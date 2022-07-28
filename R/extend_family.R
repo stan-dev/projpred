@@ -92,6 +92,9 @@
 #'
 #' @export
 extend_family <- function(family,
+                          latent = FALSE,
+                          latent_ilink = NULL,
+                          latent_ll_fun_resp = NULL,
                           augdat_y_unqs = NULL,
                           augdat_link = NULL,
                           augdat_ilink = NULL,
@@ -102,7 +105,10 @@ extend_family <- function(family,
     # If the family was already extended using this function, then return as-is:
     return(family)
   }
-  aug_data <- !is.null(augdat_link) && !is.null(augdat_ilink)
+  if (latent) {
+    family <- gaussian()
+  }
+  aug_data <- !is.null(augdat_link) && !is.null(augdat_ilink) && !latent
   if (!aug_data) {
     extend_family_specific <- paste0("extend_family_", tolower(family$family))
     if (!exists(extend_family_specific, mode = "function")) {
@@ -110,6 +116,24 @@ extend_family <- function(family,
     }
     extend_family_specific <- get(extend_family_specific, mode = "function")
     family <- extend_family_specific(family)
+    if (latent) {
+      if (is.null(latent_ilink)) {
+        message("`latent_ilink` is `NULL`, so predict.refmodel(), ",
+                "summary.vsel(), print.vsel(), plot.vsel(), ",
+                "suggest_size.vsel(), proj_linpred(), and proj_predict() ",
+                "won't work on response scale (only on latent scale).")
+      }
+      if (is.null(latent_ll_fun_resp)) {
+        message("`latent_ll_fun_resp` is `NULL`, so some features of ",
+                "predict.refmodel(), summary.vsel(), print.vsel(), ",
+                "plot.vsel(), suggest_size.vsel(), proj_linpred(), and ",
+                "proj_predict() won't work on response scale (only on latent ",
+                "scale).")
+      }
+      family$latent_ilink <- latent_ilink
+      family$latent_ll_fun_resp <- latent_ll_fun_resp
+    }
+    family$for_latent <- latent
     family$for_augdat <- FALSE
     # If `family$cats` weren't `NULL`, then downstream code in projpred would
     # have to be adapted:
@@ -210,6 +234,7 @@ extend_family <- function(family,
         sample.int(n_cat, size = 1L, prob = mu_arr[i_obs, , 1])
       })))
     }
+    family$for_latent <- FALSE
     family$for_augdat <- TRUE
   }
   family$is_extended <- TRUE

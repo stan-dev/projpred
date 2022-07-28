@@ -85,7 +85,7 @@
 #' @param ... For [get_refmodel.default()] and [get_refmodel.stanreg()]:
 #'   arguments passed to [init_refmodel()]. For the [get_refmodel()] generic:
 #'   arguments passed to the appropriate method. For [init_refmodel()]:
-#'   arguments passed to [extend_family()].
+#'   arguments passed to [extend_family()] (apart from `family` and `latent`).
 #'
 #' @details
 #'
@@ -726,17 +726,13 @@ init_refmodel <- function(object, data, formula, family, ref_predfun = NULL,
                           latent_proj = FALSE, ...) {
   # Family ------------------------------------------------------------------
 
-  if (latent_proj) {
-    family <- extend_family(gaussian())
-  }
-
-  if (family$family == "Student_t") {
+  if (family$family == "Student_t" && !latent_proj) {
     warning("Support for the `Student_t` family is still experimental.")
-  } else if (family$family == "Gamma") {
+  } else if (family$family == "Gamma" && !latent_proj) {
     warning("Support for the `Gamma` family is still experimental.")
   }
 
-  family <- extend_family(family, ...)
+  family <- extend_family(family, latent = latent_proj, ...)
 
   aug_data <- family$for_augdat
   if (aug_data &&

@@ -14,6 +14,7 @@ suggest_size(object, ...)
   type = "upper",
   thres_elpd = NA,
   warnings = TRUE,
+  lat2resp = FALSE,
   ...
 )
 }

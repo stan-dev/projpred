@@ -6,6 +6,9 @@
 \usage{
 extend_family(
   family,
+  latent = FALSE,
+  latent_ilink = NULL,
+  latent_ll_fun_resp = NULL,
   augdat_y_unqs = NULL,
   augdat_link = NULL,
   augdat_ilink = NULL,

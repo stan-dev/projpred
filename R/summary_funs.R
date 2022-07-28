@@ -37,12 +37,31 @@
          "maintainer.")
   }
   # Average over the draws, taking their weights into account:
-  return(list(
+  avg <- list(
     mu = structure(c(mu %*% wsample),
                    nobs_orig = attr(mu, "nobs_orig"),
                    class = sub("augmat", "augvec", oldClass(mu), fixed = TRUE)),
     lppd = apply(loglik, 1, log_weighted_mean_exp, wsample)
-  ))
+  )
+  if (family$for_latent) {
+    mu_resp <- family$latent_ilink(mu)
+    if (!is.matrix(mu_resp)) {
+      stop("Unexpected structure for `mu_resp`. Does the return value of ",
+           "`latent_ilink` have the correct structure?")
+    }
+    # TODO (important!): Document that `latent_ll_fun_resp` should return an
+    # S x N matrix.
+    loglik_resp <- family$latent_ll_fun_resp(mu_resp, y_test$y, y_test$weights)
+    if (!is.matrix(loglik_resp)) {
+      stop("Unexpected structure for `loglik_resp`. Does the return value of ",
+           "`latent_ll_fun_resp` have the correct structure?")
+    }
+    avg$resp <- list(
+      mu = drop(mu_resp %*% wsample),
+      lppd = apply(loglik_resp, 2, log_weighted_mean_exp, wsample)
+    )
+  }
+  return(avg)
 }
 
 # A function to calculate the desired performance statistics, their standard

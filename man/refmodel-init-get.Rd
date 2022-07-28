@@ -51,7 +51,7 @@ class.}
 \item{...}{For \code{\link[=get_refmodel.default]{get_refmodel.default()}} and \code{\link[=get_refmodel.stanreg]{get_refmodel.stanreg()}}:
 arguments passed to \code{\link[=init_refmodel]{init_refmodel()}}. For the \code{\link[=get_refmodel]{get_refmodel()}} generic:
 arguments passed to the appropriate method. For \code{\link[=init_refmodel]{init_refmodel()}}:
-arguments passed to \code{\link[=extend_family]{extend_family()}}.}
+arguments passed to \code{\link[=extend_family]{extend_family()}} (apart from \code{family} and \code{latent}).}
 
 \item{formula}{Reference model's formula. For general information on formulas
 in \R, see \code{\link{formula}}. For multilevel formulas, see also package

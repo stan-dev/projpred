@@ -377,6 +377,7 @@ plot.vsel <- function(
     alpha = 0.32,
     baseline = if (!inherits(x$refmodel, "datafit")) "ref" else "best",
     thres_elpd = NA,
+    lat2resp = FALSE,
     ...
 ) {
   object <- x
@@ -590,6 +591,7 @@ summary.vsel <- function(
     deltas = FALSE,
     alpha = 0.32,
     baseline = if (!inherits(object$refmodel, "datafit")) "ref" else "best",
+    lat2resp = FALSE,
     ...
 ) {
   .validate_vsel_object_stats(object, stats)
@@ -620,9 +622,11 @@ summary.vsel <- function(
   if (deltas) {
     nfeat_baseline <- .get_nfeat_baseline(object, baseline, stats[1])
     tab <- .tabulate_stats(object, stats, alpha = alpha,
-                           nfeat_baseline = nfeat_baseline, ...)
+                           nfeat_baseline = nfeat_baseline, lat2resp = lat2resp,
+                           ...)
   } else {
-    tab <- .tabulate_stats(object, stats, alpha = alpha, ...)
+    tab <- .tabulate_stats(object, stats, alpha = alpha, lat2resp = lat2resp,
+                           ...)
   }
   stats_table <- subset(tab, tab$size != Inf) %>%
     dplyr::group_by(.data$statistic) %>%
@@ -681,6 +685,7 @@ summary.vsel <- function(
   }
   out$suggested_size <- object$suggested_size
   out$selection <- subset(arr, arr$size <= nterms_max)
+  out$lat2resp <- lat2resp
   return(out)
 }
 
@@ -870,6 +875,7 @@ suggest_size.vsel <- function(
     type = "upper",
     thres_elpd = NA,
     warnings = TRUE,
+    lat2resp = FALSE,
     ...
 ) {
   .validate_vsel_object_stats(object, stat)
