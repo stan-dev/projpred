@@ -56,8 +56,16 @@
       stop("Unexpected structure for `loglik_resp`. Does the return value of ",
            "`latent_ll_fun_resp` have the correct structure?")
     }
+    # If applicable, coerce `mu_resp` to an augmented-rows matrix:
+    if (is.array(mu_resp) && length(dim(mu_resp)) > 2) {
+      mu_resp <- arr2augmat(mu_resp, margin_draws = 1)
+    }
     avg$resp <- list(
-      mu = drop(mu_resp %*% wsample),
+      mu = structure(
+        c(mu_resp %*% wsample),
+        nobs_orig = attr(mu_resp, "nobs_orig"),
+        class = sub("augmat", "augvec", oldClass(mu_resp), fixed = TRUE)
+      ),
       lppd = apply(loglik_resp, 2, log_weighted_mean_exp, wsample)
     )
   }
@@ -70,10 +78,14 @@
 # statistics relative to the baseline model of that size (`nfeat_baseline = Inf`
 # means that the baseline model is the reference model).
 .tabulate_stats <- function(varsel, stats, alpha = 0.05,
-                            nfeat_baseline = NULL, ...) {
+                            nfeat_baseline = NULL, lat2resp = FALSE, ...) {
   stat_tab <- data.frame()
   summ_ref <- varsel$summaries$ref
   summ_sub <- varsel$summaries$sub
+  if (varsel$refmodel$family$for_latent && lat2resp) {
+    summ_ref <- summ_ref$resp
+    summ_sub <- lapply(summ_sub, "[[", "resp")
+  }
   if (varsel$refmodel$family$for_augdat &&
       any(stats %in% c("acc", "pctcorr"))) {
     summ_ref$mu <- catmaxprb(summ_ref$mu, lvls = varsel$refmodel$family$cats)

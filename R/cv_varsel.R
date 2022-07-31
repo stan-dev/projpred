@@ -663,7 +663,7 @@ kfold_varsel <- function(refmodel, method, nterms_max, ndraws,
     fold$d_test$omitted
   }))
   idxs_sorted_by_fold_aug <- idxs_sorted_by_fold
-  if (refmodel$family$for_augdat) {
+  if (inherits(sub[[1]]$mu, "augvec")) {
     idxs_sorted_by_fold_aug <- idxs_sorted_by_fold_aug + rep(
       (seq_along(refmodel$family$cats) - 1L) * length(refmodel$y),
       each = length(idxs_sorted_by_fold_aug)
@@ -672,6 +672,10 @@ kfold_varsel <- function(refmodel, method, nterms_max, ndraws,
   sub <- lapply(sub, function(summ) {
     summ$mu <- summ$mu[order(idxs_sorted_by_fold_aug)]
     summ$lppd <- summ$lppd[order(idxs_sorted_by_fold)]
+    if (refmodel$family$for_latent) {
+      summ$resp$mu <- summ$resp$mu[order(idxs_sorted_by_fold_aug)]
+      summ$resp$lppd <- summ$resp$lppd[order(idxs_sorted_by_fold)]
+    }
 
     # Add fold-specific weights (see the discussion at GitHub issue #94 for why
     # this might have to be changed):

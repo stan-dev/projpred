@@ -267,6 +267,9 @@ varsel.refmodel <- function(object, d_test = NULL, method = NULL,
     ## observations
     nobs_test <- nrow(d_test$data %||% refmodel$fetch_data())
     ref <- list(mu = rep(NA, nobs_test), lppd = rep(NA, nobs_test))
+    if (refmodel$family$for_latent) {
+      ref$resp <- ref
+    }
   } else {
     if (d_test$type == "train") {
       mu_test <- refmodel$mu
