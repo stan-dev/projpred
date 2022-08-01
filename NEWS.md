@@ -7,7 +7,7 @@ If you read this from a place other than <https://mc-stan.org/projpred/news/inde
 ## Major changes
 
 * Some severe bugs (GitHub issues #329, #330, and #342) have been fixed, concerning the performance evaluation of models with nontrivial observation weights (i.e., models where at least one observation had a weight differing from 1). Concerned performance statistics were `"mse"`, `"rmse"`, `"acc"` (= `"pctcorr"`), and `"auc"` (i.e., all performance statistics except for `"elpd"` and `"mlpd"`).
-* By default, `suggest_size()` now considers a submodel with an ELPD difference (taking the submodel's ELPD minus the baseline model's ELPD) greater than -4 as having a performance close enough to (or higher than) the baseline model's performance. An equivalent rule has been added for the MLPD difference. See the new argument `thres_elpd` of `suggest_size()` for details. `plot.vsel()` has been updated accordingly: It now shows the new threshold as a dot-dashed gray horizontal line for the reference model and as a long-dashed green horizontal line for the baseline model (if the latter is different from the reference model).
+* `plot.vsel()` and `suggest_size()` gain a new argument `thres_elpd`. By default, this argument doesn't have any impact, but a non-`NA` value can be used for a customized model size selection rule (see `?suggest_size` for details).
 
 ## Minor changes
 

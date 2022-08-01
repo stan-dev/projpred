@@ -341,7 +341,7 @@ plot.vsel <- function(
     deltas = FALSE,
     alpha = 0.32,
     baseline = if (!inherits(x$refmodel, "datafit")) "ref" else "best",
-    thres_elpd = -4,
+    thres_elpd = NA,
     ...
 ) {
   object <- x
@@ -825,7 +825,7 @@ suggest_size.vsel <- function(
     stat = "elpd",
     pct = 0,
     type = "upper",
-    thres_elpd = -4,
+    thres_elpd = NA,
     warnings = TRUE,
     ...
 ) {

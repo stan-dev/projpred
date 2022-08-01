@@ -12,7 +12,7 @@ suggest_size(object, ...)
   stat = "elpd",
   pct = 0,
   type = "upper",
-  thres_elpd = -4,
+  thres_elpd = NA,
   warnings = TRUE,
   ...
 )

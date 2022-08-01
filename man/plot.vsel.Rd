@@ -11,7 +11,7 @@
   deltas = FALSE,
   alpha = 0.32,
   baseline = if (!inherits(x$refmodel, "datafit")) "ref" else "best",
-  thres_elpd = -4,
+  thres_elpd = NA,
   ...
 )
 }
