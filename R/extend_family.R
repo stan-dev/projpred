@@ -20,7 +20,7 @@
 #' @export
 extend_family <- function(family) {
   if (.has_family_extras(family)) {
-    ## if the object already was created using this function, then return
+    # If the family was already extended using this function, then return as-is:
     return(family)
   }
   extend_family_specific <- paste0("extend_family_", tolower(family$family))

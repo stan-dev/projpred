@@ -403,8 +403,13 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
     }
 
     ## compute approximate LOO with PSIS weights
+    if (refit_prj) {
+      refdist_eval <- p_pred
+    } else {
+      refdist_eval <- p_sel
+    }
     log_lik_ref <- t(refmodel$family$ll_fun(
-      p_pred$mu[inds, , drop = FALSE], p_pred$dis, refmodel$y[inds],
+      refdist_eval$mu[inds, , drop = FALSE], refdist_eval$dis, refmodel$y[inds],
       refmodel$wobs[inds]
     ))
     for (k in seq_along(submodels)) {
@@ -419,7 +424,7 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
       )
       lw_sub <- suppressWarnings(weights(sub_psisloo))
       # Take into account that clustered draws usually have different weights:
-      lw_sub <- lw_sub + log(p_pred$weights)
+      lw_sub <- lw_sub + log(refdist_eval$weights)
       # This re-weighting requires a re-normalization (as.array() is applied to
       # have stricter consistency checks, see `?sweep`):
       lw_sub <- sweep(lw_sub, 2, as.array(apply(lw_sub, 2, log_sum_exp)))
@@ -446,9 +451,9 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
     sel <- nlist(search_path, kl = sapply(submodels, function(x) x$kl),
                  solution_terms = search_path$solution_terms,
                  clust_used_search = p_sel$clust_used,
-                 clust_used_eval = p_pred$clust_used,
+                 clust_used_eval = refdist_eval$clust_used,
                  nprjdraws_search = NCOL(p_sel$mu),
-                 nprjdraws_eval = NCOL(p_pred$mu))
+                 nprjdraws_eval = NCOL(refdist_eval$mu))
   } else {
     if (verbose) {
       print(msg)
@@ -514,7 +519,7 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
 
   ## put all the results together in the form required by cv_varsel
   summ_sub <- lapply(seq_len(nterms_max), function(k) {
-    list(lppd = loo_sub[[k]], mu = mu_sub[[k]], w = validset$w)
+    list(lppd = loo_sub[[k]], mu = mu_sub[[k]], wcv = validset$wcv)
   })
   summ_ref <- list(lppd = loo_ref, mu = mu_ref)
   summaries <- list(sub = summ_sub, ref = summ_ref)
@@ -623,9 +628,10 @@ kfold_varsel <- function(refmodel, method, nterms_max, ndraws,
     summ$mu <- summ$mu[order(idxs_sorted_by_fold)]
     summ$lppd <- summ$lppd[order(idxs_sorted_by_fold)]
 
-    # Add weights (see GitHub issue #330 for why this needs to be clarified):
-    summ$w <- rep(1, length(summ$mu))
-    summ$w <- summ$w / sum(summ$w)
+    # Add fold-specific weights (see the discussion at GitHub issue #94 for why
+    # this might have to be changed):
+    summ$wcv <- rep(1, length(summ$mu))
+    summ$wcv <- summ$wcv / sum(summ$wcv)
     return(summ)
   })
 
@@ -738,20 +744,20 @@ kfold_varsel <- function(refmodel, method, nterms_max, ndraws,
 #
 #     ## assign the weights corresponding to this stratification (for example, the
 #     ## 'bad' values are likely to be overpresented in the sample)
-#     w <- rep(0, n)
-#     w[inds[inds %in% bad]] <- length(bad) / sum(inds %in% bad)
-#     w[inds[inds %in% ok]] <- length(ok) / sum(inds %in% ok)
-#     w[inds[inds %in% good]] <- length(good) / sum(inds %in% good)
+#     wcv <- rep(0, n)
+#     wcv[inds[inds %in% bad]] <- length(bad) / sum(inds %in% bad)
+#     wcv[inds[inds %in% ok]] <- length(ok) / sum(inds %in% ok)
+#     wcv[inds[inds %in% good]] <- length(good) / sum(inds %in% good)
 #   } else {
 #     ## all points used
 #     inds <- seq_len(n)
-#     w <- rep(1, n)
+#     wcv <- rep(1, n)
 #   }
 #
 #   ## ensure weights are normalized
-#   w <- w / sum(w)
+#   wcv <- wcv / sum(wcv)
 #
-#   return(nlist(inds, w))
+#   return(nlist(inds, wcv))
 # }
 
 ## decide which points to go through in the validation based on
@@ -767,12 +773,12 @@ kfold_varsel <- function(refmodel, method, nterms_max, ndraws,
     stop("Argument `nloo` must not be larger than the number of observations.")
   } else if (nloo == length(lppd)) {
     inds <- seq_len(nloo)
-    w <- rep(1, nloo)
+    wcv <- rep(1, nloo)
   } else if (nloo < length(lppd)) {
-    w <- exp(lppd - max(lppd))
-    inds <- sample(seq_along(lppd), size = nloo, prob = w)
+    wcv <- exp(lppd - max(lppd))
+    inds <- sample(seq_along(lppd), size = nloo, prob = wcv)
   }
-  w <- w / sum(w)
+  wcv <- wcv / sum(wcv)
 
-  return(nlist(inds, w))
+  return(nlist(inds, wcv))
 }

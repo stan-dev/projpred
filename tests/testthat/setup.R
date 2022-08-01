@@ -156,7 +156,7 @@ seed_dat <- 8541351
 set.seed(seed_dat)
 
 ## GLMs --------------------------------------------------------------------
-## Add nonpooled ("fixed") effects to the intercept-(and-offset-)only model
+## Add population-level effects to the intercept-(and-offset-)only model
 
 nterms_cont <- 3L
 x_cont <- matrix(rnorm(nobsv * nterms_cont), nobsv, nterms_cont)
@@ -193,7 +193,7 @@ eta_glm <- icpt +
 nterms_glm <- nterms_cont + nterms_cate
 
 ## GLMMs ------------------------------------------------------------------
-## Add partially pooled ("random") effects to the GLMs
+## Add group-level effects to the GLMs, yielding GLMMs
 
 nlvl_ran <- c(6L)
 nlvl_ran <- setNames(nlvl_ran, seq_along(nlvl_ran))

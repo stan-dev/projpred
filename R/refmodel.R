@@ -587,9 +587,7 @@ init_refmodel <- function(object, data, formula, family, ref_predfun = NULL,
     warning("Support for the `Gamma` family is still experimental.")
   }
 
-  if (!.has_family_extras(family)) {
-    family <- extend_family(family)
-  }
+  family <- extend_family(family)
 
   family$mu_fun <- function(fits, obs = NULL, newdata = NULL, offset = NULL,
                             transform = TRUE) {
