@@ -96,13 +96,13 @@ used for each predictor.}
 \item{verbose}{A single logical value indicating whether to print out
 additional information during the computations.}
 
-\item{nloo}{\strong{Caution:} Still experimental. Only relevant if \code{cv_method == "LOO"}. Number of subsampled LOO CV folds, i.e., number of observations
+\item{nloo}{\strong{Caution:} Still experimental. Only relevant if \code{cv_method = "LOO"}. Number of subsampled LOO CV folds, i.e., number of observations
 used for the LOO CV (anything between 1 and the original number of
 observations). Smaller values lead to faster computation but higher
 uncertainty in the evaluation part. If \code{NULL}, all observations are used,
 but for faster experimentation, one can set this to a smaller value.}
 
-\item{K}{Only relevant if \code{cv_method == "kfold"} and if the reference model
+\item{K}{Only relevant if \code{cv_method = "kfold"} and if the reference model
 was created with \code{cvfits} being \code{NULL} (which is the case for
 \code{\link[=get_refmodel.stanreg]{get_refmodel.stanreg()}} and \code{\link[brms:get_refmodel.brmsfit]{brms::get_refmodel.brmsfit()}}). Number of
 folds in \eqn{K}-fold CV.}
@@ -125,9 +125,9 @@ projecting onto (i.e., fitting) submodels which are GLMs. Usually there is
 no need for regularization, but sometimes we need to add some
 regularization to avoid numerical problems.}
 
-\item{validate_search}{Only relevant if \code{cv_method == "LOO"}. A single
-logical value indicating whether to cross-validate also the search part,
-i.e., whether to run the search separately for each CV fold (\code{TRUE}) or not
+\item{validate_search}{Only relevant if \code{cv_method = "LOO"}. A single logical
+value indicating whether to cross-validate also the search part, i.e.,
+whether to run the search separately for each CV fold (\code{TRUE}) or not
 (\code{FALSE}). We strongly do not recommend setting this to \code{FALSE}, because
 this is known to bias the predictive performance estimates of the selected
 submodels. However, setting this to \code{FALSE} can sometimes be useful because
