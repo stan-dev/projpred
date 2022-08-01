@@ -98,7 +98,7 @@ extend_family <- function(family,
                           augdat_args_ilink = list(),
                           ...) {
   if (.has_family_extras(family)) {
-    ## if the object already was created using this function, then return
+    # If the family was already extended using this function, then return as-is:
     return(family)
   }
   aug_data <- !is.null(augdat_link) && !is.null(augdat_ilink)

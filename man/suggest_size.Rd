@@ -12,6 +12,7 @@ suggest_size(object, ...)
   stat = "elpd",
   pct = 0,
   type = "upper",
+  thres_elpd = NA,
   warnings = TRUE,
   ...
 )
@@ -36,6 +37,13 @@ section "Details" below for more information.}
 based on the upper or lower confidence interval bound, respectively. See
 section "Details" below for more information.}
 
+\item{thres_elpd}{Only relevant if \code{stat \%in\% c("elpd", "mlpd")}. The
+threshold for the ELPD difference (taking the submodel's ELPD minus the
+baseline model's ELPD) above which the submodel's ELPD is considered to be
+close enough to the baseline model's ELPD. An equivalent rule is applied in
+case of the MLPD. See section "Details" for a formalization. Supplying \code{NA}
+deactivates this.}
+
 \item{warnings}{Mainly for internal use. A single logical value indicating
 whether to throw warnings if automatic suggestion fails. Usually there is
 no reason to set this to \code{FALSE}.}
@@ -48,9 +56,10 @@ examine the results via \code{\link[=plot.vsel]{plot.vsel()}} and/or \code{\link
 final decision based on what is most appropriate for the problem at hand.
 }
 \details{
-The suggested model size is the smallest model size \eqn{k \in \{0,
-  1, ..., \texttt{nterms\_max}\}}{k = 0, 1, ..., nterms_max} for which either
-the lower or upper bound (depending on argument \code{type}) of the
+In general (beware of special extensions below), the suggested model
+size is the smallest model size \eqn{k \in \{0, 1, ...,
+  \texttt{nterms\_max}\}}{k = 0, 1, ..., nterms_max} for which either the
+lower or upper bound (depending on argument \code{type}) of the
 normal-approximation confidence interval (with nominal coverage \code{1 - alpha}; see argument \code{alpha} of \code{\link[=summary.vsel]{summary.vsel()}}) for \eqn{U_k -
   U_{\mathrm{base}}}{U_k - U_base} (with \eqn{U_k} denoting the \eqn{k}-th
 submodel's true utility and \eqn{U_{\mathrm{base}}}{U_base} denoting the
@@ -61,12 +70,22 @@ where \eqn{u_0} denotes the null model's estimated utility and
 baseline model is either the reference model or the best submodel found
 (see argument \code{baseline} of \code{\link[=summary.vsel]{summary.vsel()}}).
 
-For example, \code{alpha = 0.32}, \code{pct = 0}, and \code{type = "upper"} means that we
-select the smallest model size for which the upper bound of the 68\%
+If \code{!is.na(thres_elpd)} and \code{stat = "elpd"}, the decision rule above is
+extended: The suggested model size is then the smallest model size \eqn{k}
+fulfilling the rule above \emph{or} \eqn{u_k - u_{\mathrm{base}} >
+  \texttt{thres\_elpd}}{u_k - u_base > thres_elpd}. Correspondingly, in case
+of \code{stat = "mlpd"} (and \code{!is.na(thres_elpd)}), the suggested model size is
+the smallest model size \eqn{k} fulfilling the rule above \emph{or} \eqn{u_k -
+  u_{\mathrm{base}} > \frac{\texttt{thres\_elpd}}{N}}{u_k - u_base >
+  thres_elpd / N} with \eqn{N} denoting the number of observations.
+
+For example (disregarding the special extensions in case of \code{stat = "elpd"}
+or \code{stat = "mlpd"}), \code{alpha = 0.32}, \code{pct = 0}, and \code{type = "upper"} means
+that we select the smallest model size for which the upper bound of the 68\%
 confidence interval for \eqn{U_k - U_{\mathrm{base}}}{U_k - U_base} exceeds
 (or is equal to) zero, that is, for which the submodel's utility estimate
 is at most one standard error smaller than the baseline model's utility
-estimate.
+estimate (with that standard error referring to the utility \emph{difference}).
 }
 \note{
 Loss statistics like the root mean-squared error (RMSE) and the

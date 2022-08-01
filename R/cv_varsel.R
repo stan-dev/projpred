@@ -16,19 +16,19 @@
 #'   is performed, which avoids refitting the reference model `nloo` times (in
 #'   contrast to a standard LOO CV). In the `"kfold"` case, a \eqn{K}-fold CV is
 #'   performed.
-#' @param nloo **Caution:** Still experimental. Only relevant if `cv_method ==
+#' @param nloo **Caution:** Still experimental. Only relevant if `cv_method =
 #'   "LOO"`. Number of subsampled LOO CV folds, i.e., number of observations
 #'   used for the LOO CV (anything between 1 and the original number of
 #'   observations). Smaller values lead to faster computation but higher
 #'   uncertainty in the evaluation part. If `NULL`, all observations are used,
 #'   but for faster experimentation, one can set this to a smaller value.
-#' @param K Only relevant if `cv_method == "kfold"` and if the reference model
+#' @param K Only relevant if `cv_method = "kfold"` and if the reference model
 #'   was created with `cvfits` being `NULL` (which is the case for
 #'   [get_refmodel.stanreg()] and [brms::get_refmodel.brmsfit()]). Number of
 #'   folds in \eqn{K}-fold CV.
-#' @param validate_search Only relevant if `cv_method == "LOO"`. A single
-#'   logical value indicating whether to cross-validate also the search part,
-#'   i.e., whether to run the search separately for each CV fold (`TRUE`) or not
+#' @param validate_search Only relevant if `cv_method = "LOO"`. A single logical
+#'   value indicating whether to cross-validate also the search part, i.e.,
+#'   whether to run the search separately for each CV fold (`TRUE`) or not
 #'   (`FALSE`). We strongly do not recommend setting this to `FALSE`, because
 #'   this is known to bias the predictive performance estimates of the selected
 #'   submodels. However, setting this to `FALSE` can sometimes be useful because
