@@ -778,7 +778,7 @@ print.vsel <- function(x, ...) {
 #'   confidence interval for \eqn{U_k - U_{\mathrm{base}}}{U_k - U_base} exceeds
 #'   (or is equal to) zero, that is, for which the submodel's utility estimate
 #'   is at most one standard error smaller than the baseline model's utility
-#'   estimate.
+#'   estimate (with that standard error referring to the utility *difference*).
 #'
 #' @note Loss statistics like the root mean-squared error (RMSE) and the
 #'   mean-squared error (MSE) are converted to utilities by multiplying them by
