@@ -70,9 +70,9 @@ where \eqn{u_0} denotes the null model's estimated utility and
 baseline model is either the reference model or the best submodel found
 (see argument \code{baseline} of \code{\link[=summary.vsel]{summary.vsel()}}).
 
-In case of \code{stat = "elpd"} (and \code{!is.na(thres_elpd)}), the decision rule
-above is extended: The suggested model size is then the smallest model size
-\eqn{k} fulfilling the rule above \emph{or} \eqn{u_k - u_{\mathrm{base}} >
+If \code{!is.na(thres_elpd)} and \code{stat = "elpd"}, the decision rule above is
+extended: The suggested model size is then the smallest model size \eqn{k}
+fulfilling the rule above \emph{or} \eqn{u_k - u_{\mathrm{base}} >
   \texttt{thres\_elpd}}{u_k - u_base > thres_elpd}. Correspondingly, in case
 of \code{stat = "mlpd"} (and \code{!is.na(thres_elpd)}), the suggested model size is
 the smallest model size \eqn{k} fulfilling the rule above \emph{or} \eqn{u_k -

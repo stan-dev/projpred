@@ -74,9 +74,8 @@ This is the \code{\link[=plot]{plot()}} method for \code{vsel} objects (returned
 \details{
 As long as the reference model's performance is computable, it is
 always shown in the plot as a dashed red horizontal line. If \code{baseline = "best"}, the baseline model's performance is shown as a dotted black
-horizontal line. If \code{"elpd" \%in\% stats} or \code{"mlpd" \%in\% stats} (and
-\code{!is.na(thres_elpd)}), the threshold used for the corresponding extension
-of the \code{\link[=suggest_size]{suggest_size()}} heuristic (see argument \code{thres_elpd}) is shown as a
+horizontal line. If \code{!is.na(thres_elpd)} and \code{any(stats \%in\% c("elpd", "mlpd"))}, the value supplied to \code{thres_elpd} (which is automatically
+adapted internally in case of the MLPD or \code{deltas = FALSE}) is shown as a
 dot-dashed gray horizontal line for the reference model and, if \code{baseline = "best"}, as a long-dashed green horizontal line for the baseline model.
 }
 \examples{

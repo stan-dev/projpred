@@ -306,9 +306,9 @@ proj_predict_aux <- function(proj, newdata, offset, weights,
 #' @details As long as the reference model's performance is computable, it is
 #'   always shown in the plot as a dashed red horizontal line. If `baseline =
 #'   "best"`, the baseline model's performance is shown as a dotted black
-#'   horizontal line. If `"elpd" %in% stats` or `"mlpd" %in% stats` (and
-#'   `!is.na(thres_elpd)`), the threshold used for the corresponding extension
-#'   of the [suggest_size()] heuristic (see argument `thres_elpd`) is shown as a
+#'   horizontal line. If `!is.na(thres_elpd)` and `any(stats %in% c("elpd",
+#'   "mlpd"))`, the value supplied to `thres_elpd` (which is automatically
+#'   adapted internally in case of the MLPD or `deltas = FALSE`) is shown as a
 #'   dot-dashed gray horizontal line for the reference model and, if `baseline =
 #'   "best"`, as a long-dashed green horizontal line for the baseline model.
 #'
@@ -763,9 +763,9 @@ print.vsel <- function(x, ...) {
 #'   baseline model is either the reference model or the best submodel found
 #'   (see argument `baseline` of [summary.vsel()]).
 #'
-#'   In case of `stat = "elpd"` (and `!is.na(thres_elpd)`), the decision rule
-#'   above is extended: The suggested model size is then the smallest model size
-#'   \eqn{k} fulfilling the rule above *or* \eqn{u_k - u_{\mathrm{base}} >
+#'   If `!is.na(thres_elpd)` and `stat = "elpd"`, the decision rule above is
+#'   extended: The suggested model size is then the smallest model size \eqn{k}
+#'   fulfilling the rule above *or* \eqn{u_k - u_{\mathrm{base}} >
 #'   \texttt{thres\_elpd}}{u_k - u_base > thres_elpd}. Correspondingly, in case
 #'   of `stat = "mlpd"` (and `!is.na(thres_elpd)`), the suggested model size is
 #'   the smallest model size \eqn{k} fulfilling the rule above *or* \eqn{u_k -
