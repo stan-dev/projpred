@@ -41,8 +41,8 @@ section "Details" below for more information.}
 threshold for the ELPD difference (taking the submodel's ELPD minus the
 baseline model's ELPD) above which the submodel's ELPD is considered to be
 close enough to the reference model's ELPD. An equivalent rule is applied
-to the MLPD. See section "Details" for a formalization. To deactivate this,
-use \code{NA}.}
+in case of the MLPD. See section "Details" for a formalization. Supplying
+\code{NA} deactivates this.}
 
 \item{warnings}{Mainly for internal use. A single logical value indicating
 whether to throw warnings if automatic suggestion fails. Usually there is
