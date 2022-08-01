@@ -737,7 +737,7 @@ init_refmodel <- function(object, data, formula, family, ref_predfun = NULL,
   }
 
   family <- extend_family(family, ...)
-  
+
   aug_data <- family$for_augdat
   if (aug_data &&
       isTRUE(getOption("projpred.warn_augdat_experimental", TRUE))) {
