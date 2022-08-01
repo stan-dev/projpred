@@ -56,9 +56,9 @@ terms of \code{stats[1]}), respectively.}
 \item{thres_elpd}{Only relevant if \code{any(stats \%in\% c("elpd", "mlpd"))}. The
 threshold for the ELPD difference (taking the submodel's ELPD minus the
 baseline model's ELPD) above which the submodel's ELPD is considered to be
-close enough to the reference model's ELPD. An equivalent rule is applied
-in case of the MLPD. See \code{\link[=suggest_size]{suggest_size()}} for a formalization. Supplying
-\code{NA} deactivates this.}
+close enough to the baseline model's ELPD. An equivalent rule is applied in
+case of the MLPD. See \code{\link[=suggest_size]{suggest_size()}} for a formalization. Supplying \code{NA}
+deactivates this.}
 
 \item{...}{Arguments passed to the internal function which is used for
 bootstrapping (if applicable; see argument \code{stats}). Currently, relevant

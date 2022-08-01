@@ -299,9 +299,9 @@ proj_predict_aux <- function(proj, newdata, offset, weights,
 #' @param thres_elpd Only relevant if `any(stats %in% c("elpd", "mlpd"))`. The
 #'   threshold for the ELPD difference (taking the submodel's ELPD minus the
 #'   baseline model's ELPD) above which the submodel's ELPD is considered to be
-#'   close enough to the reference model's ELPD. An equivalent rule is applied
-#'   in case of the MLPD. See [suggest_size()] for a formalization. Supplying
-#'   `NA` deactivates this.
+#'   close enough to the baseline model's ELPD. An equivalent rule is applied in
+#'   case of the MLPD. See [suggest_size()] for a formalization. Supplying `NA`
+#'   deactivates this.
 #'
 #' @details As long as the reference model's performance is computable, it is
 #'   always shown in the plot as a dashed red horizontal line. If `baseline =
@@ -737,9 +737,9 @@ print.vsel <- function(x, ...) {
 #' @param thres_elpd Only relevant if `stat %in% c("elpd", "mlpd")`. The
 #'   threshold for the ELPD difference (taking the submodel's ELPD minus the
 #'   baseline model's ELPD) above which the submodel's ELPD is considered to be
-#'   close enough to the reference model's ELPD. An equivalent rule is applied
-#'   in case of the MLPD. See section "Details" for a formalization. Supplying
-#'   `NA` deactivates this.
+#'   close enough to the baseline model's ELPD. An equivalent rule is applied in
+#'   case of the MLPD. See section "Details" for a formalization. Supplying `NA`
+#'   deactivates this.
 #' @param warnings Mainly for internal use. A single logical value indicating
 #'   whether to throw warnings if automatic suggestion fails. Usually there is
 #'   no reason to set this to `FALSE`.
