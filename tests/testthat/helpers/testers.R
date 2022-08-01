@@ -1467,10 +1467,10 @@ smmry_tester <- function(smmry, vsel_expected, nterms_max_expected = NULL,
   }
   expect_named(
     smmry,
-    c("formula", "family", "nobs", "method", "cv_method", "validate_search",
-      "clust_used_search", "clust_used_eval", "nprjdraws_search",
-      "nprjdraws_eval", "search_included", "nterms", pct_solterms_nm,
-      "suggested_size", "selection"),
+    c("formula", "family", "nobs_train", "nobs_test", "method", "cv_method",
+      "validate_search", "clust_used_search", "clust_used_eval",
+      "nprjdraws_search", "nprjdraws_eval", "search_included", "nterms",
+      pct_solterms_nm, "suggested_size", "selection"),
     info = info_str
   )
 
@@ -1487,7 +1487,9 @@ smmry_tester <- function(smmry, vsel_expected, nterms_max_expected = NULL,
   expect_identical(smmry$formula, vsel_expected$refmodel$formula,
                    info = info_str)
   expect_null(smmry$fit, info = info_str)
-  expect_identical(smmry$nobs, length(vsel_expected$refmodel$y),
+  expect_identical(smmry$nobs_train, length(vsel_expected$refmodel$y),
+                   info = info_str)
+  expect_identical(smmry$nobs_test, nrow(vsel_expected$d_test$data),
                    info = info_str)
   # In summary.vsel(), `nterms_max` and output element `nterms` do not count the
   # intercept (whereas `vsel_expected$nterms_max` does):
