@@ -88,7 +88,7 @@ pois <- generate_fake_poisson_data()
 
 We begin by fitting some reference model we believe to be a good fit to the data in BRMS.
 
-```{r, cache=TRUE, cache.lazy=FALSE}
+```{r}
 # build reference model
 model_poisson <- brm(
   formula = y ~ 1 + x1 + x2,
@@ -156,7 +156,7 @@ xtags <- data %>%
 
 We now define a simple GLM formula with censored data, and some Gaussian prior over the regressors (note that this is independent to our Gaussianity assumption over the latent predictor) and fit it accordingly in BRMS.
 
-```{r, cache=TRUE, cache.lazy=FALSE}
+```{r}
 # fit GLM model with BRMS, expliciting a non-exponential family
 fit <- brm(
   formula = formula(paste("time | cens(2 - status) ~",
