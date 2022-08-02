@@ -316,11 +316,15 @@ proj_predict_aux <- function(proj, newdata, offset, weights,
   } else {
     draw_inds <- seq_along(proj$weights)
   }
+  cats_aug <- proj$refmodel$family$cats
+  if (proj$refmodel$family$for_latent) {
+    cats_aug <- NULL
+  }
   return(structure(
     do.call(rbind, lapply(draw_inds, function(i) {
       proj$refmodel$family$ppd(mu[, i], proj$dis[i], weights)
     })),
-    cats = proj$refmodel$family$cats
+    cats = cats_aug
   ))
 }
 
