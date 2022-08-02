@@ -676,7 +676,9 @@ kfold_varsel <- function(refmodel, method, nterms_max, ndraws,
       summ$mu <- summ$mu[order(idxs_sorted_by_fold_aug)]
     }
     summ$lppd <- summ$lppd[order(idxs_sorted_by_fold)]
-    if (refmodel$family$for_latent) {
+    if (refmodel$family$for_latent &&
+        !is.null(refmodel$family$latent_ilink) &&
+        !is.null(refmodel$family$latent_ll_fun_resp)) {
       summ$resp$mu <- summ$resp$mu[order(idxs_sorted_by_fold_aug)]
       summ$resp$lppd <- summ$resp$lppd[order(idxs_sorted_by_fold)]
     }
@@ -701,8 +703,18 @@ kfold_varsel <- function(refmodel, method, nterms_max, ndraws,
       dis = fold$refmodel$dis
     )
   }))
-  ref$mu <- ref$mu[order(idxs_sorted_by_fold_aug)]
+  if (refmodel$family$for_latent && !is.null(refmodel$family$cats)) {
+    ref$mu <- ref$mu[order(idxs_sorted_by_fold)]
+  } else {
+    ref$mu <- ref$mu[order(idxs_sorted_by_fold_aug)]
+  }
   ref$lppd <- ref$lppd[order(idxs_sorted_by_fold)]
+  if (refmodel$family$for_latent &&
+      !is.null(refmodel$family$latent_ilink) &&
+      !is.null(refmodel$family$latent_ll_fun_resp)) {
+    ref$resp$mu <- ref$resp$mu[order(idxs_sorted_by_fold_aug)]
+    ref$resp$lppd <- ref$resp$lppd[order(idxs_sorted_by_fold)]
+  }
 
   # Combine the K separate test "datasets" (rather "information objects") into a
   # single list:
