@@ -670,7 +670,11 @@ kfold_varsel <- function(refmodel, method, nterms_max, ndraws,
     )
   }
   sub <- lapply(sub, function(summ) {
-    summ$mu <- summ$mu[order(idxs_sorted_by_fold_aug)]
+    if (refmodel$family$for_latent && !is.null(refmodel$family$cats)) {
+      summ$mu <- summ$mu[order(idxs_sorted_by_fold)]
+    } else {
+      summ$mu <- summ$mu[order(idxs_sorted_by_fold_aug)]
+    }
     summ$lppd <- summ$lppd[order(idxs_sorted_by_fold)]
     if (refmodel$family$for_latent) {
       summ$resp$mu <- summ$resp$mu[order(idxs_sorted_by_fold_aug)]
