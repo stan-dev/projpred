@@ -45,7 +45,7 @@
   )
   if (family$for_latent) {
     mu_resp <- family$latent_ilink(mu)
-    if (!is.matrix(mu_resp)) {
+    if (!is.array(mu_resp)) {
       stop("Unexpected structure for `mu_resp`. Does the return value of ",
            "`latent_ilink` have the correct structure?")
     }
