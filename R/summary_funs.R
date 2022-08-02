@@ -59,6 +59,8 @@
     # If applicable, coerce `mu_resp` to an augmented-rows matrix:
     if (is.array(mu_resp) && length(dim(mu_resp)) > 2) {
       mu_resp <- arr2augmat(mu_resp, margin_draws = 1)
+    } else {
+      mu_resp <- t(mu_resp)
     }
     avg$resp <- list(
       mu = structure(
