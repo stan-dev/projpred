@@ -7,6 +7,7 @@
 extend_family(
   family,
   latent = FALSE,
+  latent_y_unqs = NULL,
   latent_ilink = NULL,
   latent_ll_fun_resp = NULL,
   augdat_y_unqs = NULL,

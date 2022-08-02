@@ -93,6 +93,7 @@
 #' @export
 extend_family <- function(family,
                           latent = FALSE,
+                          latent_y_unqs = NULL,
                           latent_ilink = NULL,
                           latent_ll_fun_resp = NULL,
                           augdat_y_unqs = NULL,
@@ -116,7 +117,13 @@ extend_family <- function(family,
     }
     extend_family_specific <- get(extend_family_specific, mode = "function")
     family <- extend_family_specific(family)
+
+    # If `family$cats` weren't `NULL`, then downstream code in projpred would
+    # have to be adapted:
+    stopifnot(is.null(family$cats))
+
     if (latent) {
+      family$cats <- latent_y_unqs
       if (is.null(latent_ilink)) {
         message("`latent_ilink` is `NULL`, so predict.refmodel(), ",
                 "summary.vsel(), print.vsel(), plot.vsel(), ",
@@ -135,9 +142,6 @@ extend_family <- function(family,
     }
     family$for_latent <- latent
     family$for_augdat <- FALSE
-    # If `family$cats` weren't `NULL`, then downstream code in projpred would
-    # have to be adapted:
-    stopifnot(is.null(family$cats))
   } else {
     if (!is.null(augdat_y_unqs)) {
       family$cats <- augdat_y_unqs
