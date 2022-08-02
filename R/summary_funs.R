@@ -93,8 +93,7 @@
     summ_ref <- summ_ref$resp
     summ_sub <- lapply(summ_sub, "[[", "resp")
   }
-  if (varsel$refmodel$family$for_augdat &&
-      any(stats %in% c("acc", "pctcorr"))) {
+  if (inherits(summ_ref$mu, "augvec") && any(stats %in% c("acc", "pctcorr"))) {
     summ_ref$mu <- catmaxprb(summ_ref$mu, lvls = varsel$refmodel$family$cats)
     summ_sub <- lapply(summ_sub, function(summ_sub_k) {
       summ_sub_k$mu <- catmaxprb(summ_sub_k$mu,
