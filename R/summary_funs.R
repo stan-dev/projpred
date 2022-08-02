@@ -59,15 +59,19 @@
     # If applicable, coerce `mu_resp` to an augmented-rows matrix:
     if (is.array(mu_resp) && length(dim(mu_resp)) > 2) {
       mu_resp <- arr2augmat(mu_resp, margin_draws = 1)
-    } else {
-      mu_resp <- t(mu_resp)
-    }
-    avg$resp <- list(
-      mu = structure(
+      mu_resp_avg <- structure(
         c(mu_resp %*% wsample),
         nobs_orig = attr(mu_resp, "nobs_orig"),
         class = sub("augmat", "augvec", oldClass(mu_resp), fixed = TRUE)
-      ),
+      )
+    } else {
+      # In principle, we could use the same code for `mu_resp_avg` as above.
+      # However, that would require `mu_resp <- t(mu_resp)` beforehand, so the
+      # following should be more efficient:
+      mu_resp_avg <- c(wsample %*% mu_resp)
+    }
+    avg$resp <- list(
+      mu = mu_resp_avg,
       lppd = apply(loglik_resp, 2, log_weighted_mean_exp, wsample)
     )
   }
