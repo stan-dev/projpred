@@ -271,16 +271,11 @@ varsel.refmodel <- function(object, d_test = NULL, method = NULL,
       # In general, we could use `ref$resp <- ref` here, but the case where
       # refmodel$family$latent_ilink() returns a (3-dimensional) array needs
       # special care.
-      mu_resp <- refmodel$family$latent_ilink(matrix(nrow = nobs_test))
-      if (is.array(mu_resp) && length(dim(mu_resp)) > 2) {
-        ### Option 1:
-        # mu_resp <- structure(rep(NA, prod(dim(mu_resp)[2:3])),
-        #                      nobs_orig = dim(mu_resp)[2],
-        #                      class = "augvec")
-        ###
-        ### Option 2:
-        mu_resp <- augmat2augvec(arr2augmat(mu_resp, margin_draws = 1))
-        ###
+      mu_resp_dummy <- refmodel$family$latent_ilink(matrix(nrow = nobs_test))
+      if (is.array(mu_resp_dummy) && length(dim(mu_resp_dummy)) > 2) {
+        mu_resp <- structure(rep(NA, prod(dim(mu_resp_dummy)[2:3])),
+                             nobs_orig = dim(mu_resp_dummy)[2],
+                             class = "augvec")
       } else {
         mu_resp <- ref$mu
       }
