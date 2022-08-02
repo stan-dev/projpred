@@ -56,8 +56,9 @@
       stop("Unexpected structure for `loglik_resp`. Does the return value of ",
            "`latent_ll_fun_resp` have the correct structure?")
     }
-    # If applicable, coerce `mu_resp` to an augmented-rows matrix:
-    if (is.array(mu_resp) && length(dim(mu_resp)) > 2) {
+    if (length(dim(mu_resp)) > 2) {
+      # Here, `mu_resp` is a 3-dimensional array (S x N x C), so coerce it to an
+      # augmented-rows matrix:
       mu_resp <- arr2augmat(mu_resp, margin_draws = 1)
       mu_resp_avg <- structure(
         c(mu_resp %*% wsample),
