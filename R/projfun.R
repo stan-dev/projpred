@@ -9,7 +9,7 @@ project_submodel <- function(solution_terms, p_ref, refmodel, regul = 1e-4,
   wsample <- validparams$wsample
 
   y_unqs_aug <- refmodel$family$cats
-  if (refmodel$family$for_latent) {
+  if (refmodel$family$for_latent && !is.null(y_unqs_aug)) {
     y_unqs_aug <- NULL
   }
   subset <- subset_formula_and_data(

@@ -663,7 +663,7 @@ kfold_varsel <- function(refmodel, method, nterms_max, ndraws,
     fold$d_test$omitted
   }))
   idxs_sorted_by_fold_aug <- idxs_sorted_by_fold
-  if (inherits(sub[[1]]$mu, "augvec")) {
+  if (!is.null(refmodel$family$cats)) {
     idxs_sorted_by_fold_aug <- idxs_sorted_by_fold_aug + rep(
       (seq_along(refmodel$family$cats) - 1L) * length(refmodel$y),
       each = length(idxs_sorted_by_fold_aug)

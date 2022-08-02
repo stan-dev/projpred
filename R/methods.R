@@ -317,7 +317,7 @@ proj_predict_aux <- function(proj, newdata, offset, weights,
     draw_inds <- seq_along(proj$weights)
   }
   cats_aug <- proj$refmodel$family$cats
-  if (proj$refmodel$family$for_latent) {
+  if (proj$refmodel$family$for_latent && !is.null(cats_aug)) {
     cats_aug <- NULL
   }
   return(structure(
