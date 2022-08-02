@@ -43,22 +43,22 @@
                    class = sub("augmat", "augvec", oldClass(mu), fixed = TRUE)),
     lppd = apply(loglik, 1, log_weighted_mean_exp, wsample)
   )
-  if (family$for_latent) {
+  if (family$for_latent &&
+      !is.null(family$latent_ilink) &&
+      !is.null(family$latent_ll_fun_resp)) {
     mu_resp <- family$latent_ilink(t(mu))
-    if (!is.array(mu_resp)) {
+    if (length(dim(mu_resp)) < 2) {
       stop("Unexpected structure for `mu_resp`. Does the return value of ",
            "`latent_ilink` have the correct structure?")
     }
-    # TODO (important!): Document that `latent_ll_fun_resp` should return an
-    # S x N matrix.
     loglik_resp <- family$latent_ll_fun_resp(mu_resp, y_test$y, y_test$weights)
     if (!is.matrix(loglik_resp)) {
       stop("Unexpected structure for `loglik_resp`. Does the return value of ",
            "`latent_ll_fun_resp` have the correct structure?")
     }
-    if (length(dim(mu_resp)) > 2) {
-      # Here, `mu_resp` is a 3-dimensional array (S x N x C), so coerce it to an
-      # augmented-rows matrix:
+    if (length(dim(mu_resp)) == 3) {
+      # In this case, `mu_resp` is a 3-dimensional array (S x N x C), so coerce
+      # it to an augmented-rows matrix:
       mu_resp <- arr2augmat(mu_resp, margin_draws = 1)
       mu_resp_avg <- structure(
         c(mu_resp %*% wsample),
