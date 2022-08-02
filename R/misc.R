@@ -518,5 +518,15 @@ rbind2list <- function(x) {
       rbind2list(lapply(x, "[", "lppd"))
     ))
   }
-  return(as.list(do.call(rbind, lapply(x, as.data.frame))))
+  binded_list <- as.list(do.call(rbind, lapply(x, function(x_i) {
+    as.data.frame(x_i[setdiff(names(x_i), "resp")])
+  })))
+  is_lateval_resp <- any(sapply(x, function(x_i) {
+    is.list(x_i) &&
+      identical(names(x_i), c("mu", "lppd", "resp"))
+  }))
+  if (is_lateval_resp) {
+    binded_list$resp <- rbind2list(lapply(x, "[[", "resp"))
+  }
+  return(binded_list)
 }
