@@ -44,7 +44,7 @@
     lppd = apply(loglik, 1, log_weighted_mean_exp, wsample)
   )
   if (family$for_latent) {
-    mu_resp <- family$latent_ilink(mu)
+    mu_resp <- family$latent_ilink(t(mu))
     if (!is.array(mu_resp)) {
       stop("Unexpected structure for `mu_resp`. Does the return value of ",
            "`latent_ilink` have the correct structure?")
