@@ -360,16 +360,11 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
   if (nloo < 1) {
     stop("nloo must be at least 1")
   } else if (nloo < n) {
-    if (refmodel$family$for_latent) {
-      # Disallow subsampled LOO CV for the latent projection (for now) because
-      # `loo_ref` would probably have to be adapted in that case:
-      stop("Currently, the latent projection may not be combined with ",
-           "subsampled LOO CV.")
-    }
     warning("Subsampled LOO CV is still experimental.")
   }
 
   ## compute loo summaries for the reference model
+  loo_ref_resp <- apply(loglik_forPSIS + lw, 2, log_sum_exp)
   loo_ref <- apply(refmodel$loglik + lw, 2, log_sum_exp)
   mu_ref <- do.call(c, lapply(seq_len(nrow(mu)), function(i) {
     # For the augmented-data projection, `mu` is an augmented-rows matrix
@@ -390,7 +385,7 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
 
   ## decide which points form the validation set based on the k-values
   ## validset <- .loo_subsample(n, nloo, pareto_k)
-  validset <- .loo_subsample_pps(nloo, loo_ref)
+  validset <- .loo_subsample_pps(nloo, loo_ref_resp)
   inds <- validset$inds
 
   ## initialize objects where to store the results
@@ -699,8 +694,7 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
       nobs_orig = attr(mu_resp, "nobs_orig"),
       class = sub("augmat", "augvec", oldClass(mu_resp), fixed = TRUE)
     )
-    summ_ref$resp <- list(mu = mu_ref_resp,
-                          lppd = apply(loglik_forPSIS + lw, 2, log_sum_exp))
+    summ_ref$resp <- list(mu = mu_ref_resp, lppd = loo_ref_resp)
   }
   summaries <- list(sub = summ_sub, ref = summ_ref)
 
