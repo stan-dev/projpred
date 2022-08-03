@@ -269,8 +269,8 @@ varsel.refmodel <- function(object, d_test = NULL, method = NULL,
     ref <- list(mu = rep(NA, nobs_test), lppd = rep(NA, nobs_test))
     if (refmodel$family$for_latent && refmodel$family$lat2resp_possible) {
       # In general, we could use `ref$resp <- ref` here, but the case where
-      # refmodel$family$latent_ilink() returns a (3-dimensional) array (S x N x
-      # C) needs special care.
+      # refmodel$family$latent_ilink() returns a 3-dimensional array (S x N x C)
+      # needs special care.
       if (!is.null(refmodel$family$cats)) {
         mu_resp <- structure(rep(NA, nobs_test * length(refmodel$family$cats)),
                              nobs_orig = nobs_test,

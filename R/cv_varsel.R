@@ -393,7 +393,7 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
   if (refmodel$family$for_latent && refmodel$family$lat2resp_possible) {
     loo_sub_resp <- loo_sub
     # In general, we could use `mu_sub_resp <- mu_sub` here, but the case where
-    # refmodel$family$latent_ilink() returns a (3-dimensional) array (S x N x C)
+    # refmodel$family$latent_ilink() returns a 3-dimensional array (S x N x C)
     # needs special care.
     if (!is.null(refmodel$family$cats)) {
       mu_sub_resp <- replicate(
