@@ -356,8 +356,7 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
   }
 
   ## compute loo summaries for the reference model
-  loglik <- refmodel$loglik
-  loo_ref <- apply(loglik + lw, 2, log_sum_exp)
+  loo_ref <- apply(refmodel$loglik + lw, 2, log_sum_exp)
   mu_ref <- do.call(c, lapply(seq_len(nrow(mu)), function(i) {
     # For the augmented-data projection, `mu` is an augmented-rows matrix
     # whereas the columns of `lw` refer to the original (non-augmented)
