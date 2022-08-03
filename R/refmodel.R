@@ -734,8 +734,7 @@ init_refmodel <- function(object, data, formula, family, ref_predfun = NULL,
 
   family <- extend_family(family, latent = latent_proj, ...)
 
-  aug_data <- family$for_augdat
-  if (aug_data &&
+  if (family$for_augdat &&
       isTRUE(getOption("projpred.warn_augdat_experimental", TRUE))) {
     warning("The augmented-data projection is still experimental.")
   }
@@ -767,7 +766,7 @@ init_refmodel <- function(object, data, formula, family, ref_predfun = NULL,
   # Special case: `datafit` -------------------------------------------------
 
   proper_model <- !is.null(object)
-  if (!proper_model && aug_data) {
+  if (!proper_model && family$for_augdat) {
     stop("Currently, the augmented-data projection may not be combined with ",
          "`object = NULL` (i.e., a `datafit`).")
   }
@@ -782,7 +781,7 @@ init_refmodel <- function(object, data, formula, family, ref_predfun = NULL,
   if (length(response_name) == 2) {
     if (family$family != "binomial") {
       stop("For non-binomial families, a two-column response is not allowed.")
-    } else if (aug_data) {
+    } else if (family$for_augdat) {
       stop("Currently, the augmented-data projection may not be combined with ",
            "a 2-column response.")
     }
@@ -796,7 +795,7 @@ init_refmodel <- function(object, data, formula, family, ref_predfun = NULL,
   }
   formula <- update(formula, paste(response_name[1], "~ ."))
   if (formula_contains_additive_terms(formula)) {
-    if (aug_data) {
+    if (family$for_augdat) {
       stop("Currently, the augmented-data projection may not be combined with ",
            "additive models.")
     } else if (isTRUE(getOption("projpred.warn_additive_experimental", TRUE))) {
@@ -810,7 +809,7 @@ init_refmodel <- function(object, data, formula, family, ref_predfun = NULL,
     if (is.null(ref_predfun)) {
       ref_predfun <- refprd
     }
-    if (aug_data && family$family == "binomial") {
+    if (family$for_augdat && family$family == "binomial") {
       ref_predfun_mat <- ref_predfun
       ref_predfun <- function(fit, newdata = NULL) {
         linpred1 <- ref_predfun_mat(fit = fit, newdata = newdata)
@@ -866,7 +865,7 @@ init_refmodel <- function(object, data, formula, family, ref_predfun = NULL,
   }
 
   if (is.null(div_minimizer)) {
-    if (!aug_data) {
+    if (!family$for_augdat) {
       div_minimizer <- divmin
     } else {
       div_minimizer <- divmin_augdat
@@ -874,7 +873,7 @@ init_refmodel <- function(object, data, formula, family, ref_predfun = NULL,
   }
 
   if (is.null(proj_predfun)) {
-    if (!aug_data) {
+    if (!family$for_augdat) {
       proj_predfun <- subprd
     } else if (family$family == "binomial") {
       proj_predfun <- subprd_augdat_binom
@@ -882,7 +881,7 @@ init_refmodel <- function(object, data, formula, family, ref_predfun = NULL,
       proj_predfun <- subprd_augdat
     }
   }
-  if (aug_data) {
+  if (family$for_augdat) {
     proj_predfun_usr <- proj_predfun
     proj_predfun <- function(fits, newdata) {
       augprd_arr <- proj_predfun_usr(fits, newdata = newdata)
@@ -941,7 +940,7 @@ init_refmodel <- function(object, data, formula, family, ref_predfun = NULL,
   y <- target$y
   weights <- target$weights
 
-  if (aug_data) {
+  if (family$for_augdat) {
     y <- as.factor(y)
     stopifnot(nlevels(y) >= 2)
     if (!identical(levels(y), family$cats)) {
@@ -964,7 +963,7 @@ init_refmodel <- function(object, data, formula, family, ref_predfun = NULL,
     }
   }
 
-  if (aug_data && !all(weights == 1)) {
+  if (family$for_augdat && !all(weights == 1)) {
     stop("Currently, the augmented-data projection may not be combined with ",
          "observation weights (other than 1).")
   }
