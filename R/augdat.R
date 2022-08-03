@@ -176,7 +176,11 @@ augmat2augvec <- function(augmat) {
 catmaxprb <- function(augvec, lvls) {
   arr <- augmat2arr(augvec2augmat(augvec))
   idxmaxprb <- do.call(c, lapply(seq_len(dim(arr)[1]), function(i_obs) {
-    which.max(arr[i_obs, , 1])
+    idx_out <- which.max(arr[i_obs, , 1])
+    if (length(idx_out) == 0) {
+      idx_out <- NA_integer_
+    }
+    return(idx_out)
   }))
   return(factor(lvls[idxmaxprb], levels = lvls))
 }
