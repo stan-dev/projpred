@@ -739,6 +739,10 @@ init_refmodel <- function(object, data, formula, family, ref_predfun = NULL,
       isTRUE(getOption("projpred.warn_augdat_experimental", TRUE))) {
     warning("The augmented-data projection is still experimental.")
   }
+  if (family$for_latent &&
+      isTRUE(getOption("projpred.warn_latent_experimental", TRUE))) {
+    warning("The latent projection is still experimental.")
+  }
 
   family$mu_fun <- function(fits, obs = NULL, newdata = NULL, offset = NULL,
                             transform = TRUE) {
