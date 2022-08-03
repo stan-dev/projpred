@@ -313,6 +313,13 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
   ## each data point)
   ##
 
+  if (refmodel$family$for_latent) {
+    # TODO: Add the summary statistics (performance evaluation statistics) on
+    # response scale (element `"resp"`).
+    stop("Currently, `cv_method = \"LOO\"` is not supported yet in case ",
+         "of the latent projection.")
+  }
+
   mu <- refmodel$mu
   eta <- refmodel$eta
   dis <- refmodel$dis
@@ -428,17 +435,38 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
     } else {
       refdist_eval <- p_sel
     }
-    inds_aug <- inds
-    if (refmodel$family$for_augdat) {
-      inds_aug <- inds_aug + rep(
-        (seq_along(refmodel$family$cats) - 1L) * n,
-        each = length(inds_aug)
-      )
+    if (refmodel$family$for_latent) {
+      if (!is.null(refmodel$family$latent_ilink) &&
+          !is.null(refmodel$family$latent_ll_fun_resp)) {
+        refdist_eval_mu_resp <- refmodel$family$latent_ilink(t(refdist_eval$mu))
+        if (length(dim(refdist_eval_mu_resp)) == 3) {
+          # In this case, `refdist_eval_mu_resp` is a 3-dimensional array (S x N
+          # x C).
+          refdist_eval_mu_resp <- refdist_eval_mu_resp[, inds, , drop = FALSE]
+        } else {
+          # In this case, `refdist_eval_mu_resp` is a matrix (S x N).
+          refdist_eval_mu_resp <- refdist_eval_mu_resp[, inds, drop = FALSE]
+        }
+        log_lik_ref <- refmodel$family$latent_ll_fun_resp(
+          refdist_eval_mu_resp, refmodel$y[inds], refmodel$wobs[inds]
+        )
+      } else {
+        stop("Cannot use `validate_search = FALSE` if `latent_ilink` or ",
+             "`latent_ll_fun_resp` are missing.")
+      }
+    } else {
+      inds_aug <- inds
+      if (refmodel$family$for_augdat) {
+        inds_aug <- inds_aug + rep(
+          (seq_along(refmodel$family$cats) - 1L) * n,
+          each = length(inds_aug)
+        )
+      }
+      log_lik_ref <- t(refmodel$family$ll_fun(
+        refdist_eval$mu[inds_aug, , drop = FALSE], refdist_eval$dis,
+        refmodel$y[inds], refmodel$wobs[inds]
+      ))
     }
-    log_lik_ref <- t(refmodel$family$ll_fun(
-      refdist_eval$mu[inds_aug, , drop = FALSE], refdist_eval$dis,
-      refmodel$y[inds], refmodel$wobs[inds]
-    ))
     for (k in seq_along(submodels)) {
       mu_k <- refmodel$family$mu_fun(submodels[[k]]$submodl,
                                      obs = inds,
