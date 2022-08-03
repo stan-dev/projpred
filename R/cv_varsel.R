@@ -365,23 +365,6 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
 
   ## compute loo summaries for the reference model
   loo_ref_resp <- apply(loglik_forPSIS + lw, 2, log_sum_exp)
-  loo_ref <- apply(refmodel$loglik + lw, 2, log_sum_exp)
-  mu_ref <- do.call(c, lapply(seq_len(nrow(mu)), function(i) {
-    # For the augmented-data projection, `mu` is an augmented-rows matrix
-    # whereas the columns of `lw` refer to the original (non-augmented)
-    # observations. Since `i` refers to the rows of `mu`, the index for `lw`
-    # needs to be adapted:
-    i_nonaug <- i %% n
-    if (i_nonaug == 0) {
-      i_nonaug <- n
-    }
-    mu[i, ] %*% exp(lw[, i_nonaug])
-  }))
-  mu_ref <- structure(
-    mu_ref,
-    nobs_orig = attr(mu, "nobs_orig"),
-    class = sub("augmat", "augvec", oldClass(mu), fixed = TRUE)
-  )
 
   ## decide which points form the validation set based on the k-values
   ## validset <- .loo_subsample(n, nloo, pareto_k)
@@ -655,6 +638,23 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
     }
     return(summ_k)
   })
+  loo_ref <- apply(refmodel$loglik + lw, 2, log_sum_exp)
+  mu_ref <- do.call(c, lapply(seq_len(nrow(mu)), function(i) {
+    # For the augmented-data projection, `mu` is an augmented-rows matrix
+    # whereas the columns of `lw` refer to the original (non-augmented)
+    # observations. Since `i` refers to the rows of `mu`, the index for `lw`
+    # needs to be adapted:
+    i_nonaug <- i %% n
+    if (i_nonaug == 0) {
+      i_nonaug <- n
+    }
+    mu[i, ] %*% exp(lw[, i_nonaug])
+  }))
+  mu_ref <- structure(
+    mu_ref,
+    nobs_orig = attr(mu, "nobs_orig"),
+    class = sub("augmat", "augvec", oldClass(mu), fixed = TRUE)
+  )
   summ_ref <- list(lppd = loo_ref, mu = mu_ref)
   if (refmodel$family$for_latent && refmodel$family$lat2resp_possible) {
     if (length(dim(mu_resp)) < 2) {
