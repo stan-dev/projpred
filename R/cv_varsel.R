@@ -333,7 +333,20 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
          "probabilistic model for which the log-likelihood can be evaluated.")
   }
   if (refmodel$family$for_latent) {
-    loglik_forPSIS <- log_lik(refmodel$fit)
+    if (refmodel$family$lat2resp_possible) {
+      mu_resp <- refmodel$family$latent_ilink(t(mu))
+      loglik_forPSIS <- refmodel$family$latent_ll_fun_resp(
+        mu_resp, refmodel$y, refmodel$wobs
+      )
+    } else {
+      # Note: Since we have the following error message, all the
+      # `lat2resp_possible` checks hereafter (in loo_varsel()) would in fact not
+      # be necessary. But we keep them in case the following error message
+      # should be removed one day (although it would then be hard to get
+      # `loglik_forPSIS`; rstantools::log_lik() could be an option for that).
+      stop("Cannot use `cv_method = \"LOO\"` if `latent_ilink` or ",
+           "`latent_ll_fun_resp` are missing.")
+    }
   } else {
     loglik_forPSIS <- refmodel$loglik
   }
@@ -649,7 +662,6 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
   })
   summ_ref <- list(lppd = loo_ref, mu = mu_ref)
   if (refmodel$family$for_latent && refmodel$family$lat2resp_possible) {
-    mu_resp <- refmodel$family$latent_ilink(t(mu))
     if (length(dim(mu_resp)) < 2) {
       stop("Unexpected structure for `mu_resp`. Does the return value of ",
            "`latent_ilink` have the correct structure?")

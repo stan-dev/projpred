@@ -129,7 +129,7 @@ extend_family <- function(family,
                 "summary.vsel(), print.vsel(), plot.vsel(), ",
                 "suggest_size.vsel(), proj_linpred(), and proj_predict() ",
                 "won't work on response scale (only on latent scale). ",
-                "Furthermore, cv_varsel() with `validate_search = FALSE` ",
+                "Furthermore, cv_varsel() with `cv_method = \"LOO\"` ",
                 "cannot be used.")
       }
       if (is.null(latent_ll_fun_resp)) {
@@ -137,8 +137,8 @@ extend_family <- function(family,
                 "predict.refmodel(), summary.vsel(), print.vsel(), ",
                 "plot.vsel(), suggest_size.vsel(), proj_linpred(), and ",
                 "proj_predict() won't work on response scale (only on latent ",
-                "scale). Furthermore, cv_varsel() with ",
-                "`validate_search = FALSE` cannot be used.")
+                "scale). Furthermore, cv_varsel() with `cv_method = \"LOO\"` ",
+                "cannot be used.")
       }
       family$lat2resp_possible <- !is.null(latent_ilink) &&
         !is.null(latent_ll_fun_resp)

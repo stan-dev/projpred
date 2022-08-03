@@ -219,11 +219,7 @@
 #'
 #' # Latent projection
 #'
-#' In case of the latent projection (see argument `latent`), the
-#' [rstantools::log_lik()] generic is applied to `object` (inside of
-#' [init_refmodel()]), so there needs to be an appropriate method (which does
-#' exist in packages \pkg{rstanarm} and \pkg{brms} for `stanreg`s and
-#' `brmsfit`s, respectively).
+#' **TODO**
 #'
 #' @return An object that can be passed to all the functions that take the
 #'   reference model fit as the first argument, such as [varsel()],

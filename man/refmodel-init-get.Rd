@@ -287,11 +287,7 @@ offsets which are the same across all response categories are supported.
 }
 
 \section{Latent projection}{
-In case of the latent projection (see argument \code{latent}), the
-\code{\link[rstantools:log_lik]{rstantools::log_lik()}} generic is applied to \code{object} (inside of
-\code{\link[=init_refmodel]{init_refmodel()}}), so there needs to be an appropriate method (which does
-exist in packages \pkg{rstanarm} and \pkg{brms} for \code{stanreg}s and
-\code{brmsfit}s, respectively).
+\strong{TODO}
 }
 
 \examples{
