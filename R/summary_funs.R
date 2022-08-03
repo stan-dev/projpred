@@ -89,9 +89,11 @@
   stat_tab <- data.frame()
   summ_ref <- varsel$summaries$ref
   summ_sub <- varsel$summaries$sub
-  if (varsel$refmodel$family$for_latent && lat2resp) {
+  summ_sub_resp <- lapply(summ_sub, "[[", "resp")
+  if (lat2resp &&
+      !is.null(summ_ref$resp) && !any(sapply(summ_sub_resp, is.null))) {
     summ_ref <- summ_ref$resp
-    summ_sub <- lapply(summ_sub, "[[", "resp")
+    summ_sub <- summ_sub_resp
   }
   if ((varsel$refmodel$family$for_augdat ||
        (varsel$refmodel$family$for_latent &&
