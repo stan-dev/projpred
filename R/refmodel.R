@@ -790,7 +790,7 @@ init_refmodel <- function(object, data, formula, family, ref_predfun = NULL,
   }
   # Remove parentheses from the response:
   response_name <- gsub("[()]", "", response_name)
-  if (latent_proj) {
+  if (family$for_latent) {
     response_name <- paste0(".", response_name[1])
   }
   formula <- update(formula, paste(response_name[1], "~ ."))
@@ -927,7 +927,7 @@ init_refmodel <- function(object, data, formula, family, ref_predfun = NULL,
   model_data <- extract_model_data(object, newdata = data)
   weights <- model_data$weights
   offset <- model_data$offset
-  if (latent_proj) {
+  if (family$for_latent) {
     y <- rowMeans(ref_predfun(object))
   } else {
     y <- model_data$y
@@ -967,7 +967,7 @@ init_refmodel <- function(object, data, formula, family, ref_predfun = NULL,
     stop("Currently, the augmented-data projection may not be combined with ",
          "observation weights (other than 1).")
   }
-  if (latent_proj && !all(weights == 1)) {
+  if (family$for_latent && !all(weights == 1)) {
     stop("Currently, the latent projection may not be combined with ",
          "observation weights (other than 1).")
   }
@@ -1007,7 +1007,7 @@ init_refmodel <- function(object, data, formula, family, ref_predfun = NULL,
   # Miscellaneous -----------------------------------------------------------
 
   ndraws <- ncol(mu)
-  if (latent_proj) {
+  if (family$for_latent) {
     ## latent noise is fixed
     dis <- rep(1, ndraws)
   } else if (is.null(dis)) {
@@ -1031,7 +1031,7 @@ init_refmodel <- function(object, data, formula, family, ref_predfun = NULL,
   } else {
     loglik <- NULL
   }
-  if (proper_model && latent_proj) {
+  if (proper_model && family$for_latent) {
     loglik_forPSIS <- log_lik(object)
   } else {
     loglik_forPSIS <- NULL
