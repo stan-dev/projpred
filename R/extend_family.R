@@ -128,14 +128,17 @@ extend_family <- function(family,
         message("`latent_ilink` is `NULL`, so predict.refmodel(), ",
                 "summary.vsel(), print.vsel(), plot.vsel(), ",
                 "suggest_size.vsel(), proj_linpred(), and proj_predict() ",
-                "won't work on response scale (only on latent scale).")
+                "won't work on response scale (only on latent scale). ",
+                "Furthermore, cv_varsel() with `validate_search = FALSE` ",
+                "cannot be used.")
       }
       if (is.null(latent_ll_fun_resp)) {
         message("`latent_ll_fun_resp` is `NULL`, so some features of ",
                 "predict.refmodel(), summary.vsel(), print.vsel(), ",
                 "plot.vsel(), suggest_size.vsel(), proj_linpred(), and ",
                 "proj_predict() won't work on response scale (only on latent ",
-                "scale).")
+                "scale). Furthermore, cv_varsel() with ",
+                "`validate_search = FALSE` cannot be used.")
       }
       family$latent_ilink <- latent_ilink
       family$latent_ll_fun_resp <- latent_ll_fun_resp
