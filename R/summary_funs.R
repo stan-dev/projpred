@@ -89,9 +89,11 @@
   stat_tab <- data.frame()
   summ_ref <- varsel$summaries$ref
   summ_sub <- varsel$summaries$sub
+  # `lat2resp = TRUE` only makes sense if element `"resp"` is available:
+  lat2resp <- lat2resp && !is.null(summ_ref$resp)
   summ_sub_resp <- lapply(summ_sub, "[[", "resp")
-  if (lat2resp &&
-      !is.null(summ_ref$resp) && !any(sapply(summ_sub_resp, is.null))) {
+  lat2resp <- lat2resp && !any(sapply(summ_sub_resp, is.null))
+  if (lat2resp) {
     summ_ref <- summ_ref$resp
     summ_sub <- summ_sub_resp
   }
