@@ -18,7 +18,7 @@ get_refmodel(object, ...)
 
 \method{get_refmodel}{default}(object, formula, family = NULL, ...)
 
-\method{get_refmodel}{stanreg}(object, latent_proj = FALSE, ...)
+\method{get_refmodel}{stanreg}(object, latent = FALSE, ...)
 
 init_refmodel(
   object,
@@ -33,7 +33,6 @@ init_refmodel(
   cvfits = NULL,
   dis = NULL,
   cvrefbuilder = NULL,
-  latent_proj = FALSE,
   ...
 )
 }
@@ -51,7 +50,7 @@ class.}
 \item{...}{For \code{\link[=get_refmodel.default]{get_refmodel.default()}} and \code{\link[=get_refmodel.stanreg]{get_refmodel.stanreg()}}:
 arguments passed to \code{\link[=init_refmodel]{init_refmodel()}}. For the \code{\link[=get_refmodel]{get_refmodel()}} generic:
 arguments passed to the appropriate method. For \code{\link[=init_refmodel]{init_refmodel()}}:
-arguments passed to \code{\link[=extend_family]{extend_family()}} (apart from \code{family} and \code{latent}).}
+arguments passed to \code{\link[=extend_family]{extend_family()}} (apart from \code{family}).}
 
 \item{formula}{Reference model's formula. For general information on formulas
 in \R, see \code{\link{formula}}. For multilevel formulas, see also package
@@ -65,8 +64,8 @@ the distributional family for the response). May be \code{NULL} for
 \code{\link[=get_refmodel.default]{get_refmodel.default()}} in which case the family is retrieved from
 \code{object}.}
 
-\item{latent_proj}{A single logical value indicating whether to use the
-latent projection (\code{TRUE}) or not (\code{FALSE}).}
+\item{latent}{A single logical value indicating whether to use the latent
+projection (\code{TRUE}) or not (\code{FALSE}).}
 
 \item{data}{Data used for fitting the reference model. Any \code{contrasts}
 attributes of the dataset's columns are silently removed.}
@@ -288,7 +287,7 @@ offsets which are the same across all response categories are supported.
 }
 
 \section{Latent projection}{
-In case of the latent projection (see argument \code{latent_proj}), the
+In case of the latent projection (see argument \code{latent}), the
 \code{\link[rstantools:log_lik]{rstantools::log_lik()}} generic is applied to \code{object} (inside of
 \code{\link[=init_refmodel]{init_refmodel()}}), so there needs to be an appropriate method (which does
 exist in packages \pkg{rstanarm} and \pkg{brms} for \code{stanreg}s and

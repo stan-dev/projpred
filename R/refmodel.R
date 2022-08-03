@@ -80,12 +80,12 @@
 #'   model does have a dispersion parameter, but `object` is `NULL` (in which
 #'   case `0` is used for `dis`). Note that for the [gaussian()] `family`, `dis`
 #'   is the standard deviation, not the variance.
-#' @param latent_proj A single logical value indicating whether to use the
-#'   latent projection (`TRUE`) or not (`FALSE`).
+#' @param latent A single logical value indicating whether to use the latent
+#'   projection (`TRUE`) or not (`FALSE`).
 #' @param ... For [get_refmodel.default()] and [get_refmodel.stanreg()]:
 #'   arguments passed to [init_refmodel()]. For the [get_refmodel()] generic:
 #'   arguments passed to the appropriate method. For [init_refmodel()]:
-#'   arguments passed to [extend_family()] (apart from `family` and `latent`).
+#'   arguments passed to [extend_family()] (apart from `family`).
 #'
 #' @details
 #'
@@ -219,7 +219,7 @@
 #'
 #' # Latent projection
 #'
-#' In case of the latent projection (see argument `latent_proj`), the
+#' In case of the latent projection (see argument `latent`), the
 #' [rstantools::log_lik()] generic is applied to `object` (inside of
 #' [init_refmodel()]), so there needs to be an appropriate method (which does
 #' exist in packages \pkg{rstanarm} and \pkg{brms} for `stanreg`s and
@@ -516,7 +516,7 @@ get_refmodel.default <- function(object, formula, family = NULL, ...) {
 
 #' @rdname refmodel-init-get
 #' @export
-get_refmodel.stanreg <- function(object, latent_proj = FALSE, ...) {
+get_refmodel.stanreg <- function(object, latent = FALSE, ...) {
   if (!requireNamespace("rstanarm", quietly = TRUE)) {
     stop("Please install the 'rstanarm' package.")
   }
@@ -649,7 +649,7 @@ get_refmodel.stanreg <- function(object, latent_proj = FALSE, ...) {
     }
     linpred_out <- posterior_linpred(fit, newdata = newdata, offset = offs)
     stopifnot(length(dim(linpred_out)) == 2)
-    aug_data <- fit$stan_function == "stan_polr" && !latent_proj
+    aug_data <- fit$stan_function == "stan_polr" && !latent
     if (aug_data) {
       # Since rstanarm::posterior_linpred.stanreg() doesn't offer an argument
       # like `incl_thres` of brms::posterior_linpred.brmsfit(), we need to
@@ -681,7 +681,7 @@ get_refmodel.stanreg <- function(object, latent_proj = FALSE, ...) {
   }
 
   cvrefbuilder <- function(cvfit) {
-    get_refmodel(cvfit, latent_proj = latent_proj, ...)
+    get_refmodel(cvfit, latent = latent, ...)
   }
 
   # Miscellaneous -----------------------------------------------------------
@@ -694,7 +694,7 @@ get_refmodel.stanreg <- function(object, latent_proj = FALSE, ...) {
 
   # Augmented-data projection -----------------------------------------------
 
-  aug_data <- object$stan_function == "stan_polr" && !latent_proj
+  aug_data <- object$stan_function == "stan_polr" && !latent
   if (aug_data) {
     args_augdat <- list(
       augdat_link = augdat_link_cumul,
@@ -712,7 +712,7 @@ get_refmodel.stanreg <- function(object, latent_proj = FALSE, ...) {
     object = object, data = data, formula = formula, family = family,
     ref_predfun = ref_predfun, extract_model_data = extract_model_data,
     dis = dis, cvfun = cvfun, cvrefbuilder = cvrefbuilder,
-    latent_proj = latent_proj
+    latent = latent
   )
   return(do.call(init_refmodel, args = c(args_basic, args_augdat, list(...))))
 }
@@ -723,10 +723,10 @@ init_refmodel <- function(object, data, formula, family, ref_predfun = NULL,
                           div_minimizer = NULL, proj_predfun = NULL,
                           extract_model_data, cvfun = NULL,
                           cvfits = NULL, dis = NULL, cvrefbuilder = NULL,
-                          latent_proj = FALSE, ...) {
+                          ...) {
   # Family ------------------------------------------------------------------
 
-  family <- extend_family(family, latent = latent_proj, ...)
+  family <- extend_family(family, ...)
 
   if (family$family == "Student_t") {
     warning("Support for the `Student_t` family is still experimental.")

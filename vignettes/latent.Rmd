@@ -99,13 +99,13 @@ model_poisson <- brm(
 )
 ```
 
-We now extract a reference model in terms of the latent predictor under the Gaussianity assumption. This is done in `projpred` by setting `latent_proj = TRUE`.
+We now extract a reference model in terms of the latent predictor under the Gaussianity assumption. This is done in `projpred` by setting `latent = TRUE`.
 
 ```{r}
 # define new reference model for latent predictor
 latent_ref <- get_refmodel(
   model_poisson,
-  latent_proj = TRUE
+  latent = TRUE
 )
 ```
 
@@ -174,7 +174,7 @@ Repeating the workflow, we first extract the latent predictor posterior draws, a
 # define new reference model for latent predictor
 latent_ref <- get_refmodel(
   fit,
-  latent_proj = TRUE
+  latent = TRUE
 )
 ```
 
