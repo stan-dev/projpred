@@ -638,7 +638,6 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
     }
     return(summ_k)
   })
-  loo_ref <- apply(refmodel$loglik + lw, 2, log_sum_exp)
   mu_ref <- do.call(c, lapply(seq_len(nrow(mu)), function(i) {
     # For the augmented-data projection, `mu` is an augmented-rows matrix
     # whereas the columns of `lw` refer to the original (non-augmented)
@@ -655,7 +654,8 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
     nobs_orig = attr(mu, "nobs_orig"),
     class = sub("augmat", "augvec", oldClass(mu), fixed = TRUE)
   )
-  summ_ref <- list(lppd = loo_ref, mu = mu_ref)
+  summ_ref <- list(lppd = apply(refmodel$loglik + lw, 2, log_sum_exp),
+                   mu = mu_ref)
   if (refmodel$family$for_latent && refmodel$family$lat2resp_possible) {
     if (length(dim(mu_resp)) < 2) {
       stop("Unexpected structure for `mu_resp`. Does the return value of ",
