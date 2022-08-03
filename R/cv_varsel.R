@@ -390,9 +390,7 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
               class = sub("augmat", "augvec", oldClass(mu), fixed = TRUE)),
     simplify = FALSE
   )
-  if (refmodel$family$for_latent &&
-      !is.null(refmodel$family$latent_ilink) &&
-      !is.null(refmodel$family$latent_ll_fun_resp)) {
+  if (refmodel$family$for_latent && refmodel$family$lat2resp_possible) {
     loo_sub_resp <- loo_sub
     # In general, we could use `mu_sub_resp <- mu_sub` here, but the case where
     # refmodel$family$latent_ilink() returns a (3-dimensional) array (S x N x C)
@@ -454,8 +452,7 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
       refdist_eval <- p_sel
     }
     if (refmodel$family$for_latent) {
-      if (!is.null(refmodel$family$latent_ilink) &&
-          !is.null(refmodel$family$latent_ll_fun_resp)) {
+      if (refmodel$family$lat2resp_possible) {
         refdist_eval_mu_resp <- refmodel$family$latent_ilink(t(refdist_eval$mu))
         if (length(dim(refdist_eval_mu_resp)) == 3) {
           # In this case, `refdist_eval_mu_resp` is a 3-dimensional array (S x N
@@ -502,9 +499,7 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
       # have stricter consistency checks, see `?sweep`):
       lw_sub <- sweep(lw_sub, 2, as.array(apply(lw_sub, 2, log_sum_exp)))
       loo_sub[[k]][inds] <- apply(log_lik_sub + lw_sub, 2, log_sum_exp)
-      if (refmodel$family$for_latent &&
-          !is.null(refmodel$family$latent_ilink) &&
-          !is.null(refmodel$family$latent_ll_fun_resp)) {
+      if (refmodel$family$for_latent && refmodel$family$lat2resp_possible) {
         mu_k_resp <- refmodel$family$latent_ilink(t(mu_k))
         log_lik_sub_resp <- refmodel$family$latent_ll_fun_resp(
           mu_k_resp, refmodel$y[inds], refmodel$wobs[inds]
@@ -532,9 +527,7 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
           run_index_flx <- run_index
         }
         mu_sub[[k]][i_flx] <- mu_k[run_index_flx, ] %*% exp(lw_sub[, run_index])
-        if (refmodel$family$for_latent &&
-            !is.null(refmodel$family$latent_ilink) &&
-            !is.null(refmodel$family$latent_ll_fun_resp)) {
+        if (refmodel$family$for_latent && refmodel$family$lat2resp_possible) {
           if (inherits(mu_k_resp, "augmat")) {
             mu_sub_resp[[k]][i_aug] <- mu_k_resp[run_index_aug, ] %*%
               exp(lw_sub[, run_index])
@@ -648,18 +641,14 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
   ## put all the results together in the form required by cv_varsel
   summ_sub <- lapply(seq_len(nterms_max), function(k) {
     summ_k <- list(lppd = loo_sub[[k]], mu = mu_sub[[k]], wcv = validset$wcv)
-    if (refmodel$family$for_latent &&
-        !is.null(refmodel$family$latent_ilink) &&
-        !is.null(refmodel$family$latent_ll_fun_resp)) {
+    if (refmodel$family$for_latent && refmodel$family$lat2resp_possible) {
       summ_k$resp <- list(lppd = loo_sub_resp[[k]], mu = mu_sub_resp[[k]],
                           wcv = validset$wcv)
     }
     return(summ_k)
   })
   summ_ref <- list(lppd = loo_ref, mu = mu_ref)
-  if (refmodel$family$for_latent &&
-      !is.null(refmodel$family$latent_ilink) &&
-      !is.null(refmodel$family$latent_ll_fun_resp)) {
+  if (refmodel$family$for_latent && refmodel$family$lat2resp_possible) {
     mu_resp <- refmodel$family$latent_ilink(t(mu))
     if (length(dim(mu_resp)) < 2) {
       stop("Unexpected structure for `mu_resp`. Does the return value of ",

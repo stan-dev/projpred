@@ -43,9 +43,7 @@
                    class = sub("augmat", "augvec", oldClass(mu), fixed = TRUE)),
     lppd = apply(loglik, 1, log_weighted_mean_exp, wsample)
   )
-  if (family$for_latent &&
-      !is.null(family$latent_ilink) &&
-      !is.null(family$latent_ll_fun_resp)) {
+  if (family$for_latent && family$lat2resp_possible) {
     mu_resp <- family$latent_ilink(t(mu))
     if (length(dim(mu_resp)) < 2) {
       stop("Unexpected structure for `mu_resp`. Does the return value of ",

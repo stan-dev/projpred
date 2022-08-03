@@ -140,6 +140,8 @@ extend_family <- function(family,
                 "scale). Furthermore, cv_varsel() with ",
                 "`validate_search = FALSE` cannot be used.")
       }
+      family$lat2resp_possible <- !is.null(latent_ilink) &&
+        !is.null(latent_ll_fun_resp)
       family$latent_ilink <- latent_ilink
       family$latent_ll_fun_resp <- latent_ll_fun_resp
     }
