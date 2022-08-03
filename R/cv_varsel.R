@@ -313,13 +313,6 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
   ## each data point)
   ##
 
-  if (refmodel$family$for_latent) {
-    # TODO: Add the summary statistics (performance evaluation statistics) on
-    # response scale (element `"resp"`).
-    stop("Currently, `cv_method = \"LOO\"` is not supported yet in case ",
-         "of the latent projection.")
-  }
-
   mu <- refmodel$mu
   eta <- refmodel$eta
   dis <- refmodel$dis
@@ -353,6 +346,12 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
   if (nloo < 1) {
     stop("nloo must be at least 1")
   } else if (nloo < n) {
+    if (refmodel$family$for_latent) {
+      # Disallow subsampled LOO CV for the latent projection (for now) because
+      # `loo_ref` would probably have to be adapted in that case:
+      stop("Currently, the latent projection may not be combined with ",
+           "subsampled LOO CV.")
+    }
     warning("Subsampled LOO CV is still experimental.")
   }
 
@@ -391,6 +390,25 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
               class = sub("augmat", "augvec", oldClass(mu), fixed = TRUE)),
     simplify = FALSE
   )
+  if (refmodel$family$for_latent &&
+      !is.null(refmodel$family$latent_ilink) &&
+      !is.null(refmodel$family$latent_ll_fun_resp)) {
+    loo_sub_resp <- loo_sub
+    # In general, we could use `mu_sub_resp <- mu_sub` here, but the case where
+    # refmodel$family$latent_ilink() returns a (3-dimensional) array (S x N x C)
+    # needs special care.
+    if (!is.null(refmodel$family$cats)) {
+      mu_sub_resp <- replicate(
+        nterms_max,
+        structure(rep(NA, n * length(refmodel$family$cats)),
+                  nobs_orig = n,
+                  class = "augvec"),
+        simplify = FALSE
+      )
+    } else {
+      mu_sub_resp <- mu_sub
+    }
+  }
 
   if (verbose) {
     if (validate_search) {
@@ -484,15 +502,51 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
       # have stricter consistency checks, see `?sweep`):
       lw_sub <- sweep(lw_sub, 2, as.array(apply(lw_sub, 2, log_sum_exp)))
       loo_sub[[k]][inds] <- apply(log_lik_sub + lw_sub, 2, log_sum_exp)
+      if (refmodel$family$for_latent &&
+          !is.null(refmodel$family$latent_ilink) &&
+          !is.null(refmodel$family$latent_ll_fun_resp)) {
+        mu_k_resp <- refmodel$family$latent_ilink(t(mu_k))
+        log_lik_sub_resp <- refmodel$family$latent_ll_fun_resp(
+          mu_k_resp, refmodel$y[inds], refmodel$wobs[inds]
+        )
+        loo_sub_resp[[k]][inds] <- apply(log_lik_sub_resp + lw_sub, 2,
+                                         log_sum_exp)
+        if (length(dim(mu_k_resp)) == 3) {
+          # In this case, `mu_k_resp` is a 3-dimensional array (S x N x C), so
+          # coerce it to an augmented-rows matrix:
+          mu_k_resp <- arr2augmat(mu_k_resp, margin_draws = 1)
+        }
+      }
       for (run_index in seq_along(inds)) {
         i_aug <- inds[run_index]
         run_index_aug <- run_index
-        if (refmodel$family$for_augdat) {
+        if (!is.null(refmodel$family$cats)) {
           i_aug <- i_aug + (seq_along(refmodel$family$cats) - 1L) * n
           run_index_aug <- run_index_aug +
             (seq_along(refmodel$family$cats) - 1L) * nloo
         }
-        mu_sub[[k]][i_aug] <- mu_k[run_index_aug, ] %*% exp(lw_sub[, run_index])
+        i_flx <- i_aug
+        run_index_flx <- run_index_aug
+        if (refmodel$family$for_latent && !is.null(refmodel$family$cats)) {
+          i_flx <- inds[run_index]
+          run_index_flx <- run_index
+        }
+        mu_sub[[k]][i_flx] <- mu_k[run_index_flx, ] %*% exp(lw_sub[, run_index])
+        if (refmodel$family$for_latent &&
+            !is.null(refmodel$family$latent_ilink) &&
+            !is.null(refmodel$family$latent_ll_fun_resp)) {
+          if (inherits(mu_k_resp, "augmat")) {
+            mu_sub_resp[[k]][i_aug] <- mu_k_resp[run_index_aug, ] %*%
+              exp(lw_sub[, run_index])
+          } else {
+            # In principle, we could use the same code for averaging across the
+            # draws as above in the `"augmat"` case. However, that would require
+            # `mu_k_resp <- t(mu_k_resp)` beforehand, so the following should be
+            # more efficient:
+            mu_sub_resp[[k]][i_aug] <- exp(lw_sub[, run_index]) %*%
+              mu_k_resp[, run_index_aug]
+          }
+        }
       }
 
       if (verbose) {
@@ -555,12 +609,20 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
                                           refmodel = refmodel,
                                           test_points = i)
       i_aug <- i
-      if (refmodel$family$for_augdat) {
+      if (!is.null(refmodel$family$cats)) {
         i_aug <- i_aug + (seq_along(refmodel$family$cats) - 1L) * n
+      }
+      i_flx <- i_aug
+      if (refmodel$family$for_latent && !is.null(refmodel$family$cats)) {
+        i_flx <- i
       }
       for (k in seq_along(summaries_sub)) {
         loo_sub[[k]][i] <- summaries_sub[[k]]$lppd
-        mu_sub[[k]][i_aug] <- summaries_sub[[k]]$mu
+        mu_sub[[k]][i_flx] <- summaries_sub[[k]]$mu
+        if (!is.null(summaries_sub[[k]]$resp)) {
+          loo_sub_resp[[k]][i] <- summaries_sub[[k]]$resp$lppd
+          mu_sub_resp[[k]][i_aug] <- summaries_sub[[k]]$resp$mu
+        }
       }
 
       candidate_terms <- split_formula(refmodel$formula,
@@ -585,9 +647,60 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
 
   ## put all the results together in the form required by cv_varsel
   summ_sub <- lapply(seq_len(nterms_max), function(k) {
-    list(lppd = loo_sub[[k]], mu = mu_sub[[k]], wcv = validset$wcv)
+    summ_k <- list(lppd = loo_sub[[k]], mu = mu_sub[[k]], wcv = validset$wcv)
+    if (refmodel$family$for_latent &&
+        !is.null(refmodel$family$latent_ilink) &&
+        !is.null(refmodel$family$latent_ll_fun_resp)) {
+      summ_k$resp <- list(lppd = loo_sub_resp[[k]], mu = mu_sub_resp[[k]],
+                          wcv = validset$wcv)
+    }
+    return(summ_k)
   })
   summ_ref <- list(lppd = loo_ref, mu = mu_ref)
+  if (refmodel$family$for_latent &&
+      !is.null(refmodel$family$latent_ilink) &&
+      !is.null(refmodel$family$latent_ll_fun_resp)) {
+    mu_resp <- refmodel$family$latent_ilink(t(mu))
+    if (length(dim(mu_resp)) < 2) {
+      stop("Unexpected structure for `mu_resp`. Does the return value of ",
+           "`latent_ilink` have the correct structure?")
+    }
+    if (length(dim(mu_resp)) == 3) {
+      # In this case, `mu_resp` is a 3-dimensional array (S x N x C), so
+      # coerce it to an augmented-rows matrix:
+      mu_resp <- arr2augmat(mu_resp, margin_draws = 1)
+      n_aug <- nrow(mu_resp)
+    } else {
+      # In this case, `mu_resp` is a matrix (S x N):
+      n_aug <- ncol(mu_resp)
+    }
+    mu_ref_resp <- do.call(c, lapply(seq_len(n_aug), function(i) {
+      # For the augmented-data projection, `mu` is an augmented-rows matrix
+      # whereas the columns of `lw` refer to the original (non-augmented)
+      # observations. Since `i` refers to the rows of `mu`, the index for `lw`
+      # needs to be adapted:
+      i_nonaug <- i %% n
+      if (i_nonaug == 0) {
+        i_nonaug <- n
+      }
+      if (inherits(mu_resp, "augmat")) {
+        return(mu_resp[i, ] %*% exp(lw[, i_nonaug]))
+      } else {
+        # In principle, we could use the same code for averaging across the
+        # draws as above in the `"augmat"` case. However, that would require
+        # `mu_resp <- t(mu_resp)` beforehand, so the following should be
+        # more efficient:
+        return(exp(lw[, i_nonaug]) %*% mu_resp[, i])
+      }
+    }))
+    mu_ref_resp <- structure(
+      mu_ref_resp,
+      nobs_orig = attr(mu_resp, "nobs_orig"),
+      class = sub("augmat", "augvec", oldClass(mu_resp), fixed = TRUE)
+    )
+    summ_ref$resp <- list(mu = mu_ref_resp,
+                          lppd = apply(loglik_forPSIS + lw, 2, log_sum_exp))
+  }
   summaries <- list(sub = summ_sub, ref = summ_ref)
 
   d_test <- list(type = "LOO", data = NULL, offset = refmodel$offset,
