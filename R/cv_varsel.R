@@ -697,12 +697,12 @@ kfold_varsel <- function(refmodel, method, nterms_max, ndraws,
       each = length(idxs_sorted_by_fold_aug)
     )
   }
+  idxs_sorted_by_fold_flx <- idxs_sorted_by_fold_aug
+  if (refmodel$family$for_latent && !is.null(refmodel$family$cats)) {
+    idxs_sorted_by_fold_flx <- idxs_sorted_by_fold
+  }
   sub <- lapply(sub, function(summ) {
-    if (refmodel$family$for_latent && !is.null(refmodel$family$cats)) {
-      summ$mu <- summ$mu[order(idxs_sorted_by_fold)]
-    } else {
-      summ$mu <- summ$mu[order(idxs_sorted_by_fold_aug)]
-    }
+    summ$mu <- summ$mu[order(idxs_sorted_by_fold_flx)]
     summ$lppd <- summ$lppd[order(idxs_sorted_by_fold)]
     if (refmodel$family$for_latent &&
         !is.null(refmodel$family$latent_ilink) &&
@@ -731,11 +731,7 @@ kfold_varsel <- function(refmodel, method, nterms_max, ndraws,
       dis = fold$refmodel$dis
     )
   }))
-  if (refmodel$family$for_latent && !is.null(refmodel$family$cats)) {
-    ref$mu <- ref$mu[order(idxs_sorted_by_fold)]
-  } else {
-    ref$mu <- ref$mu[order(idxs_sorted_by_fold_aug)]
-  }
+  ref$mu <- ref$mu[order(idxs_sorted_by_fold_flx)]
   ref$lppd <- ref$lppd[order(idxs_sorted_by_fold)]
   if (refmodel$family$for_latent &&
       !is.null(refmodel$family$latent_ilink) &&
