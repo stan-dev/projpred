@@ -704,9 +704,7 @@ kfold_varsel <- function(refmodel, method, nterms_max, ndraws,
   sub <- lapply(sub, function(summ) {
     summ$mu <- summ$mu[order(idxs_sorted_by_fold_flx)]
     summ$lppd <- summ$lppd[order(idxs_sorted_by_fold)]
-    if (refmodel$family$for_latent &&
-        !is.null(refmodel$family$latent_ilink) &&
-        !is.null(refmodel$family$latent_ll_fun_resp)) {
+    if (!is.null(summ$resp)) {
       summ$resp$mu <- summ$resp$mu[order(idxs_sorted_by_fold_aug)]
       summ$resp$lppd <- summ$resp$lppd[order(idxs_sorted_by_fold)]
     }
@@ -733,9 +731,7 @@ kfold_varsel <- function(refmodel, method, nterms_max, ndraws,
   }))
   ref$mu <- ref$mu[order(idxs_sorted_by_fold_flx)]
   ref$lppd <- ref$lppd[order(idxs_sorted_by_fold)]
-  if (refmodel$family$for_latent &&
-      !is.null(refmodel$family$latent_ilink) &&
-      !is.null(refmodel$family$latent_ll_fun_resp)) {
+  if (!is.null(ref$resp)) {
     ref$resp$mu <- ref$resp$mu[order(idxs_sorted_by_fold_aug)]
     ref$resp$lppd <- ref$resp$lppd[order(idxs_sorted_by_fold)]
   }
