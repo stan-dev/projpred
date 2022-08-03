@@ -726,13 +726,13 @@ init_refmodel <- function(object, data, formula, family, ref_predfun = NULL,
                           latent_proj = FALSE, ...) {
   # Family ------------------------------------------------------------------
 
-  if (family$family == "Student_t" && !latent_proj) {
+  family <- extend_family(family, latent = latent_proj, ...)
+
+  if (family$family == "Student_t") {
     warning("Support for the `Student_t` family is still experimental.")
-  } else if (family$family == "Gamma" && !latent_proj) {
+  } else if (family$family == "Gamma") {
     warning("Support for the `Gamma` family is still experimental.")
   }
-
-  family <- extend_family(family, latent = latent_proj, ...)
 
   if (family$for_augdat &&
       isTRUE(getOption("projpred.warn_augdat_experimental", TRUE))) {
