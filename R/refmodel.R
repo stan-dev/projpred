@@ -1031,11 +1031,6 @@ init_refmodel <- function(object, data, formula, family, ref_predfun = NULL,
   } else {
     loglik <- NULL
   }
-  if (proper_model && family$for_latent) {
-    loglik_forPSIS <- log_lik(object)
-  } else {
-    loglik_forPSIS <- NULL
-  }
 
   # Equal sample (draws) weights by default:
   wsample <- rep(1 / ndraws, ndraws)
@@ -1049,9 +1044,9 @@ init_refmodel <- function(object, data, formula, family, ref_predfun = NULL,
 
   refmodel <- nlist(
     fit = object, formula, div_minimizer, family, mu, eta, dis, y, loglik,
-    loglik_forPSIS, intercept, proj_predfun, fetch_data = fetch_data_wrapper,
-    wobs = weights, wsample, offset, cvfun, cvfits, extract_model_data,
-    ref_predfun, cvrefbuilder
+    intercept, proj_predfun, fetch_data = fetch_data_wrapper, wobs = weights,
+    wsample, offset, cvfun, cvfits, extract_model_data, ref_predfun,
+    cvrefbuilder
   )
   if (proper_model) {
     class(refmodel) <- "refmodel"

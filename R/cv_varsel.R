@@ -332,8 +332,9 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
     stop("LOO can be performed only if the reference model is a genuine ",
          "probabilistic model for which the log-likelihood can be evaluated.")
   }
-  loglik_forPSIS <- refmodel$loglik_forPSIS
-  if (is.null(loglik_forPSIS)) {
+  if (refmodel$family$for_latent) {
+    loglik_forPSIS <- log_lik(refmodel$fit)
+  } else {
     loglik_forPSIS <- refmodel$loglik
   }
   n <- ncol(loglik_forPSIS)
