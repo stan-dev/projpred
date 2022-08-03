@@ -95,10 +95,9 @@
     summ_ref <- summ_ref$resp
     summ_sub <- summ_sub_resp
   }
-  if ((varsel$refmodel$family$for_augdat ||
-       (varsel$refmodel$family$for_latent &&
-        lat2resp &&
-        !is.null(varsel$refmodel$family$cats))) &&
+  if ((!varsel$refmodel$family$for_latent ||
+       (varsel$refmodel$family$for_latent && lat2resp)) &&
+      !is.null(varsel$refmodel$family$cats) &&
       any(stats %in% c("acc", "pctcorr"))) {
     summ_ref$mu <- catmaxprb(summ_ref$mu, lvls = varsel$refmodel$family$cats)
     summ_sub <- lapply(summ_sub, function(summ_sub_k) {
