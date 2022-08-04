@@ -666,10 +666,6 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
                    mu = mu_ref)
   if (refmodel$family$for_latent && refmodel$family$lat2resp_possible) {
     mu_ref_resp <- do.call(c, lapply(seq_len(n_aug), function(i) {
-      # For the augmented-data projection, `mu` is an augmented-rows matrix
-      # whereas the columns of `lw` refer to the original (non-augmented)
-      # observations. Since `i` refers to the rows of `mu`, the index for `lw`
-      # needs to be adapted:
       i_nonaug <- i %% n
       if (i_nonaug == 0) {
         i_nonaug <- n
