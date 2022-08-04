@@ -41,7 +41,7 @@ NULL
 #
 # @return An augmented-rows matrix (see above for a definition).
 arr2augmat <- function(arr, margin_draws = 3) {
-  stopifnot(is.array(arr))
+  stopifnot(is.array(arr) && length(dim(arr)) == 3)
   stopifnot(margin_draws %in% c(1, 3))
   if (margin_draws == 1) {
     margin_obs <- 2
