@@ -335,9 +335,24 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
   if (refmodel$family$for_latent) {
     if (refmodel$family$lat2resp_possible) {
       mu_resp <- refmodel$family$latent_ilink(t(mu))
+      if (length(dim(mu_resp)) < 2) {
+        stop("Unexpected structure for `mu_resp`. Does the return value of ",
+             "`latent_ilink` have the correct structure?")
+      }
       loglik_forPSIS <- refmodel$family$latent_ll_fun_resp(
         mu_resp, refmodel$y, refmodel$wobs
       )
+      if (length(dim(mu_resp)) == 3) {
+        # In this case, `mu_resp` is a 3-dimensional array (S x N x C), so
+        # coerce it to an augmented-rows matrix:
+        mu_resp <- arr2augmat(mu_resp, margin_draws = 1)
+        n_aug <- nrow(mu_resp)
+      } else {
+        # In this case, `mu_resp` is a matrix (S x N). Transposing it to an N x
+        # S matrix would be more consistent with projpred's internal convention,
+        # but avoiding the transposition is computationally more efficient:
+        n_aug <- ncol(mu_resp)
+      }
     } else {
       # Note: Since we have the following error message, all the
       # `lat2resp_possible` checks hereafter (in loo_varsel()) would in fact not
@@ -444,11 +459,8 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
       if (refmodel$family$lat2resp_possible) {
         refdist_eval_mu_resp <- refmodel$family$latent_ilink(t(refdist_eval$mu))
         if (length(dim(refdist_eval_mu_resp)) == 3) {
-          # In this case, `refdist_eval_mu_resp` is a 3-dimensional array (S x N
-          # x C).
           refdist_eval_mu_resp <- refdist_eval_mu_resp[, inds, , drop = FALSE]
         } else {
-          # In this case, `refdist_eval_mu_resp` is a matrix (S x N).
           refdist_eval_mu_resp <- refdist_eval_mu_resp[, inds, drop = FALSE]
         }
         log_lik_ref <- refmodel$family$latent_ll_fun_resp(
@@ -496,8 +508,6 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
         loo_sub_resp[[k]][inds] <- apply(log_lik_sub_resp + lw_sub, 2,
                                          log_sum_exp)
         if (length(dim(mu_k_resp)) == 3) {
-          # In this case, `mu_k_resp` is a 3-dimensional array (S x N x C), so
-          # coerce it to an augmented-rows matrix:
           mu_k_resp <- arr2augmat(mu_k_resp, margin_draws = 1)
         }
       }
@@ -655,19 +665,6 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
   summ_ref <- list(lppd = apply(refmodel$loglik + lw, 2, log_sum_exp),
                    mu = mu_ref)
   if (refmodel$family$for_latent && refmodel$family$lat2resp_possible) {
-    if (length(dim(mu_resp)) < 2) {
-      stop("Unexpected structure for `mu_resp`. Does the return value of ",
-           "`latent_ilink` have the correct structure?")
-    }
-    if (length(dim(mu_resp)) == 3) {
-      # In this case, `mu_resp` is a 3-dimensional array (S x N x C), so
-      # coerce it to an augmented-rows matrix:
-      mu_resp <- arr2augmat(mu_resp, margin_draws = 1)
-      n_aug <- nrow(mu_resp)
-    } else {
-      # In this case, `mu_resp` is a matrix (S x N):
-      n_aug <- ncol(mu_resp)
-    }
     mu_ref_resp <- do.call(c, lapply(seq_len(n_aug), function(i) {
       # For the augmented-data projection, `mu` is an augmented-rows matrix
       # whereas the columns of `lw` refer to the original (non-augmented)
