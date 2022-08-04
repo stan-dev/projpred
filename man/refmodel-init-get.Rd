@@ -287,7 +287,7 @@ offsets which are the same across all response categories are supported.
 }
 
 \section{Latent projection}{
-\strong{TODO}
+\strong{TODO} (if necessary)
 }
 
 \examples{

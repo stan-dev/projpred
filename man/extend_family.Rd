@@ -21,6 +21,14 @@ extend_family(
 \arguments{
 \item{family}{A \code{\link{family}} object.}
 
+\item{latent}{\strong{TODO}}
+
+\item{latent_y_unqs}{\strong{TODO}}
+
+\item{latent_ilink}{\strong{TODO}}
+
+\item{latent_ll_fun_resp}{\strong{TODO}}
+
 \item{augdat_y_unqs}{Only relevant for augmented-data projection, in which
 case this needs to be the character vector of unique response values (which
 will be assigned to \code{family$cats} internally) or may be left at \code{NULL} if
@@ -112,5 +120,9 @@ correlated between different response categories.
 error \code{'a' (<number> x 1) must be square}. Updating \pkg{mclogit} to a
 version >= 0.9.4 should fix this.
 }
+}
+
+\section{Latent projection}{
+\strong{TODO}
 }
 

@@ -14,6 +14,10 @@
 #' it yourself.
 #'
 #' @param family A [`family`] object.
+#' @param latent **TODO**
+#' @param latent_y_unqs **TODO**
+#' @param latent_ilink **TODO**
+#' @param latent_ll_fun_resp **TODO**
 #' @param augdat_y_unqs Only relevant for augmented-data projection, in which
 #'   case this needs to be the character vector of unique response values (which
 #'   will be assigned to `family$cats` internally) or may be left at `NULL` if
@@ -87,6 +91,10 @@
 #' * For multilevel submodels, \pkg{mclogit} versions < 0.9.4 may throw the
 #' error \code{'a' (<number> x 1) must be square}. Updating \pkg{mclogit} to a
 #' version >= 0.9.4 should fix this.
+#'
+#' # Latent projection
+#'
+#' **TODO**
 #'
 #' @return The [`family`] object extended in the way needed by \pkg{projpred}.
 #'

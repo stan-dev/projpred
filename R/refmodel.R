@@ -219,7 +219,7 @@
 #'
 #' # Latent projection
 #'
-#' **TODO**
+#' **TODO** (if necessary)
 #'
 #' @return An object that can be passed to all the functions that take the
 #'   reference model fit as the first argument, such as [varsel()],
