@@ -727,6 +727,8 @@ print.vselsummary <- function(x, digits = 1, ...) {
   }
   if (x$family$for_augdat) {
     prj_meth <- "augmented-data"
+  } else if (x$family$for_latent) {
+    prj_meth <- "latent"
   } else {
     prj_meth <- "traditional"
   }
