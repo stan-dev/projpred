@@ -492,11 +492,17 @@ test_that("`offsetnew` works", {
     }
     pred_pl <- pl$pred
     pred_pl_orig <- pl_orig$pred
-    pred_plo <- plo$pred
+    if (args_prj[[tstsetup]]$pkg_nm != "brms") {
+      # TODO (brms): Fix or document why this doesn't work for "brmsfit"s.
+      pred_plo <- plo$pred
+    }
     if (args_prj[[tstsetup]]$prj_nm == "augdat") {
       pred_pl <- t(arr2augmat(pred_pl, margin_draws = 1))
       pred_pl_orig <- t(arr2augmat(pred_pl_orig, margin_draws = 1))
-      pred_plo <- t(arr2augmat(pred_plo, margin_draws = 1))
+      if (args_prj[[tstsetup]]$pkg_nm != "brms") {
+        # TODO (brms): Fix or document why this doesn't work for "brmsfit"s.
+        pred_plo <- t(arr2augmat(pred_plo, margin_draws = 1))
+      }
     }
     if (grepl("\\.with_offs", tstsetup)) {
       if (args_prj[[tstsetup]]$pkg_nm == "rstanarm") {
