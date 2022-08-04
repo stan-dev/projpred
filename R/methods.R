@@ -192,6 +192,10 @@ proj_helper <- function(object, newdata, offsetnew, weightsnew, onesub_fun,
       stop("Currently, the augmented-data projection may not be combined with ",
            "observation weights (other than 1).")
     }
+    if (proj$refmodel$family$for_latent && !all(weightsnew == 1)) {
+      stop("Currently, the latent projection may not be combined with ",
+           "observation weights (other than 1).")
+    }
     onesub_fun(proj, newdata = newdata, offset = offsetnew,
                weights = weightsnew, extract_y_ind = extract_y_ind, ...)
   })
