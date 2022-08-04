@@ -146,9 +146,10 @@ if (run_additive) {
 
 fam_nms <- setNames(nm = c("gauss", "brnll", "binom", "poiss"))
 
-# Suppress the warning for the augmented-data projection stating that its
-# implementation is currently only experimental:
+# Suppress the warning for the augmented-data and the latent projection stating
+# that their implementation is currently only experimental:
 options(projpred.warn_augdat_experimental = FALSE)
+options(projpred.warn_latent_experimental = FALSE)
 
 # Data --------------------------------------------------------------------
 
