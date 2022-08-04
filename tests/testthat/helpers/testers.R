@@ -67,8 +67,15 @@ extfam_tester <- function(extfam,
   expect_true(isTRUE(extfam$for_augdat) || isFALSE(extfam$for_augdat),
               info = info_str)
   expect_identical(extfam$for_augdat, augdat_expected, info = info_str)
+  expect_true("for_latent" %in% names(extfam), info = info_str)
+  ### TODO:
+  expect_false(extfam$for_latent, info = info_str)
+  # expect_true(isTRUE(extfam$for_latent) || isFALSE(extfam$for_latent),
+  #             info = info_str)
+  # expect_identical(extfam$for_latent, latent_expected, info = info_str)
+  ###
   extfam_nms_add <- c("kl", "dis_fun", "predvar", "ll_fun", "deviance", "ppd",
-                      "for_augdat", "is_extended")
+                      "for_latent", "for_augdat", "is_extended")
   if (extfam$for_augdat) {
     extfam_nms_add <- setdiff(extfam_nms_add, "deviance")
     extfam_nms_add <- c(extfam_nms_add, "cats", "kl_ptwise")
@@ -147,7 +154,7 @@ extfam_tester <- function(extfam,
   expect_true(extfam$is_extended, info = info_str)
   el_nms_clos <- setdiff(
     extfam_nms_add,
-    c("refcat", "cats", "for_augdat", "is_extended")
+    c("refcat", "cats", "for_latent", "for_augdat", "is_extended")
   )
   for (el_nm in el_nms_clos) {
     expect_type(extfam[[el_nm]], "closure")
@@ -1748,7 +1755,7 @@ smmry_tester <- function(smmry, vsel_expected, nterms_max_expected = NULL,
     c("formula", "family", "nobs_train", "nobs_test", "method", "cv_method",
       "validate_search", "clust_used_search", "clust_used_eval",
       "nprjdraws_search", "nprjdraws_eval", "search_included", "nterms",
-      pct_solterms_nm, "suggested_size", "selection"),
+      pct_solterms_nm, "suggested_size", "selection", "lat2resp"),
     info = info_str
   )
 
@@ -1793,6 +1800,9 @@ smmry_tester <- function(smmry, vsel_expected, nterms_max_expected = NULL,
                    summaries_ref = vsel_expected$summaries$ref,
                    nterms_max_expected = nterms_max_expected,
                    info_str = info_str, ...)
+  ### TODO:
+  expect_false(smmry$lat2resp, info = info_str)
+  ###
 
   return(invisible(TRUE))
 }
