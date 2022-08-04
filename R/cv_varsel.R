@@ -685,7 +685,7 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
       nobs_orig = attr(mu_resp, "nobs_orig"),
       class = sub("augmat", "augvec", oldClass(mu_resp), fixed = TRUE)
     )
-    summ_ref$resp <- list(mu = mu_ref_resp, lppd = loo_ref_resp)
+    summ_ref$resp <- list(lppd = loo_ref_resp, mu = mu_ref_resp)
   }
   summaries <- list(sub = summ_sub, ref = summ_ref)
 
