@@ -346,13 +346,6 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
   if (nloo < 1) {
     stop("nloo must be at least 1")
   } else if (nloo < n) {
-    if (refmodel$family$for_augdat) {
-      # Disallow subsampled LOO CV for the augmented-data projection (for now)
-      # because `.tabulate_stats()` would probably have to be adapted in that
-      # case:
-      stop("Currently, the augmented-data projection may not be combined with ",
-           "subsampled LOO CV.")
-    }
     warning("Subsampled LOO CV is still experimental.")
   }
 

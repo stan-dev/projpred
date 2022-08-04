@@ -15,9 +15,10 @@
 #'
 #' @param family A [`family`] object.
 #' @param augdat_y_unqs Only relevant for augmented-data projection, in which
-#'   case this needs to be the vector of unique response values or may be left
-#'   at `NULL` if `family$cats` is already non-`NULL`. See also section
-#'   "Augmented-data projection" below.
+#'   case this needs to be the character vector of unique response values (which
+#'   will be assigned to `family$cats` internally) or may be left at `NULL` if
+#'   `family$cats` is already non-`NULL`. See also section "Augmented-data
+#'   projection" below.
 #' @param augdat_link Only relevant for augmented-data projection, in which case
 #'   this needs to be the link function (supplied as a function, not a character
 #'   string, for example). Use `NULL` for the traditional (non-augmented-data)

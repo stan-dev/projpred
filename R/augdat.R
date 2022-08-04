@@ -41,7 +41,7 @@ NULL
 #
 # @return An augmented-rows matrix (see above for a definition).
 arr2augmat <- function(arr, margin_draws = 3) {
-  stopifnot(is.array(arr))
+  stopifnot(is.array(arr) && length(dim(arr)) == 3)
   stopifnot(margin_draws %in% c(1, 3))
   if (margin_draws == 1) {
     margin_obs <- 2
@@ -176,7 +176,11 @@ augmat2augvec <- function(augmat) {
 catmaxprb <- function(augvec, lvls) {
   arr <- augmat2arr(augvec2augmat(augvec))
   idxmaxprb <- do.call(c, lapply(seq_len(dim(arr)[1]), function(i_obs) {
-    which.max(arr[i_obs, , 1])
+    idx_out <- which.max(arr[i_obs, , 1])
+    if (length(idx_out) == 0) {
+      idx_out <- NA_integer_
+    }
+    return(idx_out)
   }))
   return(factor(lvls[idxmaxprb], levels = lvls))
 }
