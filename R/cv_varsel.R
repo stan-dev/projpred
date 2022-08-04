@@ -363,11 +363,9 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
     warning("Subsampled LOO CV is still experimental.")
   }
 
-  ## compute loo summaries for the reference model
-  loo_ref_resp <- apply(loglik_forPSIS + lw, 2, log_sum_exp)
-
   ## decide which points form the validation set based on the k-values
   ## validset <- .loo_subsample(n, nloo, pareto_k)
+  loo_ref_resp <- apply(loglik_forPSIS + lw, 2, log_sum_exp)
   validset <- .loo_subsample_pps(nloo, loo_ref_resp)
   inds <- validset$inds
 
