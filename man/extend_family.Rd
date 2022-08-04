@@ -21,13 +21,29 @@ extend_family(
 \arguments{
 \item{family}{A \code{\link{family}} object.}
 
-\item{latent}{\strong{TODO}}
+\item{latent}{A single logical value indicating whether to use the latent
+projection (\code{TRUE}) or not (\code{FALSE}).}
 
-\item{latent_y_unqs}{\strong{TODO}}
+\item{latent_y_unqs}{Only relevant for a latent projection where the original
+response space has finite support (i.e., the original response values may
+be regarded as categories), in which case this needs to be the character
+vector of unique response values. See also section "Latent projection"
+below.}
 
-\item{latent_ilink}{\strong{TODO}}
+\item{latent_ilink}{Only relevant for the latent projection, in which case
+this needs to be the inverse-link function (supplied as a function, not a
+character string, for example). Can also be \code{NULL}, but then downstream
+functions will have limited functionality (a message thrown by
+\code{\link[=extend_family]{extend_family()}} will state what exactly won't be available). See also
+section "Latent projection" below.}
 
-\item{latent_ll_fun_resp}{\strong{TODO}}
+\item{latent_ll_fun_resp}{Only relevant for the latent projection, in which
+case this needs to be the function (supplied as a function, not a character
+string, for example) computing response-scale (not latent-scale)
+log-likelihood values. Can also be \code{NULL}, but then downstream functions
+will have limited functionality (a message thrown by \code{\link[=extend_family]{extend_family()}} will
+state what exactly won't be available). See also section "Latent
+projection" below.}
 
 \item{augdat_y_unqs}{Only relevant for augmented-data projection, in which
 case this needs to be the character vector of unique response values (which

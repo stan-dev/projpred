@@ -14,10 +14,26 @@
 #' it yourself.
 #'
 #' @param family A [`family`] object.
-#' @param latent **TODO**
-#' @param latent_y_unqs **TODO**
-#' @param latent_ilink **TODO**
-#' @param latent_ll_fun_resp **TODO**
+#' @param latent A single logical value indicating whether to use the latent
+#'   projection (`TRUE`) or not (`FALSE`).
+#' @param latent_y_unqs Only relevant for a latent projection where the original
+#'   response space has finite support (i.e., the original response values may
+#'   be regarded as categories), in which case this needs to be the character
+#'   vector of unique response values. See also section "Latent projection"
+#'   below.
+#' @param latent_ilink Only relevant for the latent projection, in which case
+#'   this needs to be the inverse-link function (supplied as a function, not a
+#'   character string, for example). Can also be `NULL`, but then downstream
+#'   functions will have limited functionality (a message thrown by
+#'   [extend_family()] will state what exactly won't be available). See also
+#'   section "Latent projection" below.
+#' @param latent_ll_fun_resp Only relevant for the latent projection, in which
+#'   case this needs to be the function (supplied as a function, not a character
+#'   string, for example) computing response-scale (not latent-scale)
+#'   log-likelihood values. Can also be `NULL`, but then downstream functions
+#'   will have limited functionality (a message thrown by [extend_family()] will
+#'   state what exactly won't be available). See also section "Latent
+#'   projection" below.
 #' @param augdat_y_unqs Only relevant for augmented-data projection, in which
 #'   case this needs to be the character vector of unique response values (which
 #'   will be assigned to `family$cats` internally) or may be left at `NULL` if
