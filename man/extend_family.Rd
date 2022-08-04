@@ -18,9 +18,10 @@ extend_family(
 \item{family}{A \code{\link{family}} object.}
 
 \item{augdat_y_unqs}{Only relevant for augmented-data projection, in which
-case this needs to be the vector of unique response values or may be left
-at \code{NULL} if \code{family$cats} is already non-\code{NULL}. See also section
-"Augmented-data projection" below.}
+case this needs to be the character vector of unique response values (which
+will be assigned to \code{family$cats} internally) or may be left at \code{NULL} if
+\code{family$cats} is already non-\code{NULL}. See also section "Augmented-data
+projection" below.}
 
 \item{augdat_link}{Only relevant for augmented-data projection, in which case
 this needs to be the link function (supplied as a function, not a character
