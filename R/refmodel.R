@@ -681,7 +681,6 @@ get_refmodel.stanreg <- function(object, ...) {
     dis <- NULL
   }
 
-
   # Augmented-data projection -----------------------------------------------
 
   if (object$stan_function == "stan_polr") {
