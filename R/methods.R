@@ -389,11 +389,12 @@ plot.vsel <- function(
   baseline <- .validate_baseline(object$refmodel, baseline, deltas)
 
   ## compute all the statistics and fetch only those that were asked
-  nfeat_baseline <- .get_nfeat_baseline(object, baseline, stats[1])
+  nfeat_baseline <- .get_nfeat_baseline(object, baseline, stats[1],
+                                        lat2resp = lat2resp)
   tab <- rbind(
     .tabulate_stats(object, stats, alpha = alpha,
-                    nfeat_baseline = nfeat_baseline, ...),
-    .tabulate_stats(object, stats, alpha = alpha, ...)
+                    nfeat_baseline = nfeat_baseline, lat2resp = lat2resp, ...),
+    .tabulate_stats(object, stats, alpha = alpha, lat2resp = lat2resp, ...)
   )
   stats_table <- subset(tab, tab$delta == deltas)
   stats_ref <- subset(stats_table, stats_table$size == Inf)
@@ -558,6 +559,9 @@ plot.vsel <- function(
 #'   For [plot.vsel()]: Always relevant. Either `"ref"` or `"best"`, indicating
 #'   whether the baseline is the reference model or the best submodel found (in
 #'   terms of `stats[1]`), respectively.
+#' @param lat2resp Only relevant for the latent projection. A single logical
+#'   value indicating whether to calculate the performance statistics on
+#'   response scale (`TRUE`) or on latent scale (`FALSE`).
 #' @param ... Arguments passed to the internal function which is used for
 #'   bootstrapping (if applicable; see argument `stats`). Currently, relevant
 #'   arguments are `B` (the number of bootstrap samples, defaulting to `2000`)
@@ -624,7 +628,8 @@ summary.vsel <- function(
 
   # The full table of the performance statistics from `stats`:
   if (deltas) {
-    nfeat_baseline <- .get_nfeat_baseline(object, baseline, stats[1])
+    nfeat_baseline <- .get_nfeat_baseline(object, baseline, stats[1],
+                                          lat2resp = lat2resp)
     tab <- .tabulate_stats(object, stats, alpha = alpha,
                            nfeat_baseline = nfeat_baseline, lat2resp = lat2resp,
                            ...)
@@ -832,6 +837,10 @@ print.vsel <- function(x, ...) {
 #'   is at most one standard error smaller than the baseline model's utility
 #'   estimate (with that standard error referring to the utility *difference*).
 #'
+#'   Apart from the two [summary.vsel()] arguments mentioned above (`alpha` and
+#'   `baseline`), `lat2resp` is another important [summary.vsel()] argument that
+#'   may be passed via `...`.
+#'
 #' @note Loss statistics like the root mean-squared error (RMSE) and the
 #'   mean-squared error (MSE) are converted to utilities by multiplying them by
 #'   `-1`, so a call such as `suggest_size(object, stat = "rmse", type =
@@ -879,7 +888,6 @@ suggest_size.vsel <- function(
     type = "upper",
     thres_elpd = NA,
     warnings = TRUE,
-    lat2resp = FALSE,
     ...
 ) {
   .validate_vsel_object_stats(object, stat)

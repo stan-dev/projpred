@@ -370,16 +370,16 @@ get_stat <- function(mu, lppd, d_test, stat, mu.bs = NULL, lppd.bs = NULL,
   return(!stat %in% c("rmse", "mse"))
 }
 
-.get_nfeat_baseline <- function(object, baseline, stat) {
+.get_nfeat_baseline <- function(object, baseline, stat, ...) {
   ## get model size that is used as a baseline in comparisons. baseline is one
   ## of 'best' or 'ref', stat is the statistic according to which the selection
   ## is done
   if (baseline == "best") {
     ## find number of features that maximizes the utility (or minimizes the
     ## loss)
-    tab <- .tabulate_stats(object, stat)
+    tab <- .tabulate_stats(object, stat, ...)
     stats_table <- subset(tab, tab$size != Inf)
-    ## tab <- .tabulate_stats(object)
+    ## tab <- .tabulate_stats(object, ...)
     ## stats_table <- subset(tab, tab$delta == FALSE &
     ##   tab$statistic == stat & tab$size != Inf)
     optfun <- ifelse(.is_util(stat), which.max, which.min)

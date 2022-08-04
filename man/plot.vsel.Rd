@@ -63,6 +63,10 @@ close enough to the baseline model's ELPD. An equivalent rule is applied in
 case of the MLPD. See \code{\link[=suggest_size]{suggest_size()}} for a formalization. Supplying \code{NA}
 deactivates this.}
 
+\item{lat2resp}{Only relevant for the latent projection. A single logical
+value indicating whether to calculate the performance statistics on
+response scale (\code{TRUE}) or on latent scale (\code{FALSE}).}
+
 \item{...}{Arguments passed to the internal function which is used for
 bootstrapping (if applicable; see argument \code{stats}). Currently, relevant
 arguments are \code{B} (the number of bootstrap samples, defaulting to \code{2000})
