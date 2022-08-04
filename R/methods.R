@@ -744,7 +744,16 @@ print.vselsummary <- function(x, digits = 1, ...) {
       " used for prediction: ", x$nprjdraws_eval, "\n", sep = "")
   cat(paste0("Suggested Projection Size: ", x$suggested_size, "\n"))
   cat("\n")
-  cat("Selection Summary:\n")
+  if (x$family$for_latent) {
+    if (x$lat2resp) {
+      scale_string <- " (response scale)"
+    } else {
+      scale_string <- " (latent scale)"
+    }
+  } else {
+    scale_string <- ""
+  }
+  cat("Selection Summary", scale_string, ":\n", sep = "")
   where <- "tidyselect" %:::% "where"
   print(
     x$selection %>% dplyr::mutate(dplyr::across(
