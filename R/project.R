@@ -231,10 +231,11 @@ project <- function(object, nterms = NULL, solution_terms = NULL,
 
   # Output:
   proj <- lapply(subm, function(initsubmodl) {
-    initsubmodl$p_type <- !is.null(nclusters)
-    initsubmodl$refmodel <- refmodel
-    class(initsubmodl) <- "projection"
-    return(initsubmodl)
+    proj_k <- initsubmodl
+    proj_k$p_type <- !is.null(nclusters)
+    proj_k$refmodel <- refmodel
+    class(proj_k) <- "projection"
+    return(proj_k)
   })
   ## If only one model size, just return the proj instead of a list of projs
   .unlist_proj(proj)
