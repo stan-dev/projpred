@@ -558,7 +558,7 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
     for (i in seq_len(n)) {
       solution_terms_mat[i, seq_along(solution)] <- solution
     }
-    sel <- nlist(search_path, kl = sapply(submodels, function(x) x$kl),
+    sel <- nlist(search_path, kl = sapply(submodels, "[[", "kl"),
                  solution_terms = search_path$solution_terms,
                  clust_used_search = p_sel$clust_used,
                  clust_used_eval = refdist_eval$clust_used,
