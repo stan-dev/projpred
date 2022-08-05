@@ -457,7 +457,9 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
     }
     if (refmodel$family$for_latent) {
       if (refmodel$family$lat2resp_possible) {
-        refdist_eval_mu_resp <- refmodel$family$latent_ilink(t(refdist_eval$mu))
+        refdist_eval_mu_resp <- refmodel$family$latent_ilink(
+          t(refdist_eval$mu), cl = refdist_eval$cl
+        )
         if (length(dim(refdist_eval_mu_resp)) == 3) {
           refdist_eval_mu_resp <- refdist_eval_mu_resp[, inds, , drop = FALSE]
         } else {
@@ -501,7 +503,7 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
       lw_sub <- sweep(lw_sub, 2, as.array(apply(lw_sub, 2, log_sum_exp)))
       loo_sub[[k]][inds] <- apply(log_lik_sub + lw_sub, 2, log_sum_exp)
       if (refmodel$family$for_latent && refmodel$family$lat2resp_possible) {
-        mu_k_resp <- refmodel$family$latent_ilink(t(mu_k))
+        mu_k_resp <- refmodel$family$latent_ilink(t(mu_k), cl = refdist_eval$cl)
         log_lik_sub_resp <- refmodel$family$latent_ll_fun_resp(
           mu_k_resp, refmodel$y[inds], refmodel$wobs[inds]
         )
@@ -825,7 +827,7 @@ kfold_varsel <- function(refmodel, method, nterms_max, ndraws,
     .weighted_summary_means(
       y_test = fold$d_test, family = fold$refmodel$family,
       wsample = fold$refmodel$wsample, mu = mu_test,
-      dis = fold$refmodel$dis
+      dis = fold$refmodel$dis, cl = seq_along(fold$refmodel$wsample)
     )
   }))
   ref$mu <- ref$mu[order(idxs_sorted_by_fold_flx)]

@@ -135,5 +135,7 @@ project_submodel <- function(solution_terms, p_ref, refmodel, regul = 1e-4,
                        nlist(mu, dis)),
     wsample
   )
-  return(nlist(dis, kl, weights = wsample, solution_terms, submodl))
+  return(
+    nlist(dis, kl, weights = wsample, solution_terms, submodl, cl = p_ref$cl)
+  )
 }

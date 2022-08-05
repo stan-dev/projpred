@@ -9,7 +9,8 @@
       wsample = model$weights,
       mu = refmodel$family$mu_fun(model$submodl, obs = test_points,
                                   newdata = newdata, offset = offset),
-      dis = model$dis
+      dis = model$dis,
+      cl = model$cl
     )
   })
 }
@@ -23,10 +24,12 @@
 # @param wsample A vector of weights for the parameter draws.
 # @param mu A matrix of expected values for `y`.
 # @param dis A vector of dispersion parameter draws.
+# @param cl **TODO**. Caution: This always refers to the reference model's
+#   parameter draws, not necessarily to the columns of `mu`!
 #
 # @return A `list` with elements `mu` and `lppd` which are both vectors
 #   containing the values for the quantities from the description above.
-.weighted_summary_means <- function(y_test, family, wsample, mu, dis) {
+.weighted_summary_means <- function(y_test, family, wsample, mu, dis, cl) {
   if (!is.matrix(mu)) {
     stop("Unexpected structure for `mu`. Do the return values of ",
          "`proj_predfun` and `ref_predfun` have the correct structure?")
@@ -44,7 +47,7 @@
     lppd = apply(loglik, 1, log_weighted_mean_exp, wsample)
   )
   if (family$for_latent && family$lat2resp_possible) {
-    mu_resp <- family$latent_ilink(t(mu))
+    mu_resp <- family$latent_ilink(t(mu), cl = cl)
     if (length(dim(mu_resp)) < 2) {
       stop("Unexpected structure for `mu_resp`. Does the return value of ",
            "`latent_ilink` have the correct structure?")

@@ -306,7 +306,7 @@ varsel.refmodel <- function(object, d_test = NULL, method = NULL,
     }
     ref <- .weighted_summary_means(
       y_test = d_test, family = refmodel$family, wsample = refmodel$wsample,
-      mu = mu_test, dis = refmodel$dis
+      mu = mu_test, dis = refmodel$dis, cl = seq_along(refmodel$wsample)
     )
   }
 
