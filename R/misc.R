@@ -245,6 +245,16 @@ bootstrap <- function(x, fun = mean, B = 2000,
 #   * `cl`: Cluster assignment for each posterior draw, that is, a vector that
 #   has length equal to the number of posterior draws and each value is an
 #   integer between 1 and \eqn{S_{\mathrm{prj}}}{S_prj}.
+#   * `wsample_orig`: A numeric vector of length equal to the number of
+#   posterior draws, giving the weights of these draws. These weights should be
+#   treated as not being normalized (i.e., they don't necessarily sum to `1`).
+#   Currently, this element could be named `wsample_ref` instead because
+#   .get_p_clust() is always applied to inputs that are specific to a `refmodel`
+#   object (either the initial reference model or a K-fold-specific `refmodel`
+#   object) (and .get_refdist() is applied to inputs that are specific to a
+#   `refmodel` object anyway). However, .get_p_clust() intentionally seems to
+#   have been kept as general as possible and `wsample_orig` is more general
+#   than `wsample_ref`.
 .get_refdist <- function(refmodel, ndraws = NULL, nclusters = NULL,
                          thinning = TRUE) {
   # Number of draws in the reference model:
@@ -290,6 +300,7 @@ bootstrap <- function(x, fun = mean, B = 2000,
                       nobs_orig = attr(refmodel$mu, "nobs_orig"),
                       class = oldClass(refmodel$mu)),
       dis = refmodel$dis[s_ind], weights = rep(1 / ndraws, ndraws), cl = cl,
+      wsample_orig = rep(1, S),
       clust_used = FALSE
     )
   }
@@ -358,6 +369,7 @@ bootstrap <- function(x, fun = mean, B = 2000,
     dis = dis_agg,
     weights = wcluster,
     cl = cl,
+    wsample_orig = wsample,
     clust_used = TRUE
   )
   return(p)
