@@ -2,8 +2,6 @@
 # Helper functions for the latent projection
 #__________________________________________________________________________
 
-# TODO: Add tests.
-
 #' Weighted averaging within clusters of parameter draws
 #'
 #' This function aggregates \eqn{S} parameter draws that have been clustered

@@ -979,7 +979,8 @@ refdist_tester <- function(refd,
               info = info_str)
   expect_length(refd$weights, nprjdraws_expected)
   expect_true(is.vector(refd$cl, "integer"), info = info_str)
-  expect_length(refd$cl, nprjdraws_expected)
+  expect_length(refd$cl, nrefdraws)
+  expect_identical(refd$wsample_orig, rep(1, nrefdraws), info = info_str)
   expect_identical(refd$clust_used, clust_expected, info = info_str)
   return(invisible(TRUE))
 }
@@ -1023,8 +1024,8 @@ projection_tester <- function(p,
   # would have to be updated:
   expect_named(
     p,
-    c("dis", "kl", "weights", "solution_terms", "submodl", "p_type",
-      "refmodel"),
+    c("dis", "kl", "weights", "solution_terms", "submodl", "cl", "wsample_orig",
+      "p_type", "refmodel"),
     info = info_str
   )
 
@@ -1151,6 +1152,14 @@ projection_tester <- function(p,
   if (nprjdraws_expected == 1) {
     expect_identical(p$weights, 1, info = info_str)
   }
+
+  # cl
+  expect_true(is.vector(p$cl, "numeric"), info = info_str)
+  expect_length(p$cl, length(p$refmodel$wsample))
+
+  # wsample_orig
+  expect_identical(p$wsample_orig, rep(1, length(p$refmodel$wsample)),
+                   info = info_str)
 
   # p_type
   expect_identical(p$p_type, p_type_expected, info = info_str)
@@ -1497,7 +1506,8 @@ vsel_tester <- function(
   nobsv_aug <- nobsv * ncats
   expect_type(vs$search_path$p_sel, "list")
   expect_named(vs$search_path$p_sel,
-               c("mu", "var", "dis", "weights", "cl", "clust_used"),
+               c("mu", "var", "dis", "weights", "cl", "wsample_orig",
+                 "clust_used"),
                info = info_str)
   expect_true(is.matrix(vs$search_path$p_sel$mu), info = info_str)
   expect_true(is.numeric(vs$search_path$p_sel$mu), info = info_str)
@@ -1527,6 +1537,8 @@ vsel_tester <- function(
   expect_length(vs$search_path$p_sel$weights, nprjdraws_search_expected)
   expect_true(is.numeric(vs$search_path$p_sel$cl), info = info_str)
   expect_length(vs$search_path$p_sel$cl, ncol(vs$refmodel$mu))
+  expect_identical(vs$search_path$p_sel$wsample_orig,
+                   rep(1, ncol(vs$refmodel$mu)), info = info_str)
   expect_identical(vs$search_path$p_sel$clust_used, cl_search_expected,
                    info = info_str)
 
