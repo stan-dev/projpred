@@ -326,6 +326,9 @@ NULL
 predict.refmodel <- function(object, newdata = NULL, ynew = NULL,
                              offsetnew = NULL, weightsnew = NULL,
                              type = "response", ...) {
+  if (object$family$for_latent && (type == "response" || !is.null(ynew))) {
+    stop("Under construction.") # TODO: Finish this.
+  }
   if (!type %in% c("response", "link")) {
     stop("type should be one of ('response', 'link')")
   }

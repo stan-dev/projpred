@@ -231,6 +231,20 @@ proj_linpred_aux <- function(proj, newdata, offset, weights, transform = FALSE,
   pred_sub <- proj$refmodel$family$mu_fun(proj$submodl, newdata = newdata,
                                           offset = offset,
                                           transform = transform)
+  if (proj$refmodel$family$for_latent && transform) {
+    stop("Under construction.") # TODO: Finish this (handle the latent_ilink() output which is either an S x N matrix or an S x N x C array).
+    if (!proj$refmodel$family$lat2resp_possible) {
+      stop("Cannot transform the latent predictors to response space if ",
+           "`latent_ilink` is missing.")
+    }
+    pred_sub <- proj$refmodel$family$latent_ilink(
+      t(pred_sub), cl_ref = proj$cl_ref, wdraws_ref = proj$wdraws_ref
+    )
+    if (length(dim(pred_sub)) < 2) {
+      stop("Unexpected structure for `pred_sub`. Does the return value of ",
+           "`latent_ilink` have the correct structure?")
+    }
+  }
   w_o <- proj$refmodel$extract_model_data(
     proj$refmodel$fit, newdata = newdata, wrhs = weights,
     orhs = offset, extract_y = extract_y_ind
@@ -277,7 +291,13 @@ compute_lpd <- function(ynew, pred_sub, proj, weights, transformed) {
       ynew <- factor(ynew, levels = proj$refmodel$family$cats)
     }
     if (!transformed) {
+      if (proj$refmodel$family$for_latent) {
+        stop("Under construction.") # TODO: Finish this (use latent_ilink()).
+      }
       pred_sub <- proj$refmodel$family$linkinv(pred_sub)
+    }
+    if (proj$refmodel$family$for_latent) {
+      stop("Under construction.") # TODO: Finish this (use latent_ll_fun_resp(), but also the new response values from the original response scale).
     }
     return(proj$refmodel$family$ll_fun(pred_sub, proj$dis, ynew, weights))
   } else {
