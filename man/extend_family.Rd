@@ -154,9 +154,14 @@ version >= 0.9.4 should fix this.
 
 \section{Latent projection}{
 \strong{TODO}. Function \code{\link[=cl_agg]{cl_agg()}} might be helpful for constructing
-\code{latent_ilink}. Note that although argument \code{wdraws_ref} has the suffix
-\verb{_ref}, \code{wdraws_ref} doesn't necessarily obtain weights for the \emph{initial}
-reference model's posterior draws (in case of \code{\link[=cv_varsel]{cv_varsel()}} with \verb{cv_method = "kfold}, these weights refer to one of the \eqn{K} reference model re-fits,
-but they are constant nonetheless).
+\code{latent_ilink}. In fact, argument \code{wdraws_ref} of \code{latent_ilink} is needed
+(i.e., the weights passed to this argument are nonconstant) only in case of
+\code{\link[=cv_varsel]{cv_varsel()}} with \code{cv_method = "LOO"} and \code{validate_search = TRUE}. In that
+case, the weights passed to this argument are the PSIS-LOO CV weights for one
+observation. Note that although argument \code{wdraws_ref} has the suffix \verb{_ref},
+\code{wdraws_ref} doesn't necessarily obtain weights for the \emph{initial} reference
+model's posterior draws (in case of \code{\link[=cv_varsel]{cv_varsel()}} with \verb{cv_method = "kfold},
+these weights refer to one of the \eqn{K} reference model re-fits, but they
+are constant nonetheless).
 }
 

@@ -123,11 +123,15 @@
 #' # Latent projection
 #'
 #' **TODO**. Function [cl_agg()] might be helpful for constructing
-#' `latent_ilink`. Note that although argument `wdraws_ref` has the suffix
-#' `_ref`, `wdraws_ref` doesn't necessarily obtain weights for the *initial*
-#' reference model's posterior draws (in case of [cv_varsel()] with `cv_method =
-#' "kfold`, these weights refer to one of the \eqn{K} reference model re-fits,
-#' but they are constant nonetheless).
+#' `latent_ilink`. In fact, argument `wdraws_ref` of `latent_ilink` is needed
+#' (i.e., the weights passed to this argument are nonconstant) only in case of
+#' [cv_varsel()] with `cv_method = "LOO"` and `validate_search = TRUE`. In that
+#' case, the weights passed to this argument are the PSIS-LOO CV weights for one
+#' observation. Note that although argument `wdraws_ref` has the suffix `_ref`,
+#' `wdraws_ref` doesn't necessarily obtain weights for the *initial* reference
+#' model's posterior draws (in case of [cv_varsel()] with `cv_method = "kfold`,
+#' these weights refer to one of the \eqn{K} reference model re-fits, but they
+#' are constant nonetheless).
 #'
 #' @return The [`family`] object extended in the way needed by \pkg{projpred}.
 #'
