@@ -330,8 +330,7 @@ proj_predict_aux <- function(proj, newdata, offset, weights,
   }
   if (proj$refmodel$family$for_latent &&
       proj$refmodel$family$ppdResp_possible) {
-    mu_resp <- proj$refmodel$family$latent_ilink(t(mu), cl_ref = proj$cl,
-                                                 wdraws_ref = proj$wsample_orig)
+    mu_resp <- proj$refmodel$family$latent_ilink(t(mu), cl_ref = proj$cl)
   }
   return(structure(
     do.call(rbind, lapply(draw_inds, function(i) {
@@ -343,8 +342,7 @@ proj_predict_aux <- function(proj, newdata, offset, weights,
           mu_resp_i <- mu_resp[i, , drop = FALSE]
         }
         return(proj$refmodel$family$latent_ppd_fun_resp(
-          mu_resp_i, wobs = weights, cl_ref = proj$cl,
-          wdraws_ref = proj$wsample_orig
+          mu_resp_i, wobs = weights, cl_ref = proj$cl
         ))
       } else {
         return(proj$refmodel$family$ppd(mu[, i], proj$dis[i], weights))
