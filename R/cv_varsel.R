@@ -458,7 +458,7 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
     if (refmodel$family$for_latent) {
       if (refmodel$family$lat2resp_possible) {
         refdist_eval_mu_resp <- refmodel$family$latent_ilink(
-          t(refdist_eval$mu), cl = refdist_eval$cl
+          t(refdist_eval$mu), cl_ref = refdist_eval$cl
         )
         if (length(dim(refdist_eval_mu_resp)) == 3) {
           refdist_eval_mu_resp <- refdist_eval_mu_resp[, inds, , drop = FALSE]
@@ -503,7 +503,8 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
       lw_sub <- sweep(lw_sub, 2, as.array(apply(lw_sub, 2, log_sum_exp)))
       loo_sub[[k]][inds] <- apply(log_lik_sub + lw_sub, 2, log_sum_exp)
       if (refmodel$family$for_latent && refmodel$family$lat2resp_possible) {
-        mu_k_resp <- refmodel$family$latent_ilink(t(mu_k), cl = refdist_eval$cl)
+        mu_k_resp <- refmodel$family$latent_ilink(t(mu_k),
+                                                  cl_ref = refdist_eval$cl)
         log_lik_sub_resp <- refmodel$family$latent_ll_fun_resp(
           mu_k_resp, refmodel$y[inds], refmodel$wobs[inds]
         )
