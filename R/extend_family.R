@@ -128,10 +128,10 @@
 #' [cv_varsel()] with `cv_method = "LOO"` and `validate_search = TRUE`. In that
 #' case, the weights passed to this argument are the PSIS-LOO CV weights for one
 #' observation. Note that although argument `wdraws_ref` has the suffix `_ref`,
-#' `wdraws_ref` doesn't necessarily obtain weights for the *initial* reference
-#' model's posterior draws (in case of [cv_varsel()] with `cv_method = "kfold`,
-#' these weights refer to one of the \eqn{K} reference model re-fits, but they
-#' are constant nonetheless).
+#' `wdraws_ref` does not necessarily obtain weights for the *initial* reference
+#' model's posterior draws: In case of [cv_varsel()] with `cv_method = "kfold`,
+#' these weights refer to one of the \eqn{K} reference model re-fits (but in
+#' that case, they are constant anyway).
 #'
 #' @return The [`family`] object extended in the way needed by \pkg{projpred}.
 #'
