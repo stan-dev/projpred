@@ -10,8 +10,8 @@
       mu = refmodel$family$mu_fun(initsubmodl$submodl, obs = test_points,
                                   newdata = newdata, offset = offset),
       dis = initsubmodl$dis,
-      cl = initsubmodl$cl,
-      wsample_orig = initsubmodl$wsample_orig
+      cl_ref = initsubmodl$cl_ref,
+      wsample_ref = initsubmodl$wsample_ref
     )
   })
 }
@@ -25,25 +25,25 @@
 # @param wsample A vector of weights for the parameter draws.
 # @param mu A matrix of expected values for `y`.
 # @param dis A vector of dispersion parameter draws.
-# @param cl A numeric vector of length \eqn{S} (with \eqn{S} denoting the number
-#   of parameter draws in the reference model), giving the cluster indices for
-#   the parameter draws in the reference model. Draws that should be dropped
-#   (e.g., because of thinning by `ndraws` or `ndraws_pred`) need to have an
-#   `NA` in `cl`. Caution: This always refers to the reference model's parameter
-#   draws, not necessarily to the columns of `mu`, the entries of `wsample`, or
-#   the entries of `dis`!
-# @param wsample_orig A numeric vector of length \eqn{S} (with \eqn{S} denoting
+# @param cl_ref A numeric vector of length \eqn{S} (with \eqn{S} denoting the
+#   number of parameter draws in the reference model), giving the cluster
+#   indices for the parameter draws in the reference model. Draws that should be
+#   dropped (e.g., because of thinning by `ndraws` or `ndraws_pred`) need to
+#   have an `NA` in `cl_ref`. Caution: This always refers to the reference
+#   model's parameter draws, not necessarily to the columns of `mu`, the entries
+#   of `wsample`, or the entries of `dis`!
+# @param wsample_ref A numeric vector of length \eqn{S} (with \eqn{S} denoting
 #   the number of parameter draws in the reference model), giving the weights of
 #   the parameter draws in the reference model. It doesn't matter whether these
 #   are normalized (i.e., sum to `1`) or not because the family$latent_ilink()
 #   function that receives them should treat them as unnormalized. Draws that
 #   should be dropped (e.g., because of thinning by `ndraws` or `ndraws_pred`)
-#   can (but must not necessarily) have an `NA` in `wsample_orig`.
+#   can (but must not necessarily) have an `NA` in `wsample_ref`.
 #
 # @return A `list` with elements `mu` and `lppd` which are both vectors
 #   containing the values for the quantities from the description above.
-.weighted_summary_means <- function(y_test, family, wsample, mu, dis, cl,
-                                    wsample_orig = rep(1, length(cl))) {
+.weighted_summary_means <- function(y_test, family, wsample, mu, dis, cl_ref,
+                                    wsample_ref = rep(1, length(cl_ref))) {
   if (!is.matrix(mu)) {
     stop("Unexpected structure for `mu`. Do the return values of ",
          "`proj_predfun` and `ref_predfun` have the correct structure?")
@@ -61,8 +61,8 @@
     lppd = apply(loglik, 1, log_weighted_mean_exp, wsample)
   )
   if (family$for_latent && family$lat2resp_possible) {
-    mu_resp <- family$latent_ilink(t(mu), cl_ref = cl,
-                                   wdraws_ref = wsample_orig)
+    mu_resp <- family$latent_ilink(t(mu), cl_ref = cl_ref,
+                                   wdraws_ref = wsample_ref)
     if (length(dim(mu_resp)) < 2) {
       stop("Unexpected structure for `mu_resp`. Does the return value of ",
            "`latent_ilink` have the correct structure?")

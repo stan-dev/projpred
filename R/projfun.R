@@ -136,8 +136,8 @@ project_submodel <- function(solution_terms, p_ref, refmodel, regul = 1e-4,
     wsample
   )
   return(structure(
-    nlist(dis, kl, weights = wsample, solution_terms, submodl, cl = p_ref$cl,
-          wsample_orig = p_ref$wsample_orig),
+    nlist(dis, kl, weights = wsample, solution_terms, submodl,
+          cl_ref = p_ref$cl, wsample_ref = p_ref$wsample_orig),
     class = "initsubmodl"
   ))
 }

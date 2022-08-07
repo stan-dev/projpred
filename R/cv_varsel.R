@@ -828,7 +828,7 @@ kfold_varsel <- function(refmodel, method, nterms_max, ndraws,
     .weighted_summary_means(
       y_test = fold$d_test, family = fold$refmodel$family,
       wsample = fold$refmodel$wsample, mu = mu_test,
-      dis = fold$refmodel$dis, cl = seq_along(fold$refmodel$wsample)
+      dis = fold$refmodel$dis, cl_ref = seq_along(fold$refmodel$wsample)
     )
   }))
   ref$mu <- ref$mu[order(idxs_sorted_by_fold_flx)]
