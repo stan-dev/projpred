@@ -65,6 +65,13 @@
 #'     submodel.}
 #'     \item{`submodl`}{A `list` containing the submodel fits (one fit per
 #'     projected draw).}
+#'     \item{`cl`}{A numeric vector of length equal to the number of posterior
+#'     draws in the reference model, containing the cluster indices of these
+#'     draws.}
+#'     \item{`wsample_orig`}{A numeric vector of length equal to the number of
+#'     posterior draws in the reference model, giving the weights of these
+#'     draws. These weights should be treated as not being normalized (i.e.,
+#'     they don't necessarily sum to `1`).}
 #'     \item{`p_type`}{A single logical value indicating whether the
 #'     reference model's posterior draws have been clustered for the projection
 #'     (`TRUE`) or not (`FALSE`).}

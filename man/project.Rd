@@ -82,6 +82,13 @@ predictor terms, ordered in the way in which the terms were added to the
 submodel.}
 \item{\code{submodl}}{A \code{list} containing the submodel fits (one fit per
 projected draw).}
+\item{\code{cl}}{A numeric vector of length equal to the number of posterior
+draws in the reference model, containing the cluster indices of these
+draws.}
+\item{\code{wsample_orig}}{A numeric vector of length equal to the number of
+posterior draws in the reference model, giving the weights of these
+draws. These weights should be treated as not being normalized (i.e.,
+they don't necessarily sum to \code{1}).}
 \item{\code{p_type}}{A single logical value indicating whether the
 reference model's posterior draws have been clustered for the projection
 (\code{TRUE}) or not (\code{FALSE}).}
