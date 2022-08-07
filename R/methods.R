@@ -239,7 +239,7 @@ proj_linpred_aux <- function(proj, newdata, offset, weights, transform = FALSE,
   lpd_out <- compute_lpd(ynew = ynew, pred_sub = pred_sub, proj = proj,
                          weights = weights, transformed = transform)
   if (integrated) {
-    ## average over the posterior draws
+    ## average over the projected draws
     pred_sub <- structure(pred_sub %*% proj$weights,
                           nobs_orig = attr(pred_sub, "nobs_orig"),
                           class = oldClass(pred_sub))
