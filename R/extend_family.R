@@ -41,7 +41,11 @@
 #'   have been transformed to response scale using `latent_ilink`. Can also be
 #'   `NULL`, but then downstream functions will have limited functionality (a
 #'   message thrown by [extend_family()] will state what exactly won't be
-#'   available). See also section "Latent projection" below.
+#'   available). See also section "Latent projection" below. Note that although
+#'   this function has the abbreviation "PPD" in its name (which stands for
+#'   "posterior predictive distribution"), \pkg{projpred} currently only uses it
+#'   in [proj_predict()], i.e., for sampling from what would better be termed
+#'   posterior-projection predictive distribution (PPPD).
 #' @param augdat_y_unqs Only relevant for augmented-data projection, in which
 #'   case this needs to be the character vector of unique response values (which
 #'   will be assigned to `family$cats` internally) or may be left at `NULL` if

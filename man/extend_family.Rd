@@ -53,7 +53,11 @@ string, for example) sampling response values given latent predictors that
 have been transformed to response scale using \code{latent_ilink}. Can also be
 \code{NULL}, but then downstream functions will have limited functionality (a
 message thrown by \code{\link[=extend_family]{extend_family()}} will state what exactly won't be
-available). See also section "Latent projection" below.}
+available). See also section "Latent projection" below. Note that although
+this function has the abbreviation "PPD" in its name (which stands for
+"posterior predictive distribution"), \pkg{projpred} currently only uses it
+in \code{\link[=proj_predict]{proj_predict()}}, i.e., for sampling from what would better be termed
+posterior-projection predictive distribution (PPPD).}
 
 \item{augdat_y_unqs}{Only relevant for augmented-data projection, in which
 case this needs to be the character vector of unique response values (which
