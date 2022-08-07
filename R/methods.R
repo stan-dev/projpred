@@ -348,7 +348,8 @@ proj_predict_aux <- function(proj, newdata, offset, weights,
   } else {
     if (proj$refmodel$family$for_latent &&
         !proj$refmodel$family$ppdResp_possible) {
-      warning("The returned predictions are on latent scale.")
+      warning("The returned predictions are on latent scale because ",
+              "`latent_ilink` or `latent_ppd_fun_resp` are missing.")
     }
     pppd_out <- do.call(rbind, lapply(draw_inds, function(i) {
       proj$refmodel$family$ppd(mu[, i], proj$dis[i], weights)
