@@ -331,6 +331,10 @@ proj_predict_aux <- function(proj, newdata, offset, weights,
   if (proj$refmodel$family$for_latent &&
       proj$refmodel$family$ppdResp_possible) {
     mu_resp <- proj$refmodel$family$latent_ilink(t(mu), cl_ref = proj$cl)
+    if (length(dim(mu_resp)) < 2) {
+      stop("Unexpected structure for `mu_resp`. Does the return value of ",
+           "`latent_ilink` have the correct structure?")
+    }
     if (length(dim(mu_resp)) == 3) {
       mu_resp_resamp <- mu_resp[draw_inds, , , drop = FALSE]
     } else {
