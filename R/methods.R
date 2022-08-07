@@ -321,14 +321,17 @@ proj_predict_aux <- function(proj, newdata, offset, weights,
     draw_inds <- seq_along(proj$weights)
   }
   cats_aug <- proj$refmodel$family$cats
-  if (proj$refmodel$family$for_latent && !is.null(cats_aug)) {
+  if (proj$refmodel$family$for_latent &&
+      !proj$refmodel$family$ppdResp_possible &&
+      !is.null(cats_aug)) {
     # In this case, the PPD will be on latent scale, so the response
     # categories don't come into play:
     cats_aug <- NULL
   }
   if (proj$refmodel$family$for_latent &&
       proj$refmodel$family$ppdResp_possible) {
-    mu_resp <- proj$refmodel$family$latent_ilink(t(mu))
+    mu_resp <- proj$refmodel$family$latent_ilink(t(mu), cl_ref = proj$cl,
+                                                 wdraws_ref = proj$wsample_orig)
   }
   return(structure(
     do.call(rbind, lapply(draw_inds, function(i) {
@@ -340,7 +343,8 @@ proj_predict_aux <- function(proj, newdata, offset, weights,
           mu_resp_i <- mu_resp[i, , drop = FALSE]
         }
         return(proj$refmodel$family$latent_ppd_fun_resp(
-          mu_resp_i, wobs = weights, cl = proj$cl, wdraws = proj$wsample_orig
+          mu_resp_i, wobs = weights, cl_ref = proj$cl,
+          wdraws_ref = proj$wsample_orig
         ))
       } else {
         return(proj$refmodel$family$ppd(mu[, i], proj$dis[i], weights))

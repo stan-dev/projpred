@@ -61,7 +61,8 @@
     lppd = apply(loglik, 1, log_weighted_mean_exp, wsample)
   )
   if (family$for_latent && family$lat2resp_possible) {
-    mu_resp <- family$latent_ilink(t(mu), cl = cl, wdraws = wsample_orig)
+    mu_resp <- family$latent_ilink(t(mu), cl_ref = cl,
+                                   wdraws_ref = wsample_orig)
     if (length(dim(mu_resp)) < 2) {
       stop("Unexpected structure for `mu_resp`. Does the return value of ",
            "`latent_ilink` have the correct structure?")
