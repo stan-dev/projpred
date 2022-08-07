@@ -118,7 +118,8 @@
 #'
 #' # Latent projection
 #'
-#' **TODO**
+#' **TODO**. Function [cl_agg()] might be helpful for constructing
+#' `latent_ilink`.
 #'
 #' @return The [`family`] object extended in the way needed by \pkg{projpred}.
 #'

@@ -149,6 +149,7 @@ version >= 0.9.4 should fix this.
 }
 
 \section{Latent projection}{
-\strong{TODO}
+\strong{TODO}. Function \code{\link[=cl_agg]{cl_agg()}} might be helpful for constructing
+\code{latent_ilink}.
 }
 
