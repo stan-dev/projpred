@@ -1025,7 +1025,7 @@ projection_tester <- function(p,
   expect_named(
     p,
     c("dis", "kl", "weights", "solution_terms", "submodl", "cl_ref",
-      "wsample_ref", "p_type", "refmodel"),
+      "wdraws_ref", "p_type", "refmodel"),
     info = info_str
   )
 
@@ -1157,8 +1157,8 @@ projection_tester <- function(p,
   expect_true(is.vector(p$cl_ref, "numeric"), info = info_str)
   expect_length(p$cl_ref, length(p$refmodel$wsample))
 
-  # wsample_ref
-  expect_identical(p$wsample_ref, rep(1, length(p$refmodel$wsample)),
+  # wdraws_ref
+  expect_identical(p$wdraws_ref, rep(1, length(p$refmodel$wsample)),
                    info = info_str)
 
   # p_type

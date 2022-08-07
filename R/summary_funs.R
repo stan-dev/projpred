@@ -11,7 +11,7 @@
                                   newdata = newdata, offset = offset),
       dis = initsubmodl$dis,
       cl_ref = initsubmodl$cl_ref,
-      wsample_ref = initsubmodl$wsample_ref
+      wdraws_ref = initsubmodl$wdraws_ref
     )
   })
 }
@@ -32,18 +32,18 @@
 #   have an `NA` in `cl_ref`. Caution: This always refers to the reference
 #   model's parameter draws, not necessarily to the columns of `mu`, the entries
 #   of `wsample`, or the entries of `dis`!
-# @param wsample_ref A numeric vector of length \eqn{S} (with \eqn{S} denoting
+# @param wdraws_ref A numeric vector of length \eqn{S} (with \eqn{S} denoting
 #   the number of parameter draws in the reference model), giving the weights of
 #   the parameter draws in the reference model. It doesn't matter whether these
 #   are normalized (i.e., sum to `1`) or not because the family$latent_ilink()
 #   function that receives them should treat them as unnormalized. Draws that
 #   should be dropped (e.g., because of thinning by `ndraws` or `ndraws_pred`)
-#   can (but must not necessarily) have an `NA` in `wsample_ref`.
+#   can (but must not necessarily) have an `NA` in `wdraws_ref`.
 #
 # @return A `list` with elements `mu` and `lppd` which are both vectors
 #   containing the values for the quantities from the description above.
 .weighted_summary_means <- function(y_test, family, wsample, mu, dis, cl_ref,
-                                    wsample_ref = rep(1, length(cl_ref))) {
+                                    wdraws_ref = rep(1, length(cl_ref))) {
   if (!is.matrix(mu)) {
     stop("Unexpected structure for `mu`. Do the return values of ",
          "`proj_predfun` and `ref_predfun` have the correct structure?")
@@ -62,7 +62,7 @@
   )
   if (family$for_latent && family$lat2resp_possible) {
     mu_resp <- family$latent_ilink(t(mu), cl_ref = cl_ref,
-                                   wdraws_ref = wsample_ref)
+                                   wdraws_ref = wdraws_ref)
     if (length(dim(mu_resp)) < 2) {
       stop("Unexpected structure for `mu_resp`. Does the return value of ",
            "`latent_ilink` have the correct structure?")

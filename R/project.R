@@ -68,7 +68,7 @@
 #'     \item{`cl_ref`}{A numeric vector of length equal to the number of
 #'     posterior draws in the reference model, containing the cluster indices of
 #'     these draws.}
-#'     \item{`wsample_ref`}{A numeric vector of length equal to the number of
+#'     \item{`wdraws_ref`}{A numeric vector of length equal to the number of
 #'     posterior draws in the reference model, giving the weights of these
 #'     draws. These weights should be treated as not being normalized (i.e.,
 #'     they don't necessarily sum to `1`).}
