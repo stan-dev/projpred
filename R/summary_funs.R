@@ -105,11 +105,16 @@
   stat_tab <- data.frame()
   summ_ref <- varsel$summaries$ref
   summ_sub <- varsel$summaries$sub
-  # `lat2resp = TRUE` only makes sense if element `"resp"` is available:
-  lat2resp <- lat2resp && !is.null(summ_ref$resp)
-  summ_sub_resp <- lapply(summ_sub, "[[", "resp")
-  lat2resp <- lat2resp && !any(sapply(summ_sub_resp, is.null))
   if (lat2resp) {
+    summ_sub_resp <- lapply(summ_sub, "[[", "resp")
+    # `lat2resp = TRUE` only makes sense if element `"resp"` is available:
+    if (is.null(summ_ref$resp) || any(sapply(summ_sub_resp, is.null))) {
+      stop("Cannot calculate the performance statistics on response scale if ",
+           "`latent_ilink` or `latent_ll_fun_resp` are missing. Use ",
+           "`lat2resp = FALSE` or provide the missing functions when creating ",
+           "the reference model (see the documentation of extend_family() ",
+           "which is called by init_refmodel()).")
+    }
     summ_ref <- summ_ref$resp
     summ_sub <- summ_sub_resp
   }
