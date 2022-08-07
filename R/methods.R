@@ -343,7 +343,7 @@ proj_predict_aux <- function(proj, newdata, offset, weights,
     }
     pppd_out <- proj$refmodel$family$latent_ppd_fun_resp(
       mu_resp_resamp, wobs = weights, cl_ref = proj$cl_ref,
-      wdraws_ref = proj$wdraws_ref
+      wdraws_ref = proj$wdraws_ref, idxs_prjdraws = draw_inds
     )
   } else {
     if (proj$refmodel$family$for_latent &&
