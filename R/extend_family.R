@@ -35,6 +35,13 @@
 #'   will have limited functionality (a message thrown by [extend_family()] will
 #'   state what exactly won't be available). See also section "Latent
 #'   projection" below.
+#' @param latent_ppd_fun_resp Only relevant for the latent projection, in which
+#'   case this needs to be the function (supplied as a function, not a character
+#'   string, for example) sampling response values given latent predictors that
+#'   have been transformed to response scale using `latent_ilink`. Can also be
+#'   `NULL`, but then downstream functions will have limited functionality (a
+#'   message thrown by [extend_family()] will state what exactly won't be
+#'   available). See also section "Latent projection" below.
 #' @param augdat_y_unqs Only relevant for augmented-data projection, in which
 #'   case this needs to be the character vector of unique response values (which
 #'   will be assigned to `family$cats` internally) or may be left at `NULL` if
@@ -121,6 +128,7 @@ extend_family <- function(family,
                           latent_y_unqs = NULL,
                           latent_ilink = NULL,
                           latent_ll_fun_resp = NULL,
+                          latent_ppd_fun_resp = NULL,
                           augdat_y_unqs = NULL,
                           augdat_link = NULL,
                           augdat_ilink = NULL,
@@ -150,25 +158,32 @@ extend_family <- function(family,
     if (latent) {
       family$cats <- latent_y_unqs
       if (is.null(latent_ilink)) {
-        message("`latent_ilink` is `NULL`, so predict.refmodel(), ",
-                "summary.vsel(), print.vsel(), plot.vsel(), ",
-                "suggest_size.vsel(), proj_linpred(), and proj_predict() ",
-                "won't work on response scale (only on latent scale). ",
-                "Furthermore, cv_varsel() with `cv_method = \"LOO\"` ",
-                "cannot be used.")
+        message("`latent_ilink` is `NULL`, so cv_varsel() with ",
+                "`cv_method = \"LOO\"` won't be usable. Furthermore, ",
+                "predict.refmodel(), summary.vsel(), print.vsel(), ",
+                "plot.vsel(), suggest_size.vsel(), and proj_linpred() won't ",
+                "work on response scale (only on latent scale). Moreover, ",
+                "proj_predict() won't be usable.")
       }
       if (is.null(latent_ll_fun_resp)) {
-        message("`latent_ll_fun_resp` is `NULL`, so some features of ",
-                "predict.refmodel(), summary.vsel(), print.vsel(), ",
-                "plot.vsel(), suggest_size.vsel(), proj_linpred(), and ",
-                "proj_predict() won't work on response scale (only on latent ",
-                "scale). Furthermore, cv_varsel() with `cv_method = \"LOO\"` ",
-                "cannot be used.")
+        message("`latent_ll_fun_resp` is `NULL`, so cv_varsel() with ",
+                "`cv_method = \"LOO\"` won't be usable. Furthermore, some ",
+                "features of predict.refmodel(), summary.vsel(), ",
+                "print.vsel(), plot.vsel(), suggest_size.vsel(), and ",
+                "proj_linpred() won't work on response scale (only on latent ",
+                "scale).")
+      }
+      if (is.null(latent_ppd_fun_resp)) {
+        message("`latent_ppd_fun_resp` is `NULL`, so proj_predict() won't be ",
+                "usable.")
       }
       family$lat2resp_possible <- !is.null(latent_ilink) &&
         !is.null(latent_ll_fun_resp)
+      family$ppdResp_possible <- !is.null(latent_ilink) &&
+        !is.null(latent_ppd_fun_resp)
       family$latent_ilink <- latent_ilink
       family$latent_ll_fun_resp <- latent_ll_fun_resp
+      family$latent_ppd_fun_resp <- latent_ppd_fun_resp
     }
     family$for_latent <- latent
     family$for_augdat <- FALSE

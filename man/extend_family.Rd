@@ -10,6 +10,7 @@ extend_family(
   latent_y_unqs = NULL,
   latent_ilink = NULL,
   latent_ll_fun_resp = NULL,
+  latent_ppd_fun_resp = NULL,
   augdat_y_unqs = NULL,
   augdat_link = NULL,
   augdat_ilink = NULL,
@@ -45,6 +46,14 @@ log-likelihood values. Can also be \code{NULL}, but then downstream functions
 will have limited functionality (a message thrown by \code{\link[=extend_family]{extend_family()}} will
 state what exactly won't be available). See also section "Latent
 projection" below.}
+
+\item{latent_ppd_fun_resp}{Only relevant for the latent projection, in which
+case this needs to be the function (supplied as a function, not a character
+string, for example) sampling response values given latent predictors that
+have been transformed to response scale using \code{latent_ilink}. Can also be
+\code{NULL}, but then downstream functions will have limited functionality (a
+message thrown by \code{\link[=extend_family]{extend_family()}} will state what exactly won't be
+available). See also section "Latent projection" below.}
 
 \item{augdat_y_unqs}{Only relevant for augmented-data projection, in which
 case this needs to be the character vector of unique response values (which
