@@ -324,8 +324,8 @@ proj_predict_aux <- function(proj, newdata, offset, weights,
   if (proj$refmodel$family$for_latent &&
       !proj$refmodel$family$ppdResp_possible &&
       !is.null(cats_aug)) {
-    # In this case, the PPD will be on latent scale, so the response
-    # categories don't come into play:
+    # In this case, the PPPD will be on latent scale, so the response-scale
+    # categories should not be appended as an attribute to the output:
     cats_aug <- NULL
   }
   if (proj$refmodel$family$for_latent &&
