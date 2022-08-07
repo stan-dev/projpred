@@ -331,25 +331,20 @@ proj_predict_aux <- function(proj, newdata, offset, weights,
   if (proj$refmodel$family$for_latent &&
       proj$refmodel$family$ppdResp_possible) {
     mu_resp <- proj$refmodel$family$latent_ilink(t(mu), cl_ref = proj$cl)
+    if (length(dim(mu_resp)) == 3) {
+      mu_resp_resamp <- mu_resp[draw_inds, , , drop = FALSE]
+    } else {
+      mu_resp_resamp <- mu_resp[draw_inds, , drop = FALSE]
+    }
+    pppd_out <- proj$refmodel$family$latent_ppd_fun_resp(
+      mu_resp_resamp, wobs = weights, cl_ref = proj$cl
+    )
+  } else {
+    pppd_out <- do.call(rbind, lapply(draw_inds, function(i) {
+      proj$refmodel$family$ppd(mu[, i], proj$dis[i], weights)
+    }))
   }
-  return(structure(
-    do.call(rbind, lapply(draw_inds, function(i) {
-      if (proj$refmodel$family$for_latent &&
-          proj$refmodel$family$ppdResp_possible) {
-        if (length(dim(mu_resp)) == 3) {
-          mu_resp_i <- mu_resp[i, , , drop = FALSE]
-        } else {
-          mu_resp_i <- mu_resp[i, , drop = FALSE]
-        }
-        return(proj$refmodel$family$latent_ppd_fun_resp(
-          mu_resp_i, wobs = weights, cl_ref = proj$cl
-        ))
-      } else {
-        return(proj$refmodel$family$ppd(mu[, i], proj$dis[i], weights))
-      }
-    })),
-    cats = cats_aug
-  ))
+  return(structure(pppd_out, cats = cats_aug))
 }
 
 #' Plot summary statistics of a variable selection
