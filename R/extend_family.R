@@ -174,9 +174,9 @@ extend_family <- function(family,
         message("`latent_ilink` is `NULL`, so cv_varsel() with ",
                 "`cv_method = \"LOO\"` won't be usable. Furthermore, ",
                 "predict.refmodel(), summary.vsel(), print.vsel(), ",
-                "plot.vsel(), suggest_size.vsel(), and proj_linpred() won't ",
-                "work on response scale (only on latent scale). Moreover, ",
-                "proj_predict() won't be usable.")
+                "plot.vsel(), suggest_size.vsel(), proj_linpred(), and ",
+                "proj_predict() won't work on response scale (only on latent ",
+                "scale).")
       }
       if (is.null(latent_ll_fun_resp)) {
         message("`latent_ll_fun_resp` is `NULL`, so cv_varsel() with ",
@@ -187,8 +187,8 @@ extend_family <- function(family,
                 "scale).")
       }
       if (is.null(latent_ppd_fun_resp)) {
-        message("`latent_ppd_fun_resp` is `NULL`, so proj_predict() won't be ",
-                "usable.")
+        message("`latent_ppd_fun_resp` is `NULL`, so proj_predict() won't ",
+                "work on response scale (only on latent scale).")
       }
       family$lat2resp_possible <- !is.null(latent_ilink) &&
         !is.null(latent_ll_fun_resp)
