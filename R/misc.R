@@ -214,7 +214,7 @@ bootstrap <- function(x, fun = mean, B = 2000,
         y <- as.vector(y, mode = "integer") - 1L # zero-one vector
       }
     } else {
-      if (is.factor(y) && !fam$for_augdat) {
+      if (is.factor(y) && !fam$for_augdat && !fam$for_latent) {
         stop("y cannot be a factor for models other than the binomial model.")
       }
     }

@@ -232,8 +232,7 @@ proj_linpred_aux <- function(proj, newdata, offset, weights, transform = FALSE,
                                           offset = offset,
                                           transform = transform)
   if (proj$refmodel$family$for_latent && transform) {
-    stop("Under construction.") # TODO: Finish this (handle the latent_ilink() output which is either an S x N matrix or an S x N x C array).
-    if (!proj$refmodel$family$lat2resp_possible) {
+    if (is.null(proj$refmodel$family$latent_ilink)) {
       stop("Cannot transform the latent predictors to response space if ",
            "`latent_ilink` is missing.")
     }
@@ -252,54 +251,100 @@ proj_linpred_aux <- function(proj, newdata, offset, weights, transform = FALSE,
   ynew <- w_o$y
   lpd_out <- compute_lpd(ynew = ynew, pred_sub = pred_sub, proj = proj,
                          weights = weights, transformed = transform)
+  if (proj$refmodel$family$for_latent && transform) {
+    if (length(dim(pred_sub)) == 3 && integrated) {
+      pred_sub <- arr2augmat(pred_sub, margin_draws = 1)
+    }
+  }
   if (integrated) {
     ## average over the projected draws
-    pred_sub <- structure(pred_sub %*% proj$weights,
-                          nobs_orig = attr(pred_sub, "nobs_orig"),
-                          class = oldClass(pred_sub))
+    if (proj$refmodel$family$for_latent && transform &&
+        !inherits(pred_sub, "augmat")) {
+      pred_sub <- proj$weights %*% pred_sub
+    } else {
+      pred_sub <- structure(pred_sub %*% proj$weights,
+                            nobs_orig = attr(pred_sub, "nobs_orig"),
+                            class = oldClass(pred_sub))
+    }
     if (!is.null(lpd_out)) {
+      if (!proj$refmodel$family$for_latent) {
+        marg_obs <- 1
+      } else {
+        marg_obs <- 2
+      }
       lpd_out <- as.matrix(
-        apply(lpd_out, 1, log_weighted_mean_exp, proj$weights)
+        apply(lpd_out, marg_obs, log_weighted_mean_exp, proj$weights)
       )
     }
   }
   if (inherits(pred_sub, "augmat")) {
     pred_sub <- augmat2arr(pred_sub, margin_draws = 1)
-  } else {
+  } else if (!(proj$refmodel$family$for_latent && transform)) {
     pred_sub <- t(pred_sub)
   }
-  return(nlist(pred = pred_sub,
-               lpd = if (is.null(lpd_out)) lpd_out else t(lpd_out)))
+  if (!is.null(lpd_out) &&
+      (!proj$refmodel$family$for_latent ||
+       (proj$refmodel$family$for_latent && integrated))) {
+    lpd_out <- t(lpd_out)
+  }
+  return(nlist(pred = pred_sub, lpd = lpd_out))
 }
 
 compute_lpd <- function(ynew, pred_sub, proj, weights, transformed) {
   if (!is.null(ynew)) {
     ## compute also the log-density
+    if (proj$refmodel$family$for_latent &&
+        !proj$refmodel$family$lat2resp_possible) {
+      stop("Cannot calculate the log predictive density values if ",
+           "`latent_ilink` or `latent_llOrig` are missing.")
+    }
     target <- .get_standard_y(ynew, weights, proj$refmodel$family)
     ynew <- target$y
     weights <- target$weights
-    if (proj$refmodel$family$for_augdat) {
+    if (proj$refmodel$family$for_augdat ||
+        (proj$refmodel$family$for_latent &&
+         !is.null(proj$refmodel$family$cats))) {
       ynew <- as.factor(ynew)
       if (!all(levels(ynew) %in% proj$refmodel$family$cats)) {
+        if (proj$refmodel$family$for_augdat) {
+          y_unqs_str <- "augdat_y_unqs"
+        } else {
+          y_unqs_str <- "latent_y_unqs"
+        }
         stop("The levels of the response variable (after coercing it to a ",
              "`factor`) have to be a subset of `family$cats`. Either modify ",
              "`newdata` or the function supplied to `extract_model_data` in ",
              "init_refmodel() accordingly or see the documentation for ",
-             "extend_family()'s argument `augdat_y_unqs` to solve this.")
+             "extend_family()'s argument `", y_unqs_str, "` to solve this.")
       }
       # Re-assign the original levels because some levels might be missing:
       ynew <- factor(ynew, levels = proj$refmodel$family$cats)
+    } else if (proj$refmodel$family$for_latent &&
+               is.null(proj$refmodel$family$cats) &&
+               is.factor(ynew)) {
+      stop("If the original (i.e., non-latent) response is a factor, ",
+           "`family$cats` must not be `NULL`. See the documentation for ",
+           "extend_family()'s argument `latent_y_unqs` to solve this.")
     }
     if (!transformed) {
       if (proj$refmodel$family$for_latent) {
-        stop("Under construction.") # TODO: Finish this (use latent_ilink()).
+        pred_sub <- proj$refmodel$family$latent_ilink(
+          t(pred_sub), cl_ref = proj$cl_ref, wdraws_ref = proj$wdraws_ref
+        )
+        if (length(dim(pred_sub)) < 2) {
+          stop("Unexpected structure for `pred_sub`. Does the return value of ",
+               "`latent_ilink` have the correct structure?")
+        }
+      } else {
+        pred_sub <- proj$refmodel$family$linkinv(pred_sub)
       }
-      pred_sub <- proj$refmodel$family$linkinv(pred_sub)
     }
     if (proj$refmodel$family$for_latent) {
-      stop("Under construction.") # TODO: Finish this (use latent_llOrig(), but also the new response values from the original response scale).
+      return(proj$refmodel$family$latent_llOrig(pred_sub, yOrig = ynew,
+                                                wobs = weights))
+    } else {
+      return(proj$refmodel$family$ll_fun(pred_sub, proj$dis, ynew, weights))
     }
-    return(proj$refmodel$family$ll_fun(pred_sub, proj$dis, ynew, weights))
   } else {
     return(NULL)
   }
