@@ -361,7 +361,7 @@ proj_predict_aux <- function(proj, newdata, offset, weights,
     } else {
       mu_resp_resamp <- mu_resp[draw_inds, , drop = FALSE]
     }
-    pppd_out <- proj$refmodel$family$latent_ppd_fun_resp(
+    pppd_out <- proj$refmodel$family$latent_ppdOrig(
       mu_resp_resamp, wobs = weights, cl_ref = proj$cl_ref,
       wdraws_ref = proj$wdraws_ref, idxs_prjdraws = draw_inds
     )
@@ -369,7 +369,7 @@ proj_predict_aux <- function(proj, newdata, offset, weights,
     if (proj$refmodel$family$for_latent &&
         !proj$refmodel$family$ppdOrig_possible) {
       warning("The returned predictions are on latent scale because ",
-              "`latent_ilink` or `latent_ppd_fun_resp` are missing.")
+              "`latent_ilink` or `latent_ppdOrig` are missing.")
     }
     pppd_out <- do.call(rbind, lapply(draw_inds, function(i) {
       proj$refmodel$family$ppd(mu[, i], proj$dis[i], weights)

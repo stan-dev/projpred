@@ -35,8 +35,8 @@
 #'   will have limited functionality (a message thrown by [extend_family()] will
 #'   state what exactly won't be available). See also section "Latent
 #'   projection" below.
-#' @param latent_ppd_fun_resp Only relevant for the latent projection, in which
-#'   case this needs to be the function (supplied as a function, not a character
+#' @param latent_ppdOrig Only relevant for the latent projection, in which case
+#'   this needs to be the function (supplied as a function, not a character
 #'   string, for example) sampling response values given latent predictors that
 #'   have been transformed to response scale using `latent_ilink`. Can also be
 #'   `NULL`, but then downstream functions will have limited functionality (a
@@ -144,7 +144,7 @@ extend_family <- function(family,
                           latent_y_unqs = NULL,
                           latent_ilink = NULL,
                           latent_llOrig = NULL,
-                          latent_ppd_fun_resp = NULL,
+                          latent_ppdOrig = NULL,
                           augdat_y_unqs = NULL,
                           augdat_link = NULL,
                           augdat_ilink = NULL,
@@ -191,17 +191,17 @@ extend_family <- function(family,
                 "proj_linpred() won't work on response scale (only on latent ",
                 "scale).")
       }
-      if (is.null(latent_ppd_fun_resp)) {
-        message("`latent_ppd_fun_resp` is `NULL`, so proj_predict() won't ",
-                "work on response scale (only on latent scale).")
+      if (is.null(latent_ppdOrig)) {
+        message("`latent_ppdOrig` is `NULL`, so proj_predict() won't work on ",
+                "response scale (only on latent scale).")
       }
       family$lat2resp_possible <- !is.null(latent_ilink) &&
         !is.null(latent_llOrig)
       family$ppdOrig_possible <- !is.null(latent_ilink) &&
-        !is.null(latent_ppd_fun_resp)
+        !is.null(latent_ppdOrig)
       family$latent_ilink <- latent_ilink
       family$latent_llOrig <- latent_llOrig
-      family$latent_ppd_fun_resp <- latent_ppd_fun_resp
+      family$latent_ppdOrig <- latent_ppdOrig
     }
     family$for_latent <- latent
     family$for_augdat <- FALSE
