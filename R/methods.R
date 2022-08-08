@@ -435,7 +435,7 @@ plot.vsel <- function(
     ...
 ) {
   object <- x
-  .validate_vsel_object_stats(object, stats)
+  .validate_vsel_object_stats(object, stats, lat2resp = lat2resp)
   baseline <- .validate_baseline(object$refmodel, baseline, deltas)
 
   ## compute all the statistics and fetch only those that were asked
@@ -652,7 +652,7 @@ summary.vsel <- function(
     lat2resp = FALSE,
     ...
 ) {
-  .validate_vsel_object_stats(object, stats)
+  .validate_vsel_object_stats(object, stats, lat2resp = lat2resp)
   baseline <- .validate_baseline(object$refmodel, baseline, deltas)
 
   # Initialize output:

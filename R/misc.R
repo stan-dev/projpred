@@ -125,18 +125,27 @@ bootstrap <- function(x, fun = mean, B = 2000,
   }
 }
 
-.validate_vsel_object_stats <- function(object, stats) {
+.validate_vsel_object_stats <- function(object, stats, lat2resp = FALSE) {
   if (!inherits(object, c("vsel"))) {
     stop("The object is not a variable selection object. Run variable ",
          "selection first")
+  }
+  if (!object$refmodel$family$for_latent && lat2resp) {
+    stop("`lat2resp = TRUE` can only be used in case of the latent projection.")
   }
 
   trad_stats <- c("elpd", "mlpd", "mse", "rmse", "acc", "pctcorr", "auc")
   trad_stats_binom_only <- c("acc", "pctcorr", "auc")
   augdat_stats <- c("elpd", "mlpd", "acc", "pctcorr")
+  lat2resp_stats_fac <- augdat_stats
 
   if (is.null(stats)) {
     stop("Statistic specified as NULL.")
+  }
+  if (lat2resp) {
+    fam_ch <- object$refmodel$family$familyOrig
+  } else {
+    fam_ch <- object$refmodel$family$family
   }
   for (stat in stats) {
     if (object$refmodel$family$for_augdat) {
@@ -144,15 +153,25 @@ bootstrap <- function(x, fun = mean, B = 2000,
         stop("Currently, the augmented-data projection may not be combined ",
              "with performance statistic `\"", stat, "\"`.")
       }
+    } else if (lat2resp && !is.null(object$refmodel$family$cats)) {
+      if (!stat %in% lat2resp_stats_fac) {
+        stop("Currently, the latent projection with `lat2resp = TRUE` and a ",
+             "non-`NULL` element `family$cats` may not be combined ",
+             "with performance statistic `\"", stat, "\"`.")
+      }
     } else {
       if (!stat %in% trad_stats) {
         stop(sprintf("Statistic '%s' not recognized.", stat))
       }
-      if (stat %in% trad_stats_binom_only &&
-          object$refmodel$family$family != "binomial") {
-        stop("In case of the traditional (non-augmented-data) projection, the",
-             "performance statistic `\"", stat, "\"` is available only for ",
-             "the binomial family.")
+      if (stat %in% trad_stats_binom_only && fam_ch != "binomial") {
+        stop("In case of (i) the traditional (non-augmented-data) projection ",
+             "or (ii) the latent projection with `lat2resp = TRUE` and a ",
+             "`NULL` element `family$cats`, the performance ",
+             "statistic `\"", stat, "\"` is available only for ",
+             "the binomial family. This also explains why performance ",
+             "statistic `\"", stat, "\"` is not available in case of the ",
+             "latent projection with `lat2resp = FALSE` (because a latent ",
+             "Gaussian distribution is used there).")
       }
     }
   }
