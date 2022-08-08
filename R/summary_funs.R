@@ -2,10 +2,10 @@
                                offset = refmodel$offset[test_points],
                                wobs = refmodel$wobs[test_points],
                                y = refmodel$y[test_points],
-                               yResp = refmodel$yResp[test_points]) {
+                               yOrig = refmodel$yOrig[test_points]) {
   lapply(submodels, function(initsubmodl) {
     .weighted_summary_means(
-      y_test = list(y = y, yResp = yResp, weights = wobs),
+      y_test = list(y = y, yOrig = yOrig, weights = wobs),
       family = refmodel$family,
       wsample = initsubmodl$weights,
       mu = refmodel$family$mu_fun(initsubmodl$submodl, obs = test_points,
@@ -22,7 +22,7 @@
 #
 # @param y_test A `list`, at least with elements `y` (response values) and
 #   `weights` (observation weights). In case of the latent projection, this
-#   `list` also needs to contain `yResp` (response values on the original
+#   `list` also needs to contain `yOrig` (response values on the original
 #   response scale, i.e., the non-latent response values).
 # @param family A `family` object.
 # @param wsample A vector of weights for the parameter draws.
@@ -70,7 +70,7 @@
       stop("Unexpected structure for `mu_resp`. Does the return value of ",
            "`latent_ilink` have the correct structure?")
     }
-    loglik_resp <- family$latent_ll_fun_resp(mu_resp, yResp = y_test$yResp,
+    loglik_resp <- family$latent_ll_fun_resp(mu_resp, yOrig = y_test$yOrig,
                                              wobs = y_test$weights)
     if (!is.matrix(loglik_resp)) {
       stop("Unexpected structure for `loglik_resp`. Does the return value of ",
@@ -137,14 +137,14 @@
     # Since `mu` is an unordered factor, `y` needs to be unordered, too (or both
     # would need to be ordered; however, unordered is the simpler type):
     varsel$d_test$y <- factor(varsel$d_test$y, ordered = FALSE)
-    varsel$d_test$yResp <- factor(varsel$d_test$yResp, ordered = FALSE)
+    varsel$d_test$yOrig <- factor(varsel$d_test$yOrig, ordered = FALSE)
   }
   if (lat2resp) {
-    varsel$d_test$y <- varsel$d_test$yResp
+    varsel$d_test$y <- varsel$d_test$yOrig
   }
-  # Just to avoid that `$y` gets expanded to `$yResp` if element `"y"` does not
+  # Just to avoid that `$y` gets expanded to `$yOrig` if element `"y"` does not
   # exist (for whatever reason; actually, it should always exist):
-  varsel$d_test$yResp <- NULL
+  varsel$d_test$yOrig <- NULL
 
   if (varsel$refmodel$family$family == "binomial" &&
       !all(varsel$d_test$weights == 1)) {

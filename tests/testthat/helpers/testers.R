@@ -308,7 +308,7 @@ refmodel_tester <- function(
     "fit", "formula", "div_minimizer", "family", "mu", "eta", "dis", "y",
     "loglik", "intercept", "proj_predfun", "fetch_data", "wobs", "wsample",
     "offset", "cvfun", "cvfits", "extract_model_data", "ref_predfun",
-    "cvrefbuilder", "yResp"
+    "cvrefbuilder", "yOrig"
   )
   refmod_class_expected <- "refmodel"
   if (is_datafit) {
@@ -591,9 +591,9 @@ refmodel_tester <- function(
   # cvrefbuilder
   expect_type(refmod$cvrefbuilder, "closure")
 
-  # yResp
+  # yOrig
   ### TODO:
-  expect_identical(refmod$yResp, y_expected, info = info_str)
+  expect_identical(refmod$yOrig, y_expected, info = info_str)
   ###
 
   return(invisible(TRUE))
@@ -1561,7 +1561,7 @@ vsel_tester <- function(
     expect_identical(vs$d_test$weights, vs$refmodel$wobs, info = info_str)
     expect_identical(vs$d_test$y, vs$refmodel$y, info = info_str)
     ### TODO:
-    expect_identical(vs$d_test$yResp, vs$refmodel$y, info = info_str)
+    expect_identical(vs$d_test$yOrig, vs$refmodel$y, info = info_str)
     ###
   } else {
     expect_identical(vs$d_test, dtest_expected, info = info_str)

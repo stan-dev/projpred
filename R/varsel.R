@@ -94,7 +94,7 @@
 #' * `weights`: a numeric vector containing the observation weights for the test
 #' set (if there are no observation weights, use a vector of ones).
 #' * `y`: a numeric vector containing the response values for the test set.
-#' * `yResp`: Only needs to be provided in case of the latent projection where
+#' * `yOrig`: Only needs to be provided in case of the latent projection where
 #' this needs to be a vector or a `factor` containing the *original* (i.e.,
 #' non-latent) response values for the test set.
 #'
@@ -219,11 +219,11 @@ varsel.refmodel <- function(object, d_test = NULL, method = NULL,
   if (is.null(d_test)) {
     d_test <- list(type = "train", data = NULL, offset = refmodel$offset,
                    weights = refmodel$wobs, y = refmodel$y,
-                   yResp = refmodel$yResp)
+                   yOrig = refmodel$yOrig)
   } else {
     d_test$type <- "test"
     if (!object$family$for_latent) {
-      d_test$yResp <- d_test$y
+      d_test$yOrig <- d_test$y
     }
     d_test <- d_test[nms_d_test()]
     if (object$family$for_augdat) {
@@ -238,21 +238,21 @@ varsel.refmodel <- function(object, d_test = NULL, method = NULL,
       d_test$y <- factor(d_test$y, levels = object$family$cats)
     }
     if (object$family$for_latent) {
-      if (is.factor(d_test$yResp) && is.null(object$family$cats)) {
+      if (is.factor(d_test$yOrig) && is.null(object$family$cats)) {
         stop("If the original (i.e., non-latent) response is a factor, ",
              "`family$cats` must not be `NULL`. See the documentation for ",
              "extend_family()'s argument `latent_y_unqs` to solve this.")
       }
       if (!is.null(object$family$cats)) {
-        d_test$yResp <- as.factor(d_test$yResp)
-        if (!all(levels(d_test$yResp) %in% object$family$cats)) {
+        d_test$yOrig <- as.factor(d_test$yOrig)
+        if (!all(levels(d_test$yOrig) %in% object$family$cats)) {
           stop("The levels of the response variable (after coercing it to a ",
                "`factor`) have to be a subset of `family$cats`. Either modify ",
-               "`d_test$yResp` accordingly or see the documentation for ",
+               "`d_test$yOrig` accordingly or see the documentation for ",
                "extend_family()'s argument `latent_y_unqs` to solve this.")
         }
         # Re-assign the original levels because some levels might be missing:
-        d_test$yResp <- factor(d_test$yResp, levels = object$family$cats)
+        d_test$yOrig <- factor(d_test$yOrig, levels = object$family$cats)
       }
     }
   }
@@ -283,7 +283,7 @@ varsel.refmodel <- function(object, d_test = NULL, method = NULL,
                             offset = d_test$offset,
                             wobs = d_test$weights,
                             y = d_test$y,
-                            yResp = d_test$yResp)
+                            yOrig = d_test$yOrig)
 
   ## predictive statistics of the reference model on test data. if no test data
   ## are provided,

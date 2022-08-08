@@ -5,7 +5,7 @@
 }
 
 nms_d_test <- function() {
-  c("type", "data", "offset", "weights", "y", "yResp")
+  c("type", "data", "offset", "weights", "y", "yOrig")
 }
 
 weighted.sd <- function(x, w, na.rm = FALSE) {

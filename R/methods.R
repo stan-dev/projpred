@@ -342,14 +342,14 @@ proj_predict_aux <- function(proj, newdata, offset, weights,
   }
   cats_aug <- proj$refmodel$family$cats
   if (proj$refmodel$family$for_latent &&
-      !proj$refmodel$family$ppdResp_possible &&
+      !proj$refmodel$family$ppdOrig_possible &&
       !is.null(cats_aug)) {
     # In this case, the PPPD will be on latent scale, so the response-scale
     # categories should not be appended as an attribute to the output:
     cats_aug <- NULL
   }
   if (proj$refmodel$family$for_latent &&
-      proj$refmodel$family$ppdResp_possible) {
+      proj$refmodel$family$ppdOrig_possible) {
     mu_resp <- proj$refmodel$family$latent_ilink(t(mu), cl_ref = proj$cl_ref,
                                                  wdraws_ref = proj$wdraws_ref)
     if (length(dim(mu_resp)) < 2) {
@@ -367,7 +367,7 @@ proj_predict_aux <- function(proj, newdata, offset, weights,
     )
   } else {
     if (proj$refmodel$family$for_latent &&
-        !proj$refmodel$family$ppdResp_possible) {
+        !proj$refmodel$family$ppdOrig_possible) {
       warning("The returned predictions are on latent scale because ",
               "`latent_ilink` or `latent_ppd_fun_resp` are missing.")
     }

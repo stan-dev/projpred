@@ -156,9 +156,9 @@ extend_family <- function(family,
     return(family)
   }
   if (latent) {
-    familyResp_tmp <- family$family
+    familyOrig_tmp <- family$family
     family <- gaussian()
-    family$familyResp <- familyResp_tmp
+    family$familyOrig <- familyOrig_tmp
   }
   aug_data <- !is.null(augdat_link) && !is.null(augdat_ilink) && !latent
   if (!aug_data) {
@@ -197,7 +197,7 @@ extend_family <- function(family,
       }
       family$lat2resp_possible <- !is.null(latent_ilink) &&
         !is.null(latent_ll_fun_resp)
-      family$ppdResp_possible <- !is.null(latent_ilink) &&
+      family$ppdOrig_possible <- !is.null(latent_ilink) &&
         !is.null(latent_ppd_fun_resp)
       family$latent_ilink <- latent_ilink
       family$latent_ll_fun_resp <- latent_ll_fun_resp

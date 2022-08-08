@@ -941,34 +941,34 @@ init_refmodel <- function(object, data, formula, family, ref_predfun = NULL,
   offset <- model_data$offset
   if (family$for_latent) {
     y <- rowMeans(ref_predfun(object))
-    yResp <- model_data$y
-    if (is.factor(yResp) && is.null(family$cats)) {
+    yOrig <- model_data$y
+    if (is.factor(yOrig) && is.null(family$cats)) {
       stop("If the original (i.e., non-latent) response is a factor, ",
            "`family$cats` must not be `NULL`. See the documentation for ",
            "extend_family()'s argument `latent_y_unqs` to solve this.")
-      # Alternatively, we could think about `family$cats <- levels(yResp)`. But
+      # Alternatively, we could think about `family$cats <- levels(yOrig)`. But
       # currently, I think the error message is conceptually more desirable
       # because it avoids the retrospective modification of extend_family()
       # output.
     }
     if (!is.null(family$cats)) {
-      yResp <- as.factor(yResp)
-      stopifnot(nlevels(yResp) >= 2)
-      if (!identical(levels(yResp), family$cats)) {
+      yOrig <- as.factor(yOrig)
+      stopifnot(nlevels(yOrig) >= 2)
+      if (!identical(levels(yOrig), family$cats)) {
         stop("The levels of the response variable (after coercing it to a ",
              "`factor`) have to be identical to `family$cats`. See the ",
              "documentation for extend_family()'s argument `latent_y_unqs` to ",
              "solve this.")
       }
-    } else if (family$familyResp == "binomial") {
-      if (!all(.is.wholenumber(yResp))) {
+    } else if (family$familyOrig == "binomial") {
+      if (!all(.is.wholenumber(yOrig))) {
         stop(
           "In projpred, the response must contain numbers of successes (not ",
           "proportions of successes), in contrast to glm() where this is ",
           "possible for a 1-column response if the multiplication with the ",
           "weights gives whole numbers."
         )
-      } else if (all(yResp %in% c(0, 1)) &&
+      } else if (all(yOrig %in% c(0, 1)) &&
                  length(response_name) == 1 &&
                  !all(weights == 1)) {
         warning(
@@ -979,7 +979,7 @@ init_refmodel <- function(object, data, formula, family, ref_predfun = NULL,
     }
   } else {
     y <- model_data$y
-    yResp <- NULL
+    yOrig <- NULL
   }
 
   # Add (transformed) response under the (possibly) new name:
@@ -1095,7 +1095,7 @@ init_refmodel <- function(object, data, formula, family, ref_predfun = NULL,
     fit = object, formula, div_minimizer, family, mu, eta, dis, y, loglik,
     intercept, proj_predfun, fetch_data = fetch_data_wrapper, wobs = weights,
     wsample, offset, cvfun, cvfits, extract_model_data, ref_predfun,
-    cvrefbuilder, yResp = yResp %||% y
+    cvrefbuilder, yOrig = yOrig %||% y
   )
   if (proper_model) {
     class(refmodel) <- "refmodel"
