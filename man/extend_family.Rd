@@ -9,7 +9,7 @@ extend_family(
   latent = FALSE,
   latent_y_unqs = NULL,
   latent_ilink = NULL,
-  latent_ll_fun_resp = NULL,
+  latent_llOrig = NULL,
   latent_ppd_fun_resp = NULL,
   augdat_y_unqs = NULL,
   augdat_link = NULL,
@@ -39,8 +39,8 @@ functions will have limited functionality (a message thrown by
 \code{\link[=extend_family]{extend_family()}} will state what exactly won't be available). See also
 section "Latent projection" below.}
 
-\item{latent_ll_fun_resp}{Only relevant for the latent projection, in which
-case this needs to be the function (supplied as a function, not a character
+\item{latent_llOrig}{Only relevant for the latent projection, in which case
+this needs to be the function (supplied as a function, not a character
 string, for example) computing response-scale (not latent-scale)
 log-likelihood values. Can also be \code{NULL}, but then downstream functions
 will have limited functionality (a message thrown by \code{\link[=extend_family]{extend_family()}} will

@@ -28,8 +28,8 @@
 #'   functions will have limited functionality (a message thrown by
 #'   [extend_family()] will state what exactly won't be available). See also
 #'   section "Latent projection" below.
-#' @param latent_ll_fun_resp Only relevant for the latent projection, in which
-#'   case this needs to be the function (supplied as a function, not a character
+#' @param latent_llOrig Only relevant for the latent projection, in which case
+#'   this needs to be the function (supplied as a function, not a character
 #'   string, for example) computing response-scale (not latent-scale)
 #'   log-likelihood values. Can also be `NULL`, but then downstream functions
 #'   will have limited functionality (a message thrown by [extend_family()] will
@@ -143,7 +143,7 @@ extend_family <- function(family,
                           latent = FALSE,
                           latent_y_unqs = NULL,
                           latent_ilink = NULL,
-                          latent_ll_fun_resp = NULL,
+                          latent_llOrig = NULL,
                           latent_ppd_fun_resp = NULL,
                           augdat_y_unqs = NULL,
                           augdat_link = NULL,
@@ -183,8 +183,8 @@ extend_family <- function(family,
                 "proj_predict() won't work on response scale (only on latent ",
                 "scale).")
       }
-      if (is.null(latent_ll_fun_resp)) {
-        message("`latent_ll_fun_resp` is `NULL`, so cv_varsel() with ",
+      if (is.null(latent_llOrig)) {
+        message("`latent_llOrig` is `NULL`, so cv_varsel() with ",
                 "`cv_method = \"LOO\"` won't be usable. Furthermore, some ",
                 "features of predict.refmodel(), summary.vsel(), ",
                 "print.vsel(), plot.vsel(), suggest_size.vsel(), and ",
@@ -196,11 +196,11 @@ extend_family <- function(family,
                 "work on response scale (only on latent scale).")
       }
       family$lat2resp_possible <- !is.null(latent_ilink) &&
-        !is.null(latent_ll_fun_resp)
+        !is.null(latent_llOrig)
       family$ppdOrig_possible <- !is.null(latent_ilink) &&
         !is.null(latent_ppd_fun_resp)
       family$latent_ilink <- latent_ilink
-      family$latent_ll_fun_resp <- latent_ll_fun_resp
+      family$latent_llOrig <- latent_llOrig
       family$latent_ppd_fun_resp <- latent_ppd_fun_resp
     }
     family$for_latent <- latent

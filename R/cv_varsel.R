@@ -342,7 +342,7 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
         stop("Unexpected structure for `mu_resp`. Does the return value of ",
              "`latent_ilink` have the correct structure?")
       }
-      loglik_forPSIS <- refmodel$family$latent_ll_fun_resp(
+      loglik_forPSIS <- refmodel$family$latent_llOrig(
         mu_resp, yOrig = refmodel$yOrig, wobs = refmodel$wobs
       )
       if (length(dim(mu_resp)) == 3) {
@@ -363,7 +363,7 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
       # should be removed one day (although it would then be hard to get
       # `loglik_forPSIS`; rstantools::log_lik() could be an option for that).
       stop("Cannot use `cv_method = \"LOO\"` if `latent_ilink` or ",
-           "`latent_ll_fun_resp` are missing.")
+           "`latent_llOrig` are missing.")
     }
   } else {
     loglik_forPSIS <- refmodel$loglik
@@ -469,13 +469,13 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
         } else {
           refdist_eval_mu_resp <- refdist_eval_mu_resp[, inds, drop = FALSE]
         }
-        log_lik_ref <- refmodel$family$latent_ll_fun_resp(
+        log_lik_ref <- refmodel$family$latent_llOrig(
           refdist_eval_mu_resp, yOrig = refmodel$yOrig[inds],
           wobs = refmodel$wobs[inds]
         )
       } else {
         stop("Cannot use `validate_search = FALSE` if `latent_ilink` or ",
-             "`latent_ll_fun_resp` are missing.")
+             "`latent_llOrig` are missing.")
       }
     } else {
       inds_aug <- inds
@@ -512,7 +512,7 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
           t(mu_k), cl_ref = refdist_eval$cl,
           wdraws_ref = refdist_eval$wsample_orig
         )
-        log_lik_sub_resp <- refmodel$family$latent_ll_fun_resp(
+        log_lik_sub_resp <- refmodel$family$latent_llOrig(
           mu_k_resp, yOrig = refmodel$yOrig[inds], wobs = refmodel$wobs[inds]
         )
         loo_sub_resp[[k]][inds] <- apply(log_lik_sub_resp + lw_sub, 2,

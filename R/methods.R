@@ -297,7 +297,7 @@ compute_lpd <- function(ynew, pred_sub, proj, weights, transformed) {
       pred_sub <- proj$refmodel$family$linkinv(pred_sub)
     }
     if (proj$refmodel$family$for_latent) {
-      stop("Under construction.") # TODO: Finish this (use latent_ll_fun_resp(), but also the new response values from the original response scale).
+      stop("Under construction.") # TODO: Finish this (use latent_llOrig(), but also the new response values from the original response scale).
     }
     return(proj$refmodel$family$ll_fun(pred_sub, proj$dis, ynew, weights))
   } else {

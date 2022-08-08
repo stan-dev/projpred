@@ -70,11 +70,11 @@
       stop("Unexpected structure for `mu_resp`. Does the return value of ",
            "`latent_ilink` have the correct structure?")
     }
-    loglik_resp <- family$latent_ll_fun_resp(mu_resp, yOrig = y_test$yOrig,
-                                             wobs = y_test$weights)
+    loglik_resp <- family$latent_llOrig(mu_resp, yOrig = y_test$yOrig,
+                                        wobs = y_test$weights)
     if (!is.matrix(loglik_resp)) {
       stop("Unexpected structure for `loglik_resp`. Does the return value of ",
-           "`latent_ll_fun_resp` have the correct structure?")
+           "`latent_llOrig` have the correct structure?")
     }
     if (length(dim(mu_resp)) == 3) {
       # In this case, `mu_resp` is a 3-dimensional array (S x N x C), so coerce
@@ -117,7 +117,7 @@
     # `lat2resp = TRUE` only makes sense if element `"resp"` is available:
     if (is.null(summ_ref$resp) || any(sapply(summ_sub_resp, is.null))) {
       stop("Cannot calculate the performance statistics on response scale if ",
-           "`latent_ilink` or `latent_ll_fun_resp` are missing. Use ",
+           "`latent_ilink` or `latent_llOrig` are missing. Use ",
            "`lat2resp = FALSE` or provide the missing functions when creating ",
            "the reference model (see the documentation of extend_family() ",
            "which is called by init_refmodel()).")
@@ -242,9 +242,9 @@
 ## observation weights (specified by the user) are contained in
 ## `d_test$weights`. These are already taken into account by
 ## `<refmodel_object>$family$ll_fun()` (or
-## `<refmodel_object>$family$latent_ll_fun_resp()`) and are thus already taken
-## into account in `lppd`. However, `mu` does not take them into account, so
-## some further adjustments are necessary below.
+## `<refmodel_object>$family$latent_llOrig()`) and are thus already taken into
+## account in `lppd`. However, `mu` does not take them into account, so some
+## further adjustments are necessary below.
 get_stat <- function(mu, lppd, d_test, stat, mu.bs = NULL, lppd.bs = NULL,
                      wcv = NULL, alpha = 0.1, ...) {
   if (stat %in% c("mlpd", "elpd")) {
