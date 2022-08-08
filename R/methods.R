@@ -951,7 +951,6 @@ suggest_size.vsel <- function(
     warnings = TRUE,
     ...
 ) {
-  .validate_vsel_object_stats(object, stat)
   if (length(stat) > 1) {
     stop("Only one statistic can be specified to suggest_size")
   }
