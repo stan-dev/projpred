@@ -621,9 +621,9 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
       for (k in seq_along(summaries_sub)) {
         loo_sub[[k]][i] <- summaries_sub[[k]]$lppd
         mu_sub[[k]][i_flx] <- summaries_sub[[k]]$mu
-        if (!is.null(summaries_sub[[k]]$resp)) {
-          loo_sub_Orig[[k]][i] <- summaries_sub[[k]]$resp$lppd
-          mu_sub_Orig[[k]][i_aug] <- summaries_sub[[k]]$resp$mu
+        if (!is.null(summaries_sub[[k]]$Orig)) {
+          loo_sub_Orig[[k]][i] <- summaries_sub[[k]]$Orig$lppd
+          mu_sub_Orig[[k]][i_aug] <- summaries_sub[[k]]$Orig$mu
         }
       }
 
@@ -651,7 +651,7 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
   summ_sub <- lapply(seq_len(nterms_max), function(k) {
     summ_k <- list(lppd = loo_sub[[k]], mu = mu_sub[[k]], wcv = validset$wcv)
     if (refmodel$family$for_latent && refmodel$family$lat2resp_possible) {
-      summ_k$resp <- list(lppd = loo_sub_Orig[[k]], mu = mu_sub_Orig[[k]],
+      summ_k$Orig <- list(lppd = loo_sub_Orig[[k]], mu = mu_sub_Orig[[k]],
                           wcv = validset$wcv)
     }
     return(summ_k)
@@ -695,7 +695,7 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
       nobs_orig = attr(mu_Orig, "nobs_orig"),
       class = sub("augmat", "augvec", oldClass(mu_Orig), fixed = TRUE)
     )
-    summ_ref$resp <- list(lppd = loo_ref_Orig, mu = mu_ref_Orig)
+    summ_ref$Orig <- list(lppd = loo_ref_Orig, mu = mu_ref_Orig)
   }
   summaries <- list(sub = summ_sub, ref = summ_ref)
 
@@ -815,9 +815,9 @@ kfold_varsel <- function(refmodel, method, nterms_max, ndraws,
   sub <- lapply(sub, function(summ) {
     summ$mu <- summ$mu[order(idxs_sorted_by_fold_flx)]
     summ$lppd <- summ$lppd[order(idxs_sorted_by_fold)]
-    if (!is.null(summ$resp)) {
-      summ$resp$mu <- summ$resp$mu[order(idxs_sorted_by_fold_aug)]
-      summ$resp$lppd <- summ$resp$lppd[order(idxs_sorted_by_fold)]
+    if (!is.null(summ$Orig)) {
+      summ$Orig$mu <- summ$Orig$mu[order(idxs_sorted_by_fold_aug)]
+      summ$Orig$lppd <- summ$Orig$lppd[order(idxs_sorted_by_fold)]
     }
 
     # Add fold-specific weights (see the discussion at GitHub issue #94 for why
@@ -842,9 +842,9 @@ kfold_varsel <- function(refmodel, method, nterms_max, ndraws,
   }))
   ref$mu <- ref$mu[order(idxs_sorted_by_fold_flx)]
   ref$lppd <- ref$lppd[order(idxs_sorted_by_fold)]
-  if (!is.null(ref$resp)) {
-    ref$resp$mu <- ref$resp$mu[order(idxs_sorted_by_fold_aug)]
-    ref$resp$lppd <- ref$resp$lppd[order(idxs_sorted_by_fold)]
+  if (!is.null(ref$Orig)) {
+    ref$Orig$mu <- ref$Orig$mu[order(idxs_sorted_by_fold_aug)]
+    ref$Orig$lppd <- ref$Orig$lppd[order(idxs_sorted_by_fold)]
   }
 
   # Combine the K separate test "datasets" (rather "information objects") into a

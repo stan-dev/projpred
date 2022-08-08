@@ -294,7 +294,7 @@ varsel.refmodel <- function(object, d_test = NULL, method = NULL,
     nobs_test <- nrow(d_test$data %||% refmodel$fetch_data())
     ref <- list(mu = rep(NA, nobs_test), lppd = rep(NA, nobs_test))
     if (refmodel$family$for_latent && refmodel$family$lat2resp_possible) {
-      # In general, we could use `ref$resp <- ref` here, but the case where
+      # In general, we could use `ref$Orig <- ref` here, but the case where
       # refmodel$family$latent_ilink() returns a 3-dimensional array (S x N x C)
       # needs special care.
       if (!is.null(refmodel$family$cats)) {
@@ -304,7 +304,7 @@ varsel.refmodel <- function(object, d_test = NULL, method = NULL,
       } else {
         mu_Orig <- ref$mu
       }
-      ref$resp <- list(mu = mu_Orig, lppd = ref$lppd)
+      ref$Orig <- list(mu = mu_Orig, lppd = ref$lppd)
     }
   } else {
     if (d_test$type == "train") {

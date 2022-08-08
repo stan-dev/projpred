@@ -91,7 +91,7 @@
       # following should be more efficient:
       mu_Orig_avg <- c(wsample %*% mu_Orig)
     }
-    avg$resp <- list(
+    avg$Orig <- list(
       mu = mu_Orig_avg,
       lppd = apply(loglik_Orig, 2, log_weighted_mean_exp, wsample)
     )
@@ -115,14 +115,14 @@
   if (lat2resp) {
     summ_sub_Orig <- lapply(summ_sub, "[[", "Orig")
     # `lat2resp = TRUE` only makes sense if element `"Orig"` is available:
-    if (is.null(summ_ref$resp) || any(sapply(summ_sub_Orig, is.null))) {
+    if (is.null(summ_ref$Orig) || any(sapply(summ_sub_Orig, is.null))) {
       stop("Cannot calculate the performance statistics on response scale if ",
            "`latent_ilink` or `latent_llOrig` are missing. Use ",
            "`lat2resp = FALSE` or provide the missing functions when creating ",
            "the reference model (see the documentation of extend_family() ",
            "which is called by init_refmodel()).")
     }
-    summ_ref <- summ_ref$resp
+    summ_ref <- summ_ref$Orig
     summ_sub <- summ_sub_Orig
   }
   if ((!varsel$refmodel$family$for_latent || lat2resp) &&

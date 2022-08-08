@@ -538,7 +538,7 @@ rbind2list <- function(x) {
       identical(names(x_i), c("mu", "lppd", "Orig"))
   }))
   if (is_lateval_Orig) {
-    binded_list$resp <- rbind2list(lapply(x, "[[", "Orig"))
+    binded_list$Orig <- rbind2list(lapply(x, "[[", "Orig"))
   }
   return(binded_list)
 }
