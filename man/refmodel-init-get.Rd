@@ -287,7 +287,16 @@ offsets which are the same across all response categories are supported.
 }
 
 \section{Latent projection}{
-\strong{TODO} (if necessary)
+If a custom reference model for a latent projection is needed, see also
+\code{\link[=extend_family]{extend_family()}}.
+
+For the latent projection, \code{family$cats} (\emph{after} applying \code{\link[=extend_family]{extend_family()}};
+see \code{\link[=extend_family]{extend_family()}}'s argument \code{latent_y_unqs}) currently must not be
+\code{NULL} if the original (i.e., non-latent) response is a \code{factor}. Conversely,
+if \code{family$cats} (\emph{after} applying \code{\link[=extend_family]{extend_family()}}) is non-\code{NULL}, the
+response vector resulting from \code{extract_model_data} is internally coerced to
+a \code{factor} (using \code{\link[=as.factor]{as.factor()}}). The levels of this \code{factor} have to be
+identical to that non-\code{NULL} element \code{family$cats}.
 }
 
 \examples{

@@ -133,7 +133,9 @@ test_that(paste(
     vsel_tester(
       vs_repr,
       refmod_expected = refmods[[tstsetup_ref]],
-      dtest_expected = c(list(type = "test"), d_test_crr),
+      dtest_expected = c(list(type = "test"),
+                         d_test_crr,
+                         list(yResp = d_test_crr$y)),
       solterms_len_expected = args_vs_i$nterms_max,
       method_expected = meth_exp_crr,
       nprjdraws_search_expected = args_vs_i$nclusters,
@@ -222,7 +224,9 @@ test_that(paste(
     vsel_tester(
       vs_indep,
       refmod_expected = refmods[[tstsetup_ref]],
-      dtest_expected = c(list(type = "test"), d_test_crr),
+      dtest_expected = c(list(type = "test"),
+                         d_test_crr,
+                         list(yResp = d_test_crr$y)),
       solterms_len_expected = args_vs_i$nterms_max,
       method_expected = meth_exp_crr,
       nprjdraws_search_expected = args_vs_i$nclusters,

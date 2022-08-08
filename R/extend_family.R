@@ -156,7 +156,9 @@ extend_family <- function(family,
     return(family)
   }
   if (latent) {
+    familyResp_tmp <- family$family
     family <- gaussian()
+    family$familyResp <- familyResp_tmp
   }
   aug_data <- !is.null(augdat_link) && !is.null(augdat_ilink) && !latent
   if (!aug_data) {

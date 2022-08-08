@@ -343,7 +343,7 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
              "`latent_ilink` have the correct structure?")
       }
       loglik_forPSIS <- refmodel$family$latent_ll_fun_resp(
-        mu_resp, refmodel$y, refmodel$wobs
+        mu_resp, yResp = refmodel$yResp, wobs = refmodel$wobs
       )
       if (length(dim(mu_resp)) == 3) {
         # In this case, `mu_resp` is a 3-dimensional array (S x N x C), so
@@ -470,7 +470,8 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
           refdist_eval_mu_resp <- refdist_eval_mu_resp[, inds, drop = FALSE]
         }
         log_lik_ref <- refmodel$family$latent_ll_fun_resp(
-          refdist_eval_mu_resp, refmodel$y[inds], refmodel$wobs[inds]
+          refdist_eval_mu_resp, yResp = refmodel$yResp[inds],
+          wobs = refmodel$wobs[inds]
         )
       } else {
         stop("Cannot use `validate_search = FALSE` if `latent_ilink` or ",
@@ -512,7 +513,7 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
           wdraws_ref = refdist_eval$wsample_orig
         )
         log_lik_sub_resp <- refmodel$family$latent_ll_fun_resp(
-          mu_k_resp, refmodel$y[inds], refmodel$wobs[inds]
+          mu_k_resp, yResp = refmodel$yResp[inds], wobs = refmodel$wobs[inds]
         )
         loo_sub_resp[[k]][inds] <- apply(log_lik_sub_resp + lw_sub, 2,
                                          log_sum_exp)
@@ -699,7 +700,8 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
   summaries <- list(sub = summ_sub, ref = summ_ref)
 
   d_test <- list(type = "LOO", data = NULL, offset = refmodel$offset,
-                 weights = refmodel$wobs, y = refmodel$y)
+                 weights = refmodel$wobs, y = refmodel$y,
+                 yResp = refmodel$yResp)
 
   out_list <- nlist(solution_terms_cv = solution_terms_mat, summaries, d_test)
   if (!validate_search) {
@@ -722,6 +724,7 @@ kfold_varsel <- function(refmodel, method, nterms_max, ndraws,
   extend_list_cv <- function(fold) {
     d_test <- list(
       y = refmodel$y[fold$omitted],
+      yResp = refmodel$yResp[fold$omitted],
       weights = refmodel$wobs[fold$omitted],
       offset = refmodel$offset[fold$omitted],
       omitted = fold$omitted
@@ -849,7 +852,8 @@ kfold_varsel <- function(refmodel, method, nterms_max, ndraws,
   d_cv <- rbind2list(lapply(list_cv, function(fold) {
     list(offset = fold$d_test$offset,
          weights = fold$d_test$weights,
-         y = fold$d_test$y)
+         y = fold$d_test$y,
+         yResp = fold$d_test$yResp)
   }))
   d_cv <- as.list(
     as.data.frame(d_cv)[order(idxs_sorted_by_fold), , drop = FALSE]

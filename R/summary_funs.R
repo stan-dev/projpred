@@ -1,10 +1,11 @@
 .get_sub_summaries <- function(submodels, refmodel, test_points, newdata = NULL,
                                offset = refmodel$offset[test_points],
                                wobs = refmodel$wobs[test_points],
-                               y = refmodel$y[test_points]) {
+                               y = refmodel$y[test_points],
+                               yResp = refmodel$yResp[test_points]) {
   lapply(submodels, function(initsubmodl) {
     .weighted_summary_means(
-      y_test = list(y = y, weights = wobs),
+      y_test = list(y = y, yResp = yResp, weights = wobs),
       family = refmodel$family,
       wsample = initsubmodl$weights,
       mu = refmodel$family$mu_fun(initsubmodl$submodl, obs = test_points,
@@ -20,7 +21,9 @@
 # draws (together with the corresponding expected response values).
 #
 # @param y_test A `list`, at least with elements `y` (response values) and
-#   `weights` (observation weights).
+#   `weights` (observation weights). In case of the latent projection, this
+#   `list` also needs to contain `yResp` (response values on the original
+#   response scale, i.e., the non-latent response values).
 # @param family A `family` object.
 # @param wsample A vector of weights for the parameter draws.
 # @param mu A matrix of expected values for `y`.
@@ -67,7 +70,8 @@
       stop("Unexpected structure for `mu_resp`. Does the return value of ",
            "`latent_ilink` have the correct structure?")
     }
-    loglik_resp <- family$latent_ll_fun_resp(mu_resp, y_test$y, y_test$weights)
+    loglik_resp <- family$latent_ll_fun_resp(mu_resp, yResp = y_test$yResp,
+                                             wobs = y_test$weights)
     if (!is.matrix(loglik_resp)) {
       stop("Unexpected structure for `loglik_resp`. Does the return value of ",
            "`latent_ll_fun_resp` have the correct structure?")
@@ -105,6 +109,9 @@
   stat_tab <- data.frame()
   summ_ref <- varsel$summaries$ref
   summ_sub <- varsel$summaries$sub
+  if (!varsel$refmodel$family$for_latent && lat2resp) {
+    stop("`lat2resp = TRUE` can only be used in case of the latent projection.")
+  }
   if (lat2resp) {
     summ_sub_resp <- lapply(summ_sub, "[[", "resp")
     # `lat2resp = TRUE` only makes sense if element `"resp"` is available:
@@ -118,8 +125,7 @@
     summ_ref <- summ_ref$resp
     summ_sub <- summ_sub_resp
   }
-  if ((!varsel$refmodel$family$for_latent ||
-       (varsel$refmodel$family$for_latent && lat2resp)) &&
+  if ((!varsel$refmodel$family$for_latent || lat2resp) &&
       !is.null(varsel$refmodel$family$cats) &&
       any(stats %in% c("acc", "pctcorr"))) {
     summ_ref$mu <- catmaxprb(summ_ref$mu, lvls = varsel$refmodel$family$cats)
@@ -131,7 +137,14 @@
     # Since `mu` is an unordered factor, `y` needs to be unordered, too (or both
     # would need to be ordered; however, unordered is the simpler type):
     varsel$d_test$y <- factor(varsel$d_test$y, ordered = FALSE)
+    varsel$d_test$yResp <- factor(varsel$d_test$yResp, ordered = FALSE)
   }
+  if (lat2resp) {
+    varsel$d_test$y <- varsel$d_test$yResp
+  }
+  # Just to avoid that `$y` gets expanded to `$yResp` if element `"y"` does not
+  # exist (for whatever reason; actually, it should always exist):
+  varsel$d_test$yResp <- NULL
 
   if (varsel$refmodel$family$family == "binomial" &&
       !all(varsel$d_test$weights == 1)) {
@@ -223,14 +236,15 @@
 ## for example the relative elpd. If these arguments are not given (NULL) then
 ## the actual (non-relative) value is computed.
 ## NOTE: Element `wcv[i]` (with i = 1, ..., N and N denoting the number of
-## observations) contains the weight of the CV fold that observation i is in.
-## In case of varsel() output, this is `NULL`. Currently, these `wcv` are
+## observations) contains the weight of the CV fold that observation i is in. In
+## case of varsel() output, this is `NULL`. Currently, these `wcv` are
 ## nonconstant (and not `NULL`) only in case of subsampled LOO CV. The actual
 ## observation weights (specified by the user) are contained in
 ## `d_test$weights`. These are already taken into account by
-## `<refmodel_object>$family$ll_fun()` and are thus already taken into account
-## in `lppd`. However, `mu` does not take them into account, so some further
-## adjustments are necessary below.
+## `<refmodel_object>$family$ll_fun()` (or
+## `<refmodel_object>$family$latent_ll_fun_resp()`) and are thus already taken
+## into account in `lppd`. However, `mu` does not take them into account, so
+## some further adjustments are necessary below.
 get_stat <- function(mu, lppd, d_test, stat, mu.bs = NULL, lppd.bs = NULL,
                      wcv = NULL, alpha = 0.1, ...) {
   if (stat %in% c("mlpd", "elpd")) {
