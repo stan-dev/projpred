@@ -32,15 +32,16 @@ are:
 \item \code{"elpd"}: (expected) sum of log predictive densities.
 \item \code{"mlpd"}: mean log predictive density, that is, \code{"elpd"} divided by the
 number of observations.
-\item \code{"mse"}: mean squared error (traditional projection only).
-\item \code{"rmse"}: root mean squared error (traditional projection only). For the
-corresponding standard error, bootstrapping is used.
-\item \code{"acc"} (or its alias, \code{"pctcorr"}): classification accuracy (for the
-traditional projection: \code{\link[=binomial]{binomial()}} family only; for the augmented-data
-projection: all families).
-\item \code{"auc"}: area under the ROC curve (\code{\link[=binomial]{binomial()}} family for the
-traditional projection only). For the corresponding standard error,
-bootstrapping is used.
+\item \code{"mse"}: mean squared error (only available in the situations mentioned
+in section "Details" below).
+\item \code{"rmse"}: root mean squared error (only available in the situations
+mentioned in section "Details" below). For the corresponding standard
+error, bootstrapping is used.
+\item \code{"acc"} (or its alias, \code{"pctcorr"}): classification accuracy (only
+available in the situations mentioned in section "Details" below).
+\item \code{"auc"}: area under the ROC curve (only available in the situations
+mentioned in section "Details" below). For the corresponding standard
+error, bootstrapping is used.
 }}
 
 \item{type}{One or more items from \code{"mean"}, \code{"se"}, \code{"lower"}, \code{"upper"},
@@ -80,6 +81,35 @@ and \code{seed} (see \code{\link[=set.seed]{set.seed()}}, defaulting to
 \description{
 This is the \code{\link[=summary]{summary()}} method for \code{vsel} objects (returned by \code{\link[=varsel]{varsel()}} or
 \code{\link[=cv_varsel]{cv_varsel()}}).
+}
+\details{
+The \code{stats} options \code{"mse"} and \code{"rmse"} are only available for:
+\itemize{
+\item the traditional projection,
+\item the latent projection with \code{lat2resp = FALSE},
+\item the latent projection with \code{lat2resp = TRUE} in combination with a
+non-\code{factor} original response.
+}
+
+The \code{stats} option \code{"acc"} (= \code{"pctcorr"}) is only available for:
+\itemize{
+\item the \code{\link[=binomial]{binomial()}} family in case of the traditional projection,
+\item all families in case of the augmented-data projection,
+\item the \code{\link[=binomial]{binomial()}} family (on the original response scale) in case of the
+latent projection with \code{lat2resp = TRUE} in combination with a non-\code{factor}
+original response,
+\item all families (on the original response scale) in case of the latent
+projection with \code{lat2resp = TRUE} in combination with a \code{factor} original
+response.
+}
+
+The \code{stats} option \code{"auc"} is only available for:
+\itemize{
+\item the \code{\link[=binomial]{binomial()}} family in case of the traditional projection,
+\item the \code{\link[=binomial]{binomial()}} family (on the original response scale) in case of the
+latent projection with \code{lat2resp = TRUE} in combination with a non-\code{factor}
+original response.
+}
 }
 \examples{
 if (requireNamespace("rstanarm", quietly = TRUE)) {

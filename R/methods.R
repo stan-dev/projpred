@@ -392,14 +392,20 @@ proj_predict_aux <- function(proj, newdata, offset, weights,
 #'   case of the MLPD. See [suggest_size()] for a formalization. Supplying `NA`
 #'   deactivates this.
 #'
-#' @details As long as the reference model's performance is computable, it is
-#'   always shown in the plot as a dashed red horizontal line. If `baseline =
-#'   "best"`, the baseline model's performance is shown as a dotted black
-#'   horizontal line. If `!is.na(thres_elpd)` and `any(stats %in% c("elpd",
-#'   "mlpd"))`, the value supplied to `thres_elpd` (which is automatically
-#'   adapted internally in case of the MLPD or `deltas = FALSE`) is shown as a
-#'   dot-dashed gray horizontal line for the reference model and, if `baseline =
-#'   "best"`, as a long-dashed green horizontal line for the baseline model.
+#' @inherit summary.vsel details
+#'
+#' @details
+#'
+#' # Horizontal lines
+#'
+#' As long as the reference model's performance is computable, it is always
+#' shown in the plot as a dashed red horizontal line. If `baseline = "best"`,
+#' the baseline model's performance is shown as a dotted black horizontal line.
+#' If `!is.na(thres_elpd)` and `any(stats %in% c("elpd", "mlpd"))`, the value
+#' supplied to `thres_elpd` (which is automatically adapted internally in case
+#' of the MLPD or `deltas = FALSE`) is shown as a dot-dashed gray horizontal
+#' line for the reference model and, if `baseline = "best"`, as a long-dashed
+#' green horizontal line for the baseline model.
 #'
 #' @examples
 #' if (requireNamespace("rstanarm", quietly = TRUE)) {
@@ -581,15 +587,16 @@ plot.vsel <- function(
 #'   * `"elpd"`: (expected) sum of log predictive densities.
 #'   * `"mlpd"`: mean log predictive density, that is, `"elpd"` divided by the
 #'   number of observations.
-#'   * `"mse"`: mean squared error (traditional projection only).
-#'   * `"rmse"`: root mean squared error (traditional projection only). For the
-#'   corresponding standard error, bootstrapping is used.
-#'   * `"acc"` (or its alias, `"pctcorr"`): classification accuracy (for the
-#'   traditional projection: [binomial()] family only; for the augmented-data
-#'   projection: all families).
-#'   * `"auc"`: area under the ROC curve ([binomial()] family for the
-#'   traditional projection only). For the corresponding standard error,
-#'   bootstrapping is used.
+#'   * `"mse"`: mean squared error (only available in the situations mentioned
+#'   in section "Details" below).
+#'   * `"rmse"`: root mean squared error (only available in the situations
+#'   mentioned in section "Details" below). For the corresponding standard
+#'   error, bootstrapping is used.
+#'   * `"acc"` (or its alias, `"pctcorr"`): classification accuracy (only
+#'   available in the situations mentioned in section "Details" below).
+#'   * `"auc"`: area under the ROC curve (only available in the situations
+#'   mentioned in section "Details" below). For the corresponding standard
+#'   error, bootstrapping is used.
 #' @param type One or more items from `"mean"`, `"se"`, `"lower"`, `"upper"`,
 #'   `"diff"`, and `"diff.se"` indicating which of these to compute for each
 #'   item from `stats` (mean, standard error, lower and upper confidence
@@ -618,6 +625,28 @@ plot.vsel <- function(
 #'   and `seed` (see [set.seed()], defaulting to
 #'   `sample.int(.Machine$integer.max, 1)`, but can also be `NA` to not call
 #'   [set.seed()] at all).
+#'
+#' @details The `stats` options `"mse"` and `"rmse"` are only available for:
+#'   * the traditional projection,
+#'   * the latent projection with `lat2resp = FALSE`,
+#'   * the latent projection with `lat2resp = TRUE` in combination with a
+#'   non-`factor` original response.
+#'
+#'   The `stats` option `"acc"` (= `"pctcorr"`) is only available for:
+#'   * the [binomial()] family in case of the traditional projection,
+#'   * all families in case of the augmented-data projection,
+#'   * the [binomial()] family (on the original response scale) in case of the
+#'   latent projection with `lat2resp = TRUE` in combination with a non-`factor`
+#'   original response,
+#'   * all families (on the original response scale) in case of the latent
+#'   projection with `lat2resp = TRUE` in combination with a `factor` original
+#'   response.
+#'
+#'   The `stats` option `"auc"` is only available for:
+#'   * the [binomial()] family in case of the traditional projection,
+#'   * the [binomial()] family (on the original response scale) in case of the
+#'   latent projection with `lat2resp = TRUE` in combination with a non-`factor`
+#'   original response.
 #'
 #' @examples
 #' if (requireNamespace("rstanarm", quietly = TRUE)) {
