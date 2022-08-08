@@ -298,13 +298,13 @@ varsel.refmodel <- function(object, d_test = NULL, method = NULL,
       # refmodel$family$latent_ilink() returns a 3-dimensional array (S x N x C)
       # needs special care.
       if (!is.null(refmodel$family$cats)) {
-        mu_resp <- structure(rep(NA, nobs_test * length(refmodel$family$cats)),
+        mu_Orig <- structure(rep(NA, nobs_test * length(refmodel$family$cats)),
                              nobs_orig = nobs_test,
                              class = "augvec")
       } else {
-        mu_resp <- ref$mu
+        mu_Orig <- ref$mu
       }
-      ref$resp <- list(mu = mu_resp, lppd = ref$lppd)
+      ref$resp <- list(mu = mu_Orig, lppd = ref$lppd)
     }
   } else {
     if (d_test$type == "train") {

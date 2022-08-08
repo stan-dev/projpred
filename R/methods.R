@@ -350,19 +350,19 @@ proj_predict_aux <- function(proj, newdata, offset, weights,
   }
   if (proj$refmodel$family$for_latent &&
       proj$refmodel$family$ppdOrig_possible) {
-    mu_resp <- proj$refmodel$family$latent_ilink(t(mu), cl_ref = proj$cl_ref,
+    mu_Orig <- proj$refmodel$family$latent_ilink(t(mu), cl_ref = proj$cl_ref,
                                                  wdraws_ref = proj$wdraws_ref)
-    if (length(dim(mu_resp)) < 2) {
-      stop("Unexpected structure for `mu_resp`. Does the return value of ",
+    if (length(dim(mu_Orig)) < 2) {
+      stop("Unexpected structure for `mu_Orig`. Does the return value of ",
            "`latent_ilink` have the correct structure?")
     }
-    if (length(dim(mu_resp)) == 3) {
-      mu_resp_resamp <- mu_resp[draw_inds, , , drop = FALSE]
+    if (length(dim(mu_Orig)) == 3) {
+      mu_Orig_resamp <- mu_Orig[draw_inds, , , drop = FALSE]
     } else {
-      mu_resp_resamp <- mu_resp[draw_inds, , drop = FALSE]
+      mu_Orig_resamp <- mu_Orig[draw_inds, , drop = FALSE]
     }
     pppd_out <- proj$refmodel$family$latent_ppdOrig(
-      mu_resp_resamp, wobs = weights, cl_ref = proj$cl_ref,
+      mu_Orig_resamp, wobs = weights, cl_ref = proj$cl_ref,
       wdraws_ref = proj$wdraws_ref, idxs_prjdraws = draw_inds
     )
   } else {

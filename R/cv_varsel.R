@@ -334,27 +334,27 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
   }
   if (refmodel$family$for_latent) {
     if (refmodel$family$lat2resp_possible) {
-      mu_resp <- refmodel$family$latent_ilink(
+      mu_Orig <- refmodel$family$latent_ilink(
         t(mu), cl_ref = seq_along(refmodel$wsample),
         wdraws_ref = refmodel$wsample
       )
-      if (length(dim(mu_resp)) < 2) {
-        stop("Unexpected structure for `mu_resp`. Does the return value of ",
+      if (length(dim(mu_Orig)) < 2) {
+        stop("Unexpected structure for `mu_Orig`. Does the return value of ",
              "`latent_ilink` have the correct structure?")
       }
       loglik_forPSIS <- refmodel$family$latent_llOrig(
-        mu_resp, yOrig = refmodel$yOrig, wobs = refmodel$wobs
+        mu_Orig, yOrig = refmodel$yOrig, wobs = refmodel$wobs
       )
-      if (length(dim(mu_resp)) == 3) {
-        # In this case, `mu_resp` is a 3-dimensional array (S x N x C), so
+      if (length(dim(mu_Orig)) == 3) {
+        # In this case, `mu_Orig` is a 3-dimensional array (S x N x C), so
         # coerce it to an augmented-rows matrix:
-        mu_resp <- arr2augmat(mu_resp, margin_draws = 1)
-        n_aug <- nrow(mu_resp)
+        mu_Orig <- arr2augmat(mu_Orig, margin_draws = 1)
+        n_aug <- nrow(mu_Orig)
       } else {
-        # In this case, `mu_resp` is a matrix (S x N). Transposing it to an N x
+        # In this case, `mu_Orig` is a matrix (S x N). Transposing it to an N x
         # S matrix would be more consistent with projpred's internal convention,
         # but avoiding the transposition is computationally more efficient:
-        n_aug <- ncol(mu_resp)
+        n_aug <- ncol(mu_Orig)
       }
     } else {
       # Note: Since we have the following error message, all the
@@ -383,8 +383,8 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
 
   ## decide which points form the validation set based on the k-values
   ## validset <- .loo_subsample(n, nloo, pareto_k)
-  loo_ref_resp <- apply(loglik_forPSIS + lw, 2, log_sum_exp)
-  validset <- .loo_subsample_pps(nloo, loo_ref_resp)
+  loo_ref_Orig <- apply(loglik_forPSIS + lw, 2, log_sum_exp)
+  validset <- .loo_subsample_pps(nloo, loo_ref_Orig)
   inds <- validset$inds
 
   ## initialize objects where to store the results
@@ -398,12 +398,12 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
     simplify = FALSE
   )
   if (refmodel$family$for_latent && refmodel$family$lat2resp_possible) {
-    loo_sub_resp <- loo_sub
-    # In general, we could use `mu_sub_resp <- mu_sub` here, but the case where
+    loo_sub_Orig <- loo_sub
+    # In general, we could use `mu_sub_Orig <- mu_sub` here, but the case where
     # refmodel$family$latent_ilink() returns a 3-dimensional array (S x N x C)
     # needs special care.
     if (!is.null(refmodel$family$cats)) {
-      mu_sub_resp <- replicate(
+      mu_sub_Orig <- replicate(
         nterms_max,
         structure(rep(NA, n * length(refmodel$family$cats)),
                   nobs_orig = n,
@@ -411,7 +411,7 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
         simplify = FALSE
       )
     } else {
-      mu_sub_resp <- mu_sub
+      mu_sub_Orig <- mu_sub
     }
   }
 
@@ -460,17 +460,17 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
     }
     if (refmodel$family$for_latent) {
       if (refmodel$family$lat2resp_possible) {
-        refdist_eval_mu_resp <- refmodel$family$latent_ilink(
+        refdist_eval_mu_Orig <- refmodel$family$latent_ilink(
           t(refdist_eval$mu), cl_ref = refdist_eval$cl,
           wdraws_ref = refdist_eval$wsample_orig
         )
-        if (length(dim(refdist_eval_mu_resp)) == 3) {
-          refdist_eval_mu_resp <- refdist_eval_mu_resp[, inds, , drop = FALSE]
+        if (length(dim(refdist_eval_mu_Orig)) == 3) {
+          refdist_eval_mu_Orig <- refdist_eval_mu_Orig[, inds, , drop = FALSE]
         } else {
-          refdist_eval_mu_resp <- refdist_eval_mu_resp[, inds, drop = FALSE]
+          refdist_eval_mu_Orig <- refdist_eval_mu_Orig[, inds, drop = FALSE]
         }
         log_lik_ref <- refmodel$family$latent_llOrig(
-          refdist_eval_mu_resp, yOrig = refmodel$yOrig[inds],
+          refdist_eval_mu_Orig, yOrig = refmodel$yOrig[inds],
           wobs = refmodel$wobs[inds]
         )
       } else {
@@ -508,17 +508,17 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
       lw_sub <- sweep(lw_sub, 2, as.array(apply(lw_sub, 2, log_sum_exp)))
       loo_sub[[k]][inds] <- apply(log_lik_sub + lw_sub, 2, log_sum_exp)
       if (refmodel$family$for_latent && refmodel$family$lat2resp_possible) {
-        mu_k_resp <- refmodel$family$latent_ilink(
+        mu_k_Orig <- refmodel$family$latent_ilink(
           t(mu_k), cl_ref = refdist_eval$cl,
           wdraws_ref = refdist_eval$wsample_orig
         )
-        log_lik_sub_resp <- refmodel$family$latent_llOrig(
-          mu_k_resp, yOrig = refmodel$yOrig[inds], wobs = refmodel$wobs[inds]
+        log_lik_sub_Orig <- refmodel$family$latent_llOrig(
+          mu_k_Orig, yOrig = refmodel$yOrig[inds], wobs = refmodel$wobs[inds]
         )
-        loo_sub_resp[[k]][inds] <- apply(log_lik_sub_resp + lw_sub, 2,
+        loo_sub_Orig[[k]][inds] <- apply(log_lik_sub_Orig + lw_sub, 2,
                                          log_sum_exp)
-        if (length(dim(mu_k_resp)) == 3) {
-          mu_k_resp <- arr2augmat(mu_k_resp, margin_draws = 1)
+        if (length(dim(mu_k_Orig)) == 3) {
+          mu_k_Orig <- arr2augmat(mu_k_Orig, margin_draws = 1)
         }
       }
       for (run_index in seq_along(inds)) {
@@ -537,16 +537,16 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
         }
         mu_sub[[k]][i_flx] <- mu_k[run_index_flx, ] %*% exp(lw_sub[, run_index])
         if (refmodel$family$for_latent && refmodel$family$lat2resp_possible) {
-          if (inherits(mu_k_resp, "augmat")) {
-            mu_sub_resp[[k]][i_aug] <- mu_k_resp[run_index_aug, ] %*%
+          if (inherits(mu_k_Orig, "augmat")) {
+            mu_sub_Orig[[k]][i_aug] <- mu_k_Orig[run_index_aug, ] %*%
               exp(lw_sub[, run_index])
           } else {
             # In principle, we could use the same code for averaging across the
             # draws as above in the `"augmat"` case. However, that would require
-            # `mu_k_resp <- t(mu_k_resp)` beforehand, so the following should be
+            # `mu_k_Orig <- t(mu_k_Orig)` beforehand, so the following should be
             # more efficient:
-            mu_sub_resp[[k]][i_aug] <- exp(lw_sub[, run_index]) %*%
-              mu_k_resp[, run_index_aug]
+            mu_sub_Orig[[k]][i_aug] <- exp(lw_sub[, run_index]) %*%
+              mu_k_Orig[, run_index_aug]
           }
         }
       }
@@ -622,8 +622,8 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
         loo_sub[[k]][i] <- summaries_sub[[k]]$lppd
         mu_sub[[k]][i_flx] <- summaries_sub[[k]]$mu
         if (!is.null(summaries_sub[[k]]$resp)) {
-          loo_sub_resp[[k]][i] <- summaries_sub[[k]]$resp$lppd
-          mu_sub_resp[[k]][i_aug] <- summaries_sub[[k]]$resp$mu
+          loo_sub_Orig[[k]][i] <- summaries_sub[[k]]$resp$lppd
+          mu_sub_Orig[[k]][i_aug] <- summaries_sub[[k]]$resp$mu
         }
       }
 
@@ -651,7 +651,7 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
   summ_sub <- lapply(seq_len(nterms_max), function(k) {
     summ_k <- list(lppd = loo_sub[[k]], mu = mu_sub[[k]], wcv = validset$wcv)
     if (refmodel$family$for_latent && refmodel$family$lat2resp_possible) {
-      summ_k$resp <- list(lppd = loo_sub_resp[[k]], mu = mu_sub_resp[[k]],
+      summ_k$resp <- list(lppd = loo_sub_Orig[[k]], mu = mu_sub_Orig[[k]],
                           wcv = validset$wcv)
     }
     return(summ_k)
@@ -675,27 +675,27 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
   summ_ref <- list(lppd = apply(refmodel$loglik + lw, 2, log_sum_exp),
                    mu = mu_ref)
   if (refmodel$family$for_latent && refmodel$family$lat2resp_possible) {
-    mu_ref_resp <- do.call(c, lapply(seq_len(n_aug), function(i) {
+    mu_ref_Orig <- do.call(c, lapply(seq_len(n_aug), function(i) {
       i_nonaug <- i %% n
       if (i_nonaug == 0) {
         i_nonaug <- n
       }
-      if (inherits(mu_resp, "augmat")) {
-        return(mu_resp[i, ] %*% exp(lw[, i_nonaug]))
+      if (inherits(mu_Orig, "augmat")) {
+        return(mu_Orig[i, ] %*% exp(lw[, i_nonaug]))
       } else {
         # In principle, we could use the same code for averaging across the
         # draws as above in the `"augmat"` case. However, that would require
-        # `mu_resp <- t(mu_resp)` beforehand, so the following should be
+        # `mu_Orig <- t(mu_Orig)` beforehand, so the following should be
         # more efficient:
-        return(exp(lw[, i_nonaug]) %*% mu_resp[, i])
+        return(exp(lw[, i_nonaug]) %*% mu_Orig[, i])
       }
     }))
-    mu_ref_resp <- structure(
-      mu_ref_resp,
-      nobs_orig = attr(mu_resp, "nobs_orig"),
-      class = sub("augmat", "augvec", oldClass(mu_resp), fixed = TRUE)
+    mu_ref_Orig <- structure(
+      mu_ref_Orig,
+      nobs_orig = attr(mu_Orig, "nobs_orig"),
+      class = sub("augmat", "augvec", oldClass(mu_Orig), fixed = TRUE)
     )
-    summ_ref$resp <- list(lppd = loo_ref_resp, mu = mu_ref_resp)
+    summ_ref$resp <- list(lppd = loo_ref_Orig, mu = mu_ref_Orig)
   }
   summaries <- list(sub = summ_sub, ref = summ_ref)
 

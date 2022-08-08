@@ -64,36 +64,36 @@
     lppd = apply(loglik, 1, log_weighted_mean_exp, wsample)
   )
   if (family$for_latent && family$lat2resp_possible) {
-    mu_resp <- family$latent_ilink(t(mu), cl_ref = cl_ref,
+    mu_Orig <- family$latent_ilink(t(mu), cl_ref = cl_ref,
                                    wdraws_ref = wdraws_ref)
-    if (length(dim(mu_resp)) < 2) {
-      stop("Unexpected structure for `mu_resp`. Does the return value of ",
+    if (length(dim(mu_Orig)) < 2) {
+      stop("Unexpected structure for `mu_Orig`. Does the return value of ",
            "`latent_ilink` have the correct structure?")
     }
-    loglik_resp <- family$latent_llOrig(mu_resp, yOrig = y_test$yOrig,
+    loglik_Orig <- family$latent_llOrig(mu_Orig, yOrig = y_test$yOrig,
                                         wobs = y_test$weights)
-    if (!is.matrix(loglik_resp)) {
-      stop("Unexpected structure for `loglik_resp`. Does the return value of ",
+    if (!is.matrix(loglik_Orig)) {
+      stop("Unexpected structure for `loglik_Orig`. Does the return value of ",
            "`latent_llOrig` have the correct structure?")
     }
-    if (length(dim(mu_resp)) == 3) {
-      # In this case, `mu_resp` is a 3-dimensional array (S x N x C), so coerce
+    if (length(dim(mu_Orig)) == 3) {
+      # In this case, `mu_Orig` is a 3-dimensional array (S x N x C), so coerce
       # it to an augmented-rows matrix:
-      mu_resp <- arr2augmat(mu_resp, margin_draws = 1)
-      mu_resp_avg <- structure(
-        c(mu_resp %*% wsample),
-        nobs_orig = attr(mu_resp, "nobs_orig"),
-        class = sub("augmat", "augvec", oldClass(mu_resp), fixed = TRUE)
+      mu_Orig <- arr2augmat(mu_Orig, margin_draws = 1)
+      mu_Orig_avg <- structure(
+        c(mu_Orig %*% wsample),
+        nobs_orig = attr(mu_Orig, "nobs_orig"),
+        class = sub("augmat", "augvec", oldClass(mu_Orig), fixed = TRUE)
       )
     } else {
-      # In principle, we could use the same code for `mu_resp_avg` as above.
-      # However, that would require `mu_resp <- t(mu_resp)` beforehand, so the
+      # In principle, we could use the same code for `mu_Orig_avg` as above.
+      # However, that would require `mu_Orig <- t(mu_Orig)` beforehand, so the
       # following should be more efficient:
-      mu_resp_avg <- c(wsample %*% mu_resp)
+      mu_Orig_avg <- c(wsample %*% mu_Orig)
     }
     avg$resp <- list(
-      mu = mu_resp_avg,
-      lppd = apply(loglik_resp, 2, log_weighted_mean_exp, wsample)
+      mu = mu_Orig_avg,
+      lppd = apply(loglik_Orig, 2, log_weighted_mean_exp, wsample)
     )
   }
   return(avg)
@@ -113,9 +113,9 @@
     stop("`lat2resp = TRUE` can only be used in case of the latent projection.")
   }
   if (lat2resp) {
-    summ_sub_resp <- lapply(summ_sub, "[[", "resp")
+    summ_sub_Orig <- lapply(summ_sub, "[[", "resp")
     # `lat2resp = TRUE` only makes sense if element `"resp"` is available:
-    if (is.null(summ_ref$resp) || any(sapply(summ_sub_resp, is.null))) {
+    if (is.null(summ_ref$resp) || any(sapply(summ_sub_Orig, is.null))) {
       stop("Cannot calculate the performance statistics on response scale if ",
            "`latent_ilink` or `latent_llOrig` are missing. Use ",
            "`lat2resp = FALSE` or provide the missing functions when creating ",
@@ -123,7 +123,7 @@
            "which is called by init_refmodel()).")
     }
     summ_ref <- summ_ref$resp
-    summ_sub <- summ_sub_resp
+    summ_sub <- summ_sub_Orig
   }
   if ((!varsel$refmodel$family$for_latent || lat2resp) &&
       !is.null(varsel$refmodel$family$cats) &&
