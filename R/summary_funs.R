@@ -113,8 +113,8 @@
     stop("`lat2resp = TRUE` can only be used in case of the latent projection.")
   }
   if (lat2resp) {
-    summ_sub_Orig <- lapply(summ_sub, "[[", "resp")
-    # `lat2resp = TRUE` only makes sense if element `"resp"` is available:
+    summ_sub_Orig <- lapply(summ_sub, "[[", "Orig")
+    # `lat2resp = TRUE` only makes sense if element `"Orig"` is available:
     if (is.null(summ_ref$resp) || any(sapply(summ_sub_Orig, is.null))) {
       stop("Cannot calculate the performance statistics on response scale if ",
            "`latent_ilink` or `latent_llOrig` are missing. Use ",

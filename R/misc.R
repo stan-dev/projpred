@@ -531,14 +531,14 @@ rbind2list <- function(x) {
     ))
   }
   binded_list <- as.list(do.call(rbind, lapply(x, function(x_i) {
-    as.data.frame(x_i[setdiff(names(x_i), "resp")])
+    as.data.frame(x_i[setdiff(names(x_i), "Orig")])
   })))
   is_lateval_Orig <- any(sapply(x, function(x_i) {
     is.list(x_i) &&
-      identical(names(x_i), c("mu", "lppd", "resp"))
+      identical(names(x_i), c("mu", "lppd", "Orig"))
   }))
   if (is_lateval_Orig) {
-    binded_list$resp <- rbind2list(lapply(x, "[[", "resp"))
+    binded_list$resp <- rbind2list(lapply(x, "[[", "Orig"))
   }
   return(binded_list)
 }
