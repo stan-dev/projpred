@@ -236,8 +236,7 @@ varsel.refmodel <- function(object, d_test = NULL, method = NULL,
       }
       # Re-assign the original levels because some levels might be missing:
       d_test$y <- factor(d_test$y, levels = object$family$cats)
-    }
-    if (object$family$for_latent) {
+    } else if (object$family$for_latent) {
       if (is.factor(d_test$yOrig) && is.null(object$family$cats)) {
         stop("If the original (i.e., non-latent) response is a factor, ",
              "`family$cats` must not be `NULL`. See the documentation for ",
