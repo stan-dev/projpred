@@ -301,9 +301,7 @@ compute_lpd <- function(ynew, pred_sub, proj, weights, transformed) {
     target <- .get_standard_y(ynew, weights, proj$refmodel$family)
     ynew <- target$y
     weights <- target$weights
-    if (proj$refmodel$family$for_augdat ||
-        (proj$refmodel$family$for_latent &&
-         !is.null(proj$refmodel$family$cats))) {
+    if (!is.null(proj$refmodel$family$cats)) {
       ynew <- as.factor(ynew)
       if (!all(levels(ynew) %in% proj$refmodel$family$cats)) {
         if (proj$refmodel$family$for_augdat) {
