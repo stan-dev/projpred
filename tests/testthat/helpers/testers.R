@@ -68,7 +68,7 @@ extfam_tester <- function(extfam,
               info = info_str)
   expect_identical(extfam$for_augdat, augdat_expected, info = info_str)
   expect_true("for_latent" %in% names(extfam), info = info_str)
-  ### TODO:
+  ### TODO (latent): Adapt this when adding tests for the latent projection:
   expect_false(extfam$for_latent, info = info_str)
   # expect_true(isTRUE(extfam$for_latent) || isFALSE(extfam$for_latent),
   #             info = info_str)
@@ -592,7 +592,7 @@ refmodel_tester <- function(
   expect_type(refmod$cvrefbuilder, "closure")
 
   # yOrig
-  ### TODO:
+  ### TODO (latent): Adapt this when adding tests for the latent projection:
   expect_identical(refmod$yOrig, y_expected, info = info_str)
   ###
 
@@ -1560,7 +1560,7 @@ vsel_tester <- function(
     expect_identical(vs$d_test$offset, vs$refmodel$offset, info = info_str)
     expect_identical(vs$d_test$weights, vs$refmodel$wobs, info = info_str)
     expect_identical(vs$d_test$y, vs$refmodel$y, info = info_str)
-    ### TODO:
+    ### TODO (latent): Adapt this when adding tests for the latent projection:
     expect_identical(vs$d_test$yOrig, vs$refmodel$y, info = info_str)
     ###
   } else {
@@ -1820,7 +1820,7 @@ smmry_tester <- function(smmry, vsel_expected, nterms_max_expected = NULL,
                    summaries_ref = vsel_expected$summaries$ref,
                    nterms_max_expected = nterms_max_expected,
                    info_str = info_str, ...)
-  ### TODO:
+  ### TODO (latent): Adapt this when adding tests for the latent projection:
   expect_false(smmry$lat2resp, info = info_str)
   ###
 

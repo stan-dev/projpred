@@ -41,11 +41,11 @@ reference for the augmented-data projection will be provided here. For now,
 \href{https://github.com/stan-dev/projpred/issues/70}{this GitHub issue} provides
 some basic information. Note that the augmented-data projection is currently
 considered as an experimental feature since it has not been tested thoroughly
-yet and is also subject to some more theoretical investigations. \strong{TODO}:
-Add information about the latent projection. Note that the latent projection
-is currently considered as an experimental feature since it has not been
-tested thoroughly yet and is also subject to some more theoretical
-investigations.
+yet and is also subject to some more theoretical investigations.
+\strong{TODO (latent)}: Add information about the latent projection.
+Note that the latent projection is currently considered as an experimental
+feature since it has not been tested thoroughly yet and is also subject to
+some more theoretical investigations.
 
 The projection of the reference model onto a submodel can be run on multiple
 CPU cores in parallel (across the projected draws). This is powered by the
