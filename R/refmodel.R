@@ -360,6 +360,13 @@ predict.refmodel <- function(object, newdata = NULL, ynew = NULL,
     }
     # Re-assign the original levels because some levels might be missing:
     ynew <- factor(ynew, levels = object$family$cats)
+  } else if (!is.null(ynew) &&
+             object$family$for_latent &&
+             is.null(object$family$cats) &&
+             is.factor(ynew)) {
+    stop("If the original (i.e., non-latent) response is a factor, ",
+         "`family$cats` must not be `NULL`. See the documentation for ",
+         "extend_family()'s argument `latent_y_unqs` to solve this.")
   }
 
   if (is.null(newdata)) {
