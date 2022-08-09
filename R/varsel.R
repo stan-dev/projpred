@@ -222,36 +222,36 @@ varsel.refmodel <- function(object, d_test = NULL, method = NULL,
                    yOrig = refmodel$yOrig)
   } else {
     d_test$type <- "test"
-    if (!object$family$for_latent) {
+    if (!refmodel$family$for_latent) {
       d_test$yOrig <- d_test$y
     }
     d_test <- d_test[nms_d_test()]
-    if (object$family$for_augdat) {
+    if (refmodel$family$for_augdat) {
       d_test$y <- as.factor(d_test$y)
-      if (!all(levels(d_test$y) %in% object$family$cats)) {
+      if (!all(levels(d_test$y) %in% refmodel$family$cats)) {
         stop("The levels of the response variable (after coercing it to a ",
              "`factor`) have to be a subset of `family$cats`. Either modify ",
              "`d_test$y` accordingly or see the documentation for ",
              "extend_family()'s argument `augdat_y_unqs` to solve this.")
       }
       # Re-assign the original levels because some levels might be missing:
-      d_test$y <- factor(d_test$y, levels = object$family$cats)
-    } else if (object$family$for_latent) {
-      if (is.factor(d_test$yOrig) && is.null(object$family$cats)) {
+      d_test$y <- factor(d_test$y, levels = refmodel$family$cats)
+    } else if (refmodel$family$for_latent) {
+      if (is.factor(d_test$yOrig) && is.null(refmodel$family$cats)) {
         stop("If the original (i.e., non-latent) response is a factor, ",
              "`family$cats` must not be `NULL`. See the documentation for ",
              "extend_family()'s argument `latent_y_unqs` to solve this.")
       }
-      if (!is.null(object$family$cats)) {
+      if (!is.null(refmodel$family$cats)) {
         d_test$yOrig <- as.factor(d_test$yOrig)
-        if (!all(levels(d_test$yOrig) %in% object$family$cats)) {
+        if (!all(levels(d_test$yOrig) %in% refmodel$family$cats)) {
           stop("The levels of the response variable (after coercing it to a ",
                "`factor`) have to be a subset of `family$cats`. Either modify ",
                "`d_test$yOrig` accordingly or see the documentation for ",
                "extend_family()'s argument `latent_y_unqs` to solve this.")
         }
         # Re-assign the original levels because some levels might be missing:
-        d_test$yOrig <- factor(d_test$yOrig, levels = object$family$cats)
+        d_test$yOrig <- factor(d_test$yOrig, levels = refmodel$family$cats)
       }
     }
   }
