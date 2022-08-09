@@ -335,9 +335,6 @@ NULL
 predict.refmodel <- function(object, newdata = NULL, ynew = NULL,
                              offsetnew = NULL, weightsnew = NULL,
                              type = "response", ...) {
-  if (object$family$for_latent && (type == "response" || !is.null(ynew))) {
-    stop("Under construction.") # TODO: Finish this.
-  }
   if (!type %in% c("response", "link")) {
     stop("type should be one of ('response', 'link')")
   }
@@ -345,16 +342,21 @@ predict.refmodel <- function(object, newdata = NULL, ynew = NULL,
     stop("Cannot make predictions for an `object` of class \"datafit\".")
   }
   if (!is.null(ynew) && (!is.numeric(ynew) || NCOL(ynew) != 1) &&
-      !object$family$for_augdat) {
+      is.null(object$family$cats)) {
     stop("Argument `ynew` must be a numeric vector.")
   }
-  if (!is.null(ynew) && object$family$for_augdat) {
+  if (!is.null(ynew) && !is.null(object$family$cats)) {
     ynew <- as.factor(ynew)
     if (!all(levels(ynew) %in% object$family$cats)) {
+      if (object$family$for_augdat) {
+        y_unqs_str <- "augdat_y_unqs"
+      } else {
+        y_unqs_str <- "latent_y_unqs"
+      }
       stop("The levels of the response variable (after coercing it to a ",
            "`factor`) have to be a subset of `family$cats`. Either modify ",
            "`ynew` accordingly or see the documentation for extend_family()'s ",
-           "argument `augdat_y_unqs` to solve this.")
+           "argument `", y_unqs_str, "` to solve this.")
     }
     # Re-assign the original levels because some levels might be missing:
     ynew <- factor(ynew, levels = object$family$cats)
@@ -396,12 +398,42 @@ predict.refmodel <- function(object, newdata = NULL, ynew = NULL,
   eta <- object$ref_predfun(object$fit, newdata = newdata) + offsetnew
 
   if (is.null(ynew)) {
-    pred <- if (type == "link") eta else object$family$linkinv(eta)
-    ## integrate over the samples
-    if (NCOL(pred) > 1) {
-      pred <- rowMeans(pred)
+    if (type == "link") {
+      pred <- eta
+    } else {
+      if (object$family$for_latent) {
+        if (is.null(object$family$latent_ilink)) {
+          stop("Cannot transform the latent predictors to response space if ",
+               "`latent_ilink` is missing.")
+        }
+        pred <- object$family$latent_ilink(
+          t(pred), cl_ref = seq_along(object$wsample),
+          wdraws_ref = rep(1, length(object$wsample))
+        )
+        if (length(dim(pred)) < 2) {
+          stop("Unexpected structure for `pred`. Does the return value of ",
+               "`latent_ilink` have the correct structure?")
+        }
+        if (length(dim(pred)) == 3) {
+          pred <- arr2augmat(pred, margin_draws = 1)
+        }
+      } else {
+        pred <- object$family$linkinv(eta)
+      }
     }
-    if (object$family$for_augdat) {
+    ## integrate over the samples
+    if (type == "link" ||
+        !object$family$for_latent ||
+        inherits(pred, "augmat")) {
+      if (ncol(pred) > 1) {
+        pred <- rowMeans(pred)
+      }
+    } else {
+      if (nrow(pred) > 1) {
+        pred <- colMeans(pred)
+      }
+    }
+    if (!is.null(object$family$cats)) {
       pred <- structure(pred,
                         nobs_orig = nrow(newdata),
                         class = "augvec")
@@ -411,11 +443,31 @@ predict.refmodel <- function(object, newdata = NULL, ynew = NULL,
     return(pred)
   } else {
     ## evaluate the log predictive density at the given ynew values
-    loglik <- object$family$ll_fun(
-      object$family$linkinv(eta), object$dis, ynew, weightsnew
-    )
-    S <- ncol(loglik)
-    lpd <- apply(loglik, 1, log_sum_exp) - log(S)
+    if (object$family$for_latent) {
+      if (!object$family$lat2resp_possible) {
+        stop("Cannot calculate the log predictive density values if ",
+             "`latent_ilink` or `latent_llOrig` are missing.")
+      }
+      mu_Orig <- object$family$latent_ilink(
+        t(eta), cl_ref = seq_along(object$wsample),
+        wdraws_ref = rep(1, length(object$wsample))
+      )
+      if (length(dim(mu_Orig)) < 2) {
+        stop("Unexpected structure for `mu_Orig`. Does the return value of ",
+             "`latent_ilink` have the correct structure?")
+      }
+      loglik <- object$family$latent_llOrig(mu_Orig, yOrig = ynew,
+                                            wobs = weightsnew)
+      S <- nrow(loglik)
+      marg_obs <- 2
+    } else {
+      loglik <- object$family$ll_fun(
+        object$family$linkinv(eta), object$dis, ynew, weightsnew
+      )
+      S <- ncol(loglik)
+      marg_obs <- 1
+    }
+    lpd <- apply(loglik, marg_obs, log_sum_exp) - log(S)
     return(lpd)
   }
 }
