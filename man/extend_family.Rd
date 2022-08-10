@@ -155,6 +155,8 @@ version >= 0.9.4 should fix this.
 \section{Latent projection}{
 \strong{TODO (latent)}: Add details about arguments and return values of the
 functions required for the latent projection.
+If \code{!is.null(latent_y_unqs)}, then \code{latent_ilink()} needs to return
+\emph{probabilities} (those for the response categories given in \code{latent_y_unqs}).
 The default for \code{wdraws_ref} needs to be \code{rep(1, length(cl_ref))}, but
 \pkg{projpred} tries to specify all arguments (i.e., not to rely on defaults)
 when calling these user-specified functions. Function \code{\link[=cl_agg]{cl_agg()}} might be

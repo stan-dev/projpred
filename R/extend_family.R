@@ -124,6 +124,8 @@
 #'
 #' **TODO (latent)**: Add details about arguments and return values of the
 #' functions required for the latent projection.
+#' If `!is.null(latent_y_unqs)`, then `latent_ilink()` needs to return
+#' *probabilities* (those for the response categories given in `latent_y_unqs`).
 #' The default for `wdraws_ref` needs to be `rep(1, length(cl_ref))`, but
 #' \pkg{projpred} tries to specify all arguments (i.e., not to rely on defaults)
 #' when calling these user-specified functions. Function [cl_agg()] might be
