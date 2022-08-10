@@ -163,6 +163,117 @@ augmat2augvec <- function(augmat) {
   return(augmat[, 1])
 }
 
+# Helper function for calculating log-likelihood values if the response
+# distribution has finite support (as is the case in augmented-data projection,
+# for example).
+#
+# @param mu_arr Array of probabilities for the C = C_cat response categories.
+#   The structure depends on `margin_draws`: If `margin_draws` is `3`, a
+#   3-dimensional array with dimensions N x C x S. If `margin_draws` is `1`, a
+#   3-dimensional array with dimensions S x N x C. See above for a definition of
+#   these dimensions.
+# @param margin_draws The index of `mu_arr`'s margin which corresponds to the
+#   parameter draws (i.e., the margin of length S). Restricted to values `1` and
+#   `3`.
+# @param y The response `factor` containing the observed response categories.
+# @param wobs A numeric vector (recycled if of length 1) containing the
+#   observation weights. Can also be of length 0 to use a vector of ones.
+#
+# @return If `margin_draws` is `3`, a matrix with dimensions N x S. If
+#   `margin_draws` is `1`, a matrix with dimensions S x N.
+ll_cats <- function(mu_arr, margin_draws = 3, y, wobs = 1) {
+  stopifnot(is.array(mu_arr) && length(dim(mu_arr)) == 3)
+  stopifnot(margin_draws %in% c(1, 3))
+  if (margin_draws == 1) {
+    margin_obs <- 2
+    margin_cats <- 3
+    bind_fun <- cbind
+  } else if (margin_draws == 3) {
+    margin_obs <- 1
+    margin_cats <- 2
+    bind_fun <- rbind
+  }
+  stopifnot(is.factor(y) &&
+              identical(length(y), dim(mu_arr)[margin_obs]) &&
+              identical(nlevels(y), dim(mu_arr)[margin_cats]))
+  if (length(wobs) == 0) {
+    wobs <- rep(1, length(y))
+  } else if (length(wobs) == 1) {
+    wobs <- rep(wobs, length(y))
+  } else if (length(wobs) != length(y)) {
+    stop("Argument `wobs` needs to be of length 0, 1, or `length(y)`.")
+  }
+  return(do.call(bind_fun, lapply(seq_along(y), function(i_obs) {
+    if (margin_draws == 1) {
+      prbs_i <- mu_arr[, i_obs, y[i_obs]]
+    } else if (margin_draws == 3) {
+      prbs_i <- mu_arr[i_obs, y[i_obs], ]
+    }
+    return(wobs[i_obs] * log(prbs_i))
+  })))
+}
+
+# Helper function for drawing from the posterior(-projection) predictive
+# distribution if the response distribution has finite support (as is the case
+# in augmented-data projection, for example).
+#
+# @param mu_arr Array of probabilities for the C = C_cat response categories.
+#   The structure depends on `margin_draws`: If `margin_draws` is `3`, a
+#   3-dimensional array with dimensions N x C x S. If `margin_draws` is `1`, a
+#   3-dimensional array with dimensions S x N x C. See above for a definition of
+#   these dimensions.
+# @param margin_draws The index of `mu_arr`'s margin which corresponds to the
+#   parameter draws (i.e., the margin of length S). Restricted to values `1` and
+#   `3`.
+# @param wobs A numeric vector (recycled if of length 1) containing the
+#   observation weights. Can also be of length 0 to use a vector of ones.
+# @param return_vec A single logical value indicating whether to return a vector
+#   (of length N). Only possible if S = 1.
+#
+# @return If `return_vec = FALSE`, then: If `margin_draws` is `3`, a matrix with
+#   dimensions N x S. If `margin_draws` is `1`, a matrix with dimensions S x N.
+#
+#   If `return_vec = TRUE`, then: A vector of length N (requires S = 1).
+ppd_cats <- function(mu_arr, margin_draws = 3, wobs = 1, return_vec = FALSE) {
+  stopifnot(is.array(mu_arr) && length(dim(mu_arr)) == 3)
+  stopifnot(margin_draws %in% c(1, 3))
+  if (margin_draws == 1) {
+    margin_obs <- 2
+    margin_cats <- 3
+    bind_fun <- cbind
+  } else if (margin_draws == 3) {
+    margin_obs <- 1
+    margin_cats <- 2
+    bind_fun <- rbind
+  }
+  ### Currently unused:
+  # if (length(wobs) == 0) {
+  #   wobs <- rep(1, length(y))
+  # } else if (length(wobs) == 1) {
+  #   wobs <- rep(wobs, length(y))
+  # } else if (length(wobs) != length(y)) {
+  #   stop("Argument `wobs` needs to be of length 0, 1, or `length(y)`.")
+  # }
+  ###
+  n_draws <- dim(mu_arr)[margin_draws]
+  n_obs <- dim(mu_arr)[margin_obs]
+  n_cat <- dim(mu_arr)[margin_cats]
+  if (return_vec) {
+    stopifnot(n_draws == 1)
+    bind_fun <- c
+  }
+  return(do.call(bind_fun, lapply(seq_len(n_obs), function(i_obs) {
+    do.call(c, lapply(seq_len(n_draws), function(i_draw) {
+      if (margin_draws == 1) {
+        prbs_i <- mu_arr[i_draw, i_obs, ]
+      } else if (margin_draws == 3) {
+        prbs_i <- mu_arr[i_obs, , i_draw]
+      }
+      return(sample.int(n_cat, size = 1L, prob = prbs_i))
+    }))
+  })))
+}
+
 # Find the maximum-probability category for each observation (with "observation"
 # meaning one of the N original observations, not one of the \eqn{N \cdot C}{N *
 # C} augmented observations).

@@ -176,7 +176,15 @@ extend_family <- function(family,
     stopifnot(is.null(family$cats))
 
     if (latent) {
-      family$cats <- latent_y_unqs
+      if (!is.null(latent_y_unqs)) {
+        family$cats <- latent_y_unqs
+        if (is.null(latent_llOrig)) {
+          latent_llOrig <- latent_llOrig_cats
+        }
+        if (is.null(latent_ppdOrig)) {
+          latent_ppdOrig <- latent_ppdOrig_cats
+        }
+      }
       if (is.null(latent_ilink)) {
         message("`latent_ilink` is `NULL`, so cv_varsel() with ",
                 "`cv_method = \"LOO\"` won't be usable. Furthermore, ",
@@ -280,28 +288,11 @@ extend_family <- function(family,
     }
     family$ll_fun <- function(mu, dis = NULL, y, weights = 1) {
       mu_arr <- augmat2arr(mu)
-      stopifnot(
-        is.factor(y) &&
-          identical(length(y), dim(mu_arr)[1]) &&
-          identical(nlevels(y), dim(mu_arr)[2])
-      )
-      if (length(weights) == 0) {
-        weights <- rep(1, length(y))
-      } else if (length(weights) == 1) {
-        weights <- rep(weights, length(y))
-      } else if (length(weights) != length(y)) {
-        stop("Argument `weights` needs to be of length 0, 1, or `length(y)`.")
-      }
-      return(do.call(rbind, lapply(seq_along(y), function(i_obs) {
-        weights[i_obs] * log(mu_arr[i_obs, y[i_obs], ])
-      })))
+      return(ll_cats(mu_arr, y = y, wobs = weights))
     }
     family$ppd <- function(mu, dis, weights = 1) {
       mu_arr <- augmat2arr(augvec2augmat(mu))
-      n_cat <- dim(mu_arr)[2]
-      return(do.call(c, lapply(seq_len(dim(mu_arr)[1]), function(i_obs) {
-        sample.int(n_cat, size = 1L, prob = mu_arr[i_obs, , 1])
-      })))
+      return(ppd_cats(mu_arr, wobs = weights, return_vec = TRUE))
     }
     family$for_latent <- FALSE
     family$for_augdat <- TRUE

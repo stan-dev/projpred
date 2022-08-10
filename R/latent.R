@@ -2,6 +2,28 @@
 # Helper functions for the latent projection
 #__________________________________________________________________________
 
+# This is the function which would have to be supplied to extend_family()'s
+# argument `latent_llOrig` in case of the latent projection if the original
+# response distribution has finite support (as is the case in ordinal families,
+# for example). Note the "*would* have to be supplied": This function is used by
+# default (internally) if `latent_y_unqs` (i.e., the later `family$cats`) is not
+# `NULL`.
+latent_llOrig_cats <- function(ilpreds, yOrig, wobs = rep(1, length(yOrig))) {
+  return(ll_cats(ilpreds, margin_draws = 1, y = yOrig, wobs = wobs))
+}
+
+# This is the function which would have to be supplied to extend_family()'s
+# argument `latent_ppdOrig` in case of the latent projection if the original
+# response distribution has finite support (as is the case in ordinal families,
+# for example). Note the "*would* have to be supplied": This function is used by
+# default (internally) if `latent_y_unqs` (i.e., the later `family$cats`) is not
+# `NULL`.
+latent_ppdOrig_cats <- function(ilpreds_resamp, wobs, cl_ref,
+                                wdraws_ref = rep(1, length(cl_ref)),
+                                idxs_prjdraws) {
+  return(ppd_cats(ilpreds_resamp, margin_draws = 1, wobs = wobs))
+}
+
 #' Weighted averaging within clusters of parameter draws
 #'
 #' This function aggregates \eqn{S} parameter draws that have been clustered
