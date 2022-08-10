@@ -71,7 +71,8 @@
            "`latent_ilink` have the correct structure?")
     }
     loglik_Orig <- family$latent_llOrig(mu_Orig, yOrig = y_test$yOrig,
-                                        wobs = y_test$weights)
+                                        wobs = y_test$weights, cl_ref = cl_ref,
+                                        wdraws_ref = wdraws_ref)
     if (!is.matrix(loglik_Orig)) {
       stop("Unexpected structure for `loglik_Orig`. Does the return value of ",
            "`latent_llOrig` have the correct structure?")

@@ -339,7 +339,9 @@ compute_lpd <- function(ynew, pred_sub, proj, weights, transformed) {
     }
     if (proj$refmodel$family$for_latent) {
       return(proj$refmodel$family$latent_llOrig(pred_sub, yOrig = ynew,
-                                                wobs = weights))
+                                                wobs = weights,
+                                                cl_ref = proj$cl_ref,
+                                                wdraws_ref = proj$wdraws_ref))
     } else {
       return(proj$refmodel$family$ll_fun(pred_sub, proj$dis, ynew, weights))
     }

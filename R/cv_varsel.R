@@ -343,7 +343,8 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
              "`latent_ilink` have the correct structure?")
       }
       loglik_forPSIS <- refmodel$family$latent_llOrig(
-        mu_Orig, yOrig = refmodel$yOrig, wobs = refmodel$wobs
+        mu_Orig, yOrig = refmodel$yOrig, wobs = refmodel$wobs,
+        cl_ref = seq_along(refmodel$wsample), wdraws_ref = refmodel$wsample
       )
       if (length(dim(mu_Orig)) == 3) {
         # In this case, `mu_Orig` is a 3-dimensional array (S x N x C), so
@@ -471,7 +472,8 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
         }
         log_lik_ref <- refmodel$family$latent_llOrig(
           refdist_eval_mu_Orig, yOrig = refmodel$yOrig[inds],
-          wobs = refmodel$wobs[inds]
+          wobs = refmodel$wobs[inds], cl_ref = refdist_eval$cl,
+          wdraws_ref = refdist_eval$wsample_orig
         )
       } else {
         stop("Cannot use `validate_search = FALSE` if `latent_ilink` or ",
@@ -513,7 +515,8 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
           wdraws_ref = refdist_eval$wsample_orig
         )
         log_lik_sub_Orig <- refmodel$family$latent_llOrig(
-          mu_k_Orig, yOrig = refmodel$yOrig[inds], wobs = refmodel$wobs[inds]
+          mu_k_Orig, yOrig = refmodel$yOrig[inds], wobs = refmodel$wobs[inds],
+          cl_ref = refdist_eval$cl, wdraws_ref = refdist_eval$wsample_orig
         )
         loo_sub_Orig[[k]][inds] <- apply(log_lik_sub_Orig + lw_sub, 2,
                                          log_sum_exp)

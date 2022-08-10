@@ -463,8 +463,11 @@ predict.refmodel <- function(object, newdata = NULL, ynew = NULL,
         stop("Unexpected structure for `mu_Orig`. Does the return value of ",
              "`latent_ilink` have the correct structure?")
       }
-      loglik <- object$family$latent_llOrig(mu_Orig, yOrig = ynew,
-                                            wobs = weightsnew)
+      loglik <- object$family$latent_llOrig(
+        mu_Orig, yOrig = ynew, wobs = weightsnew,
+        cl_ref = seq_along(object$wsample),
+        wdraws_ref = rep(1, length(object$wsample))
+      )
       S <- nrow(loglik)
       marg_obs <- 2
     } else {

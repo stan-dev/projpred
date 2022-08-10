@@ -8,7 +8,8 @@
 # for example). Note the "*would* have to be supplied": This function is used by
 # default (internally) if `latent_y_unqs` (i.e., the later `family$cats`) is not
 # `NULL`.
-latent_llOrig_cats <- function(ilpreds, yOrig, wobs = rep(1, length(yOrig))) {
+latent_llOrig_cats <- function(ilpreds, yOrig, wobs = rep(1, length(yOrig)),
+                               cl_ref, wdraws_ref = rep(1, length(cl_ref))) {
   return(ll_cats(ilpreds, margin_draws = 1, y = yOrig, wobs = wobs))
 }
 
