@@ -468,6 +468,10 @@ predict.refmodel <- function(object, newdata = NULL, ynew = NULL,
         cl_ref = seq_along(object$wsample),
         wdraws_ref = rep(1, length(object$wsample))
       )
+      if (!is.matrix(loglik)) {
+        stop("Unexpected structure for `loglik`. Does the return value of ",
+             "`latent_llOrig` have the correct structure?")
+      }
       S <- nrow(loglik)
       marg_obs <- 2
     } else {

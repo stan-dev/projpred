@@ -346,6 +346,10 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
         mu_Orig, yOrig = refmodel$yOrig, wobs = refmodel$wobs,
         cl_ref = seq_along(refmodel$wsample), wdraws_ref = refmodel$wsample
       )
+      if (!is.matrix(loglik_forPSIS)) {
+        stop("Unexpected structure for `loglik_forPSIS`. Does the return ",
+             "value of `latent_llOrig` have the correct structure?")
+      }
       if (length(dim(mu_Orig)) == 3) {
         # In this case, `mu_Orig` is a 3-dimensional array (S x N x C), so
         # coerce it to an augmented-rows matrix:

@@ -338,10 +338,15 @@ compute_lpd <- function(ynew, pred_sub, proj, weights, transformed) {
       }
     }
     if (proj$refmodel$family$for_latent) {
-      return(proj$refmodel$family$latent_llOrig(pred_sub, yOrig = ynew,
-                                                wobs = weights,
-                                                cl_ref = proj$cl_ref,
-                                                wdraws_ref = proj$wdraws_ref))
+      llOrig_out <- proj$refmodel$family$latent_llOrig(
+        pred_sub, yOrig = ynew, wobs = weights, cl_ref = proj$cl_ref,
+        wdraws_ref = proj$wdraws_ref
+      )
+      if (!is.matrix(llOrig_out)) {
+        stop("Unexpected structure for `llOrig_out`. Does the return value of ",
+             "`latent_llOrig` have the correct structure?")
+      }
+      return(llOrig_out)
     } else {
       return(proj$refmodel$family$ll_fun(pred_sub, proj$dis, ynew, weights))
     }
