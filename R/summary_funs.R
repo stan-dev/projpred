@@ -67,15 +67,13 @@
     mu_Orig <- family$latent_ilink(t(mu), cl_ref = cl_ref,
                                    wdraws_ref = wdraws_ref)
     if (length(dim(mu_Orig)) < 2) {
-      stop("Unexpected structure for `mu_Orig`. Does the return value of ",
-           "`latent_ilink` have the correct structure?")
+      stop("Unexpected structure for the output of `latent_ilink`.")
     }
     loglik_Orig <- family$latent_llOrig(mu_Orig, yOrig = y_test$yOrig,
                                         wobs = y_test$weights, cl_ref = cl_ref,
                                         wdraws_ref = wdraws_ref)
     if (!is.matrix(loglik_Orig)) {
-      stop("Unexpected structure for `loglik_Orig`. Does the return value of ",
-           "`latent_llOrig` have the correct structure?")
+      stop("Unexpected structure for the output of `latent_llOrig`.")
     }
     if (length(dim(mu_Orig)) == 3) {
       # In this case, `mu_Orig` is a 3-dimensional array (S x N x C), so coerce

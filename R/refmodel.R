@@ -418,8 +418,7 @@ predict.refmodel <- function(object, newdata = NULL, ynew = NULL,
           wdraws_ref = rep(1, length(object$wsample))
         )
         if (length(dim(pred)) < 2) {
-          stop("Unexpected structure for `pred`. Does the return value of ",
-               "`latent_ilink` have the correct structure?")
+          stop("Unexpected structure for the output of `latent_ilink`.")
         }
         if (length(dim(pred)) == 3) {
           pred <- arr2augmat(pred, margin_draws = 1)
@@ -460,8 +459,7 @@ predict.refmodel <- function(object, newdata = NULL, ynew = NULL,
         wdraws_ref = rep(1, length(object$wsample))
       )
       if (length(dim(mu_Orig)) < 2) {
-        stop("Unexpected structure for `mu_Orig`. Does the return value of ",
-             "`latent_ilink` have the correct structure?")
+        stop("Unexpected structure for the output of `latent_ilink`.")
       }
       loglik <- object$family$latent_llOrig(
         mu_Orig, yOrig = ynew, wobs = weightsnew,
@@ -469,8 +467,7 @@ predict.refmodel <- function(object, newdata = NULL, ynew = NULL,
         wdraws_ref = rep(1, length(object$wsample))
       )
       if (!is.matrix(loglik)) {
-        stop("Unexpected structure for `loglik`. Does the return value of ",
-             "`latent_llOrig` have the correct structure?")
+        stop("Unexpected structure for the output of `latent_llOrig`.")
       }
       S <- nrow(loglik)
       marg_obs <- 2

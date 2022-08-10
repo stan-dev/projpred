@@ -339,16 +339,14 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
         wdraws_ref = refmodel$wsample
       )
       if (length(dim(mu_Orig)) < 2) {
-        stop("Unexpected structure for `mu_Orig`. Does the return value of ",
-             "`latent_ilink` have the correct structure?")
+        stop("Unexpected structure for the output of `latent_ilink`.")
       }
       loglik_forPSIS <- refmodel$family$latent_llOrig(
         mu_Orig, yOrig = refmodel$yOrig, wobs = refmodel$wobs,
         cl_ref = seq_along(refmodel$wsample), wdraws_ref = refmodel$wsample
       )
       if (!is.matrix(loglik_forPSIS)) {
-        stop("Unexpected structure for `loglik_forPSIS`. Does the return ",
-             "value of `latent_llOrig` have the correct structure?")
+        stop("Unexpected structure for the output of `latent_llOrig`.")
       }
       if (length(dim(mu_Orig)) == 3) {
         # In this case, `mu_Orig` is a 3-dimensional array (S x N x C), so

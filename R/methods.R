@@ -240,8 +240,7 @@ proj_linpred_aux <- function(proj, newdata, offset, weights, transform = FALSE,
       t(pred_sub), cl_ref = proj$cl_ref, wdraws_ref = proj$wdraws_ref
     )
     if (length(dim(pred_sub)) < 2) {
-      stop("Unexpected structure for `pred_sub`. Does the return value of ",
-           "`latent_ilink` have the correct structure?")
+      stop("Unexpected structure for the output of `latent_ilink`.")
     }
   }
   w_o <- proj$refmodel$extract_model_data(
@@ -330,8 +329,7 @@ compute_lpd <- function(ynew, pred_sub, proj, weights, transformed) {
           t(pred_sub), cl_ref = proj$cl_ref, wdraws_ref = proj$wdraws_ref
         )
         if (length(dim(pred_sub)) < 2) {
-          stop("Unexpected structure for `pred_sub`. Does the return value of ",
-               "`latent_ilink` have the correct structure?")
+          stop("Unexpected structure for the output of `latent_ilink`.")
         }
       } else {
         pred_sub <- proj$refmodel$family$linkinv(pred_sub)
@@ -343,8 +341,7 @@ compute_lpd <- function(ynew, pred_sub, proj, weights, transformed) {
         wdraws_ref = proj$wdraws_ref
       )
       if (!is.matrix(llOrig_out)) {
-        stop("Unexpected structure for `llOrig_out`. Does the return value of ",
-             "`latent_llOrig` have the correct structure?")
+        stop("Unexpected structure for the output of `latent_llOrig`.")
       }
       return(llOrig_out)
     } else {
@@ -403,8 +400,7 @@ proj_predict_aux <- function(proj, newdata, offset, weights,
     mu_Orig <- proj$refmodel$family$latent_ilink(t(mu), cl_ref = proj$cl_ref,
                                                  wdraws_ref = proj$wdraws_ref)
     if (length(dim(mu_Orig)) < 2) {
-      stop("Unexpected structure for `mu_Orig`. Does the return value of ",
-           "`latent_ilink` have the correct structure?")
+      stop("Unexpected structure for the output of `latent_ilink`.")
     }
     if (length(dim(mu_Orig)) == 3) {
       mu_Orig_resamp <- mu_Orig[draw_inds, , , drop = FALSE]
@@ -416,8 +412,7 @@ proj_predict_aux <- function(proj, newdata, offset, weights,
       wdraws_ref = proj$wdraws_ref, idxs_prjdraws = draw_inds
     )
     if (!is.matrix(pppd_out)) {
-      stop("Unexpected structure for `pppd_out`. Does the return value of ",
-           "`latent_ppdOrig` have the correct structure?")
+      stop("Unexpected structure for the output of `latent_ppdOrig`.")
     }
   } else {
     if (proj$refmodel$family$for_latent &&
