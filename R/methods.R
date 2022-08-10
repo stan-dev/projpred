@@ -415,6 +415,10 @@ proj_predict_aux <- function(proj, newdata, offset, weights,
       mu_Orig_resamp, wobs = weights, cl_ref = proj$cl_ref,
       wdraws_ref = proj$wdraws_ref, idxs_prjdraws = draw_inds
     )
+    if (!is.matrix(pppd_out)) {
+      stop("Unexpected structure for `pppd_out`. Does the return value of ",
+           "`latent_ppdOrig` have the correct structure?")
+    }
   } else {
     if (proj$refmodel$family$for_latent &&
         !proj$refmodel$family$ppdOrig_possible) {
