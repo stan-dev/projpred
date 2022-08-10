@@ -42,16 +42,19 @@ section "Latent projection" below.}
 \item{latent_llOrig}{Only relevant for the latent projection, in which case
 this needs to be the function (supplied as a function, not a character
 string, for example) computing response-scale (not latent-scale)
-log-likelihood values. Can also be \code{NULL}, but then downstream functions
-will have limited functionality (a message thrown by \code{\link[=extend_family]{extend_family()}} will
-state what exactly won't be available). See also section "Latent
-projection" below.}
+log-likelihood values. If \code{!is.null(latent_y_unqs)}, then \code{latent_llOrig}
+can be \code{NULL}, in which case an internal default will be used. Can also be
+\code{NULL} in all other cases, but then downstream functions will have limited
+functionality (a message thrown by \code{\link[=extend_family]{extend_family()}} will state what
+exactly won't be available). See also section "Latent projection" below.}
 
 \item{latent_ppdOrig}{Only relevant for the latent projection, in which case
 this needs to be the function (supplied as a function, not a character
 string, for example) sampling response values given latent predictors that
-have been transformed to response scale using \code{latent_ilink}. Can also be
-\code{NULL}, but then downstream functions will have limited functionality (a
+have been transformed to response scale using \code{latent_ilink}. If
+\code{!is.null(latent_y_unqs)}, then \code{latent_ppdOrig} can be \code{NULL}, in which
+case an internal default will be used. Can also be \code{NULL} in all other
+cases, but then downstream functions will have limited functionality (a
 message thrown by \code{\link[=extend_family]{extend_family()}} will state what exactly won't be
 available). See also section "Latent projection" below. Note that although
 this function has the abbreviation "PPD" in its name (which stands for

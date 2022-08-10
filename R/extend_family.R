@@ -31,15 +31,18 @@
 #' @param latent_llOrig Only relevant for the latent projection, in which case
 #'   this needs to be the function (supplied as a function, not a character
 #'   string, for example) computing response-scale (not latent-scale)
-#'   log-likelihood values. Can also be `NULL`, but then downstream functions
-#'   will have limited functionality (a message thrown by [extend_family()] will
-#'   state what exactly won't be available). See also section "Latent
-#'   projection" below.
+#'   log-likelihood values. If `!is.null(latent_y_unqs)`, then `latent_llOrig`
+#'   can be `NULL`, in which case an internal default will be used. Can also be
+#'   `NULL` in all other cases, but then downstream functions will have limited
+#'   functionality (a message thrown by [extend_family()] will state what
+#'   exactly won't be available). See also section "Latent projection" below.
 #' @param latent_ppdOrig Only relevant for the latent projection, in which case
 #'   this needs to be the function (supplied as a function, not a character
 #'   string, for example) sampling response values given latent predictors that
-#'   have been transformed to response scale using `latent_ilink`. Can also be
-#'   `NULL`, but then downstream functions will have limited functionality (a
+#'   have been transformed to response scale using `latent_ilink`. If
+#'   `!is.null(latent_y_unqs)`, then `latent_ppdOrig` can be `NULL`, in which
+#'   case an internal default will be used. Can also be `NULL` in all other
+#'   cases, but then downstream functions will have limited functionality (a
 #'   message thrown by [extend_family()] will state what exactly won't be
 #'   available). See also section "Latent projection" below. Note that although
 #'   this function has the abbreviation "PPD" in its name (which stands for
