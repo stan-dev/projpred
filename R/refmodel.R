@@ -414,7 +414,7 @@ predict.refmodel <- function(object, newdata = NULL, ynew = NULL,
                "`latent_ilink` is missing.")
         }
         pred <- object$family$latent_ilink(
-          t(pred), cl_ref = seq_along(object$wsample),
+          t(eta), cl_ref = seq_along(object$wsample),
           wdraws_ref = rep(1, length(object$wsample))
         )
         if (length(dim(pred)) < 2) {
