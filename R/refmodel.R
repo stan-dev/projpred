@@ -427,10 +427,9 @@ predict.refmodel <- function(object, newdata = NULL, ynew = NULL,
         pred <- object$family$linkinv(eta)
       }
     }
+    was_augmat <- inherits(pred, "augmat")
     ## integrate over the samples
-    if (type == "link" ||
-        !object$family$for_latent ||
-        inherits(pred, "augmat")) {
+    if (type == "link" || !object$family$for_latent || was_augmat) {
       if (ncol(pred) > 1) {
         pred <- rowMeans(pred)
       }
@@ -439,7 +438,7 @@ predict.refmodel <- function(object, newdata = NULL, ynew = NULL,
         pred <- colMeans(pred)
       }
     }
-    if (!is.null(object$family$cats)) {
+    if (was_augmat) {
       pred <- structure(pred,
                         nobs_orig = nrow(newdata),
                         class = "augvec")
