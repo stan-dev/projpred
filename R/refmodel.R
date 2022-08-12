@@ -1118,15 +1118,20 @@ init_refmodel <- function(object, data, formula, family, ref_predfun = NULL,
   # Miscellaneous -----------------------------------------------------------
 
   ndraws <- ncol(mu)
-  if (family$for_latent) {
-    ## latent noise is fixed
-    if (!is.null(dis)) {
-      message("Ignoring argument `dis` because the latent projection was ",
-              "requested.")
-    }
-    dis <- rep(1, ndraws)
-  } else if (is.null(dis)) {
-    if (!.has_dispersion(family)) {
+  if (is.null(dis)) {
+    if (family$for_latent) {
+      if (!is.null(family$linkOrig)) {
+        if (family$linkOrig %in% c("probit", "probit_approx")) {
+          dis <- rep(1, ndraws)
+        } else {
+          stop("Could not determine `dis` for the latent projection ",
+               "automatically.")
+        }
+      } else {
+        stop("Could not determine `dis` for the latent projection ",
+             "automatically.")
+      }
+    } else if (!.has_dispersion(family)) {
       dis <- rep(NA, ndraws)
     } else {
       if (proper_model) {

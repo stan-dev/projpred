@@ -164,8 +164,10 @@ extend_family <- function(family,
   }
   if (latent) {
     familyOrig_tmp <- family$family
+    linkOrig_tmp <- family$link
     family <- gaussian()
     family$familyOrig <- familyOrig_tmp
+    family$linkOrig <- linkOrig_tmp
   }
   aug_data <- !is.null(augdat_link) && !is.null(augdat_ilink) && !latent
   if (!aug_data) {
