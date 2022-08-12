@@ -1120,6 +1120,10 @@ init_refmodel <- function(object, data, formula, family, ref_predfun = NULL,
   ndraws <- ncol(mu)
   if (family$for_latent) {
     ## latent noise is fixed
+    if (!is.null(dis)) {
+      message("Ignoring argument `dis` because the latent projection was ",
+              "requested.")
+    }
     dis <- rep(1, ndraws)
   } else if (is.null(dis)) {
     if (!.has_dispersion(family)) {
