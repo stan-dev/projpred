@@ -1123,6 +1123,8 @@ init_refmodel <- function(object, data, formula, family, ref_predfun = NULL,
       if (!is.null(family$linkOrig)) {
         if (family$linkOrig %in% c("probit", "probit_approx")) {
           dis <- rep(1, ndraws)
+        } else if (family$linkOrig %in% c("logit", "logistic")) {
+          dis <- rep(1.6, ndraws)
         } else {
           stop("Could not determine `dis` for the latent projection ",
                "automatically.")
