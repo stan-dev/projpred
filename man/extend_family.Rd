@@ -34,9 +34,11 @@ below.}
 
 \item{latent_ilink}{Only relevant for the latent projection, in which case
 this needs to be the inverse-link function (supplied as a function, not a
-character string, for example). Can also be \code{NULL}, but then downstream
-functions will have limited functionality (a message thrown by
-\code{\link[=extend_family]{extend_family()}} will state what exactly won't be available). See also
+character string, for example). If the original response family was the
+\code{\link[=binomial]{binomial()}} family, then \code{latent_ilink} can be \code{NULL}, in which case an
+internal default will be used. Can also be \code{NULL} in all other cases, but
+then downstream functions will have limited functionality (a message thrown
+by \code{\link[=extend_family]{extend_family()}} will state what exactly won't be available). See also
 section "Latent projection" below.}
 
 \item{latent_llOrig}{Only relevant for the latent projection, in which case

@@ -24,9 +24,11 @@
 #'   below.
 #' @param latent_ilink Only relevant for the latent projection, in which case
 #'   this needs to be the inverse-link function (supplied as a function, not a
-#'   character string, for example). Can also be `NULL`, but then downstream
-#'   functions will have limited functionality (a message thrown by
-#'   [extend_family()] will state what exactly won't be available). See also
+#'   character string, for example). If the original response family was the
+#'   [binomial()] family, then `latent_ilink` can be `NULL`, in which case an
+#'   internal default will be used. Can also be `NULL` in all other cases, but
+#'   then downstream functions will have limited functionality (a message thrown
+#'   by [extend_family()] will state what exactly won't be available). See also
 #'   section "Latent projection" below.
 #' @param latent_llOrig Only relevant for the latent projection, in which case
 #'   this needs to be the function (supplied as a function, not a character
@@ -190,6 +192,16 @@ extend_family <- function(family,
         }
         if (is.null(latent_ppdOrig)) {
           latent_ppdOrig <- latent_ppdOrig_cats
+        }
+      }
+      if (family$familyOrig == "binomial" && is.null(latent_ilink)) {
+        latent_ilink <- function(lpreds, cl_ref,
+                                 wdraws_ref = rep(1, length(cl_ref))) {
+          ilpreds <- ilinkfun_raw(lpreds, link_nm = family$linkOrig)
+          if (!is.null(family$cats)) {
+            ilpreds <- abind::abind(1 - ilpreds, ilpreds, rev.along = 0)
+          }
+          return(ilpreds)
         }
       }
       if (is.null(latent_ilink)) {
