@@ -78,17 +78,18 @@
 #'
 #' @details
 #'
-#' # Augmented-data projection
-#'
 #' In the following, \eqn{N}, \eqn{C_{\mathrm{cat}}}{C_cat},
 #' \eqn{C_{\mathrm{lat}}}{C_lat}, \eqn{S_{\mathrm{ref}}}{S_ref}, and
 #' \eqn{S_{\mathrm{prj}}}{S_prj} from help topic [refmodel-init-get] are used.
-#' Furthermore, let \eqn{S} denote either \eqn{S_{\mathrm{ref}}}{S_ref} or
-#' \eqn{S_{\mathrm{prj}}}{S_prj}, whichever is appropriate in the context where
-#' it is used.
+#' Note that \eqn{N} does not necessarily denote the original number of
+#' observations; these can also be new observations. Furthermore, let \eqn{S}
+#' denote either \eqn{S_{\mathrm{ref}}}{S_ref} or \eqn{S_{\mathrm{prj}}}{S_prj},
+#' whichever is appropriate in the context where it is used.
 #'
-#' Then, as their first input, the functions supplied to arguments `augdat_link`
-#' and `augdat_ilink` have to accept:
+#' # Augmented-data projection
+#'
+#' As their first input, the functions supplied to arguments `augdat_link` and
+#' `augdat_ilink` have to accept:
 #' * For `augdat_link`: an \eqn{S \times N \times C_{\mathrm{cat}}}{S x N x
 #' C_cat} array containing the probabilities for the response categories. The
 #' order of the response categories is the same as in `family$cats` (see
@@ -129,23 +130,84 @@
 #'
 #' # Latent projection
 #'
-#' **TODO (latent)**: Add details about arguments and return values of the
-#' functions required for the latent projection.
-#' If `!is.null(latent_y_unqs)`, then `latent_ilink()` needs to return
-#' *probabilities* (those for the response categories given in `latent_y_unqs`).
-#' The default for `wdraws_ref` needs to be `rep(1, length(cl_ref))`, but
-#' \pkg{projpred} tries to specify all arguments (i.e., not to rely on defaults)
-#' when calling these user-specified functions. Function [cl_agg()] might be
-#' helpful for constructing `latent_ilink`. In fact, argument `wdraws_ref` of
-#' `latent_ilink` is needed (i.e., the weights passed to this argument are
-#' nonconstant) only in case of [cv_varsel()] with `cv_method = "LOO"` and
-#' `validate_search = TRUE`. In that case, the weights passed to this argument
-#' are the PSIS-LOO CV weights for one observation. Note that although argument
-#' `wdraws_ref` has the suffix `_ref`, `wdraws_ref` does not necessarily obtain
-#' weights for the *initial* reference model's posterior draws: In case of
-#' [cv_varsel()] with `cv_method = "kfold`, these weights may refer to one of
-#' the \eqn{K} reference model re-fits (but in that case, they are constant
-#' anyway).
+#' The function supplied to argument `latent_ilink` needs to have the prototype
+#' `latent_ilink(lpreds, cl_ref, wdraws_ref = rep(1, length(cl_ref)))` where:
+#' * `lpreds` accepts an \eqn{S \times N}{S x N} matrix containing the linear
+#' predictors.
+#' * `cl_ref` accepts a numeric vector of length \eqn{S_{\mathrm{ref}}}{S_ref},
+#' containing \pkg{projpred}'s internal cluster indices for these draws.
+#' * `wdraws_ref` accepts a numeric vector of length
+#' \eqn{S_{\mathrm{ref}}}{S_ref}, containing weights for these draws. These
+#' weights should be treated as not being normalized (i.e., they don't
+#' necessarily sum to `1`).
+#'
+#' The return value of `latent_ilink` needs to contain the linear predictors
+#' transformed to the original response space, with the following structure:
+#' * If `is.null(latent_y_unqs)`: an \eqn{S \times N}{S x N} matrix.
+#' * If `!is.null(latent_y_unqs)`: an \eqn{S \times N \times C_{\mathrm{cat}}}{S
+#' x N x C_cat} array. In that case, `latent_ilink` needs to return
+#' *probabilities* (for the response categories given in `latent_y_unqs`).
+#'
+#' The function supplied to argument `latent_llOrig` needs to have the prototype
+#' ```{r, eval = FALSE}
+#' latent_llOrig(ilpreds, yOrig, wobs = rep(1, length(yOrig)), cl_ref,
+#'               wdraws_ref = rep(1, length(cl_ref)))
+#' ```
+#' where:
+#' * `ilpreds` accepts the return value from `latent_ilink`.
+#' * `yOrig` accepts a vector of length \eqn{N} containing response values on
+#' the original response scale.
+#' * `wobs` accepts a numeric vector of length \eqn{N} containing observation
+#' weights.
+#' * `cl_ref` accepts the same input as argument `cl_ref` of `latent_ilink`.
+#' * `wdraws_ref` accepts the same input as argument `wdraws_ref` of
+#' `latent_ilink`.
+#'
+#' The return value of `latent_llOrig` needs to be an \eqn{S \times N}{S x N}
+#' matrix containing the response-scale (not latent-scale) log-likelihood values
+#' for the \eqn{N} observations from its inputs.
+#'
+#' The function supplied to argument `latent_ppdOrig` needs to have the
+#' prototype
+#' ```{r, eval = FALSE}
+#' latent_ppdOrig(ilpreds_resamp, wobs, cl_ref,
+#'                wdraws_ref = rep(1, length(cl_ref)), idxs_prjdraws)
+#' ```
+#' where:
+#' * `ilpreds_resamp` accepts the return value from `latent_ilink`, but possibly
+#' with resampled (clustered) draws (see argument `nresample_clusters` of
+#' [proj_predict()]).
+#' * `wobs` accepts a numeric vector of length \eqn{N} containing observation
+#' weights.
+#' * `cl_ref` accepts the same input as argument `cl_ref` of `latent_ilink`.
+#' * `wdraws_ref` accepts the same input as argument `wdraws_ref` of
+#' `latent_ilink`.
+#' * `idxs_prjdraws` accepts a numeric vector of length `dim(ilpreds_resamp)[1]`
+#' containing the resampled indices of the projected draws (i.e., these indices
+#' are values from the set \eqn{\{1, ..., \texttt{dim(ilpreds)[1]}\}}{{1, ...,
+#' dim(ilpreds)[1]}} where `ilpreds` denotes the return value of
+#' `latent_ilink`).
+#'
+#' The return value of `latent_ppdOrig` needs to be a
+#' \eqn{\texttt{dim(ilpreds\_resamp)[1]} \times N}{dim(ilpreds_resamp)[1] x N}
+#' matrix containing the response-scale (not latent-scale) draws from the
+#' posterior(-projection) predictive distributions for the \eqn{N} observations
+#' from its inputs.
+#'
+#' If the bodies of these three functions involve parameter draws from the
+#' reference model which have not been projected (e.g., for `latent_ilink`, the
+#' response thresholds in an ordinal model), [cl_agg()] is provided as a helper
+#' function for aggregating these reference model draws in the same way as the
+#' draws have been aggregated for `lpreds`.
+#'
+#' In fact, the weights passed to argument `wdraws_ref` are nonconstant only in
+#' case of [cv_varsel()] with `cv_method = "LOO"` and `validate_search = TRUE`.
+#' In that case, the weights passed to this argument are the PSIS-LOO CV weights
+#' for one observation. Note that although argument `wdraws_ref` has the suffix
+#' `_ref`, `wdraws_ref` does not necessarily obtain weights for the *initial*
+#' reference model's posterior draws: In case of [cv_varsel()] with `cv_method =
+#' "kfold`, these weights may refer to one of the \eqn{K} reference model
+#' re-fits (but in that case, they are constant anyway).
 #'
 #' @return The [`family`] object extended in the way needed by \pkg{projpred}.
 #'

@@ -102,16 +102,18 @@ This function adds some internally required elements to a \code{\link{family}} o
 It is called internally by \code{\link[=init_refmodel]{init_refmodel()}}, so you will rarely need to call
 it yourself.
 }
-\section{Augmented-data projection}{
+\details{
 In the following, \eqn{N}, \eqn{C_{\mathrm{cat}}}{C_cat},
 \eqn{C_{\mathrm{lat}}}{C_lat}, \eqn{S_{\mathrm{ref}}}{S_ref}, and
 \eqn{S_{\mathrm{prj}}}{S_prj} from help topic \link{refmodel-init-get} are used.
-Furthermore, let \eqn{S} denote either \eqn{S_{\mathrm{ref}}}{S_ref} or
-\eqn{S_{\mathrm{prj}}}{S_prj}, whichever is appropriate in the context where
-it is used.
-
-Then, as their first input, the functions supplied to arguments \code{augdat_link}
-and \code{augdat_ilink} have to accept:
+Note that \eqn{N} does not necessarily denote the original number of
+observations; these can also be new observations. Furthermore, let \eqn{S}
+denote either \eqn{S_{\mathrm{ref}}}{S_ref} or \eqn{S_{\mathrm{prj}}}{S_prj},
+whichever is appropriate in the context where it is used.
+}
+\section{Augmented-data projection}{
+As their first input, the functions supplied to arguments \code{augdat_link} and
+\code{augdat_ilink} have to accept:
 \itemize{
 \item For \code{augdat_link}: an \eqn{S \times N \times C_{\mathrm{cat}}}{S x N x
 C_cat} array containing the probabilities for the response categories. The
@@ -160,22 +162,92 @@ version >= 0.9.4 should fix this.
 }
 
 \section{Latent projection}{
-\strong{TODO (latent)}: Add details about arguments and return values of the
-functions required for the latent projection.
-If \code{!is.null(latent_y_unqs)}, then \code{latent_ilink()} needs to return
-\emph{probabilities} (those for the response categories given in \code{latent_y_unqs}).
-The default for \code{wdraws_ref} needs to be \code{rep(1, length(cl_ref))}, but
-\pkg{projpred} tries to specify all arguments (i.e., not to rely on defaults)
-when calling these user-specified functions. Function \code{\link[=cl_agg]{cl_agg()}} might be
-helpful for constructing \code{latent_ilink}. In fact, argument \code{wdraws_ref} of
-\code{latent_ilink} is needed (i.e., the weights passed to this argument are
-nonconstant) only in case of \code{\link[=cv_varsel]{cv_varsel()}} with \code{cv_method = "LOO"} and
-\code{validate_search = TRUE}. In that case, the weights passed to this argument
-are the PSIS-LOO CV weights for one observation. Note that although argument
-\code{wdraws_ref} has the suffix \verb{_ref}, \code{wdraws_ref} does not necessarily obtain
-weights for the \emph{initial} reference model's posterior draws: In case of
-\code{\link[=cv_varsel]{cv_varsel()}} with \verb{cv_method = "kfold}, these weights may refer to one of
-the \eqn{K} reference model re-fits (but in that case, they are constant
-anyway).
+The function supplied to argument \code{latent_ilink} needs to have the prototype
+\code{latent_ilink(lpreds, cl_ref, wdraws_ref = rep(1, length(cl_ref)))} where:
+\itemize{
+\item \code{lpreds} accepts an \eqn{S \times N}{S x N} matrix containing the linear
+predictors.
+\item \code{cl_ref} accepts a numeric vector of length \eqn{S_{\mathrm{ref}}}{S_ref},
+containing \pkg{projpred}'s internal cluster indices for these draws.
+\item \code{wdraws_ref} accepts a numeric vector of length
+\eqn{S_{\mathrm{ref}}}{S_ref}, containing weights for these draws. These
+weights should be treated as not being normalized (i.e., they don't
+necessarily sum to \code{1}).
+}
+
+The return value of \code{latent_ilink} needs to contain the linear predictors
+transformed to the original response space, with the following structure:
+\itemize{
+\item If \code{is.null(latent_y_unqs)}: an \eqn{S \times N}{S x N} matrix.
+\item If \code{!is.null(latent_y_unqs)}: an \eqn{S \times N \times C_{\mathrm{cat}}}{S
+x N x C_cat} array. In that case, \code{latent_ilink} needs to return
+\emph{probabilities} (for the response categories given in \code{latent_y_unqs}).
+}
+
+The function supplied to argument \code{latent_llOrig} needs to have the prototype
+
+\if{html}{\out{<div class="sourceCode r">}}\preformatted{latent_llOrig(ilpreds, yOrig, wobs = rep(1, length(yOrig)), cl_ref,
+              wdraws_ref = rep(1, length(cl_ref)))
+}\if{html}{\out{</div>}}
+
+where:
+\itemize{
+\item \code{ilpreds} accepts the return value from \code{latent_ilink}.
+\item \code{yOrig} accepts a vector of length \eqn{N} containing response values on
+the original response scale.
+\item \code{wobs} accepts a numeric vector of length \eqn{N} containing observation
+weights.
+\item \code{cl_ref} accepts the same input as argument \code{cl_ref} of \code{latent_ilink}.
+\item \code{wdraws_ref} accepts the same input as argument \code{wdraws_ref} of
+\code{latent_ilink}.
+}
+
+The return value of \code{latent_llOrig} needs to be an \eqn{S \times N}{S x N}
+matrix containing the response-scale (not latent-scale) log-likelihood values
+for the \eqn{N} observations from its inputs.
+
+The function supplied to argument \code{latent_ppdOrig} needs to have the
+prototype
+
+\if{html}{\out{<div class="sourceCode r">}}\preformatted{latent_ppdOrig(ilpreds_resamp, wobs, cl_ref,
+               wdraws_ref = rep(1, length(cl_ref)), idxs_prjdraws)
+}\if{html}{\out{</div>}}
+
+where:
+\itemize{
+\item \code{ilpreds_resamp} accepts the return value from \code{latent_ilink}, but possibly
+with resampled (clustered) draws (see argument \code{nresample_clusters} of
+\code{\link[=proj_predict]{proj_predict()}}).
+\item \code{wobs} accepts a numeric vector of length \eqn{N} containing observation
+weights.
+\item \code{cl_ref} accepts the same input as argument \code{cl_ref} of \code{latent_ilink}.
+\item \code{wdraws_ref} accepts the same input as argument \code{wdraws_ref} of
+\code{latent_ilink}.
+\item \code{idxs_prjdraws} accepts a numeric vector of length \code{dim(ilpreds_resamp)[1]}
+containing the resampled indices of the projected draws (i.e., these indices
+are values from the set \eqn{\{1, ..., \texttt{dim(ilpreds)[1]}\}}{{1, ...,
+dim(ilpreds)[1]}} where \code{ilpreds} denotes the return value of
+\code{latent_ilink}).
+}
+
+The return value of \code{latent_ppdOrig} needs to be a
+\eqn{\texttt{dim(ilpreds\_resamp)[1]} \times N}{dim(ilpreds_resamp)[1] x N}
+matrix containing the response-scale (not latent-scale) draws from the
+posterior(-projection) predictive distributions for the \eqn{N} observations
+from its inputs.
+
+If the bodies of these three functions involve parameter draws from the
+reference model which have not been projected (e.g., for \code{latent_ilink}, the
+response thresholds in an ordinal model), \code{\link[=cl_agg]{cl_agg()}} is provided as a helper
+function for aggregating these reference model draws in the same way as the
+draws have been aggregated for \code{lpreds}.
+
+In fact, the weights passed to argument \code{wdraws_ref} are nonconstant only in
+case of \code{\link[=cv_varsel]{cv_varsel()}} with \code{cv_method = "LOO"} and \code{validate_search = TRUE}.
+In that case, the weights passed to this argument are the PSIS-LOO CV weights
+for one observation. Note that although argument \code{wdraws_ref} has the suffix
+\verb{_ref}, \code{wdraws_ref} does not necessarily obtain weights for the \emph{initial}
+reference model's posterior draws: In case of \code{\link[=cv_varsel]{cv_varsel()}} with \verb{cv_method = "kfold}, these weights may refer to one of the \eqn{K} reference model
+re-fits (but in that case, they are constant anyway).
 }
 
