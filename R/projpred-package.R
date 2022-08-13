@@ -34,12 +34,25 @@
 #' is projected, even though this term is not always appropriate for custom
 #' reference models.
 #'
-#' Currently, the families supported by the traditional (non-augmented-data)
-#' projection are [gaussian()], [binomial()] (and---via
-#' [brms::get_refmodel.brmsfit()]---also [brms::bernoulli()]), as well as
-#' [poisson()]. The families supported by the augmented-data projection are
-#' [binomial()] (again also [brms::bernoulli()]), [brms::cumulative()], and
-#' [brms::categorical()]. For the augmented-data projection with the
+#' In the following and throughout the rest of \pkg{projpred}'s documentation,
+#' the term "traditional projection" will be used whenever the projection type
+#' is neither "augmented-data" nor "latent" (see below for a description of
+#' these).
+#'
+#' The families supported by the traditional projection are [gaussian()],
+#' [binomial()] (and---via [brms::get_refmodel.brmsfit()]---also
+#' [brms::bernoulli()]), as well as [poisson()].
+#'
+#' The families supported by the augmented-data projection are [binomial()]
+#' (again also [brms::bernoulli()]), [brms::cumulative()],
+#' [rstanarm::stan_polr()] fits, and [brms::categorical()]. See
+#' [extend_family()] (which is called by [init_refmodel()]) for a description
+#' when the augmented-data projection will be applied to custom reference
+#' models. For non-custom reference models (i.e., those created by
+#' [get_refmodel.stanreg()] or [brms::get_refmodel.brmsfit()]), the
+#' augmented-data projection is applied automatically if the family is supported
+#' by the augmented-data projection and neither [binomial()] nor
+#' [brms::bernoulli()]. For applying the augmented-data projection to the
 #' [binomial()] (or [brms::bernoulli()]) family, see [extend_family()] as well
 #' as [augdat_link_binom()] and [augdat_ilink_binom()]. As soon as possible, a
 #' reference for the augmented-data projection will be provided here. For now,
@@ -47,10 +60,14 @@
 #' some basic information. Note that the augmented-data projection is currently
 #' considered as an experimental feature since it has not been tested thoroughly
 #' yet and is also subject to some more theoretical investigations.
-#' **TODO (latent)**: Add information about the latent projection.
-#' Note that the latent projection is currently considered as an experimental
-#' feature since it has not been tested thoroughly yet and is also subject to
-#' some more theoretical investigations.
+#'
+#' The families that are currently available for the latent projection (Catalina
+#' et al., 2021) are [binomial()] (again also [brms::bernoulli()]) and
+#' [brms::cumulative()]. The latent projection is applied when setting argument
+#' `latent` of [extend_family()] (which is called by [init_refmodel()]) to
+#' `TRUE`. Note that the latent projection is currently considered as an
+#' experimental feature since it has not been tested thoroughly yet and is also
+#' subject to some more theoretical investigations.
 #'
 #' The projection of the reference model onto a submodel can be run on multiple
 #' CPU cores in parallel (across the projected draws). This is powered by the
@@ -121,5 +138,9 @@
 #' Catalina, A., Bürkner, P.-C., and Vehtari, A. (2020). Projection predictive
 #' inference for generalized linear and additive multilevel models.
 #' *arXiv:2010.06994*. URL: <https://arxiv.org/abs/2010.06994>.
+#'
+#' Catalina, A., Bürkner, P., and Vehtari, A. (2021). Latent space projection
+#' predictive inference. *arXiv:2109.04702*. URL:
+#' <https://arxiv.org/abs/2109.04702>.
 #'
 "_PACKAGE"

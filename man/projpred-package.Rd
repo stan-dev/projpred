@@ -29,12 +29,25 @@ model. For the sake of simplicity, throughout this package, we use the term
 is projected, even though this term is not always appropriate for custom
 reference models.
 
-Currently, the families supported by the traditional (non-augmented-data)
-projection are \code{\link[=gaussian]{gaussian()}}, \code{\link[=binomial]{binomial()}} (and---via
-\code{\link[brms:get_refmodel.brmsfit]{brms::get_refmodel.brmsfit()}}---also \code{\link[brms:brmsfamily]{brms::bernoulli()}}), as well as
-\code{\link[=poisson]{poisson()}}. The families supported by the augmented-data projection are
-\code{\link[=binomial]{binomial()}} (again also \code{\link[brms:brmsfamily]{brms::bernoulli()}}), \code{\link[brms:brmsfamily]{brms::cumulative()}}, and
-\code{\link[brms:brmsfamily]{brms::categorical()}}. For the augmented-data projection with the
+In the following and throughout the rest of \pkg{projpred}'s documentation,
+the term "traditional projection" will be used whenever the projection type
+is neither "augmented-data" nor "latent" (see below for a description of
+these).
+
+The families supported by the traditional projection are \code{\link[=gaussian]{gaussian()}},
+\code{\link[=binomial]{binomial()}} (and---via \code{\link[brms:get_refmodel.brmsfit]{brms::get_refmodel.brmsfit()}}---also
+\code{\link[brms:brmsfamily]{brms::bernoulli()}}), as well as \code{\link[=poisson]{poisson()}}.
+
+The families supported by the augmented-data projection are \code{\link[=binomial]{binomial()}}
+(again also \code{\link[brms:brmsfamily]{brms::bernoulli()}}), \code{\link[brms:brmsfamily]{brms::cumulative()}},
+\code{\link[rstanarm:stan_polr]{rstanarm::stan_polr()}} fits, and \code{\link[brms:brmsfamily]{brms::categorical()}}. See
+\code{\link[=extend_family]{extend_family()}} (which is called by \code{\link[=init_refmodel]{init_refmodel()}}) for a description
+when the augmented-data projection will be applied to custom reference
+models. For non-custom reference models (i.e., those created by
+\code{\link[=get_refmodel.stanreg]{get_refmodel.stanreg()}} or \code{\link[brms:get_refmodel.brmsfit]{brms::get_refmodel.brmsfit()}}), the
+augmented-data projection is applied automatically if the family is supported
+by the augmented-data projection and neither \code{\link[=binomial]{binomial()}} nor
+\code{\link[brms:brmsfamily]{brms::bernoulli()}}. For applying the augmented-data projection to the
 \code{\link[=binomial]{binomial()}} (or \code{\link[brms:brmsfamily]{brms::bernoulli()}}) family, see \code{\link[=extend_family]{extend_family()}} as well
 as \code{\link[=augdat_link_binom]{augdat_link_binom()}} and \code{\link[=augdat_ilink_binom]{augdat_ilink_binom()}}. As soon as possible, a
 reference for the augmented-data projection will be provided here. For now,
@@ -42,10 +55,14 @@ reference for the augmented-data projection will be provided here. For now,
 some basic information. Note that the augmented-data projection is currently
 considered as an experimental feature since it has not been tested thoroughly
 yet and is also subject to some more theoretical investigations.
-\strong{TODO (latent)}: Add information about the latent projection.
-Note that the latent projection is currently considered as an experimental
-feature since it has not been tested thoroughly yet and is also subject to
-some more theoretical investigations.
+
+The families that are currently available for the latent projection (Catalina
+et al., 2021) are \code{\link[=binomial]{binomial()}} (again also \code{\link[brms:brmsfamily]{brms::bernoulli()}}) and
+\code{\link[brms:brmsfamily]{brms::cumulative()}}. The latent projection is applied when setting argument
+\code{latent} of \code{\link[=extend_family]{extend_family()}} (which is called by \code{\link[=init_refmodel]{init_refmodel()}}) to
+\code{TRUE}. Note that the latent projection is currently considered as an
+experimental feature since it has not been tested thoroughly yet and is also
+subject to some more theoretical investigations.
 
 The projection of the reference model onto a submodel can be run on multiple
 CPU cores in parallel (across the projected draws). This is powered by the
@@ -113,6 +130,10 @@ Journal of Statistics}, \strong{14}(1):2155-2197. \doi{10.1214/20-EJS1711}.
 Catalina, A., Bürkner, P.-C., and Vehtari, A. (2020). Projection predictive
 inference for generalized linear and additive multilevel models.
 \emph{arXiv:2010.06994}. URL: \url{https://arxiv.org/abs/2010.06994}.
+
+Catalina, A., Bürkner, P., and Vehtari, A. (2021). Latent space projection
+predictive inference. \emph{arXiv:2109.04702}. URL:
+\url{https://arxiv.org/abs/2109.04702}.
 }
 \seealso{
 Useful links:
