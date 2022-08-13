@@ -31,7 +31,7 @@ log_sum_exp <- function(x) {
 }
 
 linkfun_raw <- function(x, link_nm) {
-  if (link_nm %in% c("logistic", "logit")) {
+  if (link_nm %in% c("logit", "logistic")) {
     return(qlogis(x))
   } else if (link_nm %in% c("probit", "probit_approx")) {
     return(qnorm(x))
@@ -45,7 +45,7 @@ linkfun_raw <- function(x, link_nm) {
 }
 
 ilinkfun_raw <- function(x, link_nm) {
-  if (link_nm %in% c("logistic", "logit")) {
+  if (link_nm %in% c("logit", "logistic")) {
     return(plogis(x))
   } else if (link_nm %in% c("probit", "probit_approx")) {
     return(pnorm(x))
