@@ -1119,7 +1119,7 @@ init_refmodel <- function(object, data, formula, family, ref_predfun = NULL,
 
   ndraws <- ncol(mu)
   if (is.null(dis)) {
-    if (family$for_latent) {
+    if (family$for_latent && proper_model) {
       if (!is.null(family$linkOrig)) {
         if (family$linkOrig %in% c("probit", "probit_approx")) {
           dis <- rep(1, ndraws)
