@@ -45,8 +45,7 @@ latent_ppdOrig_binom_nocats <- function(ilpreds_resamp, wobs, cl_ref,
                                         wdraws_ref = rep(1, length(cl_ref)),
                                         idxs_prjdraws) {
   ilpreds_resamp <- t(ilpreds_resamp)
-  ppd <- rbinom(prod(dim(ilpreds_resamp)), size = wobs,
-                prob = ilpreds_resamp)
+  ppd <- rbinom(prod(dim(ilpreds_resamp)), size = wobs, prob = ilpreds_resamp)
   ppd <- matrix(ppd, ncol = length(wobs), byrow = TRUE)
   return(ppd)
 }
