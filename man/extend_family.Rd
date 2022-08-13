@@ -44,9 +44,10 @@ section "Latent projection" below.}
 \item{latent_llOrig}{Only relevant for the latent projection, in which case
 this needs to be the function (supplied as a function, not a character
 string, for example) computing response-scale (not latent-scale)
-log-likelihood values. If \code{!is.null(latent_y_unqs)}, then \code{latent_llOrig}
-can be \code{NULL}, in which case an internal default will be used. Can also be
-\code{NULL} in all other cases, but then downstream functions will have limited
+log-likelihood values. If \code{!is.null(latent_y_unqs)} or if the original
+response family was the \code{\link[=binomial]{binomial()}} family, then \code{latent_llOrig} can be
+\code{NULL}, in which case an internal default will be used. Can also be \code{NULL}
+in all other cases, but then downstream functions will have limited
 functionality (a message thrown by \code{\link[=extend_family]{extend_family()}} will state what
 exactly won't be available). See also section "Latent projection" below.}
 
@@ -54,15 +55,16 @@ exactly won't be available). See also section "Latent projection" below.}
 this needs to be the function (supplied as a function, not a character
 string, for example) sampling response values given latent predictors that
 have been transformed to response scale using \code{latent_ilink}. If
-\code{!is.null(latent_y_unqs)}, then \code{latent_ppdOrig} can be \code{NULL}, in which
-case an internal default will be used. Can also be \code{NULL} in all other
-cases, but then downstream functions will have limited functionality (a
-message thrown by \code{\link[=extend_family]{extend_family()}} will state what exactly won't be
-available). See also section "Latent projection" below. Note that although
-this function has the abbreviation "PPD" in its name (which stands for
-"posterior predictive distribution"), \pkg{projpred} currently only uses it
-in \code{\link[=proj_predict]{proj_predict()}}, i.e., for sampling from what would better be termed
-posterior-projection predictive distribution (PPPD).}
+\code{!is.null(latent_y_unqs)} or if the original response family was the
+\code{\link[=binomial]{binomial()}} family, then \code{latent_ppdOrig} can be \code{NULL}, in which case an
+internal default will be used. Can also be \code{NULL} in all other cases, but
+then downstream functions will have limited functionality (a message thrown
+by \code{\link[=extend_family]{extend_family()}} will state what exactly won't be available). See also
+section "Latent projection" below. Note that although this function has the
+abbreviation "PPD" in its name (which stands for "posterior predictive
+distribution"), \pkg{projpred} currently only uses it in \code{\link[=proj_predict]{proj_predict()}},
+i.e., for sampling from what would better be termed posterior-projection
+predictive distribution (PPPD).}
 
 \item{augdat_y_unqs}{Only relevant for augmented-data projection, in which
 case this needs to be the character vector of unique response values (which
