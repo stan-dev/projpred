@@ -57,17 +57,23 @@
 #'   * [proj_linpred()] returns a `list` with elements `pred` (predictions,
 #'   i.e., the linear predictors, possibly transformed to response scale) and
 #'   `lpd` (log predictive densities; only calculated if `newdata` contains
-#'   response values). In case of the traditional projection, both elements are
-#'   \eqn{S_{\mathrm{prj}} \times N}{S_prj x N} matrices. In case of the
-#'   augmented-data projection, `pred` is an \eqn{S_{\mathrm{prj}} \times N
-#'   \times C}{S_prj x N x C} array and `lpd` is an \eqn{S_{\mathrm{prj}} \times
+#'   response values). In case of (i) the traditional projection or (ii) the
+#'   latent projection with argument `latent_y_unqs` of [extend_family()] being
+#'   `NULL` when the reference model was built, both elements are
+#'   \eqn{S_{\mathrm{prj}} \times N}{S_prj x N} matrices. In case of (i) the
+#'   augmented-data projection or (ii) the latent projection with argument
+#'   `latent_y_unqs` of [extend_family()] being not `NULL` when the reference
+#'   model was built, `pred` is an \eqn{S_{\mathrm{prj}} \times N \times
+#'   C}{S_prj x N x C} array and `lpd` is an \eqn{S_{\mathrm{prj}} \times
 #'   N}{S_prj x N} matrix.
 #'   * [proj_predict()] returns an \eqn{S_{\mathrm{prj}} \times N}{S_prj x N}
 #'   matrix of predictions where \eqn{S_{\mathrm{prj}}}{S_prj} denotes
-#'   `nresample_clusters` in case of clustered projection. In case of the
-#'   augmented-data projection, this matrix has an attribute called `cats` (the
-#'   character vector of response categories) and the values of the matrix are
-#'   the predicted indices of the response categories (with the order of the
+#'   `nresample_clusters` in case of clustered projection. In case of (i) the
+#'   augmented-data projection or (ii) the latent projection with argument
+#'   `latent_y_unqs` of [extend_family()] being not `NULL` when the reference
+#'   model was built, this matrix has an attribute called `cats` (the character
+#'   vector of response categories) and the values of the matrix are the
+#'   predicted indices of the response categories (with the order of the
 #'   response categories being that from attribute `cats`).
 #'
 #'   If the prediction is done for more than one submodel, the output from above
