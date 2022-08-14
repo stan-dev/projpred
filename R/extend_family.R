@@ -60,13 +60,12 @@
 #'   projection" below.
 #' @param augdat_link Only relevant for augmented-data projection, in which case
 #'   this needs to be the link function (supplied as a function, not a character
-#'   string, for example). Use `NULL` for the traditional (non-augmented-data)
-#'   projection. See also section "Augmented-data projection" below.
+#'   string, for example). Use `NULL` for the traditional projection. See also
+#'   section "Augmented-data projection" below.
 #' @param augdat_ilink Only relevant for augmented-data projection, in which
 #'   case this needs to be the inverse-link function (supplied as a function,
 #'   not a character string, for example). Use `NULL` for the traditional
-#'   (non-augmented-data) projection. See also section "Augmented-data
-#'   projection" below.
+#'   projection. See also section "Augmented-data projection" below.
 #' @param augdat_args_link Only relevant for augmented-data projection, in which
 #'   case this may be a named `list` of arguments to pass to the function
 #'   supplied to `augdat_link`.
