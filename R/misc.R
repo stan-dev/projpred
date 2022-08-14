@@ -164,14 +164,13 @@ bootstrap <- function(x, fun = mean, B = 2000,
         stop(sprintf("Statistic '%s' not recognized.", stat))
       }
       if (stat %in% trad_stats_binom_only && fam_ch != "binomial") {
-        stop("In case of (i) the traditional (non-augmented-data) projection ",
-             "or (ii) the latent projection with `lat2resp = TRUE` and a ",
-             "`NULL` element `family$cats`, the performance ",
-             "statistic `\"", stat, "\"` is available only for ",
-             "the binomial family. This also explains why performance ",
-             "statistic `\"", stat, "\"` is not available in case of the ",
-             "latent projection with `lat2resp = FALSE` (because a latent ",
-             "Gaussian distribution is used there).")
+        stop("In case of (i) the traditional projection or (ii) the latent ",
+             "projection with `lat2resp = TRUE` and a `NULL` element ",
+             "`family$cats`, the performance statistic `\"", stat, "\"` is ",
+             "available only for the binomial family. This also explains why ",
+             "performance statistic `\"", stat, "\"` is not available in case ",
+             "of the latent projection with `lat2resp = FALSE` (because a ",
+             "latent Gaussian distribution is used there).")
       }
     }
   }

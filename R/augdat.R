@@ -19,12 +19,12 @@
 #' \eqn{C} (latent) response categories. For ordered response categories, the
 #' \eqn{C} (latent) response categories (i.e., the row blocks) have to be sorted
 #' increasingly. The columns of an augmented-rows matrix have to correspond to
-#' the \eqn{S} parameter draws, just like for the non-augmented-data projection.
-#' An augmented-rows matrix is of class `augmat` (inheriting from classes
-#' `matrix` and `array`) and needs to have the value of \eqn{N} stored in an
-#' attribute called `nobs_orig`. An augmented-length vector (class `augvec`) is
-#' the vector resulting from subsetting an augmented-rows matrix to extract a
-#' single column and thereby dropping dimensions.
+#' the \eqn{S} parameter draws, just like for the traditional projection. An
+#' augmented-rows matrix is of class `augmat` (inheriting from classes `matrix`
+#' and `array`) and needs to have the value of \eqn{N} stored in an attribute
+#' called `nobs_orig`. An augmented-length vector (class `augvec`) is the vector
+#' resulting from subsetting an augmented-rows matrix to extract a single column
+#' and thereby dropping dimensions.
 #'
 #' @name augdat-internals
 #' @keywords internal

@@ -1,6 +1,6 @@
 # Divergence minimizers ---------------------------------------------------
 
-## Traditional (non-augmented-data) projection ----------------------------
+## Traditional (and latent) projection ------------------------------------
 
 # Needed to avoid a NOTE in `R CMD check`:
 if (getRversion() >= package_version("2.15.1")) {
