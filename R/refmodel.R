@@ -371,8 +371,8 @@ predict.refmodel <- function(object, newdata = NULL, ynew = NULL,
   } else if (!is.null(ynew) &&
              object$family$for_latent &&
              is.null(object$family$cats) &&
-             is.factor(ynew)) {
-    stop("If the original (i.e., non-latent) response is a factor, ",
+             (is.factor(ynew) || is.character(ynew) || is.logical(ynew))) {
+    stop("If the original (i.e., non-latent) response is `factor`-like, ",
          "`family$cats` must not be `NULL`. See the documentation for ",
          "extend_family()'s argument `latent_y_unqs` to solve this.")
   }
@@ -1012,14 +1012,14 @@ init_refmodel <- function(object, data, formula, family, ref_predfun = NULL,
   if (family$for_latent) {
     y <- rowMeans(ref_predfun(object))
     yOrig <- model_data$y
-    if (is.factor(yOrig) && is.null(family$cats)) {
-      stop("If the original (i.e., non-latent) response is a factor, ",
+    if (is.null(family$cats) &&
+        (is.factor(yOrig) || is.character(yOrig) || is.logical(yOrig))) {
+      stop("If the original (i.e., non-latent) response is `factor`-like, ",
            "`family$cats` must not be `NULL`. See the documentation for ",
            "extend_family()'s argument `latent_y_unqs` to solve this.")
       # Alternatively, we could think about `family$cats <- levels(yOrig)`. But
-      # currently, I think the error message is conceptually more desirable
-      # because it avoids the retrospective modification of extend_family()
-      # output.
+      # the error message is conceptually more desirable because it avoids the
+      # retrospective modification of extend_family() output.
     }
     if (!is.null(family$cats)) {
       yOrig <- as.factor(yOrig)

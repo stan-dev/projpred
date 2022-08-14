@@ -324,8 +324,8 @@ compute_lpd <- function(ynew, pred_sub, proj, weights, transformed) {
       ynew <- factor(ynew, levels = proj$refmodel$family$cats)
     } else if (proj$refmodel$family$for_latent &&
                is.null(proj$refmodel$family$cats) &&
-               is.factor(ynew)) {
-      stop("If the original (i.e., non-latent) response is a factor, ",
+               (is.factor(ynew) || is.character(ynew) || is.logical(ynew))) {
+      stop("If the original (i.e., non-latent) response is `factor`-like, ",
            "`family$cats` must not be `NULL`. See the documentation for ",
            "extend_family()'s argument `latent_y_unqs` to solve this.")
     }
