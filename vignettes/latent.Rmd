@@ -133,62 +133,62 @@ solution_terms(vanilla_vs)
 plot(vanilla_vs, stats = c('elpd', 'rmse'), seed = 4537)
 ```
 
-## Time-to-event models
+<!-- ## Time-to-event models -->
 
-We now turn to a non-Exponential family distributed variate. Specifically, we will be working with a time-to-event model in BRMS where the variate is Weibull distributed according to 
-$$
-f(y) = \frac{\alpha}{s} \left(\frac{y}{s}\right)^{\alpha-1}  \exp\left(-\left(\frac{y}{s}\right)^\alpha\right),
-$$
-and is dealing with censored data from the lung cancer dataset from @lung. We note that in general, the Weibull distribution is not a member of the exponential family In fact this is only the case when the shape parameter $\alpha$ is known and fixed.
+<!-- We now turn to a non-Exponential family distributed variate. Specifically, we will be working with a time-to-event model in BRMS where the variate is Weibull distributed according to  -->
+<!-- $$ -->
+<!-- f(y) = \frac{\alpha}{s} \left(\frac{y}{s}\right)^{\alpha-1}  \exp\left(-\left(\frac{y}{s}\right)^\alpha\right), -->
+<!-- $$ -->
+<!-- and is dealing with censored data from the lung cancer dataset from @lung. We note that in general, the Weibull distribution is not a member of the exponential family In fact this is only the case when the shape parameter $\alpha$ is known and fixed. -->
 
-We first process our data as follows.
+<!-- We first process our data as follows. -->
 
-```{r}
-# read data from `survival` library
-data("cancer", package = "survival")
-# build dataset
-data <- na.omit(cancer)
-# identify covariate labels
-xtags <- data %>%
-  dplyr::select(-status, -time) %>%
-  colnames()
-```
+<!-- ```{r} -->
+<!-- # read data from `survival` library -->
+<!-- data("cancer", package = "survival") -->
+<!-- # build dataset -->
+<!-- data <- na.omit(cancer) -->
+<!-- # identify covariate labels -->
+<!-- xtags <- data %>% -->
+<!--   dplyr::select(-status, -time) %>% -->
+<!--   colnames() -->
+<!-- ``` -->
 
-We now define a simple GLM formula with censored data, and some Gaussian prior over the regressors (note that this is independent to our Gaussianity assumption over the latent predictor) and fit it accordingly in BRMS.
+<!-- We now define a simple GLM formula with censored data, and some Gaussian prior over the regressors (note that this is independent to our Gaussianity assumption over the latent predictor) and fit it accordingly in BRMS. -->
 
-```{r}
-# fit GLM model with BRMS, expliciting a non-exponential family
-fit <- brm(
-  formula = formula(paste("time | cens(2 - status) ~",
-                          paste0(xtags, collapse = " + "))),
-  data = data,
-  family = weibull(),
-  prior = set_prior("normal(0, 1)", class = "b"),
-  seed = 300416, refresh = 0
-)
-```
+<!-- ```{r} -->
+<!-- # fit GLM model with BRMS, expliciting a non-exponential family -->
+<!-- fit <- brm( -->
+<!--   formula = formula(paste("time | cens(2 - status) ~", -->
+<!--                           paste0(xtags, collapse = " + "))), -->
+<!--   data = data, -->
+<!--   family = weibull(), -->
+<!--   prior = set_prior("normal(0, 1)", class = "b"), -->
+<!--   seed = 300416, refresh = 0 -->
+<!-- ) -->
+<!-- ``` -->
 
-Repeating the workflow, we first extract the latent predictor posterior draws, and then define a reference model in terms of them. It is at this stage that we enforce our Gaussianity assumption in the default parameter value of the `fit_latent` function.
+<!-- Repeating the workflow, we first extract the latent predictor posterior draws, and then define a reference model in terms of them. It is at this stage that we enforce our Gaussianity assumption in the default parameter value of the `fit_latent` function. -->
 
-```{r}
-# define new reference model for latent predictor
-latent_ref <- get_refmodel(
-  fit,
-  latent = TRUE
-)
-```
+<!-- ```{r} -->
+<!-- # define new reference model for latent predictor -->
+<!-- latent_ref <- get_refmodel( -->
+<!--   fit, -->
+<!--   latent = TRUE -->
+<!-- ) -->
+<!-- ``` -->
 
-Having now build a reference model belonging to the Exponential family from a model originally Weibull-distributed, we can employ variable selection with `projpred`.
+<!-- Having now build a reference model belonging to the Exponential family from a model originally Weibull-distributed, we can employ variable selection with `projpred`. -->
 
-```{r}
-# perform latent projection predictive variable selection on model
-vs <- varsel(latent_ref, seed = 456942)
-# selection order of the variables
-solution_terms(vs)
-# plot varsel results
-plot(vs, stats = c('elpd', 'rmse'), seed = 842032)
-```
+<!-- ```{r} -->
+<!-- # perform latent projection predictive variable selection on model -->
+<!-- vs <- varsel(latent_ref, seed = 456942) -->
+<!-- # selection order of the variables -->
+<!-- solution_terms(vs) -->
+<!-- # plot varsel results -->
+<!-- plot(vs, stats = c('elpd', 'rmse'), seed = 842032) -->
+<!-- ``` -->
 
-We thus discover an ordering of variables in this non-exponential family model using latent projection predictive inference.
+<!-- We thus discover an ordering of variables in this non-exponential family model using latent projection predictive inference. -->
 
 ## References
