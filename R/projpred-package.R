@@ -47,14 +47,17 @@
 #' provided here. For now, [this GitHub
 #' issue](https://github.com/stan-dev/projpred/issues/70) provides some basic
 #' information. The families supported by the augmented-data projection are
-#' [binomial()] (again also [brms::bernoulli()]), [brms::cumulative()],
-#' [rstanarm::stan_polr()] fits, and [brms::categorical()]. See
-#' [extend_family()] (which is called by [init_refmodel()]) for a description
-#' when the augmented-data projection will be applied to custom reference
-#' models. For non-custom reference models (i.e., those created by
-#' [get_refmodel.stanreg()] or [brms::get_refmodel.brmsfit()]), the
-#' augmented-data projection is applied automatically if the family is supported
-#' by the augmented-data projection and neither [binomial()] nor
+#' [binomial()] (again also [brms::bernoulli()], but note that currently, the
+#' support for the [binomial()] family does not include binomial distributions
+#' with more than one trial; in such a case, a workaround is to de-aggregate the
+#' Bernoulli trials which belong to the same (aggregated) observation, i.e., to
+#' use a "long" dataset), [brms::cumulative()], [rstanarm::stan_polr()] fits,
+#' and [brms::categorical()]. See [extend_family()] (which is called by
+#' [init_refmodel()]) for a description when the augmented-data projection will
+#' be applied to custom reference models. For non-custom reference models (i.e.,
+#' those created by [get_refmodel.stanreg()] or [brms::get_refmodel.brmsfit()]),
+#' the augmented-data projection is applied automatically if the family is
+#' supported by the augmented-data projection and neither [binomial()] nor
 #' [brms::bernoulli()]. For applying the augmented-data projection to the
 #' [binomial()] (or [brms::bernoulli()]) family, see [extend_family()] as well
 #' as [augdat_link_binom()] and [augdat_ilink_binom()]. Note that the
@@ -66,12 +69,16 @@
 #' for extending \pkg{projpred}'s traditional projection to more response
 #' families. The families for which full latent-projection functionality (in
 #' particular, post-processing on the original response scale) is currently
-#' available are [binomial()] (again also [brms::bernoulli()]),
-#' [brms::cumulative()], and `rstanarm::stan_polr()` fits. The latent projection
-#' is applied when setting argument `latent` of [extend_family()] (which is
-#' called by [init_refmodel()]) to `TRUE`. Note that the latent projection is
-#' currently considered as an experimental feature since it has not been tested
-#' thoroughly yet and is also subject to some more theoretical investigations.
+#' available are [binomial()] (again also [brms::bernoulli()], but note that
+#' currently, the support for the [binomial()] family does not include binomial
+#' distributions with more than one trial; in such a case, a workaround is to
+#' de-aggregate the Bernoulli trials which belong to the same (aggregated)
+#' observation, i.e., to use a "long" dataset), [brms::cumulative()], and
+#' `rstanarm::stan_polr()` fits. The latent projection is applied when setting
+#' argument `latent` of [extend_family()] (which is called by [init_refmodel()])
+#' to `TRUE`. Note that the latent projection is currently considered as an
+#' experimental feature since it has not been tested thoroughly yet and is also
+#' subject to some more theoretical investigations.
 #'
 #' The projection of the reference model onto a submodel can be run on multiple
 #' CPU cores in parallel (across the projected draws). This is powered by the
