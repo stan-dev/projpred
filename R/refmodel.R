@@ -783,6 +783,40 @@ get_refmodel.stanreg <- function(object, latent = FALSE, ...) {
     args_augdat <- list()
   }
 
+  # Latent projection -------------------------------------------------------
+
+  args_latent <- list()
+  if (latent) {
+    if (object$stan_function == "stan_polr") {
+      draws_mat <- as.matrix(object)
+      thres_nms <- names(object$zeta)
+      thres_draws <- draws_mat[, thres_nms, drop = FALSE]
+      args_latent <- c(args_latent, list(
+        latent_y_unqs = family$cats,
+        latent_ilink = function(lpreds, cl_ref,
+                                wdraws_ref = rep(1, length(cl_ref))) {
+          thres_agg <- cl_agg(thres_draws, cl = cl_ref,
+                              wdraws = wdraws_ref)
+          lpreds_thres <- apply(thres_agg, 2, function(thres_agg_c) {
+            # Notes on dimensionalities (with S_agg = `nrow(lpreds)`):
+            # * `thres_agg` is S_agg x C_lat (with C_lat = `ncats - 1L` =
+            #   `nthres`) and thus `thres_agg_c` is a vector of length S_agg,
+            # * `lpreds` is S_agg x N (with N denoting the number of (possibly
+            #   new) observations (not necessarily the original number of
+            #   observations)).
+            thres_agg_c - lpreds
+          }, simplify = FALSE)
+          # Coerce to an S_agg x N x C_lat array:
+          lpreds_thres <- do.call(abind::abind, c(lpreds_thres, rev.along = 0))
+          # Transform to response space, yielding an S_agg x N x C_cat array:
+          return(augdat_ilink_cumul(lpreds_thres, link = family$link))
+        }
+      ))
+      # Free up some memory:
+      rm(draws_mat)
+    }
+  }
+
   # Output ------------------------------------------------------------------
 
   args_basic <- list(
@@ -791,7 +825,8 @@ get_refmodel.stanreg <- function(object, latent = FALSE, ...) {
     dis = dis, cvfun = cvfun, cvrefbuilder = cvrefbuilder,
     latent = latent
   )
-  return(do.call(init_refmodel, args = c(args_basic, args_augdat, list(...))))
+  return(do.call(init_refmodel, args = c(args_basic, args_augdat, args_latent,
+                                         list(...))))
 }
 
 #' @rdname refmodel-init-get

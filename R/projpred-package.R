@@ -66,12 +66,12 @@
 #' for extending \pkg{projpred}'s traditional projection to more response
 #' families. The families for which full latent-projection functionality (in
 #' particular, post-processing on the original response scale) is currently
-#' available are [binomial()] (again also [brms::bernoulli()]) and
-#' [brms::cumulative()]. The latent projection is applied when setting argument
-#' `latent` of [extend_family()] (which is called by [init_refmodel()]) to
-#' `TRUE`. Note that the latent projection is currently considered as an
-#' experimental feature since it has not been tested thoroughly yet and is also
-#' subject to some more theoretical investigations.
+#' available are [binomial()] (again also [brms::bernoulli()]),
+#' [brms::cumulative()], and `rstanarm::stan_polr()` fits. The latent projection
+#' is applied when setting argument `latent` of [extend_family()] (which is
+#' called by [init_refmodel()]) to `TRUE`. Note that the latent projection is
+#' currently considered as an experimental feature since it has not been tested
+#' thoroughly yet and is also subject to some more theoretical investigations.
 #'
 #' The projection of the reference model onto a submodel can be run on multiple
 #' CPU cores in parallel (across the projected draws). This is powered by the

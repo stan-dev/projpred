@@ -60,12 +60,12 @@ The latent projection (Catalina et al., 2021) is a quite general principle
 for extending \pkg{projpred}'s traditional projection to more response
 families. The families for which full latent-projection functionality (in
 particular, post-processing on the original response scale) is currently
-available are \code{\link[=binomial]{binomial()}} (again also \code{\link[brms:brmsfamily]{brms::bernoulli()}}) and
-\code{\link[brms:brmsfamily]{brms::cumulative()}}. The latent projection is applied when setting argument
-\code{latent} of \code{\link[=extend_family]{extend_family()}} (which is called by \code{\link[=init_refmodel]{init_refmodel()}}) to
-\code{TRUE}. Note that the latent projection is currently considered as an
-experimental feature since it has not been tested thoroughly yet and is also
-subject to some more theoretical investigations.
+available are \code{\link[=binomial]{binomial()}} (again also \code{\link[brms:brmsfamily]{brms::bernoulli()}}),
+\code{\link[brms:brmsfamily]{brms::cumulative()}}, and \code{rstanarm::stan_polr()} fits. The latent projection
+is applied when setting argument \code{latent} of \code{\link[=extend_family]{extend_family()}} (which is
+called by \code{\link[=init_refmodel]{init_refmodel()}}) to \code{TRUE}. Note that the latent projection is
+currently considered as an experimental feature since it has not been tested
+thoroughly yet and is also subject to some more theoretical investigations.
 
 The projection of the reference model onto a submodel can be run on multiple
 CPU cores in parallel (across the projected draws). This is powered by the
