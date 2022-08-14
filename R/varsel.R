@@ -95,7 +95,7 @@
 #' set (if there are no observation weights, use a vector of ones).
 #' * `y`: a numeric vector containing the response values for the test set. In
 #' case of the latent projection, these are the reference model's latent
-#' predictors.
+#' predictors averaged across the posterior draws.
 #' * `yOrig`: Only needs to be provided in case of the latent projection where
 #' this needs to be a vector or a `factor` containing the *original* (i.e.,
 #' non-latent) response values for the test set.
