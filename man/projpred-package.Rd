@@ -56,8 +56,11 @@ some basic information. Note that the augmented-data projection is currently
 considered as an experimental feature since it has not been tested thoroughly
 yet and is also subject to some more theoretical investigations.
 
-The families that are currently available for the latent projection (Catalina
-et al., 2021) are \code{\link[=binomial]{binomial()}} (again also \code{\link[brms:brmsfamily]{brms::bernoulli()}}) and
+The latent projection (Catalina et al., 2021) is a quite general principle
+for extending \pkg{projpred}'s traditional projection to more response
+families. The families for which full latent-projection functionality (in
+particular, post-processing on the original response scale) is currently
+available are \code{\link[=binomial]{binomial()}} (again also \code{\link[brms:brmsfamily]{brms::bernoulli()}}) and
 \code{\link[brms:brmsfamily]{brms::cumulative()}}. The latent projection is applied when setting argument
 \code{latent} of \code{\link[=extend_family]{extend_family()}} (which is called by \code{\link[=init_refmodel]{init_refmodel()}}) to
 \code{TRUE}. Note that the latent projection is currently considered as an
