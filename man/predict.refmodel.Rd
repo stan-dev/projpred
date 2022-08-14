@@ -27,9 +27,9 @@ observations. May also be \code{NULL} (see argument \code{extract_model_data} of
 \item{ynew}{If not \code{NULL}, then this needs to be a vector of new (or old)
 response values. See also section "Value" below. In case of (i) the
 augmented-data projection or (ii) the latent projection with argument
-\code{latent_y_unqs} passed to \code{\link[=extend_family]{extend_family()}} being not \code{NULL} when the
-reference model was built, \code{ynew} is internally coerced to a \code{factor}
-(using \code{\link[=as.factor]{as.factor()}}). The levels of this \code{factor} have to be a subset of
+\code{latent_y_unqs} of \code{\link[=extend_family]{extend_family()}} being not \code{NULL} when the reference
+model was built, \code{ynew} is internally coerced to a \code{factor} (using
+\code{\link[=as.factor]{as.factor()}}). The levels of this \code{factor} have to be a subset of
 \code{object$family$cats} (see \code{\link[=extend_family]{extend_family()}}'s arguments \code{augdat_y_unqs} and
 \code{latent_y_unqs}, respectively).}
 
@@ -57,12 +57,12 @@ Furthermore, let \eqn{C} denote either \eqn{C_{\mathrm{cat}}}{C_cat} (if
 Then, if \code{is.null(ynew)}, the returned object contains the reference
 model's predictions (with the scale depending on argument \code{type}) as a
 length-\eqn{N} vector in case of (i) the traditional projection or (ii) the
-latent projection with argument \code{latent_y_unqs} passed to \code{\link[=extend_family]{extend_family()}}
-being \code{NULL} when the reference model was built and as an \eqn{N \times
-  C}{N x C} matrix in case of (i) the augmented-data projection or (ii) the
-latent projection with argument \code{latent_y_unqs} passed to \code{\link[=extend_family]{extend_family()}}
-being not \code{NULL} when the reference model was built. If \code{!is.null(ynew)},
-the returned object is a length-\eqn{N} vector of log predictive densities
+latent projection with argument \code{latent_y_unqs} of \code{\link[=extend_family]{extend_family()}} being
+\code{NULL} when the reference model was built and as an \eqn{N \times C}{N x C}
+matrix in case of (i) the augmented-data projection or (ii) the latent
+projection with argument \code{latent_y_unqs} of \code{\link[=extend_family]{extend_family()}} being not
+\code{NULL} when the reference model was built. If \code{!is.null(ynew)}, the
+returned object is a length-\eqn{N} vector of log predictive densities
 evaluated at \code{ynew}.
 }
 \description{

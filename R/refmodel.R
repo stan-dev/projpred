@@ -310,9 +310,9 @@ NULL
 #' @param ynew If not `NULL`, then this needs to be a vector of new (or old)
 #'   response values. See also section "Value" below. In case of (i) the
 #'   augmented-data projection or (ii) the latent projection with argument
-#'   `latent_y_unqs` passed to [extend_family()] being not `NULL` when the
-#'   reference model was built, `ynew` is internally coerced to a `factor`
-#'   (using [as.factor()]). The levels of this `factor` have to be a subset of
+#'   `latent_y_unqs` of [extend_family()] being not `NULL` when the reference
+#'   model was built, `ynew` is internally coerced to a `factor` (using
+#'   [as.factor()]). The levels of this `factor` have to be a subset of
 #'   `object$family$cats` (see [extend_family()]'s arguments `augdat_y_unqs` and
 #'   `latent_y_unqs`, respectively).
 #' @param type Only relevant if `is.null(ynew)`. The scale on which the
@@ -331,12 +331,12 @@ NULL
 #'   Then, if `is.null(ynew)`, the returned object contains the reference
 #'   model's predictions (with the scale depending on argument `type`) as a
 #'   length-\eqn{N} vector in case of (i) the traditional projection or (ii) the
-#'   latent projection with argument `latent_y_unqs` passed to [extend_family()]
-#'   being `NULL` when the reference model was built and as an \eqn{N \times
-#'   C}{N x C} matrix in case of (i) the augmented-data projection or (ii) the
-#'   latent projection with argument `latent_y_unqs` passed to [extend_family()]
-#'   being not `NULL` when the reference model was built. If `!is.null(ynew)`,
-#'   the returned object is a length-\eqn{N} vector of log predictive densities
+#'   latent projection with argument `latent_y_unqs` of [extend_family()] being
+#'   `NULL` when the reference model was built and as an \eqn{N \times C}{N x C}
+#'   matrix in case of (i) the augmented-data projection or (ii) the latent
+#'   projection with argument `latent_y_unqs` of [extend_family()] being not
+#'   `NULL` when the reference model was built. If `!is.null(ynew)`, the
+#'   returned object is a length-\eqn{N} vector of log predictive densities
 #'   evaluated at `ynew`.
 #'
 #' @export

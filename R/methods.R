@@ -684,24 +684,28 @@ plot.vsel <- function(
 #' @details The `stats` options `"mse"` and `"rmse"` are only available for:
 #'   * the traditional projection,
 #'   * the latent projection with `lat2resp = FALSE`,
-#'   * the latent projection with `lat2resp = TRUE` in combination with a
-#'   non-`factor` original response.
+#'   * the latent projection with `lat2resp = TRUE` in combination with argument
+#'   `latent_y_unqs` of [extend_family()] being `NULL` when the reference model
+#'   was built.
 #'
 #'   The `stats` option `"acc"` (= `"pctcorr"`) is only available for:
 #'   * the [binomial()] family in case of the traditional projection,
 #'   * all families in case of the augmented-data projection,
 #'   * the [binomial()] family (on the original response scale) in case of the
-#'   latent projection with `lat2resp = TRUE` in combination with a non-`factor`
-#'   original response,
+#'   latent projection with `lat2resp = TRUE` in combination with argument
+#'   `latent_y_unqs` of [extend_family()] being `NULL` when the reference model
+#'   was built,
 #'   * all families (on the original response scale) in case of the latent
-#'   projection with `lat2resp = TRUE` in combination with a `factor` original
-#'   response.
+#'   projection with `lat2resp = TRUE` in combination with argument
+#'   `latent_y_unqs` of [extend_family()] being not `NULL` when the reference
+#'   model was built.
 #'
 #'   The `stats` option `"auc"` is only available for:
 #'   * the [binomial()] family in case of the traditional projection,
 #'   * the [binomial()] family (on the original response scale) in case of the
-#'   latent projection with `lat2resp = TRUE` in combination with a non-`factor`
-#'   original response.
+#'   latent projection with `lat2resp = TRUE` in combination with argument
+#'   `latent_y_unqs` of [extend_family()] being `NULL` when the reference model
+#'   was built.
 #'
 #' @examples
 #' if (requireNamespace("rstanarm", quietly = TRUE)) {
