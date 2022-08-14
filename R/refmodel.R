@@ -107,14 +107,15 @@
 #' \eqn{S_{\mathrm{ref}}}{S_ref} the number of posterior draws for the reference
 #' model's parameters, and \eqn{S_{\mathrm{prj}}}{S_prj} the number of (possibly
 #' clustered) parameter draws for projection (short: the number of projected
-#' draws). For the augmented-data projection, let \eqn{C_{\mathrm{cat}}}{C_cat}
-#' denote the number of response categories, \eqn{C_{\mathrm{lat}}}{C_lat} the
-#' number of latent response categories (which typically equals
-#' \eqn{C_{\mathrm{cat}} - 1}{C_cat - 1}), and define \eqn{N_{\mathrm{augcat}}
-#' := N \cdot C_{\mathrm{cat}}}{N_augcat := N * C_cat} as well as
-#' \eqn{N_{\mathrm{auglat}} := N \cdot C_{\mathrm{lat}}}{N_auglat := N * C_lat}.
-#' Then the functions supplied to these arguments need to have the following
-#' prototypes:
+#' draws). For (i) the augmented-data projection or (ii) the latent projection
+#' with argument `latent_y_unqs` passed to [extend_family()] being not `NULL`,
+#' let \eqn{C_{\mathrm{cat}}}{C_cat} denote the number of response categories,
+#' \eqn{C_{\mathrm{lat}}}{C_lat} the number of latent response categories (which
+#' typically equals \eqn{C_{\mathrm{cat}} - 1}{C_cat - 1}), and define
+#' \eqn{N_{\mathrm{augcat}} := N \cdot C_{\mathrm{cat}}}{N_augcat := N * C_cat}
+#' as well as \eqn{N_{\mathrm{auglat}} := N \cdot C_{\mathrm{lat}}}{N_auglat :=
+#' N * C_lat}. Then the functions supplied to these arguments need to have the
+#' following prototypes:
 #' * `ref_predfun`: `ref_predfun(fit, newdata = NULL)` where:
 #'     + `fit` accepts the reference model fit as given in argument `object`
 #'     (but possibly re-fitted to a subset of the observations, as done in
@@ -140,38 +141,38 @@
 #'     which case the projection has to be performed for each of the response
 #'     variables separately.
 #'     + `data` accepts a `data.frame` to be used for the projection. In case of
-#'     the traditional (non-augmented-data) projection, this dataset has \eqn{N}
-#'     rows. In case of the augmented-data projection, this dataset has
+#'     the traditional or the latent projection, this dataset has \eqn{N} rows.
+#'     In case of the augmented-data projection, this dataset has
 #'     \eqn{N_{\mathrm{augcat}}}{N_augcat} rows.
 #'     + `family` accepts a [`family`] object.
 #'     + `weights` accepts either observation weights (at least in the form of a
 #'     numeric vector) or `NULL` (for using a vector of ones as weights).
 #'     + `projpred_var` accepts an \eqn{N \times S_{\mathrm{prj}}}{N x S_prj}
 #'     matrix of predictive variances (necessary for \pkg{projpred}'s internal
-#'     GLM fitter) in case of the traditional projection and an
+#'     GLM fitter) in case of the traditional or the latent projection and an
 #'     \eqn{N_{\mathrm{augcat}} \times S_{\mathrm{prj}}}{N_augcat x S_prj}
-#'     matrix of `NA`s in case of the augmented-data projection.
+#'     matrix (containing only `NA`s) in case of the augmented-data projection.
 #'     + `projpred_regul` accepts a single numeric value as supplied to argument
 #'     `regul` of [project()], for example.
 #'     + `projpred_ws_aug` accepts an \eqn{N \times S_{\mathrm{prj}}}{N x S_prj}
-#'     matrix of expected values for the response in case of the traditional
-#'     projection and an \eqn{N_{\mathrm{augcat}} \times
+#'     matrix of expected values for the response in case of the traditional or
+#'     the latent projection and an \eqn{N_{\mathrm{augcat}} \times
 #'     S_{\mathrm{prj}}}{N_augcat x S_prj} matrix of probabilities for the
 #'     response categories in case of the augmented-data projection.
 #'     + `...` accepts further arguments specified by the user.
 #'
 #' The return value of these functions needs to be:
-#' * `ref_predfun`: for the traditional projection, an \eqn{N \times
-#' S_{\mathrm{ref}}}{N x S_ref} matrix; for the augmented-data projection, an
-#' \eqn{S_{\mathrm{ref}} \times N \times C_{\mathrm{lat}}}{S_ref x N x C_lat}
-#' array (the only exception is the augmented-data projection for the
-#' [binomial()] family in which case `ref_predfun` needs to return an \eqn{N
+#' * `ref_predfun`: for the traditional or the latent projection, an \eqn{N
+#' \times S_{\mathrm{ref}}}{N x S_ref} matrix; for the augmented-data
+#' projection, an \eqn{S_{\mathrm{ref}} \times N \times C_{\mathrm{lat}}}{S_ref
+#' x N x C_lat} array (the only exception is the augmented-data projection for
+#' the [binomial()] family in which case `ref_predfun` needs to return an \eqn{N
 #' \times S_{\mathrm{ref}}}{N x S_ref} matrix just like for the traditional
 #' projection because the array is constructed by an internal wrapper function).
-#' * `proj_predfun`: for the traditional projection, an \eqn{N \times
-#' S_{\mathrm{prj}}}{N x S_prj} matrix; for the augmented-data projection, an
-#' \eqn{N \times C_{\mathrm{lat}} \times S_{\mathrm{prj}}}{N x C_lat x S_prj}
-#' array.
+#' * `proj_predfun`: for the traditional or the latent projection, an \eqn{N
+#' \times S_{\mathrm{prj}}}{N x S_prj} matrix; for the augmented-data
+#' projection, an \eqn{N \times C_{\mathrm{lat}} \times S_{\mathrm{prj}}}{N x
+#' C_lat x S_prj} array.
 #' * `div_minimizer`: a `list` of length \eqn{S_{\mathrm{prj}}}{S_prj}
 #' containing this number of submodel fits.
 #'
@@ -307,10 +308,13 @@ NULL
 #' @param object An object of class `refmodel` (returned by [get_refmodel()] or
 #'   [init_refmodel()]).
 #' @param ynew If not `NULL`, then this needs to be a vector of new (or old)
-#'   response values. See also section "Value" below. In case of the
-#'   augmented-data projection, `ynew` is internally coerced to a `factor`
+#'   response values. See also section "Value" below. In case of (i) the
+#'   augmented-data projection or (ii) the latent projection with argument
+#'   `latent_y_unqs` passed to [extend_family()] being not `NULL` when the
+#'   reference model was built, `ynew` is internally coerced to a `factor`
 #'   (using [as.factor()]). The levels of this `factor` have to be a subset of
-#'   `object$family$cats` (see [extend_family()]'s argument `augdat_y_unqs`).
+#'   `object$family$cats` (see [extend_family()]'s arguments `augdat_y_unqs` and
+#'   `latent_y_unqs`, respectively).
 #' @param type Only relevant if `is.null(ynew)`. The scale on which the
 #'   predictions are returned, either `"link"` or `"response"` (see
 #'   [predict.glm()] but note that [predict.refmodel()] does not adhere to the
@@ -326,10 +330,14 @@ NULL
 #'   `type = "response"`) or \eqn{C_{\mathrm{lat}}}{C_lat} (if `type = "link"`).
 #'   Then, if `is.null(ynew)`, the returned object contains the reference
 #'   model's predictions (with the scale depending on argument `type`) as a
-#'   length-\eqn{N} vector in case of the traditional projection and as an
-#'   \eqn{N \times C}{N x C} matrix in case of the augmented-data projection. If
-#'   `!is.null(ynew)`, the returned object is a length-\eqn{N} vector of log
-#'   predictive densities evaluated at `ynew`.
+#'   length-\eqn{N} vector in case of (i) the traditional projection or (ii) the
+#'   latent projection with argument `latent_y_unqs` passed to [extend_family()]
+#'   being `NULL` when the reference model was built and as an \eqn{N \times
+#'   C}{N x C} matrix in case of (i) the augmented-data projection or (ii) the
+#'   latent projection with argument `latent_y_unqs` passed to [extend_family()]
+#'   being not `NULL` when the reference model was built. If `!is.null(ynew)`,
+#'   the returned object is a length-\eqn{N} vector of log predictive densities
+#'   evaluated at `ynew`.
 #'
 #' @export
 predict.refmodel <- function(object, newdata = NULL, ynew = NULL,
