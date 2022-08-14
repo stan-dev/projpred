@@ -43,8 +43,11 @@
 #' [binomial()] (and---via [brms::get_refmodel.brmsfit()]---also
 #' [brms::bernoulli()]), as well as [poisson()].
 #'
-#' The families supported by the augmented-data projection are [binomial()]
-#' (again also [brms::bernoulli()]), [brms::cumulative()],
+#' As soon as possible, a reference for the augmented-data projection will be
+#' provided here. For now, [this GitHub
+#' issue](https://github.com/stan-dev/projpred/issues/70) provides some basic
+#' information. The families supported by the augmented-data projection are
+#' [binomial()] (again also [brms::bernoulli()]), [brms::cumulative()],
 #' [rstanarm::stan_polr()] fits, and [brms::categorical()]. See
 #' [extend_family()] (which is called by [init_refmodel()]) for a description
 #' when the augmented-data projection will be applied to custom reference
@@ -54,12 +57,10 @@
 #' by the augmented-data projection and neither [binomial()] nor
 #' [brms::bernoulli()]. For applying the augmented-data projection to the
 #' [binomial()] (or [brms::bernoulli()]) family, see [extend_family()] as well
-#' as [augdat_link_binom()] and [augdat_ilink_binom()]. As soon as possible, a
-#' reference for the augmented-data projection will be provided here. For now,
-#' [this GitHub issue](https://github.com/stan-dev/projpred/issues/70) provides
-#' some basic information. Note that the augmented-data projection is currently
-#' considered as an experimental feature since it has not been tested thoroughly
-#' yet and is also subject to some more theoretical investigations.
+#' as [augdat_link_binom()] and [augdat_ilink_binom()]. Note that the
+#' augmented-data projection is currently considered as an experimental feature
+#' since it has not been tested thoroughly yet and is also subject to some more
+#' theoretical investigations.
 #'
 #' The latent projection (Catalina et al., 2021) is a quite general principle
 #' for extending \pkg{projpred}'s traditional projection to more response

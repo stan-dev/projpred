@@ -38,8 +38,10 @@ The families supported by the traditional projection are \code{\link[=gaussian]{
 \code{\link[=binomial]{binomial()}} (and---via \code{\link[brms:get_refmodel.brmsfit]{brms::get_refmodel.brmsfit()}}---also
 \code{\link[brms:brmsfamily]{brms::bernoulli()}}), as well as \code{\link[=poisson]{poisson()}}.
 
-The families supported by the augmented-data projection are \code{\link[=binomial]{binomial()}}
-(again also \code{\link[brms:brmsfamily]{brms::bernoulli()}}), \code{\link[brms:brmsfamily]{brms::cumulative()}},
+As soon as possible, a reference for the augmented-data projection will be
+provided here. For now, \href{https://github.com/stan-dev/projpred/issues/70}{this GitHub issue} provides some basic
+information. The families supported by the augmented-data projection are
+\code{\link[=binomial]{binomial()}} (again also \code{\link[brms:brmsfamily]{brms::bernoulli()}}), \code{\link[brms:brmsfamily]{brms::cumulative()}},
 \code{\link[rstanarm:stan_polr]{rstanarm::stan_polr()}} fits, and \code{\link[brms:brmsfamily]{brms::categorical()}}. See
 \code{\link[=extend_family]{extend_family()}} (which is called by \code{\link[=init_refmodel]{init_refmodel()}}) for a description
 when the augmented-data projection will be applied to custom reference
@@ -49,12 +51,10 @@ augmented-data projection is applied automatically if the family is supported
 by the augmented-data projection and neither \code{\link[=binomial]{binomial()}} nor
 \code{\link[brms:brmsfamily]{brms::bernoulli()}}. For applying the augmented-data projection to the
 \code{\link[=binomial]{binomial()}} (or \code{\link[brms:brmsfamily]{brms::bernoulli()}}) family, see \code{\link[=extend_family]{extend_family()}} as well
-as \code{\link[=augdat_link_binom]{augdat_link_binom()}} and \code{\link[=augdat_ilink_binom]{augdat_ilink_binom()}}. As soon as possible, a
-reference for the augmented-data projection will be provided here. For now,
-\href{https://github.com/stan-dev/projpred/issues/70}{this GitHub issue} provides
-some basic information. Note that the augmented-data projection is currently
-considered as an experimental feature since it has not been tested thoroughly
-yet and is also subject to some more theoretical investigations.
+as \code{\link[=augdat_link_binom]{augdat_link_binom()}} and \code{\link[=augdat_ilink_binom]{augdat_ilink_binom()}}. Note that the
+augmented-data projection is currently considered as an experimental feature
+since it has not been tested thoroughly yet and is also subject to some more
+theoretical investigations.
 
 The latent projection (Catalina et al., 2021) is a quite general principle
 for extending \pkg{projpred}'s traditional projection to more response
