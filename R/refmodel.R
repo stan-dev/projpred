@@ -295,11 +295,6 @@ predict.refmodel <- function(object, newdata = NULL, ynew = NULL,
     offsetnew <- rep(0, length(w_o$y))
   }
   if (inherits(object$fit, "stanreg") && length(object$fit$offset) > 0) {
-    if ("projpred_internal_offs_stanreg" %in% names(newdata)) {
-      stop("Need to write to column `projpred_internal_offs_stanreg` of ",
-           "`newdata`, but that column already exists. Please rename this ",
-           "column in `newdata` and try again.")
-    }
     newdata$projpred_internal_offs_stanreg <- offsetnew
   }
 
