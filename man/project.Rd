@@ -37,7 +37,8 @@ is not of class \code{vsel}, \code{solution_terms} must not be \code{NULL}.}
 \item{refit_prj}{A single logical value indicating whether to fit the
 submodels (again) (\code{TRUE}) or to retrieve the fitted submodels from
 \code{object} (\code{FALSE}). For an \code{object} which is not of class \code{vsel},
-\code{refit_prj} must be \code{TRUE}.}
+\code{refit_prj} must be \code{TRUE}. Note that currently, \code{refit_prj = FALSE}
+requires some caution, see GitHub issues #168 and #211.}
 
 \item{ndraws}{Only relevant if \code{refit_prj} is \code{TRUE}. Number of posterior
 draws to be projected. Ignored if \code{nclusters} is not \code{NULL} or if the

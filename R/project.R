@@ -22,7 +22,8 @@
 #' @param refit_prj A single logical value indicating whether to fit the
 #'   submodels (again) (`TRUE`) or to retrieve the fitted submodels from
 #'   `object` (`FALSE`). For an `object` which is not of class `vsel`,
-#'   `refit_prj` must be `TRUE`.
+#'   `refit_prj` must be `TRUE`. Note that currently, `refit_prj = FALSE`
+#'   requires some caution, see GitHub issues #168 and #211.
 #' @param ndraws Only relevant if `refit_prj` is `TRUE`. Number of posterior
 #'   draws to be projected. Ignored if `nclusters` is not `NULL` or if the
 #'   reference model is of class `datafit` (in which case one cluster is used).
