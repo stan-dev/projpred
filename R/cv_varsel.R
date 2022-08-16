@@ -183,7 +183,7 @@ cv_varsel.refmodel <- function(
       verbose = verbose, opt = opt, K = K, search_terms = search_terms, ...
     )
   } else {
-    stop(sprintf("Unknown `cv_method`: %s.", method))
+    stop(sprintf("Unknown `cv_method`: %s.", cv_method))
   }
 
   if (validate_search || cv_method == "kfold") {
