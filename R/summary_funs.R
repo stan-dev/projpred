@@ -2,14 +2,14 @@
                                offset = refmodel$offset[test_points],
                                wobs = refmodel$wobs[test_points],
                                y = refmodel$y[test_points]) {
-  lapply(submodels, function(model) {
+  lapply(submodels, function(initsubmodl) {
     .weighted_summary_means(
       y_test = list(y = y, weights = wobs),
       family = refmodel$family,
-      wsample = model$weights,
-      mu = refmodel$family$mu_fun(model$submodl, obs = test_points,
+      wsample = initsubmodl$weights,
+      mu = refmodel$family$mu_fun(initsubmodl$submodl, obs = test_points,
                                   newdata = newdata, offset = offset),
-      dis = model$dis
+      dis = initsubmodl$dis
     )
   })
 }
