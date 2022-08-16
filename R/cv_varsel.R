@@ -159,7 +159,8 @@ cv_varsel.refmodel <- function(
 
   ## arguments specific to this function
   args <- parse_args_cv_varsel(
-    refmodel = refmodel, cv_method = cv_method, K = K
+    refmodel = refmodel, cv_method = cv_method, K = K,
+    validate_search = validate_search
   )
   cv_method <- args$cv_method
   K <- args$K
@@ -272,7 +273,7 @@ cv_varsel.refmodel <- function(
 # @param K Number of folds in the K-fold cross validation. Default is 5 for
 #   genuine reference models and 10 for datafits (that is, for penalized
 #   maximum likelihood estimation).
-parse_args_cv_varsel <- function(refmodel, cv_method, K) {
+parse_args_cv_varsel <- function(refmodel, cv_method, K, validate_search) {
   stopifnot(!is.null(cv_method))
   if (cv_method == "loo") {
     cv_method <- toupper(cv_method)
@@ -296,6 +297,10 @@ parse_args_cv_varsel <- function(refmodel, cv_method, K) {
     }
     if (K > NROW(refmodel$y)) {
       stop("`K` cannot exceed the number of observations.")
+    }
+    if (!validate_search) {
+      stop("`cv_method = \"kfold\"` cannot be used with ",
+           "`validate_search = FALSE`.")
     }
   }
 
