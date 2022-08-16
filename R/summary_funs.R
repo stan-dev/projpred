@@ -138,8 +138,8 @@
 ## for example the relative elpd. If these arguments are not given (NULL) then
 ## the actual (non-relative) value is computed.
 ## NOTE: Element `wcv[i]` (with i = 1, ..., N and N denoting the number of
-## observations) contains the weight of the CV fold that observation i is in.
-## In case of varsel() output, this is `NULL`. Currently, these `wcv` are
+## observations) contains the weight of the CV fold that observation i is in. In
+## case of varsel() output, this is `NULL`. Currently, these `wcv` are
 ## nonconstant (and not `NULL`) only in case of subsampled LOO CV. The actual
 ## observation weights (specified by the user) are contained in
 ## `d_test$weights`. These are already taken into account by
