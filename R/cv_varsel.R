@@ -612,12 +612,12 @@ kfold_varsel <- function(refmodel, method, nterms_max, ndraws,
 
   # Perform the evaluation of the submodels for each fold (and make sure to
   # combine the results from the K folds into a single results list):
-  get_summaries_submodel_cv <- function(submodels, fold) {
+  get_summaries_submodels_cv <- function(submodels, fold) {
     .get_sub_summaries(submodels = submodels,
                        refmodel = refmodel,
                        test_points = fold$d_test$omitted)
   }
-  sub_cv_summaries <- mapply(get_summaries_submodel_cv, submodels_cv, list_cv)
+  sub_cv_summaries <- mapply(get_summaries_submodels_cv, submodels_cv, list_cv)
   if (is.null(dim(sub_cv_summaries))) {
     summ_dim <- dim(solution_terms_cv)
     summ_dim[2] <- summ_dim[2] + 1L # +1 is for the empty model
