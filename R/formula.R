@@ -72,7 +72,7 @@ remove_duplicates <- function(formula) {
 ## @return the response as a character vector.
 extract_response <- function(response) {
   if (length(response) > 1) {
-    stop("Response must have a single element.")
+    stop("Object `response` must not have length greater than 1.")
   }
   response_name_ch <- as.character(response[[1]])
   if ("cbind" %in% response_name_ch) {
