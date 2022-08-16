@@ -104,6 +104,9 @@ the number of posterior draws in the reference model (which is \code{1} for
 posterior draws in the reference model may result in slightly inaccurate
 projection performance. Increasing these arguments affects the computation
 time linearly.
+
+Note that if \code{\link[=project]{project()}} is applied to output from \code{\link[=cv_varsel]{cv_varsel()}}, then
+\code{refit_prj = FALSE} will take the results from the \emph{full-data} search.
 }
 \examples{
 if (requireNamespace("rstanarm", quietly = TRUE)) {

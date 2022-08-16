@@ -51,6 +51,9 @@
 #'   projection performance. Increasing these arguments affects the computation
 #'   time linearly.
 #'
+#'   Note that if [project()] is applied to output from [cv_varsel()], then
+#'   `refit_prj = FALSE` will take the results from the *full-data* search.
+#'
 #' @return If the projection is performed onto a single submodel (i.e.,
 #'   `length(nterms) == 1 || !is.null(solution_terms)`), an object of class
 #'   `projection` which is a `list` containing the following elements:
