@@ -6,6 +6,7 @@ If you read this from a place other than <https://mc-stan.org/projpred/news/inde
 
 ## Major changes
 
+* In the `validate_search = FALSE` case of `cv_varsel()` (with `cv_method = "LOO"`), the PSIS weights are now calculated based on the reference model (they used to be calculated based on the submodels which is incorrect). (GitHub: #325)
 * Some long-standing severe bugs (GitHub issues #329, #330, and #342) have been fixed, concerning the performance evaluation of models with nontrivial observation weights (i.e., models where at least one observation had a weight differing from 1). Concerned performance statistics were `"mse"`, `"rmse"`, `"acc"` (= `"pctcorr"`), and `"auc"` (i.e., all performance statistics except for `"elpd"` and `"mlpd"`).
 * `plot.vsel()` and `suggest_size()` gain a new argument `thres_elpd`. By default, this argument doesn't have any impact, but a non-`NA` value can be used for a customized model size selection rule (see `?suggest_size` for details). (GitHub: #335)
 
@@ -21,15 +22,15 @@ If you read this from a place other than <https://mc-stan.org/projpred/news/inde
 
 * Fix GitHub issue #324 (large `search_terms` caused the R session to crash).
 * Fix GitHub issue #204. (GitHub: #325)
-* In the `validate_search = FALSE` case of `cv_varsel()` (with `cv_method = "LOO"`), the PSIS weights are now calculated based on the reference model (they used to be calculated based on the submodels which is incorrect). (GitHub: #325)
+* Fix the `validate_search = FALSE` bug described above in "Major changes": The PSIS weights are now calculated based on the reference model (they used to be calculated based on the submodels which is incorrect). (GitHub: #325)
 * Fix `\mbox{}` commands displayed incorrectly in the HTML help from R version 4.2.0 on. (GitHub: #326)
-* Fix GitHub issue #329.
+* Fix GitHub issue #329 (see also "Major changes" above).
 * Fix GitHub issue #331.
 * `plot.vsel()` now draws the dashed red horizontal line for the reference model (and---if present---the dotted black horizontal line for the baseline model) first (i.e., before the submodel-specific graphical elements), to avoid overplotting.
 * Fix GitHub issue #339. (GitHub: #340)
 * Fix argument `d_test` of `varsel()`: Not only the predictive performance of the *reference model* needs to be evaluated on the test data, but also the predictive performance of the *submodels*. (GitHub: #341)
-* Fix GitHub issue #342.
-* Fix GitHub issue #330. (GitHub: #344, commit 23e7101)
+* Fix GitHub issue #342 (see also "Major changes" above).
+* Fix GitHub issue #330 (see also "Major changes" above). (GitHub: #344, commit 23e7101)
 
 # projpred 2.1.2
 
