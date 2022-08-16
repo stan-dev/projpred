@@ -126,8 +126,7 @@ fit_glm_ridge_callback <- function(formula, data,
 
 # Alternative to fit_glm_ridge_callback() (may be used via global option
 # `projpred.glm_fitter`):
-fit_glm_callback <- function(formula, family, projpred_var, projpred_regul,
-                             ...) {
+fit_glm_callback <- function(formula, family, ...) {
   if (family$family == "gaussian" && family$link == "identity" &&
       getOption("projpred.gaussian_not_as_generalized", TRUE)) {
     # Exclude arguments from `...` which cannot be passed to stats::lm():
