@@ -182,8 +182,6 @@ cv_varsel.refmodel <- function(
       nclusters_pred = nclusters_pred, refit_prj = refit_prj, penalty = penalty,
       verbose = verbose, opt = opt, K = K, search_terms = search_terms, ...
     )
-  } else {
-    stop(sprintf("Unknown `cv_method`: %s.", cv_method))
   }
 
   if (validate_search || cv_method == "kfold") {
