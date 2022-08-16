@@ -217,10 +217,9 @@ bootstrap <- function(x, fun = mean, B = 2000,
       return(.get_refdist(refmodel, ndraws = nclusters))
     } else if (nclusters == 1) {
       # special case, only one cluster
-      cl <- rep(1, S)
       p_ref <- .get_p_clust(family = refmodel$family, mu = refmodel$mu,
                             eta = refmodel$eta, dis = refmodel$dis,
-                            wobs = refmodel$wobs, cl = cl)
+                            wobs = refmodel$wobs, cl = rep(1, S))
     } else {
       # several clusters
       p_ref <- .get_p_clust(family = refmodel$family, mu = refmodel$mu,
@@ -239,7 +238,7 @@ bootstrap <- function(x, fun = mean, B = 2000,
       s_ind <- draws_subsample(S = S, ndraws = ndraws)
     }
     cl <- rep(NA, S)
-    cl[s_ind] <- c(1:ndraws)
+    cl[s_ind] <- 1:ndraws
     predvar <- do.call(cbind, lapply(s_ind, function(j) {
       refmodel$family$predvar(refmodel$mu[, j, drop = FALSE], refmodel$dis[j])
     }))
