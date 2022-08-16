@@ -829,10 +829,16 @@ suggest_size.vsel <- function(
     warnings = TRUE,
     ...
 ) {
-  .validate_vsel_object_stats(object, stat)
   if (length(stat) > 1) {
     stop("Only one statistic can be specified to suggest_size")
   }
+  stats <- summary.vsel(object,
+                        stats = stat,
+                        type = c("mean", "upper", "lower"),
+                        deltas = TRUE,
+                        ...)
+  nobs_test <- stats$nobs_test %||% stats$nobs_train
+  stats <- stats$selection
 
   if (.is_util(stat)) {
     sgn <- 1
@@ -850,13 +856,7 @@ suggest_size.vsel <- function(
     suffix <- ""
   }
   bound <- type
-  stats <- summary.vsel(object,
-                        stats = stat,
-                        type = c("mean", "upper", "lower"),
-                        deltas = TRUE,
-                        ...)
-  nobs_test <- stats$nobs_test %||% stats$nobs_train
-  stats <- stats$selection
+
   util_null <- sgn * unlist(unname(subset(
     stats, stats$size == 0,
     paste0(stat, suffix)
