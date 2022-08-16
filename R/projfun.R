@@ -103,14 +103,14 @@ project_submodel <- function(solution_terms, p_ref, refmodel, regul = 1e-4,
   }
   if (refmodel$family$family == "Student_t") {
     stop("For the `Student_t()` family, .init_submodel() is not finished yet.")
-    ### TODO (`Student_t()` family): Check if this is needed (perhaps with some
+    ### TODO (Student_t()): Check if this is needed (perhaps with some
     ### modifications) or if something completely different is needed (there
     ### used to be no special handling of the `Student_t()` family here at all):
     # pobs <- pseudo_data(
     #   f = 0, y = p_ref$mu, family = refmodel$family, weights = wobs,
     #   offset = refmodel$offset
     # )
-    # ### TODO: Add `dis` and perhaps other elements here?:
+    # ### TODO (Student_t()): Add `dis` and perhaps other elements here?:
     # p_ref <- list(mu = pobs$z, var = p_ref$var)
     # ###
     # if (!all(refmodel$offset == 0)) {
