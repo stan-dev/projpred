@@ -750,7 +750,7 @@ print.vsel <- function(x, ...) {
 #'
 #' @details In general (beware of special extensions below), the suggested model
 #'   size is the smallest model size \eqn{k \in \{0, 1, ...,
-#'   \texttt{nterms\_max}\}}{k = 0, 1, ..., nterms_max} for which either the
+#'   \texttt{nterms\_max}\}}{{k = 0, 1, ..., nterms_max}} for which either the
 #'   lower or upper bound (depending on argument `type`) of the
 #'   normal-approximation confidence interval (with nominal coverage `1 -
 #'   alpha`; see argument `alpha` of [summary.vsel()]) for \eqn{U_k -
