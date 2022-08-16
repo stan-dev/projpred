@@ -172,7 +172,8 @@
 #' The return value of `extract_model_data` needs to be a `list` with elements
 #' `y`, `weights`, and `offset`, each being a numeric vector containing the data
 #' for the response, the observation weights, and the offsets, respectively. An
-#' exception is that `y` may also be `NULL` (depending on argument `extract_y`).
+#' exception is that `y` may also be `NULL` (depending on argument `extract_y`)
+#' or a `factor`.
 #'
 #' @return An object that can be passed to all the functions that take the
 #'   reference model fit as the first argument, such as [varsel()],
