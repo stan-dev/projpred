@@ -223,7 +223,7 @@ project <- function(object, nterms = NULL, solution_terms = NULL,
   p_ref <- .get_refdist(refmodel, ndraws = ndraws, nclusters = nclusters)
 
   ## project onto the submodels
-  subm <- .get_submodels(
+  submodels <- .get_submodels(
     search_path = nlist(
       solution_terms,
       p_sel = object$search_path$p_sel,
@@ -234,7 +234,7 @@ project <- function(object, nterms = NULL, solution_terms = NULL,
   )
 
   # Output:
-  proj <- lapply(subm, function(model) {
+  proj <- lapply(submodels, function(model) {
     model$p_type <- !is.null(nclusters)
     model$refmodel <- refmodel
     class(model) <- "projection"
