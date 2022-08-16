@@ -50,7 +50,7 @@ class.}
 \item{...}{For \code{\link[=get_refmodel.default]{get_refmodel.default()}} and \code{\link[=get_refmodel.stanreg]{get_refmodel.stanreg()}}:
 arguments passed to \code{\link[=init_refmodel]{init_refmodel()}}. For the \code{\link[=get_refmodel]{get_refmodel()}} generic:
 arguments passed to the appropriate method. For \code{\link[=init_refmodel]{init_refmodel()}}:
-arguments passed to \code{\link[=extend_family]{extend_family()}}.}
+arguments passed to \code{\link[=extend_family]{extend_family()}} (apart from \code{family}).}
 
 \item{formula}{Reference model's formula. For general information on formulas
 in \R, see \code{\link{formula}}. For multilevel formulas, see also package
@@ -198,8 +198,8 @@ augmented-data projection) or a \code{\link{formula}} with \eqn{S_{\mathrm{prj}}
 which case the projection has to be performed for each of the response
 variables separately.
 \item \code{data} accepts a \code{data.frame} to be used for the projection. In case of
-the traditional (non-augmented-data) projection, this dataset has \eqn{N}
-rows. In case of the augmented-data projection, this dataset has
+the traditional projection, this dataset has \eqn{N} rows. In case of the
+augmented-data projection, this dataset has
 \eqn{N_{\mathrm{augcat}}}{N_augcat} rows.
 \item \code{family} accepts a \code{\link{family}} object.
 \item \code{weights} accepts either observation weights (at least in the form of a
@@ -208,7 +208,7 @@ numeric vector) or \code{NULL} (for using a vector of ones as weights).
 matrix of predictive variances (necessary for \pkg{projpred}'s internal
 GLM fitter) in case of the traditional projection and an
 \eqn{N_{\mathrm{augcat}} \times S_{\mathrm{prj}}}{N_augcat x S_prj}
-matrix of \code{NA}s in case of the augmented-data projection.
+matrix (containing only \code{NA}s) in case of the augmented-data projection.
 \item \code{projpred_regul} accepts a single numeric value as supplied to argument
 \code{regul} of \code{\link[=project]{project()}}, for example.
 \item \code{projpred_ws_aug} accepts an \eqn{N \times S_{\mathrm{prj}}}{N x S_prj}

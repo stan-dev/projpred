@@ -83,7 +83,7 @@
 #' @param ... For [get_refmodel.default()] and [get_refmodel.stanreg()]:
 #'   arguments passed to [init_refmodel()]. For the [get_refmodel()] generic:
 #'   arguments passed to the appropriate method. For [init_refmodel()]:
-#'   arguments passed to [extend_family()].
+#'   arguments passed to [extend_family()] (apart from `family`).
 #'
 #' @details
 #'
@@ -138,8 +138,8 @@
 #'     which case the projection has to be performed for each of the response
 #'     variables separately.
 #'     + `data` accepts a `data.frame` to be used for the projection. In case of
-#'     the traditional (non-augmented-data) projection, this dataset has \eqn{N}
-#'     rows. In case of the augmented-data projection, this dataset has
+#'     the traditional projection, this dataset has \eqn{N} rows. In case of the
+#'     augmented-data projection, this dataset has
 #'     \eqn{N_{\mathrm{augcat}}}{N_augcat} rows.
 #'     + `family` accepts a [`family`] object.
 #'     + `weights` accepts either observation weights (at least in the form of a
@@ -148,7 +148,7 @@
 #'     matrix of predictive variances (necessary for \pkg{projpred}'s internal
 #'     GLM fitter) in case of the traditional projection and an
 #'     \eqn{N_{\mathrm{augcat}} \times S_{\mathrm{prj}}}{N_augcat x S_prj}
-#'     matrix of `NA`s in case of the augmented-data projection.
+#'     matrix (containing only `NA`s) in case of the augmented-data projection.
 #'     + `projpred_regul` accepts a single numeric value as supplied to argument
 #'     `regul` of [project()], for example.
 #'     + `projpred_ws_aug` accepts an \eqn{N \times S_{\mathrm{prj}}}{N x S_prj}

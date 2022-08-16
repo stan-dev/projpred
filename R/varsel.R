@@ -219,16 +219,16 @@ varsel.refmodel <- function(object, d_test = NULL, method = NULL,
   } else {
     d_test$type <- "test"
     d_test <- d_test[nms_d_test()]
-    if (object$family$for_augdat) {
+    if (refmodel$family$for_augdat) {
       d_test$y <- as.factor(d_test$y)
-      if (!all(levels(d_test$y) %in% object$family$cats)) {
+      if (!all(levels(d_test$y) %in% refmodel$family$cats)) {
         stop("The levels of the response variable (after coercing it to a ",
              "`factor`) have to be a subset of `family$cats`. Either modify ",
              "`d_test$y` accordingly or see the documentation for ",
              "extend_family()'s argument `augdat_y_unqs` to solve this.")
       }
       # Re-assign the original levels because some levels might be missing:
-      d_test$y <- factor(d_test$y, levels = object$family$cats)
+      d_test$y <- factor(d_test$y, levels = refmodel$family$cats)
     }
   }
 

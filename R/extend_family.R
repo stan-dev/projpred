@@ -21,13 +21,12 @@
 #'   projection" below.
 #' @param augdat_link Only relevant for augmented-data projection, in which case
 #'   this needs to be the link function (supplied as a function, not a character
-#'   string, for example). Use `NULL` for the traditional (non-augmented-data)
-#'   projection. See also section "Augmented-data projection" below.
+#'   string, for example). Use `NULL` for the traditional projection. See also
+#'   section "Augmented-data projection" below.
 #' @param augdat_ilink Only relevant for augmented-data projection, in which
 #'   case this needs to be the inverse-link function (supplied as a function,
 #'   not a character string, for example). Use `NULL` for the traditional
-#'   (non-augmented-data) projection. See also section "Augmented-data
-#'   projection" below.
+#'   projection. See also section "Augmented-data projection" below.
 #' @param augdat_args_link Only relevant for augmented-data projection, in which
 #'   case this may be a named `list` of arguments to pass to the function
 #'   supplied to `augdat_link`.
@@ -39,17 +38,18 @@
 #'
 #' @details
 #'
-#' # Augmented-data projection
-#'
 #' In the following, \eqn{N}, \eqn{C_{\mathrm{cat}}}{C_cat},
 #' \eqn{C_{\mathrm{lat}}}{C_lat}, \eqn{S_{\mathrm{ref}}}{S_ref}, and
 #' \eqn{S_{\mathrm{prj}}}{S_prj} from help topic [refmodel-init-get] are used.
-#' Furthermore, let \eqn{S} denote either \eqn{S_{\mathrm{ref}}}{S_ref} or
-#' \eqn{S_{\mathrm{prj}}}{S_prj}, whichever is appropriate in the context where
-#' it is used.
+#' Note that \eqn{N} does not necessarily denote the original number of
+#' observations; these can also be new observations. Furthermore, let \eqn{S}
+#' denote either \eqn{S_{\mathrm{ref}}}{S_ref} or \eqn{S_{\mathrm{prj}}}{S_prj},
+#' whichever is appropriate in the context where it is used.
 #'
-#' Then, as their first input, the functions supplied to arguments `augdat_link`
-#' and `augdat_ilink` have to accept:
+#' # Augmented-data projection
+#'
+#' As their first input, the functions supplied to arguments `augdat_link` and
+#' `augdat_ilink` have to accept:
 #' * For `augdat_link`: an \eqn{S \times N \times C_{\mathrm{cat}}}{S x N x
 #' C_cat} array containing the probabilities for the response categories. The
 #' order of the response categories is the same as in `family$cats` (see
@@ -110,10 +110,12 @@ extend_family <- function(family,
     }
     extend_family_specific <- get(extend_family_specific, mode = "function")
     family <- extend_family_specific(family)
-    family$for_augdat <- FALSE
+
     # If `family$cats` weren't `NULL`, then downstream code in projpred would
     # have to be adapted:
     stopifnot(is.null(family$cats))
+
+    family$for_augdat <- FALSE
   } else {
     if (!is.null(augdat_y_unqs)) {
       family$cats <- augdat_y_unqs

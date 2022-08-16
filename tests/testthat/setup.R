@@ -711,7 +711,7 @@ cvmeth_tst <- list(
 
 vsel_funs <- nlist("summary.vsel", "plot.vsel", "suggest_size.vsel")
 # Performance statistics common across all families when using the traditional
-# (non-augmented-data) projection:
+# projection:
 stats_common <- c("elpd", "mlpd", "mse", "rmse")
 # For creating test setups (note: `common_stats` and `binom_stats` only refer to
 # the traditional projection):

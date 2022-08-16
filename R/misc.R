@@ -150,9 +150,9 @@ bootstrap <- function(x, fun = mean, B = 2000,
       }
       if (stat %in% trad_stats_binom_only &&
           object$refmodel$family$family != "binomial") {
-        stop("In case of the traditional (non-augmented-data) projection, the",
-             "performance statistic `\"", stat, "\"` is available only for ",
-             "the binomial family.")
+        stop("In case of the traditional projection, the performance ",
+             "statistic `\"", stat, "\"` is available only for the binomial ",
+             "family.")
       }
     }
   }

@@ -194,9 +194,9 @@ extfam_tester <- function(extfam,
     expect_true(is.vector(ppd_draws, "integer"), info = info_str)
     expect_length(ppd_draws, 2)
   }
-  # TODO: For the traditional (non-augmented-data) projection, add some
-  # mathematical checks (i.e., check that the calculations for the objects
-  # listed in `extfam_nms_add` are mathematically correct).
+  # TODO: For the traditional projection, add some mathematical checks (i.e.,
+  # check that the calculations for the objects listed in `extfam_nms_add` are
+  # mathematically correct).
 
   # Output ------------------------------------------------------------------
 

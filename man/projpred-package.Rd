@@ -29,19 +29,35 @@ model. For the sake of simplicity, throughout this package, we use the term
 is projected, even though this term is not always appropriate for custom
 reference models.
 
-Currently, the families supported by the traditional (non-augmented-data)
-projection are \code{\link[=gaussian]{gaussian()}}, \code{\link[=binomial]{binomial()}} (and---via
-\code{\link[brms:get_refmodel.brmsfit]{brms::get_refmodel.brmsfit()}}---also \code{\link[brms:brmsfamily]{brms::bernoulli()}}), as well as
-\code{\link[=poisson]{poisson()}}. The families supported by the augmented-data projection are
-\code{\link[=binomial]{binomial()}} (again also \code{\link[brms:brmsfamily]{brms::bernoulli()}}), \code{\link[brms:brmsfamily]{brms::cumulative()}}, and
-\code{\link[brms:brmsfamily]{brms::categorical()}}. For the augmented-data projection with the
+In the following and throughout the rest of \pkg{projpred}'s documentation,
+the term "traditional projection" will be used whenever the projection type
+is not the augmented-data projection (see below for a description of the
+augmented-data projection).
+
+The families supported by the traditional projection are \code{\link[=gaussian]{gaussian()}},
+\code{\link[=binomial]{binomial()}} (and---via \code{\link[brms:get_refmodel.brmsfit]{brms::get_refmodel.brmsfit()}}---also
+\code{\link[brms:brmsfamily]{brms::bernoulli()}}), as well as \code{\link[=poisson]{poisson()}}.
+
+As soon as possible, a reference for the augmented-data projection will be
+provided here. For now, \href{https://github.com/stan-dev/projpred/issues/70}{this GitHub issue} provides some basic
+information. The families supported by the augmented-data projection are
+\code{\link[=binomial]{binomial()}} (again also \code{\link[brms:brmsfamily]{brms::bernoulli()}}, but note that currently, the
+support for the \code{\link[=binomial]{binomial()}} family does not include binomial distributions
+with more than one trial; in such a case, a workaround is to de-aggregate the
+Bernoulli trials which belong to the same (aggregated) observation, i.e., to
+use a "long" dataset), \code{\link[brms:brmsfamily]{brms::cumulative()}}, \code{\link[rstanarm:stan_polr]{rstanarm::stan_polr()}} fits,
+and \code{\link[brms:brmsfamily]{brms::categorical()}}. See \code{\link[=extend_family]{extend_family()}} (which is called by
+\code{\link[=init_refmodel]{init_refmodel()}}) for a description when the augmented-data projection will
+be applied to custom reference models. For non-custom reference models (i.e.,
+those created by \code{\link[=get_refmodel.stanreg]{get_refmodel.stanreg()}} or \code{\link[brms:get_refmodel.brmsfit]{brms::get_refmodel.brmsfit()}}),
+the augmented-data projection is applied automatically if the family is
+supported by the augmented-data projection and neither \code{\link[=binomial]{binomial()}} nor
+\code{\link[brms:brmsfamily]{brms::bernoulli()}}. For applying the augmented-data projection to the
 \code{\link[=binomial]{binomial()}} (or \code{\link[brms:brmsfamily]{brms::bernoulli()}}) family, see \code{\link[=extend_family]{extend_family()}} as well
-as \code{\link[=augdat_link_binom]{augdat_link_binom()}} and \code{\link[=augdat_ilink_binom]{augdat_ilink_binom()}}. As soon as possible, a
-reference for the augmented-data projection will be provided here. For now,
-\href{https://github.com/stan-dev/projpred/issues/70}{this GitHub issue} provides
-some basic information. Note that the augmented-data projection is currently
-considered as an experimental feature since it has not been tested thoroughly
-yet and is also subject to some more theoretical investigations.
+as \code{\link[=augdat_link_binom]{augdat_link_binom()}} and \code{\link[=augdat_ilink_binom]{augdat_ilink_binom()}}. Note that the
+augmented-data projection is currently considered as an experimental feature
+since it has not been tested thoroughly yet and is also subject to some more
+theoretical investigations.
 
 The projection of the reference model onto a submodel can be run on multiple
 CPU cores in parallel (across the projected draws). This is powered by the
