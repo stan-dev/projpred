@@ -199,7 +199,7 @@ cv_varsel.refmodel <- function(
                   lambda_min_ratio = lambda_min_ratio, nlambda = nlambda,
                   regul = regul, search_terms = search_terms_usr, seed = seed,
                   ...)
-  } else if (cv_method == "LOO") {
+  } else {
     sel <- sel_cv$sel
   }
 
