@@ -784,7 +784,7 @@ refdist_tester <- function(refd,
               info = info_str)
   expect_length(refd$weights, nprjdraws_expected)
   expect_true(is.vector(refd$cl, "integer"), info = info_str)
-  expect_length(refd$cl, nprjdraws_expected)
+  expect_length(refd$cl, nrefdraws)
   expect_identical(refd$clust_used, clust_expected, info = info_str)
   return(invisible(TRUE))
 }
