@@ -829,11 +829,11 @@ get_refmodel.stanreg <- function(object, latent = FALSE, ...) {
       # Free up some memory:
       rm(draws_mat)
     }
-    # TODO: Add response-scale support for more families: For response-scale
-    # support, they all need a specific `latent_ilink` function; some families
-    # (those for which the response can be numeric) also require specific
-    # `latent_llOrig` and `latent_ppdOrig` functions. The binomial family has
-    # response-scale support implemented natively in projpred.
+    # TODO (latent): Add response-scale support for more families: For
+    # response-scale support, they all need a specific `latent_ilink` function;
+    # some families (those for which the response can be numeric) also require
+    # specific `latent_llOrig` and `latent_ppdOrig` functions. The binomial
+    # family has response-scale support implemented natively in projpred.
     args_latent <- c(args_latent, list(
       latent_y_unqs = y_lvls,
       latent_ilink = latent_ilink_tmp,
@@ -859,8 +859,7 @@ get_refmodel.stanreg <- function(object, latent = FALSE, ...) {
 init_refmodel <- function(object, data, formula, family, ref_predfun = NULL,
                           div_minimizer = NULL, proj_predfun = NULL,
                           extract_model_data, cvfun = NULL,
-                          cvfits = NULL, dis = NULL, cvrefbuilder = NULL,
-                          ...) {
+                          cvfits = NULL, dis = NULL, cvrefbuilder = NULL, ...) {
   # Family ------------------------------------------------------------------
 
   family <- extend_family(family, ...)
