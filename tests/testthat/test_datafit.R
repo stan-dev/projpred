@@ -130,6 +130,7 @@ if (run_cvvs) {
   args_cvvs_datafit <- lapply(args_cvvs_datafit, function(args_cvvs_i) {
     args_cvvs_i$cv_method <- NULL
     args_cvvs_i$K <- NULL
+    args_cvvs_i$validate_search <- TRUE
     return(c(args_cvvs_i, list(cv_method = "kfold", K = K_tst)))
   })
   names(args_cvvs_datafit) <- gsub("default_cvmeth", "kfold",
