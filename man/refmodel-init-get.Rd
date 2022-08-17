@@ -270,7 +270,8 @@ element \code{y} (see below) shall be \code{NULL} (\code{TRUE}) or not (\code{FA
 The return value of \code{extract_model_data} needs to be a \code{list} with elements
 \code{y}, \code{weights}, and \code{offset}, each being a numeric vector containing the data
 for the response, the observation weights, and the offsets, respectively. An
-exception is that \code{y} may also be \code{NULL} (depending on argument \code{extract_y}).
+exception is that \code{y} may also be \code{NULL} (depending on argument \code{extract_y}),
+a non-numeric vector, or a \code{factor}.
 }
 
 \section{Augmented-data projection}{

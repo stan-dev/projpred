@@ -973,6 +973,10 @@ refdist_tester <- function(refd,
                            nprjdraws_expected = nclusters_pred_tst,
                            clust_expected = TRUE,
                            info_str) {
+  expect_named(
+    refd, c("mu", "var", "dis", "weights", "cl", "wsample_orig", "clust_used"),
+    info = info_str
+  )
   expect_identical(dim(refd$mu), c(nobsv_expected, nprjdraws_expected),
                    info = info_str)
   expect_identical(dim(refd$var), c(nobsv_expected, nprjdraws_expected),

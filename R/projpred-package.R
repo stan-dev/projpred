@@ -53,8 +53,8 @@
 #' Bernoulli trials which belong to the same (aggregated) observation, i.e., to
 #' use a "long" dataset), [brms::cumulative()], [rstanarm::stan_polr()] fits,
 #' and [brms::categorical()]. See [extend_family()] (which is called by
-#' [init_refmodel()]) for a description when the augmented-data projection will
-#' be applied to custom reference models. For non-custom reference models (i.e.,
+#' [init_refmodel()]) for an explanation how to apply the augmented-data
+#' projection to custom reference models. For non-custom reference models (i.e.,
 #' those created by [get_refmodel.stanreg()] or [brms::get_refmodel.brmsfit()]),
 #' the augmented-data projection is applied automatically if the family is
 #' supported by the augmented-data projection and neither [binomial()] nor
@@ -130,13 +130,21 @@
 #'
 #' @references
 #'
-#' Goutis, C. and Robert, C. P. (1998). Model choice in generalised linear
-#' models: A Bayesian approach via Kullback–Leibler projections. *Biometrika*,
-#' **85**(1):29–37.
+#' Catalina, A., Bürkner, P.-C., and Vehtari, A. (2020). Projection predictive
+#' inference for generalized linear and additive multilevel models.
+#' *arXiv:2010.06994*. URL: <https://arxiv.org/abs/2010.06994>.
+#'
+#' Catalina, A., Bürkner, P., and Vehtari, A. (2021). Latent space projection
+#' predictive inference. *arXiv:2109.04702*. URL:
+#' <https://arxiv.org/abs/2109.04702>.
 #'
 #' Dupuis, J. A. and Robert, C. P. (2003). Variable selection in qualitative
 #' models via an entropic explanatory power. *Journal of Statistical Planning
 #' and Inference*, **111**(1-2):77–94. \doi{10.1016/S0378-3758(02)00286-0}.
+#'
+#' Goutis, C. and Robert, C. P. (1998). Model choice in generalised linear
+#' models: A Bayesian approach via Kullback–Leibler projections. *Biometrika*,
+#' **85**(1):29–37.
 #'
 #' Piironen, J. and Vehtari, A. (2017). Comparison of Bayesian predictive
 #' methods for model selection. *Statistics and Computing*, **27**(3):711-735.
@@ -145,13 +153,5 @@
 #' Piironen, J., Paasiniemi, M., and Vehtari, A. (2020). Projective inference in
 #' high-dimensional problems: Prediction and feature selection. *Electronic
 #' Journal of Statistics*, **14**(1):2155-2197. \doi{10.1214/20-EJS1711}.
-#'
-#' Catalina, A., Bürkner, P.-C., and Vehtari, A. (2020). Projection predictive
-#' inference for generalized linear and additive multilevel models.
-#' *arXiv:2010.06994*. URL: <https://arxiv.org/abs/2010.06994>.
-#'
-#' Catalina, A., Bürkner, P., and Vehtari, A. (2021). Latent space projection
-#' predictive inference. *arXiv:2109.04702*. URL:
-#' <https://arxiv.org/abs/2109.04702>.
 #'
 "_PACKAGE"

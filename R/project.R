@@ -22,7 +22,8 @@
 #' @param refit_prj A single logical value indicating whether to fit the
 #'   submodels (again) (`TRUE`) or to retrieve the fitted submodels from
 #'   `object` (`FALSE`). For an `object` which is not of class `vsel`,
-#'   `refit_prj` must be `TRUE`.
+#'   `refit_prj` must be `TRUE`. Note that currently, `refit_prj = FALSE`
+#'   requires some caution, see GitHub issues #168 and #211.
 #' @param ndraws Only relevant if `refit_prj` is `TRUE`. Number of posterior
 #'   draws to be projected. Ignored if `nclusters` is not `NULL` or if the
 #'   reference model is of class `datafit` (in which case one cluster is used).
@@ -50,6 +51,9 @@
 #'   posterior draws in the reference model may result in slightly inaccurate
 #'   projection performance. Increasing these arguments affects the computation
 #'   time linearly.
+#'
+#'   Note that if [project()] is applied to output from [cv_varsel()], then
+#'   `refit_prj = FALSE` will take the results from the *full-data* search.
 #'
 #' @return If the projection is performed onto a single submodel (i.e.,
 #'   `length(nterms) == 1 || !is.null(solution_terms)`), an object of class
@@ -226,7 +230,7 @@ project <- function(object, nterms = NULL, solution_terms = NULL,
   p_ref <- .get_refdist(refmodel, ndraws = ndraws, nclusters = nclusters)
 
   ## project onto the submodels
-  subm <- .get_submodels(
+  submodels <- .get_submodels(
     search_path = nlist(
       solution_terms,
       p_sel = object$search_path$p_sel,
@@ -237,7 +241,7 @@ project <- function(object, nterms = NULL, solution_terms = NULL,
   )
 
   # Output:
-  proj <- lapply(subm, function(initsubmodl) {
+  projs <- lapply(submodels, function(initsubmodl) {
     proj_k <- initsubmodl
     proj_k$p_type <- !is.null(nclusters)
     proj_k$refmodel <- refmodel
@@ -245,5 +249,5 @@ project <- function(object, nterms = NULL, solution_terms = NULL,
     return(proj_k)
   })
   ## If only one model size, just return the proj instead of a list of projs
-  .unlist_proj(proj)
+  return(.unlist_proj(projs))
 }

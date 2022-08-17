@@ -47,8 +47,8 @@ with more than one trial; in such a case, a workaround is to de-aggregate the
 Bernoulli trials which belong to the same (aggregated) observation, i.e., to
 use a "long" dataset), \code{\link[brms:brmsfamily]{brms::cumulative()}}, \code{\link[rstanarm:stan_polr]{rstanarm::stan_polr()}} fits,
 and \code{\link[brms:brmsfamily]{brms::categorical()}}. See \code{\link[=extend_family]{extend_family()}} (which is called by
-\code{\link[=init_refmodel]{init_refmodel()}}) for a description when the augmented-data projection will
-be applied to custom reference models. For non-custom reference models (i.e.,
+\code{\link[=init_refmodel]{init_refmodel()}}) for an explanation how to apply the augmented-data
+projection to custom reference models. For non-custom reference models (i.e.,
 those created by \code{\link[=get_refmodel.stanreg]{get_refmodel.stanreg()}} or \code{\link[brms:get_refmodel.brmsfit]{brms::get_refmodel.brmsfit()}}),
 the augmented-data projection is applied automatically if the family is
 supported by the augmented-data projection and neither \code{\link[=binomial]{binomial()}} nor
@@ -121,13 +121,21 @@ submodel (after projecting the reference model onto it).}
 }
 
 \references{
-Goutis, C. and Robert, C. P. (1998). Model choice in generalised linear
-models: A Bayesian approach via Kullback–Leibler projections. \emph{Biometrika},
-\strong{85}(1):29–37.
+Catalina, A., Bürkner, P.-C., and Vehtari, A. (2020). Projection predictive
+inference for generalized linear and additive multilevel models.
+\emph{arXiv:2010.06994}. URL: \url{https://arxiv.org/abs/2010.06994}.
+
+Catalina, A., Bürkner, P., and Vehtari, A. (2021). Latent space projection
+predictive inference. \emph{arXiv:2109.04702}. URL:
+\url{https://arxiv.org/abs/2109.04702}.
 
 Dupuis, J. A. and Robert, C. P. (2003). Variable selection in qualitative
 models via an entropic explanatory power. \emph{Journal of Statistical Planning
 and Inference}, \strong{111}(1-2):77–94. \doi{10.1016/S0378-3758(02)00286-0}.
+
+Goutis, C. and Robert, C. P. (1998). Model choice in generalised linear
+models: A Bayesian approach via Kullback–Leibler projections. \emph{Biometrika},
+\strong{85}(1):29–37.
 
 Piironen, J. and Vehtari, A. (2017). Comparison of Bayesian predictive
 methods for model selection. \emph{Statistics and Computing}, \strong{27}(3):711-735.
@@ -136,14 +144,6 @@ methods for model selection. \emph{Statistics and Computing}, \strong{27}(3):711
 Piironen, J., Paasiniemi, M., and Vehtari, A. (2020). Projective inference in
 high-dimensional problems: Prediction and feature selection. \emph{Electronic
 Journal of Statistics}, \strong{14}(1):2155-2197. \doi{10.1214/20-EJS1711}.
-
-Catalina, A., Bürkner, P.-C., and Vehtari, A. (2020). Projection predictive
-inference for generalized linear and additive multilevel models.
-\emph{arXiv:2010.06994}. URL: \url{https://arxiv.org/abs/2010.06994}.
-
-Catalina, A., Bürkner, P., and Vehtari, A. (2021). Latent space projection
-predictive inference. \emph{arXiv:2109.04702}. URL:
-\url{https://arxiv.org/abs/2109.04702}.
 }
 \seealso{
 Useful links:
