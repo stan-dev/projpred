@@ -135,9 +135,10 @@ argument \code{augdat_y_unqs}).
 For the augmented-data projection, the response vector resulting from
 \code{extract_model_data} (see \code{\link[=init_refmodel]{init_refmodel()}}) is coerced to a \code{factor} (using
 \code{\link[=as.factor]{as.factor()}}). Inside of \code{\link[=init_refmodel]{init_refmodel()}}, the levels of this \code{factor} have
-to be identical to \code{family$cats}. Everywhere else, they have to be a subset
-of \code{family$cats}. See argument \code{augdat_y_unqs} for how to control
-\code{family$cats}.
+to be identical to \code{family$cats} (\emph{after} applying \code{\link[=extend_family]{extend_family()}} inside
+of \code{\link[=init_refmodel]{init_refmodel()}}). Everywhere else, they have to be a subset of
+\code{family$cats} (where \code{family} is taken from a \code{refmodel} object). See
+argument \code{augdat_y_unqs} for how to control \code{family$cats}.
 
 For ordinal \pkg{brms} families, be aware that the submodels (onto which the
 reference model is projected) currently have the following restrictions:

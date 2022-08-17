@@ -107,9 +107,10 @@
 #' For the augmented-data projection, the response vector resulting from
 #' `extract_model_data` (see [init_refmodel()]) is coerced to a `factor` (using
 #' [as.factor()]). Inside of [init_refmodel()], the levels of this `factor` have
-#' to be identical to `family$cats`. Everywhere else, they have to be a subset
-#' of `family$cats`. See argument `augdat_y_unqs` for how to control
-#' `family$cats`.
+#' to be identical to `family$cats` (*after* applying [extend_family()] inside
+#' of [init_refmodel()]). Everywhere else, they have to be a subset of
+#' `family$cats` (where `family` is taken from a `refmodel` object). See
+#' argument `augdat_y_unqs` for how to control `family$cats`.
 #'
 #' For ordinal \pkg{brms} families, be aware that the submodels (onto which the
 #' reference model is projected) currently have the following restrictions:

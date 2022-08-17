@@ -93,8 +93,8 @@
 #' (if there is no offset, use a vector of zeros).
 #' * `weights`: a numeric vector containing the observation weights for the test
 #' set (if there are no observation weights, use a vector of ones).
-#' * `y`: a numeric vector containing the response values for the test set. In
-#' case of the latent projection, these are the reference model's latent
+#' * `y`: a vector or a `factor` containing the response values for the test
+#' set. In case of the latent projection, these are the reference model's latent
 #' predictors averaged across the posterior draws.
 #' * `yOrig`: Only needs to be provided in case of the latent projection where
 #' this needs to be a vector or a `factor` containing the *original* (i.e.,

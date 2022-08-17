@@ -192,8 +192,8 @@ elements:
 (if there is no offset, use a vector of zeros).
 \item \code{weights}: a numeric vector containing the observation weights for the test
 set (if there are no observation weights, use a vector of ones).
-\item \code{y}: a numeric vector containing the response values for the test set. In
-case of the latent projection, these are the reference model's latent
+\item \code{y}: a vector or a \code{factor} containing the response values for the test
+set. In case of the latent projection, these are the reference model's latent
 predictors averaged across the posterior draws.
 \item \code{yOrig}: Only needs to be provided in case of the latent projection where
 this needs to be a vector or a \code{factor} containing the \emph{original} (i.e.,

@@ -36,7 +36,7 @@ NULL
 #   C x S. If `margin_draws` is `1`, a 3-dimensional array with dimensions S x N
 #   x C. See above for a definition of these dimensions.
 # @param margin_draws The index of `arr`'s margin which corresponds to the
-#   posterior draws (i.e., the margin of length S). Restricted to values `1` and
+#   parameter draws (i.e., the margin of length S). Restricted to values `1` and
 #   `3`.
 #
 # @return An augmented-rows matrix (see above for a definition).
@@ -62,8 +62,8 @@ arr2augmat <- function(arr, margin_draws = 3) {
 # @param nobs_orig The number of observations (N). Usually should not have to be
 #   specified manually (i.e., the default should always work).
 # @param margin_draws The index of the returned array's margin which shall
-#   correspond to the posterior draws (i.e., the margin which shall be of
-#   length S). Restricted to values `1` and `3`.
+#   correspond to the parameter draws (i.e., the margin which shall be of length
+#   S). Restricted to values `1` and `3`.
 #
 # @return If `margin_draws` is `3`, a 3-dimensional array with dimensions
 #   N x C x S. If `margin_draws` is `1`, a 3-dimensional array with dimensions
