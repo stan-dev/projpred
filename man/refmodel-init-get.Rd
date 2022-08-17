@@ -277,7 +277,8 @@ also \code{\link[=extend_family]{extend_family()}}.
 For the augmented-data projection, the response vector resulting from
 \code{extract_model_data} is internally coerced to a \code{factor} (using
 \code{\link[=as.factor]{as.factor()}}). The levels of this \code{factor} have to be identical to
-\code{family$cats} (see \code{\link[=extend_family]{extend_family()}}'s argument \code{augdat_y_unqs}).
+\code{family$cats} (\emph{after} applying \code{\link[=extend_family]{extend_family()}}; see \code{\link[=extend_family]{extend_family()}}'s
+argument \code{augdat_y_unqs}).
 
 Note that response-specific offsets (i.e., one length-\eqn{N} offset vector
 per response category) are not supported by \pkg{projpred} yet. So far, only
