@@ -93,7 +93,8 @@
 #' (if there is no offset, use a vector of zeros).
 #' * `weights`: a numeric vector containing the observation weights for the test
 #' set (if there are no observation weights, use a vector of ones).
-#' * `y`: a numeric vector containing the response values for the test set.
+#' * `y`: a vector or a `factor` containing the response values for the test
+#' set.
 #'
 #' @details Arguments `ndraws`, `nclusters`, `nclusters_pred`, and `ndraws_pred`
 #'   are automatically truncated at the number of posterior draws in the

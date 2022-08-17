@@ -192,7 +192,8 @@ elements:
 (if there is no offset, use a vector of zeros).
 \item \code{weights}: a numeric vector containing the observation weights for the test
 set (if there are no observation weights, use a vector of ones).
-\item \code{y}: a numeric vector containing the response values for the test set.
+\item \code{y}: a vector or a \code{factor} containing the response values for the test
+set.
 }
 }
 
