@@ -47,8 +47,8 @@ with more than one trial; in such a case, a workaround is to de-aggregate the
 Bernoulli trials which belong to the same (aggregated) observation, i.e., to
 use a "long" dataset), \code{\link[brms:brmsfamily]{brms::cumulative()}}, \code{\link[rstanarm:stan_polr]{rstanarm::stan_polr()}} fits,
 and \code{\link[brms:brmsfamily]{brms::categorical()}}. See \code{\link[=extend_family]{extend_family()}} (which is called by
-\code{\link[=init_refmodel]{init_refmodel()}}) for a description when the augmented-data projection will
-be applied to custom reference models. For non-custom reference models (i.e.,
+\code{\link[=init_refmodel]{init_refmodel()}}) for an explanation how to apply the augmented-data
+projection to custom reference models. For non-custom reference models (i.e.,
 those created by \code{\link[=get_refmodel.stanreg]{get_refmodel.stanreg()}} or \code{\link[brms:get_refmodel.brmsfit]{brms::get_refmodel.brmsfit()}}),
 the augmented-data projection is applied automatically if the family is
 supported by the augmented-data projection and neither \code{\link[=binomial]{binomial()}} nor

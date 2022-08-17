@@ -53,8 +53,8 @@
 #' Bernoulli trials which belong to the same (aggregated) observation, i.e., to
 #' use a "long" dataset), [brms::cumulative()], [rstanarm::stan_polr()] fits,
 #' and [brms::categorical()]. See [extend_family()] (which is called by
-#' [init_refmodel()]) for a description when the augmented-data projection will
-#' be applied to custom reference models. For non-custom reference models (i.e.,
+#' [init_refmodel()]) for an explanation how to apply the augmented-data
+#' projection to custom reference models. For non-custom reference models (i.e.,
 #' those created by [get_refmodel.stanreg()] or [brms::get_refmodel.brmsfit()]),
 #' the augmented-data projection is applied automatically if the family is
 #' supported by the augmented-data projection and neither [binomial()] nor
