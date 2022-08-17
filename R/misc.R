@@ -224,7 +224,7 @@ bootstrap <- function(x, fun = mean, B = 2000,
 #   subsampled (without replacement).
 #
 # @return Let \eqn{y} denote the response (vector), \eqn{N} the number of
-#   observations (for non-augmented-data projection) or the number of augmented
+#   observations (for the traditional projection) or the number of augmented
 #   observations (for augmented-data projection), and
 #   \eqn{S_{\mathrm{prj}}}{S_prj} the number of projected draws (= either
 #   `nclusters` or `ndraws`, depending on which one is used). Then the return
