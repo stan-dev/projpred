@@ -23,15 +23,13 @@ test_that("`family` works", {
                                   augdat_ilink = augdat_ilink_binom)
       augdat_expected_crr <- TRUE
     } else if (fam_nm == "cumul_augdat_rstanarm") {
-      if (!requireNamespace("brms", quietly = TRUE) ||
-          packageVersion("brms") < "2.16.3") next
       fam_orig_crr <- structure(list(family = "cumulative_rstanarm",
                                      link = "logit"),
                                 class = "family")
       extfam_crr <- extend_family(fam_orig_crr,
                                   augdat_y_unqs = paste0("resplvl", 1:3),
-                                  augdat_link = brms:::link_cumulative,
-                                  augdat_ilink = brms:::inv_link_cumulative,
+                                  augdat_link = augdat_link_cumul,
+                                  augdat_ilink = augdat_ilink_cumul,
                                   augdat_args_link = list(link = "logit"),
                                   augdat_args_ilink = list(link = "logit"))
       augdat_expected_crr <- TRUE
@@ -68,13 +66,11 @@ test_that("`family` works", {
       extfam_nms_add2_crr <- character()
     }
     from_brms_crr <- fam_nm %in% fam_nms_brms_augdat
-    extfam_tester(
-      extfam = extfam_crr,
-      fam_orig = fam_orig_crr,
-      extfam_nms_add2 = extfam_nms_add2_crr,
-      from_brms = from_brms_crr,
-      augdat_expected = augdat_expected_crr,
-      info_str = fam_nm
-    )
+    extfam_tester(extfam = extfam_crr,
+                  fam_orig = fam_orig_crr,
+                  extfam_nms_add2 = extfam_nms_add2_crr,
+                  from_brms = from_brms_crr,
+                  augdat_expected = augdat_expected_crr,
+                  info_str = fam_nm)
   }
 })
