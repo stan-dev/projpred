@@ -350,7 +350,12 @@ refmodel_tester <- function(
       # In this case, the linear predictors are calculated manually because of
       # the offset issues in rstanarm.
       drws <- as.matrix(refmod$fit)
-      drws_icpt <- drws[, "(Intercept)"]
+      if ("(Intercept)" %in% colnames(drws)) {
+        drws_icpt <- drws[, "(Intercept)"]
+      } else {
+        drws_icpt <- numeric(nrow(drws))
+        drws_thres <- drws[, grep("\\|", colnames(drws))]
+      }
       drws_beta_cont <- drws[
         ,
         setdiff(grep("xco\\.", colnames(drws), value = TRUE),
@@ -400,22 +405,51 @@ refmodel_tester <- function(
       }
       mu_expected <- unname(mu_expected)
     } else if (pkg_nm == "brms") {
+      if (refmod$family$family == "categorical") {
+        stop("Construction of `mu_expected` not implemented yet for family `",
+             refmod$family$family, "`.")
+      }
       mu_expected <- posterior_linpred(refmod$fit) - matrix(
         offs_expected,
         nrow = nrefdraws_expected,
         ncol = nobsv_expected,
         byrow = TRUE
       )
+      if (fam_nm %in% fam_nms_ordin) {
+        drws <- as.matrix(refmod$fit)
+        drws_thres <- drws[, grep("b_Intercept\\[", colnames(drws))]
+      }
     }
     if (refmod$family$family != "gaussian") {
-      mu_expected <- fam_orig$linkinv(mu_expected)
+      if (refmod$family$family %in% fam_nms_aug_long) {
+        if (refmod$family$family %in% c("cumulative", "cumulative_rstanarm",
+                                        "sratio")) {
+          mu_expected <- apply(drws_thres, 2, function(thres_vec) {
+            thres_vec - mu_expected
+          }, simplify = FALSE)
+        } else if (refmod$family$family %in% c("cratio", "acat")) {
+          mu_expected <- apply(drws_thres, 2, function(thres_vec) {
+            mu_expected - thres_vec
+          }, simplify = FALSE)
+        } else {
+          stop("Construction of `mu_expected` not implemented yet for family `",
+               refmod$family$family, "`.")
+        }
+        mu_expected <- do.call(abind::abind, c(mu_expected, rev.along = 0))
+        mu_expected <- arr2augmat(mu_expected, margin_draws = 1)
+        mu_expected <- refmod$family$linkinv(mu_expected)
+      } else {
+        mu_expected <- fam_orig$linkinv(mu_expected)
+      }
     }
     if (refmod$family$for_augdat && refmod$family$family == "binomial") {
       mu_expected <- cbind(1 - mu_expected,
                            mu_expected)
     }
-    mu_expected <- t(mu_expected)
-    if (refmod$family$for_augdat) {
+    if (!refmod$family$family %in% fam_nms_aug_long) {
+      mu_expected <- t(mu_expected)
+    }
+    if (refmod$family$for_augdat && refmod$family$family == "binomial") {
       mu_expected <- structure(mu_expected,
                                nobs_orig = nobsv,
                                class = "augmat")
@@ -433,14 +467,35 @@ refmodel_tester <- function(
   # eta
   eta_cut <- refmod$eta
   mu_cut <- refmod$mu
+  # To avoid failing tests due to numerical inaccuracies for extreme
+  # values:
+  tol_ex <- 1e-12
   if (refmod$family$family %in% c("binomial")) {
-    # To avoid failing tests due to numerical inaccuracies for extreme
-    # values:
-    tol_ex <- 1e-12
     eta_cut[eta_cut < f_binom$linkfun(tol_ex)] <- f_binom$linkfun(tol_ex)
-    eta_cut[eta_cut > f_binom$linkfun(1 - tol_ex)] <- f_binom$linkfun(1 - tol_ex)
+    eta_cut[eta_cut > f_binom$linkfun(1 - tol_ex)] <-
+      f_binom$linkfun(1 - tol_ex)
     mu_cut[mu_cut < tol_ex] <- tol_ex
     mu_cut[mu_cut > 1 - tol_ex] <- 1 - tol_ex
+  } else if (refmod$family$family %in% c("cumulative")) {
+    eta_cut <- apply(augmat2arr(eta_cut), c(1, 3), function(x) {
+      x_out <- x
+      if (!all(linkfun_raw(tol_ex, link_nm = link_str) <= x &
+               x <= linkfun_raw(1 - tol_ex, link_nm = link_str))) {
+        x_out <- thres
+      }
+      return(x_out)
+    })
+    eta_cut <- aperm(eta_cut, perm = c(2, 1, 3))
+    eta_cut <- arr2augmat(eta_cut)
+    mu_cut <- apply(augmat2arr(mu_cut), c(1, 3), function(x) {
+      x_out <- x
+      if (!all(tol_ex <= x & x <= 1 - tol_ex)) {
+        x_out <- rep(1 / ncat, ncat)
+      }
+      return(x_out)
+    })
+    mu_cut <- aperm(mu_cut, perm = c(2, 1, 3))
+    mu_cut <- arr2augmat(mu_cut)
   }
   expect_equal(eta_cut, refmod$family$linkfun(mu_cut), info = info_str)
 
@@ -474,6 +529,11 @@ refmodel_tester <- function(
   }
   if (refmod$family$for_augdat) {
     y_expected <- as.factor(y_expected)
+    if (fam_nm %in% fam_nms_ordin) {
+      # brms seems to set argument `contrasts`, but this is not important for
+      # projpred, so ignore it in the comparison:
+      attr(y_expected, "contrasts") <- attr(refmod$y, "contrasts")
+    }
   }
   expect_identical(refmod$y, y_expected, info = info_str)
 
@@ -588,40 +648,16 @@ refmodel_tester <- function(
 }
 
 # A helper function for testing the structure of a list of fits for the same
-# single submodel.
+# single submodel, with that submodel coming from a traditional projection.
 #
-# @param submodl_totest The `submodl` object (a list of fits for a single
-#   submodel, with one fit per projected draw) to test.
-# @param nprjdraws_expected A single numeric value giving the expected number of
-#   projected draws.
-# @param sub_formul A list of formulas for the submodel (with one element per
-#   projected draw).
-# @param sub_data The dataset used for fitting the submodel.
-# @param sub_fam A single character string giving the submodel's family.
-# @param has_grp A single logical value indicating whether the fits in
-#   `submodl_totest` are expected to be of class `"lmerMod"` or `"glmerMod"`
-#   (if, at the same time, `has_add` is `FALSE`).
-# @param has_add A single logical value indicating whether the fits in
-#   `submodl_totest` are expected to be of class `"gam"` or `"gamm4"` (depending
-#   on whether the submodel is non-multilevel or multilevel, respectively).
-# @param wobs_expected The expected numeric vector of observation weights.
-# @param solterms_vsel_L1_search If `submodl_totest` comes from the L1
-#   `search_path` of an object of class `"vsel"`, provide here the solution
-#   terms. Otherwise, use `NULL`.
-# @param with_offs A single logical value indicating whether `submodl_totest` is
-#   expected to include offsets (`TRUE`) or not (`FALSE`).
-# @param augdat_cats A character vector of response levels in case of the
-#   augmented-data projection. Needs to be `NULL` for the traditional
-#   projection.
-# @param allow_w_zero A single logical value indicating whether observation
-#   weights are allowed to have a value of zero (`TRUE`) or not (`FALSE`).
-# @param check_y_from_resp A single logical value indicating whether to check
-#   elements `submodl_totest[[j]]@resp$y` for GLMMs (`TRUE`) or not (`FALSE`).
-# @param info_str A single character string giving information to be printed in
-#   case of failure.
+# @inheritParams submodl_tester
+# @param seq_extensive_tests A numeric vector of indexes from
+#   `seq_along(submodl_totest)` indicating those elements of `submodl_totest`
+#   for which more extensive tests should be conducted.
+# @param nobsv The number of (possibly augmented) observations.
 #
 # @return `TRUE` (invisible).
-submodl_tester <- function(
+submodl_tester_trad <- function(
     submodl_totest,
     nprjdraws_expected,
     sub_formul,
@@ -635,24 +671,12 @@ submodl_tester <- function(
     augdat_cats = NULL,
     allow_w_zero = FALSE,
     check_y_from_resp = TRUE,
+    seq_extensive_tests = seq_extensive_tests,
+    nobsv = nobsv,
     info_str
 ) {
-  expect_type(submodl_totest, "list")
-  expect_length(submodl_totest, nprjdraws_expected)
-
   from_vsel_L1_search <- !is.null(solterms_vsel_L1_search)
 
-  seq_extensive_tests <- unique(round(
-    seq(1, length(submodl_totest),
-        length.out = min(length(submodl_totest), nclusters_pred_tst))
-  ))
-
-  if (!is.null(augdat_cats)) {
-    nobsv <- nobsv * length(augdat_cats)
-    expect_length(sub_formul, 1)
-    sub_formul <- replicate(nprjdraws_expected, sub_formul[[1]],
-                            simplify = FALSE)
-  }
   if (!has_grp && !has_add) {
     sub_x_expected <- model.matrix(sub_formul[[1]], data = sub_data)
     sub_x_expected <- sub_x_expected[
@@ -940,6 +964,266 @@ submodl_tester <- function(
       expect_s3_class(submodl_totest[[!!j]], "gamm4")
     }
     # TODO (GAMMs): Add more expectations for GAMMs.
+  }
+
+  return(invisible(TRUE))
+}
+
+# A helper function for testing the structure of a list of fits for the same
+# single submodel, with that submodel coming from an augmented-data projection.
+#
+# @inheritParams submodl_tester_trad
+#
+# @return `TRUE` (invisible).
+submodl_tester_aug <- function(
+    submodl_totest,
+    nprjdraws_expected,
+    sub_formul,
+    sub_data,
+    sub_fam,
+    has_grp = formula_contains_group_terms(sub_formul[[1]]),
+    has_add = formula_contains_additive_terms(sub_formul[[1]]),
+    wobs_expected = wobs_tst,
+    solterms_vsel_L1_search = NULL,
+    with_offs = FALSE,
+    augdat_cats = NULL,
+    allow_w_zero = FALSE,
+    check_y_from_resp = TRUE,
+    seq_extensive_tests = seq_extensive_tests,
+    nobsv = nobsv,
+    info_str
+) {
+  sub_formul <- sub_formul[[1]]
+  if (has_add) {
+    stop("This case should not occur (yet).")
+  } else if (!has_grp) {
+    if (sub_fam %in% c("cumulative", "cumulative_rstanarm")) {
+      for (j in seq_along(submodl_totest)) {
+        expect_s3_class(submodl_totest[[!!j]], "polr")
+      }
+      for (j in seq_extensive_tests) {
+        # coef()
+        coefs_crr <- coef(submodl_totest[[j]])
+        expect_true(is.vector(coefs_crr, "numeric"), info = info_str)
+        expect_named(
+          coefs_crr,
+          grep("Intercept", colnames(model.matrix(sub_formul, data = sub_data)),
+               value = TRUE, invert = TRUE),
+          info = info_str
+        )
+
+        # zeta
+        zeta_crr <- submodl_totest[[j]]$zeta
+        expect_true(is.vector(zeta_crr, "numeric"), info = info_str)
+        expect_named(
+          zeta_crr,
+          paste(head(augdat_cats, -1), tail(augdat_cats, -1), sep = "|"),
+          info = info_str
+        )
+
+        # lev
+        expect_identical(submodl_totest[[!!j]]$lev, augdat_cats, info = info_str)
+
+        # method
+        expect_identical(submodl_totest[[!!j]]$method, "logistic",
+                         info = info_str)
+      }
+    } else {
+      stop("Under construction.", info_str) # TODO (augdat_tsts)
+    }
+  } else if (has_grp) {
+    if (sub_fam %in% c("cumulative", "cumulative_rstanarm")) {
+      for (j in seq_along(submodl_totest)) {
+        expect_s3_class(submodl_totest[[!!j]], "clmm")
+      }
+      coef_nms <- c("(Intercept)", "xco.1")
+      for (j in seq_extensive_tests) {
+        # alpha
+        alpha_crr <- submodl_totest[[j]]$alpha
+        expect_true(is.vector(alpha_crr, "numeric"), info = info_str)
+        expect_named(
+          alpha_crr,
+          paste(head(augdat_cats, -1), tail(augdat_cats, -1), sep = "|"),
+          info = info_str
+        )
+
+        # beta
+        coefs_crr <- submodl_totest[[j]]$beta
+        expect_true(is.vector(coefs_crr, "numeric"), info = info_str)
+        ### A quick-and-dirty workaround to get rid of group-level terms:
+        stopifnot(identical(trms_grp, c("(xco.1 | z.1)")))
+        sub_formul_no_grp <- update(sub_formul,
+                                    . ~ . - (1 | z.1) - (xco.1 | z.1))
+        ###
+        expect_named(
+          coefs_crr,
+          grep("Intercept",
+               colnames(model.matrix(sub_formul_no_grp, data = sub_data)),
+               value = TRUE, invert = TRUE),
+          info = info_str
+        )
+
+        # ordinal::ranef()
+        ranef_crr <- ordinal::ranef(submodl_totest[[j]])
+        expect_type(ranef_crr, "list")
+        expect_named(ranef_crr, "z.1", info = info_str)
+        expect_true(is.data.frame(ranef_crr[["z.1"]]), info = info_str)
+        expect_named(ranef_crr[["z.1"]], coef_nms, info = info_str)
+        expect_true(is.vector(ranef_crr[["z.1"]][["(Intercept)"]], "numeric"),
+                    info = info_str)
+        expect_length(ranef_crr[["z.1"]][["(Intercept)"]], nlevels(dat$z.1))
+        expect_true(is.vector(ranef_crr[["z.1"]][["xco.1"]], "numeric"),
+                    info = info_str)
+        expect_length(ranef_crr[["z.1"]][["xco.1"]], nlevels(dat$z.1))
+
+        # ordinal::VarCorr()
+        VarCorr_crr <- ordinal::VarCorr(submodl_totest[[j]])
+        expect_type(VarCorr_crr, "list")
+        expect_named(VarCorr_crr, "z.1", info = info_str)
+        expect_true(is.matrix(VarCorr_crr[["z.1"]]), info = info_str)
+        expect_true(is.numeric(VarCorr_crr[["z.1"]]), info = info_str)
+        expect_identical(dimnames(VarCorr_crr[["z.1"]]),
+                         replicate(2, coef_nms, simplify = FALSE),
+                         info = info_str)
+        expect_true(is.vector(attr(VarCorr_crr[["z.1"]], "stddev"), "numeric"),
+                    info = info_str)
+        expect_named(attr(VarCorr_crr[["z.1"]], "stddev"), coef_nms,
+                     info = info_str)
+        expect_true(is.matrix(attr(VarCorr_crr[["z.1"]], "correlation")),
+                    info = info_str)
+        expect_true(is.numeric(attr(VarCorr_crr[["z.1"]], "correlation")),
+                    info = info_str)
+        expect_identical(dimnames(attr(VarCorr_crr[["z.1"]], "correlation")),
+                         replicate(2, coef_nms, simplify = FALSE),
+                         info = info_str)
+
+        # formula()
+        formula_crr <- formula(submodl_totest[[j]])
+        sub_formul_chr <- as.character(sub_formul)
+        expect_identical(
+          formula_crr,
+          as.formula(paste(sub_formul_chr[2], "~ 1 +", sub_formul_chr[3]),
+                     env = environment(sub_formul)),
+          info = info_str
+        )
+
+        # xlevels
+        xlevels_crr <- submodl_totest[[j]]$xlevels
+        xca_nms <- grep("^xca\\.", labels(terms(sub_formul)), value = TRUE)
+        expect_identical(xlevels_crr, lapply(dat[xca_nms], levels),
+                         info = info_str)
+      }
+    } else {
+      stop("Under construction.", info_str) # TODO (augdat_tsts)
+    }
+  }
+
+  return(invisible(TRUE))
+}
+
+# A helper function for testing the structure of a list of fits for the same
+# single submodel.
+#
+# @param submodl_totest The `submodl` object (a list of fits for a single
+#   submodel, with one fit per projected draw) to test.
+# @param nprjdraws_expected A single numeric value giving the expected number of
+#   projected draws.
+# @param sub_formul A list of formulas for the submodel (with one element per
+#   projected draw).
+# @param sub_data The dataset used for fitting the submodel.
+# @param sub_fam A single character string giving the submodel's family.
+# @param has_grp A single logical value indicating whether the fits in
+#   `submodl_totest` are expected to be of class `"lmerMod"` or `"glmerMod"`
+#   (if, at the same time, `has_add` is `FALSE`).
+# @param has_add A single logical value indicating whether the fits in
+#   `submodl_totest` are expected to be of class `"gam"` or `"gamm4"` (depending
+#   on whether the submodel is non-multilevel or multilevel, respectively).
+# @param wobs_expected The expected numeric vector of observation weights.
+# @param solterms_vsel_L1_search If `submodl_totest` comes from the L1
+#   `search_path` of an object of class `"vsel"`, provide here the solution
+#   terms. Otherwise, use `NULL`.
+# @param with_offs A single logical value indicating whether `submodl_totest` is
+#   expected to include offsets (`TRUE`) or not (`FALSE`).
+# @param augdat_cats A character vector of response levels in case of the
+#   augmented-data projection. Needs to be `NULL` for the traditional
+#   projection.
+# @param allow_w_zero A single logical value indicating whether observation
+#   weights are allowed to have a value of zero (`TRUE`) or not (`FALSE`).
+# @param check_y_from_resp A single logical value indicating whether to check
+#   elements `submodl_totest[[j]]@resp$y` for GLMMs (`TRUE`) or not (`FALSE`).
+# @param info_str A single character string giving information to be printed in
+#   case of failure.
+#
+# @return `TRUE` (invisible).
+submodl_tester <- function(
+    submodl_totest,
+    nprjdraws_expected,
+    sub_formul,
+    sub_data,
+    sub_fam,
+    has_grp = formula_contains_group_terms(sub_formul[[1]]),
+    has_add = formula_contains_additive_terms(sub_formul[[1]]),
+    wobs_expected = wobs_tst,
+    solterms_vsel_L1_search = NULL,
+    with_offs = FALSE,
+    augdat_cats = NULL,
+    allow_w_zero = FALSE,
+    check_y_from_resp = TRUE,
+    info_str
+) {
+  expect_type(submodl_totest, "list")
+  expect_length(submodl_totest, nprjdraws_expected)
+
+  seq_extensive_tests <- unique(round(
+    seq(1, length(submodl_totest),
+        length.out = min(length(submodl_totest), nclusters_pred_tst))
+  ))
+
+  if (!is.null(augdat_cats)) {
+    nobsv <- nobsv * length(augdat_cats)
+    expect_length(sub_formul, 1)
+    sub_formul <- replicate(nprjdraws_expected, sub_formul[[1]],
+                            simplify = FALSE)
+  }
+
+  if (sub_fam %in% fam_nms_aug_long) {
+    submodl_tester_aug(
+      submodl_totest = submodl_totest,
+      nprjdraws_expected = nprjdraws_expected,
+      sub_formul = sub_formul,
+      sub_data = sub_data,
+      sub_fam = sub_fam,
+      has_grp = has_grp,
+      has_add = has_add,
+      wobs_expected = wobs_expected,
+      solterms_vsel_L1_search = solterms_vsel_L1_search,
+      with_offs = with_offs,
+      augdat_cats = augdat_cats,
+      allow_w_zero = allow_w_zero,
+      check_y_from_resp = check_y_from_resp,
+      seq_extensive_tests = seq_extensive_tests,
+      nobsv = nobsv,
+      info_str = info_str
+    )
+  } else {
+    submodl_tester_trad(
+      submodl_totest = submodl_totest,
+      nprjdraws_expected = nprjdraws_expected,
+      sub_formul = sub_formul,
+      sub_data = sub_data,
+      sub_fam = sub_fam,
+      has_grp = has_grp,
+      has_add = has_add,
+      wobs_expected = wobs_expected,
+      solterms_vsel_L1_search = solterms_vsel_L1_search,
+      with_offs = with_offs,
+      augdat_cats = augdat_cats,
+      allow_w_zero = allow_w_zero,
+      check_y_from_resp = check_y_from_resp,
+      seq_extensive_tests = seq_extensive_tests,
+      nobsv = nobsv,
+      info_str = info_str
+    )
   }
 
   return(invisible(TRUE))

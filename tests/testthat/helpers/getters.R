@@ -1,3 +1,16 @@
+# Extends an abbreviated family name to its long form (only for categorical and
+# ordinal families):
+get_fam_long <- function(fam_nm) {
+  switch(fam_nm,
+         brnll = "bernoulli",
+         categ = "categorical",
+         cumul = "cumulative",
+         srtio = "sratio",
+         crtio = "cratio",
+         adcat = "acat",
+         NA_character_)
+}
+
 # Standardize the left-hand side of a formula, i.e., get a slightly modified
 # formula as well as the response variable names before and after any
 # evaluations of special expressions:

@@ -40,9 +40,23 @@ test_that("as.matrix.projection() works", {
       npars_fam <- character()
     }
 
-    icpt_nm <- "Intercept"
-    if (pkg_crr == "rstanarm") {
-      icpt_nm <- paste0("(", icpt_nm, ")")
+    if (fam_crr != "cumul") {
+      icpt_nm <- "Intercept"
+      if (pkg_crr == "rstanarm") {
+        icpt_nm <- paste0("(", icpt_nm, ")")
+      }
+    } else {
+      # Note: Here, we could also derive `icpt_nm` from
+      # `prjs[[tstsetup]]$refmodel$family$cats`.
+      if (pkg_crr == "rstanarm") {
+        icpt_nm <- paste(head(levels(prjs[[tstsetup]]$refmodel$y), -1),
+                         tail(levels(prjs[[tstsetup]]$refmodel$y), -1),
+                         sep = "|")
+      } else if (pkg_crr == "brms") {
+        icpt_nm <- paste0("Intercept[",
+                          seq_len(nlevels(prjs[[tstsetup]]$refmodel$y) - 1L),
+                          "]")
+      }
     }
     colnms_prjmat_expect <- c(
       icpt_nm,
