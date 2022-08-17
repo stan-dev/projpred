@@ -712,7 +712,10 @@ cvmeth_tst <- list(
 
 vsel_funs <- nlist("summary.vsel", "plot.vsel", "suggest_size.vsel")
 # Performance statistics common across all families when using the traditional
-# projection:
+# projection (or the latent projection with `lat2resp = FALSE` or the latent
+# projection with `lat2resp = TRUE`, but the latter only in combination with
+# argument `latent_y_unqs` of extend_family() being `NULL` when the reference
+# model was built):
 stats_common <- c("elpd", "mlpd", "mse", "rmse")
 # For creating test setups (note: `common_stats` and `binom_stats` only refer to
 # the traditional projection):
