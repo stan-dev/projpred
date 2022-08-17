@@ -6,6 +6,7 @@ If you read this from a place other than <https://mc-stan.org/projpred/news/inde
 
 ## Major changes
 
+* In the `validate_search = FALSE` case of `cv_varsel()` (with `cv_method = "LOO"`), the PSIS weights are now calculated based on the reference model (they used to be calculated based on the submodels which is incorrect). (GitHub: #325)
 * Some long-standing severe bugs (GitHub issues #329, #330, and #342) have been fixed, concerning the performance evaluation of models with nontrivial observation weights (i.e., models where at least one observation had a weight differing from 1). Concerned performance statistics were `"mse"`, `"rmse"`, `"acc"` (= `"pctcorr"`), and `"auc"` (i.e., all performance statistics except for `"elpd"` and `"mlpd"`).
 * `plot.vsel()` and `suggest_size()` gain a new argument `thres_elpd`. By default, this argument doesn't have any impact, but a non-`NA` value can be used for a customized model size selection rule (see `?suggest_size` for details). (GitHub: #335)
 * Introduction of the augmented-data projection which adds support for the `brms::categorical()` and `brms::cumulative()` response families as well as `rstanarm::stan_polr()` fits. More **brms** families might be supported in the future. The augmented-data projection may also be used for the `binomial()` or the `brms::bernoulli()` family (see `?extend_family` as well as `?augdat_link_binom` and `?augdat_ilink_binom`). Note that currently, the support for the `binomial()` family does not include binomial distributions with more than one trial. In such a case, a workaround is to de-aggregate the Bernoulli trials which belong to the same (aggregated) observation, i.e., to use a "long" dataset. Also note that the augmented-data projection is currently considered as an experimental feature since it has not been tested thoroughly yet and is also subject to some more theoretical investigations. For the augmented-data projection based on a **brms** reference model, **brms** version 2.17.0 or later is needed. (GitHub: #70, #322)
@@ -13,24 +14,24 @@ If you read this from a place other than <https://mc-stan.org/projpred/news/inde
 ## Minor changes
 
 * Several improvements in the documentation (especially in the explanation of the `suggest_size()` heuristic).
-* At multiple places throughout the package: Improvement of the numerical stability for some link functions, achieved by avoiding unnecessary back-and-forth transformations between latent space and response space. (GitHub: #337, #338)
+* Improvement of the numerical stability for some link functions, achieved by avoiding unnecessary back-and-forth transformations between latent space and response space. (GitHub: #337, #338)
 * All arguments `seed` and `.seed` are now allowed to be `NA` for not calling `set.seed()` internally at all.
 * Argument `d_test` of `varsel()` is not considered as an internal feature anymore. This was possible after fixing a bug for `d_test` (see below). (GitHub: #341)
-* The order of the observations in the subelements of `<vsel_object>$summaries` and `<vsel_object>$d_test` now corresponds to the order of the observations in the original dataset if `<vsel_object>` was created by a call to `cv_varsel([...], cv_method = "kfold")` (formerly, in that case, the observations in those subelements were ordered by fold). Thereby, the order of the observations in those subelements now always corresponds to the order of the observations in the original dataset, except if `<vsel_object>` was created by a call to `varsel([...], d_test = <non-NULL_d_test_object>)`, in which case the order of the observations in those subelements corresponds to the order of the observations in `<non-NULL_d_test_object>`. (GitHub: #341)
+* The order of the observations in the sub-elements of `<vsel_object>$summaries` and `<vsel_object>$d_test` now corresponds to the order of the observations in the original dataset if `<vsel_object>` was created by a call to `cv_varsel([...], cv_method = "kfold")` (formerly, in that case, the observations in those sub-elements were ordered by fold). Thereby, the order of the observations in those sub-elements now always corresponds to the order of the observations in the original dataset, except if `<vsel_object>` was created by a call to `varsel([...], d_test = <non-NULL_d_test_object>)`, in which case the order of the observations in those sub-elements corresponds to the order of the observations in `<non-NULL_d_test_object>`. (GitHub: #341)
 
 ## Bug fixes
 
 * Fix GitHub issue #324 (large `search_terms` caused the R session to crash).
 * Fix GitHub issue #204. (GitHub: #325)
-* In the `validate_search = FALSE` case of `cv_varsel()` (with `cv_method = "LOO"`), the PSIS weights are now calculated based on the reference model (they used to be calculated based on the submodels which is incorrect). (GitHub: #325)
+* Fix the `validate_search = FALSE` bug described above in "Major changes": The PSIS weights are now calculated based on the reference model (they used to be calculated based on the submodels which is incorrect). (GitHub: #325)
 * Fix `\mbox{}` commands displayed incorrectly in the HTML help from R version 4.2.0 on. (GitHub: #326)
-* Fix GitHub issue #329.
+* Fix GitHub issue #329 (see also "Major changes" above).
 * Fix GitHub issue #331.
 * `plot.vsel()` now draws the dashed red horizontal line for the reference model (and---if present---the dotted black horizontal line for the baseline model) first (i.e., before the submodel-specific graphical elements), to avoid overplotting.
 * Fix GitHub issue #339. (GitHub: #340)
 * Fix argument `d_test` of `varsel()`: Not only the predictive performance of the *reference model* needs to be evaluated on the test data, but also the predictive performance of the *submodels*. (GitHub: #341)
-* Fix GitHub issue #342.
-* Fix GitHub issue #330. (GitHub: #344, commit 23e7101)
+* Fix GitHub issue #342 (see also "Major changes" above).
+* Fix GitHub issue #330 (see also "Major changes" above). (GitHub: #344, commit 23e7101)
 
 # projpred 2.1.2
 

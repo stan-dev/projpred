@@ -961,6 +961,8 @@ refdist_tester <- function(refd,
                            nprjdraws_expected = nclusters_pred_tst,
                            clust_expected = TRUE,
                            info_str) {
+  expect_named(refd, c("mu", "var", "dis", "weights", "cl", "clust_used"),
+               info = info_str)
   expect_identical(dim(refd$mu), c(nobsv_expected, nprjdraws_expected),
                    info = info_str)
   expect_identical(dim(refd$var), c(nobsv_expected, nprjdraws_expected),
@@ -972,7 +974,7 @@ refdist_tester <- function(refd,
               info = info_str)
   expect_length(refd$weights, nprjdraws_expected)
   expect_true(is.vector(refd$cl, "integer"), info = info_str)
-  expect_length(refd$cl, nprjdraws_expected)
+  expect_length(refd$cl, nrefdraws)
   expect_identical(refd$clust_used, clust_expected, info = info_str)
   return(invisible(TRUE))
 }

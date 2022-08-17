@@ -36,7 +36,7 @@ project_submodel <- function(solution_terms, p_ref, refmodel, regul = 1e-4,
 
 # Function to project the reference model onto the submodels of given model
 # sizes `nterms`. Returns a list of submodels (each processed by
-# .init_submodel()).
+# .init_submodel(), so of class `initsubmodl`).
 .get_submodels <- function(search_path, nterms, p_ref, refmodel, regul,
                            refit_prj = FALSE, ...) {
   if (!refit_prj) {
@@ -104,14 +104,14 @@ project_submodel <- function(solution_terms, p_ref, refmodel, regul = 1e-4,
   }
   if (refmodel$family$family == "Student_t") {
     stop("For the `Student_t()` family, .init_submodel() is not finished yet.")
-    ### TODO (`Student_t()` family): Check if this is needed (perhaps with some
+    ### TODO (Student_t()): Check if this is needed (perhaps with some
     ### modifications) or if something completely different is needed (there
     ### used to be no special handling of the `Student_t()` family here at all):
     # pobs <- pseudo_data(
     #   f = 0, y = p_ref$mu, family = refmodel$family, weights = wobs,
     #   offset = refmodel$offset
     # )
-    # ### TODO: Add `dis` and perhaps other elements here?:
+    # ### TODO (Student_t()): Add `dis` and perhaps other elements here?:
     # p_ref <- list(mu = pobs$z, var = p_ref$var)
     # ###
     # if (!all(refmodel$offset == 0)) {
@@ -131,5 +131,8 @@ project_submodel <- function(solution_terms, p_ref, refmodel, regul = 1e-4,
                        nlist(mu, dis)),
     wsample
   )
-  return(nlist(dis, kl, weights = wsample, solution_terms, submodl))
+  return(structure(
+    nlist(dis, kl, weights = wsample, solution_terms, submodl),
+    class = "initsubmodl"
+  ))
 }

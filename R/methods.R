@@ -235,7 +235,7 @@ proj_linpred_aux <- function(proj, newdata, offset, weights, transform = FALSE,
   lpd_out <- compute_lpd(ynew = ynew, pred_sub = pred_sub, proj = proj,
                          weights = weights, transformed = transform)
   if (integrated) {
-    ## average over the posterior draws
+    ## average over the projected draws
     pred_sub <- structure(pred_sub %*% proj$weights,
                           nobs_orig = attr(pred_sub, "nobs_orig"),
                           class = oldClass(pred_sub))
@@ -793,7 +793,7 @@ print.vsel <- function(x, ...) {
 #'
 #' @details In general (beware of special extensions below), the suggested model
 #'   size is the smallest model size \eqn{k \in \{0, 1, ...,
-#'   \texttt{nterms\_max}\}}{k = 0, 1, ..., nterms_max} for which either the
+#'   \texttt{nterms\_max}\}}{{k = 0, 1, ..., nterms_max}} for which either the
 #'   lower or upper bound (depending on argument `type`) of the
 #'   normal-approximation confidence interval (with nominal coverage `1 -
 #'   alpha`; see argument `alpha` of [summary.vsel()]) for \eqn{U_k -
@@ -872,10 +872,16 @@ suggest_size.vsel <- function(
     warnings = TRUE,
     ...
 ) {
-  .validate_vsel_object_stats(object, stat)
   if (length(stat) > 1) {
     stop("Only one statistic can be specified to suggest_size")
   }
+  stats <- summary.vsel(object,
+                        stats = stat,
+                        type = c("mean", "upper", "lower"),
+                        deltas = TRUE,
+                        ...)
+  nobs_test <- stats$nobs_test %||% stats$nobs_train
+  stats <- stats$selection
 
   if (.is_util(stat)) {
     sgn <- 1
@@ -893,13 +899,7 @@ suggest_size.vsel <- function(
     suffix <- ""
   }
   bound <- type
-  stats <- summary.vsel(object,
-                        stats = stat,
-                        type = c("mean", "upper", "lower"),
-                        deltas = TRUE,
-                        ...)
-  nobs_test <- stats$nobs_test %||% stats$nobs_train
-  stats <- stats$selection
+
   util_null <- sgn * unlist(unname(subset(
     stats, stats$size == 0,
     paste0(stat, suffix)

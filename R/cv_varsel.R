@@ -158,7 +158,8 @@ cv_varsel.refmodel <- function(
 
   ## arguments specific to this function
   args <- parse_args_cv_varsel(
-    refmodel = refmodel, cv_method = cv_method, K = K
+    refmodel = refmodel, cv_method = cv_method, K = K,
+    validate_search = validate_search
   )
   cv_method <- args$cv_method
   K <- args$K
@@ -181,8 +182,6 @@ cv_varsel.refmodel <- function(
       nclusters_pred = nclusters_pred, refit_prj = refit_prj, penalty = penalty,
       verbose = verbose, opt = opt, K = K, search_terms = search_terms, ...
     )
-  } else {
-    stop(sprintf("Unknown `cv_method`: %s.", method))
   }
 
   if (validate_search || cv_method == "kfold") {
@@ -198,7 +197,7 @@ cv_varsel.refmodel <- function(
                   lambda_min_ratio = lambda_min_ratio, nlambda = nlambda,
                   regul = regul, search_terms = search_terms_usr, seed = seed,
                   ...)
-  } else if (cv_method == "LOO") {
+  } else {
     sel <- sel_cv$sel
   }
 
@@ -273,7 +272,7 @@ cv_varsel.refmodel <- function(
 # @param K Number of folds in the K-fold cross validation. Default is 5 for
 #   genuine reference models and 10 for datafits (that is, for penalized
 #   maximum likelihood estimation).
-parse_args_cv_varsel <- function(refmodel, cv_method, K) {
+parse_args_cv_varsel <- function(refmodel, cv_method, K, validate_search) {
   stopifnot(!is.null(cv_method))
   if (cv_method == "loo") {
     cv_method <- toupper(cv_method)
@@ -297,6 +296,10 @@ parse_args_cv_varsel <- function(refmodel, cv_method, K) {
     }
     if (K > NROW(refmodel$y)) {
       stop("`K` cannot exceed the number of observations.")
+    }
+    if (!validate_search) {
+      stop("`cv_method = \"kfold\"` cannot be used with ",
+           "`validate_search = FALSE`.")
     }
   }
 
@@ -480,7 +483,7 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
     for (i in seq_len(n)) {
       solution_terms_mat[i, seq_along(solution)] <- solution
     }
-    sel <- nlist(search_path, kl = sapply(submodels, function(x) x$kl),
+    sel <- nlist(search_path, kl = sapply(submodels, "[[", "kl"),
                  solution_terms = search_path$solution_terms,
                  clust_used_search = p_sel$clust_used,
                  clust_used_eval = refdist_eval$clust_used,
@@ -645,12 +648,12 @@ kfold_varsel <- function(refmodel, method, nterms_max, ndraws,
 
   # Perform the evaluation of the submodels for each fold (and make sure to
   # combine the results from the K folds into a single results list):
-  get_summaries_submodel_cv <- function(submodels, fold) {
+  get_summaries_submodels_cv <- function(submodels, fold) {
     .get_sub_summaries(submodels = submodels,
                        refmodel = refmodel,
                        test_points = fold$d_test$omitted)
   }
-  sub_cv_summaries <- mapply(get_summaries_submodel_cv, submodels_cv, list_cv)
+  sub_cv_summaries <- mapply(get_summaries_submodels_cv, submodels_cv, list_cv)
   if (is.null(dim(sub_cv_summaries))) {
     summ_dim <- dim(solution_terms_cv)
     summ_dim[2] <- summ_dim[2] + 1L # +1 is for the empty model

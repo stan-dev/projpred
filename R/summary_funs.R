@@ -2,14 +2,14 @@
                                offset = refmodel$offset[test_points],
                                wobs = refmodel$wobs[test_points],
                                y = refmodel$y[test_points]) {
-  lapply(submodels, function(model) {
+  lapply(submodels, function(initsubmodl) {
     .weighted_summary_means(
       y_test = list(y = y, weights = wobs),
       family = refmodel$family,
-      wsample = model$weights,
-      mu = refmodel$family$mu_fun(model$submodl, obs = test_points,
+      wsample = initsubmodl$weights,
+      mu = refmodel$family$mu_fun(initsubmodl$submodl, obs = test_points,
                                   newdata = newdata, offset = offset),
-      dis = model$dis
+      dis = initsubmodl$dis
     )
   })
 }
@@ -156,8 +156,8 @@
 ## for example the relative elpd. If these arguments are not given (NULL) then
 ## the actual (non-relative) value is computed.
 ## NOTE: Element `wcv[i]` (with i = 1, ..., N and N denoting the number of
-## observations) contains the weight of the CV fold that observation i is in.
-## In case of varsel() output, this is `NULL`. Currently, these `wcv` are
+## observations) contains the weight of the CV fold that observation i is in. In
+## case of varsel() output, this is `NULL`. Currently, these `wcv` are
 ## nonconstant (and not `NULL`) only in case of subsampled LOO CV. The actual
 ## observation weights (specified by the user) are contained in
 ## `d_test$weights`. These are already taken into account by

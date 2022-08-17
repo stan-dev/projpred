@@ -10,7 +10,7 @@ search_forward <- function(p_ref, refmodel, nterms_max, verbose = TRUE, opt,
   chosen <- character()
   total_terms <- count_terms_chosen(allterms)
   stop_search <- min(total_terms, nterms_max)
-  submodels <- c()
+  submodls <- c()
 
   for (size in seq_len(stop_search)) {
     cands <- select_possible_terms_size(chosen, allterms, size = size)
@@ -24,8 +24,8 @@ search_forward <- function(p_ref, refmodel, nterms_max, verbose = TRUE, opt,
     imin <- which.min(sapply(subL, "[[", "kl"))
     chosen <- c(chosen, cands[imin])
 
-    ## append submodels
-    submodels <- c(submodels, list(subL[[imin]]$submodl))
+    ## append `submodl`
+    submodls <- c(submodls, list(subL[[imin]]$submodl))
 
     if (verbose && count_terms_chosen(chosen) %in% iq) {
       print(paste0(names(iq)[max(which(count_terms_chosen(chosen) == iq))],
@@ -36,14 +36,12 @@ search_forward <- function(p_ref, refmodel, nterms_max, verbose = TRUE, opt,
   # For `solution_terms`, `reduce_models(chosen)` used to be used instead of
   # `chosen`. However, `reduce_models(chosen)` and `chosen` should be identical
   # at this place because select_possible_terms_size() already avoids redundant
-  # models. Thus, use `chosen` here because it matches `submodels` (this
+  # models. Thus, use `chosen` here because it matches `submodls` (this
   # matching is necessary because later in .get_submodels()'s `!refit_prj` case,
   # `submodls` is indexed with integers which are based on `solution_terms`):
-  return(list(solution_terms = setdiff(chosen, "1"),
-              submodls = submodels))
+  return(nlist(solution_terms = setdiff(chosen, "1"), submodls))
 }
 
-# copied over from search until we resolve the TODO below
 search_L1_surrogate <- function(p_ref, d_train, family, intercept, nterms_max,
                                 penalty, opt) {
 

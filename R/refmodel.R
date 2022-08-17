@@ -199,7 +199,8 @@
 #' The return value of `extract_model_data` needs to be a `list` with elements
 #' `y`, `weights`, and `offset`, each being a numeric vector containing the data
 #' for the response, the observation weights, and the offsets, respectively. An
-#' exception is that `y` may also be `NULL` (depending on argument `extract_y`).
+#' exception is that `y` may also be `NULL` (depending on argument `extract_y`)
+#' or a `factor`.
 #'
 #' # Augmented-data projection
 #'
@@ -343,8 +344,10 @@ predict.refmodel <- function(object, newdata = NULL, ynew = NULL,
   }
 
   if (is.null(newdata)) {
+    isnew_newdata <- FALSE
     newdata <- object$fetch_data()
   } else {
+    isnew_newdata <- TRUE
     newdata <- na.fail(newdata)
   }
   w_o <- object$extract_model_data(object$fit, newdata = newdata,
@@ -362,6 +365,11 @@ predict.refmodel <- function(object, newdata = NULL, ynew = NULL,
          "observation weights (other than 1).")
   }
   if (inherits(object$fit, "stanreg") && length(object$fit$offset) > 0) {
+    if (isnew_newdata && "projpred_internal_offs_stanreg" %in% names(newdata)) {
+      stop("Need to write to column `projpred_internal_offs_stanreg` of ",
+           "`newdata`, but that column already exists. Please rename this ",
+           "column in `newdata` and try again.")
+    }
     newdata$projpred_internal_offs_stanreg <- offsetnew
   }
 

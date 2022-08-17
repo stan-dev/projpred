@@ -384,7 +384,7 @@ extend_family_gamma <- function(family) {
     ##     lgamma(p_sub$dis) + pref$mu*p_sub$dis/p_sub$mu - pref$dis))
   }
   dis_gamma <- function(pref, psub, wobs = 1) {
-    ## TODO, IMPLEMENT THIS
+    ## TODO (Gamma()), IMPLEMENT THIS
     stop("Projection of dispersion parameter not yet implemented for family",
          " Gamma.")
     ## mean(wobs*((pref$mu - p_sub$mu)/
