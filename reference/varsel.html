@@ -118,32 +118,32 @@ the solution path.</p>
     </div>
 
     <div id="ref-usage">
-    <div class="sourceCode"><pre class="sourceCode r"><code><span class="fu">varsel</span><span class="op">(</span><span class="va">object</span>, <span class="va">...</span><span class="op">)</span>
-
-<span class="co"># S3 method for default</span>
-<span class="fu">varsel</span><span class="op">(</span><span class="va">object</span>, <span class="va">...</span><span class="op">)</span>
-
-<span class="co"># S3 method for refmodel</span>
-<span class="fu">varsel</span><span class="op">(</span>
-  <span class="va">object</span>,
-  d_test <span class="op">=</span> <span class="cn">NULL</span>,
-  method <span class="op">=</span> <span class="cn">NULL</span>,
-  ndraws <span class="op">=</span> <span class="cn">NULL</span>,
-  nclusters <span class="op">=</span> <span class="fl">20</span>,
-  ndraws_pred <span class="op">=</span> <span class="fl">400</span>,
-  nclusters_pred <span class="op">=</span> <span class="cn">NULL</span>,
-  refit_prj <span class="op">=</span> <span class="op">!</span><span class="fu"><a href="https://rdrr.io/r/base/class.html" class="external-link">inherits</a></span><span class="op">(</span><span class="va">object</span>, <span class="st">"datafit"</span><span class="op">)</span>,
-  nterms_max <span class="op">=</span> <span class="cn">NULL</span>,
-  verbose <span class="op">=</span> <span class="cn">TRUE</span>,
-  lambda_min_ratio <span class="op">=</span> <span class="fl">1e-05</span>,
-  nlambda <span class="op">=</span> <span class="fl">150</span>,
-  thresh <span class="op">=</span> <span class="fl">1e-06</span>,
-  regul <span class="op">=</span> <span class="fl">1e-04</span>,
-  penalty <span class="op">=</span> <span class="cn">NULL</span>,
-  search_terms <span class="op">=</span> <span class="cn">NULL</span>,
-  seed <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/sample.html" class="external-link">sample.int</a></span><span class="op">(</span><span class="va">.Machine</span><span class="op">$</span><span class="va">integer.max</span>, <span class="fl">1</span><span class="op">)</span>,
-  <span class="va">...</span>
-<span class="op">)</span></code></pre></div>
+    <div class="sourceCode"><pre class="sourceCode r"><code><span><span class="fu">varsel</span><span class="op">(</span><span class="va">object</span>, <span class="va">...</span><span class="op">)</span></span>
+<span></span>
+<span><span class="co"># S3 method for default</span></span>
+<span><span class="fu">varsel</span><span class="op">(</span><span class="va">object</span>, <span class="va">...</span><span class="op">)</span></span>
+<span></span>
+<span><span class="co"># S3 method for refmodel</span></span>
+<span><span class="fu">varsel</span><span class="op">(</span></span>
+<span>  <span class="va">object</span>,</span>
+<span>  d_test <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  method <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  ndraws <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  nclusters <span class="op">=</span> <span class="fl">20</span>,</span>
+<span>  ndraws_pred <span class="op">=</span> <span class="fl">400</span>,</span>
+<span>  nclusters_pred <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  refit_prj <span class="op">=</span> <span class="op">!</span><span class="fu"><a href="https://rdrr.io/r/base/class.html" class="external-link">inherits</a></span><span class="op">(</span><span class="va">object</span>, <span class="st">"datafit"</span><span class="op">)</span>,</span>
+<span>  nterms_max <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  verbose <span class="op">=</span> <span class="cn">TRUE</span>,</span>
+<span>  lambda_min_ratio <span class="op">=</span> <span class="fl">1e-05</span>,</span>
+<span>  nlambda <span class="op">=</span> <span class="fl">150</span>,</span>
+<span>  thresh <span class="op">=</span> <span class="fl">1e-06</span>,</span>
+<span>  regul <span class="op">=</span> <span class="fl">1e-04</span>,</span>
+<span>  penalty <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  search_terms <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  seed <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/sample.html" class="external-link">sample.int</a></span><span class="op">(</span><span class="va">.Machine</span><span class="op">$</span><span class="va">integer.max</span>, <span class="fl">1</span><span class="op">)</span>,</span>
+<span>  <span class="va">...</span></span>
+<span><span class="op">)</span></span></code></pre></div>
     </div>
 
     <div id="arguments">
@@ -152,45 +152,63 @@ the solution path.</p>
 <dd><p>An object of class <code>refmodel</code> (returned by <code><a href="refmodel-init-get.html">get_refmodel()</a></code> or
 <code><a href="refmodel-init-get.html">init_refmodel()</a></code>) or an object that can be passed to argument <code>object</code> of
 <code><a href="refmodel-init-get.html">get_refmodel()</a></code>.</p></dd>
+
+
 <dt>...</dt>
 <dd><p>Arguments passed to <code><a href="refmodel-init-get.html">get_refmodel()</a></code> as well as to the divergence
 minimizer (during a forward search and also during the evaluation part, but
 the latter only if <code>refit_prj</code> is <code>TRUE</code>).</p></dd>
+
+
 <dt>d_test</dt>
 <dd><p>For internal use only. A <code>list</code> providing information about the
 test set which is used for evaluating the predictive performance of the
 reference model. If not provided, the training set is used.</p></dd>
+
+
 <dt>method</dt>
 <dd><p>The method for the search part. Possible options are <code>"L1"</code> for
 L1 search and <code>"forward"</code> for forward search. If <code>NULL</code>, then internally,
 <code>"L1"</code> is used, except if the reference model has multilevel or additive
 terms or if <code>!is.null(search_terms)</code>. See also section "Details" below.</p></dd>
+
+
 <dt>ndraws</dt>
 <dd><p>Number of posterior draws used in the search part. Ignored if
 <code>nclusters</code> is not <code>NULL</code> or in case of L1 search (because L1 search always
 uses a single cluster). If both (<code>nclusters</code> and <code>ndraws</code>) are <code>NULL</code>, the
 number of posterior draws from the reference model is used for <code>ndraws</code>.
 See also section "Details" below.</p></dd>
+
+
 <dt>nclusters</dt>
 <dd><p>Number of clusters of posterior draws used in the search
 part. Ignored in case of L1 search (because L1 search always uses a single
 cluster). For the meaning of <code>NULL</code>, see argument <code>ndraws</code>. See also
 section "Details" below.</p></dd>
+
+
 <dt>ndraws_pred</dt>
 <dd><p>Only relevant if <code>refit_prj</code> is <code>TRUE</code>. Number of
 posterior draws used in the evaluation part. Ignored if <code>nclusters_pred</code> is
 not <code>NULL</code>. If both (<code>nclusters_pred</code> and <code>ndraws_pred</code>) are <code>NULL</code>, the
 number of posterior draws from the reference model is used for
 <code>ndraws_pred</code>. See also section "Details" below.</p></dd>
+
+
 <dt>nclusters_pred</dt>
 <dd><p>Only relevant if <code>refit_prj</code> is <code>TRUE</code>. Number of
 clusters of posterior draws used in the evaluation part. For the meaning of
 <code>NULL</code>, see argument <code>ndraws_pred</code>. See also section "Details" below.</p></dd>
+
+
 <dt>refit_prj</dt>
 <dd><p>A single logical value indicating whether to fit the
 submodels along the solution path again (<code>TRUE</code>) or to retrieve their fits
 from the search part (<code>FALSE</code>) before using those (re-)fits in the
 evaluation part.</p></dd>
+
+
 <dt>nterms_max</dt>
 <dd><p>Maximum number of predictor terms until which the search is
 continued. If <code>NULL</code>, then <code>min(19, D)</code> is used where <code>D</code> is the number of
@@ -198,33 +216,47 @@ terms in the reference model (or in <code>search_terms</code>, if supplied). Not
 <code>nterms_max</code> does not count the intercept, so use <code>nterms_max = 0</code> for the
 intercept-only model. (Correspondingly, <code>D</code> above does not count the
 intercept.)</p></dd>
+
+
 <dt>verbose</dt>
 <dd><p>A single logical value indicating whether to print out
 additional information during the computations.</p></dd>
+
+
 <dt>lambda_min_ratio</dt>
 <dd><p>Only relevant for L1 search. Ratio between the
 smallest and largest lambda in the L1-penalized search. This parameter
 essentially determines how long the search is carried out, i.e., how large
 submodels are explored. No need to change this unless the program gives a
 warning about this.</p></dd>
+
+
 <dt>nlambda</dt>
 <dd><p>Only relevant for L1 search. Number of values in the lambda
 grid for L1-penalized search. No need to change this unless the program
 gives a warning about this.</p></dd>
+
+
 <dt>thresh</dt>
 <dd><p>Only relevant for L1 search. Convergence threshold when
 computing the L1 path. Usually, there is no need to change this.</p></dd>
+
+
 <dt>regul</dt>
 <dd><p>A number giving the amount of ridge regularization when
 projecting onto (i.e., fitting) submodels which are GLMs. Usually there is
 no need for regularization, but sometimes we need to add some
 regularization to avoid numerical problems.</p></dd>
+
+
 <dt>penalty</dt>
 <dd><p>Only relevant for L1 search. A numeric vector determining the
 relative penalties or costs for the predictors. A value of <code>0</code> means that
 those predictors have no cost and will therefore be selected first, whereas
 <code>Inf</code> means those predictors will never be selected. If <code>NULL</code>, then <code>1</code> is
 used for each predictor.</p></dd>
+
+
 <dt>search_terms</dt>
 <dd><p>Only relevant for forward search. A custom character
 vector of predictor term blocks to consider for the search. Section
@@ -233,6 +265,8 @@ The intercept (<code>"1"</code>) is always included internally via <code><a href
 there's no difference between including it explicitly or omitting it. The
 default <code>search_terms</code> considers all the terms in the reference model's
 formula.</p></dd>
+
+
 <dt>seed</dt>
 <dd><p>Pseudorandom number generation (PRNG) seed by which the same
 results can be obtained again if needed. If <code>NULL</code>, no seed is set and
@@ -241,10 +275,13 @@ Here, this seed is used for clustering the reference model's posterior
 draws (if <code>!is.null(nclusters)</code>) and for drawing new group-level effects
 when predicting from a multilevel submodel (however, not yet in case of a
 GAMM).</p></dd>
+
 </dl></div>
     <div id="value">
     <h2>Value</h2>
-    <p>An object of class <code>vsel</code>. The elements of this object are not meant
+    
+
+<p>An object of class <code>vsel</code>. The elements of this object are not meant
 to be accessed directly but instead via helper functions (see the vignette
 or type <code><a href="projpred-package.html">?projpred</a></code>).</p>
     </div>
@@ -297,27 +334,27 @@ specify <code>search_terms = c("x2", "x3", "x2 + x3")</code>.</p>
 
     <div id="ref-examples">
     <h2>Examples</h2>
-    <div class="sourceCode"><pre class="sourceCode r"><code><span class="r-in"><span class="kw">if</span> <span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/ns-load.html" class="external-link">requireNamespace</a></span><span class="op">(</span><span class="st">"rstanarm"</span>, quietly <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span><span class="op">)</span> <span class="op">{</span></span>
-<span class="r-in">  <span class="co"># Data:</span></span>
-<span class="r-in">  <span class="va">dat_gauss</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span>y <span class="op">=</span> <span class="va">df_gaussian</span><span class="op">$</span><span class="va">y</span>, <span class="va">df_gaussian</span><span class="op">$</span><span class="va">x</span><span class="op">)</span></span>
-<span class="r-in"></span>
-<span class="r-in">  <span class="co"># The "stanreg" fit which will be used as the reference model (with small</span></span>
-<span class="r-in">  <span class="co"># values for `chains` and `iter`, but only for technical reasons in this</span></span>
-<span class="r-in">  <span class="co"># example; this is not recommended in general):</span></span>
-<span class="r-in">  <span class="va">fit</span> <span class="op">&lt;-</span> <span class="fu">rstanarm</span><span class="fu">::</span><span class="fu"><a href="https://mc-stan.org/rstanarm/reference/stan_glm.html" class="external-link">stan_glm</a></span><span class="op">(</span></span>
-<span class="r-in">    <span class="va">y</span> <span class="op">~</span> <span class="va">X1</span> <span class="op">+</span> <span class="va">X2</span> <span class="op">+</span> <span class="va">X3</span> <span class="op">+</span> <span class="va">X4</span> <span class="op">+</span> <span class="va">X5</span>, family <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/stats/family.html" class="external-link">gaussian</a></span><span class="op">(</span><span class="op">)</span>, data <span class="op">=</span> <span class="va">dat_gauss</span>,</span>
-<span class="r-in">    QR <span class="op">=</span> <span class="cn">TRUE</span>, chains <span class="op">=</span> <span class="fl">2</span>, iter <span class="op">=</span> <span class="fl">500</span>, refresh <span class="op">=</span> <span class="fl">0</span>, seed <span class="op">=</span> <span class="fl">9876</span></span>
-<span class="r-in">  <span class="op">)</span></span>
-<span class="r-in"></span>
-<span class="r-in">  <span class="co"># Variable selection (here without cross-validation and with small values</span></span>
-<span class="r-in">  <span class="co"># for `nterms_max`, `nclusters`, and `nclusters_pred`, but only for the</span></span>
-<span class="r-in">  <span class="co"># sake of speed in this example; this is not recommended in general):</span></span>
-<span class="r-in">  <span class="va">vs</span> <span class="op">&lt;-</span> <span class="fu">varsel</span><span class="op">(</span><span class="va">fit</span>, nterms_max <span class="op">=</span> <span class="fl">3</span>, nclusters <span class="op">=</span> <span class="fl">5</span>, nclusters_pred <span class="op">=</span> <span class="fl">10</span>,</span>
-<span class="r-in">               seed <span class="op">=</span> <span class="fl">5555</span><span class="op">)</span></span>
-<span class="r-in">  <span class="co"># Now see, for example, `?print.vsel`, `?plot.vsel`, `?suggest_size.vsel`,</span></span>
-<span class="r-in">  <span class="co"># and `?solution_terms.vsel` for possible post-processing functions.</span></span>
-<span class="r-in"><span class="op">}</span></span>
-<span class="r-in"></span>
+    <div class="sourceCode"><pre class="sourceCode r"><code><span class="r-in"><span><span class="kw">if</span> <span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/ns-load.html" class="external-link">requireNamespace</a></span><span class="op">(</span><span class="st">"rstanarm"</span>, quietly <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span><span class="op">)</span> <span class="op">{</span></span></span>
+<span class="r-in"><span>  <span class="co"># Data:</span></span></span>
+<span class="r-in"><span>  <span class="va">dat_gauss</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span>y <span class="op">=</span> <span class="va">df_gaussian</span><span class="op">$</span><span class="va">y</span>, <span class="va">df_gaussian</span><span class="op">$</span><span class="va">x</span><span class="op">)</span></span></span>
+<span class="r-in"><span></span></span>
+<span class="r-in"><span>  <span class="co"># The "stanreg" fit which will be used as the reference model (with small</span></span></span>
+<span class="r-in"><span>  <span class="co"># values for `chains` and `iter`, but only for technical reasons in this</span></span></span>
+<span class="r-in"><span>  <span class="co"># example; this is not recommended in general):</span></span></span>
+<span class="r-in"><span>  <span class="va">fit</span> <span class="op">&lt;-</span> <span class="fu">rstanarm</span><span class="fu">::</span><span class="fu"><a href="https://mc-stan.org/rstanarm/reference/stan_glm.html" class="external-link">stan_glm</a></span><span class="op">(</span></span></span>
+<span class="r-in"><span>    <span class="va">y</span> <span class="op">~</span> <span class="va">X1</span> <span class="op">+</span> <span class="va">X2</span> <span class="op">+</span> <span class="va">X3</span> <span class="op">+</span> <span class="va">X4</span> <span class="op">+</span> <span class="va">X5</span>, family <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/stats/family.html" class="external-link">gaussian</a></span><span class="op">(</span><span class="op">)</span>, data <span class="op">=</span> <span class="va">dat_gauss</span>,</span></span>
+<span class="r-in"><span>    QR <span class="op">=</span> <span class="cn">TRUE</span>, chains <span class="op">=</span> <span class="fl">2</span>, iter <span class="op">=</span> <span class="fl">500</span>, refresh <span class="op">=</span> <span class="fl">0</span>, seed <span class="op">=</span> <span class="fl">9876</span></span></span>
+<span class="r-in"><span>  <span class="op">)</span></span></span>
+<span class="r-in"><span></span></span>
+<span class="r-in"><span>  <span class="co"># Variable selection (here without cross-validation and with small values</span></span></span>
+<span class="r-in"><span>  <span class="co"># for `nterms_max`, `nclusters`, and `nclusters_pred`, but only for the</span></span></span>
+<span class="r-in"><span>  <span class="co"># sake of speed in this example; this is not recommended in general):</span></span></span>
+<span class="r-in"><span>  <span class="va">vs</span> <span class="op">&lt;-</span> <span class="fu">varsel</span><span class="op">(</span><span class="va">fit</span>, nterms_max <span class="op">=</span> <span class="fl">3</span>, nclusters <span class="op">=</span> <span class="fl">5</span>, nclusters_pred <span class="op">=</span> <span class="fl">10</span>,</span></span>
+<span class="r-in"><span>               seed <span class="op">=</span> <span class="fl">5555</span><span class="op">)</span></span></span>
+<span class="r-in"><span>  <span class="co"># Now see, for example, `?print.vsel`, `?plot.vsel`, `?suggest_size.vsel`,</span></span></span>
+<span class="r-in"><span>  <span class="co"># and `?solution_terms.vsel` for possible post-processing functions.</span></span></span>
+<span class="r-in"><span><span class="op">}</span></span></span>
+<span class="r-in"><span></span></span>
 </code></pre></div>
     </div>
   </div>
@@ -332,7 +369,7 @@ specify <code>search_terms = c("x2", "x3", "x2 + x3")</code>.</p>
 </div>
 
 <div class="pkgdown">
-  <p></p><p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.0.3.</p>
+  <p></p><p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.0.6.</p>
 </div>
 
       </footer></div>

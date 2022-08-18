@@ -189,7 +189,7 @@
 <li>
 <strong>projpred</strong>’s internal <code>div_minimizer</code> functions have been unified into a single <code>div_minimizer</code> which chooses an appropriate submodel fitter based on the formula of the submodel, not based on that of the reference model. Furthermore, the automatic handling of errors in the submodel fitters has been improved. (GitHub: <a href="https://github.com/stan-dev/projpred/issues/230" class="external-link">#230</a>)</li>
 <li>Improve the axis labels in <code><a href="../reference/plot.vsel.html">plot.vsel()</a></code>. (GitHub: <a href="https://github.com/stan-dev/projpred/issues/234" class="external-link">#234</a>, <a href="https://github.com/stan-dev/projpred/issues/270" class="external-link">#270</a>)</li>
-<li>Handle <strong>rstanarm</strong>’s GitHub issue <a href="https://github.com/stan-dev/projpred/issues/551" class="external-link">#551</a>. This implies that <strong>projpred</strong>’s default <code>cvfun</code> for <code>stanreg</code> fits will now always use <em>inner</em> parallelization in <code><a href="https://mc-stan.org/rstanarm/reference/kfold.stanreg.html" class="external-link">rstanarm::kfold()</a></code> (i.e., across chains, not across CV folds), with <code>getOption("mc.cores", 1)</code> cores. We do so on all systems (not only Windows). (GitHub: <a href="https://github.com/stan-dev/projpred/issues/249" class="external-link">#249</a>)</li>
+<li>Handle <strong>rstanarm</strong>’s GitHub issue <a href="https://github.com/stan-dev/projpred/issues/551" class="external-link">#551</a>. This implies that <strong>projpred</strong>’s default <code>cvfun</code> for <code>stanreg</code> fits will now always use <em>inner</em> parallelization in <code><a href="https://mc-stan.org/loo/reference/kfold-generic.html" class="external-link">rstanarm::kfold()</a></code> (i.e., across chains, not across CV folds), with <code>getOption("mc.cores", 1)</code> cores. We do so on all systems (not only Windows). (GitHub: <a href="https://github.com/stan-dev/projpred/issues/249" class="external-link">#249</a>)</li>
 <li>Argument <code>fit</code> of <code><a href="../reference/refmodel-init-get.html">init_refmodel()</a></code>’s argument <code>proj_predfun</code> was renamed to <code>fits</code>. This is a non-breaking change since all calls to <code>proj_predfun</code> in <strong>projpred</strong> have that argument unnamed. However, this cannot be guaranteed in the future, so we strongly encourage users with a custom <code>proj_predfun</code> to rename argument <code>fit</code> to <code>fits</code>. (GitHub: <a href="https://github.com/stan-dev/projpred/issues/263" class="external-link">#263</a>)</li>
 <li>
 <code><a href="../reference/refmodel-init-get.html">init_refmodel()</a></code> has gained argument <code>cvrefbuilder</code> which may be a custom function for constructing the K reference models in a K-fold CV. (GitHub: <a href="https://github.com/stan-dev/projpred/issues/271" class="external-link">#271</a>)</li>
@@ -349,7 +349,7 @@
 </div>
 
 <div class="pkgdown">
-  <p></p><p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.0.3.</p>
+  <p></p><p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.0.6.</p>
 </div>
 
       </footer></div>

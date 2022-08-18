@@ -116,16 +116,16 @@ response scale, or the log predictive density.</p>
     </div>
 
     <div id="ref-usage">
-    <div class="sourceCode"><pre class="sourceCode r"><code><span class="co"># S3 method for refmodel</span>
-<span class="fu"><a href="https://rdrr.io/r/stats/predict.html" class="external-link">predict</a></span><span class="op">(</span>
-  <span class="va">object</span>,
-  newdata <span class="op">=</span> <span class="cn">NULL</span>,
-  ynew <span class="op">=</span> <span class="cn">NULL</span>,
-  offsetnew <span class="op">=</span> <span class="cn">NULL</span>,
-  weightsnew <span class="op">=</span> <span class="cn">NULL</span>,
-  type <span class="op">=</span> <span class="st">"response"</span>,
-  <span class="va">...</span>
-<span class="op">)</span></code></pre></div>
+    <div class="sourceCode"><pre class="sourceCode r"><code><span><span class="co"># S3 method for refmodel</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/stats/predict.html" class="external-link">predict</a></span><span class="op">(</span></span>
+<span>  <span class="va">object</span>,</span>
+<span>  newdata <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  ynew <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  offsetnew <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  weightsnew <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  type <span class="op">=</span> <span class="st">"response"</span>,</span>
+<span>  <span class="va">...</span></span>
+<span><span class="op">)</span></span></code></pre></div>
     </div>
 
     <div id="arguments">
@@ -133,35 +133,50 @@ response scale, or the log predictive density.</p>
     <dl><dt>object</dt>
 <dd><p>An object of class <code>refmodel</code> (returned by <code><a href="refmodel-init-get.html">get_refmodel()</a></code> or
 <code><a href="refmodel-init-get.html">init_refmodel()</a></code>).</p></dd>
+
+
 <dt>newdata</dt>
 <dd><p>Passed to argument <code>newdata</code> of the reference model's
 <code>extract_model_data</code> function (see <code><a href="refmodel-init-get.html">init_refmodel()</a></code>). Provides the
 predictor (and possibly also the response) data for the new (or old)
 observations. May also be <code>NULL</code> (see argument <code>extract_model_data</code> of
 <code><a href="refmodel-init-get.html">init_refmodel()</a></code>). If not <code>NULL</code>, any <code>NA</code>s will trigger an error.</p></dd>
+
+
 <dt>ynew</dt>
 <dd><p>If not <code>NULL</code>, then this needs to be a vector of new (or old)
 response values. See section "Value" below.</p></dd>
+
+
 <dt>offsetnew</dt>
 <dd><p>Passed to argument <code>orhs</code> of the reference model's
 <code>extract_model_data</code> function (see <code><a href="refmodel-init-get.html">init_refmodel()</a></code>). Used to get the
 offsets for the new (or old) observations.</p></dd>
+
+
 <dt>weightsnew</dt>
 <dd><p>Passed to argument <code>wrhs</code> of the reference model's
 <code>extract_model_data</code> function (see <code><a href="refmodel-init-get.html">init_refmodel()</a></code>). Used to get the
 weights for the new (or old) observations.</p></dd>
+
+
 <dt>type</dt>
 <dd><p>Only relevant if <code>is.null(ynew)</code>. The scale on which the
 predictions are returned, either <code>"link"</code> or <code>"response"</code> (see
 <code><a href="https://rdrr.io/r/stats/predict.glm.html" class="external-link">predict.glm()</a></code> but note that <code>predict.refmodel()</code> does not adhere to the
 typical <span style="R">R</span> convention of a default prediction on link scale). For both
 scales, the predictions are averaged across the posterior draws.</p></dd>
+
+
 <dt>...</dt>
 <dd><p>Currently ignored.</p></dd>
+
 </dl></div>
     <div id="value">
     <h2>Value</h2>
-    <p>Either a vector of predictions (with the scale depending on argument
+    
+
+<p>Either a vector of predictions (with the scale depending on argument
 <code>type</code>) or, if <code>!is.null(ynew)</code>, a vector of log predictive densities
 evaluated at <code>ynew</code>.</p>
     </div>
@@ -182,7 +197,7 @@ evaluated at <code>ynew</code>.</p>
 </div>
 
 <div class="pkgdown">
-  <p></p><p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.0.3.</p>
+  <p></p><p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.0.6.</p>
 </div>
 
       </footer></div>

@@ -116,49 +116,67 @@ different for these two methods, see below for details.</p>
     </div>
 
     <div id="ref-usage">
-    <div class="sourceCode"><pre class="sourceCode r"><code><span class="fu">cvfolds</span><span class="op">(</span><span class="va">n</span>, <span class="va">K</span>, seed <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/sample.html" class="external-link">sample.int</a></span><span class="op">(</span><span class="va">.Machine</span><span class="op">$</span><span class="va">integer.max</span>, <span class="fl">1</span><span class="op">)</span><span class="op">)</span>
-
-<span class="fu">cv_ids</span><span class="op">(</span>
-  <span class="va">n</span>,
-  <span class="va">K</span>,
-  out <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"foldwise"</span>, <span class="st">"indices"</span><span class="op">)</span>,
-  seed <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/sample.html" class="external-link">sample.int</a></span><span class="op">(</span><span class="va">.Machine</span><span class="op">$</span><span class="va">integer.max</span>, <span class="fl">1</span><span class="op">)</span>
-<span class="op">)</span></code></pre></div>
+    <div class="sourceCode"><pre class="sourceCode r"><code><span><span class="fu">cvfolds</span><span class="op">(</span><span class="va">n</span>, <span class="va">K</span>, seed <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/sample.html" class="external-link">sample.int</a></span><span class="op">(</span><span class="va">.Machine</span><span class="op">$</span><span class="va">integer.max</span>, <span class="fl">1</span><span class="op">)</span><span class="op">)</span></span>
+<span></span>
+<span><span class="fu">cv_ids</span><span class="op">(</span></span>
+<span>  <span class="va">n</span>,</span>
+<span>  <span class="va">K</span>,</span>
+<span>  out <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"foldwise"</span>, <span class="st">"indices"</span><span class="op">)</span>,</span>
+<span>  seed <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/sample.html" class="external-link">sample.int</a></span><span class="op">(</span><span class="va">.Machine</span><span class="op">$</span><span class="va">integer.max</span>, <span class="fl">1</span><span class="op">)</span></span>
+<span><span class="op">)</span></span></code></pre></div>
     </div>
 
     <div id="arguments">
     <h2>Arguments</h2>
     <dl><dt>n</dt>
 <dd><p>Number of observations.</p></dd>
+
+
 <dt>K</dt>
 <dd><p>Number of folds. Must be at least 2 and not exceed <code>n</code>.</p></dd>
+
+
 <dt>seed</dt>
 <dd><p>Pseudorandom number generation (PRNG) seed by which the same
 results can be obtained again if needed. If <code>NULL</code>, no seed is set and
 therefore, the results are not reproducible. See <code><a href="https://rdrr.io/r/base/Random.html" class="external-link">set.seed()</a></code> for details.</p></dd>
+
+
 <dt>out</dt>
 <dd><p>Format of the output, either <code>"foldwise"</code> or <code>"indices"</code>. See
 below for details.</p></dd>
+
 </dl></div>
     <div id="value">
     <h2>Value</h2>
-    <p><code>cvfolds()</code> returns a vector of length <code>n</code> such that each element is
+    
+
+<p><code>cvfolds()</code> returns a vector of length <code>n</code> such that each element is
 an integer between 1 and <code>k</code> denoting which fold the corresponding data
-point belongs to. The return value of <code>cv_ids()</code> depends on the <code>out</code>argument. If <code>out = "foldwise"</code>, the return value is a <code>list</code> with <code>k</code>elements, each being a <code>list</code> with elements <code>tr</code> and <code>ts</code> giving the
+point belongs to. The return value of <code>cv_ids()</code> depends on the <code>out</code></p>
+
+
+<p>argument. If <code>out = "foldwise"</code>, the return value is a <code>list</code> with <code>k</code></p>
+
+
+<p>elements, each being a <code>list</code> with elements <code>tr</code> and <code>ts</code> giving the
 training and test indices, respectively, for the corresponding fold. If
-<code>out = "indices"</code>, the return value is a <code>list</code> with elements <code>tr</code> and <code>ts</code>each being a <code>list</code> with <code>k</code> elements giving the training and test indices,
+<code>out = "indices"</code>, the return value is a <code>list</code> with elements <code>tr</code> and <code>ts</code></p>
+
+
+<p>each being a <code>list</code> with <code>k</code> elements giving the training and test indices,
 respectively, for each fold.</p>
     </div>
 
     <div id="ref-examples">
     <h2>Examples</h2>
-    <div class="sourceCode"><pre class="sourceCode r"><code><span class="r-in"><span class="va">n</span> <span class="op">&lt;-</span> <span class="fl">100</span></span>
-<span class="r-in"><span class="fu"><a href="https://rdrr.io/r/base/Random.html" class="external-link">set.seed</a></span><span class="op">(</span><span class="fl">1234</span><span class="op">)</span></span>
-<span class="r-in"><span class="va">y</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/stats/Normal.html" class="external-link">rnorm</a></span><span class="op">(</span><span class="va">n</span><span class="op">)</span></span>
-<span class="r-in"><span class="va">cv</span> <span class="op">&lt;-</span> <span class="fu">cv_ids</span><span class="op">(</span><span class="va">n</span>, K <span class="op">=</span> <span class="fl">5</span>, seed <span class="op">=</span> <span class="fl">9876</span><span class="op">)</span></span>
-<span class="r-in"><span class="co"># Mean within the test set of each fold:</span></span>
-<span class="r-in"><span class="va">cvmeans</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/lapply.html" class="external-link">sapply</a></span><span class="op">(</span><span class="va">cv</span>, <span class="kw">function</span><span class="op">(</span><span class="va">fold</span><span class="op">)</span> <span class="fu"><a href="https://rdrr.io/r/base/mean.html" class="external-link">mean</a></span><span class="op">(</span><span class="va">y</span><span class="op">[</span><span class="va">fold</span><span class="op">$</span><span class="va">ts</span><span class="op">]</span><span class="op">)</span><span class="op">)</span></span>
-<span class="r-in"></span>
+    <div class="sourceCode"><pre class="sourceCode r"><code><span class="r-in"><span><span class="va">n</span> <span class="op">&lt;-</span> <span class="fl">100</span></span></span>
+<span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/base/Random.html" class="external-link">set.seed</a></span><span class="op">(</span><span class="fl">1234</span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="va">y</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/stats/Normal.html" class="external-link">rnorm</a></span><span class="op">(</span><span class="va">n</span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="va">cv</span> <span class="op">&lt;-</span> <span class="fu">cv_ids</span><span class="op">(</span><span class="va">n</span>, K <span class="op">=</span> <span class="fl">5</span>, seed <span class="op">=</span> <span class="fl">9876</span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="co"># Mean within the test set of each fold:</span></span></span>
+<span class="r-in"><span><span class="va">cvmeans</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/lapply.html" class="external-link">sapply</a></span><span class="op">(</span><span class="va">cv</span>, <span class="kw">function</span><span class="op">(</span><span class="va">fold</span><span class="op">)</span> <span class="fu"><a href="https://rdrr.io/r/base/mean.html" class="external-link">mean</a></span><span class="op">(</span><span class="va">y</span><span class="op">[</span><span class="va">fold</span><span class="op">$</span><span class="va">ts</span><span class="op">]</span><span class="op">)</span><span class="op">)</span></span></span>
+<span class="r-in"><span></span></span>
 </code></pre></div>
     </div>
   </div>
@@ -173,7 +191,7 @@ respectively, for each fold.</p>
 </div>
 
 <div class="pkgdown">
-  <p></p><p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.0.3.</p>
+  <p></p><p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.0.6.</p>
 </div>
 
       </footer></div>

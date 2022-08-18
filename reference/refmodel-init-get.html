@@ -118,35 +118,35 @@ for the use of \(K\)-fold CV in <span class="pkg">projpred</span>.</p>
     </div>
 
     <div id="ref-usage">
-    <div class="sourceCode"><pre class="sourceCode r"><code><span class="fu">get_refmodel</span><span class="op">(</span><span class="va">object</span>, <span class="va">...</span><span class="op">)</span>
-
-<span class="co"># S3 method for refmodel</span>
-<span class="fu">get_refmodel</span><span class="op">(</span><span class="va">object</span>, <span class="va">...</span><span class="op">)</span>
-
-<span class="co"># S3 method for vsel</span>
-<span class="fu">get_refmodel</span><span class="op">(</span><span class="va">object</span>, <span class="va">...</span><span class="op">)</span>
-
-<span class="co"># S3 method for default</span>
-<span class="fu">get_refmodel</span><span class="op">(</span><span class="va">object</span>, <span class="va">formula</span>, family <span class="op">=</span> <span class="cn">NULL</span>, <span class="va">...</span><span class="op">)</span>
-
-<span class="co"># S3 method for stanreg</span>
-<span class="fu">get_refmodel</span><span class="op">(</span><span class="va">object</span>, <span class="va">...</span><span class="op">)</span>
-
-<span class="fu">init_refmodel</span><span class="op">(</span>
-  <span class="va">object</span>,
-  <span class="va">data</span>,
-  <span class="va">formula</span>,
-  <span class="va">family</span>,
-  ref_predfun <span class="op">=</span> <span class="cn">NULL</span>,
-  div_minimizer <span class="op">=</span> <span class="cn">NULL</span>,
-  proj_predfun <span class="op">=</span> <span class="cn">NULL</span>,
-  <span class="va">extract_model_data</span>,
-  cvfun <span class="op">=</span> <span class="cn">NULL</span>,
-  cvfits <span class="op">=</span> <span class="cn">NULL</span>,
-  dis <span class="op">=</span> <span class="cn">NULL</span>,
-  cvrefbuilder <span class="op">=</span> <span class="cn">NULL</span>,
-  <span class="va">...</span>
-<span class="op">)</span></code></pre></div>
+    <div class="sourceCode"><pre class="sourceCode r"><code><span><span class="fu">get_refmodel</span><span class="op">(</span><span class="va">object</span>, <span class="va">...</span><span class="op">)</span></span>
+<span></span>
+<span><span class="co"># S3 method for refmodel</span></span>
+<span><span class="fu">get_refmodel</span><span class="op">(</span><span class="va">object</span>, <span class="va">...</span><span class="op">)</span></span>
+<span></span>
+<span><span class="co"># S3 method for vsel</span></span>
+<span><span class="fu">get_refmodel</span><span class="op">(</span><span class="va">object</span>, <span class="va">...</span><span class="op">)</span></span>
+<span></span>
+<span><span class="co"># S3 method for default</span></span>
+<span><span class="fu">get_refmodel</span><span class="op">(</span><span class="va">object</span>, <span class="va">formula</span>, family <span class="op">=</span> <span class="cn">NULL</span>, <span class="va">...</span><span class="op">)</span></span>
+<span></span>
+<span><span class="co"># S3 method for stanreg</span></span>
+<span><span class="fu">get_refmodel</span><span class="op">(</span><span class="va">object</span>, <span class="va">...</span><span class="op">)</span></span>
+<span></span>
+<span><span class="fu">init_refmodel</span><span class="op">(</span></span>
+<span>  <span class="va">object</span>,</span>
+<span>  <span class="va">data</span>,</span>
+<span>  <span class="va">formula</span>,</span>
+<span>  <span class="va">family</span>,</span>
+<span>  ref_predfun <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  div_minimizer <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  proj_predfun <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  <span class="va">extract_model_data</span>,</span>
+<span>  cvfun <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  cvfits <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  dis <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  cvrefbuilder <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  <span class="va">...</span></span>
+<span><span class="op">)</span></span></code></pre></div>
     </div>
 
     <div id="arguments">
@@ -161,10 +161,14 @@ applied to retrieve the family (if argument <code>family</code> is <code>NULL</c
 additionally to the properties required for <code>init_refmodel()</code>. For
 non-default methods of <code>get_refmodel()</code>, an object of the corresponding
 class.</p></dd>
+
+
 <dt>...</dt>
 <dd><p>For <code>get_refmodel.default()</code> and <code>get_refmodel.stanreg()</code>:
 arguments passed to <code>init_refmodel()</code>. For the <code>get_refmodel()</code> generic:
 arguments passed to the appropriate method. Else: ignored.</p></dd>
+
+
 <dt>formula</dt>
 <dd><p>Reference model's formula. For general information on formulas
 in <span style="R">R</span>, see <code><a href="https://rdrr.io/r/stats/formula.html" class="external-link">formula</a></code>. For multilevel formulas, see also package
@@ -172,20 +176,28 @@ in <span style="R">R</span>, see <code><a href="https://rdrr.io/r/stats/formula.
 For additive formulas, see also packages <span class="pkg">mgcv</span> (in particular,
 function <code><a href="https://rdrr.io/pkg/mgcv/man/gam.html" class="external-link">mgcv::gam()</a></code>) and <span class="pkg">gamm4</span> (in particular, function
 <code><a href="https://rdrr.io/pkg/gamm4/man/gamm4.html" class="external-link">gamm4::gamm4()</a></code>) as well as the notes in section "Formula terms" below.</p></dd>
+
+
 <dt>family</dt>
 <dd><p>A <code><a href="https://rdrr.io/r/stats/family.html" class="external-link">family</a></code> object representing the observational model (i.e.,
 the distributional family for the response). May be <code>NULL</code> for
 <code>get_refmodel.default()</code> in which case the family is retrieved from
 <code>object</code>.</p></dd>
+
+
 <dt>data</dt>
 <dd><p>Data used for fitting the reference model. Any <code>contrasts</code>
 attributes of the dataset's columns are silently removed.</p></dd>
+
+
 <dt>ref_predfun</dt>
 <dd><p>Prediction function for the linear predictor of the
 reference model, including offsets (if existing). See also section
 "Arguments <code>ref_predfun</code>, <code>proj_predfun</code>, and <code>div_minimizer</code>" below. If
 <code>object</code> is <code>NULL</code>, <code>ref_predfun</code> is ignored and an internal default is
 used instead.</p></dd>
+
+
 <dt>div_minimizer</dt>
 <dd><p>A function for minimizing the Kullback-Leibler (KL)
 divergence from a submodel to the reference model (i.e., for performing the
@@ -193,15 +205,21 @@ projection of the reference model onto a submodel). The output of
 <code>div_minimizer</code> is used, e.g., by <code>proj_predfun</code>'s argument <code>fits</code>. See
 also section "Arguments <code>ref_predfun</code>, <code>proj_predfun</code>, and <code>div_minimizer</code>"
 below.</p></dd>
+
+
 <dt>proj_predfun</dt>
 <dd><p>Prediction function for the linear predictor of a
 submodel onto which the reference model is projected. See also section
 "Arguments <code>ref_predfun</code>, <code>proj_predfun</code>, and <code>div_minimizer</code>" below.</p></dd>
+
+
 <dt>extract_model_data</dt>
 <dd><p>A function for fetching some variables (response,
 observation weights, offsets) from the original dataset (i.e., the dataset
 used for fitting the reference model) or from a new dataset. See also
 section "Argument <code>extract_model_data</code>" below.</p></dd>
+
+
 <dt>cvfun</dt>
 <dd><p>For \(K\)-fold CV only. A function that, given a fold indices
 vector, fits the reference model separately for each fold and returns the
@@ -210,6 +228,8 @@ a <code>list</code>. If <code>object</code> is <code>NULL</code>, <code>cvfun</c
 internal default. Only one of <code>cvfits</code> and <code>cvfun</code> needs to be provided
 (for \(K\)-fold CV). Note that <code>cvfits</code> takes precedence over <code>cvfun</code>,
 i.e., if both are provided, <code>cvfits</code> is used.</p></dd>
+
+
 <dt>cvfits</dt>
 <dd><p>For \(K\)-fold CV only. A <code>list</code> containing a sub-<code>list</code>
 called <code>fits</code> containing the \(K\) model fits from which reference model
@@ -221,12 +241,16 @@ indices (one fold index per observation). Each element of <code>cvfits$fits</cod
 <code>cvfits</code> and <code>cvfun</code> needs to be provided (for \(K\)-fold CV). Note that
 <code>cvfits</code> takes precedence over <code>cvfun</code>, i.e., if both are provided,
 <code>cvfits</code> is used.</p></dd>
+
+
 <dt>dis</dt>
 <dd><p>A vector of posterior draws for the dispersion parameter (if
 existing). May be <code>NULL</code> if the model has no dispersion parameter or if the
 model does have a dispersion parameter, but <code>object</code> is <code>NULL</code> (in which
 case <code>0</code> is used for <code>dis</code>). Note that for the <code><a href="https://rdrr.io/r/stats/family.html" class="external-link">gaussian()</a></code> <code>family</code>, <code>dis</code>
 is the standard deviation, not the variance.</p></dd>
+
+
 <dt>cvrefbuilder</dt>
 <dd><p>For \(K\)-fold CV only. A function that, given a
 reference model fit for fold \(k \in \{1, ..., K\}\) (this
@@ -238,13 +262,19 @@ same type as <code>init_refmodel()</code> does. Argument <code>cvrefbuilder</cod
 for using an internal default: <code>get_refmodel()</code> if <code>object</code> is not <code>NULL</code>
 and a function calling <code>init_refmodel()</code> appropriately (with the assumption
 <code>dis = 0</code>) if <code>object</code> is <code>NULL</code>.</p></dd>
+
 </dl></div>
     <div id="value">
     <h2>Value</h2>
-    <p>An object that can be passed to all the functions that take the
+    
+
+<p>An object that can be passed to all the functions that take the
 reference model fit as the first argument, such as <code><a href="varsel.html">varsel()</a></code>,
 <code><a href="cv_varsel.html">cv_varsel()</a></code>, <code><a href="project.html">project()</a></code>, <code><a href="pred-projection.html">proj_linpred()</a></code>, and <code><a href="pred-projection.html">proj_predict()</a></code>.
-Usually, the returned object is of class <code>refmodel</code>. However, if <code>object</code>is <code>NULL</code>, the returned object is of class <code>datafit</code> as well as of class
+Usually, the returned object is of class <code>refmodel</code>. However, if <code>object</code></p>
+
+
+<p>is <code>NULL</code>, the returned object is of class <code>datafit</code> as well as of class
 <code>refmodel</code> (with <code>datafit</code> being first). Objects of class <code>datafit</code> are
 handled differently at several places throughout this package.</p>
     </div>
@@ -308,7 +338,7 @@ this number of submodel fits.</p></li>
     <div id="argument-extract-model-data">
     <h2>Argument <code>extract_model_data</code></h2>
     <p>The function supplied to argument <code>extract_model_data</code> needs to have the
-prototype</p><div class="sourceCode r"><pre><code><span class="fu">extract_model_data</span><span class="op">(</span><span class="va">object</span>, <span class="va">newdata</span>, wrhs <span class="op">=</span> <span class="cn">NULL</span>, orhs <span class="op">=</span> <span class="cn">NULL</span>, extract_y <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></code></pre><p></p></div>
+prototype</p><div class="sourceCode r"><pre><code><span><span class="fu">extract_model_data</span><span class="op">(</span><span class="va">object</span>, <span class="va">newdata</span>, wrhs <span class="op">=</span> <span class="cn">NULL</span>, orhs <span class="op">=</span> <span class="cn">NULL</span>, extract_y <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span></code></pre><p></p></div>
 <p>where:</p><ul><li><p><code>object</code> accepts the reference model fit as given in argument <code>object</code> (but
 possibly re-fitted to a subset of the observations, as done in \(K\)-fold
 CV).</p></li>
@@ -331,61 +361,61 @@ exception is that <code>y</code> may also be <code>NULL</code> (depending on arg
 
     <div id="ref-examples">
     <h2>Examples</h2>
-    <div class="sourceCode"><pre class="sourceCode r"><code><span class="r-in"><span class="kw">if</span> <span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/ns-load.html" class="external-link">requireNamespace</a></span><span class="op">(</span><span class="st">"rstanarm"</span>, quietly <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span><span class="op">)</span> <span class="op">{</span></span>
-<span class="r-in">  <span class="co"># Data:</span></span>
-<span class="r-in">  <span class="va">dat_gauss</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span>y <span class="op">=</span> <span class="va">df_gaussian</span><span class="op">$</span><span class="va">y</span>, <span class="va">df_gaussian</span><span class="op">$</span><span class="va">x</span><span class="op">)</span></span>
-<span class="r-in"></span>
-<span class="r-in">  <span class="co"># The "stanreg" fit which will be used as the reference model (with small</span></span>
-<span class="r-in">  <span class="co"># values for `chains` and `iter`, but only for technical reasons in this</span></span>
-<span class="r-in">  <span class="co"># example; this is not recommended in general):</span></span>
-<span class="r-in">  <span class="va">fit</span> <span class="op">&lt;-</span> <span class="fu">rstanarm</span><span class="fu">::</span><span class="fu"><a href="https://mc-stan.org/rstanarm/reference/stan_glm.html" class="external-link">stan_glm</a></span><span class="op">(</span></span>
-<span class="r-in">    <span class="va">y</span> <span class="op">~</span> <span class="va">X1</span> <span class="op">+</span> <span class="va">X2</span> <span class="op">+</span> <span class="va">X3</span> <span class="op">+</span> <span class="va">X4</span> <span class="op">+</span> <span class="va">X5</span>, family <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/stats/family.html" class="external-link">gaussian</a></span><span class="op">(</span><span class="op">)</span>, data <span class="op">=</span> <span class="va">dat_gauss</span>,</span>
-<span class="r-in">    QR <span class="op">=</span> <span class="cn">TRUE</span>, chains <span class="op">=</span> <span class="fl">2</span>, iter <span class="op">=</span> <span class="fl">500</span>, refresh <span class="op">=</span> <span class="fl">0</span>, seed <span class="op">=</span> <span class="fl">9876</span></span>
-<span class="r-in">  <span class="op">)</span></span>
-<span class="r-in"></span>
-<span class="r-in">  <span class="co"># Define the reference model explicitly:</span></span>
-<span class="r-in">  <span class="va">ref</span> <span class="op">&lt;-</span> <span class="fu">get_refmodel</span><span class="op">(</span><span class="va">fit</span><span class="op">)</span></span>
-<span class="r-in">  <span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/class.html" class="external-link">class</a></span><span class="op">(</span><span class="va">ref</span><span class="op">)</span><span class="op">)</span> <span class="co"># gives `"refmodel"`</span></span>
-<span class="r-in">  <span class="co"># Now see, for example, `?varsel`, `?cv_varsel`, and `?project` for</span></span>
-<span class="r-in">  <span class="co"># possible post-processing functions. Most of the post-processing functions</span></span>
-<span class="r-in">  <span class="co"># call get_refmodel() internally at the beginning, so you will rarely need</span></span>
-<span class="r-in">  <span class="co"># to call get_refmodel() yourself.</span></span>
-<span class="r-in"></span>
-<span class="r-in">  <span class="co"># A custom reference model which may be used in a variable selection where</span></span>
-<span class="r-in">  <span class="co"># the candidate predictors are not a subset of those used for the reference</span></span>
-<span class="r-in">  <span class="co"># model's predictions:</span></span>
-<span class="r-in">  <span class="va">ref_cust</span> <span class="op">&lt;-</span> <span class="fu">init_refmodel</span><span class="op">(</span></span>
-<span class="r-in">    <span class="va">fit</span>,</span>
-<span class="r-in">    data <span class="op">=</span> <span class="va">dat_gauss</span>,</span>
-<span class="r-in">    formula <span class="op">=</span> <span class="va">y</span> <span class="op">~</span> <span class="va">X6</span> <span class="op">+</span> <span class="va">X7</span>,</span>
-<span class="r-in">    family <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/stats/family.html" class="external-link">gaussian</a></span><span class="op">(</span><span class="op">)</span>,</span>
-<span class="r-in">    extract_model_data <span class="op">=</span> <span class="kw">function</span><span class="op">(</span><span class="va">object</span>, <span class="va">newdata</span> <span class="op">=</span> <span class="cn">NULL</span>, <span class="va">wrhs</span> <span class="op">=</span> <span class="cn">NULL</span>,</span>
-<span class="r-in">                                  <span class="va">orhs</span> <span class="op">=</span> <span class="cn">NULL</span>, <span class="va">extract_y</span> <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span> <span class="op">{</span></span>
-<span class="r-in">      <span class="kw">if</span> <span class="op">(</span><span class="op">!</span><span class="va">extract_y</span><span class="op">)</span> <span class="op">{</span></span>
-<span class="r-in">        <span class="va">resp_form</span> <span class="op">&lt;-</span> <span class="cn">NULL</span></span>
-<span class="r-in">      <span class="op">}</span> <span class="kw">else</span> <span class="op">{</span></span>
-<span class="r-in">        <span class="va">resp_form</span> <span class="op">&lt;-</span> <span class="op">~</span> <span class="va">y</span></span>
-<span class="r-in">      <span class="op">}</span></span>
-<span class="r-in"></span>
-<span class="r-in">      <span class="kw">if</span> <span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/NULL.html" class="external-link">is.null</a></span><span class="op">(</span><span class="va">newdata</span><span class="op">)</span><span class="op">)</span> <span class="op">{</span></span>
-<span class="r-in">        <span class="va">newdata</span> <span class="op">&lt;-</span> <span class="va">dat_gauss</span></span>
-<span class="r-in">      <span class="op">}</span></span>
-<span class="r-in"></span>
-<span class="r-in">      <span class="va">args</span> <span class="op">&lt;-</span> <span class="fu">projpred</span><span class="fu">:::</span><span class="fu">nlist</span><span class="op">(</span><span class="va">object</span>, <span class="va">newdata</span>, <span class="va">wrhs</span>, <span class="va">orhs</span>, <span class="va">resp_form</span><span class="op">)</span></span>
-<span class="r-in">      <span class="kw"><a href="https://rdrr.io/r/base/function.html" class="external-link">return</a></span><span class="op">(</span><span class="fu">projpred</span><span class="fu">::</span><span class="fu"><a href="do_call.html">do_call</a></span><span class="op">(</span><span class="fu">projpred</span><span class="fu">:::</span><span class="va">.extract_model_data</span>, <span class="va">args</span><span class="op">)</span><span class="op">)</span></span>
-<span class="r-in">    <span class="op">}</span>,</span>
-<span class="r-in">    cvfun <span class="op">=</span> <span class="kw">function</span><span class="op">(</span><span class="va">folds</span><span class="op">)</span> <span class="op">{</span></span>
-<span class="r-in">      <span class="fu">kfold</span><span class="op">(</span></span>
-<span class="r-in">        <span class="va">fit</span>, K <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/Extremes.html" class="external-link">max</a></span><span class="op">(</span><span class="va">folds</span><span class="op">)</span>, save_fits <span class="op">=</span> <span class="cn">TRUE</span>, folds <span class="op">=</span> <span class="va">folds</span>, cores <span class="op">=</span> <span class="fl">1</span></span>
-<span class="r-in">      <span class="op">)</span><span class="op">$</span><span class="va">fits</span><span class="op">[</span>, <span class="st">"fit"</span><span class="op">]</span></span>
-<span class="r-in">    <span class="op">}</span>,</span>
-<span class="r-in">    dis <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/matrix.html" class="external-link">as.matrix</a></span><span class="op">(</span><span class="va">fit</span><span class="op">)</span><span class="op">[</span>, <span class="st">"sigma"</span><span class="op">]</span></span>
-<span class="r-in">  <span class="op">)</span></span>
-<span class="r-in">  <span class="co"># Now, the post-processing functions mentioned above (for example,</span></span>
-<span class="r-in">  <span class="co"># varsel(), cv_varsel(), and project()) may be applied to `ref_cust`.</span></span>
-<span class="r-in"><span class="op">}</span></span>
+    <div class="sourceCode"><pre class="sourceCode r"><code><span class="r-in"><span><span class="kw">if</span> <span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/ns-load.html" class="external-link">requireNamespace</a></span><span class="op">(</span><span class="st">"rstanarm"</span>, quietly <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span><span class="op">)</span> <span class="op">{</span></span></span>
+<span class="r-in"><span>  <span class="co"># Data:</span></span></span>
+<span class="r-in"><span>  <span class="va">dat_gauss</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span>y <span class="op">=</span> <span class="va">df_gaussian</span><span class="op">$</span><span class="va">y</span>, <span class="va">df_gaussian</span><span class="op">$</span><span class="va">x</span><span class="op">)</span></span></span>
+<span class="r-in"><span></span></span>
+<span class="r-in"><span>  <span class="co"># The "stanreg" fit which will be used as the reference model (with small</span></span></span>
+<span class="r-in"><span>  <span class="co"># values for `chains` and `iter`, but only for technical reasons in this</span></span></span>
+<span class="r-in"><span>  <span class="co"># example; this is not recommended in general):</span></span></span>
+<span class="r-in"><span>  <span class="va">fit</span> <span class="op">&lt;-</span> <span class="fu">rstanarm</span><span class="fu">::</span><span class="fu"><a href="https://mc-stan.org/rstanarm/reference/stan_glm.html" class="external-link">stan_glm</a></span><span class="op">(</span></span></span>
+<span class="r-in"><span>    <span class="va">y</span> <span class="op">~</span> <span class="va">X1</span> <span class="op">+</span> <span class="va">X2</span> <span class="op">+</span> <span class="va">X3</span> <span class="op">+</span> <span class="va">X4</span> <span class="op">+</span> <span class="va">X5</span>, family <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/stats/family.html" class="external-link">gaussian</a></span><span class="op">(</span><span class="op">)</span>, data <span class="op">=</span> <span class="va">dat_gauss</span>,</span></span>
+<span class="r-in"><span>    QR <span class="op">=</span> <span class="cn">TRUE</span>, chains <span class="op">=</span> <span class="fl">2</span>, iter <span class="op">=</span> <span class="fl">500</span>, refresh <span class="op">=</span> <span class="fl">0</span>, seed <span class="op">=</span> <span class="fl">9876</span></span></span>
+<span class="r-in"><span>  <span class="op">)</span></span></span>
+<span class="r-in"><span></span></span>
+<span class="r-in"><span>  <span class="co"># Define the reference model explicitly:</span></span></span>
+<span class="r-in"><span>  <span class="va">ref</span> <span class="op">&lt;-</span> <span class="fu">get_refmodel</span><span class="op">(</span><span class="va">fit</span><span class="op">)</span></span></span>
+<span class="r-in"><span>  <span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/class.html" class="external-link">class</a></span><span class="op">(</span><span class="va">ref</span><span class="op">)</span><span class="op">)</span> <span class="co"># gives `"refmodel"`</span></span></span>
+<span class="r-in"><span>  <span class="co"># Now see, for example, `?varsel`, `?cv_varsel`, and `?project` for</span></span></span>
+<span class="r-in"><span>  <span class="co"># possible post-processing functions. Most of the post-processing functions</span></span></span>
+<span class="r-in"><span>  <span class="co"># call get_refmodel() internally at the beginning, so you will rarely need</span></span></span>
+<span class="r-in"><span>  <span class="co"># to call get_refmodel() yourself.</span></span></span>
+<span class="r-in"><span></span></span>
+<span class="r-in"><span>  <span class="co"># A custom reference model which may be used in a variable selection where</span></span></span>
+<span class="r-in"><span>  <span class="co"># the candidate predictors are not a subset of those used for the reference</span></span></span>
+<span class="r-in"><span>  <span class="co"># model's predictions:</span></span></span>
+<span class="r-in"><span>  <span class="va">ref_cust</span> <span class="op">&lt;-</span> <span class="fu">init_refmodel</span><span class="op">(</span></span></span>
+<span class="r-in"><span>    <span class="va">fit</span>,</span></span>
+<span class="r-in"><span>    data <span class="op">=</span> <span class="va">dat_gauss</span>,</span></span>
+<span class="r-in"><span>    formula <span class="op">=</span> <span class="va">y</span> <span class="op">~</span> <span class="va">X6</span> <span class="op">+</span> <span class="va">X7</span>,</span></span>
+<span class="r-in"><span>    family <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/stats/family.html" class="external-link">gaussian</a></span><span class="op">(</span><span class="op">)</span>,</span></span>
+<span class="r-in"><span>    extract_model_data <span class="op">=</span> <span class="kw">function</span><span class="op">(</span><span class="va">object</span>, <span class="va">newdata</span> <span class="op">=</span> <span class="cn">NULL</span>, <span class="va">wrhs</span> <span class="op">=</span> <span class="cn">NULL</span>,</span></span>
+<span class="r-in"><span>                                  <span class="va">orhs</span> <span class="op">=</span> <span class="cn">NULL</span>, <span class="va">extract_y</span> <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span> <span class="op">{</span></span></span>
+<span class="r-in"><span>      <span class="kw">if</span> <span class="op">(</span><span class="op">!</span><span class="va">extract_y</span><span class="op">)</span> <span class="op">{</span></span></span>
+<span class="r-in"><span>        <span class="va">resp_form</span> <span class="op">&lt;-</span> <span class="cn">NULL</span></span></span>
+<span class="r-in"><span>      <span class="op">}</span> <span class="kw">else</span> <span class="op">{</span></span></span>
+<span class="r-in"><span>        <span class="va">resp_form</span> <span class="op">&lt;-</span> <span class="op">~</span> <span class="va">y</span></span></span>
+<span class="r-in"><span>      <span class="op">}</span></span></span>
+<span class="r-in"><span></span></span>
+<span class="r-in"><span>      <span class="kw">if</span> <span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/NULL.html" class="external-link">is.null</a></span><span class="op">(</span><span class="va">newdata</span><span class="op">)</span><span class="op">)</span> <span class="op">{</span></span></span>
+<span class="r-in"><span>        <span class="va">newdata</span> <span class="op">&lt;-</span> <span class="va">dat_gauss</span></span></span>
+<span class="r-in"><span>      <span class="op">}</span></span></span>
+<span class="r-in"><span></span></span>
+<span class="r-in"><span>      <span class="va">args</span> <span class="op">&lt;-</span> <span class="fu">projpred</span><span class="fu">:::</span><span class="fu">nlist</span><span class="op">(</span><span class="va">object</span>, <span class="va">newdata</span>, <span class="va">wrhs</span>, <span class="va">orhs</span>, <span class="va">resp_form</span><span class="op">)</span></span></span>
+<span class="r-in"><span>      <span class="kw"><a href="https://rdrr.io/r/base/function.html" class="external-link">return</a></span><span class="op">(</span><span class="fu">projpred</span><span class="fu">::</span><span class="fu"><a href="do_call.html">do_call</a></span><span class="op">(</span><span class="fu">projpred</span><span class="fu">:::</span><span class="va">.extract_model_data</span>, <span class="va">args</span><span class="op">)</span><span class="op">)</span></span></span>
+<span class="r-in"><span>    <span class="op">}</span>,</span></span>
+<span class="r-in"><span>    cvfun <span class="op">=</span> <span class="kw">function</span><span class="op">(</span><span class="va">folds</span><span class="op">)</span> <span class="op">{</span></span></span>
+<span class="r-in"><span>      <span class="fu">kfold</span><span class="op">(</span></span></span>
+<span class="r-in"><span>        <span class="va">fit</span>, K <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/Extremes.html" class="external-link">max</a></span><span class="op">(</span><span class="va">folds</span><span class="op">)</span>, save_fits <span class="op">=</span> <span class="cn">TRUE</span>, folds <span class="op">=</span> <span class="va">folds</span>, cores <span class="op">=</span> <span class="fl">1</span></span></span>
+<span class="r-in"><span>      <span class="op">)</span><span class="op">$</span><span class="va">fits</span><span class="op">[</span>, <span class="st">"fit"</span><span class="op">]</span></span></span>
+<span class="r-in"><span>    <span class="op">}</span>,</span></span>
+<span class="r-in"><span>    dis <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/matrix.html" class="external-link">as.matrix</a></span><span class="op">(</span><span class="va">fit</span><span class="op">)</span><span class="op">[</span>, <span class="st">"sigma"</span><span class="op">]</span></span></span>
+<span class="r-in"><span>  <span class="op">)</span></span></span>
+<span class="r-in"><span>  <span class="co"># Now, the post-processing functions mentioned above (for example,</span></span></span>
+<span class="r-in"><span>  <span class="co"># varsel(), cv_varsel(), and project()) may be applied to `ref_cust`.</span></span></span>
+<span class="r-in"><span><span class="op">}</span></span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> [1] "refmodel"</span>
-<span class="r-in"></span>
+<span class="r-in"><span></span></span>
 </code></pre></div>
     </div>
   </div>
@@ -400,7 +430,7 @@ exception is that <code>y</code> may also be <code>NULL</code> (depending on arg
 </div>
 
 <div class="pkgdown">
-  <p></p><p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.0.3.</p>
+  <p></p><p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.0.6.</p>
 </div>
 
       </footer></div>

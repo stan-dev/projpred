@@ -116,17 +116,17 @@ final decision based on what is most appropriate for the problem at hand.</p>
     </div>
 
     <div id="ref-usage">
-    <div class="sourceCode"><pre class="sourceCode r"><code><span class="fu">suggest_size</span><span class="op">(</span><span class="va">object</span>, <span class="va">...</span><span class="op">)</span>
-
-<span class="co"># S3 method for vsel</span>
-<span class="fu">suggest_size</span><span class="op">(</span>
-  <span class="va">object</span>,
-  stat <span class="op">=</span> <span class="st">"elpd"</span>,
-  pct <span class="op">=</span> <span class="fl">0</span>,
-  type <span class="op">=</span> <span class="st">"upper"</span>,
-  warnings <span class="op">=</span> <span class="cn">TRUE</span>,
-  <span class="va">...</span>
-<span class="op">)</span></code></pre></div>
+    <div class="sourceCode"><pre class="sourceCode r"><code><span><span class="fu">suggest_size</span><span class="op">(</span><span class="va">object</span>, <span class="va">...</span><span class="op">)</span></span>
+<span></span>
+<span><span class="co"># S3 method for vsel</span></span>
+<span><span class="fu">suggest_size</span><span class="op">(</span></span>
+<span>  <span class="va">object</span>,</span>
+<span>  stat <span class="op">=</span> <span class="st">"elpd"</span>,</span>
+<span>  pct <span class="op">=</span> <span class="fl">0</span>,</span>
+<span>  type <span class="op">=</span> <span class="st">"upper"</span>,</span>
+<span>  warnings <span class="op">=</span> <span class="cn">TRUE</span>,</span>
+<span>  <span class="va">...</span></span>
+<span><span class="op">)</span></span></code></pre></div>
     </div>
 
     <div id="arguments">
@@ -134,26 +134,37 @@ final decision based on what is most appropriate for the problem at hand.</p>
     <dl><dt>object</dt>
 <dd><p>An object of class <code>vsel</code> (returned by <code><a href="varsel.html">varsel()</a></code> or
 <code><a href="cv_varsel.html">cv_varsel()</a></code>).</p></dd>
+
+
 <dt>...</dt>
 <dd><p>Arguments passed to <code><a href="summary.vsel.html">summary.vsel()</a></code>, except for <code>object</code>, <code>stats</code>
 (which is set to <code>stat</code>), <code>type</code>, and <code>deltas</code> (which is set to <code>TRUE</code>).
 See section "Details" below for some important arguments which may be
 passed here.</p></dd>
+
+
 <dt>stat</dt>
 <dd><p>Statistic used for the decision. See <code><a href="summary.vsel.html">summary.vsel()</a></code> for
 possible choices.</p></dd>
+
+
 <dt>pct</dt>
 <dd><p>A number giving the relative proportion (<em>not</em> percents) between
 baseline model and null model utilities one is willing to sacrifice. See
 section "Details" below for more information.</p></dd>
+
+
 <dt>type</dt>
 <dd><p>Either <code>"upper"</code> or <code>"lower"</code> determining whether the decision is
 based on the upper or lower confidence interval bound, respectively. See
 section "Details" below for more information.</p></dd>
+
+
 <dt>warnings</dt>
 <dd><p>Mainly for internal use. A single logical value indicating
 whether to throw warnings if automatic suggestion fails. Usually there is
 no reason to set this to <code>FALSE</code>.</p></dd>
+
 </dl></div>
     <div id="details">
     <h2>Details</h2>
@@ -187,27 +198,27 @@ zero stands for the intercept-only model.</p>
 
     <div id="ref-examples">
     <h2>Examples</h2>
-    <div class="sourceCode"><pre class="sourceCode r"><code><span class="r-in"><span class="kw">if</span> <span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/ns-load.html" class="external-link">requireNamespace</a></span><span class="op">(</span><span class="st">"rstanarm"</span>, quietly <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span><span class="op">)</span> <span class="op">{</span></span>
-<span class="r-in">  <span class="co"># Data:</span></span>
-<span class="r-in">  <span class="va">dat_gauss</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span>y <span class="op">=</span> <span class="va">df_gaussian</span><span class="op">$</span><span class="va">y</span>, <span class="va">df_gaussian</span><span class="op">$</span><span class="va">x</span><span class="op">)</span></span>
-<span class="r-in"></span>
-<span class="r-in">  <span class="co"># The "stanreg" fit which will be used as the reference model (with small</span></span>
-<span class="r-in">  <span class="co"># values for `chains` and `iter`, but only for technical reasons in this</span></span>
-<span class="r-in">  <span class="co"># example; this is not recommended in general):</span></span>
-<span class="r-in">  <span class="va">fit</span> <span class="op">&lt;-</span> <span class="fu">rstanarm</span><span class="fu">::</span><span class="fu"><a href="https://mc-stan.org/rstanarm/reference/stan_glm.html" class="external-link">stan_glm</a></span><span class="op">(</span></span>
-<span class="r-in">    <span class="va">y</span> <span class="op">~</span> <span class="va">X1</span> <span class="op">+</span> <span class="va">X2</span> <span class="op">+</span> <span class="va">X3</span> <span class="op">+</span> <span class="va">X4</span> <span class="op">+</span> <span class="va">X5</span>, family <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/stats/family.html" class="external-link">gaussian</a></span><span class="op">(</span><span class="op">)</span>, data <span class="op">=</span> <span class="va">dat_gauss</span>,</span>
-<span class="r-in">    QR <span class="op">=</span> <span class="cn">TRUE</span>, chains <span class="op">=</span> <span class="fl">2</span>, iter <span class="op">=</span> <span class="fl">500</span>, refresh <span class="op">=</span> <span class="fl">0</span>, seed <span class="op">=</span> <span class="fl">9876</span></span>
-<span class="r-in">  <span class="op">)</span></span>
-<span class="r-in"></span>
-<span class="r-in">  <span class="co"># Variable selection (here without cross-validation and with small values</span></span>
-<span class="r-in">  <span class="co"># for `nterms_max`, `nclusters`, and `nclusters_pred`, but only for the</span></span>
-<span class="r-in">  <span class="co"># sake of speed in this example; this is not recommended in general):</span></span>
-<span class="r-in">  <span class="va">vs</span> <span class="op">&lt;-</span> <span class="fu"><a href="varsel.html">varsel</a></span><span class="op">(</span><span class="va">fit</span>, nterms_max <span class="op">=</span> <span class="fl">3</span>, nclusters <span class="op">=</span> <span class="fl">5</span>, nclusters_pred <span class="op">=</span> <span class="fl">10</span>,</span>
-<span class="r-in">               seed <span class="op">=</span> <span class="fl">5555</span><span class="op">)</span></span>
-<span class="r-in">  <span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="fu">suggest_size</span><span class="op">(</span><span class="va">vs</span><span class="op">)</span><span class="op">)</span></span>
-<span class="r-in"><span class="op">}</span></span>
+    <div class="sourceCode"><pre class="sourceCode r"><code><span class="r-in"><span><span class="kw">if</span> <span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/ns-load.html" class="external-link">requireNamespace</a></span><span class="op">(</span><span class="st">"rstanarm"</span>, quietly <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span><span class="op">)</span> <span class="op">{</span></span></span>
+<span class="r-in"><span>  <span class="co"># Data:</span></span></span>
+<span class="r-in"><span>  <span class="va">dat_gauss</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span>y <span class="op">=</span> <span class="va">df_gaussian</span><span class="op">$</span><span class="va">y</span>, <span class="va">df_gaussian</span><span class="op">$</span><span class="va">x</span><span class="op">)</span></span></span>
+<span class="r-in"><span></span></span>
+<span class="r-in"><span>  <span class="co"># The "stanreg" fit which will be used as the reference model (with small</span></span></span>
+<span class="r-in"><span>  <span class="co"># values for `chains` and `iter`, but only for technical reasons in this</span></span></span>
+<span class="r-in"><span>  <span class="co"># example; this is not recommended in general):</span></span></span>
+<span class="r-in"><span>  <span class="va">fit</span> <span class="op">&lt;-</span> <span class="fu">rstanarm</span><span class="fu">::</span><span class="fu"><a href="https://mc-stan.org/rstanarm/reference/stan_glm.html" class="external-link">stan_glm</a></span><span class="op">(</span></span></span>
+<span class="r-in"><span>    <span class="va">y</span> <span class="op">~</span> <span class="va">X1</span> <span class="op">+</span> <span class="va">X2</span> <span class="op">+</span> <span class="va">X3</span> <span class="op">+</span> <span class="va">X4</span> <span class="op">+</span> <span class="va">X5</span>, family <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/stats/family.html" class="external-link">gaussian</a></span><span class="op">(</span><span class="op">)</span>, data <span class="op">=</span> <span class="va">dat_gauss</span>,</span></span>
+<span class="r-in"><span>    QR <span class="op">=</span> <span class="cn">TRUE</span>, chains <span class="op">=</span> <span class="fl">2</span>, iter <span class="op">=</span> <span class="fl">500</span>, refresh <span class="op">=</span> <span class="fl">0</span>, seed <span class="op">=</span> <span class="fl">9876</span></span></span>
+<span class="r-in"><span>  <span class="op">)</span></span></span>
+<span class="r-in"><span></span></span>
+<span class="r-in"><span>  <span class="co"># Variable selection (here without cross-validation and with small values</span></span></span>
+<span class="r-in"><span>  <span class="co"># for `nterms_max`, `nclusters`, and `nclusters_pred`, but only for the</span></span></span>
+<span class="r-in"><span>  <span class="co"># sake of speed in this example; this is not recommended in general):</span></span></span>
+<span class="r-in"><span>  <span class="va">vs</span> <span class="op">&lt;-</span> <span class="fu"><a href="varsel.html">varsel</a></span><span class="op">(</span><span class="va">fit</span>, nterms_max <span class="op">=</span> <span class="fl">3</span>, nclusters <span class="op">=</span> <span class="fl">5</span>, nclusters_pred <span class="op">=</span> <span class="fl">10</span>,</span></span>
+<span class="r-in"><span>               seed <span class="op">=</span> <span class="fl">5555</span><span class="op">)</span></span></span>
+<span class="r-in"><span>  <span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="fu">suggest_size</span><span class="op">(</span><span class="va">vs</span><span class="op">)</span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="op">}</span></span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> [1] 3</span>
-<span class="r-in"></span>
+<span class="r-in"><span></span></span>
 </code></pre></div>
     </div>
   </div>
@@ -222,7 +233,7 @@ zero stands for the intercept-only model.</p>
 </div>
 
 <div class="pkgdown">
-  <p></p><p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.0.3.</p>
+  <p></p><p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.0.6.</p>
 </div>
 
       </footer></div>

@@ -120,28 +120,28 @@ also handle multiple submodels at once (if the input <code>object</code> is of c
     </div>
 
     <div id="ref-usage">
-    <div class="sourceCode"><pre class="sourceCode r"><code><span class="fu">proj_linpred</span><span class="op">(</span>
-  <span class="va">object</span>,
-  newdata <span class="op">=</span> <span class="cn">NULL</span>,
-  offsetnew <span class="op">=</span> <span class="cn">NULL</span>,
-  weightsnew <span class="op">=</span> <span class="cn">NULL</span>,
-  filter_nterms <span class="op">=</span> <span class="cn">NULL</span>,
-  transform <span class="op">=</span> <span class="cn">FALSE</span>,
-  integrated <span class="op">=</span> <span class="cn">FALSE</span>,
-  .seed <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/sample.html" class="external-link">sample.int</a></span><span class="op">(</span><span class="va">.Machine</span><span class="op">$</span><span class="va">integer.max</span>, <span class="fl">1</span><span class="op">)</span>,
-  <span class="va">...</span>
-<span class="op">)</span>
-
-<span class="fu">proj_predict</span><span class="op">(</span>
-  <span class="va">object</span>,
-  newdata <span class="op">=</span> <span class="cn">NULL</span>,
-  offsetnew <span class="op">=</span> <span class="cn">NULL</span>,
-  weightsnew <span class="op">=</span> <span class="cn">NULL</span>,
-  filter_nterms <span class="op">=</span> <span class="cn">NULL</span>,
-  nresample_clusters <span class="op">=</span> <span class="fl">1000</span>,
-  .seed <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/sample.html" class="external-link">sample.int</a></span><span class="op">(</span><span class="va">.Machine</span><span class="op">$</span><span class="va">integer.max</span>, <span class="fl">1</span><span class="op">)</span>,
-  <span class="va">...</span>
-<span class="op">)</span></code></pre></div>
+    <div class="sourceCode"><pre class="sourceCode r"><code><span><span class="fu">proj_linpred</span><span class="op">(</span></span>
+<span>  <span class="va">object</span>,</span>
+<span>  newdata <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  offsetnew <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  weightsnew <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  filter_nterms <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  transform <span class="op">=</span> <span class="cn">FALSE</span>,</span>
+<span>  integrated <span class="op">=</span> <span class="cn">FALSE</span>,</span>
+<span>  .seed <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/sample.html" class="external-link">sample.int</a></span><span class="op">(</span><span class="va">.Machine</span><span class="op">$</span><span class="va">integer.max</span>, <span class="fl">1</span><span class="op">)</span>,</span>
+<span>  <span class="va">...</span></span>
+<span><span class="op">)</span></span>
+<span></span>
+<span><span class="fu">proj_predict</span><span class="op">(</span></span>
+<span>  <span class="va">object</span>,</span>
+<span>  newdata <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  offsetnew <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  weightsnew <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  filter_nterms <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  nresample_clusters <span class="op">=</span> <span class="fl">1000</span>,</span>
+<span>  .seed <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/sample.html" class="external-link">sample.int</a></span><span class="op">(</span><span class="va">.Machine</span><span class="op">$</span><span class="va">integer.max</span>, <span class="fl">1</span><span class="op">)</span>,</span>
+<span>  <span class="va">...</span></span>
+<span><span class="op">)</span></span></code></pre></div>
     </div>
 
     <div id="arguments">
@@ -149,34 +149,48 @@ also handle multiple submodels at once (if the input <code>object</code> is of c
     <dl><dt>object</dt>
 <dd><p>An object returned by <code><a href="project.html">project()</a></code> or an object that can be
 passed to argument <code>object</code> of <code><a href="project.html">project()</a></code>.</p></dd>
+
+
 <dt>newdata</dt>
 <dd><p>Passed to argument <code>newdata</code> of the reference model's
 <code>extract_model_data</code> function (see <code><a href="refmodel-init-get.html">init_refmodel()</a></code>). Provides the
 predictor (and possibly also the response) data for the new (or old)
 observations. May also be <code>NULL</code> (see argument <code>extract_model_data</code> of
 <code><a href="refmodel-init-get.html">init_refmodel()</a></code>). If not <code>NULL</code>, any <code>NA</code>s will trigger an error.</p></dd>
+
+
 <dt>offsetnew</dt>
 <dd><p>Passed to argument <code>orhs</code> of the reference model's
 <code>extract_model_data</code> function (see <code><a href="refmodel-init-get.html">init_refmodel()</a></code>). Used to get the
 offsets for the new (or old) observations.</p></dd>
+
+
 <dt>weightsnew</dt>
 <dd><p>Passed to argument <code>wrhs</code> of the reference model's
 <code>extract_model_data</code> function (see <code><a href="refmodel-init-get.html">init_refmodel()</a></code>). Used to get the
 weights for the new (or old) observations.</p></dd>
+
+
 <dt>filter_nterms</dt>
 <dd><p>Only applies if <code>object</code> is an object returned by
 <code><a href="project.html">project()</a></code>. In that case, <code>filter_nterms</code> can be used to filter <code>object</code>
 for only those elements (submodels) with a number of solution terms in
 <code>filter_nterms</code>. Therefore, needs to be a numeric vector or <code>NULL</code>. If
 <code>NULL</code>, use all submodels.</p></dd>
+
+
 <dt>transform</dt>
 <dd><p>For <code>proj_linpred()</code> only. A single logical value indicating
 whether the linear predictor should be transformed to response scale using
 the inverse-link function (<code>TRUE</code>) or not (<code>FALSE</code>).</p></dd>
+
+
 <dt>integrated</dt>
 <dd><p>For <code>proj_linpred()</code> only. A single logical value
 indicating whether the output should be averaged across the projected
 posterior draws (<code>TRUE</code>) or not (<code>FALSE</code>).</p></dd>
+
+
 <dt>.seed</dt>
 <dd><p>Pseudorandom number generation (PRNG) seed by which the same
 results can be obtained again if needed. If <code>NULL</code>, no seed is set and
@@ -187,9 +201,13 @@ from the predictive distribution of the submodel(s) in case of
 <code>proj_predict()</code>. If a clustered projection was performed, then in
 <code>proj_predict()</code>, <code>.seed</code> is also used for drawing from the set of the
 projected clusters of posterior draws (see argument <code>nresample_clusters</code>).</p></dd>
+
+
 <dt>...</dt>
 <dd><p>Arguments passed to <code><a href="project.html">project()</a></code> if <code>object</code> is not already an
 object returned by <code><a href="project.html">project()</a></code>.</p></dd>
+
+
 <dt>nresample_clusters</dt>
 <dd><p>For <code>proj_predict()</code> with clustered projection
 only. Number of draws to return from the predictive distribution of the
@@ -197,13 +215,19 @@ submodel. Not to be confused with argument <code>nclusters</code> of <code><a hr
 <code>nresample_clusters</code> gives the number of draws (<em>with</em> replacement) from
 the set of clustered posterior draws after projection (with this set being
 determined by argument <code>nclusters</code> of <code><a href="project.html">project()</a></code>).</p></dd>
+
 </dl></div>
     <div id="value">
     <h2>Value</h2>
-    <p>Let \(S_{\mbox{prj}}\) denote the number of (possibly
+    
+
+<p>Let \(S_{\mbox{prj}}\) denote the number of (possibly
 clustered) projected posterior draws (short: the number of projected draws)
 and \(N\) the number of observations. Then, if the prediction is done for
-one submodel only (i.e., <code>length(nterms) == 1 || !is.null(solution_terms)</code>in the call to <code><a href="project.html">project()</a></code>):</p><ul><li><p><code>proj_linpred()</code> returns a <code>list</code> with elements <code>pred</code> (predictions) and
+one submodel only (i.e., <code>length(nterms) == 1 || !is.null(solution_terms)</code></p>
+
+
+<p>in the call to <code><a href="project.html">project()</a></code>):</p><ul><li><p><code>proj_linpred()</code> returns a <code>list</code> with elements <code>pred</code> (predictions) and
 <code>lpd</code> (log predictive densities). Both elements are \(S_{\mbox{prj}}
   \times N\) matrices.</p></li>
 <li><p><code>proj_predict()</code> returns an \(S_{\mbox{prj}} \times N\)
@@ -217,30 +241,30 @@ terms of the submodels when counting the intercept, too).</p>
 
     <div id="ref-examples">
     <h2>Examples</h2>
-    <div class="sourceCode"><pre class="sourceCode r"><code><span class="r-in"><span class="kw">if</span> <span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/ns-load.html" class="external-link">requireNamespace</a></span><span class="op">(</span><span class="st">"rstanarm"</span>, quietly <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span><span class="op">)</span> <span class="op">{</span></span>
-<span class="r-in">  <span class="co"># Data:</span></span>
-<span class="r-in">  <span class="va">dat_gauss</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span>y <span class="op">=</span> <span class="va">df_gaussian</span><span class="op">$</span><span class="va">y</span>, <span class="va">df_gaussian</span><span class="op">$</span><span class="va">x</span><span class="op">)</span></span>
-<span class="r-in"></span>
-<span class="r-in">  <span class="co"># The "stanreg" fit which will be used as the reference model (with small</span></span>
-<span class="r-in">  <span class="co"># values for `chains` and `iter`, but only for technical reasons in this</span></span>
-<span class="r-in">  <span class="co"># example; this is not recommended in general):</span></span>
-<span class="r-in">  <span class="va">fit</span> <span class="op">&lt;-</span> <span class="fu">rstanarm</span><span class="fu">::</span><span class="fu"><a href="https://mc-stan.org/rstanarm/reference/stan_glm.html" class="external-link">stan_glm</a></span><span class="op">(</span></span>
-<span class="r-in">    <span class="va">y</span> <span class="op">~</span> <span class="va">X1</span> <span class="op">+</span> <span class="va">X2</span> <span class="op">+</span> <span class="va">X3</span> <span class="op">+</span> <span class="va">X4</span> <span class="op">+</span> <span class="va">X5</span>, family <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/stats/family.html" class="external-link">gaussian</a></span><span class="op">(</span><span class="op">)</span>, data <span class="op">=</span> <span class="va">dat_gauss</span>,</span>
-<span class="r-in">    QR <span class="op">=</span> <span class="cn">TRUE</span>, chains <span class="op">=</span> <span class="fl">2</span>, iter <span class="op">=</span> <span class="fl">500</span>, refresh <span class="op">=</span> <span class="fl">0</span>, seed <span class="op">=</span> <span class="fl">9876</span></span>
-<span class="r-in">  <span class="op">)</span></span>
-<span class="r-in"></span>
-<span class="r-in">  <span class="co"># Projection onto an arbitrary combination of predictor terms (with a small</span></span>
-<span class="r-in">  <span class="co"># value for `nclusters`, but only for the sake of speed in this example;</span></span>
-<span class="r-in">  <span class="co"># this is not recommended in general):</span></span>
-<span class="r-in">  <span class="va">prj</span> <span class="op">&lt;-</span> <span class="fu"><a href="project.html">project</a></span><span class="op">(</span><span class="va">fit</span>, solution_terms <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"X1"</span>, <span class="st">"X3"</span>, <span class="st">"X5"</span><span class="op">)</span>, nclusters <span class="op">=</span> <span class="fl">10</span>,</span>
-<span class="r-in">                 seed <span class="op">=</span> <span class="fl">9182</span><span class="op">)</span></span>
-<span class="r-in"></span>
-<span class="r-in">  <span class="co"># Predictions (at the training points) from the submodel onto which the</span></span>
-<span class="r-in">  <span class="co"># reference model was projected:</span></span>
-<span class="r-in">  <span class="va">prjl</span> <span class="op">&lt;-</span> <span class="fu">proj_linpred</span><span class="op">(</span><span class="va">prj</span><span class="op">)</span></span>
-<span class="r-in">  <span class="va">prjp</span> <span class="op">&lt;-</span> <span class="fu">proj_predict</span><span class="op">(</span><span class="va">prj</span>, .seed <span class="op">=</span> <span class="fl">7364</span><span class="op">)</span></span>
-<span class="r-in"><span class="op">}</span></span>
-<span class="r-in"></span>
+    <div class="sourceCode"><pre class="sourceCode r"><code><span class="r-in"><span><span class="kw">if</span> <span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/ns-load.html" class="external-link">requireNamespace</a></span><span class="op">(</span><span class="st">"rstanarm"</span>, quietly <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span><span class="op">)</span> <span class="op">{</span></span></span>
+<span class="r-in"><span>  <span class="co"># Data:</span></span></span>
+<span class="r-in"><span>  <span class="va">dat_gauss</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span>y <span class="op">=</span> <span class="va">df_gaussian</span><span class="op">$</span><span class="va">y</span>, <span class="va">df_gaussian</span><span class="op">$</span><span class="va">x</span><span class="op">)</span></span></span>
+<span class="r-in"><span></span></span>
+<span class="r-in"><span>  <span class="co"># The "stanreg" fit which will be used as the reference model (with small</span></span></span>
+<span class="r-in"><span>  <span class="co"># values for `chains` and `iter`, but only for technical reasons in this</span></span></span>
+<span class="r-in"><span>  <span class="co"># example; this is not recommended in general):</span></span></span>
+<span class="r-in"><span>  <span class="va">fit</span> <span class="op">&lt;-</span> <span class="fu">rstanarm</span><span class="fu">::</span><span class="fu"><a href="https://mc-stan.org/rstanarm/reference/stan_glm.html" class="external-link">stan_glm</a></span><span class="op">(</span></span></span>
+<span class="r-in"><span>    <span class="va">y</span> <span class="op">~</span> <span class="va">X1</span> <span class="op">+</span> <span class="va">X2</span> <span class="op">+</span> <span class="va">X3</span> <span class="op">+</span> <span class="va">X4</span> <span class="op">+</span> <span class="va">X5</span>, family <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/stats/family.html" class="external-link">gaussian</a></span><span class="op">(</span><span class="op">)</span>, data <span class="op">=</span> <span class="va">dat_gauss</span>,</span></span>
+<span class="r-in"><span>    QR <span class="op">=</span> <span class="cn">TRUE</span>, chains <span class="op">=</span> <span class="fl">2</span>, iter <span class="op">=</span> <span class="fl">500</span>, refresh <span class="op">=</span> <span class="fl">0</span>, seed <span class="op">=</span> <span class="fl">9876</span></span></span>
+<span class="r-in"><span>  <span class="op">)</span></span></span>
+<span class="r-in"><span></span></span>
+<span class="r-in"><span>  <span class="co"># Projection onto an arbitrary combination of predictor terms (with a small</span></span></span>
+<span class="r-in"><span>  <span class="co"># value for `nclusters`, but only for the sake of speed in this example;</span></span></span>
+<span class="r-in"><span>  <span class="co"># this is not recommended in general):</span></span></span>
+<span class="r-in"><span>  <span class="va">prj</span> <span class="op">&lt;-</span> <span class="fu"><a href="project.html">project</a></span><span class="op">(</span><span class="va">fit</span>, solution_terms <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"X1"</span>, <span class="st">"X3"</span>, <span class="st">"X5"</span><span class="op">)</span>, nclusters <span class="op">=</span> <span class="fl">10</span>,</span></span>
+<span class="r-in"><span>                 seed <span class="op">=</span> <span class="fl">9182</span><span class="op">)</span></span></span>
+<span class="r-in"><span></span></span>
+<span class="r-in"><span>  <span class="co"># Predictions (at the training points) from the submodel onto which the</span></span></span>
+<span class="r-in"><span>  <span class="co"># reference model was projected:</span></span></span>
+<span class="r-in"><span>  <span class="va">prjl</span> <span class="op">&lt;-</span> <span class="fu">proj_linpred</span><span class="op">(</span><span class="va">prj</span><span class="op">)</span></span></span>
+<span class="r-in"><span>  <span class="va">prjp</span> <span class="op">&lt;-</span> <span class="fu">proj_predict</span><span class="op">(</span><span class="va">prj</span>, .seed <span class="op">=</span> <span class="fl">7364</span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="op">}</span></span></span>
+<span class="r-in"><span></span></span>
 </code></pre></div>
     </div>
   </div>
@@ -255,7 +279,7 @@ terms of the submodels when counting the intercept, too).</p>
 </div>
 
 <div class="pkgdown">
-  <p></p><p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.0.3.</p>
+  <p></p><p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.0.6.</p>
 </div>
 
       </footer></div>

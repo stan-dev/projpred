@@ -133,7 +133,7 @@
       <h1 data-toc-skip>projpred: Projection predictive feature
 selection</h1>
             
-            <h4 data-toc-skip class="date">2022-05-13</h4>
+            <h4 data-toc-skip class="date">2022-08-19</h4>
       
       <small class="dont-index">Source: <a href="https://github.com/stan-dev/projpred/blob/HEAD/vignettes/projpred.Rmd" class="external-link"><code>vignettes/projpred.Rmd</code></a></small>
       <div class="hidden name"><code>projpred.Rmd</code></div>
@@ -169,8 +169,8 @@ continuous predictor variables <code>X1</code>, …, <code>X20</code>
 (originally stored in a sub-matrix; we turn them into separate columns
 below) and one continuous response variable <code>y</code>.</p>
 <div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span class="fu"><a href="https://rdrr.io/r/utils/data.html" class="external-link">data</a></span><span class="op">(</span><span class="st">"df_gaussian"</span>, package <span class="op">=</span> <span class="st">"projpred"</span><span class="op">)</span>
-<span class="va">dat_gauss</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span>y <span class="op">=</span> <span class="va">df_gaussian</span><span class="op">$</span><span class="va">y</span>, <span class="va">df_gaussian</span><span class="op">$</span><span class="va">x</span><span class="op">)</span></code></pre></div>
+<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/utils/data.html" class="external-link">data</a></span><span class="op">(</span><span class="st">"df_gaussian"</span>, package <span class="op">=</span> <span class="st">"projpred"</span><span class="op">)</span></span>
+<span><span class="va">dat_gauss</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span>y <span class="op">=</span> <span class="va">df_gaussian</span><span class="op">$</span><span class="va">y</span>, <span class="va">df_gaussian</span><span class="op">$</span><span class="va">x</span><span class="op">)</span></span></code></pre></div>
 </div>
 <div class="section level2">
 <h2 id="reference-model">Reference model<a class="anchor" aria-label="anchor" href="#reference-model"></a>
@@ -205,7 +205,7 @@ that in case of a <strong>brms</strong> fit, we recommend to specify
 argument <code>brms_seed</code> of
 <code>brms:::get_refmodel.brmsfit()</code>.</p>
 <div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://mc-stan.org/rstanarm/" class="external-link">rstanarm</a></span><span class="op">)</span></code></pre></div>
+<code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://mc-stan.org/rstanarm/" class="external-link">rstanarm</a></span><span class="op">)</span></span></code></pre></div>
 <p>For our <strong>rstanarm</strong> reference model, we use the
 Gaussian distribution as the <code>family</code> for our response. With
 respect to the predictors, we only include the linear main effects of
@@ -220,19 +220,19 @@ hyperprior for its global shrinkage parameter following Piironen and
 Vehtari (2017b,c). In R code, these are the preparation steps for the
 regularized horseshoe prior:</p>
 <div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span class="co"># Number of regression coefficients:</span>
-<span class="op">(</span> <span class="va">D</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/sum.html" class="external-link">sum</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/grep.html" class="external-link">grepl</a></span><span class="op">(</span><span class="st">"^X"</span>, <span class="fu"><a href="https://rdrr.io/r/base/names.html" class="external-link">names</a></span><span class="op">(</span><span class="va">dat_gauss</span><span class="op">)</span><span class="op">)</span><span class="op">)</span> <span class="op">)</span></code></pre></div>
+<code class="sourceCode R"><span><span class="co"># Number of regression coefficients:</span></span>
+<span><span class="op">(</span> <span class="va">D</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/sum.html" class="external-link">sum</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/grep.html" class="external-link">grepl</a></span><span class="op">(</span><span class="st">"^X"</span>, <span class="fu"><a href="https://rdrr.io/r/base/names.html" class="external-link">names</a></span><span class="op">(</span><span class="va">dat_gauss</span><span class="op">)</span><span class="op">)</span><span class="op">)</span> <span class="op">)</span></span></code></pre></div>
 <pre><code>[1] 20</code></pre>
 <div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span class="co"># Prior guess for the number of relevant (i.e., non-zero) regression</span>
-<span class="co"># coefficients:</span>
-<span class="va">p0</span> <span class="op">&lt;-</span> <span class="fl">5</span>
-<span class="co"># Number of observations:</span>
-<span class="va">N</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">nrow</a></span><span class="op">(</span><span class="va">dat_gauss</span><span class="op">)</span>
-<span class="co"># Hyperprior scale for tau, the global shrinkage parameter (note that for the</span>
-<span class="co"># Gaussian family, 'rstanarm' will automatically scale this by the residual</span>
-<span class="co"># standard deviation):</span>
-<span class="va">tau0</span> <span class="op">&lt;-</span> <span class="va">p0</span> <span class="op">/</span> <span class="op">(</span><span class="va">D</span> <span class="op">-</span> <span class="va">p0</span><span class="op">)</span> <span class="op">*</span> <span class="fl">1</span> <span class="op">/</span> <span class="fu"><a href="https://rdrr.io/r/base/MathFun.html" class="external-link">sqrt</a></span><span class="op">(</span><span class="va">N</span><span class="op">)</span></code></pre></div>
+<code class="sourceCode R"><span><span class="co"># Prior guess for the number of relevant (i.e., non-zero) regression</span></span>
+<span><span class="co"># coefficients:</span></span>
+<span><span class="va">p0</span> <span class="op">&lt;-</span> <span class="fl">5</span></span>
+<span><span class="co"># Number of observations:</span></span>
+<span><span class="va">N</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">nrow</a></span><span class="op">(</span><span class="va">dat_gauss</span><span class="op">)</span></span>
+<span><span class="co"># Hyperprior scale for tau, the global shrinkage parameter (note that for the</span></span>
+<span><span class="co"># Gaussian family, 'rstanarm' will automatically scale this by the residual</span></span>
+<span><span class="co"># standard deviation):</span></span>
+<span><span class="va">tau0</span> <span class="op">&lt;-</span> <span class="va">p0</span> <span class="op">/</span> <span class="op">(</span><span class="va">D</span> <span class="op">-</span> <span class="va">p0</span><span class="op">)</span> <span class="op">*</span> <span class="fl">1</span> <span class="op">/</span> <span class="fu"><a href="https://rdrr.io/r/base/MathFun.html" class="external-link">sqrt</a></span><span class="op">(</span><span class="va">N</span><span class="op">)</span></span></code></pre></div>
 <p>We now fit the reference model to the data. To make this vignette
 build faster, we use only 2 MCMC chains and 500 iterations per chain
 (with half of them being discarded as warmup draws). In practice, 4
@@ -244,24 +244,24 @@ to detect the number of CPU cores (like the
 <code><a href="https://rdrr.io/r/parallel/detectCores.html" class="external-link">parallel::detectCores()</a></code> function shown below) or adapt
 <code>ncores</code> manually to your system.</p>
 <div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span class="co"># Set this manually if desired:</span>
-<span class="va">ncores</span> <span class="op">&lt;-</span> <span class="fu">parallel</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/r/parallel/detectCores.html" class="external-link">detectCores</a></span><span class="op">(</span>logical <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span>
-<span class="co">### Only for technical reasons in this vignette (you can omit this when running</span>
-<span class="co">### the code yourself):</span>
-<span class="va">ncores</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/Extremes.html" class="external-link">min</a></span><span class="op">(</span><span class="va">ncores</span>, <span class="fl">2L</span><span class="op">)</span>
-<span class="co">###</span>
-<span class="fu"><a href="https://rdrr.io/r/base/options.html" class="external-link">options</a></span><span class="op">(</span>mc.cores <span class="op">=</span> <span class="va">ncores</span><span class="op">)</span>
-<span class="va">refm_fit</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://mc-stan.org/rstanarm/reference/stan_glm.html" class="external-link">stan_glm</a></span><span class="op">(</span>
-  <span class="va">y</span> <span class="op">~</span> <span class="va">X1</span> <span class="op">+</span> <span class="va">X2</span> <span class="op">+</span> <span class="va">X3</span> <span class="op">+</span> <span class="va">X4</span> <span class="op">+</span> <span class="va">X5</span> <span class="op">+</span> <span class="va">X6</span> <span class="op">+</span> <span class="va">X7</span> <span class="op">+</span> <span class="va">X8</span> <span class="op">+</span> <span class="va">X9</span> <span class="op">+</span> <span class="va">X10</span> <span class="op">+</span> <span class="va">X11</span> <span class="op">+</span> <span class="va">X12</span> <span class="op">+</span> <span class="va">X13</span> <span class="op">+</span> <span class="va">X14</span> <span class="op">+</span>
-    <span class="va">X15</span> <span class="op">+</span> <span class="va">X16</span> <span class="op">+</span> <span class="va">X17</span> <span class="op">+</span> <span class="va">X18</span> <span class="op">+</span> <span class="va">X19</span> <span class="op">+</span> <span class="va">X20</span>,
-  family <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/stats/family.html" class="external-link">gaussian</a></span><span class="op">(</span><span class="op">)</span>,
-  data <span class="op">=</span> <span class="va">dat_gauss</span>,
-  prior <span class="op">=</span> <span class="fu"><a href="https://mc-stan.org/rstanarm/reference/priors.html" class="external-link">hs</a></span><span class="op">(</span>global_scale <span class="op">=</span> <span class="va">tau0</span><span class="op">)</span>,
-  <span class="co">### Only for the sake of speed (not recommended in general):</span>
-  chains <span class="op">=</span> <span class="fl">2</span>, iter <span class="op">=</span> <span class="fl">500</span>,
-  <span class="co">###</span>
-  seed <span class="op">=</span> <span class="fl">2052109</span>, QR <span class="op">=</span> <span class="cn">TRUE</span>, refresh <span class="op">=</span> <span class="fl">0</span>
-<span class="op">)</span></code></pre></div>
+<code class="sourceCode R"><span><span class="co"># Set this manually if desired:</span></span>
+<span><span class="va">ncores</span> <span class="op">&lt;-</span> <span class="fu">parallel</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/r/parallel/detectCores.html" class="external-link">detectCores</a></span><span class="op">(</span>logical <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
+<span><span class="co">### Only for technical reasons in this vignette (you can omit this when running</span></span>
+<span><span class="co">### the code yourself):</span></span>
+<span><span class="va">ncores</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/Extremes.html" class="external-link">min</a></span><span class="op">(</span><span class="va">ncores</span>, <span class="fl">2L</span><span class="op">)</span></span>
+<span><span class="co">###</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/options.html" class="external-link">options</a></span><span class="op">(</span>mc.cores <span class="op">=</span> <span class="va">ncores</span><span class="op">)</span></span>
+<span><span class="va">refm_fit</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://mc-stan.org/rstanarm/reference/stan_glm.html" class="external-link">stan_glm</a></span><span class="op">(</span></span>
+<span>  <span class="va">y</span> <span class="op">~</span> <span class="va">X1</span> <span class="op">+</span> <span class="va">X2</span> <span class="op">+</span> <span class="va">X3</span> <span class="op">+</span> <span class="va">X4</span> <span class="op">+</span> <span class="va">X5</span> <span class="op">+</span> <span class="va">X6</span> <span class="op">+</span> <span class="va">X7</span> <span class="op">+</span> <span class="va">X8</span> <span class="op">+</span> <span class="va">X9</span> <span class="op">+</span> <span class="va">X10</span> <span class="op">+</span> <span class="va">X11</span> <span class="op">+</span> <span class="va">X12</span> <span class="op">+</span> <span class="va">X13</span> <span class="op">+</span> <span class="va">X14</span> <span class="op">+</span></span>
+<span>    <span class="va">X15</span> <span class="op">+</span> <span class="va">X16</span> <span class="op">+</span> <span class="va">X17</span> <span class="op">+</span> <span class="va">X18</span> <span class="op">+</span> <span class="va">X19</span> <span class="op">+</span> <span class="va">X20</span>,</span>
+<span>  family <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/stats/family.html" class="external-link">gaussian</a></span><span class="op">(</span><span class="op">)</span>,</span>
+<span>  data <span class="op">=</span> <span class="va">dat_gauss</span>,</span>
+<span>  prior <span class="op">=</span> <span class="fu"><a href="https://mc-stan.org/rstanarm/reference/priors.html" class="external-link">hs</a></span><span class="op">(</span>global_scale <span class="op">=</span> <span class="va">tau0</span><span class="op">)</span>,</span>
+<span>  <span class="co">### Only for the sake of speed (not recommended in general):</span></span>
+<span>  chains <span class="op">=</span> <span class="fl">2</span>, iter <span class="op">=</span> <span class="fl">500</span>,</span>
+<span>  <span class="co">###</span></span>
+<span>  seed <span class="op">=</span> <span class="fl">2052109</span>, QR <span class="op">=</span> <span class="cn">TRUE</span>, refresh <span class="op">=</span> <span class="fl">0</span></span>
+<span><span class="op">)</span></span></code></pre></div>
 <p>Usually, we would now have to check the convergence diagnostics (see,
 e.g., <code><a href="https://mc-stan.org/posterior/reference/diagnostics.html" class="external-link">?posterior::diagnostics</a></code> and
 <code><a href="https://mc-stan.org/posterior/reference/draws_summary.html" class="external-link">?posterior::default_convergence_measures</a></code>). However, due to
@@ -273,7 +273,7 @@ the technical reasons for which we reduced <code>chains</code> and
 </h2>
 <p>Now, <strong>projpred</strong> comes into play.</p>
 <div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://mc-stan.org/projpred/">projpred</a></span><span class="op">)</span></code></pre></div>
+<code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://mc-stan.org/projpred/">projpred</a></span><span class="op">)</span></span></code></pre></div>
 <p>In <strong>projpred</strong>, the projective variable selection
 consists of a <em>search</em> part and an <em>evaluation</em> part. The
 search part determines the solution path, i.e., the best submodel for
@@ -322,15 +322,15 @@ this first run, one is able to set a reasonable <code>nterms_max</code>
 in subsequent runs. The value we are using here (<code>9</code>) is
 based on such a first run (which is not shown here, though).</p>
 <div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span class="va">cvvs</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/cv_varsel.html">cv_varsel</a></span><span class="op">(</span>
-  <span class="va">refm_fit</span>,
-  <span class="co">### Only for the sake of speed (not recommended in general):</span>
-  validate_search <span class="op">=</span> <span class="cn">FALSE</span>,
-  nclusters_pred <span class="op">=</span> <span class="fl">20</span>,
-  <span class="co">###</span>
-  nterms_max <span class="op">=</span> <span class="fl">9</span>,
-  seed <span class="op">=</span> <span class="fl">411183</span>
-<span class="op">)</span></code></pre></div>
+<code class="sourceCode R"><span><span class="va">cvvs</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/cv_varsel.html">cv_varsel</a></span><span class="op">(</span></span>
+<span>  <span class="va">refm_fit</span>,</span>
+<span>  <span class="co">### Only for the sake of speed (not recommended in general):</span></span>
+<span>  validate_search <span class="op">=</span> <span class="cn">FALSE</span>,</span>
+<span>  nclusters_pred <span class="op">=</span> <span class="fl">20</span>,</span>
+<span>  <span class="co">###</span></span>
+<span>  nterms_max <span class="op">=</span> <span class="fl">9</span>,</span>
+<span>  seed <span class="op">=</span> <span class="fl">411183</span></span>
+<span><span class="op">)</span></span></code></pre></div>
 <p>The first step after running the variable selection should be the
 decision for a final submodel size. This should be the first step (in
 particular, before inspecting the solution path) in order to avoid a
@@ -351,20 +351,20 @@ with <code>deltas = TRUE</code> here (note that as
 optimistic, and the plot looks different when
 <code>validate_search = TRUE</code> is used):</p>
 <div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span class="fu"><a href="https://rdrr.io/r/graphics/plot.default.html" class="external-link">plot</a></span><span class="op">(</span><span class="va">cvvs</span>, stats <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"elpd"</span>, <span class="st">"rmse"</span><span class="op">)</span>, deltas <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></code></pre></div>
+<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/graphics/plot.default.html" class="external-link">plot</a></span><span class="op">(</span><span class="va">cvvs</span>, stats <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"elpd"</span>, <span class="st">"rmse"</span><span class="op">)</span>, deltas <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span></code></pre></div>
 <p><img src="projpred_files/figure-html/unnamed-chunk-9-1.png" width="60%" style="display: block; margin: auto;"></p>
 <p>Based on that plot, we would decide for a submodel size of 6 because
 that’s the point where the performance measures level off and are close
 enough to the reference model’s performance (this is also affected by
 <code>validate_search = FALSE</code>).</p>
 <div class="sourceCode" id="cb10"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span class="va">modsize_decided</span> <span class="op">&lt;-</span> <span class="fl">6</span></code></pre></div>
+<code class="sourceCode R"><span><span class="va">modsize_decided</span> <span class="op">&lt;-</span> <span class="fl">6</span></span></code></pre></div>
 <p>Note that <strong>projpred</strong> offers the
 <code><a href="../reference/suggest_size.html">suggest_size()</a></code> function which may help in the decision for
 a submodel size, but this is a rather heuristic method and needs to be
 interpreted with caution (see <code><a href="../reference/suggest_size.html">?suggest_size</a></code>).</p>
 <div class="sourceCode" id="cb11"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span class="fu"><a href="../reference/suggest_size.html">suggest_size</a></span><span class="op">(</span><span class="va">cvvs</span><span class="op">)</span></code></pre></div>
+<code class="sourceCode R"><span><span class="fu"><a href="../reference/suggest_size.html">suggest_size</a></span><span class="op">(</span><span class="va">cvvs</span><span class="op">)</span></span></code></pre></div>
 <pre><code>[1] 6</code></pre>
 <p>Here, we would get the same final submodel size (<code>6</code>) as
 by our manual decision (<code><a href="../reference/suggest_size.html">suggest_size()</a></code> is also affected by
@@ -374,7 +374,7 @@ inspect further results from the variable selection and, in particular,
 the solution path. For example, we can simply <code><a href="https://rdrr.io/r/base/print.html" class="external-link">print()</a></code> the
 resulting object:</p>
 <div class="sourceCode" id="cb13"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span class="va">cvvs</span></code></pre></div>
+<code class="sourceCode R"><span><span class="va">cvvs</span></span></code></pre></div>
 <pre><code>
 Family: gaussian 
 Link function: identity 
@@ -401,20 +401,20 @@ Selection Summary:
     8            X11   -135.2 4.4   13.1     2.5
     9            X10   -134.8 4.4   13.6     2.4</code></pre>
 <div class="sourceCode" id="cb15"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span class="co">### Alternative modifying the number of printed decimal places:</span>
-<span class="co"># print(cvvs, digits = 2)</span>
-<span class="co">### </span></code></pre></div>
+<code class="sourceCode R"><span><span class="co">### Alternative modifying the number of printed decimal places:</span></span>
+<span><span class="co"># print(cvvs, digits = 2)</span></span>
+<span><span class="co">### </span></span></code></pre></div>
 <p>The solution path can be seen in the <code><a href="https://rdrr.io/r/base/print.html" class="external-link">print()</a></code> output
 (column <code>solution_terms</code>), but it is also accessible through
 the <code><a href="../reference/solution_terms.html">solution_terms()</a></code> function:</p>
 <div class="sourceCode" id="cb16"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span class="op">(</span> <span class="va">soltrms</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/solution_terms.html">solution_terms</a></span><span class="op">(</span><span class="va">cvvs</span><span class="op">)</span> <span class="op">)</span></code></pre></div>
+<code class="sourceCode R"><span><span class="op">(</span> <span class="va">soltrms</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/solution_terms.html">solution_terms</a></span><span class="op">(</span><span class="va">cvvs</span><span class="op">)</span> <span class="op">)</span></span></code></pre></div>
 <pre><code>[1] "X1"  "X14" "X5"  "X20" "X6"  "X3"  "X8"  "X11" "X10"</code></pre>
 <p>Combining the decided submodel size of 6 with the solution path leads
 to the following terms (as well as the intercept) as the predictor terms
 of the final submodel:</p>
 <div class="sourceCode" id="cb18"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span class="op">(</span> <span class="va">soltrms_final</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span><span class="va">soltrms</span>, <span class="va">modsize_decided</span><span class="op">)</span> <span class="op">)</span></code></pre></div>
+<code class="sourceCode R"><span><span class="op">(</span> <span class="va">soltrms_final</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span><span class="va">soltrms</span>, <span class="va">modsize_decided</span><span class="op">)</span> <span class="op">)</span></span></code></pre></div>
 <pre><code>[1] "X1"  "X14" "X5"  "X20" "X6"  "X3" </code></pre>
 </div>
 <div class="section level2">
@@ -425,11 +425,11 @@ of the final submodel:</p>
 post-selection inference. By the following code, <code><a href="../reference/project.html">project()</a></code>
 will project the reference model onto the final submodel once again<a href="#fn4" class="footnote-ref" id="fnref4"><sup>4</sup></a>:</p>
 <div class="sourceCode" id="cb20"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span class="va">prj</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/project.html">project</a></span><span class="op">(</span>
-  <span class="va">refm_fit</span>,
-  solution_terms <span class="op">=</span> <span class="va">soltrms_final</span>,
-  seed <span class="op">=</span> <span class="fl">15705533</span>
-<span class="op">)</span></code></pre></div>
+<code class="sourceCode R"><span><span class="va">prj</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/project.html">project</a></span><span class="op">(</span></span>
+<span>  <span class="va">refm_fit</span>,</span>
+<span>  solution_terms <span class="op">=</span> <span class="va">soltrms_final</span>,</span>
+<span>  seed <span class="op">=</span> <span class="fl">15705533</span></span>
+<span><span class="op">)</span></span></code></pre></div>
 <!-- Alternative, as soon as GitHub issue #168 is resolved: -->
 <!-- ```{r} -->
 <!-- prj <- project( -->
@@ -446,7 +446,7 @@ which we don’t want in this vignette.</p>
 <p>Next, we create a matrix containing the projected posterior draws
 stored in the depths of <code><a href="../reference/project.html">project()</a></code>’s output:</p>
 <div class="sourceCode" id="cb21"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span class="va">prj_mat</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/matrix.html" class="external-link">as.matrix</a></span><span class="op">(</span><span class="va">prj</span><span class="op">)</span></code></pre></div>
+<code class="sourceCode R"><span><span class="va">prj_mat</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/matrix.html" class="external-link">as.matrix</a></span><span class="op">(</span><span class="va">prj</span><span class="op">)</span></span></code></pre></div>
 <p>This matrix is all we need for post-selection inference. It can be
 used like any matrix of draws from MCMC procedures, except that it
 doesn’t reflect a typical posterior distribution, but rather a projected
@@ -461,14 +461,14 @@ with posterior distributions, so it can also be applied to our projected
 posterior. For example, to calculate summary statistics for the
 marginals of the projected posterior:</p>
 <div class="sourceCode" id="cb22"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://mc-stan.org/posterior/" class="external-link">posterior</a></span><span class="op">)</span>
-<span class="va">prj_drws</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://mc-stan.org/posterior/reference/draws_matrix.html" class="external-link">as_draws_matrix</a></span><span class="op">(</span><span class="va">prj_mat</span><span class="op">)</span>
-<span class="co"># In the following call, as.data.frame() is used only because pkgdown</span>
-<span class="co"># versions &gt; 1.6.1 don't print the tibble correctly.</span>
-<span class="fu"><a href="https://rdrr.io/r/base/as.data.frame.html" class="external-link">as.data.frame</a></span><span class="op">(</span><span class="fu"><a href="https://mc-stan.org/posterior/reference/draws_summary.html" class="external-link">summarize_draws</a></span><span class="op">(</span>
-  <span class="va">prj_drws</span>,
-  <span class="st">"median"</span>, <span class="st">"mad"</span>, <span class="kw">function</span><span class="op">(</span><span class="va">x</span><span class="op">)</span> <span class="fu"><a href="https://rdrr.io/r/stats/quantile.html" class="external-link">quantile</a></span><span class="op">(</span><span class="va">x</span>, probs <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">0.025</span>, <span class="fl">0.975</span><span class="op">)</span><span class="op">)</span>
-<span class="op">)</span><span class="op">)</span></code></pre></div>
+<code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://mc-stan.org/posterior/" class="external-link">posterior</a></span><span class="op">)</span></span>
+<span><span class="va">prj_drws</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://mc-stan.org/posterior/reference/draws_matrix.html" class="external-link">as_draws_matrix</a></span><span class="op">(</span><span class="va">prj_mat</span><span class="op">)</span></span>
+<span><span class="co"># In the following call, as.data.frame() is used only because pkgdown</span></span>
+<span><span class="co"># versions &gt; 1.6.1 don't print the tibble correctly.</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/as.data.frame.html" class="external-link">as.data.frame</a></span><span class="op">(</span><span class="fu"><a href="https://mc-stan.org/posterior/reference/draws_summary.html" class="external-link">summarize_draws</a></span><span class="op">(</span></span>
+<span>  <span class="va">prj_drws</span>,</span>
+<span>  <span class="st">"median"</span>, <span class="st">"mad"</span>, <span class="kw">function</span><span class="op">(</span><span class="va">x</span><span class="op">)</span> <span class="fu"><a href="https://rdrr.io/r/stats/quantile.html" class="external-link">quantile</a></span><span class="op">(</span><span class="va">x</span>, probs <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">0.025</span>, <span class="fl">0.975</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
 <pre><code>     variable      median        mad       2.5%      97.5%
 1 (Intercept)  0.04648206 0.09668587 -0.1488236  0.2385997
 2          X1  1.37787022 0.08877716  1.1748630  1.5602974
@@ -482,10 +482,10 @@ marginals of the projected posterior:</p>
 <strong>bayesplot</strong> package, for example using its
 <code><a href="https://mc-stan.org/bayesplot/reference/MCMC-intervals.html" class="external-link">mcmc_intervals()</a></code> function.</p>
 <div class="sourceCode" id="cb24"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://mc-stan.org/bayesplot/" class="external-link">bayesplot</a></span><span class="op">)</span>
-<span class="fu"><a href="https://mc-stan.org/bayesplot/reference/bayesplot_theme_get.html" class="external-link">bayesplot_theme_set</a></span><span class="op">(</span><span class="fu">ggplot2</span><span class="fu">::</span><span class="fu"><a href="https://ggplot2.tidyverse.org/reference/ggtheme.html" class="external-link">theme_bw</a></span><span class="op">(</span><span class="op">)</span><span class="op">)</span>
-<span class="fu"><a href="https://mc-stan.org/bayesplot/reference/MCMC-intervals.html" class="external-link">mcmc_intervals</a></span><span class="op">(</span><span class="va">prj_mat</span><span class="op">)</span> <span class="op">+</span>
-  <span class="fu">ggplot2</span><span class="fu">::</span><span class="fu"><a href="https://ggplot2.tidyverse.org/reference/coord_cartesian.html" class="external-link">coord_cartesian</a></span><span class="op">(</span>xlim <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="op">-</span><span class="fl">1.5</span>, <span class="fl">1.6</span><span class="op">)</span><span class="op">)</span></code></pre></div>
+<code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://mc-stan.org/bayesplot/" class="external-link">bayesplot</a></span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://mc-stan.org/bayesplot/reference/bayesplot_theme_get.html" class="external-link">bayesplot_theme_set</a></span><span class="op">(</span><span class="fu">ggplot2</span><span class="fu">::</span><span class="fu"><a href="https://ggplot2.tidyverse.org/reference/ggtheme.html" class="external-link">theme_bw</a></span><span class="op">(</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://mc-stan.org/bayesplot/reference/MCMC-intervals.html" class="external-link">mcmc_intervals</a></span><span class="op">(</span><span class="va">prj_mat</span><span class="op">)</span> <span class="op">+</span></span>
+<span>  <span class="fu">ggplot2</span><span class="fu">::</span><span class="fu"><a href="https://ggplot2.tidyverse.org/reference/coord_cartesian.html" class="external-link">coord_cartesian</a></span><span class="op">(</span>xlim <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="op">-</span><span class="fl">1.5</span>, <span class="fl">1.6</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
 <p><img src="projpred_files/figure-html/unnamed-chunk-18-1.png" width="60%" style="display: block; margin: auto;"></p>
 <p>Note that we only visualize the <em>1-dimensional</em> marginals of
 the projected posterior here. To gain a more complete picture, we would
@@ -494,9 +494,9 @@ projected posterior (i.e., marginals for pairs of parameters).</p>
 <p>For comparison, consider the marginal posteriors of the corresponding
 parameters in the reference model:</p>
 <div class="sourceCode" id="cb25"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span class="va">refm_mat</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/matrix.html" class="external-link">as.matrix</a></span><span class="op">(</span><span class="va">refm_fit</span><span class="op">)</span>
-<span class="fu"><a href="https://mc-stan.org/bayesplot/reference/MCMC-intervals.html" class="external-link">mcmc_intervals</a></span><span class="op">(</span><span class="va">refm_mat</span>, pars <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/colnames.html" class="external-link">colnames</a></span><span class="op">(</span><span class="va">prj_mat</span><span class="op">)</span><span class="op">)</span> <span class="op">+</span>
-  <span class="fu">ggplot2</span><span class="fu">::</span><span class="fu"><a href="https://ggplot2.tidyverse.org/reference/coord_cartesian.html" class="external-link">coord_cartesian</a></span><span class="op">(</span>xlim <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="op">-</span><span class="fl">1.5</span>, <span class="fl">1.6</span><span class="op">)</span><span class="op">)</span></code></pre></div>
+<code class="sourceCode R"><span><span class="va">refm_mat</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/matrix.html" class="external-link">as.matrix</a></span><span class="op">(</span><span class="va">refm_fit</span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://mc-stan.org/bayesplot/reference/MCMC-intervals.html" class="external-link">mcmc_intervals</a></span><span class="op">(</span><span class="va">refm_mat</span>, pars <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/colnames.html" class="external-link">colnames</a></span><span class="op">(</span><span class="va">prj_mat</span><span class="op">)</span><span class="op">)</span> <span class="op">+</span></span>
+<span>  <span class="fu">ggplot2</span><span class="fu">::</span><span class="fu"><a href="https://ggplot2.tidyverse.org/reference/coord_cartesian.html" class="external-link">coord_cartesian</a></span><span class="op">(</span>xlim <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="op">-</span><span class="fl">1.5</span>, <span class="fl">1.6</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
 <p><img src="projpred_files/figure-html/unnamed-chunk-19-1.png" width="60%" style="display: block; margin: auto;"></p>
 <p>Here, the reference model’s marginal posteriors differ only slightly
 from the marginals of the projected posterior. This does not necessarily
@@ -510,10 +510,10 @@ have to be the case.</p>
 <p>We start with <code><a href="../reference/pred-projection.html">proj_linpred()</a></code>. For example, suppose we
 have the following new observations:</p>
 <div class="sourceCode" id="cb26"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span class="op">(</span> <span class="va">dat_gauss_new</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/stats/setNames.html" class="external-link">setNames</a></span><span class="op">(</span>
-  <span class="fu"><a href="https://rdrr.io/r/base/as.data.frame.html" class="external-link">as.data.frame</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/lapply.html" class="external-link">replicate</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/length.html" class="external-link">length</a></span><span class="op">(</span><span class="va">soltrms_final</span><span class="op">)</span>, <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="op">-</span><span class="fl">1</span>, <span class="fl">0</span>, <span class="fl">1</span><span class="op">)</span><span class="op">)</span><span class="op">)</span>,
-  <span class="va">soltrms_final</span>
-<span class="op">)</span> <span class="op">)</span></code></pre></div>
+<code class="sourceCode R"><span><span class="op">(</span> <span class="va">dat_gauss_new</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/stats/setNames.html" class="external-link">setNames</a></span><span class="op">(</span></span>
+<span>  <span class="fu"><a href="https://rdrr.io/r/base/as.data.frame.html" class="external-link">as.data.frame</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/lapply.html" class="external-link">replicate</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/length.html" class="external-link">length</a></span><span class="op">(</span><span class="va">soltrms_final</span><span class="op">)</span>, <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="op">-</span><span class="fl">1</span>, <span class="fl">0</span>, <span class="fl">1</span><span class="op">)</span><span class="op">)</span><span class="op">)</span>,</span>
+<span>  <span class="va">soltrms_final</span></span>
+<span><span class="op">)</span> <span class="op">)</span></span></code></pre></div>
 <pre><code>  X1 X14 X5 X20 X6 X3
 1 -1  -1 -1  -1 -1 -1
 2  0   0  0   0  0  0
@@ -526,8 +526,8 @@ the projected draws (within each new observation). For instance, the
 following computes the expected values of the new observations’
 predictive distributions:<a href="#fn6" class="footnote-ref" id="fnref6"><sup>6</sup></a></p>
 <div class="sourceCode" id="cb28"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span class="va">prj_linpred</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/pred-projection.html">proj_linpred</a></span><span class="op">(</span><span class="va">prj</span>, newdata <span class="op">=</span> <span class="va">dat_gauss_new</span>, integrated <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span>
-<span class="fu"><a href="https://rdrr.io/r/base/cbind.html" class="external-link">cbind</a></span><span class="op">(</span><span class="va">dat_gauss_new</span>, linpred <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/vector.html" class="external-link">as.vector</a></span><span class="op">(</span><span class="va">prj_linpred</span><span class="op">$</span><span class="va">pred</span><span class="op">)</span><span class="op">)</span></code></pre></div>
+<code class="sourceCode R"><span><span class="va">prj_linpred</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/pred-projection.html">proj_linpred</a></span><span class="op">(</span><span class="va">prj</span>, newdata <span class="op">=</span> <span class="va">dat_gauss_new</span>, integrated <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/cbind.html" class="external-link">cbind</a></span><span class="op">(</span><span class="va">dat_gauss_new</span>, linpred <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/vector.html" class="external-link">as.vector</a></span><span class="op">(</span><span class="va">prj_linpred</span><span class="op">$</span><span class="va">pred</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
 <pre><code>  X1 X14 X5 X20 X6 X3     linpred
 1 -1  -1 -1  -1 -1 -1  0.50689656
 2  0   0  0   0  0  0  0.04246826
@@ -544,9 +544,9 @@ model for the response.<a href="#fn7" class="footnote-ref" id="fnref7"><sup>7</s
 posterior predictive check (PPC), but would have to be termed something
 like a posterior-projection predictive check (PPPC) here.</p>
 <div class="sourceCode" id="cb30"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span class="va">prj_predict</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/pred-projection.html">proj_predict</a></span><span class="op">(</span><span class="va">prj</span>, .seed <span class="op">=</span> <span class="fl">762805</span><span class="op">)</span>
-<span class="co"># Using the 'bayesplot' package:</span>
-<span class="fu"><a href="https://mc-stan.org/bayesplot/reference/PPC-distributions.html" class="external-link">ppc_dens_overlay</a></span><span class="op">(</span>y <span class="op">=</span> <span class="va">dat_gauss</span><span class="op">$</span><span class="va">y</span>, yrep <span class="op">=</span> <span class="va">prj_predict</span>, alpha <span class="op">=</span> <span class="fl">0.9</span>, bw <span class="op">=</span> <span class="st">"SJ"</span><span class="op">)</span></code></pre></div>
+<code class="sourceCode R"><span><span class="va">prj_predict</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/pred-projection.html">proj_predict</a></span><span class="op">(</span><span class="va">prj</span>, .seed <span class="op">=</span> <span class="fl">762805</span><span class="op">)</span></span>
+<span><span class="co"># Using the 'bayesplot' package:</span></span>
+<span><span class="fu"><a href="https://mc-stan.org/bayesplot/reference/PPC-distributions.html" class="external-link">ppc_dens_overlay</a></span><span class="op">(</span>y <span class="op">=</span> <span class="va">dat_gauss</span><span class="op">$</span><span class="va">y</span>, yrep <span class="op">=</span> <span class="va">prj_predict</span>, alpha <span class="op">=</span> <span class="fl">0.9</span>, bw <span class="op">=</span> <span class="st">"SJ"</span><span class="op">)</span></span></code></pre></div>
 <p><img src="projpred_files/figure-html/unnamed-chunk-22-1.png" width="60%" style="display: block; margin: auto;"></p>
 <p>This PPPC shows that our final projection is able to generate
 predictions similar to the observed response values, which indicates
@@ -585,13 +585,13 @@ options for a few arguments. See the documentation for details.</p>
 corresponding multilevel reference model for the binary response
 <code>r2</code> could be created by the following code:</p>
 <div class="sourceCode" id="cb31"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span class="fu"><a href="https://rdrr.io/r/utils/data.html" class="external-link">data</a></span><span class="op">(</span><span class="st">"VerbAgg"</span>, package <span class="op">=</span> <span class="st">"lme4"</span><span class="op">)</span>
-<span class="va">refm_fit</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://mc-stan.org/rstanarm/reference/stan_glmer.html" class="external-link">stan_glmer</a></span><span class="op">(</span>
-  <span class="va">r2</span> <span class="op">~</span> <span class="va">btype</span> <span class="op">+</span> <span class="va">situ</span> <span class="op">+</span> <span class="va">mode</span> <span class="op">+</span> <span class="op">(</span><span class="va">btype</span> <span class="op">+</span> <span class="va">situ</span> <span class="op">+</span> <span class="va">mode</span> <span class="op">|</span> <span class="va">id</span><span class="op">)</span>,
-  family <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/stats/family.html" class="external-link">binomial</a></span><span class="op">(</span><span class="op">)</span>,
-  data <span class="op">=</span> <span class="va">VerbAgg</span>,
-  seed <span class="op">=</span> <span class="fl">82616169</span>, QR <span class="op">=</span> <span class="cn">TRUE</span>, refresh <span class="op">=</span> <span class="fl">0</span>
-<span class="op">)</span></code></pre></div>
+<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/utils/data.html" class="external-link">data</a></span><span class="op">(</span><span class="st">"VerbAgg"</span>, package <span class="op">=</span> <span class="st">"lme4"</span><span class="op">)</span></span>
+<span><span class="va">refm_fit</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://mc-stan.org/rstanarm/reference/stan_glmer.html" class="external-link">stan_glmer</a></span><span class="op">(</span></span>
+<span>  <span class="va">r2</span> <span class="op">~</span> <span class="va">btype</span> <span class="op">+</span> <span class="va">situ</span> <span class="op">+</span> <span class="va">mode</span> <span class="op">+</span> <span class="op">(</span><span class="va">btype</span> <span class="op">+</span> <span class="va">situ</span> <span class="op">+</span> <span class="va">mode</span> <span class="op">|</span> <span class="va">id</span><span class="op">)</span>,</span>
+<span>  family <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/stats/family.html" class="external-link">binomial</a></span><span class="op">(</span><span class="op">)</span>,</span>
+<span>  data <span class="op">=</span> <span class="va">VerbAgg</span>,</span>
+<span>  seed <span class="op">=</span> <span class="fl">82616169</span>, QR <span class="op">=</span> <span class="cn">TRUE</span>, refresh <span class="op">=</span> <span class="fl">0</span></span>
+<span><span class="op">)</span></span></code></pre></div>
 <p>As an example for an additive (non-multilevel) reference model,
 consider the <code>lasrosas.corn</code> dataset from the
 <strong>agridat</strong> package. A corresponding reference model for
@@ -599,31 +599,31 @@ the continuous response <code>yield</code> could be created by the
 following code (note that <code>pp_check(refm_fit)</code> gives a bad
 PPC in this case, so there’s still room for improvement):</p>
 <div class="sourceCode" id="cb32"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span class="fu"><a href="https://rdrr.io/r/utils/data.html" class="external-link">data</a></span><span class="op">(</span><span class="st">"lasrosas.corn"</span>, package <span class="op">=</span> <span class="st">"agridat"</span><span class="op">)</span>
-<span class="co"># Convert `year` to a `factor` (this could also be solved by using</span>
-<span class="co"># `factor(year)` in the formula, but we avoid that here to put more emphasis on</span>
-<span class="co"># the demonstration of the smooth term):</span>
-<span class="va">lasrosas.corn</span><span class="op">$</span><span class="va">year</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/factor.html" class="external-link">as.factor</a></span><span class="op">(</span><span class="va">lasrosas.corn</span><span class="op">$</span><span class="va">year</span><span class="op">)</span>
-<span class="va">refm_fit</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://mc-stan.org/rstanarm/reference/stan_gamm4.html" class="external-link">stan_gamm4</a></span><span class="op">(</span>
-  <span class="va">yield</span> <span class="op">~</span> <span class="va">year</span> <span class="op">+</span> <span class="va">topo</span> <span class="op">+</span> <span class="fu">t2</span><span class="op">(</span><span class="va">nitro</span>, <span class="va">bv</span><span class="op">)</span>,
-  family <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/stats/family.html" class="external-link">gaussian</a></span><span class="op">(</span><span class="op">)</span>,
-  data <span class="op">=</span> <span class="va">lasrosas.corn</span>,
-  seed <span class="op">=</span> <span class="fl">4919670</span>, QR <span class="op">=</span> <span class="cn">TRUE</span>, refresh <span class="op">=</span> <span class="fl">0</span>
-<span class="op">)</span></code></pre></div>
+<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/utils/data.html" class="external-link">data</a></span><span class="op">(</span><span class="st">"lasrosas.corn"</span>, package <span class="op">=</span> <span class="st">"agridat"</span><span class="op">)</span></span>
+<span><span class="co"># Convert `year` to a `factor` (this could also be solved by using</span></span>
+<span><span class="co"># `factor(year)` in the formula, but we avoid that here to put more emphasis on</span></span>
+<span><span class="co"># the demonstration of the smooth term):</span></span>
+<span><span class="va">lasrosas.corn</span><span class="op">$</span><span class="va">year</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/factor.html" class="external-link">as.factor</a></span><span class="op">(</span><span class="va">lasrosas.corn</span><span class="op">$</span><span class="va">year</span><span class="op">)</span></span>
+<span><span class="va">refm_fit</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://mc-stan.org/rstanarm/reference/stan_gamm4.html" class="external-link">stan_gamm4</a></span><span class="op">(</span></span>
+<span>  <span class="va">yield</span> <span class="op">~</span> <span class="va">year</span> <span class="op">+</span> <span class="va">topo</span> <span class="op">+</span> <span class="fu">t2</span><span class="op">(</span><span class="va">nitro</span>, <span class="va">bv</span><span class="op">)</span>,</span>
+<span>  family <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/stats/family.html" class="external-link">gaussian</a></span><span class="op">(</span><span class="op">)</span>,</span>
+<span>  data <span class="op">=</span> <span class="va">lasrosas.corn</span>,</span>
+<span>  seed <span class="op">=</span> <span class="fl">4919670</span>, QR <span class="op">=</span> <span class="cn">TRUE</span>, refresh <span class="op">=</span> <span class="fl">0</span></span>
+<span><span class="op">)</span></span></code></pre></div>
 <p>As an example for an additive multilevel reference model, consider
 the <code>gumpertz.pepper</code> dataset from the
 <strong>agridat</strong> package. A corresponding reference model for
 the binary response <code>disease</code> could be created by the
 following code:</p>
 <div class="sourceCode" id="cb33"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span class="fu"><a href="https://rdrr.io/r/utils/data.html" class="external-link">data</a></span><span class="op">(</span><span class="st">"gumpertz.pepper"</span>, package <span class="op">=</span> <span class="st">"agridat"</span><span class="op">)</span>
-<span class="va">refm_fit</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://mc-stan.org/rstanarm/reference/stan_gamm4.html" class="external-link">stan_gamm4</a></span><span class="op">(</span>
-  <span class="va">disease</span> <span class="op">~</span> <span class="va">field</span> <span class="op">+</span> <span class="va">leaf</span> <span class="op">+</span> <span class="fu">s</span><span class="op">(</span><span class="va">water</span><span class="op">)</span>,
-  random <span class="op">=</span> <span class="op">~</span> <span class="op">(</span><span class="fl">1</span> <span class="op">|</span> <span class="va">row</span><span class="op">)</span> <span class="op">+</span> <span class="op">(</span><span class="fl">1</span> <span class="op">|</span> <span class="va">quadrat</span><span class="op">)</span>,
-  family <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/stats/family.html" class="external-link">binomial</a></span><span class="op">(</span><span class="op">)</span>,
-  data <span class="op">=</span> <span class="va">gumpertz.pepper</span>,
-  seed <span class="op">=</span> <span class="fl">14209013</span>, QR <span class="op">=</span> <span class="cn">TRUE</span>, refresh <span class="op">=</span> <span class="fl">0</span>
-<span class="op">)</span></code></pre></div>
+<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/utils/data.html" class="external-link">data</a></span><span class="op">(</span><span class="st">"gumpertz.pepper"</span>, package <span class="op">=</span> <span class="st">"agridat"</span><span class="op">)</span></span>
+<span><span class="va">refm_fit</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://mc-stan.org/rstanarm/reference/stan_gamm4.html" class="external-link">stan_gamm4</a></span><span class="op">(</span></span>
+<span>  <span class="va">disease</span> <span class="op">~</span> <span class="va">field</span> <span class="op">+</span> <span class="va">leaf</span> <span class="op">+</span> <span class="fu">s</span><span class="op">(</span><span class="va">water</span><span class="op">)</span>,</span>
+<span>  random <span class="op">=</span> <span class="op">~</span> <span class="op">(</span><span class="fl">1</span> <span class="op">|</span> <span class="va">row</span><span class="op">)</span> <span class="op">+</span> <span class="op">(</span><span class="fl">1</span> <span class="op">|</span> <span class="va">quadrat</span><span class="op">)</span>,</span>
+<span>  family <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/stats/family.html" class="external-link">binomial</a></span><span class="op">(</span><span class="op">)</span>,</span>
+<span>  data <span class="op">=</span> <span class="va">gumpertz.pepper</span>,</span>
+<span>  seed <span class="op">=</span> <span class="fl">14209013</span>, QR <span class="op">=</span> <span class="cn">TRUE</span>, refresh <span class="op">=</span> <span class="fl">0</span></span>
+<span><span class="op">)</span></span></code></pre></div>
 </div>
 <div class="section level2">
 <h2 id="troubleshooting">Troubleshooting<a class="anchor" aria-label="anchor" href="#troubleshooting"></a>
@@ -744,7 +744,7 @@ terms.<a href="#fnref10" class="footnote-back">↩︎</a></p></li>
 
 <div class="pkgdown">
   <p></p>
-<p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.0.3.</p>
+<p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.0.6.</p>
 </div>
 
       </footer>
