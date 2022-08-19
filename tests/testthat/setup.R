@@ -129,6 +129,7 @@ source(testthat::test_path("helpers", "testers.R"), local = TRUE)
 source(testthat::test_path("helpers", "args.R"), local = TRUE)
 source(testthat::test_path("helpers", "getters.R"), local = TRUE)
 source(testthat::test_path("helpers", "formul_handlers.R"), local = TRUE)
+source(testthat::test_path("helpers", "revIA.R"), local = TRUE)
 
 mod_nms <- setNames(nm = c("glm", "glmm", "gam", "gamm"))
 if (run_additive) {
@@ -155,7 +156,7 @@ seed_dat <- 8541351
 set.seed(seed_dat)
 
 ## GLMs --------------------------------------------------------------------
-## Add nonpooled ("fixed") effects to the intercept-(and-offset-)only model
+## Add population-level effects to the intercept-(and-offset-)only model
 
 nterms_cont <- 3L
 x_cont <- matrix(rnorm(nobsv * nterms_cont), nobsv, nterms_cont)
@@ -192,7 +193,7 @@ eta_glm <- icpt +
 nterms_glm <- nterms_cont + nterms_cate
 
 ## GLMMs ------------------------------------------------------------------
-## Add partially pooled ("random") effects to the GLMs
+## Add group-level effects to the GLMs, yielding GLMMs
 
 nlvl_ran <- c(6L)
 nlvl_ran <- setNames(nlvl_ran, seq_along(nlvl_ran))
@@ -304,6 +305,49 @@ dat_offs_new <- within(dat, {
   offs_col_new <- seq(-2, 2, length.out = nobsv)
 })
 
+nobsv_indep <- tail(nobsv_tst, 1)
+dis_indep <- runif(1L, 1, 2)
+offs_indep <- rnorm(nobsv_indep)
+wobs_indep <- sample(1:4, nobsv_indep, replace = TRUE)
+idxs_indep <- sample.int(nobsv, size = nobsv_indep, replace = TRUE)
+dat_indep <- lapply(mod_nms, function(mod_nm) {
+  lapply(fam_nms, function(fam_nm) {
+    pred_link <- get(paste0("eta_", mod_nm))
+    pred_link <- pred_link[idxs_indep, , drop = FALSE]
+    if (fam_nm != "brnll" && !mod_nm %in% c("gam", "gamm")) {
+      # For the "brnll" `fam_nm`, offsets are simply not added to have some
+      # scenarios without offsets.
+      # For GAMs, offsets are not added because of rstanarm issue #546 (see
+      # also further below).
+      # For GAMMs, offsets are not added because of rstanarm issue #253 (see
+      # also further below).
+      pred_link <- pred_link + offs_indep
+    }
+    pred_resp <- get(paste0("f_", fam_nm))$linkinv(pred_link)
+    if (fam_nm == "gauss") {
+      return(rnorm(nobsv_indep, mean = pred_resp, sd = dis_indep))
+    } else if (fam_nm == "brnll") {
+      return(rbinom(nobsv_indep, 1, pred_resp))
+    } else if (fam_nm == "binom") {
+      return(rbinom(nobsv_indep, wobs_indep, pred_resp))
+    } else if (fam_nm == "poiss") {
+      return(rpois(nobsv_indep, pred_resp))
+    } else {
+      stop("Unknown `fam_nm`.")
+    }
+  })
+})
+dat_indep <- unlist(dat_indep, recursive = FALSE)
+names(dat_indep) <- paste("y", gsub("\\.", "_", names(dat_indep)), sep = "_")
+dat_indep <- cbind(
+  as.data.frame(dat_indep),
+  dat[idxs_indep,
+      grep("^y_", names(dat), value = TRUE, invert = TRUE),
+      drop = FALSE]
+)
+dat_indep$wobs_col <- wobs_indep
+dat_indep$offs_col <- offs_indep
+
 # Fits --------------------------------------------------------------------
 
 ## Setup ------------------------------------------------------------------
@@ -323,6 +367,22 @@ if (run_brms) {
   # For storing "brmsfit"s locally:
   file_pth <- testthat::test_path("bfits")
   if (!dir.exists(file_pth)) dir.create(file_pth)
+  # Backend:
+  if (identical(Sys.getenv("TESTS_BRMS_BACKEND"), "cmdstanr") &&
+      requireNamespace("cmdstanr", quietly = TRUE) &&
+      # Relative file paths for cmdstanr's global option
+      # `cmdstanr_write_stan_file_dir` didn't work before cmdstanr PR #665.
+      # Using the workaround `file.path(getwd(), file_pth)` instead of only
+      # `file_pth` also doesn't work in `R CMD check` (it doesn't throw any
+      # exceptions, but recompilations take place, causing a huge increase in
+      # runtime). At the time of cmdstanr's PR #665, the (development) version
+      # number of cmdstanr was 0.5.2.1, so requiring >= 0.5.3 guarantees that
+      # the fix is included:
+      packageVersion("cmdstanr") >= "0.5.3" &&
+      !is.null(cmdstanr::cmdstan_version(error_on_NA = FALSE))) {
+    options(brms.backend = "cmdstanr")
+    options(cmdstanr_write_stan_file_dir = file_pth)
+  }
 }
 pkg_nms <- setNames(nm = pkg_nms)
 
@@ -521,7 +581,11 @@ args_fit <- lapply(pkg_nms, function(pkg_nm) {
                             random_arg)
             } else if (pkg_nm == "brms") {
               pkg_args <- list(file = file_pth,
-                               file_refit = "on_change") # , silent = 2
+                               file_refit = "on_change",
+                               silent = 2)
+              if (identical(getOption("brms.backend", "rstan"), "cmdstanr")) {
+                pkg_args <- c(pkg_args, list(diagnostics = NULL))
+              }
             }
 
             return(c(
@@ -592,7 +656,7 @@ fits <- suppressWarnings(lapply(args_fit, function(args_fit_i) {
 
 ## Setup ------------------------------------------------------------------
 
-seed_tst <- 74341
+seed_tst <- 20411346
 seed2_tst <- 866028
 seed3_tst <- 1208499
 
@@ -764,6 +828,11 @@ if (run_cvvs) {
     tstsetups_cvvs_ref <- grep("\\.gam\\.", tstsetups_cvvs_ref, value = TRUE,
                                invert = TRUE)
   }
+  # Under the special test settings used here, Bernoulli GAMMs often seem to run
+  # into lme4 errors. However, since these Bernoulli GAMMs are basically
+  # redundant given the other tested models, we can simply skip them:
+  tstsetups_cvvs_ref <- grep("\\.gamm\\.brnll\\.", tstsetups_cvvs_ref,
+                             value = TRUE, invert = TRUE)
   tstsetups_cvvs_ref <- setNames(nm = tstsetups_cvvs_ref)
   args_cvvs <- lapply(tstsetups_cvvs_ref, function(tstsetup_ref) {
     pkg_crr <- args_ref[[tstsetup_ref]]$pkg_nm
@@ -774,13 +843,7 @@ if (run_cvvs) {
       # In principle, we want to use K-fold CV here and LOO CV else because
       # rstanarm:::kfold.stanreg() doesn't support observation weights. However,
       # there are some special cases to take care of:
-      if (mod_crr == "gamm" && fam_crr == "brnll") {
-        # In this case, K-fold CV leads to an error in pwrssUpdate()
-        # ("(maxstephalfit) PIRLS step-halvings failed to reduce deviance in
-        # pwrssUpdate"). Therefore, use LOO CV:
-        cvmeth <- cvmeth_tst["default_cvmeth"]
-        # TODO (GAMMs): Fix this.
-      } else if (pkg_crr == "brms" && packageVersion("brms") <= "2.16.3") {
+      if (pkg_crr == "brms" && packageVersion("brms") <= "2.16.3") {
         # For brms versions <= 2.16.3, there is a reproducibility issue when
         # using K-fold CV, so use LOO CV:
         cvmeth <- cvmeth_tst["default_cvmeth"]
@@ -1203,8 +1266,6 @@ vsel_nms_cv <- c(
 vsel_nms_pred <- c("summaries", "solution_terms", "kl", "suggested_size",
                    "summary")
 vsel_nms_pred_opt <- c("solution_terms", "suggested_size")
-# Related to `d_test`:
-vsel_nms_dtest <- c("d_test", setdiff(vsel_nms_pred, c("solution_terms", "kl")))
 # Related to `nloo`:
 vsel_nms_cv_nloo <- c("summaries", "pct_solution_terms_cv", "suggested_size",
                       "summary")
@@ -1215,8 +1276,8 @@ vsel_nms_cv_valsearch <- c("validate_search", "summaries",
                            "summary")
 vsel_nms_cv_valsearch_opt <- c("suggested_size")
 # Related to `cvfits`:
-vsel_nms_cv_cvfits <- c("refmodel", "d_test", "summaries",
-                        "pct_solution_terms_cv", "summary", "suggested_size")
+vsel_nms_cv_cvfits <- c("refmodel", "summaries", "pct_solution_terms_cv",
+                        "summary", "suggested_size")
 vsel_nms_cv_cvfits_opt <- c("pct_solution_terms_cv", "suggested_size")
 vsel_smmrs_sub_nms <- vsel_smmrs_ref_nms <- c("mu", "lppd")
 

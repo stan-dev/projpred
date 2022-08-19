@@ -1,3 +1,37 @@
+# Note
+
+If you read this from a place other than <https://mc-stan.org/projpred/news/index.html>, please consider switching to that website since it features better formatting and cross-linking.
+
+# projpred 2.2.0
+
+## Major changes
+
+* In the `validate_search = FALSE` case of `cv_varsel()` (with `cv_method = "LOO"`), the PSIS weights are now calculated based on the reference model (they used to be calculated based on the submodels which is incorrect). (GitHub: #325)
+* Some long-standing severe bugs (GitHub issues #329, #330, and #342) have been fixed, concerning the performance evaluation of models with nontrivial observation weights (i.e., models where at least one observation had a weight differing from 1). Concerned performance statistics were `"mse"`, `"rmse"`, `"acc"` (= `"pctcorr"`), and `"auc"` (i.e., all performance statistics except for `"elpd"` and `"mlpd"`).
+* `plot.vsel()` and `suggest_size()` gain a new argument `thres_elpd`. By default, this argument doesn't have any impact, but a non-`NA` value can be used for a customized model size selection rule (see `?suggest_size` for details). (GitHub: #335)
+
+## Minor changes
+
+* Several improvements in the documentation (especially in the explanation of the `suggest_size()` heuristic).
+* Improvement of the numerical stability for some link functions, achieved by avoiding unnecessary back-and-forth transformations between latent space and response space. (GitHub: #337, #338)
+* All arguments `seed` and `.seed` are now allowed to be `NA` for not calling `set.seed()` internally at all.
+* Argument `d_test` of `varsel()` is not considered as an internal feature anymore. This was possible after fixing a bug for `d_test` (see below). (GitHub: #341)
+* The order of the observations in the sub-elements of `<vsel_object>$summaries` and `<vsel_object>$d_test` now corresponds to the order of the observations in the original dataset if `<vsel_object>` was created by a call to `cv_varsel([...], cv_method = "kfold")` (formerly, in that case, the observations in those sub-elements were ordered by fold). Thereby, the order of the observations in those sub-elements now always corresponds to the order of the observations in the original dataset, except if `<vsel_object>` was created by a call to `varsel([...], d_test = <non-NULL_d_test_object>)`, in which case the order of the observations in those sub-elements corresponds to the order of the observations in `<non-NULL_d_test_object>`. (GitHub: #341)
+
+## Bug fixes
+
+* Fix GitHub issue #324 (large `search_terms` caused the R session to crash).
+* Fix GitHub issue #204. (GitHub: #325)
+* Fix the `validate_search = FALSE` bug described above in "Major changes": The PSIS weights are now calculated based on the reference model (they used to be calculated based on the submodels which is incorrect). (GitHub: #325)
+* Fix `\mbox{}` commands displayed incorrectly in the HTML help from R version 4.2.0 on. (GitHub: #326)
+* Fix GitHub issue #329 (see also "Major changes" above).
+* Fix GitHub issue #331.
+* `plot.vsel()` now draws the dashed red horizontal line for the reference model (and---if present---the dotted black horizontal line for the baseline model) first (i.e., before the submodel-specific graphical elements), to avoid overplotting.
+* Fix GitHub issue #339. (GitHub: #340)
+* Fix argument `d_test` of `varsel()`: Not only the predictive performance of the *reference model* needs to be evaluated on the test data, but also the predictive performance of the *submodels*. (GitHub: #341)
+* Fix GitHub issue #342 (see also "Major changes" above).
+* Fix GitHub issue #330 (see also "Major changes" above). (GitHub: #344, commit 23e7101)
+
 # projpred 2.1.2
 
 ## Minor changes
@@ -76,7 +110,7 @@
 * Argument `weights` of `init_refmodel()`'s argument `proj_predfun` has been removed. (GitHub: #163, #224)
 * **projpred**'s internal `div_minimizer` functions have been unified into a single `div_minimizer` which chooses an appropriate submodel fitter based on the formula of the submodel, not based on that of the reference model. Furthermore, the automatic handling of errors in the submodel fitters has been improved. (GitHub: #230)
 * Improve the axis labels in `plot.vsel()`. (GitHub: #234, #270)
-* Handle **rstanarm**'s GitHub issue #551. This implies that **projpred**'s default `cvfun` for `stanreg` fits will now always use *inner* parallelization in `rstanarm::kfold()` (i.e., across chains, not across CV folds), with `getOption("mc.cores", 1)` cores. We do so on all systems (not only Windows). (GitHub: #249)
+* Handle **rstanarm**'s GitHub issue #551. This implies that **projpred**'s default `cvfun` for `stanreg` fits will now always use *inner* parallelization in `rstanarm::kfold.stanreg()` (i.e., across chains, not across CV folds), with `getOption("mc.cores", 1)` cores. We do so on all systems (not only Windows). (GitHub: #249)
 * Argument `fit` of `init_refmodel()`'s argument `proj_predfun` was renamed to `fits`. This is a non-breaking change since all calls to `proj_predfun` in **projpred** have that argument unnamed. However, this cannot be guaranteed in the future, so we strongly encourage users with a custom `proj_predfun` to rename argument `fit` to `fits`. (GitHub: #263)
 * `init_refmodel()` has gained argument `cvrefbuilder` which may be a custom function for constructing the K reference models in a K-fold CV. (GitHub: #271)
 * Allow arguments to be passed from `project()`, `varsel()`, and `cv_varsel()` to the divergence minimizer. (GitHub: #278)

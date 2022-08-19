@@ -4,6 +4,10 @@
   packageStartupMessage(msg)
 }
 
+nms_d_test <- function() {
+  c("type", "data", "offset", "weights", "y")
+}
+
 weighted.sd <- function(x, w, na.rm = FALSE) {
   if (na.rm) {
     ind <- !is.na(w) & !is.na(x)
@@ -29,15 +33,16 @@ log_sum_exp <- function(x) {
 auc <- function(x) {
   resp <- x[, 1]
   pred <- x[, 2]
-  weights <- x[, 3]
+  wcv <- x[, 3]
   n <- nrow(x)
   ord <- order(pred, decreasing = TRUE)
   resp <- resp[ord]
   pred <- pred[ord]
-  weights <- weights[ord]
-  w0 <- w1 <- weights
-  w0[resp == 1] <- 0 # true negative weights
-  w1[resp == 0] <- 0 # true positive weights
+  wcv <- wcv[ord]
+  w0 <- w1 <- wcv
+  stopifnot(all(resp %in% c(0, 1)))
+  w0[resp == 1] <- 0 # for calculating the false positive rate (fpr)
+  w1[resp == 0] <- 0 # for calculating the true positive rate (tpr)
   cum_w0 <- cumsum(w0)
   cum_w1 <- cumsum(w1)
 
@@ -63,7 +68,7 @@ bootstrap <- function(x, fun = mean, B = 2000,
     rng_state_old <- get(".Random.seed", envir = .GlobalEnv)
     on.exit(assign(".Random.seed", rng_state_old, envir = .GlobalEnv))
   }
-  set.seed(seed)
+  if (!is.na(seed)) set.seed(seed)
 
   seq_x <- seq_len(NROW(x))
   is_vector <- NCOL(x) == 1
@@ -181,24 +186,24 @@ bootstrap <- function(x, fun = mean, B = 2000,
 #   subsampled (without replacement).
 #
 # @return Let \eqn{y} denote the response (vector), \eqn{N} the number of
-#   observations, and \eqn{S_{\mbox{prj}}}{S_prj} the number of projected draws
-#   (= either `nclusters` or `ndraws`, depending on which one is used). Then the
-#   return value is a list with elements:
+#   observations, and \eqn{S_{\mathrm{prj}}}{S_prj} the number of projected
+#   draws (= either `nclusters` or `ndraws`, depending on which one is used).
+#   Then the return value is a list with elements:
 #
-#   * `mu`: An \eqn{N \times S_{\mbox{prj}}}{N x S_prj} matrix of expected
+#   * `mu`: An \eqn{N \times S_{\mathrm{prj}}}{N x S_prj} matrix of expected
 #   values for \eqn{y} for each draw/cluster.
-#   * `var`: An \eqn{N \times S_{\mbox{prj}}}{N x S_prj} matrix of predictive
+#   * `var`: An \eqn{N \times S_{\mathrm{prj}}}{N x S_prj} matrix of predictive
 #   variances for \eqn{y} for each draw/cluster which are needed for projecting
 #   the dispersion parameter (the predictive variances are NA for those families
 #   that do not have a dispersion parameter).
-#   * `dis`: A vector of length \eqn{S_{\mbox{prj}}}{S_prj} containing the
+#   * `dis`: A vector of length \eqn{S_{\mathrm{prj}}}{S_prj} containing the
 #   reference model's dispersion parameter value for each draw/cluster (NA for
-#   those families that do not have a dispersion parameter). See issue #204.
-#   * `weights`: A vector of length \eqn{S_{\mbox{prj}}}{S_prj} containing the
+#   those families that do not have a dispersion parameter).
+#   * `weights`: A vector of length \eqn{S_{\mathrm{prj}}}{S_prj} containing the
 #   weights for the draws/clusters.
 #   * `cl`: Cluster assignment for each posterior draw, that is, a vector that
 #   has length equal to the number of posterior draws and each value is an
-#   integer between 1 and \eqn{S_{\mbox{prj}}}{S_prj}.
+#   integer between 1 and \eqn{S_{\mathrm{prj}}}{S_prj}.
 .get_refdist <- function(refmodel, ndraws = NULL, nclusters = NULL,
                          thinning = TRUE) {
   # Number of draws in the reference model:
@@ -212,12 +217,13 @@ bootstrap <- function(x, fun = mean, B = 2000,
       return(.get_refdist(refmodel, ndraws = nclusters))
     } else if (nclusters == 1) {
       # special case, only one cluster
-      cl <- rep(1, S)
-      p_ref <- .get_p_clust(refmodel$family, refmodel$mu, refmodel$dis,
-                            wobs = refmodel$wobs, cl = cl)
+      p_ref <- .get_p_clust(family = refmodel$family, mu = refmodel$mu,
+                            eta = refmodel$eta, dis = refmodel$dis,
+                            wobs = refmodel$wobs, cl = rep(1, S))
     } else {
       # several clusters
-      p_ref <- .get_p_clust(refmodel$family, refmodel$mu, refmodel$dis,
+      p_ref <- .get_p_clust(family = refmodel$family, mu = refmodel$mu,
+                            eta = refmodel$eta, dis = refmodel$dis,
                             wobs = refmodel$wobs, nclusters = nclusters)
     }
   } else {
@@ -232,7 +238,7 @@ bootstrap <- function(x, fun = mean, B = 2000,
       s_ind <- draws_subsample(S = S, ndraws = ndraws)
     }
     cl <- rep(NA, S)
-    cl[s_ind] <- c(1:ndraws)
+    cl[s_ind] <- 1:ndraws
     predvar <- do.call(cbind, lapply(s_ind, function(j) {
       refmodel$family$predvar(refmodel$mu[, j, drop = FALSE], refmodel$dis[j])
     }))
@@ -247,7 +253,7 @@ bootstrap <- function(x, fun = mean, B = 2000,
 }
 
 # Function for clustering the parameter draws:
-.get_p_clust <- function(family, mu, dis, nclusters = 10,
+.get_p_clust <- function(family, mu, eta, dis, nclusters = 10,
                          wobs = rep(1, dim(mu)[1]),
                          wsample = rep(1, dim(mu)[2]), cl = NULL) {
   # cluster the samples in the latent space if no clustering provided
@@ -255,8 +261,7 @@ bootstrap <- function(x, fun = mean, B = 2000,
     # Note: A seed is not set here because this function is not exported and has
     # a calling stack at the beginning of which a seed is set.
 
-    f <- family$linkfun(mu)
-    out <- kmeans(t(f), nclusters, iter.max = 50)
+    out <- kmeans(t(eta), nclusters, iter.max = 50)
     cl <- out$cluster # cluster indices for each sample
   } else if (typeof(cl) == "list") {
     # old clustering solution provided, so fetch the cluster indices
@@ -269,36 +274,39 @@ bootstrap <- function(x, fun = mean, B = 2000,
 
   # (re)compute the cluster centers, because they may be different from the ones
   # returned by kmeans if the samples have differing weights
-  # number of clusters (assumes labeling 1,...,nclusters)
+  # Number of clusters (assumes labeling "1, ..., nclusters"):
   nclusters <- max(cl, na.rm = TRUE)
+  # Cluster centers:
   centers <- matrix(0, nrow = nclusters, ncol = dim(mu)[1])
-  wcluster <- rep(0, nclusters) # cluster weights
+  # Cluster weights:
+  wcluster <- rep(0, nclusters)
+  # Dispersion parameter draws aggregated within each cluster:
+  dis_agg <- rep(NA_real_, nclusters)
+  # Predictive variances:
+  predvar <- matrix(nrow = dim(mu)[1], ncol = nclusters)
   eps <- 1e-10
   for (j in 1:nclusters) {
-    # compute normalized weights within the cluster, 1-eps is for numerical
-    # stability
     ind <- which(cl == j)
+    # Compute normalized weights within the j-th cluster; `1 - eps` is for
+    # numerical stability:
     ws <- wsample[ind] / sum(wsample[ind]) * (1 - eps)
 
-    # cluster centers and their weights
+    # Center of the j-th cluster:
     centers[j, ] <- mu[, ind, drop = FALSE] %*% ws
-    wcluster[j] <- sum(wsample[ind]) # unnormalized weight for the jth cluster
+    # Unnormalized weight for the j-th cluster:
+    wcluster[j] <- sum(wsample[ind])
+    # Aggregated dispersion parameter for the j-th cluster:
+    dis_agg[j] <- crossprod(dis[ind], ws)
+    # Predictive variance for the j-th cluster:
+    predvar[, j] <- family$predvar(mu[, ind, drop = FALSE], dis[ind], ws)
   }
   wcluster <- wcluster / sum(wcluster)
-
-  # predictive variances
-  predvar <- do.call(cbind, lapply(1:nclusters, function(j) {
-    # compute normalized weights within the cluster, 1-eps is for numerical
-    # stability
-    ind <- which(cl == j)
-    ws <- wsample[ind] / sum(wsample[ind]) * (1 - eps)
-    family$predvar(mu[, ind, drop = FALSE], dis[ind], ws)
-  }))
 
   # combine the results
   p <- list(
     mu = unname(t(centers)),
     var = predvar,
+    dis = dis_agg,
     weights = wcluster,
     cl = cl,
     clust_used = TRUE

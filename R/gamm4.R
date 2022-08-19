@@ -111,8 +111,7 @@ gamm4.setup <- function(formula, pterms, data = NULL, knots = NULL) {
 
 ## refactored from gamm4 to return the model matrix for generating predictions
 ## with fit$mer and newdata
-#' @noRd
-model.matrix.gamm4 <- function(formula, random = NULL, data = NULL,
+model.matrix_gamm4 <- function(formula, random = NULL, data = NULL,
                                family = gaussian()) {
   if (!is.null(random)) {
     if (!inherits(random, "formula")) {
@@ -213,7 +212,8 @@ model.matrix.gamm4 <- function(formula, random = NULL, data = NULL,
     )
   }
   lme4.formula <- as.formula(lme4.formula)
-  linear <- family$family == "gaussian" && family$link == "identity"
+  linear <- family$family == "gaussian" && family$link == "identity" &&
+    getOption("projpred.gaussian_not_as_generalized", TRUE)
 
   control <- if (linear) {
     lme4::lmerControl()

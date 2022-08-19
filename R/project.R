@@ -22,7 +22,8 @@
 #' @param refit_prj A single logical value indicating whether to fit the
 #'   submodels (again) (`TRUE`) or to retrieve the fitted submodels from
 #'   `object` (`FALSE`). For an `object` which is not of class `vsel`,
-#'   `refit_prj` must be `TRUE`.
+#'   `refit_prj` must be `TRUE`. Note that currently, `refit_prj = FALSE`
+#'   requires some caution, see GitHub issues #168 and #211.
 #' @param ndraws Only relevant if `refit_prj` is `TRUE`. Number of posterior
 #'   draws to be projected. Ignored if `nclusters` is not `NULL` or if the
 #'   reference model is of class `datafit` (in which case one cluster is used).
@@ -34,12 +35,11 @@
 #'   class `datafit` (in which case one cluster is used). For the meaning of
 #'   `NULL`, see argument `ndraws`. See also section "Details" below.
 #' @param seed Pseudorandom number generation (PRNG) seed by which the same
-#'   results can be obtained again if needed. If `NULL`, no seed is set and
-#'   therefore, the results are not reproducible. See [set.seed()] for details.
-#'   Here, this seed is used for clustering the reference model's posterior
-#'   draws (if `!is.null(nclusters)`) and for drawing new group-level effects
-#'   when predicting from a multilevel submodel (however, not yet in case of a
-#'   GAMM).
+#'   results can be obtained again if needed. Passed to argument `seed` of
+#'   [set.seed()], but can also be `NA` to not call [set.seed()] at all. Here,
+#'   this seed is used for clustering the reference model's posterior draws (if
+#'   `!is.null(nclusters)`) and for drawing new group-level effects when
+#'   predicting from a multilevel submodel (however, not yet in case of a GAMM).
 #' @inheritParams varsel
 #' @param ... Arguments passed to [get_refmodel()] (if [get_refmodel()] is
 #'   actually used; see argument `object`) as well as to the divergence
@@ -52,13 +52,17 @@
 #'   projection performance. Increasing these arguments affects the computation
 #'   time linearly.
 #'
+#'   Note that if [project()] is applied to output from [cv_varsel()], then
+#'   `refit_prj = FALSE` will take the results from the *full-data* search.
+#'
 #' @return If the projection is performed onto a single submodel (i.e.,
 #'   `length(nterms) == 1 || !is.null(solution_terms)`), an object of class
 #'   `projection` which is a `list` containing the following elements:
 #'   \describe{
 #'     \item{`dis`}{Projected draws for the dispersion parameter.}
-#'     \item{`kl`}{The KL divergence from the submodel to the reference
-#'     model.}
+#'     \item{`kl`}{The Kullback-Leibler (KL) divergence from the submodel to the
+#'     reference model. Note that in case of the Gaussian family, this is not
+#'     the actual KL divergence but merely a proxy.}
 #'     \item{`weights`}{Weights for the projected draws.}
 #'     \item{`solution_terms`}{A character vector of the submodel's
 #'     predictor terms, ordered in the way in which the terms were added to the
@@ -129,7 +133,7 @@ project <- function(object, nterms = NULL, solution_terms = NULL,
     rng_state_old <- get(".Random.seed", envir = .GlobalEnv)
     on.exit(assign(".Random.seed", rng_state_old, envir = .GlobalEnv))
   }
-  set.seed(seed)
+  if (!is.na(seed)) set.seed(seed)
 
   if (refit_prj && inherits(refmodel, "datafit")) {
     warning("Automatically setting `refit_prj` to `FALSE` since the reference ",
@@ -219,7 +223,7 @@ project <- function(object, nterms = NULL, solution_terms = NULL,
   p_ref <- .get_refdist(refmodel, ndraws = ndraws, nclusters = nclusters)
 
   ## project onto the submodels
-  subm <- .get_submodels(
+  submodels <- .get_submodels(
     search_path = nlist(
       solution_terms,
       p_sel = object$search_path$p_sel,
@@ -230,12 +234,13 @@ project <- function(object, nterms = NULL, solution_terms = NULL,
   )
 
   # Output:
-  proj <- lapply(subm, function(model) {
-    model$p_type <- !is.null(nclusters)
-    model$refmodel <- refmodel
-    class(model) <- "projection"
-    return(model)
+  projs <- lapply(submodels, function(initsubmodl) {
+    proj_k <- initsubmodl
+    proj_k$p_type <- !is.null(nclusters)
+    proj_k$refmodel <- refmodel
+    class(proj_k) <- "projection"
+    return(proj_k)
   })
   ## If only one model size, just return the proj instead of a list of projs
-  .unlist_proj(proj)
+  return(.unlist_proj(projs))
 }

@@ -37,7 +37,8 @@ is not of class \code{vsel}, \code{solution_terms} must not be \code{NULL}.}
 \item{refit_prj}{A single logical value indicating whether to fit the
 submodels (again) (\code{TRUE}) or to retrieve the fitted submodels from
 \code{object} (\code{FALSE}). For an \code{object} which is not of class \code{vsel},
-\code{refit_prj} must be \code{TRUE}.}
+\code{refit_prj} must be \code{TRUE}. Note that currently, \code{refit_prj = FALSE}
+requires some caution, see GitHub issues #168 and #211.}
 
 \item{ndraws}{Only relevant if \code{refit_prj} is \code{TRUE}. Number of posterior
 draws to be projected. Ignored if \code{nclusters} is not \code{NULL} or if the
@@ -52,12 +53,11 @@ class \code{datafit} (in which case one cluster is used). For the meaning of
 \code{NULL}, see argument \code{ndraws}. See also section "Details" below.}
 
 \item{seed}{Pseudorandom number generation (PRNG) seed by which the same
-results can be obtained again if needed. If \code{NULL}, no seed is set and
-therefore, the results are not reproducible. See \code{\link[=set.seed]{set.seed()}} for details.
-Here, this seed is used for clustering the reference model's posterior
-draws (if \code{!is.null(nclusters)}) and for drawing new group-level effects
-when predicting from a multilevel submodel (however, not yet in case of a
-GAMM).}
+results can be obtained again if needed. Passed to argument \code{seed} of
+\code{\link[=set.seed]{set.seed()}}, but can also be \code{NA} to not call \code{\link[=set.seed]{set.seed()}} at all. Here,
+this seed is used for clustering the reference model's posterior draws (if
+\code{!is.null(nclusters)}) and for drawing new group-level effects when
+predicting from a multilevel submodel (however, not yet in case of a GAMM).}
 
 \item{regul}{A number giving the amount of ridge regularization when
 projecting onto (i.e., fitting) submodels which are GLMs. Usually there is
@@ -74,8 +74,9 @@ If the projection is performed onto a single submodel (i.e.,
 \code{projection} which is a \code{list} containing the following elements:
 \describe{
 \item{\code{dis}}{Projected draws for the dispersion parameter.}
-\item{\code{kl}}{The KL divergence from the submodel to the reference
-model.}
+\item{\code{kl}}{The Kullback-Leibler (KL) divergence from the submodel to the
+reference model. Note that in case of the Gaussian family, this is not
+the actual KL divergence but merely a proxy.}
 \item{\code{weights}}{Weights for the projected draws.}
 \item{\code{solution_terms}}{A character vector of the submodel's
 predictor terms, ordered in the way in which the terms were added to the
@@ -104,6 +105,9 @@ the number of posterior draws in the reference model (which is \code{1} for
 posterior draws in the reference model may result in slightly inaccurate
 projection performance. Increasing these arguments affects the computation
 time linearly.
+
+Note that if \code{\link[=project]{project()}} is applied to output from \code{\link[=cv_varsel]{cv_varsel()}}, then
+\code{refit_prj = FALSE} will take the results from the \emph{full-data} search.
 }
 \examples{
 if (requireNamespace("rstanarm", quietly = TRUE)) {

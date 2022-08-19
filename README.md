@@ -6,8 +6,9 @@
 # projpred [<img src="man/figures/logo.svg" align="right" height="139" alt="Stan Logo"/>](https://mc-stan.org)
 
 The **projpred** R package performs the projection predictive variable selection
-for generalized linear models as well as generalized linear and additive
-multilevel models. The package is compatible with the
+for generalized linear and additive models as well as for generalized linear and
+additive multilevel models (with the support for additive models being still
+experimental). The package is compatible with the
 [**rstanarm**](https://mc-stan.org/rstanarm/) and
 [**brms**](https://paul-buerkner.github.io/brms/) packages, but custom reference
 models can also be used.

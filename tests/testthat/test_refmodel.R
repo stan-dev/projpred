@@ -43,8 +43,7 @@ test_that("missing `data` fails", {
   ))
   expect_error(
     get_refmodel(fit_nodata),
-    paste("^`object\\$data` must be a `data\\.frame` or a `matrix` \\(but a",
-          "`data\\.frame` is recommended\\)\\.$")
+    paste("^is\\.data\\.frame\\(data\\) is not TRUE$")
   )
 })
 

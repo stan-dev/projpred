@@ -126,9 +126,9 @@ fit_glm_ridge_callback <- function(formula, data,
 
 # Alternative to fit_glm_ridge_callback() (may be used via global option
 # `projpred.glm_fitter`):
-fit_glm_callback <- function(formula, family, projpred_var, projpred_regul,
-                             ...) {
-  if (family$family == "gaussian" && family$link == "identity") {
+fit_glm_callback <- function(formula, family, ...) {
+  if (family$family == "gaussian" && family$link == "identity" &&
+      getOption("projpred.gaussian_not_as_generalized", TRUE)) {
     # Exclude arguments from `...` which cannot be passed to stats::lm():
     dot_args <- list(...)
     dot_args <- dot_args[intersect(
@@ -231,7 +231,8 @@ fit_gamm_callback <- function(formula, projpred_formula_no_random,
 fit_glmer_callback <- function(formula, family,
                                control = control_callback(family), ...) {
   tryCatch({
-    if (family$family == "gaussian" && family$link == "identity") {
+    if (family$family == "gaussian" && family$link == "identity" &&
+        getOption("projpred.gaussian_not_as_generalized", TRUE)) {
       # Exclude arguments from `...` which cannot be passed to lme4::lmer():
       dot_args <- list(...)
       dot_args <- dot_args[intersect(
@@ -341,7 +342,8 @@ fit_glmer_callback <- function(formula, family,
 # Helper function for fit_glmer_callback() and fit_gamm_callback() to get the
 # appropriate control options depending on the family:
 control_callback <- function(family, ...) {
-  if (family$family == "gaussian" && family$link == "identity") {
+  if (family$family == "gaussian" && family$link == "identity" &&
+      getOption("projpred.gaussian_not_as_generalized", TRUE)) {
     return(lme4::lmerControl(...))
   } else {
     return(lme4::glmerControl(...))
@@ -446,7 +448,7 @@ predict.subfit <- function(subfit, newdata = NULL) {
     if (is.null(beta)) {
       return(as.matrix(rep(alpha, NROW(subfit$x))))
     } else {
-      return(subfit$x %*% rbind(alpha, beta))
+      return(cbind(1, subfit$x) %*% rbind(alpha, beta))
     }
   } else {
     # TODO: In the following model.matrix() call, allow user-specified contrasts
@@ -473,7 +475,7 @@ predict.gamm4 <- function(fit, newdata = NULL) {
   }
   formula <- fit$formula
   random <- fit$random
-  gamm_struct <- model.matrix.gamm4(delete.response(terms(formula)),
+  gamm_struct <- model.matrix_gamm4(delete.response(terms(formula)),
                                     random = random, data = newdata)
   ranef <- lme4::ranef(fit$mer) # TODO (GAMMs): Add `, condVar = FALSE` here?
   b <- gamm_struct$b
@@ -521,6 +523,8 @@ repair_re <- function(object, newdata) {
 #
 # The license of lme4 version 1.1-28 is:
 # "GPL (>=2)" (see <https://CRAN.R-project.org/package=lme4>).
+#' @noRd
+#' @export
 repair_re.merMod <- function(object, newdata) {
   stopifnot(!is.null(newdata))
   ranef_tmp <- lme4::ranef(object, condVar = FALSE)

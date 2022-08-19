@@ -101,8 +101,8 @@
 #' Arguments `ref_predfun`, `proj_predfun`, and `div_minimizer` may be `NULL`
 #' for using an internal default. Otherwise, let \eqn{N} denote the number of
 #' observations (in case of CV, these may be reduced to each fold),
-#' \eqn{S_{\mbox{ref}}}{S_ref} the number of posterior draws for the reference
-#' model's parameters, and \eqn{S_{\mbox{prj}}}{S_prj} the number of (possibly
+#' \eqn{S_{\mathrm{ref}}}{S_ref} the number of posterior draws for the reference
+#' model's parameters, and \eqn{S_{\mathrm{prj}}}{S_prj} the number of (possibly
 #' clustered) parameter draws for projection (short: the number of projected
 #' draws). Then the functions supplied to these arguments need to have the
 #' following prototypes:
@@ -114,7 +114,7 @@
 #'     typically stored in `fit`) or data for new observations (at least in the
 #'     form of a `data.frame`).
 #' * `proj_predfun`: `proj_predfun(fits, newdata)` where:
-#'     + `fits` accepts a `list` of length \eqn{S_{\mbox{prj}}}{S_prj}
+#'     + `fits` accepts a `list` of length \eqn{S_{\mathrm{prj}}}{S_prj}
 #'     containing this number of submodel fits. This `list` is the same as that
 #'     returned by [project()] in its output element `submodl` (which in turn is
 #'     the same as the return value of `div_minimizer`, except if [project()]
@@ -125,15 +125,15 @@
 #' * `div_minimizer` does not need to have a specific prototype, but it needs to
 #' be able to be called with the following arguments:
 #'     + `formula` accepts either a standard [`formula`] with a single response
-#'     (if \eqn{S_{\mbox{prj}} = 1}{S_prj = 1}) or a [`formula`] with
-#'     \eqn{S_{\mbox{prj}} > 1}{S_prj > 1} response variables [cbind()]-ed on
+#'     (if \eqn{S_{\mathrm{prj}} = 1}{S_prj = 1}) or a [`formula`] with
+#'     \eqn{S_{\mathrm{prj}} > 1}{S_prj > 1} response variables [cbind()]-ed on
 #'     the left-hand side in which case the projection has to be performed for
 #'     each of the response variables separately.
 #'     + `data` accepts a `data.frame` to be used for the projection.
 #'     + `family` accepts a [`family`] object.
 #'     + `weights` accepts either observation weights (at least in the form of a
 #'     numeric vector) or `NULL` (for using a vector of ones as weights).
-#'     + `projpred_var` accepts an \eqn{N \times S_{\mbox{prj}}}{N x S_prj}
+#'     + `projpred_var` accepts an \eqn{N \times S_{\mathrm{prj}}}{N x S_prj}
 #'     matrix of predictive variances (necessary for \pkg{projpred}'s internal
 #'     GLM fitter).
 #'     + `projpred_regul` accepts a single numeric value as supplied to argument
@@ -141,10 +141,10 @@
 #'     + `...` accepts further arguments specified by the user.
 #'
 #' The return value of these functions needs to be:
-#' * `ref_predfun`: an \eqn{N \times S_{\mbox{ref}}}{N x S_ref} matrix.
-#' * `proj_predfun`: an \eqn{N \times S_{\mbox{prj}}}{N x S_prj} matrix.
-#' * `div_minimizer`: a `list` of length \eqn{S_{\mbox{prj}}}{S_prj} containing
-#' this number of submodel fits.
+#' * `ref_predfun`: an \eqn{N \times S_{\mathrm{ref}}}{N x S_ref} matrix.
+#' * `proj_predfun`: an \eqn{N \times S_{\mathrm{prj}}}{N x S_prj} matrix.
+#' * `div_minimizer`: a `list` of length \eqn{S_{\mathrm{prj}}}{S_prj}
+#' containing this number of submodel fits.
 #'
 #' # Argument `extract_model_data`
 #'
@@ -172,7 +172,8 @@
 #' The return value of `extract_model_data` needs to be a `list` with elements
 #' `y`, `weights`, and `offset`, each being a numeric vector containing the data
 #' for the response, the observation weights, and the offsets, respectively. An
-#' exception is that `y` may also be `NULL` (depending on argument `extract_y`).
+#' exception is that `y` may also be `NULL` (depending on argument `extract_y`)
+#' or a `factor`.
 #'
 #' @return An object that can be passed to all the functions that take the
 #'   reference model fit as the first argument, such as [varsel()],
@@ -280,8 +281,10 @@ predict.refmodel <- function(object, newdata = NULL, ynew = NULL,
   }
 
   if (is.null(newdata)) {
+    isnew_newdata <- FALSE
     newdata <- object$fetch_data()
   } else {
+    isnew_newdata <- TRUE
     newdata <- na.fail(newdata)
   }
   w_o <- object$extract_model_data(object$fit, newdata = newdata,
@@ -294,8 +297,8 @@ predict.refmodel <- function(object, newdata = NULL, ynew = NULL,
   if (length(offsetnew) == 0) {
     offsetnew <- rep(0, length(w_o$y))
   }
-  if (inherits(object$fit, "stanreg") && length(object$offset) > 0) {
-    if ("projpred_internal_offs_stanreg" %in% names(newdata)) {
+  if (inherits(object$fit, "stanreg") && length(object$fit$offset) > 0) {
+    if (isnew_newdata && "projpred_internal_offs_stanreg" %in% names(newdata)) {
       stop("Need to write to column `projpred_internal_offs_stanreg` of ",
            "`newdata`, but that column already exists. Please rename this ",
            "column in `newdata` and try again.")
@@ -432,10 +435,7 @@ get_refmodel.stanreg <- function(object, ...) {
   # Data --------------------------------------------------------------------
 
   data <- object$data
-  if (!is.data.frame(data) && !is.matrix(data)) {
-    stop("`object$data` must be a `data.frame` or a `matrix` (but a ",
-         "`data.frame` is recommended).")
-  }
+  stopifnot(is.data.frame(data))
 
   # Weights (for the observations):
   if (family$family == "binomial" && length(object$weights) > 0) {
@@ -590,18 +590,21 @@ init_refmodel <- function(object, data, formula, family, ref_predfun = NULL,
     warning("Support for the `Gamma` family is still experimental.")
   }
 
-  if (!.has_family_extras(family)) {
-    family <- extend_family(family)
-  }
+  family <- extend_family(family)
 
-  family$mu_fun <- function(fits, obs = NULL, newdata = NULL, offset = NULL) {
+  family$mu_fun <- function(fits, obs = NULL, newdata = NULL, offset = NULL,
+                            transform = TRUE) {
     newdata <- fetch_data(data, obs = obs, newdata = newdata)
     if (is.null(offset)) {
       offset <- rep(0, nrow(newdata))
     } else {
       stopifnot(length(offset) %in% c(1L, nrow(newdata)))
     }
-    family$linkinv(proj_predfun(fits, newdata = newdata) + offset)
+    pred_sub <- proj_predfun(fits, newdata = newdata) + offset
+    if (transform) {
+      pred_sub <- family$linkinv(pred_sub)
+    }
+    return(pred_sub)
   }
 
   # Special case: `datafit` -------------------------------------------------
@@ -612,6 +615,7 @@ init_refmodel <- function(object, data, formula, family, ref_predfun = NULL,
 
   stopifnot(inherits(formula, "formula"))
   data <- na.fail(data)
+  stopifnot(is.data.frame(data))
   formula <- expand_formula(formula, data)
   response_name <- extract_terms_response(formula)$response
   if (length(response_name) == 2) {
@@ -764,6 +768,7 @@ init_refmodel <- function(object, data, formula, family, ref_predfun = NULL,
       mu <- y / weights
     }
     mu <- matrix(mu)
+    eta <- family$linkfun(mu)
   }
 
   # Miscellaneous -----------------------------------------------------------
@@ -802,9 +807,10 @@ init_refmodel <- function(object, data, formula, family, ref_predfun = NULL,
   # Output ------------------------------------------------------------------
 
   refmodel <- nlist(
-    fit = object, formula, div_minimizer, family, mu, dis, y, loglik, intercept,
-    proj_predfun, fetch_data = fetch_data_wrapper, wobs = weights, wsample,
-    offset, cvfun, cvfits, extract_model_data, ref_predfun, cvrefbuilder
+    fit = object, formula, div_minimizer, family, mu, eta, dis, y, loglik,
+    intercept, proj_predfun, fetch_data = fetch_data_wrapper, wobs = weights,
+    wsample, offset, cvfun, cvfits, extract_model_data, ref_predfun,
+    cvrefbuilder
   )
   if (proper_model) {
     class(refmodel) <- "refmodel"

@@ -17,19 +17,19 @@
 #'   is performed, which avoids refitting the reference model `nloo` times (in
 #'   contrast to a standard LOO CV). In the `"kfold"` case, a \eqn{K}-fold CV is
 #'   performed.
-#' @param nloo **Caution:** Still experimental. Only relevant if `cv_method ==
+#' @param nloo **Caution:** Still experimental. Only relevant if `cv_method =
 #'   "LOO"`. Number of subsampled LOO CV folds, i.e., number of observations
 #'   used for the LOO CV (anything between 1 and the original number of
 #'   observations). Smaller values lead to faster computation but higher
 #'   uncertainty in the evaluation part. If `NULL`, all observations are used,
 #'   but for faster experimentation, one can set this to a smaller value.
-#' @param K Only relevant if `cv_method == "kfold"` and if the reference model
+#' @param K Only relevant if `cv_method = "kfold"` and if the reference model
 #'   was created with `cvfits` being `NULL` (which is the case for
 #'   [get_refmodel.stanreg()] and [brms::get_refmodel.brmsfit()]). Number of
 #'   folds in \eqn{K}-fold CV.
-#' @param validate_search Only relevant if `cv_method == "LOO"`. A single
-#'   logical value indicating whether to cross-validate also the search part,
-#'   i.e., whether to run the search separately for each CV fold (`TRUE`) or not
+#' @param validate_search Only relevant if `cv_method = "LOO"`. A single logical
+#'   value indicating whether to cross-validate also the search part, i.e.,
+#'   whether to run the search separately for each CV fold (`TRUE`) or not
 #'   (`FALSE`). We strongly do not recommend setting this to `FALSE`, because
 #'   this is known to bias the predictive performance estimates of the selected
 #'   submodels. However, setting this to `FALSE` can sometimes be useful because
@@ -38,19 +38,25 @@
 #'   (the difference corresponds to the search degrees of freedom or the
 #'   effective number of parameters introduced by the search).
 #' @param seed Pseudorandom number generation (PRNG) seed by which the same
-#'   results can be obtained again if needed. If `NULL`, no seed is set and
-#'   therefore, the results are not reproducible. See [set.seed()] for details.
-#'   Here, this seed is used for clustering the reference model's posterior
-#'   draws (if `!is.null(nclusters)`), for subsampling LOO CV folds (if `nloo`
-#'   is smaller than the number of observations), for sampling the folds in
-#'   K-fold CV, and for drawing new group-level effects when predicting from a
-#'   multilevel submodel (however, not yet in case of a GAMM).
+#'   results can be obtained again if needed. Passed to argument `seed` of
+#'   [set.seed()], but can also be `NA` to not call [set.seed()] at all. Here,
+#'   this seed is used for clustering the reference model's posterior draws (if
+#'   `!is.null(nclusters)`), for subsampling LOO CV folds (if `nloo` is smaller
+#'   than the number of observations), for sampling the folds in K-fold CV, and
+#'   for drawing new group-level effects when predicting from a multilevel
+#'   submodel (however, not yet in case of a GAMM).
 #'
 #' @inherit varsel details return
 #'
 #' @note The case `cv_method == "LOO" && !validate_search` constitutes an
 #'   exception where the search part is not cross-validated. In that case, the
 #'   evaluation part is based on a PSIS-LOO CV.
+#'
+#'   For all PSIS-LOO CVs, \pkg{projpred} calls [loo::psis()] with `r_eff = NA`.
+#'   This is only a problem if there was extreme autocorrelation between the
+#'   MCMC iterations when the reference model was built. In those cases however,
+#'   the reference model should not have been used anyway, so we don't expect
+#'   \pkg{projpred}'s `r_eff = NA` to be a problem.
 #'
 #' @references
 #'
@@ -135,7 +141,7 @@ cv_varsel.refmodel <- function(
     rng_state_old <- get(".Random.seed", envir = .GlobalEnv)
     on.exit(assign(".Random.seed", rng_state_old, envir = .GlobalEnv))
   }
-  set.seed(seed)
+  if (!is.na(seed)) set.seed(seed)
 
   refmodel <- object
   # Needed to avoid a warning when calling varsel() later:
@@ -153,7 +159,8 @@ cv_varsel.refmodel <- function(
 
   ## arguments specific to this function
   args <- parse_args_cv_varsel(
-    refmodel = refmodel, cv_method = cv_method, K = K
+    refmodel = refmodel, cv_method = cv_method, K = K,
+    validate_search = validate_search
   )
   cv_method <- args$cv_method
   K <- args$K
@@ -176,8 +183,6 @@ cv_varsel.refmodel <- function(
       nclusters_pred = nclusters_pred, refit_prj = refit_prj, penalty = penalty,
       verbose = verbose, opt = opt, K = K, search_terms = search_terms, ...
     )
-  } else {
-    stop(sprintf("Unknown `cv_method`: %s.", method))
   }
 
   if (validate_search || cv_method == "kfold") {
@@ -193,12 +198,14 @@ cv_varsel.refmodel <- function(
                   lambda_min_ratio = lambda_min_ratio, nlambda = nlambda,
                   regul = regul, search_terms = search_terms_usr, seed = seed,
                   ...)
-  } else if (cv_method == "LOO") {
+  } else {
     sel <- sel_cv$sel
   }
 
-  # Find out how many CV folds select the same variables as the selection with
-  # all the data (assuming all CV folds have equal weight):
+  # Create `pct_solution_terms_cv`, a summary table of the fold-wise solution
+  # paths. For the column names (and therefore the order of the solution terms
+  # in the columns), the solution path from the full-data search is used. Note
+  # that the following code assumes that all CV folds have equal weight.
   candidate_terms <- split_formula(refmodel$formula,
                                    data = refmodel$fetch_data(),
                                    add_main_effects = FALSE)
@@ -266,7 +273,7 @@ cv_varsel.refmodel <- function(
 # @param K Number of folds in the K-fold cross validation. Default is 5 for
 #   genuine reference models and 10 for datafits (that is, for penalized
 #   maximum likelihood estimation).
-parse_args_cv_varsel <- function(refmodel, cv_method, K) {
+parse_args_cv_varsel <- function(refmodel, cv_method, K, validate_search) {
   stopifnot(!is.null(cv_method))
   if (cv_method == "loo") {
     cv_method <- toupper(cv_method)
@@ -291,6 +298,10 @@ parse_args_cv_varsel <- function(refmodel, cv_method, K) {
     if (K > NROW(refmodel$y)) {
       stop("`K` cannot exceed the number of observations.")
     }
+    if (!validate_search) {
+      stop("`cv_method = \"kfold\"` cannot be used with ",
+           "`validate_search = FALSE`.")
+    }
   }
 
   return(nlist(cv_method, K))
@@ -307,6 +318,7 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
   ##
 
   mu <- refmodel$mu
+  eta <- refmodel$eta
   dis <- refmodel$dis
   ## the clustering/subsampling used for selection
   p_sel <- .get_refdist(refmodel, ndraws = ndraws, nclusters = nclusters)
@@ -328,8 +340,7 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
     loglik <- refmodel$loglik
   }
   n <- ncol(loglik)
-  ## TODO: should take r_eff:s into account
-  psisloo <- loo::psis(-loglik, cores = 1, r_eff = rep(1, n))
+  psisloo <- loo::psis(-loglik, cores = 1, r_eff = NA)
   lw <- weights(psisloo)
   # pareto_k <- loo::pareto_k_values(psisloo)
   ## by default use all observations
@@ -395,6 +406,15 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
     }
 
     ## compute approximate LOO with PSIS weights
+    if (refit_prj) {
+      refdist_eval <- p_pred
+    } else {
+      refdist_eval <- p_sel
+    }
+    log_lik_ref <- t(refmodel$family$ll_fun(
+      refdist_eval$mu[inds, , drop = FALSE], refdist_eval$dis, refmodel$y[inds],
+      refmodel$wobs[inds]
+    ))
     for (k in seq_along(submodels)) {
       mu_k <- refmodel$family$mu_fun(submodels[[k]]$submodl,
                                      obs = inds,
@@ -403,13 +423,11 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
         mu_k, submodels[[k]]$dis, refmodel$y[inds], refmodel$wobs[inds]
       ))
       sub_psisloo <- suppressWarnings(
-        loo::psis(-log_lik_sub,
-                  cores = 1,
-                  r_eff = rep(1, ncol(log_lik_sub)))
+        loo::psis(-log_lik_ref, cores = 1, r_eff = NA)
       )
       lw_sub <- suppressWarnings(weights(sub_psisloo))
       # Take into account that clustered draws usually have different weights:
-      lw_sub <- lw_sub + log(p_pred$weights)
+      lw_sub <- lw_sub + log(refdist_eval$weights)
       # This re-weighting requires a re-normalization (as.array() is applied to
       # have stricter consistency checks, see `?sweep`):
       lw_sub <- sweep(lw_sub, 2, as.array(apply(lw_sub, 2, log_sum_exp)))
@@ -433,12 +451,12 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
     for (i in seq_len(n)) {
       solution_terms_mat[i, seq_along(solution)] <- solution
     }
-    sel <- nlist(search_path, kl = sapply(submodels, function(x) x$kl),
+    sel <- nlist(search_path, kl = sapply(submodels, "[[", "kl"),
                  solution_terms = search_path$solution_terms,
                  clust_used_search = p_sel$clust_used,
-                 clust_used_eval = p_pred$clust_used,
+                 clust_used_eval = refdist_eval$clust_used,
                  nprjdraws_search = NCOL(p_sel$mu),
-                 nprjdraws_eval = NCOL(p_pred$mu))
+                 nprjdraws_eval = NCOL(refdist_eval$mu))
   } else {
     if (verbose) {
       print(msg)
@@ -451,12 +469,12 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
 
       ## reweight the clusters/samples according to the psis-loo weights
       p_sel <- .get_p_clust(
-        family = refmodel$family, mu = mu, dis = dis, wsample = exp(lw[, i]),
-        cl = cl_sel
+        family = refmodel$family, mu = mu, eta = eta, dis = dis,
+        wsample = exp(lw[, i]), cl = cl_sel
       )
       p_pred <- .get_p_clust(
-        family = refmodel$family, mu = mu, dis = dis, wsample = exp(lw[, i]),
-        cl = cl_pred
+        family = refmodel$family, mu = mu, eta = eta, dis = dis,
+        wsample = exp(lw[, i]), cl = cl_pred
       )
 
       ## perform selection with the reweighted clusters/samples
@@ -474,9 +492,9 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
         p_ref = p_pred, refmodel = refmodel, regul = opt$regul,
         refit_prj = refit_prj, ...
       )
-      summaries_sub <- .get_sub_summaries(
-        submodels = submodels, test_points = c(i), refmodel = refmodel
-      )
+      summaries_sub <- .get_sub_summaries(submodels = submodels,
+                                          refmodel = refmodel,
+                                          test_points = i)
       for (k in seq_along(summaries_sub)) {
         loo_sub[[k]][i] <- summaries_sub[[k]]$lppd
         mu_sub[[k]][i] <- summaries_sub[[k]]$mu
@@ -504,17 +522,13 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
 
   ## put all the results together in the form required by cv_varsel
   summ_sub <- lapply(seq_len(nterms_max), function(k) {
-    list(lppd = loo_sub[[k]], mu = mu_sub[[k]], w = validset$w)
+    list(lppd = loo_sub[[k]], mu = mu_sub[[k]], wcv = validset$wcv)
   })
   summ_ref <- list(lppd = loo_ref, mu = mu_ref)
   summaries <- list(sub = summ_sub, ref = summ_ref)
 
-  d_test <- list(
-    y = refmodel$y, type = "LOO",
-    test_points = seq_along(refmodel$y),
-    weights = refmodel$wobs,
-    data = NULL, offset = refmodel$offset
-  )
+  d_test <- list(type = "LOO", data = NULL, offset = refmodel$offset,
+                 weights = refmodel$wobs, y = refmodel$y)
 
   out_list <- nlist(solution_terms_cv = solution_terms_mat, summaries, d_test)
   if (!validate_search) {
@@ -598,17 +612,29 @@ kfold_varsel <- function(refmodel, method, nterms_max, ndraws,
 
   # Perform the evaluation of the submodels for each fold (and make sure to
   # combine the results from the K folds into a single results list):
-  get_summaries_submodel_cv <- function(submodels, fold) {
-    .get_sub_summaries(
-      submodels = submodels, test_points = fold$d_test$omitted,
-      refmodel = refmodel
-    )
+  get_summaries_submodels_cv <- function(submodels, fold) {
+    .get_sub_summaries(submodels = submodels,
+                       refmodel = refmodel,
+                       test_points = fold$d_test$omitted)
   }
-  sub_cv_summaries <- mapply(get_summaries_submodel_cv, submodels_cv, list_cv)
+  sub_cv_summaries <- mapply(get_summaries_submodels_cv, submodels_cv, list_cv)
+  if (is.null(dim(sub_cv_summaries))) {
+    summ_dim <- dim(solution_terms_cv)
+    summ_dim[2] <- summ_dim[2] + 1L # +1 is for the empty model
+    dim(sub_cv_summaries) <- rev(summ_dim)
+  }
   sub <- apply(sub_cv_summaries, 1, rbind2list)
+  idxs_sorted_by_fold <- unlist(lapply(list_cv, function(fold) {
+    fold$d_test$omitted
+  }))
   sub <- lapply(sub, function(summ) {
-    summ$w <- rep(1, length(summ$mu))
-    summ$w <- summ$w / sum(summ$w)
+    summ$mu <- summ$mu[order(idxs_sorted_by_fold)]
+    summ$lppd <- summ$lppd[order(idxs_sorted_by_fold)]
+
+    # Add fold-specific weights (see the discussion at GitHub issue #94 for why
+    # this might have to be changed):
+    summ$wcv <- rep(1, length(summ$mu))
+    summ$wcv <- summ$wcv / sum(summ$wcv)
     return(summ)
   })
 
@@ -625,19 +651,23 @@ kfold_varsel <- function(refmodel, method, nterms_max, ndraws,
       dis = fold$refmodel$dis
     )
   }))
+  ref$mu <- ref$mu[order(idxs_sorted_by_fold)]
+  ref$lppd <- ref$lppd[order(idxs_sorted_by_fold)]
 
   # Combine the K separate test "datasets" (rather "information objects") into a
   # single list:
   d_cv <- rbind2list(lapply(list_cv, function(fold) {
-    list(y = fold$d_test$y,
+    list(offset = fold$d_test$offset,
          weights = fold$d_test$weights,
-         test_points = fold$d_test$omitted,
-         offset = fold$d_test$offset)
+         y = fold$d_test$y)
   }))
+  d_cv <- as.list(
+    as.data.frame(d_cv)[order(idxs_sorted_by_fold), , drop = FALSE]
+  )
 
   return(nlist(solution_terms_cv,
                summaries = nlist(sub, ref),
-               d_test = c(d_cv, type = "kfold")))
+               d_test = c(list(type = "kfold", data = NULL), d_cv)))
 }
 
 # Re-fit the reference model K times (once for each fold; `cvfun` case) or fetch
@@ -717,20 +747,20 @@ kfold_varsel <- function(refmodel, method, nterms_max, ndraws,
 #
 #     ## assign the weights corresponding to this stratification (for example, the
 #     ## 'bad' values are likely to be overpresented in the sample)
-#     w <- rep(0, n)
-#     w[inds[inds %in% bad]] <- length(bad) / sum(inds %in% bad)
-#     w[inds[inds %in% ok]] <- length(ok) / sum(inds %in% ok)
-#     w[inds[inds %in% good]] <- length(good) / sum(inds %in% good)
+#     wcv <- rep(0, n)
+#     wcv[inds[inds %in% bad]] <- length(bad) / sum(inds %in% bad)
+#     wcv[inds[inds %in% ok]] <- length(ok) / sum(inds %in% ok)
+#     wcv[inds[inds %in% good]] <- length(good) / sum(inds %in% good)
 #   } else {
 #     ## all points used
 #     inds <- seq_len(n)
-#     w <- rep(1, n)
+#     wcv <- rep(1, n)
 #   }
 #
 #   ## ensure weights are normalized
-#   w <- w / sum(w)
+#   wcv <- wcv / sum(wcv)
 #
-#   return(nlist(inds, w))
+#   return(nlist(inds, wcv))
 # }
 
 ## decide which points to go through in the validation based on
@@ -746,12 +776,12 @@ kfold_varsel <- function(refmodel, method, nterms_max, ndraws,
     stop("Argument `nloo` must not be larger than the number of observations.")
   } else if (nloo == length(lppd)) {
     inds <- seq_len(nloo)
-    w <- rep(1, nloo)
+    wcv <- rep(1, nloo)
   } else if (nloo < length(lppd)) {
-    w <- exp(lppd - max(lppd))
-    inds <- sample(seq_along(lppd), size = nloo, prob = w)
+    wcv <- exp(lppd - max(lppd))
+    inds <- sample(seq_along(lppd), size = nloo, prob = wcv)
   }
-  w <- w / sum(w)
+  wcv <- wcv / sum(wcv)
 
-  return(nlist(inds, w))
+  return(nlist(inds, wcv))
 }

@@ -1,8 +1,8 @@
 Package: projpred
 Encoding: UTF-8
 Title: Projection Predictive Feature Selection
-Version: 2.1.2
-Date: 2022-05-13
+Version: 2.2.0
+Date: 2022-08-18
 Authors@R: c(person("Juho", "Piironen", role = c("aut"),
                     email = "juho.t.piironen@gmail.com"),
              person("Markus", "Paasiniemi", role = "aut"),
@@ -16,13 +16,14 @@ Authors@R: c(person("Juho", "Piironen", role = c("aut"),
              person("Paul-Christian", "Bürkner", role = "ctb"),
              person("Hamada S.", "Badr", role = "ctb"))
 Description:
-    Performs projection predictive feature selection for generalized linear
-    models and generalized linear and additive multilevel models (see Piironen,
-    Paasiniemi and Vehtari, 2020, <doi:10.1214/20-EJS1711>; Catalina, Bürkner
-    and Vehtari, 2020, <arXiv:2010.06994>). The package is compatible with the
-    'rstanarm' and 'brms' packages, but other reference models can also be used.
-    See the documentation as well as the package vignette for more information
-    and examples.
+    Performs projection predictive feature selection for generalized linear and
+    additive models as well as for generalized linear and additive multilevel
+    models (see Piironen, Paasiniemi and Vehtari, 2020,
+    <doi:10.1214/20-EJS1711>; Catalina, Bürkner and Vehtari, 2020,
+    <arXiv:2010.06994>). The package is compatible with the 'rstanarm' and
+    'brms' packages, but other reference models can also be used. See the
+    documentation as well as the package vignette for more information and
+    examples.
 License: GPL-3 | file LICENSE
 URL: https://mc-stan.org/projpred/, https://discourse.mc-stan.org
 BugReports: https://github.com/stan-dev/projpred/issues/
@@ -49,6 +50,7 @@ Suggests:
     knitr,
     rmarkdown,
     glmnet,
+    cmdstanr,
     bayesplot (>= 1.5.0),
     optimx,
     posterior,
@@ -60,7 +62,9 @@ Suggests:
     future.callr,
     doFuture
 LinkingTo: Rcpp, RcppArmadillo
+Additional_repositories:
+    https://mc-stan.org/r-packages/
 LazyData: TRUE
 Roxygen: list(markdown = TRUE)
-RoxygenNote: 7.1.2
+RoxygenNote: 7.2.1
 VignetteBuilder: knitr, rmarkdown

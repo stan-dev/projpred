@@ -62,7 +62,7 @@ tau0 <- p0 / (D - p0) * 1 / sqrt(N)
 ```
 
 We now fit the reference model to the data. To make this vignette build faster, we use only 2 MCMC chains and 500 iterations per chain (with half of them being discarded as warmup draws). In practice, 4 chains and 2000 iterations per chain are reasonable defaults. Furthermore, we make use of **rstan**'s parallelization, which means to run each chain on a separate CPU core.^[More generally, the number of chains is split up as evenly as possible among the number of CPU cores.] If you run the following code yourself, you can either rely on an automatic mechanism to detect the number of CPU cores (like the `parallel::detectCores()` function shown below) or adapt `ncores` manually to your system.
-```{r, cache=TRUE, cache.lazy=FALSE}
+```{r}
 # Set this manually if desired:
 ncores <- parallel::detectCores(logical = FALSE)
 ### Only for technical reasons in this vignette (you can omit this when running
@@ -105,7 +105,7 @@ There are two functions for performing the variable selection: `varsel()` and `c
 <!-- ``` -->
 
 Here, we use only some of the available arguments; see the documentation of `cv_varsel()` for the full list of arguments. By default, `cv_varsel()` runs a leave-one-out (LOO) CV (see argument `cv_method`) which also cross-validates the search (see argument `validate_search`). Here, we set argument `validate_search` to `FALSE` to obtain rough preliminary results and make this vignette build faster. If possible (in terms of computation time), we recommend using the default of `validate_search = TRUE` to avoid overfitting in the selection of the submodel size. Here, we also set `nclusters_pred` to a low value of `20` only to speed up the building of the vignette. By modifying argument `nterms_max`, we impose a limit on the submodel size until which the search is continued. Typically, one has to run the variable selection with a large `nterms_max` first (the default value may not even be large enough) and only after inspecting the results from this first run, one is able to set a reasonable `nterms_max` in subsequent runs. The value we are using here (`9`) is based on such a first run (which is not shown here, though).
-```{r, results='hide', cache=TRUE, cache.lazy=FALSE}
+```{r, results='hide'}
 cvvs <- cv_varsel(
   refm_fit,
   ### Only for the sake of speed (not recommended in general):
@@ -122,12 +122,12 @@ The first step after running the variable selection should be the decision for a
 plot(cvvs, stats = c("elpd", "rmse"), deltas = TRUE)
 ```
 
-Based on that plot, we would decide for a submodel size of 6 because that's the point where the performance measures level off and are close enough to the reference model's performance (this is also affected by `validate_search = FALSE`).
+Based on that plot (see `?plot.vsel` for a description), we would decide for a submodel size of 6 because that's the point where the performance measures level off and are close enough to the reference model's performance (note that since the plot is affected by `validate_search = FALSE`, this manual decision based on the plot is affected, too):
 ```{r}
 modsize_decided <- 6
 ```
 
-Note that **projpred** offers the `suggest_size()` function which may help in the decision for a submodel size, but this is a rather heuristic method and needs to be interpreted with caution (see `?suggest_size`).
+Note that **projpred** offers the `suggest_size()` function which may help in the decision for a submodel size, but this is a rather heuristic method and needs to be interpreted with caution (see `?suggest_size`):
 ```{r}
 suggest_size(cvvs)
 ```
@@ -153,7 +153,7 @@ Combining the decided submodel size of 6 with the solution path leads to the fol
 ## Post-selection inference
 
 The `project()` function returns an object of class `projection` which forms the basis for convenient post-selection inference. By the following code, `project()` will project the reference model onto the final submodel once again^[During the forward search, the reference model has already been projected onto all candidate models (this was where arguments `ndraws` and `nclusters` of `cv_varsel()` came into play). During the evaluation of the submodels along the solution path, the reference model has already been projected onto those submodels (this was where arguments `ndraws_pred` and `nclusters_pred` of `cv_varsel()` came into play). In principle, one could use the results from the evaluation part for post-selection inference, but due to a bug in the current implementation (see GitHub issue #168), we currently have to project once again.]:
-```{r, cache=TRUE, cache.lazy=FALSE}
+```{r}
 prj <- project(
   refm_fit,
   solution_terms = soltrms_final,
@@ -191,7 +191,7 @@ as.data.frame(summarize_draws(
 ))
 ```
 
-A visualization of the projected posterior can be achieved with the **bayesplot** package, for example using its `mcmc_intervals()` function.
+A visualization of the projected posterior can be achieved with the **bayesplot** package, for example using its `mcmc_intervals()` function:
 ```{r}
 library(bayesplot)
 bayesplot_theme_set(ggplot2::theme_bw())
@@ -228,7 +228,7 @@ cbind(dat_gauss_new, linpred = as.vector(prj_linpred$pred))
 ```
 If `dat_gauss_new` also contained response values (i.e., `y` values in this example), then `proj_linpred()` would also evaluate the log predictive density at these.
 
-With `proj_predict()`, we can obtain draws from predictive distributions based on the final submodel. In contrast to `proj_linpred(<...>, integrated = FALSE)`, this encompasses not only the uncertainty arising from parameter estimation, but also the uncertainty arising from the observational (or "sampling") model for the response.^[In case of the Gaussian family we are using here, the uncertainty arising from the observational model is the uncertainty due to the residual standard deviation.] This is useful for what is usually termed a posterior predictive check (PPC), but would have to be termed something like a posterior-projection predictive check (PPPC) here.
+With `proj_predict()`, we can obtain draws from predictive distributions based on the final submodel. In contrast to `proj_linpred(<...>, integrated = FALSE)`, this encompasses not only the uncertainty arising from parameter estimation, but also the uncertainty arising from the observational (or "sampling") model for the response.^[In case of the Gaussian family we are using here, the uncertainty arising from the observational model is the uncertainty due to the residual standard deviation.] This is useful for what is usually termed a posterior predictive check (PPC), but would have to be termed something like a posterior-projection predictive check (PPPC) here:
 ```{r}
 prj_predict <- proj_predict(prj, .seed = 762805)
 # Using the 'bayesplot' package:

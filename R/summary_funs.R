@@ -1,14 +1,15 @@
-.get_sub_summaries <- function(submodels, test_points, refmodel) {
-  lapply(submodels, function(model) {
+.get_sub_summaries <- function(submodels, refmodel, test_points, newdata = NULL,
+                               offset = refmodel$offset[test_points],
+                               wobs = refmodel$wobs[test_points],
+                               y = refmodel$y[test_points]) {
+  lapply(submodels, function(initsubmodl) {
     .weighted_summary_means(
-      y_test = list(y = refmodel$y[test_points],
-                    weights = refmodel$wobs[test_points]),
+      y_test = list(y = y, weights = wobs),
       family = refmodel$family,
-      wsample = model$weights,
-      mu = refmodel$family$mu_fun(model$submodl,
-                                  obs = test_points,
-                                  offset = refmodel$offset[test_points]),
-      dis = model$dis
+      wsample = initsubmodl$weights,
+      mu = refmodel$family$mu_fun(initsubmodl$submodl, obs = test_points,
+                                  newdata = newdata, offset = offset),
+      dis = initsubmodl$dis
     )
   })
 }
@@ -27,8 +28,8 @@
 #   containing the values for the quantities from the description above.
 .weighted_summary_means <- function(y_test, family, wsample, mu, dis) {
   if (!is.matrix(mu)) {
-    stop("Unexpected structure for `mu`. Does the return value of ",
-         "`proj_predfun` have the correct structure?")
+    stop("Unexpected structure for `mu`. Do the return values of ",
+         "`proj_predfun` and `ref_predfun` have the correct structure?")
   }
   loglik <- family$ll_fun(mu, dis, y_test$y, y_test$weights)
   if (!is.matrix(loglik)) {
@@ -50,6 +51,11 @@
   stat_tab <- data.frame()
   summ_ref <- varsel$summaries$ref
   summ_sub <- varsel$summaries$sub
+
+  if (varsel$refmodel$family$family == "binomial" &&
+      !all(varsel$d_test$weights == 1)) {
+    varsel$d_test$y_prop <- varsel$d_test$y / varsel$d_test$weights
+  }
 
   ## fetch the mu and lppd for the baseline model
   if (is.null(nfeat_baseline)) {
@@ -75,7 +81,7 @@
     ## reference model statistics
     summ <- summ_ref
     res <- get_stat(summ$mu, summ$lppd, varsel$d_test, stat, mu.bs = mu.bs,
-                    lppd.bs = lppd.bs, weights = summ$w, alpha = alpha, ...)
+                    lppd.bs = lppd.bs, wcv = summ$wcv, alpha = alpha, ...)
     row <- data.frame(
       data = varsel$d_test$type, size = Inf, delta = delta, statistic = stat,
       value = res$value, lq = res$lq, uq = res$uq, se = res$se, diff = NA,
@@ -93,10 +99,10 @@
         ## scale
         res_ref <- get_stat(summ_ref$mu, summ_ref$lppd, varsel$d_test,
                             stat, mu.bs = NULL, lppd.bs = NULL,
-                            weights = summ_ref$w, alpha = alpha, ...)
+                            wcv = summ_ref$wcv, alpha = alpha, ...)
         res_diff <- get_stat(summ$mu, summ$lppd, varsel$d_test, stat,
                              mu.bs = summ_ref$mu, lppd.bs = summ_ref$lppd,
-                             weights = summ$w, alpha = alpha, ...)
+                             wcv = summ$wcv, alpha = alpha, ...)
         val <- res_ref$value + res_diff$value
         val.se <- sqrt(res_ref$se^2 + res_diff$se^2)
         lq <- qnorm(alpha / 2, mean = val, sd = val.se)
@@ -109,10 +115,10 @@
       } else {
         ## normal case
         res <- get_stat(summ$mu, summ$lppd, varsel$d_test, stat, mu.bs = mu.bs,
-                        lppd.bs = lppd.bs, weights = summ$w, alpha = alpha, ...)
+                        lppd.bs = lppd.bs, wcv = summ$wcv, alpha = alpha, ...)
         diff <- get_stat(summ$mu, summ$lppd, varsel$d_test, stat,
                          mu.bs = summ_ref$mu, lppd.bs = summ_ref$lppd,
-                         weights = summ$w, alpha = alpha, ...)
+                         wcv = summ$wcv, alpha = alpha, ...)
         row <- data.frame(
           data = varsel$d_test$type, size = k - 1, delta = delta,
           statistic = stat, value = res$value, lq = res$lq, uq = res$uq,
@@ -126,15 +132,22 @@
   return(stat_tab)
 }
 
+## Calculates given statistic stat with standard error and confidence bounds.
+## mu.bs and lppd.bs are the pointwise mu and lppd for another model that is
+## used as a baseline for computing the difference in the given statistic,
+## for example the relative elpd. If these arguments are not given (NULL) then
+## the actual (non-relative) value is computed.
+## NOTE: Element `wcv[i]` (with i = 1, ..., N and N denoting the number of
+## observations) contains the weight of the CV fold that observation i is in. In
+## case of varsel() output, this is `NULL`. Currently, these `wcv` are
+## nonconstant (and not `NULL`) only in case of subsampled LOO CV. The actual
+## observation weights (specified by the user) are contained in
+## `d_test$weights`. These are already taken into account by
+## `<refmodel_object>$family$ll_fun()` and are thus already taken into account
+## in `lppd`. However, `mu` does not take them into account, so some further
+## adjustments are necessary below.
 get_stat <- function(mu, lppd, d_test, stat, mu.bs = NULL, lppd.bs = NULL,
-                     weights = NULL, alpha = 0.1, ...) {
-  ##
-  ## Calculates given statistic stat with standard error and confidence bounds.
-  ## mu.bs and lppd.bs are the pointwise mu and lppd for another model that is
-  ## used as a baseline for computing the difference in the given statistic,
-  ## for example the relative elpd. If these arguments are not given (NULL) then
-  ## the actual (non-relative) value is computed.
-
+                     wcv = NULL, alpha = 0.1, ...) {
   n <- length(mu)
   if (stat %in% c("mlpd", "elpd")) {
     n_notna <- sum(!is.na(lppd))
@@ -142,108 +155,134 @@ get_stat <- function(mu, lppd, d_test, stat, mu.bs = NULL, lppd.bs = NULL,
     n_notna <- sum(!is.na(mu))
   }
 
-  if (is.null(weights)) {
-    ## set default weights if not given
-    weights <- rep(1 / n_notna, n)
+  if (is.null(wcv)) {
+    ## set default CV fold weights if not given
+    wcv <- rep(1, n)
   }
-  ## ensure the weights sum to n_notna
-  weights <- n_notna * weights / sum(weights)
+  ## ensure the CV fold weights sum to n_notna
+  wcv <- n_notna * wcv / sum(wcv)
 
-  if (stat == "mlpd") {
+  if (stat %in% c("mlpd", "elpd")) {
     if (!is.null(lppd.bs)) {
-      value <- mean((lppd - lppd.bs) * weights, na.rm = TRUE)
-      value.se <- weighted.sd(lppd - lppd.bs, weights, na.rm = TRUE) /
+      value <- sum((lppd - lppd.bs) * wcv, na.rm = TRUE)
+      value.se <- weighted.sd(lppd - lppd.bs, wcv, na.rm = TRUE) *
         sqrt(n_notna)
     } else {
-      value <- mean(lppd * weights, na.rm = TRUE)
-      value.se <- weighted.sd(lppd, weights, na.rm = TRUE) /
+      value <- sum(lppd * wcv, na.rm = TRUE)
+      value.se <- weighted.sd(lppd, wcv, na.rm = TRUE) *
         sqrt(n_notna)
     }
-  } else if (stat == "elpd") {
-    if (!is.null(lppd.bs)) {
-      value <- sum((lppd - lppd.bs) * weights, na.rm = TRUE)
-      value.se <- weighted.sd(lppd - lppd.bs, weights, na.rm = TRUE) /
-        sqrt(n_notna) * n_notna
-    } else {
-      value <- sum(lppd * weights, na.rm = TRUE)
-      value.se <- weighted.sd(lppd, weights, na.rm = TRUE) /
-        sqrt(n_notna) * n_notna
+    if (stat == "mlpd") {
+      value <- value / n_notna
+      value.se <- value.se / n_notna
     }
-  } else if (stat == "mse") {
+  } else if (stat %in% c("mse", "rmse")) {
+    if (is.null(d_test$y_prop)) {
+      y <- d_test$y
+    } else {
+      y <- d_test$y_prop
+    }
+    if (!all(d_test$weights == 1)) {
+      wcv <- wcv * d_test$weights
+      wcv <- n_notna * wcv / sum(wcv)
+    }
+    if (stat == "mse") {
+      if (!is.null(mu.bs)) {
+        value <- mean(wcv * ((mu - y)^2 - (mu.bs - y)^2), na.rm = TRUE)
+        value.se <- weighted.sd((mu - y)^2 - (mu.bs - y)^2, wcv,
+                                na.rm = TRUE) /
+          sqrt(n_notna)
+      } else {
+        value <- mean(wcv * (mu - y)^2, na.rm = TRUE)
+        value.se <- weighted.sd((mu - y)^2, wcv, na.rm = TRUE) /
+          sqrt(n_notna)
+      }
+    } else if (stat == "rmse") {
+      if (!is.null(mu.bs)) {
+        ## make sure the relative rmse is computed using only those points for
+        ## which
+        mu.bs[is.na(mu)] <- NA
+        mu[is.na(mu.bs)] <- NA # both mu and mu.bs are non-NA
+        value <- sqrt(mean(wcv * (mu - y)^2, na.rm = TRUE)) -
+          sqrt(mean(wcv * (mu.bs - y)^2, na.rm = TRUE))
+        value.bootstrap1 <- bootstrap(
+          (mu - y)^2,
+          function(resid2) {
+            sqrt(mean(wcv * resid2, na.rm = TRUE))
+          },
+          ...
+        )
+        value.bootstrap2 <- bootstrap(
+          (mu.bs - y)^2,
+          function(resid2) {
+            sqrt(mean(wcv * resid2, na.rm = TRUE))
+          },
+          ...
+        )
+        value.se <- sd(value.bootstrap1 - value.bootstrap2)
+      } else {
+        value <- sqrt(mean(wcv * (mu - y)^2, na.rm = TRUE))
+        value.bootstrap <- bootstrap(
+          (mu - y)^2,
+          function(resid2) {
+            sqrt(mean(wcv * resid2, na.rm = TRUE))
+          },
+          ...
+        )
+        value.se <- sd(value.bootstrap)
+      }
+    }
+  } else if (stat %in% c("acc", "pctcorr", "auc")) {
     y <- d_test$y
-    if (!is.null(mu.bs)) {
-      value <- mean(weights * ((mu - y)^2 - (mu.bs - y)^2), na.rm = TRUE)
-      value.se <- weighted.sd((mu - y)^2 - (mu.bs - y)^2, weights,
-                              na.rm = TRUE) /
-        sqrt(n_notna)
+    if (!is.null(d_test$y_prop)) {
+      # In fact, the following stopifnot() checks should not be necessary
+      # because this case should only occur for the binomial family (where
+      # `d_test$weights` contains the numbers of trials) with more than 1 trial
+      # for at least one observation:
+      stopifnot(all(.is.wholenumber(d_test$weights)))
+      stopifnot(all(.is.wholenumber(y)))
+      stopifnot(all(0 <= y & y <= d_test$weights))
+      y <- unlist(lapply(seq_along(y), function(i_short) {
+        c(rep(0L, d_test$weights[i_short] - y[i_short]),
+          rep(1L, y[i_short]))
+      }))
+      mu <- rep(mu, d_test$weights)
+      if (!is.null(mu.bs)) {
+        mu.bs <- rep(mu.bs, d_test$weights)
+      }
+      n_notna <- sum(d_test$weights)
+      wcv <- rep(wcv, d_test$weights)
+      wcv <- n_notna * wcv / sum(wcv)
     } else {
-      value <- mean(weights * (mu - y)^2, na.rm = TRUE)
-      value.se <- weighted.sd((mu - y)^2, weights, na.rm = TRUE) /
-        sqrt(n_notna)
+      stopifnot(all(d_test$weights == 1))
     }
-  } else if (stat == "rmse") {
-    y <- d_test$y
-    if (!is.null(mu.bs)) {
-      ## make sure the relative rmse is computed using only those points for
-      ## which
-      mu.bs[is.na(mu)] <- NA
-      mu[is.na(mu.bs)] <- NA # both mu and mu.bs are non-NA
-      value <- sqrt(mean(weights * (mu - y)^2, na.rm = TRUE)) -
-        sqrt(mean(weights * (mu.bs - y)^2, na.rm = TRUE))
-      value.bootstrap1 <- bootstrap(
-        (mu - y)^2,
-        function(resid2) {
-          sqrt(mean(weights * resid2, na.rm = TRUE))
-        },
-        ...
-      )
-      value.bootstrap2 <- bootstrap(
-        (mu.bs - y)^2,
-        function(resid2) {
-          sqrt(mean(weights * resid2, na.rm = TRUE))
-        },
-        ...
-      )
-      value.se <- sd(value.bootstrap1 - value.bootstrap2)
-    } else {
-      value <- sqrt(mean(weights * (mu - y)^2, na.rm = TRUE))
-      value.bootstrap <- bootstrap(
-        (mu - y)^2,
-        function(resid2) {
-          sqrt(mean(weights * resid2, na.rm = TRUE))
-        },
-        ...
-      )
-      value.se <- sd(value.bootstrap)
-    }
-  } else if (stat == "acc" || stat == "pctcorr") {
-    y <- d_test$y
-    if (!is.null(mu.bs)) {
-      value <- mean(weights * ((round(mu) == y) - (round(mu.bs) == y)),
-                    na.rm = TRUE)
-      value.se <- weighted.sd((round(mu) == y) - (round(mu.bs) == y), weights,
-                              na.rm = TRUE) /
-        sqrt(n_notna)
-    } else {
-      value <- mean(weights * (round(mu) == y), na.rm = TRUE)
-      value.se <- weighted.sd(round(mu) == y, weights, na.rm = TRUE) /
-        sqrt(n_notna)
-    }
-  } else if (stat == "auc") {
-    y <- d_test$y
-    auc.data <- cbind(y, mu, weights)
-    if (!is.null(mu.bs)) {
-      mu.bs[is.na(mu)] <- NA # compute the relative auc using only those points
-      mu[is.na(mu.bs)] <- NA # for which both mu and mu.bs are non-NA
-      auc.data.bs <- cbind(y, mu.bs, weights)
-      value <- auc(auc.data) - auc(auc.data.bs)
-      value.bootstrap1 <- bootstrap(auc.data, auc, ...)
-      value.bootstrap2 <- bootstrap(auc.data.bs, auc, ...)
-      value.se <- sd(value.bootstrap1 - value.bootstrap2, na.rm = TRUE)
-    } else {
-      value <- auc(auc.data)
-      value.bootstrap <- bootstrap(auc.data, auc, ...)
-      value.se <- sd(value.bootstrap, na.rm = TRUE)
+    if (stat %in% c("acc", "pctcorr")) {
+      if (!is.null(mu.bs)) {
+        value <- mean(wcv * ((round(mu) == y) - (round(mu.bs) == y)),
+                      na.rm = TRUE)
+        value.se <- weighted.sd((round(mu) == y) - (round(mu.bs) == y), wcv,
+                                na.rm = TRUE) /
+          sqrt(n_notna)
+      } else {
+        value <- mean(wcv * (round(mu) == y), na.rm = TRUE)
+        value.se <- weighted.sd(round(mu) == y, wcv, na.rm = TRUE) /
+          sqrt(n_notna)
+      }
+    } else if (stat == "auc") {
+      auc.data <- cbind(y, mu, wcv)
+      if (!is.null(mu.bs)) {
+        mu.bs[is.na(mu)] <- NA # compute the AUCs using only those points
+        mu[is.na(mu.bs)] <- NA # for which both mu and mu.bs are non-NA
+        auc.data.bs <- cbind(y, mu.bs, wcv)
+        value <- auc(auc.data) - auc(auc.data.bs)
+        value.bootstrap1 <- bootstrap(auc.data, auc, ...)
+        value.bootstrap2 <- bootstrap(auc.data.bs, auc, ...)
+        value.se <- sd(value.bootstrap1 - value.bootstrap2, na.rm = TRUE)
+      } else {
+        value <- auc(auc.data)
+        value.bootstrap <- bootstrap(auc.data, auc, ...)
+        value.se <- sd(value.bootstrap, na.rm = TRUE)
+      }
     }
   }
 

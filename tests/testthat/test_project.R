@@ -296,7 +296,7 @@ test_that("`seed` works (and restores the RNG state afterwards)", {
     .Random.seed_new1 <- .Random.seed
     p_new <- do.call(project, c(
       list(object = refmods[[args_prj_i$tstsetup_ref]],
-           seed = args_prj_i$seed + 1L),
+           seed = args_prj_i$seed + 10L),
       excl_nonargs(args_prj_i, nms_excl_add = "seed")
     ))
     .Random.seed_new2 <- .Random.seed

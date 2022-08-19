@@ -72,7 +72,7 @@ remove_duplicates <- function(formula) {
 ## @return the response as a character vector.
 extract_response <- function(response) {
   if (length(response) > 1) {
-    stop("Response must have a single element.")
+    stop("Object `response` must not have length greater than 1.")
   }
   response_name_ch <- as.character(response[[1]])
   if ("cbind" %in% response_name_ch) {
@@ -527,46 +527,6 @@ subset_formula_and_data <- function(formula, terms_, data, y = NULL,
   return(nlist(formula, data))
 }
 
-# ## Utility to just replace the response in the data frame
-# ## @param formula A formula for a valid model.
-# ## @param terms_ A vector of terms to subset.
-# ## @param split_formula If TRUE breaks the response down into single response
-# ##   formulas.
-# ## Default FALSE. It only works if `y` represents a multi-output response.
-# ## @return a function that replaces the response in the data with arguments
-# ## @param y The response vector. Default NULL.
-# ## @param data The original data frame for the full formula.
-# get_replace_response <- function(formula, terms_, split_formula = FALSE) {
-#   formula <- make_formula(terms_, formula = formula)
-#   tt <- extract_terms_response(formula)
-#   response_name <- tt$response
-#
-#   response_cols <- paste0(".", response_name)
-#   replace_response <- function(y, data) {
-#     response_ncol <- ncol(y) %||% 1
-#     if (!is.null(ncol(y)) && ncol(y) > 1) {
-#       response_cols <- paste0(response_cols, ".", seq_len(ncol(y)))
-#       if (!split_formula) {
-#         response_vector <- paste0(
-#           "cbind(",
-#           paste(response_cols, collapse = ", "),
-#           ")"
-#         )
-#       }
-#     }
-#
-#     ## don't overwrite original y name
-#     if (all(response_cols %in% colnames(data))) {
-#       data[, response_cols] <- y
-#     } else {
-#       data <- data.frame(.z = y, data)
-#       colnames(data)[seq_len(response_ncol)] <- response_cols
-#     }
-#     return(data)
-#   }
-#   return(replace_response)
-# }
-
 ## Subsets a formula by the given terms.
 ## @param terms_ A vector of terms to subset from the right hand side.
 ## @return A formula object with the collapsed terms.
@@ -722,22 +682,6 @@ count_terms_chosen <- function(list_of_terms, duplicates = TRUE,
   )
 }
 
-## Utility that checks if the next submodel is redundant with the current one.
-## @param formula The reference models' formula.
-## @param current A list of terms included in the current submodel.
-## @param new The new term to add to the submodel.
-## @return TRUE if the new term results in a redundant model, FALSE otherwise.
-is_next_submodel_redundant <- function(current, new) {
-  old_submodel <- current
-  new_submodel <- c(current, new)
-  if (count_terms_chosen(new_submodel) >
-      count_terms_chosen(old_submodel)) {
-    return(FALSE)
-  } else {
-    return(TRUE)
-  }
-}
-
 ## Helper function to evaluate right hand side formulas in a context
 ## @param formula Formula to evaluate.
 ## @param data Data with which to evaluate.
@@ -754,55 +698,6 @@ lhs <- function(x) {
   x <- as.formula(x)
   if (length(x) == 3L) update(x, . ~ 1) else NULL
 }
-
-# # taken from brms
-# ## validate formulas dedicated to response variables
-# ## @param x coerced to a formula object
-# ## @param empty_ok is an empty left-hand-side ok?
-# ## @return a formula of the form <response> ~ 1
-# validate_resp_formula <- function(x, empty_ok = TRUE) {
-#   out <- lhs(as.formula(x))
-#   if (is.null(out)) {
-#     if (empty_ok) {
-#       out <- ~ 1
-#     } else {
-#       str_x <- formula2str(x, space = "trim")
-#       stop2("Response variable is missing in formula ", str_x)
-#     }
-#   }
-#   out <- gsub("\\|+[^~]*~", "~", formula2str(out))
-#   out <- try(formula(out), silent = TRUE)
-#   if (is(out, "try-error")) {
-#     str_x <- formula2str(x, space = "trim")
-#     stop2("Incorrect use of '|' on the left-hand side of ", str_x)
-#   }
-#   environment(out) <- environment(x)
-#   out
-# }
-
-# # taken from brms
-# ## convert a formula to a character string
-# ## @param formula a model formula
-# ## @param rm a vector of to elements indicating how many characters
-# ##   should be removed at the beginning and end of the string respectively
-# ## @param space how should whitespaces be treated?
-# ## @return a single character string or NULL
-# formula2str <- function(formula, rm = c(0, 0), space = c("rm", "trim")) {
-#   if (is.null(formula)) {
-#     return(NULL)
-#   }
-#   formula <- as.formula(formula)
-#   space <- match.arg(space)
-#   if (anyNA(rm[2])) rm[2] <- 0
-#   x <- Reduce(paste, deparse(formula))
-#   x <- gsub("[\t\r\n]+", "", x, perl = TRUE)
-#   if (space == "trim") {
-#     x <- gsub(" {1,}", " ", x, perl = TRUE)
-#   } else {
-#     x <- gsub(" ", "", x, perl = TRUE)
-#   }
-#   substr(x, 1 + rm[1], nchar(x) - rm[2])
-# }
 
 ## remove intercept from formula
 ## @param formula a model formula
