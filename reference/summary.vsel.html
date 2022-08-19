@@ -18,7 +18,7 @@ cv_varsel())."><meta property="og:image" content="https://mc-stan.org/projpred/l
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">projpred</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">2.1.2</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">2.2.0</span>
       </span>
     </div>
 
@@ -138,8 +138,9 @@ calculated. Note that <code>nterms_max</code> does not count the intercept, so u
 
 
 <dt>stats</dt>
-<dd><p>One or more character strings determining which statistics to
-calculate. Available statistics are:</p><ul><li><p><code>"elpd"</code>: (expected) sum of log predictive densities.</p></li>
+<dd><p>One or more character strings determining which performance
+statistics (i.e., utilities or losses) to calculate. Available statistics
+are:</p><ul><li><p><code>"elpd"</code>: (expected) sum of log predictive densities.</p></li>
 <li><p><code>"mlpd"</code>: mean log predictive density, that is, <code>"elpd"</code> divided by the
 number of observations.</p></li>
 <li><p><code>"mse"</code>: mean squared error.</p></li>
@@ -188,7 +189,8 @@ terms of <code>stats[1]</code>), respectively.</p></dd>
 bootstrapping (if applicable; see argument <code>stats</code>). Currently, relevant
 arguments are <code>B</code> (the number of bootstrap samples, defaulting to <code>2000</code>)
 and <code>seed</code> (see <code><a href="https://rdrr.io/r/base/Random.html" class="external-link">set.seed()</a></code>, defaulting to
-<code>sample.int(.Machine$integer.max, 1)</code>).</p></dd>
+<code>sample.int(.Machine$integer.max, 1)</code>, but can also be <code>NA</code> to not call
+<code><a href="https://rdrr.io/r/base/Random.html" class="external-link">set.seed()</a></code> at all).</p></dd>
 
 </dl></div>
 

@@ -21,7 +21,7 @@ different for these two methods, see below for details.'><meta property="og:imag
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">projpred</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">2.1.2</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">2.2.0</span>
       </span>
     </div>
 
@@ -138,8 +138,8 @@ different for these two methods, see below for details.</p>
 
 <dt>seed</dt>
 <dd><p>Pseudorandom number generation (PRNG) seed by which the same
-results can be obtained again if needed. If <code>NULL</code>, no seed is set and
-therefore, the results are not reproducible. See <code><a href="https://rdrr.io/r/base/Random.html" class="external-link">set.seed()</a></code> for details.</p></dd>
+results can be obtained again if needed. Passed to argument <code>seed</code> of
+<code><a href="https://rdrr.io/r/base/Random.html" class="external-link">set.seed()</a></code>, but can also be <code>NA</code> to not call <code><a href="https://rdrr.io/r/base/Random.html" class="external-link">set.seed()</a></code> at all.</p></dd>
 
 
 <dt>out</dt>

@@ -22,7 +22,7 @@ for the use of \(K\)-fold CV in projpred."><meta property="og:image" content="ht
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">projpred</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">2.1.2</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">2.2.0</span>
       </span>
     </div>
 
@@ -293,8 +293,8 @@ analogously for higher-order joint effects, e.g., of three predictors).</p>
     <p>Arguments <code>ref_predfun</code>, <code>proj_predfun</code>, and <code>div_minimizer</code> may be <code>NULL</code>
 for using an internal default. Otherwise, let \(N\) denote the number of
 observations (in case of CV, these may be reduced to each fold),
-\(S_{\mbox{ref}}\) the number of posterior draws for the reference
-model's parameters, and \(S_{\mbox{prj}}\) the number of (possibly
+\(S_{\mathrm{ref}}\) the number of posterior draws for the reference
+model's parameters, and \(S_{\mathrm{prj}}\) the number of (possibly
 clustered) parameter draws for projection (short: the number of projected
 draws). Then the functions supplied to these arguments need to have the
 following prototypes:</p><ul><li><p><code>ref_predfun</code>: <code>ref_predfun(fit, newdata = NULL)</code> where:</p><ul><li><p><code>fit</code> accepts the reference model fit as given in argument <code>object</code>
@@ -304,7 +304,7 @@ following prototypes:</p><ul><li><p><code>ref_predfun</code>: <code>ref_predfun(
 typically stored in <code>fit</code>) or data for new observations (at least in the
 form of a <code>data.frame</code>).</p></li>
 </ul></li>
-<li><p><code>proj_predfun</code>: <code>proj_predfun(fits, newdata)</code> where:</p><ul><li><p><code>fits</code> accepts a <code>list</code> of length \(S_{\mbox{prj}}\)
+<li><p><code>proj_predfun</code>: <code>proj_predfun(fits, newdata)</code> where:</p><ul><li><p><code>fits</code> accepts a <code>list</code> of length \(S_{\mathrm{prj}}\)
 containing this number of submodel fits. This <code>list</code> is the same as that
 returned by <code><a href="project.html">project()</a></code> in its output element <code>submodl</code> (which in turn is
 the same as the return value of <code>div_minimizer</code>, except if <code><a href="project.html">project()</a></code>
@@ -315,30 +315,31 @@ as with <code>refit_prj = FALSE</code>).</p></li>
 </ul></li>
 <li><p><code>div_minimizer</code> does not need to have a specific prototype, but it needs to
 be able to be called with the following arguments:</p><ul><li><p><code>formula</code> accepts either a standard <code><a href="https://rdrr.io/r/stats/formula.html" class="external-link">formula</a></code> with a single response
-(if \(S_{\mbox{prj}} = 1\)) or a <code><a href="https://rdrr.io/r/stats/formula.html" class="external-link">formula</a></code> with
-\(S_{\mbox{prj}} &gt; 1\) response variables <code><a href="https://rdrr.io/r/base/cbind.html" class="external-link">cbind()</a></code>-ed on
+(if \(S_{\mathrm{prj}} = 1\)) or a <code><a href="https://rdrr.io/r/stats/formula.html" class="external-link">formula</a></code> with
+\(S_{\mathrm{prj}} &gt; 1\) response variables <code><a href="https://rdrr.io/r/base/cbind.html" class="external-link">cbind()</a></code>-ed on
 the left-hand side in which case the projection has to be performed for
 each of the response variables separately.</p></li>
 <li><p><code>data</code> accepts a <code>data.frame</code> to be used for the projection.</p></li>
 <li><p><code>family</code> accepts a <code><a href="https://rdrr.io/r/stats/family.html" class="external-link">family</a></code> object.</p></li>
 <li><p><code>weights</code> accepts either observation weights (at least in the form of a
 numeric vector) or <code>NULL</code> (for using a vector of ones as weights).</p></li>
-<li><p><code>projpred_var</code> accepts an \(N \times S_{\mbox{prj}}\)
+<li><p><code>projpred_var</code> accepts an \(N \times S_{\mathrm{prj}}\)
 matrix of predictive variances (necessary for <span class="pkg">projpred</span>'s internal
 GLM fitter).</p></li>
 <li><p><code>projpred_regul</code> accepts a single numeric value as supplied to argument
 <code>regul</code> of <code><a href="project.html">project()</a></code>, for example.</p></li>
 <li><p><code>...</code> accepts further arguments specified by the user.</p></li>
 </ul></li>
-</ul><p>The return value of these functions needs to be:</p><ul><li><p><code>ref_predfun</code>: an \(N \times S_{\mbox{ref}}\) matrix.</p></li>
-<li><p><code>proj_predfun</code>: an \(N \times S_{\mbox{prj}}\) matrix.</p></li>
-<li><p><code>div_minimizer</code>: a <code>list</code> of length \(S_{\mbox{prj}}\) containing
-this number of submodel fits.</p></li>
+</ul><p>The return value of these functions needs to be:</p><ul><li><p><code>ref_predfun</code>: an \(N \times S_{\mathrm{ref}}\) matrix.</p></li>
+<li><p><code>proj_predfun</code>: an \(N \times S_{\mathrm{prj}}\) matrix.</p></li>
+<li><p><code>div_minimizer</code>: a <code>list</code> of length \(S_{\mathrm{prj}}\)
+containing this number of submodel fits.</p></li>
 </ul></div>
     <div id="argument-extract-model-data">
     <h2>Argument <code>extract_model_data</code></h2>
     <p>The function supplied to argument <code>extract_model_data</code> needs to have the
-prototype</p><div class="sourceCode r"><pre><code><span><span class="fu">extract_model_data</span><span class="op">(</span><span class="va">object</span>, <span class="va">newdata</span>, wrhs <span class="op">=</span> <span class="cn">NULL</span>, orhs <span class="op">=</span> <span class="cn">NULL</span>, extract_y <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span></code></pre><p></p></div>
+prototype</p>
+<p></p><div class="sourceCode r"><pre><code><span><span class="fu">extract_model_data</span><span class="op">(</span><span class="va">object</span>, <span class="va">newdata</span>, wrhs <span class="op">=</span> <span class="cn">NULL</span>, orhs <span class="op">=</span> <span class="cn">NULL</span>, extract_y <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span></code></pre><p></p></div>
 <p>where:</p><ul><li><p><code>object</code> accepts the reference model fit as given in argument <code>object</code> (but
 possibly re-fitted to a subset of the observations, as done in \(K\)-fold
 CV).</p></li>
@@ -356,7 +357,8 @@ element <code>y</code> (see below) shall be <code>NULL</code> (<code>TRUE</code>
 </ul><p>The return value of <code>extract_model_data</code> needs to be a <code>list</code> with elements
 <code>y</code>, <code>weights</code>, and <code>offset</code>, each being a numeric vector containing the data
 for the response, the observation weights, and the offsets, respectively. An
-exception is that <code>y</code> may also be <code>NULL</code> (depending on argument <code>extract_y</code>).</p>
+exception is that <code>y</code> may also be <code>NULL</code> (depending on argument <code>extract_y</code>)
+or a <code>factor</code>.</p>
     </div>
 
     <div id="ref-examples">

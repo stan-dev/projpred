@@ -17,7 +17,7 @@
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">projpred</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">2.1.2</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">2.2.0</span>
       </span>
     </div>
 
@@ -102,6 +102,39 @@
       <small>Source: <a href="https://github.com/stan-dev/projpred/blob/HEAD/NEWS.md" class="external-link"><code>NEWS.md</code></a></small>
     </div>
 
+    <div class="section level2">
+<h2 class="page-header" data-toc-text="2.2.0" id="projpred-220">projpred 2.2.0<a class="anchor" aria-label="anchor" href="#projpred-220"></a></h2>
+<div class="section level3">
+<h3 id="major-changes-2-2-0">Major changes<a class="anchor" aria-label="anchor" href="#major-changes-2-2-0"></a></h3>
+<ul><li>In the <code>validate_search = FALSE</code> case of <code><a href="../reference/cv_varsel.html">cv_varsel()</a></code> (with <code>cv_method = "LOO"</code>), the PSIS weights are now calculated based on the reference model (they used to be calculated based on the submodels which is incorrect). (GitHub: <a href="https://github.com/stan-dev/projpred/issues/325" class="external-link">#325</a>)</li>
+<li>Some long-standing severe bugs (GitHub issues <a href="https://github.com/stan-dev/projpred/issues/329" class="external-link">#329</a>, <a href="https://github.com/stan-dev/projpred/issues/330" class="external-link">#330</a>, and <a href="https://github.com/stan-dev/projpred/issues/342" class="external-link">#342</a>) have been fixed, concerning the performance evaluation of models with nontrivial observation weights (i.e., models where at least one observation had a weight differing from 1). Concerned performance statistics were <code>"mse"</code>, <code>"rmse"</code>, <code>"acc"</code> (= <code>"pctcorr"</code>), and <code>"auc"</code> (i.e., all performance statistics except for <code>"elpd"</code> and <code>"mlpd"</code>).</li>
+<li>
+<code><a href="../reference/plot.vsel.html">plot.vsel()</a></code> and <code><a href="../reference/suggest_size.html">suggest_size()</a></code> gain a new argument <code>thres_elpd</code>. By default, this argument doesn’t have any impact, but a non-<code>NA</code> value can be used for a customized model size selection rule (see <code><a href="../reference/suggest_size.html">?suggest_size</a></code> for details). (GitHub: <a href="https://github.com/stan-dev/projpred/issues/335" class="external-link">#335</a>)</li>
+</ul></div>
+<div class="section level3">
+<h3 id="minor-changes-2-2-0">Minor changes<a class="anchor" aria-label="anchor" href="#minor-changes-2-2-0"></a></h3>
+<ul><li>Several improvements in the documentation (especially in the explanation of the <code><a href="../reference/suggest_size.html">suggest_size()</a></code> heuristic).</li>
+<li>Improvement of the numerical stability for some link functions, achieved by avoiding unnecessary back-and-forth transformations between latent space and response space. (GitHub: <a href="https://github.com/stan-dev/projpred/issues/337" class="external-link">#337</a>, <a href="https://github.com/stan-dev/projpred/issues/338" class="external-link">#338</a>)</li>
+<li>All arguments <code>seed</code> and <code>.seed</code> are now allowed to be <code>NA</code> for not calling <code><a href="https://rdrr.io/r/base/Random.html" class="external-link">set.seed()</a></code> internally at all.</li>
+<li>Argument <code>d_test</code> of <code><a href="../reference/varsel.html">varsel()</a></code> is not considered as an internal feature anymore. This was possible after fixing a bug for <code>d_test</code> (see below). (GitHub: <a href="https://github.com/stan-dev/projpred/issues/341" class="external-link">#341</a>)</li>
+<li>The order of the observations in the sub-elements of <code>&lt;vsel_object&gt;$summaries</code> and <code>&lt;vsel_object&gt;$d_test</code> now corresponds to the order of the observations in the original dataset if <code>&lt;vsel_object&gt;</code> was created by a call to <code>cv_varsel([...], cv_method = "kfold")</code> (formerly, in that case, the observations in those sub-elements were ordered by fold). Thereby, the order of the observations in those sub-elements now always corresponds to the order of the observations in the original dataset, except if <code>&lt;vsel_object&gt;</code> was created by a call to <code>varsel([...], d_test = &lt;non-NULL_d_test_object&gt;)</code>, in which case the order of the observations in those sub-elements corresponds to the order of the observations in <code>&lt;non-NULL_d_test_object&gt;</code>. (GitHub: <a href="https://github.com/stan-dev/projpred/issues/341" class="external-link">#341</a>)</li>
+</ul></div>
+<div class="section level3">
+<h3 id="bug-fixes-2-2-0">Bug fixes<a class="anchor" aria-label="anchor" href="#bug-fixes-2-2-0"></a></h3>
+<ul><li>Fix GitHub issue <a href="https://github.com/stan-dev/projpred/issues/324" class="external-link">#324</a> (large <code>search_terms</code> caused the R session to crash).</li>
+<li>Fix GitHub issue <a href="https://github.com/stan-dev/projpred/issues/204" class="external-link">#204</a>. (GitHub: <a href="https://github.com/stan-dev/projpred/issues/325" class="external-link">#325</a>)</li>
+<li>Fix the <code>validate_search = FALSE</code> bug described above in “Major changes”: The PSIS weights are now calculated based on the reference model (they used to be calculated based on the submodels which is incorrect). (GitHub: <a href="https://github.com/stan-dev/projpred/issues/325" class="external-link">#325</a>)</li>
+<li>Fix <code>\mbox{}</code> commands displayed incorrectly in the HTML help from R version 4.2.0 on. (GitHub: <a href="https://github.com/stan-dev/projpred/issues/326" class="external-link">#326</a>)</li>
+<li>Fix GitHub issue <a href="https://github.com/stan-dev/projpred/issues/329" class="external-link">#329</a> (see also “Major changes” above).</li>
+<li>Fix GitHub issue <a href="https://github.com/stan-dev/projpred/issues/331" class="external-link">#331</a>.</li>
+<li>
+<code><a href="../reference/plot.vsel.html">plot.vsel()</a></code> now draws the dashed red horizontal line for the reference model (and—if present—the dotted black horizontal line for the baseline model) first (i.e., before the submodel-specific graphical elements), to avoid overplotting.</li>
+<li>Fix GitHub issue <a href="https://github.com/stan-dev/projpred/issues/339" class="external-link">#339</a>. (GitHub: <a href="https://github.com/stan-dev/projpred/issues/340" class="external-link">#340</a>)</li>
+<li>Fix argument <code>d_test</code> of <code><a href="../reference/varsel.html">varsel()</a></code>: Not only the predictive performance of the <em>reference model</em> needs to be evaluated on the test data, but also the predictive performance of the <em>submodels</em>. (GitHub: <a href="https://github.com/stan-dev/projpred/issues/341" class="external-link">#341</a>)</li>
+<li>Fix GitHub issue <a href="https://github.com/stan-dev/projpred/issues/342" class="external-link">#342</a> (see also “Major changes” above).</li>
+<li>Fix GitHub issue <a href="https://github.com/stan-dev/projpred/issues/330" class="external-link">#330</a> (see also “Major changes” above). (GitHub: <a href="https://github.com/stan-dev/projpred/issues/344" class="external-link">#344</a>, commit 23e7101)</li>
+</ul></div>
+</div>
     <div class="section level2">
 <h2 class="page-header" data-toc-text="2.1.2" id="projpred-212">projpred 2.1.2<small>2022-05-13</small><a class="anchor" aria-label="anchor" href="#projpred-212"></a></h2>
 <div class="section level3">
@@ -189,7 +222,7 @@
 <li>
 <strong>projpred</strong>’s internal <code>div_minimizer</code> functions have been unified into a single <code>div_minimizer</code> which chooses an appropriate submodel fitter based on the formula of the submodel, not based on that of the reference model. Furthermore, the automatic handling of errors in the submodel fitters has been improved. (GitHub: <a href="https://github.com/stan-dev/projpred/issues/230" class="external-link">#230</a>)</li>
 <li>Improve the axis labels in <code><a href="../reference/plot.vsel.html">plot.vsel()</a></code>. (GitHub: <a href="https://github.com/stan-dev/projpred/issues/234" class="external-link">#234</a>, <a href="https://github.com/stan-dev/projpred/issues/270" class="external-link">#270</a>)</li>
-<li>Handle <strong>rstanarm</strong>’s GitHub issue <a href="https://github.com/stan-dev/projpred/issues/551" class="external-link">#551</a>. This implies that <strong>projpred</strong>’s default <code>cvfun</code> for <code>stanreg</code> fits will now always use <em>inner</em> parallelization in <code><a href="https://mc-stan.org/loo/reference/kfold-generic.html" class="external-link">rstanarm::kfold()</a></code> (i.e., across chains, not across CV folds), with <code>getOption("mc.cores", 1)</code> cores. We do so on all systems (not only Windows). (GitHub: <a href="https://github.com/stan-dev/projpred/issues/249" class="external-link">#249</a>)</li>
+<li>Handle <strong>rstanarm</strong>’s GitHub issue <a href="https://github.com/stan-dev/projpred/issues/551" class="external-link">#551</a>. This implies that <strong>projpred</strong>’s default <code>cvfun</code> for <code>stanreg</code> fits will now always use <em>inner</em> parallelization in <code><a href="https://mc-stan.org/rstanarm/reference/kfold.stanreg.html" class="external-link">rstanarm::kfold.stanreg()</a></code> (i.e., across chains, not across CV folds), with <code>getOption("mc.cores", 1)</code> cores. We do so on all systems (not only Windows). (GitHub: <a href="https://github.com/stan-dev/projpred/issues/249" class="external-link">#249</a>)</li>
 <li>Argument <code>fit</code> of <code><a href="../reference/refmodel-init-get.html">init_refmodel()</a></code>’s argument <code>proj_predfun</code> was renamed to <code>fits</code>. This is a non-breaking change since all calls to <code>proj_predfun</code> in <strong>projpred</strong> have that argument unnamed. However, this cannot be guaranteed in the future, so we strongly encourage users with a custom <code>proj_predfun</code> to rename argument <code>fit</code> to <code>fits</code>. (GitHub: <a href="https://github.com/stan-dev/projpred/issues/263" class="external-link">#263</a>)</li>
 <li>
 <code><a href="../reference/refmodel-init-get.html">init_refmodel()</a></code> has gained argument <code>cvrefbuilder</code> which may be a custom function for constructing the K reference models in a K-fold CV. (GitHub: <a href="https://github.com/stan-dev/projpred/issues/271" class="external-link">#271</a>)</li>

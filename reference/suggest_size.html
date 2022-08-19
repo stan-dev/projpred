@@ -21,7 +21,7 @@ final decision based on what is most appropriate for the problem at hand.'><meta
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">projpred</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">2.1.2</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">2.2.0</span>
       </span>
     </div>
 
@@ -124,6 +124,7 @@ final decision based on what is most appropriate for the problem at hand.</p>
 <span>  stat <span class="op">=</span> <span class="st">"elpd"</span>,</span>
 <span>  pct <span class="op">=</span> <span class="fl">0</span>,</span>
 <span>  type <span class="op">=</span> <span class="st">"upper"</span>,</span>
+<span>  thres_elpd <span class="op">=</span> <span class="cn">NA</span>,</span>
 <span>  warnings <span class="op">=</span> <span class="cn">TRUE</span>,</span>
 <span>  <span class="va">...</span></span>
 <span><span class="op">)</span></span></code></pre></div>
@@ -144,8 +145,8 @@ passed here.</p></dd>
 
 
 <dt>stat</dt>
-<dd><p>Statistic used for the decision. See <code><a href="summary.vsel.html">summary.vsel()</a></code> for
-possible choices.</p></dd>
+<dd><p>Performance statistic (i.e., utility or loss) used for the
+decision. See argument <code>stats</code> of <code><a href="summary.vsel.html">summary.vsel()</a></code> for possible choices.</p></dd>
 
 
 <dt>pct</dt>
@@ -160,6 +161,15 @@ based on the upper or lower confidence interval bound, respectively. See
 section "Details" below for more information.</p></dd>
 
 
+<dt>thres_elpd</dt>
+<dd><p>Only relevant if <code>stat %in% c("elpd", "mlpd")</code>. The
+threshold for the ELPD difference (taking the submodel's ELPD minus the
+baseline model's ELPD) above which the submodel's ELPD is considered to be
+close enough to the baseline model's ELPD. An equivalent rule is applied in
+case of the MLPD. See section "Details" for a formalization. Supplying <code>NA</code>
+deactivates this.</p></dd>
+
+
 <dt>warnings</dt>
 <dd><p>Mainly for internal use. A single logical value indicating
 whether to throw warnings if automatic suggestion fails. Usually there is
@@ -168,20 +178,33 @@ no reason to set this to <code>FALSE</code>.</p></dd>
 </dl></div>
     <div id="details">
     <h2>Details</h2>
-    <p>The suggested model size is the smallest model size for which either
-the lower or upper bound (depending on argument <code>type</code>) of the
-normal-approximation confidence interval (with nominal coverage <code>1 - alpha</code>, see argument <code>alpha</code> of <code><a href="summary.vsel.html">summary.vsel()</a></code>) for \(u_k -
-  u_{\mbox{base}}\) (with \(u_k\) denoting the \(k\)-th
-submodel's utility and \(u_{\mbox{base}}\) denoting the baseline
-model's utility) falls above (or is equal to) $$\mbox{pct} * (u_0 -
-  u_{\mbox{base}})$$ where \(u_0\) denotes the null
-model utility. The baseline is either the reference model or the best
-submodel found (see argument <code>baseline</code> of <code><a href="summary.vsel.html">summary.vsel()</a></code>).</p>
-<p>For example, <code>alpha = 0.32</code>, <code>pct = 0</code>, and <code>type = "upper"</code> means that we
-select the smallest model size for which the upper bound of the confidence
-interval for \(u_k - u_{\mbox{base}}\) with coverage 68%
-exceeds (or is equal to) zero, that is, for which the submodel's utility is
-at most one standard error smaller than the baseline model's utility.</p>
+    <p>In general (beware of special extensions below), the suggested model
+size is the smallest model size \(k \in \{0, 1, ...,
+  \texttt{nterms\_max}\}\) for which either the
+lower or upper bound (depending on argument <code>type</code>) of the
+normal-approximation confidence interval (with nominal coverage <code>1 - alpha</code>; see argument <code>alpha</code> of <code><a href="summary.vsel.html">summary.vsel()</a></code>) for \(U_k -
+  U_{\mathrm{base}}\) (with \(U_k\) denoting the \(k\)-th
+submodel's true utility and \(U_{\mathrm{base}}\) denoting the
+baseline model's true utility) falls above (or is equal to)
+$$\texttt{pct} \cdot (u_0 - u_{\mathrm{base}})$$
+where \(u_0\) denotes the null model's estimated utility and
+\(u_{\mathrm{base}}\) the baseline model's estimated utility. The
+baseline model is either the reference model or the best submodel found
+(see argument <code>baseline</code> of <code><a href="summary.vsel.html">summary.vsel()</a></code>).</p>
+<p>If <code>!is.na(thres_elpd)</code> and <code>stat = "elpd"</code>, the decision rule above is
+extended: The suggested model size is then the smallest model size \(k\)
+fulfilling the rule above <em>or</em> \(u_k - u_{\mathrm{base}} &gt;
+  \texttt{thres\_elpd}\). Correspondingly, in case
+of <code>stat = "mlpd"</code> (and <code>!is.na(thres_elpd)</code>), the suggested model size is
+the smallest model size \(k\) fulfilling the rule above <em>or</em> \(u_k -
+  u_{\mathrm{base}} &gt; \frac{\texttt{thres\_elpd}}{N}\) with \(N\) denoting the number of observations.</p>
+<p>For example (disregarding the special extensions in case of <code>stat = "elpd"</code>
+or <code>stat = "mlpd"</code>), <code>alpha = 0.32</code>, <code>pct = 0</code>, and <code>type = "upper"</code> means
+that we select the smallest model size for which the upper bound of the 68%
+confidence interval for \(U_k - U_{\mathrm{base}}\) exceeds
+(or is equal to) zero, that is, for which the submodel's utility estimate
+is at most one standard error smaller than the baseline model's utility
+estimate (with that standard error referring to the utility <em>difference</em>).</p>
     </div>
     <div id="note">
     <h2>Note</h2>

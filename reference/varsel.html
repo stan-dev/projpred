@@ -22,7 +22,7 @@ the solution path."><meta property="og:image" content="https://mc-stan.org/projp
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">projpred</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">2.1.2</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">2.2.0</span>
       </span>
     </div>
 
@@ -161,9 +161,10 @@ the latter only if <code>refit_prj</code> is <code>TRUE</code>).</p></dd>
 
 
 <dt>d_test</dt>
-<dd><p>For internal use only. A <code>list</code> providing information about the
-test set which is used for evaluating the predictive performance of the
-reference model. If not provided, the training set is used.</p></dd>
+<dd><p>A <code>list</code> of the structure outlined in section "Argument
+<code>d_test</code>" below, providing test data for evaluating the predictive
+performance of the submodels as well as of the reference model. If <code>NULL</code>,
+the training data is used.</p></dd>
 
 
 <dt>method</dt>
@@ -269,12 +270,11 @@ formula.</p></dd>
 
 <dt>seed</dt>
 <dd><p>Pseudorandom number generation (PRNG) seed by which the same
-results can be obtained again if needed. If <code>NULL</code>, no seed is set and
-therefore, the results are not reproducible. See <code><a href="https://rdrr.io/r/base/Random.html" class="external-link">set.seed()</a></code> for details.
-Here, this seed is used for clustering the reference model's posterior
-draws (if <code>!is.null(nclusters)</code>) and for drawing new group-level effects
-when predicting from a multilevel submodel (however, not yet in case of a
-GAMM).</p></dd>
+results can be obtained again if needed. Passed to argument <code>seed</code> of
+<code><a href="https://rdrr.io/r/base/Random.html" class="external-link">set.seed()</a></code>, but can also be <code>NA</code> to not call <code><a href="https://rdrr.io/r/base/Random.html" class="external-link">set.seed()</a></code> at all. Here,
+this seed is used for clustering the reference model's posterior draws (if
+<code>!is.null(nclusters)</code>) and for drawing new group-level effects when
+predicting from a multilevel submodel (however, not yet in case of a GAMM).</p></dd>
 
 </dl></div>
     <div id="value">
@@ -327,6 +327,16 @@ two candidates. At the last model size of 4, <code>y ~ x1 + x2 + x3</code> would
 the only candidate. As another example, to exclude <code>x1</code> from the search,
 specify <code>search_terms = c("x2", "x3", "x2 + x3")</code>.</p>
     </div>
+    <div id="argument-d-test">
+    <h2>Argument <code>d_test</code></h2>
+    <p>If not <code>NULL</code>, then <code>d_test</code> needs to be a <code>list</code> with the following
+elements:</p><ul><li><p><code>data</code>: a <code>data.frame</code> containing the predictor variables for the test set.</p></li>
+<li><p><code>offset</code>: a numeric vector containing the offset values for the test set
+(if there is no offset, use a vector of zeros).</p></li>
+<li><p><code>weights</code>: a numeric vector containing the observation weights for the test
+set (if there are no observation weights, use a vector of ones).</p></li>
+<li><p><code>y</code>: a numeric vector containing the response values for the test set.</p></li>
+</ul></div>
     <div id="see-also">
     <h2>See also</h2>
     <div class="dont-index"><p><code><a href="cv_varsel.html">cv_varsel()</a></code></p></div>

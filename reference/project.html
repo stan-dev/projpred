@@ -20,7 +20,7 @@ submodels of specific sizes."><meta property="og:image" content="https://mc-stan
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">projpred</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">2.1.2</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">2.2.0</span>
       </span>
     </div>
 
@@ -156,7 +156,8 @@ is not of class <code>vsel</code>, <code>solution_terms</code> must not be <code
 <dd><p>A single logical value indicating whether to fit the
 submodels (again) (<code>TRUE</code>) or to retrieve the fitted submodels from
 <code>object</code> (<code>FALSE</code>). For an <code>object</code> which is not of class <code>vsel</code>,
-<code>refit_prj</code> must be <code>TRUE</code>.</p></dd>
+<code>refit_prj</code> must be <code>TRUE</code>. Note that currently, <code>refit_prj = FALSE</code>
+requires some caution, see GitHub issues #168 and #211.</p></dd>
 
 
 <dt>ndraws</dt>
@@ -177,12 +178,11 @@ class <code>datafit</code> (in which case one cluster is used). For the meaning 
 
 <dt>seed</dt>
 <dd><p>Pseudorandom number generation (PRNG) seed by which the same
-results can be obtained again if needed. If <code>NULL</code>, no seed is set and
-therefore, the results are not reproducible. See <code><a href="https://rdrr.io/r/base/Random.html" class="external-link">set.seed()</a></code> for details.
-Here, this seed is used for clustering the reference model's posterior
-draws (if <code>!is.null(nclusters)</code>) and for drawing new group-level effects
-when predicting from a multilevel submodel (however, not yet in case of a
-GAMM).</p></dd>
+results can be obtained again if needed. Passed to argument <code>seed</code> of
+<code><a href="https://rdrr.io/r/base/Random.html" class="external-link">set.seed()</a></code>, but can also be <code>NA</code> to not call <code><a href="https://rdrr.io/r/base/Random.html" class="external-link">set.seed()</a></code> at all. Here,
+this seed is used for clustering the reference model's posterior draws (if
+<code>!is.null(nclusters)</code>) and for drawing new group-level effects when
+predicting from a multilevel submodel (however, not yet in case of a GAMM).</p></dd>
 
 
 <dt>regul</dt>
@@ -208,8 +208,9 @@ minimizer (if <code>refit_prj</code> is <code>TRUE</code>).</p></dd>
 <dd><p>Projected draws for the dispersion parameter.</p></dd>
 
 <dt><code>kl</code></dt>
-<dd><p>The KL divergence from the submodel to the reference
-model.</p></dd>
+<dd><p>The Kullback-Leibler (KL) divergence from the submodel to the
+reference model. Note that in case of the Gaussian family, this is not
+the actual KL divergence but merely a proxy.</p></dd>
 
 <dt><code>weights</code></dt>
 <dd><p>Weights for the projected draws.</p></dd>
@@ -244,6 +245,8 @@ the number of posterior draws in the reference model (which is <code>1</code> fo
 posterior draws in the reference model may result in slightly inaccurate
 projection performance. Increasing these arguments affects the computation
 time linearly.</p>
+<p>Note that if <code>project()</code> is applied to output from <code><a href="cv_varsel.html">cv_varsel()</a></code>, then
+<code>refit_prj = FALSE</code> will take the results from the <em>full-data</em> search.</p>
     </div>
 
     <div id="ref-examples">
