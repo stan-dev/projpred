@@ -245,10 +245,11 @@ f_binom <- f_brnll <- binomial()
 f_poiss <- poisson()
 dis_tst <- runif(1L, 1, 2)
 wobs_tst <- sample(1:4, nobsv, replace = TRUE)
+offs_expr <- expression(fam_nm != "brnll" && !mod_nm %in% c("gam", "gamm"))
 dat <- lapply(mod_nms, function(mod_nm) {
   lapply(fam_nms, function(fam_nm) {
     pred_link <- get(paste0("eta_", mod_nm))
-    if (fam_nm != "brnll" && !mod_nm %in% c("gam", "gamm")) {
+    if (eval(offs_expr)) {
       # For the "brnll" `fam_nm`, offsets are simply not added to have some
       # scenarios without offsets.
       # For GAMs, offsets are not added because of rstanarm issue #546 (see
@@ -314,7 +315,7 @@ dat_indep <- lapply(mod_nms, function(mod_nm) {
   lapply(fam_nms, function(fam_nm) {
     pred_link <- get(paste0("eta_", mod_nm))
     pred_link <- pred_link[idxs_indep, , drop = FALSE]
-    if (fam_nm != "brnll" && !mod_nm %in% c("gam", "gamm")) {
+    if (eval(offs_expr)) {
       # For the "brnll" `fam_nm`, offsets are simply not added to have some
       # scenarios without offsets.
       # For GAMs, offsets are not added because of rstanarm issue #546 (see
@@ -504,12 +505,12 @@ args_fit <- lapply(pkg_nms, function(pkg_nm) {
         family_crr <- as.name(paste0("f_", fam_nm))
       }
 
-      if (fam_nm == "brnll" ||
-          (pkg_nm == "rstanarm" && mod_nm %in% c("gam", "gamm"))) {
+      if (!eval(offs_expr)) {
         # For the "brnll" `fam_nm`, the offsets are simply omitted to have some
-        # scenarios without offsets.
-        # In the rstanarm "gam" and "gamm" case, the offsets are omitted because
-        # of rstanarm issue #546 and rstanarm issue #253.
+        # scenarios without offsets. In the rstanarm "gam" and "gamm" cases, the
+        # offsets are omitted because of rstanarm issue #546 and rstanarm issue
+        # #253. (The brms "gam" and "gamm" cases are handled in the same way as
+        # the rstanarm ones to avoid too many special cases.)
         offss_nms <- "without_offs"
       } else {
         offss_nms <- "with_offs"
