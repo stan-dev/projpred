@@ -626,8 +626,8 @@ if (!run_more) {
     "rstanarm.gamm.brnll.stdformul.without_wobs.without_offs",
     "brms.glm.poiss.stdformul.with_wobs.with_offs",
     "brms.glmm.brnll.stdformul.without_wobs.without_offs",
-    # "brms.gam.binom.stdformul.without_wobs.with_offs",
-    "brms.gamm.binom.stdformul.without_wobs.with_offs"
+    # "brms.gam.binom.stdformul.without_wobs.without_offs",
+    "brms.gamm.binom.stdformul.without_wobs.without_offs"
   )
   args_fit <- args_fit[names(args_fit) %in% sel_fits]
 }
