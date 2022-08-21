@@ -505,15 +505,15 @@ args_fit <- lapply(pkg_nms, function(pkg_nm) {
         family_crr <- as.name(paste0("f_", fam_nm))
       }
 
-      if (!eval(offs_expr)) {
+      if (eval(offs_expr)) {
+        offss_nms <- "with_offs"
+      } else {
         # For the "brnll" `fam_nm`, the offsets are simply omitted to have some
         # scenarios without offsets. In the rstanarm "gam" and "gamm" cases, the
         # offsets are omitted because of rstanarm issue #546 and rstanarm issue
         # #253. (The brms "gam" and "gamm" cases are handled in the same way as
         # the rstanarm ones to avoid too many special cases.)
         offss_nms <- "without_offs"
-      } else {
-        offss_nms <- "with_offs"
       }
 
       formul_nms <- setNames(nm = formul_nms)
