@@ -135,16 +135,18 @@ source(testthat::test_path("helpers", "getters.R"), local = TRUE)
 source(testthat::test_path("helpers", "formul_handlers.R"), local = TRUE)
 source(testthat::test_path("helpers", "revIA.R"), local = TRUE)
 
-mod_nms <- setNames(nm = c("glm", "glmm", "gam", "gamm"))
+mod_nms <- c("glm", "glmm", "gam", "gamm")
 if (run_additive) {
   # Suppress the warning for additive models (GAMs and GAMMs) stating that their
   # implementation is currently only experimental:
   options(projpred.warn_additive_experimental = FALSE)
 } else {
-  mod_nms <- setNames(nm = setdiff(mod_nms, c("gam", "gamm")))
+  mod_nms <- setdiff(mod_nms, c("gam", "gamm"))
 }
+mod_nms <- setNames(nm = mod_nms)
 
-fam_nms <- setNames(nm = c("gauss", "brnll", "binom", "poiss"))
+fam_nms <- c("gauss", "brnll", "binom", "poiss")
+fam_nms <- setNames(nm = fam_nms)
 
 # Suppress the warning for the augmented-data projection stating that its
 # implementation is currently only experimental:
@@ -253,34 +255,42 @@ f_binom <- f_brnll <- binomial()
 f_poiss <- poisson()
 dis_tst <- runif(1L, 1, 2)
 wobs_tst <- sample(1:4, nobsv, replace = TRUE)
-dat <- lapply(mod_nms, function(mod_nm) {
-  lapply(fam_nms, function(fam_nm) {
-    pred_link <- get(paste0("eta_", mod_nm))
-    if (fam_nm != "brnll" && !mod_nm %in% c("gam", "gamm")) {
-      # For the "brnll" `fam_nm`, offsets are simply not added to have some
-      # scenarios without offsets.
-      # For GAMs, offsets are not added because of rstanarm issue #546 (see
-      # also further below).
-      # For GAMMs, offsets are not added because of rstanarm issue #253 (see
-      # also further below).
-      pred_link <- pred_link + offs_tst
-    }
-    pred_resp <- get(paste0("f_", fam_nm))$linkinv(pred_link)
-    if (fam_nm == "gauss") {
-      return(rnorm(nobsv, mean = pred_resp, sd = dis_tst))
-    } else if (fam_nm == "brnll") {
-      return(rbinom(nobsv, 1, pred_resp))
-    } else if (fam_nm == "binom") {
-      return(rbinom(nobsv, wobs_tst, pred_resp))
-    } else if (fam_nm == "poiss") {
-      return(rpois(nobsv, pred_resp))
-    } else {
-      stop("Unknown `fam_nm`.")
-    }
+offs_expr <- expression(fam_nm != "brnll" && !mod_nm %in% c("gam", "gamm"))
+cre_dat <- function(idxs_crr, offs_crr, wobs_crr, dis_crr) {
+  nobsv_crr <- length(idxs_crr)
+  dat_crr <- lapply(mod_nms, function(mod_nm) {
+    lapply(fam_nms, function(fam_nm) {
+      pred_link <- get(paste0("eta_", mod_nm))
+      pred_link <- pred_link[idxs_crr, , drop = FALSE]
+      if (eval(offs_expr)) {
+        # For the "brnll" `fam_nm`, offsets are simply not added to have some
+        # scenarios without offsets.
+        # For GAMs, offsets are not added because of rstanarm issue #546 (see
+        # also further below).
+        # For GAMMs, offsets are not added because of rstanarm issue #253 (see
+        # also further below).
+        pred_link <- pred_link + offs_crr
+      }
+      pred_resp <- get(paste0("f_", fam_nm))$linkinv(pred_link)
+      if (fam_nm == "gauss") {
+        return(rnorm(nobsv_crr, mean = pred_resp, sd = dis_crr))
+      } else if (fam_nm == "brnll") {
+        return(rbinom(nobsv_crr, 1, pred_resp))
+      } else if (fam_nm == "binom") {
+        return(rbinom(nobsv_crr, wobs_crr, pred_resp))
+      } else if (fam_nm == "poiss") {
+        return(rpois(nobsv_crr, pred_resp))
+      } else {
+        stop("Unknown `fam_nm`.")
+      }
+    })
   })
-})
-dat <- unlist(dat, recursive = FALSE)
-names(dat) <- paste("y", gsub("\\.", "_", names(dat)), sep = "_")
+  dat_crr <- unlist(dat_crr, recursive = FALSE)
+  names(dat_crr) <- paste("y", gsub("\\.", "_", names(dat_crr)), sep = "_")
+  return(dat_crr)
+}
+dat <- cre_dat(idxs_crr = seq_len(nobsv), offs_crr = offs_tst,
+               wobs_crr = wobs_tst, dis_crr = dis_tst)
 dat <- data.frame(
   dat,
   xco = x_cont, xca = lapply(x_cate_list, "[[", "x_cate"),
@@ -318,35 +328,8 @@ dis_indep <- runif(1L, 1, 2)
 offs_indep <- rnorm(nobsv_indep)
 wobs_indep <- sample(1:4, nobsv_indep, replace = TRUE)
 idxs_indep <- sample.int(nobsv, size = nobsv_indep, replace = TRUE)
-dat_indep <- lapply(mod_nms, function(mod_nm) {
-  lapply(fam_nms, function(fam_nm) {
-    pred_link <- get(paste0("eta_", mod_nm))
-    pred_link <- pred_link[idxs_indep, , drop = FALSE]
-    if (fam_nm != "brnll" && !mod_nm %in% c("gam", "gamm")) {
-      # For the "brnll" `fam_nm`, offsets are simply not added to have some
-      # scenarios without offsets.
-      # For GAMs, offsets are not added because of rstanarm issue #546 (see
-      # also further below).
-      # For GAMMs, offsets are not added because of rstanarm issue #253 (see
-      # also further below).
-      pred_link <- pred_link + offs_indep
-    }
-    pred_resp <- get(paste0("f_", fam_nm))$linkinv(pred_link)
-    if (fam_nm == "gauss") {
-      return(rnorm(nobsv_indep, mean = pred_resp, sd = dis_indep))
-    } else if (fam_nm == "brnll") {
-      return(rbinom(nobsv_indep, 1, pred_resp))
-    } else if (fam_nm == "binom") {
-      return(rbinom(nobsv_indep, wobs_indep, pred_resp))
-    } else if (fam_nm == "poiss") {
-      return(rpois(nobsv_indep, pred_resp))
-    } else {
-      stop("Unknown `fam_nm`.")
-    }
-  })
-})
-dat_indep <- unlist(dat_indep, recursive = FALSE)
-names(dat_indep) <- paste("y", gsub("\\.", "_", names(dat_indep)), sep = "_")
+dat_indep <- cre_dat(idxs_crr = idxs_indep, offs_crr = offs_indep,
+                     wobs_crr = wobs_indep, dis_crr = dis_indep)
 dat_indep <- cbind(
   as.data.frame(dat_indep),
   dat[idxs_indep,
@@ -512,15 +495,15 @@ args_fit <- lapply(pkg_nms, function(pkg_nm) {
         family_crr <- as.name(paste0("f_", fam_nm))
       }
 
-      if (fam_nm == "brnll" ||
-          (pkg_nm == "rstanarm" && mod_nm %in% c("gam", "gamm"))) {
-        # For the "brnll" `fam_nm`, the offsets are simply omitted to have some
-        # scenarios without offsets.
-        # In the rstanarm "gam" and "gamm" case, the offsets are omitted because
-        # of rstanarm issue #546 and rstanarm issue #253.
-        offss_nms <- "without_offs"
-      } else {
+      if (eval(offs_expr)) {
         offss_nms <- "with_offs"
+      } else {
+        # For the "brnll" `fam_nm`, the offsets are simply omitted to have some
+        # scenarios without offsets. In the rstanarm "gam" and "gamm" cases, the
+        # offsets are omitted because of rstanarm issue #546 and rstanarm issue
+        # #253. (The brms "gam" and "gamm" cases are handled in the same way as
+        # the rstanarm ones to avoid too many special cases.)
+        offss_nms <- "without_offs"
       }
 
       formul_nms <- setNames(nm = formul_nms)
@@ -633,8 +616,8 @@ if (!run_more) {
     "rstanarm.gamm.brnll.stdformul.without_wobs.without_offs",
     "brms.glm.poiss.stdformul.with_wobs.with_offs",
     "brms.glmm.brnll.stdformul.without_wobs.without_offs",
-    # "brms.gam.binom.stdformul.without_wobs.with_offs",
-    "brms.gamm.binom.stdformul.without_wobs.with_offs"
+    # "brms.gam.binom.stdformul.without_wobs.without_offs",
+    "brms.gamm.binom.stdformul.without_wobs.without_offs"
   )
   args_fit <- args_fit[names(args_fit) %in% sel_fits]
 }
