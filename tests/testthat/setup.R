@@ -246,34 +246,41 @@ f_poiss <- poisson()
 dis_tst <- runif(1L, 1, 2)
 wobs_tst <- sample(1:4, nobsv, replace = TRUE)
 offs_expr <- expression(fam_nm != "brnll" && !mod_nm %in% c("gam", "gamm"))
-dat <- lapply(mod_nms, function(mod_nm) {
-  lapply(fam_nms, function(fam_nm) {
-    pred_link <- get(paste0("eta_", mod_nm))
-    if (eval(offs_expr)) {
-      # For the "brnll" `fam_nm`, offsets are simply not added to have some
-      # scenarios without offsets.
-      # For GAMs, offsets are not added because of rstanarm issue #546 (see
-      # also further below).
-      # For GAMMs, offsets are not added because of rstanarm issue #253 (see
-      # also further below).
-      pred_link <- pred_link + offs_tst
-    }
-    pred_resp <- get(paste0("f_", fam_nm))$linkinv(pred_link)
-    if (fam_nm == "gauss") {
-      return(rnorm(nobsv, mean = pred_resp, sd = dis_tst))
-    } else if (fam_nm == "brnll") {
-      return(rbinom(nobsv, 1, pred_resp))
-    } else if (fam_nm == "binom") {
-      return(rbinom(nobsv, wobs_tst, pred_resp))
-    } else if (fam_nm == "poiss") {
-      return(rpois(nobsv, pred_resp))
-    } else {
-      stop("Unknown `fam_nm`.")
-    }
+cre_dat <- function(idxs_crr, offs_crr, wobs_crr, dis_crr) {
+  nobsv_crr <- length(idxs_crr)
+  dat_crr <- lapply(mod_nms, function(mod_nm) {
+    lapply(fam_nms, function(fam_nm) {
+      pred_link <- get(paste0("eta_", mod_nm))
+      pred_link <- pred_link[idxs_crr, , drop = FALSE]
+      if (eval(offs_expr)) {
+        # For the "brnll" `fam_nm`, offsets are simply not added to have some
+        # scenarios without offsets.
+        # For GAMs, offsets are not added because of rstanarm issue #546 (see
+        # also further below).
+        # For GAMMs, offsets are not added because of rstanarm issue #253 (see
+        # also further below).
+        pred_link <- pred_link + offs_crr
+      }
+      pred_resp <- get(paste0("f_", fam_nm))$linkinv(pred_link)
+      if (fam_nm == "gauss") {
+        return(rnorm(nobsv_crr, mean = pred_resp, sd = dis_crr))
+      } else if (fam_nm == "brnll") {
+        return(rbinom(nobsv_crr, 1, pred_resp))
+      } else if (fam_nm == "binom") {
+        return(rbinom(nobsv_crr, wobs_crr, pred_resp))
+      } else if (fam_nm == "poiss") {
+        return(rpois(nobsv_crr, pred_resp))
+      } else {
+        stop("Unknown `fam_nm`.")
+      }
+    })
   })
-})
-dat <- unlist(dat, recursive = FALSE)
-names(dat) <- paste("y", gsub("\\.", "_", names(dat)), sep = "_")
+  dat_crr <- unlist(dat_crr, recursive = FALSE)
+  names(dat_crr) <- paste("y", gsub("\\.", "_", names(dat_crr)), sep = "_")
+  return(dat_crr)
+}
+dat <- cre_dat(idxs_crr = seq_len(nobsv), offs_crr = offs_tst,
+               wobs_crr = wobs_tst, dis_crr = dis_tst)
 dat <- data.frame(
   dat,
   xco = x_cont, xca = lapply(x_cate_list, "[[", "x_cate"),
@@ -311,35 +318,8 @@ dis_indep <- runif(1L, 1, 2)
 offs_indep <- rnorm(nobsv_indep)
 wobs_indep <- sample(1:4, nobsv_indep, replace = TRUE)
 idxs_indep <- sample.int(nobsv, size = nobsv_indep, replace = TRUE)
-dat_indep <- lapply(mod_nms, function(mod_nm) {
-  lapply(fam_nms, function(fam_nm) {
-    pred_link <- get(paste0("eta_", mod_nm))
-    pred_link <- pred_link[idxs_indep, , drop = FALSE]
-    if (eval(offs_expr)) {
-      # For the "brnll" `fam_nm`, offsets are simply not added to have some
-      # scenarios without offsets.
-      # For GAMs, offsets are not added because of rstanarm issue #546 (see
-      # also further below).
-      # For GAMMs, offsets are not added because of rstanarm issue #253 (see
-      # also further below).
-      pred_link <- pred_link + offs_indep
-    }
-    pred_resp <- get(paste0("f_", fam_nm))$linkinv(pred_link)
-    if (fam_nm == "gauss") {
-      return(rnorm(nobsv_indep, mean = pred_resp, sd = dis_indep))
-    } else if (fam_nm == "brnll") {
-      return(rbinom(nobsv_indep, 1, pred_resp))
-    } else if (fam_nm == "binom") {
-      return(rbinom(nobsv_indep, wobs_indep, pred_resp))
-    } else if (fam_nm == "poiss") {
-      return(rpois(nobsv_indep, pred_resp))
-    } else {
-      stop("Unknown `fam_nm`.")
-    }
-  })
-})
-dat_indep <- unlist(dat_indep, recursive = FALSE)
-names(dat_indep) <- paste("y", gsub("\\.", "_", names(dat_indep)), sep = "_")
+dat_indep <- cre_dat(idxs_crr = idxs_indep, offs_crr = offs_indep,
+                     wobs_crr = wobs_indep, dis_crr = dis_indep)
 dat_indep <- cbind(
   as.data.frame(dat_indep),
   dat[idxs_indep,
