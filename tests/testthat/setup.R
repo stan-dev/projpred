@@ -131,16 +131,18 @@ source(testthat::test_path("helpers", "getters.R"), local = TRUE)
 source(testthat::test_path("helpers", "formul_handlers.R"), local = TRUE)
 source(testthat::test_path("helpers", "revIA.R"), local = TRUE)
 
-mod_nms <- setNames(nm = c("glm", "glmm", "gam", "gamm"))
+mod_nms <- c("glm", "glmm", "gam", "gamm")
 if (run_additive) {
   # Suppress the warning for additive models (GAMs and GAMMs) stating that their
   # implementation is currently only experimental:
   options(projpred.warn_additive_experimental = FALSE)
 } else {
-  mod_nms <- setNames(nm = setdiff(mod_nms, c("gam", "gamm")))
+  mod_nms <- setdiff(mod_nms, c("gam", "gamm"))
 }
+mod_nms <- setNames(nm = mod_nms)
 
-fam_nms <- setNames(nm = c("gauss", "brnll", "binom", "poiss"))
+fam_nms <- c("gauss", "brnll", "binom", "poiss")
+fam_nms <- setNames(nm = fam_nms)
 
 # Data --------------------------------------------------------------------
 
