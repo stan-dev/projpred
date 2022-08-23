@@ -326,7 +326,7 @@ test_that(paste(
     summs_ref <- vs$summaries$ref
     summs_ref$mu <- structure(unclass(summs_ref$mu), nobs_orig = NULL)
     summs_ref$mu <- summs_ref$mu[(nobsv + 1):(2 * nobsv)]
-    expect_equal(summs_ref, vs_trad$summaries$ref, tolerance = 1e-16,
+    expect_equal(summs_ref, vs_trad$summaries$ref, tolerance = 1e-14,
                  info = tstsetup)
   }
 })
