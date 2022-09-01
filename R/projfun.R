@@ -91,9 +91,13 @@ project_submodel <- function(solution_terms, p_ref, refmodel, regul = 1e-4,
                            wsample) {
   # Take offsets into account (the `if ()` condition is added for efficiency):
   if (!all(refmodel$offset == 0)) {
-    p_ref$mu <- refmodel$family$linkinv(
-      refmodel$family$linkfun(p_ref$mu) + refmodel$offset
-    )
+    eta_ref <- refmodel$family$linkfun(p_ref$mu)
+    if (refmodel$family$family %in% fams_neg_linpred()) {
+      eta_ref <- eta_ref - refmodel$offset
+    } else {
+      eta_ref <- eta_ref + refmodel$offset
+    }
+    p_ref$mu <- refmodel$family$linkinv(eta_ref)
   }
   if (!(all(is.na(p_ref$var)) ||
         refmodel$family$family %in% c("gaussian", "Student_t"))) {

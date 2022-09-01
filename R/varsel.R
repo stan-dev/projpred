@@ -272,9 +272,13 @@ varsel.refmodel <- function(object, d_test = NULL, method = NULL,
     if (d_test$type == "train") {
       mu_test <- refmodel$mu
       if (!all(refmodel$offset == 0)) {
-        mu_test <- refmodel$family$linkinv(
-          refmodel$family$linkfun(mu_test) + refmodel$offset
-        )
+        eta_test <- refmodel$family$linkfun(mu_test)
+        if (refmodel$family$family %in% fams_neg_linpred()) {
+          eta_test <- eta_test - refmodel$offset
+        } else {
+          eta_test <- eta_test + refmodel$offset
+        }
+        mu_test <- refmodel$family$linkinv(eta_test)
       }
     } else {
       newdata_for_ref <- d_test$data
@@ -287,10 +291,13 @@ varsel.refmodel <- function(object, d_test = NULL, method = NULL,
         }
         newdata_for_ref$projpred_internal_offs_stanreg <- d_test$offset
       }
-      mu_test <- refmodel$family$linkinv(
-        refmodel$ref_predfun(refmodel$fit, newdata = newdata_for_ref) +
-          d_test$offset
-      )
+      eta_test <- refmodel$ref_predfun(refmodel$fit, newdata = newdata_for_ref)
+      if (refmodel$family$family %in% fams_neg_linpred()) {
+        eta_test <- eta_test - d_test$offset
+      } else {
+        eta_test <- eta_test + d_test$offset
+      }
+      mu_test <- refmodel$family$linkinv(eta_test)
     }
     ref <- .weighted_summary_means(
       y_test = d_test, family = refmodel$family, wsample = refmodel$wsample,

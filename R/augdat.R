@@ -185,6 +185,10 @@ catmaxprb <- function(augvec, lvls) {
   return(factor(lvls[idxmaxprb], levels = lvls))
 }
 
+fams_neg_linpred <- function() {
+  return(c("cumulative", "cumulative_rstanarm", "sratio"))
+}
+
 # Link and inverse-link functions with array as input and output ----------
 
 #' Link function for augmented-data projection with binomial family

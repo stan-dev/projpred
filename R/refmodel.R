@@ -375,7 +375,12 @@ predict.refmodel <- function(object, newdata = NULL, ynew = NULL,
   }
 
   ## ref_predfun returns eta = link(mu)
-  eta <- object$ref_predfun(object$fit, newdata = newdata) + offsetnew
+  eta <- object$ref_predfun(object$fit, newdata = newdata)
+  if (object$family$family %in% fams_neg_linpred()) {
+    eta <- eta - offsetnew
+  } else {
+    eta <- eta + offsetnew
+  }
 
   if (is.null(ynew)) {
     pred <- if (type == "link") eta else object$family$linkinv(eta)
@@ -738,7 +743,12 @@ init_refmodel <- function(object, data, formula, family, ref_predfun = NULL,
     } else {
       stopifnot(length(offset) %in% c(1L, nrow(newdata)))
     }
-    pred_sub <- proj_predfun(fits, newdata = newdata) + offset
+    pred_sub <- proj_predfun(fits, newdata = newdata)
+    if (family$family %in% fams_neg_linpred()) {
+      pred_sub <- pred_sub - offset
+    } else {
+      pred_sub <- pred_sub + offset
+    }
     if (transform) {
       pred_sub <- family$linkinv(pred_sub)
     }
@@ -858,9 +868,9 @@ init_refmodel <- function(object, data, formula, family, ref_predfun = NULL,
     }
     # Since posterior_linpred() is supposed to include any offsets but (at least
     # currently) projpred expects the final ref_predfun() to exclude any offsets
-    # (see issue #186), the offsets have to be subtracted here by a wrapper
-    # function. This wrapper function also performs some preparations for the
-    # augmented-data projection:
+    # (see issue #186), the offsets have to be subtracted (or added, in case of
+    # some ordinal families) here by a wrapper function. This wrapper function
+    # also performs some preparations for the augmented-data projection:
     ref_predfun_usr <- ref_predfun
     ref_predfun <- function(fit, newdata = NULL) {
       linpred_out <- ref_predfun_usr(fit = fit, newdata = newdata)
@@ -885,7 +895,11 @@ init_refmodel <- function(object, data, formula, family, ref_predfun = NULL,
       offs <- extract_model_data(fit, newdata = newdata, wrhs = NULL)$offset
       if (length(offs) > 0) {
         stopifnot(length(offs) %in% c(1L, n_obs))
-        linpred_out <- linpred_out - offs
+        if (family$family %in% fams_neg_linpred()) {
+          linpred_out <- linpred_out + offs
+        } else {
+          linpred_out <- linpred_out - offs
+        }
       }
       return(linpred_out)
     }
@@ -997,8 +1011,13 @@ init_refmodel <- function(object, data, formula, family, ref_predfun = NULL,
   }
 
   if (proper_model) {
+    if (family$family %in% fams_neg_linpred()) {
+      eta_ll <- eta - offset
+    } else {
+      eta_ll <- eta + offset
+    }
     loglik <- t(family$ll_fun(
-      family$linkinv(eta + offset), dis, y, weights = weights
+      family$linkinv(eta_ll), dis, y, weights = weights
     ))
   } else {
     loglik <- NULL
