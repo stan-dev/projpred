@@ -1022,21 +1022,42 @@ submodl_tester_aug <- function(
         )
 
         # lev
-        expect_identical(submodl_totest[[!!j]]$lev, augdat_cats, info = info_str)
+        expect_identical(submodl_totest[[!!j]]$lev, augdat_cats,
+                         info = info_str)
 
         # method
         expect_identical(submodl_totest[[!!j]]$method, "logistic",
                          info = info_str)
       }
+    } else if (sub_fam == "categorical") {
+      for (j in seq_along(submodl_totest)) {
+        expect_s3_class(submodl_totest[[!!j]], c("multinom", "nnet"))
+      }
+      for (j in seq_extensive_tests) {
+        # coef()
+        coefs_crr <- coef(submodl_totest[[j]])
+        expect_true(is.matrix(coefs_crr), info = info_str)
+        expect_true(is.numeric(coefs_crr), info = info_str)
+        expect_identical(
+          dimnames(coefs_crr),
+          list(tail(augdat_cats, -1),
+               colnames(model.matrix(sub_formul, data = sub_data))),
+          info = info_str
+        )
+
+        # lev
+        expect_identical(submodl_totest[[!!j]]$lev, augdat_cats,
+                         info = info_str)
+      }
     } else {
-      stop("Under construction.", info_str) # TODO (augdat_tsts)
+      stop("Unexpected `sub_fam` value of `", sub_fam, "`. Info: ", info_str)
     }
   } else if (has_grp) {
+    coef_nms <- c("(Intercept)", "xco.1")
     if (sub_fam %in% c("cumulative", "cumulative_rstanarm")) {
       for (j in seq_along(submodl_totest)) {
         expect_s3_class(submodl_totest[[!!j]], "clmm")
       }
-      coef_nms <- c("(Intercept)", "xco.1")
       for (j in seq_extensive_tests) {
         # alpha
         alpha_crr <- submodl_totest[[j]]$alpha
@@ -1113,8 +1134,90 @@ submodl_tester_aug <- function(
         expect_identical(xlevels_crr, lapply(dat[xca_nms], levels),
                          info = info_str)
       }
+    } else if (sub_fam == "categorical") {
+      for (j in seq_along(submodl_totest)) {
+        expect_s3_class(submodl_totest[[!!j]],
+                        c("mmblogit", "mblogit", "mmclogit", "mclogit", "lm"))
+      }
+      coef_nms <- sub("^\\(Intercept\\)$", "1", coef_nms)
+      for (j in seq_extensive_tests) {
+        # coefmat
+        coefs_crr <- submodl_totest[[j]]$coefmat
+        expect_true(is.matrix(coefs_crr), info = info_str)
+        expect_true(is.numeric(coefs_crr), info = info_str)
+        ### A quick-and-dirty workaround to get rid of group-level terms:
+        stopifnot(identical(trms_grp, c("(xco.1 | z.1)")))
+        sub_formul_no_grp <- update(sub_formul,
+                                    . ~ . - (1 | z.1) - (xco.1 | z.1))
+        ###
+        expect_identical(
+          dimnames(coefs_crr),
+          list("Response categories" = tail(augdat_cats, -1),
+               "Predictors" = colnames(model.matrix(sub_formul_no_grp,
+                                                    data = sub_data))),
+          info = info_str
+        )
+
+        # random.effects
+        ranef_crr <- submodl_totest[[j]]$random.effects
+        expect_type(ranef_crr, "list")
+        expect_length(ranef_crr, 1)
+        expect_named(ranef_crr, NULL, info = info_str)
+        expect_true(is.matrix(ranef_crr[[1]]), info = info_str)
+        expect_true(is.numeric(ranef_crr[[1]]), info = info_str)
+        expect_identical(dimnames(ranef_crr[[1]]),
+                         replicate(2, NULL, simplify = FALSE),
+                         info = info_str)
+        expect_identical(dim(ranef_crr[[1]]),
+                         c(nthres * length(coef_nms) * nlevels(dat$z.1), 1L),
+                         info = info_str)
+
+        # VarCov
+        VarCorr_crr <- submodl_totest[[j]]$VarCov
+        expect_type(VarCorr_crr, "list")
+        expect_named(VarCorr_crr, "z.1", info = info_str)
+        expect_true(is.matrix(VarCorr_crr[["z.1"]]), info = info_str)
+        expect_true(is.numeric(VarCorr_crr[["z.1"]]), info = info_str)
+        coef_nms_y <- unlist(lapply(coef_nms, function(coef_nm) {
+          paste(tail(augdat_cats, -1), coef_nm, sep = "~")
+        }))
+        expect_identical(dimnames(VarCorr_crr[["z.1"]]),
+                         replicate(2, coef_nms_y, simplify = FALSE),
+                         info = info_str)
+
+        # D
+        D_crr <- submodl_totest[[j]]$D
+        expect_identical(D_crr, contrasts(as.factor(augdat_cats)),
+                         info = info_str)
+
+        # random
+        random_crr <- submodl_totest[[j]]$random
+        expect_type(random_crr, "list")
+        expect_length(random_crr, 1)
+        expect_named(random_crr, NULL, info = info_str)
+        expect_named(random_crr[[1]], c("formula", "groups"), info = info_str)
+        expect_equal(
+          random_crr[[1]]$formula,
+          as.formula(paste("~", paste(setdiff(coef_nms, "1"), collapse = "+"))),
+          info = info_str
+        )
+        expect_identical(random_crr[[1]]$groups, "z.1", info = info_str)
+
+        # groups
+        groups_crr <- submodl_totest[[j]]$groups
+        expect_type(groups_crr, "list")
+        expect_named(groups_crr, "z.1", info = info_str)
+        expect_identical(levels(groups_crr[["z.1"]]), levels(dat$z.1),
+                         info = info_str)
+
+        # xlevels
+        xlevels_crr <- submodl_totest[[j]]$xlevels
+        xca_nms <- grep("^xca\\.", labels(terms(sub_formul)), value = TRUE)
+        expect_identical(xlevels_crr, lapply(dat[xca_nms], levels),
+                         info = info_str)
+      }
     } else {
-      stop("Under construction.", info_str) # TODO (augdat_tsts)
+      stop("Unexpected `sub_fam` value of `", sub_fam, "`. Info: ", info_str)
     }
   }
 

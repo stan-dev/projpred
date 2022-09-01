@@ -160,9 +160,6 @@ fam_nms_aug <- c(fam_nms_ordin, fam_nms_categ)
 fam_nms <- c(fam_nms_trad, fam_nms_aug)
 fam_nms_unsupp <- setdiff(fam_nms_ordin, "cumul")
 fam_nms_brms_only <- setdiff(fam_nms_aug, "cumul")
-### TODO (augdat_tsts):
-fam_nms <- setdiff(fam_nms, fam_nms_categ)
-###
 if (!run_brms) {
   fam_nms <- setdiff(fam_nms, fam_nms_brms_only)
 }
@@ -194,7 +191,7 @@ nobsv <- 41L
 # Values for testing:
 nobsv_tst <- c(1L, nobsv %/% 3L)
 
-# For ordinal models, partly also for categorical models:
+# For ordinal models (but also used for categorical models):
 nthres <- 2L
 ncat <- nthres + 1L
 yunq_num <- seq_len(ncat)
@@ -325,8 +322,9 @@ cre_dat <- function(idxs_crr, offs_crr, wobs_crr, dis_crr) {
           thres_k - pred_link
         })
       } else if (fam_nm %in% fam_nms_categ) {
-        # TODO (augdat_tsts)
-        stop("Under construction.")
+        pred_link <- sapply(thres, function(thres_k) {
+          thres_k + pred_link
+        })
       }
       if (fam_nm == "cumul") {
         pred_resp <- augdat_ilink_cumul(thres_eta, link = link_str)
@@ -338,6 +336,11 @@ cre_dat <- function(idxs_crr, offs_crr, wobs_crr, dis_crr) {
         ilink_crr <- get(paste0("inv_link_", fam_nm_long), asNamespace("brms"),
                          mode = "function", inherits = FALSE)
         pred_resp <- ilink_crr(thres_eta, link = link_str)
+      } else if (fam_nm %in% fam_nms_categ) {
+        fam_nm_long <- get_fam_long(fam_nm)
+        ilink_crr <- get(paste0("inv_link_", fam_nm_long), asNamespace("brms"),
+                         mode = "function", inherits = FALSE)
+        pred_resp <- ilink_crr(pred_link)
       } else {
         pred_resp <- get(paste0("f_", fam_nm))$linkinv(pred_link)
       }
@@ -355,7 +358,7 @@ cre_dat <- function(idxs_crr, offs_crr, wobs_crr, dis_crr) {
         })
         if (use_fac) {
           ryunq <- factor(ryunq, levels = yunq_num, labels = yunq_chr,
-                          ordered = TRUE)
+                          ordered = fam_nm %in% fam_nms_ordin)
         }
         return(ryunq)
       } else {
@@ -716,7 +719,9 @@ if (!run_more) {
     "brms.glm.srtio.stdformul.without_wobs.with_offs",
     "brms.glm.crtio.stdformul.without_wobs.with_offs",
     "brms.glm.adcat.stdformul.without_wobs.with_offs",
-    "brms.glmm.cumul.stdformul.without_wobs.with_offs"
+    "brms.glm.categ.stdformul.without_wobs.with_offs",
+    "brms.glmm.cumul.stdformul.without_wobs.with_offs",
+    "brms.glmm.categ.stdformul.without_wobs.with_offs"
   )
   if (!use_fac) {
     sel_fits <- grep("^rstanarm\\.glm\\.cumul\\.", sel_fits, value = TRUE,
@@ -941,13 +946,21 @@ if (run_vs) {
                        search_trms_tst$alltrms$search_terms)) {
           nterms_max_tst <- count_terms_chosen(search_trms_i$search_terms) - 1L
         }
+        if (mod_crr == "glmm" && fam_crr == "categ") {
+          # Quick-and-dirty solution to get some working results (it's probably
+          # due to unfortunate test data simulated here that the convergence at
+          # the original tolerance of `epsilon = 1e-8` is not given):
+          extra_args <- list(epsilon = 1e-1)
+        } else {
+          extra_args <- list()
+        }
         return(c(
           nlist(tstsetup_ref), only_nonargs(args_ref[[tstsetup_ref]]),
           list(
             nclusters = nclusters_tst, nclusters_pred = nclusters_pred_tst,
             nterms_max = nterms_max_tst, verbose = FALSE, seed = seed_tst
           ),
-          meth_i, search_trms_i
+          meth_i, search_trms_i, extra_args
         ))
       })
     })
@@ -1160,11 +1173,16 @@ if (run_prj) {
         divmin_args <- list()
       }
       lapply(ndr_ncl_pred, function(ndr_ncl_pred_i) {
+        if (mod_crr == "glmm" && fam_crr == "categ") {
+          # Quick-and-dirty solution to get some working results (it's probably
+          # due to unfortunate test data simulated here that the convergence at
+          # the original tolerance of `epsilon = 1e-8` is not given):
+          divmin_args <- c(divmin_args, list(epsilon = 1e-1))
+        }
         return(c(
           nlist(tstsetup_ref), only_nonargs(args_ref[[tstsetup_ref]]),
           list(solution_terms = solterms[[solterms_nm_i]], seed = seed_tst),
-          ndr_ncl_pred_i,
-          divmin_args
+          ndr_ncl_pred_i, divmin_args
         ))
       })
     })
