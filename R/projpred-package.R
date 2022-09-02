@@ -48,12 +48,12 @@
 #'
 #' The projection of the reference model onto a submodel can be run on multiple
 #' CPU cores in parallel (across the projected draws). This is powered by the
-#' \pkg{foreach} package. Thus, you can use any parallel (or sequential) backend
-#' compatible with \pkg{foreach}, e.g., the backends from packages
+#' \pkg{foreach} package. Thus, any parallel (or sequential) backend compatible
+#' with \pkg{foreach} can be used, e.g., the backends from packages
 #' \pkg{doParallel}, \pkg{doMPI}, or \pkg{doFuture}. Using the global option
-#' `projpred.prll_prj_trigger`, you can modify the number of projected draws
-#' below which no parallelization is used (even if a parallel backend is
-#' registered). Such a "trigger" threshold exists because of the computational
+#' `projpred.prll_prj_trigger`, the number of projected draws below which no
+#' parallelization is applied (even if a parallel backend is registered) can be
+#' modified. Such a "trigger" threshold exists because of the computational
 #' overhead of a parallelization which makes parallelization only useful for a
 #' sufficiently large number of projected draws. By default, parallelization is
 #' turned off, which can also be achieved by supplying `Inf` (or `NULL`) to
