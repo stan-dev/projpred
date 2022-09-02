@@ -31,6 +31,18 @@ Currently, the supported families are \code{\link[=gaussian]{gaussian()}}, \code
 \code{\link[brms:get_refmodel.brmsfit]{brms::get_refmodel.brmsfit()}}---also \code{\link[brms:brmsfamily]{brms::bernoulli()}}), as well as
 \code{\link[=poisson]{poisson()}}.
 
+For the projection of the reference model onto a submodel, \pkg{projpred}
+currently relies on the following functions:
+\itemize{
+\item Submodel without multilevel or additive terms: An internal C++ function
+which basically serves the same purpose as \code{\link[=lm]{lm()}} for the \code{\link[=gaussian]{gaussian()}} family
+and \code{\link[=glm]{glm()}} for all other families.
+\item Submodel with multilevel but no additive terms: \code{\link[lme4:lmer]{lme4::lmer()}} for the
+\code{\link[=gaussian]{gaussian()}} family, \code{\link[lme4:glmer]{lme4::glmer()}} for all other families.
+\item Submodel without multilevel but additive terms: \code{\link[mgcv:gam]{mgcv::gam()}}.
+\item Submodel with multilevel and additive terms: \code{\link[gamm4:gamm4]{gamm4::gamm4()}}.
+}
+
 The projection of the reference model onto a submodel can be run on multiple
 CPU cores in parallel (across the projected draws). This is powered by the
 \pkg{foreach} package. Thus, you can use any parallel (or sequential) backend

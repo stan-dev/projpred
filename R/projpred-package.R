@@ -36,6 +36,16 @@
 #' [brms::get_refmodel.brmsfit()]---also [brms::bernoulli()]), as well as
 #' [poisson()].
 #'
+#' For the projection of the reference model onto a submodel, \pkg{projpred}
+#' currently relies on the following functions:
+#' * Submodel without multilevel or additive terms: An internal C++ function
+#' which basically serves the same purpose as [lm()] for the [gaussian()] family
+#' and [glm()] for all other families.
+#' * Submodel with multilevel but no additive terms: [lme4::lmer()] for the
+#' [gaussian()] family, [lme4::glmer()] for all other families.
+#' * Submodel without multilevel but additive terms: [mgcv::gam()].
+#' * Submodel with multilevel and additive terms: [gamm4::gamm4()].
+#'
 #' The projection of the reference model onto a submodel can be run on multiple
 #' CPU cores in parallel (across the projected draws). This is powered by the
 #' \pkg{foreach} package. Thus, you can use any parallel (or sequential) backend
