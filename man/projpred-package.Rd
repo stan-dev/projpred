@@ -32,7 +32,8 @@ Currently, the supported families are \code{\link[=gaussian]{gaussian()}}, \code
 \code{\link[=poisson]{poisson()}}.
 
 For the projection of the reference model onto a submodel, \pkg{projpred}
-currently relies on the following functions:
+currently relies on the following functions (in other words, these are the
+workhorse functions used by the default divergence minimizer):
 \itemize{
 \item Submodel without multilevel or additive terms: An internal C++ function
 which basically serves the same purpose as \code{\link[=lm]{lm()}} for the \code{\link[=gaussian]{gaussian()}} family

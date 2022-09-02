@@ -99,8 +99,9 @@
 #' # Arguments `ref_predfun`, `proj_predfun`, and `div_minimizer`
 #'
 #' Arguments `ref_predfun`, `proj_predfun`, and `div_minimizer` may be `NULL`
-#' for using an internal default. Otherwise, let \eqn{N} denote the number of
-#' observations (in case of CV, these may be reduced to each fold),
+#' for using an internal default (see [projpred-package] for the functions used
+#' by the default divergence minimizer). Otherwise, let \eqn{N} denote the
+#' number of observations (in case of CV, these may be reduced to each fold),
 #' \eqn{S_{\mathrm{ref}}}{S_ref} the number of posterior draws for the reference
 #' model's parameters, and \eqn{S_{\mathrm{prj}}}{S_prj} the number of (possibly
 #' clustered) parameter draws for projection (short: the number of projected
