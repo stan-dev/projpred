@@ -785,5 +785,7 @@ formula.gamm4 <- function(x) {
       paste(split_formula(updated), collapse = " + ")
     )
   ))
+  # TODO (GAMMs): Once rstanarm issue #253 has been resolved, we probably need
+  # to include offset terms here (in the output of formula.gamm4()) as well.
   return(form)
 }
