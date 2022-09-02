@@ -840,7 +840,12 @@ kfold_varsel <- function(refmodel, method, nterms_max, ndraws,
     eta_test <- fold$refmodel$ref_predfun(
       fold$refmodel$fit,
       newdata = refmodel$fetch_data(obs = fold$d_test$omitted)
-    ) + fold$d_test$offset
+    )
+    if (fold$refmodel$family$family %in% fams_neg_linpred()) {
+      eta_test <- eta_test - fold$d_test$offset
+    } else {
+      eta_test <- eta_test + fold$d_test$offset
+    }
     mu_test <- fold$refmodel$family$linkinv(eta_test)
     .weighted_summary_means(
       y_test = fold$d_test, family = fold$refmodel$family,
