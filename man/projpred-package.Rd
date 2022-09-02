@@ -59,14 +59,26 @@ augmented-data projection is currently considered as an experimental feature
 since it has not been tested thoroughly yet and is also subject to some more
 theoretical investigations.
 
+For the projection of the reference model onto a submodel, \pkg{projpred}
+currently relies on the following functions:
+\itemize{
+\item Submodel without multilevel or additive terms: An internal C++ function
+which basically serves the same purpose as \code{\link[=lm]{lm()}} for the \code{\link[=gaussian]{gaussian()}} family
+and \code{\link[=glm]{glm()}} for all other families.
+\item Submodel with multilevel but no additive terms: \code{\link[lme4:lmer]{lme4::lmer()}} for the
+\code{\link[=gaussian]{gaussian()}} family, \code{\link[lme4:glmer]{lme4::glmer()}} for all other families.
+\item Submodel without multilevel but additive terms: \code{\link[mgcv:gam]{mgcv::gam()}}.
+\item Submodel with multilevel and additive terms: \code{\link[gamm4:gamm4]{gamm4::gamm4()}}.
+}
+
 The projection of the reference model onto a submodel can be run on multiple
 CPU cores in parallel (across the projected draws). This is powered by the
-\pkg{foreach} package. Thus, you can use any parallel (or sequential) backend
-compatible with \pkg{foreach}, e.g., the backends from packages
+\pkg{foreach} package. Thus, any parallel (or sequential) backend compatible
+with \pkg{foreach} can be used, e.g., the backends from packages
 \pkg{doParallel}, \pkg{doMPI}, or \pkg{doFuture}. Using the global option
-\code{projpred.prll_prj_trigger}, you can modify the number of projected draws
-below which no parallelization is used (even if a parallel backend is
-registered). Such a "trigger" threshold exists because of the computational
+\code{projpred.prll_prj_trigger}, the number of projected draws below which no
+parallelization is applied (even if a parallel backend is registered) can be
+modified. Such a "trigger" threshold exists because of the computational
 overhead of a parallelization which makes parallelization only useful for a
 sufficiently large number of projected draws. By default, parallelization is
 turned off, which can also be achieved by supplying \code{Inf} (or \code{NULL}) to

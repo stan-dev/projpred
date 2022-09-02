@@ -917,7 +917,7 @@ submodl_tester <- function(
                        info = info_str)
 
       # coef()
-      coefs_crr <- coef(submodl_totest[[!!j]])
+      coefs_crr <- coef(submodl_totest[[j]])
       expect_type(coefs_crr, "list")
       expect_length(coefs_crr, length(nlvl_ran))
       for (zz in seq_len(length(nlvl_ran))) {
