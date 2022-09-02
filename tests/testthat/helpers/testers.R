@@ -1120,11 +1120,13 @@ submodl_tester_aug <- function(
 
         # formula()
         formula_crr <- formula(submodl_totest[[j]])
-        sub_formul_chr <- as.character(sub_formul)
+        # "Flatten" group-level terms:
+        sub_formul_chr <- as.character(flatten_formula(sub_formul))
         expect_identical(
           formula_crr,
+          # Add the intercept explicitly and use the same environment:
           as.formula(paste(sub_formul_chr[2], "~ 1 +", sub_formul_chr[3]),
-                     env = environment(sub_formul)),
+                     env = environment(formula_crr)),
           info = info_str
         )
 

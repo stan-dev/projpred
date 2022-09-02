@@ -722,7 +722,7 @@ test_that(paste(
   "this edge case for family$ll_fun(), too)"
 ), {
   skip_if_not(run_prj)
-  for (tstsetup in names(prjs)) {
+  for (tstsetup in grep("\\.clust$", names(prjs), value = TRUE)) {
     if (args_prj[[tstsetup]]$mod_nm == "gamm") {
       # TODO (GAMMs): Fix this.
       next
@@ -740,12 +740,17 @@ test_that(paste(
     } else {
       warn_expected <- NA
     }
+    pl_args <- list(refmods[[args_prj[[tstsetup]]$tstsetup_ref]],
+                    newdata = head(get_dat(tstsetup), 1),
+                    solution_terms = args_prj[[tstsetup]]$solution_terms,
+                    nclusters = 1L,
+                    seed = seed_tst)
+    if (args_prj[[tstsetup]]$fam_nm == "categ" &&
+        args_prj[[tstsetup]]$mod_nm == "glmm") {
+      pl_args <- c(pl_args, list(epsilon = 1e-1))
+    }
     expect_warning(
-      pl1 <- proj_linpred(refmods[[args_prj[[tstsetup]]$tstsetup_ref]],
-                          newdata = head(get_dat(tstsetup), 1),
-                          solution_terms = args_prj[[tstsetup]]$solution_terms,
-                          nclusters = 1L,
-                          seed = seed_tst),
+      pl1 <- do.call(proj_linpred, pl_args),
       warn_expected
     )
     pl_tester(pl1,
@@ -1363,7 +1368,7 @@ test_that(paste(
   "this edge case for family$ppd(), too)"
 ), {
   skip_if_not(run_prj)
-  for (tstsetup in names(prjs)) {
+  for (tstsetup in grep("\\.clust$", names(prjs), value = TRUE)) {
     if (args_prj[[tstsetup]]$mod_nm == "gamm") {
       # TODO (GAMMs): Fix this.
       next
@@ -1374,14 +1379,19 @@ test_that(paste(
     } else {
       warn_expected <- NA
     }
+    pp_args <- list(refmods[[args_prj[[tstsetup]]$tstsetup_ref]],
+                    newdata = head(get_dat(tstsetup), 1),
+                    nresample_clusters = 1L,
+                    .seed = seed2_tst,
+                    solution_terms = args_prj[[tstsetup]]$solution_terms,
+                    nclusters = 1L,
+                    seed = seed_tst)
+    if (args_prj[[tstsetup]]$fam_nm == "categ" &&
+        args_prj[[tstsetup]]$mod_nm == "glmm") {
+      pp_args <- c(pp_args, list(epsilon = 1e-1))
+    }
     expect_warning(
-      pp1 <- proj_predict(refmods[[args_prj[[tstsetup]]$tstsetup_ref]],
-                          newdata = head(get_dat(tstsetup), 1),
-                          nresample_clusters = 1L,
-                          .seed = seed2_tst,
-                          solution_terms = args_prj[[tstsetup]]$solution_terms,
-                          nclusters = 1L,
-                          seed = seed_tst),
+      pp1 <- do.call(proj_predict, pp_args),
       warn_expected
     )
     pp_tester(pp1,
