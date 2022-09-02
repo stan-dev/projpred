@@ -60,7 +60,8 @@ since it has not been tested thoroughly yet and is also subject to some more
 theoretical investigations.
 
 For the projection of the reference model onto a submodel, \pkg{projpred}
-currently relies on the following functions:
+currently relies on the following functions (in other words, these are the
+workhorse functions used by the default divergence minimizers):
 \itemize{
 \item Submodel without multilevel or additive terms:
 \itemize{
