@@ -144,12 +144,17 @@ validate_response_formula <- function(formula) {
 ## @param duplicates if FALSE removes linear terms if their corresponding smooth
 ## is included. Default TRUE
 ## @return a formula without duplicated structure.
-flatten_formula <- function(formula, duplicates = TRUE) {
+flatten_formula <- function(formula, duplicates = TRUE, incl_offs = FALSE) {
   terms_ <- extract_terms_response(formula)
   group_terms <- terms_$group_terms
   interaction_terms <- terms_$interaction_terms
   individual_terms <- terms_$individual_terms
   additive_terms <- terms_$additive_terms
+  if (incl_offs) {
+    offset_terms <- terms_$offset_terms
+  } else {
+    offset_terms <- NULL
+  }
 
   if (length(individual_terms) > 0 ||
       length(interaction_terms) > 0 ||
@@ -162,7 +167,8 @@ flatten_formula <- function(formula, duplicates = TRUE) {
           flatten_individual_terms(individual_terms),
           flatten_additive_terms(additive_terms),
           flatten_interaction_terms(interaction_terms),
-          flatten_group_terms(group_terms)),
+          flatten_group_terms(group_terms),
+          offset_terms),
         collapse = " + "
       )
     )
