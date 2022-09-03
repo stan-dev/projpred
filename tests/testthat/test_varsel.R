@@ -155,11 +155,14 @@ test_that(paste(
     expect_equal(vs_repr[setdiff(names(vs_repr), "d_test")],
                  vss[[tstsetup]][setdiff(names(vss[[tstsetup]]), "d_test")],
                  info = tstsetup)
+    d_test_orig <- vss[[tstsetup]]$d_test[setdiff(names(vss[[tstsetup]]$d_test),
+                                                  c("type", "data"))]
+    # brms seems to set argument `contrasts`, but this is not important for
+    # projpred, so ignore it in the comparison:
+    attr(d_test_orig$y, "contrasts") <- NULL
     expect_equal(vs_repr$d_test[setdiff(names(vs_repr$d_test),
                                         c("type", "data"))],
-                 vss[[tstsetup]]$d_test[setdiff(names(vss[[tstsetup]]$d_test),
-                                                c("type", "data"))],
-                 info = tstsetup)
+                 d_test_orig, info = tstsetup)
   }
 })
 

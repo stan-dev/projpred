@@ -455,39 +455,31 @@ refmodel_tester <- function(
   }
 
   # eta
-  eta_cut <- refmod$eta
-  mu_cut <- refmod$mu
-  # To avoid failing tests due to numerical inaccuracies for extreme
-  # values:
-  tol_ex <- 1e-12
+  # In principle, it would be desirable to compare `refmod$eta` to
+  # `refmod$family$linkfun(refmod$mu)`, but numerical underflow and overflow can
+  # make this problematic. (Here in the unit tests, we generate rather extreme
+  # linear predictors, which should be avoided in the first place, but doesn't
+  # seem to be that simple.)
   if (refmod$family$family %in% c("binomial")) {
+    eta_cut <- refmod$eta
+    mu_cut <- refmod$mu
+    tol_ex <- 1e-12
     eta_cut[eta_cut < f_binom$linkfun(tol_ex)] <- f_binom$linkfun(tol_ex)
     eta_cut[eta_cut > f_binom$linkfun(1 - tol_ex)] <-
       f_binom$linkfun(1 - tol_ex)
     mu_cut[mu_cut < tol_ex] <- tol_ex
     mu_cut[mu_cut > 1 - tol_ex] <- 1 - tol_ex
-  } else if (refmod$family$family %in% c("cumulative")) {
-    eta_cut <- apply(augmat2arr(eta_cut), c(1, 3), function(x) {
-      x_out <- x
-      if (!all(linkfun_raw(tol_ex, link_nm = link_str) <= x &
-               x <= linkfun_raw(1 - tol_ex, link_nm = link_str))) {
-        x_out <- thres
-      }
-      return(x_out)
-    })
-    eta_cut <- aperm(eta_cut, perm = c(2, 1, 3))
-    eta_cut <- arr2augmat(eta_cut)
-    mu_cut <- apply(augmat2arr(mu_cut), c(1, 3), function(x) {
-      x_out <- x
-      if (!all(tol_ex <= x & x <= 1 - tol_ex)) {
-        x_out <- rep(1 / ncat, ncat)
-      }
-      return(x_out)
-    })
-    mu_cut <- aperm(mu_cut, perm = c(2, 1, 3))
-    mu_cut <- arr2augmat(mu_cut)
+    expect_equal(eta_cut, refmod$family$linkfun(mu_cut), info = info_str)
+  } else if (refmod$family$family %in% fam_nms_aug_long &&
+             any(refmod$mu %in% c(0, 1))) {
+    # The degenerate probabilities in `refmod$mu` are probably due to numerical
+    # underflow and overflow (for zeros and ones, respectively), so applying the
+    # link function would lead to infinite values. Thus, the only sensible (and
+    # quickly feasible) check is:
+    expect_equal(refmod$mu, refmod$family$linkinv(refmod$eta), info = info_str)
+  } else {
+    expect_equal(refmod$eta, refmod$family$linkfun(refmod$mu), info = info_str)
   }
-  expect_equal(eta_cut, refmod$family$linkfun(mu_cut), info = info_str)
 
   # dis
   if (refmod$family$family == "gaussian") {
