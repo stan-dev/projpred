@@ -405,16 +405,7 @@ refmodel_tester <- function(
       }
       mu_expected <- unname(mu_expected)
     } else if (pkg_nm == "brms") {
-      if (refmod$family$family == "categorical") {
-        stop("Construction of `mu_expected` not implemented yet for family `",
-             refmod$family$family, "`.")
-      }
-      mu_expected <- posterior_linpred(refmod$fit) - matrix(
-        offs_expected,
-        nrow = nrefdraws_expected,
-        ncol = nobsv_expected,
-        byrow = TRUE
-      )
+      mu_expected <- sweep(posterior_linpred(refmod$fit), 2L, offs_expected)
       if (fam_nm %in% fam_nms_ordin) {
         drws <- as.matrix(refmod$fit)
         drws_thres <- drws[, grep("b_Intercept\\[", colnames(drws))]
@@ -422,20 +413,19 @@ refmodel_tester <- function(
     }
     if (refmod$family$family != "gaussian") {
       if (refmod$family$family %in% fam_nms_aug_long) {
-        if (refmod$family$family %in% c("cumulative", "cumulative_rstanarm",
-                                        "sratio")) {
-          mu_expected <- apply(drws_thres, 2, function(thres_vec) {
-            thres_vec - mu_expected
-          }, simplify = FALSE)
-        } else if (refmod$family$family %in% c("cratio", "acat")) {
-          mu_expected <- apply(drws_thres, 2, function(thres_vec) {
-            mu_expected - thres_vec
-          }, simplify = FALSE)
-        } else {
-          stop("Construction of `mu_expected` not implemented yet for family `",
-               refmod$family$family, "`.")
+        if (refmod$family$family %in% fam_nms_ordin_long) {
+          if (refmod$family$family %in% c("cumulative", "cumulative_rstanarm",
+                                          "sratio")) {
+            mu_expected <- apply(drws_thres, 2, function(thres_vec) {
+              thres_vec - mu_expected
+            }, simplify = FALSE)
+          } else if (refmod$family$family %in% c("cratio", "acat")) {
+            mu_expected <- apply(drws_thres, 2, function(thres_vec) {
+              mu_expected - thres_vec
+            }, simplify = FALSE)
+          }
+          mu_expected <- do.call(abind::abind, c(mu_expected, rev.along = 0))
         }
-        mu_expected <- do.call(abind::abind, c(mu_expected, rev.along = 0))
         mu_expected <- arr2augmat(mu_expected, margin_draws = 1)
         mu_expected <- refmod$family$linkinv(mu_expected)
       } else {
@@ -529,7 +519,7 @@ refmodel_tester <- function(
   }
   if (refmod$family$for_augdat) {
     y_expected <- as.factor(y_expected)
-    if (fam_nm %in% fam_nms_ordin) {
+    if (fam_nm %in% fam_nms_aug) {
       # brms seems to set argument `contrasts`, but this is not important for
       # projpred, so ignore it in the comparison:
       attr(y_expected, "contrasts") <- attr(refmod$y, "contrasts")
@@ -1120,12 +1110,23 @@ submodl_tester_aug <- function(
 
         # formula()
         formula_crr <- formula(submodl_totest[[j]])
-        # "Flatten" group-level terms:
-        sub_formul_chr <- as.character(flatten_formula(sub_formul))
+        # Unfortunately, there are some minor caveats to take care of when
+        # comparing `formula_crr` with `sub_formul`: (i) the intercept (`1`)
+        # needs to included explicitly, (ii) group-level terms need to be
+        # "flattened" (but flatten_formula() would omit offset terms; adding an
+        # argument `incl_offs` to flatten_formula() could solve this, but the
+        # internal update() call would then still move offset terms to the end):
+        sub_trms <- labels(terms(sub_formul))
+        nongrp_trms <- grep("\\|", sub_trms, value = TRUE, invert = TRUE)
+        grp_trms <- grep("\\|", sub_trms, value = TRUE)
+        grp_trms_flat <- flatten_group_terms(grp_trms)
+        offs_trms <- if (with_offs) "offset(offs_col)" else NULL
         expect_identical(
           formula_crr,
           # Add the intercept explicitly and use the same environment:
-          as.formula(paste(sub_formul_chr[2], "~ 1 +", sub_formul_chr[3]),
+          as.formula(paste(as.character(sub_formul[[2]]), "~ 1 +",
+                           paste(c(nongrp_trms, offs_trms, grp_trms_flat),
+                                 collapse = " + ")),
                      env = environment(formula_crr)),
           info = info_str
         )

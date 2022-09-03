@@ -173,6 +173,8 @@ fam_nms_brms_only <- setNames(nm = fam_nms_brms_only)
 # Long names:
 fam_nms_aug_long <- c(sapply(fam_nms_aug, get_fam_long),
                       cumul = "cumulative_rstanarm")
+fam_nms_ordin_long <- c(sapply(fam_nms_ordin, get_fam_long),
+                        cumul = "cumulative_rstanarm")
 # Regular expressions:
 fam_nms_aug_regex <- paste0("\\.(", paste(fam_nms_aug, collapse = "|"), ")\\.")
 fam_nms_unsupp_regex <- paste0("\\.(", paste(fam_nms_unsupp, collapse = "|"),
@@ -332,14 +334,14 @@ cre_dat <- function(idxs_crr, offs_crr, wobs_crr, dis_crr) {
         if (fam_nm %in% c("crtio", "adcat")) {
           thres_eta <- -thres_eta
         }
-        fam_nm_long <- get_fam_long(fam_nm)
-        ilink_crr <- get(paste0("inv_link_", fam_nm_long), asNamespace("brms"),
-                         mode = "function", inherits = FALSE)
+        ilink_crr <- get(paste0("inv_link_", get_fam_long(fam_nm)),
+                         asNamespace("brms"), mode = "function",
+                         inherits = FALSE)
         pred_resp <- ilink_crr(thres_eta, link = link_str)
       } else if (fam_nm %in% fam_nms_categ) {
-        fam_nm_long <- get_fam_long(fam_nm)
-        ilink_crr <- get(paste0("inv_link_", fam_nm_long), asNamespace("brms"),
-                         mode = "function", inherits = FALSE)
+        ilink_crr <- get(paste0("inv_link_", get_fam_long(fam_nm)),
+                         asNamespace("brms"), mode = "function",
+                         inherits = FALSE)
         pred_resp <- ilink_crr(pred_link)
       } else {
         pred_resp <- get(paste0("f_", fam_nm))$linkinv(pred_link)
