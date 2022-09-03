@@ -296,7 +296,18 @@ f_binom <- f_brnll <- binomial()
 f_poiss <- poisson()
 dis_tst <- runif(1L, 1, 2)
 wobs_tst <- sample(1:4, nobsv, replace = TRUE)
-offs_expr <- expression(fam_nm != "brnll" && !mod_nm %in% c("gam", "gamm"))
+# For the "brnll" `fam_nm`, offsets are simply not added to have some
+# scenarios without offsets.
+# For GAMs, offsets are not added because of rstanarm issue #546 (see
+# also further below).
+# For GAMMs, offsets are not added because of rstanarm issue #253 (see
+# also further below).
+# (The brms "gam" and "gamm" cases are handled in the same way as the rstanarm
+# "gam" and "gamm" cases to avoid too many special cases.)
+# For the "categ" `fam_nm`, offsets are not added because they are currently not
+# supported for it.
+offs_expr <- expression(!(fam_nm %in% c("brnll", "categ") ||
+                            mod_nm %in% c("gam", "gamm")))
 cre_dat <- function(idxs_crr, offs_crr, wobs_crr, dis_crr) {
   nobsv_crr <- length(idxs_crr)
   dat_crr <- lapply(mod_nms, function(mod_nm) {
@@ -304,12 +315,6 @@ cre_dat <- function(idxs_crr, offs_crr, wobs_crr, dis_crr) {
       pred_link <- get(paste0("eta_", mod_nm))
       pred_link <- pred_link[idxs_crr, , drop = FALSE]
       if (eval(offs_expr)) {
-        # For the "brnll" `fam_nm`, offsets are simply not added to have some
-        # scenarios without offsets.
-        # For GAMs, offsets are not added because of rstanarm issue #546 (see
-        # also further below).
-        # For GAMMs, offsets are not added because of rstanarm issue #253 (see
-        # also further below).
         pred_link <- pred_link + offs_crr
       }
       if (fam_nm %in% fam_nms_ordin) {
@@ -597,11 +602,6 @@ args_fit <- lapply(pkg_nms, function(pkg_nm) {
       if (eval(offs_expr)) {
         offss_nms <- "with_offs"
       } else {
-        # For the "brnll" `fam_nm`, the offsets are simply omitted to have some
-        # scenarios without offsets. In the rstanarm "gam" and "gamm" cases, the
-        # offsets are omitted because of rstanarm issue #546 and rstanarm issue
-        # #253. (The brms "gam" and "gamm" cases are handled in the same way as
-        # the rstanarm ones to avoid too many special cases.)
         offss_nms <- "without_offs"
       }
 

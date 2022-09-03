@@ -163,11 +163,6 @@ test_that("divmin_augdat() works", {
         "^Using formula\\(x\\) is deprecated when x is a character vector of",
         "length > 1"
       )
-    } else if (fam_crr == "categ" && mod_crr == "glmm") {
-      warn_expected <- paste(
-        "^Offsets for a multilevel submodel of a brms::categorical\\(\\)",
-        "reference model are currently experimental\\.$"
-      )
     } else {
       warn_expected <- NA
     }
