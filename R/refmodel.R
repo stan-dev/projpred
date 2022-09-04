@@ -216,7 +216,9 @@
 #'
 #' Note that response-specific offsets (i.e., one length-\eqn{N} offset vector
 #' per response category) are not supported by \pkg{projpred} yet. So far, only
-#' offsets which are the same across all response categories are supported.
+#' offsets which are the same across all response categories are supported. This
+#' is why in case of the [brms::categorical()] family, offsets are currently not
+#' supported at all.
 #'
 #' @return An object that can be passed to all the functions that take the
 #'   reference model fit as the first argument, such as [varsel()],
@@ -775,7 +777,8 @@ init_refmodel <- function(object, data, formula, family, ref_predfun = NULL,
   data <- na.fail(data)
   stopifnot(is.data.frame(data))
   formula <- expand_formula(formula, data)
-  response_name <- extract_terms_response(formula)$response
+  fml_extractions <- extract_terms_response(formula)
+  response_name <- fml_extractions$response
   if (length(response_name) == 2) {
     if (family$family != "binomial") {
       stop("For non-binomial families, a two-column response is not allowed.")
@@ -796,6 +799,11 @@ init_refmodel <- function(object, data, formula, family, ref_predfun = NULL,
     } else if (isTRUE(getOption("projpred.warn_additive_experimental", TRUE))) {
       warning("Support for additive models is still experimental.")
     }
+  }
+  if (family$family == "categorical" &&
+      length(fml_extractions$offset_terms) > 0) {
+    stop("Currently, offsets are not supported in case of the ",
+         "brms::categorical() family.")
   }
 
   # Data --------------------------------------------------------------------

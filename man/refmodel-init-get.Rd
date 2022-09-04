@@ -283,7 +283,9 @@ argument \code{augdat_y_unqs}).
 
 Note that response-specific offsets (i.e., one length-\eqn{N} offset vector
 per response category) are not supported by \pkg{projpred} yet. So far, only
-offsets which are the same across all response categories are supported.
+offsets which are the same across all response categories are supported. This
+is why in case of the \code{\link[brms:brmsfamily]{brms::categorical()}} family, offsets are currently not
+supported at all.
 }
 
 \examples{
