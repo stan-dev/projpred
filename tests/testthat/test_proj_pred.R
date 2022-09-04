@@ -747,7 +747,11 @@ test_that(paste(
                     seed = seed_tst)
     if (args_prj[[tstsetup]]$fam_nm == "categ" &&
         args_prj[[tstsetup]]$mod_nm == "glmm") {
-      pl_args <- c(pl_args, list(epsilon = 1e-1))
+      pl_args <- c(pl_args, list(avoid.increase = TRUE))
+      warn_expected <- paste0(
+        "^step size truncated due to possible divergence$|",
+        "^Algorithm stopped due to false convergence$"
+      )
     }
     expect_warning(
       pl1 <- do.call(proj_linpred, pl_args),
@@ -1388,7 +1392,11 @@ test_that(paste(
                     seed = seed_tst)
     if (args_prj[[tstsetup]]$fam_nm == "categ" &&
         args_prj[[tstsetup]]$mod_nm == "glmm") {
-      pp_args <- c(pp_args, list(epsilon = 1e-1))
+      pp_args <- c(pp_args, list(avoid.increase = TRUE))
+      warn_expected <- paste0(
+        "^step size truncated due to possible divergence$|",
+        "^Algorithm stopped due to false convergence$"
+      )
     }
     expect_warning(
       pp1 <- do.call(proj_predict, pp_args),

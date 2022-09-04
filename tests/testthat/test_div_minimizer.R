@@ -153,15 +153,20 @@ test_that("divmin_augdat() works", {
       )
     } else if (fam_crr == "categ" && mod_crr == "glmm") {
       # Quick-and-dirty solution to get some working results (it's probably due
-      # to unfortunate test data simulated here that the convergence at the
-      # original tolerance of `epsilon = 1e-8` is not given):
-      args_fit_i <- c(args_fit_i, list(epsilon = 1e-1))
+      # to unfortunate test data simulated here that convergence at the default
+      # settings is not given):
+      args_fit_i <- c(args_fit_i, list(avoid.increase = TRUE))
     }
 
     if (fam_crr == "cumul" && mod_crr %in% c("glmm", "gamm")) {
       warn_expected <- paste(
         "^Using formula\\(x\\) is deprecated when x is a character vector of",
         "length > 1"
+      )
+    } else if (fam_crr == "categ" && mod_crr == "glmm") {
+      warn_expected <- paste0(
+        "^step size truncated due to possible divergence$|",
+        "^Algorithm stopped due to false convergence$"
       )
     } else {
       warn_expected <- NA
@@ -171,7 +176,7 @@ test_that("divmin_augdat() works", {
         divmin_augdat,
         args_fit_i[intersect(c("formula", "data", "family", "weights",
                                "projpred_var", "projpred_regul",
-                               "projpred_ws_aug", "epsilon"),
+                               "projpred_ws_aug", "epsilon", "avoid.increase"),
                              names(args_fit_i))]
       ),
       warn_expected

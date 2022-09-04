@@ -282,6 +282,11 @@ test_that("non-clustered projection does not require a seed", {
     rand_new1 <- runif(1) # Just to advance `.Random.seed[2]`.
     if (args_prj_i$fam_nm == "cumul" && args_prj_i$mod_nm == "glm") {
       warn_expected <- "non-integer #successes in a binomial glm!"
+    } else if (!is.null(args_prj_i$avoid.increase)) {
+      warn_expected <- paste0(
+        "^step size truncated due to possible divergence$|",
+        "^Algorithm stopped due to false convergence$"
+      )
     } else {
       warn_expected <- NA
     }

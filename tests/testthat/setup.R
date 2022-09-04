@@ -942,9 +942,9 @@ if (run_vs) {
         }
         if (mod_crr == "glmm" && fam_crr == "categ") {
           # Quick-and-dirty solution to get some working results (it's probably
-          # due to unfortunate test data simulated here that the convergence at
-          # the original tolerance of `epsilon = 1e-8` is not given):
-          extra_args <- list(epsilon = 1e-1)
+          # due to unfortunate test data simulated here that convergence at the
+          # default settings is not given):
+          extra_args <- list(avoid.increase = TRUE)
         } else {
           extra_args <- list()
         }
@@ -965,10 +965,24 @@ if (run_vs) {
   })) >= 1)
 
   vss <- lapply(args_vs, function(args_vs_i) {
-    do.call(varsel, c(
-      list(object = refmods[[args_vs_i$tstsetup_ref]]),
-      excl_nonargs(args_vs_i)
-    ))
+    if (args_vs_i$fam_nm == "cumul" && args_vs_i$mod_nm == "glm") {
+      warn_expected <- "non-integer #successes in a binomial glm!"
+    } else if (!is.null(args_vs_i$avoid.increase)) {
+      warn_expected <- paste0(
+        "^step size truncated due to possible divergence$|",
+        "^Algorithm stopped due to false convergence$"
+      )
+    } else {
+      warn_expected <- NA
+    }
+    expect_warning(
+      vs_out <- do.call(varsel, c(
+        list(object = refmods[[args_vs_i$tstsetup_ref]]),
+        excl_nonargs(args_vs_i)
+      )),
+      warn_expected
+    )
+    return(vs_out)
   })
 }
 
@@ -1169,9 +1183,9 @@ if (run_prj) {
       lapply(ndr_ncl_pred, function(ndr_ncl_pred_i) {
         if (mod_crr == "glmm" && fam_crr == "categ") {
           # Quick-and-dirty solution to get some working results (it's probably
-          # due to unfortunate test data simulated here that the convergence at
-          # the original tolerance of `epsilon = 1e-8` is not given):
-          divmin_args <- c(divmin_args, list(epsilon = 1e-1))
+          # due to unfortunate test data simulated here that convergence at the
+          # default settings is not given):
+          divmin_args <- c(divmin_args, list(avoid.increase = TRUE))
         }
         return(c(
           nlist(tstsetup_ref), only_nonargs(args_ref[[tstsetup_ref]]),
@@ -1184,10 +1198,24 @@ if (run_prj) {
   args_prj <- unlist_cust(args_prj)
 
   prjs <- lapply(args_prj, function(args_prj_i) {
-    do.call(project, c(
-      list(object = refmods[[args_prj_i$tstsetup_ref]]),
-      excl_nonargs(args_prj_i)
-    ))
+    if (args_prj_i$fam_nm == "cumul" && args_prj_i$mod_nm == "glm") {
+      warn_expected <- "non-integer #successes in a binomial glm!"
+    } else if (!is.null(args_prj_i$avoid.increase)) {
+      warn_expected <- paste0(
+        "^step size truncated due to possible divergence$|",
+        "^Algorithm stopped due to false convergence$"
+      )
+    } else {
+      warn_expected <- NA
+    }
+    expect_warning(
+      prj_out <- do.call(project, c(
+        list(object = refmods[[args_prj_i$tstsetup_ref]]),
+        excl_nonargs(args_prj_i)
+      )),
+      warn_expected
+    )
+    return(prj_out)
   })
 }
 
