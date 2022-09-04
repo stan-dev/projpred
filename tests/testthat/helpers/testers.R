@@ -471,7 +471,8 @@ refmodel_tester <- function(
     mu_cut[mu_cut > 1 - tol_ex] <- 1 - tol_ex
     expect_equal(eta_cut, refmod$family$linkfun(mu_cut), info = info_str)
   } else if (refmod$family$family %in% fam_nms_aug_long &&
-             any(refmod$mu %in% c(0, 1))) {
+             (any(abs(refmod$mu - 0) <= .Machine$double.eps) ||
+              any(abs(refmod$mu - 1) <= .Machine$double.eps))) {
     # The degenerate probabilities in `refmod$mu` are probably due to numerical
     # underflow and overflow (for zeros and ones, respectively), so applying the
     # link function would lead to infinite values. Thus, the only sensible (and
