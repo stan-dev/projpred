@@ -116,9 +116,14 @@ test_that(paste(
       y = dat_crr[[stdize_lhs(formul_fit_crr)$y_nm]]
     )
     if (prj_crr == "augdat") {
+      if (use_fac) {
+        yunqs <- yunq_chr
+      } else {
+        yunqs <- as.character(yunq_num)
+      }
       d_test_crr$y <- factor(
         as.character(d_test_crr$y),
-        levels = args_ref[[args_vs_i$tstsetup_ref]]$augdat_y_unqs %||% yunq_chr,
+        levels = args_ref[[args_vs_i$tstsetup_ref]]$augdat_y_unqs %||% yunqs,
         ordered = is.ordered(d_test_crr$y)
       )
     }
@@ -217,9 +222,14 @@ test_that(paste(
       y = dat_indep_crr[[stdize_lhs(formul_fit_crr)$y_nm]]
     )
     if (prj_crr == "augdat") {
+      if (use_fac) {
+        yunqs <- yunq_chr
+      } else {
+        yunqs <- as.character(yunq_num)
+      }
       d_test_crr$y <- factor(
         as.character(d_test_crr$y),
-        levels = args_ref[[args_vs_i$tstsetup_ref]]$augdat_y_unqs %||% yunq_chr,
+        levels = args_ref[[args_vs_i$tstsetup_ref]]$augdat_y_unqs %||% yunqs,
         ordered = is.ordered(d_test_crr$y)
       )
     }
