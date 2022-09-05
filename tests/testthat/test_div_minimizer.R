@@ -12,7 +12,8 @@ test_that("divmin() works", {
   # For comparison with the divmin_augdat() test:
   divmin_res_brnll_tmp <- list()
 
-  for (tstsetup in names(fits)) {
+  for (tstsetup in grep(fam_nms_aug_regex, names(fits), value = TRUE,
+                        invert = TRUE)) {
     args_fit_i <- args_fit[[tstsetup]]
     pkg_crr <- args_fit_i$pkg_nm
     mod_crr <- args_fit_i$mod_nm
@@ -50,6 +51,8 @@ test_that("divmin() works", {
     } else if (fam_crr == "brnll") {
       if (pkg_crr == "brms") {
         args_fit_i$family <- f_binom
+        # Remove some terms which lead to extreme coefficients:
+        args_fit_i$formula <- update(args_fit_i$formula, . ~ . - xca.1)
       }
     }
 
@@ -95,6 +98,8 @@ test_that("divmin_augdat() works", {
   divmin_res_brnll_tmp <- list()
 
   tstsetups_ref <- names(args_ref[sapply(args_ref, "[[", "prj_nm") == "augdat"])
+  tstsetups_ref <- grep(fam_nms_unsupp_regex, tstsetups_ref, value = TRUE,
+                        invert = TRUE)
   for (tstsetup in tstsetups_ref) {
     args_ref_i <- args_ref[[tstsetup]]
     args_fit_i <- args_fit[[args_ref_i$tstsetup_fit]]
@@ -108,7 +113,10 @@ test_that("divmin_augdat() works", {
     # Augmented-data weights, here indicating the observed response category
     # with value 1 and all others with 0:
     args_fit_i$projpred_ws_aug <- lapply(y_unqs, function(y_unq) {
-      as.integer(eval(args_fit_i$data)[[y_nm]] == as.numeric(y_unq))
+      if (fam_crr == "brnll") {
+        y_unq <- as.numeric(y_unq)
+      }
+      as.integer(eval(args_fit_i$data)[[y_nm]] == y_unq)
     })
     args_fit_i$projpred_ws_aug <- do.call(cbind, args_fit_i$projpred_ws_aug)
     stopifnot(all(rowSums(args_fit_i$projpred_ws_aug) == 1))
@@ -128,14 +136,50 @@ test_that("divmin_augdat() works", {
     args_fit_i$projpred_regul <- regul_default
     if (fam_crr == "brnll" && pkg_crr == "brms") {
       args_fit_i$family <- f_binom
+      # Remove some terms which lead to extreme coefficients:
+      args_fit_i$formula <- update(args_fit_i$formula, . ~ . - xca.1)
+    } else if (fam_crr == "cumul" && pkg_crr == "rstanarm") {
+      args_fit_i$family <- structure(
+        list(family = "cumulative_rstanarm",
+             link = refmods[[tstsetup]]$family$link,
+             cats = y_unqs),
+        class = "family"
+      )
+    } else if (fam_crr == "cumul" && pkg_crr == "brms") {
+      fam_crr_long <- get_fam_long(fam_crr)
+      args_fit_i$family <- substitute(
+        get(fam_crr_long_subst, envir = asNamespace("brms"))(),
+        list(fam_crr_long_subst = fam_crr_long)
+      )
+    } else if (fam_crr == "categ" && mod_crr == "glmm") {
+      # Quick-and-dirty solution to get some working results (it's probably due
+      # to unfortunate test data simulated here that convergence at the default
+      # settings is not given):
+      args_fit_i <- c(args_fit_i, list(avoid.increase = TRUE))
     }
 
-    divmin_res <- do.call(
-      divmin_augdat,
-      args_fit_i[intersect(c("formula", "data", "family", "weights",
-                             "projpred_var", "projpred_regul",
-                             "projpred_ws_aug"),
-                           names(args_fit_i))]
+    if (fam_crr == "cumul" && mod_crr %in% c("glmm", "gamm")) {
+      warn_expected <- paste(
+        "^Using formula\\(x\\) is deprecated when x is a character vector of",
+        "length > 1"
+      )
+    } else if (fam_crr == "categ" && mod_crr == "glmm") {
+      warn_expected <- paste0(
+        "^step size truncated due to possible divergence$|",
+        "^Algorithm stopped due to false convergence$"
+      )
+    } else {
+      warn_expected <- NA
+    }
+    expect_warning(
+      divmin_res <- do.call(
+        divmin_augdat,
+        args_fit_i[intersect(c("formula", "data", "family", "weights",
+                               "projpred_var", "projpred_regul",
+                               "projpred_ws_aug", "epsilon", "avoid.increase"),
+                             names(args_fit_i))]
+      ),
+      warn_expected
     )
     if (fam_crr == "brnll") {
       divmin_res_brnll_tmp[[tstsetup]] <- divmin_res

@@ -80,14 +80,36 @@
 #' experimental feature since it has not been tested thoroughly yet and is also
 #' subject to some more theoretical investigations.
 #'
+#' For the projection of the reference model onto a submodel, \pkg{projpred}
+#' currently relies on the following functions (in other words, these are the
+#' workhorse functions used by the default divergence minimizers):
+#' * Submodel without multilevel or additive terms:
+#'     + For the traditional (or latent) projection (or the augmented-data
+#'     projection in case of the [binomial()] or [brms::bernoulli()] family): An
+#'     internal C++ function which basically serves the same purpose as [lm()]
+#'     for the [gaussian()] family and [glm()] for all other families.
+#'     + For the augmented-data projection: [MASS::polr()] for the
+#'     [brms::cumulative()] family or [rstanarm::stan_polr()] fits,
+#'     [nnet::multinom()] for the [brms::categorical()] family.
+#' * Submodel with multilevel but no additive terms:
+#'     + For the traditional (or latent) projection (or the augmented-data
+#'     projection in case of the [binomial()] or [brms::bernoulli()] family):
+#'     [lme4::lmer()] for the [gaussian()] family, [lme4::glmer()] for all other
+#'     families.
+#'     + For the augmented-data projection: [ordinal::clmm()] for the
+#'     [brms::cumulative()] family, [mclogit::mblogit()] for the
+#'     [brms::categorical()] family.
+#' * Submodel without multilevel but additive terms: [mgcv::gam()].
+#' * Submodel with multilevel and additive terms: [gamm4::gamm4()].
+#'
 #' The projection of the reference model onto a submodel can be run on multiple
 #' CPU cores in parallel (across the projected draws). This is powered by the
-#' \pkg{foreach} package. Thus, you can use any parallel (or sequential) backend
-#' compatible with \pkg{foreach}, e.g., the backends from packages
+#' \pkg{foreach} package. Thus, any parallel (or sequential) backend compatible
+#' with \pkg{foreach} can be used, e.g., the backends from packages
 #' \pkg{doParallel}, \pkg{doMPI}, or \pkg{doFuture}. Using the global option
-#' `projpred.prll_prj_trigger`, you can modify the number of projected draws
-#' below which no parallelization is used (even if a parallel backend is
-#' registered). Such a "trigger" threshold exists because of the computational
+#' `projpred.prll_prj_trigger`, the number of projected draws below which no
+#' parallelization is applied (even if a parallel backend is registered) can be
+#' modified. Such a "trigger" threshold exists because of the computational
 #' overhead of a parallelization which makes parallelization only useful for a
 #' sufficiently large number of projected draws. By default, parallelization is
 #' turned off, which can also be achieved by supplying `Inf` (or `NULL`) to

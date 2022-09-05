@@ -17,6 +17,18 @@ test_that("`object` of class \"stanreg\" or \"brmsfit\" works", {
     } else {
       offs_expected_crr <- rep(0, nobsv)
     }
+    if (args_ref[[tstsetup]]$pkg_nm == "brms" &&
+        args_ref[[tstsetup]]$fam_nm %in% fam_nms_aug) {
+      fam_orig_expected <- eval(args_fit[[tstsetup_fit]]$family)
+    } else {
+      if (args_ref[[tstsetup]]$pkg_nm == "rstanarm" &&
+          args_ref[[tstsetup]]$fam_nm == "cumul") {
+        f_cumul <- structure(list(family = "cumulative_rstanarm",
+                                  link = link_str),
+                             class = "family")
+      }
+      fam_orig_expected <- get(paste0("f_", args_fit[[tstsetup_fit]]$fam_nm))
+    }
     refmodel_tester(
       refmods[[tstsetup]],
       pkg_nm = args_ref[[tstsetup]]$pkg_nm,
@@ -24,7 +36,7 @@ test_that("`object` of class \"stanreg\" or \"brmsfit\" works", {
       with_spclformul = with_spclformul_crr,
       wobs_expected = wobs_expected_crr,
       offs_expected = offs_expected_crr,
-      fam_orig = get(paste0("f_", args_fit[[tstsetup_fit]]$fam_nm)),
+      fam_orig = fam_orig_expected,
       mod_nm = args_ref[[tstsetup]]$mod_nm,
       fam_nm = args_ref[[tstsetup]]$fam_nm,
       augdat_expected = args_ref[[tstsetup]]$prj_nm == "augdat",

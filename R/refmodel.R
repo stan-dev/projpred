@@ -102,8 +102,9 @@
 #' # Arguments `ref_predfun`, `proj_predfun`, and `div_minimizer`
 #'
 #' Arguments `ref_predfun`, `proj_predfun`, and `div_minimizer` may be `NULL`
-#' for using an internal default. Otherwise, let \eqn{N} denote the number of
-#' observations (in case of CV, these may be reduced to each fold),
+#' for using an internal default (see [projpred-package] for the functions used
+#' by the default divergence minimizers). Otherwise, let \eqn{N} denote the
+#' number of observations (in case of CV, these may be reduced to each fold),
 #' \eqn{S_{\mathrm{ref}}}{S_ref} the number of posterior draws for the reference
 #' model's parameters, and \eqn{S_{\mathrm{prj}}}{S_prj} the number of (possibly
 #' clustered) parameter draws for projection (short: the number of projected
@@ -218,7 +219,9 @@
 #'
 #' Note that response-specific offsets (i.e., one length-\eqn{N} offset vector
 #' per response category) are not supported by \pkg{projpred} yet. So far, only
-#' offsets which are the same across all response categories are supported.
+#' offsets which are the same across all response categories are supported. This
+#' is why in case of the [brms::categorical()] family, offsets are currently not
+#' supported at all.
 #'
 #' # Latent projection
 #'
@@ -923,7 +926,8 @@ init_refmodel <- function(object, data, formula, family, ref_predfun = NULL,
   data <- na.fail(data)
   stopifnot(is.data.frame(data))
   formula <- expand_formula(formula, data)
-  response_name <- extract_terms_response(formula)$response
+  fml_extractions <- extract_terms_response(formula)
+  response_name <- fml_extractions$response
   if (length(response_name) == 2) {
     if (family$family != "binomial") {
       stop("For non-binomial families, a two-column response is not allowed.")
@@ -947,6 +951,11 @@ init_refmodel <- function(object, data, formula, family, ref_predfun = NULL,
     } else if (isTRUE(getOption("projpred.warn_additive_experimental", TRUE))) {
       warning("Support for additive models is still experimental.")
     }
+  }
+  if (family$family == "categorical" &&
+      length(fml_extractions$offset_terms) > 0) {
+    stop("Currently, offsets are not supported in case of the ",
+         "brms::categorical() family.")
   }
 
   # Functions ---------------------------------------------------------------

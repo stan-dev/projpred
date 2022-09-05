@@ -12,11 +12,18 @@ extract_terms_response <- function(formula) {
   allterms_ <- as.list(attr(tt, "variables")[-1])
   response <- attr(tt, "response")
   global_intercept <- attr(tt, "intercept") == 1
+  offs_attr <- attr(tt, "offset")
 
   if (response) {
     response <- allterms_[response]
   } else {
     response <- NA
+  }
+
+  if (length(offs_attr)) {
+    offset_terms <- sapply(allterms_[offs_attr], deparse)
+  } else {
+    offset_terms <- NULL
   }
 
   hier <- grepl("\\|", terms_)
@@ -34,7 +41,8 @@ extract_terms_response <- function(formula) {
     additive_terms,
     group_terms,
     response,
-    global_intercept
+    global_intercept,
+    offset_terms
   ))
 }
 
@@ -767,7 +775,8 @@ split_formula_random_gamm4 <- function(formula) {
     paste(parens_group_terms, collapse = " + ")
   ))
   formula <- update(formula, make_formula(c(
-    tt$individual_terms, tt$interaction_terms, tt$additive_terms
+    tt$individual_terms, tt$interaction_terms, tt$additive_terms,
+    tt$offset_terms
   )))
   return(nlist(formula, random))
 }
@@ -791,5 +800,7 @@ formula.gamm4 <- function(x) {
       paste(split_formula(updated), collapse = " + ")
     )
   ))
+  # TODO (GAMMs): Once rstanarm issue #253 has been resolved, we probably need
+  # to include offset terms here (in the output of formula.gamm4()) as well.
   return(form)
 }

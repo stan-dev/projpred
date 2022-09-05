@@ -280,10 +280,32 @@ test_that("non-clustered projection does not require a seed", {
     args_prj_i <- args_prj[[tstsetup]]
     p_orig <- prjs[[tstsetup]]
     rand_new1 <- runif(1) # Just to advance `.Random.seed[2]`.
-    p_new <- do.call(project, c(
-      list(object = refmods[[args_prj_i$tstsetup_ref]]),
-      excl_nonargs(args_prj_i, nms_excl_add = "seed")
-    ))
+    if (args_prj_i$fam_nm == "cumul" && args_prj_i$mod_nm == "glm") {
+      warn_expected <- "non-integer #successes in a binomial glm!"
+    } else if (!is.null(args_prj_i$avoid.increase)) {
+      warn_expected <- paste0(
+        "^step size truncated due to possible divergence$|",
+        "^Algorithm stopped due to false convergence$"
+      )
+    } else {
+      warn_expected <- NA
+    }
+    expect_warning(
+      p_new <- do.call(project, c(
+        list(object = refmods[[args_prj_i$tstsetup_ref]]),
+        excl_nonargs(args_prj_i, nms_excl_add = "seed")
+      )),
+      warn_expected
+    )
+    if (args_prj_i$fam_nm == "cumul" && args_prj_i$mod_nm == "glmm") {
+      for (idx_s in seq_along(p_new$submodl)) {
+        # We could also use `"sparseMatrix"` instead of `"Matrix"`:
+        expect_equal(as(p_new$submodl[[idx_s]][["L"]], "Matrix"),
+                     as(p_orig$submodl[[idx_s]][["L"]], "Matrix"),
+                     info = tstsetup)
+        p_new$submodl[[idx_s]][["L"]] <- p_orig$submodl[[idx_s]][["L"]]
+      }
+    }
     expect_equal(p_new, p_orig, info = tstsetup)
   }
 })
@@ -330,6 +352,7 @@ test_that("for GLMs, `regul` has an expected effect", {
   stopifnot(regul_tst[1] == regul_default)
   stopifnot(all(diff(regul_tst) > 0))
   tstsetups <- grep("\\.glm\\..*\\.clust$", names(prjs), value = TRUE)
+  tstsetups <- grep(fam_nms_aug_regex, tstsetups, value = TRUE, invert = TRUE)
   for (tstsetup in tstsetups) {
     args_prj_i <- args_prj[[tstsetup]]
     ndr_ncl <- ndr_ncl_dtls(args_prj_i)

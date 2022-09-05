@@ -618,6 +618,23 @@ fit_categ <- function(formula, data, family, weights, ...) {
     stop("For the brms::categorical() family, projpred only supports the ",
          "logit link.")
   }
+  # Handle offsets (but note that currently, offsets in the submodel fitter are
+  # unexpected; this case should only occur in `test_div_minimizer.R`):
+  trms <- terms(formula, data = data)
+  offs_attr <- attr(trms, "offset")
+  if (length(offs_attr)) {
+    mfr <- model.frame(formula = formula, data = data)
+    offs_obj <- model.offset(mfr)
+    if (is.null(dim(offs_obj))) {
+      # Recycle the vector of offsets to a matrix with number of columns equal
+      # to the number of response categories:
+      resp_vec <- model.response(mfr)
+      ncats <- length(unique(resp_vec))
+      offs_mat <- matrix(offs_obj, nrow = nrow(data), ncol = ncats)
+      offs_nm <- as.character(attr(trms, "variables")[[offs_attr + 1L]][[2]])
+      data[[offs_nm]] <- offs_mat
+    }
+  }
   # Call the submodel fitter:
   out_capt <- utils::capture.output({
     fitobj <- do.call(nnet::multinom, c(
@@ -649,6 +666,27 @@ fit_categ_mlvl <- function(formula, projpred_formula_no_random,
   if (link_nm != "logit") {
     stop("For the brms::categorical() family, projpred only supports the ",
          "logit link.")
+  }
+  # Handle offsets (but note that currently, offsets in the submodel fitter are
+  # unexpected; this case should only occur in `test_div_minimizer.R`):
+  trms <- terms(projpred_formula_no_random, data = data)
+  offs_attr <- attr(trms, "offset")
+  if (length(offs_attr)) {
+    # It is not clear whether mclogit::mblogit() supports offsets correctly (but
+    # currently, offsets are unexpected here anyway):
+    warning("Offsets for a multilevel submodel of a brms::categorical() ",
+            "reference model are currently experimental.")
+    mfr <- model.frame(formula = projpred_formula_no_random, data = data)
+    offs_obj <- model.offset(mfr)
+    if (is.null(dim(offs_obj))) {
+      # Recycle the vector of offsets to a matrix with number of columns equal
+      # to the number of response categories:
+      resp_vec <- model.response(mfr)
+      ncats <- length(unique(resp_vec))
+      offs_mat <- matrix(offs_obj, nrow = nrow(data), ncol = ncats)
+      offs_nm <- as.character(attr(trms, "variables")[[offs_attr + 1L]][[2]])
+      data[[offs_nm]] <- offs_mat
+    }
   }
   # Strip parentheses from group-level terms:
   random_trms <- labels(terms(projpred_random))

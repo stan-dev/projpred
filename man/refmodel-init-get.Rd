@@ -157,8 +157,9 @@ analogously for higher-order joint effects, e.g., of three predictors).
 
 \section{Arguments \code{ref_predfun}, \code{proj_predfun}, and \code{div_minimizer}}{
 Arguments \code{ref_predfun}, \code{proj_predfun}, and \code{div_minimizer} may be \code{NULL}
-for using an internal default. Otherwise, let \eqn{N} denote the number of
-observations (in case of CV, these may be reduced to each fold),
+for using an internal default (see \link{projpred-package} for the functions used
+by the default divergence minimizers). Otherwise, let \eqn{N} denote the
+number of observations (in case of CV, these may be reduced to each fold),
 \eqn{S_{\mathrm{ref}}}{S_ref} the number of posterior draws for the reference
 model's parameters, and \eqn{S_{\mathrm{prj}}}{S_prj} the number of (possibly
 clustered) parameter draws for projection (short: the number of projected
@@ -286,7 +287,9 @@ argument \code{augdat_y_unqs}).
 
 Note that response-specific offsets (i.e., one length-\eqn{N} offset vector
 per response category) are not supported by \pkg{projpred} yet. So far, only
-offsets which are the same across all response categories are supported.
+offsets which are the same across all response categories are supported. This
+is why in case of the \code{\link[brms:brmsfamily]{brms::categorical()}} family, offsets are currently not
+supported at all.
 }
 
 \section{Latent projection}{

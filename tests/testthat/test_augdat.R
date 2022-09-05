@@ -326,7 +326,11 @@ test_that(paste(
     summs_ref <- vs$summaries$ref
     summs_ref$mu <- structure(unclass(summs_ref$mu), nobs_orig = NULL)
     summs_ref$mu <- summs_ref$mu[(nobsv + 1):(2 * nobsv)]
-    expect_equal(summs_ref, vs_trad$summaries$ref, tolerance = 1e-14,
+    tol_ref <- .Machine$double.eps
+    if (args_vs[[tstsetup]]$mod_nm == "glmm") {
+      tol_ref <- 1e3 * tol_ref
+    }
+    expect_equal(summs_ref, vs_trad$summaries$ref, tolerance = tol_ref,
                  info = tstsetup)
   }
 })
@@ -420,7 +424,12 @@ test_that(paste(
 
     is_kfold <- identical(args_cvvs[[tstsetup]]$cv_method, "kfold")
     if (is_kfold) {
-      tol_sub <- 1e-5
+      is_glmm <- args_cvvs[[tstsetup]]$mod_nm == "glmm"
+      if (is_glmm) {
+        tol_sub <- 1e-4
+      } else {
+        tol_sub <- 1e-5
+      }
     } else {
       tol_sub <- 1e-6
     }

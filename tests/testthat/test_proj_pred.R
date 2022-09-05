@@ -111,7 +111,7 @@ test_that(paste(
   "`object` of (informal) class \"proj_list\" (created manually) works"
 ), {
   skip_if_not(run_prj)
-  tstsetups <- grep("\\.clust$", names(prjs), value = TRUE)
+  tstsetups <- grep("\\.trad\\..*\\.clust$", names(prjs), value = TRUE)
   stopifnot(length(tstsetups) > 1)
   pl <- proj_linpred(prjs[tstsetups])
   pl_tester(pl,
@@ -509,10 +509,20 @@ test_that("`offsetnew` works", {
         ### TODO: This might in fact be undesired:
         expect_equal(pl_zeros, pl_orig, info = tstsetup)
         expect_false(isTRUE(all.equal(pl, pl_orig)), info = tstsetup)
-        expect_equal(t(pred_pl) - dat$offs_col, t(pred_pl_orig),
-                     info = tstsetup)
-        expect_equal(t(pred_plo) - dat_offs_new$offs_col_new, t(pred_pl_orig),
-                     info = tstsetup)
+        pred_pl_no_offs <- t(pred_pl)
+        if (get_fam_long(args_prj[[tstsetup]]$fam_nm) %in% fams_neg_linpred()) {
+          pred_pl_no_offs <- pred_pl_no_offs + dat$offs_col
+        } else {
+          pred_pl_no_offs <- pred_pl_no_offs - dat$offs_col
+        }
+        expect_equal(pred_pl_no_offs, t(pred_pl_orig), info = tstsetup)
+        pred_plo_no_offs <- t(pred_plo)
+        if (get_fam_long(args_prj[[tstsetup]]$fam_nm) %in% fams_neg_linpred()) {
+          pred_plo_no_offs <- pred_plo_no_offs + dat_offs_new$offs_col_new
+        } else {
+          pred_plo_no_offs <- pred_plo_no_offs - dat_offs_new$offs_col_new
+        }
+        expect_equal(pred_plo_no_offs, t(pred_pl_orig), info = tstsetup)
         expect_false(isTRUE(all.equal(pl$lpd, pl_orig$lpd)), info = tstsetup)
         ###
         expect_false(isTRUE(all.equal(plo$lpd, pl_orig$lpd)), info = tstsetup)
@@ -532,10 +542,20 @@ test_that("`offsetnew` works", {
           pred_pl[is_extreme] <- NA
           pred_plo[is_extreme] <- NA
         }
-        expect_equal(t(pred_pl) - dat$offs_col, t(pred_pl_orig),
-                     info = tstsetup)
-        expect_equal(t(pred_plo) - dat_offs_new$offs_col_new, t(pred_pl_orig),
-                     info = tstsetup)
+        pred_pl_no_offs <- t(pred_pl)
+        if (get_fam_long(args_prj[[tstsetup]]$fam_nm) %in% fams_neg_linpred()) {
+          pred_pl_no_offs <- pred_pl_no_offs + dat$offs_col
+        } else {
+          pred_pl_no_offs <- pred_pl_no_offs - dat$offs_col
+        }
+        expect_equal(pred_pl_no_offs, t(pred_pl_orig), info = tstsetup)
+        pred_plo_no_offs <- t(pred_plo)
+        if (get_fam_long(args_prj[[tstsetup]]$fam_nm) %in% fams_neg_linpred()) {
+          pred_plo_no_offs <- pred_plo_no_offs + dat_offs_new$offs_col_new
+        } else {
+          pred_plo_no_offs <- pred_plo_no_offs - dat_offs_new$offs_col_new
+        }
+        expect_equal(pred_plo_no_offs, t(pred_pl_orig), info = tstsetup)
         expect_false(isTRUE(all.equal(pl$lpd, pl_orig$lpd)), info = tstsetup)
         expect_false(isTRUE(all.equal(plo$lpd, pl_orig$lpd)), info = tstsetup)
         expect_false(isTRUE(all.equal(plo$lpd, pl$lpd)), info = tstsetup)
@@ -593,6 +613,7 @@ test_that("`regul` works", {
   stopifnot(identical(regul_tst, sort(regul_tst)))
   tstsetups <- grep("\\.glm\\..*\\.solterms_x\\.clust$", names(prjs),
                     value = TRUE)
+  tstsetups <- grep("\\.cumul\\.", tstsetups, value = TRUE, invert = TRUE)
   for (tstsetup in tstsetups) {
     args_prj_i <- args_prj[[tstsetup]]
     if (args_prj_i$prj_nm == "augdat") {
@@ -701,7 +722,7 @@ test_that(paste(
   "this edge case for family$ll_fun(), too)"
 ), {
   skip_if_not(run_prj)
-  for (tstsetup in names(prjs)) {
+  for (tstsetup in grep("\\.clust$", names(prjs), value = TRUE)) {
     if (args_prj[[tstsetup]]$mod_nm == "gamm") {
       # TODO (GAMMs): Fix this.
       next
@@ -713,11 +734,29 @@ test_that(paste(
     } else {
       ncats_nlats_expected_crr <- integer()
     }
-    pl1 <- proj_linpred(refmods[[args_prj[[tstsetup]]$tstsetup_ref]],
-                        newdata = head(get_dat(tstsetup), 1),
-                        solution_terms = args_prj[[tstsetup]]$solution_terms,
-                        nclusters = 1L,
-                        seed = seed_tst)
+    if (args_prj[[tstsetup]]$fam_nm == "cumul" &&
+        args_prj[[tstsetup]]$mod_nm == "glm") {
+      warn_expected <- "non-integer #successes in a binomial glm!"
+    } else {
+      warn_expected <- NA
+    }
+    pl_args <- list(refmods[[args_prj[[tstsetup]]$tstsetup_ref]],
+                    newdata = head(get_dat(tstsetup), 1),
+                    solution_terms = args_prj[[tstsetup]]$solution_terms,
+                    nclusters = 1L,
+                    seed = seed_tst)
+    if (args_prj[[tstsetup]]$fam_nm == "categ" &&
+        args_prj[[tstsetup]]$mod_nm == "glmm") {
+      pl_args <- c(pl_args, list(avoid.increase = TRUE))
+      warn_expected <- paste0(
+        "^step size truncated due to possible divergence$|",
+        "^Algorithm stopped due to false convergence$"
+      )
+    }
+    expect_warning(
+      pl1 <- do.call(proj_linpred, pl_args),
+      warn_expected
+    )
     pl_tester(pl1,
               nprjdraws_expected = 1L,
               nobsv_expected = 1L,
@@ -1206,10 +1245,23 @@ test_that("`offsetnew` works", {
         # For the gaussian() family, we can perform an easy check (because of
         # the identity link):
         if (args_prj[[tstsetup]]$fam_nm == "gauss") {
+          pp_no_offs <- t(pp)
+          if (get_fam_long(args_prj[[tstsetup]]$fam_nm) %in%
+              fams_neg_linpred()) {
+            pp_no_offs <- pp_no_offs + dat$offs_col
+          } else {
+            pp_no_offs <- pp_no_offs - dat$offs_col
+          }
+          ppo_no_offs <- t(ppo)
+          if (get_fam_long(args_prj[[tstsetup]]$fam_nm) %in%
+              fams_neg_linpred()) {
+            ppo_no_offs <- ppo_no_offs + dat_offs_new$offs_col_new
+          } else {
+            ppo_no_offs <- ppo_no_offs - dat_offs_new$offs_col_new
+          }
           ### TODO: This might in fact be undesired (see above):
-          expect_equal(t(pp) - dat$offs_col, t(pp_orig), info = tstsetup)
-          expect_equal(t(ppo) - dat_offs_new$offs_col_new, t(pp_orig),
-                       info = tstsetup)
+          expect_equal(pp_no_offs, t(pp_orig), info = tstsetup)
+          expect_equal(ppo_no_offs, t(pp_orig), info = tstsetup)
           ###
         } else {
           expect_false(isTRUE(all.equal(ppo, pp_orig)), info = tstsetup)
@@ -1320,18 +1372,36 @@ test_that(paste(
   "this edge case for family$ppd(), too)"
 ), {
   skip_if_not(run_prj)
-  for (tstsetup in names(prjs)) {
+  for (tstsetup in grep("\\.clust$", names(prjs), value = TRUE)) {
     if (args_prj[[tstsetup]]$mod_nm == "gamm") {
       # TODO (GAMMs): Fix this.
       next
     }
-    pp1 <- proj_predict(refmods[[args_prj[[tstsetup]]$tstsetup_ref]],
-                        newdata = head(get_dat(tstsetup), 1),
-                        nresample_clusters = 1L,
-                        .seed = seed2_tst,
-                        solution_terms = args_prj[[tstsetup]]$solution_terms,
-                        nclusters = 1L,
-                        seed = seed_tst)
+    if (args_prj[[tstsetup]]$fam_nm == "cumul" &&
+        args_prj[[tstsetup]]$mod_nm == "glm") {
+      warn_expected <- "non-integer #successes in a binomial glm!"
+    } else {
+      warn_expected <- NA
+    }
+    pp_args <- list(refmods[[args_prj[[tstsetup]]$tstsetup_ref]],
+                    newdata = head(get_dat(tstsetup), 1),
+                    nresample_clusters = 1L,
+                    .seed = seed2_tst,
+                    solution_terms = args_prj[[tstsetup]]$solution_terms,
+                    nclusters = 1L,
+                    seed = seed_tst)
+    if (args_prj[[tstsetup]]$fam_nm == "categ" &&
+        args_prj[[tstsetup]]$mod_nm == "glmm") {
+      pp_args <- c(pp_args, list(avoid.increase = TRUE))
+      warn_expected <- paste0(
+        "^step size truncated due to possible divergence$|",
+        "^Algorithm stopped due to false convergence$"
+      )
+    }
+    expect_warning(
+      pp1 <- do.call(proj_predict, pp_args),
+      warn_expected
+    )
     pp_tester(pp1,
               nprjdraws_out_expected = 1L,
               nobsv_expected = 1L,

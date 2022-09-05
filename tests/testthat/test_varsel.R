@@ -116,15 +116,29 @@ test_that(paste(
       y = dat_crr[[stdize_lhs(formul_fit_crr)$y_nm]]
     )
     if (prj_crr == "augdat") {
+      if (use_fac) {
+        yunqs <- yunq_chr
+      } else {
+        yunqs <- as.character(yunq_num)
+      }
       d_test_crr$y <- factor(
         as.character(d_test_crr$y),
-        levels = args_ref[[args_vs_i$tstsetup_ref]]$augdat_y_unqs
+        levels = args_ref[[args_vs_i$tstsetup_ref]]$augdat_y_unqs %||% yunqs,
+        ordered = is.ordered(d_test_crr$y)
       )
     }
-    vs_repr <- do.call(varsel, c(
-      list(object = refmods[[tstsetup_ref]], d_test = d_test_crr),
-      excl_nonargs(args_vs_i)
-    ))
+    if (fam_crr == "cumul" && mod_crr == "glm") {
+      warn_expected <- "non-integer #successes in a binomial glm!"
+    } else {
+      warn_expected <- NA
+    }
+    expect_warning(
+      vs_repr <- do.call(varsel, c(
+        list(object = refmods[[tstsetup_ref]], d_test = d_test_crr),
+        excl_nonargs(args_vs_i)
+      )),
+      warn_expected
+    )
     meth_exp_crr <- args_vs_i$method
     if (is.null(meth_exp_crr)) {
       meth_exp_crr <- ifelse(mod_crr == "glm" && prj_crr != "augdat",
@@ -148,11 +162,14 @@ test_that(paste(
     expect_equal(vs_repr[setdiff(names(vs_repr), "d_test")],
                  vss[[tstsetup]][setdiff(names(vss[[tstsetup]]), "d_test")],
                  info = tstsetup)
+    d_test_orig <- vss[[tstsetup]]$d_test[setdiff(names(vss[[tstsetup]]$d_test),
+                                                  c("type", "data"))]
+    # brms seems to set argument `contrasts`, but this is not important for
+    # projpred, so ignore it in the comparison:
+    attr(d_test_orig$y, "contrasts") <- NULL
     expect_equal(vs_repr$d_test[setdiff(names(vs_repr$d_test),
                                         c("type", "data"))],
-                 vss[[tstsetup]]$d_test[setdiff(names(vss[[tstsetup]]$d_test),
-                                                c("type", "data"))],
-                 info = tstsetup)
+                 d_test_orig, info = tstsetup)
   }
 })
 
@@ -207,15 +224,29 @@ test_that(paste(
       y = dat_indep_crr[[stdize_lhs(formul_fit_crr)$y_nm]]
     )
     if (prj_crr == "augdat") {
+      if (use_fac) {
+        yunqs <- yunq_chr
+      } else {
+        yunqs <- as.character(yunq_num)
+      }
       d_test_crr$y <- factor(
         as.character(d_test_crr$y),
-        levels = args_ref[[args_vs_i$tstsetup_ref]]$augdat_y_unqs
+        levels = args_ref[[args_vs_i$tstsetup_ref]]$augdat_y_unqs %||% yunqs,
+        ordered = is.ordered(d_test_crr$y)
       )
     }
-    vs_indep <- do.call(varsel, c(
-      list(object = refmods[[tstsetup_ref]], d_test = d_test_crr),
-      excl_nonargs(args_vs_i)
-    ))
+    if (fam_crr == "cumul" && mod_crr == "glm") {
+      warn_expected <- "non-integer #successes in a binomial glm!"
+    } else {
+      warn_expected <- NA
+    }
+    expect_warning(
+      vs_indep <- do.call(varsel, c(
+        list(object = refmods[[tstsetup_ref]], d_test = d_test_crr),
+        excl_nonargs(args_vs_i)
+      )),
+      warn_expected
+    )
     meth_exp_crr <- args_vs_i$method
     if (is.null(meth_exp_crr)) {
       meth_exp_crr <- ifelse(mod_crr == "glm" && prj_crr != "augdat",
@@ -245,16 +276,21 @@ test_that(paste(
                                 nclusters = vs_indep$nprjdraws_search)
     # As soon as GitHub issues #168 and #211 are fixed, we can use `refit_prj =
     # FALSE` here:
-    pl_indep <- proj_linpred(vs_indep,
-                             newdata = dat_indep_crr,
-                             offsetnew = d_test_crr$offset,
-                             weightsnew = d_test_crr$weights,
-                             transform = TRUE,
-                             integrated = TRUE,
-                             .seed = NA,
-                             nterms = c(0L, seq_along(vs_indep$solution_terms)),
-                             nclusters = args_vs_i$nclusters_pred,
-                             seed = NA)
+    expect_warning(
+      pl_indep <- proj_linpred(
+        vs_indep,
+        newdata = dat_indep_crr,
+        offsetnew = d_test_crr$offset,
+        weightsnew = d_test_crr$weights,
+        transform = TRUE,
+        integrated = TRUE,
+        .seed = NA,
+        nterms = c(0L, seq_along(vs_indep$solution_terms)),
+        nclusters = args_vs_i$nclusters_pred,
+        seed = NA
+      ),
+      warn_expected
+    )
     summ_sub_ch <- lapply(pl_indep, function(pl_indep_k) {
       names(pl_indep_k)[names(pl_indep_k) == "pred"] <- "mu"
       names(pl_indep_k)[names(pl_indep_k) == "lpd"] <- "lppd"
@@ -277,6 +313,30 @@ test_that(paste(
       mu_new <- rstantools::posterior_epred(refmods[[tstsetup_ref]]$fit,
                                             newdata = dat_indep,
                                             offset = d_test_crr$offset)
+      if (fam_crr == "cumul") {
+        eta_new <- rstantools::posterior_linpred(refmods[[tstsetup_ref]]$fit,
+                                                 newdata = dat_indep,
+                                                 offset = d_test_crr$offset)
+        # The following shows that in case of an rstanarm::stan_polr() fit,
+        # rstantools::posterior_epred() returns the linear predictors with a
+        # threshold of zero, transformed to response scale (which is not really
+        # helpful):
+        mu_new_ch <- augdat_ilink_cumul(
+          array(eta_new, dim = c(dim(eta_new), 1L)),
+          link = link_str
+        )
+        stopifnot(isTRUE(all.equal(unname(mu_new), mu_new_ch[, , 1],
+                                   tolerance = .Machine$double.eps)))
+        # Therefore, `mu_new` has to be adapted to incorporate the correct
+        # thresholds:
+        drws <- as.matrix(refmods[[tstsetup_ref]]$fit)
+        drws_thres <- drws[, grep("\\|", colnames(drws))]
+        mu_new <- apply(drws_thres, 2, function(thres_vec) {
+          thres_vec - eta_new
+        }, simplify = FALSE)
+        mu_new <- abind::abind(mu_new, rev.along = 0)
+        mu_new <- augdat_ilink_cumul(mu_new, link = link_str)
+      }
       if (grepl("\\.without_wobs", tstsetup)) {
         lppd_new <- rstantools::log_lik(refmods[[tstsetup_ref]]$fit,
                                         newdata = dat_indep,
@@ -304,8 +364,19 @@ test_that(paste(
       lppd_new <- rstantools::log_lik(refmods[[tstsetup_ref]]$fit,
                                       newdata = dat_indep)
     }
+    if (length(dim(mu_new)) == 2) {
+      mu_new <- colMeans(mu_new)
+    } else if (length(dim(mu_new)) == 3) {
+      # In fact, we have `identical(colMeans(mu_new), apply(mu_new, c(2, 3),
+      # mean))` giving `TRUE`, but it's better to be explicit:
+      mu_new <- apply(mu_new, c(2, 3), mean)
+      mu_new <- structure(as.vector(mu_new), class = "augvec",
+                          nobs_orig = nobsv_indep)
+    } else {
+      stop("Unexpected number of margins for `mu_new`.")
+    }
     summ_ref_ch <- list(
-      mu = unname(colMeans(mu_new)),
+      mu = unname(mu_new),
       lppd = unname(apply(lppd_new, 2, log_sum_exp) - log(nrefdraws))
     )
     if (prj_crr == "augdat" && fam_crr %in% c("brnll", "binom")) {
@@ -420,6 +491,7 @@ test_that(paste(
   stopifnot(all(diff(regul_tst) > 0))
   tstsetups <- union(grep("\\.glm\\..*\\.forward", names(vss), value = TRUE),
                      grep("\\.glm\\..*\\.augdat\\.", names(vss), value = TRUE))
+  tstsetups <- grep(fam_nms_aug_regex, tstsetups, value = TRUE, invert = TRUE)
   for (tstsetup in tstsetups) {
     args_vs_i <- args_vs[[tstsetup]]
     m_max <- args_vs_i$nterms_max + 1L
