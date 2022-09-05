@@ -619,7 +619,7 @@ fit_categ <- function(formula, data, family, weights, ...) {
          "logit link.")
   }
   # Handle offsets (but note that currently, offsets in the submodel fitter are
-  # unexpected; this case should only occur in `test_div_minimizer.R`):
+  # unexpected; this case could only occur in `test_div_minimizer.R`):
   trms <- terms(formula, data = data)
   offs_attr <- attr(trms, "offset")
   if (length(offs_attr)) {
@@ -668,7 +668,7 @@ fit_categ_mlvl <- function(formula, projpred_formula_no_random,
          "logit link.")
   }
   # Handle offsets (but note that currently, offsets in the submodel fitter are
-  # unexpected; this case should only occur in `test_div_minimizer.R`):
+  # unexpected; this case could only occur in `test_div_minimizer.R`):
   trms <- terms(projpred_formula_no_random, data = data)
   offs_attr <- attr(trms, "offset")
   if (length(offs_attr)) {
