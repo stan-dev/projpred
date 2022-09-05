@@ -100,7 +100,7 @@ test_that("offsets specified via argument `offset` work", {
     info = "rstanarm.glm.gauss.stdformul.with_wobs.with_offs"
   )
   nms_compare <- c("mu", "eta", "dis", "y", "loglik", "intercept", "wobs",
-                   "wsample", "offset")
+                   "wsample", "offset", "yOrig")
   expect_equal(
     refmod_offs_arg[nms_compare],
     refmods$rstanarm.glm.gauss.stdformul.with_wobs.with_offs[nms_compare],
