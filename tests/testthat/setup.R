@@ -1500,30 +1500,27 @@ vsel_nms <- c(
   "refmodel", "search_path", "d_test", "summaries", "solution_terms", "kl",
   "nterms_max", "nterms_all", "method", "cv_method", "validate_search",
   "clust_used_search", "clust_used_eval", "nprjdraws_search", "nprjdraws_eval",
-  "suggested_size", "summary"
+  "suggested_size"
 )
 vsel_nms_cv <- c(
   "refmodel", "search_path", "d_test", "summaries", "kl", "solution_terms",
   "pct_solution_terms_cv", "nterms_all", "nterms_max", "method", "cv_method",
   "validate_search", "clust_used_search", "clust_used_eval", "nprjdraws_search",
-  "nprjdraws_eval", "suggested_size", "summary"
+  "nprjdraws_eval", "suggested_size"
 )
 # Related to prediction (in contrast to selection):
-vsel_nms_pred <- c("summaries", "solution_terms", "kl", "suggested_size",
-                   "summary")
+vsel_nms_pred <- c("summaries", "solution_terms", "kl", "suggested_size")
 vsel_nms_pred_opt <- c("solution_terms", "suggested_size")
 # Related to `nloo`:
-vsel_nms_cv_nloo <- c("summaries", "pct_solution_terms_cv", "suggested_size",
-                      "summary")
+vsel_nms_cv_nloo <- c("summaries", "pct_solution_terms_cv", "suggested_size")
 vsel_nms_cv_nloo_opt <- c("pct_solution_terms_cv", "suggested_size")
 # Related to `validate_search`:
 vsel_nms_cv_valsearch <- c("validate_search", "summaries",
-                           "pct_solution_terms_cv", "suggested_size",
-                           "summary")
+                           "pct_solution_terms_cv", "suggested_size")
 vsel_nms_cv_valsearch_opt <- c("suggested_size")
 # Related to `cvfits`:
 vsel_nms_cv_cvfits <- c("refmodel", "summaries", "pct_solution_terms_cv",
-                        "summary", "suggested_size")
+                        "suggested_size")
 vsel_nms_cv_cvfits_opt <- c("pct_solution_terms_cv", "suggested_size")
 vsel_smmrs_sub_nms <- vsel_smmrs_ref_nms <- c("mu", "lppd")
 
