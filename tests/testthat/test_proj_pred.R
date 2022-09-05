@@ -613,7 +613,7 @@ test_that("`regul` works", {
   stopifnot(identical(regul_tst, sort(regul_tst)))
   tstsetups <- grep("\\.glm\\..*\\.solterms_x\\.clust$", names(prjs),
                     value = TRUE)
-  tstsetups <- grep("\\.cumul\\.", tstsetups, value = TRUE, invert = TRUE)
+  tstsetups <- grep(fam_nms_aug_regex, tstsetups, value = TRUE, invert = TRUE)
   for (tstsetup in tstsetups) {
     args_prj_i <- args_prj[[tstsetup]]
     if (args_prj_i$prj_nm == "augdat") {
