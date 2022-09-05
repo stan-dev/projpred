@@ -68,7 +68,7 @@ currently, the support for the \code{\link[=binomial]{binomial()}} family does n
 distributions with more than one trial; in such a case, a workaround is to
 de-aggregate the Bernoulli trials which belong to the same (aggregated)
 observation, i.e., to use a "long" dataset), \code{\link[brms:brmsfamily]{brms::cumulative()}}, and
-\code{rstanarm::stan_polr()} fits. The latent projection is applied when setting
+\code{\link[rstanarm:stan_polr]{rstanarm::stan_polr()}} fits. The latent projection is applied when setting
 argument \code{latent} of \code{\link[=extend_family]{extend_family()}} (which is called by \code{\link[=init_refmodel]{init_refmodel()}})
 to \code{TRUE}. Note that the latent projection is currently considered as an
 experimental feature since it has not been tested thoroughly yet and is also

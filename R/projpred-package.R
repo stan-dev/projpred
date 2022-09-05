@@ -74,7 +74,7 @@
 #' distributions with more than one trial; in such a case, a workaround is to
 #' de-aggregate the Bernoulli trials which belong to the same (aggregated)
 #' observation, i.e., to use a "long" dataset), [brms::cumulative()], and
-#' `rstanarm::stan_polr()` fits. The latent projection is applied when setting
+#' [rstanarm::stan_polr()] fits. The latent projection is applied when setting
 #' argument `latent` of [extend_family()] (which is called by [init_refmodel()])
 #' to `TRUE`. Note that the latent projection is currently considered as an
 #' experimental feature since it has not been tested thoroughly yet and is also
