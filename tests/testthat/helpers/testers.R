@@ -2117,16 +2117,6 @@ vsel_tester <- function(
   expect_true(is.vector(vs$suggested_size, "numeric"), info = info_str)
   expect_length(vs$suggested_size, 1)
 
-  # summary
-  smmry_sel_tester(
-    vs$summary,
-    summaries_ref = vs$summaries$ref,
-    cv_method_expected = if (with_cv) cv_method_expected else character(),
-    solterms_expected = vs$solution_terms,
-    from_datafit = from_datafit,
-    info_str = info_str
-  )
-
   return(invisible(TRUE))
 }
 

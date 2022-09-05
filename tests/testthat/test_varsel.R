@@ -1043,8 +1043,8 @@ test_that("`validate_search` works", {
                     prop_as_expected,
                   info = paste(tstsetup, j, sep = "__"))
     }
-    expect_true(all(cvvs_valsearch$summary$elpd.loo >=
-                      cvvss[[tstsetup]]$summary$elpd.loo),
+    expect_true(all(summary(cvvs_valsearch)$selection$elpd.loo >=
+                      summary(cvvss[[tstsetup]])$selection$elpd.loo),
                 info = tstsetup)
     # Without a validated search, we expect overfitting in the suggested model
     # size:

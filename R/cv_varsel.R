@@ -254,8 +254,6 @@ cv_varsel.refmodel <- function(
               nprjdraws_eval = sel$nprjdraws_eval)
   class(vs) <- "vsel"
   vs$suggested_size <- suggest_size(vs, warnings = FALSE)
-  summary <- summary(vs)
-  vs$summary <- summary$selection
   if (verbose) {
     print("Done.")
   }
