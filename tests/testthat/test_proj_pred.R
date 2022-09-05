@@ -950,6 +950,7 @@ test_that(paste(
     pp_from_fit <- do.call(proj_predict, c(
       list(object = fits[[args_prj_i$tstsetup_fit]],
            .seed = seed2_tst),
+      excl_nonargs(args_ref[[args_prj_i$tstsetup_ref]]),
       excl_nonargs(args_prj_i)
     ))
     pp_from_prj <- pps[[tstsetup]]
