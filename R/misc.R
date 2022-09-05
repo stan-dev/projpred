@@ -125,14 +125,16 @@ bootstrap <- function(x, fun = mean, B = 2000,
   }
 }
 
-.validate_vsel_object_stats <- function(object, stats, lat2resp = FALSE) {
+.validate_vsel_object_stats <- function(object, stats, lat2resp = TRUE) {
   if (!inherits(object, c("vsel"))) {
     stop("The object is not a variable selection object. Run variable ",
          "selection first")
   }
-  if (!object$refmodel$family$for_latent && lat2resp) {
-    stop("`lat2resp = TRUE` can only be used in case of the latent projection.")
+  if (!object$refmodel$family$for_latent && !lat2resp) {
+    stop("`lat2resp = FALSE` can only be used in case of the latent ",
+         "projection.")
   }
+  lat2resp <- object$refmodel$family$for_latent && lat2resp
 
   trad_stats <- c("elpd", "mlpd", "mse", "rmse", "acc", "pctcorr", "auc")
   trad_stats_binom_only <- c("acc", "pctcorr", "auc")

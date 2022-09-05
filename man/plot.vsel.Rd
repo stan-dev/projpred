@@ -12,7 +12,7 @@
   alpha = 0.32,
   baseline = if (!inherits(x$refmodel, "datafit")) "ref" else "best",
   thres_elpd = NA,
-  lat2resp = FALSE,
+  lat2resp = TRUE,
   ...
 )
 }

@@ -12,7 +12,7 @@
   deltas = FALSE,
   alpha = 0.32,
   baseline = if (!inherits(object$refmodel, "datafit")) "ref" else "best",
-  lat2resp = FALSE,
+  lat2resp = TRUE,
   ...
 )
 }

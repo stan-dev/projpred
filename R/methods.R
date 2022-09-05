@@ -492,7 +492,7 @@ plot.vsel <- function(
     alpha = 0.32,
     baseline = if (!inherits(x$refmodel, "datafit")) "ref" else "best",
     thres_elpd = NA,
-    lat2resp = FALSE,
+    lat2resp = TRUE,
     ...
 ) {
   object <- x
@@ -737,7 +737,7 @@ summary.vsel <- function(
     deltas = FALSE,
     alpha = 0.32,
     baseline = if (!inherits(object$refmodel, "datafit")) "ref" else "best",
-    lat2resp = FALSE,
+    lat2resp = TRUE,
     ...
 ) {
   .validate_vsel_object_stats(object, stats, lat2resp = lat2resp)

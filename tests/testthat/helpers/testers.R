@@ -2198,7 +2198,7 @@ smmry_tester <- function(smmry, vsel_expected, nterms_max_expected = NULL,
                    nterms_max_expected = nterms_max_expected,
                    info_str = info_str, ...)
   ### TODO (latent): Adapt this when adding tests for the latent projection:
-  expect_false(smmry$lat2resp, info = info_str)
+  expect_true(smmry$lat2resp, info = info_str)
   ###
 
   return(invisible(TRUE))

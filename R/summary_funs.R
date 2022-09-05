@@ -104,13 +104,15 @@
 # statistics relative to the baseline model of that size (`nfeat_baseline = Inf`
 # means that the baseline model is the reference model).
 .tabulate_stats <- function(varsel, stats, alpha = 0.05,
-                            nfeat_baseline = NULL, lat2resp = FALSE, ...) {
+                            nfeat_baseline = NULL, lat2resp = TRUE, ...) {
   stat_tab <- data.frame()
   summ_ref <- varsel$summaries$ref
   summ_sub <- varsel$summaries$sub
-  if (!varsel$refmodel$family$for_latent && lat2resp) {
-    stop("`lat2resp = TRUE` can only be used in case of the latent projection.")
+  if (!varsel$refmodel$family$for_latent && !lat2resp) {
+    stop("`lat2resp = FALSE` can only be used in case of the latent ",
+         "projection.")
   }
+  lat2resp <- varsel$refmodel$family$for_latent && lat2resp
   if (lat2resp) {
     summ_sub_Orig <- lapply(summ_sub, "[[", "Orig")
     # `lat2resp = TRUE` only makes sense if element `"Orig"` is available:
