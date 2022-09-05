@@ -60,8 +60,8 @@
 #'   `projection` which is a `list` containing the following elements:
 #'   \describe{
 #'     \item{`dis`}{Projected draws for the dispersion parameter.}
-#'     \item{`kl`}{The Kullback-Leibler (KL) divergence from the submodel to the
-#'     reference model. Note that in case of the Gaussian family, this is not
+#'     \item{`kl`}{The Kullback-Leibler (KL) divergence from the reference model
+#'     to the submodel. Note that in case of the Gaussian family, this is not
 #'     the actual KL divergence but merely a proxy.}
 #'     \item{`weights`}{Weights for the projected draws.}
 #'     \item{`solution_terms`}{A character vector of the submodel's

@@ -74,8 +74,8 @@ If the projection is performed onto a single submodel (i.e.,
 \code{projection} which is a \code{list} containing the following elements:
 \describe{
 \item{\code{dis}}{Projected draws for the dispersion parameter.}
-\item{\code{kl}}{The Kullback-Leibler (KL) divergence from the submodel to the
-reference model. Note that in case of the Gaussian family, this is not
+\item{\code{kl}}{The Kullback-Leibler (KL) divergence from the reference model
+to the submodel. Note that in case of the Gaussian family, this is not
 the actual KL divergence but merely a proxy.}
 \item{\code{weights}}{Weights for the projected draws.}
 \item{\code{solution_terms}}{A character vector of the submodel's
