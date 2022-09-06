@@ -18,7 +18,7 @@ get_refmodel(object, ...)
 
 \method{get_refmodel}{default}(object, formula, family = NULL, ...)
 
-\method{get_refmodel}{stanreg}(object, latent = FALSE, ...)
+\method{get_refmodel}{stanreg}(object, latent = FALSE, latent_y_unqs = NULL, ...)
 
 init_refmodel(
   object,
@@ -66,6 +66,12 @@ the distributional family for the response). May be \code{NULL} for
 
 \item{latent}{A single logical value indicating whether to use the latent
 projection (\code{TRUE}) or not (\code{FALSE}).}
+
+\item{latent_y_unqs}{Only relevant for a latent projection where the original
+response space has finite support (i.e., the original response values may
+be regarded as categories), in which case this needs to be the character
+vector of unique response values. See also section "Latent projection"
+below.}
 
 \item{data}{Data used for fitting the reference model. Any \code{contrasts}
 attributes of the dataset's columns are silently removed.}

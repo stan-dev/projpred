@@ -9,6 +9,7 @@
 #'
 #' @name refmodel-init-get
 #'
+#' @inheritParams extend_family
 #' @param object Object from which the reference model is created. For
 #'   [init_refmodel()], an object on which the functions from arguments
 #'   `extract_model_data` and `ref_predfun` can be applied, with a `NULL` object
@@ -616,7 +617,8 @@ get_refmodel.default <- function(object, formula, family = NULL, ...) {
 
 #' @rdname refmodel-init-get
 #' @export
-get_refmodel.stanreg <- function(object, latent = FALSE, ...) {
+get_refmodel.stanreg <- function(object, latent = FALSE, latent_y_unqs = NULL,
+                                 ...) {
   if (!requireNamespace("rstanarm", quietly = TRUE)) {
     stop("Please install the 'rstanarm' package.")
   }
@@ -781,7 +783,7 @@ get_refmodel.stanreg <- function(object, latent = FALSE, ...) {
   }
 
   cvrefbuilder <- function(cvfit) {
-    get_refmodel(cvfit, latent = latent, ...)
+    get_refmodel(cvfit, latent = latent, latent_y_unqs = latent_y_unqs, ...)
   }
 
   # Miscellaneous -----------------------------------------------------------
@@ -810,11 +812,14 @@ get_refmodel.stanreg <- function(object, latent = FALSE, ...) {
 
   args_latent <- list()
   if (latent) {
-    y_lvls <- family$cats
+    y_lvls <- latent_y_unqs
     if (is.null(y_lvls)) {
-      y_tmp <- eval(formula[[2]], data, environment(formula))
-      if (is.factor(y_tmp) || is.character(y_tmp) || is.logical(y_tmp)) {
-        y_lvls <- levels(as.factor(y_tmp))
+      y_lvls <- family$cats
+      if (is.null(y_lvls)) {
+        y_tmp <- eval(formula[[2]], data, environment(formula))
+        if (is.factor(y_tmp) || is.character(y_tmp) || is.logical(y_tmp)) {
+          y_lvls <- levels(as.factor(y_tmp))
+        }
       }
     }
     latent_ilink_tmp <- latent_llOrig_tmp <- latent_ppdOrig_tmp <- NULL
