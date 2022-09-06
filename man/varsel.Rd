@@ -47,8 +47,9 @@ the training data is used.}
 
 \item{method}{The method for the search part. Possible options are \code{"L1"} for
 L1 search and \code{"forward"} for forward search. If \code{NULL}, then internally,
-\code{"L1"} is used, except if the reference model has multilevel or additive
-terms or if \code{!is.null(search_terms)}. See also section "Details" below.}
+\code{"L1"} is used, except if (i) the reference model has multilevel or
+additive terms, (ii) if \code{!is.null(search_terms)}, or (iii) if the
+augmented-data projection is used. See also section "Details" below.}
 
 \item{ndraws}{Number of posterior draws used in the search part. Ignored if
 \code{nclusters} is not \code{NULL} or in case of L1 search (because L1 search always
