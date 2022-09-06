@@ -306,6 +306,9 @@ if \code{family$cats} (\emph{after} applying \code{\link[=extend_family]{extend_
 response vector resulting from \code{extract_model_data} is internally coerced to
 a \code{factor} (using \code{\link[=as.factor]{as.factor()}}). The levels of this \code{factor} have to be
 identical to that non-\code{NULL} element \code{family$cats}.
+
+Currently, \code{object = NULL} (i.e., a \code{datafit}; see section "Value") is not
+supported in case of the latent projection.
 }
 
 \examples{

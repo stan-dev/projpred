@@ -239,6 +239,9 @@
 #' a `factor` (using [as.factor()]). The levels of this `factor` have to be
 #' identical to that non-`NULL` element `family$cats`.
 #'
+#' Currently, `object = NULL` (i.e., a `datafit`; see section "Value") is not
+#' supported in case of the latent projection.
+#'
 #' @return An object that can be passed to all the functions that take the
 #'   reference model fit as the first argument, such as [varsel()],
 #'   [cv_varsel()], [project()], [proj_linpred()], and [proj_predict()].
