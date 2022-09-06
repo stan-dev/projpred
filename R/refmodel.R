@@ -81,8 +81,6 @@
 #'   model does have a dispersion parameter, but `object` is `NULL` (in which
 #'   case `0` is used for `dis`). Note that for the [gaussian()] `family`, `dis`
 #'   is the standard deviation, not the variance.
-#' @param latent A single logical value indicating whether to use the latent
-#'   projection (`TRUE`) or not (`FALSE`).
 #' @param ... For [get_refmodel.default()] and [get_refmodel.stanreg()]:
 #'   arguments passed to [init_refmodel()]. For the [get_refmodel()] generic:
 #'   arguments passed to the appropriate method. For [init_refmodel()]:
