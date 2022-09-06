@@ -14,6 +14,8 @@
 # @param augdat_expected A single logical value indicating whether the extended
 #   family is expected to be for augmented-data projection (`TRUE`) or not
 #   (`FALSE`).
+# @param latent_expected A single logical value indicating whether the reference
+#   model is expected to be for latent projection (`TRUE`) or not (`FALSE`).
 # @param info_str A single character string giving information to be printed in
 #   case of failure.
 #
@@ -23,6 +25,7 @@ extfam_tester <- function(extfam,
                           extfam_nms_add2 = character(),
                           from_brms = FALSE,
                           augdat_expected = FALSE,
+                          latent_expected = FALSE,
                           info_str) {
   # General structure tests -------------------------------------------------
 
@@ -68,12 +71,9 @@ extfam_tester <- function(extfam,
               info = info_str)
   expect_identical(extfam$for_augdat, augdat_expected, info = info_str)
   expect_true("for_latent" %in% names(extfam), info = info_str)
-  ### TODO (latent): Adapt this when adding tests for the latent projection:
-  expect_false(extfam$for_latent, info = info_str)
-  # expect_true(isTRUE(extfam$for_latent) || isFALSE(extfam$for_latent),
-  #             info = info_str)
-  # expect_identical(extfam$for_latent, latent_expected, info = info_str)
-  ###
+  expect_true(isTRUE(extfam$for_latent) || isFALSE(extfam$for_latent),
+              info = info_str)
+  expect_identical(extfam$for_latent, latent_expected, info = info_str)
   extfam_nms_add <- c("kl", "dis_fun", "predvar", "ll_fun", "deviance", "ppd",
                       "for_latent", "for_augdat", "is_extended")
   if (extfam$for_augdat) {
@@ -85,13 +85,21 @@ extfam_tester <- function(extfam,
     if (extfam$family == "cumulative_rstanarm") {
       extfam_nms_add <- c(extfam_nms_add, "linkfun", "linkinv")
     }
+  } else if (extfam$for_latent) {
+    extfam_nms_add <- c(extfam_nms_add, "familyOrig", "linkOrig",
+                        "lat2resp_possible", "ppdOrig_possible", "latent_ilink",
+                        "latent_llOrig", "latent_ppdOrig")
+    if (extfam$familyOrig != "binomial") {
+      extfam_nms_add <- c(extfam_nms_add, "cats")
+    }
   }
   extfam_nms_add <- c(extfam_nms_add, extfam_nms_add2)
   extfam_nms <- c(fam_orig_nms, extfam_nms_add)
   if (fam_orig$family %in% bfam_nms) {
     expect_true(all(extfam_nms %in% names(extfam)), info = info_str)
   } else {
-    expect_named(extfam, extfam_nms, ignore.order = extfam$for_augdat,
+    expect_named(extfam, extfam_nms,
+                 ignore.order = extfam$for_augdat || extfam$for_latent,
                  info = info_str)
   }
 
@@ -128,7 +136,8 @@ extfam_tester <- function(extfam,
     fam_orig_ch$linkinv <- fam_orig$linkinv
   }
   if (!from_brms) {
-    expect_identical(fam_orig_ch, fam_orig, info = info_str)
+    expect_identical(fam_orig_ch, fam_orig,
+                     ignore.environment = extfam$for_latent, info = info_str)
   } else if (extfam$family %in% bfam_nms) {
     expect_identical(
       fam_orig_ch,
@@ -154,7 +163,8 @@ extfam_tester <- function(extfam,
   expect_true(extfam$is_extended, info = info_str)
   el_nms_clos <- setdiff(
     extfam_nms_add,
-    c("refcat", "cats", "for_latent", "for_augdat", "is_extended")
+    c("familyOrig", "linkOrig", "lat2resp_possible", "ppdOrig_possible",
+      "refcat", "cats", "for_latent", "for_augdat", "is_extended")
   )
   for (el_nm in el_nms_clos) {
     expect_type(extfam[[el_nm]], "closure")
@@ -241,6 +251,8 @@ extfam_tester <- function(extfam,
 # @param augdat_expected A single logical value indicating whether the reference
 #   model is expected to be for augmented-data projection (`TRUE`) or not
 #   (`FALSE`).
+# @param latent_expected A single logical value indicating whether the reference
+#   model is expected to be for latent projection (`TRUE`) or not (`FALSE`).
 # @param info_str A single character string giving information to be printed in
 #   case of failure.
 #
@@ -261,6 +273,7 @@ refmodel_tester <- function(
     mod_nm,
     fam_nm,
     augdat_expected = FALSE,
+    latent_expected = FALSE,
     info_str
 ) {
   # Preparations:
@@ -273,6 +286,11 @@ refmodel_tester <- function(
     length(refmod$fit$offset) > 0
   if (needs_offs_added) {
     data_expected$projpred_internal_offs_stanreg <- refmod$fit$offset
+  }
+  if (refmod$family$for_latent) {
+    formul_expected[[2]] <- str2lang(
+      paste0(".", as.character(formul_expected[[2]]))
+    )
   }
   if (!is.null(attr(terms(formul_expected), "offset"))) {
     # In the reference model, the offset() term is placed last:
@@ -340,6 +358,7 @@ refmodel_tester <- function(
                 extfam_nms_add2 = "mu_fun",
                 from_brms = (pkg_nm == "brms"),
                 augdat_expected = augdat_expected,
+                latent_expected = latent_expected,
                 info_str = info_str)
 
   # mu
@@ -514,12 +533,15 @@ refmodel_tester <- function(
       # Fixed (as a side effect) by brms PR #1314:
       y_expected <- as.numeric(y_expected)
     }
+    if (latent_expected) {
+      y_expected <- unname(colMeans(posterior_linpred(fit_expected)))
+    }
   } else {
     y_expected <- data_expected[[y_spclformul_new]]
   }
   if (refmod$family$for_augdat) {
     y_expected <- as.factor(y_expected)
-    if (fam_nm %in% fam_nms_aug) {
+    if (fam_nm %in% fam_nms_aug && pkg_nm == "brms") {
       # brms seems to set argument `contrasts`, but this is not important for
       # projpred, so ignore it in the comparison:
       attr(y_expected, "contrasts") <- attr(refmod$y, "contrasts")
@@ -551,6 +573,9 @@ refmodel_tester <- function(
   expect_type(refmod$fetch_data, "closure")
   if (!is_gamm) {
     # TODO (GAMMs): Adapt this to GAMMs.
+    if (latent_expected) {
+      data_expected[[stdized_lhs$y_nm]] <- y_expected
+    }
     if ((!is_datafit && pkg_nm != "brms") ||
         (is_datafit && (pkg_nm == "brms" || fam_nm != "binom"))) {
       expect_identical(refmod$fetch_data(), data_expected, info = info_str)
@@ -567,6 +592,12 @@ refmodel_tester <- function(
                              tail(refdat_colnms, -1))
         }
         refdat_colnms <- sub("^offset\\((.*)\\)$", "\\1", refdat_colnms)
+        if (latent_expected) {
+          # Re-order:
+          refdat_colnms <- c(sub("^\\.", "", stdized_lhs$y_nm),
+                             setdiff(refdat_colnms, stdized_lhs$y_nm),
+                             stdized_lhs$y_nm)
+        }
         refdat_ch <- data_expected[, refdat_colnms, drop = FALSE]
         expect_equal(refmod$fetch_data(), refdat_ch, check.attributes = FALSE,
                      info = info_str)
@@ -635,9 +666,17 @@ refmodel_tester <- function(
   expect_type(refmod$cvrefbuilder, "closure")
 
   # yOrig
-  ### TODO (latent): Adapt this when adding tests for the latent projection:
-  expect_identical(refmod$yOrig, y_expected, info = info_str)
-  ###
+  if (latent_expected) {
+    yOrig_expected <- data_expected[[sub("^\\.", "", stdized_lhs$y_nm)]]
+    if (pkg_nm == "brms") {
+      # brms seems to set argument `contrasts`, but this is not important for
+      # projpred, so ignore it in the comparison:
+      attr(yOrig_expected, "contrasts") <- attr(refmod$yOrig, "contrasts")
+    }
+  } else {
+    yOrig_expected <- y_expected
+  }
+  expect_identical(refmod$yOrig, yOrig_expected, info = info_str)
 
   return(invisible(TRUE))
 }
@@ -1256,8 +1295,8 @@ submodl_tester_aug <- function(
 # @param with_offs A single logical value indicating whether `submodl_totest` is
 #   expected to include offsets (`TRUE`) or not (`FALSE`).
 # @param augdat_cats A character vector of response levels in case of the
-#   augmented-data projection. Needs to be `NULL` for the traditional
-#   projection.
+#   augmented-data projection. Needs to be `NULL` for the traditional and the
+#   latent projection.
 # @param allow_w_zero A single logical value indicating whether observation
 #   weights are allowed to have a value of zero (`TRUE`) or not (`FALSE`).
 # @param check_y_from_resp A single logical value indicating whether to check
@@ -1297,7 +1336,7 @@ submodl_tester <- function(
                             simplify = FALSE)
   }
 
-  if (sub_fam %in% fam_nms_aug_long) {
+  if (!is.null(augdat_cats) && sub_fam %in% fam_nms_aug_long) {
     submodl_tester_aug(
       submodl_totest = submodl_totest,
       nprjdraws_expected = nprjdraws_expected,
@@ -1517,6 +1556,11 @@ projection_tester <- function(p,
   } else {
     wobs_expected_crr <- p$refmodel$wobs
   }
+  if (p$refmodel$family$for_augdat) {
+    augdat_cats_crr <- p$refmodel$family$cats
+  } else {
+    augdat_cats_crr <- NULL
+  }
   submodl_tester(p$submodl,
                  nprjdraws_expected = nprjdraws_expected,
                  sub_formul = sub_formul_crr,
@@ -1524,7 +1568,7 @@ projection_tester <- function(p,
                  sub_fam = p$refmodel$family$family,
                  wobs_expected = wobs_expected_crr,
                  solterms_vsel_L1_search = solterms_vsel_L1_search_crr,
-                 augdat_cats = p$refmodel$family$cats,
+                 augdat_cats = augdat_cats_crr,
                  info_str = info_str)
 
   # dis
@@ -1878,6 +1922,11 @@ vsel_tester <- function(
       }
       return(fml_tmp)
     })
+    if (vs$refmodel$family$for_augdat) {
+      augdat_cats_crr <- vs$refmodel$family$cats
+    } else {
+      augdat_cats_crr <- NULL
+    }
     submodl_tester(
       vs$search_path$submodls[[i]],
       nprjdraws_expected = nprjdraws_search_expected,
@@ -1886,7 +1935,7 @@ vsel_tester <- function(
       sub_fam = vs$refmodel$family$family,
       wobs_expected = wobs_expected_crr,
       solterms_vsel_L1_search = solterms_vsel_L1_search_crr,
-      augdat_cats = vs$refmodel$family$cats,
+      augdat_cats = augdat_cats_crr,
       info_str = paste(info_str, i, sep = "__")
     )
   }
@@ -1947,9 +1996,7 @@ vsel_tester <- function(
     expect_identical(vs$d_test$offset, vs$refmodel$offset, info = info_str)
     expect_identical(vs$d_test$weights, vs$refmodel$wobs, info = info_str)
     expect_identical(vs$d_test$y, vs$refmodel$y, info = info_str)
-    ### TODO (latent): Adapt this when adding tests for the latent projection:
-    expect_identical(vs$d_test$yOrig, vs$refmodel$y, info = info_str)
-    ###
+    expect_identical(vs$d_test$yOrig, vs$refmodel$yOrig, info = info_str)
   } else {
     expect_identical(vs$d_test, dtest_expected, info = info_str)
   }
@@ -1969,6 +2016,15 @@ vsel_tester <- function(
   if (!is.null(dtest_expected)) {
     nobsv_summ <- nrow(dtest_expected$data)
     nobsv_summ_aug <- nobsv_summ * ncats
+  }
+  if (vs$refmodel$family$for_latent) {
+    vsel_smmrs_sub_nms <- c(vsel_smmrs_sub_nms, "Orig")
+    if ("wcv" %in% vsel_smmrs_sub_nms &&
+        identical(cv_method_expected, "kfold")) {
+      vsel_smmrs_sub_nms[vsel_smmrs_sub_nms %in% c("wcv", "Orig")] <- c("Orig",
+                                                                        "wcv")
+    }
+    vsel_smmrs_ref_nms <- c(vsel_smmrs_ref_nms, "Orig")
   }
   for (j in seq_along(vs$summaries$sub)) {
     expect_named(vs$summaries$sub[[!!j]], vsel_smmrs_sub_nms, info = info_str)
@@ -2197,9 +2253,7 @@ smmry_tester <- function(smmry, vsel_expected, nterms_max_expected = NULL,
                    summaries_ref = vsel_expected$summaries$ref,
                    nterms_max_expected = nterms_max_expected,
                    info_str = info_str, ...)
-  ### TODO (latent): Adapt this when adding tests for the latent projection:
   expect_true(smmry$lat2resp, info = info_str)
-  ###
 
   return(invisible(TRUE))
 }

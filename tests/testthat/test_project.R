@@ -280,7 +280,8 @@ test_that("non-clustered projection does not require a seed", {
     args_prj_i <- args_prj[[tstsetup]]
     p_orig <- prjs[[tstsetup]]
     rand_new1 <- runif(1) # Just to advance `.Random.seed[2]`.
-    if (args_prj_i$fam_nm == "cumul" && args_prj_i$mod_nm == "glm") {
+    if (args_prj_i$prj_nm == "augdat" && args_prj_i$fam_nm == "cumul" &&
+        args_prj_i$mod_nm == "glm") {
       warn_expected <- "non-integer #successes in a binomial glm!"
     } else if (!is.null(args_prj_i$avoid.increase)) {
       warn_expected <- paste0(
@@ -297,7 +298,8 @@ test_that("non-clustered projection does not require a seed", {
       )),
       warn_expected
     )
-    if (args_prj_i$fam_nm == "cumul" && args_prj_i$mod_nm == "glmm") {
+    if (args_prj_i$prj_nm == "augdat" && args_prj_i$fam_nm == "cumul" &&
+        args_prj_i$mod_nm == "glmm") {
       for (idx_s in seq_along(p_new$submodl)) {
         # We could also use `"sparseMatrix"` instead of `"Matrix"`:
         expect_equal(as(p_new$submodl[[idx_s]][["L"]], "Matrix"),

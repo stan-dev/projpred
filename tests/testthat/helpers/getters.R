@@ -11,6 +11,12 @@ get_fam_long <- function(fam_nm) {
          NA_character_)
 }
 
+get_f_cumul <- function(link_nm = link_str) {
+  structure(list(family = "cumulative_rstanarm",
+                 link = link_nm),
+            class = "family")
+}
+
 # Standardize the left-hand side of a formula, i.e., get a slightly modified
 # formula as well as the response variable names before and after any
 # evaluations of special expressions:

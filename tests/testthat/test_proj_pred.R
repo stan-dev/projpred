@@ -322,6 +322,9 @@ test_that(paste(
     resp_nm <- extract_terms_response(
       prjs[[tstsetup]]$refmodel$formula
     )$response
+    if (prjs[[tstsetup]]$refmodel$family$for_latent) {
+      resp_nm <- sub("^\\.", "", resp_nm)
+    }
     stopifnot(!exists(resp_nm))
     dat_crr <- get_dat(tstsetup)
     pl_noresp <- proj_linpred(
@@ -370,7 +373,7 @@ test_that("`weightsnew` works", {
                 ncats_nlats_expected = list(ncats_nlats_expected_crr),
                 info_str = tstsetup)
     }
-    if (args_prj[[tstsetup]]$prj_nm != "augdat") {
+    if (!args_prj[[tstsetup]]$prj_nm %in% c("latent", "augdat")) {
       pl <- proj_linpred(prjs[[tstsetup]],
                          newdata = get_dat(tstsetup, dat),
                          weightsnew = ~ wobs_col)
@@ -381,7 +384,7 @@ test_that("`weightsnew` works", {
     }
     if (!(args_prj[[tstsetup]]$pkg_nm == "brms" &&
           args_prj[[tstsetup]]$fam_nm == "binom") &&
-        args_prj[[tstsetup]]$prj_nm != "augdat") {
+        !args_prj[[tstsetup]]$prj_nm %in% c("latent", "augdat")) {
       # TODO (brms): Fix or document why this doesn't work for "brmsfit"s.
       plw <- proj_linpred(prjs[[tstsetup]],
                           newdata = get_dat(tstsetup, dat_wobs_new),
@@ -395,7 +398,7 @@ test_that("`weightsnew` works", {
           args_prj[[tstsetup]]$fam_nm == "binom")) {
       expect_equal(pl_ones$pred, pl_orig$pred, info = tstsetup)
     }
-    if (args_prj[[tstsetup]]$prj_nm != "augdat") {
+    if (!args_prj[[tstsetup]]$prj_nm %in% c("latent", "augdat")) {
       expect_equal(pl$pred, pl_orig$pred, info = tstsetup)
       if (!(args_prj[[tstsetup]]$pkg_nm == "brms" &&
             args_prj[[tstsetup]]$fam_nm == "binom")) {
@@ -427,14 +430,14 @@ test_that("`weightsnew` works", {
         expect_equal(pl_ones$lpd, pl_orig$lpd, info = tstsetup)
       }
       if (args_prj[[tstsetup]]$pkg_nm == "rstanarm" &&
-          args_prj[[tstsetup]]$prj_nm != "augdat") {
+          !args_prj[[tstsetup]]$prj_nm %in% c("latent", "augdat")) {
         expect_false(isTRUE(all.equal(pl$lpd, pl_orig$lpd)), info = tstsetup)
         expect_false(isTRUE(all.equal(plw$lpd, pl_orig$lpd)), info = tstsetup)
         expect_false(isTRUE(all.equal(pl$lpd, pl_ones$lpd)), info = tstsetup)
         expect_false(isTRUE(all.equal(plw$lpd, pl_ones$lpd)), info = tstsetup)
         expect_false(isTRUE(all.equal(plw$lpd, pl$lpd)), info = tstsetup)
       } else if (args_prj[[tstsetup]]$pkg_nm == "brms" &&
-                 args_prj[[tstsetup]]$prj_nm != "augdat") {
+                 !args_prj[[tstsetup]]$prj_nm %in% c("latent", "augdat")) {
         ### TODO: This might in fact be undesired:
         expect_equal(pl$lpd, pl_orig$lpd, info = tstsetup)
         if (args_prj[[tstsetup]]$fam_nm != "binom") {
@@ -510,14 +513,16 @@ test_that("`offsetnew` works", {
         expect_equal(pl_zeros, pl_orig, info = tstsetup)
         expect_false(isTRUE(all.equal(pl, pl_orig)), info = tstsetup)
         pred_pl_no_offs <- t(pred_pl)
-        if (get_fam_long(args_prj[[tstsetup]]$fam_nm) %in% fams_neg_linpred()) {
+        if (args_prj[[tstsetup]]$prj_nm == "augdat" &&
+            get_fam_long(args_prj[[tstsetup]]$fam_nm) %in% fams_neg_linpred()) {
           pred_pl_no_offs <- pred_pl_no_offs + dat$offs_col
         } else {
           pred_pl_no_offs <- pred_pl_no_offs - dat$offs_col
         }
         expect_equal(pred_pl_no_offs, t(pred_pl_orig), info = tstsetup)
         pred_plo_no_offs <- t(pred_plo)
-        if (get_fam_long(args_prj[[tstsetup]]$fam_nm) %in% fams_neg_linpred()) {
+        if (args_prj[[tstsetup]]$prj_nm == "augdat" &&
+            get_fam_long(args_prj[[tstsetup]]$fam_nm) %in% fams_neg_linpred()) {
           pred_plo_no_offs <- pred_plo_no_offs + dat_offs_new$offs_col_new
         } else {
           pred_plo_no_offs <- pred_plo_no_offs - dat_offs_new$offs_col_new
@@ -543,14 +548,16 @@ test_that("`offsetnew` works", {
           pred_plo[is_extreme] <- NA
         }
         pred_pl_no_offs <- t(pred_pl)
-        if (get_fam_long(args_prj[[tstsetup]]$fam_nm) %in% fams_neg_linpred()) {
+        if (args_prj[[tstsetup]]$prj_nm == "augdat" &&
+            get_fam_long(args_prj[[tstsetup]]$fam_nm) %in% fams_neg_linpred()) {
           pred_pl_no_offs <- pred_pl_no_offs + dat$offs_col
         } else {
           pred_pl_no_offs <- pred_pl_no_offs - dat$offs_col
         }
         expect_equal(pred_pl_no_offs, t(pred_pl_orig), info = tstsetup)
         pred_plo_no_offs <- t(pred_plo)
-        if (get_fam_long(args_prj[[tstsetup]]$fam_nm) %in% fams_neg_linpred()) {
+        if (args_prj[[tstsetup]]$prj_nm == "augdat" &&
+            get_fam_long(args_prj[[tstsetup]]$fam_nm) %in% fams_neg_linpred()) {
           pred_plo_no_offs <- pred_plo_no_offs + dat_offs_new$offs_col_new
         } else {
           pred_plo_no_offs <- pred_plo_no_offs - dat_offs_new$offs_col_new
@@ -574,7 +581,7 @@ test_that("`transform` works", {
   skip_if_not(run_prj)
   for (tstsetup in names(prjs)) {
     ndr_ncl <- ndr_ncl_dtls(args_prj[[tstsetup]])
-    if (args_prj[[tstsetup]]$prj_nm == "augdat") {
+    if (!is.null(refmods[[args_prj[[tstsetup]]$tstsetup_ref]]$family$cats)) {
       ncats_nlats_expected_crr <- length(
         refmods[[args_prj[[tstsetup]]$tstsetup_ref]]$family$cats
       )
@@ -596,12 +603,25 @@ test_that("`transform` works", {
     pred_true <- pl_true$pred
     if (args_prj[[tstsetup]]$prj_nm == "augdat") {
       pred_true <- arr2augmat(pred_true, margin_draws = 1)
-    } else {
+    } else if (args_prj[[tstsetup]]$prj_nm != "latent") {
       pred_true <- t(pred_true)
     }
-    expect_equal(prjs[[!!tstsetup]]$refmodel$family$linkinv(pred_false),
-                 pred_true,
-                 info = tstsetup)
+    if (args_prj[[tstsetup]]$prj_nm != "latent") {
+      pred_false2true <- prjs[[tstsetup]]$refmodel$family$linkinv(pred_false)
+    } else {
+      if (exists(".Random.seed", envir = .GlobalEnv)) {
+        rng_old <- get(".Random.seed", envir = .GlobalEnv)
+      }
+      set.seed(args_prj[[tstsetup]]$seed)
+      clust_ref <- .get_refdist(prjs[[tstsetup]]$refmodel,
+                                ndraws = args_prj[[tstsetup]]$ndraws,
+                                nclusters = args_prj[[tstsetup]]$nclusters)
+      pred_false2true <- prjs[[tstsetup]]$refmodel$family$latent_ilink(
+        t(pred_false), cl_ref = clust_ref$cl
+      )
+    }
+    expect_equal(pred_false2true, pred_true, info = tstsetup)
+    if (exists("rng_old")) assign(".Random.seed", rng_old, envir = .GlobalEnv)
   }
 })
 
@@ -734,7 +754,8 @@ test_that(paste(
     } else {
       ncats_nlats_expected_crr <- integer()
     }
-    if (args_prj[[tstsetup]]$fam_nm == "cumul" &&
+    if (args_prj[[tstsetup]]$prj_nm == "augdat" &&
+        args_prj[[tstsetup]]$fam_nm == "cumul" &&
         args_prj[[tstsetup]]$mod_nm == "glm") {
       warn_expected <- "non-integer #successes in a binomial glm!"
     } else {
@@ -1132,7 +1153,7 @@ test_that("`weightsnew` works", {
                 ),
                 info_str = tstsetup)
     }
-    if (args_prj[[tstsetup]]$prj_nm != "augdat") {
+    if (!args_prj[[tstsetup]]$prj_nm %in% c("latent", "augdat")) {
       pp <- proj_predict(prjs[[tstsetup]],
                          newdata = dat,
                          weightsnew = ~ wobs_col,
@@ -1146,7 +1167,7 @@ test_that("`weightsnew` works", {
     }
     if (!(args_prj[[tstsetup]]$pkg_nm == "brms" &&
           args_prj[[tstsetup]]$fam_nm == "binom") &&
-        args_prj[[tstsetup]]$prj_nm != "augdat") {
+        !args_prj[[tstsetup]]$prj_nm %in% c("latent", "augdat")) {
       # TODO (brms): Fix or document why this doesn't work for "brmsfit"s.
       ppw <- proj_predict(prjs[[tstsetup]],
                           newdata = dat_wobs_new,
@@ -1162,19 +1183,19 @@ test_that("`weightsnew` works", {
     # Weights are only relevant for the binomial() family:
     if (!args_prj[[tstsetup]]$fam_nm %in% c("brnll", "binom")) {
       expect_equal(pp_ones, pp_orig, info = tstsetup)
-      if (args_prj[[tstsetup]]$prj_nm != "augdat") {
+      if (!args_prj[[tstsetup]]$prj_nm %in% c("latent", "augdat")) {
         expect_equal(pp, pp_orig, info = tstsetup)
         expect_equal(ppw, pp_orig, info = tstsetup)
       }
     } else if (args_prj[[tstsetup]]$fam_nm == "brnll") {
       expect_equal(pp_ones, pp_orig, info = tstsetup)
       if (args_prj[[tstsetup]]$pkg_nm == "rstanarm" &&
-          args_prj[[tstsetup]]$prj_nm != "augdat") {
+          !args_prj[[tstsetup]]$prj_nm %in% c("latent", "augdat")) {
         expect_false(isTRUE(all.equal(pp, pp_orig)), info = tstsetup)
         expect_false(isTRUE(all.equal(ppw, pp_orig)), info = tstsetup)
         expect_false(isTRUE(all.equal(ppw, pp)), info = tstsetup)
       } else if (args_prj[[tstsetup]]$pkg_nm == "brms" &&
-                 args_prj[[tstsetup]]$prj_nm != "augdat") {
+                 !args_prj[[tstsetup]]$prj_nm %in% c("latent", "augdat")) {
         ### TODO: This might in fact be undesired:
         expect_equal(pp, pp_orig, info = tstsetup)
         expect_equal(ppw, pp_orig, info = tstsetup)
@@ -1186,7 +1207,7 @@ test_that("`weightsnew` works", {
         ### TODO: This might in fact be undesired:
         expect_equal(pp_ones, pp_orig, info = tstsetup)
         ###
-        if (args_prj[[tstsetup]]$prj_nm != "augdat") {
+        if (!args_prj[[tstsetup]]$prj_nm %in% c("latent", "augdat")) {
           ### TODO: This might in fact be undesired:
           expect_false(isTRUE(all.equal(pp, pp_orig)), info = tstsetup)
           ###
@@ -1194,7 +1215,7 @@ test_that("`weightsnew` works", {
           expect_false(isTRUE(all.equal(ppw, pp)), info = tstsetup)
         }
       } else if (args_prj[[tstsetup]]$pkg_nm == "brms" &&
-                 args_prj[[tstsetup]]$prj_nm != "augdat") {
+                 !args_prj[[tstsetup]]$prj_nm %in% c("latent", "augdat")) {
         expect_equal(pp, pp_orig, info = tstsetup)
       }
     }
@@ -1385,7 +1406,8 @@ test_that(paste(
       # TODO (GAMMs): Fix this.
       next
     }
-    if (args_prj[[tstsetup]]$fam_nm == "cumul" &&
+    if (args_prj[[tstsetup]]$prj_nm == "augdat" &&
+        args_prj[[tstsetup]]$fam_nm == "cumul" &&
         args_prj[[tstsetup]]$mod_nm == "glm") {
       warn_expected <- "non-integer #successes in a binomial glm!"
     } else {

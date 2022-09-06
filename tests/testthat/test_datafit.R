@@ -51,7 +51,7 @@ args_datafit <- lapply(setNames(
   c(nlist(tstsetup_fit), only_nonargs(args_fit[[tstsetup_fit]]))
 })
 # The augmented-data projection is not supported yet for `datafit`s:
-args_datafit <- args_datafit[!grepl("\\.augdat", names(args_datafit))]
+args_datafit <- args_datafit[!grepl("\\.(latent|augdat)", names(args_datafit))]
 
 datafits <- lapply(args_datafit, function(args_datafit_i) {
   formul_crr <- args_fit[[args_datafit_i$tstsetup_fit]]$formula
