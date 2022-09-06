@@ -45,8 +45,9 @@ the latter only if \code{refit_prj} is \code{TRUE}).}
 
 \item{method}{The method for the search part. Possible options are \code{"L1"} for
 L1 search and \code{"forward"} for forward search. If \code{NULL}, then internally,
-\code{"L1"} is used, except if the reference model has multilevel or additive
-terms or if \code{!is.null(search_terms)}. See also section "Details" below.}
+\code{"L1"} is used, except if (i) the reference model has multilevel or
+additive terms, (ii) if \code{!is.null(search_terms)}, or (iii) if the
+augmented-data projection is used. See also section "Details" below.}
 
 \item{cv_method}{The CV method, either \code{"LOO"} or \code{"kfold"}. In the \code{"LOO"}
 case, a Pareto-smoothed importance sampling leave-one-out CV (PSIS-LOO CV)

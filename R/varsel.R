@@ -15,8 +15,9 @@
 #'   the training data is used.
 #' @param method The method for the search part. Possible options are `"L1"` for
 #'   L1 search and `"forward"` for forward search. If `NULL`, then internally,
-#'   `"L1"` is used, except if the reference model has multilevel or additive
-#'   terms or if `!is.null(search_terms)`. See also section "Details" below.
+#'   `"L1"` is used, except if (i) the reference model has multilevel or
+#'   additive terms, (ii) if `!is.null(search_terms)`, or (iii) if the
+#'   augmented-data projection is used. See also section "Details" below.
 #' @param refit_prj A single logical value indicating whether to fit the
 #'   submodels along the solution path again (`TRUE`) or to retrieve their fits
 #'   from the search part (`FALSE`) before using those (re-)fits in the
