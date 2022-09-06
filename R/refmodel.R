@@ -921,6 +921,9 @@ init_refmodel <- function(object, data, formula, family, ref_predfun = NULL,
   if (!proper_model && family$for_augdat) {
     stop("Currently, the augmented-data projection may not be combined with ",
          "`object = NULL` (i.e., a `datafit`).")
+  } else if (!proper_model && family$for_latent) {
+    stop("Currently, the latent projection may not be combined with ",
+         "`object = NULL` (i.e., a `datafit`).")
   }
 
   # Formula -----------------------------------------------------------------
