@@ -158,6 +158,10 @@ proj_helper <- function(object, newdata, offsetnew, weightsnew, onesub_fun,
     # handled by get_refmodel.stanreg(), for example. Therefore, perform the
     # following check (needed for `extract_y_ind` later):
     stopifnot(length(y_nm) == 1)
+    if (projs[[1]]$refmodel$family$for_latent) {
+      # Remove the leading dot which was added in init_refmodel():
+      y_nm <- sub("^\\.", "", y_nm)
+    }
     ### Might be helpful as a starting point in the future, but commented
     ### because some prediction functions might require only those columns from
     ### the original dataset which are needed for the corresponding submodel:
