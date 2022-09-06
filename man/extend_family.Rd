@@ -24,7 +24,7 @@ extend_family(
 
 \item{latent}{A single logical value indicating whether to use the latent
 projection (\code{TRUE}) or not (\code{FALSE}). Note that setting \code{latent = TRUE}
-causes all augmented-data arguments to be ignored.}
+causes all arguments starting with \code{augdat_} to be ignored.}
 
 \item{latent_y_unqs}{Only relevant for a latent projection where the original
 response space has finite support (i.e., the original response values may

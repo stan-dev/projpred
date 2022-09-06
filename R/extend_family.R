@@ -16,7 +16,7 @@
 #' @param family A [`family`] object.
 #' @param latent A single logical value indicating whether to use the latent
 #'   projection (`TRUE`) or not (`FALSE`). Note that setting `latent = TRUE`
-#'   causes all augmented-data arguments to be ignored.
+#'   causes all arguments starting with `augdat_` to be ignored.
 #' @param latent_y_unqs Only relevant for a latent projection where the original
 #'   response space has finite support (i.e., the original response values may
 #'   be regarded as categories), in which case this needs to be the character
