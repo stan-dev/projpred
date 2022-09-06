@@ -220,6 +220,9 @@
 #' is why in case of the [brms::categorical()] family, offsets are currently not
 #' supported at all.
 #'
+#' Currently, `object = NULL` (i.e., a `datafit`; see section "Value") is not
+#' supported in case of the augmented-data projection.
+#'
 #' @return An object that can be passed to all the functions that take the
 #'   reference model fit as the first argument, such as [varsel()],
 #'   [cv_varsel()], [project()], [proj_linpred()], and [proj_predict()].
