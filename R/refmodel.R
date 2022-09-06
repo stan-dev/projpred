@@ -223,6 +223,9 @@
 #' is why in case of the [brms::categorical()] family, offsets are currently not
 #' supported at all.
 #'
+#' Currently, `object = NULL` (i.e., a `datafit`; see section "Value") is not
+#' supported in case of the augmented-data projection.
+#'
 #' # Latent projection
 #'
 #' If a custom reference model for a latent projection is needed, see also
