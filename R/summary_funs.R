@@ -176,6 +176,8 @@ get_stat <- function(mu, lppd, d_test, stat, mu.bs = NULL, lppd.bs = NULL,
       value <- value / n_notna
       value.se <- value.se / n_notna
     }
+    lq <- qnorm(alpha / 2, mean = value, sd = value.se)
+    uq <- qnorm(1 - alpha / 2, mean = value, sd = value.se)
   } else if (stat %in% c("mse", "rmse")) {
     if (is.null(d_test$y_prop)) {
       y <- d_test$y
@@ -197,6 +199,8 @@ get_stat <- function(mu, lppd, d_test, stat, mu.bs = NULL, lppd.bs = NULL,
         value.se <- weighted.sd((mu - y)^2, wcv, na.rm = TRUE) /
           sqrt(n_notna)
       }
+    lq <- qnorm(alpha / 2, mean = value, sd = value.se)
+    uq <- qnorm(1 - alpha / 2, mean = value, sd = value.se)
     } else if (stat == "rmse") {
       if (!is.null(mu.bs)) {
         ## make sure the relative rmse is computed using only those points for
@@ -232,6 +236,8 @@ get_stat <- function(mu, lppd, d_test, stat, mu.bs = NULL, lppd.bs = NULL,
         value.se <- sd(value.bootstrap)
       }
     }
+    lq <- qnorm(alpha / 2, mean = value, sd = value.se)
+    uq <- qnorm(1 - alpha / 2, mean = value, sd = value.se)
   } else if (stat %in% c("acc", "pctcorr", "auc")) {
     y <- d_test$y
     if (!is.null(d_test$y_prop)) {
@@ -268,6 +274,8 @@ get_stat <- function(mu, lppd, d_test, stat, mu.bs = NULL, lppd.bs = NULL,
         value.se <- weighted.sd(round(mu) == y, wcv, na.rm = TRUE) /
           sqrt(n_notna)
       }
+	lq <- qnorm(alpha / 2, mean = value, sd = value.se)
+	uq <- qnorm(1 - alpha / 2, mean = value, sd = value.se)
     } else if (stat == "auc") {
       auc.data <- cbind(y, mu, wcv)
       if (!is.null(mu.bs)) {
@@ -278,16 +286,17 @@ get_stat <- function(mu, lppd, d_test, stat, mu.bs = NULL, lppd.bs = NULL,
         value.bootstrap1 <- bootstrap(auc.data, auc, ...)
         value.bootstrap2 <- bootstrap(auc.data.bs, auc, ...)
         value.se <- sd(value.bootstrap1 - value.bootstrap2, na.rm = TRUE)
+        lq <- quantile(value.bootstrap1 - value.bootstrap2, probs = alpha / 2, names = F, na.rm = T)
+        uq <- quantile(value.bootstrap1 - value.bootstrap2, probs = 1 - alpha / 2, names = F, na.rm = T)
       } else {
         value <- auc(auc.data)
         value.bootstrap <- bootstrap(auc.data, auc, ...)
         value.se <- sd(value.bootstrap, na.rm = TRUE)
+        lq <- quantile(value.bootstrap, probs = alpha / 2, names = F, na.rm = T)
+        uq <- quantile(value.bootstrap, probs = 1 - alpha / 2, names = F, na.rm = T)
       }
     }
   }
-
-  lq <- qnorm(alpha / 2, mean = value, sd = value.se)
-  uq <- qnorm(1 - alpha / 2, mean = value, sd = value.se)
 
   return(list(value = value, se = value.se, lq = lq, uq = uq))
 }
