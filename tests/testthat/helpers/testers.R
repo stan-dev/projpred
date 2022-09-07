@@ -153,6 +153,36 @@ extfam_tester <- function(extfam,
 
   ## For `extfam` -----------------------------------------------------------
 
+  if ("familyOrig" %in% names(extfam)) {
+    expect_true(extfam$familyOrig %in% fam_nms_long, info = info_str)
+  }
+  if ("linkOrig" %in% names(extfam)) {
+    expect_true(extfam$linkOrig %in% link_str, info = info_str)
+  }
+  if ("lat2resp_possible" %in% names(extfam)) {
+    expect_true(extfam$lat2resp_possible, info = info_str)
+  }
+  if ("ppdOrig_possible" %in% names(extfam)) {
+    expect_true(extfam$ppdOrig_possible, info = info_str)
+  }
+  if ("latent_llOrig" %in% names(extfam)) {
+    if (extfam$familyOrig == "binomial") {
+      expect_identical(extfam$latent_llOrig, latent_llOrig_binom_nocats,
+                       info = info_str)
+    } else {
+      expect_identical(extfam$latent_llOrig, latent_llOrig_cats,
+                       info = info_str)
+    }
+  }
+  if ("latent_ppdOrig" %in% names(extfam)) {
+    if (extfam$familyOrig == "binomial") {
+      expect_identical(extfam$latent_ppdOrig, latent_ppdOrig_binom_nocats,
+                       info = info_str)
+    } else {
+      expect_identical(extfam$latent_ppdOrig, latent_ppdOrig_cats,
+                       info = info_str)
+    }
+  }
   if ("refcat" %in% names(extfam)) {
     expect_true(is.vector(extfam$refcat, "character"), info = info_str)
     expect_length(extfam$refcat, 1)

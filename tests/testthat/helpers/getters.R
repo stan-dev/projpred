@@ -11,6 +11,15 @@ get_fam_long <- function(fam_nm) {
          NA_character_)
 }
 
+# As get_fam_long(), but including the families from the traditional projection:
+get_fam_long_full <- function(fam_nm) {
+  switch(fam_nm,
+         "gauss" = "gaussian",
+         "binom" = "binomial",
+         "poiss" = "poisson",
+         get_fam_long(fam_nm))
+}
+
 get_f_cumul <- function(link_nm = link_str) {
   structure(list(family = "cumulative_rstanarm",
                  link = link_nm),

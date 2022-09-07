@@ -176,6 +176,8 @@ fam_nms_aug_long <- c(sapply(fam_nms_aug, get_fam_long),
                       cumul = "cumulative_rstanarm")
 fam_nms_ordin_long <- c(sapply(fam_nms_ordin, get_fam_long),
                         cumul = "cumulative_rstanarm")
+fam_nms_long <- c(sapply(fam_nms, get_fam_long_full),
+                  cumul = "cumulative_rstanarm")
 # Regular expressions:
 fam_nms_aug_regex <- paste0("\\.(", paste(fam_nms_aug, collapse = "|"), ")\\.")
 fam_nms_unsupp_regex <- paste0("\\.(", paste(fam_nms_unsupp, collapse = "|"),
