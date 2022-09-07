@@ -1253,23 +1253,10 @@ test_that("`offsetnew` works", {
         # For the gaussian() family, we can perform an easy check (because of
         # the identity link):
         if (args_prj[[tstsetup]]$fam_nm == "gauss") {
-          pp_no_offs <- t(pp)
-          if (get_fam_long(args_prj[[tstsetup]]$fam_nm) %in%
-              fams_neg_linpred()) {
-            pp_no_offs <- pp_no_offs + dat$offs_col
-          } else {
-            pp_no_offs <- pp_no_offs - dat$offs_col
-          }
-          ppo_no_offs <- t(ppo)
-          if (get_fam_long(args_prj[[tstsetup]]$fam_nm) %in%
-              fams_neg_linpred()) {
-            ppo_no_offs <- ppo_no_offs + dat_offs_new$offs_col_new
-          } else {
-            ppo_no_offs <- ppo_no_offs - dat_offs_new$offs_col_new
-          }
           ### TODO: This might in fact be undesired (see above):
-          expect_equal(pp_no_offs, t(pp_orig), info = tstsetup)
-          expect_equal(ppo_no_offs, t(pp_orig), info = tstsetup)
+          expect_equal(t(pp) - dat$offs_col, t(pp_orig), info = tstsetup)
+          expect_equal(t(ppo) - dat_offs_new$offs_col_new, t(pp_orig),
+                       info = tstsetup)
           ###
         } else {
           expect_false(isTRUE(all.equal(ppo, pp_orig)), info = tstsetup)
