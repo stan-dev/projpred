@@ -2059,56 +2059,98 @@ vsel_tester <- function(
     }
     vsel_smmrs_ref_nms <- c(vsel_smmrs_ref_nms, "Orig")
   }
-  for (j in seq_along(vs$summaries$sub)) {
-    expect_named(vs$summaries$sub[[!!j]], vsel_smmrs_sub_nms, info = info_str)
-    expect_type(vs$summaries$sub[[!!j]]$mu, "double")
-    expect_length(vs$summaries$sub[[!!j]]$mu, nobsv_summ_aug)
-    if (vs$refmodel$family$for_augdat) {
-      expect_s3_class(vs$summaries$sub[[!!j]]$mu, "augvec")
-    }
-    if (with_cv) {
-      expect_identical(sum(!is.na(vs$summaries$sub[[!!j]]$mu)),
-                       nloo_expected * ncats, info = info_str)
-    } else {
-      expect_true(all(!is.na(vs$summaries$sub[[!!j]]$mu)), info = info_str)
-    }
-    expect_type(vs$summaries$sub[[!!j]]$lppd, "double")
-    expect_length(vs$summaries$sub[[!!j]]$lppd, nobsv_summ)
-    if (with_cv) {
-      expect_identical(sum(!is.na(vs$summaries$sub[[!!j]]$lppd)),
-                       nloo_expected, info = info_str)
-    } else {
-      expect_true(all(!is.na(vs$summaries$sub[[!!j]]$lppd)), info = info_str)
-    }
-    if (with_cv) {
-      expect_type(vs$summaries$sub[[!!j]]$wcv, "double")
-      expect_length(vs$summaries$sub[[!!j]]$wcv, nobsv)
-      expect_true(all(!is.na(vs$summaries$sub[[!!j]]$wcv)), info = info_str)
-      if (nloo_expected == nobsv) {
-        expect_equal(vs$summaries$sub[[!!j]]$wcv, rep(1 / nobsv, nobsv),
-                     info = info_str)
+  smmrs_sub_j_tester <- function(smmrs_sub_j, tests_Orig = FALSE) {
+    if (tests_Orig) {
+      vsel_smmrs_sub_nms <- setdiff(vsel_smmrs_sub_nms, "Orig")
+      if (!is.null(vs$refmodel$family$cats)) {
+        ncats <- length(vs$refmodel$family$cats)
       } else {
-        expect_true(any(vs$summaries$sub[[!!j]]$wcv != rep(1 / nobsv, nobsv)),
+        ncats <- 1L
+      }
+      nobsv_summ_aug <- nobsv_summ * ncats
+    }
+    expect_type(smmrs_sub_j, "list")
+    expect_named(smmrs_sub_j, vsel_smmrs_sub_nms, info = info_str)
+    expect_type(smmrs_sub_j$mu, "double")
+    expect_length(smmrs_sub_j$mu, nobsv_summ_aug)
+    if (vs$refmodel$family$for_augdat ||
+        (vs$refmodel$family$for_latent && tests_Orig &&
+         !is.null(vs$refmodel$family$cats))) {
+      expect_s3_class(smmrs_sub_j$mu, "augvec")
+    }
+    if (with_cv) {
+      expect_identical(sum(!is.na(smmrs_sub_j$mu)), nloo_expected * ncats,
+                       info = info_str)
+    } else {
+      expect_true(all(!is.na(smmrs_sub_j$mu)), info = info_str)
+    }
+    expect_type(smmrs_sub_j$lppd, "double")
+    expect_length(smmrs_sub_j$lppd, nobsv_summ)
+    if (with_cv) {
+      expect_identical(sum(!is.na(smmrs_sub_j$lppd)), nloo_expected,
+                       info = info_str)
+    } else {
+      expect_true(all(!is.na(smmrs_sub_j$lppd)), info = info_str)
+    }
+    if (with_cv) {
+      expect_type(smmrs_sub_j$wcv, "double")
+      expect_length(smmrs_sub_j$wcv, nobsv)
+      expect_true(all(!is.na(smmrs_sub_j$wcv)), info = info_str)
+      if (nloo_expected == nobsv) {
+        expect_equal(smmrs_sub_j$wcv, rep(1 / nobsv, nobsv), info = info_str)
+      } else {
+        expect_true(any(smmrs_sub_j$wcv != rep(1 / nobsv, nobsv)),
                     info = info_str)
       }
     }
+    return(invisible(TRUE))
   }
-  expect_type(vs$summaries$ref, "list")
-  expect_named(vs$summaries$ref, vsel_smmrs_ref_nms, info = info_str)
-  expect_length(vs$summaries$ref$mu, nobsv_summ_aug)
-  if (vs$refmodel$family$for_augdat) {
-    expect_s3_class(vs$summaries$ref$mu, "augvec")
+  for (j in seq_along(vs$summaries$sub)) {
+    smmrs_sub_j_tester(vs$summaries$sub[[j]])
+    if (vs$refmodel$family$for_latent) {
+      smmrs_sub_j_tester(vs$summaries$sub[[j]]$Orig, tests_Orig = TRUE)
+    }
   }
-  if (!from_datafit) {
-    expect_true(all(!is.na(vs$summaries$ref$mu)), info = info_str)
-  } else {
-    expect_true(all(is.na(vs$summaries$ref$mu)), info = info_str)
+  smmrs_ref_tester <- function(smmrs_ref, tests_Orig = FALSE) {
+    if (tests_Orig) {
+      vsel_smmrs_ref_nms <- setdiff(vsel_smmrs_ref_nms, "Orig")
+      if (!is.null(vs$refmodel$family$cats)) {
+        ncats <- length(vs$refmodel$family$cats)
+      } else {
+        ncats <- 1L
+      }
+      nobsv_summ_aug <- nobsv_summ * ncats
+    }
+    expect_type(smmrs_ref, "list")
+    expect_named(smmrs_ref, vsel_smmrs_ref_nms, info = info_str)
+    if (!from_datafit) {
+      expect_type(smmrs_ref$mu, "double")
+    }
+    expect_length(smmrs_ref$mu, nobsv_summ_aug)
+    if (vs$refmodel$family$for_augdat ||
+        (vs$refmodel$family$for_latent && tests_Orig &&
+         !is.null(vs$refmodel$family$cats))) {
+      expect_s3_class(smmrs_ref$mu, "augvec")
+    }
+    if (!from_datafit) {
+      expect_true(all(!is.na(smmrs_ref$mu)), info = info_str)
+    } else {
+      expect_true(all(is.na(smmrs_ref$mu)), info = info_str)
+    }
+    if (!from_datafit) {
+      expect_type(smmrs_ref$lppd, "double")
+    }
+    expect_length(smmrs_ref$lppd, nobsv_summ)
+    if (!from_datafit) {
+      expect_true(all(!is.na(smmrs_ref$lppd)), info = info_str)
+    } else {
+      expect_true(all(is.na(smmrs_ref$lppd)), info = info_str)
+    }
+    return(invisible(TRUE))
   }
-  expect_length(vs$summaries$ref$lppd, nobsv_summ)
-  if (!from_datafit) {
-    expect_true(all(!is.na(vs$summaries$ref$lppd)), info = info_str)
-  } else {
-    expect_true(all(is.na(vs$summaries$ref$lppd)), info = info_str)
+  smmrs_ref_tester(vs$summaries$ref)
+  if (vs$refmodel$family$for_latent) {
+    smmrs_ref_tester(vs$summaries$ref$Orig, tests_Orig = TRUE)
   }
 
   # solution_terms
