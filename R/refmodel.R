@@ -1099,7 +1099,8 @@ init_refmodel <- function(object, data, formula, family, ref_predfun = NULL,
   weights <- model_data$weights
   offset <- model_data$offset
   if (family$for_latent) {
-    y <- rowMeans(ref_predfun(object))
+    # Use `ref_predfun_usr` here (instead of `ref_predfun`) to include offsets:
+    y <- rowMeans(unname(ref_predfun_usr(object)))
     yOrig <- model_data$y
     if (is.null(family$cats) &&
         (is.factor(yOrig) || is.character(yOrig) || is.logical(yOrig))) {
