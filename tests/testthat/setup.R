@@ -714,11 +714,26 @@ if (!run_more) {
     "brms.glmm.brnll.stdformul.without_wobs.without_offs",
     # "brms.gam.binom.stdformul.without_wobs.without_offs",
     "brms.gamm.binom.stdformul.without_wobs.without_offs",
-    grep(paste(paste0("\\.", fam_nms_aug, "\\."), collapse = "|"),
-         names(args_fit), value = TRUE)
+    # grep(paste(paste0("\\.", fam_nms_aug, "\\."), collapse = "|"),
+    #      names(args_fit), value = TRUE)
+    "rstanarm.glm.cumul.stdformul.without_wobs.with_offs",
+    "brms.glm.cumul.stdformul.without_wobs.with_offs",
+    "brms.glm.srtio.stdformul.without_wobs.with_offs",
+    "brms.glm.crtio.stdformul.without_wobs.with_offs",
+    "brms.glm.adcat.stdformul.without_wobs.with_offs",
+    "brms.glm.categ.stdformul.without_wobs.without_offs",
+    "brms.glmm.cumul.stdformul.without_wobs.with_offs",
+    "brms.glmm.categ.stdformul.without_wobs.without_offs"
   )
   if (!use_fac) {
+    # rstanarm::stan_polr() cannot deal with a numeric response:
     sel_fits <- grep("^rstanarm\\.glm\\.cumul\\.", sel_fits, value = TRUE,
+                     invert = TRUE)
+  } else {
+    # The non-multilevel (and non-additive) brms::cumulative() case is
+    # redundant, given the corresponding rstanarm::stan_polr() case and the
+    # multilevel (and non-additive) brms::cumulative() case:
+    sel_fits <- grep("^brms\\.glm\\.cumul\\.", sel_fits, value = TRUE,
                      invert = TRUE)
   }
   args_fit <- args_fit[names(args_fit) %in% sel_fits]
