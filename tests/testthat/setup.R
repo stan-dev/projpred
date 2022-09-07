@@ -920,8 +920,6 @@ if (run_vs) {
   if (!run_more) {
     tstsetups_vs_ref <- grep(paste0("\\.glmm", fam_nms_aug_regex),
                              tstsetups_vs_ref, value = TRUE, invert = TRUE)
-    tstsetups_vs_ref <- grep("brms\\.glm\\.cumul\\.", tstsetups_vs_ref,
-                             value = TRUE, invert = TRUE)
   }
   tstsetups_vs_ref <- setNames(nm = tstsetups_vs_ref)
   args_vs <- lapply(tstsetups_vs_ref, function(tstsetup_ref) {
@@ -1125,10 +1123,6 @@ if (run_prj) {
   # object:
   tstsetups_prj_ref <- grep(fam_nms_unsupp_regex, names(refmods), value = TRUE,
                             invert = TRUE)
-  if (!run_more) {
-    tstsetups_prj_ref <- grep("brms\\.glm\\.cumul\\.", tstsetups_prj_ref,
-                              value = TRUE, invert = TRUE)
-  }
   tstsetups_prj_ref <- setNames(nm = tstsetups_prj_ref)
   args_prj <- lapply(tstsetups_prj_ref, function(tstsetup_ref) {
     pkg_crr <- args_ref[[tstsetup_ref]]$pkg_nm
