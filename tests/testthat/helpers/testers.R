@@ -302,12 +302,12 @@ refmodel_tester <- function(
 
   # dis
   if (refmod$family$family == "gaussian") {
-    expect_true(is.vector(refmod$dis, "double"), info = info_str)
-    expect_length(refmod$dis, nrefdraws_expected)
-    if (!is_datafit) {
-      expect_true(all(refmod$dis > 0), info = info_str)
-    } else {
+    if (is_datafit) {
       expect_identical(refmod$dis, 0, info = info_str)
+    } else {
+      expect_true(is.vector(refmod$dis, "double"), info = info_str)
+      expect_length(refmod$dis, nrefdraws_expected)
+      expect_true(all(refmod$dis > 0), info = info_str)
     }
   } else {
     expect_identical(refmod$dis, rep(NA, nrefdraws_expected), info = info_str)
