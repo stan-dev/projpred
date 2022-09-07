@@ -31,6 +31,9 @@ latent_ppdOrig_cats <- function(ilpreds_resamp, wobs, cl_ref,
 latent_llOrig_binom_nocats <- function(ilpreds, yOrig,
                                        wobs = rep(1, length(yOrig)), cl_ref,
                                        wdraws_ref = rep(1, length(cl_ref))) {
+  # Assign some nonzero value to have a finite log() value:
+  ilpreds[ilpreds %in% c(0, 1)] <- .Machine$double.eps
+
   ilpreds <- t(ilpreds)
   ll_unw <- yOrig * log(ilpreds) + (1 - yOrig) * log(1 - ilpreds)
   return(t(wobs * ll_unw))

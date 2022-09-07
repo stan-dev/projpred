@@ -209,6 +209,10 @@ ll_cats <- function(mu_arr, margin_draws = 3, y, wobs = 1) {
     } else if (margin_draws == 3) {
       prbs_i <- mu_arr[i_obs, y[i_obs], ]
     }
+
+    # Assign some nonzero value to have a finite log() value:
+    prbs_i[prbs_i == 0] <- .Machine$double.eps
+
     return(wobs[i_obs] * log(prbs_i))
   })))
 }
