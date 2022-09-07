@@ -30,9 +30,7 @@ test_that("extend_family() works for the augmented-data projection", {
                                   augdat_link = augdat_link_binom,
                                   augdat_ilink = augdat_ilink_binom)
     } else if (fam_nm == "cumul_augdat_rstanarm") {
-      fam_orig_crr <- structure(list(family = "cumulative_rstanarm",
-                                     link = "logit"),
-                                class = "family")
+      fam_orig_crr <- get_f_cumul()
       extfam_crr <- extend_family(fam_orig_crr,
                                   augdat_y_unqs = paste0("resplvl", 1:3),
                                   augdat_link = augdat_link_cumul,
@@ -43,6 +41,36 @@ test_that("extend_family() works for the augmented-data projection", {
     extfam_tester(extfam = extfam_crr,
                   fam_orig = fam_orig_crr,
                   augdat_expected = TRUE,
+                  info_str = fam_nm)
+  }
+})
+
+test_that("extend_family() works for the latent projection", {
+  fam_nms_tst <- c("binom_latent", "cumul_latent_rstanarm")
+  # For family brms::cumulative(), extend_family() can't be tested easily
+  # without receiving such a family from a `brmsfit`, so skip it here (it is
+  # tested by refmodel_tester() in `test_refmodel.R` anyway).
+  fam_nms_tst <- setNames(nm = fam_nms_tst)
+  ilink_dummy <- identity
+  for (fam_nm in fam_nms_tst) {
+    if (fam_nm == "binom_latent") {
+      extfam_crr <- extend_family(binomial(),
+                                  latent = TRUE,
+                                  # latent_y_unqs = c("0", "1"),
+                                  latent_ilink = ilink_dummy,
+                                  latent_llOrig = latent_llOrig_binom_nocats,
+                                  latent_ppdOrig = latent_ppdOrig_binom_nocats)
+    } else if (fam_nm == "cumul_latent_rstanarm") {
+      extfam_crr <- extend_family(get_f_cumul(),
+                                  latent = TRUE,
+                                  latent_y_unqs = paste0("resplvl", 1:3),
+                                  latent_ilink = ilink_dummy,
+                                  latent_llOrig = latent_llOrig_cats,
+                                  latent_ppdOrig = latent_ppdOrig_cats)
+    }
+    extfam_tester(extfam = extfam_crr,
+                  fam_orig = gaussian(),
+                  latent_expected = TRUE,
                   info_str = fam_nm)
   }
 })
