@@ -484,12 +484,12 @@ refmodel_tester <- function(
 
   # dis
   if (refmod$family$family == "gaussian") {
-    expect_true(is.vector(refmod$dis, "double"), info = info_str)
-    expect_length(refmod$dis, nrefdraws_expected)
-    if (!is_datafit) {
-      expect_true(all(refmod$dis > 0), info = info_str)
-    } else {
+    if (is_datafit) {
       expect_identical(refmod$dis, 0, info = info_str)
+    } else {
+      expect_true(is.vector(refmod$dis, "double"), info = info_str)
+      expect_length(refmod$dis, nrefdraws_expected)
+      expect_true(all(refmod$dis > 0), info = info_str)
     }
   } else {
     expect_identical(refmod$dis, rep(NA, nrefdraws_expected), info = info_str)
@@ -1963,14 +1963,14 @@ vsel_tester <- function(
       expect_true(all(!is.na(vs$summaries$sub[[!!j]]$lppd)), info = info_str)
     }
     if (with_cv) {
-      expect_type(vs$summaries$sub[[!!j]]$w, "double")
-      expect_length(vs$summaries$sub[[!!j]]$w, nobsv)
-      expect_true(all(!is.na(vs$summaries$sub[[!!j]]$w)), info = info_str)
+      expect_type(vs$summaries$sub[[!!j]]$wcv, "double")
+      expect_length(vs$summaries$sub[[!!j]]$wcv, nobsv)
+      expect_true(all(!is.na(vs$summaries$sub[[!!j]]$wcv)), info = info_str)
       if (nloo_expected == nobsv) {
-        expect_equal(vs$summaries$sub[[!!j]]$w, rep(1 / nobsv, nobsv),
+        expect_equal(vs$summaries$sub[[!!j]]$wcv, rep(1 / nobsv, nobsv),
                      info = info_str)
       } else {
-        expect_true(any(vs$summaries$sub[[!!j]]$w != rep(1 / nobsv, nobsv)),
+        expect_true(any(vs$summaries$sub[[!!j]]$wcv != rep(1 / nobsv, nobsv)),
                     info = info_str)
       }
     }
