@@ -286,14 +286,18 @@ get_stat <- function(mu, lppd, d_test, stat, mu.bs = NULL, lppd.bs = NULL,
         value.bootstrap1 <- bootstrap(auc.data, auc, ...)
         value.bootstrap2 <- bootstrap(auc.data.bs, auc, ...)
         value.se <- sd(value.bootstrap1 - value.bootstrap2, na.rm = TRUE)
-        lq <- quantile(value.bootstrap1 - value.bootstrap2, probs = alpha / 2, names = F, na.rm = T)
-        uq <- quantile(value.bootstrap1 - value.bootstrap2, probs = 1 - alpha / 2, names = F, na.rm = T)
+        lq <- quantile(value.bootstrap1 - value.bootstrap2, probs = alpha / 2,
+                       names = FALSE, na.rm = TRUE)
+        uq <- quantile(value.bootstrap1 - value.bootstrap2,
+                       probs = 1 - alpha / 2, names = FALSE, na.rm = TRUE)
       } else {
         value <- auc(auc.data)
         value.bootstrap <- bootstrap(auc.data, auc, ...)
         value.se <- sd(value.bootstrap, na.rm = TRUE)
-        lq <- quantile(value.bootstrap, probs = alpha / 2, names = F, na.rm = T)
-        uq <- quantile(value.bootstrap, probs = 1 - alpha / 2, names = F, na.rm = T)
+        lq <- quantile(value.bootstrap, probs = alpha / 2, names = FALSE,
+                       na.rm = TRUE)
+        uq <- quantile(value.bootstrap, probs = 1 - alpha / 2,
+                       names = FALSE, na.rm = TRUE)
       }
     }
   }
