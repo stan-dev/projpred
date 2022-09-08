@@ -141,6 +141,11 @@ test_that(paste(
     d_test_crr$yOrig <- yOrig_crr
     if (prj_crr == "augdat" && fam_crr == "cumul") {
       warn_expected <- "non-integer #successes in a binomial glm!"
+    } else if (!is.null(args_vs_i$avoid.increase)) {
+      warn_expected <- paste0(
+        "^step size truncated due to possible divergence$|",
+        "^Algorithm stopped due to false convergence$"
+      )
     } else {
       warn_expected <- NA
     }
@@ -268,6 +273,11 @@ test_that(paste(
     d_test_crr$yOrig <- yOrig_crr
     if (prj_crr == "augdat" && fam_crr == "cumul") {
       warn_expected <- "non-integer #successes in a binomial glm!"
+    } else if (!is.null(args_vs_i$avoid.increase)) {
+      warn_expected <- paste0(
+        "^step size truncated due to possible divergence$|",
+        "^Algorithm stopped due to false convergence$"
+      )
     } else {
       warn_expected <- NA
     }
@@ -299,6 +309,9 @@ test_that(paste(
 
     ### Summaries for the submodels -------------------------------------------
 
+    if (!is.null(args_vs_i$avoid.increase)) {
+      warn_expected <- NA
+    }
     # For getting the correct seed in proj_linpred():
     set.seed(args_vs_i$seed)
     p_sel_dummy <- .get_refdist(refmods[[tstsetup_ref]],
@@ -751,11 +764,24 @@ test_that("for forward search, `penalty` has no effect", {
   }
   for (tstsetup in tstsetups) {
     args_vs_i <- args_vs[[tstsetup]]
-    vs_penal <- do.call(varsel, c(
-      list(object = refmods[[args_vs_i$tstsetup_ref]],
-           penalty = penal_tst),
-      excl_nonargs(args_vs_i)
-    ))
+    if (args_vs_i$fam_nm == "cumul") {
+      warn_expected <- "non-integer #successes in a binomial glm!"
+    } else if (!is.null(args_vs_i$avoid.increase)) {
+      warn_expected <- paste0(
+        "^step size truncated due to possible divergence$|",
+        "^Algorithm stopped due to false convergence$"
+      )
+    } else {
+      warn_expected <- NA
+    }
+    expect_warning(
+      vs_penal <- do.call(varsel, c(
+        list(object = refmods[[args_vs_i$tstsetup_ref]],
+             penalty = penal_tst),
+        excl_nonargs(args_vs_i)
+      )),
+      warn_expected
+    )
     expect_equal(vs_penal, vss[[tstsetup]], info = tstsetup)
   }
 })
@@ -1217,14 +1243,20 @@ test_that(paste(
     }
     # Additionally to suppressWarnings(), suppressMessages() could be used here
     # (but is not necessary since messages seem to be suppressed within
-    # test_that()'s `code`):
-    kfold_obj <- suppressWarnings(
-      kfold(fit_crr,
-            K = K_crr,
-            folds = folds_vec,
-            save_fits = TRUE,
-            cores = 1)
-    )
+    # test_that()'s `code`); furthermore, try() is used because rstanarm
+    # sometimes fails to refit:
+    kfold_obj <- try(suppressWarnings(kfold(fit_crr,
+                                            K = K_crr,
+                                            folds = folds_vec,
+                                            save_fits = TRUE,
+                                            cores = 1)),
+                     silent = TRUE)
+    if (inherits(kfold_obj, "try-error")) {
+      cat("Could not test `tstsetup = \"", tstsetup, "\"` in the rstanarm ",
+          "`cvfits` test. Error message: \"",
+          attr(kfold_obj, "condition")$message, "\"\n", sep = "")
+      next
+    }
     kfold_obj <- structure(list(fits = kfold_obj$fits[, "fit"]),
                            K = K_crr,
                            folds = folds_vec)
@@ -1343,10 +1375,19 @@ test_that(paste(
     ))
 
     # Run cv_varsel():
-    cvvs_cvfits <- do.call(cv_varsel, c(
-      list(object = refmod_crr),
-      excl_nonargs(args_cvvs_i, nms_excl_add = "K")
-    ))
+    cvvs_cvfits <- try(
+      do.call(cv_varsel, c(
+        list(object = refmod_crr),
+        excl_nonargs(args_cvvs_i, nms_excl_add = "K")
+      )),
+      silent = TRUE
+    )
+    if (inherits(cvvs_cvfits, "try-error")) {
+      cat("Could not test `tstsetup = \"", tstsetup, "\"` in the brms ",
+          "`cvfits` test. Error message: \"",
+          attr(cvvs_cvfits, "condition")$message, "\"\n", sep = "")
+      next
+    }
     # Test the reproducibility of ref_predfun() when applied to new observations
     # (should be ensured by get_refmodel.brmsfit()'s internal `refprd_seed`):
     runif(1)
