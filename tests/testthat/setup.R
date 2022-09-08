@@ -978,7 +978,7 @@ if (run_vs) {
   })) >= 1)
 
   vss <- lapply(args_vs, function(args_vs_i) {
-    if (args_vs_i$fam_nm == "cumul" && args_vs_i$mod_nm == "glm") {
+    if (args_vs_i$fam_nm == "cumul") {
       warn_expected <- "non-integer #successes in a binomial glm!"
     } else if (!is.null(args_vs_i$avoid.increase)) {
       warn_expected <- paste0(
@@ -1207,9 +1207,11 @@ if (run_prj) {
   args_prj <- unlist_cust(args_prj)
 
   prjs <- lapply(args_prj, function(args_prj_i) {
-    if (args_prj_i$fam_nm == "cumul" && args_prj_i$mod_nm == "glm") {
+    if (args_prj_i$fam_nm == "cumul" &&
+        !any(grepl("\\|", args_prj_i$solution_terms))) {
       warn_expected <- "non-integer #successes in a binomial glm!"
-    } else if (!is.null(args_prj_i$avoid.increase)) {
+    } else if (!is.null(args_prj_i$avoid.increase) &&
+               any(grepl("\\|", args_prj_i$solution_terms))) {
       warn_expected <- paste0(
         "^step size truncated due to possible divergence$|",
         "^Algorithm stopped due to false convergence$"

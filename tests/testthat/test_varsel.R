@@ -127,7 +127,7 @@ test_that(paste(
         ordered = is.ordered(d_test_crr$y)
       )
     }
-    if (fam_crr == "cumul" && mod_crr == "glm") {
+    if (fam_crr == "cumul") {
       warn_expected <- "non-integer #successes in a binomial glm!"
     } else {
       warn_expected <- NA
@@ -233,7 +233,7 @@ test_that(paste(
         ordered = is.ordered(d_test_crr$y)
       )
     }
-    if (fam_crr == "cumul" && mod_crr == "glm") {
+    if (fam_crr == "cumul") {
       warn_expected <- "non-integer #successes in a binomial glm!"
     } else {
       warn_expected <- NA
