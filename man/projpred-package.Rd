@@ -137,6 +137,7 @@ Other contributors:
   \item Marco Colombo [contributor]
   \item Paul-Christian Bürkner [contributor]
   \item Hamada S. Badr [contributor]
+  \item Brian Sullivan [contributor]
 }
 
 }

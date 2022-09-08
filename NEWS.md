@@ -4,6 +4,10 @@ If you read this from a place other than <https://mc-stan.org/projpred/news/inde
 
 # projpred 2.2.0.9000
 
+## Minor changes
+
+* For the AUC (see argument `stats` of `summary.vsel()`), the bootstrapping results are now also used for inferring the lower and upper confidence interval bounds. **TODO (bootstrap)**: Add RMSE? (GitHub: #318, #347; thanks to users @awd97 and @VisionResearchBlog)
+
 # projpred 2.2.0
 
 ## Major changes
