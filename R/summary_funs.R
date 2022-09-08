@@ -105,6 +105,13 @@
                              wcv = summ$wcv, alpha = alpha, ...)
         val <- res_ref$value + res_diff$value
         val.se <- sqrt(res_ref$se^2 + res_diff$se^2)
+        if (stat %in% c("rmse", "auc")) {
+          # TODO (subsampling LOO-CV): Use bootstrap for lower and upper
+          # confidence interval bounds.
+          warning("Lower and upper confidence interval bounds of performance ",
+                  "statistic `", stat, "` are based on a normal ",
+                  "approximation, not the bootstrap.")
+        }
         lq <- qnorm(alpha / 2, mean = val, sd = val.se)
         uq <- qnorm(1 - alpha / 2, mean = val, sd = val.se)
         row <- data.frame(
