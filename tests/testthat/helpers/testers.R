@@ -1143,13 +1143,16 @@ submodl_tester_aug <- function(
         sub_formul_no_grp <- update(sub_formul,
                                     . ~ . - (1 | z.1) - (xco.1 | z.1))
         ###
-        expect_named(
-          coefs_crr,
-          grep("Intercept",
-               colnames(model.matrix(sub_formul_no_grp, data = sub_data)),
-               value = TRUE, invert = TRUE),
-          info = info_str
+        coefs_nms_expected <- grep(
+          "Intercept",
+          colnames(model.matrix(sub_formul_no_grp, data = sub_data)),
+          value = TRUE, invert = TRUE
         )
+        if (length(coefs_nms_expected)) {
+          expect_named(coefs_crr, coefs_nms_expected, info = info_str)
+        } else {
+          expect_length(coefs_crr, 0)
+        }
 
         # ordinal::ranef()
         ranef_crr <- ordinal::ranef(submodl_totest[[j]])
@@ -1211,8 +1214,12 @@ submodl_tester_aug <- function(
         # xlevels
         xlevels_crr <- submodl_totest[[j]]$xlevels
         xca_nms <- grep("^xca\\.", labels(terms(sub_formul)), value = TRUE)
-        expect_identical(xlevels_crr, lapply(dat[xca_nms], levels),
-                         info = info_str)
+        if (length(xca_nms)) {
+          expect_identical(xlevels_crr, lapply(dat[xca_nms], levels),
+                           info = info_str)
+        } else {
+          expect_null(xlevels_crr, info = info_str)
+        }
       }
     } else if (sub_fam == "categorical") {
       for (j in seq_along(submodl_totest)) {
@@ -1293,8 +1300,12 @@ submodl_tester_aug <- function(
         # xlevels
         xlevels_crr <- submodl_totest[[j]]$xlevels
         xca_nms <- grep("^xca\\.", labels(terms(sub_formul)), value = TRUE)
-        expect_identical(xlevels_crr, lapply(dat[xca_nms], levels),
-                         info = info_str)
+        if (length(xca_nms)) {
+          expect_identical(xlevels_crr, lapply(dat[xca_nms], levels),
+                           info = info_str)
+        } else {
+          expect_null(xlevels_crr, info = info_str)
+        }
       }
     } else {
       stop("Unexpected `sub_fam` value of `", sub_fam, "`. Info: ", info_str)
