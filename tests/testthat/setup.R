@@ -1003,6 +1003,13 @@ if (run_vs) {
 
 if (run_cvvs) {
   tstsetups_cvvs_ref <- tstsetups_vs_ref
+  # Even in the `run_more = TRUE` case (which is not run by default), we need to
+  # impose some restrictions to have the tests run through in a reasonable
+  # amount of time:
+  tstsetups_cvvs_ref <- grep(
+    paste0("\\.glmm", fam_nms_aug_regex), tstsetups_cvvs_ref, value = TRUE,
+    invert = TRUE
+  )
   if (!run_more) {
     tstsetups_cvvs_ref <- grep("\\.gam\\.", tstsetups_cvvs_ref, value = TRUE,
                                invert = TRUE)
