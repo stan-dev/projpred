@@ -162,6 +162,8 @@ get_stat <- function(mu, lppd, d_test, stat, mu.bs = NULL, lppd.bs = NULL,
   ## ensure the CV fold weights sum to n_notna
   wcv <- n_notna * wcv / sum(wcv)
 
+  alpha_half <- alpha / 2
+  one_minus_alpha_half <- 1 - alpha_half
   if (stat %in% c("mlpd", "elpd")) {
     if (!is.null(lppd.bs)) {
       value <- sum((lppd - lppd.bs) * wcv, na.rm = TRUE)
@@ -176,8 +178,6 @@ get_stat <- function(mu, lppd, d_test, stat, mu.bs = NULL, lppd.bs = NULL,
       value <- value / n_notna
       value.se <- value.se / n_notna
     }
-    lq <- qnorm(alpha / 2, mean = value, sd = value.se)
-    uq <- qnorm(1 - alpha / 2, mean = value, sd = value.se)
   } else if (stat %in% c("mse", "rmse")) {
     if (is.null(d_test$y_prop)) {
       y <- d_test$y
@@ -233,9 +233,9 @@ get_stat <- function(mu, lppd, d_test, stat, mu.bs = NULL, lppd.bs = NULL,
         )
         value.se <- sd(value.bootstrap)
       }
+      # TODO (bootstrap): Use bootstrap confidence interval bounds also for the
+      # RMSE? (See AUC below.)
     }
-    lq <- qnorm(alpha / 2, mean = value, sd = value.se)
-    uq <- qnorm(1 - alpha / 2, mean = value, sd = value.se)
   } else if (stat %in% c("acc", "pctcorr", "auc")) {
     y <- d_test$y
     if (!is.null(d_test$y_prop)) {
@@ -272,8 +272,6 @@ get_stat <- function(mu, lppd, d_test, stat, mu.bs = NULL, lppd.bs = NULL,
         value.se <- weighted.sd(round(mu) == y, wcv, na.rm = TRUE) /
           sqrt(n_notna)
       }
-      lq <- qnorm(alpha / 2, mean = value, sd = value.se)
-      uq <- qnorm(1 - alpha / 2, mean = value, sd = value.se)
     } else if (stat == "auc") {
       auc.data <- cbind(y, mu, wcv)
       if (!is.null(mu.bs)) {
@@ -284,20 +282,25 @@ get_stat <- function(mu, lppd, d_test, stat, mu.bs = NULL, lppd.bs = NULL,
         value.bootstrap1 <- bootstrap(auc.data, auc, ...)
         value.bootstrap2 <- bootstrap(auc.data.bs, auc, ...)
         value.se <- sd(value.bootstrap1 - value.bootstrap2, na.rm = TRUE)
-        lq <- quantile(value.bootstrap1 - value.bootstrap2, probs = alpha / 2,
-                       names = FALSE, na.rm = TRUE)
-        uq <- quantile(value.bootstrap1 - value.bootstrap2,
-                       probs = 1 - alpha / 2, names = FALSE, na.rm = TRUE)
+        lq_uq <- quantile(value.bootstrap1 - value.bootstrap2,
+                          probs = c(alpha_half, one_minus_alpha_half),
+                          names = FALSE, na.rm = TRUE)
       } else {
         value <- auc(auc.data)
         value.bootstrap <- bootstrap(auc.data, auc, ...)
         value.se <- sd(value.bootstrap, na.rm = TRUE)
-        lq <- quantile(value.bootstrap, probs = alpha / 2, names = FALSE,
-                       na.rm = TRUE)
-        uq <- quantile(value.bootstrap, probs = 1 - alpha / 2,
-                       names = FALSE, na.rm = TRUE)
+        lq_uq <- quantile(value.bootstrap,
+                          probs = c(alpha_half, one_minus_alpha_half),
+                          names = FALSE, na.rm = TRUE)
       }
+      lq <- lq_uq[1]
+      uq <- lq_uq[2]
     }
+  }
+
+  if (stat != "auc") { # TODO (bootstrap): Add RMSE?
+    lq <- qnorm(alpha_half, mean = value, sd = value.se)
+    uq <- qnorm(one_minus_alpha_half, mean = value, sd = value.se)
   }
 
   return(list(value = value, se = value.se, lq = lq, uq = uq))
