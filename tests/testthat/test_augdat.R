@@ -524,7 +524,7 @@ test_that(paste(
 
       expect_equal(smmry_pd[, setdiff(names(smmry_pd), "se")],
                    smmry_pd_trad[, setdiff(names(smmry_pd_trad), "se")],
-                   tolerance = 1e-10, info = tstsetup)
+                   info = tstsetup)
       expect_equal(smmry_pd$se, smmry_pd_trad$se, tolerance = 1e-1,
                    info = tstsetup)
     }
