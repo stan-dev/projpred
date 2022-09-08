@@ -214,9 +214,18 @@ test_that(paste(
     expect_length(submodl_augdat, 1)
     expect_length(submodl_trad, 1)
     tol_coefs <- ifelse(args_ref_i$mod_nm == "glmm", 1e-4, 1e-5)
-    expect_equal(get_subparams(submodl_augdat[[1]], nm_scheme = "rstanarm"),
-                 get_subparams(submodl_trad[[1]], nm_scheme = "rstanarm"),
-                 tolerance = tol_coefs, info = tstsetup)
+    coefs_aug <- get_subparams(submodl_augdat[[1]], nm_scheme = "rstanarm")
+    coefs_trad <- get_subparams(submodl_trad[[1]], nm_scheme = "rstanarm")
+    if (!identical(is.na(coefs_aug), is.na(coefs_trad))) {
+      # There is at least one case where the traditional projection is not able
+      # to estimate a correlation of -1:
+      expect_true(all(coefs_aug[is.na(coefs_trad)] %in% c(-1, 1)),
+                  info = tstsetup)
+      coefs_aug <- coefs_aug[!is.na(coefs_trad)]
+      coefs_trad <- coefs_trad[!is.na(coefs_trad)]
+    }
+    expect_equal(coefs_aug, coefs_trad, tolerance = tol_coefs,
+                 info = tstsetup)
   }
 })
 
