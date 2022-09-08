@@ -199,8 +199,8 @@ get_stat <- function(mu, lppd, d_test, stat, mu.bs = NULL, lppd.bs = NULL,
         value.se <- weighted.sd((mu - y)^2, wcv, na.rm = TRUE) /
           sqrt(n_notna)
       }
-    lq <- qnorm(alpha / 2, mean = value, sd = value.se)
-    uq <- qnorm(1 - alpha / 2, mean = value, sd = value.se)
+      lq <- qnorm(alpha / 2, mean = value, sd = value.se)
+      uq <- qnorm(1 - alpha / 2, mean = value, sd = value.se)
     } else if (stat == "rmse") {
       if (!is.null(mu.bs)) {
         ## make sure the relative rmse is computed using only those points for
@@ -274,8 +274,8 @@ get_stat <- function(mu, lppd, d_test, stat, mu.bs = NULL, lppd.bs = NULL,
         value.se <- weighted.sd(round(mu) == y, wcv, na.rm = TRUE) /
           sqrt(n_notna)
       }
-	lq <- qnorm(alpha / 2, mean = value, sd = value.se)
-	uq <- qnorm(1 - alpha / 2, mean = value, sd = value.se)
+      lq <- qnorm(alpha / 2, mean = value, sd = value.se)
+      uq <- qnorm(1 - alpha / 2, mean = value, sd = value.se)
     } else if (stat == "auc") {
       auc.data <- cbind(y, mu, wcv)
       if (!is.null(mu.bs)) {
