@@ -756,7 +756,7 @@ test_that(paste(
     }
     if (args_prj[[tstsetup]]$prj_nm == "augdat" &&
         args_prj[[tstsetup]]$fam_nm == "cumul" &&
-        args_prj[[tstsetup]]$mod_nm == "glm") {
+        !any(grepl("\\|", args_prj[[tstsetup]]$solution_terms))) {
       warn_expected <- "non-integer #successes in a binomial glm!"
     } else {
       warn_expected <- NA
@@ -767,7 +767,7 @@ test_that(paste(
                     nclusters = 1L,
                     seed = seed_tst)
     if (args_prj[[tstsetup]]$fam_nm == "categ" &&
-        args_prj[[tstsetup]]$mod_nm == "glmm") {
+        any(grepl("\\|", args_prj[[tstsetup]]$solution_terms))) {
       pl_args <- c(pl_args, list(avoid.increase = TRUE))
       warn_expected <- paste0(
         "^step size truncated due to possible divergence$|",
@@ -1395,7 +1395,7 @@ test_that(paste(
     }
     if (args_prj[[tstsetup]]$prj_nm == "augdat" &&
         args_prj[[tstsetup]]$fam_nm == "cumul" &&
-        args_prj[[tstsetup]]$mod_nm == "glm") {
+        !any(grepl("\\|", args_prj[[tstsetup]]$solution_terms))) {
       warn_expected <- "non-integer #successes in a binomial glm!"
     } else {
       warn_expected <- NA
@@ -1408,7 +1408,7 @@ test_that(paste(
                     nclusters = 1L,
                     seed = seed_tst)
     if (args_prj[[tstsetup]]$fam_nm == "categ" &&
-        args_prj[[tstsetup]]$mod_nm == "glmm") {
+        any(grepl("\\|", args_prj[[tstsetup]]$solution_terms))) {
       pp_args <- c(pp_args, list(avoid.increase = TRUE))
       warn_expected <- paste0(
         "^step size truncated due to possible divergence$|",

@@ -139,7 +139,7 @@ test_that(paste(
       }
     }
     d_test_crr$yOrig <- yOrig_crr
-    if (prj_crr == "augdat" && fam_crr == "cumul" && mod_crr == "glm") {
+    if (prj_crr == "augdat" && fam_crr == "cumul") {
       warn_expected <- "non-integer #successes in a binomial glm!"
     } else {
       warn_expected <- NA
@@ -266,7 +266,7 @@ test_that(paste(
       }
     }
     d_test_crr$yOrig <- yOrig_crr
-    if (prj_crr == "augdat" && fam_crr == "cumul" && mod_crr == "glm") {
+    if (prj_crr == "augdat" && fam_crr == "cumul") {
       warn_expected <- "non-integer #successes in a binomial glm!"
     } else {
       warn_expected <- NA
