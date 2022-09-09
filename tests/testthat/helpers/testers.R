@@ -1039,6 +1039,7 @@ submodl_tester_aug <- function(
     grp_trms_for_coef <- extract_terms_response(sub_formul)$group_terms
     grp_trms_for_coef <- sub("[[:blank:]]*\\|.*$", "", grp_trms_for_coef)
     coef_nms <- strsplit(grp_trms_for_coef, "[[:blank:]]*\\+[[:blank:]]*")
+    coef_nms <- union("1", coef_nms)
     coef_nms <- sub("^1$", "(Intercept)", unlist(coef_nms))
     if (sub_fam %in% c("cumulative", "cumulative_rstanarm")) {
       for (j in seq_along(submodl_totest)) {
