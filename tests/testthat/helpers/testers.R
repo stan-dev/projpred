@@ -344,7 +344,8 @@ refmodel_tester <- function(
   }
   if (!is_datafit && pkg_nm == "rstanarm" &&
       refmod$fit$stan_function == "stan_gamm4" &&
-      refmod$family$family == "binomial") {
+      refmod$family$familyOrig %||% refmod$family$family == "binomial") {
+    # A column added internally by rstanarm which is not relevant for projpred:
     data_expected$temp_y <- 1
   }
   has_grp <- mod_nm %in% c("glmm", "gamm")
