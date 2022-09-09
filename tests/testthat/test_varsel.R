@@ -764,7 +764,7 @@ test_that("for forward search, `penalty` has no effect", {
   }
   for (tstsetup in tstsetups) {
     args_vs_i <- args_vs[[tstsetup]]
-    if (args_vs_i$fam_nm == "cumul") {
+    if (args_vs_i$prj_nm == "augdat" && args_vs_i$fam_nm == "cumul") {
       warn_expected <- "non-integer #successes in a binomial glm!"
     } else if (!is.null(args_vs_i$avoid.increase)) {
       warn_expected <- paste0(
