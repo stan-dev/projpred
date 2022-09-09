@@ -45,7 +45,11 @@ weights for the new (or old) observations.}
 predictions are returned, either \code{"link"} or \code{"response"} (see
 \code{\link[=predict.glm]{predict.glm()}} but note that \code{\link[=predict.refmodel]{predict.refmodel()}} does not adhere to the
 typical \R convention of a default prediction on link scale). For both
-scales, the predictions are averaged across the posterior draws.}
+scales, the predictions are averaged across the posterior draws. In case of
+the latent projection, \code{type = "link"} will yield the linear predictors
+without any modifications that may be due to the original response
+distribution (e.g., for a \code{\link[brms:brmsfamily]{brms::cumulative()}} model, the ordered
+thresholds are not taken into account).}
 
 \item{...}{Currently ignored.}
 }

@@ -55,7 +55,11 @@ for only those elements (submodels) with a number of solution terms in
 
 \item{transform}{For \code{\link[=proj_linpred]{proj_linpred()}} only. A single logical value indicating
 whether the linear predictor should be transformed to response scale using
-the inverse-link function (\code{TRUE}) or not (\code{FALSE}).}
+the inverse-link function (\code{TRUE}) or not (\code{FALSE}). In case of the latent
+projection, \code{transform = FALSE} will yield the linear predictors without
+any modifications that may be due to the original response distribution
+(e.g., for a \code{\link[brms:brmsfamily]{brms::cumulative()}} model, the ordered thresholds are not
+taken into account).}
 
 \item{integrated}{For \code{\link[=proj_linpred]{proj_linpred()}} only. A single logical value
 indicating whether the output should be averaged across the projected

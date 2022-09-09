@@ -25,7 +25,11 @@
 #'   `NULL`, use all submodels.
 #' @param transform For [proj_linpred()] only. A single logical value indicating
 #'   whether the linear predictor should be transformed to response scale using
-#'   the inverse-link function (`TRUE`) or not (`FALSE`).
+#'   the inverse-link function (`TRUE`) or not (`FALSE`). In case of the latent
+#'   projection, `transform = FALSE` will yield the linear predictors without
+#'   any modifications that may be due to the original response distribution
+#'   (e.g., for a [brms::cumulative()] model, the ordered thresholds are not
+#'   taken into account).
 #' @param integrated For [proj_linpred()] only. A single logical value
 #'   indicating whether the output should be averaged across the projected
 #'   posterior draws (`TRUE`) or not (`FALSE`).

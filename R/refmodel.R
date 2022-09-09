@@ -329,7 +329,11 @@ NULL
 #'   predictions are returned, either `"link"` or `"response"` (see
 #'   [predict.glm()] but note that [predict.refmodel()] does not adhere to the
 #'   typical \R convention of a default prediction on link scale). For both
-#'   scales, the predictions are averaged across the posterior draws.
+#'   scales, the predictions are averaged across the posterior draws. In case of
+#'   the latent projection, `type = "link"` will yield the linear predictors
+#'   without any modifications that may be due to the original response
+#'   distribution (e.g., for a [brms::cumulative()] model, the ordered
+#'   thresholds are not taken into account).
 #' @param ... Currently ignored.
 #'
 #' @details Argument `weightsnew` is only relevant if `!is.null(ynew)`.
