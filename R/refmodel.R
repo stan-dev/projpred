@@ -824,7 +824,7 @@ get_refmodel.stanreg <- function(object, latent = FALSE, latent_y_unqs = NULL,
         }
       }
     }
-    latent_ilink_tmp <- latent_llOrig_tmp <- latent_ppdOrig_tmp <- NULL
+    args_latent <- c(args_latent, list(latent_y_unqs = y_lvls))
     if (object$stan_function == "stan_polr") {
       draws_mat <- as.matrix(object)
       thres_nms <- names(object$zeta)
@@ -847,6 +847,7 @@ get_refmodel.stanreg <- function(object, latent = FALSE, latent_y_unqs = NULL,
         # Transform to response space, yielding an S_agg x N x C_cat array:
         return(augdat_ilink_cumul(lpreds_thres, link = family$link))
       }
+      args_latent <- c(args_latent, list(latent_ilink = latent_ilink_tmp))
       # Free up some memory:
       rm(draws_mat)
     }
@@ -855,12 +856,6 @@ get_refmodel.stanreg <- function(object, latent = FALSE, latent_y_unqs = NULL,
     # some families (those for which the response can be numeric) also require
     # specific `latent_llOrig` and `latent_ppdOrig` functions. The binomial
     # family has response-scale support implemented natively in projpred.
-    args_latent <- c(args_latent, list(
-      latent_y_unqs = y_lvls,
-      latent_ilink = latent_ilink_tmp,
-      latent_llOrig = latent_llOrig_tmp,
-      latent_ppdOrig = latent_ppdOrig_tmp
-    ))
   }
 
   # Output ------------------------------------------------------------------
