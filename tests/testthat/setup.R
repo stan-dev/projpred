@@ -737,7 +737,12 @@ if (!run_more) {
                      invert = TRUE)
   }
   args_fit <- args_fit[names(args_fit) %in% sel_fits]
-  stopifnot(setequal(names(args_fit), sel_fits))
+  if (run_brms) {
+    stopifnot(setequal(names(args_fit), sel_fits))
+  } else {
+    stopifnot(setequal(names(args_fit),
+                       grep("^brms\\.", sel_fits, value = TRUE, invert = TRUE)))
+  }
 }
 
 ## Run --------------------------------------------------------------------
