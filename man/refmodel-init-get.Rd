@@ -18,7 +18,7 @@ get_refmodel(object, ...)
 
 \method{get_refmodel}{default}(object, formula, family = NULL, ...)
 
-\method{get_refmodel}{stanreg}(object, latent = FALSE, latent_y_unqs = NULL, ...)
+\method{get_refmodel}{stanreg}(object, latent = FALSE, latent_y_unqs = NULL, dis = NULL, ...)
 
 init_refmodel(
   object,
@@ -74,6 +74,12 @@ be regarded as categories), in which case this needs to be the character
 vector of unique response values. See also section "Latent projection"
 below.}
 
+\item{dis}{A vector of posterior draws for the dispersion parameter (if
+existing). May be \code{NULL} if the model has no dispersion parameter or if the
+model does have a dispersion parameter, but \code{object} is \code{NULL} (in which
+case \code{0} is used for \code{dis}). Note that for the \code{\link[=gaussian]{gaussian()}} \code{family}, \code{dis}
+is the standard deviation, not the variance.}
+
 \item{data}{Data used for fitting the reference model. Any \code{contrasts}
 attributes of the dataset's columns are silently removed.}
 
@@ -117,12 +123,6 @@ indices (one fold index per observation). Each element of \code{cvfits$fits}
 \code{cvfits} and \code{cvfun} needs to be provided (for \eqn{K}-fold CV). Note that
 \code{cvfits} takes precedence over \code{cvfun}, i.e., if both are provided,
 \code{cvfits} is used.}
-
-\item{dis}{A vector of posterior draws for the dispersion parameter (if
-existing). May be \code{NULL} if the model has no dispersion parameter or if the
-model does have a dispersion parameter, but \code{object} is \code{NULL} (in which
-case \code{0} is used for \code{dis}). Note that for the \code{\link[=gaussian]{gaussian()}} \code{family}, \code{dis}
-is the standard deviation, not the variance.}
 
 \item{cvrefbuilder}{For \eqn{K}-fold CV only. A function that, given a
 reference model fit for fold \eqn{k \in \{1, ..., K\}}{k = 1, ..., K} (this

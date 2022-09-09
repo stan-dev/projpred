@@ -620,7 +620,7 @@ get_refmodel.default <- function(object, formula, family = NULL, ...) {
 #' @rdname refmodel-init-get
 #' @export
 get_refmodel.stanreg <- function(object, latent = FALSE, latent_y_unqs = NULL,
-                                 ...) {
+                                 dis = NULL, ...) {
   if (!requireNamespace("rstanarm", quietly = TRUE)) {
     stop("Please install the 'rstanarm' package.")
   }
@@ -790,10 +790,8 @@ get_refmodel.stanreg <- function(object, latent = FALSE, latent_y_unqs = NULL,
 
   # Miscellaneous -----------------------------------------------------------
 
-  if (.has_dispersion(family)) {
+  if (is.null(dis) && .has_dispersion(family)) {
     dis <- data.frame(object)[, "sigma"]
-  } else {
-    dis <- NULL
   }
 
   # Augmented-data projection -----------------------------------------------
