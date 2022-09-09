@@ -702,6 +702,9 @@ refmodel_tester <- function(
   # yOrig
   if (latent_expected) {
     yOrig_expected <- data_expected[[sub("^\\.", "", stdized_lhs$y_nm)]]
+    if (!is.null(refmod$family$cats) && !is.factor(yOrig_expected)) {
+      yOrig_expected <- as.factor(yOrig_expected)
+    }
     if (pkg_nm == "brms") {
       # brms seems to set argument `contrasts`, but this is not important for
       # projpred, so ignore it in the comparison:
