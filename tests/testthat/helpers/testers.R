@@ -1120,7 +1120,11 @@ submodl_tester_aug <- function(
       stop("Unexpected `sub_fam` value of `", sub_fam, "`. Info: ", info_str)
     }
   } else if (has_grp) {
-    coef_nms <- c("(Intercept)", "xco.1")
+    grp_trms_for_coef <- extract_terms_response(sub_formul)$group_terms
+    grp_trms_for_coef <- sub("[[:blank:]]*\\|.*$", "", grp_trms_for_coef)
+    coef_nms <- strsplit(grp_trms_for_coef, "[[:blank:]]*\\+[[:blank:]]*")
+    coef_nms <- union("1", coef_nms)
+    coef_nms <- sub("^1$", "(Intercept)", unlist(coef_nms))
     if (sub_fam %in% c("cumulative", "cumulative_rstanarm")) {
       for (j in seq_along(submodl_totest)) {
         expect_s3_class(submodl_totest[[!!j]], "clmm")
@@ -1283,11 +1287,16 @@ submodl_tester_aug <- function(
         expect_length(random_crr, 1)
         expect_named(random_crr, NULL, info = info_str)
         expect_named(random_crr[[1]], c("formula", "groups"), info = info_str)
-        expect_equal(
-          random_crr[[1]]$formula,
-          as.formula(paste("~", paste(setdiff(coef_nms, "1"), collapse = "+"))),
-          info = info_str
-        )
+        coef_nms_no_icpt <- setdiff(coef_nms, "1")
+        if (length(coef_nms_no_icpt)) {
+          expect_equal(
+            random_crr[[1]]$formula,
+            as.formula(paste("~", paste(coef_nms_no_icpt, collapse = "+"))),
+            info = info_str
+          )
+        } else {
+          expect_equal(random_crr[[1]]$formula, ~ 1, info = info_str)
+        }
         expect_identical(random_crr[[1]]$groups, "z.1", info = info_str)
 
         # groups
