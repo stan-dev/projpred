@@ -790,7 +790,7 @@ get_refmodel.stanreg <- function(object, latent = FALSE, latent_y_unqs = NULL,
 
   # Miscellaneous -----------------------------------------------------------
 
-  if (is.null(dis) && .has_dispersion(family)) {
+  if (is.null(dis) && !latent && .has_dispersion(family)) {
     dis <- data.frame(object)[, "sigma"]
   }
 
