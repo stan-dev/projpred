@@ -1282,9 +1282,19 @@ test_that(paste(
       silent = TRUE
     )
     if (inherits(cvvs_cvfits, "try-error")) {
-      cat("Could not test `tstsetup = \"", tstsetup, "\"` in the brms ",
+      cat("Failure for `tstsetup = \"", tstsetup, "\"` in the brms ",
           "`cvfits` test. Error message: \"",
           attr(cvvs_cvfits, "condition")$message, "\"\n", sep = "")
+      # Check that this is a "pwrssUpdate" failure in lme4, so for solving this,
+      # we would either need to tweak the lme4 tuning parameters manually (via
+      # `...`) or change the data-generating mechanism here in the tests (to
+      # obtain less extreme or more data):
+      expect_true(grepl("pwrssUpdate", attr(cvvs_cvfits, "condition")$message),
+                  info = tstsetup)
+      # Furthermore, this should only occur in the `run_more = TRUE` case, so it
+      # can be skipped (because there are enough other `tstsetups` for which
+      # this works):
+      expect_true(run_more, info = tstsetup)
       next
     }
     # Test the reproducibility of ref_predfun() when applied to new observations
