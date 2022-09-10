@@ -3,20 +3,20 @@
 #__________________________________________________________________________
 
 # This is the function which would have to be supplied to extend_family()'s
-# argument `latent_llOrig` in case of the latent projection if `latent_y_unqs`
-# (i.e., the later `family$cats`) is not `NULL`. Note the "*would* have to be
-# supplied": This function is used by default (internally) in the described
-# situation.
+# argument `latent_llOrig` in case of the latent projection if `family$cats`
+# (*after* applying extend_family(); see extend_family()'s argument
+# `latent_y_unqs`) is not `NULL`. Note the "*would* have to be supplied": This
+# function is used by default (internally) in the described situation.
 latent_llOrig_cats <- function(ilpreds, yOrig, wobs = rep(1, length(yOrig)),
                                cl_ref, wdraws_ref = rep(1, length(cl_ref))) {
   return(ll_cats(ilpreds, margin_draws = 1, y = yOrig, wobs = wobs))
 }
 
 # This is the function which would have to be supplied to extend_family()'s
-# argument `latent_ppdOrig` in case of the latent projection if `latent_y_unqs`
-# (i.e., the later `family$cats`) is not `NULL`. Note the "*would* have to be
-# supplied": This function is used by default (internally) in the described
-# situation.
+# argument `latent_ppdOrig` in case of the latent projection if `family$cats`
+# (*after* applying extend_family(); see extend_family()'s argument
+# `latent_y_unqs`) is not `NULL`. Note the "*would* have to be supplied": This
+# function is used by default (internally) in the described situation.
 latent_ppdOrig_cats <- function(ilpreds_resamp, wobs, cl_ref,
                                 wdraws_ref = rep(1, length(cl_ref)),
                                 idxs_prjdraws) {
@@ -25,9 +25,10 @@ latent_ppdOrig_cats <- function(ilpreds_resamp, wobs, cl_ref,
 
 # This is the function which would have to be supplied to extend_family()'s
 # argument `latent_llOrig` in case of the latent projection for the binomial
-# family if `latent_y_unqs` (i.e., the later `family$cats`) is `NULL`. Note the
-# "*would* have to be supplied": This function is used by default (internally)
-# in the described situation.
+# family if `family$cats` (*after* applying extend_family(); see
+# extend_family()'s argument `latent_y_unqs`) is `NULL`. Note the "*would* have
+# to be supplied": This function is used by default (internally) in the
+# described situation.
 latent_llOrig_binom_nocats <- function(ilpreds, yOrig,
                                        wobs = rep(1, length(yOrig)), cl_ref,
                                        wdraws_ref = rep(1, length(cl_ref))) {
@@ -41,9 +42,10 @@ latent_llOrig_binom_nocats <- function(ilpreds, yOrig,
 
 # This is the function which would have to be supplied to extend_family()'s
 # argument `latent_ppdOrig` in case of the latent projection for the binomial
-# family if `latent_y_unqs` (i.e., the later `family$cats`) is `NULL`. Note the
-# "*would* have to be supplied": This function is used by default (internally)
-# in the described situation.
+# family if `family$cats` (*after* applying extend_family(); see
+# extend_family()'s argument `latent_y_unqs`) is `NULL`. Note the "*would* have
+# to be supplied": This function is used by default (internally) in the
+# described situation.
 latent_ppdOrig_binom_nocats <- function(ilpreds_resamp, wobs, cl_ref,
                                         wdraws_ref = rep(1, length(cl_ref)),
                                         idxs_prjdraws) {

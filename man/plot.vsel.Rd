@@ -84,9 +84,8 @@ The \code{stats} options \code{"mse"} and \code{"rmse"} are only available for:
 \itemize{
 \item the traditional projection,
 \item the latent projection with \code{lat2resp = FALSE},
-\item the latent projection with \code{lat2resp = TRUE} in combination with argument
-\code{latent_y_unqs} of \code{\link[=extend_family]{extend_family()}} being \code{NULL} when the reference model
-was built.
+\item the latent projection with \code{lat2resp = TRUE} in combination with
+\verb{<refmodel>$family$cats} being \code{NULL}.
 }
 
 The \code{stats} option \code{"acc"} (= \code{"pctcorr"}) is only available for:
@@ -94,22 +93,19 @@ The \code{stats} option \code{"acc"} (= \code{"pctcorr"}) is only available for:
 \item the \code{\link[=binomial]{binomial()}} family in case of the traditional projection,
 \item all families in case of the augmented-data projection,
 \item the \code{\link[=binomial]{binomial()}} family (on the original response scale) in case of the
-latent projection with \code{lat2resp = TRUE} in combination with argument
-\code{latent_y_unqs} of \code{\link[=extend_family]{extend_family()}} being \code{NULL} when the reference model
-was built,
+latent projection with \code{lat2resp = TRUE} in combination with
+\verb{<refmodel>$family$cats} being \code{NULL},
 \item all families (on the original response scale) in case of the latent
-projection with \code{lat2resp = TRUE} in combination with argument
-\code{latent_y_unqs} of \code{\link[=extend_family]{extend_family()}} being not \code{NULL} when the reference
-model was built.
+projection with \code{lat2resp = TRUE} in combination with
+\verb{<refmodel>$family$cats} being not \code{NULL}.
 }
 
 The \code{stats} option \code{"auc"} is only available for:
 \itemize{
 \item the \code{\link[=binomial]{binomial()}} family in case of the traditional projection,
 \item the \code{\link[=binomial]{binomial()}} family (on the original response scale) in case of the
-latent projection with \code{lat2resp = TRUE} in combination with argument
-\code{latent_y_unqs} of \code{\link[=extend_family]{extend_family()}} being \code{NULL} when the reference model
-was built.
+latent projection with \code{lat2resp = TRUE} in combination with
+\verb{<refmodel>$family$cats} being \code{NULL}.
 }
 }
 \section{Horizontal lines}{

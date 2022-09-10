@@ -29,8 +29,9 @@ causes all arguments starting with \code{augdat_} to be ignored.}
 \item{latent_y_unqs}{Only relevant for a latent projection where the original
 response space has finite support (i.e., the original response values may
 be regarded as categories), in which case this needs to be the character
-vector of unique response values. See also section "Latent projection"
-below.}
+vector of unique response values (which will be assigned to \code{family$cats}
+internally) or may be left at \code{NULL} (so that \pkg{projpred} will try to
+infer it from \code{family$cats}). See also section "Latent projection" below.}
 
 \item{latent_ilink}{Only relevant for the latent projection, in which case
 this needs to be the inverse-link function (supplied as a function, not a
@@ -44,27 +45,29 @@ section "Latent projection" below.}
 \item{latent_llOrig}{Only relevant for the latent projection, in which case
 this needs to be the function (supplied as a function, not a character
 string, for example) computing response-scale (not latent-scale)
-log-likelihood values. If \code{!is.null(latent_y_unqs)} or if the original
-response family was the \code{\link[=binomial]{binomial()}} family, then \code{latent_llOrig} can be
-\code{NULL}, in which case an internal default will be used. Can also be \code{NULL}
-in all other cases, but then downstream functions will have limited
-functionality (a message thrown by \code{\link[=extend_family]{extend_family()}} will state what
-exactly won't be available). See also section "Latent projection" below.}
+log-likelihood values. If \code{!is.null(family$cats)} (after taking
+\code{latent_y_unqs} into account) or if the original response family was the
+\code{\link[=binomial]{binomial()}} family, then \code{latent_llOrig} can be \code{NULL}, in which case an
+internal default will be used. Can also be \code{NULL} in all other cases, but
+then downstream functions will have limited functionality (a message thrown
+by \code{\link[=extend_family]{extend_family()}} will state what exactly won't be available). See also
+section "Latent projection" below.}
 
 \item{latent_ppdOrig}{Only relevant for the latent projection, in which case
 this needs to be the function (supplied as a function, not a character
 string, for example) sampling response values given latent predictors that
 have been transformed to response scale using \code{latent_ilink}. If
-\code{!is.null(latent_y_unqs)} or if the original response family was the
-\code{\link[=binomial]{binomial()}} family, then \code{latent_ppdOrig} can be \code{NULL}, in which case an
-internal default will be used. Can also be \code{NULL} in all other cases, but
-then downstream functions will have limited functionality (a message thrown
-by \code{\link[=extend_family]{extend_family()}} will state what exactly won't be available). See also
-section "Latent projection" below. Note that although this function has the
-abbreviation "PPD" in its name (which stands for "posterior predictive
-distribution"), \pkg{projpred} currently only uses it in \code{\link[=proj_predict]{proj_predict()}},
-i.e., for sampling from what would better be termed posterior-projection
-predictive distribution (PPPD).}
+\code{!is.null(family$cats)} (after taking \code{latent_y_unqs} into account) or if
+the original response family was the \code{\link[=binomial]{binomial()}} family, then
+\code{latent_ppdOrig} can be \code{NULL}, in which case an internal default will be
+used. Can also be \code{NULL} in all other cases, but then downstream functions
+will have limited functionality (a message thrown by \code{\link[=extend_family]{extend_family()}} will
+state what exactly won't be available). See also section "Latent
+projection" below. Note that although this function has the abbreviation
+"PPD" in its name (which stands for "posterior predictive distribution"),
+\pkg{projpred} currently only uses it in \code{\link[=proj_predict]{proj_predict()}}, i.e., for
+sampling from what would better be termed posterior-projection predictive
+distribution (PPPD).}
 
 \item{augdat_y_unqs}{Only relevant for augmented-data projection, in which
 case this needs to be the character vector of unique response values (which
@@ -178,10 +181,12 @@ necessarily sum to \code{1}).
 The return value of \code{latent_ilink} needs to contain the linear predictors
 transformed to the original response space, with the following structure:
 \itemize{
-\item If \code{is.null(latent_y_unqs)}: an \eqn{S \times N}{S x N} matrix.
-\item If \code{!is.null(latent_y_unqs)}: an \eqn{S \times N \times C_{\mathrm{cat}}}{S
-x N x C_cat} array. In that case, \code{latent_ilink} needs to return
-\emph{probabilities} (for the response categories given in \code{latent_y_unqs}).
+\item If \code{is.null(family$cats)} (after taking \code{latent_y_unqs} into account): an
+\eqn{S \times N}{S x N} matrix.
+\item If \code{!is.null(family$cats)} (after taking \code{latent_y_unqs} into account): an
+\eqn{S \times N \times C_{\mathrm{cat}}}{S x N x C_cat} array. In that case,
+\code{latent_ilink} needs to return \emph{probabilities} (for the response categories
+given in \code{family$cats}).
 }
 
 The function supplied to argument \code{latent_llOrig} needs to have the prototype

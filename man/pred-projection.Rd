@@ -97,23 +97,22 @@ prediction is done for one submodel only (i.e., \code{length(nterms) == 1 || !is
 i.e., the linear predictors, possibly transformed to response scale) and
 \code{lpd} (log predictive densities; only calculated if \code{newdata} contains
 response values). In case of (i) the traditional projection or (ii) the
-latent projection with argument \code{latent_y_unqs} of \code{\link[=extend_family]{extend_family()}} being
-\code{NULL} when the reference model was built, both elements are
+latent projection with \verb{<refmodel>$family$cats} (where \verb{<refmodel>} is an
+object resulting from \code{\link[=init_refmodel]{init_refmodel()}}; see also \code{\link[=extend_family]{extend_family()}}'s
+argument \code{latent_y_unqs}) being \code{NULL}, both elements are
 \eqn{S_{\mathrm{prj}} \times N}{S_prj x N} matrices. In case of (i) the
-augmented-data projection or (ii) the latent projection with argument
-\code{latent_y_unqs} of \code{\link[=extend_family]{extend_family()}} being not \code{NULL} when the reference
-model was built, \code{pred} is an \eqn{S_{\mathrm{prj}} \times N \times
-  C}{S_prj x N x C} array and \code{lpd} is an \eqn{S_{\mathrm{prj}} \times
-  N}{S_prj x N} matrix.
+augmented-data projection or (ii) the latent projection with
+\verb{<refmodel>$family$cats} being not \code{NULL}, \code{pred} is an
+\eqn{S_{\mathrm{prj}} \times N \times C}{S_prj x N x C} array and \code{lpd} is
+an \eqn{S_{\mathrm{prj}} \times N}{S_prj x N} matrix.
 \item \code{\link[=proj_predict]{proj_predict()}} returns an \eqn{S_{\mathrm{prj}} \times N}{S_prj x N}
 matrix of predictions where \eqn{S_{\mathrm{prj}}}{S_prj} denotes
 \code{nresample_clusters} in case of clustered projection. In case of (i) the
-augmented-data projection or (ii) the latent projection with argument
-\code{latent_y_unqs} of \code{\link[=extend_family]{extend_family()}} being not \code{NULL} when the reference
-model was built, this matrix has an attribute called \code{cats} (the character
-vector of response categories) and the values of the matrix are the
-predicted indices of the response categories (with the order of the
-response categories being that from attribute \code{cats}).
+augmented-data projection or (ii) the latent projection with
+\verb{<refmodel>$family$cats} being not \code{NULL}, this matrix has an attribute
+called \code{cats} (the character vector of response categories) and the values
+of the matrix are the predicted indices of the response categories (with
+the order of the response categories being that from attribute \code{cats}).
 }
 
 If the prediction is done for more than one submodel, the output from above

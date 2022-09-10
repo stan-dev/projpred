@@ -18,7 +18,7 @@ get_refmodel(object, ...)
 
 \method{get_refmodel}{default}(object, formula, family = NULL, ...)
 
-\method{get_refmodel}{stanreg}(object, latent = FALSE, latent_y_unqs = NULL, dis = NULL, ...)
+\method{get_refmodel}{stanreg}(object, latent = FALSE, dis = NULL, ...)
 
 init_refmodel(
   object,
@@ -67,12 +67,6 @@ the distributional family for the response). May be \code{NULL} for
 \item{latent}{A single logical value indicating whether to use the latent
 projection (\code{TRUE}) or not (\code{FALSE}). Note that setting \code{latent = TRUE}
 causes all arguments starting with \code{augdat_} to be ignored.}
-
-\item{latent_y_unqs}{Only relevant for a latent projection where the original
-response space has finite support (i.e., the original response values may
-be regarded as categories), in which case this needs to be the character
-vector of unique response values. See also section "Latent projection"
-below.}
 
 \item{dis}{A vector of posterior draws for the dispersion parameter (if
 existing). May be \code{NULL} if the model has no dispersion parameter or if the
@@ -171,8 +165,9 @@ number of observations (in case of CV, these may be reduced to each fold),
 model's parameters, and \eqn{S_{\mathrm{prj}}}{S_prj} the number of (possibly
 clustered) parameter draws for projection (short: the number of projected
 draws). For (i) the augmented-data projection or (ii) the latent projection
-with argument \code{latent_y_unqs} passed to \code{\link[=extend_family]{extend_family()}} being not \code{NULL},
-let \eqn{C_{\mathrm{cat}}}{C_cat} denote the number of response categories,
+with \code{family$cats} (\emph{after} applying \code{\link[=extend_family]{extend_family()}} internally; see
+\code{\link[=extend_family]{extend_family()}}'s argument \code{latent_y_unqs}) being not \code{NULL}, let
+\eqn{C_{\mathrm{cat}}}{C_cat} denote the number of response categories,
 \eqn{C_{\mathrm{lat}}}{C_lat} the number of latent response categories (which
 typically equals \eqn{C_{\mathrm{cat}} - 1}{C_cat - 1}), and define
 \eqn{N_{\mathrm{augcat}} := N \cdot C_{\mathrm{cat}}}{N_augcat := N * C_cat}
@@ -306,13 +301,13 @@ supported in case of the augmented-data projection.
 If a custom reference model for a latent projection is needed, see also
 \code{\link[=extend_family]{extend_family()}}.
 
-For the latent projection, \code{family$cats} (\emph{after} applying \code{\link[=extend_family]{extend_family()}};
-see \code{\link[=extend_family]{extend_family()}}'s argument \code{latent_y_unqs}) currently must not be
-\code{NULL} if the original (i.e., non-latent) response is a \code{factor}. Conversely,
-if \code{family$cats} (\emph{after} applying \code{\link[=extend_family]{extend_family()}}) is non-\code{NULL}, the
-response vector resulting from \code{extract_model_data} is internally coerced to
-a \code{factor} (using \code{\link[=as.factor]{as.factor()}}). The levels of this \code{factor} have to be
-identical to that non-\code{NULL} element \code{family$cats}.
+For the latent projection, \code{family$cats} (\emph{after} applying \code{\link[=extend_family]{extend_family()}}
+internally; see \code{\link[=extend_family]{extend_family()}}'s argument \code{latent_y_unqs}) currently must
+not be \code{NULL} if the original (i.e., non-latent) response is a \code{factor}.
+Conversely, if \code{family$cats} (\emph{after} applying \code{\link[=extend_family]{extend_family()}}) is
+non-\code{NULL}, the response vector resulting from \code{extract_model_data} is
+internally coerced to a \code{factor} (using \code{\link[=as.factor]{as.factor()}}). The levels of this
+\code{factor} have to be identical to that non-\code{NULL} element \code{family$cats}.
 
 Currently, \code{object = NULL} (i.e., a \code{datafit}; see section "Value") is not
 supported in case of the latent projection.

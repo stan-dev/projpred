@@ -826,20 +826,20 @@ cvmeth_tst <- list(
 )
 
 vsel_funs <- nlist("summary.vsel", "plot.vsel", "suggest_size.vsel")
-# Performance statistics common across all families when using the traditional
+# Performance statistics common across all families, when using the traditional
 # projection (or the latent projection with `lat2resp = FALSE` or the latent
 # projection with `lat2resp = TRUE`, but the latter only in combination with
-# argument `latent_y_unqs` of extend_family() being `NULL` when the reference
-# model was built):
+# `<refmodel>$family$cats` being `NULL`):
 stats_common <- c("elpd", "mlpd", "mse", "rmse")
-# For creating test setups (note: `common_stats` and `binom_stats` only refer to
-# the traditional projection and the latent projection with `lat2resp = TRUE`,
-# but the latter only in combination with argument `latent_y_unqs` of
-# extend_family() being `NULL` when the reference model was built):
+# Performance statistics for the binomial() family only, when using the
+# traditional projection (or the latent projection with `lat2resp = TRUE`, but
+# the latter only in combination with `<refmodel>$family$cats` being `NULL`):
+stats_binom <- c(stats_common, "acc", "auc")
+# For creating test setups:
 stats_tst <- list(
   default_stats = list(),
   common_stats = list(stats = stats_common),
-  binom_stats = list(stats = c(stats_common, "acc", "auc")),
+  binom_stats = list(stats = stats_binom),
   augdat_stats = list(stats = c("elpd", "mlpd", "acc"))
 )
 type_tst <- c("mean", "lower", "upper", "se")

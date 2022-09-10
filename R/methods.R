@@ -62,23 +62,22 @@
 #'   i.e., the linear predictors, possibly transformed to response scale) and
 #'   `lpd` (log predictive densities; only calculated if `newdata` contains
 #'   response values). In case of (i) the traditional projection or (ii) the
-#'   latent projection with argument `latent_y_unqs` of [extend_family()] being
-#'   `NULL` when the reference model was built, both elements are
+#'   latent projection with `<refmodel>$family$cats` (where `<refmodel>` is an
+#'   object resulting from [init_refmodel()]; see also [extend_family()]'s
+#'   argument `latent_y_unqs`) being `NULL`, both elements are
 #'   \eqn{S_{\mathrm{prj}} \times N}{S_prj x N} matrices. In case of (i) the
-#'   augmented-data projection or (ii) the latent projection with argument
-#'   `latent_y_unqs` of [extend_family()] being not `NULL` when the reference
-#'   model was built, `pred` is an \eqn{S_{\mathrm{prj}} \times N \times
-#'   C}{S_prj x N x C} array and `lpd` is an \eqn{S_{\mathrm{prj}} \times
-#'   N}{S_prj x N} matrix.
+#'   augmented-data projection or (ii) the latent projection with
+#'   `<refmodel>$family$cats` being not `NULL`, `pred` is an
+#'   \eqn{S_{\mathrm{prj}} \times N \times C}{S_prj x N x C} array and `lpd` is
+#'   an \eqn{S_{\mathrm{prj}} \times N}{S_prj x N} matrix.
 #'   * [proj_predict()] returns an \eqn{S_{\mathrm{prj}} \times N}{S_prj x N}
 #'   matrix of predictions where \eqn{S_{\mathrm{prj}}}{S_prj} denotes
 #'   `nresample_clusters` in case of clustered projection. In case of (i) the
-#'   augmented-data projection or (ii) the latent projection with argument
-#'   `latent_y_unqs` of [extend_family()] being not `NULL` when the reference
-#'   model was built, this matrix has an attribute called `cats` (the character
-#'   vector of response categories) and the values of the matrix are the
-#'   predicted indices of the response categories (with the order of the
-#'   response categories being that from attribute `cats`).
+#'   augmented-data projection or (ii) the latent projection with
+#'   `<refmodel>$family$cats` being not `NULL`, this matrix has an attribute
+#'   called `cats` (the character vector of response categories) and the values
+#'   of the matrix are the predicted indices of the response categories (with
+#'   the order of the response categories being that from attribute `cats`).
 #'
 #'   If the prediction is done for more than one submodel, the output from above
 #'   is returned for each submodel, giving a named `list` with one element for
@@ -692,28 +691,24 @@ plot.vsel <- function(
 #' @details The `stats` options `"mse"` and `"rmse"` are only available for:
 #'   * the traditional projection,
 #'   * the latent projection with `lat2resp = FALSE`,
-#'   * the latent projection with `lat2resp = TRUE` in combination with argument
-#'   `latent_y_unqs` of [extend_family()] being `NULL` when the reference model
-#'   was built.
+#'   * the latent projection with `lat2resp = TRUE` in combination with
+#'   `<refmodel>$family$cats` being `NULL`.
 #'
 #'   The `stats` option `"acc"` (= `"pctcorr"`) is only available for:
 #'   * the [binomial()] family in case of the traditional projection,
 #'   * all families in case of the augmented-data projection,
 #'   * the [binomial()] family (on the original response scale) in case of the
-#'   latent projection with `lat2resp = TRUE` in combination with argument
-#'   `latent_y_unqs` of [extend_family()] being `NULL` when the reference model
-#'   was built,
+#'   latent projection with `lat2resp = TRUE` in combination with
+#'   `<refmodel>$family$cats` being `NULL`,
 #'   * all families (on the original response scale) in case of the latent
-#'   projection with `lat2resp = TRUE` in combination with argument
-#'   `latent_y_unqs` of [extend_family()] being not `NULL` when the reference
-#'   model was built.
+#'   projection with `lat2resp = TRUE` in combination with
+#'   `<refmodel>$family$cats` being not `NULL`.
 #'
 #'   The `stats` option `"auc"` is only available for:
 #'   * the [binomial()] family in case of the traditional projection,
 #'   * the [binomial()] family (on the original response scale) in case of the
-#'   latent projection with `lat2resp = TRUE` in combination with argument
-#'   `latent_y_unqs` of [extend_family()] being `NULL` when the reference model
-#'   was built.
+#'   latent projection with `lat2resp = TRUE` in combination with
+#'   `<refmodel>$family$cats` being `NULL`.
 #'
 #' @examples
 #' if (requireNamespace("rstanarm", quietly = TRUE)) {

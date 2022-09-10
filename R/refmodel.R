@@ -108,8 +108,9 @@
 #' model's parameters, and \eqn{S_{\mathrm{prj}}}{S_prj} the number of (possibly
 #' clustered) parameter draws for projection (short: the number of projected
 #' draws). For (i) the augmented-data projection or (ii) the latent projection
-#' with argument `latent_y_unqs` passed to [extend_family()] being not `NULL`,
-#' let \eqn{C_{\mathrm{cat}}}{C_cat} denote the number of response categories,
+#' with `family$cats` (*after* applying [extend_family()] internally; see
+#' [extend_family()]'s argument `latent_y_unqs`) being not `NULL`, let
+#' \eqn{C_{\mathrm{cat}}}{C_cat} denote the number of response categories,
 #' \eqn{C_{\mathrm{lat}}}{C_lat} the number of latent response categories (which
 #' typically equals \eqn{C_{\mathrm{cat}} - 1}{C_cat - 1}), and define
 #' \eqn{N_{\mathrm{augcat}} := N \cdot C_{\mathrm{cat}}}{N_augcat := N * C_cat}
@@ -230,13 +231,13 @@
 #' If a custom reference model for a latent projection is needed, see also
 #' [extend_family()].
 #'
-#' For the latent projection, `family$cats` (*after* applying [extend_family()];
-#' see [extend_family()]'s argument `latent_y_unqs`) currently must not be
-#' `NULL` if the original (i.e., non-latent) response is a `factor`. Conversely,
-#' if `family$cats` (*after* applying [extend_family()]) is non-`NULL`, the
-#' response vector resulting from `extract_model_data` is internally coerced to
-#' a `factor` (using [as.factor()]). The levels of this `factor` have to be
-#' identical to that non-`NULL` element `family$cats`.
+#' For the latent projection, `family$cats` (*after* applying [extend_family()]
+#' internally; see [extend_family()]'s argument `latent_y_unqs`) currently must
+#' not be `NULL` if the original (i.e., non-latent) response is a `factor`.
+#' Conversely, if `family$cats` (*after* applying [extend_family()]) is
+#' non-`NULL`, the response vector resulting from `extract_model_data` is
+#' internally coerced to a `factor` (using [as.factor()]). The levels of this
+#' `factor` have to be identical to that non-`NULL` element `family$cats`.
 #'
 #' Currently, `object = NULL` (i.e., a `datafit`; see section "Value") is not
 #' supported in case of the latent projection.
@@ -319,12 +320,11 @@ NULL
 #'   [init_refmodel()]).
 #' @param ynew If not `NULL`, then this needs to be a vector of new (or old)
 #'   response values. See also section "Value" below. In case of (i) the
-#'   augmented-data projection or (ii) the latent projection with argument
-#'   `latent_y_unqs` of [extend_family()] being not `NULL` when the reference
-#'   model was built, `ynew` is internally coerced to a `factor` (using
-#'   [as.factor()]). The levels of this `factor` have to be a subset of
-#'   `object$family$cats` (see [extend_family()]'s arguments `augdat_y_unqs` and
-#'   `latent_y_unqs`, respectively).
+#'   augmented-data projection or (ii) the latent projection with
+#'   `object$family$cats` being not `NULL`, `ynew` is internally coerced to a
+#'   `factor` (using [as.factor()]). The levels of this `factor` have to be a
+#'   subset of `object$family$cats` (see [extend_family()]'s arguments
+#'   `augdat_y_unqs` and `latent_y_unqs`, respectively).
 #' @param type Only relevant if `is.null(ynew)`. The scale on which the
 #'   predictions are returned, either `"link"` or `"response"` (see
 #'   [predict.glm()] but note that [predict.refmodel()] does not adhere to the
@@ -345,13 +345,11 @@ NULL
 #'   Then, if `is.null(ynew)`, the returned object contains the reference
 #'   model's predictions (with the scale depending on argument `type`) as a
 #'   length-\eqn{N} vector in case of (i) the traditional projection or (ii) the
-#'   latent projection with argument `latent_y_unqs` of [extend_family()] being
-#'   `NULL` when the reference model was built and as an \eqn{N \times C}{N x C}
-#'   matrix in case of (i) the augmented-data projection or (ii) the latent
-#'   projection with argument `latent_y_unqs` of [extend_family()] being not
-#'   `NULL` when the reference model was built. If `!is.null(ynew)`, the
-#'   returned object is a length-\eqn{N} vector of log predictive densities
-#'   evaluated at `ynew`.
+#'   latent projection with `object$family$cats` being `NULL` and as an \eqn{N
+#'   \times C}{N x C} matrix in case of (i) the augmented-data projection or
+#'   (ii) the latent projection with `object$family$cats` being not `NULL`. If
+#'   `!is.null(ynew)`, the returned object is a length-\eqn{N} vector of log
+#'   predictive densities evaluated at `ynew`.
 #'
 #' @export
 predict.refmodel <- function(object, newdata = NULL, ynew = NULL,
@@ -619,8 +617,7 @@ get_refmodel.default <- function(object, formula, family = NULL, ...) {
 
 #' @rdname refmodel-init-get
 #' @export
-get_refmodel.stanreg <- function(object, latent = FALSE, latent_y_unqs = NULL,
-                                 dis = NULL, ...) {
+get_refmodel.stanreg <- function(object, latent = FALSE, dis = NULL, ...) {
   if (!requireNamespace("rstanarm", quietly = TRUE)) {
     stop("Please install the 'rstanarm' package.")
   }
@@ -785,7 +782,7 @@ get_refmodel.stanreg <- function(object, latent = FALSE, latent_y_unqs = NULL,
   }
 
   cvrefbuilder <- function(cvfit) {
-    get_refmodel(cvfit, latent = latent, latent_y_unqs = latent_y_unqs, ...)
+    get_refmodel(cvfit, latent = latent, ...)
   }
 
   # Miscellaneous -----------------------------------------------------------
@@ -812,17 +809,6 @@ get_refmodel.stanreg <- function(object, latent = FALSE, latent_y_unqs = NULL,
 
   args_latent <- list()
   if (latent) {
-    y_lvls <- latent_y_unqs
-    if (is.null(y_lvls)) {
-      y_lvls <- family$cats
-      if (is.null(y_lvls)) {
-        y_tmp <- eval(formula[[2]], data, environment(formula))
-        if (is.factor(y_tmp) || is.character(y_tmp) || is.logical(y_tmp)) {
-          y_lvls <- levels(as.factor(y_tmp))
-        }
-      }
-    }
-    args_latent <- c(args_latent, list(latent_y_unqs = y_lvls))
     if (object$stan_function == "stan_polr") {
       draws_mat <- as.matrix(object)
       thres_nms <- names(object$zeta)
