@@ -297,7 +297,7 @@ varsel.refmodel <- function(object, d_test = NULL, method = NULL,
     ## observations
     nobs_test <- nrow(d_test$data %||% refmodel$fetch_data())
     ref <- list(mu = rep(NA, nobs_test), lppd = rep(NA, nobs_test))
-    if (refmodel$family$for_latent && refmodel$family$lat2resp_possible) {
+    if (refmodel$family$for_latent && refmodel$family$respOrig_possible) {
       # In general, we could use `ref$Orig <- ref` here, but the case where
       # refmodel$family$latent_ilink() returns a 3-dimensional array (S x N x C)
       # needs special care.

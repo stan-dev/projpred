@@ -63,7 +63,7 @@
                    class = sub("augmat", "augvec", oldClass(mu), fixed = TRUE)),
     lppd = apply(loglik, 1, log_weighted_mean_exp, wsample)
   )
-  if (family$for_latent && family$lat2resp_possible) {
+  if (family$for_latent && family$respOrig_possible) {
     mu_Orig <- family$latent_ilink(t(mu), cl_ref = cl_ref,
                                    wdraws_ref = wdraws_ref)
     if (length(dim(mu_Orig)) < 2) {
@@ -104,29 +104,29 @@
 # statistics relative to the baseline model of that size (`nfeat_baseline = Inf`
 # means that the baseline model is the reference model).
 .tabulate_stats <- function(varsel, stats, alpha = 0.05,
-                            nfeat_baseline = NULL, lat2resp = TRUE, ...) {
+                            nfeat_baseline = NULL, respOrig = TRUE, ...) {
   stat_tab <- data.frame()
   summ_ref <- varsel$summaries$ref
   summ_sub <- varsel$summaries$sub
-  if (!varsel$refmodel$family$for_latent && !lat2resp) {
-    stop("`lat2resp = FALSE` can only be used in case of the latent ",
+  if (!varsel$refmodel$family$for_latent && !respOrig) {
+    stop("`respOrig = FALSE` can only be used in case of the latent ",
          "projection.")
   }
-  lat2resp <- varsel$refmodel$family$for_latent && lat2resp
-  if (lat2resp) {
+  respOrig <- varsel$refmodel$family$for_latent && respOrig
+  if (respOrig) {
     summ_sub_Orig <- lapply(summ_sub, "[[", "Orig")
-    # `lat2resp = TRUE` only makes sense if element `"Orig"` is available:
+    # `respOrig = TRUE` only makes sense if element `"Orig"` is available:
     if (is.null(summ_ref$Orig) || any(sapply(summ_sub_Orig, is.null))) {
       stop("Cannot calculate the performance statistics on response scale if ",
            "`latent_ilink` or `latent_llOrig` are missing. Use ",
-           "`lat2resp = FALSE` or provide the missing functions when creating ",
+           "`respOrig = FALSE` or provide the missing functions when creating ",
            "the reference model (see the documentation of extend_family() ",
            "which is called by init_refmodel()).")
     }
     summ_ref <- summ_ref$Orig
     summ_sub <- summ_sub_Orig
   }
-  if ((!varsel$refmodel$family$for_latent || lat2resp) &&
+  if ((!varsel$refmodel$family$for_latent || respOrig) &&
       !is.null(varsel$refmodel$family$cats) &&
       any(stats %in% c("acc", "pctcorr"))) {
     summ_ref$mu <- catmaxprb(summ_ref$mu, lvls = varsel$refmodel$family$cats)
@@ -140,7 +140,7 @@
     varsel$d_test$y <- factor(varsel$d_test$y, ordered = FALSE)
     varsel$d_test$yOrig <- factor(varsel$d_test$yOrig, ordered = FALSE)
   }
-  if (lat2resp) {
+  if (respOrig) {
     varsel$d_test$y <- varsel$d_test$yOrig
   }
   # Just to avoid that `$y` gets expanded to `$yOrig` if element `"y"` does not

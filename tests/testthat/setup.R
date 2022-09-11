@@ -827,12 +827,12 @@ cvmeth_tst <- list(
 
 vsel_funs <- nlist("summary.vsel", "plot.vsel", "suggest_size.vsel")
 # Performance statistics common across all families, when using the traditional
-# projection (or the latent projection with `lat2resp = FALSE` or the latent
-# projection with `lat2resp = TRUE`, but the latter only in combination with
+# projection (or the latent projection with `respOrig = FALSE` or the latent
+# projection with `respOrig = TRUE`, but the latter only in combination with
 # `<refmodel>$family$cats` being `NULL`):
 stats_common <- c("elpd", "mlpd", "mse", "rmse")
 # Performance statistics for the binomial() family only, when using the
-# traditional projection (or the latent projection with `lat2resp = TRUE`, but
+# traditional projection (or the latent projection with `respOrig = TRUE`, but
 # the latter only in combination with `<refmodel>$family$cats` being `NULL`):
 stats_binom <- c(stats_common, "acc", "auc")
 # For creating test setups:

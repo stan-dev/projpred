@@ -125,26 +125,26 @@ bootstrap <- function(x, fun = mean, B = 2000,
   }
 }
 
-.validate_vsel_object_stats <- function(object, stats, lat2resp = TRUE) {
+.validate_vsel_object_stats <- function(object, stats, respOrig = TRUE) {
   if (!inherits(object, c("vsel"))) {
     stop("The object is not a variable selection object. Run variable ",
          "selection first")
   }
-  if (!object$refmodel$family$for_latent && !lat2resp) {
-    stop("`lat2resp = FALSE` can only be used in case of the latent ",
+  if (!object$refmodel$family$for_latent && !respOrig) {
+    stop("`respOrig = FALSE` can only be used in case of the latent ",
          "projection.")
   }
-  lat2resp <- object$refmodel$family$for_latent && lat2resp
+  respOrig <- object$refmodel$family$for_latent && respOrig
 
   trad_stats <- c("elpd", "mlpd", "mse", "rmse", "acc", "pctcorr", "auc")
   trad_stats_binom_only <- c("acc", "pctcorr", "auc")
   augdat_stats <- c("elpd", "mlpd", "acc", "pctcorr")
-  lat2resp_stats_fac <- augdat_stats
+  respOrig_stats_fac <- augdat_stats
 
   if (is.null(stats)) {
     stop("Statistic specified as NULL.")
   }
-  if (lat2resp) {
+  if (respOrig) {
     fam_ch <- object$refmodel$family$familyOrig
   } else {
     fam_ch <- object$refmodel$family$family
@@ -155,9 +155,9 @@ bootstrap <- function(x, fun = mean, B = 2000,
         stop("Currently, the augmented-data projection may not be combined ",
              "with performance statistic `\"", stat, "\"`.")
       }
-    } else if (lat2resp && !is.null(object$refmodel$family$cats)) {
-      if (!stat %in% lat2resp_stats_fac) {
-        stop("Currently, the latent projection with `lat2resp = TRUE` and a ",
+    } else if (respOrig && !is.null(object$refmodel$family$cats)) {
+      if (!stat %in% respOrig_stats_fac) {
+        stop("Currently, the latent projection with `respOrig = TRUE` and a ",
              "non-`NULL` element `family$cats` may not be combined ",
              "with performance statistic `\"", stat, "\"`.")
       }
@@ -167,11 +167,11 @@ bootstrap <- function(x, fun = mean, B = 2000,
       }
       if (stat %in% trad_stats_binom_only && fam_ch != "binomial") {
         stop("In case of (i) the traditional projection or (ii) the latent ",
-             "projection with `lat2resp = TRUE` and a `NULL` element ",
+             "projection with `respOrig = TRUE` and a `NULL` element ",
              "`family$cats`, the performance statistic `\"", stat, "\"` is ",
              "available only for the binomial family. This also explains why ",
              "performance statistic `\"", stat, "\"` is not available in case ",
-             "of the latent projection with `lat2resp = FALSE` (because a ",
+             "of the latent projection with `respOrig = FALSE` (because a ",
              "latent Gaussian distribution is used there).")
       }
     }

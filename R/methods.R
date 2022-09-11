@@ -306,7 +306,7 @@ compute_lpd <- function(ynew, pred_sub, proj, weights, transformed) {
   if (!is.null(ynew)) {
     ## compute also the log-density
     if (proj$refmodel$family$for_latent &&
-        !proj$refmodel$family$lat2resp_possible) {
+        !proj$refmodel$family$respOrig_possible) {
       stop("Cannot calculate the log predictive density values if ",
            "`latent_ilink` or `latent_llOrig` are missing.")
     }
@@ -499,20 +499,20 @@ plot.vsel <- function(
     alpha = 0.32,
     baseline = if (!inherits(x$refmodel, "datafit")) "ref" else "best",
     thres_elpd = NA,
-    lat2resp = TRUE,
+    respOrig = TRUE,
     ...
 ) {
   object <- x
-  .validate_vsel_object_stats(object, stats, lat2resp = lat2resp)
+  .validate_vsel_object_stats(object, stats, respOrig = respOrig)
   baseline <- .validate_baseline(object$refmodel, baseline, deltas)
 
   ## compute all the statistics and fetch only those that were asked
   nfeat_baseline <- .get_nfeat_baseline(object, baseline, stats[1],
-                                        lat2resp = lat2resp)
+                                        respOrig = respOrig)
   tab <- rbind(
     .tabulate_stats(object, stats, alpha = alpha,
-                    nfeat_baseline = nfeat_baseline, lat2resp = lat2resp, ...),
-    .tabulate_stats(object, stats, alpha = alpha, lat2resp = lat2resp, ...)
+                    nfeat_baseline = nfeat_baseline, respOrig = respOrig, ...),
+    .tabulate_stats(object, stats, alpha = alpha, respOrig = respOrig, ...)
   )
   stats_table <- subset(tab, tab$delta == deltas)
   stats_ref <- subset(stats_table, stats_table$size == Inf)
@@ -678,7 +678,7 @@ plot.vsel <- function(
 #'   For [plot.vsel()]: Always relevant. Either `"ref"` or `"best"`, indicating
 #'   whether the baseline is the reference model or the best submodel found (in
 #'   terms of `stats[1]`), respectively.
-#' @param lat2resp Only relevant for the latent projection. A single logical
+#' @param respOrig Only relevant for the latent projection. A single logical
 #'   value indicating whether to calculate the performance statistics on
 #'   response scale (`TRUE`) or on latent scale (`FALSE`).
 #' @param ... Arguments passed to the internal function which is used for
@@ -690,24 +690,24 @@ plot.vsel <- function(
 #'
 #' @details The `stats` options `"mse"` and `"rmse"` are only available for:
 #'   * the traditional projection,
-#'   * the latent projection with `lat2resp = FALSE`,
-#'   * the latent projection with `lat2resp = TRUE` in combination with
+#'   * the latent projection with `respOrig = FALSE`,
+#'   * the latent projection with `respOrig = TRUE` in combination with
 #'   `<refmodel>$family$cats` being `NULL`.
 #'
 #'   The `stats` option `"acc"` (= `"pctcorr"`) is only available for:
 #'   * the [binomial()] family in case of the traditional projection,
 #'   * all families in case of the augmented-data projection,
 #'   * the [binomial()] family (on the original response scale) in case of the
-#'   latent projection with `lat2resp = TRUE` in combination with
+#'   latent projection with `respOrig = TRUE` in combination with
 #'   `<refmodel>$family$cats` being `NULL`,
 #'   * all families (on the original response scale) in case of the latent
-#'   projection with `lat2resp = TRUE` in combination with
+#'   projection with `respOrig = TRUE` in combination with
 #'   `<refmodel>$family$cats` being not `NULL`.
 #'
 #'   The `stats` option `"auc"` is only available for:
 #'   * the [binomial()] family in case of the traditional projection,
 #'   * the [binomial()] family (on the original response scale) in case of the
-#'   latent projection with `lat2resp = TRUE` in combination with
+#'   latent projection with `respOrig = TRUE` in combination with
 #'   `<refmodel>$family$cats` being `NULL`.
 #'
 #' @examples
@@ -740,10 +740,10 @@ summary.vsel <- function(
     deltas = FALSE,
     alpha = 0.32,
     baseline = if (!inherits(object$refmodel, "datafit")) "ref" else "best",
-    lat2resp = TRUE,
+    respOrig = TRUE,
     ...
 ) {
-  .validate_vsel_object_stats(object, stats, lat2resp = lat2resp)
+  .validate_vsel_object_stats(object, stats, respOrig = respOrig)
   baseline <- .validate_baseline(object$refmodel, baseline, deltas)
 
   # Initialize output:
@@ -770,12 +770,12 @@ summary.vsel <- function(
   # The full table of the performance statistics from `stats`:
   if (deltas) {
     nfeat_baseline <- .get_nfeat_baseline(object, baseline, stats[1],
-                                          lat2resp = lat2resp)
+                                          respOrig = respOrig)
     tab <- .tabulate_stats(object, stats, alpha = alpha,
-                           nfeat_baseline = nfeat_baseline, lat2resp = lat2resp,
+                           nfeat_baseline = nfeat_baseline, respOrig = respOrig,
                            ...)
   } else {
-    tab <- .tabulate_stats(object, stats, alpha = alpha, lat2resp = lat2resp,
+    tab <- .tabulate_stats(object, stats, alpha = alpha, respOrig = respOrig,
                            ...)
   }
   stats_table <- subset(tab, tab$size != Inf) %>%
@@ -835,7 +835,7 @@ summary.vsel <- function(
   }
   out$suggested_size <- object$suggested_size
   out$selection <- subset(arr, arr$size <= nterms_max)
-  out$lat2resp <- lat2resp
+  out$respOrig <- respOrig
   return(out)
 }
 
@@ -882,7 +882,7 @@ print.vselsummary <- function(x, digits = 1, ...) {
   cat(paste0("Suggested Projection Size: ", x$suggested_size, "\n"))
   cat("\n")
   if (x$family$for_latent) {
-    if (x$lat2resp) {
+    if (x$respOrig) {
       scale_string <- " (response scale)"
     } else {
       scale_string <- " (latent scale)"
@@ -990,7 +990,7 @@ print.vsel <- function(x, ...) {
 #'   estimate (with that standard error referring to the utility *difference*).
 #'
 #'   Apart from the two [summary.vsel()] arguments mentioned above (`alpha` and
-#'   `baseline`), `lat2resp` is another important [summary.vsel()] argument that
+#'   `baseline`), `respOrig` is another important [summary.vsel()] argument that
 #'   may be passed via `...`.
 #'
 #' @note Loss statistics like the root mean-squared error (RMSE) and the
