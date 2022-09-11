@@ -211,8 +211,8 @@
 #' For the augmented-data projection, the response vector resulting from
 #' `extract_model_data` is internally coerced to a `factor` (using
 #' [as.factor()]). The levels of this `factor` have to be identical to
-#' `family$cats` (*after* applying [extend_family()]; see [extend_family()]'s
-#' argument `augdat_y_unqs`).
+#' `family$cats` (*after* applying [extend_family()] internally; see
+#' [extend_family()]'s argument `augdat_y_unqs`).
 #'
 #' Note that response-specific offsets (i.e., one length-\eqn{N} offset vector
 #' per response category) are not supported by \pkg{projpred} yet. So far, only
