@@ -62,13 +62,11 @@
 #'   `family$cats` is already non-`NULL`. See also section "Augmented-data
 #'   projection" below.
 #' @param augdat_link Only relevant for augmented-data projection, in which case
-#'   this needs to be the link function (supplied as a function, not a character
-#'   string, for example). Use `NULL` for the traditional projection. See also
-#'   section "Augmented-data projection" below.
-#' @param augdat_ilink Only relevant for augmented-data projection, in which
-#'   case this needs to be the inverse-link function (supplied as a function,
-#'   not a character string, for example). Use `NULL` for the traditional
+#'   this needs to be the link function. Use `NULL` for the traditional
 #'   projection. See also section "Augmented-data projection" below.
+#' @param augdat_ilink Only relevant for augmented-data projection, in which
+#'   case this needs to be the inverse-link function. Use `NULL` for the
+#'   traditional projection. See also section "Augmented-data projection" below.
 #' @param augdat_args_link Only relevant for augmented-data projection, in which
 #'   case this may be a named `list` of arguments to pass to the function
 #'   supplied to `augdat_link`.
@@ -109,11 +107,13 @@
 #'
 #' For the augmented-data projection, the response vector resulting from
 #' `extract_model_data` (see [init_refmodel()]) is coerced to a `factor` (using
-#' [as.factor()]). Inside of [init_refmodel()], the levels of this `factor` have
-#' to be identical to `family$cats` (*after* applying [extend_family()] inside
-#' of [init_refmodel()]). Everywhere else, they have to be a subset of
-#' `family$cats` (where `family` is taken from a `refmodel` object). See
-#' argument `augdat_y_unqs` for how to control `family$cats`.
+#' [as.factor()]) at multiple places throughout this package. Inside of
+#' [init_refmodel()], the levels of this `factor` have to be identical to
+#' `family$cats` (*after* applying [extend_family()] inside of
+#' [init_refmodel()]). Everywhere else, these levels have to be a subset of
+#' `<refmodel>family$cats` (where `<refmodel>` is an object resulting from
+#' [init_refmodel()]). See argument `augdat_y_unqs` for how to control
+#' `family$cats`.
 #'
 #' For ordinal \pkg{brms} families, be aware that the submodels (onto which the
 #' reference model is projected) currently have the following restrictions:

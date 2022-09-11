@@ -76,14 +76,12 @@ will be assigned to \code{family$cats} internally) or may be left at \code{NULL}
 projection" below.}
 
 \item{augdat_link}{Only relevant for augmented-data projection, in which case
-this needs to be the link function (supplied as a function, not a character
-string, for example). Use \code{NULL} for the traditional projection. See also
-section "Augmented-data projection" below.}
+this needs to be the link function. Use \code{NULL} for the traditional
+projection. See also section "Augmented-data projection" below.}
 
 \item{augdat_ilink}{Only relevant for augmented-data projection, in which
-case this needs to be the inverse-link function (supplied as a function,
-not a character string, for example). Use \code{NULL} for the traditional
-projection. See also section "Augmented-data projection" below.}
+case this needs to be the inverse-link function. Use \code{NULL} for the
+traditional projection. See also section "Augmented-data projection" below.}
 
 \item{augdat_args_link}{Only relevant for augmented-data projection, in which
 case this may be a named \code{list} of arguments to pass to the function
@@ -137,11 +135,13 @@ argument \code{augdat_y_unqs}).
 
 For the augmented-data projection, the response vector resulting from
 \code{extract_model_data} (see \code{\link[=init_refmodel]{init_refmodel()}}) is coerced to a \code{factor} (using
-\code{\link[=as.factor]{as.factor()}}). Inside of \code{\link[=init_refmodel]{init_refmodel()}}, the levels of this \code{factor} have
-to be identical to \code{family$cats} (\emph{after} applying \code{\link[=extend_family]{extend_family()}} inside
-of \code{\link[=init_refmodel]{init_refmodel()}}). Everywhere else, they have to be a subset of
-\code{family$cats} (where \code{family} is taken from a \code{refmodel} object). See
-argument \code{augdat_y_unqs} for how to control \code{family$cats}.
+\code{\link[=as.factor]{as.factor()}}) at multiple places throughout this package. Inside of
+\code{\link[=init_refmodel]{init_refmodel()}}, the levels of this \code{factor} have to be identical to
+\code{family$cats} (\emph{after} applying \code{\link[=extend_family]{extend_family()}} inside of
+\code{\link[=init_refmodel]{init_refmodel()}}). Everywhere else, these levels have to be a subset of
+\verb{<refmodel>family$cats} (where \verb{<refmodel>} is an object resulting from
+\code{\link[=init_refmodel]{init_refmodel()}}). See argument \code{augdat_y_unqs} for how to control
+\code{family$cats}.
 
 For ordinal \pkg{brms} families, be aware that the submodels (onto which the
 reference model is projected) currently have the following restrictions:

@@ -56,8 +56,7 @@ supported by the augmented-data projection and neither \code{\link[=binomial]{bi
 \code{\link[=binomial]{binomial()}} (or \code{\link[brms:brmsfamily]{brms::bernoulli()}}) family, see \code{\link[=extend_family]{extend_family()}} as well
 as \code{\link[=augdat_link_binom]{augdat_link_binom()}} and \code{\link[=augdat_ilink_binom]{augdat_ilink_binom()}}. Note that the
 augmented-data projection is currently considered as an experimental feature
-since it has not been tested thoroughly yet and is also subject to some more
-theoretical investigations.
+since it is subject to some more theoretical investigations.
 
 The latent projection (Catalina et al., 2021) is a quite general principle
 for extending \pkg{projpred}'s traditional projection to more response
