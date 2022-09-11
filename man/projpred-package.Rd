@@ -56,8 +56,7 @@ supported by the augmented-data projection and neither \code{\link[=binomial]{bi
 \code{\link[=binomial]{binomial()}} (or \code{\link[brms:brmsfamily]{brms::bernoulli()}}) family, see \code{\link[=extend_family]{extend_family()}} as well
 as \code{\link[=augdat_link_binom]{augdat_link_binom()}} and \code{\link[=augdat_ilink_binom]{augdat_ilink_binom()}}. Note that the
 augmented-data projection is currently considered as an experimental feature
-since it has not been tested thoroughly yet and is also subject to some more
-theoretical investigations.
+since it is subject to some more theoretical investigations.
 
 For the projection of the reference model onto a submodel, \pkg{projpred}
 currently relies on the following functions (in other words, these are the

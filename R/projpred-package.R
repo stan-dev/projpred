@@ -62,8 +62,7 @@
 #' [binomial()] (or [brms::bernoulli()]) family, see [extend_family()] as well
 #' as [augdat_link_binom()] and [augdat_ilink_binom()]. Note that the
 #' augmented-data projection is currently considered as an experimental feature
-#' since it has not been tested thoroughly yet and is also subject to some more
-#' theoretical investigations.
+#' since it is subject to some more theoretical investigations.
 #'
 #' For the projection of the reference model onto a submodel, \pkg{projpred}
 #' currently relies on the following functions (in other words, these are the
