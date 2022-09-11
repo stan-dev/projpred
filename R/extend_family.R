@@ -24,16 +24,14 @@
 #'   internally) or may be left at `NULL` (so that \pkg{projpred} will try to
 #'   infer it from `family$cats`). See also section "Latent projection" below.
 #' @param latent_ilink Only relevant for the latent projection, in which case
-#'   this needs to be the inverse-link function (supplied as a function, not a
-#'   character string, for example). If the original response family was the
-#'   [binomial()] family, then `latent_ilink` can be `NULL`, in which case an
-#'   internal default will be used. Can also be `NULL` in all other cases, but
-#'   then downstream functions will have limited functionality (a message thrown
-#'   by [extend_family()] will state what exactly won't be available). See also
-#'   section "Latent projection" below.
+#'   this needs to be the inverse-link function. If the original response family
+#'   was the [binomial()] family, then `latent_ilink` can be `NULL`, in which
+#'   case an internal default will be used. Can also be `NULL` in all other
+#'   cases, but then downstream functions will have limited functionality (a
+#'   message thrown by [extend_family()] will state what exactly won't be
+#'   available). See also section "Latent projection" below.
 #' @param latent_llOrig Only relevant for the latent projection, in which case
-#'   this needs to be the function (supplied as a function, not a character
-#'   string, for example) computing response-scale (not latent-scale)
+#'   this needs to be the function computing response-scale (not latent-scale)
 #'   log-likelihood values. If `!is.null(family$cats)` (after taking
 #'   `latent_y_unqs` into account) or if the original response family was the
 #'   [binomial()] family, then `latent_llOrig` can be `NULL`, in which case an
@@ -42,20 +40,19 @@
 #'   by [extend_family()] will state what exactly won't be available). See also
 #'   section "Latent projection" below.
 #' @param latent_ppdOrig Only relevant for the latent projection, in which case
-#'   this needs to be the function (supplied as a function, not a character
-#'   string, for example) sampling response values given latent predictors that
-#'   have been transformed to response scale using `latent_ilink`. If
-#'   `!is.null(family$cats)` (after taking `latent_y_unqs` into account) or if
-#'   the original response family was the [binomial()] family, then
-#'   `latent_ppdOrig` can be `NULL`, in which case an internal default will be
-#'   used. Can also be `NULL` in all other cases, but then downstream functions
-#'   will have limited functionality (a message thrown by [extend_family()] will
-#'   state what exactly won't be available). See also section "Latent
-#'   projection" below. Note that although this function has the abbreviation
-#'   "PPD" in its name (which stands for "posterior predictive distribution"),
-#'   \pkg{projpred} currently only uses it in [proj_predict()], i.e., for
-#'   sampling from what would better be termed posterior-projection predictive
-#'   distribution (PPPD).
+#'   this needs to be the function sampling response values given latent
+#'   predictors that have been transformed to response scale using
+#'   `latent_ilink`. If `!is.null(family$cats)` (after taking `latent_y_unqs`
+#'   into account) or if the original response family was the [binomial()]
+#'   family, then `latent_ppdOrig` can be `NULL`, in which case an internal
+#'   default will be used. Can also be `NULL` in all other cases, but then
+#'   downstream functions will have limited functionality (a message thrown by
+#'   [extend_family()] will state what exactly won't be available). See also
+#'   section "Latent projection" below. Note that although this function has the
+#'   abbreviation "PPD" in its name (which stands for "posterior predictive
+#'   distribution"), \pkg{projpred} currently only uses it in [proj_predict()],
+#'   i.e., for sampling from what would better be termed posterior-projection
+#'   predictive distribution (PPPD).
 #' @param augdat_y_unqs Only relevant for augmented-data projection, in which
 #'   case this needs to be the character vector of unique response values (which
 #'   will be assigned to `family$cats` internally) or may be left at `NULL` if
