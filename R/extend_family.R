@@ -211,6 +211,15 @@
 #' "kfold`, these weights may refer to one of the \eqn{K} reference model
 #' re-fits (but in that case, they are constant anyway).
 #'
+#' If `latent_y_unqs` or `family$cats` is not `NULL`, then the response vector
+#' resulting from `extract_model_data` (see [init_refmodel()]) is coerced to a
+#' `factor` (using [as.factor()]) at multiple places throughout this package.
+#' Inside of [init_refmodel()], the levels of this `factor` have to be identical
+#' to `family$cats` (*after* applying [extend_family()] inside of
+#' [init_refmodel()]). Everywhere else, these levels have to be a subset of
+#' `<refmodel>family$cats` (where `<refmodel>` is an object resulting from
+#' [init_refmodel()]).
+#'
 #' @return The [`family`] object extended in the way needed by \pkg{projpred}.
 #'
 #' @export
