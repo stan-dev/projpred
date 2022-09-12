@@ -807,7 +807,7 @@ get_refmodel.stanreg <- function(object, latent = FALSE, dis = NULL, ...) {
 
   # Latent projection -------------------------------------------------------
 
-  args_latent <- list()
+  args_latent <- list(latent = latent)
   if (latent) {
     if (object$stan_function == "stan_polr") {
       draws_mat <- as.matrix(object)
@@ -847,8 +847,7 @@ get_refmodel.stanreg <- function(object, latent = FALSE, dis = NULL, ...) {
   args_basic <- list(
     object = object, data = data, formula = formula, family = family,
     ref_predfun = ref_predfun, extract_model_data = extract_model_data,
-    dis = dis, cvfun = cvfun, cvrefbuilder = cvrefbuilder,
-    latent = latent
+    dis = dis, cvfun = cvfun, cvrefbuilder = cvrefbuilder
   )
   return(do.call(init_refmodel, args = c(args_basic, args_augdat, args_latent,
                                          list(...))))
