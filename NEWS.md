@@ -4,6 +4,14 @@ If you read this from a place other than <https://mc-stan.org/projpred/news/inde
 
 # projpred 2.2.0.9000
 
+## Minor changes
+
+* Several improvements in the documentation.
+
+## Bug fixes
+
+* Fix GitHub issue #348 (L1 search in the presence of interaction terms). This bug was introduced in v2.1.0 (and existed up to---including---v2.2.0).
+
 # projpred 2.2.0
 
 ## Major changes
