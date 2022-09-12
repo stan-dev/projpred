@@ -782,7 +782,7 @@ get_refmodel.stanreg <- function(object, latent = FALSE, dis = NULL, ...) {
   }
 
   cvrefbuilder <- function(cvfit) {
-    get_refmodel(cvfit, latent = latent, ...)
+    get_refmodel(cvfit, latent = latent, dis = dis, ...)
   }
 
   # Miscellaneous -----------------------------------------------------------
