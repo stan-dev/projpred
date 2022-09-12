@@ -967,7 +967,8 @@ mkNewReTrms_man <- function(re.form, newdata, xlevels, re, D = NULL) {
   if (!is.null(D)) {
     # categorical() case
     Zt_old_rnms <- rownames(ReTrms$Zt)
-    ReTrms$Zt <- as(ReTrms$Zt %x% t(D[-1, , drop = FALSE]), class(ReTrms$Zt))
+    ReTrms$Zt <- as(as.matrix(ReTrms$Zt %x% t(D[-1, , drop = FALSE])),
+                    class(ReTrms$Zt))
     rownames(ReTrms$Zt) <- rep(Zt_old_rnms, each = ncol(D))
     for (vnm in nRnms) {
       ReTrms$cnms[[vnm]] <- names(re[[vnm]])
