@@ -1260,9 +1260,13 @@ submodl_tester_aug <- function(
         expect_named(ranef_crr, NULL, info = info_str)
         expect_true(is.matrix(ranef_crr[[1]]), info = info_str)
         expect_true(is.numeric(ranef_crr[[1]]), info = info_str)
-        expect_identical(dimnames(ranef_crr[[1]]),
-                         replicate(2, NULL, simplify = FALSE),
-                         info = info_str)
+        if (packageVersion("Matrix") >= "1.5-0") {
+          expect_null(dimnames(ranef_crr[[1]]), info = info_str)
+        } else {
+          expect_identical(dimnames(ranef_crr[[1]]),
+                           replicate(2, NULL, simplify = FALSE),
+                           info = info_str)
+        }
         expect_identical(dim(ranef_crr[[1]]),
                          c(nthres * length(coef_nms) * nlevels(dat$z.1), 1L),
                          info = info_str)
