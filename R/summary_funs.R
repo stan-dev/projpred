@@ -114,17 +114,16 @@
   }
   respOrig <- varsel$refmodel$family$for_latent && respOrig
   if (respOrig) {
-    summ_sub_Orig <- lapply(summ_sub, "[[", "Orig")
-    # `respOrig = TRUE` only makes sense if element `"Orig"` is available:
-    if (is.null(summ_ref$Orig) || any(sapply(summ_sub_Orig, is.null))) {
+    summ_ref <- summ_ref$Orig
+    summ_sub <- lapply(summ_sub, "[[", "Orig")
+    if (is.null(summ_ref) || any(sapply(summ_sub, is.null))) {
+      # `respOrig = TRUE` only makes sense if element `"Orig"` is available:
       stop("Cannot calculate the performance statistics on response scale if ",
            "`latent_ilink` or `latent_llOrig` are missing. Use ",
            "`respOrig = FALSE` or provide the missing functions when creating ",
            "the reference model (see the documentation of extend_family() ",
            "which is called by init_refmodel()).")
     }
-    summ_ref <- summ_ref$Orig
-    summ_sub <- summ_sub_Orig
   }
   if ((!varsel$refmodel$family$for_latent || respOrig) &&
       !is.null(varsel$refmodel$family$cats) &&
