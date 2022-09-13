@@ -1206,12 +1206,10 @@ init_refmodel <- function(object, data, formula, family, ref_predfun = NULL,
         } else if (family$linkOrig %in% c("logit", "logistic")) {
           dis <- rep(1.6, ndraws)
         } else {
-          stop("Could not determine `dis` for the latent projection ",
-               "automatically.")
+          dis <- rep(NA, ndraws)
         }
       } else {
-        stop("Could not determine `dis` for the latent projection ",
-             "automatically.")
+        dis <- rep(NA, ndraws)
       }
     } else if (!.has_dispersion(family)) {
       dis <- rep(NA, ndraws)
