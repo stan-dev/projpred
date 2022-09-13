@@ -208,10 +208,8 @@ get_stat <- function(mu, lppd, d_test, stat, mu.bs = NULL, lppd.bs = NULL,
       }
     } else if (stat == "rmse") {
       if (!is.null(mu.bs)) {
-        ## make sure the relative rmse is computed using only those points for
-        ## which
-        mu.bs[is.na(mu)] <- NA
-        mu[is.na(mu.bs)] <- NA # both mu and mu.bs are non-NA
+        mu.bs[is.na(mu)] <- NA # compute the RMSEs using only those points
+        mu[is.na(mu.bs)] <- NA # for which both mu and mu.bs are non-NA
         value <- sqrt(mean(wcv * (mu - y)^2, na.rm = TRUE)) -
           sqrt(mean(wcv * (mu.bs - y)^2, na.rm = TRUE))
         value.bootstrap1 <- bootstrap(
