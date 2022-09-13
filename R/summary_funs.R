@@ -203,6 +203,13 @@
                              wcv = summ$wcv, alpha = alpha, ...)
         val <- res_ref$value + res_diff$value
         val.se <- sqrt(res_ref$se^2 + res_diff$se^2)
+        if (stat %in% c("rmse", "auc")) {
+          # TODO (subsampling LOO-CV): Use bootstrap for lower and upper
+          # confidence interval bounds.
+          warning("Lower and upper confidence interval bounds of performance ",
+                  "statistic `", stat, "` are based on a normal ",
+                  "approximation, not the bootstrap.")
+        }
         lq <- qnorm(alpha / 2, mean = val, sd = val.se)
         uq <- qnorm(1 - alpha / 2, mean = val, sd = val.se)
         row <- data.frame(
@@ -262,6 +269,8 @@ get_stat <- function(mu, lppd, d_test, stat, mu.bs = NULL, lppd.bs = NULL,
   ## ensure the CV fold weights sum to n_notna
   wcv <- n_notna * wcv / sum(wcv)
 
+  alpha_half <- alpha / 2
+  one_minus_alpha_half <- 1 - alpha_half
   if (stat %in% c("mlpd", "elpd")) {
     if (!is.null(lppd.bs)) {
       value <- sum((lppd - lppd.bs) * wcv, na.rm = TRUE)
@@ -299,10 +308,8 @@ get_stat <- function(mu, lppd, d_test, stat, mu.bs = NULL, lppd.bs = NULL,
       }
     } else if (stat == "rmse") {
       if (!is.null(mu.bs)) {
-        ## make sure the relative rmse is computed using only those points for
-        ## which
-        mu.bs[is.na(mu)] <- NA
-        mu[is.na(mu.bs)] <- NA # both mu and mu.bs are non-NA
+        mu.bs[is.na(mu)] <- NA # compute the RMSEs using only those points
+        mu[is.na(mu.bs)] <- NA # for which both mu and mu.bs are non-NA
         value <- sqrt(mean(wcv * (mu - y)^2, na.rm = TRUE)) -
           sqrt(mean(wcv * (mu.bs - y)^2, na.rm = TRUE))
         value.bootstrap1 <- bootstrap(
@@ -320,6 +327,9 @@ get_stat <- function(mu, lppd, d_test, stat, mu.bs = NULL, lppd.bs = NULL,
           ...
         )
         value.se <- sd(value.bootstrap1 - value.bootstrap2)
+        lq_uq <- quantile(value.bootstrap1 - value.bootstrap2,
+                          probs = c(alpha_half, one_minus_alpha_half),
+                          names = FALSE, na.rm = TRUE)
       } else {
         value <- sqrt(mean(wcv * (mu - y)^2, na.rm = TRUE))
         value.bootstrap <- bootstrap(
@@ -330,6 +340,9 @@ get_stat <- function(mu, lppd, d_test, stat, mu.bs = NULL, lppd.bs = NULL,
           ...
         )
         value.se <- sd(value.bootstrap)
+        lq_uq <- quantile(value.bootstrap,
+                          probs = c(alpha_half, one_minus_alpha_half),
+                          names = FALSE, na.rm = TRUE)
       }
     }
   } else if (stat %in% c("acc", "pctcorr", "auc")) {
@@ -386,16 +399,27 @@ get_stat <- function(mu, lppd, d_test, stat, mu.bs = NULL, lppd.bs = NULL,
         value.bootstrap1 <- bootstrap(auc.data, auc, ...)
         value.bootstrap2 <- bootstrap(auc.data.bs, auc, ...)
         value.se <- sd(value.bootstrap1 - value.bootstrap2, na.rm = TRUE)
+        lq_uq <- quantile(value.bootstrap1 - value.bootstrap2,
+                          probs = c(alpha_half, one_minus_alpha_half),
+                          names = FALSE, na.rm = TRUE)
       } else {
         value <- auc(auc.data)
         value.bootstrap <- bootstrap(auc.data, auc, ...)
         value.se <- sd(value.bootstrap, na.rm = TRUE)
+        lq_uq <- quantile(value.bootstrap,
+                          probs = c(alpha_half, one_minus_alpha_half),
+                          names = FALSE, na.rm = TRUE)
       }
     }
   }
 
-  lq <- qnorm(alpha / 2, mean = value, sd = value.se)
-  uq <- qnorm(1 - alpha / 2, mean = value, sd = value.se)
+  if (!stat %in% c("rmse", "auc")) {
+    lq <- qnorm(alpha_half, mean = value, sd = value.se)
+    uq <- qnorm(one_minus_alpha_half, mean = value, sd = value.se)
+  } else {
+    lq <- lq_uq[1]
+    uq <- lq_uq[2]
+  }
 
   return(list(value = value, se = value.se, lq = lq, uq = uq))
 }

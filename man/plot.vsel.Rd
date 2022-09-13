@@ -34,13 +34,13 @@ number of observations.
 \item \code{"mse"}: mean squared error (only available in the situations mentioned
 in section "Details" below).
 \item \code{"rmse"}: root mean squared error (only available in the situations
-mentioned in section "Details" below). For the corresponding standard
-error, bootstrapping is used.
+mentioned in section "Details" below). For the corresponding standard error
+and lower and upper confidence interval bounds, bootstrapping is used.
 \item \code{"acc"} (or its alias, \code{"pctcorr"}): classification accuracy (only
 available in the situations mentioned in section "Details" below).
 \item \code{"auc"}: area under the ROC curve (only available in the situations
-mentioned in section "Details" below). For the corresponding standard
-error, bootstrapping is used.
+mentioned in section "Details" below). For the corresponding standard error
+and lower and upper confidence interval bounds, bootstrapping is used.
 }}
 
 \item{deltas}{If \code{TRUE}, the submodel statistics are estimated as differences

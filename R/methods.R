@@ -652,21 +652,22 @@ plot.vsel <- function(
 #'   * `"mse"`: mean squared error (only available in the situations mentioned
 #'   in section "Details" below).
 #'   * `"rmse"`: root mean squared error (only available in the situations
-#'   mentioned in section "Details" below). For the corresponding standard
-#'   error, bootstrapping is used.
+#'   mentioned in section "Details" below). For the corresponding standard error
+#'   and lower and upper confidence interval bounds, bootstrapping is used.
 #'   * `"acc"` (or its alias, `"pctcorr"`): classification accuracy (only
 #'   available in the situations mentioned in section "Details" below).
 #'   * `"auc"`: area under the ROC curve (only available in the situations
-#'   mentioned in section "Details" below). For the corresponding standard
-#'   error, bootstrapping is used.
+#'   mentioned in section "Details" below). For the corresponding standard error
+#'   and lower and upper confidence interval bounds, bootstrapping is used.
 #' @param type One or more items from `"mean"`, `"se"`, `"lower"`, `"upper"`,
 #'   `"diff"`, and `"diff.se"` indicating which of these to compute for each
 #'   item from `stats` (mean, standard error, lower and upper confidence
 #'   interval bounds, mean difference to the corresponding statistic of the
 #'   reference model, and standard error of this difference, respectively). The
-#'   confidence interval bounds belong to normal-approximation confidence
-#'   intervals with (nominal) coverage `1 - alpha`. Items `"diff"` and
-#'   `"diff.se"` are only supported if `deltas` is `FALSE`.
+#'   confidence interval bounds belong to normal-approximation (or bootstrap;
+#'   see argument `stats`) confidence intervals with (nominal) coverage `1 -
+#'   alpha`. Items `"diff"` and `"diff.se"` are only supported if `deltas` is
+#'   `FALSE`.
 #' @param deltas If `TRUE`, the submodel statistics are estimated as differences
 #'   from the baseline model (see argument `baseline`) instead of estimating the
 #'   actual values of the statistics.
