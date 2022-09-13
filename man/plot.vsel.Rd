@@ -32,13 +32,14 @@ are:
 number of observations.
 \item \code{"mse"}: mean squared error (traditional projection only).
 \item \code{"rmse"}: root mean squared error (traditional projection only). For the
-corresponding standard error, bootstrapping is used.
+corresponding standard error and lower and upper confidence interval
+bounds, bootstrapping is used.
 \item \code{"acc"} (or its alias, \code{"pctcorr"}): classification accuracy (for the
 traditional projection: \code{\link[=binomial]{binomial()}} family only; for the augmented-data
 projection: all families).
 \item \code{"auc"}: area under the ROC curve (\code{\link[=binomial]{binomial()}} family for the
-traditional projection only). For the corresponding standard error,
-bootstrapping is used.
+traditional projection only). For the corresponding standard error and
+lower and upper confidence interval bounds, bootstrapping is used.
 }}
 
 \item{deltas}{If \code{TRUE}, the submodel statistics are estimated as differences
