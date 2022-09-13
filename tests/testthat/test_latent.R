@@ -150,10 +150,18 @@ test_that(paste(
 ), {
   skip_if_not(run_prj)
   tstsetups <- grep("\\.gauss\\.", names(prjs), value = TRUE)
-  if (any(grepl("^brms\\.|\\.without_wobs\\.", tstsetups))) {
+  if (any(grepl("\\.without_wobs\\.", tstsetups))) {
     message("The test \"for the gaussian() family, the latent projection is ",
             "the same as the traditional projection (when setting `dis` ",
             "appropriately)\" could be simplified.")
+    tstsetups <- grep("\\.without_wobs\\.", tstsetups, value = TRUE,
+                      invert = TRUE)
+  }
+  if (any(grepl("^brms\\.", tstsetups))) {
+    message("The test \"for the gaussian() family, the latent projection is ",
+            "the same as the traditional projection (when setting `dis` ",
+            "appropriately)\" could be extended (to `brmsfit`s).")
+    tstsetups <- grep("^brms\\.", tstsetups, value = TRUE, invert = TRUE)
   }
   fits_no_wobs <- NULL
   for (tstsetup in tstsetups) {
