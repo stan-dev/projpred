@@ -825,6 +825,11 @@ cvmeth_tst <- list(
   kfold = list(cv_method = "kfold", K = K_tst)
 )
 
+respOrig_tst <- list(
+  default_rOrig = list(),
+  rOrig_F = list(respOrig = FALSE)
+)
+
 vsel_funs <- nlist("summary.vsel", "plot.vsel", "suggest_size.vsel")
 # Performance statistics common across all families, when using the traditional
 # projection (or the latent projection with `respOrig = FALSE` or the latent
@@ -1493,11 +1498,20 @@ cre_args_smmry_vsel <- function(args_obj) {
         }
       }
       lapply(nterms_tst, function(nterms_crr) {
-        return(c(
-          nlist(tstsetup_vsel), only_nonargs(args_obj[[tstsetup_vsel]]),
-          list(type = type_tst, nterms_max = nterms_crr),
-          stats_crr
-        ))
+        if (prj_crr != "latent") {
+          respOrig_tst <- respOrig_tst["default_rOrig"]
+        }
+        lapply(respOrig_tst, function(respOrig_crr) {
+          if (isFALSE(respOrig_crr$respOrig) &&
+              any(setdiff(stats_binom, stats_common) %in% stats_crr$stats)) {
+            return("REMOVE THIS DUMMY ENTRY")
+          }
+          return(c(
+            nlist(tstsetup_vsel), only_nonargs(args_obj[[tstsetup_vsel]]),
+            list(type = type_tst, nterms_max = nterms_crr),
+            stats_crr, respOrig_crr
+          ))
+        })
       })
     })
   })
@@ -1508,6 +1522,7 @@ cre_args_smmry_vsel <- function(args_obj) {
 if (run_vs) {
   args_smmry_vs <- cre_args_smmry_vsel(args_vs)
   args_smmry_vs <- unlist_cust(args_smmry_vs)
+  args_smmry_vs <- rm_dummies_unlisted(args_smmry_vs)
 
   smmrys_vs <- lapply(args_smmry_vs, function(args_smmry_vs_i) {
     if (any(c("rmse", "auc") %in% args_smmry_vs_i$stats)) {
@@ -1528,6 +1543,7 @@ if (run_vs) {
 if (run_cvvs) {
   args_smmry_cvvs <- cre_args_smmry_vsel(args_cvvs)
   args_smmry_cvvs <- unlist_cust(args_smmry_cvvs)
+  args_smmry_cvvs <- rm_dummies_unlisted(args_smmry_cvvs)
 
   smmrys_cvvs <- lapply(args_smmry_cvvs, function(args_smmry_cvvs_i) {
     if (any(c("rmse", "auc") %in% args_smmry_cvvs_i$stats)) {
