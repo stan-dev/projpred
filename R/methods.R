@@ -834,7 +834,6 @@ summary.vsel <- function(
   if ("pct_solution_terms_cv" %in% names(object)) {
     out$pct_solution_terms_cv <- object$pct_solution_terms_cv
   }
-  out$suggested_size <- object$suggested_size
   out$selection <- subset(arr, arr$size <= nterms_max)
   out$respOrig <- respOrig
   return(out)
@@ -880,8 +879,6 @@ print.vselsummary <- function(x, digits = 1, ...) {
       " used for selection: ", x$nprjdraws_search, "\n", sep = "")
   cat("Number of ", ifelse(x$clust_used_eval, "clusters", "draws"),
       " used for prediction: ", x$nprjdraws_eval, "\n", sep = "")
-  cat("Suggested submodel size (based on ELPD): ", x$suggested_size, "\n",
-      sep = "")
   cat("\n")
   if (x$family$for_latent) {
     if (x$respOrig) {

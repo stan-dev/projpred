@@ -1170,10 +1170,10 @@ test_that("`validate_search` works", {
                 info = tstsetup)
     # Without a validated search, we expect overfitting in the suggested model
     # size:
-    if (!is.na(cvvs_valsearch$suggested_size) &
-        !is.na(cvvss[[tstsetup]]$suggested_size)) {
-      suggsize_cond[tstsetup] <- cvvs_valsearch$suggested_size >=
-        cvvss[[tstsetup]]$suggested_size
+    sgg_size_valsearch <- suggest_size(cvvs_valsearch, warnings = FALSE)
+    sgg_size <- suggest_size(cvvss[[tstsetup]], warnings = FALSE)
+    if (!is.na(sgg_size_valsearch) & !is.na(sgg_size)) {
+      suggsize_cond[tstsetup] <- sgg_size_valsearch >= sgg_size
     }
   }
   sum_as_unexpected <- 2L

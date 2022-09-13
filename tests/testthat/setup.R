@@ -1564,29 +1564,27 @@ if (run_cvvs) {
 vsel_nms <- c(
   "refmodel", "search_path", "d_test", "summaries", "solution_terms", "kl",
   "nterms_max", "nterms_all", "method", "cv_method", "validate_search",
-  "clust_used_search", "clust_used_eval", "nprjdraws_search", "nprjdraws_eval",
-  "suggested_size"
+  "clust_used_search", "clust_used_eval", "nprjdraws_search", "nprjdraws_eval"
 )
 vsel_nms_cv <- c(
   "refmodel", "search_path", "d_test", "summaries", "kl", "solution_terms",
   "pct_solution_terms_cv", "nterms_all", "nterms_max", "method", "cv_method",
   "validate_search", "clust_used_search", "clust_used_eval", "nprjdraws_search",
-  "nprjdraws_eval", "suggested_size"
+  "nprjdraws_eval"
 )
 # Related to prediction (in contrast to selection):
-vsel_nms_pred <- c("summaries", "solution_terms", "kl", "suggested_size")
-vsel_nms_pred_opt <- c("solution_terms", "suggested_size")
+vsel_nms_pred <- c("summaries", "solution_terms", "kl")
+vsel_nms_pred_opt <- c("solution_terms")
 # Related to `nloo`:
-vsel_nms_cv_nloo <- c("summaries", "pct_solution_terms_cv", "suggested_size")
-vsel_nms_cv_nloo_opt <- c("pct_solution_terms_cv", "suggested_size")
+vsel_nms_cv_nloo <- c("summaries", "pct_solution_terms_cv")
+vsel_nms_cv_nloo_opt <- c("pct_solution_terms_cv")
 # Related to `validate_search`:
 vsel_nms_cv_valsearch <- c("validate_search", "summaries",
-                           "pct_solution_terms_cv", "suggested_size")
-vsel_nms_cv_valsearch_opt <- c("suggested_size")
+                           "pct_solution_terms_cv")
+vsel_nms_cv_valsearch_opt <- character()
 # Related to `cvfits`:
-vsel_nms_cv_cvfits <- c("refmodel", "summaries", "pct_solution_terms_cv",
-                        "suggested_size")
-vsel_nms_cv_cvfits_opt <- c("pct_solution_terms_cv", "suggested_size")
+vsel_nms_cv_cvfits <- c("refmodel", "summaries", "pct_solution_terms_cv")
+vsel_nms_cv_cvfits_opt <- c("pct_solution_terms_cv")
 vsel_smmrs_sub_nms <- vsel_smmrs_ref_nms <- c("mu", "lppd")
 
 ## Defaults ---------------------------------------------------------------

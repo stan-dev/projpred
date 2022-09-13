@@ -2272,10 +2272,6 @@ vsel_tester <- function(
   # nprjdraws_eval
   expect_equal(vs$nprjdraws_eval, nprjdraws_eval_expected, info = info_str)
 
-  # suggested_size
-  expect_true(is.vector(vs$suggested_size, "numeric"), info = info_str)
-  expect_length(vs$suggested_size, 1)
-
   return(invisible(TRUE))
 }
 
@@ -2314,14 +2310,13 @@ smmry_tester <- function(smmry, vsel_expected, nterms_max_expected = NULL,
     c("formula", "family", "nobs_train", "nobs_test", "method", "cv_method",
       "validate_search", "clust_used_search", "clust_used_eval",
       "nprjdraws_search", "nprjdraws_eval", "search_included", "nterms",
-      pct_solterms_nm, "suggested_size", "selection", "respOrig"),
+      pct_solterms_nm, "selection", "respOrig"),
     info = info_str
   )
 
   for (nm in c(
     "method", "cv_method", "validate_search", "clust_used_search",
-    "clust_used_eval", "nprjdraws_search", "nprjdraws_eval", pct_solterms_nm,
-    "suggested_size"
+    "clust_used_eval", "nprjdraws_search", "nprjdraws_eval", pct_solterms_nm
   )) {
     expect_identical(smmry[[nm]], vsel_expected[[nm]],
                      info = paste(info_str, nm, sep = "__"))

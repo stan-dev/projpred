@@ -39,7 +39,7 @@ test_that(paste(
     tstsetup_vs <- args_prj_vs[[tstsetup]]$tstsetup_vsel
     nterms_crr <- args_prj_vs[[tstsetup]]$nterms
     if (is.null(nterms_crr)) {
-      nterms_crr <- vss[[tstsetup_vs]]$suggested_size
+      nterms_crr <- suggest_size(vss[[tstsetup_vs]], warnings = FALSE)
     }
     if (args_prj_vs[[tstsetup]]$prj_nm == "augdat") {
       ncats_nlats_expected_crr <- length(
@@ -77,7 +77,7 @@ test_that(paste(
     tstsetup_cvvs <- args_prj_cvvs[[tstsetup]]$tstsetup_vsel
     nterms_crr <- args_prj_cvvs[[tstsetup]]$nterms
     if (is.null(nterms_crr)) {
-      nterms_crr <- cvvss[[tstsetup_cvvs]]$suggested_size
+      nterms_crr <- suggest_size(cvvss[[tstsetup_cvvs]], warnings = FALSE)
     }
     if (args_prj_cvvs[[tstsetup]]$prj_nm == "augdat") {
       ncats_nlats_expected_crr <- length(
@@ -865,7 +865,7 @@ test_that(paste(
     tstsetup_vs <- args_prj_vs[[tstsetup]]$tstsetup_vsel
     nterms_crr <- args_prj_vs[[tstsetup]]$nterms
     if (is.null(nterms_crr)) {
-      nterms_crr <- vss[[tstsetup_vs]]$suggested_size
+      nterms_crr <- suggest_size(vss[[tstsetup_vs]], warnings = FALSE)
     }
     pp_tester(pps_vs[[tstsetup]],
               len_expected = length(nterms_crr),
@@ -898,7 +898,7 @@ test_that(paste(
     tstsetup_cvvs <- args_prj_cvvs[[tstsetup]]$tstsetup_vsel
     nterms_crr <- args_prj_cvvs[[tstsetup]]$nterms
     if (is.null(nterms_crr)) {
-      nterms_crr <- cvvss[[tstsetup_cvvs]]$suggested_size
+      nterms_crr <- suggest_size(cvvss[[tstsetup_cvvs]], warnings = FALSE)
     }
     pp_tester(pps_cvvs[[tstsetup]],
               len_expected = length(nterms_crr),

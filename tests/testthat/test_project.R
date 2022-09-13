@@ -123,7 +123,7 @@ test_that(paste(
     fam_crr <- args_vs[[tstsetup_vs]]$fam_nm
     nterms_crr <- args_prj_vs[[tstsetup]]$nterms
     if (is.null(nterms_crr)) {
-      nterms_crr <- vss[[tstsetup_vs]]$suggested_size
+      nterms_crr <- suggest_size(vss[[tstsetup_vs]], warnings = FALSE)
     }
     if (length(nterms_crr) == 1) {
       solterms_expected_crr <- vss[[tstsetup_vs]]$solution_terms[
@@ -186,7 +186,7 @@ test_that(paste(
     fam_crr <- args_cvvs[[tstsetup_cvvs]]$fam_nm
     nterms_crr <- args_prj_cvvs[[tstsetup]]$nterms
     if (is.null(nterms_crr)) {
-      nterms_crr <- cvvss[[tstsetup_cvvs]]$suggested_size
+      nterms_crr <- suggest_size(cvvss[[tstsetup_cvvs]], warnings = FALSE)
     }
     if (length(nterms_crr) == 1) {
       solterms_expected_crr <- cvvss[[tstsetup_cvvs]]$solution_terms[

@@ -365,9 +365,7 @@ varsel.refmodel <- function(object, d_test = NULL, method = NULL,
     nprjdraws_search = NCOL(p_sel$mu),
     nprjdraws_eval = NCOL(p_pred$mu)
   )
-  ## suggest model size
   class(vs) <- "vsel"
-  vs$suggested_size <- suggest_size(vs, warnings = FALSE)
 
   return(vs)
 }

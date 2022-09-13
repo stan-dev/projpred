@@ -201,12 +201,15 @@ project <- function(object, nterms = NULL, solution_terms = NULL,
     ## by default take the variable ordering from the selection
     solution_terms <- object$solution_terms
     if (is.null(nterms)) {
-      if (!is.null(object$suggested_size) && !is.na(object$suggested_size)) {
+      message("`nterms` is `NULL`, so now trying to suggest a submodel size ",
+              "automatically.")
+      sgg_size <- suggest_size(object, warnings = FALSE)
+      if (!is.null(sgg_size) && !is.na(sgg_size)) {
         ## by default, project onto the suggested model size
-        nterms <- min(object$suggested_size, length(solution_terms))
+        nterms <- min(sgg_size, length(solution_terms))
       } else {
-        stop("No suggested model size found, please specify `nterms` or ",
-             "`solution_terms`.")
+        stop("Could not suggest a submodel size automatically; please specify ",
+             "`nterms` or `solution_terms`.")
       }
     } else {
       if (!is.numeric(nterms) || any(nterms < 0)) {
