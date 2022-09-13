@@ -2287,6 +2287,8 @@ vsel_tester <- function(
 #   call.
 # @param nterms_max_expected A single numeric value as supplied to
 #   summary.vsel()'s argument `nterms_max`.
+# @param respOrig_expected A single logical value indicating whether
+#   element `respOrig` is expected to be `TRUE` or `FALSE`.
 # @param search_trms_empty_size A single logical value indicating whether
 #   `search_terms` was constructed in a way that causes a model size to be
 #   without candidate models.
@@ -2298,6 +2300,7 @@ vsel_tester <- function(
 #
 # @return `TRUE` (invisible).
 smmry_tester <- function(smmry, vsel_expected, nterms_max_expected = NULL,
+                         respOrig_expected = TRUE,
                          search_trms_empty_size = FALSE, info_str, ...) {
   expect_s3_class(smmry, "vselsummary")
   expect_type(smmry, "list")
@@ -2356,7 +2359,7 @@ smmry_tester <- function(smmry, vsel_expected, nterms_max_expected = NULL,
                    summaries_ref = vsel_expected$summaries$ref,
                    nterms_max_expected = nterms_max_expected,
                    info_str = info_str, ...)
-  expect_true(smmry$respOrig, info = info_str)
+  expect_identical(smmry$respOrig, respOrig_expected, info = info_str)
 
   return(invisible(TRUE))
 }
