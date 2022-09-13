@@ -76,8 +76,8 @@
 #' [rstanarm::stan_polr()] fits. The latent projection is applied when setting
 #' argument `latent` of [extend_family()] (which is called by [init_refmodel()])
 #' to `TRUE`. Note that the latent projection is currently considered as an
-#' experimental feature since it has not been tested thoroughly yet and is also
-#' subject to some more theoretical investigations.
+#' experimental feature since it is subject to some more theoretical
+#' investigations.
 #'
 #' For the projection of the reference model onto a submodel, \pkg{projpred}
 #' currently relies on the following functions (in other words, these are the

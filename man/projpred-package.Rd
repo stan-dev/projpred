@@ -70,8 +70,8 @@ observation, i.e., to use a "long" dataset), \code{\link[brms:brmsfamily]{brms::
 \code{\link[rstanarm:stan_polr]{rstanarm::stan_polr()}} fits. The latent projection is applied when setting
 argument \code{latent} of \code{\link[=extend_family]{extend_family()}} (which is called by \code{\link[=init_refmodel]{init_refmodel()}})
 to \code{TRUE}. Note that the latent projection is currently considered as an
-experimental feature since it has not been tested thoroughly yet and is also
-subject to some more theoretical investigations.
+experimental feature since it is subject to some more theoretical
+investigations.
 
 For the projection of the reference model onto a submodel, \pkg{projpred}
 currently relies on the following functions (in other words, these are the
