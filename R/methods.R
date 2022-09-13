@@ -915,7 +915,11 @@ replace_population_names <- function(population_effects, nm_scheme) {
       names(population_effects),
       nm_scheme = nm_scheme
     )
-    names(population_effects) <- paste0("b_", names(population_effects))
+    if (length(population_effects) > 0) {
+      # We could also use `recycle0 = TRUE` here, but that would
+      # require R >= 4.0.1.
+      names(population_effects) <- paste0("b_", names(population_effects))
+    }
   }
   return(population_effects)
 }

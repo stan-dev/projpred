@@ -175,6 +175,7 @@ search_L1 <- function(p_ref, refmodel, nterms_max, penalty, opt) {
         }
       ))
       indices <- match(variables, colnames(x)[search_path$solution_terms])
+      indices <- indices[!is.na(indices)]
       beta <- search_path$beta[indices, max(indices) + 1, drop = FALSE]
       # Also reduce `x` (important for coef.subfit(), for example); note that
       # `x <- x[, variables, drop = FALSE]` should also be possible, but the
