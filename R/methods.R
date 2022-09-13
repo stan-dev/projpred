@@ -492,8 +492,7 @@ plot.vsel <- function(
 #'   number of observations.
 #'   * `"mse"`: mean squared error.
 #'   * `"rmse"`: root mean squared error. For the corresponding standard error
-#'   (**TODO (bootstrap)**: and lower and upper confidence interval bounds?),
-#'   bootstrapping is used.
+#'   and lower and upper confidence interval bounds, bootstrapping is used.
 #'   * `"acc"` (or its alias, `"pctcorr"`): classification accuracy
 #'   ([binomial()] family only).
 #'   * `"auc"`: area under the ROC curve ([binomial()] family only). For the

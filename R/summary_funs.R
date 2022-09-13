@@ -229,6 +229,9 @@ get_stat <- function(mu, lppd, d_test, stat, mu.bs = NULL, lppd.bs = NULL,
           ...
         )
         value.se <- sd(value.bootstrap1 - value.bootstrap2)
+        lq_uq <- quantile(value.bootstrap1 - value.bootstrap2,
+                          probs = c(alpha_half, one_minus_alpha_half),
+                          names = FALSE, na.rm = TRUE)
       } else {
         value <- sqrt(mean(wcv * (mu - y)^2, na.rm = TRUE))
         value.bootstrap <- bootstrap(
@@ -239,9 +242,10 @@ get_stat <- function(mu, lppd, d_test, stat, mu.bs = NULL, lppd.bs = NULL,
           ...
         )
         value.se <- sd(value.bootstrap)
+        lq_uq <- quantile(value.bootstrap,
+                          probs = c(alpha_half, one_minus_alpha_half),
+                          names = FALSE, na.rm = TRUE)
       }
-      # TODO (bootstrap): Use bootstrap confidence interval bounds also for the
-      # RMSE? (See AUC below.)
     }
   } else if (stat %in% c("acc", "pctcorr", "auc")) {
     y <- d_test$y
@@ -300,14 +304,15 @@ get_stat <- function(mu, lppd, d_test, stat, mu.bs = NULL, lppd.bs = NULL,
                           probs = c(alpha_half, one_minus_alpha_half),
                           names = FALSE, na.rm = TRUE)
       }
-      lq <- lq_uq[1]
-      uq <- lq_uq[2]
     }
   }
 
-  if (stat != "auc") { # TODO (bootstrap): Add RMSE?
+  if (!stat %in% c("rmse", "auc")) {
     lq <- qnorm(alpha_half, mean = value, sd = value.se)
     uq <- qnorm(one_minus_alpha_half, mean = value, sd = value.se)
+  } else {
+    lq <- lq_uq[1]
+    uq <- lq_uq[2]
   }
 
   return(list(value = value, se = value.se, lq = lq, uq = uq))

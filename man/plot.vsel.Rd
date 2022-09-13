@@ -32,8 +32,7 @@ are:
 number of observations.
 \item \code{"mse"}: mean squared error.
 \item \code{"rmse"}: root mean squared error. For the corresponding standard error
-(\strong{TODO (bootstrap)}: and lower and upper confidence interval bounds?),
-bootstrapping is used.
+and lower and upper confidence interval bounds, bootstrapping is used.
 \item \code{"acc"} (or its alias, \code{"pctcorr"}): classification accuracy
 (\code{\link[=binomial]{binomial()}} family only).
 \item \code{"auc"}: area under the ROC curve (\code{\link[=binomial]{binomial()}} family only). For the
