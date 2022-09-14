@@ -276,7 +276,9 @@ bootstrap <- function(x, fun = mean, B = 2000,
 #   have been kept as general as possible and `wsample_orig` is more general
 #   than `wsample_ref`.
 .get_refdist <- function(refmodel, ndraws = NULL, nclusters = NULL,
-                         thinning = TRUE) {
+                         thinning = TRUE,
+                         throw_mssg_ndraws = getOption("projpred.mssg_ndraws",
+                                                       TRUE)) {
   # Number of draws in the reference model:
   S <- NCOL(refmodel$mu)
 
@@ -285,7 +287,8 @@ bootstrap <- function(x, fun = mean, B = 2000,
     nclusters <- min(S, nclusters)
     if (nclusters == S) {
       # number of clusters equal to the number of samples, so return the samples
-      return(.get_refdist(refmodel, ndraws = nclusters))
+      return(.get_refdist(refmodel, ndraws = nclusters,
+                          throw_mssg_ndraws = FALSE))
     } else if (nclusters == 1) {
       # special case, only one cluster
       p_ref <- .get_p_clust(family = refmodel$family, mu = refmodel$mu,
@@ -299,7 +302,7 @@ bootstrap <- function(x, fun = mean, B = 2000,
     }
   } else {
     ndraws <- min(S, ndraws)
-    if (ndraws <= 20 && isTRUE(getOption("projpred.mssg_ndraws", TRUE))) {
+    if (ndraws <= 20 && isTRUE(throw_mssg_ndraws)) {
       message("The number of draws to project is quite small (<= 20). In such ",
               "cases, it is usually better to use clustering.")
     }

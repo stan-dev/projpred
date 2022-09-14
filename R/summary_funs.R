@@ -254,12 +254,22 @@
 ## further adjustments are necessary below.
 get_stat <- function(mu, lppd, d_test, stat, mu.bs = NULL, lppd.bs = NULL,
                      wcv = NULL, alpha = 0.1, ...) {
+  n_notna.bs <- NULL
   if (stat %in% c("mlpd", "elpd")) {
     n <- length(lppd)
     n_notna <- sum(!is.na(lppd))
+    if (!is.null(lppd.bs)) {
+      n_notna.bs <- sum(!is.na(lppd.bs))
+    }
   } else {
     n <- length(mu)
     n_notna <- sum(!is.na(mu))
+    if (!is.null(mu.bs)) {
+      n_notna.bs <- sum(!is.na(mu.bs))
+    }
+  }
+  if (n_notna == 0 || (!is.null(n_notna.bs) && n_notna.bs == 0)) {
+    return(list(value = NA, se = NA, lq = NA, uq = NA))
   }
 
   if (is.null(wcv)) {
