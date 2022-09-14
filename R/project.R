@@ -202,8 +202,6 @@ project <- function(object, nterms = NULL, solution_terms = NULL,
     ## by default take the variable ordering from the selection
     solution_terms <- object$solution_terms
     if (is.null(nterms)) {
-      message("`nterms` is `NULL`, so now trying to suggest a submodel size ",
-              "automatically.")
       sgg_size <- suggest_size(object, warnings = FALSE)
       if (!is.null(sgg_size) && !is.na(sgg_size)) {
         ## by default, project onto the suggested model size
