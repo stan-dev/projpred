@@ -16,6 +16,8 @@ If you read this from a place other than <https://mc-stan.org/projpred/news/inde
 ## Bug fixes
 
 * Fix GitHub issue #348 (L1 search in the presence of interaction terms). This bug was introduced in v2.1.0 (and existed up to---including---v2.2.0).
+* Fix incorrectly thrown messages in case of `datafit`s (and other---unlikely---cases where `nclusters == S` and `S <= 20`, with `S` denoting the number of draws in the reference model).
+* Fix GitHub issue #349 (only concerned `datafit`s). (GitHub: #350)
 
 # projpred 2.2.0
 
