@@ -1211,6 +1211,18 @@ init_refmodel <- function(object, data, formula, family, ref_predfun = NULL,
       } else {
         dis <- rep(NA, ndraws)
       }
+      if (all(is.na(dis))) {
+        message(
+          "Since `<refmodel>$dis` will consist of only `NA`s, downstream ",
+          "analyses based on this reference model won't be able to calculate ",
+          "the ELPD or MLPD on latent scale (i.e., with `respOrig = FALSE`). ",
+          "To calculate these, consider (i) supplying argument `dis`, (ii) ",
+          "switching to `respOrig = TRUE` in downstream analyses (which might ",
+          "require the specification of functions needed by extend_family()), ",
+          "or (iii) using a performance statistic other than ELPD or MLPD in ",
+          "downstream analyses."
+        )
+      }
     } else if (!.has_dispersion(family)) {
       dis <- rep(NA, ndraws)
     } else {
