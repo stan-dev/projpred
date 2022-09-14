@@ -2,11 +2,6 @@ context("datafit")
 
 # Setup -------------------------------------------------------------------
 
-if (!requireNamespace("glmnet", quietly = TRUE)) {
-  stop("Package \"glmnet\" is needed for these tests. Please install it.",
-       call. = FALSE)
-}
-
 .extrmoddat_datafit <- function(object, newdata = NULL, wrhs = NULL,
                                 orhs = NULL, resp_form = NULL) {
   if (is.null(newdata)) {
@@ -601,6 +596,11 @@ test_that(paste(
 })
 
 # Comparison with glmnet --------------------------------------------------
+
+if (!requireNamespace("glmnet", quietly = TRUE)) {
+  stop("Package \"glmnet\" is needed for these tests. Please install it.",
+       call. = FALSE)
+}
 
 # below are some tests that check Lasso solution computed with varsel is the
 # same as that of glmnet. (notice that glm_ridge and glm_elnet are already
