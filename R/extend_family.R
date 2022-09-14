@@ -315,7 +315,7 @@ extend_family <- function(family,
         message("`latent_ppdOrig` is `NULL`, so proj_predict() won't work on ",
                 "response scale (only on latent scale).")
       }
-      family$respOrig_possible <- !is.null(latent_llOrig)
+      family$llOrig_possible <- !is.null(latent_llOrig)
       family$ppdOrig_possible <- !is.null(latent_ppdOrig)
       family$latent_ilink <- latent_ilink
       family$latent_llOrig <- latent_llOrig

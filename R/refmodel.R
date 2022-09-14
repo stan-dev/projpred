@@ -476,7 +476,7 @@ predict.refmodel <- function(object, newdata = NULL, ynew = NULL,
   } else {
     ## evaluate the log predictive density at the given ynew values
     if (object$family$for_latent) {
-      if (!object$family$respOrig_possible) {
+      if (!object$family$llOrig_possible) {
         stop("Cannot calculate the log predictive density values if ",
              "`latent_ilink` or `latent_llOrig` are missing.")
       }

@@ -63,7 +63,7 @@
                    class = sub("augmat", "augvec", oldClass(mu), fixed = TRUE)),
     lppd = apply(loglik, 1, log_weighted_mean_exp, wsample)
   )
-  if (family$for_latent && family$respOrig_possible) {
+  if (family$for_latent && family$llOrig_possible) {
     mu_Orig <- family$latent_ilink(t(mu), cl_ref = cl_ref,
                                    wdraws_ref = wdraws_ref)
     if (length(dim(mu_Orig)) < 2) {

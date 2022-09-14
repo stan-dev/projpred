@@ -306,7 +306,7 @@ compute_lpd <- function(ynew, pred_sub, proj, weights, transformed) {
   if (!is.null(ynew)) {
     ## compute also the log-density
     if (proj$refmodel$family$for_latent &&
-        !proj$refmodel$family$respOrig_possible) {
+        !proj$refmodel$family$llOrig_possible) {
       stop("Cannot calculate the log predictive density values if ",
            "`latent_ilink` or `latent_llOrig` are missing.")
     }
