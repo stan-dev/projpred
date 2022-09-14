@@ -1653,9 +1653,12 @@ smmry_sel_tester <- function(
       lower_nm <- paste(stats_expected, "lower", sep = ".")
     }
     for (stat_idx in seq_along(stats_expected)) {
-      expect_true(all(smmry_sel[, stats_mean_name[stat_idx]] >=
-                        smmry_sel[, lower_nm[stat_idx]]),
-                  info = info_str)
+      if (!stats_expected[stat_idx] %in% c("rmse", "auc")) {
+        # RMSE and AUC are excluded here because of PR #347.
+        expect_true(all(smmry_sel[, stats_mean_name[stat_idx]] >=
+                          smmry_sel[, lower_nm[stat_idx]]),
+                    info = info_str)
+      }
     }
   }
   if ("upper" %in% type_expected) {
@@ -1665,9 +1668,12 @@ smmry_sel_tester <- function(
       upper_nm <- paste(stats_expected, "upper", sep = ".")
     }
     for (stat_idx in seq_along(stats_expected)) {
-      expect_true(all(smmry_sel[, stats_mean_name[stat_idx]] <=
-                        smmry_sel[, upper_nm[stat_idx]]),
-                  info = info_str)
+      if (!stats_expected[stat_idx] %in% c("rmse", "auc")) {
+        # RMSE and AUC are excluded here because of PR #347.
+        expect_true(all(smmry_sel[, stats_mean_name[stat_idx]] <=
+                          smmry_sel[, upper_nm[stat_idx]]),
+                    info = info_str)
+      }
     }
   }
 
