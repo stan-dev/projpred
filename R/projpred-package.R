@@ -66,18 +66,23 @@
 #'
 #' The latent projection (Catalina et al., 2021) is a quite general principle
 #' for extending \pkg{projpred}'s traditional projection to more response
-#' families. The families for which full latent-projection functionality (in
-#' particular, post-processing on the original response scale) is currently
-#' available are [binomial()] (again also [brms::bernoulli()], but note that
-#' currently, the support for the [binomial()] family does not include binomial
-#' distributions with more than one trial; in such a case, a workaround is to
-#' de-aggregate the Bernoulli trials which belong to the same (aggregated)
-#' observation, i.e., to use a "long" dataset), [brms::cumulative()], and
-#' [rstanarm::stan_polr()] fits. The latent projection is applied when setting
-#' argument `latent` of [extend_family()] (which is called by [init_refmodel()])
-#' to `TRUE`. Note that the latent projection is currently considered as an
-#' experimental feature since it is subject to some more theoretical
-#' investigations.
+#' families. The latent projection is applied when setting argument `latent` of
+#' [extend_family()] (which is called by [init_refmodel()]) to `TRUE`. The
+#' families for which full latent-projection functionality (in particular,
+#' `respOrig = TRUE`, i.e., post-processing on the original response scale) is
+#' currently available are [binomial()] (again also [brms::bernoulli()], but
+#' note that currently, the latent-projection support for the [binomial()]
+#' family does not include binomial distributions with more than one trial; in
+#' such a case, a workaround is to de-aggregate the Bernoulli trials which
+#' belong to the same (aggregated) observation, i.e., to use a "long" dataset),
+#' [brms::cumulative()], and [rstanarm::stan_polr()] fits. For all other
+#' families, you can try to use the latent projection (by setting `latent =
+#' TRUE`) and \pkg{projpred} should tell you if any features are not available
+#' and how to make them available. More details concerning the latent projection
+#' are given in the vignette "Latent projection predictive inference with
+#' projpred" (**TODO (latent)**: Update that latent vignette). Note that the
+#' latent projection is currently considered as an experimental feature since it
+#' is subject to some more theoretical investigations.
 #'
 #' For the projection of the reference model onto a submodel, \pkg{projpred}
 #' currently relies on the following functions (in other words, these are the

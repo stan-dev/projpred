@@ -60,18 +60,22 @@ since it is subject to some more theoretical investigations.
 
 The latent projection (Catalina et al., 2021) is a quite general principle
 for extending \pkg{projpred}'s traditional projection to more response
-families. The families for which full latent-projection functionality (in
-particular, post-processing on the original response scale) is currently
-available are \code{\link[=binomial]{binomial()}} (again also \code{\link[brms:brmsfamily]{brms::bernoulli()}}, but note that
-currently, the support for the \code{\link[=binomial]{binomial()}} family does not include binomial
-distributions with more than one trial; in such a case, a workaround is to
-de-aggregate the Bernoulli trials which belong to the same (aggregated)
-observation, i.e., to use a "long" dataset), \code{\link[brms:brmsfamily]{brms::cumulative()}}, and
-\code{\link[rstanarm:stan_polr]{rstanarm::stan_polr()}} fits. The latent projection is applied when setting
-argument \code{latent} of \code{\link[=extend_family]{extend_family()}} (which is called by \code{\link[=init_refmodel]{init_refmodel()}})
-to \code{TRUE}. Note that the latent projection is currently considered as an
-experimental feature since it is subject to some more theoretical
-investigations.
+families. The latent projection is applied when setting argument \code{latent} of
+\code{\link[=extend_family]{extend_family()}} (which is called by \code{\link[=init_refmodel]{init_refmodel()}}) to \code{TRUE}. The
+families for which full latent-projection functionality (in particular,
+\code{respOrig = TRUE}, i.e., post-processing on the original response scale) is
+currently available are \code{\link[=binomial]{binomial()}} (again also \code{\link[brms:brmsfamily]{brms::bernoulli()}}, but
+note that currently, the latent-projection support for the \code{\link[=binomial]{binomial()}}
+family does not include binomial distributions with more than one trial; in
+such a case, a workaround is to de-aggregate the Bernoulli trials which
+belong to the same (aggregated) observation, i.e., to use a "long" dataset),
+\code{\link[brms:brmsfamily]{brms::cumulative()}}, and \code{\link[rstanarm:stan_polr]{rstanarm::stan_polr()}} fits. For all other
+families, you can try to use the latent projection (by setting \code{latent = TRUE}) and \pkg{projpred} should tell you if any features are not available
+and how to make them available. More details concerning the latent projection
+are given in the vignette "Latent projection predictive inference with
+projpred" (\strong{TODO (latent)}: Update that latent vignette). Note that the
+latent projection is currently considered as an experimental feature since it
+is subject to some more theoretical investigations.
 
 For the projection of the reference model onto a submodel, \pkg{projpred}
 currently relies on the following functions (in other words, these are the
