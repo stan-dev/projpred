@@ -242,6 +242,7 @@ extend_family <- function(family,
   if (latent) {
     familyOrig_tmp <- family$family
     linkOrig_tmp <- family$link
+    linkinvOrig_tmp <- family$linkinv
     catsOrig_tmp <- family$cats
     family <- gaussian()
     family$familyOrig <- familyOrig_tmp
@@ -281,23 +282,26 @@ extend_family <- function(family,
           latent_ppdOrig <- latent_ppdOrig_binom_nocats
         }
       }
-      if (family$familyOrig == "binomial" && is.null(latent_ilink)) {
-        latent_ilink <- function(lpreds, cl_ref,
-                                 wdraws_ref = rep(1, length(cl_ref))) {
-          ilpreds <- ilinkfun_raw(lpreds, link_nm = family$linkOrig)
-          if (!is.null(family$cats)) {
-            ilpreds <- abind::abind(1 - ilpreds, ilpreds, rev.along = 0)
-          }
-          return(ilpreds)
-        }
-      }
       if (is.null(latent_ilink)) {
-        message("`latent_ilink` is `NULL`, so cv_varsel() with ",
-                "`cv_method = \"LOO\"` won't be usable. Furthermore, ",
-                "predict.refmodel(), summary.vsel(), print.vsel(), ",
-                "plot.vsel(), suggest_size.vsel(), proj_linpred(), and ",
-                "proj_predict() won't work on response scale (only on latent ",
-                "scale).")
+        if (family$familyOrig == "binomial") {
+          latent_ilink <- function(lpreds, cl_ref,
+                                   wdraws_ref = rep(1, length(cl_ref))) {
+            ilpreds <- ilinkfun_raw(lpreds, link_nm = family$linkOrig)
+            if (!is.null(family$cats)) {
+              ilpreds <- abind::abind(1 - ilpreds, ilpreds, rev.along = 0)
+            }
+            return(ilpreds)
+          }
+        } else {
+          message("Trying to define `latent_ilink` automatically, but there ",
+                  "is no guarantee that it will work for all families. If it ",
+                  "raises an error in downstream functions, supply a ",
+                  "`latent_ilink` function that returns only `NA`s.")
+          latent_ilink <- function(lpreds, cl_ref,
+                                   wdraws_ref = rep(1, length(cl_ref))) {
+            return(linkinvOrig_tmp(lpreds))
+          }
+        }
       }
       if (is.null(latent_llOrig)) {
         message("`latent_llOrig` is `NULL`, so cv_varsel() with ",
@@ -311,10 +315,8 @@ extend_family <- function(family,
         message("`latent_ppdOrig` is `NULL`, so proj_predict() won't work on ",
                 "response scale (only on latent scale).")
       }
-      family$respOrig_possible <- !is.null(latent_ilink) &&
-        !is.null(latent_llOrig)
-      family$ppdOrig_possible <- !is.null(latent_ilink) &&
-        !is.null(latent_ppdOrig)
+      family$respOrig_possible <- !is.null(latent_llOrig)
+      family$ppdOrig_possible <- !is.null(latent_ppdOrig)
       family$latent_ilink <- latent_ilink
       family$latent_llOrig <- latent_llOrig
       family$latent_ppdOrig <- latent_ppdOrig
