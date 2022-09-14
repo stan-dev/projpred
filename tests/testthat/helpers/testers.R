@@ -1641,8 +1641,7 @@ smmry_sel_tester <- function(
           )
         }
       } else {
-        expect_equal(smmry_sel[, diff_nm[stat_idx]], numeric(nrow(smmry_sel)),
-                     info = info_str)
+        expect_true(all(is.na(smmry_sel[, diff_nm[stat_idx]])), info = info_str)
       }
     }
   }
