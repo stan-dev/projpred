@@ -202,8 +202,9 @@ project <- function(object, nterms = NULL, solution_terms = NULL,
     ## by default take the variable ordering from the selection
     solution_terms <- object$solution_terms
     if (is.null(nterms)) {
-      sgg_size <- suggest_size(object, warnings = FALSE)
-      if (!is.null(sgg_size) && !is.na(sgg_size)) {
+      sgg_size <- try(suggest_size(object, warnings = FALSE), silent = TRUE)
+      if (!inherits(sgg_size, "try-error") && !is.null(sgg_size) &&
+          !is.na(sgg_size)) {
         ## by default, project onto the suggested model size
         nterms <- min(sgg_size, length(solution_terms))
       } else {
