@@ -124,6 +124,17 @@
            "the reference model (see the documentation of extend_family() ",
            "which is called by init_refmodel()).")
     }
+  } else if (all(is.na(varsel$refmodel$dis)) &&
+             any(stats %in% c("elpd", "mlpd"))) {
+    # There's already a corresponding message thrown at the time when the
+    # reference model was built, but users might have forgotten about it, so
+    # throw another one here:
+    message(
+      "Cannot calculate ELPD or MLPD if `respOrig = FALSE` with ",
+      "`<refmodel>$dis` consisting of only `NA`s. You should have received a ",
+      "message describing possible remedies when the reference model was ",
+      "built."
+    )
   }
   if ((!varsel$refmodel$family$for_latent || respOrig) &&
       !is.null(varsel$refmodel$family$cats) &&
@@ -258,19 +269,6 @@ get_stat <- function(mu, lppd, d_test, stat, mu.bs = NULL, lppd.bs = NULL,
   if (stat %in% c("mlpd", "elpd")) {
     n <- length(lppd)
     n_notna <- sum(!is.na(lppd))
-    if (n_notna == 0) {
-      # Special case (should only occur for latent-scale analyses with
-      # `<refmodel>$dis` consisting of only `NA`s). There's already a message
-      # thrown at the time when the reference model was built, but users might
-      # have forgotten about it, so throw another one here:
-      message(
-        "Cannot calculate ELPD or MLPD because all of the log predictive ",
-        "density values are `NA`s. If you're trying to use `respOrig = FALSE` ",
-        "with `<refmodel>$dis` consisting of only `NA`s, then you should have ",
-        "received a message concerning possible remedies when the reference ",
-        "model was built. Otherwise, please contact the package maintainer."
-      )
-    }
     if (!is.null(lppd.bs)) {
       n_notna.bs <- sum(!is.na(lppd.bs))
     }
