@@ -432,6 +432,17 @@ proj_predict_aux <- function(proj, newdata, offset, weights,
         !proj$refmodel$family$ppdOrig_possible) {
       warning("The returned predictions are on latent scale because ",
               "`latent_ilink` or `latent_ppdOrig` are missing.")
+      if (all(is.na(proj$refmodel$dis))) {
+        # There's already a corresponding message thrown at the time when the
+        # reference model was built, but users might have forgotten about it, so
+        # throw another one here:
+        message(
+          "Cannot draw from the latent Gaussian distribution if ",
+          "`<refmodel>$dis` consists of only `NA`s. You should have received ",
+          "a message describing possible remedies when the reference model ",
+          "was built."
+        )
+      }
     }
     pppd_out <- do.call(rbind, lapply(draw_inds, function(i) {
       proj$refmodel$family$ppd(mu[, i], proj$dis[i], weights)
