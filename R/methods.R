@@ -1077,13 +1077,12 @@ suggest_size.vsel <- function(
   if (is.na(thres_elpd)) {
     thres_elpd <- Inf
   }
-  res <- subset(
-    stats,
+  res <- stats[
     (sgn * stats[, bound] >= util_cutoff) |
       (stat == "elpd" & stats[, paste0(stat, suffix)] > thres_elpd) |
       (stat == "mlpd" & stats[, paste0(stat, suffix)] > thres_elpd / nobs_test),
-    "size"
-  )
+    "size", drop = FALSE
+  ]
 
   if (nrow(res) == 0) {
     ## no submodel satisfying the criterion found
@@ -1102,6 +1101,11 @@ suggest_size.vsel <- function(
     # Above, `object$nterms_max` includes the intercept (if present), so we need
     # to include it here, too:
     suggested_size <- min(res) + object$refmodel$intercept
+    # We don't use `na.rm = TRUE` in min() to be as cautious as possible. In
+    # fact, we could refine this to remove `NA`s after the first non-`NA` value
+    # (meaning that if there is no non-`NA` value, no `NA`s will be removed),
+    # but this gets overly complicated and it's better to be as cautious as
+    # possible (because `NA`s after the first non-`NA` value are also strange).
   }
 
   return(suggested_size - object$refmodel$intercept)
