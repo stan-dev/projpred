@@ -1077,26 +1077,6 @@ suggest_size.vsel <- function(
   if (is.na(thres_elpd)) {
     thres_elpd <- Inf
   }
-  if (any(is.na(stats[, bound])) ||
-      (stat %in% c("elpd", "mlpd") && thres_elpd < Inf &&
-       any(is.na(stats[, paste0(stat, suffix)])))) {
-    # In fact, we could refine this to check for `NA`s only after the first
-    # `TRUE` value (or---if there is no `TRUE` value---if there are any `NA`s),
-    # but this gets overly complicated.
-    if (warnings) {
-      warn_smmry_NA <- c("Could not suggest submodel size because ",
-                         "summary.vsel() returned `NA`s.")
-      if (all(is.na(object$refmodel$dis))) {
-        warn_smmry_NA <- c(
-          warn_smmry_NA, " This is probably due to `<refmodel>$dis` ",
-          "consisting of only `NA`s. You should have received a message ",
-          "concerning possible remedies when the reference model was built."
-        )
-      }
-      warning(warn_smmry_NA)
-    }
-    return(NA)
-  }
   res <- subset(
     stats,
     (sgn * stats[, bound] >= util_cutoff) |
