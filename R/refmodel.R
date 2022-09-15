@@ -1221,7 +1221,7 @@ init_refmodel <- function(object, data, formula, family, ref_predfun = NULL,
           "require the specification of functions needed by extend_family()), ",
           "or (iii) using a performance statistic other than ELPD or MLPD in ",
           "downstream analyses. Furthermore, proj_predict() won't be able to ",
-          "draw from the latent Gaussian distribution. To enable this, ",
+          "draw from the latent Gaussian distribution. To draw from it, ",
           "consider (i) supplying argument `dis` or (ii) supplying argument ",
           "`latent_ppdOrig` to extend_family()."
         )
