@@ -63,7 +63,7 @@
                    class = sub("augmat", "augvec", oldClass(mu), fixed = TRUE)),
     lppd = apply(loglik, 1, log_weighted_mean_exp, wsample)
   )
-  if (family$for_latent && family$llOrig_possible) {
+  if (family$for_latent) {
     mu_Orig <- family$latent_ilink(t(mu), cl_ref = cl_ref,
                                    wdraws_ref = wdraws_ref)
     if (length(dim(mu_Orig)) < 2) {
@@ -112,17 +112,27 @@
     stop("`respOrig = FALSE` can only be used in case of the latent ",
          "projection.")
   }
-  respOrig <- varsel$refmodel$family$for_latent && respOrig
-  if (respOrig) {
+  if (varsel$refmodel$family$for_latent && respOrig) {
     summ_ref <- summ_ref$Orig
     summ_sub <- lapply(summ_sub, "[[", "Orig")
-    if (is.null(summ_ref) || any(sapply(summ_sub, is.null))) {
-      # `respOrig = TRUE` only makes sense if element `"Orig"` is available:
-      stop("Cannot calculate the performance statistics on response scale if ",
-           "`latent_ilink` or `latent_llOrig` are missing. Use ",
-           "`respOrig = FALSE` or provide the missing functions when creating ",
-           "the reference model (see the documentation of extend_family() ",
-           "which is called by init_refmodel()).")
+    ref_lppd_NA <- all(is.na(summ_ref$lppd))
+    sub_lppd_NA <- any(sapply(summ_sub, check_sub_NA, el_nm = "lppd"))
+    ref_mu_NA <- all(is.na(summ_ref$mu))
+    sub_mu_NA <- any(sapply(summ_sub, check_sub_NA, el_nm = "mu"))
+    if (ref_mu_NA || sub_mu_NA) {
+      message(
+        "`latent_ilink` returned only `NA`s, so all performance statistics ",
+        "will also be `NA` as long as `respOrig = TRUE`."
+      )
+    } else if (any(stats %in% c("elpd", "mlpd")) &&
+               (ref_lppd_NA || sub_lppd_NA)) {
+      # This is basically the same case as
+      # `!varsel$refmodel$family$llOrig_possible`, but also covering
+      # user-supplied `latent_llOrig` functions which return only `NA`s.
+      message(
+        "`latent_llOrig` returned only `NA`s, so ELPD and MLPD will also be ",
+        "`NA` as long as `respOrig = TRUE`."
+      )
     }
   } else if (all(is.na(varsel$refmodel$dis)) &&
              any(stats %in% c("elpd", "mlpd"))) {
@@ -130,14 +140,13 @@
     # reference model was built, but users might have forgotten about it, so
     # throw another one here:
     message(
-      "Cannot calculate ELPD or MLPD if `respOrig = FALSE` with ",
-      "`<refmodel>$dis` consisting of only `NA`s. You should have received a ",
+      "Cannot calculate ELPD or MLPD if `respOrig = FALSE` and ",
+      "`<refmodel>$dis` consists of only `NA`s. You should have received a ",
       "message describing possible remedies when the reference model was ",
       "built."
     )
   }
-  if ((!varsel$refmodel$family$for_latent || respOrig) &&
-      !is.null(varsel$refmodel$family$cats) &&
+  if (respOrig && !is.null(varsel$refmodel$family$cats) &&
       any(stats %in% c("acc", "pctcorr"))) {
     summ_ref$mu <- catmaxprb(summ_ref$mu, lvls = varsel$refmodel$family$cats)
     summ_sub <- lapply(summ_sub, function(summ_sub_k) {
@@ -150,7 +159,7 @@
     varsel$d_test$y <- factor(varsel$d_test$y, ordered = FALSE)
     varsel$d_test$yOrig <- factor(varsel$d_test$yOrig, ordered = FALSE)
   }
-  if (respOrig) {
+  if (varsel$refmodel$family$for_latent && respOrig) {
     varsel$d_test$y <- varsel$d_test$yOrig
   }
   # Just to avoid that `$y` gets expanded to `$yOrig` if element `"y"` does not
@@ -246,6 +255,18 @@
   }
 
   return(stat_tab)
+}
+
+# Helper function checking whether all entries of a summaries vector are `NA`.
+#
+# @param summ_sub_k Typically `<vsel_object>$summaries$sub[[k]]`.
+# @param el_nm A single character string, giving the name of the subelement of
+#   `summ_sub_k` to check for `NA`s.
+#
+# @return A single logical value, indicating whether all entries of
+#   `summ_sub_k[[el_nm]]` are `NA`.
+check_sub_NA <- function(summ_sub_k, el_nm) {
+  all(is.na(summ_sub_k[[el_nm]]))
 }
 
 ## Calculates given statistic stat with standard error and confidence bounds.

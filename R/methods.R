@@ -26,10 +26,13 @@
 #' @param transform For [proj_linpred()] only. A single logical value indicating
 #'   whether the linear predictor should be transformed to response scale using
 #'   the inverse-link function (`TRUE`) or not (`FALSE`). In case of the latent
-#'   projection, `transform = FALSE` will yield the linear predictors without
-#'   any modifications that may be due to the original response distribution
-#'   (e.g., for a [brms::cumulative()] model, the ordered thresholds are not
-#'   taken into account).
+#'   projection, argument `transform` is similar in spirit to argument
+#'   `respOrig` from other functions and affects the scale of both output
+#'   elements `pred` and `lpd` (see section "Value" below). In that case, note
+#'   that `transform = FALSE` yields the linear predictors (in output element
+#'   `pred`) without any modifications that may be due to the original response
+#'   distribution (e.g., for a [brms::cumulative()] model, the ordered
+#'   thresholds are not taken into account).
 #' @param integrated For [proj_linpred()] only. A single logical value
 #'   indicating whether the output should be averaged across the projected
 #'   posterior draws (`TRUE`) or not (`FALSE`).
@@ -48,6 +51,9 @@
 #'   [proj_predict()]. If a clustered projection was performed, then in
 #'   [proj_predict()], `.seed` is also used for drawing from the set of the
 #'   projected clusters of posterior draws (see argument `nresample_clusters`).
+#' @param respOrig Only relevant for the latent projection. A single logical
+#'   value indicating whether to draw from the predictive distribution on the
+#'   original response scale (`TRUE`) or on latent scale (`FALSE`).
 #' @param ... Arguments passed to [project()] if `object` is not already an
 #'   object returned by [project()].
 #'
@@ -66,18 +72,19 @@
 #'   object resulting from [init_refmodel()]; see also [extend_family()]'s
 #'   argument `latent_y_unqs`) being `NULL`, both elements are
 #'   \eqn{S_{\mathrm{prj}} \times N}{S_prj x N} matrices. In case of (i) the
-#'   augmented-data projection or (ii) the latent projection with
-#'   `<refmodel>$family$cats` being not `NULL`, `pred` is an
+#'   augmented-data projection or (ii) the latent projection with `transform =
+#'   TRUE` and `<refmodel>$family$cats` being not `NULL`, `pred` is an
 #'   \eqn{S_{\mathrm{prj}} \times N \times C}{S_prj x N x C} array and `lpd` is
 #'   an \eqn{S_{\mathrm{prj}} \times N}{S_prj x N} matrix.
 #'   * [proj_predict()] returns an \eqn{S_{\mathrm{prj}} \times N}{S_prj x N}
 #'   matrix of predictions where \eqn{S_{\mathrm{prj}}}{S_prj} denotes
 #'   `nresample_clusters` in case of clustered projection. In case of (i) the
-#'   augmented-data projection or (ii) the latent projection with
-#'   `<refmodel>$family$cats` being not `NULL`, this matrix has an attribute
-#'   called `cats` (the character vector of response categories) and the values
-#'   of the matrix are the predicted indices of the response categories (with
-#'   the order of the response categories being that from attribute `cats`).
+#'   augmented-data projection or (ii) the latent projection with `respOrig =
+#'   TRUE` and `<refmodel>$family$cats` being not `NULL`, this matrix has an
+#'   attribute called `cats` (the character vector of response categories) and
+#'   the values of the matrix are the predicted indices of the response
+#'   categories (these indices refer to the order of the response categories
+#'   from attribute `cats`).
 #'
 #'   If the prediction is done for more than one submodel, the output from above
 #'   is returned for each submodel, giving a named `list` with one element for
@@ -245,15 +252,17 @@ proj_linpred_aux <- function(proj, newdata, offset, weights, transform = FALSE,
                                           offset = offset,
                                           transform = transform)
   if (proj$refmodel$family$for_latent && transform) {
-    if (is.null(proj$refmodel$family$latent_ilink)) {
-      stop("Cannot transform the latent predictors to response space if ",
-           "`latent_ilink` is missing.")
-    }
     pred_sub <- proj$refmodel$family$latent_ilink(
       t(pred_sub), cl_ref = proj$cl_ref, wdraws_ref = proj$wdraws_ref
     )
     if (length(dim(pred_sub)) < 2) {
       stop("Unexpected structure for the output of `latent_ilink`.")
+    }
+    if (all(is.na(pred_sub))) {
+      message(
+        "`latent_ilink` returned only `NA`s, so the output will also be ",
+        "`NA` as long as `transform = TRUE`."
+      )
     }
   }
   w_o <- proj$refmodel$extract_model_data(
@@ -305,11 +314,6 @@ proj_linpred_aux <- function(proj, newdata, offset, weights, transform = FALSE,
 compute_lpd <- function(ynew, pred_sub, proj, weights, transformed) {
   if (!is.null(ynew)) {
     ## compute also the log-density
-    if (proj$refmodel$family$for_latent &&
-        !proj$refmodel$family$llOrig_possible) {
-      stop("Cannot calculate the log predictive density values if ",
-           "`latent_ilink` or `latent_llOrig` are missing.")
-    }
     target <- .get_standard_y(ynew, weights, proj$refmodel$family)
     ynew <- target$y
     weights <- target$weights
@@ -337,24 +341,24 @@ compute_lpd <- function(ynew, pred_sub, proj, weights, transformed) {
            "extend_family()'s argument `latent_y_unqs` to solve this.")
     }
     if (!transformed) {
-      if (proj$refmodel$family$for_latent) {
-        pred_sub <- proj$refmodel$family$latent_ilink(
-          t(pred_sub), cl_ref = proj$cl_ref, wdraws_ref = proj$wdraws_ref
-        )
-        if (length(dim(pred_sub)) < 2) {
-          stop("Unexpected structure for the output of `latent_ilink`.")
-        }
-      } else {
-        pred_sub <- proj$refmodel$family$linkinv(pred_sub)
-      }
+      pred_sub <- proj$refmodel$family$linkinv(pred_sub)
     }
-    if (proj$refmodel$family$for_latent) {
+    if (proj$refmodel$family$for_latent && transformed) {
       llOrig_out <- proj$refmodel$family$latent_llOrig(
         pred_sub, yOrig = ynew, wobs = weights, cl_ref = proj$cl_ref,
         wdraws_ref = proj$wdraws_ref
       )
       if (!is.matrix(llOrig_out)) {
         stop("Unexpected structure for the output of `latent_llOrig`.")
+      }
+      if (all(is.na(llOrig_out))) {
+        # This is basically the same case as
+        # `!proj$refmodel$family$llOrig_possible`, but also covering
+        # user-supplied `latent_llOrig` functions which return only `NA`s.
+        message(
+          "`latent_llOrig` returned only `NA`s, so the output will also be ",
+          "`NA` as long as `transform = TRUE`."
+        )
       }
       return(llOrig_out)
     } else {
@@ -370,7 +374,8 @@ compute_lpd <- function(ynew, pred_sub, proj, weights, transformed) {
 proj_predict <- function(object, newdata = NULL, offsetnew = NULL,
                          weightsnew = NULL, filter_nterms = NULL,
                          nresample_clusters = 1000,
-                         .seed = sample.int(.Machine$integer.max, 1), ...) {
+                         .seed = sample.int(.Machine$integer.max, 1),
+                         respOrig = TRUE, ...) {
   # Set seed, but ensure the old RNG state is restored on exit:
   if (exists(".Random.seed", envir = .GlobalEnv)) {
     rng_state_old <- get(".Random.seed", envir = .GlobalEnv)
@@ -383,13 +388,17 @@ proj_predict <- function(object, newdata = NULL, offsetnew = NULL,
     object = object, newdata = newdata,
     offsetnew = offsetnew, weightsnew = weightsnew,
     onesub_fun = proj_predict_aux, filter_nterms = filter_nterms,
-    nresample_clusters = nresample_clusters, ...
+    nresample_clusters = nresample_clusters, respOrig = respOrig, ...
   )
 }
 
 ## function applied to each projected submodel in case of proj_predict()
 proj_predict_aux <- function(proj, newdata, offset, weights,
-                             nresample_clusters = 1000, ...) {
+                             nresample_clusters = 1000, respOrig = TRUE, ...) {
+  if (!proj$refmodel$family$for_latent && !respOrig) {
+    stop("`respOrig = FALSE` can only be used in case of the latent ",
+         "projection.")
+  }
   mu <- proj$refmodel$family$mu_fun(proj$submodl,
                                     newdata = newdata,
                                     offset = offset)
@@ -401,15 +410,7 @@ proj_predict_aux <- function(proj, newdata, offset, weights,
     draw_inds <- seq_along(proj$weights)
   }
   cats_aug <- proj$refmodel$family$cats
-  if (proj$refmodel$family$for_latent &&
-      !proj$refmodel$family$ppdOrig_possible &&
-      !is.null(cats_aug)) {
-    # In this case, the PPPD will be on latent scale, so the response-scale
-    # categories should not be appended as an attribute to the output:
-    cats_aug <- NULL
-  }
-  if (proj$refmodel$family$for_latent &&
-      proj$refmodel$family$ppdOrig_possible) {
+  if (proj$refmodel$family$for_latent && respOrig) {
     mu_Orig <- proj$refmodel$family$latent_ilink(t(mu), cl_ref = proj$cl_ref,
                                                  wdraws_ref = proj$wdraws_ref)
     if (length(dim(mu_Orig)) < 2) {
@@ -427,11 +428,22 @@ proj_predict_aux <- function(proj, newdata, offset, weights,
     if (!is.matrix(pppd_out)) {
       stop("Unexpected structure for the output of `latent_ppdOrig`.")
     }
+    if (all(is.na(pppd_out))) {
+      # This is basically the same case as
+      # `!proj$refmodel$family$ppdOrig_possible`, but also covering
+      # user-supplied `latent_ppdOrig` functions which return only `NA`s.
+      message(
+        "`latent_ppdOrig` returned only `NA`s, so the output will also be ",
+        "`NA` as long as `respOrig = TRUE`."
+      )
+    }
   } else {
-    if (proj$refmodel$family$for_latent &&
-        !proj$refmodel$family$ppdOrig_possible) {
-      warning("The returned predictions are on latent scale because ",
-              "`latent_ilink` or `latent_ppdOrig` are missing.")
+    if (proj$refmodel$family$for_latent) {
+      # In this case, the PPPD will be on latent scale, so the response-scale
+      # categories should not be appended as an attribute to the output:
+      if (!is.null(cats_aug)) {
+        cats_aug <- NULL
+      }
       if (all(is.na(proj$refmodel$dis))) {
         # There's already a corresponding message thrown at the time when the
         # reference model was built, but users might have forgotten about it, so

@@ -365,8 +365,7 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
       # be necessary. But we keep them in case the following error message
       # should be removed one day (although it would then be hard to get
       # `loglik_forPSIS`; rstantools::log_lik() could be an option for that).
-      stop("Cannot use `cv_method = \"LOO\"` if `latent_ilink` or ",
-           "`latent_llOrig` are missing.")
+      stop("`cv_method = \"LOO\"` requires a suitable `latent_llOrig`.")
     }
   } else {
     loglik_forPSIS <- refmodel$loglik
@@ -400,7 +399,7 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
               class = sub("augmat", "augvec", oldClass(mu), fixed = TRUE)),
     simplify = FALSE
   )
-  if (refmodel$family$for_latent && refmodel$family$llOrig_possible) {
+  if (refmodel$family$for_latent) {
     loo_sub_Orig <- loo_sub
     # In general, we could use `mu_sub_Orig <- mu_sub` here, but the case where
     # refmodel$family$latent_ilink() returns a 3-dimensional array (S x N x C)
@@ -478,8 +477,7 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
           wdraws_ref = refdist_eval$wsample_orig
         )
       } else {
-        stop("Cannot use `validate_search = FALSE` if `latent_ilink` or ",
-             "`latent_llOrig` are missing.")
+        stop("`validate_search = FALSE` requires a suitable `latent_llOrig`.")
       }
     } else {
       inds_aug <- inds
@@ -511,7 +509,7 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
       # have stricter consistency checks, see `?sweep`):
       lw_sub <- sweep(lw_sub, 2, as.array(apply(lw_sub, 2, log_sum_exp)))
       loo_sub[[k]][inds] <- apply(log_lik_sub + lw_sub, 2, log_sum_exp)
-      if (refmodel$family$for_latent && refmodel$family$llOrig_possible) {
+      if (refmodel$family$for_latent) {
         mu_k_Orig <- refmodel$family$latent_ilink(
           t(mu_k), cl_ref = refdist_eval$cl,
           wdraws_ref = refdist_eval$wsample_orig
@@ -541,7 +539,7 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
           run_index_flx <- run_index
         }
         mu_sub[[k]][i_flx] <- mu_k[run_index_flx, ] %*% exp(lw_sub[, run_index])
-        if (refmodel$family$for_latent && refmodel$family$llOrig_possible) {
+        if (refmodel$family$for_latent) {
           if (inherits(mu_k_Orig, "augmat")) {
             mu_sub_Orig[[k]][i_aug] <- mu_k_Orig[run_index_aug, ] %*%
               exp(lw_sub[, run_index])
@@ -655,7 +653,7 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
   ## put all the results together in the form required by cv_varsel
   summ_sub <- lapply(seq_len(nterms_max), function(k) {
     summ_k <- list(lppd = loo_sub[[k]], mu = mu_sub[[k]], wcv = validset$wcv)
-    if (refmodel$family$for_latent && refmodel$family$llOrig_possible) {
+    if (refmodel$family$for_latent) {
       summ_k$Orig <- list(lppd = loo_sub_Orig[[k]], mu = mu_sub_Orig[[k]],
                           wcv = validset$wcv)
     }
@@ -679,7 +677,7 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
   )
   summ_ref <- list(lppd = apply(refmodel$loglik + lw, 2, log_sum_exp),
                    mu = mu_ref)
-  if (refmodel$family$for_latent && refmodel$family$llOrig_possible) {
+  if (refmodel$family$for_latent) {
     mu_ref_Orig <- do.call(c, lapply(seq_len(n_aug), function(i) {
       i_nonaug <- i %% n
       if (i_nonaug == 0) {

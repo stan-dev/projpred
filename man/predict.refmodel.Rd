@@ -40,15 +40,21 @@ offsets for the new (or old) observations.}
 \code{extract_model_data} function (see \code{\link[=init_refmodel]{init_refmodel()}}). Used to get the
 weights for the new (or old) observations.}
 
-\item{type}{Only relevant if \code{is.null(ynew)}. The scale on which the
-predictions are returned, either \code{"link"} or \code{"response"} (see
-\code{\link[=predict.glm]{predict.glm()}} but note that \code{\link[=predict.refmodel]{predict.refmodel()}} does not adhere to the
-typical \R convention of a default prediction on link scale). For both
-scales, the predictions are averaged across the posterior draws. In case of
-the latent projection, \code{type = "link"} will yield the linear predictors
-without any modifications that may be due to the original response
-distribution (e.g., for a \code{\link[brms:brmsfamily]{brms::cumulative()}} model, the ordered
-thresholds are not taken into account).}
+\item{type}{Usually only relevant if \code{is.null(ynew)}, but for the latent
+projection, this also affects the \code{!is.null(ynew)} case (see below). The
+scale on which the predictions are returned, either \code{"link"} or
+\code{"response"} (see \code{\link[=predict.glm]{predict.glm()}} but note that \code{\link[=predict.refmodel]{predict.refmodel()}} does
+not adhere to the typical \R convention of a default prediction on link
+scale). For both scales, the predictions are averaged across the posterior
+draws. In case of the latent projection, argument \code{type} is similar in
+spirit to argument \code{respOrig} from other functions: If (i) \code{is.null(ynew)},
+then argument \code{type} affects the predictions as described above. In that
+case, note that \code{type = "link"} yields the linear predictors without any
+modifications that may be due to the original response distribution (e.g.,
+for a \code{\link[brms:brmsfamily]{brms::cumulative()}} model, the ordered thresholds are not taken into
+account). If (ii) \code{!is.null(ynew)}, then argument \code{type} also affects the
+scale of the log predictive densities (\code{type = "response"} for the original
+response scale, \code{type = "link"} for the latent Gaussian scale).}
 
 \item{...}{Currently ignored.}
 }
@@ -62,9 +68,10 @@ model's predictions (with the scale depending on argument \code{type}) as a
 length-\eqn{N} vector in case of (i) the traditional projection or (ii) the
 latent projection with \code{object$family$cats} being \code{NULL} and as an \eqn{N
   \times C}{N x C} matrix in case of (i) the augmented-data projection or
-(ii) the latent projection with \code{object$family$cats} being not \code{NULL}. If
-\code{!is.null(ynew)}, the returned object is a length-\eqn{N} vector of log
-predictive densities evaluated at \code{ynew}.
+(ii) the latent projection with \code{type = "response"} and
+\code{object$family$cats} being not \code{NULL}. If \code{!is.null(ynew)}, the returned
+object is a length-\eqn{N} vector of log predictive densities evaluated at
+\code{ynew}.
 }
 \description{
 This is the \code{\link[=predict]{predict()}} method for \code{refmodel} objects (returned by

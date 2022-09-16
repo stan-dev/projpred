@@ -325,15 +325,21 @@ NULL
 #'   `factor` (using [as.factor()]). The levels of this `factor` have to be a
 #'   subset of `object$family$cats` (see [extend_family()]'s arguments
 #'   `augdat_y_unqs` and `latent_y_unqs`, respectively).
-#' @param type Only relevant if `is.null(ynew)`. The scale on which the
-#'   predictions are returned, either `"link"` or `"response"` (see
-#'   [predict.glm()] but note that [predict.refmodel()] does not adhere to the
-#'   typical \R convention of a default prediction on link scale). For both
-#'   scales, the predictions are averaged across the posterior draws. In case of
-#'   the latent projection, `type = "link"` will yield the linear predictors
-#'   without any modifications that may be due to the original response
-#'   distribution (e.g., for a [brms::cumulative()] model, the ordered
-#'   thresholds are not taken into account).
+#' @param type Usually only relevant if `is.null(ynew)`, but for the latent
+#'   projection, this also affects the `!is.null(ynew)` case (see below). The
+#'   scale on which the predictions are returned, either `"link"` or
+#'   `"response"` (see [predict.glm()] but note that [predict.refmodel()] does
+#'   not adhere to the typical \R convention of a default prediction on link
+#'   scale). For both scales, the predictions are averaged across the posterior
+#'   draws. In case of the latent projection, argument `type` is similar in
+#'   spirit to argument `respOrig` from other functions: If (i) `is.null(ynew)`,
+#'   then argument `type` affects the predictions as described above. In that
+#'   case, note that `type = "link"` yields the linear predictors without any
+#'   modifications that may be due to the original response distribution (e.g.,
+#'   for a [brms::cumulative()] model, the ordered thresholds are not taken into
+#'   account). If (ii) `!is.null(ynew)`, then argument `type` also affects the
+#'   scale of the log predictive densities (`type = "response"` for the original
+#'   response scale, `type = "link"` for the latent Gaussian scale).
 #' @param ... Currently ignored.
 #'
 #' @details Argument `weightsnew` is only relevant if `!is.null(ynew)`.
@@ -347,9 +353,10 @@ NULL
 #'   length-\eqn{N} vector in case of (i) the traditional projection or (ii) the
 #'   latent projection with `object$family$cats` being `NULL` and as an \eqn{N
 #'   \times C}{N x C} matrix in case of (i) the augmented-data projection or
-#'   (ii) the latent projection with `object$family$cats` being not `NULL`. If
-#'   `!is.null(ynew)`, the returned object is a length-\eqn{N} vector of log
-#'   predictive densities evaluated at `ynew`.
+#'   (ii) the latent projection with `type = "response"` and
+#'   `object$family$cats` being not `NULL`. If `!is.null(ynew)`, the returned
+#'   object is a length-\eqn{N} vector of log predictive densities evaluated at
+#'   `ynew`.
 #'
 #' @export
 predict.refmodel <- function(object, newdata = NULL, ynew = NULL,
@@ -436,10 +443,6 @@ predict.refmodel <- function(object, newdata = NULL, ynew = NULL,
       pred <- eta
     } else {
       if (object$family$for_latent) {
-        if (is.null(object$family$latent_ilink)) {
-          stop("Cannot transform the latent predictors to response space if ",
-               "`latent_ilink` is missing.")
-        }
         pred <- object$family$latent_ilink(
           t(eta), cl_ref = seq_along(object$wsample),
           wdraws_ref = rep(1, length(object$wsample))
@@ -449,6 +452,12 @@ predict.refmodel <- function(object, newdata = NULL, ynew = NULL,
         }
         if (length(dim(pred)) == 3) {
           pred <- arr2augmat(pred, margin_draws = 1)
+        }
+        if (all(is.na(pred))) {
+          message(
+            "`latent_ilink` returned only `NA`s, so the output will also be ",
+            "`NA` as long as `type = \"response\"`."
+          )
         }
       } else {
         pred <- object$family$linkinv(eta)
@@ -475,11 +484,7 @@ predict.refmodel <- function(object, newdata = NULL, ynew = NULL,
     return(pred)
   } else {
     ## evaluate the log predictive density at the given ynew values
-    if (object$family$for_latent) {
-      if (!object$family$llOrig_possible) {
-        stop("Cannot calculate the log predictive density values if ",
-             "`latent_ilink` or `latent_llOrig` are missing.")
-      }
+    if (object$family$for_latent && type == "response") {
       mu_Orig <- object$family$latent_ilink(
         t(eta), cl_ref = seq_along(object$wsample),
         wdraws_ref = rep(1, length(object$wsample))
@@ -495,9 +500,34 @@ predict.refmodel <- function(object, newdata = NULL, ynew = NULL,
       if (!is.matrix(loglik)) {
         stop("Unexpected structure for the output of `latent_llOrig`.")
       }
+      if (all(is.na(mu_Orig))) {
+        message(
+          "`latent_ilink` returned only `NA`s, so the output will also be ",
+          "`NA` as long as `type = \"response\"`."
+        )
+      } else if (all(is.na(loglik))) {
+        # This is basically the same case as
+        # `!object$family$llOrig_possible`, but also covering
+        # user-supplied `latent_llOrig` functions which return only `NA`s.
+        message(
+          "`latent_llOrig` returned only `NA`s, so the output will also be ",
+          "`NA` as long as `type = \"response\"`."
+        )
+      }
       S <- nrow(loglik)
       marg_obs <- 2
     } else {
+      if (object$family$for_latent && all(is.na(object$dis))) {
+        # There's already a corresponding message thrown at the time when the
+        # reference model was built, but users might have forgotten about it, so
+        # throw another one here:
+        message(
+          "Cannot calculate LPD values if `type = \"link\"` and ",
+          "`<refmodel>$dis` consists of only `NA`s. You should have received ",
+          "a message describing possible remedies when the reference model ",
+          "was built."
+        )
+      }
       loglik <- object$family$ll_fun(
         object$family$linkinv(eta), object$dis, ynew, weightsnew
       )
@@ -1216,14 +1246,20 @@ init_refmodel <- function(object, data, formula, family, ref_predfun = NULL,
           "Since `<refmodel>$dis` will consist of only `NA`s, downstream ",
           "analyses based on this reference model won't be able to calculate ",
           "the ELPD or MLPD on latent scale (i.e., with `respOrig = FALSE`). ",
-          "To calculate these, consider (i) supplying argument `dis`, (ii) ",
-          "switching to `respOrig = TRUE` in downstream analyses (which might ",
-          "require the specification of functions needed by extend_family()), ",
-          "or (iii) using a performance statistic other than ELPD or MLPD in ",
-          "downstream analyses. Furthermore, proj_predict() won't be able to ",
-          "draw from the latent Gaussian distribution. To draw from it, ",
-          "consider (i) supplying argument `dis` or (ii) supplying argument ",
-          "`latent_ppdOrig` to extend_family()."
+          "To calculate these, supply argument `dis` (if possible). ",
+          "Alternatively, switch to `respOrig = TRUE` in downstream analyses ",
+          "(which might require the specification of functions needed by ",
+          "extend_family()), or use a performance statistic other than ELPD ",
+          "or MLPD in downstream analyses. Furthermore, proj_predict() won't ",
+          "be able to draw from the latent Gaussian distribution. To draw ",
+          "from it, supply argument `dis` (if possible). Alternatively, ",
+          "switch to `respOrig = TRUE` in proj_predict(). Finally, ",
+          "predict.refmodel() and proj_linpred() won't be able to calculate ",
+          "log predictive density (LPD) values on latent scale. To calculate ",
+          "these, supply argument `dis` (if possible). Alternatively, switch ",
+          "to `type = \"response\"` in predict.refmodel() or ",
+          "`transform = TRUE` in proj_linpred() (which might require the ",
+          "specification of functions needed by extend_family())."
         )
       }
     } else if (!.has_dispersion(family)) {

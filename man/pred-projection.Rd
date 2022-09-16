@@ -26,6 +26,7 @@ proj_predict(
   filter_nterms = NULL,
   nresample_clusters = 1000,
   .seed = sample.int(.Machine$integer.max, 1),
+  respOrig = TRUE,
   ...
 )
 }
@@ -56,10 +57,13 @@ for only those elements (submodels) with a number of solution terms in
 \item{transform}{For \code{\link[=proj_linpred]{proj_linpred()}} only. A single logical value indicating
 whether the linear predictor should be transformed to response scale using
 the inverse-link function (\code{TRUE}) or not (\code{FALSE}). In case of the latent
-projection, \code{transform = FALSE} will yield the linear predictors without
-any modifications that may be due to the original response distribution
-(e.g., for a \code{\link[brms:brmsfamily]{brms::cumulative()}} model, the ordered thresholds are not
-taken into account).}
+projection, argument \code{transform} is similar in spirit to argument
+\code{respOrig} from other functions and affects the scale of both output
+elements \code{pred} and \code{lpd} (see section "Value" below). In that case, note
+that \code{transform = FALSE} yields the linear predictors (in output element
+\code{pred}) without any modifications that may be due to the original response
+distribution (e.g., for a \code{\link[brms:brmsfamily]{brms::cumulative()}} model, the ordered
+thresholds are not taken into account).}
 
 \item{integrated}{For \code{\link[=proj_linpred]{proj_linpred()}} only. A single logical value
 indicating whether the output should be averaged across the projected
@@ -84,6 +88,10 @@ submodel. Not to be confused with argument \code{nclusters} of \code{\link[=proj
 \code{nresample_clusters} gives the number of draws (\emph{with} replacement) from
 the set of clustered posterior draws after projection (with this set being
 determined by argument \code{nclusters} of \code{\link[=project]{project()}}).}
+
+\item{respOrig}{Only relevant for the latent projection. A single logical
+value indicating whether to draw from the predictive distribution on the
+original response scale (\code{TRUE}) or on latent scale (\code{FALSE}).}
 }
 \value{
 In the following, \eqn{S_{\mathrm{prj}}}{S_prj}, \eqn{N},
@@ -101,18 +109,17 @@ latent projection with \verb{<refmodel>$family$cats} (where \verb{<refmodel>} is
 object resulting from \code{\link[=init_refmodel]{init_refmodel()}}; see also \code{\link[=extend_family]{extend_family()}}'s
 argument \code{latent_y_unqs}) being \code{NULL}, both elements are
 \eqn{S_{\mathrm{prj}} \times N}{S_prj x N} matrices. In case of (i) the
-augmented-data projection or (ii) the latent projection with
-\verb{<refmodel>$family$cats} being not \code{NULL}, \code{pred} is an
+augmented-data projection or (ii) the latent projection with \code{transform =   TRUE} and \verb{<refmodel>$family$cats} being not \code{NULL}, \code{pred} is an
 \eqn{S_{\mathrm{prj}} \times N \times C}{S_prj x N x C} array and \code{lpd} is
 an \eqn{S_{\mathrm{prj}} \times N}{S_prj x N} matrix.
 \item \code{\link[=proj_predict]{proj_predict()}} returns an \eqn{S_{\mathrm{prj}} \times N}{S_prj x N}
 matrix of predictions where \eqn{S_{\mathrm{prj}}}{S_prj} denotes
 \code{nresample_clusters} in case of clustered projection. In case of (i) the
-augmented-data projection or (ii) the latent projection with
-\verb{<refmodel>$family$cats} being not \code{NULL}, this matrix has an attribute
-called \code{cats} (the character vector of response categories) and the values
-of the matrix are the predicted indices of the response categories (with
-the order of the response categories being that from attribute \code{cats}).
+augmented-data projection or (ii) the latent projection with \code{respOrig =   TRUE} and \verb{<refmodel>$family$cats} being not \code{NULL}, this matrix has an
+attribute called \code{cats} (the character vector of response categories) and
+the values of the matrix are the predicted indices of the response
+categories (these indices refer to the order of the response categories
+from attribute \code{cats}).
 }
 
 If the prediction is done for more than one submodel, the output from above

@@ -267,21 +267,6 @@ extend_family <- function(family,
       } else {
         family$cats <- catsOrig_tmp
       }
-      if (!is.null(family$cats)) {
-        if (is.null(latent_llOrig)) {
-          latent_llOrig <- latent_llOrig_cats
-        }
-        if (is.null(latent_ppdOrig)) {
-          latent_ppdOrig <- latent_ppdOrig_cats
-        }
-      } else if (family$familyOrig == "binomial") {
-        if (is.null(latent_llOrig)) {
-          latent_llOrig <- latent_llOrig_binom_nocats
-        }
-        if (is.null(latent_ppdOrig)) {
-          latent_ppdOrig <- latent_ppdOrig_binom_nocats
-        }
-      }
       if (is.null(latent_ilink)) {
         if (family$familyOrig == "binomial") {
           latent_ilink <- function(lpreds, cl_ref,
@@ -303,20 +288,49 @@ extend_family <- function(family,
           }
         }
       }
+      # `llOrig_possible` will be overwritten by `FALSE` later (if necessary):
+      family$llOrig_possible <- TRUE
       if (is.null(latent_llOrig)) {
-        message("`latent_llOrig` is `NULL`, so cv_varsel() with ",
-                "`cv_method = \"LOO\"` won't be usable. Furthermore, some ",
-                "features of predict.refmodel(), summary.vsel(), ",
-                "print.vsel(), plot.vsel(), suggest_size.vsel(), and ",
-                "proj_linpred() won't work on response scale (only on latent ",
-                "scale).")
+        if (!is.null(family$cats)) {
+          latent_llOrig <- latent_llOrig_cats
+        } else if (family$familyOrig == "binomial") {
+          latent_llOrig <- latent_llOrig_binom_nocats
+        } else {
+          latent_llOrig <- function(ilpreds, yOrig,
+                                    wobs = rep(1, length(yOrig)), cl_ref,
+                                    wdraws_ref = rep(1, length(cl_ref))) {
+            return(array(dim = dim(ilpreds)[1:2]))
+          }
+          message("`latent_llOrig` was `NULL` and a suitable internal default ",
+                  "could not be found (other than a function returning only ",
+                  "`NA`s). Thus, cv_varsel() with `cv_method = \"LOO\"` won't ",
+                  "be usable. Furthermore, some features of ",
+                  "predict.refmodel(), summary.vsel(), print.vsel(), ",
+                  "plot.vsel(), suggest_size.vsel(), and proj_linpred() won't ",
+                  "work on response scale (only on latent scale).")
+          family$llOrig_possible <- FALSE
+        }
       }
+      # `ppdOrig_possible` will be overwritten by `FALSE` later (if necessary):
+      family$ppdOrig_possible <- TRUE
       if (is.null(latent_ppdOrig)) {
-        message("`latent_ppdOrig` is `NULL`, so proj_predict() won't work on ",
-                "response scale (only on latent scale).")
+        if (!is.null(family$cats)) {
+          latent_ppdOrig <- latent_ppdOrig_cats
+        } else if (family$familyOrig == "binomial") {
+          latent_ppdOrig <- latent_ppdOrig_binom_nocats
+        } else {
+          latent_ppdOrig <- function(ilpreds_resamp, wobs, cl_ref,
+                                     wdraws_ref = rep(1, length(cl_ref)),
+                                     idxs_prjdraws) {
+            return(array(dim = dim(ilpreds_resamp)[1:2]))
+          }
+          message("`latent_ppdOrig` was `NULL` and a suitable internal ",
+                  "default could not be found (other than a function ",
+                  "returning only `NA`s). Thus, proj_predict() won't work on ",
+                  "response scale (only on latent scale).")
+          family$ppdOrig_possible <- FALSE
+        }
       }
-      family$llOrig_possible <- !is.null(latent_llOrig)
-      family$ppdOrig_possible <- !is.null(latent_ppdOrig)
       family$latent_ilink <- latent_ilink
       family$latent_llOrig <- latent_llOrig
       family$latent_ppdOrig <- latent_ppdOrig
