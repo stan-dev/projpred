@@ -27,7 +27,7 @@
 #'   this needs to be the inverse-link function. If the original response family
 #'   was the [binomial()] family, then `latent_ilink` can be `NULL`, in which
 #'   case an internal default will be used. Can also be `NULL` in all other
-#'   cases, but then downstream functions will have limited functionality (a
+#'   cases, but then downstream functions might have limited functionality (a
 #'   message thrown by [extend_family()] will state what exactly won't be
 #'   available). See also section "Latent projection" below.
 #' @param latent_llOrig Only relevant for the latent projection, in which case

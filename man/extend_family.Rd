@@ -37,7 +37,7 @@ infer it from \code{family$cats}). See also section "Latent projection" below.}
 this needs to be the inverse-link function. If the original response family
 was the \code{\link[=binomial]{binomial()}} family, then \code{latent_ilink} can be \code{NULL}, in which
 case an internal default will be used. Can also be \code{NULL} in all other
-cases, but then downstream functions will have limited functionality (a
+cases, but then downstream functions might have limited functionality (a
 message thrown by \code{\link[=extend_family]{extend_family()}} will state what exactly won't be
 available). See also section "Latent projection" below.}
 
