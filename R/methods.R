@@ -270,6 +270,15 @@ proj_linpred_aux <- function(proj, newdata, offset, weights, transform = FALSE,
     orhs = offset, extract_y = extract_y_ind
   )
   ynew <- w_o$y
+  if (!is.null(ynew) && proj$refmodel$family$for_latent && !transform) {
+    # Use `ref_predfun_usr` here (instead of `ref_predfun`) to include
+    # offsets:
+    refprd_with_offs <- get("ref_predfun_usr",
+                            envir = environment(proj$refmodel$ref_predfun))
+    ynew <- rowMeans(unname(
+      refprd_with_offs(fit = proj$refmodel$fit, newdata = newdata)
+    ))
+  }
   lpd_out <- compute_lpd(ynew = ynew, pred_sub = pred_sub, proj = proj,
                          weights = weights, transformed = transform)
   if (proj$refmodel$family$for_latent && transform) {
@@ -317,7 +326,9 @@ compute_lpd <- function(ynew, pred_sub, proj, weights, transformed) {
     target <- .get_standard_y(ynew, weights, proj$refmodel$family)
     ynew <- target$y
     weights <- target$weights
-    if (!is.null(proj$refmodel$family$cats)) {
+    if ((!proj$refmodel$family$for_latent ||
+         (proj$refmodel$family$for_latent && transformed)) &&
+        !is.null(proj$refmodel$family$cats)) {
       ynew <- as.factor(ynew)
       if (!all(levels(ynew) %in% proj$refmodel$family$cats)) {
         if (proj$refmodel$family$for_augdat) {
@@ -333,7 +344,7 @@ compute_lpd <- function(ynew, pred_sub, proj, weights, transformed) {
       }
       # Re-assign the original levels because some levels might be missing:
       ynew <- factor(ynew, levels = proj$refmodel$family$cats)
-    } else if (proj$refmodel$family$for_latent &&
+    } else if (proj$refmodel$family$for_latent && transformed &&
                is.null(proj$refmodel$family$cats) &&
                (is.factor(ynew) || is.character(ynew) || is.logical(ynew))) {
       stop("If the original (i.e., non-latent) response is `factor`-like, ",
