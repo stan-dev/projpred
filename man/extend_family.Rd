@@ -242,7 +242,8 @@ If the bodies of these three functions involve parameter draws from the
 reference model which have not been projected (e.g., for \code{latent_ilink}, the
 response thresholds in an ordinal model), \code{\link[=cl_agg]{cl_agg()}} is provided as a helper
 function for aggregating these reference model draws in the same way as the
-draws have been aggregated for \code{lpreds}.
+draws have been aggregated for the first argument of these functions (e.g.,
+\code{lpreds} in case of \code{latent_ilink}).
 
 In fact, the weights passed to argument \code{wdraws_ref} are nonconstant only in
 case of \code{\link[=cv_varsel]{cv_varsel()}} with \code{cv_method = "LOO"} and \code{validate_search = TRUE}.

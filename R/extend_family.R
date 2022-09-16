@@ -200,7 +200,8 @@
 #' reference model which have not been projected (e.g., for `latent_ilink`, the
 #' response thresholds in an ordinal model), [cl_agg()] is provided as a helper
 #' function for aggregating these reference model draws in the same way as the
-#' draws have been aggregated for `lpreds`.
+#' draws have been aggregated for the first argument of these functions (e.g.,
+#' `lpreds` in case of `latent_ilink`).
 #'
 #' In fact, the weights passed to argument `wdraws_ref` are nonconstant only in
 #' case of [cv_varsel()] with `cv_method = "LOO"` and `validate_search = TRUE`.
