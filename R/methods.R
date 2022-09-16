@@ -260,8 +260,8 @@ proj_linpred_aux <- function(proj, newdata, offset, weights, transform = FALSE,
     }
     if (all(is.na(pred_sub))) {
       message(
-        "`latent_ilink` returned only `NA`s, so the output will also be ",
-        "`NA` as long as `transform = TRUE`."
+        "`latent_ilink` returned only `NA`s, so the corresponding output will ",
+        "also be `NA` as long as `transform = TRUE`."
       )
     }
   }
@@ -353,8 +353,8 @@ compute_lpd <- function(ynew, pred_sub, proj, weights, transformed) {
       }
       if (all(is.na(llOrig_out))) {
         message(
-          "`latent_llOrig` returned only `NA`s, so the output will also be ",
-          "`NA` as long as `transform = TRUE`."
+          "`latent_llOrig` returned only `NA`s, so the corresponding output ",
+          "will also be `NA` as long as `transform = TRUE`."
         )
       }
       return(llOrig_out)
