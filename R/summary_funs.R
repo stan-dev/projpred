@@ -131,7 +131,8 @@
         "`NA` as long as `respOrig = TRUE`."
       )
     }
-  } else if (all(is.na(varsel$refmodel$dis)) &&
+  } else if (varsel$refmodel$family$for_latent &&
+             all(is.na(varsel$refmodel$dis)) &&
              any(stats %in% c("elpd", "mlpd"))) {
     # There's already a corresponding message thrown at the time when the
     # reference model was built, but users might have forgotten about it, so
