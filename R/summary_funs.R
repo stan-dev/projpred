@@ -126,9 +126,6 @@
       )
     } else if (any(stats %in% c("elpd", "mlpd")) &&
                (ref_lppd_NA || sub_lppd_NA)) {
-      # This is basically the same case as
-      # `!varsel$refmodel$family$llOrig_possible`, but also covering
-      # user-supplied `latent_llOrig` functions which return only `NA`s.
       message(
         "`latent_llOrig` returned only `NA`s, so ELPD and MLPD will also be ",
         "`NA` as long as `respOrig = TRUE`."

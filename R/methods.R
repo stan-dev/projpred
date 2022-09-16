@@ -352,9 +352,6 @@ compute_lpd <- function(ynew, pred_sub, proj, weights, transformed) {
         stop("Unexpected structure for the output of `latent_llOrig`.")
       }
       if (all(is.na(llOrig_out))) {
-        # This is basically the same case as
-        # `!proj$refmodel$family$llOrig_possible`, but also covering
-        # user-supplied `latent_llOrig` functions which return only `NA`s.
         message(
           "`latent_llOrig` returned only `NA`s, so the output will also be ",
           "`NA` as long as `transform = TRUE`."
@@ -429,9 +426,6 @@ proj_predict_aux <- function(proj, newdata, offset, weights,
       stop("Unexpected structure for the output of `latent_ppdOrig`.")
     }
     if (all(is.na(pppd_out))) {
-      # This is basically the same case as
-      # `!proj$refmodel$family$ppdOrig_possible`, but also covering
-      # user-supplied `latent_ppdOrig` functions which return only `NA`s.
       message(
         "`latent_ppdOrig` returned only `NA`s, so the output will also be ",
         "`NA` as long as `respOrig = TRUE`."

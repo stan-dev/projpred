@@ -289,8 +289,6 @@ extend_family <- function(family,
           }
         }
       }
-      # `llOrig_possible` will be overwritten by `FALSE` later (if necessary):
-      family$llOrig_possible <- TRUE
       if (is.null(latent_llOrig)) {
         if (!is.null(family$cats)) {
           latent_llOrig <- latent_llOrig_cats
@@ -309,11 +307,8 @@ extend_family <- function(family,
                   "predict.refmodel(), summary.vsel(), print.vsel(), ",
                   "plot.vsel(), suggest_size.vsel(), and proj_linpred() won't ",
                   "work on response scale (only on latent scale).")
-          family$llOrig_possible <- FALSE
         }
       }
-      # `ppdOrig_possible` will be overwritten by `FALSE` later (if necessary):
-      family$ppdOrig_possible <- TRUE
       if (is.null(latent_ppdOrig)) {
         if (!is.null(family$cats)) {
           latent_ppdOrig <- latent_ppdOrig_cats
@@ -329,7 +324,6 @@ extend_family <- function(family,
                   "default could not be found (other than a function ",
                   "returning only `NA`s). Thus, proj_predict() won't work on ",
                   "response scale (only on latent scale).")
-          family$ppdOrig_possible <- FALSE
         }
       }
       family$latent_ilink <- latent_ilink

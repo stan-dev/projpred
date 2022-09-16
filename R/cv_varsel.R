@@ -333,39 +333,34 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
          "probabilistic model for which the log-likelihood can be evaluated.")
   }
   if (refmodel$family$for_latent) {
-    if (refmodel$family$llOrig_possible) {
-      mu_Orig <- refmodel$family$latent_ilink(
-        t(mu), cl_ref = seq_along(refmodel$wsample),
-        wdraws_ref = refmodel$wsample
-      )
-      if (length(dim(mu_Orig)) < 2) {
-        stop("Unexpected structure for the output of `latent_ilink`.")
-      }
-      loglik_forPSIS <- refmodel$family$latent_llOrig(
-        mu_Orig, yOrig = refmodel$yOrig, wobs = refmodel$wobs,
-        cl_ref = seq_along(refmodel$wsample), wdraws_ref = refmodel$wsample
-      )
-      if (!is.matrix(loglik_forPSIS)) {
-        stop("Unexpected structure for the output of `latent_llOrig`.")
-      }
-      if (length(dim(mu_Orig)) == 3) {
-        # In this case, `mu_Orig` is a 3-dimensional array (S x N x C), so
-        # coerce it to an augmented-rows matrix:
-        mu_Orig <- arr2augmat(mu_Orig, margin_draws = 1)
-        n_aug <- nrow(mu_Orig)
-      } else {
-        # In this case, `mu_Orig` is a matrix (S x N). Transposing it to an N x
-        # S matrix would be more consistent with projpred's internal convention,
-        # but avoiding the transposition is computationally more efficient:
-        n_aug <- ncol(mu_Orig)
-      }
+    mu_Orig <- refmodel$family$latent_ilink(
+      t(mu), cl_ref = seq_along(refmodel$wsample),
+      wdraws_ref = refmodel$wsample
+    )
+    if (length(dim(mu_Orig)) < 2) {
+      stop("Unexpected structure for the output of `latent_ilink`.")
+    }
+    loglik_forPSIS <- refmodel$family$latent_llOrig(
+      mu_Orig, yOrig = refmodel$yOrig, wobs = refmodel$wobs,
+      cl_ref = seq_along(refmodel$wsample), wdraws_ref = refmodel$wsample
+    )
+    if (!is.matrix(loglik_forPSIS)) {
+      stop("Unexpected structure for the output of `latent_llOrig`.")
+    }
+    if (all(is.na(loglik_forPSIS))) {
+      stop("In case of the latent projection, `cv_method = \"LOO\"` requires ",
+           "a function `latent_llOrig` that does not return only `NA`s.")
+    }
+    if (length(dim(mu_Orig)) == 3) {
+      # In this case, `mu_Orig` is a 3-dimensional array (S x N x C), so
+      # coerce it to an augmented-rows matrix:
+      mu_Orig <- arr2augmat(mu_Orig, margin_draws = 1)
+      n_aug <- nrow(mu_Orig)
     } else {
-      # Note: Since we have the following error message, all the
-      # `llOrig_possible` checks hereafter (in loo_varsel()) would in fact not
-      # be necessary. But we keep them in case the following error message
-      # should be removed one day (although it would then be hard to get
-      # `loglik_forPSIS`; rstantools::log_lik() could be an option for that).
-      stop("`cv_method = \"LOO\"` requires a suitable `latent_llOrig`.")
+      # In this case, `mu_Orig` is a matrix (S x N). Transposing it to an N x
+      # S matrix would be more consistent with projpred's internal convention,
+      # but avoiding the transposition is computationally more efficient:
+      n_aug <- ncol(mu_Orig)
     }
   } else {
     loglik_forPSIS <- refmodel$loglik
@@ -461,23 +456,24 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
       refdist_eval <- p_sel
     }
     if (refmodel$family$for_latent) {
-      if (refmodel$family$llOrig_possible) {
-        refdist_eval_mu_Orig <- refmodel$family$latent_ilink(
-          t(refdist_eval$mu), cl_ref = refdist_eval$cl,
-          wdraws_ref = refdist_eval$wsample_orig
-        )
-        if (length(dim(refdist_eval_mu_Orig)) == 3) {
-          refdist_eval_mu_Orig <- refdist_eval_mu_Orig[, inds, , drop = FALSE]
-        } else {
-          refdist_eval_mu_Orig <- refdist_eval_mu_Orig[, inds, drop = FALSE]
-        }
-        log_lik_ref <- refmodel$family$latent_llOrig(
-          refdist_eval_mu_Orig, yOrig = refmodel$yOrig[inds],
-          wobs = refmodel$wobs[inds], cl_ref = refdist_eval$cl,
-          wdraws_ref = refdist_eval$wsample_orig
-        )
+      refdist_eval_mu_Orig <- refmodel$family$latent_ilink(
+        t(refdist_eval$mu), cl_ref = refdist_eval$cl,
+        wdraws_ref = refdist_eval$wsample_orig
+      )
+      if (length(dim(refdist_eval_mu_Orig)) == 3) {
+        refdist_eval_mu_Orig <- refdist_eval_mu_Orig[, inds, , drop = FALSE]
       } else {
-        stop("`validate_search = FALSE` requires a suitable `latent_llOrig`.")
+        refdist_eval_mu_Orig <- refdist_eval_mu_Orig[, inds, drop = FALSE]
+      }
+      log_lik_ref <- refmodel$family$latent_llOrig(
+        refdist_eval_mu_Orig, yOrig = refmodel$yOrig[inds],
+        wobs = refmodel$wobs[inds], cl_ref = refdist_eval$cl,
+        wdraws_ref = refdist_eval$wsample_orig
+      )
+      if (all(is.na(log_lik_ref))) {
+        stop("In case of the latent projection, `validate_search = FALSE` ",
+             "requires a function `latent_llOrig` that does not return only ",
+             "`NA`s.")
       }
     } else {
       inds_aug <- inds

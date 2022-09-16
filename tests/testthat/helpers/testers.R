@@ -87,8 +87,7 @@ extfam_tester <- function(extfam,
     }
   } else if (extfam$for_latent) {
     extfam_nms_add <- c(extfam_nms_add, "familyOrig", "linkOrig",
-                        "llOrig_possible", "ppdOrig_possible", "latent_ilink",
-                        "latent_llOrig", "latent_ppdOrig")
+                        "latent_ilink", "latent_llOrig", "latent_ppdOrig")
     if (extfam$familyOrig != "binomial") {
       extfam_nms_add <- c(extfam_nms_add, "cats")
     }
@@ -159,12 +158,6 @@ extfam_tester <- function(extfam,
   if ("linkOrig" %in% names(extfam)) {
     expect_true(extfam$linkOrig %in% link_str, info = info_str)
   }
-  if ("llOrig_possible" %in% names(extfam)) {
-    expect_true(extfam$llOrig_possible, info = info_str)
-  }
-  if ("ppdOrig_possible" %in% names(extfam)) {
-    expect_true(extfam$ppdOrig_possible, info = info_str)
-  }
   if ("latent_llOrig" %in% names(extfam)) {
     if (extfam$familyOrig == "binomial") {
       expect_identical(extfam$latent_llOrig, latent_llOrig_binom_nocats,
@@ -193,8 +186,8 @@ extfam_tester <- function(extfam,
   expect_true(extfam$is_extended, info = info_str)
   el_nms_clos <- setdiff(
     extfam_nms_add,
-    c("familyOrig", "linkOrig", "llOrig_possible", "ppdOrig_possible",
-      "refcat", "cats", "for_latent", "for_augdat", "is_extended")
+    c("familyOrig", "linkOrig", "refcat", "cats", "for_latent", "for_augdat",
+      "is_extended")
   )
   for (el_nm in el_nms_clos) {
     expect_type(extfam[[el_nm]], "closure")

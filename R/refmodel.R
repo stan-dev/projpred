@@ -506,9 +506,6 @@ predict.refmodel <- function(object, newdata = NULL, ynew = NULL,
           "`NA` as long as `type = \"response\"`."
         )
       } else if (all(is.na(loglik))) {
-        # This is basically the same case as
-        # `!object$family$llOrig_possible`, but also covering
-        # user-supplied `latent_llOrig` functions which return only `NA`s.
         message(
           "`latent_llOrig` returned only `NA`s, so the output will also be ",
           "`NA` as long as `type = \"response\"`."
