@@ -1246,17 +1246,17 @@ init_refmodel <- function(object, data, formula, family, ref_predfun = NULL,
           "To calculate these, supply argument `dis` (if possible). ",
           "Alternatively, switch to `respOrig = TRUE` in downstream analyses ",
           "(which might require the specification of functions needed by ",
-          "extend_family()), or use a performance statistic other than ELPD ",
-          "or MLPD in downstream analyses. Furthermore, proj_predict() won't ",
-          "be able to draw from the latent Gaussian distribution. To draw ",
-          "from it, supply argument `dis` (if possible). Alternatively, ",
-          "switch to `respOrig = TRUE` in proj_predict(). Finally, ",
-          "predict.refmodel() and proj_linpred() won't be able to calculate ",
-          "log predictive density (LPD) values on latent scale. To calculate ",
-          "these, supply argument `dis` (if possible). Alternatively, switch ",
-          "to `type = \"response\"` in predict.refmodel() or ",
-          "`transform = TRUE` in proj_linpred() (which might require the ",
-          "specification of functions needed by extend_family())."
+          "extend_family()) or use a performance statistic other than ELPD or ",
+          "MLPD in downstream analyses. Furthermore, proj_predict() won't be ",
+          "able to draw from the latent Gaussian distribution. To draw from ",
+          "it, supply argument `dis` (if possible). Alternatively, switch to ",
+          "`respOrig = TRUE` in proj_predict(). Finally, predict.refmodel() ",
+          "and proj_linpred() won't be able to calculate log predictive ",
+          "density (LPD) values on latent scale. To calculate these, supply ",
+          "argument `dis` (if possible). Alternatively, switch to ",
+          "`type = \"response\"` in predict.refmodel() or `transform = TRUE` ",
+          "in proj_linpred() (which might require the specification of ",
+          "functions needed by extend_family())."
         )
       }
     } else if (!.has_dispersion(family)) {
