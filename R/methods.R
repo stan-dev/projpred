@@ -129,8 +129,6 @@ proj_helper <- function(object, newdata, offsetnew, weightsnew, onesub_fun,
   }
 
   if (is.null(newdata)) {
-    ## pick first projection's function
-    newdata <- projs[[1]]$refmodel$fetch_data()
     extract_y_ind <- TRUE
   } else {
     if (!inherits(newdata, c("matrix", "data.frame"))) {
@@ -174,10 +172,10 @@ proj_helper <- function(object, newdata, offsetnew, weightsnew, onesub_fun,
     weightsnew <- w_o$weights
     offsetnew <- w_o$offset
     if (length(weightsnew) == 0) {
-      weightsnew <- rep(1, NROW(newdata))
+      weightsnew <- rep(1, NROW(newdata %||% proj$refmodel$fetch_data()))
     }
     if (length(offsetnew) == 0) {
-      offsetnew <- rep(0, NROW(newdata))
+      offsetnew <- rep(0, NROW(newdata %||% proj$refmodel$fetch_data()))
     }
     onesub_fun(proj, newdata = newdata, offset = offsetnew,
                weights = weightsnew, extract_y_ind = extract_y_ind, ...)
