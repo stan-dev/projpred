@@ -296,7 +296,7 @@ proj_linpred_aux <- function(proj, newdata, offset, weights, transform = FALSE,
                             class = oldClass(pred_sub))
     }
     if (!is.null(lpd_out)) {
-      if (!proj$refmodel$family$for_latent) {
+      if (!(proj$refmodel$family$for_latent && transform)) {
         marg_obs <- 1
       } else {
         marg_obs <- 2
@@ -313,7 +313,8 @@ proj_linpred_aux <- function(proj, newdata, offset, weights, transform = FALSE,
   }
   if (!is.null(lpd_out) &&
       (!proj$refmodel$family$for_latent ||
-       (proj$refmodel$family$for_latent && integrated))) {
+       (proj$refmodel$family$for_latent && integrated) ||
+       (proj$refmodel$family$for_latent && !transform))) {
     lpd_out <- t(lpd_out)
   }
   return(nlist(pred = pred_sub, lpd = lpd_out))
