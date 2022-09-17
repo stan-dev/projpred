@@ -281,12 +281,11 @@ proj_linpred_aux <- function(proj, newdata, offset, weights, transform = FALSE,
   }
   lpd_out <- compute_lpd(ynew = ynew, pred_sub = pred_sub, proj = proj,
                          weights = weights, transformed = transform)
-  if (proj$refmodel$family$for_latent && transform) {
-    if (length(dim(pred_sub)) == 3 && integrated) {
+  if (integrated) {
+    if (proj$refmodel$family$for_latent && transform &&
+        length(dim(pred_sub)) == 3) {
       pred_sub <- arr2augmat(pred_sub, margin_draws = 1)
     }
-  }
-  if (integrated) {
     ## average over the projected draws
     if (proj$refmodel$family$for_latent && transform &&
         !inherits(pred_sub, "augmat")) {
