@@ -511,16 +511,32 @@ predict.refmodel <- function(object, newdata = NULL, ynew = NULL,
       S <- nrow(loglik)
       marg_obs <- 2
     } else {
-      if (object$family$for_latent && all(is.na(object$dis))) {
-        # There's already a corresponding message thrown at the time when the
-        # reference model was built, but users might have forgotten about it, so
-        # throw another one here:
-        message(
-          "Cannot calculate LPD values if `type = \"link\"` and ",
-          "`<refmodel>$dis` consists of only `NA`s. You should have received ",
-          "a message describing possible remedies when the reference model ",
-          "was built."
-        )
+      if (object$family$for_latent) {
+        if (all(is.na(object$dis))) {
+          # There's already a corresponding message thrown at the time when the
+          # reference model was built, but users might have forgotten about it,
+          # so throw another one here:
+          message(
+            "Cannot calculate LPD values if `type = \"link\"` and ",
+            "`<refmodel>$dis` consists of only `NA`s. You should have ",
+            "received a message describing possible remedies when the ",
+            "reference model was built."
+          )
+        }
+        newdata_lat <- newdata
+        if (inherits(object$fit, "stanreg") && length(object$fit$offset) > 0) {
+          if (is.null(newdata_lat)) {
+            newdata_lat <- object$fetch_data()
+            newdata_lat$projpred_internal_offs_stanreg <- offsetnew
+          }
+        }
+        # Use `ref_predfun_usr` here (instead of `ref_predfun`) to include
+        # offsets:
+        refprd_with_offs <- get("ref_predfun_usr",
+                                envir = environment(object$ref_predfun))
+        ynew <- rowMeans(unname(
+          refprd_with_offs(fit = object$fit, newdata = newdata_lat)
+        ))
       }
       loglik <- object$family$ll_fun(
         object$family$linkinv(eta), object$dis, ynew, weightsnew
