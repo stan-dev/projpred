@@ -216,7 +216,12 @@ test_that(paste(
     }
 
     # Checks with `ynew`:
-    expect_equal(predref_ynew_resp, predref_ynew_link, info = tstsetup)
+    if (prj_crr != "latent") {
+      expect_equal(predref_ynew_resp, predref_ynew_link, info = tstsetup)
+    } else {
+      expect_false(isTRUE(all.equal(predref_ynew_resp, predref_ynew_link)),
+                   info = tstsetup)
+    }
     expect_true(is.vector(predref_ynew_resp, "double"), info = tstsetup)
     expect_length(predref_ynew_resp, nobsv)
     expect_false(isTRUE(all.equal(predref_ynew_resp, predref_resp)),
