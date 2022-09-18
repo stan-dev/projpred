@@ -48,21 +48,28 @@ get_formul_from_fit <- function(fit_obj) {
 
 # A function to adapt a given dataset (`dat`) appropriately to a given formula
 # (`formul_crr`):
-get_dat_formul <- function(formul_crr, needs_adj, dat_crr = dat) {
+get_dat_formul <- function(formul_crr, needs_adj, dat_crr = dat,
+                           add_offs_dummy = FALSE) {
   if (needs_adj) {
     stdized_lhs <- stdize_lhs(formul_crr)
     dat_crr[[stdized_lhs$y_nm]] <- eval(str2lang(stdized_lhs$y_nm_orig),
                                         dat_crr)
+  }
+  if (add_offs_dummy) {
+    # Needed in some latent projection cases where posterior_linpred.stanreg()
+    # complains about `offs_col` not found, even though its argument `offset` is
+    # used. The specific value doesn't matter:
+    dat_crr$offs_col <- 42
   }
   return(dat_crr)
 }
 
 # A function to adapt a given dataset (`dat`) appropriately to a given "test
 # setup" (`tstsetup`):
-get_dat <- function(tstsetup, dat_crr = dat) {
+get_dat <- function(tstsetup, dat_crr = dat, ...) {
   get_dat_formul(args_fit[[args_prj[[tstsetup]]$tstsetup_fit]]$formula,
                  needs_adj = grepl("\\.spclformul", tstsetup),
-                 dat_crr = dat_crr)
+                 dat_crr = dat_crr, ...)
 }
 
 # A function to get the elements which may be supplied to argument `penalty`:

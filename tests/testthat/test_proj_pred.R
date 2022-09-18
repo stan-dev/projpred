@@ -468,8 +468,11 @@ test_that("`offsetnew` works", {
     pl_orig <- pls[[tstsetup]]
     if (args_prj[[tstsetup]]$pkg_nm != "brms") {
       # TODO (brms): Fix or document why this doesn't work for "brmsfit"s.
+      add_offs_crr <- args_prj[[tstsetup]]$prj_nm == "latent" &&
+        grepl("\\.with_offs\\.", tstsetup)
       pl_zeros <- proj_linpred(prjs[[tstsetup]],
-                               newdata = get_dat(tstsetup, dat_offs_zeros),
+                               newdata = get_dat(tstsetup, dat_offs_zeros,
+                                                 add_offs_dummy = add_offs_crr),
                                offsetnew = ~ offs_col_zeros)
       pl_tester(pl_zeros,
                 nprjdraws_expected = ndr_ncl$nprjdraws,
@@ -486,7 +489,8 @@ test_that("`offsetnew` works", {
     if (args_prj[[tstsetup]]$pkg_nm != "brms") {
       # TODO (brms): Fix or document why this doesn't work for "brmsfit"s.
       plo <- proj_linpred(prjs[[tstsetup]],
-                          newdata = get_dat(tstsetup, dat_offs_new),
+                          newdata = get_dat(tstsetup, dat_offs_new,
+                                            add_offs_dummy = add_offs_crr),
                           offsetnew = ~ offs_col_new)
       pl_tester(plo,
                 nprjdraws_expected = ndr_ncl$nprjdraws,
@@ -528,10 +532,22 @@ test_that("`offsetnew` works", {
           pred_plo_no_offs <- pred_plo_no_offs - dat_offs_new$offs_col_new
         }
         expect_equal(pred_plo_no_offs, t(pred_pl_orig), info = tstsetup)
-        expect_false(isTRUE(all.equal(pl$lpd, pl_orig$lpd)), info = tstsetup)
+        if (args_prj[[tstsetup]]$prj_nm != "latent") {
+          expect_false(isTRUE(all.equal(pl$lpd, pl_orig$lpd)), info = tstsetup)
+          expect_false(isTRUE(all.equal(plo$lpd, pl_orig$lpd)), info = tstsetup)
+          expect_false(isTRUE(all.equal(plo$lpd, pl$lpd)), info = tstsetup)
+        } else {
+          # Latent projection is an exception because the reference model's
+          # latent predictions (i.e., the artificial latent response `ynew`
+          # recomputed inside of proj_linpred_aux()) are shifted by the same
+          # offsets as the submodel's predictions (i.e., the mean values for the
+          # latent Gaussian distributions), so the log predictive values are
+          # unchanged:
+          expect_equal(pl$lpd, pl_orig$lpd, info = tstsetup)
+          expect_equal(plo$lpd, pl_orig$lpd, info = tstsetup)
+          expect_equal(plo$lpd, pl$lpd, info = tstsetup)
+        }
         ###
-        expect_false(isTRUE(all.equal(plo$lpd, pl_orig$lpd)), info = tstsetup)
-        expect_false(isTRUE(all.equal(plo$lpd, pl$lpd)), info = tstsetup)
       } else if (args_prj[[tstsetup]]$pkg_nm == "brms") {
         expect_equal(pl, pl_orig, info = tstsetup)
       }
@@ -1231,8 +1247,11 @@ test_that("`offsetnew` works", {
     pp_orig <- pps[[tstsetup]]
     if (args_prj[[tstsetup]]$pkg_nm != "brms") {
       # TODO (brms): Fix or document why this doesn't work for "brmsfit"s.
+      add_offs_crr <- args_prj[[tstsetup]]$prj_nm == "latent" &&
+        grepl("\\.with_offs\\.", tstsetup)
       pp_zeros <- proj_predict(prjs[[tstsetup]],
-                               newdata = dat_offs_zeros,
+                               newdata = get_dat(tstsetup, dat_offs_zeros,
+                                                 add_offs_dummy = add_offs_crr),
                                offsetnew = ~ offs_col_zeros,
                                .seed = seed2_tst)
       pp_tester(pp_zeros,
@@ -1255,7 +1274,8 @@ test_that("`offsetnew` works", {
     if (args_prj[[tstsetup]]$pkg_nm != "brms") {
       # TODO (brms): Fix or document why this doesn't work for "brmsfit"s.
       ppo <- proj_predict(prjs[[tstsetup]],
-                          newdata = dat_offs_new,
+                          newdata = get_dat(tstsetup, dat_offs_new,
+                                            add_offs_dummy = add_offs_crr),
                           offsetnew = ~ offs_col_new,
                           .seed = seed2_tst)
       pp_tester(ppo,
