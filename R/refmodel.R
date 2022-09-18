@@ -396,11 +396,7 @@ predict.refmodel <- function(object, newdata = NULL, ynew = NULL,
          "extend_family()'s argument `latent_y_unqs` to solve this.")
   }
 
-  if (is.null(newdata)) {
-    isnew_newdata <- FALSE
-    newdata <- object$fetch_data()
-  } else {
-    isnew_newdata <- TRUE
+  if (!is.null(newdata)) {
     newdata <- na.fail(newdata)
   }
   w_o <- object$extract_model_data(object$fit, newdata = newdata,
@@ -421,8 +417,9 @@ predict.refmodel <- function(object, newdata = NULL, ynew = NULL,
     stop("Currently, the latent projection may not be combined with ",
          "observation weights (other than 1).")
   }
-  if (inherits(object$fit, "stanreg") && length(object$fit$offset) > 0) {
-    if (isnew_newdata && "projpred_internal_offs_stanreg" %in% names(newdata)) {
+  if (!is.null(newdata) && inherits(object$fit, "stanreg") &&
+      length(object$fit$offset) > 0) {
+    if ("projpred_internal_offs_stanreg" %in% names(newdata)) {
       stop("Need to write to column `projpred_internal_offs_stanreg` of ",
            "`newdata`, but that column already exists. Please rename this ",
            "column in `newdata` and try again.")
@@ -476,7 +473,7 @@ predict.refmodel <- function(object, newdata = NULL, ynew = NULL,
     }
     if (was_augmat) {
       pred <- structure(pred,
-                        nobs_orig = nrow(newdata),
+                        nobs_orig = nrow(newdata %||% object$fetch_data()),
                         class = "augvec")
       pred <- augmat2arr(augvec2augmat(pred))
       pred <- matrix(pred, nrow = dim(pred)[1], ncol = dim(pred)[2])
