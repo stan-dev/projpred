@@ -269,12 +269,26 @@ proj_linpred_aux <- function(proj, newdata, offset, weights, transform = FALSE,
   )
   ynew <- w_o$y
   if (!is.null(ynew) && proj$refmodel$family$for_latent && !transform) {
+    newdata_lat <- newdata
+    if (inherits(proj$refmodel$fit, "stanreg") &&
+        length(proj$refmodel$fit$offset) > 0) {
+      if (!is.null(newdata_lat)) {
+        if ("projpred_internal_offs_stanreg" %in% names(newdata_lat)) {
+          stop("Need to write to column `projpred_internal_offs_stanreg` of ",
+               "`newdata`, but that column already exists. Please rename this ",
+               "column in `newdata` and try again.")
+        }
+      } else {
+        newdata_lat <- proj$refmodel$fetch_data()
+      }
+      newdata_lat$projpred_internal_offs_stanreg <- offset
+    }
     # Use `ref_predfun_usr` here (instead of `ref_predfun`) to include
     # offsets:
     refprd_with_offs <- get("ref_predfun_usr",
                             envir = environment(proj$refmodel$ref_predfun))
     ynew <- rowMeans(unname(
-      refprd_with_offs(fit = proj$refmodel$fit, newdata = newdata)
+      refprd_with_offs(fit = proj$refmodel$fit, newdata = newdata_lat)
     ))
   }
   lpd_out <- compute_lpd(ynew = ynew, pred_sub = pred_sub, proj = proj,
