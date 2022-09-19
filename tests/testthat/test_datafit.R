@@ -603,7 +603,6 @@ test_that(paste(
   b <- seq(0, 1, length.out = nterms)
   dis <- runif(1, 0.3, 0.5)
   weights <- sample(1:4, n, replace = TRUE)
-  offset <- rep(0, n)
 
   fams <- list(gaussian(), binomial(), poisson())
   x_list <- lapply(fams, function(fam) x)
@@ -660,9 +659,6 @@ test_that(paste(
       if ("weights" %in% colnames(newdata)) {
         wrhs <- ~ weights
       }
-      if ("offset" %in% colnames(newdata)) {
-        orhs <- ~ offset
-      }
       if ("y" %in% colnames(newdata)) {
         resp_form <- ~ y
       }
@@ -699,10 +695,8 @@ test_that(paste(
     ))
     expect_warning(
       pred1 <- proj_linpred(vs,
-                            newdata = data.frame(x = x, offset = offset,
-                                                 weights = weights),
+                            newdata = data.frame(x = x, weights = weights),
                             nterms = 0:nterms, transform = FALSE,
-                            offsetnew = ~offset,
                             refit_prj = FALSE),
       paste("^Currently, `refit_prj = FALSE` requires some caution, see GitHub",
             "issues #168 and #211\\.$"),
@@ -712,7 +706,6 @@ test_that(paste(
     # compute the results for the Lasso
     lasso <- glmnet::glmnet(x, y_glmnet,
                             family = fam$family, weights = weights,
-                            offset = offset,
                             lambda.min.ratio = lambda_min_ratio,
                             nlambda = nlambda, thresh = 1e-12)
     solution_terms <- predict(lasso, type = "nonzero", s = lasso$lambda)
@@ -722,8 +715,7 @@ test_that(paste(
     })
     ## lambdaval <- lasso$lambda[lambdainds]
     ## pred2 <- predict(lasso,
-    ##   newx = x, type = "link", s = lambdaval,
-    ##   newoffset = offset
+    ##   newx = x, type = "link", s = lambdaval
     ## )
 
     # check that the predictions agree (up to nterms-2 only, because glmnet
