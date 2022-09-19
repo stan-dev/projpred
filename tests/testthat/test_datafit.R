@@ -16,13 +16,7 @@ context("datafit")
     weights <- wrhs
   }
 
-  if (inherits(orhs, "formula")) {
-    offset <- eval_rhs(orhs, newdata)
-  } else if (is.null(orhs)) {
-    offset <- newdata$offs_col
-  } else {
-    offset <- orhs
-  }
+  offset <- rep(0, nrow(newdata))
 
   if (inherits(resp_form, "formula")) {
     y <- eval_rhs(resp_form, newdata)
@@ -62,9 +56,6 @@ datafits <- lapply(args_datafit, function(args_datafit_i) {
     }
     if (args_datafit_i$fam_nm == "brnll") {
       newdata$wobs_col <- 1
-    }
-    if (grepl("\\.without_offs", args_datafit_i$tstsetup_fit)) {
-      newdata$offs_col <- 0
     }
     args <- nlist(object, newdata, wrhs, orhs, resp_form)
     return(do.call(.extrmoddat_datafit, args))
@@ -202,11 +193,6 @@ test_that("init_refmodel(): `object` of class \"datafit\" works", {
     } else {
       wobs_expected_crr <- rep(1, nobsv)
     }
-    if (grepl("\\.with_offs", tstsetup)) {
-      offs_expected_crr <- offs_tst
-    } else {
-      offs_expected_crr <- rep(0, nobsv)
-    }
     refmodel_tester(
       datafits[[tstsetup]],
       is_datafit = TRUE,
@@ -215,7 +201,7 @@ test_that("init_refmodel(): `object` of class \"datafit\" works", {
       formul_expected = get_formul_from_fit(fits[[tstsetup_fit]]),
       with_spclformul = with_spclformul_crr,
       wobs_expected = wobs_expected_crr,
-      offs_expected = offs_expected_crr,
+      offs_expected = rep(0, nobsv),
       nrefdraws_expected = 1L,
       fam_orig = get(paste0("f_", args_datafit[[tstsetup]]$fam_nm)),
       mod_nm = args_datafit[[tstsetup]]$mod_nm,
@@ -423,7 +409,6 @@ test_that(paste(
         tail(nobsv_tst, 1)
       ),
       weightsnew = ~ wobs_col,
-      offsetnew = ~ offs_col,
       filter_nterms = nterms_crr[1]
     )
     pl_tester(pl_with_args,
@@ -462,7 +447,6 @@ test_that(paste(
       prjs_vs_datafit[[tstsetup]],
       newdata = head(dat, tail(nobsv_tst, 1)),
       weightsnew = ~ wobs_col,
-      offsetnew = ~ offs_col,
       filter_nterms = nterms_crr[1],
       nresample_clusters = tail(nresample_clusters_tst, 1),
       .seed = seed2_tst
@@ -619,7 +603,7 @@ test_that(paste(
   b <- seq(0, 1, length.out = nterms)
   dis <- runif(1, 0.3, 0.5)
   weights <- sample(1:4, n, replace = TRUE)
-  offset <- 0.1 * rnorm(n)
+  offset <- rep(0, n)
 
   fams <- list(gaussian(), binomial(), poisson())
   x_list <- lapply(fams, function(fam) x)
@@ -752,11 +736,12 @@ test_that(paste(
     ind <- match(vs$solution_terms, setdiff(split_formula(formula), "1"))
     if (Sys.getenv("NOT_CRAN") == "true") {
       betas <- sapply(vs$search_path$submodls, function(x) x[[1]]$beta %||% 0)
-      delta <- sapply(seq_len(nterms), function(i) {
+      delta <- sapply(seq_len(length(lambdainds) - 1), function(i) {
         abs(t(betas[[i + 1]]) - lasso$beta[ind[1:i], lambdainds[i + 1]])
       })
       expect_true(median(unlist(delta)) < 6e-2)
-      expect_true(median(abs(sapply(vs$search_path$submodls, function(x) {
+      expect_true(median(abs(sapply(head(vs$search_path$submodls,
+                                         length(lambdainds)), function(x) {
         x[[1]]$alpha
       }) - lasso$a0[lambdainds])) < 1.5e-1)
     } else {
