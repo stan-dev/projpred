@@ -457,7 +457,12 @@ proj_predict_aux <- function(proj, newdata, offset, weights,
     if (!is.matrix(pppd_out)) {
       stop("Unexpected structure for the output of `latent_ppdOrig`.")
     }
-    if (all(is.na(pppd_out))) {
+    if (all(is.na(mu_Orig))) {
+      message(
+        "`latent_ilink` returned only `NA`s, so the output will also be ",
+        "`NA` as long as `respOrig = TRUE`."
+      )
+    } else if (all(is.na(pppd_out))) {
       message(
         "`latent_ppdOrig` returned only `NA`s, so the output will also be ",
         "`NA` as long as `respOrig = TRUE`."
