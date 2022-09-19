@@ -134,14 +134,13 @@
   } else if (varsel$refmodel$family$for_latent &&
              all(is.na(varsel$refmodel$dis)) &&
              any(stats %in% c("elpd", "mlpd"))) {
-    # There's already a corresponding message thrown at the time when the
-    # reference model was built, but users might have forgotten about it, so
-    # throw another one here:
     message(
       "Cannot calculate ELPD or MLPD if `respOrig = FALSE` and ",
-      "`<refmodel>$dis` consists of only `NA`s. You should have received a ",
-      "message describing possible remedies when the reference model was ",
-      "built."
+      "`<refmodel>$dis` consists of only `NA`s. If it's not possible to ",
+      "supply a suitable argument `dis` to init_refmodel(), consider (i) ",
+      "switching to `respOrig = TRUE` (which might require the specification ",
+      "of functions needed by extend_family()) or (ii) using a performance ",
+      "statistic other than ELPD or MLPD."
     )
   }
   if (respOrig && !is.null(varsel$refmodel$family$cats) &&

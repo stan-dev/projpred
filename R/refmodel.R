@@ -513,14 +513,12 @@ predict.refmodel <- function(object, newdata = NULL, ynew = NULL,
     } else {
       if (object$family$for_latent) {
         if (all(is.na(object$dis))) {
-          # There's already a corresponding message thrown at the time when the
-          # reference model was built, but users might have forgotten about it,
-          # so throw another one here:
           message(
             "Cannot calculate LPD values if `type = \"link\"` and ",
-            "`<refmodel>$dis` consists of only `NA`s. You should have ",
-            "received a message describing possible remedies when the ",
-            "reference model was built."
+            "`<refmodel>$dis` consists of only `NA`s. If it's not possible to ",
+            "supply a suitable argument `dis` to init_refmodel(), consider ",
+            "switching to `type = \"response\"` (which might require the ",
+            "specification of functions needed by extend_family())."
           )
         }
         newdata_lat <- newdata
@@ -1254,22 +1252,10 @@ init_refmodel <- function(object, data, formula, family, ref_predfun = NULL,
       if (all(is.na(dis))) {
         message(
           "Since `<refmodel>$dis` will consist of only `NA`s, downstream ",
-          "analyses based on this reference model won't be able to calculate ",
-          "the ELPD or MLPD on latent scale (i.e., with `respOrig = FALSE`). ",
-          "To calculate these, supply argument `dis` (if possible). ",
-          "Alternatively, switch to `respOrig = TRUE` in downstream analyses ",
-          "(which might require the specification of functions needed by ",
-          "extend_family()) or use a performance statistic other than ELPD or ",
-          "MLPD in downstream analyses. Furthermore, proj_predict() won't be ",
-          "able to draw from the latent Gaussian distribution. To draw from ",
-          "it, supply argument `dis` (if possible). Alternatively, switch to ",
-          "`respOrig = TRUE` in proj_predict(). Finally, predict.refmodel() ",
-          "and proj_linpred() won't be able to calculate log predictive ",
-          "density (LPD) values on latent scale. To calculate these, supply ",
-          "argument `dis` (if possible). Alternatively, switch to ",
-          "`type = \"response\"` in predict.refmodel() or `transform = TRUE` ",
-          "in proj_linpred() (which might require the specification of ",
-          "functions needed by extend_family())."
+          "analyses based on this reference model won't be able to use log ",
+          "predictive density (LPD) values on latent scale. Furthermore, ",
+          "proj_predict() won't be able to draw from the latent Gaussian ",
+          "distribution."
         )
       }
     } else if (!.has_dispersion(family)) {

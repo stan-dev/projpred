@@ -383,14 +383,12 @@ compute_lpd <- function(ynew, pred_sub, proj, weights, transformed) {
       return(llOrig_out)
     } else {
       if (proj$refmodel$family$for_latent && all(is.na(proj$refmodel$dis))) {
-        # There's already a corresponding message thrown at the time when the
-        # reference model was built, but users might have forgotten about it, so
-        # throw another one here:
         message(
           "Cannot calculate LPD values if `transform = FALSE` and ",
-          "`<refmodel>$dis` consists of only `NA`s. You should have received ",
-          "a message describing possible remedies when the reference model ",
-          "was built."
+          "`<refmodel>$dis` consists of only `NA`s. If it's not possible to ",
+          "supply a suitable argument `dis` to init_refmodel(), consider ",
+          "switching to `transform = TRUE` (which might require the ",
+          "specification of functions needed by extend_family())."
         )
       }
       return(proj$refmodel$family$ll_fun(pred_sub, proj$dis, ynew, weights))
@@ -473,14 +471,12 @@ proj_predict_aux <- function(proj, newdata, offset, weights,
         cats_aug <- NULL
       }
       if (all(is.na(proj$refmodel$dis))) {
-        # There's already a corresponding message thrown at the time when the
-        # reference model was built, but users might have forgotten about it, so
-        # throw another one here:
         message(
           "Cannot draw from the latent Gaussian distribution if ",
-          "`<refmodel>$dis` consists of only `NA`s. You should have received ",
-          "a message describing possible remedies when the reference model ",
-          "was built."
+          "`<refmodel>$dis` consists of only `NA`s. If it's not possible to ",
+          "supply a suitable argument `dis` to init_refmodel(), consider ",
+          "switching to `respOrig = TRUE` (which might require the ",
+          "specification of functions needed by extend_family())."
         )
       }
     }
