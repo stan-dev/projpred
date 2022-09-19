@@ -78,6 +78,28 @@ latent_ppdOrig_poiss <- function(ilpreds_resamp, wobs, cl_ref,
   return(ppd)
 }
 
+# This is the function which would have to be supplied to extend_family()'s
+# argument `latent_llOrig` in case of the latent projection for a family for
+# which response-scale log predictive density (LPD) values cannot or should not
+# be calculated. Note the "*would* have to be supplied": This function is used
+# by default (internally) in the described situation.
+latent_llOrig_NA <- function(ilpreds, yOrig,
+                             wobs = rep(1, length(yOrig)), cl_ref,
+                             wdraws_ref = rep(1, length(cl_ref))) {
+  return(array(dim = dim(ilpreds)[1:2]))
+}
+
+# This is the function which would have to be supplied to extend_family()'s
+# argument `latent_ppdOrig` in case of the latent projection for a family for
+# which response-scale log predictive density (LPD) values cannot or should not
+# be calculated. Note the "*would* have to be supplied": This function is used
+# by default (internally) in the described situation.
+latent_ppdOrig_NA <- function(ilpreds_resamp, wobs, cl_ref,
+                              wdraws_ref = rep(1, length(cl_ref)),
+                              idxs_prjdraws) {
+  return(array(dim = dim(ilpreds_resamp)[1:2]))
+}
+
 #' Weighted averaging within clusters of parameter draws
 #'
 #' This function aggregates \eqn{S} parameter draws that have been clustered

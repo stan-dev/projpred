@@ -299,11 +299,7 @@ extend_family <- function(family,
         } else if (family$familyOrig == "poisson") {
           latent_llOrig <- latent_llOrig_poiss
         } else {
-          latent_llOrig <- function(ilpreds, yOrig,
-                                    wobs = rep(1, length(yOrig)), cl_ref,
-                                    wdraws_ref = rep(1, length(cl_ref))) {
-            return(array(dim = dim(ilpreds)[1:2]))
-          }
+          latent_llOrig <- latent_llOrig_NA
           message("`latent_llOrig` was `NULL` and a suitable internal default ",
                   "could not be found (other than a function returning only ",
                   "`NA`s). Thus, cv_varsel() with `cv_method = \"LOO\"` won't ",
@@ -321,11 +317,7 @@ extend_family <- function(family,
         } else if (family$familyOrig == "poisson") {
           latent_ppdOrig <- latent_ppdOrig_poiss
         } else {
-          latent_ppdOrig <- function(ilpreds_resamp, wobs, cl_ref,
-                                     wdraws_ref = rep(1, length(cl_ref)),
-                                     idxs_prjdraws) {
-            return(array(dim = dim(ilpreds_resamp)[1:2]))
-          }
+          latent_ppdOrig <- latent_ppdOrig_NA
           message("`latent_ppdOrig` was `NULL` and a suitable internal ",
                   "default could not be found (other than a function ",
                   "returning only `NA`s). Thus, proj_predict() won't work on ",
