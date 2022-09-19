@@ -2,6 +2,12 @@ context("datafit")
 
 # Setup -------------------------------------------------------------------
 
+# Note: Since PR #351, offsets are not supported anymore for `datafit`s. Here,
+# we use the data as generated in `setup.R`, i.e., sometimes with offsets. So
+# far, this doesn't seem to cause problems in the submodel fitting routines, but
+# it might do in the future. Then, either the scenarios including offsets have
+# to be excluded or new data has to be generated without offsets.
+
 .extrmoddat_datafit <- function(object, newdata = NULL, wrhs = NULL,
                                 orhs = NULL, resp_form = NULL) {
   if (is.null(newdata)) {
@@ -16,13 +22,7 @@ context("datafit")
     weights <- wrhs
   }
 
-  if (inherits(orhs, "formula")) {
-    offset <- eval_rhs(orhs, newdata)
-  } else if (is.null(orhs)) {
-    offset <- newdata$offs_col
-  } else {
-    offset <- orhs
-  }
+  offset <- rep(0, nrow(newdata))
 
   if (inherits(resp_form, "formula")) {
     y <- eval_rhs(resp_form, newdata)
@@ -62,9 +62,6 @@ datafits <- lapply(args_datafit, function(args_datafit_i) {
     }
     if (args_datafit_i$fam_nm == "brnll") {
       newdata$wobs_col <- 1
-    }
-    if (grepl("\\.without_offs", args_datafit_i$tstsetup_fit)) {
-      newdata$offs_col <- 0
     }
     args <- nlist(object, newdata, wrhs, orhs, resp_form)
     return(do.call(.extrmoddat_datafit, args))
@@ -202,11 +199,6 @@ test_that("init_refmodel(): `object` of class \"datafit\" works", {
     } else {
       wobs_expected_crr <- rep(1, nobsv)
     }
-    if (grepl("\\.with_offs", tstsetup)) {
-      offs_expected_crr <- offs_tst
-    } else {
-      offs_expected_crr <- rep(0, nobsv)
-    }
     refmodel_tester(
       datafits[[tstsetup]],
       is_datafit = TRUE,
@@ -215,7 +207,7 @@ test_that("init_refmodel(): `object` of class \"datafit\" works", {
       formul_expected = get_formul_from_fit(fits[[tstsetup_fit]]),
       with_spclformul = with_spclformul_crr,
       wobs_expected = wobs_expected_crr,
-      offs_expected = offs_expected_crr,
+      offs_expected = rep(0, nobsv),
       nrefdraws_expected = 1L,
       fam_orig = get(paste0("f_", args_datafit[[tstsetup]]$fam_nm)),
       mod_nm = args_datafit[[tstsetup]]$mod_nm,
@@ -423,7 +415,6 @@ test_that(paste(
         tail(nobsv_tst, 1)
       ),
       weightsnew = ~ wobs_col,
-      offsetnew = ~ offs_col,
       filter_nterms = nterms_crr[1]
     )
     pl_tester(pl_with_args,
@@ -462,7 +453,6 @@ test_that(paste(
       prjs_vs_datafit[[tstsetup]],
       newdata = head(dat, tail(nobsv_tst, 1)),
       weightsnew = ~ wobs_col,
-      offsetnew = ~ offs_col,
       filter_nterms = nterms_crr[1],
       nresample_clusters = tail(nresample_clusters_tst, 1),
       .seed = seed2_tst
@@ -619,7 +609,6 @@ test_that(paste(
   b <- seq(0, 1, length.out = nterms)
   dis <- runif(1, 0.3, 0.5)
   weights <- sample(1:4, n, replace = TRUE)
-  offset <- 0.1 * rnorm(n)
 
   fams <- list(gaussian(), binomial(), poisson())
   x_list <- lapply(fams, function(fam) x)
@@ -676,9 +665,6 @@ test_that(paste(
       if ("weights" %in% colnames(newdata)) {
         wrhs <- ~ weights
       }
-      if ("offset" %in% colnames(newdata)) {
-        orhs <- ~ offset
-      }
       if ("y" %in% colnames(newdata)) {
         resp_form <- ~ y
       }
@@ -715,10 +701,8 @@ test_that(paste(
     ))
     expect_warning(
       pred1 <- proj_linpred(vs,
-                            newdata = data.frame(x = x, offset = offset,
-                                                 weights = weights),
+                            newdata = data.frame(x = x, weights = weights),
                             nterms = 0:nterms, transform = FALSE,
-                            offsetnew = ~offset,
                             refit_prj = FALSE),
       paste("^Currently, `refit_prj = FALSE` requires some caution, see GitHub",
             "issues #168 and #211\\.$"),
@@ -728,7 +712,6 @@ test_that(paste(
     # compute the results for the Lasso
     lasso <- glmnet::glmnet(x, y_glmnet,
                             family = fam$family, weights = weights,
-                            offset = offset,
                             lambda.min.ratio = lambda_min_ratio,
                             nlambda = nlambda, thresh = 1e-12)
     solution_terms <- predict(lasso, type = "nonzero", s = lasso$lambda)
@@ -738,8 +721,7 @@ test_that(paste(
     })
     ## lambdaval <- lasso$lambda[lambdainds]
     ## pred2 <- predict(lasso,
-    ##   newx = x, type = "link", s = lambdaval,
-    ##   newoffset = offset
+    ##   newx = x, type = "link", s = lambdaval
     ## )
 
     # check that the predictions agree (up to nterms-2 only, because glmnet
@@ -752,13 +734,17 @@ test_that(paste(
     ind <- match(vs$solution_terms, setdiff(split_formula(formula), "1"))
     if (Sys.getenv("NOT_CRAN") == "true") {
       betas <- sapply(vs$search_path$submodls, function(x) x[[1]]$beta %||% 0)
-      delta <- sapply(seq_len(nterms), function(i) {
+      delta <- sapply(seq_len(length(lambdainds) - 1), function(i) {
         abs(t(betas[[i + 1]]) - lasso$beta[ind[1:i], lambdainds[i + 1]])
       })
       expect_true(median(unlist(delta)) < 6e-2)
-      expect_true(median(abs(sapply(vs$search_path$submodls, function(x) {
-        x[[1]]$alpha
-      }) - lasso$a0[lambdainds])) < 1.5e-1)
+      expect_true(median(abs(
+        sapply(head(vs$search_path$submodls, length(lambdainds)),
+               function(x) {
+                 x[[1]]$alpha
+               }) -
+          lasso$a0[lambdainds])
+      ) < 1.5e-1)
     } else {
       expect_true(sum(ind == solution_terms_lasso[[i]]) >= nterms / 2)
     }
