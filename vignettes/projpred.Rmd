@@ -2,6 +2,7 @@
 title: "projpred: Projection predictive feature selection"
 date: "`r Sys.Date()`"
 bibliography: references.bib
+link-citations: true
 output:
   rmarkdown::html_vignette:
     toc: true
