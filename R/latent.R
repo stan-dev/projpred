@@ -2,33 +2,26 @@
 # Helper functions for the latent projection
 #__________________________________________________________________________
 
-# This is the function which would have to be supplied to extend_family()'s
-# argument `latent_llOrig` in case of the latent projection if `family$cats`
-# (*after* applying extend_family(); see extend_family()'s argument
-# `latent_y_unqs`) is not `NULL`. Note the "*would* have to be supplied": This
-# function is used by default (internally) in the described situation.
+# Internal defaults for `latent_llOrig` and `latent_ppdOrig` --------------
+# These are the functions which would have to be supplied to extend_family()'s
+# arguments `latent_llOrig` and `latent_ppdOrig` in certain situations of the
+# latent projection. Note the "*would* have to be supplied": These functions are
+# used by default (internally) in the respective situations described below.
+
+# Situation: If `family$cats` (*after* applying extend_family(); see
+# extend_family()'s argument `latent_y_unqs`) is not `NULL`.
 latent_llOrig_cats <- function(ilpreds, yOrig, wobs = rep(1, length(yOrig)),
                                cl_ref, wdraws_ref = rep(1, length(cl_ref))) {
   return(ll_cats(ilpreds, margin_draws = 1, y = yOrig, wobs = wobs))
 }
-
-# This is the function which would have to be supplied to extend_family()'s
-# argument `latent_ppdOrig` in case of the latent projection if `family$cats`
-# (*after* applying extend_family(); see extend_family()'s argument
-# `latent_y_unqs`) is not `NULL`. Note the "*would* have to be supplied": This
-# function is used by default (internally) in the described situation.
 latent_ppdOrig_cats <- function(ilpreds_resamp, wobs, cl_ref,
                                 wdraws_ref = rep(1, length(cl_ref)),
                                 idxs_prjdraws) {
   return(ppd_cats(ilpreds_resamp, margin_draws = 1, wobs = wobs))
 }
 
-# This is the function which would have to be supplied to extend_family()'s
-# argument `latent_llOrig` in case of the latent projection for the binomial
-# family if `family$cats` (*after* applying extend_family(); see
-# extend_family()'s argument `latent_y_unqs`) is `NULL`. Note the "*would* have
-# to be supplied": This function is used by default (internally) in the
-# described situation.
+# Situation: For the binomial family if `family$cats` (*after* applying
+# extend_family(); see extend_family()'s argument `latent_y_unqs`) is `NULL`.
 latent_llOrig_binom_nocats <- function(ilpreds, yOrig,
                                        wobs = rep(1, length(yOrig)), cl_ref,
                                        wdraws_ref = rep(1, length(cl_ref))) {
@@ -39,13 +32,6 @@ latent_llOrig_binom_nocats <- function(ilpreds, yOrig,
   ll_unw <- yOrig * log(ilpreds) + (1 - yOrig) * log(1 - ilpreds)
   return(t(wobs * ll_unw))
 }
-
-# This is the function which would have to be supplied to extend_family()'s
-# argument `latent_ppdOrig` in case of the latent projection for the binomial
-# family if `family$cats` (*after* applying extend_family(); see
-# extend_family()'s argument `latent_y_unqs`) is `NULL`. Note the "*would* have
-# to be supplied": This function is used by default (internally) in the
-# described situation.
 latent_ppdOrig_binom_nocats <- function(ilpreds_resamp, wobs, cl_ref,
                                         wdraws_ref = rep(1, length(cl_ref)),
                                         idxs_prjdraws) {
@@ -55,21 +41,13 @@ latent_ppdOrig_binom_nocats <- function(ilpreds_resamp, wobs, cl_ref,
   return(ppd)
 }
 
-# This is the function which would have to be supplied to extend_family()'s
-# argument `latent_llOrig` in case of the latent projection for the Poisson
-# family. Note the "*would* have to be supplied": This function is used by
-# default (internally) in the described situation.
+# Situation: For the Poisson family.
 latent_llOrig_poiss <- function(ilpreds, yOrig,
                                 wobs = rep(1, length(yOrig)), cl_ref,
                                 wdraws_ref = rep(1, length(cl_ref))) {
   ll_unw <- dpois(yOrig, lambda = t(ilpreds), log = TRUE)
   return(t(wobs * ll_unw))
 }
-
-# This is the function which would have to be supplied to extend_family()'s
-# argument `latent_ppdOrig` in case of the latent projection for the Poisson
-# family. Note the "*would* have to be supplied": This function is used by
-# default (internally) in the described situation.
 latent_ppdOrig_poiss <- function(ilpreds_resamp, wobs, cl_ref,
                                  wdraws_ref = rep(1, length(cl_ref)),
                                  idxs_prjdraws) {
@@ -78,27 +56,20 @@ latent_ppdOrig_poiss <- function(ilpreds_resamp, wobs, cl_ref,
   return(ppd)
 }
 
-# This is the function which would have to be supplied to extend_family()'s
-# argument `latent_llOrig` in case of the latent projection for a family for
-# which response-scale log predictive density (LPD) values cannot or should not
-# be calculated. Note the "*would* have to be supplied": This function is used
-# by default (internally) in the described situation.
+# Situation: For a family for which response-scale log predictive density (LPD)
+# values cannot or should not be calculated.
 latent_llOrig_NA <- function(ilpreds, yOrig,
                              wobs = rep(1, length(yOrig)), cl_ref,
                              wdraws_ref = rep(1, length(cl_ref))) {
   return(array(dim = dim(ilpreds)[1:2]))
 }
-
-# This is the function which would have to be supplied to extend_family()'s
-# argument `latent_ppdOrig` in case of the latent projection for a family for
-# which response-scale log predictive density (LPD) values cannot or should not
-# be calculated. Note the "*would* have to be supplied": This function is used
-# by default (internally) in the described situation.
 latent_ppdOrig_NA <- function(ilpreds_resamp, wobs, cl_ref,
                               wdraws_ref = rep(1, length(cl_ref)),
                               idxs_prjdraws) {
   return(array(dim = dim(ilpreds_resamp)[1:2]))
 }
+
+# Other -------------------------------------------------------------------
 
 #' Weighted averaging within clusters of parameter draws
 #'
