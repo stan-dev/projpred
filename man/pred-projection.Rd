@@ -59,11 +59,11 @@ whether the linear predictor should be transformed to response scale using
 the inverse-link function (\code{TRUE}) or not (\code{FALSE}). In case of the latent
 projection, argument \code{transform} is similar in spirit to argument
 \code{respOrig} from other functions and affects the scale of both output
-elements \code{pred} and \code{lpd} (see section "Value" below). In that case, note
-that \code{transform = FALSE} yields the linear predictors (in output element
-\code{pred}) without any modifications that may be due to the original response
-distribution (e.g., for a \code{\link[brms:brmsfamily]{brms::cumulative()}} model, the ordered
-thresholds are not taken into account).}
+elements \code{pred} and \code{lpd} (see section "Value" below). Also note in case of
+the latent projection that \code{transform = FALSE} yields the linear predictors
+(in output element \code{pred}) without any modifications that may be due to the
+original response distribution (e.g., for a \code{\link[brms:brmsfamily]{brms::cumulative()}} model, the
+ordered thresholds are not taken into account).}
 
 \item{integrated}{For \code{\link[=proj_linpred]{proj_linpred()}} only. A single logical value
 indicating whether the output should be averaged across the projected

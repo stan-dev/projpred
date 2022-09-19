@@ -28,11 +28,11 @@
 #'   the inverse-link function (`TRUE`) or not (`FALSE`). In case of the latent
 #'   projection, argument `transform` is similar in spirit to argument
 #'   `respOrig` from other functions and affects the scale of both output
-#'   elements `pred` and `lpd` (see section "Value" below). In that case, note
-#'   that `transform = FALSE` yields the linear predictors (in output element
-#'   `pred`) without any modifications that may be due to the original response
-#'   distribution (e.g., for a [brms::cumulative()] model, the ordered
-#'   thresholds are not taken into account).
+#'   elements `pred` and `lpd` (see section "Value" below). Also note in case of
+#'   the latent projection that `transform = FALSE` yields the linear predictors
+#'   (in output element `pred`) without any modifications that may be due to the
+#'   original response distribution (e.g., for a [brms::cumulative()] model, the
+#'   ordered thresholds are not taken into account).
 #' @param integrated For [proj_linpred()] only. A single logical value
 #'   indicating whether the output should be averaged across the projected
 #'   posterior draws (`TRUE`) or not (`FALSE`).
