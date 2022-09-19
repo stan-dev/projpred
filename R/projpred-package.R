@@ -75,9 +75,9 @@
 #' family does not include binomial distributions with more than one trial; in
 #' such a case, a workaround is to de-aggregate the Bernoulli trials which
 #' belong to the same (aggregated) observation, i.e., to use a "long" dataset),
-#' [brms::cumulative()], and [rstanarm::stan_polr()] fits. For all other
-#' families, you can try to use the latent projection (by setting `latent =
-#' TRUE`) and \pkg{projpred} should tell you if any features are not available
+#' [poisson()], [brms::cumulative()], and [rstanarm::stan_polr()] fits. For all
+#' other families, you can try to use the latent projection (by setting `latent
+#' = TRUE`) and \pkg{projpred} should tell you if any features are not available
 #' and how to make them available. More details concerning the latent projection
 #' are given in the vignette "Latent projection predictive inference with
 #' projpred" (**TODO (latent)**: Update that latent vignette). Note that the

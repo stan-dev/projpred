@@ -69,8 +69,8 @@ note that currently, the latent-projection support for the \code{\link[=binomial
 family does not include binomial distributions with more than one trial; in
 such a case, a workaround is to de-aggregate the Bernoulli trials which
 belong to the same (aggregated) observation, i.e., to use a "long" dataset),
-\code{\link[brms:brmsfamily]{brms::cumulative()}}, and \code{\link[rstanarm:stan_polr]{rstanarm::stan_polr()}} fits. For all other
-families, you can try to use the latent projection (by setting \code{latent = TRUE}) and \pkg{projpred} should tell you if any features are not available
+\code{\link[=poisson]{poisson()}}, \code{\link[brms:brmsfamily]{brms::cumulative()}}, and \code{\link[rstanarm:stan_polr]{rstanarm::stan_polr()}} fits. For all
+other families, you can try to use the latent projection (by setting \code{latent = TRUE}) and \pkg{projpred} should tell you if any features are not available
 and how to make them available. More details concerning the latent projection
 are given in the vignette "Latent projection predictive inference with
 projpred" (\strong{TODO (latent)}: Update that latent vignette). Note that the
