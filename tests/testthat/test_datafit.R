@@ -732,10 +732,13 @@ test_that(paste(
         abs(t(betas[[i + 1]]) - lasso$beta[ind[1:i], lambdainds[i + 1]])
       })
       expect_true(median(unlist(delta)) < 6e-2)
-      expect_true(median(abs(sapply(head(vs$search_path$submodls,
-                                         length(lambdainds)), function(x) {
-        x[[1]]$alpha
-      }) - lasso$a0[lambdainds])) < 1.5e-1)
+      expect_true(median(abs(
+        sapply(head(vs$search_path$submodls, length(lambdainds)),
+               function(x) {
+                 x[[1]]$alpha
+               }) -
+          lasso$a0[lambdainds])
+      ) < 1.5e-1)
     } else {
       expect_true(sum(ind == solution_terms_lasso[[i]]) >= nterms / 2)
     }
