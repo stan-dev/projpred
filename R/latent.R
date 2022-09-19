@@ -55,6 +55,29 @@ latent_ppdOrig_binom_nocats <- function(ilpreds_resamp, wobs, cl_ref,
   return(ppd)
 }
 
+# This is the function which would have to be supplied to extend_family()'s
+# argument `latent_llOrig` in case of the latent projection for the Poisson
+# family. Note the "*would* have to be supplied": This function is used by
+# default (internally) in the described situation.
+latent_llOrig_poiss <- function(ilpreds, yOrig,
+                                wobs = rep(1, length(yOrig)), cl_ref,
+                                wdraws_ref = rep(1, length(cl_ref))) {
+  ll_unw <- dpois(yOrig, lambda = t(ilpreds), log = TRUE)
+  return(t(wobs * ll_unw))
+}
+
+# This is the function which would have to be supplied to extend_family()'s
+# argument `latent_ppdOrig` in case of the latent projection for the Poisson
+# family. Note the "*would* have to be supplied": This function is used by
+# default (internally) in the described situation.
+latent_ppdOrig_poiss <- function(ilpreds_resamp, wobs, cl_ref,
+                                 wdraws_ref = rep(1, length(cl_ref)),
+                                 idxs_prjdraws) {
+  ppd <- rpois(prod(dim(ilpreds_resamp)), lambda = ilpreds_resamp)
+  ppd <- matrix(ppd, nrow = nrow(ilpreds_resamp), ncol = ncol(ilpreds_resamp))
+  return(ppd)
+}
+
 #' Weighted averaging within clusters of parameter draws
 #'
 #' This function aggregates \eqn{S} parameter draws that have been clustered

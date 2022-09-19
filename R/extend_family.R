@@ -279,10 +279,12 @@ extend_family <- function(family,
             return(ilpreds)
           }
         } else {
-          message("Trying to define `latent_ilink` automatically, but there ",
-                  "is no guarantee that it will work for all families. If it ",
-                  "raises an error in downstream functions, supply a ",
-                  "`latent_ilink` function that returns only `NA`s.")
+          if (family$familyOrig != "poisson") {
+            message("Trying to define `latent_ilink` automatically, but there ",
+                    "is no guarantee that it will work for all families. If ",
+                    "it raises an error in downstream functions, supply a ",
+                    "`latent_ilink` function that returns only `NA`s.")
+          }
           latent_ilink <- function(lpreds, cl_ref,
                                    wdraws_ref = rep(1, length(cl_ref))) {
             return(linkinvOrig_tmp(lpreds))
@@ -294,6 +296,8 @@ extend_family <- function(family,
           latent_llOrig <- latent_llOrig_cats
         } else if (family$familyOrig == "binomial") {
           latent_llOrig <- latent_llOrig_binom_nocats
+        } else if (family$familyOrig == "poisson") {
+          latent_llOrig <- latent_llOrig_poiss
         } else {
           latent_llOrig <- function(ilpreds, yOrig,
                                     wobs = rep(1, length(yOrig)), cl_ref,
@@ -314,6 +318,8 @@ extend_family <- function(family,
           latent_ppdOrig <- latent_ppdOrig_cats
         } else if (family$familyOrig == "binomial") {
           latent_ppdOrig <- latent_ppdOrig_binom_nocats
+        } else if (family$familyOrig == "poisson") {
+          latent_ppdOrig <- latent_ppdOrig_poiss
         } else {
           latent_ppdOrig <- function(ilpreds_resamp, wobs, cl_ref,
                                      wdraws_ref = rep(1, length(cl_ref)),
