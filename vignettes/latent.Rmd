@@ -2,6 +2,7 @@
 title: "Latent projection predictive inference with projpred"
 date: "`r Sys.Date()`"
 bibliography: latent.bib
+link-citations: true
 output:
   rmarkdown::html_vignette:
     toc: true
