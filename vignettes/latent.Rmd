@@ -1,7 +1,7 @@
 ---
-title: "Latent projection predictive inference with projpred"
+title: "Latent projection predictive feature selection"
 date: "`r Sys.Date()`"
-bibliography: latent.bib
+bibliography: references.bib
 link-citations: true
 output:
   rmarkdown::html_vignette:
@@ -11,14 +11,16 @@ params:
   EVAL: !r identical(Sys.getenv("NOT_CRAN"), "true")
 vignette: >
   %\VignetteEngine{knitr::rmarkdown}
-  %\VignetteIndexEntry{Latent projection predictive inference with projpred}
+  %\VignetteIndexEntry{Latent projection predictive feature selection}
   %\VignetteEncoding{UTF-8}
 ---
 
 ```{r child="children/SETTINGS-knitr.txt"}
 ```
 
-This vignette shows how to implement the latent projection predictive inference from @latent-projpred in `projpred`.
+## Introduction
+
+This vignette shows how to apply the latent projection predictive feature selection from @catalina_latent_2021 using **projpred**.
 
 ```{r}
 # Attach packages that are needed for this vignette:
@@ -47,11 +49,11 @@ y\sim p(\mu, \phi),\quad\mu = g(\eta),\quad \eta\sim p(\lambda|\boldsymbol X),
 $$
 where we have regressions parameters $\lambda$, inverse link function $g(\cdot)$, and $\eta$ is called the latent predictor.
 
-We make the assumption in this setting that the latent predictor has a Gaussian distribution, since it is the linear combination of our data and our regressors and has infinite support. In the case where $\eta$ has two finite moments, then we know from @cover-thomas that over all distributions with two finite moments and infinite support, the Gaussian distribution has the higher differential entropy. In doing so, we return to the "easy" exponential family case, and can implement the original `projpred` workflow once more.
+We make the assumption in this setting that the latent predictor has a Gaussian distribution, since it is the linear combination of our data and our regressors and has infinite support. In the case where $\eta$ has two finite moments, then the Gaussian distribution has the highest differential entropy over all distributions with two finite moments and infinite support [see, e.g., @cover_elements_2001]. In doing so, we return to the "easy" exponential family case, and can implement the original `projpred` workflow once more.
 
 <!-- ## Exponential GLM example -->
 
-<!-- In the case of an exponential variate distribution, it has been shown in @latent-projpred this Gaussian approximation can improve training times and occasionally identify superior search paths to vanilla `projpred`. -->
+<!-- In the case of an exponential variate distribution, it has been shown in @catalina_latent_2021 this Gaussian approximation can improve training times and occasionally identify superior search paths to vanilla `projpred`. -->
 
 <!-- To begin with, we generate some fake Poisson GLM data. -->
 
@@ -133,63 +135,5 @@ We make the assumption in this setting that the latent predictor has a Gaussian 
 <!-- # plot results -->
 <!-- plot(vanilla_vs, stats = c('elpd', 'rmse'), seed = 4537) -->
 <!-- ``` -->
-
-<!-- ## Time-to-event models -->
-
-<!-- We now turn to a non-Exponential family distributed variate. Specifically, we will be working with a time-to-event model in BRMS where the variate is Weibull distributed according to  -->
-<!-- $$ -->
-<!-- f(y) = \frac{\alpha}{s} \left(\frac{y}{s}\right)^{\alpha-1}  \exp\left(-\left(\frac{y}{s}\right)^\alpha\right), -->
-<!-- $$ -->
-<!-- and is dealing with censored data from the lung cancer dataset from @lung. We note that in general, the Weibull distribution is not a member of the exponential family In fact this is only the case when the shape parameter $\alpha$ is known and fixed. -->
-
-<!-- We first process our data as follows. -->
-
-<!-- ```{r} -->
-<!-- # read data from `survival` library -->
-<!-- data("cancer", package = "survival") -->
-<!-- # build dataset -->
-<!-- data <- na.omit(cancer) -->
-<!-- # identify covariate labels -->
-<!-- xtags <- data %>% -->
-<!--   dplyr::select(-status, -time) %>% -->
-<!--   colnames() -->
-<!-- ``` -->
-
-<!-- We now define a simple GLM formula with censored data, and some Gaussian prior over the regressors (note that this is independent to our Gaussianity assumption over the latent predictor) and fit it accordingly in BRMS. -->
-
-<!-- ```{r} -->
-<!-- # fit GLM model with BRMS, expliciting a non-exponential family -->
-<!-- fit <- brm( -->
-<!--   formula = formula(paste("time | cens(2 - status) ~", -->
-<!--                           paste0(xtags, collapse = " + "))), -->
-<!--   data = data, -->
-<!--   family = weibull(), -->
-<!--   prior = set_prior("normal(0, 1)", class = "b"), -->
-<!--   seed = 300416, refresh = 0 -->
-<!-- ) -->
-<!-- ``` -->
-
-<!-- Repeating the workflow, we first extract the latent predictor posterior draws, and then define a reference model in terms of them. It is at this stage that we enforce our Gaussianity assumption in the default parameter value of the `fit_latent` function. -->
-
-<!-- ```{r} -->
-<!-- # define new reference model for latent predictor -->
-<!-- latent_ref <- get_refmodel( -->
-<!--   fit, -->
-<!--   latent = TRUE -->
-<!-- ) -->
-<!-- ``` -->
-
-<!-- Having now build a reference model belonging to the Exponential family from a model originally Weibull-distributed, we can employ variable selection with `projpred`. -->
-
-<!-- ```{r} -->
-<!-- # perform latent projection predictive variable selection on model -->
-<!-- vs <- varsel(latent_ref, seed = 456942) -->
-<!-- # selection order of the variables -->
-<!-- solution_terms(vs) -->
-<!-- # plot varsel results -->
-<!-- plot(vs, stats = c('elpd', 'rmse'), seed = 842032) -->
-<!-- ``` -->
-
-<!-- We thus discover an ordering of variables in this non-exponential family model using latent projection predictive inference. -->
 
 ## References
