@@ -2,12 +2,14 @@
 
 If you read this from a place other than <https://mc-stan.org/projpred/news/index.html>, please consider switching to that website since it features better formatting and cross-linking.
 
-# projpred 2.2.1
+# projpred 2.2.1.9000
 
 ## Major changes
 
 * Introduction of the augmented-data projection which adds support for the `brms::categorical()` and `brms::cumulative()` response families as well as `rstanarm::stan_polr()` fits. More **brms** families might be supported in the future. The augmented-data projection may also be used for the `binomial()` or the `brms::bernoulli()` family (see `?extend_family` as well as `?augdat_link_binom` and `?augdat_ilink_binom`). Note that currently, the support for the `binomial()` family does not include binomial distributions with more than one trial. In such a case, a workaround is to de-aggregate the Bernoulli trials which belong to the same (aggregated) observation, i.e., to use a "long" dataset. Also note that the augmented-data projection is currently considered as an experimental feature since it is subject to some more theoretical investigations. For the augmented-data projection based on a **brms** reference model, **brms** version 2.17.0 or later is needed. (GitHub: #70, #322)
 * Introduction of the latent projection [(Catalina et al., 2021)](https://arxiv.org/abs/2109.04702) which is a quite general principle for extending **projpred**'s traditional projection to more response families. The latent projection is applied when setting argument `latent` of `extend_family()` (which is called by `init_refmodel()`) to `TRUE`. The families for which full latent-projection functionality (in particular, `respOrig = TRUE`, i.e., post-processing on the original response scale) is currently available are `binomial()`^[Currently, the latent-projection support for the `binomial()` family does not include binomial distributions with more than one trial. In such a case, a workaround is to de-aggregate the Bernoulli trials which belong to the same (aggregated) observation, i.e., to use a "long" dataset.], `brms::bernoulli()`, `poisson()`, `brms::cumulative()`, and `rstanarm::stan_polr()` fits. For all other families, you can try to use the latent projection (by setting `latent = TRUE`) and **projpred** should tell you if any features are not available and how to make them available. More details concerning the latent projection are given in the vignette "Latent projection predictive inference with projpred" (**TODO (latent)**: Update that latent vignette). Note that the latent projection is currently considered as an experimental feature since it is subject to some more theoretical investigations. For the latent projection based on a **brms** reference model, **brms** version [**TODO (latent)**: X.X.X] or later is needed. (GitHub: [**TODO (latent)**: insert PR number])
+
+# projpred 2.2.1
 
 ## Minor changes
 
