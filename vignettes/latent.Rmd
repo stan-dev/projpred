@@ -43,7 +43,7 @@ options(brms.backend = "cmdstanr")
 
 ## General idea
 
-For generalised linear models whose variate's distribution does not belong to the exponential family, the KL divergence minimisation problem solved in projection is not analytically easy to compute in general. This is the foundational idea of efficient projection predictive inference. In order to bypass this issue, we solve the KL minimisation in the latent predictive space $p(\tilde{\eta}|\lambda_*)$ under the general model formulation for data $\mathcal{D}=\{\boldsymbol X | y\}$
+For models with a response distribution that does not belong to the exponential family, the KL divergence minimisation problem solved in projection is not analytically easy to compute in general. This is the foundational idea of efficient projection predictive inference. In order to bypass this issue, we solve the KL minimisation in the latent predictive space $p(\tilde{\eta}|\lambda_*)$ under the general model formulation for data $\mathcal{D}=\{\boldsymbol X | y\}$
 $$
 y\sim p(\mu, \phi),\quad\mu = g(\eta),\quad \eta\sim p(\lambda|\boldsymbol X),
 $$
