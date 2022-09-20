@@ -22,7 +22,7 @@ for the use of \(K\)-fold CV in projpred."><meta property="og:image" content="ht
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">projpred</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">2.2.0</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">2.2.1</span>
       </span>
     </div>
 
@@ -291,8 +291,9 @@ analogously for higher-order joint effects, e.g., of three predictors).</p>
     <div id="arguments-ref-predfun-proj-predfun-and-div-minimizer">
     <h2>Arguments <code>ref_predfun</code>, <code>proj_predfun</code>, and <code>div_minimizer</code></h2>
     <p>Arguments <code>ref_predfun</code>, <code>proj_predfun</code>, and <code>div_minimizer</code> may be <code>NULL</code>
-for using an internal default. Otherwise, let \(N\) denote the number of
-observations (in case of CV, these may be reduced to each fold),
+for using an internal default (see <a href="projpred-package.html">projpred-package</a> for the functions used
+by the default divergence minimizer). Otherwise, let \(N\) denote the
+number of observations (in case of CV, these may be reduced to each fold),
 \(S_{\mathrm{ref}}\) the number of posterior draws for the reference
 model's parameters, and \(S_{\mathrm{prj}}\) the number of (possibly
 clustered) parameter draws for projection (short: the number of projected

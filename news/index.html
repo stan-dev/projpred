@@ -17,7 +17,7 @@
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">projpred</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">2.2.0</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">2.2.1</span>
       </span>
     </div>
 
@@ -102,6 +102,21 @@
       <small>Source: <a href="https://github.com/stan-dev/projpred/blob/HEAD/NEWS.md" class="external-link"><code>NEWS.md</code></a></small>
     </div>
 
+    <div class="section level2">
+<h2 class="page-header" data-toc-text="2.2.1" id="projpred-221">projpred 2.2.1<a class="anchor" aria-label="anchor" href="#projpred-221"></a></h2>
+<div class="section level3">
+<h3 id="minor-changes-2-2-1">Minor changes<a class="anchor" aria-label="anchor" href="#minor-changes-2-2-1"></a></h3>
+<ul><li>Several improvements in the documentation.</li>
+<li>For the RMSE as well as the AUC (see argument <code>stats</code> of <code><a href="../reference/summary.vsel.html">summary.vsel()</a></code>), the bootstrapping results are now also used for inferring the lower and upper confidence interval bounds. (GitHub: <a href="https://github.com/stan-dev/projpred/issues/318" class="external-link">#318</a>, <a href="https://github.com/stan-dev/projpred/issues/347" class="external-link">#347</a>; thanks to users <a href="https://github.com/awd97" class="external-link">@awd97</a> and <a href="https://github.com/VisionResearchBlog" class="external-link">@VisionResearchBlog</a>)</li>
+<li>For <code>datafit</code>s, offsets are not supported anymore. (GitHub: <a href="https://github.com/stan-dev/projpred/issues/186" class="external-link">#186</a> (partly), <a href="https://github.com/stan-dev/projpred/issues/351" class="external-link">#351</a>)</li>
+</ul></div>
+<div class="section level3">
+<h3 id="bug-fixes-2-2-1">Bug fixes<a class="anchor" aria-label="anchor" href="#bug-fixes-2-2-1"></a></h3>
+<ul><li>Fix GitHub issue <a href="https://github.com/stan-dev/projpred/issues/348" class="external-link">#348</a> (L1 search in the presence of interaction terms). This bug was introduced in v2.1.0 (and existed up to—including—v2.2.0).</li>
+<li>Fix incorrectly thrown messages in case of <code>datafit</code>s (and other—unlikely—cases where <code>nclusters == S</code> and <code>S &lt;= 20</code>, with <code>S</code> denoting the number of draws in the reference model).</li>
+<li>Fix GitHub issue <a href="https://github.com/stan-dev/projpred/issues/349" class="external-link">#349</a> (only concerned <code>datafit</code>s). (GitHub: <a href="https://github.com/stan-dev/projpred/issues/350" class="external-link">#350</a>)</li>
+</ul></div>
+</div>
     <div class="section level2">
 <h2 class="page-header" data-toc-text="2.2.0" id="projpred-220">projpred 2.2.0<small>2022-08-19</small><a class="anchor" aria-label="anchor" href="#projpred-220"></a></h2>
 <div class="section level3">

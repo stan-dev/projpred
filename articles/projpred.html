@@ -40,7 +40,7 @@
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">projpred</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">2.2.0</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">2.2.1</span>
       </span>
     </div>
 
@@ -351,7 +351,7 @@ with <code>deltas = TRUE</code> here (note that as
 optimistic, and the plot looks different when
 <code>validate_search = TRUE</code> is used):</p>
 <div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/graphics/plot.default.html" class="external-link">plot</a></span><span class="op">(</span><span class="va">cvvs</span>, stats <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"elpd"</span>, <span class="st">"rmse"</span><span class="op">)</span>, deltas <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span></code></pre></div>
+<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/graphics/plot.default.html" class="external-link">plot</a></span><span class="op">(</span><span class="va">cvvs</span>, stats <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"elpd"</span>, <span class="st">"rmse"</span><span class="op">)</span>, deltas <span class="op">=</span> <span class="cn">TRUE</span>, seed <span class="op">=</span> <span class="fl">54548</span><span class="op">)</span></span></code></pre></div>
 <p><img src="projpred_files/figure-html/unnamed-chunk-9-1.png" width="60%" style="display: block; margin: auto;"></p>
 <p>Based on that plot (see <code><a href="../reference/plot.vsel.html">?plot.vsel</a></code> for a description),
 we would decide for a submodel size of 6 because that’s the point where
@@ -370,7 +370,8 @@ interpreted with caution (see <code><a href="../reference/suggest_size.html">?su
 <pre><code>[1] 6</code></pre>
 <p>Here, we would get the same final submodel size (<code>6</code>) as
 by our manual decision (<code><a href="../reference/suggest_size.html">suggest_size()</a></code> is also affected by
-<code>validate_search = FALSE</code>).</p>
+<code>validate_search = FALSE</code>). Note that by default,
+<code><a href="../reference/suggest_size.html">suggest_size()</a></code> uses the ELPD as performance statistic.</p>
 <p>Only now, after we have made a decision for the submodel size, we
 inspect further results from the variable selection and, in particular,
 the solution path. For example, we can simply <code><a href="https://rdrr.io/r/base/print.html" class="external-link">print()</a></code> the

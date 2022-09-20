@@ -21,14 +21,26 @@ reference models.
 Currently, the supported families are gaussian(), binomial() (and---via
 brms::get_refmodel.brmsfit()---also brms::bernoulli()), as well as
 poisson().
+For the projection of the reference model onto a submodel, projpred
+currently relies on the following functions (in other words, these are the
+workhorse functions used by the default divergence minimizer):
+Submodel without multilevel or additive terms: An internal C++ function
+which basically serves the same purpose as lm() for the gaussian() family
+and glm() for all other families.
+Submodel with multilevel but no additive terms: lme4::lmer() for the
+gaussian() family, lme4::glmer() for all other families.
+Submodel without multilevel but additive terms: mgcv::gam().
+Submodel with multilevel and additive terms: gamm4::gamm4().
+
+
 The projection of the reference model onto a submodel can be run on multiple
 CPU cores in parallel (across the projected draws). This is powered by the
-foreach package. Thus, you can use any parallel (or sequential) backend
-compatible with foreach, e.g., the backends from packages
+foreach package. Thus, any parallel (or sequential) backend compatible
+with foreach can be used, e.g., the backends from packages
 doParallel, doMPI, or doFuture. Using the global option
-projpred.prll_prj_trigger, you can modify the number of projected draws
-below which no parallelization is used (even if a parallel backend is
-registered). Such a &quot;trigger&quot; threshold exists because of the computational
+projpred.prll_prj_trigger, the number of projected draws below which no
+parallelization is applied (even if a parallel backend is registered) can be
+modified. Such a &quot;trigger&quot; threshold exists because of the computational
 overhead of a parallelization which makes parallelization only useful for a
 sufficiently large number of projected draws. By default, parallelization is
 turned off, which can also be achieved by supplying Inf (or NULL) to
@@ -63,7 +75,7 @@ projpred."><meta property="og:image" content="https://mc-stan.org/projpred/logo.
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">projpred</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">2.2.0</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">2.2.1</span>
       </span>
     </div>
 
@@ -172,14 +184,23 @@ reference models.</p>
 <p>Currently, the supported families are <code><a href="https://rdrr.io/r/stats/family.html" class="external-link">gaussian()</a></code>, <code><a href="https://rdrr.io/r/stats/family.html" class="external-link">binomial()</a></code> (and---via
 <code><a href="https://rdrr.io/pkg/brms/man/get_refmodel.brmsfit.html" class="external-link">brms::get_refmodel.brmsfit()</a></code>---also <code><a href="https://rdrr.io/pkg/brms/man/brmsfamily.html" class="external-link">brms::bernoulli()</a></code>), as well as
 <code><a href="https://rdrr.io/r/stats/family.html" class="external-link">poisson()</a></code>.</p>
-<p>The projection of the reference model onto a submodel can be run on multiple
+<p>For the projection of the reference model onto a submodel, <span class="pkg">projpred</span>
+currently relies on the following functions (in other words, these are the
+workhorse functions used by the default divergence minimizer):</p><ul><li><p>Submodel without multilevel or additive terms: An internal C++ function
+which basically serves the same purpose as <code><a href="https://rdrr.io/r/stats/lm.html" class="external-link">lm()</a></code> for the <code><a href="https://rdrr.io/r/stats/family.html" class="external-link">gaussian()</a></code> family
+and <code><a href="https://rdrr.io/r/stats/glm.html" class="external-link">glm()</a></code> for all other families.</p></li>
+<li><p>Submodel with multilevel but no additive terms: <code><a href="https://rdrr.io/pkg/lme4/man/lmer.html" class="external-link">lme4::lmer()</a></code> for the
+<code><a href="https://rdrr.io/r/stats/family.html" class="external-link">gaussian()</a></code> family, <code><a href="https://rdrr.io/pkg/lme4/man/glmer.html" class="external-link">lme4::glmer()</a></code> for all other families.</p></li>
+<li><p>Submodel without multilevel but additive terms: <code><a href="https://rdrr.io/pkg/mgcv/man/gam.html" class="external-link">mgcv::gam()</a></code>.</p></li>
+<li><p>Submodel with multilevel and additive terms: <code><a href="https://rdrr.io/pkg/gamm4/man/gamm4.html" class="external-link">gamm4::gamm4()</a></code>.</p></li>
+</ul><p>The projection of the reference model onto a submodel can be run on multiple
 CPU cores in parallel (across the projected draws). This is powered by the
-<span class="pkg">foreach</span> package. Thus, you can use any parallel (or sequential) backend
-compatible with <span class="pkg">foreach</span>, e.g., the backends from packages
+<span class="pkg">foreach</span> package. Thus, any parallel (or sequential) backend compatible
+with <span class="pkg">foreach</span> can be used, e.g., the backends from packages
 <span class="pkg">doParallel</span>, <span class="pkg">doMPI</span>, or <span class="pkg">doFuture</span>. Using the global option
-<code>projpred.prll_prj_trigger</code>, you can modify the number of projected draws
-below which no parallelization is used (even if a parallel backend is
-registered). Such a "trigger" threshold exists because of the computational
+<code>projpred.prll_prj_trigger</code>, the number of projected draws below which no
+parallelization is applied (even if a parallel backend is registered) can be
+modified. Such a "trigger" threshold exists because of the computational
 overhead of a parallelization which makes parallelization only useful for a
 sufficiently large number of projected draws. By default, parallelization is
 turned off, which can also be achieved by supplying <code>Inf</code> (or <code>NULL</code>) to
@@ -269,6 +290,7 @@ Journal of Statistics</em>, <strong>14</strong>(1):2155-2197. <a href="https://d
 <li><p>Marco Colombo [contributor]</p></li>
 <li><p>Paul-Christian Bürkner [contributor]</p></li>
 <li><p>Hamada S. Badr [contributor]</p></li>
+<li><p>Brian Sullivan [contributor]</p></li>
 </ul></div>
 
   </div>

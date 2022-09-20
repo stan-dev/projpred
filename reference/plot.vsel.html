@@ -18,7 +18,7 @@ cv_varsel())."><meta property="og:image" content="https://mc-stan.org/projpred/l
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">projpred</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">2.2.0</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">2.2.1</span>
       </span>
     </div>
 
@@ -143,12 +143,13 @@ are:</p><ul><li><p><code>"elpd"</code>: (expected) sum of log predictive densiti
 <li><p><code>"mlpd"</code>: mean log predictive density, that is, <code>"elpd"</code> divided by the
 number of observations.</p></li>
 <li><p><code>"mse"</code>: mean squared error.</p></li>
-<li><p><code>"rmse"</code>: root mean squared error. For the corresponding standard error,
-bootstrapping is used.</p></li>
+<li><p><code>"rmse"</code>: root mean squared error. For the corresponding standard error
+and lower and upper confidence interval bounds, bootstrapping is used.</p></li>
 <li><p><code>"acc"</code> (or its alias, <code>"pctcorr"</code>): classification accuracy
 (<code><a href="https://rdrr.io/r/stats/family.html" class="external-link">binomial()</a></code> family only).</p></li>
 <li><p><code>"auc"</code>: area under the ROC curve (<code><a href="https://rdrr.io/r/stats/family.html" class="external-link">binomial()</a></code> family only). For the
-corresponding standard error, bootstrapping is used.</p></li>
+corresponding standard error and lower and upper confidence interval
+bounds, bootstrapping is used.</p></li>
 </ul></dd>
 
 
