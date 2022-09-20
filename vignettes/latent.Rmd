@@ -49,7 +49,7 @@ y\sim p(\mu, \phi),\quad\mu = g(\eta),\quad \eta\sim p(\lambda|\boldsymbol X),
 $$
 where we have regressions parameters $\lambda$, inverse link function $g(\cdot)$, and $\eta$ is called the latent predictor.
 
-We make the assumption in this setting that the latent predictor has a Gaussian distribution, since it is the linear combination of our data and our regressors and has infinite support. In the case where $\eta$ has two finite moments, then the Gaussian distribution has the highest differential entropy over all distributions with two finite moments and infinite support [see, e.g., @cover_elements_2001]. In doing so, we return to the "easy" exponential family case, and can implement the original `projpred` workflow once more.
+We make the assumption in this setting that the latent predictor has a Gaussian distribution, since it is the linear combination of our data and our regressors and has infinite support. In the case where $\eta$ has two finite moments, then the Gaussian distribution has the highest differential entropy over all distributions with two finite moments and infinite support [see, e.g., @cover_elements_1991]. In doing so, we return to the "easy" exponential family case, and can implement the original `projpred` workflow once more.
 
 <!-- ## Exponential GLM example -->
 
