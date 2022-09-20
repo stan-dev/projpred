@@ -598,6 +598,9 @@ test_that(paste(
   "L1-projection with data reference gives the same results as",
   "Lasso from glmnet."
 ), {
+  # This test sometimes behaves inpredictably when run in `R CMD check`, so skip
+  # it on CRAN:
+  skip_on_cran()
   if (exists(".Random.seed", envir = .GlobalEnv)) {
     rng_old <- get(".Random.seed", envir = .GlobalEnv)
   }
@@ -630,21 +633,6 @@ test_that(paste(
     }
     nlist(y, y_glmnet, weights)
   })
-
-  median_lasso_preds <- list(
-    c(0.2774068, 0.2857059, 0.2878935, 0.2813947, 0.2237729,
-      0.2895152, 0.3225808, 0.3799348),
-    c(0.009607217, 0.015400719, -0.017591445, -0.009711566,
-      -0.023867036, -0.038964983, -0.036081074, -0.045065655),
-    c(1.8846845, 1.8830678, 1.8731548, 1.4232035, 0.9960167,
-      0.9452660, 0.6216253, 0.5856283)
-  )
-
-  solution_terms_lasso <- list(
-    c(10, 9, 6, 8, 7, 5, 4, 3, 1, 2),
-    c(10, 9, 8, 6, 7, 5, 3, 4, 2, 1),
-    c(9, 10, 6, 7, 3, 5, 2, 4, 3, 1)
-  )
 
   extract_model_data <- function(object, newdata = NULL, wrhs = NULL,
                                  orhs = NULL, extract_y = FALSE) {
@@ -719,35 +707,47 @@ test_that(paste(
     lambdainds <- sapply(unique(nselected), function(nterms) {
       max(which(nselected == nterms))
     })
-    ## lambdaval <- lasso$lambda[lambdainds]
-    ## pred2 <- predict(lasso,
-    ##   newx = x, type = "link", s = lambdaval
-    ## )
-
-    # check that the predictions agree (up to nterms-2 only, because glmnet
-    # terminates the coefficient path computation too early for some reason)
-    for (j in 1:(nterms - 2)) {
-      expect_true(median(pred1[[j]]$pred) - median_lasso_preds[[i]][j] < 3e-1)
+    lambdaval <- lasso$lambda[lambdainds]
+    pred2 <- predict(lasso, newx = x, type = "link", s = lambdaval)
+    solution_terms_lasso <- integer()
+    lasso_coefs <- as.matrix(lasso$beta[, tail(lambdainds, -1), drop = FALSE])
+    for (ii in seq_len(ncol(lasso_coefs))) {
+      solution_terms_lasso <- c(
+        solution_terms_lasso,
+        setdiff(which(lasso_coefs[, ii] > 0), solution_terms_lasso)
+      )
     }
+
+    # check that the predictions agree
+    pred1 <- unname(sapply(pred1, "[[", "pred"))
+    pred2 <- unname(pred2)
+    # Sometimes, glmnet terminates the coefficient path computation too early
+    # for some reason:
+    if (ncol(pred1) > ncol(pred2)) {
+      pred1 <- pred1[, seq_len(ncol(pred2)), drop = FALSE]
+    }
+    expect_equal(pred1, pred2, tolerance = 1e-2, info = as.character(i))
 
     # check that the coefficients are similar
     ind <- match(vs$solution_terms, setdiff(split_formula(formula), "1"))
-    if (Sys.getenv("NOT_CRAN") == "true") {
-      betas <- sapply(vs$search_path$submodls, function(x) x[[1]]$beta %||% 0)
-      delta <- sapply(seq_len(length(lambdainds) - 1), function(i) {
-        abs(t(betas[[i + 1]]) - lasso$beta[ind[1:i], lambdainds[i + 1]])
-      })
-      expect_true(median(unlist(delta)) < 6e-2)
-      expect_true(median(abs(
-        sapply(head(vs$search_path$submodls, length(lambdainds)),
-               function(x) {
-                 x[[1]]$alpha
-               }) -
-          lasso$a0[lambdainds])
-      ) < 1.5e-1)
-    } else {
-      expect_true(sum(ind == solution_terms_lasso[[i]]) >= nterms / 2)
+    betas <- sapply(vs$search_path$submodls, function(x) x[[1]]$beta %||% 0)
+    delta <- sapply(seq_len(length(lambdainds) - 1), function(i) {
+      abs(t(betas[[i + 1]]) - lasso$beta[ind[1:i], lambdainds[i + 1]])
+    })
+    expect_true(median(unlist(delta)) < 6e-2)
+    expect_true(median(abs(
+      sapply(head(vs$search_path$submodls, length(lambdainds)),
+             function(x) {
+               x[[1]]$alpha
+             }) -
+        lasso$a0[lambdainds])
+    ) < 1.5e-1)
+    # Sometimes, glmnet terminates the coefficient path computation too early
+    # for some reason:
+    if (length(ind) > length(solution_terms_lasso)) {
+      ind <- ind[seq_along(solution_terms_lasso)]
     }
+    expect_identical(ind, solution_terms_lasso, info = as.character(i))
   }
   RNGversion(getRversion())
   if (exists("rng_old")) assign(".Random.seed", rng_old, envir = .GlobalEnv)
