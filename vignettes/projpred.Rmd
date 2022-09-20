@@ -119,7 +119,7 @@ cvvs <- cv_varsel(
 
 The first step after running the variable selection should be the decision for a final submodel size. This should be the first step (in particular, before inspecting the solution path) in order to avoid a user-induced selection bias (which could occur if the user made the submodel size decision dependent on the solution path). To decide for a submodel size, there are several performance statistics we can plot as a function of the submodel size. Here, we use the expected log (pointwise) predictive density (for a new dataset) (ELPD; empirically, this is the sum of the log predictive densities of the observations in the evaluation---or "test"---set) and the root mean squared error (RMSE). By default, the performance statistics are plotted on their original scale, but with `deltas = TRUE`, they are calculated as differences from a baseline model (which is the reference model by default, at least in the most common cases). Since the differences are usually of more interest (with regard to the submodel size decision), we directly plot with `deltas = TRUE` here (note that as `validate_search = FALSE`, this result is slightly optimistic, and the plot looks different when `validate_search = TRUE` is used):
 ```{r, fig.asp=1.5 * 0.618}
-plot(cvvs, stats = c("elpd", "rmse"), deltas = TRUE)
+plot(cvvs, stats = c("elpd", "rmse"), deltas = TRUE, seed = 54548)
 ```
 
 Based on that plot (see `?plot.vsel` for a description), we would decide for a submodel size of 6 because that's the point where the performance measures level off and are close enough to the reference model's performance (note that since the plot is affected by `validate_search = FALSE`, this manual decision based on the plot is affected, too):
@@ -131,7 +131,7 @@ Note that **projpred** offers the `suggest_size()` function which may help in th
 ```{r}
 suggest_size(cvvs)
 ```
-Here, we would get the same final submodel size (`6`) as by our manual decision (`suggest_size()` is also affected by `validate_search = FALSE`).
+Here, we would get the same final submodel size (`6`) as by our manual decision (`suggest_size()` is also affected by `validate_search = FALSE`). Note that by default, `suggest_size()` uses the ELPD as performance statistic.
 
 Only now, after we have made a decision for the submodel size, we inspect further results from the variable selection and, in particular, the solution path. For example, we can simply `print()` the resulting object:
 ```{r}
