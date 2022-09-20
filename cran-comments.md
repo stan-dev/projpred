@@ -117,4 +117,5 @@ The macOS builder check gave the following NOTE:
 
 There is one downstream dependency for this package: 'brms'. This downstream
 dependency has been checked with the 'revdepcheck' package
-(<https://r-lib.github.io/revdepcheck>).
+(<https://r-lib.github.io/revdepcheck>) and also locally (with the 'projpred'
+version submitted here).
