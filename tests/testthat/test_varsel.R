@@ -275,7 +275,7 @@ test_that(paste(
       lppd = unname(apply(lppd_new, 2, log_sum_exp) - log(nrefdraws))
     )
     expect_equal(vs_indep$summaries$ref, summ_ref_ch,
-                 tolerance = 1e2 * .Machine$double.eps, info = tstsetup)
+                 tolerance = 1e3 * .Machine$double.eps, info = tstsetup)
     lppd_ref_ch2 <- unname(loo::elpd(lppd_new)$pointwise[, "elpd"])
     expect_equal(vs_indep$summaries$ref$lppd, lppd_ref_ch2,
                  tolerance = 1e2 * .Machine$double.eps, info = tstsetup)

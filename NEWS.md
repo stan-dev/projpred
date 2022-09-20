@@ -2,6 +2,20 @@
 
 If you read this from a place other than <https://mc-stan.org/projpred/news/index.html>, please consider switching to that website since it features better formatting and cross-linking.
 
+# projpred 2.2.1
+
+## Minor changes
+
+* Several improvements in the documentation.
+* For the RMSE as well as the AUC (see argument `stats` of `summary.vsel()`), the bootstrapping results are now also used for inferring the lower and upper confidence interval bounds. (GitHub: #318, #347; thanks to users @awd97 and @VisionResearchBlog)
+* For `datafit`s, offsets are not supported anymore. (GitHub: #186 (partly), #351)
+
+## Bug fixes
+
+* Fix GitHub issue #348 (L1 search in the presence of interaction terms). This bug was introduced in v2.1.0 (and existed up to---including---v2.2.0).
+* Fix incorrectly thrown messages in case of `datafit`s (and other---unlikely---cases where `nclusters == S` and `S <= 20`, with `S` denoting the number of draws in the reference model).
+* Fix GitHub issue #349 (only concerned `datafit`s). (GitHub: #350)
+
 # projpred 2.2.0
 
 ## Major changes

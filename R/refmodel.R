@@ -99,8 +99,9 @@
 #' # Arguments `ref_predfun`, `proj_predfun`, and `div_minimizer`
 #'
 #' Arguments `ref_predfun`, `proj_predfun`, and `div_minimizer` may be `NULL`
-#' for using an internal default. Otherwise, let \eqn{N} denote the number of
-#' observations (in case of CV, these may be reduced to each fold),
+#' for using an internal default (see [projpred-package] for the functions used
+#' by the default divergence minimizer). Otherwise, let \eqn{N} denote the
+#' number of observations (in case of CV, these may be reduced to each fold),
 #' \eqn{S_{\mathrm{ref}}}{S_ref} the number of posterior draws for the reference
 #' model's parameters, and \eqn{S_{\mathrm{prj}}}{S_prj} the number of (possibly
 #' clustered) parameter draws for projection (short: the number of projected
@@ -280,11 +281,7 @@ predict.refmodel <- function(object, newdata = NULL, ynew = NULL,
     stop("Argument `ynew` must be a numeric vector.")
   }
 
-  if (is.null(newdata)) {
-    isnew_newdata <- FALSE
-    newdata <- object$fetch_data()
-  } else {
-    isnew_newdata <- TRUE
+  if (!is.null(newdata)) {
     newdata <- na.fail(newdata)
   }
   w_o <- object$extract_model_data(object$fit, newdata = newdata,
@@ -297,8 +294,9 @@ predict.refmodel <- function(object, newdata = NULL, ynew = NULL,
   if (length(offsetnew) == 0) {
     offsetnew <- rep(0, length(w_o$y))
   }
-  if (inherits(object$fit, "stanreg") && length(object$fit$offset) > 0) {
-    if (isnew_newdata && "projpred_internal_offs_stanreg" %in% names(newdata)) {
+  if (!is.null(newdata) && inherits(object$fit, "stanreg") &&
+      length(object$fit$offset) > 0) {
+    if ("projpred_internal_offs_stanreg" %in% names(newdata)) {
       stop("Need to write to column `projpred_internal_offs_stanreg` of ",
            "`newdata`, but that column already exists. Please rename this ",
            "column in `newdata` and try again.")
@@ -663,6 +661,13 @@ init_refmodel <- function(object, data, formula, family, ref_predfun = NULL,
 
   if (is.null(offset)) {
     offset <- rep(0, NROW(y))
+  }
+
+  if (!proper_model && !all(offset == 0)) {
+    # Disallow offsets for `datafit`s because the submodel fitting does not take
+    # offsets into account (but `<refmodel>$mu` contains the observed response
+    # values which inevitably "include" the offsets):
+    stop("For a `datafit`, offsets are not allowed.")
   }
 
   # For avoiding the warning "contrasts dropped from factor <factor_name>" when

@@ -129,8 +129,6 @@ proj_helper <- function(object, newdata, offsetnew, weightsnew, onesub_fun,
   }
 
   if (is.null(newdata)) {
-    ## pick first projection's function
-    newdata <- projs[[1]]$refmodel$fetch_data()
     extract_y_ind <- TRUE
   } else {
     if (!inherits(newdata, c("matrix", "data.frame"))) {
@@ -174,10 +172,10 @@ proj_helper <- function(object, newdata, offsetnew, weightsnew, onesub_fun,
     weightsnew <- w_o$weights
     offsetnew <- w_o$offset
     if (length(weightsnew) == 0) {
-      weightsnew <- rep(1, NROW(newdata))
+      weightsnew <- rep(1, NROW(newdata %||% proj$refmodel$fetch_data()))
     }
     if (length(offsetnew) == 0) {
-      offsetnew <- rep(0, NROW(newdata))
+      offsetnew <- rep(0, NROW(newdata %||% proj$refmodel$fetch_data()))
     }
     onesub_fun(proj, newdata = newdata, offset = offsetnew,
                weights = weightsnew, extract_y_ind = extract_y_ind, ...)
@@ -491,20 +489,22 @@ plot.vsel <- function(
 #'   * `"mlpd"`: mean log predictive density, that is, `"elpd"` divided by the
 #'   number of observations.
 #'   * `"mse"`: mean squared error.
-#'   * `"rmse"`: root mean squared error. For the corresponding standard error,
-#'   bootstrapping is used.
+#'   * `"rmse"`: root mean squared error. For the corresponding standard error
+#'   and lower and upper confidence interval bounds, bootstrapping is used.
 #'   * `"acc"` (or its alias, `"pctcorr"`): classification accuracy
 #'   ([binomial()] family only).
 #'   * `"auc"`: area under the ROC curve ([binomial()] family only). For the
-#'   corresponding standard error, bootstrapping is used.
+#'   corresponding standard error and lower and upper confidence interval
+#'   bounds, bootstrapping is used.
 #' @param type One or more items from `"mean"`, `"se"`, `"lower"`, `"upper"`,
 #'   `"diff"`, and `"diff.se"` indicating which of these to compute for each
 #'   item from `stats` (mean, standard error, lower and upper confidence
 #'   interval bounds, mean difference to the corresponding statistic of the
 #'   reference model, and standard error of this difference, respectively). The
-#'   confidence interval bounds belong to normal-approximation confidence
-#'   intervals with (nominal) coverage `1 - alpha`. Items `"diff"` and
-#'   `"diff.se"` are only supported if `deltas` is `FALSE`.
+#'   confidence interval bounds belong to normal-approximation (or bootstrap;
+#'   see argument `stats`) confidence intervals with (nominal) coverage `1 -
+#'   alpha`. Items `"diff"` and `"diff.se"` are only supported if `deltas` is
+#'   `FALSE`.
 #' @param deltas If `TRUE`, the submodel statistics are estimated as differences
 #'   from the baseline model (see argument `baseline`) instead of estimating the
 #'   actual values of the statistics.
@@ -880,7 +880,7 @@ suggest_size.vsel <- function(
     } else {
       suggested_size <- NA
       if (warnings) {
-        warning("Could not suggest model size. Investigate plot.vsel() to ",
+        warning("Could not suggest submodel size. Investigate plot.vsel() to ",
                 "identify if the search was terminated too early. If this is ",
                 "the case, run variable selection with larger value for ",
                 "`nterms_max`.")
@@ -913,7 +913,11 @@ replace_population_names <- function(population_effects, nm_scheme) {
       names(population_effects),
       nm_scheme = nm_scheme
     )
-    names(population_effects) <- paste0("b_", names(population_effects))
+    if (length(population_effects) > 0) {
+      # We could also use `recycle0 = TRUE` here, but that would
+      # require R >= 4.0.1.
+      names(population_effects) <- paste0("b_", names(population_effects))
+    }
   }
   return(population_effects)
 }
