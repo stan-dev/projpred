@@ -3,10 +3,8 @@
 * Local:
     + R version 4.2.1 (2022-06-23) on Ubuntu 22.04.1 LTS system (platform:
       x86_64-pc-linux-gnu (64-bit))
-    + R version 4.2.1 (2022-06-23 ucrt) on Windows 10 x64 (build 19044) system
-      (platform: x86_64-w64-mingw32/x64 (64-bit))
 * win-builder:
-    + R-devel (R Under development (unstable) (2022-08-17 r82724 ucrt))
+    + R-devel (R Under development (unstable) (2022-09-19 r82880 ucrt))
     + R-release (R version 4.2.1 (2022-06-23 ucrt))
     + R-oldrelease (R version 4.1.3 (2022-03-10))
 * macOS builder:
@@ -51,17 +49,6 @@ feasibility ...`:
       cmdstanr
     Availability using Additional_repositories specification:
       cmdstanr   yes   https://mc-stan.org/r-packages/
-    
-    Found the following (possibly) invalid URLs:
-      URL: https://doi.org/10.1214/17-EJS1337SI
-        From: inst/doc/projpred.html
-        Status: 500
-        Message: Internal Server Error
-      URL: https://doi.org/10.1214/20-EJS1711
-        From: inst/doc/projpred.html
-              README.md
-        Status: 500
-        Message: Internal Server Error
 
 * On R-release, this latter NOTE reads:
     
@@ -95,10 +82,10 @@ feasibility ...`:
     Maintainer: 'Frank Weber <fweber144[ at ]protonmail.com>'
     
     Possibly mis-spelled words in DESCRIPTION:
-      Bürkner (22:41)
-      Paasiniemi (21:27)
-      Piironen (21:17)
-      Vehtari (21:42, 22:53)
+      Bürkner (23:41)
+      Paasiniemi (22:27)
+      Piironen (22:17)
+      Vehtari (22:42, 23:53)
     
     Found the following (possibly) invalid URLs:
       URL: https://doi.org/10.1214/17-EJS1337SI
@@ -124,8 +111,11 @@ The macOS builder check gave the following NOTE:
     * checking package dependencies ... NOTE
     Package suggested but not available for checking: ‘cmdstanr’
 
+(for an explanation, see above).
+
 ## Downstream dependencies
 
 There is one downstream dependency for this package: 'brms'. This downstream
 dependency has been checked with the 'revdepcheck' package
-(<https://r-lib.github.io/revdepcheck>).
+(<https://r-lib.github.io/revdepcheck>) and also locally (with the 'projpred'
+version submitted here).
