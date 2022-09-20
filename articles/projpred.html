@@ -133,7 +133,7 @@
       <h1 data-toc-skip>projpred: Projection predictive feature
 selection</h1>
             
-            <h4 data-toc-skip class="date">2022-08-19</h4>
+            <h4 data-toc-skip class="date">2022-09-20</h4>
       
       <small class="dont-index">Source: <a href="https://github.com/stan-dev/projpred/blob/HEAD/vignettes/projpred.Rmd" class="external-link"><code>vignettes/projpred.Rmd</code></a></small>
       <div class="hidden name"><code>projpred.Rmd</code></div>
@@ -392,16 +392,16 @@ Suggested Projection Size: 6
 
 Selection Summary:
  size solution_terms elpd.loo  se   diff diff.se
-    0           &lt;NA&gt;   -249.1 5.6 -100.8     7.8
-    1             X1   -230.5 6.1  -82.2     8.3
-    2            X14   -205.1 6.2  -56.7     7.5
-    3             X5   -196.5 7.3  -48.1     7.6
-    4            X20   -177.7 5.9  -29.4     6.4
-    5             X6   -168.8 5.0  -20.4     6.2
-    6             X3   -146.5 5.2    1.9     4.6
-    7             X8   -138.3 4.6   10.0     3.4
-    8            X11   -135.5 4.5   12.9     2.5
-    9            X10   -135.1 4.4   13.3     2.4</code></pre>
+    0           &lt;NA&gt;   -249.2 5.6 -102.1     7.7
+    1             X1   -230.6 6.1  -83.5     8.2
+    2            X14   -205.0 6.2  -58.0     7.5
+    3             X5   -196.5 7.2  -49.4     7.6
+    4            X20   -177.7 5.9  -30.6     6.3
+    5             X6   -168.8 5.0  -21.7     6.0
+    6             X3   -146.6 5.1    0.5     4.6
+    7             X8   -138.2 4.5    8.9     3.3
+    8            X11   -135.4 4.5   11.7     2.3
+    9            X10   -135.0 4.4   12.1     2.2</code></pre>
 <div class="sourceCode" id="cb15"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co">### Alternative modifying the number of printed decimal places:</span></span>
 <span><span class="co"># print(cvvs, digits = 2)</span></span>
@@ -471,15 +471,15 @@ marginals of the projected posterior:</p>
 <span>  <span class="va">prj_drws</span>,</span>
 <span>  <span class="st">"median"</span>, <span class="st">"mad"</span>, <span class="kw">function</span><span class="op">(</span><span class="va">x</span><span class="op">)</span> <span class="fu"><a href="https://rdrr.io/r/stats/quantile.html" class="external-link">quantile</a></span><span class="op">(</span><span class="va">x</span>, probs <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">0.025</span>, <span class="fl">0.975</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
-<pre><code>     variable      median        mad       2.5%      97.5%
-1 (Intercept)  0.04648206 0.09668587 -0.1488236  0.2385997
-2          X1  1.37787022 0.08877716  1.1748630  1.5602974
-3         X14 -1.11470328 0.08589042 -1.2963313 -0.9215542
-4          X5 -0.92397042 0.11238732 -1.1436158 -0.7046140
-5         X20 -1.11797985 0.12002328 -1.3301804 -0.9110209
-6          X6  0.54013371 0.09038704  0.3710599  0.7248236
-7          X3  0.77514379 0.09488453  0.5881578  0.9547983
-8       sigma  1.12599091 0.08129363  0.9889443  1.2994112</code></pre>
+<pre><code>     variable     median        mad       2.5%      97.5%
+1 (Intercept)  0.0458985 0.10183583 -0.1505310  0.2205816
+2          X1  1.3834312 0.09130185  1.1956560  1.5532896
+3         X14 -1.1157218 0.09405313 -1.2834051 -0.9318850
+4          X5 -0.9136915 0.11058452 -1.1096153 -0.7263205
+5         X20 -1.1185014 0.10942521 -1.3460276 -0.9092710
+6          X6  0.5395952 0.09545216  0.3489350  0.7149177
+7          X3  0.7767160 0.09659702  0.5948437  0.9772419
+8       sigma  1.1304147 0.08527177  0.9919125  1.3107667</code></pre>
 <p>A visualization of the projected posterior can be achieved with the
 <strong>bayesplot</strong> package, for example using its
 <code><a href="https://mc-stan.org/bayesplot/reference/MCMC-intervals.html" class="external-link">mcmc_intervals()</a></code> function:</p>
@@ -531,9 +531,9 @@ predictive distributions:<a href="#fn6" class="footnote-ref" id="fnref6"><sup>6<
 <code class="sourceCode R"><span><span class="va">prj_linpred</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/pred-projection.html">proj_linpred</a></span><span class="op">(</span><span class="va">prj</span>, newdata <span class="op">=</span> <span class="va">dat_gauss_new</span>, integrated <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/cbind.html" class="external-link">cbind</a></span><span class="op">(</span><span class="va">dat_gauss_new</span>, linpred <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/vector.html" class="external-link">as.vector</a></span><span class="op">(</span><span class="va">prj_linpred</span><span class="op">$</span><span class="va">pred</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
 <pre><code>  X1 X14 X5 X20 X6 X3     linpred
-1 -1  -1 -1  -1 -1 -1  0.50689656
-2  0   0  0   0  0  0  0.04246826
-3  1   1  1   1  1  1 -0.42196003</code></pre>
+1 -1  -1 -1  -1 -1 -1  0.50053930
+2  0   0  0   0  0  0  0.04160798
+3  1   1  1   1  1  1 -0.41732334</code></pre>
 <p>If <code>dat_gauss_new</code> also contained response values (i.e.,
 <code>y</code> values in this example), then <code><a href="../reference/pred-projection.html">proj_linpred()</a></code>
 would also evaluate the log predictive density at these.</p>
