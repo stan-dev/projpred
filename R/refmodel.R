@@ -1205,6 +1205,13 @@ init_refmodel <- function(object, data, formula, family, ref_predfun = NULL,
     offset <- rep(0, length(y))
   }
 
+  if (!proper_model && !all(offset == 0)) {
+    # Disallow offsets for `datafit`s because the submodel fitting does not take
+    # offsets into account (but `<refmodel>$mu` contains the observed response
+    # values which inevitably "include" the offsets):
+    stop("For a `datafit`, offsets are not allowed.")
+  }
+
   # For avoiding the warning "contrasts dropped from factor <factor_name>" when
   # predicting for each projected draw, e.g., for submodels fit with lm()/glm():
   has_contr <- sapply(data, function(data_col) {
