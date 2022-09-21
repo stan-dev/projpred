@@ -48,12 +48,9 @@ In this example, we will illustrate that in case of an(**TODO (latent)**: "a mul
 
 ### Data
 
-First, we generate a training and a test dataset with a Poisson-distributed response:
+First, we generate some fake data with a Poisson-distributed response:
 ```{r}
-# Number of observations in the training dataset (= number of observations in
-# the test dataset):
-N <- 100
-sim_poiss <- function(nobs = 2 * N, ncon = 10, ngrpPL = 4, ngrpGL = 10) {
+sim_poiss <- function(nobs = 100, ncon = 10, ngrpPL = 4, ngrpGL = 10) {
   # Regression coefficients for continuous predictors:
   coefs_con <- rnorm(ncon)
   # Continuous predictors:
@@ -93,8 +90,6 @@ sim_poiss <- function(nobs = 2 * N, ncon = 10, ngrpPL = 4, ngrpGL = 10) {
 }
 set.seed(300416)
 dat_poiss <- sim_poiss()
-dat_poiss_train <- dat_poiss[1:N, , drop = FALSE]
-dat_poiss_test <- dat_poiss[(N + 1):nrow(dat_poiss), , drop = FALSE]
 ```
 
 ### Reference model
@@ -103,10 +98,12 @@ Next, we fit the reference model that we consider as the best model in terms of 
 ```{r}
 library(rstanarm)
 # Number of regression coefficients:
-( D <- sum(grepl("^x", names(dat_poiss_train))) )
+( D <- sum(grepl("^x", names(dat_poiss))) )
 # Prior guess for the number of relevant (i.e., non-zero) regression
 # coefficients:
 p0 <- 3
+# Number of observations:
+N <- nrow(dat_poiss)
 # Hyperprior scale for tau, the global shrinkage parameter:
 ### TODO (latent): Use the appropriate sigma_tilde from piironen_sparsity_2017:
 tau0 <- p0 / (D - p0) * 1 / sqrt(N)
@@ -121,7 +118,7 @@ options(mc.cores = ncores)
 refm_fit_poiss <- stan_glmer(
   y ~ x1 + x2 + x3 + x4 + x5 + x6 + x7 + x8 + x9 + x10 + grpPL + (1 | grpGL),
   family = poisson(),
-  data = dat_poiss_train,
+  data = dat_poiss,
   prior = hs(global_scale = tau0, slab_df = 100, slab_scale = 1),
   ### Only for the sake of speed (not recommended in general):
   chains = 2, iter = 500,
@@ -132,22 +129,13 @@ refm_fit_poiss <- stan_glmer(
 
 ### Variable selection using the latent projection
 
-We now run a variable selection with `latent = TRUE` to request the latent projection (since we have a hold-out test dataset available, we can use `varsel()`'s argument `d_test` instead of `cv_varsel()`):
+We now run a variable selection using `cv_varsel()` with `latent = TRUE` to request the latent projection:
 ```{r, results='hide'}
 library(projpred)
-cvvs_lat <- varsel(
+cvvs_lat <- cv_varsel(
   refm_fit_poiss,
-  d_test = list(
-    data = dat_poiss_test,
-    offset = rep(0, nrow(dat_poiss_test)),
-    weights = rep(1, nrow(dat_poiss_test)),
-    ### Here, we are not interested in latent-scale post-processing, so we can
-    ### set element `y` to a vector of `NA`s:
-    y = rep(NA, nrow(dat_poiss_test)),
-    ###
-    yOrig = dat_poiss_test$y
-  ),
   ### Only for the sake of speed (not recommended in general):
+  validate_search = FALSE,
   nclusters_pred = 20,
   ###
   ### TODO (latent):
@@ -201,15 +189,10 @@ We will skip the post-selection inference here (see the main vignette for a demo
 
 We will now look at what **projpred**'s traditional projection would have given:
 ```{r, results='hide'}
-cvvs_trad <- varsel(
+cvvs_trad <- cv_varsel(
   refm_fit_poiss,
-  d_test = list(
-    data = dat_poiss_test,
-    offset = rep(0, nrow(dat_poiss_test)),
-    weights = rep(1, nrow(dat_poiss_test)),
-    y = dat_poiss_test$y
-  ),
   ### Only for the sake of speed (not recommended in general):
+  validate_search = FALSE,
   nclusters_pred = 20,
   ###
   ### TODO (latent):
