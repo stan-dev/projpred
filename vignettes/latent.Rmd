@@ -127,9 +127,9 @@ refm_fit_poiss <- stan_glmer(
 )
 ```
 
-### Variable selection
+### Variable selection using the latent projection
 
-We now run a variable selection using `cv_varsel()` with `latent = TRUE` to state that we want to use the latent projection:
+We now run a variable selection using `cv_varsel()` with `latent = TRUE` to request the latent projection:
 ```{r, results='hide'}
 library(projpred)
 cvvs_lat <- cv_varsel(
@@ -151,8 +151,7 @@ In order to decide for a submodel size, we first inspect the `plot()` results:
 ( gg_lat <- plot(cvvs_lat, stats = "mlpd", deltas = TRUE) )
 ```
 
-Although the MLPD seems to be very close to the reference model's MLPD from a submodel size of 9 on, a look at 
-a zoomed plot reveals that there is still some discrepancy at size 9 and that size 10 would be a better choice (further down below in the `summary()` output, we will see that on absolute---not difference---scale, the discrepancy at size 9 is not negligible):
+Although the MLPD seems to be very close to the reference model's MLPD from a submodel size of 9 on, a look at a zoomed plot reveals that there is still some discrepancy at size 9 and that size 10 would be a better choice (further down below in the `summary()` output, we will also see that on absolute scale, the discrepancy at size 9 is not negligible):
 ```{r}
 gg_lat + ggplot2::coord_cartesian(ylim = c(-10, 0.05))
 ```
@@ -176,7 +175,7 @@ smmry_lat <- summary(
 )
 print(smmry_lat, digits = 3)
 ```
-On absolute scale (column `mlpd.loo`), we see that submodel size 9 leads to an MLPD of `-1.820`, i.e., a "geometric mean predictive probability" (GMPP) of `exp(-1.820)` which is ca. `r paste(100 * round(exp(-1.820), 3), "%")` whereas size 10 leads to a GMPP of ca. `r paste(100 * round(exp(-1.463), 3), "%")`. This is a considerable improvement from size 9 to size 10, so another justification for size 10.
+On absolute scale (column `mlpd.loo`), we see that submodel size 9 leads to an MLPD of `-1.820`, i.e., a geometric mean predictive probability (GMPP) of `exp(-1.820)` which is ca. `r paste(100 * round(exp(-1.820), 3), "%")` whereas size 10 leads to a GMPP of ca. `r paste(100 * round(exp(-1.463), 3), "%")`. This is a considerable improvement from size 9 to size 10, so another justification for size 10.
 
 Our decided submodel size of 10 means to include all predictor terms except for `x5` and `x10`:
 ```{r}
@@ -184,21 +183,23 @@ soltrms_lat <- solution_terms(cvvs_lat)
 ( soltrms_lat_final <- head(soltrms_lat, modsize_decided_lat) )
 ```
 
-We will skip the post-selection inference here, but note that `proj_predict()` has a new argument `respOrig` and that analogous functionality is available in `proj_linpred()` (argument `transform`) and `predict.refmodel()` (argument `type`).
+We will skip the post-selection inference here (see the main vignette for a demonstration of post-selection inference), but note that `proj_predict()` has a new argument `respOrig` and that analogous functionality is available in `proj_linpred()` (argument `transform`) and `predict.refmodel()` (argument `type`).
 
-**TODO (latent)**: STOPPED HERE.
+### Variable selection using the traditional projection
 
-We can compare this implementation of latent projection predictive variable selection to vanilla **projpred** since the underlying covariate does in fact have distribution belonging to the exponential family. This is done below.
-
-```{r, eval=FALSE}
-# get reference model from BRMS object
-refmodel <- get_refmodel(model_poisson)
-# perform variable selection
-vanilla_vs <- varsel(refmodel, seed = 95930)
-# selection order of the variables
-solution_terms(vanilla_vs)
-# plot results
-plot(vanilla_vs, stats = c('elpd', 'rmse'), seed = 4537)
+We will now look at what **projpred**'s traditional projection would have given:
+```{r, results='hide'}
+cvvs_trad <- cv_varsel(
+  refm_fit_poiss,
+  ### Only for the sake of speed (not recommended in general):
+  validate_search = FALSE,
+  nclusters_pred = 20,
+  ###
+  ### TODO (latent):
+  # nterms_max = 8,
+  ###
+  seed = 95930
+)
 ```
 
 ## References
