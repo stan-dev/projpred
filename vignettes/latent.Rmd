@@ -20,12 +20,94 @@ vignette: >
 
 ## Introduction
 
-This vignette shows how to apply the latent projection predictive feature selection from @catalina_latent_2021 using **projpred**.
+This vignette shows how to use the latent projection predictive feature selection from @catalina_latent_2021 in **projpred**. We recommend to read the main vignette first, as the latent-projection vignette presented here will skip some of the details explained in the main vignette.
 
+### General idea
+
+For models with a response distribution that does not belong to the exponential family, the Kullback-Leibler (KL) divergence minimization problem [see @piironen_projective_2020] is often not easy to solve analytically. In order to bypass this issue, the latent projection [@catalina_latent_2021] solves the KL minimization problem in the predictive space of the latent predictors^[The latent predictors are also known as the linear predictors, but "latent" is a more general term than "linear".] instead of in the predictive space of the original response values.
+
+To this end, the latent predictor is assumed to have a Gaussian distribution, since it (i) constitutes the (often linear) combination of predictor data and regression parameters and (ii) has infinite support. Furthermore, the Gaussian distribution has the highest differential entropy over all distributions with two finite moments and infinite support [see, e.g., @cover_elements_1991]. In some cases, e.g., for the probit link, the Gaussian distribution is even part of the original statistical model. In case of the logit link, the Gaussian distribution with a standard deviation of $1.6$ approximates the logistic distribution (with a scale parameter of $1$).
+
+With the assumption of a Gaussian distribution for the latent predictors, we return to the "easy" exponential-family case and can make use of **projpred**'s traditional projection for the Gaussian family. 
+
+As illustrated by the Poisson example below(**TODO (latent)**), the latent projection can not only be used for non-exponential-family response distributions, but it can also be beneficial for exponential-family response distributions.
+
+### Implementation
+
+To use the latent projection in **projpred**, the new argument `latent` of `extend_family()` needs to be set to `TRUE`. Note that since `extend_family()` is called by `init_refmodel()` which in turn is called by `get_refmodel()` (more precisely, by the `get_refmodel()` methods) which in turn is called at the beginning of the top-level functions `project()`, `varsel()`, and `cv_varsel()`, most users will usually pass `latent = TRUE` from the top-level function they want to use (e.g., `cv_varsel()`) down to `extend_family()` via the ellipsis (`...`). This is also illustrated in the example(**TODO (latent)**: "examples"?) below
+
+After performing the projection (either as a stand-alone feature via `project()` or embedded in a variable selection via `varsel()` or `cv_varsel()`), the post-processing (e.g., the calculation of the performance statistics in `summary.vsel()`) can be performed on the original response scale. For this, `extend_family()` has gained several new arguments accepting R functions responsible for the inverse-link transformation from latent scale to response scale (`latent_ilink`), for the calculation of log-likelihood values on response scale (`latent_llOrig`), and for drawing from the predictive distribution on response scale (`latent_ppdOrig`). For some families, these arguments have internal defaults implemented natively in **projpred**. These families are listed in the main vignette (section "Supported types of reference models"). For all other families, **projpred** either tries to infer a reasonable function internally (in case of `latent_ilink`) or uses a dummy function returning only `NA`s (in case of `latent_llOrig` and `latent_ppdOrig`), unless the user supplies custom functions to these arguments. When creating a reference model for a family of the latter category (i.e., lacking full response-scale support by default), **projpred** will throw messages stating whether (and which) features will be unavailable unless at least some of these arguments are provided by the user. Again, the ellipsis (`...`) can be used to pass these arguments from a top-level function such as `cv_varsel()` down to `extend_family()`. In the post-processing functions, response-scale analyses can usually be deactivated by setting the new argument `respOrig` to `FALSE`, with the exception of `predict.refmodel()` and `proj_linpred()` where the existing arguments `type` and `transform` serve this purpose (see the documentation).
+
+Apart from the arguments mentioned above, `extend_family()` has also gained a new argument `latent_y_unqs` whose purpose is described in the documentation.
+
+While the latent projection is an approximate solution to the KL divergence minimization problem in the original response space^[More precisely, the latent projection *replaces* the KL divergence minimization problem in the original response space by a KL divergence minimization problem in the latent space and solves the latter.], the augmented-data projection (**TODO (augdat)**: Add reference for the augmented-data projection here.) gives the exact^[Here, "exact" means apart from approximations and simplifications which are also undertaken for the traditional---i.e., neither augmented-data nor latent---projection.] solution for some non-exponential-family models, namely those where the response distribution has finite support. However, the augmented-data projection comes with a higher runtime than the latent projection. The families supported by **projpred**'s augmented-data projection are also listed in the main vignette (again section "Supported types of reference models").
+
+## Example:(**TODO (latent)**: "Multilevel"?) Poisson distribution
+
+In this example, we will illustrate that in case of an(**TODO (latent)**: "a multilevel model with an"?) exponential-family response distribution (here the Poisson distribution), the latent projection can improve runtime and **TODO (latent)** compared to **projpred**'s traditional projection.(**TODO (latent)**: do we achieve this?)
+
+### Data
+
+First, we generate some fake data with a Poisson-distributed response:
 ```{r}
-# Attach packages that are needed for this vignette:
-library(brms)
-library(projpred)
+sim_poiss <- function(nobs = 100, ncon = 10, ngrpPL = 4, ngrpGL = 10) {
+  # Regression coefficients for continuous predictors:
+  coefs_con <- rnorm(ncon)
+  # Continuous predictors:
+  X_con <- matrix(rnorm(nobs * ncon), ncol = ncon)
+  colnames(X_con) <- paste0("x", seq_len(ncon))
+  # Start linear predictor:
+  linpred <- X_con %*% coefs_con
+  
+  # Population-level (PL) categorical predictor:
+  X_con <- data.frame(X_con,
+                      grpPL = gl(n = ngrpPL, k = nobs %/% ngrpPL, length = nobs,
+                                 labels = paste0("grpPL", seq_len(ngrpPL))))
+  # Regression coefficients for the PL categorical predictor:
+  coefs_catPL <- rnorm(ngrpPL)
+  # Continue linear predictor:
+  linpred <- linpred + coefs_catPL[X_con$grpPL]
+  
+  # Group-level (GL) categorical predictor:
+  X_con <- data.frame(X_con,
+                      grpGL = gl(n = ngrpGL, k = nobs %/% ngrpGL, length = nobs,
+                                 labels = paste0("grpGL", seq_len(ngrpGL))))
+  # Shuffle the GL categorical predictor to avoid a systematic structure in
+  # combination with the PL categorical predictor:
+  X_con$grpGL <- sample(X_con$grpGL)
+  # Regression coefficients for the GL categorical predictor:
+  coefs_catGL <- rnorm(ngrpGL)
+  # Continue linear predictor:
+  linpred <- linpred + coefs_catGL[X_con$grpGL]
+  
+  # Poisson response, using the log link (i.e., exp() as inverse link):
+  X_con$y <- rpois(nobs, lambda = exp(linpred))
+  # Shuffle order of observations:
+  X_con <- X_con[sample.int(nobs), , drop = FALSE]
+  # Drop the shuffled original row names:
+  rownames(X_con) <- NULL
+  return(X_con)
+}
+set.seed(300416)
+dat_poiss <- sim_poiss()
+```
+
+### Reference model
+
+Next, we fit the reference model that we consider as the best model in terms of predictive performance that we can construct (here, we are able to use the oracle likelihood because of the simulated data, but in practice, the reference model will not capture all details of the true data-generating process):
+```{r}
+library(rstanarm)
+# Number of regression coefficients:
+( D <- sum(grepl("^x", names(dat_poiss))) )
+# Prior guess for the number of relevant (i.e., non-zero) regression
+# coefficients:
+p0 <- 3
+# Number of observations:
+N <- nrow(dat_poiss)
+# Hyperprior scale for tau, the global shrinkage parameter:
+### TODO (latent): Use the appropriate sigma_tilde from piironen_sparsity_2017:
+tau0 <- p0 / (D - p0) * 1 / sqrt(N)
+###
 # Set this manually if desired:
 ncores <- parallel::detectCores(logical = FALSE)
 ### Only for technical reasons in this vignette (you can omit this when running
@@ -33,107 +115,90 @@ ncores <- parallel::detectCores(logical = FALSE)
 ncores <- min(ncores, 2L)
 ###
 options(mc.cores = ncores)
+refm_fit_poiss <- stan_glmer(
+  y ~ x1 + x2 + x3 + x4 + x5 + x6 + x7 + x8 + x9 + x10 + grpPL + (1 | grpGL),
+  family = poisson(),
+  data = dat_poiss,
+  prior = hs(global_scale = tau0, slab_df = 100, slab_scale = 1),
+  ### Only for the sake of speed (not recommended in general):
+  chains = 2, iter = 500,
+  ###
+  seed = 286012, QR = TRUE, refresh = 0
+)
 ```
 
-```{r, echo=FALSE}
-# Building the vignette fails in `R CMD check` if we use the rstan backend, so
-# use the cmdstanr backend:
-options(brms.backend = "cmdstanr")
+### Variable selection
+
+We now run a variable selection using `cv_varsel()` with `latent = TRUE` to state that we want to use the latent projection:
+```{r, results='hide'}
+library(projpred)
+cvvs_lat <- cv_varsel(
+  refm_fit_poiss,
+  ### Only for the sake of speed (not recommended in general):
+  validate_search = FALSE,
+  nclusters_pred = 20,
+  ###
+  ### TODO (latent):
+  # nterms_max = 8,
+  ###
+  seed = 95930,
+  latent = TRUE
+)
 ```
 
-## General idea
+In order to decide for a submodel size, we first inspect the `plot()` results:
+```{r}
+( gg_lat <- plot(cvvs_lat, stats = "mlpd", deltas = TRUE) )
+```
 
-For models with a response distribution that does not belong to the exponential family, the KL divergence minimisation problem solved in projection is not analytically easy to compute in general. This is the foundational idea of efficient projection predictive inference. In order to bypass this issue, we solve the KL minimisation in the latent predictive space $p(\tilde{\eta}|\lambda_*)$ under the general model formulation for data $\mathcal{D}=\{\boldsymbol X | y\}$
-$$
-y\sim p(\mu, \phi),\quad\mu = g(\eta),\quad \eta\sim p(\lambda|\boldsymbol X),
-$$
-where we have regressions parameters $\lambda$, inverse link function $g(\cdot)$, and $\eta$ is called the latent predictor.
+Although the MLPD seems to be very close to the reference model's MLPD from a submodel size of 9 on, a look at 
+a zoomed plot reveals that there is still some discrepancy at size 9 and that size 10 would be a better choice (further down below in the `summary()` output, we will see that on absolute---not difference---scale, the discrepancy at size 9 is not negligible):
+```{r}
+gg_lat + ggplot2::coord_cartesian(ylim = c(-10, 0.05))
+```
 
-We make the assumption in this setting that the latent predictor has a Gaussian distribution, since it is the linear combination of our data and our regressors and has infinite support. In the case where $\eta$ has two finite moments, then the Gaussian distribution has the highest differential entropy over all distributions with two finite moments and infinite support [see, e.g., @cover_elements_1991]. In doing so, we return to the "easy" exponential family case, and can implement the original `projpred` workflow once more.
+Thus, we decide for a submodel size of 10:
+```{r}
+modsize_decided_lat <- 10
+```
 
-<!-- ## Exponential GLM example -->
+This is also the size that `suggest_size()` would suggest:
+```{r}
+suggest_size(cvvs_lat, stat = "mlpd")
+```
 
-<!-- In the case of an exponential variate distribution, it has been shown in @catalina_latent_2021 this Gaussian approximation can improve training times and occasionally identify superior search paths to vanilla `projpred`. -->
+Only now, after we have made a decision for the submodel size, we inspect further results from the variable selection and, in particular, the solution path:
+```{r}
+smmry_lat <- summary(
+  cvvs_lat,
+  stats = "mlpd",
+  type = c("mean", "se", "lower", "upper", "diff", "diff.se")
+)
+print(smmry_lat, digits = 3)
+```
+On absolute scale (column `mlpd.loo`), we see that submodel size 9 leads to an MLPD of `-1.820`, i.e., a "geometric mean predictive probability" (GMPP) of `exp(-1.820)` which is ca. `r paste(100 * round(exp(-1.820), 3), "%")` whereas size 10 leads to a GMPP of ca. `r paste(100 * round(exp(-1.463), 3), "%")`. This is a considerable improvement from size 9 to size 10, so another justification for size 10.
 
-<!-- To begin with, we generate some fake Poisson GLM data. -->
+Our decided submodel size of 10 means to include all predictor terms except for `x5` and `x10`:
+```{r}
+soltrms_lat <- solution_terms(cvvs_lat)
+( soltrms_lat_final <- head(soltrms_lat, modsize_decided_lat) )
+```
 
-<!-- ```{r} -->
-<!-- # generate random data -->
-<!-- generate_fake_poisson_data <- -->
-<!--   function(N = 100, -->
-<!--            G = round(N / 10), -->
-<!--            P = 3) { -->
-<!--     # regression coefficients -->
-<!--     beta <- rnorm(P) -->
-<!--     # sampled covariates, group means and fake data -->
-<!--     fake <- matrix(rnorm(N * P), ncol = P) -->
-<!--     dimnames(fake) <- list(NULL, paste0("x", 1:P)) -->
-<!--     # fixed effect part and sampled group membership -->
-<!--     fake <- transform(as.data.frame(fake), -->
-<!--                       theta = fake %*% beta, -->
-<!--                       g = sample.int(G, N, replace = TRUE)) -->
-<!--     # add random intercept by group -->
-<!--     fake  <- -->
-<!--       merge(fake, data.frame(g = 1:G, eta = rnorm(G)), by = "g") -->
-<!--     # linear predictor -->
-<!--     fake  <- transform(fake, mu = theta + eta) -->
-<!--     # sample Poisson data -->
-<!--     fake  <- transform(fake, y = rpois(N, exp(mu))) -->
-<!--     # shuffle order of data rows to ensure even distribution of computational effort -->
-<!--     fake <- fake[sample.int(N, N), ] -->
-<!--     # drop not needed row names -->
-<!--     rownames(fake) <- NULL -->
-<!--     return(fake) -->
-<!--   } -->
-<!-- set.seed(300416) -->
-<!-- pois <- generate_fake_poisson_data() -->
-<!-- ``` -->
+We will skip the post-selection inference here, but note that `proj_predict()` has a new argument `respOrig` and that analogous functionality is available in `proj_linpred()` (argument `transform`) and `predict.refmodel()` (argument `type`).
 
-<!-- We begin by fitting some reference model we believe to be a good fit to the data in BRMS. -->
+**TODO (latent)**: STOPPED HERE.
 
-<!-- ```{r} -->
-<!-- # build reference model -->
-<!-- model_poisson <- brm( -->
-<!--   formula = y ~ 1 + x1 + x2, -->
-<!--   data = pois, -->
-<!--   family = poisson(), -->
-<!--   prior = set_prior("normal(0, 1)", class = "b"), -->
-<!--   seed = 300416, refresh = 0 -->
-<!-- ) -->
-<!-- ``` -->
+We can compare this implementation of latent projection predictive variable selection to vanilla **projpred** since the underlying covariate does in fact have distribution belonging to the exponential family. This is done below.
 
-<!-- We now extract a reference model in terms of the latent predictor under the Gaussianity assumption. This is done in `projpred` by setting `latent = TRUE`. -->
-
-<!-- ```{r} -->
-<!-- # define new reference model for latent predictor -->
-<!-- latent_ref <- get_refmodel( -->
-<!--   model_poisson, -->
-<!--   latent = TRUE -->
-<!-- ) -->
-<!-- ``` -->
-
-<!-- Now having a reference model where the variate's distribution belongs to the exponential family (in this case it is Gaussian), we are able to employ the standard `varsel` function from `projpred` to perform variable selection. The results are then plotted below. -->
-
-<!-- ```{r} -->
-<!-- # perform variable selection on the latent reference model -->
-<!-- latent_vs <- varsel(latent_ref, seed = 95930) -->
-<!-- # selection order of the variables -->
-<!-- solution_terms(latent_vs) -->
-<!-- # plot varsel results -->
-<!-- plot(latent_vs, stats = c('elpd', 'rmse'), seed = 4537) -->
-<!-- ``` -->
-
-<!-- We can compare this implementation of latent projection predictive variable selection to vanilla `projpred` since the underlying covariate does in fact have distribution belonging to the exponential family. This is done below. -->
-
-<!-- ```{r} -->
-<!-- # get reference model from BRMS object -->
-<!-- refmodel <- get_refmodel(model_poisson) -->
-<!-- # perform variable selection -->
-<!-- vanilla_vs <- varsel(refmodel, seed = 95930) -->
-<!-- # selection order of the variables -->
-<!-- solution_terms(vanilla_vs) -->
-<!-- # plot results -->
-<!-- plot(vanilla_vs, stats = c('elpd', 'rmse'), seed = 4537) -->
-<!-- ``` -->
+```{r, eval=FALSE}
+# get reference model from BRMS object
+refmodel <- get_refmodel(model_poisson)
+# perform variable selection
+vanilla_vs <- varsel(refmodel, seed = 95930)
+# selection order of the variables
+solution_terms(vanilla_vs)
+# plot results
+plot(vanilla_vs, stats = c('elpd', 'rmse'), seed = 4537)
+```
 
 ## References
