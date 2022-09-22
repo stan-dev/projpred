@@ -233,8 +233,43 @@ fit_gamm_callback <- function(formula, projpred_formula_no_random,
 fit_glmer_callback <- function(formula, family,
                                control = control_callback(family), ...) {
   tryCatch({
-    if (family$family == "gaussian" && family$link == "identity" &&
-        getOption("projpred.gaussian_not_as_generalized", TRUE)) {
+    if (getOption("projpred.PQL", FALSE)) {
+      # Exclude arguments from `...` which cannot be passed to MASS::glmmPQL():
+      dot_args <- list(...)
+      dot_args <- dot_args[intersect(
+        names(dot_args),
+        methods::formalArgs(MASS::glmmPQL)
+      )]
+      ### TODO (glmmPQL): Do this in divmin() and divmin_augdat() (for
+      ### efficiency):
+      # Split up the formula into a fixed and a random part (note: we could also
+      # use lme4::nobars() and lme4::findbars() here):
+      formula_random <- split_formula_random_gamm4(formula)
+      projpred_formula_no_random <- formula_random$formula
+      projpred_random <- formula_random$random
+      ###
+      # Strip parentheses from group-level terms:
+      random_trms <- labels(terms(projpred_random))
+      # if (length(random_trms) > 1) {
+      #   ### TODO (glmmPQL): Can this be extended to multiple group-level
+      #   ### variables?:
+      #   stop("MASS::glmmPQL() can only handle a single group-level term.")
+      #   ###
+      # }
+      random_fmls <- lapply(random_trms, function(random_trm) {
+        as.formula(paste("~", random_trm))
+      })
+      if (length(random_fmls) == 1) {
+        random_fmls <- random_fmls[[1]]
+      }
+      # Call the submodel fitter:
+      return(suppressMessages(suppressWarnings(do.call(MASS::glmmPQL, c(
+        list(fixed = projpred_formula_no_random, random = random_fmls,
+             family = family, control = control),
+        dot_args
+      )))))
+    } else if (family$family == "gaussian" && family$link == "identity" &&
+               getOption("projpred.gaussian_not_as_generalized", TRUE)) {
       # Exclude arguments from `...` which cannot be passed to lme4::lmer():
       dot_args <- list(...)
       dot_args <- dot_args[intersect(
@@ -255,8 +290,7 @@ fit_glmer_callback <- function(formula, family,
       )]
       # Call the submodel fitter:
       return(suppressMessages(suppressWarnings(do.call(lme4::glmer, c(
-        list(formula = formula, family = family,
-             control = control),
+        list(formula = formula, family = family, control = control),
         dot_args
       )))))
     }
@@ -797,12 +831,21 @@ check_conv <- function(fit) {
 
 subprd <- function(fits, newdata) {
   prd_list <- lapply(fits, function(fit) {
+    is_glmmPQL <- inherits(fit, "glmmPQL")
     is_glmm <- inherits(fit, c("lmerMod", "glmerMod"))
     is_gam_gamm <- inherits(fit, c("gam", "gamm4"))
     if (is_gam_gamm && !is.null(newdata)) {
       newdata <- cbind(`(Intercept)` = rep(1, NROW(newdata)), newdata)
     }
-    if (is_glmm) {
+    if (is_glmmPQL) {
+      return(
+        predict(fit, newdata = newdata)
+        ### TODO (glmmPQL):
+        # predict(fit, newdata = newdata, level = 0) +
+        #   repair_re(fit, newdata = newdata)
+        ###
+      )
+    } else if (is_glmm) {
       return(predict(fit, newdata = newdata, allow.new.levels = TRUE) +
                repair_re(fit, newdata = newdata))
     } else {
