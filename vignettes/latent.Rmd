@@ -81,7 +81,7 @@ sim_poiss <- function(nobs = 100, ncon = 10, ngrpPL = 4, ngrpGL = 10) {
   linpred <- linpred + coefs_catGL[X_con$grpGL]
   
   # Poisson response, using the log link (i.e., exp() as inverse link):
-  X_con$y <- rpois(nobs, lambda = exp(linpred))
+  X_con$y <- rbinom(nobs, size = 1, prob = plogis(linpred))
   # Shuffle order of observations:
   X_con <- X_con[sample.int(nobs), , drop = FALSE]
   # Drop the shuffled original row names:
@@ -105,9 +105,7 @@ p0 <- 3
 # Number of observations:
 N <- nrow(dat_poiss)
 # Hyperprior scale for tau, the global shrinkage parameter:
-### TODO (latent): Use the appropriate sigma_tilde from piironen_sparsity_2017:
-tau0 <- p0 / (D - p0) * 1 / sqrt(N)
-###
+tau0 <- p0 / (D - p0) * 2 / sqrt(N)
 # Set this manually if desired:
 ncores <- parallel::detectCores(logical = FALSE)
 ### Only for technical reasons in this vignette (you can omit this when running
@@ -117,7 +115,7 @@ ncores <- min(ncores, 2L)
 options(mc.cores = ncores)
 refm_fit_poiss <- stan_glmer(
   y ~ x1 + x2 + x3 + x4 + x5 + x6 + x7 + x8 + x9 + x10 + grpPL + (1 | grpGL),
-  family = poisson(),
+  family = binomial(),
   data = dat_poiss,
   prior = hs(global_scale = tau0, slab_df = 100, slab_scale = 1),
   ### Only for the sake of speed (not recommended in general):
