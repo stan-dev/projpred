@@ -200,6 +200,8 @@ cvvs_trad <- cv_varsel(
   ###
   seed = 95930
 )
+( gg_trad <- plot(cvvs_trad, stats = "mlpd", deltas = TRUE) )
+gg_trad + ggplot2::coord_cartesian(ylim = c(-10, 0.05))
 ```
 
 ## References
