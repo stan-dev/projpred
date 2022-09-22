@@ -80,7 +80,9 @@ sim_poiss <- function(nobs = 2 * N, ncon = 10, ngrpPL = 4, ngrpGL = 10,
   # combination with the PL categorical predictor:
   X_con$grpGL <- sample(X_con$grpGL)
   # Regression coefficients for the GL categorical predictor:
+  ### TODO: Make `grpGL` have a larger effect:
   coefs_catGL <- rnorm(ngrpGL)
+  ###
   # Continue linear predictor:
   linpred <- linpred + coefs_catGL[X_con$grpGL]
   
@@ -100,6 +102,10 @@ set.seed(300416)
 dat_poiss <- sim_poiss()
 dat_poiss_train <- dat_poiss[1:N, , drop = FALSE]
 dat_poiss_test <- dat_poiss[(N + 1):nrow(dat_poiss), , drop = FALSE]
+### TODO: Remove this as soon as a repair_re.glmmPQL() method has been added:
+stopifnot(identical(levels(dat_poiss_train$grpGL),
+                    levels(dat_poiss_test$grpGL)))
+### 
 ```
 
 ### Reference model
@@ -208,6 +214,8 @@ We will skip the post-selection inference here (see the main vignette for a demo
 
 We will now look at what **projpred**'s traditional projection would have given:
 ```{r, results='hide'}
+# Activate option `projpred.PQL` to use MASS::glmmPQL() as GLMM submodel fitter:
+options(projpred.PQL = TRUE)
 cvvs_trad <- varsel(
   refm_fit_poiss,
   d_test = list(
@@ -226,6 +234,18 @@ cvvs_trad <- varsel(
 )
 ( gg_trad <- plot(cvvs_trad, stats = "mlpd", deltas = TRUE) )
 gg_trad + ggplot2::coord_cartesian(ylim = c(-10, 0.05))
+# modsize_decided_trad <- 
+suggest_size(cvvs_trad, stat = "mlpd")
+smmry_trad <- summary(
+  cvvs_trad,
+  stats = "mlpd",
+  type = c("mean", "se", "lower", "upper", "diff", "diff.se")
+)
+print(smmry_trad, digits = 3)
+```
+
+```{r}
+stopifnot(inherits(cvvs_trad$search_path$submodls[[8]][[1]], "glmmPQL"))
 ```
 
 ## References
