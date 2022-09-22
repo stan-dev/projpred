@@ -98,7 +98,7 @@ Next, we fit the reference model that we consider as the best model in terms of 
 ```{r}
 library(rstanarm)
 # Number of regression coefficients:
-( D <- sum(grepl("^x", names(dat_poiss))) )
+( D <- sum(grepl("^x|^grpPL", names(dat_poiss))) )
 # Prior guess for the number of relevant (i.e., non-zero) regression
 # coefficients:
 p0 <- 3
