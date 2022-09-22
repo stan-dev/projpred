@@ -80,7 +80,8 @@ sim_poiss <- function(nobs = 2 * N, ncon = 10, ngrpPL = 4, ngrpGL = 10,
   # combination with the PL categorical predictor:
   X_con$grpGL <- sample(X_con$grpGL)
   # Regression coefficients for the GL categorical predictor:
-  ### TODO: Make `grpGL` have a larger effect:
+  ### TODO: Make `grpGL` have a larger effect (and perhaps also increase
+  ### `ngrpGL` to see lme4 issue #682 more clearly):
   coefs_catGL <- rnorm(ngrpGL)
   ###
   # Continue linear predictor:
