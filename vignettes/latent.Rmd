@@ -50,7 +50,7 @@ In this example, we will illustrate that in case of an(**TODO (latent)**: "a mul
 
 First, we generate some fake data with a Poisson-distributed response:
 ```{r}
-sim_poiss <- function(nobs = 100, ncon = 10, ngrpPL = 4, ngrpGL = 10) {
+sim_poiss <- function(nobs = 100, ncon = 10, ngrpPL = 4, ngrpGL = 1) {
   # Regression coefficients for continuous predictors:
   coefs_con <- rnorm(ncon)
   # Continuous predictors:
@@ -115,8 +115,8 @@ ncores <- parallel::detectCores(logical = FALSE)
 ncores <- min(ncores, 2L)
 ###
 options(mc.cores = ncores)
-refm_fit_poiss <- stan_glmer(
-  y ~ x1 + x2 + x3 + x4 + x5 + x6 + x7 + x8 + x9 + x10 + grpPL + (1 | grpGL),
+refm_fit_poiss <- stan_glm( # er
+  y ~ x1 + x2 + x3 + x4 + x5 + x6 + x7 + x8 + x9 + x10 + grpPL, #  + (1 | grpGL)
   family = poisson(),
   data = dat_poiss,
   prior = hs(global_scale = tau0, slab_df = 100, slab_scale = 1),
@@ -139,6 +139,7 @@ cvvs_lat <- cv_varsel(
   nclusters_pred = 20,
   ###
   ### TODO (latent):
+  # method = "forward",
   # nterms_max = 8,
   ###
   seed = 95930,
@@ -158,7 +159,7 @@ gg_lat + ggplot2::coord_cartesian(ylim = c(-10, 0.05))
 
 Thus, we decide for a submodel size of 10:
 ```{r}
-modsize_decided_lat <- 10
+modsize_decided_lat <- 9
 ```
 
 This is also the size that `suggest_size()` would suggest:
@@ -196,10 +197,13 @@ cvvs_trad <- cv_varsel(
   nclusters_pred = 20,
   ###
   ### TODO (latent):
+  # method = "forward",
   # nterms_max = 8,
   ###
   seed = 95930
 )
+( gg_trad <- plot(cvvs_trad, stats = "mlpd", deltas = TRUE) )
+gg_trad + ggplot2::coord_cartesian(ylim = c(-10, 0.05))
 ```
 
 ## References
