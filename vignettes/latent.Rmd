@@ -53,7 +53,8 @@ First, we generate a training and a test dataset with a Poisson-distributed resp
 # Number of observations in the training dataset (= number of observations in
 # the test dataset):
 N <- 100
-sim_poiss <- function(nobs = 2 * N, ncon = 10, ngrpPL = 4, ngrpGL = 10) {
+sim_poiss <- function(nobs = 2 * N, ncon = 10, ngrpPL = 4, ngrpGL = 10,
+                      nnoise = 39) {
   # Regression coefficients for continuous predictors:
   coefs_con <- rnorm(ncon)
   # Continuous predictors:
@@ -83,6 +84,10 @@ sim_poiss <- function(nobs = 2 * N, ncon = 10, ngrpPL = 4, ngrpGL = 10) {
   # Continue linear predictor:
   linpred <- linpred + coefs_catGL[X_con$grpGL]
   
+  # Noise predictors:
+  X_con <- data.frame(X_con,
+                      xn = matrix(rnorm(nobs * nnoise), ncol = nnoise))
+  
   # Poisson response, using the log link (i.e., exp() as inverse link):
   X_con$y <- rbinom(nobs, size = 1, prob = plogis(linpred))
   # Shuffle order of observations:
@@ -106,7 +111,7 @@ library(rstanarm)
 ( D <- sum(grepl("^x|^grpPL", names(dat_poiss_train))) )
 # Prior guess for the number of relevant (i.e., non-zero) regression
 # coefficients:
-p0 <- 3
+p0 <- 11
 # Hyperprior scale for tau, the global shrinkage parameter:
 tau0 <- p0 / (D - p0) * 2 / sqrt(N)
 # Set this manually if desired:
@@ -116,8 +121,12 @@ ncores <- parallel::detectCores(logical = FALSE)
 ncores <- min(ncores, 2L)
 ###
 options(mc.cores = ncores)
+refm_fml <- as.formula(paste("y", "~", paste(
+  c("(1 | grpGL)", grep("^x|^grpPL", names(dat_poiss_train), value = TRUE)),
+  collapse = " + "
+)))
 refm_fit_poiss <- stan_glmer(
-  y ~ x1 + x2 + x3 + x4 + x5 + x6 + x7 + x8 + x9 + x10 + grpPL + (1 | grpGL),
+  formula = refm_fml,
   family = binomial(),
   data = dat_poiss_train,
   prior = hs(global_scale = tau0, slab_df = 100, slab_scale = 1),
