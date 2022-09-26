@@ -42,9 +42,9 @@ Apart from the arguments mentioned above, `extend_family()` has also gained a ne
 
 While the latent projection is an approximate solution to the KL divergence minimization problem in the original response space^[More precisely, the latent projection *replaces* the KL divergence minimization problem in the original response space by a KL divergence minimization problem in the latent space and solves the latter.], the augmented-data projection (**TODO (augdat)**: Add reference for the augmented-data projection here.) gives the exact^[Here, "exact" means apart from approximations and simplifications which are also undertaken for the traditional---i.e., neither augmented-data nor latent---projection.] solution for some non-exponential-family models, namely those where the response distribution has finite support. However, the augmented-data projection comes with a higher runtime than the latent projection. The families supported by **projpred**'s augmented-data projection are also listed in the main vignette (again section "Supported types of reference models").
 
-## Example:(**TODO (latent)**: "Multilevel"?) Poisson distribution
+## Example: Poisson distribution
 
-In this example, we will illustrate that in case of an(**TODO (latent)**: "a multilevel model with an"?) exponential-family response distribution (here the Poisson distribution), the latent projection can improve runtime and lead to a more stable variable selection compared to **projpred**'s traditional projection.
+In this example, we will illustrate that in case of an exponential-family response distribution (here the Poisson distribution), the latent projection can improve runtime and lead to a more stable variable selection compared to **projpred**'s traditional projection.
 
 ### Data
 
@@ -53,8 +53,7 @@ First, we generate a training and a test dataset with a Poisson-distributed resp
 # Number of observations in the training dataset (= number of observations in
 # the test dataset):
 N <- 100
-sim_poiss <- function(nobs = 2 * N, ncon = 10, ngrpPL = 4, ngrpGL = 1,
-                      nnoise = 39) {
+sim_poiss <- function(nobs = 2 * N, ncon = 10, ngrpPL = 4, nnoise = 39) {
   # Regression coefficients for continuous predictors:
   coefs_con <- rnorm(ncon)
   # Continuous predictors:
@@ -72,21 +71,6 @@ sim_poiss <- function(nobs = 2 * N, ncon = 10, ngrpPL = 4, ngrpGL = 1,
   # Continue linear predictor:
   linpred <- linpred + coefs_catPL[X_con$grpPL]
   
-  # Group-level (GL) categorical predictor:
-  X_con <- data.frame(X_con,
-                      grpGL = gl(n = ngrpGL, k = nobs %/% ngrpGL, length = nobs,
-                                 labels = paste0("grpGL", seq_len(ngrpGL))))
-  # Shuffle the GL categorical predictor to avoid a systematic structure in
-  # combination with the PL categorical predictor:
-  X_con$grpGL <- sample(X_con$grpGL)
-  # Regression coefficients for the GL categorical predictor:
-  ### TODO: Make `grpGL` have a larger effect (and perhaps also increase
-  ### `ngrpGL` to see lme4 issue #682 more clearly):
-  coefs_catGL <- rnorm(ngrpGL)
-  ###
-  # Continue linear predictor:
-  linpred <- linpred + coefs_catGL[X_con$grpGL]
-  
   # Noise predictors:
   X_con <- data.frame(X_con,
                       xn = matrix(rnorm(nobs * nnoise), ncol = nnoise))
@@ -103,10 +87,6 @@ set.seed(300416)
 dat_poiss <- sim_poiss()
 dat_poiss_train <- dat_poiss[1:N, , drop = FALSE]
 dat_poiss_test <- dat_poiss[(N + 1):nrow(dat_poiss), , drop = FALSE]
-### TODO: Remove this as soon as a repair_re.glmmPQL() method has been added:
-stopifnot(identical(levels(dat_poiss_train$grpGL),
-                    levels(dat_poiss_test$grpGL)))
-### 
 ```
 
 ### Reference model
@@ -131,10 +111,10 @@ ncores <- min(ncores, 2L)
 ###
 options(mc.cores = ncores)
 refm_fml <- as.formula(paste("y", "~", paste(
-  c(grep("^x|^grpPL", names(dat_poiss_train), value = TRUE)), # "(1 | grpGL)", 
+  c(grep("^x|^grpPL", names(dat_poiss_train), value = TRUE)),
   collapse = " + "
 )))
-refm_fit_poiss <- stan_glm( #er
+refm_fit_poiss <- stan_glm(
   formula = refm_fml,
   family = poisson(),
   data = dat_poiss_train,
@@ -183,14 +163,14 @@ In order to decide for a submodel size, we first inspect the `plot()` results:
 ( gg_lat <- plot(cvvs_lat, stats = "mlpd", deltas = TRUE) )
 ```
 
-Although the MLPD seems to be very close to the reference model's MLPD from a submodel size of 8 on, a look at a zoomed plot reveals that there is still some discrepancy at sizes 8 to 11 and that size 12 would be a better choice (further down below in the `summary()` output, we will also see that on absolute scale, the discrepancy at sizes 8 to 11 is not negligible):
+Although the MLPD seems to be very close to the reference model's MLPD from a submodel size of 7 on, a look at a zoomed plot reveals that there is still some discrepancy at sizes 7 to 10 and that size 11 would be a better choice (further down below in the `summary()` output, we will also see that on absolute scale, the discrepancy at sizes 7 to 10 is not negligible):
 ```{r}
 gg_lat + ggplot2::coord_cartesian(ylim = c(-10, 0.05))
 ```
 
-Thus, we decide for a submodel size of 12:
+Thus, we decide for a submodel size of 11:
 ```{r}
-modsize_decided_lat <- 12
+modsize_decided_lat <- 11
 ```
 
 This is also the size that `suggest_size()` would suggest:
@@ -207,14 +187,15 @@ smmry_lat <- summary(
 )
 print(smmry_lat, digits = 3)
 ```
-On absolute scale (column `mlpd`), we see that submodel size 11 leads to an MLPD of `-2.694`, i.e., a geometric mean predictive probability (GMPP) of `exp(-2.694)` which is ca. `r paste(100 * round(exp(-2.694), 3), "%")` whereas size 12 leads to a GMPP of ca. `r paste(100 * round(exp(-2.238), 3), "%")`. This is a considerable improvement from size 11 to size 12, so another justification for size 12. (Size 13 would have resulted in a GMPP of ca. `r paste(100 * round(exp(-2.221), 3), "%")` which is not so big of an improvement compared to size 12.)
+On absolute scale (column `mlpd`), we see that submodel size 10 leads to an MLPD of ``r round(smmry_lat$selection[["mlpd"]][smmry_lat$selection$size == 10], 3)``, i.e., a geometric mean predictive probability (GMPP) of ``r paste0("exp(", round(smmry_lat$selection[["mlpd"]][smmry_lat$selection$size == 10], 3), ")")`` which is ca. `r paste(100 * round(exp(round(smmry_lat$selection[["mlpd"]][smmry_lat$selection$size == 10], 3)), 3), "%")` whereas size 11 leads to a GMPP of ca. `r paste(100 * round(exp(round(smmry_lat$selection[["mlpd"]][smmry_lat$selection$size == 11], 3)), 3), "%")`. This is a considerable improvement from size 10 to size 11, so another justification for size 11. (Size 12 would have resulted in a GMPP of ca. `r paste(100 * round(exp(round(smmry_lat$selection[["mlpd"]][smmry_lat$selection$size == 12], 3)), 3), "%")` which is no improvement compared to size 11.)
 
-In the solution path up to the selected size of 12, we can see that one noise term (`xn.16`) has slipped among the selected predictor terms. We can see this more explicitly using the following code:
+In the solution path up to the selected size of 11, we can see that in this case, **projpred** has correctly selected the truly relevant predictors first and only then the noise predictors. We can see this more explicitly using the following code:
 ```{r}
 soltrms_lat <- solution_terms(cvvs_lat)
 ( soltrms_lat_final <- head(soltrms_lat, modsize_decided_lat) )
 ```
-This suboptimal solution path is due to the L1 search. A forward search would have given the oracle solution path, i.e., first the truly relevant predictors and only then the noise predictors. However, for speeding up the building of this vignette, we use L1 search here.
+
+Note that a forward search would have given slightly different results (in particular, a slightly smoother plot). However, for speeding up the building of this vignette, we use L1 search here.
 
 We will skip the post-selection inference here (see the main vignette for a demonstration of post-selection inference), but note that `proj_predict()` has gained a new argument `respOrig` and that analogous response-scale functionality is available in `proj_linpred()` (argument `transform`) and `predict.refmodel()` (argument `type`).
 
@@ -222,8 +203,6 @@ We will skip the post-selection inference here (see the main vignette for a demo
 
 We will now look at what **projpred**'s traditional projection would have given:
 ```{r, results='hide'}
-# Activate option `projpred.PQL` to use MASS::glmmPQL() as GLMM submodel fitter:
-options(projpred.PQL = TRUE)
 time_trad <- system.time(cvvs_trad <- varsel(
   refm_fit_poiss,
   d_test = list(
@@ -242,9 +221,6 @@ time_trad <- system.time(cvvs_trad <- varsel(
 ```{r}
 print(time_trad)
 ( gg_trad <- plot(cvvs_trad, stats = "mlpd", deltas = TRUE) )
-gg_trad + ggplot2::coord_cartesian(ylim = c(-10, 0.05))
-# modsize_decided_trad <- 
-suggest_size(cvvs_trad, stat = "mlpd")
 smmry_trad <- summary(
   cvvs_trad,
   stats = "mlpd",
@@ -252,10 +228,11 @@ smmry_trad <- summary(
 )
 print(smmry_trad, digits = 3)
 ```
-Again, a forward search would have resulted in a slightly better behavior of the variable selection (in particular, for very large model sizes, the model size selection curve would eventually have approached the reference model line), but the selection would still have been unstable and some noise terms would still have been selected too early. So, for the sake of speed, we have chosen L1 search here in this vignette.
+As these results show, the traditional projection takes longer than the latent projection, although the difference is rather small on absolute scale (which is due to the fact that an L1 search is already quite fast)(**TODO (latent)**). But, more importantly, the submodel size selection plot is much more unstable and the solution path shows that several noise terms are selected before truly relevant ones.
+<!-- (this is partly due to the L1 search again, but would also hold---even if not that strongly---in case of a forward search; see below). -->
 
-```{r}
-# stopifnot(inherits(cvvs_trad$search_path$submodls[[8]][[1]], "glmmPQL"))
-```
+In case of the traditional projection, a forward search would have given markedly better results (in particular, the submodel size selection curve would eventually have approached the reference model line and the noise terms would have been selected after the truly relevant ones). However, the selection would still have been more unstable than in case of the latent projection.
+
+In conclusion, this example showed that the latent projection can be advantageous also for non-exponential-family models by improving the runtime and providing a more stable submodel size selection plot. The latter holds especially in case of L1 search, but also (even if not that strongly) for forward search. For the former, it's the other way around.
 
 ## References
