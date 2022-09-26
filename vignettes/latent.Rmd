@@ -167,7 +167,7 @@ cvvs_lat <- varsel(
   nclusters_pred = 20,
   ###
   ### TODO (latent):
-  # method = "forward",
+  method = "forward",
   # nterms_max = 8,
   ###
   seed = 95930,
@@ -232,7 +232,7 @@ cvvs_trad <- varsel(
   nclusters_pred = 20,
   ###
   ### TODO (latent):
-  # method = "forward",
+  method = "forward",
   # nterms_max = 8,
   ###
   seed = 95930
