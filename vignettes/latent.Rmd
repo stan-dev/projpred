@@ -58,9 +58,10 @@ sim_poiss <- function(nobs = 2 * N, ncon = 10, ngrpPL = 4, nnoise = 39) {
   coefs_con <- rnorm(ncon)
   # Continuous predictors:
   X_con <- matrix(rnorm(nobs * ncon), ncol = ncon)
-  colnames(X_con) <- paste0("x", seq_len(ncon))
   # Start linear predictor:
   linpred <- X_con %*% coefs_con
+  # Create `data.frame`:
+  X_con <- data.frame(x = X_con)
   
   # Population-level (PL) categorical predictor:
   X_con <- data.frame(X_con,
