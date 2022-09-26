@@ -34,7 +34,7 @@ As illustrated by the Poisson example below, the latent projection can not only 
 
 ### Implementation
 
-To use the latent projection in **projpred**, the new argument `latent` of `extend_family()` needs to be set to `TRUE`. Note that since `extend_family()` is called by `init_refmodel()` which in turn is called by `get_refmodel()` (more precisely, by the `get_refmodel()` methods) which in turn is called at the beginning of the top-level functions `project()`, `varsel()`, and `cv_varsel()`, most users will usually pass `latent = TRUE` from the top-level function they want to use (e.g., `cv_varsel()`) down to `extend_family()` via the ellipsis (`...`). This is also illustrated in the example(**TODO (latent)**: "examples"?) below
+To use the latent projection in **projpred**, the new argument `latent` of `extend_family()` needs to be set to `TRUE`. Since `extend_family()` is called by `init_refmodel()` which in turn is called by `get_refmodel()` (more precisely, by the `get_refmodel()` methods) which in turn is called at the beginning of the top-level functions `project()`, `varsel()`, and `cv_varsel()`, most users will usually pass `latent = TRUE` from the top-level function they want to use (e.g., `cv_varsel()`) down to `extend_family()` via the ellipsis (`...`). This is also illustrated in the example(**TODO (latent)**: "examples"?) below
 
 After performing the projection (either as a stand-alone feature via `project()` or embedded in a variable selection via `varsel()` or `cv_varsel()`), the post-processing (e.g., the calculation of the performance statistics in `summary.vsel()`) can be performed on the original response scale. For this, `extend_family()` has gained several new arguments accepting R functions responsible for the inverse-link transformation from latent scale to response scale (`latent_ilink`), for the calculation of log-likelihood values on response scale (`latent_llOrig`), and for drawing from the predictive distribution on response scale (`latent_ppdOrig`). For some families, these arguments have internal defaults implemented natively in **projpred**. These families are listed in the main vignette (section "Supported types of reference models"). For all other families, **projpred** either tries to infer a reasonable function internally (in case of `latent_ilink`) or uses a dummy function returning only `NA`s (in case of `latent_llOrig` and `latent_ppdOrig`), unless the user supplies custom functions to these arguments. When creating a reference model for a family of the latter category (i.e., lacking full response-scale support by default), **projpred** will throw messages stating whether (and which) features will be unavailable unless at least some of these arguments are provided by the user. Again, the ellipsis (`...`) can be used to pass these arguments from a top-level function such as `cv_varsel()` down to `extend_family()`. In the post-processing functions, response-scale analyses can usually be deactivated by setting the new argument `respOrig` to `FALSE`, with the exception of `predict.refmodel()` and `proj_linpred()` where the existing arguments `type` and `transform` serve this purpose (see the documentation).
 
@@ -130,7 +130,7 @@ refm_fit_poiss <- stan_glm(
 
 ### Variable selection using the latent projection
 
-We now run a variable selection with `latent = TRUE` to request the latent projection (since we have a hold-out test dataset available, we can use `varsel()` with argument `d_test` instead of `cv_varsel()`). We measure the runtime to compare it to the traditional projection's one later:
+We now run a variable selection with `latent = TRUE` to request the latent projection. Since we have a hold-out test dataset available, we can use `varsel()` with argument `d_test` instead of `cv_varsel()`. Furthermore, we measure the runtime to compare it to the traditional projection's later:
 ```{r}
 library(projpred)
 ```
@@ -165,7 +165,7 @@ In order to decide for a submodel size, we first inspect the `plot()` results:
 ( gg_lat <- plot(cvvs_lat, stats = "mlpd", deltas = TRUE) )
 ```
 
-Although the MLPD seems to be very close to the reference model's MLPD from a submodel size of 6 on, a look at a zoomed plot reveals that there is still some discrepancy at sizes 6 to 10 and that size 11 would be a better choice (further down below in the `summary()` output, we will also see that on absolute scale, the discrepancy at sizes 6 to 10 is not negligible):
+Although the submodels' MLPDs seem to be very close to the reference model's MLPD from a submodel size of 6 on, a look at a zoomed plot reveals that there is still some discrepancy at sizes 6 to 10 and that size 11 would be a better choice (further down below in the `summary()` output, we will also see that on absolute scale, the discrepancy at sizes 6 to 10 is not negligible):
 ```{r}
 gg_lat + ggplot2::coord_cartesian(ylim = c(-10, 0.05))
 ```
@@ -191,7 +191,7 @@ print(smmry_lat, digits = 3)
 ```
 On absolute scale (column `mlpd`), we see that submodel size 10 leads to an MLPD of ``r round(smmry_lat$selection[["mlpd"]][smmry_lat$selection$size == 10], 3)``, i.e., a geometric mean predictive probability (GMPP) of ``r paste0("exp(", round(smmry_lat$selection[["mlpd"]][smmry_lat$selection$size == 10], 3), ")")`` which is ca. `r paste(100 * round(exp(round(smmry_lat$selection[["mlpd"]][smmry_lat$selection$size == 10], 3)), 3), "%")` whereas size 11 leads to a GMPP of ca. `r paste(100 * round(exp(round(smmry_lat$selection[["mlpd"]][smmry_lat$selection$size == 11], 3)), 3), "%")`. This is a considerable improvement from size 10 to size 11, so another justification for size 11. (Size 12 would have resulted in a GMPP of ca. `r paste(100 * round(exp(round(smmry_lat$selection[["mlpd"]][smmry_lat$selection$size == 12], 3)), 3), "%")` which is no improvement compared to size 11.)
 
-In the solution path up to the selected size of 11, we can see that in this case, **projpred** has correctly selected the truly relevant predictors first and only then the noise predictors. We can see this more explicitly using the following code:
+In the solution path up to the selected size of 11, we can see that in this case, **projpred** has correctly selected the truly relevant predictors first and only then the noise predictors. We can see this more clearly using the following code:
 ```{r}
 soltrms_lat <- solution_terms(cvvs_lat)
 ( soltrms_lat_final <- head(soltrms_lat, modsize_decided_lat) )
@@ -230,8 +230,10 @@ print(smmry_trad, digits = 3)
 ```
 As these results show, the traditional projection takes longer than the latent projection, although the difference is rather small on absolute scale (which is due to the fact that the L1 search is already quite fast). More importantly however, the submodel size selection plot is much more unstable and the solution path reveals that several noise terms enter the solution path before truly relevant ones.
 
+### Conclusion
+
 In conclusion, this example showed that the latent projection can be advantageous also for exponential-family models by improving the runtime and the stability of the variable selection, eventually also leading to better variable selection results.
 
-One important point is that we have used the L1 search here. In case of the latent projection, a forward search would have given only slightly different results (in particular, a slightly smoother submodel size selection plot). In case of the traditional projection, a forward search would have given markedly better results (in particular, the submodel size selection curve would have been much smoother and all of the noise terms would have been selected after the truly relevant ones). Thus, the conclusions made for the L1 search here cannot be transmitted easily to the forward search.
+One important point is that we have used the L1 search here. In case of the latent projection, a forward search would have given only slightly different results (in particular, a slightly smoother submodel size selection plot). However, in case of the traditional projection, a forward search would have given markedly better results (in particular, the submodel size selection plot would have been much smoother and all of the noise terms would have been selected after the truly relevant ones). Thus, the conclusions made for the L1 search here cannot be transmitted easily to the forward search.
 
 ## References
