@@ -44,7 +44,7 @@ While the latent projection is an approximate solution to the KL divergence mini
 
 ## Example: Poisson distribution
 
-In this example, we will illustrate that in case of an exponential-family response distribution (here the Poisson distribution), the latent projection can improve runtime and results of the variable selection compared to **projpred**'s traditional projection.
+In this example, we will illustrate that in case of an exponential-family response distribution (here the Poisson distribution), the latent projection can improve runtime and results of the variable selection compared to **projpred**'s traditional projection, at least if the L1 search is used (see argument `method` of `varsel()` and `cv_varsel()`).
 
 ### Data
 
@@ -197,8 +197,6 @@ soltrms_lat <- solution_terms(cvvs_lat)
 ( soltrms_lat_final <- head(soltrms_lat, modsize_decided_lat) )
 ```
 
-Note that a forward search would have given slightly different results (in particular, a slightly smoother submodel size selection plot). However, for speeding up the building of this vignette, we use L1 search here.
-
 We will skip the post-selection inference here (see the main vignette for a demonstration of post-selection inference), but note that `proj_predict()` has gained a new argument `respOrig` and that analogous response-scale functionality is available in `proj_linpred()` (argument `transform`) and `predict.refmodel()` (argument `type`).
 
 ### Variable selection using the traditional projection
@@ -232,8 +230,8 @@ print(smmry_trad, digits = 3)
 ```
 As these results show, the traditional projection takes longer than the latent projection, although the difference is rather small on absolute scale (which is due to the fact that the L1 search is already quite fast). More importantly however, the submodel size selection plot is much more unstable and the solution path reveals that several noise terms enter the solution path before truly relevant ones.
 
-In case of the traditional projection, a forward search would have given markedly better results (in particular, the submodel size selection curve would have been much smoother and all of the noise terms would have been selected after the truly relevant ones). However, the submodel size selection plot would still have been more unstable than in case of the latent projection.
+In conclusion, this example showed that the latent projection can be advantageous also for exponential-family models by improving the runtime and the stability of the variable selection, eventually also leading to better variable selection results.
 
-In conclusion, this example showed that the latent projection can be advantageous also for exponential-family models by improving the runtime and the stability of the variable selection, eventually also leading to better variable selection results. This holds especially in case of L1 search, but also (even if not that strongly) for forward search.
+One important point is that we have used the L1 search here. In case of the latent projection, a forward search would have given only slightly different results (in particular, a slightly smoother submodel size selection plot). In case of the traditional projection, a forward search would have given markedly better results (in particular, the submodel size selection curve would have been much smoother and all of the noise terms would have been selected after the truly relevant ones). Thus, the conclusions made for the L1 search here cannot be transmitted easily to the forward search.
 
 ## References
