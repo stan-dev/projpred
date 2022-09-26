@@ -30,7 +30,7 @@ To this end, the latent predictor is assumed to have a Gaussian distribution, si
 
 With the assumption of a Gaussian distribution for the latent predictors, we return to the "easy" exponential-family case and can make use of **projpred**'s traditional projection for the Gaussian family. 
 
-As illustrated by the Poisson example below(**TODO (latent)**), the latent projection can not only be used for non-exponential-family response distributions, but it can also be beneficial for exponential-family response distributions.
+As illustrated by the Poisson example below, the latent projection can not only be used for non-exponential-family response distributions, but it can also be beneficial for exponential-family response distributions.
 
 ### Implementation
 
