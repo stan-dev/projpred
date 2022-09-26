@@ -252,6 +252,7 @@ smmry_trad <- summary(
 )
 print(smmry_trad, digits = 3)
 ```
+Again, a forward search would have resulted in a slightly better behavior of the variable selection (in particular, for very large model sizes, the model size selection curve would eventually have approached the reference model line), but the selection would still have been unstable and some noise terms would still have been selected too early. So, for the sake of speed, we have chosen L1 search here in this vignette.
 
 ```{r}
 # stopifnot(inherits(cvvs_trad$search_path$submodls[[8]][[1]], "glmmPQL"))
