@@ -233,6 +233,6 @@ As these results show, the traditional projection takes longer than the latent p
 
 In case of the traditional projection, a forward search would have given markedly better results (in particular, the submodel size selection curve would eventually have approached the reference model line and the noise terms would have been selected after the truly relevant ones). However, the selection would still have been more unstable than in case of the latent projection.
 
-In conclusion, this example showed that the latent projection can be advantageous also for exponential-family models by improving the runtime and providing a more stable submodel size selection plot. The latter holds especially in case of L1 search, but also (even if not that strongly) for forward search. For the former, it's the other way around.
+In conclusion, this example showed that the latent projection can be advantageous also for exponential-family models by improving the runtime and providing a more stable submodel size selection plot. The latter holds especially in case of L1 search, but also (even if not that strongly) for forward search. For the former (the runtime), it's the other way around.
 
 ## References
