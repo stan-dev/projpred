@@ -101,10 +101,8 @@ library(rstanarm)
 # coefficients:
 p0 <- 11
 # Prior guess for the overall magnitude of the response values, see Table 1 of
-# Piironen and Vehtari (2017, DOI: 10.1214/17-EJS1337SI) (in the data-generating
-# code above, we are using an intercept of 2.1; suppose we knew roughly about
-# it):
-mu_prior <- exp(2)
+# Piironen and Vehtari (2017, DOI: 10.1214/17-EJS1337SI):
+mu_prior <- 100
 # Hyperprior scale for tau, the global shrinkage parameter:
 tau0 <- p0 / (D - p0) / sqrt(mu_prior) / sqrt(N)
 # Set this manually if desired:
@@ -167,14 +165,14 @@ In order to decide for a submodel size, we first inspect the `plot()` results:
 ( gg_lat <- plot(cvvs_lat, stats = "mlpd", deltas = TRUE) )
 ```
 
-Although the MLPD seems to be very close to the reference model's MLPD from a submodel size of 6 on, a look at a zoomed plot reveals that there is still some discrepancy at sizes 6 to 11 and that size 12 would be a better choice (further down below in the `summary()` output, we will also see that on absolute scale, the discrepancy at sizes 6 to 11 is not negligible):
+Although the MLPD seems to be very close to the reference model's MLPD from a submodel size of 6 on, a look at a zoomed plot reveals that there is still some discrepancy at sizes 6 to 10 and that size 11 would be a better choice (further down below in the `summary()` output, we will also see that on absolute scale, the discrepancy at sizes 6 to 10 is not negligible):
 ```{r}
 gg_lat + ggplot2::coord_cartesian(ylim = c(-10, 0.05))
 ```
 
-Thus, we decide for a submodel size of 12:
+Thus, we decide for a submodel size of 11:
 ```{r}
-modsize_decided_lat <- 12
+modsize_decided_lat <- 11
 ```
 
 This is also the size that `suggest_size()` would suggest:
@@ -191,14 +189,15 @@ smmry_lat <- summary(
 )
 print(smmry_lat, digits = 3)
 ```
-On absolute scale (column `mlpd`), we see that submodel size 11 leads to an MLPD of ``r round(smmry_lat$selection[["mlpd"]][smmry_lat$selection$size == 11], 3)``, i.e., a geometric mean predictive probability (GMPP) of ``r paste0("exp(", round(smmry_lat$selection[["mlpd"]][smmry_lat$selection$size == 11], 3), ")")`` which is ca. `r paste(100 * round(exp(round(smmry_lat$selection[["mlpd"]][smmry_lat$selection$size == 11], 3)), 3), "%")` whereas size 12 leads to a GMPP of ca. `r paste(100 * round(exp(round(smmry_lat$selection[["mlpd"]][smmry_lat$selection$size == 12], 3)), 3), "%")`. This is a considerable improvement from size 11 to size 12, so another justification for size 12. (Size 13 would have resulted in a GMPP of ca. `r paste(100 * round(exp(round(smmry_lat$selection[["mlpd"]][smmry_lat$selection$size == 13], 3)), 3), "%")` which is no improvement compared to size 12.)
+On absolute scale (column `mlpd`), we see that submodel size 10 leads to an MLPD of ``r round(smmry_lat$selection[["mlpd"]][smmry_lat$selection$size == 10], 3)``, i.e., a geometric mean predictive probability (GMPP) of ``r paste0("exp(", round(smmry_lat$selection[["mlpd"]][smmry_lat$selection$size == 10], 3), ")")`` which is ca. `r paste(100 * round(exp(round(smmry_lat$selection[["mlpd"]][smmry_lat$selection$size == 10], 3)), 3), "%")` whereas size 11 leads to a GMPP of ca. `r paste(100 * round(exp(round(smmry_lat$selection[["mlpd"]][smmry_lat$selection$size == 11], 3)), 3), "%")`. This is a considerable improvement from size 10 to size 11, so another justification for size 11. (Size 12 would have resulted in a GMPP of ca. `r paste(100 * round(exp(round(smmry_lat$selection[["mlpd"]][smmry_lat$selection$size == 12], 3)), 3), "%")` which is no improvement compared to size 11.)
 
-In the solution path up to the selected size of 12, we can see that one noise term (`xn.6`) has slipped among the selected predictor terms. We can see this more explicitly using the following code:
+In the solution path up to the selected size of 11, we can see that in this case, **projpred** has correctly selected the truly relevant predictors first and only then the noise predictors. We can see this more explicitly using the following code:
 ```{r}
 soltrms_lat <- solution_terms(cvvs_lat)
 ( soltrms_lat_final <- head(soltrms_lat, modsize_decided_lat) )
 ```
-In this case, this suboptimal solution path is due to the L1 search. A forward search would have correctly selected the truly relevant predictors first and only then the noise predictors. (A forward search would also have given a slightly smoother submodel size selection plot.) However, for speeding up the building of this vignette, we use L1 search here.
+
+Note that a forward search would have given slightly different results (in particular, a slightly smoother submodel size selection plot). However, for speeding up the building of this vignette, we use L1 search here.
 
 We will skip the post-selection inference here (see the main vignette for a demonstration of post-selection inference), but note that `proj_predict()` has gained a new argument `respOrig` and that analogous response-scale functionality is available in `proj_linpred()` (argument `transform`) and `predict.refmodel()` (argument `type`).
 
