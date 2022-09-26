@@ -44,7 +44,7 @@ While the latent projection is an approximate solution to the KL divergence mini
 
 ## Example:(**TODO (latent)**: "Multilevel"?) Poisson distribution
 
-In this example, we will illustrate that in case of an(**TODO (latent)**: "a multilevel model with an"?) exponential-family response distribution (here the Poisson distribution), the latent projection can improve runtime and **TODO (latent)** compared to **projpred**'s traditional projection.(**TODO (latent)**: do we achieve this?)
+In this example, we will illustrate that in case of an(**TODO (latent)**: "a multilevel model with an"?) exponential-family response distribution (here the Poisson distribution), the latent projection can improve runtime and lead to a more stable variable selection compared to **projpred**'s traditional projection.
 
 ### Data
 
@@ -148,10 +148,12 @@ refm_fit_poiss <- stan_glm( #er
 
 ### Variable selection using the latent projection
 
-We now run a variable selection with `latent = TRUE` to request the latent projection (since we have a hold-out test dataset available, we can use `varsel()`'s argument `d_test` instead of `cv_varsel()`):
-```{r, results='hide', message=TRUE}
+We now run a variable selection with `latent = TRUE` to request the latent projection (since we have a hold-out test dataset available, we can use `varsel()` with argument `d_test` instead of `cv_varsel()`). We measure the runtime to compare it to the traditional projection's one later:
+```{r}
 library(projpred)
-cvvs_lat <- varsel(
+```
+```{r, results='hide', message=TRUE}
+time_lat <- system.time(cvvs_lat <- varsel(
   refm_fit_poiss,
   d_test = list(
     data = dat_poiss_test,
@@ -169,7 +171,10 @@ cvvs_lat <- varsel(
   nterms_max = 14,
   seed = 95930,
   latent = TRUE
-)
+))
+```
+```{r}
+print(time_lat)
 ```
 The message telling that `<refmodel>$dis` consists of only `NA`s will not concern us here because we will only be focusing on response-scale post-processing.
 
@@ -219,7 +224,7 @@ We will now look at what **projpred**'s traditional projection would have given:
 ```{r, results='hide'}
 # Activate option `projpred.PQL` to use MASS::glmmPQL() as GLMM submodel fitter:
 options(projpred.PQL = TRUE)
-cvvs_trad <- varsel(
+time_trad <- system.time(cvvs_trad <- varsel(
   refm_fit_poiss,
   d_test = list(
     data = dat_poiss_test,
@@ -232,7 +237,10 @@ cvvs_trad <- varsel(
   ###
   nterms_max = 14,
   seed = 95930
-)
+))
+```
+```{r}
+print(time_trad)
 ( gg_trad <- plot(cvvs_trad, stats = "mlpd", deltas = TRUE) )
 gg_trad + ggplot2::coord_cartesian(ylim = c(-10, 0.05))
 # modsize_decided_trad <- 
