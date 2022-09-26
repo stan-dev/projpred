@@ -53,7 +53,7 @@ First, we generate a training and a test dataset with a Poisson-distributed resp
 # Number of observations in the training dataset (= number of observations in
 # the test dataset):
 N <- 100
-sim_poiss <- function(nobs = 2 * N, ncon = 10, ngrpPL = 4, ngrpGL = 10,
+sim_poiss <- function(nobs = 2 * N, ncon = 10, ngrpPL = 4, ngrpGL = 1,
                       nnoise = 39) {
   # Regression coefficients for continuous predictors:
   coefs_con <- rnorm(ncon)
@@ -131,10 +131,10 @@ ncores <- min(ncores, 2L)
 ###
 options(mc.cores = ncores)
 refm_fml <- as.formula(paste("y", "~", paste(
-  c("(1 | grpGL)", grep("^x|^grpPL", names(dat_poiss_train), value = TRUE)),
+  c(grep("^x|^grpPL", names(dat_poiss_train), value = TRUE)), # "(1 | grpGL)", 
   collapse = " + "
 )))
-refm_fit_poiss <- stan_glmer(
+refm_fit_poiss <- stan_glm( #er
   formula = refm_fml,
   family = poisson(),
   data = dat_poiss_train,
@@ -167,6 +167,7 @@ cvvs_lat <- varsel(
   nclusters_pred = 20,
   ###
   ### TODO (latent):
+  # method = "forward",
   # nterms_max = 8,
   ###
   seed = 95930,
@@ -186,7 +187,7 @@ gg_lat + ggplot2::coord_cartesian(ylim = c(-10, 0.05))
 
 Thus, we decide for a submodel size of 10:
 ```{r}
-modsize_decided_lat <- 10
+modsize_decided_lat <- 9
 ```
 
 This is also the size that `suggest_size()` would suggest:
@@ -231,6 +232,7 @@ cvvs_trad <- varsel(
   nclusters_pred = 20,
   ###
   ### TODO (latent):
+  # method = "forward",
   # nterms_max = 8,
   ###
   seed = 95930
@@ -248,7 +250,7 @@ print(smmry_trad, digits = 3)
 ```
 
 ```{r}
-stopifnot(inherits(cvvs_trad$search_path$submodls[[8]][[1]], "glmmPQL"))
+# stopifnot(inherits(cvvs_trad$search_path$submodls[[8]][[1]], "glmmPQL"))
 ```
 
 ## References
