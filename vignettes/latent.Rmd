@@ -126,7 +126,7 @@ refm_fit_poiss <- stan_glm(
   ### Only for the sake of speed (not recommended in general):
   chains = 2, iter = 500,
   ###
-  seed = 286012, QR = TRUE, refresh = 0
+  seed = 286013, QR = TRUE, refresh = 0
 )
 ```
 
