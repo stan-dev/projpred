@@ -30,7 +30,7 @@ To this end, the latent predictor is assumed to have a Gaussian distribution, si
 
 With the assumption of a Gaussian distribution for the latent predictors, we return to the "easy" exponential-family case and can make use of **projpred**'s traditional projection for the Gaussian family. 
 
-As illustrated by the Poisson example below, the latent projection can not only be used for non-exponential-family response distributions, but it can also be beneficial for exponential-family response distributions.
+As illustrated by the Poisson example below, the latent projection can not only be used for nonexponential-family response distributions, but it can also be beneficial for exponential-family response distributions.
 
 ### Implementation
 
@@ -40,7 +40,7 @@ After performing the projection (either as a stand-alone feature via `project()`
 
 Apart from the arguments mentioned above, `extend_family()` has also gained a new argument `latent_y_unqs` whose purpose is described in the documentation.
 
-While the latent projection is an approximate solution to the KL divergence minimization problem in the original response space^[More precisely, the latent projection *replaces* the KL divergence minimization problem in the original response space by a KL divergence minimization problem in the latent space and solves the latter.], the augmented-data projection (**TODO (augdat)**: Add reference for the augmented-data projection here.) gives the exact^[Here, "exact" means apart from approximations and simplifications which are also undertaken for the traditional---i.e., neither augmented-data nor latent---projection.] solution for some non-exponential-family models, namely those where the response distribution has finite support. However, the augmented-data projection comes with a higher runtime than the latent projection. The families supported by **projpred**'s augmented-data projection are also listed in the main vignette (again section "Supported types of reference models").
+While the latent projection is an approximate solution to the KL divergence minimization problem in the original response space^[More precisely, the latent projection *replaces* the KL divergence minimization problem in the original response space by a KL divergence minimization problem in the latent space and solves the latter.], the augmented-data projection (**TODO (augdat)**: Add reference for the augmented-data projection here.) gives the exact^[Here, "exact" means apart from approximations and simplifications which are also undertaken for the traditional---i.e., neither augmented-data nor latent---projection.] solution for some nonexponential-family models, namely those where the response distribution has finite support. However, the augmented-data projection comes with a higher runtime than the latent projection. The families supported by **projpred**'s augmented-data projection are also listed in the main vignette (again section "Supported types of reference models").
 
 ## Example: Poisson distribution
 
@@ -233,6 +233,6 @@ As these results show, the traditional projection takes longer than the latent p
 
 In case of the traditional projection, a forward search would have given markedly better results (in particular, the submodel size selection curve would eventually have approached the reference model line and the noise terms would have been selected after the truly relevant ones). However, the selection would still have been more unstable than in case of the latent projection.
 
-In conclusion, this example showed that the latent projection can be advantageous also for non-exponential-family models by improving the runtime and providing a more stable submodel size selection plot. The latter holds especially in case of L1 search, but also (even if not that strongly) for forward search. For the former, it's the other way around.
+In conclusion, this example showed that the latent projection can be advantageous also for exponential-family models by improving the runtime and providing a more stable submodel size selection plot. The latter holds especially in case of L1 search, but also (even if not that strongly) for forward search. For the former, it's the other way around.
 
 ## References
