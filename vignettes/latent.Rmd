@@ -59,7 +59,7 @@ sim_poiss <- function(nobs = 2 * N, ncon = 10, ngrpPL = 4, nnoise = 39) {
   # Continuous predictors:
   X_con <- matrix(rnorm(nobs * ncon), ncol = ncon)
   # Start linear predictor:
-  linpred <- X_con %*% coefs_con
+  linpred <- 2.1 + X_con %*% coefs_con
   # Create `data.frame`:
   X_con <- data.frame(x = X_con)
   
@@ -84,7 +84,7 @@ sim_poiss <- function(nobs = 2 * N, ncon = 10, ngrpPL = 4, nnoise = 39) {
   rownames(X_con) <- NULL
   return(X_con)
 }
-set.seed(300416)
+set.seed(300417)
 dat_poiss <- sim_poiss()
 dat_poiss_train <- dat_poiss[1:N, , drop = FALSE]
 dat_poiss_test <- dat_poiss[(N + 1):nrow(dat_poiss), , drop = FALSE]
@@ -100,10 +100,13 @@ library(rstanarm)
 # Prior guess for the number of relevant (i.e., non-zero) regression
 # coefficients:
 p0 <- 11
+# Prior guess for the overall magnitude of the response values, see Table 1 of
+# Piironen and Vehtari (2017, DOI: 10.1214/17-EJS1337SI) (in the data-generating
+# code above, we are using an intercept of 2.1; suppose we knew roughly about
+# it):
+mu_prior <- exp(2)
 # Hyperprior scale for tau, the global shrinkage parameter:
-### TODO (latent): Use the appropriate sigma_tilde from piironen_sparsity_2017:
-tau0 <- p0 / (D - p0) * 1 / sqrt(N)
-###
+tau0 <- p0 / (D - p0) / sqrt(mu_prior) / sqrt(N)
 # Set this manually if desired:
 ncores <- parallel::detectCores(logical = FALSE)
 ### Only for technical reasons in this vignette (you can omit this when running
@@ -164,7 +167,7 @@ In order to decide for a submodel size, we first inspect the `plot()` results:
 ( gg_lat <- plot(cvvs_lat, stats = "mlpd", deltas = TRUE) )
 ```
 
-Although the MLPD seems to be very close to the reference model's MLPD from a submodel size of 7 on, a look at a zoomed plot reveals that there is still some discrepancy at sizes 7 to 10 and that size 11 would be a better choice (further down below in the `summary()` output, we will also see that on absolute scale, the discrepancy at sizes 7 to 10 is not negligible):
+Although the MLPD seems to be very close to the reference model's MLPD from a submodel size of 9 on, a look at a zoomed plot reveals that there is still some discrepancy at sizes 9 to 10 and that size 11 would be a better choice (further down below in the `summary()` output, we will also see that on absolute scale, the discrepancy at sizes 9 to 10 is not negligible):
 ```{r}
 gg_lat + ggplot2::coord_cartesian(ylim = c(-10, 0.05))
 ```
@@ -229,11 +232,10 @@ smmry_trad <- summary(
 )
 print(smmry_trad, digits = 3)
 ```
-As these results show, the traditional projection takes longer than the latent projection, although the difference is rather small on absolute scale (which is due to the fact that an L1 search is already quite fast)(**TODO (latent)**). But, more importantly, the submodel size selection plot is much more unstable and the solution path shows that several noise terms are selected before truly relevant ones.
-<!-- (this is partly due to the L1 search again, but would also hold---even if not that strongly---in case of a forward search; see below). -->
+As these results show, the traditional projection takes longer than the latent projection, although the difference is rather small on absolute scale (which is due to the fact that the L1 search is already quite fast). But, more importantly, the submodel size selection plot is much more unstable and the solution path reveals that several noise terms are selected before truly relevant ones.
 
-In case of the traditional projection, a forward search would have given markedly better results (in particular, the submodel size selection curve would eventually have approached the reference model line and the noise terms would have been selected after the truly relevant ones). However, the selection would still have been more unstable than in case of the latent projection.
+In case of the traditional projection, a forward search would have given markedly better results (in particular, the submodel size selection curve would have been smoother and---for larger submodel sizes---closer to the reference model's line). However, the selection would still have been more unstable than in case of the latent projection and some noise terms would still have been selected before truly relevant ones.
 
-In conclusion, this example showed that the latent projection can be advantageous also for exponential-family models by improving the runtime and providing a more stable submodel size selection plot. The latter holds especially in case of L1 search, but also (even if not that strongly) for forward search. For the former (the runtime), it's the other way around.
+In conclusion, this example showed that the latent projection can be advantageous also for exponential-family models by improving the runtime and the stability of the variable selection, eventually also leading to better variable selection results. This holds especially in case of L1 search, but also (even if not that strongly) for forward search.
 
 ## References
