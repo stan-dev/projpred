@@ -178,14 +178,14 @@ In order to decide for a submodel size, we first inspect the `plot()` results:
 ( gg_lat <- plot(cvvs_lat, stats = "mlpd", deltas = TRUE) )
 ```
 
-Although the MLPD seems to be very close to the reference model's MLPD from a submodel size of 9 on, a look at a zoomed plot reveals that there is still some discrepancy at size 9 and that size 10 would be a better choice (further down below in the `summary()` output, we will also see that on absolute scale, the discrepancy at size 9 is not negligible):
+Although the MLPD seems to be very close to the reference model's MLPD from a submodel size of 8 on, a look at a zoomed plot reveals that there is still some discrepancy at sizes 8 to 11 and that size 12 would be a better choice (further down below in the `summary()` output, we will also see that on absolute scale, the discrepancy at sizes 8 to 11 is not negligible):
 ```{r}
 gg_lat + ggplot2::coord_cartesian(ylim = c(-10, 0.05))
 ```
 
-Thus, we decide for a submodel size of 10:
+Thus, we decide for a submodel size of 12:
 ```{r}
-modsize_decided_lat <- 9
+modsize_decided_lat <- 12
 ```
 
 This is also the size that `suggest_size()` would suggest:
@@ -202,15 +202,16 @@ smmry_lat <- summary(
 )
 print(smmry_lat, digits = 3)
 ```
-On absolute scale (column `mlpd.loo`), we see that submodel size 9 leads to an MLPD of `-1.820`, i.e., a geometric mean predictive probability (GMPP) of `exp(-1.820)` which is ca. `r paste(100 * round(exp(-1.820), 3), "%")` whereas size 10 leads to a GMPP of ca. `r paste(100 * round(exp(-1.463), 3), "%")`. This is a considerable improvement from size 9 to size 10, so another justification for size 10.
+On absolute scale (column `mlpd`), we see that submodel size 11 leads to an MLPD of `-2.694`, i.e., a geometric mean predictive probability (GMPP) of `exp(-2.694)` which is ca. `r paste(100 * round(exp(-2.694), 3), "%")` whereas size 12 leads to a GMPP of ca. `r paste(100 * round(exp(-2.238), 3), "%")`. This is a considerable improvement from size 11 to size 12, so another justification for size 12. (Size 13 would have resulted in a GMPP of ca. `r paste(100 * round(exp(-2.221), 3), "%")` which is not so big of an improvement compared to size 12.)
 
-Our decided submodel size of 10 means to include all predictor terms except for `x5` and `x10`:
+In the solution path up to the selected size of 12, we can see that one noise term (`xn.16`) has slipped among the selected predictor terms. We can see this more explicitly using the following code:
 ```{r}
 soltrms_lat <- solution_terms(cvvs_lat)
 ( soltrms_lat_final <- head(soltrms_lat, modsize_decided_lat) )
 ```
+This suboptimal solution path is due to the L1 search. A forward search would have given the oracle solution path, i.e., first the truly relevant predictors and only then the noise predictors. However, for speeding up the building of this vignette, we use L1 search here.
 
-We will skip the post-selection inference here (see the main vignette for a demonstration of post-selection inference), but note that `proj_predict()` has a new argument `respOrig` and that analogous functionality is available in `proj_linpred()` (argument `transform`) and `predict.refmodel()` (argument `type`).
+We will skip the post-selection inference here (see the main vignette for a demonstration of post-selection inference), but note that `proj_predict()` has gained a new argument `respOrig` and that analogous response-scale functionality is available in `proj_linpred()` (argument `transform`) and `predict.refmodel()` (argument `type`).
 
 ### Variable selection using the traditional projection
 
