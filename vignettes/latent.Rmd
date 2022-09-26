@@ -166,10 +166,7 @@ cvvs_lat <- varsel(
   ### Only for the sake of speed (not recommended in general):
   nclusters_pred = 20,
   ###
-  ### TODO (latent):
-  method = "forward",
-  # nterms_max = 8,
-  ###
+  nterms_max = 14,
   seed = 95930,
   latent = TRUE
 )
@@ -231,10 +228,7 @@ cvvs_trad <- varsel(
   ### Only for the sake of speed (not recommended in general):
   nclusters_pred = 20,
   ###
-  ### TODO (latent):
-  method = "forward",
-  # nterms_max = 8,
-  ###
+  nterms_max = 14,
   seed = 95930
 )
 ( gg_trad <- plot(cvvs_trad, stats = "mlpd", deltas = TRUE) )
