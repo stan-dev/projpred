@@ -52,7 +52,7 @@ First, we generate a training and a test dataset with a Poisson-distributed resp
 ```{r}
 # Number of observations in the training dataset (= number of observations in
 # the test dataset):
-N <- 100
+N <- 71
 sim_poiss <- function(nobs = 2 * N, ncon = 10, ngrpPL = 4, nnoise = 39) {
   # Regression coefficients for continuous predictors:
   coefs_con <- rnorm(ncon)
