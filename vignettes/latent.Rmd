@@ -149,7 +149,7 @@ refm_fit_poiss <- stan_glm( #er
 ### Variable selection using the latent projection
 
 We now run a variable selection with `latent = TRUE` to request the latent projection (since we have a hold-out test dataset available, we can use `varsel()`'s argument `d_test` instead of `cv_varsel()`):
-```{r, results='hide'}
+```{r, results='hide', message=TRUE}
 library(projpred)
 cvvs_lat <- varsel(
   refm_fit_poiss,
@@ -171,6 +171,7 @@ cvvs_lat <- varsel(
   latent = TRUE
 )
 ```
+The message telling that `<refmodel>$dis` consists of only `NA`s will not concern us here because we will only be focusing on response-scale post-processing.
 
 In order to decide for a submodel size, we first inspect the `plot()` results:
 ```{r}
