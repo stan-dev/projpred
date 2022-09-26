@@ -113,7 +113,7 @@ ncores <- min(ncores, 2L)
 ###
 options(mc.cores = ncores)
 refm_fml <- as.formula(paste("y", "~", paste(
-  c(grep("^x|^grpPL", names(dat_poiss_train), value = TRUE)),
+  grep("^x|^grpPL", names(dat_poiss_train), value = TRUE),
   collapse = " + "
 )))
 refm_fit_poiss <- stan_glm(
