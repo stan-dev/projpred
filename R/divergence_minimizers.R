@@ -22,6 +22,15 @@ divmin <- function(formula, projpred_var, ...) {
                    mode = "function")
   } else if (has_grp && !has_add) {
     sdivmin <- fit_glmer_callback
+    if (getOption("projpred.PQL", FALSE)) {
+      # Split up the formula into a fixed and a random part (note: we could also
+      # use lme4::nobars() and lme4::findbars() here):
+      formula_random <- split_formula_random_gamm4(formula)
+      projpred_formulas_no_random <- validate_response_formula(
+        formula_random$formula
+      )
+      projpred_random <- formula_random$random
+    }
   } else if (!has_grp && has_add) {
     sdivmin <- fit_gam_callback
   } else if (has_grp && has_add) {
@@ -230,7 +239,8 @@ fit_gamm_callback <- function(formula, projpred_formula_no_random,
 }
 
 # Use package "lme4" to fit multilevel submodels:
-fit_glmer_callback <- function(formula, family,
+fit_glmer_callback <- function(formula, projpred_formula_no_random,
+                               projpred_random, family,
                                control = control_callback(family), ...) {
   tryCatch({
     if (getOption("projpred.PQL", FALSE)) {
@@ -240,27 +250,59 @@ fit_glmer_callback <- function(formula, family,
         names(dot_args),
         methods::formalArgs(MASS::glmmPQL)
       )]
-      ### TODO (glmmPQL): Do this in divmin() and divmin_augdat() (for
-      ### efficiency):
-      # Split up the formula into a fixed and a random part (note: we could also
-      # use lme4::nobars() and lme4::findbars() here):
-      formula_random <- split_formula_random_gamm4(formula)
-      projpred_formula_no_random <- formula_random$formula
-      projpred_random <- formula_random$random
-      ###
       # Strip parentheses from group-level terms:
       random_trms <- labels(terms(projpred_random))
-      # if (length(random_trms) > 1) {
-      #   ### TODO (glmmPQL): Can this be extended to multiple group-level
-      #   ### variables?:
-      #   stop("MASS::glmmPQL() can only handle a single group-level term.")
-      #   ###
-      # }
       random_fmls <- lapply(random_trms, function(random_trm) {
         as.formula(paste("~", random_trm))
       })
       if (length(random_fmls) == 1) {
         random_fmls <- random_fmls[[1]]
+      } else if (length(random_fmls) > 1) {
+        # Use the workaround(s) from <https://stackoverflow.com/questions/
+        # 36643713/how-to-specify-different-random-effects-in-nlme-vs-lme4/
+        # 38805602#38805602>:
+        random_trms_nogrp <- lapply(random_trms, function(random_trm) {
+          random_fml_nogrp <- as.formula(
+            paste("~", sub("[[:blank:]]*\\|.*$", "", random_trm))
+          )
+          return(labels(terms(random_fml_nogrp)))
+        })
+        ### TODO (glmmPQL): Do this via adding argument `data` explicitly:
+        stopifnot(!is.null(dot_args$data))
+        if ("projpred_internal_dummy1s_PQL" %in% names(dot_args$data)) {
+          stop("Need to write to column `projpred_internal_dummy1s_PQL` of ",
+               "`data`, but that column already exists. Please rename this ",
+               "column in `data` and try again.")
+        }
+        dot_args$data$projpred_internal_dummy1s_PQL <- factor(1)
+        ###
+        list_pdIdent <- lapply(random_trms, function(random_trm) {
+          return(nlme::pdIdent(as.formula(
+            paste("~", sub("^.*\\|[[:blank:]]*", "", random_trm), "- 1")
+          )))
+        })
+        idxs_multi_trms <- which(lengths(random_trms_nogrp) > 0)
+        if (length(idxs_multi_trms) > 0) {
+          warning("In order to be able to use MASS::glmmPQL(), we have to use ",
+                  "a workaround by which the random intercepts and random ",
+                  "slopes will be assumed to have a correlation of zero.")
+          list_pdIdent_add <- lapply(idxs_multi_trms, function(idx_multi_trms) {
+            random_grp <- sub("^.*\\|[[:blank:]]*", "",
+                              random_trms[[idx_multi_trms]])
+            random_IAs <- paste0(random_trms_nogrp[[idx_multi_trms]], ":",
+                                 random_grp)
+            return(lapply(random_IAs, function(random_IA) {
+              nlme::pdIdent(as.formula(paste("~", random_IA)))
+            }))
+          })
+          list_pdIdent_add <- unlist(list_pdIdent_add, recursive = FALSE)
+          list_pdIdent <- c(list_pdIdent, list_pdIdent_add)
+        }
+        random_fmls <- list(
+          projpred_internal_dummy1s_PQL = nlme::pdBlocked(list_pdIdent)
+        )
+      } else if (length(random_fmls) == 0) {
+        stop("Unexpected length of `random_fmls`.")
       }
       # Call the submodel fitter:
       return(suppressMessages(suppressWarnings(do.call(MASS::glmmPQL, c(
@@ -316,6 +358,8 @@ fit_glmer_callback <- function(formula, family,
       }
       return(fit_glmer_callback(
         formula = formula,
+        projpred_formula_no_random = projpred_formula_no_random,
+        projpred_random = projpred_random,
         family = family,
         control = control_callback(family,
                                    optimizer = "optimx",
@@ -336,6 +380,8 @@ fit_glmer_callback <- function(formula, family,
       }
       return(fit_glmer_callback(
         formula = formula,
+        projpred_formula_no_random = projpred_formula_no_random,
+        projpred_random = projpred_random,
         family = family,
         control = control,
         nAGQ = nAGQ_new,
@@ -363,10 +409,59 @@ fit_glmer_callback <- function(formula, family,
       }
       return(fit_glmer_callback(
         formula = formula,
+        projpred_formula_no_random = projpred_formula_no_random,
+        projpred_random = projpred_random,
         family = family,
         control = control_callback(family, tolPwrss = tolPwrss_new,
                                    optCtrl = list(maxfun = maxfun_new,
                                                   maxit = maxit_new)),
+        ...
+      ))
+    } else if (grepl("iteration limit reached without convergence",
+                     as.character(e))) {
+      if (length(control$msMaxIter) > 0 && control$msMaxIter >= 100) {
+        stop("Encountering the `iteration limit reached without convergence` ",
+             "error while running the MASS::glmmPQL() fitting procedure, but ",
+             "cannot fix this automatically anymore. You will probably have ",
+             "to tweak MASS::glmmPQL() tuning parameters manually (via `...`).")
+      }
+      return(fit_glmer_callback(
+        formula = formula,
+        projpred_formula_no_random = projpred_formula_no_random,
+        projpred_random = projpred_random,
+        family = family,
+        control = control_callback(msMaxIter = 100),
+        ...
+      ))
+    } else if (grepl("false convergence", as.character(e))) {
+      if (length(control$niterEM) > 0 && control$niterEM >= 50) {
+        stop("Encountering the `false convergence` ",
+             "error while running the MASS::glmmPQL() fitting procedure, but ",
+             "cannot fix this automatically anymore. You will probably have ",
+             "to tweak MASS::glmmPQL() tuning parameters manually (via `...`).")
+      }
+      return(fit_glmer_callback(
+        formula = formula,
+        projpred_formula_no_random = projpred_formula_no_random,
+        projpred_random = projpred_random,
+        family = family,
+        control = control_callback(niterEM = 50),
+        ...
+      ))
+    } else if (grepl("fewer observations than random effects",
+                     as.character(e))) {
+      if (length(control$allow.n.lt.q) > 0 && isTRUE(control$allow.n.lt.q)) {
+        stop("Encountering the `fewer observations than random effects` ",
+             "error while running the MASS::glmmPQL() fitting procedure, but ",
+             "cannot fix this automatically anymore. You will probably have ",
+             "to tweak MASS::glmmPQL() tuning parameters manually (via `...`).")
+      }
+      return(fit_glmer_callback(
+        formula = formula,
+        projpred_formula_no_random = projpred_formula_no_random,
+        projpred_random = projpred_random,
+        family = family,
+        control = control_callback(allow.n.lt.q = TRUE),
         ...
       ))
     } else {
@@ -378,8 +473,10 @@ fit_glmer_callback <- function(formula, family,
 # Helper function for fit_glmer_callback() and fit_gamm_callback() to get the
 # appropriate control options depending on the family:
 control_callback <- function(family, ...) {
-  if (family$family == "gaussian" && family$link == "identity" &&
-      getOption("projpred.gaussian_not_as_generalized", TRUE)) {
+  if (getOption("projpred.PQL", FALSE)) {
+    return(nlme::lmeControl(...))
+  } else if (family$family == "gaussian" && family$link == "identity" &&
+             getOption("projpred.gaussian_not_as_generalized", TRUE)) {
     return(lme4::lmerControl(...))
   } else {
     return(lme4::glmerControl(...))
@@ -418,6 +515,11 @@ divmin_augdat <- function(formula, data, family, weights, projpred_var,
       }
     } else {
       sdivmin <- fit_glmer_callback
+      if (getOption("projpred.PQL", FALSE)) {
+        formula_random <- split_formula_random_gamm4(formula)
+        projpred_formula_no_random <- formula_random$formula
+        projpred_random <- formula_random$random
+      }
     }
   } else if (family$family %in% c("cumulative", "cumulative_rstanarm")) {
     if (!has_grp) {
@@ -838,9 +940,30 @@ subprd <- function(fits, newdata) {
       newdata <- cbind(`(Intercept)` = rep(1, NROW(newdata)), newdata)
     }
     if (is_glmmPQL) {
+      ### TODO (glmmPQL): Remove this as soon as a repair_re.glmmPQL() method
+      ### has been added:
+      if (!is.null(newdata)) {
+        has_new_grps <- sapply(names(fit$groups), function(grp_nm) {
+          any(!unique(newdata[[grp_nm]]) %in% unique(fit$groups[[grp_nm]]))
+        })
+        if (any(has_new_grps)) {
+          stop("Under construction (a repair_re.glmmPQL() method needs to be ",
+               "added to projpred.")
+        }
+      }
+      ###
+      if ("projpred_internal_dummy1s_PQL" %in% names(fit$data) &&
+          !is.null(newdata)) {
+        if ("projpred_internal_dummy1s_PQL" %in% names(newdata)) {
+          stop("Need to write to column `projpred_internal_dummy1s_PQL` of ",
+               "`newdata`, but that column already exists. Please rename this ",
+               "column in `newdata` and try again.")
+        }
+        newdata$projpred_internal_dummy1s_PQL <- factor(1)
+      }
       return(
         predict(fit, newdata = newdata)
-        ### TODO (glmmPQL):
+        ### TODO (glmmPQL): Add a repair_re.glmmPQL() method for this:
         # predict(fit, newdata = newdata, level = 0) +
         #   repair_re(fit, newdata = newdata)
         ###

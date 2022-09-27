@@ -1464,7 +1464,14 @@ get_subparams.glm <- function(x, ...) {
   return(get_subparams.lm(x, ...))
 }
 
-# TODO (glmmPQL): Add a get_subparams.glmmPQL() method.
+#' @noRd
+#' @export
+get_subparams.glmmPQL <- function(x, ...) {
+  ### TODO (glmmPQL): Implement the get_subparams.glmmPQL() method:
+  stop("Under construction (the get_subparams.glmmPQL() method needs to be ",
+       "implemented.")
+  ###
+}
 
 #' @noRd
 #' @export
