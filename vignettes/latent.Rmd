@@ -139,8 +139,8 @@ d_test_lat_poiss <- list(
   data = dat_poiss_test,
   offset = rep(0, nrow(dat_poiss_test)),
   weights = rep(1, nrow(dat_poiss_test)),
-  ### Here, we are not interested in latent-scale post-processing, so we can
-  ### set element `y` to a vector of `NA`s:
+  ### Here, we are not interested in latent-scale post-processing, so we can set
+  ### element `y` to a vector of `NA`s:
   y = rep(NA, nrow(dat_poiss_test)),
   ###
   yOrig = dat_poiss_test$y
