@@ -12,15 +12,15 @@ for various regression models. Usually, the reference model will be an
 models can also be used. Details on supported model types are given in section
 ["Supported types of reference
 models"](https://mc-stan.org/projpred/articles/projpred.html#refmodtypes) of the
-[main vignette](https://mc-stan.org/projpred/articles/projpred.html).
+main vignette.
 
-The projection predictive variable selection is based on the ideas of Goutis and
-Robert (1998) and Dupuis and Robert (2003). The methods implemented in
-**projpred** are described in detail in Piironen et al. (2020) and Catalina et
-al. (2020). They are evaluated in comparison to many other methods in Piironen
-and Vehtari (2017). Type `citation("projpred")` in R (alternatively, visit
-section ["Citation"](https://mc-stan.org/projpred/authors.html#citation) on the
-website or see the `CITATION` file) for details on how to cite **projpred**.
+Type `citation("projpred")` in R (alternatively, visit section
+["Citation"](https://mc-stan.org/projpred/authors.html#citation) on the website
+or see the `CITATION` file) for details on how to cite **projpred**. Further
+references (including earlier work that **projpred** is based on) are given in
+section
+["Introduction"](https://mc-stan.org/projpred/articles/projpred.html#introduction)
+of the main vignette.
 
 The [vignettes](https://mc-stan.org/projpred/articles/) (currently, there is
 only a single one) illustrate how to use the **projpred** functions in
@@ -52,27 +52,3 @@ if (!requireNamespace("devtools", quietly = TRUE)) {
 devtools::install_github("stan-dev/projpred", build_vignettes = TRUE)
 ```
 To save time, you may omit `build_vignettes = TRUE`.
-
-## References
-
-Catalina, A., Bürkner, P.-C., and Vehtari, A. (2020). Projection predictive
-inference for generalized linear and additive multilevel models.
-*arXiv:2010.06994*. URL: <https://arxiv.org/abs/2010.06994>.
-
-Dupuis, J. A. and Robert, C. P. (2003). Variable selection in qualitative models
-via an entropic explanatory power. *Journal of Statistical Planning and
-Inference*, **111**(1-2):77–94. DOI:
-[10.1016/S0378-3758(02)00286-0](https://doi.org/10.1016/S0378-3758(02)00286-0).
-
-Goutis, C. and Robert, C. P. (1998). Model choice in generalised linear models:
-A Bayesian approach via Kullback–Leibler projections. *Biometrika*,
-**85**(1):29–37.
-
-Piironen, J. and Vehtari, A. (2017). Comparison of Bayesian predictive methods
-for model selection. *Statistics and Computing*, **27**(3):711-735. DOI:
-[10.1007/s11222-016-9649-y](https://doi.org/10.1007/s11222-016-9649-y).
-
-Piironen, J., Paasiniemi, M., and Vehtari, A. (2020). Projective inference in
-high-dimensional problems: Prediction and feature selection. *Electronic Journal
-of Statistics*, **14**(1):2155-2197. DOI:
-[10.1214/20-EJS1711](https://doi.org/10.1214/20-EJS1711).
