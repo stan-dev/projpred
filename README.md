@@ -6,11 +6,12 @@
 # projpred [<img src="man/figures/logo.svg" align="right" height="139" alt="Stan Logo"/>](https://mc-stan.org)
 
 The **projpred** R package performs the projection predictive variable selection
-for generalized linear and additive models as well as for generalized linear and
-additive multilevel models (with the support for additive models being still
-experimental). The package is compatible with the
-[**rstanarm**](https://mc-stan.org/rstanarm/) and
-[**brms**](https://paul-buerkner.github.io/brms/) packages, but custom reference
+for various regression models (details on supported model types are given in
+section ["Supported types of reference
+models"](https://mc-stan.org/projpred/articles/projpred.html#refmodtypes) of the
+[main vignette](https://mc-stan.org/projpred/articles/projpred.html)). Usually,
+the reference model will be an [**rstanarm**](https://mc-stan.org/rstanarm/) or
+[**brms**](https://paul-buerkner.github.io/brms/) fit, but custom reference
 models can also be used.
 
 The projection predictive variable selection is based on the ideas of Goutis and
@@ -19,10 +20,6 @@ Robert (1998) and Dupuis and Robert (2003). The methods implemented in
 al. (2020). They are evaluated in comparison to many other methods in Piironen
 and Vehtari (2017). Type `citation("projpred")` in R (or see the `CITATION`
 file) for details on how to cite **projpred**.
-
-Currently, the supported response distributions (objects of class `family` in R)
-are `gaussian()`, `binomial()` (via the **brms** package, `brms::bernoulli()` is
-also supported), and `poisson()`.
 
 The [vignettes](https://mc-stan.org/projpred/articles/) (currently, there is
 only a single one) illustrate how to use the **projpred** functions in
