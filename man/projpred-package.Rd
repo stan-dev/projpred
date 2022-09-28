@@ -105,13 +105,13 @@ which---when running in parallel---may lead to excessive memory usage which
 in turn may crash the R session. Thus, we currently cannot recommend the
 parallelization for models other than GLMs.
 
-The \href{https://mc-stan.org/projpred/articles/}{vignettes} (currently, there is
-only a single one) illustrate how to use the \pkg{projpred} functions in
-conjunction. Shorter examples are included here in the documentation.
+The \href{https://mc-stan.org/projpred/articles/}{vignettes} (currently, the \href{https://mc-stan.org/projpred/articles/projpred.html}{main vignette} is the only
+one) illustrate how to use the \pkg{projpred} functions in conjunction.
+Shorter examples are included here in the documentation.
 
 Some references relevant for this package are given in section "References"
-below. See \code{citation(package = "projpred")} for details on citing
-\pkg{projpred}.
+below. These references are introduced in the main vignette. See
+\code{citation(package = "projpred")} for details on citing \pkg{projpred}.
 }
 \section{Functions}{
 \describe{
