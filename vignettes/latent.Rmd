@@ -190,7 +190,7 @@ smmry_lat <- summary(
 )
 print(smmry_lat, digits = 3)
 ```
-On absolute scale (column `mlpd`), we see that submodel size `r if (!exists("modsize_decided_lat")) modsize_decided_lat <- 11; modsize_decided_lat - 1` leads to an MLPD of ``r round(smmry_lat$selection[["mlpd"]][smmry_lat$selection$size == modsize_decided_lat - 1], 3)``, i.e., a geometric mean predictive probability (GMPP) of ``r paste0("exp(", round(smmry_lat$selection[["mlpd"]][smmry_lat$selection$size == modsize_decided_lat - 1], 3), ")")`` which is ca. `r paste(100 * round(exp(round(smmry_lat$selection[["mlpd"]][smmry_lat$selection$size == modsize_decided_lat - 1], 3)), 5), "%")` whereas size `r modsize_decided_lat` leads to a GMPP of ca. `r paste(100 * round(exp(round(smmry_lat$selection[["mlpd"]][smmry_lat$selection$size == modsize_decided_lat], 3)), 5), "%")`. This is a considerable improvement from size `r modsize_decided_lat - 1` to size `r modsize_decided_lat`, so another justification for size `r modsize_decided_lat`. (Size `r modsize_decided_lat + 1` would have resulted in a GMPP of ca. `r paste(100 * round(exp(round(smmry_lat$selection[["mlpd"]][smmry_lat$selection$size == modsize_decided_lat + 1], 3)), 5), "%")` which is only a small improvement compared to size `r modsize_decided_lat`.)
+On absolute scale (column `mlpd`), we see that submodel size `r modsize_decided_lat - 1` leads to an MLPD of ``r round(smmry_lat$selection[["mlpd"]][smmry_lat$selection$size == modsize_decided_lat - 1], 3)``, i.e., a geometric mean predictive probability (GMPP) of ``r paste0("exp(", round(smmry_lat$selection[["mlpd"]][smmry_lat$selection$size == modsize_decided_lat - 1], 3), ")")`` which is ca. `r paste(100 * round(exp(round(smmry_lat$selection[["mlpd"]][smmry_lat$selection$size == modsize_decided_lat - 1], 3)), 5), "%")` whereas size `r modsize_decided_lat` leads to a GMPP of ca. `r paste(100 * round(exp(round(smmry_lat$selection[["mlpd"]][smmry_lat$selection$size == modsize_decided_lat], 3)), 5), "%")`. This is a considerable improvement from size `r modsize_decided_lat - 1` to size `r modsize_decided_lat`, so another justification for size `r modsize_decided_lat`. (Size `r modsize_decided_lat + 1` would have resulted in a GMPP of ca. `r paste(100 * round(exp(round(smmry_lat$selection[["mlpd"]][smmry_lat$selection$size == modsize_decided_lat + 1], 3)), 5), "%")` which is only a small improvement compared to size `r modsize_decided_lat`.)
 
 In the solution path up to the selected size of `r modsize_decided_lat`, we can see that in this case, **projpred** has correctly selected the truly relevant predictors first and only then the noise predictors. We can see this more clearly using the following code:
 ```{r}
@@ -330,7 +330,7 @@ smmry_lat_nebin <- summary(
 print(smmry_lat_nebin, digits = 3)
 ```
 
-As we can see from the solution path, our selected `r if (!exists("modsize_decided_lat_nebin")) modsize_decided_lat_nebin <- 11; modsize_decided_lat_nebin` predictor terms lack one truly relevant predictor (`x.9`) and include one noise term (`xn.29`). More explicitly, our selected predictor terms are:
+As we can see from the solution path, our selected `r modsize_decided_lat_nebin` predictor terms lack one truly relevant predictor (`x.9`) and include one noise term (`xn.29`). More explicitly, our selected predictor terms are:
 ```{r}
 soltrms_lat_nebin <- solution_terms(cvvs_lat_nebin)
 ( soltrms_lat_nebin_final <- head(soltrms_lat_nebin,
