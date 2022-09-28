@@ -1241,6 +1241,15 @@ get_subparams.glm <- function(x, ...) {
 
 #' @noRd
 #' @export
+get_subparams.glmmPQL <- function(x, ...) {
+  ### TODO (glmmPQL): Implement the get_subparams.glmmPQL() method:
+  stop("Under construction (the get_subparams.glmmPQL() method needs to be ",
+       "implemented.")
+  ###
+}
+
+#' @noRd
+#' @export
 get_subparams.lmerMod <- function(x, ...) {
   population_effects <- lme4::fixef(x) %>%
     replace_population_names(...)
