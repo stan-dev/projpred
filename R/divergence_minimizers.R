@@ -515,6 +515,11 @@ divmin_augdat <- function(formula, data, family, weights, projpred_var,
       }
     } else {
       sdivmin <- fit_glmer_callback
+      if (getOption("projpred.PQL", FALSE)) {
+        formula_random <- split_formula_random_gamm4(formula)
+        projpred_formula_no_random <- formula_random$formula
+        projpred_random <- formula_random$random
+      }
     }
   } else if (family$family %in% c("cumulative", "cumulative_rstanarm")) {
     if (!has_grp) {
