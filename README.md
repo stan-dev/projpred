@@ -5,7 +5,7 @@
 
 # projpred [<img src="man/figures/logo.svg" align="right" height="139" alt="Stan Logo"/>](https://mc-stan.org)
 
-The **projpred** R package performs the projection predictive variable selection
+The R package **projpred** performs the projection predictive variable selection
 for various regression models. Usually, the reference model will be an
 [**rstanarm**](https://mc-stan.org/rstanarm/) or
 [**brms**](https://paul-buerkner.github.io/brms/) fit, but custom reference
@@ -22,10 +22,13 @@ section
 ["Introduction"](https://mc-stan.org/projpred/articles/projpred.html#introduction)
 of the main vignette.
 
-The [vignettes](https://mc-stan.org/projpred/articles/) (currently, the main
-vignette is the only one) illustrate how to use the **projpred** functions in
-conjunction. Details on the **projpred** functions as well as some shorter
-examples may be found in the documentation.
+The [vignettes](https://mc-stan.org/projpred/articles/) (currently, the [main
+vignette](https://mc-stan.org/projpred/articles/projpred.html) is the only one)
+illustrate how to use the **projpred** functions in conjunction. Details on the
+**projpred** functions as well as some shorter examples may be found in the
+documentation (which is also available on page ["Functions" (also called
+"Reference")](https://mc-stan.org/projpred/reference/index.html) of the
+website).
 
 ## Installation
 
