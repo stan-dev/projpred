@@ -39,7 +39,8 @@ The families supported by the traditional projection are \code{\link[=gaussian]{
 \code{\link[brms:brmsfamily]{brms::bernoulli()}}), as well as \code{\link[=poisson]{poisson()}}.
 
 As soon as possible, a reference for the augmented-data projection will be
-provided here. For now, \href{https://github.com/stan-dev/projpred/issues/70}{this GitHub issue} provides some basic
+provided here (\strong{TODO (augdat)}: Add reference for the augmented-data
+projection here.). For now, \href{https://github.com/stan-dev/projpred/issues/70}{this GitHub issue} provides some basic
 information. The families supported by the augmented-data projection are
 \code{\link[=binomial]{binomial()}} (again also \code{\link[brms:brmsfamily]{brms::bernoulli()}}, but note that currently, the
 support for the \code{\link[=binomial]{binomial()}} family does not include binomial distributions
