@@ -44,7 +44,8 @@
 #' [brms::bernoulli()]), as well as [poisson()].
 #'
 #' As soon as possible, a reference for the augmented-data projection will be
-#' provided here. For now, [this GitHub
+#' provided here (**TODO (augdat)**: Add reference for the augmented-data
+#' projection here.). For now, [this GitHub
 #' issue](https://github.com/stan-dev/projpred/issues/70) provides some basic
 #' information. The families supported by the augmented-data projection are
 #' [binomial()] (again also [brms::bernoulli()], but note that currently, the
