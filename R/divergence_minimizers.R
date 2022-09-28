@@ -417,7 +417,8 @@ fit_glmer_callback <- function(formula, projpred_formula_no_random,
                                                   maxit = maxit_new)),
         ...
       ))
-    } else if (grepl("iteration limit reached without convergence",
+    } else if (getOption("projpred.PQL", FALSE) &&
+               grepl("iteration limit reached without convergence",
                      as.character(e))) {
       if (length(control$msMaxIter) > 0 && control$msMaxIter >= 100) {
         stop("Encountering the `iteration limit reached without convergence` ",
@@ -433,7 +434,8 @@ fit_glmer_callback <- function(formula, projpred_formula_no_random,
         control = control_callback(msMaxIter = 100),
         ...
       ))
-    } else if (grepl("false convergence", as.character(e))) {
+    } else if (getOption("projpred.PQL", FALSE) &&
+               grepl("false convergence", as.character(e))) {
       if (length(control$niterEM) > 0 && control$niterEM >= 50) {
         stop("Encountering the `false convergence` ",
              "error while running the MASS::glmmPQL() fitting procedure, but ",
@@ -448,7 +450,8 @@ fit_glmer_callback <- function(formula, projpred_formula_no_random,
         control = control_callback(niterEM = 50),
         ...
       ))
-    } else if (grepl("fewer observations than random effects",
+    } else if (getOption("projpred.PQL", FALSE) &&
+               grepl("fewer observations than random effects",
                      as.character(e))) {
       if (length(control$allow.n.lt.q) > 0 && isTRUE(control$allow.n.lt.q)) {
         stop("Encountering the `fewer observations than random effects` ",
