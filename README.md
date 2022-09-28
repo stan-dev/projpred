@@ -18,8 +18,9 @@ The projection predictive variable selection is based on the ideas of Goutis and
 Robert (1998) and Dupuis and Robert (2003). The methods implemented in
 **projpred** are described in detail in Piironen et al. (2020) and Catalina et
 al. (2020). They are evaluated in comparison to many other methods in Piironen
-and Vehtari (2017). Type `citation("projpred")` in R (or see the `CITATION`
-file) for details on how to cite **projpred**.
+and Vehtari (2017). Type `citation("projpred")` in R (alternatively, visit
+section ["Citation"](https://mc-stan.org/projpred/authors.html#citation) on the
+website or see the `CITATION` file) for details on how to cite **projpred**.
 
 The [vignettes](https://mc-stan.org/projpred/articles/) (currently, there is
 only a single one) illustrate how to use the **projpred** functions in
