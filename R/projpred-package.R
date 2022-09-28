@@ -181,4 +181,6 @@
 #' high-dimensional problems: Prediction and feature selection. *Electronic
 #' Journal of Statistics*, **14**(1):2155-2197. \doi{10.1214/20-EJS1711}.
 #'
+#' (**TODO (augdat)**: Add reference for the augmented-data projection here.)
+#'
 "_PACKAGE"

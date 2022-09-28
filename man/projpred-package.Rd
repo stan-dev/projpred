@@ -175,6 +175,8 @@ methods for model selection. \emph{Statistics and Computing}, \strong{27}(3):711
 Piironen, J., Paasiniemi, M., and Vehtari, A. (2020). Projective inference in
 high-dimensional problems: Prediction and feature selection. \emph{Electronic
 Journal of Statistics}, \strong{14}(1):2155-2197. \doi{10.1214/20-EJS1711}.
+
+(\strong{TODO (augdat)}: Add reference for the augmented-data projection here.)
 }
 \seealso{
 Useful links:
