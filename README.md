@@ -22,8 +22,8 @@ section
 ["Introduction"](https://mc-stan.org/projpred/articles/projpred.html#introduction)
 of the main vignette.
 
-The [vignettes](https://mc-stan.org/projpred/articles/) (currently, there is
-only a single one) illustrate how to use the **projpred** functions in
+The [vignettes](https://mc-stan.org/projpred/articles/) (currently, the main
+vignette is the only one) illustrate how to use the **projpred** functions in
 conjunction. Details on the **projpred** functions as well as some shorter
 examples may be found in the documentation.
 
