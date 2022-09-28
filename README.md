@@ -26,9 +26,8 @@ The [vignettes](https://mc-stan.org/projpred/articles/) (currently, the [main
 vignette](https://mc-stan.org/projpred/articles/projpred.html) is the only one)
 illustrate how to use the **projpred** functions in conjunction. Details on the
 **projpred** functions as well as some shorter examples may be found in the
-documentation (which is also available on page ["Functions" (also called
-"Reference")](https://mc-stan.org/projpred/reference/index.html) of the
-website).
+documentation (available on [CRAN](https://CRAN.R-project.org/package=projpred)
+and also [on the website](https://mc-stan.org/projpred/reference/index.html)).
 
 ## Installation
 
