@@ -6,13 +6,13 @@
 # projpred [<img src="man/figures/logo.svg" align="right" height="139" alt="Stan Logo"/>](https://mc-stan.org)
 
 The **projpred** R package performs the projection predictive variable selection
-for various regression models (details on supported model types are given in
-section ["Supported types of reference
-models"](https://mc-stan.org/projpred/articles/projpred.html#refmodtypes) of the
-[main vignette](https://mc-stan.org/projpred/articles/projpred.html)). Usually,
-the reference model will be an [**rstanarm**](https://mc-stan.org/rstanarm/) or
+for various regression models. Usually, the reference model will be an
+[**rstanarm**](https://mc-stan.org/rstanarm/) or
 [**brms**](https://paul-buerkner.github.io/brms/) fit, but custom reference
-models can also be used.
+models can also be used. Details on supported model types are given in section
+["Supported types of reference
+models"](https://mc-stan.org/projpred/articles/projpred.html#refmodtypes) of the
+[main vignette](https://mc-stan.org/projpred/articles/projpred.html).
 
 The projection predictive variable selection is based on the ideas of Goutis and
 Robert (1998) and Dupuis and Robert (2003). The methods implemented in
