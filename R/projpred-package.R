@@ -126,13 +126,13 @@
 #' in turn may crash the R session. Thus, we currently cannot recommend the
 #' parallelization for models other than GLMs.
 #'
-#' The [vignettes](https://mc-stan.org/projpred/articles/) (currently, the [main
-#' vignette](https://mc-stan.org/projpred/articles/projpred.html) is the only
-#' one) illustrate how to use the \pkg{projpred} functions in conjunction.
-#' Shorter examples are included here in the documentation.
+#' The [vignettes](https://mc-stan.org/projpred/articles/) illustrate how to use
+#' the \pkg{projpred} functions in conjunction. Shorter examples are included
+#' here in the documentation.
 #'
 #' Some references relevant for this package are given in section "References"
-#' below. These references are introduced in the main vignette. See
+#' below. These references are introduced in the [main
+#' vignette](https://mc-stan.org/projpred/articles/projpred.html). See
 #' `citation(package = "projpred")` for details on citing \pkg{projpred}.
 #'
 #' @details
