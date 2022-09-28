@@ -20,9 +20,9 @@ vignette: >
 
 ## Introduction
 
-This vignette shows the main functionalities of the **projpred** package, which implements the projective variable selection for generalized linear and additive models as well as for generalized linear and additive multilevel models.^[Currently, the support for additive models is only experimental in **projpred**.] What is special about the projective variable selection is that it not only performs a variable selection, but also allows for valid post-selection inference.
+This vignette shows the main functionalities of the **projpred** package, which implements the projection predictive variable selection for generalized linear and additive models as well as for generalized linear and additive multilevel models.^[Currently, the support for additive models is only experimental in **projpred**.] What is special about the projection predictive variable selection is that it not only performs a variable selection, but also allows for valid post-selection inference.
 
-The projective variable selection is based on the ideas of @goutis_model_1998 and @dupuis_variable_2003. The methods implemented in **projpred** are described in detail in @piironen_projective_2020 and @catalina_projection_2020. They are evaluated in comparison to many other methods in @piironen_comparison_2017. Type `citation("projpred")` for details on how to cite **projpred**.
+The projection predictive variable selection is based on the ideas of @goutis_model_1998 and @dupuis_variable_2003. The methods implemented in **projpred** are described in detail in @piironen_projective_2020 and @catalina_projection_2020. They are evaluated in comparison to many other methods in @piironen_comparison_2017. Type `citation("projpred")` for details on how to cite **projpred**.
 
 ## Data
 
@@ -34,9 +34,9 @@ dat_gauss <- data.frame(y = df_gaussian$y, df_gaussian$x)
 
 ## Reference model
 
-First, we have to construct a reference model for the projective variable selection. This model is considered as the best ("reference") solution to the prediction task. The aim of the projective variable selection is to find a subset of a set of candidate predictors which is as small as possible but achieves a predictive performance as close as possible to that of the reference model.
+First, we have to construct a reference model for the projection predictive variable selection. This model is considered as the best ("reference") solution to the prediction task. The aim of the projection predictive variable selection is to find a subset of a set of candidate predictors which is as small as possible but achieves a predictive performance as close as possible to that of the reference model.
 
-The **projpred** package is compatible with reference models fitted by the **rstanarm** and **brms** packages. To our knowledge, **rstanarm** and **brms** are currently the only packages for which a `get_refmodel()` method (which establishes the compatibility with **projpred**) exists. Custom reference models can be constructed via `init_refmodel()`, as shown in section "Examples" in the `?init_refmodel` help.^[We will cover custom reference models more deeply in a future vignette.] For both, **rstanarm** and **brms** reference models, all candidate models are *submodels* of the reference model. In principle, this is not a necessary assumption for a projective variable selection [see, e.g., @piironen_projective_2020] and custom reference models allow to avoid this assumption, but for **rstanarm** and **brms** reference models, this is a reasonable assumption which simplifies implementation in **projpred** a lot.
+The **projpred** package is compatible with reference models fitted by the **rstanarm** and **brms** packages. To our knowledge, **rstanarm** and **brms** are currently the only packages for which a `get_refmodel()` method (which establishes the compatibility with **projpred**) exists. Custom reference models can be constructed via `init_refmodel()`, as shown in section "Examples" in the `?init_refmodel` help.^[We will cover custom reference models more deeply in a future vignette.] For both, **rstanarm** and **brms** reference models, all candidate models are *submodels* of the reference model. In principle, this is not a necessary assumption for a projection predictive variable selection [see, e.g., @piironen_projective_2020] and custom reference models allow to avoid this assumption, but for **rstanarm** and **brms** reference models, this is a reasonable assumption which simplifies implementation in **projpred** a lot.
 
 Here, we use the **rstanarm** package to fit the reference model. If you want to use the **brms** package, simply replace the **rstanarm** fit (of class `stanreg`) in all the code below by your **brms** fit (of class `brmsfit`). Only note that in case of a **brms** fit, we recommend to specify argument `brms_seed` of `brms:::get_refmodel.brmsfit()`.
 ```{r}
@@ -93,7 +93,7 @@ Now, **projpred** comes into play.
 library(projpred)
 ```
 
-In **projpred**, the projective variable selection consists of a *search* part and an *evaluation* part. The search part determines the solution path, i.e., the best submodel for each submodel size (number of predictor terms). The evaluation part determines the predictive performance of the submodels along the solution path.
+In **projpred**, the projection predictive variable selection consists of a *search* part and an *evaluation* part. The search part determines the solution path, i.e., the best submodel for each submodel size (number of predictor terms). The evaluation part determines the predictive performance of the submodels along the solution path.
 
 There are two functions for performing the variable selection: `varsel()` and `cv_varsel()`. In contrast to `varsel()`, `cv_varsel()` performs a cross-validation (CV) by running the search part with the training data of each CV fold separately (an exception is `validate_search = FALSE`, see `?cv_varsel` and below) and running the evaluation part on the corresponding test set of each CV fold. Because of this CV, `cv_varsel()` is recommended over `varsel()`. Thus, we use `cv_varsel()` here. Nonetheless, running `varsel()` first can offer a rough idea of the performance of the projections (i.e., of the submodels after projecting the reference model onto them). A more principled **projpred** workflow is work under progress.
 
