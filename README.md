@@ -14,11 +14,10 @@ models can also be used. Details on supported model types are given in section
 models"](https://mc-stan.org/projpred/articles/projpred.html#refmodtypes) of the
 main vignette.
 
-Type `citation("projpred")` in R (alternatively, visit section
-["Citation"](https://mc-stan.org/projpred/authors.html#citation) on the website
-or see the `CITATION` file) for details on how to cite **projpred**. Further
-references (including earlier work that **projpred** is based on) are given in
-section
+For details on how to cite **projpred**, type `citation("projpred")` in R, visit
+section ["Citation"](https://mc-stan.org/projpred/authors.html#citation) on the
+website, or see the `CITATION` file included in the package. Further references
+(including earlier work that **projpred** is based on) are given in section
 ["Introduction"](https://mc-stan.org/projpred/articles/projpred.html#introduction)
 of the main vignette.
 
