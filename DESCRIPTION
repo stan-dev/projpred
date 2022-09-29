@@ -43,6 +43,7 @@ Imports:
     magrittr,
     mgcv,
     gamm4,
+    MASS,
     rlang
 Suggests:
     rstanarm,
