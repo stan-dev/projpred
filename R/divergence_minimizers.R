@@ -847,10 +847,7 @@ fit_categ_mlvl <- function(formula, projpred_formula_no_random,
            weights = weights,
            model = FALSE,
            x = FALSE,
-           y = FALSE,
-           dispersion = FALSE,
-           from.table = FALSE,
-           groups = NULL),
+           y = FALSE),
       dot_args
     ))
   })
