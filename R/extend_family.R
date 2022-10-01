@@ -280,10 +280,12 @@ extend_family <- function(family,
           }
         } else {
           if (family$familyOrig != "poisson") {
-            message("Trying to define `latent_ilink` automatically, but there ",
-                    "is no guarantee that it will work for all families. If ",
-                    "it raises an error in downstream functions, supply a ",
-                    "`latent_ilink` function that returns only `NA`s.")
+            message("Trying to define `latent_ilink` automatically by using ",
+                    "`family$linkinv`, but there is no guarantee that this ",
+                    "will work for all families. If it raises an error in ",
+                    "downstream functions, supply a custom `latent_ilink` ",
+                    "function (which is also allowed to return only `NA`s if ",
+                    "response-scale post-processing is not needed).")
           }
           latent_ilink <- function(lpreds, cl_ref,
                                    wdraws_ref = rep(1, length(cl_ref))) {
