@@ -143,6 +143,19 @@ cv_varsel.refmodel <- function(
   if (!is.na(seed)) set.seed(seed)
 
   refmodel <- object
+
+  if (refmodel$family$for_latent) {
+    # Need to set `refmodel$y` to `NA`s because the latent response values in
+    # `refmodel$y` are the output from `colMeans(posterior_linpred())` applied
+    # to the non-CV'ed reference model, so using the `fold$omitted` subset of
+    # `refmodel$y` as response values in fold k of K would introduce a
+    # dependency between training and test data.
+    refmodel$y <- rep(NA, length(refmodel$y))
+    # Correspondingly, `refmodel$loglik` also needs to be set to `NA`s:
+    refmodel$loglik <- matrix(nrow = nrow(refmodel$loglik),
+                              ncol = ncol(refmodel$loglik))
+  }
+
   # Needed to avoid a warning when calling varsel() later:
   search_terms_usr <- search_terms
   ## resolve the arguments similar to varsel
@@ -189,6 +202,10 @@ cv_varsel.refmodel <- function(
     if (verbose) {
       print(paste("Performing the selection using all the data.."))
     }
+    # In case of the latent projection, it should not matter whether `object` or
+    # `refmodel` is used as reference model because element `y` should not be
+    # used (only the search results). For consistency with the
+    # `validate_search = FALSE` case of loo_varsel(), we'll use `refmodel` here.
     sel <- varsel(refmodel,
                   method = method, ndraws = ndraws, nclusters = nclusters,
                   ndraws_pred = ndraws_pred, nclusters_pred = nclusters_pred,
@@ -236,7 +253,7 @@ cv_varsel.refmodel <- function(
   )
 
   ## create the object to be returned
-  vs <- nlist(refmodel,
+  vs <- nlist(object,
               search_path = sel$search_path,
               d_test = sel_cv$d_test,
               summaries = sel_cv$summaries,
