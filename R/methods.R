@@ -28,11 +28,7 @@
 #'   the inverse-link function (`TRUE`) or not (`FALSE`). In case of the latent
 #'   projection, argument `transform` is similar in spirit to argument
 #'   `respOrig` from other functions and affects the scale of both output
-#'   elements `pred` and `lpd` (see section "Value" below). Also note in case of
-#'   the latent projection that `transform = FALSE` yields the linear predictors
-#'   (in output element `pred`) without any modifications that may be due to the
-#'   original response distribution (e.g., for a [brms::cumulative()] model, the
-#'   ordered thresholds are not taken into account).
+#'   elements `pred` and `lpd` (see sections "Details" and "Value" below).
 #' @param integrated For [proj_linpred()] only. A single logical value
 #'   indicating whether the output should be averaged across the projected
 #'   posterior draws (`TRUE`) or not (`FALSE`).
@@ -56,6 +52,21 @@
 #'   original response scale (`TRUE`) or on latent scale (`FALSE`).
 #' @param ... Arguments passed to [project()] if `object` is not already an
 #'   object returned by [project()].
+#'
+#' @details In case of the latent projection and `transform = FALSE`:
+#'   * Output element `pred` contains the linear predictors without any
+#'   modifications that may be due to the original response distribution (e.g.,
+#'   for a [brms::cumulative()] model, the ordered thresholds are not taken into
+#'   account).
+#'   * Output element `lpd` contains the *latent* log predictive density values,
+#'   i.e., those corresponding to the latent Gaussian distribution. If `newdata`
+#'   is not `NULL`, this requires the latent response values to be supplied in a
+#'   column called `.<response_name>` of `newdata` where `<response_name>` needs
+#'   to be replaced by the name of the original response variable (if
+#'   `<response_name>` contained parentheses, these have been stripped off by
+#'   [init_refmodel()]; see the left-hand side of `formula(<refmodel>)`). For
+#'   technical reasons, the existence of column `<response_name>` in `newdata`
+#'   is another requirement (even though `.<response_name>` is actually used).
 #'
 #' @return In the following, \eqn{S_{\mathrm{prj}}}{S_prj}, \eqn{N},
 #'   \eqn{C_{\mathrm{cat}}}{C_cat}, and \eqn{C_{\mathrm{lat}}}{C_lat} from help
@@ -269,27 +280,23 @@ proj_linpred_aux <- function(proj, newdata, offset, weights, transform = FALSE,
   )
   ynew <- w_o$y
   if (!is.null(ynew) && proj$refmodel$family$for_latent && !transform) {
-    newdata_lat <- newdata
-    if (inherits(proj$refmodel$fit, "stanreg") &&
-        length(proj$refmodel$fit$offset) > 0) {
-      if (!is.null(newdata_lat)) {
-        if ("projpred_internal_offs_stanreg" %in% names(newdata_lat)) {
-          stop("Need to write to column `projpred_internal_offs_stanreg` of ",
-               "`newdata`, but that column already exists. Please rename this ",
-               "column in `newdata` and try again.")
-        }
-      } else {
+    if (is.null(newdata)) {
+      newdata_lat <- newdata
+      if (inherits(proj$refmodel$fit, "stanreg") &&
+          length(proj$refmodel$fit$offset) > 0) {
         newdata_lat <- proj$refmodel$fetch_data()
+        newdata_lat$projpred_internal_offs_stanreg <- offset
       }
-      newdata_lat$projpred_internal_offs_stanreg <- offset
+      # Use `ref_predfun_usr` here (instead of `ref_predfun`) to include
+      # offsets:
+      refprd_with_offs <- get("ref_predfun_usr",
+                              envir = environment(proj$refmodel$ref_predfun))
+      ynew <- rowMeans(unname(
+        refprd_with_offs(fit = proj$refmodel$fit, newdata = newdata_lat)
+      ))
+    } else {
+      ynew <- eval_el2(formula = proj$refmodel$formula, data = newdata)
     }
-    # Use `ref_predfun_usr` here (instead of `ref_predfun`) to include
-    # offsets:
-    refprd_with_offs <- get("ref_predfun_usr",
-                            envir = environment(proj$refmodel$ref_predfun))
-    ynew <- rowMeans(unname(
-      refprd_with_offs(fit = proj$refmodel$fit, newdata = newdata_lat)
-    ))
   }
   lpd_out <- compute_lpd(ynew = ynew, pred_sub = pred_sub, proj = proj,
                          weights = weights, transformed = transform)

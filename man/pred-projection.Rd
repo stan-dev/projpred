@@ -59,11 +59,7 @@ whether the linear predictor should be transformed to response scale using
 the inverse-link function (\code{TRUE}) or not (\code{FALSE}). In case of the latent
 projection, argument \code{transform} is similar in spirit to argument
 \code{respOrig} from other functions and affects the scale of both output
-elements \code{pred} and \code{lpd} (see section "Value" below). Also note in case of
-the latent projection that \code{transform = FALSE} yields the linear predictors
-(in output element \code{pred}) without any modifications that may be due to the
-original response distribution (e.g., for a \code{\link[brms:brmsfamily]{brms::cumulative()}} model, the
-ordered thresholds are not taken into account).}
+elements \code{pred} and \code{lpd} (see sections "Details" and "Value" below).}
 
 \item{integrated}{For \code{\link[=proj_linpred]{proj_linpred()}} only. A single logical value
 indicating whether the output should be averaged across the projected
@@ -140,6 +136,24 @@ onto. If the projection has not been performed yet, both functions call
 handle multiple submodels at once (for \code{object}s of class \code{vsel} or \code{object}s
 returned by a \code{\link[=project]{project()}} call to an object of class \code{vsel}; see
 \code{\link[=project]{project()}}).
+}
+\details{
+In case of the latent projection and \code{transform = FALSE}:
+\itemize{
+\item Output element \code{pred} contains the linear predictors without any
+modifications that may be due to the original response distribution (e.g.,
+for a \code{\link[brms:brmsfamily]{brms::cumulative()}} model, the ordered thresholds are not taken into
+account).
+\item Output element \code{lpd} contains the \emph{latent} log predictive density values,
+i.e., those corresponding to the latent Gaussian distribution. If \code{newdata}
+is not \code{NULL}, this requires the latent response values to be supplied in a
+column called \verb{.<response_name>} of \code{newdata} where \verb{<response_name>} needs
+to be replaced by the name of the original response variable (if
+\verb{<response_name>} contained parentheses, these have been stripped off by
+\code{\link[=init_refmodel]{init_refmodel()}}; see the left-hand side of \verb{formula(<refmodel>)}). For
+technical reasons, the existence of column \verb{<response_name>} in \code{newdata}
+is another requirement (even though \verb{.<response_name>} is actually used).
+}
 }
 \examples{
 if (requireNamespace("rstanarm", quietly = TRUE)) {
