@@ -521,20 +521,21 @@ predict.refmodel <- function(object, newdata = NULL, ynew = NULL,
             "specification of functions needed by extend_family())."
           )
         }
-        newdata_lat <- newdata
-        if (inherits(object$fit, "stanreg") && length(object$fit$offset) > 0) {
-          if (is.null(newdata_lat)) {
+        if (is.null(newdata)) {
+          newdata_lat <- newdata
+          if (inherits(object$fit, "stanreg") &&
+              length(object$fit$offset) > 0) {
             newdata_lat <- object$fetch_data()
             newdata_lat$projpred_internal_offs_stanreg <- offsetnew
           }
+          # Use `ref_predfun_usr` here (instead of `ref_predfun`) to include
+          # offsets:
+          refprd_with_offs <- get("ref_predfun_usr",
+                                  envir = environment(object$ref_predfun))
+          ynew <- rowMeans(unname(
+            refprd_with_offs(fit = object$fit, newdata = newdata_lat)
+          ))
         }
-        # Use `ref_predfun_usr` here (instead of `ref_predfun`) to include
-        # offsets:
-        refprd_with_offs <- get("ref_predfun_usr",
-                                envir = environment(object$ref_predfun))
-        ynew <- rowMeans(unname(
-          refprd_with_offs(fit = object$fit, newdata = newdata_lat)
-        ))
       }
       loglik <- object$family$ll_fun(
         object$family$linkinv(eta), object$dis, ynew, weightsnew
