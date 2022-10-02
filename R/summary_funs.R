@@ -108,6 +108,7 @@
   stat_tab <- data.frame()
   summ_ref <- varsel$summaries$ref
   summ_sub <- varsel$summaries$sub
+
   if (!varsel$refmodel$family$for_latent && !respOrig) {
     stop("`respOrig = FALSE` can only be used in case of the latent ",
          "projection.")
@@ -132,6 +133,7 @@
           "`NA` as long as `respOrig = TRUE`."
         )
       }
+      varsel$d_test$y <- varsel$d_test$yOrig
     } else {
       if (all(is.na(varsel$refmodel$dis)) &&
           any(stats %in% c("elpd", "mlpd"))) {
@@ -156,6 +158,10 @@
       }
     }
   }
+  # Just to avoid that `$y` gets expanded to `$yOrig` if element `"y"` does not
+  # exist (for whatever reason; actually, it should always exist):
+  varsel$d_test$yOrig <- NULL
+
   if (respOrig && !is.null(varsel$refmodel$family$cats) &&
       any(stats %in% c("acc", "pctcorr"))) {
     summ_ref$mu <- catmaxprb(summ_ref$mu, lvls = varsel$refmodel$family$cats)
@@ -166,18 +172,8 @@
     })
     # Since `mu` is an unordered factor, `y` needs to be unordered, too (or both
     # would need to be ordered; however, unordered is the simpler type):
-    if (varsel$refmodel$family$for_latent) {
-      varsel$d_test$yOrig <- factor(varsel$d_test$yOrig, ordered = FALSE)
-    } else {
-      varsel$d_test$y <- factor(varsel$d_test$y, ordered = FALSE)
-    }
+    varsel$d_test$y <- factor(varsel$d_test$y, ordered = FALSE)
   }
-  if (varsel$refmodel$family$for_latent && respOrig) {
-    varsel$d_test$y <- varsel$d_test$yOrig
-  }
-  # Just to avoid that `$y` gets expanded to `$yOrig` if element `"y"` does not
-  # exist (for whatever reason; actually, it should always exist):
-  varsel$d_test$yOrig <- NULL
 
   if (varsel$refmodel$family$family == "binomial" &&
       !all(varsel$d_test$weights == 1)) {
