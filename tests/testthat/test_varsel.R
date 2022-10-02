@@ -230,6 +230,7 @@ test_that(paste(
       wobs_crr <- rep(1, nobsv_indep)
     }
     formul_fit_crr <- args_fit[[args_vs_i$tstsetup_fit]]$formula
+    y_nm_crr <- stdize_lhs(formul_fit_crr)$y_nm
     dat_indep_crr <- get_dat_formul(
       formul_crr = formul_fit_crr,
       needs_adj = grepl("\\.spclformul", tstsetup),
@@ -239,7 +240,7 @@ test_that(paste(
       data = dat_indep,
       offset = offs_crr,
       weights = wobs_crr,
-      y = dat_indep_crr[[stdize_lhs(formul_fit_crr)$y_nm]]
+      y = dat_indep_crr[[y_nm_crr]]
     )
     yOrig_crr <- d_test_crr$y
     if (prj_crr %in% c("latent", "augdat")) {
@@ -352,36 +353,27 @@ test_that(paste(
                                   nclusters = vs_indep$nprjdraws_search)
       # As soon as GitHub issues #168 and #211 are fixed, we can use `refit_prj
       # = FALSE` here:
-      prjs_indep_lat <- project(
-        vs_indep,
-        nterms = c(0L, seq_along(vs_indep$solution_terms)),
-        nclusters = args_vs_i$nclusters_pred,
-        seed = NA
-      )
+      dat_indep_crr[[paste0(".", y_nm_crr)]] <- d_test_crr$y
       pl_indep_lat <- proj_linpred(
-        prjs_indep_lat,
+        vs_indep,
         newdata = dat_indep_crr,
         offsetnew = d_test_crr$offset,
         weightsnew = d_test_crr$weights,
         transform = FALSE,
-        integrated = FALSE,
-        .seed = NA
+        integrated = TRUE,
+        .seed = NA,
+        nterms = c(0L, seq_along(vs_indep$solution_terms)),
+        nclusters = args_vs_i$nclusters_pred,
+        seed = NA
       )
       y_lat_mat <- matrix(d_test_crr$y, nrow = args_vs_i$nclusters_pred,
                           ncol = nobsv_indep, byrow = TRUE)
       summ_sub_ch_lat <- lapply(seq_along(pl_indep_lat), function(k_idx) {
         pl_indep_k <- pl_indep_lat[[k_idx]]
         names(pl_indep_k)[names(pl_indep_k) == "pred"] <- "mu"
-        pl_indep_k$lpd <- NULL
-        names_for_lppd <- colnames(pl_indep_k$mu)
-        pl_indep_k$lppd <- dnorm(y_lat_mat, mean = pl_indep_k$mu,
-                                 sd = prjs_indep_lat[[k_idx]]$dis, log = TRUE)
-        pl_indep_k$mu <- unname(drop(
-          prjs_indep_lat[[k_idx]]$weights %*% pl_indep_k$mu
-        ))
-        pl_indep_k$lppd <- apply(pl_indep_k$lppd, 2, log_weighted_mean_exp,
-                                 prjs_indep_lat[[k_idx]]$weights)
-        names(pl_indep_k$lppd) <- names_for_lppd
+        names(pl_indep_k)[names(pl_indep_k) == "lpd"] <- "lppd"
+        pl_indep_k$mu <- unname(drop(pl_indep_k$mu))
+        pl_indep_k$lppd <- drop(pl_indep_k$lppd)
         return(pl_indep_k)
       })
       summ_sub_ch <- lapply(seq_along(summ_sub_ch), function(k_idx) {

@@ -66,10 +66,28 @@ get_dat_formul <- function(formul_crr, needs_adj, dat_crr = dat,
 
 # A function to adapt a given dataset (`dat`) appropriately to a given "test
 # setup" (`tstsetup`):
-get_dat <- function(tstsetup, dat_crr = dat, ...) {
-  get_dat_formul(args_fit[[args_prj[[tstsetup]]$tstsetup_fit]]$formula,
-                 needs_adj = grepl("\\.spclformul", tstsetup),
-                 dat_crr = dat_crr, ...)
+get_dat <- function(tstsetup, dat_crr = dat, offs_ylat = 0, ...) {
+  dat_crr <- get_dat_formul(
+    args_fit[[args_prj[[tstsetup]]$tstsetup_fit]]$formula,
+    needs_adj = grepl("\\.spclformul", tstsetup), dat_crr = dat_crr, ...
+  )
+  if (args_prj[[tstsetup]]$prj_nm == "latent") {
+    if (args_prj[[tstsetup]]$pkg_nm == "rstanarm" &&
+        grepl("\\.with_offs\\.", tstsetup)) {
+      dat_crr$projpred_internal_offs_stanreg <- offs_ylat
+    }
+    y_nm <- stdize_lhs(prjs[[tstsetup]]$refmodel$formula)$y_nm
+    # Use `ref_predfun_usr` here (instead of `ref_predfun`) to include
+    # offsets:
+    refprd_with_offs <- get(
+      "ref_predfun_usr",
+      envir = environment(prjs[[tstsetup]]$refmodel$ref_predfun)
+    )
+    dat_crr[[y_nm]] <- rowMeans(unname(
+      refprd_with_offs(fit = prjs[[tstsetup]]$refmodel$fit, newdata = dat_crr)
+    ))
+  }
+  return(dat_crr)
 }
 
 # A function to get the elements which may be supplied to argument `penalty`:

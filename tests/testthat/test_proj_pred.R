@@ -256,7 +256,7 @@ test_that("`newdata` and `integrated` work (even in edge cases)", {
   skip_if_not(run_prj)
   for (tstsetup in names(prjs)) {
     ndr_ncl <- ndr_ncl_dtls(args_prj[[tstsetup]])
-    dat_crr <- get_dat(tstsetup)
+    dat_crr <- get_dat(tstsetup, offs_ylat = offs_tst)
     for (nobsv_crr in nobsv_tst) {
       if (args_prj[[tstsetup]]$mod_nm == "gamm") {
         # TODO (GAMMs): Fix this.
@@ -302,9 +302,15 @@ test_that("`newdata` set to the original dataset doesn't change results", {
   skip_if_not(run_prj)
   for (tstsetup in names(prjs)) {
     dat_crr <- get_dat(tstsetup)
+    # With `transform = FALSE`:
     pl_newdata <- proj_linpred(prjs[[tstsetup]], newdata = dat_crr)
     pl_orig <- pls[[tstsetup]]
     expect_equal(pl_newdata, pl_orig, info = tstsetup)
+    # With `transform = TRUE`:
+    pl_newdata_t <- proj_linpred(prjs[[tstsetup]], newdata = dat_crr,
+                                 transform = TRUE)
+    pl_orig_t <- proj_linpred(prjs[[tstsetup]], transform = TRUE)
+    expect_equal(pl_newdata_t, pl_orig_t, info = tstsetup)
   }
 })
 
@@ -480,7 +486,7 @@ test_that("`offsetnew` works", {
                 info_str = tstsetup)
     }
     pl <- proj_linpred(prjs[[tstsetup]],
-                       newdata = get_dat(tstsetup, dat),
+                       newdata = get_dat(tstsetup, dat, offs_ylat = offs_tst),
                        offsetnew = ~ offs_col)
     pl_tester(pl,
               nprjdraws_expected = ndr_ncl$nprjdraws,
@@ -489,8 +495,11 @@ test_that("`offsetnew` works", {
     if (args_prj[[tstsetup]]$pkg_nm != "brms") {
       # TODO (brms): Fix or document why this doesn't work for "brmsfit"s.
       plo <- proj_linpred(prjs[[tstsetup]],
-                          newdata = get_dat(tstsetup, dat_offs_new,
-                                            add_offs_dummy = add_offs_crr),
+                          newdata = get_dat(
+                            tstsetup, dat_offs_new,
+                            offs_ylat = dat_offs_new$offs_col_new,
+                            add_offs_dummy = add_offs_crr
+                          ),
                           offsetnew = ~ offs_col_new)
       pl_tester(plo,
                 nprjdraws_expected = ndr_ncl$nprjdraws,
@@ -1274,8 +1283,11 @@ test_that("`offsetnew` works", {
     if (args_prj[[tstsetup]]$pkg_nm != "brms") {
       # TODO (brms): Fix or document why this doesn't work for "brmsfit"s.
       ppo <- proj_predict(prjs[[tstsetup]],
-                          newdata = get_dat(tstsetup, dat_offs_new,
-                                            add_offs_dummy = add_offs_crr),
+                          newdata = get_dat(
+                            tstsetup, dat_offs_new,
+                            offs_ylat = dat_offs_new$offs_col_new,
+                            add_offs_dummy = add_offs_crr
+                          ),
                           offsetnew = ~ offs_col_new,
                           .seed = seed2_tst)
       pp_tester(ppo,

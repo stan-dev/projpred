@@ -348,9 +348,9 @@ refmodel_tester <- function(
   # Test the general structure of the object:
   refmod_nms <- c(
     "fit", "formula", "div_minimizer", "family", "mu", "eta", "dis", "y",
-    "loglik", "intercept", "proj_predfun", "fetch_data", "wobs", "wsample",
-    "offset", "cvfun", "cvfits", "extract_model_data", "ref_predfun",
-    "cvrefbuilder", "yOrig"
+    "intercept", "proj_predfun", "fetch_data", "wobs", "wsample", "offset",
+    "cvfun", "cvfits", "extract_model_data", "ref_predfun", "cvrefbuilder",
+    "yOrig"
   )
   refmod_class_expected <- "refmodel"
   if (is_datafit) {
@@ -575,16 +575,6 @@ refmodel_tester <- function(
     }
   }
   expect_identical(refmod$y, y_expected, info = info_str)
-
-  # loglik
-  if (!is_datafit) {
-    expect_true(is.matrix(refmod$loglik), info = info_str)
-    expect_type(refmod$loglik, "double")
-    expect_identical(dim(refmod$loglik), c(nrefdraws_expected, nobsv_expected),
-                     info = info_str)
-  } else {
-    expect_null(refmod$loglik, info = info_str)
-  }
 
   # intercept
   expect_type(refmod$intercept, "logical")
@@ -2049,7 +2039,26 @@ vsel_tester <- function(
     expect_null(vs$d_test$data, info = info_str)
     expect_identical(vs$d_test$offset, vs$refmodel$offset, info = info_str)
     expect_identical(vs$d_test$weights, vs$refmodel$wobs, info = info_str)
-    expect_identical(vs$d_test$y, vs$refmodel$y, info = info_str)
+    if (vs$refmodel$family$for_latent && with_cv) {
+      if (identical(cv_method_expected, "kfold")) {
+        expect_true(all(is.na(vs$d_test$y)), info = info_str)
+      } else {
+        y_lat_loo <- vs$d_test$y
+        ### TODO (latent): Use this as soon as the offset bug in loo_varsel() is
+        ### fixed:
+        # ll_forPSIS <- rstantools::log_lik(vs$refmodel$fit)
+        # lwdraws_ref <- weights(loo::psis(-ll_forPSIS, cores = 1, r_eff = NA))
+        # refprd_with_offs <- get("ref_predfun_usr",
+        #                         envir = environment(vs$refmodel$ref_predfun))
+        # y_lat_loo <- colSums(
+        #   t(unname(refprd_with_offs(vs$refmodel$fit))) * exp(lwdraws_ref)
+        # )
+        ###
+        expect_equal(vs$d_test$y, y_lat_loo, info = info_str)
+      }
+    } else {
+      expect_identical(vs$d_test$y, vs$refmodel$y, info = info_str)
+    }
     expect_identical(vs$d_test$yOrig, vs$refmodel$yOrig, info = info_str)
   } else {
     expect_identical(vs$d_test, dtest_expected, info = info_str)
@@ -2108,8 +2117,13 @@ vsel_tester <- function(
     expect_type(smmrs_sub_j$lppd, "double")
     expect_length(smmrs_sub_j$lppd, nobsv_summ)
     if (with_cv) {
-      expect_identical(sum(!is.na(smmrs_sub_j$lppd)), nloo_expected,
-                       info = info_str)
+      if (vs$refmodel$family$for_latent && !tests_Orig &&
+          identical(cv_method_expected, "kfold")) {
+        expect_true(all(is.na(smmrs_sub_j$lppd)), info = info_str)
+      } else {
+        expect_identical(sum(!is.na(smmrs_sub_j$lppd)), nloo_expected,
+                         info = info_str)
+      }
     } else {
       expect_true(all(!is.na(smmrs_sub_j$lppd)), info = info_str)
     }
@@ -2162,7 +2176,8 @@ vsel_tester <- function(
       expect_type(smmrs_ref$lppd, "double")
     }
     expect_length(smmrs_ref$lppd, nobsv_summ)
-    if (!from_datafit) {
+    if (!from_datafit && !(vs$refmodel$family$for_latent && !tests_Orig &&
+                           identical(cv_method_expected, "kfold"))) {
       expect_true(all(!is.na(smmrs_ref$lppd)), info = info_str)
     } else {
       expect_true(all(is.na(smmrs_ref$lppd)), info = info_str)
@@ -2346,6 +2361,8 @@ smmry_tester <- function(smmry, vsel_expected, nterms_max_expected = NULL,
   smmry_sel_tester(smmry$selection,
                    summaries_ref = vsel_expected$summaries$ref,
                    nterms_max_expected = nterms_max_expected,
+                   latent_expected = vsel_expected$refmodel$family$for_latent,
+                   respOrig_expected = respOrig_expected,
                    info_str = info_str, ...)
   expect_identical(smmry$respOrig, respOrig_expected, info = info_str)
 
@@ -2373,6 +2390,10 @@ smmry_tester <- function(smmry, vsel_expected, nterms_max_expected = NULL,
 # @param from_datafit A single logical value indicating whether an object of
 #   class `"datafit"` was used for creating the `"vsel"` object (from which
 #   `smmry_sel` was created) (`TRUE`) or not (`FALSE`).
+# @param latent_expected A single logical value indicating whether the reference
+#   model is expected to be for latent projection (`TRUE`) or not (`FALSE`).
+# @param respOrig_expected A single logical value indicating whether argument
+#   `respOrig` of summary.vsel() was set to `TRUE` or `FALSE`.
 # @param info_str A single character string giving information to be printed in
 #   case of failure.
 #
@@ -2386,6 +2407,8 @@ smmry_sel_tester <- function(
     cv_method_expected = character(),
     solterms_expected,
     from_datafit = FALSE,
+    latent_expected = FALSE,
+    respOrig_expected = TRUE,
     info_str
 ) {
   if (is.null(stats_expected)) {
@@ -2443,6 +2466,14 @@ smmry_sel_tester <- function(
   expect_identical(smmry_sel$solution_terms,
                    c(NA_character_, solterms_expected),
                    info = info_str)
+  is_lat_kfold <-  latent_expected && !respOrig_expected &&
+    identical(cv_method_expected, "kfold")
+  if (is_lat_kfold) {
+    for (stat_idx in seq_along(stats_expected)) {
+      expect_true(all(is.na(smmry_sel[, stats_mean_name[stat_idx]])),
+                  info = info_str)
+    }
+  }
   if ("diff" %in% type_expected) {
     if (length(stats_expected) == 1) {
       diff_nm <- "diff"
@@ -2450,7 +2481,7 @@ smmry_sel_tester <- function(
       diff_nm <- paste(stats_expected, "diff", sep = ".")
     }
     for (stat_idx in seq_along(stats_expected)) {
-      if (!from_datafit) {
+      if (!from_datafit && !is_lat_kfold) {
         expect_equal(
           diff(smmry_sel[, stats_mean_name[stat_idx]]),
           diff(smmry_sel[, diff_nm[stat_idx]]),
@@ -2476,7 +2507,7 @@ smmry_sel_tester <- function(
       }
     }
   }
-  if ("lower" %in% type_expected) {
+  if ("lower" %in% type_expected && !is_lat_kfold) {
     if (length(stats_expected) == 1) {
       lower_nm <- "lower"
     } else {
@@ -2491,7 +2522,7 @@ smmry_sel_tester <- function(
       }
     }
   }
-  if ("upper" %in% type_expected) {
+  if ("upper" %in% type_expected && !is_lat_kfold) {
     if (length(stats_expected) == 1) {
       upper_nm <- "upper"
     } else {

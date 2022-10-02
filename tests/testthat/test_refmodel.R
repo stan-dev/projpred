@@ -100,8 +100,8 @@ test_that("offsets specified via argument `offset` work", {
     tolerance = 1e-12,
     info = "rstanarm.glm.gauss.stdformul.with_wobs.with_offs"
   )
-  nms_compare <- c("mu", "eta", "dis", "y", "loglik", "intercept", "wobs",
-                   "wsample", "offset", "yOrig")
+  nms_compare <- c("mu", "eta", "dis", "y", "intercept", "wobs", "wsample",
+                   "offset", "yOrig")
   expect_equal(
     refmod_offs_arg[nms_compare],
     refmods$rstanarm.glm.gauss.stdformul.with_wobs.with_offs[nms_compare],
@@ -166,6 +166,24 @@ test_that(paste(
     prj_crr <- args_ref[[tstsetup]]$prj_nm
 
     y_crr <- dat[, paste("y", mod_crr, fam_crr, sep = "_")]
+    if (prj_crr == "latent") {
+      dat_crr <- dat
+      if (pkg_crr == "rstanarm" && grepl("\\.with_offs\\.", tstsetup)) {
+        dat_crr$projpred_internal_offs_stanreg <- 0
+      }
+      y_nm <- stdize_lhs(refmods[[tstsetup]]$formula)$y_nm
+      # Use `ref_predfun_usr` here (instead of `ref_predfun`) to include
+      # offsets:
+      refprd_with_offs <- get(
+        "ref_predfun_usr",
+        envir = environment(refmods[[tstsetup]]$ref_predfun)
+      )
+      y_crr_link <- rowMeans(unname(
+        refprd_with_offs(fit = refmods[[tstsetup]]$fit, newdata = dat_crr)
+      ))
+    } else {
+      y_crr_link <- y_crr
+    }
 
     # Without `ynew`:
     predref_resp <- predict(refmods[[tstsetup]], dat, type = "response")
@@ -174,7 +192,7 @@ test_that(paste(
     # With `ynew`:
     predref_ynew_resp <- predict(refmods[[tstsetup]], dat, ynew = y_crr,
                                  type = "response")
-    predref_ynew_link <- predict(refmods[[tstsetup]], dat, ynew = y_crr,
+    predref_ynew_link <- predict(refmods[[tstsetup]], dat, ynew = y_crr_link,
                                  type = "link")
 
     # Checks without `ynew`:
