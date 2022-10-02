@@ -150,10 +150,11 @@
         message(
           "Cannot calculate performance statistics if `respOrig = FALSE` and ",
           "`<vsel>$d_test$y` consists of only `NA`s. The reason for these ",
-          "`NA`s is probably that `<vsel>` was created by cv_varsel(). (In ",
-          "case of cross-validation, the latent response values for the test ",
-          "datasets cannot be defined straightforwardly without inducing ",
-          "dependencies between training and test datasets.)"
+          "`NA`s is probably that `<vsel>` was created by cv_varsel() with ",
+          "`cv_method = \"kfold\"`. (In case of K-fold cross-validation, the ",
+          "latent response values for the test datasets cannot be defined ",
+          "in a straightforward manner without inducing dependencies between ",
+          "training and test datasets.)"
         )
       }
     }

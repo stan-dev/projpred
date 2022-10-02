@@ -143,19 +143,6 @@ cv_varsel.refmodel <- function(
   if (!is.na(seed)) set.seed(seed)
 
   refmodel <- object
-
-  if (refmodel$family$for_latent) {
-    # Need to set `refmodel$y` to `NA`s because the latent response values in
-    # `refmodel$y` are the output from `colMeans(posterior_linpred())` applied
-    # to the non-CV'ed reference model, so using the `fold$omitted` subset of
-    # `refmodel$y` as response values in fold k of K would introduce a
-    # dependency between training and test data.
-    refmodel$y <- rep(NA, length(refmodel$y))
-    # Correspondingly, `refmodel$loglik` also needs to be set to `NA`s:
-    refmodel$loglik <- matrix(nrow = nrow(refmodel$loglik),
-                              ncol = ncol(refmodel$loglik))
-  }
-
   # Needed to avoid a warning when calling varsel() later:
   search_terms_usr <- search_terms
   ## resolve the arguments similar to varsel
@@ -202,10 +189,6 @@ cv_varsel.refmodel <- function(
     if (verbose) {
       print(paste("Performing the selection using all the data.."))
     }
-    # In case of the latent projection, it should not matter whether `object` or
-    # `refmodel` is used as reference model because element `y` should not be
-    # used (only the search results). For consistency with the
-    # `validate_search = FALSE` case of loo_varsel(), we'll use `refmodel` here.
     sel <- varsel(refmodel,
                   method = method, ndraws = ndraws, nclusters = nclusters,
                   ndraws_pred = ndraws_pred, nclusters_pred = nclusters_pred,
@@ -253,7 +236,7 @@ cv_varsel.refmodel <- function(
   )
 
   ## create the object to be returned
-  vs <- nlist(object,
+  vs <- nlist(refmodel,
               search_path = sel$search_path,
               d_test = sel_cv$d_test,
               summaries = sel_cv$summaries,
@@ -349,6 +332,13 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
     stop("LOO can be performed only if the reference model is a genuine ",
          "probabilistic model for which the log-likelihood can be evaluated.")
   }
+
+  if (refmodel$family$family %in% fams_neg_linpred()) {
+    eta_offs <- eta - refmodel$offset
+  } else {
+    eta_offs <- eta + refmodel$offset
+  }
+
   if (refmodel$family$for_latent) {
     mu_Orig <- refmodel$family$latent_ilink(
       t(mu), cl_ref = seq_along(refmodel$wsample),
@@ -380,15 +370,41 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
       n_aug <- ncol(mu_Orig)
     }
   } else {
-    loglik_forPSIS <- refmodel$loglik
+    loglik_forPSIS <- t(refmodel$family$ll_fun(
+      refmodel$family$linkinv(eta_offs), dis, refmodel$y, refmodel$wobs
+    ))
   }
   n <- ncol(loglik_forPSIS)
   psisloo <- loo::psis(-loglik_forPSIS, cores = 1, r_eff = NA)
   lw <- weights(psisloo)
   # pareto_k <- loo::pareto_k_values(psisloo)
+
+  if (refmodel$family$for_latent) {
+    # Need to re-calculate the latent response values in `refmodel$y` by
+    # incorporating the PSIS weights because `refmodel$y` resulted from applying
+    # `colMeans(posterior_linpred())` to the original (full-data) reference
+    # model fit, so using `refmodel$y` would induce a dependency between
+    # training and test data:
+    refprd_with_offs <- get("ref_predfun_usr",
+                            envir = environment(refmodel$ref_predfun))
+    ### Option 1 (manually):
+    # refmodel$y <- colSums(t(unname(refprd_with_offs(refmodel$fit))) * exp(lw))
+    ###
+    ### Option 2 (using loo::E_loo()):
+    y_lat_E <- loo::E_loo(t(unname(refprd_with_offs(refmodel$fit))),
+                          psis_object = psisloo,
+                          log_ratios = -loglik_forPSIS)
+    if (any(y_lat_E$pareto_k > 0.7)) {
+      warning("In the recalculation of the latent response values, ",
+              sum(y_lat_E$pareto_k > 0.7), " (of ", n, ") Pareto k-value(s) ",
+              "exceeded the threshold of 0.7.")
+    }
+    refmodel$y <- y_lat_E$value
+    ###
+  }
+
   ## by default use all observations
   nloo <- min(nloo, n)
-
   if (nloo < 1) {
     stop("nloo must be at least 1")
   } else if (nloo < n) {
@@ -688,8 +704,15 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
     nobs_orig = attr(mu, "nobs_orig"),
     class = sub("augmat", "augvec", oldClass(mu), fixed = TRUE)
   )
-  summ_ref <- list(lppd = apply(refmodel$loglik + lw, 2, log_sum_exp),
-                   mu = mu_ref)
+  if (refmodel$family$for_latent) {
+    loglik_lat <- t(refmodel$family$ll_fun(
+      refmodel$family$linkinv(eta_offs), dis, refmodel$y, refmodel$wobs
+    ))
+    lppd_ref <- apply(loglik_lat + lw, 2, log_sum_exp)
+  } else {
+    lppd_ref <- loo_ref_Orig
+  }
+  summ_ref <- list(lppd = lppd_ref, mu = mu_ref)
   if (refmodel$family$for_latent) {
     mu_ref_Orig <- do.call(c, lapply(seq_len(n_aug), function(i) {
       i_nonaug <- i %% n
@@ -735,6 +758,15 @@ kfold_varsel <- function(refmodel, method, nterms_max, ndraws,
   # indices):
   list_cv <- .get_kfold(refmodel, K, verbose)
   K <- length(list_cv)
+
+  if (refmodel$family$for_latent) {
+    # Need to set the latent response values in `refmodel$y` to `NA`s because
+    # `refmodel$y` resulted from applying `colMeans(posterior_linpred())` to the
+    # original (full-data) reference model fit, so using the `fold$omitted`
+    # subset of `refmodel$y` as (latent) response values in fold k of K would
+    # induce a dependency between training and test data:
+    refmodel$y <- rep(NA, length(refmodel$y))
+  }
 
   # Extend `list_cv` to also contain `y`, `weights`, and `offset`:
   extend_list_cv <- function(fold) {
