@@ -166,8 +166,11 @@
     })
     # Since `mu` is an unordered factor, `y` needs to be unordered, too (or both
     # would need to be ordered; however, unordered is the simpler type):
-    varsel$d_test$y <- factor(varsel$d_test$y, ordered = FALSE)
-    varsel$d_test$yOrig <- factor(varsel$d_test$yOrig, ordered = FALSE)
+    if (varsel$refmodel$family$for_latent) {
+      varsel$d_test$yOrig <- factor(varsel$d_test$yOrig, ordered = FALSE)
+    } else {
+      varsel$d_test$y <- factor(varsel$d_test$y, ordered = FALSE)
+    }
   }
   if (varsel$refmodel$family$for_latent && respOrig) {
     varsel$d_test$y <- varsel$d_test$yOrig
