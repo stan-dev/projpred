@@ -112,36 +112,49 @@
     stop("`respOrig = FALSE` can only be used in case of the latent ",
          "projection.")
   }
-  if (varsel$refmodel$family$for_latent && respOrig) {
-    summ_ref <- summ_ref$Orig
-    summ_sub <- lapply(summ_sub, "[[", "Orig")
-    ref_lppd_NA <- all(is.na(summ_ref$lppd))
-    sub_lppd_NA <- any(sapply(summ_sub, check_sub_NA, el_nm = "lppd"))
-    ref_mu_NA <- all(is.na(summ_ref$mu))
-    sub_mu_NA <- any(sapply(summ_sub, check_sub_NA, el_nm = "mu"))
-    if (ref_mu_NA || sub_mu_NA) {
-      message(
-        "`latent_ilink` returned only `NA`s, so all performance statistics ",
-        "will also be `NA` as long as `respOrig = TRUE`."
-      )
-    } else if (any(stats %in% c("elpd", "mlpd")) &&
-               (ref_lppd_NA || sub_lppd_NA)) {
-      message(
-        "`latent_llOrig` returned only `NA`s, so ELPD and MLPD will also be ",
-        "`NA` as long as `respOrig = TRUE`."
-      )
+  if (varsel$refmodel$family$for_latent) {
+    if (respOrig) {
+      summ_ref <- summ_ref$Orig
+      summ_sub <- lapply(summ_sub, "[[", "Orig")
+      ref_lppd_NA <- all(is.na(summ_ref$lppd))
+      sub_lppd_NA <- any(sapply(summ_sub, check_sub_NA, el_nm = "lppd"))
+      ref_mu_NA <- all(is.na(summ_ref$mu))
+      sub_mu_NA <- any(sapply(summ_sub, check_sub_NA, el_nm = "mu"))
+      if (ref_mu_NA || sub_mu_NA) {
+        message(
+          "`latent_ilink` returned only `NA`s, so all performance statistics ",
+          "will also be `NA` as long as `respOrig = TRUE`."
+        )
+      } else if (any(stats %in% c("elpd", "mlpd")) &&
+                 (ref_lppd_NA || sub_lppd_NA)) {
+        message(
+          "`latent_llOrig` returned only `NA`s, so ELPD and MLPD will also be ",
+          "`NA` as long as `respOrig = TRUE`."
+        )
+      }
+    } else {
+      if (all(is.na(varsel$refmodel$dis)) &&
+          any(stats %in% c("elpd", "mlpd"))) {
+        message(
+          "Cannot calculate ELPD or MLPD if `respOrig = FALSE` and ",
+          "`<refmodel>$dis` consists of only `NA`s. If it's not possible to ",
+          "supply a suitable argument `dis` to init_refmodel(), consider (i) ",
+          "switching to `respOrig = TRUE` (which might require the ",
+          "specification of functions needed by extend_family()) or (ii) ",
+          "using a performance statistic other than ELPD or MLPD."
+        )
+      }
+      if (all(is.na(varsel$d_test$y))) {
+        message(
+          "Cannot calculate performance statistics if `respOrig = FALSE` and ",
+          "`<vsel>$d_test$y` consists of only `NA`s. The reason for these ",
+          "`NA`s is probably that `<vsel>` was created by cv_varsel(). (In ",
+          "case of cross-validation, the latent response values for the test ",
+          "datasets cannot be defined straightforwardly without inducing ",
+          "dependencies between training and test datasets.)"
+        )
+      }
     }
-  } else if (varsel$refmodel$family$for_latent &&
-             all(is.na(varsel$refmodel$dis)) &&
-             any(stats %in% c("elpd", "mlpd"))) {
-    message(
-      "Cannot calculate ELPD or MLPD if `respOrig = FALSE` and ",
-      "`<refmodel>$dis` consists of only `NA`s. If it's not possible to ",
-      "supply a suitable argument `dis` to init_refmodel(), consider (i) ",
-      "switching to `respOrig = TRUE` (which might require the specification ",
-      "of functions needed by extend_family()) or (ii) using a performance ",
-      "statistic other than ELPD or MLPD."
-    )
   }
   if (respOrig && !is.null(varsel$refmodel$family$cats) &&
       any(stats %in% c("acc", "pctcorr"))) {
