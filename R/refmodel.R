@@ -372,7 +372,8 @@ predict.refmodel <- function(object, newdata = NULL, ynew = NULL,
       is.null(object$family$cats)) {
     stop("Argument `ynew` must be a numeric vector.")
   }
-  if (!is.null(ynew) && !is.null(object$family$cats)) {
+  if (!is.null(ynew) && !is.null(object$family$cats) &&
+      (!object$family$for_latent || type == "response")) {
     ynew <- as.factor(ynew)
     if (!all(levels(ynew) %in% object$family$cats)) {
       if (object$family$for_augdat) {
