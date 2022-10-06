@@ -341,7 +341,7 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
 
   if (refmodel$family$for_latent) {
     mu_Orig <- refmodel$family$latent_ilink(
-      t(mu), cl_ref = seq_along(refmodel$wsample),
+      t(eta_offs), cl_ref = seq_along(refmodel$wsample),
       wdraws_ref = refmodel$wsample
     )
     if (length(dim(mu_Orig)) < 2) {
