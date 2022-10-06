@@ -387,10 +387,6 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
     # training and test data:
     refprd_with_offs <- get("ref_predfun_usr",
                             envir = environment(refmodel$ref_predfun))
-    ### Option 1 (manually):
-    # refmodel$y <- colSums(t(unname(refprd_with_offs(refmodel$fit))) * exp(lw))
-    ###
-    ### Option 2 (using loo::E_loo()):
     y_lat_E <- loo::E_loo(t(unname(refprd_with_offs(refmodel$fit))),
                           psis_object = psisloo,
                           log_ratios = -loglik_forPSIS)
@@ -400,7 +396,6 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
               "exceeded the threshold of 0.7.")
     }
     refmodel$y <- y_lat_E$value
-    ###
   }
 
   ## by default use all observations
