@@ -2043,17 +2043,13 @@ vsel_tester <- function(
       if (identical(cv_method_expected, "kfold")) {
         expect_true(all(is.na(vs$d_test$y)), info = info_str)
       } else {
-        y_lat_loo <- vs$d_test$y
-        ### TODO (latent): Use this as soon as the offset bug in loo_varsel() is
-        ### fixed:
-        # ll_forPSIS <- rstantools::log_lik(vs$refmodel$fit)
-        # lwdraws_ref <- weights(loo::psis(-ll_forPSIS, cores = 1, r_eff = NA))
-        # refprd_with_offs <- get("ref_predfun_usr",
-        #                         envir = environment(vs$refmodel$ref_predfun))
-        # y_lat_loo <- colSums(
-        #   t(unname(refprd_with_offs(vs$refmodel$fit))) * exp(lwdraws_ref)
-        # )
-        ###
+        ll_forPSIS <- rstantools::log_lik(vs$refmodel$fit)
+        lwdraws_ref <- weights(loo::psis(-ll_forPSIS, cores = 1, r_eff = NA))
+        refprd_with_offs <- get("ref_predfun_usr",
+                                envir = environment(vs$refmodel$ref_predfun))
+        y_lat_loo <- colSums(
+          t(unname(refprd_with_offs(vs$refmodel$fit))) * exp(lwdraws_ref)
+        )
         expect_equal(vs$d_test$y, y_lat_loo, info = info_str)
       }
     } else {
