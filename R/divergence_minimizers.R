@@ -644,7 +644,7 @@ fit_cumul <- function(formula, data, family, weights, ...) {
     ncoefs <- count_terms_in_formula(formula) -
       attr(terms(formula), "intercept")
     start_coefs <- rep(0, ncoefs)
-    ncats <- length(unique(eval(formula[[2]], data, environment(formula))))
+    ncats <- length(unique(eval_el2(formula = formula, data = data)))
     nthres <- ncats - 1L
     # Start with thresholds which imply equal probabilities for the response
     # categories:

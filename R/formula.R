@@ -710,6 +710,17 @@ count_terms_chosen <- function(list_of_terms, duplicates = TRUE,
 ## @param data Data with which to evaluate.
 ## @return output from the evaluation
 eval_rhs <- function(formula, data) {
+  eval_el2(formula = formula, data = data)
+}
+
+# Helper function to evaluate the second element of a `formula` in a specific
+# environment `data`.
+#
+# @param formula A `formula` whose second element should be evaluated.
+# @param data Passed to argument `envir` of eval().
+#
+# @return The output from eval().
+eval_el2 <- function(formula, data) {
   eval(formula[[2]], data, environment(formula))
 }
 
