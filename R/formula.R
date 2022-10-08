@@ -691,10 +691,14 @@ count_terms_chosen <- function(list_of_terms, duplicates = TRUE,
 }
 
 ## Helper function to evaluate right hand side formulas in a context
+## Caution: This does not evaluate the right-hand side of a *full formula* such
+## as `y ~ x`, but the right-hand side of a *right-hand side formula* such as
+## `~ x`.
 ## @param formula Formula to evaluate.
 ## @param data Data with which to evaluate.
 ## @return output from the evaluation
 eval_rhs <- function(formula, data) {
+  stopifnot(length(formula) == 2)
   eval_el2(formula = formula, data = data)
 }
 
