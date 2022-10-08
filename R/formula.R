@@ -706,10 +706,27 @@ count_terms_chosen <- function(list_of_terms, duplicates = TRUE,
 }
 
 ## Helper function to evaluate right hand side formulas in a context
+## Caution: This does not evaluate the right-hand side of a *full formula* such
+## as `y ~ x`, but the right-hand side of a *right-hand side formula* such as
+## `~ x`.
 ## @param formula Formula to evaluate.
 ## @param data Data with which to evaluate.
 ## @return output from the evaluation
 eval_rhs <- function(formula, data) {
+  stopifnot(length(formula) == 2)
+  eval_el2(formula = formula, data = data)
+}
+
+# Helper function to evaluate the left-hand side of a `formula` in a specific
+# environment `data`. This refers to full formulas such as `y ~ 1` or `y ~ x`
+# (in R, there is no such thing like a "left-hand side formula").
+#
+# @param formula A `formula` whose left-hand side should be evaluated.
+# @param data Passed to argument `envir` of eval().
+#
+# @return The output from eval().
+eval_lhs <- function(formula, data) {
+  stopifnot(length(formula) == 3)
   eval_el2(formula = formula, data = data)
 }
 
