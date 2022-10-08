@@ -702,6 +702,19 @@ eval_rhs <- function(formula, data) {
   eval_el2(formula = formula, data = data)
 }
 
+# Helper function to evaluate the left-hand side of a `formula` in a specific
+# environment `data`. This refers to full formulas such as `y ~ 1` or `y ~ x`
+# (in R, there is no such thing like a "left-hand side formula").
+#
+# @param formula A `formula` whose left-hand side should be evaluated.
+# @param data Passed to argument `envir` of eval().
+#
+# @return The output from eval().
+eval_lhs <- function(formula, data) {
+  stopifnot(length(formula) == 3)
+  eval_el2(formula = formula, data = data)
+}
+
 # Helper function to evaluate the second element of a `formula` in a specific
 # environment `data`.
 #
