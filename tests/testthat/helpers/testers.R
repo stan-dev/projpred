@@ -2044,7 +2044,9 @@ vsel_tester <- function(
         expect_true(all(is.na(vs$d_test$y)), info = info_str)
       } else {
         ll_forPSIS <- rstantools::log_lik(vs$refmodel$fit)
-        lwdraws_ref <- weights(loo::psis(-ll_forPSIS, cores = 1, r_eff = NA))
+        lwdraws_ref <- weights(suppressWarnings(
+          loo::psis(-ll_forPSIS, cores = 1, r_eff = NA)
+        ))
         refprd_with_offs <- get("ref_predfun_usr",
                                 envir = environment(vs$refmodel$ref_predfun))
         y_lat_loo <- colSums(
