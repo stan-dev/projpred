@@ -295,7 +295,7 @@ proj_linpred_aux <- function(proj, newdata, offset, weights, transform = FALSE,
         refprd_with_offs(fit = proj$refmodel$fit, newdata = newdata_lat)
       ))
     } else {
-      ynew <- eval_el2(formula = proj$refmodel$formula, data = newdata)
+      ynew <- eval_lhs(formula = proj$refmodel$formula, data = newdata)
     }
   }
   lpd_out <- compute_lpd(ynew = ynew, pred_sub = pred_sub, proj = proj,
