@@ -196,7 +196,7 @@ instead.
 The elements of the \code{search_terms} character vector don't need to be
 individual predictor terms. Instead, they can be building blocks consisting
 of several predictor terms connected by the \code{+} symbol. To understand how
-these building blocks works, it is important to know how \pkg{projpred}'s
+these building blocks work, it is important to know how \pkg{projpred}'s
 forward search works: It starts with an empty vector \code{chosen} which will
 later contain already selected predictor terms. Then, the search iterates
 over model sizes \eqn{j \in \{1, ..., J\}}{j = 1, ..., J}. The candidate

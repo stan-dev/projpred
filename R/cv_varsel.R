@@ -516,6 +516,15 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
         refmodel$y[inds], refmodel$wobs[inds]
       ))
     }
+    sub_psisloo <- suppressWarnings(
+      loo::psis(-log_lik_ref, cores = 1, r_eff = NA)
+    )
+    lw_sub <- suppressWarnings(weights(sub_psisloo))
+    # Take into account that clustered draws usually have different weights:
+    lw_sub <- lw_sub + log(refdist_eval$weights)
+    # This re-weighting requires a re-normalization (as.array() is applied to
+    # have stricter consistency checks, see `?sweep`):
+    lw_sub <- sweep(lw_sub, 2, as.array(apply(lw_sub, 2, log_sum_exp)))
     for (k in seq_along(submodels)) {
       mu_k <- refmodel$family$mu_fun(submodels[[k]]$submodl,
                                      obs = inds,
@@ -523,15 +532,6 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
       log_lik_sub <- t(refmodel$family$ll_fun(
         mu_k, submodels[[k]]$dis, refmodel$y[inds], refmodel$wobs[inds]
       ))
-      sub_psisloo <- suppressWarnings(
-        loo::psis(-log_lik_ref, cores = 1, r_eff = NA)
-      )
-      lw_sub <- suppressWarnings(weights(sub_psisloo))
-      # Take into account that clustered draws usually have different weights:
-      lw_sub <- lw_sub + log(refdist_eval$weights)
-      # This re-weighting requires a re-normalization (as.array() is applied to
-      # have stricter consistency checks, see `?sweep`):
-      lw_sub <- sweep(lw_sub, 2, as.array(apply(lw_sub, 2, log_sum_exp)))
       loo_sub[[k]][inds] <- apply(log_lik_sub + lw_sub, 2, log_sum_exp)
       if (refmodel$family$for_latent) {
         mu_k_Orig <- refmodel$family$latent_ilink(
