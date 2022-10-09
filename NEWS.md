@@ -4,6 +4,10 @@ If you read this from a place other than <https://mc-stan.org/projpred/news/inde
 
 # projpred 2.2.1.9000
 
+## Minor changes
+
+* Improvements in documentation and vignette.
+* Minor improvement in terms of efficiency in the `validate_search = FALSE` case of `cv_varsel()`.
 
 # projpred 2.2.1
 
