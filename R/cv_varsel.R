@@ -476,11 +476,11 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
       ## reweight the clusters/samples according to the psis-loo weights
       p_sel <- .get_p_clust(
         family = refmodel$family, mu = mu, eta = eta, dis = dis,
-        wsample = exp(lw[, i]), cl = cl_sel
+        wsample = exp(lw[, i]), cl = cl_sel, offs = refmodel$offset
       )
       p_pred <- .get_p_clust(
         family = refmodel$family, mu = mu, eta = eta, dis = dis,
-        wsample = exp(lw[, i]), cl = cl_pred
+        wsample = exp(lw[, i]), cl = cl_pred, offs = refmodel$offset
       )
 
       ## perform selection with the reweighted clusters/samples
