@@ -411,9 +411,15 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
     } else {
       refdist_eval <- p_sel
     }
+    refdist_eval_mu_offs <- refdist_eval$mu
+    if (!all(refmodel$offset == 0)) {
+      refdist_eval_mu_offs <- refmodel$family$linkinv(
+        refmodel$family$linkfun(refdist_eval_mu_offs) + refmodel$offset
+      )
+    }
     log_lik_ref <- t(refmodel$family$ll_fun(
-      refdist_eval$mu[inds, , drop = FALSE], refdist_eval$dis, refmodel$y[inds],
-      refmodel$wobs[inds]
+      refdist_eval_mu_offs[inds, , drop = FALSE], refdist_eval$dis,
+      refmodel$y[inds], refmodel$wobs[inds]
     ))
     sub_psisloo <- suppressWarnings(
       loo::psis(-log_lik_ref, cores = 1, r_eff = NA)
@@ -470,11 +476,11 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
       ## reweight the clusters/samples according to the psis-loo weights
       p_sel <- .get_p_clust(
         family = refmodel$family, mu = mu, eta = eta, dis = dis,
-        wsample = exp(lw[, i]), cl = cl_sel
+        wsample = exp(lw[, i]), cl = cl_sel, offs = refmodel$offset
       )
       p_pred <- .get_p_clust(
         family = refmodel$family, mu = mu, eta = eta, dis = dis,
-        wsample = exp(lw[, i]), cl = cl_pred
+        wsample = exp(lw[, i]), cl = cl_pred, offs = refmodel$offset
       )
 
       ## perform selection with the reweighted clusters/samples
