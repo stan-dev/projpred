@@ -293,12 +293,14 @@ bootstrap <- function(x, fun = mean, B = 2000,
       # special case, only one cluster
       p_ref <- .get_p_clust(family = refmodel$family, mu = refmodel$mu,
                             eta = refmodel$eta, dis = refmodel$dis,
-                            wobs = refmodel$wobs, cl = rep(1, S))
+                            wobs = refmodel$wobs, cl = rep(1, S),
+                            offs = refmodel$offset)
     } else {
       # several clusters
       p_ref <- .get_p_clust(family = refmodel$family, mu = refmodel$mu,
                             eta = refmodel$eta, dis = refmodel$dis,
-                            wobs = refmodel$wobs, nclusters = nclusters)
+                            wobs = refmodel$wobs, nclusters = nclusters,
+                            offs = refmodel$offset)
     }
   } else {
     ndraws <- min(S, ndraws)
@@ -313,8 +315,18 @@ bootstrap <- function(x, fun = mean, B = 2000,
     }
     cl <- rep(NA, S)
     cl[s_ind] <- 1:ndraws
+    mu_offs <- refmodel$mu
+    if (!all(refmodel$offset == 0)) {
+      eta_offs <- refmodel$family$linkfun(mu_offs)
+      if (refmodel$family$family %in% fams_neg_linpred()) {
+        eta_offs <- eta_offs - refmodel$offset
+      } else {
+        eta_offs <- eta_offs + refmodel$offset
+      }
+      mu_offs <- refmodel$family$linkinv(eta_offs)
+    }
     predvar <- do.call(cbind, lapply(s_ind, function(j) {
-      refmodel$family$predvar(refmodel$mu[, j, drop = FALSE], refmodel$dis[j])
+      refmodel$family$predvar(mu_offs[, j, drop = FALSE], refmodel$dis[j])
     }))
     p_ref <- list(
       mu = refmodel$mu[, s_ind, drop = FALSE],
@@ -333,7 +345,8 @@ bootstrap <- function(x, fun = mean, B = 2000,
 # Function for clustering the parameter draws:
 .get_p_clust <- function(family, mu, eta, dis, nclusters = 10,
                          wobs = rep(1, dim(mu)[1]),
-                         wsample = rep(1, dim(mu)[2]), cl = NULL) {
+                         wsample = rep(1, dim(mu)[2]), cl = NULL,
+                         offs = rep(0, dim(mu)[1])) {
   # cluster the samples in the latent space if no clustering provided
   if (is.null(cl)) {
     # Note: A seed is not set here because this function is not exported and has
@@ -363,6 +376,17 @@ bootstrap <- function(x, fun = mean, B = 2000,
   # Predictive variances:
   predvar <- matrix(nrow = dim(mu)[1], ncol = nclusters)
   eps <- 1e-10
+  # Predictions incorporating offsets (needed for `predvar`):
+  mu_offs <- mu
+  if (!all(offs == 0)) {
+    eta_offs <- family$linkfun(mu_offs)
+    if (family$family %in% fams_neg_linpred()) {
+      eta_offs <- eta_offs - offs
+    } else {
+      eta_offs <- eta_offs + offs
+    }
+    mu_offs <- family$linkinv(eta_offs)
+  }
   for (j in 1:nclusters) {
     ind <- which(cl == j)
     # Compute normalized weights within the j-th cluster; `1 - eps` is for
@@ -376,7 +400,7 @@ bootstrap <- function(x, fun = mean, B = 2000,
     # Aggregated dispersion parameter for the j-th cluster:
     dis_agg[j] <- crossprod(dis[ind], ws)
     # Predictive variance for the j-th cluster:
-    predvar[, j] <- family$predvar(mu[, ind, drop = FALSE], dis[ind], ws)
+    predvar[, j] <- family$predvar(mu_offs[, ind, drop = FALSE], dis[ind], ws)
   }
   wcluster <- wcluster / sum(wcluster)
 
