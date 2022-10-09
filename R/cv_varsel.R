@@ -431,9 +431,13 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
     }
     refdist_eval_mu_offs <- refdist_eval$mu
     if (!all(refmodel$offset == 0)) {
-      refdist_eval_mu_offs <- refmodel$family$linkinv(
-        refmodel$family$linkfun(refdist_eval_mu_offs) + refmodel$offset
-      )
+      refdist_eval_eta_offs <- refmodel$family$linkfun(refdist_eval_mu_offs)
+      if (refmodel$family$family %in% fams_neg_linpred()) {
+        refdist_eval_eta_offs <- refdist_eval_eta_offs - refmodel$offset
+      } else {
+        refdist_eval_eta_offs <- refdist_eval_eta_offs + refmodel$offset
+      }
+      refdist_eval_mu_offs <- refmodel$family$linkinv(refdist_eval_eta_offs)
     }
     inds_aug <- inds
     if (refmodel$family$for_augdat) {

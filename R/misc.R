@@ -287,9 +287,13 @@ bootstrap <- function(x, fun = mean, B = 2000,
     cl[s_ind] <- 1:ndraws
     mu_offs <- refmodel$mu
     if (!all(refmodel$offset == 0)) {
-      mu_offs <- refmodel$family$linkinv(
-        refmodel$family$linkfun(mu_offs) + refmodel$offset
-      )
+      eta_offs <- refmodel$family$linkfun(mu_offs)
+      if (refmodel$family$family %in% fams_neg_linpred()) {
+        eta_offs <- eta_offs - refmodel$offset
+      } else {
+        eta_offs <- eta_offs + refmodel$offset
+      }
+      mu_offs <- refmodel$family$linkinv(eta_offs)
     }
     predvar <- do.call(cbind, lapply(s_ind, function(j) {
       refmodel$family$predvar(mu_offs[, j, drop = FALSE], refmodel$dis[j])
@@ -344,7 +348,13 @@ bootstrap <- function(x, fun = mean, B = 2000,
   # Predictions incorporating offsets (needed for `predvar`):
   mu_offs <- mu
   if (!all(offs == 0)) {
-    mu_offs <- family$linkinv(family$linkfun(mu_offs) + offs)
+    eta_offs <- family$linkfun(mu_offs)
+    if (family$family %in% fams_neg_linpred()) {
+      eta_offs <- eta_offs - offs
+    } else {
+      eta_offs <- eta_offs + offs
+    }
+    mu_offs <- family$linkinv(eta_offs)
   }
   for (j in 1:nclusters) {
     ind <- which(cl == j)
