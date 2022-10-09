@@ -330,22 +330,24 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
   cl_pred <- p_pred$cl
 
   ## fetch the log-likelihood for the reference model to obtain the LOO weights
-  if (is.null(refmodel$loglik)) {
+  if (inherits(refmodel, "datafit")) {
     ## case where log-likelihood not available, i.e., the reference model is not
     ## a genuine model => cannot compute LOO
     stop("LOO can be performed only if the reference model is a genuine ",
          "probabilistic model for which the log-likelihood can be evaluated.")
-  } else {
-    ## log-likelihood available
-    loglik <- refmodel$loglik
   }
+
+  eta_offs <- eta + refmodel$offset
+  mu_offs <- refmodel$family$linkinv(eta_offs)
+
+  loglik <- t(refmodel$family$ll_fun(mu_offs, dis, refmodel$y, refmodel$wobs))
   n <- ncol(loglik)
   psisloo <- loo::psis(-loglik, cores = 1, r_eff = NA)
   lw <- weights(psisloo)
   # pareto_k <- loo::pareto_k_values(psisloo)
+
   ## by default use all observations
   nloo <- min(nloo, n)
-
   if (nloo < 1) {
     stop("nloo must be at least 1")
   } else if (nloo < n) {
@@ -355,7 +357,7 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
   ## compute loo summaries for the reference model
   loo_ref <- apply(loglik + lw, 2, log_sum_exp)
   mu_ref <- do.call(c, lapply(seq_len(n), function(i) {
-    mu[i, ] %*% exp(lw[, i])
+    mu_offs[i, ] %*% exp(lw[, i])
   }))
 
   ## decide which points form the validation set based on the k-values

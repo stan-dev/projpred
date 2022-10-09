@@ -13,6 +13,7 @@ If you read this from a place other than <https://mc-stan.org/projpred/news/inde
 
 * Fix a bug causing offsets not to be taken into account appropriately when calculating the PSIS weights (those used for the submodels) in the `validate_search = FALSE` case of `cv_varsel()`. This bug was introduced in v2.2.0 (and existed up to---including---v2.2.1).
 * Fix a (long-standing) bug causing offsets not to be taken into account appropriately when calculating the predictive variances for a reference model that has a dispersion parameter and a non-identity link function. (GitHub: #186 (partly), #355)
+* Fix a (long-standing) bug causing offsets not to be taken into account appropriately when calculating `<vsel_object>$summaries$ref$mu` in case of `cv_varsel()` with `cv_method = "LOO"`. (GitHub: #186 (partly), #356)
 
 # projpred 2.2.1
 
