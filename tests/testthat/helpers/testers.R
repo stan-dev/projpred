@@ -299,9 +299,8 @@ refmodel_tester <- function(
   # Test the general structure of the object:
   refmod_nms <- c(
     "fit", "formula", "div_minimizer", "family", "mu", "eta", "dis", "y",
-    "loglik", "intercept", "proj_predfun", "fetch_data", "wobs", "wsample",
-    "offset", "cvfun", "cvfits", "extract_model_data", "ref_predfun",
-    "cvrefbuilder"
+    "intercept", "proj_predfun", "fetch_data", "wobs", "wsample", "offset",
+    "cvfun", "cvfits", "extract_model_data", "ref_predfun", "cvrefbuilder"
   )
   refmod_class_expected <- "refmodel"
   if (is_datafit) {
@@ -519,16 +518,6 @@ refmodel_tester <- function(
     }
   }
   expect_identical(refmod$y, y_expected, info = info_str)
-
-  # loglik
-  if (!is_datafit) {
-    expect_true(is.matrix(refmod$loglik), info = info_str)
-    expect_type(refmod$loglik, "double")
-    expect_identical(dim(refmod$loglik), c(nrefdraws_expected, nobsv_expected),
-                     info = info_str)
-  } else {
-    expect_null(refmod$loglik, info = info_str)
-  }
 
   # intercept
   expect_type(refmod$intercept, "logical")

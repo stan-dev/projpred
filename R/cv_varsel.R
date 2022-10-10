@@ -329,22 +329,28 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
   cl_pred <- p_pred$cl
 
   ## fetch the log-likelihood for the reference model to obtain the LOO weights
-  if (is.null(refmodel$loglik)) {
+  if (inherits(refmodel, "datafit")) {
     ## case where log-likelihood not available, i.e., the reference model is not
     ## a genuine model => cannot compute LOO
     stop("LOO can be performed only if the reference model is a genuine ",
          "probabilistic model for which the log-likelihood can be evaluated.")
-  } else {
-    ## log-likelihood available
-    loglik <- refmodel$loglik
   }
+
+  if (refmodel$family$family %in% fams_neg_linpred()) {
+    eta_offs <- eta - refmodel$offset
+  } else {
+    eta_offs <- eta + refmodel$offset
+  }
+  mu_offs <- refmodel$family$linkinv(eta_offs)
+
+  loglik <- t(refmodel$family$ll_fun(mu_offs, dis, refmodel$y, refmodel$wobs))
   n <- ncol(loglik)
   psisloo <- loo::psis(-loglik, cores = 1, r_eff = NA)
   lw <- weights(psisloo)
   # pareto_k <- loo::pareto_k_values(psisloo)
+
   ## by default use all observations
   nloo <- min(nloo, n)
-
   if (nloo < 1) {
     stop("nloo must be at least 1")
   } else if (nloo < n) {
@@ -353,21 +359,21 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
 
   ## compute loo summaries for the reference model
   loo_ref <- apply(loglik + lw, 2, log_sum_exp)
-  mu_ref <- do.call(c, lapply(seq_len(nrow(mu)), function(i) {
-    # For the augmented-data projection, `mu` is an augmented-rows matrix
+  mu_ref <- do.call(c, lapply(seq_len(nrow(mu_offs)), function(i) {
+    # For the augmented-data projection, `mu_offs` is an augmented-rows matrix
     # whereas the columns of `lw` refer to the original (non-augmented)
-    # observations. Since `i` refers to the rows of `mu`, the index for `lw`
-    # needs to be adapted:
+    # observations. Since `i` refers to the rows of `mu_offs`, the index for
+    # `lw` needs to be adapted:
     i_nonaug <- i %% n
     if (i_nonaug == 0) {
       i_nonaug <- n
     }
-    mu[i, ] %*% exp(lw[, i_nonaug])
+    mu_offs[i, ] %*% exp(lw[, i_nonaug])
   }))
   mu_ref <- structure(
     mu_ref,
-    nobs_orig = attr(mu, "nobs_orig"),
-    class = sub("augmat", "augvec", oldClass(mu), fixed = TRUE)
+    nobs_orig = attr(mu_offs, "nobs_orig"),
+    class = sub("augmat", "augvec", oldClass(mu_offs), fixed = TRUE)
   )
 
   ## decide which points form the validation set based on the k-values
@@ -380,9 +386,9 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
   loo_sub <- replicate(nterms_max, rep(NA, n), simplify = FALSE)
   mu_sub <- replicate(
     nterms_max,
-    structure(rep(NA, nrow(mu)),
-              nobs_orig = attr(mu, "nobs_orig"),
-              class = sub("augmat", "augvec", oldClass(mu), fixed = TRUE)),
+    structure(rep(NA, nrow(mu_offs)),
+              nobs_orig = attr(mu_offs, "nobs_orig"),
+              class = sub("augmat", "augvec", oldClass(mu_offs), fixed = TRUE)),
     simplify = FALSE
   )
 

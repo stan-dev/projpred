@@ -1026,19 +1026,6 @@ init_refmodel <- function(object, data, formula, family, ref_predfun = NULL,
     stopifnot(length(dis) == ndraws)
   }
 
-  if (proper_model) {
-    if (family$family %in% fams_neg_linpred()) {
-      eta_ll <- eta - offset
-    } else {
-      eta_ll <- eta + offset
-    }
-    loglik <- t(family$ll_fun(
-      family$linkinv(eta_ll), dis, y, weights = weights
-    ))
-  } else {
-    loglik <- NULL
-  }
-
   # Equal sample (draws) weights by default:
   wsample <- rep(1 / ndraws, ndraws)
 
@@ -1050,10 +1037,9 @@ init_refmodel <- function(object, data, formula, family, ref_predfun = NULL,
   # Output ------------------------------------------------------------------
 
   refmodel <- nlist(
-    fit = object, formula, div_minimizer, family, mu, eta, dis, y, loglik,
-    intercept, proj_predfun, fetch_data = fetch_data_wrapper, wobs = weights,
-    wsample, offset, cvfun, cvfits, extract_model_data, ref_predfun,
-    cvrefbuilder
+    fit = object, formula, div_minimizer, family, mu, eta, dis, y, intercept,
+    proj_predfun, fetch_data = fetch_data_wrapper, wobs = weights, wsample,
+    offset, cvfun, cvfits, extract_model_data, ref_predfun, cvrefbuilder
   )
   if (proper_model) {
     class(refmodel) <- "refmodel"
