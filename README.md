@@ -26,10 +26,10 @@ of the main vignette.
 
 The [vignettes](https://mc-stan.org/projpred/articles/)^[When offline, the
 overview of all vignettes can be accessed by typing
-`browseVignettes("projpred")` within R.] (currently, the [main
-vignette](https://mc-stan.org/projpred/articles/projpred.html) is the only one)
-illustrate how to use the **projpred** functions in conjunction. Details on the
-**projpred** functions as well as some shorter examples may be found in the
+`browseVignettes("projpred")` within R.] (currently, the main vignette is the
+only one) illustrate how to use the **projpred** functions in conjunction.
+Details on the **projpred** functions as well as some shorter examples may be
+found in the
 [documentation](https://mc-stan.org/projpred/reference/index.html)^[When
 offline, the documentation can be accessed using `?` or `help()` within R.].
 
