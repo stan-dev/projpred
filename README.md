@@ -12,21 +12,26 @@ for various regression models. Usually, the reference model will be an
 models can also be used. Details on supported model types are given in section
 ["Supported types of reference
 models"](https://mc-stan.org/projpred/articles/projpred.html#refmodtypes) of the
-main vignette.
+main vignette^[When offline, the main vignette can be accessed by typing
+`vignette(topic = "projpred", package = "projpred")` or---more
+conveniently---`browseVignettes("projpred")` within R.].
 
 For details on how to cite **projpred**, visit section
-["Citation"](https://mc-stan.org/projpred/authors.html#citation) on the website.
-Further references (including earlier work that **projpred** is based on) are
-given in section
+["Citation"](https://mc-stan.org/projpred/authors.html#citation) on the
+website^[When offline, the citation information can be accessed by typing
+`citation("projpred")` within R.]. Further references (including earlier work
+that **projpred** is based on) are given in section
 ["Introduction"](https://mc-stan.org/projpred/articles/projpred.html#introduction)
 of the main vignette.
 
-The [vignettes](https://mc-stan.org/projpred/articles/) (currently, the [main
+The [vignettes](https://mc-stan.org/projpred/articles/)^[When offline, the
+overview of all vignettes can be accessed by typing
+`browseVignettes("projpred")` within R.] (currently, the [main
 vignette](https://mc-stan.org/projpred/articles/projpred.html) is the only one)
 illustrate how to use the **projpred** functions in conjunction. Details on the
 **projpred** functions as well as some shorter examples may be found in the
-documentation (available on [CRAN](https://CRAN.R-project.org/package=projpred)
-and also [on the website](https://mc-stan.org/projpred/reference/index.html)).
+[documentation](https://mc-stan.org/projpred/reference/index.html)^[When
+offline, the documentation can be accessed using `?` or `help()` within R.].
 
 ## Installation
 
