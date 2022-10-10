@@ -12,23 +12,22 @@ for various regression models. Usually, the reference model will be an
 models can also be used. Details on supported model types are given in section
 ["Supported types of reference
 models"](https://mc-stan.org/projpred/articles/projpred.html#refmodtypes) of the
-main vignette^[When offline, the main vignette can be accessed by typing
+main vignette^[The main vignette can be accessed offline by typing
 `vignette(topic = "projpred", package = "projpred")` or---more
 conveniently---`browseVignettes("projpred")` within R.].
 
 For details on how to cite **projpred**, visit section
 ["Citation"](https://mc-stan.org/projpred/authors.html#citation) on the
-website^[When offline, the citation information can be accessed by typing
+website^[The citation information can be accessed offline by typing
 `citation("projpred")` within R.]. Further references (including earlier work
 that **projpred** is based on) are given in section
 ["Introduction"](https://mc-stan.org/projpred/articles/projpred.html#introduction)
 of the main vignette.
 
-The [vignettes](https://mc-stan.org/projpred/articles/)^[When offline, the
-overview of all vignettes can be accessed by typing
-`browseVignettes("projpred")` within R.] illustrate how to use the **projpred**
-functions in conjunction. Details on the **projpred** functions as well as some
-shorter examples may be found in the
+The [vignettes](https://mc-stan.org/projpred/articles/)^[The overview of all
+vignettes can be accessed offline by typing `browseVignettes("projpred")` within
+R.] illustrate how to use the **projpred** functions in conjunction. Details on
+the **projpred** functions as well as some shorter examples may be found in the
 [documentation](https://mc-stan.org/projpred/reference/index.html)^[When
 offline, the documentation can be accessed using `?` or `help()` within R.].
 

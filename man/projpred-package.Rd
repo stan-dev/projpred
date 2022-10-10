@@ -13,7 +13,7 @@ The \R package \pkg{projpred} performs the projection predictive variable (or
 \href{https://mc-stan.org/projpred/articles/projpred.html}{online}) before
 continuing here.
 
-For the sake of simplicity, throughout the whole package documentation, we
+For the sake of simplicity (throughout the whole package documentation), we
 use the term "submodel" for all kinds of candidate models onto which the
 reference model is projected, even though this term is not always appropriate
 for custom reference models.
