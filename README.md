@@ -28,8 +28,8 @@ The [vignettes](https://mc-stan.org/projpred/articles/)^[The overview of all
 vignettes can be accessed offline by typing `browseVignettes("projpred")` within
 R.] illustrate how to use the **projpred** functions in conjunction. Details on
 the **projpred** functions as well as some shorter examples may be found in the
-[documentation](https://mc-stan.org/projpred/reference/index.html)^[When
-offline, the documentation can be accessed using `?` or `help()` within R.].
+[documentation](https://mc-stan.org/projpred/reference/index.html)^[The
+documentation can be accessed offline using `?` or `help()` within R.].
 
 ## Installation
 
