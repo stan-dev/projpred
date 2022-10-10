@@ -22,10 +22,7 @@ vignette: >
 
 This vignette shows the main functionalities of the **projpred** package, which implements the projection predictive variable selection for various regression models (see section ["Supported types of reference models"](#refmodtypes) below for more details on supported model types). What is special about the projection predictive variable selection is that it not only performs a variable selection, but also allows for valid post-selection inference.
 
-The projection predictive variable selection is based on the ideas of @goutis_model_1998 and @dupuis_variable_2003. The methods implemented in **projpred** are described in detail in @piironen_projective_2020 and @catalina_projection_2020. They are evaluated in comparison to many other methods in @piironen_comparison_2017. For details on how to cite **projpred**, visit section
-["Citation"](https://mc-stan.org/projpred/authors.html#citation) on the
-website.^[When offline, the citation information can be accessed by typing
-`citation("projpred")` within R.]
+The projection predictive variable selection is based on the ideas of @goutis_model_1998 and @dupuis_variable_2003. The methods implemented in **projpred** are described in detail in @piironen_projective_2020 and @catalina_projection_2020. They are evaluated in comparison to many other methods in @piironen_comparison_2017. For details on how to cite **projpred**, visit section ["Citation"](https://mc-stan.org/projpred/authors.html#citation) on the website.^[The citation information can be accessed offline by typing `citation("projpred")` within R.]
 
 ## Data
 
