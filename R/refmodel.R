@@ -1291,10 +1291,10 @@ init_refmodel <- function(object, data, formula, family, ref_predfun = NULL,
   # Output ------------------------------------------------------------------
 
   refmodel <- nlist(
-    fit = object, formula, div_minimizer, family, mu, eta, dis, y,
-    intercept, proj_predfun, fetch_data = fetch_data_wrapper, wobs = weights,
-    wsample, offset, cvfun, cvfits, extract_model_data, ref_predfun,
-    cvrefbuilder, yOrig = yOrig %||% y
+    fit = object, formula, div_minimizer, family, mu, eta, dis, y, intercept,
+    proj_predfun, fetch_data = fetch_data_wrapper, wobs = weights, wsample,
+    offset, cvfun, cvfits, extract_model_data, ref_predfun, cvrefbuilder,
+    yOrig = yOrig %||% y
   )
   if (proper_model) {
     class(refmodel) <- "refmodel"

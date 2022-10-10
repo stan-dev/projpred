@@ -338,17 +338,18 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
   } else {
     eta_offs <- eta + refmodel$offset
   }
+  mu_offs <- refmodel$family$linkinv(eta_offs)
 
   if (refmodel$family$for_latent) {
-    mu_Orig <- refmodel$family$latent_ilink(
-      t(eta_offs), cl_ref = seq_along(refmodel$wsample),
+    mu_offs_Orig <- refmodel$family$latent_ilink(
+      t(mu_offs), cl_ref = seq_along(refmodel$wsample),
       wdraws_ref = refmodel$wsample
     )
-    if (length(dim(mu_Orig)) < 2) {
+    if (length(dim(mu_offs_Orig)) < 2) {
       stop("Unexpected structure for the output of `latent_ilink`.")
     }
     loglik_forPSIS <- refmodel$family$latent_llOrig(
-      mu_Orig, yOrig = refmodel$yOrig, wobs = refmodel$wobs,
+      mu_offs_Orig, yOrig = refmodel$yOrig, wobs = refmodel$wobs,
       cl_ref = seq_along(refmodel$wsample), wdraws_ref = refmodel$wsample
     )
     if (!is.matrix(loglik_forPSIS)) {
@@ -358,20 +359,21 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
       stop("In case of the latent projection, `cv_method = \"LOO\"` requires ",
            "a function `latent_llOrig` that does not return only `NA`s.")
     }
-    if (length(dim(mu_Orig)) == 3) {
-      # In this case, `mu_Orig` is a 3-dimensional array (S x N x C), so
+    if (length(dim(mu_offs_Orig)) == 3) {
+      # In this case, `mu_offs_Orig` is a 3-dimensional array (S x N x C), so
       # coerce it to an augmented-rows matrix:
-      mu_Orig <- arr2augmat(mu_Orig, margin_draws = 1)
-      n_aug <- nrow(mu_Orig)
+      mu_offs_Orig <- arr2augmat(mu_offs_Orig, margin_draws = 1)
+      n_aug <- nrow(mu_offs_Orig)
     } else {
-      # In this case, `mu_Orig` is a matrix (S x N). Transposing it to an N x
-      # S matrix would be more consistent with projpred's internal convention,
-      # but avoiding the transposition is computationally more efficient:
-      n_aug <- ncol(mu_Orig)
+      # In this case, `mu_offs_Orig` is a matrix (S x N). Transposing it to an
+      # N x S matrix would be more consistent with projpred's internal
+      # convention, but avoiding the transposition is computationally more
+      # efficient:
+      n_aug <- ncol(mu_offs_Orig)
     }
   } else {
     loglik_forPSIS <- t(refmodel$family$ll_fun(
-      refmodel$family$linkinv(eta_offs), dis, refmodel$y, refmodel$wobs
+      mu_offs, dis, refmodel$y, refmodel$wobs
     ))
   }
   n <- ncol(loglik_forPSIS)
@@ -417,9 +419,9 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
   loo_sub <- replicate(nterms_max, rep(NA, n), simplify = FALSE)
   mu_sub <- replicate(
     nterms_max,
-    structure(rep(NA, nrow(mu)),
-              nobs_orig = attr(mu, "nobs_orig"),
-              class = sub("augmat", "augvec", oldClass(mu), fixed = TRUE)),
+    structure(rep(NA, nrow(mu_offs)),
+              nobs_orig = attr(mu_offs, "nobs_orig"),
+              class = sub("augmat", "augvec", oldClass(mu_offs), fixed = TRUE)),
     simplify = FALSE
   )
   if (refmodel$family$for_latent) {
@@ -695,25 +697,25 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
     }
     return(summ_k)
   })
-  mu_ref <- do.call(c, lapply(seq_len(nrow(mu)), function(i) {
-    # For the augmented-data projection, `mu` is an augmented-rows matrix
+  mu_ref <- do.call(c, lapply(seq_len(nrow(mu_offs)), function(i) {
+    # For the augmented-data projection, `mu_offs` is an augmented-rows matrix
     # whereas the columns of `lw` refer to the original (non-augmented)
-    # observations. Since `i` refers to the rows of `mu`, the index for `lw`
-    # needs to be adapted:
+    # observations. Since `i` refers to the rows of `mu_offs`, the index for
+    # `lw` needs to be adapted:
     i_nonaug <- i %% n
     if (i_nonaug == 0) {
       i_nonaug <- n
     }
-    mu[i, ] %*% exp(lw[, i_nonaug])
+    mu_offs[i, ] %*% exp(lw[, i_nonaug])
   }))
   mu_ref <- structure(
     mu_ref,
-    nobs_orig = attr(mu, "nobs_orig"),
-    class = sub("augmat", "augvec", oldClass(mu), fixed = TRUE)
+    nobs_orig = attr(mu_offs, "nobs_orig"),
+    class = sub("augmat", "augvec", oldClass(mu_offs), fixed = TRUE)
   )
   if (refmodel$family$for_latent) {
     loglik_lat <- t(refmodel$family$ll_fun(
-      refmodel$family$linkinv(eta_offs), dis, refmodel$y, refmodel$wobs
+      mu_offs, dis, refmodel$y, refmodel$wobs
     ))
     lppd_ref <- apply(loglik_lat + lw, 2, log_sum_exp)
   } else {
@@ -726,20 +728,20 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
       if (i_nonaug == 0) {
         i_nonaug <- n
       }
-      if (inherits(mu_Orig, "augmat")) {
-        return(mu_Orig[i, ] %*% exp(lw[, i_nonaug]))
+      if (inherits(mu_offs_Orig, "augmat")) {
+        return(mu_offs_Orig[i, ] %*% exp(lw[, i_nonaug]))
       } else {
         # In principle, we could use the same code for averaging across the
         # draws as above in the `"augmat"` case. However, that would require
-        # `mu_Orig <- t(mu_Orig)` beforehand, so the following should be
-        # more efficient:
-        return(exp(lw[, i_nonaug]) %*% mu_Orig[, i])
+        # `mu_offs_Orig <- t(mu_offs_Orig)` beforehand, so the following should
+        # be more efficient:
+        return(exp(lw[, i_nonaug]) %*% mu_offs_Orig[, i])
       }
     }))
     mu_ref_Orig <- structure(
       mu_ref_Orig,
-      nobs_orig = attr(mu_Orig, "nobs_orig"),
-      class = sub("augmat", "augvec", oldClass(mu_Orig), fixed = TRUE)
+      nobs_orig = attr(mu_offs_Orig, "nobs_orig"),
+      class = sub("augmat", "augvec", oldClass(mu_offs_Orig), fixed = TRUE)
     )
     summ_ref$Orig <- list(lppd = loo_ref_Orig, mu = mu_ref_Orig)
   }
