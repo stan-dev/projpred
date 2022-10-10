@@ -19,7 +19,7 @@
 #' [online](https://mc-stan.org/projpred/articles/projpred.html)) before
 #' continuing here.
 #'
-#' For the sake of simplicity, throughout the whole package documentation, we
+#' For the sake of simplicity (throughout the whole package documentation), we
 #' use the term "submodel" for all kinds of candidate models onto which the
 #' reference model is projected, even though this term is not always appropriate
 #' for custom reference models.
