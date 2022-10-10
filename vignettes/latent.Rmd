@@ -145,7 +145,7 @@ d_test_lat_poiss <- list(
   ###
   yOrig = dat_poiss_test$y
 )
-time_lat <- system.time(cvvs_lat <- varsel(
+time_lat <- system.time(vs_lat <- varsel(
   refm_fit_poiss,
   d_test = d_test_lat_poiss,
   ### Only for the sake of speed (not recommended in general):
@@ -163,7 +163,7 @@ The message telling that `<refmodel>$dis` consists of only `NA`s will not concer
 
 In order to decide for a submodel size, we first inspect the `plot()` results:
 ```{r}
-( gg_lat <- plot(cvvs_lat, stats = "mlpd", deltas = TRUE) )
+( gg_lat <- plot(vs_lat, stats = "mlpd", deltas = TRUE) )
 ```
 
 Although the submodels' MLPDs seem to be very close to the reference model's MLPD from a submodel size of 6 on, a look at a zoomed plot reveals that there is still some discrepancy at sizes 6 to 10 and that size 11 would be a better choice (further down below in the `summary()` output, we will also see that on absolute scale, the discrepancy at sizes 6 to 10 is not negligible):
@@ -178,13 +178,13 @@ modsize_decided_lat <- 11
 
 This is also the size that `suggest_size()` would suggest:
 ```{r}
-suggest_size(cvvs_lat, stat = "mlpd")
+suggest_size(vs_lat, stat = "mlpd")
 ```
 
 Only now, after we have made a decision for the submodel size, we inspect further results from the variable selection and, in particular, the solution path:
 ```{r}
 smmry_lat <- summary(
-  cvvs_lat,
+  vs_lat,
   stats = "mlpd",
   type = c("mean", "se", "lower", "upper", "diff", "diff.se")
 )
@@ -194,7 +194,7 @@ On absolute scale (column `mlpd`), we see that submodel size `r if (!params$EVAL
 
 In the solution path up to the selected size of `r if (!params$EVAL) character() else modsize_decided_lat`, we can see that in this case, **projpred** has correctly selected the truly relevant predictors first and only then the noise predictors. We can see this more clearly using the following code:
 ```{r}
-soltrms_lat <- solution_terms(cvvs_lat)
+soltrms_lat <- solution_terms(vs_lat)
 ( soltrms_lat_final <- head(soltrms_lat, modsize_decided_lat) )
 ```
 
@@ -207,7 +207,7 @@ We will now look at what **projpred**'s traditional projection would have given:
 d_test_trad_poiss <- d_test_lat_poiss
 d_test_trad_poiss$y <- d_test_trad_poiss$yOrig
 d_test_trad_poiss$yOrig <- NULL
-time_trad <- system.time(cvvs_trad <- varsel(
+time_trad <- system.time(vs_trad <- varsel(
   refm_fit_poiss,
   d_test = d_test_trad_poiss,
   ### Only for the sake of speed (not recommended in general):
@@ -219,9 +219,9 @@ time_trad <- system.time(cvvs_trad <- varsel(
 ```
 ```{r}
 print(time_trad)
-( gg_trad <- plot(cvvs_trad, stats = "mlpd", deltas = TRUE) )
+( gg_trad <- plot(vs_trad, stats = "mlpd", deltas = TRUE) )
 smmry_trad <- summary(
-  cvvs_trad,
+  vs_trad,
   stats = "mlpd",
   type = c("mean", "se", "lower", "upper", "diff", "diff.se")
 )
@@ -285,7 +285,7 @@ latent_ppdOrig_nebin <- function(ilpreds_resamp, wobs, cl_ref,
   ppd <- matrix(ppd, nrow = nrow(ilpreds_resamp), ncol = ncol(ilpreds_resamp))
   return(ppd)
 }
-cvvs_lat_nebin <- varsel(
+vs_lat_nebin <- varsel(
   refm_fit_nebin,
   d_test = d_test_lat_poiss,
   ### Only for the sake of speed (not recommended in general):
@@ -302,7 +302,7 @@ Again, the message telling that `<refmodel>$dis` consists of only `NA`s will not
 
 Again, we first inspect the `plot()` results to decide for a submodel size:
 ```{r}
-( gg_lat_nebin <- plot(cvvs_lat_nebin, stats = "mlpd", deltas = TRUE) )
+( gg_lat_nebin <- plot(vs_lat_nebin, stats = "mlpd", deltas = TRUE) )
 ```
 
 Again, a zoomed plot is more helpful:
@@ -317,13 +317,13 @@ modsize_decided_lat_nebin <- 11
 
 This is not the size that `suggest_size()` would suggest, but as mentioned in the main vignette and in the documentation, `suggest_size()` provides only a quite heuristic decision (so we stick with our manual decision here):
 ```{r}
-suggest_size(cvvs_lat_nebin, stat = "mlpd")
+suggest_size(vs_lat_nebin, stat = "mlpd")
 ```
 
 Only now, after we have made a decision for the submodel size, we inspect further results from the variable selection and, in particular, the solution path:
 ```{r}
 smmry_lat_nebin <- summary(
-  cvvs_lat_nebin,
+  vs_lat_nebin,
   stats = "mlpd",
   type = c("mean", "se", "lower", "upper", "diff", "diff.se")
 )
@@ -332,7 +332,7 @@ print(smmry_lat_nebin, digits = 3)
 
 As we can see from the solution path, our selected `r if (!params$EVAL) character() else modsize_decided_lat_nebin` predictor terms lack one truly relevant predictor (`x.9`) and include one noise term (`xn.29`). More explicitly, our selected predictor terms are:
 ```{r}
-soltrms_lat_nebin <- solution_terms(cvvs_lat_nebin)
+soltrms_lat_nebin <- solution_terms(vs_lat_nebin)
 ( soltrms_lat_nebin_final <- head(soltrms_lat_nebin,
                                   modsize_decided_lat_nebin) )
 ```
