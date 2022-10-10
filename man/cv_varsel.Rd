@@ -156,8 +156,8 @@ formula.}
 }
 \value{
 An object of class \code{vsel}. The elements of this object are not meant
-to be accessed directly but instead via helper functions (see the vignette
-or type \code{?projpred}).
+to be accessed directly but instead via helper functions (see the main
+vignette or type \code{?projpred}).
 }
 \description{
 Perform the projection predictive variable selection. This variable selection
