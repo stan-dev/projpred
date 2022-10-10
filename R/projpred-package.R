@@ -11,79 +11,25 @@
 #'
 #' @description
 #'
-#' \pkg{projpred} is an \R package for performing a projection predictive
-#' variable (or "feature") selection for generalized linear models (GLMs),
-#' generalized linear multilevel (or "mixed") models (GLMMs), generalized
-#' additive models (GAMs), and generalized additive multilevel (or "mixed")
-#' models (GAMMs), with the support for additive models still being
-#' experimental. Note that the term "generalized" includes the Gaussian family
-#' as well. Some regression models whose response family is not an exponential
-#' family are supported by the (currently still experimental) augmented-data
-#' projection (see below).
+#' The \R package \pkg{projpred} performs the projection predictive variable (or
+#' "feature") selection for various regression models. We recommend to read the
+#' `README` file (available with enhanced formatting
+#' [online](https://mc-stan.org/projpred/)) and the main vignette (`topic =
+#' "projpred"`, but also available
+#' [online](https://mc-stan.org/projpred/articles/projpred.html)) before
+#' continuing here.
 #'
-#' The package is compatible with \pkg{rstanarm} and \pkg{brms}, but developers
-#' of other packages are welcome to add new [get_refmodel()] methods (which
-#' enable the compatibility of their packages with \pkg{projpred}). Custom
-#' reference models can also be used via [init_refmodel()]. It is via custom
-#' reference models that \pkg{projpred} supports the projection onto candidate
-#' models whose predictor terms are not a subset of the reference model's
-#' predictor terms. However, for \pkg{rstanarm} and \pkg{brms} reference models,
-#' \pkg{projpred} only supports the projection onto *submodels* of the reference
-#' model. For the sake of simplicity, throughout this package, we use the term
-#' "submodel" for all kinds of candidate models onto which the reference model
-#' is projected, even though this term is not always appropriate for custom
-#' reference models.
+#' For the sake of simplicity, throughout the whole package documentation, we
+#' use the term "submodel" for all kinds of candidate models onto which the
+#' reference model is projected, even though this term is not always appropriate
+#' for custom reference models.
 #'
-#' In the following and throughout the rest of \pkg{projpred}'s documentation,
-#' the term "traditional projection" will be used whenever the projection type
-#' is neither "augmented-data" nor "latent" (see below for a description of
-#' these).
-#'
-#' The families supported by the traditional projection are [gaussian()],
-#' [binomial()] (and---via [brms::get_refmodel.brmsfit()]---also
-#' [brms::bernoulli()]), as well as [poisson()].
-#'
-#' As soon as possible, a reference for the augmented-data projection will be
-#' provided here (**TODO (augdat)**: Add reference for the augmented-data
-#' projection here.). For now, [this GitHub
-#' issue](https://github.com/stan-dev/projpred/issues/70) provides some basic
-#' information. The families supported by the augmented-data projection are
-#' [binomial()] (again also [brms::bernoulli()], but note that currently, the
-#' support for the [binomial()] family does not include binomial distributions
-#' with more than one trial; in such a case, a workaround is to de-aggregate the
-#' Bernoulli trials which belong to the same (aggregated) observation, i.e., to
-#' use a "long" dataset), [brms::cumulative()], [rstanarm::stan_polr()] fits,
-#' and [brms::categorical()]. See [extend_family()] (which is called by
-#' [init_refmodel()]) for an explanation how to apply the augmented-data
-#' projection to custom reference models. For non-custom reference models (i.e.,
-#' those created by [get_refmodel.stanreg()] or [brms::get_refmodel.brmsfit()]),
-#' the augmented-data projection is applied automatically if the family is
-#' supported by the augmented-data projection and neither [binomial()] nor
-#' [brms::bernoulli()]. For applying the augmented-data projection to the
-#' [binomial()] (or [brms::bernoulli()]) family, see [extend_family()] as well
-#' as [augdat_link_binom()] and [augdat_ilink_binom()]. Note that the
-#' augmented-data projection is currently considered as an experimental feature
-#' since it is subject to some more theoretical investigations.
-#'
-#' The latent projection (Catalina et al., 2021) is a quite general principle
-#' for extending \pkg{projpred}'s traditional projection to more response
-#' families. The latent projection is applied when setting argument `latent` of
-#' [extend_family()] (which is called by [init_refmodel()]) to `TRUE`. The
-#' families for which full latent-projection functionality (in particular,
-#' `respOrig = TRUE`, i.e., post-processing on the original response scale) is
-#' currently available are [binomial()] (again also [brms::bernoulli()], but
-#' note that currently, the latent-projection support for the [binomial()]
-#' family does not include binomial distributions with more than one trial; in
-#' such a case, a workaround is to de-aggregate the Bernoulli trials which
-#' belong to the same (aggregated) observation, i.e., to use a "long" dataset),
-#' [poisson()], [brms::cumulative()], and [rstanarm::stan_polr()] fits. For all
-#' other families, you can try to use the latent projection (by setting `latent
-#' = TRUE`) and \pkg{projpred} should tell you if any features are not available
-#' and how to make them available. More details concerning the latent projection
-#' are given in the vignette "Latent projection predictive inference with
-#' projpred" (**TODO (latent)**: Update that latent vignette). Note that the
-#' latent projection is currently considered as an experimental feature since it
-#' is subject to some more theoretical investigations.
+#' The following model type abbreviations will be used at multiple places
+#' throughout the documentation: GLM (generalized linear model), GLMM
+#' (generalized linear multilevel---or "mixed"---model), GAM (generalized
+#' additive model), and GAMM (generalized additive multilevel---or
+#' "mixed"---model). Note that the term "generalized" includes the Gaussian
+#' family as well.
 #'
 #' For the projection of the reference model onto a submodel, \pkg{projpred}
 #' currently relies on the following functions (in other words, these are the
@@ -127,15 +73,6 @@
 #' in turn may crash the R session. Thus, we currently cannot recommend the
 #' parallelization for models other than GLMs.
 #'
-#' The [vignettes](https://mc-stan.org/projpred/articles/) illustrate how to use
-#' the \pkg{projpred} functions in conjunction. Shorter examples are included
-#' here in the documentation.
-#'
-#' Some references relevant for this package are given in section "References"
-#' below. These references are introduced in the [main
-#' vignette](https://mc-stan.org/projpred/articles/projpred.html). See
-#' `citation(package = "projpred")` for details on citing \pkg{projpred}.
-#'
 #' @details
 #'
 #' # Functions
@@ -155,33 +92,5 @@
 #'   \item{[proj_linpred()], [proj_predict()]}{For making predictions from a
 #'   submodel (after projecting the reference model onto it).}
 #' }
-#'
-#' @references
-#'
-#' Catalina, A., Bürkner, P.-C., and Vehtari, A. (2020). Projection predictive
-#' inference for generalized linear and additive multilevel models.
-#' *arXiv:2010.06994*. URL: <https://arxiv.org/abs/2010.06994>.
-#'
-#' Catalina, A., Bürkner, P., and Vehtari, A. (2021). Latent space projection
-#' predictive inference. *arXiv:2109.04702*. URL:
-#' <https://arxiv.org/abs/2109.04702>.
-#'
-#' Dupuis, J. A. and Robert, C. P. (2003). Variable selection in qualitative
-#' models via an entropic explanatory power. *Journal of Statistical Planning
-#' and Inference*, **111**(1-2):77–94. \doi{10.1016/S0378-3758(02)00286-0}.
-#'
-#' Goutis, C. and Robert, C. P. (1998). Model choice in generalised linear
-#' models: A Bayesian approach via Kullback–Leibler projections. *Biometrika*,
-#' **85**(1):29–37.
-#'
-#' Piironen, J. and Vehtari, A. (2017). Comparison of Bayesian predictive
-#' methods for model selection. *Statistics and Computing*, **27**(3):711-735.
-#' \doi{10.1007/s11222-016-9649-y}.
-#'
-#' Piironen, J., Paasiniemi, M., and Vehtari, A. (2020). Projective inference in
-#' high-dimensional problems: Prediction and feature selection. *Electronic
-#' Journal of Statistics*, **14**(1):2155-2197. \doi{10.1214/20-EJS1711}.
-#'
-#' (**TODO (augdat)**: Add reference for the augmented-data projection here.)
 #'
 "_PACKAGE"
