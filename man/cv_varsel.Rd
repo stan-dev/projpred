@@ -220,7 +220,7 @@ specify \code{search_terms = c("x2", "x3", "x2 + x3")}.
 \note{
 The case \code{cv_method == "LOO" && !validate_search} constitutes an
 exception where the search part is not cross-validated. In that case, the
-evaluation part is based on a PSIS-LOO CV.
+evaluation part is based on a PSIS-LOO CV also for the submodels.
 
 For all PSIS-LOO CVs, \pkg{projpred} calls \code{\link[loo:psis]{loo::psis()}} with \code{r_eff = NA}.
 This is only a problem if there was extreme autocorrelation between the

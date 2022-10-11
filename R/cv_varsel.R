@@ -51,7 +51,7 @@
 #'
 #' @note The case `cv_method == "LOO" && !validate_search` constitutes an
 #'   exception where the search part is not cross-validated. In that case, the
-#'   evaluation part is based on a PSIS-LOO CV.
+#'   evaluation part is based on a PSIS-LOO CV also for the submodels.
 #'
 #'   For all PSIS-LOO CVs, \pkg{projpred} calls [loo::psis()] with `r_eff = NA`.
 #'   This is only a problem if there was extreme autocorrelation between the
