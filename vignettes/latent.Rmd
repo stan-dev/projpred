@@ -101,7 +101,7 @@ library(rstanarm)
 ( D <- sum(grepl("^x|^grpPL", names(dat_poiss_train))) )
 # Prior guess for the number of relevant (i.e., non-zero) regression
 # coefficients:
-p0 <- 11
+p0 <- 10
 # Prior guess for the overall magnitude of the response values, see Table 1 of
 # Piironen and Vehtari (2017, DOI: 10.1214/17-EJS1337SI):
 mu_prior <- 100
@@ -126,7 +126,7 @@ refm_fit_poiss <- stan_glm(
   ### Only for the sake of speed (not recommended in general):
   chains = 2, iter = 500,
   ###
-  seed = 286013, QR = TRUE, refresh = 0
+  seed = 7286013, QR = TRUE, refresh = 0
 )
 ```
 
