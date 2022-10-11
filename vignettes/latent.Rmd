@@ -94,7 +94,7 @@ dat_poiss_test <- dat_poiss[(N + 1):nrow(dat_poiss), , drop = FALSE]
 
 ### Reference model
 
-Next, we fit the reference model that we consider as the best model in terms of predictive performance that we can construct (here, we are able to use the oracle likelihood because of the simulated data, but in practice, the reference model will not capture all details of the true data-generating process):
+Next, we fit the reference model that we consider as the best model in terms of predictive performance that we can construct (here, because of the simulated data, our reference model matches the true data-generating process very well; in practice, this is usually not the case---but we have to emphasize that the reference model is not about matching the true data-generating process itself, it only needs to make predictions which are close to those from the true data-generating process):
 ```{r}
 library(rstanarm)
 # Number of regression coefficients:
