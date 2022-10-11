@@ -1251,13 +1251,13 @@ as.matrix.projection <- function(x, nm_scheme = "auto", ...) {
 #'   [set.seed()], but can also be `NA` to not call [set.seed()] at all.
 #'
 #' @return [cvfolds()] returns a vector of length `n` such that each element is
-#'   an integer between 1 and `k` denoting which fold the corresponding data
+#'   an integer between 1 and `K` denoting which fold the corresponding data
 #'   point belongs to. The return value of [cv_ids()] depends on the `out`
-#'   argument. If `out = "foldwise"`, the return value is a `list` with `k`
+#'   argument. If `out = "foldwise"`, the return value is a `list` with `K`
 #'   elements, each being a `list` with elements `tr` and `ts` giving the
 #'   training and test indices, respectively, for the corresponding fold. If
 #'   `out = "indices"`, the return value is a `list` with elements `tr` and `ts`
-#'   each being a `list` with `k` elements giving the training and test indices,
+#'   each being a `list` with `K` elements giving the training and test indices,
 #'   respectively, for each fold.
 #'
 #' @examples
