@@ -608,6 +608,13 @@ plot.vsel <- function(
   } else {
     ylab <- "Value"
   }
+  if (object$refmodel$family$for_latent) {
+    if (respOrig) {
+      ylab <- paste(ylab, "(response scale)")
+    } else {
+      ylab <- paste(ylab, "(latent scale)")
+    }
+  }
 
   # make sure that breaks on the x-axis are integers
   n_opts <- c(4, 5, 6)
