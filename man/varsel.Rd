@@ -122,8 +122,9 @@ formula.}
 results can be obtained again if needed. Passed to argument \code{seed} of
 \code{\link[=set.seed]{set.seed()}}, but can also be \code{NA} to not call \code{\link[=set.seed]{set.seed()}} at all. Here,
 this seed is used for clustering the reference model's posterior draws (if
-\code{!is.null(nclusters)}) and for drawing new group-level effects when
-predicting from a multilevel submodel (however, not yet in case of a GAMM).}
+\code{!is.null(nclusters)} or \code{!is.null(nclusters_pred)}) and for drawing new
+group-level effects when predicting from a multilevel submodel (however,
+not yet in case of a GAMM).}
 }
 \value{
 An object of class \code{vsel}. The elements of this object are not meant

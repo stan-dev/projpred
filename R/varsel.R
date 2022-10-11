@@ -77,8 +77,9 @@
 #'   results can be obtained again if needed. Passed to argument `seed` of
 #'   [set.seed()], but can also be `NA` to not call [set.seed()] at all. Here,
 #'   this seed is used for clustering the reference model's posterior draws (if
-#'   `!is.null(nclusters)`) and for drawing new group-level effects when
-#'   predicting from a multilevel submodel (however, not yet in case of a GAMM).
+#'   `!is.null(nclusters)` or `!is.null(nclusters_pred)`) and for drawing new
+#'   group-level effects when predicting from a multilevel submodel (however,
+#'   not yet in case of a GAMM).
 #' @param ... Arguments passed to [get_refmodel()] as well as to the divergence
 #'   minimizer (during a forward search and also during the evaluation part, but
 #'   the latter only if `refit_prj` is `TRUE`).
