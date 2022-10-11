@@ -168,7 +168,7 @@ In order to decide for a submodel size, we first inspect the `plot()` results:
 ( gg_lat <- plot(vs_lat, stats = "mlpd", deltas = TRUE) )
 ```
 
-Although the submodels' MLPDs seem to be very close to the reference model's MLPD from a submodel size of 6 on, a look at a zoomed plot reveals that there is still some discrepancy at sizes 6 to 10 and that size 11 would be a better choice (further down below in the `summary()` output, we will also see that on absolute scale, the discrepancy at sizes 6 to 10 is not negligible):
+Although the submodels' MLPDs seem to be very close to the reference model's MLPD from a submodel size of 6 on, a zoomed plot reveals that there is still some discrepancy at sizes 6 to 10 and that size 11 would be a better choice (further down below in the `summary()` output, we will also see that on absolute scale, the discrepancy at sizes 6 to 10 is not negligible):
 ```{r}
 gg_lat + ggplot2::coord_cartesian(ylim = c(-10, 0.05))
 ```
