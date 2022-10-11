@@ -144,8 +144,8 @@
 #'   specify `search_terms = c("x2", "x3", "x2 + x3")`.
 #'
 #' @return An object of class `vsel`. The elements of this object are not meant
-#'   to be accessed directly but instead via helper functions (see the vignette
-#'   or type `?projpred`).
+#'   to be accessed directly but instead via helper functions (see the main
+#'   vignette or type `?projpred`).
 #'
 #' @seealso [cv_varsel()]
 #'
