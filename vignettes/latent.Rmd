@@ -57,30 +57,34 @@ sim_poiss <- function(nobs = 2 * N, ncon = 10, ngrpPL = 4, nnoise = 39) {
   # Regression coefficients for continuous predictors:
   coefs_con <- rnorm(ncon)
   # Continuous predictors:
-  X_con <- matrix(rnorm(nobs * ncon), ncol = ncon)
+  dat_sim <- matrix(rnorm(nobs * ncon), ncol = ncon)
   # Start linear predictor:
-  linpred <- 2.1 + X_con %*% coefs_con
+  linpred <- 2.1 + dat_sim %*% coefs_con
   
   # Population-level (PL) categorical predictor:
-  X_con <- data.frame(x = X_con,
-                      grpPL = gl(n = ngrpPL, k = nobs %/% ngrpPL, length = nobs,
-                                 labels = paste0("grpPL", seq_len(ngrpPL))))
+  dat_sim <- data.frame(
+    x = dat_sim,
+    grpPL = gl(n = ngrpPL, k = nobs %/% ngrpPL, length = nobs,
+               labels = paste0("grpPL", seq_len(ngrpPL)))
+  )
   # Regression coefficients for the PL categorical predictor:
   coefs_catPL <- rnorm(ngrpPL)
   # Continue linear predictor:
-  linpred <- linpred + coefs_catPL[X_con$grpPL]
+  linpred <- linpred + coefs_catPL[dat_sim$grpPL]
   
   # Noise predictors:
-  X_con <- data.frame(X_con,
-                      xn = matrix(rnorm(nobs * nnoise), ncol = nnoise))
+  dat_sim <- data.frame(
+    dat_sim,
+    xn = matrix(rnorm(nobs * nnoise), ncol = nnoise)
+  )
   
   # Poisson response, using the log link (i.e., exp() as inverse link):
-  X_con$y <- rpois(nobs, lambda = exp(linpred))
+  dat_sim$y <- rpois(nobs, lambda = exp(linpred))
   # Shuffle order of observations:
-  X_con <- X_con[sample.int(nobs), , drop = FALSE]
+  dat_sim <- dat_sim[sample.int(nobs), , drop = FALSE]
   # Drop the shuffled original row names:
-  rownames(X_con) <- NULL
-  return(X_con)
+  rownames(dat_sim) <- NULL
+  return(dat_sim)
 }
 set.seed(300417)
 dat_poiss <- sim_poiss()
