@@ -919,7 +919,15 @@ summary.vsel <- function(
 #'
 #' @export
 print.vselsummary <- function(x, digits = 1, ...) {
+  if (x$family$for_latent) {
+    cat("------\nResponse-scale family:\n")
+    print(structure(x$family[c("familyOrig", "linkOrig")], class = "family"))
+    cat("------\nLatent-scale family:\n")
+  }
   print(x$family)
+  if (x$family$for_latent) {
+    cat("------\n")
+  }
   cat("Formula: ")
   print(x$formula, showEnv = FALSE)
   if (is.null(x$nobs_test)) {
