@@ -60,11 +60,9 @@ sim_poiss <- function(nobs = 2 * N, ncon = 10, ngrpPL = 4, nnoise = 39) {
   X_con <- matrix(rnorm(nobs * ncon), ncol = ncon)
   # Start linear predictor:
   linpred <- 2.1 + X_con %*% coefs_con
-  # Create `data.frame`:
-  X_con <- data.frame(x = X_con)
   
   # Population-level (PL) categorical predictor:
-  X_con <- data.frame(X_con,
+  X_con <- data.frame(x = X_con,
                       grpPL = gl(n = ngrpPL, k = nobs %/% ngrpPL, length = nobs,
                                  labels = paste0("grpPL", seq_len(ngrpPL))))
   # Regression coefficients for the PL categorical predictor:
