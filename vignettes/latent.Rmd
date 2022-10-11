@@ -247,7 +247,7 @@ We will re-use the data generated above in the Poisson example.
 
 ### Reference model
 
-We now fit a reference model with the negative binomial distribution as response family:
+We now fit a reference model with the negative binomial distribution as response family^[For the sake of simplicity, we won't adjust `tau0` to this new family, but in a real-world example, such an adjustment would be necessary. However, since @piironen_sparsity_2017 don't mention the negative binomial distribution, this would first require a manual derivation of the formula for the pseudo variance.]:
 ```{r}
 refm_fit_nebin <- stan_glm(
   formula = refm_fml,
