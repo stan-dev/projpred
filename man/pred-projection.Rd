@@ -86,8 +86,9 @@ the set of clustered posterior draws after projection (with this set being
 determined by argument \code{nclusters} of \code{\link[=project]{project()}}).}
 
 \item{respOrig}{Only relevant for the latent projection. A single logical
-value indicating whether to draw from the predictive distribution on the
-original response scale (\code{TRUE}) or on latent scale (\code{FALSE}).}
+value indicating whether to draw from the posterior-projection predictive
+distributions on the original response scale (\code{TRUE}) or on latent scale
+(\code{FALSE}).}
 }
 \value{
 In the following, \eqn{S_{\mathrm{prj}}}{S_prj}, \eqn{N},

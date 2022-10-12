@@ -48,8 +48,9 @@
 #'   [proj_predict()], `.seed` is also used for drawing from the set of the
 #'   projected clusters of posterior draws (see argument `nresample_clusters`).
 #' @param respOrig Only relevant for the latent projection. A single logical
-#'   value indicating whether to draw from the predictive distribution on the
-#'   original response scale (`TRUE`) or on latent scale (`FALSE`).
+#'   value indicating whether to draw from the posterior-projection predictive
+#'   distributions on the original response scale (`TRUE`) or on latent scale
+#'   (`FALSE`).
 #' @param ... Arguments passed to [project()] if `object` is not already an
 #'   object returned by [project()].
 #'
