@@ -5,9 +5,7 @@
 #' *evaluation* part. The search part determines the solution path, i.e., the
 #' best submodel for each submodel size (number of predictor terms). The
 #' evaluation part determines the predictive performance of the submodels along
-#' the solution path. In [varsel()], training and test data are the same, unless
-#' argument `d_test` is specified. Thus, if `d_test` is not specified, see
-#' [cv_varsel()] for a better alternative using cross-validation (CV).
+#' the solution path.
 #'
 #' @param object An object of class `refmodel` (returned by [get_refmodel()] or
 #'   [init_refmodel()]) or an object that can be passed to argument `object` of
