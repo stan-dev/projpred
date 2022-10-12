@@ -20,9 +20,10 @@
 \code{\link[=cv_varsel]{cv_varsel()}}).}
 
 \item{nterms_max}{Maximum submodel size for which the statistics are
-calculated. Note that \code{nterms_max} does not count the intercept, so use
-\code{nterms_max = 0} for the intercept-only model. For \code{\link[=plot.vsel]{plot.vsel()}},
-\code{nterms_max} must be at least \code{1}.}
+calculated. Using \code{NULL} is effectively the same as using
+\code{length(solution_terms(object))}. Note that \code{nterms_max} does not count the
+intercept, so use \code{nterms_max = 0} for the intercept-only model. For
+\code{\link[=plot.vsel]{plot.vsel()}}, \code{nterms_max} must be at least \code{1}.}
 
 \item{stats}{One or more character strings determining which performance
 statistics (i.e., utilities or losses) to calculate. Available statistics
