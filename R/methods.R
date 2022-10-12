@@ -79,9 +79,10 @@
 #'   * [proj_linpred()] returns a `list` with elements `pred` (predictions,
 #'   i.e., the linear predictors, possibly transformed to response scale) and
 #'   `lpd` (log predictive densities; only calculated if `newdata` contains
-#'   response values). In case of (i) the traditional projection or (ii) the
-#'   latent projection with `<refmodel>$family$cats` (where `<refmodel>` is an
-#'   object resulting from [init_refmodel()]; see also [extend_family()]'s
+#'   response values). In case of (i) the traditional projection, (ii) the
+#'   latent projection with `transform = FALSE`, or (iii) the latent projection
+#'   with `transform = TRUE` and `<refmodel>$family$cats` (where `<refmodel>` is
+#'   an object resulting from [init_refmodel()]; see also [extend_family()]'s
 #'   argument `latent_y_unqs`) being `NULL`, both elements are
 #'   \eqn{S_{\mathrm{prj}} \times N}{S_prj x N} matrices. In case of (i) the
 #'   augmented-data projection or (ii) the latent projection with `transform =
