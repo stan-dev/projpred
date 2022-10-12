@@ -50,8 +50,8 @@
 #'
 #' @return Let \eqn{S_{\mathrm{prj}}}{S_prj} denote the number of (possibly
 #'   clustered) projected posterior draws (short: the number of projected draws)
-#'   and \eqn{N} the number of observations. For [proj_linpred()] with
-#'   `integrated = TRUE`, we have \eqn{S_{\mathrm{prj}} = 1}{S_prj = 1}. Then,
+#'   and \eqn{N} the number of observations. (For [proj_linpred()] with
+#'   `integrated = TRUE`, we have \eqn{S_{\mathrm{prj}} = 1}{S_prj = 1}.) Then,
 #'   if the prediction is done for one submodel only (i.e., `length(nterms) == 1
 #'   || !is.null(solution_terms)` in the call to [project()]):
 #'   * [proj_linpred()] returns a `list` with elements `pred` (predictions,
