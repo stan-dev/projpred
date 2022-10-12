@@ -39,8 +39,8 @@
 #' In the following, \eqn{N}, \eqn{C_{\mathrm{cat}}}{C_cat},
 #' \eqn{C_{\mathrm{lat}}}{C_lat}, \eqn{S_{\mathrm{ref}}}{S_ref}, and
 #' \eqn{S_{\mathrm{prj}}}{S_prj} from help topic [refmodel-init-get] are used.
-#' Note that \eqn{N} does not necessarily denote the original number of
-#' observations; these can also be new observations. Furthermore, let \eqn{S}
+#' Note that \eqn{N} does not necessarily denote the number of original
+#' observations; it can also refer to new observations. Furthermore, let \eqn{S}
 #' denote either \eqn{S_{\mathrm{ref}}}{S_ref} or \eqn{S_{\mathrm{prj}}}{S_prj},
 #' whichever is appropriate in the context where it is used.
 #'
