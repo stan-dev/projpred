@@ -23,7 +23,7 @@ also the description).}
 A character vector of solution terms.
 }
 \description{
-This function retrieves the "solution terms" from an object. For \code{vsel}
+This function retrieves the "solution terms" from an \code{object}. For \code{vsel}
 objects (returned by \code{\link[=varsel]{varsel()}} or \code{\link[=cv_varsel]{cv_varsel()}}), this is the predictor
 solution path of the variable selection. For \code{projection} objects (returned
 by \code{\link[=project]{project()}}, possibly as elements of a \code{list}), this is the predictor

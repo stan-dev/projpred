@@ -10,11 +10,11 @@
 #' @name refmodel-init-get
 #'
 #' @param object Object from which the reference model is created. For
-#'   [init_refmodel()], an object on which the functions from arguments
-#'   `extract_model_data` and `ref_predfun` can be applied, with a `NULL` object
-#'   being treated specially (see section "Value" below). For
-#'   [get_refmodel.default()], an object on which function [family()] can be
-#'   applied to retrieve the family (if argument `family` is `NULL`),
+#'   [init_refmodel()], an object that the functions from arguments
+#'   `extract_model_data` and `ref_predfun` can be applied to, with a `NULL`
+#'   object being treated specially (see section "Value" below). For
+#'   [get_refmodel.default()], an object that function [family()] can be applied
+#'   to in order to retrieve the family (if argument `family` is `NULL`),
 #'   additionally to the properties required for [init_refmodel()]. For
 #'   non-default methods of [get_refmodel()], an object of the corresponding
 #'   class.
@@ -44,8 +44,8 @@
 #'   observation weights, offsets) from the original dataset (i.e., the dataset
 #'   used for fitting the reference model) or from a new dataset. See also
 #'   section "Argument `extract_model_data`" below.
-#' @param family A [`family`] object representing the observational model (i.e.,
-#'   the distributional family for the response). May be `NULL` for
+#' @param family An object of class `family` representing the observational
+#'   model (i.e., the distributional family for the response). May be `NULL` for
 #'   [get_refmodel.default()] in which case the family is retrieved from
 #'   `object`.
 #' @param cvfits For \eqn{K}-fold CV only. A `list` containing a sub-`list`
@@ -103,10 +103,10 @@
 #' by the default divergence minimizer). Otherwise, let \eqn{N} denote the
 #' number of observations (in case of CV, these may be reduced to each fold),
 #' \eqn{S_{\mathrm{ref}}}{S_ref} the number of posterior draws for the reference
-#' model's parameters, and \eqn{S_{\mathrm{prj}}}{S_prj} the number of (possibly
-#' clustered) parameter draws for projection (short: the number of projected
-#' draws). Then the functions supplied to these arguments need to have the
-#' following prototypes:
+#' model's parameters, and \eqn{S_{\mathrm{prj}}}{S_prj} the number of draws for
+#' the parameters of a submodel that the reference model has been projected onto
+#' (short: the number of projected draws). Then the functions supplied to these
+#' arguments need to have the following prototypes:
 #' * `ref_predfun`: `ref_predfun(fit, newdata = NULL)` where:
 #'     + `fit` accepts the reference model fit as given in argument `object`
 #'     (but possibly re-fitted to a subset of the observations, as done in
@@ -131,7 +131,7 @@
 #'     the left-hand side in which case the projection has to be performed for
 #'     each of the response variables separately.
 #'     + `data` accepts a `data.frame` to be used for the projection.
-#'     + `family` accepts a [`family`] object.
+#'     + `family` accepts an object of class `family`.
 #'     + `weights` accepts either observation weights (at least in the form of a
 #'     numeric vector) or `NULL` (for using a vector of ones as weights).
 #'     + `projpred_var` accepts an \eqn{N \times S_{\mathrm{prj}}}{N x S_prj}

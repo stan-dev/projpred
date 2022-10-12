@@ -1,4 +1,4 @@
-#' Variable selection (without cross-validation)
+#' Variable selection without cross-validation
 #'
 #' Perform the projection predictive variable selection for GLMs, GLMMs, GAMs,
 #' and GAMMs. This variable selection consists of a *search* part and an
@@ -146,7 +146,7 @@
 #'
 #' @return An object of class `vsel`. The elements of this object are not meant
 #'   to be accessed directly but instead via helper functions (see the main
-#'   vignette or type `?projpred`).
+#'   vignette and [projpred-package]).
 #'
 #' @seealso [cv_varsel()]
 #'
