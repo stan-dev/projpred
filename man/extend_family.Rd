@@ -20,7 +20,7 @@ extend_family(
 )
 }
 \arguments{
-\item{family}{A \code{\link{family}} object.}
+\item{family}{An object of class \code{family}.}
 
 \item{latent}{A single logical value indicating whether to use the latent
 projection (\code{TRUE}) or not (\code{FALSE}). Note that setting \code{latent = TRUE}
@@ -92,19 +92,19 @@ supplied to \code{augdat_ilink}.}
 be passed to this function).}
 }
 \value{
-The \code{\link{family}} object extended in the way needed by \pkg{projpred}.
+The \code{family} object extended in the way needed by \pkg{projpred}.
 }
 \description{
-This function adds some internally required elements to a \code{\link{family}} object.
-It is called internally by \code{\link[=init_refmodel]{init_refmodel()}}, so you will rarely need to call
-it yourself.
+This function adds some internally required elements to an object of class
+\code{family} (see, e.g., \code{\link[=family]{family()}}). It is called internally by
+\code{\link[=init_refmodel]{init_refmodel()}}, so you will rarely need to call it yourself.
 }
 \details{
 In the following, \eqn{N}, \eqn{C_{\mathrm{cat}}}{C_cat},
 \eqn{C_{\mathrm{lat}}}{C_lat}, \eqn{S_{\mathrm{ref}}}{S_ref}, and
 \eqn{S_{\mathrm{prj}}}{S_prj} from help topic \link{refmodel-init-get} are used.
-Note that \eqn{N} does not necessarily denote the original number of
-observations; these can also be new observations. Furthermore, let \eqn{S}
+Note that \eqn{N} does not necessarily denote the number of original
+observations; it can also refer to new observations. Furthermore, let \eqn{S}
 denote either \eqn{S_{\mathrm{ref}}}{S_ref} or \eqn{S_{\mathrm{prj}}}{S_prj},
 whichever is appropriate in the context where it is used.
 }

@@ -1,6 +1,6 @@
 # Family-specific helper functions
 #
-# `extend_family(family)` returns a [`family`] object augmented with auxiliary
+# `extend_family(family)` returns a `family` object augmented with auxiliary
 # functions that are needed for computing KL-divergence, log predictive density,
 # dispersion projection, etc.
 #
@@ -9,11 +9,11 @@
 
 #' Extend a family
 #'
-#' This function adds some internally required elements to a [`family`] object.
-#' It is called internally by [init_refmodel()], so you will rarely need to call
-#' it yourself.
+#' This function adds some internally required elements to an object of class
+#' `family` (see, e.g., [family()]). It is called internally by
+#' [init_refmodel()], so you will rarely need to call it yourself.
 #'
-#' @param family A [`family`] object.
+#' @param family An object of class `family`.
 #' @param latent A single logical value indicating whether to use the latent
 #'   projection (`TRUE`) or not (`FALSE`). Note that setting `latent = TRUE`
 #'   causes all arguments starting with `augdat_` to be ignored.
@@ -78,8 +78,8 @@
 #' In the following, \eqn{N}, \eqn{C_{\mathrm{cat}}}{C_cat},
 #' \eqn{C_{\mathrm{lat}}}{C_lat}, \eqn{S_{\mathrm{ref}}}{S_ref}, and
 #' \eqn{S_{\mathrm{prj}}}{S_prj} from help topic [refmodel-init-get] are used.
-#' Note that \eqn{N} does not necessarily denote the original number of
-#' observations; these can also be new observations. Furthermore, let \eqn{S}
+#' Note that \eqn{N} does not necessarily denote the number of original
+#' observations; it can also refer to new observations. Furthermore, let \eqn{S}
 #' denote either \eqn{S_{\mathrm{ref}}}{S_ref} or \eqn{S_{\mathrm{prj}}}{S_prj},
 #' whichever is appropriate in the context where it is used.
 #'
@@ -224,7 +224,7 @@
 #' have to be a subset of `<refmodel>$family$cats` (where `<refmodel>` is an
 #' object resulting from [init_refmodel()]).
 #'
-#' @return The [`family`] object extended in the way needed by \pkg{projpred}.
+#' @return The `family` object extended in the way needed by \pkg{projpred}.
 #'
 #' @export
 extend_family <- function(family,

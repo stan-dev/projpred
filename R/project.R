@@ -39,8 +39,7 @@
 #'   results can be obtained again if needed. Passed to argument `seed` of
 #'   [set.seed()], but can also be `NA` to not call [set.seed()] at all. Here,
 #'   this seed is used for clustering the reference model's posterior draws (if
-#'   `!is.null(nclusters)`) and for drawing new group-level effects when
-#'   predicting from a multilevel submodel (however, not yet in case of a GAMM).
+#'   `!is.null(nclusters)`).
 #' @inheritParams varsel
 #' @param ... Arguments passed to [get_refmodel()] (if [get_refmodel()] is
 #'   actually used; see argument `object`) as well as to the divergence
@@ -65,9 +64,8 @@
 #'     to the submodel. Note that in case of the Gaussian family, this is not
 #'     the actual KL divergence but merely a proxy.}
 #'     \item{`weights`}{Weights for the projected draws.}
-#'     \item{`solution_terms`}{A character vector of the submodel's
-#'     predictor terms, ordered in the way in which the terms were added to the
-#'     submodel.}
+#'     \item{`solution_terms`}{A character vector of the submodel's predictor
+#'     terms.}
 #'     \item{`submodl`}{A `list` containing the submodel fits (one fit per
 #'     projected draw).}
 #'     \item{`cl_ref`}{A numeric vector of length equal to the number of

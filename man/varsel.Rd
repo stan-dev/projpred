@@ -4,7 +4,7 @@
 \alias{varsel}
 \alias{varsel.default}
 \alias{varsel.refmodel}
-\title{Variable selection (without cross-validation)}
+\title{Variable selection without cross-validation}
 \usage{
 varsel(object, ...)
 
@@ -123,13 +123,14 @@ formula.}
 results can be obtained again if needed. Passed to argument \code{seed} of
 \code{\link[=set.seed]{set.seed()}}, but can also be \code{NA} to not call \code{\link[=set.seed]{set.seed()}} at all. Here,
 this seed is used for clustering the reference model's posterior draws (if
-\code{!is.null(nclusters)}) and for drawing new group-level effects when
-predicting from a multilevel submodel (however, not yet in case of a GAMM).}
+\code{!is.null(nclusters)} or \code{!is.null(nclusters_pred)}) and for drawing new
+group-level effects when predicting from a multilevel submodel (however,
+not yet in case of a GAMM).}
 }
 \value{
 An object of class \code{vsel}. The elements of this object are not meant
 to be accessed directly but instead via helper functions (see the main
-vignette or type \code{?projpred}).
+vignette and \link{projpred-package}).
 }
 \description{
 Perform the projection predictive variable selection. This variable selection
@@ -148,9 +149,10 @@ performance. Increasing these arguments affects the computation time
 linearly.
 
 For argument \code{method}, there are some restrictions: For a reference model
-with multilevel or additive formula terms, only the forward search is
-available. Furthermore, argument \code{search_terms} requires a forward search
-to take effect.
+with multilevel or additive formula terms or a reference model set up for
+the augmented-data projection, only the forward search is available.
+Furthermore, argument \code{search_terms} requires a forward search to take
+effect.
 
 L1 search is faster than forward search, but forward search may be more
 accurate. Furthermore, forward search may find a sparser model with
