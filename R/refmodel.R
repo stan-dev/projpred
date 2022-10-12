@@ -320,11 +320,11 @@ NULL
 #'   [init_refmodel()]).
 #' @param ynew If not `NULL`, then this needs to be a vector of new (or old)
 #'   response values. See also section "Value" below. In case of (i) the
-#'   augmented-data projection or (ii) the latent projection with
-#'   `object$family$cats` being not `NULL`, `ynew` is internally coerced to a
-#'   `factor` (using [as.factor()]). The levels of this `factor` have to be a
-#'   subset of `object$family$cats` (see [extend_family()]'s arguments
-#'   `augdat_y_unqs` and `latent_y_unqs`, respectively).
+#'   augmented-data projection or (ii) the latent projection with `type =
+#'   "response"` and `object$family$cats` being not `NULL`, `ynew` is internally
+#'   coerced to a `factor` (using [as.factor()]). The levels of this `factor`
+#'   have to be a subset of `object$family$cats` (see [extend_family()]'s
+#'   arguments `augdat_y_unqs` and `latent_y_unqs`, respectively).
 #' @param type Usually only relevant if `is.null(ynew)`, but for the latent
 #'   projection, this also affects the `!is.null(ynew)` case (see below). The
 #'   scale on which the predictions are returned, either `"link"` or

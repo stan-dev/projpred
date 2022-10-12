@@ -26,11 +26,10 @@ observations. May also be \code{NULL} (see argument \code{extract_model_data} of
 
 \item{ynew}{If not \code{NULL}, then this needs to be a vector of new (or old)
 response values. See also section "Value" below. In case of (i) the
-augmented-data projection or (ii) the latent projection with
-\code{object$family$cats} being not \code{NULL}, \code{ynew} is internally coerced to a
-\code{factor} (using \code{\link[=as.factor]{as.factor()}}). The levels of this \code{factor} have to be a
-subset of \code{object$family$cats} (see \code{\link[=extend_family]{extend_family()}}'s arguments
-\code{augdat_y_unqs} and \code{latent_y_unqs}, respectively).}
+augmented-data projection or (ii) the latent projection with \code{type = "response"} and \code{object$family$cats} being not \code{NULL}, \code{ynew} is internally
+coerced to a \code{factor} (using \code{\link[=as.factor]{as.factor()}}). The levels of this \code{factor}
+have to be a subset of \code{object$family$cats} (see \code{\link[=extend_family]{extend_family()}}'s
+arguments \code{augdat_y_unqs} and \code{latent_y_unqs}, respectively).}
 
 \item{offsetnew}{Passed to argument \code{orhs} of the reference model's
 \code{extract_model_data} function (see \code{\link[=init_refmodel]{init_refmodel()}}). Used to get the
