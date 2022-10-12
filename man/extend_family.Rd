@@ -136,7 +136,7 @@ For the augmented-data projection, the response vector resulting from
 \code{\link[=init_refmodel]{init_refmodel()}}, the levels of this \code{factor} have to be identical to
 \code{family$cats} (\emph{after} applying \code{\link[=extend_family]{extend_family()}} inside of
 \code{\link[=init_refmodel]{init_refmodel()}}). Everywhere else, these levels have to be a subset of
-\verb{<refmodel>family$cats} (where \verb{<refmodel>} is an object resulting from
+\verb{<refmodel>$family$cats} (where \verb{<refmodel>} is an object resulting from
 \code{\link[=init_refmodel]{init_refmodel()}}). See argument \code{augdat_y_unqs} for how to control
 \code{family$cats}.
 
@@ -263,7 +263,7 @@ then the response vector resulting from \code{extract_model_data} (see
 places throughout this package. Inside of \code{\link[=init_refmodel]{init_refmodel()}}, the levels of
 this \code{factor} have to be identical to \code{family$cats} (\emph{after} applying
 \code{\link[=extend_family]{extend_family()}} inside of \code{\link[=init_refmodel]{init_refmodel()}}). Everywhere else, these levels
-have to be a subset of \verb{<refmodel>family$cats} (where \verb{<refmodel>} is an
+have to be a subset of \verb{<refmodel>$family$cats} (where \verb{<refmodel>} is an
 object resulting from \code{\link[=init_refmodel]{init_refmodel()}}).
 }
 

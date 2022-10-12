@@ -108,7 +108,7 @@
 #' [init_refmodel()], the levels of this `factor` have to be identical to
 #' `family$cats` (*after* applying [extend_family()] inside of
 #' [init_refmodel()]). Everywhere else, these levels have to be a subset of
-#' `<refmodel>family$cats` (where `<refmodel>` is an object resulting from
+#' `<refmodel>$family$cats` (where `<refmodel>` is an object resulting from
 #' [init_refmodel()]). See argument `augdat_y_unqs` for how to control
 #' `family$cats`.
 #'
@@ -221,7 +221,7 @@
 #' places throughout this package. Inside of [init_refmodel()], the levels of
 #' this `factor` have to be identical to `family$cats` (*after* applying
 #' [extend_family()] inside of [init_refmodel()]). Everywhere else, these levels
-#' have to be a subset of `<refmodel>family$cats` (where `<refmodel>` is an
+#' have to be a subset of `<refmodel>$family$cats` (where `<refmodel>` is an
 #' object resulting from [init_refmodel()]).
 #'
 #' @return The [`family`] object extended in the way needed by \pkg{projpred}.
