@@ -66,7 +66,7 @@ results can be obtained again if needed. Passed to argument \code{seed} of
 \code{\link[=set.seed]{set.seed()}}, but can also be \code{NA} to not call \code{\link[=set.seed]{set.seed()}} at all. Here,
 this seed is used for drawing new group-level effects in case of a
 multilevel submodel (however, not yet in case of a GAMM) and for drawing
-from the predictive distribution of the submodel(s) in case of
+from the predictive distributions of the submodel(s) in case of
 \code{\link[=proj_predict]{proj_predict()}}. If a clustered projection was performed, then in
 \code{\link[=proj_predict]{proj_predict()}}, \code{.seed} is also used for drawing from the set of the
 projected clusters of posterior draws (see argument \code{nresample_clusters}).}
@@ -75,8 +75,8 @@ projected clusters of posterior draws (see argument \code{nresample_clusters}).}
 object returned by \code{\link[=project]{project()}}.}
 
 \item{nresample_clusters}{For \code{\link[=proj_predict]{proj_predict()}} with clustered projection
-only. Number of draws to return from the predictive distribution of the
-submodel. Not to be confused with argument \code{nclusters} of \code{\link[=project]{project()}}:
+only. Number of draws to return from the predictive distributions of the
+submodel(s). Not to be confused with argument \code{nclusters} of \code{\link[=project]{project()}}:
 \code{nresample_clusters} gives the number of draws (\emph{with} replacement) from
 the set of clustered posterior draws after projection (with this set being
 determined by argument \code{nclusters} of \code{\link[=project]{project()}}).}

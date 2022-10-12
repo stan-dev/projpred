@@ -31,8 +31,8 @@
 #'   indicating whether the output should be averaged across the projected
 #'   posterior draws (`TRUE`) or not (`FALSE`).
 #' @param nresample_clusters For [proj_predict()] with clustered projection
-#'   only. Number of draws to return from the predictive distribution of the
-#'   submodel. Not to be confused with argument `nclusters` of [project()]:
+#'   only. Number of draws to return from the predictive distributions of the
+#'   submodel(s). Not to be confused with argument `nclusters` of [project()]:
 #'   `nresample_clusters` gives the number of draws (*with* replacement) from
 #'   the set of clustered posterior draws after projection (with this set being
 #'   determined by argument `nclusters` of [project()]).
@@ -41,7 +41,7 @@
 #'   [set.seed()], but can also be `NA` to not call [set.seed()] at all. Here,
 #'   this seed is used for drawing new group-level effects in case of a
 #'   multilevel submodel (however, not yet in case of a GAMM) and for drawing
-#'   from the predictive distribution of the submodel(s) in case of
+#'   from the predictive distributions of the submodel(s) in case of
 #'   [proj_predict()]. If a clustered projection was performed, then in
 #'   [proj_predict()], `.seed` is also used for drawing from the set of the
 #'   projected clusters of posterior draws (see argument `nresample_clusters`).
