@@ -50,14 +50,15 @@
 #'
 #' @return Let \eqn{S_{\mathrm{prj}}}{S_prj} denote the number of (possibly
 #'   clustered) projected posterior draws (short: the number of projected draws)
-#'   and \eqn{N} the number of observations. Then, if the prediction is done for
-#'   one submodel only (i.e., `length(nterms) == 1 || !is.null(solution_terms)`
-#'   in the call to [project()]):
+#'   and \eqn{N} the number of observations. For [proj_linpred()] with
+#'   `integrated = TRUE`, we have \eqn{S_{\mathrm{prj}} = 1}{S_prj = 1}. Then,
+#'   if the prediction is done for one submodel only (i.e., `length(nterms) == 1
+#'   || !is.null(solution_terms)` in the call to [project()]):
 #'   * [proj_linpred()] returns a `list` with elements `pred` (predictions,
 #'   i.e., the linear predictors, possibly transformed to response scale) and
-#'   `lpd` (log predictive densities; only calculated if `newdata` contains
-#'   response values). Both elements are \eqn{S_{\mathrm{prj}} \times N}{S_prj x
-#'   N} matrices.
+#'   `lpd` (log predictive densities; only calculated if `newdata` is `NULL` or
+#'   if `newdata` contains response values in the corresponding column). Both
+#'   elements are \eqn{S_{\mathrm{prj}} \times N}{S_prj x N} matrices.
 #'   * [proj_predict()] returns an \eqn{S_{\mathrm{prj}} \times N}{S_prj x N}
 #'   matrix of predictions where \eqn{S_{\mathrm{prj}}}{S_prj} denotes
 #'   `nresample_clusters` in case of clustered projection.
