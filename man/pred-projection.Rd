@@ -105,10 +105,10 @@ terms of the submodels when counting the intercept, too).
 }
 \description{
 After the projection of the reference model onto a submodel, the linear
-predictors (for the original dataset or new data) based on that submodel can
-be calculated by \code{\link[=proj_linpred]{proj_linpred()}}. The linear predictors can also be
-transformed to response scale. Furthermore, \code{\link[=proj_linpred]{proj_linpred()}} returns the
-corresponding log predictive density values if the new dataset contains
+predictors (for the original or a new dataset) based on that submodel can be
+calculated by \code{\link[=proj_linpred]{proj_linpred()}}. The linear predictors can also be transformed
+to response scale. Furthermore, \code{\link[=proj_linpred]{proj_linpred()}} returns the corresponding
+log predictive density values if the (original or new) dataset contains
 response values. The \code{\link[=proj_predict]{proj_predict()}} function draws from the predictive
 distribution of the submodel that the reference model has been projected
 onto. If the projection has not been performed yet, both functions call
