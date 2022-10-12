@@ -187,7 +187,7 @@ transformed to the original response space, with the following structure:
 \item If \code{!is.null(family$cats)} (after taking \code{latent_y_unqs} into account): an
 \eqn{S \times N \times C_{\mathrm{cat}}}{S x N x C_cat} array. In that case,
 \code{latent_ilink} needs to return \emph{probabilities} (for the response categories
-given in \code{family$cats}).
+given in \code{family$cats}, after taking \code{latent_y_unqs} into account).
 }
 
 The function supplied to argument \code{latent_llOrig} needs to have the prototype

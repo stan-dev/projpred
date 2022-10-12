@@ -151,7 +151,7 @@
 #' * If `!is.null(family$cats)` (after taking `latent_y_unqs` into account): an
 #' \eqn{S \times N \times C_{\mathrm{cat}}}{S x N x C_cat} array. In that case,
 #' `latent_ilink` needs to return *probabilities* (for the response categories
-#' given in `family$cats`).
+#' given in `family$cats`, after taking `latent_y_unqs` into account).
 #'
 #' The function supplied to argument `latent_llOrig` needs to have the prototype
 #' ```{r, eval = FALSE}
