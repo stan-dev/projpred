@@ -45,9 +45,10 @@ from the baseline model (see argument \code{baseline}) instead of estimating the
 actual values of the statistics.}
 
 \item{alpha}{A number determining the (nominal) coverage \code{1 - alpha} of the
-normal-approximation confidence intervals. For example, \code{alpha = 0.32}
-corresponds to a coverage of 68\%, i.e., one-standard-error intervals
-(because of the normal approximation).}
+normal-approximation (or bootstrap; see argument \code{stats}) confidence
+intervals. For example, in case of the normal approximation, \code{alpha = 0.32}
+corresponds to one-standard-error intervals (because of the coverage of
+68\%).}
 
 \item{baseline}{For \code{\link[=summary.vsel]{summary.vsel()}}: Only relevant if \code{deltas} is \code{TRUE}.
 For \code{\link[=plot.vsel]{plot.vsel()}}: Always relevant. Either \code{"ref"} or \code{"best"}, indicating

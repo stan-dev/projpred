@@ -509,9 +509,10 @@ plot.vsel <- function(
 #'   from the baseline model (see argument `baseline`) instead of estimating the
 #'   actual values of the statistics.
 #' @param alpha A number determining the (nominal) coverage `1 - alpha` of the
-#'   normal-approximation confidence intervals. For example, `alpha = 0.32`
-#'   corresponds to a coverage of 68%, i.e., one-standard-error intervals
-#'   (because of the normal approximation).
+#'   normal-approximation (or bootstrap; see argument `stats`) confidence
+#'   intervals. For example, in case of the normal approximation, `alpha = 0.32`
+#'   corresponds to one-standard-error intervals (because of the coverage of
+#'   68%).
 #' @param baseline For [summary.vsel()]: Only relevant if `deltas` is `TRUE`.
 #'   For [plot.vsel()]: Always relevant. Either `"ref"` or `"best"`, indicating
 #'   whether the baseline is the reference model or the best submodel found (in
@@ -752,16 +753,16 @@ print.vsel <- function(x, ...) {
 #'   size is the smallest model size \eqn{k \in \{0, 1, ...,
 #'   \texttt{nterms\_max}\}}{{k = 0, 1, ..., nterms_max}} for which either the
 #'   lower or upper bound (depending on argument `type`) of the
-#'   normal-approximation confidence interval (with nominal coverage `1 -
-#'   alpha`; see argument `alpha` of [summary.vsel()]) for \eqn{U_k -
-#'   U_{\mathrm{base}}}{U_k - U_base} (with \eqn{U_k} denoting the \eqn{k}-th
-#'   submodel's true utility and \eqn{U_{\mathrm{base}}}{U_base} denoting the
-#'   baseline model's true utility) falls above (or is equal to)
-#'   \deqn{\texttt{pct} \cdot (u_0 - u_{\mathrm{base}})}{pct * (u_0 - u_base)}
-#'   where \eqn{u_0} denotes the null model's estimated utility and
-#'   \eqn{u_{\mathrm{base}}}{u_base} the baseline model's estimated utility. The
-#'   baseline model is either the reference model or the best submodel found
-#'   (see argument `baseline` of [summary.vsel()]).
+#'   normal-approximation (or bootstrap; see argument `stat`) confidence
+#'   interval (with nominal coverage `1 - alpha`; see argument `alpha` of
+#'   [summary.vsel()]) for \eqn{U_k - U_{\mathrm{base}}}{U_k - U_base} (with
+#'   \eqn{U_k} denoting the \eqn{k}-th submodel's true utility and
+#'   \eqn{U_{\mathrm{base}}}{U_base} denoting the baseline model's true utility)
+#'   falls above (or is equal to) \deqn{\texttt{pct} \cdot (u_0 -
+#'   u_{\mathrm{base}})}{pct * (u_0 - u_base)} where \eqn{u_0} denotes the null
+#'   model's estimated utility and \eqn{u_{\mathrm{base}}}{u_base} the baseline
+#'   model's estimated utility. The baseline model is either the reference model
+#'   or the best submodel found (see argument `baseline` of [summary.vsel()]).
 #'
 #'   If `!is.na(thres_elpd)` and `stat = "elpd"`, the decision rule above is
 #'   extended: The suggested model size is then the smallest model size \eqn{k}
@@ -776,9 +777,11 @@ print.vsel <- function(x, ...) {
 #'   or `stat = "mlpd"`), `alpha = 0.32`, `pct = 0`, and `type = "upper"` means
 #'   that we select the smallest model size for which the upper bound of the 68%
 #'   confidence interval for \eqn{U_k - U_{\mathrm{base}}}{U_k - U_base} exceeds
-#'   (or is equal to) zero, that is, for which the submodel's utility estimate
-#'   is at most one standard error smaller than the baseline model's utility
-#'   estimate (with that standard error referring to the utility *difference*).
+#'   (or is equal to) zero, that is (if `stat` is a performance statistic for
+#'   which the normal approximation is used, not the bootstrap), for which the
+#'   submodel's utility estimate is at most one standard error smaller than the
+#'   baseline model's utility estimate (with that standard error referring to
+#'   the utility *difference*).
 #'
 #' @note Loss statistics like the root mean-squared error (RMSE) and the
 #'   mean-squared error (MSE) are converted to utilities by multiplying them by
