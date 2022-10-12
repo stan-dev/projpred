@@ -100,8 +100,8 @@ matrix of predictions where \eqn{S_{\mathrm{prj}}}{S_prj} denotes
 
 If the prediction is done for more than one submodel, the output from above
 is returned for each submodel, giving a named \code{list} with one element for
-each submodel (the names of this \code{list} being the numbers of solutions
-terms of the submodels when counting the intercept, too).
+each submodel (the names of this \code{list} being the numbers of solution terms
+of the submodels when counting the intercept, too).
 }
 \description{
 After the projection of the reference model onto a submodel, the linear
