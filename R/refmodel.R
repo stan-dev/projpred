@@ -44,8 +44,8 @@
 #'   observation weights, offsets) from the original dataset (i.e., the dataset
 #'   used for fitting the reference model) or from a new dataset. See also
 #'   section "Argument `extract_model_data`" below.
-#' @param family A [`family`] object representing the observational model (i.e.,
-#'   the distributional family for the response). May be `NULL` for
+#' @param family An object of class `family` representing the observational
+#'   model (i.e., the distributional family for the response). May be `NULL` for
 #'   [get_refmodel.default()] in which case the family is retrieved from
 #'   `object`.
 #' @param cvfits For \eqn{K}-fold CV only. A `list` containing a sub-`list`
@@ -131,7 +131,7 @@
 #'     the left-hand side in which case the projection has to be performed for
 #'     each of the response variables separately.
 #'     + `data` accepts a `data.frame` to be used for the projection.
-#'     + `family` accepts a [`family`] object.
+#'     + `family` accepts an object of class `family`.
 #'     + `weights` accepts either observation weights (at least in the form of a
 #'     numeric vector) or `NULL` (for using a vector of ones as weights).
 #'     + `projpred_var` accepts an \eqn{N \times S_{\mathrm{prj}}}{N x S_prj}

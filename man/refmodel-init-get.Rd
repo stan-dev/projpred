@@ -58,8 +58,8 @@ For additive formulas, see also packages \pkg{mgcv} (in particular,
 function \code{\link[mgcv:gam]{mgcv::gam()}}) and \pkg{gamm4} (in particular, function
 \code{\link[gamm4:gamm4]{gamm4::gamm4()}}) as well as the notes in section "Formula terms" below.}
 
-\item{family}{A \code{\link{family}} object representing the observational model (i.e.,
-the distributional family for the response). May be \code{NULL} for
+\item{family}{An object of class \code{family} representing the observational
+model (i.e., the distributional family for the response). May be \code{NULL} for
 \code{\link[=get_refmodel.default]{get_refmodel.default()}} in which case the family is retrieved from
 \code{object}.}
 
@@ -191,7 +191,7 @@ be able to be called with the following arguments:
 the left-hand side in which case the projection has to be performed for
 each of the response variables separately.
 \item \code{data} accepts a \code{data.frame} to be used for the projection.
-\item \code{family} accepts a \code{\link{family}} object.
+\item \code{family} accepts an object of class \code{family}.
 \item \code{weights} accepts either observation weights (at least in the form of a
 numeric vector) or \code{NULL} (for using a vector of ones as weights).
 \item \code{projpred_var} accepts an \eqn{N \times S_{\mathrm{prj}}}{N x S_prj}
