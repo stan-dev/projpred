@@ -103,10 +103,10 @@
 #' by the default divergence minimizer). Otherwise, let \eqn{N} denote the
 #' number of observations (in case of CV, these may be reduced to each fold),
 #' \eqn{S_{\mathrm{ref}}}{S_ref} the number of posterior draws for the reference
-#' model's parameters, and \eqn{S_{\mathrm{prj}}}{S_prj} the number of (possibly
-#' clustered) parameter draws for projection (short: the number of projected
-#' draws). Then the functions supplied to these arguments need to have the
-#' following prototypes:
+#' model's parameters, and \eqn{S_{\mathrm{prj}}}{S_prj} the number of draws for
+#' the parameters of a submodel that the reference model has been projected onto
+#' (short: the number of projected draws). Then the functions supplied to these
+#' arguments need to have the following prototypes:
 #' * `ref_predfun`: `ref_predfun(fit, newdata = NULL)` where:
 #'     + `fit` accepts the reference model fit as given in argument `object`
 #'     (but possibly re-fitted to a subset of the observations, as done in
