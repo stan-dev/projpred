@@ -1334,7 +1334,7 @@ cv_ids <- function(n, K, out = c("foldwise", "indices"),
 
 #' Retrieve predictor solution path or predictor combination
 #'
-#' This function retrieves the "solution terms" from an object. For `vsel`
+#' This function retrieves the "solution terms" from an `object`. For `vsel`
 #' objects (returned by [varsel()] or [cv_varsel()]), this is the predictor
 #' solution path of the variable selection. For `projection` objects (returned
 #' by [project()], possibly as elements of a `list`), this is the predictor
