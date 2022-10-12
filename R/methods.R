@@ -785,14 +785,14 @@ print.vsel <- function(x, ...) {
 #'   baseline model's utility estimate (with that standard error referring to
 #'   the utility *difference*).
 #'
-#' @note Loss statistics like the root mean-squared error (RMSE) and the
-#'   mean-squared error (MSE) are converted to utilities by multiplying them by
-#'   `-1`, so a call such as `suggest_size(object, stat = "rmse", type =
-#'   "upper")` finds the smallest model size whose upper confidence interval
-#'   bound for the *negative* RMSE or MSE exceeds the cutoff (or, equivalently,
-#'   has the lower confidence interval bound for the RMSE or MSE below the
-#'   cutoff). This is done to make the interpretation of argument `type` the
-#'   same regardless of argument `stat`.
+#' @note Loss statistics like the root mean squared error (RMSE) and the mean
+#'   squared error (MSE) are converted to utilities by multiplying them by `-1`,
+#'   so a call such as `suggest_size(object, stat = "rmse", type = "upper")`
+#'   finds the smallest model size whose upper confidence interval bound for the
+#'   *negative* RMSE or MSE exceeds the cutoff (or, equivalently, has the lower
+#'   confidence interval bound for the RMSE or MSE below the cutoff). This is
+#'   done to make the interpretation of argument `type` the same regardless of
+#'   argument `stat`.
 #'
 #'   The intercept is not counted by [suggest_size()], so a suggested size of
 #'   zero stands for the intercept-only model.

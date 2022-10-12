@@ -91,13 +91,14 @@ baseline model's utility estimate (with that standard error referring to
 the utility \emph{difference}).
 }
 \note{
-Loss statistics like the root mean-squared error (RMSE) and the
-mean-squared error (MSE) are converted to utilities by multiplying them by
-\code{-1}, so a call such as \code{suggest_size(object, stat = "rmse", type = "upper")} finds the smallest model size whose upper confidence interval
-bound for the \emph{negative} RMSE or MSE exceeds the cutoff (or, equivalently,
-has the lower confidence interval bound for the RMSE or MSE below the
-cutoff). This is done to make the interpretation of argument \code{type} the
-same regardless of argument \code{stat}.
+Loss statistics like the root mean squared error (RMSE) and the mean
+squared error (MSE) are converted to utilities by multiplying them by \code{-1},
+so a call such as \code{suggest_size(object, stat = "rmse", type = "upper")}
+finds the smallest model size whose upper confidence interval bound for the
+\emph{negative} RMSE or MSE exceeds the cutoff (or, equivalently, has the lower
+confidence interval bound for the RMSE or MSE below the cutoff). This is
+done to make the interpretation of argument \code{type} the same regardless of
+argument \code{stat}.
 
 The intercept is not counted by \code{\link[=suggest_size]{suggest_size()}}, so a suggested size of
 zero stands for the intercept-only model.
