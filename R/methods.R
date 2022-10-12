@@ -731,9 +731,9 @@ print.vsel <- function(x, ...) {
 #'   [cv_varsel()]).
 #' @param stat Performance statistic (i.e., utility or loss) used for the
 #'   decision. See argument `stats` of [summary.vsel()] for possible choices.
-#' @param pct A number giving the relative proportion (*not* percents) between
-#'   baseline model and null model utilities one is willing to sacrifice. See
-#'   section "Details" below for more information.
+#' @param pct A number giving the proportion (*not* percents) of the *relative*
+#'   null model utility one is willing to sacrifice. See section "Details" below
+#'   for more information.
 #' @param type Either `"upper"` or `"lower"` determining whether the decision is
 #'   based on the upper or lower confidence interval bound, respectively. See
 #'   section "Details" below for more information.

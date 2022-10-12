@@ -29,9 +29,9 @@ passed here.}
 \item{stat}{Performance statistic (i.e., utility or loss) used for the
 decision. See argument \code{stats} of \code{\link[=summary.vsel]{summary.vsel()}} for possible choices.}
 
-\item{pct}{A number giving the relative proportion (\emph{not} percents) between
-baseline model and null model utilities one is willing to sacrifice. See
-section "Details" below for more information.}
+\item{pct}{A number giving the proportion (\emph{not} percents) of the \emph{relative}
+null model utility one is willing to sacrifice. See section "Details" below
+for more information.}
 
 \item{type}{Either \code{"upper"} or \code{"lower"} determining whether the decision is
 based on the upper or lower confidence interval bound, respectively. See
