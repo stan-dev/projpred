@@ -254,7 +254,7 @@ case of \code{\link[=cv_varsel]{cv_varsel()}} with \code{cv_method = "LOO"} and 
 In that case, the weights passed to this argument are the PSIS-LOO CV weights
 for one observation. Note that although argument \code{wdraws_ref} has the suffix
 \verb{_ref}, \code{wdraws_ref} does not necessarily obtain weights for the \emph{initial}
-reference model's posterior draws: In case of \code{\link[=cv_varsel]{cv_varsel()}} with \verb{cv_method = "kfold}, these weights may refer to one of the \eqn{K} reference model
+reference model's posterior draws: In case of \code{\link[=cv_varsel]{cv_varsel()}} with \code{cv_method = "kfold"}, these weights may refer to one of the \eqn{K} reference model
 re-fits (but in that case, they are constant anyway).
 
 If \code{latent_y_unqs} or \code{family$cats} is not \code{NULL}, then the response vector
