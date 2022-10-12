@@ -106,9 +106,10 @@
 #'   linearly.
 #'
 #'   For argument `method`, there are some restrictions: For a reference model
-#'   with multilevel or additive formula terms, only the forward search is
-#'   available. Furthermore, argument `search_terms` requires a forward search
-#'   to take effect.
+#'   with multilevel or additive formula terms or a reference model set up for
+#'   the augmented-data projection, only the forward search is available.
+#'   Furthermore, argument `search_terms` requires a forward search to take
+#'   effect.
 #'
 #'   L1 search is faster than forward search, but forward search may be more
 #'   accurate. Furthermore, forward search may find a sparser model with
