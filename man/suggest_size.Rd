@@ -48,6 +48,13 @@ deactivates this.}
 whether to throw warnings if automatic suggestion fails. Usually there is
 no reason to set this to \code{FALSE}.}
 }
+\value{
+A single numeric value, giving the suggested submodel size (or \code{NA}
+if the suggestion failed).
+
+The intercept is not counted by \code{\link[=suggest_size]{suggest_size()}}, so a suggested size of
+zero stands for the intercept-only model.
+}
 \description{
 This function can suggest an appropriate submodel size based on a decision
 rule described in section "Details" below. Note that this decision is quite
@@ -99,9 +106,6 @@ finds the smallest model size whose upper confidence interval bound for the
 confidence interval bound for the RMSE or MSE below the cutoff). This is
 done to make the interpretation of argument \code{type} the same regardless of
 argument \code{stat}.
-
-The intercept is not counted by \code{\link[=suggest_size]{suggest_size()}}, so a suggested size of
-zero stands for the intercept-only model.
 }
 \examples{
 if (requireNamespace("rstanarm", quietly = TRUE)) {

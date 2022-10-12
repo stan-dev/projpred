@@ -794,6 +794,9 @@ print.vsel <- function(x, ...) {
 #'   done to make the interpretation of argument `type` the same regardless of
 #'   argument `stat`.
 #'
+#' @return A single numeric value, giving the suggested submodel size (or `NA`
+#'   if the suggestion failed).
+#'
 #'   The intercept is not counted by [suggest_size()], so a suggested size of
 #'   zero stands for the intercept-only model.
 #'
