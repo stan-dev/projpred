@@ -6,11 +6,12 @@
 #' to response scale. Furthermore, [proj_linpred()] returns the corresponding
 #' log predictive density values if the (original or new) dataset contains
 #' response values. The [proj_predict()] function draws from the predictive
-#' distribution of the submodel that the reference model has been projected
-#' onto. If the projection has not been performed yet, both functions call
-#' [project()] internally to perform the projection. Both functions can also
-#' handle multiple submodels at once (for `object`s of class `vsel` or `object`s
-#' returned by a [project()] call to an object of class `vsel`; see
+#' distributions (there is one such distribution for each observation from the
+#' original or new dataset) of the submodel that the reference model has been
+#' projected onto. If the projection has not been performed yet, both functions
+#' call [project()] internally to perform the projection. Both functions can
+#' also handle multiple submodels at once (for `object`s of class `vsel` or
+#' `object`s returned by a [project()] call to an object of class `vsel`; see
 #' [project()]).
 #'
 #' @name pred-projection
