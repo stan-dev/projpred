@@ -58,12 +58,12 @@
 #'   !is.null(solution_terms)` in the call to [project()]):
 #'   * [proj_linpred()] returns a `list` with elements `pred` (predictions,
 #'   i.e., the linear predictors, possibly transformed to response scale) and
-#'   `lpd` (log predictive densities; only calculated if `newdata` contains
-#'   response values). In case of the traditional projection, both elements are
-#'   \eqn{S_{\mathrm{prj}} \times N}{S_prj x N} matrices. In case of the
-#'   augmented-data projection, `pred` is an \eqn{S_{\mathrm{prj}} \times N
-#'   \times C}{S_prj x N x C} array and `lpd` is an \eqn{S_{\mathrm{prj}} \times
-#'   N}{S_prj x N} matrix.
+#'   `lpd` (log predictive densities; only calculated if `newdata` is `NULL` or
+#'   if `newdata` contains response values in the corresponding column). In case
+#'   of the traditional projection, both elements are \eqn{S_{\mathrm{prj}}
+#'   \times N}{S_prj x N} matrices. In case of the augmented-data projection,
+#'   `pred` is an \eqn{S_{\mathrm{prj}} \times N \times C}{S_prj x N x C} array
+#'   and `lpd` is an \eqn{S_{\mathrm{prj}} \times N}{S_prj x N} matrix.
 #'   * [proj_predict()] returns an \eqn{S_{\mathrm{prj}} \times N}{S_prj x N}
 #'   matrix of predictions where \eqn{S_{\mathrm{prj}}}{S_prj} denotes
 #'   `nresample_clusters` in case of clustered projection. In case of the

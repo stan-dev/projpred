@@ -91,12 +91,12 @@ prediction is done for one submodel only (i.e., \code{length(nterms) == 1 || !is
 \itemize{
 \item \code{\link[=proj_linpred]{proj_linpred()}} returns a \code{list} with elements \code{pred} (predictions,
 i.e., the linear predictors, possibly transformed to response scale) and
-\code{lpd} (log predictive densities; only calculated if \code{newdata} contains
-response values). In case of the traditional projection, both elements are
-\eqn{S_{\mathrm{prj}} \times N}{S_prj x N} matrices. In case of the
-augmented-data projection, \code{pred} is an \eqn{S_{\mathrm{prj}} \times N
-  \times C}{S_prj x N x C} array and \code{lpd} is an \eqn{S_{\mathrm{prj}} \times
-  N}{S_prj x N} matrix.
+\code{lpd} (log predictive densities; only calculated if \code{newdata} is \code{NULL} or
+if \code{newdata} contains response values in the corresponding column). In case
+of the traditional projection, both elements are \eqn{S_{\mathrm{prj}}
+  \times N}{S_prj x N} matrices. In case of the augmented-data projection,
+\code{pred} is an \eqn{S_{\mathrm{prj}} \times N \times C}{S_prj x N x C} array
+and \code{lpd} is an \eqn{S_{\mathrm{prj}} \times N}{S_prj x N} matrix.
 \item \code{\link[=proj_predict]{proj_predict()}} returns an \eqn{S_{\mathrm{prj}} \times N}{S_prj x N}
 matrix of predictions where \eqn{S_{\mathrm{prj}}}{S_prj} denotes
 \code{nresample_clusters} in case of clustered projection. In case of the
