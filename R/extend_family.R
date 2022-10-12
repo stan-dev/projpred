@@ -27,9 +27,9 @@
 #'   this needs to be the inverse-link function. If the original response family
 #'   was the [binomial()] or the [poisson()] family, then `latent_ilink` can be
 #'   `NULL`, in which case an internal default will be used. Can also be `NULL`
-#'   in all other cases, but then downstream functions might have limited
-#'   functionality (a message thrown by [extend_family()] will state what
-#'   exactly won't be available). See also section "Latent projection" below.
+#'   in all other cases, but then an internal default based on `family$linkinv`
+#'   will be used which might not work for all families. See also section
+#'   "Latent projection" below.
 #' @param latent_llOrig Only relevant for the latent projection, in which case
 #'   this needs to be the function computing response-scale (not latent-scale)
 #'   log-likelihood values. If `!is.null(family$cats)` (after taking
