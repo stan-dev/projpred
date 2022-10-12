@@ -107,16 +107,14 @@
 #' \eqn{S_{\mathrm{ref}}}{S_ref} the number of posterior draws for the reference
 #' model's parameters, and \eqn{S_{\mathrm{prj}}}{S_prj} the number of (possibly
 #' clustered) parameter draws for projection (short: the number of projected
-#' draws). For (i) the augmented-data projection or (ii) the latent projection
-#' with `family$cats` (*after* applying [extend_family()] internally; see
-#' [extend_family()]'s argument `latent_y_unqs`) being not `NULL`, let
-#' \eqn{C_{\mathrm{cat}}}{C_cat} denote the number of response categories,
-#' \eqn{C_{\mathrm{lat}}}{C_lat} the number of latent response categories (which
-#' typically equals \eqn{C_{\mathrm{cat}} - 1}{C_cat - 1}), and define
-#' \eqn{N_{\mathrm{augcat}} := N \cdot C_{\mathrm{cat}}}{N_augcat := N * C_cat}
-#' as well as \eqn{N_{\mathrm{auglat}} := N \cdot C_{\mathrm{lat}}}{N_auglat :=
-#' N * C_lat}. Then the functions supplied to these arguments need to have the
-#' following prototypes:
+#' draws). For the augmented-data projection, let \eqn{C_{\mathrm{cat}}}{C_cat}
+#' denote the number of response categories, \eqn{C_{\mathrm{lat}}}{C_lat} the
+#' number of latent response categories (which typically equals
+#' \eqn{C_{\mathrm{cat}} - 1}{C_cat - 1}), and define \eqn{N_{\mathrm{augcat}}
+#' := N \cdot C_{\mathrm{cat}}}{N_augcat := N * C_cat} as well as
+#' \eqn{N_{\mathrm{auglat}} := N \cdot C_{\mathrm{lat}}}{N_auglat := N * C_lat}.
+#' Then the functions supplied to these arguments need to have the following
+#' prototypes:
 #' * `ref_predfun`: `ref_predfun(fit, newdata = NULL)` where:
 #'     + `fit` accepts the reference model fit as given in argument `object`
 #'     (but possibly re-fitted to a subset of the observations, as done in
