@@ -40,16 +40,17 @@
 #'   results can be obtained again if needed. Passed to argument `seed` of
 #'   [set.seed()], but can also be `NA` to not call [set.seed()] at all. Here,
 #'   this seed is used for clustering the reference model's posterior draws (if
-#'   `!is.null(nclusters)`), for subsampling LOO CV folds (if `nloo` is smaller
-#'   than the number of observations), for sampling the folds in K-fold CV, and
-#'   for drawing new group-level effects when predicting from a multilevel
-#'   submodel (however, not yet in case of a GAMM).
+#'   `!is.null(nclusters)` or `!is.null(nclusters_pred)`), for subsampling LOO
+#'   CV folds (if `nloo` is smaller than the number of observations), for
+#'   sampling the folds in K-fold CV, and for drawing new group-level effects
+#'   when predicting from a multilevel submodel (however, not yet in case of a
+#'   GAMM).
 #'
 #' @inherit varsel details return
 #'
 #' @note The case `cv_method == "LOO" && !validate_search` constitutes an
 #'   exception where the search part is not cross-validated. In that case, the
-#'   evaluation part is based on a PSIS-LOO CV.
+#'   evaluation part is based on a PSIS-LOO CV also for the submodels.
 #'
 #'   For all PSIS-LOO CVs, \pkg{projpred} calls [loo::psis()] with `r_eff = NA`.
 #'   This is only a problem if there was extreme autocorrelation between the

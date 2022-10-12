@@ -1,4 +1,4 @@
-#' Variable selection (without cross-validation)
+#' Variable selection without cross-validation
 #'
 #' Perform the projection predictive variable selection. This variable selection
 #' consists of a *search* part and an *evaluation* part. The search part
@@ -77,8 +77,9 @@
 #'   results can be obtained again if needed. Passed to argument `seed` of
 #'   [set.seed()], but can also be `NA` to not call [set.seed()] at all. Here,
 #'   this seed is used for clustering the reference model's posterior draws (if
-#'   `!is.null(nclusters)`) and for drawing new group-level effects when
-#'   predicting from a multilevel submodel (however, not yet in case of a GAMM).
+#'   `!is.null(nclusters)` or `!is.null(nclusters_pred)`) and for drawing new
+#'   group-level effects when predicting from a multilevel submodel (however,
+#'   not yet in case of a GAMM).
 #' @param ... Arguments passed to [get_refmodel()] as well as to the divergence
 #'   minimizer (during a forward search and also during the evaluation part, but
 #'   the latter only if `refit_prj` is `TRUE`).
@@ -147,7 +148,7 @@
 #'
 #' @return An object of class `vsel`. The elements of this object are not meant
 #'   to be accessed directly but instead via helper functions (see the main
-#'   vignette or type `?projpred`).
+#'   vignette and [projpred-package]).
 #'
 #' @seealso [cv_varsel()]
 #'

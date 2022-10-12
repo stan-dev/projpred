@@ -15,7 +15,7 @@ extend_family(
 )
 }
 \arguments{
-\item{family}{A \code{\link{family}} object.}
+\item{family}{An object of class \code{family}.}
 
 \item{augdat_y_unqs}{Only relevant for augmented-data projection, in which
 case this needs to be the character vector of unique response values (which
@@ -43,12 +43,12 @@ supplied to \code{augdat_ilink}.}
 be passed to this function).}
 }
 \value{
-The \code{\link{family}} object extended in the way needed by \pkg{projpred}.
+The \code{family} object extended in the way needed by \pkg{projpred}.
 }
 \description{
-This function adds some internally required elements to a \code{\link{family}} object.
-It is called internally by \code{\link[=init_refmodel]{init_refmodel()}}, so you will rarely need to call
-it yourself.
+This function adds some internally required elements to an object of class
+\code{family} (see, e.g., \code{\link[=family]{family()}}). It is called internally by
+\code{\link[=init_refmodel]{init_refmodel()}}, so you will rarely need to call it yourself.
 }
 \details{
 In the following, \eqn{N}, \eqn{C_{\mathrm{cat}}}{C_cat},

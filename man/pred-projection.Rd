@@ -66,7 +66,7 @@ results can be obtained again if needed. Passed to argument \code{seed} of
 \code{\link[=set.seed]{set.seed()}}, but can also be \code{NA} to not call \code{\link[=set.seed]{set.seed()}} at all. Here,
 this seed is used for drawing new group-level effects in case of a
 multilevel submodel (however, not yet in case of a GAMM) and for drawing
-from the predictive distribution of the submodel(s) in case of
+from the predictive distributions of the submodel(s) in case of
 \code{\link[=proj_predict]{proj_predict()}}. If a clustered projection was performed, then in
 \code{\link[=proj_predict]{proj_predict()}}, \code{.seed} is also used for drawing from the set of the
 projected clusters of posterior draws (see argument \code{nresample_clusters}).}
@@ -75,8 +75,8 @@ projected clusters of posterior draws (see argument \code{nresample_clusters}).}
 object returned by \code{\link[=project]{project()}}.}
 
 \item{nresample_clusters}{For \code{\link[=proj_predict]{proj_predict()}} with clustered projection
-only. Number of draws to return from the predictive distribution of the
-submodel. Not to be confused with argument \code{nclusters} of \code{\link[=project]{project()}}:
+only. Number of draws to return from the predictive distributions of the
+submodel(s). Not to be confused with argument \code{nclusters} of \code{\link[=project]{project()}}:
 \code{nresample_clusters} gives the number of draws (\emph{with} replacement) from
 the set of clustered posterior draws after projection (with this set being
 determined by argument \code{nclusters} of \code{\link[=project]{project()}}).}
@@ -84,9 +84,9 @@ determined by argument \code{nclusters} of \code{\link[=project]{project()}}).}
 \value{
 In the following, \eqn{S_{\mathrm{prj}}}{S_prj}, \eqn{N},
 \eqn{C_{\mathrm{cat}}}{C_cat}, and \eqn{C_{\mathrm{lat}}}{C_lat} from help
-topic \link{refmodel-init-get} are used. Furthermore, let \eqn{C} denote either
-\eqn{C_{\mathrm{cat}}}{C_cat} (if \code{transform = TRUE}) or
-\eqn{C_{\mathrm{lat}}}{C_lat} (if \code{transform = FALSE}). Then, if the
+topic \link{refmodel-init-get} are used. (For \code{\link[=proj_linpred]{proj_linpred()}} with \code{integrated = TRUE}, we have \eqn{S_{\mathrm{prj}} = 1}{S_prj = 1}.) Furthermore, let
+\eqn{C} denote either \eqn{C_{\mathrm{cat}}}{C_cat} (if \code{transform = TRUE})
+or \eqn{C_{\mathrm{lat}}}{C_lat} (if \code{transform = FALSE}). Then, if the
 prediction is done for one submodel only (i.e., \code{length(nterms) == 1 || !is.null(solution_terms)} in the call to \code{\link[=project]{project()}}):
 \itemize{
 \item \code{\link[=proj_linpred]{proj_linpred()}} returns a \code{list} with elements \code{pred} (predictions,
@@ -108,21 +108,22 @@ response categories being that from attribute \code{cats}).
 
 If the prediction is done for more than one submodel, the output from above
 is returned for each submodel, giving a named \code{list} with one element for
-each submodel (the names of this \code{list} being the numbers of solutions
-terms of the submodels when counting the intercept, too).
+each submodel (the names of this \code{list} being the numbers of solution terms
+of the submodels when counting the intercept, too).
 }
 \description{
 After the projection of the reference model onto a submodel, the linear
-predictors (for the original dataset or new data) based on that submodel can
-be calculated by \code{\link[=proj_linpred]{proj_linpred()}}. The linear predictors can also be
-transformed to response scale. Furthermore, \code{\link[=proj_linpred]{proj_linpred()}} returns the
-corresponding log predictive density values if the new dataset contains
+predictors (for the original or a new dataset) based on that submodel can be
+calculated by \code{\link[=proj_linpred]{proj_linpred()}}. The linear predictors can also be transformed
+to response scale. Furthermore, \code{\link[=proj_linpred]{proj_linpred()}} returns the corresponding
+log predictive density values if the (original or new) dataset contains
 response values. The \code{\link[=proj_predict]{proj_predict()}} function draws from the predictive
-distribution of the submodel that the reference model has been projected
-onto. If the projection has not been performed yet, both functions call
-\code{\link[=project]{project()}} internally to perform the projection. Both functions can also
-handle multiple submodels at once (for \code{object}s of class \code{vsel} or \code{object}s
-returned by a \code{\link[=project]{project()}} call to an object of class \code{vsel}; see
+distributions (there is one such distribution for each observation from the
+original or new dataset) of the submodel that the reference model has been
+projected onto. If the projection has not been performed yet, both functions
+call \code{\link[=project]{project()}} internally to perform the projection. Both functions can
+also handle multiple submodels at once (for \code{object}s of class \code{vsel} or
+\code{object}s returned by a \code{\link[=project]{project()}} call to an object of class \code{vsel}; see
 \code{\link[=project]{project()}}).
 }
 \examples{
