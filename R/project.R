@@ -63,9 +63,8 @@
 #'     to the submodel. Note that in case of the Gaussian family, this is not
 #'     the actual KL divergence but merely a proxy.}
 #'     \item{`weights`}{Weights for the projected draws.}
-#'     \item{`solution_terms`}{A character vector of the submodel's
-#'     predictor terms, ordered in the way in which the terms were added to the
-#'     submodel.}
+#'     \item{`solution_terms`}{A character vector of the submodel's predictor
+#'     terms.}
 #'     \item{`submodl`}{A `list` containing the submodel fits (one fit per
 #'     projected draw).}
 #'     \item{`p_type`}{A single logical value indicating whether the
