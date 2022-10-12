@@ -131,7 +131,10 @@
 #' # Latent projection
 #'
 #' The function supplied to argument `latent_ilink` needs to have the prototype
-#' `latent_ilink(lpreds, cl_ref, wdraws_ref = rep(1, length(cl_ref)))` where:
+#' ```{r, eval = FALSE}
+#' latent_ilink(lpreds, cl_ref, wdraws_ref = rep(1, length(cl_ref)))
+#' ```
+#' where:
 #' * `lpreds` accepts an \eqn{S \times N}{S x N} matrix containing the linear
 #' predictors.
 #' * `cl_ref` accepts a numeric vector of length \eqn{S_{\mathrm{ref}}}{S_ref},

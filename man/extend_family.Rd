@@ -163,7 +163,11 @@ version >= 0.9.4 should fix this.
 
 \section{Latent projection}{
 The function supplied to argument \code{latent_ilink} needs to have the prototype
-\code{latent_ilink(lpreds, cl_ref, wdraws_ref = rep(1, length(cl_ref)))} where:
+
+\if{html}{\out{<div class="sourceCode r">}}\preformatted{latent_ilink(lpreds, cl_ref, wdraws_ref = rep(1, length(cl_ref)))
+}\if{html}{\out{</div>}}
+
+where:
 \itemize{
 \item \code{lpreds} accepts an \eqn{S \times N}{S x N} matrix containing the linear
 predictors.
