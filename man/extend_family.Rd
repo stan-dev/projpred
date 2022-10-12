@@ -257,13 +257,13 @@ for one observation. Note that although argument \code{wdraws_ref} has the suffi
 reference model's posterior draws: In case of \code{\link[=cv_varsel]{cv_varsel()}} with \code{cv_method = "kfold"}, these weights may refer to one of the \eqn{K} reference model
 re-fits (but in that case, they are constant anyway).
 
-If \code{latent_y_unqs} or \code{family$cats} is not \code{NULL}, then the response vector
-resulting from \code{extract_model_data} (see \code{\link[=init_refmodel]{init_refmodel()}}) is coerced to a
-\code{factor} (using \code{\link[=as.factor]{as.factor()}}) at multiple places throughout this package.
-Inside of \code{\link[=init_refmodel]{init_refmodel()}}, the levels of this \code{factor} have to be identical
-to \code{family$cats} (\emph{after} applying \code{\link[=extend_family]{extend_family()}} inside of
-\code{\link[=init_refmodel]{init_refmodel()}}). Everywhere else, these levels have to be a subset of
-\verb{<refmodel>family$cats} (where \verb{<refmodel>} is an object resulting from
-\code{\link[=init_refmodel]{init_refmodel()}}).
+If \code{family$cats} is not \code{NULL} (after taking \code{latent_y_unqs} into account),
+then the response vector resulting from \code{extract_model_data} (see
+\code{\link[=init_refmodel]{init_refmodel()}}) is coerced to a \code{factor} (using \code{\link[=as.factor]{as.factor()}}) at multiple
+places throughout this package. Inside of \code{\link[=init_refmodel]{init_refmodel()}}, the levels of
+this \code{factor} have to be identical to \code{family$cats} (\emph{after} applying
+\code{\link[=extend_family]{extend_family()}} inside of \code{\link[=init_refmodel]{init_refmodel()}}). Everywhere else, these levels
+have to be a subset of \verb{<refmodel>family$cats} (where \verb{<refmodel>} is an
+object resulting from \code{\link[=init_refmodel]{init_refmodel()}}).
 }
 
