@@ -146,7 +146,7 @@
 #'
 #' @return An object of class `vsel`. The elements of this object are not meant
 #'   to be accessed directly but instead via helper functions (see the main
-#'   vignette or type `?projpred`).
+#'   vignette and [projpred-package]).
 #'
 #' @seealso [cv_varsel()]
 #'
