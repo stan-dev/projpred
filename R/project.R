@@ -38,8 +38,7 @@
 #'   results can be obtained again if needed. Passed to argument `seed` of
 #'   [set.seed()], but can also be `NA` to not call [set.seed()] at all. Here,
 #'   this seed is used for clustering the reference model's posterior draws (if
-#'   `!is.null(nclusters)`) and for drawing new group-level effects when
-#'   predicting from a multilevel submodel (however, not yet in case of a GAMM).
+#'   `!is.null(nclusters)`).
 #' @inheritParams varsel
 #' @param ... Arguments passed to [get_refmodel()] (if [get_refmodel()] is
 #'   actually used; see argument `object`) as well as to the divergence
