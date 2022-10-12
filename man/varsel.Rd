@@ -137,7 +137,9 @@ and GAMMs. This variable selection consists of a \emph{search} part and an
 \emph{evaluation} part. The search part determines the solution path, i.e., the
 best submodel for each submodel size (number of predictor terms). The
 evaluation part determines the predictive performance of the submodels along
-the solution path.
+the solution path. In \code{\link[=varsel]{varsel()}}, training and test data are the same, unless
+argument \code{d_test} is specified. Thus, if \code{d_test} is not specified, see
+\code{\link[=cv_varsel]{cv_varsel()}} for a better alternative using cross-validation (CV).
 }
 \details{
 Arguments \code{ndraws}, \code{nclusters}, \code{nclusters_pred}, and \code{ndraws_pred}
