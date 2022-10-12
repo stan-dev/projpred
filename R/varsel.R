@@ -1,4 +1,4 @@
-#' Variable selection (without cross-validation)
+#' Variable selection without cross-validation
 #'
 #' Perform the projection predictive variable selection for GLMs, GLMMs, GAMs,
 #' and GAMMs. This variable selection consists of a *search* part and an

@@ -4,7 +4,7 @@
 \alias{varsel}
 \alias{varsel.default}
 \alias{varsel.refmodel}
-\title{Variable selection (without cross-validation)}
+\title{Variable selection without cross-validation}
 \usage{
 varsel(object, ...)
 
