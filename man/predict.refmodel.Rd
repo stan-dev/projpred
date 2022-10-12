@@ -64,8 +64,9 @@ Furthermore, let \eqn{C} denote either \eqn{C_{\mathrm{cat}}}{C_cat} (if
 \code{type = "response"}) or \eqn{C_{\mathrm{lat}}}{C_lat} (if \code{type = "link"}).
 Then, if \code{is.null(ynew)}, the returned object contains the reference
 model's predictions (with the scale depending on argument \code{type}) as a
-length-\eqn{N} vector in case of (i) the traditional projection or (ii) the
-latent projection with \code{object$family$cats} being \code{NULL} and as an \eqn{N
+length-\eqn{N} vector in case of (i) the traditional projection, (ii) the
+latent projection with \code{type = "link"}, or (iii) the latent projection with
+\code{type = "response"} and \code{object$family$cats} being \code{NULL} and as an \eqn{N
   \times C}{N x C} matrix in case of (i) the augmented-data projection or
 (ii) the latent projection with \code{type = "response"} and
 \code{object$family$cats} being not \code{NULL}. If \code{!is.null(ynew)}, the returned

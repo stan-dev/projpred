@@ -350,8 +350,9 @@ NULL
 #'   `type = "response"`) or \eqn{C_{\mathrm{lat}}}{C_lat} (if `type = "link"`).
 #'   Then, if `is.null(ynew)`, the returned object contains the reference
 #'   model's predictions (with the scale depending on argument `type`) as a
-#'   length-\eqn{N} vector in case of (i) the traditional projection or (ii) the
-#'   latent projection with `object$family$cats` being `NULL` and as an \eqn{N
+#'   length-\eqn{N} vector in case of (i) the traditional projection, (ii) the
+#'   latent projection with `type = "link"`, or (iii) the latent projection with
+#'   `type = "response"` and `object$family$cats` being `NULL` and as an \eqn{N
 #'   \times C}{N x C} matrix in case of (i) the augmented-data projection or
 #'   (ii) the latent projection with `type = "response"` and
 #'   `object$family$cats` being not `NULL`. If `!is.null(ynew)`, the returned
