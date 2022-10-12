@@ -526,6 +526,8 @@ plot.vsel <- function(
 #'   `sample.int(.Machine$integer.max, 1)`, but can also be `NA` to not call
 #'   [set.seed()] at all).
 #'
+#' @return An object of class `vselsummary`.
+#'
 #' @examples
 #' if (requireNamespace("rstanarm", quietly = TRUE)) {
 #'   # Data:
