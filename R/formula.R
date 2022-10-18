@@ -647,7 +647,7 @@ select_possible_terms_size <- function(chosen, terms, size) {
   valid_submodels <- unlist(valid_submodels[!is.na(valid_submodels)])
   if (length(chosen) > 0) {
     add_chosen <- paste0(" + ", paste(chosen, collapse = "+"))
-    remove_chosen <- paste0(" - ", paste(chosen, collapse = "-"))
+    remove_chosen <- paste0(" - ", paste(gsub('\\+','-',chosen), collapse = "-"))
   } else {
     add_chosen <- ""
     remove_chosen <- ""
@@ -789,3 +789,41 @@ formula.gamm4 <- function(x) {
   # to include offset terms here (in the output of formula.gamm4()) as well.
   return(form)
 }
+
+## Sort variables in a vector of formulas
+## @param f character vector whose elements are character formulas
+## @return a character vector where each character formula has been sorted with respect to variables
+sort_formula_terms <- function(f){
+  paste(sort(unlist(strsplit(f,split=' \\+ '))),collapse=' + ')
+}
+
+## Helper that accumulates solution terms and arranges them in alphabetical order to enable easier matching
+## @param solution_terms character vector of character formulas representing solution terms
+get_cum_solution_terms <- function(solution_terms){
+  sapply(1:length(solution_terms),function(i) sort_formula_terms(solution_terms[1:i]))
+}
+
+## Helper that formats the candidate terms so that formulas are consistently represented
+## @param f character vector whose elements are character formulas
+## @return a character vector where each character formula has been formatted consistent
+format_candidate_terms <- function(f){
+  candidate_terms <- gsub("[[:blank:]]*\\+[[:blank:]]*", " + ",f)
+  #check if candidate_terms include single terms (indicating candidate terms are not to be treated as full formulas)
+  if(any(!grepl('\\+',candidate_terms))){
+    #deal with interaction term
+    candidate_terms <- sapply(candidate_terms,USE.NAMES = F,FUN=function(x){
+                          if(grepl(':',x)){
+                            trms <- unlist(strsplit(x,split=' \\+ '))
+                            return(trms[grepl(':',trms)])
+                          }else{
+                            return(x)
+                          }
+                        })
+  }
+  candidate_terms <- setdiff(candidate_terms, "1")
+  ## sort candidate terms to enable matching with solution terms later
+  candidate_terms <- sapply(strsplit(candidate_terms,split=' \\+ '),function(x) paste(sort(x),collapse=' + '))
+  return(candidate_terms)
+}
+
+

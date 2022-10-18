@@ -169,13 +169,9 @@ cv_varsel.refmodel <- function(
   opt <- nlist(lambda_min_ratio, nlambda, thresh, regul)
 
   ### TODO:
-  candidate_terms <- search_terms
   # Only a quick-and-dirty solution (perhaps we can solve this in a more elegant
   # way, but in any case, we should create a helper function for this):
-  candidate_terms <- gsub("[[:blank:]]*\\+[[:blank:]]*", " + ",
-                          candidate_terms)
-  ###
-  candidate_terms <- setdiff(candidate_terms, "1")
+  candidate_terms <- format_candidate_terms(search_terms)
 
   if (cv_method == "LOO") {
     sel_cv <- loo_varsel(
@@ -226,7 +222,11 @@ cv_varsel.refmodel <- function(
       }
     }
   ))
-  sel_solution_terms <- unlist(sel$solution_terms)
+  if(any(!grepl('\\+',candidate_terms))){
+    sel_solution_terms <- unlist(sel$solution_terms)
+  }else{
+    sel_solution_terms <- get_cum_solution_terms(unlist(sel$solution_terms))
+  }
   if (!is.matrix(solution_terms_cv_chr)) {
     stop("Unexpected `solution_terms_cv_chr`. Please notify the package ",
          "maintainer.")
@@ -235,12 +235,14 @@ cv_varsel.refmodel <- function(
     stop("Unexpected number of rows in `solution_terms_cv_chr`. Please notify ",
          "the package maintainer.")
   }
+
   pct_solution_terms_cv <- cbind(
     size = seq_len(nrow(solution_terms_cv_chr)),
     do.call(cbind, lapply(setNames(nm = sel_solution_terms), function(var_nm) {
       rowMeans(solution_terms_cv_chr == var_nm, na.rm = TRUE)
     }))
   )
+
 
   ## create the object to be returned
   vs <- nlist(refmodel,
@@ -456,7 +458,14 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
     # Need to adapt `search_path$solution_terms` so that the following match()
     # call works.
     ###
-    solution <- match(search_path$solution_terms, candidate_terms)
+    #check if candidate_terms include single terms (indicating candidate terms are not to be treated as full formulas)
+    if(any(!grepl('\\+',candidate_terms))){
+      solution <- match(search_path$solution_terms, candidate_terms)
+    }else{
+      cum_sorted_solution_terms <- get_cum_solution_terms(search_path$solution_terms)
+      solution <- match(cum_sorted_solution_terms, candidate_terms)
+    }
+
     for (i in seq_len(n)) {
       solution_terms_mat[i, seq_along(solution)] <- solution
     }
@@ -520,7 +529,13 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
       # Need to adapt `search_path$solution_terms` so that the following match()
       # call works.
       ###
-      solution <- match(search_path$solution_terms, candidate_terms)
+      #check if candidate_terms include single terms (indicating candidate terms are not to be treated as full formulas)
+      if(any(!grepl('\\+',candidate_terms))){
+        solution <- match(search_path$solution_terms, candidate_terms)
+      }else{
+        cum_sorted_solution_terms <- get_cum_solution_terms(search_path$solution_terms)
+        solution <- match(cum_sorted_solution_terms, candidate_terms)
+      }
       solution_terms_mat[i, seq_along(solution)] <- solution
 
       if (verbose) {
