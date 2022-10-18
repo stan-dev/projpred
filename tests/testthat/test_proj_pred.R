@@ -820,9 +820,8 @@ context("proj_predict()")
 test_that("`.seed` works (and restores the RNG state afterwards)", {
   skip_if_not(run_prj)
   for (tstsetup in names(prjs)) {
-    .Random.seed_orig1 <- .Random.seed
     pp_orig <- pps[[tstsetup]]
-    .Random.seed_orig2 <- .Random.seed
+    .Random.seed_orig <- .Random.seed
     rand_orig <- runif(1) # Just to advance `.Random.seed[2]`.
     .Random.seed_new1 <- .Random.seed
     pp_new <- proj_predict(prjs[[tstsetup]], .seed = seed2_tst + 1L)
@@ -841,7 +840,6 @@ test_that("`.seed` works (and restores the RNG state afterwards)", {
     expect_false(isTRUE(all.equal(pp_orig, pp_null)), info = tstsetup)
     expect_false(isTRUE(all.equal(pp_new, pp_null)), info = tstsetup)
 
-    expect_equal(.Random.seed_orig2, .Random.seed_orig1, info = tstsetup)
     expect_equal(.Random.seed_new2, .Random.seed_new1, info = tstsetup)
     expect_equal(.Random.seed_repr2, .Random.seed_repr1, info = tstsetup)
     expect_equal(.Random.seed_null2, .Random.seed_null1, info = tstsetup)
@@ -849,9 +847,9 @@ test_that("`.seed` works (and restores the RNG state afterwards)", {
     expect_false(isTRUE(all.equal(rand_new, rand_orig)), info = tstsetup)
     expect_false(isTRUE(all.equal(rand_repr, rand_orig)), info = tstsetup)
     expect_false(isTRUE(all.equal(rand_repr, rand_new)), info = tstsetup)
-    expect_false(isTRUE(all.equal(.Random.seed_new2, .Random.seed_orig2)),
+    expect_false(isTRUE(all.equal(.Random.seed_new2, .Random.seed_orig)),
                  info = tstsetup)
-    expect_false(isTRUE(all.equal(.Random.seed_repr2, .Random.seed_orig2)),
+    expect_false(isTRUE(all.equal(.Random.seed_repr2, .Random.seed_orig)),
                  info = tstsetup)
     expect_false(isTRUE(all.equal(.Random.seed_repr2, .Random.seed_new2)),
                  info = tstsetup)
