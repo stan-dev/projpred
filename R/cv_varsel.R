@@ -168,19 +168,13 @@ cv_varsel.refmodel <- function(
   ## search options
   opt <- nlist(lambda_min_ratio, nlambda, thresh, regul)
 
-  ### TODO:
-  # Only a quick-and-dirty solution (perhaps we can solve this in a more elegant
-  # way, but in any case, we should create a helper function for this):
-  candidate_terms <- format_candidate_terms(search_terms)
-
   if (cv_method == "LOO") {
     sel_cv <- loo_varsel(
       refmodel = refmodel, method = method, nterms_max = nterms_max,
       ndraws = ndraws, nclusters = nclusters, ndraws_pred = ndraws_pred,
       nclusters_pred = nclusters_pred, refit_prj = refit_prj, penalty = penalty,
       verbose = verbose, opt = opt, nloo = nloo,
-      validate_search = validate_search, search_terms = search_terms,
-      candidate_terms = candidate_terms, ...
+      validate_search = validate_search, search_terms = search_terms, ...
     )
   } else if (cv_method == "kfold") {
     sel_cv <- kfold_varsel(
@@ -213,20 +207,10 @@ cv_varsel.refmodel <- function(
   # in the columns), the solution path from the full-data search is used. Note
   # that the following code assumes that all CV folds have equal weight.
   solution_terms_cv_chr <- do.call(cbind, lapply(
-    seq_len(NROW(sel_cv$solution_terms_cv)),
-    function(i) {
-      if (!is.character(sel_cv$solution_terms_cv[i, ])) {
-        return(candidate_terms[sel_cv$solution_terms_cv[i, ]])
-      } else {
-        return(sel_cv$solution_terms_cv[i, ])
-      }
-    }
+    seq_len(NROW(sel_cv$solution_terms_cv)),function(i) sel_cv$solution_terms_cv[i, ]
   ))
-  if(any(!grepl('\\+',candidate_terms))){
-    sel_solution_terms <- unlist(sel$solution_terms)
-  }else{
-    sel_solution_terms <- get_cum_solution_terms(unlist(sel$solution_terms))
-  }
+  sel_solution_terms <- unlist(sel$solution_terms)
+
   if (!is.matrix(solution_terms_cv_chr)) {
     stop("Unexpected `solution_terms_cv_chr`. Please notify the package ",
          "maintainer.")
@@ -318,8 +302,7 @@ parse_args_cv_varsel <- function(refmodel, cv_method, K, validate_search) {
 loo_varsel <- function(refmodel, method, nterms_max, ndraws,
                        nclusters, ndraws_pred, nclusters_pred, refit_prj,
                        penalty, verbose, opt, nloo = NULL,
-                       validate_search = TRUE, search_terms = NULL,
-                       candidate_terms, ...) {
+                       validate_search = TRUE, search_terms = NULL, ...) {
   ##
   ## Perform the validation of the searching process using LOO. validate_search
   ## indicates whether the selection is performed separately for each fold (for
@@ -374,7 +357,7 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
 
   ## initialize objects where to store the results
   prv_len_soltrms <- NULL
-  solution_terms_mat <- matrix(nrow = n, ncol = length(candidate_terms))
+  solution_terms_mat <- matrix(nrow = n, ncol = length(search_terms))
   loo_sub <- replicate(nterms_max, rep(NA, n), simplify = FALSE)
   mu_sub <- replicate(nterms_max, rep(NA, n), simplify = FALSE)
 
@@ -452,22 +435,8 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
     }
 
     prv_len_soltrms <- length(search_path$solution_terms)
-    ## with `match` we get the indices of the variables as they enter the
-    ## solution path in `search_path$solution_terms`
-    ### TODO:
-    # Need to adapt `search_path$solution_terms` so that the following match()
-    # call works.
-    ###
-    #check if candidate_terms include single terms (indicating candidate terms are not to be treated as full formulas)
-    if(any(!grepl('\\+',candidate_terms))){
-      solution <- match(search_path$solution_terms, candidate_terms)
-    }else{
-      cum_sorted_solution_terms <- get_cum_solution_terms(search_path$solution_terms)
-      solution <- match(cum_sorted_solution_terms, candidate_terms)
-    }
-
     for (i in seq_len(n)) {
-      solution_terms_mat[i, seq_along(solution)] <- solution
+      solution_terms_mat[i, seq_along(search_path$solution_terms)] <- search_path$solution_terms
     }
     sel <- nlist(search_path, kl = sapply(submodels, "[[", "kl"),
                  solution_terms = search_path$solution_terms,
@@ -523,20 +492,7 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
                             prv_len_soltrms))
       }
       prv_len_soltrms <- length(search_path$solution_terms)
-      ## with `match` we get the indices of the variables as they enter the
-      ## solution path in `search_path$solution_terms`
-      ### TODO:
-      # Need to adapt `search_path$solution_terms` so that the following match()
-      # call works.
-      ###
-      #check if candidate_terms include single terms (indicating candidate terms are not to be treated as full formulas)
-      if(any(!grepl('\\+',candidate_terms))){
-        solution <- match(search_path$solution_terms, candidate_terms)
-      }else{
-        cum_sorted_solution_terms <- get_cum_solution_terms(search_path$solution_terms)
-        solution <- match(cum_sorted_solution_terms, candidate_terms)
-      }
-      solution_terms_mat[i, seq_along(solution)] <- solution
+      solution_terms_mat[i, seq_along(search_path$solution_terms)] <- search_path$solution_terms
 
       if (verbose) {
         utils::setTxtProgressBar(pb, run_index)
@@ -559,7 +515,7 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
   d_test <- list(type = "LOO", data = NULL, offset = refmodel$offset,
                  weights = refmodel$wobs, y = refmodel$y)
 
-  solution_terms_mat <- solution_terms_mat[, seq_along(solution), drop = FALSE]
+  solution_terms_mat <- solution_terms_mat[, seq_along(search_path$solution_terms), drop = FALSE]
   out_list <- nlist(solution_terms_cv = solution_terms_mat, summaries, d_test)
   if (!validate_search) {
     out_list <- c(out_list, nlist(sel))
