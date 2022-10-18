@@ -835,9 +835,13 @@ test_that("`.seed` works (and restores the RNG state afterwards)", {
     .Random.seed_null2 <- .Random.seed
 
     expect_equal(pp_orig, pp_repr, info = tstsetup)
-    expect_false(isTRUE(all.equal(pp_orig, pp_new)), info = tstsetup)
-    expect_false(isTRUE(all.equal(pp_orig, pp_null)), info = tstsetup)
-    expect_false(isTRUE(all.equal(pp_new, pp_null)), info = tstsetup)
+    if (!args_prj[[tstsetup]]$fam_nm %in% c("brnll")) {
+      # The Bernoulli family is excluded because two possible response values
+      # are too few to reliably check non-equality:
+      expect_false(isTRUE(all.equal(pp_orig, pp_new)), info = tstsetup)
+      expect_false(isTRUE(all.equal(pp_orig, pp_null)), info = tstsetup)
+      expect_false(isTRUE(all.equal(pp_new, pp_null)), info = tstsetup)
+    }
 
     expect_equal(.Random.seed_new2, .Random.seed_new1, info = tstsetup)
     expect_equal(.Random.seed_repr2, .Random.seed_repr1, info = tstsetup)
