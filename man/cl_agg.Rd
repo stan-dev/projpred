@@ -53,13 +53,11 @@ draws_cl <- cl_agg(draws, cl = cl_draws)
 # Clustering example with nonconstant `wdraws`:
 w_draws <- rgamma(S, shape = 4)
 draws_cl <- cl_agg(draws, cl = cl_draws, wdraws = w_draws)
-# Thinning example:
+# Thinning example (implying constant `wdraws`):
 S_th <- 50L
 idxs_thin <- round(seq(1, S, length.out = S_th))
 th_draws <- rep(NA, S)
 th_draws[idxs_thin] <- seq_len(S_th)
 draws_th <- cl_agg(draws, cl = th_draws)
-# A thinning example with nonconstant `wdraws` doesn't make sense because in
-# case of thinning, `wdraws` doesn't have any impact.
 
 }

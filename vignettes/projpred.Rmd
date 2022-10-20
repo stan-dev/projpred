@@ -1,6 +1,8 @@
 ---
 title: "projpred: Projection predictive feature selection"
 date: "`r Sys.Date()`"
+bibliography: references.bib
+link-citations: true
 output:
   rmarkdown::html_vignette:
     toc: true
@@ -18,9 +20,9 @@ vignette: >
 
 ## Introduction
 
-This vignette shows the main functionalities of the **projpred** package, which implements the projective variable selection for generalized linear and additive models as well as for generalized linear and additive multilevel models.^[Currently, the support for additive models is only experimental in **projpred**.] What is special about the projective variable selection is that it not only performs a variable selection, but also allows for valid post-selection inference.
+This vignette shows the main functionalities of the **projpred** package, which implements the projection predictive variable selection for various regression models (see section ["Supported types of reference models"](#refmodtypes) below for more details on supported model types). What is special about the projection predictive variable selection is that it not only performs a variable selection, but also allows for valid post-selection inference.
 
-The projective variable selection is based on the ideas of Goutis and Robert (1998) and Dupuis and Robert (2003). The methods implemented in **projpred** are described in detail in Piironen et al. (2020) and Catalina et al. (2020). They are evaluated in comparison to many other methods in Piironen and Vehtari (2017a). Type `citation("projpred")` for details on how to cite **projpred**.
+The projection predictive variable selection is based on the ideas of @goutis_model_1998 and @dupuis_variable_2003. The methods implemented in **projpred** are described in detail in @piironen_projective_2020 and @catalina_projection_2020. They are evaluated in comparison to many other methods in @piironen_comparison_2017. For details on how to cite **projpred**, visit section ["Citation"](https://mc-stan.org/projpred/authors.html#citation) on the website.^[The citation information can be accessed offline by typing `citation("projpred")` within R.]
 
 ## Data
 
@@ -32,18 +34,18 @@ dat_gauss <- data.frame(y = df_gaussian$y, df_gaussian$x)
 
 ## Reference model
 
-First, we have to construct a reference model for the projective variable selection. This model is considered as the best ("reference") solution to the prediction task. The aim of the projective variable selection is to find a subset of a set of candidate predictors which is as small as possible but achieves a predictive performance as close as possible to that of the reference model.
+First, we have to construct a reference model for the projection predictive variable selection. This model is considered as the best ("reference") solution to the prediction task. The aim of the projection predictive variable selection is to find a subset of a set of candidate predictors which is as small as possible but achieves a predictive performance as close as possible to that of the reference model.
 
-The **projpred** package is compatible with reference models fitted by the **rstanarm** and **brms** packages. To our knowledge, **rstanarm** and **brms** are currently the only packages for which a `get_refmodel()` method (which establishes the compatibility with **projpred**) exists. Custom reference models can be constructed via `init_refmodel()`, as shown in section "Examples" in the `?init_refmodel` help.^[We will cover custom reference models more deeply in a future vignette.] For both, **rstanarm** and **brms** reference models, all candidate models are *submodels* of the reference model. In principle, this is not a necessary assumption for a projective variable selection (see, e.g., Piironen et al., 2020) and custom reference models allow to avoid this assumption, but for **rstanarm** and **brms** reference models, this is a reasonable assumption which simplifies implementation in **projpred** a lot.
+Usually (and this is also the case in this vignette), the reference model will be an [**rstanarm**](https://mc-stan.org/rstanarm/) or [**brms**](https://paul-buerkner.github.io/brms/) fit. To our knowledge, **rstanarm** and **brms** are currently the only packages for which a `get_refmodel()` method (which establishes the compatibility with **projpred**) exists. Custom reference models can be constructed via `init_refmodel()`, as shown in section "Examples" in the `?init_refmodel` help.^[We will cover custom reference models more deeply in a future vignette.] For both, **rstanarm** and **brms** reference models, all candidate models are *submodels* of the reference model. In principle, this is not a necessary assumption for a projection predictive variable selection [see, e.g., @piironen_projective_2020] and custom reference models allow to avoid this assumption, but for non-custom **rstanarm** and **brms** reference models, this is a reasonable assumption which simplifies implementation in **projpred** a lot.
 
-Here, we use the **rstanarm** package to fit the reference model. If you want to use the **brms** package, simply replace the **rstanarm** fit (of class `stanreg`) in all the code below by your **brms** fit (of class `brmsfit`). Only note that in case of a **brms** fit, we recommend to specify argument `brms_seed` of `brms:::get_refmodel.brmsfit()`.
+Here, we use the **rstanarm** package to fit the reference model. If you want to use the **brms** package, simply replace the **rstanarm** fit (of class `stanreg`) in all the code below by your **brms** fit (of class `brmsfit`). Only note that in case of a **brms** fit, we recommend to specify argument `brms_seed` of `brms::get_refmodel.brmsfit()`.
 ```{r}
 library(rstanarm)
 ```
 
 For our **rstanarm** reference model, we use the Gaussian distribution as the `family` for our response. With respect to the predictors, we only include the linear main effects of all 20 predictor variables. Compared to the more complex types of reference models supported by **projpred** (see section ["Supported types of reference models"](#refmodtypes) below), this is a quite simple reference model which is sufficient, however, to demonstrate the interplay of **projpred**'s functions.
 
-We use **rstanarm**'s default priors in our reference model, except for the regression coefficients for which we use a regularized horseshoe prior (Piironen and Vehtari, 2017c) with the hyperprior for its global shrinkage parameter following Piironen and Vehtari (2017b,c). In R code, these are the preparation steps for the regularized horseshoe prior:
+We use **rstanarm**'s default priors in our reference model, except for the regression coefficients for which we use a regularized horseshoe prior [@piironen_sparsity_2017] with the hyperprior for its global shrinkage parameter following @piironen_hyperprior_2017 and @piironen_sparsity_2017. In R code, these are the preparation steps for the regularized horseshoe prior:
 ```{r}
 # Number of regression coefficients:
 ( D <- sum(grepl("^X", names(dat_gauss))) )
@@ -91,7 +93,7 @@ Now, **projpred** comes into play.
 library(projpred)
 ```
 
-In **projpred**, the projective variable selection consists of a *search* part and an *evaluation* part. The search part determines the solution path, i.e., the best submodel for each submodel size (number of predictor terms). The evaluation part determines the predictive performance of the submodels along the solution path.
+In **projpred**, the projection predictive variable selection consists of a *search* part and an *evaluation* part. The search part determines the solution path, i.e., the best submodel for each submodel size (number of predictor terms). The evaluation part determines the predictive performance of the submodels along the solution path.
 
 There are two functions for performing the variable selection: `varsel()` and `cv_varsel()`. In contrast to `varsel()`, `cv_varsel()` performs a cross-validation (CV) by running the search part with the training data of each CV fold separately (an exception is `validate_search = FALSE`, see `?cv_varsel` and below) and running the evaluation part on the corresponding test set of each CV fold. Because of this CV, `cv_varsel()` is recommended over `varsel()`. Thus, we use `cv_varsel()` here. Nonetheless, running `varsel()` first can offer a rough idea of the performance of the projections (i.e., of the submodels after projecting the reference model onto them). A more principled **projpred** workflow is work under progress.
 
@@ -119,7 +121,7 @@ cvvs <- cv_varsel(
 
 The first step after running the variable selection should be the decision for a final submodel size. This should be the first step (in particular, before inspecting the solution path) in order to avoid a user-induced selection bias (which could occur if the user made the submodel size decision dependent on the solution path). To decide for a submodel size, there are several performance statistics we can plot as a function of the submodel size. Here, we use the expected log (pointwise) predictive density (for a new dataset) (ELPD; empirically, this is the sum of the log predictive densities of the observations in the evaluation---or "test"---set) and the root mean squared error (RMSE). By default, the performance statistics are plotted on their original scale, but with `deltas = TRUE`, they are calculated as differences from a baseline model (which is the reference model by default, at least in the most common cases). Since the differences are usually of more interest (with regard to the submodel size decision), we directly plot with `deltas = TRUE` here (note that as `validate_search = FALSE`, this result is slightly optimistic, and the plot looks different when `validate_search = TRUE` is used):
 ```{r, fig.asp=1.5 * 0.618}
-plot(cvvs, stats = c("elpd", "rmse"), deltas = TRUE)
+plot(cvvs, stats = c("elpd", "rmse"), deltas = TRUE, seed = 54548)
 ```
 
 Based on that plot (see `?plot.vsel` for a description), we would decide for a submodel size of 6 because that's the point where the performance measures level off and are close enough to the reference model's performance (note that since the plot is affected by `validate_search = FALSE`, this manual decision based on the plot is affected, too):
@@ -131,7 +133,7 @@ Note that **projpred** offers the `suggest_size()` function which may help in th
 ```{r}
 suggest_size(cvvs)
 ```
-Here, we would get the same final submodel size (`6`) as by our manual decision (`suggest_size()` is also affected by `validate_search = FALSE`).
+Here, we would get the same final submodel size (`6`) as by our manual decision (`suggest_size()` is also affected by `validate_search = FALSE`). Note that by default, `suggest_size()` uses the ELPD as performance statistic.
 
 Only now, after we have made a decision for the submodel size, we inspect further results from the variable selection and, in particular, the solution path. For example, we can simply `print()` the resulting object:
 ```{r}
@@ -250,7 +252,7 @@ This PPPC shows that our final projection is able to generate predictions simila
 
 ## Supported types of reference models {#refmodtypes}
 
-Apart from the `gaussian()` response family used in this vignette, **projpred** also supports the `binomial()`^[The `binomial()` family includes the `brms::bernoulli()` family as a special case which may only be used via the **brms** package.] and the `poisson()` family. On the side of the predictors, **projpred** not only supports linear main effects as shown in this vignette, but also interactions, multilevel^[Multilevel models are also known as *hierarchical* models or models with *partially pooled*, *group-level*, or---in frequentist terms---*random* effects.], and---as an experimental feature---additive^[Additive terms are also known as *smooth* terms.] terms.
+Apart from the `gaussian()` response family used in this vignette, **projpred** also supports the `binomial()`^[Via `brms::get_refmodel.brmsfit()`, the `brms::bernoulli()` family is supported as well.] and the `poisson()` family. On the side of the predictors, **projpred** not only supports linear main effects as shown in this vignette, but also interactions, multilevel^[Multilevel models are also known as *hierarchical* models or models with *partially pooled*, *group-level*, or---in frequentist terms---*random* effects.], and---as an experimental feature---additive^[Additive terms are also known as *smooth* terms.] terms.
 
 Transferring this vignette to such more complex reference models is straightforward: Basically, only the code for fitting the reference model via **rstanarm** or **brms** needs to be adapted. The **projpred** code stays almost the same. Only note that in case of multilevel or additive reference models,
 <!-- the parallelization of the projection is not recommended and that -->
@@ -299,23 +301,7 @@ refm_fit <- stan_gamm4(
 Sometimes, the ordering of the predictor terms in the solution path makes sense, but for increasing submodel size, the performance measures of the projections do not approach that of the reference model. There are different reasons that can explain this behavior (the following list might not be exhaustive, though):
 
 1. The reference model's posterior may be so wide that the default `ndraws_pred` could be too small. Usually, this comes in combination with a difference in predictive performance which is comparatively small. Increasing `ndraws_pred` should help, but it also increases the computational cost. Re-fitting the reference model and thereby ensuring a narrower posterior (usually by employing a stronger sparsifying prior) should have a similar effect.
-1. For non-Gaussian models, the discrepancy may be due to the fact that the penalized iteratively reweighted least squares (PIRLS) algorithm might have convergence issues (Catalina et al., 2021). In this case, the latent-space approach by Catalina et al. (2021) might help.
+1. For non-Gaussian models, the discrepancy may be due to the fact that the penalized iteratively reweighted least squares (PIRLS) algorithm might have convergence issues [@catalina_latent_2021]. In this case, the latent-space approach by @catalina_latent_2021 might help.
 1. If you are using `varsel()`, then the lack of the CV in `varsel()` may lead to overconfident and overfitted results. In this case, try running `cv_varsel()` instead of `varsel()` (which you should in any case for your final results).
 
 ## References
-
-Catalina, A., Bürkner, P.-C., and Vehtari, A. (2020). Projection predictive inference for generalized linear and additive multilevel models. *arXiv:2010.06994*. URL: <https://arxiv.org/abs/2010.06994>.
-
-Catalina, A., Bürkner, P., and Vehtari, A. (2021). Latent space projection predictive inference. *arXiv:2109.04702*. URL: <https://arxiv.org/abs/2109.04702>.
-
-Dupuis, J. A. and Robert, C. P. (2003). Variable selection in qualitative models via an entropic explanatory power. *Journal of Statistical Planning and Inference*, **111**(1-2):77–94. DOI: [10.1016/S0378-3758(02)00286-0](https://doi.org/10.1016/S0378-3758(02)00286-0).
-
-Goutis, C. and Robert, C. P. (1998). Model choice in generalised linear models: A Bayesian approach via Kullback–Leibler projections. *Biometrika*, **85**(1):29–37.
-
-Piironen, J., Paasiniemi, M., and Vehtari, A. (2020). Projective inference in high-dimensional problems: Prediction and feature selection. *Electronic Journal of Statistics*, **14**(1):2155-2197. DOI: [10.1214/20-EJS1711](https://doi.org/10.1214/20-EJS1711).
-
-Piironen, J. and Vehtari, A. (2017a). Comparison of Bayesian predictive methods for model selection. *Statistics and Computing*, **27**(3):711-735. DOI: [10.1007/s11222-016-9649-y](https://doi.org/10.1007/s11222-016-9649-y).
-
-Piironen, J. and Vehtari, A. (2017b). On the hyperprior choice for the global shrinkage parameter in the horseshoe prior. In *Proceedings of the 20th International Conference on Artificial Intelligence and Statistics (AISTATS)*, PMLR 54:905-913, 2017. URL: <https://proceedings.mlr.press/v54/piironen17a.html>.
-
-Piironen, J. and Vehtari, A. (2017c). Sparsity information and regularization in the horseshoe and other shrinkage priors. *Electronic Journal of Statistics*, **11**(2): 5018-5051. DOI: [10.1214/17-EJS1337SI](https://doi.org/10.1214/17-EJS1337SI).

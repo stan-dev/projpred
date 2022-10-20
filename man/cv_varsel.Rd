@@ -140,10 +140,11 @@ effective number of parameters introduced by the search).}
 results can be obtained again if needed. Passed to argument \code{seed} of
 \code{\link[=set.seed]{set.seed()}}, but can also be \code{NA} to not call \code{\link[=set.seed]{set.seed()}} at all. Here,
 this seed is used for clustering the reference model's posterior draws (if
-\code{!is.null(nclusters)}), for subsampling LOO CV folds (if \code{nloo} is smaller
-than the number of observations), for sampling the folds in K-fold CV, and
-for drawing new group-level effects when predicting from a multilevel
-submodel (however, not yet in case of a GAMM).}
+\code{!is.null(nclusters)} or \code{!is.null(nclusters_pred)}), for subsampling LOO
+CV folds (if \code{nloo} is smaller than the number of observations), for
+sampling the folds in K-fold CV, and for drawing new group-level effects
+when predicting from a multilevel submodel (however, not yet in case of a
+GAMM).}
 
 \item{search_terms}{Only relevant for forward search. A custom character
 vector of predictor term blocks to consider for the search. Section
@@ -155,8 +156,8 @@ formula.}
 }
 \value{
 An object of class \code{vsel}. The elements of this object are not meant
-to be accessed directly but instead via helper functions (see the vignette
-or type \code{?projpred}).
+to be accessed directly but instead via helper functions (see the main
+vignette and \link{projpred-package}).
 }
 \description{
 Perform the projection predictive variable selection for GLMs, GLMMs, GAMs,
@@ -196,7 +197,7 @@ instead.
 The elements of the \code{search_terms} character vector don't need to be
 individual predictor terms. Instead, they can be building blocks consisting
 of several predictor terms connected by the \code{+} symbol. To understand how
-these building blocks works, it is important to know how \pkg{projpred}'s
+these building blocks work, it is important to know how \pkg{projpred}'s
 forward search works: It starts with an empty vector \code{chosen} which will
 later contain already selected predictor terms. Then, the search iterates
 over model sizes \eqn{j \in \{1, ..., J\}}{j = 1, ..., J}. The candidate
@@ -219,7 +220,7 @@ specify \code{search_terms = c("x2", "x3", "x2 + x3")}.
 \note{
 The case \code{cv_method == "LOO" && !validate_search} constitutes an
 exception where the search part is not cross-validated. In that case, the
-evaluation part is based on a PSIS-LOO CV.
+evaluation part is based on a PSIS-LOO CV also for the submodels.
 
 For all PSIS-LOO CVs, \pkg{projpred} calls \code{\link[loo:psis]{loo::psis()}} with \code{r_eff = NA}.
 This is only a problem if there was extreme autocorrelation between the

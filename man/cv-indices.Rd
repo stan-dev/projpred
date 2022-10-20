@@ -29,13 +29,13 @@ below for details.}
 }
 \value{
 \code{\link[=cvfolds]{cvfolds()}} returns a vector of length \code{n} such that each element is
-an integer between 1 and \code{k} denoting which fold the corresponding data
+an integer between 1 and \code{K} denoting which fold the corresponding data
 point belongs to. The return value of \code{\link[=cv_ids]{cv_ids()}} depends on the \code{out}
-argument. If \code{out = "foldwise"}, the return value is a \code{list} with \code{k}
+argument. If \code{out = "foldwise"}, the return value is a \code{list} with \code{K}
 elements, each being a \code{list} with elements \code{tr} and \code{ts} giving the
 training and test indices, respectively, for the corresponding fold. If
 \code{out = "indices"}, the return value is a \code{list} with elements \code{tr} and \code{ts}
-each being a \code{list} with \code{k} elements giving the training and test indices,
+each being a \code{list} with \code{K} elements giving the training and test indices,
 respectively, for each fold.
 }
 \description{

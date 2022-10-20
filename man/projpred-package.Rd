@@ -6,30 +6,24 @@
 \alias{projpred-package}
 \title{Projection predictive feature selection}
 \description{
-\pkg{projpred} is an \R package for performing a projection predictive
-variable (or "feature") selection for generalized linear models (GLMs),
-generalized linear multilevel (or "mixed") models (GLMMs), generalized
-additive models (GAMs), and generalized additive multilevel (or "mixed")
-models (GAMMs), with the support for additive models still being
-experimental. Note that the term "generalized" includes the Gaussian family
-as well.
+The \R package \pkg{projpred} performs the projection predictive variable (or
+"feature") selection for various regression models. We recommend to read the
+\code{README} file (available with enhanced formatting
+\href{https://mc-stan.org/projpred/}{online}) and the main vignette (\code{topic = "projpred"}, but also available
+\href{https://mc-stan.org/projpred/articles/projpred.html}{online}) before
+continuing here.
 
-The package is compatible with \pkg{rstanarm} and \pkg{brms}, but developers
-of other packages are welcome to add new \code{\link[=get_refmodel]{get_refmodel()}} methods (which
-enable the compatibility of their packages with \pkg{projpred}). Custom
-reference models can also be used via \code{\link[=init_refmodel]{init_refmodel()}}. It is via custom
-reference models that \pkg{projpred} supports the projection onto candidate
-models whose predictor terms are not a subset of the reference model's
-predictor terms. However, for \pkg{rstanarm} and \pkg{brms} reference models,
-\pkg{projpred} only supports the projection onto \emph{submodels} of the reference
-model. For the sake of simplicity, throughout this package, we use the term
-"submodel" for all kinds of candidate models onto which the reference model
-is projected, even though this term is not always appropriate for custom
-reference models.
+For the sake of simplicity (throughout the whole package documentation), we
+use the term "submodel" for all kinds of candidate models onto which the
+reference model is projected, even though this term is not always appropriate
+for custom reference models.
 
-Currently, the supported families are \code{\link[=gaussian]{gaussian()}}, \code{\link[=binomial]{binomial()}} (and---via
-\code{\link[brms:get_refmodel.brmsfit]{brms::get_refmodel.brmsfit()}}---also \code{\link[brms:brmsfamily]{brms::bernoulli()}}), as well as
-\code{\link[=poisson]{poisson()}}.
+The following model type abbreviations will be used at multiple places
+throughout the documentation: GLM (generalized linear model), GLMM
+(generalized linear multilevel---or "mixed"---model), GAM (generalized
+additive model), and GAMM (generalized additive multilevel---or
+"mixed"---model). Note that the term "generalized" includes the Gaussian
+family as well.
 
 For the projection of the reference model onto a submodel, \pkg{projpred}
 currently relies on the following functions (in other words, these are the
@@ -63,14 +57,6 @@ for GLMs, but for GLMMs, GAMs, and GAMMs, the fitted model objects are quite
 big, which---when running in parallel---may lead to an excessive memory usage
 which in turn may crash the R session. Thus, we currently cannot recommend
 the parallelization for GLMMs, GAMs, and GAMMs.
-
-The \href{https://mc-stan.org/projpred/articles/}{vignettes} (currently, there is
-only a single one) illustrate how to use the \pkg{projpred} functions in
-conjunction. Shorter examples are included here in the documentation.
-
-Some references relevant for this package are given in section "References"
-below. See \code{citation(package = "projpred")} for details on citing
-\pkg{projpred}.
 }
 \section{Functions}{
 \describe{
@@ -90,27 +76,6 @@ submodel (after projecting the reference model onto it).}
 }
 }
 
-\references{
-Catalina, A., Bürkner, P.-C., and Vehtari, A. (2020). Projection predictive
-inference for generalized linear and additive multilevel models.
-\emph{arXiv:2010.06994}. URL: \url{https://arxiv.org/abs/2010.06994}.
-
-Dupuis, J. A. and Robert, C. P. (2003). Variable selection in qualitative
-models via an entropic explanatory power. \emph{Journal of Statistical Planning
-and Inference}, \strong{111}(1-2):77–94. \doi{10.1016/S0378-3758(02)00286-0}.
-
-Goutis, C. and Robert, C. P. (1998). Model choice in generalised linear
-models: A Bayesian approach via Kullback–Leibler projections. \emph{Biometrika},
-\strong{85}(1):29–37.
-
-Piironen, J. and Vehtari, A. (2017). Comparison of Bayesian predictive
-methods for model selection. \emph{Statistics and Computing}, \strong{27}(3):711-735.
-\doi{10.1007/s11222-016-9649-y}.
-
-Piironen, J., Paasiniemi, M., and Vehtari, A. (2020). Projective inference in
-high-dimensional problems: Prediction and feature selection. \emph{Electronic
-Journal of Statistics}, \strong{14}(1):2155-2197. \doi{10.1214/20-EJS1711}.
-}
 \seealso{
 Useful links:
 \itemize{

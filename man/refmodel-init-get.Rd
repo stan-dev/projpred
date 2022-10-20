@@ -38,11 +38,11 @@ init_refmodel(
 }
 \arguments{
 \item{object}{Object from which the reference model is created. For
-\code{\link[=init_refmodel]{init_refmodel()}}, an object on which the functions from arguments
-\code{extract_model_data} and \code{ref_predfun} can be applied, with a \code{NULL} object
-being treated specially (see section "Value" below). For
-\code{\link[=get_refmodel.default]{get_refmodel.default()}}, an object on which function \code{\link[=family]{family()}} can be
-applied to retrieve the family (if argument \code{family} is \code{NULL}),
+\code{\link[=init_refmodel]{init_refmodel()}}, an object that the functions from arguments
+\code{extract_model_data} and \code{ref_predfun} can be applied to, with a \code{NULL}
+object being treated specially (see section "Value" below). For
+\code{\link[=get_refmodel.default]{get_refmodel.default()}}, an object that function \code{\link[=family]{family()}} can be applied
+to in order to retrieve the family (if argument \code{family} is \code{NULL}),
 additionally to the properties required for \code{\link[=init_refmodel]{init_refmodel()}}. For
 non-default methods of \code{\link[=get_refmodel]{get_refmodel()}}, an object of the corresponding
 class.}
@@ -58,8 +58,8 @@ For additive formulas, see also packages \pkg{mgcv} (in particular,
 function \code{\link[mgcv:gam]{mgcv::gam()}}) and \pkg{gamm4} (in particular, function
 \code{\link[gamm4:gamm4]{gamm4::gamm4()}}) as well as the notes in section "Formula terms" below.}
 
-\item{family}{A \code{\link{family}} object representing the observational model (i.e.,
-the distributional family for the response). May be \code{NULL} for
+\item{family}{An object of class \code{family} representing the observational
+model (i.e., the distributional family for the response). May be \code{NULL} for
 \code{\link[=get_refmodel.default]{get_refmodel.default()}} in which case the family is retrieved from
 \code{object}.}
 
@@ -157,10 +157,10 @@ for using an internal default (see \link{projpred-package} for the functions use
 by the default divergence minimizer). Otherwise, let \eqn{N} denote the
 number of observations (in case of CV, these may be reduced to each fold),
 \eqn{S_{\mathrm{ref}}}{S_ref} the number of posterior draws for the reference
-model's parameters, and \eqn{S_{\mathrm{prj}}}{S_prj} the number of (possibly
-clustered) parameter draws for projection (short: the number of projected
-draws). Then the functions supplied to these arguments need to have the
-following prototypes:
+model's parameters, and \eqn{S_{\mathrm{prj}}}{S_prj} the number of draws for
+the parameters of a submodel that the reference model has been projected onto
+(short: the number of projected draws). Then the functions supplied to these
+arguments need to have the following prototypes:
 \itemize{
 \item \code{ref_predfun}: \code{ref_predfun(fit, newdata = NULL)} where:
 \itemize{
@@ -191,7 +191,7 @@ be able to be called with the following arguments:
 the left-hand side in which case the projection has to be performed for
 each of the response variables separately.
 \item \code{data} accepts a \code{data.frame} to be used for the projection.
-\item \code{family} accepts a \code{\link{family}} object.
+\item \code{family} accepts an object of class \code{family}.
 \item \code{weights} accepts either observation weights (at least in the form of a
 numeric vector) or \code{NULL} (for using a vector of ones as weights).
 \item \code{projpred_var} accepts an \eqn{N \times S_{\mathrm{prj}}}{N x S_prj}

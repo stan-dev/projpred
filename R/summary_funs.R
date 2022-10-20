@@ -163,7 +163,7 @@ get_stat <- function(mu, lppd, d_test, stat, mu.bs = NULL, lppd.bs = NULL,
       n_notna.bs <- sum(!is.na(lppd.bs))
     }
   } else {
-    n_notna <- sum(!is.na(mu))
+    n_notna <- sum(!is.na(mu) & !is.na(d_test$y_prop %||% d_test$y))
     if (!is.null(mu.bs)) {
       n_notna.bs <- sum(!is.na(mu.bs))
     }

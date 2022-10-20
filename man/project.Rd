@@ -56,8 +56,7 @@ class \code{datafit} (in which case one cluster is used). For the meaning of
 results can be obtained again if needed. Passed to argument \code{seed} of
 \code{\link[=set.seed]{set.seed()}}, but can also be \code{NA} to not call \code{\link[=set.seed]{set.seed()}} at all. Here,
 this seed is used for clustering the reference model's posterior draws (if
-\code{!is.null(nclusters)}) and for drawing new group-level effects when
-predicting from a multilevel submodel (however, not yet in case of a GAMM).}
+\code{!is.null(nclusters)}).}
 
 \item{regul}{A number giving the amount of ridge regularization when
 projecting onto (i.e., fitting) submodels which are GLMs. Usually there is
@@ -78,9 +77,8 @@ If the projection is performed onto a single submodel (i.e.,
 to the submodel. Note that in case of the Gaussian family, this is not
 the actual KL divergence but merely a proxy.}
 \item{\code{weights}}{Weights for the projected draws.}
-\item{\code{solution_terms}}{A character vector of the submodel's
-predictor terms, ordered in the way in which the terms were added to the
-submodel.}
+\item{\code{solution_terms}}{A character vector of the submodel's predictor
+terms.}
 \item{\code{submodl}}{A \code{list} containing the submodel fits (one fit per
 projected draw).}
 \item{\code{p_type}}{A single logical value indicating whether the

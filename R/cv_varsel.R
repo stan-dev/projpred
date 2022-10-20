@@ -41,16 +41,17 @@
 #'   results can be obtained again if needed. Passed to argument `seed` of
 #'   [set.seed()], but can also be `NA` to not call [set.seed()] at all. Here,
 #'   this seed is used for clustering the reference model's posterior draws (if
-#'   `!is.null(nclusters)`), for subsampling LOO CV folds (if `nloo` is smaller
-#'   than the number of observations), for sampling the folds in K-fold CV, and
-#'   for drawing new group-level effects when predicting from a multilevel
-#'   submodel (however, not yet in case of a GAMM).
+#'   `!is.null(nclusters)` or `!is.null(nclusters_pred)`), for subsampling LOO
+#'   CV folds (if `nloo` is smaller than the number of observations), for
+#'   sampling the folds in K-fold CV, and for drawing new group-level effects
+#'   when predicting from a multilevel submodel (however, not yet in case of a
+#'   GAMM).
 #'
 #' @inherit varsel details return
 #'
 #' @note The case `cv_method == "LOO" && !validate_search` constitutes an
 #'   exception where the search part is not cross-validated. In that case, the
-#'   evaluation part is based on a PSIS-LOO CV.
+#'   evaluation part is based on a PSIS-LOO CV also for the submodels.
 #'
 #'   For all PSIS-LOO CVs, \pkg{projpred} calls [loo::psis()] with `r_eff = NA`.
 #'   This is only a problem if there was extreme autocorrelation between the
@@ -322,22 +323,24 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
   cl_pred <- p_pred$cl
 
   ## fetch the log-likelihood for the reference model to obtain the LOO weights
-  if (is.null(refmodel$loglik)) {
+  if (inherits(refmodel, "datafit")) {
     ## case where log-likelihood not available, i.e., the reference model is not
     ## a genuine model => cannot compute LOO
     stop("LOO can be performed only if the reference model is a genuine ",
          "probabilistic model for which the log-likelihood can be evaluated.")
-  } else {
-    ## log-likelihood available
-    loglik <- refmodel$loglik
   }
+
+  eta_offs <- eta + refmodel$offset
+  mu_offs <- refmodel$family$linkinv(eta_offs)
+
+  loglik <- t(refmodel$family$ll_fun(mu_offs, dis, refmodel$y, refmodel$wobs))
   n <- ncol(loglik)
   psisloo <- loo::psis(-loglik, cores = 1, r_eff = NA)
   lw <- weights(psisloo)
   # pareto_k <- loo::pareto_k_values(psisloo)
+
   ## by default use all observations
   nloo <- min(nloo, n)
-
   if (nloo < 1) {
     stop("nloo must be at least 1")
   } else if (nloo < n) {
@@ -347,7 +350,7 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
   ## compute loo summaries for the reference model
   loo_ref <- apply(loglik + lw, 2, log_sum_exp)
   mu_ref <- do.call(c, lapply(seq_len(n), function(i) {
-    mu[i, ] %*% exp(lw[, i])
+    mu_offs[i, ] %*% exp(lw[, i])
   }))
 
   ## decide which points form the validation set based on the k-values
@@ -404,10 +407,25 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
     } else {
       refdist_eval <- p_sel
     }
+    refdist_eval_mu_offs <- refdist_eval$mu
+    if (!all(refmodel$offset == 0)) {
+      refdist_eval_mu_offs <- refmodel$family$linkinv(
+        refmodel$family$linkfun(refdist_eval_mu_offs) + refmodel$offset
+      )
+    }
     log_lik_ref <- t(refmodel$family$ll_fun(
-      refdist_eval$mu[inds, , drop = FALSE], refdist_eval$dis, refmodel$y[inds],
-      refmodel$wobs[inds]
+      refdist_eval_mu_offs[inds, , drop = FALSE], refdist_eval$dis,
+      refmodel$y[inds], refmodel$wobs[inds]
     ))
+    sub_psisloo <- suppressWarnings(
+      loo::psis(-log_lik_ref, cores = 1, r_eff = NA)
+    )
+    lw_sub <- suppressWarnings(weights(sub_psisloo))
+    # Take into account that clustered draws usually have different weights:
+    lw_sub <- lw_sub + log(refdist_eval$weights)
+    # This re-weighting requires a re-normalization (as.array() is applied to
+    # have stricter consistency checks, see `?sweep`):
+    lw_sub <- sweep(lw_sub, 2, as.array(apply(lw_sub, 2, log_sum_exp)))
     for (k in seq_along(submodels)) {
       mu_k <- refmodel$family$mu_fun(submodels[[k]]$submodl,
                                      obs = inds,
@@ -415,15 +433,6 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
       log_lik_sub <- t(refmodel$family$ll_fun(
         mu_k, submodels[[k]]$dis, refmodel$y[inds], refmodel$wobs[inds]
       ))
-      sub_psisloo <- suppressWarnings(
-        loo::psis(-log_lik_ref, cores = 1, r_eff = NA)
-      )
-      lw_sub <- suppressWarnings(weights(sub_psisloo))
-      # Take into account that clustered draws usually have different weights:
-      lw_sub <- lw_sub + log(refdist_eval$weights)
-      # This re-weighting requires a re-normalization (as.array() is applied to
-      # have stricter consistency checks, see `?sweep`):
-      lw_sub <- sweep(lw_sub, 2, as.array(apply(lw_sub, 2, log_sum_exp)))
       loo_sub[[k]][inds] <- apply(log_lik_sub + lw_sub, 2, log_sum_exp)
       for (i in seq_along(inds)) {
         mu_sub[[k]][inds[i]] <- mu_k[i, ] %*% exp(lw_sub[, i])
@@ -457,11 +466,11 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
       ## reweight the clusters/samples according to the psis-loo weights
       p_sel <- .get_p_clust(
         family = refmodel$family, mu = mu, eta = eta, dis = dis,
-        wsample = exp(lw[, i]), cl = cl_sel
+        wsample = exp(lw[, i]), cl = cl_sel, offs = refmodel$offset
       )
       p_pred <- .get_p_clust(
         family = refmodel$family, mu = mu, eta = eta, dis = dis,
-        wsample = exp(lw[, i]), cl = cl_pred
+        wsample = exp(lw[, i]), cl = cl_pred, offs = refmodel$offset
       )
 
       ## perform selection with the reweighted clusters/samples

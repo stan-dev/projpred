@@ -10,11 +10,11 @@
 #' @name refmodel-init-get
 #'
 #' @param object Object from which the reference model is created. For
-#'   [init_refmodel()], an object on which the functions from arguments
-#'   `extract_model_data` and `ref_predfun` can be applied, with a `NULL` object
-#'   being treated specially (see section "Value" below). For
-#'   [get_refmodel.default()], an object on which function [family()] can be
-#'   applied to retrieve the family (if argument `family` is `NULL`),
+#'   [init_refmodel()], an object that the functions from arguments
+#'   `extract_model_data` and `ref_predfun` can be applied to, with a `NULL`
+#'   object being treated specially (see section "Value" below). For
+#'   [get_refmodel.default()], an object that function [family()] can be applied
+#'   to in order to retrieve the family (if argument `family` is `NULL`),
 #'   additionally to the properties required for [init_refmodel()]. For
 #'   non-default methods of [get_refmodel()], an object of the corresponding
 #'   class.
@@ -44,8 +44,8 @@
 #'   observation weights, offsets) from the original dataset (i.e., the dataset
 #'   used for fitting the reference model) or from a new dataset. See also
 #'   section "Argument `extract_model_data`" below.
-#' @param family A [`family`] object representing the observational model (i.e.,
-#'   the distributional family for the response). May be `NULL` for
+#' @param family An object of class `family` representing the observational
+#'   model (i.e., the distributional family for the response). May be `NULL` for
 #'   [get_refmodel.default()] in which case the family is retrieved from
 #'   `object`.
 #' @param cvfits For \eqn{K}-fold CV only. A `list` containing a sub-`list`
@@ -103,10 +103,10 @@
 #' by the default divergence minimizer). Otherwise, let \eqn{N} denote the
 #' number of observations (in case of CV, these may be reduced to each fold),
 #' \eqn{S_{\mathrm{ref}}}{S_ref} the number of posterior draws for the reference
-#' model's parameters, and \eqn{S_{\mathrm{prj}}}{S_prj} the number of (possibly
-#' clustered) parameter draws for projection (short: the number of projected
-#' draws). Then the functions supplied to these arguments need to have the
-#' following prototypes:
+#' model's parameters, and \eqn{S_{\mathrm{prj}}}{S_prj} the number of draws for
+#' the parameters of a submodel that the reference model has been projected onto
+#' (short: the number of projected draws). Then the functions supplied to these
+#' arguments need to have the following prototypes:
 #' * `ref_predfun`: `ref_predfun(fit, newdata = NULL)` where:
 #'     + `fit` accepts the reference model fit as given in argument `object`
 #'     (but possibly re-fitted to a subset of the observations, as done in
@@ -131,7 +131,7 @@
 #'     the left-hand side in which case the projection has to be performed for
 #'     each of the response variables separately.
 #'     + `data` accepts a `data.frame` to be used for the projection.
-#'     + `family` accepts a [`family`] object.
+#'     + `family` accepts an object of class `family`.
 #'     + `weights` accepts either observation weights (at least in the form of a
 #'     numeric vector) or `NULL` (for using a vector of ones as weights).
 #'     + `projpred_var` accepts an \eqn{N \times S_{\mathrm{prj}}}{N x S_prj}
@@ -281,11 +281,7 @@ predict.refmodel <- function(object, newdata = NULL, ynew = NULL,
     stop("Argument `ynew` must be a numeric vector.")
   }
 
-  if (is.null(newdata)) {
-    isnew_newdata <- FALSE
-    newdata <- object$fetch_data()
-  } else {
-    isnew_newdata <- TRUE
+  if (!is.null(newdata)) {
     newdata <- na.fail(newdata)
   }
   w_o <- object$extract_model_data(object$fit, newdata = newdata,
@@ -298,8 +294,9 @@ predict.refmodel <- function(object, newdata = NULL, ynew = NULL,
   if (length(offsetnew) == 0) {
     offsetnew <- rep(0, length(w_o$y))
   }
-  if (inherits(object$fit, "stanreg") && length(object$fit$offset) > 0) {
-    if (isnew_newdata && "projpred_internal_offs_stanreg" %in% names(newdata)) {
+  if (!is.null(newdata) && inherits(object$fit, "stanreg") &&
+      length(object$fit$offset) > 0) {
+    if ("projpred_internal_offs_stanreg" %in% names(newdata)) {
       stop("Need to write to column `projpred_internal_offs_stanreg` of ",
            "`newdata`, but that column already exists. Please rename this ",
            "column in `newdata` and try again.")
@@ -373,7 +370,7 @@ refprd <- function(fit, newdata = NULL) {
   }
 
   if (inherits(resp_form, "formula")) {
-    y <- eval_rhs(resp_form, newdata)
+    y <- eval_el2(resp_form, newdata)
   } else {
     y <- NULL
   }
@@ -666,6 +663,13 @@ init_refmodel <- function(object, data, formula, family, ref_predfun = NULL,
     offset <- rep(0, NROW(y))
   }
 
+  if (!proper_model && !all(offset == 0)) {
+    # Disallow offsets for `datafit`s because the submodel fitting does not take
+    # offsets into account (but `<refmodel>$mu` contains the observed response
+    # values which inevitably "include" the offsets):
+    stop("For a `datafit`, offsets are not allowed.")
+  }
+
   # For avoiding the warning "contrasts dropped from factor <factor_name>" when
   # predicting for each projected draw, e.g., for submodels fit with lm()/glm():
   has_contr <- sapply(data, function(data_col) {
@@ -789,14 +793,6 @@ init_refmodel <- function(object, data, formula, family, ref_predfun = NULL,
     stopifnot(length(dis) == ndraws)
   }
 
-  if (proper_model) {
-    loglik <- t(family$ll_fun(
-      family$linkinv(eta + offset), dis, y, weights = weights
-    ))
-  } else {
-    loglik <- NULL
-  }
-
   # Equal sample (draws) weights by default:
   wsample <- rep(1 / ndraws, ndraws)
 
@@ -808,10 +804,9 @@ init_refmodel <- function(object, data, formula, family, ref_predfun = NULL,
   # Output ------------------------------------------------------------------
 
   refmodel <- nlist(
-    fit = object, formula, div_minimizer, family, mu, eta, dis, y, loglik,
-    intercept, proj_predfun, fetch_data = fetch_data_wrapper, wobs = weights,
-    wsample, offset, cvfun, cvfits, extract_model_data, ref_predfun,
-    cvrefbuilder
+    fit = object, formula, div_minimizer, family, mu, eta, dis, y, intercept,
+    proj_predfun, fetch_data = fetch_data_wrapper, wobs = weights, wsample,
+    offset, cvfun, cvfits, extract_model_data, ref_predfun, cvrefbuilder
   )
   if (proper_model) {
     class(refmodel) <- "refmodel"

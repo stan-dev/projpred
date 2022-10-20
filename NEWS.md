@@ -2,12 +2,26 @@
 
 If you read this from a place other than <https://mc-stan.org/projpred/news/index.html>, please consider switching to that website since it features better formatting and cross-linking.
 
-# projpred 2.2.0.9000
+# projpred 2.2.1.9000
+
+## Minor changes
+
+* Improvements in documentation and vignette.
+* Minor improvement in terms of efficiency in the `validate_search = FALSE` case of `cv_varsel()`.
+
+## Bug fixes
+
+* Fix a bug causing offsets not to be taken into account appropriately when calculating the PSIS weights (those used for the submodels) in the `validate_search = FALSE` case of `cv_varsel()`. This bug was introduced in v2.2.0 (and existed up to---including---v2.2.1).
+* Fix a (long-standing) bug causing offsets not to be taken into account appropriately when calculating the predictive variances for a reference model that has a dispersion parameter and a non-identity link function. (GitHub: #186 (partly), #355)
+* Fix a (long-standing) bug causing offsets not to be taken into account appropriately when calculating the reference model's summary statistics in case of `cv_varsel()` with `cv_method = "LOO"` (more precisely, only the LOO posterior predictive expected values `<vsel_object>$summaries$ref$mu` were affected, not the (pointwise) LOO log posterior predictive density values `<vsel_object>$summaries$ref$lppd`). (GitHub: #186 (partly), #356)
+
+# projpred 2.2.1
 
 ## Minor changes
 
 * Several improvements in the documentation.
 * For the RMSE as well as the AUC (see argument `stats` of `summary.vsel()`), the bootstrapping results are now also used for inferring the lower and upper confidence interval bounds. (GitHub: #318, #347; thanks to users @awd97 and @VisionResearchBlog)
+* For `datafit`s, offsets are not supported anymore. (GitHub: #186 (partly), #351)
 
 ## Bug fixes
 
