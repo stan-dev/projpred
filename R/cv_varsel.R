@@ -461,6 +461,8 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
   } else {
     # Case `validate_search = TRUE` -------------------------------------------
 
+    # For checking that the number of solution terms is the same across all CV
+    # folds:
     prv_len_soltrms <- NULL
 
     if (verbose) {
