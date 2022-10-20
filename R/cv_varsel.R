@@ -313,6 +313,8 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
   ## each data point)
   ##
 
+  # Pre-processing ----------------------------------------------------------
+
   mu <- refmodel$mu
   eta <- refmodel$eta
   dis <- refmodel$dis
@@ -522,6 +524,8 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
       }
     }
   }
+
+  # Post-processing ---------------------------------------------------------
 
   if (verbose) {
     ## close the progress bar object
