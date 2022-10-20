@@ -362,7 +362,6 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
   inds <- validset$inds
 
   ## initialize objects where to store the results
-  prv_len_soltrms <- NULL
   solution_terms_mat <- matrix(nrow = n, ncol = length(search_terms))
   loo_sub <- replicate(nterms_max, rep(NA, n), simplify = FALSE)
   mu_sub <- replicate(nterms_max, rep(NA, n), simplify = FALSE)
@@ -376,6 +375,8 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
   }
 
   if (!validate_search) {
+    # Case `validate_search = FALSE` ------------------------------------------
+
     if (verbose) {
       print(paste("Performing the selection using all the data.."))
     }
@@ -446,7 +447,6 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
       }
     }
 
-    prv_len_soltrms <- length(search_path$solution_terms)
     for (i in seq_len(n)) {
       solution_terms_mat[
         i, seq_along(search_path$solution_terms)
@@ -459,6 +459,10 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
                  nprjdraws_search = NCOL(p_sel$mu),
                  nprjdraws_eval = NCOL(refdist_eval$mu))
   } else {
+    # Case `validate_search = TRUE` -------------------------------------------
+
+    prv_len_soltrms <- NULL
+
     if (verbose) {
       print(msg)
       pb <- utils::txtProgressBar(min = 0, max = nloo, style = 3, initial = 0)
@@ -501,11 +505,12 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
         mu_sub[[k]][i] <- summaries_sub[[k]]$mu
       }
 
-      if (!is.null(prv_len_soltrms)) {
+      if (is.null(prv_len_soltrms)) {
+        prv_len_soltrms <- length(search_path$solution_terms)
+      } else {
         stopifnot(identical(length(search_path$solution_terms),
                             prv_len_soltrms))
       }
-      prv_len_soltrms <- length(search_path$solution_terms)
       solution_terms_mat[
         i, seq_along(search_path$solution_terms)
       ] <- search_path$solution_terms
