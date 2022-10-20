@@ -214,7 +214,6 @@ cv_varsel.refmodel <- function(
     }
   ))
   sel_solution_terms <- unlist(sel$solution_terms)
-
   if (!is.matrix(solution_terms_cv_chr)) {
     stop("Unexpected `solution_terms_cv_chr`. Please notify the package ",
          "maintainer.")
@@ -223,14 +222,12 @@ cv_varsel.refmodel <- function(
     stop("Unexpected number of rows in `solution_terms_cv_chr`. Please notify ",
          "the package maintainer.")
   }
-
   pct_solution_terms_cv <- cbind(
     size = seq_len(nrow(solution_terms_cv_chr)),
     do.call(cbind, lapply(setNames(nm = sel_solution_terms), function(var_nm) {
       rowMeans(solution_terms_cv_chr == var_nm, na.rm = TRUE)
     }))
   )
-
 
   ## create the object to be returned
   vs <- nlist(refmodel,
