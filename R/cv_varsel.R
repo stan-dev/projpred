@@ -219,8 +219,8 @@ cv_varsel.refmodel <- function(
   }
   pct_solution_terms_cv <- cbind(
     size = seq_len(nrow(solution_terms_cv_chr)),
-    do.call(cbind, lapply(setNames(nm = sel_solution_terms), function(var_nm) {
-      rowMeans(solution_terms_cv_chr == var_nm, na.rm = TRUE)
+    do.call(cbind, lapply(setNames(nm = sel_solution_terms), function(soltrm_k) {
+      rowMeans(solution_terms_cv_chr == soltrm_k, na.rm = TRUE)
     }))
   )
 
