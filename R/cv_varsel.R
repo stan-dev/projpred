@@ -207,20 +207,15 @@ cv_varsel.refmodel <- function(
   # paths. For the column names (and therefore the order of the solution terms
   # in the columns), the solution path from the full-data search is used. Note
   # that the following code assumes that all CV folds have equal weight.
-  solution_terms_cv_chr <- t(sel_cv$solution_terms_cv)
   sel_solution_terms <- unlist(sel$solution_terms)
-  if (!is.matrix(solution_terms_cv_chr)) {
-    stop("Unexpected `solution_terms_cv_chr`. Please notify the package ",
-         "maintainer.")
-  }
-  if (!identical(nrow(solution_terms_cv_chr), length(sel_solution_terms))) {
-    stop("Unexpected number of rows in `solution_terms_cv_chr`. Please notify ",
-         "the package maintainer.")
+  if (!identical(ncol(sel_cv$solution_terms_cv), length(sel_solution_terms))) {
+    stop("Unexpected number of solution terms in `sel_cv$solution_terms_cv`. ",
+         "Please notify the package maintainer.")
   }
   pct_solution_terms_cv <- cbind(
-    size = seq_len(nrow(solution_terms_cv_chr)),
+    size = seq_len(ncol(sel_cv$solution_terms_cv)),
     do.call(cbind, lapply(setNames(nm = sel_solution_terms), function(soltrm_k) {
-      rowMeans(solution_terms_cv_chr == soltrm_k, na.rm = TRUE)
+      colMeans(sel_cv$solution_terms_cv == soltrm_k, na.rm = TRUE)
     }))
   )
 
