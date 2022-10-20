@@ -208,7 +208,10 @@ cv_varsel.refmodel <- function(
   # in the columns), the solution path from the full-data search is used. Note
   # that the following code assumes that all CV folds have equal weight.
   solution_terms_cv_chr <- do.call(cbind, lapply(
-    seq_len(NROW(sel_cv$solution_terms_cv)),function(i) sel_cv$solution_terms_cv[i, ]
+    seq_len(NROW(sel_cv$solution_terms_cv)),
+    function(i) {
+      sel_cv$solution_terms_cv[i, ]
+    }
   ))
   sel_solution_terms <- unlist(sel$solution_terms)
 
@@ -445,7 +448,9 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
 
     prv_len_soltrms <- length(search_path$solution_terms)
     for (i in seq_len(n)) {
-      solution_terms_mat[i, seq_along(search_path$solution_terms)] <- search_path$solution_terms
+      solution_terms_mat[
+        i, seq_along(search_path$solution_terms)
+      ] <- search_path$solution_terms
     }
     sel <- nlist(search_path, kl = sapply(submodels, "[[", "kl"),
                  solution_terms = search_path$solution_terms,
@@ -501,7 +506,9 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
                             prv_len_soltrms))
       }
       prv_len_soltrms <- length(search_path$solution_terms)
-      solution_terms_mat[i, seq_along(search_path$solution_terms)] <- search_path$solution_terms
+      solution_terms_mat[
+        i, seq_along(search_path$solution_terms)
+      ] <- search_path$solution_terms
 
       if (verbose) {
         utils::setTxtProgressBar(pb, run_index)
@@ -524,7 +531,9 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
   d_test <- list(type = "LOO", data = NULL, offset = refmodel$offset,
                  weights = refmodel$wobs, y = refmodel$y)
 
-  solution_terms_mat <- solution_terms_mat[, seq_along(search_path$solution_terms), drop = FALSE]
+  solution_terms_mat <- solution_terms_mat[
+    , seq_along(search_path$solution_terms), drop = FALSE
+  ]
   out_list <- nlist(solution_terms_cv = solution_terms_mat, summaries, d_test)
   if (!validate_search) {
     out_list <- c(out_list, nlist(sel))
