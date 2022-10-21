@@ -207,34 +207,14 @@ cv_varsel.refmodel <- function(
   # paths. For the column names (and therefore the order of the solution terms
   # in the columns), the solution path from the full-data search is used. Note
   # that the following code assumes that all CV folds have equal weight.
-  candidate_terms <- split_formula(refmodel$formula,
-                                   data = refmodel$fetch_data(),
-                                   add_main_effects = FALSE)
-  candidate_terms <- setdiff(candidate_terms, "1")
-  solution_terms_cv_chr <- do.call(cbind, lapply(
-    seq_len(NROW(sel_cv$solution_terms_cv)),
-    function(i) {
-      if (!is.character(sel_cv$solution_terms_cv[i, ])) {
-        return(candidate_terms[sel_cv$solution_terms_cv[i, ]])
-      } else {
-        return(sel_cv$solution_terms_cv[i, ])
-      }
-    }
-  ))
-  sel_solution_terms <- unlist(sel$solution_terms)
-  if (!is.matrix(solution_terms_cv_chr)) {
-    stop("Unexpected `solution_terms_cv_chr`. Please notify the package ",
-         "maintainer.")
-  }
-  if (!identical(nrow(solution_terms_cv_chr), length(sel_solution_terms))) {
-    stop("Unexpected number of rows in `solution_terms_cv_chr`. Please notify ",
-         "the package maintainer.")
-  }
   pct_solution_terms_cv <- cbind(
-    size = seq_len(nrow(solution_terms_cv_chr)),
-    do.call(cbind, lapply(setNames(nm = sel_solution_terms), function(var_nm) {
-      rowMeans(solution_terms_cv_chr == var_nm, na.rm = TRUE)
-    }))
+    size = seq_len(ncol(sel_cv$solution_terms_cv)),
+    do.call(cbind, lapply(
+      setNames(nm = sel$solution_terms),
+      function(soltrm_k) {
+        colMeans(sel_cv$solution_terms_cv == soltrm_k, na.rm = TRUE)
+      }
+    ))
   )
 
   ## create the object to be returned
@@ -318,6 +298,8 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
   ## each data point)
   ##
 
+  # Pre-processing ----------------------------------------------------------
+
   mu <- refmodel$mu
   eta <- refmodel$eta
   dis <- refmodel$dis
@@ -367,7 +349,7 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
   inds <- validset$inds
 
   ## initialize objects where to store the results
-  solution_terms_mat <- matrix(nrow = n, ncol = nterms_max - 1)
+  solution_terms_mat <- matrix(nrow = n, ncol = nterms_max - refmodel$intercept)
   loo_sub <- replicate(nterms_max, rep(NA, n), simplify = FALSE)
   mu_sub <- replicate(nterms_max, rep(NA, n), simplify = FALSE)
 
@@ -380,6 +362,8 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
   }
 
   if (!validate_search) {
+    # Case `validate_search = FALSE` ------------------------------------------
+
     if (verbose) {
       print(paste("Performing the selection using all the data.."))
     }
@@ -450,15 +434,10 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
       }
     }
 
-    candidate_terms <- split_formula(refmodel$formula,
-                                     data = refmodel$fetch_data(),
-                                     add_main_effects = FALSE)
-    ## with `match` we get the indices of the variables as they enter the
-    ## solution path in `search_path$solution_terms`
-    solution <- match(search_path$solution_terms,
-                      setdiff(candidate_terms, "1"))
     for (i in seq_len(n)) {
-      solution_terms_mat[i, seq_along(solution)] <- solution
+      solution_terms_mat[
+        i, seq_along(search_path$solution_terms)
+      ] <- search_path$solution_terms
     }
     sel <- nlist(search_path, kl = sapply(submodels, "[[", "kl"),
                  solution_terms = search_path$solution_terms,
@@ -467,6 +446,12 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
                  nprjdraws_search = NCOL(p_sel$mu),
                  nprjdraws_eval = NCOL(refdist_eval$mu))
   } else {
+    # Case `validate_search = TRUE` -------------------------------------------
+
+    # For checking that the number of solution terms is the same across all CV
+    # folds:
+    prv_len_soltrms <- NULL
+
     if (verbose) {
       print(msg)
       pb <- utils::txtProgressBar(min = 0, max = nloo, style = 3, initial = 0)
@@ -509,20 +494,23 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
         mu_sub[[k]][i] <- summaries_sub[[k]]$mu
       }
 
-      candidate_terms <- split_formula(refmodel$formula,
-                                       data = refmodel$fetch_data(),
-                                       add_main_effects = FALSE)
-      ## with `match` we get the indices of the variables as they enter the
-      ## solution path in `search_path$solution_terms`
-      solution <- match(search_path$solution_terms,
-                        setdiff(candidate_terms, "1"))
-      solution_terms_mat[i, seq_along(solution)] <- solution
+      if (is.null(prv_len_soltrms)) {
+        prv_len_soltrms <- length(search_path$solution_terms)
+      } else {
+        stopifnot(identical(length(search_path$solution_terms),
+                            prv_len_soltrms))
+      }
+      solution_terms_mat[
+        i, seq_along(search_path$solution_terms)
+      ] <- search_path$solution_terms
 
       if (verbose) {
         utils::setTxtProgressBar(pb, run_index)
       }
     }
   }
+
+  # Post-processing ---------------------------------------------------------
 
   if (verbose) {
     ## close the progress bar object
@@ -539,6 +527,9 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
   d_test <- list(type = "LOO", data = NULL, offset = refmodel$offset,
                  weights = refmodel$wobs, y = refmodel$y)
 
+  solution_terms_mat <- solution_terms_mat[
+    , seq_along(search_path$solution_terms), drop = FALSE
+  ]
   out_list <- nlist(solution_terms_cv = solution_terms_mat, summaries, d_test)
   if (!validate_search) {
     out_list <- c(out_list, nlist(sel))

@@ -15,7 +15,8 @@ Authors@R: c(person("Juho", "Piironen", role = c("aut"),
              person("Marco", "Colombo", role = "ctb"),
              person("Paul-Christian", "Bürkner", role = "ctb"),
              person("Hamada S.", "Badr", role = "ctb"),
-             person("Brian", "Sullivan", role = "ctb"))
+             person("Brian", "Sullivan", role = "ctb"),
+             person("Sölvi", "Rögnvaldsson", role = "ctb"))
 Description:
     Performs projection predictive feature selection for generalized linear and
     additive models as well as for generalized linear and additive multilevel

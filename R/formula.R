@@ -647,7 +647,8 @@ select_possible_terms_size <- function(chosen, terms, size) {
   valid_submodels <- unlist(valid_submodels[!is.na(valid_submodels)])
   if (length(chosen) > 0) {
     add_chosen <- paste0(" + ", paste(chosen, collapse = "+"))
-    remove_chosen <- paste0(" - ", paste(chosen, collapse = "-"))
+    remove_chosen <- paste0(" - ",
+                            paste(gsub("\\+", "-", chosen), collapse = "-"))
   } else {
     add_chosen <- ""
     remove_chosen <- ""

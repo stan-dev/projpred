@@ -627,8 +627,11 @@ test_that(paste(
   skip_if_not(run_vs)
   tstsetups <- grep("\\.empty_size", names(vss), value = TRUE)
   for (tstsetup in tstsetups) {
-    expect_true(all(grepl("\\+", solution_terms(vss[[tstsetup]]))),
-                info = tstsetup)
+    soltrms_out <- solution_terms(vss[[tstsetup]])
+    expect_true(
+      grepl("\\+", soltrms_out[1]) && !any(grepl("\\+", soltrms_out[-1])),
+      info = tstsetup
+    )
   }
 })
 
