@@ -6,6 +6,7 @@ If you read this from a place other than <https://mc-stan.org/projpred/news/inde
 
 ## Major changes
 
+* Several important bug fixes (see below).
 * Introduction of the augmented-data projection (see section ["Supported types of reference models"](https://mc-stan.org/projpred/articles/projpred.html#refmodtypes) of the main vignette for details). (GitHub: #70, #322)
 * Introduction of the latent projection [(Catalina et al., 2021)](https://arxiv.org/abs/2109.04702) (see section ["Supported types of reference models"](https://mc-stan.org/projpred/articles/projpred.html#refmodtypes) of the main vignette and the vignette "Latent projection predictive inference with projpred" [**TODO (latent)**: insert URL] for details). (GitHub: [**TODO (latent)**: insert PR number])
 
@@ -13,12 +14,14 @@ If you read this from a place other than <https://mc-stan.org/projpred/news/inde
 
 * Improvements in documentation and vignette.
 * Minor improvement in terms of efficiency in the `validate_search = FALSE` case of `cv_varsel()`.
+* Improvement in terms of efficiency in case of a forward search with custom `search_terms` (at least in some instances), also affecting the output of `solution_terms(<vsel_object>)` in those cases. (GitHub: #360; thanks to user @sor16)
 
 ## Bug fixes
 
 * Fix a bug causing offsets not to be taken into account appropriately when calculating the PSIS weights (those used for the submodels) in the `validate_search = FALSE` case of `cv_varsel()`. This bug was introduced in v2.2.0 (and existed up to---including---v2.2.1).
 * Fix a (long-standing) bug causing offsets not to be taken into account appropriately when calculating the predictive variances for a reference model that has a dispersion parameter and a non-identity link function. (GitHub: #186 (partly), #355)
 * Fix a (long-standing) bug causing offsets not to be taken into account appropriately when calculating the reference model's summary statistics in case of `cv_varsel()` with `cv_method = "LOO"` (more precisely, only the LOO posterior predictive expected values `<vsel_object>$summaries$ref$mu` were affected, not the (pointwise) LOO log posterior predictive density values `<vsel_object>$summaries$ref$lppd`). (GitHub: #186 (partly), #356)
+* Fix a (long-standing) bug leading to an error when trying to use `cv_varsel()` with custom `search_terms` (in some instances). (GitHub: #345, #360; thanks to user @sor16)
 
 # projpred 2.2.1
 

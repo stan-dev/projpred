@@ -16,6 +16,7 @@ Authors@R: c(person("Juho", "Piironen", role = c("aut"),
              person("Paul-Christian", "Bürkner", role = "ctb"),
              person("Hamada S.", "Badr", role = "ctb"),
              person("Brian", "Sullivan", role = "ctb"),
+             person("Sölvi", "Rögnvaldsson", role = "ctb"),
              person(family = "The LME4 Authors", role = "cph",
                     comment = "see file 'LICENSE' for details"),
              person("Yann", "McLatchie", role = "ctb"))

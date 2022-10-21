@@ -118,6 +118,7 @@ Other contributors:
   \item Paul-Christian Bürkner [contributor]
   \item Hamada S. Badr [contributor]
   \item Brian Sullivan [contributor]
+  \item Sölvi Rögnvaldsson [contributor]
   \item  The LME4 Authors (see file 'LICENSE' for details) [copyright holder]
   \item Yann McLatchie [contributor]
 }
