@@ -353,7 +353,7 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
   inds <- validset$inds
 
   ## initialize objects where to store the results
-  solution_terms_mat <- matrix(nrow = n, ncol = length(search_terms))
+  solution_terms_mat <- matrix(nrow = n, ncol = nterms_max - 1)
   loo_sub <- replicate(nterms_max, rep(NA, n), simplify = FALSE)
   mu_sub <- replicate(nterms_max, rep(NA, n), simplify = FALSE)
 
