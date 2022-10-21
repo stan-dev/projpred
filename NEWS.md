@@ -8,7 +8,7 @@ If you read this from a place other than <https://mc-stan.org/projpred/news/inde
 
 * Improvements in documentation and vignette.
 * Minor improvement in terms of efficiency in the `validate_search = FALSE` case of `cv_varsel()`.
-* Improvement in terms of efficiency in case of a forward search with custom `search_terms` (at least in some instances). (GitHub: #360; thanks to user @sor16)
+* Improvement in terms of efficiency in case of a forward search with custom `search_terms` (at least in some instances), also affecting the output of `solution_terms(<vsel_object>)` in those cases. (GitHub: #360; thanks to user @sor16)
 
 ## Bug fixes
 
