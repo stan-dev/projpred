@@ -103,6 +103,7 @@ Other contributors:
   \item Paul-Christian Bürkner [contributor]
   \item Hamada S. Badr [contributor]
   \item Brian Sullivan [contributor]
+  \item Sölvi Rögnvaldsson [contributor]
 }
 
 }
