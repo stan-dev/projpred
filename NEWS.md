@@ -4,6 +4,10 @@ If you read this from a place other than <https://mc-stan.org/projpred/news/inde
 
 # projpred 2.2.1.9000
 
+## Major changes
+
+* Several important bug fixes (see below).
+
 ## Minor changes
 
 * Improvements in documentation and vignette.
