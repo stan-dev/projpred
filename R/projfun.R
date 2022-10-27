@@ -3,7 +3,7 @@
 # a single fit (there are as many fits for this single submodel as there are
 # projected draws).
 project_submodel <- function(solution_terms, p_ref, refmodel, regul = 1e-4,
-                             ...) {
+                             verbose = FALSE, ...) {
   validparams <- .validate_wobs_wsample(refmodel$wobs, p_ref$weights, p_ref$mu)
   wobs <- validparams$wobs
   wsample <- validparams$wsample
@@ -12,6 +12,16 @@ project_submodel <- function(solution_terms, p_ref, refmodel, regul = 1e-4,
     formula = refmodel$formula, terms_ = unique(unlist(solution_terms)),
     data = refmodel$fetch_data(), y = p_ref$mu
   )
+
+  extra_verbose <- getOption("projpred.extra_verbose", FALSE)
+  unique_terms <- unique(unlist(solution_terms))
+  if(length(unique_terms) == 0){
+    st <- "{}"
+  } else {
+    st <- paste0(unique_terms, collapse = " + ")
+  }
+  msg <- paste0("  - projecting to ", st)
+  log_message(msg, extra_verbose)
 
   submodl <- refmodel$div_minimizer(
     formula = flatten_formula(subset$formula),
