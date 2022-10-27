@@ -31,9 +31,12 @@ search_forward <- function(p_ref, refmodel, nterms_max, verbose = TRUE, opt,
 
     if (verbose && count_terms_chosen(chosen) %in% iq) {
       perc_sel <- names(iq)[max(which(count_terms_chosen(chosen) == iq))]
-      chosen_str <- paste0(full_cands[[imin]], collapse = "+")
-      msg <- paste0(perc_sel, " of terms selected (",
-                    chosen_str, ")")
+      chosen_str <- paste0(full_cands[[imin]], collapse = " + ")
+      msg <- paste0(perc_sel, " of terms selected")
+      extra_verbose <- getOption("projpred.extra_verbose", FALSE)
+      if (extra_verbose) {
+        msg <- paste0(msg, ": ", chosen_str)
+      }
       log_message(msg, verbose)
     }
   }
