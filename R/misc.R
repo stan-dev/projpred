@@ -471,3 +471,10 @@ magrittr::`%>%`
 rbind2list <- function(x) {
   as.list(do.call(rbind, lapply(x, as.data.frame)))
 }
+
+# Message logging
+log_message <- function(msg, verbose) {
+  if(verbose) {
+    message(msg)
+  }
+}

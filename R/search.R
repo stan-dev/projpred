@@ -28,8 +28,9 @@ search_forward <- function(p_ref, refmodel, nterms_max, verbose = TRUE, opt,
     submodls <- c(submodls, list(subL[[imin]]$submodl))
 
     if (verbose && count_terms_chosen(chosen) %in% iq) {
-      print(paste0(names(iq)[max(which(count_terms_chosen(chosen) == iq))],
-                   " of terms selected."))
+      msg <- paste0(names(iq)[max(which(count_terms_chosen(chosen) == iq))],
+                    " of terms selected.")
+      log_message(msg, verbose)
     }
   }
 
