@@ -142,10 +142,7 @@ test_that(paste(
     if (prj_crr == "augdat" && fam_crr == "cumul") {
       warn_expected <- "non-integer #successes in a binomial glm!"
     } else if (!is.null(args_vs_i$avoid.increase)) {
-      warn_expected <- paste0(
-        "^step size truncated due to possible divergence$|",
-        "^Algorithm stopped due to false convergence$"
-      )
+      warn_expected <- warn_mclogit
     } else {
       warn_expected <- NA
     }
@@ -275,10 +272,7 @@ test_that(paste(
     if (prj_crr == "augdat" && fam_crr == "cumul") {
       warn_expected <- "non-integer #successes in a binomial glm!"
     } else if (!is.null(args_vs_i$avoid.increase)) {
-      warn_expected <- paste0(
-        "^step size truncated due to possible divergence$|",
-        "^Algorithm stopped due to false convergence$"
-      )
+      warn_expected <- warn_mclogit
     } else {
       warn_expected <- NA
     }
@@ -759,10 +753,7 @@ test_that("for forward search, `penalty` has no effect", {
     if (args_vs_i$prj_nm == "augdat" && args_vs_i$fam_nm == "cumul") {
       warn_expected <- "non-integer #successes in a binomial glm!"
     } else if (!is.null(args_vs_i$avoid.increase)) {
-      warn_expected <- paste0(
-        "^step size truncated due to possible divergence$|",
-        "^Algorithm stopped due to false convergence$"
-      )
+      warn_expected <- warn_mclogit
     } else {
       warn_expected <- NA
     }
