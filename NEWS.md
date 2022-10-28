@@ -8,7 +8,7 @@ If you read this from a place other than <https://mc-stan.org/projpred/news/inde
 
 * Several important bug fixes (see below).
 * Introduction of the augmented-data projection (see section ["Supported types of reference models"](https://mc-stan.org/projpred/articles/projpred.html#refmodtypes) of the main vignette for details). (GitHub: #70, #322)
-* Introduction of the latent projection [(Catalina et al., 2021)](https://arxiv.org/abs/2109.04702) (see section ["Supported types of reference models"](https://mc-stan.org/projpred/articles/projpred.html#refmodtypes) of the main vignette and the vignette "Latent projection predictive inference with projpred" [**TODO (latent)**: insert URL] for details). (GitHub: [**TODO (latent)**: insert PR number])
+* Introduction of the latent projection [(Catalina et al., 2021)](https://arxiv.org/abs/2109.04702) (see section ["Supported types of reference models"](https://mc-stan.org/projpred/articles/projpred.html#refmodtypes) of the main vignette and the new [latent-projection vignette](https://mc-stan.org/projpred/articles/latent.html) [**TODO (latent)**: check this URL] for details). (GitHub: [**TODO (latent)**: insert PR number])
 
 ## Minor changes
 
