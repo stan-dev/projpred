@@ -184,6 +184,15 @@ fam_nms_unsupp_regex <- paste0("\\.(", paste(fam_nms_unsupp, collapse = "|"),
 # implementation is currently only experimental:
 options(projpred.warn_augdat_experimental = FALSE)
 
+# Needed for package mclogit (providing the submodel fitter for multilevel
+# brms::categorical() models):
+warn_mclogit <- if (packageVersion("mclogit") >= "0.9.6") {
+  "Inner iterations did not coverge"
+} else {
+  paste0("^step size truncated due to possible divergence$|",
+         "^Algorithm stopped due to false convergence$")
+}
+
 # Data --------------------------------------------------------------------
 
 ## Setup ------------------------------------------------------------------
@@ -986,10 +995,7 @@ if (run_vs) {
     if (args_vs_i$fam_nm == "cumul") {
       warn_expected <- "non-integer #successes in a binomial glm!"
     } else if (!is.null(args_vs_i$avoid.increase)) {
-      warn_expected <- paste0(
-        "^step size truncated due to possible divergence$|",
-        "^Algorithm stopped due to false convergence$"
-      )
+      warn_expected <- warn_mclogit
     } else {
       warn_expected <- NA
     }
@@ -1224,10 +1230,7 @@ if (run_prj) {
       warn_expected <- "non-integer #successes in a binomial glm!"
     } else if (!is.null(args_prj_i$avoid.increase) &&
                any(grepl("\\|", args_prj_i$solution_terms))) {
-      warn_expected <- paste0(
-        "^step size truncated due to possible divergence$|",
-        "^Algorithm stopped due to false convergence$"
-      )
+      warn_expected <- warn_mclogit
     } else {
       warn_expected <- NA
     }

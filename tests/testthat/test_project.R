@@ -285,10 +285,7 @@ test_that("non-clustered projection does not require a seed", {
       warn_expected <- "non-integer #successes in a binomial glm!"
     } else if (!is.null(args_prj_i$avoid.increase) &&
                any(grepl("\\|", args_prj_i$solution_terms))) {
-      warn_expected <- paste0(
-        "^step size truncated due to possible divergence$|",
-        "^Algorithm stopped due to false convergence$"
-      )
+      warn_expected <- warn_mclogit
     } else {
       warn_expected <- NA
     }

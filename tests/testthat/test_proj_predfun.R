@@ -339,6 +339,8 @@ test_that(paste(
 
   warn_expected <- if (packageVersion("mclogit") <= "0.8.7.3") {
     "variable 'prior' is absent, its contrast will be ignored"
+  } else if (packageVersion("mclogit") >= "0.9.6") {
+    "Inner iterations did not coverge"
   } else {
     NA
   }
@@ -562,6 +564,8 @@ test_that(paste(
 
   warn_expected <- if (packageVersion("mclogit") <= "0.8.7.3") {
     "variable 'prior' is absent, its contrast will be ignored"
+  } else if (packageVersion("mclogit") >= "0.9.6") {
+    "Inner iterations did not coverge"
   } else {
     NA
   }

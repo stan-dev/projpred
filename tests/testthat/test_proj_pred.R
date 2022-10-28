@@ -748,10 +748,7 @@ test_that(paste(
     if (args_prj[[tstsetup]]$fam_nm == "categ" &&
         any(grepl("\\|", args_prj[[tstsetup]]$solution_terms))) {
       pl_args <- c(pl_args, list(avoid.increase = TRUE))
-      warn_expected <- paste0(
-        "^step size truncated due to possible divergence$|",
-        "^Algorithm stopped due to false convergence$"
-      )
+      warn_expected <- warn_mclogit
     }
     expect_warning(
       pl1 <- do.call(proj_linpred, pl_args),
@@ -1388,10 +1385,7 @@ test_that(paste(
     if (args_prj[[tstsetup]]$fam_nm == "categ" &&
         any(grepl("\\|", args_prj[[tstsetup]]$solution_terms))) {
       pp_args <- c(pp_args, list(avoid.increase = TRUE))
-      warn_expected <- paste0(
-        "^step size truncated due to possible divergence$|",
-        "^Algorithm stopped due to false convergence$"
-      )
+      warn_expected <- warn_mclogit
     }
     expect_warning(
       pp1 <- do.call(proj_predict, pp_args),
