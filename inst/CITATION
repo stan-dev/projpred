@@ -67,8 +67,8 @@ bibentry(
   series = "Proceedings of {{Machine Learning Research}}",
   volume = "151",
   pages = "4446--4461",
-  publisher = "{{PMLR}}",
+  publisher = "{PMLR}",
   url = "https://proceedings.mlr.press/v151/catalina22a.html",
-  header = "To cite the 'projpred' GLMMs, GAMs and GAMMs paper:",
+  header = "To cite the 'projpred' GLMMs, GAMs, and GAMMs paper:",
   encoding = "UTF-8"
 )
