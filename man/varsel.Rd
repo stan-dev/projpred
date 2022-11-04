@@ -132,12 +132,11 @@ to be accessed directly but instead via helper functions (see the main
 vignette and \link{projpred-package}).
 }
 \description{
-Perform the projection predictive variable selection for GLMs, GLMMs, GAMs,
-and GAMMs. This variable selection consists of a \emph{search} part and an
-\emph{evaluation} part. The search part determines the solution path, i.e., the
-best submodel for each submodel size (number of predictor terms). The
-evaluation part determines the predictive performance of the submodels along
-the solution path.
+Perform the projection predictive variable selection. This variable selection
+consists of a \emph{search} part and an \emph{evaluation} part. The search part
+determines the solution path, i.e., the best submodel for each submodel size
+(number of predictor terms). The evaluation part determines the predictive
+performance of the submodels along the solution path.
 }
 \details{
 Arguments \code{ndraws}, \code{nclusters}, \code{nclusters_pred}, and \code{ndraws_pred}
