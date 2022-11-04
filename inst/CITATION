@@ -49,7 +49,7 @@ bibentry(
 )
 
 bibentry(
-  bibtype = "Inproceedings",
+  bibtype = "InProceedings",
   title = "Projection Predictive Inference for Generalized Linear and Additive Multilevel Models",
   booktitle = "Proceedings of {{The}} 25th {{International Conference}} on {{Artificial Intelligence}} and {{Statistics}}",
   author = c(
