@@ -6,7 +6,7 @@ authors <- grep("\\[cre|\\[aut", authors, value = TRUE)
 
 bibentry(
   bibtype = "Misc",
-  title = "{projpred}: Projection Predictive Feature Selection",
+  title = "{{projpred}}: {{Projection}} Predictive Feature Selection",
   author = authors,
   year = year,
   note = note,
@@ -17,7 +17,7 @@ bibentry(
 
 bibentry(
   bibtype = "Article",
-  title = "Comparison of Bayesian predictive methods for model selection",
+  title = "Comparison of {{Bayesian}} Predictive Methods for Model Selection",
   author = c(
     person("Juho", "Piironen"),
     person("Aki", "Vehtari")
@@ -26,14 +26,14 @@ bibentry(
   journal = "Statistics and Computing",
   volume = 27,
   issue = 3,
-  pages = "711-735",
+  pages = "711--735",
   doi = "10.1007/s11222-016-9649-y",
   header = "To cite the 'projpred' comparison paper:"
 )
 
 bibentry(
   bibtype = "Article",
-  title = "Projective inference in high-dimensional problems: Prediction and feature selection",
+  title = "Projective Inference in High-Dimensional Problems: {{Prediction}} and Feature Selection",
   author = c(
     person("Juho", "Piironen"),
     person("Markus", "Paasiniemi"),
@@ -43,7 +43,7 @@ bibentry(
   journal = "Electronic Journal of Statistics",
   volume = 14,
   issue = 1,
-  pages = "2155-2197",
+  pages = "2155--2197",
   doi = "10.1214/20-EJS1711",
   header = "To cite the 'projpred' GLM paper:"
 )
