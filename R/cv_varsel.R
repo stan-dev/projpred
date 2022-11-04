@@ -1,14 +1,14 @@
 #' Variable selection with cross-validation
 #'
-#' Perform the projection predictive variable selection. This variable selection
-#' consists of a *search* part and an *evaluation* part. The search part
-#' determines the solution path, i.e., the best submodel for each submodel size
-#' (number of predictor terms). The evaluation part determines the predictive
-#' performance of the submodels along the solution path. In contrast to
-#' [varsel()], [cv_varsel()] performs a cross-validation (CV) by running the
-#' search part with the training data of each CV fold separately (an exception
-#' is explained in section "Note" below) and running the evaluation part on the
-#' corresponding test set of each CV fold.
+#' Run the *search* part and the *evaluation* part for a projection predictive
+#' variable selection. The search part determines the solution path, i.e., the
+#' best submodel for each submodel size (number of predictor terms). The
+#' evaluation part determines the predictive performance of the submodels along
+#' the solution path. In contrast to [varsel()], [cv_varsel()] performs a
+#' cross-validation (CV) by running the search part with the training data of
+#' each CV fold separately (an exception is explained in section "Note" below)
+#' and running the evaluation part on the corresponding test set of each CV
+#' fold.
 #'
 #' @inheritParams varsel
 #' @param cv_method The CV method, either `"LOO"` or `"kfold"`. In the `"LOO"`
