@@ -49,16 +49,26 @@ bibentry(
 )
 
 bibentry(
-  bibtype = "Unpublished",
-  title = "Projection predictive inference for generalized linear and additive multilevel models",
+  bibtype = "Inproceedings",
+  title = "Projection Predictive Inference for Generalized Linear and Additive Multilevel Models",
+  booktitle = "Proceedings of {{The}} 25th {{International Conference}} on {{Artificial Intelligence}} and {{Statistics}}",
   author = c(
     person("Alejandro", "Catalina"),
     person("Paul-Christian", "Bürkner"),
     person("Aki", "Vehtari")
   ),
-  year = "2020",
-  note = "arXiv:2010.06994",
-  url = "https://arxiv.org/abs/2010.06994",
-  header = "To cite the 'projpred' GLMMs and GAMMs paper:",
+  editor = c(
+    person("Gustau", "Camps-Valls"),
+    person("Francisco J. R.", "Ruiz"),
+    person("Isabel", "Valera")
+  ),
+  year = "2022",
+  month = "28--30 Mar",
+  series = "Proceedings of {{Machine Learning Research}}",
+  volume = "151",
+  pages = "4446--4461",
+  publisher = "{{PMLR}}",
+  url = "https://proceedings.mlr.press/v151/catalina22a.html",
+  header = "To cite the 'projpred' GLMMs, GAMs and GAMMs paper:",
   encoding = "UTF-8"
 )
