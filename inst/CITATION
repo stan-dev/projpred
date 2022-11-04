@@ -74,7 +74,7 @@ bibentry(
 )
 
 bibentry(
-  bibtype = "Unpublished",
+  bibtype = "Misc",
   title = "Latent Space Projection Predictive Inference",
   author = c(
     person("Alejandro", "Catalina"),
