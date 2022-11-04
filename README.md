@@ -19,8 +19,8 @@ conveniently---`browseVignettes("projpred")` within R.].
 For details on how to cite **projpred**, visit section
 ["Citation"](https://mc-stan.org/projpred/authors.html#citation) on the
 website^[The citation information can be accessed offline by typing
-`citation("projpred")` within R.]. Further references (including earlier work
-that **projpred** is based on) are given in section
+`print(citation("projpred"), bibtex = TRUE)` within R.]. Further references
+(including earlier work that **projpred** is based on) are given in section
 ["Introduction"](https://mc-stan.org/projpred/articles/projpred.html#introduction)
 of the main vignette.
 
