@@ -19,10 +19,13 @@
 #' [online](https://mc-stan.org/projpred/articles/projpred.html)) before
 #' continuing here.
 #'
-#' For the sake of simplicity (throughout the whole package documentation), we
-#' use the term "submodel" for all kinds of candidate models onto which the
-#' reference model is projected, even though this term is not always appropriate
-#' for custom reference models.
+#' Throughout the whole package documentation, we use the term "submodel" for
+#' all kinds of candidate models onto which the reference model is projected.
+#' For custom reference models, the candidate models don't need to be actual
+#' *sub*models of the reference model, but in any case (even for custom
+#' reference models), the candidate models are always actual *sub*models of the
+#' full [`formula`] used by the search procedure. In this regard, it is correct
+#' to speak of *sub*models, even in case of a custom reference model.
 #'
 #' The following model type abbreviations will be used at multiple places
 #' throughout the documentation: GLM (generalized linear model), GLMM
