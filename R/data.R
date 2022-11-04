@@ -37,8 +37,8 @@
 #'   \item{group}{group of measurements (0 for the first group, 1 for the second
 #'   group).}
 #' }
-#' @references Gelman, A. and Hill, J. (2006). *Data Analysis Using Regression
-#'   and Multilevel/Hierarchical Models*. Cambridge University Press.
-#'   \doi{10.1017/CBO9780511790942}.
+#' @references Gelman, Andrew, and Jennifer Hill. 2006. *Data Analysis Using
+#'   Regression and Multilevel/Hierarchical Models*. Cambridge, UK: Cambridge
+#'   University Press. \doi{10.1017/CBO9780511790942}.
 #' @source <http://www.stat.columbia.edu/~gelman/arm/examples/mesquite/mesquite.dat>
 "mesquite"
