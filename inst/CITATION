@@ -25,7 +25,7 @@ bibentry(
   year = "2017",
   journal = "Statistics and Computing",
   volume = 27,
-  issue = 3,
+  number = 3,
   pages = "711--735",
   doi = "10.1007/s11222-016-9649-y",
   header = "To cite the 'projpred' comparison paper:"
@@ -42,7 +42,7 @@ bibentry(
   year = "2020",
   journal = "Electronic Journal of Statistics",
   volume = 14,
-  issue = 1,
+  number = 1,
   pages = "2155--2197",
   doi = "10.1214/20-EJS1711",
   header = "To cite the 'projpred' GLM paper:"
