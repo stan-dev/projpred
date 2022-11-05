@@ -73,7 +73,7 @@ reference model, including offsets (if existing). See also section
 used instead.}
 
 \item{div_minimizer}{A function for minimizing the Kullback-Leibler (KL)
-divergence from a submodel to the reference model (i.e., for performing the
+divergence from the reference model to a submodel (i.e., for performing the
 projection of the reference model onto a submodel). The output of
 \code{div_minimizer} is used, e.g., by \code{proj_predfun}'s argument \code{fits}. See
 also section "Arguments \code{ref_predfun}, \code{proj_predfun}, and \code{div_minimizer}"

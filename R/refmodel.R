@@ -35,7 +35,7 @@
 #'   submodel onto which the reference model is projected. See also section
 #'   "Arguments `ref_predfun`, `proj_predfun`, and `div_minimizer`" below.
 #' @param div_minimizer A function for minimizing the Kullback-Leibler (KL)
-#'   divergence from a submodel to the reference model (i.e., for performing the
+#'   divergence from the reference model to a submodel (i.e., for performing the
 #'   projection of the reference model onto a submodel). The output of
 #'   `div_minimizer` is used, e.g., by `proj_predfun`'s argument `fits`. See
 #'   also section "Arguments `ref_predfun`, `proj_predfun`, and `div_minimizer`"
