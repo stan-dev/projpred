@@ -41,9 +41,9 @@
 #'   also section "Arguments `ref_predfun`, `proj_predfun`, and `div_minimizer`"
 #'   below.
 #' @param extract_model_data A function for fetching some variables (response,
-#'   observation weights, offsets) from the original dataset (i.e., the dataset
-#'   used for fitting the reference model) or from a new dataset. See also
-#'   section "Argument `extract_model_data`" below.
+#'   observation weights, offsets) from the original dataset (supplied to
+#'   argument `data`) or from a new dataset. See also section "Argument
+#'   `extract_model_data`" below.
 #' @param family An object of class `family` representing the observational
 #'   model (i.e., the distributional family for the response). May be `NULL` for
 #'   [get_refmodel.default()] in which case the family is retrieved from

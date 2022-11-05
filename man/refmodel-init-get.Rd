@@ -84,9 +84,9 @@ submodel onto which the reference model is projected. See also section
 "Arguments \code{ref_predfun}, \code{proj_predfun}, and \code{div_minimizer}" below.}
 
 \item{extract_model_data}{A function for fetching some variables (response,
-observation weights, offsets) from the original dataset (i.e., the dataset
-used for fitting the reference model) or from a new dataset. See also
-section "Argument \code{extract_model_data}" below.}
+observation weights, offsets) from the original dataset (supplied to
+argument \code{data}) or from a new dataset. See also section "Argument
+\code{extract_model_data}" below.}
 
 \item{cvfun}{For \eqn{K}-fold CV only. A function that, given a fold indices
 vector, fits the reference model separately for each fold and returns the
