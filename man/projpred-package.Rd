@@ -63,8 +63,10 @@ the parallelization for GLMMs, GAMs, and GAMMs.
 }
 \section{Functions}{
 \describe{
-\item{\code{\link[=init_refmodel]{init_refmodel()}}, \code{\link[=get_refmodel]{get_refmodel()}}}{For setting up a reference model
-(only rarely needed explicitly).}
+\item{\code{\link[=init_refmodel]{init_refmodel()}}, \code{\link[=get_refmodel]{get_refmodel()}}}{For setting up an object
+containing information about the reference model, the submodels, and how
+the projection should be carried out. Explicit calls to \code{\link[=init_refmodel]{init_refmodel()}}
+and \code{\link[=get_refmodel]{get_refmodel()}} are only rarely needed.}
 \item{\code{\link[=varsel]{varsel()}}, \code{\link[=cv_varsel]{cv_varsel()}}}{For running the \emph{search} part and the
 \emph{evaluation} part for a projection predictive variable selection, possibly
 with cross-validation (CV).}

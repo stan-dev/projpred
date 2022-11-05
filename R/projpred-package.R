@@ -70,8 +70,10 @@
 #' # Functions
 #'
 #' \describe{
-#'   \item{[init_refmodel()], [get_refmodel()]}{For setting up a reference model
-#'   (only rarely needed explicitly).}
+#'   \item{[init_refmodel()], [get_refmodel()]}{For setting up an object
+#'   containing information about the reference model, the submodels, and how
+#'   the projection should be carried out. Explicit calls to [init_refmodel()]
+#'   and [get_refmodel()] are only rarely needed.}
 #'   \item{[varsel()], [cv_varsel()]}{For running the *search* part and the
 #'   *evaluation* part for a projection predictive variable selection, possibly
 #'   with cross-validation (CV).}
