@@ -176,6 +176,9 @@
 #' exception is that `y` may also be `NULL` (depending on argument `extract_y`)
 #' or a `factor`.
 #'
+#' The weights and offsets returned by `extract_model_data` will be assumed to
+#' hold for the reference model as well as for the submodels.
+#'
 #' @return An object that can be passed to all the functions that take the
 #'   reference model fit as the first argument, such as [varsel()],
 #'   [cv_varsel()], [project()], [proj_linpred()], and [proj_predict()].

@@ -242,6 +242,9 @@ The return value of \code{extract_model_data} needs to be a \code{list} with ele
 for the response, the observation weights, and the offsets, respectively. An
 exception is that \code{y} may also be \code{NULL} (depending on argument \code{extract_y})
 or a \code{factor}.
+
+The weights and offsets returned by \code{extract_model_data} will be assumed to
+hold for the reference model as well as for the submodels.
 }
 
 \examples{
