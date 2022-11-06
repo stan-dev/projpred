@@ -9,8 +9,8 @@
 #' Both, [get_refmodel()] and [init_refmodel()], create an object containing
 #' information needed for the projection predictive variable selection, namely
 #' about the reference model, the submodels, and how the projection should be
-#' carried out. For the sake of simplicity, the documentation may also refer to
-#' the resulting object as "reference model" or "reference model object", even
+#' carried out. For the sake of simplicity, the documentation may refer to the
+#' resulting object also as "reference model" or "reference model object", even
 #' though it also contains information about the submodels and the projection.
 #'
 #' A "typical" reference model object is created by [get_refmodel.stanreg()] and
