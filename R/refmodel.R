@@ -83,11 +83,14 @@
 #'   for using an internal default: [get_refmodel()] if `object` is not `NULL`
 #'   and a function calling [init_refmodel()] appropriately (with the assumption
 #'   `dis = 0`) if `object` is `NULL`.
-#' @param dis A vector of posterior draws for the dispersion parameter (if
-#'   existing). May be `NULL` if the model has no dispersion parameter or if the
-#'   model does have a dispersion parameter, but `object` is `NULL` (in which
-#'   case `0` is used for `dis`). Note that for the [gaussian()] `family`, `dis`
-#'   is the standard deviation, not the variance.
+#' @param dis A vector of posterior draws for the reference model's dispersion
+#'   parameter or---more precisely---the posterior values for the reference
+#'   model's parameter-conditional predictive variance (assuming that this
+#'   variance is the same for all observations). May be `NULL` if the submodels
+#'   have no dispersion parameter or if the submodels do have a dispersion
+#'   parameter, but `object` is `NULL` (in which case `0` is used for `dis`).
+#'   Note that for the [gaussian()] `family`, `dis` is the standard deviation,
+#'   not the variance.
 #' @param ... For [get_refmodel.default()] and [get_refmodel.stanreg()]:
 #'   arguments passed to [init_refmodel()]. For the [get_refmodel()] generic:
 #'   arguments passed to the appropriate method. Else: ignored.

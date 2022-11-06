@@ -115,11 +115,14 @@ indices (one fold index per observation). Each element of \code{cvfits$fits}
 \code{cvfits} takes precedence over \code{cvfun}, i.e., if both are provided,
 \code{cvfits} is used.}
 
-\item{dis}{A vector of posterior draws for the dispersion parameter (if
-existing). May be \code{NULL} if the model has no dispersion parameter or if the
-model does have a dispersion parameter, but \code{object} is \code{NULL} (in which
-case \code{0} is used for \code{dis}). Note that for the \code{\link[=gaussian]{gaussian()}} \code{family}, \code{dis}
-is the standard deviation, not the variance.}
+\item{dis}{A vector of posterior draws for the reference model's dispersion
+parameter or---more precisely---the posterior values for the reference
+model's parameter-conditional predictive variance (assuming that this
+variance is the same for all observations). May be \code{NULL} if the submodels
+have no dispersion parameter or if the submodels do have a dispersion
+parameter, but \code{object} is \code{NULL} (in which case \code{0} is used for \code{dis}).
+Note that for the \code{\link[=gaussian]{gaussian()}} \code{family}, \code{dis} is the standard deviation,
+not the variance.}
 
 \item{cvrefbuilder}{For \eqn{K}-fold CV only. A function that, given a
 reference model fit for fold \eqn{k \in \{1, ..., K\}}{k = 1, ..., K} (this
