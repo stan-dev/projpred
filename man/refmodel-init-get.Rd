@@ -59,9 +59,12 @@ function \code{\link[mgcv:gam]{mgcv::gam()}}) and \pkg{gamm4} (in particular, fu
 \code{\link[gamm4:gamm4]{gamm4::gamm4()}}) as well as the notes in section "Formula terms" below.}
 
 \item{family}{An object of class \code{family} representing the observational
-model (i.e., the distributional family for the response). May be \code{NULL} for
-\code{\link[=get_refmodel.default]{get_refmodel.default()}} in which case the family is retrieved from
-\code{object}.}
+model (i.e., the distributional family for the response) of the
+\emph{submodels}. May be \code{NULL} for \code{\link[=get_refmodel.default]{get_refmodel.default()}} in which case the
+family is retrieved from \code{object}. For custom reference models, \code{family}
+does not have to coincide with the family of the reference model (if the
+reference model possesses a formal \code{family} at all). In typical reference
+models, however, these families do coincide.}
 
 \item{data}{A \code{data.frame} containing the data to use for the projection
 predictive variable selection. Any \code{contrasts} attributes of the dataset's
