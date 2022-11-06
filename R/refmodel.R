@@ -1,11 +1,26 @@
-#' Reference model structure
+#' Reference model and more general information
 #'
-#' Function [get_refmodel()] is a generic function for creating the reference
-#' model structure from a specific `object`. The methods for [get_refmodel()]
-#' usually call [init_refmodel()] which is the underlying workhorse (and may
-#' also be used directly without a call to [get_refmodel()]). Some arguments are
-#' for \eqn{K}-fold cross-validation (\eqn{K}-fold CV) only; see [cv_varsel()]
-#' for the use of \eqn{K}-fold CV in \pkg{projpred}.
+#' @description
+#'
+#' Function [get_refmodel()] is a generic function whose methods usually call
+#' [init_refmodel()] which is the underlying workhorse (and may also be used
+#' directly without a call to [get_refmodel()]).
+#'
+#' Both, [get_refmodel()] and [init_refmodel()], create an object containing
+#' information needed for the projection predictive variable selection, namely
+#' about the reference model, the submodels, and how the projection should be
+#' carried out. For the sake of simplicity, the documentation may also refer to
+#' the resulting object as "reference model" or "reference model object", even
+#' though it also contains information about the submodels and the projection.
+#'
+#' A "typical" reference model object is created by [get_refmodel.stanreg()] and
+#' [brms::get_refmodel.brmsfit()], either implicitly by a call to a top-level
+#' function such as [project()], [varsel()], and [cv_varsel()] or explicitly by
+#' a call to [get_refmodel()]. All non-"typical" reference model objects will be
+#' called "custom" reference model objects.
+#'
+#' Some arguments are for \eqn{K}-fold cross-validation (\eqn{K}-fold CV) only;
+#' see [cv_varsel()] for the use of \eqn{K}-fold CV in \pkg{projpred}.
 #'
 #' @name refmodel-init-get
 #'

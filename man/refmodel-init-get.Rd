@@ -8,7 +8,7 @@
 \alias{get_refmodel.default}
 \alias{get_refmodel.stanreg}
 \alias{init_refmodel}
-\title{Reference model structure}
+\title{Reference model and more general information}
 \usage{
 get_refmodel(object, ...)
 
@@ -145,12 +145,25 @@ is \code{NULL}, the returned object is of class \code{datafit} as well as of cla
 handled differently at several places throughout this package.
 }
 \description{
-Function \code{\link[=get_refmodel]{get_refmodel()}} is a generic function for creating the reference
-model structure from a specific \code{object}. The methods for \code{\link[=get_refmodel]{get_refmodel()}}
-usually call \code{\link[=init_refmodel]{init_refmodel()}} which is the underlying workhorse (and may
-also be used directly without a call to \code{\link[=get_refmodel]{get_refmodel()}}). Some arguments are
-for \eqn{K}-fold cross-validation (\eqn{K}-fold CV) only; see \code{\link[=cv_varsel]{cv_varsel()}}
-for the use of \eqn{K}-fold CV in \pkg{projpred}.
+Function \code{\link[=get_refmodel]{get_refmodel()}} is a generic function whose methods usually call
+\code{\link[=init_refmodel]{init_refmodel()}} which is the underlying workhorse (and may also be used
+directly without a call to \code{\link[=get_refmodel]{get_refmodel()}}).
+
+Both, \code{\link[=get_refmodel]{get_refmodel()}} and \code{\link[=init_refmodel]{init_refmodel()}}, create an object containing
+information needed for the projection predictive variable selection, namely
+about the reference model, the submodels, and how the projection should be
+carried out. For the sake of simplicity, the documentation may also refer to
+the resulting object as "reference model" or "reference model object", even
+though it also contains information about the submodels and the projection.
+
+A "typical" reference model object is created by \code{\link[=get_refmodel.stanreg]{get_refmodel.stanreg()}} and
+\code{\link[brms:get_refmodel.brmsfit]{brms::get_refmodel.brmsfit()}}, either implicitly by a call to a top-level
+function such as \code{\link[=project]{project()}}, \code{\link[=varsel]{varsel()}}, and \code{\link[=cv_varsel]{cv_varsel()}} or explicitly by
+a call to \code{\link[=get_refmodel]{get_refmodel()}}. All non-"typical" reference model objects will be
+called "custom" reference model objects.
+
+Some arguments are for \eqn{K}-fold cross-validation (\eqn{K}-fold CV) only;
+see \code{\link[=cv_varsel]{cv_varsel()}} for the use of \eqn{K}-fold CV in \pkg{projpred}.
 }
 \section{Formula terms}{
 For additive models (still an experimental feature), only \code{\link[mgcv:s]{mgcv::s()}} and
