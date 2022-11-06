@@ -50,12 +50,14 @@ class.}
 arguments passed to \code{\link[=init_refmodel]{init_refmodel()}}. For the \code{\link[=get_refmodel]{get_refmodel()}} generic:
 arguments passed to the appropriate method. Else: ignored.}
 
-\item{formula}{Reference model's formula. For general information on formulas
-in \R, see \code{\link{formula}}. For multilevel formulas, see also package
-\pkg{lme4} (in particular, functions \code{\link[lme4:lmer]{lme4::lmer()}} and \code{\link[lme4:glmer]{lme4::glmer()}}).
-For additive formulas, see also packages \pkg{mgcv} (in particular,
-function \code{\link[mgcv:gam]{mgcv::gam()}}) and \pkg{gamm4} (in particular, function
-\code{\link[gamm4:gamm4]{gamm4::gamm4()}}) as well as the notes in section "Formula terms" below.}
+\item{formula}{The full formula to use for the search procedure. For custom
+reference models, this does not necessarily coincide with the reference
+model's formula. For general information on formulas in \R, see
+\code{\link{formula}}. For multilevel formulas, see also package \pkg{lme4} (in
+particular, functions \code{\link[lme4:lmer]{lme4::lmer()}} and \code{\link[lme4:glmer]{lme4::glmer()}}). For additive
+formulas, see also packages \pkg{mgcv} (in particular, function
+\code{\link[mgcv:gam]{mgcv::gam()}}) and \pkg{gamm4} (in particular, function \code{\link[gamm4:gamm4]{gamm4::gamm4()}})
+as well as the notes in section "Formula terms" below.}
 
 \item{family}{An object of class \code{family} representing the observational
 model (i.e., the distributional family for the response) of the

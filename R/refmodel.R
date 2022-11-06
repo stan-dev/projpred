@@ -39,12 +39,14 @@
 #'   for fitting the reference model, but keep in mind that a row-subset of
 #'   `data` is used for argument `newdata` of `ref_predfun` during \eqn{K}-fold
 #'   CV.
-#' @param formula Reference model's formula. For general information on formulas
-#'   in \R, see [`formula`]. For multilevel formulas, see also package
-#'   \pkg{lme4} (in particular, functions [lme4::lmer()] and [lme4::glmer()]).
-#'   For additive formulas, see also packages \pkg{mgcv} (in particular,
-#'   function [mgcv::gam()]) and \pkg{gamm4} (in particular, function
-#'   [gamm4::gamm4()]) as well as the notes in section "Formula terms" below.
+#' @param formula The full formula to use for the search procedure. For custom
+#'   reference models, this does not necessarily coincide with the reference
+#'   model's formula. For general information on formulas in \R, see
+#'   [`formula`]. For multilevel formulas, see also package \pkg{lme4} (in
+#'   particular, functions [lme4::lmer()] and [lme4::glmer()]). For additive
+#'   formulas, see also packages \pkg{mgcv} (in particular, function
+#'   [mgcv::gam()]) and \pkg{gamm4} (in particular, function [gamm4::gamm4()])
+#'   as well as the notes in section "Formula terms" below.
 #' @param ref_predfun Prediction function for the linear predictor of the
 #'   reference model, including offsets (if existing). See also section
 #'   "Arguments `ref_predfun`, `proj_predfun`, and `div_minimizer`" below. If
