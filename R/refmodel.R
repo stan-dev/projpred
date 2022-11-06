@@ -18,8 +18,13 @@
 #'   additionally to the properties required for [init_refmodel()]. For
 #'   non-default methods of [get_refmodel()], an object of the corresponding
 #'   class.
-#' @param data Data used for fitting the reference model. Any `contrasts`
-#'   attributes of the dataset's columns are silently removed.
+#' @param data A `data.frame` containing the data to use for the projection
+#'   predictive variable selection. Any `contrasts` attributes of the dataset's
+#'   columns are silently removed. For custom reference models, the columns of
+#'   `data` do not necessarily have to coincide with those of the dataset used
+#'   for fitting the reference model, but keep in mind that a row-subset of
+#'   `data` is used for argument `newdata` of `ref_predfun` during \eqn{K}-fold
+#'   CV.
 #' @param formula Reference model's formula. For general information on formulas
 #'   in \R, see [`formula`]. For multilevel formulas, see also package
 #'   \pkg{lme4} (in particular, functions [lme4::lmer()] and [lme4::glmer()]).

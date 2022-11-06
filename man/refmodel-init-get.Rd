@@ -63,8 +63,13 @@ model (i.e., the distributional family for the response). May be \code{NULL} for
 \code{\link[=get_refmodel.default]{get_refmodel.default()}} in which case the family is retrieved from
 \code{object}.}
 
-\item{data}{Data used for fitting the reference model. Any \code{contrasts}
-attributes of the dataset's columns are silently removed.}
+\item{data}{A \code{data.frame} containing the data to use for the projection
+predictive variable selection. Any \code{contrasts} attributes of the dataset's
+columns are silently removed. For custom reference models, the columns of
+\code{data} do not necessarily have to coincide with those of the dataset used
+for fitting the reference model, but keep in mind that a row-subset of
+\code{data} is used for argument \code{newdata} of \code{ref_predfun} during \eqn{K}-fold
+CV.}
 
 \item{ref_predfun}{Prediction function for the linear predictor of the
 reference model, including offsets (if existing). See also section
