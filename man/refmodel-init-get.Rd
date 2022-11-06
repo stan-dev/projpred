@@ -37,10 +37,9 @@ init_refmodel(
 )
 }
 \arguments{
-\item{object}{Object from which the reference model is created. For
-\code{\link[=init_refmodel]{init_refmodel()}}, an object that the functions from arguments
-\code{extract_model_data} and \code{ref_predfun} can be applied to, with a \code{NULL}
-object being treated specially (see section "Value" below). For
+\item{object}{For \code{\link[=init_refmodel]{init_refmodel()}}, an object that the functions from
+arguments \code{extract_model_data} and \code{ref_predfun} can be applied to, with a
+\code{NULL} object being treated specially (see section "Value" below). For
 \code{\link[=get_refmodel.default]{get_refmodel.default()}}, an object that function \code{\link[=family]{family()}} can be applied
 to in order to retrieve the family (if argument \code{family} is \code{NULL}),
 additionally to the properties required for \code{\link[=init_refmodel]{init_refmodel()}}. For
