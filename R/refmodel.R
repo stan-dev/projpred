@@ -27,11 +27,12 @@
 #' @param object For [init_refmodel()], an object that the functions from
 #'   arguments `extract_model_data` and `ref_predfun` can be applied to, with a
 #'   `NULL` object being treated specially (see section "Value" below). For
-#'   [get_refmodel.default()], an object that function [family()] can be applied
-#'   to in order to retrieve the family (if argument `family` is `NULL`),
-#'   additionally to the properties required for [init_refmodel()]. For
-#'   non-default methods of [get_refmodel()], an object of the corresponding
-#'   class.
+#'   [get_refmodel.default()], an object of type `list` that (i) function
+#'   [family()] can be applied to in order to retrieve the family (if argument
+#'   `family` is `NULL`) and (ii) has an element called `data` containing the
+#'   original dataset (see argument `data` of [init_refmodel()]), additionally
+#'   to the properties required for [init_refmodel()]. For non-default methods
+#'   of [get_refmodel()], an object of the corresponding class.
 #' @param data A `data.frame` containing the data to use for the projection
 #'   predictive variable selection. Any `contrasts` attributes of the dataset's
 #'   columns are silently removed. For custom reference models, the columns of
