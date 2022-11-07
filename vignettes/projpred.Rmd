@@ -156,19 +156,14 @@ Combining the decided submodel size of 6 with the solution path leads to the fol
 
 The `project()` function returns an object of class `projection` which forms the basis for convenient post-selection inference. By the following code, `project()` will project the reference model onto the final submodel once again^[During the forward search, the reference model has already been projected onto all candidate models (this was where arguments `ndraws` and `nclusters` of `cv_varsel()` came into play). During the evaluation of the submodels along the solution path, the reference model has already been projected onto those submodels (this was where arguments `ndraws_pred` and `nclusters_pred` of `cv_varsel()` came into play). In principle, one could use the results from the evaluation part for post-selection inference, but due to a bug in the current implementation (see GitHub issue #168), we currently have to project once again.]:
 ```{r}
-prj <- project(
-  refm_fit,
-  solution_terms = soltrms_final,
-  seed = 15705533
-)
+prj <- project(refm_fit, solution_terms = soltrms_final)
 ```
 <!-- Alternative, as soon as GitHub issue #168 is resolved: -->
 <!-- ```{r} -->
 <!-- prj <- project( -->
 <!--   cvvs, -->
 <!--   nterms = modsize_decided, -->
-<!--   refit_prj = FALSE, -->
-<!--   seed = 15705533 -->
+<!--   refit_prj = FALSE -->
 <!-- ) -->
 <!-- ``` -->
 For more accurate results, we could have increased argument `ndraws` of `project()` (up to the number of posterior draws in the reference model). This increases the runtime, which we don't want in this vignette.
