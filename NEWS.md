@@ -7,7 +7,7 @@ If you read this from a place other than <https://mc-stan.org/projpred/news/inde
 ## Major changes
 
 * Several important bug fixes (see below).
-* Introduction of the augmented-data projection (see section ["Supported types of reference models"](https://mc-stan.org/projpred/articles/projpred.html#refmodtypes) of the main vignette for details). (GitHub: #70, #322)
+* Introduction of the augmented-data projection (see section ["Supported types of models"](https://mc-stan.org/projpred/articles/projpred.html#modtypes) of the main vignette for details). (GitHub: #70, #322)
 
 ## Minor changes
 
