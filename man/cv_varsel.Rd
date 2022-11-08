@@ -161,15 +161,15 @@ to be accessed directly but instead via helper functions (see the main
 vignette and \link{projpred-package}).
 }
 \description{
-Perform the projection predictive variable selection. This variable selection
-consists of a \emph{search} part and an \emph{evaluation} part. The search part
-determines the solution path, i.e., the best submodel for each submodel size
-(number of predictor terms). The evaluation part determines the predictive
-performance of the submodels along the solution path. In contrast to
-\code{\link[=varsel]{varsel()}}, \code{\link[=cv_varsel]{cv_varsel()}} performs a cross-validation (CV) by running the
-search part with the training data of each CV fold separately (an exception
-is explained in section "Note" below) and running the evaluation part on the
-corresponding test set of each CV fold.
+Run the \emph{search} part and the \emph{evaluation} part for a projection predictive
+variable selection. The search part determines the solution path, i.e., the
+best submodel for each submodel size (number of predictor terms). The
+evaluation part determines the predictive performance of the submodels along
+the solution path. In contrast to \code{\link[=varsel]{varsel()}}, \code{\link[=cv_varsel]{cv_varsel()}} performs a
+cross-validation (CV) by running the search part with the training data of
+each CV fold separately (an exception is explained in section "Note" below)
+and running the evaluation part on the corresponding test set of each CV
+fold.
 }
 \details{
 Arguments \code{ndraws}, \code{nclusters}, \code{nclusters_pred}, and \code{ndraws_pred}
@@ -256,18 +256,20 @@ if (requireNamespace("rstanarm", quietly = TRUE)) {
 \dontshow{\}) # examplesIf}
 }
 \references{
-Magnusson, M., Andersen, M., Jonasson, J., and Vehtari, A. (2019). Bayesian
-leave-one-out cross-validation for large data. In \emph{Proceedings of the 36th
-International Conference on Machine Learning}, 4244–4253. URL:
+Magnusson, Måns, Michael Andersen, Johan Jonasson, and Aki Vehtari. 2019.
+"Bayesian Leave-One-Out Cross-Validation for Large Data." In \emph{Proceedings of
+the 36th International Conference on Machine Learning}, edited by Kamalika
+Chaudhuri and Ruslan Salakhutdinov, 97:4244--53. Proceedings of Machine
+Learning Research. PMLR.
 \url{https://proceedings.mlr.press/v97/magnusson19a.html}.
 
-Vehtari, A., Gelman, A., and Gabry, J. (2017). Practical Bayesian model
-evaluation using leave-one-out cross-validation and WAIC. \emph{Statistics and
-Computing}, \strong{27}(5), 1413-1432. \doi{10.1007/s11222-016-9696-4}.
+Vehtari, Aki, Andrew Gelman, and Jonah Gabry. 2017. "Practical Bayesian Model
+Evaluation Using Leave-One-Out Cross-Validation and WAIC." \emph{Statistics and
+Computing} 27 (5): 1413--32. \doi{10.1007/s11222-016-9696-4}.
 
-Vehtari, A., Simpson, D., Gelman, A., Yao, Y., and Gabry, J. (2021). Pareto
-smoothed importance sampling. \emph{arXiv:1507.02646}. URL:
-\url{https://arxiv.org/abs/1507.02646}.
+Vehtari, Aki, Daniel Simpson, Andrew Gelman, Yuling Yao, and Jonah Gabry.
+2022. "Pareto Smoothed Importance Sampling." arXiv.
+\doi{10.48550/arXiv.1507.02646}.
 }
 \seealso{
 \code{\link[=varsel]{varsel()}}

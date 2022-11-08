@@ -25,10 +25,10 @@ Description:
     models, in particular, generalized linear and additive models as well as
     generalized linear and additive multilevel models (see Piironen, Paasiniemi
     and Vehtari, 2020, <doi:10.1214/20-EJS1711>; Catalina, Bürkner and Vehtari,
-    2020, <arXiv:2010.06994>). The package is compatible with the 'rstanarm' and
-    'brms' packages, but other reference models can also be used. See the
-    documentation as well as the package vignettes for more information and
-    examples.
+    2022, <https://proceedings.mlr.press/v151/catalina22a.html>). The package is
+    compatible with the 'rstanarm' and 'brms' packages, but other reference
+    models can also be used. See the documentation as well as the package
+    vignettes for more information and examples.
 License: GPL-3 | file LICENSE
 URL: https://mc-stan.org/projpred/, https://discourse.mc-stan.org
 BugReports: https://github.com/stan-dev/projpred/issues/

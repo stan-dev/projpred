@@ -1,14 +1,14 @@
 #' Variable selection with cross-validation
 #'
-#' Perform the projection predictive variable selection. This variable selection
-#' consists of a *search* part and an *evaluation* part. The search part
-#' determines the solution path, i.e., the best submodel for each submodel size
-#' (number of predictor terms). The evaluation part determines the predictive
-#' performance of the submodels along the solution path. In contrast to
-#' [varsel()], [cv_varsel()] performs a cross-validation (CV) by running the
-#' search part with the training data of each CV fold separately (an exception
-#' is explained in section "Note" below) and running the evaluation part on the
-#' corresponding test set of each CV fold.
+#' Run the *search* part and the *evaluation* part for a projection predictive
+#' variable selection. The search part determines the solution path, i.e., the
+#' best submodel for each submodel size (number of predictor terms). The
+#' evaluation part determines the predictive performance of the submodels along
+#' the solution path. In contrast to [varsel()], [cv_varsel()] performs a
+#' cross-validation (CV) by running the search part with the training data of
+#' each CV fold separately (an exception is explained in section "Note" below)
+#' and running the evaluation part on the corresponding test set of each CV
+#' fold.
 #'
 #' @inheritParams varsel
 #' @param cv_method The CV method, either `"LOO"` or `"kfold"`. In the `"LOO"`
@@ -60,18 +60,20 @@
 #'
 #' @references
 #'
-#' Magnusson, M., Andersen, M., Jonasson, J., and Vehtari, A. (2019). Bayesian
-#' leave-one-out cross-validation for large data. In *Proceedings of the 36th
-#' International Conference on Machine Learning*, 4244–4253. URL:
+#' Magnusson, Måns, Michael Andersen, Johan Jonasson, and Aki Vehtari. 2019.
+#' "Bayesian Leave-One-Out Cross-Validation for Large Data." In *Proceedings of
+#' the 36th International Conference on Machine Learning*, edited by Kamalika
+#' Chaudhuri and Ruslan Salakhutdinov, 97:4244--53. Proceedings of Machine
+#' Learning Research. PMLR.
 #' <https://proceedings.mlr.press/v97/magnusson19a.html>.
 #'
-#' Vehtari, A., Gelman, A., and Gabry, J. (2017). Practical Bayesian model
-#' evaluation using leave-one-out cross-validation and WAIC. *Statistics and
-#' Computing*, **27**(5), 1413-1432. \doi{10.1007/s11222-016-9696-4}.
+#' Vehtari, Aki, Andrew Gelman, and Jonah Gabry. 2017. "Practical Bayesian Model
+#' Evaluation Using Leave-One-Out Cross-Validation and WAIC." *Statistics and
+#' Computing* 27 (5): 1413--32. \doi{10.1007/s11222-016-9696-4}.
 #'
-#' Vehtari, A., Simpson, D., Gelman, A., Yao, Y., and Gabry, J. (2021). Pareto
-#' smoothed importance sampling. *arXiv:1507.02646*. URL:
-#' <https://arxiv.org/abs/1507.02646>.
+#' Vehtari, Aki, Daniel Simpson, Andrew Gelman, Yuling Yao, and Jonah Gabry.
+#' 2022. "Pareto Smoothed Importance Sampling." arXiv.
+#' \doi{10.48550/arXiv.1507.02646}.
 #'
 #' @seealso [varsel()]
 #'

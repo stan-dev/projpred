@@ -19,10 +19,13 @@
 #' [online](https://mc-stan.org/projpred/articles/projpred.html)) before
 #' continuing here.
 #'
-#' For the sake of simplicity (throughout the whole package documentation), we
-#' use the term "submodel" for all kinds of candidate models onto which the
-#' reference model is projected, even though this term is not always appropriate
-#' for custom reference models.
+#' Throughout the whole package documentation, we use the term "submodel" for
+#' all kinds of candidate models onto which the reference model is projected.
+#' For custom reference models, the candidate models don't need to be actual
+#' *sub*models of the reference model, but in any case (even for custom
+#' reference models), the candidate models are always actual *sub*models of the
+#' full [`formula`] used by the search procedure. In this regard, it is correct
+#' to speak of *sub*models, even in case of a custom reference model.
 #'
 #' The following model type abbreviations will be used at multiple places
 #' throughout the documentation: GLM (generalized linear model), GLMM
@@ -78,13 +81,16 @@
 #' # Functions
 #'
 #' \describe{
-#'   \item{[init_refmodel()], [get_refmodel()]}{For setting up a reference model
-#'   (only rarely needed explicitly).}
-#'   \item{[varsel()], [cv_varsel()]}{For variable selection, possibly with
-#'   cross-validation (CV).}
+#'   \item{[init_refmodel()], [get_refmodel()]}{For setting up an object
+#'   containing information about the reference model, the submodels, and how
+#'   the projection should be carried out. Explicit calls to [init_refmodel()]
+#'   and [get_refmodel()] are only rarely needed.}
+#'   \item{[varsel()], [cv_varsel()]}{For running the *search* part and the
+#'   *evaluation* part for a projection predictive variable selection, possibly
+#'   with cross-validation (CV).}
 #'   \item{[summary.vsel()], [print.vsel()], [plot.vsel()],
 #'   [suggest_size.vsel()], [solution_terms.vsel()]}{For post-processing the
-#'   results from the variable selection.}
+#'   results from [varsel()] and [cv_varsel()].}
 #'   \item{[project()]}{For projecting the reference model onto submodel(s).
 #'   Typically, this follows the variable selection, but it can also be applied
 #'   directly (without a variable selection).}
