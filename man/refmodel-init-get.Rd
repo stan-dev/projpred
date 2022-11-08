@@ -8,7 +8,7 @@
 \alias{get_refmodel.default}
 \alias{get_refmodel.stanreg}
 \alias{init_refmodel}
-\title{Reference model structure}
+\title{Reference model and more general information}
 \usage{
 get_refmodel(object, ...)
 
@@ -37,34 +37,44 @@ init_refmodel(
 )
 }
 \arguments{
-\item{object}{Object from which the reference model is created. For
-\code{\link[=init_refmodel]{init_refmodel()}}, an object that the functions from arguments
-\code{extract_model_data} and \code{ref_predfun} can be applied to, with a \code{NULL}
-object being treated specially (see section "Value" below). For
-\code{\link[=get_refmodel.default]{get_refmodel.default()}}, an object that function \code{\link[=family]{family()}} can be applied
-to in order to retrieve the family (if argument \code{family} is \code{NULL}),
-additionally to the properties required for \code{\link[=init_refmodel]{init_refmodel()}}. For
-non-default methods of \code{\link[=get_refmodel]{get_refmodel()}}, an object of the corresponding
-class.}
+\item{object}{For \code{\link[=init_refmodel]{init_refmodel()}}, an object that the functions from
+arguments \code{extract_model_data} and \code{ref_predfun} can be applied to, with a
+\code{NULL} object being treated specially (see section "Value" below). For
+\code{\link[=get_refmodel.default]{get_refmodel.default()}}, an object of type \code{list} that (i) function
+\code{\link[=family]{family()}} can be applied to in order to retrieve the family (if argument
+\code{family} is \code{NULL}) and (ii) has an element called \code{data} containing the
+original dataset (see argument \code{data} of \code{\link[=init_refmodel]{init_refmodel()}}), additionally
+to the properties required for \code{\link[=init_refmodel]{init_refmodel()}}. For non-default methods
+of \code{\link[=get_refmodel]{get_refmodel()}}, an object of the corresponding class.}
 
 \item{...}{For \code{\link[=get_refmodel.default]{get_refmodel.default()}} and \code{\link[=get_refmodel.stanreg]{get_refmodel.stanreg()}}:
 arguments passed to \code{\link[=init_refmodel]{init_refmodel()}}. For the \code{\link[=get_refmodel]{get_refmodel()}} generic:
 arguments passed to the appropriate method. Else: ignored.}
 
-\item{formula}{Reference model's formula. For general information on formulas
-in \R, see \code{\link{formula}}. For multilevel formulas, see also package
-\pkg{lme4} (in particular, functions \code{\link[lme4:lmer]{lme4::lmer()}} and \code{\link[lme4:glmer]{lme4::glmer()}}).
-For additive formulas, see also packages \pkg{mgcv} (in particular,
-function \code{\link[mgcv:gam]{mgcv::gam()}}) and \pkg{gamm4} (in particular, function
-\code{\link[gamm4:gamm4]{gamm4::gamm4()}}) as well as the notes in section "Formula terms" below.}
+\item{formula}{The full formula to use for the search procedure. For custom
+reference models, this does not necessarily coincide with the reference
+model's formula. For general information on formulas in \R, see
+\code{\link{formula}}. For multilevel formulas, see also package \pkg{lme4} (in
+particular, functions \code{\link[lme4:lmer]{lme4::lmer()}} and \code{\link[lme4:glmer]{lme4::glmer()}}). For additive
+formulas, see also packages \pkg{mgcv} (in particular, function
+\code{\link[mgcv:gam]{mgcv::gam()}}) and \pkg{gamm4} (in particular, function \code{\link[gamm4:gamm4]{gamm4::gamm4()}})
+as well as the notes in section "Formula terms" below.}
 
 \item{family}{An object of class \code{family} representing the observational
-model (i.e., the distributional family for the response). May be \code{NULL} for
-\code{\link[=get_refmodel.default]{get_refmodel.default()}} in which case the family is retrieved from
-\code{object}.}
+model (i.e., the distributional family for the response) of the
+\emph{submodels}. May be \code{NULL} for \code{\link[=get_refmodel.default]{get_refmodel.default()}} in which case the
+family is retrieved from \code{object}. For custom reference models, \code{family}
+does not have to coincide with the family of the reference model (if the
+reference model possesses a formal \code{family} at all). In typical reference
+models, however, these families do coincide.}
 
-\item{data}{Data used for fitting the reference model. Any \code{contrasts}
-attributes of the dataset's columns are silently removed.}
+\item{data}{A \code{data.frame} containing the data to use for the projection
+predictive variable selection. Any \code{contrasts} attributes of the dataset's
+columns are silently removed. For custom reference models, the columns of
+\code{data} do not necessarily have to coincide with those of the dataset used
+for fitting the reference model, but keep in mind that a row-subset of
+\code{data} is used for argument \code{newdata} of \code{ref_predfun} during \eqn{K}-fold
+CV.}
 
 \item{ref_predfun}{Prediction function for the linear predictor of the
 reference model, including offsets (if existing). See also section
@@ -84,9 +94,9 @@ submodel onto which the reference model is projected. See also section
 "Arguments \code{ref_predfun}, \code{proj_predfun}, and \code{div_minimizer}" below.}
 
 \item{extract_model_data}{A function for fetching some variables (response,
-observation weights, offsets) from the original dataset (i.e., the dataset
-used for fitting the reference model) or from a new dataset. See also
-section "Argument \code{extract_model_data}" below.}
+observation weights, offsets) from the original dataset (supplied to
+argument \code{data}) or from a new dataset. See also section "Argument
+\code{extract_model_data}" below.}
 
 \item{cvfun}{For \eqn{K}-fold CV only. A function that, given a fold indices
 vector, fits the reference model separately for each fold and returns the
@@ -107,11 +117,14 @@ indices (one fold index per observation). Each element of \code{cvfits$fits}
 \code{cvfits} takes precedence over \code{cvfun}, i.e., if both are provided,
 \code{cvfits} is used.}
 
-\item{dis}{A vector of posterior draws for the dispersion parameter (if
-existing). May be \code{NULL} if the model has no dispersion parameter or if the
-model does have a dispersion parameter, but \code{object} is \code{NULL} (in which
-case \code{0} is used for \code{dis}). Note that for the \code{\link[=gaussian]{gaussian()}} \code{family}, \code{dis}
-is the standard deviation, not the variance.}
+\item{dis}{A vector of posterior draws for the reference model's dispersion
+parameter or---more precisely---the posterior values for the reference
+model's parameter-conditional predictive variance (assuming that this
+variance is the same for all observations). May be \code{NULL} if the submodels
+have no dispersion parameter or if the submodels do have a dispersion
+parameter, but \code{object} is \code{NULL} (in which case \code{0} is used for \code{dis}).
+Note that for the \code{\link[=gaussian]{gaussian()}} \code{family}, \code{dis} is the standard deviation,
+not the variance.}
 
 \item{cvrefbuilder}{For \eqn{K}-fold CV only. A function that, given a
 reference model fit for fold \eqn{k \in \{1, ..., K\}}{k = 1, ..., K} (this
@@ -134,12 +147,25 @@ is \code{NULL}, the returned object is of class \code{datafit} as well as of cla
 handled differently at several places throughout this package.
 }
 \description{
-Function \code{\link[=get_refmodel]{get_refmodel()}} is a generic function for creating the reference
-model structure from a specific \code{object}. The methods for \code{\link[=get_refmodel]{get_refmodel()}}
-usually call \code{\link[=init_refmodel]{init_refmodel()}} which is the underlying workhorse (and may
-also be used directly without a call to \code{\link[=get_refmodel]{get_refmodel()}}). Some arguments are
-for \eqn{K}-fold cross-validation (\eqn{K}-fold CV) only; see \code{\link[=cv_varsel]{cv_varsel()}}
-for the use of \eqn{K}-fold CV in \pkg{projpred}.
+Function \code{\link[=get_refmodel]{get_refmodel()}} is a generic function whose methods usually call
+\code{\link[=init_refmodel]{init_refmodel()}} which is the underlying workhorse (and may also be used
+directly without a call to \code{\link[=get_refmodel]{get_refmodel()}}).
+
+Both, \code{\link[=get_refmodel]{get_refmodel()}} and \code{\link[=init_refmodel]{init_refmodel()}}, create an object containing
+information needed for the projection predictive variable selection, namely
+about the reference model, the submodels, and how the projection should be
+carried out. For the sake of simplicity, the documentation may refer to the
+resulting object also as "reference model" or "reference model object", even
+though it also contains information about the submodels and the projection.
+
+A "typical" reference model object is created by \code{\link[=get_refmodel.stanreg]{get_refmodel.stanreg()}} and
+\code{\link[brms:get_refmodel.brmsfit]{brms::get_refmodel.brmsfit()}}, either implicitly by a call to a top-level
+function such as \code{\link[=project]{project()}}, \code{\link[=varsel]{varsel()}}, and \code{\link[=cv_varsel]{cv_varsel()}} or explicitly by
+a call to \code{\link[=get_refmodel]{get_refmodel()}}. All non-"typical" reference model objects will be
+called "custom" reference model objects.
+
+Some arguments are for \eqn{K}-fold cross-validation (\eqn{K}-fold CV) only;
+see \code{\link[=cv_varsel]{cv_varsel()}} for the use of \eqn{K}-fold CV in \pkg{projpred}.
 }
 \section{Formula terms}{
 For additive models (still an experimental feature), only \code{\link[mgcv:s]{mgcv::s()}} and
@@ -242,6 +268,9 @@ The return value of \code{extract_model_data} needs to be a \code{list} with ele
 for the response, the observation weights, and the offsets, respectively. An
 exception is that \code{y} may also be \code{NULL} (depending on argument \code{extract_y})
 or a \code{factor}.
+
+The weights and offsets returned by \code{extract_model_data} will be assumed to
+hold for the reference model as well as for the submodels.
 }
 
 \examples{

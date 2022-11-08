@@ -1,31 +1,53 @@
-#' Reference model structure
+#' Reference model and more general information
 #'
-#' Function [get_refmodel()] is a generic function for creating the reference
-#' model structure from a specific `object`. The methods for [get_refmodel()]
-#' usually call [init_refmodel()] which is the underlying workhorse (and may
-#' also be used directly without a call to [get_refmodel()]). Some arguments are
-#' for \eqn{K}-fold cross-validation (\eqn{K}-fold CV) only; see [cv_varsel()]
-#' for the use of \eqn{K}-fold CV in \pkg{projpred}.
+#' @description
+#'
+#' Function [get_refmodel()] is a generic function whose methods usually call
+#' [init_refmodel()] which is the underlying workhorse (and may also be used
+#' directly without a call to [get_refmodel()]).
+#'
+#' Both, [get_refmodel()] and [init_refmodel()], create an object containing
+#' information needed for the projection predictive variable selection, namely
+#' about the reference model, the submodels, and how the projection should be
+#' carried out. For the sake of simplicity, the documentation may refer to the
+#' resulting object also as "reference model" or "reference model object", even
+#' though it also contains information about the submodels and the projection.
+#'
+#' A "typical" reference model object is created by [get_refmodel.stanreg()] and
+#' [brms::get_refmodel.brmsfit()], either implicitly by a call to a top-level
+#' function such as [project()], [varsel()], and [cv_varsel()] or explicitly by
+#' a call to [get_refmodel()]. All non-"typical" reference model objects will be
+#' called "custom" reference model objects.
+#'
+#' Some arguments are for \eqn{K}-fold cross-validation (\eqn{K}-fold CV) only;
+#' see [cv_varsel()] for the use of \eqn{K}-fold CV in \pkg{projpred}.
 #'
 #' @name refmodel-init-get
 #'
-#' @param object Object from which the reference model is created. For
-#'   [init_refmodel()], an object that the functions from arguments
-#'   `extract_model_data` and `ref_predfun` can be applied to, with a `NULL`
-#'   object being treated specially (see section "Value" below). For
-#'   [get_refmodel.default()], an object that function [family()] can be applied
-#'   to in order to retrieve the family (if argument `family` is `NULL`),
-#'   additionally to the properties required for [init_refmodel()]. For
-#'   non-default methods of [get_refmodel()], an object of the corresponding
-#'   class.
-#' @param data Data used for fitting the reference model. Any `contrasts`
-#'   attributes of the dataset's columns are silently removed.
-#' @param formula Reference model's formula. For general information on formulas
-#'   in \R, see [`formula`]. For multilevel formulas, see also package
-#'   \pkg{lme4} (in particular, functions [lme4::lmer()] and [lme4::glmer()]).
-#'   For additive formulas, see also packages \pkg{mgcv} (in particular,
-#'   function [mgcv::gam()]) and \pkg{gamm4} (in particular, function
-#'   [gamm4::gamm4()]) as well as the notes in section "Formula terms" below.
+#' @param object For [init_refmodel()], an object that the functions from
+#'   arguments `extract_model_data` and `ref_predfun` can be applied to, with a
+#'   `NULL` object being treated specially (see section "Value" below). For
+#'   [get_refmodel.default()], an object of type `list` that (i) function
+#'   [family()] can be applied to in order to retrieve the family (if argument
+#'   `family` is `NULL`) and (ii) has an element called `data` containing the
+#'   original dataset (see argument `data` of [init_refmodel()]), additionally
+#'   to the properties required for [init_refmodel()]. For non-default methods
+#'   of [get_refmodel()], an object of the corresponding class.
+#' @param data A `data.frame` containing the data to use for the projection
+#'   predictive variable selection. Any `contrasts` attributes of the dataset's
+#'   columns are silently removed. For custom reference models, the columns of
+#'   `data` do not necessarily have to coincide with those of the dataset used
+#'   for fitting the reference model, but keep in mind that a row-subset of
+#'   `data` is used for argument `newdata` of `ref_predfun` during \eqn{K}-fold
+#'   CV.
+#' @param formula The full formula to use for the search procedure. For custom
+#'   reference models, this does not necessarily coincide with the reference
+#'   model's formula. For general information on formulas in \R, see
+#'   [`formula`]. For multilevel formulas, see also package \pkg{lme4} (in
+#'   particular, functions [lme4::lmer()] and [lme4::glmer()]). For additive
+#'   formulas, see also packages \pkg{mgcv} (in particular, function
+#'   [mgcv::gam()]) and \pkg{gamm4} (in particular, function [gamm4::gamm4()])
+#'   as well as the notes in section "Formula terms" below.
 #' @param ref_predfun Prediction function for the linear predictor of the
 #'   reference model, including offsets (if existing). See also section
 #'   "Arguments `ref_predfun`, `proj_predfun`, and `div_minimizer`" below. If
@@ -41,13 +63,16 @@
 #'   also section "Arguments `ref_predfun`, `proj_predfun`, and `div_minimizer`"
 #'   below.
 #' @param extract_model_data A function for fetching some variables (response,
-#'   observation weights, offsets) from the original dataset (i.e., the dataset
-#'   used for fitting the reference model) or from a new dataset. See also
-#'   section "Argument `extract_model_data`" below.
+#'   observation weights, offsets) from the original dataset (supplied to
+#'   argument `data`) or from a new dataset. See also section "Argument
+#'   `extract_model_data`" below.
 #' @param family An object of class `family` representing the observational
-#'   model (i.e., the distributional family for the response). May be `NULL` for
-#'   [get_refmodel.default()] in which case the family is retrieved from
-#'   `object`.
+#'   model (i.e., the distributional family for the response) of the
+#'   *submodels*. May be `NULL` for [get_refmodel.default()] in which case the
+#'   family is retrieved from `object`. For custom reference models, `family`
+#'   does not have to coincide with the family of the reference model (if the
+#'   reference model possesses a formal `family` at all). In typical reference
+#'   models, however, these families do coincide.
 #' @param cvfits For \eqn{K}-fold CV only. A `list` containing a sub-`list`
 #'   called `fits` containing the \eqn{K} model fits from which reference model
 #'   structures are created. The `cvfits` `list` (i.e., the super-`list`) needs
@@ -75,11 +100,14 @@
 #'   for using an internal default: [get_refmodel()] if `object` is not `NULL`
 #'   and a function calling [init_refmodel()] appropriately (with the assumption
 #'   `dis = 0`) if `object` is `NULL`.
-#' @param dis A vector of posterior draws for the dispersion parameter (if
-#'   existing). May be `NULL` if the model has no dispersion parameter or if the
-#'   model does have a dispersion parameter, but `object` is `NULL` (in which
-#'   case `0` is used for `dis`). Note that for the [gaussian()] `family`, `dis`
-#'   is the standard deviation, not the variance.
+#' @param dis A vector of posterior draws for the reference model's dispersion
+#'   parameter or---more precisely---the posterior values for the reference
+#'   model's parameter-conditional predictive variance (assuming that this
+#'   variance is the same for all observations). May be `NULL` if the submodels
+#'   have no dispersion parameter or if the submodels do have a dispersion
+#'   parameter, but `object` is `NULL` (in which case `0` is used for `dis`).
+#'   Note that for the [gaussian()] `family`, `dis` is the standard deviation,
+#'   not the variance.
 #' @param ... For [get_refmodel.default()] and [get_refmodel.stanreg()]:
 #'   arguments passed to [init_refmodel()]. For the [get_refmodel()] generic:
 #'   arguments passed to the appropriate method. Else: ignored.
@@ -175,6 +203,9 @@
 #' for the response, the observation weights, and the offsets, respectively. An
 #' exception is that `y` may also be `NULL` (depending on argument `extract_y`)
 #' or a `factor`.
+#'
+#' The weights and offsets returned by `extract_model_data` will be assumed to
+#' hold for the reference model as well as for the submodels.
 #'
 #' @return An object that can be passed to all the functions that take the
 #'   reference model fit as the first argument, such as [varsel()],
