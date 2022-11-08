@@ -13,10 +13,13 @@ The \R package \pkg{projpred} performs the projection predictive variable (or
 \href{https://mc-stan.org/projpred/articles/projpred.html}{online}) before
 continuing here.
 
-For the sake of simplicity (throughout the whole package documentation), we
-use the term "submodel" for all kinds of candidate models onto which the
-reference model is projected, even though this term is not always appropriate
-for custom reference models.
+Throughout the whole package documentation, we use the term "submodel" for
+all kinds of candidate models onto which the reference model is projected.
+For custom reference models, the candidate models don't need to be actual
+\emph{sub}models of the reference model, but in any case (even for custom
+reference models), the candidate models are always actual \emph{sub}models of the
+full \code{\link{formula}} used by the search procedure. In this regard, it is correct
+to speak of \emph{sub}models, even in case of a custom reference model.
 
 The following model type abbreviations will be used at multiple places
 throughout the documentation: GLM (generalized linear model), GLMM
@@ -74,13 +77,16 @@ parallelization for models other than GLMs.
 }
 \section{Functions}{
 \describe{
-\item{\code{\link[=init_refmodel]{init_refmodel()}}, \code{\link[=get_refmodel]{get_refmodel()}}}{For setting up a reference model
-(only rarely needed explicitly).}
-\item{\code{\link[=varsel]{varsel()}}, \code{\link[=cv_varsel]{cv_varsel()}}}{For variable selection, possibly with
-cross-validation (CV).}
+\item{\code{\link[=init_refmodel]{init_refmodel()}}, \code{\link[=get_refmodel]{get_refmodel()}}}{For setting up an object
+containing information about the reference model, the submodels, and how
+the projection should be carried out. Explicit calls to \code{\link[=init_refmodel]{init_refmodel()}}
+and \code{\link[=get_refmodel]{get_refmodel()}} are only rarely needed.}
+\item{\code{\link[=varsel]{varsel()}}, \code{\link[=cv_varsel]{cv_varsel()}}}{For running the \emph{search} part and the
+\emph{evaluation} part for a projection predictive variable selection, possibly
+with cross-validation (CV).}
 \item{\code{\link[=summary.vsel]{summary.vsel()}}, \code{\link[=print.vsel]{print.vsel()}}, \code{\link[=plot.vsel]{plot.vsel()}},
 \code{\link[=suggest_size.vsel]{suggest_size.vsel()}}, \code{\link[=solution_terms.vsel]{solution_terms.vsel()}}}{For post-processing the
-results from the variable selection.}
+results from \code{\link[=varsel]{varsel()}} and \code{\link[=cv_varsel]{cv_varsel()}}.}
 \item{\code{\link[=project]{project()}}}{For projecting the reference model onto submodel(s).
 Typically, this follows the variable selection, but it can also be applied
 directly (without a variable selection).}
