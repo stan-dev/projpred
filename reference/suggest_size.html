@@ -21,7 +21,7 @@ final decision based on what is most appropriate for the problem at hand.'><meta
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">projpred</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">2.2.1</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">2.2.2</span>
       </span>
     </div>
 
@@ -150,9 +150,9 @@ decision. See argument <code>stats</code> of <code><a href="summary.vsel.html">s
 
 
 <dt>pct</dt>
-<dd><p>A number giving the relative proportion (<em>not</em> percents) between
-baseline model and null model utilities one is willing to sacrifice. See
-section "Details" below for more information.</p></dd>
+<dd><p>A number giving the proportion (<em>not</em> percents) of the <em>relative</em>
+null model utility one is willing to sacrifice. See section "Details" below
+for more information.</p></dd>
 
 
 <dt>type</dt>
@@ -176,21 +176,35 @@ whether to throw warnings if automatic suggestion fails. Usually there is
 no reason to set this to <code>FALSE</code>.</p></dd>
 
 </dl></div>
+    <div id="value">
+    <h2>Value</h2>
+    
+
+<p>A single numeric value, giving the suggested submodel size (or <code>NA</code></p>
+
+
+<p>if the suggestion failed).</p>
+
+
+<p>The intercept is not counted by <code>suggest_size()</code>, so a suggested size of
+zero stands for the intercept-only model.</p>
+    </div>
     <div id="details">
     <h2>Details</h2>
     <p>In general (beware of special extensions below), the suggested model
 size is the smallest model size \(k \in \{0, 1, ...,
   \texttt{nterms\_max}\}\) for which either the
 lower or upper bound (depending on argument <code>type</code>) of the
-normal-approximation confidence interval (with nominal coverage <code>1 - alpha</code>; see argument <code>alpha</code> of <code><a href="summary.vsel.html">summary.vsel()</a></code>) for \(U_k -
-  U_{\mathrm{base}}\) (with \(U_k\) denoting the \(k\)-th
-submodel's true utility and \(U_{\mathrm{base}}\) denoting the
-baseline model's true utility) falls above (or is equal to)
-$$\texttt{pct} \cdot (u_0 - u_{\mathrm{base}})$$
-where \(u_0\) denotes the null model's estimated utility and
-\(u_{\mathrm{base}}\) the baseline model's estimated utility. The
-baseline model is either the reference model or the best submodel found
-(see argument <code>baseline</code> of <code><a href="summary.vsel.html">summary.vsel()</a></code>).</p>
+normal-approximation (or bootstrap; see argument <code>stat</code>) confidence
+interval (with nominal coverage <code>1 - alpha</code>; see argument <code>alpha</code> of
+<code><a href="summary.vsel.html">summary.vsel()</a></code>) for \(U_k - U_{\mathrm{base}}\) (with
+\(U_k\) denoting the \(k\)-th submodel's true utility and
+\(U_{\mathrm{base}}\) denoting the baseline model's true utility)
+falls above (or is equal to) $$\texttt{pct} \cdot (u_0 -
+  u_{\mathrm{base}})$$ where \(u_0\) denotes the null
+model's estimated utility and \(u_{\mathrm{base}}\) the baseline
+model's estimated utility. The baseline model is either the reference model
+or the best submodel found (see argument <code>baseline</code> of <code><a href="summary.vsel.html">summary.vsel()</a></code>).</p>
 <p>If <code>!is.na(thres_elpd)</code> and <code>stat = "elpd"</code>, the decision rule above is
 extended: The suggested model size is then the smallest model size \(k\)
 fulfilling the rule above <em>or</em> \(u_k - u_{\mathrm{base}} &gt;
@@ -202,21 +216,22 @@ the smallest model size \(k\) fulfilling the rule above <em>or</em> \(u_k -
 or <code>stat = "mlpd"</code>), <code>alpha = 0.32</code>, <code>pct = 0</code>, and <code>type = "upper"</code> means
 that we select the smallest model size for which the upper bound of the 68%
 confidence interval for \(U_k - U_{\mathrm{base}}\) exceeds
-(or is equal to) zero, that is, for which the submodel's utility estimate
-is at most one standard error smaller than the baseline model's utility
-estimate (with that standard error referring to the utility <em>difference</em>).</p>
+(or is equal to) zero, that is (if <code>stat</code> is a performance statistic for
+which the normal approximation is used, not the bootstrap), for which the
+submodel's utility estimate is at most one standard error smaller than the
+baseline model's utility estimate (with that standard error referring to
+the utility <em>difference</em>).</p>
     </div>
     <div id="note">
     <h2>Note</h2>
-    <p>Loss statistics like the root mean-squared error (RMSE) and the
-mean-squared error (MSE) are converted to utilities by multiplying them by
-<code>-1</code>, so a call such as <code>suggest_size(object, stat = "rmse", type = "upper")</code> finds the smallest model size whose upper confidence interval
-bound for the <em>negative</em> RMSE or MSE exceeds the cutoff (or, equivalently,
-has the lower confidence interval bound for the RMSE or MSE below the
-cutoff). This is done to make the interpretation of argument <code>type</code> the
-same regardless of argument <code>stat</code>.</p>
-<p>The intercept is not counted by <code>suggest_size()</code>, so a suggested size of
-zero stands for the intercept-only model.</p>
+    <p>Loss statistics like the root mean squared error (RMSE) and the mean
+squared error (MSE) are converted to utilities by multiplying them by <code>-1</code>,
+so a call such as <code>suggest_size(object, stat = "rmse", type = "upper")</code>
+finds the smallest model size whose upper confidence interval bound for the
+<em>negative</em> RMSE or MSE exceeds the cutoff (or, equivalently, has the lower
+confidence interval bound for the RMSE or MSE below the cutoff). This is
+done to make the interpretation of argument <code>type</code> the same regardless of
+argument <code>stat</code>.</p>
     </div>
 
     <div id="ref-examples">

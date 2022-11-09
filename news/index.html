@@ -17,7 +17,7 @@
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">projpred</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">2.2.1</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">2.2.2</span>
       </span>
     </div>
 
@@ -102,6 +102,27 @@
       <small>Source: <a href="https://github.com/stan-dev/projpred/blob/HEAD/NEWS.md" class="external-link"><code>NEWS.md</code></a></small>
     </div>
 
+    <div class="section level2">
+<h2 class="page-header" data-toc-text="2.2.2" id="projpred-222">projpred 2.2.2<a class="anchor" aria-label="anchor" href="#projpred-222"></a></h2>
+<div class="section level3">
+<h3 id="major-changes-2-2-2">Major changes<a class="anchor" aria-label="anchor" href="#major-changes-2-2-2"></a></h3>
+<ul><li>Several important bug fixes (see below).</li>
+</ul></div>
+<div class="section level3">
+<h3 id="minor-changes-2-2-2">Minor changes<a class="anchor" aria-label="anchor" href="#minor-changes-2-2-2"></a></h3>
+<ul><li>Improvements in documentation and vignette, especially to emphasize the generality of the reference model object resulting from <code><a href="../reference/refmodel-init-get.html">get_refmodel()</a></code> and <code><a href="../reference/refmodel-init-get.html">init_refmodel()</a></code> (thereby also distinguishing more clearly between “typical” and “custom” reference model objects) in (i) the description and several arguments of <code><a href="../reference/refmodel-init-get.html">get_refmodel()</a></code> and <code><a href="../reference/refmodel-init-get.html">init_refmodel()</a></code>, (ii) sections <a href="https://mc-stan.org/projpred/articles/projpred.html#refmod">“Reference model”</a> and <a href="https://mc-stan.org/projpred/articles/projpred.html#modtypes">“Supported types of models”</a> of the vignette. (GitHub: <a href="https://github.com/stan-dev/projpred/issues/357" class="external-link">#357</a>, <a href="https://github.com/stan-dev/projpred/issues/359" class="external-link">#359</a>, <a href="https://github.com/stan-dev/projpred/issues/364" class="external-link">#364</a>, <a href="https://github.com/stan-dev/projpred/issues/365" class="external-link">#365</a>, <a href="https://github.com/stan-dev/projpred/issues/366" class="external-link">#366</a>)</li>
+<li>Minor improvement in terms of efficiency in the <code>validate_search = FALSE</code> case of <code><a href="../reference/cv_varsel.html">cv_varsel()</a></code>.</li>
+<li>Improvement in terms of efficiency in case of a forward search with custom <code>search_terms</code> (at least in some instances), also affecting the output of <code>solution_terms(&lt;vsel_object&gt;)</code> in those cases. (GitHub: <a href="https://github.com/stan-dev/projpred/issues/360" class="external-link">#360</a>; thanks to user <a href="https://github.com/sor16" class="external-link">@sor16</a>)</li>
+<li>Update <a href="https://doi.org/10.48550/arXiv.2010.06994" class="external-link">Catalina et al. (2020)</a> to <a href="https://proceedings.mlr.press/v151/catalina22a.html" class="external-link">Catalina et al. (2022)</a>. (GitHub: <a href="https://github.com/stan-dev/projpred/issues/364" class="external-link">#364</a>)</li>
+</ul></div>
+<div class="section level3">
+<h3 id="bug-fixes-2-2-2">Bug fixes<a class="anchor" aria-label="anchor" href="#bug-fixes-2-2-2"></a></h3>
+<ul><li>Fix a bug causing offsets not to be taken into account appropriately when calculating the PSIS weights (those used for the submodels) in the <code>validate_search = FALSE</code> case of <code><a href="../reference/cv_varsel.html">cv_varsel()</a></code>. This bug was introduced in v2.2.0 (and existed up to—including—v2.2.1).</li>
+<li>Fix a (long-standing) bug causing offsets not to be taken into account appropriately when calculating the predictive variances for a reference model that has a dispersion parameter and a non-identity link function. (GitHub: <a href="https://github.com/stan-dev/projpred/issues/186" class="external-link">#186</a> (partly), <a href="https://github.com/stan-dev/projpred/issues/355" class="external-link">#355</a>)</li>
+<li>Fix a (long-standing) bug causing offsets not to be taken into account appropriately when calculating the reference model’s summary statistics in case of <code><a href="../reference/cv_varsel.html">cv_varsel()</a></code> with <code>cv_method = "LOO"</code> (more precisely, only the LOO posterior predictive expected values <code>&lt;vsel_object&gt;$summaries$ref$mu</code> were affected, not the (pointwise) LOO log posterior predictive density values <code>&lt;vsel_object&gt;$summaries$ref$lppd</code>). (GitHub: <a href="https://github.com/stan-dev/projpred/issues/186" class="external-link">#186</a> (partly), <a href="https://github.com/stan-dev/projpred/issues/356" class="external-link">#356</a>)</li>
+<li>Fix a (long-standing) bug leading to an error when trying to use <code><a href="../reference/cv_varsel.html">cv_varsel()</a></code> with custom <code>search_terms</code> (in some instances). (GitHub: <a href="https://github.com/stan-dev/projpred/issues/345" class="external-link">#345</a>, <a href="https://github.com/stan-dev/projpred/issues/360" class="external-link">#360</a>; thanks to user <a href="https://github.com/sor16" class="external-link">@sor16</a>)</li>
+</ul></div>
+</div>
     <div class="section level2">
 <h2 class="page-header" data-toc-text="2.2.1" id="projpred-221">projpred 2.2.1<small>2022-09-20</small><a class="anchor" aria-label="anchor" href="#projpred-221"></a></h2>
 <div class="section level3">

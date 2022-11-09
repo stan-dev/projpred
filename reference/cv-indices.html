@@ -21,7 +21,7 @@ different for these two methods, see below for details.'><meta property="og:imag
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">projpred</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">2.2.1</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">2.2.2</span>
       </span>
     </div>
 
@@ -152,11 +152,11 @@ below for details.</p></dd>
     
 
 <p><code>cvfolds()</code> returns a vector of length <code>n</code> such that each element is
-an integer between 1 and <code>k</code> denoting which fold the corresponding data
+an integer between 1 and <code>K</code> denoting which fold the corresponding data
 point belongs to. The return value of <code>cv_ids()</code> depends on the <code>out</code></p>
 
 
-<p>argument. If <code>out = "foldwise"</code>, the return value is a <code>list</code> with <code>k</code></p>
+<p>argument. If <code>out = "foldwise"</code>, the return value is a <code>list</code> with <code>K</code></p>
 
 
 <p>elements, each being a <code>list</code> with elements <code>tr</code> and <code>ts</code> giving the
@@ -164,7 +164,7 @@ training and test indices, respectively, for the corresponding fold. If
 <code>out = "indices"</code>, the return value is a <code>list</code> with elements <code>tr</code> and <code>ts</code></p>
 
 
-<p>each being a <code>list</code> with <code>k</code> elements giving the training and test indices,
+<p>each being a <code>list</code> with <code>K</code> elements giving the training and test indices,
 respectively, for each fold.</p>
     </div>
 

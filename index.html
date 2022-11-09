@@ -22,11 +22,11 @@
     Performs projection predictive feature selection for generalized linear and
     additive models as well as for generalized linear and additive multilevel
     models (see Piironen, Paasiniemi and Vehtari, 2020,
-    &lt;doi:10.1214/20-EJS1711&gt;; Catalina, Bürkner and Vehtari, 2020,
-    &lt;arXiv:2010.06994&gt;). The package is compatible with the rstanarm and
-    brms packages, but other reference models can also be used. See the
-    documentation as well as the package vignette for more information and
-    examples.">
+    &lt;doi:10.1214/20-EJS1711&gt;; Catalina, Bürkner and Vehtari, 2022,
+    &lt;https://proceedings.mlr.press/v151/catalina22a.html&gt;). The package is
+    compatible with the rstanarm and brms packages, but other reference
+    models can also be used. See the documentation as well as the package
+    vignette for more information and examples.">
 <meta property="og:image" content="https://mc-stan.org/projpred/logo.svg">
 <!-- mathjax --><script src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/MathJax.js" integrity="sha256-nvJJv9wWKEm88qvoQl9ekL2J+k/RWIsaSScxxlsrv8k=" crossorigin="anonymous"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/config/TeX-AMS-MML_HTMLorMML.js" integrity="sha256-84DKXVJXs0/F8OTMzX4UR909+jtl4G7SPypPavF+GfA=" crossorigin="anonymous"></script><!--[if lt IE 9]>
 <script src="https://oss.maxcdn.com/html5shiv/3.7.3/html5shiv.min.js"></script>
@@ -48,7 +48,7 @@
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="index.html">projpred</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">2.2.1</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">2.2.2</span>
       </span>
     </div>
 
@@ -143,10 +143,9 @@
 <div class="page-header"><h1 id="projpred-">projpred <a href="https://mc-stan.org" class="external-link"><img src="reference/figures/logo.svg" align="right" height="139" alt="Stan Logo"></a>
 <a class="anchor" aria-label="anchor" href="#projpred-"></a>
 </h1></div>
-<p>The <strong>projpred</strong> R package performs the projection predictive variable selection for generalized linear and additive models as well as for generalized linear and additive multilevel models (with the support for additive models being still experimental). The package is compatible with the <a href="https://mc-stan.org/rstanarm/" class="external-link"><strong>rstanarm</strong></a> and <a href="https://paul-buerkner.github.io/brms/" class="external-link"><strong>brms</strong></a> packages, but custom reference models can also be used.</p>
-<p>The projection predictive variable selection is based on the ideas of Goutis and Robert (1998) and Dupuis and Robert (2003). The methods implemented in <strong>projpred</strong> are described in detail in Piironen et al. (2020) and Catalina et al. (2020). They are evaluated in comparison to many other methods in Piironen and Vehtari (2017). Type <code>citation("projpred")</code> in R (or see the <code>CITATION</code> file) for details on how to cite <strong>projpred</strong>.</p>
-<p>Currently, the supported response distributions (objects of class <code>family</code> in R) are <code><a href="https://rdrr.io/r/stats/family.html" class="external-link">gaussian()</a></code>, <code><a href="https://rdrr.io/r/stats/family.html" class="external-link">binomial()</a></code> (via the <strong>brms</strong> package, <code><a href="https://rdrr.io/pkg/brms/man/brmsfamily.html" class="external-link">brms::bernoulli()</a></code> is also supported), and <code><a href="https://rdrr.io/r/stats/family.html" class="external-link">poisson()</a></code>.</p>
-<p>The <a href="https://mc-stan.org/projpred/articles/">vignettes</a> (currently, there is only a single one) illustrate how to use the <strong>projpred</strong> functions in conjunction. Details on the <strong>projpred</strong> functions as well as some shorter examples may be found in the documentation.</p>
+<p>The R package <strong>projpred</strong> performs the projection predictive variable selection for various regression models. Usually, the reference model will be an <a href="https://mc-stan.org/rstanarm/" class="external-link"><strong>rstanarm</strong></a> or <a href="https://paul-buerkner.github.io/brms/" class="external-link"><strong>brms</strong></a> fit, but custom reference models can also be used. Details on supported model types are given in section <a href="https://mc-stan.org/projpred/articles/projpred.html#modtypes">“Supported types of models”</a> of the main vignette<a href="#fn1" class="footnote-ref" id="fnref1"><sup>1</sup></a>.</p>
+<p>For details on how to cite <strong>projpred</strong>, see the <a href="https://CRAN.R-project.org/package=projpred/citation.html" class="external-link">projpred citation info</a> on CRAN.<a href="#fn2" class="footnote-ref" id="fnref2"><sup>2</sup></a>. Further references (including earlier work that <strong>projpred</strong> is based on) are given in section <a href="https://mc-stan.org/projpred/articles/projpred.html#introduction">“Introduction”</a> of the main vignette.</p>
+<p>The <a href="https://mc-stan.org/projpred/articles/">vignettes</a><a href="#fn3" class="footnote-ref" id="fnref3"><sup>3</sup></a> (currently, the main vignette is the only one) illustrate how to use the <strong>projpred</strong> functions in conjunction. Details on the <strong>projpred</strong> functions as well as some shorter examples may be found in the <a href="https://mc-stan.org/projpred/reference/index.html">documentation</a><a href="#fn4" class="footnote-ref" id="fnref4"><sup>4</sup></a>.</p>
 <div class="section level2">
 <h2 id="installation">Installation<a class="anchor" aria-label="anchor" href="#installation"></a>
 </h2>
@@ -169,15 +168,15 @@
 <p>To save time, you may omit <code>build_vignettes = TRUE</code>.</p>
 </div>
 </div>
-<div class="section level2">
-<h2 id="references">References<a class="anchor" aria-label="anchor" href="#references"></a>
-</h2>
-<p>Catalina, A., Bürkner, P.-C., and Vehtari, A. (2020). Projection predictive inference for generalized linear and additive multilevel models. <em>arXiv:2010.06994</em>. URL: <a href="https://arxiv.org/abs/2010.06994" class="external-link uri">https://arxiv.org/abs/2010.06994</a>.</p>
-<p>Dupuis, J. A. and Robert, C. P. (2003). Variable selection in qualitative models via an entropic explanatory power. <em>Journal of Statistical Planning and Inference</em>, <strong>111</strong>(1-2):77–94. DOI: <a href="https://doi.org/10.1016/S0378-3758(02)00286-0" class="external-link">10.1016/S0378-3758(02)00286-0</a>.</p>
-<p>Goutis, C. and Robert, C. P. (1998). Model choice in generalised linear models: A Bayesian approach via Kullback–Leibler projections. <em>Biometrika</em>, <strong>85</strong>(1):29–37.</p>
-<p>Piironen, J. and Vehtari, A. (2017). Comparison of Bayesian predictive methods for model selection. <em>Statistics and Computing</em>, <strong>27</strong>(3):711-735. DOI: <a href="https://doi.org/10.1007/s11222-016-9649-y" class="external-link">10.1007/s11222-016-9649-y</a>.</p>
-<p>Piironen, J., Paasiniemi, M., and Vehtari, A. (2020). Projective inference in high-dimensional problems: Prediction and feature selection. <em>Electronic Journal of Statistics</em>, <strong>14</strong>(1):2155-2197. DOI: <a href="https://doi.org/10.1214/20-EJS1711" class="external-link">10.1214/20-EJS1711</a>.</p>
 </div>
+<div class="footnotes footnotes-end-of-document">
+<hr>
+<ol>
+<li id="fn1"><p>The main vignette can be accessed offline by typing <code><a href="articles/projpred.html">vignette(topic = "projpred", package = "projpred")</a></code> or—more conveniently—<code>browseVignettes("projpred")</code> within R.<a href="#fnref1" class="footnote-back">↩︎</a></p></li>
+<li id="fn2"><p>The citation information can be accessed offline by typing <code>print(citation("projpred"), bibtex = TRUE)</code> within R.<a href="#fnref2" class="footnote-back">↩︎</a></p></li>
+<li id="fn3"><p>The overview of all vignettes can be accessed offline by typing <code>browseVignettes("projpred")</code> within R.<a href="#fnref3" class="footnote-back">↩︎</a></p></li>
+<li id="fn4"><p>The documentation can be accessed offline using <code>?</code> or <code><a href="https://rdrr.io/r/utils/help.html" class="external-link">help()</a></code> within R.<a href="#fnref4" class="footnote-back">↩︎</a></p></li>
+</ol>
 </div>
 
   </div>

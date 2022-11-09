@@ -40,7 +40,7 @@
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">projpred</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">2.2.1</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">2.2.2</span>
       </span>
     </div>
 
@@ -146,19 +146,20 @@ selection</h1>
 <h2 id="introduction">Introduction<a class="anchor" aria-label="anchor" href="#introduction"></a>
 </h2>
 <p>This vignette shows the main functionalities of the
-<strong>projpred</strong> package, which implements the projective
-variable selection for generalized linear and additive models as well as
-for generalized linear and additive multilevel models.<a href="#fn1" class="footnote-ref" id="fnref1"><sup>1</sup></a> What is special about
-the projective variable selection is that it not only performs a
-variable selection, but also allows for valid post-selection
-inference.</p>
-<p>The projective variable selection is based on the ideas of Goutis and
-Robert (1998) and Dupuis and Robert (2003). The methods implemented in
-<strong>projpred</strong> are described in detail in Piironen et
-al. (2020) and Catalina et al. (2020). They are evaluated in comparison
-to many other methods in Piironen and Vehtari (2017a). Type
-<code>citation("projpred")</code> for details on how to cite
-<strong>projpred</strong>.</p>
+<strong>projpred</strong> package, which implements the projection
+predictive variable selection for various regression models (see section
+<a href="#modtypes">“Supported types of models”</a> below for more
+details on supported model types). What is special about the projection
+predictive variable selection is that it not only performs a variable
+selection, but also allows for valid post-selection inference.</p>
+<p>The projection predictive variable selection is based on the ideas of
+<span class="citation">Goutis and Robert (<a href="#ref-goutis_model_1998" role="doc-biblioref">1998</a>)</span> and
+<span class="citation">Dupuis and Robert (<a href="#ref-dupuis_variable_2003" role="doc-biblioref">2003</a>)</span>.
+The methods implemented in <strong>projpred</strong> are described in
+detail in <span class="citation">Piironen, Paasiniemi, and Vehtari (<a href="#ref-piironen_projective_2020" role="doc-biblioref">2020</a>)</span> and <span class="citation">Catalina, Bürkner, and Vehtari (<a href="#ref-catalina_projection_2022" role="doc-biblioref">2022</a>)</span>. They are evaluated in comparison
+to many other methods in <span class="citation">Piironen and Vehtari (<a href="#ref-piironen_comparison_2017" role="doc-biblioref">2017a</a>)</span>. For details on how to cite
+<strong>projpred</strong>, see the <a href="https://CRAN.R-project.org/package=projpred/citation.html" class="external-link">projpred
+citation info</a> on CRAN.<a href="#fn1" class="footnote-ref" id="fnref1"><sup>1</sup></a></p>
 </div>
 <div class="section level2">
 <h2 id="data">Data<a class="anchor" aria-label="anchor" href="#data"></a>
@@ -173,29 +174,39 @@ below) and one continuous response variable <code>y</code>.</p>
 <span><span class="va">dat_gauss</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span>y <span class="op">=</span> <span class="va">df_gaussian</span><span class="op">$</span><span class="va">y</span>, <span class="va">df_gaussian</span><span class="op">$</span><span class="va">x</span><span class="op">)</span></span></code></pre></div>
 </div>
 <div class="section level2">
-<h2 id="reference-model">Reference model<a class="anchor" aria-label="anchor" href="#reference-model"></a>
+<h2 id="refmod">Reference model<a class="anchor" aria-label="anchor" href="#refmod"></a>
 </h2>
-<p>First, we have to construct a reference model for the projective
-variable selection. This model is considered as the best (“reference”)
-solution to the prediction task. The aim of the projective variable
-selection is to find a subset of a set of candidate predictors which is
-as small as possible but achieves a predictive performance as close as
-possible to that of the reference model.</p>
-<p>The <strong>projpred</strong> package is compatible with reference
-models fitted by the <strong>rstanarm</strong> and <strong>brms</strong>
-packages. To our knowledge, <strong>rstanarm</strong> and
+<p>First, we have to construct a reference model for the projection
+predictive variable selection. This model is considered as the best
+(“reference”) solution to the prediction task. The aim of the projection
+predictive variable selection is to find a subset of a set of candidate
+predictors which is as small as possible but achieves a predictive
+performance as close as possible to that of the reference model.</p>
+<p>Usually (and this is also the case in this vignette), the reference
+model will be an <a href="https://mc-stan.org/rstanarm/" class="external-link"><strong>rstanarm</strong></a> or <a href="https://paul-buerkner.github.io/brms/" class="external-link"><strong>brms</strong></a>
+fit. To our knowledge, <strong>rstanarm</strong> and
 <strong>brms</strong> are currently the only packages for which a
 <code><a href="../reference/refmodel-init-get.html">get_refmodel()</a></code> method (which establishes the compatibility
-with <strong>projpred</strong>) exists. Custom reference models can be
-constructed via <code><a href="../reference/refmodel-init-get.html">init_refmodel()</a></code>, as shown in section
-“Examples” in the <code><a href="../reference/refmodel-init-get.html">?init_refmodel</a></code> help.<a href="#fn2" class="footnote-ref" id="fnref2"><sup>2</sup></a> For both,
-<strong>rstanarm</strong> and <strong>brms</strong> reference models,
-all candidate models are <em>submodels</em> of the reference model. In
-principle, this is not a necessary assumption for a projective variable
-selection (see, e.g., Piironen et al., 2020) and custom reference models
-allow to avoid this assumption, but for <strong>rstanarm</strong> and
-<strong>brms</strong> reference models, this is a reasonable assumption
-which simplifies implementation in <strong>projpred</strong> a lot.</p>
+with <strong>projpred</strong>) exists. Creating a reference model
+object via one of these <code><a href="../reference/refmodel-init-get.html">get_refmodel.stanreg()</a></code> or
+<code><a href="https://rdrr.io/pkg/brms/man/get_refmodel.brmsfit.html" class="external-link">brms::get_refmodel.brmsfit()</a></code> methods (either implicitly by
+a call to a top-level function such as <code><a href="../reference/project.html">project()</a></code>,
+<code><a href="../reference/varsel.html">varsel()</a></code>, and <code><a href="../reference/cv_varsel.html">cv_varsel()</a></code>, as done below, or
+explicitly by a call to <code><a href="../reference/refmodel-init-get.html">get_refmodel()</a></code>) leads to a
+“typical” reference model object. In that case, all candidate models are
+actual <em>sub</em>models of the reference model. In general, however,
+this assumption is not necessary for a projection predictive variable
+selection <span class="citation">(see, e.g., <a href="#ref-piironen_projective_2020" role="doc-biblioref">Piironen,
+Paasiniemi, and Vehtari 2020</a>)</span>. This is why “custom” (i.e.,
+non-“typical”) reference model objects allow to avoid this assumption
+(although the candidate models of a “custom” reference model object will
+still be actual <em>sub</em>models of the full <code>formula</code> used
+by the search procedure—which does not have to be the same as the
+reference model’s <code>formula</code>, if the reference model possesses
+a <code>formula</code> at all). Such “custom” reference model objects
+can be constructed via <code><a href="../reference/refmodel-init-get.html">init_refmodel()</a></code> (or
+<code><a href="../reference/refmodel-init-get.html">get_refmodel.default()</a></code>), as shown in section “Examples” of
+the <code><a href="../reference/refmodel-init-get.html">?init_refmodel</a></code> help.<a href="#fn2" class="footnote-ref" id="fnref2"><sup>2</sup></a></p>
 <p>Here, we use the <strong>rstanarm</strong> package to fit the
 reference model. If you want to use the <strong>brms</strong> package,
 simply replace the <strong>rstanarm</strong> fit (of class
@@ -203,22 +214,22 @@ simply replace the <strong>rstanarm</strong> fit (of class
 <strong>brms</strong> fit (of class <code>brmsfit</code>). Only note
 that in case of a <strong>brms</strong> fit, we recommend to specify
 argument <code>brms_seed</code> of
-<code>brms:::get_refmodel.brmsfit()</code>.</p>
+<code><a href="https://rdrr.io/pkg/brms/man/get_refmodel.brmsfit.html" class="external-link">brms::get_refmodel.brmsfit()</a></code>.</p>
 <div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://mc-stan.org/rstanarm/" class="external-link">rstanarm</a></span><span class="op">)</span></span></code></pre></div>
 <p>For our <strong>rstanarm</strong> reference model, we use the
 Gaussian distribution as the <code>family</code> for our response. With
 respect to the predictors, we only include the linear main effects of
 all 20 predictor variables. Compared to the more complex types of
-reference models supported by <strong>projpred</strong> (see section <a href="#refmodtypes">“Supported types of reference models”</a> below),
-this is a quite simple reference model which is sufficient, however, to
-demonstrate the interplay of <strong>projpred</strong>’s functions.</p>
+reference models supported by <strong>projpred</strong> (see section <a href="#modtypes">“Supported types of models”</a> below), this is a quite
+simple reference model which is sufficient, however, to demonstrate the
+interplay of <strong>projpred</strong>’s functions.</p>
 <p>We use <strong>rstanarm</strong>’s default priors in our reference
 model, except for the regression coefficients for which we use a
-regularized horseshoe prior (Piironen and Vehtari, 2017c) with the
-hyperprior for its global shrinkage parameter following Piironen and
-Vehtari (2017b,c). In R code, these are the preparation steps for the
-regularized horseshoe prior:</p>
+regularized horseshoe prior <span class="citation">(<a href="#ref-piironen_sparsity_2017" role="doc-biblioref">Piironen and
+Vehtari 2017c</a>)</span> with the hyperprior for its global shrinkage
+parameter following <span class="citation">Piironen and Vehtari (<a href="#ref-piironen_hyperprior_2017" role="doc-biblioref">2017b</a>)</span> and <span class="citation">Piironen and Vehtari (<a href="#ref-piironen_sparsity_2017" role="doc-biblioref">2017c</a>)</span>. In R code, these are the
+preparation steps for the regularized horseshoe prior:</p>
 <div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># Number of regression coefficients:</span></span>
 <span><span class="op">(</span> <span class="va">D</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/sum.html" class="external-link">sum</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/grep.html" class="external-link">grepl</a></span><span class="op">(</span><span class="st">"^X"</span>, <span class="fu"><a href="https://rdrr.io/r/base/names.html" class="external-link">names</a></span><span class="op">(</span><span class="va">dat_gauss</span><span class="op">)</span><span class="op">)</span><span class="op">)</span> <span class="op">)</span></span></code></pre></div>
@@ -274,12 +285,12 @@ the technical reasons for which we reduced <code>chains</code> and
 <p>Now, <strong>projpred</strong> comes into play.</p>
 <div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://mc-stan.org/projpred/">projpred</a></span><span class="op">)</span></span></code></pre></div>
-<p>In <strong>projpred</strong>, the projective variable selection
-consists of a <em>search</em> part and an <em>evaluation</em> part. The
-search part determines the solution path, i.e., the best submodel for
-each submodel size (number of predictor terms). The evaluation part
-determines the predictive performance of the submodels along the
-solution path.</p>
+<p>In <strong>projpred</strong>, the projection predictive variable
+selection consists of a <em>search</em> part and an <em>evaluation</em>
+part. The search part determines the solution path, i.e., the best
+submodel for each submodel size (number of predictor terms). The
+evaluation part determines the predictive performance of the submodels
+along the solution path.</p>
 <p>There are two functions for performing the variable selection:
 <code><a href="../reference/varsel.html">varsel()</a></code> and <code><a href="../reference/cv_varsel.html">cv_varsel()</a></code>. In contrast to
 <code><a href="../reference/varsel.html">varsel()</a></code>, <code><a href="../reference/cv_varsel.html">cv_varsel()</a></code> performs a
@@ -291,10 +302,10 @@ each CV fold. Because of this CV, <code><a href="../reference/cv_varsel.html">cv
 recommended over <code><a href="../reference/varsel.html">varsel()</a></code>. Thus, we use
 <code><a href="../reference/cv_varsel.html">cv_varsel()</a></code> here. Nonetheless, running
 <code><a href="../reference/varsel.html">varsel()</a></code> first can offer a rough idea of the performance of
-the projections (i.e., of the submodels after projecting the reference
-model onto them). A more principled <strong>projpred</strong> workflow
-is work under progress.</p>
-<!-- In versions > 2.0.2, **projpred** offers a parallelization of the projection. Typically, this only makes sense for a large number of projected draws. Therefore, this parallelization is not activated by a simple logical switch, but by a threshold for the number of projected draws below which no parallelization will be used. Values greater than or equal to this threshold will trigger the parallelization. For more information, see the general package documentation available at ``?`projpred-package` ``. There, we also explain why we are not running the parallelization on Windows and why we cannot recommend the parallelization of the projection for some types of reference models (see also section ["Supported types of reference models"](#refmodtypes) below). -->
+the submodels (after projecting the reference model onto them). A more
+principled <strong>projpred</strong> workflow is work under
+progress.</p>
+<!-- In versions > 2.0.2, **projpred** offers a parallelization of the projection. Typically, this only makes sense for a large number of projected draws. Therefore, this parallelization is not activated by a simple logical switch, but by a threshold for the number of projected draws below which no parallelization will be used. Values greater than or equal to this threshold will trigger the parallelization. For more information, see the general package documentation available at ``?`projpred-package` ``. There, we also explain why we are not running the parallelization on Windows and why we cannot recommend the parallelization of the projection for some types of reference models (see also section ["Supported types of models"](#modtypes) below). -->
 <!-- ```{r} -->
 <!-- if (!identical(.Platform$OS.type, "windows")) { -->
 <!--   trigger_default <- options(projpred.prll_prj_trigger = 200) -->
@@ -428,18 +439,13 @@ of the final submodel:</p>
 post-selection inference. By the following code, <code><a href="../reference/project.html">project()</a></code>
 will project the reference model onto the final submodel once again<a href="#fn4" class="footnote-ref" id="fnref4"><sup>4</sup></a>:</p>
 <div class="sourceCode" id="cb20"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">prj</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/project.html">project</a></span><span class="op">(</span></span>
-<span>  <span class="va">refm_fit</span>,</span>
-<span>  solution_terms <span class="op">=</span> <span class="va">soltrms_final</span>,</span>
-<span>  seed <span class="op">=</span> <span class="fl">15705533</span></span>
-<span><span class="op">)</span></span></code></pre></div>
+<code class="sourceCode R"><span><span class="va">prj</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/project.html">project</a></span><span class="op">(</span><span class="va">refm_fit</span>, solution_terms <span class="op">=</span> <span class="va">soltrms_final</span><span class="op">)</span></span></code></pre></div>
 <!-- Alternative, as soon as GitHub issue #168 is resolved: -->
 <!-- ```{r} -->
 <!-- prj <- project( -->
 <!--   cvvs, -->
 <!--   nterms = modsize_decided, -->
-<!--   refit_prj = FALSE, -->
-<!--   seed = 15705533 -->
+<!--   refit_prj = FALSE -->
 <!-- ) -->
 <!-- ``` -->
 <p>For more accurate results, we could have increased argument
@@ -566,8 +572,17 @@ that this model is reasonable, at least in this regard.</p>
 </div>
 </div>
 <div class="section level2">
-<h2 id="refmodtypes">Supported types of reference models<a class="anchor" aria-label="anchor" href="#refmodtypes"></a>
+<h2 id="modtypes">Supported types of models<a class="anchor" aria-label="anchor" href="#modtypes"></a>
 </h2>
+<p>In principle, the projection predictive variable selection requires
+only little information about the form of the reference model. Although
+many aspects of the reference model coincide with those from the
+submodels if a “typical” reference model object is used, this does not
+need to be the case if a “custom” reference model object is used (see
+section <a href="#refmod">“Reference model”</a> above for the definition
+of “typical” and “custom” reference model objects). This explains why in
+general, the following remarks refer to the submodels and not to the
+reference model.</p>
 <p>Apart from the <code><a href="https://rdrr.io/r/stats/family.html" class="external-link">gaussian()</a></code> response family used in this
 vignette, <strong>projpred</strong> also supports the
 <code><a href="https://rdrr.io/r/stats/family.html" class="external-link">binomial()</a></code><a href="#fn8" class="footnote-ref" id="fnref8"><sup>8</sup></a> and the <code><a href="https://rdrr.io/r/stats/family.html" class="external-link">poisson()</a></code> family. On
@@ -575,11 +590,12 @@ the side of the predictors, <strong>projpred</strong> not only supports
 linear main effects as shown in this vignette, but also interactions,
 multilevel<a href="#fn9" class="footnote-ref" id="fnref9"><sup>9</sup></a>, and—as an experimental feature—additive<a href="#fn10" class="footnote-ref" id="fnref10"><sup>10</sup></a>
 terms.</p>
-<p>Transferring this vignette to such more complex reference models is
-straightforward: Basically, only the code for fitting the reference
-model via <strong>rstanarm</strong> or <strong>brms</strong> needs to be
-adapted. The <strong>projpred</strong> code stays almost the same. Only
-note that in case of multilevel or additive reference models,
+<p>Transferring this vignette (which employs a “typical” reference
+model) to such more complex problems is straightforward: Basically, only
+the code for fitting the reference model via <strong>rstanarm</strong>
+or <strong>brms</strong> needs to be adapted. The
+<strong>projpred</strong> code stays almost the same. Only note that in
+case of multilevel or additive reference models,
 <!-- the parallelization of the projection is not recommended and that -->
 some <strong>projpred</strong> functions then have slightly different
 options for a few arguments. See the documentation for details.</p>
@@ -633,8 +649,8 @@ following code:</p>
 </h2>
 <p>Sometimes, the ordering of the predictor terms in the solution path
 makes sense, but for increasing submodel size, the performance measures
-of the projections do not approach that of the reference model. There
-are different reasons that can explain this behavior (the following list
+of the submodels do not approach that of the reference model. There are
+different reasons that can explain this behavior (the following list
 might not be exhaustive, though):</p>
 <ol style="list-style-type: decimal">
 <li>The reference model’s posterior may be so wide that the default
@@ -646,8 +662,10 @@ model and thereby ensuring a narrower posterior (usually by employing a
 stronger sparsifying prior) should have a similar effect.</li>
 <li>For non-Gaussian models, the discrepancy may be due to the fact that
 the penalized iteratively reweighted least squares (PIRLS) algorithm
-might have convergence issues (Catalina et al., 2021). In this case, the
-latent-space approach by Catalina et al. (2021) might help.</li>
+might have convergence issues <span class="citation">(<a href="#ref-catalina_latent_2021" role="doc-biblioref">Catalina, Bürkner,
+and Vehtari 2021</a>)</span>. In this case, the latent-space approach by
+<span class="citation">Catalina, Bürkner, and Vehtari (<a href="#ref-catalina_latent_2021" role="doc-biblioref">2021</a>)</span>
+might help.</li>
 <li>If you are using <code><a href="../reference/varsel.html">varsel()</a></code>, then the lack of the CV in
 <code><a href="../reference/varsel.html">varsel()</a></code> may lead to overconfident and overfitted results.
 In this case, try running <code><a href="../reference/cv_varsel.html">cv_varsel()</a></code> instead of
@@ -655,43 +673,68 @@ In this case, try running <code><a href="../reference/cv_varsel.html">cv_varsel(
 results).</li>
 </ol>
 </div>
-<div class="section level2">
-<h2 id="references">References<a class="anchor" aria-label="anchor" href="#references"></a>
+<div class="section level2 unnumbered">
+<h2 class="unnumbered" id="references">References<a class="anchor" aria-label="anchor" href="#references"></a>
 </h2>
-<p>Catalina, A., Bürkner, P.-C., and Vehtari, A. (2020). Projection
-predictive inference for generalized linear and additive multilevel
-models. <em>arXiv:2010.06994</em>. URL: <a href="https://arxiv.org/abs/2010.06994" class="external-link uri">https://arxiv.org/abs/2010.06994</a>.</p>
-<p>Catalina, A., Bürkner, P., and Vehtari, A. (2021). Latent space
-projection predictive inference. <em>arXiv:2109.04702</em>. URL: <a href="https://arxiv.org/abs/2109.04702" class="external-link uri">https://arxiv.org/abs/2109.04702</a>.</p>
-<p>Dupuis, J. A. and Robert, C. P. (2003). Variable selection in
-qualitative models via an entropic explanatory power. <em>Journal of
-Statistical Planning and Inference</em>,
-<strong>111</strong>(1-2):77–94. DOI: <a href="https://doi.org/10.1016/S0378-3758(02)00286-0" class="external-link">10.1016/S0378-3758(02)00286-0</a>.</p>
-<p>Goutis, C. and Robert, C. P. (1998). Model choice in generalised
-linear models: A Bayesian approach via Kullback–Leibler projections.
-<em>Biometrika</em>, <strong>85</strong>(1):29–37.</p>
-<p>Piironen, J., Paasiniemi, M., and Vehtari, A. (2020). Projective
-inference in high-dimensional problems: Prediction and feature
-selection. <em>Electronic Journal of Statistics</em>,
-<strong>14</strong>(1):2155-2197. DOI: <a href="https://doi.org/10.1214/20-EJS1711" class="external-link">10.1214/20-EJS1711</a>.</p>
-<p>Piironen, J. and Vehtari, A. (2017a). Comparison of Bayesian
-predictive methods for model selection. <em>Statistics and
-Computing</em>, <strong>27</strong>(3):711-735. DOI: <a href="https://doi.org/10.1007/s11222-016-9649-y" class="external-link">10.1007/s11222-016-9649-y</a>.</p>
-<p>Piironen, J. and Vehtari, A. (2017b). On the hyperprior choice for
-the global shrinkage parameter in the horseshoe prior. In
-<em>Proceedings of the 20th International Conference on Artificial
-Intelligence and Statistics (AISTATS)</em>, PMLR 54:905-913, 2017. URL:
-<a href="https://proceedings.mlr.press/v54/piironen17a.html" class="external-link uri">https://proceedings.mlr.press/v54/piironen17a.html</a>.</p>
-<p>Piironen, J. and Vehtari, A. (2017c). Sparsity information and
-regularization in the horseshoe and other shrinkage priors.
-<em>Electronic Journal of Statistics</em>, <strong>11</strong>(2):
-5018-5051. DOI: <a href="https://doi.org/10.1214/17-EJS1337SI" class="external-link">10.1214/17-EJS1337SI</a>.</p>
+<div id="refs" class="references csl-bib-body hanging-indent">
+<div id="ref-catalina_projection_2022" class="csl-entry">
+Catalina, Alejandro, Paul-Christian Bürkner, and Aki Vehtari. 2022.
+<span>“Projection Predictive Inference for Generalized Linear and
+Additive Multilevel Models.”</span> In <em>Proceedings of
+<span>The</span> 25th <span>International Conference</span> on
+<span>Artificial Intelligence</span> and <span>Statistics</span></em>,
+edited by Gustau Camps-Valls, Francisco J. R. Ruiz, and Isabel Valera,
+151:4446–61. Proceedings of <span>Machine Learning Research</span>.
+<span>PMLR</span>. <a href="https://proceedings.mlr.press/v151/catalina22a.html" class="external-link">https://proceedings.mlr.press/v151/catalina22a.html</a>.
+</div>
+<div id="ref-catalina_latent_2021" class="csl-entry">
+Catalina, Alejandro, Paul Bürkner, and Aki Vehtari. 2021. <span>“Latent
+Space Projection Predictive Inference.”</span> <span>arXiv</span>. <a href="https://doi.org/10.48550/arXiv.2109.04702" class="external-link">https://doi.org/10.48550/arXiv.2109.04702</a>.
+</div>
+<div id="ref-dupuis_variable_2003" class="csl-entry">
+Dupuis, Jérome A., and Christian P. Robert. 2003. <span>“Variable
+Selection in Qualitative Models via an Entropic Explanatory
+Power.”</span> <em>Journal of Statistical Planning and Inference</em>
+111 (1–2): 77–94. <a href="https://doi.org/10.1016/S0378-3758(02)00286-0" class="external-link">https://doi.org/10.1016/S0378-3758(02)00286-0</a>.
+</div>
+<div id="ref-goutis_model_1998" class="csl-entry">
+Goutis, Constantinos, and Christian P. Robert. 1998. <span>“Model Choice
+in Generalised Linear Models: <span>A Bayesian</span> Approach via
+<span>Kullback-Leibler</span> Projections.”</span> <em>Biometrika</em>
+85 (1): 29–37.
+</div>
+<div id="ref-piironen_projective_2020" class="csl-entry">
+Piironen, Juho, Markus Paasiniemi, and Aki Vehtari. 2020.
+<span>“Projective Inference in High-Dimensional Problems:
+<span>Prediction</span> and Feature Selection.”</span> <em>Electronic
+Journal of Statistics</em> 14 (1): 2155–97. <a href="https://doi.org/10.1214/20-EJS1711" class="external-link">https://doi.org/10.1214/20-EJS1711</a>.
+</div>
+<div id="ref-piironen_comparison_2017" class="csl-entry">
+Piironen, Juho, and Aki Vehtari. 2017a. <span>“Comparison of
+<span>Bayesian</span> Predictive Methods for Model Selection.”</span>
+<em>Statistics and Computing</em> 27 (3): 711–35. <a href="https://doi.org/10.1007/s11222-016-9649-y" class="external-link">https://doi.org/10.1007/s11222-016-9649-y</a>.
+</div>
+<div id="ref-piironen_hyperprior_2017" class="csl-entry">
+———. 2017b. <span>“On the Hyperprior Choice for the Global Shrinkage
+Parameter in the Horseshoe Prior.”</span> In <em>Proceedings of the 20th
+<span>International Conference</span> on <span>Artificial
+Intelligence</span> and <span>Statistics</span></em>, edited by Aarti
+Singh and Jerry Zhu, 54:905–13. Proceedings of <span>Machine Learning
+Research</span>. <span>PMLR</span>. <a href="https://proceedings.mlr.press/v54/piironen17a.html" class="external-link">https://proceedings.mlr.press/v54/piironen17a.html</a>.
+</div>
+<div id="ref-piironen_sparsity_2017" class="csl-entry">
+———. 2017c. <span>“Sparsity Information and Regularization in the
+Horseshoe and Other Shrinkage Priors.”</span> <em>Electronic Journal of
+Statistics</em> 11 (2): 5018–51. <a href="https://doi.org/10.1214/17-EJS1337SI" class="external-link">https://doi.org/10.1214/17-EJS1337SI</a>.
+</div>
+</div>
 </div>
 <div class="footnotes footnotes-end-of-document">
 <hr>
 <ol>
-<li id="fn1"><p>Currently, the support for additive models is only
-experimental in <strong>projpred</strong>.<a href="#fnref1" class="footnote-back">↩︎</a></p></li>
+<li id="fn1"><p>The citation information can be accessed offline by
+typing <code>print(citation("projpred"), bibtex = TRUE)</code> within
+R.<a href="#fnref1" class="footnote-back">↩︎</a></p></li>
 <li id="fn2"><p>We will cover custom reference models more deeply in a
 future vignette.<a href="#fnref2" class="footnote-back">↩︎</a></p></li>
 <li id="fn3"><p>More generally, the number of chains is split up as
@@ -718,9 +761,8 @@ make this statement correct.<a href="#fnref6" class="footnote-back">↩︎</a></
 <li id="fn7"><p>In case of the Gaussian family we are using here, the
 uncertainty arising from the observational model is the uncertainty due
 to the residual standard deviation.<a href="#fnref7" class="footnote-back">↩︎</a></p></li>
-<li id="fn8"><p>The <code><a href="https://rdrr.io/r/stats/family.html" class="external-link">binomial()</a></code> family includes the
-<code><a href="https://rdrr.io/pkg/brms/man/brmsfamily.html" class="external-link">brms::bernoulli()</a></code> family as a special case which may only
-be used via the <strong>brms</strong> package.<a href="#fnref8" class="footnote-back">↩︎</a></p></li>
+<li id="fn8"><p>Via <code><a href="https://rdrr.io/pkg/brms/man/get_refmodel.brmsfit.html" class="external-link">brms::get_refmodel.brmsfit()</a></code>, the
+<code><a href="https://rdrr.io/pkg/brms/man/brmsfamily.html" class="external-link">brms::bernoulli()</a></code> family is supported as well.<a href="#fnref8" class="footnote-back">↩︎</a></p></li>
 <li id="fn9"><p>Multilevel models are also known as
 <em>hierarchical</em> models or models with <em>partially pooled</em>,
 <em>group-level</em>, or—in frequentist terms—<em>random</em> effects.<a href="#fnref9" class="footnote-back">↩︎</a></p></li>

@@ -19,7 +19,7 @@ belong to the same cluster. This averaging can be done in a weighted fashion."><
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">projpred</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">2.2.1</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">2.2.2</span>
       </span>
     </div>
 
@@ -171,14 +171,12 @@ parameter draws.</p>
 <span class="r-in"><span><span class="co"># Clustering example with nonconstant `wdraws`:</span></span></span>
 <span class="r-in"><span><span class="va">w_draws</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/stats/GammaDist.html" class="external-link">rgamma</a></span><span class="op">(</span><span class="va">S</span>, shape <span class="op">=</span> <span class="fl">4</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="va">draws_cl</span> <span class="op">&lt;-</span> <span class="fu">cl_agg</span><span class="op">(</span><span class="va">draws</span>, cl <span class="op">=</span> <span class="va">cl_draws</span>, wdraws <span class="op">=</span> <span class="va">w_draws</span><span class="op">)</span></span></span>
-<span class="r-in"><span><span class="co"># Thinning example:</span></span></span>
+<span class="r-in"><span><span class="co"># Thinning example (implying constant `wdraws`):</span></span></span>
 <span class="r-in"><span><span class="va">S_th</span> <span class="op">&lt;-</span> <span class="fl">50L</span></span></span>
 <span class="r-in"><span><span class="va">idxs_thin</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/Round.html" class="external-link">round</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/seq.html" class="external-link">seq</a></span><span class="op">(</span><span class="fl">1</span>, <span class="va">S</span>, length.out <span class="op">=</span> <span class="va">S_th</span><span class="op">)</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="va">th_draws</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/rep.html" class="external-link">rep</a></span><span class="op">(</span><span class="cn">NA</span>, <span class="va">S</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="va">th_draws</span><span class="op">[</span><span class="va">idxs_thin</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/seq.html" class="external-link">seq_len</a></span><span class="op">(</span><span class="va">S_th</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="va">draws_th</span> <span class="op">&lt;-</span> <span class="fu">cl_agg</span><span class="op">(</span><span class="va">draws</span>, cl <span class="op">=</span> <span class="va">th_draws</span><span class="op">)</span></span></span>
-<span class="r-in"><span><span class="co"># A thinning example with nonconstant `wdraws` doesn't make sense because in</span></span></span>
-<span class="r-in"><span><span class="co"># case of thinning, `wdraws` doesn't have any impact.</span></span></span>
 <span class="r-in"><span></span></span>
 </code></pre></div>
     </div>
