@@ -1,16 +1,17 @@
 #' Predictions from a submodel (after projection)
 #'
 #' After the projection of the reference model onto a submodel, the linear
-#' predictors (for the original dataset or new data) based on that submodel can
-#' be calculated by [proj_linpred()]. The linear predictors can also be
-#' transformed to response scale. Furthermore, [proj_linpred()] returns the
-#' corresponding log predictive density values if the new dataset contains
+#' predictors (for the original or a new dataset) based on that submodel can be
+#' calculated by [proj_linpred()]. The linear predictors can also be transformed
+#' to response scale. Furthermore, [proj_linpred()] returns the corresponding
+#' log predictive density values if the (original or new) dataset contains
 #' response values. The [proj_predict()] function draws from the predictive
-#' distribution of the submodel that the reference model has been projected
-#' onto. If the projection has not been performed yet, both functions call
-#' [project()] internally to perform the projection. Both functions can also
-#' handle multiple submodels at once (for `object`s of class `vsel` or `object`s
-#' returned by a [project()] call to an object of class `vsel`; see
+#' distributions (there is one such distribution for each observation from the
+#' original or new dataset) of the submodel that the reference model has been
+#' projected onto. If the projection has not been performed yet, both functions
+#' call [project()] internally to perform the projection. Both functions can
+#' also handle multiple submodels at once (for `object`s of class `vsel` or
+#' `object`s returned by a [project()] call to an object of class `vsel`; see
 #' [project()]).
 #'
 #' @name pred-projection
@@ -30,8 +31,8 @@
 #'   indicating whether the output should be averaged across the projected
 #'   posterior draws (`TRUE`) or not (`FALSE`).
 #' @param nresample_clusters For [proj_predict()] with clustered projection
-#'   only. Number of draws to return from the predictive distribution of the
-#'   submodel. Not to be confused with argument `nclusters` of [project()]:
+#'   only. Number of draws to return from the predictive distributions of the
+#'   submodel(s). Not to be confused with argument `nclusters` of [project()]:
 #'   `nresample_clusters` gives the number of draws (*with* replacement) from
 #'   the set of clustered posterior draws after projection (with this set being
 #'   determined by argument `nclusters` of [project()]).
@@ -40,7 +41,7 @@
 #'   [set.seed()], but can also be `NA` to not call [set.seed()] at all. Here,
 #'   this seed is used for drawing new group-level effects in case of a
 #'   multilevel submodel (however, not yet in case of a GAMM) and for drawing
-#'   from the predictive distribution of the submodel(s) in case of
+#'   from the predictive distributions of the submodel(s) in case of
 #'   [proj_predict()]. If a clustered projection was performed, then in
 #'   [proj_predict()], `.seed` is also used for drawing from the set of the
 #'   projected clusters of posterior draws (see argument `nresample_clusters`).
@@ -49,22 +50,23 @@
 #'
 #' @return Let \eqn{S_{\mathrm{prj}}}{S_prj} denote the number of (possibly
 #'   clustered) projected posterior draws (short: the number of projected draws)
-#'   and \eqn{N} the number of observations. Then, if the prediction is done for
-#'   one submodel only (i.e., `length(nterms) == 1 || !is.null(solution_terms)`
-#'   in the call to [project()]):
+#'   and \eqn{N} the number of observations. (For [proj_linpred()] with
+#'   `integrated = TRUE`, we have \eqn{S_{\mathrm{prj}} = 1}{S_prj = 1}.) Then,
+#'   if the prediction is done for one submodel only (i.e., `length(nterms) == 1
+#'   || !is.null(solution_terms)` in the call to [project()]):
 #'   * [proj_linpred()] returns a `list` with elements `pred` (predictions,
 #'   i.e., the linear predictors, possibly transformed to response scale) and
-#'   `lpd` (log predictive densities; only calculated if `newdata` contains
-#'   response values). Both elements are \eqn{S_{\mathrm{prj}} \times N}{S_prj x
-#'   N} matrices.
+#'   `lpd` (log predictive densities; only calculated if `newdata` is `NULL` or
+#'   if `newdata` contains response values in the corresponding column). Both
+#'   elements are \eqn{S_{\mathrm{prj}} \times N}{S_prj x N} matrices.
 #'   * [proj_predict()] returns an \eqn{S_{\mathrm{prj}} \times N}{S_prj x N}
 #'   matrix of predictions where \eqn{S_{\mathrm{prj}}}{S_prj} denotes
 #'   `nresample_clusters` in case of clustered projection.
 #'
 #'   If the prediction is done for more than one submodel, the output from above
 #'   is returned for each submodel, giving a named `list` with one element for
-#'   each submodel (the names of this `list` being the numbers of solutions
-#'   terms of the submodels when counting the intercept, too).
+#'   each submodel (the names of this `list` being the numbers of solution terms
+#'   of the submodels when counting the intercept, too).
 #'
 #' @examples
 #' if (requireNamespace("rstanarm", quietly = TRUE)) {
@@ -479,9 +481,10 @@ plot.vsel <- function(
 #' @param object An object of class `vsel` (returned by [varsel()] or
 #'   [cv_varsel()]).
 #' @param nterms_max Maximum submodel size for which the statistics are
-#'   calculated. Note that `nterms_max` does not count the intercept, so use
-#'   `nterms_max = 0` for the intercept-only model. For [plot.vsel()],
-#'   `nterms_max` must be at least `1`.
+#'   calculated. Using `NULL` is effectively the same as using
+#'   `length(solution_terms(object))`. Note that `nterms_max` does not count the
+#'   intercept, so use `nterms_max = 0` for the intercept-only model. For
+#'   [plot.vsel()], `nterms_max` must be at least `1`.
 #' @param stats One or more character strings determining which performance
 #'   statistics (i.e., utilities or losses) to calculate. Available statistics
 #'   are:
@@ -509,9 +512,10 @@ plot.vsel <- function(
 #'   from the baseline model (see argument `baseline`) instead of estimating the
 #'   actual values of the statistics.
 #' @param alpha A number determining the (nominal) coverage `1 - alpha` of the
-#'   normal-approximation confidence intervals. For example, `alpha = 0.32`
-#'   corresponds to a coverage of 68%, i.e., one-standard-error intervals
-#'   (because of the normal approximation).
+#'   normal-approximation (or bootstrap; see argument `stats`) confidence
+#'   intervals. For example, in case of the normal approximation, `alpha = 0.32`
+#'   corresponds to one-standard-error intervals (because of the coverage of
+#'   68%).
 #' @param baseline For [summary.vsel()]: Only relevant if `deltas` is `TRUE`.
 #'   For [plot.vsel()]: Always relevant. Either `"ref"` or `"best"`, indicating
 #'   whether the baseline is the reference model or the best submodel found (in
@@ -522,6 +526,8 @@ plot.vsel <- function(
 #'   and `seed` (see [set.seed()], defaulting to
 #'   `sample.int(.Machine$integer.max, 1)`, but can also be `NA` to not call
 #'   [set.seed()] at all).
+#'
+#' @return An object of class `vselsummary`.
 #'
 #' @examples
 #' if (requireNamespace("rstanarm", quietly = TRUE)) {
@@ -728,9 +734,9 @@ print.vsel <- function(x, ...) {
 #'   [cv_varsel()]).
 #' @param stat Performance statistic (i.e., utility or loss) used for the
 #'   decision. See argument `stats` of [summary.vsel()] for possible choices.
-#' @param pct A number giving the relative proportion (*not* percents) between
-#'   baseline model and null model utilities one is willing to sacrifice. See
-#'   section "Details" below for more information.
+#' @param pct A number giving the proportion (*not* percents) of the *relative*
+#'   null model utility one is willing to sacrifice. See section "Details" below
+#'   for more information.
 #' @param type Either `"upper"` or `"lower"` determining whether the decision is
 #'   based on the upper or lower confidence interval bound, respectively. See
 #'   section "Details" below for more information.
@@ -752,16 +758,16 @@ print.vsel <- function(x, ...) {
 #'   size is the smallest model size \eqn{k \in \{0, 1, ...,
 #'   \texttt{nterms\_max}\}}{{k = 0, 1, ..., nterms_max}} for which either the
 #'   lower or upper bound (depending on argument `type`) of the
-#'   normal-approximation confidence interval (with nominal coverage `1 -
-#'   alpha`; see argument `alpha` of [summary.vsel()]) for \eqn{U_k -
-#'   U_{\mathrm{base}}}{U_k - U_base} (with \eqn{U_k} denoting the \eqn{k}-th
-#'   submodel's true utility and \eqn{U_{\mathrm{base}}}{U_base} denoting the
-#'   baseline model's true utility) falls above (or is equal to)
-#'   \deqn{\texttt{pct} \cdot (u_0 - u_{\mathrm{base}})}{pct * (u_0 - u_base)}
-#'   where \eqn{u_0} denotes the null model's estimated utility and
-#'   \eqn{u_{\mathrm{base}}}{u_base} the baseline model's estimated utility. The
-#'   baseline model is either the reference model or the best submodel found
-#'   (see argument `baseline` of [summary.vsel()]).
+#'   normal-approximation (or bootstrap; see argument `stat`) confidence
+#'   interval (with nominal coverage `1 - alpha`; see argument `alpha` of
+#'   [summary.vsel()]) for \eqn{U_k - U_{\mathrm{base}}}{U_k - U_base} (with
+#'   \eqn{U_k} denoting the \eqn{k}-th submodel's true utility and
+#'   \eqn{U_{\mathrm{base}}}{U_base} denoting the baseline model's true utility)
+#'   falls above (or is equal to) \deqn{\texttt{pct} \cdot (u_0 -
+#'   u_{\mathrm{base}})}{pct * (u_0 - u_base)} where \eqn{u_0} denotes the null
+#'   model's estimated utility and \eqn{u_{\mathrm{base}}}{u_base} the baseline
+#'   model's estimated utility. The baseline model is either the reference model
+#'   or the best submodel found (see argument `baseline` of [summary.vsel()]).
 #'
 #'   If `!is.na(thres_elpd)` and `stat = "elpd"`, the decision rule above is
 #'   extended: The suggested model size is then the smallest model size \eqn{k}
@@ -776,18 +782,23 @@ print.vsel <- function(x, ...) {
 #'   or `stat = "mlpd"`), `alpha = 0.32`, `pct = 0`, and `type = "upper"` means
 #'   that we select the smallest model size for which the upper bound of the 68%
 #'   confidence interval for \eqn{U_k - U_{\mathrm{base}}}{U_k - U_base} exceeds
-#'   (or is equal to) zero, that is, for which the submodel's utility estimate
-#'   is at most one standard error smaller than the baseline model's utility
-#'   estimate (with that standard error referring to the utility *difference*).
+#'   (or is equal to) zero, that is (if `stat` is a performance statistic for
+#'   which the normal approximation is used, not the bootstrap), for which the
+#'   submodel's utility estimate is at most one standard error smaller than the
+#'   baseline model's utility estimate (with that standard error referring to
+#'   the utility *difference*).
 #'
-#' @note Loss statistics like the root mean-squared error (RMSE) and the
-#'   mean-squared error (MSE) are converted to utilities by multiplying them by
-#'   `-1`, so a call such as `suggest_size(object, stat = "rmse", type =
-#'   "upper")` finds the smallest model size whose upper confidence interval
-#'   bound for the *negative* RMSE or MSE exceeds the cutoff (or, equivalently,
-#'   has the lower confidence interval bound for the RMSE or MSE below the
-#'   cutoff). This is done to make the interpretation of argument `type` the
-#'   same regardless of argument `stat`.
+#' @note Loss statistics like the root mean squared error (RMSE) and the mean
+#'   squared error (MSE) are converted to utilities by multiplying them by `-1`,
+#'   so a call such as `suggest_size(object, stat = "rmse", type = "upper")`
+#'   finds the smallest model size whose upper confidence interval bound for the
+#'   *negative* RMSE or MSE exceeds the cutoff (or, equivalently, has the lower
+#'   confidence interval bound for the RMSE or MSE below the cutoff). This is
+#'   done to make the interpretation of argument `type` the same regardless of
+#'   argument `stat`.
+#'
+#' @return A single numeric value, giving the suggested submodel size (or `NA`
+#'   if the suggestion failed).
 #'
 #'   The intercept is not counted by [suggest_size()], so a suggested size of
 #'   zero stands for the intercept-only model.
@@ -1060,6 +1071,15 @@ get_subparams.glm <- function(x, ...) {
 
 #' @noRd
 #' @export
+get_subparams.glmmPQL <- function(x, ...) {
+  ### TODO (glmmPQL): Implement the get_subparams.glmmPQL() method:
+  stop("Under construction (the get_subparams.glmmPQL() method needs to be ",
+       "implemented.")
+  ###
+}
+
+#' @noRd
+#' @export
 get_subparams.lmerMod <- function(x, ...) {
   population_effects <- lme4::fixef(x) %>%
     replace_population_names(...)
@@ -1242,13 +1262,13 @@ as.matrix.projection <- function(x, nm_scheme = "auto", ...) {
 #'   [set.seed()], but can also be `NA` to not call [set.seed()] at all.
 #'
 #' @return [cvfolds()] returns a vector of length `n` such that each element is
-#'   an integer between 1 and `k` denoting which fold the corresponding data
+#'   an integer between 1 and `K` denoting which fold the corresponding data
 #'   point belongs to. The return value of [cv_ids()] depends on the `out`
-#'   argument. If `out = "foldwise"`, the return value is a `list` with `k`
+#'   argument. If `out = "foldwise"`, the return value is a `list` with `K`
 #'   elements, each being a `list` with elements `tr` and `ts` giving the
 #'   training and test indices, respectively, for the corresponding fold. If
 #'   `out = "indices"`, the return value is a `list` with elements `tr` and `ts`
-#'   each being a `list` with `k` elements giving the training and test indices,
+#'   each being a `list` with `K` elements giving the training and test indices,
 #'   respectively, for each fold.
 #'
 #' @examples
@@ -1320,7 +1340,7 @@ cv_ids <- function(n, K, out = c("foldwise", "indices"),
 
 #' Retrieve predictor solution path or predictor combination
 #'
-#' This function retrieves the "solution terms" from an object. For `vsel`
+#' This function retrieves the "solution terms" from an `object`. For `vsel`
 #' objects (returned by [varsel()] or [cv_varsel()]), this is the predictor
 #' solution path of the variable selection. For `projection` objects (returned
 #' by [project()], possibly as elements of a `list`), this is the predictor

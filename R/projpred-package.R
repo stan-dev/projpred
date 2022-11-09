@@ -11,30 +11,28 @@
 #'
 #' @description
 #'
-#' \pkg{projpred} is an \R package for performing a projection predictive
-#' variable (or "feature") selection for generalized linear models (GLMs),
-#' generalized linear multilevel (or "mixed") models (GLMMs), generalized
-#' additive models (GAMs), and generalized additive multilevel (or "mixed")
-#' models (GAMMs), with the support for additive models still being
-#' experimental. Note that the term "generalized" includes the Gaussian family
-#' as well.
+#' The \R package \pkg{projpred} performs the projection predictive variable (or
+#' "feature") selection for various regression models. We recommend to read the
+#' `README` file (available with enhanced formatting
+#' [online](https://mc-stan.org/projpred/)) and the main vignette (`topic =
+#' "projpred"`, but also available
+#' [online](https://mc-stan.org/projpred/articles/projpred.html)) before
+#' continuing here.
 #'
-#' The package is compatible with \pkg{rstanarm} and \pkg{brms}, but developers
-#' of other packages are welcome to add new [get_refmodel()] methods (which
-#' enable the compatibility of their packages with \pkg{projpred}). Custom
-#' reference models can also be used via [init_refmodel()]. It is via custom
-#' reference models that \pkg{projpred} supports the projection onto candidate
-#' models whose predictor terms are not a subset of the reference model's
-#' predictor terms. However, for \pkg{rstanarm} and \pkg{brms} reference models,
-#' \pkg{projpred} only supports the projection onto *submodels* of the reference
-#' model. For the sake of simplicity, throughout this package, we use the term
-#' "submodel" for all kinds of candidate models onto which the reference model
-#' is projected, even though this term is not always appropriate for custom
-#' reference models.
+#' Throughout the whole package documentation, we use the term "submodel" for
+#' all kinds of candidate models onto which the reference model is projected.
+#' For custom reference models, the candidate models don't need to be actual
+#' *sub*models of the reference model, but in any case (even for custom
+#' reference models), the candidate models are always actual *sub*models of the
+#' full [`formula`] used by the search procedure. In this regard, it is correct
+#' to speak of *sub*models, even in case of a custom reference model.
 #'
-#' Currently, the supported families are [gaussian()], [binomial()] (and---via
-#' [brms::get_refmodel.brmsfit()]---also [brms::bernoulli()]), as well as
-#' [poisson()].
+#' The following model type abbreviations will be used at multiple places
+#' throughout the documentation: GLM (generalized linear model), GLMM
+#' (generalized linear multilevel---or "mixed"---model), GAM (generalized
+#' additive model), and GAMM (generalized additive multilevel---or
+#' "mixed"---model). Note that the term "generalized" includes the Gaussian
+#' family as well.
 #'
 #' For the projection of the reference model onto a submodel, \pkg{projpred}
 #' currently relies on the following functions (in other words, these are the
@@ -67,26 +65,21 @@
 #' which in turn may crash the R session. Thus, we currently cannot recommend
 #' the parallelization for GLMMs, GAMs, and GAMMs.
 #'
-#' The [vignettes](https://mc-stan.org/projpred/articles/) (currently, there is
-#' only a single one) illustrate how to use the \pkg{projpred} functions in
-#' conjunction. Shorter examples are included here in the documentation.
-#'
-#' Some references relevant for this package are given in section "References"
-#' below. See `citation(package = "projpred")` for details on citing
-#' \pkg{projpred}.
-#'
 #' @details
 #'
 #' # Functions
 #'
 #' \describe{
-#'   \item{[init_refmodel()], [get_refmodel()]}{For setting up a reference model
-#'   (only rarely needed explicitly).}
-#'   \item{[varsel()], [cv_varsel()]}{For variable selection, possibly with
-#'   cross-validation (CV).}
+#'   \item{[init_refmodel()], [get_refmodel()]}{For setting up an object
+#'   containing information about the reference model, the submodels, and how
+#'   the projection should be carried out. Explicit calls to [init_refmodel()]
+#'   and [get_refmodel()] are only rarely needed.}
+#'   \item{[varsel()], [cv_varsel()]}{For running the *search* part and the
+#'   *evaluation* part for a projection predictive variable selection, possibly
+#'   with cross-validation (CV).}
 #'   \item{[summary.vsel()], [print.vsel()], [plot.vsel()],
 #'   [suggest_size.vsel()], [solution_terms.vsel()]}{For post-processing the
-#'   results from the variable selection.}
+#'   results from [varsel()] and [cv_varsel()].}
 #'   \item{[project()]}{For projecting the reference model onto submodel(s).
 #'   Typically, this follows the variable selection, but it can also be applied
 #'   directly (without a variable selection).}
@@ -94,27 +87,5 @@
 #'   \item{[proj_linpred()], [proj_predict()]}{For making predictions from a
 #'   submodel (after projecting the reference model onto it).}
 #' }
-#'
-#' @references
-#'
-#' Catalina, A., Bürkner, P.-C., and Vehtari, A. (2020). Projection predictive
-#' inference for generalized linear and additive multilevel models.
-#' *arXiv:2010.06994*. URL: <https://arxiv.org/abs/2010.06994>.
-#'
-#' Dupuis, J. A. and Robert, C. P. (2003). Variable selection in qualitative
-#' models via an entropic explanatory power. *Journal of Statistical Planning
-#' and Inference*, **111**(1-2):77–94. \doi{10.1016/S0378-3758(02)00286-0}.
-#'
-#' Goutis, C. and Robert, C. P. (1998). Model choice in generalised linear
-#' models: A Bayesian approach via Kullback–Leibler projections. *Biometrika*,
-#' **85**(1):29–37.
-#'
-#' Piironen, J. and Vehtari, A. (2017). Comparison of Bayesian predictive
-#' methods for model selection. *Statistics and Computing*, **27**(3):711-735.
-#' \doi{10.1007/s11222-016-9649-y}.
-#'
-#' Piironen, J., Paasiniemi, M., and Vehtari, A. (2020). Projective inference in
-#' high-dimensional problems: Prediction and feature selection. *Electronic
-#' Journal of Statistics*, **14**(1):2155-2197. \doi{10.1214/20-EJS1711}.
 #'
 "_PACKAGE"

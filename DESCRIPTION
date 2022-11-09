@@ -1,8 +1,8 @@
 Package: projpred
 Encoding: UTF-8
 Title: Projection Predictive Feature Selection
-Version: 2.2.1
-Date: 2022-09-20
+Version: 2.2.2
+Date: 2022-11-09
 Authors@R: c(person("Juho", "Piironen", role = c("aut"),
                     email = "juho.t.piironen@gmail.com"),
              person("Markus", "Paasiniemi", role = "aut"),
@@ -15,16 +15,17 @@ Authors@R: c(person("Juho", "Piironen", role = c("aut"),
              person("Marco", "Colombo", role = "ctb"),
              person("Paul-Christian", "Bürkner", role = "ctb"),
              person("Hamada S.", "Badr", role = "ctb"),
-             person("Brian", "Sullivan", role = "ctb"))
+             person("Brian", "Sullivan", role = "ctb"),
+             person("Sölvi", "Rögnvaldsson", role = "ctb"))
 Description:
     Performs projection predictive feature selection for generalized linear and
     additive models as well as for generalized linear and additive multilevel
     models (see Piironen, Paasiniemi and Vehtari, 2020,
-    <doi:10.1214/20-EJS1711>; Catalina, Bürkner and Vehtari, 2020,
-    <arXiv:2010.06994>). The package is compatible with the 'rstanarm' and
-    'brms' packages, but other reference models can also be used. See the
-    documentation as well as the package vignette for more information and
-    examples.
+    <doi:10.1214/20-EJS1711>; Catalina, Bürkner and Vehtari, 2022,
+    <https://proceedings.mlr.press/v151/catalina22a.html>). The package is
+    compatible with the 'rstanarm' and 'brms' packages, but other reference
+    models can also be used. See the documentation as well as the package
+    vignette for more information and examples.
 License: GPL-3 | file LICENSE
 URL: https://mc-stan.org/projpred/, https://discourse.mc-stan.org
 BugReports: https://github.com/stan-dev/projpred/issues/
@@ -43,6 +44,7 @@ Imports:
     magrittr,
     mgcv,
     gamm4,
+    MASS,
     rlang
 Suggests:
     rstanarm,
@@ -53,6 +55,7 @@ Suggests:
     glmnet,
     cmdstanr,
     bayesplot (>= 1.5.0),
+    nlme,
     optimx,
     posterior,
     parallel,

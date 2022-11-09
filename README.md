@@ -5,29 +5,32 @@
 
 # projpred [<img src="man/figures/logo.svg" align="right" height="139" alt="Stan Logo"/>](https://mc-stan.org)
 
-The **projpred** R package performs the projection predictive variable selection
-for generalized linear and additive models as well as for generalized linear and
-additive multilevel models (with the support for additive models being still
-experimental). The package is compatible with the
-[**rstanarm**](https://mc-stan.org/rstanarm/) and
-[**brms**](https://paul-buerkner.github.io/brms/) packages, but custom reference
-models can also be used.
+The R package **projpred** performs the projection predictive variable selection
+for various regression models. Usually, the reference model will be an
+[**rstanarm**](https://mc-stan.org/rstanarm/) or
+[**brms**](https://paul-buerkner.github.io/brms/) fit, but custom reference
+models can also be used. Details on supported model types are given in section
+["Supported types of
+models"](https://mc-stan.org/projpred/articles/projpred.html#modtypes) of the
+main vignette^[The main vignette can be accessed offline by typing
+`vignette(topic = "projpred", package = "projpred")` or---more
+conveniently---`browseVignettes("projpred")` within R.].
 
-The projection predictive variable selection is based on the ideas of Goutis and
-Robert (1998) and Dupuis and Robert (2003). The methods implemented in
-**projpred** are described in detail in Piironen et al. (2020) and Catalina et
-al. (2020). They are evaluated in comparison to many other methods in Piironen
-and Vehtari (2017). Type `citation("projpred")` in R (or see the `CITATION`
-file) for details on how to cite **projpred**.
+For details on how to cite **projpred**, see the [projpred citation
+info](https://CRAN.R-project.org/package=projpred/citation.html) on
+CRAN.^[The citation information can be accessed offline by typing
+`print(citation("projpred"), bibtex = TRUE)` within R.]. Further references
+(including earlier work that **projpred** is based on) are given in section
+["Introduction"](https://mc-stan.org/projpred/articles/projpred.html#introduction)
+of the main vignette.
 
-Currently, the supported response distributions (objects of class `family` in R)
-are `gaussian()`, `binomial()` (via the **brms** package, `brms::bernoulli()` is
-also supported), and `poisson()`.
-
-The [vignettes](https://mc-stan.org/projpred/articles/) (currently, there is
-only a single one) illustrate how to use the **projpred** functions in
-conjunction. Details on the **projpred** functions as well as some shorter
-examples may be found in the documentation.
+The [vignettes](https://mc-stan.org/projpred/articles/)^[The overview of all
+vignettes can be accessed offline by typing `browseVignettes("projpred")` within
+R.] (currently, the main vignette is the only one) illustrate how to use the
+**projpred** functions in conjunction. Details on the **projpred** functions as
+well as some shorter examples may be found in the
+[documentation](https://mc-stan.org/projpred/reference/index.html)^[The
+documentation can be accessed offline using `?` or `help()` within R.].
 
 ## Installation
 
@@ -54,27 +57,3 @@ if (!requireNamespace("devtools", quietly = TRUE)) {
 devtools::install_github("stan-dev/projpred", build_vignettes = TRUE)
 ```
 To save time, you may omit `build_vignettes = TRUE`.
-
-## References
-
-Catalina, A., Bürkner, P.-C., and Vehtari, A. (2020). Projection predictive
-inference for generalized linear and additive multilevel models.
-*arXiv:2010.06994*. URL: <https://arxiv.org/abs/2010.06994>.
-
-Dupuis, J. A. and Robert, C. P. (2003). Variable selection in qualitative models
-via an entropic explanatory power. *Journal of Statistical Planning and
-Inference*, **111**(1-2):77–94. DOI:
-[10.1016/S0378-3758(02)00286-0](https://doi.org/10.1016/S0378-3758(02)00286-0).
-
-Goutis, C. and Robert, C. P. (1998). Model choice in generalised linear models:
-A Bayesian approach via Kullback–Leibler projections. *Biometrika*,
-**85**(1):29–37.
-
-Piironen, J. and Vehtari, A. (2017). Comparison of Bayesian predictive methods
-for model selection. *Statistics and Computing*, **27**(3):711-735. DOI:
-[10.1007/s11222-016-9649-y](https://doi.org/10.1007/s11222-016-9649-y).
-
-Piironen, J., Paasiniemi, M., and Vehtari, A. (2020). Projective inference in
-high-dimensional problems: Prediction and feature selection. *Electronic Journal
-of Statistics*, **14**(1):2155-2197. DOI:
-[10.1214/20-EJS1711](https://doi.org/10.1214/20-EJS1711).

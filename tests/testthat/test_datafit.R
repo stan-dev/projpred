@@ -25,7 +25,7 @@ context("datafit")
   offset <- rep(0, nrow(newdata))
 
   if (inherits(resp_form, "formula")) {
-    y <- eval_rhs(resp_form, newdata)
+    y <- eval_el2(resp_form, newdata)
   } else {
     y <- NULL
   }

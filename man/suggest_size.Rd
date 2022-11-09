@@ -29,9 +29,9 @@ passed here.}
 \item{stat}{Performance statistic (i.e., utility or loss) used for the
 decision. See argument \code{stats} of \code{\link[=summary.vsel]{summary.vsel()}} for possible choices.}
 
-\item{pct}{A number giving the relative proportion (\emph{not} percents) between
-baseline model and null model utilities one is willing to sacrifice. See
-section "Details" below for more information.}
+\item{pct}{A number giving the proportion (\emph{not} percents) of the \emph{relative}
+null model utility one is willing to sacrifice. See section "Details" below
+for more information.}
 
 \item{type}{Either \code{"upper"} or \code{"lower"} determining whether the decision is
 based on the upper or lower confidence interval bound, respectively. See
@@ -48,6 +48,13 @@ deactivates this.}
 whether to throw warnings if automatic suggestion fails. Usually there is
 no reason to set this to \code{FALSE}.}
 }
+\value{
+A single numeric value, giving the suggested submodel size (or \code{NA}
+if the suggestion failed).
+
+The intercept is not counted by \code{\link[=suggest_size]{suggest_size()}}, so a suggested size of
+zero stands for the intercept-only model.
+}
 \description{
 This function can suggest an appropriate submodel size based on a decision
 rule described in section "Details" below. Note that this decision is quite
@@ -60,15 +67,16 @@ In general (beware of special extensions below), the suggested model
 size is the smallest model size \eqn{k \in \{0, 1, ...,
   \texttt{nterms\_max}\}}{{k = 0, 1, ..., nterms_max}} for which either the
 lower or upper bound (depending on argument \code{type}) of the
-normal-approximation confidence interval (with nominal coverage \code{1 - alpha}; see argument \code{alpha} of \code{\link[=summary.vsel]{summary.vsel()}}) for \eqn{U_k -
-  U_{\mathrm{base}}}{U_k - U_base} (with \eqn{U_k} denoting the \eqn{k}-th
-submodel's true utility and \eqn{U_{\mathrm{base}}}{U_base} denoting the
-baseline model's true utility) falls above (or is equal to)
-\deqn{\texttt{pct} \cdot (u_0 - u_{\mathrm{base}})}{pct * (u_0 - u_base)}
-where \eqn{u_0} denotes the null model's estimated utility and
-\eqn{u_{\mathrm{base}}}{u_base} the baseline model's estimated utility. The
-baseline model is either the reference model or the best submodel found
-(see argument \code{baseline} of \code{\link[=summary.vsel]{summary.vsel()}}).
+normal-approximation (or bootstrap; see argument \code{stat}) confidence
+interval (with nominal coverage \code{1 - alpha}; see argument \code{alpha} of
+\code{\link[=summary.vsel]{summary.vsel()}}) for \eqn{U_k - U_{\mathrm{base}}}{U_k - U_base} (with
+\eqn{U_k} denoting the \eqn{k}-th submodel's true utility and
+\eqn{U_{\mathrm{base}}}{U_base} denoting the baseline model's true utility)
+falls above (or is equal to) \deqn{\texttt{pct} \cdot (u_0 -
+  u_{\mathrm{base}})}{pct * (u_0 - u_base)} where \eqn{u_0} denotes the null
+model's estimated utility and \eqn{u_{\mathrm{base}}}{u_base} the baseline
+model's estimated utility. The baseline model is either the reference model
+or the best submodel found (see argument \code{baseline} of \code{\link[=summary.vsel]{summary.vsel()}}).
 
 If \code{!is.na(thres_elpd)} and \code{stat = "elpd"}, the decision rule above is
 extended: The suggested model size is then the smallest model size \eqn{k}
@@ -83,21 +91,21 @@ For example (disregarding the special extensions in case of \code{stat = "elpd"}
 or \code{stat = "mlpd"}), \code{alpha = 0.32}, \code{pct = 0}, and \code{type = "upper"} means
 that we select the smallest model size for which the upper bound of the 68\%
 confidence interval for \eqn{U_k - U_{\mathrm{base}}}{U_k - U_base} exceeds
-(or is equal to) zero, that is, for which the submodel's utility estimate
-is at most one standard error smaller than the baseline model's utility
-estimate (with that standard error referring to the utility \emph{difference}).
+(or is equal to) zero, that is (if \code{stat} is a performance statistic for
+which the normal approximation is used, not the bootstrap), for which the
+submodel's utility estimate is at most one standard error smaller than the
+baseline model's utility estimate (with that standard error referring to
+the utility \emph{difference}).
 }
 \note{
-Loss statistics like the root mean-squared error (RMSE) and the
-mean-squared error (MSE) are converted to utilities by multiplying them by
-\code{-1}, so a call such as \code{suggest_size(object, stat = "rmse", type = "upper")} finds the smallest model size whose upper confidence interval
-bound for the \emph{negative} RMSE or MSE exceeds the cutoff (or, equivalently,
-has the lower confidence interval bound for the RMSE or MSE below the
-cutoff). This is done to make the interpretation of argument \code{type} the
-same regardless of argument \code{stat}.
-
-The intercept is not counted by \code{\link[=suggest_size]{suggest_size()}}, so a suggested size of
-zero stands for the intercept-only model.
+Loss statistics like the root mean squared error (RMSE) and the mean
+squared error (MSE) are converted to utilities by multiplying them by \code{-1},
+so a call such as \code{suggest_size(object, stat = "rmse", type = "upper")}
+finds the smallest model size whose upper confidence interval bound for the
+\emph{negative} RMSE or MSE exceeds the cutoff (or, equivalently, has the lower
+confidence interval bound for the RMSE or MSE below the cutoff). This is
+done to make the interpretation of argument \code{type} the same regardless of
+argument \code{stat}.
 }
 \examples{
 if (requireNamespace("rstanarm", quietly = TRUE)) {

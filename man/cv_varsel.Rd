@@ -140,10 +140,11 @@ effective number of parameters introduced by the search).}
 results can be obtained again if needed. Passed to argument \code{seed} of
 \code{\link[=set.seed]{set.seed()}}, but can also be \code{NA} to not call \code{\link[=set.seed]{set.seed()}} at all. Here,
 this seed is used for clustering the reference model's posterior draws (if
-\code{!is.null(nclusters)}), for subsampling LOO CV folds (if \code{nloo} is smaller
-than the number of observations), for sampling the folds in K-fold CV, and
-for drawing new group-level effects when predicting from a multilevel
-submodel (however, not yet in case of a GAMM).}
+\code{!is.null(nclusters)} or \code{!is.null(nclusters_pred)}), for subsampling LOO
+CV folds (if \code{nloo} is smaller than the number of observations), for
+sampling the folds in K-fold CV, and for drawing new group-level effects
+when predicting from a multilevel submodel (however, not yet in case of a
+GAMM).}
 
 \item{search_terms}{Only relevant for forward search. A custom character
 vector of predictor term blocks to consider for the search. Section
@@ -155,13 +156,12 @@ formula.}
 }
 \value{
 An object of class \code{vsel}. The elements of this object are not meant
-to be accessed directly but instead via helper functions (see the vignette
-or type \code{?projpred}).
+to be accessed directly but instead via helper functions (see the main
+vignette and \link{projpred-package}).
 }
 \description{
-Perform the projection predictive variable selection for GLMs, GLMMs, GAMs,
-and GAMMs. This variable selection consists of a \emph{search} part and an
-\emph{evaluation} part. The search part determines the solution path, i.e., the
+Run the \emph{search} part and the \emph{evaluation} part for a projection predictive
+variable selection. The search part determines the solution path, i.e., the
 best submodel for each submodel size (number of predictor terms). The
 evaluation part determines the predictive performance of the submodels along
 the solution path. In contrast to \code{\link[=varsel]{varsel()}}, \code{\link[=cv_varsel]{cv_varsel()}} performs a
@@ -196,7 +196,7 @@ instead.
 The elements of the \code{search_terms} character vector don't need to be
 individual predictor terms. Instead, they can be building blocks consisting
 of several predictor terms connected by the \code{+} symbol. To understand how
-these building blocks works, it is important to know how \pkg{projpred}'s
+these building blocks work, it is important to know how \pkg{projpred}'s
 forward search works: It starts with an empty vector \code{chosen} which will
 later contain already selected predictor terms. Then, the search iterates
 over model sizes \eqn{j \in \{1, ..., J\}}{j = 1, ..., J}. The candidate
@@ -219,7 +219,7 @@ specify \code{search_terms = c("x2", "x3", "x2 + x3")}.
 \note{
 The case \code{cv_method == "LOO" && !validate_search} constitutes an
 exception where the search part is not cross-validated. In that case, the
-evaluation part is based on a PSIS-LOO CV.
+evaluation part is based on a PSIS-LOO CV also for the submodels.
 
 For all PSIS-LOO CVs, \pkg{projpred} calls \code{\link[loo:psis]{loo::psis()}} with \code{r_eff = NA}.
 This is only a problem if there was extreme autocorrelation between the
@@ -254,18 +254,20 @@ if (requireNamespace("rstanarm", quietly = TRUE)) {
 \dontshow{\}) # examplesIf}
 }
 \references{
-Magnusson, M., Andersen, M., Jonasson, J., and Vehtari, A. (2019). Bayesian
-leave-one-out cross-validation for large data. In \emph{Proceedings of the 36th
-International Conference on Machine Learning}, 4244–4253. URL:
+Magnusson, Måns, Michael Andersen, Johan Jonasson, and Aki Vehtari. 2019.
+"Bayesian Leave-One-Out Cross-Validation for Large Data." In \emph{Proceedings of
+the 36th International Conference on Machine Learning}, edited by Kamalika
+Chaudhuri and Ruslan Salakhutdinov, 97:4244--53. Proceedings of Machine
+Learning Research. PMLR.
 \url{https://proceedings.mlr.press/v97/magnusson19a.html}.
 
-Vehtari, A., Gelman, A., and Gabry, J. (2017). Practical Bayesian model
-evaluation using leave-one-out cross-validation and WAIC. \emph{Statistics and
-Computing}, \strong{27}(5), 1413-1432. \doi{10.1007/s11222-016-9696-4}.
+Vehtari, Aki, Andrew Gelman, and Jonah Gabry. 2017. "Practical Bayesian Model
+Evaluation Using Leave-One-Out Cross-Validation and WAIC." \emph{Statistics and
+Computing} 27 (5): 1413--32. \doi{10.1007/s11222-016-9696-4}.
 
-Vehtari, A., Simpson, D., Gelman, A., Yao, Y., and Gabry, J. (2021). Pareto
-smoothed importance sampling. \emph{arXiv:1507.02646}. URL:
-\url{https://arxiv.org/abs/1507.02646}.
+Vehtari, Aki, Daniel Simpson, Andrew Gelman, Yuling Yao, and Jonah Gabry.
+2022. "Pareto Smoothed Importance Sampling." arXiv.
+\doi{10.48550/arXiv.1507.02646}.
 }
 \seealso{
 \code{\link[=varsel]{varsel()}}

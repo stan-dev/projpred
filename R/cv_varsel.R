@@ -1,8 +1,7 @@
 #' Variable selection with cross-validation
 #'
-#' Perform the projection predictive variable selection for GLMs, GLMMs, GAMs,
-#' and GAMMs. This variable selection consists of a *search* part and an
-#' *evaluation* part. The search part determines the solution path, i.e., the
+#' Run the *search* part and the *evaluation* part for a projection predictive
+#' variable selection. The search part determines the solution path, i.e., the
 #' best submodel for each submodel size (number of predictor terms). The
 #' evaluation part determines the predictive performance of the submodels along
 #' the solution path. In contrast to [varsel()], [cv_varsel()] performs a
@@ -41,16 +40,17 @@
 #'   results can be obtained again if needed. Passed to argument `seed` of
 #'   [set.seed()], but can also be `NA` to not call [set.seed()] at all. Here,
 #'   this seed is used for clustering the reference model's posterior draws (if
-#'   `!is.null(nclusters)`), for subsampling LOO CV folds (if `nloo` is smaller
-#'   than the number of observations), for sampling the folds in K-fold CV, and
-#'   for drawing new group-level effects when predicting from a multilevel
-#'   submodel (however, not yet in case of a GAMM).
+#'   `!is.null(nclusters)` or `!is.null(nclusters_pred)`), for subsampling LOO
+#'   CV folds (if `nloo` is smaller than the number of observations), for
+#'   sampling the folds in K-fold CV, and for drawing new group-level effects
+#'   when predicting from a multilevel submodel (however, not yet in case of a
+#'   GAMM).
 #'
 #' @inherit varsel details return
 #'
 #' @note The case `cv_method == "LOO" && !validate_search` constitutes an
 #'   exception where the search part is not cross-validated. In that case, the
-#'   evaluation part is based on a PSIS-LOO CV.
+#'   evaluation part is based on a PSIS-LOO CV also for the submodels.
 #'
 #'   For all PSIS-LOO CVs, \pkg{projpred} calls [loo::psis()] with `r_eff = NA`.
 #'   This is only a problem if there was extreme autocorrelation between the
@@ -60,18 +60,20 @@
 #'
 #' @references
 #'
-#' Magnusson, M., Andersen, M., Jonasson, J., and Vehtari, A. (2019). Bayesian
-#' leave-one-out cross-validation for large data. In *Proceedings of the 36th
-#' International Conference on Machine Learning*, 4244–4253. URL:
+#' Magnusson, Måns, Michael Andersen, Johan Jonasson, and Aki Vehtari. 2019.
+#' "Bayesian Leave-One-Out Cross-Validation for Large Data." In *Proceedings of
+#' the 36th International Conference on Machine Learning*, edited by Kamalika
+#' Chaudhuri and Ruslan Salakhutdinov, 97:4244--53. Proceedings of Machine
+#' Learning Research. PMLR.
 #' <https://proceedings.mlr.press/v97/magnusson19a.html>.
 #'
-#' Vehtari, A., Gelman, A., and Gabry, J. (2017). Practical Bayesian model
-#' evaluation using leave-one-out cross-validation and WAIC. *Statistics and
-#' Computing*, **27**(5), 1413-1432. \doi{10.1007/s11222-016-9696-4}.
+#' Vehtari, Aki, Andrew Gelman, and Jonah Gabry. 2017. "Practical Bayesian Model
+#' Evaluation Using Leave-One-Out Cross-Validation and WAIC." *Statistics and
+#' Computing* 27 (5): 1413--32. \doi{10.1007/s11222-016-9696-4}.
 #'
-#' Vehtari, A., Simpson, D., Gelman, A., Yao, Y., and Gabry, J. (2021). Pareto
-#' smoothed importance sampling. *arXiv:1507.02646*. URL:
-#' <https://arxiv.org/abs/1507.02646>.
+#' Vehtari, Aki, Daniel Simpson, Andrew Gelman, Yuling Yao, and Jonah Gabry.
+#' 2022. "Pareto Smoothed Importance Sampling." arXiv.
+#' \doi{10.48550/arXiv.1507.02646}.
 #'
 #' @seealso [varsel()]
 #'
@@ -206,34 +208,14 @@ cv_varsel.refmodel <- function(
   # paths. For the column names (and therefore the order of the solution terms
   # in the columns), the solution path from the full-data search is used. Note
   # that the following code assumes that all CV folds have equal weight.
-  candidate_terms <- split_formula(refmodel$formula,
-                                   data = refmodel$fetch_data(),
-                                   add_main_effects = FALSE)
-  candidate_terms <- setdiff(candidate_terms, "1")
-  solution_terms_cv_chr <- do.call(cbind, lapply(
-    seq_len(NROW(sel_cv$solution_terms_cv)),
-    function(i) {
-      if (!is.character(sel_cv$solution_terms_cv[i, ])) {
-        return(candidate_terms[sel_cv$solution_terms_cv[i, ]])
-      } else {
-        return(sel_cv$solution_terms_cv[i, ])
-      }
-    }
-  ))
-  sel_solution_terms <- unlist(sel$solution_terms)
-  if (!is.matrix(solution_terms_cv_chr)) {
-    stop("Unexpected `solution_terms_cv_chr`. Please notify the package ",
-         "maintainer.")
-  }
-  if (!identical(nrow(solution_terms_cv_chr), length(sel_solution_terms))) {
-    stop("Unexpected number of rows in `solution_terms_cv_chr`. Please notify ",
-         "the package maintainer.")
-  }
   pct_solution_terms_cv <- cbind(
-    size = seq_len(nrow(solution_terms_cv_chr)),
-    do.call(cbind, lapply(setNames(nm = sel_solution_terms), function(var_nm) {
-      rowMeans(solution_terms_cv_chr == var_nm, na.rm = TRUE)
-    }))
+    size = seq_len(ncol(sel_cv$solution_terms_cv)),
+    do.call(cbind, lapply(
+      setNames(nm = sel$solution_terms),
+      function(soltrm_k) {
+        colMeans(sel_cv$solution_terms_cv == soltrm_k, na.rm = TRUE)
+      }
+    ))
   )
 
   ## create the object to be returned
@@ -317,6 +299,8 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
   ## each data point)
   ##
 
+  # Pre-processing ----------------------------------------------------------
+
   mu <- refmodel$mu
   eta <- refmodel$eta
   dis <- refmodel$dis
@@ -330,22 +314,24 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
   cl_pred <- p_pred$cl
 
   ## fetch the log-likelihood for the reference model to obtain the LOO weights
-  if (is.null(refmodel$loglik)) {
+  if (inherits(refmodel, "datafit")) {
     ## case where log-likelihood not available, i.e., the reference model is not
     ## a genuine model => cannot compute LOO
     stop("LOO can be performed only if the reference model is a genuine ",
          "probabilistic model for which the log-likelihood can be evaluated.")
-  } else {
-    ## log-likelihood available
-    loglik <- refmodel$loglik
   }
+
+  eta_offs <- eta + refmodel$offset
+  mu_offs <- refmodel$family$linkinv(eta_offs)
+
+  loglik <- t(refmodel$family$ll_fun(mu_offs, dis, refmodel$y, refmodel$wobs))
   n <- ncol(loglik)
   psisloo <- loo::psis(-loglik, cores = 1, r_eff = NA)
   lw <- weights(psisloo)
   # pareto_k <- loo::pareto_k_values(psisloo)
+
   ## by default use all observations
   nloo <- min(nloo, n)
-
   if (nloo < 1) {
     stop("nloo must be at least 1")
   } else if (nloo < n) {
@@ -355,7 +341,7 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
   ## compute loo summaries for the reference model
   loo_ref <- apply(loglik + lw, 2, log_sum_exp)
   mu_ref <- do.call(c, lapply(seq_len(n), function(i) {
-    mu[i, ] %*% exp(lw[, i])
+    mu_offs[i, ] %*% exp(lw[, i])
   }))
 
   ## decide which points form the validation set based on the k-values
@@ -364,7 +350,7 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
   inds <- validset$inds
 
   ## initialize objects where to store the results
-  solution_terms_mat <- matrix(nrow = n, ncol = nterms_max - 1)
+  solution_terms_mat <- matrix(nrow = n, ncol = nterms_max - refmodel$intercept)
   loo_sub <- replicate(nterms_max, rep(NA, n), simplify = FALSE)
   mu_sub <- replicate(nterms_max, rep(NA, n), simplify = FALSE)
 
@@ -377,6 +363,8 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
   }
 
   if (!validate_search) {
+    # Case `validate_search = FALSE` ------------------------------------------
+
     if (verbose) {
       print(paste("Performing the selection using all the data.."))
     }
@@ -411,10 +399,25 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
     } else {
       refdist_eval <- p_sel
     }
+    refdist_eval_mu_offs <- refdist_eval$mu
+    if (!all(refmodel$offset == 0)) {
+      refdist_eval_mu_offs <- refmodel$family$linkinv(
+        refmodel$family$linkfun(refdist_eval_mu_offs) + refmodel$offset
+      )
+    }
     log_lik_ref <- t(refmodel$family$ll_fun(
-      refdist_eval$mu[inds, , drop = FALSE], refdist_eval$dis, refmodel$y[inds],
-      refmodel$wobs[inds]
+      refdist_eval_mu_offs[inds, , drop = FALSE], refdist_eval$dis,
+      refmodel$y[inds], refmodel$wobs[inds]
     ))
+    sub_psisloo <- suppressWarnings(
+      loo::psis(-log_lik_ref, cores = 1, r_eff = NA)
+    )
+    lw_sub <- suppressWarnings(weights(sub_psisloo))
+    # Take into account that clustered draws usually have different weights:
+    lw_sub <- lw_sub + log(refdist_eval$weights)
+    # This re-weighting requires a re-normalization (as.array() is applied to
+    # have stricter consistency checks, see `?sweep`):
+    lw_sub <- sweep(lw_sub, 2, as.array(apply(lw_sub, 2, log_sum_exp)))
     for (k in seq_along(submodels)) {
       mu_k <- refmodel$family$mu_fun(submodels[[k]]$submodl,
                                      obs = inds,
@@ -422,15 +425,6 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
       log_lik_sub <- t(refmodel$family$ll_fun(
         mu_k, submodels[[k]]$dis, refmodel$y[inds], refmodel$wobs[inds]
       ))
-      sub_psisloo <- suppressWarnings(
-        loo::psis(-log_lik_ref, cores = 1, r_eff = NA)
-      )
-      lw_sub <- suppressWarnings(weights(sub_psisloo))
-      # Take into account that clustered draws usually have different weights:
-      lw_sub <- lw_sub + log(refdist_eval$weights)
-      # This re-weighting requires a re-normalization (as.array() is applied to
-      # have stricter consistency checks, see `?sweep`):
-      lw_sub <- sweep(lw_sub, 2, as.array(apply(lw_sub, 2, log_sum_exp)))
       loo_sub[[k]][inds] <- apply(log_lik_sub + lw_sub, 2, log_sum_exp)
       for (i in seq_along(inds)) {
         mu_sub[[k]][inds[i]] <- mu_k[i, ] %*% exp(lw_sub[, i])
@@ -441,15 +435,10 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
       }
     }
 
-    candidate_terms <- split_formula(refmodel$formula,
-                                     data = refmodel$fetch_data(),
-                                     add_main_effects = FALSE)
-    ## with `match` we get the indices of the variables as they enter the
-    ## solution path in `search_path$solution_terms`
-    solution <- match(search_path$solution_terms,
-                      setdiff(candidate_terms, "1"))
     for (i in seq_len(n)) {
-      solution_terms_mat[i, seq_along(solution)] <- solution
+      solution_terms_mat[
+        i, seq_along(search_path$solution_terms)
+      ] <- search_path$solution_terms
     }
     sel <- nlist(search_path, kl = sapply(submodels, "[[", "kl"),
                  solution_terms = search_path$solution_terms,
@@ -458,6 +447,12 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
                  nprjdraws_search = NCOL(p_sel$mu),
                  nprjdraws_eval = NCOL(refdist_eval$mu))
   } else {
+    # Case `validate_search = TRUE` -------------------------------------------
+
+    # For checking that the number of solution terms is the same across all CV
+    # folds:
+    prv_len_soltrms <- NULL
+
     if (verbose) {
       print(msg)
       pb <- utils::txtProgressBar(min = 0, max = nloo, style = 3, initial = 0)
@@ -470,11 +465,11 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
       ## reweight the clusters/samples according to the psis-loo weights
       p_sel <- .get_p_clust(
         family = refmodel$family, mu = mu, eta = eta, dis = dis,
-        wsample = exp(lw[, i]), cl = cl_sel
+        wsample = exp(lw[, i]), cl = cl_sel, offs = refmodel$offset
       )
       p_pred <- .get_p_clust(
         family = refmodel$family, mu = mu, eta = eta, dis = dis,
-        wsample = exp(lw[, i]), cl = cl_pred
+        wsample = exp(lw[, i]), cl = cl_pred, offs = refmodel$offset
       )
 
       ## perform selection with the reweighted clusters/samples
@@ -500,20 +495,23 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
         mu_sub[[k]][i] <- summaries_sub[[k]]$mu
       }
 
-      candidate_terms <- split_formula(refmodel$formula,
-                                       data = refmodel$fetch_data(),
-                                       add_main_effects = FALSE)
-      ## with `match` we get the indices of the variables as they enter the
-      ## solution path in `search_path$solution_terms`
-      solution <- match(search_path$solution_terms,
-                        setdiff(candidate_terms, "1"))
-      solution_terms_mat[i, seq_along(solution)] <- solution
+      if (is.null(prv_len_soltrms)) {
+        prv_len_soltrms <- length(search_path$solution_terms)
+      } else {
+        stopifnot(identical(length(search_path$solution_terms),
+                            prv_len_soltrms))
+      }
+      solution_terms_mat[
+        i, seq_along(search_path$solution_terms)
+      ] <- search_path$solution_terms
 
       if (verbose) {
         utils::setTxtProgressBar(pb, run_index)
       }
     }
   }
+
+  # Post-processing ---------------------------------------------------------
 
   if (verbose) {
     ## close the progress bar object
@@ -530,6 +528,9 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
   d_test <- list(type = "LOO", data = NULL, offset = refmodel$offset,
                  weights = refmodel$wobs, y = refmodel$y)
 
+  solution_terms_mat <- solution_terms_mat[
+    , seq_along(search_path$solution_terms), drop = FALSE
+  ]
   out_list <- nlist(solution_terms_cv = solution_terms_mat, summaries, d_test)
   if (!validate_search) {
     out_list <- c(out_list, nlist(sel))

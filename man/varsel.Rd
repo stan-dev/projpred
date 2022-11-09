@@ -4,7 +4,7 @@
 \alias{varsel}
 \alias{varsel.default}
 \alias{varsel.refmodel}
-\title{Variable selection (without cross-validation)}
+\title{Variable selection without cross-validation}
 \usage{
 varsel(object, ...)
 
@@ -122,18 +122,18 @@ formula.}
 results can be obtained again if needed. Passed to argument \code{seed} of
 \code{\link[=set.seed]{set.seed()}}, but can also be \code{NA} to not call \code{\link[=set.seed]{set.seed()}} at all. Here,
 this seed is used for clustering the reference model's posterior draws (if
-\code{!is.null(nclusters)}) and for drawing new group-level effects when
-predicting from a multilevel submodel (however, not yet in case of a GAMM).}
+\code{!is.null(nclusters)} or \code{!is.null(nclusters_pred)}) and for drawing new
+group-level effects when predicting from a multilevel submodel (however,
+not yet in case of a GAMM).}
 }
 \value{
 An object of class \code{vsel}. The elements of this object are not meant
-to be accessed directly but instead via helper functions (see the vignette
-or type \code{?projpred}).
+to be accessed directly but instead via helper functions (see the main
+vignette and \link{projpred-package}).
 }
 \description{
-Perform the projection predictive variable selection for GLMs, GLMMs, GAMs,
-and GAMMs. This variable selection consists of a \emph{search} part and an
-\emph{evaluation} part. The search part determines the solution path, i.e., the
+Run the \emph{search} part and the \emph{evaluation} part for a projection predictive
+variable selection. The search part determines the solution path, i.e., the
 best submodel for each submodel size (number of predictor terms). The
 evaluation part determines the predictive performance of the submodels along
 the solution path.
@@ -164,7 +164,7 @@ instead.
 The elements of the \code{search_terms} character vector don't need to be
 individual predictor terms. Instead, they can be building blocks consisting
 of several predictor terms connected by the \code{+} symbol. To understand how
-these building blocks works, it is important to know how \pkg{projpred}'s
+these building blocks work, it is important to know how \pkg{projpred}'s
 forward search works: It starts with an empty vector \code{chosen} which will
 later contain already selected predictor terms. Then, the search iterates
 over model sizes \eqn{j \in \{1, ..., J\}}{j = 1, ..., J}. The candidate
