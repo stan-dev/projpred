@@ -414,13 +414,13 @@ plot.vsel <- function(
 
   # plot submodel results
   pp <- ggplot(data = subset(stats_sub, stats_sub$size <= nterms_max),
-               mapping = aes_string(x = "size"))
+               mapping = aes(x = .data[["size"]]))
   if (!all(is.na(stats_ref$se))) {
     # add reference model results if they exist
 
     pp <- pp +
       # The reference model's dashed red horizontal line:
-      geom_hline(aes_string(yintercept = "value"),
+      geom_hline(aes(yintercept = .data[["value"]]),
                  data = stats_ref,
                  color = "darkred", linetype = 2)
 
@@ -431,7 +431,7 @@ plot.vsel <- function(
                              by = "statistic")
       thres_tab_ref$thres <- thres_tab_ref$value + thres_tab_ref$thres
       pp <- pp +
-        geom_hline(aes_string(yintercept = "thres"),
+        geom_hline(aes(yintercept = .data[["thres"]]),
                    data = thres_tab_ref,
                    color = "gray50", linetype = "dotdash")
     }
@@ -441,7 +441,7 @@ plot.vsel <- function(
 
     pp <- pp +
       # The baseline model's dotted black horizontal line:
-      geom_hline(aes_string(yintercept = "value"),
+      geom_hline(aes(yintercept = .data[["value"]]),
                  data = stats_bs,
                  color = "black", linetype = 3)
 
@@ -452,16 +452,17 @@ plot.vsel <- function(
                             by = "statistic")
       thres_tab_bs$thres <- thres_tab_bs$value + thres_tab_bs$thres
       pp <- pp +
-        geom_hline(aes_string(yintercept = "thres"),
+        geom_hline(aes(yintercept = .data[["thres"]]),
                    data = thres_tab_bs,
                    color = "darkgreen", linetype = "longdash")
     }
   }
   pp <- pp +
     # The submodel-specific graphical elements:
-    geom_linerange(aes_string(ymin = "lq", ymax = "uq", alpha = 0.1)) +
-    geom_line(aes_string(y = "value")) +
-    geom_point(aes_string(y = "value")) +
+    geom_linerange(aes(ymin = .data[["lq"]], ymax = .data[["uq"]],
+                       alpha = 0.1)) +
+    geom_line(aes(y = .data[["value"]])) +
+    geom_point(aes(y = .data[["value"]])) +
     # Miscellaneous stuff (axes, theming, faceting, etc.):
     scale_x_continuous(
       breaks = breaks, minor_breaks = minor_breaks,
