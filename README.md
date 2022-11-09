@@ -17,7 +17,7 @@ main vignette^[The main vignette can be accessed offline by typing
 conveniently---`browseVignettes("projpred")` within R.].
 
 For details on how to cite **projpred**, see the [projpred citation
-info](https://cran.r-project.org/web/packages/projpred/citation.html) on
+info](https://CRAN.R-project.org/package=projpred/citation.html) on
 CRAN.^[The citation information can be accessed offline by typing
 `print(citation("projpred"), bibtex = TRUE)` within R.]. Further references
 (including earlier work that **projpred** is based on) are given in section

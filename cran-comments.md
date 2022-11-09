@@ -1,11 +1,11 @@
 ## Test environments
 
 * Local:
-    + R version 4.2.1 (2022-06-23) on Ubuntu 22.04.1 LTS system (platform:
+    + R version 4.2.2 (2022-10-31) on Ubuntu 22.04.1 LTS system (platform:
       x86_64-pc-linux-gnu (64-bit))
 * win-builder:
-    + R-devel (R Under development (unstable) (2022-09-19 r82880 ucrt))
-    + R-release (R version 4.2.1 (2022-06-23 ucrt))
+    + R-devel (R Under development (unstable) (2022-10-11 r83083 ucrt))
+    + R-release (R version 4.2.2 (2022-10-31 ucrt))
     + R-oldrelease (R version 4.1.3 (2022-03-10))
 * macOS builder:
     + R version 4.2.1 Patched (2022-06-23 r82516) on macOS 11.5.2 (20G95) system
@@ -58,50 +58,16 @@ feasibility ...`:
       cmdstanr
     Availability using Additional_repositories specification:
       cmdstanr   yes   https://mc-stan.org/r-packages/
-    
-    Found the following (possibly) invalid URLs:
-      URL: https://doi.org/10.1214/17-EJS1337SI
-        From: inst/doc/projpred.html
-        Status: 500
-        Message: Internal Server Error
-      URL: https://doi.org/10.1214/20-EJS1711
-        From: inst/doc/projpred.html
-              README.md
-        Status: 500
-        Message: Internal Server Error
-    
-    Found the following (possibly) invalid DOIs:
-      DOI: 10.1214/20-EJS1711
-        From: DESCRIPTION
-              inst/CITATION
-        Status: Internal Server Error
-        Message: 500
 
 * On R-oldrelease, this latter NOTE reads:
     
     Maintainer: 'Frank Weber <fweber144[ at ]protonmail.com>'
     
     Possibly mis-spelled words in DESCRIPTION:
-      Bürkner (23:41)
-      Paasiniemi (22:27)
-      Piironen (22:17)
-      Vehtari (22:42, 23:53)
-    
-    Found the following (possibly) invalid URLs:
-      URL: https://doi.org/10.1214/17-EJS1337SI
-        From: inst/doc/projpred.html
-        Status: 500
-        Message: Internal Server Error
-      URL: https://doi.org/10.1214/20-EJS1711
-        From: man/projpred-package.Rd
-              inst/doc/projpred.html
-              README.md
-        Status: 500
-        Message: Internal Server Error
-
-As can be seen above, the URLs reported as inaccessible are created from DOIs.
-In fact, these URLs are accessible (just like the DOIs themselves), so we think
-this can be safely ignored.
+      Bürkner (24:41)
+      Paasiniemi (23:27)
+      Piironen (23:17)
+      Vehtari (23:42, 24:53)
 
 The "Possibly mis-spelled words in DESCRIPTION" are names that are spelled
 correctly.
