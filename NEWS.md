@@ -8,6 +8,10 @@ If you read this from a place other than <https://mc-stan.org/projpred/news/inde
 
 * Introduction of the augmented-data projection (see section ["Supported types of models"](https://mc-stan.org/projpred/articles/projpred.html#modtypes) of the main vignette for details). (GitHub: #70, #322)
 
+## Minor changes
+
+* The deprecated function `ggplot2::aes_string()` is not used anymore, thereby avoiding an occasional soft-deprecation warning thrown by **ggplot2** 3.4.0. (GitHub: #367)
+
 # projpred 2.2.2
 
 ## Major changes
