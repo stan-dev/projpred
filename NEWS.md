@@ -9,6 +9,10 @@ If you read this from a place other than <https://mc-stan.org/projpred/news/inde
 * Introduction of the augmented-data projection (see section ["Supported types of models"](https://mc-stan.org/projpred/articles/projpred.html#modtypes) of the main vignette for details). (GitHub: #70, #322)
 * Introduction of the latent projection [(Catalina et al., 2021)](https://doi.org/10.48550/arXiv.2109.04702) (see section ["Supported types of models"](https://mc-stan.org/projpred/articles/projpred.html#modtypes) of the main vignette and the new [latent-projection vignette](https://mc-stan.org/projpred/articles/latent.html) [**TODO (latent)**: check this URL] for details). (GitHub: [**TODO (latent)**: insert PR number])
 
+## Minor changes
+
+* The deprecated function `ggplot2::aes_string()` is not used anymore, thereby avoiding an occasional soft-deprecation warning thrown by **ggplot2** 3.4.0. (GitHub: #367)
+
 # projpred 2.2.2
 
 ## Major changes
