@@ -34,10 +34,19 @@ extend_family <- function(family) {
 }
 
 extend_family_binomial <- function(family) {
-  kl_dev <- function(pref, data, psub) {
-    data$weights <- data$weights / sum(data$weights)
-    data$weights <- rep(data$weights, ncol(pref$mu))
-    colSums(family$dev.resids(pref$mu, psub$mu, data$weights)) / 2
+  # Helper function for calculating the log PMF of the binomial distribution,
+  # but (i) modified to be non-zero at `x` not contained in the support and (ii)
+  # "reduced" in the sense of lacking the (additive) part
+  # `log(choose(size, size * x))`:
+  dbinom_log_reduced <- function(x, size, prob) {
+    size * (x * log(prob) + (1 - x) * log(1 - prob))
+  }
+
+  ce_binom <- function(pref, data, psub) {
+    ce_sums <- -colSums(
+      dbinom_log_reduced(x = pref$mu, size = data$weights, prob = psub$mu)
+    )
+    return(ce_sums / sum(data$weights))
   }
   dis_na <- function(pref, psub, wobs = 1) {
     rep(NA, ncol(pref$mu))
@@ -53,7 +62,7 @@ extend_family_binomial <- function(family) {
     if (NCOL(y) < NCOL(mu)) {
       y <- matrix(y, nrow = length(y), ncol = NCOL(mu))
     }
-    -2 * weights * (y * log(mu) + (1 - y) * log(1 - mu))
+    -2 * dbinom_log_reduced(x = y, size = weights, prob = mu)
   }
   ppd_binom <- function(mu, dis, weights = 1) {
     rbinom(length(mu), weights, mu)
@@ -100,7 +109,7 @@ extend_family_binomial <- function(family) {
   })
 
   family$initialize <- initialize_binom
-  family$kl <- kl_dev
+  family$ce <- ce_binom
   family$dis_fun <- dis_na
   family$predvar <- predvar_na
   family$ll_fun <- ll_binom
@@ -111,10 +120,19 @@ extend_family_binomial <- function(family) {
 }
 
 extend_family_poisson <- function(family) {
-  kl_dev <- function(pref, data, psub) {
-    data$weights <- data$weights / sum(data$weights)
-    data$weights <- rep(data$weights, ncol(pref$mu))
-    colSums(family$dev.resids(pref$mu, psub$mu, data$weights)) / 2
+  # Helper function for calculating the log PMF of the Poisson distribution,
+  # but (i) modified to be non-zero at `x` not contained in the support and (ii)
+  # "reduced" in the sense of lacking the (additive) part
+  # `- wobs * log(factorial(x))`:
+  dpois_log_reduced <- function(x, lamb, wobs) {
+    wobs * (x * log(lamb) - lamb)
+  }
+
+  ce_poiss <- function(pref, data, psub) {
+    ce_sums <- -colSums(
+      dpois_log_reduced(x = pref$mu, lamb = psub$mu, wobs = data$weights)
+    )
+    return(ce_sums / sum(data$weights))
   }
   dis_na <- function(pref, psub, wobs = 1) {
     rep(NA, ncol(pref$mu))
@@ -130,13 +148,13 @@ extend_family_poisson <- function(family) {
     if (NCOL(y) < NCOL(mu)) {
       y <- matrix(y, nrow = length(y), ncol = NCOL(mu))
     }
-    -2 * weights * (y * log(mu) - mu)
+    -2 * dpois_log_reduced(x = y, lamb = mu, wobs = weights)
   }
   ppd_poiss <- function(mu, dis, weights = 1) {
     rpois(length(mu), mu)
   }
 
-  family$kl <- kl_dev
+  family$ce <- ce_poiss
   family$dis_fun <- dis_na
   family$predvar <- predvar_na
   family$ll_fun <- ll_poiss
@@ -147,10 +165,15 @@ extend_family_poisson <- function(family) {
 }
 
 extend_family_gaussian <- function(family) {
-  kl_gauss <- function(pref, data, psub) {
-    data$weights <- data$weights / sum(data$weights)
-    colSums(data$weights * (psub$mu - pref$mu)^2)
-  } # not the actual KL but reasonable surrogate..
+  # ce_gauss() does not give the actual cross-entropy (not even the one which
+  # would result from dropping terms which would cancel out when calculating the
+  # KL divergence) but a reasonable surrogate. This additional approximation was
+  # already made back when this used to be the KL divergence, not the
+  # cross-entropy.
+  ce_gauss <- function(pref, data, psub) {
+    ce_sums <- colSums(data$weights * (-2 * pref$mu * psub$mu + psub$mu^2))
+    return(ce_sums / sum(data$weights))
+  }
   dis_gauss <- function(pref, psub, wobs = 1) {
     sqrt(colSums(wobs / sum(wobs) * (pref$var + (pref$mu - psub$mu)^2)))
   }
@@ -180,7 +203,7 @@ extend_family_gaussian <- function(family) {
     rnorm(length(mu), mu, dis)
   }
 
-  family$kl <- kl_gauss
+  family$ce <- ce_gauss
   family$dis_fun <- dis_gauss
   family$predvar <- predvar_gauss
   family$ll_fun <- ll_gauss
@@ -191,12 +214,17 @@ extend_family_gaussian <- function(family) {
 }
 
 extend_family_gamma <- function(family) {
-  kl_gamma <- function(pref, data, psub) {
-    stop("KL-divergence for gamma not implemented yet.")
+  ce_gamma <- function(pref, data, psub) {
+    stop("Cross-entropy for the Gamma() family not implemented yet.")
+    ### TODO (Gamma()): This commented code stems from a time when this was
+    ### still the actual KL divergence and not the (possibly reduced)
+    ### cross-entropy ("possibly reduced" means: possibly reduced to only those
+    ### terms which would not cancel out when calculating the KL divergence):
     ## mean(data$weights*(
     ##   p_sub$dis*(log(pref$dis)-log(p_sub$dis)+log(psub$mu)-log(pref$mu)) +
     ##     digamma(pref$dis)*(pref$dis - p_sub$dis) - lgamma(pref$dis) +
     ##     lgamma(p_sub$dis) + pref$mu*p_sub$dis/p_sub$mu - pref$dis))
+    ###
   }
   dis_gamma <- function(pref, psub, wobs = 1) {
     ## TODO (Gamma()), IMPLEMENT THIS
@@ -222,7 +250,7 @@ extend_family_gamma <- function(family) {
     rgamma(length(mu), dis, dis / mu)
   }
 
-  family$kl <- kl_gamma
+  family$ce <- ce_gamma
   family$dis_fun <- dis_gamma
   family$predvar <- predvar_gamma
   family$ll_fun <- ll_gamma
@@ -233,9 +261,16 @@ extend_family_gamma <- function(family) {
 }
 
 extend_family_student_t <- function(family) {
-  kl_student_t <- function(pref, data, psub) {
-    log(psub$dis)
-  } #- 0.5*log(pref$var) # FIX THIS, NOT CORRECT
+  ce_student_t <- function(pref, data, psub) {
+    stop("Cross-entropy for the Student_t() family not implemented yet.")
+    ### TODO (Student_t()): This commented code stems from a time when this was
+    ### still the actual KL divergence and not the (possibly reduced)
+    ### cross-entropy ("possibly reduced" means: possibly reduced to only those
+    ### terms which would not cancel out when calculating the KL divergence):
+    # log(psub$dis)
+    ##- 0.5*log(pref$var) # FIX THIS, NOT CORRECT
+    ###
+  }
   dis_student_t <- function(pref, psub, wobs = 1) {
     s2 <- colSums(psub$w / sum(wobs) *
                     (pref$var + (pref$mu - psub$mu)^2)) # CHECK THIS
@@ -269,7 +304,7 @@ extend_family_student_t <- function(family) {
     rt(length(mu), family$nu) * dis + mu
   }
 
-  family$kl <- kl_student_t
+  family$ce <- ce_student_t
   family$dis_fun <- dis_student_t
   family$predvar <- predvar_student_t
   family$ll_fun <- ll_student_t
