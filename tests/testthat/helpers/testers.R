@@ -161,15 +161,17 @@ extfam_tester <- function(extfam,
     expect_equal(extfam$linkinv(extfam$linkfun(augm_pr)), augm_pr,
                  info = info_str)
     # We expect an N x S matrix:
-    expect_equal(extfam$ce_ptwise(mu_ref = augm_pr, mu_sub = augm_pr),
-                 matrix(0, nrow = 2, ncol = 2),
+    ce_pt <- extfam$ce_ptwise(mu_ref = augm_pr, mu_sub = augm_pr)
+    expect_identical(dim(ce_pt), c(2L, 2L), info = info_str)
+    expect_equal(ce_pt,
+                 unname(t(-apply(arr_pr * log(arr_pr), c(1, 2), sum))),
                  info = info_str)
     # We expect a vector of length S:
-    expect_equal(extfam$ce(pref = list(mu = augm_pr),
+    ce_summed <- extfam$ce(pref = list(mu = augm_pr),
                            data = list(weights = rep(1, 2)),
-                           psub = list(mu = augm_pr)),
-                 numeric(2),
-                 info = info_str)
+                           psub = list(mu = augm_pr))
+    expect_length(ce_summed, 2)
+    expect_equal(ce_summed, colMeans(ce_pt), info = info_str)
     # We expect a vector of length S:
     expect_equal(extfam$dis_fun(pref = list(mu = augm_pr),
                                 psub = list(mu = augm_pr)),
