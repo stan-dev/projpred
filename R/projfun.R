@@ -129,14 +129,14 @@ project_submodel <- function(solution_terms, p_ref, refmodel, regul = 1e-4,
 
   mu <- refmodel$family$mu_fun(submodl, offset = refmodel$offset)
   dis <- refmodel$family$dis_fun(p_ref, nlist(mu), wobs)
-  kl <- weighted.mean(
-    refmodel$family$kl(p_ref,
+  ce <- weighted.mean(
+    refmodel$family$ce(p_ref,
                        nlist(weights = wobs),
                        nlist(mu, dis)),
     wsample
   )
   return(structure(
-    nlist(dis, kl, weights = wsample, solution_terms, submodl),
+    nlist(dis, ce, weights = wsample, solution_terms, submodl),
     class = "initsubmodl"
   ))
 }

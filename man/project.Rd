@@ -73,9 +73,12 @@ If the projection is performed onto a single submodel (i.e.,
 \code{projection} which is a \code{list} containing the following elements:
 \describe{
 \item{\code{dis}}{Projected draws for the dispersion parameter.}
-\item{\code{kl}}{The Kullback-Leibler (KL) divergence from the reference model
-to the submodel. Note that in case of the Gaussian family, this is not
-the actual KL divergence but merely a proxy.}
+\item{\code{ce}}{The cross-entropy part of the Kullback-Leibler (KL)
+divergence from the reference model to the submodel. For some families,
+this is not the actual cross-entropy, but a reduced one where terms which
+would cancel out when calculating the KL divergence have been dropped. In
+case of the Gaussian family, that reduced cross-entropy is further
+modified, yielding merely a proxy.}
 \item{\code{weights}}{Weights for the projected draws.}
 \item{\code{solution_terms}}{A character vector of the submodel's predictor
 terms.}
