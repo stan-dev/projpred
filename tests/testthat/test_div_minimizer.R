@@ -158,7 +158,8 @@ test_that("divmin_augdat() works", {
       args_fit_i <- c(args_fit_i, list(avoid.increase = TRUE))
     }
 
-    if (fam_crr == "cumul" && mod_crr %in% c("glmm", "gamm")) {
+    if (fam_crr == "cumul" && mod_crr %in% c("glmm", "gamm") &&
+        packageVersion("ordinal") < "2022.11-16") {
       warn_expected <- paste(
         "^Using formula\\(x\\) is deprecated when x is a character vector of",
         "length > 1"

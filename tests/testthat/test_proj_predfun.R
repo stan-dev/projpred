@@ -167,6 +167,12 @@ test_that("repair_re() works for multilevel cumulative() models", {
 
   # Fit with ordinal::clmm() ------------------------------------------------
 
+  warn_expected <- if (packageVersion("ordinal") < "2022.11-16") {
+    paste("^Using formula\\(x\\) is deprecated when x is a character vector of",
+          "length > 1")
+  } else {
+    NA
+  }
   expect_warning(
     ofit <- ordinal::clmm(
       rating ~ period + carry + treat + (1 | sbj) + (1 + period + carry | grp),
@@ -174,8 +180,7 @@ test_that("repair_re() works for multilevel cumulative() models", {
       Hess = FALSE,
       model = FALSE
     ),
-    paste("^Using formula\\(x\\) is deprecated when x is a character vector of",
-          "length > 1")
+    warn_expected
   )
   # Needed for the ordinal:::predict.clm() workaround (the value `"negative"` is
   # the default, see `?ordinal::clm.control`):

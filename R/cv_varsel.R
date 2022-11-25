@@ -223,7 +223,7 @@ cv_varsel.refmodel <- function(
               search_path = sel$search_path,
               d_test = sel_cv$d_test,
               summaries = sel_cv$summaries,
-              kl = sel$kl,
+              ce = sel$ce,
               solution_terms = sel$solution_terms,
               pct_solution_terms_cv,
               nterms_all = count_terms_in_formula(refmodel$formula),
@@ -589,7 +589,7 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
         i, seq_along(search_path$solution_terms)
       ] <- search_path$solution_terms
     }
-    sel <- nlist(search_path, kl = sapply(submodels, "[[", "kl"),
+    sel <- nlist(search_path, ce = sapply(submodels, "[[", "ce"),
                  solution_terms = search_path$solution_terms,
                  clust_used_search = p_sel$clust_used,
                  clust_used_eval = refdist_eval$clust_used,
