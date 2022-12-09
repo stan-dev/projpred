@@ -93,9 +93,9 @@ that we select the smallest model size for which the upper bound of the 68\%
 confidence interval for \eqn{U_k - U_{\mathrm{base}}}{U_k - U_base} exceeds
 (or is equal to) zero, that is (if \code{stat} is a performance statistic for
 which the normal approximation is used, not the bootstrap), for which the
-submodel's utility estimate is at most one standard error smaller than the
-baseline model's utility estimate (with that standard error referring to
-the utility \emph{difference}).
+submodel's utility estimate is at most one standard error (approximately)
+smaller than the baseline model's utility estimate (with that standard
+error referring to the utility \emph{difference}).
 }
 \note{
 Loss statistics like the root mean squared error (RMSE) and the mean

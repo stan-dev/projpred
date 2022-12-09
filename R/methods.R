@@ -515,8 +515,8 @@ plot.vsel <- function(
 #' @param alpha A number determining the (nominal) coverage `1 - alpha` of the
 #'   normal-approximation (or bootstrap; see argument `stats`) confidence
 #'   intervals. For example, in case of the normal approximation, `alpha = 0.32`
-#'   corresponds to one-standard-error intervals (because of the coverage of
-#'   68%).
+#'   approximately corresponds to one-standard-error intervals (because of the
+#'   coverage of 68%).
 #' @param baseline For [summary.vsel()]: Only relevant if `deltas` is `TRUE`.
 #'   For [plot.vsel()]: Always relevant. Either `"ref"` or `"best"`, indicating
 #'   whether the baseline is the reference model or the best submodel found (in
@@ -785,9 +785,9 @@ print.vsel <- function(x, ...) {
 #'   confidence interval for \eqn{U_k - U_{\mathrm{base}}}{U_k - U_base} exceeds
 #'   (or is equal to) zero, that is (if `stat` is a performance statistic for
 #'   which the normal approximation is used, not the bootstrap), for which the
-#'   submodel's utility estimate is at most one standard error smaller than the
-#'   baseline model's utility estimate (with that standard error referring to
-#'   the utility *difference*).
+#'   submodel's utility estimate is at most one standard error (approximately)
+#'   smaller than the baseline model's utility estimate (with that standard
+#'   error referring to the utility *difference*).
 #'
 #' @note Loss statistics like the root mean squared error (RMSE) and the mean
 #'   squared error (MSE) are converted to utilities by multiplying them by `-1`,
