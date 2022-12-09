@@ -510,8 +510,9 @@ plot.vsel <- function(
 #'   alpha`. Items `"diff"` and `"diff.se"` are only supported if `deltas` is
 #'   `FALSE`.
 #' @param deltas If `TRUE`, the submodel statistics are estimated as differences
-#'   from the baseline model (see argument `baseline`) instead of estimating the
-#'   actual values of the statistics.
+#'   from the baseline model (see argument `baseline`). With a "difference
+#'   *from* the baseline model", we mean to take the submodel statistic minus
+#'   the baseline model statistic (not the other way round).
 #' @param alpha A number determining the (nominal) coverage `1 - alpha` of the
 #'   normal-approximation (or bootstrap; see argument `stats`) confidence
 #'   intervals. For example, in case of the normal approximation, `alpha = 0.32`

@@ -42,8 +42,9 @@ bounds, bootstrapping is used.
 }}
 
 \item{deltas}{If \code{TRUE}, the submodel statistics are estimated as differences
-from the baseline model (see argument \code{baseline}) instead of estimating the
-actual values of the statistics.}
+from the baseline model (see argument \code{baseline}). With a "difference
+\emph{from} the baseline model", we mean to take the submodel statistic minus
+the baseline model statistic (not the other way round).}
 
 \item{alpha}{A number determining the (nominal) coverage \code{1 - alpha} of the
 normal-approximation (or bootstrap; see argument \code{stats}) confidence
