@@ -4,6 +4,10 @@ If you read this from a place other than <https://mc-stan.org/projpred/news/inde
 
 # projpred 2.2.2.9000
 
+## Major changes
+
+* In `plot.vsel()` and `summary.vsel()`, the default of `alpha = 0.32` is replaced by `alpha = 2 * pnorm(-1)` (= `1 - diff(pnorm(c(-1, 1)))`, which is only *approximately* 0.32) so that now, a normal-approximation confidence interval with default `alpha` stretches by exactly one standard error on either side of the point estimate. (In at least one case, the former default even led to a different suggested size than the confidence interval calculated manually based on the standard error.) (GitHub: #371)
+
 ## Minor changes
 
 * The deprecated function `ggplot2::aes_string()` is not used anymore, thereby avoiding an occasional soft-deprecation warning thrown by **ggplot2** 3.4.0. (GitHub: #367)
