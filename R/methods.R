@@ -339,7 +339,7 @@ plot.vsel <- function(
     nterms_max = NULL,
     stats = "elpd",
     deltas = FALSE,
-    alpha = 0.32,
+    alpha = 2 * pnorm(-1),
     baseline = if (!inherits(x$refmodel, "datafit")) "ref" else "best",
     thres_elpd = NA,
     ...
@@ -515,9 +515,9 @@ plot.vsel <- function(
 #'   the baseline model statistic (not the other way round).
 #' @param alpha A number determining the (nominal) coverage `1 - alpha` of the
 #'   normal-approximation (or bootstrap; see argument `stats`) confidence
-#'   intervals. For example, in case of the normal approximation, `alpha = 0.32`
-#'   approximately corresponds to one-standard-error intervals (because of the
-#'   coverage of 68%).
+#'   intervals. For example, in case of the normal approximation, `alpha = 2 *
+#'   pnorm(-1)` corresponds to a confidence interval stretching by one standard
+#'   error on either side of the point estimate.
 #' @param baseline For [summary.vsel()]: Only relevant if `deltas` is `TRUE`.
 #'   For [plot.vsel()]: Always relevant. Either `"ref"` or `"best"`, indicating
 #'   whether the baseline is the reference model or the best submodel found (in
@@ -559,7 +559,7 @@ summary.vsel <- function(
     stats = "elpd",
     type = c("mean", "se", "diff", "diff.se"),
     deltas = FALSE,
-    alpha = 0.32,
+    alpha = 2 * pnorm(-1),
     baseline = if (!inherits(object$refmodel, "datafit")) "ref" else "best",
     ...
 ) {
@@ -781,14 +781,14 @@ print.vsel <- function(x, ...) {
 #'   thres_elpd / N} with \eqn{N} denoting the number of observations.
 #'
 #'   For example (disregarding the special extensions in case of `stat = "elpd"`
-#'   or `stat = "mlpd"`), `alpha = 0.32`, `pct = 0`, and `type = "upper"` means
-#'   that we select the smallest model size for which the upper bound of the 68%
-#'   confidence interval for \eqn{U_k - U_{\mathrm{base}}}{U_k - U_base} exceeds
-#'   (or is equal to) zero, that is (if `stat` is a performance statistic for
-#'   which the normal approximation is used, not the bootstrap), for which the
-#'   submodel's utility estimate is at most one standard error (approximately)
-#'   smaller than the baseline model's utility estimate (with that standard
-#'   error referring to the utility *difference*).
+#'   or `stat = "mlpd"`), `alpha = 2 * pnorm(-1)`, `pct = 0`, and `type =
+#'   "upper"` means that we select the smallest model size for which the upper
+#'   bound of the 68% confidence interval for \eqn{U_k - U_{\mathrm{base}}}{U_k
+#'   - U_base} exceeds (or is equal to) zero, that is (if `stat` is a
+#'   performance statistic for which the normal approximation is used, not the
+#'   bootstrap), for which the submodel's utility estimate is at most one
+#'   standard error smaller than the baseline model's utility estimate (with
+#'   that standard error referring to the utility *difference*).
 #'
 #' @note Loss statistics like the root mean squared error (RMSE) and the mean
 #'   squared error (MSE) are converted to utilities by multiplying them by `-1`,
