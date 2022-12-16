@@ -67,13 +67,15 @@
 #'   observation weights, offsets) from the original dataset (supplied to
 #'   argument `data`) or from a new dataset. See also section "Argument
 #'   `extract_model_data`" below.
-#' @param family An object of class `family` representing the observational
-#'   model (i.e., the distributional family for the response) of the
-#'   *submodels*. May be `NULL` for [get_refmodel.default()] in which case the
-#'   family is retrieved from `object`. For custom reference models, `family`
-#'   does not have to coincide with the family of the reference model (if the
-#'   reference model possesses a formal `family` at all). In typical reference
-#'   models, however, these families do coincide.
+#' @param family An object of class `family` representing the observation model
+#'   (i.e., the distributional family for the response) of the *submodels*.
+#'   (However, the link and the inverse-link function of this `family` are also
+#'   used for quantities like predictions and fitted values related to the
+#'   *reference model*.) May be `NULL` for [get_refmodel.default()] in which
+#'   case the family is retrieved from `object`. For custom reference models,
+#'   `family` does not have to coincide with the family of the reference model
+#'   (if the reference model possesses a formal `family` at all). In typical
+#'   reference models, however, these families do coincide.
 #' @param cvfits For \eqn{K}-fold CV only. A `list` containing a sub-`list`
 #'   called `fits` containing the \eqn{K} model fits from which reference model
 #'   structures are created. The `cvfits` `list` (i.e., the super-`list`) needs

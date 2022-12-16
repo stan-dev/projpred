@@ -10,7 +10,7 @@
   stats = "elpd",
   type = c("mean", "se", "diff", "diff.se"),
   deltas = FALSE,
-  alpha = 0.32,
+  alpha = 2 * pnorm(-1),
   baseline = if (!inherits(object$refmodel, "datafit")) "ref" else "best",
   respOrig = TRUE,
   ...
@@ -55,14 +55,14 @@ see argument \code{stats}) confidence intervals with (nominal) coverage \code{1 
 \code{FALSE}.}
 
 \item{deltas}{If \code{TRUE}, the submodel statistics are estimated as differences
-from the baseline model (see argument \code{baseline}) instead of estimating the
-actual values of the statistics.}
+from the baseline model (see argument \code{baseline}). With a "difference
+\emph{from} the baseline model", we mean to take the submodel statistic minus
+the baseline model statistic (not the other way round).}
 
 \item{alpha}{A number determining the (nominal) coverage \code{1 - alpha} of the
 normal-approximation (or bootstrap; see argument \code{stats}) confidence
-intervals. For example, in case of the normal approximation, \code{alpha = 0.32}
-corresponds to one-standard-error intervals (because of the coverage of
-68\%).}
+intervals. For example, in case of the normal approximation, \code{alpha = 2 * pnorm(-1)} corresponds to a confidence interval stretching by one standard
+error on either side of the point estimate.}
 
 \item{baseline}{For \code{\link[=summary.vsel]{summary.vsel()}}: Only relevant if \code{deltas} is \code{TRUE}.
 For \code{\link[=plot.vsel]{plot.vsel()}}: Always relevant. Either \code{"ref"} or \code{"best"}, indicating

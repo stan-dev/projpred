@@ -61,13 +61,15 @@ formulas, see also packages \pkg{mgcv} (in particular, function
 \code{\link[mgcv:gam]{mgcv::gam()}}) and \pkg{gamm4} (in particular, function \code{\link[gamm4:gamm4]{gamm4::gamm4()}})
 as well as the notes in section "Formula terms" below.}
 
-\item{family}{An object of class \code{family} representing the observational
-model (i.e., the distributional family for the response) of the
-\emph{submodels}. May be \code{NULL} for \code{\link[=get_refmodel.default]{get_refmodel.default()}} in which case the
-family is retrieved from \code{object}. For custom reference models, \code{family}
-does not have to coincide with the family of the reference model (if the
-reference model possesses a formal \code{family} at all). In typical reference
-models, however, these families do coincide.}
+\item{family}{An object of class \code{family} representing the observation model
+(i.e., the distributional family for the response) of the \emph{submodels}.
+(However, the link and the inverse-link function of this \code{family} are also
+used for quantities like predictions and fitted values related to the
+\emph{reference model}.) May be \code{NULL} for \code{\link[=get_refmodel.default]{get_refmodel.default()}} in which
+case the family is retrieved from \code{object}. For custom reference models,
+\code{family} does not have to coincide with the family of the reference model
+(if the reference model possesses a formal \code{family} at all). In typical
+reference models, however, these families do coincide.}
 
 \item{latent}{A single logical value indicating whether to use the latent
 projection (\code{TRUE}) or not (\code{FALSE}). Note that setting \code{latent = TRUE}
