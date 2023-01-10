@@ -17,7 +17,7 @@
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">projpred</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">2.2.2</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">2.3.0</span>
       </span>
     </div>
 
@@ -102,6 +102,19 @@
       <small>Source: <a href="https://github.com/stan-dev/projpred/blob/HEAD/NEWS.md" class="external-link"><code>NEWS.md</code></a></small>
     </div>
 
+    <div class="section level2">
+<h2 class="page-header" data-toc-text="2.3.0" id="projpred-230">projpred 2.3.0<a class="anchor" aria-label="anchor" href="#projpred-230"></a></h2>
+<div class="section level3">
+<h3 id="major-changes-2-3-0">Major changes<a class="anchor" aria-label="anchor" href="#major-changes-2-3-0"></a></h3>
+<ul><li>In <code><a href="../reference/plot.vsel.html">plot.vsel()</a></code> and <code><a href="../reference/summary.vsel.html">summary.vsel()</a></code>, the default of <code>alpha = 0.32</code> is replaced by <code>alpha = 2 * pnorm(-1)</code> (= <code>1 - diff(pnorm(c(-1, 1)))</code>, which is only <em>approximately</em> 0.32) so that now, a normal-approximation confidence interval with default <code>alpha</code> stretches by exactly one standard error on either side of the point estimate. Typically, this changes results only slightly. In some cases, however, the new default may lead to a different suggested size, explaining why this is regarded as a major change. (GitHub: <a href="https://github.com/stan-dev/projpred/issues/371" class="external-link">#371</a>)</li>
+</ul></div>
+<div class="section level3">
+<h3 id="minor-changes-2-3-0">Minor changes<a class="anchor" aria-label="anchor" href="#minor-changes-2-3-0"></a></h3>
+<ul><li>The deprecated function <code><a href="https://ggplot2.tidyverse.org/reference/aes_.html" class="external-link">ggplot2::aes_string()</a></code> is not used anymore, thereby avoiding an occasional soft-deprecation warning thrown by <strong>ggplot2</strong> 3.4.0. (GitHub: <a href="https://github.com/stan-dev/projpred/issues/367" class="external-link">#367</a>)</li>
+<li>The KL divergence from the reference model to a submodel is simplified to the corresponding cross-entropy (i.e., the reference model’s entropy is dropped), with some caveats described in the documentation for output element <code>ce</code> of <code><a href="../reference/project.html">project()</a></code>. The reason for this change is that the former KL divergence assumed the reference model’s family to be the same as the submodel’s family, which does not need to be the case for custom reference models. This should not be a user-facing change as users are discouraged to make use of specific output elements (like the former element <code>kl</code> of objects of class <code>projection</code> or <code>vsel</code>) directly. (GitHub: <a href="https://github.com/stan-dev/projpred/issues/369" class="external-link">#369</a>)</li>
+<li>Improvements in the documentation (especially for argument <code>family</code> of <code><a href="../reference/refmodel-init-get.html">init_refmodel()</a></code> and <code><a href="../reference/refmodel-init-get.html">get_refmodel.default()</a></code>).</li>
+</ul></div>
+</div>
     <div class="section level2">
 <h2 class="page-header" data-toc-text="2.2.2" id="projpred-222">projpred 2.2.2<small>2022-11-09</small><a class="anchor" aria-label="anchor" href="#projpred-222"></a></h2>
 <div class="section level3">

@@ -21,7 +21,7 @@ final decision based on what is most appropriate for the problem at hand.'><meta
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">projpred</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">2.2.2</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">2.3.0</span>
       </span>
     </div>
 
@@ -213,14 +213,12 @@ of <code>stat = "mlpd"</code> (and <code>!is.na(thres_elpd)</code>), the suggest
 the smallest model size \(k\) fulfilling the rule above <em>or</em> \(u_k -
   u_{\mathrm{base}} &gt; \frac{\texttt{thres\_elpd}}{N}\) with \(N\) denoting the number of observations.</p>
 <p>For example (disregarding the special extensions in case of <code>stat = "elpd"</code>
-or <code>stat = "mlpd"</code>), <code>alpha = 0.32</code>, <code>pct = 0</code>, and <code>type = "upper"</code> means
-that we select the smallest model size for which the upper bound of the 68%
-confidence interval for \(U_k - U_{\mathrm{base}}\) exceeds
-(or is equal to) zero, that is (if <code>stat</code> is a performance statistic for
-which the normal approximation is used, not the bootstrap), for which the
-submodel's utility estimate is at most one standard error smaller than the
-baseline model's utility estimate (with that standard error referring to
-the utility <em>difference</em>).</p>
+or <code>stat = "mlpd"</code>), <code>alpha = 2 * pnorm(-1)</code>, <code>pct = 0</code>, and <code>type = "upper"</code> means that we select the smallest model size for which the upper
+bound of the 68% confidence interval for \(U_k - U_{\mathrm{base}}\) exceeds (or is equal to) zero, that is (if <code>stat</code> is a
+performance statistic for which the normal approximation is used, not the
+bootstrap), for which the submodel's utility estimate is at most one
+standard error smaller than the baseline model's utility estimate (with
+that standard error referring to the utility <em>difference</em>).</p>
     </div>
     <div id="note">
     <h2>Note</h2>

@@ -18,7 +18,7 @@ cv_varsel())."><meta property="og:image" content="https://mc-stan.org/projpred/l
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">projpred</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">2.2.2</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">2.3.0</span>
       </span>
     </div>
 
@@ -117,7 +117,7 @@ cv_varsel())."><meta property="og:image" content="https://mc-stan.org/projpred/l
 <span>  stats <span class="op">=</span> <span class="st">"elpd"</span>,</span>
 <span>  type <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"mean"</span>, <span class="st">"se"</span>, <span class="st">"diff"</span>, <span class="st">"diff.se"</span><span class="op">)</span>,</span>
 <span>  deltas <span class="op">=</span> <span class="cn">FALSE</span>,</span>
-<span>  alpha <span class="op">=</span> <span class="fl">0.32</span>,</span>
+<span>  alpha <span class="op">=</span> <span class="fl">2</span> <span class="op">*</span> <span class="fu"><a href="https://rdrr.io/r/stats/Normal.html" class="external-link">pnorm</a></span><span class="op">(</span><span class="op">-</span><span class="fl">1</span><span class="op">)</span>,</span>
 <span>  baseline <span class="op">=</span> <span class="kw">if</span> <span class="op">(</span><span class="op">!</span><span class="fu"><a href="https://rdrr.io/r/base/class.html" class="external-link">inherits</a></span><span class="op">(</span><span class="va">object</span><span class="op">$</span><span class="va">refmodel</span>, <span class="st">"datafit"</span><span class="op">)</span><span class="op">)</span> <span class="st">"ref"</span> <span class="kw">else</span> <span class="st">"best"</span>,</span>
 <span>  <span class="va">...</span></span>
 <span><span class="op">)</span></span></code></pre></div>
@@ -168,16 +168,16 @@ see argument <code>stats</code>) confidence intervals with (nominal) coverage <c
 
 <dt>deltas</dt>
 <dd><p>If <code>TRUE</code>, the submodel statistics are estimated as differences
-from the baseline model (see argument <code>baseline</code>) instead of estimating the
-actual values of the statistics.</p></dd>
+from the baseline model (see argument <code>baseline</code>). With a "difference
+<em>from</em> the baseline model", we mean to take the submodel statistic minus
+the baseline model statistic (not the other way round).</p></dd>
 
 
 <dt>alpha</dt>
 <dd><p>A number determining the (nominal) coverage <code>1 - alpha</code> of the
 normal-approximation (or bootstrap; see argument <code>stats</code>) confidence
-intervals. For example, in case of the normal approximation, <code>alpha = 0.32</code>
-corresponds to one-standard-error intervals (because of the coverage of
-68%).</p></dd>
+intervals. For example, in case of the normal approximation, <code>alpha = 2 * pnorm(-1)</code> corresponds to a confidence interval stretching by one standard
+error on either side of the point estimate.</p></dd>
 
 
 <dt>baseline</dt>

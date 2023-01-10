@@ -20,7 +20,7 @@ submodels of specific sizes."><meta property="og:image" content="https://mc-stan
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">projpred</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">2.2.2</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">2.3.0</span>
       </span>
     </div>
 
@@ -206,10 +206,13 @@ minimizer (if <code>refit_prj</code> is <code>TRUE</code>).</p></dd>
 <code>projection</code> which is a <code>list</code> containing the following elements:</p><dl><dt><code>dis</code></dt>
 <dd><p>Projected draws for the dispersion parameter.</p></dd>
 
-<dt><code>kl</code></dt>
-<dd><p>The Kullback-Leibler (KL) divergence from the reference model
-to the submodel. Note that in case of the Gaussian family, this is not
-the actual KL divergence but merely a proxy.</p></dd>
+<dt><code>ce</code></dt>
+<dd><p>The cross-entropy part of the Kullback-Leibler (KL)
+divergence from the reference model to the submodel. For some families,
+this is not the actual cross-entropy, but a reduced one where terms which
+would cancel out when calculating the KL divergence have been dropped. In
+case of the Gaussian family, that reduced cross-entropy is further
+modified, yielding merely a proxy.</p></dd>
 
 <dt><code>weights</code></dt>
 <dd><p>Weights for the projected draws.</p></dd>

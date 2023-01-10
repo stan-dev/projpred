@@ -32,7 +32,7 @@ see cv_varsel() for the use of \(K\)-fold CV in projpred.'><meta property="og:im
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">projpred</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">2.2.2</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">2.3.0</span>
       </span>
     </div>
 
@@ -201,13 +201,15 @@ as well as the notes in section "Formula terms" below.</p></dd>
 
 
 <dt>family</dt>
-<dd><p>An object of class <code>family</code> representing the observational
-model (i.e., the distributional family for the response) of the
-<em>submodels</em>. May be <code>NULL</code> for <code>get_refmodel.default()</code> in which case the
-family is retrieved from <code>object</code>. For custom reference models, <code>family</code>
-does not have to coincide with the family of the reference model (if the
-reference model possesses a formal <code>family</code> at all). In typical reference
-models, however, these families do coincide.</p></dd>
+<dd><p>An object of class <code>family</code> representing the observation model
+(i.e., the distributional family for the response) of the <em>submodels</em>.
+(However, the link and the inverse-link function of this <code>family</code> are also
+used for quantities like predictions and fitted values related to the
+<em>reference model</em>.) May be <code>NULL</code> for <code>get_refmodel.default()</code> in which
+case the family is retrieved from <code>object</code>. For custom reference models,
+<code>family</code> does not have to coincide with the family of the reference model
+(if the reference model possesses a formal <code>family</code> at all). In typical
+reference models, however, these families do coincide.</p></dd>
 
 
 <dt>data</dt>
