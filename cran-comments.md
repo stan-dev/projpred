@@ -17,7 +17,7 @@
 
 All checks gave neither ERRORs nor WARNINGs.
 
-The local checks gave the following NOTE:
+The local check gave the following NOTE:
 
     * checking CRAN incoming feasibility ... NOTE
     Maintainer: 'Frank Weber <fweber144[ at ]protonmail.com>'
@@ -86,7 +86,7 @@ workload on the system that the win-builder check ran on.
 The macOS builder check gave the following NOTE:
 
     * checking package dependencies ... NOTE
-    Package suggested but not available for checking: ‘cmdstanr’
+    Package suggested but not available for checking: 'cmdstanr'
 
 (for an explanation, see above).
 
