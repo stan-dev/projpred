@@ -11,7 +11,7 @@ If you read this from a place other than <https://mc-stan.org/projpred/news/inde
 ## Minor changes
 
 * The deprecated function `ggplot2::aes_string()` is not used anymore, thereby avoiding an occasional soft-deprecation warning thrown by **ggplot2** 3.4.0. (GitHub: #367)
-* The KL divergence from the reference model to the submodels was simplified to the corresponding cross-entropy part (i.e., the reference model's negative entropy was dropped), for consistency of "typical" and "custom"" reference models. This should not be a user-facing change as users are discouraged to make use of specific output elements (like the former element `kl` of objects of class `projection` or `vsel`) directly. (GitHub: #369)
+* The KL divergence from the reference model to a submodel is simplified to the corresponding cross-entropy (i.e., the reference model's entropy is dropped), with some caveats described in the documentation for output element `ce` of `project()`. The reason for this change is that the former KL divergence assumed the reference model's family to be the same as the submodel's family, which does not need to be the case for custom reference models. This should not be a user-facing change as users are discouraged to make use of specific output elements (like the former element `kl` of objects of class `projection` or `vsel`) directly. (GitHub: #369)
 * Improvements in the documentation (especially for argument `family` of `init_refmodel()` and `get_refmodel.default()`).
 
 # projpred 2.2.2
