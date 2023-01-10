@@ -2,18 +2,24 @@
 
 If you read this from a place other than <https://mc-stan.org/projpred/news/index.html>, please consider switching to that website since it features better formatting and cross-linking.
 
-# projpred 2.2.2.9000
+# projpred 2.3.0.9000
 
 ## Major changes
 
-* In `plot.vsel()` and `summary.vsel()`, the default of `alpha = 0.32` is replaced by `alpha = 2 * pnorm(-1)` (= `1 - diff(pnorm(c(-1, 1)))`, which is only *approximately* 0.32) so that now, a normal-approximation confidence interval with default `alpha` stretches by exactly one standard error on either side of the point estimate. (In at least one case, the former default even led to a different suggested size than the confidence interval calculated manually based on the standard error.) (GitHub: #371)
 * Introduction of the augmented-data projection (see section ["Supported types of models"](https://mc-stan.org/projpred/articles/projpred.html#modtypes) of the main vignette for details). (GitHub: #70, #322)
 * Introduction of the latent projection [(Catalina et al., 2021)](https://doi.org/10.48550/arXiv.2109.04702) (see section ["Supported types of models"](https://mc-stan.org/projpred/articles/projpred.html#modtypes) of the main vignette and the new [latent-projection vignette](https://mc-stan.org/projpred/articles/latent.html) [**TODO (latent)**: check this URL] for details). (GitHub: [**TODO (latent)**: insert PR number])
+
+# projpred 2.3.0
+
+## Major changes
+
+* In `plot.vsel()` and `summary.vsel()`, the default of `alpha = 0.32` is replaced by `alpha = 2 * pnorm(-1)` (= `1 - diff(pnorm(c(-1, 1)))`, which is only *approximately* 0.32) so that now, a normal-approximation confidence interval with default `alpha` stretches by exactly one standard error on either side of the point estimate. Typically, this changes results only slightly. In some cases, however, the new default may lead to a different suggested size, explaining why this is regarded as a major change. (GitHub: #371)
 
 ## Minor changes
 
 * The deprecated function `ggplot2::aes_string()` is not used anymore, thereby avoiding an occasional soft-deprecation warning thrown by **ggplot2** 3.4.0. (GitHub: #367)
-* The KL divergence from the reference model to the submodels was simplified to the corresponding cross-entropy part (i.e., the reference model's negative entropy was dropped), for consistency of "typical" and "custom"" reference models. This should not be a user-facing change as users are discouraged to make use of specific output elements (like the former element `kl` of objects of class `projection` or `vsel`) directly. (GitHub: #369)
+* The KL divergence from the reference model to a submodel is simplified to the corresponding cross-entropy (i.e., the reference model's entropy is dropped), with some caveats described in the documentation for output element `ce` of `project()`. The reason for this change is that the former KL divergence assumed the reference model's family to be the same as the submodel's family, which does not need to be the case for custom reference models. This should not be a user-facing change as users are discouraged to make use of specific output elements (like the former element `kl` of objects of class `projection` or `vsel`) directly. (GitHub: #369)
+* Improvements in the documentation (especially for argument `family` of `init_refmodel()` and `get_refmodel.default()`).
 
 # projpred 2.2.2
 
