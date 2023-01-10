@@ -4,6 +4,8 @@ If you read this from a place other than <https://mc-stan.org/projpred/news/inde
 
 # projpred 2.3.0.9000
 
+## Major changes
+
 * Introduction of the augmented-data projection (see section ["Supported types of models"](https://mc-stan.org/projpred/articles/projpred.html#modtypes) of the main vignette for details). (GitHub: #70, #322)
 
 # projpred 2.3.0
