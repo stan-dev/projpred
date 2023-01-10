@@ -1,10 +1,10 @@
 ## Test environments
 
 * Local:
-    + R version 4.2.2 (2022-10-31) on Ubuntu 22.04.1 LTS system (platform:
-      x86_64-pc-linux-gnu (64-bit))
+    + R version 4.2.2 Patched (2022-11-10 r83330) on Ubuntu 22.04.1 LTS system
+      (platform: x86_64-pc-linux-gnu (64-bit))
 * win-builder:
-    + R-devel (R Under development (unstable) (2022-10-11 r83083 ucrt))
+    + R-devel (R Under development (unstable) (2023-01-09 r83588 ucrt))
     + R-release (R version 4.2.2 (2022-10-31 ucrt))
     + R-oldrelease (R version 4.1.3 (2022-03-10))
 * macOS builder:
@@ -71,6 +71,17 @@ feasibility ...`:
 
 The "Possibly mis-spelled words in DESCRIPTION" are names that are spelled
 correctly.
+
+The R-devel win-builder check also gave the following NOTE:
+
+    * checking examples ... [27s] NOTE
+    Examples with CPU (user + system) or elapsed time > 10s
+                         user system elapsed
+    as.matrix.projection 4.56    0.5   12.37
+
+In previous checks (both local and on win-builder), this example did not take
+that long, so the increased runtime might simply be due to a temporary heavy
+workload on the system that the win-builder check ran on.
 
 The macOS builder check gave the following NOTE:
 
