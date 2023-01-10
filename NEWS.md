@@ -6,7 +6,7 @@ If you read this from a place other than <https://mc-stan.org/projpred/news/inde
 
 ## Major changes
 
-* In `plot.vsel()` and `summary.vsel()`, the default of `alpha = 0.32` is replaced by `alpha = 2 * pnorm(-1)` (= `1 - diff(pnorm(c(-1, 1)))`, which is only *approximately* 0.32) so that now, a normal-approximation confidence interval with default `alpha` stretches by exactly one standard error on either side of the point estimate. (In at least one case, the former default even led to a different suggested size than the confidence interval calculated manually based on the standard error.) (GitHub: #371)
+* In `plot.vsel()` and `summary.vsel()`, the default of `alpha = 0.32` is replaced by `alpha = 2 * pnorm(-1)` (= `1 - diff(pnorm(c(-1, 1)))`, which is only *approximately* 0.32) so that now, a normal-approximation confidence interval with default `alpha` stretches by exactly one standard error on either side of the point estimate. Typically, this changes results only slightly. In some cases, however, the new default may lead to a different suggested size, explaining why this is regarded as a major change. (GitHub: #371)
 
 ## Minor changes
 
