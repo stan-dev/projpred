@@ -1234,19 +1234,19 @@ if (run_cvvs) {
 ## Output names -----------------------------------------------------------
 
 vsel_nms <- c(
-  "refmodel", "search_path", "d_test", "summaries", "solution_terms", "kl",
+  "refmodel", "search_path", "d_test", "summaries", "solution_terms", "ce",
   "nterms_max", "nterms_all", "method", "cv_method", "validate_search",
   "clust_used_search", "clust_used_eval", "nprjdraws_search", "nprjdraws_eval",
   "suggested_size", "summary"
 )
 vsel_nms_cv <- c(
-  "refmodel", "search_path", "d_test", "summaries", "kl", "solution_terms",
+  "refmodel", "search_path", "d_test", "summaries", "ce", "solution_terms",
   "pct_solution_terms_cv", "nterms_all", "nterms_max", "method", "cv_method",
   "validate_search", "clust_used_search", "clust_used_eval", "nprjdraws_search",
   "nprjdraws_eval", "suggested_size", "summary"
 )
 # Related to prediction (in contrast to selection):
-vsel_nms_pred <- c("summaries", "solution_terms", "kl", "suggested_size",
+vsel_nms_pred <- c("summaries", "solution_terms", "ce", "suggested_size",
                    "summary")
 vsel_nms_pred_opt <- c("solution_terms", "suggested_size")
 # Related to `nloo`:

@@ -38,7 +38,7 @@ extfam_tester <- function(extfam,
 
   ## For `extfam` -----------------------------------------------------------
 
-  extfam_nms_add <- c("kl", "dis_fun", "predvar", "ll_fun", "deviance", "ppd",
+  extfam_nms_add <- c("ce", "dis_fun", "predvar", "ll_fun", "deviance", "ppd",
                       "is_extended", extfam_nms_add2)
   extfam_nms <- c(names(fam_orig), extfam_nms_add)
   expect_s3_class(extfam, "family")
@@ -817,7 +817,7 @@ projection_tester <- function(p,
   # would have to be updated:
   expect_named(
     p,
-    c("dis", "kl", "weights", "solution_terms", "submodl", "p_type",
+    c("dis", "ce", "weights", "solution_terms", "submodl", "p_type",
       "refmodel"),
     info = info_str
   )
@@ -907,11 +907,10 @@ projection_tester <- function(p,
   # dis
   expect_length(p$dis, nprjdraws_expected)
 
-  # kl
-  expect_type(p$kl, "double")
-  expect_length(p$kl, 1)
-  expect_true(!is.na(p$kl), info = info_str)
-  expect_gte(p$kl, 0)
+  # ce
+  expect_type(p$ce, "double")
+  expect_length(p$ce, 1)
+  expect_true(!is.na(p$ce), info = info_str)
 
   # weights
   expect_length(p$weights, nprjdraws_expected)
@@ -969,19 +968,13 @@ proj_list_tester <- function(p,
                       ...)
   }
   if (is_seq) {
-    # For a sequential `"proj_list"` object and training data, `kl` should be
+    # For a sequential `"proj_list"` object and training data, `ce` should be
     # non-increasing for increasing model size:
-    klseq <- sapply(p, function(x) sum(x$kl))
-    expect_true(all(tail(klseq, -1) <= extra_tol * head(klseq, -1)),
+    ceseq <- sapply(p, function(x) sum(x$ce))
+    expect_true(all(ifelse(sign(head(ceseq, -1)) == 1,
+                           tail(ceseq, -1) <= extra_tol * head(ceseq, -1),
+                           tail(ceseq, -1) <= 1 / extra_tol * head(ceseq, -1))),
                 info = info_str)
-    ### Too unsafe because `length(klseq)` is usually small:
-    # prop_as_expected <- 0.8
-    # expect_true(
-    #   mean(tail(klseq, -1) <= extra_tol * head(klseq, -1)) >=
-    #     prop_as_expected,
-    #   info = info_str
-    # )
-    ###
   }
   return(invisible(TRUE))
 }
@@ -1335,21 +1328,14 @@ vsel_tester <- function(
     info = info_str
   )
 
-  # kl
-  expect_type(vs$kl, "double")
-  expect_length(vs$kl, solterms_len_expected + 1)
-  expect_true(all(vs$kl >= 0), info = info_str)
+  # ce
+  expect_type(vs$ce, "double")
+  expect_length(vs$ce, solterms_len_expected + 1)
   # Expected to be non-increasing for increasing model size:
-  expect_true(all(tail(vs$kl, -1) <= extra_tol * head(vs$kl, -1)),
+  expect_true(all(ifelse(sign(head(vs$ce, -1)) == 1,
+                         tail(vs$ce, -1) <= extra_tol * head(vs$ce, -1),
+                         tail(vs$ce, -1) <= 1 / extra_tol * head(vs$ce, -1))),
               info = info_str)
-  ### Too unsafe because `length(vs$kl)` is usually small:
-  # prop_as_expected <- 0.8
-  # expect_true(
-  #   mean(tail(vs$kl, -1) <= extra_tol * head(vs$kl, -1)) >=
-  #     prop_as_expected,
-  #   info = info_str
-  # )
-  ###
 
   # pct_solution_terms_cv
   if (with_cv) {

@@ -339,7 +339,7 @@ plot.vsel <- function(
     nterms_max = NULL,
     stats = "elpd",
     deltas = FALSE,
-    alpha = 0.32,
+    alpha = 2 * pnorm(-1),
     baseline = if (!inherits(x$refmodel, "datafit")) "ref" else "best",
     thres_elpd = NA,
     ...
@@ -414,13 +414,13 @@ plot.vsel <- function(
 
   # plot submodel results
   pp <- ggplot(data = subset(stats_sub, stats_sub$size <= nterms_max),
-               mapping = aes_string(x = "size"))
+               mapping = aes(x = .data[["size"]]))
   if (!all(is.na(stats_ref$se))) {
     # add reference model results if they exist
 
     pp <- pp +
       # The reference model's dashed red horizontal line:
-      geom_hline(aes_string(yintercept = "value"),
+      geom_hline(aes(yintercept = .data[["value"]]),
                  data = stats_ref,
                  color = "darkred", linetype = 2)
 
@@ -431,7 +431,7 @@ plot.vsel <- function(
                              by = "statistic")
       thres_tab_ref$thres <- thres_tab_ref$value + thres_tab_ref$thres
       pp <- pp +
-        geom_hline(aes_string(yintercept = "thres"),
+        geom_hline(aes(yintercept = .data[["thres"]]),
                    data = thres_tab_ref,
                    color = "gray50", linetype = "dotdash")
     }
@@ -441,7 +441,7 @@ plot.vsel <- function(
 
     pp <- pp +
       # The baseline model's dotted black horizontal line:
-      geom_hline(aes_string(yintercept = "value"),
+      geom_hline(aes(yintercept = .data[["value"]]),
                  data = stats_bs,
                  color = "black", linetype = 3)
 
@@ -452,16 +452,17 @@ plot.vsel <- function(
                             by = "statistic")
       thres_tab_bs$thres <- thres_tab_bs$value + thres_tab_bs$thres
       pp <- pp +
-        geom_hline(aes_string(yintercept = "thres"),
+        geom_hline(aes(yintercept = .data[["thres"]]),
                    data = thres_tab_bs,
                    color = "darkgreen", linetype = "longdash")
     }
   }
   pp <- pp +
     # The submodel-specific graphical elements:
-    geom_linerange(aes_string(ymin = "lq", ymax = "uq", alpha = 0.1)) +
-    geom_line(aes_string(y = "value")) +
-    geom_point(aes_string(y = "value")) +
+    geom_linerange(aes(ymin = .data[["lq"]], ymax = .data[["uq"]],
+                       alpha = 0.1)) +
+    geom_line(aes(y = .data[["value"]])) +
+    geom_point(aes(y = .data[["value"]])) +
     # Miscellaneous stuff (axes, theming, faceting, etc.):
     scale_x_continuous(
       breaks = breaks, minor_breaks = minor_breaks,
@@ -509,13 +510,14 @@ plot.vsel <- function(
 #'   alpha`. Items `"diff"` and `"diff.se"` are only supported if `deltas` is
 #'   `FALSE`.
 #' @param deltas If `TRUE`, the submodel statistics are estimated as differences
-#'   from the baseline model (see argument `baseline`) instead of estimating the
-#'   actual values of the statistics.
+#'   from the baseline model (see argument `baseline`). With a "difference
+#'   *from* the baseline model", we mean to take the submodel statistic minus
+#'   the baseline model statistic (not the other way round).
 #' @param alpha A number determining the (nominal) coverage `1 - alpha` of the
 #'   normal-approximation (or bootstrap; see argument `stats`) confidence
-#'   intervals. For example, in case of the normal approximation, `alpha = 0.32`
-#'   corresponds to one-standard-error intervals (because of the coverage of
-#'   68%).
+#'   intervals. For example, in case of the normal approximation, `alpha = 2 *
+#'   pnorm(-1)` corresponds to a confidence interval stretching by one standard
+#'   error on either side of the point estimate.
 #' @param baseline For [summary.vsel()]: Only relevant if `deltas` is `TRUE`.
 #'   For [plot.vsel()]: Always relevant. Either `"ref"` or `"best"`, indicating
 #'   whether the baseline is the reference model or the best submodel found (in
@@ -557,7 +559,7 @@ summary.vsel <- function(
     stats = "elpd",
     type = c("mean", "se", "diff", "diff.se"),
     deltas = FALSE,
-    alpha = 0.32,
+    alpha = 2 * pnorm(-1),
     baseline = if (!inherits(object$refmodel, "datafit")) "ref" else "best",
     ...
 ) {
@@ -779,14 +781,14 @@ print.vsel <- function(x, ...) {
 #'   thres_elpd / N} with \eqn{N} denoting the number of observations.
 #'
 #'   For example (disregarding the special extensions in case of `stat = "elpd"`
-#'   or `stat = "mlpd"`), `alpha = 0.32`, `pct = 0`, and `type = "upper"` means
-#'   that we select the smallest model size for which the upper bound of the 68%
-#'   confidence interval for \eqn{U_k - U_{\mathrm{base}}}{U_k - U_base} exceeds
-#'   (or is equal to) zero, that is (if `stat` is a performance statistic for
-#'   which the normal approximation is used, not the bootstrap), for which the
-#'   submodel's utility estimate is at most one standard error smaller than the
-#'   baseline model's utility estimate (with that standard error referring to
-#'   the utility *difference*).
+#'   or `stat = "mlpd"`), `alpha = 2 * pnorm(-1)`, `pct = 0`, and `type =
+#'   "upper"` means that we select the smallest model size for which the upper
+#'   bound of the 68% confidence interval for \eqn{U_k - U_{\mathrm{base}}}{U_k
+#'   - U_base} exceeds (or is equal to) zero, that is (if `stat` is a
+#'   performance statistic for which the normal approximation is used, not the
+#'   bootstrap), for which the submodel's utility estimate is at most one
+#'   standard error smaller than the baseline model's utility estimate (with
+#'   that standard error referring to the utility *difference*).
 #'
 #' @note Loss statistics like the root mean squared error (RMSE) and the mean
 #'   squared error (MSE) are converted to utilities by multiplying them by `-1`,
