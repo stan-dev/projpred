@@ -4,13 +4,13 @@ If you read this from a place other than <https://mc-stan.org/projpred/news/inde
 
 # projpred 2.3.0.9000
 
+* Introduction of the augmented-data projection (see section ["Supported types of models"](https://mc-stan.org/projpred/articles/projpred.html#modtypes) of the main vignette for details). (GitHub: #70, #322)
 
 # projpred 2.3.0
 
 ## Major changes
 
 * In `plot.vsel()` and `summary.vsel()`, the default of `alpha = 0.32` is replaced by `alpha = 2 * pnorm(-1)` (= `1 - diff(pnorm(c(-1, 1)))`, which is only *approximately* 0.32) so that now, a normal-approximation confidence interval with default `alpha` stretches by exactly one standard error on either side of the point estimate. Typically, this changes results only slightly. In some cases, however, the new default may lead to a different suggested size, explaining why this is regarded as a major change. (GitHub: #371)
-* Introduction of the augmented-data projection (see section ["Supported types of models"](https://mc-stan.org/projpred/articles/projpred.html#modtypes) of the main vignette for details). (GitHub: #70, #322)
 
 ## Minor changes
 
