@@ -943,10 +943,6 @@ init_refmodel <- function(object, data, formula, family, ref_predfun = NULL,
     warning("Support for the `Gamma` family is still experimental.")
   }
 
-  if (family$for_augdat &&
-      isTRUE(getOption("projpred.warn_augdat_experimental", TRUE))) {
-    warning("The augmented-data projection is still experimental.")
-  }
   if (family$for_latent &&
       isTRUE(getOption("projpred.warn_latent_experimental", TRUE))) {
     warning("The latent projection is still experimental.")
