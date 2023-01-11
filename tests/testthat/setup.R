@@ -180,10 +180,6 @@ fam_nms_aug_regex <- paste0("\\.(", paste(fam_nms_aug, collapse = "|"), ")\\.")
 fam_nms_unsupp_regex <- paste0("\\.(", paste(fam_nms_unsupp, collapse = "|"),
                                ")\\.")
 
-# Suppress the warning for the augmented-data projection stating that its
-# implementation is currently only experimental:
-options(projpred.warn_augdat_experimental = FALSE)
-
 # Needed for package mclogit (providing the submodel fitter for multilevel
 # brms::categorical() models):
 warn_mclogit <- if (packageVersion("mclogit") >= "0.9.6") {

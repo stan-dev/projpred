@@ -766,10 +766,6 @@ init_refmodel <- function(object, data, formula, family, ref_predfun = NULL,
   family <- extend_family(family, ...)
 
   aug_data <- family$for_augdat
-  if (aug_data &&
-      isTRUE(getOption("projpred.warn_augdat_experimental", TRUE))) {
-    warning("The augmented-data projection is still experimental.")
-  }
 
   family$mu_fun <- function(fits, obs = NULL, newdata = NULL, offset = NULL,
                             transform = TRUE) {
