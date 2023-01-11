@@ -943,11 +943,6 @@ init_refmodel <- function(object, data, formula, family, ref_predfun = NULL,
     warning("Support for the `Gamma` family is still experimental.")
   }
 
-  if (family$for_latent &&
-      isTRUE(getOption("projpred.warn_latent_experimental", TRUE))) {
-    warning("The latent projection is still experimental.")
-  }
-
   family$mu_fun <- function(fits, obs = NULL, newdata = NULL, offset = NULL,
                             transform = TRUE) {
     newdata <- fetch_data(data, obs = obs, newdata = newdata)
