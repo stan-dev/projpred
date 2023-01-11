@@ -21,13 +21,13 @@ Authors@R: c(person("Juho", "Piironen", role = c("aut"),
                     comment = "see file 'LICENSE' for details"))
 Description:
     Performs projection predictive feature selection for various regression
-    models, in particular, generalized linear and additive models as well as
-    generalized linear and additive multilevel models (see Piironen, Paasiniemi
-    and Vehtari, 2020, <doi:10.1214/20-EJS1711>; Catalina, Bürkner and Vehtari,
-    2022, <https://proceedings.mlr.press/v151/catalina22a.html>). The package is
+    models, including generalized linear models (Piironen, Paasiniemi, and
+    Vehtari, 2020, <doi:10.1214/20-EJS1711>) which may also have multilevel or
+    additive terms (Catalina, Bürkner, and Vehtari, 2022,
+    <https://proceedings.mlr.press/v151/catalina22a.html>). The package is
     compatible with the 'rstanarm' and 'brms' packages, but other reference
-    models can also be used. See the documentation as well as the package
-    vignette for more information and examples.
+    models can also be used. See the vignette and the documentation for more
+    information and examples.
 License: GPL-3 | file LICENSE
 URL: https://mc-stan.org/projpred/, https://discourse.mc-stan.org
 BugReports: https://github.com/stan-dev/projpred/issues/
