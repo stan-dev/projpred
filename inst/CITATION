@@ -74,7 +74,7 @@ bibentry(
 )
 
 bibentry(
-  bibtype = "Unpublished",
+  bibtype = "Misc",
   title = "Projection Predictive Variable Selection for Discrete Response Families with Finite Support",
   author = c(
     person("Frank", "Weber"),
@@ -83,7 +83,6 @@ bibentry(
   year = "2023",
   publisher = "{arXiv}",
   doi = "10.48550/arXiv.2301.01660",
-  note = "Preprint",
   header = "To cite the 'projpred' augmented-data projection paper:",
   encoding = "UTF-8"
 )
