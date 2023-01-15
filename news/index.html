@@ -103,7 +103,7 @@
     </div>
 
     <div class="section level2">
-<h2 class="page-header" data-toc-text="2.3.0" id="projpred-230">projpred 2.3.0<a class="anchor" aria-label="anchor" href="#projpred-230"></a></h2>
+<h2 class="page-header" data-toc-text="2.3.0" id="projpred-230">projpred 2.3.0<small>2023-01-10</small><a class="anchor" aria-label="anchor" href="#projpred-230"></a></h2>
 <div class="section level3">
 <h3 id="major-changes-2-3-0">Major changes<a class="anchor" aria-label="anchor" href="#major-changes-2-3-0"></a></h3>
 <ul><li>In <code><a href="../reference/plot.vsel.html">plot.vsel()</a></code> and <code><a href="../reference/summary.vsel.html">summary.vsel()</a></code>, the default of <code>alpha = 0.32</code> is replaced by <code>alpha = 2 * pnorm(-1)</code> (= <code>1 - diff(pnorm(c(-1, 1)))</code>, which is only <em>approximately</em> 0.32) so that now, a normal-approximation confidence interval with default <code>alpha</code> stretches by exactly one standard error on either side of the point estimate. Typically, this changes results only slightly. In some cases, however, the new default may lead to a different suggested size, explaining why this is regarded as a major change. (GitHub: <a href="https://github.com/stan-dev/projpred/issues/371" class="external-link">#371</a>)</li>
