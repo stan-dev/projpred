@@ -1367,6 +1367,13 @@ repair_re.mmblogit <- function(object, newdata) {
     list(comb = union(from_fit, from_new),
          new = from_new)
   })
+  # In case of duplicated levels across group variables, later code would have
+  # to be adapted:
+  if (length(lvls_list) >= 2 &&
+      !all(utils::combn(lvls_list, 2, empty_intersection_new))) {
+    stop("Currently, projpred requires all variables with group-level effects ",
+         "to have disjoint level sets.")
+  }
   # Create the lme4-type random-effects formula needed by mkNewReTrms_man():
   if (utils::packageVersion("mclogit") < "0.9") {
     re_fml <- update(object$random$formula,
