@@ -1032,9 +1032,67 @@ init_refmodel <- function(object, data, formula, family, ref_predfun = NULL,
     # some ordinal families). This is done here by defining the final
     # ref_predfun() as a wrapper function around the user-supplied (or
     # automatically derived) preliminary ref_predfun(). This wrapper function
-    # also performs some preparations for the augmented-data projection:
+    # also ensures that we draw new group-level effects for *all* group levels
+    # (existing and new ones) and performs some preparations for the
+    # augmented-data projection:
     ref_predfun_usr <- ref_predfun
     ref_predfun <- function(fit, newdata = NULL, excl_offs = TRUE) {
+      if (length(fml_extractions$group_terms) > 0) {
+        # Need to replace existing group levels by dummy ones to ensure that we
+        # draw new group-level effects for *all* group levels (existing and new
+        # ones):
+        if (is.null(newdata)) newdata <- data
+        vnms <- flatten_group_terms(fml_extractions$group_terms)
+        vnms <- sub("^.*\\|[[:blank:]]*", "", vnms)
+        vnms <- sub("[[:blank:]]*\\)$", "", vnms)
+        lvls_list <- lapply(setNames(nm = vnms), function(vnm) {
+          if (!vnm %in% names(data)) {
+            stop("Could not find column `", vnm, "` in `data`.")
+          }
+          if (!vnm %in% names(newdata)) {
+            stop("Could not find column `", vnm, "` in `newdata`.")
+          }
+          from_fit <- unique(data[, vnm])
+          from_new <- unique(newdata[, vnm])
+          list(comb = union(from_fit, from_new),
+               exist = from_fit,
+               new = from_new)
+        })
+        for (vnm in vnms) {
+          ex_lvl <- newdata[[vnm]] %in% lvls_list[[vnm]]$exist
+          if (is.numeric(newdata[[vnm]])) {
+            newdata[[vnm]][ex_lvl] <- max(c(data[[vnm]], newdata[[vnm]])) +
+              newdata[[vnm]][ex_lvl]
+          } else if (is.character(newdata[[vnm]]) ||
+                     is.factor(newdata[[vnm]])) {
+            dummy_lvls_ex <- paste0("projpred_DUMMY_", newdata[[vnm]][ex_lvl])
+            if (is.factor(newdata[[vnm]])) {
+              orig_lvls <- levels(newdata[[vnm]])
+              orig_ord <- is.ordered(newdata[[vnm]])
+              newdata[[vnm]] <- as.character(newdata[[vnm]])
+            } else {
+              orig_lvls <- NULL
+              orig_ord <- NULL
+            }
+            dummy_lvls <- unique(dummy_lvls_ex)
+            if (any(dummy_lvls %in% lvls_list[[vnm]]$comb)) {
+              stop("Need to assign dummy levels to existing group levels, but ",
+                   "encountered a conflict. Please try again or rename the ",
+                   "group levels.")
+            }
+            newdata[[vnm]][ex_lvl] <- dummy_lvls_ex
+            if (!is.null(orig_lvls) && !is.null(orig_ord)) {
+              newdata[[vnm]] <- factor(newdata[[vnm]],
+                                       levels = c(orig_lvls, dummy_lvls),
+                                       ordered = orig_ord)
+            }
+          } else {
+            stop("Unknown type of group variable. Please use factor, ",
+                 "character, or numeric.")
+          }
+        }
+      }
+
       linpred_out <- ref_predfun_usr(fit = fit, newdata = newdata)
       if (length(dim(linpred_out)) == 2) {
         n_obs <- nrow(linpred_out)
