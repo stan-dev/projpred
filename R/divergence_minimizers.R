@@ -969,8 +969,10 @@ subprd <- function(fits, newdata) {
         ###
       )
     } else if (is_glmm) {
-      return(predict(fit, newdata = newdata, allow.new.levels = TRUE) +
-               repair_re(fit, newdata = newdata))
+      return(
+        predict(fit, newdata = newdata, re.form = ~0, allow.new.levels = TRUE) +
+          repair_re(fit, newdata = newdata)
+      )
     } else {
       return(predict(fit, newdata = newdata))
     }
@@ -1099,10 +1101,6 @@ predict.gamm4 <- function(fit, newdata = NULL) {
 
 ## Random-effects adjustments ---------------------------------------------
 
-empty_intersection_comb <- function(x) {
-  length(intersect(x[[1]]$comb, x[[2]]$comb)) == 0
-}
-
 empty_intersection_new <- function(x) {
   length(intersect(x[[1]]$new, x[[2]]$new)) == 0
 }
@@ -1169,8 +1167,8 @@ repair_re <- function(object, newdata) {
 }
 
 # For objects of class `merMod`, the following repair_re() method will draw the
-# random effects for new group levels from a (multivariate) Gaussian
-# distribution.
+# random effects for *all* group levels (existing and new ones) from a
+# (multivariate) Gaussian distribution.
 #
 # License/copyright notice: repair_re.merMod() is inspired by and uses code
 # snippets from lme4:::predict.merMod() from lme4 version 1.1-28 (see
@@ -1203,13 +1201,12 @@ repair_re.merMod <- function(object, newdata) {
     }
     from_new <- levels(as.factor(newdata[, vnm]))
     list(comb = union(from_fit, from_new),
-         exist = intersect(from_new, from_fit),
-         new = setdiff(from_new, from_fit))
+         new = from_new)
   })
   # In case of duplicated levels across group variables, later code would have
   # to be adapted:
   if (length(lvls_list) >= 2 &&
-      !all(utils::combn(lvls_list, 2, empty_intersection_comb))) {
+      !all(utils::combn(lvls_list, 2, empty_intersection_new))) {
     stop("Currently, projpred requires all variables with group-level effects ",
          "to have disjoint level sets.")
   }
@@ -1223,24 +1220,20 @@ repair_re.merMod <- function(object, newdata) {
 
   VarCorr_tmp <- lme4::VarCorr(object)
   for (vnm in vnms) {
-    lvls_exist <- lvls_list[[vnm]]$exist
     lvls_new <- lvls_list[[vnm]]$new
-    ranefs_prep$b[names(ranefs_prep$b) %in% lvls_exist] <- 0
-    if (length(lvls_new) > 0) {
-      ranefs_prep$b[names(ranefs_prep$b) %in% lvls_new] <- t(mvtnorm::rmvnorm(
-        n = length(lvls_new),
-        # Add `[, , drop = FALSE]` to drop attributes:
-        sigma = VarCorr_tmp[[vnm]][, , drop = FALSE],
-        checkSymmetry = FALSE
-      ))
-    }
+    ranefs_prep$b[names(ranefs_prep$b) %in% lvls_new] <- t(mvtnorm::rmvnorm(
+      n = length(lvls_new),
+      # Add `[, , drop = FALSE]` to drop attributes:
+      sigma = VarCorr_tmp[[vnm]][, , drop = FALSE],
+      checkSymmetry = FALSE
+    ))
   }
   return(drop(as(ranefs_prep$b %*% ranefs_prep$Zt, "matrix")))
 }
 
-# For objects of class `clmm`, the following repair_re() method will re-use the
-# estimated random effects for existing group levels and will draw the random
-# effects for new group levels from a (multivariate) Gaussian distribution.
+# For objects of class `clmm`, the following repair_re() method will draw the
+# random effects for *all* group levels (existing and new ones) from a
+# (multivariate) Gaussian distribution.
 #
 # License/copyright notice: repair_re.clmm() is inspired by and uses code
 # snippets from lme4:::predict.merMod() from lme4 version 1.1-28 (see
@@ -1273,7 +1266,7 @@ repair_re.clmm <- function(object, newdata) {
     }
     from_new <- levels(as.factor(newdata[, vnm]))
     list(comb = union(from_fit, from_new),
-         new = setdiff(from_new, from_fit))
+         new = from_new)
   })
   # In case of duplicated levels across group variables, later code would have
   # to be adapted:
@@ -1293,22 +1286,19 @@ repair_re.clmm <- function(object, newdata) {
   VarCorr_tmp <- ordinal::VarCorr(object)
   for (vnm in vnms) {
     lvls_new <- lvls_list[[vnm]]$new
-    if (length(lvls_new) > 0) {
-      ranefs_prep$b[names(ranefs_prep$b) %in% lvls_new] <- t(mvtnorm::rmvnorm(
-        n = length(lvls_new),
-        # Add `[, , drop = FALSE]` to drop attributes:
-        sigma = VarCorr_tmp[[vnm]][, , drop = FALSE],
-        checkSymmetry = FALSE
-      ))
-    }
+    ranefs_prep$b[names(ranefs_prep$b) %in% lvls_new] <- t(mvtnorm::rmvnorm(
+      n = length(lvls_new),
+      # Add `[, , drop = FALSE]` to drop attributes:
+      sigma = VarCorr_tmp[[vnm]][, , drop = FALSE],
+      checkSymmetry = FALSE
+    ))
   }
   return(-drop(as(ranefs_prep$b %*% ranefs_prep$Zt, "matrix")))
 }
 
-# For objects of class `mmblogit`, the following repair_re() method will re-use
-# the estimated random effects for existing group levels and will draw the
-# random effects for new group levels from a (multivariate) Gaussian
-# distribution.
+# For objects of class `mmblogit`, the following repair_re() method will draw
+# the random effects for *all* group levels (existing and new ones) from a
+# (multivariate) Gaussian distribution.
 #
 # License/copyright notice: repair_re.mmblogit() is inspired by and uses code
 # snippets from lme4:::predict.merMod() from lme4 version 1.1-28 (see
@@ -1375,7 +1365,7 @@ repair_re.mmblogit <- function(object, newdata) {
     }
     from_new <- levels(as.factor(newdata[, vnm]))
     list(comb = union(from_fit, from_new),
-         new = setdiff(from_new, from_fit))
+         new = from_new)
   })
   # Create the lme4-type random-effects formula needed by mkNewReTrms_man():
   if (utils::packageVersion("mclogit") < "0.9") {
@@ -1408,13 +1398,11 @@ repair_re.mmblogit <- function(object, newdata) {
   }
   for (vnm in vnms) {
     lvls_new <- lvls_list[[vnm]]$new
-    if (length(lvls_new) > 0) {
-      ranefs_prep$b[names(ranefs_prep$b) %in% lvls_new] <- t(mvtnorm::rmvnorm(
-        n = length(lvls_new),
-        sigma = VarCorr_tmp[[vnm]],
-        checkSymmetry = FALSE
-      ))
-    }
+    ranefs_prep$b[names(ranefs_prep$b) %in% lvls_new] <- t(mvtnorm::rmvnorm(
+      n = length(lvls_new),
+      sigma = VarCorr_tmp[[vnm]],
+      checkSymmetry = FALSE
+    ))
   }
   re_vec <- drop(as(ranefs_prep$b %*% ranefs_prep$Zt, "matrix"))
   re_mat <- matrix(re_vec, nrow = nlats, ncol = nrow(newdata),
