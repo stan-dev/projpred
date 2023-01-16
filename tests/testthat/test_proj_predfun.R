@@ -69,6 +69,8 @@ test_that("repair_re() works for GLMMs", {
 
   # Predict -----------------------------------------------------------------
 
+  ## With random effects ----------------------------------------------------
+
   lpreds_orig <- predict(lmm_fit, newdata = dat_new, allow.new.levels = TRUE)
 
   fixnms_b <- c(paste0("X", 1:2), paste0("Xfl", 2:3))
@@ -91,6 +93,18 @@ test_that("repair_re() works for GLMMs", {
     })
   expect_equal(lpreds_orig, lpreds_orig_man, tolerance = 1e-15)
 
+  ## Without random effects -------------------------------------------------
+
+  lpreds_orig0 <- predict(lmm_fit, newdata = dat_new, re.form = ~0,
+                          allow.new.levels = TRUE)
+
+  lpreds_orig0_man <- lmm_fixef["(Intercept)"] +
+    sapply(seq_len(nrow(dat_new_ch)), function(i) {
+      drop(as.matrix(dat_new_ch[i, fixnms_b, drop = FALSE]) %*%
+             lmm_fixef[fixnms_b])
+    })
+  expect_equal(lpreds_orig0, lpreds_orig0_man, tolerance = 1e-15)
+
   ## With repair_re() -------------------------------------------------------
 
   set.seed(seed3_tst)
@@ -100,25 +114,22 @@ test_that("repair_re() works for GLMMs", {
 
   set.seed(seed3_tst)
   ranmulti_sbj <- mvtnorm::rmvnorm(
-    n = 1, sigma = lmm_VarCorr$sbj[, , drop = FALSE], checkSymmetry = FALSE
+    n = length(unique(dat_new$sbj)), sigma = lmm_VarCorr$sbj[, , drop = FALSE],
+    checkSymmetry = FALSE
   )
   ranmulti_grp <- mvtnorm::rmvnorm(
-    n = 1, sigma = lmm_VarCorr$grp[, , drop = FALSE], checkSymmetry = FALSE
+    n = length(unique(dat_new$grp)), sigma = lmm_VarCorr$grp[, , drop = FALSE],
+    checkSymmetry = FALSE
   )
   ranslopes <- list(
-    X1 = c(lmm_ranef$grp[as.character(dat_new_ch$grp[1]), "X1"],
-           rep(ranmulti_grp[1, 2], 2)),
+    X1 = c(ranmulti_grp[1, 2], rep(ranmulti_grp[2, 2], 2)),
     X2 = rep(0, 3),
-    Xfl2 = c(lmm_ranef$grp[as.character(dat_new_ch$grp[1]), "Xfl2"],
-             rep(ranmulti_grp[1, 3], 2)),
-    Xfl3 = c(lmm_ranef$grp[as.character(dat_new_ch$grp[1]), "Xfl3"],
-             rep(ranmulti_grp[1, 4], 2))
+    Xfl2 = c(ranmulti_grp[1, 3], rep(ranmulti_grp[2, 3], 2)),
+    Xfl3 = c(ranmulti_grp[1, 4], rep(ranmulti_grp[2, 4], 2))
   )
   lpreds_man <- lmm_fixef["(Intercept)"] +
-    c(lmm_ranef$sbj[as.character(dat_new_ch$sbj[1]), "(Intercept)"],
-      rep(ranmulti_sbj[1, 1], 2)) +
-    c(lmm_ranef$grp[as.character(dat_new_ch$grp[1]), "(Intercept)"],
-      rep(ranmulti_grp[1, 1], 2)) +
+    c(ranmulti_sbj[1, 1], rep(ranmulti_sbj[2, 1], 2)) +
+    c(ranmulti_grp[1, 1], rep(ranmulti_grp[2, 1], 2)) +
     sapply(seq_len(nrow(dat_new_ch)), function(i) {
       drop(as.matrix(dat_new_ch[i, fixnms_b, drop = FALSE]) %*%
              (lmm_fixef[fixnms_b] + sapply(ranslopes[fixnms_b], "[", i)))
@@ -238,25 +249,23 @@ test_that("repair_re() works for multilevel cumulative() models", {
 
   set.seed(seed3_tst)
   ranmulti_sbj <- mvtnorm::rmvnorm(
-    n = 1, sigma = oVarCorr$sbj[, , drop = FALSE], checkSymmetry = FALSE
+    n = length(unique(inhaler_new$sbj)), sigma = oVarCorr$sbj[, , drop = FALSE],
+    checkSymmetry = FALSE
   )
   ranmulti_grp <- mvtnorm::rmvnorm(
-    n = 1, sigma = oVarCorr$grp[, , drop = FALSE], checkSymmetry = FALSE
+    n = length(unique(inhaler_new$grp)), sigma = oVarCorr$grp[, , drop = FALSE],
+    checkSymmetry = FALSE
   )
   ranslopes <- list(
-    periodpd1 = c(oranef$grp[as.character(inhaler_new_ch$grp[1]), "periodpd1"],
-                  rep(ranmulti_grp[1, 2], 2)),
-    carry = c(oranef$grp[as.character(inhaler_new_ch$grp[1]), "carry"],
-              rep(ranmulti_grp[1, 3], 2)),
+    periodpd1 = c(ranmulti_grp[1, 2], rep(ranmulti_grp[2, 2], 2)),
+    carry = c(ranmulti_grp[1, 3], rep(ranmulti_grp[2, 3], 2)),
     treat = rep(0, 3)
   )
   lpreds_man <- matrix(othres, nrow = nrow(inhaler_new_ch),
                        ncol = length(othres), byrow = TRUE) -
     (
-      c(oranef$sbj[as.character(inhaler_new_ch$sbj[1]), "(Intercept)"],
-        rep(ranmulti_sbj[1, 1], 2)) +
-        c(oranef$grp[as.character(inhaler_new_ch$grp[1]), "(Intercept)"],
-          rep(ranmulti_grp[1, 1], 2)) +
+      c(ranmulti_sbj[1, 1], rep(ranmulti_sbj[2, 1], 2)) +
+        c(ranmulti_grp[1, 1], rep(ranmulti_grp[2, 1], 2)) +
         sapply(seq_len(nrow(inhaler_new_ch)), function(i) {
           drop(as.matrix(inhaler_new_ch[i, fixnms_b, drop = FALSE]) %*%
                  (ofixef[fixnms_b] + sapply(ranslopes[fixnms_b], "[", i)))
@@ -520,15 +529,13 @@ test_that(paste(
 
   set.seed(seed3_tst)
   ranmulti_grp <- mvtnorm::rmvnorm(
-    n = 1, sigma = mVarCorr$grp, checkSymmetry = FALSE
+    n = length(unique(VA_new$grp)), sigma = mVarCorr$grp, checkSymmetry = FALSE
   )
   ranslopes <- list(
     treat2 = rbind(
-      mranef$grp[
-        seq_len(nlats) + nlats + (lvl_idx_new1 - 1L) * 2L * nlats,
-        1
-      ],
       matrix(ranmulti_grp[1, grep("~treat2$", colnames(mVarCorr$grp))],
+             nrow = 1L, ncol = nlats, byrow = TRUE),
+      matrix(ranmulti_grp[2, grep("~treat2$", colnames(mVarCorr$grp))],
              nrow = nrow(VA_new) - 1L, ncol = nlats, byrow = TRUE)
     ),
     age = matrix(0, nrow = nrow(VA_new), ncol = nlats),
@@ -539,11 +546,9 @@ test_that(paste(
                        nrow = nrow(VA_new_ch),
                        ncol = nlats, byrow = TRUE) +
     rbind(
-      mranef$grp[
-        seq_len(nlats) + (lvl_idx_new1 - 1L) * 2L * nlats,
-        1
-      ],
       matrix(ranmulti_grp[1, grep("~1$", colnames(mVarCorr$grp))],
+             nrow = 1L, ncol = nlats, byrow = TRUE),
+      matrix(ranmulti_grp[2, grep("~1$", colnames(mVarCorr$grp))],
              nrow = nrow(VA_new) - 1L, ncol = nlats, byrow = TRUE)
     ) +
     do.call(rbind, lapply(seq_len(nrow(VA_new_ch)), function(i) {
@@ -777,18 +782,16 @@ test_that(paste(
 
   set.seed(seed3_tst)
   ranmulti_sbj <- mvtnorm::rmvnorm(
-    n = 1, sigma = mVarCorr$sbj, checkSymmetry = FALSE
+    n = length(unique(VA_new$sbj)), sigma = mVarCorr$sbj, checkSymmetry = FALSE
   )
   ranmulti_grp <- mvtnorm::rmvnorm(
-    n = 1, sigma = mVarCorr$grp, checkSymmetry = FALSE
+    n = length(unique(VA_new$grp)), sigma = mVarCorr$grp, checkSymmetry = FALSE
   )
   ranslopes <- list(
     treat2 = rbind(
-      mranef$grp[
-        seq_len(nlats) + nlats + (lvl_idx_new1 - 1L) * 2L * nlats,
-        1
-      ],
       matrix(ranmulti_grp[1, grep("~treat2$", colnames(mVarCorr$grp))],
+             nrow = 1L, ncol = nlats, byrow = TRUE),
+      matrix(ranmulti_grp[2, grep("~treat2$", colnames(mVarCorr$grp))],
              nrow = nrow(VA_new) - 1L, ncol = nlats, byrow = TRUE)
     ),
     age = matrix(0, nrow = nrow(VA_new), ncol = nlats),
@@ -799,19 +802,15 @@ test_that(paste(
                        nrow = nrow(VA_new_ch),
                        ncol = nlats, byrow = TRUE) +
     rbind(
-      mranef$sbj[
-        seq_len(nlats) + (lvl_idx_new1_sbj - 1L) * nlats,
-        1
-      ],
       matrix(ranmulti_sbj[1, grep("~1$", colnames(mVarCorr$sbj))],
+             nrow = 1L, ncol = nlats, byrow = TRUE),
+      matrix(ranmulti_sbj[2, grep("~1$", colnames(mVarCorr$sbj))],
              nrow = nrow(VA_new) - 1L, ncol = nlats, byrow = TRUE)
     ) +
     rbind(
-      mranef$grp[
-        seq_len(nlats) + (lvl_idx_new1 - 1L) * 2L * nlats,
-        1
-      ],
       matrix(ranmulti_grp[1, grep("~1$", colnames(mVarCorr$grp))],
+             nrow = 1L, ncol = nlats, byrow = TRUE),
+      matrix(ranmulti_grp[2, grep("~1$", colnames(mVarCorr$grp))],
              nrow = nrow(VA_new) - 1L, ncol = nlats, byrow = TRUE)
     ) +
     do.call(rbind, lapply(seq_len(nrow(VA_new_ch)), function(i) {
