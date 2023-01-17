@@ -1199,7 +1199,7 @@ repair_re.merMod <- function(object, newdata) {
         stop("Could not find column `", vnm, "` in `newdata`.")
       }
     }
-    from_new <- levels(as.factor(newdata[, vnm]))
+    from_new <- unique(newdata[, vnm])
     list(comb = union(from_fit, from_new),
          new = from_new)
   })
@@ -1264,7 +1264,7 @@ repair_re.clmm <- function(object, newdata) {
         stop("Could not find column `", vnm, "` in `newdata`.")
       }
     }
-    from_new <- levels(as.factor(newdata[, vnm]))
+    from_new <- unique(newdata[, vnm])
     list(comb = union(from_fit, from_new),
          new = from_new)
   })
@@ -1363,7 +1363,7 @@ repair_re.mmblogit <- function(object, newdata) {
     if (!vnm %in% names(newdata)) {
       stop("Could not find column `", vnm, "` in `newdata`.")
     }
-    from_new <- levels(as.factor(newdata[, vnm]))
+    from_new <- unique(newdata[, vnm])
     list(comb = union(from_fit, from_new),
          new = from_new)
   })
