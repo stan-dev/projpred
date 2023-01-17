@@ -1074,7 +1074,7 @@ init_refmodel <- function(object, data, formula, family, ref_predfun = NULL,
         for (vnm in vnms) {
           ex_lvl <- newdata[[vnm]] %in% lvls_list[[vnm]]$exist
           if (is.numeric(newdata[[vnm]])) {
-            newdata[[vnm]][ex_lvl] <- max(c(data[[vnm]], newdata[[vnm]])) +
+            newdata[[vnm]][ex_lvl] <- max(lvls_list[[vnm]]$comb) +
               newdata[[vnm]][ex_lvl]
           } else if (is.character(newdata[[vnm]]) ||
                      is.factor(newdata[[vnm]])) {
