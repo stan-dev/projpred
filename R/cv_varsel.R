@@ -367,7 +367,8 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
     # model fit, so using `refmodel$y` would induce a dependency between
     # training and test data:
     y_lat_E <- loo::E_loo(t(refmodel$ref_predfun(refmodel$fit,
-                                                 excl_offs = FALSE)),
+                                                 excl_offs = FALSE,
+                                                 mlvl_allrandom = FALSE)),
                           psis_object = psisloo,
                           log_ratios = -loglik_forPSIS)
     if (any(y_lat_E$pareto_k > 0.7)) {

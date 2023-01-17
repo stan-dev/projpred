@@ -562,7 +562,8 @@ predict.refmodel <- function(object, newdata = NULL, ynew = NULL,
           }
           ynew <- rowMeans(object$ref_predfun(fit = object$fit,
                                               newdata = newdata_lat,
-                                              excl_offs = FALSE))
+                                              excl_offs = FALSE,
+                                              mlvl_allrandom = FALSE))
         }
       }
       loglik <- object$family$ll_fun(
@@ -1036,8 +1037,9 @@ init_refmodel <- function(object, data, formula, family, ref_predfun = NULL,
     # (existing and new ones) and performs some preparations for the
     # augmented-data projection:
     ref_predfun_usr <- ref_predfun
-    ref_predfun <- function(fit, newdata = NULL, excl_offs = TRUE) {
-      if (length(fml_extractions$group_terms) > 0) {
+    ref_predfun <- function(fit, newdata = NULL, excl_offs = TRUE,
+                            mlvl_allrandom = TRUE) {
+      if (length(fml_extractions$group_terms) > 0 && mlvl_allrandom) {
         # Need to replace existing group levels by dummy ones to ensure that we
         # draw new group-level effects for *all* group levels (existing and new
         # ones):
@@ -1203,7 +1205,8 @@ init_refmodel <- function(object, data, formula, family, ref_predfun = NULL,
   weights <- model_data$weights
   offset <- model_data$offset
   if (family$for_latent) {
-    y <- rowMeans(ref_predfun(object, excl_offs = FALSE))
+    y <- rowMeans(ref_predfun(object, excl_offs = FALSE,
+                              mlvl_allrandom = FALSE))
     y_oscale <- model_data$y
     if (is.null(family$cats) &&
         (is.factor(y_oscale) || is.character(y_oscale) ||
@@ -1312,7 +1315,7 @@ init_refmodel <- function(object, data, formula, family, ref_predfun = NULL,
   # augmented-rows matrix containing the probabilities for each of the response
   # categories (at each observation and each posterior draw).
   if (proper_model) {
-    eta <- ref_predfun(object)
+    eta <- ref_predfun(object, mlvl_allrandom = FALSE)
     mu <- family$linkinv(eta)
   } else {
     if (family$family != "binomial") {
