@@ -1075,7 +1075,11 @@ init_refmodel <- function(object, data, formula, family, ref_predfun = NULL,
           ex_lvl <- newdata[[vnm]] %in% lvls_list[[vnm]]$exist
           if (is.numeric(newdata[[vnm]])) {
             stopifnot(is.numeric(data[[vnm]]))
-            newdata[[vnm]][ex_lvl] <- max(lvls_list[[vnm]]$comb) +
+            if (!all(lvls_list[[vnm]]$exist >= 0)) {
+              stop("In case of a numeric group variable, projpred requires ",
+                   "this to have values >= 0.")
+            }
+            newdata[[vnm]][ex_lvl] <- max(lvls_list[[vnm]]$comb) + 1L +
               newdata[[vnm]][ex_lvl]
           } else if (is.character(newdata[[vnm]]) ||
                      is.factor(newdata[[vnm]])) {
