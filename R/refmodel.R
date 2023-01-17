@@ -1056,6 +1056,17 @@ init_refmodel <- function(object, data, formula, family, ref_predfun = NULL,
           }
           from_fit <- unique(data[, vnm])
           from_new <- unique(newdata[, vnm])
+
+          # Strictly speaking, this is not necessary (currently), but include it
+          # for safety reasons, in case downstream code is changed in the future
+          # (or in case the behavior of `factor`s in R is changed in general):
+          if (is.factor(from_fit)) {
+            from_fit <- as.character(from_fit)
+          }
+          if (is.factor(from_new)) {
+            from_new <- as.character(from_new)
+          }
+
           list(comb = union(from_fit, from_new),
                exist = from_fit,
                new = from_new)

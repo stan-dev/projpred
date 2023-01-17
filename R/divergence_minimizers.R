@@ -1200,6 +1200,12 @@ repair_re.merMod <- function(object, newdata) {
       }
     }
     from_new <- unique(newdata[, vnm])
+    if (is.factor(from_new)) {
+      # Strictly speaking, this is not necessary (currently), but include it for
+      # safety reasons, in case downstream code is changed in the future (or in
+      # case the behavior of `factor`s in R is changed in general):
+      from_new <- as.character(from_new)
+    }
     list(comb = union(from_fit, from_new),
          new = from_new)
   })
@@ -1265,6 +1271,12 @@ repair_re.clmm <- function(object, newdata) {
       }
     }
     from_new <- unique(newdata[, vnm])
+    if (is.factor(from_new)) {
+      # Strictly speaking, this is not necessary (currently), but include it for
+      # safety reasons, in case downstream code is changed in the future (or in
+      # case the behavior of `factor`s in R is changed in general):
+      from_new <- as.character(from_new)
+    }
     list(comb = union(from_fit, from_new),
          new = from_new)
   })
@@ -1364,6 +1376,12 @@ repair_re.mmblogit <- function(object, newdata) {
       stop("Could not find column `", vnm, "` in `newdata`.")
     }
     from_new <- unique(newdata[, vnm])
+    if (is.factor(from_new)) {
+      # Strictly speaking, this is not necessary (currently), but include it for
+      # safety reasons, in case downstream code is changed in the future (or in
+      # case the behavior of `factor`s in R is changed in general):
+      from_new <- as.character(from_new)
+    }
     list(comb = union(from_fit, from_new),
          new = from_new)
   })
