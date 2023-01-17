@@ -78,13 +78,14 @@ get_dat <- function(tstsetup, dat_crr = dat, offs_ylat = 0, ...) {
     }
     y_nm <- stdize_lhs(prjs[[tstsetup]]$refmodel$formula)$y_nm
     # Use `ref_predfun_usr` here (instead of `ref_predfun`) to include
-    # offsets:
-    refprd_with_offs <- get(
+    # offsets and group-level effects for existing group levels:
+    refprd_with_offs_grplvl <- get(
       "ref_predfun_usr",
       envir = environment(prjs[[tstsetup]]$refmodel$ref_predfun)
     )
     dat_crr[[y_nm]] <- rowMeans(unname(
-      refprd_with_offs(fit = prjs[[tstsetup]]$refmodel$fit, newdata = dat_crr)
+      refprd_with_offs_grplvl(fit = prjs[[tstsetup]]$refmodel$fit,
+                              newdata = dat_crr)
     ))
   }
   return(dat_crr)

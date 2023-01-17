@@ -173,13 +173,14 @@ test_that(paste(
       }
       y_nm <- stdize_lhs(refmods[[tstsetup]]$formula)$y_nm
       # Use `ref_predfun_usr` here (instead of `ref_predfun`) to include
-      # offsets:
-      refprd_with_offs <- get(
+      # offsets and group-level effects for existing group levels:
+      refprd_with_offs_grplvl <- get(
         "ref_predfun_usr",
         envir = environment(refmods[[tstsetup]]$ref_predfun)
       )
       y_crr_link <- rowMeans(unname(
-        refprd_with_offs(fit = refmods[[tstsetup]]$fit, newdata = dat_crr)
+        refprd_with_offs_grplvl(fit = refmods[[tstsetup]]$fit,
+                                newdata = dat_crr)
       ))
     } else {
       y_crr_link <- y_crr

@@ -2061,10 +2061,12 @@ vsel_tester <- function(
         lwdraws_ref <- weights(suppressWarnings(
           loo::psis(-ll_forPSIS, cores = 1, r_eff = NA)
         ))
-        refprd_with_offs <- get("ref_predfun_usr",
-                                envir = environment(vs$refmodel$ref_predfun))
+        refprd_with_offs_grplvl <- get(
+          "ref_predfun_usr",
+          envir = environment(vs$refmodel$ref_predfun)
+        )
         y_lat_loo <- colSums(
-          t(unname(refprd_with_offs(vs$refmodel$fit))) * exp(lwdraws_ref)
+          t(unname(refprd_with_offs_grplvl(vs$refmodel$fit))) * exp(lwdraws_ref)
         )
         expect_equal(vs$d_test$y, y_lat_loo, info = info_str)
       }
