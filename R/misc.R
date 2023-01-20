@@ -315,15 +315,16 @@ bootstrap <- function(x, fun = mean, B = 2000,
     }
     cl <- rep(NA, S)
     cl[s_ind] <- 1:ndraws
-    mu_offs <- refmodel$mu
     if (!all(refmodel$offset == 0)) {
-      eta_offs <- refmodel$family$linkfun(mu_offs)
+      eta_offs <- refmodel$eta
       if (refmodel$family$family %in% fams_neg_linpred()) {
         eta_offs <- eta_offs - refmodel$offset
       } else {
         eta_offs <- eta_offs + refmodel$offset
       }
       mu_offs <- refmodel$family$linkinv(eta_offs)
+    } else {
+      mu_offs <- refmodel$mu
     }
     predvar <- do.call(cbind, lapply(s_ind, function(j) {
       refmodel$family$predvar(mu_offs[, j, drop = FALSE], refmodel$dis[j])
