@@ -1083,7 +1083,9 @@ init_refmodel <- function(object, data, formula, family, ref_predfun = NULL,
               newdata[[vnm]][ex_lvl]
           } else if (is.character(newdata[[vnm]]) ||
                      is.factor(newdata[[vnm]])) {
-            dummy_lvls_ex <- paste0("projpred_DUMMY_", newdata[[vnm]][ex_lvl])
+            timestamp <- gsub("\\.", "", as.character(as.numeric(Sys.time())))
+            dummy_lvls_ex <- paste("projpred_DUMMY", timestamp,
+                                   newdata[[vnm]][ex_lvl], sep = "_")
             if (is.factor(newdata[[vnm]])) {
               orig_lvls <- levels(newdata[[vnm]])
               orig_ord <- is.ordered(newdata[[vnm]])
@@ -1094,9 +1096,9 @@ init_refmodel <- function(object, data, formula, family, ref_predfun = NULL,
             }
             dummy_lvls <- unique(dummy_lvls_ex)
             if (any(dummy_lvls %in% lvls_list[[vnm]]$comb)) {
-              stop("Need to assign dummy levels to existing group levels, but ",
-                   "encountered a conflict. Please try again or rename the ",
-                   "group levels.")
+              stop("Need to assign dummy levels to existing group levels of ",
+                   "variable `", vnm, "`, but encountered a conflict. Please ",
+                   "try again or rename the group levels.")
             }
             newdata[[vnm]][ex_lvl] <- dummy_lvls_ex
             if (!is.null(orig_lvls) && !is.null(orig_ord)) {
