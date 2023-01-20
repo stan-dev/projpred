@@ -378,15 +378,16 @@ bootstrap <- function(x, fun = mean, B = 2000,
   predvar <- matrix(nrow = dim(mu)[1], ncol = nclusters)
   eps <- 1e-10
   # Predictions incorporating offsets (needed for `predvar`):
-  mu_offs <- mu
   if (!all(offs == 0)) {
-    eta_offs <- family$linkfun(mu_offs)
+    eta_offs <- eta
     if (family$family %in% fams_neg_linpred()) {
       eta_offs <- eta_offs - offs
     } else {
       eta_offs <- eta_offs + offs
     }
     mu_offs <- family$linkinv(eta_offs)
+  } else {
+    mu_offs <- mu
   }
   for (j in 1:nclusters) {
     ind <- which(cl == j)
