@@ -318,12 +318,16 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
          "probabilistic model for which the log-likelihood can be evaluated.")
   }
 
-  if (refmodel$family$family %in% fams_neg_linpred()) {
-    eta_offs <- eta - refmodel$offset
+  if (!all(refmodel$offset == 0)) {
+    if (refmodel$family$family %in% fams_neg_linpred()) {
+      eta_offs <- eta - refmodel$offset
+    } else {
+      eta_offs <- eta + refmodel$offset
+    }
+    mu_offs <- refmodel$family$linkinv(eta_offs)
   } else {
-    eta_offs <- eta + refmodel$offset
+    mu_offs <- mu
   }
-  mu_offs <- refmodel$family$linkinv(eta_offs)
 
   if (refmodel$family$for_latent) {
     mu_offs_oscale <- refmodel$family$latent_ilink(
