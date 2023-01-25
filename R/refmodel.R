@@ -1273,11 +1273,10 @@ init_refmodel <- function(object, data, formula, family, ref_predfun = NULL,
 
   # Same as `mu`, but taking offsets into account:
   if (!all(offset == 0)) {
-    eta_offs <- eta
     if (family$family %in% fams_neg_linpred()) {
-      eta_offs <- eta_offs - offset
+      eta_offs <- eta - offset
     } else {
-      eta_offs <- eta_offs + offset
+      eta_offs <- eta + offset
     }
     mu_offs <- family$linkinv(eta_offs)
   } else {
