@@ -466,10 +466,9 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
     } else {
       refdist_eval <- p_sel
     }
-    refdist_eval_mu_offs <- refdist_eval$mu_offs
     if (refmodel$family$for_latent) {
       refdist_eval_mu_offs_oscale <- refmodel$family$latent_ilink(
-        t(refdist_eval_mu_offs), cl_ref = refdist_eval$cl,
+        t(refdist_eval$mu_offs), cl_ref = refdist_eval$cl,
         wdraws_ref = refdist_eval$wsample_orig
       )
       if (length(dim(refdist_eval_mu_offs_oscale)) == 3) {
@@ -498,7 +497,7 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
         )
       }
       log_lik_ref <- t(refmodel$family$ll_fun(
-        refdist_eval_mu_offs[inds_aug, , drop = FALSE], refdist_eval$dis,
+        refdist_eval$mu_offs[inds_aug, , drop = FALSE], refdist_eval$dis,
         refmodel$y[inds], refmodel$wobs[inds]
       ))
     }
