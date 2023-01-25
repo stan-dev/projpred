@@ -298,8 +298,9 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
 
   # Pre-processing ----------------------------------------------------------
 
-  mu <- refmodel$mu
   eta <- refmodel$eta
+  mu <- refmodel$mu
+  mu_offs <- refmodel$mu_offs
   dis <- refmodel$dis
   ## the clustering/subsampling used for selection
   p_sel <- .get_refdist(refmodel, ndraws = ndraws, nclusters = nclusters)
@@ -316,17 +317,6 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
     ## a genuine model => cannot compute LOO
     stop("LOO can be performed only if the reference model is a genuine ",
          "probabilistic model for which the log-likelihood can be evaluated.")
-  }
-
-  if (!all(refmodel$offset == 0)) {
-    if (refmodel$family$family %in% fams_neg_linpred()) {
-      eta_offs <- eta - refmodel$offset
-    } else {
-      eta_offs <- eta + refmodel$offset
-    }
-    mu_offs <- refmodel$family$linkinv(eta_offs)
-  } else {
-    mu_offs <- mu
   }
 
   if (refmodel$family$for_latent) {
