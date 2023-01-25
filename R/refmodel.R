@@ -1279,6 +1279,7 @@ init_refmodel <- function(object, data, formula, family, ref_predfun = NULL,
       eta_offs <- eta + offset
     }
     mu_offs <- family$linkinv(eta_offs)
+    rm(eta_offs)
   } else {
     mu_offs <- mu
   }
