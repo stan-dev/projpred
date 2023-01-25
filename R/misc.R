@@ -321,6 +321,7 @@ bootstrap <- function(x, fun = mean, B = 2000,
     }))
     p_ref <- list(
       mu = refmodel$mu[, s_ind, drop = FALSE],
+      mu_offs = refmodel$mu_offs[, s_ind, drop = FALSE],
       var = structure(predvar,
                       nobs_orig = attr(refmodel$mu, "nobs_orig"),
                       class = oldClass(refmodel$mu)),
@@ -328,23 +329,6 @@ bootstrap <- function(x, fun = mean, B = 2000,
       wsample_orig = rep(1, S),
       clust_used = FALSE
     )
-
-    ### TODO: I think the following is equivalent to thinning `refmodel$mu_offs`
-    ### directly (even for non-identity links), but thinning `refmodel$mu_offs`
-    ### directly is conceptually more desirable (especially if also tackling the
-    ### other `TODO` comment added below in the way proposed there) and also in
-    ### terms of efficiency.
-    # Take offsets into account (the `if ()` condition is added for efficiency):
-    if (!all(refmodel$offset == 0)) {
-      p_eta <- refmodel$family$linkfun(p_ref$mu)
-      if (refmodel$family$family %in% fams_neg_linpred()) {
-        p_eta <- p_eta - refmodel$offset
-      } else {
-        p_eta <- p_eta + refmodel$offset
-      }
-      p_ref$mu_offs <- refmodel$family$linkinv(p_eta)
-    }
-    ###
   }
 
   return(p_ref)
