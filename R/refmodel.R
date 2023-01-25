@@ -1271,6 +1271,19 @@ init_refmodel <- function(object, data, formula, family, ref_predfun = NULL,
     eta <- family$linkfun(mu)
   }
 
+  # Same as `mu`, but taking offsets into account:
+  if (!all(offset == 0)) {
+    eta_offs <- eta
+    if (family$family %in% fams_neg_linpred()) {
+      eta_offs <- eta_offs - offset
+    } else {
+      eta_offs <- eta_offs + offset
+    }
+    mu_offs <- family$linkinv(eta_offs)
+  } else {
+    mu_offs <- mu
+  }
+
   # Miscellaneous -----------------------------------------------------------
 
   ndraws <- ncol(mu)
@@ -1320,10 +1333,10 @@ init_refmodel <- function(object, data, formula, family, ref_predfun = NULL,
   # Output ------------------------------------------------------------------
 
   refmodel <- nlist(
-    fit = object, formula, div_minimizer, family, mu, eta, dis, y, intercept,
-    proj_predfun, fetch_data = fetch_data_wrapper, wobs = weights, wsample,
-    offset, cvfun, cvfits, extract_model_data, ref_predfun, cvrefbuilder,
-    y_oscale = y_oscale %||% y
+    fit = object, formula, div_minimizer, family, eta, mu, mu_offs, dis, y,
+    intercept, proj_predfun, fetch_data = fetch_data_wrapper, wobs = weights,
+    wsample, offset, cvfun, cvfits, extract_model_data, ref_predfun,
+    cvrefbuilder, y_oscale = y_oscale %||% y
   )
   if (proper_model) {
     class(refmodel) <- "refmodel"
