@@ -294,13 +294,13 @@ bootstrap <- function(x, fun = mean, B = 2000,
       p_ref <- .get_p_clust(family = refmodel$family, eta = refmodel$eta,
                             mu = refmodel$mu, mu_offs = refmodel$mu_offs,
                             dis = refmodel$dis, wobs = refmodel$wobs,
-                            cl = rep(1, S))
+                            cl = rep(1, S), offs = refmodel$offset)
     } else {
       # several clusters
       p_ref <- .get_p_clust(family = refmodel$family, eta = refmodel$eta,
                             mu = refmodel$mu, mu_offs = refmodel$mu_offs,
                             dis = refmodel$dis, wobs = refmodel$wobs,
-                            nclusters = nclusters)
+                            nclusters = nclusters, offs = refmodel$offset)
     }
   } else {
     ndraws <- min(S, ndraws)
@@ -328,6 +328,23 @@ bootstrap <- function(x, fun = mean, B = 2000,
       wsample_orig = rep(1, S),
       clust_used = FALSE
     )
+
+    ### TODO: I think the following is equivalent to thinning `refmodel$mu_offs`
+    ### directly (even for non-identity links), but thinning `refmodel$mu_offs`
+    ### directly is conceptually more desirable (especially if also tackling the
+    ### other `TODO` comment added below in the way proposed there) and also in
+    ### terms of efficiency.
+    # Take offsets into account (the `if ()` condition is added for efficiency):
+    if (!all(refmodel$offset == 0)) {
+      p_eta <- refmodel$family$linkfun(p_ref$mu)
+      if (refmodel$family$family %in% fams_neg_linpred()) {
+        p_eta <- p_eta - refmodel$offset
+      } else {
+        p_eta <- p_eta + refmodel$offset
+      }
+      p_ref$mu_offs <- refmodel$family$linkinv(p_eta)
+    }
+    ###
   }
 
   return(p_ref)
@@ -336,7 +353,8 @@ bootstrap <- function(x, fun = mean, B = 2000,
 # Function for clustering the parameter draws:
 .get_p_clust <- function(family, eta, mu, mu_offs, dis, nclusters = 10,
                          wobs = rep(1, dim(mu)[1]),
-                         wsample = rep(1, dim(mu)[2]), cl = NULL) {
+                         wsample = rep(1, dim(mu)[2]), cl = NULL,
+                         offs = rep(0, dim(mu)[1])) {
   # cluster the samples in the latent space if no clustering provided
   if (is.null(cl)) {
     # Note: A seed is not set here because this function is not exported and has
@@ -397,6 +415,24 @@ bootstrap <- function(x, fun = mean, B = 2000,
     wsample_orig = wsample,
     clust_used = TRUE
   )
+
+  ### TODO: I think the following is not correct for non-identity links. I think
+  ### we need to average `mu_offs` within each cluster instead.
+  # Take offsets into account (the `if ()` condition is added for efficiency):
+  if (!all(offs == 0)) {
+    p_eta <- family$linkfun(p$mu)
+    if (family$family %in% fams_neg_linpred()) {
+      p_eta <- p_eta - offs
+    } else {
+      p_eta <- p_eta + offs
+    }
+    p$mu_offs <- family$linkinv(p_eta)
+  } else {
+    p$mu_offs <- p$mu
+  }
+  p <- p[c("mu", "mu_offs", setdiff(names(p), c("mu", "mu_offs")))]
+  ###
+
   return(p)
 }
 

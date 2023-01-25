@@ -466,16 +466,7 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
     } else {
       refdist_eval <- p_sel
     }
-    refdist_eval_mu_offs <- refdist_eval$mu
-    if (!all(refmodel$offset == 0)) {
-      refdist_eval_eta_offs <- refmodel$family$linkfun(refdist_eval_mu_offs)
-      if (refmodel$family$family %in% fams_neg_linpred()) {
-        refdist_eval_eta_offs <- refdist_eval_eta_offs - refmodel$offset
-      } else {
-        refdist_eval_eta_offs <- refdist_eval_eta_offs + refmodel$offset
-      }
-      refdist_eval_mu_offs <- refmodel$family$linkinv(refdist_eval_eta_offs)
-    }
+    refdist_eval_mu_offs <- refdist_eval$mu_offs
     if (refmodel$family$for_latent) {
       refdist_eval_mu_offs_oscale <- refmodel$family$latent_ilink(
         t(refdist_eval_mu_offs), cl_ref = refdist_eval$cl,
@@ -609,11 +600,11 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
       ## reweight the clusters/samples according to the psis-loo weights
       p_sel <- .get_p_clust(
         family = refmodel$family, eta = eta, mu = mu, mu_offs = mu_offs,
-        dis = dis, wsample = exp(lw[, i]), cl = cl_sel
+        dis = dis, wsample = exp(lw[, i]), cl = cl_sel, offs = refmodel$offset
       )
       p_pred <- .get_p_clust(
         family = refmodel$family, eta = eta, mu = mu, mu_offs = mu_offs,
-        dis = dis, wsample = exp(lw[, i]), cl = cl_pred
+        dis = dis, wsample = exp(lw[, i]), cl = cl_pred, offs = refmodel$offset
       )
 
       ## perform selection with the reweighted clusters/samples
