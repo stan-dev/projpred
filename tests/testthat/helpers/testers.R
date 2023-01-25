@@ -1452,7 +1452,8 @@ refdist_tester <- function(refd,
                            clust_expected = TRUE,
                            info_str) {
   expect_named(
-    refd, c("mu", "var", "dis", "weights", "cl", "wsample_orig", "clust_used"),
+    refd, c("mu", "mu_offs", "var", "dis", "weights", "cl", "wsample_orig",
+            "clust_used"),
     info = info_str
   )
   expect_identical(dim(refd$mu), c(nobsv_expected, nprjdraws_expected),
