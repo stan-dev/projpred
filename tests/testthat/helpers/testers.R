@@ -349,8 +349,8 @@ refmodel_tester <- function(
 
   # Test the general structure of the object:
   refmod_nms <- c(
-    "fit", "formula", "div_minimizer", "family", "mu", "eta", "dis", "y",
-    "intercept", "proj_predfun", "fetch_data", "wobs", "wsample", "offset",
+    "fit", "formula", "div_minimizer", "family", "eta", "mu", "mu_offs", "dis",
+    "y", "intercept", "proj_predfun", "fetch_data", "wobs", "wsample", "offset",
     "cvfun", "cvfits", "extract_model_data", "ref_predfun", "cvrefbuilder",
     "y_oscale"
   )
@@ -386,6 +386,34 @@ refmodel_tester <- function(
                 augdat_expected = augdat_expected,
                 latent_expected = latent_expected,
                 info_str = info_str)
+
+  # eta
+  # In principle, it would be desirable to compare `refmod$eta` to
+  # `refmod$family$linkfun(refmod$mu)`, but numerical underflow and overflow can
+  # make this problematic. (Here in the unit tests, we generate rather extreme
+  # linear predictors, which should be avoided in the first place, but doesn't
+  # seem to be that simple.)
+  if (refmod$family$family %in% c("binomial")) {
+    eta_cut <- refmod$eta
+    mu_cut <- refmod$mu
+    tol_ex <- 1e-12
+    eta_cut[eta_cut < f_binom$linkfun(tol_ex)] <- f_binom$linkfun(tol_ex)
+    eta_cut[eta_cut > f_binom$linkfun(1 - tol_ex)] <-
+      f_binom$linkfun(1 - tol_ex)
+    mu_cut[mu_cut < tol_ex] <- tol_ex
+    mu_cut[mu_cut > 1 - tol_ex] <- 1 - tol_ex
+    expect_equal(eta_cut, refmod$family$linkfun(mu_cut), info = info_str)
+  } else if (refmod$family$family %in% fam_nms_aug_long &&
+             (any(abs(refmod$mu - 0) <= .Machine$double.eps) ||
+              any(abs(refmod$mu - 1) <= .Machine$double.eps))) {
+    # The degenerate probabilities in `refmod$mu` are probably due to numerical
+    # underflow and overflow (for zeros and ones, respectively), so applying the
+    # link function would lead to infinite values. Thus, the only sensible (and
+    # quickly feasible) check is:
+    expect_equal(refmod$mu, refmod$family$linkinv(refmod$eta), info = info_str)
+  } else {
+    expect_equal(refmod$eta, refmod$family$linkfun(refmod$mu), info = info_str)
+  }
 
   # mu
   ### Not needed because of the more precise test below:
@@ -506,33 +534,15 @@ refmodel_tester <- function(
     }
   }
 
-  # eta
-  # In principle, it would be desirable to compare `refmod$eta` to
-  # `refmod$family$linkfun(refmod$mu)`, but numerical underflow and overflow can
-  # make this problematic. (Here in the unit tests, we generate rather extreme
-  # linear predictors, which should be avoided in the first place, but doesn't
-  # seem to be that simple.)
-  if (refmod$family$family %in% c("binomial")) {
-    eta_cut <- refmod$eta
-    mu_cut <- refmod$mu
-    tol_ex <- 1e-12
-    eta_cut[eta_cut < f_binom$linkfun(tol_ex)] <- f_binom$linkfun(tol_ex)
-    eta_cut[eta_cut > f_binom$linkfun(1 - tol_ex)] <-
-      f_binom$linkfun(1 - tol_ex)
-    mu_cut[mu_cut < tol_ex] <- tol_ex
-    mu_cut[mu_cut > 1 - tol_ex] <- 1 - tol_ex
-    expect_equal(eta_cut, refmod$family$linkfun(mu_cut), info = info_str)
-  } else if (refmod$family$family %in% fam_nms_aug_long &&
-             (any(abs(refmod$mu - 0) <= .Machine$double.eps) ||
-              any(abs(refmod$mu - 1) <= .Machine$double.eps))) {
-    # The degenerate probabilities in `refmod$mu` are probably due to numerical
-    # underflow and overflow (for zeros and ones, respectively), so applying the
-    # link function would lead to infinite values. Thus, the only sensible (and
-    # quickly feasible) check is:
-    expect_equal(refmod$mu, refmod$family$linkinv(refmod$eta), info = info_str)
-  } else {
-    expect_equal(refmod$eta, refmod$family$linkfun(refmod$mu), info = info_str)
-  }
+  # mu_offs
+  expect_equal(
+    refmod$mu_offs,
+    refmod$family$linkinv(
+      refmod$eta + ifelse(refmod$family$family %in% fams_neg_linpred(), -1, 1) *
+        refmod$offset
+    ),
+    info = info_str
+  )
 
   # dis
   if (refmod$family$family == "gaussian") {
@@ -1986,7 +1996,7 @@ vsel_tester <- function(
   nobsv_aug <- nobsv * ncats
   expect_type(vs$search_path$p_sel, "list")
   expect_named(vs$search_path$p_sel,
-               c("mu", "var", "dis", "weights", "cl", "wsample_orig",
+               c("mu", "mu_offs", "var", "dis", "weights", "cl", "wsample_orig",
                  "clust_used"),
                info = info_str)
   expect_true(is.matrix(vs$search_path$p_sel$mu), info = info_str)
@@ -1996,6 +2006,14 @@ vsel_tester <- function(
                info = info_str)
   if (vs$refmodel$family$for_augdat) {
     expect_s3_class(vs$search_path$p_sel$mu, "augmat")
+  }
+  expect_true(is.matrix(vs$search_path$p_sel$mu_offs), info = info_str)
+  expect_true(is.numeric(vs$search_path$p_sel$mu_offs), info = info_str)
+  expect_equal(dim(vs$search_path$p_sel$mu_offs),
+               c(nobsv_aug, nprjdraws_search_expected),
+               info = info_str)
+  if (vs$refmodel$family$for_augdat) {
+    expect_s3_class(vs$search_path$p_sel$mu_offs, "augmat")
   }
   expect_true(is.matrix(vs$search_path$p_sel$var), info = info_str)
   if (vs$refmodel$family$family == "gaussian") {
