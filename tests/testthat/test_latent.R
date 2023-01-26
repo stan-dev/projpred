@@ -127,6 +127,7 @@ test_that(paste(
       pref_trad[setdiff(names(pref_trad), c("mu", "mu_offs", "var", "dis"))],
       info = tstsetup
     )
+
     mu_lat_oscale <- refmod_crr$family$latent_ilink(t(refmod_crr$mu))
     mu_lat_oscale_cl <- sapply(
       seq_len(max(pref_lat$cl, na.rm = TRUE)),
@@ -137,6 +138,20 @@ test_that(paste(
       }
     )
     expect_equal(mu_lat_oscale_cl, pref_trad$mu, tolerance = 1e-10,
+                 info = tstsetup)
+
+    mu_offs_lat_oscale <- refmod_crr$family$latent_ilink(t(refmod_crr$mu_offs))
+    mu_offs_lat_oscale_cl <- sapply(
+      seq_len(max(pref_lat$cl, na.rm = TRUE)),
+      function(cl_idx) {
+        # We don't use `eps` here, so there are minor differences compared to
+        # .get_pclust():
+        colMeans(
+          mu_offs_lat_oscale[which(pref_lat$cl == cl_idx), , drop = FALSE]
+        )
+      }
+    )
+    expect_equal(mu_offs_lat_oscale_cl, pref_trad$mu_offs, tolerance = 1e-10,
                  info = tstsetup)
   }
   if (exists("rng_old")) assign(".Random.seed", rng_old, envir = .GlobalEnv)
