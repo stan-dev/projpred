@@ -278,6 +278,17 @@ test_that("non-clustered projection does not require a seed", {
                     value = TRUE)
   for (tstsetup in tstsetups) {
     args_prj_i <- args_prj[[tstsetup]]
+    if (args_prj_i$mod_nm %in% c("glmm", "gamm")) {
+      # In this case, the multilevel submodel fitters (fit_glmer_callback(),
+      # fit_gamm_callback(), fit_cumul_mlvl(), fit_categ_mlvl()) should still be
+      # deterministic, but the prediction from the fitted submodels is not
+      # (because of the randomly drawn new group-level effects for existing
+      # group levels).
+      # TODO: Test the multilevel submodel fitters separately (outside of
+      # project()) or compare only the as.matrix.projection() output (but for
+      # Gaussian models, we then need to exclude `sigma` from that matrix).
+      next
+    }
     p_orig <- prjs[[tstsetup]]
     rand_new1 <- runif(1) # Just to advance `.Random.seed[2]`.
     if (args_prj_i$prj_nm == "augdat" && args_prj_i$fam_nm == "cumul" &&
