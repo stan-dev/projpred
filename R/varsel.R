@@ -327,17 +327,10 @@ varsel.refmodel <- function(object, d_test = NULL, method = NULL,
                "`d_test$data`, but that column already exists. Please rename ",
                "this column in `d_test$data` and try again.")
         }
-        # Note: Here, the specific values assigned to
-        # `newdata_for_ref$projpred_internal_offs_stanreg` don't matter as they
-        # are subtracted later within ref_predfun() anyway.
         newdata_for_ref$projpred_internal_offs_stanreg <- d_test$offset
       }
-      eta_test <- refmodel$ref_predfun(refmodel$fit, newdata = newdata_for_ref)
-      if (refmodel$family$family %in% fams_neg_linpred()) {
-        eta_test <- eta_test - d_test$offset
-      } else {
-        eta_test <- eta_test + d_test$offset
-      }
+      eta_test <- refmodel$ref_predfun(refmodel$fit, newdata = newdata_for_ref,
+                                       excl_offs = FALSE)
       mu_test <- refmodel$family$linkinv(eta_test)
     }
     ref <- .weighted_summary_means(

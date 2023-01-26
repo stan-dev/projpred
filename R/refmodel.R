@@ -465,12 +465,7 @@ predict.refmodel <- function(object, newdata = NULL, ynew = NULL,
   }
 
   ## ref_predfun returns eta = link(mu)
-  eta <- object$ref_predfun(object$fit, newdata = newdata)
-  if (object$family$family %in% fams_neg_linpred()) {
-    eta <- eta - offsetnew
-  } else {
-    eta <- eta + offsetnew
-  }
+  eta <- object$ref_predfun(object$fit, newdata = newdata, excl_offs = FALSE)
 
   if (is.null(ynew)) {
     if (type == "link") {
@@ -565,13 +560,9 @@ predict.refmodel <- function(object, newdata = NULL, ynew = NULL,
             newdata_lat <- object$fetch_data()
             newdata_lat$projpred_internal_offs_stanreg <- offsetnew
           }
-          # Use `ref_predfun_usr` here (instead of `ref_predfun`) to include
-          # offsets:
-          refprd_with_offs <- get("ref_predfun_usr",
-                                  envir = environment(object$ref_predfun))
-          ynew <- rowMeans(unname(
-            refprd_with_offs(fit = object$fit, newdata = newdata_lat)
-          ))
+          ynew <- rowMeans(object$ref_predfun(fit = object$fit,
+                                              newdata = newdata_lat,
+                                              excl_offs = FALSE))
         }
       }
       loglik <- object$family$ll_fun(
@@ -1034,13 +1025,16 @@ init_refmodel <- function(object, data, formula, family, ref_predfun = NULL,
         return(array(linpred1, dim = c(dim(linpred1), 1L)))
       }
     }
-    # Since posterior_linpred() is supposed to include any offsets but (at least
-    # currently) projpred expects the final ref_predfun() to exclude any offsets
+    # Since posterior_linpred() is supposed to include any offsets, but in
+    # general (i.e., in the default case `excl_offs = TRUE`, see below),
+    # projpred currently expects the final ref_predfun() to exclude any offsets
     # (see issue #186), the offsets have to be subtracted (or added, in case of
-    # some ordinal families) here by a wrapper function. This wrapper function
+    # some ordinal families). This is done here by defining the final
+    # ref_predfun() as a wrapper function around the user-supplied (or
+    # automatically derived) preliminary ref_predfun(). This wrapper function
     # also performs some preparations for the augmented-data projection:
     ref_predfun_usr <- ref_predfun
-    ref_predfun <- function(fit, newdata = NULL) {
+    ref_predfun <- function(fit, newdata = NULL, excl_offs = TRUE) {
       linpred_out <- ref_predfun_usr(fit = fit, newdata = newdata)
       if (length(dim(linpred_out)) == 2) {
         n_obs <- nrow(linpred_out)
@@ -1058,15 +1052,17 @@ init_refmodel <- function(object, data, formula, family, ref_predfun = NULL,
       }
       linpred_out <- unname(linpred_out)
 
-      # Observation weights are not needed here, so use `wrhs = NULL` to avoid
-      # potential conflicts for a non-`NULL` default `wrhs`:
-      offs <- extract_model_data(fit, newdata = newdata, wrhs = NULL)$offset
-      if (length(offs) > 0) {
-        stopifnot(length(offs) %in% c(1L, n_obs))
-        if (family$family %in% fams_neg_linpred()) {
-          linpred_out <- linpred_out + offs
-        } else {
-          linpred_out <- linpred_out - offs
+      if (excl_offs) {
+        # Observation weights are not needed here, so use `wrhs = NULL` to avoid
+        # potential conflicts for a non-`NULL` default `wrhs`:
+        offs <- extract_model_data(fit, newdata = newdata, wrhs = NULL)$offset
+        if (length(offs) > 0) {
+          stopifnot(length(offs) %in% c(1L, n_obs))
+          if (family$family %in% fams_neg_linpred()) {
+            linpred_out <- linpred_out + offs
+          } else {
+            linpred_out <- linpred_out - offs
+          }
         }
       }
       return(linpred_out)
@@ -1075,12 +1071,12 @@ init_refmodel <- function(object, data, formula, family, ref_predfun = NULL,
     if (!is.null(ref_predfun)) {
       warning("Ignoring argument `ref_predfun` because `object` is `NULL`.")
     }
-    ref_predfun <- function(fit, newdata = NULL) {
+    ref_predfun <- function(fit, newdata = NULL, excl_offs = TRUE) {
       stopifnot(is.null(fit))
       if (is.null(newdata)) {
-        return(matrix(rep(NA, nrow(data))))
+        return(matrix(rep(NA_real_, nrow(data))))
       } else {
-        return(matrix(rep(NA, nrow(newdata))))
+        return(matrix(rep(NA_real_, nrow(newdata))))
       }
     }
   }
@@ -1149,8 +1145,7 @@ init_refmodel <- function(object, data, formula, family, ref_predfun = NULL,
   weights <- model_data$weights
   offset <- model_data$offset
   if (family$for_latent) {
-    # Use `ref_predfun_usr` here (instead of `ref_predfun`) to include offsets:
-    y <- rowMeans(unname(ref_predfun_usr(object)))
+    y <- rowMeans(ref_predfun(object, excl_offs = FALSE))
     y_oscale <- model_data$y
     if (is.null(family$cats) &&
         (is.factor(y_oscale) || is.character(y_oscale) ||
