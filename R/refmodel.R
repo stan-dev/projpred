@@ -1033,9 +1033,9 @@ init_refmodel <- function(object, data, formula, family, ref_predfun = NULL,
     # some ordinal families). This is done here by defining the final
     # ref_predfun() as a wrapper function around the user-supplied (or
     # automatically derived) preliminary ref_predfun(). This wrapper function
-    # also ensures that we draw new group-level effects for *all* group levels
-    # (existing and new ones) and performs some preparations for the
-    # augmented-data projection:
+    # also ensures that in the default case `mlvl_allrandom = TRUE`, we draw new
+    # group-level effects for *all* group levels (existing and new ones) and
+    # performs some preparations for the augmented-data projection:
     ref_predfun_usr <- ref_predfun
     ref_predfun <- function(fit, newdata = NULL, excl_offs = TRUE,
                             mlvl_allrandom = TRUE) {
