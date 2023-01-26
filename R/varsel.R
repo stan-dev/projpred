@@ -317,7 +317,14 @@ varsel.refmodel <- function(object, d_test = NULL, method = NULL,
     }
   } else {
     if (d_test$type == "train") {
-      mu_test <- refmodel$mu_offs
+      if (formula_contains_group_terms(refmodel$formula)) {
+        # Need to use `mlvl_allrandom = TRUE` (`refmodel$mu_offs` is based on
+        # `mlvl_allrandom = FALSE`):
+        eta_test <- refmodel$ref_predfun(refmodel$fit, excl_offs = FALSE)
+        mu_test <- refmodel$family$linkinv(eta_test)
+      } else {
+        mu_test <- refmodel$mu_offs
+      }
     } else {
       newdata_for_ref <- d_test$data
       if (inherits(refmodel$fit, "stanreg") &&
