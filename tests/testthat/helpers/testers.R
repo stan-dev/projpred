@@ -543,6 +543,14 @@ refmodel_tester <- function(
     ),
     info = info_str
   )
+  if (!is_datafit) {
+    expect_equal(
+      refmod$mu_offs,
+      refmod$family$linkinv(refmod$ref_predfun(refmod$fit, excl_offs = FALSE,
+                                               mlvl_allrandom = FALSE)),
+      info = info_str
+    )
+  }
 
   # dis
   if (refmod$family$family == "gaussian") {
