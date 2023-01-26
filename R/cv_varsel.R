@@ -673,53 +673,98 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
     }
     return(summ_k)
   })
-  mu_ref <- do.call(c, lapply(seq_len(nrow(mu_offs)), function(i) {
-    # For the augmented-data projection, `mu_offs` is an augmented-rows matrix
-    # whereas the columns of `lw` refer to the original (non-augmented)
-    # observations. Since `i` refers to the rows of `mu_offs`, the index for
-    # `lw` needs to be adapted:
+  if (formula_contains_group_terms(refmodel$formula)) {
+    # Need to use `mlvl_allrandom = TRUE` (`mu_offs` is based on
+    # `mlvl_allrandom = FALSE`):
+    eta_offs_mlvlRan <- refmodel$ref_predfun(refmodel$fit, excl_offs = FALSE)
+    mu_offs_mlvlRan <- refmodel$family$linkinv(eta_offs_mlvlRan)
+  } else {
+    mu_offs_mlvlRan <- mu_offs
+  }
+  mu_ref <- do.call(c, lapply(seq_len(nrow(mu_offs_mlvlRan)), function(i) {
+    # For the augmented-data projection, `mu_offs_mlvlRan` is an augmented-rows
+    # matrix whereas the columns of `lw` refer to the original (non-augmented)
+    # observations. Since `i` refers to the rows of `mu_offs_mlvlRan`, the index
+    # for `lw` needs to be adapted:
     i_nonaug <- i %% n
     if (i_nonaug == 0) {
       i_nonaug <- n
     }
-    mu_offs[i, ] %*% exp(lw[, i_nonaug])
+    mu_offs_mlvlRan[i, ] %*% exp(lw[, i_nonaug])
   }))
   mu_ref <- structure(
     mu_ref,
-    nobs_orig = attr(mu_offs, "nobs_orig"),
-    class = sub("augmat", "augvec", oldClass(mu_offs), fixed = TRUE)
+    nobs_orig = attr(mu_offs_mlvlRan, "nobs_orig"),
+    class = sub("augmat", "augvec", oldClass(mu_offs_mlvlRan), fixed = TRUE)
   )
   if (refmodel$family$for_latent) {
     loglik_lat <- t(refmodel$family$ll_fun(
-      mu_offs, dis, refmodel$y, refmodel$wobs
+      mu_offs_mlvlRan, dis, refmodel$y, refmodel$wobs
     ))
     lppd_ref <- apply(loglik_lat + lw, 2, log_sum_exp)
   } else {
-    lppd_ref <- loo_ref_oscale
+    if (formula_contains_group_terms(refmodel$formula)) {
+      # Need to use `mlvl_allrandom = TRUE` (`loo_ref_oscale` is based on
+      # `mlvl_allrandom = FALSE`):
+      loglik_mlvlRan <- t(refmodel$family$ll_fun(
+        mu_offs_mlvlRan, dis, refmodel$y, refmodel$wobs
+      ))
+      lppd_ref <- apply(loglik_mlvlRan + lw, 2, log_sum_exp)
+    } else {
+      lppd_ref <- loo_ref_oscale
+    }
   }
   summ_ref <- list(lppd = lppd_ref, mu = mu_ref)
   if (refmodel$family$for_latent) {
+    if (formula_contains_group_terms(refmodel$formula)) {
+      # Need to use `mlvl_allrandom = TRUE` (`mu_offs_oscale` is based on
+      # `mlvl_allrandom = FALSE`):
+      mu_offs_mlvlRan_oscale <- refmodel$family$latent_ilink(
+        t(mu_offs_mlvlRan), cl_ref = seq_along(refmodel$wsample),
+        wdraws_ref = refmodel$wsample
+      )
+      mu_offs_mlvlRan_oscale_odim <- mu_offs_mlvlRan_oscale
+      if (length(dim(mu_offs_mlvlRan_oscale)) == 3) {
+        mu_offs_mlvlRan_oscale <- arr2augmat(mu_offs_mlvlRan_oscale,
+                                             margin_draws = 1)
+      }
+    } else {
+      mu_offs_mlvlRan_oscale <- mu_offs_oscale
+    }
     mu_ref_oscale <- do.call(c, lapply(seq_len(n_aug), function(i) {
       i_nonaug <- i %% n
       if (i_nonaug == 0) {
         i_nonaug <- n
       }
-      if (inherits(mu_offs_oscale, "augmat")) {
-        return(mu_offs_oscale[i, ] %*% exp(lw[, i_nonaug]))
+      if (inherits(mu_offs_mlvlRan_oscale, "augmat")) {
+        return(mu_offs_mlvlRan_oscale[i, ] %*% exp(lw[, i_nonaug]))
       } else {
         # In principle, we could use the same code for averaging across the
         # draws as above in the `"augmat"` case. However, that would require
-        # `mu_offs_oscale <- t(mu_offs_oscale)` beforehand, so the following
-        # should be more efficient:
-        return(exp(lw[, i_nonaug]) %*% mu_offs_oscale[, i])
+        # `mu_offs_mlvlRan_oscale <- t(mu_offs_mlvlRan_oscale)` beforehand, so
+        # the following should be more efficient:
+        return(exp(lw[, i_nonaug]) %*% mu_offs_mlvlRan_oscale[, i])
       }
     }))
     mu_ref_oscale <- structure(
       mu_ref_oscale,
-      nobs_orig = attr(mu_offs_oscale, "nobs_orig"),
-      class = sub("augmat", "augvec", oldClass(mu_offs_oscale), fixed = TRUE)
+      nobs_orig = attr(mu_offs_mlvlRan_oscale, "nobs_orig"),
+      class = sub("augmat", "augvec", oldClass(mu_offs_mlvlRan_oscale),
+                  fixed = TRUE)
     )
-    summ_ref$oscale <- list(lppd = loo_ref_oscale, mu = mu_ref_oscale)
+    if (formula_contains_group_terms(refmodel$formula)) {
+      # Need to use `mlvl_allrandom = TRUE` (`loo_ref_oscale` is based on
+      # `mlvl_allrandom = FALSE`):
+      loglik_mlvlRan <- refmodel$family$latent_ll_oscale(
+        mu_offs_mlvlRan_oscale_odim, y_oscale = refmodel$y_oscale,
+        wobs = refmodel$wobs, cl_ref = seq_along(refmodel$wsample),
+        wdraws_ref = refmodel$wsample
+      )
+      lppd_ref_oscale <- apply(loglik_mlvlRan + lw, 2, log_sum_exp)
+    } else {
+      lppd_ref_oscale <- loo_ref_oscale
+    }
+    summ_ref$oscale <- list(lppd = lppd_ref_oscale, mu = mu_ref_oscale)
   }
   summaries <- list(sub = summ_sub, ref = summ_ref)
 
