@@ -1020,11 +1020,15 @@ init_refmodel <- function(object, data, formula, family, ref_predfun = NULL,
     }
     if (family$for_augdat && family$family == "binomial") {
       ref_predfun_mat <- ref_predfun
-      ref_predfun <- function(fit, newdata = NULL) {
+      # The assignment to a dummy object is just needed to avoid a `NOTE` in `R
+      # CMD check`, namely "init_refmodel: multiple local function definitions
+      # for 'ref_predfun' with different formal arguments":
+      ref_predfun_dummy <- function(fit, newdata = NULL) {
         linpred1 <- ref_predfun_mat(fit = fit, newdata = newdata)
         linpred1 <- t(linpred1)
         return(array(linpred1, dim = c(dim(linpred1), 1L)))
       }
+      ref_predfun <- ref_predfun_dummy
     }
     # Since posterior_linpred() is supposed to include any offsets, but in
     # general (i.e., in the default case `excl_offs = TRUE`, see below),
