@@ -11,7 +11,7 @@ If you read this from a place other than <https://mc-stan.org/projpred/news/inde
 
 ## Bug fixes
 
-* Fix a bug for offsets in cases where `family` (see `init_refmodel()`) has a non-identity link function: After clustering the reference model's posterior draws, we need to aggregate the fitted values which already take the offsets into account instead of taking the offsets into account after aggregating the fitted values which do *not* take the offsets into account. (GitHub: **TODO** (insert PR number))
+* Fix a bug for offsets in cases where `family` (see `init_refmodel()`) has a non-identity link function: After clustering the reference model's posterior draws, we need to aggregate (within a given cluster) the reference model's fitted values which already take the offsets into account instead of taking the offsets into account after aggregating the fitted values which do *not* take the offsets into account. This fix should affect results only in a very slight manner. Due to **projpred**'s internal adjustment for numerical stability when averaging a quantity across the draws within a given cluster, this also changes the projected residual standard deviations in Gaussian models in the order of `1e-10`. (GitHub: #374)
 
 # projpred 2.3.0
 
