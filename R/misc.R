@@ -294,13 +294,13 @@ bootstrap <- function(x, fun = mean, B = 2000,
       p_ref <- .get_p_clust(family = refmodel$family, eta = refmodel$eta,
                             mu = refmodel$mu, mu_offs = refmodel$mu_offs,
                             dis = refmodel$dis, wobs = refmodel$wobs,
-                            cl = rep(1, S), offs = refmodel$offset)
+                            cl = rep(1, S))
     } else {
       # several clusters
       p_ref <- .get_p_clust(family = refmodel$family, eta = refmodel$eta,
                             mu = refmodel$mu, mu_offs = refmodel$mu_offs,
                             dis = refmodel$dis, wobs = refmodel$wobs,
-                            nclusters = nclusters, offs = refmodel$offset)
+                            nclusters = nclusters)
     }
   } else {
     ndraws <- min(S, ndraws)
@@ -337,8 +337,7 @@ bootstrap <- function(x, fun = mean, B = 2000,
 # Function for clustering the parameter draws:
 .get_p_clust <- function(family, eta, mu, mu_offs, dis, nclusters = 10,
                          wobs = rep(1, dim(mu)[1]),
-                         wsample = rep(1, dim(mu)[2]), cl = NULL,
-                         offs = rep(0, dim(mu)[1])) {
+                         wsample = rep(1, dim(mu)[2]), cl = NULL) {
   # cluster the samples in the latent space if no clustering provided
   if (is.null(cl)) {
     # Note: A seed is not set here because this function is not exported and has
@@ -361,6 +360,8 @@ bootstrap <- function(x, fun = mean, B = 2000,
   nclusters <- max(cl, na.rm = TRUE)
   # Cluster centers:
   centers <- matrix(0, nrow = nclusters, ncol = dim(mu)[1])
+  # The same centers, but taking offsets into account:
+  centers_offs <- matrix(0, nrow = nclusters, ncol = dim(mu_offs)[1])
   # Cluster weights:
   wcluster <- rep(0, nclusters)
   # Dispersion parameter draws aggregated within each cluster:
@@ -376,6 +377,8 @@ bootstrap <- function(x, fun = mean, B = 2000,
 
     # Center of the j-th cluster:
     centers[j, ] <- mu[, ind, drop = FALSE] %*% ws
+    # The same centers, but taking offsets into account:
+    centers_offs[j, ] <- mu_offs[, ind, drop = FALSE] %*% ws
     # Unnormalized weight for the j-th cluster:
     wcluster[j] <- sum(wsample[ind])
     # Aggregated dispersion parameter for the j-th cluster:
@@ -390,6 +393,9 @@ bootstrap <- function(x, fun = mean, B = 2000,
     mu = structure(unname(t(centers)),
                    nobs_orig = attr(mu, "nobs_orig"),
                    class = oldClass(mu)),
+    mu_offs = structure(unname(t(centers_offs)),
+                        nobs_orig = attr(mu_offs, "nobs_orig"),
+                        class = oldClass(mu_offs)),
     var = structure(predvar,
                     nobs_orig = attr(mu, "nobs_orig"),
                     class = oldClass(mu)),
@@ -399,23 +405,6 @@ bootstrap <- function(x, fun = mean, B = 2000,
     wsample_orig = wsample,
     clust_used = TRUE
   )
-
-  ### TODO: I think the following is not correct for non-identity links. I think
-  ### we need to average `mu_offs` within each cluster instead.
-  # Take offsets into account (the `if ()` condition is added for efficiency):
-  if (!all(offs == 0)) {
-    p_eta <- family$linkfun(p$mu)
-    if (family$family %in% fams_neg_linpred()) {
-      p_eta <- p_eta - offs
-    } else {
-      p_eta <- p_eta + offs
-    }
-    p$mu_offs <- family$linkinv(p_eta)
-  } else {
-    p$mu_offs <- p$mu
-  }
-  p <- p[c("mu", "mu_offs", setdiff(names(p), c("mu", "mu_offs")))]
-  ###
 
   return(p)
 }
