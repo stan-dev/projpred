@@ -1153,7 +1153,8 @@ init_refmodel <- function(object, data, formula, family, ref_predfun = NULL,
     if (!is.null(ref_predfun)) {
       warning("Ignoring argument `ref_predfun` because `object` is `NULL`.")
     }
-    ref_predfun <- function(fit, newdata = NULL, excl_offs = TRUE) {
+    ref_predfun <- function(fit, newdata = NULL, excl_offs = TRUE,
+                            mlvl_allrandom = TRUE) {
       stopifnot(is.null(fit))
       if (is.null(newdata)) {
         return(matrix(rep(NA_real_, nrow(data))))
