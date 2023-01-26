@@ -380,13 +380,14 @@ test_that(paste(
 
     ### Summaries for the reference model -------------------------------------
 
+    dat_indep_crr$z.1 <- as.factor(paste0("NEW_", dat_indep_crr$z.1))
     if (pkg_crr == "rstanarm") {
       mu_new <- rstantools::posterior_epred(refmods[[tstsetup_ref]]$fit,
-                                            newdata = dat_indep,
+                                            newdata = dat_indep_crr,
                                             offset = d_test_crr$offset)
       if (fam_crr == "cumul") {
         eta_new <- rstantools::posterior_linpred(refmods[[tstsetup_ref]]$fit,
-                                                 newdata = dat_indep,
+                                                 newdata = dat_indep_crr,
                                                  offset = d_test_crr$offset)
         # The following shows that in case of an rstanarm::stan_polr() fit,
         # rstantools::posterior_epred() returns the linear predictors with a
@@ -410,7 +411,7 @@ test_that(paste(
       }
       if (grepl("\\.without_wobs", tstsetup)) {
         lppd_new <- rstantools::log_lik(refmods[[tstsetup_ref]]$fit,
-                                        newdata = dat_indep,
+                                        newdata = dat_indep_crr,
                                         offset = d_test_crr$offset)
       } else {
         # Currently, rstanarm issue #567 causes an error to be thrown when
@@ -421,12 +422,21 @@ test_that(paste(
       }
       if (prj_crr == "latent") {
         mu_new_lat <- rstantools::posterior_linpred(refmods[[tstsetup_ref]]$fit,
-                                                    newdata = dat_indep,
+                                                    newdata = dat_indep_crr,
                                                     offset = d_test_crr$offset)
       }
     } else if (pkg_crr == "brms") {
+      expr_seed <- expression({
+        set.seed(seed2_tst)
+        kfold_seed_dummy <- sample.int(.Machine$integer.max, 1)
+        refprd_seed_dummy <- sample.int(.Machine$integer.max, 1)
+        set.seed(refprd_seed_dummy)
+      })
+      eval(expr_seed)
       mu_new <- rstantools::posterior_epred(refmods[[tstsetup_ref]]$fit,
-                                            newdata = dat_indep)
+                                            newdata = dat_indep_crr,
+                                            allow_new_levels = TRUE,
+                                            sample_new_levels = "gaussian")
       if (fam_crr == "binom") {
         # Compared to rstanarm, brms uses a different convention for the
         # binomial family: The values returned by posterior_epred() are not
@@ -436,11 +446,19 @@ test_that(paste(
         mu_new <- mu_new / matrix(wobs_indep, nrow = nrow(mu_new),
                                   ncol = ncol(mu_new), byrow = TRUE)
       }
+      eval(expr_seed)
       lppd_new <- rstantools::log_lik(refmods[[tstsetup_ref]]$fit,
-                                      newdata = dat_indep)
+                                      newdata = dat_indep_crr,
+                                      allow_new_levels = TRUE,
+                                      sample_new_levels = "gaussian")
       if (prj_crr == "latent") {
-        mu_new_lat <- rstantools::posterior_linpred(refmods[[tstsetup_ref]]$fit,
-                                                    newdata = dat_indep)
+        eval(expr_seed)
+        mu_new_lat <- rstantools::posterior_linpred(
+          refmods[[tstsetup_ref]]$fit,
+          newdata = dat_indep_crr,
+          allow_new_levels = TRUE,
+          sample_new_levels = "gaussian"
+        )
       }
     }
     if (length(dim(mu_new)) == 2) {
