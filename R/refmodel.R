@@ -377,6 +377,13 @@ NULL
 #'
 #' @details Argument `weightsnew` is only relevant if `!is.null(ynew)`.
 #'
+#'   In case of a multilevel reference model, group-level effects are
+#'   "integrated out" by considering all group levels from `newdata` (even those
+#'   that already exist in the original dataset) as *new* group levels (if
+#'   `is.null(newdata)`, all group levels from the original dataset are
+#'   considered as new group levels) and by drawing group-level effects for all
+#'   these "new" group levels randomly.
+#'
 #' @return In the following, \eqn{N}, \eqn{C_{\mathrm{cat}}}{C_cat}, and
 #'   \eqn{C_{\mathrm{lat}}}{C_lat} from help topic [refmodel-init-get] are used.
 #'   Furthermore, let \eqn{C} denote either \eqn{C_{\mathrm{cat}}}{C_cat} (if

@@ -46,7 +46,7 @@
 #'   multilevel submodel (however, not yet in case of a GAMM) and for drawing
 #'   from the predictive distributions of the submodel(s) in case of
 #'   [proj_predict()]. If a clustered projection was performed, then in
-#'   [proj_predict()], `.seed` is also used for drawing from the set of the
+#'   [proj_predict()], `.seed` is also used for drawing from the set of
 #'   projected clusters of posterior draws (see argument `nresample_clusters`).
 #' @param resp_oscale Only relevant for the latent projection. A single logical
 #'   value indicating whether to draw from the posterior-projection predictive

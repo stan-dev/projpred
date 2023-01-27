@@ -87,4 +87,11 @@ response scale, or the log predictive density.
 }
 \details{
 Argument \code{weightsnew} is only relevant if \code{!is.null(ynew)}.
+
+In case of a multilevel reference model, group-level effects are
+"integrated out" by considering all group levels from \code{newdata} (even those
+that already exist in the original dataset) as \emph{new} group levels (if
+\code{is.null(newdata)}, all group levels from the original dataset are
+considered as new group levels) and by drawing group-level effects for all
+these "new" group levels randomly.
 }
