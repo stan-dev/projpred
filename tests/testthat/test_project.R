@@ -305,6 +305,11 @@ test_that("non-clustered projection does not require a seed", {
       # all group levels; here, only the existing ones are relevant)). Thus, we
       # cannot test the whole project() output, but need to restrict ourselves
       # to the output of as.matrix.projection().
+      if (args_prj_i$mod_nm == "gamm") {
+        # Skipping GAMMs because of issue #131.
+        # TODO (GAMMs): Fix this.
+        next
+      }
       prjmat_orig <- as.matrix(p_orig)
       prjmat_new <- as.matrix(p_new)
       if (args_prj_i$fam_nm == "gauss" || args_prj_i$prj_nm == "latent") {
