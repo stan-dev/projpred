@@ -27,8 +27,9 @@ latent_ll_oscale_binom_nocats <- function(ilpreds, y_oscale,
                                           wobs = rep(1, length(y_oscale)),
                                           cl_ref,
                                           wdraws_ref = rep(1, length(cl_ref))) {
-  # Assign some nonzero value to have a finite log() value:
-  ilpreds[ilpreds %in% c(0, 1)] <- .Machine$double.eps
+  # Ensure finite log() values:
+  ilpreds[ilpreds %in% c(0)] <- .Machine$double.eps
+  ilpreds[ilpreds %in% c(1)] <- 1 - .Machine$double.eps
 
   ilpreds <- t(ilpreds)
   ll_unw <- y_oscale * log(ilpreds) + (1 - y_oscale) * log(1 - ilpreds)
