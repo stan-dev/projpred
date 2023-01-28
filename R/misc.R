@@ -31,31 +31,31 @@ log_sum_exp <- function(x) {
 }
 
 linkfun_raw <- function(x, link_nm) {
-  if (link_nm %in% c("logit", "logistic")) {
-    return(qlogis(x))
-  } else if (link_nm %in% c("probit", "probit_approx")) {
-    return(qnorm(x))
+  if (link_nm %in% c("logistic")) {
+    link_nm <- "logit"
+  } else if (link_nm %in% c("probit_approx")) {
+    link_nm <- "probit"
   } else if (link_nm == "cloglog") {
+    # The `"cloglog"` link is also supported by binomial(), but the following
+    # should be numerically more stable:
     return(log(-log1p(-x)))
-  } else if (link_nm == "cauchit") {
-    return(qcauchy(x))
-  } else {
+  } else if (!link_nm %in% c("logit", "probit", "cauchit")) {
     stop("Unknown `link_nm`.")
   }
+  basic_link <- binomial(link = link_nm)$linkfun
+  return(basic_link(x))
 }
 
 ilinkfun_raw <- function(x, link_nm) {
-  if (link_nm %in% c("logit", "logistic")) {
-    return(plogis(x))
-  } else if (link_nm %in% c("probit", "probit_approx")) {
-    return(pnorm(x))
-  } else if (link_nm == "cloglog") {
-    return(1 - exp(-exp(x)))
-  } else if (link_nm == "cauchit") {
-    return(pcauchy(x))
-  } else {
+  if (link_nm %in% c("logistic")) {
+    link_nm <- "logit"
+  } else if (link_nm %in% c("probit_approx")) {
+    link_nm <- "probit"
+  } else if (!link_nm %in% c("logit", "probit", "cloglog", "cauchit")) {
     stop("Unknown `link_nm`.")
   }
+  basic_ilink <- binomial(link = link_nm)$linkinv
+  return(basic_ilink(x))
 }
 
 auc <- function(x) {
