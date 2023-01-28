@@ -321,8 +321,7 @@ fams_neg_linpred <- function() {
 #'
 #' @export
 augdat_link_binom <- function(prb_arr, link = "logit") {
-  basic_link <- binomial(link = link)$linkfun
-  return(basic_link(prb_arr[, , -1, drop = FALSE]))
+  return(linkfun_raw(prb_arr[, , -1, drop = FALSE], link_nm = link))
 }
 
 #' Inverse-link function for augmented-data projection with binomial family
@@ -340,8 +339,7 @@ augdat_link_binom <- function(prb_arr, link = "logit") {
 #'
 #' @export
 augdat_ilink_binom <- function(eta_arr, link = "logit") {
-  basic_ilink <- binomial(link = link)$linkinv
-  prb_arr1 <- basic_ilink(eta_arr)
+  prb_arr1 <- ilinkfun_raw(eta_arr, link_nm = link)
   prb_arr0 <- 1 - prb_arr1
   stopifnot(identical(dim(prb_arr0), dim(prb_arr1)))
   stopifnot(identical(dim(prb_arr1)[3], 1L))
