@@ -39,8 +39,6 @@ linkfun_raw <- function(x, link_nm) {
     # The `"cloglog"` link is also supported by binomial(), but the following
     # should be numerically more stable:
     return(log(-log1p(-x)))
-  } else if (!link_nm %in% c("logit", "probit", "cauchit")) {
-    stop("Unknown `link_nm`.")
   }
   basic_link <- binomial(link = link_nm)$linkfun
   return(basic_link(x))
@@ -51,8 +49,6 @@ ilinkfun_raw <- function(x, link_nm) {
     link_nm <- "logit"
   } else if (link_nm %in% c("probit_approx")) {
     link_nm <- "probit"
-  } else if (!link_nm %in% c("logit", "probit", "cloglog", "cauchit")) {
-    stop("Unknown `link_nm`.")
   }
   basic_ilink <- binomial(link = link_nm)$linkinv
   return(basic_ilink(x))
