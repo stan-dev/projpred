@@ -5,14 +5,17 @@ The `projpred` package includes other open source software components.
 The following is a list of these components (full copies of the license
 agreements used by these components are included below):
 
-* The general structure of the repair_re.merMod() function is inspired
-  by lme4:::predict.merMod() from R package `lme4`, version 1.1-28
-  (<https://CRAN.R-project.org/package=lme4>). Furthermore, the
-  following code snippets of repair_re.merMod() were directly copied
-  from lme4:::predict.merMod() and then slightly modified:
+* The general structure of the repair_re.merMod(), repair_re.clmm(), and
+  repair_re.mmblogit() functions is inspired by lme4:::predict.merMod() from R
+  package `lme4`, version 1.1-28 (<https://CRAN.R-project.org/package=lme4>).
+  Furthermore, the following code snippets of these functions were directly
+  copied from lme4:::predict.merMod() and then slightly modified:
     + the lme4:::reOnly() call,
     + the lme4::mkNewReTrms() call,
     + the line containing the multiplication of `b` and `Zt`.
+* The mkNewReTrms_man() function is strongly based on (i.e., it was only
+  slightly modified from) lme4::mkNewReTrms() from lme4 version 1.1-28
+  (<https://CRAN.R-project.org/package=lme4>).
 
 ------------------------------------------------------------------------
 R package `lme4`, version 1.1-28

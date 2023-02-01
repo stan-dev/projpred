@@ -47,8 +47,9 @@ the training data is used.}
 
 \item{method}{The method for the search part. Possible options are \code{"L1"} for
 L1 search and \code{"forward"} for forward search. If \code{NULL}, then internally,
-\code{"L1"} is used, except if the reference model has multilevel or additive
-terms or if \code{!is.null(search_terms)}. See also section "Details" below.}
+\code{"L1"} is used, except if (i) the reference model has multilevel or
+additive terms, (ii) if \code{!is.null(search_terms)}, or (iii) if the
+augmented-data projection is used. See also section "Details" below.}
 
 \item{ndraws}{Number of posterior draws used in the search part. Ignored if
 \code{nclusters} is not \code{NULL} or in case of L1 search (because L1 search always
@@ -148,9 +149,10 @@ performance. Increasing these arguments affects the computation time
 linearly.
 
 For argument \code{method}, there are some restrictions: For a reference model
-with multilevel or additive formula terms, only the forward search is
-available. Furthermore, argument \code{search_terms} requires a forward search
-to take effect.
+with multilevel or additive formula terms or a reference model set up for
+the augmented-data projection, only the forward search is available.
+Furthermore, argument \code{search_terms} requires a forward search to take
+effect.
 
 L1 search is faster than forward search, but forward search may be more
 accurate. Furthermore, forward search may find a sparser model with
@@ -193,7 +195,8 @@ elements:
 (if there is no offset, use a vector of zeros).
 \item \code{weights}: a numeric vector containing the observation weights for the test
 set (if there are no observation weights, use a vector of ones).
-\item \code{y}: a numeric vector containing the response values for the test set.
+\item \code{y}: a vector or a \code{factor} containing the response values for the test
+set.
 }
 }
 

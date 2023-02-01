@@ -321,7 +321,11 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
          "probabilistic model for which the log-likelihood can be evaluated.")
   }
 
-  eta_offs <- eta + refmodel$offset
+  if (refmodel$family$family %in% fams_neg_linpred()) {
+    eta_offs <- eta - refmodel$offset
+  } else {
+    eta_offs <- eta + refmodel$offset
+  }
   mu_offs <- refmodel$family$linkinv(eta_offs)
 
   loglik <- t(refmodel$family$ll_fun(mu_offs, dis, refmodel$y, refmodel$wobs))
@@ -340,9 +344,22 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
 
   ## compute loo summaries for the reference model
   loo_ref <- apply(loglik + lw, 2, log_sum_exp)
-  mu_ref <- do.call(c, lapply(seq_len(n), function(i) {
-    mu_offs[i, ] %*% exp(lw[, i])
+  mu_ref <- do.call(c, lapply(seq_len(nrow(mu_offs)), function(i) {
+    # For the augmented-data projection, `mu_offs` is an augmented-rows matrix
+    # whereas the columns of `lw` refer to the original (non-augmented)
+    # observations. Since `i` refers to the rows of `mu_offs`, the index for
+    # `lw` needs to be adapted:
+    i_nonaug <- i %% n
+    if (i_nonaug == 0) {
+      i_nonaug <- n
+    }
+    mu_offs[i, ] %*% exp(lw[, i_nonaug])
   }))
+  mu_ref <- structure(
+    mu_ref,
+    nobs_orig = attr(mu_offs, "nobs_orig"),
+    class = sub("augmat", "augvec", oldClass(mu_offs), fixed = TRUE)
+  )
 
   ## decide which points form the validation set based on the k-values
   ## validset <- .loo_subsample(n, nloo, pareto_k)
@@ -352,7 +369,13 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
   ## initialize objects where to store the results
   solution_terms_mat <- matrix(nrow = n, ncol = nterms_max - refmodel$intercept)
   loo_sub <- replicate(nterms_max, rep(NA, n), simplify = FALSE)
-  mu_sub <- replicate(nterms_max, rep(NA, n), simplify = FALSE)
+  mu_sub <- replicate(
+    nterms_max,
+    structure(rep(NA, nrow(mu_offs)),
+              nobs_orig = attr(mu_offs, "nobs_orig"),
+              class = sub("augmat", "augvec", oldClass(mu_offs), fixed = TRUE)),
+    simplify = FALSE
+  )
 
   if (verbose) {
     if (validate_search) {
@@ -401,12 +424,23 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
     }
     refdist_eval_mu_offs <- refdist_eval$mu
     if (!all(refmodel$offset == 0)) {
-      refdist_eval_mu_offs <- refmodel$family$linkinv(
-        refmodel$family$linkfun(refdist_eval_mu_offs) + refmodel$offset
+      refdist_eval_eta_offs <- refmodel$family$linkfun(refdist_eval_mu_offs)
+      if (refmodel$family$family %in% fams_neg_linpred()) {
+        refdist_eval_eta_offs <- refdist_eval_eta_offs - refmodel$offset
+      } else {
+        refdist_eval_eta_offs <- refdist_eval_eta_offs + refmodel$offset
+      }
+      refdist_eval_mu_offs <- refmodel$family$linkinv(refdist_eval_eta_offs)
+    }
+    inds_aug <- inds
+    if (refmodel$family$for_augdat) {
+      inds_aug <- inds_aug + rep(
+        (seq_along(refmodel$family$cats) - 1L) * n,
+        each = length(inds_aug)
       )
     }
     log_lik_ref <- t(refmodel$family$ll_fun(
-      refdist_eval_mu_offs[inds, , drop = FALSE], refdist_eval$dis,
+      refdist_eval_mu_offs[inds_aug, , drop = FALSE], refdist_eval$dis,
       refmodel$y[inds], refmodel$wobs[inds]
     ))
     sub_psisloo <- suppressWarnings(
@@ -426,8 +460,15 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
         mu_k, submodels[[k]]$dis, refmodel$y[inds], refmodel$wobs[inds]
       ))
       loo_sub[[k]][inds] <- apply(log_lik_sub + lw_sub, 2, log_sum_exp)
-      for (i in seq_along(inds)) {
-        mu_sub[[k]][inds[i]] <- mu_k[i, ] %*% exp(lw_sub[, i])
+      for (run_index in seq_along(inds)) {
+        i_aug <- inds[run_index]
+        run_index_aug <- run_index
+        if (refmodel$family$for_augdat) {
+          i_aug <- i_aug + (seq_along(refmodel$family$cats) - 1L) * n
+          run_index_aug <- run_index_aug +
+            (seq_along(refmodel$family$cats) - 1L) * nloo
+        }
+        mu_sub[[k]][i_aug] <- mu_k[run_index_aug, ] %*% exp(lw_sub[, run_index])
       }
 
       if (verbose) {
@@ -490,9 +531,13 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
       summaries_sub <- .get_sub_summaries(submodels = submodels,
                                           refmodel = refmodel,
                                           test_points = i)
+      i_aug <- i
+      if (refmodel$family$for_augdat) {
+        i_aug <- i_aug + (seq_along(refmodel$family$cats) - 1L) * n
+      }
       for (k in seq_along(summaries_sub)) {
         loo_sub[[k]][i] <- summaries_sub[[k]]$lppd
-        mu_sub[[k]][i] <- summaries_sub[[k]]$mu
+        mu_sub[[k]][i_aug] <- summaries_sub[[k]]$mu
       }
 
       if (is.null(prv_len_soltrms)) {
@@ -628,13 +673,20 @@ kfold_varsel <- function(refmodel, method, nterms_max, ndraws,
   idxs_sorted_by_fold <- unlist(lapply(list_cv, function(fold) {
     fold$d_test$omitted
   }))
+  idxs_sorted_by_fold_aug <- idxs_sorted_by_fold
+  if (refmodel$family$for_augdat) {
+    idxs_sorted_by_fold_aug <- idxs_sorted_by_fold_aug + rep(
+      (seq_along(refmodel$family$cats) - 1L) * length(refmodel$y),
+      each = length(idxs_sorted_by_fold_aug)
+    )
+  }
   sub <- lapply(sub, function(summ) {
-    summ$mu <- summ$mu[order(idxs_sorted_by_fold)]
+    summ$mu <- summ$mu[order(idxs_sorted_by_fold_aug)]
     summ$lppd <- summ$lppd[order(idxs_sorted_by_fold)]
 
     # Add fold-specific weights (see the discussion at GitHub issue #94 for why
     # this might have to be changed):
-    summ$wcv <- rep(1, length(summ$mu))
+    summ$wcv <- rep(1, length(summ$lppd))
     summ$wcv <- summ$wcv / sum(summ$wcv)
     return(summ)
   })
@@ -644,7 +696,12 @@ kfold_varsel <- function(refmodel, method, nterms_max, ndraws,
     eta_test <- fold$refmodel$ref_predfun(
       fold$refmodel$fit,
       newdata = refmodel$fetch_data(obs = fold$d_test$omitted)
-    ) + fold$d_test$offset
+    )
+    if (fold$refmodel$family$family %in% fams_neg_linpred()) {
+      eta_test <- eta_test - fold$d_test$offset
+    } else {
+      eta_test <- eta_test + fold$d_test$offset
+    }
     mu_test <- fold$refmodel$family$linkinv(eta_test)
     .weighted_summary_means(
       y_test = fold$d_test, family = fold$refmodel$family,
@@ -652,7 +709,7 @@ kfold_varsel <- function(refmodel, method, nterms_max, ndraws,
       dis = fold$refmodel$dis
     )
   }))
-  ref$mu <- ref$mu[order(idxs_sorted_by_fold)]
+  ref$mu <- ref$mu[order(idxs_sorted_by_fold_aug)]
   ref$lppd <- ref$lppd[order(idxs_sorted_by_fold)]
 
   # Combine the K separate test "datasets" (rather "information objects") into a

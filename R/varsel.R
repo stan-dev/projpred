@@ -15,8 +15,9 @@
 #'   the training data is used.
 #' @param method The method for the search part. Possible options are `"L1"` for
 #'   L1 search and `"forward"` for forward search. If `NULL`, then internally,
-#'   `"L1"` is used, except if the reference model has multilevel or additive
-#'   terms or if `!is.null(search_terms)`. See also section "Details" below.
+#'   `"L1"` is used, except if (i) the reference model has multilevel or
+#'   additive terms, (ii) if `!is.null(search_terms)`, or (iii) if the
+#'   augmented-data projection is used. See also section "Details" below.
 #' @param refit_prj A single logical value indicating whether to fit the
 #'   submodels along the solution path again (`TRUE`) or to retrieve their fits
 #'   from the search part (`FALSE`) before using those (re-)fits in the
@@ -94,7 +95,8 @@
 #' (if there is no offset, use a vector of zeros).
 #' * `weights`: a numeric vector containing the observation weights for the test
 #' set (if there are no observation weights, use a vector of ones).
-#' * `y`: a numeric vector containing the response values for the test set.
+#' * `y`: a vector or a `factor` containing the response values for the test
+#' set.
 #'
 #' @details Arguments `ndraws`, `nclusters`, `nclusters_pred`, and `ndraws_pred`
 #'   are automatically truncated at the number of posterior draws in the
@@ -105,9 +107,10 @@
 #'   linearly.
 #'
 #'   For argument `method`, there are some restrictions: For a reference model
-#'   with multilevel or additive formula terms, only the forward search is
-#'   available. Furthermore, argument `search_terms` requires a forward search
-#'   to take effect.
+#'   with multilevel or additive formula terms or a reference model set up for
+#'   the augmented-data projection, only the forward search is available.
+#'   Furthermore, argument `search_terms` requires a forward search to take
+#'   effect.
 #'
 #'   L1 search is faster than forward search, but forward search may be more
 #'   accurate. Furthermore, forward search may find a sparser model with
@@ -220,6 +223,17 @@ varsel.refmodel <- function(object, d_test = NULL, method = NULL,
   } else {
     d_test$type <- "test"
     d_test <- d_test[nms_d_test()]
+    if (refmodel$family$for_augdat) {
+      d_test$y <- as.factor(d_test$y)
+      if (!all(levels(d_test$y) %in% refmodel$family$cats)) {
+        stop("The levels of the response variable (after coercing it to a ",
+             "`factor`) have to be a subset of `family$cats`. Either modify ",
+             "`d_test$y` accordingly or see the documentation for ",
+             "extend_family()'s argument `augdat_y_unqs` to solve this.")
+      }
+      # Re-assign the original levels because some levels might be missing:
+      d_test$y <- factor(d_test$y, levels = refmodel$family$cats)
+    }
   }
 
   ## reference distributions for selection and prediction after selection
@@ -261,9 +275,13 @@ varsel.refmodel <- function(object, d_test = NULL, method = NULL,
     if (d_test$type == "train") {
       mu_test <- refmodel$mu
       if (!all(refmodel$offset == 0)) {
-        mu_test <- refmodel$family$linkinv(
-          refmodel$family$linkfun(mu_test) + refmodel$offset
-        )
+        eta_test <- refmodel$family$linkfun(mu_test)
+        if (refmodel$family$family %in% fams_neg_linpred()) {
+          eta_test <- eta_test - refmodel$offset
+        } else {
+          eta_test <- eta_test + refmodel$offset
+        }
+        mu_test <- refmodel$family$linkinv(eta_test)
       }
     } else {
       newdata_for_ref <- d_test$data
@@ -276,10 +294,13 @@ varsel.refmodel <- function(object, d_test = NULL, method = NULL,
         }
         newdata_for_ref$projpred_internal_offs_stanreg <- d_test$offset
       }
-      mu_test <- refmodel$family$linkinv(
-        refmodel$ref_predfun(refmodel$fit, newdata = newdata_for_ref) +
-          d_test$offset
-      )
+      eta_test <- refmodel$ref_predfun(refmodel$fit, newdata = newdata_for_ref)
+      if (refmodel$family$family %in% fams_neg_linpred()) {
+        eta_test <- eta_test - d_test$offset
+      } else {
+        eta_test <- eta_test + d_test$offset
+      }
+      mu_test <- refmodel$family$linkinv(eta_test)
     }
     ref <- .weighted_summary_means(
       y_test = d_test, family = refmodel$family, wsample = refmodel$wsample,
@@ -358,7 +379,8 @@ parse_args_varsel <- function(refmodel, method, refit_prj, nterms_max,
   has_additive_features <- formula_contains_additive_terms(refmodel$formula)
 
   if (is.null(method)) {
-    if (has_group_features || has_additive_features || !search_terms_was_null) {
+    if (has_group_features || has_additive_features || !search_terms_was_null ||
+        refmodel$family$for_augdat) {
       method <- "forward"
     } else {
       method <- "l1"
@@ -373,6 +395,10 @@ parse_args_varsel <- function(refmodel, method, refit_prj, nterms_max,
       if (!search_terms_was_null) {
         warning("Argument `search_terms` only takes effect if ",
                 "`method = \"forward\"`.")
+      }
+      if (refmodel$family$for_augdat) {
+        stop("Currently, the augmented-data projection may not be combined ",
+             "with an L1 search.")
       }
     }
   }

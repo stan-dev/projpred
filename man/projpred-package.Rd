@@ -30,13 +30,27 @@ family as well.
 
 For the projection of the reference model onto a submodel, \pkg{projpred}
 currently relies on the following functions (in other words, these are the
-workhorse functions used by the default divergence minimizer):
+workhorse functions used by the default divergence minimizers):
 \itemize{
-\item Submodel without multilevel or additive terms: An internal C++ function
-which basically serves the same purpose as \code{\link[=lm]{lm()}} for the \code{\link[=gaussian]{gaussian()}} family
-and \code{\link[=glm]{glm()}} for all other families.
-\item Submodel with multilevel but no additive terms: \code{\link[lme4:lmer]{lme4::lmer()}} for the
-\code{\link[=gaussian]{gaussian()}} family, \code{\link[lme4:glmer]{lme4::glmer()}} for all other families.
+\item Submodel without multilevel or additive terms:
+\itemize{
+\item For the traditional projection (or the augmented-data projection in
+case of the \code{\link[=binomial]{binomial()}} or \code{\link[brms:brmsfamily]{brms::bernoulli()}} family): An internal C++
+function which basically serves the same purpose as \code{\link[=lm]{lm()}} for the
+\code{\link[=gaussian]{gaussian()}} family and \code{\link[=glm]{glm()}} for all other families.
+\item For the augmented-data projection: \code{\link[MASS:polr]{MASS::polr()}} for the
+\code{\link[brms:brmsfamily]{brms::cumulative()}} family or \code{\link[rstanarm:stan_polr]{rstanarm::stan_polr()}} fits,
+\code{\link[nnet:multinom]{nnet::multinom()}} for the \code{\link[brms:brmsfamily]{brms::categorical()}} family.
+}
+\item Submodel with multilevel but no additive terms:
+\itemize{
+\item For the traditional projection (or the augmented-data projection in
+case of the \code{\link[=binomial]{binomial()}} or \code{\link[brms:brmsfamily]{brms::bernoulli()}} family): \code{\link[lme4:lmer]{lme4::lmer()}}
+for the \code{\link[=gaussian]{gaussian()}} family, \code{\link[lme4:glmer]{lme4::glmer()}} for all other families.
+\item For the augmented-data projection: \code{\link[ordinal:clmm]{ordinal::clmm()}} for the
+\code{\link[brms:brmsfamily]{brms::cumulative()}} family, \code{\link[mclogit:mblogit]{mclogit::mblogit()}} for the
+\code{\link[brms:brmsfamily]{brms::categorical()}} family.
+}
 \item Submodel without multilevel but additive terms: \code{\link[mgcv:gam]{mgcv::gam()}}.
 \item Submodel with multilevel and additive terms: \code{\link[gamm4:gamm4]{gamm4::gamm4()}}.
 }
@@ -56,10 +70,10 @@ option \code{projpred.prll_prj_trigger}. Note that we cannot recommend
 parallelizing the projection on Windows because in our experience, the
 parallelization overhead is larger there, causing a parallel run to take
 longer than a sequential run. Also note that the parallelization works well
-for GLMs, but for GLMMs, GAMs, and GAMMs, the fitted model objects are quite
-big, which---when running in parallel---may lead to an excessive memory usage
-which in turn may crash the R session. Thus, we currently cannot recommend
-the parallelization for GLMMs, GAMs, and GAMMs.
+for GLMs, but for all other models, the fitted model objects are quite big,
+which---when running in parallel---may lead to excessive memory usage which
+in turn may crash the R session. Thus, we currently cannot recommend the
+parallelization for models other than GLMs.
 }
 \section{Functions}{
 \describe{
@@ -110,6 +124,7 @@ Other contributors:
   \item Hamada S. Badr [contributor]
   \item Brian Sullivan [contributor]
   \item Sölvi Rögnvaldsson [contributor]
+  \item  The LME4 Authors (see file 'LICENSE' for details) [copyright holder]
 }
 
 }

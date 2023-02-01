@@ -82,20 +82,28 @@ the set of clustered posterior draws after projection (with this set being
 determined by argument \code{nclusters} of \code{\link[=project]{project()}}).}
 }
 \value{
-Let \eqn{S_{\mathrm{prj}}}{S_prj} denote the number of (possibly
-clustered) projected posterior draws (short: the number of projected draws)
-and \eqn{N} the number of observations. (For \code{\link[=proj_linpred]{proj_linpred()}} with
-\code{integrated = TRUE}, we have \eqn{S_{\mathrm{prj}} = 1}{S_prj = 1}.) Then,
-if the prediction is done for one submodel only (i.e., \code{length(nterms) == 1 || !is.null(solution_terms)} in the call to \code{\link[=project]{project()}}):
+In the following, \eqn{S_{\mathrm{prj}}}{S_prj}, \eqn{N},
+\eqn{C_{\mathrm{cat}}}{C_cat}, and \eqn{C_{\mathrm{lat}}}{C_lat} from help
+topic \link{refmodel-init-get} are used. (For \code{\link[=proj_linpred]{proj_linpred()}} with \code{integrated = TRUE}, we have \eqn{S_{\mathrm{prj}} = 1}{S_prj = 1}.) Furthermore, let
+\eqn{C} denote either \eqn{C_{\mathrm{cat}}}{C_cat} (if \code{transform = TRUE})
+or \eqn{C_{\mathrm{lat}}}{C_lat} (if \code{transform = FALSE}). Then, if the
+prediction is done for one submodel only (i.e., \code{length(nterms) == 1 || !is.null(solution_terms)} in the call to \code{\link[=project]{project()}}):
 \itemize{
 \item \code{\link[=proj_linpred]{proj_linpred()}} returns a \code{list} with elements \code{pred} (predictions,
 i.e., the linear predictors, possibly transformed to response scale) and
 \code{lpd} (log predictive densities; only calculated if \code{newdata} is \code{NULL} or
-if \code{newdata} contains response values in the corresponding column). Both
-elements are \eqn{S_{\mathrm{prj}} \times N}{S_prj x N} matrices.
+if \code{newdata} contains response values in the corresponding column). In case
+of the traditional projection, both elements are \eqn{S_{\mathrm{prj}}
+  \times N}{S_prj x N} matrices. In case of the augmented-data projection,
+\code{pred} is an \eqn{S_{\mathrm{prj}} \times N \times C}{S_prj x N x C} array
+and \code{lpd} is an \eqn{S_{\mathrm{prj}} \times N}{S_prj x N} matrix.
 \item \code{\link[=proj_predict]{proj_predict()}} returns an \eqn{S_{\mathrm{prj}} \times N}{S_prj x N}
 matrix of predictions where \eqn{S_{\mathrm{prj}}}{S_prj} denotes
-\code{nresample_clusters} in case of clustered projection.
+\code{nresample_clusters} in case of clustered projection. In case of the
+augmented-data projection, this matrix has an attribute called \code{cats} (the
+character vector of response categories) and the values of the matrix are
+the predicted indices of the response categories (with the order of the
+response categories being that from attribute \code{cats}).
 }
 
 If the prediction is done for more than one submodel, the output from above

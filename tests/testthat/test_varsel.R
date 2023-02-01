@@ -11,9 +11,11 @@ test_that(paste(
     tstsetup_ref <- args_vs[[tstsetup]]$tstsetup_ref
     mod_crr <- args_vs[[tstsetup]]$mod_nm
     fam_crr <- args_vs[[tstsetup]]$fam_nm
+    prj_crr <- args_vs[[tstsetup]]$prj_nm
     meth_exp_crr <- args_vs[[tstsetup]]$method
     if (is.null(meth_exp_crr)) {
-      meth_exp_crr <- ifelse(mod_crr == "glm", "L1", "forward")
+      meth_exp_crr <- ifelse(mod_crr == "glm" && prj_crr != "augdat",
+                             "L1", "forward")
     }
     vsel_tester(
       vss[[tstsetup]],
@@ -45,6 +47,13 @@ test_that("invalid `method` fails", {
                    paste("^L1 search is only supported for reference models",
                          "without multilevel and without additive",
                          "\\(\"smoothing\"\\) terms\\.$"),
+                   info = tstsetup)
+    }
+    if (args_ref[[tstsetup]]$mod_nm == "glm" &&
+        args_ref[[tstsetup]]$prj_nm == "augdat") {
+      expect_error(varsel(refmods[[tstsetup]], method = "L1"),
+                   paste("^Currently, the augmented-data projection may not be",
+                         "combined with an L1 search\\.$"),
                    info = tstsetup)
     }
   }
@@ -86,6 +95,7 @@ test_that(paste(
     pkg_crr <- args_vs_i$pkg_nm
     mod_crr <- args_vs_i$mod_nm
     fam_crr <- args_vs_i$fam_nm
+    prj_crr <- args_vs_i$prj_nm
     if (!all(refmods[[tstsetup_ref]]$offset == 0)) {
       offs_crr <- offs_tst
     } else {
@@ -105,13 +115,36 @@ test_that(paste(
       weights = wobs_crr,
       y = dat_crr[[stdize_lhs(formul_fit_crr)$y_nm]]
     )
-    vs_repr <- do.call(varsel, c(
-      list(object = refmods[[tstsetup_ref]], d_test = d_test_crr),
-      excl_nonargs(args_vs_i)
-    ))
+    if (prj_crr == "augdat") {
+      if (use_fac) {
+        yunqs <- yunq_chr
+      } else {
+        yunqs <- as.character(yunq_num)
+      }
+      d_test_crr$y <- factor(
+        as.character(d_test_crr$y),
+        levels = args_ref[[args_vs_i$tstsetup_ref]]$augdat_y_unqs %||% yunqs,
+        ordered = is.ordered(d_test_crr$y)
+      )
+    }
+    if (fam_crr == "cumul") {
+      warn_expected <- "non-integer #successes in a binomial glm!"
+    } else if (!is.null(args_vs_i$avoid.increase)) {
+      warn_expected <- warn_mclogit
+    } else {
+      warn_expected <- NA
+    }
+    expect_warning(
+      vs_repr <- do.call(varsel, c(
+        list(object = refmods[[tstsetup_ref]], d_test = d_test_crr),
+        excl_nonargs(args_vs_i)
+      )),
+      warn_expected
+    )
     meth_exp_crr <- args_vs_i$method
     if (is.null(meth_exp_crr)) {
-      meth_exp_crr <- ifelse(mod_crr == "glm", "L1", "forward")
+      meth_exp_crr <- ifelse(mod_crr == "glm" && prj_crr != "augdat",
+                             "L1", "forward")
     }
     vsel_tester(
       vs_repr,
@@ -129,11 +162,14 @@ test_that(paste(
     expect_equal(vs_repr[setdiff(names(vs_repr), "d_test")],
                  vss[[tstsetup]][setdiff(names(vss[[tstsetup]]), "d_test")],
                  info = tstsetup)
+    d_test_orig <- vss[[tstsetup]]$d_test[setdiff(names(vss[[tstsetup]]$d_test),
+                                                  c("type", "data"))]
+    # brms seems to set argument `contrasts`, but this is not important for
+    # projpred, so ignore it in the comparison:
+    attr(d_test_orig$y, "contrasts") <- NULL
     expect_equal(vs_repr$d_test[setdiff(names(vs_repr$d_test),
                                         c("type", "data"))],
-                 vss[[tstsetup]]$d_test[setdiff(names(vss[[tstsetup]]$d_test),
-                                                c("type", "data"))],
-                 info = tstsetup)
+                 d_test_orig, info = tstsetup)
   }
 })
 
@@ -164,6 +200,7 @@ test_that(paste(
     pkg_crr <- args_vs_i$pkg_nm
     mod_crr <- args_vs_i$mod_nm
     fam_crr <- args_vs_i$fam_nm
+    prj_crr <- args_vs_i$prj_nm
     if (!all(refmods[[tstsetup_ref]]$offset == 0)) {
       offs_crr <- offs_indep
     } else {
@@ -186,13 +223,36 @@ test_that(paste(
       weights = wobs_crr,
       y = dat_indep_crr[[stdize_lhs(formul_fit_crr)$y_nm]]
     )
-    vs_indep <- do.call(varsel, c(
-      list(object = refmods[[tstsetup_ref]], d_test = d_test_crr),
-      excl_nonargs(args_vs_i)
-    ))
+    if (prj_crr == "augdat") {
+      if (use_fac) {
+        yunqs <- yunq_chr
+      } else {
+        yunqs <- as.character(yunq_num)
+      }
+      d_test_crr$y <- factor(
+        as.character(d_test_crr$y),
+        levels = args_ref[[args_vs_i$tstsetup_ref]]$augdat_y_unqs %||% yunqs,
+        ordered = is.ordered(d_test_crr$y)
+      )
+    }
+    if (fam_crr == "cumul") {
+      warn_expected <- "non-integer #successes in a binomial glm!"
+    } else if (!is.null(args_vs_i$avoid.increase)) {
+      warn_expected <- warn_mclogit
+    } else {
+      warn_expected <- NA
+    }
+    expect_warning(
+      vs_indep <- do.call(varsel, c(
+        list(object = refmods[[tstsetup_ref]], d_test = d_test_crr),
+        excl_nonargs(args_vs_i)
+      )),
+      warn_expected
+    )
     meth_exp_crr <- args_vs_i$method
     if (is.null(meth_exp_crr)) {
-      meth_exp_crr <- ifelse(mod_crr == "glm", "L1", "forward")
+      meth_exp_crr <- ifelse(mod_crr == "glm" && prj_crr != "augdat",
+                             "L1", "forward")
     }
     vsel_tester(
       vs_indep,
@@ -210,27 +270,40 @@ test_that(paste(
 
     ### Summaries for the submodels -------------------------------------------
 
+    if (!is.null(args_vs_i$avoid.increase)) {
+      warn_expected <- NA
+    }
     # For getting the correct seed in proj_linpred():
     set.seed(args_vs_i$seed)
     p_sel_dummy <- .get_refdist(refmods[[tstsetup_ref]],
                                 nclusters = vs_indep$nprjdraws_search)
     # As soon as GitHub issues #168 and #211 are fixed, we can use `refit_prj =
     # FALSE` here:
-    pl_indep <- proj_linpred(vs_indep,
-                             newdata = dat_indep_crr,
-                             offsetnew = d_test_crr$offset,
-                             weightsnew = d_test_crr$weights,
-                             transform = TRUE,
-                             integrated = TRUE,
-                             .seed = NA,
-                             nterms = c(0L, seq_along(vs_indep$solution_terms)),
-                             nclusters = args_vs_i$nclusters_pred,
-                             seed = NA)
+    expect_warning(
+      pl_indep <- proj_linpred(
+        vs_indep,
+        newdata = dat_indep_crr,
+        offsetnew = d_test_crr$offset,
+        weightsnew = d_test_crr$weights,
+        transform = TRUE,
+        integrated = TRUE,
+        .seed = NA,
+        nterms = c(0L, seq_along(vs_indep$solution_terms)),
+        nclusters = args_vs_i$nclusters_pred,
+        seed = NA
+      ),
+      warn_expected
+    )
     summ_sub_ch <- lapply(pl_indep, function(pl_indep_k) {
       names(pl_indep_k)[names(pl_indep_k) == "pred"] <- "mu"
       names(pl_indep_k)[names(pl_indep_k) == "lpd"] <- "lppd"
       pl_indep_k$mu <- unname(drop(pl_indep_k$mu))
       pl_indep_k$lppd <- drop(pl_indep_k$lppd)
+      if (prj_crr == "augdat") {
+        pl_indep_k$mu <- structure(as.vector(pl_indep_k$mu),
+                                   class = "augvec",
+                                   nobs_orig = nrow(pl_indep_k$mu))
+      }
       return(pl_indep_k)
     })
     names(summ_sub_ch) <- NULL
@@ -243,6 +316,30 @@ test_that(paste(
       mu_new <- rstantools::posterior_epred(refmods[[tstsetup_ref]]$fit,
                                             newdata = dat_indep,
                                             offset = d_test_crr$offset)
+      if (fam_crr == "cumul") {
+        eta_new <- rstantools::posterior_linpred(refmods[[tstsetup_ref]]$fit,
+                                                 newdata = dat_indep,
+                                                 offset = d_test_crr$offset)
+        # The following shows that in case of an rstanarm::stan_polr() fit,
+        # rstantools::posterior_epred() returns the linear predictors with a
+        # threshold of zero, transformed to response scale (which is not really
+        # helpful):
+        mu_new_ch <- augdat_ilink_cumul(
+          array(eta_new, dim = c(dim(eta_new), 1L)),
+          link = link_str
+        )
+        stopifnot(isTRUE(all.equal(unname(mu_new), mu_new_ch[, , 1],
+                                   tolerance = .Machine$double.eps)))
+        # Therefore, `mu_new` has to be adapted to incorporate the correct
+        # thresholds:
+        drws <- as.matrix(refmods[[tstsetup_ref]]$fit)
+        drws_thres <- drws[, grep("\\|", colnames(drws))]
+        mu_new <- apply(drws_thres, 2, function(thres_vec) {
+          thres_vec - eta_new
+        }, simplify = FALSE)
+        mu_new <- abind::abind(mu_new, rev.along = 0)
+        mu_new <- augdat_ilink_cumul(mu_new, link = link_str)
+      }
       if (grepl("\\.without_wobs", tstsetup)) {
         lppd_new <- rstantools::log_lik(refmods[[tstsetup_ref]]$fit,
                                         newdata = dat_indep,
@@ -270,10 +367,26 @@ test_that(paste(
       lppd_new <- rstantools::log_lik(refmods[[tstsetup_ref]]$fit,
                                       newdata = dat_indep)
     }
+    if (length(dim(mu_new)) == 2) {
+      mu_new <- colMeans(mu_new)
+    } else if (length(dim(mu_new)) == 3) {
+      # In fact, we have `identical(colMeans(mu_new), apply(mu_new, c(2, 3),
+      # mean))` giving `TRUE`, but it's better to be explicit:
+      mu_new <- apply(mu_new, c(2, 3), mean)
+      mu_new <- structure(as.vector(mu_new), class = "augvec",
+                          nobs_orig = nobsv_indep)
+    } else {
+      stop("Unexpected number of margins for `mu_new`.")
+    }
     summ_ref_ch <- list(
-      mu = unname(colMeans(mu_new)),
+      mu = unname(mu_new),
       lppd = unname(apply(lppd_new, 2, log_sum_exp) - log(nrefdraws))
     )
+    if (prj_crr == "augdat" && fam_crr %in% c("brnll", "binom")) {
+      summ_ref_ch$mu <- structure(c(1 - summ_ref_ch$mu, summ_ref_ch$mu),
+                                  class = "augvec",
+                                  nobs_orig = length(summ_ref_ch$mu))
+    }
     expect_equal(vs_indep$summaries$ref, summ_ref_ch,
                  tolerance = 1e3 * .Machine$double.eps, info = tstsetup)
     lppd_ref_ch2 <- unname(loo::elpd(lppd_new)$pointwise[, "elpd"])
@@ -299,8 +412,11 @@ test_that(paste(
   regul_tst <- c(regul_default, 1e-1, 1e2)
   stopifnot(regul_tst[1] == regul_default)
   stopifnot(all(diff(regul_tst) > 0))
-  tstsetups <- setdiff(grep("\\.glm\\.", names(vss), value = TRUE),
-                       grep("\\.glm\\..*\\.forward", names(vss), value = TRUE))
+  tstsetups <- setdiff(
+    setdiff(grep("\\.glm\\.", names(vss), value = TRUE),
+            grep("\\.glm\\..*\\.forward", names(vss), value = TRUE)),
+    grep("\\.glm\\..*\\.augdat\\.", names(vss), value = TRUE)
+  )
   for (tstsetup in tstsetups) {
     args_vs_i <- args_vs[[tstsetup]]
     m_max <- args_vs_i$nterms_max + 1L
@@ -376,7 +492,9 @@ test_that(paste(
   regul_tst <- c(regul_default, 1e-1, 1e2)
   stopifnot(regul_tst[1] == regul_default)
   stopifnot(all(diff(regul_tst) > 0))
-  tstsetups <- grep("\\.glm\\..*\\.forward", names(vss), value = TRUE)
+  tstsetups <- union(grep("\\.glm\\..*\\.forward", names(vss), value = TRUE),
+                     grep("\\.glm\\..*\\.augdat\\.", names(vss), value = TRUE))
+  tstsetups <- grep(fam_nms_aug_regex, tstsetups, value = TRUE, invert = TRUE)
   for (tstsetup in tstsetups) {
     args_vs_i <- args_vs[[tstsetup]]
     m_max <- args_vs_i$nterms_max + 1L
@@ -431,9 +549,11 @@ test_that(paste(
         # Since varsel() doesn't output object `p_sub`, use the linear predictor
         # here (instead of the coefficients themselves, which would only be
         # accessible from `p_sub`):
-        mu_jm_regul <- vs_regul$refmodel$family$linkfun(
-          vs_regul$summaries$sub[[m]]$mu
-        )
+        mu_jm_regul <- vs_regul$summaries$sub[[m]]$mu
+        if (args_vs_i$prj_nm == "augdat") {
+          mu_jm_regul <- augvec2augmat(mu_jm_regul)
+        }
+        mu_jm_regul <- vs_regul$refmodel$family$linkfun(mu_jm_regul)
         if (grepl("\\.with_offs", tstsetup)) {
           mu_jm_regul <- mu_jm_regul - offs_tst
         }
@@ -441,7 +561,18 @@ test_that(paste(
         # `var(mu - offset) = sum((mu - offset - mean(mu - offset))^2)` but
         # since varsel() doesn't output object `p_sub`, the intercept from the
         # prediction is not accessible here.
-        ssq_regul_prd[j, m] <- var(mu_jm_regul)
+        if (args_vs_i$prj_nm == "augdat") {
+          # Take the maximum variance across the response categories (i.e., the
+          # worst-case scenario):
+          mu_jm_regul <- augmat2arr(mu_jm_regul)
+          mu_jm_regul <- matrix(mu_jm_regul,
+                                nrow = dim(mu_jm_regul)[1],
+                                ncol = dim(mu_jm_regul)[2])
+          var_jm_regul <- max(apply(mu_jm_regul, 2, var))
+        } else {
+          var_jm_regul <- var(mu_jm_regul)
+        }
+        ssq_regul_prd[j, m] <- var_jm_regul
       }
     }
     # Selection:
@@ -484,8 +615,9 @@ test_that(paste(
 test_that("`penalty` of invalid length fails", {
   skip_if_not(run_vs)
   tstsetups <- setdiff(
-    grep("\\.glm\\.", names(args_vs), value = TRUE),
-    grep("\\.glm\\..*\\.forward", names(args_vs), value = TRUE)
+    setdiff(grep("\\.glm\\.", names(args_vs), value = TRUE),
+            grep("\\.glm\\..*\\.forward", names(args_vs), value = TRUE)),
+    grep("\\.glm\\..*\\.augdat\\.", names(args_vs), value = TRUE)
   )
   for (tstsetup in tstsetups) {
     args_vs_i <- args_vs[[tstsetup]]
@@ -514,25 +646,43 @@ test_that("`penalty` of invalid length fails", {
 test_that("for forward search, `penalty` has no effect", {
   skip_if_not(run_vs)
   penal_tst <- 2
-  tstsetups <- union(grep("\\.forward", names(vss), value = TRUE),
-                     grep("\\.glm\\.", names(vss), value = TRUE, invert = TRUE))
+  tstsetups <- union(
+    union(grep("\\.forward", names(vss), value = TRUE),
+          grep("\\.glm\\.", names(vss), value = TRUE, invert = TRUE)),
+    grep("\\.augdat\\.", names(vss), value = TRUE)
+  )
   # To save time:
-  tstsetups <- head(tstsetups, 1)
+  if (!run_more) {
+    tstsetups <- head(tstsetups, 1)
+  }
   for (tstsetup in tstsetups) {
     args_vs_i <- args_vs[[tstsetup]]
-    vs_penal <- do.call(varsel, c(
-      list(object = refmods[[args_vs_i$tstsetup_ref]],
-           penalty = penal_tst),
-      excl_nonargs(args_vs_i)
-    ))
+    if (args_vs_i$fam_nm == "cumul") {
+      warn_expected <- "non-integer #successes in a binomial glm!"
+    } else if (!is.null(args_vs_i$avoid.increase)) {
+      warn_expected <- warn_mclogit
+    } else {
+      warn_expected <- NA
+    }
+    expect_warning(
+      vs_penal <- do.call(varsel, c(
+        list(object = refmods[[args_vs_i$tstsetup_ref]],
+             penalty = penal_tst),
+        excl_nonargs(args_vs_i)
+      )),
+      warn_expected
+    )
     expect_equal(vs_penal, vss[[tstsetup]], info = tstsetup)
   }
 })
 
 test_that("for L1 search, `penalty` has an expected effect", {
   skip_if_not(run_vs)
-  tstsetups <- setdiff(grep("\\.glm\\.", names(vss), value = TRUE),
-                       grep("\\.glm\\..*\\.forward", names(vss), value = TRUE))
+  tstsetups <- setdiff(
+    setdiff(grep("\\.glm\\.", names(vss), value = TRUE),
+            grep("\\.glm\\..*\\.forward", names(vss), value = TRUE)),
+    grep("\\.glm\\..*\\.augdat\\.", names(vss), value = TRUE)
+  )
   for (tstsetup in tstsetups) {
     args_vs_i <- args_vs[[tstsetup]]
 
@@ -647,9 +797,11 @@ test_that(paste(
   for (tstsetup in names(cvvss)) {
     mod_crr <- args_cvvs[[tstsetup]]$mod_nm
     fam_crr <- args_cvvs[[tstsetup]]$fam_nm
+    prj_crr <- args_cvvs[[tstsetup]]$prj_nm
     meth_exp_crr <- args_cvvs[[tstsetup]]$method
     if (is.null(meth_exp_crr)) {
-      meth_exp_crr <- ifelse(mod_crr == "glm", "L1", "forward")
+      meth_exp_crr <- ifelse(mod_crr == "glm" && prj_crr != "augdat",
+                             "L1", "forward")
     }
     vsel_tester(
       cvvss[[tstsetup]],
@@ -684,6 +836,13 @@ test_that("invalid `method` fails", {
                    paste("^L1 search is only supported for reference models",
                          "without multilevel and without additive",
                          "\\(\"smoothing\"\\) terms\\.$"),
+                   info = tstsetup)
+    }
+    if (args_ref[[tstsetup]]$mod_nm == "glm" &&
+        args_ref[[tstsetup]]$prj_nm == "augdat") {
+      expect_error(cv_varsel(refmods[[tstsetup]], method = "L1"),
+                   paste("^Currently, the augmented-data projection may not be",
+                         "combined with an L1 search\\.$"),
                    info = tstsetup)
     }
   }
@@ -769,9 +928,11 @@ test_that("setting `nloo` smaller than the number of observations works", {
     tstsetup_ref <- args_cvvs_i$tstsetup_ref
     mod_crr <- args_cvvs_i$mod_nm
     fam_crr <- args_cvvs_i$fam_nm
+    prj_crr <- args_cvvs_i$prj_nm
     meth_exp_crr <- args_cvvs_i$method
     if (is.null(meth_exp_crr)) {
-      meth_exp_crr <- ifelse(mod_crr == "glm", "L1", "forward")
+      meth_exp_crr <- ifelse(mod_crr == "glm" && prj_crr != "augdat",
+                             "L1", "forward")
     }
     # Use suppressWarnings() because of occasional warnings concerning Pareto k
     # diagnostics and also because of the warning concerning subsampled LOO CV
@@ -817,8 +978,10 @@ test_that("`validate_search` works", {
   skip_if_not(run_cvvs)
   tstsetups <- grep("\\.default_cvmeth", names(cvvss), value = TRUE)
   if (!run_valsearch_always) {
-    tstsetups <- grep("\\.glm\\.", tstsetups, value = TRUE)
-    tstsetups <- grep("\\.forward\\.", tstsetups, value = TRUE, invert = TRUE)
+    has_valsearch_true <- sapply(tstsetups, function(tstsetup_cvvs) {
+      !isFALSE(args_cvvs[[tstsetup_cvvs]]$validate_search)
+    })
+    tstsetups <- tstsetups[has_valsearch_true]
   }
   suggsize_cond <- setNames(rep(NA, length(tstsetups)), nm = tstsetups)
   for (tstsetup in tstsetups) {
@@ -828,9 +991,11 @@ test_that("`validate_search` works", {
     tstsetup_ref <- args_cvvs_i$tstsetup_ref
     mod_crr <- args_cvvs_i$mod_nm
     fam_crr <- args_cvvs_i$fam_nm
+    prj_crr <- args_cvvs_i$prj_nm
     meth_exp_crr <- args_cvvs_i$method
     if (is.null(meth_exp_crr)) {
-      meth_exp_crr <- ifelse(mod_crr == "glm", "L1", "forward")
+      meth_exp_crr <- ifelse(mod_crr == "glm" && prj_crr != "augdat",
+                             "L1", "forward")
     }
     # Use suppressWarnings() because of occasional warnings concerning Pareto k
     # diagnostics:
@@ -941,9 +1106,11 @@ test_that(paste(
     tstsetup_fit <- args_cvvs_i$tstsetup_fit
     mod_crr <- args_cvvs_i$mod_nm
     fam_crr <- args_cvvs_i$fam_nm
+    prj_crr <- args_cvvs_i$prj_nm
     meth_exp_crr <- args_cvvs_i$method
     if (is.null(meth_exp_crr)) {
-      meth_exp_crr <- ifelse(mod_crr == "glm", "L1", "forward")
+      meth_exp_crr <- ifelse(mod_crr == "glm" && prj_crr != "augdat",
+                             "L1", "forward")
     }
     fit_crr <- fits[[tstsetup_fit]]
     K_crr <- args_cvvs_i$K
@@ -969,20 +1136,29 @@ test_that(paste(
     }
     # Additionally to suppressWarnings(), suppressMessages() could be used here
     # (but is not necessary since messages seem to be suppressed within
-    # test_that()'s `code`):
-    kfold_obj <- suppressWarnings(
-      kfold(fit_crr,
-            K = K_crr,
-            folds = folds_vec,
-            save_fits = TRUE,
-            cores = 1)
-    )
+    # test_that()'s `code`); furthermore, try() is used because rstanarm
+    # sometimes fails to refit:
+    kfold_obj <- try(suppressWarnings(kfold(fit_crr,
+                                            K = K_crr,
+                                            folds = folds_vec,
+                                            save_fits = TRUE,
+                                            cores = 1)),
+                     silent = TRUE)
+    if (inherits(kfold_obj, "try-error")) {
+      cat("Could not test `tstsetup = \"", tstsetup, "\"` in the rstanarm ",
+          "`cvfits` test. Error message: \"",
+          attr(kfold_obj, "condition")$message, "\"\n", sep = "")
+      next
+    }
     kfold_obj <- structure(list(fits = kfold_obj$fits[, "fit"]),
                            K = K_crr,
                            folds = folds_vec)
 
     # Create `"refmodel"` object with `cvfits`:
-    refmod_crr <- get_refmodel(fit_crr, cvfits = kfold_obj)
+    refmod_crr <- do.call(get_refmodel, c(
+      list(object = fit_crr, cvfits = kfold_obj),
+      excl_nonargs(args_ref[[args_cvvs_i$tstsetup_ref]])
+    ))
 
     # Run cv_varsel():
     cvvs_cvfits <- do.call(cv_varsel, c(
@@ -1046,9 +1222,11 @@ test_that(paste(
     tstsetup_fit <- args_cvvs_i$tstsetup_fit
     mod_crr <- args_cvvs_i$mod_nm
     fam_crr <- args_cvvs_i$fam_nm
+    prj_crr <- args_cvvs_i$prj_nm
     meth_exp_crr <- args_cvvs_i$method
     if (is.null(meth_exp_crr)) {
-      meth_exp_crr <- ifelse(mod_crr == "glm", "L1", "forward")
+      meth_exp_crr <- ifelse(mod_crr == "glm" && prj_crr != "augdat",
+                             "L1", "forward")
     }
     fit_crr <- fits[[tstsetup_fit]]
     K_crr <- args_cvvs_i$K
@@ -1084,14 +1262,35 @@ test_that(paste(
                            folds = folds_vec)
 
     # Create `"refmodel"` object with `cvfits`:
-    refmod_crr <- get_refmodel(fit_crr, brms_seed = seed2_tst,
-                               cvfits = kfold_obj)
+    refmod_crr <- do.call(get_refmodel, c(
+      list(object = fit_crr, cvfits = kfold_obj),
+      excl_nonargs(args_ref[[args_cvvs_i$tstsetup_ref]])
+    ))
 
     # Run cv_varsel():
-    cvvs_cvfits <- do.call(cv_varsel, c(
-      list(object = refmod_crr),
-      excl_nonargs(args_cvvs_i, nms_excl_add = "K")
-    ))
+    cvvs_cvfits <- try(
+      do.call(cv_varsel, c(
+        list(object = refmod_crr),
+        excl_nonargs(args_cvvs_i, nms_excl_add = "K")
+      )),
+      silent = TRUE
+    )
+    if (inherits(cvvs_cvfits, "try-error")) {
+      cat("Failure for `tstsetup = \"", tstsetup, "\"` in the brms ",
+          "`cvfits` test. Error message: \"",
+          attr(cvvs_cvfits, "condition")$message, "\"\n", sep = "")
+      # Check that this is a "pwrssUpdate" failure in lme4, so for solving this,
+      # we would either need to tweak the lme4 tuning parameters manually (via
+      # `...`) or change the data-generating mechanism here in the tests (to
+      # obtain less extreme or more data):
+      expect_true(grepl("pwrssUpdate", attr(cvvs_cvfits, "condition")$message),
+                  info = tstsetup)
+      # Furthermore, this should only occur in the `run_more = TRUE` case, so it
+      # can be skipped (because there are enough other `tstsetups` for which
+      # this works):
+      expect_true(run_more, info = tstsetup)
+      next
+    }
     # Test the reproducibility of ref_predfun() when applied to new observations
     # (should be ensured by get_refmodel.brmsfit()'s internal `refprd_seed`):
     runif(1)

@@ -19,6 +19,10 @@ run_cvvs <- run_vs
 # Run cv_varsel() with `validate_search = TRUE` always (`TRUE`) or just for L1
 # search (`FALSE`)?:
 run_valsearch_always <- FALSE
+# Run cv_varsel() with `validate_search = TRUE` also for the augmented-data
+# projection and the corresponding traditional setting which is used for
+# comparison? (Only relevant if `run_valsearch_always = FALSE`.):
+run_valsearch_augdat_or_compare <- FALSE
 # Run the `cvfits` test for all possible test setups (`TRUE`) or just for the
 # first one among the GLMMs (`FALSE`; note that if there is no GLMM available in
 # that test, the first test setup among those for K-fold CV is used)?:
@@ -124,6 +128,9 @@ run_randRNG <- identical(Sys.getenv("NOT_CRAN"), "true")
 # Run tests for additive models (GAMs and GAMMs)?:
 run_additive <- TRUE
 
+# Use a factor or an integer response for ordinal and categorical families?:
+use_fac <- TRUE
+
 source(testthat::test_path("helpers", "unlist_cust.R"), local = TRUE)
 source(testthat::test_path("helpers", "testers.R"), local = TRUE)
 source(testthat::test_path("helpers", "args.R"), local = TRUE)
@@ -131,6 +138,11 @@ source(testthat::test_path("helpers", "getters.R"), local = TRUE)
 source(testthat::test_path("helpers", "formul_handlers.R"), local = TRUE)
 source(testthat::test_path("helpers", "revIA.R"), local = TRUE)
 
+# Note: The following `mod_nms` refer to *generalized* (linear/additive,
+# multilevel) models. This is due to history (when these tests were written,
+# only such *generalized* models were supported by projpred). Now that more
+# models are supported (even non-generalized ones), these model names are not
+# really correct anymore. However, we keep them for simplicity.
 mod_nms <- c("glm", "glmm", "gam", "gamm")
 if (run_additive) {
   # Suppress the warning for additive models (GAMs and GAMMs) stating that their
@@ -141,8 +153,41 @@ if (run_additive) {
 }
 mod_nms <- setNames(nm = mod_nms)
 
-fam_nms <- c("gauss", "brnll", "binom", "poiss")
+fam_nms_trad <- c("gauss", "brnll", "binom", "poiss")
+fam_nms_ordin <- c("cumul", "srtio", "crtio", "adcat")
+fam_nms_categ <- "categ"
+fam_nms_aug <- c(fam_nms_ordin, fam_nms_categ)
+fam_nms <- c(fam_nms_trad, fam_nms_aug)
+fam_nms_unsupp <- setdiff(fam_nms_ordin, "cumul")
+fam_nms_brms_only <- setdiff(fam_nms_aug, "cumul")
+if (!run_brms) {
+  fam_nms <- setdiff(fam_nms, fam_nms_brms_only)
+}
+fam_nms_trad <- setNames(nm = fam_nms_trad)
+fam_nms_ordin <- setNames(nm = fam_nms_ordin)
+fam_nms_categ <- setNames(nm = fam_nms_categ)
+fam_nms_aug <- setNames(nm = fam_nms_aug)
 fam_nms <- setNames(nm = fam_nms)
+fam_nms_unsupp <- setNames(nm = fam_nms_unsupp)
+fam_nms_brms_only <- setNames(nm = fam_nms_brms_only)
+# Long names:
+fam_nms_aug_long <- c(sapply(fam_nms_aug, get_fam_long),
+                      cumul = "cumulative_rstanarm")
+fam_nms_ordin_long <- c(sapply(fam_nms_ordin, get_fam_long),
+                        cumul = "cumulative_rstanarm")
+# Regular expressions:
+fam_nms_aug_regex <- paste0("\\.(", paste(fam_nms_aug, collapse = "|"), ")\\.")
+fam_nms_unsupp_regex <- paste0("\\.(", paste(fam_nms_unsupp, collapse = "|"),
+                               ")\\.")
+
+# Needed for package mclogit (providing the submodel fitter for multilevel
+# brms::categorical() models):
+warn_mclogit <- if (packageVersion("mclogit") >= "0.9.6") {
+  "Inner iterations did not coverge"
+} else {
+  paste0("^step size truncated due to possible divergence$|",
+         "^Algorithm stopped due to false convergence$")
+}
 
 # Data --------------------------------------------------------------------
 
@@ -152,6 +197,15 @@ fam_nms <- setNames(nm = fam_nms)
 nobsv <- 41L
 # Values for testing:
 nobsv_tst <- c(1L, nobsv %/% 3L)
+
+# For ordinal models (but also used for categorical models):
+nthres <- 2L
+ncat <- nthres + 1L
+yunq_num <- seq_len(ncat)
+yunq_chr <- paste0("y", yunq_num)
+# The intercepts at centered predictors, also known as thresholds:
+thres <- qlogis(seq_len(nthres) / ncat)
+link_str <- "logit"
 
 # Seed:
 seed_dat <- 8541351
@@ -208,8 +262,8 @@ nterms_z <- length(nlvl_ran) * 2L
 z_list <- lapply(nlvl_ran, function(nlvl_ran_i) {
   z <- gl(n = nlvl_ran_i, k = floor(nobsv / nlvl_ran_i), length = nobsv,
           labels = paste0("lvl", seq_len(nlvl_ran_i)))
-  r_icpts <- rnorm(nlvl_ran_i, sd = 2.8)
-  r_xco1 <- rnorm(nlvl_ran_i, sd = 2.8)
+  r_icpts <- rnorm(nlvl_ran_i, sd = 0.4)
+  r_xco1 <- rnorm(nlvl_ran_i, sd = 0.4)
   eta_z <- r_icpts[z] + r_xco1[z] * x_cont[, 1]
   return(nlist(z, eta_z, r_icpts, r_xco1))
 })
@@ -247,7 +301,18 @@ f_binom <- f_brnll <- binomial()
 f_poiss <- poisson()
 dis_tst <- runif(1L, 1, 2)
 wobs_tst <- sample(1:4, nobsv, replace = TRUE)
-offs_expr <- expression(fam_nm != "brnll" && !mod_nm %in% c("gam", "gamm"))
+# For the "brnll" `fam_nm`, offsets are simply not added to have some
+# scenarios without offsets.
+# For GAMs, offsets are not added because of rstanarm issue #546 (see
+# also further below).
+# For GAMMs, offsets are not added because of rstanarm issue #253 (see
+# also further below).
+# (The brms "gam" and "gamm" cases are handled in the same way as the rstanarm
+# "gam" and "gamm" cases to avoid too many special cases.)
+# For the "categ" `fam_nm`, offsets are not added because they are currently not
+# supported for it.
+offs_expr <- expression(!(fam_nm %in% c("brnll", "categ") ||
+                            mod_nm %in% c("gam", "gamm")))
 cre_dat <- function(idxs_crr, offs_crr, wobs_crr, dis_crr) {
   nobsv_crr <- length(idxs_crr)
   dat_crr <- lapply(mod_nms, function(mod_nm) {
@@ -255,15 +320,42 @@ cre_dat <- function(idxs_crr, offs_crr, wobs_crr, dis_crr) {
       pred_link <- get(paste0("eta_", mod_nm))
       pred_link <- pred_link[idxs_crr, , drop = FALSE]
       if (eval(offs_expr)) {
-        # For the "brnll" `fam_nm`, offsets are simply not added to have some
-        # scenarios without offsets.
-        # For GAMs, offsets are not added because of rstanarm issue #546 (see
-        # also further below).
-        # For GAMMs, offsets are not added because of rstanarm issue #253 (see
-        # also further below).
         pred_link <- pred_link + offs_crr
       }
-      pred_resp <- get(paste0("f_", fam_nm))$linkinv(pred_link)
+      if (fam_nm %in% fam_nms_ordin) {
+        pred_link <- pred_link - icpt
+        if (eval(offs_expr)) {
+          # The equal-probability thresholds defined above refer to the state
+          # before offsets are added, so we need to subtract them here in the
+          # data-generating model:
+          pred_link <- pred_link - offs_crr
+        }
+        thres_eta <- sapply(thres, function(thres_k) {
+          thres_k - pred_link
+        })
+      } else if (fam_nm %in% fam_nms_categ) {
+        pred_link <- sapply(thres, function(thres_k) {
+          thres_k + pred_link
+        })
+      }
+      if (fam_nm == "cumul") {
+        pred_resp <- augdat_ilink_cumul(thres_eta, link = link_str)
+      } else if (fam_nm %in% fam_nms_ordin) {
+        if (fam_nm %in% c("crtio", "adcat")) {
+          thres_eta <- -thres_eta
+        }
+        ilink_crr <- get(paste0("inv_link_", get_fam_long(fam_nm)),
+                         asNamespace("brms"), mode = "function",
+                         inherits = FALSE)
+        pred_resp <- ilink_crr(thres_eta, link = link_str)
+      } else if (fam_nm %in% fam_nms_categ) {
+        ilink_crr <- get(paste0("inv_link_", get_fam_long(fam_nm)),
+                         asNamespace("brms"), mode = "function",
+                         inherits = FALSE)
+        pred_resp <- ilink_crr(pred_link)
+      } else {
+        pred_resp <- get(paste0("f_", fam_nm))$linkinv(pred_link)
+      }
       if (fam_nm == "gauss") {
         return(rnorm(nobsv_crr, mean = pred_resp, sd = dis_crr))
       } else if (fam_nm == "brnll") {
@@ -272,6 +364,15 @@ cre_dat <- function(idxs_crr, offs_crr, wobs_crr, dis_crr) {
         return(rbinom(nobsv_crr, wobs_crr, pred_resp))
       } else if (fam_nm == "poiss") {
         return(rpois(nobsv_crr, pred_resp))
+      } else if (fam_nm %in% fam_nms_aug) {
+        ryunq <- sapply(seq_len(nobsv_crr), function(i_obs) {
+          sample(yunq_num, size = 1L, prob = pred_resp[i_obs, ])
+        })
+        if (use_fac) {
+          ryunq <- factor(ryunq, levels = yunq_num, labels = yunq_chr,
+                          ordered = fam_nm %in% fam_nms_ordin)
+        }
+        return(ryunq)
       } else {
         stop("Unknown `fam_nm`.")
       }
@@ -429,7 +530,7 @@ offss_tst <- list(with_offs = list(), # with_offs = list(offset = offs_tst),
 # global environment. Since `testthat` uses a new environment for running
 # the tests (see `?testthat::test_env`), we need the following code to be
 # able to run devtools::test():
-for (obj_symb_chr in c(paste0("f_", fam_nms))) {
+for (obj_symb_chr in c(paste0("f_", fam_nms_trad))) {
   if (!exists(obj_symb_chr, envir = .GlobalEnv)) {
     assign(obj_symb_chr, get(obj_symb_chr), envir = .GlobalEnv)
   }
@@ -441,6 +542,13 @@ args_fit <- lapply(pkg_nms, function(pkg_nm) {
   mod_nms <- setNames(nm = mod_nms)
   lapply(mod_nms, function(mod_nm) {
     if (pkg_nm == "rstanarm") {
+      fam_nms <- setdiff(fam_nms, fam_nms_brms_only)
+      if (mod_nm != "glm" || !use_fac) {
+        # rstanarm::stan_polr() does not support multilevel or additive terms
+        # and it also does not support a numeric response:
+        fam_nms <- setdiff(fam_nms, "cumul")
+      }
+
       if (mod_nm != "gamm") {
         random_arg <- list()
       } else {
@@ -449,10 +557,15 @@ args_fit <- lapply(pkg_nms, function(pkg_nm) {
     }
 
     if (mod_nm != "glm") {
+      if (mod_nm %in% c("gam", "gamm")) {
+        # Additive models are currently not supported by the augmented-data
+        # projection:
+        fam_nms <- setdiff(fam_nms, fam_nms_aug)
+      }
       if (pkg_nm == "brms") {
         # For speed reasons, do not test all families:
         if (mod_nm == "glmm") {
-          fam_nms <- intersect(fam_nms, "brnll")
+          fam_nms <- intersect(fam_nms, c("brnll", "cumul", "categ"))
         } else {
           fam_nms <- intersect(fam_nms, "binom")
         }
@@ -481,8 +594,12 @@ args_fit <- lapply(pkg_nms, function(pkg_nm) {
         formul_nms <- "stdformul"
       }
 
-      if (pkg_nm == "brms" && fam_nm == "brnll") {
-        family_crr <- quote(get("bernoulli", envir = asNamespace("brms"))())
+      fam_nm_long <- get_fam_long(fam_nm)
+      if (pkg_nm == "brms" && !is.na(fam_nm_long)) {
+        family_crr <- substitute(
+          get(fam_nm_long_subst, envir = asNamespace("brms"))(),
+          list(fam_nm_long_subst = fam_nm_long)
+        )
       } else {
         family_crr <- as.name(paste0("f_", fam_nm))
       }
@@ -490,11 +607,6 @@ args_fit <- lapply(pkg_nms, function(pkg_nm) {
       if (eval(offs_expr)) {
         offss_nms <- "with_offs"
       } else {
-        # For the "brnll" `fam_nm`, the offsets are simply omitted to have some
-        # scenarios without offsets. In the rstanarm "gam" and "gamm" cases, the
-        # offsets are omitted because of rstanarm issue #546 and rstanarm issue
-        # #253. (The brms "gam" and "gamm" cases are handled in the same way as
-        # the rstanarm ones to avoid too many special cases.)
         offss_nms <- "without_offs"
       }
 
@@ -527,11 +639,8 @@ args_fit <- lapply(pkg_nms, function(pkg_nm) {
                        ),
                        stop("Unknown `mod_nm`."))
 
-        if (fam_nm %in% c("brnll", "binom")) {
-          # In this case, observation weights are not supported by projpred (and
-          # for rstanarm, the number of trials is specified in the formula via
-          # the cbind() syntax (indirectly, because the number of trials is the
-          # sum of the two columns)):
+        if (fam_nm %in% c("brnll", "binom", fam_nms_aug)) {
+          # In this case, observation weights are not supported by projpred:
           wobss_nms <- "without_wobs"
         } else {
           wobss_nms <- "with_wobs"
@@ -609,9 +718,36 @@ if (!run_more) {
     "brms.glm.poiss.stdformul.with_wobs.with_offs",
     "brms.glmm.brnll.stdformul.without_wobs.without_offs",
     # "brms.gam.binom.stdformul.without_wobs.without_offs",
-    "brms.gamm.binom.stdformul.without_wobs.without_offs"
+    "brms.gamm.binom.stdformul.without_wobs.without_offs",
+    # grep(paste(paste0("\\.", fam_nms_aug, "\\."), collapse = "|"),
+    #      names(args_fit), value = TRUE)
+    "rstanarm.glm.cumul.stdformul.without_wobs.with_offs",
+    "brms.glm.cumul.stdformul.without_wobs.with_offs",
+    "brms.glm.srtio.stdformul.without_wobs.with_offs",
+    "brms.glm.crtio.stdformul.without_wobs.with_offs",
+    "brms.glm.adcat.stdformul.without_wobs.with_offs",
+    "brms.glm.categ.stdformul.without_wobs.without_offs",
+    "brms.glmm.cumul.stdformul.without_wobs.with_offs",
+    "brms.glmm.categ.stdformul.without_wobs.without_offs"
   )
+  if (!use_fac) {
+    # rstanarm::stan_polr() cannot deal with a numeric response:
+    sel_fits <- grep("^rstanarm\\.glm\\.cumul\\.", sel_fits, value = TRUE,
+                     invert = TRUE)
+  } else {
+    # The non-multilevel (and non-additive) brms::cumulative() case is
+    # redundant, given the corresponding rstanarm::stan_polr() case and the
+    # multilevel (and non-additive) brms::cumulative() case:
+    sel_fits <- grep("^brms\\.glm\\.cumul\\.", sel_fits, value = TRUE,
+                     invert = TRUE)
+  }
   args_fit <- args_fit[names(args_fit) %in% sel_fits]
+  if (run_brms) {
+    stopifnot(setequal(names(args_fit), sel_fits))
+  } else {
+    stopifnot(setequal(names(args_fit),
+                       grep("^brms\\.", sel_fits, value = TRUE, invert = TRUE)))
+  }
 }
 
 ## Run --------------------------------------------------------------------
@@ -624,6 +760,12 @@ fits <- suppressWarnings(lapply(args_fit, function(args_fit_i) {
                                            "stan_gamm4"),
                        "brms" = "brm",
                        stop("Unknown `pkg_nm`."))
+  if (args_fit_i$pkg_nm == "rstanarm" && args_fit_i$fam_nm == "cumul") {
+    fit_fun_nm <- "stan_polr"
+    args_fit_i$family <- NULL
+    args_fit_i$prior <- quote(rstanarm::R2(location = 0.5, what = "median"))
+    args_fit_i$QR <- NULL
+  }
   ### Option 1:
   # do.call(fit_fun_nm,
   #         excl_nonargs(args_fit_i),
@@ -685,11 +827,16 @@ cvmeth_tst <- list(
 )
 
 vsel_funs <- nlist("summary.vsel", "plot.vsel", "suggest_size.vsel")
+# Performance statistics common across all families when using the traditional
+# projection:
 stats_common <- c("elpd", "mlpd", "mse", "rmse")
+# For creating test setups (note: `common_stats` and `binom_stats` only refer to
+# the traditional projection):
 stats_tst <- list(
   default_stats = list(),
   common_stats = list(stats = stats_common),
-  binom_stats = list(stats = c(stats_common, "acc", "auc"))
+  binom_stats = list(stats = c(stats_common, "acc", "auc")),
+  augdat_stats = list(stats = c("elpd", "mlpd", "acc"))
 )
 type_tst <- c("mean", "lower", "upper", "se")
 
@@ -735,10 +882,34 @@ args_ref <- lapply(setNames(nm = names(fits)), function(tstsetup_fit) {
   } else {
     pkg_args <- list()
   }
-  return(c(nlist(tstsetup_fit),
-           only_nonargs(args_fit[[tstsetup_fit]]),
-           pkg_args))
+
+  if (!args_fit[[tstsetup_fit]]$mod_nm %in% c("gam", "gamm") &&
+      args_fit[[tstsetup_fit]]$fam_nm == "brnll") {
+    # In this case, test the augmented-data projection. For the corresponding
+    # traditional projection case (needed for comparing the two projection
+    # approaches), use the keyword `trad_compare` to be able to find this case
+    # more easily later:
+    augdat_args <- list(
+      trad_compare = list(),
+      augdat = list(augdat_y_unqs = c("0", "1"),
+                    augdat_link = quote(augdat_link_binom),
+                    augdat_ilink = quote(augdat_ilink_binom))
+    )
+  } else if (args_fit[[tstsetup_fit]]$fam_nm %in% fam_nms_aug) {
+    augdat_args <- list(augdat = list())
+  } else {
+    augdat_args <- list(trad = list())
+  }
+
+  lapply(setNames(nm = names(augdat_args)), function(augdat_args_nm) {
+    return(c(nlist(tstsetup_fit),
+             only_nonargs(args_fit[[tstsetup_fit]]),
+             list(prj_nm = augdat_args_nm),
+             pkg_args,
+             augdat_args[[augdat_args_nm]]))
+  })
 })
+args_ref <- unlist_cust(args_ref)
 
 refmods <- lapply(args_ref, function(args_ref_i) {
   do.call(get_refmodel, c(
@@ -752,14 +923,27 @@ refmods <- lapply(args_ref, function(args_ref_i) {
 ### varsel() --------------------------------------------------------------
 
 if (run_vs) {
-  tstsetups_vs_ref <- setNames(nm = names(refmods))
+  # Some families are not supported yet, apart from the creation of a `refmodel`
+  # object:
+  tstsetups_vs_ref <- grep(fam_nms_unsupp_regex, names(refmods), value = TRUE,
+                           invert = TRUE)
+  if (!run_more) {
+    tstsetups_vs_ref <- grep(paste0("\\.glmm", fam_nms_aug_regex),
+                             tstsetups_vs_ref, value = TRUE, invert = TRUE)
+  }
+  tstsetups_vs_ref <- setNames(nm = tstsetups_vs_ref)
   args_vs <- lapply(tstsetups_vs_ref, function(tstsetup_ref) {
     mod_crr <- args_ref[[tstsetup_ref]]$mod_nm
     fam_crr <- args_ref[[tstsetup_ref]]$fam_nm
-    if (mod_crr == "glm" && fam_crr == "gauss") {
+    prj_crr <- args_ref[[tstsetup_ref]]$prj_nm
+    if (prj_crr == "trad" && mod_crr == "glm" && fam_crr == "gauss") {
       # Here, we test the default `method` (which is L1 search here) as well as
       # forward search:
       meth <- meth_tst[setdiff(names(meth_tst), "L1")]
+    } else if (prj_crr == "trad_compare") {
+      # For traditional settings which correspond to an augmented-data setting,
+      # choose forward search (needed for comparing the two approaches):
+      meth <- meth_tst["forward"]
     } else {
       # Here, we only test the default `method`:
       meth <- meth_tst["default_meth"]
@@ -779,13 +963,21 @@ if (run_vs) {
                        search_trms_tst$alltrms$search_terms)) {
           nterms_max_tst <- count_terms_chosen(search_trms_i$search_terms) - 1L
         }
+        if (mod_crr == "glmm" && fam_crr == "categ") {
+          # Quick-and-dirty solution to get some working results (it's probably
+          # due to unfortunate test data simulated here that convergence at the
+          # default settings is not given):
+          extra_args <- list(avoid.increase = TRUE)
+        } else {
+          extra_args <- list()
+        }
         return(c(
           nlist(tstsetup_ref), only_nonargs(args_ref[[tstsetup_ref]]),
           list(
             nclusters = nclusters_tst, nclusters_pred = nclusters_pred_tst,
             nterms_max = nterms_max_tst, verbose = FALSE, seed = seed_tst
           ),
-          meth_i, search_trms_i
+          meth_i, search_trms_i, extra_args
         ))
       })
     })
@@ -796,17 +988,35 @@ if (run_vs) {
   })) >= 1)
 
   vss <- lapply(args_vs, function(args_vs_i) {
-    do.call(varsel, c(
-      list(object = refmods[[args_vs_i$tstsetup_ref]]),
-      excl_nonargs(args_vs_i)
-    ))
+    if (args_vs_i$fam_nm == "cumul") {
+      warn_expected <- "non-integer #successes in a binomial glm!"
+    } else if (!is.null(args_vs_i$avoid.increase)) {
+      warn_expected <- warn_mclogit
+    } else {
+      warn_expected <- NA
+    }
+    expect_warning(
+      vs_out <- do.call(varsel, c(
+        list(object = refmods[[args_vs_i$tstsetup_ref]]),
+        excl_nonargs(args_vs_i)
+      )),
+      warn_expected
+    )
+    return(vs_out)
   })
 }
 
 ### cv_varsel() -----------------------------------------------------------
 
 if (run_cvvs) {
-  tstsetups_cvvs_ref <- names(refmods)
+  tstsetups_cvvs_ref <- tstsetups_vs_ref
+  # Even in the `run_more = TRUE` case (which is not run by default), we need to
+  # impose some restrictions to have the tests run through in a reasonable
+  # amount of time:
+  tstsetups_cvvs_ref <- grep(
+    paste0("\\.glmm", fam_nms_aug_regex), tstsetups_cvvs_ref, value = TRUE,
+    invert = TRUE
+  )
   if (!run_more) {
     tstsetups_cvvs_ref <- grep("\\.gam\\.", tstsetups_cvvs_ref, value = TRUE,
                                invert = TRUE)
@@ -821,7 +1031,14 @@ if (run_cvvs) {
     pkg_crr <- args_ref[[tstsetup_ref]]$pkg_nm
     mod_crr <- args_ref[[tstsetup_ref]]$mod_nm
     fam_crr <- args_ref[[tstsetup_ref]]$fam_nm
-    meth <- meth_tst["default_meth"]
+    prj_crr <- args_ref[[tstsetup_ref]]$prj_nm
+    if (prj_crr == "trad_compare") {
+      # For traditional settings which correspond to an augmented-data setting,
+      # choose forward search (needed for comparing the two approaches):
+      meth <- meth_tst["forward"]
+    } else {
+      meth <- meth_tst["default_meth"]
+    }
     if (grepl("\\.without_wobs", tstsetup_ref)) {
       # In principle, we want to use K-fold CV here and LOO CV else because
       # rstanarm:::kfold.stanreg() doesn't support observation weights. However,
@@ -834,6 +1051,9 @@ if (run_cvvs) {
         # For GAMMs fitted by brms, there is a (random, i.e., only occasional)
         # reproducibility issue when using K-fold CV, so use LOO CV:
         cvmeth <- cvmeth_tst["default_cvmeth"]
+      } else if (prj_crr == "augdat" && fam_crr != "brnll") {
+        # We also want to test the augmented-data projection with LOO CV:
+        cvmeth <- cvmeth_tst["default_cvmeth"]
       } else {
         cvmeth <- cvmeth_tst["kfold"]
       }
@@ -843,10 +1063,16 @@ if (run_cvvs) {
     lapply(meth, function(meth_i) {
       lapply(cvmeth, function(cvmeth_i) {
         if (!run_valsearch_always && !identical(cvmeth_i$cv_method, "kfold") &&
-            ((length(meth_i) == 0 && mod_crr != "glm") ||
+            # Handle augmented-data and corresponding traditional projection:
+            (!prj_crr %in% c("augdat", "trad_compare") ||
+             (prj_crr %in% c("augdat", "trad_compare") &&
+              !run_valsearch_augdat_or_compare)) &&
+            # Forward search:
+            ((length(meth_i) == 0 &&
+              (mod_crr != "glm" || prj_crr == "augdat")) ||
              (length(meth_i) > 0 && meth_i$method == "forward"))) {
-          # In this case, we have forward search (and LOO CV) and
-          # `!run_valsearch_always` indicates that we want to save time by using
+          # These are cases with forward search, LOO CV, and
+          # `!run_valsearch_always` where we want to save time by using
           # `validate_search = FALSE`:
           meth_i <- c(meth_i, list(validate_search = FALSE))
         }
@@ -907,15 +1133,26 @@ if (run_cvvs) {
 ### From "refmodel" -------------------------------------------------------
 
 if (run_prj) {
-  tstsetups_prj_ref <- setNames(nm = names(refmods))
+  # Some families are not supported yet, apart from the creation of a `refmodel`
+  # object:
+  tstsetups_prj_ref <- grep(fam_nms_unsupp_regex, names(refmods), value = TRUE,
+                            invert = TRUE)
+  tstsetups_prj_ref <- setNames(nm = tstsetups_prj_ref)
   args_prj <- lapply(tstsetups_prj_ref, function(tstsetup_ref) {
     pkg_crr <- args_ref[[tstsetup_ref]]$pkg_nm
     mod_crr <- args_ref[[tstsetup_ref]]$mod_nm
     fam_crr <- args_ref[[tstsetup_ref]]$fam_nm
+    prj_crr <- args_ref[[tstsetup_ref]]$prj_nm
     if (grepl("\\.spclformul", tstsetup_ref)) {
       solterms_x <- solterms_spcl
     }
     solterms <- nlist(empty = character(), solterms_x)
+    if (prj_crr %in% c("augdat", "trad_compare") && fam_crr == "brnll" &&
+        mod_crr == "glmm") {
+      # We need a single group-level term (which only consists of group-level
+      # intercepts) to be able to use `nAGQ` later:
+      solterms_z <- setdiff(solterms_z, "(xco.1 | z.1)")
+    }
     if (mod_crr %in% c("glmm", "gamm")) {
       solterms <- c(solterms,
                     nlist(solterms_z, solterms_xz = c(solterms_x, solterms_z)))
@@ -949,7 +1186,8 @@ if (run_prj) {
           (pkg_crr == "rstanarm" && mod_crr == "gamm" &&
            fam_crr == "brnll" && solterms_nm_i == "solterms_xsz")
         )) ||
-        (!run_more && mod_crr %in% c("glmm", "gam", "gamm"))
+        (!run_more && mod_crr %in% c("glmm", "gam", "gamm")) ||
+        prj_crr %in% c("augdat", "trad_compare")
       ) {
         # The `noclust` setting is important for the test "non-clustered
         # projection does not require a seed" in `test_project.R`.
@@ -957,11 +1195,25 @@ if (run_prj) {
       } else {
         ndr_ncl_pred <- ndr_ncl_pred_tst[c("clust")]
       }
+      if (prj_crr %in% c("augdat", "trad_compare") && fam_crr == "brnll" &&
+          mod_crr == "glmm" && grepl("z", solterms_nm_i)) {
+        # We need an increased accuracy to be able to compare traditional and
+        # augmented-data projection:
+        divmin_args <- list(nAGQ = 30L)
+      } else {
+        divmin_args <- list()
+      }
       lapply(ndr_ncl_pred, function(ndr_ncl_pred_i) {
+        if (mod_crr == "glmm" && fam_crr == "categ") {
+          # Quick-and-dirty solution to get some working results (it's probably
+          # due to unfortunate test data simulated here that convergence at the
+          # default settings is not given):
+          divmin_args <- c(divmin_args, list(avoid.increase = TRUE))
+        }
         return(c(
           nlist(tstsetup_ref), only_nonargs(args_ref[[tstsetup_ref]]),
           list(solution_terms = solterms[[solterms_nm_i]], seed = seed_tst),
-          ndr_ncl_pred_i
+          ndr_ncl_pred_i, divmin_args
         ))
       })
     })
@@ -969,10 +1221,23 @@ if (run_prj) {
   args_prj <- unlist_cust(args_prj)
 
   prjs <- lapply(args_prj, function(args_prj_i) {
-    do.call(project, c(
-      list(object = refmods[[args_prj_i$tstsetup_ref]]),
-      excl_nonargs(args_prj_i)
-    ))
+    if (args_prj_i$fam_nm == "cumul" &&
+        !any(grepl("\\|", args_prj_i$solution_terms))) {
+      warn_expected <- "non-integer #successes in a binomial glm!"
+    } else if (!is.null(args_prj_i$avoid.increase) &&
+               any(grepl("\\|", args_prj_i$solution_terms))) {
+      warn_expected <- warn_mclogit
+    } else {
+      warn_expected <- NA
+    }
+    expect_warning(
+      prj_out <- do.call(project, c(
+        list(object = refmods[[args_prj_i$tstsetup_ref]]),
+        excl_nonargs(args_prj_i)
+      )),
+      warn_expected
+    )
+    return(prj_out)
   })
 }
 
@@ -993,6 +1258,7 @@ cre_args_prj_vsel <- function(tstsetups_prj_vsel) {
     )
     if (args_obj[[tstsetup_vsel]]$mod_nm != "glm" ||
         !is.null(args_obj[[tstsetup_vsel]]$search_terms) ||
+        args_obj[[tstsetup_vsel]]$prj_nm == "augdat" ||
         grepl("\\.spclformul", tstsetup_vsel)) {
       nterms_avail <- nterms_avail["subvec"]
     }
@@ -1040,6 +1306,8 @@ if (run_vs) {
     tstsetups_prj_vs,
     grep("\\.default_search_trms", names(vss), value = TRUE, invert = TRUE)
   )
+  tstsetups_prj_vs <- union(tstsetups_prj_vs,
+                            grep("\\.augdat\\.", names(vss), value = TRUE))
   tstsetups_prj_vs <- setNames(nm = tstsetups_prj_vs)
   stopifnot(length(tstsetups_prj_vs) > 0)
   args_prj_vs <- cre_args_prj_vsel(tstsetups_prj_vs)
@@ -1078,6 +1346,8 @@ if (run_cvvs) {
     tstsetups_prj_cvvs,
     grep("\\.default_search_trms", names(cvvss), value = TRUE, invert = TRUE)
   )
+  tstsetups_prj_cvvs <- union(tstsetups_prj_cvvs,
+                              grep("\\.augdat\\.", names(cvvss), value = TRUE))
   tstsetups_prj_cvvs <- setNames(nm = tstsetups_prj_cvvs)
   stopifnot(length(tstsetups_prj_cvvs) > 0)
   args_prj_cvvs <- cre_args_prj_vsel(tstsetups_prj_cvvs)
@@ -1128,6 +1398,14 @@ cre_args_smmry_vsel <- function(args_obj) {
   tstsetups_smmry_vsel <- tstsetups[sapply(tstsetups, function(tstsetup_vsel) {
     !is.null(args_obj[[tstsetup_vsel]]$search_terms)
   })]
+  # Choose all test setups which are for augmented-data projection or which are
+  # corresponding to such:
+  tstsetups_smmry_vsel <- union(
+    tstsetups_smmry_vsel,
+    tstsetups[sapply(tstsetups, function(tstsetup_vsel) {
+      args_obj[[tstsetup_vsel]]$prj_nm %in% c("augdat", "trad_compare")
+    })]
+  )
 
   # Ensure that from each model type (`mod_nm`) and each family (`fam_nm`), we
   # have at least one test setup:
@@ -1153,11 +1431,14 @@ cre_args_smmry_vsel <- function(args_obj) {
   lapply(tstsetups_smmry_vsel, function(tstsetup_vsel) {
     mod_crr <- args_obj[[tstsetup_vsel]]$mod_nm
     fam_crr <- args_obj[[tstsetup_vsel]]$fam_nm
+    prj_crr <- args_obj[[tstsetup_vsel]]$prj_nm
     add_stats <- switch(mod_crr,
-                        "glm" = switch(fam_crr,
-                                       "brnll" = "binom_stats",
-                                       "binom" = "binom_stats",
-                                       "common_stats"),
+                        "glm" = switch(prj_crr,
+                                       "augdat" = "augdat_stats",
+                                       switch(fam_crr,
+                                              "brnll" = "binom_stats",
+                                              "binom" = "binom_stats",
+                                              "common_stats")),
                         character())
     if (!run_more && !is.null(args_obj[[tstsetup_vsel]]$search_terms)) {
       add_stats <- character()

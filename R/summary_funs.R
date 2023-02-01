@@ -37,8 +37,12 @@
          "maintainer.")
   }
   # Average over the draws, taking their weights into account:
-  return(list(mu = c(mu %*% wsample),
-              lppd = apply(loglik, 1, log_weighted_mean_exp, wsample)))
+  return(list(
+    mu = structure(c(mu %*% wsample),
+                   nobs_orig = attr(mu, "nobs_orig"),
+                   class = sub("augmat", "augvec", oldClass(mu), fixed = TRUE)),
+    lppd = apply(loglik, 1, log_weighted_mean_exp, wsample)
+  ))
 }
 
 # A function to calculate the desired performance statistics, their standard
@@ -51,9 +55,23 @@
   stat_tab <- data.frame()
   summ_ref <- varsel$summaries$ref
   summ_sub <- varsel$summaries$sub
+  if (varsel$refmodel$family$for_augdat &&
+      any(stats %in% c("acc", "pctcorr"))) {
+    summ_ref$mu <- catmaxprb(summ_ref$mu, lvls = varsel$refmodel$family$cats)
+    summ_sub <- lapply(summ_sub, function(summ_sub_k) {
+      summ_sub_k$mu <- catmaxprb(summ_sub_k$mu,
+                                 lvls = varsel$refmodel$family$cats)
+      return(summ_sub_k)
+    })
+    # Since `mu` is an unordered factor, `y` needs to be unordered, too (or both
+    # would need to be ordered; however, unordered is the simpler type):
+    varsel$d_test$y <- factor(varsel$d_test$y, ordered = FALSE)
+  }
 
   if (varsel$refmodel$family$family == "binomial" &&
       !all(varsel$d_test$weights == 1)) {
+    # This case should not occur (yet) for the augmented-data projection:
+    stopifnot(!varsel$refmodel$family$for_augdat)
     varsel$d_test$y_prop <- varsel$d_test$y / varsel$d_test$weights
   }
 
@@ -155,14 +173,15 @@
 ## adjustments are necessary below.
 get_stat <- function(mu, lppd, d_test, stat, mu.bs = NULL, lppd.bs = NULL,
                      wcv = NULL, alpha = 0.1, ...) {
-  n <- length(mu)
   n_notna.bs <- NULL
   if (stat %in% c("mlpd", "elpd")) {
+    n <- length(lppd)
     n_notna <- sum(!is.na(lppd))
     if (!is.null(lppd.bs)) {
       n_notna.bs <- sum(!is.na(lppd.bs))
     }
   } else {
+    n <- length(mu)
     n_notna <- sum(!is.na(mu) & !is.na(d_test$y_prop %||% d_test$y))
     if (!is.null(mu.bs)) {
       n_notna.bs <- sum(!is.na(mu.bs))
@@ -280,16 +299,24 @@ get_stat <- function(mu, lppd, d_test, stat, mu.bs = NULL, lppd.bs = NULL,
       stopifnot(all(d_test$weights == 1))
     }
     if (stat %in% c("acc", "pctcorr")) {
+      # Find out whether each observation was classified correctly or not:
+      if (!is.factor(mu)) {
+        mu <- round(mu)
+      }
+      crrct <- mu == y
+
       if (!is.null(mu.bs)) {
-        value <- mean(wcv * ((round(mu) == y) - (round(mu.bs) == y)),
-                      na.rm = TRUE)
-        value.se <- weighted.sd((round(mu) == y) - (round(mu.bs) == y), wcv,
-                                na.rm = TRUE) /
+        if (!is.factor(mu.bs)) {
+          mu.bs <- round(mu.bs)
+        }
+        crrct.bs <- mu.bs == y
+
+        value <- mean(wcv * (crrct - crrct.bs), na.rm = TRUE)
+        value.se <- weighted.sd(crrct - crrct.bs, wcv, na.rm = TRUE) /
           sqrt(n_notna)
       } else {
-        value <- mean(wcv * (round(mu) == y), na.rm = TRUE)
-        value.se <- weighted.sd(round(mu) == y, wcv, na.rm = TRUE) /
-          sqrt(n_notna)
+        value <- mean(wcv * crrct, na.rm = TRUE)
+        value.se <- weighted.sd(crrct, wcv, na.rm = TRUE) / sqrt(n_notna)
       }
     } else if (stat == "auc") {
       auc.data <- cbind(y, mu, wcv)

@@ -30,6 +30,34 @@ log_sum_exp <- function(x) {
   max_x + log(sum(exp(x - max_x)))
 }
 
+linkfun_raw <- function(x, link_nm) {
+  if (link_nm %in% c("logistic", "logit")) {
+    return(qlogis(x))
+  } else if (link_nm == "probit") {
+    return(qnorm(x))
+  } else if (link_nm == "cloglog") {
+    return(log(-log1p(-x)))
+  } else if (link_nm == "cauchit") {
+    return(qcauchy(x))
+  } else {
+    stop("Unknown `link_nm`.")
+  }
+}
+
+ilinkfun_raw <- function(x, link_nm) {
+  if (link_nm %in% c("logistic", "logit")) {
+    return(plogis(x))
+  } else if (link_nm == "probit") {
+    return(pnorm(x))
+  } else if (link_nm == "cloglog") {
+    return(1 - exp(-exp(x)))
+  } else if (link_nm == "cauchit") {
+    return(pcauchy(x))
+  } else {
+    stop("Unknown `link_nm`.")
+  }
+}
+
 auc <- function(x) {
   resp <- x[, 1]
   pred <- x[, 2]
@@ -103,19 +131,29 @@ bootstrap <- function(x, fun = mean, B = 2000,
          "selection first")
   }
 
-  recognized_stats <- c("elpd", "mlpd", "mse", "rmse", "acc", "pctcorr", "auc")
-  binomial_only_stats <- c("acc", "pctcorr", "auc")
+  trad_stats <- c("elpd", "mlpd", "mse", "rmse", "acc", "pctcorr", "auc")
+  trad_stats_binom_only <- c("acc", "pctcorr", "auc")
+  augdat_stats <- c("elpd", "mlpd", "acc", "pctcorr")
 
   if (is.null(stats)) {
     stop("Statistic specified as NULL.")
   }
   for (stat in stats) {
-    if (!(stat %in% recognized_stats)) {
-      stop(sprintf("Statistic '%s' not recognized.", stat))
-    }
-    if (stat %in% binomial_only_stats &&
-        object$refmodel$family$family != "binomial") {
-      stop("Statistic '", stat, "' available only for the binomial family.")
+    if (object$refmodel$family$for_augdat) {
+      if (!stat %in% augdat_stats) {
+        stop("Currently, the augmented-data projection may not be combined ",
+             "with performance statistic `\"", stat, "\"`.")
+      }
+    } else {
+      if (!stat %in% trad_stats) {
+        stop(sprintf("Statistic '%s' not recognized.", stat))
+      }
+      if (stat %in% trad_stats_binom_only &&
+          object$refmodel$family$family != "binomial") {
+        stop("In case of the traditional projection, the performance ",
+             "statistic `\"", stat, "\"` is available only for the binomial ",
+             "family.")
+      }
     }
   }
   return(invisible(TRUE))
@@ -150,14 +188,14 @@ bootstrap <- function(x, fun = mean, B = 2000,
       weights <- rep(1, length(y))
     }
     if (fam$family == "binomial") {
-      if (is.factor(y)) {
+      if (is.factor(y) && !fam$for_augdat) {
         if (nlevels(y) > 2) {
           stop("y cannot contain more than two classes if specified as factor.")
         }
         y <- as.vector(y, mode = "integer") - 1L # zero-one vector
       }
     } else {
-      if (is.factor(y)) {
+      if (is.factor(y) && !fam$for_augdat) {
         stop("y cannot be a factor for models other than the binomial model.")
       }
     }
@@ -186,12 +224,15 @@ bootstrap <- function(x, fun = mean, B = 2000,
 #   subsampled (without replacement).
 #
 # @return Let \eqn{y} denote the response (vector), \eqn{N} the number of
-#   observations, and \eqn{S_{\mathrm{prj}}}{S_prj} the number of projected
-#   draws (= either `nclusters` or `ndraws`, depending on which one is used).
-#   Then the return value is a list with elements:
+#   observations (for the traditional projection) or the number of augmented
+#   observations (for augmented-data projection), and
+#   \eqn{S_{\mathrm{prj}}}{S_prj} the number of projected draws (= either
+#   `nclusters` or `ndraws`, depending on which one is used). Then the return
+#   value is a list with elements:
 #
 #   * `mu`: An \eqn{N \times S_{\mathrm{prj}}}{N x S_prj} matrix of expected
-#   values for \eqn{y} for each draw/cluster.
+#   values for \eqn{y} (probabilities for the response categories in case of the
+#   augmented-data projection) for each draw/cluster.
 #   * `var`: An \eqn{N \times S_{\mathrm{prj}}}{N x S_prj} matrix of predictive
 #   variances for \eqn{y} for each draw/cluster which are needed for projecting
 #   the dispersion parameter (the predictive variances are NA for those families
@@ -246,15 +287,22 @@ bootstrap <- function(x, fun = mean, B = 2000,
     cl[s_ind] <- 1:ndraws
     mu_offs <- refmodel$mu
     if (!all(refmodel$offset == 0)) {
-      mu_offs <- refmodel$family$linkinv(
-        refmodel$family$linkfun(mu_offs) + refmodel$offset
-      )
+      eta_offs <- refmodel$family$linkfun(mu_offs)
+      if (refmodel$family$family %in% fams_neg_linpred()) {
+        eta_offs <- eta_offs - refmodel$offset
+      } else {
+        eta_offs <- eta_offs + refmodel$offset
+      }
+      mu_offs <- refmodel$family$linkinv(eta_offs)
     }
     predvar <- do.call(cbind, lapply(s_ind, function(j) {
       refmodel$family$predvar(mu_offs[, j, drop = FALSE], refmodel$dis[j])
     }))
     p_ref <- list(
-      mu = refmodel$mu[, s_ind, drop = FALSE], var = predvar,
+      mu = refmodel$mu[, s_ind, drop = FALSE],
+      var = structure(predvar,
+                      nobs_orig = attr(refmodel$mu, "nobs_orig"),
+                      class = oldClass(refmodel$mu)),
       dis = refmodel$dis[s_ind], weights = rep(1 / ndraws, ndraws), cl = cl,
       clust_used = FALSE
     )
@@ -300,7 +348,13 @@ bootstrap <- function(x, fun = mean, B = 2000,
   # Predictions incorporating offsets (needed for `predvar`):
   mu_offs <- mu
   if (!all(offs == 0)) {
-    mu_offs <- family$linkinv(family$linkfun(mu_offs) + offs)
+    eta_offs <- family$linkfun(mu_offs)
+    if (family$family %in% fams_neg_linpred()) {
+      eta_offs <- eta_offs - offs
+    } else {
+      eta_offs <- eta_offs + offs
+    }
+    mu_offs <- family$linkinv(eta_offs)
   }
   for (j in 1:nclusters) {
     ind <- which(cl == j)
@@ -321,8 +375,12 @@ bootstrap <- function(x, fun = mean, B = 2000,
 
   # combine the results
   p <- list(
-    mu = unname(t(centers)),
-    var = predvar,
+    mu = structure(unname(t(centers)),
+                   nobs_orig = attr(mu, "nobs_orig"),
+                   class = oldClass(mu)),
+    var = structure(predvar,
+                    nobs_orig = attr(mu, "nobs_orig"),
+                    class = oldClass(mu)),
     dis = dis_agg,
     weights = wcluster,
     cl = cl,
@@ -469,5 +527,22 @@ magrittr::`%>%`
 
 # Helper function to combine separate `list`s into a single `list`:
 rbind2list <- function(x) {
-  as.list(do.call(rbind, lapply(x, as.data.frame)))
+  is_augeval <- any(sapply(x, function(x_i) {
+    is.list(x_i) &&
+      identical(names(x_i), c("mu", "lppd")) &&
+      inherits(x_i$mu, "augvec")
+  }))
+  if (is_augeval) {
+    mu_arr <- abind::abind(
+      lapply(x, function(x_i) {
+        augmat2arr(augvec2augmat(x_i$mu))
+      }),
+      along = 1
+    )
+    return(c(
+      list(mu = augmat2augvec(arr2augmat(mu_arr))),
+      rbind2list(lapply(x, "[", "lppd"))
+    ))
+  }
+  return(as.list(do.call(rbind, lapply(x, as.data.frame))))
 }

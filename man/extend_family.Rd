@@ -4,10 +4,43 @@
 \alias{extend_family}
 \title{Extend a family}
 \usage{
-extend_family(family)
+extend_family(
+  family,
+  augdat_y_unqs = NULL,
+  augdat_link = NULL,
+  augdat_ilink = NULL,
+  augdat_args_link = list(),
+  augdat_args_ilink = list(),
+  ...
+)
 }
 \arguments{
 \item{family}{An object of class \code{family}.}
+
+\item{augdat_y_unqs}{Only relevant for augmented-data projection, in which
+case this needs to be the character vector of unique response values (which
+will be assigned to \code{family$cats} internally) or may be left at \code{NULL} if
+\code{family$cats} is already non-\code{NULL}. See also section "Augmented-data
+projection" below.}
+
+\item{augdat_link}{Only relevant for augmented-data projection, in which case
+this needs to be the link function. Use \code{NULL} for the traditional
+projection. See also section "Augmented-data projection" below.}
+
+\item{augdat_ilink}{Only relevant for augmented-data projection, in which
+case this needs to be the inverse-link function. Use \code{NULL} for the
+traditional projection. See also section "Augmented-data projection" below.}
+
+\item{augdat_args_link}{Only relevant for augmented-data projection, in which
+case this may be a named \code{list} of arguments to pass to the function
+supplied to \code{augdat_link}.}
+
+\item{augdat_args_ilink}{Only relevant for augmented-data projection, in
+which case this may be a named \code{list} of arguments to pass to the function
+supplied to \code{augdat_ilink}.}
+
+\item{...}{Ignored (exists only to swallow up further arguments which might
+be passed to this function).}
 }
 \value{
 The \code{family} object extended in the way needed by \pkg{projpred}.
@@ -17,3 +50,65 @@ This function adds some internally required elements to an object of class
 \code{family} (see, e.g., \code{\link[=family]{family()}}). It is called internally by
 \code{\link[=init_refmodel]{init_refmodel()}}, so you will rarely need to call it yourself.
 }
+\details{
+In the following, \eqn{N}, \eqn{C_{\mathrm{cat}}}{C_cat},
+\eqn{C_{\mathrm{lat}}}{C_lat}, \eqn{S_{\mathrm{ref}}}{S_ref}, and
+\eqn{S_{\mathrm{prj}}}{S_prj} from help topic \link{refmodel-init-get} are used.
+Note that \eqn{N} does not necessarily denote the number of original
+observations; it can also refer to new observations. Furthermore, let \eqn{S}
+denote either \eqn{S_{\mathrm{ref}}}{S_ref} or \eqn{S_{\mathrm{prj}}}{S_prj},
+whichever is appropriate in the context where it is used.
+}
+\section{Augmented-data projection}{
+As their first input, the functions supplied to arguments \code{augdat_link} and
+\code{augdat_ilink} have to accept:
+\itemize{
+\item For \code{augdat_link}: an \eqn{S \times N \times C_{\mathrm{cat}}}{S x N x
+C_cat} array containing the probabilities for the response categories. The
+order of the response categories is the same as in \code{family$cats} (see
+argument \code{augdat_y_unqs}).
+\item For \code{augdat_ilink}: an \eqn{S \times N \times C_{\mathrm{lat}}}{S x N x
+C_lat} array containing the linear predictors.
+}
+
+The return value of these functions needs to be:
+\itemize{
+\item For \code{augdat_link}: an \eqn{S \times N \times C_{\mathrm{lat}}}{S x N x
+C_lat} array containing the linear predictors.
+\item For \code{augdat_ilink}: an \eqn{S \times N \times C_{\mathrm{cat}}}{S x N x
+C_cat} array containing the probabilities for the response categories. The
+order of the response categories has to be the same as in \code{family$cats} (see
+argument \code{augdat_y_unqs}).
+}
+
+For the augmented-data projection, the response vector resulting from
+\code{extract_model_data} (see \code{\link[=init_refmodel]{init_refmodel()}}) is coerced to a \code{factor} (using
+\code{\link[=as.factor]{as.factor()}}) at multiple places throughout this package. Inside of
+\code{\link[=init_refmodel]{init_refmodel()}}, the levels of this \code{factor} have to be identical to
+\code{family$cats} (\emph{after} applying \code{\link[=extend_family]{extend_family()}} inside of
+\code{\link[=init_refmodel]{init_refmodel()}}). Everywhere else, these levels have to be a subset of
+\verb{<refmodel>$family$cats} (where \verb{<refmodel>} is an object resulting from
+\code{\link[=init_refmodel]{init_refmodel()}}). See argument \code{augdat_y_unqs} for how to control
+\code{family$cats}.
+
+For ordinal \pkg{brms} families, be aware that the submodels (onto which the
+reference model is projected) currently have the following restrictions:
+\itemize{
+\item The discrimination parameter \code{disc} is not supported (i.e., it is a
+constant with value 1).
+\item The thresholds are \code{"flexible"} (see \code{\link[brms:brmsfamily]{brms::brmsfamily()}}).
+\item The thresholds do not vary across the levels of a \code{factor}-like variable
+(see argument \code{gr} of \code{\link[brms:addition-terms]{brms::resp_thres()}}).
+\item The \code{"probit_approx"} link is replaced by \code{"probit"}.
+}
+
+For the \code{\link[brms:brmsfamily]{brms::categorical()}} family, be aware that:
+\itemize{
+\item For multilevel submodels, the group-level effects are allowed to be
+correlated between different response categories.
+\item For multilevel submodels, \pkg{mclogit} versions < 0.9.4 may throw the
+error \code{'a' (<number> x 1) must be square}. Updating \pkg{mclogit} to a
+version >= 0.9.4 should fix this.
+}
+}
+

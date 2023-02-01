@@ -49,7 +49,8 @@ of \code{\link[=get_refmodel]{get_refmodel()}}, an object of the corresponding c
 
 \item{...}{For \code{\link[=get_refmodel.default]{get_refmodel.default()}} and \code{\link[=get_refmodel.stanreg]{get_refmodel.stanreg()}}:
 arguments passed to \code{\link[=init_refmodel]{init_refmodel()}}. For the \code{\link[=get_refmodel]{get_refmodel()}} generic:
-arguments passed to the appropriate method. Else: ignored.}
+arguments passed to the appropriate method. For \code{\link[=init_refmodel]{init_refmodel()}}:
+arguments passed to \code{\link[=extend_family]{extend_family()}} (apart from \code{family}).}
 
 \item{formula}{The full formula to use for the search procedure. For custom
 reference models, this does not necessarily coincide with the reference
@@ -182,13 +183,19 @@ analogously for higher-order joint effects, e.g., of three predictors).
 \section{Arguments \code{ref_predfun}, \code{proj_predfun}, and \code{div_minimizer}}{
 Arguments \code{ref_predfun}, \code{proj_predfun}, and \code{div_minimizer} may be \code{NULL}
 for using an internal default (see \link{projpred-package} for the functions used
-by the default divergence minimizer). Otherwise, let \eqn{N} denote the
+by the default divergence minimizers). Otherwise, let \eqn{N} denote the
 number of observations (in case of CV, these may be reduced to each fold),
 \eqn{S_{\mathrm{ref}}}{S_ref} the number of posterior draws for the reference
 model's parameters, and \eqn{S_{\mathrm{prj}}}{S_prj} the number of draws for
 the parameters of a submodel that the reference model has been projected onto
-(short: the number of projected draws). Then the functions supplied to these
-arguments need to have the following prototypes:
+(short: the number of projected draws). For the augmented-data projection,
+let \eqn{C_{\mathrm{cat}}}{C_cat} denote the number of response categories,
+\eqn{C_{\mathrm{lat}}}{C_lat} the number of latent response categories (which
+typically equals \eqn{C_{\mathrm{cat}} - 1}{C_cat - 1}), and define
+\eqn{N_{\mathrm{augcat}} := N \cdot C_{\mathrm{cat}}}{N_augcat := N * C_cat}
+as well as \eqn{N_{\mathrm{auglat}} := N \cdot C_{\mathrm{lat}}}{N_auglat :=
+N * C_lat}. Then the functions supplied to these arguments need to have the
+following prototypes:
 \itemize{
 \item \code{ref_predfun}: \code{ref_predfun(fit, newdata = NULL)} where:
 \itemize{
@@ -214,27 +221,47 @@ as with \code{refit_prj = FALSE}).
 be able to be called with the following arguments:
 \itemize{
 \item \code{formula} accepts either a standard \code{\link{formula}} with a single response
-(if \eqn{S_{\mathrm{prj}} = 1}{S_prj = 1}) or a \code{\link{formula}} with
-\eqn{S_{\mathrm{prj}} > 1}{S_prj > 1} response variables \code{\link[=cbind]{cbind()}}-ed on
-the left-hand side in which case the projection has to be performed for
-each of the response variables separately.
-\item \code{data} accepts a \code{data.frame} to be used for the projection.
+(if \eqn{S_{\mathrm{prj}} = 1}{S_prj = 1} or in case of the
+augmented-data projection) or a \code{\link{formula}} with \eqn{S_{\mathrm{prj}} >
+    1}{S_prj > 1} response variables \code{\link[=cbind]{cbind()}}-ed on the left-hand side in
+which case the projection has to be performed for each of the response
+variables separately.
+\item \code{data} accepts a \code{data.frame} to be used for the projection. In case of
+the traditional projection, this dataset has \eqn{N} rows. In case of the
+augmented-data projection, this dataset has
+\eqn{N_{\mathrm{augcat}}}{N_augcat} rows.
 \item \code{family} accepts an object of class \code{family}.
 \item \code{weights} accepts either observation weights (at least in the form of a
 numeric vector) or \code{NULL} (for using a vector of ones as weights).
 \item \code{projpred_var} accepts an \eqn{N \times S_{\mathrm{prj}}}{N x S_prj}
 matrix of predictive variances (necessary for \pkg{projpred}'s internal
-GLM fitter).
+GLM fitter) in case of the traditional projection and an
+\eqn{N_{\mathrm{augcat}} \times S_{\mathrm{prj}}}{N_augcat x S_prj}
+matrix (containing only \code{NA}s) in case of the augmented-data projection.
 \item \code{projpred_regul} accepts a single numeric value as supplied to argument
 \code{regul} of \code{\link[=project]{project()}}, for example.
+\item \code{projpred_ws_aug} accepts an \eqn{N \times S_{\mathrm{prj}}}{N x S_prj}
+matrix of expected values for the response in case of the traditional
+projection and an \eqn{N_{\mathrm{augcat}} \times
+    S_{\mathrm{prj}}}{N_augcat x S_prj} matrix of probabilities for the
+response categories in case of the augmented-data projection.
 \item \code{...} accepts further arguments specified by the user.
 }
 }
 
 The return value of these functions needs to be:
 \itemize{
-\item \code{ref_predfun}: an \eqn{N \times S_{\mathrm{ref}}}{N x S_ref} matrix.
-\item \code{proj_predfun}: an \eqn{N \times S_{\mathrm{prj}}}{N x S_prj} matrix.
+\item \code{ref_predfun}: for the traditional projection, an \eqn{N \times
+S_{\mathrm{ref}}}{N x S_ref} matrix; for the augmented-data projection, an
+\eqn{S_{\mathrm{ref}} \times N \times C_{\mathrm{lat}}}{S_ref x N x C_lat}
+array (the only exception is the augmented-data projection for the
+\code{\link[=binomial]{binomial()}} family in which case \code{ref_predfun} needs to return an \eqn{N
+\times S_{\mathrm{ref}}}{N x S_ref} matrix just like for the traditional
+projection because the array is constructed by an internal wrapper function).
+\item \code{proj_predfun}: for the traditional projection, an \eqn{N \times
+S_{\mathrm{prj}}}{N x S_prj} matrix; for the augmented-data projection, an
+\eqn{N \times C_{\mathrm{lat}} \times S_{\mathrm{prj}}}{N x C_lat x S_prj}
+array.
 \item \code{div_minimizer}: a \code{list} of length \eqn{S_{\mathrm{prj}}}{S_prj}
 containing this number of submodel fits.
 }
@@ -268,11 +295,31 @@ element \code{y} (see below) shall be \code{NULL} (\code{TRUE}) or not (\code{FA
 The return value of \code{extract_model_data} needs to be a \code{list} with elements
 \code{y}, \code{weights}, and \code{offset}, each being a numeric vector containing the data
 for the response, the observation weights, and the offsets, respectively. An
-exception is that \code{y} may also be \code{NULL} (depending on argument \code{extract_y})
-or a \code{factor}.
+exception is that \code{y} may also be \code{NULL} (depending on argument \code{extract_y}),
+a non-numeric vector, or a \code{factor}.
 
 The weights and offsets returned by \code{extract_model_data} will be assumed to
 hold for the reference model as well as for the submodels.
+}
+
+\section{Augmented-data projection}{
+If a custom reference model for an augmented-data projection is needed, see
+also \code{\link[=extend_family]{extend_family()}}.
+
+For the augmented-data projection, the response vector resulting from
+\code{extract_model_data} is internally coerced to a \code{factor} (using
+\code{\link[=as.factor]{as.factor()}}). The levels of this \code{factor} have to be identical to
+\code{family$cats} (\emph{after} applying \code{\link[=extend_family]{extend_family()}} internally; see
+\code{\link[=extend_family]{extend_family()}}'s argument \code{augdat_y_unqs}).
+
+Note that response-specific offsets (i.e., one length-\eqn{N} offset vector
+per response category) are not supported by \pkg{projpred} yet. So far, only
+offsets which are the same across all response categories are supported. This
+is why in case of the \code{\link[brms:brmsfamily]{brms::categorical()}} family, offsets are currently not
+supported at all.
+
+Currently, \code{object = NULL} (i.e., a \code{datafit}; see section "Value") is not
+supported in case of the augmented-data projection.
 }
 
 \examples{

@@ -36,12 +36,22 @@
 #'
 #' For the projection of the reference model onto a submodel, \pkg{projpred}
 #' currently relies on the following functions (in other words, these are the
-#' workhorse functions used by the default divergence minimizer):
-#' * Submodel without multilevel or additive terms: An internal C++ function
-#' which basically serves the same purpose as [lm()] for the [gaussian()] family
-#' and [glm()] for all other families.
-#' * Submodel with multilevel but no additive terms: [lme4::lmer()] for the
-#' [gaussian()] family, [lme4::glmer()] for all other families.
+#' workhorse functions used by the default divergence minimizers):
+#' * Submodel without multilevel or additive terms:
+#'     + For the traditional projection (or the augmented-data projection in
+#'     case of the [binomial()] or [brms::bernoulli()] family): An internal C++
+#'     function which basically serves the same purpose as [lm()] for the
+#'     [gaussian()] family and [glm()] for all other families.
+#'     + For the augmented-data projection: [MASS::polr()] for the
+#'     [brms::cumulative()] family or [rstanarm::stan_polr()] fits,
+#'     [nnet::multinom()] for the [brms::categorical()] family.
+#' * Submodel with multilevel but no additive terms:
+#'     + For the traditional projection (or the augmented-data projection in
+#'     case of the [binomial()] or [brms::bernoulli()] family): [lme4::lmer()]
+#'     for the [gaussian()] family, [lme4::glmer()] for all other families.
+#'     + For the augmented-data projection: [ordinal::clmm()] for the
+#'     [brms::cumulative()] family, [mclogit::mblogit()] for the
+#'     [brms::categorical()] family.
 #' * Submodel without multilevel but additive terms: [mgcv::gam()].
 #' * Submodel with multilevel and additive terms: [gamm4::gamm4()].
 #'
@@ -60,10 +70,10 @@
 #' parallelizing the projection on Windows because in our experience, the
 #' parallelization overhead is larger there, causing a parallel run to take
 #' longer than a sequential run. Also note that the parallelization works well
-#' for GLMs, but for GLMMs, GAMs, and GAMMs, the fitted model objects are quite
-#' big, which---when running in parallel---may lead to an excessive memory usage
-#' which in turn may crash the R session. Thus, we currently cannot recommend
-#' the parallelization for GLMMs, GAMs, and GAMMs.
+#' for GLMs, but for all other models, the fitted model objects are quite big,
+#' which---when running in parallel---may lead to excessive memory usage which
+#' in turn may crash the R session. Thus, we currently cannot recommend the
+#' parallelization for models other than GLMs.
 #'
 #' @details
 #'

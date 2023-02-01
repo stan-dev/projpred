@@ -48,20 +48,29 @@
 #' @param ... Arguments passed to [project()] if `object` is not already an
 #'   object returned by [project()].
 #'
-#' @return Let \eqn{S_{\mathrm{prj}}}{S_prj} denote the number of (possibly
-#'   clustered) projected posterior draws (short: the number of projected draws)
-#'   and \eqn{N} the number of observations. (For [proj_linpred()] with
-#'   `integrated = TRUE`, we have \eqn{S_{\mathrm{prj}} = 1}{S_prj = 1}.) Then,
-#'   if the prediction is done for one submodel only (i.e., `length(nterms) == 1
-#'   || !is.null(solution_terms)` in the call to [project()]):
+#' @return In the following, \eqn{S_{\mathrm{prj}}}{S_prj}, \eqn{N},
+#'   \eqn{C_{\mathrm{cat}}}{C_cat}, and \eqn{C_{\mathrm{lat}}}{C_lat} from help
+#'   topic [refmodel-init-get] are used. (For [proj_linpred()] with `integrated
+#'   = TRUE`, we have \eqn{S_{\mathrm{prj}} = 1}{S_prj = 1}.) Furthermore, let
+#'   \eqn{C} denote either \eqn{C_{\mathrm{cat}}}{C_cat} (if `transform = TRUE`)
+#'   or \eqn{C_{\mathrm{lat}}}{C_lat} (if `transform = FALSE`). Then, if the
+#'   prediction is done for one submodel only (i.e., `length(nterms) == 1 ||
+#'   !is.null(solution_terms)` in the call to [project()]):
 #'   * [proj_linpred()] returns a `list` with elements `pred` (predictions,
 #'   i.e., the linear predictors, possibly transformed to response scale) and
 #'   `lpd` (log predictive densities; only calculated if `newdata` is `NULL` or
-#'   if `newdata` contains response values in the corresponding column). Both
-#'   elements are \eqn{S_{\mathrm{prj}} \times N}{S_prj x N} matrices.
+#'   if `newdata` contains response values in the corresponding column). In case
+#'   of the traditional projection, both elements are \eqn{S_{\mathrm{prj}}
+#'   \times N}{S_prj x N} matrices. In case of the augmented-data projection,
+#'   `pred` is an \eqn{S_{\mathrm{prj}} \times N \times C}{S_prj x N x C} array
+#'   and `lpd` is an \eqn{S_{\mathrm{prj}} \times N}{S_prj x N} matrix.
 #'   * [proj_predict()] returns an \eqn{S_{\mathrm{prj}} \times N}{S_prj x N}
 #'   matrix of predictions where \eqn{S_{\mathrm{prj}}}{S_prj} denotes
-#'   `nresample_clusters` in case of clustered projection.
+#'   `nresample_clusters` in case of clustered projection. In case of the
+#'   augmented-data projection, this matrix has an attribute called `cats` (the
+#'   character vector of response categories) and the values of the matrix are
+#'   the predicted indices of the response categories (with the order of the
+#'   response categories being that from attribute `cats`).
 #'
 #'   If the prediction is done for more than one submodel, the output from above
 #'   is returned for each submodel, giving a named `list` with one element for
@@ -179,6 +188,10 @@ proj_helper <- function(object, newdata, offsetnew, weightsnew, onesub_fun,
     if (length(offsetnew) == 0) {
       offsetnew <- rep(0, NROW(newdata %||% proj$refmodel$fetch_data()))
     }
+    if (proj$refmodel$family$for_augdat && !all(weightsnew == 1)) {
+      stop("Currently, the augmented-data projection may not be combined with ",
+           "observation weights (other than 1).")
+    }
     onesub_fun(proj, newdata = newdata, offset = offsetnew,
                weights = weightsnew, extract_y_ind = extract_y_ind, ...)
   })
@@ -223,14 +236,21 @@ proj_linpred_aux <- function(proj, newdata, offset, weights, transform = FALSE,
                          weights = weights, transformed = transform)
   if (integrated) {
     ## average over the projected draws
-    pred_sub <- pred_sub %*% proj$weights
+    pred_sub <- structure(pred_sub %*% proj$weights,
+                          nobs_orig = attr(pred_sub, "nobs_orig"),
+                          class = oldClass(pred_sub))
     if (!is.null(lpd_out)) {
       lpd_out <- as.matrix(
         apply(lpd_out, 1, log_weighted_mean_exp, proj$weights)
       )
     }
   }
-  return(nlist(pred = t(pred_sub),
+  if (inherits(pred_sub, "augmat")) {
+    pred_sub <- augmat2arr(pred_sub, margin_draws = 1)
+  } else {
+    pred_sub <- t(pred_sub)
+  }
+  return(nlist(pred = pred_sub,
                lpd = if (is.null(lpd_out)) lpd_out else t(lpd_out)))
 }
 
@@ -240,6 +260,18 @@ compute_lpd <- function(ynew, pred_sub, proj, weights, transformed) {
     target <- .get_standard_y(ynew, weights, proj$refmodel$family)
     ynew <- target$y
     weights <- target$weights
+    if (proj$refmodel$family$for_augdat) {
+      ynew <- as.factor(ynew)
+      if (!all(levels(ynew) %in% proj$refmodel$family$cats)) {
+        stop("The levels of the response variable (after coercing it to a ",
+             "`factor`) have to be a subset of `family$cats`. Either modify ",
+             "`newdata` or the function supplied to `extract_model_data` in ",
+             "init_refmodel() accordingly or see the documentation for ",
+             "extend_family()'s argument `augdat_y_unqs` to solve this.")
+      }
+      # Re-assign the original levels because some levels might be missing:
+      ynew <- factor(ynew, levels = proj$refmodel$family$cats)
+    }
     if (!transformed) {
       pred_sub <- proj$refmodel$family$linkinv(pred_sub)
     }
@@ -284,9 +316,12 @@ proj_predict_aux <- function(proj, newdata, offset, weights,
   } else {
     draw_inds <- seq_along(proj$weights)
   }
-  return(do.call(rbind, lapply(draw_inds, function(i) {
-    proj$refmodel$family$ppd(mu[, i], proj$dis[i], weights)
-  })))
+  return(structure(
+    do.call(rbind, lapply(draw_inds, function(i) {
+      proj$refmodel$family$ppd(mu[, i], proj$dis[i], weights)
+    })),
+    cats = proj$refmodel$family$cats
+  ))
 }
 
 #' Plot summary statistics of a variable selection
@@ -492,14 +527,16 @@ plot.vsel <- function(
 #'   * `"elpd"`: (expected) sum of log predictive densities.
 #'   * `"mlpd"`: mean log predictive density, that is, `"elpd"` divided by the
 #'   number of observations.
-#'   * `"mse"`: mean squared error.
-#'   * `"rmse"`: root mean squared error. For the corresponding standard error
-#'   and lower and upper confidence interval bounds, bootstrapping is used.
-#'   * `"acc"` (or its alias, `"pctcorr"`): classification accuracy
-#'   ([binomial()] family only).
-#'   * `"auc"`: area under the ROC curve ([binomial()] family only). For the
+#'   * `"mse"`: mean squared error (traditional projection only).
+#'   * `"rmse"`: root mean squared error (traditional projection only). For the
 #'   corresponding standard error and lower and upper confidence interval
 #'   bounds, bootstrapping is used.
+#'   * `"acc"` (or its alias, `"pctcorr"`): classification accuracy (for the
+#'   traditional projection: [binomial()] family only; for the augmented-data
+#'   projection: all families).
+#'   * `"auc"`: area under the ROC curve ([binomial()] family for the
+#'   traditional projection only). For the corresponding standard error and
+#'   lower and upper confidence interval bounds, bootstrapping is used.
 #' @param type One or more items from `"mean"`, `"se"`, `"lower"`, `"upper"`,
 #'   `"diff"`, and `"diff.se"` indicating which of these to compute for each
 #'   item from `stats` (mean, standard error, lower and upper confidence
@@ -678,6 +715,12 @@ print.vselsummary <- function(x, digits = 1, ...) {
     cat(paste0("Observations (training set): ", x$nobs_train, "\n"))
     cat(paste0("Observations (test set): ", x$nobs_test, "\n"))
   }
+  if (x$family$for_augdat) {
+    prj_meth <- "augmented-data"
+  } else {
+    prj_meth <- "traditional"
+  }
+  cat("Projection method: ", prj_meth, "\n", sep = "")
   if (!is.null(x$cv_method)) {
     cat(paste("CV method:", x$cv_method, x$search_included, "\n"))
   }
@@ -937,7 +980,10 @@ replace_population_names <- function(population_effects, nm_scheme) {
 
 # Make the parameter names for variance components adhere to the naming scheme
 # `nm_scheme`:
-mknms_VarCorr <- function(nms, nm_scheme, coef_nms) {
+mknms_VarCorr <- function(nms, nms_lats = NULL, nm_scheme, coef_nms) {
+  if (!is.null(nms_lats)) {
+    stopifnot(nm_scheme == "brms")
+  }
   grp_nms <- names(coef_nms)
   # We will have to search for the substrings "\\sd\\." and "\\cor\\.", so make
   # sure that they don't occur in the coefficient or group names:
@@ -990,12 +1036,28 @@ mknms_VarCorr <- function(nms, nm_scheme, coef_nms) {
   if (nm_scheme == "rstanarm") {
     nms <- paste0("Sigma[", nms, "]")
   }
+  if (!is.null(nms_lats)) {
+    # Escape special characters in the latent category names and collapse them
+    # with "|":
+    nms_lats_esc <- paste(gsub("\\)", "\\\\)",
+                               gsub("\\(", "\\\\(",
+                                    gsub("\\.", "\\\\.", nms_lats))),
+                          collapse = "|")
+    # Put the string `mu` in front of the latent category names and replace the
+    # following tilde by an underscore:
+    nms <- gsub(paste0("(", nms_lats_esc, ")~"),
+                "mu\\1_",
+                nms)
+  }
   return(nms)
 }
 
 # Make the parameter names for group-level effects adhere to the naming scheme
 # `nm_scheme`:
-mknms_ranef <- function(nms, nm_scheme, coef_nms) {
+mknms_ranef <- function(nms, nms_lats = NULL, nm_scheme, coef_nms) {
+  if (!is.null(nms_lats)) {
+    stopifnot(nm_scheme == "brms")
+  }
   if (nm_scheme == "brms") {
     nms <- mknms_icpt(nms, nm_scheme = nm_scheme)
   }
@@ -1034,7 +1096,41 @@ mknms_ranef <- function(nms, nm_scheme, coef_nms) {
   } else if (nm_scheme == "rstanarm") {
     nms <- paste0("b[", nms, "]")
   }
+  if (!is.null(nms_lats)) {
+    # Escape special characters in the latent category names and collapse them
+    # with "|":
+    nms_lats_esc <- paste(gsub("\\)", "\\\\)",
+                               gsub("\\(", "\\\\(",
+                                    gsub("\\.", "\\\\.", nms_lats))),
+                          collapse = "|")
+    # Put the string `mu` in front of the latent category names, remove the
+    # following tilde, and place all this in front of the first square bracket:
+    nms <- gsub(paste0("\\[(.*),(", nms_lats_esc, ")~"),
+                "__mu\\2[\\1,",
+                nms)
+  }
   return(nms)
+}
+
+# Make the parameter names for the thresholds of an ordinal model adhere to the
+# naming scheme `nm_scheme`:
+mknms_thres <- function(nms, nm_scheme) {
+  if (nm_scheme == "brms") {
+    nms <- paste0("b_Intercept[", seq_along(nms), "]")
+  }
+  return(nms)
+}
+
+# Make the non-multilevel parameter names of a categorical model adhere to the
+# naming scheme `nm_scheme`:
+mknms_categ <- function(dimnms, nm_scheme) {
+  # rstanarm currently doesn't support categorical models:
+  stopifnot(nm_scheme == "brms")
+  nmsdf <- expand.grid(dimnms, stringsAsFactors = FALSE)
+  nmsdf[, 1] <- paste0("mu", nmsdf[, 1])
+  nmsdf[, 2] <- mknms_icpt(nmsdf[, 2], nm_scheme = nm_scheme)
+  nmsdf <- cbind("b", nmsdf)
+  return(apply(nmsdf, 1, paste, collapse = "_"))
 }
 
 #' @noRd
@@ -1044,6 +1140,91 @@ coef.subfit <- function(object, ...) {
     "(Intercept)" = alpha,
     setNames(beta, colnames(x))
   )))
+}
+
+# To process the multilevel variance components (from a submodel fit):
+proc_VarCorr <- function(group_vc_raw, nms_lats = NULL, ...) {
+  group_vc <- unlist(lapply(group_vc_raw, function(vc_obj) {
+    # The vector of standard deviations:
+    if (is.null(nms_lats)) {
+      vc_out <- c("sd" = attr(vc_obj, "stddev"))
+    } else {
+      vc_out <- c("sd" = sqrt(diag(vc_obj)))
+    }
+    # The correlation matrix:
+    if (is.null(nms_lats)) {
+      cor_mat <- attr(vc_obj, "correlation")
+      has_cor <- !is.null(cor_mat)
+    } else {
+      cor_mat <- cov2cor(vc_obj)
+      has_cor <- ncol(cor_mat) > 1
+    }
+    if (has_cor) {
+      # Auxiliary object: A matrix of the same dimension as cor_mat, but
+      # containing the paste()-d dimnames:
+      cor_mat_nms <- matrix(
+        apply(expand.grid(rownames(cor_mat),
+                          colnames(cor_mat)),
+              1,
+              paste,
+              collapse = "."),
+        nrow = nrow(cor_mat),
+        ncol = ncol(cor_mat)
+      )
+      # Note: With upper.tri() (and also with lower.tri()), the indexed matrix
+      # is coerced to a vector in column-major order:
+      vc_out <- c(
+        vc_out,
+        "cor" = setNames(
+          cor_mat[upper.tri(cor_mat)],
+          cor_mat_nms[upper.tri(cor_mat_nms)]
+        )
+      )
+    }
+    return(vc_out)
+  }))
+  names(group_vc) <- mknms_VarCorr(names(group_vc), nms_lats = nms_lats, ...)
+  return(group_vc)
+}
+
+# To process the raw group-level effects themselves (from a submodel fit):
+proc_ranef <- function(group_ef_raw, nms_lats = NULL, ncoefs, grps_lvls, VarCov,
+                       ...) {
+  if (!is.null(nms_lats)) {
+    coef_nms <- list(...)$coef_nms
+    stopifnot(!is.null(coef_nms))
+    nlats <- length(nms_lats)
+    group_ef_raw <- lapply(setNames(nm = names(group_ef_raw)), function(vnm) {
+      ranef_tmp <- group_ef_raw[[vnm]]
+      if (utils::packageVersion("mclogit") < "0.9") {
+        ncoefs_vnm <- ncoefs
+      } else {
+        ncoefs_vnm <- ncoefs[vnm]
+      }
+      # Coerce the random effects into the same format as the output of ranef()
+      # from packages 'lme4' and 'ordinal':
+      ranef_tmp <- matrix(ranef_tmp,
+                          nrow = nlats * ncoefs_vnm,
+                          ncol = length(grps_lvls[[vnm]]),
+                          dimnames = list(coef_nms[[vnm]],
+                                          grps_lvls[[vnm]]))
+      return(as.data.frame(t(ranef_tmp)))
+    })
+  }
+  group_ef <- unlist(lapply(group_ef_raw, function(ranef_df) {
+    ranef_mat <- as.matrix(ranef_df)
+    setNames(
+      as.vector(ranef_mat),
+      apply(expand.grid(rownames(ranef_mat),
+                        colnames(ranef_mat)),
+            1,
+            function(row_col_nm) {
+              paste(rev(row_col_nm), collapse = ".")
+            })
+    )
+  }))
+  names(group_ef) <- mknms_ranef(names(group_ef), nms_lats = nms_lats, ...)
+  return(group_ef)
 }
 
 # An (internal) generic for extracting the coefficients and any other parameter
@@ -1086,61 +1267,12 @@ get_subparams.lmerMod <- function(x, ...) {
   population_effects <- lme4::fixef(x) %>%
     replace_population_names(...)
 
-  # Extract variance components:
   group_vc_raw <- lme4::VarCorr(x)
-  group_vc <- unlist(lapply(group_vc_raw, function(vc_obj) {
-    # The vector of standard deviations:
-    vc_out <- c("sd" = attr(vc_obj, "stddev"))
-    # The correlation matrix:
-    cor_mat <- attr(vc_obj, "correlation")
-    if (!is.null(cor_mat)) {
-      # Auxiliary object: A matrix of the same dimension as cor_mat, but
-      # containing the paste()-d dimnames:
-      cor_mat_nms <- matrix(
-        apply(expand.grid(rownames(cor_mat),
-                          colnames(cor_mat)),
-              1,
-              paste,
-              collapse = "."),
-        nrow = nrow(cor_mat),
-        ncol = ncol(cor_mat)
-      )
-      # Note: With upper.tri() (and also with lower.tri()), the indexed matrix
-      # is coerced to a vector in column-major order:
-      vc_out <- c(
-        vc_out,
-        "cor" = setNames(
-          cor_mat[upper.tri(cor_mat)],
-          cor_mat_nms[upper.tri(cor_mat_nms)]
-        )
-      )
-    }
-    return(vc_out)
-  }))
-  names(group_vc) <- mknms_VarCorr(
-    names(group_vc),
-    coef_nms = lapply(group_vc_raw, rownames),
-    ...
-  )
+  group_vc <- proc_VarCorr(group_vc_raw,
+                           coef_nms = lapply(group_vc_raw, rownames), ...)
 
-  # Extract the group-level effects themselves:
-  group_ef <- unlist(lapply(lme4::ranef(x, condVar = FALSE), function(ranef_df) {
-    ranef_mat <- as.matrix(ranef_df)
-    setNames(
-      as.vector(ranef_mat),
-      apply(expand.grid(rownames(ranef_mat),
-                        colnames(ranef_mat)),
-            1,
-            function(row_col_nm) {
-              paste(rev(row_col_nm), collapse = ".")
-            })
-    )
-  }))
-  names(group_ef) <- mknms_ranef(
-    names(group_ef),
-    coef_nms = lapply(group_vc_raw, rownames),
-    ...
-  )
+  group_ef <- proc_ranef(lme4::ranef(x, condVar = FALSE),
+                         coef_nms = lapply(group_vc_raw, rownames), ...)
 
   return(c(population_effects, group_vc, group_ef))
 }
@@ -1157,6 +1289,79 @@ get_subparams.gamm4 <- function(x, ...) {
   return(get_subparams.lm(x, ...))
 }
 
+#' @noRd
+#' @export
+get_subparams.polr <- function(x, ...) {
+  thres <- x$zeta
+  names(thres) <- mknms_thres(names(thres), ...)
+  return(c(thres, get_subparams.lm(x, ...)))
+}
+
+#' @noRd
+#' @export
+get_subparams.clmm <- function(x, ...) {
+  thres <- x$alpha
+  names(thres) <- mknms_thres(names(thres), ...)
+
+  group_vc_raw <- ordinal::VarCorr(x)
+  group_vc <- proc_VarCorr(group_vc_raw,
+                           coef_nms = lapply(group_vc_raw, rownames), ...)
+
+  group_ef <- proc_ranef(ordinal::ranef(x),
+                         coef_nms = lapply(group_vc_raw, rownames), ...)
+
+  return(c(thres, replace_population_names(x$beta, ...), group_vc, group_ef))
+}
+
+#' @noRd
+#' @export
+get_subparams.multinom <- function(x, ...) {
+  coefs <- coef(x)
+  nms <- mknms_categ(dimnames(coefs), ...)
+  return(setNames(as.vector(coefs), nms))
+}
+
+#' @noRd
+#' @export
+get_subparams.mmblogit <- function(x, ...) {
+  coefs <- x$coefmat
+  group_vc_raw <- x$VarCov
+  if (utils::packageVersion("mclogit") < "0.9") {
+    group_vc_raw <- setNames(group_vc_raw, names(x$groups))
+  }
+  group_vc_raw <- lapply(group_vc_raw, function(vc_obj) {
+    nms_lats_coefs <- rownames(vc_obj)
+    stopifnot(identical(nms_lats_coefs, colnames(vc_obj)))
+    tilde_check <- gregexpr("~", nms_lats_coefs)
+    stopifnot(all(lengths(tilde_check) == 1))
+    stopifnot(all(unlist(tilde_check) != -1))
+    rownames(vc_obj) <- colnames(vc_obj) <-
+      sub("~1$", "~(Intercept)", nms_lats_coefs)
+    return(vc_obj)
+  })
+  group_vc <- proc_VarCorr(group_vc_raw, nms_lats = colnames(x$D),
+                           coef_nms = lapply(group_vc_raw, rownames), ...)
+
+  if (utils::packageVersion("mclogit") < "0.9") {
+    ncoefs_all <- length(all.vars(x$random$formula)) + 1L
+  } else {
+    ncoefs_all <- sapply(
+      setNames(x$random, names(x$groups)),
+      function(re_info_i) {
+        length(all.vars(re_info_i$formula)) + 1L
+      }
+    )
+  }
+  group_ef <- proc_ranef(setNames(x$random.effects, names(x$groups)),
+                         nms_lats = colnames(x$D),
+                         ncoefs = ncoefs_all,
+                         grps_lvls = lapply(x$groups, levels),
+                         coef_nms = lapply(group_vc_raw, rownames), ...)
+
+  nms <- mknms_categ(dimnames(coefs), ...)
+  return(c(setNames(as.vector(coefs), nms), group_vc, group_ef))
+}
+
 #' Extract projected parameter draws
 #'
 #' This is the [as.matrix()] method for `projection` objects (returned by
@@ -1170,6 +1375,12 @@ get_subparams.gamm4 <- function(x, ...) {
 #'   `"rstanarm"` or `"brms"` based on the class of the reference model fit (and
 #'   uses `"rstanarm"` if the reference model fit is of an unknown class).
 #' @param ... Currently ignored.
+#'
+#' @details In case of the augmented-data projection for a multilevel submodel
+#'   of a [brms::categorical()] reference model, the multilevel parameters (and
+#'   therefore also their names) slightly differ from those in the \pkg{brms}
+#'   reference model fit (see section "Augmented-data projection" in
+#'   [extend_family()]'s documentation).
 #'
 #' @return An \eqn{S_{\mathrm{prj}} \times Q}{S_prj x Q} matrix of projected
 #'   draws, with \eqn{S_{\mathrm{prj}}}{S_prj} denoting the number of projected

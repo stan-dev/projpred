@@ -501,37 +501,52 @@ formula_contains_additive_terms <- function(formula) {
 ## @param data The original data frame for the full formula.
 ## @param y The response vector. Default NULL.
 ## @param split_formula If TRUE breaks the response down into single response
-##   formulas.
-## Default FALSE. It only works if `y` represents a multi-output response.
+##   formulas. Default FALSE. It only works if `y` represents a multi-output
+##   response.
+## @param y_unqs Only relevant for augmented-data projection, in which case this
+##   needs to be the vector of unique response values (for an ordinal response,
+##   these need to be ordered correctly, see [extend_family()]'s argument
+##   `augdat_y_unqs`).
 ## @return a list including the updated formula and data
 subset_formula_and_data <- function(formula, terms_, data, y = NULL,
-                                    split_formula = FALSE) {
+                                    split_formula = FALSE, y_unqs = NULL) {
   formula <- make_formula(terms_, formula = formula)
   response_name <- extract_terms_response(formula)$response
 
-  response_cols <- paste0(".", response_name)
+  if (is.null(y_unqs)) {
+    response_cols <- paste0(".", response_name)
 
-  if (NCOL(y) > 1) {
-    response_cols <- paste0(response_cols, ".", seq_len(ncol(y)))
-    if (!split_formula) {
-      response_vector <- paste0(
-        "cbind(",
-        paste(response_cols, collapse = ", "),
-        ")"
-      )
-      formula <- update(formula, paste0(response_vector, " ~ ."))
+    if (NCOL(y) > 1) {
+      response_cols <- paste0(response_cols, ".", seq_len(ncol(y)))
+      if (!split_formula) {
+        response_vector <- paste0(
+          "cbind(",
+          paste(response_cols, collapse = ", "),
+          ")"
+        )
+        formula <- update(formula, paste0(response_vector, " ~ ."))
+      } else {
+        formula <- lapply(response_cols, function(response) {
+          update(formula, paste0(response, " ~ ."))
+        })
+      }
     } else {
-      formula <- lapply(response_cols, function(response) {
-        update(formula, paste0(response, " ~ ."))
-      })
+      formula <- update(formula, paste(response_cols, "~ ."))
     }
+
+    ## don't overwrite original y name
+    data <- data.frame(.z = y, data)
+    colnames(data)[seq_len(NCOL(y))] <- response_cols
   } else {
-    formula <- update(formula, paste(response_cols, "~ ."))
+    # Create the augmented dataset:
+    stopifnot(is.data.frame(data))
+    data <- do.call(rbind, lapply(y_unqs, function(y_unq) {
+      data[[response_name]] <- y_unq
+      return(data)
+    }))
+    data[[response_name]] <- factor(data[[response_name]], levels = y_unqs)
   }
 
-  ## don't overwrite original y name
-  data <- data.frame(.z = y, data)
-  colnames(data)[seq_len(NCOL(y))] <- response_cols
   return(nlist(formula, data))
 }
 
