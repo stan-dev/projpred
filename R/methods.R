@@ -292,10 +292,12 @@ proj_linpred_aux <- function(proj, newdata, offset, weights, transform = FALSE,
         newdata_lat <- proj$refmodel$fetch_data()
         newdata_lat$projpred_internal_offs_stanreg <- offset
       }
-      ynew <- rowMeans(proj$refmodel$ref_predfun(fit = proj$refmodel$fit,
-                                                 newdata = newdata_lat,
-                                                 excl_offs = FALSE,
-                                                 mlvl_allrandom = FALSE))
+      ynew <- rowMeans(proj$refmodel$ref_predfun(
+        fit = proj$refmodel$fit,
+        newdata = newdata_lat,
+        excl_offs = FALSE,
+        mlvl_allrandom = getOption("projpred.mlvl_prj_ref_new", FALSE)
+      ))
     } else {
       ynew <- eval_lhs(formula = proj$refmodel$formula, data = newdata)
     }
@@ -1303,6 +1305,66 @@ mknms_VarCorr <- function(nms, nms_lats = NULL, nm_scheme, coef_nms) {
   return(nms)
 }
 
+# Make the parameter names for group-level effects adhere to the naming scheme
+# `nm_scheme`:
+mknms_ranef <- function(nms, nms_lats = NULL, nm_scheme, coef_nms) {
+  if (!is.null(nms_lats)) {
+    stopifnot(nm_scheme == "brms")
+  }
+  if (nm_scheme == "brms") {
+    nms <- mknms_icpt(nms, nm_scheme = nm_scheme)
+  }
+  for (coef_nms_idx in seq_along(coef_nms)) {
+    coef_nms_i <- coef_nms[[coef_nms_idx]]
+    if (nm_scheme == "brms") {
+      coef_nms_i <- mknms_icpt(coef_nms_i, nm_scheme = nm_scheme)
+    }
+    # Escape special characters in the coefficient names and collapse them with
+    # "|":
+    coef_nms_i_esc <- paste(gsub("\\)", "\\\\)",
+                                 gsub("\\(", "\\\\(",
+                                      gsub("\\.", "\\\\.", coef_nms_i))),
+                            collapse = "|")
+    if (nm_scheme == "brms") {
+      # Put the part following the group name in square brackets, reorder its
+      # two subparts (coefficient name and group level), and separate them by
+      # comma:
+      nms <- sub(paste0("\\.(", coef_nms_i_esc, ")\\.(.*)$"),
+                 "[\\2,\\1]",
+                 nms)
+    } else if (nm_scheme == "rstanarm") {
+      grp_nm_i <- names(coef_nms)[coef_nms_idx]
+      # Escape special characters in the group name:
+      grp_nm_i_esc <- gsub("\\)", "\\\\)",
+                           gsub("\\(", "\\\\(",
+                                gsub("\\.", "\\\\.", grp_nm_i)))
+      # Re-arrange as required:
+      nms <- sub(paste0("^(", grp_nm_i_esc, ")\\.(", coef_nms_i_esc, ")\\."),
+                 "\\2 \\1:",
+                 nms)
+    }
+  }
+  if (nm_scheme == "brms") {
+    nms <- paste0("r_", nms)
+  } else if (nm_scheme == "rstanarm") {
+    nms <- paste0("b[", nms, "]")
+  }
+  if (!is.null(nms_lats)) {
+    # Escape special characters in the latent category names and collapse them
+    # with "|":
+    nms_lats_esc <- paste(gsub("\\)", "\\\\)",
+                               gsub("\\(", "\\\\(",
+                                    gsub("\\.", "\\\\.", nms_lats))),
+                          collapse = "|")
+    # Put the string `mu` in front of the latent category names, remove the
+    # following tilde, and place all this in front of the first square bracket:
+    nms <- gsub(paste0("\\[(.*),(", nms_lats_esc, ")~"),
+                "__mu\\2[\\1,",
+                nms)
+  }
+  return(nms)
+}
+
 # Make the parameter names for the thresholds of an ordinal model adhere to the
 # naming scheme `nm_scheme`:
 mknms_thres <- function(nms, nm_scheme) {
@@ -1378,6 +1440,46 @@ proc_VarCorr <- function(group_vc_raw, nms_lats = NULL, ...) {
   return(group_vc)
 }
 
+# To process the raw group-level effects themselves (from a submodel fit):
+proc_ranef <- function(group_ef_raw, nms_lats = NULL, ncoefs, grps_lvls, VarCov,
+                       ...) {
+  if (!is.null(nms_lats)) {
+    coef_nms <- list(...)$coef_nms
+    stopifnot(!is.null(coef_nms))
+    nlats <- length(nms_lats)
+    group_ef_raw <- lapply(setNames(nm = names(group_ef_raw)), function(vnm) {
+      ranef_tmp <- group_ef_raw[[vnm]]
+      if (utils::packageVersion("mclogit") < "0.9") {
+        ncoefs_vnm <- ncoefs
+      } else {
+        ncoefs_vnm <- ncoefs[vnm]
+      }
+      # Coerce the random effects into the same format as the output of ranef()
+      # from packages 'lme4' and 'ordinal':
+      ranef_tmp <- matrix(ranef_tmp,
+                          nrow = nlats * ncoefs_vnm,
+                          ncol = length(grps_lvls[[vnm]]),
+                          dimnames = list(coef_nms[[vnm]],
+                                          grps_lvls[[vnm]]))
+      return(as.data.frame(t(ranef_tmp)))
+    })
+  }
+  group_ef <- unlist(lapply(group_ef_raw, function(ranef_df) {
+    ranef_mat <- as.matrix(ranef_df)
+    setNames(
+      as.vector(ranef_mat),
+      apply(expand.grid(rownames(ranef_mat),
+                        colnames(ranef_mat)),
+            1,
+            function(row_col_nm) {
+              paste(rev(row_col_nm), collapse = ".")
+            })
+    )
+  }))
+  names(group_ef) <- mknms_ranef(names(group_ef), nms_lats = nms_lats, ...)
+  return(group_ef)
+}
+
 # An (internal) generic for extracting the coefficients and any other parameter
 # estimates from a submodel fit.
 get_subparams <- function(x, ...) {
@@ -1422,7 +1524,15 @@ get_subparams.lmerMod <- function(x, ...) {
   group_vc <- proc_VarCorr(group_vc_raw,
                            coef_nms = lapply(group_vc_raw, rownames), ...)
 
-  return(c(population_effects, group_vc))
+  subparams <- c(population_effects, group_vc)
+
+  if (!getOption("projpred.mlvl_prd_new", FALSE)) {
+    group_ef <- proc_ranef(lme4::ranef(x, condVar = FALSE),
+                           coef_nms = lapply(group_vc_raw, rownames), ...)
+    subparams <- c(subparams, group_ef)
+  }
+
+  return(subparams)
 }
 
 #' @noRd
@@ -1455,7 +1565,15 @@ get_subparams.clmm <- function(x, ...) {
   group_vc <- proc_VarCorr(group_vc_raw,
                            coef_nms = lapply(group_vc_raw, rownames), ...)
 
-  return(c(thres, replace_population_names(x$beta, ...), group_vc))
+  subparams <- c(thres, replace_population_names(x$beta, ...), group_vc)
+
+  if (!getOption("projpred.mlvl_prd_new", FALSE)) {
+    group_ef <- proc_ranef(ordinal::ranef(x),
+                           coef_nms = lapply(group_vc_raw, rownames), ...)
+    subparams <- c(subparams, group_ef)
+  }
+
+  return(subparams)
 }
 
 #' @noRd
@@ -1487,19 +1605,29 @@ get_subparams.mmblogit <- function(x, ...) {
   group_vc <- proc_VarCorr(group_vc_raw, nms_lats = colnames(x$D),
                            coef_nms = lapply(group_vc_raw, rownames), ...)
 
-  if (utils::packageVersion("mclogit") < "0.9") {
-    ncoefs_all <- length(all.vars(x$random$formula)) + 1L
-  } else {
-    ncoefs_all <- sapply(
-      setNames(x$random, names(x$groups)),
-      function(re_info_i) {
-        length(all.vars(re_info_i$formula)) + 1L
-      }
-    )
+  nms <- mknms_categ(dimnames(coefs), ...)
+  subparams <- c(setNames(as.vector(coefs), nms), group_vc)
+
+  if (!getOption("projpred.mlvl_prd_new", FALSE)) {
+    if (utils::packageVersion("mclogit") < "0.9") {
+      ncoefs_all <- length(all.vars(x$random$formula)) + 1L
+    } else {
+      ncoefs_all <- sapply(
+        setNames(x$random, names(x$groups)),
+        function(re_info_i) {
+          length(all.vars(re_info_i$formula)) + 1L
+        }
+      )
+    }
+    group_ef <- proc_ranef(setNames(x$random.effects, names(x$groups)),
+                           nms_lats = colnames(x$D),
+                           ncoefs = ncoefs_all,
+                           grps_lvls = lapply(x$groups, levels),
+                           coef_nms = lapply(group_vc_raw, rownames), ...)
+    subparams <- c(subparams, group_ef)
   }
 
-  nms <- mknms_categ(dimnames(coefs), ...)
-  return(c(setNames(as.vector(coefs), nms), group_vc))
+  return(subparams)
 }
 
 #' Extract projected parameter draws

@@ -76,6 +76,32 @@
 #' in turn may crash the R session. Thus, we currently cannot recommend the
 #' parallelization for models other than GLMs.
 #'
+#' For multilevel models, \pkg{projpred} offers two global options that may be
+#' revelant for users: `projpred.mlvl_prd_new` and `projpred.mlvl_prj_ref_new`.
+#' When setting `projpred.mlvl_prd_new` to `TRUE` (default is `FALSE`), then at
+#' prediction time, \pkg{projpred} will treat group levels existing in the
+#' training data as *new* group levels, implying that their group-level effects
+#' are drawn randomly from a (multivariate) Gaussian distribution. This concerns
+#' both, the reference model and the (i.e., any) submodel. Furthermore, setting
+#' `projpred.mlvl_prd_new` to `TRUE` causes `as.matrix.projection()` to omit the
+#' projected group-level effects (for the group levels from the original
+#' dataset). When setting `projpred.mlvl_prj_ref_new` to `TRUE` (default is
+#' `FALSE`), then at projection time, the reference model's fitted values (that
+#' the submodels fit to) will be computed by treating the group levels from the
+#' original dataset as *new* group levels, implying that their group-level
+#' effects will be drawn randomly from a (multivariate) Gaussian distribution
+#' (as long as the reference model is a multilevel model, which---for custom
+#' reference models---does not need to be the case). This also affects the
+#' latent response values for a latent projection correspondingly. Setting
+#' `projpred.mlvl_prd_new` to `TRUE` makes sense, e.g., when the prediction task
+#' is such that any group level will be treated as a new one. Typically, setting
+#' `projpred.mlvl_prj_ref_new` to `TRUE` only makes sense when
+#' `projpred.mlvl_prd_new` is already set to `TRUE`. In that case, the default
+#' of `FALSE` for `projpred.mlvl_prj_ref_new` ensures that at projection time,
+#' the submodels fit to the best possible fitted values from the reference
+#' model, and setting `projpred.mlvl_prj_ref_new` to `TRUE` would make sense if
+#' the group-level effects should be integrated out completely.
+#'
 #' @details
 #'
 #' # Functions

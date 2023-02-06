@@ -192,6 +192,8 @@ warn_mclogit <- if (packageVersion("mclogit") >= "0.9.6") {
          "^Algorithm stopped due to false convergence$")
 }
 
+options(projpred.mlvl_prd_new = TRUE)
+
 # Data --------------------------------------------------------------------
 
 ## Setup ------------------------------------------------------------------

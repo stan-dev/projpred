@@ -304,11 +304,13 @@ test_that(paste(
 
     ### Summaries for the submodels -------------------------------------------
 
-    if (!(mod_crr %in% c("glmm", "gamm") &&
+    if (!(getOption("projpred.mlvl_prd_new", FALSE) &&
+          mod_crr %in% c("glmm", "gamm") &&
           any(grepl("\\|", solution_terms(vs_indep))))) {
-      # In the negation of this case (i.e., multilevel models), proj_linpred()
-      # can't be used to calculate the reference model's performance statistics
-      # because proj_linpred()'s argument `.seed` cannot be set such that the
+      # In the negation of this case (i.e., multilevel models with option
+      # `projpred.mlvl_prd_new` being set to `TRUE`), proj_linpred() can't be
+      # used to calculate the reference model's performance statistics because
+      # proj_linpred()'s argument `.seed` cannot be set such that the
       # .Random.seed from inside proj_linpred() at the place where the new
       # group-level effects are drawn coincides with .Random.seed from inside
       # varsel() at the place where the new group-level effects are drawn (not
@@ -391,7 +393,9 @@ test_that(paste(
 
     ### Summaries for the reference model -------------------------------------
 
-    dat_indep_crr$z.1 <- as.factor(paste0("NEW_", dat_indep_crr$z.1))
+    if (getOption("projpred.mlvl_prd_new", FALSE)) {
+      dat_indep_crr$z.1 <- as.factor(paste0("NEW_", dat_indep_crr$z.1))
+    }
     if (pkg_crr == "rstanarm") {
       mu_new <- rstantools::posterior_epred(refmods[[tstsetup_ref]]$fit,
                                             newdata = dat_indep_crr,

@@ -317,7 +317,8 @@ varsel.refmodel <- function(object, d_test = NULL, method = NULL,
     }
   } else {
     if (d_test$type == "train") {
-      if (formula_contains_group_terms(refmodel$formula)) {
+      if (formula_contains_group_terms(refmodel$formula) &&
+          getOption("projpred.mlvl_prd_new", FALSE)) {
         # Need to use `mlvl_allrandom = TRUE` (`refmodel$mu_offs` is based on
         # `mlvl_allrandom = FALSE`):
         eta_test <- refmodel$ref_predfun(refmodel$fit, excl_offs = FALSE)

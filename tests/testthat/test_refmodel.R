@@ -174,7 +174,7 @@ test_that(paste(
       y_nm <- stdize_lhs(refmods[[tstsetup]]$formula)$y_nm
       y_crr_link <- rowMeans(refmods[[tstsetup]]$ref_predfun(
         fit = refmods[[tstsetup]]$fit, newdata = dat_crr, excl_offs = FALSE,
-        mlvl_allrandom = FALSE
+        mlvl_allrandom = getOption("projpred.mlvl_prj_ref_new", FALSE)
       ))
     } else {
       y_crr_link <- y_crr

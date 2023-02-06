@@ -366,11 +366,14 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
     # `colMeans(posterior_linpred())` to the original (full-data) reference
     # model fit, so using `refmodel$y` would induce a dependency between
     # training and test data:
-    y_lat_E <- loo::E_loo(t(refmodel$ref_predfun(refmodel$fit,
-                                                 excl_offs = FALSE,
-                                                 mlvl_allrandom = FALSE)),
-                          psis_object = psisloo,
-                          log_ratios = -loglik_forPSIS)
+    y_lat_E <- loo::E_loo(
+      t(refmodel$ref_predfun(
+        refmodel$fit, excl_offs = FALSE,
+        mlvl_allrandom = getOption("projpred.mlvl_prj_ref_new", FALSE)
+      )),
+      psis_object = psisloo,
+      log_ratios = -loglik_forPSIS
+    )
     if (any(y_lat_E$pareto_k > 0.7)) {
       warning("In the recalculation of the latent response values, ",
               sum(y_lat_E$pareto_k > 0.7), " (of ", n, ") Pareto k-value(s) ",
@@ -673,7 +676,8 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
     }
     return(summ_k)
   })
-  if (formula_contains_group_terms(refmodel$formula)) {
+  if (formula_contains_group_terms(refmodel$formula) &&
+      getOption("projpred.mlvl_prd_new", FALSE)) {
     # Need to use `mlvl_allrandom = TRUE` (`mu_offs` is based on
     # `mlvl_allrandom = FALSE`):
     eta_offs_mlvlRan <- refmodel$ref_predfun(refmodel$fit, excl_offs = FALSE)
@@ -703,7 +707,8 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
     ))
     lppd_ref <- apply(loglik_lat + lw, 2, log_sum_exp)
   } else {
-    if (formula_contains_group_terms(refmodel$formula)) {
+    if (formula_contains_group_terms(refmodel$formula) &&
+        getOption("projpred.mlvl_prd_new", FALSE)) {
       # Need to use `mlvl_allrandom = TRUE` (`loo_ref_oscale` is based on
       # `mlvl_allrandom = FALSE`):
       loglik_mlvlRan <- t(refmodel$family$ll_fun(
@@ -716,7 +721,8 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
   }
   summ_ref <- list(lppd = lppd_ref, mu = mu_ref)
   if (refmodel$family$for_latent) {
-    if (formula_contains_group_terms(refmodel$formula)) {
+    if (formula_contains_group_terms(refmodel$formula) &&
+        getOption("projpred.mlvl_prd_new", FALSE)) {
       # Need to use `mlvl_allrandom = TRUE` (`mu_offs_oscale` is based on
       # `mlvl_allrandom = FALSE`):
       mu_offs_mlvlRan_oscale <- refmodel$family$latent_ilink(
@@ -752,7 +758,8 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
       class = sub("augmat", "augvec", oldClass(mu_offs_mlvlRan_oscale),
                   fixed = TRUE)
     )
-    if (formula_contains_group_terms(refmodel$formula)) {
+    if (formula_contains_group_terms(refmodel$formula) &&
+        getOption("projpred.mlvl_prd_new", FALSE)) {
       # Need to use `mlvl_allrandom = TRUE` (`loo_ref_oscale` is based on
       # `mlvl_allrandom = FALSE`):
       loglik_mlvlRan <- refmodel$family$latent_ll_oscale(
