@@ -123,8 +123,8 @@ test_that(paste(
                               nclusters = args_prj_i_trad$nclusters)
 
     expect_identical(
-      pref_lat[setdiff(names(pref_lat), c("mu", "var", "dis"))],
-      pref_trad[setdiff(names(pref_trad), c("mu", "var", "dis"))],
+      pref_lat[setdiff(names(pref_lat), c("mu", "mu_offs", "var", "dis"))],
+      pref_trad[setdiff(names(pref_trad), c("mu", "mu_offs", "var", "dis"))],
       info = tstsetup
     )
     mu_lat_oscale <- refmod_crr$family$latent_ilink(t(refmod_crr$mu))

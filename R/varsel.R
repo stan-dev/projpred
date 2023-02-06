@@ -317,16 +317,7 @@ varsel.refmodel <- function(object, d_test = NULL, method = NULL,
     }
   } else {
     if (d_test$type == "train") {
-      mu_test <- refmodel$mu
-      if (!all(refmodel$offset == 0)) {
-        eta_test <- refmodel$family$linkfun(mu_test)
-        if (refmodel$family$family %in% fams_neg_linpred()) {
-          eta_test <- eta_test - refmodel$offset
-        } else {
-          eta_test <- eta_test + refmodel$offset
-        }
-        mu_test <- refmodel$family$linkinv(eta_test)
-      }
+      mu_test <- refmodel$mu_offs
     } else {
       newdata_for_ref <- d_test$data
       if (inherits(refmodel$fit, "stanreg") &&

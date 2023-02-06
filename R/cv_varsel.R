@@ -298,8 +298,9 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
 
   # Pre-processing ----------------------------------------------------------
 
-  mu <- refmodel$mu
   eta <- refmodel$eta
+  mu <- refmodel$mu
+  mu_offs <- refmodel$mu_offs
   dis <- refmodel$dis
   ## the clustering/subsampling used for selection
   p_sel <- .get_refdist(refmodel, ndraws = ndraws, nclusters = nclusters)
@@ -317,13 +318,6 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
     stop("LOO can be performed only if the reference model is a genuine ",
          "probabilistic model for which the log-likelihood can be evaluated.")
   }
-
-  if (refmodel$family$family %in% fams_neg_linpred()) {
-    eta_offs <- eta - refmodel$offset
-  } else {
-    eta_offs <- eta + refmodel$offset
-  }
-  mu_offs <- refmodel$family$linkinv(eta_offs)
 
   if (refmodel$family$for_latent) {
     mu_offs_oscale <- refmodel$family$latent_ilink(
@@ -472,19 +466,9 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
     } else {
       refdist_eval <- p_sel
     }
-    refdist_eval_mu_offs <- refdist_eval$mu
-    if (!all(refmodel$offset == 0)) {
-      refdist_eval_eta_offs <- refmodel$family$linkfun(refdist_eval_mu_offs)
-      if (refmodel$family$family %in% fams_neg_linpred()) {
-        refdist_eval_eta_offs <- refdist_eval_eta_offs - refmodel$offset
-      } else {
-        refdist_eval_eta_offs <- refdist_eval_eta_offs + refmodel$offset
-      }
-      refdist_eval_mu_offs <- refmodel$family$linkinv(refdist_eval_eta_offs)
-    }
     if (refmodel$family$for_latent) {
       refdist_eval_mu_offs_oscale <- refmodel$family$latent_ilink(
-        t(refdist_eval_mu_offs), cl_ref = refdist_eval$cl,
+        t(refdist_eval$mu_offs), cl_ref = refdist_eval$cl,
         wdraws_ref = refdist_eval$wsample_orig
       )
       if (length(dim(refdist_eval_mu_offs_oscale)) == 3) {
@@ -513,7 +497,7 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
         )
       }
       log_lik_ref <- t(refmodel$family$ll_fun(
-        refdist_eval_mu_offs[inds_aug, , drop = FALSE], refdist_eval$dis,
+        refdist_eval$mu_offs[inds_aug, , drop = FALSE], refdist_eval$dis,
         refmodel$y[inds], refmodel$wobs[inds]
       ))
     }
@@ -614,12 +598,12 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
 
       ## reweight the clusters/samples according to the psis-loo weights
       p_sel <- .get_p_clust(
-        family = refmodel$family, mu = mu, eta = eta, dis = dis,
-        wsample = exp(lw[, i]), cl = cl_sel, offs = refmodel$offset
+        family = refmodel$family, eta = eta, mu = mu, mu_offs = mu_offs,
+        dis = dis, wsample = exp(lw[, i]), cl = cl_sel, offs = refmodel$offset
       )
       p_pred <- .get_p_clust(
-        family = refmodel$family, mu = mu, eta = eta, dis = dis,
-        wsample = exp(lw[, i]), cl = cl_pred, offs = refmodel$offset
+        family = refmodel$family, eta = eta, mu = mu, mu_offs = mu_offs,
+        dis = dis, wsample = exp(lw[, i]), cl = cl_pred, offs = refmodel$offset
       )
 
       ## perform selection with the reweighted clusters/samples

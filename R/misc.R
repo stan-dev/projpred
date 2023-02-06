@@ -291,16 +291,16 @@ bootstrap <- function(x, fun = mean, B = 2000,
                           throw_mssg_ndraws = FALSE))
     } else if (nclusters == 1) {
       # special case, only one cluster
-      p_ref <- .get_p_clust(family = refmodel$family, mu = refmodel$mu,
-                            eta = refmodel$eta, dis = refmodel$dis,
-                            wobs = refmodel$wobs, cl = rep(1, S),
-                            offs = refmodel$offset)
+      p_ref <- .get_p_clust(family = refmodel$family, eta = refmodel$eta,
+                            mu = refmodel$mu, mu_offs = refmodel$mu_offs,
+                            dis = refmodel$dis, wobs = refmodel$wobs,
+                            cl = rep(1, S), offs = refmodel$offset)
     } else {
       # several clusters
-      p_ref <- .get_p_clust(family = refmodel$family, mu = refmodel$mu,
-                            eta = refmodel$eta, dis = refmodel$dis,
-                            wobs = refmodel$wobs, nclusters = nclusters,
-                            offs = refmodel$offset)
+      p_ref <- .get_p_clust(family = refmodel$family, eta = refmodel$eta,
+                            mu = refmodel$mu, mu_offs = refmodel$mu_offs,
+                            dis = refmodel$dis, wobs = refmodel$wobs,
+                            nclusters = nclusters, offs = refmodel$offset)
     }
   } else {
     ndraws <- min(S, ndraws)
@@ -315,21 +315,13 @@ bootstrap <- function(x, fun = mean, B = 2000,
     }
     cl <- rep(NA, S)
     cl[s_ind] <- 1:ndraws
-    mu_offs <- refmodel$mu
-    if (!all(refmodel$offset == 0)) {
-      eta_offs <- refmodel$family$linkfun(mu_offs)
-      if (refmodel$family$family %in% fams_neg_linpred()) {
-        eta_offs <- eta_offs - refmodel$offset
-      } else {
-        eta_offs <- eta_offs + refmodel$offset
-      }
-      mu_offs <- refmodel$family$linkinv(eta_offs)
-    }
     predvar <- do.call(cbind, lapply(s_ind, function(j) {
-      refmodel$family$predvar(mu_offs[, j, drop = FALSE], refmodel$dis[j])
+      refmodel$family$predvar(refmodel$mu_offs[, j, drop = FALSE],
+                              refmodel$dis[j])
     }))
     p_ref <- list(
       mu = refmodel$mu[, s_ind, drop = FALSE],
+      mu_offs = refmodel$mu_offs[, s_ind, drop = FALSE],
       var = structure(predvar,
                       nobs_orig = attr(refmodel$mu, "nobs_orig"),
                       class = oldClass(refmodel$mu)),
@@ -343,7 +335,7 @@ bootstrap <- function(x, fun = mean, B = 2000,
 }
 
 # Function for clustering the parameter draws:
-.get_p_clust <- function(family, mu, eta, dis, nclusters = 10,
+.get_p_clust <- function(family, eta, mu, mu_offs, dis, nclusters = 10,
                          wobs = rep(1, dim(mu)[1]),
                          wsample = rep(1, dim(mu)[2]), cl = NULL,
                          offs = rep(0, dim(mu)[1])) {
@@ -376,17 +368,6 @@ bootstrap <- function(x, fun = mean, B = 2000,
   # Predictive variances:
   predvar <- matrix(nrow = dim(mu)[1], ncol = nclusters)
   eps <- 1e-10
-  # Predictions incorporating offsets (needed for `predvar`):
-  mu_offs <- mu
-  if (!all(offs == 0)) {
-    eta_offs <- family$linkfun(mu_offs)
-    if (family$family %in% fams_neg_linpred()) {
-      eta_offs <- eta_offs - offs
-    } else {
-      eta_offs <- eta_offs + offs
-    }
-    mu_offs <- family$linkinv(eta_offs)
-  }
   for (j in 1:nclusters) {
     ind <- which(cl == j)
     # Compute normalized weights within the j-th cluster; `1 - eps` is for
@@ -418,6 +399,24 @@ bootstrap <- function(x, fun = mean, B = 2000,
     wsample_orig = wsample,
     clust_used = TRUE
   )
+
+  ### TODO: I think the following is not correct for non-identity links. I think
+  ### we need to average `mu_offs` within each cluster instead.
+  # Take offsets into account (the `if ()` condition is added for efficiency):
+  if (!all(offs == 0)) {
+    p_eta <- family$linkfun(p$mu)
+    if (family$family %in% fams_neg_linpred()) {
+      p_eta <- p_eta - offs
+    } else {
+      p_eta <- p_eta + offs
+    }
+    p$mu_offs <- family$linkinv(p_eta)
+  } else {
+    p$mu_offs <- p$mu
+  }
+  p <- p[c("mu", "mu_offs", setdiff(names(p), c("mu", "mu_offs")))]
+  ###
+
   return(p)
 }
 
