@@ -8,7 +8,7 @@ If you read this from a place other than <https://mc-stan.org/projpred/news/inde
 
 * Introduction of the augmented-data projection [(Weber and Vehtari, 2023)](https://doi.org/10.48550/arXiv.2301.01660) (see section ["Supported types of models"](https://mc-stan.org/projpred/articles/projpred.html#modtypes) of the main vignette for details). (GitHub: #70, #322)
 * Introduction of the latent projection [(Catalina et al., 2021)](https://doi.org/10.48550/arXiv.2109.04702) (see section ["Supported types of models"](https://mc-stan.org/projpred/articles/projpred.html#modtypes) of the main vignette and the new [latent-projection vignette](https://mc-stan.org/projpred/articles/latent.html) for details). (GitHub: #372)
-* When predicting from a multilevel model (both, from a multilevel reference model or from a multilevel submodel), group-level effects are now "integrated out" by considering all group levels (even those that already exist in the original dataset) as *new* group levels and by drawing group-level effects for all these "new" group levels randomly. Accordingly, `as.matrix.projection()` does not return the group-level effects anymore (the hierarchical variance components are still returned, though). (GitHub: **TODO** (insert PR number))
+* In case of multilevel models, **projpred** now has two global options that may be relevant for users: `projpred.mlvl_prd_new` and `projpred.mlvl_prj_ref_new`. These are explained in detail in the general package documentation (available [online](https://mc-stan.org/projpred/reference/projpred-package.html) or by typing `` ?`projpred-package` ``). (GitHub: #379)
 
 ## Minor changes
 
