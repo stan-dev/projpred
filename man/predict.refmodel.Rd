@@ -46,14 +46,15 @@ scale on which the predictions are returned, either \code{"link"} or
 not adhere to the typical \R convention of a default prediction on link
 scale). For both scales, the predictions are averaged across the posterior
 draws. In case of the latent projection, argument \code{type} is similar in
-spirit to argument \code{respOrig} from other functions: If (i) \code{is.null(ynew)},
-then argument \code{type} affects the predictions as described above. In that
-case, note that \code{type = "link"} yields the linear predictors without any
-modifications that may be due to the original response distribution (e.g.,
-for a \code{\link[brms:brmsfamily]{brms::cumulative()}} model, the ordered thresholds are not taken into
-account). If (ii) \code{!is.null(ynew)}, then argument \code{type} also affects the
-scale of the log predictive densities (\code{type = "response"} for the original
-response scale, \code{type = "link"} for the latent Gaussian scale).}
+spirit to argument \code{resp_oscale} from other functions: If (i)
+\code{is.null(ynew)}, then argument \code{type} affects the predictions as described
+above. In that case, note that \code{type = "link"} yields the linear predictors
+without any modifications that may be due to the original response
+distribution (e.g., for a \code{\link[brms:brmsfamily]{brms::cumulative()}} model, the ordered
+thresholds are not taken into account). If (ii) \code{!is.null(ynew)}, then
+argument \code{type} also affects the scale of the log predictive densities
+(\code{type = "response"} for the original response scale, \code{type = "link"} for
+the latent Gaussian scale).}
 
 \item{...}{Currently ignored.}
 }

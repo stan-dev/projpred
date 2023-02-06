@@ -2,10 +2,10 @@
                                offset = refmodel$offset[test_points],
                                wobs = refmodel$wobs[test_points],
                                y = refmodel$y[test_points],
-                               yOrig = refmodel$yOrig[test_points]) {
+                               y_oscale = refmodel$y_oscale[test_points]) {
   lapply(submodels, function(initsubmodl) {
     .weighted_summary_means(
-      y_test = list(y = y, yOrig = yOrig, weights = wobs),
+      y_test = list(y = y, y_oscale = y_oscale, weights = wobs),
       family = refmodel$family,
       wsample = initsubmodl$weights,
       mu = refmodel$family$mu_fun(initsubmodl$submodl, obs = test_points,
@@ -22,7 +22,7 @@
 #
 # @param y_test A `list`, at least with elements `y` (response values) and
 #   `weights` (observation weights). In case of the latent projection, this
-#   `list` also needs to contain `yOrig` (response values on the original
+#   `list` also needs to contain `y_oscale` (response values on the original
 #   response scale, i.e., the non-latent response values).
 # @param family A `family` object.
 # @param wsample A vector of weights for the parameter draws.
@@ -64,35 +64,36 @@
     lppd = apply(loglik, 1, log_weighted_mean_exp, wsample)
   )
   if (family$for_latent) {
-    mu_Orig <- family$latent_ilink(t(mu), cl_ref = cl_ref,
-                                   wdraws_ref = wdraws_ref)
-    if (length(dim(mu_Orig)) < 2) {
+    mu_oscale <- family$latent_ilink(t(mu), cl_ref = cl_ref,
+                                     wdraws_ref = wdraws_ref)
+    if (length(dim(mu_oscale)) < 2) {
       stop("Unexpected structure for the output of `latent_ilink`.")
     }
-    loglik_Orig <- family$latent_llOrig(mu_Orig, yOrig = y_test$yOrig,
-                                        wobs = y_test$weights, cl_ref = cl_ref,
-                                        wdraws_ref = wdraws_ref)
-    if (!is.matrix(loglik_Orig)) {
-      stop("Unexpected structure for the output of `latent_llOrig`.")
+    loglik_oscale <- family$latent_ll_oscale(
+      mu_oscale, y_oscale = y_test$y_oscale, wobs = y_test$weights,
+      cl_ref = cl_ref, wdraws_ref = wdraws_ref
+    )
+    if (!is.matrix(loglik_oscale)) {
+      stop("Unexpected structure for the output of `latent_ll_oscale`.")
     }
-    if (length(dim(mu_Orig)) == 3) {
-      # In this case, `mu_Orig` is a 3-dimensional array (S x N x C), so coerce
-      # it to an augmented-rows matrix:
-      mu_Orig <- arr2augmat(mu_Orig, margin_draws = 1)
-      mu_Orig_avg <- structure(
-        c(mu_Orig %*% wsample),
-        nobs_orig = attr(mu_Orig, "nobs_orig"),
-        class = sub("augmat", "augvec", oldClass(mu_Orig), fixed = TRUE)
+    if (length(dim(mu_oscale)) == 3) {
+      # In this case, `mu_oscale` is a 3-dimensional array (S x N x C), so
+      # coerce it to an augmented-rows matrix:
+      mu_oscale <- arr2augmat(mu_oscale, margin_draws = 1)
+      mu_oscale_avg <- structure(
+        c(mu_oscale %*% wsample),
+        nobs_orig = attr(mu_oscale, "nobs_orig"),
+        class = sub("augmat", "augvec", oldClass(mu_oscale), fixed = TRUE)
       )
     } else {
-      # In principle, we could use the same code for `mu_Orig_avg` as above.
-      # However, that would require `mu_Orig <- t(mu_Orig)` beforehand, so the
-      # following should be more efficient:
-      mu_Orig_avg <- c(wsample %*% mu_Orig)
+      # In principle, we could use the same code for `mu_oscale_avg` as above.
+      # However, that would require `mu_oscale <- t(mu_oscale)` beforehand, so
+      # the following should be more efficient:
+      mu_oscale_avg <- c(wsample %*% mu_oscale)
     }
-    avg$Orig <- list(
-      mu = mu_Orig_avg,
-      lppd = apply(loglik_Orig, 2, log_weighted_mean_exp, wsample)
+    avg$oscale <- list(
+      mu = mu_oscale_avg,
+      lppd = apply(loglik_oscale, 2, log_weighted_mean_exp, wsample)
     )
   }
   return(avg)
@@ -104,19 +105,19 @@
 # statistics relative to the baseline model of that size (`nfeat_baseline = Inf`
 # means that the baseline model is the reference model).
 .tabulate_stats <- function(varsel, stats, alpha = 0.05,
-                            nfeat_baseline = NULL, respOrig = TRUE, ...) {
+                            nfeat_baseline = NULL, resp_oscale = TRUE, ...) {
   stat_tab <- data.frame()
   summ_ref <- varsel$summaries$ref
   summ_sub <- varsel$summaries$sub
 
-  if (!varsel$refmodel$family$for_latent && !respOrig) {
-    stop("`respOrig = FALSE` can only be used in case of the latent ",
+  if (!varsel$refmodel$family$for_latent && !resp_oscale) {
+    stop("`resp_oscale = FALSE` can only be used in case of the latent ",
          "projection.")
   }
   if (varsel$refmodel$family$for_latent) {
-    if (respOrig) {
-      summ_ref <- summ_ref$Orig
-      summ_sub <- lapply(summ_sub, "[[", "Orig")
+    if (resp_oscale) {
+      summ_ref <- summ_ref$oscale
+      summ_sub <- lapply(summ_sub, "[[", "oscale")
       ref_lppd_NA <- all(is.na(summ_ref$lppd))
       sub_lppd_NA <- any(sapply(summ_sub, check_sub_NA, el_nm = "lppd"))
       ref_mu_NA <- all(is.na(summ_ref$mu))
@@ -124,32 +125,32 @@
       if (ref_mu_NA || sub_mu_NA) {
         message(
           "`latent_ilink` returned only `NA`s, so all performance statistics ",
-          "will also be `NA` as long as `respOrig = TRUE`."
+          "will also be `NA` as long as `resp_oscale = TRUE`."
         )
       } else if (any(stats %in% c("elpd", "mlpd")) &&
                  (ref_lppd_NA || sub_lppd_NA)) {
         message(
-          "`latent_llOrig` returned only `NA`s, so ELPD and MLPD will also be ",
-          "`NA` as long as `respOrig = TRUE`."
+          "`latent_ll_oscale` returned only `NA`s, so ELPD and MLPD will also ",
+          "be `NA` as long as `resp_oscale = TRUE`."
         )
       }
-      varsel$d_test$y <- varsel$d_test$yOrig
+      varsel$d_test$y <- varsel$d_test$y_oscale
     } else {
       if (all(is.na(varsel$refmodel$dis)) &&
           any(stats %in% c("elpd", "mlpd"))) {
         message(
-          "Cannot calculate ELPD or MLPD if `respOrig = FALSE` and ",
+          "Cannot calculate ELPD or MLPD if `resp_oscale = FALSE` and ",
           "`<refmodel>$dis` consists of only `NA`s. If it's not possible to ",
           "supply a suitable argument `dis` to init_refmodel(), consider (i) ",
-          "switching to `respOrig = TRUE` (which might require the ",
+          "switching to `resp_oscale = TRUE` (which might require the ",
           "specification of functions needed by extend_family()) or (ii) ",
           "using a performance statistic other than ELPD or MLPD."
         )
       }
       if (all(is.na(varsel$d_test$y))) {
         message(
-          "Cannot calculate performance statistics if `respOrig = FALSE` and ",
-          "`<vsel>$d_test$y` consists of only `NA`s. The reason for these ",
+          "Cannot calculate performance statistics if `resp_oscale = FALSE` ",
+          "and `<vsel>$d_test$y` consists of only `NA`s. The reason for these ",
           "`NA`s is probably that `<vsel>` was created by cv_varsel() with ",
           "`cv_method = \"kfold\"`. (In case of K-fold cross-validation, the ",
           "latent response values for the test datasets cannot be defined ",
@@ -159,11 +160,11 @@
       }
     }
   }
-  # Just to avoid that `$y` gets expanded to `$yOrig` if element `"y"` does not
-  # exist (for whatever reason; actually, it should always exist):
-  varsel$d_test$yOrig <- NULL
+  # Just to avoid that `$y` gets expanded to `$y_oscale` if element `"y"` does
+  # not exist (for whatever reason; actually, it should always exist):
+  varsel$d_test$y_oscale <- NULL
 
-  if (respOrig && !is.null(varsel$refmodel$family$cats) &&
+  if (resp_oscale && !is.null(varsel$refmodel$family$cats) &&
       any(stats %in% c("acc", "pctcorr"))) {
     summ_ref$mu <- catmaxprb(summ_ref$mu, lvls = varsel$refmodel$family$cats)
     summ_sub <- lapply(summ_sub, function(summ_sub_k) {
@@ -291,9 +292,9 @@ check_sub_NA <- function(summ_sub_k, el_nm) {
 ## observation weights (specified by the user) are contained in
 ## `d_test$weights`. These are already taken into account by
 ## `<refmodel_object>$family$ll_fun()` (or
-## `<refmodel_object>$family$latent_llOrig()`) and are thus already taken into
-## account in `lppd`. However, `mu` does not take them into account, so some
-## further adjustments are necessary below.
+## `<refmodel_object>$family$latent_ll_oscale()`) and are thus already taken
+## into account in `lppd`. However, `mu` does not take them into account, so
+## some further adjustments are necessary below.
 get_stat <- function(mu, lppd, d_test, stat, mu.bs = NULL, lppd.bs = NULL,
                      wcv = NULL, alpha = 0.1, ...) {
   n_notna.bs <- NULL

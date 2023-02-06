@@ -74,7 +74,7 @@ test_that(paste(
     smmry_tester(
       smmrys_vs[[tstsetup]],
       vsel_expected = vss[[tstsetup_vs]],
-      respOrig_expected = args_smmry_vs[[tstsetup]]$respOrig %||% TRUE,
+      resp_oscale_expected = args_smmry_vs[[tstsetup]]$resp_oscale %||% TRUE,
       search_trms_empty_size =
         length(args_vs[[tstsetup_vs]]$search_terms) &&
         all(grepl("\\+", args_vs[[tstsetup_vs]]$search_terms)),
@@ -97,7 +97,7 @@ test_that(paste(
     smmry_tester(
       smmrys_cvvs[[tstsetup]],
       vsel_expected = cvvss[[tstsetup_cvvs]],
-      respOrig_expected = args_smmry_cvvs[[tstsetup]]$respOrig %||% TRUE,
+      resp_oscale_expected = args_smmry_cvvs[[tstsetup]]$resp_oscale %||% TRUE,
       search_trms_empty_size =
         length(args_cvvs[[tstsetup_cvvs]]$search_terms) &&
         all(grepl("\\+", args_cvvs[[tstsetup_cvvs]]$search_terms)),

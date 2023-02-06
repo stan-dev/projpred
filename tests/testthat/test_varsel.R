@@ -115,7 +115,7 @@ test_that(paste(
       weights = wobs_crr,
       y = dat_crr[[stdize_lhs(formul_fit_crr)$y_nm]]
     )
-    yOrig_crr <- d_test_crr$y
+    y_oscale_crr <- d_test_crr$y
     if (prj_crr %in% c("latent", "augdat")) {
       if (use_fac) {
         yunqs <- yunq_chr
@@ -127,18 +127,18 @@ test_that(paste(
         lvls_crr <- lvls_crr %||%
           args_ref[[args_vs_i$tstsetup_ref]]$latent_y_unqs
         lvls_crr <- lvls_crr %||% yunqs
-        yOrig_crr <- factor(as.character(yOrig_crr), levels = lvls_crr,
-                            ordered = is.ordered(yOrig_crr))
+        y_oscale_crr <- factor(as.character(y_oscale_crr), levels = lvls_crr,
+                            ordered = is.ordered(y_oscale_crr))
       }
       if (prj_crr == "augdat") {
-        d_test_crr$y <- yOrig_crr
+        d_test_crr$y <- y_oscale_crr
       } else if (prj_crr == "latent") {
         d_test_crr$y <- colMeans(
           unname(posterior_linpred(fits[[args_vs_i$tstsetup_fit]]))
         )
       }
     }
-    d_test_crr$yOrig <- yOrig_crr
+    d_test_crr$y_oscale <- y_oscale_crr
     if (prj_crr == "augdat" && fam_crr == "cumul") {
       warn_expected <- "non-integer #successes in a binomial glm!"
     } else if (!is.null(args_vs_i$avoid.increase)) {
@@ -180,7 +180,7 @@ test_that(paste(
       # brms seems to set argument `contrasts`, but this is not important for
       # projpred, so ignore it in the comparison:
       attr(d_test_orig$y, "contrasts") <- NULL
-      attr(d_test_orig$yOrig, "contrasts") <- NULL
+      attr(d_test_orig$y_oscale, "contrasts") <- NULL
     }
     expect_equal(vs_repr$d_test[setdiff(names(vs_repr$d_test),
                                         c("type", "data"))],
@@ -239,7 +239,7 @@ test_that(paste(
       weights = wobs_crr,
       y = dat_indep_crr[[y_nm_crr]]
     )
-    yOrig_crr <- d_test_crr$y
+    y_oscale_crr <- d_test_crr$y
     if (prj_crr %in% c("latent", "augdat")) {
       if (use_fac) {
         yunqs <- yunq_chr
@@ -251,11 +251,11 @@ test_that(paste(
         lvls_crr <- lvls_crr %||%
           args_ref[[args_vs_i$tstsetup_ref]]$latent_y_unqs
         lvls_crr <- lvls_crr %||% yunqs
-        yOrig_crr <- factor(as.character(yOrig_crr), levels = lvls_crr,
-                            ordered = is.ordered(yOrig_crr))
+        y_oscale_crr <- factor(as.character(y_oscale_crr), levels = lvls_crr,
+                            ordered = is.ordered(y_oscale_crr))
       }
       if (prj_crr == "augdat") {
-        d_test_crr$y <- yOrig_crr
+        d_test_crr$y <- y_oscale_crr
       } else if (prj_crr == "latent") {
         if (pkg_crr == "rstanarm") {
           post_linpred <- posterior_linpred(fits[[args_vs_i$tstsetup_fit]],
@@ -268,7 +268,7 @@ test_that(paste(
         d_test_crr$y <- colMeans(unname(post_linpred))
       }
     }
-    d_test_crr$yOrig <- yOrig_crr
+    d_test_crr$y_oscale <- y_oscale_crr
     if (prj_crr == "augdat" && fam_crr == "cumul") {
       warn_expected <- "non-integer #successes in a binomial glm!"
     } else if (!is.null(args_vs_i$avoid.increase)) {
@@ -371,7 +371,7 @@ test_that(paste(
         return(pl_indep_k)
       })
       summ_sub_ch <- lapply(seq_along(summ_sub_ch), function(k_idx) {
-        c(summ_sub_ch_lat[[k_idx]], list("Orig" = summ_sub_ch[[k_idx]]))
+        c(summ_sub_ch_lat[[k_idx]], list("oscale" = summ_sub_ch[[k_idx]]))
       })
     }
     names(summ_sub_ch) <- NULL
@@ -472,14 +472,14 @@ test_that(paste(
         mu = unname(colMeans(mu_new_lat)),
         lppd = unname(apply(lppd_new_lat, 2, log_sum_exp) - log(nrefdraws))
       )
-      summ_ref_ch <- c(summ_ref_ch_lat, list("Orig" = summ_ref_ch))
+      summ_ref_ch <- c(summ_ref_ch_lat, list("oscale" = summ_ref_ch))
     }
     expect_equal(vs_indep$summaries$ref, summ_ref_ch,
                  tolerance = 1e3 * .Machine$double.eps, info = tstsetup)
     lppd_ref_ch2 <- unname(loo::elpd(lppd_new)$pointwise[, "elpd"])
     if (prj_crr == "latent") {
-      lppd_ref_ch2_Orig <- lppd_ref_ch2
-      expect_equal(vs_indep$summaries$ref$Orig$lppd, lppd_ref_ch2_Orig,
+      lppd_ref_ch2_oscale <- lppd_ref_ch2
+      expect_equal(vs_indep$summaries$ref$oscale$lppd, lppd_ref_ch2_oscale,
                    tolerance = 1e1 * .Machine$double.eps, info = tstsetup)
       lppd_ref_ch2 <- loo::elpd(lppd_new_lat)$pointwise[, "elpd"]
     }

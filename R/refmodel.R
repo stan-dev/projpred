@@ -210,7 +210,8 @@
 #' The function supplied to argument `extract_model_data` needs to have the
 #' prototype
 #' ```{r, eval = FALSE}
-#' extract_model_data(object, newdata, wrhs = NULL, orhs = NULL, extract_y = TRUE)
+#' extract_model_data(object, newdata, wrhs = NULL, orhs = NULL,
+#'                    extract_y = TRUE)
 #' ```
 #' where:
 #' * `object` accepts the reference model fit as given in argument `object` (but
@@ -363,14 +364,15 @@ NULL
 #'   not adhere to the typical \R convention of a default prediction on link
 #'   scale). For both scales, the predictions are averaged across the posterior
 #'   draws. In case of the latent projection, argument `type` is similar in
-#'   spirit to argument `respOrig` from other functions: If (i) `is.null(ynew)`,
-#'   then argument `type` affects the predictions as described above. In that
-#'   case, note that `type = "link"` yields the linear predictors without any
-#'   modifications that may be due to the original response distribution (e.g.,
-#'   for a [brms::cumulative()] model, the ordered thresholds are not taken into
-#'   account). If (ii) `!is.null(ynew)`, then argument `type` also affects the
-#'   scale of the log predictive densities (`type = "response"` for the original
-#'   response scale, `type = "link"` for the latent Gaussian scale).
+#'   spirit to argument `resp_oscale` from other functions: If (i)
+#'   `is.null(ynew)`, then argument `type` affects the predictions as described
+#'   above. In that case, note that `type = "link"` yields the linear predictors
+#'   without any modifications that may be due to the original response
+#'   distribution (e.g., for a [brms::cumulative()] model, the ordered
+#'   thresholds are not taken into account). If (ii) `!is.null(ynew)`, then
+#'   argument `type` also affects the scale of the log predictive densities
+#'   (`type = "response"` for the original response scale, `type = "link"` for
+#'   the latent Gaussian scale).
 #' @param ... Currently ignored.
 #'
 #' @details Argument `weightsnew` is only relevant if `!is.null(ynew)`.
@@ -517,29 +519,29 @@ predict.refmodel <- function(object, newdata = NULL, ynew = NULL,
   } else {
     ## evaluate the log predictive density at the given ynew values
     if (object$family$for_latent && type == "response") {
-      mu_Orig <- object$family$latent_ilink(
+      mu_oscale <- object$family$latent_ilink(
         t(eta), cl_ref = seq_along(object$wsample),
         wdraws_ref = rep(1, length(object$wsample))
       )
-      if (length(dim(mu_Orig)) < 2) {
+      if (length(dim(mu_oscale)) < 2) {
         stop("Unexpected structure for the output of `latent_ilink`.")
       }
-      loglik <- object$family$latent_llOrig(
-        mu_Orig, yOrig = ynew, wobs = weightsnew,
+      loglik <- object$family$latent_ll_oscale(
+        mu_oscale, y_oscale = ynew, wobs = weightsnew,
         cl_ref = seq_along(object$wsample),
         wdraws_ref = rep(1, length(object$wsample))
       )
       if (!is.matrix(loglik)) {
-        stop("Unexpected structure for the output of `latent_llOrig`.")
+        stop("Unexpected structure for the output of `latent_ll_oscale`.")
       }
-      if (all(is.na(mu_Orig))) {
+      if (all(is.na(mu_oscale))) {
         message(
           "`latent_ilink` returned only `NA`s, so the output will also be ",
           "`NA` as long as `type = \"response\"`."
         )
       } else if (all(is.na(loglik))) {
         message(
-          "`latent_llOrig` returned only `NA`s, so the output will also be ",
+          "`latent_ll_oscale` returned only `NA`s, so the output will also be ",
           "`NA` as long as `type = \"response\"`."
         )
       }
@@ -912,8 +914,9 @@ get_refmodel.stanreg <- function(object, latent = FALSE, dis = NULL, ...) {
     # TODO (latent): Add response-scale support for more families: For
     # response-scale support, they all need a specific `latent_ilink` function;
     # some families (those for which the response can be numeric) also require
-    # specific `latent_llOrig` and `latent_ppdOrig` functions. The binomial
-    # family has response-scale support implemented natively in projpred.
+    # specific `latent_ll_oscale` and `latent_ppd_oscale` functions. The
+    # binomial family has response-scale support implemented natively in
+    # projpred.
   }
 
   # Output ------------------------------------------------------------------
@@ -1148,34 +1151,35 @@ init_refmodel <- function(object, data, formula, family, ref_predfun = NULL,
   if (family$for_latent) {
     # Use `ref_predfun_usr` here (instead of `ref_predfun`) to include offsets:
     y <- rowMeans(unname(ref_predfun_usr(object)))
-    yOrig <- model_data$y
+    y_oscale <- model_data$y
     if (is.null(family$cats) &&
-        (is.factor(yOrig) || is.character(yOrig) || is.logical(yOrig))) {
+        (is.factor(y_oscale) || is.character(y_oscale) ||
+         is.logical(y_oscale))) {
       stop("If the original (i.e., non-latent) response is `factor`-like, ",
            "`family$cats` must not be `NULL`. See the documentation for ",
            "extend_family()'s argument `latent_y_unqs` to solve this.")
-      # Alternatively, we could think about `family$cats <- levels(yOrig)`. But
-      # the error message is conceptually more desirable because it avoids the
-      # retrospective modification of extend_family() output.
+      # Alternatively, we could think about `family$cats <- levels(y_oscale)`.
+      # But the error message is conceptually more desirable because it avoids
+      # the retrospective modification of extend_family() output.
     }
     if (!is.null(family$cats)) {
-      yOrig <- as.factor(yOrig)
-      stopifnot(nlevels(yOrig) >= 2)
-      if (!identical(levels(yOrig), family$cats)) {
+      y_oscale <- as.factor(y_oscale)
+      stopifnot(nlevels(y_oscale) >= 2)
+      if (!identical(levels(y_oscale), family$cats)) {
         stop("The levels of the response variable (after coercing it to a ",
              "`factor`) have to be identical to `family$cats`. See the ",
              "documentation for extend_family()'s argument `latent_y_unqs` to ",
              "solve this.")
       }
-    } else if (family$familyOrig == "binomial") {
-      if (!all(.is.wholenumber(yOrig))) {
+    } else if (family$family_oscale == "binomial") {
+      if (!all(.is.wholenumber(y_oscale))) {
         stop(
           "In projpred, the response must contain numbers of successes (not ",
           "proportions of successes), in contrast to glm() where this is ",
           "possible for a 1-column response if the multiplication with the ",
           "weights gives whole numbers."
         )
-      } else if (all(yOrig %in% c(0, 1)) &&
+      } else if (all(y_oscale %in% c(0, 1)) &&
                  length(response_name) == 1 &&
                  !all(weights == 1)) {
         warning(
@@ -1186,7 +1190,7 @@ init_refmodel <- function(object, data, formula, family, ref_predfun = NULL,
     }
   } else {
     y <- model_data$y
-    yOrig <- NULL
+    y_oscale <- NULL
   }
 
   # Add (transformed) response under the (possibly) new name:
@@ -1272,10 +1276,10 @@ init_refmodel <- function(object, data, formula, family, ref_predfun = NULL,
   ndraws <- ncol(mu)
   if (is.null(dis)) {
     if (family$for_latent && proper_model) {
-      if (!is.null(family$linkOrig)) {
-        if (family$linkOrig %in% c("probit", "probit_approx")) {
+      if (!is.null(family$link_oscale)) {
+        if (family$link_oscale %in% c("probit", "probit_approx")) {
           dis <- rep(1, ndraws)
-        } else if (family$linkOrig %in% c("logit", "logistic")) {
+        } else if (family$link_oscale %in% c("logit", "logistic")) {
           dis <- rep(1.6, ndraws)
         } else {
           dis <- rep(NA, ndraws)
@@ -1319,7 +1323,7 @@ init_refmodel <- function(object, data, formula, family, ref_predfun = NULL,
     fit = object, formula, div_minimizer, family, mu, eta, dis, y, intercept,
     proj_predfun, fetch_data = fetch_data_wrapper, wobs = weights, wsample,
     offset, cvfun, cvfits, extract_model_data, ref_predfun, cvrefbuilder,
-    yOrig = yOrig %||% y
+    y_oscale = y_oscale %||% y
   )
   if (proper_model) {
     class(refmodel) <- "refmodel"

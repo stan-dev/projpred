@@ -37,7 +37,7 @@ As illustrated by the Poisson example below, the latent projection can not only 
 
 To use the latent projection in **projpred**, the new argument `latent` of `extend_family()` needs to be set to `TRUE`. Since `extend_family()` is called by `init_refmodel()` which in turn is called by `get_refmodel()` (more precisely, by the `get_refmodel()` methods) which in turn is called at the beginning of the top-level functions `project()`, `varsel()`, and `cv_varsel()`, most users will usually pass `latent = TRUE` from the top-level function they want to use (e.g., `cv_varsel()`) down to `extend_family()` via the ellipsis (`...`). This is also illustrated in the examples below.
 
-After performing the projection (either as a stand-alone feature via `project()` or embedded in a variable selection via `varsel()` or `cv_varsel()`), the post-processing (e.g., the calculation of the performance statistics in `summary.vsel()`) can be performed on the original response scale. For this, `extend_family()` has gained several new arguments accepting R functions responsible for the inverse-link transformation from latent scale to response scale (`latent_ilink`), for the calculation of log-likelihood values on response scale (`latent_llOrig`), and for drawing from the predictive distribution on response scale (`latent_ppdOrig`). For some families, these arguments have internal defaults implemented natively in **projpred**. These families are listed in the main vignette (section ["Supported types of models"](https://mc-stan.org/projpred/articles/projpred.html#modtypes)). For all other families, **projpred** either tries to infer a reasonable function internally (in case of `latent_ilink`) or uses a dummy function returning only `NA`s (in case of `latent_llOrig` and `latent_ppdOrig`), unless the user supplies custom functions to these arguments. When creating a reference model object for a family of the latter category (i.e., lacking full response-scale support by default), **projpred** will throw messages stating whether (and which) features will be unavailable unless at least some of these arguments are provided by the user. Again, the ellipsis (`...`) can be used to pass these arguments from a top-level function such as `cv_varsel()` down to `extend_family()`. In the post-processing functions, response-scale analyses can usually be deactivated by setting the new argument `respOrig` to `FALSE`, with the exception of `predict.refmodel()` and `proj_linpred()` where the existing arguments `type` and `transform` serve this purpose (see the documentation).
+After performing the projection (either as a stand-alone feature via `project()` or embedded in a variable selection via `varsel()` or `cv_varsel()`), the post-processing (e.g., the calculation of the performance statistics in `summary.vsel()`) can be performed on the original response scale. For this, `extend_family()` has gained several new arguments accepting R functions responsible for the inverse-link transformation from latent scale to response scale (`latent_ilink`), for the calculation of log-likelihood values on response scale (`latent_ll_oscale`), and for drawing from the predictive distribution on response scale (`latent_ppd_oscale`). For some families, these arguments have internal defaults implemented natively in **projpred**. These families are listed in the main vignette (section ["Supported types of models"](https://mc-stan.org/projpred/articles/projpred.html#modtypes)). For all other families, **projpred** either tries to infer a reasonable function internally (in case of `latent_ilink`) or uses a dummy function returning only `NA`s (in case of `latent_ll_oscale` and `latent_ppd_oscale`), unless the user supplies custom functions to these arguments. When creating a reference model object for a family of the latter category (i.e., lacking full response-scale support by default), **projpred** will throw messages stating whether (and which) features will be unavailable unless at least some of these arguments are provided by the user. Again, the ellipsis (`...`) can be used to pass these arguments from a top-level function such as `cv_varsel()` down to `extend_family()`. In the post-processing functions, response-scale analyses can usually be deactivated by setting the new argument `resp_oscale` to `FALSE`, with the exception of `predict.refmodel()` and `proj_linpred()` where the existing arguments `type` and `transform` serve this purpose (see the documentation).
 
 Apart from the arguments mentioned above, `extend_family()` has also gained a new argument `latent_y_unqs` whose purpose is described in the documentation.
 
@@ -146,7 +146,7 @@ d_test_lat_poiss <- list(
   ### element `y` to a vector of `NA`s:
   y = rep(NA, nrow(dat_poiss_test)),
   ###
-  yOrig = dat_poiss_test$y
+  y_oscale = dat_poiss_test$y
 )
 time_lat <- system.time(vs_lat <- varsel(
   refm_fit_poiss,
@@ -201,15 +201,15 @@ soltrms_lat <- solution_terms(vs_lat)
 ( soltrms_lat_final <- head(soltrms_lat, modsize_decided_lat) )
 ```
 
-We will skip post-selection inference here (see the main vignette for a demonstration of post-selection inference), but note that `proj_predict()` has gained a new argument `respOrig` and that analogous response-scale functionality is available in `proj_linpred()` (argument `transform`) and `predict.refmodel()` (argument `type`).
+We will skip post-selection inference here (see the main vignette for a demonstration of post-selection inference), but note that `proj_predict()` has gained a new argument `resp_oscale` and that analogous response-scale functionality is available in `proj_linpred()` (argument `transform`) and `predict.refmodel()` (argument `type`).
 
 ### Variable selection using the traditional projection
 
 We will now look at what **projpred**'s traditional projection would have given:
 ```{r, results='hide'}
 d_test_trad_poiss <- d_test_lat_poiss
-d_test_trad_poiss$y <- d_test_trad_poiss$yOrig
-d_test_trad_poiss$yOrig <- NULL
+d_test_trad_poiss$y <- d_test_trad_poiss$y_oscale
+d_test_trad_poiss$y_oscale <- NULL
 time_trad <- system.time(vs_trad <- varsel(
   refm_fit_poiss,
   d_test = d_test_trad_poiss,
@@ -267,20 +267,20 @@ refm_fit_nebin <- stan_glm(
 To run a variable selection with `latent = TRUE`, we now also need to specify more arguments which will be passed to `extend_family()`:^[The suffix `_prec` in `refm_prec` stands for "precision" because here, we follow the Stan convention (see the Stan documentation for the `neg_binomial_2` distribution, the `brms::negbinomial()` documentation, and the **brms** vignette "Parameterization of Response Distributions in brms") and prefer the term *precision* parameter for what is denoted by $\phi$ there (confusingly, argument `size` in `?stats::NegBinomial`---which is the same as $\phi$ from the Stan notation---is called the *dispersion* parameter there, although the variance is increased by its reciprocal).]
 ```{r, results='hide', message=TRUE}
 refm_prec <- as.matrix(refm_fit_nebin)[, "reciprocal_dispersion", drop = FALSE]
-latent_llOrig_nebin <- function(ilpreds, yOrig,
-                                wobs = rep(1, length(yOrig)), cl_ref,
-                                wdraws_ref = rep(1, length(cl_ref))) {
-  yOrig_mat <- matrix(yOrig, nrow = nrow(ilpreds), ncol = ncol(ilpreds),
-                      byrow = TRUE)
+latent_ll_oscale_nebin <- function(ilpreds, y_oscale,
+                                   wobs = rep(1, length(y_oscale)), cl_ref,
+                                   wdraws_ref = rep(1, length(cl_ref))) {
+  y_oscale_mat <- matrix(y_oscale, nrow = nrow(ilpreds), ncol = ncol(ilpreds),
+                         byrow = TRUE)
   wobs_mat <- matrix(wobs, nrow = nrow(ilpreds), ncol = ncol(ilpreds),
                      byrow = TRUE)
   refm_prec_agg <- cl_agg(refm_prec, cl = cl_ref, wdraws = wdraws_ref)
-  ll_unw <- dnbinom(yOrig_mat, size = refm_prec_agg, mu = ilpreds, log = TRUE)
+  ll_unw <- dnbinom(y_oscale_mat, size = refm_prec_agg, mu = ilpreds, log = TRUE)
   return(wobs_mat * ll_unw)
 }
-latent_ppdOrig_nebin <- function(ilpreds_resamp, wobs, cl_ref,
-                                 wdraws_ref = rep(1, length(cl_ref)),
-                                 idxs_prjdraws) {
+latent_ppd_oscale_nebin <- function(ilpreds_resamp, wobs, cl_ref,
+                                    wdraws_ref = rep(1, length(cl_ref)),
+                                    idxs_prjdraws) {
   refm_prec_agg <- cl_agg(refm_prec, cl = cl_ref, wdraws = wdraws_ref)
   refm_prec_agg_resamp <- refm_prec_agg[idxs_prjdraws, , drop = FALSE]
   ppd <- rnbinom(prod(dim(ilpreds_resamp)), size = refm_prec_agg_resamp,
@@ -297,8 +297,8 @@ vs_lat_nebin <- varsel(
   nterms_max = 14,
   seed = 95930,
   latent = TRUE,
-  latent_llOrig = latent_llOrig_nebin,
-  latent_ppdOrig = latent_ppdOrig_nebin
+  latent_ll_oscale = latent_ll_oscale_nebin,
+  latent_ppd_oscale = latent_ppd_oscale_nebin
 )
 ```
 Again, the message telling that `<refmodel>$dis` consists of only `NA`s will not concern us here because we will only be focusing on response-scale post-processing. The message concerning `latent_ilink` can be safely ignored here (the internal default based on `family$linkinv` works correctly in this case).

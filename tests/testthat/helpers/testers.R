@@ -86,9 +86,9 @@ extfam_tester <- function(extfam,
       extfam_nms_add <- c(extfam_nms_add, "linkfun", "linkinv")
     }
   } else if (extfam$for_latent) {
-    extfam_nms_add <- c(extfam_nms_add, "familyOrig", "linkOrig",
-                        "latent_ilink", "latent_llOrig", "latent_ppdOrig")
-    if (extfam$familyOrig != "binomial") {
+    extfam_nms_add <- c(extfam_nms_add, "family_oscale", "link_oscale",
+                        "latent_ilink", "latent_ll_oscale", "latent_ppd_oscale")
+    if (extfam$family_oscale != "binomial") {
       extfam_nms_add <- c(extfam_nms_add, "cats")
     }
   }
@@ -152,27 +152,27 @@ extfam_tester <- function(extfam,
 
   ## For `extfam` -----------------------------------------------------------
 
-  if ("familyOrig" %in% names(extfam)) {
-    expect_true(extfam$familyOrig %in% fam_nms_long, info = info_str)
+  if ("family_oscale" %in% names(extfam)) {
+    expect_true(extfam$family_oscale %in% fam_nms_long, info = info_str)
   }
-  if ("linkOrig" %in% names(extfam)) {
-    expect_true(extfam$linkOrig %in% link_str, info = info_str)
+  if ("link_oscale" %in% names(extfam)) {
+    expect_true(extfam$link_oscale %in% link_str, info = info_str)
   }
-  if ("latent_llOrig" %in% names(extfam)) {
-    if (extfam$familyOrig == "binomial") {
-      expect_identical(extfam$latent_llOrig, latent_llOrig_binom_nocats,
+  if ("latent_ll_oscale" %in% names(extfam)) {
+    if (extfam$family_oscale == "binomial") {
+      expect_identical(extfam$latent_ll_oscale, latent_ll_oscale_binom_nocats,
                        info = info_str)
     } else {
-      expect_identical(extfam$latent_llOrig, latent_llOrig_cats,
+      expect_identical(extfam$latent_ll_oscale, latent_ll_oscale_cats,
                        info = info_str)
     }
   }
-  if ("latent_ppdOrig" %in% names(extfam)) {
-    if (extfam$familyOrig == "binomial") {
-      expect_identical(extfam$latent_ppdOrig, latent_ppdOrig_binom_nocats,
+  if ("latent_ppd_oscale" %in% names(extfam)) {
+    if (extfam$family_oscale == "binomial") {
+      expect_identical(extfam$latent_ppd_oscale, latent_ppd_oscale_binom_nocats,
                        info = info_str)
     } else {
-      expect_identical(extfam$latent_ppdOrig, latent_ppdOrig_cats,
+      expect_identical(extfam$latent_ppd_oscale, latent_ppd_oscale_cats,
                        info = info_str)
     }
   }
@@ -186,7 +186,7 @@ extfam_tester <- function(extfam,
   expect_true(extfam$is_extended, info = info_str)
   el_nms_clos <- setdiff(
     extfam_nms_add,
-    c("familyOrig", "linkOrig", "refcat", "cats", "for_latent", "for_augdat",
+    c("family_oscale", "link_oscale", "refcat", "cats", "for_latent", "for_augdat",
       "is_extended")
   )
   for (el_nm in el_nms_clos) {
@@ -339,7 +339,7 @@ refmodel_tester <- function(
   }
   if (!is_datafit && pkg_nm == "rstanarm" &&
       refmod$fit$stan_function == "stan_gamm4" &&
-      refmod$family$familyOrig %||% refmod$family$family == "binomial") {
+      refmod$family$family_oscale %||% refmod$family$family == "binomial") {
     # A column added internally by rstanarm which is not relevant for projpred:
     data_expected$temp_y <- 1
   }
@@ -352,7 +352,7 @@ refmodel_tester <- function(
     "fit", "formula", "div_minimizer", "family", "mu", "eta", "dis", "y",
     "intercept", "proj_predfun", "fetch_data", "wobs", "wsample", "offset",
     "cvfun", "cvfits", "extract_model_data", "ref_predfun", "cvrefbuilder",
-    "yOrig"
+    "y_oscale"
   )
   refmod_class_expected <- "refmodel"
   if (is_datafit) {
@@ -684,21 +684,21 @@ refmodel_tester <- function(
   # cvrefbuilder
   expect_type(refmod$cvrefbuilder, "closure")
 
-  # yOrig
+  # y_oscale
   if (latent_expected) {
-    yOrig_expected <- data_expected[[sub("^\\.", "", stdized_lhs$y_nm)]]
-    if (!is.null(refmod$family$cats) && !is.factor(yOrig_expected)) {
-      yOrig_expected <- as.factor(yOrig_expected)
+    y_oscale_expected <- data_expected[[sub("^\\.", "", stdized_lhs$y_nm)]]
+    if (!is.null(refmod$family$cats) && !is.factor(y_oscale_expected)) {
+      y_oscale_expected <- as.factor(y_oscale_expected)
     }
     if (pkg_nm == "brms") {
       # brms seems to set argument `contrasts`, but this is not important for
       # projpred, so ignore it in the comparison:
-      attr(yOrig_expected, "contrasts") <- attr(refmod$yOrig, "contrasts")
+      attr(y_oscale_expected, "contrasts") <- attr(refmod$y_oscale, "contrasts")
     }
   } else {
-    yOrig_expected <- y_expected
+    y_oscale_expected <- y_expected
   }
-  expect_identical(refmod$yOrig, yOrig_expected, info = info_str)
+  expect_identical(refmod$y_oscale, y_oscale_expected, info = info_str)
 
   return(invisible(TRUE))
 }
@@ -2052,7 +2052,7 @@ vsel_tester <- function(
     } else {
       expect_identical(vs$d_test$y, vs$refmodel$y, info = info_str)
     }
-    expect_identical(vs$d_test$yOrig, vs$refmodel$yOrig, info = info_str)
+    expect_identical(vs$d_test$y_oscale, vs$refmodel$y_oscale, info = info_str)
   } else {
     expect_identical(vs$d_test, dtest_expected, info = info_str)
   }
@@ -2074,17 +2074,17 @@ vsel_tester <- function(
     nobsv_summ_aug <- nobsv_summ * ncats
   }
   if (vs$refmodel$family$for_latent) {
-    vsel_smmrs_sub_nms <- c(vsel_smmrs_sub_nms, "Orig")
+    vsel_smmrs_sub_nms <- c(vsel_smmrs_sub_nms, "oscale")
     if ("wcv" %in% vsel_smmrs_sub_nms &&
         identical(cv_method_expected, "kfold")) {
-      vsel_smmrs_sub_nms[vsel_smmrs_sub_nms %in% c("wcv", "Orig")] <- c("Orig",
+      vsel_smmrs_sub_nms[vsel_smmrs_sub_nms %in% c("wcv", "oscale")] <- c("oscale",
                                                                         "wcv")
     }
-    vsel_smmrs_ref_nms <- c(vsel_smmrs_ref_nms, "Orig")
+    vsel_smmrs_ref_nms <- c(vsel_smmrs_ref_nms, "oscale")
   }
-  smmrs_sub_j_tester <- function(smmrs_sub_j, tests_Orig = FALSE) {
-    if (tests_Orig) {
-      vsel_smmrs_sub_nms <- setdiff(vsel_smmrs_sub_nms, "Orig")
+  smmrs_sub_j_tester <- function(smmrs_sub_j, tests_oscale = FALSE) {
+    if (tests_oscale) {
+      vsel_smmrs_sub_nms <- setdiff(vsel_smmrs_sub_nms, "oscale")
       if (!is.null(vs$refmodel$family$cats)) {
         ncats <- length(vs$refmodel$family$cats)
       } else {
@@ -2097,7 +2097,7 @@ vsel_tester <- function(
     expect_type(smmrs_sub_j$mu, "double")
     expect_length(smmrs_sub_j$mu, nobsv_summ_aug)
     if (vs$refmodel$family$for_augdat ||
-        (vs$refmodel$family$for_latent && tests_Orig &&
+        (vs$refmodel$family$for_latent && tests_oscale &&
          !is.null(vs$refmodel$family$cats))) {
       expect_s3_class(smmrs_sub_j$mu, "augvec")
     }
@@ -2110,7 +2110,7 @@ vsel_tester <- function(
     expect_type(smmrs_sub_j$lppd, "double")
     expect_length(smmrs_sub_j$lppd, nobsv_summ)
     if (with_cv) {
-      if (vs$refmodel$family$for_latent && !tests_Orig &&
+      if (vs$refmodel$family$for_latent && !tests_oscale &&
           identical(cv_method_expected, "kfold")) {
         expect_true(all(is.na(smmrs_sub_j$lppd)), info = info_str)
       } else {
@@ -2136,12 +2136,12 @@ vsel_tester <- function(
   for (j in seq_along(vs$summaries$sub)) {
     smmrs_sub_j_tester(vs$summaries$sub[[j]])
     if (vs$refmodel$family$for_latent) {
-      smmrs_sub_j_tester(vs$summaries$sub[[j]]$Orig, tests_Orig = TRUE)
+      smmrs_sub_j_tester(vs$summaries$sub[[j]]$oscale, tests_oscale = TRUE)
     }
   }
-  smmrs_ref_tester <- function(smmrs_ref, tests_Orig = FALSE) {
-    if (tests_Orig) {
-      vsel_smmrs_ref_nms <- setdiff(vsel_smmrs_ref_nms, "Orig")
+  smmrs_ref_tester <- function(smmrs_ref, tests_oscale = FALSE) {
+    if (tests_oscale) {
+      vsel_smmrs_ref_nms <- setdiff(vsel_smmrs_ref_nms, "oscale")
       if (!is.null(vs$refmodel$family$cats)) {
         ncats <- length(vs$refmodel$family$cats)
       } else {
@@ -2156,7 +2156,7 @@ vsel_tester <- function(
     }
     expect_length(smmrs_ref$mu, nobsv_summ_aug)
     if (vs$refmodel$family$for_augdat ||
-        (vs$refmodel$family$for_latent && tests_Orig &&
+        (vs$refmodel$family$for_latent && tests_oscale &&
          !is.null(vs$refmodel$family$cats))) {
       expect_s3_class(smmrs_ref$mu, "augvec")
     }
@@ -2169,7 +2169,7 @@ vsel_tester <- function(
       expect_type(smmrs_ref$lppd, "double")
     }
     expect_length(smmrs_ref$lppd, nobsv_summ)
-    if (!from_datafit && !(vs$refmodel$family$for_latent && !tests_Orig &&
+    if (!from_datafit && !(vs$refmodel$family$for_latent && !tests_oscale &&
                            identical(cv_method_expected, "kfold"))) {
       expect_true(all(!is.na(smmrs_ref$lppd)), info = info_str)
     } else {
@@ -2179,7 +2179,7 @@ vsel_tester <- function(
   }
   smmrs_ref_tester(vs$summaries$ref)
   if (vs$refmodel$family$for_latent) {
-    smmrs_ref_tester(vs$summaries$ref$Orig, tests_Orig = TRUE)
+    smmrs_ref_tester(vs$summaries$ref$oscale, tests_oscale = TRUE)
   }
 
   # solution_terms
@@ -2277,8 +2277,8 @@ vsel_tester <- function(
 #   call.
 # @param nterms_max_expected A single numeric value as supplied to
 #   summary.vsel()'s argument `nterms_max`.
-# @param respOrig_expected A single logical value indicating whether
-#   element `respOrig` is expected to be `TRUE` or `FALSE`.
+# @param resp_oscale_expected A single logical value indicating whether
+#   element `resp_oscale` is expected to be `TRUE` or `FALSE`.
 # @param search_trms_empty_size A single logical value indicating whether
 #   `search_terms` was constructed in a way that causes a model size to be
 #   without candidate models.
@@ -2290,7 +2290,7 @@ vsel_tester <- function(
 #
 # @return `TRUE` (invisible).
 smmry_tester <- function(smmry, vsel_expected, nterms_max_expected = NULL,
-                         respOrig_expected = TRUE,
+                         resp_oscale_expected = TRUE,
                          search_trms_empty_size = FALSE, info_str, ...) {
   expect_s3_class(smmry, "vselsummary")
   expect_type(smmry, "list")
@@ -2304,7 +2304,7 @@ smmry_tester <- function(smmry, vsel_expected, nterms_max_expected = NULL,
     c("formula", "family", "nobs_train", "nobs_test", "method", "cv_method",
       "validate_search", "clust_used_search", "clust_used_eval",
       "nprjdraws_search", "nprjdraws_eval", "search_included", "nterms",
-      pct_solterms_nm, "selection", "respOrig"),
+      pct_solterms_nm, "selection", "resp_oscale"),
     info = info_str
   )
 
@@ -2348,9 +2348,9 @@ smmry_tester <- function(smmry, vsel_expected, nterms_max_expected = NULL,
                    summaries_ref = vsel_expected$summaries$ref,
                    nterms_max_expected = nterms_max_expected,
                    latent_expected = vsel_expected$refmodel$family$for_latent,
-                   respOrig_expected = respOrig_expected,
+                   resp_oscale_expected = resp_oscale_expected,
                    info_str = info_str, ...)
-  expect_identical(smmry$respOrig, respOrig_expected, info = info_str)
+  expect_identical(smmry$resp_oscale, resp_oscale_expected, info = info_str)
 
   return(invisible(TRUE))
 }
@@ -2378,8 +2378,8 @@ smmry_tester <- function(smmry, vsel_expected, nterms_max_expected = NULL,
 #   `smmry_sel` was created) (`TRUE`) or not (`FALSE`).
 # @param latent_expected A single logical value indicating whether the reference
 #   model is expected to be for latent projection (`TRUE`) or not (`FALSE`).
-# @param respOrig_expected A single logical value indicating whether argument
-#   `respOrig` of summary.vsel() was set to `TRUE` or `FALSE`.
+# @param resp_oscale_expected A single logical value indicating whether argument
+#   `resp_oscale` of summary.vsel() was set to `TRUE` or `FALSE`.
 # @param info_str A single character string giving information to be printed in
 #   case of failure.
 #
@@ -2394,7 +2394,7 @@ smmry_sel_tester <- function(
     solterms_expected,
     from_datafit = FALSE,
     latent_expected = FALSE,
-    respOrig_expected = TRUE,
+    resp_oscale_expected = TRUE,
     info_str
 ) {
   if (is.null(stats_expected)) {
@@ -2452,7 +2452,7 @@ smmry_sel_tester <- function(
   expect_identical(smmry_sel$solution_terms,
                    c(NA_character_, solterms_expected),
                    info = info_str)
-  is_lat_kfold <-  latent_expected && !respOrig_expected &&
+  is_lat_kfold <-  latent_expected && !resp_oscale_expected &&
     identical(cv_method_expected, "kfold")
   if (is_lat_kfold) {
     for (stat_idx in seq_along(stats_expected)) {

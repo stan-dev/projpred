@@ -58,15 +58,15 @@ test_that("extend_family() works for the latent projection", {
                                   latent = TRUE,
                                   # latent_y_unqs = c("0", "1"),
                                   latent_ilink = ilink_dummy,
-                                  latent_llOrig = latent_llOrig_binom_nocats,
-                                  latent_ppdOrig = latent_ppdOrig_binom_nocats)
+                                  latent_ll_oscale = latent_ll_oscale_binom_nocats,
+                                  latent_ppd_oscale = latent_ppd_oscale_binom_nocats)
     } else if (fam_nm == "cumul_latent_rstanarm") {
       extfam_crr <- extend_family(get_f_cumul(),
                                   latent = TRUE,
                                   latent_y_unqs = paste0("resplvl", 1:3),
                                   latent_ilink = ilink_dummy,
-                                  latent_llOrig = latent_llOrig_cats,
-                                  latent_ppdOrig = latent_ppdOrig_cats)
+                                  latent_ll_oscale = latent_ll_oscale_cats,
+                                  latent_ppd_oscale = latent_ppd_oscale_cats)
     }
     extfam_tester(extfam = extfam_crr,
                   fam_orig = gaussian(),

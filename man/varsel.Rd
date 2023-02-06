@@ -199,9 +199,9 @@ set (if there are no observation weights, use a vector of ones).
 set. In case of the latent projection, this has to be a vector containing the
 \emph{latent} response values, but it can also be a vector full of \code{NA}s if
 latent-scale post-processing is not needed.
-\item \code{yOrig}: Only needs to be provided in case of the latent projection where
-this needs to be a vector or a \code{factor} containing the \emph{original} (i.e.,
-non-latent) response values for the test set.
+\item \code{y_oscale}: Only needs to be provided in case of the latent projection
+where this needs to be a vector or a \code{factor} containing the \emph{original}
+(i.e., non-latent) response values for the test set.
 }
 }
 

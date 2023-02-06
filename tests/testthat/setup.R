@@ -829,19 +829,19 @@ cvmeth_tst <- list(
   kfold = list(cv_method = "kfold", K = K_tst)
 )
 
-respOrig_tst <- list(
-  default_rOrig = list(),
-  rOrig_F = list(respOrig = FALSE)
+resp_oscale_tst <- list(
+  default_r_oscale = list(),
+  r_oscale_F = list(resp_oscale = FALSE)
 )
 
 vsel_funs <- nlist("summary.vsel", "plot.vsel", "suggest_size.vsel")
 # Performance statistics common across all families, when using the traditional
-# projection (or the latent projection with `respOrig = FALSE` or the latent
-# projection with `respOrig = TRUE`, but the latter only in combination with
+# projection (or the latent projection with `resp_oscale = FALSE` or the latent
+# projection with `resp_oscale = TRUE`, but the latter only in combination with
 # `<refmodel>$family$cats` being `NULL`):
 stats_common <- c("elpd", "mlpd", "mse", "rmse")
 # Performance statistics for the binomial() family only, when using the
-# traditional projection (or the latent projection with `respOrig = TRUE`, but
+# traditional projection (or the latent projection with `resp_oscale = TRUE`, but
 # the latter only in combination with `<refmodel>$family$cats` being `NULL`):
 stats_binom <- c(stats_common, "acc", "auc")
 # For creating test setups:
@@ -1497,17 +1497,17 @@ cre_args_smmry_vsel <- function(args_obj) {
       }
       lapply(nterms_tst, function(nterms_crr) {
         if (prj_crr != "latent") {
-          respOrig_tst <- respOrig_tst["default_rOrig"]
+          resp_oscale_tst <- resp_oscale_tst["default_r_oscale"]
         }
-        lapply(respOrig_tst, function(respOrig_crr) {
-          if (isFALSE(respOrig_crr$respOrig) &&
+        lapply(resp_oscale_tst, function(resp_oscale_crr) {
+          if (isFALSE(resp_oscale_crr$resp_oscale) &&
               any(setdiff(stats_binom, stats_common) %in% stats_crr$stats)) {
             return("REMOVE THIS DUMMY ENTRY")
           }
           return(c(
             nlist(tstsetup_vsel), only_nonargs(args_obj[[tstsetup_vsel]]),
             list(type = type_tst, nterms_max = nterms_crr),
-            stats_crr, respOrig_crr
+            stats_crr, resp_oscale_crr
           ))
         })
       })

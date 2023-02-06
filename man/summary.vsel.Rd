@@ -12,7 +12,7 @@
   deltas = FALSE,
   alpha = 2 * pnorm(-1),
   baseline = if (!inherits(object$refmodel, "datafit")) "ref" else "best",
-  respOrig = TRUE,
+  resp_oscale = TRUE,
   ...
 )
 }
@@ -69,7 +69,7 @@ For \code{\link[=plot.vsel]{plot.vsel()}}: Always relevant. Either \code{"ref"} 
 whether the baseline is the reference model or the best submodel found (in
 terms of \code{stats[1]}), respectively.}
 
-\item{respOrig}{Only relevant for the latent projection. A single logical
+\item{resp_oscale}{Only relevant for the latent projection. A single logical
 value indicating whether to calculate the performance statistics on
 response scale (\code{TRUE}) or on latent scale (\code{FALSE}).}
 
@@ -91,8 +91,8 @@ This is the \code{\link[=summary]{summary()}} method for \code{vsel} objects (re
 The \code{stats} options \code{"mse"} and \code{"rmse"} are only available for:
 \itemize{
 \item the traditional projection,
-\item the latent projection with \code{respOrig = FALSE},
-\item the latent projection with \code{respOrig = TRUE} in combination with
+\item the latent projection with \code{resp_oscale = FALSE},
+\item the latent projection with \code{resp_oscale = TRUE} in combination with
 \verb{<refmodel>$family$cats} being \code{NULL}.
 }
 
@@ -101,10 +101,10 @@ The \code{stats} option \code{"acc"} (= \code{"pctcorr"}) is only available for:
 \item the \code{\link[=binomial]{binomial()}} family in case of the traditional projection,
 \item all families in case of the augmented-data projection,
 \item the \code{\link[=binomial]{binomial()}} family (on the original response scale) in case of the
-latent projection with \code{respOrig = TRUE} in combination with
+latent projection with \code{resp_oscale = TRUE} in combination with
 \verb{<refmodel>$family$cats} being \code{NULL},
 \item all families (on the original response scale) in case of the latent
-projection with \code{respOrig = TRUE} in combination with
+projection with \code{resp_oscale = TRUE} in combination with
 \verb{<refmodel>$family$cats} being not \code{NULL}.
 }
 
@@ -112,7 +112,7 @@ The \code{stats} option \code{"auc"} is only available for:
 \itemize{
 \item the \code{\link[=binomial]{binomial()}} family in case of the traditional projection,
 \item the \code{\link[=binomial]{binomial()}} family (on the original response scale) in case of the
-latent projection with \code{respOrig = TRUE} in combination with
+latent projection with \code{resp_oscale = TRUE} in combination with
 \verb{<refmodel>$family$cats} being \code{NULL}.
 }
 }

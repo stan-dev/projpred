@@ -275,7 +275,8 @@ containing this number of submodel fits.
 The function supplied to argument \code{extract_model_data} needs to have the
 prototype
 
-\if{html}{\out{<div class="sourceCode r">}}\preformatted{extract_model_data(object, newdata, wrhs = NULL, orhs = NULL, extract_y = TRUE)
+\if{html}{\out{<div class="sourceCode r">}}\preformatted{extract_model_data(object, newdata, wrhs = NULL, orhs = NULL,
+                   extract_y = TRUE)
 }\if{html}{\out{</div>}}
 
 where:

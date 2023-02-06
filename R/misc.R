@@ -5,7 +5,7 @@
 }
 
 nms_d_test <- function() {
-  c("type", "data", "offset", "weights", "y", "yOrig")
+  c("type", "data", "offset", "weights", "y", "y_oscale")
 }
 
 weighted.sd <- function(x, w, na.rm = FALSE) {
@@ -125,27 +125,27 @@ bootstrap <- function(x, fun = mean, B = 2000,
   }
 }
 
-.validate_vsel_object_stats <- function(object, stats, respOrig = TRUE) {
+.validate_vsel_object_stats <- function(object, stats, resp_oscale = TRUE) {
   if (!inherits(object, c("vsel"))) {
     stop("The object is not a variable selection object. Run variable ",
          "selection first")
   }
-  if (!object$refmodel$family$for_latent && !respOrig) {
-    stop("`respOrig = FALSE` can only be used in case of the latent ",
+  if (!object$refmodel$family$for_latent && !resp_oscale) {
+    stop("`resp_oscale = FALSE` can only be used in case of the latent ",
          "projection.")
   }
-  respOrig <- object$refmodel$family$for_latent && respOrig
+  resp_oscale <- object$refmodel$family$for_latent && resp_oscale
 
   trad_stats <- c("elpd", "mlpd", "mse", "rmse", "acc", "pctcorr", "auc")
   trad_stats_binom_only <- c("acc", "pctcorr", "auc")
   augdat_stats <- c("elpd", "mlpd", "acc", "pctcorr")
-  respOrig_stats_fac <- augdat_stats
+  resp_oscale_stats_fac <- augdat_stats
 
   if (is.null(stats)) {
     stop("Statistic specified as NULL.")
   }
-  if (respOrig) {
-    fam_ch <- object$refmodel$family$familyOrig
+  if (resp_oscale) {
+    fam_ch <- object$refmodel$family$family_oscale
   } else {
     fam_ch <- object$refmodel$family$family
   }
@@ -155,11 +155,11 @@ bootstrap <- function(x, fun = mean, B = 2000,
         stop("Currently, the augmented-data projection may not be combined ",
              "with performance statistic `\"", stat, "\"`.")
       }
-    } else if (respOrig && !is.null(object$refmodel$family$cats)) {
-      if (!stat %in% respOrig_stats_fac) {
-        stop("Currently, the latent projection with `respOrig = TRUE` and a ",
-             "non-`NULL` element `family$cats` may not be combined ",
-             "with performance statistic `\"", stat, "\"`.")
+    } else if (resp_oscale && !is.null(object$refmodel$family$cats)) {
+      if (!stat %in% resp_oscale_stats_fac) {
+        stop("Currently, the latent projection with `resp_oscale = TRUE` and ",
+             "a non-`NULL` element `family$cats` may not be combined with ",
+             "performance statistic `\"", stat, "\"`.")
       }
     } else {
       if (!stat %in% trad_stats) {
@@ -167,11 +167,11 @@ bootstrap <- function(x, fun = mean, B = 2000,
       }
       if (stat %in% trad_stats_binom_only && fam_ch != "binomial") {
         stop("In case of (i) the traditional projection or (ii) the latent ",
-             "projection with `respOrig = TRUE` and a `NULL` element ",
+             "projection with `resp_oscale = TRUE` and a `NULL` element ",
              "`family$cats`, the performance statistic `\"", stat, "\"` is ",
              "available only for the binomial family. This also explains why ",
              "performance statistic `\"", stat, "\"` is not available in case ",
-             "of the latent projection with `respOrig = FALSE` (because a ",
+             "of the latent projection with `resp_oscale = FALSE` (because a ",
              "latent Gaussian distribution is used there).")
       }
     }
@@ -577,14 +577,14 @@ rbind2list <- function(x) {
     ))
   }
   binded_list <- as.list(do.call(rbind, lapply(x, function(x_i) {
-    as.data.frame(x_i[setdiff(names(x_i), "Orig")])
+    as.data.frame(x_i[setdiff(names(x_i), "oscale")])
   })))
-  is_lateval_Orig <- any(sapply(x, function(x_i) {
+  is_lateval_oscale <- any(sapply(x, function(x_i) {
     is.list(x_i) &&
-      identical(names(x_i), c("mu", "lppd", "Orig"))
+      identical(names(x_i), c("mu", "lppd", "oscale"))
   }))
-  if (is_lateval_Orig) {
-    binded_list$Orig <- rbind2list(lapply(x, "[[", "Orig"))
+  if (is_lateval_oscale) {
+    binded_list$oscale <- rbind2list(lapply(x, "[[", "oscale"))
   }
   return(binded_list)
 }

@@ -326,35 +326,35 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
   mu_offs <- refmodel$family$linkinv(eta_offs)
 
   if (refmodel$family$for_latent) {
-    mu_offs_Orig <- refmodel$family$latent_ilink(
+    mu_offs_oscale <- refmodel$family$latent_ilink(
       t(mu_offs), cl_ref = seq_along(refmodel$wsample),
       wdraws_ref = refmodel$wsample
     )
-    if (length(dim(mu_offs_Orig)) < 2) {
+    if (length(dim(mu_offs_oscale)) < 2) {
       stop("Unexpected structure for the output of `latent_ilink`.")
     }
-    loglik_forPSIS <- refmodel$family$latent_llOrig(
-      mu_offs_Orig, yOrig = refmodel$yOrig, wobs = refmodel$wobs,
+    loglik_forPSIS <- refmodel$family$latent_ll_oscale(
+      mu_offs_oscale, y_oscale = refmodel$y_oscale, wobs = refmodel$wobs,
       cl_ref = seq_along(refmodel$wsample), wdraws_ref = refmodel$wsample
     )
     if (!is.matrix(loglik_forPSIS)) {
-      stop("Unexpected structure for the output of `latent_llOrig`.")
+      stop("Unexpected structure for the output of `latent_ll_oscale`.")
     }
     if (all(is.na(loglik_forPSIS))) {
       stop("In case of the latent projection, `cv_method = \"LOO\"` requires ",
-           "a function `latent_llOrig` that does not return only `NA`s.")
+           "a function `latent_ll_oscale` that does not return only `NA`s.")
     }
-    if (length(dim(mu_offs_Orig)) == 3) {
-      # In this case, `mu_offs_Orig` is a 3-dimensional array (S x N x C), so
+    if (length(dim(mu_offs_oscale)) == 3) {
+      # In this case, `mu_offs_oscale` is a 3-dimensional array (S x N x C), so
       # coerce it to an augmented-rows matrix:
-      mu_offs_Orig <- arr2augmat(mu_offs_Orig, margin_draws = 1)
-      n_aug <- nrow(mu_offs_Orig)
+      mu_offs_oscale <- arr2augmat(mu_offs_oscale, margin_draws = 1)
+      n_aug <- nrow(mu_offs_oscale)
     } else {
-      # In this case, `mu_offs_Orig` is a matrix (S x N). Transposing it to an
+      # In this case, `mu_offs_oscale` is a matrix (S x N). Transposing it to an
       # N x S matrix would be more consistent with projpred's internal
       # convention, but avoiding the transposition is computationally more
       # efficient:
-      n_aug <- ncol(mu_offs_Orig)
+      n_aug <- ncol(mu_offs_oscale)
     }
   } else {
     loglik_forPSIS <- t(refmodel$family$ll_fun(
@@ -395,8 +395,8 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
 
   ## decide which points form the validation set based on the k-values
   ## validset <- .loo_subsample(n, nloo, pareto_k)
-  loo_ref_Orig <- apply(loglik_forPSIS + lw, 2, log_sum_exp)
-  validset <- .loo_subsample_pps(nloo, loo_ref_Orig)
+  loo_ref_oscale <- apply(loglik_forPSIS + lw, 2, log_sum_exp)
+  validset <- .loo_subsample_pps(nloo, loo_ref_oscale)
   inds <- validset$inds
 
   ## initialize objects where to store the results
@@ -410,12 +410,12 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
     simplify = FALSE
   )
   if (refmodel$family$for_latent) {
-    loo_sub_Orig <- loo_sub
-    # In general, we could use `mu_sub_Orig <- mu_sub` here, but the case where
-    # refmodel$family$latent_ilink() returns a 3-dimensional array (S x N x C)
-    # needs special care.
+    loo_sub_oscale <- loo_sub
+    # In general, we could use `mu_sub_oscale <- mu_sub` here, but the case
+    # where refmodel$family$latent_ilink() returns a 3-dimensional array (S x N
+    # x C) needs special care.
     if (!is.null(refmodel$family$cats)) {
-      mu_sub_Orig <- replicate(
+      mu_sub_oscale <- replicate(
         nterms_max,
         structure(rep(NA, n * length(refmodel$family$cats)),
                   nobs_orig = n,
@@ -423,7 +423,7 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
         simplify = FALSE
       )
     } else {
-      mu_sub_Orig <- mu_sub
+      mu_sub_oscale <- mu_sub
     }
   }
 
@@ -483,26 +483,26 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
       refdist_eval_mu_offs <- refmodel$family$linkinv(refdist_eval_eta_offs)
     }
     if (refmodel$family$for_latent) {
-      refdist_eval_mu_offs_Orig <- refmodel$family$latent_ilink(
+      refdist_eval_mu_offs_oscale <- refmodel$family$latent_ilink(
         t(refdist_eval_mu_offs), cl_ref = refdist_eval$cl,
         wdraws_ref = refdist_eval$wsample_orig
       )
-      if (length(dim(refdist_eval_mu_offs_Orig)) == 3) {
-        refdist_eval_mu_offs_Orig <- refdist_eval_mu_offs_Orig[, inds, ,
-                                                               drop = FALSE]
+      if (length(dim(refdist_eval_mu_offs_oscale)) == 3) {
+        refdist_eval_mu_offs_oscale <- refdist_eval_mu_offs_oscale[, inds, ,
+                                                                   drop = FALSE]
       } else {
-        refdist_eval_mu_offs_Orig <- refdist_eval_mu_offs_Orig[, inds,
-                                                               drop = FALSE]
+        refdist_eval_mu_offs_oscale <- refdist_eval_mu_offs_oscale[, inds,
+                                                                   drop = FALSE]
       }
-      log_lik_ref <- refmodel$family$latent_llOrig(
-        refdist_eval_mu_offs_Orig, yOrig = refmodel$yOrig[inds],
+      log_lik_ref <- refmodel$family$latent_ll_oscale(
+        refdist_eval_mu_offs_oscale, y_oscale = refmodel$y_oscale[inds],
         wobs = refmodel$wobs[inds], cl_ref = refdist_eval$cl,
         wdraws_ref = refdist_eval$wsample_orig
       )
       if (all(is.na(log_lik_ref))) {
         stop("In case of the latent projection, `validate_search = FALSE` ",
-             "requires a function `latent_llOrig` that does not return only ",
-             "`NA`s.")
+             "requires a function `latent_ll_oscale` that does not return ",
+             "only `NA`s.")
       }
     } else {
       inds_aug <- inds
@@ -535,18 +535,19 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
       ))
       loo_sub[[k]][inds] <- apply(log_lik_sub + lw_sub, 2, log_sum_exp)
       if (refmodel$family$for_latent) {
-        mu_k_Orig <- refmodel$family$latent_ilink(
+        mu_k_oscale <- refmodel$family$latent_ilink(
           t(mu_k), cl_ref = refdist_eval$cl,
           wdraws_ref = refdist_eval$wsample_orig
         )
-        log_lik_sub_Orig <- refmodel$family$latent_llOrig(
-          mu_k_Orig, yOrig = refmodel$yOrig[inds], wobs = refmodel$wobs[inds],
-          cl_ref = refdist_eval$cl, wdraws_ref = refdist_eval$wsample_orig
+        log_lik_sub_oscale <- refmodel$family$latent_ll_oscale(
+          mu_k_oscale, y_oscale = refmodel$y_oscale[inds],
+          wobs = refmodel$wobs[inds], cl_ref = refdist_eval$cl,
+          wdraws_ref = refdist_eval$wsample_orig
         )
-        loo_sub_Orig[[k]][inds] <- apply(log_lik_sub_Orig + lw_sub, 2,
-                                         log_sum_exp)
-        if (length(dim(mu_k_Orig)) == 3) {
-          mu_k_Orig <- arr2augmat(mu_k_Orig, margin_draws = 1)
+        loo_sub_oscale[[k]][inds] <- apply(log_lik_sub_oscale + lw_sub, 2,
+                                           log_sum_exp)
+        if (length(dim(mu_k_oscale)) == 3) {
+          mu_k_oscale <- arr2augmat(mu_k_oscale, margin_draws = 1)
         }
       }
       for (run_index in seq_along(inds)) {
@@ -565,16 +566,16 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
         }
         mu_sub[[k]][i_flx] <- mu_k[run_index_flx, ] %*% exp(lw_sub[, run_index])
         if (refmodel$family$for_latent) {
-          if (inherits(mu_k_Orig, "augmat")) {
-            mu_sub_Orig[[k]][i_aug] <- mu_k_Orig[run_index_aug, ] %*%
+          if (inherits(mu_k_oscale, "augmat")) {
+            mu_sub_oscale[[k]][i_aug] <- mu_k_oscale[run_index_aug, ] %*%
               exp(lw_sub[, run_index])
           } else {
             # In principle, we could use the same code for averaging across the
             # draws as above in the `"augmat"` case. However, that would require
-            # `mu_k_Orig <- t(mu_k_Orig)` beforehand, so the following should be
-            # more efficient:
-            mu_sub_Orig[[k]][i_aug] <- exp(lw_sub[, run_index]) %*%
-              mu_k_Orig[, run_index_aug]
+            # `mu_k_oscale <- t(mu_k_oscale)` beforehand, so the following
+            # should be more efficient:
+            mu_sub_oscale[[k]][i_aug] <- exp(lw_sub[, run_index]) %*%
+              mu_k_oscale[, run_index_aug]
           }
         }
       }
@@ -650,9 +651,9 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
       for (k in seq_along(summaries_sub)) {
         loo_sub[[k]][i] <- summaries_sub[[k]]$lppd
         mu_sub[[k]][i_flx] <- summaries_sub[[k]]$mu
-        if (!is.null(summaries_sub[[k]]$Orig)) {
-          loo_sub_Orig[[k]][i] <- summaries_sub[[k]]$Orig$lppd
-          mu_sub_Orig[[k]][i_aug] <- summaries_sub[[k]]$Orig$mu
+        if (!is.null(summaries_sub[[k]]$oscale)) {
+          loo_sub_oscale[[k]][i] <- summaries_sub[[k]]$oscale$lppd
+          mu_sub_oscale[[k]][i_aug] <- summaries_sub[[k]]$oscale$mu
         }
       }
 
@@ -683,8 +684,8 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
   summ_sub <- lapply(seq_len(nterms_max), function(k) {
     summ_k <- list(lppd = loo_sub[[k]], mu = mu_sub[[k]], wcv = validset$wcv)
     if (refmodel$family$for_latent) {
-      summ_k$Orig <- list(lppd = loo_sub_Orig[[k]], mu = mu_sub_Orig[[k]],
-                          wcv = validset$wcv)
+      summ_k$oscale <- list(lppd = loo_sub_oscale[[k]], mu = mu_sub_oscale[[k]],
+                            wcv = validset$wcv)
     }
     return(summ_k)
   })
@@ -710,37 +711,37 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
     ))
     lppd_ref <- apply(loglik_lat + lw, 2, log_sum_exp)
   } else {
-    lppd_ref <- loo_ref_Orig
+    lppd_ref <- loo_ref_oscale
   }
   summ_ref <- list(lppd = lppd_ref, mu = mu_ref)
   if (refmodel$family$for_latent) {
-    mu_ref_Orig <- do.call(c, lapply(seq_len(n_aug), function(i) {
+    mu_ref_oscale <- do.call(c, lapply(seq_len(n_aug), function(i) {
       i_nonaug <- i %% n
       if (i_nonaug == 0) {
         i_nonaug <- n
       }
-      if (inherits(mu_offs_Orig, "augmat")) {
-        return(mu_offs_Orig[i, ] %*% exp(lw[, i_nonaug]))
+      if (inherits(mu_offs_oscale, "augmat")) {
+        return(mu_offs_oscale[i, ] %*% exp(lw[, i_nonaug]))
       } else {
         # In principle, we could use the same code for averaging across the
         # draws as above in the `"augmat"` case. However, that would require
-        # `mu_offs_Orig <- t(mu_offs_Orig)` beforehand, so the following should
-        # be more efficient:
-        return(exp(lw[, i_nonaug]) %*% mu_offs_Orig[, i])
+        # `mu_offs_oscale <- t(mu_offs_oscale)` beforehand, so the following
+        # should be more efficient:
+        return(exp(lw[, i_nonaug]) %*% mu_offs_oscale[, i])
       }
     }))
-    mu_ref_Orig <- structure(
-      mu_ref_Orig,
-      nobs_orig = attr(mu_offs_Orig, "nobs_orig"),
-      class = sub("augmat", "augvec", oldClass(mu_offs_Orig), fixed = TRUE)
+    mu_ref_oscale <- structure(
+      mu_ref_oscale,
+      nobs_orig = attr(mu_offs_oscale, "nobs_orig"),
+      class = sub("augmat", "augvec", oldClass(mu_offs_oscale), fixed = TRUE)
     )
-    summ_ref$Orig <- list(lppd = loo_ref_Orig, mu = mu_ref_Orig)
+    summ_ref$oscale <- list(lppd = loo_ref_oscale, mu = mu_ref_oscale)
   }
   summaries <- list(sub = summ_sub, ref = summ_ref)
 
   d_test <- list(type = "LOO", data = NULL, offset = refmodel$offset,
                  weights = refmodel$wobs, y = refmodel$y,
-                 yOrig = refmodel$yOrig)
+                 y_oscale = refmodel$y_oscale)
 
   solution_terms_mat <- solution_terms_mat[
     , seq_along(search_path$solution_terms), drop = FALSE
@@ -775,7 +776,7 @@ kfold_varsel <- function(refmodel, method, nterms_max, ndraws,
   extend_list_cv <- function(fold) {
     d_test <- list(
       y = refmodel$y[fold$omitted],
-      yOrig = refmodel$yOrig[fold$omitted],
+      y_oscale = refmodel$y_oscale[fold$omitted],
       weights = refmodel$wobs[fold$omitted],
       offset = refmodel$offset[fold$omitted],
       omitted = fold$omitted
@@ -872,10 +873,10 @@ kfold_varsel <- function(refmodel, method, nterms_max, ndraws,
     summ$wcv <- rep(1, length(summ$lppd))
     summ$wcv <- summ$wcv / sum(summ$wcv)
 
-    if (!is.null(summ$Orig)) {
-      summ$Orig$mu <- summ$Orig$mu[order(idxs_sorted_by_fold_aug)]
-      summ$Orig$lppd <- summ$Orig$lppd[order(idxs_sorted_by_fold)]
-      summ$Orig$wcv <- summ$wcv
+    if (!is.null(summ$oscale)) {
+      summ$oscale$mu <- summ$oscale$mu[order(idxs_sorted_by_fold_aug)]
+      summ$oscale$lppd <- summ$oscale$lppd[order(idxs_sorted_by_fold)]
+      summ$oscale$wcv <- summ$wcv
     }
     return(summ)
   })
@@ -900,9 +901,9 @@ kfold_varsel <- function(refmodel, method, nterms_max, ndraws,
   }))
   ref$mu <- ref$mu[order(idxs_sorted_by_fold_flx)]
   ref$lppd <- ref$lppd[order(idxs_sorted_by_fold)]
-  if (!is.null(ref$Orig)) {
-    ref$Orig$mu <- ref$Orig$mu[order(idxs_sorted_by_fold_aug)]
-    ref$Orig$lppd <- ref$Orig$lppd[order(idxs_sorted_by_fold)]
+  if (!is.null(ref$oscale)) {
+    ref$oscale$mu <- ref$oscale$mu[order(idxs_sorted_by_fold_aug)]
+    ref$oscale$lppd <- ref$oscale$lppd[order(idxs_sorted_by_fold)]
   }
 
   # Combine the K separate test "datasets" (rather "information objects") into a
@@ -911,7 +912,7 @@ kfold_varsel <- function(refmodel, method, nterms_max, ndraws,
     list(offset = fold$d_test$offset,
          weights = fold$d_test$weights,
          y = fold$d_test$y,
-         yOrig = fold$d_test$yOrig)
+         y_oscale = fold$d_test$y_oscale)
   }))
   d_cv <- as.list(
     as.data.frame(d_cv)[order(idxs_sorted_by_fold), , drop = FALSE]
@@ -997,8 +998,8 @@ kfold_varsel <- function(refmodel, method, nterms_max, ndraws,
 #       inds <- c(inds, resample(setdiff(seq_len(n), inds), nloo - length(inds)))
 #     }
 #
-#     ## assign the weights corresponding to this stratification (for example, the
-#     ## 'bad' values are likely to be overpresented in the sample)
+#     ## assign the weights corresponding to this stratification (for example,
+#     ## the 'bad' values are likely to be overpresented in the sample)
 #     wcv <- rep(0, n)
 #     wcv[inds[inds %in% bad]] <- length(bad) / sum(inds %in% bad)
 #     wcv[inds[inds %in% ok]] <- length(ok) / sum(inds %in% ok)

@@ -28,7 +28,7 @@
 #'   whether the linear predictor should be transformed to response scale using
 #'   the inverse-link function (`TRUE`) or not (`FALSE`). In case of the latent
 #'   projection, argument `transform` is similar in spirit to argument
-#'   `respOrig` from other functions and affects the scale of both output
+#'   `resp_oscale` from other functions and affects the scale of both output
 #'   elements `pred` and `lpd` (see sections "Details" and "Value" below).
 #' @param integrated For [proj_linpred()] only. A single logical value
 #'   indicating whether the output should be averaged across the projected
@@ -48,7 +48,7 @@
 #'   [proj_predict()]. If a clustered projection was performed, then in
 #'   [proj_predict()], `.seed` is also used for drawing from the set of the
 #'   projected clusters of posterior draws (see argument `nresample_clusters`).
-#' @param respOrig Only relevant for the latent projection. A single logical
+#' @param resp_oscale Only relevant for the latent projection. A single logical
 #'   value indicating whether to draw from the posterior-projection predictive
 #'   distributions on the original response scale (`TRUE`) or on latent scale
 #'   (`FALSE`).
@@ -95,7 +95,7 @@
 #'   * [proj_predict()] returns an \eqn{S_{\mathrm{prj}} \times N}{S_prj x N}
 #'   matrix of predictions where \eqn{S_{\mathrm{prj}}}{S_prj} denotes
 #'   `nresample_clusters` in case of clustered projection. In case of (i) the
-#'   augmented-data projection or (ii) the latent projection with `respOrig =
+#'   augmented-data projection or (ii) the latent projection with `resp_oscale =
 #'   TRUE` and `<refmodel>$family$cats` being not `NULL`, this matrix has an
 #'   attribute called `cats` (the character vector of response categories) and
 #'   the values of the matrix are the predicted indices of the response
@@ -379,20 +379,20 @@ compute_lpd <- function(ynew, pred_sub, proj, weights, transformed) {
       pred_sub <- proj$refmodel$family$linkinv(pred_sub)
     }
     if (proj$refmodel$family$for_latent && transformed) {
-      llOrig_out <- proj$refmodel$family$latent_llOrig(
-        pred_sub, yOrig = ynew, wobs = weights, cl_ref = proj$cl_ref,
+      ll_oscale_out <- proj$refmodel$family$latent_ll_oscale(
+        pred_sub, y_oscale = ynew, wobs = weights, cl_ref = proj$cl_ref,
         wdraws_ref = proj$wdraws_ref
       )
-      if (!is.matrix(llOrig_out)) {
-        stop("Unexpected structure for the output of `latent_llOrig`.")
+      if (!is.matrix(ll_oscale_out)) {
+        stop("Unexpected structure for the output of `latent_ll_oscale`.")
       }
-      if (all(is.na(llOrig_out))) {
+      if (all(is.na(ll_oscale_out))) {
         message(
-          "`latent_llOrig` returned only `NA`s, so the corresponding output ",
-          "will also be `NA` as long as `transform = TRUE`."
+          "`latent_ll_oscale` returned only `NA`s, so the corresponding ",
+          "output will also be `NA` as long as `transform = TRUE`."
         )
       }
-      return(llOrig_out)
+      return(ll_oscale_out)
     } else {
       if (proj$refmodel$family$for_latent && all(is.na(proj$refmodel$dis))) {
         message(
@@ -416,7 +416,7 @@ proj_predict <- function(object, newdata = NULL, offsetnew = NULL,
                          weightsnew = NULL, filter_nterms = NULL,
                          nresample_clusters = 1000,
                          .seed = sample.int(.Machine$integer.max, 1),
-                         respOrig = TRUE, ...) {
+                         resp_oscale = TRUE, ...) {
   # Set seed, but ensure the old RNG state is restored on exit:
   if (exists(".Random.seed", envir = .GlobalEnv)) {
     rng_state_old <- get(".Random.seed", envir = .GlobalEnv)
@@ -429,15 +429,16 @@ proj_predict <- function(object, newdata = NULL, offsetnew = NULL,
     object = object, newdata = newdata,
     offsetnew = offsetnew, weightsnew = weightsnew,
     onesub_fun = proj_predict_aux, filter_nterms = filter_nterms,
-    nresample_clusters = nresample_clusters, respOrig = respOrig, ...
+    nresample_clusters = nresample_clusters, resp_oscale = resp_oscale, ...
   )
 }
 
 ## function applied to each projected submodel in case of proj_predict()
 proj_predict_aux <- function(proj, newdata, offset, weights,
-                             nresample_clusters = 1000, respOrig = TRUE, ...) {
-  if (!proj$refmodel$family$for_latent && !respOrig) {
-    stop("`respOrig = FALSE` can only be used in case of the latent ",
+                             nresample_clusters = 1000, resp_oscale = TRUE,
+                             ...) {
+  if (!proj$refmodel$family$for_latent && !resp_oscale) {
+    stop("`resp_oscale = FALSE` can only be used in case of the latent ",
          "projection.")
   }
   mu <- proj$refmodel$family$mu_fun(proj$submodl,
@@ -451,33 +452,33 @@ proj_predict_aux <- function(proj, newdata, offset, weights,
     draw_inds <- seq_along(proj$weights)
   }
   cats_aug <- proj$refmodel$family$cats
-  if (proj$refmodel$family$for_latent && respOrig) {
-    mu_Orig <- proj$refmodel$family$latent_ilink(t(mu), cl_ref = proj$cl_ref,
-                                                 wdraws_ref = proj$wdraws_ref)
-    if (length(dim(mu_Orig)) < 2) {
+  if (proj$refmodel$family$for_latent && resp_oscale) {
+    mu_oscale <- proj$refmodel$family$latent_ilink(t(mu), cl_ref = proj$cl_ref,
+                                                   wdraws_ref = proj$wdraws_ref)
+    if (length(dim(mu_oscale)) < 2) {
       stop("Unexpected structure for the output of `latent_ilink`.")
     }
-    if (length(dim(mu_Orig)) == 3) {
-      mu_Orig_resamp <- mu_Orig[draw_inds, , , drop = FALSE]
+    if (length(dim(mu_oscale)) == 3) {
+      mu_oscale_resamp <- mu_oscale[draw_inds, , , drop = FALSE]
     } else {
-      mu_Orig_resamp <- mu_Orig[draw_inds, , drop = FALSE]
+      mu_oscale_resamp <- mu_oscale[draw_inds, , drop = FALSE]
     }
-    pppd_out <- proj$refmodel$family$latent_ppdOrig(
-      mu_Orig_resamp, wobs = weights, cl_ref = proj$cl_ref,
+    pppd_out <- proj$refmodel$family$latent_ppd_oscale(
+      mu_oscale_resamp, wobs = weights, cl_ref = proj$cl_ref,
       wdraws_ref = proj$wdraws_ref, idxs_prjdraws = draw_inds
     )
     if (!is.matrix(pppd_out)) {
-      stop("Unexpected structure for the output of `latent_ppdOrig`.")
+      stop("Unexpected structure for the output of `latent_ppd_oscale`.")
     }
-    if (all(is.na(mu_Orig))) {
+    if (all(is.na(mu_oscale))) {
       message(
         "`latent_ilink` returned only `NA`s, so the output will also be ",
-        "`NA` as long as `respOrig = TRUE`."
+        "`NA` as long as `resp_oscale = TRUE`."
       )
     } else if (all(is.na(pppd_out))) {
       message(
-        "`latent_ppdOrig` returned only `NA`s, so the output will also be ",
-        "`NA` as long as `respOrig = TRUE`."
+        "`latent_ppd_oscale` returned only `NA`s, so the output will also be ",
+        "`NA` as long as `resp_oscale = TRUE`."
       )
     }
   } else {
@@ -492,7 +493,7 @@ proj_predict_aux <- function(proj, newdata, offset, weights,
           "Cannot draw from the latent Gaussian distribution if ",
           "`<refmodel>$dis` consists of only `NA`s. If it's not possible to ",
           "supply a suitable argument `dis` to init_refmodel(), consider ",
-          "switching to `respOrig = TRUE` (which might require the ",
+          "switching to `resp_oscale = TRUE` (which might require the ",
           "specification of functions needed by extend_family())."
         )
       }
@@ -563,20 +564,22 @@ plot.vsel <- function(
     alpha = 2 * pnorm(-1),
     baseline = if (!inherits(x$refmodel, "datafit")) "ref" else "best",
     thres_elpd = NA,
-    respOrig = TRUE,
+    resp_oscale = TRUE,
     ...
 ) {
   object <- x
-  .validate_vsel_object_stats(object, stats, respOrig = respOrig)
+  .validate_vsel_object_stats(object, stats, resp_oscale = resp_oscale)
   baseline <- .validate_baseline(object$refmodel, baseline, deltas)
 
   ## compute all the statistics and fetch only those that were asked
   nfeat_baseline <- .get_nfeat_baseline(object, baseline, stats[1],
-                                        respOrig = respOrig)
+                                        resp_oscale = resp_oscale)
   tab <- rbind(
     .tabulate_stats(object, stats, alpha = alpha,
-                    nfeat_baseline = nfeat_baseline, respOrig = respOrig, ...),
-    .tabulate_stats(object, stats, alpha = alpha, respOrig = respOrig, ...)
+                    nfeat_baseline = nfeat_baseline, resp_oscale = resp_oscale,
+                    ...),
+    .tabulate_stats(object, stats, alpha = alpha, resp_oscale = resp_oscale,
+                    ...)
   )
   stats_table <- subset(tab, tab$delta == deltas)
   stats_ref <- subset(stats_table, stats_table$size == Inf)
@@ -614,7 +617,7 @@ plot.vsel <- function(
     ylab <- "Value"
   }
   if (object$refmodel$family$for_latent) {
-    if (respOrig) {
+    if (resp_oscale) {
       ylab <- paste(ylab, "(response scale)")
     } else {
       ylab <- paste(ylab, "(latent scale)")
@@ -754,7 +757,7 @@ plot.vsel <- function(
 #'   For [plot.vsel()]: Always relevant. Either `"ref"` or `"best"`, indicating
 #'   whether the baseline is the reference model or the best submodel found (in
 #'   terms of `stats[1]`), respectively.
-#' @param respOrig Only relevant for the latent projection. A single logical
+#' @param resp_oscale Only relevant for the latent projection. A single logical
 #'   value indicating whether to calculate the performance statistics on
 #'   response scale (`TRUE`) or on latent scale (`FALSE`).
 #' @param ... Arguments passed to the internal function which is used for
@@ -766,24 +769,24 @@ plot.vsel <- function(
 #'
 #' @details The `stats` options `"mse"` and `"rmse"` are only available for:
 #'   * the traditional projection,
-#'   * the latent projection with `respOrig = FALSE`,
-#'   * the latent projection with `respOrig = TRUE` in combination with
+#'   * the latent projection with `resp_oscale = FALSE`,
+#'   * the latent projection with `resp_oscale = TRUE` in combination with
 #'   `<refmodel>$family$cats` being `NULL`.
 #'
 #'   The `stats` option `"acc"` (= `"pctcorr"`) is only available for:
 #'   * the [binomial()] family in case of the traditional projection,
 #'   * all families in case of the augmented-data projection,
 #'   * the [binomial()] family (on the original response scale) in case of the
-#'   latent projection with `respOrig = TRUE` in combination with
+#'   latent projection with `resp_oscale = TRUE` in combination with
 #'   `<refmodel>$family$cats` being `NULL`,
 #'   * all families (on the original response scale) in case of the latent
-#'   projection with `respOrig = TRUE` in combination with
+#'   projection with `resp_oscale = TRUE` in combination with
 #'   `<refmodel>$family$cats` being not `NULL`.
 #'
 #'   The `stats` option `"auc"` is only available for:
 #'   * the [binomial()] family in case of the traditional projection,
 #'   * the [binomial()] family (on the original response scale) in case of the
-#'   latent projection with `respOrig = TRUE` in combination with
+#'   latent projection with `resp_oscale = TRUE` in combination with
 #'   `<refmodel>$family$cats` being `NULL`.
 #'
 #' @return An object of class `vselsummary`.
@@ -818,10 +821,10 @@ summary.vsel <- function(
     deltas = FALSE,
     alpha = 2 * pnorm(-1),
     baseline = if (!inherits(object$refmodel, "datafit")) "ref" else "best",
-    respOrig = TRUE,
+    resp_oscale = TRUE,
     ...
 ) {
-  .validate_vsel_object_stats(object, stats, respOrig = respOrig)
+  .validate_vsel_object_stats(object, stats, resp_oscale = resp_oscale)
   baseline <- .validate_baseline(object$refmodel, baseline, deltas)
 
   # Initialize output:
@@ -848,13 +851,13 @@ summary.vsel <- function(
   # The full table of the performance statistics from `stats`:
   if (deltas) {
     nfeat_baseline <- .get_nfeat_baseline(object, baseline, stats[1],
-                                          respOrig = respOrig)
+                                          resp_oscale = resp_oscale)
     tab <- .tabulate_stats(object, stats, alpha = alpha,
-                           nfeat_baseline = nfeat_baseline, respOrig = respOrig,
-                           ...)
+                           nfeat_baseline = nfeat_baseline,
+                           resp_oscale = resp_oscale, ...)
   } else {
-    tab <- .tabulate_stats(object, stats, alpha = alpha, respOrig = respOrig,
-                           ...)
+    tab <- .tabulate_stats(object, stats, alpha = alpha,
+                           resp_oscale = resp_oscale, ...)
   }
   stats_table <- subset(tab, tab$size != Inf) %>%
     dplyr::group_by(.data$statistic) %>%
@@ -912,7 +915,7 @@ summary.vsel <- function(
     out$pct_solution_terms_cv <- object$pct_solution_terms_cv
   }
   out$selection <- subset(arr, arr$size <= nterms_max)
-  out$respOrig <- respOrig
+  out$resp_oscale <- resp_oscale
   return(out)
 }
 
@@ -932,7 +935,8 @@ summary.vsel <- function(
 print.vselsummary <- function(x, digits = 1, ...) {
   if (x$family$for_latent) {
     cat("------\nResponse-scale family:\n")
-    print(structure(x$family[c("familyOrig", "linkOrig")], class = "family"))
+    print(structure(x$family[c("family_oscale", "link_oscale")],
+                    class = "family"))
     cat("------\nLatent-scale family:\n")
   }
   print(x$family)
@@ -966,7 +970,7 @@ print.vselsummary <- function(x, digits = 1, ...) {
       " used for prediction: ", x$nprjdraws_eval, "\n", sep = "")
   cat("\n")
   if (x$family$for_latent) {
-    if (x$respOrig) {
+    if (x$resp_oscale) {
       scale_string <- " (response scale)"
     } else {
       scale_string <- " (latent scale)"
@@ -1076,8 +1080,8 @@ print.vsel <- function(x, ...) {
 #'   that standard error referring to the utility *difference*).
 #'
 #'   Apart from the two [summary.vsel()] arguments mentioned above (`alpha` and
-#'   `baseline`), `respOrig` is another important [summary.vsel()] argument that
-#'   may be passed via `...`.
+#'   `baseline`), `resp_oscale` is another important [summary.vsel()] argument
+#'   that may be passed via `...`.
 #'
 #' @note Loss statistics like the root mean squared error (RMSE) and the mean
 #'   squared error (MSE) are converted to utilities by multiplying them by `-1`,

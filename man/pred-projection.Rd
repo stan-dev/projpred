@@ -26,7 +26,7 @@ proj_predict(
   filter_nterms = NULL,
   nresample_clusters = 1000,
   .seed = sample.int(.Machine$integer.max, 1),
-  respOrig = TRUE,
+  resp_oscale = TRUE,
   ...
 )
 }
@@ -58,7 +58,7 @@ for only those elements (submodels) with a number of solution terms in
 whether the linear predictor should be transformed to response scale using
 the inverse-link function (\code{TRUE}) or not (\code{FALSE}). In case of the latent
 projection, argument \code{transform} is similar in spirit to argument
-\code{respOrig} from other functions and affects the scale of both output
+\code{resp_oscale} from other functions and affects the scale of both output
 elements \code{pred} and \code{lpd} (see sections "Details" and "Value" below).}
 
 \item{integrated}{For \code{\link[=proj_linpred]{proj_linpred()}} only. A single logical value
@@ -85,7 +85,7 @@ submodel(s). Not to be confused with argument \code{nclusters} of \code{\link[=p
 the set of clustered posterior draws after projection (with this set being
 determined by argument \code{nclusters} of \code{\link[=project]{project()}}).}
 
-\item{respOrig}{Only relevant for the latent projection. A single logical
+\item{resp_oscale}{Only relevant for the latent projection. A single logical
 value indicating whether to draw from the posterior-projection predictive
 distributions on the original response scale (\code{TRUE}) or on latent scale
 (\code{FALSE}).}
@@ -115,7 +115,7 @@ an \eqn{S_{\mathrm{prj}} \times N}{S_prj x N} matrix.
 \item \code{\link[=proj_predict]{proj_predict()}} returns an \eqn{S_{\mathrm{prj}} \times N}{S_prj x N}
 matrix of predictions where \eqn{S_{\mathrm{prj}}}{S_prj} denotes
 \code{nresample_clusters} in case of clustered projection. In case of (i) the
-augmented-data projection or (ii) the latent projection with \code{respOrig =   TRUE} and \verb{<refmodel>$family$cats} being not \code{NULL}, this matrix has an
+augmented-data projection or (ii) the latent projection with \code{resp_oscale =   TRUE} and \verb{<refmodel>$family$cats} being not \code{NULL}, this matrix has an
 attribute called \code{cats} (the character vector of response categories) and
 the values of the matrix are the predicted indices of the response
 categories (these indices refer to the order of the response categories

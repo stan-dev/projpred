@@ -9,8 +9,8 @@ extend_family(
   latent = FALSE,
   latent_y_unqs = NULL,
   latent_ilink = NULL,
-  latent_llOrig = NULL,
-  latent_ppdOrig = NULL,
+  latent_ll_oscale = NULL,
+  latent_ppd_oscale = NULL,
   augdat_y_unqs = NULL,
   augdat_link = NULL,
   augdat_ilink = NULL,
@@ -41,27 +41,27 @@ in all other cases, but then an internal default based on \code{family$linkinv}
 will be used which might not work for all families. See also section
 "Latent projection" below.}
 
-\item{latent_llOrig}{Only relevant for the latent projection, in which case
-this needs to be the function computing response-scale (not latent-scale)
-log-likelihood values. If \code{!is.null(family$cats)} (after taking
-\code{latent_y_unqs} into account) or if the original response family was the
-\code{\link[=binomial]{binomial()}} or the \code{\link[=poisson]{poisson()}} family, then \code{latent_llOrig} can be \code{NULL},
-in which case an internal default will be used. Can also be \code{NULL} in all
-other cases, but then downstream functions will have limited functionality
-(a message thrown by \code{\link[=extend_family]{extend_family()}} will state what exactly won't be
-available). See also section "Latent projection" below.}
+\item{latent_ll_oscale}{Only relevant for the latent projection, in which
+case this needs to be the function computing response-scale (not
+latent-scale) log-likelihood values. If \code{!is.null(family$cats)} (after
+taking \code{latent_y_unqs} into account) or if the original response family was
+the \code{\link[=binomial]{binomial()}} or the \code{\link[=poisson]{poisson()}} family, then \code{latent_ll_oscale} can be
+\code{NULL}, in which case an internal default will be used. Can also be \code{NULL}
+in all other cases, but then downstream functions will have limited
+functionality (a message thrown by \code{\link[=extend_family]{extend_family()}} will state what
+exactly won't be available). See also section "Latent projection" below.}
 
-\item{latent_ppdOrig}{Only relevant for the latent projection, in which case
-this needs to be the function sampling response values given latent
+\item{latent_ppd_oscale}{Only relevant for the latent projection, in which
+case this needs to be the function sampling response values given latent
 predictors that have been transformed to response scale using
 \code{latent_ilink}. If \code{!is.null(family$cats)} (after taking \code{latent_y_unqs}
 into account) or if the original response family was the \code{\link[=binomial]{binomial()}} or
-the \code{\link[=poisson]{poisson()}} family, then \code{latent_ppdOrig} can be \code{NULL}, in which case
-an internal default will be used. Can also be \code{NULL} in all other cases,
-but then downstream functions will have limited functionality (a message
-thrown by \code{\link[=extend_family]{extend_family()}} will state what exactly won't be available).
-See also section "Latent projection" below. Note that although this
-function has the abbreviation "PPD" in its name (which stands for
+the \code{\link[=poisson]{poisson()}} family, then \code{latent_ppd_oscale} can be \code{NULL}, in which
+case an internal default will be used. Can also be \code{NULL} in all other
+cases, but then downstream functions will have limited functionality (a
+message thrown by \code{\link[=extend_family]{extend_family()}} will state what exactly won't be
+available). See also section "Latent projection" below. Note that although
+this function has the abbreviation "PPD" in its name (which stands for
 "posterior predictive distribution"), \pkg{projpred} currently only uses it
 in \code{\link[=proj_predict]{proj_predict()}}, i.e., for sampling from what would better be termed
 posterior-projection predictive distribution (PPPD).}
@@ -190,16 +190,17 @@ transformed to the original response space, with the following structure:
 given in \code{family$cats}, after taking \code{latent_y_unqs} into account).
 }
 
-The function supplied to argument \code{latent_llOrig} needs to have the prototype
+The function supplied to argument \code{latent_ll_oscale} needs to have the
+prototype
 
-\if{html}{\out{<div class="sourceCode r">}}\preformatted{latent_llOrig(ilpreds, yOrig, wobs = rep(1, length(yOrig)), cl_ref,
-              wdraws_ref = rep(1, length(cl_ref)))
+\if{html}{\out{<div class="sourceCode r">}}\preformatted{latent_ll_oscale(ilpreds, y_oscale, wobs = rep(1, length(y_oscale)), cl_ref,
+                 wdraws_ref = rep(1, length(cl_ref)))
 }\if{html}{\out{</div>}}
 
 where:
 \itemize{
 \item \code{ilpreds} accepts the return value from \code{latent_ilink}.
-\item \code{yOrig} accepts a vector of length \eqn{N} containing response values on
+\item \code{y_oscale} accepts a vector of length \eqn{N} containing response values on
 the original response scale.
 \item \code{wobs} accepts a numeric vector of length \eqn{N} containing observation
 weights.
@@ -208,14 +209,14 @@ weights.
 \code{latent_ilink}.
 }
 
-The return value of \code{latent_llOrig} needs to be an \eqn{S \times N}{S x N}
+The return value of \code{latent_ll_oscale} needs to be an \eqn{S \times N}{S x N}
 matrix containing the response-scale (not latent-scale) log-likelihood values
 for the \eqn{N} observations from its inputs.
 
-The function supplied to argument \code{latent_ppdOrig} needs to have the
+The function supplied to argument \code{latent_ppd_oscale} needs to have the
 prototype
 
-\if{html}{\out{<div class="sourceCode r">}}\preformatted{latent_ppdOrig(ilpreds_resamp, wobs, cl_ref,
+\if{html}{\out{<div class="sourceCode r">}}\preformatted{latent_ppd_oscale(ilpreds_resamp, wobs, cl_ref,
                wdraws_ref = rep(1, length(cl_ref)), idxs_prjdraws)
 }\if{html}{\out{</div>}}
 
@@ -236,7 +237,7 @@ dim(ilpreds)[1]}} where \code{ilpreds} denotes the return value of
 \code{latent_ilink}).
 }
 
-The return value of \code{latent_ppdOrig} needs to be a
+The return value of \code{latent_ppd_oscale} needs to be a
 \eqn{\texttt{dim(ilpreds\_resamp)[1]} \times N}{dim(ilpreds_resamp)[1] x N}
 matrix containing the response-scale (not latent-scale) draws from the
 posterior(-projection) predictive distributions for the \eqn{N} observations
