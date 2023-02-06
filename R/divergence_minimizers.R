@@ -847,7 +847,8 @@ fit_categ_mlvl <- function(formula, projpred_formula_no_random,
            weights = weights,
            model = FALSE,
            x = FALSE,
-           y = FALSE),
+           y = FALSE,
+           method = "PQL"),
       dot_args
     ))
   })
