@@ -366,9 +366,8 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
     # `colMeans(posterior_linpred())` to the original (full-data) reference
     # model fit, so using `refmodel$y` would induce a dependency between
     # training and test data:
-    refprd_with_offs <- get("ref_predfun_usr",
-                            envir = environment(refmodel$ref_predfun))
-    y_lat_E <- loo::E_loo(t(unname(refprd_with_offs(refmodel$fit))),
+    y_lat_E <- loo::E_loo(t(refmodel$ref_predfun(refmodel$fit,
+                                                 excl_offs = FALSE)),
                           psis_object = psisloo,
                           log_ratios = -loglik_forPSIS)
     if (any(y_lat_E$pareto_k > 0.7)) {
@@ -869,13 +868,9 @@ kfold_varsel <- function(refmodel, method, nterms_max, ndraws,
   ref <- rbind2list(lapply(list_cv, function(fold) {
     eta_test <- fold$refmodel$ref_predfun(
       fold$refmodel$fit,
-      newdata = refmodel$fetch_data(obs = fold$d_test$omitted)
+      newdata = refmodel$fetch_data(obs = fold$d_test$omitted),
+      excl_offs = FALSE
     )
-    if (fold$refmodel$family$family %in% fams_neg_linpred()) {
-      eta_test <- eta_test - fold$d_test$offset
-    } else {
-      eta_test <- eta_test + fold$d_test$offset
-    }
     mu_test <- fold$refmodel$family$linkinv(eta_test)
     .weighted_summary_means(
       y_test = fold$d_test, family = fold$refmodel$family,

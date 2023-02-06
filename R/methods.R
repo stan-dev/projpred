@@ -292,13 +292,9 @@ proj_linpred_aux <- function(proj, newdata, offset, weights, transform = FALSE,
         newdata_lat <- proj$refmodel$fetch_data()
         newdata_lat$projpred_internal_offs_stanreg <- offset
       }
-      # Use `ref_predfun_usr` here (instead of `ref_predfun`) to include
-      # offsets:
-      refprd_with_offs <- get("ref_predfun_usr",
-                              envir = environment(proj$refmodel$ref_predfun))
-      ynew <- rowMeans(unname(
-        refprd_with_offs(fit = proj$refmodel$fit, newdata = newdata_lat)
-      ))
+      ynew <- rowMeans(proj$refmodel$ref_predfun(fit = proj$refmodel$fit,
+                                                 newdata = newdata_lat,
+                                                 excl_offs = FALSE))
     } else {
       ynew <- eval_lhs(formula = proj$refmodel$formula, data = newdata)
     }
