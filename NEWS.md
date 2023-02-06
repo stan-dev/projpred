@@ -11,7 +11,7 @@ If you read this from a place other than <https://mc-stan.org/projpred/news/inde
 
 ## Minor changes
 
-* Improvements in the numerical stability of internal link and inverse-link functions.
+* Improvements in the numerical stability of internal link and inverse-link functions. (GitHub: #376)
 
 ## Bug fixes
 
