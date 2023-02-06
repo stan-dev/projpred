@@ -12,6 +12,7 @@
   alpha = 2 * pnorm(-1),
   baseline = if (!inherits(x$refmodel, "datafit")) "ref" else "best",
   thres_elpd = NA,
+  resp_oscale = TRUE,
   ...
 )
 }
@@ -31,16 +32,16 @@ are:
 \item \code{"elpd"}: (expected) sum of log predictive densities.
 \item \code{"mlpd"}: mean log predictive density, that is, \code{"elpd"} divided by the
 number of observations.
-\item \code{"mse"}: mean squared error (traditional projection only).
-\item \code{"rmse"}: root mean squared error (traditional projection only). For the
-corresponding standard error and lower and upper confidence interval
-bounds, bootstrapping is used.
-\item \code{"acc"} (or its alias, \code{"pctcorr"}): classification accuracy (for the
-traditional projection: \code{\link[=binomial]{binomial()}} family only; for the augmented-data
-projection: all families).
-\item \code{"auc"}: area under the ROC curve (\code{\link[=binomial]{binomial()}} family for the
-traditional projection only). For the corresponding standard error and
-lower and upper confidence interval bounds, bootstrapping is used.
+\item \code{"mse"}: mean squared error (only available in the situations mentioned
+in section "Details" below).
+\item \code{"rmse"}: root mean squared error (only available in the situations
+mentioned in section "Details" below). For the corresponding standard error
+and lower and upper confidence interval bounds, bootstrapping is used.
+\item \code{"acc"} (or its alias, \code{"pctcorr"}): classification accuracy (only
+available in the situations mentioned in section "Details" below).
+\item \code{"auc"}: area under the ROC curve (only available in the situations
+mentioned in section "Details" below). For the corresponding standard error
+and lower and upper confidence interval bounds, bootstrapping is used.
 }}
 
 \item{deltas}{If \code{TRUE}, the submodel statistics are estimated as differences
@@ -65,6 +66,10 @@ close enough to the baseline model's ELPD. An equivalent rule is applied in
 case of the MLPD. See \code{\link[=suggest_size]{suggest_size()}} for a formalization. Supplying \code{NA}
 deactivates this.}
 
+\item{resp_oscale}{Only relevant for the latent projection. A single logical
+value indicating whether to calculate the performance statistics on
+response scale (\code{TRUE}) or on latent scale (\code{FALSE}).}
+
 \item{...}{Arguments passed to the internal function which is used for
 bootstrapping (if applicable; see argument \code{stats}). Currently, relevant
 arguments are \code{B} (the number of bootstrap samples, defaulting to \code{2000})
@@ -77,12 +82,45 @@ This is the \code{\link[=plot]{plot()}} method for \code{vsel} objects (returned
 \code{\link[=cv_varsel]{cv_varsel()}}).
 }
 \details{
-As long as the reference model's performance is computable, it is
-always shown in the plot as a dashed red horizontal line. If \code{baseline = "best"}, the baseline model's performance is shown as a dotted black
-horizontal line. If \code{!is.na(thres_elpd)} and \code{any(stats \%in\% c("elpd", "mlpd"))}, the value supplied to \code{thres_elpd} (which is automatically
-adapted internally in case of the MLPD or \code{deltas = FALSE}) is shown as a
-dot-dashed gray horizontal line for the reference model and, if \code{baseline = "best"}, as a long-dashed green horizontal line for the baseline model.
+The \code{stats} options \code{"mse"} and \code{"rmse"} are only available for:
+\itemize{
+\item the traditional projection,
+\item the latent projection with \code{resp_oscale = FALSE},
+\item the latent projection with \code{resp_oscale = TRUE} in combination with
+\verb{<refmodel>$family$cats} being \code{NULL}.
 }
+
+The \code{stats} option \code{"acc"} (= \code{"pctcorr"}) is only available for:
+\itemize{
+\item the \code{\link[=binomial]{binomial()}} family in case of the traditional projection,
+\item all families in case of the augmented-data projection,
+\item the \code{\link[=binomial]{binomial()}} family (on the original response scale) in case of the
+latent projection with \code{resp_oscale = TRUE} in combination with
+\verb{<refmodel>$family$cats} being \code{NULL},
+\item all families (on the original response scale) in case of the latent
+projection with \code{resp_oscale = TRUE} in combination with
+\verb{<refmodel>$family$cats} being not \code{NULL}.
+}
+
+The \code{stats} option \code{"auc"} is only available for:
+\itemize{
+\item the \code{\link[=binomial]{binomial()}} family in case of the traditional projection,
+\item the \code{\link[=binomial]{binomial()}} family (on the original response scale) in case of the
+latent projection with \code{resp_oscale = TRUE} in combination with
+\verb{<refmodel>$family$cats} being \code{NULL}.
+}
+}
+\section{Horizontal lines}{
+As long as the reference model's performance is computable, it is always
+shown in the plot as a dashed red horizontal line. If \code{baseline = "best"},
+the baseline model's performance is shown as a dotted black horizontal line.
+If \code{!is.na(thres_elpd)} and \code{any(stats \%in\% c("elpd", "mlpd"))}, the value
+supplied to \code{thres_elpd} (which is automatically adapted internally in case
+of the MLPD or \code{deltas = FALSE}) is shown as a dot-dashed gray horizontal
+line for the reference model and, if \code{baseline = "best"}, as a long-dashed
+green horizontal line for the baseline model.
+}
+
 \examples{
 if (requireNamespace("rstanarm", quietly = TRUE)) {
   # Data:

@@ -86,3 +86,18 @@ bibentry(
   header = "To cite the 'projpred' augmented-data projection paper:",
   encoding = "UTF-8"
 )
+
+bibentry(
+  bibtype = "Misc",
+  title = "Latent Space Projection Predictive Inference",
+  author = c(
+    person("Alejandro", "Catalina"),
+    person("Paul", "Bürkner"),
+    person("Aki", "Vehtari")
+  ),
+  year = "2021",
+  publisher = "{arXiv}",
+  doi = "10.48550/arXiv.2109.04702",
+  header = "To cite the 'projpred' latent projection paper:",
+  encoding = "UTF-8"
+)

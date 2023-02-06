@@ -17,15 +17,15 @@ test_that("`object` of class \"stanreg\" or \"brmsfit\" works", {
     } else {
       offs_expected_crr <- rep(0, nobsv)
     }
-    if (args_ref[[tstsetup]]$pkg_nm == "brms" &&
-        args_ref[[tstsetup]]$fam_nm %in% fam_nms_aug) {
+    if (args_ref[[tstsetup]]$prj_nm == "latent") {
+      fam_orig_expected <- f_gauss
+    } else if (args_ref[[tstsetup]]$pkg_nm == "brms" &&
+               args_ref[[tstsetup]]$fam_nm %in% fam_nms_aug) {
       fam_orig_expected <- eval(args_fit[[tstsetup_fit]]$family)
     } else {
       if (args_ref[[tstsetup]]$pkg_nm == "rstanarm" &&
           args_ref[[tstsetup]]$fam_nm == "cumul") {
-        f_cumul <- structure(list(family = "cumulative_rstanarm",
-                                  link = link_str),
-                             class = "family")
+        f_cumul <- get_f_cumul()
       }
       fam_orig_expected <- get(paste0("f_", args_fit[[tstsetup_fit]]$fam_nm))
     }
@@ -40,6 +40,7 @@ test_that("`object` of class \"stanreg\" or \"brmsfit\" works", {
       mod_nm = args_ref[[tstsetup]]$mod_nm,
       fam_nm = args_ref[[tstsetup]]$fam_nm,
       augdat_expected = args_ref[[tstsetup]]$prj_nm == "augdat",
+      latent_expected = args_ref[[tstsetup]]$prj_nm == "latent",
       info_str = tstsetup
     )
   }
@@ -100,7 +101,7 @@ test_that("offsets specified via argument `offset` work", {
     info = "rstanarm.glm.gauss.stdformul.with_wobs.with_offs"
   )
   nms_compare <- c("mu", "eta", "dis", "y", "intercept", "wobs", "wsample",
-                   "offset")
+                   "offset", "y_oscale")
   expect_equal(
     refmod_offs_arg[nms_compare],
     refmods$rstanarm.glm.gauss.stdformul.with_wobs.with_offs[nms_compare],
@@ -165,6 +166,24 @@ test_that(paste(
     prj_crr <- args_ref[[tstsetup]]$prj_nm
 
     y_crr <- dat[, paste("y", mod_crr, fam_crr, sep = "_")]
+    if (prj_crr == "latent") {
+      dat_crr <- dat
+      if (pkg_crr == "rstanarm" && grepl("\\.with_offs\\.", tstsetup)) {
+        dat_crr$projpred_internal_offs_stanreg <- 0
+      }
+      y_nm <- stdize_lhs(refmods[[tstsetup]]$formula)$y_nm
+      # Use `ref_predfun_usr` here (instead of `ref_predfun`) to include
+      # offsets:
+      refprd_with_offs <- get(
+        "ref_predfun_usr",
+        envir = environment(refmods[[tstsetup]]$ref_predfun)
+      )
+      y_crr_link <- rowMeans(unname(
+        refprd_with_offs(fit = refmods[[tstsetup]]$fit, newdata = dat_crr)
+      ))
+    } else {
+      y_crr_link <- y_crr
+    }
 
     # Without `ynew`:
     predref_resp <- predict(refmods[[tstsetup]], dat, type = "response")
@@ -173,21 +192,33 @@ test_that(paste(
     # With `ynew`:
     predref_ynew_resp <- predict(refmods[[tstsetup]], dat, ynew = y_crr,
                                  type = "response")
-    predref_ynew_link <- predict(refmods[[tstsetup]], dat, ynew = y_crr,
+    predref_ynew_link <- predict(refmods[[tstsetup]], dat, ynew = y_crr_link,
                                  type = "link")
 
     # Checks without `ynew`:
-    if (prj_crr == "augdat") {
-      expect_identical(dim(predref_resp),
-                       c(nobsv, length(refmods[[tstsetup]]$family$cats)),
-                       info = tstsetup)
-      if (fam_crr %in% c("brnll", "binom")) {
+    if (prj_crr %in% c("latent", "augdat")) {
+      if (prj_crr == "augdat" || !is.null(refmods[[tstsetup]]$family$cats)) {
+        expect_identical(dim(predref_resp),
+                         c(nobsv, length(refmods[[tstsetup]]$family$cats)),
+                         info = tstsetup)
         expect_true(all(predref_resp >= 0 & predref_resp <= 1),
                     info = tstsetup)
+      } else {
+        expect_true(is.vector(predref_resp, "double"), info = tstsetup)
+        expect_length(predref_resp, nobsv)
+        if (fam_crr %in% c("brnll", "binom")) {
+          expect_true(all(predref_resp >= 0 & predref_resp <= 1),
+                      info = tstsetup)
+        }
       }
-      expect_identical(dim(predref_link),
-                       c(nobsv, length(refmods[[tstsetup]]$family$cats) - 1L),
-                       info = tstsetup)
+      if (prj_crr == "augdat") {
+        expect_identical(dim(predref_link),
+                         c(nobsv, length(refmods[[tstsetup]]$family$cats) - 1L),
+                         info = tstsetup)
+      } else if (prj_crr == "latent") {
+        expect_true(is.vector(predref_link, "double"), info = tstsetup)
+        expect_length(predref_link, nobsv)
+      }
     } else {
       expect_true(is.vector(predref_resp, "double"), info = tstsetup)
       expect_length(predref_resp, nobsv)
@@ -203,7 +234,12 @@ test_that(paste(
     }
 
     # Checks with `ynew`:
-    expect_equal(predref_ynew_resp, predref_ynew_link, info = tstsetup)
+    if (prj_crr != "latent") {
+      expect_equal(predref_ynew_resp, predref_ynew_link, info = tstsetup)
+    } else {
+      expect_false(isTRUE(all.equal(predref_ynew_resp, predref_ynew_link)),
+                   info = tstsetup)
+    }
     expect_true(is.vector(predref_ynew_resp, "double"), info = tstsetup)
     expect_length(predref_ynew_resp, nobsv)
     expect_false(isTRUE(all.equal(predref_ynew_resp, predref_resp)),

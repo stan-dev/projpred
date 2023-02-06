@@ -24,6 +24,7 @@
 #'
 #' @name refmodel-init-get
 #'
+#' @inheritParams extend_family
 #' @param object For [init_refmodel()], an object that the functions from
 #'   arguments `extract_model_data` and `ref_predfun` can be applied to, with a
 #'   `NULL` object being treated specially (see section "Value" below). For
@@ -169,38 +170,38 @@
 #'     which case the projection has to be performed for each of the response
 #'     variables separately.
 #'     + `data` accepts a `data.frame` to be used for the projection. In case of
-#'     the traditional projection, this dataset has \eqn{N} rows. In case of the
-#'     augmented-data projection, this dataset has
+#'     the traditional or the latent projection, this dataset has \eqn{N} rows.
+#'     In case of the augmented-data projection, this dataset has
 #'     \eqn{N_{\mathrm{augcat}}}{N_augcat} rows.
 #'     + `family` accepts an object of class `family`.
 #'     + `weights` accepts either observation weights (at least in the form of a
 #'     numeric vector) or `NULL` (for using a vector of ones as weights).
 #'     + `projpred_var` accepts an \eqn{N \times S_{\mathrm{prj}}}{N x S_prj}
 #'     matrix of predictive variances (necessary for \pkg{projpred}'s internal
-#'     GLM fitter) in case of the traditional projection and an
+#'     GLM fitter) in case of the traditional or the latent projection and an
 #'     \eqn{N_{\mathrm{augcat}} \times S_{\mathrm{prj}}}{N_augcat x S_prj}
 #'     matrix (containing only `NA`s) in case of the augmented-data projection.
 #'     + `projpred_regul` accepts a single numeric value as supplied to argument
 #'     `regul` of [project()], for example.
 #'     + `projpred_ws_aug` accepts an \eqn{N \times S_{\mathrm{prj}}}{N x S_prj}
-#'     matrix of expected values for the response in case of the traditional
-#'     projection and an \eqn{N_{\mathrm{augcat}} \times
+#'     matrix of expected values for the response in case of the traditional or
+#'     the latent projection and an \eqn{N_{\mathrm{augcat}} \times
 #'     S_{\mathrm{prj}}}{N_augcat x S_prj} matrix of probabilities for the
 #'     response categories in case of the augmented-data projection.
 #'     + `...` accepts further arguments specified by the user.
 #'
 #' The return value of these functions needs to be:
-#' * `ref_predfun`: for the traditional projection, an \eqn{N \times
-#' S_{\mathrm{ref}}}{N x S_ref} matrix; for the augmented-data projection, an
-#' \eqn{S_{\mathrm{ref}} \times N \times C_{\mathrm{lat}}}{S_ref x N x C_lat}
-#' array (the only exception is the augmented-data projection for the
-#' [binomial()] family in which case `ref_predfun` needs to return an \eqn{N
+#' * `ref_predfun`: for the traditional or the latent projection, an \eqn{N
+#' \times S_{\mathrm{ref}}}{N x S_ref} matrix; for the augmented-data
+#' projection, an \eqn{S_{\mathrm{ref}} \times N \times C_{\mathrm{lat}}}{S_ref
+#' x N x C_lat} array (the only exception is the augmented-data projection for
+#' the [binomial()] family in which case `ref_predfun` needs to return an \eqn{N
 #' \times S_{\mathrm{ref}}}{N x S_ref} matrix just like for the traditional
 #' projection because the array is constructed by an internal wrapper function).
-#' * `proj_predfun`: for the traditional projection, an \eqn{N \times
-#' S_{\mathrm{prj}}}{N x S_prj} matrix; for the augmented-data projection, an
-#' \eqn{N \times C_{\mathrm{lat}} \times S_{\mathrm{prj}}}{N x C_lat x S_prj}
-#' array.
+#' * `proj_predfun`: for the traditional or the latent projection, an \eqn{N
+#' \times S_{\mathrm{prj}}}{N x S_prj} matrix; for the augmented-data
+#' projection, an \eqn{N \times C_{\mathrm{lat}} \times S_{\mathrm{prj}}}{N x
+#' C_lat x S_prj} array.
 #' * `div_minimizer`: a `list` of length \eqn{S_{\mathrm{prj}}}{S_prj}
 #' containing this number of submodel fits.
 #'
@@ -209,7 +210,8 @@
 #' The function supplied to argument `extract_model_data` needs to have the
 #' prototype
 #' ```{r, eval = FALSE}
-#' extract_model_data(object, newdata, wrhs = NULL, orhs = NULL, extract_y = TRUE)
+#' extract_model_data(object, newdata, wrhs = NULL, orhs = NULL,
+#'                    extract_y = TRUE)
 #' ```
 #' where:
 #' * `object` accepts the reference model fit as given in argument `object` (but
@@ -255,6 +257,22 @@
 #'
 #' Currently, `object = NULL` (i.e., a `datafit`; see section "Value") is not
 #' supported in case of the augmented-data projection.
+#'
+#' # Latent projection
+#'
+#' If a custom reference model for a latent projection is needed, see also
+#' [extend_family()].
+#'
+#' For the latent projection, `family$cats` (*after* applying [extend_family()]
+#' internally; see [extend_family()]'s argument `latent_y_unqs`) currently must
+#' not be `NULL` if the original (i.e., non-latent) response is a `factor`.
+#' Conversely, if `family$cats` (*after* applying [extend_family()]) is
+#' non-`NULL`, the response vector resulting from `extract_model_data` is
+#' internally coerced to a `factor` (using [as.factor()]). The levels of this
+#' `factor` have to be identical to that non-`NULL` element `family$cats`.
+#'
+#' Currently, `object = NULL` (i.e., a `datafit`; see section "Value") is not
+#' supported in case of the latent projection.
 #'
 #' @return An object that can be passed to all the functions that take the
 #'   reference model fit as the first argument, such as [varsel()],
@@ -333,15 +351,28 @@ NULL
 #' @param object An object of class `refmodel` (returned by [get_refmodel()] or
 #'   [init_refmodel()]).
 #' @param ynew If not `NULL`, then this needs to be a vector of new (or old)
-#'   response values. See also section "Value" below. In case of the
-#'   augmented-data projection, `ynew` is internally coerced to a `factor`
-#'   (using [as.factor()]). The levels of this `factor` have to be a subset of
-#'   `object$family$cats` (see [extend_family()]'s argument `augdat_y_unqs`).
-#' @param type Only relevant if `is.null(ynew)`. The scale on which the
-#'   predictions are returned, either `"link"` or `"response"` (see
-#'   [predict.glm()] but note that [predict.refmodel()] does not adhere to the
-#'   typical \R convention of a default prediction on link scale). For both
-#'   scales, the predictions are averaged across the posterior draws.
+#'   response values. See also section "Value" below. In case of (i) the
+#'   augmented-data projection or (ii) the latent projection with `type =
+#'   "response"` and `object$family$cats` being not `NULL`, `ynew` is internally
+#'   coerced to a `factor` (using [as.factor()]). The levels of this `factor`
+#'   have to be a subset of `object$family$cats` (see [extend_family()]'s
+#'   arguments `augdat_y_unqs` and `latent_y_unqs`, respectively).
+#' @param type Usually only relevant if `is.null(ynew)`, but for the latent
+#'   projection, this also affects the `!is.null(ynew)` case (see below). The
+#'   scale on which the predictions are returned, either `"link"` or
+#'   `"response"` (see [predict.glm()] but note that [predict.refmodel()] does
+#'   not adhere to the typical \R convention of a default prediction on link
+#'   scale). For both scales, the predictions are averaged across the posterior
+#'   draws. In case of the latent projection, argument `type` is similar in
+#'   spirit to argument `resp_oscale` from other functions: If (i)
+#'   `is.null(ynew)`, then argument `type` affects the predictions as described
+#'   above. In that case, note that `type = "link"` yields the linear predictors
+#'   without any modifications that may be due to the original response
+#'   distribution (e.g., for a [brms::cumulative()] model, the ordered
+#'   thresholds are not taken into account). If (ii) `!is.null(ynew)`, then
+#'   argument `type` also affects the scale of the log predictive densities
+#'   (`type = "response"` for the original response scale, `type = "link"` for
+#'   the latent Gaussian scale).
 #' @param ... Currently ignored.
 #'
 #' @details Argument `weightsnew` is only relevant if `!is.null(ynew)`.
@@ -351,11 +382,17 @@ NULL
 #'   Furthermore, let \eqn{C} denote either \eqn{C_{\mathrm{cat}}}{C_cat} (if
 #'   `type = "response"`) or \eqn{C_{\mathrm{lat}}}{C_lat} (if `type = "link"`).
 #'   Then, if `is.null(ynew)`, the returned object contains the reference
-#'   model's predictions (with the scale depending on argument `type`) as a
-#'   length-\eqn{N} vector in case of the traditional projection and as an
-#'   \eqn{N \times C}{N x C} matrix in case of the augmented-data projection. If
-#'   `!is.null(ynew)`, the returned object is a length-\eqn{N} vector of log
-#'   predictive densities evaluated at `ynew`.
+#'   model's predictions (with the scale depending on argument `type`) as:
+#'   * a length-\eqn{N} vector in case of (i) the traditional projection, (ii)
+#'   the latent projection with `type = "link"`, or (iii) the latent projection
+#'   with `type = "response"` and `object$family$cats` being `NULL`;
+#'   * an \eqn{N \times C}{N x C} matrix in case of (i) the augmented-data
+#'   projection or (ii) the latent projection with `type = "response"` and
+#'   `object$family$cats` being not `NULL`.
+#'
+#'   If `!is.null(ynew)`, the returned
+#'   object is a length-\eqn{N} vector of log predictive densities evaluated at
+#'   `ynew`.
 #'
 #' @export
 predict.refmodel <- function(object, newdata = NULL, ynew = NULL,
@@ -368,19 +405,32 @@ predict.refmodel <- function(object, newdata = NULL, ynew = NULL,
     stop("Cannot make predictions for an `object` of class \"datafit\".")
   }
   if (!is.null(ynew) && (!is.numeric(ynew) || NCOL(ynew) != 1) &&
-      !object$family$for_augdat) {
+      is.null(object$family$cats)) {
     stop("Argument `ynew` must be a numeric vector.")
   }
-  if (!is.null(ynew) && object$family$for_augdat) {
+  if (!is.null(ynew) && !is.null(object$family$cats) &&
+      (!object$family$for_latent || type == "response")) {
     ynew <- as.factor(ynew)
     if (!all(levels(ynew) %in% object$family$cats)) {
+      if (object$family$for_augdat) {
+        y_unqs_str <- "augdat_y_unqs"
+      } else {
+        y_unqs_str <- "latent_y_unqs"
+      }
       stop("The levels of the response variable (after coercing it to a ",
            "`factor`) have to be a subset of `family$cats`. Either modify ",
            "`ynew` accordingly or see the documentation for extend_family()'s ",
-           "argument `augdat_y_unqs` to solve this.")
+           "argument `", y_unqs_str, "` to solve this.")
     }
     # Re-assign the original levels because some levels might be missing:
     ynew <- factor(ynew, levels = object$family$cats)
+  } else if (!is.null(ynew) &&
+             object$family$for_latent &&
+             is.null(object$family$cats) &&
+             (is.factor(ynew) || is.character(ynew) || is.logical(ynew))) {
+    stop("If the original (i.e., non-latent) response is `factor`-like, ",
+         "`family$cats` must not be `NULL`. See the documentation for ",
+         "extend_family()'s argument `latent_y_unqs` to solve this.")
   }
 
   if (!is.null(newdata)) {
@@ -398,6 +448,10 @@ predict.refmodel <- function(object, newdata = NULL, ynew = NULL,
   }
   if (object$family$for_augdat && !all(weightsnew == 1)) {
     stop("Currently, the augmented-data projection may not be combined with ",
+         "observation weights (other than 1).")
+  }
+  if (object$family$for_latent && !all(weightsnew == 1)) {
+    stop("Currently, the latent projection may not be combined with ",
          "observation weights (other than 1).")
   }
   if (!is.null(newdata) && inherits(object$fit, "stanreg") &&
@@ -419,12 +473,42 @@ predict.refmodel <- function(object, newdata = NULL, ynew = NULL,
   }
 
   if (is.null(ynew)) {
-    pred <- if (type == "link") eta else object$family$linkinv(eta)
-    ## integrate over the samples
-    if (NCOL(pred) > 1) {
-      pred <- rowMeans(pred)
+    if (type == "link") {
+      pred <- eta
+    } else {
+      if (object$family$for_latent) {
+        pred <- object$family$latent_ilink(
+          t(eta), cl_ref = seq_along(object$wsample),
+          wdraws_ref = rep(1, length(object$wsample))
+        )
+        if (length(dim(pred)) < 2) {
+          stop("Unexpected structure for the output of `latent_ilink`.")
+        }
+        if (length(dim(pred)) == 3) {
+          pred <- arr2augmat(pred, margin_draws = 1)
+        }
+        if (all(is.na(pred))) {
+          message(
+            "`latent_ilink` returned only `NA`s, so the output will also be ",
+            "`NA` as long as `type = \"response\"`."
+          )
+        }
+      } else {
+        pred <- object$family$linkinv(eta)
+      }
     }
-    if (object$family$for_augdat) {
+    was_augmat <- inherits(pred, "augmat")
+    ## integrate over the samples
+    if (type == "link" || !object$family$for_latent || was_augmat) {
+      if (ncol(pred) > 1) {
+        pred <- rowMeans(pred)
+      }
+    } else {
+      if (nrow(pred) > 1) {
+        pred <- colMeans(pred)
+      }
+    }
+    if (was_augmat) {
       pred <- structure(pred,
                         nobs_orig = nrow(newdata %||% object$fetch_data()),
                         class = "augvec")
@@ -434,11 +518,69 @@ predict.refmodel <- function(object, newdata = NULL, ynew = NULL,
     return(pred)
   } else {
     ## evaluate the log predictive density at the given ynew values
-    loglik <- object$family$ll_fun(
-      object$family$linkinv(eta), object$dis, ynew, weightsnew
-    )
-    S <- ncol(loglik)
-    lpd <- apply(loglik, 1, log_sum_exp) - log(S)
+    if (object$family$for_latent && type == "response") {
+      mu_oscale <- object$family$latent_ilink(
+        t(eta), cl_ref = seq_along(object$wsample),
+        wdraws_ref = rep(1, length(object$wsample))
+      )
+      if (length(dim(mu_oscale)) < 2) {
+        stop("Unexpected structure for the output of `latent_ilink`.")
+      }
+      loglik <- object$family$latent_ll_oscale(
+        mu_oscale, y_oscale = ynew, wobs = weightsnew,
+        cl_ref = seq_along(object$wsample),
+        wdraws_ref = rep(1, length(object$wsample))
+      )
+      if (!is.matrix(loglik)) {
+        stop("Unexpected structure for the output of `latent_ll_oscale`.")
+      }
+      if (all(is.na(mu_oscale))) {
+        message(
+          "`latent_ilink` returned only `NA`s, so the output will also be ",
+          "`NA` as long as `type = \"response\"`."
+        )
+      } else if (all(is.na(loglik))) {
+        message(
+          "`latent_ll_oscale` returned only `NA`s, so the output will also be ",
+          "`NA` as long as `type = \"response\"`."
+        )
+      }
+      S <- nrow(loglik)
+      marg_obs <- 2
+    } else {
+      if (object$family$for_latent) {
+        if (all(is.na(object$dis))) {
+          message(
+            "Cannot calculate LPD values if `type = \"link\"` and ",
+            "`<refmodel>$dis` consists of only `NA`s. If it's not possible to ",
+            "supply a suitable argument `dis` to init_refmodel(), consider ",
+            "switching to `type = \"response\"` (which might require the ",
+            "specification of functions needed by extend_family())."
+          )
+        }
+        if (is.null(newdata)) {
+          newdata_lat <- newdata
+          if (inherits(object$fit, "stanreg") &&
+              length(object$fit$offset) > 0) {
+            newdata_lat <- object$fetch_data()
+            newdata_lat$projpred_internal_offs_stanreg <- offsetnew
+          }
+          # Use `ref_predfun_usr` here (instead of `ref_predfun`) to include
+          # offsets:
+          refprd_with_offs <- get("ref_predfun_usr",
+                                  envir = environment(object$ref_predfun))
+          ynew <- rowMeans(unname(
+            refprd_with_offs(fit = object$fit, newdata = newdata_lat)
+          ))
+        }
+      }
+      loglik <- object$family$ll_fun(
+        object$family$linkinv(eta), object$dis, ynew, weightsnew
+      )
+      S <- ncol(loglik)
+      marg_obs <- 1
+    }
+    lpd <- apply(loglik, marg_obs, log_sum_exp) - log(S)
     return(lpd)
   }
 }
@@ -486,7 +628,7 @@ refprd <- function(fit, newdata = NULL) {
   if (inherits(wrhs, "formula")) {
     weights <- eval_rhs(wrhs, newdata)
   } else if (is.null(wrhs)) {
-    weights <- rep(1, NROW(newdata))
+    weights <- rep(1, nrow(newdata))
   } else {
     weights <- wrhs
   }
@@ -494,7 +636,7 @@ refprd <- function(fit, newdata = NULL) {
   if (inherits(orhs, "formula")) {
     offset <- eval_rhs(orhs, newdata)
   } else if (is.null(orhs)) {
-    offset <- rep(0, NROW(newdata))
+    offset <- rep(0, nrow(newdata))
   } else {
     offset <- orhs
   }
@@ -551,7 +693,7 @@ get_refmodel.default <- function(object, formula, family = NULL, ...) {
 
 #' @rdname refmodel-init-get
 #' @export
-get_refmodel.stanreg <- function(object, ...) {
+get_refmodel.stanreg <- function(object, latent = FALSE, dis = NULL, ...) {
   if (!requireNamespace("rstanarm", quietly = TRUE)) {
     stop("Please install the 'rstanarm' package.")
   }
@@ -684,7 +826,8 @@ get_refmodel.stanreg <- function(object, ...) {
     }
     linpred_out <- posterior_linpred(fit, newdata = newdata, offset = offs)
     stopifnot(length(dim(linpred_out)) == 2)
-    if (fit$stan_function == "stan_polr") {
+    aug_data <- fit$stan_function == "stan_polr" && !latent
+    if (aug_data) {
       # Since rstanarm::posterior_linpred.stanreg() doesn't offer an argument
       # like `incl_thres` of brms::posterior_linpred.brmsfit(), we need to
       # incorporate the thresholds into the linear predictors by hand:
@@ -715,20 +858,19 @@ get_refmodel.stanreg <- function(object, ...) {
   }
 
   cvrefbuilder <- function(cvfit) {
-    get_refmodel(cvfit, ...)
+    get_refmodel(cvfit, latent = latent, dis = dis, ...)
   }
 
   # Miscellaneous -----------------------------------------------------------
 
-  if (.has_dispersion(family)) {
+  if (is.null(dis) && !latent && .has_dispersion(family)) {
     dis <- data.frame(object)[, "sigma"]
-  } else {
-    dis <- NULL
   }
 
   # Augmented-data projection -----------------------------------------------
 
-  if (object$stan_function == "stan_polr") {
+  aug_data <- object$stan_function == "stan_polr" && !latent
+  if (aug_data) {
     args_augdat <- list(
       augdat_link = augdat_link_cumul,
       augdat_ilink = augdat_ilink_cumul,
@@ -739,6 +881,44 @@ get_refmodel.stanreg <- function(object, ...) {
     args_augdat <- list()
   }
 
+  # Latent projection -------------------------------------------------------
+
+  args_latent <- list(latent = latent)
+  if (latent) {
+    if (object$stan_function == "stan_polr") {
+      draws_mat <- as.matrix(object)
+      thres_nms <- names(object$zeta)
+      thres_draws <- draws_mat[, thres_nms, drop = FALSE]
+      latent_ilink_tmp <- function(lpreds, cl_ref,
+                                   wdraws_ref = rep(1, length(cl_ref))) {
+        thres_agg <- cl_agg(thres_draws, cl = cl_ref,
+                            wdraws = wdraws_ref)
+        lpreds_thres <- apply(thres_agg, 2, function(thres_agg_c) {
+          # Notes on dimensionalities (with S_agg = `nrow(lpreds)`):
+          # * `thres_agg` is S_agg x C_lat (with C_lat = `ncats - 1L` =
+          #   `nthres`) and thus `thres_agg_c` is a vector of length S_agg,
+          # * `lpreds` is S_agg x N (with N denoting the number of (possibly
+          #   new) observations (not necessarily the original number of
+          #   observations)).
+          thres_agg_c - lpreds
+        }, simplify = FALSE)
+        # Coerce to an S_agg x N x C_lat array:
+        lpreds_thres <- do.call(abind::abind, c(lpreds_thres, rev.along = 0))
+        # Transform to response space, yielding an S_agg x N x C_cat array:
+        return(augdat_ilink_cumul(lpreds_thres, link = family$link))
+      }
+      args_latent <- c(args_latent, list(latent_ilink = latent_ilink_tmp))
+      # Free up some memory:
+      rm(draws_mat)
+    }
+    # TODO (latent): Add response-scale support for more families: For
+    # response-scale support, they all need a specific `latent_ilink` function;
+    # some families (those for which the response can be numeric) also require
+    # specific `latent_ll_oscale` and `latent_ppd_oscale` functions. The
+    # binomial family has response-scale support implemented natively in
+    # projpred.
+  }
+
   # Output ------------------------------------------------------------------
 
   args_basic <- list(
@@ -746,7 +926,8 @@ get_refmodel.stanreg <- function(object, ...) {
     ref_predfun = ref_predfun, extract_model_data = extract_model_data,
     dis = dis, cvfun = cvfun, cvrefbuilder = cvrefbuilder
   )
-  return(do.call(init_refmodel, args = c(args_basic, args_augdat, list(...))))
+  return(do.call(init_refmodel, args = c(args_basic, args_augdat, args_latent,
+                                         list(...))))
 }
 
 #' @rdname refmodel-init-get
@@ -757,15 +938,13 @@ init_refmodel <- function(object, data, formula, family, ref_predfun = NULL,
                           cvfits = NULL, dis = NULL, cvrefbuilder = NULL, ...) {
   # Family ------------------------------------------------------------------
 
+  family <- extend_family(family, ...)
+
   if (family$family == "Student_t") {
     warning("Support for the `Student_t` family is still experimental.")
   } else if (family$family == "Gamma") {
     warning("Support for the `Gamma` family is still experimental.")
   }
-
-  family <- extend_family(family, ...)
-
-  aug_data <- family$for_augdat
 
   family$mu_fun <- function(fits, obs = NULL, newdata = NULL, offset = NULL,
                             transform = TRUE) {
@@ -795,8 +974,11 @@ init_refmodel <- function(object, data, formula, family, ref_predfun = NULL,
   # Special case: `datafit` -------------------------------------------------
 
   proper_model <- !is.null(object)
-  if (!proper_model && aug_data) {
+  if (!proper_model && family$for_augdat) {
     stop("Currently, the augmented-data projection may not be combined with ",
+         "`object = NULL` (i.e., a `datafit`).")
+  } else if (!proper_model && family$for_latent) {
+    stop("Currently, the latent projection may not be combined with ",
          "`object = NULL` (i.e., a `datafit`).")
   }
 
@@ -811,7 +993,7 @@ init_refmodel <- function(object, data, formula, family, ref_predfun = NULL,
   if (length(response_name) == 2) {
     if (family$family != "binomial") {
       stop("For non-binomial families, a two-column response is not allowed.")
-    } else if (aug_data) {
+    } else if (family$for_augdat) {
       stop("Currently, the augmented-data projection may not be combined with ",
            "a 2-column response.")
     }
@@ -820,9 +1002,12 @@ init_refmodel <- function(object, data, formula, family, ref_predfun = NULL,
   }
   # Remove parentheses from the response:
   response_name <- gsub("[()]", "", response_name)
+  if (family$for_latent) {
+    response_name <- paste0(".", response_name[1])
+  }
   formula <- update(formula, paste(response_name[1], "~ ."))
   if (formula_contains_additive_terms(formula)) {
-    if (aug_data) {
+    if (family$for_augdat) {
       stop("Currently, the augmented-data projection may not be combined with ",
            "additive models.")
     } else if (isTRUE(getOption("projpred.warn_additive_experimental", TRUE))) {
@@ -835,75 +1020,13 @@ init_refmodel <- function(object, data, formula, family, ref_predfun = NULL,
          "brms::categorical() family.")
   }
 
-  # Data --------------------------------------------------------------------
-
-  model_data <- extract_model_data(object, newdata = data)
-  weights <- model_data$weights
-  offset <- model_data$offset
-  y <- model_data$y
-
-  # Add (transformed) response under the (possibly) new name:
-  data[, response_name] <- y
-
-  target <- .get_standard_y(y, weights, family)
-  y <- target$y
-  weights <- target$weights
-
-  if (aug_data) {
-    y <- as.factor(y)
-    stopifnot(nlevels(y) >= 2)
-    if (!identical(levels(y), family$cats)) {
-      stop("The levels of the response variable (after coercing it to a ",
-           "`factor`) have to be identical to `family$cats`. See the ",
-           "documentation for extend_family()'s argument `augdat_y_unqs` to ",
-           "solve this.")
-    }
-  } else if (family$family == "binomial") {
-    if (!all(.is.wholenumber(y))) {
-      stop("In projpred, the response must contain numbers of successes (not ",
-           "proportions of successes), in contrast to glm() where this is ",
-           "possible for a 1-column response if the multiplication with the ",
-           "weights gives whole numbers.")
-    } else if (all(y %in% c(0, 1)) &&
-               length(response_name) == 1 &&
-               !all(weights == 1)) {
-      warning("Assuming that the response contains numbers of successes (not ",
-              "proportions of successes), in contrast to glm().")
-    }
-  }
-
-  if (aug_data && !all(weights == 1)) {
-    stop("Currently, the augmented-data projection may not be combined with ",
-         "observation weights (other than 1).")
-  }
-
-  if (is.null(offset)) {
-    offset <- rep(0, NROW(y))
-  }
-
-  if (!proper_model && !all(offset == 0)) {
-    # Disallow offsets for `datafit`s because the submodel fitting does not take
-    # offsets into account (but `<refmodel>$mu` contains the observed response
-    # values which inevitably "include" the offsets):
-    stop("For a `datafit`, offsets are not allowed.")
-  }
-
-  # For avoiding the warning "contrasts dropped from factor <factor_name>" when
-  # predicting for each projected draw, e.g., for submodels fit with lm()/glm():
-  has_contr <- sapply(data, function(data_col) {
-    !is.null(attr(data_col, "contrasts"))
-  })
-  for (idx_col in which(has_contr)) {
-    attr(data[[idx_col]], "contrasts") <- NULL
-  }
-
   # Functions ---------------------------------------------------------------
 
   if (proper_model) {
     if (is.null(ref_predfun)) {
       ref_predfun <- refprd
     }
-    if (aug_data && family$family == "binomial") {
+    if (family$for_augdat && family$family == "binomial") {
       ref_predfun_mat <- ref_predfun
       ref_predfun <- function(fit, newdata = NULL) {
         linpred1 <- ref_predfun_mat(fit = fit, newdata = newdata)
@@ -955,15 +1078,15 @@ init_refmodel <- function(object, data, formula, family, ref_predfun = NULL,
     ref_predfun <- function(fit, newdata = NULL) {
       stopifnot(is.null(fit))
       if (is.null(newdata)) {
-        return(matrix(rep(NA, NROW(y))))
+        return(matrix(rep(NA, nrow(data))))
       } else {
-        return(matrix(rep(NA, NROW(newdata))))
+        return(matrix(rep(NA, nrow(newdata))))
       }
     }
   }
 
   if (is.null(div_minimizer)) {
-    if (!aug_data) {
+    if (!family$for_augdat) {
       div_minimizer <- divmin
     } else {
       div_minimizer <- divmin_augdat
@@ -971,7 +1094,7 @@ init_refmodel <- function(object, data, formula, family, ref_predfun = NULL,
   }
 
   if (is.null(proj_predfun)) {
-    if (!aug_data) {
+    if (!family$for_augdat) {
       proj_predfun <- subprd
     } else if (family$family == "binomial") {
       proj_predfun <- subprd_augdat_binom
@@ -979,7 +1102,7 @@ init_refmodel <- function(object, data, formula, family, ref_predfun = NULL,
       proj_predfun <- subprd_augdat
     }
   }
-  if (aug_data) {
+  if (family$for_augdat) {
     proj_predfun_usr <- proj_predfun
     proj_predfun <- function(fits, newdata) {
       augprd_arr <- proj_predfun_usr(fits, newdata = newdata)
@@ -1008,7 +1131,8 @@ init_refmodel <- function(object, data, formula, family, ref_predfun = NULL,
       cvrefbuilder <- function(cvfit) {
         init_refmodel(
           object = NULL,
-          data = fetch_data_wrapper(obs = setdiff(seq_along(y), cvfit$omitted)),
+          data = fetch_data_wrapper(obs = setdiff(seq_len(nrow(data)),
+                                                  cvfit$omitted)),
           formula = formula,
           family = family,
           div_minimizer = div_minimizer,
@@ -1017,6 +1141,115 @@ init_refmodel <- function(object, data, formula, family, ref_predfun = NULL,
         )
       }
     }
+  }
+
+  # Data --------------------------------------------------------------------
+
+  model_data <- extract_model_data(object, newdata = data)
+  weights <- model_data$weights
+  offset <- model_data$offset
+  if (family$for_latent) {
+    # Use `ref_predfun_usr` here (instead of `ref_predfun`) to include offsets:
+    y <- rowMeans(unname(ref_predfun_usr(object)))
+    y_oscale <- model_data$y
+    if (is.null(family$cats) &&
+        (is.factor(y_oscale) || is.character(y_oscale) ||
+         is.logical(y_oscale))) {
+      stop("If the original (i.e., non-latent) response is `factor`-like, ",
+           "`family$cats` must not be `NULL`. See the documentation for ",
+           "extend_family()'s argument `latent_y_unqs` to solve this.")
+      # Alternatively, we could think about `family$cats <- levels(y_oscale)`.
+      # But the error message is conceptually more desirable because it avoids
+      # the retrospective modification of extend_family() output.
+    }
+    if (!is.null(family$cats)) {
+      y_oscale <- as.factor(y_oscale)
+      stopifnot(nlevels(y_oscale) >= 2)
+      if (!identical(levels(y_oscale), family$cats)) {
+        stop("The levels of the response variable (after coercing it to a ",
+             "`factor`) have to be identical to `family$cats`. See the ",
+             "documentation for extend_family()'s argument `latent_y_unqs` to ",
+             "solve this.")
+      }
+    } else if (family$family_oscale == "binomial") {
+      if (!all(.is.wholenumber(y_oscale))) {
+        stop(
+          "In projpred, the response must contain numbers of successes (not ",
+          "proportions of successes), in contrast to glm() where this is ",
+          "possible for a 1-column response if the multiplication with the ",
+          "weights gives whole numbers."
+        )
+      } else if (all(y_oscale %in% c(0, 1)) &&
+                 length(response_name) == 1 &&
+                 !all(weights == 1)) {
+        warning(
+          "Assuming that the response contains numbers of successes (not ",
+          "proportions of successes), in contrast to glm()."
+        )
+      }
+    }
+  } else {
+    y <- model_data$y
+    y_oscale <- NULL
+  }
+
+  # Add (transformed) response under the (possibly) new name:
+  data[, response_name] <- y
+
+  target <- .get_standard_y(y, weights, family)
+  y <- target$y
+  weights <- target$weights
+
+  if (family$for_augdat) {
+    y <- as.factor(y)
+    stopifnot(nlevels(y) >= 2)
+    if (!identical(levels(y), family$cats)) {
+      stop("The levels of the response variable (after coercing it to a ",
+           "`factor`) have to be identical to `family$cats`. See the ",
+           "documentation for extend_family()'s argument `augdat_y_unqs` to ",
+           "solve this.")
+    }
+  } else if (family$family == "binomial") {
+    if (!all(.is.wholenumber(y))) {
+      stop("In projpred, the response must contain numbers of successes (not ",
+           "proportions of successes), in contrast to glm() where this is ",
+           "possible for a 1-column response if the multiplication with the ",
+           "weights gives whole numbers.")
+    } else if (all(y %in% c(0, 1)) &&
+               length(response_name) == 1 &&
+               !all(weights == 1)) {
+      warning("Assuming that the response contains numbers of successes (not ",
+              "proportions of successes), in contrast to glm().")
+    }
+  }
+
+  if (family$for_augdat && !all(weights == 1)) {
+    stop("Currently, the augmented-data projection may not be combined with ",
+         "observation weights (other than 1).")
+  }
+  if (family$for_latent && !all(weights == 1)) {
+    stop("Currently, the latent projection may not be combined with ",
+         "observation weights (other than 1).")
+  }
+
+  if (is.null(offset)) {
+    offset <- rep(0, length(y))
+  }
+
+  if (!proper_model && !all(offset == 0)) {
+    # Disallow offsets for `datafit`s because the submodel fitting does not take
+    # offsets into account (but `<refmodel>$mu` contains the observed response
+    # values which inevitably "include" the offsets):
+    stop("For a `datafit`, offsets are not allowed.")
+  }
+
+  # For avoiding the warning "contrasts dropped from factor <factor_name>" when
+  # predicting for each projected draw, e.g., for submodels fit with lm()/glm():
+  has_contr <- sapply(data, function(data_col) {
+    !is.null(attr(data_col, "contrasts"))
+  })
+  for (idx_col in which(has_contr)) {
+    attr(data[[idx_col]], "contrasts") <- NULL
   }
 
   # mu ----------------------------------------------------------------------
@@ -1042,7 +1275,28 @@ init_refmodel <- function(object, data, formula, family, ref_predfun = NULL,
 
   ndraws <- ncol(mu)
   if (is.null(dis)) {
-    if (!.has_dispersion(family)) {
+    if (family$for_latent && proper_model) {
+      if (!is.null(family$link_oscale)) {
+        if (family$link_oscale %in% c("probit", "probit_approx")) {
+          dis <- rep(1, ndraws)
+        } else if (family$link_oscale %in% c("logit", "logistic")) {
+          dis <- rep(1.6, ndraws)
+        } else {
+          dis <- rep(NA, ndraws)
+        }
+      } else {
+        dis <- rep(NA, ndraws)
+      }
+      if (all(is.na(dis))) {
+        message(
+          "Since `<refmodel>$dis` will consist of only `NA`s, downstream ",
+          "analyses based on this reference model won't be able to use log ",
+          "predictive density (LPD) values on latent scale. Furthermore, ",
+          "proj_predict() won't be able to draw from the latent Gaussian ",
+          "distribution."
+        )
+      }
+    } else if (!.has_dispersion(family)) {
       dis <- rep(NA, ndraws)
     } else {
       if (proper_model) {
@@ -1068,7 +1322,8 @@ init_refmodel <- function(object, data, formula, family, ref_predfun = NULL,
   refmodel <- nlist(
     fit = object, formula, div_minimizer, family, mu, eta, dis, y, intercept,
     proj_predfun, fetch_data = fetch_data_wrapper, wobs = weights, wsample,
-    offset, cvfun, cvfits, extract_model_data, ref_predfun, cvrefbuilder
+    offset, cvfun, cvfits, extract_model_data, ref_predfun, cvrefbuilder,
+    y_oscale = y_oscale %||% y
   )
   if (proper_model) {
     class(refmodel) <- "refmodel"

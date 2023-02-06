@@ -8,13 +8,14 @@
 #' @param object An object which can be used as input to [get_refmodel()] (in
 #'   particular, objects of class `refmodel`).
 #' @param nterms Only relevant if `object` is of class `vsel` (returned by
-#'   [varsel()] or [cv_varsel()]). Ignored if `!is.null(solution_terms)`.
-#'   Number of terms for the submodel (the corresponding combination of
-#'   predictor terms is taken from `object`). If a numeric vector, then the
-#'   projection is performed for each element of this vector. If `NULL` (and
-#'   `is.null(solution_terms)`), then the value suggested by the variable
-#'   selection is taken (see function [suggest_size()]). Note that `nterms` does
-#'   not count the intercept, so use `nterms = 0` for the intercept-only model.
+#'   [varsel()] or [cv_varsel()]). Ignored if `!is.null(solution_terms)`. Number
+#'   of terms for the submodel (the corresponding combination of predictor terms
+#'   is taken from `object`). If a numeric vector, then the projection is
+#'   performed for each element of this vector. If `NULL` (and
+#'   `is.null(solution_terms)`), then the value suggested by [suggest_size()] is
+#'   taken (with default arguments for [suggest_size()], implying that this
+#'   suggested size is based on the ELPD). Note that `nterms` does not count the
+#'   intercept, so use `nterms = 0` for the intercept-only model.
 #' @param solution_terms If not `NULL`, then this needs to be a character vector
 #'   of predictor terms for the submodel onto which the projection will be
 #'   performed. Argument `nterms` is ignored in that case. For an `object` which
@@ -70,6 +71,13 @@
 #'     terms.}
 #'     \item{`submodl`}{A `list` containing the submodel fits (one fit per
 #'     projected draw).}
+#'     \item{`cl_ref`}{A numeric vector of length equal to the number of
+#'     posterior draws in the reference model, containing the cluster indices of
+#'     these draws.}
+#'     \item{`wdraws_ref`}{A numeric vector of length equal to the number of
+#'     posterior draws in the reference model, giving the weights of these
+#'     draws. These weights should be treated as not being normalized (i.e.,
+#'     they don't necessarily sum to `1`).}
 #'     \item{`p_type`}{A single logical value indicating whether the
 #'     reference model's posterior draws have been clustered for the projection
 #'     (`TRUE`) or not (`FALSE`).}
@@ -195,12 +203,14 @@ project <- function(object, nterms = NULL, solution_terms = NULL,
     ## by default take the variable ordering from the selection
     solution_terms <- object$solution_terms
     if (is.null(nterms)) {
-      if (!is.null(object$suggested_size) && !is.na(object$suggested_size)) {
+      sgg_size <- try(suggest_size(object, warnings = FALSE), silent = TRUE)
+      if (!inherits(sgg_size, "try-error") && !is.null(sgg_size) &&
+          !is.na(sgg_size)) {
         ## by default, project onto the suggested model size
-        nterms <- min(object$suggested_size, length(solution_terms))
+        nterms <- min(sgg_size, length(solution_terms))
       } else {
-        stop("No suggested model size found, please specify `nterms` or ",
-             "`solution_terms`.")
+        stop("Could not suggest a submodel size automatically; please specify ",
+             "`nterms` or `solution_terms`.")
       }
     } else {
       if (!is.numeric(nterms) || any(nterms < 0)) {

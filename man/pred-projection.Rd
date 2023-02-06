@@ -26,6 +26,7 @@ proj_predict(
   filter_nterms = NULL,
   nresample_clusters = 1000,
   .seed = sample.int(.Machine$integer.max, 1),
+  resp_oscale = TRUE,
   ...
 )
 }
@@ -55,7 +56,10 @@ for only those elements (submodels) with a number of solution terms in
 
 \item{transform}{For \code{\link[=proj_linpred]{proj_linpred()}} only. A single logical value indicating
 whether the linear predictor should be transformed to response scale using
-the inverse-link function (\code{TRUE}) or not (\code{FALSE}).}
+the inverse-link function (\code{TRUE}) or not (\code{FALSE}). In case of the latent
+projection, argument \code{transform} is similar in spirit to argument
+\code{resp_oscale} from other functions and affects the scale of both output
+elements \code{pred} and \code{lpd} (see sections "Details" and "Value" below).}
 
 \item{integrated}{For \code{\link[=proj_linpred]{proj_linpred()}} only. A single logical value
 indicating whether the output should be averaged across the projected
@@ -80,6 +84,11 @@ submodel(s). Not to be confused with argument \code{nclusters} of \code{\link[=p
 \code{nresample_clusters} gives the number of draws (\emph{with} replacement) from
 the set of clustered posterior draws after projection (with this set being
 determined by argument \code{nclusters} of \code{\link[=project]{project()}}).}
+
+\item{resp_oscale}{Only relevant for the latent projection. A single logical
+value indicating whether to draw from the posterior-projection predictive
+distributions on the original response scale (\code{TRUE}) or on latent scale
+(\code{FALSE}).}
 }
 \value{
 In the following, \eqn{S_{\mathrm{prj}}}{S_prj}, \eqn{N},
@@ -93,17 +102,24 @@ prediction is done for one submodel only (i.e., \code{length(nterms) == 1 || !is
 i.e., the linear predictors, possibly transformed to response scale) and
 \code{lpd} (log predictive densities; only calculated if \code{newdata} is \code{NULL} or
 if \code{newdata} contains response values in the corresponding column). In case
-of the traditional projection, both elements are \eqn{S_{\mathrm{prj}}
-  \times N}{S_prj x N} matrices. In case of the augmented-data projection,
-\code{pred} is an \eqn{S_{\mathrm{prj}} \times N \times C}{S_prj x N x C} array
-and \code{lpd} is an \eqn{S_{\mathrm{prj}} \times N}{S_prj x N} matrix.
+of (i) the traditional projection, (ii) the latent projection with
+\code{transform = FALSE}, or (iii) the latent projection with \code{transform = TRUE}
+and \verb{<refmodel>$family$cats} (where \verb{<refmodel>} is an object resulting
+from \code{\link[=init_refmodel]{init_refmodel()}}; see also \code{\link[=extend_family]{extend_family()}}'s argument
+\code{latent_y_unqs}) being \code{NULL}, both elements are \eqn{S_{\mathrm{prj}}
+  \times N}{S_prj x N} matrices. In case of (i) the augmented-data projection
+or (ii) the latent projection with \code{transform = TRUE} and
+\verb{<refmodel>$family$cats} being not \code{NULL}, \code{pred} is an
+\eqn{S_{\mathrm{prj}} \times N \times C}{S_prj x N x C} array and \code{lpd} is
+an \eqn{S_{\mathrm{prj}} \times N}{S_prj x N} matrix.
 \item \code{\link[=proj_predict]{proj_predict()}} returns an \eqn{S_{\mathrm{prj}} \times N}{S_prj x N}
 matrix of predictions where \eqn{S_{\mathrm{prj}}}{S_prj} denotes
-\code{nresample_clusters} in case of clustered projection. In case of the
-augmented-data projection, this matrix has an attribute called \code{cats} (the
-character vector of response categories) and the values of the matrix are
-the predicted indices of the response categories (with the order of the
-response categories being that from attribute \code{cats}).
+\code{nresample_clusters} in case of clustered projection. In case of (i) the
+augmented-data projection or (ii) the latent projection with \code{resp_oscale =   TRUE} and \verb{<refmodel>$family$cats} being not \code{NULL}, this matrix has an
+attribute called \code{cats} (the character vector of response categories) and
+the values of the matrix are the predicted indices of the response
+categories (these indices refer to the order of the response categories
+from attribute \code{cats}).
 }
 
 If the prediction is done for more than one submodel, the output from above
@@ -125,6 +141,24 @@ call \code{\link[=project]{project()}} internally to perform the projection. Bot
 also handle multiple submodels at once (for \code{object}s of class \code{vsel} or
 \code{object}s returned by a \code{\link[=project]{project()}} call to an object of class \code{vsel}; see
 \code{\link[=project]{project()}}).
+}
+\details{
+In case of the latent projection and \code{transform = FALSE}:
+\itemize{
+\item Output element \code{pred} contains the linear predictors without any
+modifications that may be due to the original response distribution (e.g.,
+for a \code{\link[brms:brmsfamily]{brms::cumulative()}} model, the ordered thresholds are not taken into
+account).
+\item Output element \code{lpd} contains the \emph{latent} log predictive density values,
+i.e., those corresponding to the latent Gaussian distribution. If \code{newdata}
+is not \code{NULL}, this requires the latent response values to be supplied in a
+column called \verb{.<response_name>} of \code{newdata} where \verb{<response_name>} needs
+to be replaced by the name of the original response variable (if
+\verb{<response_name>} contained parentheses, these have been stripped off by
+\code{\link[=init_refmodel]{init_refmodel()}}; see the left-hand side of \verb{formula(<refmodel>)}). For
+technical reasons, the existence of column \verb{<response_name>} in \code{newdata}
+is another requirement (even though \verb{.<response_name>} is actually used).
+}
 }
 \examples{
 if (requireNamespace("rstanarm", quietly = TRUE)) {

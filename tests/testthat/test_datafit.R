@@ -46,7 +46,7 @@ args_datafit <- lapply(setNames(
   c(nlist(tstsetup_fit), only_nonargs(args_fit[[tstsetup_fit]]))
 })
 # The augmented-data projection is not supported yet for `datafit`s:
-args_datafit <- args_datafit[!grepl("\\.augdat", names(args_datafit))]
+args_datafit <- args_datafit[!grepl("\\.(latent|augdat)", names(args_datafit))]
 
 datafits <- lapply(args_datafit, function(args_datafit_i) {
   formul_crr <- args_fit[[args_datafit_i$tstsetup_fit]]$formula
@@ -327,7 +327,7 @@ test_that(paste(
     stopifnot(length(tstsetup_vs) > 0)
     nterms_crr <- args_prj_vs_datafit[[tstsetup]]$nterms
     if (is.null(nterms_crr)) {
-      nterms_crr <- vss_datafit[[tstsetup_vs]]$suggested_size
+      nterms_crr <- suggest_size(vss_datafit[[tstsetup_vs]], warnings = FALSE)
     }
     with_L1 <- (args_vs_datafit[[tstsetup_vs]]$mod_nm == "glm" &&
                   is.null(args_vs_datafit[[tstsetup_vs]]$method)) ||
@@ -402,7 +402,7 @@ test_that(paste(
     tstsetup_vs <- args_prj_vs_datafit[[tstsetup]]$tstsetup_vsel
     nterms_crr <- args_prj_vs_datafit[[tstsetup]]$nterms
     if (is.null(nterms_crr)) {
-      nterms_crr <- vss_datafit[[tstsetup_vs]]$suggested_size
+      nterms_crr <- suggest_size(vss_datafit[[tstsetup_vs]], warnings = FALSE)
     }
     pl_tester(pls_vs_datafit[[tstsetup]],
               len_expected = length(nterms_crr),
@@ -447,7 +447,7 @@ test_that(paste(
     tstsetup_vs <- args_prj_vs_datafit[[tstsetup]]$tstsetup_vsel
     nterms_crr <- args_prj_vs_datafit[[tstsetup]]$nterms
     if (is.null(nterms_crr)) {
-      nterms_crr <- vss_datafit[[tstsetup_vs]]$suggested_size
+      nterms_crr <- suggest_size(vss_datafit[[tstsetup_vs]], warnings = FALSE)
     }
     pp_tester(pps_vs_datafit[[tstsetup]],
               len_expected = length(nterms_crr),

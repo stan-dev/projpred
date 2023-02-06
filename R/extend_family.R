@@ -14,6 +14,45 @@
 #' [init_refmodel()], so you will rarely need to call it yourself.
 #'
 #' @param family An object of class `family`.
+#' @param latent A single logical value indicating whether to use the latent
+#'   projection (`TRUE`) or not (`FALSE`). Note that setting `latent = TRUE`
+#'   causes all arguments starting with `augdat_` to be ignored.
+#' @param latent_y_unqs Only relevant for a latent projection where the original
+#'   response space has finite support (i.e., the original response values may
+#'   be regarded as categories), in which case this needs to be the character
+#'   vector of unique response values (which will be assigned to `family$cats`
+#'   internally) or may be left at `NULL` (so that \pkg{projpred} will try to
+#'   infer it from `family$cats`). See also section "Latent projection" below.
+#' @param latent_ilink Only relevant for the latent projection, in which case
+#'   this needs to be the inverse-link function. If the original response family
+#'   was the [binomial()] or the [poisson()] family, then `latent_ilink` can be
+#'   `NULL`, in which case an internal default will be used. Can also be `NULL`
+#'   in all other cases, but then an internal default based on `family$linkinv`
+#'   will be used which might not work for all families. See also section
+#'   "Latent projection" below.
+#' @param latent_ll_oscale Only relevant for the latent projection, in which
+#'   case this needs to be the function computing response-scale (not
+#'   latent-scale) log-likelihood values. If `!is.null(family$cats)` (after
+#'   taking `latent_y_unqs` into account) or if the original response family was
+#'   the [binomial()] or the [poisson()] family, then `latent_ll_oscale` can be
+#'   `NULL`, in which case an internal default will be used. Can also be `NULL`
+#'   in all other cases, but then downstream functions will have limited
+#'   functionality (a message thrown by [extend_family()] will state what
+#'   exactly won't be available). See also section "Latent projection" below.
+#' @param latent_ppd_oscale Only relevant for the latent projection, in which
+#'   case this needs to be the function sampling response values given latent
+#'   predictors that have been transformed to response scale using
+#'   `latent_ilink`. If `!is.null(family$cats)` (after taking `latent_y_unqs`
+#'   into account) or if the original response family was the [binomial()] or
+#'   the [poisson()] family, then `latent_ppd_oscale` can be `NULL`, in which
+#'   case an internal default will be used. Can also be `NULL` in all other
+#'   cases, but then downstream functions will have limited functionality (a
+#'   message thrown by [extend_family()] will state what exactly won't be
+#'   available). See also section "Latent projection" below. Note that although
+#'   this function has the abbreviation "PPD" in its name (which stands for
+#'   "posterior predictive distribution"), \pkg{projpred} currently only uses it
+#'   in [proj_predict()], i.e., for sampling from what would better be termed
+#'   posterior-projection predictive distribution (PPPD).
 #' @param augdat_y_unqs Only relevant for augmented-data projection, in which
 #'   case this needs to be the character vector of unique response values (which
 #'   will be assigned to `family$cats` internally) or may be left at `NULL` if
@@ -89,10 +128,112 @@
 #' error \code{'a' (<number> x 1) must be square}. Updating \pkg{mclogit} to a
 #' version >= 0.9.4 should fix this.
 #'
+#' # Latent projection
+#'
+#' The function supplied to argument `latent_ilink` needs to have the prototype
+#' ```{r, eval = FALSE}
+#' latent_ilink(lpreds, cl_ref, wdraws_ref = rep(1, length(cl_ref)))
+#' ```
+#' where:
+#' * `lpreds` accepts an \eqn{S \times N}{S x N} matrix containing the linear
+#' predictors.
+#' * `cl_ref` accepts a numeric vector of length \eqn{S_{\mathrm{ref}}}{S_ref},
+#' containing \pkg{projpred}'s internal cluster indices for these draws.
+#' * `wdraws_ref` accepts a numeric vector of length
+#' \eqn{S_{\mathrm{ref}}}{S_ref}, containing weights for these draws. These
+#' weights should be treated as not being normalized (i.e., they don't
+#' necessarily sum to `1`).
+#'
+#' The return value of `latent_ilink` needs to contain the linear predictors
+#' transformed to the original response space, with the following structure:
+#' * If `is.null(family$cats)` (after taking `latent_y_unqs` into account): an
+#' \eqn{S \times N}{S x N} matrix.
+#' * If `!is.null(family$cats)` (after taking `latent_y_unqs` into account): an
+#' \eqn{S \times N \times C_{\mathrm{cat}}}{S x N x C_cat} array. In that case,
+#' `latent_ilink` needs to return *probabilities* (for the response categories
+#' given in `family$cats`, after taking `latent_y_unqs` into account).
+#'
+#' The function supplied to argument `latent_ll_oscale` needs to have the
+#' prototype
+#' ```{r, eval = FALSE}
+#' latent_ll_oscale(ilpreds, y_oscale, wobs = rep(1, length(y_oscale)), cl_ref,
+#'                  wdraws_ref = rep(1, length(cl_ref)))
+#' ```
+#' where:
+#' * `ilpreds` accepts the return value from `latent_ilink`.
+#' * `y_oscale` accepts a vector of length \eqn{N} containing response values on
+#' the original response scale.
+#' * `wobs` accepts a numeric vector of length \eqn{N} containing observation
+#' weights.
+#' * `cl_ref` accepts the same input as argument `cl_ref` of `latent_ilink`.
+#' * `wdraws_ref` accepts the same input as argument `wdraws_ref` of
+#' `latent_ilink`.
+#'
+#' The return value of `latent_ll_oscale` needs to be an \eqn{S \times N}{S x N}
+#' matrix containing the response-scale (not latent-scale) log-likelihood values
+#' for the \eqn{N} observations from its inputs.
+#'
+#' The function supplied to argument `latent_ppd_oscale` needs to have the
+#' prototype
+#' ```{r, eval = FALSE}
+#' latent_ppd_oscale(ilpreds_resamp, wobs, cl_ref,
+#'                wdraws_ref = rep(1, length(cl_ref)), idxs_prjdraws)
+#' ```
+#' where:
+#' * `ilpreds_resamp` accepts the return value from `latent_ilink`, but possibly
+#' with resampled (clustered) draws (see argument `nresample_clusters` of
+#' [proj_predict()]).
+#' * `wobs` accepts a numeric vector of length \eqn{N} containing observation
+#' weights.
+#' * `cl_ref` accepts the same input as argument `cl_ref` of `latent_ilink`.
+#' * `wdraws_ref` accepts the same input as argument `wdraws_ref` of
+#' `latent_ilink`.
+#' * `idxs_prjdraws` accepts a numeric vector of length `dim(ilpreds_resamp)[1]`
+#' containing the resampled indices of the projected draws (i.e., these indices
+#' are values from the set \eqn{\{1, ..., \texttt{dim(ilpreds)[1]}\}}{{1, ...,
+#' dim(ilpreds)[1]}} where `ilpreds` denotes the return value of
+#' `latent_ilink`).
+#'
+#' The return value of `latent_ppd_oscale` needs to be a
+#' \eqn{\texttt{dim(ilpreds\_resamp)[1]} \times N}{dim(ilpreds_resamp)[1] x N}
+#' matrix containing the response-scale (not latent-scale) draws from the
+#' posterior(-projection) predictive distributions for the \eqn{N} observations
+#' from its inputs.
+#'
+#' If the bodies of these three functions involve parameter draws from the
+#' reference model which have not been projected (e.g., for `latent_ilink`, the
+#' thresholds in an ordinal model), [cl_agg()] is provided as a helper function
+#' for aggregating these reference model draws in the same way as the draws have
+#' been aggregated for the first argument of these functions (e.g., `lpreds` in
+#' case of `latent_ilink`).
+#'
+#' In fact, the weights passed to argument `wdraws_ref` are nonconstant only in
+#' case of [cv_varsel()] with `cv_method = "LOO"` and `validate_search = TRUE`.
+#' In that case, the weights passed to this argument are the PSIS-LOO CV weights
+#' for one observation. Note that although argument `wdraws_ref` has the suffix
+#' `_ref`, `wdraws_ref` does not necessarily obtain weights for the *initial*
+#' reference model's posterior draws: In case of [cv_varsel()] with `cv_method =
+#' "kfold"`, these weights may refer to one of the \eqn{K} reference model
+#' re-fits (but in that case, they are constant anyway).
+#'
+#' If `family$cats` is not `NULL` (after taking `latent_y_unqs` into account),
+#' then the response vector resulting from `extract_model_data` (see
+#' [init_refmodel()]) is coerced to a `factor` (using [as.factor()]) at multiple
+#' places throughout this package. Inside of [init_refmodel()], the levels of
+#' this `factor` have to be identical to `family$cats` (*after* applying
+#' [extend_family()] inside of [init_refmodel()]). Everywhere else, these levels
+#' have to be a subset of `<refmodel>$family$cats` (where `<refmodel>` is an
+#' object resulting from [init_refmodel()]).
+#'
 #' @return The `family` object extended in the way needed by \pkg{projpred}.
 #'
 #' @export
 extend_family <- function(family,
+                          latent = FALSE,
+                          latent_y_unqs = NULL,
+                          latent_ilink = NULL,
+                          latent_ll_oscale = NULL,
+                          latent_ppd_oscale = NULL,
                           augdat_y_unqs = NULL,
                           augdat_link = NULL,
                           augdat_ilink = NULL,
@@ -103,7 +244,16 @@ extend_family <- function(family,
     # If the family was already extended using this function, then return as-is:
     return(family)
   }
-  aug_data <- !is.null(augdat_link) && !is.null(augdat_ilink)
+  if (latent) {
+    family_oscale_tmp <- family$family
+    link_oscale_tmp <- family$link
+    linkinv_oscale_tmp <- family$linkinv
+    cats_oscale_tmp <- family$cats
+    family <- gaussian()
+    family$family_oscale <- family_oscale_tmp
+    family$link_oscale <- link_oscale_tmp
+  }
+  aug_data <- !is.null(augdat_link) && !is.null(augdat_ilink) && !latent
   if (!aug_data) {
     extend_family_specific <- paste0("extend_family_", tolower(family$family))
     if (!exists(extend_family_specific, mode = "function")) {
@@ -116,6 +266,77 @@ extend_family <- function(family,
     # have to be adapted:
     stopifnot(is.null(family$cats))
 
+    if (latent) {
+      if (!is.null(latent_y_unqs)) {
+        family$cats <- latent_y_unqs
+      } else {
+        family$cats <- cats_oscale_tmp
+      }
+      if (is.null(latent_ilink)) {
+        if (family$family_oscale == "binomial") {
+          latent_ilink <- function(lpreds, cl_ref,
+                                   wdraws_ref = rep(1, length(cl_ref))) {
+            ilpreds <- ilinkfun_raw(lpreds, link_nm = family$link_oscale)
+            if (!is.null(family$cats)) {
+              ilpreds <- abind::abind(1 - ilpreds, ilpreds, rev.along = 0)
+            }
+            return(ilpreds)
+          }
+        } else {
+          if (family$family_oscale != "poisson") {
+            message("Defining `latent_ilink` as a function which calls ",
+                    "`family$linkinv`, but there is no guarantee that this ",
+                    "will work for all families. If relying on ",
+                    "`family$linkinv` is not appropriate or if this raises an ",
+                    "error in downstream functions, supply a custom ",
+                    "`latent_ilink` function (which is also allowed to return ",
+                    "only `NA`s if response-scale post-processing is not ",
+                    "needed).")
+          }
+          latent_ilink <- function(lpreds, cl_ref,
+                                   wdraws_ref = rep(1, length(cl_ref))) {
+            return(linkinv_oscale_tmp(lpreds))
+          }
+        }
+      }
+      if (is.null(latent_ll_oscale)) {
+        if (!is.null(family$cats)) {
+          latent_ll_oscale <- latent_ll_oscale_cats
+        } else if (family$family_oscale == "binomial") {
+          latent_ll_oscale <- latent_ll_oscale_binom_nocats
+        } else if (family$family_oscale == "poisson") {
+          latent_ll_oscale <- latent_ll_oscale_poiss
+        } else {
+          latent_ll_oscale <- latent_ll_oscale_NA
+          message("`latent_ll_oscale` was `NULL` and a suitable internal ",
+                  "default could not be found (other than a function ",
+                  "returning only `NA`s). Thus, cv_varsel() with `cv_method = ",
+                  "\"LOO\"` won't be usable. Furthermore, some features of ",
+                  "predict.refmodel(), summary.vsel(), print.vsel(), ",
+                  "plot.vsel(), suggest_size.vsel(), and proj_linpred() won't ",
+                  "work on response scale (only on latent scale).")
+        }
+      }
+      if (is.null(latent_ppd_oscale)) {
+        if (!is.null(family$cats)) {
+          latent_ppd_oscale <- latent_ppd_oscale_cats
+        } else if (family$family_oscale == "binomial") {
+          latent_ppd_oscale <- latent_ppd_oscale_binom_nocats
+        } else if (family$family_oscale == "poisson") {
+          latent_ppd_oscale <- latent_ppd_oscale_poiss
+        } else {
+          latent_ppd_oscale <- latent_ppd_oscale_NA
+          message("`latent_ppd_oscale` was `NULL` and a suitable internal ",
+                  "default could not be found (other than a function ",
+                  "returning only `NA`s). Thus, proj_predict() won't work on ",
+                  "response scale (only on latent scale).")
+        }
+      }
+      family$latent_ilink <- latent_ilink
+      family$latent_ll_oscale <- latent_ll_oscale
+      family$latent_ppd_oscale <- latent_ppd_oscale
+    }
+    family$for_latent <- latent
     family$for_augdat <- FALSE
   } else {
     if (!is.null(augdat_y_unqs)) {
@@ -190,29 +411,13 @@ extend_family <- function(family,
     }
     family$ll_fun <- function(mu, dis = NULL, y, weights = 1) {
       mu_arr <- augmat2arr(mu)
-      stopifnot(
-        is.factor(y) &&
-          identical(length(y), dim(mu_arr)[1]) &&
-          identical(nlevels(y), dim(mu_arr)[2])
-      )
-      if (length(weights) == 0) {
-        weights <- rep(1, length(y))
-      } else if (length(weights) == 1) {
-        weights <- rep(weights, length(y))
-      } else if (length(weights) != length(y)) {
-        stop("Argument `weights` needs to be of length 0, 1, or `length(y)`.")
-      }
-      return(do.call(rbind, lapply(seq_along(y), function(i_obs) {
-        weights[i_obs] * log(mu_arr[i_obs, y[i_obs], ])
-      })))
+      return(ll_cats(mu_arr, y = y, wobs = weights))
     }
     family$ppd <- function(mu, dis, weights = 1) {
       mu_arr <- augmat2arr(augvec2augmat(mu))
-      n_cat <- dim(mu_arr)[2]
-      return(do.call(c, lapply(seq_len(dim(mu_arr)[1]), function(i_obs) {
-        sample.int(n_cat, size = 1L, prob = mu_arr[i_obs, , 1])
-      })))
+      return(ppd_cats(mu_arr, wobs = weights, return_vec = TRUE))
     }
+    family$for_latent <- FALSE
     family$for_augdat <- TRUE
   }
   family$is_extended <- TRUE

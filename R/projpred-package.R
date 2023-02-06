@@ -38,17 +38,18 @@
 #' currently relies on the following functions (in other words, these are the
 #' workhorse functions used by the default divergence minimizers):
 #' * Submodel without multilevel or additive terms:
-#'     + For the traditional projection (or the augmented-data projection in
-#'     case of the [binomial()] or [brms::bernoulli()] family): An internal C++
-#'     function which basically serves the same purpose as [lm()] for the
-#'     [gaussian()] family and [glm()] for all other families.
+#'     + For the traditional (or latent) projection (or the augmented-data
+#'     projection in case of the [binomial()] or [brms::bernoulli()] family): An
+#'     internal C++ function which basically serves the same purpose as [lm()]
+#'     for the [gaussian()] family and [glm()] for all other families.
 #'     + For the augmented-data projection: [MASS::polr()] for the
 #'     [brms::cumulative()] family or [rstanarm::stan_polr()] fits,
 #'     [nnet::multinom()] for the [brms::categorical()] family.
 #' * Submodel with multilevel but no additive terms:
-#'     + For the traditional projection (or the augmented-data projection in
-#'     case of the [binomial()] or [brms::bernoulli()] family): [lme4::lmer()]
-#'     for the [gaussian()] family, [lme4::glmer()] for all other families.
+#'     + For the traditional (or latent) projection (or the augmented-data
+#'     projection in case of the [binomial()] or [brms::bernoulli()] family):
+#'     [lme4::lmer()] for the [gaussian()] family, [lme4::glmer()] for all other
+#'     families.
 #'     + For the augmented-data projection: [ordinal::clmm()] for the
 #'     [brms::cumulative()] family, [mclogit::mblogit()] for the
 #'     [brms::categorical()] family.

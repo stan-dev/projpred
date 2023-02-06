@@ -96,7 +96,12 @@
 #' * `weights`: a numeric vector containing the observation weights for the test
 #' set (if there are no observation weights, use a vector of ones).
 #' * `y`: a vector or a `factor` containing the response values for the test
-#' set.
+#' set. In case of the latent projection, this has to be a vector containing the
+#' *latent* response values, but it can also be a vector full of `NA`s if
+#' latent-scale post-processing is not needed.
+#' * `y_oscale`: Only needs to be provided in case of the latent projection
+#' where this needs to be a vector or a `factor` containing the *original*
+#' (i.e., non-latent) response values for the test set.
 #'
 #' @details Arguments `ndraws`, `nclusters`, `nclusters_pred`, and `ndraws_pred`
 #'   are automatically truncated at the number of posterior draws in the
@@ -219,9 +224,13 @@ varsel.refmodel <- function(object, d_test = NULL, method = NULL,
 
   if (is.null(d_test)) {
     d_test <- list(type = "train", data = NULL, offset = refmodel$offset,
-                   weights = refmodel$wobs, y = refmodel$y)
+                   weights = refmodel$wobs, y = refmodel$y,
+                   y_oscale = refmodel$y_oscale)
   } else {
     d_test$type <- "test"
+    if (!refmodel$family$for_latent) {
+      d_test$y_oscale <- d_test$y
+    }
     d_test <- d_test[nms_d_test()]
     if (refmodel$family$for_augdat) {
       d_test$y <- as.factor(d_test$y)
@@ -233,6 +242,26 @@ varsel.refmodel <- function(object, d_test = NULL, method = NULL,
       }
       # Re-assign the original levels because some levels might be missing:
       d_test$y <- factor(d_test$y, levels = refmodel$family$cats)
+    } else if (refmodel$family$for_latent) {
+      if (is.null(refmodel$family$cats) &&
+          (is.factor(d_test$y_oscale) || is.character(d_test$y_oscale) ||
+           is.logical(d_test$y_oscale))) {
+        stop("If the original (i.e., non-latent) response is `factor`-like, ",
+             "`family$cats` must not be `NULL`. See the documentation for ",
+             "extend_family()'s argument `latent_y_unqs` to solve this.")
+      }
+      if (!is.null(refmodel$family$cats)) {
+        d_test$y_oscale <- as.factor(d_test$y_oscale)
+        if (!all(levels(d_test$y_oscale) %in% refmodel$family$cats)) {
+          stop("The levels of the response variable (after coercing it to a ",
+               "`factor`) have to be a subset of `family$cats`. Either modify ",
+               "`d_test$y_oscale` accordingly or see the documentation for ",
+               "extend_family()'s argument `latent_y_unqs` to solve this.")
+        }
+        # Re-assign the original levels because some levels might be missing:
+        d_test$y_oscale <- factor(d_test$y_oscale,
+                                  levels = refmodel$family$cats)
+      }
     }
   }
 
@@ -261,7 +290,8 @@ varsel.refmodel <- function(object, d_test = NULL, method = NULL,
                             newdata = d_test$data,
                             offset = d_test$offset,
                             wobs = d_test$weights,
-                            y = d_test$y)
+                            y = d_test$y,
+                            y_oscale = d_test$y_oscale)
 
   ## predictive statistics of the reference model on test data. if no test data
   ## are provided,
@@ -271,6 +301,20 @@ varsel.refmodel <- function(object, d_test = NULL, method = NULL,
     ## observations
     nobs_test <- nrow(d_test$data %||% refmodel$fetch_data())
     ref <- list(mu = rep(NA, nobs_test), lppd = rep(NA, nobs_test))
+    if (refmodel$family$for_latent) {
+      # In general, we could use `ref$oscale <- ref` here, but the case where
+      # refmodel$family$latent_ilink() returns a 3-dimensional array (S x N x C)
+      # needs special care.
+      if (!is.null(refmodel$family$cats)) {
+        mu_oscale <- structure(rep(NA,
+                                   nobs_test * length(refmodel$family$cats)),
+                               nobs_orig = nobs_test,
+                               class = "augvec")
+      } else {
+        mu_oscale <- ref$mu
+      }
+      ref$oscale <- list(mu = mu_oscale, lppd = ref$lppd)
+    }
   } else {
     if (d_test$type == "train") {
       mu_test <- refmodel$mu
@@ -292,6 +336,9 @@ varsel.refmodel <- function(object, d_test = NULL, method = NULL,
                "`d_test$data`, but that column already exists. Please rename ",
                "this column in `d_test$data` and try again.")
         }
+        # Note: Here, the specific values assigned to
+        # `newdata_for_ref$projpred_internal_offs_stanreg` don't matter as they
+        # are subtracted later within ref_predfun() anyway.
         newdata_for_ref$projpred_internal_offs_stanreg <- d_test$offset
       }
       eta_test <- refmodel$ref_predfun(refmodel$fit, newdata = newdata_for_ref)
@@ -304,7 +351,7 @@ varsel.refmodel <- function(object, d_test = NULL, method = NULL,
     }
     ref <- .weighted_summary_means(
       y_test = d_test, family = refmodel$family, wsample = refmodel$wsample,
-      mu = mu_test, dis = refmodel$dis
+      mu = mu_test, dis = refmodel$dis, cl_ref = seq_along(refmodel$wsample)
     )
   }
 
@@ -326,11 +373,7 @@ varsel.refmodel <- function(object, d_test = NULL, method = NULL,
     nprjdraws_search = NCOL(p_sel$mu),
     nprjdraws_eval = NCOL(p_pred$mu)
   )
-  ## suggest model size
   class(vs) <- "vsel"
-  vs$suggested_size <- suggest_size(vs, warnings = FALSE)
-  summary <- summary(vs)
-  vs$summary <- summary$selection
 
   return(vs)
 }

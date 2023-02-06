@@ -1,15 +1,18 @@
 .get_sub_summaries <- function(submodels, refmodel, test_points, newdata = NULL,
                                offset = refmodel$offset[test_points],
                                wobs = refmodel$wobs[test_points],
-                               y = refmodel$y[test_points]) {
+                               y = refmodel$y[test_points],
+                               y_oscale = refmodel$y_oscale[test_points]) {
   lapply(submodels, function(initsubmodl) {
     .weighted_summary_means(
-      y_test = list(y = y, weights = wobs),
+      y_test = list(y = y, y_oscale = y_oscale, weights = wobs),
       family = refmodel$family,
       wsample = initsubmodl$weights,
       mu = refmodel$family$mu_fun(initsubmodl$submodl, obs = test_points,
                                   newdata = newdata, offset = offset),
-      dis = initsubmodl$dis
+      dis = initsubmodl$dis,
+      cl_ref = initsubmodl$cl_ref,
+      wdraws_ref = initsubmodl$wdraws_ref
     )
   })
 }
@@ -18,15 +21,32 @@
 # draws (together with the corresponding expected response values).
 #
 # @param y_test A `list`, at least with elements `y` (response values) and
-#   `weights` (observation weights).
+#   `weights` (observation weights). In case of the latent projection, this
+#   `list` also needs to contain `y_oscale` (response values on the original
+#   response scale, i.e., the non-latent response values).
 # @param family A `family` object.
 # @param wsample A vector of weights for the parameter draws.
 # @param mu A matrix of expected values for `y`.
 # @param dis A vector of dispersion parameter draws.
+# @param cl_ref A numeric vector of length \eqn{S} (with \eqn{S} denoting the
+#   number of parameter draws in the reference model), giving the cluster
+#   indices for the parameter draws in the reference model. Draws that should be
+#   dropped (e.g., because of thinning by `ndraws` or `ndraws_pred`) need to
+#   have an `NA` in `cl_ref`. Caution: This always refers to the reference
+#   model's parameter draws, not necessarily to the columns of `mu`, the entries
+#   of `wsample`, or the entries of `dis`!
+# @param wdraws_ref A numeric vector of length \eqn{S} (with \eqn{S} denoting
+#   the number of parameter draws in the reference model), giving the weights of
+#   the parameter draws in the reference model. It doesn't matter whether these
+#   are normalized (i.e., sum to `1`) or not because the family$latent_ilink()
+#   function that receives them should treat them as unnormalized. Draws that
+#   should be dropped (e.g., because of thinning by `ndraws` or `ndraws_pred`)
+#   can (but must not necessarily) have an `NA` in `wdraws_ref`.
 #
 # @return A `list` with elements `mu` and `lppd` which are both vectors
 #   containing the values for the quantities from the description above.
-.weighted_summary_means <- function(y_test, family, wsample, mu, dis) {
+.weighted_summary_means <- function(y_test, family, wsample, mu, dis, cl_ref,
+                                    wdraws_ref = rep(1, length(cl_ref))) {
   if (!is.matrix(mu)) {
     stop("Unexpected structure for `mu`. Do the return values of ",
          "`proj_predfun` and `ref_predfun` have the correct structure?")
@@ -37,12 +57,46 @@
          "maintainer.")
   }
   # Average over the draws, taking their weights into account:
-  return(list(
+  avg <- list(
     mu = structure(c(mu %*% wsample),
                    nobs_orig = attr(mu, "nobs_orig"),
                    class = sub("augmat", "augvec", oldClass(mu), fixed = TRUE)),
     lppd = apply(loglik, 1, log_weighted_mean_exp, wsample)
-  ))
+  )
+  if (family$for_latent) {
+    mu_oscale <- family$latent_ilink(t(mu), cl_ref = cl_ref,
+                                     wdraws_ref = wdraws_ref)
+    if (length(dim(mu_oscale)) < 2) {
+      stop("Unexpected structure for the output of `latent_ilink`.")
+    }
+    loglik_oscale <- family$latent_ll_oscale(
+      mu_oscale, y_oscale = y_test$y_oscale, wobs = y_test$weights,
+      cl_ref = cl_ref, wdraws_ref = wdraws_ref
+    )
+    if (!is.matrix(loglik_oscale)) {
+      stop("Unexpected structure for the output of `latent_ll_oscale`.")
+    }
+    if (length(dim(mu_oscale)) == 3) {
+      # In this case, `mu_oscale` is a 3-dimensional array (S x N x C), so
+      # coerce it to an augmented-rows matrix:
+      mu_oscale <- arr2augmat(mu_oscale, margin_draws = 1)
+      mu_oscale_avg <- structure(
+        c(mu_oscale %*% wsample),
+        nobs_orig = attr(mu_oscale, "nobs_orig"),
+        class = sub("augmat", "augvec", oldClass(mu_oscale), fixed = TRUE)
+      )
+    } else {
+      # In principle, we could use the same code for `mu_oscale_avg` as above.
+      # However, that would require `mu_oscale <- t(mu_oscale)` beforehand, so
+      # the following should be more efficient:
+      mu_oscale_avg <- c(wsample %*% mu_oscale)
+    }
+    avg$oscale <- list(
+      mu = mu_oscale_avg,
+      lppd = apply(loglik_oscale, 2, log_weighted_mean_exp, wsample)
+    )
+  }
+  return(avg)
 }
 
 # A function to calculate the desired performance statistics, their standard
@@ -51,11 +105,66 @@
 # statistics relative to the baseline model of that size (`nfeat_baseline = Inf`
 # means that the baseline model is the reference model).
 .tabulate_stats <- function(varsel, stats, alpha = 0.05,
-                            nfeat_baseline = NULL, ...) {
+                            nfeat_baseline = NULL, resp_oscale = TRUE, ...) {
   stat_tab <- data.frame()
   summ_ref <- varsel$summaries$ref
   summ_sub <- varsel$summaries$sub
-  if (varsel$refmodel$family$for_augdat &&
+
+  if (!varsel$refmodel$family$for_latent && !resp_oscale) {
+    stop("`resp_oscale = FALSE` can only be used in case of the latent ",
+         "projection.")
+  }
+  if (varsel$refmodel$family$for_latent) {
+    if (resp_oscale) {
+      summ_ref <- summ_ref$oscale
+      summ_sub <- lapply(summ_sub, "[[", "oscale")
+      ref_lppd_NA <- all(is.na(summ_ref$lppd))
+      sub_lppd_NA <- any(sapply(summ_sub, check_sub_NA, el_nm = "lppd"))
+      ref_mu_NA <- all(is.na(summ_ref$mu))
+      sub_mu_NA <- any(sapply(summ_sub, check_sub_NA, el_nm = "mu"))
+      if (ref_mu_NA || sub_mu_NA) {
+        message(
+          "`latent_ilink` returned only `NA`s, so all performance statistics ",
+          "will also be `NA` as long as `resp_oscale = TRUE`."
+        )
+      } else if (any(stats %in% c("elpd", "mlpd")) &&
+                 (ref_lppd_NA || sub_lppd_NA)) {
+        message(
+          "`latent_ll_oscale` returned only `NA`s, so ELPD and MLPD will also ",
+          "be `NA` as long as `resp_oscale = TRUE`."
+        )
+      }
+      varsel$d_test$y <- varsel$d_test$y_oscale
+    } else {
+      if (all(is.na(varsel$refmodel$dis)) &&
+          any(stats %in% c("elpd", "mlpd"))) {
+        message(
+          "Cannot calculate ELPD or MLPD if `resp_oscale = FALSE` and ",
+          "`<refmodel>$dis` consists of only `NA`s. If it's not possible to ",
+          "supply a suitable argument `dis` to init_refmodel(), consider (i) ",
+          "switching to `resp_oscale = TRUE` (which might require the ",
+          "specification of functions needed by extend_family()) or (ii) ",
+          "using a performance statistic other than ELPD or MLPD."
+        )
+      }
+      if (all(is.na(varsel$d_test$y))) {
+        message(
+          "Cannot calculate performance statistics if `resp_oscale = FALSE` ",
+          "and `<vsel>$d_test$y` consists of only `NA`s. The reason for these ",
+          "`NA`s is probably that `<vsel>` was created by cv_varsel() with ",
+          "`cv_method = \"kfold\"`. (In case of K-fold cross-validation, the ",
+          "latent response values for the test datasets cannot be defined ",
+          "in a straightforward manner without inducing dependencies between ",
+          "training and test datasets.)"
+        )
+      }
+    }
+  }
+  # Just to avoid that `$y` gets expanded to `$y_oscale` if element `"y"` does
+  # not exist (for whatever reason; actually, it should always exist):
+  varsel$d_test$y_oscale <- NULL
+
+  if (resp_oscale && !is.null(varsel$refmodel$family$cats) &&
       any(stats %in% c("acc", "pctcorr"))) {
     summ_ref$mu <- catmaxprb(summ_ref$mu, lvls = varsel$refmodel$family$cats)
     summ_sub <- lapply(summ_sub, function(summ_sub_k) {
@@ -70,8 +179,10 @@
 
   if (varsel$refmodel$family$family == "binomial" &&
       !all(varsel$d_test$weights == 1)) {
-    # This case should not occur (yet) for the augmented-data projection:
+    # This case should not occur (yet) for the augmented-data or the latent
+    # projection:
     stopifnot(!varsel$refmodel$family$for_augdat)
+    stopifnot(!varsel$refmodel$family$for_latent)
     varsel$d_test$y_prop <- varsel$d_test$y / varsel$d_test$weights
   }
 
@@ -157,6 +268,18 @@
   return(stat_tab)
 }
 
+# Helper function checking whether all entries of a summaries vector are `NA`.
+#
+# @param summ_sub_k Typically `<vsel_object>$summaries$sub[[k]]`.
+# @param el_nm A single character string, giving the name of the subelement of
+#   `summ_sub_k` to check for `NA`s.
+#
+# @return A single logical value, indicating whether all entries of
+#   `summ_sub_k[[el_nm]]` are `NA`.
+check_sub_NA <- function(summ_sub_k, el_nm) {
+  all(is.na(summ_sub_k[[el_nm]]))
+}
+
 ## Calculates given statistic stat with standard error and confidence bounds.
 ## mu.bs and lppd.bs are the pointwise mu and lppd for another model that is
 ## used as a baseline for computing the difference in the given statistic,
@@ -168,9 +291,10 @@
 ## nonconstant (and not `NULL`) only in case of subsampled LOO CV. The actual
 ## observation weights (specified by the user) are contained in
 ## `d_test$weights`. These are already taken into account by
-## `<refmodel_object>$family$ll_fun()` and are thus already taken into account
-## in `lppd`. However, `mu` does not take them into account, so some further
-## adjustments are necessary below.
+## `<refmodel_object>$family$ll_fun()` (or
+## `<refmodel_object>$family$latent_ll_oscale()`) and are thus already taken
+## into account in `lppd`. However, `mu` does not take them into account, so
+## some further adjustments are necessary below.
 get_stat <- function(mu, lppd, d_test, stat, mu.bs = NULL, lppd.bs = NULL,
                      wcv = NULL, alpha = 0.1, ...) {
   n_notna.bs <- NULL
@@ -360,16 +484,16 @@ get_stat <- function(mu, lppd, d_test, stat, mu.bs = NULL, lppd.bs = NULL,
   return(!stat %in% c("rmse", "mse"))
 }
 
-.get_nfeat_baseline <- function(object, baseline, stat) {
+.get_nfeat_baseline <- function(object, baseline, stat, ...) {
   ## get model size that is used as a baseline in comparisons. baseline is one
   ## of 'best' or 'ref', stat is the statistic according to which the selection
   ## is done
   if (baseline == "best") {
     ## find number of features that maximizes the utility (or minimizes the
     ## loss)
-    tab <- .tabulate_stats(object, stat)
+    tab <- .tabulate_stats(object, stat, ...)
     stats_table <- subset(tab, tab$size != Inf)
-    ## tab <- .tabulate_stats(object)
+    ## tab <- .tabulate_stats(object, ...)
     ## stats_table <- subset(tab, tab$delta == FALSE &
     ##   tab$statistic == stat & tab$size != Inf)
     optfun <- ifelse(.is_util(stat), which.max, which.min)

@@ -95,6 +95,10 @@ performance statistic for which the normal approximation is used, not the
 bootstrap), for which the submodel's utility estimate is at most one
 standard error smaller than the baseline model's utility estimate (with
 that standard error referring to the utility \emph{difference}).
+
+Apart from the two \code{\link[=summary.vsel]{summary.vsel()}} arguments mentioned above (\code{alpha} and
+\code{baseline}), \code{resp_oscale} is another important \code{\link[=summary.vsel]{summary.vsel()}} argument
+that may be passed via \code{...}.
 }
 \note{
 Loss statistics like the root mean squared error (RMSE) and the mean

@@ -12,6 +12,7 @@
   deltas = FALSE,
   alpha = 2 * pnorm(-1),
   baseline = if (!inherits(object$refmodel, "datafit")) "ref" else "best",
+  resp_oscale = TRUE,
   ...
 )
 }
@@ -32,16 +33,16 @@ are:
 \item \code{"elpd"}: (expected) sum of log predictive densities.
 \item \code{"mlpd"}: mean log predictive density, that is, \code{"elpd"} divided by the
 number of observations.
-\item \code{"mse"}: mean squared error (traditional projection only).
-\item \code{"rmse"}: root mean squared error (traditional projection only). For the
-corresponding standard error and lower and upper confidence interval
-bounds, bootstrapping is used.
-\item \code{"acc"} (or its alias, \code{"pctcorr"}): classification accuracy (for the
-traditional projection: \code{\link[=binomial]{binomial()}} family only; for the augmented-data
-projection: all families).
-\item \code{"auc"}: area under the ROC curve (\code{\link[=binomial]{binomial()}} family for the
-traditional projection only). For the corresponding standard error and
-lower and upper confidence interval bounds, bootstrapping is used.
+\item \code{"mse"}: mean squared error (only available in the situations mentioned
+in section "Details" below).
+\item \code{"rmse"}: root mean squared error (only available in the situations
+mentioned in section "Details" below). For the corresponding standard error
+and lower and upper confidence interval bounds, bootstrapping is used.
+\item \code{"acc"} (or its alias, \code{"pctcorr"}): classification accuracy (only
+available in the situations mentioned in section "Details" below).
+\item \code{"auc"}: area under the ROC curve (only available in the situations
+mentioned in section "Details" below). For the corresponding standard error
+and lower and upper confidence interval bounds, bootstrapping is used.
 }}
 
 \item{type}{One or more items from \code{"mean"}, \code{"se"}, \code{"lower"}, \code{"upper"},
@@ -68,6 +69,10 @@ For \code{\link[=plot.vsel]{plot.vsel()}}: Always relevant. Either \code{"ref"} 
 whether the baseline is the reference model or the best submodel found (in
 terms of \code{stats[1]}), respectively.}
 
+\item{resp_oscale}{Only relevant for the latent projection. A single logical
+value indicating whether to calculate the performance statistics on
+response scale (\code{TRUE}) or on latent scale (\code{FALSE}).}
+
 \item{...}{Arguments passed to the internal function which is used for
 bootstrapping (if applicable; see argument \code{stats}). Currently, relevant
 arguments are \code{B} (the number of bootstrap samples, defaulting to \code{2000})
@@ -81,6 +86,35 @@ An object of class \code{vselsummary}.
 \description{
 This is the \code{\link[=summary]{summary()}} method for \code{vsel} objects (returned by \code{\link[=varsel]{varsel()}} or
 \code{\link[=cv_varsel]{cv_varsel()}}).
+}
+\details{
+The \code{stats} options \code{"mse"} and \code{"rmse"} are only available for:
+\itemize{
+\item the traditional projection,
+\item the latent projection with \code{resp_oscale = FALSE},
+\item the latent projection with \code{resp_oscale = TRUE} in combination with
+\verb{<refmodel>$family$cats} being \code{NULL}.
+}
+
+The \code{stats} option \code{"acc"} (= \code{"pctcorr"}) is only available for:
+\itemize{
+\item the \code{\link[=binomial]{binomial()}} family in case of the traditional projection,
+\item all families in case of the augmented-data projection,
+\item the \code{\link[=binomial]{binomial()}} family (on the original response scale) in case of the
+latent projection with \code{resp_oscale = TRUE} in combination with
+\verb{<refmodel>$family$cats} being \code{NULL},
+\item all families (on the original response scale) in case of the latent
+projection with \code{resp_oscale = TRUE} in combination with
+\verb{<refmodel>$family$cats} being not \code{NULL}.
+}
+
+The \code{stats} option \code{"auc"} is only available for:
+\itemize{
+\item the \code{\link[=binomial]{binomial()}} family in case of the traditional projection,
+\item the \code{\link[=binomial]{binomial()}} family (on the original response scale) in case of the
+latent projection with \code{resp_oscale = TRUE} in combination with
+\verb{<refmodel>$family$cats} being \code{NULL}.
+}
 }
 \examples{
 if (requireNamespace("rstanarm", quietly = TRUE)) {

@@ -5,7 +5,7 @@
 }
 
 nms_d_test <- function() {
-  c("type", "data", "offset", "weights", "y")
+  c("type", "data", "offset", "weights", "y", "y_oscale")
 }
 
 weighted.sd <- function(x, w, na.rm = FALSE) {
@@ -31,9 +31,9 @@ log_sum_exp <- function(x) {
 }
 
 linkfun_raw <- function(x, link_nm) {
-  if (link_nm %in% c("logistic", "logit")) {
+  if (link_nm %in% c("logit", "logistic")) {
     return(qlogis(x))
-  } else if (link_nm == "probit") {
+  } else if (link_nm %in% c("probit", "probit_approx")) {
     return(qnorm(x))
   } else if (link_nm == "cloglog") {
     return(log(-log1p(-x)))
@@ -45,9 +45,9 @@ linkfun_raw <- function(x, link_nm) {
 }
 
 ilinkfun_raw <- function(x, link_nm) {
-  if (link_nm %in% c("logistic", "logit")) {
+  if (link_nm %in% c("logit", "logistic")) {
     return(plogis(x))
-  } else if (link_nm == "probit") {
+  } else if (link_nm %in% c("probit", "probit_approx")) {
     return(pnorm(x))
   } else if (link_nm == "cloglog") {
     return(1 - exp(-exp(x)))
@@ -125,18 +125,29 @@ bootstrap <- function(x, fun = mean, B = 2000,
   }
 }
 
-.validate_vsel_object_stats <- function(object, stats) {
+.validate_vsel_object_stats <- function(object, stats, resp_oscale = TRUE) {
   if (!inherits(object, c("vsel"))) {
     stop("The object is not a variable selection object. Run variable ",
          "selection first")
   }
+  if (!object$refmodel$family$for_latent && !resp_oscale) {
+    stop("`resp_oscale = FALSE` can only be used in case of the latent ",
+         "projection.")
+  }
+  resp_oscale <- object$refmodel$family$for_latent && resp_oscale
 
   trad_stats <- c("elpd", "mlpd", "mse", "rmse", "acc", "pctcorr", "auc")
   trad_stats_binom_only <- c("acc", "pctcorr", "auc")
   augdat_stats <- c("elpd", "mlpd", "acc", "pctcorr")
+  resp_oscale_stats_fac <- augdat_stats
 
   if (is.null(stats)) {
     stop("Statistic specified as NULL.")
+  }
+  if (resp_oscale) {
+    fam_ch <- object$refmodel$family$family_oscale
+  } else {
+    fam_ch <- object$refmodel$family$family
   }
   for (stat in stats) {
     if (object$refmodel$family$for_augdat) {
@@ -144,15 +155,24 @@ bootstrap <- function(x, fun = mean, B = 2000,
         stop("Currently, the augmented-data projection may not be combined ",
              "with performance statistic `\"", stat, "\"`.")
       }
+    } else if (resp_oscale && !is.null(object$refmodel$family$cats)) {
+      if (!stat %in% resp_oscale_stats_fac) {
+        stop("Currently, the latent projection with `resp_oscale = TRUE` and ",
+             "a non-`NULL` element `family$cats` may not be combined with ",
+             "performance statistic `\"", stat, "\"`.")
+      }
     } else {
       if (!stat %in% trad_stats) {
         stop(sprintf("Statistic '%s' not recognized.", stat))
       }
-      if (stat %in% trad_stats_binom_only &&
-          object$refmodel$family$family != "binomial") {
-        stop("In case of the traditional projection, the performance ",
-             "statistic `\"", stat, "\"` is available only for the binomial ",
-             "family.")
+      if (stat %in% trad_stats_binom_only && fam_ch != "binomial") {
+        stop("In case of (i) the traditional projection or (ii) the latent ",
+             "projection with `resp_oscale = TRUE` and a `NULL` element ",
+             "`family$cats`, the performance statistic `\"", stat, "\"` is ",
+             "available only for the binomial family. This also explains why ",
+             "performance statistic `\"", stat, "\"` is not available in case ",
+             "of the latent projection with `resp_oscale = FALSE` (because a ",
+             "latent Gaussian distribution is used there).")
       }
     }
   }
@@ -195,7 +215,7 @@ bootstrap <- function(x, fun = mean, B = 2000,
         y <- as.vector(y, mode = "integer") - 1L # zero-one vector
       }
     } else {
-      if (is.factor(y) && !fam$for_augdat) {
+      if (is.factor(y) && !fam$for_augdat && !fam$for_latent) {
         stop("y cannot be a factor for models other than the binomial model.")
       }
     }
@@ -224,8 +244,8 @@ bootstrap <- function(x, fun = mean, B = 2000,
 #   subsampled (without replacement).
 #
 # @return Let \eqn{y} denote the response (vector), \eqn{N} the number of
-#   observations (for the traditional projection) or the number of augmented
-#   observations (for augmented-data projection), and
+#   observations (for the traditional or the latent projection) or the number of
+#   augmented observations (for augmented-data projection), and
 #   \eqn{S_{\mathrm{prj}}}{S_prj} the number of projected draws (= either
 #   `nclusters` or `ndraws`, depending on which one is used). Then the return
 #   value is a list with elements:
@@ -245,6 +265,16 @@ bootstrap <- function(x, fun = mean, B = 2000,
 #   * `cl`: Cluster assignment for each posterior draw, that is, a vector that
 #   has length equal to the number of posterior draws and each value is an
 #   integer between 1 and \eqn{S_{\mathrm{prj}}}{S_prj}.
+#   * `wsample_orig`: A numeric vector of length equal to the number of
+#   posterior draws, giving the weights of these draws. These weights should be
+#   treated as not being normalized (i.e., they don't necessarily sum to `1`).
+#   Currently, this element could be named `wsample_ref` instead because
+#   .get_p_clust() is always applied to inputs that are specific to a `refmodel`
+#   object (either the initial reference model or a K-fold-specific `refmodel`
+#   object) (and .get_refdist() is applied to inputs that are specific to a
+#   `refmodel` object anyway). However, .get_p_clust() intentionally seems to
+#   have been kept as general as possible and `wsample_orig` is more general
+#   than `wsample_ref`.
 .get_refdist <- function(refmodel, ndraws = NULL, nclusters = NULL,
                          thinning = TRUE,
                          throw_mssg_ndraws = getOption("projpred.mssg_ndraws",
@@ -304,6 +334,7 @@ bootstrap <- function(x, fun = mean, B = 2000,
                       nobs_orig = attr(refmodel$mu, "nobs_orig"),
                       class = oldClass(refmodel$mu)),
       dis = refmodel$dis[s_ind], weights = rep(1 / ndraws, ndraws), cl = cl,
+      wsample_orig = rep(1, S),
       clust_used = FALSE
     )
   }
@@ -384,6 +415,7 @@ bootstrap <- function(x, fun = mean, B = 2000,
     dis = dis_agg,
     weights = wcluster,
     cl = cl,
+    wsample_orig = wsample,
     clust_used = TRUE
   )
   return(p)
@@ -544,5 +576,15 @@ rbind2list <- function(x) {
       rbind2list(lapply(x, "[", "lppd"))
     ))
   }
-  return(as.list(do.call(rbind, lapply(x, as.data.frame))))
+  binded_list <- as.list(do.call(rbind, lapply(x, function(x_i) {
+    as.data.frame(x_i[setdiff(names(x_i), "oscale")])
+  })))
+  is_lateval_oscale <- any(sapply(x, function(x_i) {
+    is.list(x_i) &&
+      identical(names(x_i), c("mu", "lppd", "oscale"))
+  }))
+  if (is_lateval_oscale) {
+    binded_list$oscale <- rbind2list(lapply(x, "[[", "oscale"))
+  }
+  return(binded_list)
 }

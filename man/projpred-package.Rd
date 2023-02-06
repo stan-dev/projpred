@@ -34,19 +34,20 @@ workhorse functions used by the default divergence minimizers):
 \itemize{
 \item Submodel without multilevel or additive terms:
 \itemize{
-\item For the traditional projection (or the augmented-data projection in
-case of the \code{\link[=binomial]{binomial()}} or \code{\link[brms:brmsfamily]{brms::bernoulli()}} family): An internal C++
-function which basically serves the same purpose as \code{\link[=lm]{lm()}} for the
-\code{\link[=gaussian]{gaussian()}} family and \code{\link[=glm]{glm()}} for all other families.
+\item For the traditional (or latent) projection (or the augmented-data
+projection in case of the \code{\link[=binomial]{binomial()}} or \code{\link[brms:brmsfamily]{brms::bernoulli()}} family): An
+internal C++ function which basically serves the same purpose as \code{\link[=lm]{lm()}}
+for the \code{\link[=gaussian]{gaussian()}} family and \code{\link[=glm]{glm()}} for all other families.
 \item For the augmented-data projection: \code{\link[MASS:polr]{MASS::polr()}} for the
 \code{\link[brms:brmsfamily]{brms::cumulative()}} family or \code{\link[rstanarm:stan_polr]{rstanarm::stan_polr()}} fits,
 \code{\link[nnet:multinom]{nnet::multinom()}} for the \code{\link[brms:brmsfamily]{brms::categorical()}} family.
 }
 \item Submodel with multilevel but no additive terms:
 \itemize{
-\item For the traditional projection (or the augmented-data projection in
-case of the \code{\link[=binomial]{binomial()}} or \code{\link[brms:brmsfamily]{brms::bernoulli()}} family): \code{\link[lme4:lmer]{lme4::lmer()}}
-for the \code{\link[=gaussian]{gaussian()}} family, \code{\link[lme4:glmer]{lme4::glmer()}} for all other families.
+\item For the traditional (or latent) projection (or the augmented-data
+projection in case of the \code{\link[=binomial]{binomial()}} or \code{\link[brms:brmsfamily]{brms::bernoulli()}} family):
+\code{\link[lme4:lmer]{lme4::lmer()}} for the \code{\link[=gaussian]{gaussian()}} family, \code{\link[lme4:glmer]{lme4::glmer()}} for all other
+families.
 \item For the augmented-data projection: \code{\link[ordinal:clmm]{ordinal::clmm()}} for the
 \code{\link[brms:brmsfamily]{brms::cumulative()}} family, \code{\link[mclogit:mblogit]{mclogit::mblogit()}} for the
 \code{\link[brms:brmsfamily]{brms::categorical()}} family.
@@ -125,6 +126,7 @@ Other contributors:
   \item Brian Sullivan [contributor]
   \item Sölvi Rögnvaldsson [contributor]
   \item  The LME4 Authors (see file 'LICENSE' for details) [copyright holder]
+  \item Yann McLatchie [contributor]
 }
 
 }

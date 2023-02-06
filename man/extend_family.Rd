@@ -6,6 +6,11 @@
 \usage{
 extend_family(
   family,
+  latent = FALSE,
+  latent_y_unqs = NULL,
+  latent_ilink = NULL,
+  latent_ll_oscale = NULL,
+  latent_ppd_oscale = NULL,
   augdat_y_unqs = NULL,
   augdat_link = NULL,
   augdat_ilink = NULL,
@@ -16,6 +21,50 @@ extend_family(
 }
 \arguments{
 \item{family}{An object of class \code{family}.}
+
+\item{latent}{A single logical value indicating whether to use the latent
+projection (\code{TRUE}) or not (\code{FALSE}). Note that setting \code{latent = TRUE}
+causes all arguments starting with \code{augdat_} to be ignored.}
+
+\item{latent_y_unqs}{Only relevant for a latent projection where the original
+response space has finite support (i.e., the original response values may
+be regarded as categories), in which case this needs to be the character
+vector of unique response values (which will be assigned to \code{family$cats}
+internally) or may be left at \code{NULL} (so that \pkg{projpred} will try to
+infer it from \code{family$cats}). See also section "Latent projection" below.}
+
+\item{latent_ilink}{Only relevant for the latent projection, in which case
+this needs to be the inverse-link function. If the original response family
+was the \code{\link[=binomial]{binomial()}} or the \code{\link[=poisson]{poisson()}} family, then \code{latent_ilink} can be
+\code{NULL}, in which case an internal default will be used. Can also be \code{NULL}
+in all other cases, but then an internal default based on \code{family$linkinv}
+will be used which might not work for all families. See also section
+"Latent projection" below.}
+
+\item{latent_ll_oscale}{Only relevant for the latent projection, in which
+case this needs to be the function computing response-scale (not
+latent-scale) log-likelihood values. If \code{!is.null(family$cats)} (after
+taking \code{latent_y_unqs} into account) or if the original response family was
+the \code{\link[=binomial]{binomial()}} or the \code{\link[=poisson]{poisson()}} family, then \code{latent_ll_oscale} can be
+\code{NULL}, in which case an internal default will be used. Can also be \code{NULL}
+in all other cases, but then downstream functions will have limited
+functionality (a message thrown by \code{\link[=extend_family]{extend_family()}} will state what
+exactly won't be available). See also section "Latent projection" below.}
+
+\item{latent_ppd_oscale}{Only relevant for the latent projection, in which
+case this needs to be the function sampling response values given latent
+predictors that have been transformed to response scale using
+\code{latent_ilink}. If \code{!is.null(family$cats)} (after taking \code{latent_y_unqs}
+into account) or if the original response family was the \code{\link[=binomial]{binomial()}} or
+the \code{\link[=poisson]{poisson()}} family, then \code{latent_ppd_oscale} can be \code{NULL}, in which
+case an internal default will be used. Can also be \code{NULL} in all other
+cases, but then downstream functions will have limited functionality (a
+message thrown by \code{\link[=extend_family]{extend_family()}} will state what exactly won't be
+available). See also section "Latent projection" below. Note that although
+this function has the abbreviation "PPD" in its name (which stands for
+"posterior predictive distribution"), \pkg{projpred} currently only uses it
+in \code{\link[=proj_predict]{proj_predict()}}, i.e., for sampling from what would better be termed
+posterior-projection predictive distribution (PPPD).}
 
 \item{augdat_y_unqs}{Only relevant for augmented-data projection, in which
 case this needs to be the character vector of unique response values (which
@@ -110,5 +159,112 @@ correlated between different response categories.
 error \code{'a' (<number> x 1) must be square}. Updating \pkg{mclogit} to a
 version >= 0.9.4 should fix this.
 }
+}
+
+\section{Latent projection}{
+The function supplied to argument \code{latent_ilink} needs to have the prototype
+
+\if{html}{\out{<div class="sourceCode r">}}\preformatted{latent_ilink(lpreds, cl_ref, wdraws_ref = rep(1, length(cl_ref)))
+}\if{html}{\out{</div>}}
+
+where:
+\itemize{
+\item \code{lpreds} accepts an \eqn{S \times N}{S x N} matrix containing the linear
+predictors.
+\item \code{cl_ref} accepts a numeric vector of length \eqn{S_{\mathrm{ref}}}{S_ref},
+containing \pkg{projpred}'s internal cluster indices for these draws.
+\item \code{wdraws_ref} accepts a numeric vector of length
+\eqn{S_{\mathrm{ref}}}{S_ref}, containing weights for these draws. These
+weights should be treated as not being normalized (i.e., they don't
+necessarily sum to \code{1}).
+}
+
+The return value of \code{latent_ilink} needs to contain the linear predictors
+transformed to the original response space, with the following structure:
+\itemize{
+\item If \code{is.null(family$cats)} (after taking \code{latent_y_unqs} into account): an
+\eqn{S \times N}{S x N} matrix.
+\item If \code{!is.null(family$cats)} (after taking \code{latent_y_unqs} into account): an
+\eqn{S \times N \times C_{\mathrm{cat}}}{S x N x C_cat} array. In that case,
+\code{latent_ilink} needs to return \emph{probabilities} (for the response categories
+given in \code{family$cats}, after taking \code{latent_y_unqs} into account).
+}
+
+The function supplied to argument \code{latent_ll_oscale} needs to have the
+prototype
+
+\if{html}{\out{<div class="sourceCode r">}}\preformatted{latent_ll_oscale(ilpreds, y_oscale, wobs = rep(1, length(y_oscale)), cl_ref,
+                 wdraws_ref = rep(1, length(cl_ref)))
+}\if{html}{\out{</div>}}
+
+where:
+\itemize{
+\item \code{ilpreds} accepts the return value from \code{latent_ilink}.
+\item \code{y_oscale} accepts a vector of length \eqn{N} containing response values on
+the original response scale.
+\item \code{wobs} accepts a numeric vector of length \eqn{N} containing observation
+weights.
+\item \code{cl_ref} accepts the same input as argument \code{cl_ref} of \code{latent_ilink}.
+\item \code{wdraws_ref} accepts the same input as argument \code{wdraws_ref} of
+\code{latent_ilink}.
+}
+
+The return value of \code{latent_ll_oscale} needs to be an \eqn{S \times N}{S x N}
+matrix containing the response-scale (not latent-scale) log-likelihood values
+for the \eqn{N} observations from its inputs.
+
+The function supplied to argument \code{latent_ppd_oscale} needs to have the
+prototype
+
+\if{html}{\out{<div class="sourceCode r">}}\preformatted{latent_ppd_oscale(ilpreds_resamp, wobs, cl_ref,
+               wdraws_ref = rep(1, length(cl_ref)), idxs_prjdraws)
+}\if{html}{\out{</div>}}
+
+where:
+\itemize{
+\item \code{ilpreds_resamp} accepts the return value from \code{latent_ilink}, but possibly
+with resampled (clustered) draws (see argument \code{nresample_clusters} of
+\code{\link[=proj_predict]{proj_predict()}}).
+\item \code{wobs} accepts a numeric vector of length \eqn{N} containing observation
+weights.
+\item \code{cl_ref} accepts the same input as argument \code{cl_ref} of \code{latent_ilink}.
+\item \code{wdraws_ref} accepts the same input as argument \code{wdraws_ref} of
+\code{latent_ilink}.
+\item \code{idxs_prjdraws} accepts a numeric vector of length \code{dim(ilpreds_resamp)[1]}
+containing the resampled indices of the projected draws (i.e., these indices
+are values from the set \eqn{\{1, ..., \texttt{dim(ilpreds)[1]}\}}{{1, ...,
+dim(ilpreds)[1]}} where \code{ilpreds} denotes the return value of
+\code{latent_ilink}).
+}
+
+The return value of \code{latent_ppd_oscale} needs to be a
+\eqn{\texttt{dim(ilpreds\_resamp)[1]} \times N}{dim(ilpreds_resamp)[1] x N}
+matrix containing the response-scale (not latent-scale) draws from the
+posterior(-projection) predictive distributions for the \eqn{N} observations
+from its inputs.
+
+If the bodies of these three functions involve parameter draws from the
+reference model which have not been projected (e.g., for \code{latent_ilink}, the
+thresholds in an ordinal model), \code{\link[=cl_agg]{cl_agg()}} is provided as a helper function
+for aggregating these reference model draws in the same way as the draws have
+been aggregated for the first argument of these functions (e.g., \code{lpreds} in
+case of \code{latent_ilink}).
+
+In fact, the weights passed to argument \code{wdraws_ref} are nonconstant only in
+case of \code{\link[=cv_varsel]{cv_varsel()}} with \code{cv_method = "LOO"} and \code{validate_search = TRUE}.
+In that case, the weights passed to this argument are the PSIS-LOO CV weights
+for one observation. Note that although argument \code{wdraws_ref} has the suffix
+\verb{_ref}, \code{wdraws_ref} does not necessarily obtain weights for the \emph{initial}
+reference model's posterior draws: In case of \code{\link[=cv_varsel]{cv_varsel()}} with \code{cv_method = "kfold"}, these weights may refer to one of the \eqn{K} reference model
+re-fits (but in that case, they are constant anyway).
+
+If \code{family$cats} is not \code{NULL} (after taking \code{latent_y_unqs} into account),
+then the response vector resulting from \code{extract_model_data} (see
+\code{\link[=init_refmodel]{init_refmodel()}}) is coerced to a \code{factor} (using \code{\link[=as.factor]{as.factor()}}) at multiple
+places throughout this package. Inside of \code{\link[=init_refmodel]{init_refmodel()}}, the levels of
+this \code{factor} have to be identical to \code{family$cats} (\emph{after} applying
+\code{\link[=extend_family]{extend_family()}} inside of \code{\link[=init_refmodel]{init_refmodel()}}). Everywhere else, these levels
+have to be a subset of \verb{<refmodel>$family$cats} (where \verb{<refmodel>} is an
+object resulting from \code{\link[=init_refmodel]{init_refmodel()}}).
 }
 

@@ -74,6 +74,7 @@ test_that(paste(
     smmry_tester(
       smmrys_vs[[tstsetup]],
       vsel_expected = vss[[tstsetup_vs]],
+      resp_oscale_expected = args_smmry_vs[[tstsetup]]$resp_oscale %||% TRUE,
       search_trms_empty_size =
         length(args_vs[[tstsetup_vs]]$search_terms) &&
         all(grepl("\\+", args_vs[[tstsetup_vs]]$search_terms)),
@@ -96,6 +97,7 @@ test_that(paste(
     smmry_tester(
       smmrys_cvvs[[tstsetup]],
       vsel_expected = cvvss[[tstsetup_cvvs]],
+      resp_oscale_expected = args_smmry_cvvs[[tstsetup]]$resp_oscale %||% TRUE,
       search_trms_empty_size =
         length(args_cvvs[[tstsetup_cvvs]]$search_terms) &&
         all(grepl("\\+", args_cvvs[[tstsetup_cvvs]]$search_terms)),
@@ -317,10 +319,6 @@ test_that("`stat` works", {
       expect_length(suggsize, 1)
       if (!is.na(suggsize)) {
         expect_true(suggsize >= 0, info = paste(tstsetup, stat_crr, sep = "__"))
-        if (stat_crr == "elpd") {
-          expect_identical(suggsize, vss[[tstsetup_vs]]$suggested_size,
-                           info = paste(tstsetup, stat_crr, sep = "__"))
-        }
       } else {
         expect_true(
           vss[[tstsetup_vs]]$nterms_max < vss[[tstsetup_vs]]$nterms_all,

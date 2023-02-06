@@ -18,7 +18,7 @@ get_refmodel(object, ...)
 
 \method{get_refmodel}{default}(object, formula, family = NULL, ...)
 
-\method{get_refmodel}{stanreg}(object, ...)
+\method{get_refmodel}{stanreg}(object, latent = FALSE, dis = NULL, ...)
 
 init_refmodel(
   object,
@@ -71,6 +71,19 @@ case the family is retrieved from \code{object}. For custom reference models,
 (if the reference model possesses a formal \code{family} at all). In typical
 reference models, however, these families do coincide.}
 
+\item{latent}{A single logical value indicating whether to use the latent
+projection (\code{TRUE}) or not (\code{FALSE}). Note that setting \code{latent = TRUE}
+causes all arguments starting with \code{augdat_} to be ignored.}
+
+\item{dis}{A vector of posterior draws for the reference model's dispersion
+parameter or---more precisely---the posterior values for the reference
+model's parameter-conditional predictive variance (assuming that this
+variance is the same for all observations). May be \code{NULL} if the submodels
+have no dispersion parameter or if the submodels do have a dispersion
+parameter, but \code{object} is \code{NULL} (in which case \code{0} is used for \code{dis}).
+Note that for the \code{\link[=gaussian]{gaussian()}} \code{family}, \code{dis} is the standard deviation,
+not the variance.}
+
 \item{data}{A \code{data.frame} containing the data to use for the projection
 predictive variable selection. Any \code{contrasts} attributes of the dataset's
 columns are silently removed. For custom reference models, the columns of
@@ -119,15 +132,6 @@ indices (one fold index per observation). Each element of \code{cvfits$fits}
 \code{cvfits} and \code{cvfun} needs to be provided (for \eqn{K}-fold CV). Note that
 \code{cvfits} takes precedence over \code{cvfun}, i.e., if both are provided,
 \code{cvfits} is used.}
-
-\item{dis}{A vector of posterior draws for the reference model's dispersion
-parameter or---more precisely---the posterior values for the reference
-model's parameter-conditional predictive variance (assuming that this
-variance is the same for all observations). May be \code{NULL} if the submodels
-have no dispersion parameter or if the submodels do have a dispersion
-parameter, but \code{object} is \code{NULL} (in which case \code{0} is used for \code{dis}).
-Note that for the \code{\link[=gaussian]{gaussian()}} \code{family}, \code{dis} is the standard deviation,
-not the variance.}
 
 \item{cvrefbuilder}{For \eqn{K}-fold CV only. A function that, given a
 reference model fit for fold \eqn{k \in \{1, ..., K\}}{k = 1, ..., K} (this
@@ -227,22 +231,22 @@ augmented-data projection) or a \code{\link{formula}} with \eqn{S_{\mathrm{prj}}
 which case the projection has to be performed for each of the response
 variables separately.
 \item \code{data} accepts a \code{data.frame} to be used for the projection. In case of
-the traditional projection, this dataset has \eqn{N} rows. In case of the
-augmented-data projection, this dataset has
+the traditional or the latent projection, this dataset has \eqn{N} rows.
+In case of the augmented-data projection, this dataset has
 \eqn{N_{\mathrm{augcat}}}{N_augcat} rows.
 \item \code{family} accepts an object of class \code{family}.
 \item \code{weights} accepts either observation weights (at least in the form of a
 numeric vector) or \code{NULL} (for using a vector of ones as weights).
 \item \code{projpred_var} accepts an \eqn{N \times S_{\mathrm{prj}}}{N x S_prj}
 matrix of predictive variances (necessary for \pkg{projpred}'s internal
-GLM fitter) in case of the traditional projection and an
+GLM fitter) in case of the traditional or the latent projection and an
 \eqn{N_{\mathrm{augcat}} \times S_{\mathrm{prj}}}{N_augcat x S_prj}
 matrix (containing only \code{NA}s) in case of the augmented-data projection.
 \item \code{projpred_regul} accepts a single numeric value as supplied to argument
 \code{regul} of \code{\link[=project]{project()}}, for example.
 \item \code{projpred_ws_aug} accepts an \eqn{N \times S_{\mathrm{prj}}}{N x S_prj}
-matrix of expected values for the response in case of the traditional
-projection and an \eqn{N_{\mathrm{augcat}} \times
+matrix of expected values for the response in case of the traditional or
+the latent projection and an \eqn{N_{\mathrm{augcat}} \times
     S_{\mathrm{prj}}}{N_augcat x S_prj} matrix of probabilities for the
 response categories in case of the augmented-data projection.
 \item \code{...} accepts further arguments specified by the user.
@@ -251,17 +255,17 @@ response categories in case of the augmented-data projection.
 
 The return value of these functions needs to be:
 \itemize{
-\item \code{ref_predfun}: for the traditional projection, an \eqn{N \times
-S_{\mathrm{ref}}}{N x S_ref} matrix; for the augmented-data projection, an
-\eqn{S_{\mathrm{ref}} \times N \times C_{\mathrm{lat}}}{S_ref x N x C_lat}
-array (the only exception is the augmented-data projection for the
-\code{\link[=binomial]{binomial()}} family in which case \code{ref_predfun} needs to return an \eqn{N
+\item \code{ref_predfun}: for the traditional or the latent projection, an \eqn{N
+\times S_{\mathrm{ref}}}{N x S_ref} matrix; for the augmented-data
+projection, an \eqn{S_{\mathrm{ref}} \times N \times C_{\mathrm{lat}}}{S_ref
+x N x C_lat} array (the only exception is the augmented-data projection for
+the \code{\link[=binomial]{binomial()}} family in which case \code{ref_predfun} needs to return an \eqn{N
 \times S_{\mathrm{ref}}}{N x S_ref} matrix just like for the traditional
 projection because the array is constructed by an internal wrapper function).
-\item \code{proj_predfun}: for the traditional projection, an \eqn{N \times
-S_{\mathrm{prj}}}{N x S_prj} matrix; for the augmented-data projection, an
-\eqn{N \times C_{\mathrm{lat}} \times S_{\mathrm{prj}}}{N x C_lat x S_prj}
-array.
+\item \code{proj_predfun}: for the traditional or the latent projection, an \eqn{N
+\times S_{\mathrm{prj}}}{N x S_prj} matrix; for the augmented-data
+projection, an \eqn{N \times C_{\mathrm{lat}} \times S_{\mathrm{prj}}}{N x
+C_lat x S_prj} array.
 \item \code{div_minimizer}: a \code{list} of length \eqn{S_{\mathrm{prj}}}{S_prj}
 containing this number of submodel fits.
 }
@@ -271,7 +275,8 @@ containing this number of submodel fits.
 The function supplied to argument \code{extract_model_data} needs to have the
 prototype
 
-\if{html}{\out{<div class="sourceCode r">}}\preformatted{extract_model_data(object, newdata, wrhs = NULL, orhs = NULL, extract_y = TRUE)
+\if{html}{\out{<div class="sourceCode r">}}\preformatted{extract_model_data(object, newdata, wrhs = NULL, orhs = NULL,
+                   extract_y = TRUE)
 }\if{html}{\out{</div>}}
 
 where:
@@ -320,6 +325,22 @@ supported at all.
 
 Currently, \code{object = NULL} (i.e., a \code{datafit}; see section "Value") is not
 supported in case of the augmented-data projection.
+}
+
+\section{Latent projection}{
+If a custom reference model for a latent projection is needed, see also
+\code{\link[=extend_family]{extend_family()}}.
+
+For the latent projection, \code{family$cats} (\emph{after} applying \code{\link[=extend_family]{extend_family()}}
+internally; see \code{\link[=extend_family]{extend_family()}}'s argument \code{latent_y_unqs}) currently must
+not be \code{NULL} if the original (i.e., non-latent) response is a \code{factor}.
+Conversely, if \code{family$cats} (\emph{after} applying \code{\link[=extend_family]{extend_family()}}) is
+non-\code{NULL}, the response vector resulting from \code{extract_model_data} is
+internally coerced to a \code{factor} (using \code{\link[=as.factor]{as.factor()}}). The levels of this
+\code{factor} have to be identical to that non-\code{NULL} element \code{family$cats}.
+
+Currently, \code{object = NULL} (i.e., a \code{datafit}; see section "Value") is not
+supported in case of the latent projection.
 }
 
 \examples{

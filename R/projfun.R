@@ -8,9 +8,13 @@ project_submodel <- function(solution_terms, p_ref, refmodel, regul = 1e-4,
   wobs <- validparams$wobs
   wsample <- validparams$wsample
 
+  y_unqs_aug <- refmodel$family$cats
+  if (refmodel$family$for_latent && !is.null(y_unqs_aug)) {
+    y_unqs_aug <- NULL
+  }
   subset <- subset_formula_and_data(
     formula = refmodel$formula, terms_ = unique(unlist(solution_terms)),
-    data = refmodel$fetch_data(), y = p_ref$mu, y_unqs = refmodel$family$cats
+    data = refmodel$fetch_data(), y = p_ref$mu, y_unqs = y_unqs_aug
   )
 
   submodl <- refmodel$div_minimizer(
@@ -136,7 +140,8 @@ project_submodel <- function(solution_terms, p_ref, refmodel, regul = 1e-4,
     wsample
   )
   return(structure(
-    nlist(dis, ce, weights = wsample, solution_terms, submodl),
+    nlist(dis, ce, weights = wsample, solution_terms, submodl,
+          cl_ref = p_ref$cl, wdraws_ref = p_ref$wsample_orig),
     class = "initsubmodl"
   ))
 }

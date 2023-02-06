@@ -25,10 +25,11 @@ observations. May also be \code{NULL} (see argument \code{extract_model_data} of
 \code{\link[=init_refmodel]{init_refmodel()}}). If not \code{NULL}, any \code{NA}s will trigger an error.}
 
 \item{ynew}{If not \code{NULL}, then this needs to be a vector of new (or old)
-response values. See also section "Value" below. In case of the
-augmented-data projection, \code{ynew} is internally coerced to a \code{factor}
-(using \code{\link[=as.factor]{as.factor()}}). The levels of this \code{factor} have to be a subset of
-\code{object$family$cats} (see \code{\link[=extend_family]{extend_family()}}'s argument \code{augdat_y_unqs}).}
+response values. See also section "Value" below. In case of (i) the
+augmented-data projection or (ii) the latent projection with \code{type = "response"} and \code{object$family$cats} being not \code{NULL}, \code{ynew} is internally
+coerced to a \code{factor} (using \code{\link[=as.factor]{as.factor()}}). The levels of this \code{factor}
+have to be a subset of \code{object$family$cats} (see \code{\link[=extend_family]{extend_family()}}'s
+arguments \code{augdat_y_unqs} and \code{latent_y_unqs}, respectively).}
 
 \item{offsetnew}{Passed to argument \code{orhs} of the reference model's
 \code{extract_model_data} function (see \code{\link[=init_refmodel]{init_refmodel()}}). Used to get the
@@ -38,11 +39,22 @@ offsets for the new (or old) observations.}
 \code{extract_model_data} function (see \code{\link[=init_refmodel]{init_refmodel()}}). Used to get the
 weights for the new (or old) observations.}
 
-\item{type}{Only relevant if \code{is.null(ynew)}. The scale on which the
-predictions are returned, either \code{"link"} or \code{"response"} (see
-\code{\link[=predict.glm]{predict.glm()}} but note that \code{\link[=predict.refmodel]{predict.refmodel()}} does not adhere to the
-typical \R convention of a default prediction on link scale). For both
-scales, the predictions are averaged across the posterior draws.}
+\item{type}{Usually only relevant if \code{is.null(ynew)}, but for the latent
+projection, this also affects the \code{!is.null(ynew)} case (see below). The
+scale on which the predictions are returned, either \code{"link"} or
+\code{"response"} (see \code{\link[=predict.glm]{predict.glm()}} but note that \code{\link[=predict.refmodel]{predict.refmodel()}} does
+not adhere to the typical \R convention of a default prediction on link
+scale). For both scales, the predictions are averaged across the posterior
+draws. In case of the latent projection, argument \code{type} is similar in
+spirit to argument \code{resp_oscale} from other functions: If (i)
+\code{is.null(ynew)}, then argument \code{type} affects the predictions as described
+above. In that case, note that \code{type = "link"} yields the linear predictors
+without any modifications that may be due to the original response
+distribution (e.g., for a \code{\link[brms:brmsfamily]{brms::cumulative()}} model, the ordered
+thresholds are not taken into account). If (ii) \code{!is.null(ynew)}, then
+argument \code{type} also affects the scale of the log predictive densities
+(\code{type = "response"} for the original response scale, \code{type = "link"} for
+the latent Gaussian scale).}
 
 \item{...}{Currently ignored.}
 }
@@ -52,11 +64,19 @@ In the following, \eqn{N}, \eqn{C_{\mathrm{cat}}}{C_cat}, and
 Furthermore, let \eqn{C} denote either \eqn{C_{\mathrm{cat}}}{C_cat} (if
 \code{type = "response"}) or \eqn{C_{\mathrm{lat}}}{C_lat} (if \code{type = "link"}).
 Then, if \code{is.null(ynew)}, the returned object contains the reference
-model's predictions (with the scale depending on argument \code{type}) as a
-length-\eqn{N} vector in case of the traditional projection and as an
-\eqn{N \times C}{N x C} matrix in case of the augmented-data projection. If
-\code{!is.null(ynew)}, the returned object is a length-\eqn{N} vector of log
-predictive densities evaluated at \code{ynew}.
+model's predictions (with the scale depending on argument \code{type}) as:
+\itemize{
+\item a length-\eqn{N} vector in case of (i) the traditional projection, (ii)
+the latent projection with \code{type = "link"}, or (iii) the latent projection
+with \code{type = "response"} and \code{object$family$cats} being \code{NULL};
+\item an \eqn{N \times C}{N x C} matrix in case of (i) the augmented-data
+projection or (ii) the latent projection with \code{type = "response"} and
+\code{object$family$cats} being not \code{NULL}.
+}
+
+If \code{!is.null(ynew)}, the returned
+object is a length-\eqn{N} vector of log predictive densities evaluated at
+\code{ynew}.
 }
 \description{
 This is the \code{\link[=predict]{predict()}} method for \code{refmodel} objects (returned by

@@ -205,7 +205,7 @@ test_that("repair_re() works for multilevel cumulative() models", {
   link_nm <- ofit$link
   prbs <- do.call(rbind, apply(prbs, 1, cumsum, simplify = FALSE))
   prbs <- prbs[, -ncol(prbs), drop = FALSE]
-  if (link_nm %in% c("logistic", "logit")) {
+  if (link_nm %in% c("logit", "logistic")) {
     linkfun_raw_man <- function(x) qlogis(x)
   } else if (link_nm == "probit") {
     linkfun_raw_man <- function(x) qnorm(x)

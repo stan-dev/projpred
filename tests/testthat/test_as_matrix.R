@@ -20,6 +20,7 @@ test_that("as.matrix.projection() works", {
     mod_crr <- args_prj[[tstsetup]]$mod_nm
     fam_crr <- args_prj[[tstsetup]]$fam_nm
     pkg_crr <- args_prj[[tstsetup]]$pkg_nm
+    prj_crr <- args_prj[[tstsetup]]$prj_nm
     solterms <- args_prj[[tstsetup]]$solution_terms
     ndr_ncl <- ndr_ncl_dtls(args_prj[[tstsetup]])
 
@@ -34,13 +35,13 @@ test_that("as.matrix.projection() works", {
     expect_warning(m <- as.matrix(prjs[[tstsetup]]),
                    warn_prjmat_expect, info = tstsetup)
 
-    if (fam_crr == "gauss") {
+    if (fam_crr == "gauss" || prj_crr == "latent") {
       npars_fam <- "sigma"
     } else {
       npars_fam <- character()
     }
 
-    if (fam_crr == "cumul") {
+    if (fam_crr == "cumul" && prj_crr == "augdat") {
       # Note: Here, we could also derive `icpt_nm` from
       # `prjs[[tstsetup]]$refmodel$family$cats`.
       if (pkg_crr == "rstanarm") {

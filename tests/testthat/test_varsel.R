@@ -115,19 +115,31 @@ test_that(paste(
       weights = wobs_crr,
       y = dat_crr[[stdize_lhs(formul_fit_crr)$y_nm]]
     )
-    if (prj_crr == "augdat") {
+    y_oscale_crr <- d_test_crr$y
+    if (prj_crr %in% c("latent", "augdat")) {
       if (use_fac) {
         yunqs <- yunq_chr
       } else {
         yunqs <- as.character(yunq_num)
       }
-      d_test_crr$y <- factor(
-        as.character(d_test_crr$y),
-        levels = args_ref[[args_vs_i$tstsetup_ref]]$augdat_y_unqs %||% yunqs,
-        ordered = is.ordered(d_test_crr$y)
-      )
+      if (!(prj_crr == "latent" && fam_crr == "brnll")) {
+        lvls_crr <- args_ref[[args_vs_i$tstsetup_ref]]$augdat_y_unqs
+        lvls_crr <- lvls_crr %||%
+          args_ref[[args_vs_i$tstsetup_ref]]$latent_y_unqs
+        lvls_crr <- lvls_crr %||% yunqs
+        y_oscale_crr <- factor(as.character(y_oscale_crr), levels = lvls_crr,
+                            ordered = is.ordered(y_oscale_crr))
+      }
+      if (prj_crr == "augdat") {
+        d_test_crr$y <- y_oscale_crr
+      } else if (prj_crr == "latent") {
+        d_test_crr$y <- colMeans(
+          unname(posterior_linpred(fits[[args_vs_i$tstsetup_fit]]))
+        )
+      }
     }
-    if (fam_crr == "cumul") {
+    d_test_crr$y_oscale <- y_oscale_crr
+    if (prj_crr == "augdat" && fam_crr == "cumul") {
       warn_expected <- "non-integer #successes in a binomial glm!"
     } else if (!is.null(args_vs_i$avoid.increase)) {
       warn_expected <- warn_mclogit
@@ -164,9 +176,12 @@ test_that(paste(
                  info = tstsetup)
     d_test_orig <- vss[[tstsetup]]$d_test[setdiff(names(vss[[tstsetup]]$d_test),
                                                   c("type", "data"))]
-    # brms seems to set argument `contrasts`, but this is not important for
-    # projpred, so ignore it in the comparison:
-    attr(d_test_orig$y, "contrasts") <- NULL
+    if (pkg_crr == "brms") {
+      # brms seems to set argument `contrasts`, but this is not important for
+      # projpred, so ignore it in the comparison:
+      attr(d_test_orig$y, "contrasts") <- NULL
+      attr(d_test_orig$y_oscale, "contrasts") <- NULL
+    }
     expect_equal(vs_repr$d_test[setdiff(names(vs_repr$d_test),
                                         c("type", "data"))],
                  d_test_orig, info = tstsetup)
@@ -212,6 +227,7 @@ test_that(paste(
       wobs_crr <- rep(1, nobsv_indep)
     }
     formul_fit_crr <- args_fit[[args_vs_i$tstsetup_fit]]$formula
+    y_nm_crr <- stdize_lhs(formul_fit_crr)$y_nm
     dat_indep_crr <- get_dat_formul(
       formul_crr = formul_fit_crr,
       needs_adj = grepl("\\.spclformul", tstsetup),
@@ -221,21 +237,39 @@ test_that(paste(
       data = dat_indep,
       offset = offs_crr,
       weights = wobs_crr,
-      y = dat_indep_crr[[stdize_lhs(formul_fit_crr)$y_nm]]
+      y = dat_indep_crr[[y_nm_crr]]
     )
-    if (prj_crr == "augdat") {
+    y_oscale_crr <- d_test_crr$y
+    if (prj_crr %in% c("latent", "augdat")) {
       if (use_fac) {
         yunqs <- yunq_chr
       } else {
         yunqs <- as.character(yunq_num)
       }
-      d_test_crr$y <- factor(
-        as.character(d_test_crr$y),
-        levels = args_ref[[args_vs_i$tstsetup_ref]]$augdat_y_unqs %||% yunqs,
-        ordered = is.ordered(d_test_crr$y)
-      )
+      if (!(prj_crr == "latent" && fam_crr == "brnll")) {
+        lvls_crr <- args_ref[[args_vs_i$tstsetup_ref]]$augdat_y_unqs
+        lvls_crr <- lvls_crr %||%
+          args_ref[[args_vs_i$tstsetup_ref]]$latent_y_unqs
+        lvls_crr <- lvls_crr %||% yunqs
+        y_oscale_crr <- factor(as.character(y_oscale_crr), levels = lvls_crr,
+                            ordered = is.ordered(y_oscale_crr))
+      }
+      if (prj_crr == "augdat") {
+        d_test_crr$y <- y_oscale_crr
+      } else if (prj_crr == "latent") {
+        if (pkg_crr == "rstanarm") {
+          post_linpred <- posterior_linpred(fits[[args_vs_i$tstsetup_fit]],
+                                            newdata = dat_indep,
+                                            offset = d_test_crr$offset)
+        } else {
+          post_linpred <- posterior_linpred(fits[[args_vs_i$tstsetup_fit]],
+                                            newdata = dat_indep)
+        }
+        d_test_crr$y <- colMeans(unname(post_linpred))
+      }
     }
-    if (fam_crr == "cumul") {
+    d_test_crr$y_oscale <- y_oscale_crr
+    if (prj_crr == "augdat" && fam_crr == "cumul") {
       warn_expected <- "non-integer #successes in a binomial glm!"
     } else if (!is.null(args_vs_i$avoid.increase)) {
       warn_expected <- warn_mclogit
@@ -299,13 +333,47 @@ test_that(paste(
       names(pl_indep_k)[names(pl_indep_k) == "lpd"] <- "lppd"
       pl_indep_k$mu <- unname(drop(pl_indep_k$mu))
       pl_indep_k$lppd <- drop(pl_indep_k$lppd)
-      if (prj_crr == "augdat") {
+      if (!is.null(refmods[[tstsetup_ref]]$family$cats)) {
         pl_indep_k$mu <- structure(as.vector(pl_indep_k$mu),
                                    class = "augvec",
                                    nobs_orig = nrow(pl_indep_k$mu))
       }
       return(pl_indep_k)
     })
+    if (prj_crr == "latent") {
+      # For getting the correct seed in proj_linpred():
+      set.seed(args_vs_i$seed)
+      p_sel_dummy <- .get_refdist(refmods[[tstsetup_ref]],
+                                  nclusters = vs_indep$nprjdraws_search)
+      # As soon as GitHub issues #168 and #211 are fixed, we can use `refit_prj
+      # = FALSE` here:
+      dat_indep_crr[[paste0(".", y_nm_crr)]] <- d_test_crr$y
+      pl_indep_lat <- proj_linpred(
+        vs_indep,
+        newdata = dat_indep_crr,
+        offsetnew = d_test_crr$offset,
+        weightsnew = d_test_crr$weights,
+        transform = FALSE,
+        integrated = TRUE,
+        .seed = NA,
+        nterms = c(0L, seq_along(vs_indep$solution_terms)),
+        nclusters = args_vs_i$nclusters_pred,
+        seed = NA
+      )
+      y_lat_mat <- matrix(d_test_crr$y, nrow = args_vs_i$nclusters_pred,
+                          ncol = nobsv_indep, byrow = TRUE)
+      summ_sub_ch_lat <- lapply(seq_along(pl_indep_lat), function(k_idx) {
+        pl_indep_k <- pl_indep_lat[[k_idx]]
+        names(pl_indep_k)[names(pl_indep_k) == "pred"] <- "mu"
+        names(pl_indep_k)[names(pl_indep_k) == "lpd"] <- "lppd"
+        pl_indep_k$mu <- unname(drop(pl_indep_k$mu))
+        pl_indep_k$lppd <- drop(pl_indep_k$lppd)
+        return(pl_indep_k)
+      })
+      summ_sub_ch <- lapply(seq_along(summ_sub_ch), function(k_idx) {
+        c(summ_sub_ch_lat[[k_idx]], list("oscale" = summ_sub_ch[[k_idx]]))
+      })
+    }
     names(summ_sub_ch) <- NULL
     expect_equal(vs_indep$summaries$sub, summ_sub_ch,
                  tolerance = .Machine$double.eps, info = tstsetup)
@@ -345,12 +413,16 @@ test_that(paste(
                                         newdata = dat_indep,
                                         offset = d_test_crr$offset)
       } else {
-        ### Currently, rstanarm issue #567 causes an error to be thrown when
-        ### calling log_lik(). Therefore, use the following dummy which
-        ### guarantees test success:
+        # Currently, rstanarm issue #567 causes an error to be thrown when
+        # calling log_lik(). Therefore, use the following dummy which guarantees
+        # test success:
         lppd_new <- matrix(vs_indep$summaries$ref$lppd,
                            nrow = nrefdraws, ncol = nobsv_indep, byrow = TRUE)
-        ###
+      }
+      if (prj_crr == "latent") {
+        mu_new_lat <- rstantools::posterior_linpred(refmods[[tstsetup_ref]]$fit,
+                                                    newdata = dat_indep,
+                                                    offset = d_test_crr$offset)
       }
     } else if (pkg_crr == "brms") {
       mu_new <- rstantools::posterior_epred(refmods[[tstsetup_ref]]$fit,
@@ -366,6 +438,10 @@ test_that(paste(
       }
       lppd_new <- rstantools::log_lik(refmods[[tstsetup_ref]]$fit,
                                       newdata = dat_indep)
+      if (prj_crr == "latent") {
+        mu_new_lat <- rstantools::posterior_linpred(refmods[[tstsetup_ref]]$fit,
+                                                    newdata = dat_indep)
+      }
     }
     if (length(dim(mu_new)) == 2) {
       mu_new <- colMeans(mu_new)
@@ -387,9 +463,26 @@ test_that(paste(
                                   class = "augvec",
                                   nobs_orig = length(summ_ref_ch$mu))
     }
+    if (prj_crr == "latent") {
+      y_lat_mat <- matrix(d_test_crr$y, nrow = nrefdraws, ncol = nobsv_indep,
+                          byrow = TRUE)
+      lppd_new_lat <- dnorm(y_lat_mat, mean = mu_new_lat,
+                            sd = refmods[[tstsetup_ref]]$dis, log = TRUE)
+      summ_ref_ch_lat <- list(
+        mu = unname(colMeans(mu_new_lat)),
+        lppd = unname(apply(lppd_new_lat, 2, log_sum_exp) - log(nrefdraws))
+      )
+      summ_ref_ch <- c(summ_ref_ch_lat, list("oscale" = summ_ref_ch))
+    }
     expect_equal(vs_indep$summaries$ref, summ_ref_ch,
                  tolerance = 1e3 * .Machine$double.eps, info = tstsetup)
     lppd_ref_ch2 <- unname(loo::elpd(lppd_new)$pointwise[, "elpd"])
+    if (prj_crr == "latent") {
+      lppd_ref_ch2_oscale <- lppd_ref_ch2
+      expect_equal(vs_indep$summaries$ref$oscale$lppd, lppd_ref_ch2_oscale,
+                   tolerance = 1e1 * .Machine$double.eps, info = tstsetup)
+      lppd_ref_ch2 <- loo::elpd(lppd_new_lat)$pointwise[, "elpd"]
+    }
     expect_equal(vs_indep$summaries$ref$lppd, lppd_ref_ch2,
                  tolerance = 1e2 * .Machine$double.eps, info = tstsetup)
   }
@@ -657,7 +750,7 @@ test_that("for forward search, `penalty` has no effect", {
   }
   for (tstsetup in tstsetups) {
     args_vs_i <- args_vs[[tstsetup]]
-    if (args_vs_i$fam_nm == "cumul") {
+    if (args_vs_i$prj_nm == "augdat" && args_vs_i$fam_nm == "cumul") {
       warn_expected <- "non-integer #successes in a binomial glm!"
     } else if (!is.null(args_vs_i$avoid.increase)) {
       warn_expected <- warn_mclogit
@@ -1058,15 +1151,15 @@ test_that("`validate_search` works", {
                     prop_as_expected,
                   info = paste(tstsetup, j, sep = "__"))
     }
-    expect_true(all(cvvs_valsearch$summary$elpd.loo >=
-                      cvvss[[tstsetup]]$summary$elpd.loo),
+    expect_true(all(summary(cvvs_valsearch)$selection$elpd.loo >=
+                      summary(cvvss[[tstsetup]])$selection$elpd.loo),
                 info = tstsetup)
     # Without a validated search, we expect overfitting in the suggested model
     # size:
-    if (!is.na(cvvs_valsearch$suggested_size) &
-        !is.na(cvvss[[tstsetup]]$suggested_size)) {
-      suggsize_cond[tstsetup] <- cvvs_valsearch$suggested_size >=
-        cvvss[[tstsetup]]$suggested_size
+    sgg_size_valsearch <- suggest_size(cvvs_valsearch, warnings = FALSE)
+    sgg_size <- suggest_size(cvvss[[tstsetup]], warnings = FALSE)
+    if (!is.na(sgg_size_valsearch) & !is.na(sgg_size)) {
+      suggsize_cond[tstsetup] <- sgg_size_valsearch >= sgg_size
     }
   }
   sum_as_unexpected <- 2L

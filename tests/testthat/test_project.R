@@ -123,7 +123,7 @@ test_that(paste(
     fam_crr <- args_vs[[tstsetup_vs]]$fam_nm
     nterms_crr <- args_prj_vs[[tstsetup]]$nterms
     if (is.null(nterms_crr)) {
-      nterms_crr <- vss[[tstsetup_vs]]$suggested_size
+      nterms_crr <- suggest_size(vss[[tstsetup_vs]], warnings = FALSE)
     }
     if (length(nterms_crr) == 1) {
       solterms_expected_crr <- vss[[tstsetup_vs]]$solution_terms[
@@ -186,7 +186,7 @@ test_that(paste(
     fam_crr <- args_cvvs[[tstsetup_cvvs]]$fam_nm
     nterms_crr <- args_prj_cvvs[[tstsetup]]$nterms
     if (is.null(nterms_crr)) {
-      nterms_crr <- cvvss[[tstsetup_cvvs]]$suggested_size
+      nterms_crr <- suggest_size(cvvss[[tstsetup_cvvs]], warnings = FALSE)
     }
     if (length(nterms_crr) == 1) {
       solterms_expected_crr <- cvvss[[tstsetup_cvvs]]$solution_terms[
@@ -280,7 +280,7 @@ test_that("non-clustered projection does not require a seed", {
     args_prj_i <- args_prj[[tstsetup]]
     p_orig <- prjs[[tstsetup]]
     rand_new1 <- runif(1) # Just to advance `.Random.seed[2]`.
-    if (args_prj_i$fam_nm == "cumul" &&
+    if (args_prj_i$prj_nm == "augdat" && args_prj_i$fam_nm == "cumul" &&
         !any(grepl("\\|", args_prj_i$solution_terms))) {
       warn_expected <- "non-integer #successes in a binomial glm!"
     } else if (!is.null(args_prj_i$avoid.increase) &&
@@ -296,7 +296,8 @@ test_that("non-clustered projection does not require a seed", {
       )),
       warn_expected
     )
-    if (args_prj_i$fam_nm == "cumul" && args_prj_i$mod_nm == "glmm") {
+    if (args_prj_i$prj_nm == "augdat" && args_prj_i$fam_nm == "cumul" &&
+        args_prj_i$mod_nm == "glmm") {
       for (idx_s in seq_along(p_new$submodl)) {
         if (!is.null(p_new$submodl[[idx_s]][["L"]])) {
           # We could also use `"sparseMatrix"` instead of `"Matrix"`:

@@ -21,13 +21,14 @@ project(
 particular, objects of class \code{refmodel}).}
 
 \item{nterms}{Only relevant if \code{object} is of class \code{vsel} (returned by
-\code{\link[=varsel]{varsel()}} or \code{\link[=cv_varsel]{cv_varsel()}}). Ignored if \code{!is.null(solution_terms)}.
-Number of terms for the submodel (the corresponding combination of
-predictor terms is taken from \code{object}). If a numeric vector, then the
-projection is performed for each element of this vector. If \code{NULL} (and
-\code{is.null(solution_terms)}), then the value suggested by the variable
-selection is taken (see function \code{\link[=suggest_size]{suggest_size()}}). Note that \code{nterms} does
-not count the intercept, so use \code{nterms = 0} for the intercept-only model.}
+\code{\link[=varsel]{varsel()}} or \code{\link[=cv_varsel]{cv_varsel()}}). Ignored if \code{!is.null(solution_terms)}. Number
+of terms for the submodel (the corresponding combination of predictor terms
+is taken from \code{object}). If a numeric vector, then the projection is
+performed for each element of this vector. If \code{NULL} (and
+\code{is.null(solution_terms)}), then the value suggested by \code{\link[=suggest_size]{suggest_size()}} is
+taken (with default arguments for \code{\link[=suggest_size]{suggest_size()}}, implying that this
+suggested size is based on the ELPD). Note that \code{nterms} does not count the
+intercept, so use \code{nterms = 0} for the intercept-only model.}
 
 \item{solution_terms}{If not \code{NULL}, then this needs to be a character vector
 of predictor terms for the submodel onto which the projection will be
@@ -84,6 +85,13 @@ modified, yielding merely a proxy.}
 terms.}
 \item{\code{submodl}}{A \code{list} containing the submodel fits (one fit per
 projected draw).}
+\item{\code{cl_ref}}{A numeric vector of length equal to the number of
+posterior draws in the reference model, containing the cluster indices of
+these draws.}
+\item{\code{wdraws_ref}}{A numeric vector of length equal to the number of
+posterior draws in the reference model, giving the weights of these
+draws. These weights should be treated as not being normalized (i.e.,
+they don't necessarily sum to \code{1}).}
 \item{\code{p_type}}{A single logical value indicating whether the
 reference model's posterior draws have been clustered for the projection
 (\code{TRUE}) or not (\code{FALSE}).}

@@ -19,10 +19,11 @@ run_cvvs <- run_vs
 # Run cv_varsel() with `validate_search = TRUE` always (`TRUE`) or just for L1
 # search (`FALSE`)?:
 run_valsearch_always <- FALSE
-# Run cv_varsel() with `validate_search = TRUE` also for the augmented-data
-# projection and the corresponding traditional setting which is used for
-# comparison? (Only relevant if `run_valsearch_always = FALSE`.):
-run_valsearch_augdat_or_compare <- FALSE
+# Run cv_varsel() with `validate_search = TRUE` also for the latent and the
+# augmented-data projection (and the corresponding traditional projection
+# settings which are used for comparison)? (Only relevant if
+# `run_valsearch_always = FALSE`.):
+run_valsearch_aug_lat <- FALSE
 # Run the `cvfits` test for all possible test setups (`TRUE`) or just for the
 # first one among the GLMMs (`FALSE`; note that if there is no GLMM available in
 # that test, the first test setup among those for K-fold CV is used)?:
@@ -175,6 +176,8 @@ fam_nms_aug_long <- c(sapply(fam_nms_aug, get_fam_long),
                       cumul = "cumulative_rstanarm")
 fam_nms_ordin_long <- c(sapply(fam_nms_ordin, get_fam_long),
                         cumul = "cumulative_rstanarm")
+fam_nms_long <- c(sapply(fam_nms, get_fam_long_full),
+                  cumul = "cumulative_rstanarm")
 # Regular expressions:
 fam_nms_aug_regex <- paste0("\\.(", paste(fam_nms_aug, collapse = "|"), ")\\.")
 fam_nms_unsupp_regex <- paste0("\\.(", paste(fam_nms_unsupp, collapse = "|"),
@@ -826,16 +829,26 @@ cvmeth_tst <- list(
   kfold = list(cv_method = "kfold", K = K_tst)
 )
 
+resp_oscale_tst <- list(
+  default_r_oscale = list(),
+  r_oscale_F = list(resp_oscale = FALSE)
+)
+
 vsel_funs <- nlist("summary.vsel", "plot.vsel", "suggest_size.vsel")
-# Performance statistics common across all families when using the traditional
-# projection:
+# Performance statistics common across all families, when using the traditional
+# projection (or the latent projection with `resp_oscale = FALSE` or the latent
+# projection with `resp_oscale = TRUE`, but the latter only in combination with
+# `<refmodel>$family$cats` being `NULL`):
 stats_common <- c("elpd", "mlpd", "mse", "rmse")
-# For creating test setups (note: `common_stats` and `binom_stats` only refer to
-# the traditional projection):
+# Performance statistics for the binomial() family only, when using the
+# traditional projection (or the latent projection with `resp_oscale = TRUE`, but
+# the latter only in combination with `<refmodel>$family$cats` being `NULL`):
+stats_binom <- c(stats_common, "acc", "auc")
+# For creating test setups:
 stats_tst <- list(
   default_stats = list(),
   common_stats = list(stats = stats_common),
-  binom_stats = list(stats = c(stats_common, "acc", "auc")),
+  binom_stats = list(stats = stats_binom),
   augdat_stats = list(stats = c("elpd", "mlpd", "acc"))
 )
 type_tst <- c("mean", "lower", "upper", "se")
@@ -883,20 +896,29 @@ args_ref <- lapply(setNames(nm = names(fits)), function(tstsetup_fit) {
     pkg_args <- list()
   }
 
-  if (!args_fit[[tstsetup_fit]]$mod_nm %in% c("gam", "gamm") &&
-      args_fit[[tstsetup_fit]]$fam_nm == "brnll") {
-    # In this case, test the augmented-data projection. For the corresponding
-    # traditional projection case (needed for comparing the two projection
-    # approaches), use the keyword `trad_compare` to be able to find this case
-    # more easily later:
+  if (args_fit[[tstsetup_fit]]$fam_nm == "brnll") {
+    # In this case, test the latent projection and the augmented-data projection
+    # (the latter only in a slightly reduced set of test setups). For the
+    # corresponding traditional projection case (needed for comparison), use the
+    # keyword `trad_compare` to be able to find this case more easily later.
     augdat_args <- list(
       trad_compare = list(),
-      augdat = list(augdat_y_unqs = c("0", "1"),
-                    augdat_link = quote(augdat_link_binom),
-                    augdat_ilink = quote(augdat_ilink_binom))
+      latent = list(latent = TRUE) # , latent_y_unqs = c("0", "1")
     )
+    if (!args_fit[[tstsetup_fit]]$mod_nm %in% c("gam", "gamm")) {
+      augdat_args <- c(augdat_args, list(
+        augdat = list(augdat_y_unqs = c("0", "1"),
+                      augdat_link = quote(augdat_link_binom),
+                      augdat_ilink = quote(augdat_ilink_binom))
+      ))
+    }
   } else if (args_fit[[tstsetup_fit]]$fam_nm %in% fam_nms_aug) {
     augdat_args <- list(augdat = list())
+    if (args_fit[[tstsetup_fit]]$fam_nm %in% "cumul") {
+      augdat_args <- c(augdat_args, list(
+        latent = list(latent = TRUE)
+      ))
+    }
   } else {
     augdat_args <- list(trad = list())
   }
@@ -940,9 +962,12 @@ if (run_vs) {
       # Here, we test the default `method` (which is L1 search here) as well as
       # forward search:
       meth <- meth_tst[setdiff(names(meth_tst), "L1")]
-    } else if (prj_crr == "trad_compare") {
+    } else if (prj_crr %in% c("trad_compare", "latent")) {
       # For traditional settings which correspond to an augmented-data setting,
-      # choose forward search (needed for comparing the two approaches):
+      # choose forward search (needed for comparing the two approaches);
+      # correspondingly, we also need forward search for the latent projection
+      # (even though in principle, the latent projection can be used with L1
+      # search):
       meth <- meth_tst["forward"]
     } else {
       # Here, we only test the default `method`:
@@ -988,7 +1013,7 @@ if (run_vs) {
   })) >= 1)
 
   vss <- lapply(args_vs, function(args_vs_i) {
-    if (args_vs_i$fam_nm == "cumul") {
+    if (args_vs_i$prj_nm == "augdat" && args_vs_i$fam_nm == "cumul") {
       warn_expected <- "non-integer #successes in a binomial glm!"
     } else if (!is.null(args_vs_i$avoid.increase)) {
       warn_expected <- warn_mclogit
@@ -1032,9 +1057,11 @@ if (run_cvvs) {
     mod_crr <- args_ref[[tstsetup_ref]]$mod_nm
     fam_crr <- args_ref[[tstsetup_ref]]$fam_nm
     prj_crr <- args_ref[[tstsetup_ref]]$prj_nm
-    if (prj_crr == "trad_compare") {
-      # For traditional settings which correspond to an augmented-data setting,
-      # choose forward search (needed for comparing the two approaches):
+    if (prj_crr %in% c("trad_compare", "latent")) {
+      # For traditional settings which correspond to an augmented-data setting
+      # (`trad_compare`), choose forward search (needed for comparing the two
+      # approaches; therefore also necessary for the `latent` setting even
+      # though in principle, the latent projection can be used with L1 search):
       meth <- meth_tst["forward"]
     } else {
       meth <- meth_tst["default_meth"]
@@ -1051,8 +1078,9 @@ if (run_cvvs) {
         # For GAMMs fitted by brms, there is a (random, i.e., only occasional)
         # reproducibility issue when using K-fold CV, so use LOO CV:
         cvmeth <- cvmeth_tst["default_cvmeth"]
-      } else if (prj_crr == "augdat" && fam_crr != "brnll") {
-        # We also want to test the augmented-data projection with LOO CV:
+      } else if (prj_crr %in% c("latent", "augdat") && fam_crr != "brnll") {
+        # We also want to test the latent and the augmented-data projection with
+        # LOO CV:
         cvmeth <- cvmeth_tst["default_cvmeth"]
       } else {
         cvmeth <- cvmeth_tst["kfold"]
@@ -1064,9 +1092,9 @@ if (run_cvvs) {
       lapply(cvmeth, function(cvmeth_i) {
         if (!run_valsearch_always && !identical(cvmeth_i$cv_method, "kfold") &&
             # Handle augmented-data and corresponding traditional projection:
-            (!prj_crr %in% c("augdat", "trad_compare") ||
-             (prj_crr %in% c("augdat", "trad_compare") &&
-              !run_valsearch_augdat_or_compare)) &&
+            (!prj_crr %in% c("latent", "augdat", "trad_compare") ||
+             (prj_crr %in% c("latent", "augdat", "trad_compare") &&
+              !run_valsearch_aug_lat)) &&
             # Forward search:
             ((length(meth_i) == 0 &&
               (mod_crr != "glm" || prj_crr == "augdat")) ||
@@ -1187,7 +1215,7 @@ if (run_prj) {
            fam_crr == "brnll" && solterms_nm_i == "solterms_xsz")
         )) ||
         (!run_more && mod_crr %in% c("glmm", "gam", "gamm")) ||
-        prj_crr %in% c("augdat", "trad_compare")
+        prj_crr %in% c("latent", "augdat", "trad_compare")
       ) {
         # The `noclust` setting is important for the test "non-clustered
         # projection does not require a seed" in `test_project.R`.
@@ -1221,7 +1249,7 @@ if (run_prj) {
   args_prj <- unlist_cust(args_prj)
 
   prjs <- lapply(args_prj, function(args_prj_i) {
-    if (args_prj_i$fam_nm == "cumul" &&
+    if (args_prj_i$prj_nm == "augdat" && args_prj_i$fam_nm == "cumul" &&
         !any(grepl("\\|", args_prj_i$solution_terms))) {
       warn_expected <- "non-integer #successes in a binomial glm!"
     } else if (!is.null(args_prj_i$avoid.increase) &&
@@ -1258,7 +1286,7 @@ cre_args_prj_vsel <- function(tstsetups_prj_vsel) {
     )
     if (args_obj[[tstsetup_vsel]]$mod_nm != "glm" ||
         !is.null(args_obj[[tstsetup_vsel]]$search_terms) ||
-        args_obj[[tstsetup_vsel]]$prj_nm == "augdat" ||
+        args_obj[[tstsetup_vsel]]$prj_nm %in% c("latent", "augdat") ||
         grepl("\\.spclformul", tstsetup_vsel)) {
       nterms_avail <- nterms_avail["subvec"]
     }
@@ -1306,8 +1334,10 @@ if (run_vs) {
     tstsetups_prj_vs,
     grep("\\.default_search_trms", names(vss), value = TRUE, invert = TRUE)
   )
-  tstsetups_prj_vs <- union(tstsetups_prj_vs,
-                            grep("\\.augdat\\.", names(vss), value = TRUE))
+  tstsetups_prj_vs <- union(
+    tstsetups_prj_vs,
+    grep("\\.(latent|augdat)\\.", names(vss), value = TRUE)
+  )
   tstsetups_prj_vs <- setNames(nm = tstsetups_prj_vs)
   stopifnot(length(tstsetups_prj_vs) > 0)
   args_prj_vs <- cre_args_prj_vsel(tstsetups_prj_vs)
@@ -1346,8 +1376,10 @@ if (run_cvvs) {
     tstsetups_prj_cvvs,
     grep("\\.default_search_trms", names(cvvss), value = TRUE, invert = TRUE)
   )
-  tstsetups_prj_cvvs <- union(tstsetups_prj_cvvs,
-                              grep("\\.augdat\\.", names(cvvss), value = TRUE))
+  tstsetups_prj_cvvs <- union(
+    tstsetups_prj_cvvs,
+    grep("\\.(latent|augdat)\\.", names(cvvss), value = TRUE)
+  )
   tstsetups_prj_cvvs <- setNames(nm = tstsetups_prj_cvvs)
   stopifnot(length(tstsetups_prj_cvvs) > 0)
   args_prj_cvvs <- cre_args_prj_vsel(tstsetups_prj_cvvs)
@@ -1398,12 +1430,13 @@ cre_args_smmry_vsel <- function(args_obj) {
   tstsetups_smmry_vsel <- tstsetups[sapply(tstsetups, function(tstsetup_vsel) {
     !is.null(args_obj[[tstsetup_vsel]]$search_terms)
   })]
-  # Choose all test setups which are for augmented-data projection or which are
-  # corresponding to such:
+  # Choose all test setups which are for the latent or the augmented-data
+  # projection or which are corresponding to such:
   tstsetups_smmry_vsel <- union(
     tstsetups_smmry_vsel,
     tstsetups[sapply(tstsetups, function(tstsetup_vsel) {
-      args_obj[[tstsetup_vsel]]$prj_nm %in% c("augdat", "trad_compare")
+      args_obj[[tstsetup_vsel]]$prj_nm %in% c("latent", "augdat",
+                                              "trad_compare")
     })]
   )
 
@@ -1435,6 +1468,7 @@ cre_args_smmry_vsel <- function(args_obj) {
     add_stats <- switch(mod_crr,
                         "glm" = switch(prj_crr,
                                        "augdat" = "augdat_stats",
+                                       "latent" = "augdat_stats",
                                        switch(fam_crr,
                                               "brnll" = "binom_stats",
                                               "binom" = "binom_stats",
@@ -1462,11 +1496,20 @@ cre_args_smmry_vsel <- function(args_obj) {
         }
       }
       lapply(nterms_tst, function(nterms_crr) {
-        return(c(
-          nlist(tstsetup_vsel), only_nonargs(args_obj[[tstsetup_vsel]]),
-          list(type = type_tst, nterms_max = nterms_crr),
-          stats_crr
-        ))
+        if (prj_crr != "latent") {
+          resp_oscale_tst <- resp_oscale_tst["default_r_oscale"]
+        }
+        lapply(resp_oscale_tst, function(resp_oscale_crr) {
+          if (isFALSE(resp_oscale_crr$resp_oscale) &&
+              any(setdiff(stats_binom, stats_common) %in% stats_crr$stats)) {
+            return("REMOVE THIS DUMMY ENTRY")
+          }
+          return(c(
+            nlist(tstsetup_vsel), only_nonargs(args_obj[[tstsetup_vsel]]),
+            list(type = type_tst, nterms_max = nterms_crr),
+            stats_crr, resp_oscale_crr
+          ))
+        })
       })
     })
   })
@@ -1477,6 +1520,7 @@ cre_args_smmry_vsel <- function(args_obj) {
 if (run_vs) {
   args_smmry_vs <- cre_args_smmry_vsel(args_vs)
   args_smmry_vs <- unlist_cust(args_smmry_vs)
+  args_smmry_vs <- rm_dummies_unlisted(args_smmry_vs)
 
   smmrys_vs <- lapply(args_smmry_vs, function(args_smmry_vs_i) {
     if (any(c("rmse", "auc") %in% args_smmry_vs_i$stats)) {
@@ -1497,6 +1541,7 @@ if (run_vs) {
 if (run_cvvs) {
   args_smmry_cvvs <- cre_args_smmry_vsel(args_cvvs)
   args_smmry_cvvs <- unlist_cust(args_smmry_cvvs)
+  args_smmry_cvvs <- rm_dummies_unlisted(args_smmry_cvvs)
 
   smmrys_cvvs <- lapply(args_smmry_cvvs, function(args_smmry_cvvs_i) {
     if (any(c("rmse", "auc") %in% args_smmry_cvvs_i$stats)) {
@@ -1517,32 +1562,27 @@ if (run_cvvs) {
 vsel_nms <- c(
   "refmodel", "search_path", "d_test", "summaries", "solution_terms", "ce",
   "nterms_max", "nterms_all", "method", "cv_method", "validate_search",
-  "clust_used_search", "clust_used_eval", "nprjdraws_search", "nprjdraws_eval",
-  "suggested_size", "summary"
+  "clust_used_search", "clust_used_eval", "nprjdraws_search", "nprjdraws_eval"
 )
 vsel_nms_cv <- c(
   "refmodel", "search_path", "d_test", "summaries", "ce", "solution_terms",
   "pct_solution_terms_cv", "nterms_all", "nterms_max", "method", "cv_method",
   "validate_search", "clust_used_search", "clust_used_eval", "nprjdraws_search",
-  "nprjdraws_eval", "suggested_size", "summary"
+  "nprjdraws_eval"
 )
 # Related to prediction (in contrast to selection):
-vsel_nms_pred <- c("summaries", "solution_terms", "ce", "suggested_size",
-                   "summary")
-vsel_nms_pred_opt <- c("solution_terms", "suggested_size")
+vsel_nms_pred <- c("summaries", "solution_terms", "ce")
+vsel_nms_pred_opt <- c("solution_terms")
 # Related to `nloo`:
-vsel_nms_cv_nloo <- c("summaries", "pct_solution_terms_cv", "suggested_size",
-                      "summary")
-vsel_nms_cv_nloo_opt <- c("pct_solution_terms_cv", "suggested_size")
+vsel_nms_cv_nloo <- c("summaries", "pct_solution_terms_cv")
+vsel_nms_cv_nloo_opt <- c("pct_solution_terms_cv")
 # Related to `validate_search`:
 vsel_nms_cv_valsearch <- c("validate_search", "summaries",
-                           "pct_solution_terms_cv", "suggested_size",
-                           "summary")
-vsel_nms_cv_valsearch_opt <- c("suggested_size")
+                           "pct_solution_terms_cv")
+vsel_nms_cv_valsearch_opt <- character()
 # Related to `cvfits`:
-vsel_nms_cv_cvfits <- c("refmodel", "summaries", "pct_solution_terms_cv",
-                        "summary", "suggested_size")
-vsel_nms_cv_cvfits_opt <- c("pct_solution_terms_cv", "suggested_size")
+vsel_nms_cv_cvfits <- c("refmodel", "summaries", "pct_solution_terms_cv")
+vsel_nms_cv_cvfits_opt <- c("pct_solution_terms_cv")
 vsel_smmrs_sub_nms <- vsel_smmrs_ref_nms <- c("mu", "lppd")
 
 ## Defaults ---------------------------------------------------------------
