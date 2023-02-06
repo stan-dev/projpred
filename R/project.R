@@ -41,7 +41,7 @@
 #'   this seed is used for clustering the reference model's posterior draws (if
 #'   `!is.null(nclusters)`) and for drawing new group-level effects when
 #'   predicting from a multilevel submodel (however, not yet in case of a GAMM)
-#'   and having global option `projpred.mlvl_prd_new` set to `TRUE`. (Such a
+#'   and having global option `projpred.mlvl_pred_new` set to `TRUE`. (Such a
 #'   prediction takes place when calculating output elements `dis` and `ce`.)
 #' @inheritParams varsel
 #' @param ... Arguments passed to [get_refmodel()] (if [get_refmodel()] is

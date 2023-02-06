@@ -59,7 +59,7 @@ results can be obtained again if needed. Passed to argument \code{seed} of
 this seed is used for clustering the reference model's posterior draws (if
 \code{!is.null(nclusters)}) and for drawing new group-level effects when
 predicting from a multilevel submodel (however, not yet in case of a GAMM)
-and having global option \code{projpred.mlvl_prd_new} set to \code{TRUE}. (Such a
+and having global option \code{projpred.mlvl_pred_new} set to \code{TRUE}. (Such a
 prediction takes place when calculating output elements \code{dis} and \code{ce}.)}
 
 \item{regul}{A number giving the amount of ridge regularization when

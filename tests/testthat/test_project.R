@@ -298,7 +298,7 @@ test_that("non-clustered projection does not require a seed", {
     )
     if (args_prj_i$mod_nm %in% c("glmm", "gamm") &&
         any(grepl("\\|", args_prj_i$solution_terms))) {
-      if (getOption("projpred.mlvl_prd_new", FALSE)) {
+      if (getOption("projpred.mlvl_pred_new", FALSE)) {
         # In this case, the multilevel submodel fitters (fit_glmer_callback(),
         # fit_gamm_callback(), fit_cumul_mlvl(), fit_categ_mlvl()) should still
         # be deterministic, but the prediction from the fitted submodels is not

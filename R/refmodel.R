@@ -379,7 +379,7 @@ NULL
 #'
 #'   In case of a multilevel reference model, group-level effects for new group
 #'   levels are drawn randomly from a (multivariate) Gaussian distribution. When
-#'   setting `projpred.mlvl_prd_new` to `TRUE`, all group levels from `newdata`
+#'   setting `projpred.mlvl_pred_new` to `TRUE`, all group levels from `newdata`
 #'   (even those that already exist in the original dataset) are treated as new
 #'   group levels (if `is.null(newdata)`, all group levels from the original
 #'   dataset are considered as new group levels in that case).
@@ -571,7 +571,7 @@ predict.refmodel <- function(object, newdata = NULL, ynew = NULL,
             fit = object$fit,
             newdata = newdata_lat,
             excl_offs = FALSE,
-            mlvl_allrandom = getOption("projpred.mlvl_prj_ref_new", FALSE)
+            mlvl_allrandom = getOption("projpred.mlvl_proj_ref_new", FALSE)
           ))
         }
       }
@@ -1051,7 +1051,7 @@ init_refmodel <- function(object, data, formula, family, ref_predfun = NULL,
     # performs some preparations for the augmented-data projection:
     ref_predfun_usr <- ref_predfun
     ref_predfun <- function(fit, newdata = NULL, excl_offs = TRUE,
-                            mlvl_allrandom = getOption("projpred.mlvl_prd_new",
+                            mlvl_allrandom = getOption("projpred.mlvl_pred_new",
                                                        FALSE)) {
       if (length(fml_extractions$group_terms) > 0 && mlvl_allrandom) {
         # Need to replace existing group levels by dummy ones to ensure that we
@@ -1164,7 +1164,7 @@ init_refmodel <- function(object, data, formula, family, ref_predfun = NULL,
       warning("Ignoring argument `ref_predfun` because `object` is `NULL`.")
     }
     ref_predfun <- function(fit, newdata = NULL, excl_offs = TRUE,
-                            mlvl_allrandom = getOption("projpred.mlvl_prd_new",
+                            mlvl_allrandom = getOption("projpred.mlvl_pred_new",
                                                        FALSE)) {
       stopifnot(is.null(fit))
       if (is.null(newdata)) {
@@ -1241,7 +1241,7 @@ init_refmodel <- function(object, data, formula, family, ref_predfun = NULL,
   if (family$for_latent) {
     y <- rowMeans(ref_predfun(
       object, excl_offs = FALSE,
-      mlvl_allrandom = getOption("projpred.mlvl_prj_ref_new", FALSE)
+      mlvl_allrandom = getOption("projpred.mlvl_proj_ref_new", FALSE)
     ))
     y_oscale <- model_data$y
     if (is.null(family$cats) &&
@@ -1352,7 +1352,7 @@ init_refmodel <- function(object, data, formula, family, ref_predfun = NULL,
   # categories (at each observation and each posterior draw).
   if (proper_model) {
     eta <- ref_predfun(
-      object, mlvl_allrandom = getOption("projpred.mlvl_prj_ref_new", FALSE)
+      object, mlvl_allrandom = getOption("projpred.mlvl_proj_ref_new", FALSE)
     )
     mu <- family$linkinv(eta)
   } else {

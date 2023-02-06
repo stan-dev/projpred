@@ -112,7 +112,7 @@ test_that("repair_re() works for GLMMs", {
   expect_identical(dim(lpreds), c(nrow(dat_new), 1L))
   lpreds <- lpreds[, 1]
 
-  if (getOption("projpred.mlvl_prd_new", FALSE)) {
+  if (getOption("projpred.mlvl_pred_new", FALSE)) {
     n_sbj <- length(unique(dat_new$sbj))
     n_grp <- length(unique(dat_new$grp))
   } else {
@@ -129,7 +129,7 @@ test_that("repair_re() works for GLMMs", {
     n = n_grp, sigma = lmm_VarCorr$grp[, , drop = FALSE],
     checkSymmetry = FALSE
   )
-  if (getOption("projpred.mlvl_prd_new", FALSE)) {
+  if (getOption("projpred.mlvl_pred_new", FALSE)) {
     ranicpts <- c(ranmulti_sbj[1, 1], rep(ranmulti_sbj[2, 1], 2)) +
       c(ranmulti_grp[1, 1], rep(ranmulti_grp[2, 1], 2))
     ranslopes <- list(
@@ -272,7 +272,7 @@ test_that("repair_re() works for multilevel cumulative() models", {
                    c(nrow(inhaler_new), nlevels(inhaler$rating) - 1L, 1L))
   lpreds <- lpreds[, , 1]
 
-  if (getOption("projpred.mlvl_prd_new", FALSE)) {
+  if (getOption("projpred.mlvl_pred_new", FALSE)) {
     n_sbj <- length(unique(inhaler_new$sbj))
     n_grp <- length(unique(inhaler_new$grp))
   } else {
@@ -289,7 +289,7 @@ test_that("repair_re() works for multilevel cumulative() models", {
     n = n_grp, sigma = oVarCorr$grp[, , drop = FALSE],
     checkSymmetry = FALSE
   )
-  if (getOption("projpred.mlvl_prd_new", FALSE)) {
+  if (getOption("projpred.mlvl_pred_new", FALSE)) {
     ranicpts <- c(ranmulti_sbj[1, 1], rep(ranmulti_sbj[2, 1], 2)) +
       c(ranmulti_grp[1, 1], rep(ranmulti_grp[2, 1], 2))
     ranslopes <- list(
@@ -577,7 +577,7 @@ test_that(paste(
   expect_identical(dim(lpreds), c(nrow(VA_new), nlats, 1L))
   lpreds <- lpreds[, , 1]
 
-  if (getOption("projpred.mlvl_prd_new", FALSE)) {
+  if (getOption("projpred.mlvl_pred_new", FALSE)) {
     n_grp <- length(unique(VA_new$grp))
   } else {
     n_grp <- 1
@@ -587,7 +587,7 @@ test_that(paste(
   ranmulti_grp <- mvtnorm::rmvnorm(
     n = n_grp, sigma = mVarCorr$grp, checkSymmetry = FALSE
   )
-  if (getOption("projpred.mlvl_prd_new", FALSE)) {
+  if (getOption("projpred.mlvl_pred_new", FALSE)) {
     ranicpts <- rbind(
       matrix(ranmulti_grp[1, grep("~1$", colnames(mVarCorr$grp))],
              nrow = 1L, ncol = nlats, byrow = TRUE),
@@ -851,7 +851,7 @@ test_that(paste(
   expect_identical(dim(lpreds), c(nrow(VA_new), nlats, 1L))
   lpreds <- lpreds[, , 1]
 
-  if (getOption("projpred.mlvl_prd_new", FALSE)) {
+  if (getOption("projpred.mlvl_pred_new", FALSE)) {
     n_sbj <- length(unique(VA_new$sbj))
     n_grp <- length(unique(VA_new$grp))
   } else {
@@ -866,7 +866,7 @@ test_that(paste(
   ranmulti_grp <- mvtnorm::rmvnorm(
     n = n_grp, sigma = mVarCorr$grp, checkSymmetry = FALSE
   )
-  if (getOption("projpred.mlvl_prd_new", FALSE)) {
+  if (getOption("projpred.mlvl_pred_new", FALSE)) {
     ranicpts <- rbind(
       matrix(ranmulti_sbj[1, grep("~1$", colnames(mVarCorr$sbj))],
              nrow = 1L, ncol = nlats, byrow = TRUE),

@@ -969,7 +969,7 @@ subprd <- function(fits, newdata) {
         ###
       )
     } else if (is_glmm) {
-      if (getOption("projpred.mlvl_prd_new", FALSE)) {
+      if (getOption("projpred.mlvl_pred_new", FALSE)) {
         re_fml_predict <- ~0
       } else {
         re_fml_predict <- NULL
@@ -1174,7 +1174,7 @@ repair_re <- function(object, newdata) {
 
 # For objects of class `merMod`, the following repair_re() method will draw the
 # random effects for new group levels from a (multivariate) Gaussian
-# distribution, but option `projpred.mlvl_prd_new` determines whether existing
+# distribution, but option `projpred.mlvl_pred_new` determines whether existing
 # group levels are also considered as new group levels.
 #
 # License/copyright notice: repair_re.merMod() is inspired by and uses code
@@ -1219,7 +1219,7 @@ repair_re.merMod <- function(object, newdata) {
   })
   # In case of duplicated levels across group variables, later code would have
   # to be adapted:
-  if (getOption("projpred.mlvl_prd_new", FALSE)) {
+  if (getOption("projpred.mlvl_pred_new", FALSE)) {
     el_nm_mer <- "new"
   } else {
     el_nm_mer <- "comb"
@@ -1240,7 +1240,7 @@ repair_re.merMod <- function(object, newdata) {
   VarCorr_tmp <- lme4::VarCorr(object)
   for (vnm in vnms) {
     lvls_new <- lvls_list[[vnm]]$new
-    if (!getOption("projpred.mlvl_prd_new", FALSE)) {
+    if (!getOption("projpred.mlvl_pred_new", FALSE)) {
       lvls_exist <- lvls_list[[vnm]]$exist
       lvls_new <- setdiff(lvls_new, lvls_exist)
       ranefs_prep$b[names(ranefs_prep$b) %in% lvls_exist] <- 0
@@ -1260,7 +1260,7 @@ repair_re.merMod <- function(object, newdata) {
 # For objects of class `clmm`, the following repair_re() method will re-use the
 # estimated random effects for existing group levels and will draw the random
 # effects for new group levels from a (multivariate) Gaussian distribution, but
-# option `projpred.mlvl_prd_new` determines whether existing group levels are
+# option `projpred.mlvl_pred_new` determines whether existing group levels are
 # also considered as new group levels.
 #
 # License/copyright notice: repair_re.clmm() is inspired by and uses code
@@ -1321,7 +1321,7 @@ repair_re.clmm <- function(object, newdata) {
   VarCorr_tmp <- ordinal::VarCorr(object)
   for (vnm in vnms) {
     lvls_new <- lvls_list[[vnm]]$new
-    if (!getOption("projpred.mlvl_prd_new", FALSE)) {
+    if (!getOption("projpred.mlvl_pred_new", FALSE)) {
       lvls_exist <- lvls_list[[vnm]]$exist
       lvls_new <- setdiff(lvls_new, lvls_exist)
     }
@@ -1340,7 +1340,7 @@ repair_re.clmm <- function(object, newdata) {
 # For objects of class `mmblogit`, the following repair_re() method will re-use
 # the estimated random effects for existing group levels and will draw the
 # random effects for new group levels from a (multivariate) Gaussian
-# distribution, but option `projpred.mlvl_prd_new` determines whether existing
+# distribution, but option `projpred.mlvl_pred_new` determines whether existing
 # group levels are also considered as new group levels.
 #
 # License/copyright notice: repair_re.mmblogit() is inspired by and uses code
@@ -1455,7 +1455,7 @@ repair_re.mmblogit <- function(object, newdata) {
   }
   for (vnm in vnms) {
     lvls_new <- lvls_list[[vnm]]$new
-    if (!getOption("projpred.mlvl_prd_new", FALSE)) {
+    if (!getOption("projpred.mlvl_pred_new", FALSE)) {
       lvls_exist <- lvls_list[[vnm]]$exist
       lvls_new <- setdiff(lvls_new, lvls_exist)
     }

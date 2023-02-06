@@ -79,7 +79,7 @@ get_dat <- function(tstsetup, dat_crr = dat, offs_ylat = 0, ...) {
     y_nm <- stdize_lhs(prjs[[tstsetup]]$refmodel$formula)$y_nm
     dat_crr[[y_nm]] <- rowMeans(prjs[[tstsetup]]$refmodel$ref_predfun(
       fit = prjs[[tstsetup]]$refmodel$fit, newdata = dat_crr, excl_offs = FALSE,
-      mlvl_allrandom = getOption("projpred.mlvl_prj_ref_new", FALSE)
+      mlvl_allrandom = getOption("projpred.mlvl_proj_ref_new", FALSE)
     ))
   }
   return(dat_crr)

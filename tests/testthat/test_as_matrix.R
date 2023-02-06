@@ -115,7 +115,7 @@ test_that("as.matrix.projection() works", {
         }
         colnms_prjmat_expect <- c(colnms_prjmat_expect,
                                   paste0("sd_z.1__", mlvl_icpt_str))
-        if (!getOption("projpred.mlvl_prd_new", FALSE)) {
+        if (!getOption("projpred.mlvl_pred_new", FALSE)) {
           if (fam_crr == "categ") {
             mlvl_r_str <- paste0("__mu", yunq_norefcat)
           } else {
@@ -132,7 +132,7 @@ test_that("as.matrix.projection() works", {
       } else if (pkg_crr == "rstanarm") {
         colnms_prjmat_expect <- c(colnms_prjmat_expect,
                                   "Sigma[z.1:(Intercept),(Intercept)]")
-        if (!getOption("projpred.mlvl_prd_new", FALSE)) {
+        if (!getOption("projpred.mlvl_pred_new", FALSE)) {
           colnms_prjmat_expect <- c(
             colnms_prjmat_expect,
             paste0("b[(Intercept) z.1:lvl", seq_len(nlvl_ran[1]), "]")
@@ -148,7 +148,7 @@ test_that("as.matrix.projection() works", {
         }
         colnms_prjmat_expect <- c(colnms_prjmat_expect,
                                   paste0("sd_z.1__", mlvl_xco_str))
-        if (!getOption("projpred.mlvl_prd_new", FALSE)) {
+        if (!getOption("projpred.mlvl_pred_new", FALSE)) {
           colnms_prjmat_expect <- c(
             colnms_prjmat_expect,
             unlist(lapply(mlvl_r_str, function(mlvl_r_str_i) {
@@ -160,7 +160,7 @@ test_that("as.matrix.projection() works", {
       } else if (pkg_crr == "rstanarm") {
         colnms_prjmat_expect <- c(colnms_prjmat_expect,
                                   "Sigma[z.1:xco.1,xco.1]")
-        if (!getOption("projpred.mlvl_prd_new", FALSE)) {
+        if (!getOption("projpred.mlvl_pred_new", FALSE)) {
           colnms_prjmat_expect <- c(
             colnms_prjmat_expect,
             paste0("b[xco.1 z.1:lvl", seq_len(nlvl_ran[1]), "]")

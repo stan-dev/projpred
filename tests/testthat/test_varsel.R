@@ -304,11 +304,11 @@ test_that(paste(
 
     ### Summaries for the submodels -------------------------------------------
 
-    if (!(getOption("projpred.mlvl_prd_new", FALSE) &&
+    if (!(getOption("projpred.mlvl_pred_new", FALSE) &&
           mod_crr %in% c("glmm", "gamm") &&
           any(grepl("\\|", solution_terms(vs_indep))))) {
       # In the negation of this case (i.e., multilevel models with option
-      # `projpred.mlvl_prd_new` being set to `TRUE`), proj_linpred() can't be
+      # `projpred.mlvl_pred_new` being set to `TRUE`), proj_linpred() can't be
       # used to calculate the reference model's performance statistics because
       # proj_linpred()'s argument `.seed` cannot be set such that the
       # .Random.seed from inside proj_linpred() at the place where the new
@@ -393,7 +393,7 @@ test_that(paste(
 
     ### Summaries for the reference model -------------------------------------
 
-    if (getOption("projpred.mlvl_prd_new", FALSE)) {
+    if (getOption("projpred.mlvl_pred_new", FALSE)) {
       dat_indep_crr$z.1 <- as.factor(paste0("NEW_", dat_indep_crr$z.1))
     }
     if (pkg_crr == "rstanarm") {

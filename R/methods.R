@@ -296,7 +296,7 @@ proj_linpred_aux <- function(proj, newdata, offset, weights, transform = FALSE,
         fit = proj$refmodel$fit,
         newdata = newdata_lat,
         excl_offs = FALSE,
-        mlvl_allrandom = getOption("projpred.mlvl_prj_ref_new", FALSE)
+        mlvl_allrandom = getOption("projpred.mlvl_proj_ref_new", FALSE)
       ))
     } else {
       ynew <- eval_lhs(formula = proj$refmodel$formula, data = newdata)
@@ -1526,7 +1526,7 @@ get_subparams.lmerMod <- function(x, ...) {
 
   subparams <- c(population_effects, group_vc)
 
-  if (!getOption("projpred.mlvl_prd_new", FALSE)) {
+  if (!getOption("projpred.mlvl_pred_new", FALSE)) {
     group_ef <- proc_ranef(lme4::ranef(x, condVar = FALSE),
                            coef_nms = lapply(group_vc_raw, rownames), ...)
     subparams <- c(subparams, group_ef)
@@ -1567,7 +1567,7 @@ get_subparams.clmm <- function(x, ...) {
 
   subparams <- c(thres, replace_population_names(x$beta, ...), group_vc)
 
-  if (!getOption("projpred.mlvl_prd_new", FALSE)) {
+  if (!getOption("projpred.mlvl_pred_new", FALSE)) {
     group_ef <- proc_ranef(ordinal::ranef(x),
                            coef_nms = lapply(group_vc_raw, rownames), ...)
     subparams <- c(subparams, group_ef)
@@ -1608,7 +1608,7 @@ get_subparams.mmblogit <- function(x, ...) {
   nms <- mknms_categ(dimnames(coefs), ...)
   subparams <- c(setNames(as.vector(coefs), nms), group_vc)
 
-  if (!getOption("projpred.mlvl_prd_new", FALSE)) {
+  if (!getOption("projpred.mlvl_pred_new", FALSE)) {
     if (utils::packageVersion("mclogit") < "0.9") {
       ncoefs_all <- length(all.vars(x$random$formula)) + 1L
     } else {

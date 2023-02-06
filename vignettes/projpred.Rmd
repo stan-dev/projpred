@@ -301,7 +301,7 @@ refm_fit <- stan_gamm4(
 )
 ```
 
-In case of multilevel models, **projpred** has two global options that may be relevant for users: `projpred.mlvl_prd_new` and `projpred.mlvl_prj_ref_new`.
+In case of multilevel models, **projpred** has two global options that may be relevant for users: `projpred.mlvl_pred_new` and `projpred.mlvl_proj_ref_new`.
 These are explained in detail in the general package documentation (available [online](https://mc-stan.org/projpred/reference/projpred-package.html) or by typing `` ?`projpred-package` ``).
 
 ## Troubleshooting
