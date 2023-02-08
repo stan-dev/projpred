@@ -841,8 +841,9 @@ vsel_funs <- nlist("summary.vsel", "plot.vsel", "suggest_size.vsel")
 # `<refmodel>$family$cats` being `NULL`):
 stats_common <- c("elpd", "mlpd", "mse", "rmse")
 # Performance statistics for the binomial() family only, when using the
-# traditional projection (or the latent projection with `resp_oscale = TRUE`, but
-# the latter only in combination with `<refmodel>$family$cats` being `NULL`):
+# traditional projection (or the latent projection with `resp_oscale = TRUE`,
+# but the latter only in combination with `<refmodel>$family$cats` being
+# `NULL`):
 stats_binom <- c(stats_common, "acc", "auc")
 # For creating test setups:
 stats_tst <- list(

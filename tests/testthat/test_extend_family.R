@@ -54,12 +54,14 @@ test_that("extend_family() works for the latent projection", {
   ilink_dummy <- identity
   for (fam_nm in fam_nms_tst) {
     if (fam_nm == "binom_latent") {
-      extfam_crr <- extend_family(binomial(),
-                                  latent = TRUE,
-                                  # latent_y_unqs = c("0", "1"),
-                                  latent_ilink = ilink_dummy,
-                                  latent_ll_oscale = latent_ll_oscale_binom_nocats,
-                                  latent_ppd_oscale = latent_ppd_oscale_binom_nocats)
+      extfam_crr <- extend_family(
+        binomial(),
+        latent = TRUE,
+        # latent_y_unqs = c("0", "1"),
+        latent_ilink = ilink_dummy,
+        latent_ll_oscale = latent_ll_oscale_binom_nocats,
+        latent_ppd_oscale = latent_ppd_oscale_binom_nocats
+      )
     } else if (fam_nm == "cumul_latent_rstanarm") {
       extfam_crr <- extend_family(get_f_cumul(),
                                   latent = TRUE,

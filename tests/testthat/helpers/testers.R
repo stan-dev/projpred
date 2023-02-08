@@ -186,8 +186,8 @@ extfam_tester <- function(extfam,
   expect_true(extfam$is_extended, info = info_str)
   el_nms_clos <- setdiff(
     extfam_nms_add,
-    c("family_oscale", "link_oscale", "refcat", "cats", "for_latent", "for_augdat",
-      "is_extended")
+    c("family_oscale", "link_oscale", "refcat", "cats", "for_latent",
+      "for_augdat", "is_extended")
   )
   for (el_nm in el_nms_clos) {
     expect_type(extfam[[el_nm]], "closure")
@@ -2107,8 +2107,9 @@ vsel_tester <- function(
     vsel_smmrs_sub_nms <- c(vsel_smmrs_sub_nms, "oscale")
     if ("wcv" %in% vsel_smmrs_sub_nms &&
         identical(cv_method_expected, "kfold")) {
-      vsel_smmrs_sub_nms[vsel_smmrs_sub_nms %in% c("wcv", "oscale")] <- c("oscale",
-                                                                        "wcv")
+      vsel_smmrs_sub_nms[vsel_smmrs_sub_nms %in% c("wcv", "oscale")] <- c(
+        "oscale", "wcv"
+      )
     }
     vsel_smmrs_ref_nms <- c(vsel_smmrs_ref_nms, "oscale")
   }
