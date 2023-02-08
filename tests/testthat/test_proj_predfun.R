@@ -85,8 +85,10 @@ test_that("repair_re() works for GLMMs", {
     Xfl3 = c(lmm_ranef$grp[as.character(dat_new_ch$grp[1]), "Xfl3"], rep(0, 2))
   )
   lpreds_orig_man <- lmm_fixef["(Intercept)"] +
-    c(lmm_ranef$sbj[as.character(dat_new_ch$sbj[1]), "(Intercept)"], rep(0, 2)) +
-    c(lmm_ranef$grp[as.character(dat_new_ch$grp[1]), "(Intercept)"], rep(0, 2)) +
+    c(lmm_ranef$sbj[as.character(dat_new_ch$sbj[1]), "(Intercept)"],
+      rep(0, 2)) +
+    c(lmm_ranef$grp[as.character(dat_new_ch$grp[1]), "(Intercept)"],
+      rep(0, 2)) +
     sapply(seq_len(nrow(dat_new_ch)), function(i) {
       drop(as.matrix(dat_new_ch[i, fixnms_b, drop = FALSE]) %*%
              (lmm_fixef[fixnms_b] + sapply(ranslopes_orig[fixnms_b], "[", i)))
