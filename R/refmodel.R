@@ -1381,13 +1381,16 @@ init_refmodel <- function(object, data, formula, family, ref_predfun = NULL,
   # Miscellaneous -----------------------------------------------------------
 
   ndraws <- ncol(mu)
+  warn_allrandom_dis <- getOption("projpred.warn_allrandom_dis", TRUE)
   if (is.null(dis)) {
     if (family$for_latent && proper_model) {
       if (!is.null(family$link_oscale)) {
         if (family$link_oscale %in% c("probit", "probit_approx")) {
           dis <- rep(1, ndraws)
+          warn_allrandom_dis <- FALSE
         } else if (family$link_oscale %in% c("logit", "logistic")) {
           dis <- rep(1.6, ndraws)
+          warn_allrandom_dis <- FALSE
         } else {
           dis <- rep(NA, ndraws)
         }
@@ -1414,6 +1417,19 @@ init_refmodel <- function(object, data, formula, family, ref_predfun = NULL,
     }
   } else {
     stopifnot(length(dis) == ndraws)
+  }
+  if (getOption("projpred.mlvl_pred_new", FALSE) && warn_allrandom_dis &&
+      !all(is.na(dis))) {
+    warning("Option `projpred.mlvl_pred_new` has been set to `TRUE`, but the ",
+            "reference model includes non-trivial dispersion parameter ",
+            "values. Since option `projpred.mlvl_pred_new` also affects the ",
+            "projected dispersion parameter values, you need to ensure ",
+            "yourself that the reference model's dispersion parameter values ",
+            "are the correct ones in the sense that they should typically ",
+            "result from integrating out group-level effects. In case of the ",
+            "latent projection, a remedy is to switch to response-scale ",
+            "analyses as they do not make use of the latent projected ",
+            "dispersion parameter values.")
   }
 
   # Equal sample (draws) weights by default:
