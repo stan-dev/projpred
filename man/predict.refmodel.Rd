@@ -87,4 +87,11 @@ response scale, or the log predictive density.
 }
 \details{
 Argument \code{weightsnew} is only relevant if \code{!is.null(ynew)}.
+
+In case of a multilevel reference model, group-level effects for new group
+levels are drawn randomly from a (multivariate) Gaussian distribution. When
+setting \code{projpred.mlvl_pred_new} to \code{TRUE}, all group levels from \code{newdata}
+(even those that already exist in the original dataset) are treated as new
+group levels (if \code{is.null(newdata)}, all group levels from the original
+dataset are considered as new group levels in that case).
 }

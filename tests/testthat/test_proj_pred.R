@@ -113,7 +113,7 @@ test_that(paste(
   skip_if_not(run_prj)
   tstsetups <- grep("\\.trad\\..*\\.clust$", names(prjs), value = TRUE)
   stopifnot(length(tstsetups) > 1)
-  pl <- proj_linpred(prjs[tstsetups])
+  pl <- proj_linpred(prjs[tstsetups], .seed = seed2_tst)
   pl_tester(pl,
             len_expected = length(tstsetups),
             ncats_nlats_expected = lapply(tstsetups, function(tstsetup) {
@@ -136,7 +136,7 @@ test_that(paste(
   for (tstsetup in tstsetups) {
     args_prj_i <- args_prj[[tstsetup]]
     pl_from_refmod <- do.call(proj_linpred, c(
-      list(object = refmods[[args_prj_i$tstsetup_ref]]),
+      list(object = refmods[[args_prj_i$tstsetup_ref]], .seed = seed2_tst),
       excl_nonargs(args_prj_i)
     ))
     pl_from_prj <- pls[[tstsetup]]
@@ -154,7 +154,7 @@ test_that(paste(
   for (tstsetup in tstsetups) {
     args_prj_i <- args_prj[[tstsetup]]
     pl_from_fit <- do.call(proj_linpred, c(
-      list(object = fits[[args_prj_i$tstsetup_fit]]),
+      list(object = fits[[args_prj_i$tstsetup_fit]], .seed = seed2_tst),
       excl_nonargs(args_prj_i),
       excl_nonargs(args_ref[[args_prj_i$tstsetup_ref]])
     ))
@@ -174,7 +174,7 @@ test_that(paste(
   for (tstsetup in tstsetups) {
     args_prj_vs_i <- args_prj_vs[[tstsetup]]
     pl_from_vsel <- do.call(proj_linpred, c(
-      list(object = vss[[args_prj_vs_i$tstsetup_vsel]]),
+      list(object = vss[[args_prj_vs_i$tstsetup_vsel]], .seed = seed2_tst),
       excl_nonargs(args_prj_vs_i)
     ))
     pl_from_prj <- pls_vs[[tstsetup]]
@@ -202,7 +202,7 @@ test_that(paste(
   for (tstsetup in tstsetups) {
     args_prj_cvvs_i <- args_prj_cvvs[[tstsetup]]
     pl_from_vsel <- do.call(proj_linpred, c(
-      list(object = cvvss[[args_prj_cvvs_i$tstsetup_vsel]]),
+      list(object = cvvss[[args_prj_cvvs_i$tstsetup_vsel]], .seed = seed2_tst),
       excl_nonargs(args_prj_cvvs_i)
     ))
     pl_from_prj <- pls_cvvs[[tstsetup]]
@@ -212,23 +212,23 @@ test_that(paste(
 
 test_that("`object` not of class \"vsel\" and missing `solution_terms` fails", {
   expect_error(
-    proj_linpred(1),
+    proj_linpred(1, .seed = seed2_tst),
     paste("^Please provide an `object` of class \"vsel\" or use argument",
           "`solution_terms`\\.$")
   )
   expect_error(
-    proj_linpred(fits[[1]]),
+    proj_linpred(fits[[1]], .seed = seed2_tst),
     paste("^Please provide an `object` of class \"vsel\" or use argument",
           "`solution_terms`\\.$")
   )
   expect_error(
-    proj_linpred(refmods[[1]]),
+    proj_linpred(refmods[[1]], .seed = seed2_tst),
     paste("^Please provide an `object` of class \"vsel\" or use argument",
           "`solution_terms`\\.$")
   )
   if (run_prj) {
     expect_error(
-      proj_linpred(c(prjs, list(dat))),
+      proj_linpred(c(prjs, list(dat)), .seed = seed2_tst),
       paste("Please provide an `object` of class \"vsel\" or use argument",
             "`solution_terms`\\.")
     )
@@ -240,14 +240,15 @@ test_that("`object` not of class \"vsel\" and missing `solution_terms` fails", {
 test_that("invalid `newdata` fails", {
   skip_if_not(run_prj)
   expect_error(
-    proj_linpred(prjs, newdata = dat[, 1]),
+    proj_linpred(prjs, newdata = dat[, 1], .seed = seed2_tst),
     "must be a data\\.frame or a matrix"
   )
   stopifnot(length(solterms_x) > 1)
   expect_error(
     proj_linpred(prjs[[head(grep("\\.glm\\.gauss.*\\.solterms_x", names(prjs)),
                             1)]],
-                 newdata = dat[, head(solterms_x, -1), drop = FALSE]),
+                 newdata = dat[, head(solterms_x, -1), drop = FALSE],
+                 .seed = seed2_tst),
     "^object '.*' not found$"
   )
 })
@@ -270,7 +271,8 @@ test_that("`newdata` and `integrated` work (even in edge cases)", {
         ncats_nlats_expected_crr <- integer()
       }
       pl_false <- proj_linpred(prjs[[tstsetup]],
-                               newdata = head(dat_crr, nobsv_crr))
+                               newdata = head(dat_crr, nobsv_crr),
+                               .seed = seed2_tst)
       pl_tester(pl_false,
                 nprjdraws_expected = ndr_ncl$nprjdraws,
                 nobsv_expected = nobsv_crr,
@@ -278,7 +280,8 @@ test_that("`newdata` and `integrated` work (even in edge cases)", {
                 info_str = paste(tstsetup, nobsv_crr, sep = "__"))
       pl_true <- proj_linpred(prjs[[tstsetup]],
                               newdata = head(dat_crr, nobsv_crr),
-                              integrated = TRUE)
+                              integrated = TRUE,
+                              .seed = seed2_tst)
       pl_tester(pl_true,
                 nprjdraws_expected = 1L,
                 nobsv_expected = nobsv_crr,
@@ -303,13 +306,15 @@ test_that("`newdata` set to the original dataset doesn't change results", {
   for (tstsetup in names(prjs)) {
     dat_crr <- get_dat(tstsetup)
     # With `transform = FALSE`:
-    pl_newdata <- proj_linpred(prjs[[tstsetup]], newdata = dat_crr)
+    pl_newdata <- proj_linpred(prjs[[tstsetup]], newdata = dat_crr,
+                               .seed = seed2_tst)
     pl_orig <- pls[[tstsetup]]
     expect_equal(pl_newdata, pl_orig, info = tstsetup)
     # With `transform = TRUE`:
     pl_newdata_t <- proj_linpred(prjs[[tstsetup]], newdata = dat_crr,
-                                 transform = TRUE)
-    pl_orig_t <- proj_linpred(prjs[[tstsetup]], transform = TRUE)
+                                 transform = TRUE, .seed = seed2_tst)
+    pl_orig_t <- proj_linpred(prjs[[tstsetup]], transform = TRUE,
+                              .seed = seed2_tst)
     expect_equal(pl_newdata_t, pl_orig_t, info = tstsetup)
   }
 })
@@ -335,7 +340,8 @@ test_that(paste(
     dat_crr <- get_dat(tstsetup)
     pl_noresp <- proj_linpred(
       prjs[[tstsetup]],
-      newdata = dat_crr[, setdiff(names(dat_crr), resp_nm)]
+      newdata = dat_crr[, setdiff(names(dat_crr), resp_nm)],
+      .seed = seed2_tst
     )
     if (args_prj[[tstsetup]]$prj_nm == "augdat") {
       ncats_nlats_expected_crr <- length(
@@ -373,7 +379,8 @@ test_that("`weightsnew` works", {
       # TODO (brms): Fix or document why this doesn't work for "brmsfit"s.
       pl_ones <- proj_linpred(prjs[[tstsetup]],
                               newdata = get_dat(tstsetup, dat_wobs_ones),
-                              weightsnew = ~ wobs_col_ones)
+                              weightsnew = ~ wobs_col_ones,
+                              .seed = seed2_tst)
       pl_tester(pl_ones,
                 nprjdraws_expected = ndr_ncl$nprjdraws,
                 ncats_nlats_expected = list(ncats_nlats_expected_crr),
@@ -382,7 +389,8 @@ test_that("`weightsnew` works", {
     if (!args_prj[[tstsetup]]$prj_nm %in% c("latent", "augdat")) {
       pl <- proj_linpred(prjs[[tstsetup]],
                          newdata = get_dat(tstsetup, dat),
-                         weightsnew = ~ wobs_col)
+                         weightsnew = ~ wobs_col,
+                         .seed = seed2_tst)
       pl_tester(pl,
                 nprjdraws_expected = ndr_ncl$nprjdraws,
                 ncats_nlats_expected = list(ncats_nlats_expected_crr),
@@ -394,7 +402,8 @@ test_that("`weightsnew` works", {
       # TODO (brms): Fix or document why this doesn't work for "brmsfit"s.
       plw <- proj_linpred(prjs[[tstsetup]],
                           newdata = get_dat(tstsetup, dat_wobs_new),
-                          weightsnew = ~ wobs_col_new)
+                          weightsnew = ~ wobs_col_new,
+                          .seed = seed2_tst)
       pl_tester(plw,
                 nprjdraws_expected = ndr_ncl$nprjdraws,
                 ncats_nlats_expected = list(ncats_nlats_expected_crr),
@@ -479,7 +488,8 @@ test_that("`offsetnew` works", {
       pl_zeros <- proj_linpred(prjs[[tstsetup]],
                                newdata = get_dat(tstsetup, dat_offs_zeros,
                                                  add_offs_dummy = add_offs_crr),
-                               offsetnew = ~ offs_col_zeros)
+                               offsetnew = ~ offs_col_zeros,
+                               .seed = seed2_tst)
       pl_tester(pl_zeros,
                 nprjdraws_expected = ndr_ncl$nprjdraws,
                 ncats_nlats_expected = list(ncats_nlats_expected_crr),
@@ -487,7 +497,8 @@ test_that("`offsetnew` works", {
     }
     pl <- proj_linpred(prjs[[tstsetup]],
                        newdata = get_dat(tstsetup, dat, offs_ylat = offs_tst),
-                       offsetnew = ~ offs_col)
+                       offsetnew = ~ offs_col,
+                       .seed = seed2_tst)
     pl_tester(pl,
               nprjdraws_expected = ndr_ncl$nprjdraws,
               ncats_nlats_expected = list(ncats_nlats_expected_crr),
@@ -500,7 +511,8 @@ test_that("`offsetnew` works", {
                             offs_ylat = dat_offs_new$offs_col_new,
                             add_offs_dummy = add_offs_crr
                           ),
-                          offsetnew = ~ offs_col_new)
+                          offsetnew = ~ offs_col_new,
+                          .seed = seed2_tst)
       pl_tester(plo,
                 nprjdraws_expected = ndr_ncl$nprjdraws,
                 ncats_nlats_expected = list(ncats_nlats_expected_crr),
@@ -614,7 +626,8 @@ test_that("`transform` works", {
       ncats_nlats_expected_crr <- integer()
     }
     pl_false <- pls[[tstsetup]]
-    pl_true <- proj_linpred(prjs[[tstsetup]], transform = TRUE)
+    pl_true <- proj_linpred(prjs[[tstsetup]], transform = TRUE,
+                            .seed = seed2_tst)
     pl_tester(pl_true,
               nprjdraws_expected = ndr_ncl$nprjdraws,
               ncats_nlats_expected = list(ncats_nlats_expected_crr),
@@ -672,6 +685,7 @@ test_that("`regul` works", {
       pl <- do.call(proj_linpred, c(
         list(object = refmods[[args_prj_i$tstsetup_ref]],
              integrated = TRUE,
+             .seed = seed2_tst,
              regul = regul_crr),
         excl_nonargs(args_prj_i)
       ))
@@ -699,12 +713,14 @@ test_that("`filter_nterms` works (for an `object` of class \"projection\")", {
     stopifnot(!nterms_avail_crr %in% nterms_unavail_crr)
     for (filter_nterms_crr in nterms_unavail_crr) {
       expect_error(proj_linpred(prjs[[tstsetup]],
-                                filter_nterms = filter_nterms_crr),
+                                filter_nterms = filter_nterms_crr,
+                                .seed = seed2_tst),
                    "Invalid `filter_nterms`\\.",
                    info = paste(tstsetup, filter_nterms_crr, sep = "__"))
     }
     pl <- proj_linpred(prjs[[tstsetup]],
-                       filter_nterms = nterms_avail_crr)
+                       filter_nterms = nterms_avail_crr,
+                       .seed = seed2_tst)
     pl_orig <- pls[[tstsetup]]
     expect_equal(pl, pl_orig, info = tstsetup)
   }
@@ -727,7 +743,8 @@ test_that(paste(
     # Unavailable number(s) of terms:
     for (filter_nterms_crr in nterms_unavail) {
       expect_error(proj_linpred(prjs_vs[[tstsetup]],
-                                filter_nterms = filter_nterms_crr),
+                                filter_nterms = filter_nterms_crr,
+                                .seed = seed2_tst),
                    "Invalid `filter_nterms`\\.",
                    info = paste(tstsetup,
                                 paste(filter_nterms_crr, collapse = ","),
@@ -740,7 +757,8 @@ test_that(paste(
     )
     for (filter_nterms_crr in nterms_avail_filter) {
       pl_crr <- proj_linpred(prjs_vs[[tstsetup]],
-                             filter_nterms = filter_nterms_crr)
+                             filter_nterms = filter_nterms_crr,
+                             .seed = seed2_tst)
       if (is.null(filter_nterms_crr)) filter_nterms_crr <- 0:nterms_max_tst
       nhits_nterms <- sum(filter_nterms_crr <= nterms_max_tst)
       pl_tester(pl_crr,
@@ -788,6 +806,7 @@ test_that(paste(
     }
     pl_args <- list(refmods[[args_prj[[tstsetup]]$tstsetup_ref]],
                     newdata = head(get_dat(tstsetup), 1),
+                    .seed = seed2_tst,
                     solution_terms = args_prj[[tstsetup]]$solution_terms,
                     nclusters = 1L,
                     seed = seed_tst)

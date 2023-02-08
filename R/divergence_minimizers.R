@@ -969,8 +969,16 @@ subprd <- function(fits, newdata) {
         ###
       )
     } else if (is_glmm) {
-      return(predict(fit, newdata = newdata, allow.new.levels = TRUE) +
-               repair_re(fit, newdata = newdata))
+      if (getOption("projpred.mlvl_pred_new", FALSE)) {
+        re_fml_predict <- ~0
+      } else {
+        re_fml_predict <- NULL
+      }
+      return(
+        predict(fit, newdata = newdata, re.form = re_fml_predict,
+                allow.new.levels = TRUE) +
+          repair_re(fit, newdata = newdata)
+      )
     } else {
       return(predict(fit, newdata = newdata))
     }
@@ -1099,12 +1107,8 @@ predict.gamm4 <- function(fit, newdata = NULL) {
 
 ## Random-effects adjustments ---------------------------------------------
 
-empty_intersection_comb <- function(x) {
-  length(intersect(x[[1]]$comb, x[[2]]$comb)) == 0
-}
-
-empty_intersection_new <- function(x) {
-  length(intersect(x[[1]]$new, x[[2]]$new)) == 0
+empty_intersection <- function(x, el_nm = "new") {
+  length(intersect(x[[1]][[el_nm]], x[[2]][[el_nm]])) == 0
 }
 
 # License/copyright notice: mkNewReTrms_man() is strongly based on (i.e., it was
@@ -1170,7 +1174,8 @@ repair_re <- function(object, newdata) {
 
 # For objects of class `merMod`, the following repair_re() method will draw the
 # random effects for new group levels from a (multivariate) Gaussian
-# distribution.
+# distribution, but option `projpred.mlvl_pred_new` determines whether existing
+# group levels are also considered as new group levels.
 #
 # License/copyright notice: repair_re.merMod() is inspired by and uses code
 # snippets from lme4:::predict.merMod() from lme4 version 1.1-28 (see
@@ -1201,15 +1206,26 @@ repair_re.merMod <- function(object, newdata) {
         stop("Could not find column `", vnm, "` in `newdata`.")
       }
     }
-    from_new <- levels(as.factor(newdata[, vnm]))
+    from_new <- unique(newdata[, vnm])
+    if (is.factor(from_new)) {
+      # Strictly speaking, this is not necessary (currently), but include it for
+      # safety reasons, in case downstream code is changed in the future (or in
+      # case the behavior of `factor`s in R is changed in general):
+      from_new <- as.character(from_new)
+    }
     list(comb = union(from_fit, from_new),
          exist = intersect(from_new, from_fit),
-         new = setdiff(from_new, from_fit))
+         new = from_new)
   })
   # In case of duplicated levels across group variables, later code would have
   # to be adapted:
+  if (getOption("projpred.mlvl_pred_new", FALSE)) {
+    el_nm_mer <- "new"
+  } else {
+    el_nm_mer <- "comb"
+  }
   if (length(lvls_list) >= 2 &&
-      !all(utils::combn(lvls_list, 2, empty_intersection_comb))) {
+      !all(utils::combn(lvls_list, 2, empty_intersection, el_nm = el_nm_mer))) {
     stop("Currently, projpred requires all variables with group-level effects ",
          "to have disjoint level sets.")
   }
@@ -1223,9 +1239,12 @@ repair_re.merMod <- function(object, newdata) {
 
   VarCorr_tmp <- lme4::VarCorr(object)
   for (vnm in vnms) {
-    lvls_exist <- lvls_list[[vnm]]$exist
     lvls_new <- lvls_list[[vnm]]$new
-    ranefs_prep$b[names(ranefs_prep$b) %in% lvls_exist] <- 0
+    if (!getOption("projpred.mlvl_pred_new", FALSE)) {
+      lvls_exist <- lvls_list[[vnm]]$exist
+      lvls_new <- setdiff(lvls_new, lvls_exist)
+      ranefs_prep$b[names(ranefs_prep$b) %in% lvls_exist] <- 0
+    }
     if (length(lvls_new) > 0) {
       ranefs_prep$b[names(ranefs_prep$b) %in% lvls_new] <- t(mvtnorm::rmvnorm(
         n = length(lvls_new),
@@ -1240,7 +1259,9 @@ repair_re.merMod <- function(object, newdata) {
 
 # For objects of class `clmm`, the following repair_re() method will re-use the
 # estimated random effects for existing group levels and will draw the random
-# effects for new group levels from a (multivariate) Gaussian distribution.
+# effects for new group levels from a (multivariate) Gaussian distribution, but
+# option `projpred.mlvl_pred_new` determines whether existing group levels are
+# also considered as new group levels.
 #
 # License/copyright notice: repair_re.clmm() is inspired by and uses code
 # snippets from lme4:::predict.merMod() from lme4 version 1.1-28 (see
@@ -1271,14 +1292,21 @@ repair_re.clmm <- function(object, newdata) {
         stop("Could not find column `", vnm, "` in `newdata`.")
       }
     }
-    from_new <- levels(as.factor(newdata[, vnm]))
+    from_new <- unique(newdata[, vnm])
+    if (is.factor(from_new)) {
+      # Strictly speaking, this is not necessary (currently), but include it for
+      # safety reasons, in case downstream code is changed in the future (or in
+      # case the behavior of `factor`s in R is changed in general):
+      from_new <- as.character(from_new)
+    }
     list(comb = union(from_fit, from_new),
-         new = setdiff(from_new, from_fit))
+         exist = intersect(from_new, from_fit),
+         new = from_new)
   })
   # In case of duplicated levels across group variables, later code would have
   # to be adapted:
   if (length(lvls_list) >= 2 &&
-      !all(utils::combn(lvls_list, 2, empty_intersection_new))) {
+      !all(utils::combn(lvls_list, 2, empty_intersection))) {
     stop("Currently, projpred requires all variables with group-level effects ",
          "to have disjoint level sets.")
   }
@@ -1293,6 +1321,10 @@ repair_re.clmm <- function(object, newdata) {
   VarCorr_tmp <- ordinal::VarCorr(object)
   for (vnm in vnms) {
     lvls_new <- lvls_list[[vnm]]$new
+    if (!getOption("projpred.mlvl_pred_new", FALSE)) {
+      lvls_exist <- lvls_list[[vnm]]$exist
+      lvls_new <- setdiff(lvls_new, lvls_exist)
+    }
     if (length(lvls_new) > 0) {
       ranefs_prep$b[names(ranefs_prep$b) %in% lvls_new] <- t(mvtnorm::rmvnorm(
         n = length(lvls_new),
@@ -1308,7 +1340,8 @@ repair_re.clmm <- function(object, newdata) {
 # For objects of class `mmblogit`, the following repair_re() method will re-use
 # the estimated random effects for existing group levels and will draw the
 # random effects for new group levels from a (multivariate) Gaussian
-# distribution.
+# distribution, but option `projpred.mlvl_pred_new` determines whether existing
+# group levels are also considered as new group levels.
 #
 # License/copyright notice: repair_re.mmblogit() is inspired by and uses code
 # snippets from lme4:::predict.merMod() from lme4 version 1.1-28 (see
@@ -1373,10 +1406,24 @@ repair_re.mmblogit <- function(object, newdata) {
     if (!vnm %in% names(newdata)) {
       stop("Could not find column `", vnm, "` in `newdata`.")
     }
-    from_new <- levels(as.factor(newdata[, vnm]))
+    from_new <- unique(newdata[, vnm])
+    if (is.factor(from_new)) {
+      # Strictly speaking, this is not necessary (currently), but include it for
+      # safety reasons, in case downstream code is changed in the future (or in
+      # case the behavior of `factor`s in R is changed in general):
+      from_new <- as.character(from_new)
+    }
     list(comb = union(from_fit, from_new),
-         new = setdiff(from_new, from_fit))
+         exist = intersect(from_new, from_fit),
+         new = from_new)
   })
+  # In case of duplicated levels across group variables, later code would have
+  # to be adapted:
+  if (length(lvls_list) >= 2 &&
+      !all(utils::combn(lvls_list, 2, empty_intersection))) {
+    stop("Currently, projpred requires all variables with group-level effects ",
+         "to have disjoint level sets.")
+  }
   # Create the lme4-type random-effects formula needed by mkNewReTrms_man():
   if (utils::packageVersion("mclogit") < "0.9") {
     re_fml <- update(object$random$formula,
@@ -1408,6 +1455,10 @@ repair_re.mmblogit <- function(object, newdata) {
   }
   for (vnm in vnms) {
     lvls_new <- lvls_list[[vnm]]$new
+    if (!getOption("projpred.mlvl_pred_new", FALSE)) {
+      lvls_exist <- lvls_list[[vnm]]$exist
+      lvls_new <- setdiff(lvls_new, lvls_exist)
+    }
     if (length(lvls_new) > 0) {
       ranefs_prep$b[names(ranefs_prep$b) %in% lvls_new] <- t(mvtnorm::rmvnorm(
         n = length(lvls_new),

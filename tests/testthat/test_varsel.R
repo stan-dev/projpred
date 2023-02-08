@@ -128,7 +128,7 @@ test_that(paste(
           args_ref[[args_vs_i$tstsetup_ref]]$latent_y_unqs
         lvls_crr <- lvls_crr %||% yunqs
         y_oscale_crr <- factor(as.character(y_oscale_crr), levels = lvls_crr,
-                            ordered = is.ordered(y_oscale_crr))
+                               ordered = is.ordered(y_oscale_crr))
       }
       if (prj_crr == "augdat") {
         d_test_crr$y <- y_oscale_crr
@@ -252,7 +252,7 @@ test_that(paste(
           args_ref[[args_vs_i$tstsetup_ref]]$latent_y_unqs
         lvls_crr <- lvls_crr %||% yunqs
         y_oscale_crr <- factor(as.character(y_oscale_crr), levels = lvls_crr,
-                            ordered = is.ordered(y_oscale_crr))
+                               ordered = is.ordered(y_oscale_crr))
       }
       if (prj_crr == "augdat") {
         d_test_crr$y <- y_oscale_crr
@@ -304,89 +304,105 @@ test_that(paste(
 
     ### Summaries for the submodels -------------------------------------------
 
-    if (!is.null(args_vs_i$avoid.increase)) {
-      warn_expected <- NA
-    }
-    # For getting the correct seed in proj_linpred():
-    set.seed(args_vs_i$seed)
-    p_sel_dummy <- .get_refdist(refmods[[tstsetup_ref]],
-                                nclusters = vs_indep$nprjdraws_search)
-    # As soon as GitHub issues #168 and #211 are fixed, we can use `refit_prj =
-    # FALSE` here:
-    expect_warning(
-      pl_indep <- proj_linpred(
-        vs_indep,
-        newdata = dat_indep_crr,
-        offsetnew = d_test_crr$offset,
-        weightsnew = d_test_crr$weights,
-        transform = TRUE,
-        integrated = TRUE,
-        .seed = NA,
-        nterms = c(0L, seq_along(vs_indep$solution_terms)),
-        nclusters = args_vs_i$nclusters_pred,
-        seed = NA
-      ),
-      warn_expected
-    )
-    summ_sub_ch <- lapply(pl_indep, function(pl_indep_k) {
-      names(pl_indep_k)[names(pl_indep_k) == "pred"] <- "mu"
-      names(pl_indep_k)[names(pl_indep_k) == "lpd"] <- "lppd"
-      pl_indep_k$mu <- unname(drop(pl_indep_k$mu))
-      pl_indep_k$lppd <- drop(pl_indep_k$lppd)
-      if (!is.null(refmods[[tstsetup_ref]]$family$cats)) {
-        pl_indep_k$mu <- structure(as.vector(pl_indep_k$mu),
-                                   class = "augvec",
-                                   nobs_orig = nrow(pl_indep_k$mu))
+    if (!(getOption("projpred.mlvl_pred_new", FALSE) &&
+          mod_crr %in% c("glmm", "gamm") &&
+          any(grepl("\\|", solution_terms(vs_indep))))) {
+      # In the negation of this case (i.e., multilevel models with option
+      # `projpred.mlvl_pred_new` being set to `TRUE`), proj_linpred() can't be
+      # used to calculate the reference model's performance statistics because
+      # proj_linpred()'s argument `.seed` cannot be set such that the
+      # .Random.seed from inside proj_linpred() at the place where the new
+      # group-level effects are drawn coincides with .Random.seed from inside
+      # varsel() at the place where the new group-level effects are drawn (not
+      # even `.seed = NA` with an appropriate preparation is possible).
+
+      if (!is.null(args_vs_i$avoid.increase)) {
+        warn_expected <- NA
       }
-      return(pl_indep_k)
-    })
-    if (prj_crr == "latent") {
       # For getting the correct seed in proj_linpred():
       set.seed(args_vs_i$seed)
       p_sel_dummy <- .get_refdist(refmods[[tstsetup_ref]],
                                   nclusters = vs_indep$nprjdraws_search)
-      # As soon as GitHub issues #168 and #211 are fixed, we can use `refit_prj
-      # = FALSE` here:
-      dat_indep_crr[[paste0(".", y_nm_crr)]] <- d_test_crr$y
-      pl_indep_lat <- proj_linpred(
-        vs_indep,
-        newdata = dat_indep_crr,
-        offsetnew = d_test_crr$offset,
-        weightsnew = d_test_crr$weights,
-        transform = FALSE,
-        integrated = TRUE,
-        .seed = NA,
-        nterms = c(0L, seq_along(vs_indep$solution_terms)),
-        nclusters = args_vs_i$nclusters_pred,
-        seed = NA
+      # As soon as GitHub issues #168 and #211 are fixed, we can use
+      # `refit_prj = FALSE` here:
+      expect_warning(
+        pl_indep <- proj_linpred(
+          vs_indep,
+          newdata = dat_indep_crr,
+          offsetnew = d_test_crr$offset,
+          weightsnew = d_test_crr$weights,
+          transform = TRUE,
+          integrated = TRUE,
+          .seed = NA,
+          nterms = c(0L, seq_along(vs_indep$solution_terms)),
+          nclusters = args_vs_i$nclusters_pred,
+          seed = NA
+        ),
+        warn_expected
       )
-      y_lat_mat <- matrix(d_test_crr$y, nrow = args_vs_i$nclusters_pred,
-                          ncol = nobsv_indep, byrow = TRUE)
-      summ_sub_ch_lat <- lapply(seq_along(pl_indep_lat), function(k_idx) {
-        pl_indep_k <- pl_indep_lat[[k_idx]]
+      summ_sub_ch <- lapply(pl_indep, function(pl_indep_k) {
         names(pl_indep_k)[names(pl_indep_k) == "pred"] <- "mu"
         names(pl_indep_k)[names(pl_indep_k) == "lpd"] <- "lppd"
         pl_indep_k$mu <- unname(drop(pl_indep_k$mu))
         pl_indep_k$lppd <- drop(pl_indep_k$lppd)
+        if (!is.null(refmods[[tstsetup_ref]]$family$cats)) {
+          pl_indep_k$mu <- structure(as.vector(pl_indep_k$mu),
+                                     class = "augvec",
+                                     nobs_orig = nrow(pl_indep_k$mu))
+        }
         return(pl_indep_k)
       })
-      summ_sub_ch <- lapply(seq_along(summ_sub_ch), function(k_idx) {
-        c(summ_sub_ch_lat[[k_idx]], list("oscale" = summ_sub_ch[[k_idx]]))
-      })
+      if (prj_crr == "latent") {
+        # For getting the correct seed in proj_linpred():
+        set.seed(args_vs_i$seed)
+        p_sel_dummy <- .get_refdist(refmods[[tstsetup_ref]],
+                                    nclusters = vs_indep$nprjdraws_search)
+        # As soon as GitHub issues #168 and #211 are fixed, we can use
+        # `refit_prj = FALSE` here:
+        dat_indep_crr[[paste0(".", y_nm_crr)]] <- d_test_crr$y
+        pl_indep_lat <- proj_linpred(
+          vs_indep,
+          newdata = dat_indep_crr,
+          offsetnew = d_test_crr$offset,
+          weightsnew = d_test_crr$weights,
+          transform = FALSE,
+          integrated = TRUE,
+          .seed = NA,
+          nterms = c(0L, seq_along(vs_indep$solution_terms)),
+          nclusters = args_vs_i$nclusters_pred,
+          seed = NA
+        )
+        y_lat_mat <- matrix(d_test_crr$y, nrow = args_vs_i$nclusters_pred,
+                            ncol = nobsv_indep, byrow = TRUE)
+        summ_sub_ch_lat <- lapply(seq_along(pl_indep_lat), function(k_idx) {
+          pl_indep_k <- pl_indep_lat[[k_idx]]
+          names(pl_indep_k)[names(pl_indep_k) == "pred"] <- "mu"
+          names(pl_indep_k)[names(pl_indep_k) == "lpd"] <- "lppd"
+          pl_indep_k$mu <- unname(drop(pl_indep_k$mu))
+          pl_indep_k$lppd <- drop(pl_indep_k$lppd)
+          return(pl_indep_k)
+        })
+        summ_sub_ch <- lapply(seq_along(summ_sub_ch), function(k_idx) {
+          c(summ_sub_ch_lat[[k_idx]], list("oscale" = summ_sub_ch[[k_idx]]))
+        })
+      }
+      names(summ_sub_ch) <- NULL
+      expect_equal(vs_indep$summaries$sub, summ_sub_ch,
+                   tolerance = .Machine$double.eps, info = tstsetup)
     }
-    names(summ_sub_ch) <- NULL
-    expect_equal(vs_indep$summaries$sub, summ_sub_ch,
-                 tolerance = .Machine$double.eps, info = tstsetup)
 
     ### Summaries for the reference model -------------------------------------
 
+    if (getOption("projpred.mlvl_pred_new", FALSE)) {
+      dat_indep_crr$z.1 <- as.factor(paste0("NEW_", dat_indep_crr$z.1))
+    }
     if (pkg_crr == "rstanarm") {
       mu_new <- rstantools::posterior_epred(refmods[[tstsetup_ref]]$fit,
-                                            newdata = dat_indep,
+                                            newdata = dat_indep_crr,
                                             offset = d_test_crr$offset)
       if (fam_crr == "cumul") {
         eta_new <- rstantools::posterior_linpred(refmods[[tstsetup_ref]]$fit,
-                                                 newdata = dat_indep,
+                                                 newdata = dat_indep_crr,
                                                  offset = d_test_crr$offset)
         # The following shows that in case of an rstanarm::stan_polr() fit,
         # rstantools::posterior_epred() returns the linear predictors with a
@@ -410,7 +426,7 @@ test_that(paste(
       }
       if (grepl("\\.without_wobs", tstsetup)) {
         lppd_new <- rstantools::log_lik(refmods[[tstsetup_ref]]$fit,
-                                        newdata = dat_indep,
+                                        newdata = dat_indep_crr,
                                         offset = d_test_crr$offset)
       } else {
         # Currently, rstanarm issue #567 causes an error to be thrown when
@@ -421,12 +437,21 @@ test_that(paste(
       }
       if (prj_crr == "latent") {
         mu_new_lat <- rstantools::posterior_linpred(refmods[[tstsetup_ref]]$fit,
-                                                    newdata = dat_indep,
+                                                    newdata = dat_indep_crr,
                                                     offset = d_test_crr$offset)
       }
     } else if (pkg_crr == "brms") {
+      expr_seed <- expression({
+        set.seed(seed2_tst)
+        kfold_seed_dummy <- sample.int(.Machine$integer.max, 1)
+        refprd_seed_dummy <- sample.int(.Machine$integer.max, 1)
+        set.seed(refprd_seed_dummy)
+      })
+      eval(expr_seed)
       mu_new <- rstantools::posterior_epred(refmods[[tstsetup_ref]]$fit,
-                                            newdata = dat_indep)
+                                            newdata = dat_indep_crr,
+                                            allow_new_levels = TRUE,
+                                            sample_new_levels = "gaussian")
       if (fam_crr == "binom") {
         # Compared to rstanarm, brms uses a different convention for the
         # binomial family: The values returned by posterior_epred() are not
@@ -436,11 +461,19 @@ test_that(paste(
         mu_new <- mu_new / matrix(wobs_indep, nrow = nrow(mu_new),
                                   ncol = ncol(mu_new), byrow = TRUE)
       }
+      eval(expr_seed)
       lppd_new <- rstantools::log_lik(refmods[[tstsetup_ref]]$fit,
-                                      newdata = dat_indep)
+                                      newdata = dat_indep_crr,
+                                      allow_new_levels = TRUE,
+                                      sample_new_levels = "gaussian")
       if (prj_crr == "latent") {
-        mu_new_lat <- rstantools::posterior_linpred(refmods[[tstsetup_ref]]$fit,
-                                                    newdata = dat_indep)
+        eval(expr_seed)
+        mu_new_lat <- rstantools::posterior_linpred(
+          refmods[[tstsetup_ref]]$fit,
+          newdata = dat_indep_crr,
+          allow_new_levels = TRUE,
+          sample_new_levels = "gaussian"
+        )
       }
     }
     if (length(dim(mu_new)) == 2) {

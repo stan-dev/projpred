@@ -184,7 +184,7 @@ if (run_vs) {
 ### From "proj_list" ------------------------------------------------------
 
 if (run_vs) {
-  pls_vs_datafit <- lapply(prjs_vs_datafit, proj_linpred)
+  pls_vs_datafit <- lapply(prjs_vs_datafit, proj_linpred, .seed = seed2_tst)
   pps_vs_datafit <- lapply(prjs_vs_datafit, proj_predict, .seed = seed2_tst)
 }
 
@@ -418,7 +418,8 @@ test_that(paste(
         tail(nobsv_tst, 1)
       ),
       weightsnew = ~ wobs_col,
-      filter_nterms = nterms_crr[1]
+      filter_nterms = nterms_crr[1],
+      .seed = seed2_tst
     )
     pl_tester(pl_with_args,
               len_expected = 1L,
@@ -693,8 +694,8 @@ test_that(paste(
     expect_warning(
       pred1 <- proj_linpred(vs,
                             newdata = data.frame(x = x, weights = weights),
-                            nterms = 0:nterms, transform = FALSE,
-                            refit_prj = FALSE),
+                            transform = FALSE, .seed = seed2_tst,
+                            nterms = 0:nterms, refit_prj = FALSE),
       paste("^Currently, `refit_prj = FALSE` requires some caution, see GitHub",
             "issues #168 and #211\\.$"),
       info = fam$family

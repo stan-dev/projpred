@@ -172,14 +172,9 @@ test_that(paste(
         dat_crr$projpred_internal_offs_stanreg <- 0
       }
       y_nm <- stdize_lhs(refmods[[tstsetup]]$formula)$y_nm
-      # Use `ref_predfun_usr` here (instead of `ref_predfun`) to include
-      # offsets:
-      refprd_with_offs <- get(
-        "ref_predfun_usr",
-        envir = environment(refmods[[tstsetup]]$ref_predfun)
-      )
-      y_crr_link <- rowMeans(unname(
-        refprd_with_offs(fit = refmods[[tstsetup]]$fit, newdata = dat_crr)
+      y_crr_link <- rowMeans(refmods[[tstsetup]]$ref_predfun(
+        fit = refmods[[tstsetup]]$fit, newdata = dat_crr, excl_offs = FALSE,
+        mlvl_allrandom = getOption("projpred.mlvl_proj_ref_new", FALSE)
       ))
     } else {
       y_crr_link <- y_crr

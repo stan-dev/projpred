@@ -296,15 +296,42 @@ test_that("non-clustered projection does not require a seed", {
       )),
       warn_expected
     )
-    if (args_prj_i$prj_nm == "augdat" && args_prj_i$fam_nm == "cumul" &&
-        args_prj_i$mod_nm == "glmm") {
-      for (idx_s in seq_along(p_new$submodl)) {
-        if (!is.null(p_new$submodl[[idx_s]][["L"]])) {
-          # We could also use `"sparseMatrix"` instead of `"Matrix"`:
-          expect_equal(as(p_new$submodl[[idx_s]][["L"]], "Matrix"),
-                       as(p_orig$submodl[[idx_s]][["L"]], "Matrix"),
-                       info = tstsetup)
-          p_new$submodl[[idx_s]][["L"]] <- p_orig$submodl[[idx_s]][["L"]]
+    if (args_prj_i$mod_nm %in% c("glmm", "gamm") &&
+        any(grepl("\\|", args_prj_i$solution_terms))) {
+      if (getOption("projpred.mlvl_pred_new", FALSE)) {
+        # In this case, the multilevel submodel fitters (fit_glmer_callback(),
+        # fit_gamm_callback(), fit_cumul_mlvl(), fit_categ_mlvl()) should still
+        # be deterministic, but the prediction from the fitted submodels is not
+        # (because of the group-level effects drawn randomly by repair_re() (for
+        # all group levels; here, only the existing ones are relevant)). Thus,
+        # we cannot test the whole project() output, but need to restrict
+        # ourselves to the output of as.matrix.projection().
+        if (args_prj_i$mod_nm == "gamm") {
+          # Skipping GAMMs because of issue #131.
+          # TODO (GAMMs): Fix this.
+          next
+        }
+        prjmat_orig <- as.matrix(p_orig)
+        prjmat_new <- as.matrix(p_new)
+        if (args_prj_i$fam_nm == "gauss" || args_prj_i$prj_nm == "latent") {
+          # The projected dispersion parameter is affected by the group-level
+          # effects drawn randomly by repair_re() (for all group levels):
+          prjmat_new[, "sigma"] <- prjmat_orig[, "sigma"]
+        }
+        expect_equal(prjmat_new, prjmat_orig, info = tstsetup,
+                     tolerance = .Machine$double.eps)
+        # To facilitate the `if` conditions here:
+        p_new <- p_orig
+      } else if (args_prj_i$prj_nm == "augdat" &&
+                 args_prj_i$fam_nm == "cumul" && args_prj_i$mod_nm == "glmm") {
+        for (idx_s in seq_along(p_new$submodl)) {
+          if (!is.null(p_new$submodl[[idx_s]][["L"]])) {
+            # We could also use `"sparseMatrix"` instead of `"Matrix"`:
+            expect_equal(as(p_new$submodl[[idx_s]][["L"]], "Matrix"),
+                         as(p_orig$submodl[[idx_s]][["L"]], "Matrix"),
+                         info = tstsetup)
+            p_new$submodl[[idx_s]][["L"]] <- p_orig$submodl[[idx_s]][["L"]]
+          }
         }
       }
     }

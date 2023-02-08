@@ -46,7 +46,7 @@
 #'   multilevel submodel (however, not yet in case of a GAMM) and for drawing
 #'   from the predictive distributions of the submodel(s) in case of
 #'   [proj_predict()]. If a clustered projection was performed, then in
-#'   [proj_predict()], `.seed` is also used for drawing from the set of the
+#'   [proj_predict()], `.seed` is also used for drawing from the set of
 #'   projected clusters of posterior draws (see argument `nresample_clusters`).
 #' @param resp_oscale Only relevant for the latent projection. A single logical
 #'   value indicating whether to draw from the posterior-projection predictive
@@ -292,9 +292,12 @@ proj_linpred_aux <- function(proj, newdata, offset, weights, transform = FALSE,
         newdata_lat <- proj$refmodel$fetch_data()
         newdata_lat$projpred_internal_offs_stanreg <- offset
       }
-      ynew <- rowMeans(proj$refmodel$ref_predfun(fit = proj$refmodel$fit,
-                                                 newdata = newdata_lat,
-                                                 excl_offs = FALSE))
+      ynew <- rowMeans(proj$refmodel$ref_predfun(
+        fit = proj$refmodel$fit,
+        newdata = newdata_lat,
+        excl_offs = FALSE,
+        mlvl_allrandom = getOption("projpred.mlvl_proj_ref_new", FALSE)
+      ))
     } else {
       ynew <- eval_lhs(formula = proj$refmodel$formula, data = newdata)
     }
@@ -1521,10 +1524,15 @@ get_subparams.lmerMod <- function(x, ...) {
   group_vc <- proc_VarCorr(group_vc_raw,
                            coef_nms = lapply(group_vc_raw, rownames), ...)
 
-  group_ef <- proc_ranef(lme4::ranef(x, condVar = FALSE),
-                         coef_nms = lapply(group_vc_raw, rownames), ...)
+  subparams <- c(population_effects, group_vc)
 
-  return(c(population_effects, group_vc, group_ef))
+  if (!getOption("projpred.mlvl_pred_new", FALSE)) {
+    group_ef <- proc_ranef(lme4::ranef(x, condVar = FALSE),
+                           coef_nms = lapply(group_vc_raw, rownames), ...)
+    subparams <- c(subparams, group_ef)
+  }
+
+  return(subparams)
 }
 
 #' @noRd
@@ -1557,10 +1565,15 @@ get_subparams.clmm <- function(x, ...) {
   group_vc <- proc_VarCorr(group_vc_raw,
                            coef_nms = lapply(group_vc_raw, rownames), ...)
 
-  group_ef <- proc_ranef(ordinal::ranef(x),
-                         coef_nms = lapply(group_vc_raw, rownames), ...)
+  subparams <- c(thres, replace_population_names(x$beta, ...), group_vc)
 
-  return(c(thres, replace_population_names(x$beta, ...), group_vc, group_ef))
+  if (!getOption("projpred.mlvl_pred_new", FALSE)) {
+    group_ef <- proc_ranef(ordinal::ranef(x),
+                           coef_nms = lapply(group_vc_raw, rownames), ...)
+    subparams <- c(subparams, group_ef)
+  }
+
+  return(subparams)
 }
 
 #' @noRd
@@ -1592,24 +1605,29 @@ get_subparams.mmblogit <- function(x, ...) {
   group_vc <- proc_VarCorr(group_vc_raw, nms_lats = colnames(x$D),
                            coef_nms = lapply(group_vc_raw, rownames), ...)
 
-  if (utils::packageVersion("mclogit") < "0.9") {
-    ncoefs_all <- length(all.vars(x$random$formula)) + 1L
-  } else {
-    ncoefs_all <- sapply(
-      setNames(x$random, names(x$groups)),
-      function(re_info_i) {
-        length(all.vars(re_info_i$formula)) + 1L
-      }
-    )
-  }
-  group_ef <- proc_ranef(setNames(x$random.effects, names(x$groups)),
-                         nms_lats = colnames(x$D),
-                         ncoefs = ncoefs_all,
-                         grps_lvls = lapply(x$groups, levels),
-                         coef_nms = lapply(group_vc_raw, rownames), ...)
-
   nms <- mknms_categ(dimnames(coefs), ...)
-  return(c(setNames(as.vector(coefs), nms), group_vc, group_ef))
+  subparams <- c(setNames(as.vector(coefs), nms), group_vc)
+
+  if (!getOption("projpred.mlvl_pred_new", FALSE)) {
+    if (utils::packageVersion("mclogit") < "0.9") {
+      ncoefs_all <- length(all.vars(x$random$formula)) + 1L
+    } else {
+      ncoefs_all <- sapply(
+        setNames(x$random, names(x$groups)),
+        function(re_info_i) {
+          length(all.vars(re_info_i$formula)) + 1L
+        }
+      )
+    }
+    group_ef <- proc_ranef(setNames(x$random.effects, names(x$groups)),
+                           nms_lats = colnames(x$D),
+                           ncoefs = ncoefs_all,
+                           grps_lvls = lapply(x$groups, levels),
+                           coef_nms = lapply(group_vc_raw, rownames), ...)
+    subparams <- c(subparams, group_ef)
+  }
+
+  return(subparams)
 }
 
 #' Extract projected parameter draws

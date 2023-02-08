@@ -77,14 +77,9 @@ get_dat <- function(tstsetup, dat_crr = dat, offs_ylat = 0, ...) {
       dat_crr$projpred_internal_offs_stanreg <- offs_ylat
     }
     y_nm <- stdize_lhs(prjs[[tstsetup]]$refmodel$formula)$y_nm
-    # Use `ref_predfun_usr` here (instead of `ref_predfun`) to include
-    # offsets:
-    refprd_with_offs <- get(
-      "ref_predfun_usr",
-      envir = environment(prjs[[tstsetup]]$refmodel$ref_predfun)
-    )
-    dat_crr[[y_nm]] <- rowMeans(unname(
-      refprd_with_offs(fit = prjs[[tstsetup]]$refmodel$fit, newdata = dat_crr)
+    dat_crr[[y_nm]] <- rowMeans(prjs[[tstsetup]]$refmodel$ref_predfun(
+      fit = prjs[[tstsetup]]$refmodel$fit, newdata = dat_crr, excl_offs = FALSE,
+      mlvl_allrandom = getOption("projpred.mlvl_proj_ref_new", FALSE)
     ))
   }
   return(dat_crr)

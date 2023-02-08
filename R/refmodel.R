@@ -377,6 +377,13 @@ NULL
 #'
 #' @details Argument `weightsnew` is only relevant if `!is.null(ynew)`.
 #'
+#'   In case of a multilevel reference model, group-level effects for new group
+#'   levels are drawn randomly from a (multivariate) Gaussian distribution. When
+#'   setting `projpred.mlvl_pred_new` to `TRUE`, all group levels from `newdata`
+#'   (even those that already exist in the original dataset) are treated as new
+#'   group levels (if `is.null(newdata)`, all group levels from the original
+#'   dataset are considered as new group levels in that case).
+#'
 #' @return In the following, \eqn{N}, \eqn{C_{\mathrm{cat}}}{C_cat}, and
 #'   \eqn{C_{\mathrm{lat}}}{C_lat} from help topic [refmodel-init-get] are used.
 #'   Furthermore, let \eqn{C} denote either \eqn{C_{\mathrm{cat}}}{C_cat} (if
@@ -560,9 +567,12 @@ predict.refmodel <- function(object, newdata = NULL, ynew = NULL,
             newdata_lat <- object$fetch_data()
             newdata_lat$projpred_internal_offs_stanreg <- offsetnew
           }
-          ynew <- rowMeans(object$ref_predfun(fit = object$fit,
-                                              newdata = newdata_lat,
-                                              excl_offs = FALSE))
+          ynew <- rowMeans(object$ref_predfun(
+            fit = object$fit,
+            newdata = newdata_lat,
+            excl_offs = FALSE,
+            mlvl_allrandom = getOption("projpred.mlvl_proj_ref_new", FALSE)
+          ))
         }
       }
       loglik <- object$family$ll_fun(
@@ -1019,11 +1029,15 @@ init_refmodel <- function(object, data, formula, family, ref_predfun = NULL,
     }
     if (family$for_augdat && family$family == "binomial") {
       ref_predfun_mat <- ref_predfun
-      ref_predfun <- function(fit, newdata = NULL) {
+      # The assignment to a dummy object is just needed to avoid a `NOTE` in `R
+      # CMD check`, namely "init_refmodel: multiple local function definitions
+      # for 'ref_predfun' with different formal arguments":
+      ref_predfun_dummy <- function(fit, newdata = NULL) {
         linpred1 <- ref_predfun_mat(fit = fit, newdata = newdata)
         linpred1 <- t(linpred1)
         return(array(linpred1, dim = c(dim(linpred1), 1L)))
       }
+      ref_predfun <- ref_predfun_dummy
     }
     # Since posterior_linpred() is supposed to include any offsets, but in
     # general (i.e., in the default case `excl_offs = TRUE`, see below),
@@ -1032,9 +1046,87 @@ init_refmodel <- function(object, data, formula, family, ref_predfun = NULL,
     # some ordinal families). This is done here by defining the final
     # ref_predfun() as a wrapper function around the user-supplied (or
     # automatically derived) preliminary ref_predfun(). This wrapper function
-    # also performs some preparations for the augmented-data projection:
+    # also ensures that in the case `mlvl_allrandom = TRUE`, we draw new
+    # group-level effects for *all* group levels (existing and new ones) and
+    # performs some preparations for the augmented-data projection:
     ref_predfun_usr <- ref_predfun
-    ref_predfun <- function(fit, newdata = NULL, excl_offs = TRUE) {
+    ref_predfun <- function(fit, newdata = NULL, excl_offs = TRUE,
+                            mlvl_allrandom = getOption("projpred.mlvl_pred_new",
+                                                       FALSE)) {
+      if (length(fml_extractions$group_terms) > 0 && mlvl_allrandom) {
+        # Need to replace existing group levels by dummy ones to ensure that we
+        # draw new group-level effects for *all* group levels (existing and new
+        # ones):
+        if (is.null(newdata)) newdata <- data
+        vnms <- flatten_group_terms(fml_extractions$group_terms)
+        vnms <- sub("^.*\\|[[:blank:]]*", "", vnms)
+        vnms <- sub("[[:blank:]]*\\)$", "", vnms)
+        lvls_list <- lapply(setNames(nm = vnms), function(vnm) {
+          if (!vnm %in% names(data)) {
+            stop("Could not find column `", vnm, "` in `data`.")
+          }
+          if (!vnm %in% names(newdata)) {
+            stop("Could not find column `", vnm, "` in `newdata`.")
+          }
+          from_fit <- unique(data[, vnm])
+          from_new <- unique(newdata[, vnm])
+
+          # Strictly speaking, this is not necessary (currently), but include it
+          # for safety reasons, in case downstream code is changed in the future
+          # (or in case the behavior of `factor`s in R is changed in general):
+          if (is.factor(from_fit)) {
+            from_fit <- as.character(from_fit)
+          }
+          if (is.factor(from_new)) {
+            from_new <- as.character(from_new)
+          }
+
+          list(comb = union(from_fit, from_new),
+               exist = from_fit,
+               new = from_new)
+        })
+        for (vnm in vnms) {
+          ex_lvl <- newdata[[vnm]] %in% lvls_list[[vnm]]$exist
+          if (is.numeric(newdata[[vnm]])) {
+            stopifnot(is.numeric(data[[vnm]]))
+            if (!all(lvls_list[[vnm]]$exist >= 0)) {
+              stop("In case of a numeric group variable, projpred requires ",
+                   "this to have values >= 0.")
+            }
+            newdata[[vnm]][ex_lvl] <- max(lvls_list[[vnm]]$comb) + 1L +
+              newdata[[vnm]][ex_lvl]
+          } else if (is.character(newdata[[vnm]]) ||
+                     is.factor(newdata[[vnm]])) {
+            timestamp <- gsub("\\.", "", as.character(as.numeric(Sys.time())))
+            dummy_lvls_ex <- paste("projpred_DUMMY", timestamp,
+                                   newdata[[vnm]][ex_lvl], sep = "_")
+            if (is.factor(newdata[[vnm]])) {
+              orig_lvls <- levels(newdata[[vnm]])
+              orig_ord <- is.ordered(newdata[[vnm]])
+              newdata[[vnm]] <- as.character(newdata[[vnm]])
+            } else {
+              orig_lvls <- NULL
+              orig_ord <- NULL
+            }
+            dummy_lvls <- unique(dummy_lvls_ex)
+            if (any(dummy_lvls %in% lvls_list[[vnm]]$comb)) {
+              stop("Need to assign dummy levels to existing group levels of ",
+                   "variable `", vnm, "`, but encountered a conflict. Please ",
+                   "try again or rename the group levels.")
+            }
+            newdata[[vnm]][ex_lvl] <- dummy_lvls_ex
+            if (!is.null(orig_lvls) && !is.null(orig_ord)) {
+              newdata[[vnm]] <- factor(newdata[[vnm]],
+                                       levels = c(orig_lvls, dummy_lvls),
+                                       ordered = orig_ord)
+            }
+          } else {
+            stop("Unknown type of group variable. Please use factor, ",
+                 "character, or numeric.")
+          }
+        }
+      }
+
       linpred_out <- ref_predfun_usr(fit = fit, newdata = newdata)
       if (length(dim(linpred_out)) == 2) {
         n_obs <- nrow(linpred_out)
@@ -1071,7 +1163,9 @@ init_refmodel <- function(object, data, formula, family, ref_predfun = NULL,
     if (!is.null(ref_predfun)) {
       warning("Ignoring argument `ref_predfun` because `object` is `NULL`.")
     }
-    ref_predfun <- function(fit, newdata = NULL, excl_offs = TRUE) {
+    ref_predfun <- function(fit, newdata = NULL, excl_offs = TRUE,
+                            mlvl_allrandom = getOption("projpred.mlvl_pred_new",
+                                                       FALSE)) {
       stopifnot(is.null(fit))
       if (is.null(newdata)) {
         return(matrix(rep(NA_real_, nrow(data))))
@@ -1145,7 +1239,10 @@ init_refmodel <- function(object, data, formula, family, ref_predfun = NULL,
   weights <- model_data$weights
   offset <- model_data$offset
   if (family$for_latent) {
-    y <- rowMeans(ref_predfun(object, excl_offs = FALSE))
+    y <- rowMeans(ref_predfun(
+      object, excl_offs = FALSE,
+      mlvl_allrandom = getOption("projpred.mlvl_proj_ref_new", FALSE)
+    ))
     y_oscale <- model_data$y
     if (is.null(family$cats) &&
         (is.factor(y_oscale) || is.character(y_oscale) ||
@@ -1254,7 +1351,9 @@ init_refmodel <- function(object, data, formula, family, ref_predfun = NULL,
   # augmented-rows matrix containing the probabilities for each of the response
   # categories (at each observation and each posterior draw).
   if (proper_model) {
-    eta <- ref_predfun(object)
+    eta <- ref_predfun(
+      object, mlvl_allrandom = getOption("projpred.mlvl_proj_ref_new", FALSE)
+    )
     mu <- family$linkinv(eta)
   } else {
     if (family$family != "binomial") {
@@ -1282,13 +1381,16 @@ init_refmodel <- function(object, data, formula, family, ref_predfun = NULL,
   # Miscellaneous -----------------------------------------------------------
 
   ndraws <- ncol(mu)
+  warn_allrandom_dis <- getOption("projpred.warn_allrandom_dis", TRUE)
   if (is.null(dis)) {
     if (family$for_latent && proper_model) {
       if (!is.null(family$link_oscale)) {
         if (family$link_oscale %in% c("probit", "probit_approx")) {
           dis <- rep(1, ndraws)
+          warn_allrandom_dis <- FALSE
         } else if (family$link_oscale %in% c("logit", "logistic")) {
           dis <- rep(1.6, ndraws)
+          warn_allrandom_dis <- FALSE
         } else {
           dis <- rep(NA, ndraws)
         }
@@ -1315,6 +1417,19 @@ init_refmodel <- function(object, data, formula, family, ref_predfun = NULL,
     }
   } else {
     stopifnot(length(dis) == ndraws)
+  }
+  if (getOption("projpred.mlvl_pred_new", FALSE) && warn_allrandom_dis &&
+      !all(is.na(dis))) {
+    warning("Option `projpred.mlvl_pred_new` has been set to `TRUE`, but the ",
+            "reference model includes non-trivial dispersion parameter ",
+            "values. Since option `projpred.mlvl_pred_new` also affects the ",
+            "projected dispersion parameter values, you need to ensure ",
+            "yourself that the reference model's dispersion parameter values ",
+            "are the correct ones in the sense that they should typically ",
+            "result from integrating out group-level effects. In case of the ",
+            "latent projection, a remedy is to switch to response-scale ",
+            "analyses as they do not make use of the latent projected ",
+            "dispersion parameter values.")
   }
 
   # Equal sample (draws) weights by default:
