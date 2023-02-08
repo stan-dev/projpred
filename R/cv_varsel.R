@@ -679,7 +679,7 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
   if (formula_contains_group_terms(refmodel$formula) &&
       getOption("projpred.mlvl_pred_new", FALSE)) {
     # Need to use `mlvl_allrandom = TRUE` (`mu_offs` is based on
-    # `mlvl_allrandom = FALSE`):
+    # `mlvl_allrandom = getOption("projpred.mlvl_proj_ref_new", FALSE)`):
     eta_offs_mlvlRan <- refmodel$ref_predfun(refmodel$fit, excl_offs = FALSE)
     mu_offs_mlvlRan <- refmodel$family$linkinv(eta_offs_mlvlRan)
   } else {
@@ -710,7 +710,7 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
     if (formula_contains_group_terms(refmodel$formula) &&
         getOption("projpred.mlvl_pred_new", FALSE)) {
       # Need to use `mlvl_allrandom = TRUE` (`loo_ref_oscale` is based on
-      # `mlvl_allrandom = FALSE`):
+      # `mlvl_allrandom = getOption("projpred.mlvl_proj_ref_new", FALSE)`):
       loglik_mlvlRan <- t(refmodel$family$ll_fun(
         mu_offs_mlvlRan, dis, refmodel$y, refmodel$wobs
       ))
@@ -724,7 +724,7 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
     if (formula_contains_group_terms(refmodel$formula) &&
         getOption("projpred.mlvl_pred_new", FALSE)) {
       # Need to use `mlvl_allrandom = TRUE` (`mu_offs_oscale` is based on
-      # `mlvl_allrandom = FALSE`):
+      # `mlvl_allrandom = getOption("projpred.mlvl_proj_ref_new", FALSE)`):
       mu_offs_mlvlRan_oscale <- refmodel$family$latent_ilink(
         t(mu_offs_mlvlRan), cl_ref = seq_along(refmodel$wsample),
         wdraws_ref = refmodel$wsample
@@ -761,7 +761,7 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
     if (formula_contains_group_terms(refmodel$formula) &&
         getOption("projpred.mlvl_pred_new", FALSE)) {
       # Need to use `mlvl_allrandom = TRUE` (`loo_ref_oscale` is based on
-      # `mlvl_allrandom = FALSE`):
+      # `mlvl_allrandom = getOption("projpred.mlvl_proj_ref_new", FALSE)`):
       loglik_mlvlRan <- refmodel$family$latent_ll_oscale(
         mu_offs_mlvlRan_oscale_odim, y_oscale = refmodel$y_oscale,
         wobs = refmodel$wobs, cl_ref = seq_along(refmodel$wsample),
