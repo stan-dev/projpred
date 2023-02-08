@@ -63,7 +63,7 @@ N <- nrow(dat_gauss)
 tau0 <- p0 / (D - p0) * 1 / sqrt(N)
 ```
 
-We now fit the reference model to the data. To make this vignette build faster, we use only 2 MCMC chains and 500 iterations per chain (with half of them being discarded as warmup draws). In practice, 4 chains and 2000 iterations per chain are reasonable defaults. Furthermore, we make use of **rstan**'s parallelization, which means to run each chain on a separate CPU core.^[More generally, the number of chains is split up as evenly as possible among the number of CPU cores.] If you run the following code yourself, you can either rely on an automatic mechanism to detect the number of CPU cores (like the `parallel::detectCores()` function shown below) or adapt `ncores` manually to your system.
+We now fit the reference model to the data. To make this vignette build faster, we use only 2 MCMC chains and 500 iterations per chain (with half of them being discarded as warmup draws). In practice, 4 chains and 2000 iterations per chain are reasonable defaults. Furthermore, we make use of [**rstan**](https://mc-stan.org/rstan/)'s parallelization, which means to run each chain on a separate CPU core.^[More generally, the number of chains is split up as evenly as possible among the number of CPU cores.] If you run the following code yourself, you can either rely on an automatic mechanism to detect the number of CPU cores (like the `parallel::detectCores()` function shown below) or adapt `ncores` manually to your system.
 ```{r}
 # Set this manually if desired:
 ncores <- parallel::detectCores(logical = FALSE)
@@ -176,7 +176,7 @@ This matrix is all we need for post-selection inference. It can be used like any
 
 ### Marginals of the projected posterior
 
-The **posterior** package provides a general way to deal with posterior distributions, so it can also be applied to our projected posterior. For example, to calculate summary statistics for the marginals of the projected posterior:
+The [**posterior**](https://mc-stan.org/posterior/) package provides a general way to deal with posterior distributions, so it can also be applied to our projected posterior. For example, to calculate summary statistics for the marginals of the projected posterior:
 ```{r}
 library(posterior)
 prj_drws <- as_draws_matrix(prj_mat)
@@ -188,7 +188,7 @@ as.data.frame(summarize_draws(
 ))
 ```
 
-A visualization of the projected posterior can be achieved with the **bayesplot** package, for example using its `mcmc_intervals()` function:
+A visualization of the projected posterior can be achieved with the [**bayesplot**](https://mc-stan.org/bayesplot/) package, for example using its `mcmc_intervals()` function:
 ```{r}
 library(bayesplot)
 bayesplot_theme_set(ggplot2::theme_bw())
@@ -263,7 +263,7 @@ Transferring this vignette (which employs a "typical" reference model) to such m
 <!-- the parallelization of the projection is not recommended and that -->
 some **projpred** functions then have slightly different options for a few arguments. See the documentation for details.
 
-For example, to apply **projpred** to the `VerbAgg` dataset from the **lme4** package, a corresponding multilevel reference model for the binary response `r2` could be created by the following code:
+For example, to apply **projpred** to the `VerbAgg` dataset from the [**lme4**](https://CRAN.R-project.org/package=lme4) package, a corresponding multilevel reference model for the binary response `r2` could be created by the following code:
 ```{r, eval=FALSE}
 data("VerbAgg", package = "lme4")
 refm_fit <- stan_glmer(
@@ -274,7 +274,7 @@ refm_fit <- stan_glmer(
 )
 ```
 
-As an example for an additive (non-multilevel) reference model, consider the `lasrosas.corn` dataset from the **agridat** package. A corresponding reference model for the continuous response `yield` could be created by the following code (note that `pp_check(refm_fit)` gives a bad PPC in this case, so there's still room for improvement):
+As an example for an additive (non-multilevel) reference model, consider the `lasrosas.corn` dataset from the [**agridat**](https://kwstat.github.io/agridat/) package. A corresponding reference model for the continuous response `yield` could be created by the following code (note that `pp_check(refm_fit)` gives a bad PPC in this case, so there's still room for improvement):
 ```{r, eval=FALSE}
 data("lasrosas.corn", package = "agridat")
 # Convert `year` to a `factor` (this could also be solved by using
