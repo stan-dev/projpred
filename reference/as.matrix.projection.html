@@ -19,7 +19,7 @@ parameter draws and returns them as a matrix."><meta property="og:image" content
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">projpred</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">2.3.0</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">2.4.0</span>
       </span>
     </div>
 
@@ -141,6 +141,14 @@ uses <code>"rstanarm"</code> if the reference model fit is of an unknown class).
 <p>An \(S_{\mathrm{prj}} \times Q\) matrix of projected
 draws, with \(S_{\mathrm{prj}}\) denoting the number of projected
 draws and \(Q\) the number of parameters.</p>
+    </div>
+    <div id="details">
+    <h2>Details</h2>
+    <p>In case of the augmented-data projection for a multilevel submodel
+of a <code><a href="https://rdrr.io/pkg/brms/man/brmsfamily.html" class="external-link">brms::categorical()</a></code> reference model, the multilevel parameters (and
+therefore also their names) slightly differ from those in the <span class="pkg">brms</span>
+reference model fit (see section "Augmented-data projection" in
+<code><a href="extend_family.html">extend_family()</a></code>'s documentation).</p>
     </div>
 
     <div id="ref-examples">

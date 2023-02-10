@@ -32,7 +32,7 @@ see cv_varsel() for the use of \(K\)-fold CV in projpred.'><meta property="og:im
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">projpred</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">2.3.0</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">2.4.0</span>
       </span>
     </div>
 
@@ -150,7 +150,7 @@ see <code><a href="cv_varsel.html">cv_varsel()</a></code> for the use of \(K\)-f
 <span><span class="fu">get_refmodel</span><span class="op">(</span><span class="va">object</span>, <span class="va">formula</span>, family <span class="op">=</span> <span class="cn">NULL</span>, <span class="va">...</span><span class="op">)</span></span>
 <span></span>
 <span><span class="co"># S3 method for stanreg</span></span>
-<span><span class="fu">get_refmodel</span><span class="op">(</span><span class="va">object</span>, <span class="va">...</span><span class="op">)</span></span>
+<span><span class="fu">get_refmodel</span><span class="op">(</span><span class="va">object</span>, latent <span class="op">=</span> <span class="cn">FALSE</span>, dis <span class="op">=</span> <span class="cn">NULL</span>, <span class="va">...</span><span class="op">)</span></span>
 <span></span>
 <span><span class="fu">init_refmodel</span><span class="op">(</span></span>
 <span>  <span class="va">object</span>,</span>
@@ -186,7 +186,8 @@ of <code>get_refmodel()</code>, an object of the corresponding class.</p></dd>
 <dt>...</dt>
 <dd><p>For <code>get_refmodel.default()</code> and <code>get_refmodel.stanreg()</code>:
 arguments passed to <code>init_refmodel()</code>. For the <code>get_refmodel()</code> generic:
-arguments passed to the appropriate method. Else: ignored.</p></dd>
+arguments passed to the appropriate method. For <code>init_refmodel()</code>:
+arguments passed to <code><a href="extend_family.html">extend_family()</a></code> (apart from <code>family</code>).</p></dd>
 
 
 <dt>formula</dt>
@@ -210,6 +211,23 @@ case the family is retrieved from <code>object</code>. For custom reference mode
 <code>family</code> does not have to coincide with the family of the reference model
 (if the reference model possesses a formal <code>family</code> at all). In typical
 reference models, however, these families do coincide.</p></dd>
+
+
+<dt>latent</dt>
+<dd><p>A single logical value indicating whether to use the latent
+projection (<code>TRUE</code>) or not (<code>FALSE</code>). Note that setting <code>latent = TRUE</code>
+causes all arguments starting with <code>augdat_</code> to be ignored.</p></dd>
+
+
+<dt>dis</dt>
+<dd><p>A vector of posterior draws for the reference model's dispersion
+parameter or---more precisely---the posterior values for the reference
+model's parameter-conditional predictive variance (assuming that this
+variance is the same for all observations). May be <code>NULL</code> if the submodels
+have no dispersion parameter or if the submodels do have a dispersion
+parameter, but <code>object</code> is <code>NULL</code> (in which case <code>0</code> is used for <code>dis</code>).
+Note that for the <code><a href="https://rdrr.io/r/stats/family.html" class="external-link">gaussian()</a></code> <code>family</code>, <code>dis</code> is the standard deviation,
+not the variance.</p></dd>
 
 
 <dt>data</dt>
@@ -275,17 +293,6 @@ indices (one fold index per observation). Each element of <code>cvfits$fits</cod
 <code>cvfits</code> is used.</p></dd>
 
 
-<dt>dis</dt>
-<dd><p>A vector of posterior draws for the reference model's dispersion
-parameter or---more precisely---the posterior values for the reference
-model's parameter-conditional predictive variance (assuming that this
-variance is the same for all observations). May be <code>NULL</code> if the submodels
-have no dispersion parameter or if the submodels do have a dispersion
-parameter, but <code>object</code> is <code>NULL</code> (in which case <code>0</code> is used for <code>dis</code>).
-Note that for the <code><a href="https://rdrr.io/r/stats/family.html" class="external-link">gaussian()</a></code> <code>family</code>, <code>dis</code> is the standard deviation,
-not the variance.</p></dd>
-
-
 <dt>cvrefbuilder</dt>
 <dd><p>For \(K\)-fold CV only. A function that, given a
 reference model fit for fold \(k \in \{1, ..., K\}\) (this
@@ -327,13 +334,18 @@ analogously for higher-order joint effects, e.g., of three predictors).</p>
     <h2>Arguments <code>ref_predfun</code>, <code>proj_predfun</code>, and <code>div_minimizer</code></h2>
     <p>Arguments <code>ref_predfun</code>, <code>proj_predfun</code>, and <code>div_minimizer</code> may be <code>NULL</code>
 for using an internal default (see <a href="projpred-package.html">projpred-package</a> for the functions used
-by the default divergence minimizer). Otherwise, let \(N\) denote the
+by the default divergence minimizers). Otherwise, let \(N\) denote the
 number of observations (in case of CV, these may be reduced to each fold),
 \(S_{\mathrm{ref}}\) the number of posterior draws for the reference
 model's parameters, and \(S_{\mathrm{prj}}\) the number of draws for
 the parameters of a submodel that the reference model has been projected onto
-(short: the number of projected draws). Then the functions supplied to these
-arguments need to have the following prototypes:</p><ul><li><p><code>ref_predfun</code>: <code>ref_predfun(fit, newdata = NULL)</code> where:</p><ul><li><p><code>fit</code> accepts the reference model fit as given in argument <code>object</code>
+(short: the number of projected draws). For the augmented-data projection,
+let \(C_{\mathrm{cat}}\) denote the number of response categories,
+\(C_{\mathrm{lat}}\) the number of latent response categories (which
+typically equals \(C_{\mathrm{cat}} - 1\)), and define
+\(N_{\mathrm{augcat}} := N \cdot C_{\mathrm{cat}}\)
+as well as \(N_{\mathrm{auglat}} := N \cdot C_{\mathrm{lat}}\). Then the functions supplied to these arguments need to have the
+following prototypes:</p><ul><li><p><code>ref_predfun</code>: <code>ref_predfun(fit, newdata = NULL)</code> where:</p><ul><li><p><code>fit</code> accepts the reference model fit as given in argument <code>object</code>
 (but possibly re-fitted to a subset of the observations, as done in
 \(K\)-fold CV).</p></li>
 <li><p><code>newdata</code> accepts either <code>NULL</code> (for using the original dataset,
@@ -351,23 +363,41 @@ as with <code>refit_prj = FALSE</code>).</p></li>
 </ul></li>
 <li><p><code>div_minimizer</code> does not need to have a specific prototype, but it needs to
 be able to be called with the following arguments:</p><ul><li><p><code>formula</code> accepts either a standard <code><a href="https://rdrr.io/r/stats/formula.html" class="external-link">formula</a></code> with a single response
-(if \(S_{\mathrm{prj}} = 1\)) or a <code><a href="https://rdrr.io/r/stats/formula.html" class="external-link">formula</a></code> with
-\(S_{\mathrm{prj}} &gt; 1\) response variables <code><a href="https://rdrr.io/r/base/cbind.html" class="external-link">cbind()</a></code>-ed on
-the left-hand side in which case the projection has to be performed for
-each of the response variables separately.</p></li>
-<li><p><code>data</code> accepts a <code>data.frame</code> to be used for the projection.</p></li>
+(if \(S_{\mathrm{prj}} = 1\) or in case of the
+augmented-data projection) or a <code><a href="https://rdrr.io/r/stats/formula.html" class="external-link">formula</a></code> with \(S_{\mathrm{prj}} &gt;
+    1\) response variables <code><a href="https://rdrr.io/r/base/cbind.html" class="external-link">cbind()</a></code>-ed on the left-hand side in
+which case the projection has to be performed for each of the response
+variables separately.</p></li>
+<li><p><code>data</code> accepts a <code>data.frame</code> to be used for the projection. In case of
+the traditional or the latent projection, this dataset has \(N\) rows.
+In case of the augmented-data projection, this dataset has
+\(N_{\mathrm{augcat}}\) rows.</p></li>
 <li><p><code>family</code> accepts an object of class <code>family</code>.</p></li>
 <li><p><code>weights</code> accepts either observation weights (at least in the form of a
 numeric vector) or <code>NULL</code> (for using a vector of ones as weights).</p></li>
 <li><p><code>projpred_var</code> accepts an \(N \times S_{\mathrm{prj}}\)
 matrix of predictive variances (necessary for <span class="pkg">projpred</span>'s internal
-GLM fitter).</p></li>
+GLM fitter) in case of the traditional or the latent projection and an
+\(N_{\mathrm{augcat}} \times S_{\mathrm{prj}}\)
+matrix (containing only <code>NA</code>s) in case of the augmented-data projection.</p></li>
 <li><p><code>projpred_regul</code> accepts a single numeric value as supplied to argument
 <code>regul</code> of <code><a href="project.html">project()</a></code>, for example.</p></li>
+<li><p><code>projpred_ws_aug</code> accepts an \(N \times S_{\mathrm{prj}}\)
+matrix of expected values for the response in case of the traditional or
+the latent projection and an \(N_{\mathrm{augcat}} \times
+    S_{\mathrm{prj}}\) matrix of probabilities for the
+response categories in case of the augmented-data projection.</p></li>
 <li><p><code>...</code> accepts further arguments specified by the user.</p></li>
 </ul></li>
-</ul><p>The return value of these functions needs to be:</p><ul><li><p><code>ref_predfun</code>: an \(N \times S_{\mathrm{ref}}\) matrix.</p></li>
-<li><p><code>proj_predfun</code>: an \(N \times S_{\mathrm{prj}}\) matrix.</p></li>
+</ul><p>The return value of these functions needs to be:</p><ul><li><p><code>ref_predfun</code>: for the traditional or the latent projection, an \(N
+\times S_{\mathrm{ref}}\) matrix; for the augmented-data
+projection, an \(S_{\mathrm{ref}} \times N \times C_{\mathrm{lat}}\) array (the only exception is the augmented-data projection for
+the <code><a href="https://rdrr.io/r/stats/family.html" class="external-link">binomial()</a></code> family in which case <code>ref_predfun</code> needs to return an \(N
+\times S_{\mathrm{ref}}\) matrix just like for the traditional
+projection because the array is constructed by an internal wrapper function).</p></li>
+<li><p><code>proj_predfun</code>: for the traditional or the latent projection, an \(N
+\times S_{\mathrm{prj}}\) matrix; for the augmented-data
+projection, an \(N \times C_{\mathrm{lat}} \times S_{\mathrm{prj}}\) array.</p></li>
 <li><p><code>div_minimizer</code>: a <code>list</code> of length \(S_{\mathrm{prj}}\)
 containing this number of submodel fits.</p></li>
 </ul></div>
@@ -375,7 +405,8 @@ containing this number of submodel fits.</p></li>
     <h2>Argument <code>extract_model_data</code></h2>
     <p>The function supplied to argument <code>extract_model_data</code> needs to have the
 prototype</p>
-<p></p><div class="sourceCode r"><pre><code><span><span class="fu">extract_model_data</span><span class="op">(</span><span class="va">object</span>, <span class="va">newdata</span>, wrhs <span class="op">=</span> <span class="cn">NULL</span>, orhs <span class="op">=</span> <span class="cn">NULL</span>, extract_y <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span></code></pre><p></p></div>
+<p></p><div class="sourceCode r"><pre><code><span><span class="fu">extract_model_data</span><span class="op">(</span><span class="va">object</span>, <span class="va">newdata</span>, wrhs <span class="op">=</span> <span class="cn">NULL</span>, orhs <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>                   extract_y <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span></code></pre><p></p></div>
 <p>where:</p><ul><li><p><code>object</code> accepts the reference model fit as given in argument <code>object</code> (but
 possibly re-fitted to a subset of the observations, as done in \(K\)-fold
 CV).</p></li>
@@ -393,10 +424,41 @@ element <code>y</code> (see below) shall be <code>NULL</code> (<code>TRUE</code>
 </ul><p>The return value of <code>extract_model_data</code> needs to be a <code>list</code> with elements
 <code>y</code>, <code>weights</code>, and <code>offset</code>, each being a numeric vector containing the data
 for the response, the observation weights, and the offsets, respectively. An
-exception is that <code>y</code> may also be <code>NULL</code> (depending on argument <code>extract_y</code>)
-or a <code>factor</code>.</p>
+exception is that <code>y</code> may also be <code>NULL</code> (depending on argument <code>extract_y</code>),
+a non-numeric vector, or a <code>factor</code>.</p>
 <p>The weights and offsets returned by <code>extract_model_data</code> will be assumed to
 hold for the reference model as well as for the submodels.</p>
+    </div>
+    <div id="augmented-data-projection">
+    <h2>Augmented-data projection</h2>
+    <p>If a custom reference model for an augmented-data projection is needed, see
+also <code><a href="extend_family.html">extend_family()</a></code>.</p>
+<p>For the augmented-data projection, the response vector resulting from
+<code>extract_model_data</code> is internally coerced to a <code>factor</code> (using
+<code><a href="https://rdrr.io/r/base/factor.html" class="external-link">as.factor()</a></code>). The levels of this <code>factor</code> have to be identical to
+<code>family$cats</code> (<em>after</em> applying <code><a href="extend_family.html">extend_family()</a></code> internally; see
+<code><a href="extend_family.html">extend_family()</a></code>'s argument <code>augdat_y_unqs</code>).</p>
+<p>Note that response-specific offsets (i.e., one length-\(N\) offset vector
+per response category) are not supported by <span class="pkg">projpred</span> yet. So far, only
+offsets which are the same across all response categories are supported. This
+is why in case of the <code><a href="https://rdrr.io/pkg/brms/man/brmsfamily.html" class="external-link">brms::categorical()</a></code> family, offsets are currently not
+supported at all.</p>
+<p>Currently, <code>object = NULL</code> (i.e., a <code>datafit</code>; see section "Value") is not
+supported in case of the augmented-data projection.</p>
+    </div>
+    <div id="latent-projection">
+    <h2>Latent projection</h2>
+    <p>If a custom reference model for a latent projection is needed, see also
+<code><a href="extend_family.html">extend_family()</a></code>.</p>
+<p>For the latent projection, <code>family$cats</code> (<em>after</em> applying <code><a href="extend_family.html">extend_family()</a></code>
+internally; see <code><a href="extend_family.html">extend_family()</a></code>'s argument <code>latent_y_unqs</code>) currently must
+not be <code>NULL</code> if the original (i.e., non-latent) response is a <code>factor</code>.
+Conversely, if <code>family$cats</code> (<em>after</em> applying <code><a href="extend_family.html">extend_family()</a></code>) is
+non-<code>NULL</code>, the response vector resulting from <code>extract_model_data</code> is
+internally coerced to a <code>factor</code> (using <code><a href="https://rdrr.io/r/base/factor.html" class="external-link">as.factor()</a></code>). The levels of this
+<code>factor</code> have to be identical to that non-<code>NULL</code> element <code>family$cats</code>.</p>
+<p>Currently, <code>object = NULL</code> (i.e., a <code>datafit</code>; see section "Value") is not
+supported in case of the latent projection.</p>
     </div>
 
     <div id="ref-examples">

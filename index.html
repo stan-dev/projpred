@@ -19,14 +19,17 @@
 <!-- clipboard.js --><script src="https://cdnjs.cloudflare.com/ajax/libs/clipboard.js/2.0.6/clipboard.min.js" integrity="sha256-inc5kl9MA1hkeYUt+EC3BhlIgyp/2jDIyBLS6k3UxPI=" crossorigin="anonymous"></script><!-- headroom.js --><script src="https://cdnjs.cloudflare.com/ajax/libs/headroom/0.11.0/headroom.min.js" integrity="sha256-AsUX4SJE1+yuDu5+mAVzJbuYNPHj/WroHuZ8Ir/CkE0=" crossorigin="anonymous"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/headroom/0.11.0/jQuery.headroom.min.js" integrity="sha256-ZX/yNShbjqsohH1k95liqY9Gd8uOiE1S4vZc+9KQ1K4=" crossorigin="anonymous"></script><!-- pkgdown --><link href="pkgdown.css" rel="stylesheet">
 <script src="pkgdown.js"></script><meta property="og:title" content="Projection Predictive Feature Selection">
 <meta property="og:description" content="
-    Performs projection predictive feature selection for generalized linear and
-    additive models as well as for generalized linear and additive multilevel
-    models (see Piironen, Paasiniemi and Vehtari, 2020,
-    &lt;doi:10.1214/20-EJS1711&gt;; Catalina, Bürkner and Vehtari, 2022,
-    &lt;https://proceedings.mlr.press/v151/catalina22a.html&gt;). The package is
+    Performs projection predictive feature selection for generalized linear
+    models (Piironen, Paasiniemi, and Vehtari, 2020, &lt;doi:10.1214/20-EJS1711&gt;)
+    with or without multilevel or additive terms (Catalina, Bürkner, and
+    Vehtari, 2022, &lt;https://proceedings.mlr.press/v151/catalina22a.html&gt;), for
+    some ordinal and nominal regression models (Weber and Vehtari, 2023,
+    &lt;arXiv:2301.01660&gt;), and for many other regression models (using the latent
+    projection by Catalina, Bürkner, and Vehtari, 2021, &lt;arXiv:2109.04702&gt;,
+    which can also be applied to most of the former models). The package is
     compatible with the rstanarm and brms packages, but other reference
-    models can also be used. See the documentation as well as the package
-    vignette for more information and examples.">
+    models can also be used. See the vignettes and the documentation for more
+    information and examples.">
 <meta property="og:image" content="https://mc-stan.org/projpred/logo.svg">
 <!-- mathjax --><script src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/MathJax.js" integrity="sha256-nvJJv9wWKEm88qvoQl9ekL2J+k/RWIsaSScxxlsrv8k=" crossorigin="anonymous"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/config/TeX-AMS-MML_HTMLorMML.js" integrity="sha256-84DKXVJXs0/F8OTMzX4UR909+jtl4G7SPypPavF+GfA=" crossorigin="anonymous"></script><!--[if lt IE 9]>
 <script src="https://oss.maxcdn.com/html5shiv/3.7.3/html5shiv.min.js"></script>
@@ -48,7 +51,7 @@
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="index.html">projpred</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">2.3.0</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">2.4.0</span>
       </span>
     </div>
 
@@ -145,7 +148,7 @@
 </h1></div>
 <p>The R package <strong>projpred</strong> performs the projection predictive variable selection for various regression models. Usually, the reference model will be an <a href="https://mc-stan.org/rstanarm/" class="external-link"><strong>rstanarm</strong></a> or <a href="https://paul-buerkner.github.io/brms/" class="external-link"><strong>brms</strong></a> fit, but custom reference models can also be used. Details on supported model types are given in section <a href="https://mc-stan.org/projpred/articles/projpred.html#modtypes">“Supported types of models”</a> of the main vignette<a href="#fn1" class="footnote-ref" id="fnref1"><sup>1</sup></a>.</p>
 <p>For details on how to cite <strong>projpred</strong>, see the <a href="https://CRAN.R-project.org/package=projpred/citation.html" class="external-link">projpred citation info</a> on CRAN<a href="#fn2" class="footnote-ref" id="fnref2"><sup>2</sup></a>. Further references (including earlier work that <strong>projpred</strong> is based on) are given in section <a href="https://mc-stan.org/projpred/articles/projpred.html#introduction">“Introduction”</a> of the main vignette.</p>
-<p>The <a href="https://mc-stan.org/projpred/articles/">vignettes</a><a href="#fn3" class="footnote-ref" id="fnref3"><sup>3</sup></a> (currently, the main vignette is the only one) illustrate how to use the <strong>projpred</strong> functions in conjunction. Details on the <strong>projpred</strong> functions as well as some shorter examples may be found in the <a href="https://mc-stan.org/projpred/reference/index.html">documentation</a><a href="#fn4" class="footnote-ref" id="fnref4"><sup>4</sup></a>.</p>
+<p>The <a href="https://mc-stan.org/projpred/articles/">vignettes</a><a href="#fn3" class="footnote-ref" id="fnref3"><sup>3</sup></a> illustrate how to use the <strong>projpred</strong> functions in conjunction. Details on the <strong>projpred</strong> functions as well as some shorter examples may be found in the <a href="https://mc-stan.org/projpred/reference/index.html">documentation</a><a href="#fn4" class="footnote-ref" id="fnref4"><sup>4</sup></a>.</p>
 <div class="section level2">
 <h2 id="installation">Installation<a class="anchor" aria-label="anchor" href="#installation"></a>
 </h2>

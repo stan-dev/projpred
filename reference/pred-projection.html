@@ -29,7 +29,7 @@ project())."><meta property="og:image" content="https://mc-stan.org/projpred/log
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">projpred</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">2.3.0</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">2.4.0</span>
       </span>
     </div>
 
@@ -152,6 +152,7 @@ also handle multiple submodels at once (for <code>object</code>s of class <code>
 <span>  filter_nterms <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  nresample_clusters <span class="op">=</span> <span class="fl">1000</span>,</span>
 <span>  .seed <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/sample.html" class="external-link">sample.int</a></span><span class="op">(</span><span class="va">.Machine</span><span class="op">$</span><span class="va">integer.max</span>, <span class="fl">1</span><span class="op">)</span>,</span>
+<span>  resp_oscale <span class="op">=</span> <span class="cn">TRUE</span>,</span>
 <span>  <span class="va">...</span></span>
 <span><span class="op">)</span></span></code></pre></div>
     </div>
@@ -194,7 +195,10 @@ for only those elements (submodels) with a number of solution terms in
 <dt>transform</dt>
 <dd><p>For <code>proj_linpred()</code> only. A single logical value indicating
 whether the linear predictor should be transformed to response scale using
-the inverse-link function (<code>TRUE</code>) or not (<code>FALSE</code>).</p></dd>
+the inverse-link function (<code>TRUE</code>) or not (<code>FALSE</code>). In case of the latent
+projection, argument <code>transform</code> is similar in spirit to argument
+<code>resp_oscale</code> from other functions and affects the scale of both output
+elements <code>pred</code> and <code>lpd</code> (see sections "Details" and "Value" below).</p></dd>
 
 
 <dt>integrated</dt>
@@ -211,7 +215,7 @@ this seed is used for drawing new group-level effects in case of a
 multilevel submodel (however, not yet in case of a GAMM) and for drawing
 from the predictive distributions of the submodel(s) in case of
 <code>proj_predict()</code>. If a clustered projection was performed, then in
-<code>proj_predict()</code>, <code>.seed</code> is also used for drawing from the set of the
+<code>proj_predict()</code>, <code>.seed</code> is also used for drawing from the set of
 projected clusters of posterior draws (see argument <code>nresample_clusters</code>).</p></dd>
 
 
@@ -228,28 +232,66 @@ submodel(s). Not to be confused with argument <code>nclusters</code> of <code><a
 the set of clustered posterior draws after projection (with this set being
 determined by argument <code>nclusters</code> of <code><a href="project.html">project()</a></code>).</p></dd>
 
+
+<dt>resp_oscale</dt>
+<dd><p>Only relevant for the latent projection. A single logical
+value indicating whether to draw from the posterior-projection predictive
+distributions on the original response scale (<code>TRUE</code>) or on latent scale
+(<code>FALSE</code>).</p></dd>
+
 </dl></div>
     <div id="value">
     <h2>Value</h2>
     
 
-<p>Let \(S_{\mathrm{prj}}\) denote the number of (possibly
-clustered) projected posterior draws (short: the number of projected draws)
-and \(N\) the number of observations. (For <code>proj_linpred()</code> with
-<code>integrated = TRUE</code>, we have \(S_{\mathrm{prj}} = 1\).) Then,
-if the prediction is done for one submodel only (i.e., <code>length(nterms) == 1 || !is.null(solution_terms)</code> in the call to <code><a href="project.html">project()</a></code>):</p><ul><li><p><code>proj_linpred()</code> returns a <code>list</code> with elements <code>pred</code> (predictions,
+<p>In the following, \(S_{\mathrm{prj}}\), \(N\),
+\(C_{\mathrm{cat}}\), and \(C_{\mathrm{lat}}\) from help
+topic <a href="refmodel-init-get.html">refmodel-init-get</a> are used. (For <code>proj_linpred()</code> with <code>integrated = TRUE</code>, we have \(S_{\mathrm{prj}} = 1\).) Furthermore, let
+\(C\) denote either \(C_{\mathrm{cat}}\) (if <code>transform = TRUE</code>)
+or \(C_{\mathrm{lat}}\) (if <code>transform = FALSE</code>). Then, if the
+prediction is done for one submodel only (i.e., <code>length(nterms) == 1 || !is.null(solution_terms)</code> in the call to <code><a href="project.html">project()</a></code>):</p><ul><li><p><code>proj_linpred()</code> returns a <code>list</code> with elements <code>pred</code> (predictions,
 i.e., the linear predictors, possibly transformed to response scale) and
 <code>lpd</code> (log predictive densities; only calculated if <code>newdata</code> is <code>NULL</code> or
-if <code>newdata</code> contains response values in the corresponding column). Both
-elements are \(S_{\mathrm{prj}} \times N\) matrices.</p></li>
+if <code>newdata</code> contains response values in the corresponding column). In case
+of (i) the traditional projection, (ii) the latent projection with
+<code>transform = FALSE</code>, or (iii) the latent projection with <code>transform = TRUE</code>
+and <code>&lt;refmodel&gt;$family$cats</code> (where <code>&lt;refmodel&gt;</code> is an object resulting
+from <code><a href="refmodel-init-get.html">init_refmodel()</a></code>; see also <code><a href="extend_family.html">extend_family()</a></code>'s argument
+<code>latent_y_unqs</code>) being <code>NULL</code>, both elements are \(S_{\mathrm{prj}}
+  \times N\) matrices. In case of (i) the augmented-data projection
+or (ii) the latent projection with <code>transform = TRUE</code> and
+<code>&lt;refmodel&gt;$family$cats</code> being not <code>NULL</code>, <code>pred</code> is an
+\(S_{\mathrm{prj}} \times N \times C\) array and <code>lpd</code> is
+an \(S_{\mathrm{prj}} \times N\) matrix.</p></li>
 <li><p><code>proj_predict()</code> returns an \(S_{\mathrm{prj}} \times N\)
 matrix of predictions where \(S_{\mathrm{prj}}\) denotes
-<code>nresample_clusters</code> in case of clustered projection.</p></li>
+<code>nresample_clusters</code> in case of clustered projection. In case of (i) the
+augmented-data projection or (ii) the latent projection with <code>resp_oscale =   TRUE</code> and <code>&lt;refmodel&gt;$family$cats</code> being not <code>NULL</code>, this matrix has an
+attribute called <code>cats</code> (the character vector of response categories) and
+the values of the matrix are the predicted indices of the response
+categories (these indices refer to the order of the response categories
+from attribute <code>cats</code>).</p></li>
 </ul><p>If the prediction is done for more than one submodel, the output from above
 is returned for each submodel, giving a named <code>list</code> with one element for
 each submodel (the names of this <code>list</code> being the numbers of solution terms
 of the submodels when counting the intercept, too).</p>
     </div>
+    <div id="details">
+    <h2>Details</h2>
+    <p>In case of the latent projection and <code>transform = FALSE</code>:</p><ul><li><p>Output element <code>pred</code> contains the linear predictors without any
+modifications that may be due to the original response distribution (e.g.,
+for a <code><a href="https://rdrr.io/pkg/brms/man/brmsfamily.html" class="external-link">brms::cumulative()</a></code> model, the ordered thresholds are not taken into
+account).</p></li>
+<li><p>Output element <code>lpd</code> contains the <em>latent</em> log predictive density values,
+i.e., those corresponding to the latent Gaussian distribution. If <code>newdata</code>
+is not <code>NULL</code>, this requires the latent response values to be supplied in a
+column called <code>.&lt;response_name&gt;</code> of <code>newdata</code> where <code>&lt;response_name&gt;</code> needs
+to be replaced by the name of the original response variable (if
+<code>&lt;response_name&gt;</code> contained parentheses, these have been stripped off by
+<code><a href="refmodel-init-get.html">init_refmodel()</a></code>; see the left-hand side of <code>formula(&lt;refmodel&gt;)</code>). For
+technical reasons, the existence of column <code>&lt;response_name&gt;</code> in <code>newdata</code>
+is another requirement (even though <code>.&lt;response_name&gt;</code> is actually used).</p></li>
+</ul></div>
 
     <div id="ref-examples">
     <h2>Examples</h2>

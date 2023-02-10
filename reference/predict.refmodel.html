@@ -21,7 +21,7 @@ response scale, or the log predictive density."><meta property="og:image" conten
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">projpred</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">2.3.0</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">2.4.0</span>
       </span>
     </div>
 
@@ -145,7 +145,11 @@ observations. May also be <code>NULL</code> (see argument <code>extract_model_da
 
 <dt>ynew</dt>
 <dd><p>If not <code>NULL</code>, then this needs to be a vector of new (or old)
-response values. See section "Value" below.</p></dd>
+response values. See also section "Value" below. In case of (i) the
+augmented-data projection or (ii) the latent projection with <code>type = "response"</code> and <code>object$family$cats</code> being not <code>NULL</code>, <code>ynew</code> is internally
+coerced to a <code>factor</code> (using <code><a href="https://rdrr.io/r/base/factor.html" class="external-link">as.factor()</a></code>). The levels of this <code>factor</code>
+have to be a subset of <code>object$family$cats</code> (see <code><a href="extend_family.html">extend_family()</a></code>'s
+arguments <code>augdat_y_unqs</code> and <code>latent_y_unqs</code>, respectively).</p></dd>
 
 
 <dt>offsetnew</dt>
@@ -161,11 +165,22 @@ weights for the new (or old) observations.</p></dd>
 
 
 <dt>type</dt>
-<dd><p>Only relevant if <code>is.null(ynew)</code>. The scale on which the
-predictions are returned, either <code>"link"</code> or <code>"response"</code> (see
-<code><a href="https://rdrr.io/r/stats/predict.glm.html" class="external-link">predict.glm()</a></code> but note that <code>predict.refmodel()</code> does not adhere to the
-typical <span style="R">R</span> convention of a default prediction on link scale). For both
-scales, the predictions are averaged across the posterior draws.</p></dd>
+<dd><p>Usually only relevant if <code>is.null(ynew)</code>, but for the latent
+projection, this also affects the <code>!is.null(ynew)</code> case (see below). The
+scale on which the predictions are returned, either <code>"link"</code> or
+<code>"response"</code> (see <code><a href="https://rdrr.io/r/stats/predict.glm.html" class="external-link">predict.glm()</a></code> but note that <code>predict.refmodel()</code> does
+not adhere to the typical <span style="R">R</span> convention of a default prediction on link
+scale). For both scales, the predictions are averaged across the posterior
+draws. In case of the latent projection, argument <code>type</code> is similar in
+spirit to argument <code>resp_oscale</code> from other functions: If (i)
+<code>is.null(ynew)</code>, then argument <code>type</code> affects the predictions as described
+above. In that case, note that <code>type = "link"</code> yields the linear predictors
+without any modifications that may be due to the original response
+distribution (e.g., for a <code><a href="https://rdrr.io/pkg/brms/man/brmsfamily.html" class="external-link">brms::cumulative()</a></code> model, the ordered
+thresholds are not taken into account). If (ii) <code>!is.null(ynew)</code>, then
+argument <code>type</code> also affects the scale of the log predictive densities
+(<code>type = "response"</code> for the original response scale, <code>type = "link"</code> for
+the latent Gaussian scale).</p></dd>
 
 
 <dt>...</dt>
@@ -176,13 +191,30 @@ scales, the predictions are averaged across the posterior draws.</p></dd>
     <h2>Value</h2>
     
 
-<p>Either a vector of predictions (with the scale depending on argument
-<code>type</code>) or, if <code>!is.null(ynew)</code>, a vector of log predictive densities
-evaluated at <code>ynew</code>.</p>
+<p>In the following, \(N\), \(C_{\mathrm{cat}}\), and
+\(C_{\mathrm{lat}}\) from help topic <a href="refmodel-init-get.html">refmodel-init-get</a> are used.
+Furthermore, let \(C\) denote either \(C_{\mathrm{cat}}\) (if
+<code>type = "response"</code>) or \(C_{\mathrm{lat}}\) (if <code>type = "link"</code>).
+Then, if <code>is.null(ynew)</code>, the returned object contains the reference
+model's predictions (with the scale depending on argument <code>type</code>) as:</p><ul><li><p>a length-\(N\) vector in case of (i) the traditional projection, (ii)
+the latent projection with <code>type = "link"</code>, or (iii) the latent projection
+with <code>type = "response"</code> and <code>object$family$cats</code> being <code>NULL</code>;</p></li>
+<li><p>an \(N \times C\) matrix in case of (i) the augmented-data
+projection or (ii) the latent projection with <code>type = "response"</code> and
+<code>object$family$cats</code> being not <code>NULL</code>.</p></li>
+</ul><p>If <code>!is.null(ynew)</code>, the returned
+object is a length-\(N\) vector of log predictive densities evaluated at
+<code>ynew</code>.</p>
     </div>
     <div id="details">
     <h2>Details</h2>
     <p>Argument <code>weightsnew</code> is only relevant if <code>!is.null(ynew)</code>.</p>
+<p>In case of a multilevel reference model, group-level effects for new group
+levels are drawn randomly from a (multivariate) Gaussian distribution. When
+setting <code>projpred.mlvl_pred_new</code> to <code>TRUE</code>, all group levels from <code>newdata</code>
+(even those that already exist in the original dataset) are treated as new
+group levels (if <code>is.null(newdata)</code>, all group levels from the original
+dataset are considered as new group levels in that case).</p>
     </div>
 
   </div>

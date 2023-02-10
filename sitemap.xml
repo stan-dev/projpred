@@ -13,6 +13,9 @@
     <loc>https://mc-stan.org/projpred/articles/index.html</loc>
   </url>
   <url>
+    <loc>https://mc-stan.org/projpred/articles/latent.html</loc>
+  </url>
+  <url>
     <loc>https://mc-stan.org/projpred/articles/projpred.html</loc>
   </url>
   <url>
@@ -26,6 +29,15 @@
   </url>
   <url>
     <loc>https://mc-stan.org/projpred/reference/as.matrix.projection.html</loc>
+  </url>
+  <url>
+    <loc>https://mc-stan.org/projpred/reference/augdat-internals.html</loc>
+  </url>
+  <url>
+    <loc>https://mc-stan.org/projpred/reference/augdat_ilink_binom.html</loc>
+  </url>
+  <url>
+    <loc>https://mc-stan.org/projpred/reference/augdat_link_binom.html</loc>
   </url>
   <url>
     <loc>https://mc-stan.org/projpred/reference/break_up_matrix_term.html</loc>

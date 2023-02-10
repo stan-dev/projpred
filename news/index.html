@@ -17,7 +17,7 @@
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">projpred</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">2.3.0</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">2.4.0</span>
       </span>
     </div>
 
@@ -102,6 +102,23 @@
       <small>Source: <a href="https://github.com/stan-dev/projpred/blob/HEAD/NEWS.md" class="external-link"><code>NEWS.md</code></a></small>
     </div>
 
+    <div class="section level2">
+<h2 class="page-header" data-toc-text="2.4.0" id="projpred-240">projpred 2.4.0<a class="anchor" aria-label="anchor" href="#projpred-240"></a></h2>
+<div class="section level3">
+<h3 id="major-changes-2-4-0">Major changes<a class="anchor" aria-label="anchor" href="#major-changes-2-4-0"></a></h3>
+<ul><li>Introduction of the augmented-data projection <a href="https://doi.org/10.48550/arXiv.2301.01660" class="external-link">(Weber and Vehtari, 2023)</a> (see section <a href="https://mc-stan.org/projpred/articles/projpred.html#modtypes">“Supported types of models”</a> of the main vignette for details). (GitHub: <a href="https://github.com/stan-dev/projpred/issues/70" class="external-link">#70</a>, <a href="https://github.com/stan-dev/projpred/issues/322" class="external-link">#322</a>)</li>
+<li>Introduction of the latent projection <a href="https://doi.org/10.48550/arXiv.2109.04702" class="external-link">(Catalina et al., 2021)</a> (see section <a href="https://mc-stan.org/projpred/articles/projpred.html#modtypes">“Supported types of models”</a> of the main vignette and the new <a href="https://mc-stan.org/projpred/articles/latent.html">latent-projection vignette</a> for details). A consequence of the latent projection (more precisely, of the <code>resp_oscale = TRUE</code> default in <code><a href="../reference/summary.vsel.html">summary.vsel()</a></code>) is that <code><a href="../reference/varsel.html">varsel()</a></code> and <code><a href="../reference/cv_varsel.html">cv_varsel()</a></code> no longer call <code><a href="../reference/suggest_size.html">suggest_size()</a></code> internally at the end. Thus, <code><a href="https://rdrr.io/r/base/print.html" class="external-link">print()</a></code>-ing an object of class <code>vsel</code> no longer includes the suggested projection size in the output (the <code>stat</code> for this suggested size was fixed to <code>"elpd"</code> anyway, a fact that many users were probably not aware of). (GitHub: <a href="https://github.com/stan-dev/projpred/issues/372" class="external-link">#372</a>)</li>
+<li>In case of multilevel models, <strong>projpred</strong> now has two global options for “integrating out” group-level effects: <code>projpred.mlvl_pred_new</code> and <code>projpred.mlvl_proj_ref_new</code>. These are explained in detail in the general package documentation (available <a href="https://mc-stan.org/projpred/reference/projpred-package.html">online</a> or by typing <code><a href="../reference/projpred-package.html">?`projpred-package`</a></code>). (GitHub: <a href="https://github.com/stan-dev/projpred/issues/379" class="external-link">#379</a>)</li>
+</ul></div>
+<div class="section level3">
+<h3 id="minor-changes-2-4-0">Minor changes<a class="anchor" aria-label="anchor" href="#minor-changes-2-4-0"></a></h3>
+<ul><li>Improvements in the numerical stability of internal link and inverse-link functions. (GitHub: <a href="https://github.com/stan-dev/projpred/issues/376" class="external-link">#376</a>)</li>
+</ul></div>
+<div class="section level3">
+<h3 id="bug-fixes-2-4-0">Bug fixes<a class="anchor" aria-label="anchor" href="#bug-fixes-2-4-0"></a></h3>
+<ul><li>Fix a bug for offsets in cases where <code>family</code> (see <code><a href="../reference/refmodel-init-get.html">init_refmodel()</a></code>) has a non-identity link function: After clustering the reference model’s posterior draws, we need to aggregate (within a given cluster) the reference model’s fitted values which already take the offsets into account instead of taking the offsets into account after aggregating the fitted values which do <em>not</em> take the offsets into account. This fix should affect results only in a very slight manner. Due to <strong>projpred</strong>’s internal adjustment for numerical stability when averaging a quantity across the draws within a given cluster, this also changes the projected residual standard deviations in Gaussian models in the order of <code>1e-10</code>. (GitHub: <a href="https://github.com/stan-dev/projpred/issues/374" class="external-link">#374</a>)</li>
+</ul></div>
+</div>
     <div class="section level2">
 <h2 class="page-header" data-toc-text="2.3.0" id="projpred-230">projpred 2.3.0<small>2023-01-10</small><a class="anchor" aria-label="anchor" href="#projpred-230"></a></h2>
 <div class="section level3">

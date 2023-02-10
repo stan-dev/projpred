@@ -25,7 +25,7 @@ fold.'><meta property="og:image" content="https://mc-stan.org/projpred/logo.svg"
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">projpred</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">2.3.0</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">2.4.0</span>
       </span>
     </div>
 
@@ -172,8 +172,9 @@ the latter only if <code>refit_prj</code> is <code>TRUE</code>).</p></dd>
 <dt>method</dt>
 <dd><p>The method for the search part. Possible options are <code>"L1"</code> for
 L1 search and <code>"forward"</code> for forward search. If <code>NULL</code>, then internally,
-<code>"L1"</code> is used, except if the reference model has multilevel or additive
-terms or if <code>!is.null(search_terms)</code>. See also section "Details" below.</p></dd>
+<code>"L1"</code> is used, except if (i) the reference model has multilevel or
+additive terms, (ii) if <code>!is.null(search_terms)</code>, or (iii) if the
+augmented-data projection is used. See also section "Details" below.</p></dd>
 
 
 <dt>cv_method</dt>
@@ -336,9 +337,10 @@ draws in the reference model may result in slightly inaccurate projection
 performance. Increasing these arguments affects the computation time
 linearly.</p>
 <p>For argument <code>method</code>, there are some restrictions: For a reference model
-with multilevel or additive formula terms, only the forward search is
-available. Furthermore, argument <code>search_terms</code> requires a forward search
-to take effect.</p>
+with multilevel or additive formula terms or a reference model set up for
+the augmented-data projection, only the forward search is available.
+Furthermore, argument <code>search_terms</code> requires a forward search to take
+effect.</p>
 <p>L1 search is faster than forward search, but forward search may be more
 accurate. Furthermore, forward search may find a sparser model with
 comparable performance to that found by L1 search, but it may also start

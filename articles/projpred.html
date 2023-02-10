@@ -40,7 +40,7 @@
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">projpred</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">2.3.0</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">2.4.0</span>
       </span>
     </div>
 
@@ -133,7 +133,7 @@
       <h1 data-toc-skip>projpred: Projection predictive feature
 selection</h1>
             
-            <h4 data-toc-skip class="date">2023-01-15</h4>
+            <h4 data-toc-skip class="date">2023-02-10</h4>
       
       <small class="dont-index">Source: <a href="https://github.com/stan-dev/projpred/blob/HEAD/vignettes/projpred.Rmd" class="external-link"><code>vignettes/projpred.Rmd</code></a></small>
       <div class="hidden name"><code>projpred.Rmd</code></div>
@@ -156,8 +156,10 @@ selection, but also allows for valid post-selection inference.</p>
 <span class="citation">Goutis and Robert (<a href="#ref-goutis_model_1998" role="doc-biblioref">1998</a>)</span> and
 <span class="citation">Dupuis and Robert (<a href="#ref-dupuis_variable_2003" role="doc-biblioref">2003</a>)</span>.
 The methods implemented in <strong>projpred</strong> are described in
-detail in <span class="citation">Piironen, Paasiniemi, and Vehtari (<a href="#ref-piironen_projective_2020" role="doc-biblioref">2020</a>)</span> and <span class="citation">Catalina, Bürkner, and Vehtari (<a href="#ref-catalina_projection_2022" role="doc-biblioref">2022</a>)</span>. They are evaluated in comparison
-to many other methods in <span class="citation">Piironen and Vehtari (<a href="#ref-piironen_comparison_2017" role="doc-biblioref">2017a</a>)</span>. For details on how to cite
+detail in <span class="citation">Piironen, Paasiniemi, and Vehtari (<a href="#ref-piironen_projective_2020" role="doc-biblioref">2020</a>)</span>, <span class="citation">Catalina,
+Bürkner, and Vehtari (<a href="#ref-catalina_projection_2022" role="doc-biblioref">2022</a>)</span>, <span class="citation">Weber and
+Vehtari (<a href="#ref-weber_projection_2023" role="doc-biblioref">2023</a>)</span>, and <span class="citation">Catalina, Bürkner, and Vehtari (<a href="#ref-catalina_latent_2021" role="doc-biblioref">2021</a>)</span>.
+A comparison to many other methods may also be found in <span class="citation">Piironen and Vehtari (<a href="#ref-piironen_comparison_2017" role="doc-biblioref">2017a</a>)</span>. For details on how to cite
 <strong>projpred</strong>, see the <a href="https://CRAN.R-project.org/package=projpred/citation.html" class="external-link">projpred
 citation info</a> on CRAN.<a href="#fn1" class="footnote-ref" id="fnref1"><sup>1</sup></a></p>
 </div>
@@ -248,10 +250,10 @@ preparation steps for the regularized horseshoe prior:</p>
 build faster, we use only 2 MCMC chains and 500 iterations per chain
 (with half of them being discarded as warmup draws). In practice, 4
 chains and 2000 iterations per chain are reasonable defaults.
-Furthermore, we make use of <strong>rstan</strong>’s parallelization,
-which means to run each chain on a separate CPU core.<a href="#fn3" class="footnote-ref" id="fnref3"><sup>3</sup></a> If you run the
-following code yourself, you can either rely on an automatic mechanism
-to detect the number of CPU cores (like the
+Furthermore, we make use of <a href="https://mc-stan.org/rstan/" class="external-link"><strong>rstan</strong></a>’s
+parallelization, which means to run each chain on a separate CPU core.<a href="#fn3" class="footnote-ref" id="fnref3"><sup>3</sup></a> If you run
+the following code yourself, you can either rely on an automatic
+mechanism to detect the number of CPU cores (like the
 <code><a href="https://rdrr.io/r/parallel/detectCores.html" class="external-link">parallel::detectCores()</a></code> function shown below) or adapt
 <code>ncores</code> manually to your system.</p>
 <div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
@@ -396,11 +398,11 @@ Link function: identity
 Formula: y ~ X1 + X2 + X3 + X4 + X5 + X6 + X7 + X8 + X9 + X10 + X11 + 
     X12 + X13 + X14 + X15 + X16 + X17 + X18 + X19 + X20
 Observations: 100
+Projection method: traditional
 CV method: LOO search not included 
 Search method: l1, maximum number of terms 9
 Number of clusters used for selection: 1
 Number of clusters used for prediction: 20
-Suggested Projection Size: 6
 
 Selection Summary:
  size solution_terms elpd.loo  se   diff diff.se
@@ -465,10 +467,11 @@ onto the parameter space of the final submodel.</p>
 <div class="section level3">
 <h3 id="marginals-of-the-projected-posterior">Marginals of the projected posterior<a class="anchor" aria-label="anchor" href="#marginals-of-the-projected-posterior"></a>
 </h3>
-<p>The <strong>posterior</strong> package provides a general way to deal
-with posterior distributions, so it can also be applied to our projected
-posterior. For example, to calculate summary statistics for the
-marginals of the projected posterior:</p>
+<p>The <a href="https://mc-stan.org/posterior/" class="external-link"><strong>posterior</strong></a>
+package provides a general way to deal with posterior distributions, so
+it can also be applied to our projected posterior. For example, to
+calculate summary statistics for the marginals of the projected
+posterior:</p>
 <div class="sourceCode" id="cb22"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://mc-stan.org/posterior/" class="external-link">posterior</a></span><span class="op">)</span></span>
 <span><span class="va">prj_drws</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://mc-stan.org/posterior/reference/draws_matrix.html" class="external-link">as_draws_matrix</a></span><span class="op">(</span><span class="va">prj_mat</span><span class="op">)</span></span>
@@ -488,8 +491,9 @@ marginals of the projected posterior:</p>
 7          X3  0.7767160 0.09659702  0.5948437  0.9772419
 8       sigma  1.1304147 0.08527177  0.9919125  1.3107667</code></pre>
 <p>A visualization of the projected posterior can be achieved with the
-<strong>bayesplot</strong> package, for example using its
-<code><a href="https://mc-stan.org/bayesplot/reference/MCMC-intervals.html" class="external-link">mcmc_intervals()</a></code> function:</p>
+<a href="https://mc-stan.org/bayesplot/" class="external-link"><strong>bayesplot</strong></a>
+package, for example using its <code><a href="https://mc-stan.org/bayesplot/reference/MCMC-intervals.html" class="external-link">mcmc_intervals()</a></code>
+function:</p>
 <div class="sourceCode" id="cb24"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://mc-stan.org/bayesplot/" class="external-link">bayesplot</a></span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://mc-stan.org/bayesplot/reference/bayesplot_theme_get.html" class="external-link">bayesplot_theme_set</a></span><span class="op">(</span><span class="fu">ggplot2</span><span class="fu">::</span><span class="fu"><a href="https://ggplot2.tidyverse.org/reference/ggtheme.html" class="external-link">theme_bw</a></span><span class="op">(</span><span class="op">)</span><span class="op">)</span></span>
@@ -583,13 +587,57 @@ section <a href="#refmod">“Reference model”</a> above for the definition
 of “typical” and “custom” reference model objects). This explains why in
 general, the following remarks refer to the submodels and not to the
 reference model.</p>
+<p>In the following and throughout <strong>projpred</strong>’s
+documentation, the term “traditional projection” is used whenever the
+projection type is neither “augmented-data” nor “latent” (see below for
+a description of these).</p>
 <p>Apart from the <code><a href="https://rdrr.io/r/stats/family.html" class="external-link">gaussian()</a></code> response family used in this
-vignette, <strong>projpred</strong> also supports the
-<code><a href="https://rdrr.io/r/stats/family.html" class="external-link">binomial()</a></code><a href="#fn8" class="footnote-ref" id="fnref8"><sup>8</sup></a> and the <code><a href="https://rdrr.io/r/stats/family.html" class="external-link">poisson()</a></code> family. On
-the side of the predictors, <strong>projpred</strong> not only supports
-linear main effects as shown in this vignette, but also interactions,
-multilevel<a href="#fn9" class="footnote-ref" id="fnref9"><sup>9</sup></a>, and—as an experimental feature—additive<a href="#fn10" class="footnote-ref" id="fnref10"><sup>10</sup></a>
-terms.</p>
+vignette, <strong>projpred</strong>’s traditional projection also
+supports the <code><a href="https://rdrr.io/r/stats/family.html" class="external-link">binomial()</a></code><a href="#fn8" class="footnote-ref" id="fnref8"><sup>8</sup></a> and the <code><a href="https://rdrr.io/r/stats/family.html" class="external-link">poisson()</a></code> family.</p>
+<p>The families supported by <strong>projpred</strong>’s augmented-data
+projection <span class="citation">(<a href="#ref-weber_projection_2023" role="doc-biblioref">Weber and Vehtari 2023</a>)</span> are
+<code><a href="https://rdrr.io/r/stats/family.html" class="external-link">binomial()</a></code><a href="#fn9" class="footnote-ref" id="fnref9"><sup>9</sup></a> <a href="#fn10" class="footnote-ref" id="fnref10"><sup>10</sup></a>, <code><a href="https://rdrr.io/pkg/brms/man/brmsfamily.html" class="external-link">brms::cumulative()</a></code>,
+<code><a href="https://mc-stan.org/rstanarm/reference/stan_polr.html" class="external-link">rstanarm::stan_polr()</a></code> fits, and
+<code><a href="https://rdrr.io/pkg/brms/man/brmsfamily.html" class="external-link">brms::categorical()</a></code>.<a href="#fn11" class="footnote-ref" id="fnref11"><sup>11</sup></a> <a href="#fn12" class="footnote-ref" id="fnref12"><sup>12</sup></a> See <code><a href="../reference/extend_family.html">?extend_family</a></code> (which is
+called by <code><a href="../reference/refmodel-init-get.html">init_refmodel()</a></code>) for an explanation how to apply
+the augmented-data projection to “custom” reference models. For
+“typical” reference models (i.e., those created by
+<code><a href="../reference/refmodel-init-get.html">get_refmodel.stanreg()</a></code> or
+<code><a href="https://rdrr.io/pkg/brms/man/get_refmodel.brmsfit.html" class="external-link">brms::get_refmodel.brmsfit()</a></code>), the augmented-data
+projection is applied automatically if the family is supported by the
+augmented-data projection and neither <code><a href="https://rdrr.io/r/stats/family.html" class="external-link">binomial()</a></code> nor
+<code><a href="https://rdrr.io/pkg/brms/man/brmsfamily.html" class="external-link">brms::bernoulli()</a></code>. For applying the augmented-data
+projection to the <code><a href="https://rdrr.io/r/stats/family.html" class="external-link">binomial()</a></code> (or
+<code><a href="https://rdrr.io/pkg/brms/man/brmsfamily.html" class="external-link">brms::bernoulli()</a></code>) family, see <code><a href="../reference/extend_family.html">?extend_family</a></code>
+as well as <code><a href="../reference/augdat_link_binom.html">?augdat_link_binom</a></code> and
+<code><a href="../reference/augdat_ilink_binom.html">?augdat_ilink_binom</a></code>. Finally, we note that there are some
+restrictions with respect to the augmented-data projection;
+<strong>projpred</strong> will throw an informative error if a requested
+feature is currently not supported for the augmented-data
+projection.</p>
+<p>The latent projection <span class="citation">(<a href="#ref-catalina_latent_2021" role="doc-biblioref">Catalina, Bürkner,
+and Vehtari 2021</a>)</span> is a quite general principle for extending
+<strong>projpred</strong>’s traditional projection to more response
+families. The latent projection is applied when setting argument
+<code>latent</code> of <code><a href="../reference/extend_family.html">extend_family()</a></code> (which is called by
+<code><a href="../reference/refmodel-init-get.html">init_refmodel()</a></code>) to <code>TRUE</code>. The families for
+which full latent-projection functionality (in particular,
+<code>resp_oscale = TRUE</code>, i.e., post-processing on the original
+response scale) is currently available are <code><a href="https://rdrr.io/r/stats/family.html" class="external-link">binomial()</a></code><a href="#fn13" class="footnote-ref" id="fnref13"><sup>13</sup></a> <a href="#fn14" class="footnote-ref" id="fnref14"><sup>14</sup></a>,
+<code><a href="https://rdrr.io/r/stats/family.html" class="external-link">poisson()</a></code>, <code><a href="https://rdrr.io/pkg/brms/man/brmsfamily.html" class="external-link">brms::cumulative()</a></code>, and
+<code><a href="https://mc-stan.org/rstanarm/reference/stan_polr.html" class="external-link">rstanarm::stan_polr()</a></code> fits.<a href="#fn15" class="footnote-ref" id="fnref15"><sup>15</sup></a> For all other
+families, you can try to use the latent projection (by setting
+<code>latent = TRUE</code>) and <strong>projpred</strong> should tell
+you if any features are not available and how to make them available.
+More details concerning the latent projection are given in the vignette
+“Latent projection predictive inference with projpred”. Note that there
+are some restrictions with respect to the latent projection;
+<strong>projpred</strong> will throw an informative error if a requested
+feature is currently not supported for the latent projection.</p>
+<p>On the side of the predictors, <strong>projpred</strong> not only
+supports linear main effects as shown in this vignette, but also
+interactions, multilevel<a href="#fn16" class="footnote-ref" id="fnref16"><sup>16</sup></a>, and—as an experimental
+feature—additive<a href="#fn17" class="footnote-ref" id="fnref17"><sup>17</sup></a> terms.</p>
 <p>Transferring this vignette (which employs a “typical” reference
 model) to such more complex problems is straightforward: Basically, only
 the code for fitting the reference model via <strong>rstanarm</strong>
@@ -600,9 +648,9 @@ case of multilevel or additive reference models,
 some <strong>projpred</strong> functions then have slightly different
 options for a few arguments. See the documentation for details.</p>
 <p>For example, to apply <strong>projpred</strong> to the
-<code>VerbAgg</code> dataset from the <strong>lme4</strong> package, a
-corresponding multilevel reference model for the binary response
-<code>r2</code> could be created by the following code:</p>
+<code>VerbAgg</code> dataset from the <a href="https://CRAN.R-project.org/package=lme4" class="external-link"><strong>lme4</strong></a>
+package, a corresponding multilevel reference model for the binary
+response <code>r2</code> could be created by the following code:</p>
 <div class="sourceCode" id="cb31"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/utils/data.html" class="external-link">data</a></span><span class="op">(</span><span class="st">"VerbAgg"</span>, package <span class="op">=</span> <span class="st">"lme4"</span><span class="op">)</span></span>
 <span><span class="va">refm_fit</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://mc-stan.org/rstanarm/reference/stan_glmer.html" class="external-link">stan_glmer</a></span><span class="op">(</span></span>
@@ -612,11 +660,11 @@ corresponding multilevel reference model for the binary response
 <span>  seed <span class="op">=</span> <span class="fl">82616169</span>, QR <span class="op">=</span> <span class="cn">TRUE</span>, refresh <span class="op">=</span> <span class="fl">0</span></span>
 <span><span class="op">)</span></span></code></pre></div>
 <p>As an example for an additive (non-multilevel) reference model,
-consider the <code>lasrosas.corn</code> dataset from the
-<strong>agridat</strong> package. A corresponding reference model for
-the continuous response <code>yield</code> could be created by the
-following code (note that <code>pp_check(refm_fit)</code> gives a bad
-PPC in this case, so there’s still room for improvement):</p>
+consider the <code>lasrosas.corn</code> dataset from the <a href="https://kwstat.github.io/agridat/" class="external-link"><strong>agridat</strong></a>
+package. A corresponding reference model for the continuous response
+<code>yield</code> could be created by the following code (note that
+<code>pp_check(refm_fit)</code> gives a bad PPC in this case, so there’s
+still room for improvement):</p>
 <div class="sourceCode" id="cb32"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/utils/data.html" class="external-link">data</a></span><span class="op">(</span><span class="st">"lasrosas.corn"</span>, package <span class="op">=</span> <span class="st">"agridat"</span><span class="op">)</span></span>
 <span><span class="co"># Convert `year` to a `factor` (this could also be solved by using</span></span>
@@ -643,6 +691,12 @@ following code:</p>
 <span>  data <span class="op">=</span> <span class="va">gumpertz.pepper</span>,</span>
 <span>  seed <span class="op">=</span> <span class="fl">14209013</span>, QR <span class="op">=</span> <span class="cn">TRUE</span>, refresh <span class="op">=</span> <span class="fl">0</span></span>
 <span><span class="op">)</span></span></code></pre></div>
+<p>In case of multilevel models, <strong>projpred</strong> has two
+global options that may be relevant for users:
+<code>projpred.mlvl_pred_new</code> and
+<code>projpred.mlvl_proj_ref_new</code>. These are explained in detail
+in the general package documentation (available <a href="https://mc-stan.org/projpred/reference/projpred-package.html">online</a>
+or by typing <code><a href="../reference/projpred-package.html">?`projpred-package`</a></code>).</p>
 </div>
 <div class="section level2">
 <h2 id="troubleshooting">Troubleshooting<a class="anchor" aria-label="anchor" href="#troubleshooting"></a>
@@ -727,6 +781,11 @@ Research</span>. <span>PMLR</span>. <a href="https://proceedings.mlr.press/v54/p
 Horseshoe and Other Shrinkage Priors.”</span> <em>Electronic Journal of
 Statistics</em> 11 (2): 5018–51. <a href="https://doi.org/10.1214/17-EJS1337SI" class="external-link">https://doi.org/10.1214/17-EJS1337SI</a>.
 </div>
+<div id="ref-weber_projection_2023" class="csl-entry">
+Weber, Frank, and Aki Vehtari. 2023. <span>“Projection Predictive
+Variable Selection for Discrete Response Families with Finite
+Support.”</span> <span>arXiv</span>. <a href="https://doi.org/10.48550/arXiv.2301.01660" class="external-link">https://doi.org/10.48550/arXiv.2301.01660</a>.
+</div>
 </div>
 </div>
 <div class="footnotes footnotes-end-of-document">
@@ -763,11 +822,35 @@ uncertainty arising from the observational model is the uncertainty due
 to the residual standard deviation.<a href="#fnref7" class="footnote-back">↩︎</a></p></li>
 <li id="fn8"><p>Via <code><a href="https://rdrr.io/pkg/brms/man/get_refmodel.brmsfit.html" class="external-link">brms::get_refmodel.brmsfit()</a></code>, the
 <code><a href="https://rdrr.io/pkg/brms/man/brmsfamily.html" class="external-link">brms::bernoulli()</a></code> family is supported as well.<a href="#fnref8" class="footnote-back">↩︎</a></p></li>
-<li id="fn9"><p>Multilevel models are also known as
+<li id="fn9"><p>Currently, the augmented-data support for the
+<code><a href="https://rdrr.io/r/stats/family.html" class="external-link">binomial()</a></code> family does not include binomial distributions
+with more than one trial. In such a case, a workaround is to
+de-aggregate the Bernoulli trials which belong to the same (aggregated)
+observation, i.e., to use a “long” dataset.<a href="#fnref9" class="footnote-back">↩︎</a></p></li>
+<li id="fn10"><p>Like the traditional projection, the augmented-data
+projection also supports the <code><a href="https://rdrr.io/pkg/brms/man/brmsfamily.html" class="external-link">brms::bernoulli()</a></code> family via
+<code><a href="https://rdrr.io/pkg/brms/man/get_refmodel.brmsfit.html" class="external-link">brms::get_refmodel.brmsfit()</a></code>.<a href="#fnref10" class="footnote-back">↩︎</a></p></li>
+<li id="fn11"><p>For the augmented-data projection based on a “typical”
+<strong>brms</strong> reference model, <strong>brms</strong> version
+2.17.0 or later is needed.<a href="#fnref11" class="footnote-back">↩︎</a></p></li>
+<li id="fn12"><p>More <strong>brms</strong> families might be supported
+in the future.<a href="#fnref12" class="footnote-back">↩︎</a></p></li>
+<li id="fn13"><p>Currently, the latent-projection support for the
+<code><a href="https://rdrr.io/r/stats/family.html" class="external-link">binomial()</a></code> family does not include binomial distributions
+with more than one trial. In such a case, a workaround is to
+de-aggregate the Bernoulli trials which belong to the same (aggregated)
+observation, i.e., to use a “long” dataset.<a href="#fnref13" class="footnote-back">↩︎</a></p></li>
+<li id="fn14"><p>Like the traditional projection, the latent projection
+also supports the <code><a href="https://rdrr.io/pkg/brms/man/brmsfamily.html" class="external-link">brms::bernoulli()</a></code> family via
+<code><a href="https://rdrr.io/pkg/brms/man/get_refmodel.brmsfit.html" class="external-link">brms::get_refmodel.brmsfit()</a></code>.<a href="#fnref14" class="footnote-back">↩︎</a></p></li>
+<li id="fn15"><p>For the latent projection based on a “typical”
+<strong>brms</strong> reference model, <strong>brms</strong> version
+2.18.7 or later is needed.<a href="#fnref15" class="footnote-back">↩︎</a></p></li>
+<li id="fn16"><p>Multilevel models are also known as
 <em>hierarchical</em> models or models with <em>partially pooled</em>,
-<em>group-level</em>, or—in frequentist terms—<em>random</em> effects.<a href="#fnref9" class="footnote-back">↩︎</a></p></li>
-<li id="fn10"><p>Additive terms are also known as <em>smooth</em>
-terms.<a href="#fnref10" class="footnote-back">↩︎</a></p></li>
+<em>group-level</em>, or—in frequentist terms—<em>random</em> effects.<a href="#fnref16" class="footnote-back">↩︎</a></p></li>
+<li id="fn17"><p>Additive terms are also known as <em>smooth</em>
+terms.<a href="#fnref17" class="footnote-back">↩︎</a></p></li>
 </ol>
 </div>
   </div>

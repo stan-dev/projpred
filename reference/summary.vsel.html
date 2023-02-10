@@ -18,7 +18,7 @@ cv_varsel())."><meta property="og:image" content="https://mc-stan.org/projpred/l
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">projpred</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">2.3.0</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">2.4.0</span>
       </span>
     </div>
 
@@ -119,6 +119,7 @@ cv_varsel())."><meta property="og:image" content="https://mc-stan.org/projpred/l
 <span>  deltas <span class="op">=</span> <span class="cn">FALSE</span>,</span>
 <span>  alpha <span class="op">=</span> <span class="fl">2</span> <span class="op">*</span> <span class="fu"><a href="https://rdrr.io/r/stats/Normal.html" class="external-link">pnorm</a></span><span class="op">(</span><span class="op">-</span><span class="fl">1</span><span class="op">)</span>,</span>
 <span>  baseline <span class="op">=</span> <span class="kw">if</span> <span class="op">(</span><span class="op">!</span><span class="fu"><a href="https://rdrr.io/r/base/class.html" class="external-link">inherits</a></span><span class="op">(</span><span class="va">object</span><span class="op">$</span><span class="va">refmodel</span>, <span class="st">"datafit"</span><span class="op">)</span><span class="op">)</span> <span class="st">"ref"</span> <span class="kw">else</span> <span class="st">"best"</span>,</span>
+<span>  resp_oscale <span class="op">=</span> <span class="cn">TRUE</span>,</span>
 <span>  <span class="va">...</span></span>
 <span><span class="op">)</span></span></code></pre></div>
     </div>
@@ -144,14 +145,16 @@ statistics (i.e., utilities or losses) to calculate. Available statistics
 are:</p><ul><li><p><code>"elpd"</code>: (expected) sum of log predictive densities.</p></li>
 <li><p><code>"mlpd"</code>: mean log predictive density, that is, <code>"elpd"</code> divided by the
 number of observations.</p></li>
-<li><p><code>"mse"</code>: mean squared error.</p></li>
-<li><p><code>"rmse"</code>: root mean squared error. For the corresponding standard error
+<li><p><code>"mse"</code>: mean squared error (only available in the situations mentioned
+in section "Details" below).</p></li>
+<li><p><code>"rmse"</code>: root mean squared error (only available in the situations
+mentioned in section "Details" below). For the corresponding standard error
 and lower and upper confidence interval bounds, bootstrapping is used.</p></li>
-<li><p><code>"acc"</code> (or its alias, <code>"pctcorr"</code>): classification accuracy
-(<code><a href="https://rdrr.io/r/stats/family.html" class="external-link">binomial()</a></code> family only).</p></li>
-<li><p><code>"auc"</code>: area under the ROC curve (<code><a href="https://rdrr.io/r/stats/family.html" class="external-link">binomial()</a></code> family only). For the
-corresponding standard error and lower and upper confidence interval
-bounds, bootstrapping is used.</p></li>
+<li><p><code>"acc"</code> (or its alias, <code>"pctcorr"</code>): classification accuracy (only
+available in the situations mentioned in section "Details" below).</p></li>
+<li><p><code>"auc"</code>: area under the ROC curve (only available in the situations
+mentioned in section "Details" below). For the corresponding standard error
+and lower and upper confidence interval bounds, bootstrapping is used.</p></li>
 </ul></dd>
 
 
@@ -187,6 +190,12 @@ whether the baseline is the reference model or the best submodel found (in
 terms of <code>stats[1]</code>), respectively.</p></dd>
 
 
+<dt>resp_oscale</dt>
+<dd><p>Only relevant for the latent projection. A single logical
+value indicating whether to calculate the performance statistics on
+response scale (<code>TRUE</code>) or on latent scale (<code>FALSE</code>).</p></dd>
+
+
 <dt>...</dt>
 <dd><p>Arguments passed to the internal function which is used for
 bootstrapping (if applicable; see argument <code>stats</code>). Currently, relevant
@@ -202,6 +211,25 @@ and <code>seed</code> (see <code><a href="https://rdrr.io/r/base/Random.html" cl
 
 <p>An object of class <code>vselsummary</code>.</p>
     </div>
+    <div id="details">
+    <h2>Details</h2>
+    <p>The <code>stats</code> options <code>"mse"</code> and <code>"rmse"</code> are only available for:</p><ul><li><p>the traditional projection,</p></li>
+<li><p>the latent projection with <code>resp_oscale = FALSE</code>,</p></li>
+<li><p>the latent projection with <code>resp_oscale = TRUE</code> in combination with
+<code>&lt;refmodel&gt;$family$cats</code> being <code>NULL</code>.</p></li>
+</ul><p>The <code>stats</code> option <code>"acc"</code> (= <code>"pctcorr"</code>) is only available for:</p><ul><li><p>the <code><a href="https://rdrr.io/r/stats/family.html" class="external-link">binomial()</a></code> family in case of the traditional projection,</p></li>
+<li><p>all families in case of the augmented-data projection,</p></li>
+<li><p>the <code><a href="https://rdrr.io/r/stats/family.html" class="external-link">binomial()</a></code> family (on the original response scale) in case of the
+latent projection with <code>resp_oscale = TRUE</code> in combination with
+<code>&lt;refmodel&gt;$family$cats</code> being <code>NULL</code>,</p></li>
+<li><p>all families (on the original response scale) in case of the latent
+projection with <code>resp_oscale = TRUE</code> in combination with
+<code>&lt;refmodel&gt;$family$cats</code> being not <code>NULL</code>.</p></li>
+</ul><p>The <code>stats</code> option <code>"auc"</code> is only available for:</p><ul><li><p>the <code><a href="https://rdrr.io/r/stats/family.html" class="external-link">binomial()</a></code> family in case of the traditional projection,</p></li>
+<li><p>the <code><a href="https://rdrr.io/r/stats/family.html" class="external-link">binomial()</a></code> family (on the original response scale) in case of the
+latent projection with <code>resp_oscale = TRUE</code> in combination with
+<code>&lt;refmodel&gt;$family$cats</code> being <code>NULL</code>.</p></li>
+</ul></div>
 
     <div id="ref-examples">
     <h2>Examples</h2>
@@ -230,10 +258,10 @@ and <code>seed</code> (see <code><a href="https://rdrr.io/r/base/Random.html" cl
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Formula: y ~ X1 + X2 + X3 + X4 + X5</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Observations: 100</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Projection method: traditional</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Search method: l1, maximum number of terms 3</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Number of clusters used for selection: 1</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Number of clusters used for prediction: 10</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> Suggested Projection Size: 3</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Selection Summary:</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>  size solution_terms   elpd  se  diff diff.se</span>

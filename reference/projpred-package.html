@@ -20,12 +20,25 @@ additive model), and GAMM (generalized additive multilevel---or
 family as well.
 For the projection of the reference model onto a submodel, projpred
 currently relies on the following functions (in other words, these are the
-workhorse functions used by the default divergence minimizer):
-Submodel without multilevel or additive terms: An internal C++ function
-which basically serves the same purpose as lm() for the gaussian() family
-and glm() for all other families.
-Submodel with multilevel but no additive terms: lme4::lmer() for the
-gaussian() family, lme4::glmer() for all other families.
+workhorse functions used by the default divergence minimizers):
+Submodel without multilevel or additive terms:
+For the traditional (or latent) projection (or the augmented-data
+projection in case of the binomial() or brms::bernoulli() family): An
+internal C++ function which basically serves the same purpose as lm()
+for the gaussian() family and glm() for all other families.
+For the augmented-data projection: MASS::polr() for the
+brms::cumulative() family or rstanarm::stan_polr() fits,
+nnet::multinom() for the brms::categorical() family.
+
+Submodel with multilevel but no additive terms:
+For the traditional (or latent) projection (or the augmented-data
+projection in case of the binomial() or brms::bernoulli() family):
+lme4::lmer() for the gaussian() family, lme4::glmer() for all other
+families.
+For the augmented-data projection: ordinal::clmm() for the
+brms::cumulative() family, mclogit::mblogit() for the
+brms::categorical() family.
+
 Submodel without multilevel but additive terms: mgcv::gam().
 Submodel with multilevel and additive terms: gamm4::gamm4().
 
@@ -45,10 +58,36 @@ option projpred.prll_prj_trigger. Note that we cannot recommend
 parallelizing the projection on Windows because in our experience, the
 parallelization overhead is larger there, causing a parallel run to take
 longer than a sequential run. Also note that the parallelization works well
-for GLMs, but for GLMMs, GAMs, and GAMMs, the fitted model objects are quite
-big, which---when running in parallel---may lead to an excessive memory usage
-which in turn may crash the R session. Thus, we currently cannot recommend
-the parallelization for GLMMs, GAMs, and GAMMs."><meta property="og:image" content="https://mc-stan.org/projpred/logo.svg"><!-- mathjax --><script src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/MathJax.js" integrity="sha256-nvJJv9wWKEm88qvoQl9ekL2J+k/RWIsaSScxxlsrv8k=" crossorigin="anonymous"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/config/TeX-AMS-MML_HTMLorMML.js" integrity="sha256-84DKXVJXs0/F8OTMzX4UR909+jtl4G7SPypPavF+GfA=" crossorigin="anonymous"></script><!--[if lt IE 9]>
+for GLMs, but for all other models, the fitted model objects are quite big,
+which---when running in parallel---may lead to excessive memory usage which
+in turn may crash the R session. Thus, we currently cannot recommend the
+parallelization for models other than GLMs.
+In case of multilevel models, projpred offers two global options for
+&quot;integrating out&quot; group-level effects: projpred.mlvl_pred_new and
+projpred.mlvl_proj_ref_new. When setting projpred.mlvl_pred_new to TRUE
+(default is FALSE), then at
+prediction time, projpred will treat group levels existing in the
+training data as new group levels, implying that their group-level effects
+are drawn randomly from a (multivariate) Gaussian distribution. This concerns
+both, the reference model and the (i.e., any) submodel. Furthermore, setting
+projpred.mlvl_pred_new to TRUE causes as.matrix.projection() to omit
+the projected group-level effects (for the group levels from the original
+dataset). When setting projpred.mlvl_proj_ref_new to TRUE (default is
+FALSE), then at projection time, the reference model's fitted values
+(that the submodels fit to) will be computed by treating the group levels
+from the original dataset as new group levels, implying that their
+group-level effects will be drawn randomly from a (multivariate) Gaussian
+distribution (as long as the reference model is a multilevel model,
+which---for custom reference models---does not need to be the case). This
+also affects the latent response values for a latent projection
+correspondingly. Setting projpred.mlvl_pred_new to TRUE makes sense,
+e.g., when the prediction task is such that any group level will be treated
+as a new one. Typically, setting projpred.mlvl_proj_ref_new to TRUE only
+makes sense when projpred.mlvl_pred_new is already set to TRUE. In that
+case, the default of FALSE for projpred.mlvl_proj_ref_new ensures that at
+projection time, the submodels fit to the best possible fitted values from
+the reference model, and setting projpred.mlvl_proj_ref_new to TRUE would
+make sense if the group-level effects should be integrated out completely."><meta property="og:image" content="https://mc-stan.org/projpred/logo.svg"><!-- mathjax --><script src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/MathJax.js" integrity="sha256-nvJJv9wWKEm88qvoQl9ekL2J+k/RWIsaSScxxlsrv8k=" crossorigin="anonymous"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/config/TeX-AMS-MML_HTMLorMML.js" integrity="sha256-84DKXVJXs0/F8OTMzX4UR909+jtl4G7SPypPavF+GfA=" crossorigin="anonymous"></script><!--[if lt IE 9]>
 <script src="https://oss.maxcdn.com/html5shiv/3.7.3/html5shiv.min.js"></script>
 <script src="https://oss.maxcdn.com/respond/1.4.2/respond.min.js"></script>
 <![endif]--></head><body data-spy="scroll" data-target="#toc">
@@ -66,7 +105,7 @@ the parallelization for GLMMs, GAMs, and GAMMs."><meta property="og:image" conte
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">projpred</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">2.3.0</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">2.4.0</span>
       </span>
     </div>
 
@@ -174,11 +213,22 @@ additive model), and GAMM (generalized additive multilevel---or
 family as well.</p>
 <p>For the projection of the reference model onto a submodel, <span class="pkg">projpred</span>
 currently relies on the following functions (in other words, these are the
-workhorse functions used by the default divergence minimizer):</p><ul><li><p>Submodel without multilevel or additive terms: An internal C++ function
-which basically serves the same purpose as <code><a href="https://rdrr.io/r/stats/lm.html" class="external-link">lm()</a></code> for the <code><a href="https://rdrr.io/r/stats/family.html" class="external-link">gaussian()</a></code> family
-and <code><a href="https://rdrr.io/r/stats/glm.html" class="external-link">glm()</a></code> for all other families.</p></li>
-<li><p>Submodel with multilevel but no additive terms: <code><a href="https://rdrr.io/pkg/lme4/man/lmer.html" class="external-link">lme4::lmer()</a></code> for the
-<code><a href="https://rdrr.io/r/stats/family.html" class="external-link">gaussian()</a></code> family, <code><a href="https://rdrr.io/pkg/lme4/man/glmer.html" class="external-link">lme4::glmer()</a></code> for all other families.</p></li>
+workhorse functions used by the default divergence minimizers):</p><ul><li><p>Submodel without multilevel or additive terms:</p><ul><li><p>For the traditional (or latent) projection (or the augmented-data
+projection in case of the <code><a href="https://rdrr.io/r/stats/family.html" class="external-link">binomial()</a></code> or <code><a href="https://rdrr.io/pkg/brms/man/brmsfamily.html" class="external-link">brms::bernoulli()</a></code> family): An
+internal C++ function which basically serves the same purpose as <code><a href="https://rdrr.io/r/stats/lm.html" class="external-link">lm()</a></code>
+for the <code><a href="https://rdrr.io/r/stats/family.html" class="external-link">gaussian()</a></code> family and <code><a href="https://rdrr.io/r/stats/glm.html" class="external-link">glm()</a></code> for all other families.</p></li>
+<li><p>For the augmented-data projection: <code><a href="https://rdrr.io/pkg/MASS/man/polr.html" class="external-link">MASS::polr()</a></code> for the
+<code><a href="https://rdrr.io/pkg/brms/man/brmsfamily.html" class="external-link">brms::cumulative()</a></code> family or <code><a href="https://mc-stan.org/rstanarm/reference/stan_polr.html" class="external-link">rstanarm::stan_polr()</a></code> fits,
+<code><a href="https://rdrr.io/pkg/nnet/man/multinom.html" class="external-link">nnet::multinom()</a></code> for the <code><a href="https://rdrr.io/pkg/brms/man/brmsfamily.html" class="external-link">brms::categorical()</a></code> family.</p></li>
+</ul></li>
+<li><p>Submodel with multilevel but no additive terms:</p><ul><li><p>For the traditional (or latent) projection (or the augmented-data
+projection in case of the <code><a href="https://rdrr.io/r/stats/family.html" class="external-link">binomial()</a></code> or <code><a href="https://rdrr.io/pkg/brms/man/brmsfamily.html" class="external-link">brms::bernoulli()</a></code> family):
+<code><a href="https://rdrr.io/pkg/lme4/man/lmer.html" class="external-link">lme4::lmer()</a></code> for the <code><a href="https://rdrr.io/r/stats/family.html" class="external-link">gaussian()</a></code> family, <code><a href="https://rdrr.io/pkg/lme4/man/glmer.html" class="external-link">lme4::glmer()</a></code> for all other
+families.</p></li>
+<li><p>For the augmented-data projection: <code><a href="https://rdrr.io/pkg/ordinal/man/clmm.html" class="external-link">ordinal::clmm()</a></code> for the
+<code><a href="https://rdrr.io/pkg/brms/man/brmsfamily.html" class="external-link">brms::cumulative()</a></code> family, <code><a href="https://rdrr.io/pkg/mclogit/man/mblogit.html" class="external-link">mclogit::mblogit()</a></code> for the
+<code><a href="https://rdrr.io/pkg/brms/man/brmsfamily.html" class="external-link">brms::categorical()</a></code> family.</p></li>
+</ul></li>
 <li><p>Submodel without multilevel but additive terms: <code><a href="https://rdrr.io/pkg/mgcv/man/gam.html" class="external-link">mgcv::gam()</a></code>.</p></li>
 <li><p>Submodel with multilevel and additive terms: <code><a href="https://rdrr.io/pkg/gamm4/man/gamm4.html" class="external-link">gamm4::gamm4()</a></code>.</p></li>
 </ul><p>The projection of the reference model onto a submodel can be run on multiple
@@ -196,10 +246,36 @@ option <code>projpred.prll_prj_trigger</code>. Note that we cannot recommend
 parallelizing the projection on Windows because in our experience, the
 parallelization overhead is larger there, causing a parallel run to take
 longer than a sequential run. Also note that the parallelization works well
-for GLMs, but for GLMMs, GAMs, and GAMMs, the fitted model objects are quite
-big, which---when running in parallel---may lead to an excessive memory usage
-which in turn may crash the R session. Thus, we currently cannot recommend
-the parallelization for GLMMs, GAMs, and GAMMs.</p>
+for GLMs, but for all other models, the fitted model objects are quite big,
+which---when running in parallel---may lead to excessive memory usage which
+in turn may crash the R session. Thus, we currently cannot recommend the
+parallelization for models other than GLMs.</p>
+<p>In case of multilevel models, <span class="pkg">projpred</span> offers two global options for
+"integrating out" group-level effects: <code>projpred.mlvl_pred_new</code> and
+<code>projpred.mlvl_proj_ref_new</code>. When setting <code>projpred.mlvl_pred_new</code> to <code>TRUE</code>
+(default is <code>FALSE</code>), then at
+<em>prediction</em> time, <span class="pkg">projpred</span> will treat group levels existing in the
+training data as <em>new</em> group levels, implying that their group-level effects
+are drawn randomly from a (multivariate) Gaussian distribution. This concerns
+both, the reference model and the (i.e., any) submodel. Furthermore, setting
+<code>projpred.mlvl_pred_new</code> to <code>TRUE</code> causes <code><a href="as.matrix.projection.html">as.matrix.projection()</a></code> to omit
+the projected group-level effects (for the group levels from the original
+dataset). When setting <code>projpred.mlvl_proj_ref_new</code> to <code>TRUE</code> (default is
+<code>FALSE</code>), then at <em>projection</em> time, the reference model's fitted values
+(that the submodels fit to) will be computed by treating the group levels
+from the original dataset as <em>new</em> group levels, implying that their
+group-level effects will be drawn randomly from a (multivariate) Gaussian
+distribution (as long as the reference model is a multilevel model,
+which---for custom reference models---does not need to be the case). This
+also affects the latent response values for a latent projection
+correspondingly. Setting <code>projpred.mlvl_pred_new</code> to <code>TRUE</code> makes sense,
+e.g., when the prediction task is such that any group level will be treated
+as a new one. Typically, setting <code>projpred.mlvl_proj_ref_new</code> to <code>TRUE</code> only
+makes sense when <code>projpred.mlvl_pred_new</code> is already set to <code>TRUE</code>. In that
+case, the default of <code>FALSE</code> for <code>projpred.mlvl_proj_ref_new</code> ensures that at
+projection time, the submodels fit to the best possible fitted values from
+the reference model, and setting <code>projpred.mlvl_proj_ref_new</code> to <code>TRUE</code> would
+make sense if the group-level effects should be integrated out completely.</p>
     </div>
 
 
@@ -256,6 +332,8 @@ submodel (after projecting the reference model onto it).</p></dd>
 <li><p>Hamada S. Badr [contributor]</p></li>
 <li><p>Brian Sullivan [contributor]</p></li>
 <li><p>Sölvi Rögnvaldsson [contributor]</p></li>
+<li><p>The LME4 Authors (see file 'LICENSE' for details) [copyright holder]</p></li>
+<li><p>Yann McLatchie [contributor]</p></li>
 </ul></div>
 
   </div>
