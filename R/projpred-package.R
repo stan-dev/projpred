@@ -76,8 +76,8 @@
 #' in turn may crash the R session. Thus, we currently cannot recommend the
 #' parallelization for models other than GLMs.
 #'
-#' For multilevel models, \pkg{projpred} offers two global options that may be
-#' revelant for users: `projpred.mlvl_pred_new` and
+#' In case of multilevel models, \pkg{projpred} offers two global options for
+#' "integrating out" group-level effects: `projpred.mlvl_pred_new` and
 #' `projpred.mlvl_proj_ref_new`. When setting `projpred.mlvl_pred_new` to `TRUE`
 #' (default is `FALSE`), then at
 #' *prediction* time, \pkg{projpred} will treat group levels existing in the
