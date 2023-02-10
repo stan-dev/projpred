@@ -236,9 +236,6 @@ cv_varsel.refmodel <- function(
               nprjdraws_search = sel$nprjdraws_search,
               nprjdraws_eval = sel$nprjdraws_eval)
   class(vs) <- "vsel"
-  vs$suggested_size <- suggest_size(vs, warnings = FALSE)
-  summary <- summary(vs)
-  vs$summary <- summary$selection
   if (verbose) {
     print("Done.")
   }
@@ -301,8 +298,9 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
 
   # Pre-processing ----------------------------------------------------------
 
-  mu <- refmodel$mu
   eta <- refmodel$eta
+  mu <- refmodel$mu
+  mu_offs <- refmodel$mu_offs
   dis <- refmodel$dis
   ## the clustering/subsampling used for selection
   p_sel <- .get_refdist(refmodel, ndraws = ndraws, nclusters = nclusters)
@@ -321,14 +319,68 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
          "probabilistic model for which the log-likelihood can be evaluated.")
   }
 
-  eta_offs <- eta + refmodel$offset
-  mu_offs <- refmodel$family$linkinv(eta_offs)
-
-  loglik <- t(refmodel$family$ll_fun(mu_offs, dis, refmodel$y, refmodel$wobs))
-  n <- ncol(loglik)
-  psisloo <- loo::psis(-loglik, cores = 1, r_eff = NA)
+  if (refmodel$family$for_latent) {
+    mu_offs_oscale <- refmodel$family$latent_ilink(
+      t(mu_offs), cl_ref = seq_along(refmodel$wsample),
+      wdraws_ref = refmodel$wsample
+    )
+    if (length(dim(mu_offs_oscale)) < 2) {
+      stop("Unexpected structure for the output of `latent_ilink`.")
+    }
+    loglik_forPSIS <- refmodel$family$latent_ll_oscale(
+      mu_offs_oscale, y_oscale = refmodel$y_oscale, wobs = refmodel$wobs,
+      cl_ref = seq_along(refmodel$wsample), wdraws_ref = refmodel$wsample
+    )
+    if (!is.matrix(loglik_forPSIS)) {
+      stop("Unexpected structure for the output of `latent_ll_oscale`.")
+    }
+    if (all(is.na(loglik_forPSIS))) {
+      stop("In case of the latent projection, `cv_method = \"LOO\"` requires ",
+           "a function `latent_ll_oscale` that does not return only `NA`s.")
+    }
+    if (length(dim(mu_offs_oscale)) == 3) {
+      # In this case, `mu_offs_oscale` is a 3-dimensional array (S x N x C), so
+      # coerce it to an augmented-rows matrix:
+      mu_offs_oscale <- arr2augmat(mu_offs_oscale, margin_draws = 1)
+      n_aug <- nrow(mu_offs_oscale)
+    } else {
+      # In this case, `mu_offs_oscale` is a matrix (S x N). Transposing it to an
+      # N x S matrix would be more consistent with projpred's internal
+      # convention, but avoiding the transposition is computationally more
+      # efficient:
+      n_aug <- ncol(mu_offs_oscale)
+    }
+  } else {
+    loglik_forPSIS <- t(refmodel$family$ll_fun(
+      mu_offs, dis, refmodel$y, refmodel$wobs
+    ))
+  }
+  n <- ncol(loglik_forPSIS)
+  psisloo <- loo::psis(-loglik_forPSIS, cores = 1, r_eff = NA)
   lw <- weights(psisloo)
   # pareto_k <- loo::pareto_k_values(psisloo)
+
+  if (refmodel$family$for_latent) {
+    # Need to re-calculate the latent response values in `refmodel$y` by
+    # incorporating the PSIS weights because `refmodel$y` resulted from applying
+    # `colMeans(posterior_linpred())` to the original (full-data) reference
+    # model fit, so using `refmodel$y` would induce a dependency between
+    # training and test data:
+    y_lat_E <- loo::E_loo(
+      t(refmodel$ref_predfun(
+        refmodel$fit, excl_offs = FALSE,
+        mlvl_allrandom = getOption("projpred.mlvl_proj_ref_new", FALSE)
+      )),
+      psis_object = psisloo,
+      log_ratios = -loglik_forPSIS
+    )
+    if (any(y_lat_E$pareto_k > 0.7)) {
+      warning("In the recalculation of the latent response values, ",
+              sum(y_lat_E$pareto_k > 0.7), " (of ", n, ") Pareto k-value(s) ",
+              "exceeded the threshold of 0.7.")
+    }
+    refmodel$y <- y_lat_E$value
+  }
 
   ## by default use all observations
   nloo <- min(nloo, n)
@@ -338,21 +390,39 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
     warning("Subsampled LOO CV is still experimental.")
   }
 
-  ## compute loo summaries for the reference model
-  loo_ref <- apply(loglik + lw, 2, log_sum_exp)
-  mu_ref <- do.call(c, lapply(seq_len(n), function(i) {
-    mu_offs[i, ] %*% exp(lw[, i])
-  }))
-
   ## decide which points form the validation set based on the k-values
   ## validset <- .loo_subsample(n, nloo, pareto_k)
-  validset <- .loo_subsample_pps(nloo, loo_ref)
+  loo_ref_oscale <- apply(loglik_forPSIS + lw, 2, log_sum_exp)
+  validset <- .loo_subsample_pps(nloo, loo_ref_oscale)
   inds <- validset$inds
 
   ## initialize objects where to store the results
   solution_terms_mat <- matrix(nrow = n, ncol = nterms_max - refmodel$intercept)
   loo_sub <- replicate(nterms_max, rep(NA, n), simplify = FALSE)
-  mu_sub <- replicate(nterms_max, rep(NA, n), simplify = FALSE)
+  mu_sub <- replicate(
+    nterms_max,
+    structure(rep(NA, nrow(mu_offs)),
+              nobs_orig = attr(mu_offs, "nobs_orig"),
+              class = sub("augmat", "augvec", oldClass(mu_offs), fixed = TRUE)),
+    simplify = FALSE
+  )
+  if (refmodel$family$for_latent) {
+    loo_sub_oscale <- loo_sub
+    # In general, we could use `mu_sub_oscale <- mu_sub` here, but the case
+    # where refmodel$family$latent_ilink() returns a 3-dimensional array (S x N
+    # x C) needs special care.
+    if (!is.null(refmodel$family$cats)) {
+      mu_sub_oscale <- replicate(
+        nterms_max,
+        structure(rep(NA, n * length(refmodel$family$cats)),
+                  nobs_orig = n,
+                  class = "augvec"),
+        simplify = FALSE
+      )
+    } else {
+      mu_sub_oscale <- mu_sub
+    }
+  }
 
   if (verbose) {
     if (validate_search) {
@@ -399,16 +469,41 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
     } else {
       refdist_eval <- p_sel
     }
-    refdist_eval_mu_offs <- refdist_eval$mu
-    if (!all(refmodel$offset == 0)) {
-      refdist_eval_mu_offs <- refmodel$family$linkinv(
-        refmodel$family$linkfun(refdist_eval_mu_offs) + refmodel$offset
+    if (refmodel$family$for_latent) {
+      refdist_eval_mu_offs_oscale <- refmodel$family$latent_ilink(
+        t(refdist_eval$mu_offs), cl_ref = refdist_eval$cl,
+        wdraws_ref = refdist_eval$wsample_orig
       )
+      if (length(dim(refdist_eval_mu_offs_oscale)) == 3) {
+        refdist_eval_mu_offs_oscale <- refdist_eval_mu_offs_oscale[, inds, ,
+                                                                   drop = FALSE]
+      } else {
+        refdist_eval_mu_offs_oscale <- refdist_eval_mu_offs_oscale[, inds,
+                                                                   drop = FALSE]
+      }
+      log_lik_ref <- refmodel$family$latent_ll_oscale(
+        refdist_eval_mu_offs_oscale, y_oscale = refmodel$y_oscale[inds],
+        wobs = refmodel$wobs[inds], cl_ref = refdist_eval$cl,
+        wdraws_ref = refdist_eval$wsample_orig
+      )
+      if (all(is.na(log_lik_ref))) {
+        stop("In case of the latent projection, `validate_search = FALSE` ",
+             "requires a function `latent_ll_oscale` that does not return ",
+             "only `NA`s.")
+      }
+    } else {
+      inds_aug <- inds
+      if (refmodel$family$for_augdat) {
+        inds_aug <- inds_aug + rep(
+          (seq_along(refmodel$family$cats) - 1L) * n,
+          each = length(inds_aug)
+        )
+      }
+      log_lik_ref <- t(refmodel$family$ll_fun(
+        refdist_eval$mu_offs[inds_aug, , drop = FALSE], refdist_eval$dis,
+        refmodel$y[inds], refmodel$wobs[inds]
+      ))
     }
-    log_lik_ref <- t(refmodel$family$ll_fun(
-      refdist_eval_mu_offs[inds, , drop = FALSE], refdist_eval$dis,
-      refmodel$y[inds], refmodel$wobs[inds]
-    ))
     sub_psisloo <- suppressWarnings(
       loo::psis(-log_lik_ref, cores = 1, r_eff = NA)
     )
@@ -426,8 +521,50 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
         mu_k, submodels[[k]]$dis, refmodel$y[inds], refmodel$wobs[inds]
       ))
       loo_sub[[k]][inds] <- apply(log_lik_sub + lw_sub, 2, log_sum_exp)
-      for (i in seq_along(inds)) {
-        mu_sub[[k]][inds[i]] <- mu_k[i, ] %*% exp(lw_sub[, i])
+      if (refmodel$family$for_latent) {
+        mu_k_oscale <- refmodel$family$latent_ilink(
+          t(mu_k), cl_ref = refdist_eval$cl,
+          wdraws_ref = refdist_eval$wsample_orig
+        )
+        log_lik_sub_oscale <- refmodel$family$latent_ll_oscale(
+          mu_k_oscale, y_oscale = refmodel$y_oscale[inds],
+          wobs = refmodel$wobs[inds], cl_ref = refdist_eval$cl,
+          wdraws_ref = refdist_eval$wsample_orig
+        )
+        loo_sub_oscale[[k]][inds] <- apply(log_lik_sub_oscale + lw_sub, 2,
+                                           log_sum_exp)
+        if (length(dim(mu_k_oscale)) == 3) {
+          mu_k_oscale <- arr2augmat(mu_k_oscale, margin_draws = 1)
+        }
+      }
+      for (run_index in seq_along(inds)) {
+        i_aug <- inds[run_index]
+        run_index_aug <- run_index
+        if (!is.null(refmodel$family$cats)) {
+          i_aug <- i_aug + (seq_along(refmodel$family$cats) - 1L) * n
+          run_index_aug <- run_index_aug +
+            (seq_along(refmodel$family$cats) - 1L) * nloo
+        }
+        i_flx <- i_aug
+        run_index_flx <- run_index_aug
+        if (refmodel$family$for_latent && !is.null(refmodel$family$cats)) {
+          i_flx <- inds[run_index]
+          run_index_flx <- run_index
+        }
+        mu_sub[[k]][i_flx] <- mu_k[run_index_flx, ] %*% exp(lw_sub[, run_index])
+        if (refmodel$family$for_latent) {
+          if (inherits(mu_k_oscale, "augmat")) {
+            mu_sub_oscale[[k]][i_aug] <- mu_k_oscale[run_index_aug, ] %*%
+              exp(lw_sub[, run_index])
+          } else {
+            # In principle, we could use the same code for averaging across the
+            # draws as above in the `"augmat"` case. However, that would require
+            # `mu_k_oscale <- t(mu_k_oscale)` beforehand, so the following
+            # should be more efficient:
+            mu_sub_oscale[[k]][i_aug] <- exp(lw_sub[, run_index]) %*%
+              mu_k_oscale[, run_index_aug]
+          }
+        }
       }
 
       if (verbose) {
@@ -464,12 +601,12 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
 
       ## reweight the clusters/samples according to the psis-loo weights
       p_sel <- .get_p_clust(
-        family = refmodel$family, mu = mu, eta = eta, dis = dis,
-        wsample = exp(lw[, i]), cl = cl_sel, offs = refmodel$offset
+        family = refmodel$family, eta = eta, mu = mu, mu_offs = mu_offs,
+        dis = dis, wsample = exp(lw[, i]), cl = cl_sel
       )
       p_pred <- .get_p_clust(
-        family = refmodel$family, mu = mu, eta = eta, dis = dis,
-        wsample = exp(lw[, i]), cl = cl_pred, offs = refmodel$offset
+        family = refmodel$family, eta = eta, mu = mu, mu_offs = mu_offs,
+        dis = dis, wsample = exp(lw[, i]), cl = cl_pred
       )
 
       ## perform selection with the reweighted clusters/samples
@@ -490,9 +627,21 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
       summaries_sub <- .get_sub_summaries(submodels = submodels,
                                           refmodel = refmodel,
                                           test_points = i)
+      i_aug <- i
+      if (!is.null(refmodel$family$cats)) {
+        i_aug <- i_aug + (seq_along(refmodel$family$cats) - 1L) * n
+      }
+      i_flx <- i_aug
+      if (refmodel$family$for_latent && !is.null(refmodel$family$cats)) {
+        i_flx <- i
+      }
       for (k in seq_along(summaries_sub)) {
         loo_sub[[k]][i] <- summaries_sub[[k]]$lppd
-        mu_sub[[k]][i] <- summaries_sub[[k]]$mu
+        mu_sub[[k]][i_flx] <- summaries_sub[[k]]$mu
+        if (!is.null(summaries_sub[[k]]$oscale)) {
+          loo_sub_oscale[[k]][i] <- summaries_sub[[k]]$oscale$lppd
+          mu_sub_oscale[[k]][i_aug] <- summaries_sub[[k]]$oscale$mu
+        }
       }
 
       if (is.null(prv_len_soltrms)) {
@@ -520,13 +669,115 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
 
   ## put all the results together in the form required by cv_varsel
   summ_sub <- lapply(seq_len(nterms_max), function(k) {
-    list(lppd = loo_sub[[k]], mu = mu_sub[[k]], wcv = validset$wcv)
+    summ_k <- list(lppd = loo_sub[[k]], mu = mu_sub[[k]], wcv = validset$wcv)
+    if (refmodel$family$for_latent) {
+      summ_k$oscale <- list(lppd = loo_sub_oscale[[k]], mu = mu_sub_oscale[[k]],
+                            wcv = validset$wcv)
+    }
+    return(summ_k)
   })
-  summ_ref <- list(lppd = loo_ref, mu = mu_ref)
+  if (formula_contains_group_terms(refmodel$formula) &&
+      getOption("projpred.mlvl_pred_new", FALSE)) {
+    # Need to use `mlvl_allrandom = TRUE` (`mu_offs` is based on
+    # `mlvl_allrandom = getOption("projpred.mlvl_proj_ref_new", FALSE)`):
+    eta_offs_mlvlRan <- refmodel$ref_predfun(refmodel$fit, excl_offs = FALSE)
+    mu_offs_mlvlRan <- refmodel$family$linkinv(eta_offs_mlvlRan)
+  } else {
+    mu_offs_mlvlRan <- mu_offs
+  }
+  mu_ref <- do.call(c, lapply(seq_len(nrow(mu_offs_mlvlRan)), function(i) {
+    # For the augmented-data projection, `mu_offs_mlvlRan` is an augmented-rows
+    # matrix whereas the columns of `lw` refer to the original (non-augmented)
+    # observations. Since `i` refers to the rows of `mu_offs_mlvlRan`, the index
+    # for `lw` needs to be adapted:
+    i_nonaug <- i %% n
+    if (i_nonaug == 0) {
+      i_nonaug <- n
+    }
+    mu_offs_mlvlRan[i, ] %*% exp(lw[, i_nonaug])
+  }))
+  mu_ref <- structure(
+    mu_ref,
+    nobs_orig = attr(mu_offs_mlvlRan, "nobs_orig"),
+    class = sub("augmat", "augvec", oldClass(mu_offs_mlvlRan), fixed = TRUE)
+  )
+  if (refmodel$family$for_latent) {
+    loglik_lat <- t(refmodel$family$ll_fun(
+      mu_offs_mlvlRan, dis, refmodel$y, refmodel$wobs
+    ))
+    lppd_ref <- apply(loglik_lat + lw, 2, log_sum_exp)
+  } else {
+    if (formula_contains_group_terms(refmodel$formula) &&
+        getOption("projpred.mlvl_pred_new", FALSE)) {
+      # Need to use `mlvl_allrandom = TRUE` (`loo_ref_oscale` is based on
+      # `mlvl_allrandom = getOption("projpred.mlvl_proj_ref_new", FALSE)`):
+      loglik_mlvlRan <- t(refmodel$family$ll_fun(
+        mu_offs_mlvlRan, dis, refmodel$y, refmodel$wobs
+      ))
+      lppd_ref <- apply(loglik_mlvlRan + lw, 2, log_sum_exp)
+    } else {
+      lppd_ref <- loo_ref_oscale
+    }
+  }
+  summ_ref <- list(lppd = lppd_ref, mu = mu_ref)
+  if (refmodel$family$for_latent) {
+    if (formula_contains_group_terms(refmodel$formula) &&
+        getOption("projpred.mlvl_pred_new", FALSE)) {
+      # Need to use `mlvl_allrandom = TRUE` (`mu_offs_oscale` is based on
+      # `mlvl_allrandom = getOption("projpred.mlvl_proj_ref_new", FALSE)`):
+      mu_offs_mlvlRan_oscale <- refmodel$family$latent_ilink(
+        t(mu_offs_mlvlRan), cl_ref = seq_along(refmodel$wsample),
+        wdraws_ref = refmodel$wsample
+      )
+      mu_offs_mlvlRan_oscale_odim <- mu_offs_mlvlRan_oscale
+      if (length(dim(mu_offs_mlvlRan_oscale)) == 3) {
+        mu_offs_mlvlRan_oscale <- arr2augmat(mu_offs_mlvlRan_oscale,
+                                             margin_draws = 1)
+      }
+    } else {
+      mu_offs_mlvlRan_oscale <- mu_offs_oscale
+    }
+    mu_ref_oscale <- do.call(c, lapply(seq_len(n_aug), function(i) {
+      i_nonaug <- i %% n
+      if (i_nonaug == 0) {
+        i_nonaug <- n
+      }
+      if (inherits(mu_offs_mlvlRan_oscale, "augmat")) {
+        return(mu_offs_mlvlRan_oscale[i, ] %*% exp(lw[, i_nonaug]))
+      } else {
+        # In principle, we could use the same code for averaging across the
+        # draws as above in the `"augmat"` case. However, that would require
+        # `mu_offs_mlvlRan_oscale <- t(mu_offs_mlvlRan_oscale)` beforehand, so
+        # the following should be more efficient:
+        return(exp(lw[, i_nonaug]) %*% mu_offs_mlvlRan_oscale[, i])
+      }
+    }))
+    mu_ref_oscale <- structure(
+      mu_ref_oscale,
+      nobs_orig = attr(mu_offs_mlvlRan_oscale, "nobs_orig"),
+      class = sub("augmat", "augvec", oldClass(mu_offs_mlvlRan_oscale),
+                  fixed = TRUE)
+    )
+    if (formula_contains_group_terms(refmodel$formula) &&
+        getOption("projpred.mlvl_pred_new", FALSE)) {
+      # Need to use `mlvl_allrandom = TRUE` (`loo_ref_oscale` is based on
+      # `mlvl_allrandom = getOption("projpred.mlvl_proj_ref_new", FALSE)`):
+      loglik_mlvlRan <- refmodel$family$latent_ll_oscale(
+        mu_offs_mlvlRan_oscale_odim, y_oscale = refmodel$y_oscale,
+        wobs = refmodel$wobs, cl_ref = seq_along(refmodel$wsample),
+        wdraws_ref = refmodel$wsample
+      )
+      lppd_ref_oscale <- apply(loglik_mlvlRan + lw, 2, log_sum_exp)
+    } else {
+      lppd_ref_oscale <- loo_ref_oscale
+    }
+    summ_ref$oscale <- list(lppd = lppd_ref_oscale, mu = mu_ref_oscale)
+  }
   summaries <- list(sub = summ_sub, ref = summ_ref)
 
   d_test <- list(type = "LOO", data = NULL, offset = refmodel$offset,
-                 weights = refmodel$wobs, y = refmodel$y)
+                 weights = refmodel$wobs, y = refmodel$y,
+                 y_oscale = refmodel$y_oscale)
 
   solution_terms_mat <- solution_terms_mat[
     , seq_along(search_path$solution_terms), drop = FALSE
@@ -548,10 +799,20 @@ kfold_varsel <- function(refmodel, method, nterms_max, ndraws,
   list_cv <- .get_kfold(refmodel, K, verbose)
   K <- length(list_cv)
 
+  if (refmodel$family$for_latent) {
+    # Need to set the latent response values in `refmodel$y` to `NA`s because
+    # `refmodel$y` resulted from applying `colMeans(posterior_linpred())` to the
+    # original (full-data) reference model fit, so using the `fold$omitted`
+    # subset of `refmodel$y` as (latent) response values in fold k of K would
+    # induce a dependency between training and test data:
+    refmodel$y <- rep(NA, length(refmodel$y))
+  }
+
   # Extend `list_cv` to also contain `y`, `weights`, and `offset`:
   extend_list_cv <- function(fold) {
     d_test <- list(
       y = refmodel$y[fold$omitted],
+      y_oscale = refmodel$y_oscale[fold$omitted],
       weights = refmodel$wobs[fold$omitted],
       offset = refmodel$offset[fold$omitted],
       omitted = fold$omitted
@@ -628,14 +889,31 @@ kfold_varsel <- function(refmodel, method, nterms_max, ndraws,
   idxs_sorted_by_fold <- unlist(lapply(list_cv, function(fold) {
     fold$d_test$omitted
   }))
+  idxs_sorted_by_fold_aug <- idxs_sorted_by_fold
+  if (!is.null(refmodel$family$cats)) {
+    idxs_sorted_by_fold_aug <- idxs_sorted_by_fold_aug + rep(
+      (seq_along(refmodel$family$cats) - 1L) * length(refmodel$y),
+      each = length(idxs_sorted_by_fold_aug)
+    )
+  }
+  idxs_sorted_by_fold_flx <- idxs_sorted_by_fold_aug
+  if (refmodel$family$for_latent && !is.null(refmodel$family$cats)) {
+    idxs_sorted_by_fold_flx <- idxs_sorted_by_fold
+  }
   sub <- lapply(sub, function(summ) {
-    summ$mu <- summ$mu[order(idxs_sorted_by_fold)]
+    summ$mu <- summ$mu[order(idxs_sorted_by_fold_flx)]
     summ$lppd <- summ$lppd[order(idxs_sorted_by_fold)]
 
     # Add fold-specific weights (see the discussion at GitHub issue #94 for why
     # this might have to be changed):
-    summ$wcv <- rep(1, length(summ$mu))
+    summ$wcv <- rep(1, length(summ$lppd))
     summ$wcv <- summ$wcv / sum(summ$wcv)
+
+    if (!is.null(summ$oscale)) {
+      summ$oscale$mu <- summ$oscale$mu[order(idxs_sorted_by_fold_aug)]
+      summ$oscale$lppd <- summ$oscale$lppd[order(idxs_sorted_by_fold)]
+      summ$oscale$wcv <- summ$wcv
+    }
     return(summ)
   })
 
@@ -643,24 +921,30 @@ kfold_varsel <- function(refmodel, method, nterms_max, ndraws,
   ref <- rbind2list(lapply(list_cv, function(fold) {
     eta_test <- fold$refmodel$ref_predfun(
       fold$refmodel$fit,
-      newdata = refmodel$fetch_data(obs = fold$d_test$omitted)
-    ) + fold$d_test$offset
+      newdata = refmodel$fetch_data(obs = fold$d_test$omitted),
+      excl_offs = FALSE
+    )
     mu_test <- fold$refmodel$family$linkinv(eta_test)
     .weighted_summary_means(
       y_test = fold$d_test, family = fold$refmodel$family,
       wsample = fold$refmodel$wsample, mu = mu_test,
-      dis = fold$refmodel$dis
+      dis = fold$refmodel$dis, cl_ref = seq_along(fold$refmodel$wsample)
     )
   }))
-  ref$mu <- ref$mu[order(idxs_sorted_by_fold)]
+  ref$mu <- ref$mu[order(idxs_sorted_by_fold_flx)]
   ref$lppd <- ref$lppd[order(idxs_sorted_by_fold)]
+  if (!is.null(ref$oscale)) {
+    ref$oscale$mu <- ref$oscale$mu[order(idxs_sorted_by_fold_aug)]
+    ref$oscale$lppd <- ref$oscale$lppd[order(idxs_sorted_by_fold)]
+  }
 
   # Combine the K separate test "datasets" (rather "information objects") into a
   # single list:
   d_cv <- rbind2list(lapply(list_cv, function(fold) {
     list(offset = fold$d_test$offset,
          weights = fold$d_test$weights,
-         y = fold$d_test$y)
+         y = fold$d_test$y,
+         y_oscale = fold$d_test$y_oscale)
   }))
   d_cv <- as.list(
     as.data.frame(d_cv)[order(idxs_sorted_by_fold), , drop = FALSE]
@@ -746,8 +1030,8 @@ kfold_varsel <- function(refmodel, method, nterms_max, ndraws,
 #       inds <- c(inds, resample(setdiff(seq_len(n), inds), nloo - length(inds)))
 #     }
 #
-#     ## assign the weights corresponding to this stratification (for example, the
-#     ## 'bad' values are likely to be overpresented in the sample)
+#     ## assign the weights corresponding to this stratification (for example,
+#     ## the 'bad' values are likely to be overpresented in the sample)
 #     wcv <- rep(0, n)
 #     wcv[inds[inds %in% bad]] <- length(bad) / sum(inds %in% bad)
 #     wcv[inds[inds %in% ok]] <- length(ok) / sum(inds %in% ok)

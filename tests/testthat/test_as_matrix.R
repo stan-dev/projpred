@@ -20,6 +20,7 @@ test_that("as.matrix.projection() works", {
     mod_crr <- args_prj[[tstsetup]]$mod_nm
     fam_crr <- args_prj[[tstsetup]]$fam_nm
     pkg_crr <- args_prj[[tstsetup]]$pkg_nm
+    prj_crr <- args_prj[[tstsetup]]$prj_nm
     solterms <- args_prj[[tstsetup]]$solution_terms
     ndr_ncl <- ndr_ncl_dtls(args_prj[[tstsetup]])
 
@@ -34,15 +35,29 @@ test_that("as.matrix.projection() works", {
     expect_warning(m <- as.matrix(prjs[[tstsetup]]),
                    warn_prjmat_expect, info = tstsetup)
 
-    if (fam_crr == "gauss") {
+    if (fam_crr == "gauss" || prj_crr == "latent") {
       npars_fam <- "sigma"
     } else {
       npars_fam <- character()
     }
 
-    icpt_nm <- "Intercept"
-    if (pkg_crr == "rstanarm") {
-      icpt_nm <- paste0("(", icpt_nm, ")")
+    if (fam_crr == "cumul" && prj_crr == "augdat") {
+      # Note: Here, we could also derive `icpt_nm` from
+      # `prjs[[tstsetup]]$refmodel$family$cats`.
+      if (pkg_crr == "rstanarm") {
+        icpt_nm <- paste(head(levels(prjs[[tstsetup]]$refmodel$y), -1),
+                         tail(levels(prjs[[tstsetup]]$refmodel$y), -1),
+                         sep = "|")
+      } else if (pkg_crr == "brms") {
+        icpt_nm <- paste0("Intercept[",
+                          seq_len(nlevels(prjs[[tstsetup]]$refmodel$y) - 1L),
+                          "]")
+      }
+    } else {
+      icpt_nm <- "Intercept"
+      if (pkg_crr == "rstanarm") {
+        icpt_nm <- paste0("(", icpt_nm, ")")
+      }
     }
     colnms_prjmat_expect <- c(
       icpt_nm,
@@ -78,44 +93,87 @@ test_that("as.matrix.projection() works", {
       )
     }
     if (pkg_crr == "brms") {
+      if (fam_crr == "categ") {
+        # Note: Here, we could also derive `yunq_norefcat` from
+        # `prjs[[tstsetup]]$refmodel$family$cats`.
+        yunq_norefcat <- tail(levels(prjs[[tstsetup]]$refmodel$y), -1)
+        colnms_prjmat_expect <- unlist(lapply(
+          colnms_prjmat_expect,
+          function(colnms_prjmat_expect_i) {
+            paste0("mu", yunq_norefcat, "_",
+                   colnms_prjmat_expect_i)
+          }
+        ))
+      }
       colnms_prjmat_expect <- paste0("b_", colnms_prjmat_expect)
     }
     if ("(1 | z.1)" %in% solterms) {
       if (pkg_crr == "brms") {
-        colnms_prjmat_expect <- c(colnms_prjmat_expect, "sd_z.1__Intercept")
-        colnms_prjmat_expect <- c(
-          colnms_prjmat_expect,
-          paste0("r_z.1[lvl", seq_len(nlvl_ran[1]), ",Intercept]")
-        )
+        mlvl_icpt_str <- "Intercept"
+        if (fam_crr == "categ") {
+          mlvl_icpt_str <- paste0("mu", yunq_norefcat, "_", mlvl_icpt_str)
+        }
+        colnms_prjmat_expect <- c(colnms_prjmat_expect,
+                                  paste0("sd_z.1__", mlvl_icpt_str))
+        if (!getOption("projpred.mlvl_pred_new", FALSE)) {
+          if (fam_crr == "categ") {
+            mlvl_r_str <- paste0("__mu", yunq_norefcat)
+          } else {
+            mlvl_r_str <- ""
+          }
+          colnms_prjmat_expect <- c(
+            colnms_prjmat_expect,
+            unlist(lapply(mlvl_r_str, function(mlvl_r_str_i) {
+              paste0("r_z.1", mlvl_r_str_i,
+                     "[lvl", seq_len(nlvl_ran[1]), ",Intercept]")
+            }))
+          )
+        }
       } else if (pkg_crr == "rstanarm") {
         colnms_prjmat_expect <- c(colnms_prjmat_expect,
                                   "Sigma[z.1:(Intercept),(Intercept)]")
-        colnms_prjmat_expect <- c(
-          colnms_prjmat_expect,
-          paste0("b[(Intercept) z.1:lvl", seq_len(nlvl_ran[1]), "]")
-        )
+        if (!getOption("projpred.mlvl_pred_new", FALSE)) {
+          colnms_prjmat_expect <- c(
+            colnms_prjmat_expect,
+            paste0("b[(Intercept) z.1:lvl", seq_len(nlvl_ran[1]), "]")
+          )
+        }
       }
     }
     if ("(xco.1 | z.1)" %in% solterms) {
       if (pkg_crr == "brms") {
-        colnms_prjmat_expect <- c(colnms_prjmat_expect, "sd_z.1__xco.1")
-        colnms_prjmat_expect <- c(
-          colnms_prjmat_expect,
-          paste0("r_z.1[lvl", seq_len(nlvl_ran[1]), ",xco.1]")
-        )
+        mlvl_xco_str <- "xco.1"
+        if (fam_crr == "categ") {
+          mlvl_xco_str <- paste0("mu", yunq_norefcat, "_", mlvl_xco_str)
+        }
+        colnms_prjmat_expect <- c(colnms_prjmat_expect,
+                                  paste0("sd_z.1__", mlvl_xco_str))
+        if (!getOption("projpred.mlvl_pred_new", FALSE)) {
+          colnms_prjmat_expect <- c(
+            colnms_prjmat_expect,
+            unlist(lapply(mlvl_r_str, function(mlvl_r_str_i) {
+              paste0("r_z.1", mlvl_r_str_i,
+                     "[lvl", seq_len(nlvl_ran[1]), ",xco.1]")
+            }))
+          )
+        }
       } else if (pkg_crr == "rstanarm") {
         colnms_prjmat_expect <- c(colnms_prjmat_expect,
                                   "Sigma[z.1:xco.1,xco.1]")
-        colnms_prjmat_expect <- c(
-          colnms_prjmat_expect,
-          paste0("b[xco.1 z.1:lvl", seq_len(nlvl_ran[1]), "]")
-        )
+        if (!getOption("projpred.mlvl_pred_new", FALSE)) {
+          colnms_prjmat_expect <- c(
+            colnms_prjmat_expect,
+            paste0("b[xco.1 z.1:lvl", seq_len(nlvl_ran[1]), "]")
+          )
+        }
       }
     }
     if (all(c("(1 | z.1)", "(xco.1 | z.1)") %in% solterms)) {
       if (pkg_crr == "brms") {
+        mlvl_icpt_xco_str <- combn(c(mlvl_icpt_str, mlvl_xco_str), m = 2,
+                                   FUN = paste, collapse = "__")
         colnms_prjmat_expect <- c(colnms_prjmat_expect,
-                                  "cor_z.1__Intercept__xco.1")
+                                  paste0("cor_z.1__", mlvl_icpt_xco_str))
       } else if (pkg_crr == "rstanarm") {
         colnms_prjmat_expect <- c(colnms_prjmat_expect,
                                   "Sigma[z.1:xco.1,(Intercept)]")

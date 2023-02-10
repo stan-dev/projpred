@@ -24,10 +24,10 @@ is based on) are given in section
 [“Introduction”](https://mc-stan.org/projpred/articles/projpred.html#introduction)
 of the main vignette.
 
-The [vignettes](https://mc-stan.org/projpred/articles/)[^3] (currently,
-the main vignette is the only one) illustrate how to use the
-**projpred** functions in conjunction. Details on the **projpred**
-functions as well as some shorter examples may be found in the
+The [vignettes](https://mc-stan.org/projpred/articles/)[^3] illustrate
+how to use the **projpred** functions in conjunction. Details on the
+**projpred** functions as well as some shorter examples may be found in
+the
 [documentation](https://mc-stan.org/projpred/reference/index.html)[^4].
 
 ## Installation

@@ -8,9 +8,13 @@ project_submodel <- function(solution_terms, p_ref, refmodel, regul = 1e-4,
   wobs <- validparams$wobs
   wsample <- validparams$wsample
 
+  y_unqs_aug <- refmodel$family$cats
+  if (refmodel$family$for_latent && !is.null(y_unqs_aug)) {
+    y_unqs_aug <- NULL
+  }
   subset <- subset_formula_and_data(
     formula = refmodel$formula, terms_ = unique(unlist(solution_terms)),
-    data = refmodel$fetch_data(), y = p_ref$mu
+    data = refmodel$fetch_data(), y = p_ref$mu, y_unqs = y_unqs_aug
   )
 
   submodl <- refmodel$div_minimizer(
@@ -20,6 +24,7 @@ project_submodel <- function(solution_terms, p_ref, refmodel, regul = 1e-4,
     weights = refmodel$wobs,
     projpred_var = p_ref$var,
     projpred_regul = regul,
+    projpred_ws_aug = p_ref$mu,
     ...
   )
 
@@ -88,12 +93,7 @@ project_submodel <- function(solution_terms, p_ref, refmodel, regul = 1e-4,
 
 .init_submodel <- function(submodl, p_ref, refmodel, solution_terms, wobs,
                            wsample) {
-  # Take offsets into account (the `if ()` condition is added for efficiency):
-  if (!all(refmodel$offset == 0)) {
-    p_ref$mu <- refmodel$family$linkinv(
-      refmodel$family$linkfun(p_ref$mu) + refmodel$offset
-    )
-  }
+  p_ref$mu <- p_ref$mu_offs
   if (!(all(is.na(p_ref$var)) ||
         refmodel$family$family %in% c("gaussian", "Student_t"))) {
     stop("For family `", refmodel$family$family, "()`, .init_submodel() might ",
@@ -131,7 +131,8 @@ project_submodel <- function(solution_terms, p_ref, refmodel, regul = 1e-4,
     wsample
   )
   return(structure(
-    nlist(dis, ce, weights = wsample, solution_terms, submodl),
+    nlist(dis, ce, weights = wsample, solution_terms, submodl,
+          cl_ref = p_ref$cl, wdraws_ref = p_ref$wsample_orig),
     class = "initsubmodl"
   ))
 }

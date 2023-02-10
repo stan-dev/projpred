@@ -97,13 +97,14 @@ test_that("invalid `solution_terms` warns or fails", {
 
 test_that("`object` of class \"stanreg\" or \"brmsfit\" works", {
   skip_if_not(run_prj)
-  tstsetups <- grep("\\.glm\\.gauss.*\\.solterms_x\\.clust$", names(prjs),
+  tstsetups <- grep("\\.brnll\\..*\\.solterms_x\\.clust$", names(prjs),
                     value = TRUE)
   for (tstsetup in tstsetups) {
     args_prj_i <- args_prj[[tstsetup]]
     p_fit <- do.call(project, c(
       list(object = fits[[args_prj_i$tstsetup_fit]]),
-      excl_nonargs(args_prj_i)
+      excl_nonargs(args_prj_i),
+      excl_nonargs(args_ref[[args_prj_i$tstsetup_ref]])
     ))
     expect_identical(p_fit, prjs[[tstsetup]], ignore.environment = TRUE,
                      info = tstsetup)
@@ -122,7 +123,7 @@ test_that(paste(
     fam_crr <- args_vs[[tstsetup_vs]]$fam_nm
     nterms_crr <- args_prj_vs[[tstsetup]]$nterms
     if (is.null(nterms_crr)) {
-      nterms_crr <- vss[[tstsetup_vs]]$suggested_size
+      nterms_crr <- suggest_size(vss[[tstsetup_vs]], warnings = FALSE)
     }
     if (length(nterms_crr) == 1) {
       solterms_expected_crr <- vss[[tstsetup_vs]]$solution_terms[
@@ -148,7 +149,8 @@ test_that(paste(
         value = TRUE
       )
       match_prj <- sapply(tstsetup_tries, function(tstsetup_try) {
-        setequal(solterms_expected_crr, prjs[[tstsetup_try]]$solution_terms)
+        setequal(solterms_expected_crr, prjs[[tstsetup_try]]$solution_terms) &&
+          args_prj_vs[[tstsetup]]$prj_nm == args_prj[[tstsetup_try]]$prj_nm
       })
       tstsetup_match_prj <- tstsetup_tries[match_prj]
       if (length(tstsetup_match_prj) == 1) {
@@ -184,7 +186,7 @@ test_that(paste(
     fam_crr <- args_cvvs[[tstsetup_cvvs]]$fam_nm
     nterms_crr <- args_prj_cvvs[[tstsetup]]$nterms
     if (is.null(nterms_crr)) {
-      nterms_crr <- cvvss[[tstsetup_cvvs]]$suggested_size
+      nterms_crr <- suggest_size(cvvss[[tstsetup_cvvs]], warnings = FALSE)
     }
     if (length(nterms_crr) == 1) {
       solterms_expected_crr <- cvvss[[tstsetup_cvvs]]$solution_terms[
@@ -210,7 +212,8 @@ test_that(paste(
         value = TRUE
       )
       match_prj <- sapply(tstsetup_tries, function(tstsetup_try) {
-        setequal(solterms_expected_crr, prjs[[tstsetup_try]]$solution_terms)
+        setequal(solterms_expected_crr, prjs[[tstsetup_try]]$solution_terms) &&
+          args_prj_cvvs[[tstsetup]]$prj_nm == args_prj[[tstsetup_try]]$prj_nm
       })
       tstsetup_match_prj <- tstsetup_tries[match_prj]
       if (length(tstsetup_match_prj) == 1) {
@@ -277,10 +280,61 @@ test_that("non-clustered projection does not require a seed", {
     args_prj_i <- args_prj[[tstsetup]]
     p_orig <- prjs[[tstsetup]]
     rand_new1 <- runif(1) # Just to advance `.Random.seed[2]`.
-    p_new <- do.call(project, c(
-      list(object = refmods[[args_prj_i$tstsetup_ref]]),
-      excl_nonargs(args_prj_i, nms_excl_add = "seed")
-    ))
+    if (args_prj_i$prj_nm == "augdat" && args_prj_i$fam_nm == "cumul" &&
+        !any(grepl("\\|", args_prj_i$solution_terms))) {
+      warn_expected <- "non-integer #successes in a binomial glm!"
+    } else if (!is.null(args_prj_i$avoid.increase) &&
+               any(grepl("\\|", args_prj_i$solution_terms))) {
+      warn_expected <- warn_mclogit
+    } else {
+      warn_expected <- NA
+    }
+    expect_warning(
+      p_new <- do.call(project, c(
+        list(object = refmods[[args_prj_i$tstsetup_ref]]),
+        excl_nonargs(args_prj_i, nms_excl_add = "seed")
+      )),
+      warn_expected
+    )
+    if (args_prj_i$mod_nm %in% c("glmm", "gamm") &&
+        any(grepl("\\|", args_prj_i$solution_terms))) {
+      if (getOption("projpred.mlvl_pred_new", FALSE)) {
+        # In this case, the multilevel submodel fitters (fit_glmer_callback(),
+        # fit_gamm_callback(), fit_cumul_mlvl(), fit_categ_mlvl()) should still
+        # be deterministic, but the prediction from the fitted submodels is not
+        # (because of the group-level effects drawn randomly by repair_re() (for
+        # all group levels; here, only the existing ones are relevant)). Thus,
+        # we cannot test the whole project() output, but need to restrict
+        # ourselves to the output of as.matrix.projection().
+        if (args_prj_i$mod_nm == "gamm") {
+          # Skipping GAMMs because of issue #131.
+          # TODO (GAMMs): Fix this.
+          next
+        }
+        prjmat_orig <- as.matrix(p_orig)
+        prjmat_new <- as.matrix(p_new)
+        if (args_prj_i$fam_nm == "gauss" || args_prj_i$prj_nm == "latent") {
+          # The projected dispersion parameter is affected by the group-level
+          # effects drawn randomly by repair_re() (for all group levels):
+          prjmat_new[, "sigma"] <- prjmat_orig[, "sigma"]
+        }
+        expect_equal(prjmat_new, prjmat_orig, info = tstsetup,
+                     tolerance = .Machine$double.eps)
+        # To facilitate the `if` conditions here:
+        p_new <- p_orig
+      } else if (args_prj_i$prj_nm == "augdat" &&
+                 args_prj_i$fam_nm == "cumul" && args_prj_i$mod_nm == "glmm") {
+        for (idx_s in seq_along(p_new$submodl)) {
+          if (!is.null(p_new$submodl[[idx_s]][["L"]])) {
+            # We could also use `"sparseMatrix"` instead of `"Matrix"`:
+            expect_equal(as(p_new$submodl[[idx_s]][["L"]], "Matrix"),
+                         as(p_orig$submodl[[idx_s]][["L"]], "Matrix"),
+                         info = tstsetup)
+            p_new$submodl[[idx_s]][["L"]] <- p_orig$submodl[[idx_s]][["L"]]
+          }
+        }
+      }
+    }
     expect_equal(p_new, p_orig, info = tstsetup)
   }
 })
@@ -327,6 +381,7 @@ test_that("for GLMs, `regul` has an expected effect", {
   stopifnot(regul_tst[1] == regul_default)
   stopifnot(all(diff(regul_tst) > 0))
   tstsetups <- grep("\\.glm\\..*\\.clust$", names(prjs), value = TRUE)
+  tstsetups <- grep(fam_nms_aug_regex, tstsetups, value = TRUE, invert = TRUE)
   for (tstsetup in tstsetups) {
     args_prj_i <- args_prj[[tstsetup]]
     ndr_ncl <- ndr_ncl_dtls(args_prj_i)

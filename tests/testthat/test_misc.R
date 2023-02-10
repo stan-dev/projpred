@@ -14,11 +14,17 @@ test_that(paste(
   set.seed(seed2_tst)
   for (tstsetup in names(refmods)) {
     refdist <- .get_refdist(refmods[[tstsetup]])
+    if (args_ref[[tstsetup]]$prj_nm == "augdat") {
+      nobsv_fac <- length(refmods[[tstsetup]]$family$cats)
+    } else {
+      nobsv_fac <- 1L
+    }
     # The following refdist_tester() call runs more expectations than necessary
     # for this test (only the one for `refdist$clust_used` and the dim() test
     # for `refdist$mu` are actually necessary):
     refdist_tester(
       refdist,
+      nobsv_expected = nobsv * nobsv_fac,
       nprjdraws_expected = nrefdraws,
       clust_expected = FALSE,
       info_str = tstsetup
@@ -41,8 +47,14 @@ test_that(paste(
         refdist <- .get_refdist(refmods[[tstsetup]],
                                 ndraws = ndraws_crr,
                                 nclusters = nclusters_crr)
+        if (args_ref[[tstsetup]]$prj_nm == "augdat") {
+          nobsv_fac <- length(refmods[[tstsetup]]$family$cats)
+        } else {
+          nobsv_fac <- 1L
+        }
         refdist_tester(
           refdist,
+          nobsv_expected = nobsv * nobsv_fac,
           nprjdraws_expected = nrefdraws,
           clust_expected = FALSE,
           info_str = paste(tstsetup, ndraws_crr, nclusters_crr, sep = "__")

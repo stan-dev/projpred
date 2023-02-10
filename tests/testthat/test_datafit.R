@@ -36,14 +36,17 @@ context("datafit")
 ## Reference model --------------------------------------------------------
 ## (actually "datafit"s)
 
-# Exclude brms fits (since `datafit`s don't make use of a reference model fit,
-# it doesn't make a difference if rstanarm or brms is used as the basis here for
-# retrieving the formula, data, and family):
+# Exclude brms reference models (since `datafit`s don't make use of a reference
+# model fit, it doesn't make a difference if rstanarm or brms is used as the
+# basis here for retrieving the formula, data, and family):
 args_datafit <- lapply(setNames(
-  nm = grep("^brms\\.", names(fits), value = TRUE, invert = TRUE)
-), function(tstsetup_fit) {
+  nm = grep("^brms\\.", names(refmods), value = TRUE, invert = TRUE)
+), function(tstsetup_ref) {
+  tstsetup_fit <- args_ref[[tstsetup_ref]]$tstsetup_fit
   c(nlist(tstsetup_fit), only_nonargs(args_fit[[tstsetup_fit]]))
 })
+# The augmented-data projection is not supported yet for `datafit`s:
+args_datafit <- args_datafit[!grepl("\\.(latent|augdat)", names(args_datafit))]
 
 datafits <- lapply(args_datafit, function(args_datafit_i) {
   formul_crr <- args_fit[[args_datafit_i$tstsetup_fit]]$formula
@@ -124,7 +127,7 @@ if (run_cvvs) {
   })
   names(args_cvvs_datafit) <- gsub("default_cvmeth", "kfold",
                                    names(args_cvvs_datafit))
-  stopifnot(!any(duplicated(names(args_cvvs_datafit))))
+  args_cvvs_datafit <- args_cvvs_datafit[unique(names(args_cvvs_datafit))]
   # For `"datafit"`s, we always have 1 cluster by default, so omit related
   # arguments:
   args_cvvs_datafit <- lapply(args_cvvs_datafit, function(args_cvvs_i) {
@@ -181,7 +184,7 @@ if (run_vs) {
 ### From "proj_list" ------------------------------------------------------
 
 if (run_vs) {
-  pls_vs_datafit <- lapply(prjs_vs_datafit, proj_linpred)
+  pls_vs_datafit <- lapply(prjs_vs_datafit, proj_linpred, .seed = seed2_tst)
   pps_vs_datafit <- lapply(prjs_vs_datafit, proj_predict, .seed = seed2_tst)
 }
 
@@ -324,7 +327,7 @@ test_that(paste(
     stopifnot(length(tstsetup_vs) > 0)
     nterms_crr <- args_prj_vs_datafit[[tstsetup]]$nterms
     if (is.null(nterms_crr)) {
-      nterms_crr <- vss_datafit[[tstsetup_vs]]$suggested_size
+      nterms_crr <- suggest_size(vss_datafit[[tstsetup_vs]], warnings = FALSE)
     }
     with_L1 <- (args_vs_datafit[[tstsetup_vs]]$mod_nm == "glm" &&
                   is.null(args_vs_datafit[[tstsetup_vs]]$method)) ||
@@ -399,7 +402,7 @@ test_that(paste(
     tstsetup_vs <- args_prj_vs_datafit[[tstsetup]]$tstsetup_vsel
     nterms_crr <- args_prj_vs_datafit[[tstsetup]]$nterms
     if (is.null(nterms_crr)) {
-      nterms_crr <- vss_datafit[[tstsetup_vs]]$suggested_size
+      nterms_crr <- suggest_size(vss_datafit[[tstsetup_vs]], warnings = FALSE)
     }
     pl_tester(pls_vs_datafit[[tstsetup]],
               len_expected = length(nterms_crr),
@@ -415,7 +418,8 @@ test_that(paste(
         tail(nobsv_tst, 1)
       ),
       weightsnew = ~ wobs_col,
-      filter_nterms = nterms_crr[1]
+      filter_nterms = nterms_crr[1],
+      .seed = seed2_tst
     )
     pl_tester(pl_with_args,
               len_expected = 1L,
@@ -444,7 +448,7 @@ test_that(paste(
     tstsetup_vs <- args_prj_vs_datafit[[tstsetup]]$tstsetup_vsel
     nterms_crr <- args_prj_vs_datafit[[tstsetup]]$nterms
     if (is.null(nterms_crr)) {
-      nterms_crr <- vss_datafit[[tstsetup_vs]]$suggested_size
+      nterms_crr <- suggest_size(vss_datafit[[tstsetup_vs]], warnings = FALSE)
     }
     pp_tester(pps_vs_datafit[[tstsetup]],
               len_expected = length(nterms_crr),
@@ -690,8 +694,8 @@ test_that(paste(
     expect_warning(
       pred1 <- proj_linpred(vs,
                             newdata = data.frame(x = x, weights = weights),
-                            nterms = 0:nterms, transform = FALSE,
-                            refit_prj = FALSE),
+                            transform = FALSE, .seed = seed2_tst,
+                            nterms = 0:nterms, refit_prj = FALSE),
       paste("^Currently, `refit_prj = FALSE` requires some caution, see GitHub",
             "issues #168 and #211\\.$"),
       info = fam$family

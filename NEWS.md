@@ -2,6 +2,22 @@
 
 If you read this from a place other than <https://mc-stan.org/projpred/news/index.html>, please consider switching to that website since it features better formatting and cross-linking.
 
+# projpred 2.4.0
+
+## Major changes
+
+* Introduction of the augmented-data projection [(Weber and Vehtari, 2023)](https://doi.org/10.48550/arXiv.2301.01660) (see section ["Supported types of models"](https://mc-stan.org/projpred/articles/projpred.html#modtypes) of the main vignette for details). (GitHub: #70, #322)
+* Introduction of the latent projection [(Catalina et al., 2021)](https://doi.org/10.48550/arXiv.2109.04702) (see section ["Supported types of models"](https://mc-stan.org/projpred/articles/projpred.html#modtypes) of the main vignette and the new [latent-projection vignette](https://mc-stan.org/projpred/articles/latent.html) for details). A consequence of the latent projection (more precisely, of the `resp_oscale = TRUE` default in `summary.vsel()`) is that `varsel()` and `cv_varsel()` no longer call `suggest_size()` internally at the end. Thus, `print()`-ing an object of class `vsel` no longer includes the suggested projection size in the output (the `stat` for this suggested size was fixed to `"elpd"` anyway, a fact that many users were probably not aware of). (GitHub: #372)
+* In case of multilevel models, **projpred** now has two global options for "integrating out" group-level effects: `projpred.mlvl_pred_new` and `projpred.mlvl_proj_ref_new`. These are explained in detail in the general package documentation (available [online](https://mc-stan.org/projpred/reference/projpred-package.html) or by typing `` ?`projpred-package` ``). (GitHub: #379)
+
+## Minor changes
+
+* Improvements in the numerical stability of internal link and inverse-link functions. (GitHub: #376)
+
+## Bug fixes
+
+* Fix a bug for offsets in cases where `family` (see `init_refmodel()`) has a non-identity link function: After clustering the reference model's posterior draws, we need to aggregate (within a given cluster) the reference model's fitted values which already take the offsets into account instead of taking the offsets into account after aggregating the fitted values which do *not* take the offsets into account. This fix should affect results only in a very slight manner. Due to **projpred**'s internal adjustment for numerical stability when averaging a quantity across the draws within a given cluster, this also changes the projected residual standard deviations in Gaussian models in the order of `1e-10`. (GitHub: #374)
+
 # projpred 2.3.0
 
 ## Major changes

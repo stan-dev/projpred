@@ -5,7 +5,7 @@
 }
 
 nms_d_test <- function() {
-  c("type", "data", "offset", "weights", "y")
+  c("type", "data", "offset", "weights", "y", "y_oscale")
 }
 
 weighted.sd <- function(x, w, na.rm = FALSE) {
@@ -28,6 +28,30 @@ log_weighted_mean_exp <- function(x, w) {
 log_sum_exp <- function(x) {
   max_x <- max(x)
   max_x + log(sum(exp(x - max_x)))
+}
+
+linkfun_raw <- function(x, link_nm) {
+  if (link_nm %in% c("logistic")) {
+    link_nm <- "logit"
+  } else if (link_nm %in% c("probit_approx")) {
+    link_nm <- "probit"
+  } else if (link_nm == "cloglog") {
+    # The `"cloglog"` link is also supported by binomial(), but the following
+    # should be numerically more stable:
+    return(log(-log1p(-x)))
+  }
+  basic_link <- binomial(link = link_nm)$linkfun
+  return(basic_link(x))
+}
+
+ilinkfun_raw <- function(x, link_nm) {
+  if (link_nm %in% c("logistic")) {
+    link_nm <- "logit"
+  } else if (link_nm %in% c("probit_approx")) {
+    link_nm <- "probit"
+  }
+  basic_ilink <- binomial(link = link_nm)$linkinv
+  return(basic_ilink(x))
 }
 
 auc <- function(x) {
@@ -97,25 +121,55 @@ bootstrap <- function(x, fun = mean, B = 2000,
   }
 }
 
-.validate_vsel_object_stats <- function(object, stats) {
+.validate_vsel_object_stats <- function(object, stats, resp_oscale = TRUE) {
   if (!inherits(object, c("vsel"))) {
     stop("The object is not a variable selection object. Run variable ",
          "selection first")
   }
+  if (!object$refmodel$family$for_latent && !resp_oscale) {
+    stop("`resp_oscale = FALSE` can only be used in case of the latent ",
+         "projection.")
+  }
+  resp_oscale <- object$refmodel$family$for_latent && resp_oscale
 
-  recognized_stats <- c("elpd", "mlpd", "mse", "rmse", "acc", "pctcorr", "auc")
-  binomial_only_stats <- c("acc", "pctcorr", "auc")
+  trad_stats <- c("elpd", "mlpd", "mse", "rmse", "acc", "pctcorr", "auc")
+  trad_stats_binom_only <- c("acc", "pctcorr", "auc")
+  augdat_stats <- c("elpd", "mlpd", "acc", "pctcorr")
+  resp_oscale_stats_fac <- augdat_stats
 
   if (is.null(stats)) {
     stop("Statistic specified as NULL.")
   }
+  if (resp_oscale) {
+    fam_ch <- object$refmodel$family$family_oscale
+  } else {
+    fam_ch <- object$refmodel$family$family
+  }
   for (stat in stats) {
-    if (!(stat %in% recognized_stats)) {
-      stop(sprintf("Statistic '%s' not recognized.", stat))
-    }
-    if (stat %in% binomial_only_stats &&
-        object$refmodel$family$family != "binomial") {
-      stop("Statistic '", stat, "' available only for the binomial family.")
+    if (object$refmodel$family$for_augdat) {
+      if (!stat %in% augdat_stats) {
+        stop("Currently, the augmented-data projection may not be combined ",
+             "with performance statistic `\"", stat, "\"`.")
+      }
+    } else if (resp_oscale && !is.null(object$refmodel$family$cats)) {
+      if (!stat %in% resp_oscale_stats_fac) {
+        stop("Currently, the latent projection with `resp_oscale = TRUE` and ",
+             "a non-`NULL` element `family$cats` may not be combined with ",
+             "performance statistic `\"", stat, "\"`.")
+      }
+    } else {
+      if (!stat %in% trad_stats) {
+        stop(sprintf("Statistic '%s' not recognized.", stat))
+      }
+      if (stat %in% trad_stats_binom_only && fam_ch != "binomial") {
+        stop("In case of (i) the traditional projection or (ii) the latent ",
+             "projection with `resp_oscale = TRUE` and a `NULL` element ",
+             "`family$cats`, the performance statistic `\"", stat, "\"` is ",
+             "available only for the binomial family. This also explains why ",
+             "performance statistic `\"", stat, "\"` is not available in case ",
+             "of the latent projection with `resp_oscale = FALSE` (because a ",
+             "latent Gaussian distribution is used there).")
+      }
     }
   }
   return(invisible(TRUE))
@@ -150,14 +204,14 @@ bootstrap <- function(x, fun = mean, B = 2000,
       weights <- rep(1, length(y))
     }
     if (fam$family == "binomial") {
-      if (is.factor(y)) {
+      if (is.factor(y) && !fam$for_augdat) {
         if (nlevels(y) > 2) {
           stop("y cannot contain more than two classes if specified as factor.")
         }
         y <- as.vector(y, mode = "integer") - 1L # zero-one vector
       }
     } else {
-      if (is.factor(y)) {
+      if (is.factor(y) && !fam$for_augdat && !fam$for_latent) {
         stop("y cannot be a factor for models other than the binomial model.")
       }
     }
@@ -186,12 +240,15 @@ bootstrap <- function(x, fun = mean, B = 2000,
 #   subsampled (without replacement).
 #
 # @return Let \eqn{y} denote the response (vector), \eqn{N} the number of
-#   observations, and \eqn{S_{\mathrm{prj}}}{S_prj} the number of projected
-#   draws (= either `nclusters` or `ndraws`, depending on which one is used).
-#   Then the return value is a list with elements:
+#   observations (for the traditional or the latent projection) or the number of
+#   augmented observations (for augmented-data projection), and
+#   \eqn{S_{\mathrm{prj}}}{S_prj} the number of projected draws (= either
+#   `nclusters` or `ndraws`, depending on which one is used). Then the return
+#   value is a list with elements:
 #
 #   * `mu`: An \eqn{N \times S_{\mathrm{prj}}}{N x S_prj} matrix of expected
-#   values for \eqn{y} for each draw/cluster.
+#   values for \eqn{y} (probabilities for the response categories in case of the
+#   augmented-data projection) for each draw/cluster.
 #   * `var`: An \eqn{N \times S_{\mathrm{prj}}}{N x S_prj} matrix of predictive
 #   variances for \eqn{y} for each draw/cluster which are needed for projecting
 #   the dispersion parameter (the predictive variances are NA for those families
@@ -204,6 +261,16 @@ bootstrap <- function(x, fun = mean, B = 2000,
 #   * `cl`: Cluster assignment for each posterior draw, that is, a vector that
 #   has length equal to the number of posterior draws and each value is an
 #   integer between 1 and \eqn{S_{\mathrm{prj}}}{S_prj}.
+#   * `wsample_orig`: A numeric vector of length equal to the number of
+#   posterior draws, giving the weights of these draws. These weights should be
+#   treated as not being normalized (i.e., they don't necessarily sum to `1`).
+#   Currently, this element could be named `wsample_ref` instead because
+#   .get_p_clust() is always applied to inputs that are specific to a `refmodel`
+#   object (either the initial reference model or a K-fold-specific `refmodel`
+#   object) (and .get_refdist() is applied to inputs that are specific to a
+#   `refmodel` object anyway). However, .get_p_clust() intentionally seems to
+#   have been kept as general as possible and `wsample_orig` is more general
+#   than `wsample_ref`.
 .get_refdist <- function(refmodel, ndraws = NULL, nclusters = NULL,
                          thinning = TRUE,
                          throw_mssg_ndraws = getOption("projpred.mssg_ndraws",
@@ -220,16 +287,16 @@ bootstrap <- function(x, fun = mean, B = 2000,
                           throw_mssg_ndraws = FALSE))
     } else if (nclusters == 1) {
       # special case, only one cluster
-      p_ref <- .get_p_clust(family = refmodel$family, mu = refmodel$mu,
-                            eta = refmodel$eta, dis = refmodel$dis,
-                            wobs = refmodel$wobs, cl = rep(1, S),
-                            offs = refmodel$offset)
+      p_ref <- .get_p_clust(family = refmodel$family, eta = refmodel$eta,
+                            mu = refmodel$mu, mu_offs = refmodel$mu_offs,
+                            dis = refmodel$dis, wobs = refmodel$wobs,
+                            cl = rep(1, S))
     } else {
       # several clusters
-      p_ref <- .get_p_clust(family = refmodel$family, mu = refmodel$mu,
-                            eta = refmodel$eta, dis = refmodel$dis,
-                            wobs = refmodel$wobs, nclusters = nclusters,
-                            offs = refmodel$offset)
+      p_ref <- .get_p_clust(family = refmodel$family, eta = refmodel$eta,
+                            mu = refmodel$mu, mu_offs = refmodel$mu_offs,
+                            dis = refmodel$dis, wobs = refmodel$wobs,
+                            nclusters = nclusters)
     }
   } else {
     ndraws <- min(S, ndraws)
@@ -244,18 +311,18 @@ bootstrap <- function(x, fun = mean, B = 2000,
     }
     cl <- rep(NA, S)
     cl[s_ind] <- 1:ndraws
-    mu_offs <- refmodel$mu
-    if (!all(refmodel$offset == 0)) {
-      mu_offs <- refmodel$family$linkinv(
-        refmodel$family$linkfun(mu_offs) + refmodel$offset
-      )
-    }
     predvar <- do.call(cbind, lapply(s_ind, function(j) {
-      refmodel$family$predvar(mu_offs[, j, drop = FALSE], refmodel$dis[j])
+      refmodel$family$predvar(refmodel$mu_offs[, j, drop = FALSE],
+                              refmodel$dis[j])
     }))
     p_ref <- list(
-      mu = refmodel$mu[, s_ind, drop = FALSE], var = predvar,
+      mu = refmodel$mu[, s_ind, drop = FALSE],
+      mu_offs = refmodel$mu_offs[, s_ind, drop = FALSE],
+      var = structure(predvar,
+                      nobs_orig = attr(refmodel$mu, "nobs_orig"),
+                      class = oldClass(refmodel$mu)),
       dis = refmodel$dis[s_ind], weights = rep(1 / ndraws, ndraws), cl = cl,
+      wsample_orig = rep(1, S),
       clust_used = FALSE
     )
   }
@@ -264,10 +331,9 @@ bootstrap <- function(x, fun = mean, B = 2000,
 }
 
 # Function for clustering the parameter draws:
-.get_p_clust <- function(family, mu, eta, dis, nclusters = 10,
+.get_p_clust <- function(family, eta, mu, mu_offs, dis, nclusters = 10,
                          wobs = rep(1, dim(mu)[1]),
-                         wsample = rep(1, dim(mu)[2]), cl = NULL,
-                         offs = rep(0, dim(mu)[1])) {
+                         wsample = rep(1, dim(mu)[2]), cl = NULL) {
   # cluster the samples in the latent space if no clustering provided
   if (is.null(cl)) {
     # Note: A seed is not set here because this function is not exported and has
@@ -290,6 +356,8 @@ bootstrap <- function(x, fun = mean, B = 2000,
   nclusters <- max(cl, na.rm = TRUE)
   # Cluster centers:
   centers <- matrix(0, nrow = nclusters, ncol = dim(mu)[1])
+  # The same centers, but taking offsets into account:
+  centers_offs <- matrix(0, nrow = nclusters, ncol = dim(mu_offs)[1])
   # Cluster weights:
   wcluster <- rep(0, nclusters)
   # Dispersion parameter draws aggregated within each cluster:
@@ -297,11 +365,6 @@ bootstrap <- function(x, fun = mean, B = 2000,
   # Predictive variances:
   predvar <- matrix(nrow = dim(mu)[1], ncol = nclusters)
   eps <- 1e-10
-  # Predictions incorporating offsets (needed for `predvar`):
-  mu_offs <- mu
-  if (!all(offs == 0)) {
-    mu_offs <- family$linkinv(family$linkfun(mu_offs) + offs)
-  }
   for (j in 1:nclusters) {
     ind <- which(cl == j)
     # Compute normalized weights within the j-th cluster; `1 - eps` is for
@@ -310,6 +373,8 @@ bootstrap <- function(x, fun = mean, B = 2000,
 
     # Center of the j-th cluster:
     centers[j, ] <- mu[, ind, drop = FALSE] %*% ws
+    # The same centers, but taking offsets into account:
+    centers_offs[j, ] <- mu_offs[, ind, drop = FALSE] %*% ws
     # Unnormalized weight for the j-th cluster:
     wcluster[j] <- sum(wsample[ind])
     # Aggregated dispersion parameter for the j-th cluster:
@@ -321,13 +386,22 @@ bootstrap <- function(x, fun = mean, B = 2000,
 
   # combine the results
   p <- list(
-    mu = unname(t(centers)),
-    var = predvar,
+    mu = structure(unname(t(centers)),
+                   nobs_orig = attr(mu, "nobs_orig"),
+                   class = oldClass(mu)),
+    mu_offs = structure(unname(t(centers_offs)),
+                        nobs_orig = attr(mu_offs, "nobs_orig"),
+                        class = oldClass(mu_offs)),
+    var = structure(predvar,
+                    nobs_orig = attr(mu, "nobs_orig"),
+                    class = oldClass(mu)),
     dis = dis_agg,
     weights = wcluster,
     cl = cl,
+    wsample_orig = wsample,
     clust_used = TRUE
   )
+
   return(p)
 }
 
@@ -469,5 +543,32 @@ magrittr::`%>%`
 
 # Helper function to combine separate `list`s into a single `list`:
 rbind2list <- function(x) {
-  as.list(do.call(rbind, lapply(x, as.data.frame)))
+  is_augeval <- any(sapply(x, function(x_i) {
+    is.list(x_i) &&
+      identical(names(x_i), c("mu", "lppd")) &&
+      inherits(x_i$mu, "augvec")
+  }))
+  if (is_augeval) {
+    mu_arr <- abind::abind(
+      lapply(x, function(x_i) {
+        augmat2arr(augvec2augmat(x_i$mu))
+      }),
+      along = 1
+    )
+    return(c(
+      list(mu = augmat2augvec(arr2augmat(mu_arr))),
+      rbind2list(lapply(x, "[", "lppd"))
+    ))
+  }
+  binded_list <- as.list(do.call(rbind, lapply(x, function(x_i) {
+    as.data.frame(x_i[setdiff(names(x_i), "oscale")])
+  })))
+  is_lateval_oscale <- any(sapply(x, function(x_i) {
+    is.list(x_i) &&
+      identical(names(x_i), c("mu", "lppd", "oscale"))
+  }))
+  if (is_lateval_oscale) {
+    binded_list$oscale <- rbind2list(lapply(x, "[[", "oscale"))
+  }
+  return(binded_list)
 }
