@@ -59,3 +59,8 @@ articles:
       This vignette provides a quick-start guide to using the **projpred** package for projection predictive feature selection.
     contents:
       - projpred
+  - title: "Latent Projection"
+    desc: >
+      This vignette illustrates the latent projection implemented in **projpred**.
+    contents:
+      - latent
