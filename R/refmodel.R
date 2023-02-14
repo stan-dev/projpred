@@ -1237,7 +1237,7 @@ init_refmodel <- function(object, data, formula, family, ref_predfun = NULL,
 
   # Data --------------------------------------------------------------------
 
-  model_data <- extract_model_data(object, newdata = data)
+  model_data <- extract_model_data(object, newdata = data, extract_y = TRUE)
   weights <- model_data$weights
   offset <- model_data$offset
   if (family$for_latent) {
