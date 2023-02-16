@@ -443,15 +443,17 @@ predict.refmodel <- function(object, newdata = NULL, ynew = NULL,
   if (!is.null(newdata)) {
     newdata <- na.fail(newdata)
   }
+  nobs_new <- nrow(newdata %||% object$fetch_data())
   w_o <- object$extract_model_data(object$fit, newdata = newdata,
-                                   wrhs = weightsnew, orhs = offsetnew)
+                                   wrhs = weightsnew, orhs = offsetnew,
+                                   extract_y = FALSE)
   weightsnew <- w_o$weights
   offsetnew <- w_o$offset
   if (length(weightsnew) == 0) {
-    weightsnew <- rep(1, length(w_o$y))
+    weightsnew <- rep(1, nobs_new)
   }
   if (length(offsetnew) == 0) {
-    offsetnew <- rep(0, length(w_o$y))
+    offsetnew <- rep(0, nobs_new)
   }
   if (object$family$for_augdat && !all(weightsnew == 1)) {
     stop("Currently, the augmented-data projection may not be combined with ",
@@ -511,9 +513,7 @@ predict.refmodel <- function(object, newdata = NULL, ynew = NULL,
       }
     }
     if (was_augmat) {
-      pred <- structure(pred,
-                        nobs_orig = nrow(newdata %||% object$fetch_data()),
-                        class = "augvec")
+      pred <- structure(pred, nobs_orig = nobs_new, class = "augvec")
       pred <- augmat2arr(augvec2augmat(pred))
       pred <- matrix(pred, nrow = dim(pred)[1], ncol = dim(pred)[2])
     }
@@ -815,7 +815,8 @@ get_refmodel.stanreg <- function(object, latent = FALSE, dis = NULL, ...) {
 
     # Observation weights are not needed here, so use `wrhs = NULL` to avoid
     # potential conflicts for a non-`NULL` default `wrhs`:
-    offs <- extract_model_data(fit, newdata = newdata, wrhs = NULL)$offset
+    offs <- extract_model_data(fit, newdata = newdata, wrhs = NULL,
+                               extract_y = FALSE)$offset
     n_obs <- nrow(newdata %||% data)
     if (length(offs) == 0) {
       offs <- rep(0, n_obs)
@@ -1147,7 +1148,8 @@ init_refmodel <- function(object, data, formula, family, ref_predfun = NULL,
       if (excl_offs) {
         # Observation weights are not needed here, so use `wrhs = NULL` to avoid
         # potential conflicts for a non-`NULL` default `wrhs`:
-        offs <- extract_model_data(fit, newdata = newdata, wrhs = NULL)$offset
+        offs <- extract_model_data(fit, newdata = newdata, wrhs = NULL,
+                                   extract_y = FALSE)$offset
         if (length(offs) > 0) {
           stopifnot(length(offs) %in% c(1L, n_obs))
           if (family$family %in% fams_neg_linpred()) {
@@ -1235,7 +1237,7 @@ init_refmodel <- function(object, data, formula, family, ref_predfun = NULL,
 
   # Data --------------------------------------------------------------------
 
-  model_data <- extract_model_data(object, newdata = data)
+  model_data <- extract_model_data(object, newdata = data, extract_y = TRUE)
   weights <- model_data$weights
   offset <- model_data$offset
   if (family$for_latent) {
