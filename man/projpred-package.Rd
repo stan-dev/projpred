@@ -13,10 +13,13 @@ The \R package \pkg{projpred} performs the projection predictive variable (or
 \href{https://mc-stan.org/projpred/articles/projpred.html}{online}) before
 continuing here.
 
-For the sake of simplicity (throughout the whole package documentation), we
-use the term "submodel" for all kinds of candidate models onto which the
-reference model is projected, even though this term is not always appropriate
-for custom reference models.
+Throughout the whole package documentation, we use the term "submodel" for
+all kinds of candidate models onto which the reference model is projected.
+For custom reference models, the candidate models don't need to be actual
+\emph{sub}models of the reference model, but in any case (even for custom
+reference models), the candidate models are always actual \emph{sub}models of the
+full \code{\link{formula}} used by the search procedure. In this regard, it is correct
+to speak of \emph{sub}models, even in case of a custom reference model.
 
 The following model type abbreviations will be used at multiple places
 throughout the documentation: GLM (generalized linear model), GLMM
@@ -27,13 +30,28 @@ family as well.
 
 For the projection of the reference model onto a submodel, \pkg{projpred}
 currently relies on the following functions (in other words, these are the
-workhorse functions used by the default divergence minimizer):
+workhorse functions used by the default divergence minimizers):
 \itemize{
-\item Submodel without multilevel or additive terms: An internal C++ function
-which basically serves the same purpose as \code{\link[=lm]{lm()}} for the \code{\link[=gaussian]{gaussian()}} family
-and \code{\link[=glm]{glm()}} for all other families.
-\item Submodel with multilevel but no additive terms: \code{\link[lme4:lmer]{lme4::lmer()}} for the
-\code{\link[=gaussian]{gaussian()}} family, \code{\link[lme4:glmer]{lme4::glmer()}} for all other families.
+\item Submodel without multilevel or additive terms:
+\itemize{
+\item For the traditional (or latent) projection (or the augmented-data
+projection in case of the \code{\link[=binomial]{binomial()}} or \code{\link[brms:brmsfamily]{brms::bernoulli()}} family): An
+internal C++ function which basically serves the same purpose as \code{\link[=lm]{lm()}}
+for the \code{\link[=gaussian]{gaussian()}} family and \code{\link[=glm]{glm()}} for all other families.
+\item For the augmented-data projection: \code{\link[MASS:polr]{MASS::polr()}} for the
+\code{\link[brms:brmsfamily]{brms::cumulative()}} family or \code{\link[rstanarm:stan_polr]{rstanarm::stan_polr()}} fits,
+\code{\link[nnet:multinom]{nnet::multinom()}} for the \code{\link[brms:brmsfamily]{brms::categorical()}} family.
+}
+\item Submodel with multilevel but no additive terms:
+\itemize{
+\item For the traditional (or latent) projection (or the augmented-data
+projection in case of the \code{\link[=binomial]{binomial()}} or \code{\link[brms:brmsfamily]{brms::bernoulli()}} family):
+\code{\link[lme4:lmer]{lme4::lmer()}} for the \code{\link[=gaussian]{gaussian()}} family, \code{\link[lme4:glmer]{lme4::glmer()}} for all other
+families.
+\item For the augmented-data projection: \code{\link[ordinal:clmm]{ordinal::clmm()}} for the
+\code{\link[brms:brmsfamily]{brms::cumulative()}} family, \code{\link[mclogit:mblogit]{mclogit::mblogit()}} for the
+\code{\link[brms:brmsfamily]{brms::categorical()}} family.
+}
 \item Submodel without multilevel but additive terms: \code{\link[mgcv:gam]{mgcv::gam()}}.
 \item Submodel with multilevel and additive terms: \code{\link[gamm4:gamm4]{gamm4::gamm4()}}.
 }
@@ -53,20 +71,50 @@ option \code{projpred.prll_prj_trigger}. Note that we cannot recommend
 parallelizing the projection on Windows because in our experience, the
 parallelization overhead is larger there, causing a parallel run to take
 longer than a sequential run. Also note that the parallelization works well
-for GLMs, but for GLMMs, GAMs, and GAMMs, the fitted model objects are quite
-big, which---when running in parallel---may lead to an excessive memory usage
-which in turn may crash the R session. Thus, we currently cannot recommend
-the parallelization for GLMMs, GAMs, and GAMMs.
+for GLMs, but for all other models, the fitted model objects are quite big,
+which---when running in parallel---may lead to excessive memory usage which
+in turn may crash the R session. Thus, we currently cannot recommend the
+parallelization for models other than GLMs.
+
+In case of multilevel models, \pkg{projpred} offers two global options for
+"integrating out" group-level effects: \code{projpred.mlvl_pred_new} and
+\code{projpred.mlvl_proj_ref_new}. When setting \code{projpred.mlvl_pred_new} to \code{TRUE}
+(default is \code{FALSE}), then at
+\emph{prediction} time, \pkg{projpred} will treat group levels existing in the
+training data as \emph{new} group levels, implying that their group-level effects
+are drawn randomly from a (multivariate) Gaussian distribution. This concerns
+both, the reference model and the (i.e., any) submodel. Furthermore, setting
+\code{projpred.mlvl_pred_new} to \code{TRUE} causes \code{as.matrix.projection()} to omit
+the projected group-level effects (for the group levels from the original
+dataset). When setting \code{projpred.mlvl_proj_ref_new} to \code{TRUE} (default is
+\code{FALSE}), then at \emph{projection} time, the reference model's fitted values
+(that the submodels fit to) will be computed by treating the group levels
+from the original dataset as \emph{new} group levels, implying that their
+group-level effects will be drawn randomly from a (multivariate) Gaussian
+distribution (as long as the reference model is a multilevel model,
+which---for custom reference models---does not need to be the case). This
+also affects the latent response values for a latent projection
+correspondingly. Setting \code{projpred.mlvl_pred_new} to \code{TRUE} makes sense,
+e.g., when the prediction task is such that any group level will be treated
+as a new one. Typically, setting \code{projpred.mlvl_proj_ref_new} to \code{TRUE} only
+makes sense when \code{projpred.mlvl_pred_new} is already set to \code{TRUE}. In that
+case, the default of \code{FALSE} for \code{projpred.mlvl_proj_ref_new} ensures that at
+projection time, the submodels fit to the best possible fitted values from
+the reference model, and setting \code{projpred.mlvl_proj_ref_new} to \code{TRUE} would
+make sense if the group-level effects should be integrated out completely.
 }
 \section{Functions}{
 \describe{
-\item{\code{\link[=init_refmodel]{init_refmodel()}}, \code{\link[=get_refmodel]{get_refmodel()}}}{For setting up a reference model
-(only rarely needed explicitly).}
-\item{\code{\link[=varsel]{varsel()}}, \code{\link[=cv_varsel]{cv_varsel()}}}{For variable selection, possibly with
-cross-validation (CV).}
+\item{\code{\link[=init_refmodel]{init_refmodel()}}, \code{\link[=get_refmodel]{get_refmodel()}}}{For setting up an object
+containing information about the reference model, the submodels, and how
+the projection should be carried out. Explicit calls to \code{\link[=init_refmodel]{init_refmodel()}}
+and \code{\link[=get_refmodel]{get_refmodel()}} are only rarely needed.}
+\item{\code{\link[=varsel]{varsel()}}, \code{\link[=cv_varsel]{cv_varsel()}}}{For running the \emph{search} part and the
+\emph{evaluation} part for a projection predictive variable selection, possibly
+with cross-validation (CV).}
 \item{\code{\link[=summary.vsel]{summary.vsel()}}, \code{\link[=print.vsel]{print.vsel()}}, \code{\link[=plot.vsel]{plot.vsel()}},
 \code{\link[=suggest_size.vsel]{suggest_size.vsel()}}, \code{\link[=solution_terms.vsel]{solution_terms.vsel()}}}{For post-processing the
-results from the variable selection.}
+results from \code{\link[=varsel]{varsel()}} and \code{\link[=cv_varsel]{cv_varsel()}}.}
 \item{\code{\link[=project]{project()}}}{For projecting the reference model onto submodel(s).
 Typically, this follows the variable selection, but it can also be applied
 directly (without a variable selection).}
@@ -104,6 +152,8 @@ Other contributors:
   \item Hamada S. Badr [contributor]
   \item Brian Sullivan [contributor]
   \item Sölvi Rögnvaldsson [contributor]
+  \item  The LME4 Authors (see file 'LICENSE' for details) [copyright holder]
+  \item Yann McLatchie [contributor]
 }
 
 }

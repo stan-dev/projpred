@@ -2,7 +2,41 @@
 
 If you read this from a place other than <https://mc-stan.org/projpred/news/index.html>, please consider switching to that website since it features better formatting and cross-linking.
 
-# projpred 2.2.1.9000
+# projpred 2.4.0.9000
+
+## Bug fixes
+
+* Fixed a bug causing `predict.refmodel()` to require `newdata` to contain the response variable in case of a **brms** reference model. This is similar to paul-buerkner/brms#1457, but concerns `predict.refmodel()` (paul-buerkner/brms#1457 referred to predictions from the *submodels*). In order to make this `predict.refmodel()` fix work, **brms** version 2.18.8 or later is needed. (GitHub: #381)
+
+# projpred 2.4.0
+
+## Major changes
+
+* Introduction of the augmented-data projection [(Weber and Vehtari, 2023)](https://doi.org/10.48550/arXiv.2301.01660) (see section ["Supported types of models"](https://mc-stan.org/projpred/articles/projpred.html#modtypes) of the main vignette for details). (GitHub: #70, #322)
+* Introduction of the latent projection [(Catalina et al., 2021)](https://doi.org/10.48550/arXiv.2109.04702) (see section ["Supported types of models"](https://mc-stan.org/projpred/articles/projpred.html#modtypes) of the main vignette and the new [latent-projection vignette](https://mc-stan.org/projpred/articles/latent.html) for details). A consequence of the latent projection (more precisely, of the `resp_oscale = TRUE` default in `summary.vsel()`) is that `varsel()` and `cv_varsel()` no longer call `suggest_size()` internally at the end. Thus, `print()`-ing an object of class `vsel` no longer includes the suggested projection size in the output (the `stat` for this suggested size was fixed to `"elpd"` anyway, a fact that many users were probably not aware of). (GitHub: #372)
+* In case of multilevel models, **projpred** now has two global options for "integrating out" group-level effects: `projpred.mlvl_pred_new` and `projpred.mlvl_proj_ref_new`. These are explained in detail in the general package documentation (available [online](https://mc-stan.org/projpred/reference/projpred-package.html) or by typing `` ?`projpred-package` ``). (GitHub: #379)
+
+## Minor changes
+
+* Improvements in the numerical stability of internal link and inverse-link functions. (GitHub: #376)
+
+## Bug fixes
+
+* Fix a bug for offsets in cases where `family` (see `init_refmodel()`) has a non-identity link function: After clustering the reference model's posterior draws, we need to aggregate (within a given cluster) the reference model's fitted values which already take the offsets into account instead of taking the offsets into account after aggregating the fitted values which do *not* take the offsets into account. This fix should affect results only in a very slight manner. Due to **projpred**'s internal adjustment for numerical stability when averaging a quantity across the draws within a given cluster, this also changes the projected residual standard deviations in Gaussian models in the order of `1e-10`. (GitHub: #374)
+
+# projpred 2.3.0
+
+## Major changes
+
+* In `plot.vsel()` and `summary.vsel()`, the default of `alpha = 0.32` is replaced by `alpha = 2 * pnorm(-1)` (= `1 - diff(pnorm(c(-1, 1)))`, which is only *approximately* 0.32) so that now, a normal-approximation confidence interval with default `alpha` stretches by exactly one standard error on either side of the point estimate. Typically, this changes results only slightly. In some cases, however, the new default may lead to a different suggested size, explaining why this is regarded as a major change. (GitHub: #371)
+
+## Minor changes
+
+* The deprecated function `ggplot2::aes_string()` is not used anymore, thereby avoiding an occasional soft-deprecation warning thrown by **ggplot2** 3.4.0. (GitHub: #367)
+* The KL divergence from the reference model to a submodel is simplified to the corresponding cross-entropy (i.e., the reference model's entropy is dropped), with some caveats described in the documentation for output element `ce` of `project()`. The reason for this change is that the former KL divergence assumed the reference model's family to be the same as the submodel's family, which does not need to be the case for custom reference models. This should not be a user-facing change as users are discouraged to make use of specific output elements (like the former element `kl` of objects of class `projection` or `vsel`) directly. (GitHub: #369)
+* Improvements in the documentation (especially for argument `family` of `init_refmodel()` and `get_refmodel.default()`).
+
+# projpred 2.2.2
 
 ## Major changes
 
@@ -10,9 +44,10 @@ If you read this from a place other than <https://mc-stan.org/projpred/news/inde
 
 ## Minor changes
 
-* Improvements in documentation and vignette.
+* Improvements in documentation and vignette, especially to emphasize the generality of the reference model object resulting from `get_refmodel()` and `init_refmodel()` (thereby also distinguishing more clearly between "typical" and "custom" reference model objects) in (i) the description and several arguments of `get_refmodel()` and `init_refmodel()`, (ii) sections ["Reference model"](https://mc-stan.org/projpred/articles/projpred.html#refmod) and ["Supported types of models"](https://mc-stan.org/projpred/articles/projpred.html#modtypes) of the vignette. (GitHub: #357, #359, #364, #365, #366)
 * Minor improvement in terms of efficiency in the `validate_search = FALSE` case of `cv_varsel()`.
 * Improvement in terms of efficiency in case of a forward search with custom `search_terms` (at least in some instances), also affecting the output of `solution_terms(<vsel_object>)` in those cases. (GitHub: #360; thanks to user @sor16)
+* Update [Catalina et al. (2020)](https://doi.org/10.48550/arXiv.2010.06994) to [Catalina et al. (2022)](https://proceedings.mlr.press/v151/catalina22a.html). (GitHub: #364)
 
 ## Bug fixes
 

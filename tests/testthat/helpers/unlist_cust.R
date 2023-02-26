@@ -16,3 +16,12 @@ unlist_cust <- function(x, nm_stop = "mod_nm") {
     return(unlist_cust(unlist(x, recursive = FALSE), nm_stop = nm_stop))
   }
 }
+
+# Remove undesired "dummy" entries from an "unlisted" (via unlist_cust()) list.
+#
+# @param x_unlisted A list returned by unlist_cust().
+#
+# @return `x_unlisted` with dummy elements removed..
+rm_dummies_unlisted <- function(x_unlisted) {
+  return(x_unlisted[!sapply(x_unlisted, identical, "REMOVE THIS DUMMY ENTRY")])
+}

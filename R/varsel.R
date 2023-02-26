@@ -1,8 +1,7 @@
 #' Variable selection without cross-validation
 #'
-#' Perform the projection predictive variable selection for GLMs, GLMMs, GAMs,
-#' and GAMMs. This variable selection consists of a *search* part and an
-#' *evaluation* part. The search part determines the solution path, i.e., the
+#' Run the *search* part and the *evaluation* part for a projection predictive
+#' variable selection. The search part determines the solution path, i.e., the
 #' best submodel for each submodel size (number of predictor terms). The
 #' evaluation part determines the predictive performance of the submodels along
 #' the solution path.
@@ -16,8 +15,9 @@
 #'   the training data is used.
 #' @param method The method for the search part. Possible options are `"L1"` for
 #'   L1 search and `"forward"` for forward search. If `NULL`, then internally,
-#'   `"L1"` is used, except if the reference model has multilevel or additive
-#'   terms or if `!is.null(search_terms)`. See also section "Details" below.
+#'   `"L1"` is used, except if (i) the reference model has multilevel or
+#'   additive terms, (ii) if `!is.null(search_terms)`, or (iii) if the
+#'   augmented-data projection is used. See also section "Details" below.
 #' @param refit_prj A single logical value indicating whether to fit the
 #'   submodels along the solution path again (`TRUE`) or to retrieve their fits
 #'   from the search part (`FALSE`) before using those (re-)fits in the
@@ -95,7 +95,13 @@
 #' (if there is no offset, use a vector of zeros).
 #' * `weights`: a numeric vector containing the observation weights for the test
 #' set (if there are no observation weights, use a vector of ones).
-#' * `y`: a numeric vector containing the response values for the test set.
+#' * `y`: a vector or a `factor` containing the response values for the test
+#' set. In case of the latent projection, this has to be a vector containing the
+#' *latent* response values, but it can also be a vector full of `NA`s if
+#' latent-scale post-processing is not needed.
+#' * `y_oscale`: Only needs to be provided in case of the latent projection
+#' where this needs to be a vector or a `factor` containing the *original*
+#' (i.e., non-latent) response values for the test set.
 #'
 #' @details Arguments `ndraws`, `nclusters`, `nclusters_pred`, and `ndraws_pred`
 #'   are automatically truncated at the number of posterior draws in the
@@ -106,9 +112,10 @@
 #'   linearly.
 #'
 #'   For argument `method`, there are some restrictions: For a reference model
-#'   with multilevel or additive formula terms, only the forward search is
-#'   available. Furthermore, argument `search_terms` requires a forward search
-#'   to take effect.
+#'   with multilevel or additive formula terms or a reference model set up for
+#'   the augmented-data projection, only the forward search is available.
+#'   Furthermore, argument `search_terms` requires a forward search to take
+#'   effect.
 #'
 #'   L1 search is faster than forward search, but forward search may be more
 #'   accurate. Furthermore, forward search may find a sparser model with
@@ -217,10 +224,45 @@ varsel.refmodel <- function(object, d_test = NULL, method = NULL,
 
   if (is.null(d_test)) {
     d_test <- list(type = "train", data = NULL, offset = refmodel$offset,
-                   weights = refmodel$wobs, y = refmodel$y)
+                   weights = refmodel$wobs, y = refmodel$y,
+                   y_oscale = refmodel$y_oscale)
   } else {
     d_test$type <- "test"
+    if (!refmodel$family$for_latent) {
+      d_test$y_oscale <- d_test$y
+    }
     d_test <- d_test[nms_d_test()]
+    if (refmodel$family$for_augdat) {
+      d_test$y <- as.factor(d_test$y)
+      if (!all(levels(d_test$y) %in% refmodel$family$cats)) {
+        stop("The levels of the response variable (after coercing it to a ",
+             "`factor`) have to be a subset of `family$cats`. Either modify ",
+             "`d_test$y` accordingly or see the documentation for ",
+             "extend_family()'s argument `augdat_y_unqs` to solve this.")
+      }
+      # Re-assign the original levels because some levels might be missing:
+      d_test$y <- factor(d_test$y, levels = refmodel$family$cats)
+    } else if (refmodel$family$for_latent) {
+      if (is.null(refmodel$family$cats) &&
+          (is.factor(d_test$y_oscale) || is.character(d_test$y_oscale) ||
+           is.logical(d_test$y_oscale))) {
+        stop("If the original (i.e., non-latent) response is `factor`-like, ",
+             "`family$cats` must not be `NULL`. See the documentation for ",
+             "extend_family()'s argument `latent_y_unqs` to solve this.")
+      }
+      if (!is.null(refmodel$family$cats)) {
+        d_test$y_oscale <- as.factor(d_test$y_oscale)
+        if (!all(levels(d_test$y_oscale) %in% refmodel$family$cats)) {
+          stop("The levels of the response variable (after coercing it to a ",
+               "`factor`) have to be a subset of `family$cats`. Either modify ",
+               "`d_test$y_oscale` accordingly or see the documentation for ",
+               "extend_family()'s argument `latent_y_unqs` to solve this.")
+        }
+        # Re-assign the original levels because some levels might be missing:
+        d_test$y_oscale <- factor(d_test$y_oscale,
+                                  levels = refmodel$family$cats)
+      }
+    }
   }
 
   ## reference distributions for selection and prediction after selection
@@ -248,7 +290,8 @@ varsel.refmodel <- function(object, d_test = NULL, method = NULL,
                             newdata = d_test$data,
                             offset = d_test$offset,
                             wobs = d_test$weights,
-                            y = d_test$y)
+                            y = d_test$y,
+                            y_oscale = d_test$y_oscale)
 
   ## predictive statistics of the reference model on test data. if no test data
   ## are provided,
@@ -258,13 +301,30 @@ varsel.refmodel <- function(object, d_test = NULL, method = NULL,
     ## observations
     nobs_test <- nrow(d_test$data %||% refmodel$fetch_data())
     ref <- list(mu = rep(NA, nobs_test), lppd = rep(NA, nobs_test))
+    if (refmodel$family$for_latent) {
+      # In general, we could use `ref$oscale <- ref` here, but the case where
+      # refmodel$family$latent_ilink() returns a 3-dimensional array (S x N x C)
+      # needs special care.
+      if (!is.null(refmodel$family$cats)) {
+        mu_oscale <- structure(rep(NA,
+                                   nobs_test * length(refmodel$family$cats)),
+                               nobs_orig = nobs_test,
+                               class = "augvec")
+      } else {
+        mu_oscale <- ref$mu
+      }
+      ref$oscale <- list(mu = mu_oscale, lppd = ref$lppd)
+    }
   } else {
     if (d_test$type == "train") {
-      mu_test <- refmodel$mu
-      if (!all(refmodel$offset == 0)) {
-        mu_test <- refmodel$family$linkinv(
-          refmodel$family$linkfun(mu_test) + refmodel$offset
-        )
+      if (formula_contains_group_terms(refmodel$formula) &&
+          getOption("projpred.mlvl_pred_new", FALSE)) {
+        # Need to use `mlvl_allrandom = TRUE` (`refmodel$mu_offs` is based on
+        # `mlvl_allrandom = getOption("projpred.mlvl_proj_ref_new", FALSE)`):
+        eta_test <- refmodel$ref_predfun(refmodel$fit, excl_offs = FALSE)
+        mu_test <- refmodel$family$linkinv(eta_test)
+      } else {
+        mu_test <- refmodel$mu_offs
       }
     } else {
       newdata_for_ref <- d_test$data
@@ -277,14 +337,13 @@ varsel.refmodel <- function(object, d_test = NULL, method = NULL,
         }
         newdata_for_ref$projpred_internal_offs_stanreg <- d_test$offset
       }
-      mu_test <- refmodel$family$linkinv(
-        refmodel$ref_predfun(refmodel$fit, newdata = newdata_for_ref) +
-          d_test$offset
-      )
+      eta_test <- refmodel$ref_predfun(refmodel$fit, newdata = newdata_for_ref,
+                                       excl_offs = FALSE)
+      mu_test <- refmodel$family$linkinv(eta_test)
     }
     ref <- .weighted_summary_means(
       y_test = d_test, family = refmodel$family, wsample = refmodel$wsample,
-      mu = mu_test, dis = refmodel$dis
+      mu = mu_test, dis = refmodel$dis, cl_ref = seq_along(refmodel$wsample)
     )
   }
 
@@ -295,7 +354,7 @@ varsel.refmodel <- function(object, d_test = NULL, method = NULL,
     d_test,
     summaries = nlist(sub, ref),
     solution_terms = search_path$solution_terms,
-    kl = sapply(submodels, "[[", "kl"),
+    ce = sapply(submodels, "[[", "ce"),
     nterms_max,
     nterms_all = count_terms_in_formula(refmodel$formula),
     method = method,
@@ -306,11 +365,7 @@ varsel.refmodel <- function(object, d_test = NULL, method = NULL,
     nprjdraws_search = NCOL(p_sel$mu),
     nprjdraws_eval = NCOL(p_pred$mu)
   )
-  ## suggest model size
   class(vs) <- "vsel"
-  vs$suggested_size <- suggest_size(vs, warnings = FALSE)
-  summary <- summary(vs)
-  vs$summary <- summary$selection
 
   return(vs)
 }
@@ -359,7 +414,8 @@ parse_args_varsel <- function(refmodel, method, refit_prj, nterms_max,
   has_additive_features <- formula_contains_additive_terms(refmodel$formula)
 
   if (is.null(method)) {
-    if (has_group_features || has_additive_features || !search_terms_was_null) {
+    if (has_group_features || has_additive_features || !search_terms_was_null ||
+        refmodel$family$for_augdat) {
       method <- "forward"
     } else {
       method <- "l1"
@@ -374,6 +430,10 @@ parse_args_varsel <- function(refmodel, method, refit_prj, nterms_max,
       if (!search_terms_was_null) {
         warning("Argument `search_terms` only takes effect if ",
                 "`method = \"forward\"`.")
+      }
+      if (refmodel$family$for_augdat) {
+        stop("Currently, the augmented-data projection may not be combined ",
+             "with an L1 search.")
       }
     }
   }

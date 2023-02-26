@@ -45,8 +45,9 @@ the latter only if \code{refit_prj} is \code{TRUE}).}
 
 \item{method}{The method for the search part. Possible options are \code{"L1"} for
 L1 search and \code{"forward"} for forward search. If \code{NULL}, then internally,
-\code{"L1"} is used, except if the reference model has multilevel or additive
-terms or if \code{!is.null(search_terms)}. See also section "Details" below.}
+\code{"L1"} is used, except if (i) the reference model has multilevel or
+additive terms, (ii) if \code{!is.null(search_terms)}, or (iii) if the
+augmented-data projection is used. See also section "Details" below.}
 
 \item{cv_method}{The CV method, either \code{"LOO"} or \code{"kfold"}. In the \code{"LOO"}
 case, a Pareto-smoothed importance sampling leave-one-out CV (PSIS-LOO CV)
@@ -160,9 +161,8 @@ to be accessed directly but instead via helper functions (see the main
 vignette and \link{projpred-package}).
 }
 \description{
-Perform the projection predictive variable selection for GLMs, GLMMs, GAMs,
-and GAMMs. This variable selection consists of a \emph{search} part and an
-\emph{evaluation} part. The search part determines the solution path, i.e., the
+Run the \emph{search} part and the \emph{evaluation} part for a projection predictive
+variable selection. The search part determines the solution path, i.e., the
 best submodel for each submodel size (number of predictor terms). The
 evaluation part determines the predictive performance of the submodels along
 the solution path. In contrast to \code{\link[=varsel]{varsel()}}, \code{\link[=cv_varsel]{cv_varsel()}} performs a
@@ -181,9 +181,10 @@ performance. Increasing these arguments affects the computation time
 linearly.
 
 For argument \code{method}, there are some restrictions: For a reference model
-with multilevel or additive formula terms, only the forward search is
-available. Furthermore, argument \code{search_terms} requires a forward search
-to take effect.
+with multilevel or additive formula terms or a reference model set up for
+the augmented-data projection, only the forward search is available.
+Furthermore, argument \code{search_terms} requires a forward search to take
+effect.
 
 L1 search is faster than forward search, but forward search may be more
 accurate. Furthermore, forward search may find a sparser model with
@@ -255,18 +256,20 @@ if (requireNamespace("rstanarm", quietly = TRUE)) {
 \dontshow{\}) # examplesIf}
 }
 \references{
-Magnusson, M., Andersen, M., Jonasson, J., and Vehtari, A. (2019). Bayesian
-leave-one-out cross-validation for large data. In \emph{Proceedings of the 36th
-International Conference on Machine Learning}, 4244–4253. URL:
+Magnusson, Måns, Michael Andersen, Johan Jonasson, and Aki Vehtari. 2019.
+"Bayesian Leave-One-Out Cross-Validation for Large Data." In \emph{Proceedings of
+the 36th International Conference on Machine Learning}, edited by Kamalika
+Chaudhuri and Ruslan Salakhutdinov, 97:4244--53. Proceedings of Machine
+Learning Research. PMLR.
 \url{https://proceedings.mlr.press/v97/magnusson19a.html}.
 
-Vehtari, A., Gelman, A., and Gabry, J. (2017). Practical Bayesian model
-evaluation using leave-one-out cross-validation and WAIC. \emph{Statistics and
-Computing}, \strong{27}(5), 1413-1432. \doi{10.1007/s11222-016-9696-4}.
+Vehtari, Aki, Andrew Gelman, and Jonah Gabry. 2017. "Practical Bayesian Model
+Evaluation Using Leave-One-Out Cross-Validation and WAIC." \emph{Statistics and
+Computing} 27 (5): 1413--32. \doi{10.1007/s11222-016-9696-4}.
 
-Vehtari, A., Simpson, D., Gelman, A., Yao, Y., and Gabry, J. (2021). Pareto
-smoothed importance sampling. \emph{arXiv:1507.02646}. URL:
-\url{https://arxiv.org/abs/1507.02646}.
+Vehtari, Aki, Daniel Simpson, Andrew Gelman, Yuling Yao, and Jonah Gabry.
+2022. "Pareto Smoothed Importance Sampling." arXiv.
+\doi{10.48550/arXiv.1507.02646}.
 }
 \seealso{
 \code{\link[=varsel]{varsel()}}

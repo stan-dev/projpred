@@ -11,6 +11,11 @@
 # @param from_brms A single logical value indicating whether the extended family
 #   was created for a reference model based on a `"brmsfit"` (`TRUE`) or not
 #   (`FALSE`).
+# @param augdat_expected A single logical value indicating whether the extended
+#   family is expected to be for augmented-data projection (`TRUE`) or not
+#   (`FALSE`).
+# @param latent_expected A single logical value indicating whether the reference
+#   model is expected to be for latent projection (`TRUE`) or not (`FALSE`).
 # @param info_str A single character string giving information to be printed in
 #   case of failure.
 #
@@ -19,6 +24,8 @@ extfam_tester <- function(extfam,
                           fam_orig,
                           extfam_nms_add2 = character(),
                           from_brms = FALSE,
+                          augdat_expected = FALSE,
+                          latent_expected = FALSE,
                           info_str) {
   # General structure tests -------------------------------------------------
 
@@ -26,35 +33,118 @@ extfam_tester <- function(extfam,
 
   expect_s3_class(fam_orig, "family")
   expect_type(fam_orig, "list")
-  fam_orig_nms <- c(
-    "family", "link", "linkfun", "linkinv", "variance", "dev.resids", "aic",
-    "mu.eta", "initialize", "validmu", "valideta"
-  )
+  # Basic names of `fam_orig` (will be adapted later if necessary):
+  fam_orig_nms <- c("family", "link")
+  # Check for element `family`:
   expect_true("family" %in% names(fam_orig), info = info_str)
-  if (fam_orig$family %in% c("binomial", "poisson")) {
-    fam_orig_nms <- c(fam_orig_nms, "simulate")
+  expect_true(is.vector(fam_orig$family, "character"), info = info_str)
+  expect_length(fam_orig$family, 1)
+  # Family "cumulative_rstanarm" is an artificial family, so it lacks some
+  # elements present in actual families:
+  if (fam_orig$family != "cumulative_rstanarm") {
+    fam_orig_nms <- c(fam_orig_nms, "linkfun", "linkinv")
   }
-  expect_named(fam_orig, fam_orig_nms, info = info_str)
+  # Families from brms which require the augmented-data projection:
+  bfam_nms <- c("categorical", "cumulative", "cratio", "sratio", "acat")
+  # Check the names of `fam_orig`:
+  if (fam_orig$family %in% bfam_nms) {
+    # Just check that the basic names exist (to avoid depending too strongly on
+    # brms internals):
+    expect_true(all(fam_orig_nms %in% names(fam_orig)), info = info_str)
+  } else {
+    if (fam_orig$family != "cumulative_rstanarm") {
+      fam_orig_nms <- c(fam_orig_nms, "variance", "dev.resids", "aic", "mu.eta",
+                        "initialize", "validmu", "valideta")
+      if (fam_orig$family %in% c("binomial", "poisson")) {
+        fam_orig_nms <- c(fam_orig_nms, "simulate")
+      }
+    }
+    expect_named(fam_orig, fam_orig_nms, info = info_str)
+  }
 
   ## For `extfam` -----------------------------------------------------------
 
-  extfam_nms_add <- c("kl", "dis_fun", "predvar", "ll_fun", "deviance", "ppd",
-                      "is_extended", extfam_nms_add2)
-  extfam_nms <- c(names(fam_orig), extfam_nms_add)
   expect_s3_class(extfam, "family")
   expect_type(extfam, "list")
-  expect_named(extfam, extfam_nms, info = info_str)
+  expect_true("for_augdat" %in% names(extfam), info = info_str)
+  expect_true(isTRUE(extfam$for_augdat) || isFALSE(extfam$for_augdat),
+              info = info_str)
+  expect_identical(extfam$for_augdat, augdat_expected, info = info_str)
+  expect_true("for_latent" %in% names(extfam), info = info_str)
+  expect_true(isTRUE(extfam$for_latent) || isFALSE(extfam$for_latent),
+              info = info_str)
+  expect_identical(extfam$for_latent, latent_expected, info = info_str)
+  extfam_nms_add <- c("ce", "dis_fun", "predvar", "ll_fun", "deviance", "ppd",
+                      "for_latent", "for_augdat", "is_extended")
+  if (extfam$for_augdat) {
+    extfam_nms_add <- setdiff(extfam_nms_add, "deviance")
+    extfam_nms_add <- c(extfam_nms_add, "cats", "ce_ptwise")
+    if (extfam$family == "categorical") {
+      extfam_nms_add <- c(extfam_nms_add, "refcat")
+    }
+    if (extfam$family == "cumulative_rstanarm") {
+      extfam_nms_add <- c(extfam_nms_add, "linkfun", "linkinv")
+    }
+  } else if (extfam$for_latent) {
+    extfam_nms_add <- c(extfam_nms_add, "family_oscale", "link_oscale",
+                        "latent_ilink", "latent_ll_oscale", "latent_ppd_oscale")
+    if (extfam$family_oscale != "binomial") {
+      extfam_nms_add <- c(extfam_nms_add, "cats")
+    }
+  }
+  extfam_nms_add <- c(extfam_nms_add, extfam_nms_add2)
+  extfam_nms <- c(fam_orig_nms, extfam_nms_add)
+  if (fam_orig$family %in% bfam_nms) {
+    expect_true(all(extfam_nms %in% names(extfam)), info = info_str)
+  } else {
+    expect_named(extfam, extfam_nms,
+                 ignore.order = extfam$for_augdat || extfam$for_latent,
+                 info = info_str)
+  }
 
   # Detailed tests ----------------------------------------------------------
 
   ## For `fam_orig` ---------------------------------------------------------
 
-  fam_orig_ch <- structure(extfam[names(fam_orig)], class = "family")
+  fam_orig_ch <- structure(
+    extfam[setdiff(names(fam_orig), c("dpars", "multi_dpars"))],
+    class = if (fam_orig$family %in% bfam_nms) {
+      c("brmsfamily", "family")
+    } else {
+      "family"
+    }
+  )
   if (extfam$family == "binomial") {
     fam_orig_ch$initialize <- fam_orig$initialize
+    if (extfam$for_augdat) {
+      expect_identical(
+        get("augdat_link", envir = environment(fam_orig_ch$linkfun)),
+        augdat_link_binom,
+        info = info_str
+      )
+      expect_identical(
+        get("augdat_ilink", envir = environment(fam_orig_ch$linkinv)),
+        augdat_ilink_binom,
+        info = info_str
+      )
+      fam_orig_ch$linkfun <- fam_orig$linkfun
+      fam_orig_ch$linkinv <- fam_orig$linkinv
+    }
+  } else if (extfam$for_augdat) {
+    fam_orig_ch$linkfun <- fam_orig$linkfun
+    fam_orig_ch$linkinv <- fam_orig$linkinv
   }
   if (!from_brms) {
-    expect_identical(fam_orig_ch, fam_orig, info = info_str)
+    expect_identical(fam_orig_ch, fam_orig,
+                     ignore.environment = extfam$for_latent, info = info_str)
+  } else if (extfam$family %in% bfam_nms) {
+    expect_identical(
+      fam_orig_ch,
+      structure(fam_orig[setdiff(names(fam_orig), c("dpars", "multi_dpars"))],
+                class = class(fam_orig)),
+      ignore.environment = TRUE,
+      info = info_str
+    )
   } else {
     expect_identical(fam_orig_ch, fam_orig, ignore.environment = TRUE,
                      info = info_str)
@@ -62,13 +152,93 @@ extfam_tester <- function(extfam,
 
   ## For `extfam` -----------------------------------------------------------
 
-  for (el_nm in setdiff(extfam_nms_add, "is_extended")) {
-    expect_type(extfam[[el_nm]], "closure")
+  if ("family_oscale" %in% names(extfam)) {
+    expect_true(extfam$family_oscale %in% fam_nms_long, info = info_str)
+  }
+  if ("link_oscale" %in% names(extfam)) {
+    expect_true(extfam$link_oscale %in% link_str, info = info_str)
+  }
+  if ("latent_ll_oscale" %in% names(extfam)) {
+    if (extfam$family_oscale == "binomial") {
+      expect_identical(extfam$latent_ll_oscale, latent_ll_oscale_binom_nocats,
+                       info = info_str)
+    } else {
+      expect_identical(extfam$latent_ll_oscale, latent_ll_oscale_cats,
+                       info = info_str)
+    }
+  }
+  if ("latent_ppd_oscale" %in% names(extfam)) {
+    if (extfam$family_oscale == "binomial") {
+      expect_identical(extfam$latent_ppd_oscale, latent_ppd_oscale_binom_nocats,
+                       info = info_str)
+    } else {
+      expect_identical(extfam$latent_ppd_oscale, latent_ppd_oscale_cats,
+                       info = info_str)
+    }
+  }
+  if ("refcat" %in% names(extfam)) {
+    expect_true(is.vector(extfam$refcat, "character"), info = info_str)
+    expect_length(extfam$refcat, 1)
+  }
+  if ("cats" %in% names(extfam)) {
+    expect_true(is.vector(extfam$cats, "character"), info = info_str)
   }
   expect_true(extfam$is_extended, info = info_str)
+  el_nms_clos <- setdiff(
+    extfam_nms_add,
+    c("family_oscale", "link_oscale", "refcat", "cats", "for_latent",
+      "for_augdat", "is_extended")
+  )
+  for (el_nm in el_nms_clos) {
+    expect_type(extfam[[el_nm]], "closure")
+  }
 
-  # TODO: Add some mathematical checks (i.e., check that the calculations for
-  # the objects listed in `extfam_nms_add` are mathematically correct).
+  if (extfam$for_augdat) {
+    arr_pr <- abind::abind(array(c(0.7, 0.6, 0.3, 0.4), dim = c(2, 1, 2)),
+                           array(c(0.1, 0.2, 0.9, 0.8), dim = c(2, 1, 2)),
+                           along = 2)
+    augm_pr <- arr2augmat(arr_pr, margin_draws = 1)
+    expect_equal(extfam$linkinv(extfam$linkfun(augm_pr)), augm_pr,
+                 info = info_str)
+    # We expect an N x S matrix:
+    ce_pt <- extfam$ce_ptwise(mu_ref = augm_pr, mu_sub = augm_pr)
+    expect_identical(dim(ce_pt), c(2L, 2L), info = info_str)
+    expect_equal(ce_pt,
+                 unname(t(-apply(arr_pr * log(arr_pr), c(1, 2), sum))),
+                 info = info_str)
+    # We expect a vector of length S:
+    ce_summed <- extfam$ce(pref = list(mu = augm_pr),
+                           data = list(weights = rep(1, 2)),
+                           psub = list(mu = augm_pr))
+    expect_length(ce_summed, 2)
+    expect_equal(ce_summed, colMeans(ce_pt), info = info_str)
+    # We expect a vector of length S:
+    expect_equal(extfam$dis_fun(pref = list(mu = augm_pr),
+                                psub = list(mu = augm_pr)),
+                 rep(NA, 2),
+                 info = info_str)
+    # We expect a vector of length N_augcat = nrow(augm_pr):
+    expect_equal(extfam$predvar(mu = augm_pr, dis = NA),
+                 rep(NA, 4),
+                 info = info_str)
+    # We expect an N x S matrix:
+    expect_equal(extfam$ll_fun(mu = augm_pr,
+                               y = factor(head(letters, 2)[c(2, 1)])),
+                 matrix(log(c(0.3, 0.1, 0.4, 0.2)), ncol = 2),
+                 info = info_str)
+    # We expect a vector of length N:
+    if (exists(".Random.seed", envir = .GlobalEnv)) {
+      rng_state_old <- get(".Random.seed", envir = .GlobalEnv)
+      on.exit(assign(".Random.seed", rng_state_old, envir = .GlobalEnv))
+    }
+    set.seed(seed2_tst)
+    ppd_draws <- extfam$ppd(mu = augm_pr[, 1])
+    expect_true(is.vector(ppd_draws, "integer"), info = info_str)
+    expect_length(ppd_draws, 2)
+  }
+  # TODO: For the traditional (and latent) projection, add some mathematical
+  # checks (i.e., check that the calculations for the objects listed in
+  # `extfam_nms_add` are mathematically correct).
 
   # Output ------------------------------------------------------------------
 
@@ -103,6 +273,11 @@ extfam_tester <- function(extfam,
 #   object `mod_nms`.
 # @param fam_nm A single character string specifying the family (see object
 #   `fam_nms`.
+# @param augdat_expected A single logical value indicating whether the reference
+#   model is expected to be for augmented-data projection (`TRUE`) or not
+#   (`FALSE`).
+# @param latent_expected A single logical value indicating whether the reference
+#   model is expected to be for latent projection (`TRUE`) or not (`FALSE`).
 # @param info_str A single character string giving information to be printed in
 #   case of failure.
 #
@@ -122,6 +297,8 @@ refmodel_tester <- function(
     fam_orig,
     mod_nm,
     fam_nm,
+    augdat_expected = FALSE,
+    latent_expected = FALSE,
     info_str
 ) {
   # Preparations:
@@ -134,6 +311,11 @@ refmodel_tester <- function(
     length(refmod$fit$offset) > 0
   if (needs_offs_added) {
     data_expected$projpred_internal_offs_stanreg <- refmod$fit$offset
+  }
+  if (refmod$family$for_latent) {
+    formul_expected[[2]] <- str2lang(
+      paste0(".", as.character(formul_expected[[2]]))
+    )
   }
   if (!is.null(attr(terms(formul_expected), "offset"))) {
     # In the reference model, the offset() term is placed last:
@@ -157,7 +339,8 @@ refmodel_tester <- function(
   }
   if (!is_datafit && pkg_nm == "rstanarm" &&
       refmod$fit$stan_function == "stan_gamm4" &&
-      refmod$family$family == "binomial") {
+      refmod$family$family_oscale %||% refmod$family$family == "binomial") {
+    # A column added internally by rstanarm which is not relevant for projpred:
     data_expected$temp_y <- 1
   }
   has_grp <- mod_nm %in% c("glmm", "gamm")
@@ -166,9 +349,10 @@ refmodel_tester <- function(
 
   # Test the general structure of the object:
   refmod_nms <- c(
-    "fit", "formula", "div_minimizer", "family", "mu", "eta", "dis", "y",
-    "intercept", "proj_predfun", "fetch_data", "wobs", "wsample", "offset",
-    "cvfun", "cvfits", "extract_model_data", "ref_predfun", "cvrefbuilder"
+    "fit", "formula", "div_minimizer", "family", "eta", "mu", "mu_offs", "dis",
+    "y", "intercept", "proj_predfun", "fetch_data", "wobs", "wsample", "offset",
+    "cvfun", "cvfits", "extract_model_data", "ref_predfun", "cvrefbuilder",
+    "y_oscale"
   )
   refmod_class_expected <- "refmodel"
   if (is_datafit) {
@@ -195,10 +379,41 @@ refmodel_tester <- function(
   expect_type(refmod$div_minimizer, "closure")
 
   # family
-  extfam_tester(refmod$family, fam_orig = fam_orig,
+  extfam_tester(refmod$family,
+                fam_orig = fam_orig,
                 extfam_nms_add2 = "mu_fun",
                 from_brms = (pkg_nm == "brms"),
+                augdat_expected = augdat_expected,
+                latent_expected = latent_expected,
                 info_str = info_str)
+
+  # eta
+  # In principle, it would be desirable to compare `refmod$eta` to
+  # `refmod$family$linkfun(refmod$mu)`, but numerical underflow and overflow can
+  # make this problematic. (Here in the unit tests, we generate rather extreme
+  # linear predictors, which should be avoided in the first place, but doesn't
+  # seem to be that simple.)
+  if (refmod$family$family %in% c("binomial")) {
+    eta_cut <- refmod$eta
+    mu_cut <- refmod$mu
+    tol_ex <- 1e-12
+    eta_cut[eta_cut < f_binom$linkfun(tol_ex)] <- f_binom$linkfun(tol_ex)
+    eta_cut[eta_cut > f_binom$linkfun(1 - tol_ex)] <-
+      f_binom$linkfun(1 - tol_ex)
+    mu_cut[mu_cut < tol_ex] <- tol_ex
+    mu_cut[mu_cut > 1 - tol_ex] <- 1 - tol_ex
+    expect_equal(eta_cut, refmod$family$linkfun(mu_cut), info = info_str)
+  } else if (refmod$family$family %in% fam_nms_aug_long &&
+             (any(abs(refmod$mu - 0) <= .Machine$double.eps) ||
+              any(abs(refmod$mu - 1) <= .Machine$double.eps))) {
+    # The degenerate probabilities in `refmod$mu` are probably due to numerical
+    # underflow and overflow (for zeros and ones, respectively), so applying the
+    # link function would lead to infinite values. Thus, the only sensible (and
+    # quickly feasible) check is:
+    expect_equal(refmod$mu, refmod$family$linkinv(refmod$eta), info = info_str)
+  } else {
+    expect_equal(refmod$eta, refmod$family$linkfun(refmod$mu), info = info_str)
+  }
 
   # mu
   ### Not needed because of the more precise test below:
@@ -215,7 +430,12 @@ refmodel_tester <- function(
       # In this case, the linear predictors are calculated manually because of
       # the offset issues in rstanarm.
       drws <- as.matrix(refmod$fit)
-      drws_icpt <- drws[, "(Intercept)"]
+      if ("(Intercept)" %in% colnames(drws)) {
+        drws_icpt <- drws[, "(Intercept)"]
+      } else {
+        drws_icpt <- numeric(nrow(drws))
+        drws_thres <- drws[, grep("\\|", colnames(drws))]
+      }
       drws_beta_cont <- drws[
         ,
         setdiff(grep("xco\\.", colnames(drws), value = TRUE),
@@ -265,17 +485,46 @@ refmodel_tester <- function(
       }
       mu_expected <- unname(mu_expected)
     } else if (pkg_nm == "brms") {
-      mu_expected <- posterior_linpred(refmod$fit) - matrix(
-        offs_expected,
-        nrow = nrefdraws_expected,
-        ncol = nobsv_expected,
-        byrow = TRUE
-      )
+      mu_expected <- sweep(posterior_linpred(refmod$fit), 2L, offs_expected)
+      if (fam_nm %in% fam_nms_ordin) {
+        drws <- as.matrix(refmod$fit)
+        drws_thres <- drws[, grep("b_Intercept\\[", colnames(drws))]
+      }
     }
     if (refmod$family$family != "gaussian") {
-      mu_expected <- fam_orig$linkinv(mu_expected)
+      if (refmod$family$family %in% fam_nms_aug_long) {
+        if (refmod$family$family %in% fam_nms_ordin_long) {
+          if (refmod$family$family %in% c("cumulative", "cumulative_rstanarm",
+                                          "sratio")) {
+            mu_expected <- apply(drws_thres, 2, function(thres_vec) {
+              thres_vec - mu_expected
+            }, simplify = FALSE)
+          } else if (refmod$family$family %in% c("cratio", "acat")) {
+            mu_expected <- apply(drws_thres, 2, function(thres_vec) {
+              mu_expected - thres_vec
+            }, simplify = FALSE)
+          }
+          mu_expected <- do.call(abind::abind, c(mu_expected, rev.along = 0))
+        }
+        mu_expected <- arr2augmat(mu_expected, margin_draws = 1)
+        mu_expected <- refmod$family$linkinv(mu_expected)
+      } else {
+        mu_expected <- fam_orig$linkinv(mu_expected)
+      }
     }
-    expect_equal(refmod$mu, t(mu_expected), info = info_str)
+    if (refmod$family$for_augdat && refmod$family$family == "binomial") {
+      mu_expected <- cbind(1 - mu_expected,
+                           mu_expected)
+    }
+    if (!refmod$family$family %in% fam_nms_aug_long) {
+      mu_expected <- t(mu_expected)
+    }
+    if (refmod$family$for_augdat && refmod$family$family == "binomial") {
+      mu_expected <- structure(mu_expected,
+                               nobs_orig = nobsv,
+                               class = "augmat")
+    }
+    expect_equal(refmod$mu, mu_expected, info = info_str)
   } else {
     if (refmod$family$family != "binomial") {
       expect_identical(refmod$mu, as.matrix(refmod$y), info = info_str)
@@ -285,24 +534,33 @@ refmodel_tester <- function(
     }
   }
 
-  # eta
-  eta_cut <- refmod$eta
-  mu_cut <- refmod$mu
-  if (refmod$family$family %in% c("binomial")) {
-    # To avoid failing tests due to numerical inaccuracies for extreme
-    # values:
-    tol_ex <- 1e-12
-    eta_cut[eta_cut < f_binom$linkfun(tol_ex)] <- f_binom$linkfun(tol_ex)
-    eta_cut[eta_cut > f_binom$linkfun(1 - tol_ex)] <- f_binom$linkfun(1 - tol_ex)
-    mu_cut[mu_cut < tol_ex] <- tol_ex
-    mu_cut[mu_cut > 1 - tol_ex] <- 1 - tol_ex
+  # mu_offs
+  expect_equal(
+    refmod$mu_offs,
+    refmod$family$linkinv(
+      refmod$eta + ifelse(refmod$family$family %in% fams_neg_linpred(), -1, 1) *
+        refmod$offset
+    ),
+    info = info_str
+  )
+  if (!is_datafit) {
+    expect_equal(
+      refmod$mu_offs,
+      refmod$family$linkinv(refmod$ref_predfun(
+        refmod$fit, excl_offs = FALSE,
+        mlvl_allrandom = getOption("projpred.mlvl_proj_ref_new", FALSE)
+      )),
+      info = info_str
+    )
   }
-  expect_equal(eta_cut, refmod$family$linkfun(mu_cut), info = info_str)
 
   # dis
   if (refmod$family$family == "gaussian") {
     if (is_datafit) {
       expect_identical(refmod$dis, 0, info = info_str)
+    } else if (latent_expected) {
+      expect_identical(refmod$dis, rep(1.6, nrefdraws_expected),
+                       info = info_str)
     } else {
       expect_true(is.vector(refmod$dis, "double"), info = info_str)
       expect_length(refmod$dis, nrefdraws_expected)
@@ -324,8 +582,19 @@ refmodel_tester <- function(
       # Fixed (as a side effect) by brms PR #1314:
       y_expected <- as.numeric(y_expected)
     }
+    if (latent_expected) {
+      y_expected <- unname(colMeans(posterior_linpred(fit_expected)))
+    }
   } else {
     y_expected <- data_expected[[y_spclformul_new]]
+  }
+  if (refmod$family$for_augdat) {
+    y_expected <- as.factor(y_expected)
+    if (fam_nm %in% fam_nms_aug && pkg_nm == "brms") {
+      # brms seems to set argument `contrasts`, but this is not important for
+      # projpred, so ignore it in the comparison:
+      attr(y_expected, "contrasts") <- attr(refmod$y, "contrasts")
+    }
   }
   expect_identical(refmod$y, y_expected, info = info_str)
 
@@ -343,6 +612,9 @@ refmodel_tester <- function(
   expect_type(refmod$fetch_data, "closure")
   if (!is_gamm) {
     # TODO (GAMMs): Adapt this to GAMMs.
+    if (latent_expected) {
+      data_expected[[stdized_lhs$y_nm]] <- y_expected
+    }
     if ((!is_datafit && pkg_nm != "brms") ||
         (is_datafit && (pkg_nm == "brms" || fam_nm != "binom"))) {
       expect_identical(refmod$fetch_data(), data_expected, info = info_str)
@@ -359,6 +631,12 @@ refmodel_tester <- function(
                              tail(refdat_colnms, -1))
         }
         refdat_colnms <- sub("^offset\\((.*)\\)$", "\\1", refdat_colnms)
+        if (latent_expected) {
+          # Re-order:
+          refdat_colnms <- c(sub("^\\.", "", stdized_lhs$y_nm),
+                             setdiff(refdat_colnms, stdized_lhs$y_nm),
+                             stdized_lhs$y_nm)
+        }
         refdat_ch <- data_expected[, refdat_colnms, drop = FALSE]
         expect_equal(refmod$fetch_data(), refdat_ch, check.attributes = FALSE,
                      info = info_str)
@@ -426,37 +704,36 @@ refmodel_tester <- function(
   # cvrefbuilder
   expect_type(refmod$cvrefbuilder, "closure")
 
+  # y_oscale
+  if (latent_expected) {
+    y_oscale_expected <- data_expected[[sub("^\\.", "", stdized_lhs$y_nm)]]
+    if (!is.null(refmod$family$cats) && !is.factor(y_oscale_expected)) {
+      y_oscale_expected <- as.factor(y_oscale_expected)
+    }
+    if (pkg_nm == "brms") {
+      # brms seems to set argument `contrasts`, but this is not important for
+      # projpred, so ignore it in the comparison:
+      attr(y_oscale_expected, "contrasts") <- attr(refmod$y_oscale, "contrasts")
+    }
+  } else {
+    y_oscale_expected <- y_expected
+  }
+  expect_identical(refmod$y_oscale, y_oscale_expected, info = info_str)
+
   return(invisible(TRUE))
 }
 
 # A helper function for testing the structure of a list of fits for the same
-# single submodel.
+# single submodel, with that submodel coming from a traditional projection.
 #
-# @param submodl_totest The `submodl` object (a list of fits for a single
-#   submodel, with one fit per projected draw) to test.
-# @param nprjdraws_expected A single numeric value giving the expected number of
-#   projected draws.
-# @param sub_formul A list of formulas for the submodel (with one element per
-#   projected draw).
-# @param sub_data The dataset used for fitting the submodel.
-# @param sub_fam A single character string giving the submodel's family.
-# @param has_grp A single logical value indicating whether the fits in
-#   `submodl_totest` are expected to be of class `"lmerMod"` or `"glmerMod"`
-#   (if, at the same time, `has_add` is `FALSE`).
-# @param has_add A single logical value indicating whether the fits in
-#   `submodl_totest` are expected to be of class `"gam"` or `"gamm4"` (depending
-#   on whether the submodel is non-multilevel or multilevel, respectively).
-# @param wobs_expected The expected numeric vector of observation weights.
-# @param solterms_vsel_L1_search If `submodl_totest` comes from the L1
-#   `search_path` of an object of class `"vsel"`, provide here the solution
-#   terms. Otherwise, use `NULL`.
-# @param with_offs A single logical value indicating whether `submodl_totest` is
-#   expected to include offsets (`TRUE`) or not (`FALSE`).
-# @param info_str A single character string giving information to be printed in
-#   case of failure.
+# @inheritParams submodl_tester
+# @param seq_extensive_tests A numeric vector of indexes from
+#   `seq_along(submodl_totest)` indicating those elements of `submodl_totest`
+#   for which more extensive tests should be conducted.
+# @param nobsv The number of (possibly augmented) observations.
 #
 # @return `TRUE` (invisible).
-submodl_tester <- function(
+submodl_tester_trad <- function(
     submodl_totest,
     nprjdraws_expected,
     sub_formul,
@@ -467,17 +744,14 @@ submodl_tester <- function(
     wobs_expected = wobs_tst,
     solterms_vsel_L1_search = NULL,
     with_offs = FALSE,
+    augdat_cats = NULL,
+    allow_w_zero = FALSE,
+    check_y_from_resp = TRUE,
+    seq_extensive_tests = seq_extensive_tests,
+    nobsv = nobsv,
     info_str
 ) {
-  expect_type(submodl_totest, "list")
-  expect_length(submodl_totest, nprjdraws_expected)
-
   from_vsel_L1_search <- !is.null(solterms_vsel_L1_search)
-
-  seq_extensive_tests <- unique(round(
-    seq(1, length(submodl_totest),
-        length.out = min(length(submodl_totest), nclusters_pred_tst))
-  ))
 
   if (!has_grp && !has_add) {
     sub_x_expected <- model.matrix(sub_formul[[1]], data = sub_data)
@@ -553,7 +827,11 @@ submodl_tester <- function(
                       info = info_str)
           expect_length(submodl_totest[[!!j]]$w, nobsv)
         }
-        expect_true(all(submodl_totest[[!!j]]$w > 0), info = info_str)
+        if (allow_w_zero) {
+          expect_true(all(submodl_totest[[!!j]]$w >= 0), info = info_str)
+        } else {
+          expect_true(all(submodl_totest[[!!j]]$w > 0), info = info_str)
+        }
         if (sub_fam == "gaussian") {
           # Note: For non-Gaussian families, a comparison of
           # `submodl_totest[[j]]$w` with `wobs_expected` doesn't make sense
@@ -598,6 +876,10 @@ submodl_tester <- function(
           y_ch <- setNames(eval(str2lang(as.character(sub_formul[[j]])[2]),
                                 sub_data),
                            seq_len(nobsv))
+          if (!is.null(augdat_cats)) {
+            stopifnot(is.factor(y_ch), identical(levels(y_ch), c("0", "1")))
+            y_ch <- setNames(as.integer(y_ch) - 1L, names(y_ch))
+          }
           expect_identical(submodl_totest[[!!j]]$y, y_ch, info = info_str)
         }
       }
@@ -657,32 +939,48 @@ submodl_tester <- function(
                        offs_expected,
                        info = info_str)
       if (!is.null(wobs_expected)) {
+        if (is.matrix(wobs_expected)) {
+          wobs_expected_j <- wobs_expected[, j]
+        } else {
+          wobs_expected_j <- wobs_expected
+        }
         expect_equal(submodl_totest[[!!j]]@resp$weights,
-                     wobs_expected,
+                     wobs_expected_j,
                      info = info_str)
       } else {
         expect_equal(submodl_totest[[!!j]]@resp$weights,
                      rep(1, nobsv),
                      info = info_str)
       }
-      expect_equal(submodl_totest[[!!j]]@resp$y,
-                   eval(str2lang(as.character(sub_formul[[!!j]])[2]),
-                        sub_data),
-                   info = info_str)
+      y_from_resp <- submodl_totest[[j]]@resp$y
+      if (!is.null(augdat_cats)) {
+        y_from_resp <- as.factor(y_from_resp)
+      }
+      if (check_y_from_resp) {
+        expect_equal(y_from_resp,
+                     eval(str2lang(as.character(sub_formul[[!!j]])[2]),
+                          sub_data),
+                     info = info_str)
+      }
 
       # frame
       expect_identical(submodl_totest[[!!j]]@frame,
                        model.frame(submodl_totest[[!!j]]),
                        info = info_str)
-      expect_equal(
-        submodl_totest[[!!j]]@frame[[
-          grep("y_|ybinprop", names(submodl_totest[[!!j]]@frame), value = TRUE)
-        ]],
-        submodl_totest[[!!j]]@resp$y,
-        info = info_str
-      )
+      if (check_y_from_resp) {
+        expect_equal(
+          submodl_totest[[!!j]]@frame[[
+            grep("y_|ybinprop", names(submodl_totest[[!!j]]@frame),
+                 value = TRUE)
+          ]],
+          y_from_resp,
+          info = info_str
+        )
+      }
       if (!is.null(wobs_expected)) {
-        expect_equal(submodl_totest[[!!j]]@frame$`(weights)`,
+        expect_equal(structure(submodl_totest[[!!j]]@frame$`(weights)`,
+                               nobs_orig = NULL,
+                               class = NULL),
                      submodl_totest[[!!j]]@resp$weights,
                      info = info_str)
       } else {
@@ -747,6 +1045,406 @@ submodl_tester <- function(
   return(invisible(TRUE))
 }
 
+# A helper function for testing the structure of a list of fits for the same
+# single submodel, with that submodel coming from an augmented-data projection.
+#
+# @inheritParams submodl_tester_trad
+#
+# @return `TRUE` (invisible).
+submodl_tester_aug <- function(
+    submodl_totest,
+    nprjdraws_expected,
+    sub_formul,
+    sub_data,
+    sub_fam,
+    has_grp = formula_contains_group_terms(sub_formul[[1]]),
+    has_add = formula_contains_additive_terms(sub_formul[[1]]),
+    wobs_expected = wobs_tst,
+    solterms_vsel_L1_search = NULL,
+    with_offs = FALSE,
+    augdat_cats = NULL,
+    allow_w_zero = FALSE,
+    check_y_from_resp = TRUE,
+    seq_extensive_tests = seq_extensive_tests,
+    nobsv = nobsv,
+    info_str
+) {
+  sub_formul <- sub_formul[[1]]
+  if (has_add) {
+    stop("This case should not occur (yet).")
+  } else if (!has_grp) {
+    if (sub_fam %in% c("cumulative", "cumulative_rstanarm")) {
+      for (j in seq_along(submodl_totest)) {
+        expect_s3_class(submodl_totest[[!!j]], "polr")
+      }
+      for (j in seq_extensive_tests) {
+        # coef()
+        coefs_crr <- coef(submodl_totest[[j]])
+        expect_true(is.vector(coefs_crr, "numeric"), info = info_str)
+        expect_named(
+          coefs_crr,
+          grep("Intercept", colnames(model.matrix(sub_formul, data = sub_data)),
+               value = TRUE, invert = TRUE),
+          info = info_str
+        )
+
+        # zeta
+        zeta_crr <- submodl_totest[[j]]$zeta
+        expect_true(is.vector(zeta_crr, "numeric"), info = info_str)
+        expect_named(
+          zeta_crr,
+          paste(head(augdat_cats, -1), tail(augdat_cats, -1), sep = "|"),
+          info = info_str
+        )
+
+        # lev
+        expect_identical(submodl_totest[[!!j]]$lev, augdat_cats,
+                         info = info_str)
+
+        # method
+        expect_identical(submodl_totest[[!!j]]$method, "logistic",
+                         info = info_str)
+      }
+    } else if (sub_fam == "categorical") {
+      for (j in seq_along(submodl_totest)) {
+        expect_s3_class(submodl_totest[[!!j]], c("multinom", "nnet"))
+      }
+      for (j in seq_extensive_tests) {
+        # coef()
+        coefs_crr <- coef(submodl_totest[[j]])
+        expect_true(is.matrix(coefs_crr), info = info_str)
+        expect_true(is.numeric(coefs_crr), info = info_str)
+        expect_identical(
+          dimnames(coefs_crr),
+          list(tail(augdat_cats, -1),
+               colnames(model.matrix(sub_formul, data = sub_data))),
+          info = info_str
+        )
+
+        # lev
+        expect_identical(submodl_totest[[!!j]]$lev, augdat_cats,
+                         info = info_str)
+      }
+    } else {
+      stop("Unexpected `sub_fam` value of `", sub_fam, "`. Info: ", info_str)
+    }
+  } else if (has_grp) {
+    grp_trms_for_coef <- extract_terms_response(sub_formul)$group_terms
+    grp_trms_for_coef <- sub("[[:blank:]]*\\|.*$", "", grp_trms_for_coef)
+    coef_nms <- strsplit(grp_trms_for_coef, "[[:blank:]]*\\+[[:blank:]]*")
+    coef_nms <- union("1", coef_nms)
+    coef_nms <- sub("^1$", "(Intercept)", unlist(coef_nms))
+    if (sub_fam %in% c("cumulative", "cumulative_rstanarm")) {
+      for (j in seq_along(submodl_totest)) {
+        expect_s3_class(submodl_totest[[!!j]], "clmm")
+      }
+      for (j in seq_extensive_tests) {
+        # alpha
+        alpha_crr <- submodl_totest[[j]]$alpha
+        expect_true(is.vector(alpha_crr, "numeric"), info = info_str)
+        expect_named(
+          alpha_crr,
+          paste(head(augdat_cats, -1), tail(augdat_cats, -1), sep = "|"),
+          info = info_str
+        )
+
+        # beta
+        coefs_crr <- submodl_totest[[j]]$beta
+        expect_true(is.vector(coefs_crr, "numeric"), info = info_str)
+        ### A quick-and-dirty workaround to get rid of group-level terms:
+        stopifnot(identical(trms_grp, c("(xco.1 | z.1)")))
+        sub_formul_no_grp <- update(sub_formul,
+                                    . ~ . - (1 | z.1) - (xco.1 | z.1))
+        ###
+        coefs_nms_expected <- grep(
+          "Intercept",
+          colnames(model.matrix(sub_formul_no_grp, data = sub_data)),
+          value = TRUE, invert = TRUE
+        )
+        if (length(coefs_nms_expected)) {
+          expect_named(coefs_crr, coefs_nms_expected, info = info_str)
+        } else {
+          expect_length(coefs_crr, 0)
+        }
+
+        # ordinal::ranef()
+        ranef_crr <- ordinal::ranef(submodl_totest[[j]])
+        expect_type(ranef_crr, "list")
+        expect_named(ranef_crr, "z.1", info = info_str)
+        expect_true(is.data.frame(ranef_crr[["z.1"]]), info = info_str)
+        expect_named(ranef_crr[["z.1"]], coef_nms, info = info_str)
+        expect_true(is.vector(ranef_crr[["z.1"]][["(Intercept)"]], "numeric"),
+                    info = info_str)
+        expect_length(ranef_crr[["z.1"]][["(Intercept)"]], nlevels(dat$z.1))
+        expect_true(is.vector(ranef_crr[["z.1"]][["xco.1"]], "numeric"),
+                    info = info_str)
+        expect_length(ranef_crr[["z.1"]][["xco.1"]], nlevels(dat$z.1))
+
+        # ordinal::VarCorr()
+        VarCorr_crr <- ordinal::VarCorr(submodl_totest[[j]])
+        expect_type(VarCorr_crr, "list")
+        expect_named(VarCorr_crr, "z.1", info = info_str)
+        expect_true(is.matrix(VarCorr_crr[["z.1"]]), info = info_str)
+        expect_true(is.numeric(VarCorr_crr[["z.1"]]), info = info_str)
+        expect_identical(dimnames(VarCorr_crr[["z.1"]]),
+                         replicate(2, coef_nms, simplify = FALSE),
+                         info = info_str)
+        expect_true(is.vector(attr(VarCorr_crr[["z.1"]], "stddev"), "numeric"),
+                    info = info_str)
+        expect_named(attr(VarCorr_crr[["z.1"]], "stddev"), coef_nms,
+                     info = info_str)
+        expect_true(is.matrix(attr(VarCorr_crr[["z.1"]], "correlation")),
+                    info = info_str)
+        expect_true(is.numeric(attr(VarCorr_crr[["z.1"]], "correlation")),
+                    info = info_str)
+        expect_identical(dimnames(attr(VarCorr_crr[["z.1"]], "correlation")),
+                         replicate(2, coef_nms, simplify = FALSE),
+                         info = info_str)
+
+        # formula()
+        formula_crr <- formula(submodl_totest[[j]])
+        # Unfortunately, there are some minor caveats to take care of when
+        # comparing `formula_crr` with `sub_formul`: (i) the intercept (`1`)
+        # needs to included explicitly, (ii) group-level terms need to be
+        # "flattened" (but flatten_formula() would omit offset terms; adding an
+        # argument `incl_offs` to flatten_formula() could solve this, but the
+        # internal update() call would then still move offset terms to the end):
+        sub_trms <- labels(terms(sub_formul))
+        nongrp_trms <- grep("\\|", sub_trms, value = TRUE, invert = TRUE)
+        grp_trms <- grep("\\|", sub_trms, value = TRUE)
+        grp_trms_flat <- flatten_group_terms(grp_trms)
+        offs_trms <- if (with_offs) "offset(offs_col)" else NULL
+        expect_identical(
+          formula_crr,
+          # Add the intercept explicitly and use the same environment:
+          as.formula(paste(as.character(sub_formul[[2]]), "~ 1 +",
+                           paste(c(nongrp_trms, offs_trms, grp_trms_flat),
+                                 collapse = " + ")),
+                     env = environment(formula_crr)),
+          info = info_str
+        )
+
+        # xlevels
+        xlevels_crr <- submodl_totest[[j]]$xlevels
+        xca_nms <- grep("^xca\\.", labels(terms(sub_formul)), value = TRUE)
+        if (length(xca_nms)) {
+          expect_identical(xlevels_crr, lapply(dat[xca_nms], levels),
+                           info = info_str)
+        } else {
+          expect_null(xlevels_crr, info = info_str)
+        }
+      }
+    } else if (sub_fam == "categorical") {
+      for (j in seq_along(submodl_totest)) {
+        expect_s3_class(submodl_totest[[!!j]],
+                        c("mmblogit", "mblogit", "mmclogit", "mclogit", "lm"))
+      }
+      coef_nms <- sub("^\\(Intercept\\)$", "1", coef_nms)
+      for (j in seq_extensive_tests) {
+        # coefmat
+        coefs_crr <- submodl_totest[[j]]$coefmat
+        expect_true(is.matrix(coefs_crr), info = info_str)
+        expect_true(is.numeric(coefs_crr), info = info_str)
+        ### A quick-and-dirty workaround to get rid of group-level terms:
+        stopifnot(identical(trms_grp, c("(xco.1 | z.1)")))
+        sub_formul_no_grp <- update(sub_formul,
+                                    . ~ . - (1 | z.1) - (xco.1 | z.1))
+        ###
+        expect_identical(
+          dimnames(coefs_crr),
+          list("Response categories" = tail(augdat_cats, -1),
+               "Predictors" = colnames(model.matrix(sub_formul_no_grp,
+                                                    data = sub_data))),
+          info = info_str
+        )
+
+        # random.effects
+        ranef_crr <- submodl_totest[[j]]$random.effects
+        expect_type(ranef_crr, "list")
+        expect_length(ranef_crr, 1)
+        expect_named(ranef_crr, NULL, info = info_str)
+        expect_true(is.matrix(ranef_crr[[1]]), info = info_str)
+        expect_true(is.numeric(ranef_crr[[1]]), info = info_str)
+        if (packageVersion("Matrix") >= "1.5-0") {
+          expect_null(dimnames(ranef_crr[[1]]), info = info_str)
+        } else {
+          expect_identical(dimnames(ranef_crr[[1]]),
+                           replicate(2, NULL, simplify = FALSE),
+                           info = info_str)
+        }
+        expect_identical(dim(ranef_crr[[1]]),
+                         c(nthres * length(coef_nms) * nlevels(dat$z.1), 1L),
+                         info = info_str)
+
+        # VarCov
+        VarCorr_crr <- submodl_totest[[j]]$VarCov
+        expect_type(VarCorr_crr, "list")
+        expect_named(VarCorr_crr, "z.1", info = info_str)
+        expect_true(is.matrix(VarCorr_crr[["z.1"]]), info = info_str)
+        expect_true(is.numeric(VarCorr_crr[["z.1"]]), info = info_str)
+        coef_nms_y <- unlist(lapply(coef_nms, function(coef_nm) {
+          paste(tail(augdat_cats, -1), coef_nm, sep = "~")
+        }))
+        expect_identical(dimnames(VarCorr_crr[["z.1"]]),
+                         replicate(2, coef_nms_y, simplify = FALSE),
+                         info = info_str)
+
+        # D
+        D_crr <- submodl_totest[[j]]$D
+        expect_identical(D_crr, contrasts(as.factor(augdat_cats)),
+                         info = info_str)
+
+        # random
+        random_crr <- submodl_totest[[j]]$random
+        expect_type(random_crr, "list")
+        expect_length(random_crr, 1)
+        expect_named(random_crr, NULL, info = info_str)
+        expect_named(random_crr[[1]], c("formula", "groups"), info = info_str)
+        coef_nms_no_icpt <- setdiff(coef_nms, "1")
+        if (length(coef_nms_no_icpt)) {
+          expect_equal(
+            random_crr[[1]]$formula,
+            as.formula(paste("~", paste(coef_nms_no_icpt, collapse = "+"))),
+            info = info_str
+          )
+        } else {
+          expect_equal(random_crr[[1]]$formula, ~ 1, info = info_str)
+        }
+        expect_identical(random_crr[[1]]$groups, "z.1", info = info_str)
+
+        # groups
+        groups_crr <- submodl_totest[[j]]$groups
+        expect_type(groups_crr, "list")
+        expect_named(groups_crr, "z.1", info = info_str)
+        expect_identical(levels(groups_crr[["z.1"]]), levels(dat$z.1),
+                         info = info_str)
+
+        # xlevels
+        xlevels_crr <- submodl_totest[[j]]$xlevels
+        xca_nms <- grep("^xca\\.", labels(terms(sub_formul)), value = TRUE)
+        if (length(xca_nms)) {
+          expect_identical(xlevels_crr, lapply(dat[xca_nms], levels),
+                           info = info_str)
+        } else {
+          expect_null(xlevels_crr, info = info_str)
+        }
+      }
+    } else {
+      stop("Unexpected `sub_fam` value of `", sub_fam, "`. Info: ", info_str)
+    }
+  }
+
+  return(invisible(TRUE))
+}
+
+# A helper function for testing the structure of a list of fits for the same
+# single submodel.
+#
+# @param submodl_totest The `submodl` object (a list of fits for a single
+#   submodel, with one fit per projected draw) to test.
+# @param nprjdraws_expected A single numeric value giving the expected number of
+#   projected draws.
+# @param sub_formul A list of formulas for the submodel (with one element per
+#   projected draw).
+# @param sub_data The dataset used for fitting the submodel.
+# @param sub_fam A single character string giving the submodel's family.
+# @param has_grp A single logical value indicating whether the fits in
+#   `submodl_totest` are expected to be of class `"lmerMod"` or `"glmerMod"`
+#   (if, at the same time, `has_add` is `FALSE`).
+# @param has_add A single logical value indicating whether the fits in
+#   `submodl_totest` are expected to be of class `"gam"` or `"gamm4"` (depending
+#   on whether the submodel is non-multilevel or multilevel, respectively).
+# @param wobs_expected The expected numeric vector of observation weights.
+# @param solterms_vsel_L1_search If `submodl_totest` comes from the L1
+#   `search_path` of an object of class `"vsel"`, provide here the solution
+#   terms. Otherwise, use `NULL`.
+# @param with_offs A single logical value indicating whether `submodl_totest` is
+#   expected to include offsets (`TRUE`) or not (`FALSE`).
+# @param augdat_cats A character vector of response levels in case of the
+#   augmented-data projection. Needs to be `NULL` for the traditional and the
+#   latent projection.
+# @param allow_w_zero A single logical value indicating whether observation
+#   weights are allowed to have a value of zero (`TRUE`) or not (`FALSE`).
+# @param check_y_from_resp A single logical value indicating whether to check
+#   elements `submodl_totest[[j]]@resp$y` for GLMMs (`TRUE`) or not (`FALSE`).
+# @param info_str A single character string giving information to be printed in
+#   case of failure.
+#
+# @return `TRUE` (invisible).
+submodl_tester <- function(
+    submodl_totest,
+    nprjdraws_expected,
+    sub_formul,
+    sub_data,
+    sub_fam,
+    has_grp = formula_contains_group_terms(sub_formul[[1]]),
+    has_add = formula_contains_additive_terms(sub_formul[[1]]),
+    wobs_expected = wobs_tst,
+    solterms_vsel_L1_search = NULL,
+    with_offs = FALSE,
+    augdat_cats = NULL,
+    allow_w_zero = FALSE,
+    check_y_from_resp = TRUE,
+    info_str
+) {
+  expect_type(submodl_totest, "list")
+  expect_length(submodl_totest, nprjdraws_expected)
+
+  seq_extensive_tests <- unique(round(
+    seq(1, length(submodl_totest),
+        length.out = min(length(submodl_totest), nclusters_pred_tst))
+  ))
+
+  if (!is.null(augdat_cats)) {
+    nobsv <- nobsv * length(augdat_cats)
+    expect_length(sub_formul, 1)
+    sub_formul <- replicate(nprjdraws_expected, sub_formul[[1]],
+                            simplify = FALSE)
+  }
+
+  if (!is.null(augdat_cats) && sub_fam %in% fam_nms_aug_long) {
+    submodl_tester_aug(
+      submodl_totest = submodl_totest,
+      nprjdraws_expected = nprjdraws_expected,
+      sub_formul = sub_formul,
+      sub_data = sub_data,
+      sub_fam = sub_fam,
+      has_grp = has_grp,
+      has_add = has_add,
+      wobs_expected = wobs_expected,
+      solterms_vsel_L1_search = solterms_vsel_L1_search,
+      with_offs = with_offs,
+      augdat_cats = augdat_cats,
+      allow_w_zero = allow_w_zero,
+      check_y_from_resp = check_y_from_resp,
+      seq_extensive_tests = seq_extensive_tests,
+      nobsv = nobsv,
+      info_str = info_str
+    )
+  } else {
+    submodl_tester_trad(
+      submodl_totest = submodl_totest,
+      nprjdraws_expected = nprjdraws_expected,
+      sub_formul = sub_formul,
+      sub_data = sub_data,
+      sub_fam = sub_fam,
+      has_grp = has_grp,
+      has_add = has_add,
+      wobs_expected = wobs_expected,
+      solterms_vsel_L1_search = solterms_vsel_L1_search,
+      with_offs = with_offs,
+      augdat_cats = augdat_cats,
+      allow_w_zero = allow_w_zero,
+      check_y_from_resp = check_y_from_resp,
+      seq_extensive_tests = seq_extensive_tests,
+      nobsv = nobsv,
+      info_str = info_str
+    )
+  }
+
+  return(invisible(TRUE))
+}
+
 # A helper function for testing the structure of .get_refdist()'s output.
 #
 # @param refd Output of .get_refdist().
@@ -759,13 +1457,19 @@ submodl_tester <- function(
 #
 # @return `TRUE` (invisible).
 refdist_tester <- function(refd,
+                           nobsv_expected = nobsv,
                            nprjdraws_expected = nclusters_pred_tst,
                            clust_expected = TRUE,
                            info_str) {
-  expect_named(refd, c("mu", "var", "dis", "weights", "cl", "clust_used"),
-               info = info_str)
-  expect_identical(dim(refd$mu), c(nobsv, nprjdraws_expected), info = info_str)
-  expect_identical(dim(refd$var), c(nobsv, nprjdraws_expected), info = info_str)
+  expect_named(
+    refd, c("mu", "mu_offs", "var", "dis", "weights", "cl", "wsample_orig",
+            "clust_used"),
+    info = info_str
+  )
+  expect_identical(dim(refd$mu), c(nobsv_expected, nprjdraws_expected),
+                   info = info_str)
+  expect_identical(dim(refd$var), c(nobsv_expected, nprjdraws_expected),
+                   info = info_str)
   expect_true(is.vector(refd$dis) && is.atomic(refd$dis),
               info = info_str)
   expect_length(refd$dis, nprjdraws_expected)
@@ -774,6 +1478,7 @@ refdist_tester <- function(refd,
   expect_length(refd$weights, nprjdraws_expected)
   expect_true(is.vector(refd$cl, "integer"), info = info_str)
   expect_length(refd$cl, nrefdraws)
+  expect_identical(refd$wsample_orig, rep(1, nrefdraws), info = info_str)
   expect_identical(refd$clust_used, clust_expected, info = info_str)
   return(invisible(TRUE))
 }
@@ -817,8 +1522,8 @@ projection_tester <- function(p,
   # would have to be updated:
   expect_named(
     p,
-    c("dis", "kl", "weights", "solution_terms", "submodl", "p_type",
-      "refmodel"),
+    c("dis", "ce", "weights", "solution_terms", "submodl", "cl_ref",
+      "wdraws_ref", "p_type", "refmodel"),
     info = info_str
   )
 
@@ -849,7 +1554,14 @@ projection_tester <- function(p,
     y_nm <- ""
     solterms_vsel_L1_search_crr <- p$solution_terms
   }
-  y_nms <- paste0(".", y_nm)
+  y_nms <- y_nm
+  # For checking for the augmented-data projection case, we use the "unsafer"
+  # `p$refmodel$family$for_augdat` here instead of an extra argument such as
+  # `augdat_expected` because such an argument already exists in
+  # extfam_tester():
+  if (!p$refmodel$family$for_augdat) {
+    y_nms <- paste0(".", y_nms)
+  }
   # A preliminary check for `nprjdraws_expected` (doesn't work for "datafit"s
   # and, because of issue #131, for submodels which are GAMMs):
   sub_formul_crr_rhs <- as.formula(paste(
@@ -868,7 +1580,7 @@ projection_tester <- function(p,
     expect_identical(suppressWarnings(NROW(as.matrix(p))), nprjdraws_expected,
                      info = info_str)
   }
-  if (nprjdraws_expected > 1) {
+  if (!p$refmodel$family$for_augdat && nprjdraws_expected > 1) {
     y_nms <- paste0(y_nms, ".", seq_len(nprjdraws_expected))
   }
   sub_formul_crr <- lapply(y_nms, function(y_nm_i) {
@@ -892,26 +1604,47 @@ projection_tester <- function(p,
   } else {
     clust_ref <- .get_refdist(p$refmodel, ndraws = nprjdraws_expected)
   }
-  for (i in seq_len(nprjdraws_expected)) {
-    sub_data_crr[[y_nms[i]]] <- clust_ref$mu[, i]
+  if (p$refmodel$family$for_augdat) {
+    # Create the augmented dataset:
+    y_unqs <- p$refmodel$family$cats
+    sub_data_crr <- do.call(rbind, lapply(y_unqs, function(y_unq) {
+      sub_data_crr_j <- sub_data_crr
+      sub_data_crr_j[[y_nms]] <- y_unq
+      return(sub_data_crr_j)
+    }))
+    sub_data_crr[[y_nms]] <- factor(sub_data_crr[[y_nms]], levels = y_unqs)
+  } else {
+    for (i in seq_len(nprjdraws_expected)) {
+      sub_data_crr[[y_nms[i]]] <- clust_ref$mu[, i]
+    }
+  }
+  if (p$refmodel$family$for_augdat) {
+    wobs_expected_crr <- unclass(clust_ref$mu)
+  } else {
+    wobs_expected_crr <- p$refmodel$wobs
+  }
+  if (p$refmodel$family$for_augdat) {
+    augdat_cats_crr <- p$refmodel$family$cats
+  } else {
+    augdat_cats_crr <- NULL
   }
   submodl_tester(p$submodl,
                  nprjdraws_expected = nprjdraws_expected,
                  sub_formul = sub_formul_crr,
                  sub_data = sub_data_crr,
                  sub_fam = p$refmodel$family$family,
-                 wobs_expected = p$refmodel$wobs,
+                 wobs_expected = wobs_expected_crr,
                  solterms_vsel_L1_search = solterms_vsel_L1_search_crr,
+                 augdat_cats = augdat_cats_crr,
                  info_str = info_str)
 
   # dis
   expect_length(p$dis, nprjdraws_expected)
 
-  # kl
-  expect_type(p$kl, "double")
-  expect_length(p$kl, 1)
-  expect_true(!is.na(p$kl), info = info_str)
-  expect_gte(p$kl, 0)
+  # ce
+  expect_type(p$ce, "double")
+  expect_length(p$ce, 1)
+  expect_true(!is.na(p$ce), info = info_str)
 
   # weights
   expect_length(p$weights, nprjdraws_expected)
@@ -921,6 +1654,14 @@ projection_tester <- function(p,
   if (nprjdraws_expected == 1) {
     expect_identical(p$weights, 1, info = info_str)
   }
+
+  # cl_ref
+  expect_true(is.vector(p$cl_ref, "numeric"), info = info_str)
+  expect_length(p$cl_ref, length(p$refmodel$wsample))
+
+  # wdraws_ref
+  expect_identical(p$wdraws_ref, rep(1, length(p$refmodel$wsample)),
+                   info = info_str)
 
   # p_type
   expect_identical(p$p_type, p_type_expected, info = info_str)
@@ -969,19 +1710,13 @@ proj_list_tester <- function(p,
                       ...)
   }
   if (is_seq) {
-    # For a sequential `"proj_list"` object and training data, `kl` should be
+    # For a sequential `"proj_list"` object and training data, `ce` should be
     # non-increasing for increasing model size:
-    klseq <- sapply(p, function(x) sum(x$kl))
-    expect_true(all(tail(klseq, -1) <= extra_tol * head(klseq, -1)),
+    ceseq <- sapply(p, function(x) sum(x$ce))
+    expect_true(all(ifelse(sign(head(ceseq, -1)) == 1,
+                           tail(ceseq, -1) <= extra_tol * head(ceseq, -1),
+                           tail(ceseq, -1) <= 1 / extra_tol * head(ceseq, -1))),
                 info = info_str)
-    ### Too unsafe because `length(klseq)` is usually small:
-    # prop_as_expected <- 0.8
-    # expect_true(
-    #   mean(tail(klseq, -1) <= extra_tol * head(klseq, -1)) >=
-    #     prop_as_expected,
-    #   info = info_str
-    # )
-    ###
   }
   return(invisible(TRUE))
 }
@@ -995,6 +1730,12 @@ proj_list_tester <- function(p,
 # @param nobsv_expected The expected number of observations in `pl`.
 # @param lpd_null_expected A single logical value indicating whether output
 #   element `lpd` is expected to be `NULL` (`TRUE`) or not (`FALSE`).
+# @param ncats_nlats_expected A list of length `len_expected`. If the
+#   augmented-data projection is expected to have been applied in case of
+#   element `j`, then element `j` has to be a single integer value giving the
+#   number of response categories or latent response categories (depending on
+#   whether the linear predictor was transformed to response scale or not).
+#   Else, element `j` has to be `integer()`.
 # @param info_str A single character string giving information to be printed in
 #   case of failure.
 #
@@ -1004,6 +1745,9 @@ pl_tester <- function(pl,
                       nprjdraws_expected = nclusters_pred_tst,
                       nobsv_expected = nobsv,
                       lpd_null_expected = FALSE,
+                      ncats_nlats_expected = replicate(len_expected,
+                                                       integer(),
+                                                       simplify = FALSE),
                       info_str) {
   if (len_expected == 1) {
     pl <- list(pl)
@@ -1013,9 +1757,11 @@ pl_tester <- function(pl,
   }
   for (j in seq_along(pl)) {
     expect_named(pl[[!!j]], c("pred", "lpd"), info = info_str)
-    expect_identical(dim(pl[[!!j]]$pred),
-                     c(nprjdraws_expected, nobsv_expected),
-                     info = info_str)
+    expect_identical(
+      dim(pl[[!!j]]$pred),
+      c(nprjdraws_expected, nobsv_expected, ncats_nlats_expected[[!!j]]),
+      info = info_str
+    )
     if (!lpd_null_expected) {
       expect_identical(dim(pl[[!!j]]$lpd),
                        c(nprjdraws_expected, nobsv_expected),
@@ -1038,6 +1784,10 @@ pl_tester <- function(pl,
 # @param nobsv_expected The expected number of observations in `pp`.
 # @param lpd_null_expected A single logical value indicating whether output
 #   element `lpd` is expected to be `NULL` (`TRUE`) or not (`FALSE`).
+# @param cats_expected A list of length `len_expected`. If the
+#   augmented-data projection is expected to have been applied in case of
+#   element `j`, then element `j` has to be a character vector giving the
+#   response categories. Else, element `j` has to be `NULL`.
 # @param info_str A single character string giving information to be printed in
 #   case of failure.
 #
@@ -1046,6 +1796,9 @@ pp_tester <- function(pp,
                       len_expected = 1,
                       nprjdraws_out_expected = nresample_clusters_default,
                       nobsv_expected = nobsv,
+                      cats_expected = replicate(len_expected,
+                                                NULL,
+                                                simplify = FALSE),
                       info_str) {
   if (len_expected == 1) {
     pp <- list(pp)
@@ -1056,6 +1809,8 @@ pp_tester <- function(pp,
   for (j in seq_along(pp)) {
     expect_identical(dim(pp[[!!j]]),
                      c(nprjdraws_out_expected, nobsv_expected),
+                     info = info_str)
+    expect_identical(attr(pp[[!!j]], "cats"), cats_expected[[j]],
                      info = info_str)
   }
   return(invisible(TRUE))
@@ -1179,13 +1934,36 @@ vsel_tester <- function(
     y_nm <- ""
     solterms_vsel_L1_search_crr <- vs$solution_terms
   }
-  y_nms <- paste0(".", y_nm)
-  if (nprjdraws_search_expected > 1) {
+  y_nms <- y_nm
+  # For checking for the augmented-data projection case, we use the "unsafer"
+  # `vs$refmodel$family$for_augdat` here instead of an extra argument such as
+  # `augdat_expected` because such an argument already exists in
+  # extfam_tester():
+  if (!vs$refmodel$family$for_augdat) {
+    y_nms <- paste0(".", y_nms)
+  }
+  if (!vs$refmodel$family$for_augdat && nprjdraws_search_expected > 1) {
     y_nms <- paste0(y_nms, ".", seq_len(nprjdraws_search_expected))
   }
   sub_data_crr <- vs$refmodel$fetch_data()
-  for (i in seq_len(nprjdraws_search_expected)) {
-    sub_data_crr[[y_nms[i]]] <- clust_ref$mu[, i]
+  if (vs$refmodel$family$for_augdat) {
+    # Create the augmented dataset:
+    y_unqs <- vs$refmodel$family$cats
+    sub_data_crr <- do.call(rbind, lapply(y_unqs, function(y_unq) {
+      sub_data_crr_j <- sub_data_crr
+      sub_data_crr_j[[y_nms]] <- y_unq
+      return(sub_data_crr_j)
+    }))
+    sub_data_crr[[y_nms]] <- factor(sub_data_crr[[y_nms]], levels = y_unqs)
+  } else {
+    for (i in seq_len(nprjdraws_search_expected)) {
+      sub_data_crr[[y_nms[i]]] <- clust_ref$mu[, i]
+    }
+  }
+  if (vs$refmodel$family$for_augdat) {
+    wobs_expected_crr <- unclass(clust_ref$mu)
+  } else {
+    wobs_expected_crr <- vs$refmodel$wobs
   }
   solterms_for_sub <- c(as.character(as.numeric(vs$refmodel$intercept)),
                         vs$solution_terms)
@@ -1204,26 +1982,50 @@ vsel_tester <- function(
       }
       return(fml_tmp)
     })
+    if (vs$refmodel$family$for_augdat) {
+      augdat_cats_crr <- vs$refmodel$family$cats
+    } else {
+      augdat_cats_crr <- NULL
+    }
     submodl_tester(
       vs$search_path$submodls[[i]],
       nprjdraws_expected = nprjdraws_search_expected,
       sub_formul = sub_formul_crr,
       sub_data = sub_data_crr,
       sub_fam = vs$refmodel$family$family,
-      wobs_expected = vs$refmodel$wobs,
+      wobs_expected = wobs_expected_crr,
       solterms_vsel_L1_search = solterms_vsel_L1_search_crr,
+      augdat_cats = augdat_cats_crr,
       info_str = paste(info_str, i, sep = "__")
     )
   }
+  if (!vs$refmodel$family$for_augdat) {
+    ncats <- 1L
+  } else {
+    ncats <- length(vs$refmodel$family$cats)
+  }
+  nobsv_aug <- nobsv * ncats
   expect_type(vs$search_path$p_sel, "list")
   expect_named(vs$search_path$p_sel,
-               c("mu", "var", "dis", "weights", "cl", "clust_used"),
+               c("mu", "mu_offs", "var", "dis", "weights", "cl", "wsample_orig",
+                 "clust_used"),
                info = info_str)
   expect_true(is.matrix(vs$search_path$p_sel$mu), info = info_str)
   expect_true(is.numeric(vs$search_path$p_sel$mu), info = info_str)
   expect_equal(dim(vs$search_path$p_sel$mu),
-               c(nobsv, nprjdraws_search_expected),
+               c(nobsv_aug, nprjdraws_search_expected),
                info = info_str)
+  if (vs$refmodel$family$for_augdat) {
+    expect_s3_class(vs$search_path$p_sel$mu, "augmat")
+  }
+  expect_true(is.matrix(vs$search_path$p_sel$mu_offs), info = info_str)
+  expect_true(is.numeric(vs$search_path$p_sel$mu_offs), info = info_str)
+  expect_equal(dim(vs$search_path$p_sel$mu_offs),
+               c(nobsv_aug, nprjdraws_search_expected),
+               info = info_str)
+  if (vs$refmodel$family$for_augdat) {
+    expect_s3_class(vs$search_path$p_sel$mu_offs, "augmat")
+  }
   expect_true(is.matrix(vs$search_path$p_sel$var), info = info_str)
   if (vs$refmodel$family$family == "gaussian") {
     expect_type(vs$search_path$p_sel$var, "double")
@@ -1231,8 +2033,11 @@ vsel_tester <- function(
     expect_true(all(is.na(vs$search_path$p_sel$var)), info = info_str)
   }
   expect_equal(dim(vs$search_path$p_sel$var),
-               c(nobsv, nprjdraws_search_expected),
+               c(nobsv_aug, nprjdraws_search_expected),
                info = info_str)
+  if (vs$refmodel$family$for_augdat) {
+    expect_s3_class(vs$search_path$p_sel$var, "augmat")
+  }
   expect_true(is.vector(vs$search_path$p_sel$dis) &&
                 is.atomic(vs$search_path$p_sel$dis),
               info = info_str)
@@ -1241,6 +2046,8 @@ vsel_tester <- function(
   expect_length(vs$search_path$p_sel$weights, nprjdraws_search_expected)
   expect_true(is.numeric(vs$search_path$p_sel$cl), info = info_str)
   expect_length(vs$search_path$p_sel$cl, ncol(vs$refmodel$mu))
+  expect_identical(vs$search_path$p_sel$wsample_orig,
+                   rep(1, ncol(vs$refmodel$mu)), info = info_str)
   expect_identical(vs$search_path$p_sel$clust_used, cl_search_expected,
                    info = info_str)
 
@@ -1256,7 +2063,26 @@ vsel_tester <- function(
     expect_null(vs$d_test$data, info = info_str)
     expect_identical(vs$d_test$offset, vs$refmodel$offset, info = info_str)
     expect_identical(vs$d_test$weights, vs$refmodel$wobs, info = info_str)
-    expect_identical(vs$d_test$y, vs$refmodel$y, info = info_str)
+    if (vs$refmodel$family$for_latent && with_cv) {
+      if (identical(cv_method_expected, "kfold")) {
+        expect_true(all(is.na(vs$d_test$y)), info = info_str)
+      } else {
+        ll_forPSIS <- rstantools::log_lik(vs$refmodel$fit)
+        lwdraws_ref <- weights(suppressWarnings(
+          loo::psis(-ll_forPSIS, cores = 1, r_eff = NA)
+        ))
+        y_lat_loo <- colSums(
+          t(vs$refmodel$ref_predfun(
+            vs$refmodel$fit, excl_offs = FALSE,
+            mlvl_allrandom = getOption("projpred.mlvl_proj_ref_new", FALSE)
+          )) * exp(lwdraws_ref)
+        )
+        expect_equal(vs$d_test$y, y_lat_loo, info = info_str)
+      }
+    } else {
+      expect_identical(vs$d_test$y, vs$refmodel$y, info = info_str)
+    }
+    expect_identical(vs$d_test$y_oscale, vs$refmodel$y_oscale, info = info_str)
   } else {
     expect_identical(vs$d_test, dtest_expected, info = info_str)
   }
@@ -1272,53 +2098,119 @@ vsel_tester <- function(
     }
   }
   nobsv_summ <- nobsv
+  nobsv_summ_aug <- nobsv_aug
   if (!is.null(dtest_expected)) {
     nobsv_summ <- nrow(dtest_expected$data)
+    nobsv_summ_aug <- nobsv_summ * ncats
   }
-  for (j in seq_along(vs$summaries$sub)) {
-    expect_named(vs$summaries$sub[[!!j]], vsel_smmrs_sub_nms, info = info_str)
-    expect_type(vs$summaries$sub[[!!j]]$mu, "double")
-    expect_length(vs$summaries$sub[[!!j]]$mu, nobsv_summ)
-    if (with_cv) {
-      expect_identical(sum(!is.na(vs$summaries$sub[[!!j]]$mu)),
-                       nloo_expected, info = info_str)
-    } else {
-      expect_true(all(!is.na(vs$summaries$sub[[!!j]]$mu)), info = info_str)
+  if (vs$refmodel$family$for_latent) {
+    vsel_smmrs_sub_nms <- c(vsel_smmrs_sub_nms, "oscale")
+    if ("wcv" %in% vsel_smmrs_sub_nms &&
+        identical(cv_method_expected, "kfold")) {
+      vsel_smmrs_sub_nms[vsel_smmrs_sub_nms %in% c("wcv", "oscale")] <- c(
+        "oscale", "wcv"
+      )
     }
-    expect_type(vs$summaries$sub[[!!j]]$lppd, "double")
-    expect_length(vs$summaries$sub[[!!j]]$lppd, nobsv_summ)
-    if (with_cv) {
-      expect_identical(sum(!is.na(vs$summaries$sub[[!!j]]$lppd)),
-                       nloo_expected, info = info_str)
-    } else {
-      expect_true(all(!is.na(vs$summaries$sub[[!!j]]$lppd)), info = info_str)
-    }
-    if (with_cv) {
-      expect_type(vs$summaries$sub[[!!j]]$wcv, "double")
-      expect_length(vs$summaries$sub[[!!j]]$wcv, nobsv)
-      expect_true(all(!is.na(vs$summaries$sub[[!!j]]$wcv)), info = info_str)
-      if (nloo_expected == nobsv) {
-        expect_equal(vs$summaries$sub[[!!j]]$wcv, rep(1 / nobsv, nobsv),
-                     info = info_str)
+    vsel_smmrs_ref_nms <- c(vsel_smmrs_ref_nms, "oscale")
+  }
+  smmrs_sub_j_tester <- function(smmrs_sub_j, tests_oscale = FALSE) {
+    if (tests_oscale) {
+      vsel_smmrs_sub_nms <- setdiff(vsel_smmrs_sub_nms, "oscale")
+      if (!is.null(vs$refmodel$family$cats)) {
+        ncats <- length(vs$refmodel$family$cats)
       } else {
-        expect_true(any(vs$summaries$sub[[!!j]]$wcv != rep(1 / nobsv, nobsv)),
+        ncats <- 1L
+      }
+      nobsv_summ_aug <- nobsv_summ * ncats
+    }
+    expect_type(smmrs_sub_j, "list")
+    expect_named(smmrs_sub_j, vsel_smmrs_sub_nms, info = info_str)
+    expect_type(smmrs_sub_j$mu, "double")
+    expect_length(smmrs_sub_j$mu, nobsv_summ_aug)
+    if (vs$refmodel$family$for_augdat ||
+        (vs$refmodel$family$for_latent && tests_oscale &&
+         !is.null(vs$refmodel$family$cats))) {
+      expect_s3_class(smmrs_sub_j$mu, "augvec")
+    }
+    if (with_cv) {
+      expect_identical(sum(!is.na(smmrs_sub_j$mu)), nloo_expected * ncats,
+                       info = info_str)
+    } else {
+      expect_true(all(!is.na(smmrs_sub_j$mu)), info = info_str)
+    }
+    expect_type(smmrs_sub_j$lppd, "double")
+    expect_length(smmrs_sub_j$lppd, nobsv_summ)
+    if (with_cv) {
+      if (vs$refmodel$family$for_latent && !tests_oscale &&
+          identical(cv_method_expected, "kfold")) {
+        expect_true(all(is.na(smmrs_sub_j$lppd)), info = info_str)
+      } else {
+        expect_identical(sum(!is.na(smmrs_sub_j$lppd)), nloo_expected,
+                         info = info_str)
+      }
+    } else {
+      expect_true(all(!is.na(smmrs_sub_j$lppd)), info = info_str)
+    }
+    if (with_cv) {
+      expect_type(smmrs_sub_j$wcv, "double")
+      expect_length(smmrs_sub_j$wcv, nobsv)
+      expect_true(all(!is.na(smmrs_sub_j$wcv)), info = info_str)
+      if (nloo_expected == nobsv) {
+        expect_equal(smmrs_sub_j$wcv, rep(1 / nobsv, nobsv), info = info_str)
+      } else {
+        expect_true(any(smmrs_sub_j$wcv != rep(1 / nobsv, nobsv)),
                     info = info_str)
       }
     }
+    return(invisible(TRUE))
   }
-  expect_type(vs$summaries$ref, "list")
-  expect_named(vs$summaries$ref, vsel_smmrs_ref_nms, info = info_str)
-  expect_length(vs$summaries$ref$mu, nobsv_summ)
-  if (!from_datafit) {
-    expect_true(all(!is.na(vs$summaries$ref$mu)), info = info_str)
-  } else {
-    expect_true(all(is.na(vs$summaries$ref$mu)), info = info_str)
+  for (j in seq_along(vs$summaries$sub)) {
+    smmrs_sub_j_tester(vs$summaries$sub[[j]])
+    if (vs$refmodel$family$for_latent) {
+      smmrs_sub_j_tester(vs$summaries$sub[[j]]$oscale, tests_oscale = TRUE)
+    }
   }
-  expect_length(vs$summaries$ref$lppd, nobsv_summ)
-  if (!from_datafit) {
-    expect_true(all(!is.na(vs$summaries$ref$lppd)), info = info_str)
-  } else {
-    expect_true(all(is.na(vs$summaries$ref$lppd)), info = info_str)
+  smmrs_ref_tester <- function(smmrs_ref, tests_oscale = FALSE) {
+    if (tests_oscale) {
+      vsel_smmrs_ref_nms <- setdiff(vsel_smmrs_ref_nms, "oscale")
+      if (!is.null(vs$refmodel$family$cats)) {
+        ncats <- length(vs$refmodel$family$cats)
+      } else {
+        ncats <- 1L
+      }
+      nobsv_summ_aug <- nobsv_summ * ncats
+    }
+    expect_type(smmrs_ref, "list")
+    expect_named(smmrs_ref, vsel_smmrs_ref_nms, info = info_str)
+    if (!from_datafit) {
+      expect_type(smmrs_ref$mu, "double")
+    }
+    expect_length(smmrs_ref$mu, nobsv_summ_aug)
+    if (vs$refmodel$family$for_augdat ||
+        (vs$refmodel$family$for_latent && tests_oscale &&
+         !is.null(vs$refmodel$family$cats))) {
+      expect_s3_class(smmrs_ref$mu, "augvec")
+    }
+    if (!from_datafit) {
+      expect_true(all(!is.na(smmrs_ref$mu)), info = info_str)
+    } else {
+      expect_true(all(is.na(smmrs_ref$mu)), info = info_str)
+    }
+    if (!from_datafit) {
+      expect_type(smmrs_ref$lppd, "double")
+    }
+    expect_length(smmrs_ref$lppd, nobsv_summ)
+    if (!from_datafit && !(vs$refmodel$family$for_latent && !tests_oscale &&
+                           identical(cv_method_expected, "kfold"))) {
+      expect_true(all(!is.na(smmrs_ref$lppd)), info = info_str)
+    } else {
+      expect_true(all(is.na(smmrs_ref$lppd)), info = info_str)
+    }
+    return(invisible(TRUE))
+  }
+  smmrs_ref_tester(vs$summaries$ref)
+  if (vs$refmodel$family$for_latent) {
+    smmrs_ref_tester(vs$summaries$ref$oscale, tests_oscale = TRUE)
   }
 
   # solution_terms
@@ -1335,21 +2227,14 @@ vsel_tester <- function(
     info = info_str
   )
 
-  # kl
-  expect_type(vs$kl, "double")
-  expect_length(vs$kl, solterms_len_expected + 1)
-  expect_true(all(vs$kl >= 0), info = info_str)
+  # ce
+  expect_type(vs$ce, "double")
+  expect_length(vs$ce, solterms_len_expected + 1)
   # Expected to be non-increasing for increasing model size:
-  expect_true(all(tail(vs$kl, -1) <= extra_tol * head(vs$kl, -1)),
+  expect_true(all(ifelse(sign(head(vs$ce, -1)) == 1,
+                         tail(vs$ce, -1) <= extra_tol * head(vs$ce, -1),
+                         tail(vs$ce, -1) <= 1 / extra_tol * head(vs$ce, -1))),
               info = info_str)
-  ### Too unsafe because `length(vs$kl)` is usually small:
-  # prop_as_expected <- 0.8
-  # expect_true(
-  #   mean(tail(vs$kl, -1) <= extra_tol * head(vs$kl, -1)) >=
-  #     prop_as_expected,
-  #   info = info_str
-  # )
-  ###
 
   # pct_solution_terms_cv
   if (with_cv) {
@@ -1412,20 +2297,6 @@ vsel_tester <- function(
   # nprjdraws_eval
   expect_equal(vs$nprjdraws_eval, nprjdraws_eval_expected, info = info_str)
 
-  # suggested_size
-  expect_true(is.vector(vs$suggested_size, "numeric"), info = info_str)
-  expect_length(vs$suggested_size, 1)
-
-  # summary
-  smmry_sel_tester(
-    vs$summary,
-    summaries_ref = vs$summaries$ref,
-    cv_method_expected = if (with_cv) cv_method_expected else character(),
-    solterms_expected = vs$solution_terms,
-    from_datafit = from_datafit,
-    info_str = info_str
-  )
-
   return(invisible(TRUE))
 }
 
@@ -1437,6 +2308,8 @@ vsel_tester <- function(
 #   call.
 # @param nterms_max_expected A single numeric value as supplied to
 #   summary.vsel()'s argument `nterms_max`.
+# @param resp_oscale_expected A single logical value indicating whether
+#   element `resp_oscale` is expected to be `TRUE` or `FALSE`.
 # @param search_trms_empty_size A single logical value indicating whether
 #   `search_terms` was constructed in a way that causes a model size to be
 #   without candidate models.
@@ -1448,6 +2321,7 @@ vsel_tester <- function(
 #
 # @return `TRUE` (invisible).
 smmry_tester <- function(smmry, vsel_expected, nterms_max_expected = NULL,
+                         resp_oscale_expected = TRUE,
                          search_trms_empty_size = FALSE, info_str, ...) {
   expect_s3_class(smmry, "vselsummary")
   expect_type(smmry, "list")
@@ -1461,14 +2335,13 @@ smmry_tester <- function(smmry, vsel_expected, nterms_max_expected = NULL,
     c("formula", "family", "nobs_train", "nobs_test", "method", "cv_method",
       "validate_search", "clust_used_search", "clust_used_eval",
       "nprjdraws_search", "nprjdraws_eval", "search_included", "nterms",
-      pct_solterms_nm, "suggested_size", "selection"),
+      pct_solterms_nm, "selection", "resp_oscale"),
     info = info_str
   )
 
   for (nm in c(
     "method", "cv_method", "validate_search", "clust_used_search",
-    "clust_used_eval", "nprjdraws_search", "nprjdraws_eval", pct_solterms_nm,
-    "suggested_size"
+    "clust_used_eval", "nprjdraws_search", "nprjdraws_eval", pct_solterms_nm
   )) {
     expect_identical(smmry[[nm]], vsel_expected[[nm]],
                      info = paste(info_str, nm, sep = "__"))
@@ -1505,7 +2378,10 @@ smmry_tester <- function(smmry, vsel_expected, nterms_max_expected = NULL,
   smmry_sel_tester(smmry$selection,
                    summaries_ref = vsel_expected$summaries$ref,
                    nterms_max_expected = nterms_max_expected,
+                   latent_expected = vsel_expected$refmodel$family$for_latent,
+                   resp_oscale_expected = resp_oscale_expected,
                    info_str = info_str, ...)
+  expect_identical(smmry$resp_oscale, resp_oscale_expected, info = info_str)
 
   return(invisible(TRUE))
 }
@@ -1531,6 +2407,10 @@ smmry_tester <- function(smmry, vsel_expected, nterms_max_expected = NULL,
 # @param from_datafit A single logical value indicating whether an object of
 #   class `"datafit"` was used for creating the `"vsel"` object (from which
 #   `smmry_sel` was created) (`TRUE`) or not (`FALSE`).
+# @param latent_expected A single logical value indicating whether the reference
+#   model is expected to be for latent projection (`TRUE`) or not (`FALSE`).
+# @param resp_oscale_expected A single logical value indicating whether argument
+#   `resp_oscale` of summary.vsel() was set to `TRUE` or `FALSE`.
 # @param info_str A single character string giving information to be printed in
 #   case of failure.
 #
@@ -1544,6 +2424,8 @@ smmry_sel_tester <- function(
     cv_method_expected = character(),
     solterms_expected,
     from_datafit = FALSE,
+    latent_expected = FALSE,
+    resp_oscale_expected = TRUE,
     info_str
 ) {
   if (is.null(stats_expected)) {
@@ -1601,6 +2483,14 @@ smmry_sel_tester <- function(
   expect_identical(smmry_sel$solution_terms,
                    c(NA_character_, solterms_expected),
                    info = info_str)
+  is_lat_kfold <-  latent_expected && !resp_oscale_expected &&
+    identical(cv_method_expected, "kfold")
+  if (is_lat_kfold) {
+    for (stat_idx in seq_along(stats_expected)) {
+      expect_true(all(is.na(smmry_sel[, stats_mean_name[stat_idx]])),
+                  info = info_str)
+    }
+  }
   if ("diff" %in% type_expected) {
     if (length(stats_expected) == 1) {
       diff_nm <- "diff"
@@ -1608,7 +2498,7 @@ smmry_sel_tester <- function(
       diff_nm <- paste(stats_expected, "diff", sep = ".")
     }
     for (stat_idx in seq_along(stats_expected)) {
-      if (!from_datafit) {
+      if (!from_datafit && !is_lat_kfold) {
         expect_equal(
           diff(smmry_sel[, stats_mean_name[stat_idx]]),
           diff(smmry_sel[, diff_nm[stat_idx]]),
@@ -1634,7 +2524,7 @@ smmry_sel_tester <- function(
       }
     }
   }
-  if ("lower" %in% type_expected) {
+  if ("lower" %in% type_expected && !is_lat_kfold) {
     if (length(stats_expected) == 1) {
       lower_nm <- "lower"
     } else {
@@ -1649,7 +2539,7 @@ smmry_sel_tester <- function(
       }
     }
   }
-  if ("upper" %in% type_expected) {
+  if ("upper" %in% type_expected && !is_lat_kfold) {
     if (length(stats_expected) == 1) {
       upper_nm <- "upper"
     } else {

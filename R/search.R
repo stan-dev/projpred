@@ -23,7 +23,7 @@ search_forward <- function(p_ref, refmodel, nterms_max, verbose = TRUE, opt,
                    ...)
 
     ## select best candidate
-    imin <- which.min(sapply(subL, "[[", "kl"))
+    imin <- which.min(sapply(subL, "[[", "ce"))
     chosen <- c(chosen, cands[imin])
 
     ## append `submodl`
