@@ -24,7 +24,7 @@ project_submodel <- function(solution_terms, p_ref, refmodel, regul = 1e-4,
       rhs_chr <- paste("<EXCEPTION: Unexpected length of the character-coerced",
                        "formula passed to the divergence minimizer.>")
     }
-    verb_out(paste("  Projecting onto", utils::tail(rhs_chr, 1)))
+    verb_out("  Projecting onto ", utils::tail(rhs_chr, 1))
   }
 
   submodl <- refmodel$div_minimizer(
