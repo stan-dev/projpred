@@ -457,10 +457,8 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
 
     if (verbose) {
       print(msg)
-      pb <- utils::txtProgressBar(
-        min = 0, max = nterms_max, style = 3,
-        initial = 0
-      )
+      pb <- utils::txtProgressBar(min = 0, max = nterms_max, style = 3,
+                                  initial = 0)
     }
 
     ## compute approximate LOO with PSIS weights
