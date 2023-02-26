@@ -19,7 +19,8 @@ Authors@R: c(person("Juho", "Piironen", role = c("aut"),
              person("Sölvi", "Rögnvaldsson", role = "ctb"),
              person(family = "The LME4 Authors", role = "cph",
                     comment = "see file 'LICENSE' for details"),
-             person("Yann", "McLatchie", role = "ctb"))
+             person("Yann", "McLatchie", role = "ctb"),
+             person("Juho", "Timonen", role = "ctb"))
 Description:
     Performs projection predictive feature selection for generalized linear
     models (Piironen, Paasiniemi, and Vehtari, 2020, <doi:10.1214/20-EJS1711>)
