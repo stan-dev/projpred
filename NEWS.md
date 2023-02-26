@@ -4,6 +4,10 @@ If you read this from a place other than <https://mc-stan.org/projpred/news/inde
 
 # projpred 2.4.0.9000
 
+## Minor changes
+
+* Setting the new global option `projpred.extra_verbose` to `TRUE` will print out which submodel **projpred** is currently projecting onto as well as (if `method = "forward"` and `verbose = TRUE` in `varsel()` or `cv_varsel()`) which submodel has been selected at those steps of the forward search for which a percentage (of the maximum submodel size that the search is run up to) is printed. In general, however, we cannot recommend setting this new global option to `TRUE` for `cv_varsel()` with `cv_method = "LOO"` and `validate_search = TRUE` or for `cv_varsel()` with `cv_method = "kfold"` (simply due to the amount of information that will be printed, but also due to the progress bar which will not work anymore as intended). (GitHub: #363; thanks to @jtimonen)
+
 ## Bug fixes
 
 * Fixed a bug causing `predict.refmodel()` to require `newdata` to contain the response variable in case of a **brms** reference model. This is similar to paul-buerkner/brms#1457, but concerns `predict.refmodel()` (paul-buerkner/brms#1457 referred to predictions from the *submodels*). In order to make this `predict.refmodel()` fix work, **brms** version 2.18.8 or later is needed. (GitHub: #381)
@@ -46,7 +50,7 @@ If you read this from a place other than <https://mc-stan.org/projpred/news/inde
 
 * Improvements in documentation and vignette, especially to emphasize the generality of the reference model object resulting from `get_refmodel()` and `init_refmodel()` (thereby also distinguishing more clearly between "typical" and "custom" reference model objects) in (i) the description and several arguments of `get_refmodel()` and `init_refmodel()`, (ii) sections ["Reference model"](https://mc-stan.org/projpred/articles/projpred.html#refmod) and ["Supported types of models"](https://mc-stan.org/projpred/articles/projpred.html#modtypes) of the vignette. (GitHub: #357, #359, #364, #365, #366)
 * Minor improvement in terms of efficiency in the `validate_search = FALSE` case of `cv_varsel()`.
-* Improvement in terms of efficiency in case of a forward search with custom `search_terms` (at least in some instances), also affecting the output of `solution_terms(<vsel_object>)` in those cases. (GitHub: #360; thanks to user @sor16)
+* Improvement in terms of efficiency in case of a forward search with custom `search_terms` (at least in some instances), also affecting the output of `solution_terms(<vsel_object>)` in those cases. (GitHub: #360; thanks to @sor16)
 * Update [Catalina et al. (2020)](https://doi.org/10.48550/arXiv.2010.06994) to [Catalina et al. (2022)](https://proceedings.mlr.press/v151/catalina22a.html). (GitHub: #364)
 
 ## Bug fixes
@@ -54,14 +58,14 @@ If you read this from a place other than <https://mc-stan.org/projpred/news/inde
 * Fix a bug causing offsets not to be taken into account appropriately when calculating the PSIS weights (those used for the submodels) in the `validate_search = FALSE` case of `cv_varsel()`. This bug was introduced in v2.2.0 (and existed up to---including---v2.2.1).
 * Fix a (long-standing) bug causing offsets not to be taken into account appropriately when calculating the predictive variances for a reference model that has a dispersion parameter and a non-identity link function. (GitHub: #186 (partly), #355)
 * Fix a (long-standing) bug causing offsets not to be taken into account appropriately when calculating the reference model's summary statistics in case of `cv_varsel()` with `cv_method = "LOO"` (more precisely, only the LOO posterior predictive expected values `<vsel_object>$summaries$ref$mu` were affected, not the (pointwise) LOO log posterior predictive density values `<vsel_object>$summaries$ref$lppd`). (GitHub: #186 (partly), #356)
-* Fix a (long-standing) bug leading to an error when trying to use `cv_varsel()` with custom `search_terms` (in some instances). (GitHub: #345, #360; thanks to user @sor16)
+* Fix a (long-standing) bug leading to an error when trying to use `cv_varsel()` with custom `search_terms` (in some instances). (GitHub: #345, #360; thanks to @sor16)
 
 # projpred 2.2.1
 
 ## Minor changes
 
 * Several improvements in the documentation.
-* For the RMSE as well as the AUC (see argument `stats` of `summary.vsel()`), the bootstrapping results are now also used for inferring the lower and upper confidence interval bounds. (GitHub: #318, #347; thanks to users @awd97 and @VisionResearchBlog)
+* For the RMSE as well as the AUC (see argument `stats` of `summary.vsel()`), the bootstrapping results are now also used for inferring the lower and upper confidence interval bounds. (GitHub: #318, #347; thanks to @awd97 and @VisionResearchBlog)
 * For `datafit`s, offsets are not supported anymore. (GitHub: #186 (partly), #351)
 
 ## Bug fixes
