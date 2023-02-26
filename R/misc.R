@@ -573,9 +573,9 @@ rbind2list <- function(x) {
   return(binded_list)
 }
 
-# Message logging
-log_message <- function(msg, verbose) {
-  if(verbose) {
-    message(msg)
+# Print out `txt` if `verbose = TRUE`.
+verb_out <- function(txt, verbose = TRUE) {
+  if (verbose) {
+    message(txt)
   }
 }

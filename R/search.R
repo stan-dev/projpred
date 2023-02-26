@@ -1,6 +1,5 @@
 search_forward <- function(p_ref, refmodel, nterms_max, verbose = TRUE, opt,
                            search_terms = NULL, ...) {
-
   iq <- ceiling(quantile(seq_len(nterms_max), 1:10 / 10))
   if (is.null(search_terms)) {
     allterms <- split_formula(refmodel$formula, data = refmodel$fetch_data())
@@ -19,8 +18,7 @@ search_forward <- function(p_ref, refmodel, nterms_max, verbose = TRUE, opt,
       next
     full_cands <- lapply(cands, function(cand) c(chosen, cand))
     subL <- lapply(full_cands, project_submodel,
-                   p_ref = p_ref, refmodel = refmodel, regul = opt$regul,
-                   ...)
+                   p_ref = p_ref, refmodel = refmodel, regul = opt$regul, ...)
 
     ## select best candidate
     imin <- which.min(sapply(subL, "[[", "ce"))
@@ -29,15 +27,13 @@ search_forward <- function(p_ref, refmodel, nterms_max, verbose = TRUE, opt,
     ## append `submodl`
     submodls <- c(submodls, list(subL[[imin]]$submodl))
 
-    if (verbose && count_terms_chosen(chosen) %in% iq) {
-      perc_sel <- names(iq)[max(which(count_terms_chosen(chosen) == iq))]
-      chosen_str <- paste0(full_cands[[imin]], collapse = " + ")
-      msg <- paste0(perc_sel, " of terms selected")
-      extra_verbose <- getOption("projpred.extra_verbose", FALSE)
-      if (extra_verbose) {
-        msg <- paste0(msg, ": ", chosen_str)
+    ct_chosen <- count_terms_chosen(chosen)
+    if (verbose && ct_chosen %in% iq) {
+      vtxt <- paste(names(iq)[max(which(ct_chosen == iq))], "of terms selected")
+      if (getOption("projpred.extra_verbose", FALSE)) {
+        vtxt <- paste0(vtxt, ": ", paste(chosen, collapse = " + "))
       }
-      log_message(msg, verbose)
+      verb_out(vtxt)
     }
   }
 
