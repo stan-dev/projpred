@@ -3,7 +3,7 @@
 # a single fit (there are as many fits for this single submodel as there are
 # projected draws).
 project_submodel <- function(solution_terms, p_ref, refmodel, regul = 1e-4,
-                             verbose = FALSE, ...) {
+                             ...) {
   validparams <- .validate_wobs_wsample(refmodel$wobs, p_ref$weights, p_ref$mu)
   wobs <- validparams$wobs
   wsample <- validparams$wsample
