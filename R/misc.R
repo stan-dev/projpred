@@ -573,9 +573,9 @@ rbind2list <- function(x) {
   return(binded_list)
 }
 
-# Print out `txt` if `verbose = TRUE`.
+# Print out `txt` via cat() if `verbose = TRUE`:
 verb_out <- function(txt, verbose = TRUE) {
   if (verbose) {
-    message(txt)
+    cat(txt, "\n", sep = "")
   }
 }
