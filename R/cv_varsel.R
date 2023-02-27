@@ -434,7 +434,7 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
     ## fold), and perform the projection then for each submodel size
     search_path <- select(
       method = method, p_sel = p_sel, refmodel = refmodel,
-      nterms_max = nterms_max, penalty = penalty, verbose = FALSE, opt = opt,
+      nterms_max = nterms_max, penalty = penalty, verbose = verbose, opt = opt,
       search_terms = search_terms, ...
     )
 
@@ -603,8 +603,9 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
       ## perform selection with the reweighted clusters/samples
       search_path <- select(
         method = method, p_sel = p_sel, refmodel = refmodel,
-        nterms_max = nterms_max, penalty = penalty, verbose = FALSE, opt = opt,
-        search_terms = search_terms, ...
+        nterms_max = nterms_max, penalty = penalty,
+        verbose = verbose && getOption("projpred.extra_verbose", FALSE),
+        opt = opt, search_terms = search_terms, ...
       )
 
       ## project onto the selected models and compute the prediction accuracy
@@ -822,8 +823,9 @@ kfold_varsel <- function(refmodel, method, nterms_max, ndraws,
     p_sel <- .get_refdist(fold$refmodel, ndraws, nclusters)
     out <- select(
       method = method, p_sel = p_sel, refmodel = fold$refmodel,
-      nterms_max = nterms_max, penalty = penalty, verbose = FALSE, opt = opt,
-      search_terms = search_terms, ...
+      nterms_max = nterms_max, penalty = penalty,
+      verbose = verbose && getOption("projpred.extra_verbose", FALSE),
+      opt = opt, search_terms = search_terms, ...
     )
     if (verbose) {
       utils::setTxtProgressBar(pb, fold_index)
