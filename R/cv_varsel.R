@@ -424,15 +424,6 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
     }
   }
 
-  if (verbose) {
-    if (validate_search) {
-      msg <- paste("Repeating", sub("^l1$", "L1", method), "search for", nloo,
-                   "LOO folds...")
-    } else {
-      msg <- paste("Computing LOO for", nterms_max, "models...")
-    }
-  }
-
   if (!validate_search) {
     # Case `validate_search = FALSE` ------------------------------------------
 
@@ -457,7 +448,7 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
     )
 
     if (verbose) {
-      print(msg)
+      print(paste("Computing LOO for", nterms_max, "models..."))
       pb <- utils::txtProgressBar(min = 0, max = nterms_max, style = 3,
                                   initial = 0)
     }
@@ -590,7 +581,8 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
     prv_len_soltrms <- NULL
 
     if (verbose) {
-      print(msg)
+      print(paste("Repeating", sub("^l1$", "L1", method), "search for", nloo,
+                  "LOO folds..."))
       pb <- utils::txtProgressBar(min = 0, max = nloo, style = 3, initial = 0)
     }
 
