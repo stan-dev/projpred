@@ -426,7 +426,8 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
 
   if (verbose) {
     if (validate_search) {
-      msg <- paste("Repeating", method, "search for", nloo, "LOO folds...")
+      msg <- paste("Repeating", sub("^l1$", "L1", method), "search for", nloo,
+                   "LOO folds...")
     } else {
       msg <- paste("Computing LOO for", nterms_max, "models...")
     }
