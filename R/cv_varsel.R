@@ -189,9 +189,7 @@ cv_varsel.refmodel <- function(
 
   if (validate_search || cv_method == "kfold") {
     ## run the selection using the full dataset
-    if (verbose) {
-      print(paste("Performing the selection using all the data.."))
-    }
+    verb_out("Performing the selection using all the data..", verbose = verbose)
     sel <- varsel(refmodel,
                   method = method, ndraws = ndraws, nclusters = nclusters,
                   ndraws_pred = ndraws_pred, nclusters_pred = nclusters_pred,
@@ -236,9 +234,7 @@ cv_varsel.refmodel <- function(
               nprjdraws_search = sel$nprjdraws_search,
               nprjdraws_eval = sel$nprjdraws_eval)
   class(vs) <- "vsel"
-  if (verbose) {
-    print("Done.")
-  }
+  verb_out("Done.", verbose = verbose)
   return(vs)
 }
 
@@ -427,9 +423,7 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
   if (!validate_search) {
     # Case `validate_search = FALSE` ------------------------------------------
 
-    if (verbose) {
-      print(paste("Performing the selection using all the data.."))
-    }
+    verb_out("Performing the selection using all the data..", verbose = verbose)
     ## perform selection only once using all the data (not separately for each
     ## fold), and perform the projection then for each submodel size
     search_path <- select(
@@ -448,7 +442,7 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
     )
 
     if (verbose) {
-      print(paste("Computing LOO for", nterms_max, "models..."))
+      verb_out("Computing LOO for ", nterms_max, " models...")
       pb <- utils::txtProgressBar(min = 0, max = nterms_max, style = 3,
                                   initial = 0)
     }
@@ -581,8 +575,8 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
     prv_len_soltrms <- NULL
 
     if (verbose) {
-      print(paste("Repeating", sub("^l1$", "L1", method), "search for", nloo,
-                  "LOO folds..."))
+      verb_out("Repeating ", sub("^l1$", "L1", method), " search for ", nloo,
+               " LOO folds...")
       pb <- utils::txtProgressBar(min = 0, max = nloo, style = 3, initial = 0)
     }
 
@@ -815,7 +809,7 @@ kfold_varsel <- function(refmodel, method, nterms_max, ndraws,
 
   # Perform the search for each fold:
   if (verbose) {
-    print("Performing selection for each fold..")
+    verb_out("Performing selection for each fold..")
     pb <- utils::txtProgressBar(min = 0, max = K, style = 3, initial = 0)
   }
   search_path_cv <- lapply(seq_along(list_cv), function(fold_index) {
@@ -842,7 +836,7 @@ kfold_varsel <- function(refmodel, method, nterms_max, ndraws,
   # Re-project along the solution path (or fetch the projections from the search
   # results) for each fold:
   if (verbose && refit_prj) {
-    print("Computing projections..")
+    verb_out("Computing projections..")
     pb <- utils::txtProgressBar(min = 0, max = K, style = 3, initial = 0)
   }
   get_submodels_cv <- function(search_path, fold_index) {
@@ -961,7 +955,7 @@ kfold_varsel <- function(refmodel, method, nterms_max, ndraws,
       # to normal cross-validation for the submodels although we don't have an
       # actual reference model
       if (verbose && !inherits(refmodel, "datafit")) {
-        print("Performing cross-validation for the reference model..")
+        verb_out("Performing cross-validation for the reference model..")
       }
       nobs <- NROW(refmodel$y)
       folds <- cvfolds(nobs, K = K)
