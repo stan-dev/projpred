@@ -188,8 +188,8 @@ cv_varsel.refmodel <- function(
   }
 
   if (validate_search || cv_method == "kfold") {
-    ## run the selection using the full dataset
-    verb_out("Performing the selection using all the data..", verbose = verbose)
+    verb_out("-----\nRunning a final search using the full dataset ...",
+             verbose = verbose)
     sel <- varsel(refmodel,
                   method = method, ndraws = ndraws, nclusters = nclusters,
                   ndraws_pred = ndraws_pred, nclusters_pred = nclusters_pred,
@@ -198,6 +198,7 @@ cv_varsel.refmodel <- function(
                   lambda_min_ratio = lambda_min_ratio, nlambda = nlambda,
                   regul = regul, search_terms = search_terms_usr, seed = seed,
                   ...)
+    verb_out("-----", verbose = verbose)
   } else {
     sel <- sel_cv$sel
   }
@@ -234,7 +235,6 @@ cv_varsel.refmodel <- function(
               nprjdraws_search = sel$nprjdraws_search,
               nprjdraws_eval = sel$nprjdraws_eval)
   class(vs) <- "vsel"
-  verb_out("Done.", verbose = verbose)
   return(vs)
 }
 
@@ -423,31 +423,29 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
   if (!validate_search) {
     # Case `validate_search = FALSE` ------------------------------------------
 
-    verb_out("Performing the selection using all the data..", verbose = verbose)
-    ## perform selection only once using all the data (not separately for each
-    ## fold), and perform the projection then for each submodel size
+    verb_out("-----\nRunning the search using the full dataset ...",
+             verbose = verbose)
     search_path <- select(
       method = method, p_sel = p_sel, refmodel = refmodel,
       nterms_max = nterms_max, penalty = penalty, verbose = verbose, opt = opt,
       search_terms = search_terms, ...
     )
+    verb_out("-----", verbose = verbose)
 
-    ## project onto the selected models and compute the prediction accuracy for
-    ## the full data
+    verb_out("-----\nFor performance evaluation: Re-projecting (using the ",
+             "full dataset) onto the submodels along the full-data solution ",
+             "path ...", verbose = verbose && refit_prj)
     submodels <- .get_submodels(
       search_path = search_path,
       nterms = c(0, seq_along(search_path$solution_terms)),
       p_ref = p_pred, refmodel = refmodel, regul = opt$regul,
       refit_prj = refit_prj, ...
     )
+    verb_out("-----", verbose = verbose && refit_prj)
 
-    if (verbose) {
-      verb_out("Computing LOO for ", nterms_max, " models...")
-      pb <- utils::txtProgressBar(min = 0, max = nterms_max, style = 3,
-                                  initial = 0)
-    }
-
-    ## compute approximate LOO with PSIS weights
+    verb_out("-----\nCalculating the full-data performance evaluation ",
+             "results and weighting those results according to the PSIS-LOO ",
+             "CV weights ...", verbose = verbose)
     if (refit_prj) {
       refdist_eval <- p_pred
     } else {
@@ -550,11 +548,8 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
           }
         }
       }
-
-      if (verbose) {
-        utils::setTxtProgressBar(pb, k)
-      }
     }
+    verb_out("-----", verbose = verbose)
 
     for (i in seq_len(n)) {
       solution_terms_mat[
@@ -575,8 +570,8 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
     prv_len_soltrms <- NULL
 
     if (verbose) {
-      verb_out("Repeating ", sub("^l1$", "L1", method), " search for ", nloo,
-               " LOO folds...")
+      verb_out("-----\nRunning the search and the performance evaluation for ",
+               "each of the N = ", nloo, " LOO CV folds separately ...")
       pb <- utils::txtProgressBar(min = 0, max = nloo, style = 3, initial = 0)
     }
 
@@ -644,14 +639,13 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
         utils::setTxtProgressBar(pb, run_index)
       }
     }
+    if (verbose) {
+      close(pb)
+    }
+    verb_out("-----", verbose = verbose)
   }
 
   # Post-processing ---------------------------------------------------------
-
-  if (verbose) {
-    ## close the progress bar object
-    close(pb)
-  }
 
   ## put all the results together in the form required by cv_varsel
   summ_sub <- lapply(seq_len(nterms_max), function(k) {
@@ -809,7 +803,8 @@ kfold_varsel <- function(refmodel, method, nterms_max, ndraws,
 
   # Perform the search for each fold:
   if (verbose) {
-    verb_out("Performing selection for each fold..")
+    verb_out("-----\nRunning the search K = ", K, " times (using the ",
+             "fold-wise training data) ...")
     pb <- utils::txtProgressBar(min = 0, max = K, style = 3, initial = 0)
   }
   search_path_cv <- lapply(seq_along(list_cv), function(fold_index) {
@@ -832,11 +827,14 @@ kfold_varsel <- function(refmodel, method, nterms_max, ndraws,
   if (verbose) {
     close(pb)
   }
+  verb_out("-----", verbose = verbose)
 
   # Re-project along the solution path (or fetch the projections from the search
   # results) for each fold:
   if (verbose && refit_prj) {
-    verb_out("Computing projections..")
+    verb_out("-----\nFor performance evaluation: Re-projecting (using the ",
+             "fold-wise training data) onto the submodels along the K = ", K,
+             " fold-wise solution paths ...")
     pb <- utils::txtProgressBar(min = 0, max = K, style = 3, initial = 0)
   }
   get_submodels_cv <- function(search_path, fold_index) {
@@ -858,6 +856,7 @@ kfold_varsel <- function(refmodel, method, nterms_max, ndraws,
   if (verbose && refit_prj) {
     close(pb)
   }
+  verb_out("-----", verbose = verbose)
 
   # Perform the evaluation of the submodels for each fold (and make sure to
   # combine the results from the K folds into a single results list):
@@ -955,11 +954,13 @@ kfold_varsel <- function(refmodel, method, nterms_max, ndraws,
       # to normal cross-validation for the submodels although we don't have an
       # actual reference model
       if (verbose && !inherits(refmodel, "datafit")) {
-        verb_out("Performing cross-validation for the reference model..")
+        verb_out("-----\nRefitting the reference model K = ", K, " times ",
+                 "(using the fold-wise training data) ...")
       }
       nobs <- NROW(refmodel$y)
       folds <- cvfolds(nobs, K = K)
       cvfits <- refmodel$cvfun(folds)
+      verb_out("-----", verbose = verbose)
     } else {
       ## genuine probabilistic model but no K-fold fits nor cvfun provided,
       ## this only works for approximate kfold computation
