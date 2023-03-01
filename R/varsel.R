@@ -273,20 +273,26 @@ varsel.refmodel <- function(object, d_test = NULL, method = NULL,
 
   # Run the search:
   opt <- nlist(lambda_min_ratio, nlambda, thresh, regul)
+  verb_out("-----\nRunning the search ...", verbose = verbose)
   search_path <- select(
     method = method, p_sel = p_sel, refmodel = refmodel,
     nterms_max = nterms_max, penalty = penalty, verbose = verbose, opt = opt,
     search_terms = search_terms, ...
   )
+  verb_out("-----", verbose = verbose)
 
   # For the performance evaluation: Re-project along the solution path (or fetch
   # the projections from the search results):
+  verb_out("-----\nFor performance evaluation: Re-projecting onto the ",
+           "submodels along the solution path ...",
+           verbose = verbose && refit_prj)
   submodels <- .get_submodels(
     search_path = search_path,
     nterms = c(0, seq_along(search_path$solution_terms)),
     p_ref = p_pred, refmodel = refmodel, regul = regul, refit_prj = refit_prj,
     ...
   )
+  verb_out("-----", verbose = verbose && refit_prj)
   # The performance evaluation itself, i.e., the calculation of the predictive
   # performance statistic(s) for the submodels along the solution path:
   sub <- .get_sub_summaries(submodels = submodels,
