@@ -273,26 +273,35 @@ varsel.refmodel <- function(object, d_test = NULL, method = NULL,
 
   # Run the search:
   opt <- nlist(lambda_min_ratio, nlambda, thresh, regul)
-  verb_out("-----\nRunning the search ...", verbose = verbose)
+  # A single-liner for the following would be
+  # `calld_aft_cv <- list(...)[["called_after_cv"]] %||% FALSE`
+  # but that would always cause `...` to get evaluated. With the ...names()
+  # check, the ellipsis does not always get evaluated:
+  if ("called_after_cv" %in% ...names()) {
+    calld_aft_cv <- isTRUE(list(...)[["called_after_cv"]])
+  } else {
+    calld_aft_cv <- FALSE
+  }
+  verb_out("-----\nRunning the search ...", verbose = verbose && !calld_aft_cv)
   search_path <- select(
     method = method, p_sel = p_sel, refmodel = refmodel,
     nterms_max = nterms_max, penalty = penalty, verbose = verbose, opt = opt,
     search_terms = search_terms, ...
   )
-  verb_out("-----", verbose = verbose)
+  verb_out("-----", verbose = verbose && !calld_aft_cv)
 
   # For the performance evaluation: Re-project along the solution path (or fetch
   # the projections from the search results):
   verb_out("-----\nFor performance evaluation: Re-projecting onto the ",
            "submodels along the solution path ...",
-           verbose = verbose && refit_prj)
+           verbose = verbose && refit_prj && !calld_aft_cv)
   submodels <- .get_submodels(
     search_path = search_path,
     nterms = c(0, seq_along(search_path$solution_terms)),
     p_ref = p_pred, refmodel = refmodel, regul = regul, refit_prj = refit_prj,
     ...
   )
-  verb_out("-----", verbose = verbose && refit_prj)
+  verb_out("-----", verbose = verbose && refit_prj && !calld_aft_cv)
   # The performance evaluation itself, i.e., the calculation of the predictive
   # performance statistic(s) for the submodels along the solution path:
   sub <- .get_sub_summaries(submodels = submodels,
