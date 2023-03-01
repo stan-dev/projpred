@@ -27,9 +27,13 @@ search_forward <- function(p_ref, refmodel, nterms_max, verbose = TRUE, opt,
     ## append `submodl`
     submodls <- c(submodls, list(subL[[imin]]$submodl))
 
-    if (verbose && count_terms_chosen(chosen) %in% iq) {
-      print(paste0(names(iq)[max(which(count_terms_chosen(chosen) == iq))],
-                   " of terms selected."))
+    ct_chosen <- count_terms_chosen(chosen)
+    if (verbose && ct_chosen %in% iq) {
+      vtxt <- paste(names(iq)[max(which(ct_chosen == iq))], "of terms selected")
+      if (getOption("projpred.extra_verbose", FALSE)) {
+        vtxt <- paste0(vtxt, ": ", paste(chosen, collapse = " + "))
+      }
+      verb_out(vtxt)
     }
   }
 

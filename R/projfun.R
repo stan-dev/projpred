@@ -16,9 +16,19 @@ project_submodel <- function(solution_terms, p_ref, refmodel, regul = 1e-4,
     formula = refmodel$formula, terms_ = unique(unlist(solution_terms)),
     data = refmodel$fetch_data(), y = p_ref$mu, y_unqs = y_unqs_aug
   )
+  fml_divmin <- flatten_formula(subset$formula)
+
+  if (getOption("projpred.extra_verbose", FALSE)) {
+    rhs_chr <- as.character(fml_divmin)
+    if (length(rhs_chr) != 3) {
+      rhs_chr <- paste("<EXCEPTION: Unexpected length of the character-coerced",
+                       "formula passed to the divergence minimizer.>")
+    }
+    verb_out("  Projecting onto ", utils::tail(rhs_chr, 1))
+  }
 
   submodl <- refmodel$div_minimizer(
-    formula = flatten_formula(subset$formula),
+    formula = fml_divmin,
     data = subset$data,
     family = refmodel$family,
     weights = refmodel$wobs,
