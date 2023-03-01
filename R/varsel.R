@@ -211,7 +211,7 @@ varsel.refmodel <- function(object, d_test = NULL, method = NULL,
 
   refmodel <- object
 
-  ## fetch the default arguments or replace them by the user defined values
+  # Parse arguments:
   args <- parse_args_varsel(
     refmodel = refmodel, method = method, refit_prj = refit_prj,
     nterms_max = nterms_max, nclusters = nclusters, search_terms = search_terms
@@ -222,6 +222,7 @@ varsel.refmodel <- function(object, d_test = NULL, method = NULL,
   nclusters <- args$nclusters
   search_terms <- args$search_terms
 
+  # Pre-process `d_test`:
   if (is.null(d_test)) {
     d_test <- list(type = "train", data = NULL, offset = refmodel$offset,
                    weights = refmodel$wobs, y = refmodel$y,
@@ -265,11 +266,12 @@ varsel.refmodel <- function(object, d_test = NULL, method = NULL,
     }
   }
 
-  ## reference distributions for selection and prediction after selection
+  # Clustering or thinning for the search:
   p_sel <- .get_refdist(refmodel, ndraws, nclusters)
+  # Clustering or thinning for the performance evaluation:
   p_pred <- .get_refdist(refmodel, ndraws_pred, nclusters_pred)
 
-  ## perform the selection
+  # Run the search:
   opt <- nlist(lambda_min_ratio, nlambda, thresh, regul)
   search_path <- select(
     method = method, p_sel = p_sel, refmodel = refmodel,
@@ -277,13 +279,16 @@ varsel.refmodel <- function(object, d_test = NULL, method = NULL,
     search_terms = search_terms, ...
   )
 
-  ## statistics for the selected submodels
+  # For the performance evaluation: Re-project along the solution path (or fetch
+  # the projections from the search results):
   submodels <- .get_submodels(
     search_path = search_path,
     nterms = c(0, seq_along(search_path$solution_terms)),
     p_ref = p_pred, refmodel = refmodel, regul = regul, refit_prj = refit_prj,
     ...
   )
+  # The performance evaluation itself, i.e., the calculation of the predictive
+  # performance statistic(s) for the submodels along the solution path:
   sub <- .get_sub_summaries(submodels = submodels,
                             refmodel = refmodel,
                             test_points = NULL,
@@ -293,12 +298,10 @@ varsel.refmodel <- function(object, d_test = NULL, method = NULL,
                             y = d_test$y,
                             y_oscale = d_test$y_oscale)
 
-  ## predictive statistics of the reference model on test data. if no test data
-  ## are provided,
-  ## simply fetch the statistics on the train data
+  # Predictive performance of the reference model:
   if (inherits(refmodel, "datafit")) {
-    ## no actual reference model, so we don't know how to predict test
-    ## observations
+    # In this case, there is no actual reference model, so we don't know how to
+    # predict for actual new data.
     nobs_test <- nrow(d_test$data %||% refmodel$fetch_data())
     ref <- list(mu = rep(NA, nobs_test), lppd = rep(NA, nobs_test))
     if (refmodel$family$for_latent) {
@@ -347,7 +350,7 @@ varsel.refmodel <- function(object, d_test = NULL, method = NULL,
     )
   }
 
-  ## store the relevant fields into the object to be returned
+  # The object to be returned:
   vs <- nlist(
     refmodel,
     search_path,
@@ -370,20 +373,17 @@ varsel.refmodel <- function(object, d_test = NULL, method = NULL,
   return(vs)
 }
 
+# Workhorse function for the search
+#
+# Argument `p_sel` accepts output from .get_refdist() or .get_p_clust(). For all
+# other arguments, see the documentation of varsel().
+#
+# @return A list with elements `solution_terms` (the solution path), `submodls`
+#   (the submodel fits along the solution path, with the number of fits per
+#   model size being equal to the number of projected draws), and `p_sel` (the
+#   same as the input argument `p_sel`).
 select <- function(method, p_sel, refmodel, nterms_max, penalty, verbose, opt,
                    search_terms = NULL, ...) {
-  ##
-  ## Auxiliary function, performs variable selection with the given method,
-  ## and returns the search_path, i.e., a list with the followint entries (the
-  ## last three
-  ## are returned only if one cluster projection is used for selection):
-  ##   solution_terms: the variable ordering
-  ##   beta: coefficients along the solution path
-  ##   alpha: intercepts along the solution path
-  ##   p_sel: the reference distribution used in the selection (the input
-  ##   argument p_sel)
-  ##
-  ## routine that can be used with several clusters
   if (method == "l1") {
     search_path <- search_L1(p_sel, refmodel, nterms_max - refmodel$intercept,
                              penalty, opt)
@@ -397,11 +397,12 @@ select <- function(method, p_sel, refmodel, nterms_max, penalty, verbose, opt,
   }
 }
 
-## Auxiliary function for parsing the input arguments for varsel.
-## The arguments specified by the user (or the function calling this function)
-## are treated as they are, but if some are not given, then this function
-## fills them in with the default values. The purpose of this function is to
-## avoid repeating the same code both in varsel and cv_varsel.
+# Auxiliary function for parsing the arguments of varsel()
+#
+# The arguments specified by the user (or the function calling this function)
+# are treated as they are, but if some are not given, then this function fills
+# them in with the default values. The purpose of this function is to avoid
+# repeating the same code both in varsel() and cv_varsel().
 parse_args_varsel <- function(refmodel, method, refit_prj, nterms_max,
                               nclusters, search_terms) {
   search_terms_was_null <- is.null(search_terms)
