@@ -1208,8 +1208,10 @@ init_refmodel <- function(object, data, formula, family, ref_predfun = NULL,
 
   if (is.null(cvfun)) {
     if (!proper_model) {
-      # This is a dummy definition for cvfun(), but it will lead to standard CV
-      # for `datafit`s; see cv_varsel() and .get_kfold():
+      # This is a dummy definition for cvfun(), but the cvrefbuilder() function
+      # defined below will lead to standard CV nonetheless (at least for the
+      # submodels; for the reference model, we don't have an actual reference
+      # model, only a `datafit`):
       cvfun <- function(folds) {
         lapply(seq_len(max(folds)), function(k) list())
       }
