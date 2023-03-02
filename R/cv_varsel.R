@@ -146,8 +146,6 @@ cv_varsel.refmodel <- function(
   if (!is.na(seed)) set.seed(seed)
 
   refmodel <- object
-  # Needed to avoid a warning when calling varsel() later:
-  search_terms_usr <- search_terms
   # Parse arguments which also exist in varsel():
   args <- parse_args_varsel(
     refmodel = refmodel, method = method, refit_prj = refit_prj,
@@ -186,19 +184,18 @@ cv_varsel.refmodel <- function(
   }
 
   if (validate_search || cv_method == "kfold") {
+    # Clustering or thinning for the final full-data search:
+    p_sel <- .get_refdist(refmodel, ndraws, nclusters)
     verb_out("-----\nRunning a final search using the full dataset ...",
              verbose = verbose)
-    sel <- varsel(refmodel,
-                  method = method, ndraws = ndraws, nclusters = nclusters,
-                  ndraws_pred = ndraws_pred, nclusters_pred = nclusters_pred,
-                  refit_prj = refit_prj, nterms_max = nterms_max - 1,
-                  penalty = penalty, verbose = verbose,
-                  lambda_min_ratio = lambda_min_ratio, nlambda = nlambda,
-                  regul = regul, search_terms = search_terms_usr, seed = seed,
-                  ...)
+    sel <- select(method = method, p_sel = p_sel, refmodel = refmodel,
+                  nterms_max = nterms_max, penalty = penalty, verbose = verbose,
+                  opt = opt, search_terms = search_terms, ...)
     verb_out("-----", verbose = verbose)
+    ce_out <- rep(NA_real_, length(sel$solution_terms) + refmodel$intercept)
   } else {
-    sel <- sel_cv$sel
+    sel <- sel_cv$sel$search_path
+    ce_out <- sel_cv$sel$ce
   }
 
   # Create `pct_solution_terms_cv`, a summary table of the fold-wise solution
@@ -215,12 +212,23 @@ cv_varsel.refmodel <- function(
     ))
   )
 
+  # Just a dummy object which is not used as usual, but only for inferring the
+  # output elements `clust_used_eval` and `nprjdraws_eval` (this unnecessary
+  # .get_refdist() call is much cheaper than calling varsel() with its
+  # re-projections (if `refit_prj = TRUE`) instead of select() above in the case
+  # `if (validate_search || cv_method == "kfold")`, see GitHub PR #385):
+  if (refit_prj) {
+    refdist_eval_dummy <- .get_refdist(refmodel, ndraws_pred, nclusters_pred)
+  } else {
+    refdist_eval_dummy <- sel$p_sel
+  }
+
   # The object to be returned:
   vs <- nlist(refmodel,
-              search_path = sel$search_path,
+              search_path = sel,
               d_test = sel_cv$d_test,
               summaries = sel_cv$summaries,
-              ce = sel$ce,
+              ce = ce_out,
               solution_terms = sel$solution_terms,
               pct_solution_terms_cv,
               nterms_all = count_terms_in_formula(refmodel$formula),
@@ -228,10 +236,10 @@ cv_varsel.refmodel <- function(
               method,
               cv_method,
               validate_search,
-              clust_used_search = sel$clust_used_search,
-              clust_used_eval = sel$clust_used_eval,
-              nprjdraws_search = sel$nprjdraws_search,
-              nprjdraws_eval = sel$nprjdraws_eval)
+              clust_used_search = sel$p_sel$clust_used,
+              clust_used_eval = refdist_eval_dummy$clust_used,
+              nprjdraws_search = NCOL(sel$p_sel$mu),
+              nprjdraws_eval = NCOL(refdist_eval_dummy$mu))
   class(vs) <- "vsel"
   return(vs)
 }
@@ -552,12 +560,7 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
         i, seq_along(search_path$solution_terms)
       ] <- search_path$solution_terms
     }
-    sel <- nlist(search_path, ce = sapply(submodels, "[[", "ce"),
-                 solution_terms = search_path$solution_terms,
-                 clust_used_search = p_sel$clust_used,
-                 clust_used_eval = refdist_eval$clust_used,
-                 nprjdraws_search = NCOL(p_sel$mu),
-                 nprjdraws_eval = NCOL(refdist_eval$mu))
+    sel <- nlist(search_path, ce = sapply(submodels, "[[", "ce"))
   } else {
     # Case `validate_search = TRUE` -------------------------------------------
 
