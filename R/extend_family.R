@@ -570,8 +570,9 @@ extend_family_gaussian <- function(family) {
   }
   predvar_gauss <- function(mu, dis, wsample = 1) {
     wsample <- wsample / sum(wsample)
-    mu_mean <- mu %*% wsample
-    mu_var <- mu^2 %*% wsample - mu_mean^2
+    mu_var <- do.call(rbind, lapply(seq_len(nrow(mu)), function(i) {
+      sum(wsample * (mu[i, ] - weighted.mean(mu[i, ], wsample))^2)
+    }))
     as.vector(sum(wsample * dis^2) + mu_var)
   }
   ll_gauss <- function(mu, dis, y, weights = 1) {
@@ -670,8 +671,9 @@ extend_family_student_t <- function(family) {
   }
   predvar_student_t <- function(mu, dis, wsample = 1) {
     wsample <- wsample / sum(wsample)
-    mu_mean <- mu %*% wsample
-    mu_var <- mu^2 %*% wsample - mu_mean^2
+    mu_var <- do.call(rbind, lapply(seq_len(nrow(mu)), function(i) {
+      sum(wsample * (mu[i, ] - weighted.mean(mu[i, ], wsample))^2)
+    }))
     as.vector(family$nu / (family$nu - 2) * sum(wsample * dis^2) + mu_var)
   }
   ll_student_t <- function(mu, dis, y, weights = 1) {
