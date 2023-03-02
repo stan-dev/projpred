@@ -195,7 +195,7 @@ cv_varsel.refmodel <- function(
                   penalty = penalty, verbose = verbose,
                   lambda_min_ratio = lambda_min_ratio, nlambda = nlambda,
                   regul = regul, search_terms = search_terms_usr, seed = seed,
-                  called_after_cv = TRUE, ...)
+                  ...)
     verb_out("-----", verbose = verbose)
   } else {
     sel <- sel_cv$sel
