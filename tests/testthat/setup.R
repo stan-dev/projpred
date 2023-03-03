@@ -57,6 +57,10 @@ if (identical(run_snaps, "")) {
 }
 if (run_snaps) {
   testthat_ed_max2 <- edition_get() <= 2
+  if (!requireNamespace("rlang", quietly = TRUE)) {
+    stop("Package \"rlang\" is needed for the snapshots. Please install it.",
+         call. = FALSE)
+  }
 }
 # Run parallel tests?:
 # Notes:

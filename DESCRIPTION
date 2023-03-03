@@ -40,7 +40,6 @@ Depends:
     R (>= 3.5.0)
 Imports:
     methods,
-    dplyr,
     loo (>= 2.0.0),
     rstantools (>= 2.0.0),
     lme4,
@@ -49,15 +48,13 @@ Imports:
     Rcpp,
     utils,
     abind,
-    magrittr,
     mgcv,
     gamm4,
     MASS,
     ordinal,
     ucminf,
     nnet,
-    mclogit,
-    rlang
+    mclogit
 Suggests:
     rstanarm,
     brms,
@@ -66,6 +63,7 @@ Suggests:
     rmarkdown,
     glmnet,
     cmdstanr,
+    rlang,
     bayesplot (>= 1.5.0),
     nlme,
     optimx,

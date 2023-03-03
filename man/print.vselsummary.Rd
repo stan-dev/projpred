@@ -9,7 +9,7 @@
 \arguments{
 \item{x}{An object of class \code{vselsummary}.}
 
-\item{digits}{Number of decimal places to be reported.}
+\item{digits}{Passed to argument \code{digits} of \code{\link[=round]{round()}}.}
 
 \item{...}{Currently ignored.}
 }
