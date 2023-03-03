@@ -1578,7 +1578,7 @@ vsel_nms_pred_opt <- c("solution_terms")
 vsel_nms_cv_nloo <- c("summaries", "pct_solution_terms_cv")
 vsel_nms_cv_nloo_opt <- c("pct_solution_terms_cv")
 # Related to `validate_search`:
-vsel_nms_cv_valsearch <- c("validate_search", "summaries",
+vsel_nms_cv_valsearch <- c("validate_search", "summaries", "ce",
                            "pct_solution_terms_cv")
 vsel_nms_cv_valsearch_opt <- character()
 # Related to `cvfits`:
