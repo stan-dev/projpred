@@ -64,7 +64,14 @@ pseudo_data <- function(f, y, family, offset = rep(0, NROW(f)),
   } else if (family$family %in% c("gaussian", "poisson", "binomial")) {
     # exponential family distributions
     wobs <- (weights * dmu_df^2) / family$variance(mu) # 2* because of deviance
-    loss <- 0.5 * sum(family$deviance(mu, y, weights))
+    if (family$family == "gaussian") {
+      # We can use `dis <- 1` here because in this case, `dis` simply scales and
+      # shifts the deviance (and thus `loss` here):
+      dis <- 1
+    } else {
+      dis <- NULL
+    }
+    loss <- 0.5 * sum(family$deviance(mu, y, weights, dis))
     grad <- -wobs * (z - f)
   } else {
     stop("Don't know how to compute quadratic approximation and gradients",
