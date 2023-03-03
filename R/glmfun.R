@@ -65,10 +65,9 @@ pseudo_data <- function(f, y, family, offset = rep(0, NROW(f)),
     # exponential family distributions
     wobs <- (weights * dmu_df^2) / family$variance(mu) # 2* because of deviance
     if (family$family == "gaussian") {
-      # Projected residual variance:
-      s2 <- sum(weights * (obsvar + (y - mu)^2)) / sum(weights)
-      # Projected residual standard deviation:
-      dis <- sqrt(s2)
+      # We can use `dis <- 1` here because in this case, `dis` simply scales and
+      # shifts the deviance (and thus `loss` here):
+      dis <- 1
     } else {
       dis <- NULL
     }
