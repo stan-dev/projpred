@@ -125,7 +125,7 @@ test_that(paste(
   "`pseudo_data(f = 0, [...], family = extend_family(gaussian()), [...])` is",
   "essentially an identity function (apart from offsets)."
 ), {
-  mu_crr <- matrix(1:12, nrow = 3)
+  mu_crr <- matrix(1:3, ncol = 1)
   wobs_crr <- c(2.5, 6, 4)
   offs_crr <- c(-4.2, 3.5, 1.1)
   psdat <- pseudo_data(
