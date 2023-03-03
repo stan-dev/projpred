@@ -12,6 +12,7 @@ If you read this from a place other than <https://mc-stan.org/projpred/news/inde
 ## Bug fixes
 
 * Fixed a bug causing `predict.refmodel()` to require `newdata` to contain the response variable in case of a **brms** reference model. This is similar to paul-buerkner/brms#1457, but concerns `predict.refmodel()` (paul-buerkner/brms#1457 referred to predictions from the *submodels*). In order to make this `predict.refmodel()` fix work, **brms** version 2.18.8 or later is needed. (GitHub: #381)
+* Slightly improved the calculation of predictive variances to make them less prone to numerical inaccuracies. (GitHub: #199)
 
 # projpred 2.4.0
 
