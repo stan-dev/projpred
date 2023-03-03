@@ -166,6 +166,14 @@ cv_varsel.refmodel <- function(
   # Arguments specific to the search:
   opt <- nlist(lambda_min_ratio, nlambda, thresh, regul)
 
+  if (validate_search || cv_method == "kfold") {
+    # Clustering or thinning for the final full-data search (already clustering
+    # or thinning here for consistent PRNG states between the full-data search
+    # in the `validate_search == FALSE` case and the full-data search in the
+    # cases `validate_search || cv_method == "kfold"` we are in here):
+    p_sel <- .get_refdist(refmodel, ndraws, nclusters)
+  }
+
   if (cv_method == "LOO") {
     sel_cv <- loo_varsel(
       refmodel = refmodel, method = method, nterms_max = nterms_max,
@@ -184,8 +192,6 @@ cv_varsel.refmodel <- function(
   }
 
   if (validate_search || cv_method == "kfold") {
-    # Clustering or thinning for the final full-data search:
-    p_sel <- .get_refdist(refmodel, ndraws, nclusters)
     verb_out("-----\nRunning a final search using the full dataset ...",
              verbose = verbose)
     sel <- select(method = method, p_sel = p_sel, refmodel = refmodel,
