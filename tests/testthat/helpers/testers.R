@@ -2228,13 +2228,17 @@ vsel_tester <- function(
   )
 
   # ce
-  expect_type(vs$ce, "double")
-  expect_length(vs$ce, solterms_len_expected + 1)
-  # Expected to be non-increasing for increasing model size:
-  expect_true(all(ifelse(sign(head(vs$ce, -1)) == 1,
-                         tail(vs$ce, -1) <= extra_tol * head(vs$ce, -1),
-                         tail(vs$ce, -1) <= 1 / extra_tol * head(vs$ce, -1))),
-              info = info_str)
+  if (with_cv && (valsearch_expected || cv_method_expected == "kfold")) {
+    expect_identical(vs$ce, rep(NA_real_, solterms_len_expected + 1))
+  } else {
+    expect_type(vs$ce, "double")
+    expect_length(vs$ce, solterms_len_expected + 1)
+    # Expected to be non-increasing for increasing model size:
+    expect_true(all(ifelse(sign(head(vs$ce, -1)) == 1,
+                           tail(vs$ce, -1) <= extra_tol * head(vs$ce, -1),
+                           tail(vs$ce, -1) <= 1 / extra_tol * head(vs$ce, -1))),
+                info = info_str)
+  }
 
   # pct_solution_terms_cv
   if (with_cv) {
