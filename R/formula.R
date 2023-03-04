@@ -105,9 +105,9 @@ parse_additive_terms <- function(terms) {
   if (sum(excluded) > 0) {
     stop("te terms are not supported, please use t2 instead.")
   }
-  smooth <- sapply(smooth_terms, function(et) {
+  smooth <- unname(unlist(sapply(smooth_terms, function(et) {
     terms[grep(make_function_regexp(et), terms)]
-  }) %>% unlist() %>% unname()
+  })))
   return(smooth)
 }
 
@@ -293,8 +293,7 @@ split_formula <- function(formula, return_group_terms = TRUE, data = NULL,
       group_replace,
       function(x) length(x) > 0
     ))]
-    to_replace <- group_split[match(group_replace, additive) %>%
-                                (function(x) !is.na(x))]
+    to_replace <- group_split[!is.na(match(group_replace, additive))]
     not_replace <- setdiff(group_split, to_replace)
 
     replacement <- gsub(

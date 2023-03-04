@@ -858,9 +858,12 @@ summary.vsel <- function(
     tab <- .tabulate_stats(object, stats, alpha = alpha,
                            resp_oscale = resp_oscale, ...)
   }
-  stats_table <- subset(tab, tab$size != Inf) %>%
-    dplyr::group_by(.data$statistic) %>%
-    dplyr::slice_head(n = length(object$solution_terms) + 1)
+  stats_table <- subset(tab, tab$size != Inf)
+  stats_table <- do.call(rbind,
+                         lapply(split(stats_table, stats_table$statistic),
+                                utils::head,
+                                n = length(object$solution_terms) + 1))
+  row.names(stats_table) <- NULL
 
   # Get the names of `stats_table` corresponding to all items from `type`, and
   # set up their suffices in the table to be returned:
@@ -904,6 +907,7 @@ summary.vsel <- function(
     colnames(temp) <- newnames
     arr <- cbind(arr, temp)
   }
+  row.names(arr) <- NULL
 
   # Output (and also cut `arr` at `nterms_max` (if provided)):
   if (is.null(nterms_max)) {
@@ -925,7 +929,7 @@ summary.vsel <- function(
 #' selection.
 #'
 #' @param x An object of class `vselsummary`.
-#' @param digits Number of decimal places to be reported.
+#' @param digits Passed to argument `digits` of [round()].
 #' @param ... Currently ignored.
 #'
 #' @return The output of [summary.vsel()] (invisible).
@@ -978,14 +982,12 @@ print.vselsummary <- function(x, digits = 1, ...) {
     scale_string <- ""
   }
   cat("Selection Summary", scale_string, ":\n", sep = "")
-  where <- "tidyselect" %:::% "where"
-  print(
-    x$selection %>% dplyr::mutate(dplyr::across(
-      where(is.numeric),
-      ~ round(., digits)
-    )),
-    row.names = FALSE
+  sel_dfr <- x$selection
+  sel_dfr[sapply(sel_dfr, is.numeric)] <- round(
+    sel_dfr[sapply(sel_dfr, is.numeric)],
+    digits
   )
+  print(sel_dfr, row.names = FALSE)
   return(invisible(x))
 }
 
@@ -1489,8 +1491,7 @@ get_subparams <- function(x, ...) {
 #' @noRd
 #' @export
 get_subparams.lm <- function(x, ...) {
-  return(coef(x) %>%
-           replace_population_names(...))
+  return(replace_population_names(coef(x), ...))
 }
 
 #' @noRd
@@ -1517,8 +1518,7 @@ get_subparams.glmmPQL <- function(x, ...) {
 #' @noRd
 #' @export
 get_subparams.lmerMod <- function(x, ...) {
-  population_effects <- lme4::fixef(x) %>%
-    replace_population_names(...)
+  population_effects <- replace_population_names(lme4::fixef(x), ...)
 
   group_vc_raw <- lme4::VarCorr(x)
   group_vc <- proc_VarCorr(group_vc_raw,

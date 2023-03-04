@@ -525,10 +525,6 @@ deparse_combine <- function(x, max_char = NULL) {
   out
 }
 
-#' @importFrom magrittr %>%
-#' @export
-magrittr::`%>%`
-
 # `R CMD check` throws a note when using <package>:::<function>() (for accessing
 # <function> which is not exported by its <package>). Of course, usage of
 # non-exported functions should be avoided, but sometimes there's no way around
