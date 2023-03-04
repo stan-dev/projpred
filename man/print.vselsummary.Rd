@@ -9,7 +9,7 @@
 \arguments{
 \item{x}{An object of class \code{vselsummary}.}
 
-\item{digits}{Passed to argument \code{digits} of \code{\link[=round]{round()}}.}
+\item{digits}{Passed to argument \code{digits} of \code{\link[=print.data.frame]{print.data.frame()}}.}
 
 \item{...}{Currently ignored.}
 }

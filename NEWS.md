@@ -10,6 +10,7 @@ If you read this from a place other than <https://mc-stan.org/projpred/news/inde
 * Enhanced `verbose` output. In particular, `varsel()` is now more verbose, similarly to how `cv_varsel()` has already been for a long time. The  `verbose` output for `cv_varsel()` has also been updated, with the aim to give users a better understanding of **projpred**'s internal procedures. (GitHub: #382)
 * Avoided an unnecessary final full-data performance evaluation (including costly re-projections if `refit_prj = TRUE`, which is the default for non-`datafit` reference models) in `cv_varsel()` with `validate_search = TRUE` or `cv_method = "kfold"`. (GitHub: #385)
 * Reduced dependencies. (GitHub: #388)
+* Argument `digits` of `print.vselsummary()` is not used for an internal `round()` call anymore, but passed to argument `digits` of `print.data.frame()`, meaning that it now determines the minimum number of *significant digits* to be printed. (GitHub: #389)
 
 ## Bug fixes
 

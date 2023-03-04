@@ -929,7 +929,7 @@ summary.vsel <- function(
 #' selection.
 #'
 #' @param x An object of class `vselsummary`.
-#' @param digits Passed to argument `digits` of [round()].
+#' @param digits Passed to argument `digits` of [print.data.frame()].
 #' @param ... Currently ignored.
 #'
 #' @return The output of [summary.vsel()] (invisible).
@@ -982,12 +982,7 @@ print.vselsummary <- function(x, digits = 1, ...) {
     scale_string <- ""
   }
   cat("Selection Summary", scale_string, ":\n", sep = "")
-  sel_dfr <- x$selection
-  sel_dfr[sapply(sel_dfr, is.numeric)] <- round(
-    sel_dfr[sapply(sel_dfr, is.numeric)],
-    digits
-  )
-  print(sel_dfr, row.names = FALSE)
+  print(x$selection, digits = digits, row.names = FALSE)
   return(invisible(x))
 }
 
