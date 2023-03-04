@@ -9,6 +9,7 @@ If you read this from a place other than <https://mc-stan.org/projpred/news/inde
 * Setting the new global option `projpred.extra_verbose` to `TRUE` will print out which submodel **projpred** is currently projecting onto as well as (if `method = "forward"` and `verbose = TRUE` in `varsel()` or `cv_varsel()`) which submodel has been selected at those steps of the forward search for which a percentage (of the maximum submodel size that the search is run up to) is printed. In general, however, we cannot recommend setting this new global option to `TRUE` for `cv_varsel()` with `cv_method = "LOO"` and `validate_search = TRUE` or for `cv_varsel()` with `cv_method = "kfold"` (simply due to the amount of information that will be printed, but also due to the progress bar which will not work anymore as intended). (GitHub: #363; thanks to @jtimonen)
 * Enhanced `verbose` output. In particular, `varsel()` is now more verbose, similarly to how `cv_varsel()` has already been for a long time. The  `verbose` output for `cv_varsel()` has also been updated, with the aim to give users a better understanding of **projpred**'s internal procedures. (GitHub: #382)
 * Avoided an unnecessary final full-data performance evaluation (including costly re-projections if `refit_prj = TRUE`, which is the default for non-`datafit` reference models) in `cv_varsel()` with `validate_search = TRUE` or `cv_method = "kfold"`. (GitHub: #385)
+* Reduced dependencies. (GitHub: #386)
 
 ## Bug fixes
 
