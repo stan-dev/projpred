@@ -118,7 +118,7 @@ search_L1_surrogate <- function(p_ref, d_train, family, intercept, nterms_max,
     }
   }
 
-  out$solution_terms <- order[1:nterms_max]
+  out$solution_terms <- order[seq_len(nterms_max)]
   if (any(is.na(out$solution_terms)) &&
       length(entered_variables) < nterms_max) {
     if (length(setdiff(notentered_variables,
