@@ -350,9 +350,8 @@ refmodel_tester <- function(
   # Test the general structure of the object:
   refmod_nms <- c(
     "fit", "formula", "div_minimizer", "family", "eta", "mu", "mu_offs", "dis",
-    "y", "intercept", "proj_predfun", "fetch_data", "wobs", "wsample", "offset",
-    "cvfun", "cvfits", "extract_model_data", "ref_predfun", "cvrefbuilder",
-    "y_oscale"
+    "y", "proj_predfun", "fetch_data", "wobs", "wsample", "offset", "cvfun",
+    "cvfits", "extract_model_data", "ref_predfun", "cvrefbuilder", "y_oscale"
   )
   refmod_class_expected <- "refmodel"
   if (is_datafit) {
@@ -597,13 +596,6 @@ refmodel_tester <- function(
     }
   }
   expect_identical(refmod$y, y_expected, info = info_str)
-
-  # intercept
-  expect_type(refmod$intercept, "logical")
-  expect_length(refmod$intercept, 1)
-  expect_false(is.na(refmod$intercept), info = info_str)
-  # As long as models without an intercept are not supported by projpred:
-  expect_true(refmod$intercept, info = info_str)
 
   # proj_predfun
   expect_type(refmod$proj_predfun, "closure")
@@ -1545,7 +1537,7 @@ projection_tester <- function(p,
   # submodl
   sub_trms_crr <- p$solution_terms
   if (length(sub_trms_crr) == 0) {
-    sub_trms_crr <- as.character(as.numeric(p$refmodel$intercept))
+    sub_trms_crr <- "1"
   }
   if (!from_vsel_L1_search) {
     y_nm <- as.character(p$refmodel$formula)[2]
@@ -1965,8 +1957,7 @@ vsel_tester <- function(
   } else {
     wobs_expected_crr <- vs$refmodel$wobs
   }
-  solterms_for_sub <- c(as.character(as.numeric(vs$refmodel$intercept)),
-                        vs$solution_terms)
+  solterms_for_sub <- c("1", vs$solution_terms)
   for (i in seq_along(vs$search_path$submodls)) {
     sub_trms_crr <- head(solterms_for_sub, i)
     if (length(sub_trms_crr) > 1) {
@@ -2370,8 +2361,7 @@ smmry_tester <- function(smmry, vsel_expected, nterms_max_expected = NULL,
     # size (see issue #307):
     nterms_ch <- nterms_ch - 1
   }
-  expect_identical(smmry$nterms, nterms_ch,
-                   info = info_str)
+  expect_equal(smmry$nterms, nterms_ch, info = info_str)
   expect_true(smmry$search_included %in% c("search included",
                                            "search not included"),
               info = info_str)
