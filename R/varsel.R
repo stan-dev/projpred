@@ -391,7 +391,7 @@ varsel.refmodel <- function(object, d_test = NULL, method = NULL,
 select <- function(method, p_sel, refmodel, nterms_max, penalty, verbose, opt,
                    search_terms = NULL, ...) {
   if (method == "l1") {
-    search_path <- search_L1(p_sel, refmodel, nterms_max - refmodel$intercept,
+    search_path <- search_L1(p_sel, refmodel, nterms_max - 1L,
                              penalty, opt)
     search_path$p_sel <- p_sel
     return(search_path)
@@ -467,7 +467,7 @@ parse_args_varsel <- function(refmodel, method, refit_prj, nterms_max,
   if (is.null(nterms_max)) {
     nterms_max <- 19
   }
-  nterms_max <- min(max_nv_possible, nterms_max + refmodel$intercept)
+  nterms_max <- min(max_nv_possible, nterms_max + 1L)
 
   return(nlist(method, refit_prj, nterms_max, nclusters, search_terms))
 }

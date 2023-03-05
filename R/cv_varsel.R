@@ -198,7 +198,7 @@ cv_varsel.refmodel <- function(
                   nterms_max = nterms_max, penalty = penalty, verbose = verbose,
                   opt = opt, search_terms = search_terms, ...)
     verb_out("-----", verbose = verbose)
-    ce_out <- rep(NA_real_, length(sel$solution_terms) + refmodel$intercept)
+    ce_out <- rep(NA_real_, length(sel$solution_terms) + 1L)
   } else {
     sel <- sel_cv$sel$search_path
     ce_out <- sel_cv$sel$ce
@@ -403,7 +403,7 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
   inds <- validset$inds
 
   # Initialize objects where to store the results:
-  solution_terms_mat <- matrix(nrow = n, ncol = nterms_max - refmodel$intercept)
+  solution_terms_mat <- matrix(nrow = n, ncol = nterms_max - 1L)
   loo_sub <- replicate(nterms_max, rep(NA, n), simplify = FALSE)
   mu_sub <- replicate(
     nterms_max,

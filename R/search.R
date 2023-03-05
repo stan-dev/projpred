@@ -149,7 +149,7 @@ search_L1 <- function(p_ref, refmodel, nterms_max, penalty, opt) {
   terms_ <- attr(tt, "term.labels")
   search_path <- search_L1_surrogate(
     p_ref, nlist(x, weights = refmodel$wobs), refmodel$family,
-    refmodel$intercept, ncol(x), penalty, opt
+    intercept = TRUE, ncol(x), penalty, opt
   )
   solution_terms <- collapse_contrasts_solution_path(
     refmodel$formula, colnames(x)[search_path$solution_terms],
