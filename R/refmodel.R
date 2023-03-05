@@ -990,6 +990,14 @@ init_refmodel <- function(object, data, formula, family, ref_predfun = NULL,
   data <- na.fail(data)
   stopifnot(is.data.frame(data))
   formula <- expand_formula(formula, data)
+  if (!as.logical(attr(terms(formula), "intercept"))) {
+    # Add an intercept to `formula` so that we always project onto submodels
+    # *including* an intercept (see the discussion at #96):
+    message("Adding an intercept to `formula` (which is the full-model ",
+            "formula used for the search) so that the projection is always ",
+            "performed onto submodels *including* an intercept.")
+    formula <- update(formula, . ~ . + 1)
+  }
   fml_extractions <- extract_terms_response(formula)
   response_name <- fml_extractions$response
   if (length(response_name) == 2) {
@@ -1439,18 +1447,13 @@ init_refmodel <- function(object, data, formula, family, ref_predfun = NULL,
   # Equal sample (draws) weights by default:
   wsample <- rep(1 / ndraws, ndraws)
 
-  intercept <- as.logical(attr(terms(formula), "intercept"))
-  if (!intercept) {
-    stop("Reference models without an intercept are currently not supported.")
-  }
-
   # Output ------------------------------------------------------------------
 
   refmodel <- nlist(
     fit = object, formula, div_minimizer, family, eta, mu, mu_offs, dis, y,
-    intercept, proj_predfun, fetch_data = fetch_data_wrapper, wobs = weights,
-    wsample, offset, cvfun, cvfits, extract_model_data, ref_predfun,
-    cvrefbuilder, y_oscale = y_oscale %||% y
+    proj_predfun, fetch_data = fetch_data_wrapper, wobs = weights, wsample,
+    offset, cvfun, cvfits, extract_model_data, ref_predfun, cvrefbuilder,
+    y_oscale = y_oscale %||% y
   )
   if (proper_model) {
     class(refmodel) <- "refmodel"

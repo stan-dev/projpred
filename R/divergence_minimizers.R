@@ -640,7 +640,11 @@ fit_cumul <- function(formula, data, family, weights, ...) {
                   "attempt to find suitable starting values failed",
                   sep = "|"),
             attr(fitobj, "condition")$message)) {
-    # Try to fix this automatically by specifying `start` values.
+    # Try to fix this automatically by specifying `start` values (the check for
+    # the intercept being present is just performed to show that *by
+    # construction*, we expect an intercept here; later code might be general
+    # enough to deal with a missing intercept, but that's not the point).
+    stopifnot(attr(terms(formula), "intercept") == 1)
     ncoefs <- count_terms_in_formula(formula) -
       attr(terms(formula), "intercept")
     start_coefs <- rep(0, ncoefs)

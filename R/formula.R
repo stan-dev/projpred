@@ -312,7 +312,7 @@ split_formula <- function(formula, return_group_terms = TRUE, data = NULL,
     )
   }
 
-  ## exclude the intercept if there is no intercept in the reference model
+  ## exclude the intercept if there is no intercept in `formula`
   if (!global_intercept) {
     allterms_nobias <- unlist(lapply(allterms_, function(term) {
       paste0(term, " + 0")
@@ -740,13 +740,6 @@ eval_el2 <- function(formula, data) {
 lhs <- function(x) {
   x <- as.formula(x)
   if (length(x) == 3L) update(x, . ~ 1) else NULL
-}
-
-## remove intercept from formula
-## @param formula a model formula
-## @return the updated formula without intercept
-delete.intercept <- function(formula) {
-  return(update(formula, . ~ . - 1))
 }
 
 ## collapse a list of terms including contrasts
