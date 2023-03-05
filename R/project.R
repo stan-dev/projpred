@@ -236,7 +236,9 @@ project <- function(object, nterms = NULL, solution_terms = NULL,
   }
 
   ## get the clustering or subsample
-  p_ref <- .get_refdist(refmodel, ndraws = ndraws, nclusters = nclusters)
+  if (refit_prj) {
+    p_ref <- .get_refdist(refmodel, ndraws = ndraws, nclusters = nclusters)
+  }
 
   ## project onto the submodels
   submodels <- .get_submodels(
