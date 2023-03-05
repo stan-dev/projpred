@@ -686,17 +686,10 @@ to_character_rhs <- function(rhs) {
 ## @param list_of_terms Subset of terms from formula.
 ## @param duplicates if FALSE removes linear terms if their corresponding smooth
 ##   is included. Default TRUE
-## @param add_icpt Only relevant if `length(list_of_terms) == 0`. A single
-##   logical value indicating whether to add the intercept.
-## @return number of terms
-count_terms_chosen <- function(list_of_terms, duplicates = TRUE,
-                               add_icpt = FALSE) {
+## @return number of terms (counting the intercept as a term)
+count_terms_chosen <- function(list_of_terms, duplicates = TRUE) {
   if (length(list_of_terms) == 0) {
-    if (!add_icpt) {
-      return(0)
-    } else {
-      list_of_terms <- "1"
-    }
+    list_of_terms <- "1"
   }
   formula <- make_formula(list_of_terms)
   return(

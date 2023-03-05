@@ -1536,8 +1536,8 @@ projection_tester <- function(p,
   if (is.numeric(solterms_expected)) {
     expect_length(p$solution_terms, solterms_expected)
     # Same check, but using count_terms_chosen():
-    expect_equal(count_terms_chosen(p$solution_terms, add_icpt = TRUE),
-                 solterms_expected + 1, info = info_str)
+    expect_equal(count_terms_chosen(p$solution_terms), solterms_expected + 1,
+                 info = info_str)
   } else if (is.character(solterms_expected)) {
     expect_identical(p$solution_terms, solterms_expected, info = info_str)
   }
