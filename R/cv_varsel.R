@@ -237,7 +237,7 @@ cv_varsel.refmodel <- function(
               ce = ce_out,
               solution_terms = sel$solution_terms,
               pct_solution_terms_cv,
-              nterms_all = count_terms_in_formula(refmodel$formula),
+              nterms_all = count_terms_in_formula(refmodel$formula) - 1L,
               nterms_max,
               method,
               cv_method,
@@ -403,10 +403,10 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
   inds <- validset$inds
 
   # Initialize objects where to store the results:
-  solution_terms_mat <- matrix(nrow = n, ncol = nterms_max - 1L)
-  loo_sub <- replicate(nterms_max, rep(NA, n), simplify = FALSE)
+  solution_terms_mat <- matrix(nrow = n, ncol = nterms_max)
+  loo_sub <- replicate(nterms_max + 1L, rep(NA, n), simplify = FALSE)
   mu_sub <- replicate(
-    nterms_max,
+    nterms_max + 1L,
     structure(rep(NA, nrow(mu_offs)),
               nobs_orig = attr(mu_offs, "nobs_orig"),
               class = sub("augmat", "augvec", oldClass(mu_offs), fixed = TRUE)),
@@ -419,7 +419,7 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
     # x C) needs special care.
     if (!is.null(refmodel$family$cats)) {
       mu_sub_oscale <- replicate(
-        nterms_max,
+        nterms_max + 1L,
         structure(rep(NA, n * length(refmodel$family$cats)),
                   nobs_orig = n,
                   class = "augvec"),
@@ -658,7 +658,7 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
   # Post-processing ---------------------------------------------------------
 
   # Submodel predictive performance:
-  summ_sub <- lapply(seq_len(nterms_max), function(k) {
+  summ_sub <- lapply(seq_len(nterms_max + 1L), function(k) {
     summ_k <- list(lppd = loo_sub[[k]], mu = mu_sub[[k]], wcv = validset$wcv)
     if (refmodel$family$for_latent) {
       summ_k$oscale <- list(lppd = loo_sub_oscale[[k]], mu = mu_sub_oscale[[k]],

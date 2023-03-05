@@ -2270,14 +2270,15 @@ vsel_tester <- function(
   }
 
   # nterms_max
-  nterms_max_expected <- solterms_len_expected + 1
+  nterms_max_expected <- solterms_len_expected
   if (search_trms_empty_size) {
     nterms_max_expected <- nterms_max_expected + 1
   }
   expect_equal(vs$nterms_max, nterms_max_expected, info = info_str)
 
   # nterms_all
-  expect_identical(vs$nterms_all, count_terms_in_formula(vs$refmodel$formula),
+  expect_identical(vs$nterms_all,
+                   count_terms_in_formula(vs$refmodel$formula) - 1L,
                    info = info_str)
 
   # method
@@ -2359,10 +2360,8 @@ smmry_tester <- function(smmry, vsel_expected, nterms_max_expected = NULL,
                    info = info_str)
   expect_identical(smmry$nobs_test, nrow(vsel_expected$d_test$data),
                    info = info_str)
-  # In summary.vsel(), `nterms_max` and output element `nterms` do not count the
-  # intercept (whereas `vsel_expected$nterms_max` does):
   if (is.null(nterms_max_expected)) {
-    nterms_ch <- vsel_expected$nterms_max - 1
+    nterms_ch <- vsel_expected$nterms_max
   } else {
     nterms_ch <- nterms_max_expected
   }

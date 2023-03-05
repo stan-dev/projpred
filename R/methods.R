@@ -1188,9 +1188,7 @@ suggest_size.vsel <- function(
       }
     }
   } else {
-    # Above, `object$nterms_max` includes the intercept (if present), so we need
-    # to include it here, too:
-    suggested_size <- min(res) + 1L
+    suggested_size <- min(res)
     # We don't use `na.rm = TRUE` in min() to be as cautious as possible. In
     # fact, we could refine this to remove `NA`s after the first non-`NA` value
     # (meaning that if there is no non-`NA` value, no `NA`s will be removed),
@@ -1198,7 +1196,7 @@ suggest_size.vsel <- function(
     # possible (because `NA`s after the first non-`NA` value are also strange).
   }
 
-  return(suggested_size - 1L)
+  return(suggested_size)
 }
 
 # Make the parameter name(s) for the intercept(s) adhere to the naming scheme

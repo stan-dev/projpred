@@ -1,13 +1,14 @@
 search_forward <- function(p_ref, refmodel, nterms_max, verbose = TRUE, opt,
                            search_terms, ...) {
-  iq <- ceiling(quantile(seq_len(nterms_max), 1:10 / 10))
+  nterms_max_with_icpt <- nterms_max + 1L
+  iq <- ceiling(quantile(seq_len(nterms_max_with_icpt), 1:10 / 10))
   if (is.null(search_terms)) {
     stop("Did not expect `search_terms` to be `NULL`. Please report this.")
   }
 
   chosen <- character()
   total_terms <- count_terms_chosen(search_terms)
-  stop_search <- min(total_terms, nterms_max)
+  stop_search <- min(total_terms, nterms_max_with_icpt)
   submodls <- c()
 
   for (size in seq_len(stop_search)) {
