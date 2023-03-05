@@ -643,8 +643,7 @@ select_possible_terms_size <- function(chosen, terms, size) {
     linear <- terms_new$individual_terms
     dups <- setdiff(linear[!is.na(match(linear, additive))], chosen)
 
-    size_crr <- count_terms_chosen(c(chosen, x), duplicates = TRUE) -
-      length(dups)
+    size_crr <- count_terms_chosen(c(chosen, x)) - length(dups)
     if (size_crr == size) {
       if (length(dups) > 0) {
         tt <- terms(formula(paste("~", x, "-", paste(dups, collapse = "-"))))
