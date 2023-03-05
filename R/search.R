@@ -134,7 +134,7 @@ search_L1_surrogate <- function(p_ref, d_train, family, intercept, nterms_max,
 search_L1 <- function(p_ref, refmodel, nterms_max, penalty, opt) {
   if (nterms_max == 0) {
     stop("L1 search cannot be used for an empty (i.e. intercept-only) ",
-         "reference model.")
+         "full-model formula.")
   }
   # TODO: In the following model.matrix() call, allow user-specified contrasts
   # to be passed to argument `contrasts.arg`. The `contrasts.arg` default
