@@ -184,10 +184,6 @@ project <- function(object, nterms = NULL, solution_terms = NULL,
         "1"
       )
     }
-    if (length(solution_terms) > length(vars)) {
-      stop("Argument 'solution_terms' contains more terms than the number of ",
-           "terms in the reference model.")
-    }
 
     if (!all(solution_terms %in% vars)) {
       warning(

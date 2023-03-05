@@ -38,18 +38,14 @@ test_that("invalid `solution_terms` warns or fails", {
       info = tstsetup
     )
 
-    # Invalid length:
-    expect_error(
-      do.call(project, c(
-        list(object = refmods[[args_prj_i$tstsetup_ref]],
-             solution_terms = rep_len(args_prj_i$solution_terms,
-                                      length.out = 1e4)),
-        excl_nonargs(args_prj_i, nms_excl_add = "solution_terms")
-      )),
-      paste("^Argument 'solution_terms' contains more terms than the number of",
-            "terms in the reference model\\.$"),
-      info = tstsetup
-    )
+    # Repeating solution terms:
+    p_long <- do.call(project, c(
+      list(object = refmods[[args_prj_i$tstsetup_ref]],
+           solution_terms = rep_len(args_prj_i$solution_terms,
+                                    length.out = 1e4)),
+      excl_nonargs(args_prj_i, nms_excl_add = "solution_terms")
+    ))
+    expect_identical(p_long, prjs[[tstsetup]])
 
     # Invalid type:
     for (solterms_crr in list(2, 1:3, list(solterms_x, solterms_x))) {
