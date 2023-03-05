@@ -7,10 +7,9 @@ search_forward <- function(p_ref, refmodel, nterms_max, verbose = TRUE, opt,
   }
 
   chosen <- character()
-  stop_search <- nterms_max_with_icpt
   submodls <- c()
 
-  for (size in seq_len(stop_search)) {
+  for (size in seq_len(nterms_max_with_icpt)) {
     cands <- select_possible_terms_size(chosen, search_terms, size = size)
     if (is.null(cands))
       next
