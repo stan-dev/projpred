@@ -191,6 +191,20 @@ search_L1 <- function(p_ref, refmodel, nterms_max, penalty, opt) {
     class(sub) <- "subfit"
     return(list(sub))
   })
-  return(list(solution_terms = solution_terms[seq_len(nterms_max)],
-              submodls = submodls[seq_len(nterms_max + 1)]))
+  solution_terms <- solution_terms[seq_len(nterms_max)]
+  submodls <- submodls[seq_len(nterms_max + 1)]
+
+  # Check for interaction terms being selected before all involved main effects
+  # have been selected (and throw a warning if that is the case):
+  ia_sel_bef_main <- sapply(grep(":", solution_terms), function(idx_ia) {
+    term_split <- strsplit(solution_terms[idx_ia], ":")[[1]]
+    !all(term_split %in% utils::head(solution_terms, idx_ia - 1L))
+  })
+  if (any(ia_sel_bef_main)) {
+    warning("An interaction has been selected before all involved main ",
+            "effects have been selected. This is a known deficiency of L1 ",
+            "search. Use forward search to avoid this.")
+  }
+
+  return(nlist(solution_terms, submodls))
 }
