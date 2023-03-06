@@ -97,13 +97,13 @@ extract_response <- function(response) {
 ## @param terms list of terms to parse
 ## @return a vector of smooth terms
 parse_additive_terms <- function(terms) {
-  excluded_terms <- c("te")
+  excluded_terms <- c("te", "ti")
   smooth_terms <- c("s", "t2")
   excluded <- unlist(sapply(excluded_terms, function(et) {
     grep(make_function_regexp(et), terms)
   }))
   if (sum(excluded) > 0) {
-    stop("te terms are not supported, please use t2 instead.")
+    stop("te() and ti() terms are not supported, please use t2() instead.")
   }
   smooth <- unname(unlist(sapply(smooth_terms, function(et) {
     terms[grep(make_function_regexp(et), terms)]
