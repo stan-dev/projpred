@@ -365,7 +365,7 @@ varsel.refmodel <- function(object, d_test = NULL, method = NULL,
     solution_terms = search_path$solution_terms,
     ce = sapply(submodels, "[[", "ce"),
     nterms_max,
-    nterms_all = count_terms_in_formula(refmodel$formula),
+    nterms_all = count_terms_in_formula(refmodel$formula) - 1L,
     method = method,
     cv_method = NULL,
     validate_search = NULL,
@@ -391,8 +391,7 @@ varsel.refmodel <- function(object, d_test = NULL, method = NULL,
 select <- function(method, p_sel, refmodel, nterms_max, penalty, verbose, opt,
                    search_terms = NULL, ...) {
   if (method == "l1") {
-    search_path <- search_L1(p_sel, refmodel, nterms_max - refmodel$intercept,
-                             penalty, opt)
+    search_path <- search_L1(p_sel, refmodel, nterms_max, penalty, opt)
     search_path$p_sel <- p_sel
     return(search_path)
   } else if (method == "forward") {
@@ -463,11 +462,11 @@ parse_args_varsel <- function(refmodel, method, refit_prj, nterms_max,
   search_terms_unq <- unique(unlist(
     strsplit(search_terms, split = "+", fixed = TRUE)
   ))
-  max_nv_possible <- count_terms_chosen(search_terms_unq, duplicates = TRUE)
+  max_nv_possible <- count_terms_chosen(search_terms_unq) - 1L
   if (is.null(nterms_max)) {
     nterms_max <- 19
   }
-  nterms_max <- min(max_nv_possible, nterms_max + refmodel$intercept)
+  nterms_max <- min(max_nv_possible, nterms_max)
 
   return(nlist(method, refit_prj, nterms_max, nclusters, search_terms))
 }

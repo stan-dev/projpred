@@ -314,12 +314,14 @@ test_that("`stat` works", {
       suggsize <- suppressWarnings(
         suggest_size(vss[[tstsetup_vs]], stat = stat_crr, seed = suggsize_seed)
       )
-      expect_true(is.vector(suggsize, "numeric"),
-                  info = paste(tstsetup, stat_crr, sep = "__"))
       expect_length(suggsize, 1)
       if (!is.na(suggsize)) {
+        expect_true(is.vector(suggsize, "numeric"),
+                    info = paste(tstsetup, stat_crr, sep = "__"))
         expect_true(suggsize >= 0, info = paste(tstsetup, stat_crr, sep = "__"))
       } else {
+        expect_identical(suggsize, NA,
+                         info = paste(tstsetup, stat_crr, sep = "__"))
         expect_true(
           vss[[tstsetup_vs]]$nterms_max < vss[[tstsetup_vs]]$nterms_all,
           info = paste(tstsetup, stat_crr, sep = "__")

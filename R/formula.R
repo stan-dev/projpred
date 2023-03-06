@@ -312,7 +312,7 @@ split_formula <- function(formula, return_group_terms = TRUE, data = NULL,
     )
   }
 
-  ## exclude the intercept if there is no intercept in the reference model
+  ## exclude the intercept if there is no intercept in `formula`
   if (!global_intercept) {
     allterms_nobias <- unlist(lapply(allterms_, function(term) {
       paste0(term, " + 0")
@@ -643,8 +643,7 @@ select_possible_terms_size <- function(chosen, terms, size) {
     linear <- terms_new$individual_terms
     dups <- setdiff(linear[!is.na(match(linear, additive))], chosen)
 
-    size_crr <- count_terms_chosen(c(chosen, x), duplicates = TRUE) -
-      length(dups)
+    size_crr <- count_terms_chosen(c(chosen, x)) - length(dups)
     if (size_crr == size) {
       if (length(dups) > 0) {
         tt <- terms(formula(paste("~", x, "-", paste(dups, collapse = "-"))))
@@ -687,17 +686,10 @@ to_character_rhs <- function(rhs) {
 ## @param list_of_terms Subset of terms from formula.
 ## @param duplicates if FALSE removes linear terms if their corresponding smooth
 ##   is included. Default TRUE
-## @param add_icpt Only relevant if `length(list_of_terms) == 0`. A single
-##   logical value indicating whether to add the intercept.
-## @return number of terms
-count_terms_chosen <- function(list_of_terms, duplicates = TRUE,
-                               add_icpt = FALSE) {
+## @return number of terms (counting the intercept as a term)
+count_terms_chosen <- function(list_of_terms, duplicates = TRUE) {
   if (length(list_of_terms) == 0) {
-    if (!add_icpt) {
-      return(0)
-    } else {
-      list_of_terms <- "1"
-    }
+    list_of_terms <- "1"
   }
   formula <- make_formula(list_of_terms)
   return(
@@ -748,13 +740,6 @@ eval_el2 <- function(formula, data) {
 lhs <- function(x) {
   x <- as.formula(x)
   if (length(x) == 3L) update(x, . ~ 1) else NULL
-}
-
-## remove intercept from formula
-## @param formula a model formula
-## @return the updated formula without intercept
-delete.intercept <- function(formula) {
-  return(update(formula, . ~ . - 1))
 }
 
 ## collapse a list of terms including contrasts

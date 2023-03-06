@@ -1,16 +1,15 @@
 search_forward <- function(p_ref, refmodel, nterms_max, verbose = TRUE, opt,
                            search_terms, ...) {
-  iq <- ceiling(quantile(seq_len(nterms_max), 1:10 / 10))
+  nterms_max_with_icpt <- nterms_max + 1L
+  iq <- ceiling(quantile(seq_len(nterms_max_with_icpt), 1:10 / 10))
   if (is.null(search_terms)) {
     stop("Did not expect `search_terms` to be `NULL`. Please report this.")
   }
 
   chosen <- character()
-  total_terms <- count_terms_chosen(search_terms)
-  stop_search <- min(total_terms, nterms_max)
   submodls <- c()
 
-  for (size in seq_len(stop_search)) {
+  for (size in seq_len(nterms_max_with_icpt)) {
     cands <- select_possible_terms_size(chosen, search_terms, size = size)
     if (is.null(cands))
       next
@@ -149,7 +148,7 @@ search_L1 <- function(p_ref, refmodel, nterms_max, penalty, opt) {
   terms_ <- attr(tt, "term.labels")
   search_path <- search_L1_surrogate(
     p_ref, nlist(x, weights = refmodel$wobs), refmodel$family,
-    refmodel$intercept, ncol(x), penalty, opt
+    intercept = TRUE, ncol(x), penalty, opt
   )
   solution_terms <- collapse_contrasts_solution_path(
     refmodel$formula, colnames(x)[search_path$solution_terms],

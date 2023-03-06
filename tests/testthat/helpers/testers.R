@@ -350,9 +350,8 @@ refmodel_tester <- function(
   # Test the general structure of the object:
   refmod_nms <- c(
     "fit", "formula", "div_minimizer", "family", "eta", "mu", "mu_offs", "dis",
-    "y", "intercept", "proj_predfun", "fetch_data", "wobs", "wsample", "offset",
-    "cvfun", "cvfits", "extract_model_data", "ref_predfun", "cvrefbuilder",
-    "y_oscale"
+    "y", "proj_predfun", "fetch_data", "wobs", "wsample", "offset", "cvfun",
+    "cvfits", "extract_model_data", "ref_predfun", "cvrefbuilder", "y_oscale"
   )
   refmod_class_expected <- "refmodel"
   if (is_datafit) {
@@ -597,13 +596,6 @@ refmodel_tester <- function(
     }
   }
   expect_identical(refmod$y, y_expected, info = info_str)
-
-  # intercept
-  expect_type(refmod$intercept, "logical")
-  expect_length(refmod$intercept, 1)
-  expect_false(is.na(refmod$intercept), info = info_str)
-  # As long as models without an intercept are not supported by projpred:
-  expect_true(refmod$intercept, info = info_str)
 
   # proj_predfun
   expect_type(refmod$proj_predfun, "closure")
@@ -1536,8 +1528,8 @@ projection_tester <- function(p,
   if (is.numeric(solterms_expected)) {
     expect_length(p$solution_terms, solterms_expected)
     # Same check, but using count_terms_chosen():
-    expect_equal(count_terms_chosen(p$solution_terms, add_icpt = TRUE),
-                 solterms_expected + 1, info = info_str)
+    expect_equal(count_terms_chosen(p$solution_terms), solterms_expected + 1,
+                 info = info_str)
   } else if (is.character(solterms_expected)) {
     expect_identical(p$solution_terms, solterms_expected, info = info_str)
   }
@@ -1545,7 +1537,7 @@ projection_tester <- function(p,
   # submodl
   sub_trms_crr <- p$solution_terms
   if (length(sub_trms_crr) == 0) {
-    sub_trms_crr <- as.character(as.numeric(p$refmodel$intercept))
+    sub_trms_crr <- "1"
   }
   if (!from_vsel_L1_search) {
     y_nm <- as.character(p$refmodel$formula)[2]
@@ -1965,8 +1957,7 @@ vsel_tester <- function(
   } else {
     wobs_expected_crr <- vs$refmodel$wobs
   }
-  solterms_for_sub <- c(as.character(as.numeric(vs$refmodel$intercept)),
-                        vs$solution_terms)
+  solterms_for_sub <- c("1", vs$solution_terms)
   for (i in seq_along(vs$search_path$submodls)) {
     sub_trms_crr <- head(solterms_for_sub, i)
     if (length(sub_trms_crr) > 1) {
@@ -2270,14 +2261,15 @@ vsel_tester <- function(
   }
 
   # nterms_max
-  nterms_max_expected <- solterms_len_expected + 1
+  nterms_max_expected <- solterms_len_expected
   if (search_trms_empty_size) {
     nterms_max_expected <- nterms_max_expected + 1
   }
   expect_equal(vs$nterms_max, nterms_max_expected, info = info_str)
 
   # nterms_all
-  expect_identical(vs$nterms_all, count_terms_in_formula(vs$refmodel$formula),
+  expect_identical(vs$nterms_all,
+                   count_terms_in_formula(vs$refmodel$formula) - 1L,
                    info = info_str)
 
   # method
@@ -2359,10 +2351,8 @@ smmry_tester <- function(smmry, vsel_expected, nterms_max_expected = NULL,
                    info = info_str)
   expect_identical(smmry$nobs_test, nrow(vsel_expected$d_test$data),
                    info = info_str)
-  # In summary.vsel(), `nterms_max` and output element `nterms` do not count the
-  # intercept (whereas `vsel_expected$nterms_max` does):
   if (is.null(nterms_max_expected)) {
-    nterms_ch <- vsel_expected$nterms_max - 1
+    nterms_ch <- vsel_expected$nterms_max
   } else {
     nterms_ch <- nterms_max_expected
   }
@@ -2371,8 +2361,7 @@ smmry_tester <- function(smmry, vsel_expected, nterms_max_expected = NULL,
     # size (see issue #307):
     nterms_ch <- nterms_ch - 1
   }
-  expect_identical(smmry$nterms, nterms_ch,
-                   info = info_str)
+  expect_equal(smmry$nterms, nterms_ch, info = info_str)
   expect_true(smmry$search_included %in% c("search included",
                                            "search not included"),
               info = info_str)

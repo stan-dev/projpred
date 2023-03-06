@@ -149,8 +149,7 @@ proj_helper <- function(object, newdata, offsetnew, weightsnew, onesub_fun,
       }
       projs <- Filter(
         function(x) {
-          count_terms_chosen(x$solution_terms, add_icpt = TRUE) %in%
-            (filter_nterms + 1)
+          count_terms_chosen(x$solution_terms) %in% (filter_nterms + 1)
         },
         object
       )
@@ -206,7 +205,7 @@ proj_helper <- function(object, newdata, offsetnew, weightsnew, onesub_fun,
   }
 
   names(projs) <- sapply(projs, function(proj) {
-    count_terms_chosen(proj$solution_terms, add_icpt = TRUE)
+    count_terms_chosen(proj$solution_terms)
   })
 
   preds <- lapply(projs, function(proj) {
@@ -1188,9 +1187,7 @@ suggest_size.vsel <- function(
       }
     }
   } else {
-    # Above, `object$nterms_max` includes the intercept (if present), so we need
-    # to include it here, too:
-    suggested_size <- min(res) + object$refmodel$intercept
+    suggested_size <- min(res)
     # We don't use `na.rm = TRUE` in min() to be as cautious as possible. In
     # fact, we could refine this to remove `NA`s after the first non-`NA` value
     # (meaning that if there is no non-`NA` value, no `NA`s will be removed),
@@ -1198,7 +1195,7 @@ suggest_size.vsel <- function(
     # possible (because `NA`s after the first non-`NA` value are also strange).
   }
 
-  return(suggested_size - object$refmodel$intercept)
+  return(suggested_size)
 }
 
 # Make the parameter name(s) for the intercept(s) adhere to the naming scheme
