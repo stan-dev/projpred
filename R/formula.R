@@ -106,7 +106,7 @@ parse_additive_terms <- function(terms) {
     stop("te() and ti() terms are not supported, please use t2() instead.")
   }
   smooth <- unname(unlist(sapply(smooth_terms, function(et) {
-    terms[grep(make_function_regexp(et), terms)]
+    grep(make_function_regexp(et), terms, value = TRUE)
   })))
   return(smooth)
 }
