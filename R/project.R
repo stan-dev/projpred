@@ -184,10 +184,6 @@ project <- function(object, nterms = NULL, solution_terms = NULL,
         "1"
       )
     }
-    if (length(solution_terms) > length(vars)) {
-      stop("Argument 'solution_terms' contains more terms than the number of ",
-           "terms in the reference model.")
-    }
 
     if (!all(solution_terms %in% vars)) {
       warning(
@@ -206,7 +202,7 @@ project <- function(object, nterms = NULL, solution_terms = NULL,
     nterms <- length(solution_terms)
   } else {
     ## by default take the variable ordering from the selection
-    solution_terms <- object$solution_terms
+    solution_terms <- solution_terms(object)
     if (is.null(nterms)) {
       sgg_size <- try(suggest_size(object, warnings = FALSE), silent = TRUE)
       if (!inherits(sgg_size, "try-error") && !is.null(sgg_size) &&
@@ -236,7 +232,9 @@ project <- function(object, nterms = NULL, solution_terms = NULL,
   }
 
   ## get the clustering or subsample
-  p_ref <- .get_refdist(refmodel, ndraws = ndraws, nclusters = nclusters)
+  if (refit_prj) {
+    p_ref <- .get_refdist(refmodel, ndraws = ndraws, nclusters = nclusters)
+  }
 
   ## project onto the submodels
   submodels <- .get_submodels(
