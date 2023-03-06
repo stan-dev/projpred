@@ -11,6 +11,7 @@ If you read this from a place other than <https://mc-stan.org/projpred/news/inde
 * Avoided an unnecessary final full-data performance evaluation (including costly re-projections if `refit_prj = TRUE`, which is the default for non-`datafit` reference models) in `cv_varsel()` with `validate_search = TRUE` or `cv_method = "kfold"`. (GitHub: #385)
 * Reduced dependencies. (GitHub: #388)
 * Argument `digits` of `print.vselsummary()` is not used for an internal `round()` call anymore, but passed to argument `digits` of `print.data.frame()`, meaning that it now determines the minimum number of *significant digits* to be printed. (GitHub: #389)
+* Although bad practice (in general), a reference model lacking an intercept can now be used within **projpred**. However, it will always be projected onto submodels which *include* an intercept. The reason is that even if the true intercept in the reference model is zero, this does not need to hold for the submodels. An informational message mentioning the projection onto intercept-including submodels is thrown when **projpred** encounters a reference model lacking an intercept. (GitHub: #96, #391)
 
 ## Bug fixes
 

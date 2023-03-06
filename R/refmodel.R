@@ -43,12 +43,13 @@
 #'   CV.
 #' @param formula The full formula to use for the search procedure. For custom
 #'   reference models, this does not necessarily coincide with the reference
-#'   model's formula. For general information on formulas in \R, see
-#'   [`formula`]. For multilevel formulas, see also package \pkg{lme4} (in
-#'   particular, functions [lme4::lmer()] and [lme4::glmer()]). For additive
+#'   model's formula. For general information about formulas in \R, see
+#'   [`formula`]. For information about possible right-hand side (i.e.,
+#'   predictor) terms in `formula` here, see the main vignette and section
+#'   "Formula terms" below. For multilevel formulas, see also package \pkg{lme4}
+#'   (in particular, functions [lme4::lmer()] and [lme4::glmer()]). For additive
 #'   formulas, see also packages \pkg{mgcv} (in particular, function
-#'   [mgcv::gam()]) and \pkg{gamm4} (in particular, function [gamm4::gamm4()])
-#'   as well as the notes in section "Formula terms" below.
+#'   [mgcv::gam()]) and \pkg{gamm4} (in particular, function [gamm4::gamm4()]).
 #' @param ref_predfun Prediction function for the linear predictor of the
 #'   reference model, including offsets (if existing). See also section
 #'   "Arguments `ref_predfun`, `proj_predfun`, and `div_minimizer`" below. If
@@ -119,6 +120,12 @@
 #' @details
 #'
 #' # Formula terms
+#'
+#' Although bad practice (in general), a reference model lacking an intercept
+#' can be used within \pkg{projpred}. However, it will always be projected onto
+#' submodels which *include* an intercept. The reason is that even if the true
+#' intercept in the reference model is zero, this does not need to hold for the
+#' submodels.
 #'
 #' For additive models (still an experimental feature), only [mgcv::s()] and
 #' [mgcv::t2()] are currently supported as smooth terms. Furthermore, these need
@@ -993,9 +1000,9 @@ init_refmodel <- function(object, data, formula, family, ref_predfun = NULL,
   if (!as.logical(attr(terms(formula), "intercept"))) {
     # Add an intercept to `formula` so that we always project onto submodels
     # *including* an intercept (see the discussion at #96):
-    message("Adding an intercept to `formula` (which is the full-model ",
-            "formula used for the search) so that the projection is always ",
-            "performed onto submodels *including* an intercept.")
+    message("Adding an intercept to `formula` (the full-model formula used ",
+            "for the search) so that the projection is always performed onto ",
+            "submodels *including* an intercept.")
     formula <- update(formula, . ~ . + 1)
   }
   fml_extractions <- extract_terms_response(formula)
