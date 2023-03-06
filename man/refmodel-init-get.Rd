@@ -54,12 +54,13 @@ arguments passed to \code{\link[=extend_family]{extend_family()}} (apart from \c
 
 \item{formula}{The full formula to use for the search procedure. For custom
 reference models, this does not necessarily coincide with the reference
-model's formula. For general information on formulas in \R, see
-\code{\link{formula}}. For multilevel formulas, see also package \pkg{lme4} (in
-particular, functions \code{\link[lme4:lmer]{lme4::lmer()}} and \code{\link[lme4:glmer]{lme4::glmer()}}). For additive
+model's formula. For general information about formulas in \R, see
+\code{\link{formula}}. For information about possible right-hand side (i.e.,
+predictor) terms in \code{formula} here, see the main vignette and section
+"Formula terms" below. For multilevel formulas, see also package \pkg{lme4}
+(in particular, functions \code{\link[lme4:lmer]{lme4::lmer()}} and \code{\link[lme4:glmer]{lme4::glmer()}}). For additive
 formulas, see also packages \pkg{mgcv} (in particular, function
-\code{\link[mgcv:gam]{mgcv::gam()}}) and \pkg{gamm4} (in particular, function \code{\link[gamm4:gamm4]{gamm4::gamm4()}})
-as well as the notes in section "Formula terms" below.}
+\code{\link[mgcv:gam]{mgcv::gam()}}) and \pkg{gamm4} (in particular, function \code{\link[gamm4:gamm4]{gamm4::gamm4()}}).}
 
 \item{family}{An object of class \code{family} representing the observation model
 (i.e., the distributional family for the response) of the \emph{submodels}.

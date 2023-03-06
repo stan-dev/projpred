@@ -43,12 +43,13 @@
 #'   CV.
 #' @param formula The full formula to use for the search procedure. For custom
 #'   reference models, this does not necessarily coincide with the reference
-#'   model's formula. For general information on formulas in \R, see
-#'   [`formula`]. For multilevel formulas, see also package \pkg{lme4} (in
-#'   particular, functions [lme4::lmer()] and [lme4::glmer()]). For additive
+#'   model's formula. For general information about formulas in \R, see
+#'   [`formula`]. For information about possible right-hand side (i.e.,
+#'   predictor) terms in `formula` here, see the main vignette and section
+#'   "Formula terms" below. For multilevel formulas, see also package \pkg{lme4}
+#'   (in particular, functions [lme4::lmer()] and [lme4::glmer()]). For additive
 #'   formulas, see also packages \pkg{mgcv} (in particular, function
-#'   [mgcv::gam()]) and \pkg{gamm4} (in particular, function [gamm4::gamm4()])
-#'   as well as the notes in section "Formula terms" below.
+#'   [mgcv::gam()]) and \pkg{gamm4} (in particular, function [gamm4::gamm4()]).
 #' @param ref_predfun Prediction function for the linear predictor of the
 #'   reference model, including offsets (if existing). See also section
 #'   "Arguments `ref_predfun`, `proj_predfun`, and `div_minimizer`" below. If
