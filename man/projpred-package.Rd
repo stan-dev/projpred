@@ -57,7 +57,7 @@ families.
 }
 
 Setting the global option \code{projpred.extra_verbose} to \code{TRUE} will print out
-which submodel \strong{projpred} is currently projecting onto as well as (if
+which submodel \pkg{projpred} is currently projecting onto as well as (if
 \code{method = "forward"} and \code{verbose = TRUE} in \code{varsel()} or \code{cv_varsel()})
 which submodel has been selected at those steps of the forward search for
 which a percentage (of the maximum submodel size that the search is run up

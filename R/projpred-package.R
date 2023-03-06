@@ -56,7 +56,7 @@
 #' * Submodel with multilevel and additive terms: [gamm4::gamm4()].
 #'
 #' Setting the global option `projpred.extra_verbose` to `TRUE` will print out
-#' which submodel **projpred** is currently projecting onto as well as (if
+#' which submodel \pkg{projpred} is currently projecting onto as well as (if
 #' `method = "forward"` and `verbose = TRUE` in `varsel()` or `cv_varsel()`)
 #' which submodel has been selected at those steps of the forward search for
 #' which a percentage (of the maximum submodel size that the search is run up
