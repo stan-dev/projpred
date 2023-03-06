@@ -175,10 +175,11 @@ Some arguments are for \eqn{K}-fold cross-validation (\eqn{K}-fold CV) only;
 see \code{\link[=cv_varsel]{cv_varsel()}} for the use of \eqn{K}-fold CV in \pkg{projpred}.
 }
 \section{Formula terms}{
-A reference model lacking an intercept can be used, but it will always be
-projected onto submodels which \emph{include} an intercept. The reason is that
-even if the true intercept in the reference model is zero, this does not need
-to hold for the submodels.
+Although bad practice (in general), a reference model lacking an intercept
+can be used within \pkg{projpred}. However, it will always be projected onto
+submodels which \emph{include} an intercept. The reason is that even if the true
+intercept in the reference model is zero, this does not need to hold for the
+submodels.
 
 For additive models (still an experimental feature), only \code{\link[mgcv:s]{mgcv::s()}} and
 \code{\link[mgcv:t2]{mgcv::t2()}} are currently supported as smooth terms. Furthermore, these need
