@@ -756,8 +756,8 @@ plot.vsel <- function(
 #'   whether the baseline is the reference model or the best submodel found (in
 #'   terms of `stats[1]`), respectively.
 #' @param resp_oscale Only relevant for the latent projection. A single logical
-#'   value indicating whether to calculate the performance statistics on
-#'   response scale (`TRUE`) or on latent scale (`FALSE`).
+#'   value indicating whether to calculate the performance statistics on the
+#'   original response scale (`TRUE`) or on latent scale (`FALSE`).
 #' @param ... Arguments passed to the internal function which is used for
 #'   bootstrapping (if applicable; see argument `stats`). Currently, relevant
 #'   arguments are `B` (the number of bootstrap samples, defaulting to `2000`)

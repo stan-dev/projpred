@@ -70,8 +70,8 @@ whether the baseline is the reference model or the best submodel found (in
 terms of \code{stats[1]}), respectively.}
 
 \item{resp_oscale}{Only relevant for the latent projection. A single logical
-value indicating whether to calculate the performance statistics on
-response scale (\code{TRUE}) or on latent scale (\code{FALSE}).}
+value indicating whether to calculate the performance statistics on the
+original response scale (\code{TRUE}) or on latent scale (\code{FALSE}).}
 
 \item{...}{Arguments passed to the internal function which is used for
 bootstrapping (if applicable; see argument \code{stats}). Currently, relevant
