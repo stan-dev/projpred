@@ -97,17 +97,21 @@ extract_response <- function(response) {
 ## @param terms list of terms to parse
 ## @return a vector of smooth terms
 parse_additive_terms <- function(terms) {
-  excluded_terms <- c("te")
+  excluded_terms <- c("te", "ti")
   smooth_terms <- c("s", "t2")
-  excluded <- unlist(sapply(excluded_terms, function(et) {
-    grep(make_function_regexp(et), terms)
-  }))
-  if (sum(excluded) > 0) {
-    stop("te terms are not supported, please use t2 instead.")
+  excluded <- sapply(excluded_terms, function(et) {
+    any(grepl(make_function_regexp(et), terms))
+  })
+  if (any(excluded)) {
+    stop("te() and ti() terms are not supported, please use t2() instead.")
   }
-  smooth <- unname(unlist(sapply(smooth_terms, function(et) {
-    terms[grep(make_function_regexp(et), terms)]
-  })))
+  smooth <- unlist(lapply(smooth_terms, function(st) {
+    grep(make_function_regexp(st), terms, value = TRUE)
+  }))
+  if (any(grepl("\\(.+,.+=.+\\)", smooth))) {
+    stop("In s() and t2() terms, arguments other than predictors are not ",
+         "allowed.")
+  }
   return(smooth)
 }
 
