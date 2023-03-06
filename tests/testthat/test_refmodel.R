@@ -130,12 +130,12 @@ test_that("offsets specified via argument `offset` work", {
     tolerance = 1e-12,
     info = "rstanarm.glm.gauss.stdformul.with_wobs.with_offs"
   )
-  nms_compare <- c("eta", "mu", "mu_offs", "dis", "y", "wobs", "wsample",
-                   "offset", "y_oscale")
+  nms_compare <- c("div_minimizer", "eta", "mu", "mu_offs", "dis", "y",
+                   "proj_predfun", "wobs", "wsample", "offset", "y_oscale")
   expect_equal(
     refmod_offs_arg[nms_compare],
     refmods$rstanarm.glm.gauss.stdformul.with_wobs.with_offs[nms_compare],
-    tolerance = 1e-12,
+    tolerance = .Machine$double.eps,
     info = "rstanarm.glm.gauss.stdformul.with_wobs.with_offs"
   )
 })
