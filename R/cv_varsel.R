@@ -302,8 +302,8 @@ parse_args_cv_varsel <- function(refmodel, cv_method, K, validate_search) {
 # all other arguments, see the documentation of cv_varsel().
 loo_varsel <- function(refmodel, method, nterms_max, ndraws,
                        nclusters, ndraws_pred, nclusters_pred, refit_prj,
-                       penalty, verbose, opt, nloo = NULL,
-                       validate_search = TRUE, search_terms, ...) {
+                       penalty, verbose, opt, nloo, validate_search,
+                       search_terms, ...) {
   # Pre-processing ----------------------------------------------------------
 
   eta <- refmodel$eta
