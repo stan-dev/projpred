@@ -1226,11 +1226,45 @@ replace_population_names <- function(population_effects, nm_scheme) {
   return(population_effects)
 }
 
+# Helper function for removing underscores in response category names (as done
+# by brms) contained in a special character vector. Unfortunately, for these
+# special character vectors, this replacement doesn't seem to be feasible with
+# regular expressions, so we need to iterate over the elements of such a special
+# character vector as well as over the category names and perform the
+# replacement manually:
+rm_underscore <- function(nms, nms_lats, preceding_char = ".") {
+  preceding_char_esc <- gsub("\\)", "\\\\)",
+                             gsub("\\(", "\\\\(",
+                                  gsub("\\.", "\\\\.", preceding_char)))
+  unlist(lapply(strsplit(nms, "~"), function(nm_split) {
+    paste(unlist(lapply(nm_split, function(nm_split_part) {
+      for (nm_lat in grep("_", nms_lats, value = TRUE)) {
+        nm_lat_esc <- gsub("\\)", "\\\\)",
+                           gsub("\\(", "\\\\(",
+                                gsub("\\.", "\\\\.", nm_lat)))
+        nm_lat_regex <- paste0(preceding_char_esc, "(", nm_lat_esc, ")")
+        if (grepl(nm_lat_regex, nm_split_part)) {
+          nm_split_part <- paste0(sub(nm_lat_regex, "", nm_split_part),
+                                  preceding_char, gsub("_", "", nm_lat))
+        }
+      }
+      return(nm_split_part)
+    })), collapse = "~")
+  }))
+}
+
 # Make the parameter names for variance components adhere to the naming scheme
 # `nm_scheme`:
 mknms_VarCorr <- function(nms, nms_lats = NULL, nm_scheme, coef_nms) {
   if (!is.null(nms_lats)) {
     stopifnot(nm_scheme == "brms")
+    # Remove underscores in the response category names (as done by brms):
+    if (any(grepl("_", nms_lats))) {
+      nms <- rm_underscore(nms, nms_lats = nms_lats)
+      coef_nms <- lapply(coef_nms, rm_underscore, nms_lats = nms_lats,
+                         preceding_char = "")
+      nms_lats <- gsub("_", "", nms_lats)
+    }
   }
   grp_nms <- names(coef_nms)
   # We will have to search for the substrings "\\sd\\." and "\\cor\\.", so make
@@ -1305,6 +1339,13 @@ mknms_VarCorr <- function(nms, nms_lats = NULL, nm_scheme, coef_nms) {
 mknms_ranef <- function(nms, nms_lats = NULL, nm_scheme, coef_nms) {
   if (!is.null(nms_lats)) {
     stopifnot(nm_scheme == "brms")
+    # Remove underscores in the response category names (as done by brms):
+    if (any(grepl("_", nms_lats))) {
+      nms <- rm_underscore(nms, nms_lats = nms_lats)
+      coef_nms <- lapply(coef_nms, rm_underscore, nms_lats = nms_lats,
+                         preceding_char = "")
+      nms_lats <- gsub("_", "", nms_lats)
+    }
   }
   if (nm_scheme == "brms") {
     nms <- mknms_icpt(nms, nm_scheme = nm_scheme)
@@ -1375,7 +1416,7 @@ mknms_categ <- function(dimnms, nm_scheme) {
   # rstanarm currently doesn't support categorical models:
   stopifnot(nm_scheme == "brms")
   nmsdf <- expand.grid(dimnms, stringsAsFactors = FALSE)
-  nmsdf[, 1] <- paste0("mu", nmsdf[, 1])
+  nmsdf[, 1] <- paste0("mu", gsub("_", "", nmsdf[, 1]))
   nmsdf[, 2] <- mknms_icpt(nmsdf[, 2], nm_scheme = nm_scheme)
   nmsdf <- cbind("b", nmsdf)
   return(apply(nmsdf, 1, paste, collapse = "_"))
