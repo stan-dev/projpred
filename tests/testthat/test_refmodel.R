@@ -75,6 +75,36 @@ test_that("`formula` as a character string fails", {
                "^inherits\\(formula, \"formula\"\\) is not TRUE$")
 })
 
+test_that("reference models lacking an intercept work", {
+  args_fit_i <- args_fit$rstanarm.glm.gauss.stdformul.with_wobs.with_offs
+  skip_if_not(!is.null(args_fit_i))
+  fit_fun_nm <- switch(args_fit_i$pkg_nm,
+                       "rstanarm" = switch(args_fit_i$mod_nm,
+                                           "glm" = "stan_glm",
+                                           "glmm" = "stan_glmer",
+                                           "stan_gamm4"),
+                       "brms" = "brm",
+                       stop("Unknown `pkg_nm`."))
+  fit_no_icpt <- suppressWarnings(do.call(
+    get(fit_fun_nm, asNamespace(args_fit_i$pkg_nm)),
+    c(list(formula = update(args_fit_i$formula, . ~ . - 1)),
+      excl_nonargs(args_fit_i, nms_excl_add = "formula"))
+  ))
+  expect_message(
+    refmod_no_icpt <- get_refmodel(fit_no_icpt),
+    "Adding an intercept to `formula`",
+    info = "rstanarm.glm.gauss.stdformul.with_wobs.with_offs"
+  )
+  nms_compare <- c("formula", "div_minimizer", "y", "proj_predfun", "wobs",
+                   "wsample", "offset", "y_oscale")
+  expect_equal(
+    refmod_no_icpt[nms_compare],
+    refmods$rstanarm.glm.gauss.stdformul.with_wobs.with_offs[nms_compare],
+    tolerance = .Machine$double.eps,
+    info = "rstanarm.glm.gauss.stdformul.with_wobs.with_offs"
+  )
+})
+
 test_that("offsets specified via argument `offset` work", {
   args_fit_i <- args_fit$rstanarm.glm.gauss.stdformul.with_wobs.with_offs
   skip_if_not(!is.null(args_fit_i))
