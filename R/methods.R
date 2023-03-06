@@ -1067,12 +1067,13 @@ print.vsel <- function(x, ...) {
 #'   For example (disregarding the special extensions in case of `stat = "elpd"`
 #'   or `stat = "mlpd"`), `alpha = 2 * pnorm(-1)`, `pct = 0`, and `type =
 #'   "upper"` means that we select the smallest model size for which the upper
-#'   bound of the 68% confidence interval for \eqn{U_k - U_{\mathrm{base}}}{U_k
-#'   - U_base} exceeds (or is equal to) zero, that is (if `stat` is a
-#'   performance statistic for which the normal approximation is used, not the
-#'   bootstrap), for which the submodel's utility estimate is at most one
-#'   standard error smaller than the baseline model's utility estimate (with
-#'   that standard error referring to the utility *difference*).
+#'   bound of the `1 - 2 * pnorm(-1)` (approximately 68.3%) confidence interval
+#'   for \eqn{U_k - U_{\mathrm{base}}}{U_k - U_base} exceeds (or is equal to)
+#'   zero, that is (if `stat` is a performance statistic for which the normal
+#'   approximation is used, not the bootstrap), for which the submodel's utility
+#'   estimate is at most one standard error smaller than the baseline model's
+#'   utility estimate (with that standard error referring to the utility
+#'   *difference*).
 #'
 #'   Apart from the two [summary.vsel()] arguments mentioned above (`alpha` and
 #'   `baseline`), `resp_oscale` is another important [summary.vsel()] argument

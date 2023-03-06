@@ -89,12 +89,13 @@ the smallest model size \eqn{k} fulfilling the rule above \emph{or} \eqn{u_k -
 
 For example (disregarding the special extensions in case of \code{stat = "elpd"}
 or \code{stat = "mlpd"}), \code{alpha = 2 * pnorm(-1)}, \code{pct = 0}, and \code{type = "upper"} means that we select the smallest model size for which the upper
-bound of the 68\% confidence interval for \eqn{U_k - U_{\mathrm{base}}}{U_k
-  - U_base} exceeds (or is equal to) zero, that is (if \code{stat} is a
-performance statistic for which the normal approximation is used, not the
-bootstrap), for which the submodel's utility estimate is at most one
-standard error smaller than the baseline model's utility estimate (with
-that standard error referring to the utility \emph{difference}).
+bound of the \code{1 - 2 * pnorm(-1)} (approximately 68.3\%) confidence interval
+for \eqn{U_k - U_{\mathrm{base}}}{U_k - U_base} exceeds (or is equal to)
+zero, that is (if \code{stat} is a performance statistic for which the normal
+approximation is used, not the bootstrap), for which the submodel's utility
+estimate is at most one standard error smaller than the baseline model's
+utility estimate (with that standard error referring to the utility
+\emph{difference}).
 
 Apart from the two \code{\link[=summary.vsel]{summary.vsel()}} arguments mentioned above (\code{alpha} and
 \code{baseline}), \code{resp_oscale} is another important \code{\link[=summary.vsel]{summary.vsel()}} argument
