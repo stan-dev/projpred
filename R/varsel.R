@@ -389,7 +389,7 @@ varsel.refmodel <- function(object, d_test = NULL, method = NULL,
 #   model size being equal to the number of projected draws), and `p_sel` (the
 #   same as the input argument `p_sel`).
 select <- function(method, p_sel, refmodel, nterms_max, penalty, verbose, opt,
-                   search_terms = NULL, ...) {
+                   search_terms, ...) {
   if (method == "l1") {
     search_path <- search_L1(p_sel, refmodel, nterms_max, penalty, opt)
     search_path$p_sel <- p_sel

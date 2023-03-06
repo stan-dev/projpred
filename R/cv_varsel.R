@@ -303,7 +303,7 @@ parse_args_cv_varsel <- function(refmodel, cv_method, K, validate_search) {
 loo_varsel <- function(refmodel, method, nterms_max, ndraws,
                        nclusters, ndraws_pred, nclusters_pred, refit_prj,
                        penalty, verbose, opt, nloo = NULL,
-                       validate_search = TRUE, search_terms = NULL, ...) {
+                       validate_search = TRUE, search_terms, ...) {
   # Pre-processing ----------------------------------------------------------
 
   eta <- refmodel$eta
@@ -786,7 +786,7 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
 kfold_varsel <- function(refmodel, method, nterms_max, ndraws,
                          nclusters, ndraws_pred, nclusters_pred,
                          refit_prj, penalty, verbose, opt, K,
-                         search_terms = NULL, ...) {
+                         search_terms, ...) {
   # Fetch the K reference model fits (or fit them now if not already done) and
   # create objects of class `refmodel` from them (and also store the `omitted`
   # indices):
