@@ -120,6 +120,11 @@
 #'
 #' # Formula terms
 #'
+#' A reference model lacking an intercept can be used, but it will always be
+#' projected onto submodels which *include* an intercept. The reason is that
+#' even if the true intercept in the reference model is zero, this does not need
+#' to hold for the submodels.
+#'
 #' For additive models (still an experimental feature), only [mgcv::s()] and
 #' [mgcv::t2()] are currently supported as smooth terms. Furthermore, these need
 #' to be called without any arguments apart from the predictor names (symbols).
