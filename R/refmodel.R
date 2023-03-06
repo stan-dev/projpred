@@ -993,9 +993,9 @@ init_refmodel <- function(object, data, formula, family, ref_predfun = NULL,
   if (!as.logical(attr(terms(formula), "intercept"))) {
     # Add an intercept to `formula` so that we always project onto submodels
     # *including* an intercept (see the discussion at #96):
-    message("Adding an intercept to `formula` (which is the full-model ",
-            "formula used for the search) so that the projection is always ",
-            "performed onto submodels *including* an intercept.")
+    message("Adding an intercept to `formula` (the full-model formula used ",
+            "for the search) so that the projection is always performed onto ",
+            "submodels *including* an intercept.")
     formula <- update(formula, . ~ . + 1)
   }
   fml_extractions <- extract_terms_response(formula)
