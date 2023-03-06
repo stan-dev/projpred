@@ -1226,11 +1226,49 @@ replace_population_names <- function(population_effects, nm_scheme) {
   return(population_effects)
 }
 
+# Escape special characters in each element of a character vector, to give a
+# character vector of the same length which may be used in regular expressions:
+esc_chars <- function(chr_vec) {
+  gsub("\\)", "\\\\)",
+       gsub("\\(", "\\\\(",
+            gsub("\\.", "\\\\.", chr_vec)))
+}
+
+# Helper function for removing underscores in response category names (as done
+# by brms) contained in a special character vector. Unfortunately, for these
+# special character vectors, this replacement doesn't seem to be feasible with
+# regular expressions, so we need to iterate over the elements of such a special
+# character vector as well as over the category names and perform the
+# replacement manually:
+rm_underscore <- function(nms, nms_lats, preceding_char = ".") {
+  preceding_char_esc <- esc_chars(preceding_char)
+  unlist(lapply(strsplit(nms, "~"), function(nm_split) {
+    paste(unlist(lapply(nm_split, function(nm_split_part) {
+      for (nm_lat in grep("_", nms_lats, value = TRUE)) {
+        nm_lat_esc <- esc_chars(nm_lat)
+        nm_lat_regex <- paste0(preceding_char_esc, "(", nm_lat_esc, ")")
+        if (grepl(nm_lat_regex, nm_split_part)) {
+          nm_split_part <- paste0(sub(nm_lat_regex, "", nm_split_part),
+                                  preceding_char, gsub("_", "", nm_lat))
+        }
+      }
+      return(nm_split_part)
+    })), collapse = "~")
+  }))
+}
+
 # Make the parameter names for variance components adhere to the naming scheme
 # `nm_scheme`:
 mknms_VarCorr <- function(nms, nms_lats = NULL, nm_scheme, coef_nms) {
   if (!is.null(nms_lats)) {
     stopifnot(nm_scheme == "brms")
+    # Remove underscores in the response category names (as done by brms):
+    if (any(grepl("_", nms_lats))) {
+      nms <- rm_underscore(nms, nms_lats = nms_lats)
+      coef_nms <- lapply(coef_nms, rm_underscore, nms_lats = nms_lats,
+                         preceding_char = "")
+      nms_lats <- gsub("_", "", nms_lats)
+    }
   }
   grp_nms <- names(coef_nms)
   # We will have to search for the substrings "\\sd\\." and "\\cor\\.", so make
@@ -1242,10 +1280,7 @@ mknms_VarCorr <- function(nms, nms_lats = NULL, nm_scheme, coef_nms) {
   if (nm_scheme == "brms") {
     nms <- mknms_icpt(nms, nm_scheme = nm_scheme)
     # Escape special characters in the group names and collapse them with "|":
-    grp_nms_esc <- paste(gsub("\\)", "\\\\)",
-                              gsub("\\(", "\\\\(",
-                                   gsub("\\.", "\\\\.", grp_nms))),
-                         collapse = "|")
+    grp_nms_esc <- paste(esc_chars(grp_nms), collapse = "|")
     # Move the substrings "\\.sd\\." and "\\.cor\\." up front (i.e. in front of
     # the group name), replace their dots, and replace the dot following the
     # group name by double underscores:
@@ -1259,10 +1294,7 @@ mknms_VarCorr <- function(nms, nms_lats = NULL, nm_scheme, coef_nms) {
     }
     # Escape special characters in the coefficient names and collapse them
     # with "|":
-    coef_nms_i_esc <- paste(gsub("\\)", "\\\\)",
-                                 gsub("\\(", "\\\\(",
-                                      gsub("\\.", "\\\\.", coef_nms_i))),
-                            collapse = "|")
+    coef_nms_i_esc <- paste(esc_chars(coef_nms_i), collapse = "|")
     if (nm_scheme == "brms") {
       # Replace dots between coefficient names by double underscores:
       nms <- gsub(paste0("(", coef_nms_i_esc, ")\\."),
@@ -1287,15 +1319,10 @@ mknms_VarCorr <- function(nms, nms_lats = NULL, nm_scheme, coef_nms) {
   if (!is.null(nms_lats)) {
     # Escape special characters in the latent category names and collapse them
     # with "|":
-    nms_lats_esc <- paste(gsub("\\)", "\\\\)",
-                               gsub("\\(", "\\\\(",
-                                    gsub("\\.", "\\\\.", nms_lats))),
-                          collapse = "|")
+    nms_lats_esc <- paste(esc_chars(nms_lats), collapse = "|")
     # Put the string `mu` in front of the latent category names and replace the
     # following tilde by an underscore:
-    nms <- gsub(paste0("(", nms_lats_esc, ")~"),
-                "mu\\1_",
-                nms)
+    nms <- gsub(paste0("(", nms_lats_esc, ")~"), "mu\\1_", nms)
   }
   return(nms)
 }
@@ -1305,6 +1332,13 @@ mknms_VarCorr <- function(nms, nms_lats = NULL, nm_scheme, coef_nms) {
 mknms_ranef <- function(nms, nms_lats = NULL, nm_scheme, coef_nms) {
   if (!is.null(nms_lats)) {
     stopifnot(nm_scheme == "brms")
+    # Remove underscores in the response category names (as done by brms):
+    if (any(grepl("_", nms_lats))) {
+      nms <- rm_underscore(nms, nms_lats = nms_lats)
+      coef_nms <- lapply(coef_nms, rm_underscore, nms_lats = nms_lats,
+                         preceding_char = "")
+      nms_lats <- gsub("_", "", nms_lats)
+    }
   }
   if (nm_scheme == "brms") {
     nms <- mknms_icpt(nms, nm_scheme = nm_scheme)
@@ -1316,10 +1350,7 @@ mknms_ranef <- function(nms, nms_lats = NULL, nm_scheme, coef_nms) {
     }
     # Escape special characters in the coefficient names and collapse them with
     # "|":
-    coef_nms_i_esc <- paste(gsub("\\)", "\\\\)",
-                                 gsub("\\(", "\\\\(",
-                                      gsub("\\.", "\\\\.", coef_nms_i))),
-                            collapse = "|")
+    coef_nms_i_esc <- paste(esc_chars(coef_nms_i), collapse = "|")
     if (nm_scheme == "brms") {
       # Put the part following the group name in square brackets, reorder its
       # two subparts (coefficient name and group level), and separate them by
@@ -1330,9 +1361,7 @@ mknms_ranef <- function(nms, nms_lats = NULL, nm_scheme, coef_nms) {
     } else if (nm_scheme == "rstanarm") {
       grp_nm_i <- names(coef_nms)[coef_nms_idx]
       # Escape special characters in the group name:
-      grp_nm_i_esc <- gsub("\\)", "\\\\)",
-                           gsub("\\(", "\\\\(",
-                                gsub("\\.", "\\\\.", grp_nm_i)))
+      grp_nm_i_esc <- esc_chars(grp_nm_i)
       # Re-arrange as required:
       nms <- sub(paste0("^(", grp_nm_i_esc, ")\\.(", coef_nms_i_esc, ")\\."),
                  "\\2 \\1:",
@@ -1347,10 +1376,7 @@ mknms_ranef <- function(nms, nms_lats = NULL, nm_scheme, coef_nms) {
   if (!is.null(nms_lats)) {
     # Escape special characters in the latent category names and collapse them
     # with "|":
-    nms_lats_esc <- paste(gsub("\\)", "\\\\)",
-                               gsub("\\(", "\\\\(",
-                                    gsub("\\.", "\\\\.", nms_lats))),
-                          collapse = "|")
+    nms_lats_esc <- paste(esc_chars(nms_lats), collapse = "|")
     # Put the string `mu` in front of the latent category names, remove the
     # following tilde, and place all this in front of the first square bracket:
     nms <- gsub(paste0("\\[(.*),(", nms_lats_esc, ")~"),
@@ -1375,7 +1401,7 @@ mknms_categ <- function(dimnms, nm_scheme) {
   # rstanarm currently doesn't support categorical models:
   stopifnot(nm_scheme == "brms")
   nmsdf <- expand.grid(dimnms, stringsAsFactors = FALSE)
-  nmsdf[, 1] <- paste0("mu", nmsdf[, 1])
+  nmsdf[, 1] <- paste0("mu", gsub("_", "", nmsdf[, 1]))
   nmsdf[, 2] <- mknms_icpt(nmsdf[, 2], nm_scheme = nm_scheme)
   nmsdf <- cbind("b", nmsdf)
   return(apply(nmsdf, 1, paste, collapse = "_"))

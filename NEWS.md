@@ -17,6 +17,7 @@ If you read this from a place other than <https://mc-stan.org/projpred/news/inde
 
 * Fixed a bug causing `predict.refmodel()` to require `newdata` to contain the response variable in case of a **brms** reference model. This is similar to paul-buerkner/brms#1457, but concerns `predict.refmodel()` (paul-buerkner/brms#1457 referred to predictions from the *submodels*). In order to make this `predict.refmodel()` fix work, **brms** version 2.18.8 or later is needed. (GitHub: #381)
 * Slightly improved the calculation of predictive variances to make them less prone to numerical inaccuracies. (GitHub: #199)
+* In case of the `brms::categorical()` family, strip underscores from response category names in `as.matrix.projection()` output, as done by **brms**. (GitHub: #394)
 
 # projpred 2.4.0
 
