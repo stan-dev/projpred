@@ -689,7 +689,7 @@ test_that(paste(
     vs <- suppressWarnings(varsel(
       ref,
       method = "l1", lambda_min_ratio = lambda_min_ratio,
-      nlambda = nlambda, thresh = 1e-12
+      nlambda = nlambda, thresh = 1e-12, verbose = FALSE
     ))
     expect_warning(
       pred1 <- proj_linpred(vs,
