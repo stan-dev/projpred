@@ -917,6 +917,7 @@ test_that(paste(
   "L1 search warns if an interaction term is selected before all involved",
   "main effects have been selected"
 ), {
+  warn_L1_ia_orig <- options(projpred.warn_L1_interactions = TRUE)
   args_fit_i <- args_fit$rstanarm.glm.gauss.stdformul.with_wobs.with_offs
   skip_if_not(!is.null(args_fit_i))
   fit_fun_nm <- switch(args_fit_i$pkg_nm,
@@ -946,6 +947,7 @@ test_that(paste(
   idxs_main <- match(soltrms_ia_main, soltrms_all)
   expect_true(any(idx_ia < idxs_main),
               info = "rstanarm.glm.gauss.stdformul.with_wobs.with_offs")
+  options(warn_L1_ia_orig)
 })
 
 # cv_varsel() -------------------------------------------------------------
