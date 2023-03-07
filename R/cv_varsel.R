@@ -962,7 +962,7 @@ kfold_varsel <- function(refmodel, method, nterms_max, ndraws,
 # will return a list of length K, where each element is a list with elements
 # `refmodel` (output of init_refmodel()) and `omitted` (vector of indices of
 # those observations which were left out for the corresponding fold).
-.get_kfold <- function(refmodel, K, verbose, approximate = FALSE) {
+.get_kfold <- function(refmodel, K, verbose) {
   if (is.null(refmodel$cvfits)) {
     if (!is.null(refmodel$cvfun)) {
       # In this case, cvfun() provided (and `cvfits` not), so run cvfun() now.
@@ -975,19 +975,9 @@ kfold_varsel <- function(refmodel, method, nterms_max, ndraws,
       cvfits <- refmodel$cvfun(folds)
       verb_out("-----", verbose = verbose)
     } else {
-      ## genuine probabilistic model but no K-fold fits nor cvfun provided,
-      ## this only works for approximate kfold computation
-      if (approximate) {
-        nobs <- NROW(refmodel$y)
-        folds <- cvfolds(nobs, K = K)
-        cvfits <- lapply(seq_len(K), function(k) {
-          refmodel$fit
-        })
-      } else {
-        stop("For a reference model which is not of class `datafit`, either ",
-             "`cvfits` or `cvfun` needs to be provided for K-fold CV (see ",
-             "`?init_refmodel`).")
-      }
+      stop("For a reference model which is not of class `datafit`, either ",
+           "`cvfits` or `cvfun` needs to be provided for K-fold CV (see ",
+           "`?init_refmodel`).")
     }
   } else {
     cvfits <- refmodel$cvfits
