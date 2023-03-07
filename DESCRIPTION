@@ -42,7 +42,7 @@ Imports:
     methods,
     loo (>= 2.0.0),
     rstantools (>= 2.0.0),
-    lme4,
+    lme4 (>= 1.1-28),
     mvtnorm,
     ggplot2,
     Rcpp,
