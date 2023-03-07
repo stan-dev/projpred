@@ -911,6 +911,43 @@ test_that(paste(
   }
 })
 
+## L1 search warning for interactions -------------------------------------
+
+test_that(paste(
+  "L1 search warns if an interaction term is selected before all involved",
+  "main effects have been selected"
+), {
+  args_fit_i <- args_fit$rstanarm.glm.gauss.stdformul.with_wobs.with_offs
+  skip_if_not(!is.null(args_fit_i))
+  fit_fun_nm <- switch(args_fit_i$pkg_nm,
+                       "rstanarm" = switch(args_fit_i$mod_nm,
+                                           "glm" = "stan_glm",
+                                           "glmm" = "stan_glmer",
+                                           "stan_gamm4"),
+                       "brms" = "brm",
+                       stop("Unknown `pkg_nm`."))
+  fit_ia <- suppressWarnings(do.call(
+    get(fit_fun_nm, asNamespace(args_fit_i$pkg_nm)),
+    c(list(formula = update(args_fit_i$formula, . ~ . + xco.1:xca.2)),
+      excl_nonargs(args_fit_i, nms_excl_add = "formula"))
+  ))
+  args_vs_i <- args_vs$rstanarm.glm.gauss.stdformul.with_wobs.with_offs.trad.default_meth.default_search_trms
+  expect_warning(
+    vs_ia <- do.call(varsel, c(
+      list(object = fit_ia),
+      excl_nonargs(args_vs_i, nms_excl_add = "nterms_max")
+    )),
+    "An interaction has been selected before all involved main effects",
+    info = "rstanarm.glm.gauss.stdformul.with_wobs.with_offs"
+  )
+  soltrms_all <- solution_terms(vs_ia)
+  idx_ia <- grep(":", soltrms_all)
+  soltrms_ia_main <- unlist(strsplit(grep(":", soltrms_all, value = TRUE), ":"))
+  idxs_main <- match(soltrms_ia_main, soltrms_all)
+  expect_true(any(idx_ia < idxs_main),
+              info = "rstanarm.glm.gauss.stdformul.with_wobs.with_offs")
+})
+
 # cv_varsel() -------------------------------------------------------------
 
 context("cv_varsel()")
