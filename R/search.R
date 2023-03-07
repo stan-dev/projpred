@@ -200,7 +200,8 @@ search_L1 <- function(p_ref, refmodel, nterms_max, penalty, opt) {
     term_split <- strsplit(solution_terms[idx_ia], ":")[[1]]
     !all(term_split %in% utils::head(solution_terms, idx_ia - 1L))
   })
-  if (any(ia_sel_bef_main)) {
+  if (any(ia_sel_bef_main) &&
+      getOption("projpred.warn_L1_interactions", TRUE)) {
     warning("An interaction has been selected before all involved main ",
             "effects have been selected. This is a known deficiency of L1 ",
             "search. Use forward search to avoid this.")

@@ -815,6 +815,9 @@ meth_tst <- list(
   L1 = list(method = "L1"),
   forward = list(method = "forward")
 )
+# Suppress the warning for interaction terms being selected before all involved
+# main effects have been selected (only concerns L1 search):
+options(projpred.warn_L1_interactions = FALSE)
 
 search_trms_tst <- list(
   default_search_trms = list(),
