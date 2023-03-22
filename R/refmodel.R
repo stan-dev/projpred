@@ -1,3 +1,5 @@
+# Common documentation ----------------------------------------------------
+
 #' Reference model and more general information
 #'
 #' @description
@@ -345,6 +347,8 @@
 #' }
 #'
 NULL
+
+# Function definitions ----------------------------------------------------
 
 #' Predictions or log predictive densities from a reference model
 #'
