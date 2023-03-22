@@ -29,6 +29,7 @@ extract_terms_response <- function(formula) {
   hier <- grepl("\\|", terms_)
   int <- grepl(":", terms_)
   group_terms <- terms_[hier]
+  group_terms <- parse_group_terms(group_terms)
   interaction_terms <- terms_[int & !hier]
   individual_terms <- terms_[!hier & !int]
   additive_terms <- parse_additive_terms(individual_terms)
@@ -90,6 +91,28 @@ extract_response <- function(response) {
     response_name_ch <- as.character(response)
   }
   return(response_name_ch)
+}
+
+# Parse group terms
+#
+# @param group_terms Character vector of group terms, but as extracted by
+#   labels(terms()), i.e., lacking the surrounding parentheses.
+#
+# @return Character vector of parsed group terms, but as extracted by
+#   labels(terms()), i.e., lacking the surrounding parentheses.
+parse_group_terms <- function(group_terms) {
+  has_call <- sapply(strsplit(group_terms, "\\|"), function(grp_trm_split) {
+    if (length(grp_trm_split) != 2) {
+      stop("Unexpected number of `|` characters in group terms. Please ",
+           "contact the package maintainer.")
+    }
+    grepl("\\(", grp_trm_split[2])
+  })
+  if (any(has_call)) {
+    stop("Function calls on the right-hand side of a group-term `|` ",
+         "character are not allowed.")
+  }
+  return(group_terms)
 }
 
 ## Parse additive terms (smooth terms) from a list of individual terms. See
