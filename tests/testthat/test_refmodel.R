@@ -152,6 +152,21 @@ test_that(paste(
                "response must contain numbers of successes")
 })
 
+test_that("function calls in group terms fail", {
+  tstsetup <- "brms.glmm.brnll.stdformul.without_wobs.without_offs"
+  args_fit_i <- args_fit[[tstsetup]]
+  skip_if_not(!is.null(args_fit_i))
+  fit_gr <- fits[[tstsetup]]
+  fit_gr$formula <- update(fit_gr$formula,
+                           . ~ . - (xco.1 | z.1) + (xco.1 | gr(z.1)))
+  expect_error(
+    refmod_gr <- get_refmodel(fit_gr),
+    paste("Function calls on the right-hand side of a group-term `|` character",
+          "are not allowed\\."),
+    info = tstsetup
+  )
+})
+
 test_that("extra arguments in s() or t2() terms fail", {
   args_fit_i <- args_fit$rstanarm.gam.gauss.stdformul.with_wobs.without_offs
   skip_if_not(!is.null(args_fit_i))
