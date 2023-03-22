@@ -131,7 +131,7 @@ parse_additive_terms <- function(terms) {
   smooth <- unlist(lapply(smooth_terms, function(st) {
     grep(make_function_regexp(st), terms, value = TRUE)
   }))
-  if (any(grepl("\\(.+,.+=.+\\)", smooth))) {
+  if (any(grepl("\\(.+,.*=.+\\)", smooth))) {
     stop("In s() and t2() terms, arguments other than predictors are not ",
          "allowed.")
   }
