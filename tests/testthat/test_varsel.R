@@ -920,13 +920,7 @@ test_that(paste(
   warn_L1_ia_orig <- options(projpred.warn_L1_interactions = TRUE)
   args_fit_i <- args_fit$rstanarm.glm.gauss.stdformul.with_wobs.with_offs
   skip_if_not(!is.null(args_fit_i))
-  fit_fun_nm <- switch(args_fit_i$pkg_nm,
-                       "rstanarm" = switch(args_fit_i$mod_nm,
-                                           "glm" = "stan_glm",
-                                           "glmm" = "stan_glmer",
-                                           "stan_gamm4"),
-                       "brms" = "brm",
-                       stop("Unknown `pkg_nm`."))
+  fit_fun_nm <- get_fit_fun_nm(args_fit_i)
   fit_ia <- suppressWarnings(do.call(
     get(fit_fun_nm, asNamespace(args_fit_i$pkg_nm)),
     c(list(formula = update(args_fit_i$formula, . ~ . + xco.1:xca.2)),

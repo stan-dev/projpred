@@ -78,13 +78,7 @@ test_that("`formula` as a character string fails", {
 test_that("reference models lacking an intercept work", {
   args_fit_i <- args_fit$rstanarm.glm.gauss.stdformul.with_wobs.with_offs
   skip_if_not(!is.null(args_fit_i))
-  fit_fun_nm <- switch(args_fit_i$pkg_nm,
-                       "rstanarm" = switch(args_fit_i$mod_nm,
-                                           "glm" = "stan_glm",
-                                           "glmm" = "stan_glmer",
-                                           "stan_gamm4"),
-                       "brms" = "brm",
-                       stop("Unknown `pkg_nm`."))
+  fit_fun_nm <- get_fit_fun_nm(args_fit_i)
   fit_no_icpt <- suppressWarnings(do.call(
     get(fit_fun_nm, asNamespace(args_fit_i$pkg_nm)),
     c(list(formula = update(args_fit_i$formula, . ~ . - 1)),
@@ -108,13 +102,7 @@ test_that("reference models lacking an intercept work", {
 test_that("offsets specified via argument `offset` work", {
   args_fit_i <- args_fit$rstanarm.glm.gauss.stdformul.with_wobs.with_offs
   skip_if_not(!is.null(args_fit_i))
-  fit_fun_nm <- switch(args_fit_i$pkg_nm,
-                       "rstanarm" = switch(args_fit_i$mod_nm,
-                                           "glm" = "stan_glm",
-                                           "glmm" = "stan_glmer",
-                                           "stan_gamm4"),
-                       "brms" = "brm",
-                       stop("Unknown `pkg_nm`."))
+  fit_fun_nm <- get_fit_fun_nm(args_fit_i)
   upd_no_offs <- paste(". ~", sub(" \\+ offset\\(offs_col\\)", "",
                                   as.character(args_fit_i$formula[3])))
   fit_offs_arg <- suppressWarnings(do.call(
@@ -167,13 +155,7 @@ test_that(paste(
 test_that("extra arguments in s() or t2() terms fail", {
   args_fit_i <- args_fit$rstanarm.gam.gauss.stdformul.with_wobs.without_offs
   skip_if_not(!is.null(args_fit_i))
-  fit_fun_nm <- switch(args_fit_i$pkg_nm,
-                       "rstanarm" = switch(args_fit_i$mod_nm,
-                                           "glm" = "stan_glm",
-                                           "glmm" = "stan_glmer",
-                                           "stan_gamm4"),
-                       "brms" = "brm",
-                       stop("Unknown `pkg_nm`."))
+  fit_fun_nm <- get_fit_fun_nm(args_fit_i)
   fit_s <- suppressWarnings(do.call(
     get(fit_fun_nm, asNamespace(args_fit_i$pkg_nm)),
     c(list(formula = update(args_fit_i$formula,

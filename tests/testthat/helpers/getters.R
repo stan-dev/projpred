@@ -89,3 +89,14 @@ get_dat <- function(tstsetup, dat_crr = dat, offs_ylat = 0, ...) {
 get_penal_possbl <- function(formul_crr) {
   return(setdiff(colnames(model.matrix(formul_crr, data = dat)), "(Intercept)"))
 }
+
+# A function to get the name of a fitting function for a reference model:
+get_fit_fun_nm <- function(args_fit_i) {
+  switch(args_fit_i$pkg_nm,
+         "rstanarm" = switch(args_fit_i$mod_nm,
+                             "glm" = "stan_glm",
+                             "glmm" = "stan_glmer",
+                             "stan_gamm4"),
+         "brms" = "brm",
+         stop("Unknown `pkg_nm`."))
+}

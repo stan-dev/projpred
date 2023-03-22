@@ -760,13 +760,7 @@ if (!run_more) {
 ## Run --------------------------------------------------------------------
 
 fits <- suppressWarnings(lapply(args_fit, function(args_fit_i) {
-  fit_fun_nm <- switch(args_fit_i$pkg_nm,
-                       "rstanarm" = switch(args_fit_i$mod_nm,
-                                           "glm" = "stan_glm",
-                                           "glmm" = "stan_glmer",
-                                           "stan_gamm4"),
-                       "brms" = "brm",
-                       stop("Unknown `pkg_nm`."))
+  fit_fun_nm <- get_fit_fun_nm(args_fit_i)
   if (args_fit_i$pkg_nm == "rstanarm" && args_fit_i$fam_nm == "cumul") {
     fit_fun_nm <- "stan_polr"
     args_fit_i$family <- NULL
