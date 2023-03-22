@@ -129,6 +129,10 @@
 #' intercept in the reference model is zero, this does not need to hold for the
 #' submodels.
 #'
+#' In multilevel (group-level) terms, function calls on the right-hand side of
+#' the `|` character (e.g., `(1 | gr(group_variable))`, which is possible in
+#' \pkg{brms}) are currently not allowed in \pkg{projpred}.
+#'
 #' For additive models (still an experimental feature), only [mgcv::s()] and
 #' [mgcv::t2()] are currently supported as smooth terms. Furthermore, these need
 #' to be called without any arguments apart from the predictor names (symbols).
