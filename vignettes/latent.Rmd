@@ -33,9 +33,10 @@ The assumption of a Gaussian distribution for the latent predictors makes things
 
 As illustrated by the Poisson example below, the latent projection can not only be used for families not supported by **projpred**'s traditional projection, but it can also be beneficial for families supported by it.
 
-### Implementation
+### Implementation {#impl}
 
-To use the latent projection in **projpred**, the new argument `latent` of `extend_family()` needs to be set to `TRUE`. Since `extend_family()` is called by `init_refmodel()` which in turn is called by `get_refmodel()` (more precisely, by the `get_refmodel()` methods) which in turn is called at the beginning of the top-level functions `project()`, `varsel()`, and `cv_varsel()`, most users will usually pass `latent = TRUE` from the top-level function they want to use (e.g., `cv_varsel()`) down to `extend_family()` via the ellipsis (`...`). This is also illustrated in the examples below.
+To use the latent projection in **projpred**, the new argument `latent` of `extend_family()` needs to be set to `TRUE`. Since `extend_family()` is called by `init_refmodel()` which in turn is called by `get_refmodel()` (more precisely, by the `get_refmodel()` methods) which in turn is called at the beginning of the top-level functions `project()`, `varsel()`, and `cv_varsel()`, it is possible to pass `latent = TRUE` from such a top-level function down to `extend_family()` via the ellipsis (`...`).
+However, for the latent projection, we recommend to define the reference model object of class `refmodel` explicitly (as illustrated in the examples below) to avoid repetitions^[If the `refmodel`-class object is not defined explicitly but implicitly by a call to a top-level function such as `project()`, `varsel()`, or `cv_varsel()`, then `latent = TRUE` and all other arguments related to the latent projection need to be set in *each* call to a top-level function.].
 
 After performing the projection (either as a stand-alone feature via `project()` or embedded in a variable selection via `varsel()` or `cv_varsel()`), the post-processing (e.g., the calculation of the performance statistics in `summary.vsel()`) can be performed on the original response scale. For this, `extend_family()` has gained several new arguments accepting R functions responsible for the inverse-link transformation from latent scale to response scale (`latent_ilink`), for the calculation of log-likelihood values on response scale (`latent_ll_oscale`), and for drawing from the predictive distribution on response scale (`latent_ppd_oscale`). For some families, these arguments have internal defaults implemented natively in **projpred**. These families are listed in the main vignette (section ["Supported types of models"](https://mc-stan.org/projpred/articles/projpred.html#modtypes)). For all other families, **projpred** either tries to infer a reasonable function internally (in case of `latent_ilink`) or uses a dummy function returning only `NA`s (in case of `latent_ll_oscale` and `latent_ppd_oscale`), unless the user supplies custom functions to these arguments. When creating a reference model object for a family of the latter category (i.e., lacking full response-scale support by default), **projpred** will throw messages stating whether (and which) features will be unavailable unless at least some of these arguments are provided by the user. Again, the ellipsis (`...`) can be used to pass these arguments from a top-level function such as `cv_varsel()` down to `extend_family()`. In the post-processing functions, response-scale analyses can usually be deactivated by setting the new argument `resp_oscale` to `FALSE`, with the exception of `predict.refmodel()` and `proj_linpred()` where the existing arguments `type` and `transform` serve this purpose (see the documentation).
 
@@ -133,7 +134,7 @@ refm_fit_poiss <- stan_glm(
 
 ### Variable selection using the latent projection
 
-We now run a variable selection with `latent = TRUE` to request the latent projection. Since we have a hold-out test dataset available, we can use `varsel()` with argument `d_test` instead of `cv_varsel()`. Furthermore, we measure the runtime to compare it to the traditional projection's later:
+We now run a variable selection with `latent = TRUE` in the `get_refmodel()` call (see section ["Implementation"](#impl) for why `get_refmodel()` is called explicitly here) to request the latent projection. Since we have a hold-out test dataset available, we can use `varsel()` with argument `d_test` instead of `cv_varsel()`. Furthermore, we measure the runtime to compare it to the traditional projection's later:
 ```{r}
 library(projpred)
 ```
@@ -148,15 +149,15 @@ d_test_lat_poiss <- list(
   ###
   y_oscale = dat_poiss_test$y
 )
+refm_poiss <- get_refmodel(refm_fit_poiss, latent = TRUE)
 time_lat <- system.time(vs_lat <- varsel(
-  refm_fit_poiss,
+  refm_poiss,
   d_test = d_test_lat_poiss,
   ### Only for the sake of speed (not recommended in general):
   nclusters_pred = 20,
   ###
   nterms_max = 14,
-  seed = 95930,
-  latent = TRUE
+  seed = 95930
 ))
 ```
 ```{r}
@@ -288,17 +289,17 @@ latent_ppd_oscale_nebin <- function(ilpreds_resamp, wobs, cl_ref,
   ppd <- matrix(ppd, nrow = nrow(ilpreds_resamp), ncol = ncol(ilpreds_resamp))
   return(ppd)
 }
+refm_nebin <- get_refmodel(refm_fit_nebin, latent = TRUE,
+                           latent_ll_oscale = latent_ll_oscale_nebin,
+                           latent_ppd_oscale = latent_ppd_oscale_nebin)
 vs_lat_nebin <- varsel(
-  refm_fit_nebin,
+  refm_nebin,
   d_test = d_test_lat_poiss,
   ### Only for the sake of speed (not recommended in general):
   nclusters_pred = 20,
   ###
   nterms_max = 14,
-  seed = 95930,
-  latent = TRUE,
-  latent_ll_oscale = latent_ll_oscale_nebin,
-  latent_ppd_oscale = latent_ppd_oscale_nebin
+  seed = 95930
 )
 ```
 Again, the message telling that `<refmodel>$dis` consists of only `NA`s will not concern us here because we will only be focusing on response-scale post-processing. The message concerning `latent_ilink` can be safely ignored here (the internal default based on `family$linkinv` works correctly in this case).
