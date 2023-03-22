@@ -188,7 +188,9 @@ to be called without any arguments apart from the predictor names (symbols).
 For example, for smoothing the effect of a predictor \code{x}, only \code{s(x)} or
 \code{t2(x)} are allowed. As another example, for smoothing the joint effect of
 two predictors \code{x} and \code{z}, only \code{s(x, z)} or \code{t2(x, z)} are allowed (and
-analogously for higher-order joint effects, e.g., of three predictors).
+analogously for higher-order joint effects, e.g., of three predictors). Note
+that all smooth terms need to be included in \code{formula} (there is no \code{random}
+argument as in \code{\link[rstanarm:stan_gamm4]{rstanarm::stan_gamm4()}}, for example).
 }
 
 \section{Arguments \code{ref_predfun}, \code{proj_predfun}, and \code{div_minimizer}}{

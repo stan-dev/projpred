@@ -135,7 +135,9 @@
 #' For example, for smoothing the effect of a predictor `x`, only `s(x)` or
 #' `t2(x)` are allowed. As another example, for smoothing the joint effect of
 #' two predictors `x` and `z`, only `s(x, z)` or `t2(x, z)` are allowed (and
-#' analogously for higher-order joint effects, e.g., of three predictors).
+#' analogously for higher-order joint effects, e.g., of three predictors). Note
+#' that all smooth terms need to be included in `formula` (there is no `random`
+#' argument as in [rstanarm::stan_gamm4()], for example).
 #'
 #' # Arguments `ref_predfun`, `proj_predfun`, and `div_minimizer`
 #'
