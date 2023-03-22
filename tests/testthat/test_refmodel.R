@@ -164,6 +164,40 @@ test_that(paste(
                "response must contain numbers of successes")
 })
 
+test_that("extra arguments in s() or t2() terms fail", {
+  args_fit_i <- args_fit$rstanarm.gam.gauss.stdformul.with_wobs.without_offs
+  skip_if_not(!is.null(args_fit_i))
+  fit_fun_nm <- switch(args_fit_i$pkg_nm,
+                       "rstanarm" = switch(args_fit_i$mod_nm,
+                                           "glm" = "stan_glm",
+                                           "glmm" = "stan_glmer",
+                                           "stan_gamm4"),
+                       "brms" = "brm",
+                       stop("Unknown `pkg_nm`."))
+  fit_s <- suppressWarnings(do.call(
+    get(fit_fun_nm, asNamespace(args_fit_i$pkg_nm)),
+    c(list(formula = update(args_fit_i$formula,
+                            . ~ . - s(s.1) + s(s.1, bs = "cr"))),
+      excl_nonargs(args_fit_i, nms_excl_add = "formula"))
+  ))
+  expect_error(
+    refmod_s <- get_refmodel(fit_s),
+    "arguments other than predictors are not allowed",
+    info = paste0("rstanarm.gam.gauss.stdformul.with_wobs.without_offs", "__s")
+  )
+  fit_t2 <- suppressWarnings(do.call(
+    get(fit_fun_nm, asNamespace(args_fit_i$pkg_nm)),
+    c(list(formula = update(args_fit_i$formula,
+                            . ~ . - s(s.1) + t2(s.1, bs = "tp"))),
+      excl_nonargs(args_fit_i, nms_excl_add = "formula"))
+  ))
+  expect_error(
+    refmod_t2 <- get_refmodel(fit_t2),
+    "arguments other than predictors are not allowed",
+    info = paste0("rstanarm.gam.gauss.stdformul.with_wobs.without_offs", "__t2")
+  )
+})
+
 test_that("get_refmodel() is idempotent", {
   for (tstsetup in names(refmods)) {
     expect_identical(get_refmodel(refmods[[tstsetup]]),
