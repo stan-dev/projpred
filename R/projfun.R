@@ -7,7 +7,7 @@ get_submodl_prj <- function(solution_terms, p_ref, refmodel, regul = 1e-4,
   validparams <- .validate_wobs_wdraws(refmodel$wobs, p_ref$wdraws_prj,
                                        p_ref$mu)
   wobs <- validparams$wobs
-  wdraws <- validparams$wdraws
+  wdraws_prj <- validparams$wdraws_prj
 
   y_unqs_aug <- refmodel$family$cats
   if (refmodel$family$for_latent && !is.null(y_unqs_aug)) {
@@ -45,7 +45,7 @@ get_submodl_prj <- function(solution_terms, p_ref, refmodel, regul = 1e-4,
 
   return(init_submodl(
     outdmin = outdmin, p_ref = p_ref, refmodel = refmodel,
-    solution_terms = solution_terms, wobs = wobs, wdraws = wdraws
+    solution_terms = solution_terms, wobs = wobs, wdraws_prj = wdraws_prj
   ))
 }
 
@@ -58,11 +58,11 @@ get_submodls <- function(search_path, nterms, p_ref, refmodel, regul,
     # In this case, simply fetch the already computed projections, so don't
     # project again.
     fetch_submodl <- function(nterms, ...) {
-      validparams <- .validate_wobs_wdraws(
-        refmodel$wobs, search_path$p_sel$wdraws_prj, search_path$p_sel$mu
-      )
+      validparams <- .validate_wobs_wdraws(refmodel$wobs,
+                                           search_path$p_sel$wdraws_prj,
+                                           search_path$p_sel$mu)
       wobs <- validparams$wobs
-      wdraws <- validparams$wdraws
+      wdraws_prj <- validparams$wdraws_prj
       return(init_submodl(
         # Re-use the submodel fits from the search:
         outdmin = search_path$outdmins[[nterms + 1]],
@@ -70,7 +70,7 @@ get_submodls <- function(search_path, nterms, p_ref, refmodel, regul,
         refmodel = refmodel,
         solution_terms = utils::head(search_path$solution_terms, nterms),
         wobs = wobs,
-        wdraws = wdraws
+        wdraws_prj = wdraws_prj
       ))
     }
   } else {
@@ -93,19 +93,19 @@ get_submodls <- function(search_path, nterms, p_ref, refmodel, regul,
   }
 
   if (is.null(ref_wdraws)) {
-    wdraws <- rep(1.0, NCOL(ref_mu))
+    wdraws_prj <- rep(1.0, NCOL(ref_mu))
   } else {
-    wdraws <- ref_wdraws
+    wdraws_prj <- ref_wdraws
   }
 
-  wdraws <- wdraws / sum(wdraws)
-  return(nlist(wobs, wdraws))
+  wdraws_prj <- wdraws_prj / sum(wdraws_prj)
+  return(nlist(wobs, wdraws_prj))
 }
 
 # Process the output of the `divergence_minimizer` function (see
 # init_refmodel()) to create an object of class `submodl`.
 init_submodl <- function(outdmin, p_ref, refmodel, solution_terms, wobs,
-                         wdraws) {
+                         wdraws_prj) {
   p_ref$mu <- p_ref$mu_offs
   if (!(all(is.na(p_ref$var)) ||
         refmodel$family$family %in% c("gaussian", "Student_t"))) {
@@ -141,10 +141,10 @@ init_submodl <- function(outdmin, p_ref, refmodel, solution_terms, wobs,
     refmodel$family$ce(p_ref,
                        nlist(weights = wobs),
                        nlist(mu, dis)),
-    wdraws
+    wdraws_prj
   )
   return(structure(
-    nlist(dis, ce, wdraws_prj = wdraws, solution_terms, outdmin,
+    nlist(dis, ce, wdraws_prj = wdraws_prj, solution_terms, outdmin,
           cl_ref = p_ref$cl, wdraws_ref = p_ref$wdraws_orig),
     class = "submodl"
   ))
