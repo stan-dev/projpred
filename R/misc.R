@@ -313,7 +313,7 @@ bootstrap <- function(x, fun = mean, B = 2000,
     cl[s_ind] <- 1:ndraws
     predvar <- do.call(cbind, lapply(s_ind, function(j) {
       refmodel$family$predvar(refmodel$mu_offs[, j, drop = FALSE],
-                              refmodel$dis[j])
+                              refmodel$dis[j], refmodel$wdraws_ref[j])
     }))
     p_ref <- list(
       mu = refmodel$mu[, s_ind, drop = FALSE],
