@@ -56,7 +56,7 @@ get_submodls <- function(search_path, nterms, p_ref, refmodel, regul,
   if (!refit_prj) {
     # In this case, simply fetch the already computed projections, so don't
     # project again.
-    fetch_submodel <- function(nterms, ...) {
+    fetch_submodl <- function(nterms, ...) {
       validparams <- .validate_wobs_wsample(
         refmodel$wobs, search_path$p_sel$weights, search_path$p_sel$mu
       )
@@ -74,14 +74,14 @@ get_submodls <- function(search_path, nterms, p_ref, refmodel, regul,
     }
   } else {
     # In this case, project again.
-    fetch_submodel <- function(nterms, ...) {
+    fetch_submodl <- function(nterms, ...) {
       return(get_submodl_prj(
         solution_terms = utils::head(search_path$solution_terms, nterms),
         p_ref = p_ref, refmodel = refmodel, regul = regul, ...
       ))
     }
   }
-  return(lapply(nterms, fetch_submodel, ...))
+  return(lapply(nterms, fetch_submodl, ...))
 }
 
 .validate_wobs_wsample <- function(ref_wobs, ref_wsample, ref_mu) {
