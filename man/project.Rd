@@ -87,7 +87,11 @@ modified, yielding merely a proxy.}
 \item{\code{solution_terms}}{A character vector of the submodel's predictor
 terms.}
 \item{\code{outdmin}}{A \code{list} containing the submodel fits (one fit per
-projected draw).}
+projected draw). This is the same as the return value of the
+\code{div_minimizer} function (see \code{\link[=init_refmodel]{init_refmodel()}}), except if \code{\link[=project]{project()}}
+was used with an \code{object} of class \code{vsel} based on an L1 search as well
+as with \code{refit_prj = FALSE}, in which case this is the output from an
+internal \emph{L1-penalized} divergence minimizer.}
 \item{\code{cl_ref}}{A numeric vector of length equal to the number of
 posterior draws in the reference model, containing the cluster indices of
 these draws.}

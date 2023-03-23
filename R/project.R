@@ -73,7 +73,11 @@
 #'     \item{`solution_terms`}{A character vector of the submodel's predictor
 #'     terms.}
 #'     \item{`outdmin`}{A `list` containing the submodel fits (one fit per
-#'     projected draw).}
+#'     projected draw). This is the same as the return value of the
+#'     `div_minimizer` function (see [init_refmodel()]), except if [project()]
+#'     was used with an `object` of class `vsel` based on an L1 search as well
+#'     as with `refit_prj = FALSE`, in which case this is the output from an
+#'     internal *L1-penalized* divergence minimizer.}
 #'     \item{`cl_ref`}{A numeric vector of length equal to the number of
 #'     posterior draws in the reference model, containing the cluster indices of
 #'     these draws.}
