@@ -78,7 +78,7 @@ test_that("divmin() works", {
     } else {
       wobs_expected_crr <- NULL
     }
-    submodl_tester(outdmin,
+    outdmin_tester(outdmin,
                    nprjdraws_expected = 1L,
                    sub_formul = list(args_fit_i$formula),
                    sub_data = eval(args_fit_i$data),
@@ -183,7 +183,7 @@ test_that("divmin_augdat() works", {
       outdmin_brnll_tmp[[tstsetup]] <- outdmin
     }
 
-    submodl_tester(outdmin,
+    outdmin_tester(outdmin,
                    nprjdraws_expected = 1L,
                    sub_formul = list(args_fit_i$formula),
                    sub_data = args_fit_i$data,
@@ -207,13 +207,13 @@ test_that(paste(
   skip_on_cran()
   for (tstsetup in names(outdmin_brnll_augdat)) {
     args_ref_i <- args_ref[[tstsetup]]
-    submodl_augdat <- outdmin_brnll_augdat[[tstsetup]]
-    submodl_trad <- outdmin_brnll_trad[[args_ref_i$tstsetup_fit]]
-    expect_length(submodl_augdat, 1)
-    expect_length(submodl_trad, 1)
+    outdmin_augdat <- outdmin_brnll_augdat[[tstsetup]]
+    outdmin_trad <- outdmin_brnll_trad[[args_ref_i$tstsetup_fit]]
+    expect_length(outdmin_augdat, 1)
+    expect_length(outdmin_trad, 1)
     tol_coefs <- ifelse(args_ref_i$mod_nm == "glmm", 1e-4, 1e-5)
-    coefs_aug <- get_subparams(submodl_augdat[[1]], nm_scheme = "rstanarm")
-    coefs_trad <- get_subparams(submodl_trad[[1]], nm_scheme = "rstanarm")
+    coefs_aug <- get_subparams(outdmin_augdat[[1]], nm_scheme = "rstanarm")
+    coefs_trad <- get_subparams(outdmin_trad[[1]], nm_scheme = "rstanarm")
     if (!identical(is.na(coefs_aug), is.na(coefs_trad))) {
       # There is at least one case where the traditional projection is not able
       # to estimate a correlation of -1:

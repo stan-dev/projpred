@@ -7,7 +7,7 @@ search_forward <- function(p_ref, refmodel, nterms_max, verbose = TRUE, opt,
   }
 
   chosen <- character()
-  submodls <- c()
+  outdmins <- c()
 
   for (size in seq_len(nterms_max_with_icpt)) {
     cands <- select_possible_terms_size(chosen, search_terms, size = size)
@@ -21,8 +21,8 @@ search_forward <- function(p_ref, refmodel, nterms_max, verbose = TRUE, opt,
     imin <- which.min(sapply(submodels, "[[", "ce"))
     chosen <- c(chosen, cands[imin])
 
-    ## append `submodl`
-    submodls <- c(submodls, list(submodels[[imin]]$submodl))
+    ## append `outdmin`
+    outdmins <- c(outdmins, list(submodels[[imin]]$outdmin))
 
     ct_chosen <- count_terms_chosen(chosen)
     if (verbose && ct_chosen %in% iq) {
@@ -37,10 +37,10 @@ search_forward <- function(p_ref, refmodel, nterms_max, verbose = TRUE, opt,
   # For `solution_terms`, `reduce_models(chosen)` used to be used instead of
   # `chosen`. However, `reduce_models(chosen)` and `chosen` should be identical
   # at this place because select_possible_terms_size() already avoids redundant
-  # models. Thus, use `chosen` here because it matches `submodls` (this
+  # models. Thus, use `chosen` here because it matches `outdmins` (this
   # matching is necessary because later in .get_submodels()'s `!refit_prj` case,
-  # `submodls` is indexed with integers which are based on `solution_terms`):
-  return(nlist(solution_terms = setdiff(chosen, "1"), submodls))
+  # `outdmins` is indexed with integers which are based on `solution_terms`):
+  return(nlist(solution_terms = setdiff(chosen, "1"), outdmins))
 }
 
 search_L1_surrogate <- function(p_ref, d_train, family, intercept, nterms_max,
@@ -154,7 +154,7 @@ search_L1 <- function(p_ref, refmodel, nterms_max, penalty, opt) {
     refmodel$formula, colnames(x)[search_path$solution_terms],
     refmodel$fetch_data()
   )
-  submodls <- lapply(0:length(solution_terms), function(nterms) {
+  outdmins <- lapply(0:length(solution_terms), function(nterms) {
     if (nterms == 0) {
       formula <- make_formula(c("1"))
       beta <- NULL
@@ -192,7 +192,7 @@ search_L1 <- function(p_ref, refmodel, nterms_max, penalty, opt) {
     return(list(sub))
   })
   solution_terms <- solution_terms[seq_len(nterms_max)]
-  submodls <- submodls[seq_len(nterms_max + 1)]
+  outdmins <- outdmins[seq_len(nterms_max + 1)]
 
   # Check for interaction terms being selected before all involved main effects
   # have been selected (and throw a warning if that is the case):
@@ -207,5 +207,5 @@ search_L1 <- function(p_ref, refmodel, nterms_max, penalty, opt) {
             "search. Use forward search to avoid this.")
   }
 
-  return(nlist(solution_terms, submodls))
+  return(nlist(solution_terms, outdmins))
 }

@@ -3,16 +3,16 @@
                                wobs = refmodel$wobs[test_points],
                                y = refmodel$y[test_points],
                                y_oscale = refmodel$y_oscale[test_points]) {
-  lapply(submodels, function(initsubmodl) {
+  lapply(submodels, function(initoutdmin) {
     .weighted_summary_means(
       y_test = list(y = y, y_oscale = y_oscale, weights = wobs),
       family = refmodel$family,
-      wsample = initsubmodl$weights,
-      mu = refmodel$family$mu_fun(initsubmodl$submodl, obs = test_points,
+      wsample = initoutdmin$weights,
+      mu = refmodel$family$mu_fun(initoutdmin$outdmin, obs = test_points,
                                   newdata = newdata, offset = offset),
-      dis = initsubmodl$dis,
-      cl_ref = initsubmodl$cl_ref,
-      wdraws_ref = initsubmodl$wdraws_ref
+      dis = initoutdmin$dis,
+      cl_ref = initoutdmin$cl_ref,
+      wdraws_ref = initoutdmin$wdraws_ref
     )
   })
 }

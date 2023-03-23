@@ -320,13 +320,13 @@ test_that("non-clustered projection does not require a seed", {
         p_new <- p_orig
       } else if (args_prj_i$prj_nm == "augdat" &&
                  args_prj_i$fam_nm == "cumul" && args_prj_i$mod_nm == "glmm") {
-        for (idx_s in seq_along(p_new$submodl)) {
-          if (!is.null(p_new$submodl[[idx_s]][["L"]])) {
+        for (idx_s in seq_along(p_new$outdmin)) {
+          if (!is.null(p_new$outdmin[[idx_s]][["L"]])) {
             # We could also use `"sparseMatrix"` instead of `"Matrix"`:
-            expect_equal(as(p_new$submodl[[idx_s]][["L"]], "Matrix"),
-                         as(p_orig$submodl[[idx_s]][["L"]], "Matrix"),
+            expect_equal(as(p_new$outdmin[[idx_s]][["L"]], "Matrix"),
+                         as(p_orig$outdmin[[idx_s]][["L"]], "Matrix"),
                          info = tstsetup)
-            p_new$submodl[[idx_s]][["L"]] <- p_orig$submodl[[idx_s]][["L"]]
+            p_new$outdmin[[idx_s]][["L"]] <- p_orig$outdmin[[idx_s]][["L"]]
           }
         }
       }

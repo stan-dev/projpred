@@ -27,7 +27,7 @@ project_submodel <- function(solution_terms, p_ref, refmodel, regul = 1e-4,
     verb_out("  Projecting onto ", utils::tail(rhs_chr, 1))
   }
 
-  submodl <- refmodel$div_minimizer(
+  outdmin <- refmodel$div_minimizer(
     formula = fml_divmin,
     data = subset$data,
     family = refmodel$family,
@@ -39,18 +39,18 @@ project_submodel <- function(solution_terms, p_ref, refmodel, regul = 1e-4,
   )
 
   if (isTRUE(getOption("projpred.check_conv", FALSE))) {
-    check_conv(submodl)
+    check_conv(outdmin)
   }
 
   return(.init_submodel(
-    submodl = submodl, p_ref = p_ref, refmodel = refmodel,
+    outdmin = outdmin, p_ref = p_ref, refmodel = refmodel,
     solution_terms = solution_terms, wobs = wobs, wsample = wsample
   ))
 }
 
 # Function to project the reference model onto the submodels of given model
 # sizes `nterms`. Returns a list of submodels (each processed by
-# .init_submodel(), so of class `initsubmodl`).
+# .init_submodel(), so of class `initoutdmin`).
 .get_submodels <- function(search_path, nterms, p_ref, refmodel, regul,
                            refit_prj = FALSE, ...) {
   if (!refit_prj) {
@@ -64,7 +64,7 @@ project_submodel <- function(solution_terms, p_ref, refmodel, regul = 1e-4,
       wsample <- validparams$wsample
       return(.init_submodel(
         # Re-use the submodel fits from the search:
-        submodl = search_path$submodls[[nterms + 1]],
+        outdmin = search_path$outdmins[[nterms + 1]],
         p_ref = search_path$p_sel,
         refmodel = refmodel,
         solution_terms = utils::head(search_path$solution_terms, nterms),
@@ -101,7 +101,7 @@ project_submodel <- function(solution_terms, p_ref, refmodel, regul = 1e-4,
   return(nlist(wobs, wsample))
 }
 
-.init_submodel <- function(submodl, p_ref, refmodel, solution_terms, wobs,
+.init_submodel <- function(outdmin, p_ref, refmodel, solution_terms, wobs,
                            wsample) {
   p_ref$mu <- p_ref$mu_offs
   if (!(all(is.na(p_ref$var)) ||
@@ -132,7 +132,7 @@ project_submodel <- function(solution_terms, p_ref, refmodel, regul = 1e-4,
     ###
   }
 
-  mu <- refmodel$family$mu_fun(submodl, offset = refmodel$offset)
+  mu <- refmodel$family$mu_fun(outdmin, offset = refmodel$offset)
   dis <- refmodel$family$dis_fun(p_ref, nlist(mu), wobs)
   ce <- weighted.mean(
     refmodel$family$ce(p_ref,
@@ -141,8 +141,8 @@ project_submodel <- function(solution_terms, p_ref, refmodel, regul = 1e-4,
     wsample
   )
   return(structure(
-    nlist(dis, ce, weights = wsample, solution_terms, submodl,
+    nlist(dis, ce, weights = wsample, solution_terms, outdmin,
           cl_ref = p_ref$cl, wdraws_ref = p_ref$wsample_orig),
-    class = "initsubmodl"
+    class = "initoutdmin"
   ))
 }

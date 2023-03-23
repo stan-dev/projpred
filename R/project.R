@@ -72,7 +72,7 @@
 #'     \item{`weights`}{Weights for the projected draws.}
 #'     \item{`solution_terms`}{A character vector of the submodel's predictor
 #'     terms.}
-#'     \item{`submodl`}{A `list` containing the submodel fits (one fit per
+#'     \item{`outdmin`}{A `list` containing the submodel fits (one fit per
 #'     projected draw).}
 #'     \item{`cl_ref`}{A numeric vector of length equal to the number of
 #'     posterior draws in the reference model, containing the cluster indices of
@@ -241,15 +241,15 @@ project <- function(object, nterms = NULL, solution_terms = NULL,
     search_path = nlist(
       solution_terms,
       p_sel = object$search_path$p_sel,
-      submodls = object$search_path$submodls
+      outdmins = object$search_path$outdmins
     ),
     nterms = nterms, p_ref = p_ref, refmodel = refmodel, regul = regul,
     refit_prj = refit_prj, ...
   )
 
   # Output:
-  projs <- lapply(submodels, function(initsubmodl) {
-    proj_k <- initsubmodl
+  projs <- lapply(submodels, function(initoutdmin) {
+    proj_k <- initoutdmin
     proj_k$p_type <- !is.null(nclusters)
     proj_k$refmodel <- refmodel
     class(proj_k) <- "projection"

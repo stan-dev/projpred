@@ -506,7 +506,7 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
     # have stricter consistency checks, see `?sweep`):
     lw_sub <- sweep(lw_sub, 2, as.array(apply(lw_sub, 2, log_sum_exp)))
     for (k in seq_along(submodels)) {
-      mu_k <- refmodel$family$mu_fun(submodels[[k]]$submodl,
+      mu_k <- refmodel$family$mu_fun(submodels[[k]]$outdmin,
                                      obs = inds,
                                      offset = refmodel$offset[inds])
       log_lik_sub <- t(refmodel$family$ll_fun(

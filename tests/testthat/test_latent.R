@@ -226,7 +226,7 @@ test_that(paste(
     expect_warning(prjmat_crr_trad <- as.matrix(prj_crr_trad),
                    warn_prjmat_expect, info = tstsetup_mod)
     expect_identical(prjmat_crr_lat, prjmat_crr_trad, info = tstsetup_mod)
-    prj_el_excl <- c("submodl", "refmodel")
+    prj_el_excl <- c("outdmin", "refmodel")
     expect_identical(prj_crr_lat[setdiff(names(prj_crr_lat), prj_el_excl)],
                      prj_crr_trad[setdiff(names(prj_crr_trad), prj_el_excl)],
                      info = tstsetup_mod)

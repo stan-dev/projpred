@@ -384,7 +384,7 @@ varsel.refmodel <- function(object, d_test = NULL, method = NULL,
 # Argument `p_sel` accepts output from .get_refdist() or .get_p_clust(). For all
 # other arguments, see the documentation of varsel().
 #
-# @return A list with elements `solution_terms` (the solution path), `submodls`
+# @return A list with elements `solution_terms` (the solution path), `outdmins`
 #   (the submodel fits along the solution path, with the number of fits per
 #   model size being equal to the number of projected draws), and `p_sel` (the
 #   same as the input argument `p_sel`).

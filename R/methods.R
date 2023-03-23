@@ -261,7 +261,7 @@ proj_linpred <- function(object, newdata = NULL, offsetnew = NULL,
 ## function applied to each projected submodel in case of proj_linpred()
 proj_linpred_aux <- function(proj, newdata, offset, weights, transform = FALSE,
                              integrated = FALSE, extract_y_ind = TRUE, ...) {
-  pred_sub <- proj$refmodel$family$mu_fun(proj$submodl, newdata = newdata,
+  pred_sub <- proj$refmodel$family$mu_fun(proj$outdmin, newdata = newdata,
                                           offset = offset,
                                           transform = transform)
   if (proj$refmodel$family$for_latent && transform) {
@@ -439,7 +439,7 @@ proj_predict_aux <- function(proj, newdata, offset, weights,
     stop("`resp_oscale = FALSE` can only be used in case of the latent ",
          "projection.")
   }
-  mu <- proj$refmodel$family$mu_fun(proj$submodl,
+  mu <- proj$refmodel$family$mu_fun(proj$outdmin,
                                     newdata = newdata,
                                     offset = offset)
   if (proj$p_type) {
@@ -1738,7 +1738,7 @@ as.matrix.projection <- function(x, nm_scheme = "auto", ...) {
     }
   }
   stopifnot(nm_scheme %in% c("rstanarm", "brms"))
-  res <- do.call(rbind, lapply(x$submodl, get_subparams, nm_scheme = nm_scheme))
+  res <- do.call(rbind, lapply(x$outdmin, get_subparams, nm_scheme = nm_scheme))
   if (x$refmodel$family$family == "gaussian") res <- cbind(res, sigma = x$dis)
   return(res)
 }

@@ -86,7 +86,7 @@ modified, yielding merely a proxy.}
 \item{\code{weights}}{Weights for the projected draws.}
 \item{\code{solution_terms}}{A character vector of the submodel's predictor
 terms.}
-\item{\code{submodl}}{A \code{list} containing the submodel fits (one fit per
+\item{\code{outdmin}}{A \code{list} containing the submodel fits (one fit per
 projected draw).}
 \item{\code{cl_ref}}{A numeric vector of length equal to the number of
 posterior draws in the reference model, containing the cluster indices of
