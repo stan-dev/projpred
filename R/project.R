@@ -248,8 +248,8 @@ project <- function(object, nterms = NULL, solution_terms = NULL,
   )
 
   # Output:
-  projs <- lapply(submodels, function(initoutdmin) {
-    proj_k <- initoutdmin
+  projs <- lapply(submodels, function(submodl) {
+    proj_k <- submodl
     proj_k$p_type <- !is.null(nclusters)
     proj_k$refmodel <- refmodel
     class(proj_k) <- "projection"

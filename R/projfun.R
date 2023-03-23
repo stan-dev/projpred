@@ -50,7 +50,7 @@ project_submodel <- function(solution_terms, p_ref, refmodel, regul = 1e-4,
 
 # Function to project the reference model onto the submodels of given model
 # sizes `nterms`. Returns a list of submodels (each processed by
-# .init_submodel(), so of class `initoutdmin`).
+# .init_submodel(), so of class `submodl`).
 .get_submodels <- function(search_path, nterms, p_ref, refmodel, regul,
                            refit_prj = FALSE, ...) {
   if (!refit_prj) {
@@ -143,6 +143,6 @@ project_submodel <- function(solution_terms, p_ref, refmodel, regul = 1e-4,
   return(structure(
     nlist(dis, ce, weights = wsample, solution_terms, outdmin,
           cl_ref = p_ref$cl, wdraws_ref = p_ref$wsample_orig),
-    class = "initoutdmin"
+    class = "submodl"
   ))
 }
