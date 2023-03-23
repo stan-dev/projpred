@@ -634,7 +634,7 @@ select_possible_terms_size <- function(chosen, terms, size) {
     stop("size must be at least 1")
   }
 
-  valid_submodels <- lapply(terms, function(x) {
+  valid_sub_trm_combs <- lapply(terms, function(x) {
     ## if we are adding a linear term whose smooth is already
     ## included, we reject it
     terms <- extract_terms_response(make_formula(c(chosen)))
@@ -662,7 +662,9 @@ select_possible_terms_size <- function(chosen, terms, size) {
       return(NA)
     }
   })
-  valid_submodels <- unlist(valid_submodels[!is.na(valid_submodels)])
+  valid_sub_trm_combs <- unlist(
+    valid_sub_trm_combs[!is.na(valid_sub_trm_combs)]
+  )
   if (length(chosen) > 0) {
     add_chosen <- paste0(" + ", paste(chosen, collapse = "+"))
     remove_chosen <- paste0(" - ",
@@ -671,12 +673,12 @@ select_possible_terms_size <- function(chosen, terms, size) {
     add_chosen <- ""
     remove_chosen <- ""
   }
-  valid_submodels <- unique(unlist(lapply(valid_submodels, function(x) {
+  valid_sub_trm_combs <- unique(unlist(lapply(valid_sub_trm_combs, function(x) {
     to_character_rhs(flatten_formula(make_formula(
       paste(x, add_chosen, remove_chosen)
     )))
   })))
-  return(valid_submodels)
+  return(valid_sub_trm_combs)
 }
 
 ## Cast a right hand side formula to a character vector.
