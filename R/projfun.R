@@ -101,6 +101,8 @@ get_submodls <- function(search_path, nterms, p_ref, refmodel, regul,
   return(nlist(wobs, wsample))
 }
 
+# Process the output of the `divergence_minimizer` function (see
+# init_refmodel()) to create an object of class `submodl`.
 init_submodl <- function(outdmin, p_ref, refmodel, solution_terms, wobs,
                          wsample) {
   p_ref$mu <- p_ref$mu_offs
