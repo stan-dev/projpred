@@ -217,7 +217,7 @@ The function supplied to argument \code{latent_ppd_oscale} needs to have the
 prototype
 
 \if{html}{\out{<div class="sourceCode r">}}\preformatted{latent_ppd_oscale(ilpreds_resamp, wobs, cl_ref,
-               wdraws_ref = rep(1, length(cl_ref)), idxs_prjdraws)
+                  wdraws_ref = rep(1, length(cl_ref)), idxs_prjdraws)
 }\if{html}{\out{</div>}}
 
 where:

@@ -177,7 +177,7 @@
 #' prototype
 #' ```{r, eval = FALSE}
 #' latent_ppd_oscale(ilpreds_resamp, wobs, cl_ref,
-#'                wdraws_ref = rep(1, length(cl_ref)), idxs_prjdraws)
+#'                   wdraws_ref = rep(1, length(cl_ref)), idxs_prjdraws)
 #' ```
 #' where:
 #' * `ilpreds_resamp` accepts the return value from `latent_ilink`, but possibly
