@@ -355,9 +355,9 @@ bootstrap <- function(x, fun = mean, B = 2000,
   # Number of clusters (assumes labeling "1, ..., nclusters"):
   nclusters <- max(cl, na.rm = TRUE)
   # Cluster centers:
-  centers <- matrix(0, nrow = nclusters, ncol = dim(mu)[1])
+  centers <- matrix(0, nrow = dim(mu)[1], ncol = nclusters)
   # The same centers, but taking offsets into account:
-  centers_offs <- matrix(0, nrow = nclusters, ncol = dim(mu_offs)[1])
+  centers_offs <- matrix(0, nrow = dim(mu_offs)[1], ncol = nclusters)
   # Cluster weights:
   wcluster <- rep(0, nclusters)
   # Dispersion parameter draws aggregated within each cluster:
@@ -372,9 +372,9 @@ bootstrap <- function(x, fun = mean, B = 2000,
     ws <- wsample[ind] / sum(wsample[ind]) * (1 - eps)
 
     # Center of the j-th cluster:
-    centers[j, ] <- mu[, ind, drop = FALSE] %*% ws
+    centers[, j] <- mu[, ind, drop = FALSE] %*% ws
     # The same centers, but taking offsets into account:
-    centers_offs[j, ] <- mu_offs[, ind, drop = FALSE] %*% ws
+    centers_offs[, j] <- mu_offs[, ind, drop = FALSE] %*% ws
     # Unnormalized weight for the j-th cluster:
     wcluster[j] <- sum(wsample[ind])
     # Aggregated dispersion parameter for the j-th cluster:
@@ -386,10 +386,10 @@ bootstrap <- function(x, fun = mean, B = 2000,
 
   # combine the results
   p <- list(
-    mu = structure(unname(t(centers)),
+    mu = structure(unname(centers),
                    nobs_orig = attr(mu, "nobs_orig"),
                    class = oldClass(mu)),
-    mu_offs = structure(unname(t(centers_offs)),
+    mu_offs = structure(unname(centers_offs),
                         nobs_orig = attr(mu_offs, "nobs_orig"),
                         class = oldClass(mu_offs)),
     var = structure(predvar,
