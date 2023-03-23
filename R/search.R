@@ -14,7 +14,7 @@ search_forward <- function(p_ref, refmodel, nterms_max, verbose = TRUE, opt,
     if (is.null(cands))
       next
     full_cands <- lapply(cands, function(cand) c(chosen, cand))
-    submodels <- lapply(full_cands, project_submodel, p_ref = p_ref,
+    submodels <- lapply(full_cands, get_submodl_prj, p_ref = p_ref,
                         refmodel = refmodel, regul = opt$regul, ...)
 
     ## select best candidate

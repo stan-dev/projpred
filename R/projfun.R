@@ -2,8 +2,8 @@
 # terms given in `solution_terms`. Note that "single submodel" does not refer to
 # a single fit (there are as many fits for this single submodel as there are
 # projected draws).
-project_submodel <- function(solution_terms, p_ref, refmodel, regul = 1e-4,
-                             ...) {
+get_submodl_prj <- function(solution_terms, p_ref, refmodel, regul = 1e-4,
+                            ...) {
   validparams <- .validate_wobs_wsample(refmodel$wobs, p_ref$weights, p_ref$mu)
   wobs <- validparams$wobs
   wsample <- validparams$wsample
@@ -75,7 +75,7 @@ get_submodls <- function(search_path, nterms, p_ref, refmodel, regul,
   } else {
     # In this case, project again.
     fetch_submodel <- function(nterms, ...) {
-      return(project_submodel(
+      return(get_submodl_prj(
         solution_terms = utils::head(search_path$solution_terms, nterms),
         p_ref = p_ref, refmodel = refmodel, regul = regul, ...
       ))
