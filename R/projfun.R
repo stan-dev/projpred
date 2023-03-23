@@ -48,9 +48,9 @@ project_submodel <- function(solution_terms, p_ref, refmodel, regul = 1e-4,
   ))
 }
 
-# Function to project the reference model onto the submodels of given model
-# sizes `nterms`. Returns a list of submodels (each processed by
-# .init_submodel(), so of class `submodl`).
+# Function to fetch .init_submodel() output (of class `submodl`) for each of
+# given model sizes `nterms`, so this gives a list of objects, each of class
+# `submodl`.
 get_submodls <- function(search_path, nterms, p_ref, refmodel, regul,
                            refit_prj = FALSE, ...) {
   if (!refit_prj) {
