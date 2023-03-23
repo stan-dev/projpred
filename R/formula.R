@@ -625,28 +625,6 @@ count_terms_in_group_term <- function(term) {
   return(length(terms_))
 }
 
-## Given a list of formulas, sort them by the number of terms in them.
-## @param submodels A list of models' formulas.
-## @return a sorted list of submodels by included terms.
-sort_submodels_by_size <- function(submodels) {
-  size <- lapply(submodels, count_terms_in_formula)
-  df <- data.frame(submodels = as.character(submodels), size = unlist(size))
-  ordered <- df[order(df$size), ]
-
-  search_terms <- list()
-  for (size in unique(ordered$size)) {
-    search_terms[[size]] <- as.character(
-      ordered$submodels[ordered$size == size]
-    )
-  }
-
-  ord_list <- search_terms
-  ## remove NA inside submodels
-  ord_list_nona <- lapply(ord_list, function(l) l[!is.na(l)])
-  ## remove NA at the submodels level
-  return(ord_list_nona[!is.na(ord_list_nona)])
-}
-
 ## Select next possible terms without surpassing a specific size
 ## @param chosen A list of currently chosen terms
 ## @param terms A list of all possible terms
