@@ -671,12 +671,12 @@ select_possible_terms_size <- function(chosen, terms, size) {
     add_chosen <- ""
     remove_chosen <- ""
   }
-  full_valid_submodels <- unique(unlist(lapply(valid_submodels, function(x) {
+  valid_submodels <- unique(unlist(lapply(valid_submodels, function(x) {
     to_character_rhs(flatten_formula(make_formula(
       paste(x, add_chosen, remove_chosen)
     )))
   })))
-  return(full_valid_submodels)
+  return(valid_submodels)
 }
 
 ## Cast a right hand side formula to a character vector.
