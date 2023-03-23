@@ -639,7 +639,7 @@ plot.vsel <- function(
   if (!is.na(thres_elpd)) {
     # Table of thresholds used in extended suggest_size() heuristics (only in
     # case of ELPD and MLPD):
-    nobs_test <- nrow(object$d_test$data %||% object$refmodel$fetch_data())
+    nobs_test <- nrow(object$y_wobs_test)
     thres_tab_basic <- data.frame(statistic = c("elpd", "mlpd"),
                                   thres = c(thres_elpd, thres_elpd / nobs_test))
   }
@@ -831,7 +831,11 @@ summary.vsel <- function(
     formula = object$refmodel$formula,
     family = object$refmodel$family,
     nobs_train = nrow(object$refmodel$fetch_data()),
-    nobs_test = nrow(object$d_test$data),
+    nobs_test = if (object$type_test == "test_hold-out") {
+      nrow(object$y_wobs_test)
+    } else {
+      NULL
+    },
     method = object$method,
     cv_method = object$cv_method,
     validate_search = object$validate_search,

@@ -228,7 +228,7 @@ varsel.refmodel <- function(object, d_test = NULL, method = NULL,
                    weights = refmodel$wobs, y = refmodel$y,
                    y_oscale = refmodel$y_oscale)
   } else {
-    d_test$type <- "test"
+    d_test$type <- "test_hold-out"
     if (!refmodel$family$for_latent) {
       d_test$y_oscale <- d_test$y
     }
@@ -265,6 +265,10 @@ varsel.refmodel <- function(object, d_test = NULL, method = NULL,
       }
     }
   }
+  y_wobs_test <- setNames(
+    as.data.frame(d_test[nms_y_wobs_test(wobs_nm = "weights")]),
+    nms_y_wobs_test()
+  )
 
   # Clustering or thinning for the search:
   p_sel <- get_refdist(refmodel, ndraws, nclusters)
@@ -351,29 +355,29 @@ varsel.refmodel <- function(object, d_test = NULL, method = NULL,
       mu_test <- refmodel$family$linkinv(eta_test)
     }
     ref <- weighted_summary_means(
-      y_test = d_test, family = refmodel$family, wdraws = refmodel$wdraws_ref,
-      mu = mu_test, dis = refmodel$dis, cl_ref = seq_along(refmodel$wdraws_ref)
+      y_wobs_test = y_wobs_test, family = refmodel$family,
+      wdraws = refmodel$wdraws_ref, mu = mu_test, dis = refmodel$dis,
+      cl_ref = seq_along(refmodel$wdraws_ref)
     )
   }
 
   # The object to be returned:
-  vs <- nlist(
-    refmodel,
-    search_path,
-    d_test,
-    summaries = nlist(sub, ref),
-    solution_terms = search_path$solution_terms,
-    ce = sapply(submodls, "[[", "ce"),
-    nterms_max,
-    nterms_all = count_terms_in_formula(refmodel$formula) - 1L,
-    method = method,
-    cv_method = NULL,
-    validate_search = NULL,
-    clust_used_search = p_sel$clust_used,
-    clust_used_eval = p_pred$clust_used,
-    nprjdraws_search = NCOL(p_sel$mu),
-    nprjdraws_eval = NCOL(p_pred$mu)
-  )
+  vs <- nlist(refmodel,
+              search_path,
+              type_test = d_test$type,
+              y_wobs_test,
+              summaries = nlist(sub, ref),
+              solution_terms = search_path$solution_terms,
+              ce = sapply(submodls, "[[", "ce"),
+              nterms_max,
+              nterms_all = count_terms_in_formula(refmodel$formula) - 1L,
+              method = method,
+              cv_method = NULL,
+              validate_search = NULL,
+              clust_used_search = p_sel$clust_used,
+              clust_used_eval = p_pred$clust_used,
+              nprjdraws_search = NCOL(p_sel$mu),
+              nprjdraws_eval = NCOL(p_pred$mu))
   class(vs) <- "vsel"
 
   return(vs)

@@ -161,7 +161,10 @@ test_that(paste(
     vsel_tester(
       vs_repr,
       refmod_expected = refmods[[tstsetup_ref]],
-      dtest_expected = c(list(type = "test"), d_test_crr),
+      ywtest_expected = setNames(
+        as.data.frame(d_test_crr[nms_y_wobs_test(wobs_nm = "weights")]),
+        nms_y_wobs_test()
+      ),
       solterms_len_expected = args_vs_i$nterms_max,
       method_expected = meth_exp_crr,
       nprjdraws_search_expected = args_vs_i$nclusters,
@@ -171,20 +174,19 @@ test_that(paste(
         all(grepl("\\+", args_vs_i$search_terms)),
       info_str = tstsetup
     )
-    expect_equal(vs_repr[setdiff(names(vs_repr), "d_test")],
-                 vss[[tstsetup]][setdiff(names(vss[[tstsetup]]), "d_test")],
+    expect_equal(vs_repr[setdiff(names(vs_repr),
+                                 c("type_test", "y_wobs_test"))],
+                 vss[[tstsetup]][setdiff(names(vss[[tstsetup]]),
+                                         c("type_test", "y_wobs_test"))],
                  info = tstsetup)
-    d_test_orig <- vss[[tstsetup]]$d_test[setdiff(names(vss[[tstsetup]]$d_test),
-                                                  c("type", "data"))]
+    y_wobs_test_orig <- vss[[tstsetup]]$y_wobs_test
     if (pkg_crr == "brms") {
       # brms seems to set argument `contrasts`, but this is not important for
       # projpred, so ignore it in the comparison:
-      attr(d_test_orig$y, "contrasts") <- NULL
-      attr(d_test_orig$y_oscale, "contrasts") <- NULL
+      attr(y_wobs_test_orig$y, "contrasts") <- NULL
+      attr(y_wobs_test_orig$y_oscale, "contrasts") <- NULL
     }
-    expect_equal(vs_repr$d_test[setdiff(names(vs_repr$d_test),
-                                        c("type", "data"))],
-                 d_test_orig, info = tstsetup)
+    expect_equal(vs_repr$y_wobs_test, y_wobs_test_orig, info = tstsetup)
   }
 })
 
@@ -291,7 +293,10 @@ test_that(paste(
     vsel_tester(
       vs_indep,
       refmod_expected = refmods[[tstsetup_ref]],
-      dtest_expected = c(list(type = "test"), d_test_crr),
+      ywtest_expected = setNames(
+        as.data.frame(d_test_crr[nms_y_wobs_test(wobs_nm = "weights")]),
+        nms_y_wobs_test()
+      ),
       solterms_len_expected = args_vs_i$nterms_max,
       method_expected = meth_exp_crr,
       nprjdraws_search_expected = args_vs_i$nclusters,

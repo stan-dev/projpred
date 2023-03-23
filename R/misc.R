@@ -8,6 +8,10 @@ nms_d_test <- function() {
   c("type", "data", "offset", "weights", "y", "y_oscale")
 }
 
+nms_y_wobs_test <- function(wobs_nm = "wobs") {
+  c("y", "y_oscale", wobs_nm)
+}
+
 weighted.sd <- function(x, w, na.rm = FALSE) {
   if (na.rm) {
     ind <- !is.na(w) & !is.na(x)

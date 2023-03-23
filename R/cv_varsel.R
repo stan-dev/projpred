@@ -232,7 +232,8 @@ cv_varsel.refmodel <- function(
   # The object to be returned:
   vs <- nlist(refmodel,
               search_path = sel,
-              d_test = sel_cv$d_test,
+              type_test = cv_method,
+              y_wobs_test = sel_cv$y_wobs_test,
               summaries = sel_cv$summaries,
               ce = ce_out,
               solution_terms = sel$solution_terms,
@@ -769,14 +770,11 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
   # Combined submodel and reference model predictive performance:
   summaries <- list(sub = summ_sub, ref = summ_ref)
 
-  d_test <- list(type = "LOO", data = NULL, offset = refmodel$offset,
-                 weights = refmodel$wobs, y = refmodel$y,
-                 y_oscale = refmodel$y_oscale)
-
   solution_terms_mat <- solution_terms_mat[
     , seq_along(search_path$solution_terms), drop = FALSE
   ]
-  out_list <- nlist(solution_terms_cv = solution_terms_mat, summaries, d_test)
+  out_list <- nlist(solution_terms_cv = solution_terms_mat, summaries,
+                    y_wobs_test = as.data.frame(refmodel[nms_y_wobs_test()]))
   if (!validate_search) {
     out_list <- c(out_list, nlist(sel))
   }
@@ -801,19 +799,6 @@ kfold_varsel <- function(refmodel, method, nterms_max, ndraws,
     # induce a dependency between training and test data:
     refmodel$y <- rep(NA, length(refmodel$y))
   }
-
-  # Extend `list_cv` to also contain `y`, `y_oscale`, `weights`, and `offset`:
-  extend_list_cv <- function(fold) {
-    d_test <- list(
-      y = refmodel$y[fold$omitted],
-      y_oscale = refmodel$y_oscale[fold$omitted],
-      weights = refmodel$wobs[fold$omitted],
-      offset = refmodel$offset[fold$omitted],
-      omitted = fold$omitted
-    )
-    return(nlist(refmodel = fold$refmodel, d_test))
-  }
-  list_cv <- mapply(extend_list_cv, list_cv, SIMPLIFY = FALSE)
 
   # Run the search for each fold:
   if (verbose) {
@@ -878,7 +863,7 @@ kfold_varsel <- function(refmodel, method, nterms_max, ndraws,
   get_summaries_submodls_cv <- function(submodls, fold) {
     get_sub_summaries(submodls = submodls,
                       refmodel = refmodel,
-                      test_points = fold$d_test$omitted)
+                      test_points = fold$omitted)
   }
   sub_cv_summaries <- mapply(get_summaries_submodls_cv, submodls_cv, list_cv)
   # Combine the results from the K folds into a single results list:
@@ -889,7 +874,7 @@ kfold_varsel <- function(refmodel, method, nterms_max, ndraws,
   }
   sub <- apply(sub_cv_summaries, 1, rbind2list)
   idxs_sorted_by_fold <- unlist(lapply(list_cv, function(fold) {
-    fold$d_test$omitted
+    fold$omitted
   }))
   idxs_sorted_by_fold_aug <- idxs_sorted_by_fold
   if (!is.null(refmodel$family$cats)) {
@@ -919,18 +904,24 @@ kfold_varsel <- function(refmodel, method, nterms_max, ndraws,
     return(summ)
   })
 
+  # Needed later:
+  y_wobs_test <- as.data.frame(refmodel[nms_y_wobs_test()])
+
   # Perform the evaluation of the reference model for each fold:
   ref <- rbind2list(lapply(list_cv, function(fold) {
     eta_test <- fold$refmodel$ref_predfun(
       fold$refmodel$fit,
-      newdata = refmodel$fetch_data(obs = fold$d_test$omitted),
+      newdata = refmodel$fetch_data(obs = fold$omitted),
       excl_offs = FALSE
     )
     mu_test <- fold$refmodel$family$linkinv(eta_test)
     weighted_summary_means(
-      y_test = fold$d_test, family = fold$refmodel$family,
-      wdraws = fold$refmodel$wdraws_ref, mu = mu_test,
-      dis = fold$refmodel$dis, cl_ref = seq_along(fold$refmodel$wdraws_ref)
+      y_wobs_test = y_wobs_test[fold$omitted, , drop = FALSE],
+      family = fold$refmodel$family,
+      wdraws = fold$refmodel$wdraws_ref,
+      mu = mu_test,
+      dis = fold$refmodel$dis,
+      cl_ref = seq_along(fold$refmodel$wdraws_ref)
     )
   }))
   ref$mu <- ref$mu[order(idxs_sorted_by_fold_flx)]
@@ -940,21 +931,7 @@ kfold_varsel <- function(refmodel, method, nterms_max, ndraws,
     ref$oscale$lppd <- ref$oscale$lppd[order(idxs_sorted_by_fold)]
   }
 
-  # Combine the K separate test "datasets" (rather "information objects") into a
-  # single list:
-  d_cv <- rbind2list(lapply(list_cv, function(fold) {
-    list(offset = fold$d_test$offset,
-         weights = fold$d_test$weights,
-         y = fold$d_test$y,
-         y_oscale = fold$d_test$y_oscale)
-  }))
-  d_cv <- as.list(
-    as.data.frame(d_cv)[order(idxs_sorted_by_fold), , drop = FALSE]
-  )
-
-  return(nlist(solution_terms_cv,
-               summaries = nlist(sub, ref),
-               d_test = c(list(type = "kfold", data = NULL), d_cv)))
+  return(nlist(solution_terms_cv, summaries = nlist(sub, ref), y_wobs_test))
 }
 
 # Re-fit the reference model K times (once for each fold; `cvfun` case) or fetch

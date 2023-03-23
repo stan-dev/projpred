@@ -1814,9 +1814,9 @@ pp_tester <- function(pp,
 # @param with_cv A single logical value indicating whether `vs` was created by
 #   cv_varsel() (`TRUE`) or not (`FALSE`).
 # @param refmod_expected The expected `vs$refmodel` object.
-# @param dtest_expected If `vs` was created with a non-`NULL` argument `d_test`
+# @param ywtest_expected If `vs` was created with a non-`NULL` argument `d_test`
 #   (which is only possible for varsel()), then this needs to be the expected
-#   `vs$d_test` object. Otherwise, this needs to be `NULL`.
+#   `vs$y_wobs_test` object. Otherwise, this needs to be `NULL`.
 # @param solterms_len_expected A single numeric value giving the expected number
 #   of solution terms (not counting the intercept, even for the intercept-only
 #   model).
@@ -1846,7 +1846,7 @@ vsel_tester <- function(
     with_cv = FALSE,
     from_datafit = FALSE,
     refmod_expected,
-    dtest_expected = NULL,
+    ywtest_expected = NULL,
     solterms_len_expected,
     method_expected,
     cv_method_expected = NULL,
@@ -2042,21 +2042,25 @@ vsel_tester <- function(
   expect_identical(vs$search_path$p_sel$clust_used, cl_search_expected,
                    info = info_str)
 
-  # d_test
-  if (is.null(dtest_expected)) {
-    expect_type(vs$d_test, "list")
-    expect_named(vs$d_test, nms_d_test(), info = info_str)
-    dtest_type <- cv_method_expected
-    if (length(dtest_type) == 0) {
-      dtest_type <- "train"
+  # type_test
+  type_test_expected <- cv_method_expected
+  if (length(type_test_expected) == 0) {
+    if (is.null(ywtest_expected)) {
+      type_test_expected <- "train"
+    } else {
+      type_test_expected <- "test_hold-out"
     }
-    expect_identical(vs$d_test$type, dtest_type, info = info_str)
-    expect_null(vs$d_test$data, info = info_str)
-    expect_identical(vs$d_test$offset, vs$refmodel$offset, info = info_str)
-    expect_identical(vs$d_test$weights, vs$refmodel$wobs, info = info_str)
+  }
+  expect_identical(vs$type_test, type_test_expected, info = info_str)
+
+  # y_wobs_test
+  if (is.null(ywtest_expected)) {
+    expect_true(is.data.frame(vs$y_wobs_test))
+    expect_named(vs$y_wobs_test, nms_y_wobs_test(), info = info_str)
+    expect_identical(vs$y_wobs_test$wobs, vs$refmodel$wobs, info = info_str)
     if (vs$refmodel$family$for_latent && with_cv) {
       if (identical(cv_method_expected, "kfold")) {
-        expect_true(all(is.na(vs$d_test$y)), info = info_str)
+        expect_true(all(is.na(vs$y_wobs_test$y)), info = info_str)
       } else {
         ll_forPSIS <- rstantools::log_lik(vs$refmodel$fit)
         lwdraws_ref <- weights(suppressWarnings(
@@ -2068,14 +2072,15 @@ vsel_tester <- function(
             mlvl_allrandom = getOption("projpred.mlvl_proj_ref_new", FALSE)
           )) * exp(lwdraws_ref)
         )
-        expect_equal(vs$d_test$y, y_lat_loo, info = info_str)
+        expect_equal(vs$y_wobs_test$y, y_lat_loo, info = info_str)
       }
     } else {
-      expect_identical(vs$d_test$y, vs$refmodel$y, info = info_str)
+      expect_identical(vs$y_wobs_test$y, vs$refmodel$y, info = info_str)
     }
-    expect_identical(vs$d_test$y_oscale, vs$refmodel$y_oscale, info = info_str)
+    expect_identical(vs$y_wobs_test$y_oscale, vs$refmodel$y_oscale,
+                     info = info_str)
   } else {
-    expect_identical(vs$d_test, dtest_expected, info = info_str)
+    expect_identical(vs$y_wobs_test, ywtest_expected, info = info_str)
   }
 
   # summaries
@@ -2090,8 +2095,8 @@ vsel_tester <- function(
   }
   nobsv_summ <- nobsv
   nobsv_summ_aug <- nobsv_aug
-  if (!is.null(dtest_expected)) {
-    nobsv_summ <- nrow(dtest_expected$data)
+  if (!is.null(ywtest_expected)) {
+    nobsv_summ <- nrow(ywtest_expected)
     nobsv_summ_aug <- nobsv_summ * ncats
   }
   if (vs$refmodel$family$for_latent) {
@@ -2349,8 +2354,12 @@ smmry_tester <- function(smmry, vsel_expected, nterms_max_expected = NULL,
   expect_null(smmry$fit, info = info_str)
   expect_identical(smmry$nobs_train, length(vsel_expected$refmodel$y),
                    info = info_str)
-  expect_identical(smmry$nobs_test, nrow(vsel_expected$d_test$data),
-                   info = info_str)
+  if (vsel_expected$type_test == "test_hold-out") {
+    expect_identical(smmry$nobs_test, nrow(vsel_expected$y_wobs_test),
+                     info = info_str)
+  } else {
+    expect_null(smmry$nobs_test, info = info_str)
+  }
   if (is.null(nterms_max_expected)) {
     nterms_ch <- vsel_expected$nterms_max
   } else {
