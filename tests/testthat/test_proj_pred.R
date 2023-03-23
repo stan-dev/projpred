@@ -295,7 +295,7 @@ test_that("`newdata` and `integrated` work (even in edge cases)", {
       if (args_prj[[tstsetup]]$prj_nm == "augdat") {
         pred_true <- t(arr2augmat(pred_true, margin_draws = 1))
       }
-      expect_equal(prjs[[!!tstsetup]]$weights %*% pred_false, pred_true,
+      expect_equal(prjs[[!!tstsetup]]$wdraws_prj %*% pred_false, pred_true,
                    info = nobsv_crr)
     }
   }

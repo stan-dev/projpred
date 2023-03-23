@@ -256,8 +256,8 @@ bootstrap <- function(x, fun = mean, B = 2000,
 #   * `dis`: A vector of length \eqn{S_{\mathrm{prj}}}{S_prj} containing the
 #   reference model's dispersion parameter value for each draw/cluster (NA for
 #   those families that do not have a dispersion parameter).
-#   * `weights`: A vector of length \eqn{S_{\mathrm{prj}}}{S_prj} containing the
-#   weights for the draws/clusters.
+#   * `wdraws_prj`: A vector of length \eqn{S_{\mathrm{prj}}}{S_prj} containing
+#   the weights for the projected draws/clusters.
 #   * `cl`: Cluster assignment for each posterior draw, that is, a vector that
 #   has length equal to the number of posterior draws and each value is an
 #   integer between 1 and \eqn{S_{\mathrm{prj}}}{S_prj}.
@@ -321,7 +321,9 @@ bootstrap <- function(x, fun = mean, B = 2000,
       var = structure(predvar,
                       nobs_orig = attr(refmodel$mu, "nobs_orig"),
                       class = oldClass(refmodel$mu)),
-      dis = refmodel$dis[s_ind], weights = rep(1 / ndraws, ndraws), cl = cl,
+      dis = refmodel$dis[s_ind],
+      wdraws_prj = rep(1 / ndraws, ndraws),
+      cl = cl,
       wsample_orig = rep(1, S),
       clust_used = FALSE
     )
@@ -350,8 +352,8 @@ bootstrap <- function(x, fun = mean, B = 2000,
     cl <- cl$cluster
   }
 
-  # (re)compute the cluster centers, because they may be different from the ones
-  # returned by kmeans if the samples have differing weights
+  # (Re)compute the cluster centers, because they may be different from the ones
+  # returned by kmeans() if the draws have differing weights.
   # Number of clusters (assumes labeling "1, ..., nclusters"):
   nclusters <- max(cl, na.rm = TRUE)
   # Cluster centers:
@@ -396,7 +398,7 @@ bootstrap <- function(x, fun = mean, B = 2000,
                     nobs_orig = attr(mu, "nobs_orig"),
                     class = oldClass(mu)),
     dis = dis_agg,
-    weights = wcluster,
+    wdraws_prj = wcluster,
     cl = cl,
     wsample_orig = wsample,
     clust_used = TRUE

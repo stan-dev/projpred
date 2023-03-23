@@ -1454,7 +1454,7 @@ refdist_tester <- function(refd,
                            clust_expected = TRUE,
                            info_str) {
   expect_named(
-    refd, c("mu", "mu_offs", "var", "dis", "weights", "cl", "wsample_orig",
+    refd, c("mu", "mu_offs", "var", "dis", "wdraws_prj", "cl", "wsample_orig",
             "clust_used"),
     info = info_str
   )
@@ -1465,9 +1465,9 @@ refdist_tester <- function(refd,
   expect_true(is.vector(refd$dis) && is.atomic(refd$dis),
               info = info_str)
   expect_length(refd$dis, nprjdraws_expected)
-  expect_true(is.vector(refd$weights) && is.atomic(refd$weights),
+  expect_true(is.vector(refd$wdraws_prj) && is.atomic(refd$wdraws_prj),
               info = info_str)
-  expect_length(refd$weights, nprjdraws_expected)
+  expect_length(refd$wdraws_prj, nprjdraws_expected)
   expect_true(is.vector(refd$cl, "integer"), info = info_str)
   expect_length(refd$cl, nrefdraws)
   expect_identical(refd$wsample_orig, rep(1, nrefdraws), info = info_str)
@@ -1514,7 +1514,7 @@ projection_tester <- function(p,
   # would have to be updated:
   expect_named(
     p,
-    c("dis", "ce", "weights", "solution_terms", "outdmin", "cl_ref",
+    c("dis", "ce", "wdraws_prj", "solution_terms", "outdmin", "cl_ref",
       "wdraws_ref", "p_type", "refmodel"),
     info = info_str
   )
@@ -1638,13 +1638,13 @@ projection_tester <- function(p,
   expect_length(p$ce, 1)
   expect_true(!is.na(p$ce), info = info_str)
 
-  # weights
-  expect_length(p$weights, nprjdraws_expected)
+  # wdraws_prj
+  expect_length(p$wdraws_prj, nprjdraws_expected)
   if (!is.null(prjdraw_weights_expected)) {
-    expect_identical(p$weights, prjdraw_weights_expected, info = info_str)
+    expect_identical(p$wdraws_prj, prjdraw_weights_expected, info = info_str)
   }
   if (nprjdraws_expected == 1) {
-    expect_identical(p$weights, 1, info = info_str)
+    expect_identical(p$wdraws_prj, 1, info = info_str)
   }
 
   # cl_ref
@@ -1998,8 +1998,8 @@ vsel_tester <- function(
   nobsv_aug <- nobsv * ncats
   expect_type(vs$search_path$p_sel, "list")
   expect_named(vs$search_path$p_sel,
-               c("mu", "mu_offs", "var", "dis", "weights", "cl", "wsample_orig",
-                 "clust_used"),
+               c("mu", "mu_offs", "var", "dis", "wdraws_prj", "cl",
+                 "wsample_orig", "clust_used"),
                info = info_str)
   expect_true(is.matrix(vs$search_path$p_sel$mu), info = info_str)
   expect_true(is.numeric(vs$search_path$p_sel$mu), info = info_str)
@@ -2033,8 +2033,8 @@ vsel_tester <- function(
                 is.atomic(vs$search_path$p_sel$dis),
               info = info_str)
   expect_length(vs$search_path$p_sel$dis, nprjdraws_search_expected)
-  expect_type(vs$search_path$p_sel$weights, "double")
-  expect_length(vs$search_path$p_sel$weights, nprjdraws_search_expected)
+  expect_type(vs$search_path$p_sel$wdraws_prj, "double")
+  expect_length(vs$search_path$p_sel$wdraws_prj, nprjdraws_search_expected)
   expect_true(is.numeric(vs$search_path$p_sel$cl), info = info_str)
   expect_length(vs$search_path$p_sel$cl, ncol(vs$refmodel$mu))
   expect_identical(vs$search_path$p_sel$wsample_orig,

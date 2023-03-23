@@ -501,7 +501,7 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
     )
     lw_sub <- suppressWarnings(weights(sub_psisloo))
     # Take into account that clustered draws usually have different weights:
-    lw_sub <- lw_sub + log(refdist_eval$weights)
+    lw_sub <- lw_sub + log(refdist_eval$wdraws_prj)
     # This re-weighting requires a re-normalization (as.array() is applied to
     # have stricter consistency checks, see `?sweep`):
     lw_sub <- sweep(lw_sub, 2, as.array(apply(lw_sub, 2, log_sum_exp)))

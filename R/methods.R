@@ -311,9 +311,9 @@ proj_linpred_aux <- function(proj, newdata, offset, weights, transform = FALSE,
     ## average over the projected draws
     if (proj$refmodel$family$for_latent && transform &&
         !inherits(pred_sub, "augmat")) {
-      pred_sub <- proj$weights %*% pred_sub
+      pred_sub <- proj$wdraws_prj %*% pred_sub
     } else {
-      pred_sub <- structure(pred_sub %*% proj$weights,
+      pred_sub <- structure(pred_sub %*% proj$wdraws_prj,
                             nobs_orig = attr(pred_sub, "nobs_orig"),
                             class = oldClass(pred_sub))
     }
@@ -324,7 +324,7 @@ proj_linpred_aux <- function(proj, newdata, offset, weights, transform = FALSE,
         marg_obs <- 2
       }
       lpd_out <- as.matrix(
-        apply(lpd_out, marg_obs, log_weighted_mean_exp, proj$weights)
+        apply(lpd_out, marg_obs, log_weighted_mean_exp, proj$wdraws_prj)
       )
     }
   }
@@ -444,10 +444,11 @@ proj_predict_aux <- function(proj, newdata, offset, weights,
                                     offset = offset)
   if (proj$p_type) {
     # In this case, the posterior draws have been clustered.
-    draw_inds <- sample(x = seq_along(proj$weights), size = nresample_clusters,
-                        replace = TRUE, prob = proj$weights)
+    draw_inds <- sample(x = seq_along(proj$wdraws_prj),
+                        size = nresample_clusters, replace = TRUE,
+                        prob = proj$wdraws_prj)
   } else {
-    draw_inds <- seq_along(proj$weights)
+    draw_inds <- seq_along(proj$wdraws_prj)
   }
   cats_aug <- proj$refmodel$family$cats
   if (proj$refmodel$family$for_latent && resp_oscale) {

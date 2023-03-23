@@ -69,7 +69,7 @@
 #'     would cancel out when calculating the KL divergence have been dropped. In
 #'     case of the Gaussian family, that reduced cross-entropy is further
 #'     modified, yielding merely a proxy.}
-#'     \item{`weights`}{Weights for the projected draws.}
+#'     \item{`wdraws_prj`}{Weights for the projected draws.}
 #'     \item{`solution_terms`}{A character vector of the submodel's predictor
 #'     terms.}
 #'     \item{`outdmin`}{A `list` containing the submodel fits (one fit per

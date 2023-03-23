@@ -7,7 +7,7 @@
     .weighted_summary_means(
       y_test = list(y = y, y_oscale = y_oscale, weights = wobs),
       family = refmodel$family,
-      wsample = submodl$weights,
+      wsample = submodl$wdraws_prj,
       mu = refmodel$family$mu_fun(submodl$outdmin, obs = test_points,
                                   newdata = newdata, offset = offset),
       dis = submodl$dis,

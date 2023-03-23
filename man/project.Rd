@@ -83,7 +83,7 @@ this is not the actual cross-entropy, but a reduced one where terms which
 would cancel out when calculating the KL divergence have been dropped. In
 case of the Gaussian family, that reduced cross-entropy is further
 modified, yielding merely a proxy.}
-\item{\code{weights}}{Weights for the projected draws.}
+\item{\code{wdraws_prj}}{Weights for the projected draws.}
 \item{\code{solution_terms}}{A character vector of the submodel's predictor
 terms.}
 \item{\code{outdmin}}{A \code{list} containing the submodel fits (one fit per

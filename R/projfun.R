@@ -4,7 +4,8 @@
 # projected draws).
 get_submodl_prj <- function(solution_terms, p_ref, refmodel, regul = 1e-4,
                             ...) {
-  validparams <- .validate_wobs_wsample(refmodel$wobs, p_ref$weights, p_ref$mu)
+  validparams <- .validate_wobs_wsample(refmodel$wobs, p_ref$wdraws_prj,
+                                        p_ref$mu)
   wobs <- validparams$wobs
   wsample <- validparams$wsample
 
@@ -58,7 +59,7 @@ get_submodls <- function(search_path, nterms, p_ref, refmodel, regul,
     # project again.
     fetch_submodl <- function(nterms, ...) {
       validparams <- .validate_wobs_wsample(
-        refmodel$wobs, search_path$p_sel$weights, search_path$p_sel$mu
+        refmodel$wobs, search_path$p_sel$wdraws_prj, search_path$p_sel$mu
       )
       wobs <- validparams$wobs
       wsample <- validparams$wsample
@@ -143,7 +144,7 @@ init_submodl <- function(outdmin, p_ref, refmodel, solution_terms, wobs,
     wsample
   )
   return(structure(
-    nlist(dis, ce, weights = wsample, solution_terms, outdmin,
+    nlist(dis, ce, wdraws_prj = wsample, solution_terms, outdmin,
           cl_ref = p_ref$cl, wdraws_ref = p_ref$wsample_orig),
     class = "submodl"
   ))

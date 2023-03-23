@@ -368,7 +368,7 @@ test_that(paste(
           datafits[[args_prj_vs_datafit[[tstsetup]]$tstsetup_datafit]],
         nprjdraws_expected = 1L,
         p_type_expected = TRUE,
-        prjdraw_weights_expected = prjs_vs_datafit[[tstsetup]][[1]]$weights,
+        prjdraw_weights_expected = prjs_vs_datafit[[tstsetup]][[1]]$wdraws_prj,
         from_vsel_L1_search = with_L1
       )
       ### TODO: Currently, the as.matrix() call below is not possible for
