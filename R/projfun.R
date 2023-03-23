@@ -42,17 +42,17 @@ project_submodel <- function(solution_terms, p_ref, refmodel, regul = 1e-4,
     check_conv(outdmin)
   }
 
-  return(.init_submodel(
+  return(init_submodl(
     outdmin = outdmin, p_ref = p_ref, refmodel = refmodel,
     solution_terms = solution_terms, wobs = wobs, wsample = wsample
   ))
 }
 
-# Function to fetch .init_submodel() output (of class `submodl`) for each of
-# given model sizes `nterms`, so this gives a list of objects, each of class
+# Function to fetch init_submodl() output (of class `submodl`) for each of given
+# model sizes `nterms`, so this gives a list of objects, each of class
 # `submodl`.
 get_submodls <- function(search_path, nterms, p_ref, refmodel, regul,
-                           refit_prj = FALSE, ...) {
+                         refit_prj = FALSE, ...) {
   if (!refit_prj) {
     # In this case, simply fetch the already computed projections, so don't
     # project again.
@@ -62,7 +62,7 @@ get_submodls <- function(search_path, nterms, p_ref, refmodel, regul,
       )
       wobs <- validparams$wobs
       wsample <- validparams$wsample
-      return(.init_submodel(
+      return(init_submodl(
         # Re-use the submodel fits from the search:
         outdmin = search_path$outdmins[[nterms + 1]],
         p_ref = search_path$p_sel,
@@ -101,18 +101,18 @@ get_submodls <- function(search_path, nterms, p_ref, refmodel, regul,
   return(nlist(wobs, wsample))
 }
 
-.init_submodel <- function(outdmin, p_ref, refmodel, solution_terms, wobs,
-                           wsample) {
+init_submodl <- function(outdmin, p_ref, refmodel, solution_terms, wobs,
+                         wsample) {
   p_ref$mu <- p_ref$mu_offs
   if (!(all(is.na(p_ref$var)) ||
         refmodel$family$family %in% c("gaussian", "Student_t"))) {
-    stop("For family `", refmodel$family$family, "()`, .init_submodel() might ",
+    stop("For family `", refmodel$family$family, "()`, init_submodl() might ",
          "have to be adapted, depending on whether family$predvar() is ",
          "invariant with respect to offsets (this would be OK and does not ",
          "need an adaptation) or not (this would need an adaptation).")
   }
   if (refmodel$family$family == "Student_t") {
-    stop("For the `Student_t()` family, .init_submodel() is not finished yet.")
+    stop("For the `Student_t()` family, init_submodl() is not finished yet.")
     ### TODO (Student_t()): Check if this is needed (perhaps with some
     ### modifications) or if something completely different is needed (there
     ### used to be no special handling of the `Student_t()` family here at all):
