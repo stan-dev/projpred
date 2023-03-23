@@ -422,21 +422,22 @@ NULL
 predict.refmodel <- function(object, newdata = NULL, ynew = NULL,
                              offsetnew = NULL, weightsnew = NULL,
                              type = "response", ...) {
-  if (!type %in% c("response", "link")) {
-    stop("type should be one of ('response', 'link')")
-  }
   if (inherits(object, "datafit")) {
     stop("Cannot make predictions for an `object` of class \"datafit\".")
   }
+  refmodel <- object
+  if (!type %in% c("response", "link")) {
+    stop("type should be one of ('response', 'link')")
+  }
   if (!is.null(ynew) && (!is.numeric(ynew) || NCOL(ynew) != 1) &&
-      is.null(object$family$cats)) {
+      is.null(refmodel$family$cats)) {
     stop("Argument `ynew` must be a numeric vector.")
   }
-  if (!is.null(ynew) && !is.null(object$family$cats) &&
-      (!object$family$for_latent || type == "response")) {
+  if (!is.null(ynew) && !is.null(refmodel$family$cats) &&
+      (!refmodel$family$for_latent || type == "response")) {
     ynew <- as.factor(ynew)
-    if (!all(levels(ynew) %in% object$family$cats)) {
-      if (object$family$for_augdat) {
+    if (!all(levels(ynew) %in% refmodel$family$cats)) {
+      if (refmodel$family$for_augdat) {
         y_unqs_str <- "augdat_y_unqs"
       } else {
         y_unqs_str <- "latent_y_unqs"
@@ -447,10 +448,10 @@ predict.refmodel <- function(object, newdata = NULL, ynew = NULL,
            "argument `", y_unqs_str, "` to solve this.")
     }
     # Re-assign the original levels because some levels might be missing:
-    ynew <- factor(ynew, levels = object$family$cats)
+    ynew <- factor(ynew, levels = refmodel$family$cats)
   } else if (!is.null(ynew) &&
-             object$family$for_latent &&
-             is.null(object$family$cats) &&
+             refmodel$family$for_latent &&
+             is.null(refmodel$family$cats) &&
              (is.factor(ynew) || is.character(ynew) || is.logical(ynew))) {
     stop("If the original (i.e., non-latent) response is `factor`-like, ",
          "`family$cats` must not be `NULL`. See the documentation for ",
@@ -460,10 +461,10 @@ predict.refmodel <- function(object, newdata = NULL, ynew = NULL,
   if (!is.null(newdata)) {
     newdata <- na.fail(newdata)
   }
-  nobs_new <- nrow(newdata %||% object$fetch_data())
-  w_o <- object$extract_model_data(object$fit, newdata = newdata,
-                                   wrhs = weightsnew, orhs = offsetnew,
-                                   extract_y = FALSE)
+  nobs_new <- nrow(newdata %||% refmodel$fetch_data())
+  w_o <- refmodel$extract_model_data(refmodel$fit, newdata = newdata,
+                                     wrhs = weightsnew, orhs = offsetnew,
+                                     extract_y = FALSE)
   weightsnew <- w_o$weights
   offsetnew <- w_o$offset
   if (length(weightsnew) == 0) {
@@ -472,16 +473,16 @@ predict.refmodel <- function(object, newdata = NULL, ynew = NULL,
   if (length(offsetnew) == 0) {
     offsetnew <- rep(0, nobs_new)
   }
-  if (object$family$for_augdat && !all(weightsnew == 1)) {
+  if (refmodel$family$for_augdat && !all(weightsnew == 1)) {
     stop("Currently, the augmented-data projection may not be combined with ",
          "observation weights (other than 1).")
   }
-  if (object$family$for_latent && !all(weightsnew == 1)) {
+  if (refmodel$family$for_latent && !all(weightsnew == 1)) {
     stop("Currently, the latent projection may not be combined with ",
          "observation weights (other than 1).")
   }
-  if (!is.null(newdata) && inherits(object$fit, "stanreg") &&
-      length(object$fit$offset) > 0) {
+  if (!is.null(newdata) && inherits(refmodel$fit, "stanreg") &&
+      length(refmodel$fit$offset) > 0) {
     if ("projpred_internal_offs_stanreg" %in% names(newdata)) {
       stop("Need to write to column `projpred_internal_offs_stanreg` of ",
            "`newdata`, but that column already exists. Please rename this ",
@@ -491,16 +492,17 @@ predict.refmodel <- function(object, newdata = NULL, ynew = NULL,
   }
 
   ## ref_predfun returns eta = link(mu)
-  eta <- object$ref_predfun(object$fit, newdata = newdata, excl_offs = FALSE)
+  eta <- refmodel$ref_predfun(refmodel$fit, newdata = newdata,
+                              excl_offs = FALSE)
 
   if (is.null(ynew)) {
     if (type == "link") {
       pred <- eta
     } else {
-      if (object$family$for_latent) {
-        pred <- object$family$latent_ilink(
-          t(eta), cl_ref = seq_along(object$wsample),
-          wdraws_ref = rep(1, length(object$wsample))
+      if (refmodel$family$for_latent) {
+        pred <- refmodel$family$latent_ilink(
+          t(eta), cl_ref = seq_along(refmodel$wsample),
+          wdraws_ref = rep(1, length(refmodel$wsample))
         )
         if (length(dim(pred)) < 2) {
           stop("Unexpected structure for the output of `latent_ilink`.")
@@ -515,12 +517,12 @@ predict.refmodel <- function(object, newdata = NULL, ynew = NULL,
           )
         }
       } else {
-        pred <- object$family$linkinv(eta)
+        pred <- refmodel$family$linkinv(eta)
       }
     }
     was_augmat <- inherits(pred, "augmat")
     ## integrate over the samples
-    if (type == "link" || !object$family$for_latent || was_augmat) {
+    if (type == "link" || !refmodel$family$for_latent || was_augmat) {
       if (ncol(pred) > 1) {
         pred <- rowMeans(pred)
       }
@@ -537,18 +539,18 @@ predict.refmodel <- function(object, newdata = NULL, ynew = NULL,
     return(pred)
   } else {
     ## evaluate the log predictive density at the given ynew values
-    if (object$family$for_latent && type == "response") {
-      mu_oscale <- object$family$latent_ilink(
-        t(eta), cl_ref = seq_along(object$wsample),
-        wdraws_ref = rep(1, length(object$wsample))
+    if (refmodel$family$for_latent && type == "response") {
+      mu_oscale <- refmodel$family$latent_ilink(
+        t(eta), cl_ref = seq_along(refmodel$wsample),
+        wdraws_ref = rep(1, length(refmodel$wsample))
       )
       if (length(dim(mu_oscale)) < 2) {
         stop("Unexpected structure for the output of `latent_ilink`.")
       }
-      loglik <- object$family$latent_ll_oscale(
+      loglik <- refmodel$family$latent_ll_oscale(
         mu_oscale, y_oscale = ynew, wobs = weightsnew,
-        cl_ref = seq_along(object$wsample),
-        wdraws_ref = rep(1, length(object$wsample))
+        cl_ref = seq_along(refmodel$wsample),
+        wdraws_ref = rep(1, length(refmodel$wsample))
       )
       if (!is.matrix(loglik)) {
         stop("Unexpected structure for the output of `latent_ll_oscale`.")
@@ -567,8 +569,8 @@ predict.refmodel <- function(object, newdata = NULL, ynew = NULL,
       S <- nrow(loglik)
       marg_obs <- 2
     } else {
-      if (object$family$for_latent) {
-        if (all(is.na(object$dis))) {
+      if (refmodel$family$for_latent) {
+        if (all(is.na(refmodel$dis))) {
           message(
             "Cannot calculate LPD values if `type = \"link\"` and ",
             "`<refmodel>$dis` consists of only `NA`s. If it's not possible to ",
@@ -579,21 +581,21 @@ predict.refmodel <- function(object, newdata = NULL, ynew = NULL,
         }
         if (is.null(newdata)) {
           newdata_lat <- newdata
-          if (inherits(object$fit, "stanreg") &&
-              length(object$fit$offset) > 0) {
-            newdata_lat <- object$fetch_data()
+          if (inherits(refmodel$fit, "stanreg") &&
+              length(refmodel$fit$offset) > 0) {
+            newdata_lat <- refmodel$fetch_data()
             newdata_lat$projpred_internal_offs_stanreg <- offsetnew
           }
-          ynew <- rowMeans(object$ref_predfun(
-            fit = object$fit,
+          ynew <- rowMeans(refmodel$ref_predfun(
+            fit = refmodel$fit,
             newdata = newdata_lat,
             excl_offs = FALSE,
             mlvl_allrandom = getOption("projpred.mlvl_proj_ref_new", FALSE)
           ))
         }
       }
-      loglik <- object$family$ll_fun(
-        object$family$linkinv(eta), object$dis, ynew, weightsnew
+      loglik <- refmodel$family$ll_fun(
+        refmodel$family$linkinv(eta), refmodel$dis, ynew, weightsnew
       )
       S <- ncol(loglik)
       marg_obs <- 1
