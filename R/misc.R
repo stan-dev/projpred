@@ -385,7 +385,7 @@ bootstrap <- function(x, fun = mean, B = 2000,
   wcluster <- wcluster / sum(wcluster)
 
   # combine the results
-  p <- list(
+  return(list(
     mu = structure(unname(centers),
                    nobs_orig = attr(mu, "nobs_orig"),
                    class = oldClass(mu)),
@@ -400,9 +400,7 @@ bootstrap <- function(x, fun = mean, B = 2000,
     cl = cl,
     wsample_orig = wsample,
     clust_used = TRUE
-  )
-
-  return(p)
+  ))
 }
 
 draws_subsample <- function(S, ndraws) {
