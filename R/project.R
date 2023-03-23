@@ -237,7 +237,7 @@ project <- function(object, nterms = NULL, solution_terms = NULL,
   }
 
   ## project onto the submodels
-  submodels <- get_submodls(
+  submodls <- get_submodls(
     search_path = nlist(
       solution_terms,
       p_sel = object$search_path$p_sel,
@@ -248,7 +248,7 @@ project <- function(object, nterms = NULL, solution_terms = NULL,
   )
 
   # Output:
-  projs <- lapply(submodels, function(submodl) {
+  projs <- lapply(submodls, function(submodl) {
     proj_k <- submodl
     proj_k$p_type <- !is.null(nclusters)
     proj_k$refmodel <- refmodel

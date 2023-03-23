@@ -286,7 +286,7 @@ varsel.refmodel <- function(object, d_test = NULL, method = NULL,
   verb_out("-----\nFor performance evaluation: Re-projecting onto the ",
            "submodels along the solution path ...",
            verbose = verbose && refit_prj)
-  submodels <- get_submodls(
+  submodls <- get_submodls(
     search_path = search_path,
     nterms = c(0, seq_along(search_path$solution_terms)),
     p_ref = p_pred, refmodel = refmodel, regul = regul, refit_prj = refit_prj,
@@ -295,7 +295,7 @@ varsel.refmodel <- function(object, d_test = NULL, method = NULL,
   verb_out("-----", verbose = verbose && refit_prj)
   # The performance evaluation itself, i.e., the calculation of the predictive
   # performance statistic(s) for the submodels along the solution path:
-  sub <- .get_sub_summaries(submodels = submodels,
+  sub <- .get_sub_summaries(submodls = submodls,
                             refmodel = refmodel,
                             test_points = NULL,
                             newdata = d_test$data,
@@ -363,7 +363,7 @@ varsel.refmodel <- function(object, d_test = NULL, method = NULL,
     d_test,
     summaries = nlist(sub, ref),
     solution_terms = search_path$solution_terms,
-    ce = sapply(submodels, "[[", "ce"),
+    ce = sapply(submodls, "[[", "ce"),
     nterms_max,
     nterms_all = count_terms_in_formula(refmodel$formula) - 1L,
     method = method,

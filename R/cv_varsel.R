@@ -445,7 +445,7 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
     verb_out("-----\nFor performance evaluation: Re-projecting (using the ",
              "full dataset) onto the submodels along the full-data solution ",
              "path ...", verbose = verbose && refit_prj)
-    submodels <- get_submodls(
+    submodls <- get_submodls(
       search_path = search_path,
       nterms = c(0, seq_along(search_path$solution_terms)),
       p_ref = p_pred, refmodel = refmodel, regul = opt$regul,
@@ -505,12 +505,12 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
     # This re-weighting requires a re-normalization (as.array() is applied to
     # have stricter consistency checks, see `?sweep`):
     lw_sub <- sweep(lw_sub, 2, as.array(apply(lw_sub, 2, log_sum_exp)))
-    for (k in seq_along(submodels)) {
-      mu_k <- refmodel$family$mu_fun(submodels[[k]]$outdmin,
+    for (k in seq_along(submodls)) {
+      mu_k <- refmodel$family$mu_fun(submodls[[k]]$outdmin,
                                      obs = inds,
                                      offset = refmodel$offset[inds])
       log_lik_sub <- t(refmodel$family$ll_fun(
-        mu_k, submodels[[k]]$dis, refmodel$y[inds], refmodel$wobs[inds]
+        mu_k, submodls[[k]]$dis, refmodel$y[inds], refmodel$wobs[inds]
       ))
       loo_sub[[k]][inds] <- apply(log_lik_sub + lw_sub, 2, log_sum_exp)
       if (refmodel$family$for_latent) {
@@ -566,7 +566,7 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
         i, seq_along(search_path$solution_terms)
       ] <- search_path$solution_terms
     }
-    sel <- nlist(search_path, ce = sapply(submodels, "[[", "ce"))
+    sel <- nlist(search_path, ce = sapply(submodls, "[[", "ce"))
   } else {
     # Case `validate_search = TRUE` -------------------------------------------
 
@@ -607,14 +607,14 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
 
       # Re-project along the solution path (or fetch the projections from the
       # search results) of the current fold:
-      submodels <- get_submodls(
+      submodls <- get_submodls(
         search_path = search_path,
         nterms = c(0, seq_along(search_path$solution_terms)),
         p_ref = p_pred, refmodel = refmodel, regul = opt$regul,
         refit_prj = refit_prj, ...
       )
       # Predictive performance at the omitted observation:
-      summaries_sub <- .get_sub_summaries(submodels = submodels,
+      summaries_sub <- .get_sub_summaries(submodls = submodls,
                                           refmodel = refmodel,
                                           test_points = i)
       i_aug <- i
@@ -851,10 +851,10 @@ kfold_varsel <- function(refmodel, method, nterms_max, ndraws,
              " fold-wise solution paths ...")
     pb <- utils::txtProgressBar(min = 0, max = K, style = 3, initial = 0)
   }
-  get_submodels_cv <- function(search_path, fold_index) {
+  get_submodls_cv <- function(search_path, fold_index) {
     fold <- list_cv[[fold_index]]
     p_pred <- .get_refdist(fold$refmodel, ndraws_pred, nclusters_pred)
-    submodels <- get_submodls(
+    submodls <- get_submodls(
       search_path = search_path,
       nterms = c(0, seq_along(search_path$solution_terms)),
       p_ref = p_pred, refmodel = fold$refmodel, regul = opt$regul,
@@ -863,10 +863,10 @@ kfold_varsel <- function(refmodel, method, nterms_max, ndraws,
     if (verbose && refit_prj) {
       utils::setTxtProgressBar(pb, fold_index)
     }
-    return(submodels)
+    return(submodls)
   }
-  submodels_cv <- mapply(get_submodels_cv, search_path_cv, seq_along(list_cv),
-                         SIMPLIFY = FALSE)
+  submodls_cv <- mapply(get_submodls_cv, search_path_cv, seq_along(list_cv),
+                        SIMPLIFY = FALSE)
   if (verbose && refit_prj) {
     close(pb)
   }
@@ -875,12 +875,12 @@ kfold_varsel <- function(refmodel, method, nterms_max, ndraws,
   # The performance evaluation itself, i.e., the calculation of the predictive
   # performance statistic(s) for the submodels along the solution path of each
   # fold:
-  get_summaries_submodels_cv <- function(submodels, fold) {
-    .get_sub_summaries(submodels = submodels,
+  get_summaries_submodls_cv <- function(submodls, fold) {
+    .get_sub_summaries(submodls = submodls,
                        refmodel = refmodel,
                        test_points = fold$d_test$omitted)
   }
-  sub_cv_summaries <- mapply(get_summaries_submodels_cv, submodels_cv, list_cv)
+  sub_cv_summaries <- mapply(get_summaries_submodls_cv, submodls_cv, list_cv)
   # Combine the results from the K folds into a single results list:
   if (is.null(dim(sub_cv_summaries))) {
     summ_dim <- dim(solution_terms_cv)
