@@ -14,15 +14,15 @@ search_forward <- function(p_ref, refmodel, nterms_max, verbose = TRUE, opt,
     if (is.null(cands))
       next
     full_cands <- lapply(cands, function(cand) c(chosen, cand))
-    subL <- lapply(full_cands, project_submodel,
-                   p_ref = p_ref, refmodel = refmodel, regul = opt$regul, ...)
+    submodels <- lapply(full_cands, project_submodel, p_ref = p_ref,
+                        refmodel = refmodel, regul = opt$regul, ...)
 
     ## select best candidate
-    imin <- which.min(sapply(subL, "[[", "ce"))
+    imin <- which.min(sapply(submodels, "[[", "ce"))
     chosen <- c(chosen, cands[imin])
 
     ## append `submodl`
-    submodls <- c(submodls, list(subL[[imin]]$submodl))
+    submodls <- c(submodls, list(submodels[[imin]]$submodl))
 
     ct_chosen <- count_terms_chosen(chosen)
     if (verbose && ct_chosen %in% iq) {
