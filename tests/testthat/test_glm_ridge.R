@@ -78,14 +78,13 @@ test_that(paste(
     }
 
     devfun <- function(f)
-      projpred:::pseudo_data(f, y, fam, weights = weights, offset = offset)$loss
+      pseudo_data(f, y, fam, weights = weights, offset = offset)$loss
     zfun <- function(f)
-      projpred:::pseudo_data(f, y, fam, weights = weights, offset = offset)$z
+      pseudo_data(f, y, fam, weights = weights, offset = offset)$z
     wfun <- function(f)
-      projpred:::pseudo_data(f, y, fam, weights = weights, offset = offset)$w
+      pseudo_data(f, y, fam, weights = weights, offset = offset)$w
     gradan <- function(f)
-      sum(projpred:::pseudo_data(f, y, fam, weights = weights,
-                                 offset = offset)$grad)
+      sum(pseudo_data(f, y, fam, weights = weights, offset = offset)$grad)
     gradfd <- function(f)
       fdiffu(devfun, f, h = 1e-5) # finite difference
 
