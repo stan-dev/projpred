@@ -142,9 +142,9 @@ NULL
 ## the predictive distribution if called from proj_predict.
 proj_helper <- function(object, newdata, offsetnew, weightsnew, onesub_fun,
                         filter_nterms = NULL, ...) {
-  if (inherits(object, "projection") || .is_proj_list(object)) {
+  if (inherits(object, "projection") || is_proj_list(object)) {
     if (!is.null(filter_nterms)) {
-      if (!.is_proj_list(object)) {
+      if (!is_proj_list(object)) {
         object <- list(object)
       }
       projs <- Filter(
@@ -164,7 +164,7 @@ proj_helper <- function(object, newdata, offsetnew, weightsnew, onesub_fun,
     projs <- project(object = object, ...)
   }
 
-  if (!.is_proj_list(projs)) {
+  if (!is_proj_list(projs)) {
     projs <- list(projs)
   }
 
@@ -233,7 +233,7 @@ proj_helper <- function(object, newdata, offsetnew, weightsnew, onesub_fun,
                weights = weightsnew, extract_y_ind = extract_y_ind, ...)
   })
 
-  return(.unlist_proj(preds))
+  return(unlist_proj(preds))
 }
 
 #' @rdname pred-projection
@@ -345,7 +345,7 @@ proj_linpred_aux <- function(proj, newdata, offset, weights, transform = FALSE,
 compute_lpd <- function(ynew, pred_sub, proj, weights, transformed) {
   if (!is.null(ynew)) {
     ## compute also the log-density
-    target <- .get_standard_y(ynew, weights, proj$refmodel$family)
+    target <- get_standard_y(ynew, weights, proj$refmodel$family)
     ynew <- target$y
     weights <- target$weights
     if ((!proj$refmodel$family$for_latent ||
@@ -567,12 +567,12 @@ plot.vsel <- function(
     ...
 ) {
   object <- x
-  .validate_vsel_object_stats(object, stats, resp_oscale = resp_oscale)
-  baseline <- .validate_baseline(object$refmodel, baseline, deltas)
+  validate_vsel_object_stats(object, stats, resp_oscale = resp_oscale)
+  baseline <- validate_baseline(object$refmodel, baseline, deltas)
 
   ## compute all the statistics and fetch only those that were asked
-  nfeat_baseline <- .get_nfeat_baseline(object, baseline, stats[1],
-                                        resp_oscale = resp_oscale)
+  nfeat_baseline <- get_nfeat_baseline(object, baseline, stats[1],
+                                       resp_oscale = resp_oscale)
   tab <- rbind(
     .tabulate_stats(object, stats, alpha = alpha,
                     nfeat_baseline = nfeat_baseline, resp_oscale = resp_oscale,
@@ -823,8 +823,8 @@ summary.vsel <- function(
     resp_oscale = TRUE,
     ...
 ) {
-  .validate_vsel_object_stats(object, stats, resp_oscale = resp_oscale)
-  baseline <- .validate_baseline(object$refmodel, baseline, deltas)
+  validate_vsel_object_stats(object, stats, resp_oscale = resp_oscale)
+  baseline <- validate_baseline(object$refmodel, baseline, deltas)
 
   # Initialize output:
   out <- list(
@@ -849,8 +849,8 @@ summary.vsel <- function(
 
   # The full table of the performance statistics from `stats`:
   if (deltas) {
-    nfeat_baseline <- .get_nfeat_baseline(object, baseline, stats[1],
-                                          resp_oscale = resp_oscale)
+    nfeat_baseline <- get_nfeat_baseline(object, baseline, stats[1],
+                                         resp_oscale = resp_oscale)
     tab <- .tabulate_stats(object, stats, alpha = alpha,
                            nfeat_baseline = nfeat_baseline,
                            resp_oscale = resp_oscale, ...)
@@ -1143,7 +1143,7 @@ suggest_size.vsel <- function(
   nobs_test <- stats$nobs_test %||% stats$nobs_train
   stats <- stats$selection
 
-  if (.is_util(stat)) {
+  if (is_util(stat)) {
     sgn <- 1
   } else {
     sgn <- -1
@@ -1785,7 +1785,7 @@ NULL
 #' @rdname cv-indices
 #' @export
 cvfolds <- function(n, K, seed = sample.int(.Machine$integer.max, 1)) {
-  .validate_num_folds(K, n)
+  validate_num_folds(K, n)
 
   # Set seed, but ensure the old RNG state is restored on exit:
   if (exists(".Random.seed", envir = .GlobalEnv)) {
@@ -1805,7 +1805,7 @@ cvfolds <- function(n, K, seed = sample.int(.Machine$integer.max, 1)) {
 #' @export
 cv_ids <- function(n, K, out = c("foldwise", "indices"),
                    seed = sample.int(.Machine$integer.max, 1)) {
-  .validate_num_folds(K, n)
+  validate_num_folds(K, n)
   out <- match.arg(out)
 
   # Set seed, but ensure the old RNG state is restored on exit:

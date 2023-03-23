@@ -240,7 +240,7 @@ extend_family <- function(family,
                           augdat_args_link = list(),
                           augdat_args_ilink = list(),
                           ...) {
-  if (.has_family_extras(family)) {
+  if (has_family_extras(family)) {
     # If the family was already extended using this function, then return as-is:
     return(family)
   }
@@ -707,7 +707,7 @@ extend_family_student_t <- function(family) {
   return(family)
 }
 
-.has_dispersion <- function(family) {
+has_dispersion <- function(family) {
   # a function for checking whether the family has a dispersion parameter
   family$family %in% c("gaussian", "Student_t", "Gamma")
 }
@@ -715,6 +715,6 @@ extend_family_student_t <- function(family) {
 # A function for checking whether a `family` object has the required extra
 # functions, that is, whether it has already been extended (typically by a call
 # to extend_family()):
-.has_family_extras <- function(family) {
+has_family_extras <- function(family) {
   return(isTRUE(family$is_extended))
 }

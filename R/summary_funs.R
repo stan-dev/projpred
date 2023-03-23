@@ -1,10 +1,10 @@
-.get_sub_summaries <- function(submodls, refmodel, test_points, newdata = NULL,
-                               offset = refmodel$offset[test_points],
-                               wobs = refmodel$wobs[test_points],
-                               y = refmodel$y[test_points],
-                               y_oscale = refmodel$y_oscale[test_points]) {
+get_sub_summaries <- function(submodls, refmodel, test_points, newdata = NULL,
+                              offset = refmodel$offset[test_points],
+                              wobs = refmodel$wobs[test_points],
+                              y = refmodel$y[test_points],
+                              y_oscale = refmodel$y_oscale[test_points]) {
   lapply(submodls, function(submodl) {
-    .weighted_summary_means(
+    weighted_summary_means(
       y_test = list(y = y, y_oscale = y_oscale, weights = wobs),
       family = refmodel$family,
       wdraws = submodl$wdraws_prj,
@@ -45,8 +45,8 @@
 #
 # @return A `list` with elements `mu` and `lppd` which are both vectors
 #   containing the values for the quantities from the description above.
-.weighted_summary_means <- function(y_test, family, wdraws, mu, dis, cl_ref,
-                                    wdraws_ref = rep(1, length(cl_ref))) {
+weighted_summary_means <- function(y_test, family, wdraws, mu, dis, cl_ref,
+                                   wdraws_ref = rep(1, length(cl_ref))) {
   if (!is.matrix(mu)) {
     stop("Unexpected structure for `mu`. Do the return values of ",
          "`proj_predfun` and `ref_predfun` have the correct structure?")
@@ -405,8 +405,8 @@ get_stat <- function(mu, lppd, d_test, stat, mu.bs = NULL, lppd.bs = NULL,
       # because this case should only occur for the binomial family (where
       # `d_test$weights` contains the numbers of trials) with more than 1 trial
       # for at least one observation:
-      stopifnot(all(.is.wholenumber(d_test$weights)))
-      stopifnot(all(.is.wholenumber(y)))
+      stopifnot(all(is_wholenumber(d_test$weights)))
+      stopifnot(all(is_wholenumber(y)))
       stopifnot(all(0 <= y & y <= d_test$weights))
       y <- unlist(lapply(seq_along(y), function(i_short) {
         c(rep(0L, d_test$weights[i_short] - y[i_short]),
@@ -477,14 +477,14 @@ get_stat <- function(mu, lppd, d_test, stat, mu.bs = NULL, lppd.bs = NULL,
   return(list(value = value, se = value.se, lq = lq, uq = uq))
 }
 
-.is_util <- function(stat) {
+is_util <- function(stat) {
   ## a simple function to determine whether a given statistic (string) is
   ## a utility (we want to maximize) or loss (we want to minimize)
   ## by the time we get here, stat should have already been validated
   return(!stat %in% c("rmse", "mse"))
 }
 
-.get_nfeat_baseline <- function(object, baseline, stat, ...) {
+get_nfeat_baseline <- function(object, baseline, stat, ...) {
   ## get model size that is used as a baseline in comparisons. baseline is one
   ## of 'best' or 'ref', stat is the statistic according to which the selection
   ## is done
@@ -496,7 +496,7 @@ get_stat <- function(mu, lppd, d_test, stat, mu.bs = NULL, lppd.bs = NULL,
     ## tab <- .tabulate_stats(object, ...)
     ## stats_table <- subset(tab, tab$delta == FALSE &
     ##   tab$statistic == stat & tab$size != Inf)
-    optfun <- ifelse(.is_util(stat), which.max, which.min)
+    optfun <- ifelse(is_util(stat), which.max, which.min)
     nfeat_baseline <- stats_table$size[optfun(stats_table$value)]
   } else {
     ## use reference model

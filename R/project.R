@@ -237,7 +237,7 @@ project <- function(object, nterms = NULL, solution_terms = NULL,
 
   ## get the clustering or thinning
   if (refit_prj) {
-    p_ref <- .get_refdist(refmodel, ndraws = ndraws, nclusters = nclusters)
+    p_ref <- get_refdist(refmodel, ndraws = ndraws, nclusters = nclusters)
   }
 
   ## project onto the submodels
@@ -260,5 +260,5 @@ project <- function(object, nterms = NULL, solution_terms = NULL,
     return(proj_k)
   })
   ## If only one model size, just return the proj instead of a list of projs
-  return(.unlist_proj(projs))
+  return(unlist_proj(projs))
 }

@@ -651,9 +651,9 @@ test_that("`transform` works", {
         rng_old <- get(".Random.seed", envir = .GlobalEnv)
       }
       set.seed(args_prj[[tstsetup]]$seed)
-      clust_ref <- .get_refdist(prjs[[tstsetup]]$refmodel,
-                                ndraws = args_prj[[tstsetup]]$ndraws,
-                                nclusters = args_prj[[tstsetup]]$nclusters)
+      clust_ref <- get_refdist(prjs[[tstsetup]]$refmodel,
+                               ndraws = args_prj[[tstsetup]]$ndraws,
+                               nclusters = args_prj[[tstsetup]]$nclusters)
       pred_false2true <- prjs[[tstsetup]]$refmodel$family$latent_ilink(
         t(pred_false), cl_ref = clust_ref$cl
       )

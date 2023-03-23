@@ -76,7 +76,7 @@ augmat2arr <- function(augmat,
   stopifnot(!is.null(nobs_orig))
   stopifnot(margin_draws %in% c(1, 3))
   n_discr <- nrow(augmat) / nobs_orig
-  stopifnot(.is.wholenumber(n_discr))
+  stopifnot(is_wholenumber(n_discr))
   n_discr <- as.integer(round(n_discr))
   arr <- array(augmat, dim = c(nobs_orig, n_discr, ncol(augmat)))
   if (margin_draws == 1) {

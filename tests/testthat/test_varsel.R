@@ -321,8 +321,8 @@ test_that(paste(
       }
       # For getting the correct seed in proj_linpred():
       set.seed(args_vs_i$seed)
-      p_sel_dummy <- .get_refdist(refmods[[tstsetup_ref]],
-                                  nclusters = vs_indep$nprjdraws_search)
+      p_sel_dummy <- get_refdist(refmods[[tstsetup_ref]],
+                                 nclusters = vs_indep$nprjdraws_search)
       # As soon as GitHub issues #168 and #211 are fixed, we can use
       # `refit_prj = FALSE` here:
       expect_warning(
@@ -355,8 +355,8 @@ test_that(paste(
       if (prj_crr == "latent") {
         # For getting the correct seed in proj_linpred():
         set.seed(args_vs_i$seed)
-        p_sel_dummy <- .get_refdist(refmods[[tstsetup_ref]],
-                                    nclusters = vs_indep$nprjdraws_search)
+        p_sel_dummy <- get_refdist(refmods[[tstsetup_ref]],
+                                   nclusters = vs_indep$nprjdraws_search)
         # As soon as GitHub issues #168 and #211 are fixed, we can use
         # `refit_prj = FALSE` here:
         dat_indep_crr[[paste0(".", y_nm_crr)]] <- d_test_crr$y

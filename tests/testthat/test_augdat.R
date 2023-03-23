@@ -188,13 +188,13 @@ test_that(paste(
     refmod_crr <- refmods[[args_prj_i$tstsetup_ref]]
     refmod_crr_trad <- refmods[[args_prj_i_trad$tstsetup_ref]]
     set.seed(args_prj_i$seed)
-    pref_aug <- .get_refdist(refmod_crr,
-                             ndraws = args_prj_i$ndraws,
-                             nclusters = args_prj_i$nclusters)
+    pref_aug <- get_refdist(refmod_crr,
+                            ndraws = args_prj_i$ndraws,
+                            nclusters = args_prj_i$nclusters)
     set.seed(args_prj_i_trad$seed)
-    pref_trad <- .get_refdist(refmod_crr_trad,
-                              ndraws = args_prj_i_trad$ndraws,
-                              nclusters = args_prj_i_trad$nclusters)
+    pref_trad <- get_refdist(refmod_crr_trad,
+                             ndraws = args_prj_i_trad$ndraws,
+                             nclusters = args_prj_i_trad$nclusters)
 
     eta_aug <- refmod_crr$family$linkfun(pref_aug$mu)
     eta_trad <- refmod_crr_trad$family$linkfun(pref_trad$mu)

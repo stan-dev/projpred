@@ -171,7 +171,7 @@ cv_varsel.refmodel <- function(
     # or thinning here for consistent PRNG states between the full-data search
     # in the `validate_search == FALSE` case and the full-data search in the
     # cases `validate_search || cv_method == "kfold"` we are in here):
-    p_sel <- .get_refdist(refmodel, ndraws, nclusters)
+    p_sel <- get_refdist(refmodel, ndraws, nclusters)
   }
 
   if (cv_method == "LOO") {
@@ -220,11 +220,11 @@ cv_varsel.refmodel <- function(
 
   # Just a dummy object which is not used as usual, but only for inferring the
   # output elements `clust_used_eval` and `nprjdraws_eval` (this unnecessary
-  # .get_refdist() call is much cheaper than calling varsel() with its
+  # get_refdist() call is much cheaper than calling varsel() with its
   # re-projections (if `refit_prj = TRUE`) instead of select() above in the case
   # `if (validate_search || cv_method == "kfold")`, see GitHub PR #385):
   if (refit_prj) {
-    refdist_eval_dummy <- .get_refdist(refmodel, ndraws_pred, nclusters_pred)
+    refdist_eval_dummy <- get_refdist(refmodel, ndraws_pred, nclusters_pred)
   } else {
     refdist_eval_dummy <- sel$p_sel
   }
@@ -277,7 +277,7 @@ parse_args_cv_varsel <- function(refmodel, cv_method, K, validate_search) {
 
   if (cv_method == "kfold") {
     stopifnot(!is.null(K))
-    if (length(K) > 1 || !is.numeric(K) || !.is.wholenumber(K)) {
+    if (length(K) > 1 || !is.numeric(K) || !is_wholenumber(K)) {
       stop("`K` must be a single integer value.")
     }
     if (K < 2) {
@@ -311,11 +311,11 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
   mu_offs <- refmodel$mu_offs
   dis <- refmodel$dis
   # Clustering or thinning for the search:
-  p_sel <- .get_refdist(refmodel, ndraws = ndraws, nclusters = nclusters)
+  p_sel <- get_refdist(refmodel, ndraws = ndraws, nclusters = nclusters)
   cl_sel <- p_sel$cl
   # Clustering or thinning for the performance evaluation:
-  p_pred <- .get_refdist(refmodel, ndraws = ndraws_pred,
-                         nclusters = nclusters_pred)
+  p_pred <- get_refdist(refmodel, ndraws = ndraws_pred,
+                        nclusters = nclusters_pred)
   cl_pred <- p_pred$cl
 
   if (inherits(refmodel, "datafit")) {
@@ -397,9 +397,9 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
   } else if (nloo < n) {
     warning("Subsampled LOO CV is still experimental.")
   }
-  # validset <- .loo_subsample(n, nloo, pareto_k)
+  # validset <- loo_subsample(n, nloo, pareto_k)
   loo_ref_oscale <- apply(loglik_forPSIS + lw, 2, log_sum_exp)
-  validset <- .loo_subsample_pps(nloo, loo_ref_oscale)
+  validset <- loo_subsample_pps(nloo, loo_ref_oscale)
   inds <- validset$inds
 
   # Initialize objects where to store the results:
@@ -585,11 +585,11 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
       i <- inds[run_index]
 
       # Reweight the clusters (or thinned draws) according to the PSIS weights:
-      p_sel <- .get_p_clust(
+      p_sel <- get_p_clust(
         family = refmodel$family, eta = eta, mu = mu, mu_offs = mu_offs,
         dis = dis, wdraws = exp(lw[, i]), cl = cl_sel
       )
-      p_pred <- .get_p_clust(
+      p_pred <- get_p_clust(
         family = refmodel$family, eta = eta, mu = mu, mu_offs = mu_offs,
         dis = dis, wdraws = exp(lw[, i]), cl = cl_pred
       )
@@ -614,9 +614,9 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
         refit_prj = refit_prj, ...
       )
       # Predictive performance at the omitted observation:
-      summaries_sub <- .get_sub_summaries(submodls = submodls,
-                                          refmodel = refmodel,
-                                          test_points = i)
+      summaries_sub <- get_sub_summaries(submodls = submodls,
+                                         refmodel = refmodel,
+                                         test_points = i)
       i_aug <- i
       if (!is.null(refmodel$family$cats)) {
         i_aug <- i_aug + (seq_along(refmodel$family$cats) - 1L) * n
@@ -790,7 +790,7 @@ kfold_varsel <- function(refmodel, method, nterms_max, ndraws,
   # Fetch the K reference model fits (or fit them now if not already done) and
   # create objects of class `refmodel` from them (and also store the `omitted`
   # indices):
-  list_cv <- .get_kfold(refmodel, K, verbose)
+  list_cv <- get_kfold(refmodel, K, verbose)
   K <- length(list_cv)
 
   if (refmodel$family$for_latent) {
@@ -823,7 +823,7 @@ kfold_varsel <- function(refmodel, method, nterms_max, ndraws,
   }
   search_path_cv <- lapply(seq_along(list_cv), function(fold_index) {
     fold <- list_cv[[fold_index]]
-    p_sel <- .get_refdist(fold$refmodel, ndraws, nclusters)
+    p_sel <- get_refdist(fold$refmodel, ndraws, nclusters)
     out <- select(
       method = method, p_sel = p_sel, refmodel = fold$refmodel,
       nterms_max = nterms_max, penalty = penalty,
@@ -853,7 +853,7 @@ kfold_varsel <- function(refmodel, method, nterms_max, ndraws,
   }
   get_submodls_cv <- function(search_path, fold_index) {
     fold <- list_cv[[fold_index]]
-    p_pred <- .get_refdist(fold$refmodel, ndraws_pred, nclusters_pred)
+    p_pred <- get_refdist(fold$refmodel, ndraws_pred, nclusters_pred)
     submodls <- get_submodls(
       search_path = search_path,
       nterms = c(0, seq_along(search_path$solution_terms)),
@@ -876,9 +876,9 @@ kfold_varsel <- function(refmodel, method, nterms_max, ndraws,
   # performance statistic(s) for the submodels along the solution path of each
   # fold:
   get_summaries_submodls_cv <- function(submodls, fold) {
-    .get_sub_summaries(submodls = submodls,
-                       refmodel = refmodel,
-                       test_points = fold$d_test$omitted)
+    get_sub_summaries(submodls = submodls,
+                      refmodel = refmodel,
+                      test_points = fold$d_test$omitted)
   }
   sub_cv_summaries <- mapply(get_summaries_submodls_cv, submodls_cv, list_cv)
   # Combine the results from the K folds into a single results list:
@@ -927,7 +927,7 @@ kfold_varsel <- function(refmodel, method, nterms_max, ndraws,
       excl_offs = FALSE
     )
     mu_test <- fold$refmodel$family$linkinv(eta_test)
-    .weighted_summary_means(
+    weighted_summary_means(
       y_test = fold$d_test, family = fold$refmodel$family,
       wdraws = fold$refmodel$wdraws_ref, mu = mu_test,
       dis = fold$refmodel$dis, cl_ref = seq_along(fold$refmodel$wdraws_ref)
@@ -962,7 +962,7 @@ kfold_varsel <- function(refmodel, method, nterms_max, ndraws,
 # will return a list of length K, where each element is a list with elements
 # `refmodel` (output of init_refmodel()) and `omitted` (vector of indices of
 # those observations which were left out for the corresponding fold).
-.get_kfold <- function(refmodel, K, verbose) {
+get_kfold <- function(refmodel, K, verbose) {
   if (is.null(refmodel$cvfits)) {
     if (!is.null(refmodel$cvfun)) {
       # In this case, cvfun() provided (and `cvfits` not), so run cvfun() now.
@@ -993,17 +993,17 @@ kfold_varsel <- function(refmodel, method, nterms_max, ndraws,
     cvfit$projpred_k <- k
     return(cvfit)
   })
-  return(lapply(cvfits, .init_kfold_refmodel, refmodel = refmodel))
+  return(lapply(cvfits, init_kfold_refmodel, refmodel = refmodel))
 }
 
-.init_kfold_refmodel <- function(cvfit, refmodel) {
+init_kfold_refmodel <- function(cvfit, refmodel) {
   return(list(refmodel = refmodel$cvrefbuilder(cvfit),
               omitted = cvfit$omitted))
 }
 
 # ## decide which points to go through in the validation (i.e., which points
 # ## belong to the semi random subsample of validation points)
-# .loo_subsample <- function(n, nloo, pareto_k) {
+# loo_subsample <- function(n, nloo, pareto_k) {
 #   # Note: A seed is not set here because this function is not exported and has
 #   # a calling stack at the beginning of which a seed is set.
 #
@@ -1044,7 +1044,7 @@ kfold_varsel <- function(refmodel, method, nterms_max, ndraws,
 ## Andersen, M., Jonasson, J. and Vehtari, A. (2019). Leave-One-Out
 ## Cross-Validation for Large Data. In International Conference on Machine
 ## Learning.
-.loo_subsample_pps <- function(nloo, lppd) {
+loo_subsample_pps <- function(nloo, lppd) {
   # Note: A seed is not set here because this function is not exported and has a
   # calling stack at the beginning of which a seed is set.
 

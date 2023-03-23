@@ -1,11 +1,11 @@
 context("miscellaneous")
 
-# .get_refdist() ----------------------------------------------------------
+# get_refdist() ----------------------------------------------------------
 
 ## ndraws and nclusters ---------------------------------------------------
 
 test_that(paste(
-  ".get_refdist(): `ndraws = NULL` and `nclusters = NULL` leads to",
+  "get_refdist(): `ndraws = NULL` and `nclusters = NULL` leads to",
   "`ndraws = S` (and `nclusters = NULL`)"
 ), {
   if (exists(".Random.seed", envir = .GlobalEnv)) {
@@ -13,7 +13,7 @@ test_that(paste(
   }
   set.seed(seed2_tst)
   for (tstsetup in names(refmods)) {
-    refdist <- .get_refdist(refmods[[tstsetup]])
+    refdist <- get_refdist(refmods[[tstsetup]])
     if (args_ref[[tstsetup]]$prj_nm == "augdat") {
       nobsv_fac <- length(refmods[[tstsetup]]$family$cats)
     } else {
@@ -44,9 +44,9 @@ test_that(paste(
   for (tstsetup in names(refmods)) {
     for (ndraws_crr in list(nrefdraws + 1L)) {
       for (nclusters_crr in list(NULL, nrefdraws + 1L)) {
-        refdist <- .get_refdist(refmods[[tstsetup]],
-                                ndraws = ndraws_crr,
-                                nclusters = nclusters_crr)
+        refdist <- get_refdist(refmods[[tstsetup]],
+                               ndraws = ndraws_crr,
+                               nclusters = nclusters_crr)
         if (args_ref[[tstsetup]]$prj_nm == "augdat") {
           nobsv_fac <- length(refmods[[tstsetup]]$family$cats)
         } else {

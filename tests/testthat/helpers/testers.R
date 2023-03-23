@@ -1437,9 +1437,9 @@ outdmin_tester <- function(
   return(invisible(TRUE))
 }
 
-# A helper function for testing the structure of .get_refdist()'s output.
+# A helper function for testing the structure of get_refdist()'s output.
 #
-# @param refd Output of .get_refdist().
+# @param refd Output of get_refdist().
 # @param nprjdraws_expected A single numeric value giving the expected number of
 #   projected draws.
 # @param clust_expected A single logical value giving the expected value for
@@ -1592,9 +1592,9 @@ projection_tester <- function(p,
       on.exit(assign(".Random.seed", rng_state_old, envir = .GlobalEnv))
     }
     set.seed(seed_expected)
-    clust_ref <- .get_refdist(p$refmodel, nclusters = nprjdraws_expected)
+    clust_ref <- get_refdist(p$refmodel, nclusters = nprjdraws_expected)
   } else {
-    clust_ref <- .get_refdist(p$refmodel, ndraws = nprjdraws_expected)
+    clust_ref <- get_refdist(p$refmodel, ndraws = nprjdraws_expected)
   }
   if (p$refmodel$family$for_augdat) {
     # Create the augmented dataset:
@@ -1686,7 +1686,7 @@ proj_list_tester <- function(p,
                              ...) {
   expect_type(p, "list")
   expect_length(p, len_expected)
-  expect_true(.is_proj_list(p), info = info_str)
+  expect_true(is_proj_list(p), info = info_str)
 
   for (j in seq_along(p)) {
     if (is_seq) {
@@ -1913,11 +1913,11 @@ vsel_tester <- function(
   }
   set.seed(seed_expected)
   if (cl_search_expected) {
-    clust_ref <- .get_refdist(vs$refmodel,
-                              nclusters = nprjdraws_search_expected)
+    clust_ref <- get_refdist(vs$refmodel,
+                             nclusters = nprjdraws_search_expected)
   } else {
-    clust_ref <- .get_refdist(vs$refmodel,
-                              ndraws = nprjdraws_search_expected)
+    clust_ref <- get_refdist(vs$refmodel,
+                             ndraws = nprjdraws_search_expected)
   }
   if (!from_vsel_L1_search) {
     y_nm <- as.character(vs$refmodel$formula)[2]

@@ -267,9 +267,9 @@ varsel.refmodel <- function(object, d_test = NULL, method = NULL,
   }
 
   # Clustering or thinning for the search:
-  p_sel <- .get_refdist(refmodel, ndraws, nclusters)
+  p_sel <- get_refdist(refmodel, ndraws, nclusters)
   # Clustering or thinning for the performance evaluation:
-  p_pred <- .get_refdist(refmodel, ndraws_pred, nclusters_pred)
+  p_pred <- get_refdist(refmodel, ndraws_pred, nclusters_pred)
 
   # Run the search:
   opt <- nlist(lambda_min_ratio, nlambda, thresh, regul)
@@ -295,14 +295,14 @@ varsel.refmodel <- function(object, d_test = NULL, method = NULL,
   verb_out("-----", verbose = verbose && refit_prj)
   # The performance evaluation itself, i.e., the calculation of the predictive
   # performance statistic(s) for the submodels along the solution path:
-  sub <- .get_sub_summaries(submodls = submodls,
-                            refmodel = refmodel,
-                            test_points = NULL,
-                            newdata = d_test$data,
-                            offset = d_test$offset,
-                            wobs = d_test$weights,
-                            y = d_test$y,
-                            y_oscale = d_test$y_oscale)
+  sub <- get_sub_summaries(submodls = submodls,
+                           refmodel = refmodel,
+                           test_points = NULL,
+                           newdata = d_test$data,
+                           offset = d_test$offset,
+                           wobs = d_test$weights,
+                           y = d_test$y,
+                           y_oscale = d_test$y_oscale)
 
   # Predictive performance of the reference model:
   if (inherits(refmodel, "datafit")) {
@@ -350,7 +350,7 @@ varsel.refmodel <- function(object, d_test = NULL, method = NULL,
                                        excl_offs = FALSE)
       mu_test <- refmodel$family$linkinv(eta_test)
     }
-    ref <- .weighted_summary_means(
+    ref <- weighted_summary_means(
       y_test = d_test, family = refmodel$family, wdraws = refmodel$wdraws_ref,
       mu = mu_test, dis = refmodel$dis, cl_ref = seq_along(refmodel$wdraws_ref)
     )
@@ -381,7 +381,7 @@ varsel.refmodel <- function(object, d_test = NULL, method = NULL,
 
 # Workhorse function for the search
 #
-# Argument `p_sel` accepts output from .get_refdist() or .get_p_clust(). For all
+# Argument `p_sel` accepts output from get_refdist() or get_p_clust(). For all
 # other arguments, see the documentation of varsel().
 #
 # @return A list with elements `solution_terms` (the solution path), `outdmins`

@@ -105,12 +105,12 @@ bootstrap <- function(x, fun = mean, B = 2000,
 }
 
 # From `?is.integer` (slightly modified):
-.is.wholenumber <- function(x) {
+is_wholenumber <- function(x) {
   abs(x - round(x)) < .Machine$double.eps^0.5
 }
 
-.validate_num_folds <- function(k, n) {
-  if (!is.numeric(k) || length(k) != 1 || !.is.wholenumber(k)) {
+validate_num_folds <- function(k, n) {
+  if (!is.numeric(k) || length(k) != 1 || !is_wholenumber(k)) {
     stop("Number of folds must be a single integer value.")
   }
   if (k < 2) {
@@ -121,7 +121,7 @@ bootstrap <- function(x, fun = mean, B = 2000,
   }
 }
 
-.validate_vsel_object_stats <- function(object, stats, resp_oscale = TRUE) {
+validate_vsel_object_stats <- function(object, stats, resp_oscale = TRUE) {
   if (!inherits(object, c("vsel"))) {
     stop("The object is not a variable selection object. Run variable ",
          "selection first")
@@ -175,7 +175,7 @@ bootstrap <- function(x, fun = mean, B = 2000,
   return(invisible(TRUE))
 }
 
-.validate_baseline <- function(refmodel, baseline, deltas) {
+validate_baseline <- function(refmodel, baseline, deltas) {
   stopifnot(!is.null(baseline))
   if (!(baseline %in% c("ref", "best"))) {
     stop("Argument 'baseline' must be either 'ref' or 'best'.")
@@ -196,7 +196,7 @@ bootstrap <- function(x, fun = mean, B = 2000,
 #     in which case it is replaced by a vector of ones). For a binomial family,
 #     if `is.factor(y)`, `y` is transformed into a zero-one vector (i.e., with
 #     values in the set {0, 1}).
-.get_standard_y <- function(y, weights, fam) {
+get_standard_y <- function(y, weights, fam) {
   if (NCOL(y) == 1) {
     if (length(weights) > 0) {
       weights <- unname(weights)
@@ -265,16 +265,16 @@ bootstrap <- function(x, fun = mean, B = 2000,
 #   posterior draws, giving the weights of these draws. These weights should be
 #   treated as not being normalized (i.e., they don't necessarily sum to `1`).
 #   Currently, this element could be named `wdraws_ref` instead because
-#   .get_p_clust() is always applied to inputs that are specific to a `refmodel`
+#   get_p_clust() is always applied to inputs that are specific to a `refmodel`
 #   object (either the initial reference model or a K-fold-specific `refmodel`
-#   object) (and .get_refdist() is applied to inputs that are specific to a
-#   `refmodel` object anyway). However, .get_p_clust() intentionally seems to
+#   object) (and get_refdist() is applied to inputs that are specific to a
+#   `refmodel` object anyway). However, get_p_clust() intentionally seems to
 #   have been kept as general as possible and `wdraws_orig` is more general than
 #   `wdraws_ref`.
-.get_refdist <- function(refmodel, ndraws = NULL, nclusters = NULL,
-                         thinning = TRUE,
-                         throw_mssg_ndraws = getOption("projpred.mssg_ndraws",
-                                                       TRUE)) {
+get_refdist <- function(refmodel, ndraws = NULL, nclusters = NULL,
+                        thinning = TRUE,
+                        throw_mssg_ndraws = getOption("projpred.mssg_ndraws",
+                                                      TRUE)) {
   # Number of draws in the reference model:
   S <- NCOL(refmodel$mu)
 
@@ -283,20 +283,20 @@ bootstrap <- function(x, fun = mean, B = 2000,
     nclusters <- min(S, nclusters)
     if (nclusters == S) {
       # number of clusters equal to the number of draws, so return the draws
-      return(.get_refdist(refmodel, ndraws = nclusters,
-                          throw_mssg_ndraws = FALSE))
+      return(get_refdist(refmodel, ndraws = nclusters,
+                         throw_mssg_ndraws = FALSE))
     } else if (nclusters == 1) {
       # special case, only one cluster
-      p_ref <- .get_p_clust(family = refmodel$family, eta = refmodel$eta,
-                            mu = refmodel$mu, mu_offs = refmodel$mu_offs,
-                            dis = refmodel$dis, wobs = refmodel$wobs,
-                            cl = rep(1, S))
+      p_ref <- get_p_clust(family = refmodel$family, eta = refmodel$eta,
+                           mu = refmodel$mu, mu_offs = refmodel$mu_offs,
+                           dis = refmodel$dis, wobs = refmodel$wobs,
+                           cl = rep(1, S))
     } else {
       # several clusters
-      p_ref <- .get_p_clust(family = refmodel$family, eta = refmodel$eta,
-                            mu = refmodel$mu, mu_offs = refmodel$mu_offs,
-                            dis = refmodel$dis, wobs = refmodel$wobs,
-                            nclusters = nclusters)
+      p_ref <- get_p_clust(family = refmodel$family, eta = refmodel$eta,
+                           mu = refmodel$mu, mu_offs = refmodel$mu_offs,
+                           dis = refmodel$dis, wobs = refmodel$wobs,
+                           nclusters = nclusters)
     }
   } else {
     ndraws <- min(S, ndraws)
@@ -333,9 +333,9 @@ bootstrap <- function(x, fun = mean, B = 2000,
 }
 
 # Function for clustering the parameter draws:
-.get_p_clust <- function(family, eta, mu, mu_offs, dis, nclusters = 10,
-                         wobs = rep(1, dim(mu)[1]),
-                         wdraws = rep(1, dim(mu)[2]), cl = NULL) {
+get_p_clust <- function(family, eta, mu, mu_offs, dis, nclusters = 10,
+                        wobs = rep(1, dim(mu)[1]),
+                        wdraws = rep(1, dim(mu)[2]), cl = NULL) {
   # cluster the draws in the latent space if no clustering provided
   if (is.null(cl)) {
     # Note: A seed is not set here because this function is not exported and has
@@ -412,12 +412,12 @@ draws_subsample <- function(S, ndraws) {
   return(sample.int(S, size = ndraws))
 }
 
-.is_proj_list <- function(proj) {
+is_proj_list <- function(proj) {
   # Better use a formal class `proj_list`, but for now, use this workaround:
   is.list(proj) && length(proj) && all(sapply(proj, inherits, "projection"))
 }
 
-.unlist_proj <- function(p) {
+unlist_proj <- function(p) {
   if (length(p) == 1) p[[1]] else p
 }
 

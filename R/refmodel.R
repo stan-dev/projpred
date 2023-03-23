@@ -884,7 +884,7 @@ get_refmodel.stanreg <- function(object, latent = FALSE, dis = NULL, ...) {
 
   # Miscellaneous -----------------------------------------------------------
 
-  if (is.null(dis) && !latent && .has_dispersion(family)) {
+  if (is.null(dis) && !latent && has_dispersion(family)) {
     dis <- data.frame(object)[, "sigma"]
   }
 
@@ -1295,7 +1295,7 @@ init_refmodel <- function(object, data, formula, family, ref_predfun = NULL,
              "solve this.")
       }
     } else if (family$family_oscale == "binomial") {
-      if (!all(.is.wholenumber(y_oscale))) {
+      if (!all(is_wholenumber(y_oscale))) {
         stop(
           "In projpred, the response must contain numbers of successes (not ",
           "proportions of successes), in contrast to glm() where this is ",
@@ -1319,7 +1319,7 @@ init_refmodel <- function(object, data, formula, family, ref_predfun = NULL,
   # Add (transformed) response under the (possibly) new name:
   data[, response_name] <- y
 
-  target <- .get_standard_y(y, weights, family)
+  target <- get_standard_y(y, weights, family)
   y <- target$y
   weights <- target$weights
 
@@ -1333,7 +1333,7 @@ init_refmodel <- function(object, data, formula, family, ref_predfun = NULL,
            "solve this.")
     }
   } else if (family$family == "binomial") {
-    if (!all(.is.wholenumber(y))) {
+    if (!all(is_wholenumber(y))) {
       stop("In projpred, the response must contain numbers of successes (not ",
            "proportions of successes), in contrast to glm() where this is ",
            "possible for a 1-column response if the multiplication with the ",
@@ -1437,7 +1437,7 @@ init_refmodel <- function(object, data, formula, family, ref_predfun = NULL,
           "distribution."
         )
       }
-    } else if (!.has_dispersion(family)) {
+    } else if (!has_dispersion(family)) {
       dis <- rep(NA, ndraws)
     } else {
       if (proper_model) {

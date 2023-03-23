@@ -4,8 +4,8 @@
 # projected draws).
 get_submodl_prj <- function(solution_terms, p_ref, refmodel, regul = 1e-4,
                             ...) {
-  validparams <- .validate_wobs_wdraws(refmodel$wobs, p_ref$wdraws_prj,
-                                       p_ref$mu)
+  validparams <- validate_wobs_wdraws(refmodel$wobs, p_ref$wdraws_prj,
+                                      p_ref$mu)
   wobs <- validparams$wobs
   wdraws_prj <- validparams$wdraws_prj
 
@@ -58,9 +58,9 @@ get_submodls <- function(search_path, nterms, p_ref, refmodel, regul,
     # In this case, simply fetch the already computed projections, so don't
     # project again.
     fetch_submodl <- function(nterms, ...) {
-      validparams <- .validate_wobs_wdraws(refmodel$wobs,
-                                           search_path$p_sel$wdraws_prj,
-                                           search_path$p_sel$mu)
+      validparams <- validate_wobs_wdraws(refmodel$wobs,
+                                          search_path$p_sel$wdraws_prj,
+                                          search_path$p_sel$mu)
       wobs <- validparams$wobs
       wdraws_prj <- validparams$wdraws_prj
       return(init_submodl(
@@ -85,7 +85,7 @@ get_submodls <- function(search_path, nterms, p_ref, refmodel, regul,
   return(lapply(nterms, fetch_submodl, ...))
 }
 
-.validate_wobs_wdraws <- function(ref_wobs, ref_wdraws, ref_mu) {
+validate_wobs_wdraws <- function(ref_wobs, ref_wdraws, ref_mu) {
   if (is.null(ref_wobs)) {
     wobs <- rep(1.0, NROW(ref_mu))
   } else {
