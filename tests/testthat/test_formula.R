@@ -226,15 +226,15 @@ test_that("check that we count terms correctly", {
 })
 
 test_that("check that we correctly sort models by size", {
-  submodels <- c(
+  sub_fmls <- c(
     y ~ x + z,
     y ~ x + z + x:z,
     y ~ x + z + x:z + (1 | g),
     y ~ x + z + x:z + (x | g)
   )
-  s <- sort_submodels_by_size(submodels)
+  s <- sort_submodels_by_size(sub_fmls)
   expect_null(s[[1]])
-  expect_equal(unlist(s), as.character(submodels))
+  expect_equal(unlist(s), as.character(sub_fmls))
 })
 
 test_that("select_possible_terms_size() avoids redundant models", {
