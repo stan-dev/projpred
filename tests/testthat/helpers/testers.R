@@ -1454,7 +1454,7 @@ refdist_tester <- function(refd,
                            clust_expected = TRUE,
                            info_str) {
   expect_named(
-    refd, c("mu", "mu_offs", "var", "dis", "wdraws_prj", "cl", "wsample_orig",
+    refd, c("mu", "mu_offs", "var", "dis", "wdraws_prj", "cl", "wdraws_orig",
             "clust_used"),
     info = info_str
   )
@@ -1470,7 +1470,7 @@ refdist_tester <- function(refd,
   expect_length(refd$wdraws_prj, nprjdraws_expected)
   expect_true(is.vector(refd$cl, "integer"), info = info_str)
   expect_length(refd$cl, nrefdraws)
-  expect_identical(refd$wsample_orig, rep(1, nrefdraws), info = info_str)
+  expect_identical(refd$wdraws_orig, rep(1, nrefdraws), info = info_str)
   expect_identical(refd$clust_used, clust_expected, info = info_str)
   return(invisible(TRUE))
 }
@@ -1999,7 +1999,7 @@ vsel_tester <- function(
   expect_type(vs$search_path$p_sel, "list")
   expect_named(vs$search_path$p_sel,
                c("mu", "mu_offs", "var", "dis", "wdraws_prj", "cl",
-                 "wsample_orig", "clust_used"),
+                 "wdraws_orig", "clust_used"),
                info = info_str)
   expect_true(is.matrix(vs$search_path$p_sel$mu), info = info_str)
   expect_true(is.numeric(vs$search_path$p_sel$mu), info = info_str)
@@ -2037,7 +2037,7 @@ vsel_tester <- function(
   expect_length(vs$search_path$p_sel$wdraws_prj, nprjdraws_search_expected)
   expect_true(is.numeric(vs$search_path$p_sel$cl), info = info_str)
   expect_length(vs$search_path$p_sel$cl, ncol(vs$refmodel$mu))
-  expect_identical(vs$search_path$p_sel$wsample_orig,
+  expect_identical(vs$search_path$p_sel$wdraws_orig,
                    rep(1, ncol(vs$refmodel$mu)), info = info_str)
   expect_identical(vs$search_path$p_sel$clust_used, cl_search_expected,
                    info = info_str)

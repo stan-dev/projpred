@@ -464,7 +464,7 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
     if (refmodel$family$for_latent) {
       refdist_eval_mu_offs_oscale <- refmodel$family$latent_ilink(
         t(refdist_eval$mu_offs), cl_ref = refdist_eval$cl,
-        wdraws_ref = refdist_eval$wsample_orig
+        wdraws_ref = refdist_eval$wdraws_orig
       )
       if (length(dim(refdist_eval_mu_offs_oscale)) == 3) {
         refdist_eval_mu_offs_oscale <- refdist_eval_mu_offs_oscale[, inds, ,
@@ -476,7 +476,7 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
       log_lik_ref <- refmodel$family$latent_ll_oscale(
         refdist_eval_mu_offs_oscale, y_oscale = refmodel$y_oscale[inds],
         wobs = refmodel$wobs[inds], cl_ref = refdist_eval$cl,
-        wdraws_ref = refdist_eval$wsample_orig
+        wdraws_ref = refdist_eval$wdraws_orig
       )
       if (all(is.na(log_lik_ref))) {
         stop("In case of the latent projection, `validate_search = FALSE` ",
@@ -516,12 +516,12 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
       if (refmodel$family$for_latent) {
         mu_k_oscale <- refmodel$family$latent_ilink(
           t(mu_k), cl_ref = refdist_eval$cl,
-          wdraws_ref = refdist_eval$wsample_orig
+          wdraws_ref = refdist_eval$wdraws_orig
         )
         log_lik_sub_oscale <- refmodel$family$latent_ll_oscale(
           mu_k_oscale, y_oscale = refmodel$y_oscale[inds],
           wobs = refmodel$wobs[inds], cl_ref = refdist_eval$cl,
-          wdraws_ref = refdist_eval$wsample_orig
+          wdraws_ref = refdist_eval$wdraws_orig
         )
         loo_sub_oscale[[k]][inds] <- apply(log_lik_sub_oscale + lw_sub, 2,
                                            log_sum_exp)
@@ -587,11 +587,11 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
       # Reweight the clusters (or thinned draws) according to the PSIS weights:
       p_sel <- .get_p_clust(
         family = refmodel$family, eta = eta, mu = mu, mu_offs = mu_offs,
-        dis = dis, wsample = exp(lw[, i]), cl = cl_sel
+        dis = dis, wdraws = exp(lw[, i]), cl = cl_sel
       )
       p_pred <- .get_p_clust(
         family = refmodel$family, eta = eta, mu = mu, mu_offs = mu_offs,
-        dis = dis, wsample = exp(lw[, i]), cl = cl_pred
+        dis = dis, wdraws = exp(lw[, i]), cl = cl_pred
       )
 
       # Run the search with the reweighted clusters (or thinned draws) (so the
@@ -929,7 +929,7 @@ kfold_varsel <- function(refmodel, method, nterms_max, ndraws,
     mu_test <- fold$refmodel$family$linkinv(eta_test)
     .weighted_summary_means(
       y_test = fold$d_test, family = fold$refmodel$family,
-      wsample = fold$refmodel$wdraws_ref, mu = mu_test,
+      wdraws = fold$refmodel$wdraws_ref, mu = mu_test,
       dis = fold$refmodel$dis, cl_ref = seq_along(fold$refmodel$wdraws_ref)
     )
   }))

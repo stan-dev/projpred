@@ -261,16 +261,16 @@ bootstrap <- function(x, fun = mean, B = 2000,
 #   * `cl`: Cluster assignment for each posterior draw, that is, a vector that
 #   has length equal to the number of posterior draws and each value is an
 #   integer between 1 and \eqn{S_{\mathrm{prj}}}{S_prj}.
-#   * `wsample_orig`: A numeric vector of length equal to the number of
+#   * `wdraws_orig`: A numeric vector of length equal to the number of
 #   posterior draws, giving the weights of these draws. These weights should be
 #   treated as not being normalized (i.e., they don't necessarily sum to `1`).
-#   Currently, this element could be named `wsample_ref` instead because
+#   Currently, this element could be named `wdraws_ref` instead because
 #   .get_p_clust() is always applied to inputs that are specific to a `refmodel`
 #   object (either the initial reference model or a K-fold-specific `refmodel`
 #   object) (and .get_refdist() is applied to inputs that are specific to a
 #   `refmodel` object anyway). However, .get_p_clust() intentionally seems to
-#   have been kept as general as possible and `wsample_orig` is more general
-#   than `wsample_ref`.
+#   have been kept as general as possible and `wdraws_orig` is more general than
+#   `wdraws_ref`.
 .get_refdist <- function(refmodel, ndraws = NULL, nclusters = NULL,
                          thinning = TRUE,
                          throw_mssg_ndraws = getOption("projpred.mssg_ndraws",
@@ -324,7 +324,7 @@ bootstrap <- function(x, fun = mean, B = 2000,
       dis = refmodel$dis[s_ind],
       wdraws_prj = rep(1 / ndraws, ndraws),
       cl = cl,
-      wsample_orig = rep(1, S),
+      wdraws_orig = rep(1, S),
       clust_used = FALSE
     )
   }
@@ -335,7 +335,7 @@ bootstrap <- function(x, fun = mean, B = 2000,
 # Function for clustering the parameter draws:
 .get_p_clust <- function(family, eta, mu, mu_offs, dis, nclusters = 10,
                          wobs = rep(1, dim(mu)[1]),
-                         wsample = rep(1, dim(mu)[2]), cl = NULL) {
+                         wdraws = rep(1, dim(mu)[2]), cl = NULL) {
   # cluster the samples in the latent space if no clustering provided
   if (is.null(cl)) {
     # Note: A seed is not set here because this function is not exported and has
@@ -371,14 +371,14 @@ bootstrap <- function(x, fun = mean, B = 2000,
     ind <- which(cl == j)
     # Compute normalized weights within the j-th cluster; `1 - eps` is for
     # numerical stability:
-    ws <- wsample[ind] / sum(wsample[ind]) * (1 - eps)
+    ws <- wdraws[ind] / sum(wdraws[ind]) * (1 - eps)
 
     # Center of the j-th cluster:
     centers[, j] <- mu[, ind, drop = FALSE] %*% ws
     # The same centers, but taking offsets into account:
     centers_offs[, j] <- mu_offs[, ind, drop = FALSE] %*% ws
     # Unnormalized weight for the j-th cluster:
-    wcluster[j] <- sum(wsample[ind])
+    wcluster[j] <- sum(wdraws[ind])
     # Aggregated dispersion parameter for the j-th cluster:
     dis_agg[j] <- crossprod(dis[ind], ws)
     # Predictive variance for the j-th cluster:
@@ -400,7 +400,7 @@ bootstrap <- function(x, fun = mean, B = 2000,
     dis = dis_agg,
     wdraws_prj = wcluster,
     cl = cl,
-    wsample_orig = wsample,
+    wdraws_orig = wdraws,
     clust_used = TRUE
   ))
 }

@@ -406,7 +406,7 @@ extend_family <- function(family,
     family$dis_fun <- function(pref, psub, wobs = 1) {
       return(rep(NA, ncol(pref$mu)))
     }
-    family$predvar <- function(mu, dis, wsample = 1) {
+    family$predvar <- function(mu, dis, wdraws = 1) {
       return(rep(NA, NROW(mu)))
     }
     family$ll_fun <- function(mu, dis = NULL, y, weights = 1) {
@@ -442,7 +442,7 @@ extend_family_binomial <- function(family) {
   dis_na <- function(pref, psub, wobs = 1) {
     rep(NA, ncol(pref$mu))
   }
-  predvar_na <- function(mu, dis, wsample = 1) {
+  predvar_na <- function(mu, dis, wdraws = 1) {
     rep(NA, NROW(mu))
   }
   ll_binom <- function(mu, dis, y, weights = 1) {
@@ -528,7 +528,7 @@ extend_family_poisson <- function(family) {
   dis_na <- function(pref, psub, wobs = 1) {
     rep(NA, ncol(pref$mu))
   }
-  predvar_na <- function(mu, dis, wsample = 1) {
+  predvar_na <- function(mu, dis, wdraws = 1) {
     rep(NA, NROW(mu))
   }
   ll_poiss <- function(mu, dis, y, weights = 1) {
@@ -568,12 +568,12 @@ extend_family_gaussian <- function(family) {
   dis_gauss <- function(pref, psub, wobs = 1) {
     sqrt(colSums(wobs / sum(wobs) * (pref$var + (pref$mu - psub$mu)^2)))
   }
-  predvar_gauss <- function(mu, dis, wsample = 1) {
-    wsample <- wsample / sum(wsample)
+  predvar_gauss <- function(mu, dis, wdraws = 1) {
+    wdraws <- wdraws / sum(wdraws)
     mu_var <- do.call(rbind, lapply(seq_len(nrow(mu)), function(i) {
-      sum(wsample * (mu[i, ] - weighted.mean(mu[i, ], wsample))^2)
+      sum(wdraws * (mu[i, ] - weighted.mean(mu[i, ], wdraws))^2)
     }))
-    as.vector(sum(wsample * dis^2) + mu_var)
+    as.vector(sum(wdraws * dis^2) + mu_var)
   }
   ll_gauss <- function(mu, dis, y, weights = 1) {
     y <- as.matrix(y)
@@ -625,7 +625,7 @@ extend_family_gamma <- function(family) {
     ## mean(wobs*((pref$mu - p_sub$mu)/
     ##                      family$mu.eta(family$linkfun(p_sub$mu))^2))
   }
-  predvar_gamma <- function(mu, dis, wsample = 1) {
+  predvar_gamma <- function(mu, dis, wdraws = 1) {
     stop("Family Gamma not implemented yet.")
   }
   ll_gamma <- function(mu, dis, y, weights = 1) {
@@ -669,12 +669,12 @@ extend_family_student_t <- function(family) {
     sqrt(s2)
     ## stop('Projection of dispersion not yet implemented for student-t')
   }
-  predvar_student_t <- function(mu, dis, wsample = 1) {
-    wsample <- wsample / sum(wsample)
+  predvar_student_t <- function(mu, dis, wdraws = 1) {
+    wdraws <- wdraws / sum(wdraws)
     mu_var <- do.call(rbind, lapply(seq_len(nrow(mu)), function(i) {
-      sum(wsample * (mu[i, ] - weighted.mean(mu[i, ], wsample))^2)
+      sum(wdraws * (mu[i, ] - weighted.mean(mu[i, ], wdraws))^2)
     }))
-    as.vector(family$nu / (family$nu - 2) * sum(wsample * dis^2) + mu_var)
+    as.vector(family$nu / (family$nu - 2) * sum(wdraws * dis^2) + mu_var)
   }
   ll_student_t <- function(mu, dis, y, weights = 1) {
     y <- as.matrix(y)

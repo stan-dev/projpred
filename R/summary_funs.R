@@ -7,7 +7,7 @@
     .weighted_summary_means(
       y_test = list(y = y, y_oscale = y_oscale, weights = wobs),
       family = refmodel$family,
-      wsample = submodl$wdraws_prj,
+      wdraws = submodl$wdraws_prj,
       mu = refmodel$family$mu_fun(submodl$outdmin, obs = test_points,
                                   newdata = newdata, offset = offset),
       dis = submodl$dis,
@@ -25,7 +25,7 @@
 #   `list` also needs to contain `y_oscale` (response values on the original
 #   response scale, i.e., the non-latent response values).
 # @param family A `family` object.
-# @param wsample A vector of weights for the parameter draws.
+# @param wdraws A vector of weights for the parameter draws.
 # @param mu A matrix of expected values for `y`.
 # @param dis A vector of dispersion parameter draws.
 # @param cl_ref A numeric vector of length \eqn{S} (with \eqn{S} denoting the
@@ -34,7 +34,7 @@
 #   dropped (e.g., because of thinning by `ndraws` or `ndraws_pred`) need to
 #   have an `NA` in `cl_ref`. Caution: This always refers to the reference
 #   model's parameter draws, not necessarily to the columns of `mu`, the entries
-#   of `wsample`, or the entries of `dis`!
+#   of `wdraws`, or the entries of `dis`!
 # @param wdraws_ref A numeric vector of length \eqn{S} (with \eqn{S} denoting
 #   the number of parameter draws in the reference model), giving the weights of
 #   the parameter draws in the reference model. It doesn't matter whether these
@@ -45,7 +45,7 @@
 #
 # @return A `list` with elements `mu` and `lppd` which are both vectors
 #   containing the values for the quantities from the description above.
-.weighted_summary_means <- function(y_test, family, wsample, mu, dis, cl_ref,
+.weighted_summary_means <- function(y_test, family, wdraws, mu, dis, cl_ref,
                                     wdraws_ref = rep(1, length(cl_ref))) {
   if (!is.matrix(mu)) {
     stop("Unexpected structure for `mu`. Do the return values of ",
@@ -58,10 +58,10 @@
   }
   # Average over the draws, taking their weights into account:
   avg <- list(
-    mu = structure(c(mu %*% wsample),
+    mu = structure(c(mu %*% wdraws),
                    nobs_orig = attr(mu, "nobs_orig"),
                    class = sub("augmat", "augvec", oldClass(mu), fixed = TRUE)),
-    lppd = apply(loglik, 1, log_weighted_mean_exp, wsample)
+    lppd = apply(loglik, 1, log_weighted_mean_exp, wdraws)
   )
   if (family$for_latent) {
     mu_oscale <- family$latent_ilink(t(mu), cl_ref = cl_ref,
@@ -81,7 +81,7 @@
       # coerce it to an augmented-rows matrix:
       mu_oscale <- arr2augmat(mu_oscale, margin_draws = 1)
       mu_oscale_avg <- structure(
-        c(mu_oscale %*% wsample),
+        c(mu_oscale %*% wdraws),
         nobs_orig = attr(mu_oscale, "nobs_orig"),
         class = sub("augmat", "augvec", oldClass(mu_oscale), fixed = TRUE)
       )
@@ -89,11 +89,11 @@
       # In principle, we could use the same code for `mu_oscale_avg` as above.
       # However, that would require `mu_oscale <- t(mu_oscale)` beforehand, so
       # the following should be more efficient:
-      mu_oscale_avg <- c(wsample %*% mu_oscale)
+      mu_oscale_avg <- c(wdraws %*% mu_oscale)
     }
     avg$oscale <- list(
       mu = mu_oscale_avg,
-      lppd = apply(loglik_oscale, 2, log_weighted_mean_exp, wsample)
+      lppd = apply(loglik_oscale, 2, log_weighted_mean_exp, wdraws)
     )
   }
   return(avg)
