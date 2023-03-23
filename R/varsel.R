@@ -286,7 +286,7 @@ varsel.refmodel <- function(object, d_test = NULL, method = NULL,
   verb_out("-----\nFor performance evaluation: Re-projecting onto the ",
            "submodels along the solution path ...",
            verbose = verbose && refit_prj)
-  submodels <- .get_submodels(
+  submodels <- get_submodls(
     search_path = search_path,
     nterms = c(0, seq_along(search_path$solution_terms)),
     p_ref = p_pred, refmodel = refmodel, regul = regul, refit_prj = refit_prj,

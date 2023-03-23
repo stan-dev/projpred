@@ -445,7 +445,7 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
     verb_out("-----\nFor performance evaluation: Re-projecting (using the ",
              "full dataset) onto the submodels along the full-data solution ",
              "path ...", verbose = verbose && refit_prj)
-    submodels <- .get_submodels(
+    submodels <- get_submodls(
       search_path = search_path,
       nterms = c(0, seq_along(search_path$solution_terms)),
       p_ref = p_pred, refmodel = refmodel, regul = opt$regul,
@@ -607,7 +607,7 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
 
       # Re-project along the solution path (or fetch the projections from the
       # search results) of the current fold:
-      submodels <- .get_submodels(
+      submodels <- get_submodls(
         search_path = search_path,
         nterms = c(0, seq_along(search_path$solution_terms)),
         p_ref = p_pred, refmodel = refmodel, regul = opt$regul,
@@ -854,7 +854,7 @@ kfold_varsel <- function(refmodel, method, nterms_max, ndraws,
   get_submodels_cv <- function(search_path, fold_index) {
     fold <- list_cv[[fold_index]]
     p_pred <- .get_refdist(fold$refmodel, ndraws_pred, nclusters_pred)
-    submodels <- .get_submodels(
+    submodels <- get_submodls(
       search_path = search_path,
       nterms = c(0, seq_along(search_path$solution_terms)),
       p_ref = p_pred, refmodel = fold$refmodel, regul = opt$regul,

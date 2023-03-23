@@ -237,7 +237,7 @@ project <- function(object, nterms = NULL, solution_terms = NULL,
   }
 
   ## project onto the submodels
-  submodels <- .get_submodels(
+  submodels <- get_submodls(
     search_path = nlist(
       solution_terms,
       p_sel = object$search_path$p_sel,
