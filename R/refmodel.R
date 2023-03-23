@@ -501,8 +501,8 @@ predict.refmodel <- function(object, newdata = NULL, ynew = NULL,
     } else {
       if (refmodel$family$for_latent) {
         pred <- refmodel$family$latent_ilink(
-          t(eta), cl_ref = seq_along(refmodel$wsample),
-          wdraws_ref = rep(1, length(refmodel$wsample))
+          t(eta), cl_ref = seq_along(refmodel$wdraws_ref),
+          wdraws_ref = rep(1, length(refmodel$wdraws_ref))
         )
         if (length(dim(pred)) < 2) {
           stop("Unexpected structure for the output of `latent_ilink`.")
@@ -541,16 +541,16 @@ predict.refmodel <- function(object, newdata = NULL, ynew = NULL,
     ## evaluate the log predictive density at the given ynew values
     if (refmodel$family$for_latent && type == "response") {
       mu_oscale <- refmodel$family$latent_ilink(
-        t(eta), cl_ref = seq_along(refmodel$wsample),
-        wdraws_ref = rep(1, length(refmodel$wsample))
+        t(eta), cl_ref = seq_along(refmodel$wdraws_ref),
+        wdraws_ref = rep(1, length(refmodel$wdraws_ref))
       )
       if (length(dim(mu_oscale)) < 2) {
         stop("Unexpected structure for the output of `latent_ilink`.")
       }
       loglik <- refmodel$family$latent_ll_oscale(
         mu_oscale, y_oscale = ynew, wobs = weightsnew,
-        cl_ref = seq_along(refmodel$wsample),
-        wdraws_ref = rep(1, length(refmodel$wsample))
+        cl_ref = seq_along(refmodel$wdraws_ref),
+        wdraws_ref = rep(1, length(refmodel$wdraws_ref))
       )
       if (!is.matrix(loglik)) {
         stop("Unexpected structure for the output of `latent_ll_oscale`.")
@@ -1464,13 +1464,13 @@ init_refmodel <- function(object, data, formula, family, ref_predfun = NULL,
   }
 
   # Equal sample (draws) weights by default:
-  wsample <- rep(1 / ndraws, ndraws)
+  wdraws_ref <- rep(1 / ndraws, ndraws)
 
   # Output ------------------------------------------------------------------
 
   refmodel <- nlist(
     fit = object, formula, div_minimizer, family, eta, mu, mu_offs, dis, y,
-    proj_predfun, fetch_data = fetch_data_wrapper, wobs = weights, wsample,
+    proj_predfun, fetch_data = fetch_data_wrapper, wobs = weights, wdraws_ref,
     offset, cvfun, cvfits, extract_model_data, ref_predfun, cvrefbuilder,
     y_oscale = y_oscale %||% y
   )

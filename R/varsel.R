@@ -351,8 +351,8 @@ varsel.refmodel <- function(object, d_test = NULL, method = NULL,
       mu_test <- refmodel$family$linkinv(eta_test)
     }
     ref <- .weighted_summary_means(
-      y_test = d_test, family = refmodel$family, wsample = refmodel$wsample,
-      mu = mu_test, dis = refmodel$dis, cl_ref = seq_along(refmodel$wsample)
+      y_test = d_test, family = refmodel$family, wsample = refmodel$wdraws_ref,
+      mu = mu_test, dis = refmodel$dis, cl_ref = seq_along(refmodel$wdraws_ref)
     )
   }
 

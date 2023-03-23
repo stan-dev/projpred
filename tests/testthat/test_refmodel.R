@@ -90,7 +90,7 @@ test_that("reference models lacking an intercept work", {
     info = "rstanarm.glm.gauss.stdformul.with_wobs.with_offs"
   )
   nms_compare <- c("formula", "div_minimizer", "y", "proj_predfun", "wobs",
-                   "wsample", "offset", "y_oscale")
+                   "wdraws_ref", "offset", "y_oscale")
   expect_equal(
     refmod_no_icpt[nms_compare],
     refmods$rstanarm.glm.gauss.stdformul.with_wobs.with_offs[nms_compare],
@@ -119,7 +119,7 @@ test_that("offsets specified via argument `offset` work", {
     info = "rstanarm.glm.gauss.stdformul.with_wobs.with_offs"
   )
   nms_compare <- c("div_minimizer", "eta", "mu", "mu_offs", "dis", "y",
-                   "proj_predfun", "wobs", "wsample", "offset", "y_oscale")
+                   "proj_predfun", "wobs", "wdraws_ref", "offset", "y_oscale")
   expect_equal(
     refmod_offs_arg[nms_compare],
     refmods$rstanarm.glm.gauss.stdformul.with_wobs.with_offs[nms_compare],

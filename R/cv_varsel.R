@@ -327,15 +327,15 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
   # weights, but also for performance statistics like ELPD and MLPD):
   if (refmodel$family$for_latent) {
     mu_offs_oscale <- refmodel$family$latent_ilink(
-      t(mu_offs), cl_ref = seq_along(refmodel$wsample),
-      wdraws_ref = refmodel$wsample
+      t(mu_offs), cl_ref = seq_along(refmodel$wdraws_ref),
+      wdraws_ref = refmodel$wdraws_ref
     )
     if (length(dim(mu_offs_oscale)) < 2) {
       stop("Unexpected structure for the output of `latent_ilink`.")
     }
     loglik_forPSIS <- refmodel$family$latent_ll_oscale(
       mu_offs_oscale, y_oscale = refmodel$y_oscale, wobs = refmodel$wobs,
-      cl_ref = seq_along(refmodel$wsample), wdraws_ref = refmodel$wsample
+      cl_ref = seq_along(refmodel$wdraws_ref), wdraws_ref = refmodel$wdraws_ref
     )
     if (!is.matrix(loglik_forPSIS)) {
       stop("Unexpected structure for the output of `latent_ll_oscale`.")
@@ -718,8 +718,8 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
       # Need to use `mlvl_allrandom = TRUE` (`mu_offs_oscale` is based on
       # `mlvl_allrandom = getOption("projpred.mlvl_proj_ref_new", FALSE)`):
       mu_offs_mlvlRan_oscale <- refmodel$family$latent_ilink(
-        t(mu_offs_mlvlRan), cl_ref = seq_along(refmodel$wsample),
-        wdraws_ref = refmodel$wsample
+        t(mu_offs_mlvlRan), cl_ref = seq_along(refmodel$wdraws_ref),
+        wdraws_ref = refmodel$wdraws_ref
       )
       mu_offs_mlvlRan_oscale_odim <- mu_offs_mlvlRan_oscale
       if (length(dim(mu_offs_mlvlRan_oscale)) == 3) {
@@ -756,8 +756,8 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
       # `mlvl_allrandom = getOption("projpred.mlvl_proj_ref_new", FALSE)`):
       loglik_mlvlRan <- refmodel$family$latent_ll_oscale(
         mu_offs_mlvlRan_oscale_odim, y_oscale = refmodel$y_oscale,
-        wobs = refmodel$wobs, cl_ref = seq_along(refmodel$wsample),
-        wdraws_ref = refmodel$wsample
+        wobs = refmodel$wobs, cl_ref = seq_along(refmodel$wdraws_ref),
+        wdraws_ref = refmodel$wdraws_ref
       )
       lppd_ref_oscale <- apply(loglik_mlvlRan + lw, 2, log_sum_exp)
     } else {
@@ -929,8 +929,8 @@ kfold_varsel <- function(refmodel, method, nterms_max, ndraws,
     mu_test <- fold$refmodel$family$linkinv(eta_test)
     .weighted_summary_means(
       y_test = fold$d_test, family = fold$refmodel$family,
-      wsample = fold$refmodel$wsample, mu = mu_test,
-      dis = fold$refmodel$dis, cl_ref = seq_along(fold$refmodel$wsample)
+      wsample = fold$refmodel$wdraws_ref, mu = mu_test,
+      dis = fold$refmodel$dis, cl_ref = seq_along(fold$refmodel$wdraws_ref)
     )
   }))
   ref$mu <- ref$mu[order(idxs_sorted_by_fold_flx)]

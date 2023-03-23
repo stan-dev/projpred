@@ -350,7 +350,7 @@ refmodel_tester <- function(
   # Test the general structure of the object:
   refmod_nms <- c(
     "fit", "formula", "div_minimizer", "family", "eta", "mu", "mu_offs", "dis",
-    "y", "proj_predfun", "fetch_data", "wobs", "wsample", "offset", "cvfun",
+    "y", "proj_predfun", "fetch_data", "wobs", "wdraws_ref", "offset", "cvfun",
     "cvfits", "extract_model_data", "ref_predfun", "cvrefbuilder", "y_oscale"
   )
   refmod_class_expected <- "refmodel"
@@ -668,10 +668,10 @@ refmodel_tester <- function(
     expect_identical(refmod$wobs, wobs_expected, info = info_str)
   }
 
-  # wsample
-  expect_true(is.vector(refmod$wsample, "double"), info = info_str)
-  expect_length(refmod$wsample, nrefdraws_expected)
-  expect_true(all(refmod$wsample > 0), info = info_str)
+  # wdraws_ref
+  expect_true(is.vector(refmod$wdraws_ref, "double"), info = info_str)
+  expect_length(refmod$wdraws_ref, nrefdraws_expected)
+  expect_true(all(refmod$wdraws_ref > 0), info = info_str)
 
   # offset
   ### Not needed because of the more precise test below:
@@ -1649,10 +1649,10 @@ projection_tester <- function(p,
 
   # cl_ref
   expect_true(is.vector(p$cl_ref, "numeric"), info = info_str)
-  expect_length(p$cl_ref, length(p$refmodel$wsample))
+  expect_length(p$cl_ref, length(p$refmodel$wdraws_ref))
 
   # wdraws_ref
-  expect_identical(p$wdraws_ref, rep(1, length(p$refmodel$wsample)),
+  expect_identical(p$wdraws_ref, rep(1, length(p$refmodel$wdraws_ref)),
                    info = info_str)
 
   # p_type
