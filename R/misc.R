@@ -282,7 +282,7 @@ bootstrap <- function(x, fun = mean, B = 2000,
     # use clustering (ignore ndraws argument)
     nclusters <- min(S, nclusters)
     if (nclusters == S) {
-      # number of clusters equal to the number of samples, so return the samples
+      # number of clusters equal to the number of draws, so return the draws
       return(.get_refdist(refmodel, ndraws = nclusters,
                           throw_mssg_ndraws = FALSE))
     } else if (nclusters == 1) {
@@ -336,13 +336,13 @@ bootstrap <- function(x, fun = mean, B = 2000,
 .get_p_clust <- function(family, eta, mu, mu_offs, dis, nclusters = 10,
                          wobs = rep(1, dim(mu)[1]),
                          wdraws = rep(1, dim(mu)[2]), cl = NULL) {
-  # cluster the samples in the latent space if no clustering provided
+  # cluster the draws in the latent space if no clustering provided
   if (is.null(cl)) {
     # Note: A seed is not set here because this function is not exported and has
     # a calling stack at the beginning of which a seed is set.
 
     out <- kmeans(t(eta), nclusters, iter.max = 50)
-    cl <- out$cluster # cluster indices for each sample
+    cl <- out$cluster # cluster indices for each draw
   } else if (typeof(cl) == "list") {
     # old clustering solution provided, so fetch the cluster indices
     if (is.null(cl$cluster)) {

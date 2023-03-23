@@ -235,7 +235,7 @@ project <- function(object, nterms = NULL, solution_terms = NULL,
     nclusters <- 1
   }
 
-  ## get the clustering or subsample
+  ## get the clustering or thinning
   if (refit_prj) {
     p_ref <- .get_refdist(refmodel, ndraws = ndraws, nclusters = nclusters)
   }

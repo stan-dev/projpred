@@ -521,7 +521,7 @@ predict.refmodel <- function(object, newdata = NULL, ynew = NULL,
       }
     }
     was_augmat <- inherits(pred, "augmat")
-    ## integrate over the samples
+    ## integrate over the draws
     if (type == "link" || !refmodel$family$for_latent || was_augmat) {
       if (ncol(pred) > 1) {
         pred <- rowMeans(pred)
@@ -1463,7 +1463,7 @@ init_refmodel <- function(object, data, formula, family, ref_predfun = NULL,
             "dispersion parameter values.")
   }
 
-  # Equal sample (draws) weights by default:
+  # Equal weights for the posterior draws by default:
   wdraws_ref <- rep(1 / ndraws, ndraws)
 
   # Output ------------------------------------------------------------------
