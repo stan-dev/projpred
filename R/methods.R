@@ -827,22 +827,17 @@ summary.vsel <- function(
   baseline <- validate_baseline(object$refmodel, baseline, deltas)
 
   # Initialize output:
-  out <- list(
-    formula = object$refmodel$formula,
-    family = object$refmodel$family,
-    nobs_train = nrow(object$refmodel$fetch_data()),
-    nobs_test = if (object$type_test == "test_hold-out") {
-      nrow(object$y_wobs_test)
-    } else {
-      NULL
-    },
-    method = object$method,
-    cv_method = object$cv_method,
-    validate_search = object$validate_search,
-    clust_used_search = object$clust_used_search,
-    clust_used_eval = object$clust_used_eval,
-    nprjdraws_search = object$nprjdraws_search,
-    nprjdraws_eval = object$nprjdraws_eval
+  out <- c(
+    list(formula = object$refmodel$formula,
+         family = object$refmodel$family,
+         nobs_train = nrow(object$refmodel$fetch_data()),
+         nobs_test = if (object$type_test == "test_hold-out") {
+           nrow(object$y_wobs_test)
+         } else {
+           NULL
+         }),
+    object[c("method", "cv_method", "validate_search", "clust_used_search",
+             "clust_used_eval", "nprjdraws_search", "nprjdraws_eval")]
   )
   if (isTRUE(out$validate_search)) {
     out$search_included <- "search included"
