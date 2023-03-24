@@ -297,6 +297,10 @@
 #'   `refmodel` (with `datafit` being first). Objects of class `datafit` are
 #'   handled differently at several places throughout this package.
 #'
+#'   The elements of the returned object are not meant to be accessed directly
+#'   but instead via downstream functions (see the functions mentioned above as
+#'   well as [predict.refmodel()]).
+#'
 #' @examples
 #' if (requireNamespace("rstanarm", quietly = TRUE)) {
 #'   # Data:

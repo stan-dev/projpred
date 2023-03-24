@@ -153,6 +153,10 @@ Usually, the returned object is of class \code{refmodel}. However, if \code{obje
 is \code{NULL}, the returned object is of class \code{datafit} as well as of class
 \code{refmodel} (with \code{datafit} being first). Objects of class \code{datafit} are
 handled differently at several places throughout this package.
+
+The elements of the returned object are not meant to be accessed directly
+but instead via downstream functions (see the functions mentioned above as
+well as \code{\link[=predict.refmodel]{predict.refmodel()}}).
 }
 \description{
 Function \code{\link[=get_refmodel]{get_refmodel()}} is a generic function whose methods usually call
