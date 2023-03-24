@@ -688,7 +688,7 @@ test_that(paste(
     )
     vs <- suppressWarnings(varsel(
       ref,
-      method = "l1", lambda_min_ratio = lambda_min_ratio,
+      method = "L1", lambda_min_ratio = lambda_min_ratio,
       nlambda = nlambda, thresh = 1e-12, verbose = FALSE
     ))
     expect_warning(

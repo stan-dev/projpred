@@ -1882,8 +1882,7 @@ vsel_tester <- function(
       vsel_smmrs_ref_nms[1:2] <- vsel_smmrs_ref_nms[2:1]
     }
   }
-  method_expected <- tolower(method_expected)
-  if (method_expected == "l1") {
+  if (method_expected == "L1") {
     cl_search_expected <- !from_datafit
     nprjdraws_search_expected <- 1
   }
@@ -1912,7 +1911,7 @@ vsel_tester <- function(
                    info = info_str)
   expect_type(vs$search_path$outdmins, "list")
   expect_length(vs$search_path$outdmins, solterms_len_expected + 1)
-  from_vsel_L1_search <- method_expected == "l1"
+  from_vsel_L1_search <- method_expected == "L1"
   if (exists(".Random.seed", envir = .GlobalEnv)) {
     rng_state_old <- get(".Random.seed", envir = .GlobalEnv)
     on.exit(assign(".Random.seed", rng_state_old, envir = .GlobalEnv))

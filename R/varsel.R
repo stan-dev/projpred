@@ -398,7 +398,7 @@ varsel.refmodel <- function(object, d_test = NULL, method = NULL,
 #   same as the input argument `p_sel`).
 select <- function(method, p_sel, refmodel, nterms_max, penalty, verbose, opt,
                    search_terms, ...) {
-  if (method == "l1") {
+  if (method == "L1") {
     search_path <- search_L1(p_sel, refmodel, nterms_max, penalty, opt)
     search_path$p_sel <- p_sel
     return(search_path)
@@ -432,11 +432,13 @@ parse_args_varsel <- function(refmodel, method, refit_prj, nterms_max,
         refmodel$family$for_augdat) {
       method <- "forward"
     } else {
-      method <- "l1"
+      method <- "L1"
     }
   } else {
-    method <- tolower(method)
     if (method == "l1") {
+      method <- toupper(method)
+    }
+    if (method == "L1") {
       if (has_group_features || has_additive_features) {
         stop("L1 search is only supported for reference models without ",
              "multilevel and without additive (\"smoothing\") terms.")
@@ -452,7 +454,7 @@ parse_args_varsel <- function(refmodel, method, refit_prj, nterms_max,
     }
   }
 
-  if (!(method %in% c("l1", "forward"))) {
+  if (!(method %in% c("L1", "forward"))) {
     stop("Unknown search method")
   }
 
@@ -463,7 +465,7 @@ parse_args_varsel <- function(refmodel, method, refit_prj, nterms_max,
     refit_prj <- FALSE
   }
 
-  if (method == "l1") {
+  if (method == "L1") {
     nclusters <- 1
   }
 
