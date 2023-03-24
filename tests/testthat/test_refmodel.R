@@ -168,8 +168,7 @@ test_that("function calls in group terms fail", {
 })
 
 test_that("extra arguments in s() or t2() terms fail", {
-  skip_if_not(run_more)
-  args_fit_i <- args_fit$rstanarm.gam.gauss.stdformul.with_wobs.without_offs
+  args_fit_i <- args_fit$rstanarm.gam.gauss.spclformul.with_wobs.without_offs
   skip_if_not(!is.null(args_fit_i))
   fit_fun_nm <- get_fit_fun_nm(args_fit_i)
   fit_s <- suppressWarnings(do.call(
