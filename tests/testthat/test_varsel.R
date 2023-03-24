@@ -1123,12 +1123,12 @@ test_that("setting `nloo` smaller than the number of observations works", {
       info_str = tstsetup
     )
     # Expected equality for most components with a few exceptions:
-    expect_equal(cvvs_nloo[setdiff(vsel_nms_cv, vsel_nms_cv_nloo)],
-                 cvvss[[tstsetup]][setdiff(vsel_nms_cv, vsel_nms_cv_nloo)],
+    expect_equal(cvvs_nloo[setdiff(vsel_nms, vsel_nms_nloo)],
+                 cvvss[[tstsetup]][setdiff(vsel_nms, vsel_nms_nloo)],
                  info = tstsetup)
     # Expected inequality for the exceptions (but note that the components from
-    # `vsel_nms_cv_nloo_opt` can be, but don't need to be differing):
-    for (vsel_nm in setdiff(vsel_nms_cv_nloo, vsel_nms_cv_nloo_opt)) {
+    # `vsel_nms_nloo_opt` can be, but don't need to be differing):
+    for (vsel_nm in setdiff(vsel_nms_nloo, vsel_nms_nloo_opt)) {
       expect_false(isTRUE(all.equal(cvvs_nloo[[vsel_nm]],
                                     cvvss[[tstsetup]][[vsel_nm]])),
                    info = paste(tstsetup, vsel_nm, sep = "__"))
@@ -1184,15 +1184,15 @@ test_that("`validate_search` works", {
       info_str = tstsetup
     )
     # Expected equality for most components with a few exceptions:
-    expect_equal(cvvs_valsearch[setdiff(vsel_nms_cv, vsel_nms_cv_valsearch)],
-                 cvvss[[tstsetup]][setdiff(vsel_nms_cv, vsel_nms_cv_valsearch)],
+    expect_equal(cvvs_valsearch[setdiff(vsel_nms, vsel_nms_valsearch)],
+                 cvvss[[tstsetup]][setdiff(vsel_nms, vsel_nms_valsearch)],
                  info = tstsetup)
     expect_identical(cvvs_valsearch$summaries$ref,
                      cvvss[[tstsetup]]$summaries$ref,
                      info = tstsetup)
     # Expected inequality for the exceptions (but note that the components from
-    # `vsel_nms_cv_valsearch_opt` can be, but don't need to be differing):
-    for (vsel_nm in setdiff(vsel_nms_cv_valsearch, vsel_nms_cv_valsearch_opt)) {
+    # `vsel_nms_valsearch_opt` can be, but don't need to be differing):
+    for (vsel_nm in setdiff(vsel_nms_valsearch, vsel_nms_valsearch_opt)) {
       if (vsel_nm == "pct_solution_terms_cv" &&
           all(cvvss[[tstsetup]][[vsel_nm]][
             , colnames(cvvss[[tstsetup]][[vsel_nm]]) != "size", drop = FALSE
@@ -1200,9 +1200,9 @@ test_that("`validate_search` works", {
         # In this case, a comparison will most likely give the same
         # `pct_solution_terms_cv` element for `validate_search = TRUE` and
         # `validate_search = FALSE`. In fact, `pct_solution_terms_cv` could
-        # therefore be added to `vsel_nms_cv_valsearch_opt`, but most of the
+        # therefore be added to `vsel_nms_valsearch_opt`, but most of the
         # time, `pct_solution_terms_cv` will differ, so we don't include it in
-        # `vsel_nms_cv_valsearch_opt` and skip here:
+        # `vsel_nms_valsearch_opt` and skip here:
         next
       }
       expect_false(isTRUE(all.equal(cvvs_valsearch[[vsel_nm]],
@@ -1352,14 +1352,14 @@ test_that(paste(
     # is passed to argument `family` of the external model fitting functions
     # like lme4::glmer(). This should be fixed and then `check.environment =
     # FALSE` should be removed.
-    expect_equal(cvvs_cvfits[setdiff(vsel_nms_cv, vsel_nms_cv_cvfits)],
-                 cvvss[[tstsetup]][setdiff(vsel_nms_cv, vsel_nms_cv_cvfits)],
+    expect_equal(cvvs_cvfits[setdiff(vsel_nms, vsel_nms_cvfits)],
+                 cvvss[[tstsetup]][setdiff(vsel_nms, vsel_nms_cvfits)],
                  check.environment = FALSE,
                  info = tstsetup)
     # Expected inequality for the remaining components (but note that the
-    # components from `vsel_nms_cv_cvfits_opt` can be, but don't need to be
+    # components from `vsel_nms_cvfits_opt` can be, but don't need to be
     # differing):
-    for (vsel_nm in setdiff(vsel_nms_cv_cvfits, vsel_nms_cv_cvfits_opt)) {
+    for (vsel_nm in setdiff(vsel_nms_cvfits, vsel_nms_cvfits_opt)) {
       expect_false(isTRUE(all.equal(cvvs_cvfits[[vsel_nm]],
                                     cvvss[[tstsetup]][[vsel_nm]])),
                    info = paste(tstsetup, vsel_nm, sep = "__"))
@@ -1486,14 +1486,14 @@ test_that(paste(
     # is passed to argument `family` of the external model fitting functions
     # like lme4::glmer(). This should be fixed and then `check.environment =
     # FALSE` should be removed.
-    expect_equal(cvvs_cvfits[setdiff(vsel_nms_cv, vsel_nms_cv_cvfits)],
-                 cvvss[[tstsetup]][setdiff(vsel_nms_cv, vsel_nms_cv_cvfits)],
+    expect_equal(cvvs_cvfits[setdiff(vsel_nms, vsel_nms_cvfits)],
+                 cvvss[[tstsetup]][setdiff(vsel_nms, vsel_nms_cvfits)],
                  check.environment = FALSE,
                  info = tstsetup)
     # Expected inequality for the remaining components (but note that the
-    # components from `vsel_nms_cv_cvfits_opt` can be, but don't need to be
+    # components from `vsel_nms_cvfits_opt` can be, but don't need to be
     # differing):
-    for (vsel_nm in setdiff(vsel_nms_cv_cvfits, vsel_nms_cv_cvfits_opt)) {
+    for (vsel_nm in setdiff(vsel_nms_cvfits, vsel_nms_cvfits_opt)) {
       expect_false(isTRUE(all.equal(cvvs_cvfits[[vsel_nm]],
                                     cvvss[[tstsetup]][[vsel_nm]])),
                    info = paste(tstsetup, vsel_nm, sep = "__"))

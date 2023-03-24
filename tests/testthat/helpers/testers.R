@@ -1863,7 +1863,6 @@ vsel_tester <- function(
 ) {
   # Preparations:
   if (with_cv) {
-    vsel_nms <- vsel_nms_cv
     vsel_smmrs_sub_nms <- c(vsel_smmrs_sub_nms, "wcv")
 
     if (is.null(cv_method_expected)) {
@@ -2263,6 +2262,8 @@ vsel_tester <- function(
       colnames(pct_solterms_ch) <- pct_nonsize_nms
       expect_identical(pct_solterms_ch, pct_solterms, info = info_str)
     }
+  } else {
+    expect_null(vs$pct_solution_terms_cv, info = info_str)
   }
 
   # nterms_max
@@ -2326,23 +2327,18 @@ smmry_tester <- function(smmry, vsel_expected, nterms_max_expected = NULL,
                          search_trms_empty_size = FALSE, info_str, ...) {
   expect_s3_class(smmry, "vselsummary")
   expect_type(smmry, "list")
-  pct_solterms_nm <- if ("pct_solution_terms_cv" %in% names(vsel_expected)) {
-    "pct_solution_terms_cv"
-  } else {
-    character()
-  }
   expect_named(
     smmry,
-    c("formula", "family", "nobs_train", "nobs_test", "method", "cv_method",
-      "validate_search", "clust_used_search", "clust_used_eval",
-      "nprjdraws_search", "nprjdraws_eval", "search_included", "nterms",
-      pct_solterms_nm, "selection", "resp_oscale"),
+    c("formula", "family", "nobs_train", "nobs_test", "pct_solution_terms_cv",
+      "method", "cv_method", "validate_search", "clust_used_search",
+      "clust_used_eval", "nprjdraws_search", "nprjdraws_eval",
+      "search_included", "nterms", "selection", "resp_oscale"),
     info = info_str
   )
 
   for (nm in c(
-    "method", "cv_method", "validate_search", "clust_used_search",
-    "clust_used_eval", "nprjdraws_search", "nprjdraws_eval", pct_solterms_nm
+    "pct_solution_terms_cv", "method", "cv_method", "validate_search",
+    "clust_used_search", "clust_used_eval", "nprjdraws_search", "nprjdraws_eval"
   )) {
     expect_identical(smmry[[nm]], vsel_expected[[nm]],
                      info = paste(info_str, nm, sep = "__"))

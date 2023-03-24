@@ -836,8 +836,9 @@ summary.vsel <- function(
          } else {
            NULL
          }),
-    object[c("method", "cv_method", "validate_search", "clust_used_search",
-             "clust_used_eval", "nprjdraws_search", "nprjdraws_eval")]
+    object[c("pct_solution_terms_cv", "method", "cv_method", "validate_search",
+             "clust_used_search", "clust_used_eval", "nprjdraws_search",
+             "nprjdraws_eval")]
   )
   if (isTRUE(out$validate_search)) {
     out$search_included <- "search included"
@@ -913,9 +914,6 @@ summary.vsel <- function(
     nterms_max <- max(stats_table$size)
   }
   out$nterms <- nterms_max
-  if ("pct_solution_terms_cv" %in% names(object)) {
-    out$pct_solution_terms_cv <- object$pct_solution_terms_cv
-  }
   out$selection <- subset(arr, arr$size <= nterms_max)
   out$resp_oscale <- resp_oscale
   return(out)
