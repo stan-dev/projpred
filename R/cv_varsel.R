@@ -247,6 +247,7 @@ cv_varsel.refmodel <- function(
               nterms_max,
               method,
               cv_method,
+              K = K,
               validate_search,
               clust_used_search = sel$p_sel$clust_used,
               clust_used_eval = refdist_eval_dummy$clust_used,
@@ -282,6 +283,9 @@ parse_args_cv_varsel <- function(refmodel, cv_method, K, validate_search) {
   }
 
   if (cv_method == "kfold") {
+    if (!is.null(refmodel$cvfits)) {
+      K <- attr(refmodel$cvfits, "K")
+    }
     stopifnot(!is.null(K))
     if (length(K) > 1 || !is.numeric(K) || !is_wholenumber(K)) {
       stop("`K` must be a single integer value.")
@@ -296,6 +300,8 @@ parse_args_cv_varsel <- function(refmodel, cv_method, K, validate_search) {
       stop("`cv_method = \"kfold\"` cannot be used with ",
            "`validate_search = FALSE`.")
     }
+  } else {
+    K <- NULL
   }
 
   return(nlist(cv_method, K))

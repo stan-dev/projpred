@@ -2294,6 +2294,13 @@ vsel_tester <- function(
   # cv_method
   expect_identical(vs$cv_method, cv_method_expected, info = info_str)
 
+  # K
+  if (identical(cv_method_expected, "kfold")) {
+    expect_identical(vs$K, K_tst, info = info_str)
+  } else {
+    expect_null(vs$K, info = info_str)
+  }
+
   # validate_search
   expect_identical(vs$validate_search, valsearch_expected, info = info_str)
 
@@ -2340,28 +2347,32 @@ smmry_tester <- function(smmry, vsel_expected, nterms_max_expected = NULL,
   expect_named(
     smmry,
     c("formula", "family", "nobs_train", "pct_solution_terms_cv", "type_test",
-      "nobs_test", "method", "cv_method", "validate_search",
+      "nobs_test", "method", "cv_method", "K", "validate_search",
       "clust_used_search", "clust_used_eval", "nprjdraws_search",
       "nprjdraws_eval", "search_included", "nterms", "selection",
       "resp_oscale"),
     info = info_str
   )
 
+  expect_null(smmry$fit, info = info_str)
+  expect_identical(smmry$formula, vsel_expected$refmodel$formula,
+                   info = info_str)
+  expect_identical(smmry$family, vsel_expected$refmodel$family,
+                   info = info_str)
   for (nm in c(
-    "pct_solution_terms_cv", "method", "cv_method", "validate_search",
-    "clust_used_search", "clust_used_eval", "nprjdraws_search", "nprjdraws_eval"
+    "nobs_train", "pct_solution_terms_cv", "type_test", "nobs_test", "method",
+    "cv_method", "K", "validate_search", "clust_used_search", "clust_used_eval",
+    "nprjdraws_search", "nprjdraws_eval"
   )) {
     expect_identical(smmry[[nm]], vsel_expected[[nm]],
                      info = paste(info_str, nm, sep = "__"))
   }
-  expect_identical(smmry$family, vsel_expected$refmodel$family,
+  expect_true(smmry$search_included %in% c("search included",
+                                           "search not included"),
+              info = info_str)
+  expect_identical(smmry$search_included == "search included",
+                   isTRUE(vsel_expected$validate_search),
                    info = info_str)
-  expect_identical(smmry$formula, vsel_expected$refmodel$formula,
-                   info = info_str)
-  expect_null(smmry$fit, info = info_str)
-  expect_identical(smmry$nobs_train, vsel_expected$nobs_train, info = info_str)
-  expect_identical(smmry$type_test, vsel_expected$type_test, info = info_str)
-  expect_identical(smmry$nobs_test, vsel_expected$nobs_test, info = info_str)
   if (is.null(nterms_max_expected)) {
     nterms_ch <- vsel_expected$nterms_max
   } else {
@@ -2373,12 +2384,6 @@ smmry_tester <- function(smmry, vsel_expected, nterms_max_expected = NULL,
     nterms_ch <- nterms_ch - 1
   }
   expect_equal(smmry$nterms, nterms_ch, info = info_str)
-  expect_true(smmry$search_included %in% c("search included",
-                                           "search not included"),
-              info = info_str)
-  expect_identical(smmry$search_included == "search included",
-                   isTRUE(vsel_expected$validate_search),
-                   info = info_str)
   smmry_sel_tester(smmry$selection,
                    summaries_ref = vsel_expected$summaries$ref,
                    nterms_max_expected = nterms_max_expected,

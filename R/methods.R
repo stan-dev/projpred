@@ -831,7 +831,7 @@ summary.vsel <- function(
   out <- c(
     object$refmodel[c("formula", "family")],
     object[c("nobs_train", "pct_solution_terms_cv", "type_test", "nobs_test",
-             "method", "cv_method", "validate_search", "clust_used_search",
+             "method", "cv_method", "K", "validate_search", "clust_used_search",
              "clust_used_eval", "nprjdraws_search", "nprjdraws_eval")]
   )
   if (isTRUE(out$validate_search)) {
