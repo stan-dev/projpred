@@ -956,7 +956,13 @@ print.vselsummary <- function(x, digits = 1, ...) {
   if (!is.null(x$cv_method)) {
     cv_meth_pretty <- sub("^kfold$", "K-fold", x$cv_method)
     cv_meth_pretty <- sub("^LOO$", "PSIS-LOO", cv_meth_pretty)
-    cat(paste("CV method:", cv_meth_pretty, "CV with", x$search_included, "\n"))
+    if (x$cv_method == "kfold") {
+      K_pretty <- paste("K =", x$K, "and ")
+    } else {
+      K_pretty <- ""
+    }
+    cat("CV method: ", cv_meth_pretty, " CV with ", K_pretty, x$search_included,
+        "\n", sep = "")
   }
   cat(paste0("Search method: ", x$method, ", maximum number of terms ",
              max(x$selection$size), "\n"))
