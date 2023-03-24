@@ -19,6 +19,8 @@ If you read this from a place other than <https://mc-stan.org/projpred/news/inde
     + `varsel()`'s and `cv_varsel()`'s output element `d_test` has been replaced with new output elements `type_test` and `y_wobs_test`.
     
     In general, these elements don't need to be accessed manually, so this should not be a user-facing change.
+* `print.vselsummary()` now also prints `K` in case of K-fold CV.
+* The `print.vselsummary()` output has been slightly improved, e.g., adding a remark what "search included" or "search not included" means.
 
 ## Bug fixes
 

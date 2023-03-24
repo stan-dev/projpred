@@ -835,9 +835,9 @@ summary.vsel <- function(
              "clust_used_eval", "nprjdraws_search", "nprjdraws_eval")]
   )
   if (isTRUE(out$validate_search)) {
-    out$search_included <- "search included"
+    out$search_included <- "search included (i.e., fold-wise searches)"
   } else {
-    out$search_included <- "search not included"
+    out$search_included <- "search not included (i.e., a full-data search)"
   }
   class(out) <- "vselsummary"
 
@@ -954,7 +954,9 @@ print.vselsummary <- function(x, digits = 1, ...) {
   }
   cat("Projection method: ", prj_meth, "\n", sep = "")
   if (!is.null(x$cv_method)) {
-    cat(paste("CV method:", x$cv_method, x$search_included, "\n"))
+    cv_meth_pretty <- sub("^kfold$", "K-fold", x$cv_method)
+    cv_meth_pretty <- sub("^LOO$", "PSIS-LOO", cv_meth_pretty)
+    cat(paste("CV method:", cv_meth_pretty, "CV with", x$search_included, "\n"))
   }
   cat(paste0("Search method: ", x$method, ", maximum number of terms ",
              max(x$selection$size), "\n"))

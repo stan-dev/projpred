@@ -2367,12 +2367,18 @@ smmry_tester <- function(smmry, vsel_expected, nterms_max_expected = NULL,
     expect_identical(smmry[[nm]], vsel_expected[[nm]],
                      info = paste(info_str, nm, sep = "__"))
   }
-  expect_true(smmry$search_included %in% c("search included",
-                                           "search not included"),
-              info = info_str)
-  expect_identical(smmry$search_included == "search included",
-                   isTRUE(vsel_expected$validate_search),
-                   info = info_str)
+  expect_true(
+    smmry$search_included %in% c(
+      "search included (i.e., fold-wise searches)",
+      "search not included (i.e., a full-data search)"
+    ),
+    info = info_str
+  )
+  expect_identical(
+    smmry$search_included == "search included (i.e., fold-wise searches)",
+    isTRUE(vsel_expected$validate_search),
+    info = info_str
+  )
   if (is.null(nterms_max_expected)) {
     nterms_ch <- vsel_expected$nterms_max
   } else {
