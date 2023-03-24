@@ -107,6 +107,14 @@ reference model's posterior draws have been clustered for the projection
 If the projection is performed onto more than one submodel, the output from
 above is returned for each submodel, giving a \code{list} with one element for
 each submodel.
+
+The elements of an object of class \code{projection} are not meant to be
+accessed directly but instead via helper functions (see the main vignette
+and \link{projpred-package}). An exception is element \code{wdraws_prj} which is
+currently needed to weight quantities derived from the projected draws in
+case of clustered projection, e.g., after applying \code{\link[=as.matrix.projection]{as.matrix.projection()}}
+(which throws a warning in case of clustered projection to make users aware
+of this problem).
 }
 \description{
 Project the posterior of the reference model onto the parameter space of a

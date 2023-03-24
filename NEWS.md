@@ -20,7 +20,7 @@ If you read this from a place other than <https://mc-stan.org/projpred/news/inde
     + `project()`'s output elements `submodl` and `weights` have been renamed to `outdmin` and `wdraws_prj`, respectively.
     + `varsel()`'s and `cv_varsel()`'s output element `d_test` has been replaced with new output elements `type_test` and `y_wobs_test`.
     
-    Apart from `project()`'s output element `wdraws_prj`, these elements don't need to be accessed manually, so changes are mentioned here only for the sake of completeness. Output element `wdraws_prj` of `project()` is only needed if `project()` was used for a clustered projection, which is not the default and discouraged in most applied cases. Thus, these renamings are breaking changes only in very rare cases.
+    Apart from `project()`'s output element `wdraws_prj`, these elements are not meant to be accessed manually, so changes are mentioned here only for the sake of completeness. Output element `wdraws_prj` of `project()` is only needed if `project()` was used for a clustered projection, which is not the default and discouraged in most applied cases. Thus, these renamings are breaking changes only in very rare cases.
 * `print.vselsummary()` now also prints `K` in case of K-fold CV.
 * The `print.vselsummary()` output has been slightly improved, e.g., adding a remark what "search included" or "search not included" means.
 * `print.vselsummary()` now also prints whether `deltas = TRUE` or `deltas = FALSE` was used.
