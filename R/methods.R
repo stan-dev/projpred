@@ -964,8 +964,8 @@ print.vselsummary <- function(x, digits = 1, ...) {
     cat("CV method: ", cv_meth_pretty, " CV with ", K_pretty, x$search_included,
         "\n", sep = "")
   }
-  cat("Search method: ", x$method, ", maximum number of terms ",
-      max(x$selection$size), "\n", sep = "")
+  cat("Search method: ", x$method, "\n", sep = "")
+  cat("Maximum submodel size for the search: ", x$nterms, "\n", sep = "")
   cat("Number of ", ifelse(x$clust_used_search, "clusters", "draws"),
       " used for the search: ", x$nprjdraws_search, "\n", sep = "")
   cat("Number of ", ifelse(x$clust_used_eval, "clusters", "draws"),
