@@ -461,7 +461,7 @@ predict.refmodel <- function(object, newdata = NULL, ynew = NULL,
   if (!is.null(newdata)) {
     newdata <- na.fail(newdata)
   }
-  nobs_new <- nrow(newdata %||% refmodel$fetch_data())
+  nobs_new <- nrow(newdata) %||% refmodel$nobs
   w_o <- refmodel$extract_model_data(refmodel$fit, newdata = newdata,
                                      wrhs = weightsnew, orhs = offsetnew,
                                      extract_y = FALSE)
@@ -1472,7 +1472,7 @@ init_refmodel <- function(object, data, formula, family, ref_predfun = NULL,
     fit = object, formula, div_minimizer, family, eta, mu, mu_offs, dis, y,
     proj_predfun, fetch_data = fetch_data_wrapper, wobs = weights, wdraws_ref,
     offset, cvfun, cvfits, extract_model_data, ref_predfun, cvrefbuilder,
-    y_oscale = y_oscale %||% y
+    y_oscale = y_oscale %||% y, nobs = nrow(data)
   )
   if (proper_model) {
     class(refmodel) <- "refmodel"

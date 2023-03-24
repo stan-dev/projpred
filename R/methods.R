@@ -216,10 +216,10 @@ proj_helper <- function(object, newdata, offsetnew, weightsnew, onesub_fun,
     weightsnew <- w_o$weights
     offsetnew <- w_o$offset
     if (length(weightsnew) == 0) {
-      weightsnew <- rep(1, NROW(newdata %||% proj$refmodel$fetch_data()))
+      weightsnew <- rep(1, nrow(newdata) %||% proj$refmodel$nobs)
     }
     if (length(offsetnew) == 0) {
-      offsetnew <- rep(0, NROW(newdata %||% proj$refmodel$fetch_data()))
+      offsetnew <- rep(0, nrow(newdata) %||% proj$refmodel$nobs)
     }
     if (proj$refmodel$family$for_augdat && !all(weightsnew == 1)) {
       stop("Currently, the augmented-data projection may not be combined with ",
@@ -830,7 +830,7 @@ summary.vsel <- function(
   out <- c(
     list(formula = object$refmodel$formula,
          family = object$refmodel$family,
-         nobs_train = nrow(object$refmodel$fetch_data()),
+         nobs_train = object$refmodel$nobs,
          nobs_test = if (object$type_test == "test_hold-out") {
            nrow(object$y_wobs_test)
          } else {

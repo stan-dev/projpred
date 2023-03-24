@@ -312,7 +312,7 @@ varsel.refmodel <- function(object, d_test = NULL, method = NULL,
   if (inherits(refmodel, "datafit")) {
     # In this case, there is no actual reference model, so we don't know how to
     # predict for actual new data.
-    nobs_test <- nrow(d_test$data %||% refmodel$fetch_data())
+    nobs_test <- nrow(d_test$data) %||% refmodel$nobs
     ref <- list(mu = rep(NA, nobs_test), lppd = rep(NA, nobs_test))
     if (refmodel$family$for_latent) {
       # In general, we could use `ref$oscale <- ref` here, but the case where

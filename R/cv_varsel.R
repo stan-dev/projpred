@@ -797,7 +797,7 @@ kfold_varsel <- function(refmodel, method, nterms_max, ndraws,
     # original (full-data) reference model fit, so using the `fold$omitted`
     # subset of `refmodel$y` as (latent) response values in fold k of K would
     # induce a dependency between training and test data:
-    refmodel$y <- rep(NA, length(refmodel$y))
+    refmodel$y <- rep(NA, refmodel$nobs)
   }
 
   # Run the search for each fold:
@@ -879,7 +879,7 @@ kfold_varsel <- function(refmodel, method, nterms_max, ndraws,
   idxs_sorted_by_fold_aug <- idxs_sorted_by_fold
   if (!is.null(refmodel$family$cats)) {
     idxs_sorted_by_fold_aug <- idxs_sorted_by_fold_aug + rep(
-      (seq_along(refmodel$family$cats) - 1L) * length(refmodel$y),
+      (seq_along(refmodel$family$cats) - 1L) * refmodel$nobs,
       each = length(idxs_sorted_by_fold_aug)
     )
   }
@@ -947,7 +947,7 @@ get_kfold <- function(refmodel, K, verbose) {
         verb_out("-----\nRefitting the reference model K = ", K, " times ",
                  "(using the fold-wise training data) ...")
       }
-      nobs <- NROW(refmodel$y)
+      nobs <- refmodel$nobs
       folds <- cvfolds(nobs, K = K)
       cvfits <- refmodel$cvfun(folds)
       verb_out("-----", verbose = verbose)

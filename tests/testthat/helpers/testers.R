@@ -351,7 +351,8 @@ refmodel_tester <- function(
   refmod_nms <- c(
     "fit", "formula", "div_minimizer", "family", "eta", "mu", "mu_offs", "dis",
     "y", "proj_predfun", "fetch_data", "wobs", "wdraws_ref", "offset", "cvfun",
-    "cvfits", "extract_model_data", "ref_predfun", "cvrefbuilder", "y_oscale"
+    "cvfits", "extract_model_data", "ref_predfun", "cvrefbuilder", "y_oscale",
+    "nobs"
   )
   refmod_class_expected <- "refmodel"
   if (is_datafit) {
@@ -711,6 +712,9 @@ refmodel_tester <- function(
     y_oscale_expected <- y_expected
   }
   expect_identical(refmod$y_oscale, y_oscale_expected, info = info_str)
+
+  # nobs
+  expect_identical(refmod$nobs, nrow(refmod$fetch_data()), info = info_str)
 
   return(invisible(TRUE))
 }
@@ -2348,7 +2352,7 @@ smmry_tester <- function(smmry, vsel_expected, nterms_max_expected = NULL,
   expect_identical(smmry$formula, vsel_expected$refmodel$formula,
                    info = info_str)
   expect_null(smmry$fit, info = info_str)
-  expect_identical(smmry$nobs_train, length(vsel_expected$refmodel$y),
+  expect_identical(smmry$nobs_train, vsel_expected$refmodel$nobs,
                    info = info_str)
   if (vsel_expected$type_test == "test_hold-out") {
     expect_identical(smmry$nobs_test, nrow(vsel_expected$y_wobs_test),
