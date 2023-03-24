@@ -1562,10 +1562,11 @@ if (run_cvvs) {
 ## Output names -----------------------------------------------------------
 
 vsel_nms <- c(
-  "refmodel", "search_path", "solution_terms", "pct_solution_terms_cv", "ce",
-  "type_test", "y_wobs_test", "summaries",
-  "nterms_all", "nterms_max", "method", "cv_method", "validate_search",
-  "clust_used_search", "clust_used_eval", "nprjdraws_search", "nprjdraws_eval"
+  "refmodel", "nobs_train", "search_path", "solution_terms",
+  "pct_solution_terms_cv", "ce", "type_test", "y_wobs_test", "nobs_test",
+  "summaries", "nterms_all", "nterms_max", "method", "cv_method",
+  "validate_search", "clust_used_search", "clust_used_eval", "nprjdraws_search",
+  "nprjdraws_eval"
 )
 # Related to prediction (in contrast to selection):
 vsel_nms_pred <- c("summaries", "solution_terms", "ce")

@@ -218,6 +218,9 @@ cv_varsel.refmodel <- function(
     ))
   )
 
+  # Defined here for `nobs_test` later:
+  y_wobs_test <- sel_cv$y_wobs_test
+
   # Just a dummy object which is not used as usual, but only for inferring the
   # output elements `clust_used_eval` and `nprjdraws_eval` (this unnecessary
   # get_refdist() call is much cheaper than calling varsel() with its
@@ -231,12 +234,14 @@ cv_varsel.refmodel <- function(
 
   # The object to be returned:
   vs <- nlist(refmodel,
+              nobs_train = refmodel$nobs,
               search_path = sel,
               solution_terms = sel$solution_terms,
               pct_solution_terms_cv,
               ce = ce_out,
               type_test = cv_method,
-              y_wobs_test = sel_cv$y_wobs_test,
+              y_wobs_test,
+              nobs_test = nrow(y_wobs_test),
               summaries = sel_cv$summaries,
               nterms_all = count_terms_in_formula(refmodel$formula) - 1L,
               nterms_max,

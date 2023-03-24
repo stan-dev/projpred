@@ -1901,6 +1901,9 @@ vsel_tester <- function(
   # refmodel
   expect_identical(vs$refmodel, refmod_expected, info = info_str)
 
+  # nobs_train
+  expect_identical(vs$nobs_train, vs$refmodel$nobs, info = info_str)
+
   # search_path
   expect_type(vs$search_path, "list")
   expect_named(vs$search_path, c("solution_terms", "outdmins", "p_sel"),
@@ -2085,6 +2088,9 @@ vsel_tester <- function(
   } else {
     expect_identical(vs$y_wobs_test, ywtest_expected, info = info_str)
   }
+
+  # nobs_test
+  expect_identical(vs$nobs_test, nrow(vs$y_wobs_test), info = info_str)
 
   # summaries
   expect_type(vs$summaries, "list")
@@ -2333,10 +2339,11 @@ smmry_tester <- function(smmry, vsel_expected, nterms_max_expected = NULL,
   expect_type(smmry, "list")
   expect_named(
     smmry,
-    c("formula", "family", "nobs_train", "nobs_test", "pct_solution_terms_cv",
-      "method", "cv_method", "validate_search", "clust_used_search",
-      "clust_used_eval", "nprjdraws_search", "nprjdraws_eval",
-      "search_included", "nterms", "selection", "resp_oscale"),
+    c("formula", "family", "nobs_train", "pct_solution_terms_cv", "type_test",
+      "nobs_test", "method", "cv_method", "validate_search",
+      "clust_used_search", "clust_used_eval", "nprjdraws_search",
+      "nprjdraws_eval", "search_included", "nterms", "selection",
+      "resp_oscale"),
     info = info_str
   )
 
@@ -2352,14 +2359,9 @@ smmry_tester <- function(smmry, vsel_expected, nterms_max_expected = NULL,
   expect_identical(smmry$formula, vsel_expected$refmodel$formula,
                    info = info_str)
   expect_null(smmry$fit, info = info_str)
-  expect_identical(smmry$nobs_train, vsel_expected$refmodel$nobs,
-                   info = info_str)
-  if (vsel_expected$type_test == "test_hold-out") {
-    expect_identical(smmry$nobs_test, nrow(vsel_expected$y_wobs_test),
-                     info = info_str)
-  } else {
-    expect_null(smmry$nobs_test, info = info_str)
-  }
+  expect_identical(smmry$nobs_train, vsel_expected$nobs_train, info = info_str)
+  expect_identical(smmry$type_test, vsel_expected$type_test, info = info_str)
+  expect_identical(smmry$nobs_test, vsel_expected$nobs_test, info = info_str)
   if (is.null(nterms_max_expected)) {
     nterms_ch <- vsel_expected$nterms_max
   } else {

@@ -639,9 +639,10 @@ plot.vsel <- function(
   if (!is.na(thres_elpd)) {
     # Table of thresholds used in extended suggest_size() heuristics (only in
     # case of ELPD and MLPD):
-    nobs_test <- nrow(object$y_wobs_test)
-    thres_tab_basic <- data.frame(statistic = c("elpd", "mlpd"),
-                                  thres = c(thres_elpd, thres_elpd / nobs_test))
+    thres_tab_basic <- data.frame(
+      statistic = c("elpd", "mlpd"),
+      thres = c(thres_elpd, thres_elpd / object$nobs_test)
+    )
   }
 
   # plot submodel results
@@ -828,17 +829,10 @@ summary.vsel <- function(
 
   # Initialize output:
   out <- c(
-    list(formula = object$refmodel$formula,
-         family = object$refmodel$family,
-         nobs_train = object$refmodel$nobs,
-         nobs_test = if (object$type_test == "test_hold-out") {
-           nrow(object$y_wobs_test)
-         } else {
-           NULL
-         }),
-    object[c("pct_solution_terms_cv", "method", "cv_method", "validate_search",
-             "clust_used_search", "clust_used_eval", "nprjdraws_search",
-             "nprjdraws_eval")]
+    object$refmodel[c("formula", "family")],
+    object[c("nobs_train", "pct_solution_terms_cv", "type_test", "nobs_test",
+             "method", "cv_method", "validate_search", "clust_used_search",
+             "clust_used_eval", "nprjdraws_search", "nprjdraws_eval")]
   )
   if (isTRUE(out$validate_search)) {
     out$search_included <- "search included"
@@ -945,7 +939,7 @@ print.vselsummary <- function(x, digits = 1, ...) {
   }
   cat("Formula: ")
   print(x$formula, showEnv = FALSE)
-  if (is.null(x$nobs_test)) {
+  if (x$type_test != "test_hold-out") {
     cat(paste0("Observations: ", x$nobs_train, "\n"))
   } else {
     cat(paste0("Observations (training set): ", x$nobs_train, "\n"))
@@ -1137,7 +1131,6 @@ suggest_size.vsel <- function(
                         type = c("mean", "upper", "lower"),
                         deltas = TRUE,
                         ...)
-  nobs_test <- stats$nobs_test %||% stats$nobs_train
   stats <- stats$selection
 
   if (is_util(stat)) {
@@ -1165,6 +1158,7 @@ suggest_size.vsel <- function(
   if (is.na(thres_elpd)) {
     thres_elpd <- Inf
   }
+  nobs_test <- object$nobs_test
   res <- stats[
     (sgn * stats[, bound] >= util_cutoff) |
       (stat == "elpd" & stats[, paste0(stat, suffix)] > thres_elpd) |
