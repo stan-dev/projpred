@@ -269,6 +269,7 @@ varsel.refmodel <- function(object, d_test = NULL, method = NULL,
     as.data.frame(d_test[nms_y_wobs_test(wobs_nm = "weights")]),
     nms_y_wobs_test()
   )
+  nobs_test <- nrow(y_wobs_test)
 
   # Clustering or thinning for the search:
   p_sel <- get_refdist(refmodel, ndraws, nclusters)
@@ -312,7 +313,6 @@ varsel.refmodel <- function(object, d_test = NULL, method = NULL,
   if (inherits(refmodel, "datafit")) {
     # In this case, there is no actual reference model, so we don't know how to
     # predict for actual new data.
-    nobs_test <- nrow(d_test$data) %||% refmodel$nobs
     ref <- list(mu = rep(NA, nobs_test), lppd = rep(NA, nobs_test))
     if (refmodel$family$for_latent) {
       # In general, we could use `ref$oscale <- ref` here, but the case where
@@ -370,7 +370,7 @@ varsel.refmodel <- function(object, d_test = NULL, method = NULL,
               ce = sapply(submodls, "[[", "ce"),
               type_test = d_test$type,
               y_wobs_test,
-              nobs_test = nrow(y_wobs_test),
+              nobs_test,
               summaries = nlist(sub, ref),
               nterms_all = count_terms_in_formula(refmodel$formula) - 1L,
               nterms_max,
