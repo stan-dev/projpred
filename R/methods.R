@@ -940,10 +940,10 @@ print.vselsummary <- function(x, digits = 1, ...) {
   cat("Formula: ")
   print(x$formula, showEnv = FALSE)
   if (x$type_test != "test_hold-out") {
-    cat(paste0("Observations: ", x$nobs_train, "\n"))
+    cat("Observations: ", x$nobs_train, "\n", sep = "")
   } else {
-    cat(paste0("Observations (training set): ", x$nobs_train, "\n"))
-    cat(paste0("Observations (test set): ", x$nobs_test, "\n"))
+    cat("Observations (training set): ", x$nobs_train, "\n", sep = "")
+    cat("Observations (test set): ", x$nobs_test, "\n", sep = "")
   }
   if (x$family$for_augdat) {
     prj_meth <- "augmented-data"
@@ -964,12 +964,13 @@ print.vselsummary <- function(x, digits = 1, ...) {
     cat("CV method: ", cv_meth_pretty, " CV with ", K_pretty, x$search_included,
         "\n", sep = "")
   }
-  cat(paste0("Search method: ", x$method, ", maximum number of terms ",
-             max(x$selection$size), "\n"))
+  cat("Search method: ", x$method, ", maximum number of terms ",
+      max(x$selection$size), "\n", sep = "")
   cat("Number of ", ifelse(x$clust_used_search, "clusters", "draws"),
-      " used for selection: ", x$nprjdraws_search, "\n", sep = "")
+      " used for the search: ", x$nprjdraws_search, "\n", sep = "")
   cat("Number of ", ifelse(x$clust_used_eval, "clusters", "draws"),
-      " used for prediction: ", x$nprjdraws_eval, "\n", sep = "")
+      " used for the performance evaluation: ", x$nprjdraws_eval, "\n",
+      sep = "")
   cat("\n")
   if (x$family$for_latent) {
     if (x$resp_oscale) {
