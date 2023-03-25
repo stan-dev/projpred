@@ -194,11 +194,13 @@ cv_varsel.refmodel <- function(
   if (validate_search) {
     verb_out("-----\nRunning a final search using the full dataset ...",
              verbose = verbose)
-    sel <- select(method = method, p_sel = p_sel, refmodel = refmodel,
-                  nterms_max = nterms_max, penalty = penalty, verbose = verbose,
-                  opt = opt, search_terms = search_terms, ...)
+    search_path_full_data <- select(
+      method = method, p_sel = p_sel, refmodel = refmodel,
+      nterms_max = nterms_max, penalty = penalty, verbose = verbose, opt = opt,
+      search_terms = search_terms, ...
+    )
     verb_out("-----", verbose = verbose)
-    ce_out <- rep(NA_real_, length(sel$solution_terms) + 1L)
+    ce_out <- rep(NA_real_, length(search_path_full_data$solution_terms) + 1L)
 
     # Create `pct_solution_terms_cv`, a summary table of the fold-wise solution
     # paths. For the column names (and therefore the order of the solution terms
@@ -207,14 +209,14 @@ cv_varsel.refmodel <- function(
     pct_solution_terms_cv <- cbind(
       size = seq_len(ncol(sel_cv$solution_terms_cv)),
       do.call(cbind, lapply(
-        setNames(nm = sel$solution_terms),
+        setNames(nm = search_path_full_data$solution_terms),
         function(soltrm_k) {
           colMeans(sel_cv$solution_terms_cv == soltrm_k, na.rm = TRUE)
         }
       ))
     )
   } else {
-    sel <- sel_cv$search_path
+    search_path_full_data <- sel_cv$search_path
     ce_out <- sel_cv$ce
     pct_solution_terms_cv <- NULL
   }
@@ -230,14 +232,14 @@ cv_varsel.refmodel <- function(
   if (refit_prj) {
     refdist_eval_dummy <- get_refdist(refmodel, ndraws_pred, nclusters_pred)
   } else {
-    refdist_eval_dummy <- sel$p_sel
+    refdist_eval_dummy <- search_path_full_data$p_sel
   }
 
   # The object to be returned:
   vs <- nlist(refmodel,
               nobs_train = refmodel$nobs,
-              search_path = sel,
-              solution_terms = sel$solution_terms,
+              search_path = search_path_full_data,
+              solution_terms = search_path_full_data$solution_terms,
               pct_solution_terms_cv,
               ce = ce_out,
               type_test = cv_method,
@@ -250,9 +252,9 @@ cv_varsel.refmodel <- function(
               cv_method,
               K = K,
               validate_search,
-              clust_used_search = sel$p_sel$clust_used,
+              clust_used_search = search_path_full_data$p_sel$clust_used,
               clust_used_eval = refdist_eval_dummy$clust_used,
-              nprjdraws_search = NCOL(sel$p_sel$mu),
+              nprjdraws_search = NCOL(search_path_full_data$p_sel$mu),
               nprjdraws_eval = NCOL(refdist_eval_dummy$mu))
   class(vs) <- "vsel"
   return(vs)
@@ -818,7 +820,7 @@ kfold_varsel <- function(refmodel, method, nterms_max, ndraws,
   search_path_cv <- lapply(seq_along(list_cv), function(fold_index) {
     fold <- list_cv[[fold_index]]
     p_sel <- get_refdist(fold$refmodel, ndraws, nclusters)
-    out <- select(
+    search_path <- select(
       method = method, p_sel = p_sel, refmodel = fold$refmodel,
       nterms_max = nterms_max, penalty = penalty,
       verbose = verbose && getOption("projpred.extra_verbose", FALSE),
@@ -827,7 +829,7 @@ kfold_varsel <- function(refmodel, method, nterms_max, ndraws,
     if (verbose) {
       utils::setTxtProgressBar(pb, fold_index)
     }
-    return(out)
+    return(search_path)
   })
   solution_terms_cv <- do.call(rbind, lapply(search_path_cv, function(e) {
     e$solution_terms
