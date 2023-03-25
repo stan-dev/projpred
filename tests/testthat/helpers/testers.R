@@ -2245,7 +2245,7 @@ vsel_tester <- function(
   }
 
   # pct_solution_terms_cv
-  if (with_cv) {
+  if (with_cv && isTRUE(vs$validate_search)) {
     expect_true(is.matrix(vs$pct_solution_terms_cv), info = info_str)
     expect_type(vs$pct_solution_terms_cv, "double")
     expect_identical(dim(vs$pct_solution_terms_cv),
@@ -2261,16 +2261,6 @@ vsel_tester <- function(
     pct_solterms <- vs$pct_solution_terms_cv[, pct_nonsize_nms, drop = FALSE]
     expect_false(anyNA(pct_solterms), info = info_str)
     expect_true(all(pct_solterms >= 0 & pct_solterms <= 1), info = info_str)
-    if (isFALSE(vs$validate_search) &&
-        !identical(cv_method_expected, "kfold")) {
-      expect_true(all(pct_solterms %in% c(0, 1)), info = info_str)
-      # More specifically:
-      pct_solterms_ch <- matrix(0, nrow = nrow(pct_solterms),
-                                ncol = ncol(pct_solterms))
-      diag(pct_solterms_ch) <- 1
-      colnames(pct_solterms_ch) <- pct_nonsize_nms
-      expect_identical(pct_solterms_ch, pct_solterms, info = info_str)
-    }
   } else {
     expect_null(vs$pct_solution_terms_cv, info = info_str)
   }
