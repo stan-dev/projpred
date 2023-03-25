@@ -214,8 +214,8 @@ cv_varsel.refmodel <- function(
       ))
     )
   } else {
-    sel <- sel_cv$sel$search_path
-    ce_out <- sel_cv$sel$ce
+    sel <- sel_cv$search_path
+    ce_out <- sel_cv$ce
     pct_solution_terms_cv <- NULL
   }
 
@@ -416,7 +416,6 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
   inds <- validset$inds
 
   # Initialize objects where to store the results:
-  solution_terms_mat <- matrix(nrow = n, ncol = nterms_max)
   loo_sub <- replicate(nterms_max + 1L, rep(NA, n), simplify = FALSE)
   mu_sub <- replicate(
     nterms_max + 1L,
@@ -573,16 +572,12 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
       }
     }
     verb_out("-----", verbose = verbose)
-
-    for (i in seq_len(n)) {
-      solution_terms_mat[
-        i, seq_along(search_path$solution_terms)
-      ] <- search_path$solution_terms
-    }
-    sel <- nlist(search_path, ce = sapply(submodls, "[[", "ce"))
   } else {
     # Case `validate_search = TRUE` -------------------------------------------
 
+    # Continue initializing objects where to store the results:
+    # For storing the fold-wise solution paths:
+    solution_terms_mat <- matrix(nrow = n, ncol = nterms_max)
     # For checking that the number of solution terms is the same across all CV
     # folds:
     prv_len_soltrms <- NULL
@@ -782,14 +777,16 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
   # Combined submodel and reference model predictive performance:
   summaries <- list(sub = summ_sub, ref = summ_ref)
 
-  solution_terms_mat <- solution_terms_mat[
-    , seq_along(search_path$solution_terms), drop = FALSE
-  ]
-  out_list <- nlist(solution_terms_cv = solution_terms_mat, summaries,
-                    y_wobs_test = as.data.frame(refmodel[nms_y_wobs_test()]))
   if (!validate_search) {
-    out_list <- c(out_list, nlist(sel))
+    out_list <- nlist(search_path, ce = sapply(submodls, "[[", "ce"))
+  } else {
+    out_list <- nlist(solution_terms_cv = solution_terms_mat[
+      , seq_along(search_path$solution_terms), drop = FALSE
+    ])
   }
+  out_list <- c(out_list,
+                nlist(summaries,
+                      y_wobs_test = as.data.frame(refmodel[nms_y_wobs_test()])))
   return(out_list)
 }
 
