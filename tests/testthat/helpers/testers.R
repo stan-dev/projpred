@@ -2349,7 +2349,7 @@ smmry_tester <- function(smmry, vsel_expected, nterms_max_expected = NULL,
       "nobs_test", "method", "cv_method", "K", "validate_search",
       "clust_used_search", "clust_used_eval", "nprjdraws_search",
       "nprjdraws_eval", "search_included", "nterms", "selection",
-      "resp_oscale"),
+      "resp_oscale", "deltas"),
     info = info_str
   )
 
@@ -2396,6 +2396,7 @@ smmry_tester <- function(smmry, vsel_expected, nterms_max_expected = NULL,
                    resp_oscale_expected = resp_oscale_expected,
                    info_str = info_str, ...)
   expect_identical(smmry$resp_oscale, resp_oscale_expected, info = info_str)
+  expect_identical(smmry$deltas, FALSE, info = info_str)
 
   return(invisible(TRUE))
 }

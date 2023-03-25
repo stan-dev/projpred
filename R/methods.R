@@ -910,6 +910,7 @@ summary.vsel <- function(
   out$nterms <- nterms_max
   out$selection <- subset(arr, arr$size <= nterms_max)
   out$resp_oscale <- resp_oscale
+  out$deltas <- deltas
   return(out)
 }
 
@@ -981,7 +982,8 @@ print.vselsummary <- function(x, digits = 1, ...) {
   } else {
     scale_string <- ""
   }
-  cat("Selection Summary", scale_string, ":\n", sep = "")
+  cat("Performance evaluation summary", scale_string, " with `deltas = ",
+      x$deltas, "`:\n", sep = "")
   print(x$selection, digits = digits, row.names = FALSE)
   return(invisible(x))
 }
