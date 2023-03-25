@@ -191,7 +191,7 @@ cv_varsel.refmodel <- function(
     )
   }
 
-  if (validate_search || cv_method == "kfold") {
+  if (validate_search) {
     verb_out("-----\nRunning a final search using the full dataset ...",
              verbose = verbose)
     sel <- select(method = method, p_sel = p_sel, refmodel = refmodel,
