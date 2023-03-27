@@ -201,24 +201,9 @@ cv_varsel.refmodel <- function(
     )
     verb_out("-----", verbose = verbose)
     ce_out <- rep(NA_real_, length(search_path_full_data$solution_terms) + 1L)
-
-    # Create `pct_solution_terms_cv`, a summary table of the fold-wise solution
-    # paths. For the column names (and therefore the order of the solution terms
-    # in the columns), the solution path from the full-data search is used. Note
-    # that the following code assumes that all CV folds have equal weight.
-    pct_solution_terms_cv <- cbind(
-      size = seq_len(ncol(sel_cv$solution_terms_cv)),
-      do.call(cbind, lapply(
-        setNames(nm = search_path_full_data$solution_terms),
-        function(soltrm_k) {
-          colMeans(sel_cv$solution_terms_cv == soltrm_k, na.rm = TRUE)
-        }
-      ))
-    )
   } else {
     search_path_full_data <- sel_cv$search_path
     ce_out <- sel_cv$ce
-    pct_solution_terms_cv <- NULL
   }
 
   # Defined here for `nobs_test` later:
@@ -240,7 +225,7 @@ cv_varsel.refmodel <- function(
               nobs_train = refmodel$nobs,
               search_path = search_path_full_data,
               solution_terms = search_path_full_data$solution_terms,
-              pct_solution_terms_cv,
+              solution_terms_cv = sel_cv$solution_terms_cv,
               ce = ce_out,
               type_test = cv_method,
               y_wobs_test,

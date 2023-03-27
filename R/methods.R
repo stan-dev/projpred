@@ -862,9 +862,9 @@ summary.vsel <- function(
   # Initialize output:
   out <- c(
     object$refmodel[c("formula", "family")],
-    object[c("nobs_train", "pct_solution_terms_cv", "type_test", "nobs_test",
-             "method", "cv_method", "K", "validate_search", "clust_used_search",
-             "clust_used_eval", "nprjdraws_search", "nprjdraws_eval")]
+    object[c("nobs_train", "type_test", "nobs_test", "method", "cv_method", "K",
+             "validate_search", "clust_used_search", "clust_used_eval",
+             "nprjdraws_search", "nprjdraws_eval")]
   )
   if (isTRUE(out$validate_search)) {
     out$search_included <- "search included (i.e., fold-wise searches)"
@@ -1024,6 +1024,14 @@ print.vselsummary <- function(x, ...) {
   cat("Performance evaluation summary", scale_string, " with `deltas = ",
       x$deltas, "`:\n", sep = "")
   print(x$selection, row.names = FALSE, ...)
+  if (isTRUE(x$validate_search)) {
+    message(
+      "Column `solution_terms` contains the full-data predictor ranking. To ",
+      "retrieve the fold-wise predictor rankings, use the ranking() function, ",
+      "possibly followed by props() for computing the ranking proportions ",
+      "(which can be visualized by plot.propsrk())."
+    )
+  }
   return(invisible(x))
 }
 
@@ -1939,4 +1947,214 @@ solution_terms.vsel <- function(object, ...) {
 #' @export
 solution_terms.projection <- function(object, ...) {
   return(object$solution_terms)
+}
+
+#' Predictor ranking(s)
+#'
+#' Extracts the *predictor ranking(s)* from an object of class `vsel` (returned
+#' by [varsel()] or [cv_varsel()]). A predictor ranking is simply a character
+#' vector of predictor terms ranked by predictive relevance (with the most
+#' relevant term first). In any case, objects of class `vsel` contain the
+#' predictor ranking based on the *full-data* search. If an object of class
+#' `vsel` is based on a cross-validation (CV) with fold-wise searches (i.e., if
+#' it was created by [cv_varsel()] with `validate_search = TRUE`), then it also
+#' contains *fold-wise* predictor rankings.
+#'
+#' @param object The object from which to retrieve the predictor ranking(s).
+#'   Possible classes may be inferred from the names of the corresponding
+#'   methods (see also the description).
+#' @param ... Currently ignored.
+#'
+#' @return An object of class `ranking` which is a `list` with the following
+#'   elements:
+#'   * `fulldata`: The predictor ranking from the full-data search.
+#'   * `foldwise`: The predictor rankings from the fold-wise
+#'   searches in the form of a character matrix (only available if `object` is
+#'   based on a CV with fold-wise searches, otherwise element `foldwise` is
+#'   `NULL`). The rows of this matrix correspond to the CV folds and the columns
+#'   to the submodel sizes. Each row contains the predictor ranking from the
+#'   search of that CV fold.
+#'
+#' @seealso [props()]
+#'
+#' @examples
+#' # TODO
+#'
+#' @export
+ranking <- function(object, ...) {
+  UseMethod("ranking")
+}
+
+#' @rdname ranking
+#' @export
+ranking.vsel <- function(object, ...) {
+  out <- list(fulldata = object[["solution_terms"]],
+              foldwise = object[["solution_terms_cv"]])
+  class(out) <- "ranking"
+  return(out)
+}
+
+#' Ranking proportions from fold-wise predictor rankings
+#'
+#' Calculates the *ranking proportions* from the fold-wise predictor rankings in
+#' a cross-validation (CV) with fold-wise searches. For a given predictor `x`
+#' and a given submodel size `j`, the ranking proportion is the proportion of CV
+#' folds which have predictor `x` at position `j` of their predictor ranking.
+#' While these ranking proportions are helpful for investigating variability in
+#' the predictor ranking, they can also be *cumulated* across submodel sizes.
+#' The cumulated ranking proportions are more helpful when it comes to model
+#' selection.
+#'
+#' @param object For [props.ranking()]: an object of class `ranking` (returned
+#'   by [ranking()]). For [props.vsel()]: an object of class `vsel` (returned by
+#'   [varsel()] or [cv_varsel()]) that [ranking()] will be applied to internally
+#'   before then calling [props.ranking()].
+#' @param cumulate A single logical value indicating whether the ranking
+#'   proportions should be cumulated across increasing submodel sizes (`TRUE`)
+#'   or not (`FALSE`).
+#' @param nterms_max A single numeric value giving the maximum submodel size
+#'   (number of predictor terms) to include in the returned matrix. Note that
+#'   `nterms_max` does not count the intercept, so `nterms_max = 1` corresponds
+#'   to the submodel consisting of the first (non-intercept) predictor term.
+#' @param ... For [props.vsel()]: arguments passed to [props.ranking()]. For
+#'   [props.ranking()]: currently ignored.
+#'
+#' @return If the `ranking` object contains only a full-data predictor ranking
+#'   (i.e., if it is based on a `vsel` object created by [varsel()] or by
+#'   [cv_varsel()], but the latter with `validate_search = FALSE`), then `NULL`
+#'   is returned. If the `ranking` object includes fold-wise predictor rankings
+#'   (i.e., if it is based on a `vsel` object created by [cv_varsel()] with
+#'   `validate_search = TRUE`), then a numeric matrix with `nterms_max` rows and
+#'   `nterms_max` columns is returned, containing the ranking proportions based
+#'   on these fold-wise predictor rankings (with the rows corresponding to the
+#'   submodel sizes and the columns to the predictor terms, sorted according to
+#'   the full-data predictor ranking). If `cumulate` is `FALSE`, then the
+#'   returned matrix is of class `propsrk`. If `cumulate` is `TRUE`, then the
+#'   returned matrix is of classes `cumulpropsrk` and `propsrk` (in this order).
+#'
+#'   Note that if `cumulate` is `FALSE`, then the values in the returned matrix
+#'   only need to sum to 1 (column-wise and row-wise) if `nterms_max` is equal
+#'   to the full model size. Likewise, if `cumulate` is `TRUE`, then the value
+#'   `1` only needs to occur in each column of the returned matrix if
+#'   `nterms_max` is equal to the full model size.
+#'
+#' @seealso [plot.propsrk()]
+#'
+#' @examples
+#' # TODO
+#'
+#' @export
+props <- function(object, ...) {
+  UseMethod("props")
+}
+
+#' @rdname props
+#' @export
+props.ranking <- function(object, cumulate = FALSE,
+                          nterms_max = ncol(object[["foldwise"]]), ...) {
+  cv_paths <- object[["foldwise"]]
+  if (is.null(cv_paths)) {
+    message(
+      "Either `object` is not based on a cross-validation or the search has ",
+      "been excluded from the cross-validation. Thus, there are no fold-wise ",
+      "predictor rankings from which to calculate ranking proportions."
+    )
+    return(NULL)
+  }
+  stopifnot("Needing `nterms_max >= 1`." = isTRUE(nterms_max >= 1))
+  cv_paths <- cv_paths[, seq_len(nterms_max), drop = FALSE]
+  # Calculate the ranking proportions. Note that the following code assumes that
+  # all CV folds have equal weight.
+  cv_props <- do.call(cbind, lapply(
+    setNames(nm = utils::head(object[["fulldata"]], nterms_max)),
+    function(predictor_j) {
+      colMeans(cv_paths == predictor_j, na.rm = TRUE)
+    }
+  ))
+  rownames(cv_props) <- seq_len(nrow(cv_props))
+  classes_out <- "propsrk"
+  if (cumulate) {
+    cv_props <- do.call(cbind, apply(cv_props, 2, cumsum, simplify = FALSE))
+    rownames(cv_props) <- paste0("<=", rownames(cv_props))
+    classes_out <- c("cumulpropsrk", classes_out)
+  }
+  # Setting the `dimnames` names here (not before the `if (cumulate)` part)
+  # because `simplify = FALSE` in apply() makes it impossible to keep these:
+  names(dimnames(cv_props)) <- c("size", "predictor")
+  class(cv_props) <- classes_out
+  return(cv_props)
+}
+
+#' @rdname props
+#' @export
+props.vsel <- function(object, ...) {
+  props(ranking(object), ...)
+}
+
+#' Plot ranking proportions from fold-wise predictor rankings
+#'
+#' Plots the ranking proportions (see [props()]) from the fold-wise predictor
+#' rankings in a cross-validation with fold-wise searches. This is a
+#' visualization of the *transposed* matrix returned by [props()]. The
+#' proportions printed as text inside of the colored tiles are rounded to whole
+#' percentage points (the plotted proportions themselves are not rounded).
+#'
+#' @param x For [plot.propsrk()]: an object of class `propsrk` (returned by
+#'   [props()], possibly with `cumulate = TRUE`). For [plot.ranking()]: an
+#'   object of class `ranking` (returned by [ranking()]) that [props()] will be
+#'   applied to internally before then calling [plot.propsrk()].
+#' @param text_angle Passed to argument `angle` of [ggplot2::element_text()] for
+#'   the y-axis tick labels. In case of long predictor names, `text_angle = 45`
+#'   might be helpful (for example).
+#' @param ... For [plot.ranking()]: arguments passed to [props.ranking()] and
+#'   [plot.propsrk()]. For [plot.propsrk()]: currently ignored.
+#'
+#' @return A \pkg{ggplot2} plotting object (of class `gg` and `ggplot`).
+#'
+#' @author Idea and original code by Aki Vehtari. Slight modifications of the
+#'   original code by Frank Weber, Yann McLatchie, and Sölvi Rögnvaldsson. Final
+#'   implementation in \pkg{projpred} by Frank Weber.
+#'
+#' @examples
+#' # TODO
+#'
+#' @export
+plot.propsrk <- function(x, text_angle = NULL, ...) {
+  props_long <- data.frame(
+    msize = factor(rep(rownames(x), times = ncol(x)), levels = rownames(x)),
+    pterm = factor(rep(colnames(x), each = nrow(x)), levels = colnames(x)),
+    propcv = as.vector(x)
+  )
+  props_long$txtcolor <- ifelse(props_long$propcv > 0.5, "white", "black")
+  ggprops <- ggplot(data = props_long, mapping = aes(x = msize, y = pterm)) +
+    geom_tile(mapping = aes(fill = propcv),
+              width = 1, height = 1, linewidth = 1, color = "white") +
+    # Note: The original code for this function specified argument `fontface`
+    # in the aes() call of geom_text(), but incorrectly (as constantly `1`):
+    geom_text(mapping = aes(label = paste(round(100 * propcv), "%"),
+                            color = I(txtcolor)),
+              size = 3) +
+    scale_y_discrete(limits = rev(levels(props_long$pterm))) +
+    # Filling color:
+    ### Option 1:
+    scale_fill_gradient(name = "Proportion\nof CV folds",
+                        labels = scales::label_percent(suffix = " %"),
+                        limits = c(0, 1),
+                        low = "#ededed", high = "#0f365c") +
+    ###
+    ### Option 2 (requires the 'RColorBrewer' package):
+    # scale_fill_distiller(name = "Proportion\nof CV folds",
+    #                      labels = scales::label_percent(suffix = " %"),
+    #                      direction = 1) +
+    ###
+    labs(x = "Submodel size (number of predictor terms)", y = "Predictor") +
+    coord_cartesian(expand = FALSE) +
+    theme(axis.text.y = element_text(angle = text_angle))
+  return(ggprops)
+}
+
+#' @rdname plot.propsrk
+#' @export
+plot.ranking <- function(x, ...) {
+  plot(props(x, ...), ...)
 }
