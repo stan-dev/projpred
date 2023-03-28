@@ -24,6 +24,7 @@ If you read this from a place other than <https://mc-stan.org/projpred/news/inde
 * The `print.vselsummary()` output has been slightly improved, e.g., adding a remark what "search included" or "search not included" means.
 * `print.vselsummary()` now also prints whether `deltas = TRUE` or `deltas = FALSE` was used.
 * Output element `pct_solution_terms_cv` has now also been added to `vsel` objects returned by `varsel()`, but in that case, it is simply `NULL`. This (`pct_solution_terms_cv` being `NULL`) is now also the case if `validate_search = FALSE` was used in `cv_varsel()`.
+* Enhancements in the documentation and the vignettes.
 
 ## Bug fixes
 
