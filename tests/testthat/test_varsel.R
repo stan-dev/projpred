@@ -328,8 +328,8 @@ test_that(paste(
       set.seed(args_vs_i$seed)
       p_sel_dummy <- get_refdist(refmods[[tstsetup_ref]],
                                  nclusters = vs_indep$nprjdraws_search)
-      # As soon as GitHub issues #168 and #211 are fixed, we can use
-      # `refit_prj = FALSE` here:
+      # As soon as GitHub issue #168 is fixed, we can use `refit_prj = FALSE`
+      # here:
       expect_warning(
         pl_indep <- proj_linpred(
           vs_indep,
@@ -362,8 +362,8 @@ test_that(paste(
         set.seed(args_vs_i$seed)
         p_sel_dummy <- get_refdist(refmods[[tstsetup_ref]],
                                    nclusters = vs_indep$nprjdraws_search)
-        # As soon as GitHub issues #168 and #211 are fixed, we can use
-        # `refit_prj = FALSE` here:
+        # As soon as GitHub issue #168 is fixed, we can use `refit_prj = FALSE`
+        # here:
         dat_indep_crr[[paste0(".", y_nm_crr)]] <- d_test_crr$y
         pl_indep_lat <- proj_linpred(
           vs_indep,

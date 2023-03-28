@@ -24,7 +24,7 @@
 #'   submodels (again) (`TRUE`) or to retrieve the fitted submodels from
 #'   `object` (`FALSE`). For an `object` which is not of class `vsel`,
 #'   `refit_prj` must be `TRUE`. Note that currently, `refit_prj = FALSE`
-#'   requires some caution, see GitHub issues #168 and #211.
+#'   requires some caution, see GitHub issue #168.
 #' @param ndraws Only relevant if `refit_prj` is `TRUE`. Number of posterior
 #'   draws to be projected. Ignored if `nclusters` is not `NULL` or if the
 #'   reference model is of class `datafit` (in which case one cluster is used).
@@ -179,7 +179,7 @@ project <- function(object, nterms = NULL, solution_terms = NULL,
 
   if (!refit_prj) {
     warning("Currently, `refit_prj = FALSE` requires some caution, see GitHub ",
-            "issues #168 and #211.")
+            "issue #168.")
   }
 
   if (!is.null(solution_terms)) {
@@ -260,9 +260,14 @@ project <- function(object, nterms = NULL, solution_terms = NULL,
   )
 
   # Output:
+  if (refit_prj) {
+    refdist_eval <- p_ref
+  } else {
+    refdist_eval <- object$search_path$p_sel
+  }
   projs <- lapply(submodls, function(submodl) {
     proj_k <- submodl
-    proj_k$p_type <- !is.null(nclusters)
+    proj_k$p_type <- refdist_eval$clust_used
     proj_k$refmodel <- refmodel
     class(proj_k) <- "projection"
     return(proj_k)

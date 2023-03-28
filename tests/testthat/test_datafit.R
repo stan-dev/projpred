@@ -173,7 +173,7 @@ if (run_vs) {
         excl_nonargs(args_prj_vs_i)
       )),
       paste("^Currently, `refit_prj = FALSE` requires some caution, see GitHub",
-            "issues #168 and #211\\.$"),
+            "issue #168\\.$"),
       info = args_prj_vs_i$tstsetup_vsel
     )
   })
@@ -697,7 +697,7 @@ test_that(paste(
                             transform = FALSE, .seed = seed2_tst,
                             nterms = 0:nterms, refit_prj = FALSE),
       paste("^Currently, `refit_prj = FALSE` requires some caution, see GitHub",
-            "issues #168 and #211\\.$"),
+            "issue #168\\.$"),
       info = fam$family
     )
 
