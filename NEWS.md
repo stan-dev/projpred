@@ -12,17 +12,20 @@ If you read this from a place other than <https://mc-stan.org/projpred/news/inde
 * Reduced dependencies. (GitHub: #388)
 * Argument `digits` of `print.vselsummary()` is not used for an internal `round()` call anymore, but passed to argument `digits` of `print.data.frame()`, meaning that it now determines the minimum number of *significant digits* to be printed. (GitHub: #389)
 * Although bad practice (in general), a reference model lacking an intercept can now be used within **projpred**. However, it will always be projected onto submodels which *include* an intercept. The reason is that even if the true intercept in the reference model is zero, this does not need to hold for the submodels. An informational message mentioning the projection onto intercept-including submodels is thrown when **projpred** encounters a reference model lacking an intercept. (GitHub: #96, #391)
+* In case of non-predictor arguments of `s()` or `t2()`, **projpred** now throws an error. (This had already been documented before, but a suitable error message was missing.) (GitHub: #393, based on #156 and #269)
 * L1 search now throws a warning if an interaction term is selected before all involved main effects have been selected. (GitHub: #395)
+* Documented that in multilevel (group-level) terms, function calls on the right-hand side of the `|` character (e.g., `(1 | gr(group_variable))`, which is possible in **brms**) are currently not allowed in **projpred**. A corresponding error message has also been added. (GitHub: #319)
 * Due to internal refactoring:
     
     + `project()`'s output elements `submodl` and `weights` have been renamed to `outdmin` and `wdraws_prj`, respectively.
     + `varsel()`'s and `cv_varsel()`'s output element `d_test` has been replaced with new output elements `type_test` and `y_wobs_test`.
     
-    In general, these elements don't need to be accessed manually, so this should not be a user-facing change.
+    Apart from `project()`'s output element `wdraws_prj`, these elements don't need to be accessed manually, so changes are mentioned here only for the sake of completeness. Output element `wdraws_prj` of `project()` is only needed if `project()` was used for a clustered projection, which is not the default and discouraged in most applied cases. Thus, these renamings are breaking changes only in very rare cases.
 * `print.vselsummary()` now also prints `K` in case of K-fold CV.
 * The `print.vselsummary()` output has been slightly improved, e.g., adding a remark what "search included" or "search not included" means.
 * `print.vselsummary()` now also prints whether `deltas = TRUE` or `deltas = FALSE` was used.
 * Output element `pct_solution_terms_cv` has now also been added to `vsel` objects returned by `varsel()`, but in that case, it is simply `NULL`. This (`pct_solution_terms_cv` being `NULL`) is now also the case if `validate_search = FALSE` was used in `cv_varsel()`.
+* Enhancements in the documentation and the vignettes.
 
 ## Bug fixes
 
