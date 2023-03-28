@@ -922,6 +922,7 @@ test_that(paste(
   "L1 search warns if an interaction term is selected before all involved",
   "main effects have been selected"
 ), {
+  skip_if_not(run_vs)
   warn_L1_ia_orig <- options(projpred.warn_L1_interactions = TRUE)
   args_fit_i <- args_fit$rstanarm.glm.gauss.stdformul.with_wobs.with_offs
   skip_if_not(!is.null(args_fit_i))

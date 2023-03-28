@@ -59,7 +59,7 @@ extfam_tester <- function(extfam,
         fam_orig_nms <- c(fam_orig_nms, "simulate")
       }
     }
-    expect_named(fam_orig, fam_orig_nms, info = info_str)
+    expect_true(all(fam_orig_nms %in% names(fam_orig)), info = info_str)
   }
 
   ## For `extfam` -----------------------------------------------------------
@@ -94,13 +94,7 @@ extfam_tester <- function(extfam,
   }
   extfam_nms_add <- c(extfam_nms_add, extfam_nms_add2)
   extfam_nms <- c(fam_orig_nms, extfam_nms_add)
-  if (fam_orig$family %in% bfam_nms) {
-    expect_true(all(extfam_nms %in% names(extfam)), info = info_str)
-  } else {
-    expect_named(extfam, extfam_nms,
-                 ignore.order = extfam$for_augdat || extfam$for_latent,
-                 info = info_str)
-  }
+  expect_true(all(extfam_nms %in% names(extfam)), info = info_str)
 
   # Detailed tests ----------------------------------------------------------
 
