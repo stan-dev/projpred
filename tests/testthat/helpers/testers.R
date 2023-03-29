@@ -1440,8 +1440,13 @@ outdmin_tester <- function(
 # @param refd Output of get_refdist().
 # @param nprjdraws_expected A single numeric value giving the expected number of
 #   projected draws.
+# @param nrefdraws_expected A single numeric value giving the expected number of
+#   posterior draws in the reference model.
 # @param clust_expected A single logical value giving the expected value for
 #   `refd$clust_used`.
+# @param aug_expected A single logical value indicating whether get_refdist() is
+#   assumed to have been applied for an augmented-data projection.
+# @param fam_expected The name of the expected `family` (as a character string).
 # @param info_str A single character string giving information to be printed in
 #   case of failure.
 #
@@ -1449,27 +1454,68 @@ outdmin_tester <- function(
 refdist_tester <- function(refd,
                            nobsv_expected = nobsv,
                            nprjdraws_expected = nclusters_pred_tst,
+                           nrefdraws_expected = nrefdraws,
                            clust_expected = TRUE,
+                           aug_expected = FALSE,
+                           fam_expected,
                            info_str) {
-  expect_named(
-    refd, c("mu", "mu_offs", "var", "dis", "wdraws_prj", "cl", "wdraws_orig",
-            "clust_used"),
-    info = info_str
-  )
-  expect_identical(dim(refd$mu), c(nobsv_expected, nprjdraws_expected),
-                   info = info_str)
-  expect_identical(dim(refd$var), c(nobsv_expected, nprjdraws_expected),
-                   info = info_str)
-  expect_true(is.vector(refd$dis) && is.atomic(refd$dis),
-              info = info_str)
+  # General structure:
+  expect_type(refd, "list")
+  refd_nms <- c("mu", "mu_offs", "var", "dis", "wdraws_prj", "cl",
+                "wdraws_orig", "clust_used")
+  expect_named(refd, refd_nms, info = info_str)
+
+  # mu
+  expect_equal(dim(refd$mu), c(nobsv_expected, nprjdraws_expected),
+               info = info_str)
+  expect_true(is.numeric(refd$mu), info = info_str)
+  if (aug_expected) {
+    expect_s3_class(refd$mu, "augmat")
+  }
+
+  # mu_offs
+  expect_equal(dim(refd$mu_offs), c(nobsv_expected, nprjdraws_expected),
+               info = info_str)
+  expect_true(is.numeric(refd$mu_offs), info = info_str)
+  if (aug_expected) {
+    expect_s3_class(refd$mu_offs, "augmat")
+  }
+
+  # var
+  expect_equal(dim(refd$var), c(nobsv_expected, nprjdraws_expected),
+               info = info_str)
+  if (fam_expected == "gaussian") {
+    expect_true(is.numeric(refd$var), info = info_str)
+  } else {
+    expect_true(all(is.na(refd$var)), info = info_str)
+  }
+  if (aug_expected) {
+    expect_s3_class(refd$var, "augmat")
+  }
+
+  # dis
+  if (fam_expected == "gaussian") {
+    expect_true(is.vector(refd$dis, "numeric"), info = info_str)
+  } else {
+    expect_true(all(is.na(refd$dis)), info = info_str)
+  }
   expect_length(refd$dis, nprjdraws_expected)
-  expect_true(is.vector(refd$wdraws_prj) && is.atomic(refd$wdraws_prj),
-              info = info_str)
+
+  # wdraws_prj
+  expect_true(is.vector(refd$wdraws_prj, "numeric"), info = info_str)
   expect_length(refd$wdraws_prj, nprjdraws_expected)
-  expect_true(is.vector(refd$cl, "integer"), info = info_str)
-  expect_length(refd$cl, nrefdraws)
-  expect_identical(refd$wdraws_orig, rep(1, nrefdraws), info = info_str)
+
+  # cl
+  expect_true(is.vector(refd$cl, "numeric"), info = info_str)
+  expect_length(refd$cl, nrefdraws_expected)
+
+  # wdraws_orig
+  expect_identical(refd$wdraws_orig, rep(1, nrefdraws_expected),
+                   info = info_str)
+
+  # clust_used
   expect_identical(refd$clust_used, clust_expected, info = info_str)
+
   return(invisible(TRUE))
 }
 
@@ -1995,51 +2041,14 @@ vsel_tester <- function(
     ncats <- length(vs$refmodel$family$cats)
   }
   nobsv_aug <- nobsv * ncats
-  expect_type(vs$search_path$p_sel, "list")
-  expect_named(vs$search_path$p_sel,
-               c("mu", "mu_offs", "var", "dis", "wdraws_prj", "cl",
-                 "wdraws_orig", "clust_used"),
-               info = info_str)
-  expect_true(is.matrix(vs$search_path$p_sel$mu), info = info_str)
-  expect_true(is.numeric(vs$search_path$p_sel$mu), info = info_str)
-  expect_equal(dim(vs$search_path$p_sel$mu),
-               c(nobsv_aug, nprjdraws_search_expected),
-               info = info_str)
-  if (vs$refmodel$family$for_augdat) {
-    expect_s3_class(vs$search_path$p_sel$mu, "augmat")
-  }
-  expect_true(is.matrix(vs$search_path$p_sel$mu_offs), info = info_str)
-  expect_true(is.numeric(vs$search_path$p_sel$mu_offs), info = info_str)
-  expect_equal(dim(vs$search_path$p_sel$mu_offs),
-               c(nobsv_aug, nprjdraws_search_expected),
-               info = info_str)
-  if (vs$refmodel$family$for_augdat) {
-    expect_s3_class(vs$search_path$p_sel$mu_offs, "augmat")
-  }
-  expect_true(is.matrix(vs$search_path$p_sel$var), info = info_str)
-  if (vs$refmodel$family$family == "gaussian") {
-    expect_type(vs$search_path$p_sel$var, "double")
-  } else {
-    expect_true(all(is.na(vs$search_path$p_sel$var)), info = info_str)
-  }
-  expect_equal(dim(vs$search_path$p_sel$var),
-               c(nobsv_aug, nprjdraws_search_expected),
-               info = info_str)
-  if (vs$refmodel$family$for_augdat) {
-    expect_s3_class(vs$search_path$p_sel$var, "augmat")
-  }
-  expect_true(is.vector(vs$search_path$p_sel$dis) &&
-                is.atomic(vs$search_path$p_sel$dis),
-              info = info_str)
-  expect_length(vs$search_path$p_sel$dis, nprjdraws_search_expected)
-  expect_type(vs$search_path$p_sel$wdraws_prj, "double")
-  expect_length(vs$search_path$p_sel$wdraws_prj, nprjdraws_search_expected)
-  expect_true(is.numeric(vs$search_path$p_sel$cl), info = info_str)
-  expect_length(vs$search_path$p_sel$cl, ncol(vs$refmodel$mu))
-  expect_identical(vs$search_path$p_sel$wdraws_orig,
-                   rep(1, ncol(vs$refmodel$mu)), info = info_str)
-  expect_identical(vs$search_path$p_sel$clust_used, cl_search_expected,
-                   info = info_str)
+  refdist_tester(vs$search_path$p_sel,
+                 nobsv_expected = nobsv_aug,
+                 nprjdraws_expected = nprjdraws_search_expected,
+                 nrefdraws_expected = ncol(vs$refmodel$mu),
+                 clust_expected = cl_search_expected,
+                 aug_expected = vs$refmodel$family$for_augdat,
+                 fam_expected = vs$refmodel$family$family,
+                 info_str = info_str)
 
   # type_test
   type_test_expected <- cv_method_expected

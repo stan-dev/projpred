@@ -27,6 +27,7 @@ test_that(paste(
       nobsv_expected = nobsv * nobsv_fac,
       nprjdraws_expected = nrefdraws,
       clust_expected = FALSE,
+      fam_expected = refmods[[tstsetup]]$family$family,
       info_str = tstsetup
     )
   }
@@ -57,6 +58,7 @@ test_that(paste(
           nobsv_expected = nobsv * nobsv_fac,
           nprjdraws_expected = nrefdraws,
           clust_expected = FALSE,
+          fam_expected = refmods[[tstsetup]]$family$family,
           info_str = paste(tstsetup, ndraws_crr, nclusters_crr, sep = "__")
         )
       }
