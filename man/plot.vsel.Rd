@@ -77,6 +77,9 @@ and \code{seed} (see \code{\link[=set.seed]{set.seed()}}, defaulting to
 \code{sample.int(.Machine$integer.max, 1)}, but can also be \code{NA} to not call
 \code{\link[=set.seed]{set.seed()}} at all).}
 }
+\value{
+A \pkg{ggplot2} plotting object (of class \code{gg} and \code{ggplot}).
+}
 \description{
 This is the \code{\link[=plot]{plot()}} method for \code{vsel} objects (returned by \code{\link[=varsel]{varsel()}} or
 \code{\link[=cv_varsel]{cv_varsel()}}).

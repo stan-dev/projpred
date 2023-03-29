@@ -520,6 +520,8 @@ proj_predict_aux <- function(proj, newdata, offset, weights,
 #'
 #' @inherit summary.vsel details
 #'
+#' @return A \pkg{ggplot2} plotting object (of class `gg` and `ggplot`).
+#'
 #' @details
 #'
 #' # Horizontal lines
