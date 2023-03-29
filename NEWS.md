@@ -32,7 +32,7 @@ If you read this from a place other than <https://mc-stan.org/projpred/news/inde
 * Fixed a bug causing `predict.refmodel()` to require `newdata` to contain the response variable in case of a **brms** reference model. This is similar to paul-buerkner/brms#1457, but concerns `predict.refmodel()` (paul-buerkner/brms#1457 referred to predictions from the *submodels*). In order to make this `predict.refmodel()` fix work, **brms** version 2.19.0 or later is needed. (GitHub: #381)
 * Slightly improved the calculation of predictive variances to make them less prone to numerical inaccuracies. (GitHub: #199)
 * In case of the `brms::categorical()` family, strip underscores from response category names in `as.matrix.projection()` output, as done by **brms**. (GitHub: #394)
-* Fixed #211, a bug causing output element `p_type` of `project()` to be incorrect in case of `refit_prj = FALSE`, `!is.null(nclusters)`, and an `object` of class `vsel` that was created with a non-clustered (thinned) projection during the search phase. (GitHub: #401)
+* Fixed #211, a bug causing output element `p_type` of `project()` to be incorrect in case of `refit_prj = FALSE`, `!is.null(nclusters)`, and an `object` of class `vsel` that was created with a non-clustered (thinned) projection during the search phase. The fix comes with a slightly different behavior of `proj_predict()` for `datafit`s: It will not draw `nresample_clusters` times from the posterior-projection predictive distribution (which is based on the same single projected draw), but only once. (GitHub: #401)
 
 # projpred 2.4.0
 
