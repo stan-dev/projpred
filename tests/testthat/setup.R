@@ -502,7 +502,7 @@ trms_common_spcl <- c("xco.1", "I(xco.1^2)",
 
 # Solution terms for project()-ing from `"refmodel"`s:
 solterms_x <- c("xco.1", "xca.1")
-solterms_z <- c("(1 | z.1)", "(xco.1 | z.1)")
+solterms_z <- c("(1 | z.1)", "(xco.1 | z.1)") # removing one of them later
 solterms_s <- c("s(s.1)") # , "s(s.2)"
 solterms_spcl <- c("xca.1", "xco.1", "I(xco.1^2)", "exp(xco.2)",
                    "I(as.numeric(xco.3 > 0))",
@@ -1182,6 +1182,8 @@ if (run_prj) {
       # We need a single group-level term (which only consists of group-level
       # intercepts) to be able to use `nAGQ` later:
       solterms_z <- setdiff(solterms_z, "(xco.1 | z.1)")
+    } else {
+      solterms_z <- setdiff(solterms_z, "(1 | z.1)")
     }
     if (mod_crr %in% c("glmm", "gamm")) {
       solterms <- c(solterms,
