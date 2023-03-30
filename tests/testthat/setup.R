@@ -27,7 +27,7 @@ run_valsearch_aug_lat <- FALSE
 # Run the `cvfits` test for all possible test setups (`TRUE`) or just for the
 # first one among the GLMMs (`FALSE`; note that if there is no GLMM available in
 # that test, the first test setup among those for K-fold CV is used)?:
-run_cvfits_all <- FALSE
+run_cvfits_all <- run_more
 # Run tests for "brmsfit"s?:
 run_brms <- identical(Sys.getenv("NOT_CRAN"), "true")
 # Run snapshot tests?:
