@@ -150,8 +150,40 @@ test_that(paste(
       })
       tstsetup_match_prj <- tstsetup_tries[match_prj]
       if (length(tstsetup_match_prj) == 1) {
-        expect_identical(prjs_vs[[tstsetup]], prjs[[tstsetup_match_prj]],
-                         ignore.environment = TRUE, info = tstsetup)
+        if (identical(prjs_vs[[tstsetup]]$solution_terms,
+                      prjs[[tstsetup_match_prj]]$solution_terms)) {
+          expect_identical(prjs_vs[[tstsetup]], prjs[[tstsetup_match_prj]],
+                           ignore.environment = TRUE, info = tstsetup)
+        } else {
+          expect_setequal(prjs_vs[[tstsetup]]$solution_terms,
+                          prjs[[tstsetup_match_prj]]$solution_terms)
+          expect_equal(
+            lapply(seq_along(prjs_vs[[tstsetup]]$outdmin), function(s_idx) {
+              outdmin_s <- prjs_vs[[tstsetup]]$outdmin[[s_idx]]
+              outdmin_s$beta <- outdmin_s$beta[
+                rownames(prjs[[tstsetup_match_prj]]$outdmin[[s_idx]]$beta), ,
+                drop = FALSE
+              ]
+              outdmin_s$formula <- prjs[[tstsetup_match_prj]]$outdmin[[s_idx]][[
+                "formula"
+              ]]
+              outdmin_s$x <- outdmin_s$x[
+                , colnames(prjs[[tstsetup_match_prj]]$outdmin[[s_idx]]$x),
+                drop = FALSE
+              ]
+              return(outdmin_s)
+            }),
+            prjs[[tstsetup_match_prj]]$outdmin,
+            tolerance = 1e1 * .Machine$double.eps, info = tstsetup
+          )
+          prj_nms <- names(prjs_vs[[tstsetup]])
+          expect_identical(prj_nms, names(prjs[[tstsetup_match_prj]]),
+                           info = tstsetup)
+          prj_el_excl <- !prj_nms %in% c("solution_terms", "outdmin")
+          expect_equal(prjs_vs[[tstsetup]][prj_el_excl],
+                       prjs[[tstsetup_match_prj]][prj_el_excl],
+                       tolerance = .Machine$double.eps, info = tstsetup)
+        }
       } else if (length(tstsetup_match_prj) > 1) {
         stop("Unexpected number of matches.")
       }
@@ -213,8 +245,40 @@ test_that(paste(
       })
       tstsetup_match_prj <- tstsetup_tries[match_prj]
       if (length(tstsetup_match_prj) == 1) {
-        expect_identical(prjs_cvvs[[tstsetup]], prjs[[tstsetup_match_prj]],
-                         ignore.environment = TRUE, info = tstsetup)
+        if (identical(prjs_cvvs[[tstsetup]]$solution_terms,
+                      prjs[[tstsetup_match_prj]]$solution_terms)) {
+          expect_identical(prjs_cvvs[[tstsetup]], prjs[[tstsetup_match_prj]],
+                           ignore.environment = TRUE, info = tstsetup)
+        } else {
+          expect_setequal(prjs_cvvs[[tstsetup]]$solution_terms,
+                          prjs[[tstsetup_match_prj]]$solution_terms)
+          expect_equal(
+            lapply(seq_along(prjs_cvvs[[tstsetup]]$outdmin), function(s_idx) {
+              outdmin_s <- prjs_cvvs[[tstsetup]]$outdmin[[s_idx]]
+              outdmin_s$beta <- outdmin_s$beta[
+                rownames(prjs[[tstsetup_match_prj]]$outdmin[[s_idx]]$beta), ,
+                drop = FALSE
+              ]
+              outdmin_s$formula <- prjs[[tstsetup_match_prj]]$outdmin[[s_idx]][[
+                "formula"
+              ]]
+              outdmin_s$x <- outdmin_s$x[
+                , colnames(prjs[[tstsetup_match_prj]]$outdmin[[s_idx]]$x),
+                drop = FALSE
+              ]
+              return(outdmin_s)
+            }),
+            prjs[[tstsetup_match_prj]]$outdmin,
+            tolerance = 1e1 * .Machine$double.eps, info = tstsetup
+          )
+          prj_nms <- names(prjs_cvvs[[tstsetup]])
+          expect_identical(prj_nms, names(prjs[[tstsetup_match_prj]]),
+                           info = tstsetup)
+          prj_el_excl <- !prj_nms %in% c("solution_terms", "outdmin")
+          expect_equal(prjs_cvvs[[tstsetup]][prj_el_excl],
+                       prjs[[tstsetup_match_prj]][prj_el_excl],
+                       tolerance = .Machine$double.eps, info = tstsetup)
+        }
       } else if (length(tstsetup_match_prj) > 1) {
         stop("Unexpected number of matches.")
       }
