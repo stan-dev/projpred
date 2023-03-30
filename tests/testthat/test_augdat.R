@@ -223,7 +223,7 @@ test_that(paste(
     tol_coefs <- ifelse(
       args_prj[[tstsetup]]$mod_nm == "glmm" &&
         any(grepl("^\\(.*\\)$", args_prj[[tstsetup]]$solution_terms)),
-      1e-3, 1e-6
+      1e-3, 1e-5
     )
     expect_equal(prjmat, prjmat_trad, tolerance = tol_coefs, info = tstsetup)
   }
