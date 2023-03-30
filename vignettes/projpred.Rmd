@@ -230,7 +230,7 @@ With `proj_predict()`, we can obtain draws from predictive distributions based o
 ```{r}
 prj_predict <- proj_predict(prj, .seed = 762805)
 # Using the 'bayesplot' package:
-ppc_dens_overlay(y = dat_gauss$y, yrep = prj_predict, bw = "SJ")
+ppc_dens_overlay(y = dat_gauss$y, yrep = prj_predict)
 ```
 
 This PPPC shows that our final projection is able to generate predictions similar to the observed response values, which indicates that this model is reasonable, at least in this regard.
