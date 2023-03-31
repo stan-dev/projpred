@@ -41,7 +41,7 @@ NULL
 #
 # @return An augmented-rows matrix (see above for a definition).
 arr2augmat <- function(arr, margin_draws = 3) {
-  stopifnot(is.array(arr) && length(dim(arr)) == 3)
+  stopifnot(is.array(arr), length(dim(arr)) == 3)
   stopifnot(margin_draws %in% c(1, 3))
   if (margin_draws == 1) {
     margin_obs <- 2
@@ -182,7 +182,7 @@ augmat2augvec <- function(augmat) {
 # @return If `margin_draws` is `3`, a matrix with dimensions N x S. If
 #   `margin_draws` is `1`, a matrix with dimensions S x N.
 ll_cats <- function(mu_arr, margin_draws = 3, y, wobs = 1) {
-  stopifnot(is.array(mu_arr) && length(dim(mu_arr)) == 3)
+  stopifnot(is.array(mu_arr), length(dim(mu_arr)) == 3)
   stopifnot(margin_draws %in% c(1, 3))
   if (margin_draws == 1) {
     margin_obs <- 2
@@ -193,9 +193,9 @@ ll_cats <- function(mu_arr, margin_draws = 3, y, wobs = 1) {
     margin_cats <- 2
     bind_fun <- rbind
   }
-  stopifnot(is.factor(y) &&
-              identical(length(y), dim(mu_arr)[margin_obs]) &&
-              identical(nlevels(y), dim(mu_arr)[margin_cats]))
+  stopifnot(is.factor(y),
+            length(y) == dim(mu_arr)[margin_obs],
+            nlevels(y) == dim(mu_arr)[margin_cats])
   if (length(wobs) == 0) {
     wobs <- rep(1, length(y))
   } else if (length(wobs) == 1) {
@@ -239,7 +239,7 @@ ll_cats <- function(mu_arr, margin_draws = 3, y, wobs = 1) {
 #
 #   If `return_vec = TRUE`, then: A vector of length N (requires S = 1).
 ppd_cats <- function(mu_arr, margin_draws = 3, wobs = 1, return_vec = FALSE) {
-  stopifnot(is.array(mu_arr) && length(dim(mu_arr)) == 3)
+  stopifnot(is.array(mu_arr), length(dim(mu_arr)) == 3)
   stopifnot(margin_draws %in% c(1, 3))
   if (margin_draws == 1) {
     margin_obs <- 2
