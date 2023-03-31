@@ -316,7 +316,7 @@ Sometimes, the ordering of the predictor terms in the solution path makes sense,
 
 ### Overfitting
 
-If you are using `varsel()`, then the lack of the CV in `varsel()` may lead to overconfident and overfitted results. In this case, try running `cv_varsel()` instead of `varsel()` (which you should in any case for your final results).
+If you are using `varsel()`, then the lack of CV in `varsel()` may lead to overconfident and overfitted results. In this case, try running `cv_varsel()` instead of `varsel()` (which you should in any case for your final results).
 
 ### Issues with the traditional projection
 
