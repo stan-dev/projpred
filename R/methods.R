@@ -1046,13 +1046,13 @@ print.vsel <- function(x, ...) {
 #'   passed here.
 #'
 #' @details In general (beware of special extensions below), the suggested model
-#'   size is the smallest model size \eqn{k \in \{0, 1, ...,
-#'   \texttt{nterms\_max}\}}{{k = 0, 1, ..., nterms_max}} for which either the
+#'   size is the smallest model size \eqn{j \in \{0, 1, ...,
+#'   \texttt{nterms\_max}\}}{{j = 0, 1, ..., nterms_max}} for which either the
 #'   lower or upper bound (depending on argument `type`) of the
 #'   normal-approximation (or bootstrap; see argument `stat`) confidence
 #'   interval (with nominal coverage `1 - alpha`; see argument `alpha` of
-#'   [summary.vsel()]) for \eqn{U_k - U_{\mathrm{base}}}{U_k - U_base} (with
-#'   \eqn{U_k} denoting the \eqn{k}-th submodel's true utility and
+#'   [summary.vsel()]) for \eqn{U_j - U_{\mathrm{base}}}{U_j - U_base} (with
+#'   \eqn{U_j} denoting the \eqn{j}-th submodel's true utility and
 #'   \eqn{U_{\mathrm{base}}}{U_base} denoting the baseline model's true utility)
 #'   falls above (or is equal to) \deqn{\texttt{pct} \cdot (u_0 -
 #'   u_{\mathrm{base}})}{pct * (u_0 - u_base)} where \eqn{u_0} denotes the null
@@ -1061,19 +1061,19 @@ print.vsel <- function(x, ...) {
 #'   or the best submodel found (see argument `baseline` of [summary.vsel()]).
 #'
 #'   If `!is.na(thres_elpd)` and `stat = "elpd"`, the decision rule above is
-#'   extended: The suggested model size is then the smallest model size \eqn{k}
-#'   fulfilling the rule above *or* \eqn{u_k - u_{\mathrm{base}} >
-#'   \texttt{thres\_elpd}}{u_k - u_base > thres_elpd}. Correspondingly, in case
+#'   extended: The suggested model size is then the smallest model size \eqn{j}
+#'   fulfilling the rule above *or* \eqn{u_j - u_{\mathrm{base}} >
+#'   \texttt{thres\_elpd}}{u_j - u_base > thres_elpd}. Correspondingly, in case
 #'   of `stat = "mlpd"` (and `!is.na(thres_elpd)`), the suggested model size is
-#'   the smallest model size \eqn{k} fulfilling the rule above *or* \eqn{u_k -
-#'   u_{\mathrm{base}} > \frac{\texttt{thres\_elpd}}{N}}{u_k - u_base >
+#'   the smallest model size \eqn{j} fulfilling the rule above *or* \eqn{u_j -
+#'   u_{\mathrm{base}} > \frac{\texttt{thres\_elpd}}{N}}{u_j - u_base >
 #'   thres_elpd / N} with \eqn{N} denoting the number of observations.
 #'
 #'   For example (disregarding the special extensions in case of `stat = "elpd"`
 #'   or `stat = "mlpd"`), `alpha = 2 * pnorm(-1)`, `pct = 0`, and `type =
 #'   "upper"` means that we select the smallest model size for which the upper
 #'   bound of the `1 - 2 * pnorm(-1)` (approximately 68.3%) confidence interval
-#'   for \eqn{U_k - U_{\mathrm{base}}}{U_k - U_base} exceeds (or is equal to)
+#'   for \eqn{U_j - U_{\mathrm{base}}}{U_j - U_base} exceeds (or is equal to)
 #'   zero, that is (if `stat` is a performance statistic for which the normal
 #'   approximation is used, not the bootstrap), for which the submodel's utility
 #'   estimate is at most one standard error smaller than the baseline model's
