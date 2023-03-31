@@ -78,20 +78,27 @@
 #'   or \eqn{C_{\mathrm{lat}}}{C_lat} (if `transform = FALSE`). Then, if the
 #'   prediction is done for one submodel only (i.e., `length(nterms) == 1 ||
 #'   !is.null(solution_terms)` in the call to [project()]):
-#'   * [proj_linpred()] returns a `list` with elements `pred` (predictions,
-#'   i.e., the linear predictors, possibly transformed to response scale) and
-#'   `lpd` (log predictive densities; only calculated if `newdata` is `NULL` or
-#'   if `newdata` contains response values in the corresponding column). In case
-#'   of (i) the traditional projection, (ii) the latent projection with
-#'   `transform = FALSE`, or (iii) the latent projection with `transform = TRUE`
-#'   and `<refmodel>$family$cats` (where `<refmodel>` is an object resulting
-#'   from [init_refmodel()]; see also [extend_family()]'s argument
-#'   `latent_y_unqs`) being `NULL`, both elements are \eqn{S_{\mathrm{prj}}
-#'   \times N}{S_prj x N} matrices. In case of (i) the augmented-data projection
-#'   or (ii) the latent projection with `transform = TRUE` and
-#'   `<refmodel>$family$cats` being not `NULL`, `pred` is an
-#'   \eqn{S_{\mathrm{prj}} \times N \times C}{S_prj x N x C} array and `lpd` is
-#'   an \eqn{S_{\mathrm{prj}} \times N}{S_prj x N} matrix.
+#'   * [proj_linpred()] returns a `list` with the following elements:
+#'       + Element `pred` contains the actual predictions, i.e., the linear
+#'       predictors, possibly transformed to response scale (depending on
+#'       argument `transform`).
+#'       + Element `lpd` is non-`NULL` only if `newdata` is `NULL` or if
+#'       `newdata` contains response values in the corresponding column. In that
+#'       case, it contains the log predictive density values (conditional on
+#'       each of the projected parameter draws if `integrated = FALSE` and
+#'       integrated over the projected parameter draws if `integrated = TRUE`).
+#'
+#'       In case of (i) the traditional projection, (ii) the latent projection
+#'       with `transform = FALSE`, or (iii) the latent projection with
+#'       `transform = TRUE` and `<refmodel>$family$cats` (where `<refmodel>` is
+#'       an object resulting from [init_refmodel()]; see also
+#'       [extend_family()]'s argument `latent_y_unqs`) being `NULL`, both
+#'       elements are \eqn{S_{\mathrm{prj}} \times N}{S_prj x N} matrices. In
+#'       case of (i) the augmented-data projection or (ii) the latent projection
+#'       with `transform = TRUE` and `<refmodel>$family$cats` being not `NULL`,
+#'       `pred` is an \eqn{S_{\mathrm{prj}} \times N \times C}{S_prj x N x C}
+#'       array and `lpd` is an \eqn{S_{\mathrm{prj}} \times N}{S_prj x N}
+#'       matrix.
 #'   * [proj_predict()] returns an \eqn{S_{\mathrm{prj}} \times N}{S_prj x N}
 #'   matrix of predictions where \eqn{S_{\mathrm{prj}}}{S_prj} denotes
 #'   `nresample_clusters` in case of clustered projection. In case of (i) the

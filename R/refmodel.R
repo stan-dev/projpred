@@ -360,13 +360,13 @@ NULL
 
 # Function definitions ----------------------------------------------------
 
-#' Predictions or log predictive densities from a reference model
+#' Predictions or log posterior predictive densities from a reference model
 #'
 #' This is the [predict()] method for `refmodel` objects (returned by
 #' [get_refmodel()] or [init_refmodel()]). It offers three types of output which
 #' are all based on the reference model and new (or old) observations: Either
 #' the linear predictor on link scale, the linear predictor transformed to
-#' response scale, or the log predictive density.
+#' response scale, or the log posterior predictive density.
 #'
 #' @template args-newdata
 #' @param object An object of class `refmodel` (returned by [get_refmodel()] or
@@ -391,9 +391,9 @@ NULL
 #'   without any modifications that may be due to the original response
 #'   distribution (e.g., for a [brms::cumulative()] model, the ordered
 #'   thresholds are not taken into account). If (ii) `!is.null(ynew)`, then
-#'   argument `type` also affects the scale of the log predictive densities
-#'   (`type = "response"` for the original response scale, `type = "link"` for
-#'   the latent Gaussian scale).
+#'   argument `type` also affects the scale of the log posterior predictive
+#'   densities (`type = "response"` for the original response scale, `type =
+#'   "link"` for the latent Gaussian scale).
 #' @param ... Currently ignored.
 #'
 #' @details Argument `weightsnew` is only relevant if `!is.null(ynew)`.
@@ -418,9 +418,8 @@ NULL
 #'   projection or (ii) the latent projection with `type = "response"` and
 #'   `object$family$cats` being not `NULL`.
 #'
-#'   If `!is.null(ynew)`, the returned
-#'   object is a length-\eqn{N} vector of log predictive densities evaluated at
-#'   `ynew`.
+#'   If `!is.null(ynew)`, the returned object is a length-\eqn{N} vector of log
+#'   posterior predictive densities evaluated at `ynew`.
 #'
 #' @export
 predict.refmodel <- function(object, newdata = NULL, ynew = NULL,
@@ -542,7 +541,7 @@ predict.refmodel <- function(object, newdata = NULL, ynew = NULL,
     }
     return(pred)
   } else {
-    ## evaluate the log predictive density at the given ynew values
+    ## evaluate the log posterior predictive density at the given ynew values
     if (refmodel$family$for_latent && type == "response") {
       mu_oscale <- refmodel$family$latent_ilink(
         t(eta), cl_ref = seq_along(refmodel$wdraws_ref),

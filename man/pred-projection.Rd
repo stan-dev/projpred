@@ -98,20 +98,29 @@ topic \link{refmodel-init-get} are used. (For \code{\link[=proj_linpred]{proj_li
 or \eqn{C_{\mathrm{lat}}}{C_lat} (if \code{transform = FALSE}). Then, if the
 prediction is done for one submodel only (i.e., \code{length(nterms) == 1 || !is.null(solution_terms)} in the call to \code{\link[=project]{project()}}):
 \itemize{
-\item \code{\link[=proj_linpred]{proj_linpred()}} returns a \code{list} with elements \code{pred} (predictions,
-i.e., the linear predictors, possibly transformed to response scale) and
-\code{lpd} (log predictive densities; only calculated if \code{newdata} is \code{NULL} or
-if \code{newdata} contains response values in the corresponding column). In case
-of (i) the traditional projection, (ii) the latent projection with
-\code{transform = FALSE}, or (iii) the latent projection with \code{transform = TRUE}
-and \verb{<refmodel>$family$cats} (where \verb{<refmodel>} is an object resulting
-from \code{\link[=init_refmodel]{init_refmodel()}}; see also \code{\link[=extend_family]{extend_family()}}'s argument
-\code{latent_y_unqs}) being \code{NULL}, both elements are \eqn{S_{\mathrm{prj}}
-  \times N}{S_prj x N} matrices. In case of (i) the augmented-data projection
-or (ii) the latent projection with \code{transform = TRUE} and
-\verb{<refmodel>$family$cats} being not \code{NULL}, \code{pred} is an
-\eqn{S_{\mathrm{prj}} \times N \times C}{S_prj x N x C} array and \code{lpd} is
-an \eqn{S_{\mathrm{prj}} \times N}{S_prj x N} matrix.
+\item \code{\link[=proj_linpred]{proj_linpred()}} returns a \code{list} with the following elements:
+\itemize{
+\item Element \code{pred} contains the actual predictions, i.e., the linear
+predictors, possibly transformed to response scale (depending on
+argument \code{transform}).
+\item Element \code{lpd} is non-\code{NULL} only if \code{newdata} is \code{NULL} or if
+\code{newdata} contains response values in the corresponding column. In that
+case, it contains the log predictive density values (conditional on
+each of the projected parameter draws if \code{integrated = FALSE} and
+integrated over the projected parameter draws if \code{integrated = TRUE}).
+}
+
+In case of (i) the traditional projection, (ii) the latent projection
+with \code{transform = FALSE}, or (iii) the latent projection with
+\code{transform = TRUE} and \verb{<refmodel>$family$cats} (where \verb{<refmodel>} is
+an object resulting from \code{\link[=init_refmodel]{init_refmodel()}}; see also
+\code{\link[=extend_family]{extend_family()}}'s argument \code{latent_y_unqs}) being \code{NULL}, both
+elements are \eqn{S_{\mathrm{prj}} \times N}{S_prj x N} matrices. In
+case of (i) the augmented-data projection or (ii) the latent projection
+with \code{transform = TRUE} and \verb{<refmodel>$family$cats} being not \code{NULL},
+\code{pred} is an \eqn{S_{\mathrm{prj}} \times N \times C}{S_prj x N x C}
+array and \code{lpd} is an \eqn{S_{\mathrm{prj}} \times N}{S_prj x N}
+matrix.
 \item \code{\link[=proj_predict]{proj_predict()}} returns an \eqn{S_{\mathrm{prj}} \times N}{S_prj x N}
 matrix of predictions where \eqn{S_{\mathrm{prj}}}{S_prj} denotes
 \code{nresample_clusters} in case of clustered projection. In case of (i) the

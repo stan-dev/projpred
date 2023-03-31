@@ -17,8 +17,9 @@ get_sub_summaries <- function(submodls, refmodel, test_points, newdata = NULL,
   })
 }
 
-# Calculate log predictive density values and average them across parameter
-# draws (together with the corresponding expected response values).
+# Calculate log posterior(-projection) predictive density values and average
+# them across parameter draws (together with the corresponding expected response
+# values).
 #
 # @param y_wobs_test A `list` (but we encourage to use a `data.frame`), at least
 #   with elements (columns) `y` (response values) and `wobs` (observation

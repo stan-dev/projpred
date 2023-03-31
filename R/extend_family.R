@@ -1,7 +1,7 @@
 # Family-specific helper functions
 #
 # `extend_family(family)` returns a `family` object augmented with auxiliary
-# functions that are needed for computing KL-divergence, log predictive density,
+# functions that are needed for computing KL-divergence, log likelihood,
 # dispersion projection, etc.
 #
 # Missing: Quasi-families are not implemented. If dis_gamma is the correct shape
