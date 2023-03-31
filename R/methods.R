@@ -729,9 +729,19 @@ plot.vsel <- function(
 #'   intercept, so use `nterms_max = 0` for the intercept-only model. For
 #'   [plot.vsel()], `nterms_max` must be at least `1`.
 #' @param stats One or more character strings determining which performance
-#'   statistics (i.e., utilities or losses) to calculate. Available statistics
-#'   are:
-#'   * `"elpd"`: (expected) sum of log predictive densities.
+#'   statistics (i.e., utilities or losses) to estimate based on the
+#'   observations in the evaluation (or "test") set (in case of
+#'   cross-validation, these are all observations because they are partitioned
+#'   into multiple test sets; in case of [varsel()] with `d_test = NULL`, these
+#'   are again all observations because the test set is the same as the training
+#'   set). Available statistics are:
+#'   * `"elpd"`: expected log (pointwise) predictive density (for a new
+#'   dataset). Estimated by the *sum* of the observation-specific log predictive
+#'   densities (here, the term "predictive density" refers to the posterior
+#'   predictive density in case of the reference model and the
+#'   posterior-projection predictive density in case of the submodels, i.e.,
+#'   "predictive density" refers to the predictive density resulting from
+#'   integrating over the corresponding parameter draws).
 #'   * `"mlpd"`: mean log predictive density, that is, `"elpd"` divided by the
 #'   number of observations.
 #'   * `"mse"`: mean squared error (only available in the situations mentioned
