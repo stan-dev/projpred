@@ -314,4 +314,8 @@ Sometimes, the ordering of the predictor terms in the solution path makes sense,
 
 Another problem might be that if you are using `varsel()`, then the lack of the CV in `varsel()` may lead to overconfident and overfitted results. In this case, try running `cv_varsel()` instead of `varsel()` (which you should in any case for your final results).
 
+For multilevel binomial models, the traditional projection may not work properly and give suboptimal results, see GitHub issue [#353](https://github.com/stan-dev/projpred/pull/353) (the underlying issue is described in **lme4** issue [#682](https://github.com/lme4/lme4/issues/682)).
+With suboptimality of the results, we mean that in such cases, the relevance of the group-level terms can be underestimated.
+According to the simulation-based case study from [#353](https://github.com/stan-dev/projpred/pull/353), the [latent projection](https://mc-stan.org/projpred/articles/latent.html) should be considered as a currently available remedy.
+
 ## References
