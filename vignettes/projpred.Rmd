@@ -307,12 +307,18 @@ These are explained in detail in the general package documentation (available [o
 
 ## Troubleshooting
 
+### Non-convergence of predictive performance
+
 Sometimes, the ordering of the predictor terms in the solution path makes sense, but for increasing submodel size, the performance measures of the submodels do not approach that of the reference model so that the submodels exhibit a predictive performance that is worse than the reference model's. There are different reasons that can explain this behavior (the following list might not be exhaustive, though):
 
 1. The reference model's posterior may be so wide that the default `ndraws_pred` could be too small. Usually, this comes in combination with a difference in predictive performance which is comparatively small. Increasing `ndraws_pred` should help, but it also increases the computational cost. Re-fitting the reference model and thereby ensuring a narrower posterior (usually by employing a stronger sparsifying prior) should have a similar effect.
 1. For non-Gaussian models, the discrepancy may be due to the fact that the penalized iteratively reweighted least squares (PIRLS) algorithm might have convergence issues [@catalina_latent_2021]. In this case, the latent-space approach by @catalina_latent_2021 might help, see also the [latent-projection vignette](https://mc-stan.org/projpred/articles/latent.html).
 
-Another problem might be that if you are using `varsel()`, then the lack of the CV in `varsel()` may lead to overconfident and overfitted results. In this case, try running `cv_varsel()` instead of `varsel()` (which you should in any case for your final results).
+### Overfitting
+
+If you are using `varsel()`, then the lack of the CV in `varsel()` may lead to overconfident and overfitted results. In this case, try running `cv_varsel()` instead of `varsel()` (which you should in any case for your final results).
+
+### Issues with the traditional projection
 
 For multilevel binomial models, the traditional projection may not work properly and give suboptimal results, see GitHub issue [#353](https://github.com/stan-dev/projpred/pull/353) (the underlying issue is described in **lme4** issue [#682](https://github.com/lme4/lme4/issues/682)).
 With suboptimality of the results, we mean that in such cases, the relevance of the group-level terms can be underestimated.
@@ -322,5 +328,7 @@ For multilevel Poisson models, the traditional projection may take very long, se
 According to the simulation-based case study from [#353](https://github.com/stan-dev/projpred/pull/353), the [latent projection](https://mc-stan.org/projpred/articles/latent.html) should be considered as a currently available remedy.
 
 Finally, as illustrated in the Poisson example of the [latent-projection vignette](https://mc-stan.org/projpred/articles/latent.html), the latent projection can be beneficial for non-multilevel models with a (non-Gaussian) family that is also supported by the traditional projection, at least in case of the Poisson family and L1 search.
+
+In conclusion, when using **projpred**'s traditional projection for a non-Gaussian family, we recommend to also try the latent projection.
 
 ## References
