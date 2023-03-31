@@ -87,11 +87,13 @@ the smallest model size \eqn{j} fulfilling the rule above \emph{or} \eqn{u_j -
   u_{\mathrm{base}} > \frac{\texttt{thres\_elpd}}{N}}{u_j - u_base >
   thres_elpd / N} with \eqn{N} denoting the number of observations.
 
-For example (disregarding the special extensions in case of \code{stat = "elpd"}
-or \code{stat = "mlpd"}), \code{alpha = 2 * pnorm(-1)}, \code{pct = 0}, and \code{type = "upper"} means that we select the smallest model size for which the upper
-bound of the \code{1 - 2 * pnorm(-1)} (approximately 68.3\%) confidence interval
-for \eqn{U_j - U_{\mathrm{base}}}{U_j - U_base} exceeds (or is equal to)
-zero, that is (if \code{stat} is a performance statistic for which the normal
+For example (disregarding the special extensions in case of
+\code{!is.na(thres_elpd)} with \code{stat = "elpd"} or \code{stat = "mlpd"}),
+\code{alpha = 2 * pnorm(-1)}, \code{pct = 0}, and \code{type = "upper"} means that we
+select the smallest model size for which the upper bound of the
+\code{1 - 2 * pnorm(-1)} (approximately 68.3\%) confidence interval for
+\eqn{U_j - U_{\mathrm{base}}}{U_j - U_base} exceeds (or is equal to) zero,
+that is (if \code{stat} is a performance statistic for which the normal
 approximation is used, not the bootstrap), for which the submodel's utility
 estimate is at most one standard error smaller than the baseline model's
 utility estimate (with that standard error referring to the utility
