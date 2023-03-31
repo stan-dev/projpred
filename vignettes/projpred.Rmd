@@ -318,4 +318,7 @@ For multilevel binomial models, the traditional projection may not work properly
 With suboptimality of the results, we mean that in such cases, the relevance of the group-level terms can be underestimated.
 According to the simulation-based case study from [#353](https://github.com/stan-dev/projpred/pull/353), the [latent projection](https://mc-stan.org/projpred/articles/latent.html) should be considered as a currently available remedy.
 
+For multilevel Poisson models, the traditional projection may take very long, see GitHub issue [#353](https://github.com/stan-dev/projpred/pull/353).
+According to the simulation-based case study from [#353](https://github.com/stan-dev/projpred/pull/353), the [latent projection](https://mc-stan.org/projpred/articles/latent.html) should be considered as a currently available remedy.
+
 ## References
