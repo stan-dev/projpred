@@ -331,4 +331,10 @@ Finally, as illustrated in the Poisson example of the latent-projection vignette
 
 In conclusion, when using **projpred**'s traditional projection for a non-Gaussian family, we recommend to also try the latent projection.
 
+### Issues with the augmented-data projection
+
+For multilevel models, the augmented-data projection seems to suffer from the same issue as the traditional projection for the binomial family (see above), i.e., it may not work properly and give suboptimal results, see GitHub issue [#353](https://github.com/stan-dev/projpred/pull/353) (the underlying issue is probably similar to the one described in **lme4** issue [#682](https://github.com/lme4/lme4/issues/682)).
+With suboptimality of the results, we mean that in such cases, the relevance of the group-level terms can be underestimated.
+According to the simulation-based case study from [#353](https://github.com/stan-dev/projpred/pull/353), the latent projection should be considered as a remedy in such cases.
+
 ## References
