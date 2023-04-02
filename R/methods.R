@@ -740,12 +740,9 @@ plot.vsel <- function(
 #'   are again all observations because the test set is the same as the training
 #'   set). Available statistics are:
 #'   * `"elpd"`: expected log (pointwise) predictive density (for a new
-#'   dataset). Estimated by the *sum* of the observation-specific log predictive
-#'   densities (here, the term "predictive density" refers to the posterior
-#'   predictive density in case of the reference model and the
-#'   posterior-projection predictive density in case of the submodels, i.e.,
-#'   "predictive density" refers to the predictive density resulting from
-#'   integrating over the corresponding parameter draws).
+#'   dataset). Estimated by the sum of the observation-specific log predictive
+#'   density values (with each of these predictive density values being
+#'   a---possibly weighted---average across the parameter draws).
 #'   * `"mlpd"`: mean log predictive density, that is, `"elpd"` divided by the
 #'   number of observations.
 #'   * `"mse"`: mean squared error (only available in the situations mentioned
