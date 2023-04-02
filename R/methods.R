@@ -944,13 +944,12 @@ summary.vsel <- function(
 #' selection.
 #'
 #' @param x An object of class `vselsummary`.
-#' @param digits Passed to argument `digits` of [print.data.frame()].
-#' @param ... Currently ignored.
+#' @param ... Passed to [print.data.frame()].
 #'
 #' @return The output of [summary.vsel()] (invisible).
 #'
 #' @export
-print.vselsummary <- function(x, digits = 1, ...) {
+print.vselsummary <- function(x, ...) {
   if (x$family$for_latent) {
     cat("------\nResponse-scale family:\n")
     print(structure(x$family[c("family_oscale", "link_oscale")],
@@ -1007,7 +1006,7 @@ print.vselsummary <- function(x, digits = 1, ...) {
   }
   cat("Performance evaluation summary", scale_string, " with `deltas = ",
       x$deltas, "`:\n", sep = "")
-  print(x$selection, digits = digits, row.names = FALSE)
+  print(x$selection, row.names = FALSE, ...)
   return(invisible(x))
 }
 
