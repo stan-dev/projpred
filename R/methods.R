@@ -1,3 +1,5 @@
+# Common documentation ----------------------------------------------------
+
 #' Predictions from a submodel (after projection)
 #'
 #' After the projection of the reference model onto a submodel, the linear
@@ -140,6 +142,8 @@
 #' }
 #'
 NULL
+
+# Function definitions ----------------------------------------------------
 
 ## The 'helper' for proj_linpred and proj_predict, ie. does all the
 ## functionality that is common to them. It essentially checks all the arguments
