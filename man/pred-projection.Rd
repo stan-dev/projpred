@@ -107,7 +107,7 @@ argument \code{transform}).
 \code{newdata} contains response values in the corresponding column. In that
 case, it contains the log predictive density values (conditional on
 each of the projected parameter draws if \code{integrated = FALSE} and
-integrated over the projected parameter draws if \code{integrated = TRUE}).
+averaged across the projected parameter draws if \code{integrated = TRUE}).
 }
 
 In case of (i) the traditional projection, (ii) the latent projection
@@ -139,17 +139,17 @@ of the submodels when counting the intercept, too).
 \description{
 After the projection of the reference model onto a submodel, the linear
 predictors (for the original or a new dataset) based on that submodel can be
-calculated by \code{\link[=proj_linpred]{proj_linpred()}}. The linear predictors can also be transformed
-to response scale. Furthermore, \code{\link[=proj_linpred]{proj_linpred()}} returns the corresponding
-log predictive density values if the (original or new) dataset contains
-response values. The \code{\link[=proj_predict]{proj_predict()}} function draws from the predictive
-distributions (there is one such distribution for each observation from the
-original or new dataset) of the submodel that the reference model has been
-projected onto. If the projection has not been performed yet, both functions
-call \code{\link[=project]{project()}} internally to perform the projection. Both functions can
-also handle multiple submodels at once (for \code{object}s of class \code{vsel} or
-\code{object}s returned by a \code{\link[=project]{project()}} call to an object of class \code{vsel}; see
-\code{\link[=project]{project()}}).
+calculated by \code{\link[=proj_linpred]{proj_linpred()}}. These linear predictors can also be
+transformed to response scale and averaged across the projected parameter
+draws. Furthermore, \code{\link[=proj_linpred]{proj_linpred()}} returns the corresponding log predictive
+density values if the (original or new) dataset contains response values. The
+\code{\link[=proj_predict]{proj_predict()}} function draws from the predictive distributions (there is
+one such distribution for each observation from the original or new dataset)
+of the submodel that the reference model has been projected onto. If the
+projection has not been performed yet, both functions call \code{\link[=project]{project()}}
+internally to perform the projection. Both functions can also handle multiple
+submodels at once (for \code{object}s of class \code{vsel} or \code{object}s returned by a
+\code{\link[=project]{project()}} call to an object of class \code{vsel}; see \code{\link[=project]{project()}}).
 }
 \details{
 In case of the latent projection and \code{transform = FALSE}:

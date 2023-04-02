@@ -4,17 +4,17 @@
 #'
 #' After the projection of the reference model onto a submodel, the linear
 #' predictors (for the original or a new dataset) based on that submodel can be
-#' calculated by [proj_linpred()]. The linear predictors can also be transformed
-#' to response scale. Furthermore, [proj_linpred()] returns the corresponding
-#' log predictive density values if the (original or new) dataset contains
-#' response values. The [proj_predict()] function draws from the predictive
-#' distributions (there is one such distribution for each observation from the
-#' original or new dataset) of the submodel that the reference model has been
-#' projected onto. If the projection has not been performed yet, both functions
-#' call [project()] internally to perform the projection. Both functions can
-#' also handle multiple submodels at once (for `object`s of class `vsel` or
-#' `object`s returned by a [project()] call to an object of class `vsel`; see
-#' [project()]).
+#' calculated by [proj_linpred()]. These linear predictors can also be
+#' transformed to response scale and averaged across the projected parameter
+#' draws. Furthermore, [proj_linpred()] returns the corresponding log predictive
+#' density values if the (original or new) dataset contains response values. The
+#' [proj_predict()] function draws from the predictive distributions (there is
+#' one such distribution for each observation from the original or new dataset)
+#' of the submodel that the reference model has been projected onto. If the
+#' projection has not been performed yet, both functions call [project()]
+#' internally to perform the projection. Both functions can also handle multiple
+#' submodels at once (for `object`s of class `vsel` or `object`s returned by a
+#' [project()] call to an object of class `vsel`; see [project()]).
 #'
 #' @name pred-projection
 #'
@@ -88,7 +88,7 @@
 #'       `newdata` contains response values in the corresponding column. In that
 #'       case, it contains the log predictive density values (conditional on
 #'       each of the projected parameter draws if `integrated = FALSE` and
-#'       integrated over the projected parameter draws if `integrated = TRUE`).
+#'       averaged across the projected parameter draws if `integrated = TRUE`).
 #'
 #'       In case of (i) the traditional projection, (ii) the latent projection
 #'       with `transform = FALSE`, or (iii) the latent projection with
