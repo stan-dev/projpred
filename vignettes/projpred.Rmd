@@ -137,10 +137,7 @@ Here, we would get the same final submodel size (`6`) as by our manual decision 
 
 Only now, after we have made a decision for the submodel size, we inspect further results from the variable selection and, in particular, the solution path. For example, we can simply `print()` the resulting object:
 ```{r}
-cvvs
-### Alternative modifying the number of printed decimal places:
-# print(cvvs, digits = 2)
-### 
+print(cvvs, digits = 2)
 ```
 The solution path can be seen in the `print()` output (column `solution_terms`), but it is also accessible through the `solution_terms()` function:
 ```{r}
