@@ -493,9 +493,9 @@ get_nfeat_baseline <- function(object, baseline, stat, ...) {
   if (baseline == "best") {
     ## find number of features that maximizes the utility (or minimizes the
     ## loss)
-    tab <- .tabulate_stats(object, stat, ...)
+    tab <- .tabulate_stats(object, stat, B = 2, ...)
     stats_table <- subset(tab, tab$size != Inf)
-    ## tab <- .tabulate_stats(object, ...)
+    ## tab <- .tabulate_stats(object, B = 2, ...)
     ## stats_table <- subset(tab, tab$delta == FALSE &
     ##   tab$statistic == stat & tab$size != Inf)
     optfun <- ifelse(is_util(stat), which.max, which.min)
