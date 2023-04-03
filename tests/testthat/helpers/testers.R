@@ -2362,7 +2362,7 @@ smmry_tester <- function(smmry, vsel_expected, nterms_max_expected = NULL,
   expect_true(
     smmry$search_included %in% c(
       "search included (i.e., fold-wise searches)",
-      "search not included (i.e., a full-data search)"
+      "search not included (i.e., a full-data search only)"
     ),
     info = info_str
   )

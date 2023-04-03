@@ -857,7 +857,7 @@ summary.vsel <- function(
   if (isTRUE(out$validate_search)) {
     out$search_included <- "search included (i.e., fold-wise searches)"
   } else {
-    out$search_included <- "search not included (i.e., a full-data search)"
+    out$search_included <- "search not included (i.e., a full-data search only)"
   }
   class(out) <- "vselsummary"
 
