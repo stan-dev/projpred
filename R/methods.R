@@ -986,11 +986,20 @@ print.vselsummary <- function(x, ...) {
   }
   cat("Search method: ", x$method, "\n", sep = "")
   cat("Maximum submodel size for the search: ", x$nterms, "\n", sep = "")
-  cat("Number of ", ifelse(x$clust_used_search, "clusters", "draws"),
-      " used for the search: ", x$nprjdraws_search, "\n", sep = "")
-  cat("Number of ", ifelse(x$clust_used_eval, "clusters", "draws"),
-      " used for the performance evaluation: ", x$nprjdraws_eval, "\n",
-      sep = "")
+  if (x$clust_used_search) {
+    clust_search_pretty <- " (from clustered projection)"
+  } else {
+    clust_search_pretty <- ""
+  }
+  if (x$clust_used_eval) {
+    clust_eval_pretty <- " (from clustered projection)"
+  } else {
+    clust_eval_pretty <- ""
+  }
+  cat("Number of projected draws in the search: ", x$nprjdraws_search,
+      clust_search_pretty, "\n", sep = "")
+  cat("Number of projected draws in the performance evaluation: ",
+      x$nprjdraws_eval, clust_eval_pretty, "\n", sep = "")
   cat("\n")
   if (x$family$for_latent) {
     if (x$resp_oscale) {
