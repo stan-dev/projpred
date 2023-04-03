@@ -9,8 +9,8 @@
 \arguments{
 \item{x}{An object of class \code{vsel} (returned by \code{\link[=varsel]{varsel()}} or \code{\link[=cv_varsel]{cv_varsel()}}).}
 
-\item{...}{Further arguments passed to \code{\link[=summary.vsel]{summary.vsel()}} (apart from
-argument \code{digits} which is passed to \code{\link[=print.vselsummary]{print.vselsummary()}}).}
+\item{...}{Arguments passed to \code{\link[=summary.vsel]{summary.vsel()}} (apart from argument \code{digits}
+which is passed to \code{\link[=print.vselsummary]{print.vselsummary()}}).}
 }
 \value{
 The output of \code{\link[=summary.vsel]{summary.vsel()}} (invisible).

@@ -9,7 +9,7 @@
 \arguments{
 \item{x}{An object of class \code{vselsummary}.}
 
-\item{...}{Passed to \code{\link[=print.data.frame]{print.data.frame()}}.}
+\item{...}{Arguments passed to \code{\link[=print.data.frame]{print.data.frame()}}.}
 }
 \value{
 The output of \code{\link[=summary.vsel]{summary.vsel()}} (invisible).

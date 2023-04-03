@@ -946,7 +946,7 @@ summary.vsel <- function(
 #' selection.
 #'
 #' @param x An object of class `vselsummary`.
-#' @param ... Passed to [print.data.frame()].
+#' @param ... Arguments passed to [print.data.frame()].
 #'
 #' @return The output of [summary.vsel()] (invisible).
 #'
@@ -1029,8 +1029,8 @@ print.vselsummary <- function(x, ...) {
 #' [print.vselsummary()].
 #'
 #' @param x An object of class `vsel` (returned by [varsel()] or [cv_varsel()]).
-#' @param ... Further arguments passed to [summary.vsel()] (apart from
-#'   argument `digits` which is passed to [print.vselsummary()]).
+#' @param ... Arguments passed to [summary.vsel()] (apart from argument `digits`
+#'   which is passed to [print.vselsummary()]).
 #'
 #' @return The output of [summary.vsel()] (invisible).
 #'
