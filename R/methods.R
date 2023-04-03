@@ -57,7 +57,10 @@
 #' @param ... Arguments passed to [project()] if `object` is not already an
 #'   object returned by [project()].
 #'
-#' @details In case of the latent projection and `transform = FALSE`:
+#' @details Currently, [proj_predict()] ignores observation weights that are not
+#'   equal to `1`. A corresponding warning is thrown if this is the case.
+#'
+#'   In case of the latent projection and `transform = FALSE`:
 #'   * Output element `pred` contains the linear predictors without any
 #'   modifications that may be due to the original response distribution (e.g.,
 #'   for a [brms::cumulative()] model, the ordered thresholds are not taken into

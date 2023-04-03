@@ -579,3 +579,21 @@ verb_out <- function(..., verbose = TRUE) {
     cat(..., "\n", sep = "")
   }
 }
+
+# Parse the argument containing the observation weights (`wobs` or `weights`)
+# for the <family_object>$ppd() functions used by proj_predict():
+parse_wobs_ppd <- function(wobs, n_obs) {
+  if (length(wobs) == 0) {
+    wobs <- rep(1, n_obs)
+  } else if (length(wobs) == 1) {
+    wobs <- rep(wobs, n_obs)
+  } else if (length(wobs) != n_obs) {
+    stop("Argument `wobs` needs to be of length 0, 1, or the number of ",
+         "observations.")
+  }
+  if (!all(wobs == 1) && getOption("projpred.warn_wobs_ppd", TRUE)) {
+    warning("Currently, proj_predict() ignores observation weights not equal ",
+            "to `1`.")
+  }
+  return(wobs)
+}

@@ -152,6 +152,9 @@ submodels at once (for \code{object}s of class \code{vsel} or \code{object}s ret
 \code{\link[=project]{project()}} call to an object of class \code{vsel}; see \code{\link[=project]{project()}}).
 }
 \details{
+Currently, \code{\link[=proj_predict]{proj_predict()}} ignores observation weights that are not
+equal to \code{1}. A corresponding warning is thrown if this is the case.
+
 In case of the latent projection and \code{transform = FALSE}:
 \itemize{
 \item Output element \code{pred} contains the linear predictors without any

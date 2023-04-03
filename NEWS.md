@@ -27,6 +27,7 @@ If you read this from a place other than <https://mc-stan.org/projpred/news/inde
 * Output element `pct_solution_terms_cv` has now also been added to `vsel` objects returned by `varsel()`, but in that case, it is simply `NULL`. This (`pct_solution_terms_cv` being `NULL`) is now also the case if `validate_search = FALSE` was used in `cv_varsel()`.
 * Minor enhancements in the documentation.
 * Enhancements in the vignettes. In particular, section ["Troubleshooting"](https://mc-stan.org/projpred/articles/projpred.html#troubleshooting) of the main vignette has been revised.
+* If `proj_predict()` is used with observation weights that are not all equal to `1`, a warning is now thrown. (GitHub: starts to address #402)
 
 ## Bug fixes
 

@@ -250,18 +250,10 @@ ppd_cats <- function(mu_arr, margin_draws = 3, wobs = 1, return_vec = FALSE) {
     margin_cats <- 2
     bind_fun <- rbind
   }
-  ### Currently unused:
-  # if (length(wobs) == 0) {
-  #   wobs <- rep(1, length(y))
-  # } else if (length(wobs) == 1) {
-  #   wobs <- rep(wobs, length(y))
-  # } else if (length(wobs) != length(y)) {
-  #   stop("Argument `wobs` needs to be of length 0, 1, or `length(y)`.")
-  # }
-  ###
   n_draws <- dim(mu_arr)[margin_draws]
   n_obs <- dim(mu_arr)[margin_obs]
   n_cat <- dim(mu_arr)[margin_cats]
+  wobs <- parse_wobs_ppd(wobs, n_obs = n_obs)
   if (return_vec) {
     stopifnot(n_draws == 1)
     bind_fun <- c

@@ -542,6 +542,7 @@ extend_family_poisson <- function(family) {
     -2 * dpois_log_reduced(x = y, lamb = mu, wobs = weights)
   }
   ppd_poiss <- function(mu, dis, weights = 1) {
+    weights <- parse_wobs_ppd(weights, n_obs = length(mu))
     rpois(length(mu), mu)
   }
 
@@ -592,6 +593,7 @@ extend_family_gaussian <- function(family) {
     -2 * weights * (-0.5 / dis^2 * (y - mu)^2 - log(dis))
   }
   ppd_gauss <- function(mu, dis, weights = 1) {
+    weights <- parse_wobs_ppd(weights, n_obs = length(mu))
     rnorm(length(mu), mu, dis)
   }
 
@@ -639,6 +641,7 @@ extend_family_gamma <- function(family) {
     ## weights*dgamma(y, dis, dis/matrix(mu), log= TRUE)
   }
   ppd_gamma <- function(mu, dis, weights = 1) {
+    weights <- parse_wobs_ppd(weights, n_obs = length(mu))
     rgamma(length(mu), dis, dis / mu)
   }
 
@@ -694,6 +697,7 @@ extend_family_student_t <- function(family) {
                      * log(1 + 1 / family$nu * ((y - mu) / dis)^2) - log(dis)))
   }
   ppd_student_t <- function(mu, dis, weights = 1) {
+    weights <- parse_wobs_ppd(weights, n_obs = length(mu))
     rt(length(mu), family$nu) * dis + mu
   }
 
