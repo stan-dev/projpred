@@ -1080,9 +1080,14 @@ predict.subfit <- function(subfit, newdata = NULL) {
       x <- model.matrix(delete.response(terms(subfit$formula)), data = newdata,
                         xlev = subfit$xlvls)
       if (any(colnames(x) != c("(Intercept)", colnames(subfit$x)))) {
-        stop("The column names of the new model matrix don't match the column ",
-             "names of the original model matrix. Please notify the package ",
-             "maintainer.")
+        if (identical(sort(colnames(x)),
+                      sort(c("(Intercept)", colnames(subfit$x))))) {
+          x <- x[, c("(Intercept)", colnames(subfit$x)), drop = FALSE]
+        } else {
+          stop("The column names of the new model matrix don't match the ",
+               "column names of the original model matrix. Please notify the ",
+               "package maintainer.")
+        }
       }
       return(x %*% rbind(alpha, beta))
     }
