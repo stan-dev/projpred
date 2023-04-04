@@ -1079,7 +1079,7 @@ predict.subfit <- function(subfit, newdata = NULL) {
       # now).
       x <- model.matrix(delete.response(terms(subfit$formula)), data = newdata,
                         xlev = subfit$xlvls)
-      if (any(colnames(x) != c("(Intercept)", colnames(subfit$x)))) {
+      if (!identical(colnames(x), c("(Intercept)", colnames(subfit$x)))) {
         if (identical(sort(colnames(x)),
                       sort(c("(Intercept)", colnames(subfit$x))))) {
           x <- x[, c("(Intercept)", colnames(subfit$x)), drop = FALSE]
