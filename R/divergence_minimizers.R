@@ -1068,16 +1068,17 @@ predict.subfit <- function(subfit, newdata = NULL) {
       return(cbind(1, subfit$x) %*% rbind(alpha, beta))
     }
   } else {
-    # TODO: In the following model.matrix() call, allow user-specified contrasts
-    # to be passed to argument `contrasts.arg`. The `contrasts.arg` default
-    # (`NULL`) uses `options("contrasts")` internally, but it might be more
-    # convenient to let users specify contrasts directly. At that occasion,
-    # contrasts should also be tested thoroughly (not done until now).
-    x <- model.matrix(delete.response(terms(subfit$formula)), data = newdata,
-                      xlev = subfit$xlvls)
     if (is.null(beta)) {
-      return(as.matrix(rep(alpha, nrow(x))))
+      return(as.matrix(rep(alpha, nrow(newdata))))
     } else {
+      # TODO: In the following model.matrix() call, allow user-specified
+      # contrasts to be passed to argument `contrasts.arg`. The `contrasts.arg`
+      # default (`NULL`) uses `options("contrasts")` internally, but it might be
+      # more convenient to let users specify contrasts directly. At that
+      # occasion, contrasts should also be tested thoroughly (not done until
+      # now).
+      x <- model.matrix(delete.response(terms(subfit$formula)), data = newdata,
+                        xlev = subfit$xlvls)
       if (any(colnames(x) != c("(Intercept)", colnames(subfit$x)))) {
         stop("The column names of the new model matrix don't match the column ",
              "names of the original model matrix. Please notify the package ",
