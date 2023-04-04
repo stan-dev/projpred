@@ -165,8 +165,7 @@ search_L1 <- function(p_ref, refmodel, nterms_max, penalty, opt) {
     intercept = TRUE, ncol(x), penalty, opt
   )
   solution_terms <- collapse_contrasts_solution_path(
-    refmodel$formula, colnames(x)[search_path$solution_terms],
-    refmodel$fetch_data()
+    refmodel$formula, colnames(x)[search_path$solution_terms], data = fr
   )
   outdmins <- lapply(0:length(solution_terms), function(nterms) {
     if (nterms == 0) {
