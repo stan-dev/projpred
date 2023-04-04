@@ -803,6 +803,9 @@ outdmin_tester_trad <- function(
           expect_true(is.numeric(outdmin_totest[[!!j]]$beta), info = info_str)
           expect_identical(dim(outdmin_totest[[!!j]]$beta), c(ncoefs, 1L),
                            info = info_str)
+          expect_identical(rownames(outdmin_totest[[!!j]]$beta),
+                           colnames(outdmin_totest[[!!j]]$x),
+                           info = info_str)
         } else if (ncoefs == 0) {
           expect_null(outdmin_totest[[!!j]]$beta, info = info_str)
         }
