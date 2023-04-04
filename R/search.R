@@ -197,6 +197,13 @@ search_L1 <- function(p_ref, refmodel, nterms_max, penalty, opt) {
       # re-use of `colnames(x)` should provide another sanity check:
       x <- x[, colnames(x)[search_path$solution_terms[indices]], drop = FALSE]
     }
+    # Avoid model.frame.default()'s warning "variable '<...>' is not a factor"
+    # when calling predict.subfit() later:
+    xlvls <- xlvls[intersect(names(xlvls), all.vars(formula))]
+    if (length(xlvls) == 0) {
+      xlvls <- NULL
+    }
+
     sub <- nlist(alpha = search_path$alpha[nterms + 1], beta,
                  w = search_path$w[, nterms + 1], formula, x, xlvls)
     class(sub) <- "subfit"
