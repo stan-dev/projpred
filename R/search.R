@@ -183,8 +183,7 @@ search_L1 <- function(p_ref, refmodel, nterms_max, penalty, opt) {
           # internally, but it might be more convenient to let users specify
           # contrasts directly. At that occasion, contrasts should also be
           # tested thoroughly (not done until now).
-          mm <- model.matrix(as.formula(paste("~ 1 +", term)),
-                             data = refmodel$fetch_data())
+          mm <- model.matrix(as.formula(paste("~ 1 +", term)), data = fr)
           return(setdiff(colnames(mm), "(Intercept)"))
         }
       ))
