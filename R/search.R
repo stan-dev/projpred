@@ -196,6 +196,8 @@ search_L1 <- function(p_ref, refmodel, nterms_max, penalty, opt) {
       # `x <- x[, variables, drop = FALSE]` should also be possible, but the
       # re-use of `colnames(x)` should provide another sanity check:
       x <- x[, colnames(x)[search_path$solution_terms[indices]], drop = FALSE]
+      # For consistency with fit_glm_ridge_callback():
+      rownames(beta) <- colnames(x)
     }
     # Avoid model.frame.default()'s warning "variable '<...>' is not a factor"
     # when calling predict.subfit() later:
