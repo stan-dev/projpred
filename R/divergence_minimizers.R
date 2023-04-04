@@ -1057,7 +1057,7 @@ predict.subfit <- function(subfit, newdata = NULL) {
   alpha <- subfit$alpha
   if (is.null(newdata)) {
     if (is.null(beta)) {
-      return(as.matrix(rep(alpha, NROW(subfit$x))))
+      return(as.matrix(rep(alpha, nrow(subfit$x))))
     } else {
       return(cbind(1, subfit$x) %*% rbind(alpha, beta))
     }
@@ -1069,11 +1069,12 @@ predict.subfit <- function(subfit, newdata = NULL) {
     # contrasts should also be tested thoroughly (not done until now).
     x <- model.matrix(delete.response(terms(subfit$formula)), data = newdata)
     if (is.null(beta)) {
-      return(as.matrix(rep(alpha, NROW(x))))
+      return(as.matrix(rep(alpha, nrow(x))))
     } else {
-      if (ncol(x) != length(beta) + 1L) {
-        stop("The number of columns in the model matrix (\"X\") doesn't match ",
-             "the number of coefficients.")
+      if (any(colnames(x) != c("(Intercept)", colnames(subfit$x)))) {
+        stop("The column names of the new model matrix don't match the column ",
+             "names of the original model matrix. Please notify the package ",
+             "maintainer.")
       }
       return(x %*% rbind(alpha, beta))
     }
