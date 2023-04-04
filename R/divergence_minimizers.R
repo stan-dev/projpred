@@ -102,7 +102,18 @@ fit_glm_ridge_callback <- function(formula, data,
                                    projpred_var = matrix(nrow = nrow(data)),
                                    projpred_regul = 1e-4, ...) {
   # Preparations:
-  fr <- model.frame(formula, data = data)
+  fr <- model.frame(formula, data = data, drop.unused.levels = TRUE)
+  da_classes <- attr(attr(fr, "terms"), "dataClasses")
+  nms_chr_fac <- names(da_classes)[da_classes %in% c("character", "factor")]
+  resp_nm <- all.vars(attr(fr, "terms"))[attr(attr(fr, "terms"), "response")]
+  nms_chr_fac <- setdiff(nms_chr_fac, resp_nm)
+  if (length(nms_chr_fac) > 0) {
+    xlvls <- lapply(setNames(nm = nms_chr_fac), function(nm_chr_fac) {
+      levels(as.factor(fr[[nm_chr_fac]]))
+    })
+  } else {
+    xlvls <- NULL
+  }
   # TODO: In the following model.matrix() call, allow user-specified contrasts
   # to be passed to argument `contrasts.arg`. The `contrasts.arg` default
   # (`NULL`) uses `options("contrasts")` internally, but it might be more
@@ -124,13 +135,8 @@ fit_glm_ridge_callback <- function(formula, data,
   ))
   # Post-processing:
   rownames(fit$beta) <- colnames(x)
-  sub <- nlist(
-    alpha = fit$beta0,
-    beta = fit$beta,
-    w = fit$w,
-    formula,
-    x, y
-  )
+  sub <- nlist(alpha = fit$beta0, beta = fit$beta, w = fit$w, formula, x, y,
+               xlvls)
   class(sub) <- "subfit"
   return(sub)
 }
@@ -1067,7 +1073,8 @@ predict.subfit <- function(subfit, newdata = NULL) {
     # (`NULL`) uses `options("contrasts")` internally, but it might be more
     # convenient to let users specify contrasts directly. At that occasion,
     # contrasts should also be tested thoroughly (not done until now).
-    x <- model.matrix(delete.response(terms(subfit$formula)), data = newdata)
+    x <- model.matrix(delete.response(terms(subfit$formula)), data = newdata,
+                      xlev = subfit$xlvls)
     if (is.null(beta)) {
       return(as.matrix(rep(alpha, nrow(x))))
     } else {
