@@ -21,7 +21,7 @@ final decision based on what is most appropriate for the problem at hand.'><meta
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">projpred</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">2.4.0</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">2.5.0</span>
       </span>
     </div>
 
@@ -192,13 +192,13 @@ zero stands for the intercept-only model.</p>
     <div id="details">
     <h2>Details</h2>
     <p>In general (beware of special extensions below), the suggested model
-size is the smallest model size \(k \in \{0, 1, ...,
+size is the smallest model size \(j \in \{0, 1, ...,
   \texttt{nterms\_max}\}\) for which either the
 lower or upper bound (depending on argument <code>type</code>) of the
 normal-approximation (or bootstrap; see argument <code>stat</code>) confidence
 interval (with nominal coverage <code>1 - alpha</code>; see argument <code>alpha</code> of
-<code><a href="summary.vsel.html">summary.vsel()</a></code>) for \(U_k - U_{\mathrm{base}}\) (with
-\(U_k\) denoting the \(k\)-th submodel's true utility and
+<code><a href="summary.vsel.html">summary.vsel()</a></code>) for \(U_j - U_{\mathrm{base}}\) (with
+\(U_j\) denoting the \(j\)-th submodel's true utility and
 \(U_{\mathrm{base}}\) denoting the baseline model's true utility)
 falls above (or is equal to) $$\texttt{pct} \cdot (u_0 -
   u_{\mathrm{base}})$$ where \(u_0\) denotes the null
@@ -206,19 +206,23 @@ model's estimated utility and \(u_{\mathrm{base}}\) the baseline
 model's estimated utility. The baseline model is either the reference model
 or the best submodel found (see argument <code>baseline</code> of <code><a href="summary.vsel.html">summary.vsel()</a></code>).</p>
 <p>If <code>!is.na(thres_elpd)</code> and <code>stat = "elpd"</code>, the decision rule above is
-extended: The suggested model size is then the smallest model size \(k\)
-fulfilling the rule above <em>or</em> \(u_k - u_{\mathrm{base}} &gt;
+extended: The suggested model size is then the smallest model size \(j\)
+fulfilling the rule above <em>or</em> \(u_j - u_{\mathrm{base}} &gt;
   \texttt{thres\_elpd}\). Correspondingly, in case
 of <code>stat = "mlpd"</code> (and <code>!is.na(thres_elpd)</code>), the suggested model size is
-the smallest model size \(k\) fulfilling the rule above <em>or</em> \(u_k -
+the smallest model size \(j\) fulfilling the rule above <em>or</em> \(u_j -
   u_{\mathrm{base}} &gt; \frac{\texttt{thres\_elpd}}{N}\) with \(N\) denoting the number of observations.</p>
-<p>For example (disregarding the special extensions in case of <code>stat = "elpd"</code>
-or <code>stat = "mlpd"</code>), <code>alpha = 2 * pnorm(-1)</code>, <code>pct = 0</code>, and <code>type = "upper"</code> means that we select the smallest model size for which the upper
-bound of the 68% confidence interval for \(U_k - U_{\mathrm{base}}\) exceeds (or is equal to) zero, that is (if <code>stat</code> is a
-performance statistic for which the normal approximation is used, not the
-bootstrap), for which the submodel's utility estimate is at most one
-standard error smaller than the baseline model's utility estimate (with
-that standard error referring to the utility <em>difference</em>).</p>
+<p>For example (disregarding the special extensions in case of
+<code>!is.na(thres_elpd)</code> with <code>stat = "elpd"</code> or <code>stat = "mlpd"</code>),
+<code>alpha = 2 * pnorm(-1)</code>, <code>pct = 0</code>, and <code>type = "upper"</code> means that we
+select the smallest model size for which the upper bound of the
+<code>1 - 2 * pnorm(-1)</code> (approximately 68.3%) confidence interval for
+\(U_j - U_{\mathrm{base}}\) exceeds (or is equal to) zero,
+that is (if <code>stat</code> is a performance statistic for which the normal
+approximation is used, not the bootstrap), for which the submodel's utility
+estimate is at most one standard error smaller than the baseline model's
+utility estimate (with that standard error referring to the utility
+<em>difference</em>).</p>
 <p>Apart from the two <code><a href="summary.vsel.html">summary.vsel()</a></code> arguments mentioned above (<code>alpha</code> and
 <code>baseline</code>), <code>resp_oscale</code> is another important <code><a href="summary.vsel.html">summary.vsel()</a></code> argument
 that may be passed via <code>...</code>.</p>
@@ -256,6 +260,12 @@ argument <code>stat</code>.</p>
 <span class="r-in"><span>               seed <span class="op">=</span> <span class="fl">5555</span><span class="op">)</span></span></span>
 <span class="r-in"><span>  <span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="fu">suggest_size</span><span class="op">(</span><span class="va">vs</span><span class="op">)</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="op">}</span></span></span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> -----</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Running the search ...</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> -----</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> -----</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> For performance evaluation: Re-projecting onto the submodels along the solution path ...</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> -----</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> [1] 3</span>
 <span class="r-in"><span></span></span>
 </code></pre></div>

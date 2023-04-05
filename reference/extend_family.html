@@ -19,7 +19,7 @@ init_refmodel(), so you will rarely need to call it yourself."><meta property="o
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">projpred</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">2.4.0</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">2.5.0</span>
       </span>
     </div>
 
@@ -311,7 +311,7 @@ for the \(N\) observations from its inputs.</p>
 <p>The function supplied to argument <code>latent_ppd_oscale</code> needs to have the
 prototype</p>
 <p></p><div class="sourceCode r"><pre><code><span><span class="fu">latent_ppd_oscale</span><span class="op">(</span><span class="va">ilpreds_resamp</span>, <span class="va">wobs</span>, <span class="va">cl_ref</span>,</span>
-<span>               wdraws_ref <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/rep.html" class="external-link">rep</a></span><span class="op">(</span><span class="fl">1</span>, <span class="fu"><a href="https://rdrr.io/r/base/length.html" class="external-link">length</a></span><span class="op">(</span><span class="va">cl_ref</span><span class="op">)</span><span class="op">)</span>, <span class="va">idxs_prjdraws</span><span class="op">)</span></span></code></pre><p></p></div>
+<span>                  wdraws_ref <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/rep.html" class="external-link">rep</a></span><span class="op">(</span><span class="fl">1</span>, <span class="fu"><a href="https://rdrr.io/r/base/length.html" class="external-link">length</a></span><span class="op">(</span><span class="va">cl_ref</span><span class="op">)</span><span class="op">)</span>, <span class="va">idxs_prjdraws</span><span class="op">)</span></span></code></pre><p></p></div>
 <p>where:</p><ul><li><p><code>ilpreds_resamp</code> accepts the return value from <code>latent_ilink</code>, but possibly
 with resampled (clustered) draws (see argument <code>nresample_clusters</code> of
 <code><a href="pred-projection.html">proj_predict()</a></code>).</p></li>

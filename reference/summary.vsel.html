@@ -18,7 +18,7 @@ cv_varsel())."><meta property="og:image" content="https://mc-stan.org/projpred/l
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">projpred</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">2.4.0</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">2.5.0</span>
       </span>
     </div>
 
@@ -141,8 +141,15 @@ intercept, so use <code>nterms_max = 0</code> for the intercept-only model. For
 
 <dt>stats</dt>
 <dd><p>One or more character strings determining which performance
-statistics (i.e., utilities or losses) to calculate. Available statistics
-are:</p><ul><li><p><code>"elpd"</code>: (expected) sum of log predictive densities.</p></li>
+statistics (i.e., utilities or losses) to estimate based on the
+observations in the evaluation (or "test") set (in case of
+cross-validation, these are all observations because they are partitioned
+into multiple test sets; in case of <code><a href="varsel.html">varsel()</a></code> with <code>d_test = NULL</code>, these
+are again all observations because the test set is the same as the training
+set). Available statistics are:</p><ul><li><p><code>"elpd"</code>: expected log (pointwise) predictive density (for a new
+dataset). Estimated by the sum of the observation-specific log predictive
+density values (with each of these predictive density values being
+a---possibly weighted---average across the parameter draws).</p></li>
 <li><p><code>"mlpd"</code>: mean log predictive density, that is, <code>"elpd"</code> divided by the
 number of observations.</p></li>
 <li><p><code>"mse"</code>: mean squared error (only available in the situations mentioned
@@ -192,8 +199,8 @@ terms of <code>stats[1]</code>), respectively.</p></dd>
 
 <dt>resp_oscale</dt>
 <dd><p>Only relevant for the latent projection. A single logical
-value indicating whether to calculate the performance statistics on
-response scale (<code>TRUE</code>) or on latent scale (<code>FALSE</code>).</p></dd>
+value indicating whether to calculate the performance statistics on the
+original response scale (<code>TRUE</code>) or on latent scale (<code>FALSE</code>).</p></dd>
 
 
 <dt>...</dt>
@@ -230,6 +237,10 @@ projection with <code>resp_oscale = TRUE</code> in combination with
 latent projection with <code>resp_oscale = TRUE</code> in combination with
 <code>&lt;refmodel&gt;$family$cats</code> being <code>NULL</code>.</p></li>
 </ul></div>
+    <div id="see-also">
+    <h2>See also</h2>
+    <div class="dont-index"><p><code><a href="print.vselsummary.html">print.vselsummary()</a></code></p></div>
+    </div>
 
     <div id="ref-examples">
     <h2>Examples</h2>
@@ -250,8 +261,14 @@ latent projection with <code>resp_oscale = TRUE</code> in combination with
 <span class="r-in"><span>  <span class="co"># sake of speed in this example; this is not recommended in general):</span></span></span>
 <span class="r-in"><span>  <span class="va">vs</span> <span class="op">&lt;-</span> <span class="fu"><a href="varsel.html">varsel</a></span><span class="op">(</span><span class="va">fit</span>, nterms_max <span class="op">=</span> <span class="fl">3</span>, nclusters <span class="op">=</span> <span class="fl">5</span>, nclusters_pred <span class="op">=</span> <span class="fl">10</span>,</span></span>
 <span class="r-in"><span>               seed <span class="op">=</span> <span class="fl">5555</span><span class="op">)</span></span></span>
-<span class="r-in"><span>  <span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary</a></span><span class="op">(</span><span class="va">vs</span><span class="op">)</span><span class="op">)</span></span></span>
+<span class="r-in"><span>  <span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary</a></span><span class="op">(</span><span class="va">vs</span><span class="op">)</span>, digits <span class="op">=</span> <span class="fl">1</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="op">}</span></span></span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> -----</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Running the search ...</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> -----</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> -----</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> For performance evaluation: Re-projecting onto the submodels along the solution path ...</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> -----</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Family: gaussian </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Link function: identity </span>
@@ -259,16 +276,17 @@ latent projection with <code>resp_oscale = TRUE</code> in combination with
 <span class="r-out co"><span class="r-pr">#&gt;</span> Formula: y ~ X1 + X2 + X3 + X4 + X5</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Observations: 100</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Projection method: traditional</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> Search method: l1, maximum number of terms 3</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> Number of clusters used for selection: 1</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> Number of clusters used for prediction: 10</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Search method: L1</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Maximum submodel size for the search: 3</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Number of projected draws in the search: 1 (from clustered projection)</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Number of projected draws in the performance evaluation: 10 (from clustered projection)</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> Selection Summary:</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  size solution_terms   elpd  se  diff diff.se</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     0           &lt;NA&gt; -249.2 5.3 -39.1     5.8</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     1             X1 -230.6 5.6 -20.5     4.5</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     2             X5 -219.8 6.0  -9.7     3.4</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>     3             X3 -210.5 6.6  -0.4     0.9</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Performance evaluation summary with `deltas = FALSE`:</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  size solution_terms elpd se  diff diff.se</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>     0           &lt;NA&gt; -249  5 -39.1     5.8</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>     1             X1 -231  6 -20.5     4.5</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>     2             X5 -220  6  -9.7     3.4</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>     3             X3 -211  7  -0.4     0.9</span>
 <span class="r-in"><span></span></span>
 </code></pre></div>
     </div>
