@@ -225,9 +225,9 @@ cv_varsel.refmodel <- function(
   y_wobs_test <- sel_cv$y_wobs_test
 
   # Just a dummy object which is not used as usual, but only for inferring the
-  # output elements `clust_used_eval` and `nprjdraws_eval` (this unnecessary
-  # get_refdist() call is much cheaper than calling varsel() with its
-  # re-projections (if `refit_prj = TRUE`) instead of select() above in the case
+  # output elements `clust_used_eval` and `nprjdraws_eval` (this get_refdist()
+  # call is much cheaper than calling varsel() with its re-projections (if
+  # `refit_prj = TRUE`) instead of select() above in the case
   # `if (validate_search)`, see GitHub PR #385):
   if (refit_prj) {
     refdist_eval_dummy <- get_refdist(refmodel, ndraws_pred, nclusters_pred)
