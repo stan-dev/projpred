@@ -166,11 +166,11 @@ cv_varsel.refmodel <- function(
   # Arguments specific to the search:
   opt <- nlist(lambda_min_ratio, nlambda, thresh, regul)
 
-  if (validate_search || cv_method == "kfold") {
+  if (validate_search) {
     # Clustering or thinning for the final full-data search (already clustering
     # or thinning here for consistent PRNG states between the full-data search
     # in the `validate_search == FALSE` case and the full-data search in the
-    # cases `validate_search || cv_method == "kfold"` we are in here):
+    # cases `validate_search` we are in here):
     p_sel <- get_refdist(refmodel, ndraws, nclusters)
   }
 
@@ -228,7 +228,7 @@ cv_varsel.refmodel <- function(
   # output elements `clust_used_eval` and `nprjdraws_eval` (this unnecessary
   # get_refdist() call is much cheaper than calling varsel() with its
   # re-projections (if `refit_prj = TRUE`) instead of select() above in the case
-  # `if (validate_search || cv_method == "kfold")`, see GitHub PR #385):
+  # `if (validate_search)`, see GitHub PR #385):
   if (refit_prj) {
     refdist_eval_dummy <- get_refdist(refmodel, ndraws_pred, nclusters_pred)
   } else {
