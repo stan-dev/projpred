@@ -135,12 +135,26 @@ search_L1 <- function(p_ref, refmodel, nterms_max, penalty, opt) {
     stop("L1 search cannot be used for an empty (i.e. intercept-only) ",
          "full-model formula or `nterms_max = 0`.")
   }
+  # Preparations:
+  fr <- model.frame(refmodel$formula, data = refmodel$fetch_data(),
+                    drop.unused.levels = TRUE)
+  da_classes <- attr(attr(fr, "terms"), "dataClasses")
+  nms_chr_fac <- names(da_classes)[da_classes %in% c("character", "factor")]
+  resp_nm <- all.vars(attr(fr, "terms"))[attr(attr(fr, "terms"), "response")]
+  nms_chr_fac <- setdiff(nms_chr_fac, resp_nm)
+  if (length(nms_chr_fac) > 0) {
+    xlvls <- lapply(setNames(nm = nms_chr_fac), function(nm_chr_fac) {
+      levels(as.factor(fr[[nm_chr_fac]]))
+    })
+  } else {
+    xlvls <- NULL
+  }
   # TODO: In the following model.matrix() call, allow user-specified contrasts
   # to be passed to argument `contrasts.arg`. The `contrasts.arg` default
   # (`NULL`) uses `options("contrasts")` internally, but it might be more
   # convenient to let users specify contrasts directly. At that occasion,
   # contrasts should also be tested thoroughly (not done until now).
-  x <- model.matrix(refmodel$formula, data = refmodel$fetch_data())
+  x <- model.matrix(refmodel$formula, data = fr)
   x <- x[, colnames(x) != "(Intercept)", drop = FALSE]
   ## it's important to keep the original order because that's the order
   ## in which lasso will estimate the parameters
@@ -151,8 +165,7 @@ search_L1 <- function(p_ref, refmodel, nterms_max, penalty, opt) {
     intercept = TRUE, ncol(x), penalty, opt
   )
   solution_terms <- collapse_contrasts_solution_path(
-    refmodel$formula, colnames(x)[search_path$solution_terms],
-    refmodel$fetch_data()
+    refmodel$formula, colnames(x)[search_path$solution_terms], data = fr
   )
   outdmins <- lapply(0:length(solution_terms), function(nterms) {
     if (nterms == 0) {
@@ -170,8 +183,7 @@ search_L1 <- function(p_ref, refmodel, nterms_max, penalty, opt) {
           # internally, but it might be more convenient to let users specify
           # contrasts directly. At that occasion, contrasts should also be
           # tested thoroughly (not done until now).
-          mm <- model.matrix(as.formula(paste("~ 1 +", term)),
-                             data = refmodel$fetch_data())
+          mm <- model.matrix(as.formula(paste("~ 1 +", term)), data = fr)
           return(setdiff(colnames(mm), "(Intercept)"))
         }
       ))
@@ -182,12 +194,18 @@ search_L1 <- function(p_ref, refmodel, nterms_max, penalty, opt) {
       # `x <- x[, variables, drop = FALSE]` should also be possible, but the
       # re-use of `colnames(x)` should provide another sanity check:
       x <- x[, colnames(x)[search_path$solution_terms[indices]], drop = FALSE]
+      # For consistency with fit_glm_ridge_callback():
+      rownames(beta) <- colnames(x)
     }
-    sub <- nlist(alpha = search_path$alpha[nterms + 1],
-                 beta,
-                 w = search_path$w[, nterms + 1],
-                 formula,
-                 x)
+    # Avoid model.frame.default()'s warning "variable '<...>' is not a factor"
+    # when calling predict.subfit() later:
+    xlvls <- xlvls[intersect(names(xlvls), all.vars(formula))]
+    if (length(xlvls) == 0) {
+      xlvls <- NULL
+    }
+
+    sub <- nlist(alpha = search_path$alpha[nterms + 1], beta,
+                 w = search_path$w[, nterms + 1], formula, x, xlvls)
     class(sub) <- "subfit"
     return(list(sub))
   })

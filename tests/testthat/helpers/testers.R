@@ -784,7 +784,7 @@ outdmin_tester_trad <- function(
         ]
       }
     }
-    subfit_nms <- c("alpha", "beta", "w", "formula", "x", "y")
+    subfit_nms <- c("alpha", "beta", "w", "formula", "x", "y", "xlvls")
     if (from_vsel_L1_search) {
       subfit_nms <- setdiff(subfit_nms, "y")
     }
@@ -803,7 +803,10 @@ outdmin_tester_trad <- function(
           expect_true(is.numeric(outdmin_totest[[!!j]]$beta), info = info_str)
           expect_identical(dim(outdmin_totest[[!!j]]$beta), c(ncoefs, 1L),
                            info = info_str)
-        } else if (ncoefs == 0) {
+          expect_identical(rownames(outdmin_totest[[!!j]]$beta),
+                           colnames(outdmin_totest[[!!j]]$x),
+                           info = info_str)
+        } else {
           expect_null(outdmin_totest[[!!j]]$beta, info = info_str)
         }
 
@@ -859,8 +862,7 @@ outdmin_tester_trad <- function(
             dimnames(x_ch)[[2]]
           )
         }
-        expect_identical(x_to_test, x_ch,
-                         info = info_str)
+        expect_identical(x_to_test, x_ch, info = info_str)
 
         if (!from_vsel_L1_search) {
           y_ch <- setNames(eval(str2lang(as.character(sub_formul[[j]])[2]),
@@ -871,6 +873,25 @@ outdmin_tester_trad <- function(
             y_ch <- setNames(as.integer(y_ch) - 1L, names(y_ch))
           }
           expect_identical(outdmin_totest[[!!j]]$y, y_ch, info = info_str)
+        }
+
+        # TODO: For now, we don't need to take `character` predictors into
+        # account because in the tests, we are currently always using `factor`s
+        # in such cases. In the future, however, we should extend the tests to
+        # `character` predictors as well and then the following needs to be
+        # adapted.
+        nms_fac <- grep("xca", labels(terms(outdmin_totest[[j]]$formula)),
+                        value = TRUE)
+        if (length(nms_fac)) {
+          xlvls_ch <- lapply(setNames(nm = nms_fac), function(nm_fac) {
+            levels(droplevels(sub_data[[nm_fac]]))
+          })
+          expect_setequal(names(outdmin_totest[[!!j]]$xlvls), names(xlvls_ch))
+          xlvls_ch <- xlvls_ch[names(outdmin_totest[[j]]$xlvls)]
+          expect_identical(outdmin_totest[[!!j]]$xlvls, xlvls_ch,
+                           info = info_str)
+        } else {
+          expect_null(outdmin_totest[[!!j]]$xlvls, info = info_str)
         }
       }
     }
