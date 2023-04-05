@@ -27,10 +27,17 @@ intercept, so use \code{nterms_max = 0} for the intercept-only model. For
 \code{\link[=plot.vsel]{plot.vsel()}}, \code{nterms_max} must be at least \code{1}.}
 
 \item{stats}{One or more character strings determining which performance
-statistics (i.e., utilities or losses) to calculate. Available statistics
-are:
+statistics (i.e., utilities or losses) to estimate based on the
+observations in the evaluation (or "test") set (in case of
+cross-validation, these are all observations because they are partitioned
+into multiple test sets; in case of \code{\link[=varsel]{varsel()}} with \code{d_test = NULL}, these
+are again all observations because the test set is the same as the training
+set). Available statistics are:
 \itemize{
-\item \code{"elpd"}: (expected) sum of log predictive densities.
+\item \code{"elpd"}: expected log (pointwise) predictive density (for a new
+dataset). Estimated by the sum of the observation-specific log predictive
+density values (with each of these predictive density values being
+a---possibly weighted---average across the parameter draws).
 \item \code{"mlpd"}: mean log predictive density, that is, \code{"elpd"} divided by the
 number of observations.
 \item \code{"mse"}: mean squared error (only available in the situations mentioned
@@ -70,8 +77,8 @@ whether the baseline is the reference model or the best submodel found (in
 terms of \code{stats[1]}), respectively.}
 
 \item{resp_oscale}{Only relevant for the latent projection. A single logical
-value indicating whether to calculate the performance statistics on
-response scale (\code{TRUE}) or on latent scale (\code{FALSE}).}
+value indicating whether to calculate the performance statistics on the
+original response scale (\code{TRUE}) or on latent scale (\code{FALSE}).}
 
 \item{...}{Arguments passed to the internal function which is used for
 bootstrapping (if applicable; see argument \code{stats}). Currently, relevant
@@ -134,7 +141,10 @@ if (requireNamespace("rstanarm", quietly = TRUE)) {
   # sake of speed in this example; this is not recommended in general):
   vs <- varsel(fit, nterms_max = 3, nclusters = 5, nclusters_pred = 10,
                seed = 5555)
-  print(summary(vs))
+  print(summary(vs), digits = 1)
 }
 
+}
+\seealso{
+\code{\link[=print.vselsummary]{print.vselsummary()}}
 }

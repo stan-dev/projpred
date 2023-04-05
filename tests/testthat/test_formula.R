@@ -80,7 +80,7 @@ test_that("check that we return a list of formulas for multiple responses", {
 test_that("check that we properly flatten a formula with duplicated terms", {
   formula <- (y ~ x + z + x:z + (1 | g) + (x | g) + (z | g) + (x + z | g) +
                 (x + z + x:z | g))
-  flat <- projpred:::flatten_formula(formula)
+  flat <- flatten_formula(formula)
   # don't check 'flat' directly as sorting of terms is OS specific
   terms <- attr(terms(flat), "term.labels")
   expect_length(terms, 4)
@@ -223,18 +223,6 @@ test_that("check that we count terms correctly", {
   expect_equal(count_terms_chosen(c("x", "z")), 3)
   expect_equal(count_terms_chosen(c("x", "z", "x:z")), 4)
   expect_equal(count_terms_chosen(c("x", "z", "x:z", "x + (x | g)")), 6)
-})
-
-test_that("check that we correctly sort models by size", {
-  submodels <- c(
-    y ~ x + z,
-    y ~ x + z + x:z,
-    y ~ x + z + x:z + (1 | g),
-    y ~ x + z + x:z + (x | g)
-  )
-  s <- sort_submodels_by_size(submodels)
-  expect_null(s[[1]])
-  expect_equal(unlist(s), as.character(submodels))
 })
 
 test_that("select_possible_terms_size() avoids redundant models", {

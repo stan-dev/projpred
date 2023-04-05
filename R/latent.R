@@ -54,13 +54,14 @@ latent_ll_oscale_poiss <- function(ilpreds, y_oscale,
 latent_ppd_oscale_poiss <- function(ilpreds_resamp, wobs, cl_ref,
                                     wdraws_ref = rep(1, length(cl_ref)),
                                     idxs_prjdraws) {
+  wobs <- parse_wobs_ppd(wobs, n_obs = ncol(ilpreds_resamp))
   ppd <- rpois(prod(dim(ilpreds_resamp)), lambda = ilpreds_resamp)
   ppd <- matrix(ppd, nrow = nrow(ilpreds_resamp), ncol = ncol(ilpreds_resamp))
   return(ppd)
 }
 
-# Situation: For a family for which response-scale log predictive density (LPD)
-# values cannot or should not be calculated.
+# Situation: For a family for which response-scale log likelihood values cannot
+# or should not be calculated.
 latent_ll_oscale_NA <- function(ilpreds, y_oscale,
                                 wobs = rep(1, length(y_oscale)), cl_ref,
                                 wdraws_ref = rep(1, length(cl_ref))) {

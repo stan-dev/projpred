@@ -2,11 +2,12 @@
 # terms given in `solution_terms`. Note that "single submodel" does not refer to
 # a single fit (there are as many fits for this single submodel as there are
 # projected draws).
-project_submodel <- function(solution_terms, p_ref, refmodel, regul = 1e-4,
-                             ...) {
-  validparams <- .validate_wobs_wsample(refmodel$wobs, p_ref$weights, p_ref$mu)
+get_submodl_prj <- function(solution_terms, p_ref, refmodel, regul = 1e-4,
+                            ...) {
+  validparams <- validate_wobs_wdraws(refmodel$wobs, p_ref$wdraws_prj,
+                                      p_ref$mu)
   wobs <- validparams$wobs
-  wsample <- validparams$wsample
+  wdraws_prj <- validparams$wdraws_prj
 
   y_unqs_aug <- refmodel$family$cats
   if (refmodel$family$for_latent && !is.null(y_unqs_aug)) {
@@ -16,9 +17,19 @@ project_submodel <- function(solution_terms, p_ref, refmodel, regul = 1e-4,
     formula = refmodel$formula, terms_ = unique(unlist(solution_terms)),
     data = refmodel$fetch_data(), y = p_ref$mu, y_unqs = y_unqs_aug
   )
+  fml_divmin <- flatten_formula(subset$formula)
 
-  submodl <- refmodel$div_minimizer(
-    formula = flatten_formula(subset$formula),
+  if (getOption("projpred.extra_verbose", FALSE)) {
+    rhs_chr <- as.character(fml_divmin)
+    if (length(rhs_chr) != 3) {
+      rhs_chr <- paste("<EXCEPTION: Unexpected length of the character-coerced",
+                       "formula passed to the divergence minimizer.>")
+    }
+    verb_out("  Projecting onto ", utils::tail(rhs_chr, 1))
+  }
+
+  outdmin <- refmodel$div_minimizer(
+    formula = fml_divmin,
     data = subset$data,
     family = refmodel$family,
     weights = refmodel$wobs,
@@ -29,80 +40,82 @@ project_submodel <- function(solution_terms, p_ref, refmodel, regul = 1e-4,
   )
 
   if (isTRUE(getOption("projpred.check_conv", FALSE))) {
-    check_conv(submodl)
+    check_conv(outdmin)
   }
 
-  return(.init_submodel(
-    submodl = submodl, p_ref = p_ref, refmodel = refmodel,
-    solution_terms = solution_terms, wobs = wobs, wsample = wsample
+  return(init_submodl(
+    outdmin = outdmin, p_ref = p_ref, refmodel = refmodel,
+    solution_terms = solution_terms, wobs = wobs, wdraws_prj = wdraws_prj
   ))
 }
 
-# Function to project the reference model onto the submodels of given model
-# sizes `nterms`. Returns a list of submodels (each processed by
-# .init_submodel(), so of class `initsubmodl`).
-.get_submodels <- function(search_path, nterms, p_ref, refmodel, regul,
-                           refit_prj = FALSE, ...) {
+# Function to fetch init_submodl() output (of class `submodl`) for each of given
+# model sizes `nterms`, so this gives a list of objects, each of class
+# `submodl`.
+get_submodls <- function(search_path, nterms, p_ref, refmodel, regul,
+                         refit_prj = FALSE, ...) {
   if (!refit_prj) {
     # In this case, simply fetch the already computed projections, so don't
     # project again.
-    fetch_submodel <- function(nterms, ...) {
-      validparams <- .validate_wobs_wsample(
-        refmodel$wobs, search_path$p_sel$weights, search_path$p_sel$mu
-      )
+    fetch_submodl <- function(nterms, ...) {
+      validparams <- validate_wobs_wdraws(refmodel$wobs,
+                                          search_path$p_sel$wdraws_prj,
+                                          search_path$p_sel$mu)
       wobs <- validparams$wobs
-      wsample <- validparams$wsample
-      return(.init_submodel(
+      wdraws_prj <- validparams$wdraws_prj
+      return(init_submodl(
         # Re-use the submodel fits from the search:
-        submodl = search_path$submodls[[nterms + 1]],
+        outdmin = search_path$outdmins[[nterms + 1]],
         p_ref = search_path$p_sel,
         refmodel = refmodel,
         solution_terms = utils::head(search_path$solution_terms, nterms),
         wobs = wobs,
-        wsample = wsample
+        wdraws_prj = wdraws_prj
       ))
     }
   } else {
     # In this case, project again.
-    fetch_submodel <- function(nterms, ...) {
-      return(project_submodel(
+    fetch_submodl <- function(nterms, ...) {
+      return(get_submodl_prj(
         solution_terms = utils::head(search_path$solution_terms, nterms),
         p_ref = p_ref, refmodel = refmodel, regul = regul, ...
       ))
     }
   }
-  return(lapply(nterms, fetch_submodel, ...))
+  return(lapply(nterms, fetch_submodl, ...))
 }
 
-.validate_wobs_wsample <- function(ref_wobs, ref_wsample, ref_mu) {
+validate_wobs_wdraws <- function(ref_wobs, ref_wdraws, ref_mu) {
   if (is.null(ref_wobs)) {
     wobs <- rep(1.0, NROW(ref_mu))
   } else {
     wobs <- ref_wobs
   }
 
-  if (is.null(ref_wsample)) {
-    wsample <- rep(1.0, NCOL(ref_mu))
+  if (is.null(ref_wdraws)) {
+    wdraws_prj <- rep(1.0, NCOL(ref_mu))
   } else {
-    wsample <- ref_wsample
+    wdraws_prj <- ref_wdraws
   }
 
-  wsample <- wsample / sum(wsample)
-  return(nlist(wobs, wsample))
+  wdraws_prj <- wdraws_prj / sum(wdraws_prj)
+  return(nlist(wobs, wdraws_prj))
 }
 
-.init_submodel <- function(submodl, p_ref, refmodel, solution_terms, wobs,
-                           wsample) {
+# Process the output of the `divergence_minimizer` function (see
+# init_refmodel()) to create an object of class `submodl`.
+init_submodl <- function(outdmin, p_ref, refmodel, solution_terms, wobs,
+                         wdraws_prj) {
   p_ref$mu <- p_ref$mu_offs
   if (!(all(is.na(p_ref$var)) ||
         refmodel$family$family %in% c("gaussian", "Student_t"))) {
-    stop("For family `", refmodel$family$family, "()`, .init_submodel() might ",
+    stop("For family `", refmodel$family$family, "()`, init_submodl() might ",
          "have to be adapted, depending on whether family$predvar() is ",
          "invariant with respect to offsets (this would be OK and does not ",
          "need an adaptation) or not (this would need an adaptation).")
   }
   if (refmodel$family$family == "Student_t") {
-    stop("For the `Student_t()` family, .init_submodel() is not finished yet.")
+    stop("For the `Student_t()` family, init_submodl() is not finished yet.")
     ### TODO (Student_t()): Check if this is needed (perhaps with some
     ### modifications) or if something completely different is needed (there
     ### used to be no special handling of the `Student_t()` family here at all):
@@ -122,17 +135,17 @@ project_submodel <- function(solution_terms, p_ref, refmodel, regul = 1e-4,
     ###
   }
 
-  mu <- refmodel$family$mu_fun(submodl, offset = refmodel$offset)
+  mu <- refmodel$family$mu_fun(outdmin, offset = refmodel$offset)
   dis <- refmodel$family$dis_fun(p_ref, nlist(mu), wobs)
   ce <- weighted.mean(
     refmodel$family$ce(p_ref,
                        nlist(weights = wobs),
                        nlist(mu, dis)),
-    wsample
+    wdraws_prj
   )
   return(structure(
-    nlist(dis, ce, weights = wsample, solution_terms, submodl,
-          cl_ref = p_ref$cl, wdraws_ref = p_ref$wsample_orig),
-    class = "initsubmodl"
+    nlist(dis, ce, wdraws_prj = wdraws_prj, solution_terms, outdmin,
+          cl_ref = p_ref$cl, wdraws_ref = p_ref$wdraws_orig),
+    class = "submodl"
   ))
 }

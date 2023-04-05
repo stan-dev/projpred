@@ -26,10 +26,17 @@ intercept, so use \code{nterms_max = 0} for the intercept-only model. For
 \code{\link[=plot.vsel]{plot.vsel()}}, \code{nterms_max} must be at least \code{1}.}
 
 \item{stats}{One or more character strings determining which performance
-statistics (i.e., utilities or losses) to calculate. Available statistics
-are:
+statistics (i.e., utilities or losses) to estimate based on the
+observations in the evaluation (or "test") set (in case of
+cross-validation, these are all observations because they are partitioned
+into multiple test sets; in case of \code{\link[=varsel]{varsel()}} with \code{d_test = NULL}, these
+are again all observations because the test set is the same as the training
+set). Available statistics are:
 \itemize{
-\item \code{"elpd"}: (expected) sum of log predictive densities.
+\item \code{"elpd"}: expected log (pointwise) predictive density (for a new
+dataset). Estimated by the sum of the observation-specific log predictive
+density values (with each of these predictive density values being
+a---possibly weighted---average across the parameter draws).
 \item \code{"mlpd"}: mean log predictive density, that is, \code{"elpd"} divided by the
 number of observations.
 \item \code{"mse"}: mean squared error (only available in the situations mentioned
@@ -67,8 +74,8 @@ case of the MLPD. See \code{\link[=suggest_size]{suggest_size()}} for a formaliz
 deactivates this.}
 
 \item{resp_oscale}{Only relevant for the latent projection. A single logical
-value indicating whether to calculate the performance statistics on
-response scale (\code{TRUE}) or on latent scale (\code{FALSE}).}
+value indicating whether to calculate the performance statistics on the
+original response scale (\code{TRUE}) or on latent scale (\code{FALSE}).}
 
 \item{...}{Arguments passed to the internal function which is used for
 bootstrapping (if applicable; see argument \code{stats}). Currently, relevant
@@ -76,6 +83,9 @@ arguments are \code{B} (the number of bootstrap samples, defaulting to \code{200
 and \code{seed} (see \code{\link[=set.seed]{set.seed()}}, defaulting to
 \code{sample.int(.Machine$integer.max, 1)}, but can also be \code{NA} to not call
 \code{\link[=set.seed]{set.seed()}} at all).}
+}
+\value{
+A \pkg{ggplot2} plotting object (of class \code{gg} and \code{ggplot}).
 }
 \description{
 This is the \code{\link[=plot]{plot()}} method for \code{vsel} objects (returned by \code{\link[=varsel]{varsel()}} or

@@ -2,6 +2,44 @@
 
 If you read this from a place other than <https://mc-stan.org/projpred/news/index.html>, please consider switching to that website since it features better formatting and cross-linking.
 
+# projpred 2.5.0
+
+## Minor changes
+
+* Setting the new global option `projpred.extra_verbose` to `TRUE` will print out which submodel **projpred** is currently projecting onto. Furthermore, if `method = "forward"` and `verbose = TRUE` in `varsel()` or `cv_varsel()`, this new option will also make **projpred** print out which submodel has been selected at those steps of the forward search for which a percentage is printed (the percentage refers to the maximum submodel size that the search is run up to). In general, however, we cannot recommend setting this new global option to `TRUE` for `cv_varsel()` with `cv_method = "LOO"` and `validate_search = TRUE` or for `cv_varsel()` with `cv_method = "kfold"` (simply due to the amount of information that will be printed, but also due to the progress bar which will not work anymore as intended). (GitHub: #363; thanks to @jtimonen)
+* Enhanced `verbose` output. In particular, `varsel()` is now more verbose, similarly to how `cv_varsel()` has already been for a long time. The  `verbose` output for `cv_varsel()` has also been updated, with the aim to give users a better understanding of the methodology behind **projpred**. (GitHub: #382)
+* Slightly improved the calculation of predictive variances to make them less prone to numerical inaccuracies. (GitHub: #199)
+* Improved computational efficiency by avoiding an unnecessary final full-data performance evaluation (including costly re-projections if `refit_prj = TRUE`, which is the default for non-`datafit` reference models) in `cv_varsel()` with `validate_search = TRUE` or `cv_method = "kfold"`. (GitHub: #385)
+* Reduced dependencies. (GitHub: #388)
+* Argument `digits` of `print.vselsummary()` which used to be passed to an internal `round()` call was removed. Instead, `digits` can now be passed to `print.data.frame()` via `...`, thereby determining the minimum number of *significant digits* to be printed. (GitHub: #389)
+* Although bad practice (in general), a reference model lacking an intercept can now be used within **projpred**. However, it will always be projected onto submodels which *include* an intercept. The reason is that even if the true intercept in the reference model is zero, this does not need to hold for the submodels. An informational message mentioning the projection onto intercept-including submodels is thrown when **projpred** encounters a reference model lacking an intercept. (GitHub: #96, #391)
+* In case of non-predictor arguments of `s()` or `t2()`, **projpred** now throws an error. (This had already been documented before, but a suitable error message was missing.) (GitHub: #393, based on #156 and #269)
+* In case of the `brms::categorical()` family (supported since version 2.4.0), **projpred** now strips underscores from response category names in `as.matrix.projection()` output, as done by **brms**. (GitHub: #394)
+* L1 search now throws a warning if an interaction term is selected before all involved main effects have been selected. (GitHub: #395)
+* Documented that in multilevel (group-level) terms, function calls on the right-hand side of the `|` character (e.g., `(1 | gr(group_variable))`, which is possible in **brms**) are currently not allowed in **projpred**. A corresponding error message has also been added. (GitHub: #319)
+* Due to internal refactoring:
+    
+    + `project()`'s output elements `submodl` and `weights` have been renamed to `outdmin` and `wdraws_prj`, respectively.
+    + `varsel()`'s and `cv_varsel()`'s output element `d_test` has been replaced with new output elements `type_test` and `y_wobs_test`.
+    
+    Apart from `project()`'s output element `wdraws_prj`, these elements are not meant to be accessed manually, so changes are mentioned here only for the sake of completeness. Output element `wdraws_prj` of `project()` is only needed if `project()` was used for a clustered projection, which is not the default (and discouraged in most applied cases, at least with a small number of clusters). Thus, these renamings are breaking changes only in very rare cases.
+* `print.vselsummary()` now also prints `K` in case of K-fold CV.
+* The `print.vselsummary()` output has been slightly improved, e.g., adding a remark what "search included" or "search not included" means.
+* `print.vselsummary()` now also prints whether `deltas = TRUE` or `deltas = FALSE` was used.
+* Output element `pct_solution_terms_cv` has now also been added to `vsel` objects returned by `varsel()`, but in that case, it is simply `NULL`. This (`pct_solution_terms_cv` being `NULL`) is now also the case if `validate_search = FALSE` was used in `cv_varsel()`.
+* Minor enhancements in the documentation.
+* Enhancements in the vignettes. In particular, section ["Troubleshooting"](https://mc-stan.org/projpred/articles/projpred.html#troubleshooting) of the main vignette has been revised.
+* If `proj_predict()` is used with observation weights that are not all equal to `1`, a warning is now thrown. (GitHub: starts to address #402)
+
+## Bug fixes
+
+* Fixed a long-standing bug (existing at least from version 2.0.2 on) causing `predict.refmodel()` to require `newdata` to contain the response variable in case of a **brms** reference model. This is similar to paul-buerkner/brms#1457, but concerns `predict.refmodel()` (paul-buerkner/brms#1457 referred to predictions from the *submodels*). In order to make this `predict.refmodel()` fix work, **brms** version 2.19.0 or later is needed. (GitHub: #381)
+* Fixed a long-standing bug (existing from version 2.1.0 on) causing output element `p_type` of `project()` to be incorrect in case of `refit_prj = FALSE`, `!is.null(nclusters)`, and an `object` of class `vsel` that was created with a non-clustered (thinned) projection during the search phase. The fix comes with a slightly different behavior of `proj_predict()` for `datafit`s: It will not draw `nresample_clusters` times from the posterior-projection predictive distribution (which is based on the same single projected draw), but only once. (GitHub: #211, #401)
+* When performing predictions from submodels which are GLMs (or from submodels which are L1-penalized GLMs, which is only possible in case of `refit_prj = FALSE` after an L1 search), a new dataset containing a `character` predictor variable with only a single unique value (or a new dataset containing a `factor` predictor variable with a single level) used to cause an error. The case of a `character` (not `factor`) predictor variable with only a single unique value occurred, e.g., during the performance evaluation in a LOO CV if a `character` predictor got selected into a fold's solution path. The `character` issue existed from version 2.1.0 on (in earlier versions, however, there were other issues which caused `character` predictors to throw an error). Now, all issues with respect to `character` predictor variables should be resolved. The issue with single-level `factor` predictor variables is resolved now as well. (GitHub: #403)
+* When performing predictions from submodels which are GLMs (or from submodels which are L1-penalized GLMs, which is only possible in case of `refit_prj = FALSE` after an L1 search), a new dataset containing a `factor` predictor with re-ordered levels (compared to this same `factor` in the original dataset) used to lead to incorrect predictions. This bug existed at least from version 2.0.2 on (possibly even in earlier versions), but has been resolved now. (GitHub: #403)
+* Fixed an error thrown by **projpred**'s internal GLM submodel fitter in case of unused levels of a `factor`. This issue existed at least from version 2.0.2 on (possibly even in earlier versions), but should have only affected **rstanarm** reference model fits (**brms** reference model fits were only affected in case of a `brms::brm()` call with `drop_unused_levels = FALSE`, which is not the default). (GitHub: #403)
+* Fixed a bug that caused an L1 search combined with `refit_prj = FALSE` (which is the default only for `datafit`s, not for the reference model objects of class `refmodel` that are usually employed in practice) to lead to incorrect predictions from the L1-searched submodels (which are L1-penalized GLMs) if the solution path had a main effect ranked after an interaction term. This bug existed at least from version 2.0.2 on (possibly even in earlier versions). The mentioned submodel predictions did not only affect the performance evaluation, but also the projected dispersion parameter and the returned Kullback-Leibler divergence (and the corresponding cross-entropy). (GitHub: #403)
+
 # projpred 2.4.0
 
 ## Major changes
@@ -40,7 +78,7 @@ If you read this from a place other than <https://mc-stan.org/projpred/news/inde
 
 * Improvements in documentation and vignette, especially to emphasize the generality of the reference model object resulting from `get_refmodel()` and `init_refmodel()` (thereby also distinguishing more clearly between "typical" and "custom" reference model objects) in (i) the description and several arguments of `get_refmodel()` and `init_refmodel()`, (ii) sections ["Reference model"](https://mc-stan.org/projpred/articles/projpred.html#refmod) and ["Supported types of models"](https://mc-stan.org/projpred/articles/projpred.html#modtypes) of the vignette. (GitHub: #357, #359, #364, #365, #366)
 * Minor improvement in terms of efficiency in the `validate_search = FALSE` case of `cv_varsel()`.
-* Improvement in terms of efficiency in case of a forward search with custom `search_terms` (at least in some instances), also affecting the output of `solution_terms(<vsel_object>)` in those cases. (GitHub: #360; thanks to user @sor16)
+* Improvement in terms of efficiency in case of a forward search with custom `search_terms` (at least in some instances), also affecting the output of `solution_terms(<vsel_object>)` in those cases. (GitHub: #360; thanks to @sor16)
 * Update [Catalina et al. (2020)](https://doi.org/10.48550/arXiv.2010.06994) to [Catalina et al. (2022)](https://proceedings.mlr.press/v151/catalina22a.html). (GitHub: #364)
 
 ## Bug fixes
@@ -48,14 +86,14 @@ If you read this from a place other than <https://mc-stan.org/projpred/news/inde
 * Fix a bug causing offsets not to be taken into account appropriately when calculating the PSIS weights (those used for the submodels) in the `validate_search = FALSE` case of `cv_varsel()`. This bug was introduced in v2.2.0 (and existed up to---including---v2.2.1).
 * Fix a (long-standing) bug causing offsets not to be taken into account appropriately when calculating the predictive variances for a reference model that has a dispersion parameter and a non-identity link function. (GitHub: #186 (partly), #355)
 * Fix a (long-standing) bug causing offsets not to be taken into account appropriately when calculating the reference model's summary statistics in case of `cv_varsel()` with `cv_method = "LOO"` (more precisely, only the LOO posterior predictive expected values `<vsel_object>$summaries$ref$mu` were affected, not the (pointwise) LOO log posterior predictive density values `<vsel_object>$summaries$ref$lppd`). (GitHub: #186 (partly), #356)
-* Fix a (long-standing) bug leading to an error when trying to use `cv_varsel()` with custom `search_terms` (in some instances). (GitHub: #345, #360; thanks to user @sor16)
+* Fix a (long-standing) bug leading to an error when trying to use `cv_varsel()` with custom `search_terms` (in some instances). (GitHub: #345, #360; thanks to @sor16)
 
 # projpred 2.2.1
 
 ## Minor changes
 
 * Several improvements in the documentation.
-* For the RMSE as well as the AUC (see argument `stats` of `summary.vsel()`), the bootstrapping results are now also used for inferring the lower and upper confidence interval bounds. (GitHub: #318, #347; thanks to users @awd97 and @VisionResearchBlog)
+* For the RMSE as well as the AUC (see argument `stats` of `summary.vsel()`), the bootstrapping results are now also used for inferring the lower and upper confidence interval bounds. (GitHub: #318, #347; thanks to @awd97 and @VisionResearchBlog)
 * For `datafit`s, offsets are not supported anymore. (GitHub: #186 (partly), #351)
 
 ## Bug fixes

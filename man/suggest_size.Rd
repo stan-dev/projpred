@@ -64,13 +64,13 @@ final decision based on what is most appropriate for the problem at hand.
 }
 \details{
 In general (beware of special extensions below), the suggested model
-size is the smallest model size \eqn{k \in \{0, 1, ...,
-  \texttt{nterms\_max}\}}{{k = 0, 1, ..., nterms_max}} for which either the
+size is the smallest model size \eqn{j \in \{0, 1, ...,
+  \texttt{nterms\_max}\}}{{j = 0, 1, ..., nterms_max}} for which either the
 lower or upper bound (depending on argument \code{type}) of the
 normal-approximation (or bootstrap; see argument \code{stat}) confidence
 interval (with nominal coverage \code{1 - alpha}; see argument \code{alpha} of
-\code{\link[=summary.vsel]{summary.vsel()}}) for \eqn{U_k - U_{\mathrm{base}}}{U_k - U_base} (with
-\eqn{U_k} denoting the \eqn{k}-th submodel's true utility and
+\code{\link[=summary.vsel]{summary.vsel()}}) for \eqn{U_j - U_{\mathrm{base}}}{U_j - U_base} (with
+\eqn{U_j} denoting the \eqn{j}-th submodel's true utility and
 \eqn{U_{\mathrm{base}}}{U_base} denoting the baseline model's true utility)
 falls above (or is equal to) \deqn{\texttt{pct} \cdot (u_0 -
   u_{\mathrm{base}})}{pct * (u_0 - u_base)} where \eqn{u_0} denotes the null
@@ -79,22 +79,25 @@ model's estimated utility. The baseline model is either the reference model
 or the best submodel found (see argument \code{baseline} of \code{\link[=summary.vsel]{summary.vsel()}}).
 
 If \code{!is.na(thres_elpd)} and \code{stat = "elpd"}, the decision rule above is
-extended: The suggested model size is then the smallest model size \eqn{k}
-fulfilling the rule above \emph{or} \eqn{u_k - u_{\mathrm{base}} >
-  \texttt{thres\_elpd}}{u_k - u_base > thres_elpd}. Correspondingly, in case
+extended: The suggested model size is then the smallest model size \eqn{j}
+fulfilling the rule above \emph{or} \eqn{u_j - u_{\mathrm{base}} >
+  \texttt{thres\_elpd}}{u_j - u_base > thres_elpd}. Correspondingly, in case
 of \code{stat = "mlpd"} (and \code{!is.na(thres_elpd)}), the suggested model size is
-the smallest model size \eqn{k} fulfilling the rule above \emph{or} \eqn{u_k -
-  u_{\mathrm{base}} > \frac{\texttt{thres\_elpd}}{N}}{u_k - u_base >
+the smallest model size \eqn{j} fulfilling the rule above \emph{or} \eqn{u_j -
+  u_{\mathrm{base}} > \frac{\texttt{thres\_elpd}}{N}}{u_j - u_base >
   thres_elpd / N} with \eqn{N} denoting the number of observations.
 
-For example (disregarding the special extensions in case of \code{stat = "elpd"}
-or \code{stat = "mlpd"}), \code{alpha = 2 * pnorm(-1)}, \code{pct = 0}, and \code{type = "upper"} means that we select the smallest model size for which the upper
-bound of the 68\% confidence interval for \eqn{U_k - U_{\mathrm{base}}}{U_k
-  - U_base} exceeds (or is equal to) zero, that is (if \code{stat} is a
-performance statistic for which the normal approximation is used, not the
-bootstrap), for which the submodel's utility estimate is at most one
-standard error smaller than the baseline model's utility estimate (with
-that standard error referring to the utility \emph{difference}).
+For example (disregarding the special extensions in case of
+\code{!is.na(thres_elpd)} with \code{stat = "elpd"} or \code{stat = "mlpd"}),
+\code{alpha = 2 * pnorm(-1)}, \code{pct = 0}, and \code{type = "upper"} means that we
+select the smallest model size for which the upper bound of the
+\code{1 - 2 * pnorm(-1)} (approximately 68.3\%) confidence interval for
+\eqn{U_j - U_{\mathrm{base}}}{U_j - U_base} exceeds (or is equal to) zero,
+that is (if \code{stat} is a performance statistic for which the normal
+approximation is used, not the bootstrap), for which the submodel's utility
+estimate is at most one standard error smaller than the baseline model's
+utility estimate (with that standard error referring to the utility
+\emph{difference}).
 
 Apart from the two \code{\link[=summary.vsel]{summary.vsel()}} arguments mentioned above (\code{alpha} and
 \code{baseline}), \code{resp_oscale} is another important \code{\link[=summary.vsel]{summary.vsel()}} argument

@@ -161,7 +161,10 @@ test_that(paste(
     vsel_tester(
       vs_repr,
       refmod_expected = refmods[[tstsetup_ref]],
-      dtest_expected = c(list(type = "test"), d_test_crr),
+      ywtest_expected = setNames(
+        as.data.frame(d_test_crr[nms_y_wobs_test(wobs_nm = "weights")]),
+        nms_y_wobs_test()
+      ),
       solterms_len_expected = args_vs_i$nterms_max,
       method_expected = meth_exp_crr,
       nprjdraws_search_expected = args_vs_i$nclusters,
@@ -171,20 +174,19 @@ test_that(paste(
         all(grepl("\\+", args_vs_i$search_terms)),
       info_str = tstsetup
     )
-    expect_equal(vs_repr[setdiff(names(vs_repr), "d_test")],
-                 vss[[tstsetup]][setdiff(names(vss[[tstsetup]]), "d_test")],
+    expect_equal(vs_repr[setdiff(names(vs_repr),
+                                 c("type_test", "y_wobs_test"))],
+                 vss[[tstsetup]][setdiff(names(vss[[tstsetup]]),
+                                         c("type_test", "y_wobs_test"))],
                  info = tstsetup)
-    d_test_orig <- vss[[tstsetup]]$d_test[setdiff(names(vss[[tstsetup]]$d_test),
-                                                  c("type", "data"))]
+    y_wobs_test_orig <- vss[[tstsetup]]$y_wobs_test
     if (pkg_crr == "brms") {
       # brms seems to set argument `contrasts`, but this is not important for
       # projpred, so ignore it in the comparison:
-      attr(d_test_orig$y, "contrasts") <- NULL
-      attr(d_test_orig$y_oscale, "contrasts") <- NULL
+      attr(y_wobs_test_orig$y, "contrasts") <- NULL
+      attr(y_wobs_test_orig$y_oscale, "contrasts") <- NULL
     }
-    expect_equal(vs_repr$d_test[setdiff(names(vs_repr$d_test),
-                                        c("type", "data"))],
-                 d_test_orig, info = tstsetup)
+    expect_equal(vs_repr$y_wobs_test, y_wobs_test_orig, info = tstsetup)
   }
 })
 
@@ -291,7 +293,10 @@ test_that(paste(
     vsel_tester(
       vs_indep,
       refmod_expected = refmods[[tstsetup_ref]],
-      dtest_expected = c(list(type = "test"), d_test_crr),
+      ywtest_expected = setNames(
+        as.data.frame(d_test_crr[nms_y_wobs_test(wobs_nm = "weights")]),
+        nms_y_wobs_test()
+      ),
       solterms_len_expected = args_vs_i$nterms_max,
       method_expected = meth_exp_crr,
       nprjdraws_search_expected = args_vs_i$nclusters,
@@ -321,10 +326,10 @@ test_that(paste(
       }
       # For getting the correct seed in proj_linpred():
       set.seed(args_vs_i$seed)
-      p_sel_dummy <- .get_refdist(refmods[[tstsetup_ref]],
-                                  nclusters = vs_indep$nprjdraws_search)
-      # As soon as GitHub issues #168 and #211 are fixed, we can use
-      # `refit_prj = FALSE` here:
+      p_sel_dummy <- get_refdist(refmods[[tstsetup_ref]],
+                                 nclusters = vs_indep$nprjdraws_search)
+      # As soon as GitHub issue #168 is fixed, we can use `refit_prj = FALSE`
+      # here:
       expect_warning(
         pl_indep <- proj_linpred(
           vs_indep,
@@ -355,10 +360,10 @@ test_that(paste(
       if (prj_crr == "latent") {
         # For getting the correct seed in proj_linpred():
         set.seed(args_vs_i$seed)
-        p_sel_dummy <- .get_refdist(refmods[[tstsetup_ref]],
-                                    nclusters = vs_indep$nprjdraws_search)
-        # As soon as GitHub issues #168 and #211 are fixed, we can use
-        # `refit_prj = FALSE` here:
+        p_sel_dummy <- get_refdist(refmods[[tstsetup_ref]],
+                                   nclusters = vs_indep$nprjdraws_search)
+        # As soon as GitHub issue #168 is fixed, we can use `refit_prj = FALSE`
+        # here:
         dat_indep_crr[[paste0(".", y_nm_crr)]] <- d_test_crr$y
         pl_indep_lat <- proj_linpred(
           vs_indep,
@@ -526,7 +531,7 @@ test_that(paste(
 
 # In fact, `regul` is already checked in `test_project.R`, so the `regul` tests
 # could be omitted here since varsel() and cv_varsel() also pass `regul` to
-# project_submodel() (usually via .get_submodels(), just like project()). This
+# get_submodl_prj() (usually via get_submodls(), just like project()). This
 # doesn't hold for L1 search, though. So for L1 search, the `regul` tests are
 # still needed.
 
@@ -658,17 +663,17 @@ test_that(paste(
       }
       for (m in seq_len(m_max)) {
         # Selection:
-        submodl_jm_regul <- vs_regul$search_path$submodls[[m]]
+        outdmin_jm_regul <- vs_regul$search_path$outdmins[[m]]
         if (ncl_crr == 1) {
-          submodl_jm_regul <- list(submodl_jm_regul)
+          outdmin_jm_regul <- list(outdmin_jm_regul)
         } else {
-          stopifnot(identical(ncl_crr, length(submodl_jm_regul)))
+          stopifnot(identical(ncl_crr, length(outdmin_jm_regul)))
         }
         for (nn in seq_len(ncl_crr)) {
-          stopifnot(length(submodl_jm_regul[[nn]]$alpha) == 1)
-          ssq_regul_sel_alpha[j, m, nn] <- submodl_jm_regul[[nn]]$alpha^2
-          if (length(submodl_jm_regul[[nn]]$beta) > 0) {
-            ssq_regul_sel_beta[j, m, nn] <- sum(submodl_jm_regul[[nn]]$beta^2)
+          stopifnot(length(outdmin_jm_regul[[nn]]$alpha) == 1)
+          ssq_regul_sel_alpha[j, m, nn] <- outdmin_jm_regul[[nn]]$alpha^2
+          if (length(outdmin_jm_regul[[nn]]$beta) > 0) {
+            ssq_regul_sel_beta[j, m, nn] <- sum(outdmin_jm_regul[[nn]]$beta^2)
           }
         }
         # Prediction:
@@ -911,6 +916,40 @@ test_that(paste(
   }
 })
 
+## L1 search warning for interactions -------------------------------------
+
+test_that(paste(
+  "L1 search warns if an interaction term is selected before all involved",
+  "main effects have been selected"
+), {
+  skip_if_not(run_vs)
+  warn_L1_ia_orig <- options(projpred.warn_L1_interactions = TRUE)
+  args_fit_i <- args_fit$rstanarm.glm.gauss.stdformul.with_wobs.with_offs
+  skip_if_not(!is.null(args_fit_i))
+  fit_fun_nm <- get_fit_fun_nm(args_fit_i)
+  fit_ia <- suppressWarnings(do.call(
+    get(fit_fun_nm, asNamespace(args_fit_i$pkg_nm)),
+    c(list(formula = update(args_fit_i$formula, . ~ . + xco.1:xca.2)),
+      excl_nonargs(args_fit_i, nms_excl_add = "formula"))
+  ))
+  args_vs_i <- args_vs$rstanarm.glm.gauss.stdformul.with_wobs.with_offs.trad.default_meth.default_search_trms
+  expect_warning(
+    vs_ia <- do.call(varsel, c(
+      list(object = fit_ia),
+      excl_nonargs(args_vs_i, nms_excl_add = "nterms_max")
+    )),
+    "An interaction has been selected before all involved main effects",
+    info = "rstanarm.glm.gauss.stdformul.with_wobs.with_offs"
+  )
+  soltrms_all <- solution_terms(vs_ia)
+  idx_ia <- grep(":", soltrms_all)
+  soltrms_ia_main <- unlist(strsplit(grep(":", soltrms_all, value = TRUE), ":"))
+  idxs_main <- match(soltrms_ia_main, soltrms_all)
+  expect_true(any(idx_ia < idxs_main),
+              info = "rstanarm.glm.gauss.stdformul.with_wobs.with_offs")
+  options(warn_L1_ia_orig)
+})
+
 # cv_varsel() -------------------------------------------------------------
 
 context("cv_varsel()")
@@ -1085,12 +1124,12 @@ test_that("setting `nloo` smaller than the number of observations works", {
       info_str = tstsetup
     )
     # Expected equality for most components with a few exceptions:
-    expect_equal(cvvs_nloo[setdiff(vsel_nms_cv, vsel_nms_cv_nloo)],
-                 cvvss[[tstsetup]][setdiff(vsel_nms_cv, vsel_nms_cv_nloo)],
+    expect_equal(cvvs_nloo[setdiff(vsel_nms, vsel_nms_nloo)],
+                 cvvss[[tstsetup]][setdiff(vsel_nms, vsel_nms_nloo)],
                  info = tstsetup)
     # Expected inequality for the exceptions (but note that the components from
-    # `vsel_nms_cv_nloo_opt` can be, but don't need to be differing):
-    for (vsel_nm in setdiff(vsel_nms_cv_nloo, vsel_nms_cv_nloo_opt)) {
+    # `vsel_nms_nloo_opt` can be, but don't need to be differing):
+    for (vsel_nm in setdiff(vsel_nms_nloo, vsel_nms_nloo_opt)) {
       expect_false(isTRUE(all.equal(cvvs_nloo[[vsel_nm]],
                                     cvvss[[tstsetup]][[vsel_nm]])),
                    info = paste(tstsetup, vsel_nm, sep = "__"))
@@ -1146,27 +1185,15 @@ test_that("`validate_search` works", {
       info_str = tstsetup
     )
     # Expected equality for most components with a few exceptions:
-    expect_equal(cvvs_valsearch[setdiff(vsel_nms_cv, vsel_nms_cv_valsearch)],
-                 cvvss[[tstsetup]][setdiff(vsel_nms_cv, vsel_nms_cv_valsearch)],
+    expect_equal(cvvs_valsearch[setdiff(vsel_nms, vsel_nms_valsearch)],
+                 cvvss[[tstsetup]][setdiff(vsel_nms, vsel_nms_valsearch)],
                  info = tstsetup)
     expect_identical(cvvs_valsearch$summaries$ref,
                      cvvss[[tstsetup]]$summaries$ref,
                      info = tstsetup)
     # Expected inequality for the exceptions (but note that the components from
-    # `vsel_nms_cv_valsearch_opt` can be, but don't need to be differing):
-    for (vsel_nm in setdiff(vsel_nms_cv_valsearch, vsel_nms_cv_valsearch_opt)) {
-      if (vsel_nm == "pct_solution_terms_cv" &&
-          all(cvvss[[tstsetup]][[vsel_nm]][
-            , colnames(cvvss[[tstsetup]][[vsel_nm]]) != "size", drop = FALSE
-          ] %in% c(0, 1))) {
-        # In this case, a comparison will most likely give the same
-        # `pct_solution_terms_cv` element for `validate_search = TRUE` and
-        # `validate_search = FALSE`. In fact, `pct_solution_terms_cv` could
-        # therefore be added to `vsel_nms_cv_valsearch_opt`, but most of the
-        # time, `pct_solution_terms_cv` will differ, so we don't include it in
-        # `vsel_nms_cv_valsearch_opt` and skip here:
-        next
-      }
+    # `vsel_nms_valsearch_opt` can be, but don't need to be differing):
+    for (vsel_nm in setdiff(vsel_nms_valsearch, vsel_nms_valsearch_opt)) {
       expect_false(isTRUE(all.equal(cvvs_valsearch[[vsel_nm]],
                                     cvvss[[tstsetup]][[vsel_nm]])),
                    info = paste(tstsetup, vsel_nm, sep = "__"))
@@ -1314,14 +1341,14 @@ test_that(paste(
     # is passed to argument `family` of the external model fitting functions
     # like lme4::glmer(). This should be fixed and then `check.environment =
     # FALSE` should be removed.
-    expect_equal(cvvs_cvfits[setdiff(vsel_nms_cv, vsel_nms_cv_cvfits)],
-                 cvvss[[tstsetup]][setdiff(vsel_nms_cv, vsel_nms_cv_cvfits)],
+    expect_equal(cvvs_cvfits[setdiff(vsel_nms, vsel_nms_cvfits)],
+                 cvvss[[tstsetup]][setdiff(vsel_nms, vsel_nms_cvfits)],
                  check.environment = FALSE,
                  info = tstsetup)
     # Expected inequality for the remaining components (but note that the
-    # components from `vsel_nms_cv_cvfits_opt` can be, but don't need to be
+    # components from `vsel_nms_cvfits_opt` can be, but don't need to be
     # differing):
-    for (vsel_nm in setdiff(vsel_nms_cv_cvfits, vsel_nms_cv_cvfits_opt)) {
+    for (vsel_nm in setdiff(vsel_nms_cvfits, vsel_nms_cvfits_opt)) {
       expect_false(isTRUE(all.equal(cvvs_cvfits[[vsel_nm]],
                                     cvvss[[tstsetup]][[vsel_nm]])),
                    info = paste(tstsetup, vsel_nm, sep = "__"))
@@ -1448,14 +1475,14 @@ test_that(paste(
     # is passed to argument `family` of the external model fitting functions
     # like lme4::glmer(). This should be fixed and then `check.environment =
     # FALSE` should be removed.
-    expect_equal(cvvs_cvfits[setdiff(vsel_nms_cv, vsel_nms_cv_cvfits)],
-                 cvvss[[tstsetup]][setdiff(vsel_nms_cv, vsel_nms_cv_cvfits)],
+    expect_equal(cvvs_cvfits[setdiff(vsel_nms, vsel_nms_cvfits)],
+                 cvvss[[tstsetup]][setdiff(vsel_nms, vsel_nms_cvfits)],
                  check.environment = FALSE,
                  info = tstsetup)
     # Expected inequality for the remaining components (but note that the
-    # components from `vsel_nms_cv_cvfits_opt` can be, but don't need to be
+    # components from `vsel_nms_cvfits_opt` can be, but don't need to be
     # differing):
-    for (vsel_nm in setdiff(vsel_nms_cv_cvfits, vsel_nms_cv_cvfits_opt)) {
+    for (vsel_nm in setdiff(vsel_nms_cvfits, vsel_nms_cvfits_opt)) {
       expect_false(isTRUE(all.equal(cvvs_cvfits[[vsel_nm]],
                                     cvvss[[tstsetup]][[vsel_nm]])),
                    info = paste(tstsetup, vsel_nm, sep = "__"))

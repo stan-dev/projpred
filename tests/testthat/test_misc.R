@@ -1,11 +1,11 @@
 context("miscellaneous")
 
-# .get_refdist() ----------------------------------------------------------
+# get_refdist() ----------------------------------------------------------
 
 ## ndraws and nclusters ---------------------------------------------------
 
 test_that(paste(
-  ".get_refdist(): `ndraws = NULL` and `nclusters = NULL` leads to",
+  "get_refdist(): `ndraws = NULL` and `nclusters = NULL` leads to",
   "`ndraws = S` (and `nclusters = NULL`)"
 ), {
   if (exists(".Random.seed", envir = .GlobalEnv)) {
@@ -13,7 +13,7 @@ test_that(paste(
   }
   set.seed(seed2_tst)
   for (tstsetup in names(refmods)) {
-    refdist <- .get_refdist(refmods[[tstsetup]])
+    refdist <- get_refdist(refmods[[tstsetup]])
     if (args_ref[[tstsetup]]$prj_nm == "augdat") {
       nobsv_fac <- length(refmods[[tstsetup]]$family$cats)
     } else {
@@ -27,6 +27,7 @@ test_that(paste(
       nobsv_expected = nobsv * nobsv_fac,
       nprjdraws_expected = nrefdraws,
       clust_expected = FALSE,
+      fam_expected = refmods[[tstsetup]]$family$family,
       info_str = tstsetup
     )
   }
@@ -44,9 +45,9 @@ test_that(paste(
   for (tstsetup in names(refmods)) {
     for (ndraws_crr in list(nrefdraws + 1L)) {
       for (nclusters_crr in list(NULL, nrefdraws + 1L)) {
-        refdist <- .get_refdist(refmods[[tstsetup]],
-                                ndraws = ndraws_crr,
-                                nclusters = nclusters_crr)
+        refdist <- get_refdist(refmods[[tstsetup]],
+                               ndraws = ndraws_crr,
+                               nclusters = nclusters_crr)
         if (args_ref[[tstsetup]]$prj_nm == "augdat") {
           nobsv_fac <- length(refmods[[tstsetup]]$family$cats)
         } else {
@@ -57,6 +58,7 @@ test_that(paste(
           nobsv_expected = nobsv * nobsv_fac,
           nprjdraws_expected = nrefdraws,
           clust_expected = FALSE,
+          fam_expected = refmods[[tstsetup]]$family$family,
           info_str = paste(tstsetup, ndraws_crr, nclusters_crr, sep = "__")
         )
       }
@@ -125,7 +127,7 @@ test_that(paste(
   "`pseudo_data(f = 0, [...], family = extend_family(gaussian()), [...])` is",
   "essentially an identity function (apart from offsets)."
 ), {
-  mu_crr <- matrix(1:12, nrow = 3)
+  mu_crr <- matrix(1:3, ncol = 1)
   wobs_crr <- c(2.5, 6, 4)
   offs_crr <- c(-4.2, 3.5, 1.1)
   psdat <- pseudo_data(

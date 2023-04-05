@@ -1,31 +1,33 @@
-.get_sub_summaries <- function(submodels, refmodel, test_points, newdata = NULL,
-                               offset = refmodel$offset[test_points],
-                               wobs = refmodel$wobs[test_points],
-                               y = refmodel$y[test_points],
-                               y_oscale = refmodel$y_oscale[test_points]) {
-  lapply(submodels, function(initsubmodl) {
-    .weighted_summary_means(
-      y_test = list(y = y, y_oscale = y_oscale, weights = wobs),
+get_sub_summaries <- function(submodls, refmodel, test_points, newdata = NULL,
+                              offset = refmodel$offset[test_points],
+                              wobs = refmodel$wobs[test_points],
+                              y = refmodel$y[test_points],
+                              y_oscale = refmodel$y_oscale[test_points]) {
+  lapply(submodls, function(submodl) {
+    weighted_summary_means(
+      y_wobs_test = data.frame(y, y_oscale, wobs),
       family = refmodel$family,
-      wsample = initsubmodl$weights,
-      mu = refmodel$family$mu_fun(initsubmodl$submodl, obs = test_points,
+      wdraws = submodl$wdraws_prj,
+      mu = refmodel$family$mu_fun(submodl$outdmin, obs = test_points,
                                   newdata = newdata, offset = offset),
-      dis = initsubmodl$dis,
-      cl_ref = initsubmodl$cl_ref,
-      wdraws_ref = initsubmodl$wdraws_ref
+      dis = submodl$dis,
+      cl_ref = submodl$cl_ref,
+      wdraws_ref = submodl$wdraws_ref
     )
   })
 }
 
-# Calculate log predictive density values and average them across parameter
-# draws (together with the corresponding expected response values).
+# Calculate log posterior(-projection) predictive density values and average
+# them across parameter draws (together with the corresponding expected response
+# values).
 #
-# @param y_test A `list`, at least with elements `y` (response values) and
-#   `weights` (observation weights). In case of the latent projection, this
-#   `list` also needs to contain `y_oscale` (response values on the original
-#   response scale, i.e., the non-latent response values).
+# @param y_wobs_test A `list` (but we encourage to use a `data.frame`), at least
+#   with elements (columns) `y` (response values) and `wobs` (observation
+#   weights). In case of the latent projection, this `list` (or `data.frame`)
+#   also needs to contain `y_oscale` (response values on the original response
+#   scale, i.e., the non-latent response values).
 # @param family A `family` object.
-# @param wsample A vector of weights for the parameter draws.
+# @param wdraws A vector of weights for the parameter draws.
 # @param mu A matrix of expected values for `y`.
 # @param dis A vector of dispersion parameter draws.
 # @param cl_ref A numeric vector of length \eqn{S} (with \eqn{S} denoting the
@@ -34,7 +36,7 @@
 #   dropped (e.g., because of thinning by `ndraws` or `ndraws_pred`) need to
 #   have an `NA` in `cl_ref`. Caution: This always refers to the reference
 #   model's parameter draws, not necessarily to the columns of `mu`, the entries
-#   of `wsample`, or the entries of `dis`!
+#   of `wdraws`, or the entries of `dis`!
 # @param wdraws_ref A numeric vector of length \eqn{S} (with \eqn{S} denoting
 #   the number of parameter draws in the reference model), giving the weights of
 #   the parameter draws in the reference model. It doesn't matter whether these
@@ -45,23 +47,23 @@
 #
 # @return A `list` with elements `mu` and `lppd` which are both vectors
 #   containing the values for the quantities from the description above.
-.weighted_summary_means <- function(y_test, family, wsample, mu, dis, cl_ref,
-                                    wdraws_ref = rep(1, length(cl_ref))) {
+weighted_summary_means <- function(y_wobs_test, family, wdraws, mu, dis, cl_ref,
+                                   wdraws_ref = rep(1, length(cl_ref))) {
   if (!is.matrix(mu)) {
     stop("Unexpected structure for `mu`. Do the return values of ",
          "`proj_predfun` and `ref_predfun` have the correct structure?")
   }
-  loglik <- family$ll_fun(mu, dis, y_test$y, y_test$weights)
+  loglik <- family$ll_fun(mu, dis, y_wobs_test$y, y_wobs_test$wobs)
   if (!is.matrix(loglik)) {
     stop("Unexpected structure for `loglik`. Please notify the package ",
          "maintainer.")
   }
   # Average over the draws, taking their weights into account:
   avg <- list(
-    mu = structure(c(mu %*% wsample),
+    mu = structure(c(mu %*% wdraws),
                    nobs_orig = attr(mu, "nobs_orig"),
                    class = sub("augmat", "augvec", oldClass(mu), fixed = TRUE)),
-    lppd = apply(loglik, 1, log_weighted_mean_exp, wsample)
+    lppd = apply(loglik, 1, log_weighted_mean_exp, wdraws)
   )
   if (family$for_latent) {
     mu_oscale <- family$latent_ilink(t(mu), cl_ref = cl_ref,
@@ -70,7 +72,7 @@
       stop("Unexpected structure for the output of `latent_ilink`.")
     }
     loglik_oscale <- family$latent_ll_oscale(
-      mu_oscale, y_oscale = y_test$y_oscale, wobs = y_test$weights,
+      mu_oscale, y_oscale = y_wobs_test$y_oscale, wobs = y_wobs_test$wobs,
       cl_ref = cl_ref, wdraws_ref = wdraws_ref
     )
     if (!is.matrix(loglik_oscale)) {
@@ -81,7 +83,7 @@
       # coerce it to an augmented-rows matrix:
       mu_oscale <- arr2augmat(mu_oscale, margin_draws = 1)
       mu_oscale_avg <- structure(
-        c(mu_oscale %*% wsample),
+        c(mu_oscale %*% wdraws),
         nobs_orig = attr(mu_oscale, "nobs_orig"),
         class = sub("augmat", "augvec", oldClass(mu_oscale), fixed = TRUE)
       )
@@ -89,11 +91,11 @@
       # In principle, we could use the same code for `mu_oscale_avg` as above.
       # However, that would require `mu_oscale <- t(mu_oscale)` beforehand, so
       # the following should be more efficient:
-      mu_oscale_avg <- c(wsample %*% mu_oscale)
+      mu_oscale_avg <- c(wdraws %*% mu_oscale)
     }
     avg$oscale <- list(
       mu = mu_oscale_avg,
-      lppd = apply(loglik_oscale, 2, log_weighted_mean_exp, wsample)
+      lppd = apply(loglik_oscale, 2, log_weighted_mean_exp, wdraws)
     )
   }
   return(avg)
@@ -134,7 +136,7 @@
           "be `NA` as long as `resp_oscale = TRUE`."
         )
       }
-      varsel$d_test$y <- varsel$d_test$y_oscale
+      varsel$y_wobs_test$y <- varsel$y_wobs_test$y_oscale
     } else {
       if (all(is.na(varsel$refmodel$dis)) &&
           any(stats %in% c("elpd", "mlpd"))) {
@@ -147,13 +149,13 @@
           "using a performance statistic other than ELPD or MLPD."
         )
       }
-      if (all(is.na(varsel$d_test$y))) {
+      if (all(is.na(varsel$y_wobs_test$y))) {
         message(
           "Cannot calculate performance statistics if `resp_oscale = FALSE` ",
-          "and `<vsel>$d_test$y` consists of only `NA`s. The reason for these ",
-          "`NA`s is probably that `<vsel>` was created by cv_varsel() with ",
-          "`cv_method = \"kfold\"`. (In case of K-fold cross-validation, the ",
-          "latent response values for the test datasets cannot be defined ",
+          "and `<vsel>$y_wobs_test$y` consists of only `NA`s. The reason for ",
+          "these `NA`s is probably that `<vsel>` was created by cv_varsel() ",
+          "with `cv_method = \"kfold\"`. (In case of K-fold cross-validation, ",
+          "the latent response values for the test datasets cannot be defined ",
           "in a straightforward manner without inducing dependencies between ",
           "training and test datasets.)"
         )
@@ -162,7 +164,7 @@
   }
   # Just to avoid that `$y` gets expanded to `$y_oscale` if element `"y"` does
   # not exist (for whatever reason; actually, it should always exist):
-  varsel$d_test$y_oscale <- NULL
+  varsel$y_wobs_test$y_oscale <- NULL
 
   if (resp_oscale && !is.null(varsel$refmodel$family$cats) &&
       any(stats %in% c("acc", "pctcorr"))) {
@@ -174,16 +176,16 @@
     })
     # Since `mu` is an unordered factor, `y` needs to be unordered, too (or both
     # would need to be ordered; however, unordered is the simpler type):
-    varsel$d_test$y <- factor(varsel$d_test$y, ordered = FALSE)
+    varsel$y_wobs_test$y <- factor(varsel$y_wobs_test$y, ordered = FALSE)
   }
 
   if (varsel$refmodel$family$family == "binomial" &&
-      !all(varsel$d_test$weights == 1)) {
+      !all(varsel$y_wobs_test$wobs == 1)) {
     # This case should not occur (yet) for the augmented-data or the latent
     # projection:
     stopifnot(!varsel$refmodel$family$for_augdat)
     stopifnot(!varsel$refmodel$family$for_latent)
-    varsel$d_test$y_prop <- varsel$d_test$y / varsel$d_test$weights
+    varsel$y_wobs_test$y_prop <- varsel$y_wobs_test$y / varsel$y_wobs_test$wobs
   }
 
   ## fetch the mu and lppd for the baseline model
@@ -209,10 +211,10 @@
 
     ## reference model statistics
     summ <- summ_ref
-    res <- get_stat(summ$mu, summ$lppd, varsel$d_test, stat, mu.bs = mu.bs,
+    res <- get_stat(summ$mu, summ$lppd, varsel$y_wobs_test, stat, mu.bs = mu.bs,
                     lppd.bs = lppd.bs, wcv = summ$wcv, alpha = alpha, ...)
     row <- data.frame(
-      data = varsel$d_test$type, size = Inf, delta = delta, statistic = stat,
+      data = varsel$type_test, size = Inf, delta = delta, statistic = stat,
       value = res$value, lq = res$lq, uq = res$uq, se = res$se, diff = NA,
       diff.se = NA
     )
@@ -226,10 +228,10 @@
         ## for more points than for the submodel, so utilize the reference model
         ## results to get more accurate statistic fot the submodel on the actual
         ## scale
-        res_ref <- get_stat(summ_ref$mu, summ_ref$lppd, varsel$d_test,
+        res_ref <- get_stat(summ_ref$mu, summ_ref$lppd, varsel$y_wobs_test,
                             stat, mu.bs = NULL, lppd.bs = NULL,
                             wcv = summ_ref$wcv, alpha = alpha, ...)
-        res_diff <- get_stat(summ$mu, summ$lppd, varsel$d_test, stat,
+        res_diff <- get_stat(summ$mu, summ$lppd, varsel$y_wobs_test, stat,
                              mu.bs = summ_ref$mu, lppd.bs = summ_ref$lppd,
                              wcv = summ$wcv, alpha = alpha, ...)
         val <- res_ref$value + res_diff$value
@@ -244,19 +246,20 @@
         lq <- qnorm(alpha / 2, mean = val, sd = val.se)
         uq <- qnorm(1 - alpha / 2, mean = val, sd = val.se)
         row <- data.frame(
-          data = varsel$d_test$type, size = k - 1, delta = delta,
+          data = varsel$type_test, size = k - 1, delta = delta,
           statistic = stat, value = val, lq = lq, uq = uq, se = val.se,
           diff = res_diff$value, diff.se = res_diff$se
         )
       } else {
         ## normal case
-        res <- get_stat(summ$mu, summ$lppd, varsel$d_test, stat, mu.bs = mu.bs,
-                        lppd.bs = lppd.bs, wcv = summ$wcv, alpha = alpha, ...)
-        diff <- get_stat(summ$mu, summ$lppd, varsel$d_test, stat,
+        res <- get_stat(summ$mu, summ$lppd, varsel$y_wobs_test, stat,
+                        mu.bs = mu.bs, lppd.bs = lppd.bs, wcv = summ$wcv,
+                        alpha = alpha, ...)
+        diff <- get_stat(summ$mu, summ$lppd, varsel$y_wobs_test, stat,
                          mu.bs = summ_ref$mu, lppd.bs = summ_ref$lppd,
                          wcv = summ$wcv, alpha = alpha, ...)
         row <- data.frame(
-          data = varsel$d_test$type, size = k - 1, delta = delta,
+          data = varsel$type_test, size = k - 1, delta = delta,
           statistic = stat, value = res$value, lq = res$lq, uq = res$uq,
           se = res$se, diff = diff$value, diff.se = diff$se
         )
@@ -282,20 +285,19 @@ check_sub_NA <- function(summ_sub_k, el_nm) {
 
 ## Calculates given statistic stat with standard error and confidence bounds.
 ## mu.bs and lppd.bs are the pointwise mu and lppd for another model that is
-## used as a baseline for computing the difference in the given statistic,
-## for example the relative elpd. If these arguments are not given (NULL) then
-## the actual (non-relative) value is computed.
-## NOTE: Element `wcv[i]` (with i = 1, ..., N and N denoting the number of
-## observations) contains the weight of the CV fold that observation i is in. In
-## case of varsel() output, this is `NULL`. Currently, these `wcv` are
-## nonconstant (and not `NULL`) only in case of subsampled LOO CV. The actual
-## observation weights (specified by the user) are contained in
-## `d_test$weights`. These are already taken into account by
+## used as a baseline for computing the difference in the given statistic, for
+## example the relative elpd. If these arguments are not given (NULL) then the
+## actual (non-relative) value is computed. NOTE: Element `wcv[i]` (with i = 1,
+## ..., N and N denoting the number of observations) contains the weight of the
+## CV fold that observation i is in. In case of varsel() output, this is `NULL`.
+## Currently, these `wcv` are nonconstant (and not `NULL`) only in case of
+## subsampled LOO CV. The actual observation weights (specified by the user) are
+## contained in `y_wobs_test$wobs`. These are already taken into account by
 ## `<refmodel_object>$family$ll_fun()` (or
 ## `<refmodel_object>$family$latent_ll_oscale()`) and are thus already taken
 ## into account in `lppd`. However, `mu` does not take them into account, so
 ## some further adjustments are necessary below.
-get_stat <- function(mu, lppd, d_test, stat, mu.bs = NULL, lppd.bs = NULL,
+get_stat <- function(mu, lppd, y_wobs_test, stat, mu.bs = NULL, lppd.bs = NULL,
                      wcv = NULL, alpha = 0.1, ...) {
   n_notna.bs <- NULL
   if (stat %in% c("mlpd", "elpd")) {
@@ -306,7 +308,7 @@ get_stat <- function(mu, lppd, d_test, stat, mu.bs = NULL, lppd.bs = NULL,
     }
   } else {
     n <- length(mu)
-    n_notna <- sum(!is.na(mu) & !is.na(d_test$y_prop %||% d_test$y))
+    n_notna <- sum(!is.na(mu) & !is.na(y_wobs_test$y_prop %||% y_wobs_test$y))
     if (!is.null(mu.bs)) {
       n_notna.bs <- sum(!is.na(mu.bs))
     }
@@ -339,13 +341,13 @@ get_stat <- function(mu, lppd, d_test, stat, mu.bs = NULL, lppd.bs = NULL,
       value.se <- value.se / n_notna
     }
   } else if (stat %in% c("mse", "rmse")) {
-    if (is.null(d_test$y_prop)) {
-      y <- d_test$y
+    if (is.null(y_wobs_test$y_prop)) {
+      y <- y_wobs_test$y
     } else {
-      y <- d_test$y_prop
+      y <- y_wobs_test$y_prop
     }
-    if (!all(d_test$weights == 1)) {
-      wcv <- wcv * d_test$weights
+    if (!all(y_wobs_test$wobs == 1)) {
+      wcv <- wcv * y_wobs_test$wobs
       wcv <- n_notna * wcv / sum(wcv)
     }
     if (stat == "mse") {
@@ -399,28 +401,28 @@ get_stat <- function(mu, lppd, d_test, stat, mu.bs = NULL, lppd.bs = NULL,
       }
     }
   } else if (stat %in% c("acc", "pctcorr", "auc")) {
-    y <- d_test$y
-    if (!is.null(d_test$y_prop)) {
+    y <- y_wobs_test$y
+    if (!is.null(y_wobs_test$y_prop)) {
       # In fact, the following stopifnot() checks should not be necessary
       # because this case should only occur for the binomial family (where
-      # `d_test$weights` contains the numbers of trials) with more than 1 trial
-      # for at least one observation:
-      stopifnot(all(.is.wholenumber(d_test$weights)))
-      stopifnot(all(.is.wholenumber(y)))
-      stopifnot(all(0 <= y & y <= d_test$weights))
+      # `y_wobs_test$wobs` contains the numbers of trials) with more than 1
+      # trial for at least one observation:
+      stopifnot(all(is_wholenumber(y_wobs_test$wobs)))
+      stopifnot(all(is_wholenumber(y)))
+      stopifnot(all(0 <= y & y <= y_wobs_test$wobs))
       y <- unlist(lapply(seq_along(y), function(i_short) {
-        c(rep(0L, d_test$weights[i_short] - y[i_short]),
+        c(rep(0L, y_wobs_test$wobs[i_short] - y[i_short]),
           rep(1L, y[i_short]))
       }))
-      mu <- rep(mu, d_test$weights)
+      mu <- rep(mu, y_wobs_test$wobs)
       if (!is.null(mu.bs)) {
-        mu.bs <- rep(mu.bs, d_test$weights)
+        mu.bs <- rep(mu.bs, y_wobs_test$wobs)
       }
-      n_notna <- sum(d_test$weights)
-      wcv <- rep(wcv, d_test$weights)
+      n_notna <- sum(y_wobs_test$wobs)
+      wcv <- rep(wcv, y_wobs_test$wobs)
       wcv <- n_notna * wcv / sum(wcv)
     } else {
-      stopifnot(all(d_test$weights == 1))
+      stopifnot(all(y_wobs_test$wobs == 1))
     }
     if (stat %in% c("acc", "pctcorr")) {
       # Find out whether each observation was classified correctly or not:
@@ -477,26 +479,26 @@ get_stat <- function(mu, lppd, d_test, stat, mu.bs = NULL, lppd.bs = NULL,
   return(list(value = value, se = value.se, lq = lq, uq = uq))
 }
 
-.is_util <- function(stat) {
+is_util <- function(stat) {
   ## a simple function to determine whether a given statistic (string) is
   ## a utility (we want to maximize) or loss (we want to minimize)
   ## by the time we get here, stat should have already been validated
   return(!stat %in% c("rmse", "mse"))
 }
 
-.get_nfeat_baseline <- function(object, baseline, stat, ...) {
+get_nfeat_baseline <- function(object, baseline, stat, ...) {
   ## get model size that is used as a baseline in comparisons. baseline is one
   ## of 'best' or 'ref', stat is the statistic according to which the selection
   ## is done
   if (baseline == "best") {
     ## find number of features that maximizes the utility (or minimizes the
     ## loss)
-    tab <- .tabulate_stats(object, stat, ...)
+    tab <- .tabulate_stats(object, stat, B = 2, ...)
     stats_table <- subset(tab, tab$size != Inf)
-    ## tab <- .tabulate_stats(object, ...)
+    ## tab <- .tabulate_stats(object, B = 2, ...)
     ## stats_table <- subset(tab, tab$delta == FALSE &
     ##   tab$statistic == stat & tab$size != Inf)
-    optfun <- ifelse(.is_util(stat), which.max, which.min)
+    optfun <- ifelse(is_util(stat), which.max, which.min)
     nfeat_baseline <- stats_table$size[optfun(stats_table$value)]
   } else {
     ## use reference model

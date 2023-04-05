@@ -1,3 +1,5 @@
+# Common documentation ----------------------------------------------------
+
 #' Reference model and more general information
 #'
 #' @description
@@ -43,12 +45,13 @@
 #'   CV.
 #' @param formula The full formula to use for the search procedure. For custom
 #'   reference models, this does not necessarily coincide with the reference
-#'   model's formula. For general information on formulas in \R, see
-#'   [`formula`]. For multilevel formulas, see also package \pkg{lme4} (in
-#'   particular, functions [lme4::lmer()] and [lme4::glmer()]). For additive
+#'   model's formula. For general information about formulas in \R, see
+#'   [`formula`]. For information about possible right-hand side (i.e.,
+#'   predictor) terms in `formula` here, see the main vignette and section
+#'   "Formula terms" below. For multilevel formulas, see also package \pkg{lme4}
+#'   (in particular, functions [lme4::lmer()] and [lme4::glmer()]). For additive
 #'   formulas, see also packages \pkg{mgcv} (in particular, function
-#'   [mgcv::gam()]) and \pkg{gamm4} (in particular, function [gamm4::gamm4()])
-#'   as well as the notes in section "Formula terms" below.
+#'   [mgcv::gam()]) and \pkg{gamm4} (in particular, function [gamm4::gamm4()]).
 #' @param ref_predfun Prediction function for the linear predictor of the
 #'   reference model, including offsets (if existing). See also section
 #'   "Arguments `ref_predfun`, `proj_predfun`, and `div_minimizer`" below. If
@@ -120,13 +123,25 @@
 #'
 #' # Formula terms
 #'
+#' Although bad practice (in general), a reference model lacking an intercept
+#' can be used within \pkg{projpred}. However, it will always be projected onto
+#' submodels which *include* an intercept. The reason is that even if the true
+#' intercept in the reference model is zero, this does not need to hold for the
+#' submodels.
+#'
+#' In multilevel (group-level) terms, function calls on the right-hand side of
+#' the `|` character (e.g., `(1 | gr(group_variable))`, which is possible in
+#' \pkg{brms}) are currently not allowed in \pkg{projpred}.
+#'
 #' For additive models (still an experimental feature), only [mgcv::s()] and
 #' [mgcv::t2()] are currently supported as smooth terms. Furthermore, these need
 #' to be called without any arguments apart from the predictor names (symbols).
 #' For example, for smoothing the effect of a predictor `x`, only `s(x)` or
 #' `t2(x)` are allowed. As another example, for smoothing the joint effect of
 #' two predictors `x` and `z`, only `s(x, z)` or `t2(x, z)` are allowed (and
-#' analogously for higher-order joint effects, e.g., of three predictors).
+#' analogously for higher-order joint effects, e.g., of three predictors). Note
+#' that all smooth terms need to be included in `formula` (there is no `random`
+#' argument as in [rstanarm::stan_gamm4()], for example).
 #'
 #' # Arguments `ref_predfun`, `proj_predfun`, and `div_minimizer`
 #'
@@ -155,7 +170,7 @@
 #' * `proj_predfun`: `proj_predfun(fits, newdata)` where:
 #'     + `fits` accepts a `list` of length \eqn{S_{\mathrm{prj}}}{S_prj}
 #'     containing this number of submodel fits. This `list` is the same as that
-#'     returned by [project()] in its output element `submodl` (which in turn is
+#'     returned by [project()] in its output element `outdmin` (which in turn is
 #'     the same as the return value of `div_minimizer`, except if [project()]
 #'     was used with an `object` of class `vsel` based on an L1 search as well
 #'     as with `refit_prj = FALSE`).
@@ -282,6 +297,10 @@
 #'   `refmodel` (with `datafit` being first). Objects of class `datafit` are
 #'   handled differently at several places throughout this package.
 #'
+#'   The elements of the returned object are not meant to be accessed directly
+#'   but instead via downstream functions (see the functions mentioned above as
+#'   well as [predict.refmodel()]).
+#'
 #' @examples
 #' if (requireNamespace("rstanarm", quietly = TRUE)) {
 #'   # Data:
@@ -339,13 +358,15 @@
 #'
 NULL
 
-#' Predictions or log predictive densities from a reference model
+# Function definitions ----------------------------------------------------
+
+#' Predictions or log posterior predictive densities from a reference model
 #'
 #' This is the [predict()] method for `refmodel` objects (returned by
 #' [get_refmodel()] or [init_refmodel()]). It offers three types of output which
 #' are all based on the reference model and new (or old) observations: Either
 #' the linear predictor on link scale, the linear predictor transformed to
-#' response scale, or the log predictive density.
+#' response scale, or the log posterior predictive density.
 #'
 #' @template args-newdata
 #' @param object An object of class `refmodel` (returned by [get_refmodel()] or
@@ -370,9 +391,9 @@ NULL
 #'   without any modifications that may be due to the original response
 #'   distribution (e.g., for a [brms::cumulative()] model, the ordered
 #'   thresholds are not taken into account). If (ii) `!is.null(ynew)`, then
-#'   argument `type` also affects the scale of the log predictive densities
-#'   (`type = "response"` for the original response scale, `type = "link"` for
-#'   the latent Gaussian scale).
+#'   argument `type` also affects the scale of the log posterior predictive
+#'   densities (`type = "response"` for the original response scale, `type =
+#'   "link"` for the latent Gaussian scale).
 #' @param ... Currently ignored.
 #'
 #' @details Argument `weightsnew` is only relevant if `!is.null(ynew)`.
@@ -397,29 +418,29 @@ NULL
 #'   projection or (ii) the latent projection with `type = "response"` and
 #'   `object$family$cats` being not `NULL`.
 #'
-#'   If `!is.null(ynew)`, the returned
-#'   object is a length-\eqn{N} vector of log predictive densities evaluated at
-#'   `ynew`.
+#'   If `!is.null(ynew)`, the returned object is a length-\eqn{N} vector of log
+#'   posterior predictive densities evaluated at `ynew`.
 #'
 #' @export
 predict.refmodel <- function(object, newdata = NULL, ynew = NULL,
                              offsetnew = NULL, weightsnew = NULL,
                              type = "response", ...) {
-  if (!type %in% c("response", "link")) {
-    stop("type should be one of ('response', 'link')")
-  }
   if (inherits(object, "datafit")) {
     stop("Cannot make predictions for an `object` of class \"datafit\".")
   }
+  refmodel <- object
+  if (!type %in% c("response", "link")) {
+    stop("type should be one of ('response', 'link')")
+  }
   if (!is.null(ynew) && (!is.numeric(ynew) || NCOL(ynew) != 1) &&
-      is.null(object$family$cats)) {
+      is.null(refmodel$family$cats)) {
     stop("Argument `ynew` must be a numeric vector.")
   }
-  if (!is.null(ynew) && !is.null(object$family$cats) &&
-      (!object$family$for_latent || type == "response")) {
+  if (!is.null(ynew) && !is.null(refmodel$family$cats) &&
+      (!refmodel$family$for_latent || type == "response")) {
     ynew <- as.factor(ynew)
-    if (!all(levels(ynew) %in% object$family$cats)) {
-      if (object$family$for_augdat) {
+    if (!all(levels(ynew) %in% refmodel$family$cats)) {
+      if (refmodel$family$for_augdat) {
         y_unqs_str <- "augdat_y_unqs"
       } else {
         y_unqs_str <- "latent_y_unqs"
@@ -430,10 +451,10 @@ predict.refmodel <- function(object, newdata = NULL, ynew = NULL,
            "argument `", y_unqs_str, "` to solve this.")
     }
     # Re-assign the original levels because some levels might be missing:
-    ynew <- factor(ynew, levels = object$family$cats)
+    ynew <- factor(ynew, levels = refmodel$family$cats)
   } else if (!is.null(ynew) &&
-             object$family$for_latent &&
-             is.null(object$family$cats) &&
+             refmodel$family$for_latent &&
+             is.null(refmodel$family$cats) &&
              (is.factor(ynew) || is.character(ynew) || is.logical(ynew))) {
     stop("If the original (i.e., non-latent) response is `factor`-like, ",
          "`family$cats` must not be `NULL`. See the documentation for ",
@@ -443,26 +464,28 @@ predict.refmodel <- function(object, newdata = NULL, ynew = NULL,
   if (!is.null(newdata)) {
     newdata <- na.fail(newdata)
   }
-  w_o <- object$extract_model_data(object$fit, newdata = newdata,
-                                   wrhs = weightsnew, orhs = offsetnew)
+  nobs_new <- nrow(newdata) %||% refmodel$nobs
+  w_o <- refmodel$extract_model_data(refmodel$fit, newdata = newdata,
+                                     wrhs = weightsnew, orhs = offsetnew,
+                                     extract_y = FALSE)
   weightsnew <- w_o$weights
   offsetnew <- w_o$offset
   if (length(weightsnew) == 0) {
-    weightsnew <- rep(1, length(w_o$y))
+    weightsnew <- rep(1, nobs_new)
   }
   if (length(offsetnew) == 0) {
-    offsetnew <- rep(0, length(w_o$y))
+    offsetnew <- rep(0, nobs_new)
   }
-  if (object$family$for_augdat && !all(weightsnew == 1)) {
+  if (refmodel$family$for_augdat && !all(weightsnew == 1)) {
     stop("Currently, the augmented-data projection may not be combined with ",
          "observation weights (other than 1).")
   }
-  if (object$family$for_latent && !all(weightsnew == 1)) {
+  if (refmodel$family$for_latent && !all(weightsnew == 1)) {
     stop("Currently, the latent projection may not be combined with ",
          "observation weights (other than 1).")
   }
-  if (!is.null(newdata) && inherits(object$fit, "stanreg") &&
-      length(object$fit$offset) > 0) {
+  if (!is.null(newdata) && inherits(refmodel$fit, "stanreg") &&
+      length(refmodel$fit$offset) > 0) {
     if ("projpred_internal_offs_stanreg" %in% names(newdata)) {
       stop("Need to write to column `projpred_internal_offs_stanreg` of ",
            "`newdata`, but that column already exists. Please rename this ",
@@ -472,16 +495,17 @@ predict.refmodel <- function(object, newdata = NULL, ynew = NULL,
   }
 
   ## ref_predfun returns eta = link(mu)
-  eta <- object$ref_predfun(object$fit, newdata = newdata, excl_offs = FALSE)
+  eta <- refmodel$ref_predfun(refmodel$fit, newdata = newdata,
+                              excl_offs = FALSE)
 
   if (is.null(ynew)) {
     if (type == "link") {
       pred <- eta
     } else {
-      if (object$family$for_latent) {
-        pred <- object$family$latent_ilink(
-          t(eta), cl_ref = seq_along(object$wsample),
-          wdraws_ref = rep(1, length(object$wsample))
+      if (refmodel$family$for_latent) {
+        pred <- refmodel$family$latent_ilink(
+          t(eta), cl_ref = seq_along(refmodel$wdraws_ref),
+          wdraws_ref = rep(1, length(refmodel$wdraws_ref))
         )
         if (length(dim(pred)) < 2) {
           stop("Unexpected structure for the output of `latent_ilink`.")
@@ -496,12 +520,12 @@ predict.refmodel <- function(object, newdata = NULL, ynew = NULL,
           )
         }
       } else {
-        pred <- object$family$linkinv(eta)
+        pred <- refmodel$family$linkinv(eta)
       }
     }
     was_augmat <- inherits(pred, "augmat")
-    ## integrate over the samples
-    if (type == "link" || !object$family$for_latent || was_augmat) {
+    ## integrate over the draws
+    if (type == "link" || !refmodel$family$for_latent || was_augmat) {
       if (ncol(pred) > 1) {
         pred <- rowMeans(pred)
       }
@@ -511,27 +535,25 @@ predict.refmodel <- function(object, newdata = NULL, ynew = NULL,
       }
     }
     if (was_augmat) {
-      pred <- structure(pred,
-                        nobs_orig = nrow(newdata %||% object$fetch_data()),
-                        class = "augvec")
+      pred <- structure(pred, nobs_orig = nobs_new, class = "augvec")
       pred <- augmat2arr(augvec2augmat(pred))
       pred <- matrix(pred, nrow = dim(pred)[1], ncol = dim(pred)[2])
     }
     return(pred)
   } else {
-    ## evaluate the log predictive density at the given ynew values
-    if (object$family$for_latent && type == "response") {
-      mu_oscale <- object$family$latent_ilink(
-        t(eta), cl_ref = seq_along(object$wsample),
-        wdraws_ref = rep(1, length(object$wsample))
+    ## evaluate the log posterior predictive density at the given ynew values
+    if (refmodel$family$for_latent && type == "response") {
+      mu_oscale <- refmodel$family$latent_ilink(
+        t(eta), cl_ref = seq_along(refmodel$wdraws_ref),
+        wdraws_ref = rep(1, length(refmodel$wdraws_ref))
       )
       if (length(dim(mu_oscale)) < 2) {
         stop("Unexpected structure for the output of `latent_ilink`.")
       }
-      loglik <- object$family$latent_ll_oscale(
+      loglik <- refmodel$family$latent_ll_oscale(
         mu_oscale, y_oscale = ynew, wobs = weightsnew,
-        cl_ref = seq_along(object$wsample),
-        wdraws_ref = rep(1, length(object$wsample))
+        cl_ref = seq_along(refmodel$wdraws_ref),
+        wdraws_ref = rep(1, length(refmodel$wdraws_ref))
       )
       if (!is.matrix(loglik)) {
         stop("Unexpected structure for the output of `latent_ll_oscale`.")
@@ -550,8 +572,8 @@ predict.refmodel <- function(object, newdata = NULL, ynew = NULL,
       S <- nrow(loglik)
       marg_obs <- 2
     } else {
-      if (object$family$for_latent) {
-        if (all(is.na(object$dis))) {
+      if (refmodel$family$for_latent) {
+        if (all(is.na(refmodel$dis))) {
           message(
             "Cannot calculate LPD values if `type = \"link\"` and ",
             "`<refmodel>$dis` consists of only `NA`s. If it's not possible to ",
@@ -562,21 +584,21 @@ predict.refmodel <- function(object, newdata = NULL, ynew = NULL,
         }
         if (is.null(newdata)) {
           newdata_lat <- newdata
-          if (inherits(object$fit, "stanreg") &&
-              length(object$fit$offset) > 0) {
-            newdata_lat <- object$fetch_data()
+          if (inherits(refmodel$fit, "stanreg") &&
+              length(refmodel$fit$offset) > 0) {
+            newdata_lat <- refmodel$fetch_data()
             newdata_lat$projpred_internal_offs_stanreg <- offsetnew
           }
-          ynew <- rowMeans(object$ref_predfun(
-            fit = object$fit,
+          ynew <- rowMeans(refmodel$ref_predfun(
+            fit = refmodel$fit,
             newdata = newdata_lat,
             excl_offs = FALSE,
             mlvl_allrandom = getOption("projpred.mlvl_proj_ref_new", FALSE)
           ))
         }
       }
-      loglik <- object$family$ll_fun(
-        object$family$linkinv(eta), object$dis, ynew, weightsnew
+      loglik <- refmodel$family$ll_fun(
+        refmodel$family$linkinv(eta), refmodel$dis, ynew, weightsnew
       )
       S <- ncol(loglik)
       marg_obs <- 1
@@ -815,7 +837,8 @@ get_refmodel.stanreg <- function(object, latent = FALSE, dis = NULL, ...) {
 
     # Observation weights are not needed here, so use `wrhs = NULL` to avoid
     # potential conflicts for a non-`NULL` default `wrhs`:
-    offs <- extract_model_data(fit, newdata = newdata, wrhs = NULL)$offset
+    offs <- extract_model_data(fit, newdata = newdata, wrhs = NULL,
+                               extract_y = FALSE)$offset
     n_obs <- nrow(newdata %||% data)
     if (length(offs) == 0) {
       offs <- rep(0, n_obs)
@@ -864,7 +887,7 @@ get_refmodel.stanreg <- function(object, latent = FALSE, dis = NULL, ...) {
 
   # Miscellaneous -----------------------------------------------------------
 
-  if (is.null(dis) && !latent && .has_dispersion(family)) {
+  if (is.null(dis) && !latent && has_dispersion(family)) {
     dis <- data.frame(object)[, "sigma"]
   }
 
@@ -989,6 +1012,14 @@ init_refmodel <- function(object, data, formula, family, ref_predfun = NULL,
   data <- na.fail(data)
   stopifnot(is.data.frame(data))
   formula <- expand_formula(formula, data)
+  if (!as.logical(attr(terms(formula), "intercept"))) {
+    # Add an intercept to `formula` so that we always project onto submodels
+    # *including* an intercept (see the discussion at #96):
+    message("Adding an intercept to `formula` (the full-model formula used ",
+            "for the search) so that the projection is always performed onto ",
+            "submodels *including* an intercept.")
+    formula <- update(formula, . ~ . + 1)
+  }
   fml_extractions <- extract_terms_response(formula)
   response_name <- fml_extractions$response
   if (length(response_name) == 2) {
@@ -1147,7 +1178,8 @@ init_refmodel <- function(object, data, formula, family, ref_predfun = NULL,
       if (excl_offs) {
         # Observation weights are not needed here, so use `wrhs = NULL` to avoid
         # potential conflicts for a non-`NULL` default `wrhs`:
-        offs <- extract_model_data(fit, newdata = newdata, wrhs = NULL)$offset
+        offs <- extract_model_data(fit, newdata = newdata, wrhs = NULL,
+                                   extract_y = FALSE)$offset
         if (length(offs) > 0) {
           stopifnot(length(offs) %in% c(1L, n_obs))
           if (family$family %in% fams_neg_linpred()) {
@@ -1206,8 +1238,10 @@ init_refmodel <- function(object, data, formula, family, ref_predfun = NULL,
 
   if (is.null(cvfun)) {
     if (!proper_model) {
-      # This is a dummy definition for cvfun(), but it will lead to standard CV
-      # for `datafit`s; see cv_varsel() and .get_kfold():
+      # This is a dummy definition for cvfun(), but the cvrefbuilder() function
+      # defined below will lead to standard CV nonetheless (at least for the
+      # submodels; for the reference model, we don't have an actual reference
+      # model, only a `datafit`):
       cvfun <- function(folds) {
         lapply(seq_len(max(folds)), function(k) list())
       }
@@ -1235,7 +1269,7 @@ init_refmodel <- function(object, data, formula, family, ref_predfun = NULL,
 
   # Data --------------------------------------------------------------------
 
-  model_data <- extract_model_data(object, newdata = data)
+  model_data <- extract_model_data(object, newdata = data, extract_y = TRUE)
   weights <- model_data$weights
   offset <- model_data$offset
   if (family$for_latent) {
@@ -1264,7 +1298,7 @@ init_refmodel <- function(object, data, formula, family, ref_predfun = NULL,
              "solve this.")
       }
     } else if (family$family_oscale == "binomial") {
-      if (!all(.is.wholenumber(y_oscale))) {
+      if (!all(is_wholenumber(y_oscale))) {
         stop(
           "In projpred, the response must contain numbers of successes (not ",
           "proportions of successes), in contrast to glm() where this is ",
@@ -1288,7 +1322,7 @@ init_refmodel <- function(object, data, formula, family, ref_predfun = NULL,
   # Add (transformed) response under the (possibly) new name:
   data[, response_name] <- y
 
-  target <- .get_standard_y(y, weights, family)
+  target <- get_standard_y(y, weights, family)
   y <- target$y
   weights <- target$weights
 
@@ -1302,7 +1336,7 @@ init_refmodel <- function(object, data, formula, family, ref_predfun = NULL,
            "solve this.")
     }
   } else if (family$family == "binomial") {
-    if (!all(.is.wholenumber(y))) {
+    if (!all(is_wholenumber(y))) {
       stop("In projpred, the response must contain numbers of successes (not ",
            "proportions of successes), in contrast to glm() where this is ",
            "possible for a 1-column response if the multiplication with the ",
@@ -1406,7 +1440,7 @@ init_refmodel <- function(object, data, formula, family, ref_predfun = NULL,
           "distribution."
         )
       }
-    } else if (!.has_dispersion(family)) {
+    } else if (!has_dispersion(family)) {
       dis <- rep(NA, ndraws)
     } else {
       if (proper_model) {
@@ -1432,21 +1466,16 @@ init_refmodel <- function(object, data, formula, family, ref_predfun = NULL,
             "dispersion parameter values.")
   }
 
-  # Equal sample (draws) weights by default:
-  wsample <- rep(1 / ndraws, ndraws)
-
-  intercept <- as.logical(attr(terms(formula), "intercept"))
-  if (!intercept) {
-    stop("Reference models without an intercept are currently not supported.")
-  }
+  # Equal weights for the posterior draws by default:
+  wdraws_ref <- rep(1 / ndraws, ndraws)
 
   # Output ------------------------------------------------------------------
 
   refmodel <- nlist(
     fit = object, formula, div_minimizer, family, eta, mu, mu_offs, dis, y,
-    intercept, proj_predfun, fetch_data = fetch_data_wrapper, wobs = weights,
-    wsample, offset, cvfun, cvfits, extract_model_data, ref_predfun,
-    cvrefbuilder, y_oscale = y_oscale %||% y
+    proj_predfun, fetch_data = fetch_data_wrapper, wobs = weights, wdraws_ref,
+    offset, cvfun, cvfits, extract_model_data, ref_predfun, cvrefbuilder,
+    y_oscale = y_oscale %||% y, nobs = nrow(data)
   )
   if (proper_model) {
     class(refmodel) <- "refmodel"

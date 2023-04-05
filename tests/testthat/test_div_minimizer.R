@@ -10,7 +10,7 @@ ls_bu <- ls()
 test_that("divmin() works", {
   skip_on_cran()
   # For comparison with the divmin_augdat() test:
-  divmin_res_brnll_tmp <- list()
+  outdmin_brnll_tmp <- list()
 
   for (tstsetup in grep(fam_nms_aug_regex, names(fits), value = TRUE,
                         invert = TRUE)) {
@@ -63,14 +63,14 @@ test_that("divmin() works", {
       )
     }
 
-    divmin_res <- do.call(
+    outdmin <- do.call(
       divmin,
       args_fit_i[intersect(c("formula", "data", "family", "weights",
                              "projpred_var", "projpred_regul"),
                            names(args_fit_i))]
     )
     if (fam_crr == "brnll") {
-      divmin_res_brnll_tmp[[tstsetup]] <- divmin_res
+      outdmin_brnll_tmp[[tstsetup]] <- outdmin
     }
 
     if (fam_crr == "binom" || grepl("\\.with_wobs", tstsetup)) {
@@ -78,7 +78,7 @@ test_that("divmin() works", {
     } else {
       wobs_expected_crr <- NULL
     }
-    submodl_tester(divmin_res,
+    outdmin_tester(outdmin,
                    nprjdraws_expected = 1L,
                    sub_formul = list(args_fit_i$formula),
                    sub_data = eval(args_fit_i$data),
@@ -87,7 +87,7 @@ test_that("divmin() works", {
                    with_offs = grepl("\\.with_offs", tstsetup),
                    info_str = tstsetup)
   }
-  assign("divmin_res_brnll_trad", divmin_res_brnll_tmp, envir = .GlobalEnv)
+  assign("outdmin_brnll_trad", outdmin_brnll_tmp, envir = .GlobalEnv)
 })
 
 # divmin_augdat() ---------------------------------------------------------
@@ -95,7 +95,7 @@ test_that("divmin() works", {
 test_that("divmin_augdat() works", {
   skip_on_cran()
   # For comparison with the divmin() test:
-  divmin_res_brnll_tmp <- list()
+  outdmin_brnll_tmp <- list()
 
   tstsetups_ref <- names(args_ref[sapply(args_ref, "[[", "prj_nm") == "augdat"])
   tstsetups_ref <- grep(fam_nms_unsupp_regex, tstsetups_ref, value = TRUE,
@@ -170,7 +170,7 @@ test_that("divmin_augdat() works", {
       warn_expected <- NA
     }
     expect_warning(
-      divmin_res <- do.call(
+      outdmin <- do.call(
         divmin_augdat,
         args_fit_i[intersect(c("formula", "data", "family", "weights",
                                "projpred_var", "projpred_regul",
@@ -180,10 +180,10 @@ test_that("divmin_augdat() works", {
       warn_expected
     )
     if (fam_crr == "brnll") {
-      divmin_res_brnll_tmp[[tstsetup]] <- divmin_res
+      outdmin_brnll_tmp[[tstsetup]] <- outdmin
     }
 
-    submodl_tester(divmin_res,
+    outdmin_tester(outdmin,
                    nprjdraws_expected = 1L,
                    sub_formul = list(args_fit_i$formula),
                    sub_data = args_fit_i$data,
@@ -195,7 +195,7 @@ test_that("divmin_augdat() works", {
                    check_y_from_resp = FALSE,
                    info_str = tstsetup)
   }
-  assign("divmin_res_brnll_augdat", divmin_res_brnll_tmp, envir = .GlobalEnv)
+  assign("outdmin_brnll_augdat", outdmin_brnll_tmp, envir = .GlobalEnv)
 })
 
 # Comparison of divmin() and divmin_augdat() ------------------------------
@@ -205,15 +205,15 @@ test_that(paste(
   "`brnll` family)"
 ), {
   skip_on_cran()
-  for (tstsetup in names(divmin_res_brnll_augdat)) {
+  for (tstsetup in names(outdmin_brnll_augdat)) {
     args_ref_i <- args_ref[[tstsetup]]
-    submodl_augdat <- divmin_res_brnll_augdat[[tstsetup]]
-    submodl_trad <- divmin_res_brnll_trad[[args_ref_i$tstsetup_fit]]
-    expect_length(submodl_augdat, 1)
-    expect_length(submodl_trad, 1)
+    outdmin_augdat <- outdmin_brnll_augdat[[tstsetup]]
+    outdmin_trad <- outdmin_brnll_trad[[args_ref_i$tstsetup_fit]]
+    expect_length(outdmin_augdat, 1)
+    expect_length(outdmin_trad, 1)
     tol_coefs <- ifelse(args_ref_i$mod_nm == "glmm", 1e-4, 1e-5)
-    coefs_aug <- get_subparams(submodl_augdat[[1]], nm_scheme = "rstanarm")
-    coefs_trad <- get_subparams(submodl_trad[[1]], nm_scheme = "rstanarm")
+    coefs_aug <- get_subparams(outdmin_augdat[[1]], nm_scheme = "rstanarm")
+    coefs_trad <- get_subparams(outdmin_trad[[1]], nm_scheme = "rstanarm")
     if (!identical(is.na(coefs_aug), is.na(coefs_trad))) {
       # There is at least one case where the traditional projection is not able
       # to estimate a correlation of -1:

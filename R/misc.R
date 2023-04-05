@@ -8,6 +8,10 @@ nms_d_test <- function() {
   c("type", "data", "offset", "weights", "y", "y_oscale")
 }
 
+nms_y_wobs_test <- function(wobs_nm = "wobs") {
+  c("y", "y_oscale", wobs_nm)
+}
+
 weighted.sd <- function(x, w, na.rm = FALSE) {
   if (na.rm) {
     ind <- !is.na(w) & !is.na(x)
@@ -105,12 +109,12 @@ bootstrap <- function(x, fun = mean, B = 2000,
 }
 
 # From `?is.integer` (slightly modified):
-.is.wholenumber <- function(x) {
+is_wholenumber <- function(x) {
   abs(x - round(x)) < .Machine$double.eps^0.5
 }
 
-.validate_num_folds <- function(k, n) {
-  if (!is.numeric(k) || length(k) != 1 || !.is.wholenumber(k)) {
+validate_num_folds <- function(k, n) {
+  if (!is.numeric(k) || length(k) != 1 || !is_wholenumber(k)) {
     stop("Number of folds must be a single integer value.")
   }
   if (k < 2) {
@@ -121,7 +125,7 @@ bootstrap <- function(x, fun = mean, B = 2000,
   }
 }
 
-.validate_vsel_object_stats <- function(object, stats, resp_oscale = TRUE) {
+validate_vsel_object_stats <- function(object, stats, resp_oscale = TRUE) {
   if (!inherits(object, c("vsel"))) {
     stop("The object is not a variable selection object. Run variable ",
          "selection first")
@@ -175,7 +179,7 @@ bootstrap <- function(x, fun = mean, B = 2000,
   return(invisible(TRUE))
 }
 
-.validate_baseline <- function(refmodel, baseline, deltas) {
+validate_baseline <- function(refmodel, baseline, deltas) {
   stopifnot(!is.null(baseline))
   if (!(baseline %in% c("ref", "best"))) {
     stop("Argument 'baseline' must be either 'ref' or 'best'.")
@@ -196,7 +200,7 @@ bootstrap <- function(x, fun = mean, B = 2000,
 #     in which case it is replaced by a vector of ones). For a binomial family,
 #     if `is.factor(y)`, `y` is transformed into a zero-one vector (i.e., with
 #     values in the set {0, 1}).
-.get_standard_y <- function(y, weights, fam) {
+get_standard_y <- function(y, weights, fam) {
   if (NCOL(y) == 1) {
     if (length(weights) > 0) {
       weights <- unname(weights)
@@ -256,25 +260,25 @@ bootstrap <- function(x, fun = mean, B = 2000,
 #   * `dis`: A vector of length \eqn{S_{\mathrm{prj}}}{S_prj} containing the
 #   reference model's dispersion parameter value for each draw/cluster (NA for
 #   those families that do not have a dispersion parameter).
-#   * `weights`: A vector of length \eqn{S_{\mathrm{prj}}}{S_prj} containing the
-#   weights for the draws/clusters.
+#   * `wdraws_prj`: A vector of length \eqn{S_{\mathrm{prj}}}{S_prj} containing
+#   the weights for the projected draws/clusters.
 #   * `cl`: Cluster assignment for each posterior draw, that is, a vector that
 #   has length equal to the number of posterior draws and each value is an
 #   integer between 1 and \eqn{S_{\mathrm{prj}}}{S_prj}.
-#   * `wsample_orig`: A numeric vector of length equal to the number of
+#   * `wdraws_orig`: A numeric vector of length equal to the number of
 #   posterior draws, giving the weights of these draws. These weights should be
 #   treated as not being normalized (i.e., they don't necessarily sum to `1`).
-#   Currently, this element could be named `wsample_ref` instead because
-#   .get_p_clust() is always applied to inputs that are specific to a `refmodel`
+#   Currently, this element could be named `wdraws_ref` instead because
+#   get_p_clust() is always applied to inputs that are specific to a `refmodel`
 #   object (either the initial reference model or a K-fold-specific `refmodel`
-#   object) (and .get_refdist() is applied to inputs that are specific to a
-#   `refmodel` object anyway). However, .get_p_clust() intentionally seems to
-#   have been kept as general as possible and `wsample_orig` is more general
-#   than `wsample_ref`.
-.get_refdist <- function(refmodel, ndraws = NULL, nclusters = NULL,
-                         thinning = TRUE,
-                         throw_mssg_ndraws = getOption("projpred.mssg_ndraws",
-                                                       TRUE)) {
+#   object) (and get_refdist() is applied to inputs that are specific to a
+#   `refmodel` object anyway). However, get_p_clust() intentionally seems to
+#   have been kept as general as possible and `wdraws_orig` is more general than
+#   `wdraws_ref`.
+get_refdist <- function(refmodel, ndraws = NULL, nclusters = NULL,
+                        thinning = TRUE,
+                        throw_mssg_ndraws = getOption("projpred.mssg_ndraws",
+                                                      TRUE)) {
   # Number of draws in the reference model:
   S <- NCOL(refmodel$mu)
 
@@ -282,21 +286,21 @@ bootstrap <- function(x, fun = mean, B = 2000,
     # use clustering (ignore ndraws argument)
     nclusters <- min(S, nclusters)
     if (nclusters == S) {
-      # number of clusters equal to the number of samples, so return the samples
-      return(.get_refdist(refmodel, ndraws = nclusters,
-                          throw_mssg_ndraws = FALSE))
+      # number of clusters equal to the number of draws, so return the draws
+      return(get_refdist(refmodel, ndraws = nclusters,
+                         throw_mssg_ndraws = FALSE))
     } else if (nclusters == 1) {
       # special case, only one cluster
-      p_ref <- .get_p_clust(family = refmodel$family, eta = refmodel$eta,
-                            mu = refmodel$mu, mu_offs = refmodel$mu_offs,
-                            dis = refmodel$dis, wobs = refmodel$wobs,
-                            cl = rep(1, S))
+      p_ref <- get_p_clust(family = refmodel$family, eta = refmodel$eta,
+                           mu = refmodel$mu, mu_offs = refmodel$mu_offs,
+                           dis = refmodel$dis, wobs = refmodel$wobs,
+                           cl = rep(1, S))
     } else {
       # several clusters
-      p_ref <- .get_p_clust(family = refmodel$family, eta = refmodel$eta,
-                            mu = refmodel$mu, mu_offs = refmodel$mu_offs,
-                            dis = refmodel$dis, wobs = refmodel$wobs,
-                            nclusters = nclusters)
+      p_ref <- get_p_clust(family = refmodel$family, eta = refmodel$eta,
+                           mu = refmodel$mu, mu_offs = refmodel$mu_offs,
+                           dis = refmodel$dis, wobs = refmodel$wobs,
+                           nclusters = nclusters)
     }
   } else {
     ndraws <- min(S, ndraws)
@@ -313,7 +317,7 @@ bootstrap <- function(x, fun = mean, B = 2000,
     cl[s_ind] <- 1:ndraws
     predvar <- do.call(cbind, lapply(s_ind, function(j) {
       refmodel$family$predvar(refmodel$mu_offs[, j, drop = FALSE],
-                              refmodel$dis[j])
+                              refmodel$dis[j], refmodel$wdraws_ref[j])
     }))
     p_ref <- list(
       mu = refmodel$mu[, s_ind, drop = FALSE],
@@ -321,8 +325,10 @@ bootstrap <- function(x, fun = mean, B = 2000,
       var = structure(predvar,
                       nobs_orig = attr(refmodel$mu, "nobs_orig"),
                       class = oldClass(refmodel$mu)),
-      dis = refmodel$dis[s_ind], weights = rep(1 / ndraws, ndraws), cl = cl,
-      wsample_orig = rep(1, S),
+      dis = refmodel$dis[s_ind],
+      wdraws_prj = rep(1 / ndraws, ndraws),
+      cl = cl,
+      wdraws_orig = rep(1, S),
       clust_used = FALSE
     )
   }
@@ -331,16 +337,16 @@ bootstrap <- function(x, fun = mean, B = 2000,
 }
 
 # Function for clustering the parameter draws:
-.get_p_clust <- function(family, eta, mu, mu_offs, dis, nclusters = 10,
-                         wobs = rep(1, dim(mu)[1]),
-                         wsample = rep(1, dim(mu)[2]), cl = NULL) {
-  # cluster the samples in the latent space if no clustering provided
+get_p_clust <- function(family, eta, mu, mu_offs, dis, nclusters = 10,
+                        wobs = rep(1, dim(mu)[1]),
+                        wdraws = rep(1, dim(mu)[2]), cl = NULL) {
+  # cluster the draws in the latent space if no clustering provided
   if (is.null(cl)) {
     # Note: A seed is not set here because this function is not exported and has
     # a calling stack at the beginning of which a seed is set.
 
     out <- kmeans(t(eta), nclusters, iter.max = 50)
-    cl <- out$cluster # cluster indices for each sample
+    cl <- out$cluster # cluster indices for each draw
   } else if (typeof(cl) == "list") {
     # old clustering solution provided, so fetch the cluster indices
     if (is.null(cl$cluster)) {
@@ -350,14 +356,14 @@ bootstrap <- function(x, fun = mean, B = 2000,
     cl <- cl$cluster
   }
 
-  # (re)compute the cluster centers, because they may be different from the ones
-  # returned by kmeans if the samples have differing weights
+  # (Re)compute the cluster centers, because they may be different from the ones
+  # returned by kmeans() if the draws have differing weights.
   # Number of clusters (assumes labeling "1, ..., nclusters"):
   nclusters <- max(cl, na.rm = TRUE)
   # Cluster centers:
-  centers <- matrix(0, nrow = nclusters, ncol = dim(mu)[1])
+  centers <- matrix(0, nrow = dim(mu)[1], ncol = nclusters)
   # The same centers, but taking offsets into account:
-  centers_offs <- matrix(0, nrow = nclusters, ncol = dim(mu_offs)[1])
+  centers_offs <- matrix(0, nrow = dim(mu_offs)[1], ncol = nclusters)
   # Cluster weights:
   wcluster <- rep(0, nclusters)
   # Dispersion parameter draws aggregated within each cluster:
@@ -369,14 +375,14 @@ bootstrap <- function(x, fun = mean, B = 2000,
     ind <- which(cl == j)
     # Compute normalized weights within the j-th cluster; `1 - eps` is for
     # numerical stability:
-    ws <- wsample[ind] / sum(wsample[ind]) * (1 - eps)
+    ws <- wdraws[ind] / sum(wdraws[ind]) * (1 - eps)
 
     # Center of the j-th cluster:
-    centers[j, ] <- mu[, ind, drop = FALSE] %*% ws
+    centers[, j] <- mu[, ind, drop = FALSE] %*% ws
     # The same centers, but taking offsets into account:
-    centers_offs[j, ] <- mu_offs[, ind, drop = FALSE] %*% ws
+    centers_offs[, j] <- mu_offs[, ind, drop = FALSE] %*% ws
     # Unnormalized weight for the j-th cluster:
-    wcluster[j] <- sum(wsample[ind])
+    wcluster[j] <- sum(wdraws[ind])
     # Aggregated dispersion parameter for the j-th cluster:
     dis_agg[j] <- crossprod(dis[ind], ws)
     # Predictive variance for the j-th cluster:
@@ -385,24 +391,22 @@ bootstrap <- function(x, fun = mean, B = 2000,
   wcluster <- wcluster / sum(wcluster)
 
   # combine the results
-  p <- list(
-    mu = structure(unname(t(centers)),
+  return(list(
+    mu = structure(unname(centers),
                    nobs_orig = attr(mu, "nobs_orig"),
                    class = oldClass(mu)),
-    mu_offs = structure(unname(t(centers_offs)),
+    mu_offs = structure(unname(centers_offs),
                         nobs_orig = attr(mu_offs, "nobs_orig"),
                         class = oldClass(mu_offs)),
     var = structure(predvar,
                     nobs_orig = attr(mu, "nobs_orig"),
                     class = oldClass(mu)),
     dis = dis_agg,
-    weights = wcluster,
+    wdraws_prj = wcluster,
     cl = cl,
-    wsample_orig = wsample,
+    wdraws_orig = wdraws,
     clust_used = TRUE
-  )
-
-  return(p)
+  ))
 }
 
 draws_subsample <- function(S, ndraws) {
@@ -412,12 +416,12 @@ draws_subsample <- function(S, ndraws) {
   return(sample.int(S, size = ndraws))
 }
 
-.is_proj_list <- function(proj) {
+is_proj_list <- function(proj) {
   # Better use a formal class `proj_list`, but for now, use this workaround:
   is.list(proj) && length(proj) && all(sapply(proj, inherits, "projection"))
 }
 
-.unlist_proj <- function(p) {
+unlist_proj <- function(p) {
   if (length(p) == 1) p[[1]] else p
 }
 
@@ -525,10 +529,6 @@ deparse_combine <- function(x, max_char = NULL) {
   out
 }
 
-#' @importFrom magrittr %>%
-#' @export
-magrittr::`%>%`
-
 # `R CMD check` throws a note when using <package>:::<function>() (for accessing
 # <function> which is not exported by its <package>). Of course, usage of
 # non-exported functions should be avoided, but sometimes there's no way around
@@ -571,4 +571,29 @@ rbind2list <- function(x) {
     binded_list$oscale <- rbind2list(lapply(x, "[[", "oscale"))
   }
   return(binded_list)
+}
+
+# Print out text via cat() if `verbose = TRUE`:
+verb_out <- function(..., verbose = TRUE) {
+  if (verbose) {
+    cat(..., "\n", sep = "")
+  }
+}
+
+# Parse the argument containing the observation weights (`wobs` or `weights`)
+# for the <family_object>$ppd() functions used by proj_predict():
+parse_wobs_ppd <- function(wobs, n_obs) {
+  if (length(wobs) == 0) {
+    wobs <- rep(1, n_obs)
+  } else if (length(wobs) == 1) {
+    wobs <- rep(wobs, n_obs)
+  } else if (length(wobs) != n_obs) {
+    stop("Argument `wobs` needs to be of length 0, 1, or the number of ",
+         "observations.")
+  }
+  if (!all(wobs == 1) && getOption("projpred.warn_wobs_ppd", TRUE)) {
+    warning("Currently, proj_predict() ignores observation weights not equal ",
+            "to `1`.")
+  }
+  return(wobs)
 }

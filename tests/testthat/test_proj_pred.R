@@ -295,7 +295,7 @@ test_that("`newdata` and `integrated` work (even in edge cases)", {
       if (args_prj[[tstsetup]]$prj_nm == "augdat") {
         pred_true <- t(arr2augmat(pred_true, margin_draws = 1))
       }
-      expect_equal(prjs[[!!tstsetup]]$weights %*% pred_false, pred_true,
+      expect_equal(prjs[[!!tstsetup]]$wdraws_prj %*% pred_false, pred_true,
                    info = nobsv_crr)
     }
   }
@@ -651,9 +651,9 @@ test_that("`transform` works", {
         rng_old <- get(".Random.seed", envir = .GlobalEnv)
       }
       set.seed(args_prj[[tstsetup]]$seed)
-      clust_ref <- .get_refdist(prjs[[tstsetup]]$refmodel,
-                                ndraws = args_prj[[tstsetup]]$ndraws,
-                                nclusters = args_prj[[tstsetup]]$nclusters)
+      clust_ref <- get_refdist(prjs[[tstsetup]]$refmodel,
+                               ndraws = args_prj[[tstsetup]]$ndraws,
+                               nclusters = args_prj[[tstsetup]]$nclusters)
       pred_false2true <- prjs[[tstsetup]]$refmodel$family$latent_ilink(
         t(pred_false), cl_ref = clust_ref$cl
       )

@@ -54,12 +54,13 @@ arguments passed to \code{\link[=extend_family]{extend_family()}} (apart from \c
 
 \item{formula}{The full formula to use for the search procedure. For custom
 reference models, this does not necessarily coincide with the reference
-model's formula. For general information on formulas in \R, see
-\code{\link{formula}}. For multilevel formulas, see also package \pkg{lme4} (in
-particular, functions \code{\link[lme4:lmer]{lme4::lmer()}} and \code{\link[lme4:glmer]{lme4::glmer()}}). For additive
+model's formula. For general information about formulas in \R, see
+\code{\link{formula}}. For information about possible right-hand side (i.e.,
+predictor) terms in \code{formula} here, see the main vignette and section
+"Formula terms" below. For multilevel formulas, see also package \pkg{lme4}
+(in particular, functions \code{\link[lme4:lmer]{lme4::lmer()}} and \code{\link[lme4:glmer]{lme4::glmer()}}). For additive
 formulas, see also packages \pkg{mgcv} (in particular, function
-\code{\link[mgcv:gam]{mgcv::gam()}}) and \pkg{gamm4} (in particular, function \code{\link[gamm4:gamm4]{gamm4::gamm4()}})
-as well as the notes in section "Formula terms" below.}
+\code{\link[mgcv:gam]{mgcv::gam()}}) and \pkg{gamm4} (in particular, function \code{\link[gamm4:gamm4]{gamm4::gamm4()}}).}
 
 \item{family}{An object of class \code{family} representing the observation model
 (i.e., the distributional family for the response) of the \emph{submodels}.
@@ -152,6 +153,10 @@ Usually, the returned object is of class \code{refmodel}. However, if \code{obje
 is \code{NULL}, the returned object is of class \code{datafit} as well as of class
 \code{refmodel} (with \code{datafit} being first). Objects of class \code{datafit} are
 handled differently at several places throughout this package.
+
+The elements of the returned object are not meant to be accessed directly
+but instead via downstream functions (see the functions mentioned above as
+well as \code{\link[=predict.refmodel]{predict.refmodel()}}).
 }
 \description{
 Function \code{\link[=get_refmodel]{get_refmodel()}} is a generic function whose methods usually call
@@ -175,13 +180,25 @@ Some arguments are for \eqn{K}-fold cross-validation (\eqn{K}-fold CV) only;
 see \code{\link[=cv_varsel]{cv_varsel()}} for the use of \eqn{K}-fold CV in \pkg{projpred}.
 }
 \section{Formula terms}{
+Although bad practice (in general), a reference model lacking an intercept
+can be used within \pkg{projpred}. However, it will always be projected onto
+submodels which \emph{include} an intercept. The reason is that even if the true
+intercept in the reference model is zero, this does not need to hold for the
+submodels.
+
+In multilevel (group-level) terms, function calls on the right-hand side of
+the \code{|} character (e.g., \code{(1 | gr(group_variable))}, which is possible in
+\pkg{brms}) are currently not allowed in \pkg{projpred}.
+
 For additive models (still an experimental feature), only \code{\link[mgcv:s]{mgcv::s()}} and
 \code{\link[mgcv:t2]{mgcv::t2()}} are currently supported as smooth terms. Furthermore, these need
 to be called without any arguments apart from the predictor names (symbols).
 For example, for smoothing the effect of a predictor \code{x}, only \code{s(x)} or
 \code{t2(x)} are allowed. As another example, for smoothing the joint effect of
 two predictors \code{x} and \code{z}, only \code{s(x, z)} or \code{t2(x, z)} are allowed (and
-analogously for higher-order joint effects, e.g., of three predictors).
+analogously for higher-order joint effects, e.g., of three predictors). Note
+that all smooth terms need to be included in \code{formula} (there is no \code{random}
+argument as in \code{\link[rstanarm:stan_gamm4]{rstanarm::stan_gamm4()}}, for example).
 }
 
 \section{Arguments \code{ref_predfun}, \code{proj_predfun}, and \code{div_minimizer}}{
@@ -214,7 +231,7 @@ form of a \code{data.frame}).
 \itemize{
 \item \code{fits} accepts a \code{list} of length \eqn{S_{\mathrm{prj}}}{S_prj}
 containing this number of submodel fits. This \code{list} is the same as that
-returned by \code{\link[=project]{project()}} in its output element \code{submodl} (which in turn is
+returned by \code{\link[=project]{project()}} in its output element \code{outdmin} (which in turn is
 the same as the return value of \code{div_minimizer}, except if \code{\link[=project]{project()}}
 was used with an \code{object} of class \code{vsel} based on an L1 search as well
 as with \code{refit_prj = FALSE}).

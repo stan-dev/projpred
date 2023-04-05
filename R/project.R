@@ -24,7 +24,7 @@
 #'   submodels (again) (`TRUE`) or to retrieve the fitted submodels from
 #'   `object` (`FALSE`). For an `object` which is not of class `vsel`,
 #'   `refit_prj` must be `TRUE`. Note that currently, `refit_prj = FALSE`
-#'   requires some caution, see GitHub issues #168 and #211.
+#'   requires some caution, see GitHub issue #168.
 #' @param ndraws Only relevant if `refit_prj` is `TRUE`. Number of posterior
 #'   draws to be projected. Ignored if `nclusters` is not `NULL` or if the
 #'   reference model is of class `datafit` (in which case one cluster is used).
@@ -69,11 +69,15 @@
 #'     would cancel out when calculating the KL divergence have been dropped. In
 #'     case of the Gaussian family, that reduced cross-entropy is further
 #'     modified, yielding merely a proxy.}
-#'     \item{`weights`}{Weights for the projected draws.}
+#'     \item{`wdraws_prj`}{Weights for the projected draws.}
 #'     \item{`solution_terms`}{A character vector of the submodel's predictor
 #'     terms.}
-#'     \item{`submodl`}{A `list` containing the submodel fits (one fit per
-#'     projected draw).}
+#'     \item{`outdmin`}{A `list` containing the submodel fits (one fit per
+#'     projected draw). This is the same as the return value of the
+#'     `div_minimizer` function (see [init_refmodel()]), except if [project()]
+#'     was used with an `object` of class `vsel` based on an L1 search as well
+#'     as with `refit_prj = FALSE`, in which case this is the output from an
+#'     internal *L1-penalized* divergence minimizer.}
 #'     \item{`cl_ref`}{A numeric vector of length equal to the number of
 #'     posterior draws in the reference model, containing the cluster indices of
 #'     these draws.}
@@ -89,6 +93,14 @@
 #'   If the projection is performed onto more than one submodel, the output from
 #'   above is returned for each submodel, giving a `list` with one element for
 #'   each submodel.
+#'
+#'   The elements of an object of class `projection` are not meant to be
+#'   accessed directly but instead via helper functions (see the main vignette
+#'   and [projpred-package]). An exception is element `wdraws_prj` which is
+#'   currently needed to weight quantities derived from the projected draws in
+#'   case of clustered projection, e.g., after applying [as.matrix.projection()]
+#'   (which throws a warning in case of clustered projection to make users aware
+#'   of this problem).
 #'
 #' @examples
 #' if (requireNamespace("rstanarm", quietly = TRUE)) {
@@ -167,7 +179,7 @@ project <- function(object, nterms = NULL, solution_terms = NULL,
 
   if (!refit_prj) {
     warning("Currently, `refit_prj = FALSE` requires some caution, see GitHub ",
-            "issues #168 and #211.")
+            "issue #168.")
   }
 
   if (!is.null(solution_terms)) {
@@ -184,19 +196,17 @@ project <- function(object, nterms = NULL, solution_terms = NULL,
         "1"
       )
     }
-    if (length(solution_terms) > length(vars)) {
-      stop("Argument 'solution_terms' contains more terms than the number of ",
-           "terms in the reference model.")
-    }
 
     if (!all(solution_terms %in% vars)) {
       warning(
-        "At least one element of `solution_terms` could not be found in the ",
-        "table of solution terms (which is either `object$solution_terms` or ",
-        "the vector of terms in the reference model, depending on whether ",
-        "`object$solution_terms` is `NULL` or not). Elements which cannot be ",
-        "found are ignored. The table of solution terms is here: `c(\"",
-        paste(vars, collapse = "\", \""), "\")`."
+        "The following element(s) of `solution_terms` could not be found in ",
+        "the table of possible solution terms: `c(\"",
+        paste(setdiff(solution_terms, vars), collapse = "\", \""), "\")`. ",
+        "These elements are ignored. (The table of solution terms is either ",
+        "`object$solution_terms` or the vector of terms in the reference ",
+        "model, depending on whether `object$solution_terms` is `NULL` or ",
+        "not. Here, the table of solution terms is: `c(\"",
+        paste(vars, collapse = "\", \""), "\")`.)"
       )
     }
 
@@ -204,7 +214,7 @@ project <- function(object, nterms = NULL, solution_terms = NULL,
     nterms <- length(solution_terms)
   } else {
     ## by default take the variable ordering from the selection
-    solution_terms <- object$solution_terms
+    solution_terms <- solution_terms(object)
     if (is.null(nterms)) {
       sgg_size <- try(suggest_size(object, warnings = FALSE), silent = TRUE)
       if (!inherits(sgg_size, "try-error") && !is.null(sgg_size) &&
@@ -233,28 +243,35 @@ project <- function(object, nterms = NULL, solution_terms = NULL,
     nclusters <- 1
   }
 
-  ## get the clustering or subsample
-  p_ref <- .get_refdist(refmodel, ndraws = ndraws, nclusters = nclusters)
+  ## get the clustering or thinning
+  if (refit_prj) {
+    p_ref <- get_refdist(refmodel, ndraws = ndraws, nclusters = nclusters)
+  }
 
   ## project onto the submodels
-  submodels <- .get_submodels(
+  submodls <- get_submodls(
     search_path = nlist(
       solution_terms,
       p_sel = object$search_path$p_sel,
-      submodls = object$search_path$submodls
+      outdmins = object$search_path$outdmins
     ),
     nterms = nterms, p_ref = p_ref, refmodel = refmodel, regul = regul,
     refit_prj = refit_prj, ...
   )
 
   # Output:
-  projs <- lapply(submodels, function(initsubmodl) {
-    proj_k <- initsubmodl
-    proj_k$p_type <- !is.null(nclusters)
+  if (refit_prj) {
+    refdist_eval <- p_ref
+  } else {
+    refdist_eval <- object$search_path$p_sel
+  }
+  projs <- lapply(submodls, function(submodl) {
+    proj_k <- submodl
+    proj_k$p_type <- refdist_eval$clust_used
     proj_k$refmodel <- refmodel
     class(proj_k) <- "projection"
     return(proj_k)
   })
   ## If only one model size, just return the proj instead of a list of projs
-  return(.unlist_proj(projs))
+  return(unlist_proj(projs))
 }

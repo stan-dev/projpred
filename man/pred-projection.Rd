@@ -98,20 +98,29 @@ topic \link{refmodel-init-get} are used. (For \code{\link[=proj_linpred]{proj_li
 or \eqn{C_{\mathrm{lat}}}{C_lat} (if \code{transform = FALSE}). Then, if the
 prediction is done for one submodel only (i.e., \code{length(nterms) == 1 || !is.null(solution_terms)} in the call to \code{\link[=project]{project()}}):
 \itemize{
-\item \code{\link[=proj_linpred]{proj_linpred()}} returns a \code{list} with elements \code{pred} (predictions,
-i.e., the linear predictors, possibly transformed to response scale) and
-\code{lpd} (log predictive densities; only calculated if \code{newdata} is \code{NULL} or
-if \code{newdata} contains response values in the corresponding column). In case
-of (i) the traditional projection, (ii) the latent projection with
-\code{transform = FALSE}, or (iii) the latent projection with \code{transform = TRUE}
-and \verb{<refmodel>$family$cats} (where \verb{<refmodel>} is an object resulting
-from \code{\link[=init_refmodel]{init_refmodel()}}; see also \code{\link[=extend_family]{extend_family()}}'s argument
-\code{latent_y_unqs}) being \code{NULL}, both elements are \eqn{S_{\mathrm{prj}}
-  \times N}{S_prj x N} matrices. In case of (i) the augmented-data projection
-or (ii) the latent projection with \code{transform = TRUE} and
-\verb{<refmodel>$family$cats} being not \code{NULL}, \code{pred} is an
-\eqn{S_{\mathrm{prj}} \times N \times C}{S_prj x N x C} array and \code{lpd} is
-an \eqn{S_{\mathrm{prj}} \times N}{S_prj x N} matrix.
+\item \code{\link[=proj_linpred]{proj_linpred()}} returns a \code{list} with the following elements:
+\itemize{
+\item Element \code{pred} contains the actual predictions, i.e., the linear
+predictors, possibly transformed to response scale (depending on
+argument \code{transform}).
+\item Element \code{lpd} is non-\code{NULL} only if \code{newdata} is \code{NULL} or if
+\code{newdata} contains response values in the corresponding column. In that
+case, it contains the log predictive density values (conditional on
+each of the projected parameter draws if \code{integrated = FALSE} and
+averaged across the projected parameter draws if \code{integrated = TRUE}).
+}
+
+In case of (i) the traditional projection, (ii) the latent projection
+with \code{transform = FALSE}, or (iii) the latent projection with
+\code{transform = TRUE} and \verb{<refmodel>$family$cats} (where \verb{<refmodel>} is
+an object resulting from \code{\link[=init_refmodel]{init_refmodel()}}; see also
+\code{\link[=extend_family]{extend_family()}}'s argument \code{latent_y_unqs}) being \code{NULL}, both
+elements are \eqn{S_{\mathrm{prj}} \times N}{S_prj x N} matrices. In
+case of (i) the augmented-data projection or (ii) the latent projection
+with \code{transform = TRUE} and \verb{<refmodel>$family$cats} being not \code{NULL},
+\code{pred} is an \eqn{S_{\mathrm{prj}} \times N \times C}{S_prj x N x C}
+array and \code{lpd} is an \eqn{S_{\mathrm{prj}} \times N}{S_prj x N}
+matrix.
 \item \code{\link[=proj_predict]{proj_predict()}} returns an \eqn{S_{\mathrm{prj}} \times N}{S_prj x N}
 matrix of predictions where \eqn{S_{\mathrm{prj}}}{S_prj} denotes
 \code{nresample_clusters} in case of clustered projection. In case of (i) the
@@ -130,19 +139,22 @@ of the submodels when counting the intercept, too).
 \description{
 After the projection of the reference model onto a submodel, the linear
 predictors (for the original or a new dataset) based on that submodel can be
-calculated by \code{\link[=proj_linpred]{proj_linpred()}}. The linear predictors can also be transformed
-to response scale. Furthermore, \code{\link[=proj_linpred]{proj_linpred()}} returns the corresponding
-log predictive density values if the (original or new) dataset contains
-response values. The \code{\link[=proj_predict]{proj_predict()}} function draws from the predictive
-distributions (there is one such distribution for each observation from the
-original or new dataset) of the submodel that the reference model has been
-projected onto. If the projection has not been performed yet, both functions
-call \code{\link[=project]{project()}} internally to perform the projection. Both functions can
-also handle multiple submodels at once (for \code{object}s of class \code{vsel} or
-\code{object}s returned by a \code{\link[=project]{project()}} call to an object of class \code{vsel}; see
-\code{\link[=project]{project()}}).
+calculated by \code{\link[=proj_linpred]{proj_linpred()}}. These linear predictors can also be
+transformed to response scale and averaged across the projected parameter
+draws. Furthermore, \code{\link[=proj_linpred]{proj_linpred()}} returns the corresponding log predictive
+density values if the (original or new) dataset contains response values. The
+\code{\link[=proj_predict]{proj_predict()}} function draws from the predictive distributions (there is
+one such distribution for each observation from the original or new dataset)
+of the submodel that the reference model has been projected onto. If the
+projection has not been performed yet, both functions call \code{\link[=project]{project()}}
+internally to perform the projection. Both functions can also handle multiple
+submodels at once (for \code{object}s of class \code{vsel} or \code{object}s returned by a
+\code{\link[=project]{project()}} call to an object of class \code{vsel}; see \code{\link[=project]{project()}}).
 }
 \details{
+Currently, \code{\link[=proj_predict]{proj_predict()}} ignores observation weights that are not
+equal to \code{1}. A corresponding warning is thrown if this is the case.
+
 In case of the latent projection and \code{transform = FALSE}:
 \itemize{
 \item Output element \code{pred} contains the linear predictors without any

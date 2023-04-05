@@ -5,7 +5,6 @@
 #'
 #' @import stats
 #' @import ggplot2
-#' @importFrom rlang .data
 #' @importFrom rstantools posterior_linpred
 #' @importFrom loo kfold
 #'
@@ -55,6 +54,17 @@
 #'     [brms::categorical()] family.
 #' * Submodel without multilevel but additive terms: [mgcv::gam()].
 #' * Submodel with multilevel and additive terms: [gamm4::gamm4()].
+#'
+#' Setting the global option `projpred.extra_verbose` to `TRUE` will print out
+#' which submodel \pkg{projpred} is currently projecting onto as well as (if
+#' `method = "forward"` and `verbose = TRUE` in `varsel()` or `cv_varsel()`)
+#' which submodel has been selected at those steps of the forward search for
+#' which a percentage (of the maximum submodel size that the search is run up
+#' to) is printed. In general, however, we cannot recommend setting this global
+#' option to `TRUE` for `cv_varsel()` with `cv_method = "LOO"` and
+#' `validate_search = TRUE` or for `cv_varsel()` with `cv_method = "kfold"`
+#' (simply due to the amount of information that will be printed, but also due
+#' to the progress bar which will not work anymore as intended).
 #'
 #' The projection of the reference model onto a submodel can be run on multiple
 #' CPU cores in parallel (across the projected draws). This is powered by the

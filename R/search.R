@@ -1,45 +1,46 @@
 search_forward <- function(p_ref, refmodel, nterms_max, verbose = TRUE, opt,
-                           search_terms = NULL, ...) {
-  iq <- ceiling(quantile(seq_len(nterms_max), 1:10 / 10))
+                           search_terms, ...) {
+  nterms_max_with_icpt <- nterms_max + 1L
+  iq <- ceiling(quantile(seq_len(nterms_max_with_icpt), 1:10 / 10))
   if (is.null(search_terms)) {
-    allterms <- split_formula(refmodel$formula, data = refmodel$fetch_data())
-  } else {
-    allterms <- search_terms
+    stop("Did not expect `search_terms` to be `NULL`. Please report this.")
   }
 
   chosen <- character()
-  total_terms <- count_terms_chosen(allterms)
-  stop_search <- min(total_terms, nterms_max)
-  submodls <- c()
+  outdmins <- c()
 
-  for (size in seq_len(stop_search)) {
-    cands <- select_possible_terms_size(chosen, allterms, size = size)
+  for (size in seq_len(nterms_max_with_icpt)) {
+    cands <- select_possible_terms_size(chosen, search_terms, size = size)
     if (is.null(cands))
       next
     full_cands <- lapply(cands, function(cand) c(chosen, cand))
-    subL <- lapply(full_cands, project_submodel,
-                   p_ref = p_ref, refmodel = refmodel, regul = opt$regul, ...)
+    submodls <- lapply(full_cands, get_submodl_prj, p_ref = p_ref,
+                       refmodel = refmodel, regul = opt$regul, ...)
 
     ## select best candidate
-    imin <- which.min(sapply(subL, "[[", "ce"))
+    imin <- which.min(sapply(submodls, "[[", "ce"))
     chosen <- c(chosen, cands[imin])
 
-    ## append `submodl`
-    submodls <- c(submodls, list(subL[[imin]]$submodl))
+    ## append `outdmin`
+    outdmins <- c(outdmins, list(submodls[[imin]]$outdmin))
 
-    if (verbose && count_terms_chosen(chosen) %in% iq) {
-      print(paste0(names(iq)[max(which(count_terms_chosen(chosen) == iq))],
-                   " of terms selected."))
+    ct_chosen <- count_terms_chosen(chosen)
+    if (verbose && ct_chosen %in% iq) {
+      vtxt <- paste(names(iq)[max(which(ct_chosen == iq))], "of terms selected")
+      if (getOption("projpred.extra_verbose", FALSE)) {
+        vtxt <- paste0(vtxt, ": ", paste(chosen, collapse = " + "))
+      }
+      verb_out(vtxt)
     }
   }
 
   # For `solution_terms`, `reduce_models(chosen)` used to be used instead of
   # `chosen`. However, `reduce_models(chosen)` and `chosen` should be identical
   # at this place because select_possible_terms_size() already avoids redundant
-  # models. Thus, use `chosen` here because it matches `submodls` (this
-  # matching is necessary because later in .get_submodels()'s `!refit_prj` case,
-  # `submodls` is indexed with integers which are based on `solution_terms`):
-  return(nlist(solution_terms = setdiff(chosen, "1"), submodls))
+  # models. Thus, use `chosen` here because it matches `outdmins` (this
+  # matching is necessary because later in get_submodls()'s `!refit_prj` case,
+  # `outdmins` is indexed with integers which are based on `solution_terms`):
+  return(nlist(solution_terms = setdiff(chosen, "1"), outdmins))
 }
 
 search_L1_surrogate <- function(p_ref, d_train, family, intercept, nterms_max,
@@ -116,7 +117,7 @@ search_L1_surrogate <- function(p_ref, d_train, family, intercept, nterms_max,
     }
   }
 
-  out$solution_terms <- order[1:nterms_max]
+  out$solution_terms <- order[seq_len(nterms_max)]
   if (any(is.na(out$solution_terms)) &&
       length(entered_variables) < nterms_max) {
     if (length(setdiff(notentered_variables,
@@ -132,14 +133,28 @@ search_L1_surrogate <- function(p_ref, d_train, family, intercept, nterms_max,
 search_L1 <- function(p_ref, refmodel, nterms_max, penalty, opt) {
   if (nterms_max == 0) {
     stop("L1 search cannot be used for an empty (i.e. intercept-only) ",
-         "reference model.")
+         "full-model formula or `nterms_max = 0`.")
+  }
+  # Preparations:
+  fr <- model.frame(refmodel$formula, data = refmodel$fetch_data(),
+                    drop.unused.levels = TRUE)
+  da_classes <- attr(attr(fr, "terms"), "dataClasses")
+  nms_chr_fac <- names(da_classes)[da_classes %in% c("character", "factor")]
+  resp_nm <- all.vars(attr(fr, "terms"))[attr(attr(fr, "terms"), "response")]
+  nms_chr_fac <- setdiff(nms_chr_fac, resp_nm)
+  if (length(nms_chr_fac) > 0) {
+    xlvls <- lapply(setNames(nm = nms_chr_fac), function(nm_chr_fac) {
+      levels(as.factor(fr[[nm_chr_fac]]))
+    })
+  } else {
+    xlvls <- NULL
   }
   # TODO: In the following model.matrix() call, allow user-specified contrasts
   # to be passed to argument `contrasts.arg`. The `contrasts.arg` default
   # (`NULL`) uses `options("contrasts")` internally, but it might be more
   # convenient to let users specify contrasts directly. At that occasion,
   # contrasts should also be tested thoroughly (not done until now).
-  x <- model.matrix(refmodel$formula, data = refmodel$fetch_data())
+  x <- model.matrix(refmodel$formula, data = fr)
   x <- x[, colnames(x) != "(Intercept)", drop = FALSE]
   ## it's important to keep the original order because that's the order
   ## in which lasso will estimate the parameters
@@ -147,13 +162,12 @@ search_L1 <- function(p_ref, refmodel, nterms_max, penalty, opt) {
   terms_ <- attr(tt, "term.labels")
   search_path <- search_L1_surrogate(
     p_ref, nlist(x, weights = refmodel$wobs), refmodel$family,
-    refmodel$intercept, ncol(x), penalty, opt
+    intercept = TRUE, ncol(x), penalty, opt
   )
   solution_terms <- collapse_contrasts_solution_path(
-    refmodel$formula, colnames(x)[search_path$solution_terms],
-    refmodel$fetch_data()
+    refmodel$formula, colnames(x)[search_path$solution_terms], data = fr
   )
-  submodls <- lapply(0:length(solution_terms), function(nterms) {
+  outdmins <- lapply(0:length(solution_terms), function(nterms) {
     if (nterms == 0) {
       formula <- make_formula(c("1"))
       beta <- NULL
@@ -169,8 +183,7 @@ search_L1 <- function(p_ref, refmodel, nterms_max, penalty, opt) {
           # internally, but it might be more convenient to let users specify
           # contrasts directly. At that occasion, contrasts should also be
           # tested thoroughly (not done until now).
-          mm <- model.matrix(as.formula(paste("~ 1 +", term)),
-                             data = refmodel$fetch_data())
+          mm <- model.matrix(as.formula(paste("~ 1 +", term)), data = fr)
           return(setdiff(colnames(mm), "(Intercept)"))
         }
       ))
@@ -181,15 +194,36 @@ search_L1 <- function(p_ref, refmodel, nterms_max, penalty, opt) {
       # `x <- x[, variables, drop = FALSE]` should also be possible, but the
       # re-use of `colnames(x)` should provide another sanity check:
       x <- x[, colnames(x)[search_path$solution_terms[indices]], drop = FALSE]
+      # For consistency with fit_glm_ridge_callback():
+      rownames(beta) <- colnames(x)
     }
-    sub <- nlist(alpha = search_path$alpha[nterms + 1],
-                 beta,
-                 w = search_path$w[, nterms + 1],
-                 formula,
-                 x)
+    # Avoid model.frame.default()'s warning "variable '<...>' is not a factor"
+    # when calling predict.subfit() later:
+    xlvls <- xlvls[intersect(names(xlvls), all.vars(formula))]
+    if (length(xlvls) == 0) {
+      xlvls <- NULL
+    }
+
+    sub <- nlist(alpha = search_path$alpha[nterms + 1], beta,
+                 w = search_path$w[, nterms + 1], formula, x, xlvls)
     class(sub) <- "subfit"
     return(list(sub))
   })
-  return(list(solution_terms = solution_terms[seq_len(nterms_max)],
-              submodls = submodls[seq_len(nterms_max + 1)]))
+  solution_terms <- solution_terms[seq_len(nterms_max)]
+  outdmins <- outdmins[seq_len(nterms_max + 1)]
+
+  # Check for interaction terms being selected before all involved main effects
+  # have been selected (and throw a warning if that is the case):
+  ia_sel_bef_main <- sapply(grep(":", solution_terms), function(idx_ia) {
+    term_split <- strsplit(solution_terms[idx_ia], ":")[[1]]
+    !all(term_split %in% utils::head(solution_terms, idx_ia - 1L))
+  })
+  if (any(ia_sel_bef_main) &&
+      getOption("projpred.warn_L1_interactions", TRUE)) {
+    warning("An interaction has been selected before all involved main ",
+            "effects have been selected. This is a known deficiency of L1 ",
+            "search. Use forward search to avoid this.")
+  }
+
+  return(nlist(solution_terms, outdmins))
 }

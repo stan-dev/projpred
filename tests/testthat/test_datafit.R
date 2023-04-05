@@ -173,7 +173,7 @@ if (run_vs) {
         excl_nonargs(args_prj_vs_i)
       )),
       paste("^Currently, `refit_prj = FALSE` requires some caution, see GitHub",
-            "issues #168 and #211\\.$"),
+            "issue #168\\.$"),
       info = args_prj_vs_i$tstsetup_vsel
     )
   })
@@ -342,7 +342,7 @@ test_that(paste(
           datafits[[args_prj_vs_datafit[[tstsetup]]$tstsetup_datafit]],
         solterms_expected = solterms_expected_crr,
         nprjdraws_expected = 1L,
-        p_type_expected = TRUE,
+        p_type_expected = FALSE,
         from_vsel_L1_search = with_L1,
         info_str = tstsetup
       )
@@ -367,8 +367,8 @@ test_that(paste(
         refmod_expected =
           datafits[[args_prj_vs_datafit[[tstsetup]]$tstsetup_datafit]],
         nprjdraws_expected = 1L,
-        p_type_expected = TRUE,
-        prjdraw_weights_expected = prjs_vs_datafit[[tstsetup]][[1]]$weights,
+        p_type_expected = FALSE,
+        prjdraw_weights_expected = prjs_vs_datafit[[tstsetup]][[1]]$wdraws_prj,
         from_vsel_L1_search = with_L1
       )
       ### TODO: Currently, the as.matrix() call below is not possible for
@@ -452,6 +452,7 @@ test_that(paste(
     }
     pp_tester(pps_vs_datafit[[tstsetup]],
               len_expected = length(nterms_crr),
+              nprjdraws_out_expected = 1L,
               info_str = tstsetup)
     pp_with_args <- proj_predict(
       prjs_vs_datafit[[tstsetup]],
@@ -463,7 +464,7 @@ test_that(paste(
     )
     pp_tester(pp_with_args,
               len_expected = 1L,
-              nprjdraws_out_expected = tail(nresample_clusters_tst, 1),
+              nprjdraws_out_expected = 1L,
               nobsv_expected = tail(nobsv_tst, 1),
               info_str = paste(tstsetup, "with_args", sep = "__"))
     if (run_snaps) {
@@ -688,8 +689,8 @@ test_that(paste(
     )
     vs <- suppressWarnings(varsel(
       ref,
-      method = "l1", lambda_min_ratio = lambda_min_ratio,
-      nlambda = nlambda, thresh = 1e-12
+      method = "L1", lambda_min_ratio = lambda_min_ratio,
+      nlambda = nlambda, thresh = 1e-12, verbose = FALSE
     ))
     expect_warning(
       pred1 <- proj_linpred(vs,
@@ -697,7 +698,7 @@ test_that(paste(
                             transform = FALSE, .seed = seed2_tst,
                             nterms = 0:nterms, refit_prj = FALSE),
       paste("^Currently, `refit_prj = FALSE` requires some caution, see GitHub",
-            "issues #168 and #211\\.$"),
+            "issue #168\\.$"),
       info = fam$family
     )
 
@@ -734,13 +735,13 @@ test_that(paste(
 
     # check that the coefficients are similar
     ind <- match(vs$solution_terms, setdiff(split_formula(formula), "1"))
-    betas <- sapply(vs$search_path$submodls, function(x) x[[1]]$beta %||% 0)
+    betas <- sapply(vs$search_path$outdmins, function(x) x[[1]]$beta %||% 0)
     delta <- sapply(seq_len(length(lambdainds) - 1), function(i) {
       abs(t(betas[[i + 1]]) - lasso$beta[ind[1:i], lambdainds[i + 1]])
     })
     expect_true(median(unlist(delta)) < 6e-2)
     expect_true(median(abs(
-      sapply(head(vs$search_path$submodls, length(lambdainds)),
+      sapply(head(vs$search_path$outdmins, length(lambdainds)),
              function(x) {
                x[[1]]$alpha
              }) -

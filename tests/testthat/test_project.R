@@ -38,18 +38,14 @@ test_that("invalid `solution_terms` warns or fails", {
       info = tstsetup
     )
 
-    # Invalid length:
-    expect_error(
-      do.call(project, c(
-        list(object = refmods[[args_prj_i$tstsetup_ref]],
-             solution_terms = rep_len(args_prj_i$solution_terms,
-                                      length.out = 1e4)),
-        excl_nonargs(args_prj_i, nms_excl_add = "solution_terms")
-      )),
-      paste("^Argument 'solution_terms' contains more terms than the number of",
-            "terms in the reference model\\.$"),
-      info = tstsetup
-    )
+    # Repeating solution terms:
+    p_long <- do.call(project, c(
+      list(object = refmods[[args_prj_i$tstsetup_ref]],
+           solution_terms = rep_len(args_prj_i$solution_terms,
+                                    length.out = 1e4)),
+      excl_nonargs(args_prj_i, nms_excl_add = "solution_terms")
+    ))
+    expect_identical(p_long, prjs[[tstsetup]])
 
     # Invalid type:
     for (solterms_crr in list(2, 1:3, list(solterms_x, solterms_x))) {
@@ -81,8 +77,8 @@ test_that("invalid `solution_terms` warns or fails", {
                solution_terms = solterms_crr),
           excl_nonargs(args_prj_i, nms_excl_add = "solution_terms")
         )),
-        paste("At least one element of `solution_terms` could not be found",
-              "in the table of solution terms"),
+        paste("The following element\\(s\\) of `solution_terms` could not be",
+              "found in the table of possible solution terms"),
         info = tstsetup_crr
       )
       projection_tester(p,
@@ -154,8 +150,40 @@ test_that(paste(
       })
       tstsetup_match_prj <- tstsetup_tries[match_prj]
       if (length(tstsetup_match_prj) == 1) {
-        expect_identical(prjs_vs[[tstsetup]], prjs[[tstsetup_match_prj]],
-                         ignore.environment = TRUE, info = tstsetup)
+        if (identical(prjs_vs[[tstsetup]]$solution_terms,
+                      prjs[[tstsetup_match_prj]]$solution_terms)) {
+          expect_identical(prjs_vs[[tstsetup]], prjs[[tstsetup_match_prj]],
+                           ignore.environment = TRUE, info = tstsetup)
+        } else {
+          expect_setequal(prjs_vs[[tstsetup]]$solution_terms,
+                          prjs[[tstsetup_match_prj]]$solution_terms)
+          expect_equal(
+            lapply(seq_along(prjs_vs[[tstsetup]]$outdmin), function(s_idx) {
+              outdmin_s <- prjs_vs[[tstsetup]]$outdmin[[s_idx]]
+              outdmin_s$beta <- outdmin_s$beta[
+                rownames(prjs[[tstsetup_match_prj]]$outdmin[[s_idx]]$beta), ,
+                drop = FALSE
+              ]
+              outdmin_s$formula <- prjs[[tstsetup_match_prj]]$outdmin[[s_idx]][[
+                "formula"
+              ]]
+              outdmin_s$x <- outdmin_s$x[
+                , colnames(prjs[[tstsetup_match_prj]]$outdmin[[s_idx]]$x),
+                drop = FALSE
+              ]
+              return(outdmin_s)
+            }),
+            prjs[[tstsetup_match_prj]]$outdmin,
+            tolerance = 1e1 * .Machine$double.eps, info = tstsetup
+          )
+          prj_nms <- names(prjs_vs[[tstsetup]])
+          expect_identical(prj_nms, names(prjs[[tstsetup_match_prj]]),
+                           info = tstsetup)
+          prj_el_excl <- !prj_nms %in% c("solution_terms", "outdmin")
+          expect_equal(prjs_vs[[tstsetup]][prj_el_excl],
+                       prjs[[tstsetup_match_prj]][prj_el_excl],
+                       tolerance = .Machine$double.eps, info = tstsetup)
+        }
       } else if (length(tstsetup_match_prj) > 1) {
         stop("Unexpected number of matches.")
       }
@@ -168,7 +196,7 @@ test_that(paste(
         refmod_expected = refmods[[args_prj_vs[[tstsetup]]$tstsetup_ref]],
         nprjdraws_expected = args_prj_vs[[tstsetup]]$nclusters,
         p_type_expected = TRUE,
-        prjdraw_weights_expected = prjs_vs[[tstsetup]][[1]]$weights
+        prjdraw_weights_expected = prjs_vs[[tstsetup]][[1]]$wdraws_prj
       )
     }
   }
@@ -217,8 +245,40 @@ test_that(paste(
       })
       tstsetup_match_prj <- tstsetup_tries[match_prj]
       if (length(tstsetup_match_prj) == 1) {
-        expect_identical(prjs_cvvs[[tstsetup]], prjs[[tstsetup_match_prj]],
-                         ignore.environment = TRUE, info = tstsetup)
+        if (identical(prjs_cvvs[[tstsetup]]$solution_terms,
+                      prjs[[tstsetup_match_prj]]$solution_terms)) {
+          expect_identical(prjs_cvvs[[tstsetup]], prjs[[tstsetup_match_prj]],
+                           ignore.environment = TRUE, info = tstsetup)
+        } else {
+          expect_setequal(prjs_cvvs[[tstsetup]]$solution_terms,
+                          prjs[[tstsetup_match_prj]]$solution_terms)
+          expect_equal(
+            lapply(seq_along(prjs_cvvs[[tstsetup]]$outdmin), function(s_idx) {
+              outdmin_s <- prjs_cvvs[[tstsetup]]$outdmin[[s_idx]]
+              outdmin_s$beta <- outdmin_s$beta[
+                rownames(prjs[[tstsetup_match_prj]]$outdmin[[s_idx]]$beta), ,
+                drop = FALSE
+              ]
+              outdmin_s$formula <- prjs[[tstsetup_match_prj]]$outdmin[[s_idx]][[
+                "formula"
+              ]]
+              outdmin_s$x <- outdmin_s$x[
+                , colnames(prjs[[tstsetup_match_prj]]$outdmin[[s_idx]]$x),
+                drop = FALSE
+              ]
+              return(outdmin_s)
+            }),
+            prjs[[tstsetup_match_prj]]$outdmin,
+            tolerance = 1e1 * .Machine$double.eps, info = tstsetup
+          )
+          prj_nms <- names(prjs_cvvs[[tstsetup]])
+          expect_identical(prj_nms, names(prjs[[tstsetup_match_prj]]),
+                           info = tstsetup)
+          prj_el_excl <- !prj_nms %in% c("solution_terms", "outdmin")
+          expect_equal(prjs_cvvs[[tstsetup]][prj_el_excl],
+                       prjs[[tstsetup_match_prj]][prj_el_excl],
+                       tolerance = .Machine$double.eps, info = tstsetup)
+        }
       } else if (length(tstsetup_match_prj) > 1) {
         stop("Unexpected number of matches.")
       }
@@ -231,7 +291,7 @@ test_that(paste(
         refmod_expected = refmods[[args_prj_cvvs[[tstsetup]]$tstsetup_ref]],
         nprjdraws_expected = args_prj_cvvs[[tstsetup]]$nclusters,
         p_type_expected = TRUE,
-        prjdraw_weights_expected = prjs_cvvs[[tstsetup]][[1]]$weights
+        prjdraw_weights_expected = prjs_cvvs[[tstsetup]][[1]]$wdraws_prj
       )
     }
   }
@@ -324,13 +384,13 @@ test_that("non-clustered projection does not require a seed", {
         p_new <- p_orig
       } else if (args_prj_i$prj_nm == "augdat" &&
                  args_prj_i$fam_nm == "cumul" && args_prj_i$mod_nm == "glmm") {
-        for (idx_s in seq_along(p_new$submodl)) {
-          if (!is.null(p_new$submodl[[idx_s]][["L"]])) {
+        for (idx_s in seq_along(p_new$outdmin)) {
+          if (!is.null(p_new$outdmin[[idx_s]][["L"]])) {
             # We could also use `"sparseMatrix"` instead of `"Matrix"`:
-            expect_equal(as(p_new$submodl[[idx_s]][["L"]], "Matrix"),
-                         as(p_orig$submodl[[idx_s]][["L"]], "Matrix"),
+            expect_equal(as(p_new$outdmin[[idx_s]][["L"]], "Matrix"),
+                         as(p_orig$outdmin[[idx_s]][["L"]], "Matrix"),
                          info = tstsetup)
-            p_new$submodl[[idx_s]][["L"]] <- p_orig$submodl[[idx_s]][["L"]]
+            p_new$outdmin[[idx_s]][["L"]] <- p_orig$outdmin[[idx_s]][["L"]]
           }
         }
       }

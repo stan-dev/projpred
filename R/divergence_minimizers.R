@@ -102,7 +102,18 @@ fit_glm_ridge_callback <- function(formula, data,
                                    projpred_var = matrix(nrow = nrow(data)),
                                    projpred_regul = 1e-4, ...) {
   # Preparations:
-  fr <- model.frame(formula, data = data)
+  fr <- model.frame(formula, data = data, drop.unused.levels = TRUE)
+  da_classes <- attr(attr(fr, "terms"), "dataClasses")
+  nms_chr_fac <- names(da_classes)[da_classes %in% c("character", "factor")]
+  resp_nm <- all.vars(attr(fr, "terms"))[attr(attr(fr, "terms"), "response")]
+  nms_chr_fac <- setdiff(nms_chr_fac, resp_nm)
+  if (length(nms_chr_fac) > 0) {
+    xlvls <- lapply(setNames(nm = nms_chr_fac), function(nm_chr_fac) {
+      levels(as.factor(fr[[nm_chr_fac]]))
+    })
+  } else {
+    xlvls <- NULL
+  }
   # TODO: In the following model.matrix() call, allow user-specified contrasts
   # to be passed to argument `contrasts.arg`. The `contrasts.arg` default
   # (`NULL`) uses `options("contrasts")` internally, but it might be more
@@ -124,13 +135,8 @@ fit_glm_ridge_callback <- function(formula, data,
   ))
   # Post-processing:
   rownames(fit$beta) <- colnames(x)
-  sub <- nlist(
-    alpha = fit$beta0,
-    beta = fit$beta,
-    w = fit$w,
-    formula,
-    x, y
-  )
+  sub <- nlist(alpha = fit$beta0, beta = fit$beta, w = fit$w, formula, x, y,
+               xlvls)
   class(sub) <- "subfit"
   return(sub)
 }
@@ -640,7 +646,11 @@ fit_cumul <- function(formula, data, family, weights, ...) {
                   "attempt to find suitable starting values failed",
                   sep = "|"),
             attr(fitobj, "condition")$message)) {
-    # Try to fix this automatically by specifying `start` values.
+    # Try to fix this automatically by specifying `start` values (the check for
+    # the intercept being present is just performed to show that *by
+    # construction*, we expect an intercept here; later code might be general
+    # enough to deal with a missing intercept, but that's not the point).
+    stopifnot(attr(terms(formula), "intercept") == 1)
     ncoefs <- count_terms_in_formula(formula) -
       attr(terms(formula), "intercept")
     start_coefs <- rep(0, ncoefs)
@@ -1053,23 +1063,31 @@ predict.subfit <- function(subfit, newdata = NULL) {
   alpha <- subfit$alpha
   if (is.null(newdata)) {
     if (is.null(beta)) {
-      return(as.matrix(rep(alpha, NROW(subfit$x))))
+      return(as.matrix(rep(alpha, nrow(subfit$x))))
     } else {
       return(cbind(1, subfit$x) %*% rbind(alpha, beta))
     }
   } else {
-    # TODO: In the following model.matrix() call, allow user-specified contrasts
-    # to be passed to argument `contrasts.arg`. The `contrasts.arg` default
-    # (`NULL`) uses `options("contrasts")` internally, but it might be more
-    # convenient to let users specify contrasts directly. At that occasion,
-    # contrasts should also be tested thoroughly (not done until now).
-    x <- model.matrix(delete.response(terms(subfit$formula)), data = newdata)
     if (is.null(beta)) {
-      return(as.matrix(rep(alpha, NROW(x))))
+      return(as.matrix(rep(alpha, nrow(newdata))))
     } else {
-      if (ncol(x) != length(beta) + 1L) {
-        stop("The number of columns in the model matrix (\"X\") doesn't match ",
-             "the number of coefficients.")
+      # TODO: In the following model.matrix() call, allow user-specified
+      # contrasts to be passed to argument `contrasts.arg`. The `contrasts.arg`
+      # default (`NULL`) uses `options("contrasts")` internally, but it might be
+      # more convenient to let users specify contrasts directly. At that
+      # occasion, contrasts should also be tested thoroughly (not done until
+      # now).
+      x <- model.matrix(delete.response(terms(subfit$formula)), data = newdata,
+                        xlev = subfit$xlvls)
+      if (!identical(colnames(x), c("(Intercept)", colnames(subfit$x)))) {
+        if (identical(sort(colnames(x)),
+                      sort(c("(Intercept)", colnames(subfit$x))))) {
+          x <- x[, c("(Intercept)", colnames(subfit$x)), drop = FALSE]
+        } else {
+          stop("The column names of the new model matrix don't match the ",
+               "column names of the original model matrix. Please notify the ",
+               "package maintainer.")
+        }
       }
       return(x %*% rbind(alpha, beta))
     }

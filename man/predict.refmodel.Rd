@@ -2,7 +2,7 @@
 % Please edit documentation in R/refmodel.R
 \name{predict.refmodel}
 \alias{predict.refmodel}
-\title{Predictions or log predictive densities from a reference model}
+\title{Predictions or log posterior predictive densities from a reference model}
 \usage{
 \method{predict}{refmodel}(
   object,
@@ -52,9 +52,8 @@ above. In that case, note that \code{type = "link"} yields the linear predictors
 without any modifications that may be due to the original response
 distribution (e.g., for a \code{\link[brms:brmsfamily]{brms::cumulative()}} model, the ordered
 thresholds are not taken into account). If (ii) \code{!is.null(ynew)}, then
-argument \code{type} also affects the scale of the log predictive densities
-(\code{type = "response"} for the original response scale, \code{type = "link"} for
-the latent Gaussian scale).}
+argument \code{type} also affects the scale of the log posterior predictive
+densities (\code{type = "response"} for the original response scale, \code{type = "link"} for the latent Gaussian scale).}
 
 \item{...}{Currently ignored.}
 }
@@ -74,16 +73,15 @@ projection or (ii) the latent projection with \code{type = "response"} and
 \code{object$family$cats} being not \code{NULL}.
 }
 
-If \code{!is.null(ynew)}, the returned
-object is a length-\eqn{N} vector of log predictive densities evaluated at
-\code{ynew}.
+If \code{!is.null(ynew)}, the returned object is a length-\eqn{N} vector of log
+posterior predictive densities evaluated at \code{ynew}.
 }
 \description{
 This is the \code{\link[=predict]{predict()}} method for \code{refmodel} objects (returned by
 \code{\link[=get_refmodel]{get_refmodel()}} or \code{\link[=init_refmodel]{init_refmodel()}}). It offers three types of output which
 are all based on the reference model and new (or old) observations: Either
 the linear predictor on link scale, the linear predictor transformed to
-response scale, or the log predictive density.
+response scale, or the log posterior predictive density.
 }
 \details{
 Argument \code{weightsnew} is only relevant if \code{!is.null(ynew)}.

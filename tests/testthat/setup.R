@@ -27,7 +27,7 @@ run_valsearch_aug_lat <- FALSE
 # Run the `cvfits` test for all possible test setups (`TRUE`) or just for the
 # first one among the GLMMs (`FALSE`; note that if there is no GLMM available in
 # that test, the first test setup among those for K-fold CV is used)?:
-run_cvfits_all <- FALSE
+run_cvfits_all <- run_more
 # Run tests for "brmsfit"s?:
 run_brms <- identical(Sys.getenv("NOT_CRAN"), "true")
 # Run snapshot tests?:
@@ -57,6 +57,10 @@ if (identical(run_snaps, "")) {
 }
 if (run_snaps) {
   testthat_ed_max2 <- edition_get() <= 2
+  if (!requireNamespace("rlang", quietly = TRUE)) {
+    stop("Package \"rlang\" is needed for the snapshots. Please install it.",
+         call. = FALSE)
+  }
 }
 # Run parallel tests?:
 # Notes:
@@ -497,8 +501,8 @@ trms_common_spcl <- c("xco.1", "I(xco.1^2)",
                       "offset(offs_col)")
 
 # Solution terms for project()-ing from `"refmodel"`s:
-solterms_x <- c("xco.2", "xca.1")
-solterms_z <- c("(1 | z.1)", "(xco.1 | z.1)")
+solterms_x <- c("xco.1", "xca.1")
+solterms_z <- c("(1 | z.1)", "(xco.1 | z.1)") # removing one of them later
 solterms_s <- c("s(s.1)") # , "s(s.2)"
 solterms_spcl <- c("xca.1", "xco.1", "I(xco.1^2)", "exp(xco.2)",
                    "I(as.numeric(xco.3 > 0))",
@@ -756,13 +760,7 @@ if (!run_more) {
 ## Run --------------------------------------------------------------------
 
 fits <- suppressWarnings(lapply(args_fit, function(args_fit_i) {
-  fit_fun_nm <- switch(args_fit_i$pkg_nm,
-                       "rstanarm" = switch(args_fit_i$mod_nm,
-                                           "glm" = "stan_glm",
-                                           "glmm" = "stan_glmer",
-                                           "stan_gamm4"),
-                       "brms" = "brm",
-                       stop("Unknown `pkg_nm`."))
+  fit_fun_nm <- get_fit_fun_nm(args_fit_i)
   if (args_fit_i$pkg_nm == "rstanarm" && args_fit_i$fam_nm == "cumul") {
     fit_fun_nm <- "stan_polr"
     args_fit_i$family <- NULL
@@ -811,6 +809,12 @@ meth_tst <- list(
   L1 = list(method = "L1"),
   forward = list(method = "forward")
 )
+# Suppress the warning for interaction terms being selected before all involved
+# main effects have been selected (only concerns L1 search):
+options(projpred.warn_L1_interactions = FALSE)
+# Suppress the warning thrown by proj_predict() in case of observation weights
+# that are not all equal to `1`:
+options(projpred.warn_wobs_ppd = FALSE)
 
 search_trms_tst <- list(
   default_search_trms = list(),
@@ -1181,6 +1185,8 @@ if (run_prj) {
       # We need a single group-level term (which only consists of group-level
       # intercepts) to be able to use `nAGQ` later:
       solterms_z <- setdiff(solterms_z, "(xco.1 | z.1)")
+    } else {
+      solterms_z <- setdiff(solterms_z, "(1 | z.1)")
     }
     if (mod_crr %in% c("glmm", "gamm")) {
       solterms <- c(solterms,
@@ -1561,13 +1567,9 @@ if (run_cvvs) {
 ## Output names -----------------------------------------------------------
 
 vsel_nms <- c(
-  "refmodel", "search_path", "d_test", "summaries", "solution_terms", "ce",
-  "nterms_max", "nterms_all", "method", "cv_method", "validate_search",
-  "clust_used_search", "clust_used_eval", "nprjdraws_search", "nprjdraws_eval"
-)
-vsel_nms_cv <- c(
-  "refmodel", "search_path", "d_test", "summaries", "ce", "solution_terms",
-  "pct_solution_terms_cv", "nterms_all", "nterms_max", "method", "cv_method",
+  "refmodel", "nobs_train", "search_path", "solution_terms",
+  "pct_solution_terms_cv", "ce", "type_test", "y_wobs_test", "nobs_test",
+  "summaries", "nterms_all", "nterms_max", "method", "cv_method", "K",
   "validate_search", "clust_used_search", "clust_used_eval", "nprjdraws_search",
   "nprjdraws_eval"
 )
@@ -1575,15 +1577,15 @@ vsel_nms_cv <- c(
 vsel_nms_pred <- c("summaries", "solution_terms", "ce")
 vsel_nms_pred_opt <- c("solution_terms")
 # Related to `nloo`:
-vsel_nms_cv_nloo <- c("summaries", "pct_solution_terms_cv")
-vsel_nms_cv_nloo_opt <- c("pct_solution_terms_cv")
+vsel_nms_nloo <- c("summaries", "pct_solution_terms_cv")
+vsel_nms_nloo_opt <- c("pct_solution_terms_cv")
 # Related to `validate_search`:
-vsel_nms_cv_valsearch <- c("validate_search", "summaries",
-                           "pct_solution_terms_cv")
-vsel_nms_cv_valsearch_opt <- character()
+vsel_nms_valsearch <- c("validate_search", "summaries", "ce",
+                        "pct_solution_terms_cv")
+vsel_nms_valsearch_opt <- character()
 # Related to `cvfits`:
-vsel_nms_cv_cvfits <- c("refmodel", "summaries", "pct_solution_terms_cv")
-vsel_nms_cv_cvfits_opt <- c("pct_solution_terms_cv")
+vsel_nms_cvfits <- c("refmodel", "summaries", "pct_solution_terms_cv")
+vsel_nms_cvfits_opt <- c("pct_solution_terms_cv")
 vsel_smmrs_sub_nms <- vsel_smmrs_ref_nms <- c("mu", "lppd")
 
 ## Defaults ---------------------------------------------------------------

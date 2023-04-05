@@ -20,9 +20,9 @@ vignette: >
 
 ## Introduction
 
-This vignette shows the main functionalities of the **projpred** package, which implements the projection predictive variable selection for various regression models (see section ["Supported types of models"](#modtypes) below for more details on supported model types). What is special about the projection predictive variable selection is that it not only performs a variable selection, but also allows for valid post-selection inference.
+This vignette illustrates the main functionalities of the **projpred** package, which implements the projection predictive variable selection for various regression models (see section ["Supported types of models"](#modtypes) below for more details on supported model types). What is special about the projection predictive variable selection is that it not only performs a variable selection, but also allows for valid post-selection inference.
 
-The projection predictive variable selection is based on the ideas of @goutis_model_1998 and @dupuis_variable_2003. The methods implemented in **projpred** are described in detail in @piironen_projective_2020, @catalina_projection_2022, @weber_projection_2023, and @catalina_latent_2021. A comparison to many other methods may also be found in @piironen_comparison_2017. For details on how to cite **projpred**, see the [projpred citation info](https://CRAN.R-project.org/package=projpred/citation.html) on CRAN.^[The citation information can be accessed offline by typing `print(citation("projpred"), bibtex = TRUE)` within R.]
+The projection predictive variable selection is based on the ideas of @goutis_model_1998 and @dupuis_variable_2003. The methods implemented in **projpred** are described in detail in @piironen_projective_2020, @catalina_projection_2022, @weber_projection_2023, and @catalina_latent_2021. A comparison to many other methods may also be found in @piironen_comparison_2017. For details on how to cite **projpred**, see the [projpred citation info](https://CRAN.R-project.org/package=projpred/citation.html) on CRAN^[The citation information can be accessed offline by typing `print(citation("projpred"), bibtex = TRUE)` within R.].
 
 ## Data
 
@@ -36,7 +36,7 @@ dat_gauss <- data.frame(y = df_gaussian$y, df_gaussian$x)
 
 First, we have to construct a reference model for the projection predictive variable selection. This model is considered as the best ("reference") solution to the prediction task. The aim of the projection predictive variable selection is to find a subset of a set of candidate predictors which is as small as possible but achieves a predictive performance as close as possible to that of the reference model.
 
-Usually (and this is also the case in this vignette), the reference model will be an [**rstanarm**](https://mc-stan.org/rstanarm/) or [**brms**](https://paul-buerkner.github.io/brms/) fit. To our knowledge, **rstanarm** and **brms** are currently the only packages for which a `get_refmodel()` method (which establishes the compatibility with **projpred**) exists. Creating a reference model object via one of these `get_refmodel.stanreg()` or `brms::get_refmodel.brmsfit()` methods (either implicitly by a call to a top-level function such as `project()`, `varsel()`, and `cv_varsel()`, as done below, or explicitly by a call to `get_refmodel()`) leads to a "typical" reference model object. In that case, all candidate models are actual *sub*models of the reference model. In general, however, this assumption is not necessary for a projection predictive variable selection [see, e.g., @piironen_projective_2020]. This is why "custom" (i.e., non-"typical") reference model objects allow to avoid this assumption (although the candidate models of a "custom" reference model object will still be actual *sub*models of the full `formula` used by the search procedure---which does not have to be the same as the reference model's `formula`, if the reference model possesses a `formula` at all). Such "custom" reference model objects can be constructed via `init_refmodel()` (or `get_refmodel.default()`), as shown in section "Examples" of the `?init_refmodel` help.^[We will cover custom reference models more deeply in a future vignette.]
+Usually (and this is also the case in this vignette), the reference model will be an [**rstanarm**](https://mc-stan.org/rstanarm/) or [**brms**](https://paul-buerkner.github.io/brms/) fit. To our knowledge, **rstanarm** and **brms** are currently the only packages for which a `get_refmodel()` method (which establishes the compatibility with **projpred**) exists. Creating a reference model object via one of these `get_refmodel.stanreg()` or `brms::get_refmodel.brmsfit()` methods (either implicitly by a call to a top-level function such as `project()`, `varsel()`, and `cv_varsel()`, as done below, or explicitly by a call to `get_refmodel()`) leads to a "typical" reference model object. In that case, all candidate models are actual *sub*models of the reference model. In general, however, this assumption is not necessary for a projection predictive variable selection [see, e.g., @piironen_projective_2020]. This is why "custom" (i.e., non-"typical") reference model objects allow to avoid this assumption (although the candidate models of a "custom" reference model object will still be actual *sub*models of the full `formula` used by the search procedure---which does not have to be the same as the reference model's `formula`, if the reference model possesses a `formula` at all). Such "custom" reference model objects can be constructed via `init_refmodel()` (or `get_refmodel.default()`), as shown in section "Examples" of the `?init_refmodel` help^[We will cover custom reference models more deeply in a future vignette.].
 
 Here, we use the **rstanarm** package to fit the reference model. If you want to use the **brms** package, simply replace the **rstanarm** fit (of class `stanreg`) in all the code below by your **brms** fit (of class `brmsfit`). Only note that in case of a **brms** fit, we recommend to specify argument `brms_seed` of `brms::get_refmodel.brmsfit()`.
 ```{r}
@@ -63,7 +63,7 @@ N <- nrow(dat_gauss)
 tau0 <- p0 / (D - p0) * 1 / sqrt(N)
 ```
 
-We now fit the reference model to the data. To make this vignette build faster, we use only 2 MCMC chains and 500 iterations per chain (with half of them being discarded as warmup draws). In practice, 4 chains and 2000 iterations per chain are reasonable defaults. Furthermore, we make use of [**rstan**](https://mc-stan.org/rstan/)'s parallelization, which means to run each chain on a separate CPU core.^[More generally, the number of chains is split up as evenly as possible among the number of CPU cores.] If you run the following code yourself, you can either rely on an automatic mechanism to detect the number of CPU cores (like the `parallel::detectCores()` function shown below) or adapt `ncores` manually to your system.
+We now fit the reference model to the data. To make this vignette build faster, we use only 2 MCMC chains and 500 iterations per chain (with half of them being discarded as warmup draws). In practice, 4 chains and 2000 iterations per chain are reasonable defaults. Furthermore, we make use of [**rstan**](https://mc-stan.org/rstan/)'s parallelization, which means to run each chain on a separate CPU core^[More generally, the number of chains is split up as evenly as possible among the number of CPU cores.]. If you run the following code yourself, you can either rely on an automatic mechanism to detect the number of CPU cores (like the `parallel::detectCores()` function shown below) or adapt `ncores` manually to your system.
 ```{r}
 # Set this manually if desired:
 ncores <- parallel::detectCores(logical = FALSE)
@@ -93,7 +93,7 @@ Now, **projpred** comes into play.
 library(projpred)
 ```
 
-In **projpred**, the projection predictive variable selection consists of a *search* part and an *evaluation* part. The search part determines the solution path, i.e., the best submodel for each submodel size (number of predictor terms). The evaluation part determines the predictive performance of the submodels along the solution path.
+In **projpred**, the projection predictive variable selection consists of a *search* part and an *evaluation* part. The search part determines the solution path, i.e., the best submodel for each submodel size (the size is the number of predictor terms). The evaluation part determines the predictive performance of the submodels along the solution path.
 
 There are two functions for performing the variable selection: `varsel()` and `cv_varsel()`. In contrast to `varsel()`, `cv_varsel()` performs a cross-validation (CV) by running the search part with the training data of each CV fold separately (an exception is `validate_search = FALSE`, see `?cv_varsel` and below) and running the evaluation part on the corresponding test set of each CV fold. Because of this CV, `cv_varsel()` is recommended over `varsel()`. Thus, we use `cv_varsel()` here. Nonetheless, running `varsel()` first can offer a rough idea of the performance of the submodels (after projecting the reference model onto them). A more principled **projpred** workflow is work under progress.
 
@@ -106,7 +106,7 @@ There are two functions for performing the variable selection: `varsel()` and `c
 <!-- } -->
 <!-- ``` -->
 
-Here, we use only some of the available arguments; see the documentation of `cv_varsel()` for the full list of arguments. By default, `cv_varsel()` runs a leave-one-out (LOO) CV (see argument `cv_method`) which also cross-validates the search (see argument `validate_search`). Here, we set argument `validate_search` to `FALSE` to obtain rough preliminary results and make this vignette build faster. If possible (in terms of computation time), we recommend using the default of `validate_search = TRUE` to avoid overfitting in the selection of the submodel size. Here, we also set `nclusters_pred` to a low value of `20` only to speed up the building of the vignette. By modifying argument `nterms_max`, we impose a limit on the submodel size until which the search is continued. Typically, one has to run the variable selection with a large `nterms_max` first (the default value may not even be large enough) and only after inspecting the results from this first run, one is able to set a reasonable `nterms_max` in subsequent runs. The value we are using here (`9`) is based on such a first run (which is not shown here, though).
+Here, we use only some of the available arguments; see the documentation of `cv_varsel()` for the full list of arguments. By default, `cv_varsel()` runs a Pareto-smoothed importance sampling [PSIS, see @vehtari_practical_2017; @vehtari_pareto_2022] leave-one-out (LOO) CV (see argument `cv_method`) which includes the search in the CV (see argument `validate_search`). Here, we set argument `validate_search` to `FALSE` to obtain rough preliminary results and make this vignette build faster. If possible (in terms of computation time), we recommend using the default of `validate_search = TRUE` to avoid overfitting in the selection of the submodel size. Here, we also set `nclusters_pred` to a low value of `20` only to speed up the building of the vignette. By modifying argument `nterms_max`, we impose a limit on the submodel size up to which the search is continued. Typically, one has to run the variable selection with a large `nterms_max` first (the default value may not even be large enough) and only after inspecting the results from this first run, one is able to set a reasonable `nterms_max` in subsequent runs. The value we are using here (`9`) is based on such a first run (which is not shown here, though).
 ```{r, results='hide'}
 cvvs <- cv_varsel(
   refm_fit,
@@ -119,9 +119,9 @@ cvvs <- cv_varsel(
 )
 ```
 
-The first step after running the variable selection should be the decision for a final submodel size. This should be the first step (in particular, before inspecting the solution path) in order to avoid a user-induced selection bias (which could occur if the user made the submodel size decision dependent on the solution path). To decide for a submodel size, there are several performance statistics we can plot as a function of the submodel size. Here, we use the expected log (pointwise) predictive density (for a new dataset) (ELPD; empirically, this is the sum of the log predictive densities of the observations in the evaluation---or "test"---set) and the root mean squared error (RMSE). By default, the performance statistics are plotted on their original scale, but with `deltas = TRUE`, they are calculated as differences from a baseline model (which is the reference model by default, at least in the most common cases). Since the differences are usually of more interest (with regard to the submodel size decision), we directly plot with `deltas = TRUE` here (note that as `validate_search = FALSE`, this result is slightly optimistic, and the plot looks different when `validate_search = TRUE` is used):
+The first step after running `varsel()` or `cv_varsel()` should be the decision for a final submodel size. This should be the first step (in particular, before inspecting the solution path) in order to avoid a user-induced selection bias (which could occur if the user made the submodel size decision dependent on the solution path). To decide for a submodel size, there are several performance statistics we can plot as a function of the submodel size. Here, we use the mean log predictive density (MLPD; see argument `stats` of `summary.vsel()` for details) and the root mean squared error (RMSE). By default, the performance statistics are plotted on their original scale, but with `deltas = TRUE`, they are calculated as differences from a baseline model (which is the reference model by default, at least in the most common cases). Since the differences are usually of more interest (with regard to the submodel size decision), we directly plot with `deltas = TRUE` here (note that as `validate_search = FALSE`, this result is slightly optimistic, and the plot looks different when `validate_search = TRUE` is used):
 ```{r, fig.asp=1.5 * 0.618}
-plot(cvvs, stats = c("elpd", "rmse"), deltas = TRUE, seed = 54548)
+plot(cvvs, stats = c("mlpd", "rmse"), deltas = TRUE, seed = 54548)
 ```
 
 Based on that plot (see `?plot.vsel` for a description), we would decide for a submodel size of 6 because that's the point where the performance measures level off and are close enough to the reference model's performance (note that since the plot is affected by `validate_search = FALSE`, this manual decision based on the plot is affected, too):
@@ -129,18 +129,19 @@ Based on that plot (see `?plot.vsel` for a description), we would decide for a s
 modsize_decided <- 6
 ```
 
-Note that **projpred** offers the `suggest_size()` function which may help in the decision for a submodel size, but this is a rather heuristic method and needs to be interpreted with caution (see `?suggest_size`):
+The `suggest_size()` function offered by **projpred** may help in the decision for a submodel size, but this is a rather heuristic method and needs to be interpreted with caution (see `?suggest_size`):
 ```{r}
-suggest_size(cvvs)
+suggest_size(cvvs, stat = "mlpd")
+# We are using the same seed as in the plot() call above to ensure that the
+# bootstrap intervals are exactly the same:
+suggest_size(cvvs, stat = "rmse", seed = 54548)
 ```
-Here, we would get the same final submodel size (`6`) as by our manual decision (`suggest_size()` is also affected by `validate_search = FALSE`). Note that by default, `suggest_size()` uses the ELPD as performance statistic.
+With both performance statistics, we would get the same final submodel size (`6`) as by our manual decision (`suggest_size()` is also affected by `validate_search = FALSE`).
 
-Only now, after we have made a decision for the submodel size, we inspect further results from the variable selection and, in particular, the solution path. For example, we can simply `print()` the resulting object:
+Only now, after we have made a decision for the submodel size, we inspect further results from the variable selection and, in particular, the solution path. For example, we could simply `print()` the resulting `cvvs` object, but to create the summary table matching the predictive performance plot above (and to adjust the minimum number of printed significant digits), we slightly adapt the printing here:
 ```{r}
-cvvs
-### Alternative modifying the number of printed decimal places:
-# print(cvvs, digits = 2)
-### 
+print(summary(cvvs, stats = c("mlpd", "rmse"), deltas = TRUE, seed = 54548),
+      digits = 1)
 ```
 The solution path can be seen in the `print()` output (column `solution_terms`), but it is also accessible through the `solution_terms()` function:
 ```{r}
@@ -154,7 +155,7 @@ Combining the decided submodel size of 6 with the solution path leads to the fol
 
 ## Post-selection inference
 
-The `project()` function returns an object of class `projection` which forms the basis for convenient post-selection inference. By the following code, `project()` will project the reference model onto the final submodel once again^[During the forward search, the reference model has already been projected onto all candidate models (this was where arguments `ndraws` and `nclusters` of `cv_varsel()` came into play). During the evaluation of the submodels along the solution path, the reference model has already been projected onto those submodels (this was where arguments `ndraws_pred` and `nclusters_pred` of `cv_varsel()` came into play). In principle, one could use the results from the evaluation part for post-selection inference, but due to a bug in the current implementation (see GitHub issue #168), we currently have to project once again.]:
+The `project()` function returns an object of class `projection` which forms the basis for convenient post-selection inference. By the following code, `project()` will project the reference model onto the final submodel once again^[During the forward search, the reference model has already been projected onto all candidate models (this was where arguments `ndraws` and `nclusters` of `cv_varsel()` came into play). For the evaluation of the submodels along the solution path, the reference model has been projected onto these submodels again (this was where arguments `ndraws_pred` and `nclusters_pred` of `cv_varsel()` came into play). In principle, one could use the re-projections from the evaluation part for post-selection inference, but due to a deficiency in the current implementation (see GitHub issue #168), we currently have to project once again.]:
 ```{r}
 prj <- project(refm_fit, solution_terms = soltrms_final)
 ```
@@ -166,13 +167,14 @@ prj <- project(refm_fit, solution_terms = soltrms_final)
 <!--   refit_prj = FALSE -->
 <!-- ) -->
 <!-- ``` -->
-For more accurate results, we could have increased argument `ndraws` of `project()` (up to the number of posterior draws in the reference model). This increases the runtime, which we don't want in this vignette.
+For more accurate results, we could have increased argument `ndraws` of `project()` (up to the number of posterior draws in the reference model). However, this increases the runtime, which we don't want in this vignette.
 
 Next, we create a matrix containing the projected posterior draws stored in the depths of `project()`'s output:
 ```{r}
 prj_mat <- as.matrix(prj)
 ```
-This matrix is all we need for post-selection inference. It can be used like any matrix of draws from MCMC procedures, except that it doesn't reflect a typical posterior distribution, but rather a projected posterior distribution, i.e., the distribution arising from the deterministic projection of the reference model's posterior distribution onto the parameter space of the final submodel.
+This matrix is all we need for post-selection inference. It can be used like any matrix of draws from MCMC procedures, except that it doesn't reflect a typical posterior distribution, but rather a projected posterior distribution, i.e., the distribution arising from the deterministic projection of the reference model's posterior distribution onto the parameter space of the final submodel^[In general, this implies that projected regression coefficients do not reflect isolated effects of the predictors. For example, especially in case of highly correlated predictors, it is possible that projected regression coefficients "absorb" effects from predictors that have been excluded in the projection.].
+Beware that in case of clustered projection (i.e., a non-`NULL` argument `nclusters` in the `project()` call), the weights of the clusters need to be taken into account when performing post-selection (or, more generally, post-projection) inference.
 
 ### Marginals of the projected posterior
 
@@ -180,12 +182,14 @@ The [**posterior**](https://mc-stan.org/posterior/) package provides a general w
 ```{r}
 library(posterior)
 prj_drws <- as_draws_matrix(prj_mat)
-# In the following call, as.data.frame() is used only because pkgdown
-# versions > 1.6.1 don't print the tibble correctly.
-as.data.frame(summarize_draws(
+prj_smmry <- summarize_draws(
   prj_drws,
   "median", "mad", function(x) quantile(x, probs = c(0.025, 0.975))
-))
+)
+# Coerce to a `data.frame` because pkgdown versions > 1.6.1 don't print the
+# tibble correctly:
+prj_smmry <- as.data.frame(prj_smmry)
+print(prj_smmry, digits = 1)
 ```
 
 A visualization of the projected posterior can be achieved with the [**bayesplot**](https://mc-stan.org/bayesplot/) package, for example using its `mcmc_intervals()` function:
@@ -218,18 +222,18 @@ We start with `proj_linpred()`. For example, suppose we have the following new o
   soltrms_final
 ) )
 ```
-Then `proj_linpred()` can calculate the linear predictors^[`proj_linpred()` can also transform the linear predictor to response scale, but here, this is the same as the linear predictor scale (because of the identity link function).] for all new observations from `dat_gauss_new`. Depending on argument `integrated`, these linear predictors can be averaged across the projected draws (within each new observation). For instance, the following computes the expected values of the new observations' predictive distributions:^[Beware that this statement is correct here because of the Gaussian family with the identity link function. For other families (which usually come in combination with a different link function), one would typically have to use `transform = TRUE` in order to make this statement correct.]
+Then `proj_linpred()` can calculate the linear predictors^[`proj_linpred()` can also transform the linear predictor to response scale, but here, this is the same as the linear predictor scale (because of the identity link function).] for all new observations from `dat_gauss_new`. Depending on argument `integrated`, these linear predictors can be averaged across the projected draws (within each new observation). For instance, the following computes the expected values of the new observations' predictive distributions^[Beware that this statement is correct here because of the Gaussian family with the identity link function. For other families (which usually come in combination with a different link function), one would typically have to use `transform = TRUE` in order to make this statement correct.]:
 ```{r}
 prj_linpred <- proj_linpred(prj, newdata = dat_gauss_new, integrated = TRUE)
 cbind(dat_gauss_new, linpred = as.vector(prj_linpred$pred))
 ```
-If `dat_gauss_new` also contained response values (i.e., `y` values in this example), then `proj_linpred()` would also evaluate the log predictive density at these.
+If `dat_gauss_new` also contained response values (i.e., `y` values in this example), then `proj_linpred()` would also evaluate the log predictive density at these (conditional on each of the projected parameter draws if `integrated = FALSE` and integrated over the projected parameter draws if `integrated = TRUE`).
 
-With `proj_predict()`, we can obtain draws from predictive distributions based on the final submodel. In contrast to `proj_linpred(<...>, integrated = FALSE)`, this encompasses not only the uncertainty arising from parameter estimation, but also the uncertainty arising from the observational (or "sampling") model for the response.^[In case of the Gaussian family we are using here, the uncertainty arising from the observational model is the uncertainty due to the residual standard deviation.] This is useful for what is usually termed a posterior predictive check (PPC), but would have to be termed something like a posterior-projection predictive check (PPPC) here:
+With `proj_predict()`, we can obtain draws from predictive distributions based on the final submodel. In contrast to `proj_linpred(<...>, integrated = FALSE)`, this encompasses not only the uncertainty arising from parameter estimation, but also the uncertainty arising from the observation (or "sampling") model for the response^[In case of the Gaussian family we are using here, the uncertainty arising from the observation model is the uncertainty due to the residual standard deviation.]. This is useful for what is usually termed a posterior predictive check (PPC), but would have to be termed something like a posterior-projection predictive check (PPPC) here:
 ```{r}
 prj_predict <- proj_predict(prj, .seed = 762805)
 # Using the 'bayesplot' package:
-ppc_dens_overlay(y = dat_gauss$y, yrep = prj_predict, alpha = 0.9, bw = "SJ")
+ppc_dens_overlay(y = dat_gauss$y, yrep = prj_predict)
 ```
 
 This PPPC shows that our final projection is able to generate predictions similar to the observed response values, which indicates that this model is reasonable, at least in this regard.
@@ -253,9 +257,9 @@ In the following and throughout **projpred**'s documentation, the term "traditio
 
 Apart from the `gaussian()` response family used in this vignette, **projpred**'s traditional projection also supports the `binomial()`^[Via `brms::get_refmodel.brmsfit()`, the `brms::bernoulli()` family is supported as well.] and the `poisson()` family.
 
-The families supported by **projpred**'s augmented-data projection [@weber_projection_2023] are `binomial()`^[Currently, the augmented-data support for the `binomial()` family does not include binomial distributions with more than one trial. In such a case, a workaround is to de-aggregate the Bernoulli trials which belong to the same (aggregated) observation, i.e., to use a "long" dataset.] ^[Like the traditional projection, the augmented-data projection also supports the `brms::bernoulli()` family via `brms::get_refmodel.brmsfit()`.], `brms::cumulative()`, `rstanarm::stan_polr()` fits, and `brms::categorical()`.^[For the augmented-data projection based on a "typical" **brms** reference model, **brms** version 2.17.0 or later is needed.] ^[More **brms** families might be supported in the future.] See `?extend_family` (which is called by `init_refmodel()`) for an explanation how to apply the augmented-data projection to "custom" reference models. For "typical" reference models (i.e., those created by `get_refmodel.stanreg()` or `brms::get_refmodel.brmsfit()`), the augmented-data projection is applied automatically if the family is supported by the augmented-data projection and neither `binomial()` nor `brms::bernoulli()`. For applying the augmented-data projection to the `binomial()` (or `brms::bernoulli()`) family, see `?extend_family` as well as `?augdat_link_binom` and `?augdat_ilink_binom`. Finally, we note that there are some restrictions with respect to the augmented-data projection; **projpred** will throw an informative error if a requested feature is currently not supported for the augmented-data projection.
+The families supported by **projpred**'s augmented-data projection [@weber_projection_2023] are `binomial()`^[Currently, the augmented-data support for the `binomial()` family does not include binomial distributions with more than one trial. In such a case, a workaround is to de-aggregate the Bernoulli trials which belong to the same (aggregated) observation, i.e., to use a "long" dataset.] ^[Like the traditional projection, the augmented-data projection also supports the `brms::bernoulli()` family via `brms::get_refmodel.brmsfit()`.], `brms::cumulative()`, `rstanarm::stan_polr()` fits, and `brms::categorical()`^[For the augmented-data projection based on a "typical" **brms** reference model, **brms** version 2.17.0 or later is needed.] ^[More **brms** families might be supported in the future.]. See `?extend_family` (which is called by `init_refmodel()`) for an explanation how to apply the augmented-data projection to "custom" reference models. For "typical" reference models (i.e., those created by `get_refmodel.stanreg()` or `brms::get_refmodel.brmsfit()`), the augmented-data projection is applied automatically if the family is supported by the augmented-data projection and neither `binomial()` nor `brms::bernoulli()`. For applying the augmented-data projection to the `binomial()` (or `brms::bernoulli()`) family, see `?extend_family` as well as `?augdat_link_binom` and `?augdat_ilink_binom`. Finally, we note that there are some restrictions with respect to the augmented-data projection; **projpred** will throw an informative error if a requested feature is currently not supported for the augmented-data projection.
 
-The latent projection [@catalina_latent_2021] is a quite general principle for extending **projpred**'s traditional projection to more response families. The latent projection is applied when setting argument `latent` of `extend_family()` (which is called by `init_refmodel()`) to `TRUE`. The families for which full latent-projection functionality (in particular, `resp_oscale = TRUE`, i.e., post-processing on the original response scale) is currently available are `binomial()`^[Currently, the latent-projection support for the `binomial()` family does not include binomial distributions with more than one trial. In such a case, a workaround is to de-aggregate the Bernoulli trials which belong to the same (aggregated) observation, i.e., to use a "long" dataset.] ^[Like the traditional projection, the latent projection also supports the `brms::bernoulli()` family via `brms::get_refmodel.brmsfit()`.], `poisson()`, `brms::cumulative()`, and `rstanarm::stan_polr()` fits.^[For the latent projection based on a "typical" **brms** reference model, **brms** version 2.18.7 or later is needed.] For all other families, you can try to use the latent projection (by setting `latent = TRUE`) and **projpred** should tell you if any features are not available and how to make them available. More details concerning the latent projection are given in the vignette "Latent projection predictive inference with projpred". Note that there are some restrictions with respect to the latent projection; **projpred** will throw an informative error if a requested feature is currently not supported for the latent projection.
+The latent projection [@catalina_latent_2021] is a quite general principle for extending **projpred**'s traditional projection to more response families. The latent projection is applied when setting argument `latent` of `extend_family()` (which is called by `init_refmodel()`) to `TRUE`. The families for which full latent-projection functionality (in particular, `resp_oscale = TRUE`, i.e., post-processing on the original response scale) is currently available are `binomial()`^[Currently, the latent-projection support for the `binomial()` family does not include binomial distributions with more than one trial. In such a case, a workaround is to de-aggregate the Bernoulli trials which belong to the same (aggregated) observation, i.e., to use a "long" dataset.] ^[Like the traditional projection, the latent projection also supports the `brms::bernoulli()` family via `brms::get_refmodel.brmsfit()`.], `poisson()`, `brms::cumulative()`, and `rstanarm::stan_polr()` fits^[For the latent projection based on a "typical" **brms** reference model, **brms** version 2.19.0 or later is needed.]. For all other families, you can try to use the latent projection (by setting `latent = TRUE`) and **projpred** should tell you if any features are not available and how to make them available. More details concerning the latent projection are given in the corresponding [latent-projection vignette](https://mc-stan.org/projpred/articles/latent.html). Note that there are some restrictions with respect to the latent projection; **projpred** will throw an informative error if a requested feature is currently not supported for the latent projection.
 
 On the side of the predictors, **projpred** not only supports linear main effects as shown in this vignette, but also interactions, multilevel^[Multilevel models are also known as *hierarchical* models or models with *partially pooled*, *group-level*, or---in frequentist terms---*random* effects.], and---as an experimental feature---additive^[Additive terms are also known as *smooth* terms.] terms.
 
@@ -306,10 +310,32 @@ These are explained in detail in the general package documentation (available [o
 
 ## Troubleshooting
 
-Sometimes, the ordering of the predictor terms in the solution path makes sense, but for increasing submodel size, the performance measures of the submodels do not approach that of the reference model. There are different reasons that can explain this behavior (the following list might not be exhaustive, though):
+### Non-convergence of predictive performance
+
+Sometimes, the ordering of the predictor terms in the solution path makes sense, but for an increasing submodel size, the performance measures of the submodels do not approach that of the reference model so that the submodels exhibit a predictive performance that stays worse than the reference model's. There are different reasons that can explain this behavior (the following list might not be exhaustive, though):
 
 1. The reference model's posterior may be so wide that the default `ndraws_pred` could be too small. Usually, this comes in combination with a difference in predictive performance which is comparatively small. Increasing `ndraws_pred` should help, but it also increases the computational cost. Re-fitting the reference model and thereby ensuring a narrower posterior (usually by employing a stronger sparsifying prior) should have a similar effect.
-1. For non-Gaussian models, the discrepancy may be due to the fact that the penalized iteratively reweighted least squares (PIRLS) algorithm might have convergence issues [@catalina_latent_2021]. In this case, the latent-space approach by @catalina_latent_2021 might help.
-1. If you are using `varsel()`, then the lack of the CV in `varsel()` may lead to overconfident and overfitted results. In this case, try running `cv_varsel()` instead of `varsel()` (which you should in any case for your final results).
+1. For non-Gaussian models, the discrepancy may be due to the fact that the penalized iteratively reweighted least squares (PIRLS) algorithm might have convergence issues [@catalina_latent_2021]. In this case, the latent-space approach by @catalina_latent_2021 might help, see also the latent-projection vignette linked above.
+
+### Overfitting
+
+If you are using `varsel()`, then the lack of CV in `varsel()` may lead to overconfident and overfitted results. In this case, try running `cv_varsel()` instead of `varsel()` (which you should in any case for your final results).
+
+### Issues with the traditional projection
+
+For multilevel binomial models, the traditional projection may not work properly and give suboptimal results, see [#353](https://github.com/stan-dev/projpred/pull/353) on GitHub (the underlying issue is described in **lme4** issue [#682](https://github.com/lme4/lme4/issues/682)).
+With suboptimality of the results, we mean that in such cases, the relevance of the group-level terms can be underestimated.
+According to the simulation-based case study from [#353](https://github.com/stan-dev/projpred/pull/353), the latent projection should be considered as a currently available remedy.
+
+For multilevel Poisson models, the traditional projection may take very long, see [#353](https://github.com/stan-dev/projpred/pull/353).
+According to the simulation-based case study from [#353](https://github.com/stan-dev/projpred/pull/353), the latent projection should be considered as a currently available remedy.
+
+Finally, as illustrated in the Poisson example of the latent-projection vignette, the latent projection can be beneficial for non-multilevel models with a (non-Gaussian) family that is also supported by the traditional projection, at least in case of the Poisson family and L1 search.
+
+### Issues with the augmented-data projection
+
+For multilevel models, the augmented-data projection seems to suffer from the same issue as the traditional projection for the binomial family (see above), i.e., it may not work properly and give suboptimal results, see [#353](https://github.com/stan-dev/projpred/pull/353) (the underlying issue is probably similar to the one described in **lme4** issue [#682](https://github.com/lme4/lme4/issues/682)).
+With suboptimality of the results, we mean that in such cases, the relevance of the group-level terms can be underestimated.
+According to the simulation-based case study from [#353](https://github.com/stan-dev/projpred/pull/353), the latent projection should be considered as a remedy in such cases.
 
 ## References

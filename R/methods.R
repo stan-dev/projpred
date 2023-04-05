@@ -1,18 +1,20 @@
+# Common documentation ----------------------------------------------------
+
 #' Predictions from a submodel (after projection)
 #'
 #' After the projection of the reference model onto a submodel, the linear
 #' predictors (for the original or a new dataset) based on that submodel can be
-#' calculated by [proj_linpred()]. The linear predictors can also be transformed
-#' to response scale. Furthermore, [proj_linpred()] returns the corresponding
-#' log predictive density values if the (original or new) dataset contains
-#' response values. The [proj_predict()] function draws from the predictive
-#' distributions (there is one such distribution for each observation from the
-#' original or new dataset) of the submodel that the reference model has been
-#' projected onto. If the projection has not been performed yet, both functions
-#' call [project()] internally to perform the projection. Both functions can
-#' also handle multiple submodels at once (for `object`s of class `vsel` or
-#' `object`s returned by a [project()] call to an object of class `vsel`; see
-#' [project()]).
+#' calculated by [proj_linpred()]. These linear predictors can also be
+#' transformed to response scale and averaged across the projected parameter
+#' draws. Furthermore, [proj_linpred()] returns the corresponding log predictive
+#' density values if the (original or new) dataset contains response values. The
+#' [proj_predict()] function draws from the predictive distributions (there is
+#' one such distribution for each observation from the original or new dataset)
+#' of the submodel that the reference model has been projected onto. If the
+#' projection has not been performed yet, both functions call [project()]
+#' internally to perform the projection. Both functions can also handle multiple
+#' submodels at once (for `object`s of class `vsel` or `object`s returned by a
+#' [project()] call to an object of class `vsel`; see [project()]).
 #'
 #' @name pred-projection
 #'
@@ -55,7 +57,10 @@
 #' @param ... Arguments passed to [project()] if `object` is not already an
 #'   object returned by [project()].
 #'
-#' @details In case of the latent projection and `transform = FALSE`:
+#' @details Currently, [proj_predict()] ignores observation weights that are not
+#'   equal to `1`. A corresponding warning is thrown if this is the case.
+#'
+#'   In case of the latent projection and `transform = FALSE`:
 #'   * Output element `pred` contains the linear predictors without any
 #'   modifications that may be due to the original response distribution (e.g.,
 #'   for a [brms::cumulative()] model, the ordered thresholds are not taken into
@@ -78,20 +83,27 @@
 #'   or \eqn{C_{\mathrm{lat}}}{C_lat} (if `transform = FALSE`). Then, if the
 #'   prediction is done for one submodel only (i.e., `length(nterms) == 1 ||
 #'   !is.null(solution_terms)` in the call to [project()]):
-#'   * [proj_linpred()] returns a `list` with elements `pred` (predictions,
-#'   i.e., the linear predictors, possibly transformed to response scale) and
-#'   `lpd` (log predictive densities; only calculated if `newdata` is `NULL` or
-#'   if `newdata` contains response values in the corresponding column). In case
-#'   of (i) the traditional projection, (ii) the latent projection with
-#'   `transform = FALSE`, or (iii) the latent projection with `transform = TRUE`
-#'   and `<refmodel>$family$cats` (where `<refmodel>` is an object resulting
-#'   from [init_refmodel()]; see also [extend_family()]'s argument
-#'   `latent_y_unqs`) being `NULL`, both elements are \eqn{S_{\mathrm{prj}}
-#'   \times N}{S_prj x N} matrices. In case of (i) the augmented-data projection
-#'   or (ii) the latent projection with `transform = TRUE` and
-#'   `<refmodel>$family$cats` being not `NULL`, `pred` is an
-#'   \eqn{S_{\mathrm{prj}} \times N \times C}{S_prj x N x C} array and `lpd` is
-#'   an \eqn{S_{\mathrm{prj}} \times N}{S_prj x N} matrix.
+#'   * [proj_linpred()] returns a `list` with the following elements:
+#'       + Element `pred` contains the actual predictions, i.e., the linear
+#'       predictors, possibly transformed to response scale (depending on
+#'       argument `transform`).
+#'       + Element `lpd` is non-`NULL` only if `newdata` is `NULL` or if
+#'       `newdata` contains response values in the corresponding column. In that
+#'       case, it contains the log predictive density values (conditional on
+#'       each of the projected parameter draws if `integrated = FALSE` and
+#'       averaged across the projected parameter draws if `integrated = TRUE`).
+#'
+#'       In case of (i) the traditional projection, (ii) the latent projection
+#'       with `transform = FALSE`, or (iii) the latent projection with
+#'       `transform = TRUE` and `<refmodel>$family$cats` (where `<refmodel>` is
+#'       an object resulting from [init_refmodel()]; see also
+#'       [extend_family()]'s argument `latent_y_unqs`) being `NULL`, both
+#'       elements are \eqn{S_{\mathrm{prj}} \times N}{S_prj x N} matrices. In
+#'       case of (i) the augmented-data projection or (ii) the latent projection
+#'       with `transform = TRUE` and `<refmodel>$family$cats` being not `NULL`,
+#'       `pred` is an \eqn{S_{\mathrm{prj}} \times N \times C}{S_prj x N x C}
+#'       array and `lpd` is an \eqn{S_{\mathrm{prj}} \times N}{S_prj x N}
+#'       matrix.
 #'   * [proj_predict()] returns an \eqn{S_{\mathrm{prj}} \times N}{S_prj x N}
 #'   matrix of predictions where \eqn{S_{\mathrm{prj}}}{S_prj} denotes
 #'   `nresample_clusters` in case of clustered projection. In case of (i) the
@@ -134,6 +146,8 @@
 #'
 NULL
 
+# Function definitions ----------------------------------------------------
+
 ## The 'helper' for proj_linpred and proj_predict, ie. does all the
 ## functionality that is common to them. It essentially checks all the arguments
 ## and sets them to their respective defaults and then loops over the
@@ -142,15 +156,14 @@ NULL
 ## the predictive distribution if called from proj_predict.
 proj_helper <- function(object, newdata, offsetnew, weightsnew, onesub_fun,
                         filter_nterms = NULL, ...) {
-  if (inherits(object, "projection") || .is_proj_list(object)) {
+  if (inherits(object, "projection") || is_proj_list(object)) {
     if (!is.null(filter_nterms)) {
-      if (!.is_proj_list(object)) {
+      if (!is_proj_list(object)) {
         object <- list(object)
       }
       projs <- Filter(
         function(x) {
-          count_terms_chosen(x$solution_terms, add_icpt = TRUE) %in%
-            (filter_nterms + 1)
+          count_terms_chosen(x$solution_terms) %in% (filter_nterms + 1)
         },
         object
       )
@@ -165,7 +178,7 @@ proj_helper <- function(object, newdata, offsetnew, weightsnew, onesub_fun,
     projs <- project(object = object, ...)
   }
 
-  if (!.is_proj_list(projs)) {
+  if (!is_proj_list(projs)) {
     projs <- list(projs)
   }
 
@@ -206,7 +219,7 @@ proj_helper <- function(object, newdata, offsetnew, weightsnew, onesub_fun,
   }
 
   names(projs) <- sapply(projs, function(proj) {
-    count_terms_chosen(proj$solution_terms, add_icpt = TRUE)
+    count_terms_chosen(proj$solution_terms)
   })
 
   preds <- lapply(projs, function(proj) {
@@ -217,10 +230,10 @@ proj_helper <- function(object, newdata, offsetnew, weightsnew, onesub_fun,
     weightsnew <- w_o$weights
     offsetnew <- w_o$offset
     if (length(weightsnew) == 0) {
-      weightsnew <- rep(1, NROW(newdata %||% proj$refmodel$fetch_data()))
+      weightsnew <- rep(1, nrow(newdata) %||% proj$refmodel$nobs)
     }
     if (length(offsetnew) == 0) {
-      offsetnew <- rep(0, NROW(newdata %||% proj$refmodel$fetch_data()))
+      offsetnew <- rep(0, nrow(newdata) %||% proj$refmodel$nobs)
     }
     if (proj$refmodel$family$for_augdat && !all(weightsnew == 1)) {
       stop("Currently, the augmented-data projection may not be combined with ",
@@ -234,7 +247,7 @@ proj_helper <- function(object, newdata, offsetnew, weightsnew, onesub_fun,
                weights = weightsnew, extract_y_ind = extract_y_ind, ...)
   })
 
-  return(.unlist_proj(preds))
+  return(unlist_proj(preds))
 }
 
 #' @rdname pred-projection
@@ -262,7 +275,7 @@ proj_linpred <- function(object, newdata = NULL, offsetnew = NULL,
 ## function applied to each projected submodel in case of proj_linpred()
 proj_linpred_aux <- function(proj, newdata, offset, weights, transform = FALSE,
                              integrated = FALSE, extract_y_ind = TRUE, ...) {
-  pred_sub <- proj$refmodel$family$mu_fun(proj$submodl, newdata = newdata,
+  pred_sub <- proj$refmodel$family$mu_fun(proj$outdmin, newdata = newdata,
                                           offset = offset,
                                           transform = transform)
   if (proj$refmodel$family$for_latent && transform) {
@@ -312,9 +325,9 @@ proj_linpred_aux <- function(proj, newdata, offset, weights, transform = FALSE,
     ## average over the projected draws
     if (proj$refmodel$family$for_latent && transform &&
         !inherits(pred_sub, "augmat")) {
-      pred_sub <- proj$weights %*% pred_sub
+      pred_sub <- proj$wdraws_prj %*% pred_sub
     } else {
-      pred_sub <- structure(pred_sub %*% proj$weights,
+      pred_sub <- structure(pred_sub %*% proj$wdraws_prj,
                             nobs_orig = attr(pred_sub, "nobs_orig"),
                             class = oldClass(pred_sub))
     }
@@ -325,7 +338,7 @@ proj_linpred_aux <- function(proj, newdata, offset, weights, transform = FALSE,
         marg_obs <- 2
       }
       lpd_out <- as.matrix(
-        apply(lpd_out, marg_obs, log_weighted_mean_exp, proj$weights)
+        apply(lpd_out, marg_obs, log_weighted_mean_exp, proj$wdraws_prj)
       )
     }
   }
@@ -346,7 +359,7 @@ proj_linpred_aux <- function(proj, newdata, offset, weights, transform = FALSE,
 compute_lpd <- function(ynew, pred_sub, proj, weights, transformed) {
   if (!is.null(ynew)) {
     ## compute also the log-density
-    target <- .get_standard_y(ynew, weights, proj$refmodel$family)
+    target <- get_standard_y(ynew, weights, proj$refmodel$family)
     ynew <- target$y
     weights <- target$weights
     if ((!proj$refmodel$family$for_latent ||
@@ -440,15 +453,16 @@ proj_predict_aux <- function(proj, newdata, offset, weights,
     stop("`resp_oscale = FALSE` can only be used in case of the latent ",
          "projection.")
   }
-  mu <- proj$refmodel$family$mu_fun(proj$submodl,
+  mu <- proj$refmodel$family$mu_fun(proj$outdmin,
                                     newdata = newdata,
                                     offset = offset)
   if (proj$p_type) {
     # In this case, the posterior draws have been clustered.
-    draw_inds <- sample(x = seq_along(proj$weights), size = nresample_clusters,
-                        replace = TRUE, prob = proj$weights)
+    draw_inds <- sample(x = seq_along(proj$wdraws_prj),
+                        size = nresample_clusters, replace = TRUE,
+                        prob = proj$wdraws_prj)
   } else {
-    draw_inds <- seq_along(proj$weights)
+    draw_inds <- seq_along(proj$wdraws_prj)
   }
   cats_aug <- proj$refmodel$family$cats
   if (proj$refmodel$family$for_latent && resp_oscale) {
@@ -520,6 +534,8 @@ proj_predict_aux <- function(proj, newdata, offset, weights,
 #'
 #' @inherit summary.vsel details
 #'
+#' @return A \pkg{ggplot2} plotting object (of class `gg` and `ggplot`).
+#'
 #' @details
 #'
 #' # Horizontal lines
@@ -567,12 +583,12 @@ plot.vsel <- function(
     ...
 ) {
   object <- x
-  .validate_vsel_object_stats(object, stats, resp_oscale = resp_oscale)
-  baseline <- .validate_baseline(object$refmodel, baseline, deltas)
+  validate_vsel_object_stats(object, stats, resp_oscale = resp_oscale)
+  baseline <- validate_baseline(object$refmodel, baseline, deltas)
 
   ## compute all the statistics and fetch only those that were asked
-  nfeat_baseline <- .get_nfeat_baseline(object, baseline, stats[1],
-                                        resp_oscale = resp_oscale)
+  nfeat_baseline <- get_nfeat_baseline(object, baseline, stats[1],
+                                       resp_oscale = resp_oscale)
   tab <- rbind(
     .tabulate_stats(object, stats, alpha = alpha,
                     nfeat_baseline = nfeat_baseline, resp_oscale = resp_oscale,
@@ -639,9 +655,10 @@ plot.vsel <- function(
   if (!is.na(thres_elpd)) {
     # Table of thresholds used in extended suggest_size() heuristics (only in
     # case of ELPD and MLPD):
-    nobs_test <- nrow(object$d_test$data %||% object$refmodel$fetch_data())
-    thres_tab_basic <- data.frame(statistic = c("elpd", "mlpd"),
-                                  thres = c(thres_elpd, thres_elpd / nobs_test))
+    thres_tab_basic <- data.frame(
+      statistic = c("elpd", "mlpd"),
+      thres = c(thres_elpd, thres_elpd / object$nobs_test)
+    )
   }
 
   # plot submodel results
@@ -719,9 +736,16 @@ plot.vsel <- function(
 #'   intercept, so use `nterms_max = 0` for the intercept-only model. For
 #'   [plot.vsel()], `nterms_max` must be at least `1`.
 #' @param stats One or more character strings determining which performance
-#'   statistics (i.e., utilities or losses) to calculate. Available statistics
-#'   are:
-#'   * `"elpd"`: (expected) sum of log predictive densities.
+#'   statistics (i.e., utilities or losses) to estimate based on the
+#'   observations in the evaluation (or "test") set (in case of
+#'   cross-validation, these are all observations because they are partitioned
+#'   into multiple test sets; in case of [varsel()] with `d_test = NULL`, these
+#'   are again all observations because the test set is the same as the training
+#'   set). Available statistics are:
+#'   * `"elpd"`: expected log (pointwise) predictive density (for a new
+#'   dataset). Estimated by the sum of the observation-specific log predictive
+#'   density values (with each of these predictive density values being
+#'   a---possibly weighted---average across the parameter draws).
 #'   * `"mlpd"`: mean log predictive density, that is, `"elpd"` divided by the
 #'   number of observations.
 #'   * `"mse"`: mean squared error (only available in the situations mentioned
@@ -757,8 +781,8 @@ plot.vsel <- function(
 #'   whether the baseline is the reference model or the best submodel found (in
 #'   terms of `stats[1]`), respectively.
 #' @param resp_oscale Only relevant for the latent projection. A single logical
-#'   value indicating whether to calculate the performance statistics on
-#'   response scale (`TRUE`) or on latent scale (`FALSE`).
+#'   value indicating whether to calculate the performance statistics on the
+#'   original response scale (`TRUE`) or on latent scale (`FALSE`).
 #' @param ... Arguments passed to the internal function which is used for
 #'   bootstrapping (if applicable; see argument `stats`). Currently, relevant
 #'   arguments are `B` (the number of bootstrap samples, defaulting to `2000`)
@@ -790,6 +814,8 @@ plot.vsel <- function(
 #'
 #' @return An object of class `vselsummary`.
 #'
+#' @seealso [print.vselsummary()]
+#'
 #' @examples
 #' if (requireNamespace("rstanarm", quietly = TRUE)) {
 #'   # Data:
@@ -808,7 +834,7 @@ plot.vsel <- function(
 #'   # sake of speed in this example; this is not recommended in general):
 #'   vs <- varsel(fit, nterms_max = 3, nclusters = 5, nclusters_pred = 10,
 #'                seed = 5555)
-#'   print(summary(vs))
+#'   print(summary(vs), digits = 1)
 #' }
 #'
 #' @export
@@ -823,34 +849,27 @@ summary.vsel <- function(
     resp_oscale = TRUE,
     ...
 ) {
-  .validate_vsel_object_stats(object, stats, resp_oscale = resp_oscale)
-  baseline <- .validate_baseline(object$refmodel, baseline, deltas)
+  validate_vsel_object_stats(object, stats, resp_oscale = resp_oscale)
+  baseline <- validate_baseline(object$refmodel, baseline, deltas)
 
   # Initialize output:
-  out <- list(
-    formula = object$refmodel$formula,
-    family = object$refmodel$family,
-    nobs_train = nrow(object$refmodel$fetch_data()),
-    nobs_test = nrow(object$d_test$data),
-    method = object$method,
-    cv_method = object$cv_method,
-    validate_search = object$validate_search,
-    clust_used_search = object$clust_used_search,
-    clust_used_eval = object$clust_used_eval,
-    nprjdraws_search = object$nprjdraws_search,
-    nprjdraws_eval = object$nprjdraws_eval
+  out <- c(
+    object$refmodel[c("formula", "family")],
+    object[c("nobs_train", "pct_solution_terms_cv", "type_test", "nobs_test",
+             "method", "cv_method", "K", "validate_search", "clust_used_search",
+             "clust_used_eval", "nprjdraws_search", "nprjdraws_eval")]
   )
   if (isTRUE(out$validate_search)) {
-    out$search_included <- "search included"
+    out$search_included <- "search included (i.e., fold-wise searches)"
   } else {
-    out$search_included <- "search not included"
+    out$search_included <- "search not included (i.e., a full-data search only)"
   }
   class(out) <- "vselsummary"
 
   # The full table of the performance statistics from `stats`:
   if (deltas) {
-    nfeat_baseline <- .get_nfeat_baseline(object, baseline, stats[1],
-                                          resp_oscale = resp_oscale)
+    nfeat_baseline <- get_nfeat_baseline(object, baseline, stats[1],
+                                         resp_oscale = resp_oscale)
     tab <- .tabulate_stats(object, stats, alpha = alpha,
                            nfeat_baseline = nfeat_baseline,
                            resp_oscale = resp_oscale, ...)
@@ -858,9 +877,12 @@ summary.vsel <- function(
     tab <- .tabulate_stats(object, stats, alpha = alpha,
                            resp_oscale = resp_oscale, ...)
   }
-  stats_table <- subset(tab, tab$size != Inf) %>%
-    dplyr::group_by(.data$statistic) %>%
-    dplyr::slice_head(n = length(object$solution_terms) + 1)
+  stats_table <- subset(tab, tab$size != Inf)
+  stats_table <- do.call(rbind,
+                         lapply(split(stats_table, stats_table$statistic),
+                                utils::head,
+                                n = length(object$solution_terms) + 1))
+  row.names(stats_table) <- NULL
 
   # Get the names of `stats_table` corresponding to all items from `type`, and
   # set up their suffices in the table to be returned:
@@ -904,17 +926,16 @@ summary.vsel <- function(
     colnames(temp) <- newnames
     arr <- cbind(arr, temp)
   }
+  row.names(arr) <- NULL
 
   # Output (and also cut `arr` at `nterms_max` (if provided)):
   if (is.null(nterms_max)) {
     nterms_max <- max(stats_table$size)
   }
   out$nterms <- nterms_max
-  if ("pct_solution_terms_cv" %in% names(object)) {
-    out$pct_solution_terms_cv <- object$pct_solution_terms_cv
-  }
   out$selection <- subset(arr, arr$size <= nterms_max)
   out$resp_oscale <- resp_oscale
+  out$deltas <- deltas
   return(out)
 }
 
@@ -925,13 +946,12 @@ summary.vsel <- function(
 #' selection.
 #'
 #' @param x An object of class `vselsummary`.
-#' @param digits Number of decimal places to be reported.
-#' @param ... Currently ignored.
+#' @param ... Arguments passed to [print.data.frame()].
 #'
 #' @return The output of [summary.vsel()] (invisible).
 #'
 #' @export
-print.vselsummary <- function(x, digits = 1, ...) {
+print.vselsummary <- function(x, ...) {
   if (x$family$for_latent) {
     cat("------\nResponse-scale family:\n")
     print(structure(x$family[c("family_oscale", "link_oscale")],
@@ -944,11 +964,11 @@ print.vselsummary <- function(x, digits = 1, ...) {
   }
   cat("Formula: ")
   print(x$formula, showEnv = FALSE)
-  if (is.null(x$nobs_test)) {
-    cat(paste0("Observations: ", x$nobs_train, "\n"))
+  if (x$type_test != "test_hold-out") {
+    cat("Observations: ", x$nobs_train, "\n", sep = "")
   } else {
-    cat(paste0("Observations (training set): ", x$nobs_train, "\n"))
-    cat(paste0("Observations (test set): ", x$nobs_test, "\n"))
+    cat("Observations (training set): ", x$nobs_train, "\n", sep = "")
+    cat("Observations (test set): ", x$nobs_test, "\n", sep = "")
   }
   if (x$family$for_augdat) {
     prj_meth <- "augmented-data"
@@ -959,14 +979,32 @@ print.vselsummary <- function(x, digits = 1, ...) {
   }
   cat("Projection method: ", prj_meth, "\n", sep = "")
   if (!is.null(x$cv_method)) {
-    cat(paste("CV method:", x$cv_method, x$search_included, "\n"))
+    cv_meth_pretty <- sub("^kfold$", "K-fold", x$cv_method)
+    cv_meth_pretty <- sub("^LOO$", "PSIS-LOO", cv_meth_pretty)
+    if (x$cv_method == "kfold") {
+      K_pretty <- paste("K =", x$K, "and ")
+    } else {
+      K_pretty <- ""
+    }
+    cat("CV method: ", cv_meth_pretty, " CV with ", K_pretty, x$search_included,
+        "\n", sep = "")
   }
-  cat(paste0("Search method: ", x$method, ", maximum number of terms ",
-             max(x$selection$size), "\n"))
-  cat("Number of ", ifelse(x$clust_used_search, "clusters", "draws"),
-      " used for selection: ", x$nprjdraws_search, "\n", sep = "")
-  cat("Number of ", ifelse(x$clust_used_eval, "clusters", "draws"),
-      " used for prediction: ", x$nprjdraws_eval, "\n", sep = "")
+  cat("Search method: ", x$method, "\n", sep = "")
+  cat("Maximum submodel size for the search: ", x$nterms, "\n", sep = "")
+  if (x$clust_used_search) {
+    clust_search_pretty <- " (from clustered projection)"
+  } else {
+    clust_search_pretty <- ""
+  }
+  if (x$clust_used_eval) {
+    clust_eval_pretty <- " (from clustered projection)"
+  } else {
+    clust_eval_pretty <- ""
+  }
+  cat("Number of projected draws in the search: ", x$nprjdraws_search,
+      clust_search_pretty, "\n", sep = "")
+  cat("Number of projected draws in the performance evaluation: ",
+      x$nprjdraws_eval, clust_eval_pretty, "\n", sep = "")
   cat("\n")
   if (x$family$for_latent) {
     if (x$resp_oscale) {
@@ -977,15 +1015,9 @@ print.vselsummary <- function(x, digits = 1, ...) {
   } else {
     scale_string <- ""
   }
-  cat("Selection Summary", scale_string, ":\n", sep = "")
-  where <- "tidyselect" %:::% "where"
-  print(
-    x$selection %>% dplyr::mutate(dplyr::across(
-      where(is.numeric),
-      ~ round(., digits)
-    )),
-    row.names = FALSE
-  )
+  cat("Performance evaluation summary", scale_string, " with `deltas = ",
+      x$deltas, "`:\n", sep = "")
+  print(x$selection, row.names = FALSE, ...)
   return(invisible(x))
 }
 
@@ -997,8 +1029,8 @@ print.vselsummary <- function(x, digits = 1, ...) {
 #' [print.vselsummary()].
 #'
 #' @param x An object of class `vsel` (returned by [varsel()] or [cv_varsel()]).
-#' @param ... Further arguments passed to [summary.vsel()] (apart from
-#'   argument `digits` which is passed to [print.vselsummary()]).
+#' @param ... Arguments passed to [summary.vsel()] (apart from argument `digits`
+#'   which is passed to [print.vselsummary()]).
 #'
 #' @return The output of [summary.vsel()] (invisible).
 #'
@@ -1045,13 +1077,13 @@ print.vsel <- function(x, ...) {
 #'   passed here.
 #'
 #' @details In general (beware of special extensions below), the suggested model
-#'   size is the smallest model size \eqn{k \in \{0, 1, ...,
-#'   \texttt{nterms\_max}\}}{{k = 0, 1, ..., nterms_max}} for which either the
+#'   size is the smallest model size \eqn{j \in \{0, 1, ...,
+#'   \texttt{nterms\_max}\}}{{j = 0, 1, ..., nterms_max}} for which either the
 #'   lower or upper bound (depending on argument `type`) of the
 #'   normal-approximation (or bootstrap; see argument `stat`) confidence
 #'   interval (with nominal coverage `1 - alpha`; see argument `alpha` of
-#'   [summary.vsel()]) for \eqn{U_k - U_{\mathrm{base}}}{U_k - U_base} (with
-#'   \eqn{U_k} denoting the \eqn{k}-th submodel's true utility and
+#'   [summary.vsel()]) for \eqn{U_j - U_{\mathrm{base}}}{U_j - U_base} (with
+#'   \eqn{U_j} denoting the \eqn{j}-th submodel's true utility and
 #'   \eqn{U_{\mathrm{base}}}{U_base} denoting the baseline model's true utility)
 #'   falls above (or is equal to) \deqn{\texttt{pct} \cdot (u_0 -
 #'   u_{\mathrm{base}})}{pct * (u_0 - u_base)} where \eqn{u_0} denotes the null
@@ -1060,23 +1092,25 @@ print.vsel <- function(x, ...) {
 #'   or the best submodel found (see argument `baseline` of [summary.vsel()]).
 #'
 #'   If `!is.na(thres_elpd)` and `stat = "elpd"`, the decision rule above is
-#'   extended: The suggested model size is then the smallest model size \eqn{k}
-#'   fulfilling the rule above *or* \eqn{u_k - u_{\mathrm{base}} >
-#'   \texttt{thres\_elpd}}{u_k - u_base > thres_elpd}. Correspondingly, in case
+#'   extended: The suggested model size is then the smallest model size \eqn{j}
+#'   fulfilling the rule above *or* \eqn{u_j - u_{\mathrm{base}} >
+#'   \texttt{thres\_elpd}}{u_j - u_base > thres_elpd}. Correspondingly, in case
 #'   of `stat = "mlpd"` (and `!is.na(thres_elpd)`), the suggested model size is
-#'   the smallest model size \eqn{k} fulfilling the rule above *or* \eqn{u_k -
-#'   u_{\mathrm{base}} > \frac{\texttt{thres\_elpd}}{N}}{u_k - u_base >
+#'   the smallest model size \eqn{j} fulfilling the rule above *or* \eqn{u_j -
+#'   u_{\mathrm{base}} > \frac{\texttt{thres\_elpd}}{N}}{u_j - u_base >
 #'   thres_elpd / N} with \eqn{N} denoting the number of observations.
 #'
-#'   For example (disregarding the special extensions in case of `stat = "elpd"`
-#'   or `stat = "mlpd"`), `alpha = 2 * pnorm(-1)`, `pct = 0`, and `type =
-#'   "upper"` means that we select the smallest model size for which the upper
-#'   bound of the 68% confidence interval for \eqn{U_k - U_{\mathrm{base}}}{U_k
-#'   - U_base} exceeds (or is equal to) zero, that is (if `stat` is a
-#'   performance statistic for which the normal approximation is used, not the
-#'   bootstrap), for which the submodel's utility estimate is at most one
-#'   standard error smaller than the baseline model's utility estimate (with
-#'   that standard error referring to the utility *difference*).
+#'   For example (disregarding the special extensions in case of
+#'   `!is.na(thres_elpd)` with `stat = "elpd"` or `stat = "mlpd"`),
+#'   `alpha = 2 * pnorm(-1)`, `pct = 0`, and `type = "upper"` means that we
+#'   select the smallest model size for which the upper bound of the
+#'   `1 - 2 * pnorm(-1)` (approximately 68.3%) confidence interval for
+#'   \eqn{U_j - U_{\mathrm{base}}}{U_j - U_base} exceeds (or is equal to) zero,
+#'   that is (if `stat` is a performance statistic for which the normal
+#'   approximation is used, not the bootstrap), for which the submodel's utility
+#'   estimate is at most one standard error smaller than the baseline model's
+#'   utility estimate (with that standard error referring to the utility
+#'   *difference*).
 #'
 #'   Apart from the two [summary.vsel()] arguments mentioned above (`alpha` and
 #'   `baseline`), `resp_oscale` is another important [summary.vsel()] argument
@@ -1142,10 +1176,9 @@ suggest_size.vsel <- function(
                         type = c("mean", "upper", "lower"),
                         deltas = TRUE,
                         ...)
-  nobs_test <- stats$nobs_test %||% stats$nobs_train
   stats <- stats$selection
 
-  if (.is_util(stat)) {
+  if (is_util(stat)) {
     sgn <- 1
   } else {
     sgn <- -1
@@ -1170,6 +1203,7 @@ suggest_size.vsel <- function(
   if (is.na(thres_elpd)) {
     thres_elpd <- Inf
   }
+  nobs_test <- object$nobs_test
   res <- stats[
     (sgn * stats[, bound] >= util_cutoff) |
       (stat == "elpd" & stats[, paste0(stat, suffix)] > thres_elpd) |
@@ -1191,9 +1225,7 @@ suggest_size.vsel <- function(
       }
     }
   } else {
-    # Above, `object$nterms_max` includes the intercept (if present), so we need
-    # to include it here, too:
-    suggested_size <- min(res) + object$refmodel$intercept
+    suggested_size <- min(res)
     # We don't use `na.rm = TRUE` in min() to be as cautious as possible. In
     # fact, we could refine this to remove `NA`s after the first non-`NA` value
     # (meaning that if there is no non-`NA` value, no `NA`s will be removed),
@@ -1201,7 +1233,7 @@ suggest_size.vsel <- function(
     # possible (because `NA`s after the first non-`NA` value are also strange).
   }
 
-  return(suggested_size - object$refmodel$intercept)
+  return(suggested_size)
 }
 
 # Make the parameter name(s) for the intercept(s) adhere to the naming scheme
@@ -1231,11 +1263,49 @@ replace_population_names <- function(population_effects, nm_scheme) {
   return(population_effects)
 }
 
+# Escape special characters in each element of a character vector, to give a
+# character vector of the same length which may be used in regular expressions:
+esc_chars <- function(chr_vec) {
+  gsub("\\)", "\\\\)",
+       gsub("\\(", "\\\\(",
+            gsub("\\.", "\\\\.", chr_vec)))
+}
+
+# Helper function for removing underscores in response category names (as done
+# by brms) contained in a special character vector. Unfortunately, for these
+# special character vectors, this replacement doesn't seem to be feasible with
+# regular expressions, so we need to iterate over the elements of such a special
+# character vector as well as over the category names and perform the
+# replacement manually:
+rm_underscore <- function(nms, nms_lats, preceding_char = ".") {
+  preceding_char_esc <- esc_chars(preceding_char)
+  unlist(lapply(strsplit(nms, "~"), function(nm_split) {
+    paste(unlist(lapply(nm_split, function(nm_split_part) {
+      for (nm_lat in grep("_", nms_lats, value = TRUE)) {
+        nm_lat_esc <- esc_chars(nm_lat)
+        nm_lat_regex <- paste0(preceding_char_esc, "(", nm_lat_esc, ")")
+        if (grepl(nm_lat_regex, nm_split_part)) {
+          nm_split_part <- paste0(sub(nm_lat_regex, "", nm_split_part),
+                                  preceding_char, gsub("_", "", nm_lat))
+        }
+      }
+      return(nm_split_part)
+    })), collapse = "~")
+  }))
+}
+
 # Make the parameter names for variance components adhere to the naming scheme
 # `nm_scheme`:
 mknms_VarCorr <- function(nms, nms_lats = NULL, nm_scheme, coef_nms) {
   if (!is.null(nms_lats)) {
     stopifnot(nm_scheme == "brms")
+    # Remove underscores in the response category names (as done by brms):
+    if (any(grepl("_", nms_lats))) {
+      nms <- rm_underscore(nms, nms_lats = nms_lats)
+      coef_nms <- lapply(coef_nms, rm_underscore, nms_lats = nms_lats,
+                         preceding_char = "")
+      nms_lats <- gsub("_", "", nms_lats)
+    }
   }
   grp_nms <- names(coef_nms)
   # We will have to search for the substrings "\\sd\\." and "\\cor\\.", so make
@@ -1247,10 +1317,7 @@ mknms_VarCorr <- function(nms, nms_lats = NULL, nm_scheme, coef_nms) {
   if (nm_scheme == "brms") {
     nms <- mknms_icpt(nms, nm_scheme = nm_scheme)
     # Escape special characters in the group names and collapse them with "|":
-    grp_nms_esc <- paste(gsub("\\)", "\\\\)",
-                              gsub("\\(", "\\\\(",
-                                   gsub("\\.", "\\\\.", grp_nms))),
-                         collapse = "|")
+    grp_nms_esc <- paste(esc_chars(grp_nms), collapse = "|")
     # Move the substrings "\\.sd\\." and "\\.cor\\." up front (i.e. in front of
     # the group name), replace their dots, and replace the dot following the
     # group name by double underscores:
@@ -1264,10 +1331,7 @@ mknms_VarCorr <- function(nms, nms_lats = NULL, nm_scheme, coef_nms) {
     }
     # Escape special characters in the coefficient names and collapse them
     # with "|":
-    coef_nms_i_esc <- paste(gsub("\\)", "\\\\)",
-                                 gsub("\\(", "\\\\(",
-                                      gsub("\\.", "\\\\.", coef_nms_i))),
-                            collapse = "|")
+    coef_nms_i_esc <- paste(esc_chars(coef_nms_i), collapse = "|")
     if (nm_scheme == "brms") {
       # Replace dots between coefficient names by double underscores:
       nms <- gsub(paste0("(", coef_nms_i_esc, ")\\."),
@@ -1292,15 +1356,10 @@ mknms_VarCorr <- function(nms, nms_lats = NULL, nm_scheme, coef_nms) {
   if (!is.null(nms_lats)) {
     # Escape special characters in the latent category names and collapse them
     # with "|":
-    nms_lats_esc <- paste(gsub("\\)", "\\\\)",
-                               gsub("\\(", "\\\\(",
-                                    gsub("\\.", "\\\\.", nms_lats))),
-                          collapse = "|")
+    nms_lats_esc <- paste(esc_chars(nms_lats), collapse = "|")
     # Put the string `mu` in front of the latent category names and replace the
     # following tilde by an underscore:
-    nms <- gsub(paste0("(", nms_lats_esc, ")~"),
-                "mu\\1_",
-                nms)
+    nms <- gsub(paste0("(", nms_lats_esc, ")~"), "mu\\1_", nms)
   }
   return(nms)
 }
@@ -1310,6 +1369,13 @@ mknms_VarCorr <- function(nms, nms_lats = NULL, nm_scheme, coef_nms) {
 mknms_ranef <- function(nms, nms_lats = NULL, nm_scheme, coef_nms) {
   if (!is.null(nms_lats)) {
     stopifnot(nm_scheme == "brms")
+    # Remove underscores in the response category names (as done by brms):
+    if (any(grepl("_", nms_lats))) {
+      nms <- rm_underscore(nms, nms_lats = nms_lats)
+      coef_nms <- lapply(coef_nms, rm_underscore, nms_lats = nms_lats,
+                         preceding_char = "")
+      nms_lats <- gsub("_", "", nms_lats)
+    }
   }
   if (nm_scheme == "brms") {
     nms <- mknms_icpt(nms, nm_scheme = nm_scheme)
@@ -1321,10 +1387,7 @@ mknms_ranef <- function(nms, nms_lats = NULL, nm_scheme, coef_nms) {
     }
     # Escape special characters in the coefficient names and collapse them with
     # "|":
-    coef_nms_i_esc <- paste(gsub("\\)", "\\\\)",
-                                 gsub("\\(", "\\\\(",
-                                      gsub("\\.", "\\\\.", coef_nms_i))),
-                            collapse = "|")
+    coef_nms_i_esc <- paste(esc_chars(coef_nms_i), collapse = "|")
     if (nm_scheme == "brms") {
       # Put the part following the group name in square brackets, reorder its
       # two subparts (coefficient name and group level), and separate them by
@@ -1335,9 +1398,7 @@ mknms_ranef <- function(nms, nms_lats = NULL, nm_scheme, coef_nms) {
     } else if (nm_scheme == "rstanarm") {
       grp_nm_i <- names(coef_nms)[coef_nms_idx]
       # Escape special characters in the group name:
-      grp_nm_i_esc <- gsub("\\)", "\\\\)",
-                           gsub("\\(", "\\\\(",
-                                gsub("\\.", "\\\\.", grp_nm_i)))
+      grp_nm_i_esc <- esc_chars(grp_nm_i)
       # Re-arrange as required:
       nms <- sub(paste0("^(", grp_nm_i_esc, ")\\.(", coef_nms_i_esc, ")\\."),
                  "\\2 \\1:",
@@ -1352,10 +1413,7 @@ mknms_ranef <- function(nms, nms_lats = NULL, nm_scheme, coef_nms) {
   if (!is.null(nms_lats)) {
     # Escape special characters in the latent category names and collapse them
     # with "|":
-    nms_lats_esc <- paste(gsub("\\)", "\\\\)",
-                               gsub("\\(", "\\\\(",
-                                    gsub("\\.", "\\\\.", nms_lats))),
-                          collapse = "|")
+    nms_lats_esc <- paste(esc_chars(nms_lats), collapse = "|")
     # Put the string `mu` in front of the latent category names, remove the
     # following tilde, and place all this in front of the first square bracket:
     nms <- gsub(paste0("\\[(.*),(", nms_lats_esc, ")~"),
@@ -1380,7 +1438,7 @@ mknms_categ <- function(dimnms, nm_scheme) {
   # rstanarm currently doesn't support categorical models:
   stopifnot(nm_scheme == "brms")
   nmsdf <- expand.grid(dimnms, stringsAsFactors = FALSE)
-  nmsdf[, 1] <- paste0("mu", nmsdf[, 1])
+  nmsdf[, 1] <- paste0("mu", gsub("_", "", nmsdf[, 1]))
   nmsdf[, 2] <- mknms_icpt(nmsdf[, 2], nm_scheme = nm_scheme)
   nmsdf <- cbind("b", nmsdf)
   return(apply(nmsdf, 1, paste, collapse = "_"))
@@ -1489,8 +1547,7 @@ get_subparams <- function(x, ...) {
 #' @noRd
 #' @export
 get_subparams.lm <- function(x, ...) {
-  return(coef(x) %>%
-           replace_population_names(...))
+  return(replace_population_names(coef(x), ...))
 }
 
 #' @noRd
@@ -1517,8 +1574,7 @@ get_subparams.glmmPQL <- function(x, ...) {
 #' @noRd
 #' @export
 get_subparams.lmerMod <- function(x, ...) {
-  population_effects <- lme4::fixef(x) %>%
-    replace_population_names(...)
+  population_effects <- replace_population_names(lme4::fixef(x), ...)
 
   group_vc_raw <- lme4::VarCorr(x)
   group_vc <- proc_VarCorr(group_vc_raw,
@@ -1719,7 +1775,7 @@ as.matrix.projection <- function(x, nm_scheme = "auto", ...) {
     }
   }
   stopifnot(nm_scheme %in% c("rstanarm", "brms"))
-  res <- do.call(rbind, lapply(x$submodl, get_subparams, nm_scheme = nm_scheme))
+  res <- do.call(rbind, lapply(x$outdmin, get_subparams, nm_scheme = nm_scheme))
   if (x$refmodel$family$family == "gaussian") res <- cbind(res, sigma = x$dis)
   return(res)
 }
@@ -1765,7 +1821,7 @@ NULL
 #' @rdname cv-indices
 #' @export
 cvfolds <- function(n, K, seed = sample.int(.Machine$integer.max, 1)) {
-  .validate_num_folds(K, n)
+  validate_num_folds(K, n)
 
   # Set seed, but ensure the old RNG state is restored on exit:
   if (exists(".Random.seed", envir = .GlobalEnv)) {
@@ -1785,7 +1841,7 @@ cvfolds <- function(n, K, seed = sample.int(.Machine$integer.max, 1)) {
 #' @export
 cv_ids <- function(n, K, out = c("foldwise", "indices"),
                    seed = sample.int(.Machine$integer.max, 1)) {
-  .validate_num_folds(K, n)
+  validate_num_folds(K, n)
   out <- match.arg(out)
 
   # Set seed, but ensure the old RNG state is restored on exit:

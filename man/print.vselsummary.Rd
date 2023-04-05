@@ -4,14 +4,12 @@
 \alias{print.vselsummary}
 \title{Print summary of variable selection}
 \usage{
-\method{print}{vselsummary}(x, digits = 1, ...)
+\method{print}{vselsummary}(x, ...)
 }
 \arguments{
 \item{x}{An object of class \code{vselsummary}.}
 
-\item{digits}{Number of decimal places to be reported.}
-
-\item{...}{Currently ignored.}
+\item{...}{Arguments passed to \code{\link[=print.data.frame]{print.data.frame()}}.}
 }
 \value{
 The output of \code{\link[=summary.vsel]{summary.vsel()}} (invisible).

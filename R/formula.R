@@ -29,6 +29,7 @@ extract_terms_response <- function(formula) {
   hier <- grepl("\\|", terms_)
   int <- grepl(":", terms_)
   group_terms <- terms_[hier]
+  group_terms <- parse_group_terms(group_terms)
   interaction_terms <- terms_[int & !hier]
   individual_terms <- terms_[!hier & !int]
   additive_terms <- parse_additive_terms(individual_terms)
@@ -92,22 +93,48 @@ extract_response <- function(response) {
   return(response_name_ch)
 }
 
+# Parse group terms
+#
+# @param group_terms Character vector of group terms, but as extracted by
+#   labels(terms()), i.e., lacking the surrounding parentheses.
+#
+# @return Character vector of parsed group terms, but as extracted by
+#   labels(terms()), i.e., lacking the surrounding parentheses.
+parse_group_terms <- function(group_terms) {
+  has_call <- sapply(strsplit(group_terms, "\\|"), function(grp_trm_split) {
+    if (length(grp_trm_split) != 2) {
+      stop("Unexpected number of `|` characters in group terms. Please ",
+           "contact the package maintainer.")
+    }
+    grepl("\\(", grp_trm_split[2])
+  })
+  if (any(has_call)) {
+    stop("Function calls on the right-hand side of a group-term `|` ",
+         "character are not allowed.")
+  }
+  return(group_terms)
+}
+
 ## Parse additive terms (smooth terms) from a list of individual terms. See
 ## `?init_refmodel` for allowed smooth terms.
 ## @param terms list of terms to parse
 ## @return a vector of smooth terms
 parse_additive_terms <- function(terms) {
-  excluded_terms <- c("te")
+  excluded_terms <- c("te", "ti")
   smooth_terms <- c("s", "t2")
-  excluded <- unlist(sapply(excluded_terms, function(et) {
-    grep(make_function_regexp(et), terms)
-  }))
-  if (sum(excluded) > 0) {
-    stop("te terms are not supported, please use t2 instead.")
+  excluded <- sapply(excluded_terms, function(et) {
+    any(grepl(make_function_regexp(et), terms))
+  })
+  if (any(excluded)) {
+    stop("te() and ti() terms are not supported, please use t2() instead.")
   }
-  smooth <- sapply(smooth_terms, function(et) {
-    terms[grep(make_function_regexp(et), terms)]
-  }) %>% unlist() %>% unname()
+  smooth <- unlist(lapply(smooth_terms, function(st) {
+    grep(make_function_regexp(st), terms, value = TRUE)
+  }))
+  if (any(grepl("\\(.+,.*=.+\\)", smooth))) {
+    stop("In s() and t2() terms, arguments other than predictors are not ",
+         "allowed.")
+  }
   return(smooth)
 }
 
@@ -293,8 +320,7 @@ split_formula <- function(formula, return_group_terms = TRUE, data = NULL,
       group_replace,
       function(x) length(x) > 0
     ))]
-    to_replace <- group_split[match(group_replace, additive) %>%
-                                (function(x) !is.na(x))]
+    to_replace <- group_split[!is.na(match(group_replace, additive))]
     not_replace <- setdiff(group_split, to_replace)
 
     replacement <- gsub(
@@ -313,7 +339,7 @@ split_formula <- function(formula, return_group_terms = TRUE, data = NULL,
     )
   }
 
-  ## exclude the intercept if there is no intercept in the reference model
+  ## exclude the intercept if there is no intercept in `formula`
   if (!global_intercept) {
     allterms_nobias <- unlist(lapply(allterms_, function(term) {
       paste0(term, " + 0")
@@ -599,28 +625,6 @@ count_terms_in_group_term <- function(term) {
   return(length(terms_))
 }
 
-## Given a list of formulas, sort them by the number of terms in them.
-## @param submodels A list of models' formulas.
-## @return a sorted list of submodels by included terms.
-sort_submodels_by_size <- function(submodels) {
-  size <- lapply(submodels, count_terms_in_formula)
-  df <- data.frame(submodels = as.character(submodels), size = unlist(size))
-  ordered <- df[order(df$size), ]
-
-  search_terms <- list()
-  for (size in unique(ordered$size)) {
-    search_terms[[size]] <- as.character(
-      ordered$submodels[ordered$size == size]
-    )
-  }
-
-  ord_list <- search_terms
-  ## remove NA inside submodels
-  ord_list_nona <- lapply(ord_list, function(l) l[!is.na(l)])
-  ## remove NA at the submodels level
-  return(ord_list_nona[!is.na(ord_list_nona)])
-}
-
 ## Select next possible terms without surpassing a specific size
 ## @param chosen A list of currently chosen terms
 ## @param terms A list of all possible terms
@@ -630,7 +634,7 @@ select_possible_terms_size <- function(chosen, terms, size) {
     stop("size must be at least 1")
   }
 
-  valid_submodels <- lapply(terms, function(x) {
+  valid_sub_trm_combs <- lapply(terms, function(x) {
     ## if we are adding a linear term whose smooth is already
     ## included, we reject it
     terms <- extract_terms_response(make_formula(c(chosen)))
@@ -644,8 +648,7 @@ select_possible_terms_size <- function(chosen, terms, size) {
     linear <- terms_new$individual_terms
     dups <- setdiff(linear[!is.na(match(linear, additive))], chosen)
 
-    size_crr <- count_terms_chosen(c(chosen, x), duplicates = TRUE) -
-      length(dups)
+    size_crr <- count_terms_chosen(c(chosen, x)) - length(dups)
     if (size_crr == size) {
       if (length(dups) > 0) {
         tt <- terms(formula(paste("~", x, "-", paste(dups, collapse = "-"))))
@@ -659,7 +662,9 @@ select_possible_terms_size <- function(chosen, terms, size) {
       return(NA)
     }
   })
-  valid_submodels <- unlist(valid_submodels[!is.na(valid_submodels)])
+  valid_sub_trm_combs <- unlist(
+    valid_sub_trm_combs[!is.na(valid_sub_trm_combs)]
+  )
   if (length(chosen) > 0) {
     add_chosen <- paste0(" + ", paste(chosen, collapse = "+"))
     remove_chosen <- paste0(" - ",
@@ -668,12 +673,12 @@ select_possible_terms_size <- function(chosen, terms, size) {
     add_chosen <- ""
     remove_chosen <- ""
   }
-  full_valid_submodels <- unique(unlist(lapply(valid_submodels, function(x) {
+  valid_sub_trm_combs <- unique(unlist(lapply(valid_sub_trm_combs, function(x) {
     to_character_rhs(flatten_formula(make_formula(
       paste(x, add_chosen, remove_chosen)
     )))
   })))
-  return(full_valid_submodels)
+  return(valid_sub_trm_combs)
 }
 
 ## Cast a right hand side formula to a character vector.
@@ -688,17 +693,10 @@ to_character_rhs <- function(rhs) {
 ## @param list_of_terms Subset of terms from formula.
 ## @param duplicates if FALSE removes linear terms if their corresponding smooth
 ##   is included. Default TRUE
-## @param add_icpt Only relevant if `length(list_of_terms) == 0`. A single
-##   logical value indicating whether to add the intercept.
-## @return number of terms
-count_terms_chosen <- function(list_of_terms, duplicates = TRUE,
-                               add_icpt = FALSE) {
+## @return number of terms (counting the intercept as a term)
+count_terms_chosen <- function(list_of_terms, duplicates = TRUE) {
   if (length(list_of_terms) == 0) {
-    if (!add_icpt) {
-      return(0)
-    } else {
-      list_of_terms <- "1"
-    }
+    list_of_terms <- "1"
   }
   formula <- make_formula(list_of_terms)
   return(
@@ -749,13 +747,6 @@ eval_el2 <- function(formula, data) {
 lhs <- function(x) {
   x <- as.formula(x)
   if (length(x) == 3L) update(x, . ~ 1) else NULL
-}
-
-## remove intercept from formula
-## @param formula a model formula
-## @return the updated formula without intercept
-delete.intercept <- function(formula) {
-  return(update(formula, . ~ . - 1))
 }
 
 ## collapse a list of terms including contrasts

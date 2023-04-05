@@ -1,7 +1,7 @@
 # Family-specific helper functions
 #
 # `extend_family(family)` returns a `family` object augmented with auxiliary
-# functions that are needed for computing KL-divergence, log predictive density,
+# functions that are needed for computing KL-divergence, log likelihood,
 # dispersion projection, etc.
 #
 # Missing: Quasi-families are not implemented. If dis_gamma is the correct shape
@@ -177,7 +177,7 @@
 #' prototype
 #' ```{r, eval = FALSE}
 #' latent_ppd_oscale(ilpreds_resamp, wobs, cl_ref,
-#'                wdraws_ref = rep(1, length(cl_ref)), idxs_prjdraws)
+#'                   wdraws_ref = rep(1, length(cl_ref)), idxs_prjdraws)
 #' ```
 #' where:
 #' * `ilpreds_resamp` accepts the return value from `latent_ilink`, but possibly
@@ -240,7 +240,7 @@ extend_family <- function(family,
                           augdat_args_link = list(),
                           augdat_args_ilink = list(),
                           ...) {
-  if (.has_family_extras(family)) {
+  if (has_family_extras(family)) {
     # If the family was already extended using this function, then return as-is:
     return(family)
   }
@@ -406,7 +406,7 @@ extend_family <- function(family,
     family$dis_fun <- function(pref, psub, wobs = 1) {
       return(rep(NA, ncol(pref$mu)))
     }
-    family$predvar <- function(mu, dis, wsample = 1) {
+    family$predvar <- function(mu, dis, wdraws = 1) {
       return(rep(NA, NROW(mu)))
     }
     family$ll_fun <- function(mu, dis = NULL, y, weights = 1) {
@@ -442,7 +442,7 @@ extend_family_binomial <- function(family) {
   dis_na <- function(pref, psub, wobs = 1) {
     rep(NA, ncol(pref$mu))
   }
-  predvar_na <- function(mu, dis, wsample = 1) {
+  predvar_na <- function(mu, dis, wdraws = 1) {
     rep(NA, NROW(mu))
   }
   ll_binom <- function(mu, dis, y, weights = 1) {
@@ -528,7 +528,7 @@ extend_family_poisson <- function(family) {
   dis_na <- function(pref, psub, wobs = 1) {
     rep(NA, ncol(pref$mu))
   }
-  predvar_na <- function(mu, dis, wsample = 1) {
+  predvar_na <- function(mu, dis, wdraws = 1) {
     rep(NA, NROW(mu))
   }
   ll_poiss <- function(mu, dis, y, weights = 1) {
@@ -542,6 +542,7 @@ extend_family_poisson <- function(family) {
     -2 * dpois_log_reduced(x = y, lamb = mu, wobs = weights)
   }
   ppd_poiss <- function(mu, dis, weights = 1) {
+    weights <- parse_wobs_ppd(weights, n_obs = length(mu))
     rpois(length(mu), mu)
   }
 
@@ -568,11 +569,12 @@ extend_family_gaussian <- function(family) {
   dis_gauss <- function(pref, psub, wobs = 1) {
     sqrt(colSums(wobs / sum(wobs) * (pref$var + (pref$mu - psub$mu)^2)))
   }
-  predvar_gauss <- function(mu, dis, wsample = 1) {
-    wsample <- wsample / sum(wsample)
-    mu_mean <- mu %*% wsample
-    mu_var <- mu^2 %*% wsample - mu_mean^2
-    as.vector(sum(wsample * dis^2) + mu_var)
+  predvar_gauss <- function(mu, dis, wdraws = 1) {
+    wdraws <- wdraws / sum(wdraws)
+    mu_var <- do.call(rbind, lapply(seq_len(nrow(mu)), function(i) {
+      sum(wdraws * (mu[i, ] - weighted.mean(mu[i, ], wdraws))^2)
+    }))
+    as.vector(sum(wdraws * dis^2) + mu_var)
   }
   ll_gauss <- function(mu, dis, y, weights = 1) {
     y <- as.matrix(y)
@@ -591,6 +593,7 @@ extend_family_gaussian <- function(family) {
     -2 * weights * (-0.5 / dis^2 * (y - mu)^2 - log(dis))
   }
   ppd_gauss <- function(mu, dis, weights = 1) {
+    weights <- parse_wobs_ppd(weights, n_obs = length(mu))
     rnorm(length(mu), mu, dis)
   }
 
@@ -624,7 +627,7 @@ extend_family_gamma <- function(family) {
     ## mean(wobs*((pref$mu - p_sub$mu)/
     ##                      family$mu.eta(family$linkfun(p_sub$mu))^2))
   }
-  predvar_gamma <- function(mu, dis, wsample = 1) {
+  predvar_gamma <- function(mu, dis, wdraws = 1) {
     stop("Family Gamma not implemented yet.")
   }
   ll_gamma <- function(mu, dis, y, weights = 1) {
@@ -638,6 +641,7 @@ extend_family_gamma <- function(family) {
     ## weights*dgamma(y, dis, dis/matrix(mu), log= TRUE)
   }
   ppd_gamma <- function(mu, dis, weights = 1) {
+    weights <- parse_wobs_ppd(weights, n_obs = length(mu))
     rgamma(length(mu), dis, dis / mu)
   }
 
@@ -668,11 +672,12 @@ extend_family_student_t <- function(family) {
     sqrt(s2)
     ## stop('Projection of dispersion not yet implemented for student-t')
   }
-  predvar_student_t <- function(mu, dis, wsample = 1) {
-    wsample <- wsample / sum(wsample)
-    mu_mean <- mu %*% wsample
-    mu_var <- mu^2 %*% wsample - mu_mean^2
-    as.vector(family$nu / (family$nu - 2) * sum(wsample * dis^2) + mu_var)
+  predvar_student_t <- function(mu, dis, wdraws = 1) {
+    wdraws <- wdraws / sum(wdraws)
+    mu_var <- do.call(rbind, lapply(seq_len(nrow(mu)), function(i) {
+      sum(wdraws * (mu[i, ] - weighted.mean(mu[i, ], wdraws))^2)
+    }))
+    as.vector(family$nu / (family$nu - 2) * sum(wdraws * dis^2) + mu_var)
   }
   ll_student_t <- function(mu, dis, y, weights = 1) {
     y <- as.matrix(y)
@@ -692,6 +697,7 @@ extend_family_student_t <- function(family) {
                      * log(1 + 1 / family$nu * ((y - mu) / dis)^2) - log(dis)))
   }
   ppd_student_t <- function(mu, dis, weights = 1) {
+    weights <- parse_wobs_ppd(weights, n_obs = length(mu))
     rt(length(mu), family$nu) * dis + mu
   }
 
@@ -705,7 +711,7 @@ extend_family_student_t <- function(family) {
   return(family)
 }
 
-.has_dispersion <- function(family) {
+has_dispersion <- function(family) {
   # a function for checking whether the family has a dispersion parameter
   family$family %in% c("gaussian", "Student_t", "Gamma")
 }
@@ -713,6 +719,6 @@ extend_family_student_t <- function(family) {
 # A function for checking whether a `family` object has the required extra
 # functions, that is, whether it has already been extended (typically by a call
 # to extend_family()):
-.has_family_extras <- function(family) {
+has_family_extras <- function(family) {
   return(isTRUE(family$is_extended))
 }

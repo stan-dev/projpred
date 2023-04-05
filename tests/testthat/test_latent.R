@@ -114,13 +114,13 @@ test_that(paste(
     refmod_crr <- refmods[[args_prj_i$tstsetup_ref]]
     refmod_crr_trad <- refmods[[args_prj_i_trad$tstsetup_ref]]
     set.seed(args_prj_i$seed)
-    pref_lat <- .get_refdist(refmod_crr,
-                             ndraws = args_prj_i$ndraws,
-                             nclusters = args_prj_i$nclusters)
+    pref_lat <- get_refdist(refmod_crr,
+                            ndraws = args_prj_i$ndraws,
+                            nclusters = args_prj_i$nclusters)
     set.seed(args_prj_i_trad$seed)
-    pref_trad <- .get_refdist(refmod_crr_trad,
-                              ndraws = args_prj_i_trad$ndraws,
-                              nclusters = args_prj_i_trad$nclusters)
+    pref_trad <- get_refdist(refmod_crr_trad,
+                             ndraws = args_prj_i_trad$ndraws,
+                             nclusters = args_prj_i_trad$nclusters)
 
     expect_identical(
       pref_lat[setdiff(names(pref_lat), c("mu", "mu_offs", "var", "dis"))],
@@ -226,7 +226,7 @@ test_that(paste(
     expect_warning(prjmat_crr_trad <- as.matrix(prj_crr_trad),
                    warn_prjmat_expect, info = tstsetup_mod)
     expect_identical(prjmat_crr_lat, prjmat_crr_trad, info = tstsetup_mod)
-    prj_el_excl <- c("submodl", "refmodel")
+    prj_el_excl <- c("outdmin", "refmodel")
     expect_identical(prj_crr_lat[setdiff(names(prj_crr_lat), prj_el_excl)],
                      prj_crr_trad[setdiff(names(prj_crr_trad), prj_el_excl)],
                      info = tstsetup_mod)

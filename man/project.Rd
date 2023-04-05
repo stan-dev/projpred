@@ -39,7 +39,7 @@ is not of class \code{vsel}, \code{solution_terms} must not be \code{NULL}.}
 submodels (again) (\code{TRUE}) or to retrieve the fitted submodels from
 \code{object} (\code{FALSE}). For an \code{object} which is not of class \code{vsel},
 \code{refit_prj} must be \code{TRUE}. Note that currently, \code{refit_prj = FALSE}
-requires some caution, see GitHub issues #168 and #211.}
+requires some caution, see GitHub issue #168.}
 
 \item{ndraws}{Only relevant if \code{refit_prj} is \code{TRUE}. Number of posterior
 draws to be projected. Ignored if \code{nclusters} is not \code{NULL} or if the
@@ -83,11 +83,15 @@ this is not the actual cross-entropy, but a reduced one where terms which
 would cancel out when calculating the KL divergence have been dropped. In
 case of the Gaussian family, that reduced cross-entropy is further
 modified, yielding merely a proxy.}
-\item{\code{weights}}{Weights for the projected draws.}
+\item{\code{wdraws_prj}}{Weights for the projected draws.}
 \item{\code{solution_terms}}{A character vector of the submodel's predictor
 terms.}
-\item{\code{submodl}}{A \code{list} containing the submodel fits (one fit per
-projected draw).}
+\item{\code{outdmin}}{A \code{list} containing the submodel fits (one fit per
+projected draw). This is the same as the return value of the
+\code{div_minimizer} function (see \code{\link[=init_refmodel]{init_refmodel()}}), except if \code{\link[=project]{project()}}
+was used with an \code{object} of class \code{vsel} based on an L1 search as well
+as with \code{refit_prj = FALSE}, in which case this is the output from an
+internal \emph{L1-penalized} divergence minimizer.}
 \item{\code{cl_ref}}{A numeric vector of length equal to the number of
 posterior draws in the reference model, containing the cluster indices of
 these draws.}
@@ -103,6 +107,14 @@ reference model's posterior draws have been clustered for the projection
 If the projection is performed onto more than one submodel, the output from
 above is returned for each submodel, giving a \code{list} with one element for
 each submodel.
+
+The elements of an object of class \code{projection} are not meant to be
+accessed directly but instead via helper functions (see the main vignette
+and \link{projpred-package}). An exception is element \code{wdraws_prj} which is
+currently needed to weight quantities derived from the projected draws in
+case of clustered projection, e.g., after applying \code{\link[=as.matrix.projection]{as.matrix.projection()}}
+(which throws a warning in case of clustered projection to make users aware
+of this problem).
 }
 \description{
 Project the posterior of the reference model onto the parameter space of a

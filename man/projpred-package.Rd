@@ -56,6 +56,17 @@ families.
 \item Submodel with multilevel and additive terms: \code{\link[gamm4:gamm4]{gamm4::gamm4()}}.
 }
 
+Setting the global option \code{projpred.extra_verbose} to \code{TRUE} will print out
+which submodel \pkg{projpred} is currently projecting onto as well as (if
+\code{method = "forward"} and \code{verbose = TRUE} in \code{varsel()} or \code{cv_varsel()})
+which submodel has been selected at those steps of the forward search for
+which a percentage (of the maximum submodel size that the search is run up
+to) is printed. In general, however, we cannot recommend setting this global
+option to \code{TRUE} for \code{cv_varsel()} with \code{cv_method = "LOO"} and
+\code{validate_search = TRUE} or for \code{cv_varsel()} with \code{cv_method = "kfold"}
+(simply due to the amount of information that will be printed, but also due
+to the progress bar which will not work anymore as intended).
+
 The projection of the reference model onto a submodel can be run on multiple
 CPU cores in parallel (across the projected draws). This is powered by the
 \pkg{foreach} package. Thus, any parallel (or sequential) backend compatible
@@ -154,6 +165,7 @@ Other contributors:
   \item Sölvi Rögnvaldsson [contributor]
   \item  The LME4 Authors (see file 'LICENSE' for details) [copyright holder]
   \item Yann McLatchie [contributor]
+  \item Juho Timonen [contributor]
 }
 
 }

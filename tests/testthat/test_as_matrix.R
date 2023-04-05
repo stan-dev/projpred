@@ -107,7 +107,7 @@ test_that("as.matrix.projection() works", {
       }
       colnms_prjmat_expect <- paste0("b_", colnms_prjmat_expect)
     }
-    if ("(1 | z.1)" %in% solterms) {
+    if (any(c("(1 | z.1)", "(xco.1 | z.1)") %in% solterms)) {
       if (pkg_crr == "brms") {
         mlvl_icpt_str <- "Intercept"
         if (fam_crr == "categ") {
@@ -167,8 +167,7 @@ test_that("as.matrix.projection() works", {
           )
         }
       }
-    }
-    if (all(c("(1 | z.1)", "(xco.1 | z.1)") %in% solterms)) {
+      # Correlation:
       if (pkg_crr == "brms") {
         mlvl_icpt_xco_str <- combn(c(mlvl_icpt_str, mlvl_xco_str), m = 2,
                                    FUN = paste, collapse = "__")

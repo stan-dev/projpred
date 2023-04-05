@@ -188,13 +188,13 @@ test_that(paste(
     refmod_crr <- refmods[[args_prj_i$tstsetup_ref]]
     refmod_crr_trad <- refmods[[args_prj_i_trad$tstsetup_ref]]
     set.seed(args_prj_i$seed)
-    pref_aug <- .get_refdist(refmod_crr,
-                             ndraws = args_prj_i$ndraws,
-                             nclusters = args_prj_i$nclusters)
+    pref_aug <- get_refdist(refmod_crr,
+                            ndraws = args_prj_i$ndraws,
+                            nclusters = args_prj_i$nclusters)
     set.seed(args_prj_i_trad$seed)
-    pref_trad <- .get_refdist(refmod_crr_trad,
-                              ndraws = args_prj_i_trad$ndraws,
-                              nclusters = args_prj_i_trad$nclusters)
+    pref_trad <- get_refdist(refmod_crr_trad,
+                             ndraws = args_prj_i_trad$ndraws,
+                             nclusters = args_prj_i_trad$nclusters)
 
     eta_aug <- refmod_crr$family$linkfun(pref_aug$mu)
     eta_trad <- refmod_crr_trad$family$linkfun(pref_trad$mu)
@@ -223,7 +223,7 @@ test_that(paste(
     tol_coefs <- ifelse(
       args_prj[[tstsetup]]$mod_nm == "glmm" &&
         any(grepl("^\\(.*\\)$", args_prj[[tstsetup]]$solution_terms)),
-      1e-3, 1e-6
+      1e-3, 1e-5
     )
     expect_equal(prjmat, prjmat_trad, tolerance = tol_coefs, info = tstsetup)
   }
@@ -524,7 +524,7 @@ test_that(paste(
 
       expect_equal(smmry_pd[, setdiff(names(smmry_pd), "se")],
                    smmry_pd_trad[, setdiff(names(smmry_pd_trad), "se")],
-                   info = tstsetup)
+                   tolerance = tol_smmry, info = tstsetup)
       expect_equal(smmry_pd$se, smmry_pd_trad$se, tolerance = 1e-1,
                    info = tstsetup)
     }

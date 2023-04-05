@@ -211,7 +211,7 @@ varsel.refmodel <- function(object, d_test = NULL, method = NULL,
 
   refmodel <- object
 
-  ## fetch the default arguments or replace them by the user defined values
+  # Parse arguments:
   args <- parse_args_varsel(
     refmodel = refmodel, method = method, refit_prj = refit_prj,
     nterms_max = nterms_max, nclusters = nclusters, search_terms = search_terms
@@ -222,12 +222,13 @@ varsel.refmodel <- function(object, d_test = NULL, method = NULL,
   nclusters <- args$nclusters
   search_terms <- args$search_terms
 
+  # Pre-process `d_test`:
   if (is.null(d_test)) {
     d_test <- list(type = "train", data = NULL, offset = refmodel$offset,
                    weights = refmodel$wobs, y = refmodel$y,
                    y_oscale = refmodel$y_oscale)
   } else {
-    d_test$type <- "test"
+    d_test$type <- "test_hold-out"
     if (!refmodel$family$for_latent) {
       d_test$y_oscale <- d_test$y
     }
@@ -264,42 +265,54 @@ varsel.refmodel <- function(object, d_test = NULL, method = NULL,
       }
     }
   }
+  y_wobs_test <- setNames(
+    as.data.frame(d_test[nms_y_wobs_test(wobs_nm = "weights")]),
+    nms_y_wobs_test()
+  )
+  nobs_test <- nrow(y_wobs_test)
 
-  ## reference distributions for selection and prediction after selection
-  p_sel <- .get_refdist(refmodel, ndraws, nclusters)
-  p_pred <- .get_refdist(refmodel, ndraws_pred, nclusters_pred)
+  # Clustering or thinning for the search:
+  p_sel <- get_refdist(refmodel, ndraws, nclusters)
+  # Clustering or thinning for the performance evaluation:
+  p_pred <- get_refdist(refmodel, ndraws_pred, nclusters_pred)
 
-  ## perform the selection
+  # Run the search:
   opt <- nlist(lambda_min_ratio, nlambda, thresh, regul)
+  verb_out("-----\nRunning the search ...", verbose = verbose)
   search_path <- select(
     method = method, p_sel = p_sel, refmodel = refmodel,
     nterms_max = nterms_max, penalty = penalty, verbose = verbose, opt = opt,
     search_terms = search_terms, ...
   )
+  verb_out("-----", verbose = verbose)
 
-  ## statistics for the selected submodels
-  submodels <- .get_submodels(
+  # For the performance evaluation: Re-project along the solution path (or fetch
+  # the projections from the search results):
+  verb_out("-----\nFor performance evaluation: Re-projecting onto the ",
+           "submodels along the solution path ...",
+           verbose = verbose && refit_prj)
+  submodls <- get_submodls(
     search_path = search_path,
     nterms = c(0, seq_along(search_path$solution_terms)),
     p_ref = p_pred, refmodel = refmodel, regul = regul, refit_prj = refit_prj,
     ...
   )
-  sub <- .get_sub_summaries(submodels = submodels,
-                            refmodel = refmodel,
-                            test_points = NULL,
-                            newdata = d_test$data,
-                            offset = d_test$offset,
-                            wobs = d_test$weights,
-                            y = d_test$y,
-                            y_oscale = d_test$y_oscale)
+  verb_out("-----", verbose = verbose && refit_prj)
+  # The performance evaluation itself, i.e., the calculation of the predictive
+  # performance statistic(s) for the submodels along the solution path:
+  sub <- get_sub_summaries(submodls = submodls,
+                           refmodel = refmodel,
+                           test_points = NULL,
+                           newdata = d_test$data,
+                           offset = d_test$offset,
+                           wobs = d_test$weights,
+                           y = d_test$y,
+                           y_oscale = d_test$y_oscale)
 
-  ## predictive statistics of the reference model on test data. if no test data
-  ## are provided,
-  ## simply fetch the statistics on the train data
+  # Predictive performance of the reference model:
   if (inherits(refmodel, "datafit")) {
-    ## no actual reference model, so we don't know how to predict test
-    ## observations
-    nobs_test <- nrow(d_test$data %||% refmodel$fetch_data())
+    # In this case, there is no actual reference model, so we don't know how to
+    # predict for actual new data.
     ref <- list(mu = rep(NA, nobs_test), lppd = rep(NA, nobs_test))
     if (refmodel$family$for_latent) {
       # In general, we could use `ref$oscale <- ref` here, but the case where
@@ -341,52 +354,52 @@ varsel.refmodel <- function(object, d_test = NULL, method = NULL,
                                        excl_offs = FALSE)
       mu_test <- refmodel$family$linkinv(eta_test)
     }
-    ref <- .weighted_summary_means(
-      y_test = d_test, family = refmodel$family, wsample = refmodel$wsample,
-      mu = mu_test, dis = refmodel$dis, cl_ref = seq_along(refmodel$wsample)
+    ref <- weighted_summary_means(
+      y_wobs_test = y_wobs_test, family = refmodel$family,
+      wdraws = refmodel$wdraws_ref, mu = mu_test, dis = refmodel$dis,
+      cl_ref = seq_along(refmodel$wdraws_ref)
     )
   }
 
-  ## store the relevant fields into the object to be returned
-  vs <- nlist(
-    refmodel,
-    search_path,
-    d_test,
-    summaries = nlist(sub, ref),
-    solution_terms = search_path$solution_terms,
-    ce = sapply(submodels, "[[", "ce"),
-    nterms_max,
-    nterms_all = count_terms_in_formula(refmodel$formula),
-    method = method,
-    cv_method = NULL,
-    validate_search = NULL,
-    clust_used_search = p_sel$clust_used,
-    clust_used_eval = p_pred$clust_used,
-    nprjdraws_search = NCOL(p_sel$mu),
-    nprjdraws_eval = NCOL(p_pred$mu)
-  )
+  # The object to be returned:
+  vs <- nlist(refmodel,
+              nobs_train = refmodel$nobs,
+              search_path,
+              solution_terms = search_path$solution_terms,
+              pct_solution_terms_cv = NULL,
+              ce = sapply(submodls, "[[", "ce"),
+              type_test = d_test$type,
+              y_wobs_test,
+              nobs_test,
+              summaries = nlist(sub, ref),
+              nterms_all = count_terms_in_formula(refmodel$formula) - 1L,
+              nterms_max,
+              method,
+              cv_method = NULL,
+              K = NULL,
+              validate_search = NULL,
+              clust_used_search = p_sel$clust_used,
+              clust_used_eval = p_pred$clust_used,
+              nprjdraws_search = NCOL(p_sel$mu),
+              nprjdraws_eval = NCOL(p_pred$mu))
   class(vs) <- "vsel"
 
   return(vs)
 }
 
+# Workhorse function for the search
+#
+# Argument `p_sel` accepts output from get_refdist() or get_p_clust(). For all
+# other arguments, see the documentation of varsel().
+#
+# @return A list with elements `solution_terms` (the solution path), `outdmins`
+#   (the submodel fits along the solution path, with the number of fits per
+#   model size being equal to the number of projected draws), and `p_sel` (the
+#   same as the input argument `p_sel`).
 select <- function(method, p_sel, refmodel, nterms_max, penalty, verbose, opt,
-                   search_terms = NULL, ...) {
-  ##
-  ## Auxiliary function, performs variable selection with the given method,
-  ## and returns the search_path, i.e., a list with the followint entries (the
-  ## last three
-  ## are returned only if one cluster projection is used for selection):
-  ##   solution_terms: the variable ordering
-  ##   beta: coefficients along the solution path
-  ##   alpha: intercepts along the solution path
-  ##   p_sel: the reference distribution used in the selection (the input
-  ##   argument p_sel)
-  ##
-  ## routine that can be used with several clusters
-  if (method == "l1") {
-    search_path <- search_L1(p_sel, refmodel, nterms_max - refmodel$intercept,
-                             penalty, opt)
+                   search_terms, ...) {
+  if (method == "L1") {
+    search_path <- search_L1(p_sel, refmodel, nterms_max, penalty, opt)
     search_path$p_sel <- p_sel
     return(search_path)
   } else if (method == "forward") {
@@ -397,11 +410,12 @@ select <- function(method, p_sel, refmodel, nterms_max, penalty, verbose, opt,
   }
 }
 
-## Auxiliary function for parsing the input arguments for varsel.
-## The arguments specified by the user (or the function calling this function)
-## are treated as they are, but if some are not given, then this function
-## fills them in with the default values. The purpose of this function is to
-## avoid repeating the same code both in varsel and cv_varsel.
+# Auxiliary function for parsing the arguments of varsel()
+#
+# The arguments specified by the user (or the function calling this function)
+# are treated as they are, but if some are not given, then this function fills
+# them in with the default values. The purpose of this function is to avoid
+# repeating the same code both in varsel() and cv_varsel().
 parse_args_varsel <- function(refmodel, method, refit_prj, nterms_max,
                               nclusters, search_terms) {
   search_terms_was_null <- is.null(search_terms)
@@ -418,11 +432,13 @@ parse_args_varsel <- function(refmodel, method, refit_prj, nterms_max,
         refmodel$family$for_augdat) {
       method <- "forward"
     } else {
-      method <- "l1"
+      method <- "L1"
     }
   } else {
-    method <- tolower(method)
     if (method == "l1") {
+      method <- toupper(method)
+    }
+    if (method == "L1") {
       if (has_group_features || has_additive_features) {
         stop("L1 search is only supported for reference models without ",
              "multilevel and without additive (\"smoothing\") terms.")
@@ -438,7 +454,7 @@ parse_args_varsel <- function(refmodel, method, refit_prj, nterms_max,
     }
   }
 
-  if (!(method %in% c("l1", "forward"))) {
+  if (!(method %in% c("L1", "forward"))) {
     stop("Unknown search method")
   }
 
@@ -449,18 +465,18 @@ parse_args_varsel <- function(refmodel, method, refit_prj, nterms_max,
     refit_prj <- FALSE
   }
 
-  if (method == "l1") {
+  if (method == "L1") {
     nclusters <- 1
   }
 
   search_terms_unq <- unique(unlist(
     strsplit(search_terms, split = "+", fixed = TRUE)
   ))
-  max_nv_possible <- count_terms_chosen(search_terms_unq, duplicates = TRUE)
+  max_nv_possible <- count_terms_chosen(search_terms_unq) - 1L
   if (is.null(nterms_max)) {
     nterms_max <- 19
   }
-  nterms_max <- min(max_nv_possible, nterms_max + refmodel$intercept)
+  nterms_max <- min(max_nv_possible, nterms_max)
 
   return(nlist(method, refit_prj, nterms_max, nclusters, search_terms))
 }
