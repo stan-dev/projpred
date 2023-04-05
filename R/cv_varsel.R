@@ -170,7 +170,7 @@ cv_varsel.refmodel <- function(
     # Clustering or thinning for the final full-data search (already clustering
     # or thinning here for consistent PRNG states between the full-data search
     # in the `validate_search == FALSE` case and the full-data search in the
-    # cases `validate_search` we are in here):
+    # `validate_search == TRUE` case we are in here):
     p_sel <- get_refdist(refmodel, ndraws, nclusters)
   }
 
