@@ -2,7 +2,7 @@
 % Please edit documentation in R/methods.R
 \name{plot.vsel}
 \alias{plot.vsel}
-\title{Plot summary statistics of a variable selection}
+\title{Plot predictive performance}
 \usage{
 \method{plot}{vsel}(
   x,
@@ -89,7 +89,11 @@ A \pkg{ggplot2} plotting object (of class \code{gg} and \code{ggplot}).
 }
 \description{
 This is the \code{\link[=plot]{plot()}} method for \code{vsel} objects (returned by \code{\link[=varsel]{varsel()}} or
-\code{\link[=cv_varsel]{cv_varsel()}}).
+\code{\link[=cv_varsel]{cv_varsel()}}). It displays the predictive performance of the reference model
+(possibly also that of some other "baseline" model) and that of the submodels
+(more precisely, of the submodel \emph{sizes}) along the solution path. For a
+tabular representation of the plotted performance statistics, see
+\code{\link[=summary.vsel]{summary.vsel()}}.
 }
 \details{
 The \code{stats} options \code{"mse"} and \code{"rmse"} are only available for:

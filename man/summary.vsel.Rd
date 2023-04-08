@@ -2,7 +2,7 @@
 % Please edit documentation in R/methods.R
 \name{summary.vsel}
 \alias{summary.vsel}
-\title{Summary statistics of a variable selection}
+\title{Summary of a \code{\link[=varsel]{varsel()}} or \code{\link[=cv_varsel]{cv_varsel()}} run}
 \usage{
 \method{summary}{vsel}(
   object,
@@ -92,7 +92,10 @@ An object of class \code{vselsummary}.
 }
 \description{
 This is the \code{\link[=summary]{summary()}} method for \code{vsel} objects (returned by \code{\link[=varsel]{varsel()}} or
-\code{\link[=cv_varsel]{cv_varsel()}}).
+\code{\link[=cv_varsel]{cv_varsel()}}), which consists of some general information about the
+\code{\link[=varsel]{varsel()}} or \code{\link[=cv_varsel]{cv_varsel()}} run, the full-data solution path, and
+user-specified predictive performance statistics. For plotting the latter,
+see \code{\link[=plot.vsel]{plot.vsel()}}.
 }
 \details{
 The \code{stats} options \code{"mse"} and \code{"rmse"} are only available for:

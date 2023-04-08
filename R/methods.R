@@ -518,10 +518,14 @@ proj_predict_aux <- function(proj, newdata, offset, weights,
   return(structure(pppd_out, cats = cats_aug))
 }
 
-#' Plot summary statistics of a variable selection
+#' Plot predictive performance
 #'
 #' This is the [plot()] method for `vsel` objects (returned by [varsel()] or
-#' [cv_varsel()]).
+#' [cv_varsel()]). It displays the predictive performance of the reference model
+#' (possibly also that of some other "baseline" model) and that of the submodels
+#' (more precisely, of the submodel *sizes*) along the solution path. For a
+#' tabular representation of the plotted performance statistics, see
+#' [summary.vsel()].
 #'
 #' @inheritParams summary.vsel
 #' @param x An object of class `vsel` (returned by [varsel()] or [cv_varsel()]).
@@ -723,10 +727,13 @@ plot.vsel <- function(
   return(pp)
 }
 
-#' Summary statistics of a variable selection
+#' Summary of a [varsel()] or [cv_varsel()] run
 #'
 #' This is the [summary()] method for `vsel` objects (returned by [varsel()] or
-#' [cv_varsel()]).
+#' [cv_varsel()]), which consists of some general information about the
+#' [varsel()] or [cv_varsel()] run, the full-data solution path, and
+#' user-specified predictive performance statistics. For plotting the latter,
+#' see [plot.vsel()].
 #'
 #' @param object An object of class `vsel` (returned by [varsel()] or
 #'   [cv_varsel()]).
