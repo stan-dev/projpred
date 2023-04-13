@@ -499,6 +499,32 @@ trms_add <- c("s(s.1)") # , "s(s.2)", "s(s.3)"
 trms_common_spcl <- c("xco.1", "I(xco.1^2)",
                       "exp(xco.2) * I(as.numeric(xco.3 > 0))", "xca.1", "xca.2",
                       "offset(offs_col)")
+trms_universe <- unique(c(trms_common, trms_grp, trms_add, trms_common_spcl))
+trms_universe_split <- setdiff(trms_universe, "offset(offs_col)")
+# Handle interaction terms:
+stopifnot(!any(grepl(":", trms_universe_split)))
+trms_universe_split_IA <- grep("\\*", trms_universe_split, value = TRUE)
+if (length(trms_universe_split_IA)) {
+  trms_universe_split_noIA <- setdiff(trms_universe_split,
+                                      trms_universe_split_IA)
+  # Replace " * " in interaction terms by ":":
+  trms_universe_split_IA <- gsub(" \\* ", ":", trms_universe_split_IA)
+  # Add main effects from interaction terms:
+  trms_universe_split_noIA <- union(
+    trms_universe_split_noIA,
+    unlist(strsplit(trms_universe_split_IA, split = ":"))
+  )
+  trms_universe_split <- c(trms_universe_split_noIA, trms_universe_split_IA)
+}
+# Add lower-order group-level terms:
+if ("(xco.1 | z.1)" %in% trms_universe_split) {
+  trms_universe_split <- union(trms_universe_split, "(1 | z.1)")
+}
+# Ensure that for all terms on the left-hand side of the `|` character in
+# group-level terms, corresponding population-level terms exist:
+if ("(xco.1 | z.1)" %in% trms_universe_split) {
+  trms_universe_split <- union(trms_universe_split, "xco.1")
+}
 
 # Solution terms for project()-ing from `"refmodel"`s:
 solterms_x <- c("xco.1", "xca.1")
@@ -1568,7 +1594,7 @@ if (run_cvvs) {
 
 vsel_nms <- c(
   "refmodel", "nobs_train", "search_path", "solution_terms",
-  "pct_solution_terms_cv", "ce", "type_test", "y_wobs_test", "nobs_test",
+  "solution_terms_cv", "ce", "type_test", "y_wobs_test", "nobs_test",
   "summaries", "nterms_all", "nterms_max", "method", "cv_method", "K",
   "validate_search", "clust_used_search", "clust_used_eval", "nprjdraws_search",
   "nprjdraws_eval"
@@ -1577,15 +1603,15 @@ vsel_nms <- c(
 vsel_nms_pred <- c("summaries", "solution_terms", "ce")
 vsel_nms_pred_opt <- c("solution_terms")
 # Related to `nloo`:
-vsel_nms_nloo <- c("summaries", "pct_solution_terms_cv")
-vsel_nms_nloo_opt <- c("pct_solution_terms_cv")
+vsel_nms_nloo <- c("summaries", "solution_terms_cv")
+vsel_nms_nloo_opt <- c("solution_terms_cv")
 # Related to `validate_search`:
 vsel_nms_valsearch <- c("validate_search", "summaries", "ce",
-                        "pct_solution_terms_cv")
+                        "solution_terms_cv")
 vsel_nms_valsearch_opt <- character()
 # Related to `cvfits`:
-vsel_nms_cvfits <- c("refmodel", "summaries", "pct_solution_terms_cv")
-vsel_nms_cvfits_opt <- c("pct_solution_terms_cv")
+vsel_nms_cvfits <- c("refmodel", "summaries", "solution_terms_cv")
+vsel_nms_cvfits_opt <- c("solution_terms_cv")
 vsel_smmrs_sub_nms <- vsel_smmrs_ref_nms <- c("mu", "lppd")
 
 ## Defaults ---------------------------------------------------------------

@@ -2249,11 +2249,7 @@ vsel_tester <- function(
     soltrms <- setdiff(soltrms, soltrms_plus)
     soltrms <- c(soltrms, labels(terms(as.formula(paste(". ~", soltrms_plus)))))
   }
-  expect_true(
-    all(soltrms %in% split_formula(vs$refmodel$formula,
-                                   add_main_effects = FALSE)),
-    info = info_str
-  )
+  expect_true(all(soltrms %in% trms_universe_split), info = info_str)
 
   # ce
   if (with_cv && (valsearch_expected || cv_method_expected == "kfold")) {
@@ -2268,25 +2264,22 @@ vsel_tester <- function(
                 info = info_str)
   }
 
-  # pct_solution_terms_cv
+  # solution_terms_cv
   if (with_cv && isTRUE(vs$validate_search)) {
-    expect_true(is.matrix(vs$pct_solution_terms_cv), info = info_str)
-    expect_type(vs$pct_solution_terms_cv, "double")
-    expect_identical(dim(vs$pct_solution_terms_cv),
-                     c(solterms_len_expected, 1L + solterms_len_expected),
+    expect_true(is.matrix(vs$solution_terms_cv), info = info_str)
+    expect_type(vs$solution_terms_cv, "character")
+    if (identical(cv_method_expected, "kfold")) {
+      n_folds <- K_tst
+    } else {
+      n_folds <- nloo_expected
+    }
+    expect_identical(dim(vs$solution_terms_cv),
+                     c(n_folds, solterms_len_expected),
                      info = info_str)
-    expect_identical(colnames(vs$pct_solution_terms_cv),
-                     c("size", vs$solution_terms),
-                     info = info_str)
-    expect_identical(vs$pct_solution_terms_cv[, "size"],
-                     as.numeric(seq_len(solterms_len_expected)),
-                     info = info_str)
-    pct_nonsize_nms <- setdiff(colnames(vs$pct_solution_terms_cv), "size")
-    pct_solterms <- vs$pct_solution_terms_cv[, pct_nonsize_nms, drop = FALSE]
-    expect_false(anyNA(pct_solterms), info = info_str)
-    expect_true(all(pct_solterms >= 0 & pct_solterms <= 1), info = info_str)
+    expect_true(all(vs$solution_terms_cv %in% trms_universe_split),
+                info = info_str)
   } else {
-    expect_null(vs$pct_solution_terms_cv, info = info_str)
+    expect_null(vs$solution_terms_cv, info = info_str)
   }
 
   # nterms_max
@@ -2359,11 +2352,10 @@ smmry_tester <- function(smmry, vsel_expected, nterms_max_expected = NULL,
   expect_type(smmry, "list")
   expect_named(
     smmry,
-    c("formula", "family", "nobs_train", "pct_solution_terms_cv", "type_test",
-      "nobs_test", "method", "cv_method", "K", "validate_search",
-      "clust_used_search", "clust_used_eval", "nprjdraws_search",
-      "nprjdraws_eval", "search_included", "nterms", "selection",
-      "resp_oscale", "deltas"),
+    c("formula", "family", "nobs_train", "type_test", "nobs_test", "method",
+      "cv_method", "K", "validate_search", "clust_used_search",
+      "clust_used_eval", "nprjdraws_search", "nprjdraws_eval",
+      "search_included", "nterms", "selection", "resp_oscale", "deltas"),
     info = info_str
   )
 
@@ -2373,8 +2365,8 @@ smmry_tester <- function(smmry, vsel_expected, nterms_max_expected = NULL,
   expect_identical(smmry$family, vsel_expected$refmodel$family,
                    info = info_str)
   for (nm in c(
-    "nobs_train", "pct_solution_terms_cv", "type_test", "nobs_test", "method",
-    "cv_method", "K", "validate_search", "clust_used_search", "clust_used_eval",
+    "nobs_train", "type_test", "nobs_test", "method", "cv_method", "K",
+    "validate_search", "clust_used_search", "clust_used_eval",
     "nprjdraws_search", "nprjdraws_eval"
   )) {
     expect_identical(smmry[[nm]], vsel_expected[[nm]],
