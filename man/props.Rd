@@ -41,8 +41,8 @@ is returned. If the \code{ranking} object includes fold-wise predictor rankings
 on these fold-wise predictor rankings (with the rows corresponding to the
 submodel sizes and the columns to the predictor terms, sorted according to
 the full-data predictor ranking). If \code{cumulate} is \code{FALSE}, then the
-returned matrix is of class \code{propsrk}. If \code{cumulate} is \code{TRUE}, then the
-returned matrix is of classes \code{cumulpropsrk} and \code{propsrk} (in this order).
+returned matrix is of class \code{props}. If \code{cumulate} is \code{TRUE}, then the
+returned matrix is of classes \code{cumulprops} and \code{props} (in this order).
 
 Note that if \code{cumulate} is \code{FALSE}, then the values in the returned matrix
 only need to sum to 1 (column-wise and row-wise) if \code{nterms_max} is equal
@@ -65,5 +65,5 @@ selection.
 
 }
 \seealso{
-\code{\link[=plot.propsrk]{plot.propsrk()}}
+\code{\link[=plot.props]{plot.props()}}
 }

@@ -1029,7 +1029,7 @@ print.vselsummary <- function(x, ...) {
       "Column `solution_terms` contains the full-data predictor ranking. To ",
       "retrieve the fold-wise predictor rankings, use the ranking() function, ",
       "possibly followed by props() for computing the ranking proportions ",
-      "(which can be visualized by plot.propsrk())."
+      "(which can be visualized by plot.props())."
     )
   }
   return(invisible(x))
@@ -2029,8 +2029,8 @@ ranking.vsel <- function(object, ...) {
 #'   on these fold-wise predictor rankings (with the rows corresponding to the
 #'   submodel sizes and the columns to the predictor terms, sorted according to
 #'   the full-data predictor ranking). If `cumulate` is `FALSE`, then the
-#'   returned matrix is of class `propsrk`. If `cumulate` is `TRUE`, then the
-#'   returned matrix is of classes `cumulpropsrk` and `propsrk` (in this order).
+#'   returned matrix is of class `props`. If `cumulate` is `TRUE`, then the
+#'   returned matrix is of classes `cumulprops` and `props` (in this order).
 #'
 #'   Note that if `cumulate` is `FALSE`, then the values in the returned matrix
 #'   only need to sum to 1 (column-wise and row-wise) if `nterms_max` is equal
@@ -2038,7 +2038,7 @@ ranking.vsel <- function(object, ...) {
 #'   `1` only needs to occur in each column of the returned matrix if
 #'   `nterms_max` is equal to the full model size.
 #'
-#' @seealso [plot.propsrk()]
+#' @seealso [plot.props()]
 #'
 #' @examples
 #' # TODO
@@ -2073,11 +2073,11 @@ props.ranking <- function(object, cumulate = FALSE,
     }
   ))
   rownames(cv_props) <- seq_len(nrow(cv_props))
-  classes_out <- "propsrk"
+  classes_out <- "props"
   if (cumulate) {
     cv_props <- do.call(cbind, apply(cv_props, 2, cumsum, simplify = FALSE))
     rownames(cv_props) <- paste0("<=", rownames(cv_props))
-    classes_out <- c("cumulpropsrk", classes_out)
+    classes_out <- c("cumulprops", classes_out)
   }
   # Setting the `dimnames` names here (not before the `if (cumulate)` part)
   # because `simplify = FALSE` in apply() makes it impossible to keep these:
@@ -2100,15 +2100,15 @@ props.vsel <- function(object, ...) {
 #' proportions printed as text inside of the colored tiles are rounded to whole
 #' percentage points (the plotted proportions themselves are not rounded).
 #'
-#' @param x For [plot.propsrk()]: an object of class `propsrk` (returned by
+#' @param x For [plot.props()]: an object of class `props` (returned by
 #'   [props()], possibly with `cumulate = TRUE`). For [plot.ranking()]: an
 #'   object of class `ranking` (returned by [ranking()]) that [props()] will be
-#'   applied to internally before then calling [plot.propsrk()].
+#'   applied to internally before then calling [plot.props()].
 #' @param text_angle Passed to argument `angle` of [ggplot2::element_text()] for
 #'   the y-axis tick labels. In case of long predictor names, `text_angle = 45`
 #'   might be helpful (for example).
 #' @param ... For [plot.ranking()]: arguments passed to [props.ranking()] and
-#'   [plot.propsrk()]. For [plot.propsrk()]: currently ignored.
+#'   [plot.props()]. For [plot.props()]: currently ignored.
 #'
 #' @return A \pkg{ggplot2} plotting object (of class `gg` and `ggplot`).
 #'
@@ -2120,7 +2120,7 @@ props.vsel <- function(object, ...) {
 #' # TODO
 #'
 #' @export
-plot.propsrk <- function(x, text_angle = NULL, ...) {
+plot.props <- function(x, text_angle = NULL, ...) {
   props_long <- data.frame(
     msize = factor(rep(rownames(x), times = ncol(x)), levels = rownames(x)),
     pterm = factor(rep(colnames(x), each = nrow(x)), levels = colnames(x)),
@@ -2155,7 +2155,7 @@ plot.propsrk <- function(x, text_angle = NULL, ...) {
   return(ggprops)
 }
 
-#' @rdname plot.propsrk
+#' @rdname plot.props
 #' @export
 plot.ranking <- function(x, ...) {
   plot(props(x, ...), ...)

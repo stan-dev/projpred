@@ -127,7 +127,7 @@
 #'   with cross-validation (CV).}
 #'   \item{[summary.vsel()], [print.vsel()], [plot.vsel()],
 #'   [suggest_size.vsel()], [solution_terms.vsel()], [ranking()], [props()],
-#'   [plot.propsrk()]}{For post-processing the results from [varsel()] and
+#'   [plot.props()]}{For post-processing the results from [varsel()] and
 #'   [cv_varsel()].}
 #'   \item{[project()]}{For projecting the reference model onto submodel(s).
 #'   Typically, this follows the variable selection, but it can also be applied

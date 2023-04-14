@@ -125,7 +125,7 @@ and \code{\link[=get_refmodel]{get_refmodel()}} are only rarely needed.}
 with cross-validation (CV).}
 \item{\code{\link[=summary.vsel]{summary.vsel()}}, \code{\link[=print.vsel]{print.vsel()}}, \code{\link[=plot.vsel]{plot.vsel()}},
 \code{\link[=suggest_size.vsel]{suggest_size.vsel()}}, \code{\link[=solution_terms.vsel]{solution_terms.vsel()}}, \code{\link[=ranking]{ranking()}}, \code{\link[=props]{props()}},
-\code{\link[=plot.propsrk]{plot.propsrk()}}}{For post-processing the results from \code{\link[=varsel]{varsel()}} and
+\code{\link[=plot.props]{plot.props()}}}{For post-processing the results from \code{\link[=varsel]{varsel()}} and
 \code{\link[=cv_varsel]{cv_varsel()}}.}
 \item{\code{\link[=project]{project()}}}{For projecting the reference model onto submodel(s).
 Typically, this follows the variable selection, but it can also be applied
