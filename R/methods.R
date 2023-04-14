@@ -2127,13 +2127,14 @@ plot.propsrk <- function(x, text_angle = NULL, ...) {
     propcv = as.vector(x)
   )
   props_long$txtcolor <- ifelse(props_long$propcv > 0.5, "white", "black")
-  ggprops <- ggplot(data = props_long, mapping = aes(x = msize, y = pterm)) +
-    geom_tile(mapping = aes(fill = propcv),
+  ggprops <- ggplot(data = props_long,
+                    mapping = aes(x = .data[["msize"]], y = .data[["pterm"]])) +
+    geom_tile(mapping = aes(fill = .data[["propcv"]]),
               width = 1, height = 1, linewidth = 1, color = "white") +
     # Note: The original code for this function specified argument `fontface`
     # in the aes() call of geom_text(), but incorrectly (as constantly `1`):
-    geom_text(mapping = aes(label = paste(round(100 * propcv), "%"),
-                            color = I(txtcolor)),
+    geom_text(mapping = aes(label = paste(round(100 * .data[["propcv"]]), "%"),
+                            color = I(.data[["txtcolor"]])),
               size = 3) +
     scale_y_discrete(limits = rev(levels(props_long$pterm))) +
     # Filling color:
