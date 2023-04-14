@@ -33,8 +33,42 @@ proportions printed as text inside of the colored tiles are rounded to whole
 percentage points (the plotted proportions themselves are not rounded).
 }
 \examples{
-# TODO
+\dontshow{if (identical(Sys.getenv("RUN_EX"), "true")) (if (getRversion() >= "3.4") withAutoprint else force)(\{ # examplesIf}
+# Note: The code from this example is not executed when called via example().
+# To execute it, you have to copy and paste it manually to the console.
+if (requireNamespace("rstanarm", quietly = TRUE)) {
+  # Data:
+  dat_gauss <- data.frame(y = df_gaussian$y, df_gaussian$x)
 
+  # The "stanreg" fit which will be used as the reference model (with small
+  # values for `chains` and `iter`, but only for technical reasons in this
+  # example; this is not recommended in general):
+  fit <- rstanarm::stan_glm(
+    y ~ X1 + X2 + X3 + X4 + X5, family = gaussian(), data = dat_gauss,
+    QR = TRUE, chains = 2, iter = 1000, refresh = 0, seed = 9876
+  )
+
+  # Run cv_varsel() (with small values for `K`, `nterms_max`, `nclusters`,
+  # and `nclusters_pred`, but only for the sake of speed in this example;
+  # this is not recommended in general):
+  cvvs <- cv_varsel(fit, cv_method = "kfold", K = 2, nterms_max = 3,
+                    nclusters = 5, nclusters_pred = 10, seed = 5555)
+
+  # Extract predictor rankings:
+  rk <- ranking(cvvs)
+
+  # Compute ranking proportions:
+  pr_rk <- props(rk)
+
+  # Visualize the ranking proportions:
+  gg_pr_rk <- plot(pr_rk)
+  print(gg_pr_rk)
+
+  # Since the object returned by plot.props() is a standard ggplot2 plotting
+  # object, you can modify the plot easily, e.g., to remove the legend:
+  print(gg_pr_rk + theme(legend.position = "none"))
+}
+\dontshow{\}) # examplesIf}
 }
 \author{
 Idea and original code by Aki Vehtari. Slight modifications of the

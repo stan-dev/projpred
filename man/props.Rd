@@ -61,7 +61,7 @@ The cumulated ranking proportions are more helpful when it comes to model
 selection.
 }
 \examples{
-# TODO
+# For an example, see `?plot.props`.
 
 }
 \seealso{

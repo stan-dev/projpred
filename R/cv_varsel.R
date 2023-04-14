@@ -89,16 +89,17 @@
 #'   # example; this is not recommended in general):
 #'   fit <- rstanarm::stan_glm(
 #'     y ~ X1 + X2 + X3 + X4 + X5, family = gaussian(), data = dat_gauss,
-#'     QR = TRUE, chains = 2, iter = 500, refresh = 0, seed = 9876
+#'     QR = TRUE, chains = 2, iter = 1000, refresh = 0, seed = 9876
 #'   )
 #'
-#'   # Run cv_varsel() (with small values for `nterms_max`, `nclusters`, and
-#'   # `nclusters_pred`, but only for the sake of speed in this example; this is
-#'   # not recommended in general):
-#'   cvvs <- cv_varsel(fit, nterms_max = 3, nclusters = 5, nclusters_pred = 10,
-#'                     seed = 5555)
+#'   # Run cv_varsel() (with small values for `K`, `nterms_max`, `nclusters`,
+#'   # and `nclusters_pred`, but only for the sake of speed in this example;
+#'   # this is not recommended in general):
+#'   cvvs <- cv_varsel(fit, cv_method = "kfold", K = 2, nterms_max = 3,
+#'                     nclusters = 5, nclusters_pred = 10, seed = 5555)
 #'   # Now see, for example, `?print.vsel`, `?plot.vsel`, `?suggest_size.vsel`,
-#'   # and `?solution_terms.vsel` for possible post-processing functions.
+#'   # `?solution_terms.vsel`, and `?ranking` for possible post-processing
+#'   # functions.
 #' }
 #'
 #' @export
