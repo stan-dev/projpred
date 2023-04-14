@@ -12,7 +12,7 @@ If you read this from a place other than <https://mc-stan.org/projpred/news/inde
     + Added a new function called `props()` which computes ranking proportions (across CV folds, see `?props` for details) from fold-wise predictor rankings. (More precisely, `props()` is a generic. The main method is `props.ranking()`, but as a shortcut, `props.vsel()` has also been added. The output is of class `props`.)
     + Added a new `plot()` method called `plot.props()` for plotting ranking proportions from fold-wise predictor rankings. (As a shortcut, `plot.ranking()` has also been added.)
     
-    For these changes, element `pct_solution_terms_cv` of `vsel` objects has been replaced by element `solution_terms_cv` which contains the fold-wise predictor rankings instead of the corresponding ranking proportions. However, elements of `vsel` objects are not meant to be accessed directly, so this replacement should not be a breaking change for most users. (GitHub: **TODO**)
+    Because of these new functions, a message has been added to `print.vselsummary()`, mentioning how to access and investigate the fold-wise predictor rankings (if they exist). Furthermore, due to these changes, element `pct_solution_terms_cv` of `vsel` objects has been replaced by element `solution_terms_cv` which contains the fold-wise predictor rankings instead of the corresponding ranking proportions. However, elements of `vsel` objects are not meant to be accessed directly, so this replacement should not be a breaking change for most users. (GitHub: **TODO**)
 
 # projpred 2.5.0
 
