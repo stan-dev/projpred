@@ -2068,6 +2068,7 @@ props.ranking <- function(object, cumulate = FALSE,
   cv_props <- do.call(cbind, lapply(
     setNames(nm = utils::head(object[["fulldata"]], nterms_max)),
     function(predictor_j) {
+      # We need `na.rm = TRUE` for subsampled LOO CV:
       colMeans(cv_paths == predictor_j, na.rm = TRUE)
     }
   ))

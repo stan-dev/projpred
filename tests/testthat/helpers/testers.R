@@ -2271,13 +2271,16 @@ vsel_tester <- function(
     if (identical(cv_method_expected, "kfold")) {
       n_folds <- K_tst
     } else {
-      n_folds <- nloo_expected
+      n_folds <- nobsv
     }
     expect_identical(dim(vs$solution_terms_cv),
                      c(n_folds, solterms_len_expected),
                      info = info_str)
-    expect_true(all(vs$solution_terms_cv %in% trms_universe_split),
-                info = info_str)
+    # We need the addition of `NA_character_` because of subsampled LOO CV:
+    expect_true(
+      all(vs$solution_terms_cv %in% c(trms_universe_split, NA_character_)),
+      info = info_str
+    )
   } else {
     expect_null(vs$solution_terms_cv, info = info_str)
   }
