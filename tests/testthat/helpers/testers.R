@@ -2581,3 +2581,60 @@ smmry_sel_tester <- function(
 
   return(invisible(TRUE))
 }
+
+# A helper function for testing the structure of a `ranking` object as returned
+# by ranking().
+#
+# @param rk A `ranking` object as returned by ranking().
+# @param fulldata_expected The expected `fulldata` element of `rk`.
+# @param foldwise_expected The expected `foldwise` element of `rk`.
+# @param info_str A single character string giving information to be printed in
+#   case of failure.
+#
+# @return `TRUE` (invisible).
+ranking_tester <- function(rk, fulldata_expected, foldwise_expected, info_str) {
+  expect_s3_class(rk, "ranking", exact = TRUE)
+  expect_type(rk, "list")
+  expect_named(rk, c("fulldata", "foldwise"), info = info_str)
+  # Since we test elements `solution_terms` and `solution_terms_cv` already
+  # thoroughly in vsel_tester(), we can simply plug these into
+  # `fulldata_expected` and `foldwise_expected` and then test via identical():
+  expect_identical(rk[["fulldata"]], fulldata_expected, info = info_str)
+  expect_identical(rk[["foldwise"]], foldwise_expected, info = info_str)
+  return(invisible(TRUE))
+}
+
+# A helper function for testing the structure of a `props` object as returned by
+# props().
+#
+# @param pr A `props` object as returned by props().
+# @param cumulate_expected A single logical value indicating whether props() was
+#   run with `cumulate = TRUE` (`TRUE`) or not (`FALSE`).
+# @param nterms_max_expected A single numeric value as supplied to
+#   props.ranking()'s argument `nterms_max`.
+# @param info_str A single character string giving information to be printed in
+#   case of failure.
+#
+# @return `TRUE` (invisible).
+props_tester <- function(pr, cumulate_expected = FALSE, nterms_max_expected,
+                         cnms_expected, info_str) {
+  classes_expected <- "props"
+  if (cumulate_expected) {
+    classes_expected <- c("cumulprops", classes_expected)
+  }
+  expect_s3_class(pr, classes_expected, exact = TRUE)
+  expect_equal(dim(pr), c(nterms_max_expected, nterms_max_expected),
+               info = info_str)
+  expect_true(is.numeric(pr), info = info_str)
+  rnms_expected <- as.character(seq_len(nterms_max_expected))
+  if (cumulate_expected) {
+    rnms_expected <- paste0("<=", rnms_expected)
+  }
+  if (length(cnms_expected) > nterms_max_expected) {
+    cnms_expected <- head(cnms_expected, nterms_max_expected)
+  }
+  expect_identical(dimnames(pr),
+                   list("size" = rnms_expected, "predictor" = cnms_expected),
+                   info = info_str)
+  return(invisible(TRUE))
+}

@@ -60,6 +60,7 @@ Suggests:
     rstanarm,
     brms,
     testthat,
+    vdiffr,
     knitr,
     rmarkdown,
     glmnet,
