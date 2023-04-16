@@ -2019,25 +2019,27 @@ ranking.vsel <- function(object, ...) {
 #' @param ... For [props.vsel()]: arguments passed to [props.ranking()]. For
 #'   [props.ranking()]: currently ignored.
 #'
-#' @return If the `ranking` object contains only a full-data predictor ranking
-#'   (i.e., if it is based on a `vsel` object created by [varsel()] or by
-#'   [cv_varsel()], but the latter with `validate_search = FALSE`), then an
-#'   error is thrown. If the `ranking` object includes fold-wise predictor
-#'   rankings (i.e., if it is based on a `vsel` object created by [cv_varsel()]
-#'   with `validate_search = TRUE`), then a numeric matrix with `nterms_max`
-#'   rows and `nterms_max` columns is returned, containing the ranking
-#'   proportions based on these fold-wise predictor rankings (with the rows
-#'   corresponding to the submodel sizes and the columns to the predictor terms,
-#'   sorted according to the full-data predictor ranking). If `cumulate` is
-#'   `FALSE`, then the returned matrix is of class `props`. If `cumulate` is
-#'   `TRUE`, then the returned matrix is of classes `cumulprops` and `props` (in
-#'   this order).
+#' @return A numeric matrix containing the ranking proportions. This matrix has
+#'   `nterms_max` rows and `nterms_max` columns: The rows correspond to the
+#'   submodel sizes and the columns to the predictor terms (sorted according to
+#'   the full-data predictor ranking). If `cumulate` is `FALSE`, then the
+#'   returned matrix is of class `props`. If `cumulate` is `TRUE`, then the
+#'   returned matrix is of classes `cumulprops` and `props` (in this order).
 #'
 #'   Note that if `cumulate` is `FALSE`, then the values in the returned matrix
 #'   only need to sum to 1 (column-wise and row-wise) if `nterms_max` is equal
 #'   to the full model size. Likewise, if `cumulate` is `TRUE`, then the value
 #'   `1` only needs to occur in each column of the returned matrix if
 #'   `nterms_max` is equal to the full model size.
+#'
+#'   The [props()] function is only applicable if the `ranking` object includes
+#'   fold-wise predictor rankings (i.e., if it is based on a `vsel` object
+#'   created by [cv_varsel()] with `validate_search = TRUE`). If the `ranking`
+#'   object contains only a full-data predictor ranking (i.e., if it is based on
+#'   a `vsel` object created by [varsel()] or by [cv_varsel()], but the latter
+#'   with `validate_search = FALSE`), then an error is thrown because in that
+#'   case, there are no fold-wise predictor rankings from which to calculate
+#'   ranking proportions.
 #'
 #' @seealso [plot.props()]
 #'
