@@ -2021,16 +2021,17 @@ ranking.vsel <- function(object, ...) {
 #'
 #' @return If the `ranking` object contains only a full-data predictor ranking
 #'   (i.e., if it is based on a `vsel` object created by [varsel()] or by
-#'   [cv_varsel()], but the latter with `validate_search = FALSE`), then `NULL`
-#'   is returned. If the `ranking` object includes fold-wise predictor rankings
-#'   (i.e., if it is based on a `vsel` object created by [cv_varsel()] with
-#'   `validate_search = TRUE`), then a numeric matrix with `nterms_max` rows and
-#'   `nterms_max` columns is returned, containing the ranking proportions based
-#'   on these fold-wise predictor rankings (with the rows corresponding to the
-#'   submodel sizes and the columns to the predictor terms, sorted according to
-#'   the full-data predictor ranking). If `cumulate` is `FALSE`, then the
-#'   returned matrix is of class `props`. If `cumulate` is `TRUE`, then the
-#'   returned matrix is of classes `cumulprops` and `props` (in this order).
+#'   [cv_varsel()], but the latter with `validate_search = FALSE`), then an
+#'   error is thrown. If the `ranking` object includes fold-wise predictor
+#'   rankings (i.e., if it is based on a `vsel` object created by [cv_varsel()]
+#'   with `validate_search = TRUE`), then a numeric matrix with `nterms_max`
+#'   rows and `nterms_max` columns is returned, containing the ranking
+#'   proportions based on these fold-wise predictor rankings (with the rows
+#'   corresponding to the submodel sizes and the columns to the predictor terms,
+#'   sorted according to the full-data predictor ranking). If `cumulate` is
+#'   `FALSE`, then the returned matrix is of class `props`. If `cumulate` is
+#'   `TRUE`, then the returned matrix is of classes `cumulprops` and `props` (in
+#'   this order).
 #'
 #'   Note that if `cumulate` is `FALSE`, then the values in the returned matrix
 #'   only need to sum to 1 (column-wise and row-wise) if `nterms_max` is equal
@@ -2054,12 +2055,11 @@ props.ranking <- function(object, cumulate = FALSE,
                           nterms_max = ncol(object[["foldwise"]]), ...) {
   cv_paths <- object[["foldwise"]]
   if (is.null(cv_paths)) {
-    message(
+    stop(
       "Either `object` is not based on a cross-validation or the search has ",
       "been excluded from the cross-validation. Thus, there are no fold-wise ",
       "predictor rankings from which to calculate ranking proportions."
     )
-    return(NULL)
   }
   stopifnot("Needing `nterms_max >= 1`." = isTRUE(nterms_max >= 1))
   cv_paths <- cv_paths[, seq_len(nterms_max), drop = FALSE]

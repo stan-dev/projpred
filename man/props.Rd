@@ -33,16 +33,17 @@ to the submodel consisting of the first (non-intercept) predictor term.}
 \value{
 If the \code{ranking} object contains only a full-data predictor ranking
 (i.e., if it is based on a \code{vsel} object created by \code{\link[=varsel]{varsel()}} or by
-\code{\link[=cv_varsel]{cv_varsel()}}, but the latter with \code{validate_search = FALSE}), then \code{NULL}
-is returned. If the \code{ranking} object includes fold-wise predictor rankings
-(i.e., if it is based on a \code{vsel} object created by \code{\link[=cv_varsel]{cv_varsel()}} with
-\code{validate_search = TRUE}), then a numeric matrix with \code{nterms_max} rows and
-\code{nterms_max} columns is returned, containing the ranking proportions based
-on these fold-wise predictor rankings (with the rows corresponding to the
-submodel sizes and the columns to the predictor terms, sorted according to
-the full-data predictor ranking). If \code{cumulate} is \code{FALSE}, then the
-returned matrix is of class \code{props}. If \code{cumulate} is \code{TRUE}, then the
-returned matrix is of classes \code{cumulprops} and \code{props} (in this order).
+\code{\link[=cv_varsel]{cv_varsel()}}, but the latter with \code{validate_search = FALSE}), then an
+error is thrown. If the \code{ranking} object includes fold-wise predictor
+rankings (i.e., if it is based on a \code{vsel} object created by \code{\link[=cv_varsel]{cv_varsel()}}
+with \code{validate_search = TRUE}), then a numeric matrix with \code{nterms_max}
+rows and \code{nterms_max} columns is returned, containing the ranking
+proportions based on these fold-wise predictor rankings (with the rows
+corresponding to the submodel sizes and the columns to the predictor terms,
+sorted according to the full-data predictor ranking). If \code{cumulate} is
+\code{FALSE}, then the returned matrix is of class \code{props}. If \code{cumulate} is
+\code{TRUE}, then the returned matrix is of classes \code{cumulprops} and \code{props} (in
+this order).
 
 Note that if \code{cumulate} is \code{FALSE}, then the values in the returned matrix
 only need to sum to 1 (column-wise and row-wise) if \code{nterms_max} is equal
