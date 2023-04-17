@@ -5,7 +5,7 @@
 \alias{solution_terms.vsel}
 \alias{solution_terms.projection}
 \title{Retrieve the full-data solution path from a \code{\link[=varsel]{varsel()}} or \code{\link[=cv_varsel]{cv_varsel()}} run
-or the predictor combination from a projection}
+or the predictor combination from a \code{\link[=project]{project()}} run}
 \usage{
 solution_terms(object, ...)
 
@@ -14,21 +14,21 @@ solution_terms(object, ...)
 \method{solution_terms}{projection}(object, ...)
 }
 \arguments{
-\item{object}{The object from which to retrieve the solution terms. Possible
+\item{object}{The object from which to retrieve the predictor terms. Possible
 classes may be inferred from the names of the corresponding methods (see
 also the description).}
 
 \item{...}{Currently ignored.}
 }
 \value{
-A character vector of solution terms.
+A character vector of predictor terms.
 }
 \description{
-This function retrieves the so-called \emph{solution terms} from an \code{object}. For
-\code{vsel} objects (returned by \code{\link[=varsel]{varsel()}} or \code{\link[=cv_varsel]{cv_varsel()}}), this is the
-full-data solution path from the search phase. For \code{projection} objects
-(returned by \code{\link[=project]{project()}}, possibly as elements of a \code{list}), this is the
-predictor combination onto which the projection was performed.
+For \code{vsel} objects (returned by \code{\link[=varsel]{varsel()}} or \code{\link[=cv_varsel]{cv_varsel()}}), this function
+retrieves the solution path from the full-data search. For \code{projection}
+objects (returned by \code{\link[=project]{project()}}, possibly as elements of a \code{list}), this
+function retrieves the predictor combination onto which the projection was
+performed.
 }
 \examples{
 if (requireNamespace("rstanarm", quietly = TRUE)) {

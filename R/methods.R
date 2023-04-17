@@ -1881,20 +1881,20 @@ cv_ids <- function(n, K, out = c("foldwise", "indices"),
 }
 
 #' Retrieve the full-data solution path from a [varsel()] or [cv_varsel()] run
-#' or the predictor combination from a projection
+#' or the predictor combination from a [project()] run
 #'
-#' This function retrieves the so-called *solution terms* from an `object`. For
-#' `vsel` objects (returned by [varsel()] or [cv_varsel()]), this is the
-#' full-data solution path from the search phase. For `projection` objects
-#' (returned by [project()], possibly as elements of a `list`), this is the
-#' predictor combination onto which the projection was performed.
+#' For `vsel` objects (returned by [varsel()] or [cv_varsel()]), this function
+#' retrieves the solution path from the full-data search. For `projection`
+#' objects (returned by [project()], possibly as elements of a `list`), this
+#' function retrieves the predictor combination onto which the projection was
+#' performed.
 #'
-#' @param object The object from which to retrieve the solution terms. Possible
+#' @param object The object from which to retrieve the predictor terms. Possible
 #'   classes may be inferred from the names of the corresponding methods (see
 #'   also the description).
 #' @param ... Currently ignored.
 #'
-#' @return A character vector of solution terms.
+#' @return A character vector of predictor terms.
 #'
 #' @examples
 #' if (requireNamespace("rstanarm", quietly = TRUE)) {
