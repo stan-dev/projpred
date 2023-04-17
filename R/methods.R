@@ -518,10 +518,14 @@ proj_predict_aux <- function(proj, newdata, offset, weights,
   return(structure(pppd_out, cats = cats_aug))
 }
 
-#' Plot summary statistics of a variable selection
+#' Plot predictive performance
 #'
 #' This is the [plot()] method for `vsel` objects (returned by [varsel()] or
-#' [cv_varsel()]).
+#' [cv_varsel()]). It displays the predictive performance of the reference model
+#' (possibly also that of some other "baseline" model) and that of the submodels
+#' (more precisely, of the submodel *sizes*) along the solution path. For a
+#' tabular representation of the plotted performance statistics, see
+#' [summary.vsel()].
 #'
 #' @inheritParams summary.vsel
 #' @param x An object of class `vsel` (returned by [varsel()] or [cv_varsel()]).
@@ -562,9 +566,9 @@ proj_predict_aux <- function(proj, newdata, offset, weights,
 #'     QR = TRUE, chains = 2, iter = 500, refresh = 0, seed = 9876
 #'   )
 #'
-#'   # Variable selection (here without cross-validation and with small values
-#'   # for `nterms_max`, `nclusters`, and `nclusters_pred`, but only for the
-#'   # sake of speed in this example; this is not recommended in general):
+#'   # Run varsel() (here without cross-validation and with small values for
+#'   # `nterms_max`, `nclusters`, and `nclusters_pred`, but only for the sake of
+#'   # speed in this example; this is not recommended in general):
 #'   vs <- varsel(fit, nterms_max = 3, nclusters = 5, nclusters_pred = 10,
 #'                seed = 5555)
 #'   print(plot(vs))
@@ -723,10 +727,13 @@ plot.vsel <- function(
   return(pp)
 }
 
-#' Summary statistics of a variable selection
+#' Summary of a [varsel()] or [cv_varsel()] run
 #'
 #' This is the [summary()] method for `vsel` objects (returned by [varsel()] or
-#' [cv_varsel()]).
+#' [cv_varsel()]), which consists of some general information about the
+#' [varsel()] or [cv_varsel()] run, the full-data solution path, and
+#' user-specified predictive performance statistics. For plotting the latter,
+#' see [plot.vsel()].
 #'
 #' @param object An object of class `vsel` (returned by [varsel()] or
 #'   [cv_varsel()]).
@@ -829,9 +836,9 @@ plot.vsel <- function(
 #'     QR = TRUE, chains = 2, iter = 500, refresh = 0, seed = 9876
 #'   )
 #'
-#'   # Variable selection (here without cross-validation and with small values
-#'   # for `nterms_max`, `nclusters`, and `nclusters_pred`, but only for the
-#'   # sake of speed in this example; this is not recommended in general):
+#'   # Run varsel() (here without cross-validation and with small values for
+#'   # `nterms_max`, `nclusters`, and `nclusters_pred`, but only for the sake of
+#'   # speed in this example; this is not recommended in general):
 #'   vs <- varsel(fit, nterms_max = 3, nclusters = 5, nclusters_pred = 10,
 #'                seed = 5555)
 #'   print(summary(vs), digits = 1)
@@ -939,11 +946,10 @@ summary.vsel <- function(
   return(out)
 }
 
-#' Print summary of variable selection
+#' Print summary of a [varsel()] or [cv_varsel()] run
 #'
 #' This is the [print()] method for summary objects created by [summary.vsel()].
-#' It displays a summary of the results of the projection predictive variable
-#' selection.
+#' It displays a summary of the results from a [varsel()] or [cv_varsel()] run.
 #'
 #' @param x An object of class `vselsummary`.
 #' @param ... Arguments passed to [print.data.frame()].
@@ -1021,12 +1027,11 @@ print.vselsummary <- function(x, ...) {
   return(invisible(x))
 }
 
-#' Print results (summary) of variable selection
+#' Print results (summary) of a [varsel()] or [cv_varsel()] run
 #'
 #' This is the [print()] method for `vsel` objects (returned by [varsel()] or
-#' [cv_varsel()]). It displays a summary of the results of the projection
-#' predictive variable selection by first calling [summary.vsel()] and then
-#' [print.vselsummary()].
+#' [cv_varsel()]). It displays a summary of a [varsel()] or [cv_varsel()] run by
+#' first calling [summary.vsel()] and then [print.vselsummary()].
 #'
 #' @param x An object of class `vsel` (returned by [varsel()] or [cv_varsel()]).
 #' @param ... Arguments passed to [summary.vsel()] (apart from argument `digits`
@@ -1144,9 +1149,9 @@ print.vsel <- function(x, ...) {
 #'     QR = TRUE, chains = 2, iter = 500, refresh = 0, seed = 9876
 #'   )
 #'
-#'   # Variable selection (here without cross-validation and with small values
-#'   # for `nterms_max`, `nclusters`, and `nclusters_pred`, but only for the
-#'   # sake of speed in this example; this is not recommended in general):
+#'   # Run varsel() (here without cross-validation and with small values for
+#'   # `nterms_max`, `nclusters`, and `nclusters_pred`, but only for the sake of
+#'   # speed in this example; this is not recommended in general):
 #'   vs <- varsel(fit, nterms_max = 3, nclusters = 5, nclusters_pred = 10,
 #'                seed = 5555)
 #'   print(suggest_size(vs))
@@ -1875,13 +1880,14 @@ cv_ids <- function(n, K, out = c("foldwise", "indices"),
   return(cv)
 }
 
-#' Retrieve predictor solution path or predictor combination
+#' Retrieve the full-data solution path from a [varsel()] or [cv_varsel()] run
+#' or the predictor combination from a projection
 #'
-#' This function retrieves the "solution terms" from an `object`. For `vsel`
-#' objects (returned by [varsel()] or [cv_varsel()]), this is the predictor
-#' solution path of the variable selection. For `projection` objects (returned
-#' by [project()], possibly as elements of a `list`), this is the predictor
-#' combination onto which the projection was performed.
+#' This function retrieves the so-called *solution terms* from an `object`. For
+#' `vsel` objects (returned by [varsel()] or [cv_varsel()]), this is the
+#' full-data solution path from the search phase. For `projection` objects
+#' (returned by [project()], possibly as elements of a `list`), this is the
+#' predictor combination onto which the projection was performed.
 #'
 #' @param object The object from which to retrieve the solution terms. Possible
 #'   classes may be inferred from the names of the corresponding methods (see
@@ -1903,9 +1909,9 @@ cv_ids <- function(n, K, out = c("foldwise", "indices"),
 #'     QR = TRUE, chains = 2, iter = 500, refresh = 0, seed = 9876
 #'   )
 #'
-#'   # Variable selection (here without cross-validation and with small values
-#'   # for `nterms_max`, `nclusters`, and `nclusters_pred`, but only for the
-#'   # sake of speed in this example; this is not recommended in general):
+#'   # Run varsel() (here without cross-validation and with small values for
+#'   # `nterms_max`, `nclusters`, and `nclusters_pred`, but only for the sake of
+#'   # speed in this example; this is not recommended in general):
 #'   vs <- varsel(fit, nterms_max = 3, nclusters = 5, nclusters_pred = 10,
 #'                seed = 5555)
 #'   print(solution_terms(vs))

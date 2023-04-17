@@ -4,7 +4,7 @@
 \alias{cv_varsel}
 \alias{cv_varsel.default}
 \alias{cv_varsel.refmodel}
-\title{Variable selection with cross-validation}
+\title{Run search and performance evaluation with cross-validation}
 \usage{
 cv_varsel(object, ...)
 
@@ -133,9 +133,9 @@ whether to run the search separately for each CV fold (\code{TRUE}) or not
 this is known to bias the predictive performance estimates of the selected
 submodels. However, setting this to \code{FALSE} can sometimes be useful because
 comparing the results to the case where this argument is \code{TRUE} gives an
-idea of how strongly the variable selection is (over-)fitted to the data
-(the difference corresponds to the search degrees of freedom or the
-effective number of parameters introduced by the search).}
+idea of how strongly the search is (over-)fitted to the data (the
+difference corresponds to the search degrees of freedom or the effective
+number of parameters introduced by the search).}
 
 \item{seed}{Pseudorandom number generation (PRNG) seed by which the same
 results can be obtained again if needed. Passed to argument \code{seed} of
@@ -245,9 +245,9 @@ if (requireNamespace("rstanarm", quietly = TRUE)) {
     QR = TRUE, chains = 2, iter = 500, refresh = 0, seed = 9876
   )
 
-  # Variable selection with cross-validation (with small values
-  # for `nterms_max`, `nclusters`, and `nclusters_pred`, but only for the
-  # sake of speed in this example; this is not recommended in general):
+  # Run cv_varsel() (with small values for `nterms_max`, `nclusters`, and
+  # `nclusters_pred`, but only for the sake of speed in this example; this is
+  # not recommended in general):
   cvvs <- cv_varsel(fit, nterms_max = 3, nclusters = 5, nclusters_pred = 10,
                     seed = 5555)
   # Now see, for example, `?print.vsel`, `?plot.vsel`, `?suggest_size.vsel`,
