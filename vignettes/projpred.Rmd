@@ -82,7 +82,7 @@ tau0 <- p0 / (D - p0) * 1 / sqrt(N)
 ```
 
 We now fit the reference model to the data.
-To make this vignette build faster, we use only 2 MCMC chains and 500 iterations per chain (with half of them being discarded as warmup draws).
+To make this vignette build faster, we use only 2 MCMC chains and 1000 iterations per chain (with half of them being discarded as warmup draws).
 In practice, 4 chains and 2000 iterations per chain are reasonable defaults.
 Furthermore, we make use of [**rstan**](https://mc-stan.org/rstan/)'s parallelization, which means to run each chain on a separate CPU core^[More generally, the number of chains is split up as evenly as possible among the number of CPU cores.].
 If you run the following code yourself, you can either rely on an automatic mechanism to detect the number of CPU cores (like the `parallel::detectCores()` function shown below) or adapt `ncores` manually to your system.
@@ -101,7 +101,7 @@ refm_fit <- stan_glm(
   data = dat_gauss,
   prior = hs(global_scale = tau0),
   ### Only for the sake of speed (not recommended in general):
-  chains = 2, iter = 500,
+  chains = 2, iter = 1000,
   ###
   seed = 2052109, QR = TRUE, refresh = 0
 )
@@ -122,9 +122,9 @@ The evaluation part determines the predictive performance of the submodels along
 
 There are two functions for performing the variable selection: `varsel()` and `cv_varsel()`.
 In contrast to `varsel()`, `cv_varsel()` performs a cross-validation (CV) by running the search part with the training data of each CV fold separately (an exception is `validate_search = FALSE`, see `?cv_varsel` and below) and running the evaluation part on the corresponding test set of each CV fold.
-Because of this CV, `cv_varsel()` is recommended over `varsel()`.
-Thus, we use `cv_varsel()` here.
-Nonetheless, running `varsel()` first can offer a rough idea of the performance of the submodels (after projecting the reference model onto them).
+Because of this CV, `cv_varsel()` with `validate_search = TRUE` is recommended over `varsel()` and `cv_varsel()` with `validate_search = FALSE`.
+Thus, we use `cv_varsel()` with `validate_search = TRUE` here.
+Nonetheless, running `varsel()` or `cv_varsel()` with `validate_search = FALSE` first can give a rough idea of the performance of the submodels.
 A more principled **projpred** workflow is work under progress.
 
 <!-- In versions > 2.0.2, **projpred** offers a parallelization of the projection. -->
@@ -142,22 +142,23 @@ A more principled **projpred** workflow is work under progress.
 <!-- ``` -->
 
 Here, we use only some of the available arguments; see the documentation of `cv_varsel()` for the full list of arguments.
-By default, `cv_varsel()` runs a Pareto-smoothed importance sampling [PSIS, see @vehtari_practical_2017; @vehtari_pareto_2022] leave-one-out (LOO) CV (see argument `cv_method`) which includes the search in the CV (see argument `validate_search`).
-Here, we set argument `validate_search` to `FALSE` to obtain rough preliminary results and make this vignette build faster.
-If possible (in terms of computation time), we recommend using the default of `validate_search = TRUE` to avoid overfitting in the selection of the submodel size.
-Here, we also set `nclusters_pred` to a low value of `20` only to speed up the building of the vignette.
+By default, `cv_varsel()` runs a Pareto-smoothed importance sampling [PSIS, see @vehtari_practical_2017; @vehtari_pareto_2022] leave-one-out (LOO) CV (see argument `cv_method`) and includes the search in that CV (see argument `validate_search`).
+Here, we use a $K$-fold CV (which currently always includes the search in the CV, i.e., always comes with `validate_search = TRUE`) and `K = 2` to make this vignette build faster.
+For final results in practice, we recommend using either the default of `cv_method = "LOO"` (with `validate_search = TRUE`) or a larger value for `K` if this is possible in terms of computation time.
+Here, we also set `nclusters_pred` to a low value of `20` to speed up the building of the vignette.
 By modifying argument `nterms_max`, we impose a limit on the submodel size up to which the search is continued.
 Typically, one has to run the variable selection with a large `nterms_max` first (the default value may not even be large enough) and only after inspecting the results from this first run, one is able to set a reasonable `nterms_max` in subsequent runs.
 The value we are using here (`9`) is based on such a first run (which is not shown here, though).
 ```{r, results='hide'}
 cvvs <- cv_varsel(
   refm_fit,
+  cv_method = "kfold",
   ### Only for the sake of speed (not recommended in general):
-  validate_search = FALSE,
+  K = 2,
   nclusters_pred = 20,
   ###
   nterms_max = 9,
-  seed = 411183
+  seed = 117614
 )
 ```
 
@@ -166,12 +167,12 @@ This should be the first step (in particular, before inspecting the solution pat
 To decide for a submodel size, there are several performance statistics we can plot as a function of the submodel size.
 Here, we use the mean log predictive density (MLPD; see argument `stats` of `summary.vsel()` for details) and the root mean squared error (RMSE).
 By default, the performance statistics are plotted on their original scale, but with `deltas = TRUE`, they are calculated as differences from a baseline model (which is the reference model by default, at least in the most common cases).
-Since the differences are usually of more interest (with regard to the submodel size decision), we directly plot with `deltas = TRUE` here (note that as `validate_search = FALSE`, this result is slightly optimistic, and the plot looks different when `validate_search = TRUE` is used):
+Since the differences are usually of more interest (with regard to the submodel size decision), we directly plot with `deltas = TRUE` here:
 ```{r, fig.asp=1.5 * 0.618}
 plot(cvvs, stats = c("mlpd", "rmse"), deltas = TRUE, seed = 54548)
 ```
 
-Based on that plot (see `?plot.vsel` for a description), we would decide for a submodel size of 6 because that's the point where the performance measures level off and are close enough to the reference model's performance (note that since the plot is affected by `validate_search = FALSE`, this manual decision based on the plot is affected, too):
+Based on that plot (see `?plot.vsel` for a description), we would decide for a submodel size of 6 because that's the point where the performance measures level off and are close enough to the reference model's performance:
 ```{r}
 modsize_decided <- 6
 ```
@@ -183,7 +184,7 @@ suggest_size(cvvs, stat = "mlpd")
 # bootstrap intervals are exactly the same:
 suggest_size(cvvs, stat = "rmse", seed = 54548)
 ```
-With both performance statistics, we would get the same final submodel size (`6`) as by our manual decision (`suggest_size()` is also affected by `validate_search = FALSE`).
+With both performance statistics, we would get the same final submodel size (`6`) as by our manual decision.
 
 Only now, after we have made a decision for the submodel size, we inspect further results from the variable selection and, in particular, the solution path.
 For example, we could simply `print()` the resulting `cvvs` object, but to create the summary table matching the predictive performance plot above (and to adjust the minimum number of printed significant digits), we slightly adapt the printing here:
