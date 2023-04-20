@@ -140,7 +140,7 @@ We now run a variable selection with `latent = TRUE` in the `get_refmodel()` cal
 ```{r projpred_attach, message=FALSE}
 library(projpred)
 ```
-```{r vs_lat, results='hide'}
+```{r vs_lat}
 d_test_lat_poiss <- list(
   data = dat_poiss_test,
   offset = rep(0, nrow(dat_poiss_test)),
@@ -159,6 +159,9 @@ time_lat <- system.time(vs_lat <- varsel(
   nclusters_pred = 20,
   ###
   nterms_max = 14,
+  ### In interactive use, we recommend not to deactivate the verbose mode:
+  verbose = FALSE,
+  ### 
   seed = 95930
 ))
 ```
@@ -209,7 +212,7 @@ We will skip post-selection inference here (see the main vignette for a demonstr
 ### Variable selection using the traditional projection
 
 We will now look at what **projpred**'s traditional projection would have given:
-```{r vs_trad, results='hide'}
+```{r vs_trad}
 d_test_trad_poiss <- d_test_lat_poiss
 d_test_trad_poiss$y <- d_test_trad_poiss$y_oscale
 d_test_trad_poiss$y_oscale <- NULL
@@ -220,6 +223,9 @@ time_trad <- system.time(vs_trad <- varsel(
   nclusters_pred = 20,
   ###
   nterms_max = 14,
+  ### In interactive use, we recommend not to deactivate the verbose mode:
+  verbose = FALSE,
+  ### 
   seed = 95930
 ))
 ```
@@ -268,7 +274,7 @@ refm_fit_nebin <- stan_glm(
 ### Variable selection using the latent projection
 
 To run a variable selection with `latent = TRUE`, we now also need to specify more arguments which will be passed to `extend_family()`^[The suffix `_prec` in `refm_prec` stands for "precision" because here, we follow the Stan convention (see the Stan documentation for the `neg_binomial_2` distribution, the `brms::negbinomial()` documentation, and the [**brms**](https://paul-buerkner.github.io/brms/) vignette "Parameterization of Response Distributions in brms") and prefer the term *precision* parameter for what is denoted by $\phi$ there (confusingly, argument `size` in `?stats::NegBinomial`---which is the same as $\phi$ from the Stan notation---is called the *dispersion* parameter there, although the variance is increased by its reciprocal).]:
-```{r vs_nebin, results='hide'}
+```{r vs_nebin}
 refm_prec <- as.matrix(refm_fit_nebin)[, "reciprocal_dispersion", drop = FALSE]
 latent_ll_oscale_nebin <- function(ilpreds, y_oscale,
                                    wobs = rep(1, length(y_oscale)), cl_ref,
@@ -301,6 +307,9 @@ vs_lat_nebin <- varsel(
   nclusters_pred = 20,
   ###
   nterms_max = 14,
+  ### In interactive use, we recommend not to deactivate the verbose mode:
+  verbose = FALSE,
+  ### 
   seed = 95930
 )
 ```
