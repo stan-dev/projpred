@@ -51,7 +51,7 @@ In this example, we will illustrate that in case of a family supported by **proj
 ### Data
 
 First, we generate a training and a test dataset with a Poisson-distributed response:
-```{r}
+```{r dat_poiss}
 # Number of observations in the training dataset (= number of observations in
 # the test dataset):
 N <- 71
@@ -97,7 +97,7 @@ dat_poiss_test <- dat_poiss[(N + 1):nrow(dat_poiss), , drop = FALSE]
 ### Reference model
 
 Next, we fit the reference model that we consider as the best model in terms of predictive performance that we can construct (here, we assume that we don't know about the true data-generating process even though the dataset was simulated):
-```{r}
+```{r ref_fit_poiss}
 library(rstanarm)
 # Number of regression coefficients:
 ( D <- sum(grepl("^x|^grpPL", names(dat_poiss_train))) )
@@ -135,10 +135,10 @@ refm_fit_poiss <- stan_glm(
 ### Variable selection using the latent projection
 
 We now run a variable selection with `latent = TRUE` in the `get_refmodel()` call (see section ["Implementation"](#impl) for why `get_refmodel()` is called explicitly here) to request the latent projection. Since we have a hold-out test dataset available, we can use `varsel()` with argument `d_test` instead of `cv_varsel()`. Furthermore, we measure the runtime to compare it to the traditional projection's later:
-```{r}
+```{r projpred_attach}
 library(projpred)
 ```
-```{r, results='hide', message=TRUE}
+```{r vs_lat, results='hide', message=TRUE}
 d_test_lat_poiss <- list(
   data = dat_poiss_test,
   offset = rep(0, nrow(dat_poiss_test)),
@@ -160,33 +160,33 @@ time_lat <- system.time(vs_lat <- varsel(
   seed = 95930
 ))
 ```
-```{r}
+```{r time_lat}
 print(time_lat)
 ```
 The message telling that `<refmodel>$dis` consists of only `NA`s will not concern us here because we will only be focusing on response-scale post-processing.
 
 In order to decide for a submodel size, we first inspect the `plot()` results:
-```{r, fig.width = 6, out.width = "75%"}
+```{r plot_vsel_lat, fig.width = 6, out.width = "75%"}
 ( gg_lat <- plot(vs_lat, stats = "mlpd", deltas = TRUE) )
 ```
 
 Although the submodels' MLPDs seem to be very close to the reference model's MLPD from a submodel size of 6 on, a zoomed plot reveals that there is still some discrepancy at sizes 6 to 11 and that size 12 would be a better choice (further down below in the `summary()` output, we will also see that on absolute scale, the discrepancy at sizes 6 to 11 is not negligible):
-```{r, fig.width = 6, out.width = "75%"}
+```{r plot_vsel_lat_zoom, fig.width = 6, out.width = "75%"}
 gg_lat + ggplot2::coord_cartesian(ylim = c(-10, 0.05))
 ```
 
 Thus, we decide for a submodel size of 12:
-```{r}
+```{r size_man_lat}
 modsize_decided_lat <- 12
 ```
 
 This is also the size that `suggest_size()` would suggest:
-```{r}
+```{r size_sgg_lat}
 suggest_size(vs_lat, stat = "mlpd")
 ```
 
 Only now, after we have made a decision for the submodel size, we inspect further results from the variable selection and, in particular, the solution path:
-```{r}
+```{r smmry_vsel_lat}
 smmry_lat <- summary(
   vs_lat,
   stats = "mlpd",
@@ -197,7 +197,7 @@ print(smmry_lat, digits = 3)
 On absolute scale (column `mlpd`), we see that submodel size `r if (!params$EVAL) character() else modsize_decided_lat - 1` leads to an MLPD of ``r if (!params$EVAL) character() else round(smmry_lat$selection[["mlpd"]][smmry_lat$selection$size == modsize_decided_lat - 1], 2)``, i.e., a geometric mean predictive density (GMPD; due to the discrete response family, the "density" values are probabilities here, so we will report the GMPD as percentage) of ``r if (!params$EVAL) character() else paste0("exp(", round(smmry_lat$selection[["mlpd"]][smmry_lat$selection$size == modsize_decided_lat - 1], 2), ")")`` which is ca. `r if (!params$EVAL) character() else paste(100 * round(exp(round(smmry_lat$selection[["mlpd"]][smmry_lat$selection$size == modsize_decided_lat - 1], 2)), 6), "%")` whereas size `r if (!params$EVAL) character() else modsize_decided_lat` leads to a GMPD of ca. `r if (!params$EVAL) character() else paste(100 * round(exp(round(smmry_lat$selection[["mlpd"]][smmry_lat$selection$size == modsize_decided_lat], 2)), 4), "%")`. This is a considerable improvement from size `r if (!params$EVAL) character() else modsize_decided_lat - 1` to size `r if (!params$EVAL) character() else modsize_decided_lat`, so another justification for size `r if (!params$EVAL) character() else modsize_decided_lat`. (Size `r if (!params$EVAL) character() else modsize_decided_lat + 1` would have resulted in a GMPD of ca. `r if (!params$EVAL) character() else paste(100 * round(exp(round(smmry_lat$selection[["mlpd"]][smmry_lat$selection$size == modsize_decided_lat + 1], 2)), 4), "%")` which is only a small improvement compared to size `r if (!params$EVAL) character() else modsize_decided_lat`.)
 
 In the solution path up to the selected size of `r if (!params$EVAL) character() else modsize_decided_lat`, we can see that apart from the noise term `xn.6`, **projpred** has correctly selected the truly relevant predictors first and only then the noise predictors. We can see this more clearly using the following code:
-```{r}
+```{r soltrms_lat_final}
 soltrms_lat <- solution_terms(vs_lat)
 ( soltrms_lat_final <- head(soltrms_lat, modsize_decided_lat) )
 ```
@@ -207,7 +207,7 @@ We will skip post-selection inference here (see the main vignette for a demonstr
 ### Variable selection using the traditional projection
 
 We will now look at what **projpred**'s traditional projection would have given:
-```{r, results='hide'}
+```{r vs_trad, results='hide'}
 d_test_trad_poiss <- d_test_lat_poiss
 d_test_trad_poiss$y <- d_test_trad_poiss$y_oscale
 d_test_trad_poiss$y_oscale <- NULL
@@ -221,7 +221,7 @@ time_trad <- system.time(vs_trad <- varsel(
   seed = 95930
 ))
 ```
-```{r}
+```{r post_vs_trad}
 print(time_trad)
 ( gg_trad <- plot(vs_trad, stats = "mlpd", deltas = TRUE) )
 smmry_trad <- summary(
@@ -250,7 +250,7 @@ We will re-use the data generated above in the Poisson example.
 ### Reference model
 
 We now fit a reference model with the negative binomial distribution as response family^[For the sake of simplicity, we won't adjust `tau0` to this new family, but in a real-world example, such an adjustment would be necessary. However, since Table 1 of @piironen_sparsity_2017 doesn't list the negative binomial distribution, this would first require a manual derivation of the pseudo-variance $\tilde{\sigma}^2$.]:
-```{r}
+```{r ref_fit_nebin}
 refm_fit_nebin <- stan_glm(
   formula = refm_fml,
   family = neg_binomial_2(),
@@ -266,7 +266,7 @@ refm_fit_nebin <- stan_glm(
 ### Variable selection using the latent projection
 
 To run a variable selection with `latent = TRUE`, we now also need to specify more arguments which will be passed to `extend_family()`^[The suffix `_prec` in `refm_prec` stands for "precision" because here, we follow the Stan convention (see the Stan documentation for the `neg_binomial_2` distribution, the `brms::negbinomial()` documentation, and the [**brms**](https://paul-buerkner.github.io/brms/) vignette "Parameterization of Response Distributions in brms") and prefer the term *precision* parameter for what is denoted by $\phi$ there (confusingly, argument `size` in `?stats::NegBinomial`---which is the same as $\phi$ from the Stan notation---is called the *dispersion* parameter there, although the variance is increased by its reciprocal).]:
-```{r, results='hide', message=TRUE}
+```{r vs_nebin, results='hide', message=TRUE}
 refm_prec <- as.matrix(refm_fit_nebin)[, "reciprocal_dispersion", drop = FALSE]
 latent_ll_oscale_nebin <- function(ilpreds, y_oscale,
                                    wobs = rep(1, length(y_oscale)), cl_ref,
@@ -305,27 +305,27 @@ vs_lat_nebin <- varsel(
 Again, the message telling that `<refmodel>$dis` consists of only `NA`s will not concern us here because we will only be focusing on response-scale post-processing. The message concerning `latent_ilink` can be safely ignored here (the internal default based on `family$linkinv` works correctly in this case).
 
 Again, we first inspect the `plot()` results to decide for a submodel size:
-```{r, fig.width = 6, out.width = "75%"}
+```{r plot_vsel_nebin, fig.width = 6, out.width = "75%"}
 ( gg_lat_nebin <- plot(vs_lat_nebin, stats = "mlpd", deltas = TRUE) )
 ```
 
 Again, a zoomed plot is more helpful:
-```{r, fig.width = 6, out.width = "75%"}
+```{r plot_vsel_nebin_zoom, fig.width = 6, out.width = "75%"}
 gg_lat_nebin + ggplot2::coord_cartesian(ylim = c(-2.5, 0.25))
 ```
 
 Although the submodels' MLPDs approach the reference model's already from a submodel size of 9 on (taking into account the uncertainty indicated by the error bars), the curve levels off only from a submodel size of 11 on. For a more informed decision, the GMPD could be taken into account again, but for the sake of brevity, we will simply decide for a submodel size of 11 here:
-```{r}
+```{r size_man_nebin}
 modsize_decided_lat_nebin <- 11
 ```
 
 This is not the size that `suggest_size()` would suggest, but as mentioned in the main vignette and in the documentation, `suggest_size()` provides only a quite heuristic decision (so we stick with our manual decision here):
-```{r}
+```{r size_sgg_nebin}
 suggest_size(vs_lat_nebin, stat = "mlpd")
 ```
 
 Only now, after we have made a decision for the submodel size, we inspect further results from the variable selection and, in particular, the solution path:
-```{r}
+```{r smmry_vsel_nebin}
 smmry_lat_nebin <- summary(
   vs_lat_nebin,
   stats = "mlpd",
@@ -335,7 +335,7 @@ print(smmry_lat_nebin, digits = 3)
 ```
 
 As we can see from the solution path, our selected `r if (!params$EVAL) character() else modsize_decided_lat_nebin` predictor terms lack one truly relevant predictor (`x.9`) and include one noise term (`xn.29`). More explicitly, our selected predictor terms are:
-```{r}
+```{r soltrms_nebin_final}
 soltrms_lat_nebin <- solution_terms(vs_lat_nebin)
 ( soltrms_lat_nebin_final <- head(soltrms_lat_nebin,
                                   modsize_decided_lat_nebin) )
