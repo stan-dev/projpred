@@ -97,8 +97,10 @@ dat_poiss_test <- dat_poiss[(N + 1):nrow(dat_poiss), , drop = FALSE]
 ### Reference model
 
 Next, we fit the reference model that we consider as the best model in terms of predictive performance that we can construct (here, we assume that we don't know about the true data-generating process even though the dataset was simulated):
-```{r ref_fit_poiss}
+```{r rstanarm_attach, message=FALSE}
 library(rstanarm)
+```
+```{r ref_fit_poiss}
 # Number of regression coefficients:
 ( D <- sum(grepl("^x|^grpPL", names(dat_poiss_train))) )
 # Prior guess for the number of relevant (i.e., non-zero) regression
@@ -135,10 +137,10 @@ refm_fit_poiss <- stan_glm(
 ### Variable selection using the latent projection
 
 We now run a variable selection with `latent = TRUE` in the `get_refmodel()` call (see section ["Implementation"](#impl) for why `get_refmodel()` is called explicitly here) to request the latent projection. Since we have a hold-out test dataset available, we can use `varsel()` with argument `d_test` instead of `cv_varsel()`. Furthermore, we measure the runtime to compare it to the traditional projection's later:
-```{r projpred_attach}
+```{r projpred_attach, message=FALSE}
 library(projpred)
 ```
-```{r vs_lat, results='hide', message=TRUE}
+```{r vs_lat, results='hide'}
 d_test_lat_poiss <- list(
   data = dat_poiss_test,
   offset = rep(0, nrow(dat_poiss_test)),
@@ -266,7 +268,7 @@ refm_fit_nebin <- stan_glm(
 ### Variable selection using the latent projection
 
 To run a variable selection with `latent = TRUE`, we now also need to specify more arguments which will be passed to `extend_family()`^[The suffix `_prec` in `refm_prec` stands for "precision" because here, we follow the Stan convention (see the Stan documentation for the `neg_binomial_2` distribution, the `brms::negbinomial()` documentation, and the [**brms**](https://paul-buerkner.github.io/brms/) vignette "Parameterization of Response Distributions in brms") and prefer the term *precision* parameter for what is denoted by $\phi$ there (confusingly, argument `size` in `?stats::NegBinomial`---which is the same as $\phi$ from the Stan notation---is called the *dispersion* parameter there, although the variance is increased by its reciprocal).]:
-```{r vs_nebin, results='hide', message=TRUE}
+```{r vs_nebin, results='hide'}
 refm_prec <- as.matrix(refm_fit_nebin)[, "reciprocal_dispersion", drop = FALSE]
 latent_ll_oscale_nebin <- function(ilpreds, y_oscale,
                                    wobs = rep(1, length(y_oscale)), cl_ref,
