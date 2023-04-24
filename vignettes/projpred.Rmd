@@ -431,6 +431,8 @@ In this case, the latent-space approach by @catalina_latent_2021 might help, see
 If you are using `varsel()`, then the lack of CV in `varsel()` may lead to overconfident and overfitted results.
 In this case, try running `cv_varsel()` instead of `varsel()` (which you should in any case for your final results).
 
+Similarly, `cv_varsel()` with `validate_search = TRUE` is less prone to overfitting than `cv_varsel()` with `validate_search = FALSE`.
+
 ### Issues with the traditional projection
 
 For multilevel binomial models, the traditional projection may not work properly and give suboptimal results, see [#353](https://github.com/stan-dev/projpred/pull/353) on GitHub (the underlying issue is described in **lme4** issue [#682](https://github.com/lme4/lme4/issues/682)).
