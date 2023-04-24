@@ -64,12 +64,9 @@ Compared to the more complex types of reference models supported by **projpred**
 
 We use **rstanarm**'s default priors in our reference model, except for the regression coefficients for which we use a regularized horseshoe prior [@piironen_sparsity_2017] with the hyperprior for its global shrinkage parameter following @piironen_hyperprior_2017 and @piironen_sparsity_2017.
 In R code, these are the preparation steps for the regularized horseshoe prior:
-```{r rh_D}
+```{r rh}
 # Number of regression coefficients:
 ( D <- sum(grepl("^X", names(dat_gauss))) )
-```
-
-```{r rh}
 # Prior guess for the number of relevant (i.e., non-zero) regression
 # coefficients:
 p0 <- 5
