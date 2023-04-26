@@ -143,10 +143,10 @@ cvvs_fast <- cv_varsel(
 ```
 In this case, we ignore the Pareto-$k$ warning due to the reduced values for `chains` and `iter` in the reference model fit.
 
-To find a suitable value for `nterms_max` in subsequent runs, we take a look at a plot of predictive performance statistics in dependence of the submodel size.
-As performance statistics, we use the mean log predictive density (MLPD; see argument `stats` of `summary.vsel()` for details) and the root mean squared error (RMSE):
-```{r plot_vsel_fast, fig.asp=1.5 * 0.618}
-plot(cvvs_fast, stats = c("mlpd", "rmse"), seed = 54548)
+To find a suitable value for `nterms_max` in subsequent runs, we take a look at a plot of at least one predictive performance statistic in dependence of the submodel size.
+Here, we choose the mean log predictive density (MLPD; see argument `stats` of `summary.vsel()` for details) as the only performance statistic:
+```{r plot_vsel_fast}
+plot(cvvs_fast, stats = "mlpd")
 ```
 This plot (see `?plot.vsel` for a description) shows that the predictive performance of the submodels does not change much after submodel size 8, so we set `nterms_max = 8` in our final `cv_varsel()` run^[Here, we were lucky that half the number of predictor terms in the full model (`nterms_max = 10`) was a sufficiently large starting point. In practice, half the number of predictor terms in the full model may not be large enough to have submodel performances that level off before this point.].
 
@@ -188,11 +188,11 @@ We can now select a final submodel size.
 <!-- This should be the first step (in particular, before inspecting the solution path) in order to avoid a user-induced selection bias (which could occur if the user made the submodel size decision dependent on the solution path). -->
 By default, the performance statistics are plotted on their original scale, but with `deltas = TRUE`, they are calculated as differences from a baseline model (which is the reference model by default, at least in the most common cases).
 Since the differences are usually of more interest (with regard to the decision for a final submodel size), we directly plot with `deltas = TRUE` here:
-```{r plot_vsel, fig.asp=1.5 * 0.618}
-plot(cvvs, stats = c("mlpd", "rmse"), deltas = TRUE, seed = 54548)
+```{r plot_vsel}
+plot(cvvs, stats = "mlpd", deltas = TRUE)
 ```
 
-Based on that plot, we decide for a submodel size of 6 because that's the point where the performance measures level off and are close enough to the reference model's performance:
+Based on that plot, we decide for a submodel size of 6 because that's the point where the submodel MLPD levels off and is close enough to the reference model MLPD:
 ```{r size_man}
 modsize_decided <- 6
 ```
@@ -200,19 +200,15 @@ modsize_decided <- 6
 The `suggest_size()` function offered by **projpred** may help in the decision for a submodel size, but this is a rather heuristic method and needs to be interpreted with caution (see `?suggest_size`):
 ```{r size_sgg}
 suggest_size(cvvs, stat = "mlpd")
-# We are using the same seed as in the plot() call above to ensure that the
-# bootstrap intervals are exactly the same:
-suggest_size(cvvs, stat = "rmse", seed = 54548)
 ```
-With both performance statistics, we would get the same final submodel size (`6`) as by our manual decision.
+With this heuristic, we would get the same final submodel size (`6`) as by our manual decision.
 
 Now that
 <!-- Only now, after -->
 we have made a decision for the final submodel size, we inspect further results from the `cv_varsel()` run and, in particular, the solution path.
 For example, we could simply `print()` the resulting `cvvs` object, but to create the summary table matching the predictive performance plot above (and to adjust the minimum number of printed significant digits), we slightly adapt the printing here:
 ```{r smmry_vsel}
-print(summary(cvvs, stats = c("mlpd", "rmse"), deltas = TRUE, seed = 54548),
-      digits = 1)
+print(summary(cvvs, stats = "mlpd", deltas = TRUE), digits = 1)
 ```
 The solution path can be seen in the `print()` output (column `solution_terms`), but it is also accessible through the `solution_terms()` function:
 ```{r soltrms}
