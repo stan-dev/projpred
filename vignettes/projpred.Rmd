@@ -127,7 +127,7 @@ Nonetheless, a preliminary and comparably fast run of `varsel()` or `cv_varsel()
 
 To illustrate a preliminary `cv_varsel()` run with `validate_search = FALSE`, we set `nterms_max` to the number of predictor terms in the full model, i.e., `nterms_max = 20`.
 <!-- (in practice, in the absence of a more informed guess, the default value for `nterms_max` may be another good starting point, but it may not be large enough). -->
-Only to speed up the building of the vignette (this is not recommended in general), we set `nclusters_pred` to a comparatively low value of `20`.
+To speed up the building of the vignette (this is not recommended in general), we stick with the default search `method` (here: L1 search, but in general, the forward search is more desirable, see `?varsel` or `?cv_varsel` for details) and set `nclusters_pred` to a comparatively low value of `20`.
 ```{r cv_varsel_fast}
 cvvs_fast <- cv_varsel(
   refm_fit,
