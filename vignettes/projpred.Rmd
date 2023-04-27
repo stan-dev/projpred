@@ -225,9 +225,10 @@ To compute these ranking proportions, we use `props()`:
 ```
 Here, the ranking proportions are of little use as we have used `K = 2` (in the final `cv_varsel()` call above) for the sake of speed.
 Nevertheless, we can see that the two CV folds agree on the two most relevant predictor terms `X1` and `X14` as well as on their order.
-The predictor terms `X1` and `X14` are also the two most relevant ones in the full-data predictor ranking:
+Since the column names of the matrix returned by `props()` follow the full-data predictor ranking, we can infer that `X1` and `X14` are also the two most relevant predictor terms in the full-data predictor ranking.
+To see this more explicitly, we can access element `fulldata` of the `ranking()` output:
 ```{r ranking_fulldata}
-rk$fulldata
+rk[["fulldata"]]
 ```
 
 Note that we have cut off the search at `nterms_max = 10`, so the ranking proportions in the matrix returned by `props()` do not need to sum to 100 % (neither column-wise nor row-wise).
@@ -239,7 +240,7 @@ plot(pr_rk)
 
 To retrieve the predictor terms of the final submodel (except for the intercept which is always included in the submodels), we combine the chosen submodel size of 6 with the full-data predictor ranking:
 ```{r predictors_final}
-( predictors_final <- head(rk$fulldata, size_decided) )
+( predictors_final <- head(rk[["fulldata"]], size_decided) )
 ```
 
 ## Post-selection inference
