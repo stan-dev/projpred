@@ -217,7 +217,7 @@ All of these predictor rankings (the full-data one and---if available---the fold
 rk <- ranking(cvvs)
 ```
 
-In case of `cv_varsel()` with `validate_search = TRUE` (like here), it usually makes sense to investigate the ranking proportions derived from the fold-wise predictor rankings, for example to get a sense for the variability in the ranking of the predictors.
+In addition to inspecting the full-data predictor ranking, it usually makes sense to investigate the ranking proportions derived from the fold-wise predictor rankings (only available in case of `cv_varsel()` with `validate_search = TRUE`, which we have here) in order to get a sense for the variability in the ranking of the predictors.
 For a given predictor $x$ and a given submodel size $j$, the ranking proportion is the proportion of CV folds which have predictor $x$ at position $j$ of their predictor ranking.
 To compute these ranking proportions, we use `props()`:
 ```{r props}
@@ -237,7 +237,7 @@ The matrix of ranking proportions can also be visualized via `plot.props()`:
 plot(pr_rk)
 ```
 
-Combining the decided submodel size of 6 with the full-data predictor ranking leads to the following terms (as well as the intercept) as the predictor terms of the final submodel:
+To retrieve the predictor terms of the final submodel (except for the intercept which is always included in the submodels), we combine the chosen submodel size of 6 with the full-data predictor ranking:
 ```{r predictors_final}
 ( predictors_final <- head(rk$fulldata, modsize_decided) )
 ```
