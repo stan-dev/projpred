@@ -148,7 +148,7 @@ Here, we choose the mean log predictive density (MLPD; see argument `stats` of `
 ```{r plot_vsel_fast}
 plot(cvvs_fast, stats = "mlpd")
 ```
-This plot (see `?plot.vsel` for a description) shows that the predictive performance of the submodels does not change much after submodel size 8, so in our final `cv_varsel()` run, we set `nterms_max` to a value slightly higher than 8 (here: `nterms_max = 10`) to ensure that we see the MLPD leveling off.
+This plot (see `?plot.vsel` for a description) shows that the submodel MLPD does not change much after submodel size 8, so in our final `cv_varsel()` run, we set `nterms_max` to a value slightly higher than 8 (here: `nterms_max = 10`) to ensure that we see the MLPD leveling off.
 
 <!-- In versions > 2.0.2, **projpred** offers a parallelization of the projection. -->
 <!-- Typically, this only makes sense for a large number of projected draws. -->
@@ -192,16 +192,21 @@ Since the differences are usually of more interest (with regard to the decision 
 plot(cvvs, stats = "mlpd", deltas = TRUE)
 ```
 
-Based on that plot, we decide for a submodel size of 6 because that's the point where the submodel MLPD levels off and is close enough to the reference model MLPD:
+Based on that plot, we decide for a submodel size.
+Usually, the aim is to find the smallest submodel size where the predictive performance of the submodels levels off and is close enough to the reference model's predictive performance (the dashed red horizontal line).
+Sometimes (as here), the plot may be ambiguous and one may have to find a suitable trade-off between predictive performance (accuracy) and model size (sparsity) in the context of subject-matter knowledge.
+Here, we assume that the focus of our predictive model is sparsity (not accuracy).
+Hence, based on the plot, we decide for a submodel size of 6 because this is the smallest size where the submodel MLPD is close enough to the reference model MLPD:
 ```{r size_man}
 modsize_decided <- 6
 ```
+If the focus of our predictive model had been accuracy (not sparsity), size 8 would have been a natural choice because at size 8, the submodel MLPD "levels off" (in fact, size 8 here even comes with the maximum submodel MLPD among all plotted sizes, but in general, this does not need to be the case).
 
 The `suggest_size()` function offered by **projpred** may help in the decision for a submodel size, but this is a rather heuristic method and needs to be interpreted with caution (see `?suggest_size`):
 ```{r size_sgg}
 suggest_size(cvvs, stat = "mlpd")
 ```
-With this heuristic, we would get the same final submodel size (`6`) as by our manual decision.
+With this heuristic, we would get the same final submodel size (`6`) as by our manual (sparsity-based) decision.
 
 Now that
 <!-- Only now, after -->
