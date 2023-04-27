@@ -1997,13 +1997,13 @@ ranking.vsel <- function(object, ...) {
 #' Ranking proportions from fold-wise predictor rankings
 #'
 #' Calculates the *ranking proportions* from the fold-wise predictor rankings in
-#' a cross-validation (CV) with fold-wise searches. For a given predictor `x`
-#' and a given submodel size `j`, the ranking proportion is the proportion of CV
-#' folds which have predictor `x` at position `j` of their predictor ranking.
-#' While these ranking proportions are helpful for investigating variability in
-#' the predictor ranking, they can also be *cumulated* across submodel sizes.
-#' The cumulated ranking proportions are more helpful when it comes to model
-#' selection.
+#' a cross-validation (CV) with fold-wise searches. For a given predictor
+#' \eqn{x} and a given submodel size \eqn{j}, the ranking proportion is the
+#' proportion of CV folds which have predictor \eqn{x} at position \eqn{j} of
+#' their predictor ranking. While these ranking proportions are helpful for
+#' investigating variability in the predictor ranking, they can also be
+#' *cumulated* across submodel sizes. The cumulated ranking proportions are more
+#' helpful when it comes to model selection.
 #'
 #' @param object For [props.ranking()]: an object of class `ranking` (returned
 #'   by [ranking()]). For [props.vsel()]: an object of class `vsel` (returned by

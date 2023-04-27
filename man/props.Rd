@@ -55,13 +55,13 @@ ranking proportions.
 }
 \description{
 Calculates the \emph{ranking proportions} from the fold-wise predictor rankings in
-a cross-validation (CV) with fold-wise searches. For a given predictor \code{x}
-and a given submodel size \code{j}, the ranking proportion is the proportion of CV
-folds which have predictor \code{x} at position \code{j} of their predictor ranking.
-While these ranking proportions are helpful for investigating variability in
-the predictor ranking, they can also be \emph{cumulated} across submodel sizes.
-The cumulated ranking proportions are more helpful when it comes to model
-selection.
+a cross-validation (CV) with fold-wise searches. For a given predictor
+\eqn{x} and a given submodel size \eqn{j}, the ranking proportion is the
+proportion of CV folds which have predictor \eqn{x} at position \eqn{j} of
+their predictor ranking. While these ranking proportions are helpful for
+investigating variability in the predictor ranking, they can also be
+\emph{cumulated} across submodel sizes. The cumulated ranking proportions are more
+helpful when it comes to model selection.
 }
 \examples{
 # For an example, see `?plot.props`.
