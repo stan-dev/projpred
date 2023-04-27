@@ -119,14 +119,11 @@ The evaluation part determines the predictive performance of the submodels along
 
 There are two functions for running the combination of search and evaluation: `varsel()` and `cv_varsel()`.
 In contrast to `varsel()`, `cv_varsel()` performs a cross-validation (CV). With `cv_method = "LOO"` (the default), `cv_varsel()` runs a Pareto-smoothed importance sampling leave-one-out CV [PSIS-LOO CV, see @vehtari_practical_2017; @vehtari_pareto_2022]. With `cv_method = "kfold"`, `cv_varsel()` runs a $K$-fold CV. The extent of the CV depends on `cv_varsel()`'s argument `validate_search`: If `validate_search = TRUE` (the default), the search part is run with the training data of each CV fold separately and the evaluation part is run with the corresponding test data of each CV fold.
-If `validate_search = FALSE` (which is currently only available for `cv_method = "LOO"`),
-then the search is excluded from the CV so that only a single full-data search is run.
-<!-- then the CV only includes the evaluation part, which means that there is only a single full-data search and that the projection onto the submodels along the resulting full-data predictor ranking takes place with the training data of each CV fold separately (the actual performance evaluation itself is then achieved as usual by making predictions for the test data of each CV fold, now based on the submodels along the full-data predictor ranking for which the projection was performed with the training data corresponding to that fold, and comparing these predictions to the truth, with the nature of the comparison depending on the chosen predictive performance statistic). -->
+If `validate_search = FALSE` (which is currently only available for `cv_method = "LOO"`), then the search is excluded from the CV so that only a single full-data search is run.
 Because of its most thorough protection against overfitting^[Note that currently, neither `varsel()` nor `cv_varsel()` (not even `cv_varsel()` with `validate_search = TRUE`) guard against overfitting in the selection of a submodel *size*. This is why we added "approximately" to "valid post-selection inference" in section ["Introduction"](#intro). Typically, however, the overfitting induced by the size selection should be comparably small.], `cv_varsel()` with `validate_search = TRUE` is recommended over `varsel()` and `cv_varsel()` with `validate_search = FALSE`.
 Nonetheless, a preliminary and comparably fast run of `varsel()` or `cv_varsel()` with `validate_search = FALSE` can give a rough idea of the performance of the submodels and can be used for finding a suitable value for argument `nterms_max` in subsequent runs (argument `nterms_max` imposes a limit on the submodel size up to which the search is continued and is thus able to reduce the runtime considerably).
 
 To illustrate a preliminary `cv_varsel()` run with `validate_search = FALSE`, we set `nterms_max` to the number of predictor terms in the full model, i.e., `nterms_max = 20`.
-<!-- (in practice, in the absence of a more informed guess, the default value for `nterms_max` may be another good starting point, but it may not be large enough). -->
 To speed up the building of the vignette (this is not recommended in general), we stick with the default search `method` (here: L1 search, but in general, the forward search is more desirable, see `?varsel` or `?cv_varsel` for details) and set `nclusters_pred` to a comparatively low value of `20`.
 ```{r cv_varsel_fast}
 cvvs_fast <- cv_varsel(
@@ -184,8 +181,6 @@ cvvs <- cv_varsel(
 ```
 
 We can now select a final submodel size.
-<!-- The first step after running `varsel()` or `cv_varsel()` should be the decision for a final submodel size. -->
-<!-- This should be the first step (in particular, before inspecting the predictor ranking) in order to avoid a user-induced selection bias (which could occur if the user made the submodel size decision dependent on the predictor ranking). -->
 By default, the performance statistics are plotted on their original scale, but with `deltas = TRUE`, they are calculated as differences from a baseline model (which is the reference model by default, at least in the most common cases).
 Since the differences are usually of more interest (with regard to the decision for a final submodel size), we directly plot with `deltas = TRUE` here:
 ```{r plot_vsel}
@@ -208,9 +203,7 @@ suggest_size(cvvs, stat = "mlpd")
 ```
 With this heuristic, we would get the same final submodel size (`6`) as by our manual (sparsity-based) decision.
 
-Now that
-<!-- Only now, after -->
-we have made a decision for the final submodel size, we inspect further results from the `cv_varsel()` run and, in particular, the predictor ranking.
+Now that we have made a decision for the final submodel size, we inspect further results from the `cv_varsel()` run and, in particular, the predictor ranking.
 For example, we could simply `print()` the resulting `cvvs` object, but to create the summary table matching the predictive performance plot above (and to adjust the minimum number of printed significant digits), we slightly adapt the printing here:
 ```{r smmry_vsel}
 print(summary(cvvs, stats = "mlpd", deltas = TRUE), digits = 1)
