@@ -145,7 +145,7 @@ cvvs_fast <- cv_varsel(
 In this case, we ignore the Pareto-$k$ warning due to the reduced values for `chains` and `iter` in the reference model fit.
 
 To find a suitable value for `nterms_max` in subsequent runs, we take a look at a plot of at least one predictive performance statistic in dependence of the submodel size.
-Here, we choose the mean log predictive density (MLPD; see argument `stats` of `summary.vsel()` for details) as the only performance statistic:
+Here, we choose the mean log predictive density (MLPD; see the documentation for argument `stats` of `summary.vsel()` for details) as the only performance statistic:
 ```{r plot_vsel_fast}
 plot(cvvs_fast, stats = "mlpd")
 ```
