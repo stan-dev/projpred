@@ -125,7 +125,7 @@ then the search is excluded from the CV so that only a single full-data search i
 Because of its most thorough protection against overfitting^[Note that currently, neither `varsel()` nor `cv_varsel()` (not even `cv_varsel()` with `validate_search = TRUE`) guard against overfitting in the selection of a submodel *size*. This is why we added "approximately" to "valid post-selection inference" in section ["Introduction"](#intro). Typically, however, the overfitting induced by the size selection should be comparably small.], `cv_varsel()` with `validate_search = TRUE` is recommended over `varsel()` and `cv_varsel()` with `validate_search = FALSE`.
 Nonetheless, a preliminary and comparably fast run of `varsel()` or `cv_varsel()` with `validate_search = FALSE` can give a rough idea of the performance of the submodels and can be used for finding a suitable value for argument `nterms_max` in subsequent runs (argument `nterms_max` imposes a limit on the submodel size up to which the search is continued and is thus able to reduce the runtime considerably).
 
-To illustrate a preliminary `cv_varsel()` run with `validate_search = FALSE`, we try `nterms_max = 10`, i.e., half the number of predictor terms in the full model:
+To illustrate a preliminary `cv_varsel()` run with `validate_search = FALSE`, we set `nterms_max` to the number of predictor terms in the full model, i.e., `nterms_max = 20`:
 <!-- (in practice, in the absence of a more informed guess, the default value for `nterms_max` may be another good starting point, but it may not be large enough): -->
 ```{r cv_varsel_fast}
 cvvs_fast <- cv_varsel(
@@ -134,7 +134,7 @@ cvvs_fast <- cv_varsel(
   ### Only for the sake of speed (not recommended in general):
   nclusters_pred = 20,
   ###
-  nterms_max = 10,
+  nterms_max = 20,
   ### In interactive use, we recommend not to deactivate the verbose mode:
   verbose = FALSE,
   ### 
@@ -148,7 +148,7 @@ Here, we choose the mean log predictive density (MLPD; see argument `stats` of `
 ```{r plot_vsel_fast}
 plot(cvvs_fast, stats = "mlpd")
 ```
-This plot (see `?plot.vsel` for a description) shows that the predictive performance of the submodels does not change much after submodel size 8, so we set `nterms_max = 8` in our final `cv_varsel()` run^[Here, we were lucky that half the number of predictor terms in the full model (`nterms_max = 10`) was a sufficiently large starting point. In practice, half the number of predictor terms in the full model may not be large enough to have submodel performances that level off before this point.].
+This plot (see `?plot.vsel` for a description) shows that the predictive performance of the submodels does not change much after submodel size 8, so in our final `cv_varsel()` run, we set `nterms_max` to a value slightly higher than 8 (here: `nterms_max = 10`) to ensure that we see the MLPD leveling off.
 
 <!-- In versions > 2.0.2, **projpred** offers a parallelization of the projection. -->
 <!-- Typically, this only makes sense for a large number of projected draws. -->
@@ -175,7 +175,7 @@ cvvs <- cv_varsel(
   K = 2,
   nclusters_pred = 20,
   ###
-  nterms_max = 8,
+  nterms_max = 10,
   ### In interactive use, we recommend not to deactivate the verbose mode:
   verbose = FALSE,
   ### 
