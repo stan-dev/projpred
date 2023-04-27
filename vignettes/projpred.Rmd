@@ -209,12 +209,8 @@ For example, we can create the summary table matching the predictive performance
 ```{r smmry_vsel}
 print(summary(cvvs, stats = "mlpd", deltas = TRUE), digits = 1)
 ```
-The predictor ranking from the `print()` output (column `solution_terms`) is also accessible through the `solution_terms()` function:
-```{r soltrms}
-( soltrms <- solution_terms(cvvs) )
-```
 
-When retrieved via `solution_terms()`, the predictor ranking is always based on the full-data search.
+As highlighted by the message printed above, the predictor ranking from column `solution_terms` is based on the full-data search.
 In case of `cv_varsel()` with `validate_search = TRUE`, there is not only the full-data search, but also fold-wise searches, implying that there are also fold-wise predictor rankings.
 All of these predictor rankings (the full-data one and---if available---the fold-wise ones) can be retrieved via `ranking()`:
 ```{r ranking}
@@ -229,7 +225,10 @@ To compute these ranking proportions, we use `props()`:
 ```
 Here, the ranking proportions are of little use as we have set `K = 2` (in the final `cv_varsel()` call above) for the sake of speed.
 Nevertheless, we can see that the two CV folds agree on the two most relevant predictor terms `X1` and `X14` as well as on their order.
-From object `soltrms` above, we can see that `X1` and `X14` are also the two most relevant predictor terms in the full-data predictor ranking.
+The predictor terms `X1` and `X14` are also the two most relevant ones in the full-data predictor ranking:
+```{r ranking_fulldata}
+rk$fulldata
+```
 
 Note that we have cut off the search at `nterms_max = 10`, so the ranking proportions in the matrix returned by `props()` do not need to sum to 100 % (neither column-wise nor row-wise).
 
@@ -240,7 +239,7 @@ plot(pr_rk)
 
 Combining the decided submodel size of 6 with the full-data predictor ranking leads to the following terms (as well as the intercept) as the predictor terms of the final submodel:
 ```{r soltrms_final}
-( soltrms_final <- head(soltrms, modsize_decided) )
+( soltrms_final <- head(rk$fulldata, modsize_decided) )
 ```
 
 ## Post-selection inference
