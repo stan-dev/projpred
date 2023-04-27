@@ -238,8 +238,8 @@ plot(pr_rk)
 ```
 
 Combining the decided submodel size of 6 with the full-data predictor ranking leads to the following terms (as well as the intercept) as the predictor terms of the final submodel:
-```{r soltrms_final}
-( soltrms_final <- head(rk$fulldata, modsize_decided) )
+```{r predictors_final}
+( predictors_final <- head(rk$fulldata, modsize_decided) )
 ```
 
 ## Post-selection inference
@@ -247,7 +247,7 @@ Combining the decided submodel size of 6 with the full-data predictor ranking le
 The `project()` function returns an object of class `projection` which forms the basis for convenient post-selection inference.
 By the following code, `project()` will project the reference model onto the final submodel once again^[During the forward search, the reference model has already been projected onto all candidate models (this was where arguments `ndraws` and `nclusters` of `cv_varsel()` came into play). For the evaluation of the submodels along the predictor ranking, the reference model has been projected onto these submodels again (this was where arguments `ndraws_pred` and `nclusters_pred` of `cv_varsel()` came into play). In principle, one could use the re-projections from the evaluation part for post-selection inference, but due to a deficiency in the current implementation (see GitHub issue #168), we currently have to project once again.]:
 ```{r project}
-prj <- project(refm_fit, solution_terms = soltrms_final)
+prj <- project(refm_fit, solution_terms = predictors_final)
 ```
 <!-- Alternative, as soon as GitHub issue #168 is resolved: -->
 <!-- ```{r project} -->
@@ -318,8 +318,8 @@ We start with `proj_linpred()`.
 For example, suppose we have the following new observations:
 ```{r data_new}
 ( dat_gauss_new <- setNames(
-  as.data.frame(replicate(length(soltrms_final), c(-1, 0, 1))),
-  soltrms_final
+  as.data.frame(replicate(length(predictors_final), c(-1, 0, 1))),
+  predictors_final
 ) )
 ```
 Then `proj_linpred()` can calculate the linear predictors^[`proj_linpred()` can also transform the linear predictor to response scale, but here, this is the same as the linear predictor scale (because of the identity link function).] for all new observations from `dat_gauss_new`.
