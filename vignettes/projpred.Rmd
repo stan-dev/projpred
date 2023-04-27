@@ -203,8 +203,9 @@ suggest_size(cvvs, stat = "mlpd")
 ```
 With this heuristic, we would get the same final submodel size (`6`) as by our manual (sparsity-based) decision.
 
-Now that we have made a decision for the final submodel size, we inspect further results from the `cv_varsel()` run and, in particular, the predictor ranking.
-For example, we could simply `print()` the resulting `cvvs` object, but to create the summary table matching the predictive performance plot above (and to adjust the minimum number of printed significant digits), we slightly adapt the printing here:
+The predictive performance statistic(s) plotted by `plot.vsel()` can be retrieved in tabular form via `summary.vsel()`.
+For the output of `summary.vsel()`, there is a sophisticated `print()` method (`print.vselsummary()`) which is also called by the shortcut method `print.vsel()`^[`print.vsel()` is the method that is called when simply printing an object resulting from `varsel()` or `cv_varsel()`.].
+For example, we can create the summary table matching the predictive performance plot above (and also adjust the minimum number of printed significant digits):
 ```{r smmry_vsel}
 print(summary(cvvs, stats = "mlpd", deltas = TRUE), digits = 1)
 ```
