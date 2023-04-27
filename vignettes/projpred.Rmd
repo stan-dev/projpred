@@ -182,7 +182,7 @@ cvvs <- cv_varsel(
 
 We can now select a final submodel size.
 By default, the performance statistics are plotted on their original scale, but with `deltas = TRUE`, they are calculated as differences from a baseline model (which is the reference model by default, at least in the most common cases).
-Since the differences are usually of more interest (with regard to the decision for a final submodel size), we directly plot with `deltas = TRUE` here:
+Since the differences and the (frequentist) uncertainty in their estimation are usually of more interest than the original-scale performance statistics (at least with regard to the decision for a final submodel size), we directly plot with `deltas = TRUE` here:
 ```{r plot_vsel}
 plot(cvvs, stats = "mlpd", deltas = TRUE)
 ```
