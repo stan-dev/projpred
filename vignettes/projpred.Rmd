@@ -336,7 +336,7 @@ For example, suppose we have the following new observations:
 ```
 Then `proj_linpred()` can calculate the linear predictors^[`proj_linpred()` can also transform the linear predictor to response scale, but here, this is the same as the linear predictor scale (because of the identity link function).] for all new observations from `dat_gauss_new`.
 Depending on argument `integrated`, these linear predictors can be averaged across the projected draws (within each new observation).
-For instance, the following computes the expected values of the new observations' predictive distributions^[Beware that this statement is correct here because of the Gaussian family with the identity link function. For other families (which usually come in combination with a different link function), one would typically have to use `transform = TRUE` in order to make this statement correct.]:
+For instance, the following computes the expected values of the new observations' predictive distributions (beware that the following code refers to the Gaussian family with the identity link function; for other families---which usually come in combination with a different link function---one would typically have to use `transform = TRUE` in order to achieve such expected values):
 ```{r proj_linpred}
 prj_linpred <- proj_linpred(prj, newdata = dat_gauss_new, integrated = TRUE)
 cbind(dat_gauss_new, linpred = as.vector(prj_linpred$pred))
