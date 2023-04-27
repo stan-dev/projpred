@@ -193,7 +193,7 @@ Sometimes (as here), the plot may be ambiguous and one may have to find a suitab
 Here, we assume that the focus of our predictive model is sparsity (not accuracy).
 Hence, based on the plot, we decide for a submodel size of 6 because this is the smallest size where the submodel MLPD is close enough to the reference model MLPD:
 ```{r size_man}
-modsize_decided <- 6
+size_decided <- 6
 ```
 If the focus of our predictive model had been accuracy (not sparsity), size 8 would have been a natural choice because at size 8, the submodel MLPD "levels off" (in fact, size 8 here even comes with the maximum submodel MLPD among all plotted sizes, but in general, this does not need to be the case).
 
@@ -239,7 +239,7 @@ plot(pr_rk)
 
 To retrieve the predictor terms of the final submodel (except for the intercept which is always included in the submodels), we combine the chosen submodel size of 6 with the full-data predictor ranking:
 ```{r predictors_final}
-( predictors_final <- head(rk$fulldata, modsize_decided) )
+( predictors_final <- head(rk$fulldata, size_decided) )
 ```
 
 ## Post-selection inference
@@ -253,7 +253,7 @@ prj <- project(refm_fit, solution_terms = predictors_final)
 <!-- ```{r project} -->
 <!-- prj <- project( -->
 <!--   cvvs, -->
-<!--   nterms = modsize_decided, -->
+<!--   nterms = size_decided, -->
 <!--   refit_prj = FALSE -->
 <!-- ) -->
 <!-- ``` -->
