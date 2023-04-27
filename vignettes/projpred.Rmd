@@ -231,7 +231,7 @@ To see this more explicitly, we can access element `fulldata` of the `ranking()`
 rk[["fulldata"]]
 ```
 
-Note that we have cut off the search at `nterms_max = 10` (which is smaller than the number of predictor terms in the full model, 20 here), so the ranking proportions in the matrix returned by `props()` do not need to sum to 100 % (neither column-wise nor row-wise).
+Note that we have cut off the search at `nterms_max = 10` (which is smaller than the number of predictor terms in the full model, 20 here), so the ranking proportions in the `pr_rk` matrix do not need to sum to 100 % (neither column-wise nor row-wise).
 
 The matrix of ranking proportions can also be visualized via `plot.props()`:
 ```{r plot_props, fig.width = 6, out.width = "80%"}
@@ -242,6 +242,12 @@ To retrieve the predictor terms of the final submodel (except for the intercept 
 ```{r predictors_final}
 ( predictors_final <- head(rk[["fulldata"]], size_decided) )
 ```
+At this place, it is again helpful to take the ranking proportions into account, but now in a cumulated fashion:
+```{r plot_props_cumul, fig.width = 6, out.width = "80%"}
+plot(props(rk, cumulate = TRUE))
+```
+This plot tells us that both CV folds have all terms from `predictors_final` (except for `X6`) included among the first 6 terms of their predictor ranking (6 was the chosen submodel size, so we look at `<=6` on the x-axis).
+Only one of the two CV folds includes `X6` among the first 6 terms, but the other CV fold includes it shortly after that (at size 7, see also the `plot(pr_rk)` call above), which indicates that `X6` might indeed be relevant.
 
 ## Post-selection inference
 
