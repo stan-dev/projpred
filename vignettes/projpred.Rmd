@@ -249,6 +249,11 @@ plot(props(rk, cumulate = TRUE))
 This plot tells us that both CV folds have all terms from `predictors_final` (except for `X6`) included among the first 6 terms of their predictor ranking (6 was the chosen submodel size, so we look at `<=6` on the x-axis).
 Only one of the two CV folds includes `X6` among the first 6 terms, but the other CV fold includes it shortly after that (at size 7, see also the `plot(pr_rk)` call above), which indicates that `X6` might indeed be relevant.
 
+Although not demonstrated here, the cumulated ranking proportions could also have guided the decision for a submodel size (if we had not been willing to follow a strict rule based on accuracy or sparsity):
+From the plot, we can see that size 8 might be an unfortunate choice because cutting off the full-data predictor ranking at that size would have led to the selection of `X11` which is not included among the first 8 terms by any CV fold.
+Size 7 would probably be a better choice than size 8 because cutting off the full-data predictor ranking at size 7 would have led to the selection of `X8` which is included among the first 7 terms by one CV fold and among the first 8 terms by the other CV fold (see also the `plot(pr_rk)` call above).
+However, since `K = 2` is too small for reliable statements regarding the variability in the ranking of the predictors, we did not take the cumulated ranking proportions into account when we made our decision for a submodel size above.
+
 ## Post-selection inference
 
 The `project()` function returns an object of class `projection` which forms the basis for convenient post-selection inference.
