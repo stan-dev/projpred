@@ -125,8 +125,9 @@ then the search is excluded from the CV so that only a single full-data search i
 Because of its most thorough protection against overfitting^[Note that currently, neither `varsel()` nor `cv_varsel()` (not even `cv_varsel()` with `validate_search = TRUE`) guard against overfitting in the selection of a submodel *size*. This is why we added "approximately" to "valid post-selection inference" in section ["Introduction"](#intro). Typically, however, the overfitting induced by the size selection should be comparably small.], `cv_varsel()` with `validate_search = TRUE` is recommended over `varsel()` and `cv_varsel()` with `validate_search = FALSE`.
 Nonetheless, a preliminary and comparably fast run of `varsel()` or `cv_varsel()` with `validate_search = FALSE` can give a rough idea of the performance of the submodels and can be used for finding a suitable value for argument `nterms_max` in subsequent runs (argument `nterms_max` imposes a limit on the submodel size up to which the search is continued and is thus able to reduce the runtime considerably).
 
-To illustrate a preliminary `cv_varsel()` run with `validate_search = FALSE`, we set `nterms_max` to the number of predictor terms in the full model, i.e., `nterms_max = 20`:
-<!-- (in practice, in the absence of a more informed guess, the default value for `nterms_max` may be another good starting point, but it may not be large enough): -->
+To illustrate a preliminary `cv_varsel()` run with `validate_search = FALSE`, we set `nterms_max` to the number of predictor terms in the full model, i.e., `nterms_max = 20`.
+<!-- (in practice, in the absence of a more informed guess, the default value for `nterms_max` may be another good starting point, but it may not be large enough). -->
+Only to speed up the building of the vignette (this is not recommended in general), we set `nclusters_pred` to a comparatively low value of `20`.
 ```{r cv_varsel_fast}
 cvvs_fast <- cv_varsel(
   refm_fit,
@@ -166,7 +167,6 @@ This plot (see `?plot.vsel` for a description) shows that the submodel MLPD does
 
 For this final `cv_varsel()` run, we use a $K$-fold CV with a small number of folds (`K = 2`) to make this vignette build faster.
 In practice, we recommend using either the default of `cv_method = "LOO"` (with `validate_search = TRUE`) or a larger value for `K` if this is possible in terms of computation time.
-We also set `nclusters_pred` to a low value of `20` to speed up the building of the vignette:
 ```{r cv_varsel, message=FALSE}
 cvvs <- cv_varsel(
   refm_fit,
