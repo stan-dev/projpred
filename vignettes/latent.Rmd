@@ -300,7 +300,7 @@ latent_ppd_oscale_nebin <- function(ilpreds_resamp, wobs, cl_ref,
 refm_nebin <- get_refmodel(refm_fit_nebin, latent = TRUE,
                            latent_ll_oscale = latent_ll_oscale_nebin,
                            latent_ppd_oscale = latent_ppd_oscale_nebin)
-vs_lat_nebin <- varsel(
+vs_nebin <- varsel(
   refm_nebin,
   d_test = d_test_lat_poiss,
   ### Only for the sake of speed (not recommended in general):
@@ -317,39 +317,39 @@ Again, the message telling that `<refmodel>$dis` consists of only `NA`s will not
 
 Again, we first inspect the `plot()` results to decide for a submodel size:
 ```{r plot_vsel_nebin, fig.width = 6, out.width = "75%"}
-( gg_lat_nebin <- plot(vs_lat_nebin, stats = "mlpd", deltas = TRUE) )
+( gg_nebin <- plot(vs_nebin, stats = "mlpd", deltas = TRUE) )
 ```
 
 Again, a zoomed plot is more helpful:
 ```{r plot_vsel_nebin_zoom, fig.width = 6, out.width = "75%"}
-gg_lat_nebin + ggplot2::coord_cartesian(ylim = c(-2.5, 0.25))
+gg_nebin + ggplot2::coord_cartesian(ylim = c(-2.5, 0.25))
 ```
 
 Although the submodels' MLPDs approach the reference model's already from a submodel size of 9 on (taking into account the uncertainty indicated by the error bars), the curve levels off only from a submodel size of 11 on. For a more informed decision, the GMPD could be taken into account again, but for the sake of brevity, we will simply decide for a submodel size of 11 here:
 ```{r size_man_nebin}
-size_decided_lat_nebin <- 11
+size_decided_nebin <- 11
 ```
 
 This is not the size that `suggest_size()` would suggest, but as mentioned in the main vignette and in the documentation, `suggest_size()` provides only a quite heuristic decision (so we stick with our manual decision here):
 ```{r size_sgg_nebin}
-suggest_size(vs_lat_nebin, stat = "mlpd")
+suggest_size(vs_nebin, stat = "mlpd")
 ```
 
 Only now, after we have made a decision for the submodel size, we inspect further results from the variable selection and, in particular, the solution path:
 ```{r smmry_vsel_nebin}
-smmry_lat_nebin <- summary(
-  vs_lat_nebin,
+smmry_nebin <- summary(
+  vs_nebin,
   stats = "mlpd",
   type = c("mean", "se", "lower", "upper", "diff", "diff.se")
 )
-print(smmry_lat_nebin, digits = 3)
+print(smmry_nebin, digits = 3)
 ```
 
-As we can see from the solution path, our selected `r if (!params$EVAL) character() else size_decided_lat_nebin` predictor terms lack one truly relevant predictor (`x.9`) and include one noise term (`xn.29`). More explicitly, our selected predictor terms are:
+As we can see from the solution path, our selected `r if (!params$EVAL) character() else size_decided_nebin` predictor terms lack one truly relevant predictor (`x.9`) and include one noise term (`xn.29`). More explicitly, our selected predictor terms are:
 ```{r predictors_final_nebin}
-rk_lat_nebin <- ranking(vs_lat_nebin)
-( predictors_final_lat_nebin <- head(rk_lat_nebin[["fulldata"]],
-                                     size_decided_lat_nebin) )
+rk_nebin <- ranking(vs_nebin)
+( predictors_final_nebin <- head(rk_nebin[["fulldata"]],
+                                 size_decided_nebin) )
 ```
 
 Again, we will skip post-selection inference here (see the main vignette for a demonstration of post-selection inference).
