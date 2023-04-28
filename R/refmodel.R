@@ -1434,8 +1434,8 @@ init_refmodel <- function(object, data, formula, family, ref_predfun = NULL,
       if (all(is.na(dis))) {
         message(
           "Since `<refmodel>$dis` will consist of only `NA`s, downstream ",
-          "analyses based on this reference model won't be able to use log ",
-          "predictive density (LPD) values on latent scale. Furthermore, ",
+          "analyses based on this reference model object won't be able to use ",
+          "log predictive density (LPD) values on latent scale. Furthermore, ",
           "proj_predict() won't be able to draw from the latent Gaussian ",
           "distribution."
         )
