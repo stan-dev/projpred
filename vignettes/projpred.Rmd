@@ -126,6 +126,7 @@ Nonetheless, a preliminary and comparatively fast run of `varsel()` or `cv_varse
 To illustrate a preliminary `cv_varsel()` run with `validate_search = FALSE`, we set `nterms_max` to the number of predictor terms in the full model, i.e., `nterms_max = 20`.
 To speed up the building of the vignette (this is not recommended in general), we stick with the default search `method` (here: L1 search, but in general, the forward search is more desirable, see `?varsel` or `?cv_varsel` for details) and set `nclusters_pred` to a comparatively low value of `20`.
 ```{r cv_varsel_fast}
+# Preliminary cv_varsel() run:
 cvvs_fast <- cv_varsel(
   refm_fit,
   validate_search = FALSE,
@@ -165,6 +166,7 @@ This plot (see `?plot.vsel` for a description) shows that the submodel MLPD does
 For this final `cv_varsel()` run, we use a $K$-fold CV with a small number of folds (`K = 2`) to make this vignette build faster.
 In practice, we recommend using either the default of `cv_method = "LOO"` (with `validate_search = TRUE`) or a larger value for `K` if this is possible in terms of computation time.
 ```{r cv_varsel, message=FALSE}
+# Final cv_varsel() run:
 cvvs <- cv_varsel(
   refm_fit,
   cv_method = "kfold",
@@ -180,8 +182,8 @@ cvvs <- cv_varsel(
 )
 ```
 
-We can now select a final submodel size.
-By default, the performance statistics are plotted on their original scale, but with `deltas = TRUE`, they are calculated as differences from a baseline model (which is the reference model by default, at least in the most common cases).
+We can now select a final submodel size by looking at a predictive performance plot similar to the one created for the preliminary `cv_varsel()` run above.
+By default, the performance statistics are plotted on their original scale, but with `deltas = TRUE`, they are plotted as differences from a baseline model (which is the reference model by default, at least in the most common cases).
 Since the differences and the (frequentist) uncertainty in their estimation are usually of more interest than the original-scale performance statistics (at least with regard to the decision for a final submodel size), we directly plot with `deltas = TRUE` here:
 ```{r plot_vsel}
 plot(cvvs, stats = "mlpd", deltas = TRUE)
@@ -231,9 +233,9 @@ To see this more explicitly, we can access element `fulldata` of the `ranking()`
 rk[["fulldata"]]
 ```
 
-Note that we have cut off the search at `nterms_max = 9` (which is smaller than the number of predictor terms in the full model, 20 here), so the ranking proportions in the `pr_rk` matrix do not need to sum to 100 % (neither column-wise nor row-wise).
+Note that we have cut off the search at `nterms_max = 9` (which is smaller than the number of predictor terms in the full model, 20 here), so the ranking proportions in the `pr_rk` matrix do not need to sum to 100&nbsp;% (neither column-wise nor row-wise).
 
-The matrix of ranking proportions can also be visualized via `plot.props()`:
+The matrix of ranking proportions can be visualized via `plot.props()`:
 ```{r plot_props, fig.width = 6, out.width = "80%"}
 plot(pr_rk)
 ```
@@ -250,7 +252,7 @@ This plot tells us that both CV folds have all terms from `predictors_final` (ex
 Only one of the two CV folds includes `X6` among the first 6 terms, but the other CV fold includes it shortly after that (at size 7, see also the `plot(pr_rk)` call above), which indicates that `X6` might indeed be relevant.
 
 Although not demonstrated here, the cumulated ranking proportions could also have guided the decision for a submodel size (if we had not been willing to follow a strict rule based on accuracy or sparsity):
-From the plot, we can see that size 8 might be an unfortunate choice because cutting off the full-data predictor ranking at that size would have led to the selection of `X11` which is not included among the first 8 terms by any CV fold.
+From the plot, we can see that size 8 might have been an unfortunate choice because `X11` (which---by cutting off the full-data predictor ranking at size 8---would then have been selected as the next predictor in the final submodel) is not included among the first 8 terms by any CV fold.
 Size 7 would probably be a better choice than size 8 because cutting off the full-data predictor ranking at size 7 would have led to the selection of `X8` which is included among the first 7 terms by one CV fold and among the first 8 terms by the other CV fold (see also the `plot(pr_rk)` call above).
 However, since `K = 2` is too small for reliable statements regarding the variability of the predictor ranking, we did not take the cumulated ranking proportions into account when we made our decision for a submodel size above.
 
