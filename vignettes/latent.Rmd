@@ -190,7 +190,7 @@ This is also the size that `suggest_size()` would suggest:
 suggest_size(vs_lat, stat = "mlpd")
 ```
 
-Only now, after we have made a decision for the submodel size, we inspect further results from the variable selection and, in particular, the predictor ranking (also known as solution path):
+We can also inspect further results from the `varsel()` run and, in particular, the predictor ranking (also known as solution path):
 ```{r smmry_vsel_lat}
 smmry_lat <- summary(
   vs_lat,
@@ -335,7 +335,7 @@ This is not the size that `suggest_size()` would suggest, but as mentioned in th
 suggest_size(vs_nebin, stat = "mlpd")
 ```
 
-Only now, after we have made a decision for the submodel size, we inspect further results from the variable selection and, in particular, the predictor ranking:
+We can also inspect further results from the `varsel()` run and, in particular, the predictor ranking:
 ```{r smmry_vsel_nebin}
 smmry_nebin <- summary(
   vs_nebin,
