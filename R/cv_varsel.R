@@ -48,14 +48,13 @@
 #'
 #' @inherit varsel details return
 #'
-#' @note The case `cv_method == "LOO" && !validate_search` constitutes an
-#'   exception where the search part is not cross-validated. In that case, the
-#'   evaluation part is based on a PSIS-LOO CV also for the submodels.
+#' @note If `validate_search` is `FALSE`, the search is not included in the CV
+#'   so that only a single full-data search is run.
 #'
-#'   For all PSIS-LOO CVs, \pkg{projpred} calls [loo::psis()] with `r_eff = NA`.
-#'   This is only a problem if there was extreme autocorrelation between the
-#'   MCMC iterations when the reference model was built. In those cases however,
-#'   the reference model should not have been used anyway, so we don't expect
+#'   For PSIS-LOO CV, \pkg{projpred} calls [loo::psis()] with `r_eff = NA`. This
+#'   is only a problem if there was extreme autocorrelation between the MCMC
+#'   iterations when the reference model was built. In those cases however, the
+#'   reference model should not have been used anyway, so we don't expect
 #'   \pkg{projpred}'s `r_eff = NA` to be a problem.
 #'
 #' @references

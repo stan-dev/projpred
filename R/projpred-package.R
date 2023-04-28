@@ -61,10 +61,9 @@
 #' which submodel has been selected at those steps of the forward search for
 #' which a percentage (of the maximum submodel size that the search is run up
 #' to) is printed. In general, however, we cannot recommend setting this global
-#' option to `TRUE` for `cv_varsel()` with `cv_method = "LOO"` and
-#' `validate_search = TRUE` or for `cv_varsel()` with `cv_method = "kfold"`
-#' (simply due to the amount of information that will be printed, but also due
-#' to the progress bar which will not work anymore as intended).
+#' option to `TRUE` for `cv_varsel()` with `validate_search = TRUE` (simply due
+#' to the amount of information that will be printed, but also due to the
+#' progress bar which will not work anymore as intended).
 #'
 #' The projection of the reference model onto a submodel can be run on multiple
 #' CPU cores in parallel (across the projected draws). This is powered by the
