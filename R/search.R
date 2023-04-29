@@ -164,7 +164,7 @@ search_L1 <- function(p_ref, refmodel, nterms_max, penalty, opt) {
     p_ref, nlist(x, weights = refmodel$wobs), refmodel$family,
     intercept = TRUE, ncol(x), penalty, opt
   )
-  solution_terms <- collapse_contrasts_solution_path(
+  solution_terms <- collapse_ranked_predictors(
     refmodel$formula, colnames(x)[search_path$solution_terms], data = fr
   )
   outdmins <- lapply(0:length(solution_terms), function(nterms) {
