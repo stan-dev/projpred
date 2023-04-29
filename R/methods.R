@@ -1280,12 +1280,12 @@ replace_population_names <- function(population_effects, nm_scheme) {
 # character vector of the same length which may be used in regular expressions.
 # Copied over from brms::escape_all() (GitHub commit
 # e42e8da64fc48919085fabd6cba40b7b86668f4b) with Paul Bürkner's consent.
-esc_chars <- function(x) {
-  specials <- c(".", "*", "+", "?", "^", "$", "(", ")", "[", "]", "|")
-  for (s in specials) {
-    x <- gsub(s, paste0("\\", s), x, fixed = TRUE)
+# Slightly refactored afterwards.
+esc_chars <- function(chr_vec) {
+  for (chr_spcl in c(".", "*", "+", "?", "^", "$", "(", ")", "[", "]", "|")) {
+    chr_vec <- gsub(chr_spcl, paste0("\\", chr_spcl), chr_vec, fixed = TRUE)
   }
-  x
+  return(chr_vec)
 }
 
 # Helper function for removing underscores in response category names (as done
