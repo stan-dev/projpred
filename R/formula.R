@@ -752,15 +752,15 @@ lhs <- function(x) {
 # Collapse "raw" predictor terms representing contrasts, dummy codings, or
 # polynomial terms into their corresponding original terms from a model formula.
 #
-# @param formula The model formula (from which the ranking in `path` was
-#   derived).
 # @param path Vector of ranked "raw" predictor terms ("raw" means that these
 #   terms may represent contrasts, dummy codings, or polynomial terms).
+# @param formula The model formula (from which the ranking in `path` was
+#   derived).
 # @param data The model data (from which the ranking in `path` was derived).
 #
 # @return A character vector of collapsed predictor terms (i.e., all of these
 #   returned predictor terms occur in `formula`).
-collapse_ranked_predictors <- function(formula, path, data) {
+collapse_ranked_predictors <- function(path, formula, data) {
   tt <- terms(formula)
   terms_ <- attr(tt, "term.labels")
   for (term in terms_) {
