@@ -498,8 +498,8 @@ trms_common <- c("xco.1", "xco.2", "xco.3", "xca.1", "xca.2",
 trms_grp <- c("(xco.1 | z.1)")
 trms_add <- c("s(s.1)") # , "s(s.2)", "s(s.3)"
 trms_common_spcl <- c("xco.1", "I(xco.1^2)",
-                      "exp(xco.2) * I(as.numeric(xco.3 > 0))", "xca.1", "xca.2",
-                      "offset(offs_col)")
+                      "exp(xco.2) * I(!as.logical(xco.3 > 0))", "xca.1",
+                      "xca.2", "offset(offs_col)")
 trms_universe <- unique(c(trms_common, trms_grp, trms_add, trms_common_spcl))
 trms_universe_split <- setdiff(trms_universe, "offset(offs_col)")
 # Handle interaction terms:
@@ -532,8 +532,8 @@ solterms_x <- c("xco.1", "xca.1")
 solterms_z <- c("(1 | z.1)", "(xco.1 | z.1)") # removing one of them later
 solterms_s <- c("s(s.1)") # , "s(s.2)"
 solterms_spcl <- c("xca.1", "xco.1", "I(xco.1^2)", "exp(xco.2)",
-                   "I(as.numeric(xco.3 > 0))",
-                   "exp(xco.2):I(as.numeric(xco.3 > 0))")
+                   "I(!as.logical(xco.3 > 0))",
+                   "exp(xco.2):I(!as.logical(xco.3 > 0))")
 
 ### Weights (observations) ------------------------------------------------
 
