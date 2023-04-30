@@ -436,9 +436,11 @@ refmodel_tester <- function(
                 grep("z\\.", colnames(drws), value = TRUE)),
         drop = FALSE
       ]
+      predictors_cont <- colnames(drws_beta_cont)
+      predictors_cont <- sub("(I\\(.*as\\.logical\\(.*\\)\\))TRUE", "\\1",
+                             predictors_cont)
       mm_cont <- model.matrix(
-        as.formula(paste("~",
-                         paste(colnames(drws_beta_cont), collapse = " + "))),
+        as.formula(paste("~", paste(predictors_cont, collapse = " + "))),
         data = data_expected
       )
       stopifnot(identical(c("(Intercept)", colnames(drws_beta_cont)),
@@ -748,14 +750,23 @@ outdmin_tester_trad <- function(
     sub_x_expected <- sub_x_expected[
       , colnames(sub_x_expected) != "(Intercept)", drop = FALSE
     ]
+    I_logic_excl <- grep("I\\(.*as\\.logical\\(.*\\)\\)FALSE",
+                         colnames(sub_x_expected), value = TRUE)
+    if (length(I_logic_excl) && from_vsel_L1_search) {
+      sub_x_expected <- sub_x_expected[
+        , setdiff(colnames(sub_x_expected), I_logic_excl), drop = FALSE
+      ]
+    }
     ncoefs <- ncol(sub_x_expected)
     if (from_vsel_L1_search) {
       # Unfortunately, model.matrix() uses terms() and there seems to be no way
       # to set `keep.order = TRUE` in that internal terms() call. Thus, we have
       # to reorder the columns manually:
-      if (length(solterms_vsel_L1_search) > 0) {
+      if (length(solterms_vsel_L1_search)) {
         terms_contr_expd <- lapply(solterms_vsel_L1_search, function(term_crr) {
           if (!is.factor(sub_data[[term_crr]])) {
+            term_crr <- sub("(I\\(.*as\\.logical\\(.*\\)\\))", "\\1TRUE",
+                            term_crr)
             return(term_crr)
           } else {
             return(paste0(term_crr, levels(sub_data[[term_crr]])[-1]))
@@ -854,8 +865,7 @@ outdmin_tester_trad <- function(
 
         x_to_test <- outdmin_totest[[j]]$x
         x_ch <- sub_x_expected
-        if (!identical(dimnames(x_to_test)[[2]],
-                       dimnames(x_ch)[[2]])) {
+        if (!identical(dimnames(x_to_test)[[2]], dimnames(x_ch)[[2]])) {
           # Try reversing the order of individual terms within ":" interaction
           # terms:
           dimnames(x_ch)[[2]][grep(":", dimnames(x_ch)[[2]])] <- revIA(
@@ -1071,7 +1081,6 @@ outdmin_tester_aug <- function(
     has_grp = formula_contains_group_terms(sub_formul[[1]]),
     has_add = formula_contains_additive_terms(sub_formul[[1]]),
     wobs_expected = wobs_tst,
-    solterms_vsel_L1_search = NULL,
     with_offs = FALSE,
     augdat_cats = NULL,
     allow_w_zero = FALSE,
@@ -1423,7 +1432,6 @@ outdmin_tester <- function(
       has_grp = has_grp,
       has_add = has_add,
       wobs_expected = wobs_expected,
-      solterms_vsel_L1_search = solterms_vsel_L1_search,
       with_offs = with_offs,
       augdat_cats = augdat_cats,
       allow_w_zero = allow_w_zero,

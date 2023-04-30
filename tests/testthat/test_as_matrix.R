@@ -76,14 +76,24 @@ test_that("as.matrix.projection() works", {
         paste0("xca.", xca_idx, "lvl", seq_len(nlvl_fix[xca_idx])[-1])
       )
     }
+    I_logic_trms <- grep("I\\(.*as\\.logical\\(.*\\)\\)", colnms_prjmat_expect,
+                         value = TRUE)
+    if (length(I_logic_trms)) {
+      colnms_prjmat_expect <- c(
+        setdiff(colnms_prjmat_expect, I_logic_trms),
+        unlist(lapply(I_logic_trms, function(I_logic_trms_i) {
+          paste0(I_logic_trms_i, "TRUE")
+        }))
+      )
+    }
     poly_trms <- grep("poly\\(.*\\)", colnms_prjmat_expect, value = TRUE)
-    if (length(poly_trms) > 0) {
+    if (length(poly_trms)) {
       poly_degree <- sub(".*(poly\\(.*\\)).*", "\\1", poly_trms)
       if (length(unique(poly_degree)) != 1) {
         stop("This test needs to be adapted. Info: ", tstsetup)
       }
       poly_degree <- unique(poly_degree)
-      poly_degree <- sub(".*,[[:blank:]]+(.*)\\)", "\\1", poly_degree)
+      poly_degree <- sub(".*,[[:blank:]]*(.*)\\)", "\\1", poly_degree)
       poly_degree <- as.integer(poly_degree)
       colnms_prjmat_expect <- c(
         setdiff(colnms_prjmat_expect, poly_trms),
@@ -181,7 +191,7 @@ test_that("as.matrix.projection() works", {
     s_nms <- sub("\\)$", "",
                  sub("^s\\(", "",
                      grep("^s\\(.*\\)$", solterms, value = TRUE)))
-    if (length(s_nms) > 0) {
+    if (length(s_nms)) {
       stopifnot(inherits(refmods[[tstsetup_ref]]$fit, "stanreg"))
       # Get the number of basis coefficients:
       s_info <- refmods[[tstsetup_ref]]$fit$jam$smooth
