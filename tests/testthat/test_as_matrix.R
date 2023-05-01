@@ -88,12 +88,14 @@ test_that("as.matrix.projection() works", {
     }
     poly_trms <- grep("poly\\(.*\\)", colnms_prjmat_expect, value = TRUE)
     if (length(poly_trms)) {
-      poly_degree <- sub(".*(poly\\(.*\\)).*", "\\1", poly_trms)
-      if (length(unique(poly_degree)) != 1) {
+      poly_degree <- sub(
+        "poly\\(.*,[[:blank:]]*([[:digit:]]+)[[:blank:]]*,.*\\)", "\\1",
+        poly_trms
+      )
+      poly_degree <- unique(poly_degree)
+      if (length(poly_degree) != 1) {
         stop("This test needs to be adapted. Info: ", tstsetup)
       }
-      poly_degree <- unique(poly_degree)
-      poly_degree <- sub(".*,[[:blank:]]*(.*)\\)", "\\1", poly_degree)
       poly_degree <- as.integer(poly_degree)
       colnms_prjmat_expect <- c(
         setdiff(colnms_prjmat_expect, poly_trms),
