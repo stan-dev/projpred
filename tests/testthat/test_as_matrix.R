@@ -86,24 +86,8 @@ test_that("as.matrix.projection() works", {
         }))
       )
     }
-    poly_trms <- grep("poly\\(.*\\)", colnms_prjmat_expect, value = TRUE)
-    if (length(poly_trms)) {
-      poly_degree <- sub(
-        "poly\\(.*,[[:blank:]]*([[:digit:]]+)[[:blank:]]*,.*\\)", "\\1",
-        poly_trms
-      )
-      poly_degree <- unique(poly_degree)
-      if (length(poly_degree) != 1) {
-        stop("This test needs to be adapted. Info: ", tstsetup)
-      }
-      poly_degree <- as.integer(poly_degree)
-      colnms_prjmat_expect <- c(
-        setdiff(colnms_prjmat_expect, poly_trms),
-        unlist(lapply(poly_trms, function(poly_trms_i) {
-          paste0(poly_trms_i, seq_len(poly_degree))
-        }))
-      )
-    }
+    colnms_prjmat_expect <- expand_poly(colnms_prjmat_expect,
+                                        info_str = tstsetup)
     if (pkg_crr == "brms") {
       if (fam_crr == "categ") {
         # Note: Here, we could also derive `yunq_norefcat` from

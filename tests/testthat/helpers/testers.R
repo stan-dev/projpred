@@ -769,19 +769,8 @@ outdmin_tester_trad <- function(
           if (!is.factor(sub_data[[term_crr]])) {
             term_crr <- sub("(I\\(.*as\\.logical\\(.*\\)\\))", "\\1TRUE",
                             term_crr)
-            poly_trm <- grep("poly\\(.*\\)", term_crr, value = TRUE)
-            if (length(poly_trm)) {
-              poly_degree <- sub(
-                "poly\\(.*,[[:blank:]]*([[:digit:]]+)[[:blank:]]*,.*\\)", "\\1",
-                poly_trm
-              )
-              poly_degree <- unique(poly_degree)
-              if (length(poly_degree) != 1) {
-                stop("This test needs to be adapted. Info: ", info_str)
-              }
-              poly_degree <- as.integer(poly_degree)
-              term_crr <- paste0(poly_trm, seq_len(poly_degree))
-            }
+            term_crr <- expand_poly(term_crr,
+                                    info_str = paste0(info_str, "__", term_crr))
             return(term_crr)
           } else {
             return(paste0(term_crr, levels(sub_data[[term_crr]])[-1]))
