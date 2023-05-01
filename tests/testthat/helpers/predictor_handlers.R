@@ -10,10 +10,10 @@ revIA <- function(trms) {
 # Expand poly() terms, e.g., `poly(x, 2, raw = TRUE)` to
 # `poly(x, 2, raw = TRUE)1` and `poly(x, 2, raw = TRUE)2`:
 expand_poly <- function(trms, info_str) {
-  poly_trms <- grep("poly\\(.*\\)", trms, value = TRUE)
+  poly_trms <- grep("poly[m]*\\(.*\\)", trms, value = TRUE)
   if (length(poly_trms)) {
     poly_degree <- sub(
-      "poly\\(.*,[[:blank:]]*([[:digit:]]+)[[:blank:]]*,.*\\)", "\\1",
+      "poly[m]*\\(.*,.*([[:digit:]]+).*", "\\1",
       poly_trms
     )
     poly_degree <- unique(poly_degree)

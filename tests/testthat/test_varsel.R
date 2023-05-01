@@ -830,7 +830,7 @@ test_that("for L1 search, `penalty` has an expected effect", {
     # the following code ensures that no categorical predictors and no poly()
     # terms get zero or infinite penalty.
     idx_cat <- grep("xca\\.", penal_possbl)
-    idx_poly <- grep("poly\\(", penal_possbl)
+    idx_poly <- grep("poly[m]*\\(", penal_possbl)
     # Two predictors without cost:
     idx_penal_0 <- head(setdiff(seq_along(penal_crr),
                                 c(idx_cat, idx_poly)),

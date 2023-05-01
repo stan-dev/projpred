@@ -62,7 +62,8 @@ test_that("as.matrix.projection() works", {
     colnms_prjmat_expect <- c(
       icpt_nm,
       grep("\\|", grep("x(co|ca)\\.[[:digit:]]", solterms, value = TRUE),
-           value = TRUE, invert = TRUE)
+           value = TRUE, invert = TRUE),
+      grep("noise", solterms, value = TRUE)
     )
     xca_idxs <- as.integer(
       sub("^xca\\.", "", grep("^xca\\.", colnms_prjmat_expect, value = TRUE))

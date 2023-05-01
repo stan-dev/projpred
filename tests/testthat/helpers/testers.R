@@ -439,7 +439,7 @@ refmodel_tester <- function(
       predictors_cont <- colnames(drws_beta_cont)
       predictors_cont <- sub("(I\\(.*as\\.logical\\(.*\\)\\))TRUE", "\\1",
                              predictors_cont)
-      predictors_cont <- unique(sub("(poly\\(.*\\))[[:digit:]]+", "\\1",
+      predictors_cont <- unique(sub("(poly[m]*\\(.*\\))[[:digit:]]+", "\\1",
                                     predictors_cont))
       mm_cont <- model.matrix(
         as.formula(paste("~", paste(predictors_cont, collapse = " + "))),
