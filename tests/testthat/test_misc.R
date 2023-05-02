@@ -87,7 +87,7 @@ test_that("rstanarm: special formulas work", {
     } else {
       expect_false(is.null(mf_spclformul), info = tstsetup)
     }
-    nms_spclformul <- grep("y_|xco|noise", names(mf_spclformul), value = TRUE)
+    nms_spclformul <- grep("y_|xco", names(mf_spclformul), value = TRUE)
 
     tstsetup_stdformul <- sub("\\.spclformul", ".stdformul", tstsetup)
     stopifnot(tstsetup_stdformul != tstsetup)
