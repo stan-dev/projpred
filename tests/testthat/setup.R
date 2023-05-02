@@ -506,7 +506,7 @@ if (use_polym) {
   trm_poly <- "poly(xco.1, 2, raw = TRUE)"
 }
 trms_common_spcl <- c(trm_poly,
-                      "exp(xco.2) * I(!as.logical(xco.3 > 0))", "xca.1",
+                      "sqrt(abs(xco.3)^2) * I(!as.logical(xco.3 > 0))", "xca.1",
                       "xca.2", "offset(offs_col)")
 trms_universe <- unique(c(trms_common, trms_grp, trms_add, trms_common_spcl))
 trms_universe_split <- setdiff(trms_universe, "offset(offs_col)")
@@ -539,8 +539,9 @@ if ("(xco.1 | z.1)" %in% trms_universe_split) {
 solterms_x <- c("xco.1", "xca.1")
 solterms_z <- c("(1 | z.1)", "(xco.1 | z.1)") # removing one of them later
 solterms_s <- c("s(s.1)") # , "s(s.2)"
-solterms_spcl <- c("xca.1", trm_poly, "exp(xco.2)", "I(!as.logical(xco.3 > 0))",
-                   "exp(xco.2):I(!as.logical(xco.3 > 0))")
+solterms_spcl <- c("xca.1", trm_poly,
+                   "sqrt(abs(xco.3)^2)", "I(!as.logical(xco.3 > 0))",
+                   "sqrt(abs(xco.3)^2):I(!as.logical(xco.3 > 0))")
 
 ### Weights (observations) ------------------------------------------------
 
