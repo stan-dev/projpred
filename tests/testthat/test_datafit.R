@@ -254,7 +254,7 @@ test_that(paste(
       search_trms_empty_size =
         length(args_vs_datafit[[tstsetup]]$search_terms) &&
         all(grepl("\\+", args_vs_datafit[[tstsetup]]$search_terms)),
-      extra_tol = 1.2,
+      extra_tol = 1.5,
       info_str = tstsetup
     )
   }

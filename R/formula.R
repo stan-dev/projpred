@@ -139,7 +139,9 @@ parse_additive_terms <- function(terms) {
 }
 
 make_function_regexp <- function(fname) {
-  return(paste0(fname, "\\(.+\\)"))
+  disallowed_prechars <- "[:alnum:]._"
+  return(paste0("(^", fname, "|", "[^", disallowed_prechars, "]+", fname, ")",
+                "\\(.+\\)"))
 }
 
 ## Because the formula can imply multiple or single response, in this function
