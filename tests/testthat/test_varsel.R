@@ -823,16 +823,26 @@ test_that("for L1 search, `penalty` has an expected effect", {
     len_penal <- length(penal_possbl)
     penal_crr <- rep(1, len_penal)
     stopifnot(len_penal >= 3)
-    idx_penal_0 <- c(1, 2) # A few variables without cost.
-    idx_penal_Inf <- c(3) # One variable with infinite penalty.
+    # TODO: This test should be extended to also test the case where a
+    # categorical predictor (more precisely, one of its dummy variables) or a
+    # poly() term (more precisely, one of its lower-order terms resulting from
+    # the expansion of the poly() term) gets zero or infinite penalty. For now,
+    # the following code ensures that no categorical predictors and no poly()
+    # terms get zero or infinite penalty.
+    idx_cat <- grep("xca\\.", penal_possbl)
+    idx_poly <- grep("poly[m]*\\(", penal_possbl)
+    # Two predictors without cost:
+    idx_penal_0 <- head(setdiff(seq_along(penal_crr),
+                                c(idx_cat, idx_poly)),
+                        2)
+    stopifnot(length(idx_penal_0) == 2)
+    # One predictor with infinite penalty:
+    idx_penal_Inf <- head(setdiff(seq_along(penal_crr),
+                                  c(idx_penal_0, idx_cat, idx_poly)),
+                          1)
+    stopifnot(length(idx_penal_Inf) == 1)
     penal_crr[idx_penal_0] <- 0
     penal_crr[idx_penal_Inf] <- Inf
-    # TODO: This test should be extended to also test the case where a
-    # categorical predictor (more precisely, one of its dummy variables) gets
-    # zero or infinite penalty. For now, the following check ensures that no
-    # categorical predictors get zero or infinite penalty:
-    stopifnot(all(grep("^xca\\.", penal_possbl) >= max(c(idx_penal_0,
-                                                         idx_penal_Inf))))
 
     vs_penal <- do.call(varsel, c(
       list(object = refmods[[args_vs_i$tstsetup_ref]],
@@ -852,6 +862,8 @@ test_that("for L1 search, `penalty` has an expected effect", {
     # Check that the variables with no cost are selected first and the ones
     # with infinite penalty last:
     solterms_penal <- vs_penal$solution_terms
+    solterms_penal <- sub("(I\\(.*as\\.logical\\(.*\\)\\))", "\\1TRUE",
+                          solterms_penal)
     expect_identical(solterms_penal[seq_along(idx_penal_0)],
                      penal_possbl[idx_penal_0],
                      info = tstsetup)

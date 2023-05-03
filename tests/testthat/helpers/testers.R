@@ -439,6 +439,8 @@ refmodel_tester <- function(
       predictors_cont <- colnames(drws_beta_cont)
       predictors_cont <- sub("(I\\(.*as\\.logical\\(.*\\)\\))TRUE", "\\1",
                              predictors_cont)
+      predictors_cont <- unique(sub("(poly[m]*\\(.*\\))[[:digit:]]+", "\\1",
+                                    predictors_cont))
       mm_cont <- model.matrix(
         as.formula(paste("~", paste(predictors_cont, collapse = " + "))),
         data = data_expected
@@ -767,6 +769,8 @@ outdmin_tester_trad <- function(
           if (!is.factor(sub_data[[term_crr]])) {
             term_crr <- sub("(I\\(.*as\\.logical\\(.*\\)\\))", "\\1TRUE",
                             term_crr)
+            term_crr <- expand_poly(term_crr,
+                                    info_str = paste0(info_str, "__", term_crr))
             return(term_crr)
           } else {
             return(paste0(term_crr, levels(sub_data[[term_crr]])[-1]))

@@ -87,10 +87,7 @@ test_that("rstanarm: special formulas work", {
     } else {
       expect_false(is.null(mf_spclformul), info = tstsetup)
     }
-    nms_spclformul <- setdiff(
-      grep("y_|xco", names(mf_spclformul), value = TRUE),
-      "xco.1"
-    )
+    nms_spclformul <- grep("y_|xco", names(mf_spclformul), value = TRUE)
 
     tstsetup_stdformul <- sub("\\.spclformul", ".stdformul", tstsetup)
     stopifnot(tstsetup_stdformul != tstsetup)
@@ -102,10 +99,7 @@ test_that("rstanarm: special formulas work", {
       } else {
         expect_false(is.null(mf_stdformul), info = tstsetup_stdformul)
       }
-      nms_stdformul <- setdiff(
-        grep("y_|xco", names(mf_stdformul), value = TRUE),
-        "xco.1"
-      )
+      nms_stdformul <- grep("y_|xco", names(mf_stdformul), value = TRUE)
       expect_equal(mf_spclformul[, setdiff(names(mf_spclformul),
                                            nms_spclformul)],
                    mf_stdformul[, setdiff(names(mf_stdformul),

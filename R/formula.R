@@ -749,12 +749,18 @@ lhs <- function(x) {
   if (length(x) == 3L) update(x, . ~ 1) else NULL
 }
 
-## collapse a list of terms including contrasts
-## @param formula model's formula
-## @param path list of terms possibly including contrasts
-## @param data model's data
-## @return the updated list of terms replacing the contrasts with the term name
-collapse_contrasts_solution_path <- function(formula, path, data) {
+# Collapse "raw" predictor terms representing contrasts, dummy codings, or
+# polynomial terms into their corresponding original terms from a model formula.
+#
+# @param path Vector of ranked "raw" predictor terms ("raw" means that these
+#   terms may represent contrasts, dummy codings, or polynomial terms).
+# @param formula The model formula (from which the ranking in `path` was
+#   derived).
+# @param data The model data (from which the ranking in `path` was derived).
+#
+# @return A character vector of collapsed predictor terms (i.e., all of these
+#   returned predictor terms occur in `formula`).
+collapse_ranked_predictors <- function(path, formula, data) {
   tt <- terms(formula)
   terms_ <- attr(tt, "term.labels")
   for (term in terms_) {
@@ -764,7 +770,8 @@ collapse_contrasts_solution_path <- function(formula, path, data) {
     # convenient to let users specify contrasts directly. At that occasion,
     # contrasts should also be tested thoroughly (not done until now).
     x <- model.matrix(as.formula(paste("~ 1 +", term)), data = data)
-    if (length(attr(x, "contrasts")) == 0) {
+    if (length(attr(x, "contrasts")) == 0 &&
+        !grepl("^poly[m]*\\(.+\\)$", term)) {
       next
     }
     x <- x[, colnames(x) != "(Intercept)", drop = FALSE]

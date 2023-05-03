@@ -136,12 +136,15 @@ run_additive <- TRUE
 # Use a factor or an integer response for ordinal and categorical families?:
 use_fac <- TRUE
 
+# Use polym() instead of poly()?:
+use_polym <- FALSE
+
 source(testthat::test_path("helpers", "unlist_cust.R"), local = TRUE)
 source(testthat::test_path("helpers", "testers.R"), local = TRUE)
 source(testthat::test_path("helpers", "args.R"), local = TRUE)
 source(testthat::test_path("helpers", "getters.R"), local = TRUE)
 source(testthat::test_path("helpers", "formul_handlers.R"), local = TRUE)
-source(testthat::test_path("helpers", "revIA.R"), local = TRUE)
+source(testthat::test_path("helpers", "predictor_handlers.R"), local = TRUE)
 source(testthat::test_path("helpers", "dummies.R"), local = TRUE)
 
 # Note: The following `mod_nms` refer to *generalized* (linear/additive,
@@ -497,7 +500,12 @@ trms_common <- c("xco.1", "xco.2", "xco.3", "xca.1", "xca.2",
                  "offset(offs_col)")
 trms_grp <- c("(xco.1 | z.1)")
 trms_add <- c("s(s.1)") # , "s(s.2)", "s(s.3)"
-trms_common_spcl <- c("xco.1", "I(xco.1^2)",
+if (use_polym) {
+  trm_poly <- "polym(xco.1, degree = 2, raw = TRUE)"
+} else {
+  trm_poly <- "poly(xco.1, 2, raw = TRUE)"
+}
+trms_common_spcl <- c(trm_poly,
                       "exp(xco.2) * I(!as.logical(xco.3 > 0))", "xca.1",
                       "xca.2", "offset(offs_col)")
 trms_universe <- unique(c(trms_common, trms_grp, trms_add, trms_common_spcl))
@@ -531,8 +539,7 @@ if ("(xco.1 | z.1)" %in% trms_universe_split) {
 solterms_x <- c("xco.1", "xca.1")
 solterms_z <- c("(1 | z.1)", "(xco.1 | z.1)") # removing one of them later
 solterms_s <- c("s(s.1)") # , "s(s.2)"
-solterms_spcl <- c("xca.1", "xco.1", "I(xco.1^2)", "exp(xco.2)",
-                   "I(!as.logical(xco.3 > 0))",
+solterms_spcl <- c("xca.1", trm_poly, "exp(xco.2)", "I(!as.logical(xco.3 > 0))",
                    "exp(xco.2):I(!as.logical(xco.3 > 0))")
 
 ### Weights (observations) ------------------------------------------------
