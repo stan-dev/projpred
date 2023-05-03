@@ -119,10 +119,13 @@ context("print()")
 test_that("`x` of class \"vselsummary\" (based on varsel()) works", {
   skip_if_not(run_vs)
   for (tstsetup in names(smmrys_vs)) {
-    expect_output(
-      print_obj <- print(smmrys_vs[[tstsetup]]),
-      "Family:.*Link function:.*Formula:.*Observations:",
-      info = tstsetup
+    expect_message(
+      expect_output(
+        print_obj <- print(smmrys_vs[[tstsetup]]),
+        "Family:.*Link function:.*Formula:.*Observations:",
+        info = tstsetup
+      ),
+      NA
     )
     expect_identical(print_obj, smmrys_vs[[tstsetup]], info = tstsetup)
     if (run_snaps) {
@@ -141,10 +144,19 @@ test_that("`x` of class \"vselsummary\" (based on varsel()) works", {
 test_that("`x` of class \"vselsummary\" (based on cv_varsel())  works", {
   skip_if_not(run_cvvs)
   for (tstsetup in names(smmrys_cvvs)) {
-    expect_output(
-      print_obj <- print(smmrys_cvvs[[tstsetup]]),
-      "Family:.*Link function:.*Formula:.*Observations:",
-      info = tstsetup
+    args_crr <- args_cvvs[[args_smmry_cvvs[[tstsetup]]$tstsetup_vsel]]
+    if (isFALSE(args_crr$validate_search)) {
+      mssg_expected <- NA
+    } else {
+      mssg_expected <- "Column.*contains the full-data predictor ranking"
+    }
+    expect_message(
+      expect_output(
+        print_obj <- print(smmrys_cvvs[[tstsetup]]),
+        "Family:.*Link function:.*Formula:.*Observations:",
+        info = tstsetup
+      ),
+      mssg_expected
     )
     expect_identical(print_obj, smmrys_cvvs[[tstsetup]], info = tstsetup)
     if (run_snaps) {
@@ -218,7 +230,7 @@ test_that("`x` of class \"vsel\" (created by varsel()) works", {
   skip_if_not(run_vs)
   for (tstsetup in grep("\\.brnll\\.", names(vss), value = TRUE)) {
     plot_obj <- plot(vss[[tstsetup]], nterms_max = nterms_avail$single)
-    expect_s3_class(plot_obj, "ggplot")
+    expect_s3_class(plot_obj, c("gg", "ggplot"))
     expect_visible(plot_obj, label = tstsetup)
   }
 })
@@ -227,7 +239,7 @@ test_that("`x` of class \"vsel\" (created by cv_varsel()) works", {
   skip_if_not(run_cvvs)
   for (tstsetup in grep("\\.brnll\\.", names(cvvss), value = TRUE)) {
     plot_obj <- plot(cvvss[[tstsetup]], nterms_max = nterms_avail$single)
-    expect_s3_class(plot_obj, "ggplot")
+    expect_s3_class(plot_obj, c("gg", "ggplot"))
     expect_visible(plot_obj, label = tstsetup)
   }
 })
@@ -330,3 +342,217 @@ test_that("`stat` works", {
     }
   }
 })
+
+# ranking() ---------------------------------------------------------------
+
+context("ranking()")
+
+test_that("`object` of class `vsel` (created by varsel()) works", {
+  skip_if_not(run_vs)
+  for (tstsetup in names(rks_vs)) {
+    tstsetup_vs <- args_rk_vs[[tstsetup]]$tstsetup_vsel
+    ranking_tester(
+      rks_vs[[tstsetup]],
+      fulldata_expected = vss[[tstsetup_vs]][["solution_terms"]],
+      foldwise_expected = vss[[tstsetup_vs]][["solution_terms_cv"]],
+      info_str = tstsetup
+    )
+  }
+})
+
+test_that("`object` of class `vsel` (created by cv_varsel()) works", {
+  skip_if_not(run_cvvs)
+  for (tstsetup in names(rks_cvvs)) {
+    tstsetup_cvvs <- args_rk_cvvs[[tstsetup]]$tstsetup_vsel
+    ranking_tester(
+      rks_cvvs[[tstsetup]],
+      fulldata_expected = cvvss[[tstsetup_cvvs]][["solution_terms"]],
+      foldwise_expected = cvvss[[tstsetup_cvvs]][["solution_terms_cv"]],
+      info_str = tstsetup
+    )
+  }
+})
+
+# props() -----------------------------------------------------------------
+
+context("props()")
+
+test_that("`object` of class `ranking` (based on varsel() output) fails", {
+  skip_if_not(run_vs)
+  expect_length(prs_vs, 0)
+})
+
+test_that(paste(
+  "`object` of class `ranking` (based on cv_varsel() output) works (if",
+  "appropriate)"
+), {
+  skip_if_not(run_cvvs)
+  for (tstsetup in names(prs_cvvs)) {
+    nterms_max_expected_crr <- args_pr_cvvs[[tstsetup]][["nterms_max"]]
+    if (is.null(nterms_max_expected_crr)) {
+      tstsetup_cvvs <- args_pr_cvvs[[tstsetup]]$tstsetup_vsel
+      nterms_max_expected_crr <- args_cvvs[[tstsetup_cvvs]][["nterms_max"]]
+    }
+    props_tester(
+      prs_cvvs[[tstsetup]],
+      cumulate_expected = args_pr_cvvs[[tstsetup]][["cumulate"]],
+      nterms_max_expected = nterms_max_expected_crr,
+      cnms_expected = cvvss[[tstsetup_cvvs]][["solution_terms"]],
+      info_str = tstsetup
+    )
+  }
+})
+
+test_that("props.vsel() is a shortcut", {
+  skip_if_not(run_cvvs)
+  for (tstsetup in names(prs_cvvs)) {
+    args_pr_cvvs_i <- args_pr_cvvs[[tstsetup]]
+    pr_from_vsel <- do.call(props, c(
+      list(object = cvvss[[args_pr_cvvs_i$tstsetup_vsel]]),
+      excl_nonargs(args_pr_cvvs_i)
+    ))
+    expect_identical(pr_from_vsel, prs_cvvs[[tstsetup]], info = tstsetup)
+  }
+})
+
+# Needed to clean up the workspace afterwards:
+ls_bu <- ls()
+
+ntrms <- 9L
+rk_fdata <- rev(head(letters, ntrms))
+rk_fwise <- do.call(rbind, lapply(seq_len(ntrms), function(idx_trm) {
+  c(tail(rk_fdata, -idx_trm), head(rk_fdata, idx_trm))
+}))
+rk <- structure(
+  list(fulldata = rk_fdata,
+       foldwise = rk_fwise),
+  class = "ranking"
+)
+# With `cumulate = FALSE`:
+pr_cF <- props(rk)
+# With `cumulate = TRUE`:
+pr_cT <- props(rk, cumulate = TRUE)
+
+test_that("`nterms_max = 0` fails", {
+  expect_error(props(rk, nterms_max = 0), "Needing `nterms_max >= 1`")
+})
+
+test_that("`cumulate = TRUE` works", {
+  pr_cT_ch <- structure(apply(pr_cF, 2, cumsum),
+                        class = c("cumulprops", "props"))
+  rownames(pr_cT_ch) <- paste0("<=", seq_len(nrow(pr_cT_ch)))
+  expect_identical(pr_cT, pr_cT_ch)
+})
+
+test_that("ranking proportions are computed correctly", {
+  # With `cumulate = FALSE`:
+  props_tester(pr_cF, nterms_max_expected = ntrms, cnms_expected = rk_fdata,
+               info_str = "cumulate = FALSE")
+  expect_true(all(pr_cF == 1 / ntrms), info = "cumulate = FALSE")
+  expect_true(all(rowSums(pr_cF) == 1), info = "cumulate = FALSE")
+  expect_true(all(colSums(pr_cF) == 1), info = "cumulate = FALSE")
+
+  # With `cumulate = TRUE`:
+  props_tester(pr_cT, cumulate_expected = TRUE, nterms_max_expected = ntrms,
+               cnms_expected = rk_fdata, info_str = "cumulate = TRUE")
+  pr_cT_expected <- matrix(1:ntrms / ntrms, nrow = ntrms, ncol = ntrms)
+  class(pr_cT_expected) <- c("cumulprops", "props")
+  expect_equal(pr_cT, pr_cT_expected, check.attributes = FALSE,
+               tolerance = .Machine$double.eps, info = "cumulate = TRUE")
+  has_1_colwise <- all(apply(pr_cT, 2, function(x_col) 1 %in% x_col))
+  expect_true(has_1_colwise, info = "cumulate = TRUE")
+})
+
+# Clean up the workspace:
+rm(list = setdiff(ls(), ls_bu))
+
+# plot.props() ------------------------------------------------------------
+
+context("plot.props()")
+
+test_that("`x` of class `props` works", {
+  skip_if_not(run_cvvs)
+  for (tstsetup in names(plotprs)) {
+    expect_s3_class(plotprs[[tstsetup]], c("gg", "ggplot"))
+    expect_visible(plotprs[[tstsetup]], label = tstsetup)
+    if (run_snaps) {
+      vdiffr::expect_doppelganger(tstsetup, plotprs[[tstsetup]])
+    }
+  }
+})
+
+test_that("plot.ranking() is a shortcut", {
+  skip_if_not(run_cvvs)
+  for (tstsetup in names(plotprs)) {
+    args_plotpr_i <- args_plotpr[[tstsetup]]
+    plotpr_from_rk <- do.call(plot, c(
+      list(x = rks_cvvs[[args_plotpr_i$tstsetup_rk]]),
+      excl_nonargs(args_plotpr_i),
+      excl_nonargs(args_pr_cvvs[[args_plotpr_i$tstsetup_pr]])
+    ))
+    expect_s3_class(plotpr_from_rk, c("gg", "ggplot"))
+    expect_visible(plotpr_from_rk, label = tstsetup)
+    ### We are doing the comparison via vdiffr's snapshots only, because that is
+    ### much quicker than applying expect_identical() to the ggplot objects:
+    # expect_identical(plotpr_from_rk, plotprs[[tstsetup]], info = tstsetup)
+    if (run_snaps) {
+      vdiffr::expect_doppelganger(tstsetup, plotpr_from_rk)
+    }
+    ###
+  }
+})
+
+# Needed to clean up the workspace afterwards:
+ls_bu <- ls()
+
+ntrms <- 20L
+pr_dummy <- matrix(seq(0, 1, length.out = ntrms^2), nrow = ntrms, ncol = ntrms,
+                   dimnames = list("size" = as.character(seq_len(ntrms)),
+                                   "predictor" = paste0("x", seq_len(ntrms))))
+class(pr_dummy) <- "props"
+prc_dummy <- pr_dummy
+rownames(prc_dummy) <- paste0("<=", rownames(pr_dummy))
+class(prc_dummy) <- c("cumulprops", class(pr_dummy))
+
+plotpr_dummy <- plot(pr_dummy)
+plotprc_dummy <- plot(prc_dummy)
+
+test_that("color gradient behaves as expected", {
+  expect_s3_class(plotpr_dummy, c("gg", "ggplot"))
+  expect_visible(plotpr_dummy)
+  expect_s3_class(plotprc_dummy, c("gg", "ggplot"))
+  expect_visible(plotprc_dummy)
+  if (run_snaps) {
+    vdiffr::expect_doppelganger("plotpr_dummy", plotpr_dummy)
+    vdiffr::expect_doppelganger("plotprc_dummy", plotprc_dummy)
+  }
+})
+
+test_that("`text_angle` works", {
+  plotpr_dummy_angle <- plot(pr_dummy, text_angle = 60)
+  plotprc_dummy_angle <- plot(prc_dummy, text_angle = 60)
+  expect_s3_class(plotpr_dummy_angle, c("gg", "ggplot"))
+  expect_visible(plotpr_dummy_angle)
+  expect_s3_class(plotprc_dummy_angle, c("gg", "ggplot"))
+  expect_visible(plotprc_dummy_angle)
+  if (run_snaps) {
+    vdiffr::expect_doppelganger("plotpr_dummy_angle", plotpr_dummy_angle)
+    vdiffr::expect_doppelganger("plotprc_dummy_angle", plotprc_dummy_angle)
+  }
+})
+
+test_that("the ggplot can be modified", {
+  plotpr_dummy_mod <- plotpr_dummy + theme(legend.position = "none")
+  plotprc_dummy_mod <- plotprc_dummy + theme(legend.position = "none")
+  expect_s3_class(plotpr_dummy_mod, c("gg", "ggplot"))
+  expect_visible(plotpr_dummy_mod)
+  expect_s3_class(plotprc_dummy_mod, c("gg", "ggplot"))
+  expect_visible(plotprc_dummy_mod)
+  if (run_snaps) {
+    vdiffr::expect_doppelganger("plotpr_dummy_mod", plotpr_dummy_mod)
+    vdiffr::expect_doppelganger("plotprc_dummy_mod", plotprc_dummy_mod)
+  }
+})
+
+# Clean up the workspace:
+rm(list = setdiff(ls(), ls_bu))

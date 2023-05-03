@@ -42,9 +42,9 @@
 #'   this seed is used for clustering the reference model's posterior draws (if
 #'   `!is.null(nclusters)` or `!is.null(nclusters_pred)`), for subsampling LOO
 #'   CV folds (if `nloo` is smaller than the number of observations), for
-#'   sampling the folds in K-fold CV, and for drawing new group-level effects
-#'   when predicting from a multilevel submodel (however, not yet in case of a
-#'   GAMM).
+#'   sampling the folds in \eqn{K}-fold CV, and for drawing new group-level
+#'   effects when predicting from a multilevel submodel (however, not yet in
+#'   case of a GAMM).
 #'
 #' @inherit varsel details return
 #'
@@ -89,16 +89,17 @@
 #'   # example; this is not recommended in general):
 #'   fit <- rstanarm::stan_glm(
 #'     y ~ X1 + X2 + X3 + X4 + X5, family = gaussian(), data = dat_gauss,
-#'     QR = TRUE, chains = 2, iter = 500, refresh = 0, seed = 9876
+#'     QR = TRUE, chains = 2, iter = 1000, refresh = 0, seed = 9876
 #'   )
 #'
-#'   # Run cv_varsel() (with small values for `nterms_max`, `nclusters`, and
-#'   # `nclusters_pred`, but only for the sake of speed in this example; this is
-#'   # not recommended in general):
-#'   cvvs <- cv_varsel(fit, nterms_max = 3, nclusters = 5, nclusters_pred = 10,
-#'                     seed = 5555)
+#'   # Run cv_varsel() (with small values for `K`, `nterms_max`, `nclusters`,
+#'   # and `nclusters_pred`, but only for the sake of speed in this example;
+#'   # this is not recommended in general):
+#'   cvvs <- cv_varsel(fit, cv_method = "kfold", K = 2, nterms_max = 3,
+#'                     nclusters = 5, nclusters_pred = 10, seed = 5555)
 #'   # Now see, for example, `?print.vsel`, `?plot.vsel`, `?suggest_size.vsel`,
-#'   # and `?solution_terms.vsel` for possible post-processing functions.
+#'   # `?solution_terms.vsel`, and `?ranking` for possible post-processing
+#'   # functions.
 #' }
 #'
 #' @export
@@ -201,24 +202,9 @@ cv_varsel.refmodel <- function(
     )
     verb_out("-----", verbose = verbose)
     ce_out <- rep(NA_real_, length(search_path_full_data$solution_terms) + 1L)
-
-    # Create `pct_solution_terms_cv`, a summary table of the fold-wise solution
-    # paths. For the column names (and therefore the order of the solution terms
-    # in the columns), the solution path from the full-data search is used. Note
-    # that the following code assumes that all CV folds have equal weight.
-    pct_solution_terms_cv <- cbind(
-      size = seq_len(ncol(sel_cv$solution_terms_cv)),
-      do.call(cbind, lapply(
-        setNames(nm = search_path_full_data$solution_terms),
-        function(soltrm_k) {
-          colMeans(sel_cv$solution_terms_cv == soltrm_k, na.rm = TRUE)
-        }
-      ))
-    )
   } else {
     search_path_full_data <- sel_cv$search_path
     ce_out <- sel_cv$ce
-    pct_solution_terms_cv <- NULL
   }
 
   # Defined here for `nobs_test` later:
@@ -240,7 +226,7 @@ cv_varsel.refmodel <- function(
               nobs_train = refmodel$nobs,
               search_path = search_path_full_data,
               solution_terms = search_path_full_data$solution_terms,
-              pct_solution_terms_cv,
+              solution_terms_cv = sel_cv$solution_terms_cv,
               ce = ce_out,
               type_test = cv_method,
               y_wobs_test,

@@ -142,6 +142,7 @@ source(testthat::test_path("helpers", "args.R"), local = TRUE)
 source(testthat::test_path("helpers", "getters.R"), local = TRUE)
 source(testthat::test_path("helpers", "formul_handlers.R"), local = TRUE)
 source(testthat::test_path("helpers", "revIA.R"), local = TRUE)
+source(testthat::test_path("helpers", "dummies.R"), local = TRUE)
 
 # Note: The following `mod_nms` refer to *generalized* (linear/additive,
 # multilevel) models. This is due to history (when these tests were written,
@@ -499,6 +500,32 @@ trms_add <- c("s(s.1)") # , "s(s.2)", "s(s.3)"
 trms_common_spcl <- c("xco.1", "I(xco.1^2)",
                       "exp(xco.2) * I(as.numeric(xco.3 > 0))", "xca.1", "xca.2",
                       "offset(offs_col)")
+trms_universe <- unique(c(trms_common, trms_grp, trms_add, trms_common_spcl))
+trms_universe_split <- setdiff(trms_universe, "offset(offs_col)")
+# Handle interaction terms:
+stopifnot(!any(grepl(":", trms_universe_split)))
+trms_universe_split_IA <- grep("\\*", trms_universe_split, value = TRUE)
+if (length(trms_universe_split_IA)) {
+  trms_universe_split_noIA <- setdiff(trms_universe_split,
+                                      trms_universe_split_IA)
+  # Replace " * " in interaction terms by ":":
+  trms_universe_split_IA <- gsub(" \\* ", ":", trms_universe_split_IA)
+  # Add main effects from interaction terms:
+  trms_universe_split_noIA <- union(
+    trms_universe_split_noIA,
+    unlist(strsplit(trms_universe_split_IA, split = ":"))
+  )
+  trms_universe_split <- c(trms_universe_split_noIA, trms_universe_split_IA)
+}
+# Add lower-order group-level terms:
+if ("(xco.1 | z.1)" %in% trms_universe_split) {
+  trms_universe_split <- union(trms_universe_split, "(1 | z.1)")
+}
+# Ensure that for all terms on the left-hand side of the `|` character in
+# group-level terms, corresponding population-level terms exist:
+if ("(xco.1 | z.1)" %in% trms_universe_split) {
+  trms_universe_split <- union(trms_universe_split, "xco.1")
+}
 
 # Solution terms for project()-ing from `"refmodel"`s:
 solterms_x <- c("xco.1", "xca.1")
@@ -858,6 +885,9 @@ stats_tst <- list(
 )
 type_tst <- c("mean", "lower", "upper", "se")
 
+cumulate_tst <- as.list(setNames(nm = c(FALSE, TRUE)))
+names(cumulate_tst) <- paste0("cu", names(cumulate_tst))
+
 ### nterms ----------------------------------------------------------------
 
 ntermss <- sapply(mod_nms, function(mod_nm) {
@@ -889,6 +919,11 @@ nterms_avail <- c(nterms_avail, list(
 nterms_max_smmry <- list(
   default_nterms_max_smmry = NULL,
   halfway = nterms_max_tst %/% 2L
+)
+
+nterms_max_pr <- list(
+  default_nterms_max_pr = list(),
+  halfway = list(nterms_max = nterms_max_tst %/% 2L)
 )
 
 ## Reference model --------------------------------------------------------
@@ -1030,7 +1065,8 @@ if (run_vs) {
         list(object = refmods[[args_vs_i$tstsetup_ref]]),
         excl_nonargs(args_vs_i)
       )),
-      warn_expected
+      warn_expected,
+      info = args_vs_i$tstsetup_ref
     )
     return(vs_out)
   })
@@ -1270,7 +1306,8 @@ if (run_prj) {
         list(object = refmods[[args_prj_i$tstsetup_ref]]),
         excl_nonargs(args_prj_i)
       )),
-      warn_expected
+      warn_expected,
+      info = args_prj_i$tstsetup_ref
     )
     return(prj_out)
   })
@@ -1509,7 +1546,7 @@ cre_args_smmry_vsel <- function(args_obj) {
         lapply(resp_oscale_tst, function(resp_oscale_crr) {
           if (isFALSE(resp_oscale_crr$resp_oscale) &&
               any(setdiff(stats_binom, stats_common) %in% stats_crr$stats)) {
-            return("REMOVE THIS DUMMY ENTRY")
+            return(dummy_glob)
           }
           return(c(
             nlist(tstsetup_vsel), only_nonargs(args_obj[[tstsetup_vsel]]),
@@ -1527,7 +1564,7 @@ cre_args_smmry_vsel <- function(args_obj) {
 if (run_vs) {
   args_smmry_vs <- cre_args_smmry_vsel(args_vs)
   args_smmry_vs <- unlist_cust(args_smmry_vs)
-  args_smmry_vs <- rm_dummies_unlisted(args_smmry_vs)
+  args_smmry_vs <- rm_dummies(args_smmry_vs)
 
   smmrys_vs <- lapply(args_smmry_vs, function(args_smmry_vs_i) {
     if (any(c("rmse", "auc") %in% args_smmry_vs_i$stats)) {
@@ -1548,7 +1585,7 @@ if (run_vs) {
 if (run_cvvs) {
   args_smmry_cvvs <- cre_args_smmry_vsel(args_cvvs)
   args_smmry_cvvs <- unlist_cust(args_smmry_cvvs)
-  args_smmry_cvvs <- rm_dummies_unlisted(args_smmry_cvvs)
+  args_smmry_cvvs <- rm_dummies(args_smmry_cvvs)
 
   smmrys_cvvs <- lapply(args_smmry_cvvs, function(args_smmry_cvvs_i) {
     if (any(c("rmse", "auc") %in% args_smmry_cvvs_i$stats)) {
@@ -1564,11 +1601,139 @@ if (run_cvvs) {
   })
 }
 
+## ranking() --------------------------------------------------------------
+
+### varsel() --------------------------------------------------------------
+
+if (run_vs) {
+  args_rk_vs <- lapply(setNames(nm = names(vss)), function(tstsetup_vsel) {
+    return(c(
+      nlist(tstsetup_vsel), only_nonargs(args_vs[[tstsetup_vsel]])
+    ))
+  })
+  args_rk_vs <- unlist_cust(args_rk_vs)
+
+  rks_vs <- lapply(args_rk_vs, function(args_rk_vs_i) {
+    do.call(ranking, c(
+      list(object = vss[[args_rk_vs_i$tstsetup_vsel]]),
+      excl_nonargs(args_rk_vs_i)
+    ))
+  })
+}
+
+### cv_varsel() -----------------------------------------------------------
+
+if (run_cvvs) {
+  args_rk_cvvs <- lapply(setNames(nm = names(cvvss)), function(tstsetup_vsel) {
+    return(c(
+      nlist(tstsetup_vsel), only_nonargs(args_cvvs[[tstsetup_vsel]])
+    ))
+  })
+  args_rk_cvvs <- unlist_cust(args_rk_cvvs)
+
+  rks_cvvs <- lapply(args_rk_cvvs, function(args_rk_cvvs_i) {
+    do.call(ranking, c(
+      list(object = cvvss[[args_rk_cvvs_i$tstsetup_vsel]]),
+      excl_nonargs(args_rk_cvvs_i)
+    ))
+  })
+}
+
+## props() ----------------------------------------------------------------
+
+err_no_foldwise_rk <- "no fold-wise predictor rankings"
+
+### varsel() --------------------------------------------------------------
+
+if (run_vs) {
+  args_pr_vs <- lapply(setNames(nm = names(rks_vs)), function(tstsetup_rk) {
+    return(c(
+      nlist(tstsetup_rk), only_nonargs(args_rk_vs[[tstsetup_rk]])
+    ))
+  })
+  args_pr_vs <- unlist_cust(args_pr_vs)
+
+  prs_vs <- lapply(args_pr_vs, function(args_pr_vs_i) {
+    err_expected <- err_no_foldwise_rk
+    expect_error(
+      do.call(props, c(
+        list(object = rks_vs[[args_pr_vs_i$tstsetup_rk]]),
+        excl_nonargs(args_pr_vs_i)
+      )),
+      err_expected,
+      info = args_pr_vs_i$tstsetup_rk
+    )
+    return(dummy_glob)
+  })
+  keep_prs_vs <- rm_dummies(prs_vs, return_logical = TRUE)
+  prs_vs <- prs_vs[keep_prs_vs]
+  args_pr_vs <- args_pr_vs[keep_prs_vs]
+}
+
+### cv_varsel() -----------------------------------------------------------
+
+if (run_cvvs) {
+  args_pr_cvvs <- lapply(setNames(nm = names(rks_cvvs)), function(tstsetup_rk) {
+    lapply(cumulate_tst, function(cumulate_crr) {
+      lapply(nterms_max_pr, function(nterms_crr) {
+        return(c(
+          nlist(tstsetup_rk), only_nonargs(args_rk_cvvs[[tstsetup_rk]]),
+          list(cumulate = cumulate_crr),
+          nterms_crr
+        ))
+      })
+    })
+  })
+  args_pr_cvvs <- unlist_cust(args_pr_cvvs)
+
+  prs_cvvs <- lapply(args_pr_cvvs, function(args_pr_cvvs_i) {
+    if (isFALSE(args_cvvs[[args_pr_cvvs_i$tstsetup_vsel]]$validate_search)) {
+      err_expected <- err_no_foldwise_rk
+    } else {
+      err_expected <- NA
+    }
+    expect_error(
+      pr_out <- do.call(props, c(
+        list(object = rks_cvvs[[args_pr_cvvs_i$tstsetup_rk]]),
+        excl_nonargs(args_pr_cvvs_i)
+      )),
+      err_expected,
+      info = args_pr_cvvs_i$tstsetup_rk
+    )
+    if (is.na(err_expected)) {
+      return(pr_out)
+    } else {
+      return(dummy_glob)
+    }
+  })
+  keep_prs_cvvs <- rm_dummies(prs_cvvs, return_logical = TRUE)
+  prs_cvvs <- prs_cvvs[keep_prs_cvvs]
+  args_pr_cvvs <- args_pr_cvvs[keep_prs_cvvs]
+}
+
+## plot.props -------------------------------------------------------------
+
+if (run_cvvs) {
+  args_plotpr <- lapply(setNames(nm = names(prs_cvvs)), function(tstsetup_pr) {
+    return(c(
+      nlist(tstsetup_pr), only_nonargs(args_pr_cvvs[[tstsetup_pr]])
+    ))
+  })
+  args_plotpr <- unlist_cust(args_plotpr)
+
+  plotprs <- lapply(args_plotpr, function(args_plotpr_i) {
+    do.call(plot, c(
+      list(x = prs_cvvs[[args_plotpr_i$tstsetup_pr]]),
+      excl_nonargs(args_plotpr_i)
+    ))
+  })
+}
+
 ## Output names -----------------------------------------------------------
 
 vsel_nms <- c(
   "refmodel", "nobs_train", "search_path", "solution_terms",
-  "pct_solution_terms_cv", "ce", "type_test", "y_wobs_test", "nobs_test",
+  "solution_terms_cv", "ce", "type_test", "y_wobs_test", "nobs_test",
   "summaries", "nterms_all", "nterms_max", "method", "cv_method", "K",
   "validate_search", "clust_used_search", "clust_used_eval", "nprjdraws_search",
   "nprjdraws_eval"
@@ -1577,15 +1742,15 @@ vsel_nms <- c(
 vsel_nms_pred <- c("summaries", "solution_terms", "ce")
 vsel_nms_pred_opt <- c("solution_terms")
 # Related to `nloo`:
-vsel_nms_nloo <- c("summaries", "pct_solution_terms_cv")
-vsel_nms_nloo_opt <- c("pct_solution_terms_cv")
+vsel_nms_nloo <- c("summaries", "solution_terms_cv")
+vsel_nms_nloo_opt <- c("solution_terms_cv")
 # Related to `validate_search`:
 vsel_nms_valsearch <- c("validate_search", "summaries", "ce",
-                        "pct_solution_terms_cv")
+                        "solution_terms_cv")
 vsel_nms_valsearch_opt <- character()
 # Related to `cvfits`:
-vsel_nms_cvfits <- c("refmodel", "summaries", "pct_solution_terms_cv")
-vsel_nms_cvfits_opt <- c("pct_solution_terms_cv")
+vsel_nms_cvfits <- c("refmodel", "summaries", "solution_terms_cv")
+vsel_nms_cvfits_opt <- c("solution_terms_cv")
 vsel_smmrs_sub_nms <- vsel_smmrs_ref_nms <- c("mu", "lppd")
 
 ## Defaults ---------------------------------------------------------------

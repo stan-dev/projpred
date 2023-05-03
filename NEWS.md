@@ -4,6 +4,15 @@ If you read this from a place other than <https://mc-stan.org/projpred/news/inde
 
 # projpred 2.5.0.9000
 
+## Major changes
+
+* Until now, `solution_terms.vsel()` was the only function for extracting a solution path from `vsel` objects (returned by `varsel()` or `cv_varsel()`), namely the solution path from the full-data search. This function is unchanged by this release, to avoid breaking changes for users. However, in anticipation of a larger overhaul of the **projpred** user interface, this release introduces some new functions that are useful for accessing and investigating solution paths (which are now termed *predictor rankings* by these new functions, a term that is hopefully easier to grasp for new users):
+
+    + Added a new function called `ranking()` which returns the predictor ranking from the full-data search and possibly also the predictor rankings from fold-wise searches in case of cross-validation (CV). (More precisely, `ranking()` is a generic. The only method is `ranking.vsel()`. The output is of class `ranking`.)
+    + Added a new function called `props()` which computes ranking proportions (across CV folds, see `?props` for details) from fold-wise predictor rankings. (More precisely, `props()` is a generic. The main method is `props.ranking()`, but as a shortcut, `props.vsel()` has also been added. The output is of class `props`.)
+    + Added a new `plot()` method called `plot.props()` for plotting ranking proportions from fold-wise predictor rankings. (As a shortcut, `plot.ranking()` has also been added.)
+    
+    Because of these new functions, a message has been added to `print.vselsummary()`, mentioning how to access and investigate the fold-wise predictor rankings (if they exist). Furthermore, due to these changes, element `pct_solution_terms_cv` of `vsel` objects has been replaced by element `solution_terms_cv` which contains the fold-wise predictor rankings instead of the corresponding ranking proportions. However, elements of `vsel` objects are not meant to be accessed directly, so this replacement should not be a breaking change for most users. (GitHub: #406)
 
 # projpred 2.5.0
 
