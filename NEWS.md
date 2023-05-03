@@ -18,6 +18,10 @@ If you read this from a place other than <https://mc-stan.org/projpred/news/inde
 
 * Enhancements in the vignettes. In particular, the new functions `ranking()`, `props()`, and `plot.props()` (see "Major changes" above) are now illustrated in the main vignette. (GitHub: #407)
 
+## Bug fixes
+    
+* Fixed a bug causing L1 search to throw an error in case of some `I()` terms. (GitHub: #404, #408)
+
 # projpred 2.5.0
 
 ## Minor changes
