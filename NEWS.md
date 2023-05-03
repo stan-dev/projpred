@@ -16,7 +16,7 @@ If you read this from a place other than <https://mc-stan.org/projpred/news/inde
 
 ## Minor changes
 
-* Enhancements in the vignettes. In particular, the new functions `ranking()`, `props()`, and `plot.props()` (see "Major changes" above) are now illustrated in the main vignette.
+* Enhancements in the vignettes. In particular, the new functions `ranking()`, `props()`, and `plot.props()` (see "Major changes" above) are now illustrated in the main vignette. (GitHub: #407)
 
 # projpred 2.5.0
 
