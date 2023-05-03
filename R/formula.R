@@ -768,16 +768,10 @@ collapse_contrasts_solution_path <- function(formula, path, data) {
       next
     }
     x <- x[, colnames(x) != "(Intercept)", drop = FALSE]
-    path <- Reduce(
-      function(current, pattern) {
-        pattern <- gsub("\\+", "\\\\+", pattern)
-        list(current[[1]],
-             gsub(pattern, current[[1]], current[[2]]))
-      },
-      x = colnames(x),
-      init = list(term, path)
-    )
-    path <- unique(path[[length(path)]])
+    for (col_nm in colnames(x)) {
+      path <- gsub(esc_chars(col_nm), term, path)
+    }
+    path <- unique(path)
   }
   return(path)
 }
