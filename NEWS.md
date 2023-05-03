@@ -14,6 +14,10 @@ If you read this from a place other than <https://mc-stan.org/projpred/news/inde
     
     Because of these new functions, a message has been added to `print.vselsummary()`, mentioning how to access and investigate the fold-wise predictor rankings (if they exist). Furthermore, due to these changes, element `pct_solution_terms_cv` of `vsel` objects has been replaced by element `solution_terms_cv` which contains the fold-wise predictor rankings instead of the corresponding ranking proportions. However, elements of `vsel` objects are not meant to be accessed directly, so this replacement should not be a breaking change for most users. (GitHub: #406)
 
+## Minor changes
+
+* Enhancements in the vignettes. In particular, the new functions `ranking()`, `props()`, and `plot.props()` (see "Major changes" above) are now illustrated in the main vignette. (GitHub: #407)
+
 # projpred 2.5.0
 
 ## Minor changes

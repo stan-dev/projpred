@@ -8,8 +8,6 @@ knitr::opts_chunk$set(
   out.width = "60%",
   fig.align = "center",
   comment = NA,
-  eval = if (isTRUE(exists("params"))) params$EVAL else FALSE,
-  message = FALSE,
-  warning = FALSE
+  eval = if (isTRUE(exists("params"))) params$EVAL else FALSE
 )
 ```
