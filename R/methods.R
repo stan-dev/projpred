@@ -739,9 +739,9 @@ plot.vsel <- function(
 #'   [cv_varsel()]).
 #' @param nterms_max Maximum submodel size for which the statistics are
 #'   calculated. Using `NULL` is effectively the same as using
-#'   `length(solution_terms(object))`. Note that `nterms_max` does not count the
-#'   intercept, so use `nterms_max = 0` for the intercept-only model. For
-#'   [plot.vsel()], `nterms_max` must be at least `1`.
+#'   `length(ranking(object)[["fulldata"]])`. Note that `nterms_max` does not
+#'   count the intercept, so use `nterms_max = 0` for the intercept-only model.
+#'   For [plot.vsel()], `nterms_max` must be at least `1`.
 #' @param stats One or more character strings determining which performance
 #'   statistics (i.e., utilities or losses) to estimate based on the
 #'   observations in the evaluation (or "test") set (in case of
@@ -1913,7 +1913,8 @@ cv_ids <- function(n, K, out = c("foldwise", "indices"),
 #' ([ranking()]'s output element `fulldata` contains the full-data predictor
 #' ranking that is also extracted by [solution_terms.vsel()]; [ranking()]'s
 #' output element `foldwise` contains the fold-wise predictor rankings---if
-#' available---which were previously not accessible via a built-in function).
+#' available---which were previously not accessible via a built-in function) and
+#' [predictor_terms()] instead of [solution_terms.projection()].
 #'
 #' @param object The object from which to retrieve the predictor terms. Possible
 #'   classes may be inferred from the names of the corresponding methods (see
@@ -1921,34 +1922,6 @@ cv_ids <- function(n, K, out = c("foldwise", "indices"),
 #' @param ... Currently ignored.
 #'
 #' @return A character vector of predictor terms.
-#'
-#' @examples
-#' if (requireNamespace("rstanarm", quietly = TRUE)) {
-#'   # Data:
-#'   dat_gauss <- data.frame(y = df_gaussian$y, df_gaussian$x)
-#'
-#'   # The "stanreg" fit which will be used as the reference model (with small
-#'   # values for `chains` and `iter`, but only for technical reasons in this
-#'   # example; this is not recommended in general):
-#'   fit <- rstanarm::stan_glm(
-#'     y ~ X1 + X2 + X3 + X4 + X5, family = gaussian(), data = dat_gauss,
-#'     QR = TRUE, chains = 2, iter = 500, refresh = 0, seed = 9876
-#'   )
-#'
-#'   # Run varsel() (here without cross-validation and with small values for
-#'   # `nterms_max`, `nclusters`, and `nclusters_pred`, but only for the sake of
-#'   # speed in this example; this is not recommended in general):
-#'   vs <- varsel(fit, nterms_max = 3, nclusters = 5, nclusters_pred = 10,
-#'                seed = 5555)
-#'   print(solution_terms(vs))
-#'
-#'   # Projection onto an arbitrary combination of predictor terms (with a small
-#'   # value for `nclusters`, but only for the sake of speed in this example;
-#'   # this is not recommended in general):
-#'   prj <- project(fit, solution_terms = c("X1", "X3", "X5"), nclusters = 10,
-#'                  seed = 9182)
-#'   print(solution_terms(prj)) # gives `c("X1", "X3", "X5")`
-#' }
 #'
 #' @export
 solution_terms <- function(object, ...) {
@@ -1969,7 +1942,54 @@ solution_terms.vsel <- function(object, ...) {
 #' @rdname solution_terms
 #' @export
 solution_terms.projection <- function(object, ...) {
-  return(object$solution_terms)
+  warning("solution_terms.projection() is deprecated. Please use ",
+          "predictor_terms() instead.")
+  return(predictor_terms(object))
+}
+
+#' Predictor terms used in a [project()] run
+#'
+#' For a `projection` object (returned by [project()], possibly as elements of a
+#' `list`), this function extracts the combination of predictor terms onto which
+#' the projection was performed.
+#'
+#' @param object An object of class `projection` (returned by [project()],
+#'   possibly as elements of a `list`) from which to retrieve the predictor
+#'   terms.
+#' @param ... Currently ignored.
+#'
+#' @return A character vector of predictor terms.
+#'
+#' @examples
+#' if (requireNamespace("rstanarm", quietly = TRUE)) {
+#'   # Data:
+#'   dat_gauss <- data.frame(y = df_gaussian$y, df_gaussian$x)
+#'
+#'   # The "stanreg" fit which will be used as the reference model (with small
+#'   # values for `chains` and `iter`, but only for technical reasons in this
+#'   # example; this is not recommended in general):
+#'   fit <- rstanarm::stan_glm(
+#'     y ~ X1 + X2 + X3 + X4 + X5, family = gaussian(), data = dat_gauss,
+#'     QR = TRUE, chains = 2, iter = 500, refresh = 0, seed = 9876
+#'   )
+#'
+#'   # Projection onto an arbitrary combination of predictor terms (with a small
+#'   # value for `nclusters`, but only for the sake of speed in this example;
+#'   # this is not recommended in general):
+#'   prj <- project(fit, solution_terms = c("X1", "X3", "X5"), nclusters = 10,
+#'                  seed = 9182)
+#'   print(predictor_terms(prj)) # gives `c("X1", "X3", "X5")`
+#' }
+#'
+#' @export
+predictor_terms <- function(object, ...) {
+  UseMethod("predictor_terms")
+}
+
+#' @rdname predictor_terms
+#' @export
+predictor_terms.projection <- function(object, ...) {
+  return(object[["solution_terms"]])
 }
 
 #' Predictor ranking(s)

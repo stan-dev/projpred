@@ -224,7 +224,7 @@ if (requireNamespace("rstanarm", quietly = TRUE)) {
   vs <- varsel(fit, nterms_max = 3, nclusters = 5, nclusters_pred = 10,
                seed = 5555)
   # Now see, for example, `?print.vsel`, `?plot.vsel`, `?suggest_size.vsel`,
-  # and `?solution_terms.vsel` for possible post-processing functions.
+  # and `?ranking` for possible post-processing functions.
 }
 
 }

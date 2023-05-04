@@ -250,8 +250,7 @@ if (requireNamespace("rstanarm", quietly = TRUE)) {
   cvvs <- cv_varsel(fit, cv_method = "kfold", K = 2, nterms_max = 3,
                     nclusters = 5, nclusters_pred = 10, seed = 5555)
   # Now see, for example, `?print.vsel`, `?plot.vsel`, `?suggest_size.vsel`,
-  # `?solution_terms.vsel`, and `?ranking` for possible post-processing
-  # functions.
+  # and `?ranking` for possible post-processing functions.
 }
 \dontshow{\}) # examplesIf}
 }
