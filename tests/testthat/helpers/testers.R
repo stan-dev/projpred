@@ -2632,7 +2632,7 @@ cv_proportions_tester <- function(pr, cumulate_expected = FALSE, nterms_max_expe
                          cnms_expected, info_str) {
   classes_expected <- "cv_proportions"
   if (cumulate_expected) {
-    classes_expected <- c("cumulcv_proportions", classes_expected)
+    classes_expected <- c("cv_proportions_cumul", classes_expected)
   }
   expect_s3_class(pr, classes_expected, exact = TRUE)
   expect_equal(dim(pr), c(nterms_max_expected, nterms_max_expected),

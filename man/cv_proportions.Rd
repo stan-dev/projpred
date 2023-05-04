@@ -41,7 +41,7 @@ A numeric matrix containing the ranking proportions. This matrix has
 submodel sizes and the columns to the predictor terms (sorted according to
 the full-data predictor ranking). If \code{cumulate} is \code{FALSE}, then the
 returned matrix is of class \code{cv_proportions}. If \code{cumulate} is \code{TRUE}, then the
-returned matrix is of classes \code{cumulcv_proportions} and \code{cv_proportions} (in this order).
+returned matrix is of classes \code{cv_proportions_cumul} and \code{cv_proportions} (in this order).
 
 Note that if \code{cumulate} is \code{FALSE}, then the values in the returned matrix
 only need to sum to 1 (column-wise and row-wise) if \code{nterms_max} is equal

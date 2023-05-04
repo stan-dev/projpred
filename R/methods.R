@@ -2037,7 +2037,7 @@ ranking.vsel <- function(object, ...) {
 #'   submodel sizes and the columns to the predictor terms (sorted according to
 #'   the full-data predictor ranking). If `cumulate` is `FALSE`, then the
 #'   returned matrix is of class `cv_proportions`. If `cumulate` is `TRUE`, then the
-#'   returned matrix is of classes `cumulcv_proportions` and `cv_proportions` (in this order).
+#'   returned matrix is of classes `cv_proportions_cumul` and `cv_proportions` (in this order).
 #'
 #'   Note that if `cumulate` is `FALSE`, then the values in the returned matrix
 #'   only need to sum to 1 (column-wise and row-wise) if `nterms_max` is equal
@@ -2092,7 +2092,7 @@ cv_proportions.ranking <- function(object, cumulate = FALSE,
   if (cumulate) {
     cv_cv_proportions <- do.call(cbind, apply(cv_cv_proportions, 2, cumsum, simplify = FALSE))
     rownames(cv_cv_proportions) <- paste0("<=", rownames(cv_cv_proportions))
-    classes_out <- c("cumulcv_proportions", classes_out)
+    classes_out <- c("cv_proportions_cumul", classes_out)
   }
   # Setting the `dimnames` names here (not before the `if (cumulate)` part)
   # because `simplify = FALSE` in apply() makes it impossible to keep these:

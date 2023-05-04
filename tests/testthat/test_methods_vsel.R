@@ -439,7 +439,7 @@ test_that("`nterms_max = 0` fails", {
 
 test_that("`cumulate = TRUE` works", {
   pr_cT_ch <- structure(apply(pr_cF, 2, cumsum),
-                        class = c("cumulcv_proportions", "cv_proportions"))
+                        class = c("cv_proportions_cumul", "cv_proportions"))
   rownames(pr_cT_ch) <- paste0("<=", seq_len(nrow(pr_cT_ch)))
   expect_identical(pr_cT, pr_cT_ch)
 })
@@ -456,7 +456,7 @@ test_that("ranking proportions are computed correctly", {
   cv_proportions_tester(pr_cT, cumulate_expected = TRUE, nterms_max_expected = ntrms,
                cnms_expected = rk_fdata, info_str = "cumulate = TRUE")
   pr_cT_expected <- matrix(1:ntrms / ntrms, nrow = ntrms, ncol = ntrms)
-  class(pr_cT_expected) <- c("cumulcv_proportions", "cv_proportions")
+  class(pr_cT_expected) <- c("cv_proportions_cumul", "cv_proportions")
   expect_equal(pr_cT, pr_cT_expected, check.attributes = FALSE,
                tolerance = .Machine$double.eps, info = "cumulate = TRUE")
   has_1_colwise <- all(apply(pr_cT, 2, function(x_col) 1 %in% x_col))
@@ -512,7 +512,7 @@ pr_dummy <- matrix(seq(0, 1, length.out = ntrms^2), nrow = ntrms, ncol = ntrms,
 class(pr_dummy) <- "cv_proportions"
 prc_dummy <- pr_dummy
 rownames(prc_dummy) <- paste0("<=", rownames(pr_dummy))
-class(prc_dummy) <- c("cumulcv_proportions", class(pr_dummy))
+class(prc_dummy) <- c("cv_proportions_cumul", class(pr_dummy))
 
 plotpr_dummy <- plot(pr_dummy)
 plotprc_dummy <- plot(prc_dummy)
