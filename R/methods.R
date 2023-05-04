@@ -1908,7 +1908,12 @@ cv_ids <- function(n, K, out = c("foldwise", "indices"),
 #' retrieves the solution path from the full-data search. For `projection`
 #' objects (returned by [project()], possibly as elements of a `list`), this
 #' function retrieves the predictor combination onto which the projection was
-#' performed.
+#' performed. This function is deprecated and will be removed in a future
+#' release. Please use [ranking()] instead of [solution_terms.vsel()]
+#' ([ranking()]'s output element `fulldata` contains the full-data predictor
+#' ranking that is also extracted by [solution_terms.vsel()]; [ranking()]'s
+#' output element `foldwise` contains the fold-wise predictor rankings---if
+#' available---which were previously not accessible via a built-in function).
 #'
 #' @param object The object from which to retrieve the predictor terms. Possible
 #'   classes may be inferred from the names of the corresponding methods (see
@@ -1953,7 +1958,12 @@ solution_terms <- function(object, ...) {
 #' @rdname solution_terms
 #' @export
 solution_terms.vsel <- function(object, ...) {
-  return(object$solution_terms)
+  warning("solution_terms.vsel() is deprecated. Please use ranking() instead ",
+          "(ranking()'s output element `fulldata` contains the full-data ",
+          "predictor ranking that is also extracted by solution_terms.vsel(); ",
+          "ranking()'s output element `foldwise` contains fold-wise predictor ",
+          "rankings which were previously not accessible via a function).")
+  return(ranking(object)[["fulldata"]])
 }
 
 #' @rdname solution_terms

@@ -28,7 +28,12 @@ For \code{vsel} objects (returned by \code{\link[=varsel]{varsel()}} or \code{\l
 retrieves the solution path from the full-data search. For \code{projection}
 objects (returned by \code{\link[=project]{project()}}, possibly as elements of a \code{list}), this
 function retrieves the predictor combination onto which the projection was
-performed.
+performed. This function is deprecated and will be removed in a future
+release. Please use \code{\link[=ranking]{ranking()}} instead of \code{\link[=solution_terms.vsel]{solution_terms.vsel()}}
+(\code{\link[=ranking]{ranking()}}'s output element \code{fulldata} contains the full-data predictor
+ranking that is also extracted by \code{\link[=solution_terms.vsel]{solution_terms.vsel()}}; \code{\link[=ranking]{ranking()}}'s
+output element \code{foldwise} contains the fold-wise predictor rankings---if
+available---which were previously not accessible via a built-in function).
 }
 \examples{
 if (requireNamespace("rstanarm", quietly = TRUE)) {
