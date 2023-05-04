@@ -1815,7 +1815,7 @@ as.matrix.projection <- function(x, nm_scheme = "auto", ...) {
 #'   results can be obtained again if needed. Passed to argument `seed` of
 #'   [set.seed()], but can also be `NA` to not call [set.seed()] at all.
 #'
-#' @return [cvfolds()] returns a vector of length `n` such that each element is
+#' @return [cv_folds()] returns a vector of length `n` such that each element is
 #'   an integer between 1 and `K` denoting which fold the corresponding data
 #'   point belongs to. The return value of [cv_ids()] depends on the `out`
 #'   argument. If `out = "foldwise"`, the return value is a `list` with `K`
@@ -1837,7 +1837,7 @@ NULL
 
 #' @rdname cv-indices
 #' @export
-cvfolds <- function(n, K, seed = sample.int(.Machine$integer.max, 1)) {
+cv_folds <- function(n, K, seed = sample.int(.Machine$integer.max, 1)) {
   validate_num_folds(K, n)
 
   # Set seed, but ensure the old RNG state is restored on exit:

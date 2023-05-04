@@ -944,7 +944,7 @@ get_kfold <- function(refmodel, K, verbose) {
                  "(using the fold-wise training data) ...")
       }
       nobs <- refmodel$nobs
-      folds <- cvfolds(nobs, K = K)
+      folds <- cv_folds(nobs, K = K)
       cvfits <- refmodel$cvfun(folds)
       verb_out("-----", verbose = verbose)
     } else {
