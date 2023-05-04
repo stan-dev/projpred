@@ -10,24 +10,26 @@
 \method{plot}{ranking}(x, ...)
 }
 \arguments{
-\item{x}{For \code{\link[=plot.cv_proportions]{plot.cv_proportions()}}: an object of class \code{cv_proportions} (returned by
-\code{\link[=cv_proportions]{cv_proportions()}}, possibly with \code{cumulate = TRUE}). For \code{\link[=plot.ranking]{plot.ranking()}}: an
-object of class \code{ranking} (returned by \code{\link[=ranking]{ranking()}}) that \code{\link[=cv_proportions]{cv_proportions()}} will be
-applied to internally before then calling \code{\link[=plot.cv_proportions]{plot.cv_proportions()}}.}
+\item{x}{For \code{\link[=plot.cv_proportions]{plot.cv_proportions()}}: an object of class \code{cv_proportions}
+(returned by \code{\link[=cv_proportions]{cv_proportions()}}, possibly with \code{cumulate = TRUE}). For
+\code{\link[=plot.ranking]{plot.ranking()}}: an object of class \code{ranking} (returned by \code{\link[=ranking]{ranking()}})
+that \code{\link[=cv_proportions]{cv_proportions()}} will be applied to internally before then calling
+\code{\link[=plot.cv_proportions]{plot.cv_proportions()}}.}
 
 \item{text_angle}{Passed to argument \code{angle} of \code{\link[ggplot2:element]{ggplot2::element_text()}} for
 the y-axis tick labels. In case of long predictor names, \code{text_angle = 45}
 might be helpful (for example).}
 
-\item{...}{For \code{\link[=plot.ranking]{plot.ranking()}}: arguments passed to \code{\link[=cv_proportions.ranking]{cv_proportions.ranking()}} and
-\code{\link[=plot.cv_proportions]{plot.cv_proportions()}}. For \code{\link[=plot.cv_proportions]{plot.cv_proportions()}}: currently ignored.}
+\item{...}{For \code{\link[=plot.ranking]{plot.ranking()}}: arguments passed to
+\code{\link[=cv_proportions.ranking]{cv_proportions.ranking()}} and \code{\link[=plot.cv_proportions]{plot.cv_proportions()}}. For
+\code{\link[=plot.cv_proportions]{plot.cv_proportions()}}: currently ignored.}
 }
 \value{
 A \pkg{ggplot2} plotting object (of class \code{gg} and \code{ggplot}).
 }
 \description{
-Plots the ranking proportions (see \code{\link[=cv_proportions]{cv_proportions()}}) from the fold-wise predictor
-rankings in a cross-validation with fold-wise searches. This is a
+Plots the ranking proportions (see \code{\link[=cv_proportions]{cv_proportions()}}) from the fold-wise
+predictor rankings in a cross-validation with fold-wise searches. This is a
 visualization of the \emph{transposed} matrix returned by \code{\link[=cv_proportions]{cv_proportions()}}. The
 proportions printed as text inside of the colored tiles are rounded to whole
 percentage points (the plotted proportions themselves are not rounded).
@@ -64,8 +66,9 @@ if (requireNamespace("rstanarm", quietly = TRUE)) {
   gg_pr_rk <- plot(pr_rk)
   print(gg_pr_rk)
 
-  # Since the object returned by plot.cv_proportions() is a standard ggplot2 plotting
-  # object, you can modify the plot easily, e.g., to remove the legend:
+  # Since the object returned by plot.cv_proportions() is a standard ggplot2
+  # plotting object, you can modify the plot easily, e.g., to remove the
+  # legend:
   print(gg_pr_rk + theme(legend.position = "none"))
 }
 \dontshow{\}) # examplesIf}

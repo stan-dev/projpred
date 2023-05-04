@@ -1647,7 +1647,7 @@ if (run_cvvs) {
   })
 }
 
-## cv_proportions() ----------------------------------------------------------------
+## cv_proportions() -------------------------------------------------------
 
 err_no_foldwise_rk <- "no fold-wise predictor rankings"
 
@@ -1719,7 +1719,7 @@ if (run_cvvs) {
   args_pr_cvvs <- args_pr_cvvs[keep_prs_cvvs]
 }
 
-## plot.cv_proportions -------------------------------------------------------------
+## plot.cv_proportions() --------------------------------------------------
 
 if (run_cvvs) {
   args_plotpr <- lapply(setNames(nm = names(prs_cvvs)), function(tstsetup_pr) {

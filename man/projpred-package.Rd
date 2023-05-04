@@ -123,9 +123,9 @@ and \code{\link[=get_refmodel]{get_refmodel()}} are only rarely needed.}
 \emph{evaluation} part for a projection predictive variable selection, possibly
 with cross-validation (CV).}
 \item{\code{\link[=summary.vsel]{summary.vsel()}}, \code{\link[=print.vsel]{print.vsel()}}, \code{\link[=plot.vsel]{plot.vsel()}},
-\code{\link[=suggest_size.vsel]{suggest_size.vsel()}}, \code{\link[=solution_terms.vsel]{solution_terms.vsel()}}, \code{\link[=ranking]{ranking()}}, \code{\link[=cv_proportions]{cv_proportions()}},
-\code{\link[=plot.cv_proportions]{plot.cv_proportions()}}}{For post-processing the results from \code{\link[=varsel]{varsel()}} and
-\code{\link[=cv_varsel]{cv_varsel()}}.}
+\code{\link[=suggest_size.vsel]{suggest_size.vsel()}}, \code{\link[=solution_terms.vsel]{solution_terms.vsel()}}, \code{\link[=ranking]{ranking()}},
+\code{\link[=cv_proportions]{cv_proportions()}}, \code{\link[=plot.cv_proportions]{plot.cv_proportions()}}}{For post-processing the
+results from \code{\link[=varsel]{varsel()}} and \code{\link[=cv_varsel]{cv_varsel()}}.}
 \item{\code{\link[=project]{project()}}}{For projecting the reference model onto submodel(s).
 Typically, this follows the variable selection, but it can also be applied
 directly (without a variable selection).}

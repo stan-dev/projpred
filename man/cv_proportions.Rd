@@ -18,13 +18,14 @@ cv_proportions(object, ...)
 \method{cv_proportions}{vsel}(object, ...)
 }
 \arguments{
-\item{object}{For \code{\link[=cv_proportions.ranking]{cv_proportions.ranking()}}: an object of class \code{ranking} (returned
-by \code{\link[=ranking]{ranking()}}). For \code{\link[=cv_proportions.vsel]{cv_proportions.vsel()}}: an object of class \code{vsel} (returned by
-\code{\link[=varsel]{varsel()}} or \code{\link[=cv_varsel]{cv_varsel()}}) that \code{\link[=ranking]{ranking()}} will be applied to internally
-before then calling \code{\link[=cv_proportions.ranking]{cv_proportions.ranking()}}.}
+\item{object}{For \code{\link[=cv_proportions.ranking]{cv_proportions.ranking()}}: an object of class \code{ranking}
+(returned by \code{\link[=ranking]{ranking()}}). For \code{\link[=cv_proportions.vsel]{cv_proportions.vsel()}}: an object of class
+\code{vsel} (returned by \code{\link[=varsel]{varsel()}} or \code{\link[=cv_varsel]{cv_varsel()}}) that \code{\link[=ranking]{ranking()}} will be
+applied to internally before then calling \code{\link[=cv_proportions.ranking]{cv_proportions.ranking()}}.}
 
-\item{...}{For \code{\link[=cv_proportions.vsel]{cv_proportions.vsel()}}: arguments passed to \code{\link[=cv_proportions.ranking]{cv_proportions.ranking()}}. For
-\code{\link[=cv_proportions.ranking]{cv_proportions.ranking()}}: currently ignored.}
+\item{...}{For \code{\link[=cv_proportions.vsel]{cv_proportions.vsel()}}: arguments passed to
+\code{\link[=cv_proportions.ranking]{cv_proportions.ranking()}}. For \code{\link[=cv_proportions.ranking]{cv_proportions.ranking()}}: currently
+ignored.}
 
 \item{cumulate}{A single logical value indicating whether the ranking
 proportions should be cumulated across increasing submodel sizes (\code{TRUE})
@@ -40,8 +41,9 @@ A numeric matrix containing the ranking proportions. This matrix has
 \code{nterms_max} rows and \code{nterms_max} columns: The rows correspond to the
 submodel sizes and the columns to the predictor terms (sorted according to
 the full-data predictor ranking). If \code{cumulate} is \code{FALSE}, then the
-returned matrix is of class \code{cv_proportions}. If \code{cumulate} is \code{TRUE}, then the
-returned matrix is of classes \code{cv_proportions_cumul} and \code{cv_proportions} (in this order).
+returned matrix is of class \code{cv_proportions}. If \code{cumulate} is \code{TRUE}, then
+the returned matrix is of classes \code{cv_proportions_cumul} and
+\code{cv_proportions} (in this order).
 
 Note that if \code{cumulate} is \code{FALSE}, then the values in the returned matrix
 only need to sum to 1 (column-wise and row-wise) if \code{nterms_max} is equal
@@ -49,14 +51,14 @@ to the full model size. Likewise, if \code{cumulate} is \code{TRUE}, then the va
 \code{1} only needs to occur in each column of the returned matrix if
 \code{nterms_max} is equal to the full model size.
 
-The \code{\link[=cv_proportions]{cv_proportions()}} function is only applicable if the \code{ranking} object includes
-fold-wise predictor rankings (i.e., if it is based on a \code{vsel} object
-created by \code{\link[=cv_varsel]{cv_varsel()}} with \code{validate_search = TRUE}). If the \code{ranking}
-object contains only a full-data predictor ranking (i.e., if it is based on
-a \code{vsel} object created by \code{\link[=varsel]{varsel()}} or by \code{\link[=cv_varsel]{cv_varsel()}}, but the latter
-with \code{validate_search = FALSE}), then an error is thrown because in that
-case, there are no fold-wise predictor rankings from which to calculate
-ranking proportions.
+The \code{\link[=cv_proportions]{cv_proportions()}} function is only applicable if the \code{ranking} object
+includes fold-wise predictor rankings (i.e., if it is based on a \code{vsel}
+object created by \code{\link[=cv_varsel]{cv_varsel()}} with \code{validate_search = TRUE}). If the
+\code{ranking} object contains only a full-data predictor ranking (i.e., if it
+is based on a \code{vsel} object created by \code{\link[=varsel]{varsel()}} or by \code{\link[=cv_varsel]{cv_varsel()}}, but
+the latter with \code{validate_search = FALSE}), then an error is thrown because
+in that case, there are no fold-wise predictor rankings from which to
+calculate ranking proportions.
 }
 \description{
 Calculates the \emph{ranking proportions} from the fold-wise predictor rankings in

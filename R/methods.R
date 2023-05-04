@@ -1028,8 +1028,8 @@ print.vselsummary <- function(x, ...) {
     message(
       "Column `solution_terms` contains the full-data predictor ranking. To ",
       "retrieve the fold-wise predictor rankings, use the ranking() function, ",
-      "possibly followed by cv_proportions() for computing the ranking proportions ",
-      "(which can be visualized by plot.cv_proportions())."
+      "possibly followed by cv_proportions() for computing the ranking ",
+      "proportions (which can be visualized by plot.cv_proportions())."
     )
   }
   return(invisible(x))
@@ -2018,10 +2018,10 @@ ranking.vsel <- function(object, ...) {
 #' *cumulated* across submodel sizes. The cumulated ranking proportions are more
 #' helpful when it comes to model selection.
 #'
-#' @param object For [cv_proportions.ranking()]: an object of class `ranking` (returned
-#'   by [ranking()]). For [cv_proportions.vsel()]: an object of class `vsel` (returned by
-#'   [varsel()] or [cv_varsel()]) that [ranking()] will be applied to internally
-#'   before then calling [cv_proportions.ranking()].
+#' @param object For [cv_proportions.ranking()]: an object of class `ranking`
+#'   (returned by [ranking()]). For [cv_proportions.vsel()]: an object of class
+#'   `vsel` (returned by [varsel()] or [cv_varsel()]) that [ranking()] will be
+#'   applied to internally before then calling [cv_proportions.ranking()].
 #' @param cumulate A single logical value indicating whether the ranking
 #'   proportions should be cumulated across increasing submodel sizes (`TRUE`)
 #'   or not (`FALSE`).
@@ -2029,15 +2029,17 @@ ranking.vsel <- function(object, ...) {
 #'   (number of predictor terms) to include in the returned matrix. Note that
 #'   `nterms_max` does not count the intercept, so `nterms_max = 1` corresponds
 #'   to the submodel consisting of the first (non-intercept) predictor term.
-#' @param ... For [cv_proportions.vsel()]: arguments passed to [cv_proportions.ranking()]. For
-#'   [cv_proportions.ranking()]: currently ignored.
+#' @param ... For [cv_proportions.vsel()]: arguments passed to
+#'   [cv_proportions.ranking()]. For [cv_proportions.ranking()]: currently
+#'   ignored.
 #'
 #' @return A numeric matrix containing the ranking proportions. This matrix has
 #'   `nterms_max` rows and `nterms_max` columns: The rows correspond to the
 #'   submodel sizes and the columns to the predictor terms (sorted according to
 #'   the full-data predictor ranking). If `cumulate` is `FALSE`, then the
-#'   returned matrix is of class `cv_proportions`. If `cumulate` is `TRUE`, then the
-#'   returned matrix is of classes `cv_proportions_cumul` and `cv_proportions` (in this order).
+#'   returned matrix is of class `cv_proportions`. If `cumulate` is `TRUE`, then
+#'   the returned matrix is of classes `cv_proportions_cumul` and
+#'   `cv_proportions` (in this order).
 #'
 #'   Note that if `cumulate` is `FALSE`, then the values in the returned matrix
 #'   only need to sum to 1 (column-wise and row-wise) if `nterms_max` is equal
@@ -2045,14 +2047,14 @@ ranking.vsel <- function(object, ...) {
 #'   `1` only needs to occur in each column of the returned matrix if
 #'   `nterms_max` is equal to the full model size.
 #'
-#'   The [cv_proportions()] function is only applicable if the `ranking` object includes
-#'   fold-wise predictor rankings (i.e., if it is based on a `vsel` object
-#'   created by [cv_varsel()] with `validate_search = TRUE`). If the `ranking`
-#'   object contains only a full-data predictor ranking (i.e., if it is based on
-#'   a `vsel` object created by [varsel()] or by [cv_varsel()], but the latter
-#'   with `validate_search = FALSE`), then an error is thrown because in that
-#'   case, there are no fold-wise predictor rankings from which to calculate
-#'   ranking proportions.
+#'   The [cv_proportions()] function is only applicable if the `ranking` object
+#'   includes fold-wise predictor rankings (i.e., if it is based on a `vsel`
+#'   object created by [cv_varsel()] with `validate_search = TRUE`). If the
+#'   `ranking` object contains only a full-data predictor ranking (i.e., if it
+#'   is based on a `vsel` object created by [varsel()] or by [cv_varsel()], but
+#'   the latter with `validate_search = FALSE`), then an error is thrown because
+#'   in that case, there are no fold-wise predictor rankings from which to
+#'   calculate ranking proportions.
 #'
 #' @seealso [plot.cv_proportions()]
 #'
@@ -2067,7 +2069,8 @@ cv_proportions <- function(object, ...) {
 #' @rdname cv_proportions
 #' @export
 cv_proportions.ranking <- function(object, cumulate = FALSE,
-                          nterms_max = ncol(object[["foldwise"]]), ...) {
+                                   nterms_max = ncol(object[["foldwise"]]),
+                                   ...) {
   cv_paths <- object[["foldwise"]]
   if (is.null(cv_paths)) {
     stop(
@@ -2080,25 +2083,25 @@ cv_proportions.ranking <- function(object, cumulate = FALSE,
   cv_paths <- cv_paths[, seq_len(nterms_max), drop = FALSE]
   # Calculate the ranking proportions. Note that the following code assumes that
   # all CV folds have equal weight.
-  cv_cv_proportions <- do.call(cbind, lapply(
+  cv_props <- do.call(cbind, lapply(
     setNames(nm = utils::head(object[["fulldata"]], nterms_max)),
     function(predictor_j) {
       # We need `na.rm = TRUE` for subsampled LOO CV:
       colMeans(cv_paths == predictor_j, na.rm = TRUE)
     }
   ))
-  rownames(cv_cv_proportions) <- seq_len(nrow(cv_cv_proportions))
+  rownames(cv_props) <- seq_len(nrow(cv_props))
   classes_out <- "cv_proportions"
   if (cumulate) {
-    cv_cv_proportions <- do.call(cbind, apply(cv_cv_proportions, 2, cumsum, simplify = FALSE))
-    rownames(cv_cv_proportions) <- paste0("<=", rownames(cv_cv_proportions))
+    cv_props <- do.call(cbind, apply(cv_props, 2, cumsum, simplify = FALSE))
+    rownames(cv_props) <- paste0("<=", rownames(cv_props))
     classes_out <- c("cv_proportions_cumul", classes_out)
   }
   # Setting the `dimnames` names here (not before the `if (cumulate)` part)
   # because `simplify = FALSE` in apply() makes it impossible to keep these:
-  names(dimnames(cv_cv_proportions)) <- c("size", "predictor")
-  class(cv_cv_proportions) <- classes_out
-  return(cv_cv_proportions)
+  names(dimnames(cv_props)) <- c("size", "predictor")
+  class(cv_props) <- classes_out
+  return(cv_props)
 }
 
 #' @rdname cv_proportions
@@ -2109,21 +2112,23 @@ cv_proportions.vsel <- function(object, ...) {
 
 #' Plot ranking proportions from fold-wise predictor rankings
 #'
-#' Plots the ranking proportions (see [cv_proportions()]) from the fold-wise predictor
-#' rankings in a cross-validation with fold-wise searches. This is a
+#' Plots the ranking proportions (see [cv_proportions()]) from the fold-wise
+#' predictor rankings in a cross-validation with fold-wise searches. This is a
 #' visualization of the *transposed* matrix returned by [cv_proportions()]. The
 #' proportions printed as text inside of the colored tiles are rounded to whole
 #' percentage points (the plotted proportions themselves are not rounded).
 #'
-#' @param x For [plot.cv_proportions()]: an object of class `cv_proportions` (returned by
-#'   [cv_proportions()], possibly with `cumulate = TRUE`). For [plot.ranking()]: an
-#'   object of class `ranking` (returned by [ranking()]) that [cv_proportions()] will be
-#'   applied to internally before then calling [plot.cv_proportions()].
+#' @param x For [plot.cv_proportions()]: an object of class `cv_proportions`
+#'   (returned by [cv_proportions()], possibly with `cumulate = TRUE`). For
+#'   [plot.ranking()]: an object of class `ranking` (returned by [ranking()])
+#'   that [cv_proportions()] will be applied to internally before then calling
+#'   [plot.cv_proportions()].
 #' @param text_angle Passed to argument `angle` of [ggplot2::element_text()] for
 #'   the y-axis tick labels. In case of long predictor names, `text_angle = 45`
 #'   might be helpful (for example).
-#' @param ... For [plot.ranking()]: arguments passed to [cv_proportions.ranking()] and
-#'   [plot.cv_proportions()]. For [plot.cv_proportions()]: currently ignored.
+#' @param ... For [plot.ranking()]: arguments passed to
+#'   [cv_proportions.ranking()] and [plot.cv_proportions()]. For
+#'   [plot.cv_proportions()]: currently ignored.
 #'
 #' @return A \pkg{ggplot2} plotting object (of class `gg` and `ggplot`).
 #'
@@ -2162,8 +2167,9 @@ cv_proportions.vsel <- function(object, ...) {
 #'   gg_pr_rk <- plot(pr_rk)
 #'   print(gg_pr_rk)
 #'
-#'   # Since the object returned by plot.cv_proportions() is a standard ggplot2 plotting
-#'   # object, you can modify the plot easily, e.g., to remove the legend:
+#'   # Since the object returned by plot.cv_proportions() is a standard ggplot2
+#'   # plotting object, you can modify the plot easily, e.g., to remove the
+#'   # legend:
 #'   print(gg_pr_rk + theme(legend.position = "none"))
 #' }
 #'
@@ -2174,9 +2180,11 @@ plot.cv_proportions <- function(x, text_angle = NULL, ...) {
     pterm = factor(rep(colnames(x), each = nrow(x)), levels = colnames(x)),
     propcv = as.vector(x)
   )
-  cv_proportions_long$txtcolor <- ifelse(cv_proportions_long$propcv > 0.5, "white", "black")
+  cv_proportions_long$txtcolor <- ifelse(cv_proportions_long$propcv > 0.5,
+                                         "white", "black")
   ggcv_proportions <- ggplot(data = cv_proportions_long,
-                    mapping = aes(x = .data[["msize"]], y = .data[["pterm"]])) +
+                             mapping = aes(x = .data[["msize"]],
+                                           y = .data[["pterm"]])) +
     geom_tile(mapping = aes(fill = .data[["propcv"]]),
               width = 1, height = 1, linewidth = 1, color = "white") +
     # Note: The original code for this function specified argument `fontface`

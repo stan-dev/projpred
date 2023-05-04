@@ -373,7 +373,7 @@ test_that("`object` of class `vsel` (created by cv_varsel()) works", {
   }
 })
 
-# cv_proportions() -----------------------------------------------------------------
+# cv_proportions() --------------------------------------------------------
 
 context("cv_proportions()")
 
@@ -446,15 +446,16 @@ test_that("`cumulate = TRUE` works", {
 
 test_that("ranking proportions are computed correctly", {
   # With `cumulate = FALSE`:
-  cv_proportions_tester(pr_cF, nterms_max_expected = ntrms, cnms_expected = rk_fdata,
-               info_str = "cumulate = FALSE")
+  cv_proportions_tester(pr_cF, nterms_max_expected = ntrms,
+                        cnms_expected = rk_fdata, info_str = "cumulate = FALSE")
   expect_true(all(pr_cF == 1 / ntrms), info = "cumulate = FALSE")
   expect_true(all(rowSums(pr_cF) == 1), info = "cumulate = FALSE")
   expect_true(all(colSums(pr_cF) == 1), info = "cumulate = FALSE")
 
   # With `cumulate = TRUE`:
-  cv_proportions_tester(pr_cT, cumulate_expected = TRUE, nterms_max_expected = ntrms,
-               cnms_expected = rk_fdata, info_str = "cumulate = TRUE")
+  cv_proportions_tester(pr_cT, cumulate_expected = TRUE,
+                        nterms_max_expected = ntrms, cnms_expected = rk_fdata,
+                        info_str = "cumulate = TRUE")
   pr_cT_expected <- matrix(1:ntrms / ntrms, nrow = ntrms, ncol = ntrms)
   class(pr_cT_expected) <- c("cv_proportions_cumul", "cv_proportions")
   expect_equal(pr_cT, pr_cT_expected, check.attributes = FALSE,
@@ -466,7 +467,7 @@ test_that("ranking proportions are computed correctly", {
 # Clean up the workspace:
 rm(list = setdiff(ls(), ls_bu))
 
-# plot.cv_proportions() ------------------------------------------------------------
+# plot.cv_proportions() ---------------------------------------------------
 
 context("plot.cv_proportions()")
 
