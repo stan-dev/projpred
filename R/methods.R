@@ -2175,14 +2175,13 @@ cv_proportions.vsel <- function(object, ...) {
 #'
 #' @export
 plot.cv_proportions <- function(x, text_angle = NULL, ...) {
-  cv_proportions_long <- data.frame(
+  cv_props_long <- data.frame(
     msize = factor(rep(rownames(x), times = ncol(x)), levels = rownames(x)),
     pterm = factor(rep(colnames(x), each = nrow(x)), levels = colnames(x)),
     propcv = as.vector(x)
   )
-  cv_proportions_long$txtcolor <- ifelse(cv_proportions_long$propcv > 0.5,
-                                         "white", "black")
-  ggcv_proportions <- ggplot(data = cv_proportions_long,
+  cv_props_long$txtcolor <- ifelse(cv_props_long$propcv > 0.5, "white", "black")
+  ggcv_proportions <- ggplot(data = cv_props_long,
                              mapping = aes(x = .data[["msize"]],
                                            y = .data[["pterm"]])) +
     geom_tile(mapping = aes(fill = .data[["propcv"]]),
@@ -2192,7 +2191,7 @@ plot.cv_proportions <- function(x, text_angle = NULL, ...) {
     geom_text(mapping = aes(label = paste(round(100 * .data[["propcv"]]), "%"),
                             color = I(.data[["txtcolor"]])),
               size = 3) +
-    scale_y_discrete(limits = rev(levels(cv_proportions_long$pterm))) +
+    scale_y_discrete(limits = rev(levels(cv_props_long$pterm))) +
     # Filling color:
     ### Option 1:
     scale_fill_gradient(name = "Proportion\nof CV folds",
