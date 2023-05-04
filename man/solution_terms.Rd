@@ -24,15 +24,16 @@ also the description).}
 A character vector of predictor terms.
 }
 \description{
-For \code{vsel} objects (returned by \code{\link[=varsel]{varsel()}} or \code{\link[=cv_varsel]{cv_varsel()}}), this function
-retrieves the solution path from the full-data search. For \code{projection}
-objects (returned by \code{\link[=project]{project()}}, possibly as elements of a \code{list}), this
-function retrieves the predictor combination onto which the projection was
-performed. This function is deprecated and will be removed in a future
-release. Please use \code{\link[=ranking]{ranking()}} instead of \code{\link[=solution_terms.vsel]{solution_terms.vsel()}}
-(\code{\link[=ranking]{ranking()}}'s output element \code{fulldata} contains the full-data predictor
-ranking that is also extracted by \code{\link[=solution_terms.vsel]{solution_terms.vsel()}}; \code{\link[=ranking]{ranking()}}'s
-output element \code{foldwise} contains the fold-wise predictor rankings---if
-available---which were previously not accessible via a built-in function) and
-\code{\link[=predictor_terms]{predictor_terms()}} instead of \code{\link[=solution_terms.projection]{solution_terms.projection()}}.
+The \code{\link[=solution_terms.vsel]{solution_terms.vsel()}} method retrieves the solution path from a
+full-data search (\code{vsel} objects are returned by \code{\link[=varsel]{varsel()}} or
+\code{\link[=cv_varsel]{cv_varsel()}}). The \code{\link[=solution_terms.projection]{solution_terms.projection()}} method retrieves the
+predictor combination onto which a projection was performed (\code{projection}
+objects are returned by \code{\link[=project]{project()}}, possibly as elements of a \code{list}). Both
+methods (and hence also the \code{\link[=solution_terms]{solution_terms()}} generic) are deprecated and
+will be removed in a future release. Please use \code{\link[=ranking]{ranking()}} instead of
+\code{\link[=solution_terms.vsel]{solution_terms.vsel()}} (\code{\link[=ranking]{ranking()}}'s output element \code{fulldata} contains the
+full-data predictor ranking that is extracted by \code{\link[=solution_terms.vsel]{solution_terms.vsel()}};
+\code{\link[=ranking]{ranking()}}'s output element \code{foldwise} contains the fold-wise predictor
+rankings---if available---which were previously not accessible via a built-in
+function) and \code{\link[=predictor_terms]{predictor_terms()}} instead of \code{\link[=solution_terms.projection]{solution_terms.projection()}}.
 }

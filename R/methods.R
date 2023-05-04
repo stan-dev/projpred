@@ -1904,17 +1904,18 @@ cv_ids <- function(n, K, out = c("foldwise", "indices"),
 #' Retrieve the full-data solution path from a [varsel()] or [cv_varsel()] run
 #' or the predictor combination from a [project()] run
 #'
-#' For `vsel` objects (returned by [varsel()] or [cv_varsel()]), this function
-#' retrieves the solution path from the full-data search. For `projection`
-#' objects (returned by [project()], possibly as elements of a `list`), this
-#' function retrieves the predictor combination onto which the projection was
-#' performed. This function is deprecated and will be removed in a future
-#' release. Please use [ranking()] instead of [solution_terms.vsel()]
-#' ([ranking()]'s output element `fulldata` contains the full-data predictor
-#' ranking that is also extracted by [solution_terms.vsel()]; [ranking()]'s
-#' output element `foldwise` contains the fold-wise predictor rankings---if
-#' available---which were previously not accessible via a built-in function) and
-#' [predictor_terms()] instead of [solution_terms.projection()].
+#' The [solution_terms.vsel()] method retrieves the solution path from a
+#' full-data search (`vsel` objects are returned by [varsel()] or
+#' [cv_varsel()]). The [solution_terms.projection()] method retrieves the
+#' predictor combination onto which a projection was performed (`projection`
+#' objects are returned by [project()], possibly as elements of a `list`). Both
+#' methods (and hence also the [solution_terms()] generic) are deprecated and
+#' will be removed in a future release. Please use [ranking()] instead of
+#' [solution_terms.vsel()] ([ranking()]'s output element `fulldata` contains the
+#' full-data predictor ranking that is extracted by [solution_terms.vsel()];
+#' [ranking()]'s output element `foldwise` contains the fold-wise predictor
+#' rankings---if available---which were previously not accessible via a built-in
+#' function) and [predictor_terms()] instead of [solution_terms.projection()].
 #'
 #' @param object The object from which to retrieve the predictor terms. Possible
 #'   classes may be inferred from the names of the corresponding methods (see
