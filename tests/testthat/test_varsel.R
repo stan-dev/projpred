@@ -311,7 +311,7 @@ test_that(paste(
 
     if (!(getOption("projpred.mlvl_pred_new", FALSE) &&
           mod_crr %in% c("glmm", "gamm") &&
-          any(grepl("\\|", solution_terms(vs_indep))))) {
+          any(grepl("\\|", vs_indep$solution_terms)))) {
       # In the negation of this case (i.e., multilevel models with option
       # `projpred.mlvl_pred_new` being set to `TRUE`), proj_linpred() can't be
       # used to calculate the reference model's performance statistics because
@@ -898,7 +898,7 @@ test_that(paste(
     # In principle, `search_trms_tst$fixed$search_terms[1]` could be used
     # instead of `"xco.1"`, but that would seem like the forced term always has
     # to come first in `search_terms` (which is not the case):
-    expect_identical(solution_terms(vss[[tstsetup]])[1], "xco.1",
+    expect_identical(vss[[tstsetup]]$solution_terms[1], "xco.1",
                      info = tstsetup)
   }
 })
@@ -910,7 +910,7 @@ test_that(paste(
   skip_if_not(run_vs)
   tstsetups <- grep("\\.excluded", names(vss), value = TRUE)
   for (tstsetup in tstsetups) {
-    expect_false("xco.1" %in% solution_terms(vss[[tstsetup]]), info = tstsetup)
+    expect_false("xco.1" %in% vss[[tstsetup]]$solution_terms, info = tstsetup)
   }
 })
 
@@ -920,7 +920,7 @@ test_that(paste(
   skip_if_not(run_vs)
   tstsetups <- grep("\\.empty_size", names(vss), value = TRUE)
   for (tstsetup in tstsetups) {
-    soltrms_out <- solution_terms(vss[[tstsetup]])
+    soltrms_out <- vss[[tstsetup]]$solution_terms
     expect_true(
       grepl("\\+", soltrms_out[1]) && !any(grepl("\\+", soltrms_out[-1])),
       info = tstsetup
@@ -953,7 +953,7 @@ test_that(paste(
     "An interaction has been selected before all involved main effects",
     info = "rstanarm.glm.gauss.stdformul.with_wobs.with_offs"
   )
-  soltrms_all <- solution_terms(vs_ia)
+  soltrms_all <- vs_ia$solution_terms
   idx_ia <- grep(":", soltrms_all)
   soltrms_ia_main <- unlist(strsplit(grep(":", soltrms_all, value = TRUE), ":"))
   idxs_main <- match(soltrms_ia_main, soltrms_all)
@@ -1297,7 +1297,7 @@ test_that(paste(
       folds_vec <- loo::kfold_split_grouped(K = K_crr, x = dat$z.1)
       if (exists("rng_old")) assign(".Random.seed", rng_old, envir = .GlobalEnv)
     } else {
-      folds_vec <- cvfolds(nobsv, K = K_crr, seed = seed2_tst)
+      folds_vec <- cv_folds(nobsv, K = K_crr, seed = seed2_tst)
     }
     # Additionally to suppressWarnings(), suppressMessages() could be used here
     # (but is not necessary since messages seem to be suppressed within
@@ -1413,9 +1413,9 @@ test_that(paste(
       folds_vec <- loo::kfold_split_grouped(K = K_crr, x = dat$z.1)
       if (exists("rng_old")) assign(".Random.seed", rng_old, envir = .GlobalEnv)
     } else if (grepl("\\.gam\\.", tstsetup)) {
-      folds_vec <- cvfolds(nobsv, K = K_crr, seed = seed2_tst + 10L)
+      folds_vec <- cv_folds(nobsv, K = K_crr, seed = seed2_tst + 10L)
     } else {
-      folds_vec <- cvfolds(nobsv, K = K_crr, seed = seed2_tst)
+      folds_vec <- cv_folds(nobsv, K = K_crr, seed = seed2_tst)
     }
     kfold_obj <- kfold(fit_crr,
                        K = K_crr,

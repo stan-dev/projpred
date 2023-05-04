@@ -2616,23 +2616,24 @@ ranking_tester <- function(rk, fulldata_expected, foldwise_expected, info_str) {
   return(invisible(TRUE))
 }
 
-# A helper function for testing the structure of a `props` object as returned by
-# props().
+# A helper function for testing the structure of a `cv_proportions` object as
+# returned by cv_proportions().
 #
-# @param pr A `props` object as returned by props().
-# @param cumulate_expected A single logical value indicating whether props() was
-#   run with `cumulate = TRUE` (`TRUE`) or not (`FALSE`).
+# @param pr A `cv_proportions` object as returned by cv_proportions().
+# @param cumulate_expected A single logical value indicating whether
+#   cv_proportions() was run with `cumulate = TRUE` (`TRUE`) or not (`FALSE`).
 # @param nterms_max_expected A single numeric value as supplied to
-#   props.ranking()'s argument `nterms_max`.
+#   cv_proportions.ranking()'s argument `nterms_max`.
 # @param info_str A single character string giving information to be printed in
 #   case of failure.
 #
 # @return `TRUE` (invisible).
-props_tester <- function(pr, cumulate_expected = FALSE, nterms_max_expected,
-                         cnms_expected, info_str) {
-  classes_expected <- "props"
+cv_proportions_tester <- function(pr, cumulate_expected = FALSE,
+                                  nterms_max_expected, cnms_expected,
+                                  info_str) {
+  classes_expected <- "cv_proportions"
   if (cumulate_expected) {
-    classes_expected <- c("cumulprops", classes_expected)
+    classes_expected <- c("cv_proportions_cumul", classes_expected)
   }
   expect_s3_class(pr, classes_expected, exact = TRUE)
   expect_equal(dim(pr), c(nterms_max_expected, nterms_max_expected),

@@ -40,9 +40,9 @@ it was created by \code{\link[=cv_varsel]{cv_varsel()}} with \code{validate_sear
 contains \emph{fold-wise} predictor rankings.
 }
 \examples{
-# For an example, see `?plot.props`.
+# For an example, see `?plot.cv_proportions`.
 
 }
 \seealso{
-\code{\link[=props]{props()}}
+\code{\link[=cv_proportions]{cv_proportions()}}
 }

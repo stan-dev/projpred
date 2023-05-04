@@ -1647,7 +1647,7 @@ if (run_cvvs) {
   })
 }
 
-## props() ----------------------------------------------------------------
+## cv_proportions() -------------------------------------------------------
 
 err_no_foldwise_rk <- "no fold-wise predictor rankings"
 
@@ -1664,7 +1664,7 @@ if (run_vs) {
   prs_vs <- lapply(args_pr_vs, function(args_pr_vs_i) {
     err_expected <- err_no_foldwise_rk
     expect_error(
-      do.call(props, c(
+      do.call(cv_proportions, c(
         list(object = rks_vs[[args_pr_vs_i$tstsetup_rk]]),
         excl_nonargs(args_pr_vs_i)
       )),
@@ -1701,7 +1701,7 @@ if (run_cvvs) {
       err_expected <- NA
     }
     expect_error(
-      pr_out <- do.call(props, c(
+      pr_out <- do.call(cv_proportions, c(
         list(object = rks_cvvs[[args_pr_cvvs_i$tstsetup_rk]]),
         excl_nonargs(args_pr_cvvs_i)
       )),
@@ -1719,7 +1719,7 @@ if (run_cvvs) {
   args_pr_cvvs <- args_pr_cvvs[keep_prs_cvvs]
 }
 
-## plot.props -------------------------------------------------------------
+## plot.cv_proportions() --------------------------------------------------
 
 if (run_cvvs) {
   args_plotpr <- lapply(setNames(nm = names(prs_cvvs)), function(tstsetup_pr) {

@@ -168,12 +168,9 @@ project <- function(object, nterms = NULL, solution_terms = NULL,
   stopifnot(is.null(solution_terms) || is.vector(solution_terms, "character"))
   if (!refit_prj &&
       !is.null(solution_terms) &&
-      any(
-        solution_terms(object)[seq_along(solution_terms)] != solution_terms
-      )) {
+      any(object$solution_terms[seq_along(solution_terms)] != solution_terms)) {
     warning("The given `solution_terms` are not part of the solution path ",
-            "(from `solution_terms(object)`), so `refit_prj` is automatically ",
-            "set to `TRUE`.")
+            "(from `object`), so `refit_prj` is automatically set to `TRUE`.")
     refit_prj <- TRUE
   }
 
@@ -214,7 +211,7 @@ project <- function(object, nterms = NULL, solution_terms = NULL,
     nterms <- length(solution_terms)
   } else {
     ## by default take the variable ordering from the selection
-    solution_terms <- solution_terms(object)
+    solution_terms <- object$solution_terms
     if (is.null(nterms)) {
       sgg_size <- try(suggest_size(object, warnings = FALSE), silent = TRUE)
       if (!inherits(sgg_size, "try-error") && !is.null(sgg_size) &&

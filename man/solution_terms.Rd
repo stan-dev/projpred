@@ -24,38 +24,16 @@ also the description).}
 A character vector of predictor terms.
 }
 \description{
-For \code{vsel} objects (returned by \code{\link[=varsel]{varsel()}} or \code{\link[=cv_varsel]{cv_varsel()}}), this function
-retrieves the solution path from the full-data search. For \code{projection}
-objects (returned by \code{\link[=project]{project()}}, possibly as elements of a \code{list}), this
-function retrieves the predictor combination onto which the projection was
-performed.
-}
-\examples{
-if (requireNamespace("rstanarm", quietly = TRUE)) {
-  # Data:
-  dat_gauss <- data.frame(y = df_gaussian$y, df_gaussian$x)
-
-  # The "stanreg" fit which will be used as the reference model (with small
-  # values for `chains` and `iter`, but only for technical reasons in this
-  # example; this is not recommended in general):
-  fit <- rstanarm::stan_glm(
-    y ~ X1 + X2 + X3 + X4 + X5, family = gaussian(), data = dat_gauss,
-    QR = TRUE, chains = 2, iter = 500, refresh = 0, seed = 9876
-  )
-
-  # Run varsel() (here without cross-validation and with small values for
-  # `nterms_max`, `nclusters`, and `nclusters_pred`, but only for the sake of
-  # speed in this example; this is not recommended in general):
-  vs <- varsel(fit, nterms_max = 3, nclusters = 5, nclusters_pred = 10,
-               seed = 5555)
-  print(solution_terms(vs))
-
-  # Projection onto an arbitrary combination of predictor terms (with a small
-  # value for `nclusters`, but only for the sake of speed in this example;
-  # this is not recommended in general):
-  prj <- project(fit, solution_terms = c("X1", "X3", "X5"), nclusters = 10,
-                 seed = 9182)
-  print(solution_terms(prj)) # gives `c("X1", "X3", "X5")`
-}
-
+The \code{\link[=solution_terms.vsel]{solution_terms.vsel()}} method retrieves the solution path from a
+full-data search (\code{vsel} objects are returned by \code{\link[=varsel]{varsel()}} or
+\code{\link[=cv_varsel]{cv_varsel()}}). The \code{\link[=solution_terms.projection]{solution_terms.projection()}} method retrieves the
+predictor combination onto which a projection was performed (\code{projection}
+objects are returned by \code{\link[=project]{project()}}, possibly as elements of a \code{list}). Both
+methods (and hence also the \code{\link[=solution_terms]{solution_terms()}} generic) are deprecated and
+will be removed in a future release. Please use \code{\link[=ranking]{ranking()}} instead of
+\code{\link[=solution_terms.vsel]{solution_terms.vsel()}} (\code{\link[=ranking]{ranking()}}'s output element \code{fulldata} contains the
+full-data predictor ranking that is extracted by \code{\link[=solution_terms.vsel]{solution_terms.vsel()}};
+\code{\link[=ranking]{ranking()}}'s output element \code{foldwise} contains the fold-wise predictor
+rankings---if available---which were previously not accessible via a built-in
+function) and \code{\link[=predictor_terms]{predictor_terms()}} instead of \code{\link[=solution_terms.projection]{solution_terms.projection()}}.
 }
