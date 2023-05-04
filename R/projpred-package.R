@@ -125,8 +125,8 @@
 #'   *evaluation* part for a projection predictive variable selection, possibly
 #'   with cross-validation (CV).}
 #'   \item{[summary.vsel()], [print.vsel()], [plot.vsel()],
-#'   [suggest_size.vsel()], [solution_terms.vsel()], [ranking()], [props()],
-#'   [plot.props()]}{For post-processing the results from [varsel()] and
+#'   [suggest_size.vsel()], [solution_terms.vsel()], [ranking()], [cv_proportions()],
+#'   [plot.cv_proportions()]}{For post-processing the results from [varsel()] and
 #'   [cv_varsel()].}
 #'   \item{[project()]}{For projecting the reference model onto submodel(s).
 #'   Typically, this follows the variable selection, but it can also be applied

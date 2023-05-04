@@ -221,13 +221,13 @@ rk <- ranking(cvvs)
 
 In addition to inspecting the full-data predictor ranking, it usually makes sense to investigate the ranking proportions derived from the fold-wise predictor rankings (only available in case of `cv_varsel()` with `validate_search = TRUE`, which we have here) in order to get a sense for the variability in the ranking of the predictors.
 For a given predictor $x$ and a given submodel size $j$, the ranking proportion is the proportion of CV folds which have predictor $x$ at position $j$ of their predictor ranking.
-To compute these ranking proportions, we use `props()`:
-```{r props}
-( pr_rk <- props(rk) )
+To compute these ranking proportions, we use `cv_proportions()`:
+```{r cv_proportions}
+( pr_rk <- cv_proportions(rk) )
 ```
 Here, the ranking proportions are of little use as we have used `K = 2` (in the final `cv_varsel()` call above) for the sake of speed.
 Nevertheless, we can see that the two CV folds agree on the two most relevant predictor terms `X1` and `X14` as well as on their order.
-Since the column names of the matrix returned by `props()` follow the full-data predictor ranking, we can infer that `X1` and `X14` are also the two most relevant predictor terms in the full-data predictor ranking.
+Since the column names of the matrix returned by `cv_proportions()` follow the full-data predictor ranking, we can infer that `X1` and `X14` are also the two most relevant predictor terms in the full-data predictor ranking.
 To see this more explicitly, we can access element `fulldata` of the `ranking()` output:
 ```{r ranking_fulldata}
 rk[["fulldata"]]
@@ -235,8 +235,8 @@ rk[["fulldata"]]
 
 Note that we have cut off the search at `nterms_max = 9` (which is smaller than the number of predictor terms in the full model, 20 here), so the ranking proportions in the `pr_rk` matrix do not need to sum to 100&nbsp;% (neither column-wise nor row-wise).
 
-The matrix of ranking proportions can be visualized via `plot.props()`:
-```{r plot_props, fig.width = 6, out.width = "80%"}
+The matrix of ranking proportions can be visualized via `plot.cv_proportions()`:
+```{r plot_cv_proportions, fig.width = 6, out.width = "80%"}
 plot(pr_rk)
 ```
 
@@ -245,8 +245,8 @@ To retrieve the predictor terms of the final submodel (except for the intercept 
 ( predictors_final <- head(rk[["fulldata"]], size_decided) )
 ```
 At this place, it is again helpful to take the ranking proportions into account, but now in a cumulated fashion:
-```{r plot_props_cumul, fig.width = 6, out.width = "80%"}
-plot(props(rk, cumulate = TRUE))
+```{r plot_cv_proportions_cumul, fig.width = 6, out.width = "80%"}
+plot(cv_proportions(rk, cumulate = TRUE))
 ```
 This plot tells us that both CV folds have all terms from `predictors_final` (except for `X6`) included among the first 6 terms of their predictor ranking (6 was the chosen submodel size, so we look at `<=6` on the x-axis).
 Only one of the two CV folds includes `X6` among the first 6 terms, but the other CV fold includes it shortly after that (at size 7, see also the `plot(pr_rk)` call above), which indicates that `X6` might indeed be relevant.

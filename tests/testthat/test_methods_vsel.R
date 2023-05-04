@@ -373,9 +373,9 @@ test_that("`object` of class `vsel` (created by cv_varsel()) works", {
   }
 })
 
-# props() -----------------------------------------------------------------
+# cv_proportions() -----------------------------------------------------------------
 
-context("props()")
+context("cv_proportions()")
 
 test_that("`object` of class `ranking` (based on varsel() output) fails", {
   skip_if_not(run_vs)
@@ -393,7 +393,7 @@ test_that(paste(
       tstsetup_cvvs <- args_pr_cvvs[[tstsetup]]$tstsetup_vsel
       nterms_max_expected_crr <- args_cvvs[[tstsetup_cvvs]][["nterms_max"]]
     }
-    props_tester(
+    cv_proportions_tester(
       prs_cvvs[[tstsetup]],
       cumulate_expected = args_pr_cvvs[[tstsetup]][["cumulate"]],
       nterms_max_expected = nterms_max_expected_crr,
@@ -403,11 +403,11 @@ test_that(paste(
   }
 })
 
-test_that("props.vsel() is a shortcut", {
+test_that("cv_proportions.vsel() is a shortcut", {
   skip_if_not(run_cvvs)
   for (tstsetup in names(prs_cvvs)) {
     args_pr_cvvs_i <- args_pr_cvvs[[tstsetup]]
-    pr_from_vsel <- do.call(props, c(
+    pr_from_vsel <- do.call(cv_proportions, c(
       list(object = cvvss[[args_pr_cvvs_i$tstsetup_vsel]]),
       excl_nonargs(args_pr_cvvs_i)
     ))
@@ -429,34 +429,34 @@ rk <- structure(
   class = "ranking"
 )
 # With `cumulate = FALSE`:
-pr_cF <- props(rk)
+pr_cF <- cv_proportions(rk)
 # With `cumulate = TRUE`:
-pr_cT <- props(rk, cumulate = TRUE)
+pr_cT <- cv_proportions(rk, cumulate = TRUE)
 
 test_that("`nterms_max = 0` fails", {
-  expect_error(props(rk, nterms_max = 0), "Needing `nterms_max >= 1`")
+  expect_error(cv_proportions(rk, nterms_max = 0), "Needing `nterms_max >= 1`")
 })
 
 test_that("`cumulate = TRUE` works", {
   pr_cT_ch <- structure(apply(pr_cF, 2, cumsum),
-                        class = c("cumulprops", "props"))
+                        class = c("cumulcv_proportions", "cv_proportions"))
   rownames(pr_cT_ch) <- paste0("<=", seq_len(nrow(pr_cT_ch)))
   expect_identical(pr_cT, pr_cT_ch)
 })
 
 test_that("ranking proportions are computed correctly", {
   # With `cumulate = FALSE`:
-  props_tester(pr_cF, nterms_max_expected = ntrms, cnms_expected = rk_fdata,
+  cv_proportions_tester(pr_cF, nterms_max_expected = ntrms, cnms_expected = rk_fdata,
                info_str = "cumulate = FALSE")
   expect_true(all(pr_cF == 1 / ntrms), info = "cumulate = FALSE")
   expect_true(all(rowSums(pr_cF) == 1), info = "cumulate = FALSE")
   expect_true(all(colSums(pr_cF) == 1), info = "cumulate = FALSE")
 
   # With `cumulate = TRUE`:
-  props_tester(pr_cT, cumulate_expected = TRUE, nterms_max_expected = ntrms,
+  cv_proportions_tester(pr_cT, cumulate_expected = TRUE, nterms_max_expected = ntrms,
                cnms_expected = rk_fdata, info_str = "cumulate = TRUE")
   pr_cT_expected <- matrix(1:ntrms / ntrms, nrow = ntrms, ncol = ntrms)
-  class(pr_cT_expected) <- c("cumulprops", "props")
+  class(pr_cT_expected) <- c("cumulcv_proportions", "cv_proportions")
   expect_equal(pr_cT, pr_cT_expected, check.attributes = FALSE,
                tolerance = .Machine$double.eps, info = "cumulate = TRUE")
   has_1_colwise <- all(apply(pr_cT, 2, function(x_col) 1 %in% x_col))
@@ -466,11 +466,11 @@ test_that("ranking proportions are computed correctly", {
 # Clean up the workspace:
 rm(list = setdiff(ls(), ls_bu))
 
-# plot.props() ------------------------------------------------------------
+# plot.cv_proportions() ------------------------------------------------------------
 
-context("plot.props()")
+context("plot.cv_proportions()")
 
-test_that("`x` of class `props` works", {
+test_that("`x` of class `cv_proportions` works", {
   skip_if_not(run_cvvs)
   for (tstsetup in names(plotprs)) {
     expect_s3_class(plotprs[[tstsetup]], c("gg", "ggplot"))
@@ -509,10 +509,10 @@ ntrms <- 20L
 pr_dummy <- matrix(seq(0, 1, length.out = ntrms^2), nrow = ntrms, ncol = ntrms,
                    dimnames = list("size" = as.character(seq_len(ntrms)),
                                    "predictor" = paste0("x", seq_len(ntrms))))
-class(pr_dummy) <- "props"
+class(pr_dummy) <- "cv_proportions"
 prc_dummy <- pr_dummy
 rownames(prc_dummy) <- paste0("<=", rownames(pr_dummy))
-class(prc_dummy) <- c("cumulprops", class(pr_dummy))
+class(prc_dummy) <- c("cumulcv_proportions", class(pr_dummy))
 
 plotpr_dummy <- plot(pr_dummy)
 plotprc_dummy <- plot(prc_dummy)
