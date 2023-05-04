@@ -2181,9 +2181,9 @@ plot.cv_proportions <- function(x, text_angle = NULL, ...) {
     propcv = as.vector(x)
   )
   cv_props_long$txtcolor <- ifelse(cv_props_long$propcv > 0.5, "white", "black")
-  ggcv_proportions <- ggplot(data = cv_props_long,
-                             mapping = aes(x = .data[["msize"]],
-                                           y = .data[["pterm"]])) +
+  gg_cv_props <- ggplot(data = cv_props_long,
+                        mapping = aes(x = .data[["msize"]],
+                                      y = .data[["pterm"]])) +
     geom_tile(mapping = aes(fill = .data[["propcv"]]),
               width = 1, height = 1, linewidth = 1, color = "white") +
     # Note: The original code for this function specified argument `fontface`
@@ -2207,7 +2207,7 @@ plot.cv_proportions <- function(x, text_angle = NULL, ...) {
     labs(x = "Submodel size (number of predictor terms)", y = "Predictor") +
     coord_cartesian(expand = FALSE) +
     theme(axis.text.y = element_text(angle = text_angle))
-  return(ggcv_proportions)
+  return(gg_cv_props)
 }
 
 #' @rdname plot.cv_proportions
