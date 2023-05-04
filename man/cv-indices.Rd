@@ -3,10 +3,13 @@
 \name{cv-indices}
 \alias{cv-indices}
 \alias{cv_folds}
+\alias{cvfolds}
 \alias{cv_ids}
 \title{Create cross-validation folds}
 \usage{
 cv_folds(n, K, seed = sample.int(.Machine$integer.max, 1))
+
+cvfolds(n, K, seed = sample.int(.Machine$integer.max, 1))
 
 cv_ids(
   n,
@@ -42,8 +45,10 @@ respectively, for each fold.
 These are helper functions to create cross-validation (CV) folds, i.e., to
 split up the indices from 1 to \code{n} into \code{K} subsets ("folds") for
 \eqn{K}-fold CV. These functions are potentially useful when creating the
-\code{cvfits} and \code{cvfun} arguments for \code{\link[=init_refmodel]{init_refmodel()}}. The return value is
-different for these two methods, see below for details.
+\code{cvfits} and \code{cvfun} arguments for \code{\link[=init_refmodel]{init_refmodel()}}. Function \code{\link[=cvfolds]{cvfolds()}} is
+deprecated; please use \code{\link[=cv_folds]{cv_folds()}} instead (apart from the name, they are
+the same). The return value of \code{\link[=cv_folds]{cv_folds()}} and \code{\link[=cv_ids]{cv_ids()}} is different, see
+below for details.
 }
 \examples{
 n <- 100

@@ -1802,8 +1802,10 @@ as.matrix.projection <- function(x, nm_scheme = "auto", ...) {
 #' These are helper functions to create cross-validation (CV) folds, i.e., to
 #' split up the indices from 1 to `n` into `K` subsets ("folds") for
 #' \eqn{K}-fold CV. These functions are potentially useful when creating the
-#' `cvfits` and `cvfun` arguments for [init_refmodel()]. The return value is
-#' different for these two methods, see below for details.
+#' `cvfits` and `cvfun` arguments for [init_refmodel()]. Function [cvfolds()] is
+#' deprecated; please use [cv_folds()] instead (apart from the name, they are
+#' the same). The return value of [cv_folds()] and [cv_ids()] is different, see
+#' below for details.
 #'
 #' @name cv-indices
 #'
@@ -1852,6 +1854,13 @@ cv_folds <- function(n, K, seed = sample.int(.Machine$integer.max, 1)) {
   folds <- sample(folds, n, replace = FALSE)
 
   return(folds)
+}
+
+#' @rdname cv-indices
+#' @export
+cvfolds <- function(n, K, seed = sample.int(.Machine$integer.max, 1)) {
+  warning("cvfolds() is deprecated. Please use cv_folds() instead.")
+  cv_folds(n = n, K = K, seed = seed)
 }
 
 #' @rdname cv-indices
