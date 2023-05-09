@@ -1649,7 +1649,7 @@ if (run_cvvs) {
 
 ## cv_proportions() -------------------------------------------------------
 
-err_no_foldwise_rk <- "no fold-wise predictor rankings"
+err_no_foldwise_rk <- "Could not find fold-wise predictor rankings"
 
 ### varsel() --------------------------------------------------------------
 

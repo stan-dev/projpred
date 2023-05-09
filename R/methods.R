@@ -2032,6 +2032,13 @@ ranking <- function(object, ...) {
 #' @rdname ranking
 #' @export
 ranking.vsel <- function(object, ...) {
+  if (is.null(object$projpred_version) && !is.null(object$cv_method)) {
+    warning(
+      "It seems like a projpred version <= 2.5.0 was used for creating the ",
+      "`vsel` object. Thus, even if there are fold-wise searches, the ",
+      "corresponding fold-wise predictor rankings cannot be extracted."
+    )
+  }
   out <- list(fulldata = object[["solution_terms"]],
               foldwise = object[["solution_terms_cv"]])
   class(out) <- "ranking"
@@ -2104,11 +2111,10 @@ cv_proportions.ranking <- function(object, cumulate = FALSE,
                                    ...) {
   cv_paths <- object[["foldwise"]]
   if (is.null(cv_paths)) {
-    stop(
-      "Either `object` is not based on a cross-validation or the search has ",
-      "been excluded from the cross-validation. Thus, there are no fold-wise ",
-      "predictor rankings from which to calculate ranking proportions."
-    )
+    stop("Could not find fold-wise predictor rankings from which to calculate ",
+         "ranking proportions. The reason is probably that `object` is not ",
+         "based on a cross-validation or that the search has been excluded ",
+         "from the cross-validation.")
   }
   stopifnot("Needing `nterms_max >= 1`." = isTRUE(nterms_max >= 1))
   cv_paths <- cv_paths[, seq_len(nterms_max), drop = FALSE]
