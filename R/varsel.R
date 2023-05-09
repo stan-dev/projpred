@@ -381,7 +381,8 @@ varsel.refmodel <- function(object, d_test = NULL, method = NULL,
               clust_used_search = p_sel$clust_used,
               clust_used_eval = p_pred$clust_used,
               nprjdraws_search = NCOL(p_sel$mu),
-              nprjdraws_eval = NCOL(p_pred$mu))
+              nprjdraws_eval = NCOL(p_pred$mu),
+              projpred_version = utils::packageVersion("projpred"))
   class(vs) <- "vsel"
 
   return(vs)

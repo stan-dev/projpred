@@ -1744,7 +1744,7 @@ vsel_nms <- c(
   "solution_terms_cv", "ce", "type_test", "y_wobs_test", "nobs_test",
   "summaries", "nterms_all", "nterms_max", "method", "cv_method", "K",
   "validate_search", "clust_used_search", "clust_used_eval", "nprjdraws_search",
-  "nprjdraws_eval"
+  "nprjdraws_eval", "projpred_version"
 )
 # Related to prediction (in contrast to selection):
 vsel_nms_pred <- c("summaries", "solution_terms", "ce")

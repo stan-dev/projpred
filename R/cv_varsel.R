@@ -239,7 +239,8 @@ cv_varsel.refmodel <- function(
               clust_used_search = search_path_full_data$p_sel$clust_used,
               clust_used_eval = refdist_eval_dummy$clust_used,
               nprjdraws_search = NCOL(search_path_full_data$p_sel$mu),
-              nprjdraws_eval = NCOL(refdist_eval_dummy$mu))
+              nprjdraws_eval = NCOL(refdist_eval_dummy$mu),
+              projpred_version = utils::packageVersion("projpred"))
   class(vs) <- "vsel"
   return(vs)
 }

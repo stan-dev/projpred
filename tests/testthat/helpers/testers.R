@@ -2337,6 +2337,9 @@ vsel_tester <- function(
   # nprjdraws_eval
   expect_equal(vs$nprjdraws_eval, nprjdraws_eval_expected, info = info_str)
 
+  # projpred_version
+  expect_true(is.package_version(vs$projpred_version), info = info_str)
+
   return(invisible(TRUE))
 }
 
