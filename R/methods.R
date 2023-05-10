@@ -256,10 +256,12 @@ proj_linpred <- function(object, newdata = NULL, offsetnew = NULL,
                          weightsnew = NULL, filter_nterms = NULL,
                          transform = FALSE, integrated = FALSE, .seed = NA,
                          ...) {
+  if (exists(".Random.seed", envir = .GlobalEnv)) {
+    rng_state_old <- get(".Random.seed", envir = .GlobalEnv)
+  }
   if (!is.na(.seed)) {
     # Set seed, but ensure the old RNG state is restored on exit:
     if (exists(".Random.seed", envir = .GlobalEnv)) {
-      rng_state_old <- get(".Random.seed", envir = .GlobalEnv)
       on.exit(assign(".Random.seed", rng_state_old, envir = .GlobalEnv))
     }
     set.seed(.seed)
@@ -430,10 +432,12 @@ proj_predict <- function(object, newdata = NULL, offsetnew = NULL,
                          weightsnew = NULL, filter_nterms = NULL,
                          nresample_clusters = 1000, .seed = NA,
                          resp_oscale = TRUE, ...) {
+  if (exists(".Random.seed", envir = .GlobalEnv)) {
+    rng_state_old <- get(".Random.seed", envir = .GlobalEnv)
+  }
   if (!is.na(.seed)) {
     # Set seed, but ensure the old RNG state is restored on exit:
     if (exists(".Random.seed", envir = .GlobalEnv)) {
-      rng_state_old <- get(".Random.seed", envir = .GlobalEnv)
       on.exit(assign(".Random.seed", rng_state_old, envir = .GlobalEnv))
     }
     set.seed(.seed)
@@ -1844,10 +1848,12 @@ NULL
 cv_folds <- function(n, K, seed = NA) {
   validate_num_folds(K, n)
 
+  if (exists(".Random.seed", envir = .GlobalEnv)) {
+    rng_state_old <- get(".Random.seed", envir = .GlobalEnv)
+  }
   if (!is.na(seed)) {
     # Set seed, but ensure the old RNG state is restored on exit:
     if (exists(".Random.seed", envir = .GlobalEnv)) {
-      rng_state_old <- get(".Random.seed", envir = .GlobalEnv)
       on.exit(assign(".Random.seed", rng_state_old, envir = .GlobalEnv))
     }
     set.seed(seed)
@@ -1873,10 +1879,12 @@ cv_ids <- function(n, K, out = c("foldwise", "indices"), seed = NA) {
   validate_num_folds(K, n)
   out <- match.arg(out)
 
+  if (exists(".Random.seed", envir = .GlobalEnv)) {
+    rng_state_old <- get(".Random.seed", envir = .GlobalEnv)
+  }
   if (!is.na(seed)) {
     # Set seed, but ensure the old RNG state is restored on exit:
     if (exists(".Random.seed", envir = .GlobalEnv)) {
-      rng_state_old <- get(".Random.seed", envir = .GlobalEnv)
       on.exit(assign(".Random.seed", rng_state_old, envir = .GlobalEnv))
     }
     set.seed(seed)

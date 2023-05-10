@@ -137,10 +137,12 @@ cv_varsel.refmodel <- function(
     search_terms = NULL,
     ...
 ) {
+  if (exists(".Random.seed", envir = .GlobalEnv)) {
+    rng_state_old <- get(".Random.seed", envir = .GlobalEnv)
+  }
   if (!is.na(seed)) {
     # Set seed, but ensure the old RNG state is restored on exit:
     if (exists(".Random.seed", envir = .GlobalEnv)) {
-      rng_state_old <- get(".Random.seed", envir = .GlobalEnv)
       on.exit(assign(".Random.seed", rng_state_old, envir = .GlobalEnv))
     }
     set.seed(seed)
