@@ -55,12 +55,14 @@ class \code{datafit} (in which case one cluster is used). For the meaning of
 
 \item{seed}{Pseudorandom number generation (PRNG) seed by which the same
 results can be obtained again if needed. Passed to argument \code{seed} of
-\code{\link[=set.seed]{set.seed()}}, but can also be \code{NA} to not call \code{\link[=set.seed]{set.seed()}} at all. Here,
-this seed is used for clustering the reference model's posterior draws (if
-\code{!is.null(nclusters)}) and for drawing new group-level effects when
-predicting from a multilevel submodel (however, not yet in case of a GAMM)
-and having global option \code{projpred.mlvl_pred_new} set to \code{TRUE}. (Such a
-prediction takes place when calculating output elements \code{dis} and \code{ce}.)}
+\code{\link[=set.seed]{set.seed()}}, but can also be \code{NA} to not call \code{\link[=set.seed]{set.seed()}} at all. If not
+\code{NA}, then the PRNG state is reset (to the state before calling
+\code{\link[=project]{project()}}) upon exiting \code{\link[=project]{project()}}. Here, \code{seed} is used for clustering
+the reference model's posterior draws (if \code{!is.null(nclusters)}) and for
+drawing new group-level effects when predicting from a multilevel submodel
+(however, not yet in case of a GAMM) and having global option
+\code{projpred.mlvl_pred_new} set to \code{TRUE}. (Such a prediction takes place when
+calculating output elements \code{dis} and \code{ce}.)}
 
 \item{regul}{A number giving the amount of ridge regularization when
 projecting onto (i.e., fitting) submodels which are GLMs. Usually there is

@@ -38,13 +38,14 @@
 #'   number of parameters introduced by the search).
 #' @param seed Pseudorandom number generation (PRNG) seed by which the same
 #'   results can be obtained again if needed. Passed to argument `seed` of
-#'   [set.seed()], but can also be `NA` to not call [set.seed()] at all. Here,
-#'   this seed is used for clustering the reference model's posterior draws (if
-#'   `!is.null(nclusters)` or `!is.null(nclusters_pred)`), for subsampling LOO
-#'   CV folds (if `nloo` is smaller than the number of observations), for
-#'   sampling the folds in \eqn{K}-fold CV, and for drawing new group-level
-#'   effects when predicting from a multilevel submodel (however, not yet in
-#'   case of a GAMM).
+#'   [set.seed()], but can also be `NA` to not call [set.seed()] at all. If not
+#'   `NA`, then the PRNG state is reset (to the state before calling
+#'   [cv_varsel()]) upon exiting [cv_varsel()]. Here, `seed` is used for
+#'   clustering the reference model's posterior draws (if `!is.null(nclusters)`
+#'   or `!is.null(nclusters_pred)`), for subsampling LOO CV folds (if `nloo` is
+#'   smaller than the number of observations), for sampling the folds in
+#'   \eqn{K}-fold CV, and for drawing new group-level effects when predicting
+#'   from a multilevel submodel (however, not yet in case of a GAMM).
 #'
 #' @inherit varsel details return
 #'

@@ -37,12 +37,14 @@
 #'   `NULL`, see argument `ndraws`. See also section "Details" below.
 #' @param seed Pseudorandom number generation (PRNG) seed by which the same
 #'   results can be obtained again if needed. Passed to argument `seed` of
-#'   [set.seed()], but can also be `NA` to not call [set.seed()] at all. Here,
-#'   this seed is used for clustering the reference model's posterior draws (if
-#'   `!is.null(nclusters)`) and for drawing new group-level effects when
-#'   predicting from a multilevel submodel (however, not yet in case of a GAMM)
-#'   and having global option `projpred.mlvl_pred_new` set to `TRUE`. (Such a
-#'   prediction takes place when calculating output elements `dis` and `ce`.)
+#'   [set.seed()], but can also be `NA` to not call [set.seed()] at all. If not
+#'   `NA`, then the PRNG state is reset (to the state before calling
+#'   [project()]) upon exiting [project()]. Here, `seed` is used for clustering
+#'   the reference model's posterior draws (if `!is.null(nclusters)`) and for
+#'   drawing new group-level effects when predicting from a multilevel submodel
+#'   (however, not yet in case of a GAMM) and having global option
+#'   `projpred.mlvl_pred_new` set to `TRUE`. (Such a prediction takes place when
+#'   calculating output elements `dis` and `ce`.)
 #' @inheritParams varsel
 #' @param ... Arguments passed to [get_refmodel()] (if [get_refmodel()] is
 #'   actually used; see argument `object`) as well as to the divergence

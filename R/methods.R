@@ -43,10 +43,12 @@
 #'   determined by argument `nclusters` of [project()]).
 #' @param .seed Pseudorandom number generation (PRNG) seed by which the same
 #'   results can be obtained again if needed. Passed to argument `seed` of
-#'   [set.seed()], but can also be `NA` to not call [set.seed()] at all. Here,
-#'   this seed is used for drawing new group-level effects in case of a
-#'   multilevel submodel (however, not yet in case of a GAMM) and for drawing
-#'   from the predictive distributions of the submodel(s) in case of
+#'   [set.seed()], but can also be `NA` to not call [set.seed()] at all. If not
+#'   `NA`, then the PRNG state is reset (to the state before calling
+#'   [proj_linpred()] or [proj_predict()]) upon exiting [proj_linpred()] or
+#'   [proj_predict()]. Here, `.seed` is used for drawing new group-level effects
+#'   in case of a multilevel submodel (however, not yet in case of a GAMM) and
+#'   for drawing from the predictive distributions of the submodel(s) in case of
 #'   [proj_predict()]. If a clustered projection was performed, then in
 #'   [proj_predict()], `.seed` is also used for drawing from the set of
 #'   projected clusters of posterior draws (see argument `nresample_clusters`).
@@ -1821,7 +1823,9 @@ as.matrix.projection <- function(x, nm_scheme = "auto", ...) {
 #'   below for details.
 #' @param seed Pseudorandom number generation (PRNG) seed by which the same
 #'   results can be obtained again if needed. Passed to argument `seed` of
-#'   [set.seed()], but can also be `NA` to not call [set.seed()] at all.
+#'   [set.seed()], but can also be `NA` to not call [set.seed()] at all. If not
+#'   `NA`, then the PRNG state is reset (to the state before calling
+#'   [cv_folds()] or [cv_ids()]) upon exiting [cv_folds()] or [cv_ids()].
 #'
 #' @return [cv_folds()] returns a vector of length `n` such that each element is
 #'   an integer between 1 and `K` denoting which fold the corresponding data
