@@ -239,6 +239,7 @@ The *transposed* matrix of ranking proportions can be visualized via `plot.cv_pr
 ```{r plot_cv_proportions, fig.width=6, out.width="80%"}
 plot(pr_rk)
 ```
+Apart from visualizing the variability in the ranking of the predictors (here, this is of little use because of `K = 2`), this plot will be helpful later.
 
 To retrieve the predictor terms of the final submodel (except for the intercept which is always included in the submodels), we combine the chosen submodel size of 6 with the full-data predictor ranking:
 ```{r predictors_final}
