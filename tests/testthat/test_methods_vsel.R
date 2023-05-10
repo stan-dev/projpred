@@ -232,6 +232,9 @@ test_that("`x` of class \"vsel\" (created by varsel()) works", {
     plot_obj <- plot(vss[[tstsetup]], nterms_max = nterms_avail$single)
     expect_s3_class(plot_obj, c("gg", "ggplot"))
     expect_visible(plot_obj, label = tstsetup)
+    if (run_snaps) {
+      vdiffr::expect_doppelganger(tstsetup, plot_obj)
+    }
   }
 })
 
@@ -241,6 +244,9 @@ test_that("`x` of class \"vsel\" (created by cv_varsel()) works", {
     plot_obj <- plot(cvvss[[tstsetup]], nterms_max = nterms_avail$single)
     expect_s3_class(plot_obj, c("gg", "ggplot"))
     expect_visible(plot_obj, label = tstsetup)
+    if (run_snaps) {
+      vdiffr::expect_doppelganger(tstsetup, plot_obj)
+    }
   }
 })
 
@@ -268,12 +274,29 @@ test_that("invalid `nterms_max` fails", {
 
 test_that("`nterms_max` is capped to the maximum model size", {
   skip_if_not(run_vs)
-  for (tstsetup in head(names(vss), 1)) {
-    expect_equal(
-      plot(vss[[tstsetup]]),
-      plot(vss[[tstsetup]], nterms_max = args_vs[[tstsetup]]$nterms_max + 1L),
-      info = tstsetup
-    )
+  for (tstsetup in names(vss)) {
+    plot_default <- plot(vss[[tstsetup]])
+    expect_s3_class(plot_default, c("gg", "ggplot"))
+    expect_visible(plot_default, label = tstsetup)
+    if (run_snaps) {
+      vdiffr::expect_doppelganger(paste(tstsetup, "default", sep = "__"),
+                                  plot_default)
+    }
+
+    plot_capped <- plot(vss[[tstsetup]],
+                        nterms_max = args_vs[[tstsetup]]$nterms_max + 1L)
+    expect_s3_class(plot_capped, c("gg", "ggplot"))
+    expect_visible(plot_capped, label = tstsetup)
+    ### We are doing the comparison via vdiffr's snapshots only, because that is
+    ### much quicker than applying expect_identical() or expect_equal() to the
+    ### ggplot objects:
+    # expect_identical(plot_capped, plot_default, info = tstsetup)
+    # expect_equal(plot_capped, plot_default, info = tstsetup)
+    if (run_snaps) {
+      vdiffr::expect_doppelganger(paste(tstsetup, "default", sep = "__"),
+                                  plot_capped)
+    }
+    ###
   }
 })
 
@@ -494,8 +517,10 @@ test_that("plot.ranking() is a shortcut", {
     expect_s3_class(plotpr_from_rk, c("gg", "ggplot"))
     expect_visible(plotpr_from_rk, label = tstsetup)
     ### We are doing the comparison via vdiffr's snapshots only, because that is
-    ### much quicker than applying expect_identical() to the ggplot objects:
+    ### much quicker than applying expect_identical() or expect_equal() to the
+    ### ggplot objects:
     # expect_identical(plotpr_from_rk, plotprs[[tstsetup]], info = tstsetup)
+    # expect_equal(plotpr_from_rk, plotprs[[tstsetup]], info = tstsetup)
     if (run_snaps) {
       vdiffr::expect_doppelganger(tstsetup, plotpr_from_rk)
     }
