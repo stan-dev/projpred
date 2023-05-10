@@ -52,6 +52,9 @@
 #'   [proj_predict()]. If a clustered projection was performed, then in
 #'   [proj_predict()], `.seed` is also used for drawing from the set of
 #'   projected clusters of posterior draws (see argument `nresample_clusters`).
+#'   If [project()] is called internally with `seed = NA` (or with `seed` being
+#'   a lazily evaluated expression that uses the PRNG), then `.seed` also
+#'   affects the PRNG usage there.
 #' @param resp_oscale Only relevant for the latent projection. A single logical
 #'   value indicating whether to draw from the posterior-projection predictive
 #'   distributions on the original response scale (`TRUE`) or on latent scale
