@@ -25,6 +25,7 @@ If you read this from a place other than <https://mc-stan.org/projpred/news/inde
 * Fixed a bug causing L1 search to throw an error in case of some `I()` terms. (GitHub: #404, #408)
 * Fixed a bug causing L1 search to throw an error in case of `poly()` or `polym()` terms. Note that just like `step()` and `MASS::stepAIC()`, **projpred**'s search algorithms do not split up a `poly()` or `polym()` term into its lower-degree polynomial terms (which would be helpful, for example, if the linear part of a `poly()` term with `degrees = 2` was relevant but the quadratic part not). Such a split-up of a `poly()` or `polym()` term needs to be performed manually (if desired). (GitHub: #183, #409)
 * Fixed a bug causing some non-smooth predictor terms to be treated as smooth terms. (GitHub: #182, #410)
+* See "Major changes" above: Fixed a bug causing **projpred** functions with a `seed` (or `.seed`) argument to use the same seed internally when users set a seed once at the beginning (via `set.seed()`) and then had two or more calls to such **projpred** functions with their `seed` (or `.seed`) argument being at its default and no PRNG-using code between those calls. (GitHub: #412)
 
 # projpred 2.5.0
 
