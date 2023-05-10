@@ -287,16 +287,10 @@ test_that("`nterms_max` is capped to the maximum model size", {
                         nterms_max = args_vs[[tstsetup]]$nterms_max + 1L)
     expect_s3_class(plot_capped, c("gg", "ggplot"))
     expect_visible(plot_capped, label = tstsetup)
-    ### We are doing the comparison via vdiffr's snapshots only, because that is
-    ### much quicker than applying expect_identical() or expect_equal() to the
-    ### ggplot objects:
-    # expect_identical(plot_capped, plot_default, info = tstsetup)
-    # expect_equal(plot_capped, plot_default, info = tstsetup)
     if (run_snaps) {
       vdiffr::expect_doppelganger(paste(tstsetup, "default", sep = "__"),
                                   plot_capped)
     }
-    ###
   }
 })
 
@@ -516,15 +510,9 @@ test_that("plot.ranking() is a shortcut", {
     ))
     expect_s3_class(plotpr_from_rk, c("gg", "ggplot"))
     expect_visible(plotpr_from_rk, label = tstsetup)
-    ### We are doing the comparison via vdiffr's snapshots only, because that is
-    ### much quicker than applying expect_identical() or expect_equal() to the
-    ### ggplot objects:
-    # expect_identical(plotpr_from_rk, plotprs[[tstsetup]], info = tstsetup)
-    # expect_equal(plotpr_from_rk, plotprs[[tstsetup]], info = tstsetup)
     if (run_snaps) {
       vdiffr::expect_doppelganger(tstsetup, plotpr_from_rk)
     }
-    ###
   }
 })
 
