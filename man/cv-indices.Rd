@@ -7,16 +7,11 @@
 \alias{cv_ids}
 \title{Create cross-validation folds}
 \usage{
-cv_folds(n, K, seed = sample.int(.Machine$integer.max, 1))
+cv_folds(n, K, seed = NA)
 
-cvfolds(n, K, seed = sample.int(.Machine$integer.max, 1))
+cvfolds(n, K, seed = NA)
 
-cv_ids(
-  n,
-  K,
-  out = c("foldwise", "indices"),
-  seed = sample.int(.Machine$integer.max, 1)
-)
+cv_ids(n, K, out = c("foldwise", "indices"), seed = NA)
 }
 \arguments{
 \item{n}{Number of observations.}
@@ -54,7 +49,7 @@ below for details.
 n <- 100
 set.seed(1234)
 y <- rnorm(n)
-cv <- cv_ids(n, K = 5, seed = 9876)
+cv <- cv_ids(n, K = 5)
 # Mean within the test set of each fold:
 cvmeans <- sapply(cv, function(fold) mean(y[fold$ts]))
 

@@ -200,14 +200,15 @@ varsel.refmodel <- function(object, d_test = NULL, method = NULL,
                             nterms_max = NULL, verbose = TRUE,
                             lambda_min_ratio = 1e-5, nlambda = 150,
                             thresh = 1e-6, regul = 1e-4, penalty = NULL,
-                            search_terms = NULL,
-                            seed = sample.int(.Machine$integer.max, 1), ...) {
-  # Set seed, but ensure the old RNG state is restored on exit:
-  if (exists(".Random.seed", envir = .GlobalEnv)) {
-    rng_state_old <- get(".Random.seed", envir = .GlobalEnv)
-    on.exit(assign(".Random.seed", rng_state_old, envir = .GlobalEnv))
+                            search_terms = NULL, seed = NA, ...) {
+  if (!is.na(seed)) {
+    # Set seed, but ensure the old RNG state is restored on exit:
+    if (exists(".Random.seed", envir = .GlobalEnv)) {
+      rng_state_old <- get(".Random.seed", envir = .GlobalEnv)
+      on.exit(assign(".Random.seed", rng_state_old, envir = .GlobalEnv))
+    }
+    set.seed(seed)
   }
-  if (!is.na(seed)) set.seed(seed)
 
   refmodel <- object
 

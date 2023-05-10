@@ -135,9 +135,8 @@
 #'
 #' @export
 project <- function(object, nterms = NULL, solution_terms = NULL,
-                    refit_prj = TRUE, ndraws = 400, nclusters = NULL,
-                    seed = sample.int(.Machine$integer.max, 1), regul = 1e-4,
-                    ...) {
+                    refit_prj = TRUE, ndraws = 400, nclusters = NULL, seed = NA,
+                    regul = 1e-4, ...) {
   if (inherits(object, "datafit")) {
     stop("project() does not support an `object` of class \"datafit\".")
   }
@@ -152,12 +151,14 @@ project <- function(object, nterms = NULL, solution_terms = NULL,
 
   refmodel <- get_refmodel(object, ...)
 
-  # Set seed, but ensure the old RNG state is restored on exit:
-  if (exists(".Random.seed", envir = .GlobalEnv)) {
-    rng_state_old <- get(".Random.seed", envir = .GlobalEnv)
-    on.exit(assign(".Random.seed", rng_state_old, envir = .GlobalEnv))
+  if (!is.na(seed)) {
+    # Set seed, but ensure the old RNG state is restored on exit:
+    if (exists(".Random.seed", envir = .GlobalEnv)) {
+      rng_state_old <- get(".Random.seed", envir = .GlobalEnv)
+      on.exit(assign(".Random.seed", rng_state_old, envir = .GlobalEnv))
+    }
+    set.seed(seed)
   }
-  if (!is.na(seed)) set.seed(seed)
 
   if (refit_prj && inherits(refmodel, "datafit")) {
     warning("Automatically setting `refit_prj` to `FALSE` since the reference ",

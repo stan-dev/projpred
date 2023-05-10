@@ -14,7 +14,7 @@ proj_linpred(
   filter_nterms = NULL,
   transform = FALSE,
   integrated = FALSE,
-  .seed = sample.int(.Machine$integer.max, 1),
+  .seed = NA,
   ...
 )
 
@@ -25,7 +25,7 @@ proj_predict(
   weightsnew = NULL,
   filter_nterms = NULL,
   nresample_clusters = 1000,
-  .seed = sample.int(.Machine$integer.max, 1),
+  .seed = NA,
   resp_oscale = TRUE,
   ...
 )

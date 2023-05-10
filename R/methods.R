@@ -254,14 +254,16 @@ proj_helper <- function(object, newdata, offsetnew, weightsnew, onesub_fun,
 #' @export
 proj_linpred <- function(object, newdata = NULL, offsetnew = NULL,
                          weightsnew = NULL, filter_nterms = NULL,
-                         transform = FALSE, integrated = FALSE,
-                         .seed = sample.int(.Machine$integer.max, 1), ...) {
-  # Set seed, but ensure the old RNG state is restored on exit:
-  if (exists(".Random.seed", envir = .GlobalEnv)) {
-    rng_state_old <- get(".Random.seed", envir = .GlobalEnv)
-    on.exit(assign(".Random.seed", rng_state_old, envir = .GlobalEnv))
+                         transform = FALSE, integrated = FALSE, .seed = NA,
+                         ...) {
+  if (!is.na(.seed)) {
+    # Set seed, but ensure the old RNG state is restored on exit:
+    if (exists(".Random.seed", envir = .GlobalEnv)) {
+      rng_state_old <- get(".Random.seed", envir = .GlobalEnv)
+      on.exit(assign(".Random.seed", rng_state_old, envir = .GlobalEnv))
+    }
+    set.seed(.seed)
   }
-  if (!is.na(.seed)) set.seed(.seed)
 
   ## proj_helper lapplies fun to each projection in object
   proj_helper(
@@ -426,15 +428,16 @@ compute_lpd <- function(ynew, pred_sub, proj, weights, transformed) {
 #' @export
 proj_predict <- function(object, newdata = NULL, offsetnew = NULL,
                          weightsnew = NULL, filter_nterms = NULL,
-                         nresample_clusters = 1000,
-                         .seed = sample.int(.Machine$integer.max, 1),
+                         nresample_clusters = 1000, .seed = NA,
                          resp_oscale = TRUE, ...) {
-  # Set seed, but ensure the old RNG state is restored on exit:
-  if (exists(".Random.seed", envir = .GlobalEnv)) {
-    rng_state_old <- get(".Random.seed", envir = .GlobalEnv)
-    on.exit(assign(".Random.seed", rng_state_old, envir = .GlobalEnv))
+  if (!is.na(.seed)) {
+    # Set seed, but ensure the old RNG state is restored on exit:
+    if (exists(".Random.seed", envir = .GlobalEnv)) {
+      rng_state_old <- get(".Random.seed", envir = .GlobalEnv)
+      on.exit(assign(".Random.seed", rng_state_old, envir = .GlobalEnv))
+    }
+    set.seed(.seed)
   }
-  if (!is.na(.seed)) set.seed(.seed)
 
   ## proj_helper lapplies fun to each projection in object
   proj_helper(
@@ -793,9 +796,8 @@ plot.vsel <- function(
 #' @param ... Arguments passed to the internal function which is used for
 #'   bootstrapping (if applicable; see argument `stats`). Currently, relevant
 #'   arguments are `B` (the number of bootstrap samples, defaulting to `2000`)
-#'   and `seed` (see [set.seed()], defaulting to
-#'   `sample.int(.Machine$integer.max, 1)`, but can also be `NA` to not call
-#'   [set.seed()] at all).
+#'   and `seed` (see [set.seed()], but defaulting to `NA` so that [set.seed()]
+#'   is not called within that function at all).
 #'
 #' @details The `stats` options `"mse"` and `"rmse"` are only available for:
 #'   * the traditional projection,
@@ -1831,7 +1833,7 @@ as.matrix.projection <- function(x, nm_scheme = "auto", ...) {
 #' n <- 100
 #' set.seed(1234)
 #' y <- rnorm(n)
-#' cv <- cv_ids(n, K = 5, seed = 9876)
+#' cv <- cv_ids(n, K = 5)
 #' # Mean within the test set of each fold:
 #' cvmeans <- sapply(cv, function(fold) mean(y[fold$ts]))
 #'
@@ -1839,15 +1841,17 @@ NULL
 
 #' @rdname cv-indices
 #' @export
-cv_folds <- function(n, K, seed = sample.int(.Machine$integer.max, 1)) {
+cv_folds <- function(n, K, seed = NA) {
   validate_num_folds(K, n)
 
-  # Set seed, but ensure the old RNG state is restored on exit:
-  if (exists(".Random.seed", envir = .GlobalEnv)) {
-    rng_state_old <- get(".Random.seed", envir = .GlobalEnv)
-    on.exit(assign(".Random.seed", rng_state_old, envir = .GlobalEnv))
+  if (!is.na(seed)) {
+    # Set seed, but ensure the old RNG state is restored on exit:
+    if (exists(".Random.seed", envir = .GlobalEnv)) {
+      rng_state_old <- get(".Random.seed", envir = .GlobalEnv)
+      on.exit(assign(".Random.seed", rng_state_old, envir = .GlobalEnv))
+    }
+    set.seed(seed)
   }
-  if (!is.na(seed)) set.seed(seed)
 
   ## create and shuffle the indices
   folds <- rep_len(seq_len(K), length.out = n)
@@ -1858,24 +1862,25 @@ cv_folds <- function(n, K, seed = sample.int(.Machine$integer.max, 1)) {
 
 #' @rdname cv-indices
 #' @export
-cvfolds <- function(n, K, seed = sample.int(.Machine$integer.max, 1)) {
+cvfolds <- function(n, K, seed = NA) {
   warning("cvfolds() is deprecated. Please use cv_folds() instead.")
   cv_folds(n = n, K = K, seed = seed)
 }
 
 #' @rdname cv-indices
 #' @export
-cv_ids <- function(n, K, out = c("foldwise", "indices"),
-                   seed = sample.int(.Machine$integer.max, 1)) {
+cv_ids <- function(n, K, out = c("foldwise", "indices"), seed = NA) {
   validate_num_folds(K, n)
   out <- match.arg(out)
 
-  # Set seed, but ensure the old RNG state is restored on exit:
-  if (exists(".Random.seed", envir = .GlobalEnv)) {
-    rng_state_old <- get(".Random.seed", envir = .GlobalEnv)
-    on.exit(assign(".Random.seed", rng_state_old, envir = .GlobalEnv))
+  if (!is.na(seed)) {
+    # Set seed, but ensure the old RNG state is restored on exit:
+    if (exists(".Random.seed", envir = .GlobalEnv)) {
+      rng_state_old <- get(".Random.seed", envir = .GlobalEnv)
+      on.exit(assign(".Random.seed", rng_state_old, envir = .GlobalEnv))
+    }
+    set.seed(seed)
   }
-  if (!is.na(seed)) set.seed(seed)
 
   # shuffle the indices
   ind <- sample(seq_len(n), n, replace = FALSE)

@@ -133,16 +133,18 @@ cv_varsel.refmodel <- function(
     thresh = 1e-6,
     regul = 1e-4,
     validate_search = TRUE,
-    seed = sample.int(.Machine$integer.max, 1),
+    seed = NA,
     search_terms = NULL,
     ...
 ) {
-  # Set seed, but ensure the old RNG state is restored on exit:
-  if (exists(".Random.seed", envir = .GlobalEnv)) {
-    rng_state_old <- get(".Random.seed", envir = .GlobalEnv)
-    on.exit(assign(".Random.seed", rng_state_old, envir = .GlobalEnv))
+  if (!is.na(seed)) {
+    # Set seed, but ensure the old RNG state is restored on exit:
+    if (exists(".Random.seed", envir = .GlobalEnv)) {
+      rng_state_old <- get(".Random.seed", envir = .GlobalEnv)
+      on.exit(assign(".Random.seed", rng_state_old, envir = .GlobalEnv))
+    }
+    set.seed(seed)
   }
-  if (!is.na(seed)) set.seed(seed)
 
   refmodel <- object
   # Parse arguments which also exist in varsel():

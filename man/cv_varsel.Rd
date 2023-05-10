@@ -29,7 +29,7 @@ cv_varsel(object, ...)
   thresh = 1e-06,
   regul = 1e-04,
   validate_search = TRUE,
-  seed = sample.int(.Machine$integer.max, 1),
+  seed = NA,
   search_terms = NULL,
   ...
 )

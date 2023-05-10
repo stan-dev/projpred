@@ -11,7 +11,7 @@ project(
   refit_prj = TRUE,
   ndraws = 400,
   nclusters = NULL,
-  seed = sample.int(.Machine$integer.max, 1),
+  seed = NA,
   regul = 1e-04,
   ...
 )
