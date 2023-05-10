@@ -39,12 +39,12 @@
 #' @param nclusters_pred Only relevant if `refit_prj` is `TRUE`. Number of
 #'   clusters of posterior draws used in the evaluation part. For the meaning of
 #'   `NULL`, see argument `ndraws_pred`. See also section "Details" below.
-#' @param nterms_max Maximum number of predictor terms until which the search is
-#'   continued. If `NULL`, then `min(19, D)` is used where `D` is the number of
-#'   terms in the reference model (or in `search_terms`, if supplied). Note that
-#'   `nterms_max` does not count the intercept, so use `nterms_max = 0` for the
-#'   intercept-only model. (Correspondingly, `D` above does not count the
-#'   intercept.)
+#' @param nterms_max Maximum submodel size (number of predictor terms) up to
+#'   which the search is continued. If `NULL`, then `min(19, D)` is used where
+#'   `D` is the number of terms in the reference model (or in `search_terms`, if
+#'   supplied). Note that `nterms_max` does not count the intercept, so use
+#'   `nterms_max = 0` for the intercept-only model. (Correspondingly, `D` above
+#'   does not count the intercept.)
 #' @param penalty Only relevant for L1 search. A numeric vector determining the
 #'   relative penalties or costs for the predictors. A value of `0` means that
 #'   those predictors have no cost and will therefore be selected first, whereas

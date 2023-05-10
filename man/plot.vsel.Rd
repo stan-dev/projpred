@@ -19,11 +19,11 @@
 \arguments{
 \item{x}{An object of class \code{vsel} (returned by \code{\link[=varsel]{varsel()}} or \code{\link[=cv_varsel]{cv_varsel()}}).}
 
-\item{nterms_max}{Maximum submodel size for which the statistics are
-calculated. Using \code{NULL} is effectively the same as using
-\code{length(ranking(object)[["fulldata"]])}. Note that \code{nterms_max} does not
-count the intercept, so use \code{nterms_max = 0} for the intercept-only model.
-For \code{\link[=plot.vsel]{plot.vsel()}}, \code{nterms_max} must be at least \code{1}.}
+\item{nterms_max}{Maximum submodel size (number of predictor terms) for which
+the performance statistics are calculated. Using \code{NULL} is effectively the
+same as \code{length(ranking(object)[["fulldata"]])}. Note that \code{nterms_max}
+does not count the intercept, so use \code{nterms_max = 0} for the
+intercept-only model. For \code{\link[=plot.vsel]{plot.vsel()}}, \code{nterms_max} must be at least \code{1}.}
 
 \item{stats}{One or more character strings determining which performance
 statistics (i.e., utilities or losses) to estimate based on the

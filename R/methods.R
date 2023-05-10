@@ -737,11 +737,11 @@ plot.vsel <- function(
 #'
 #' @param object An object of class `vsel` (returned by [varsel()] or
 #'   [cv_varsel()]).
-#' @param nterms_max Maximum submodel size for which the statistics are
-#'   calculated. Using `NULL` is effectively the same as using
-#'   `length(ranking(object)[["fulldata"]])`. Note that `nterms_max` does not
-#'   count the intercept, so use `nterms_max = 0` for the intercept-only model.
-#'   For [plot.vsel()], `nterms_max` must be at least `1`.
+#' @param nterms_max Maximum submodel size (number of predictor terms) for which
+#'   the performance statistics are calculated. Using `NULL` is effectively the
+#'   same as `length(ranking(object)[["fulldata"]])`. Note that `nterms_max`
+#'   does not count the intercept, so use `nterms_max = 0` for the
+#'   intercept-only model. For [plot.vsel()], `nterms_max` must be at least `1`.
 #' @param stats One or more character strings determining which performance
 #'   statistics (i.e., utilities or losses) to estimate based on the
 #'   observations in the evaluation (or "test") set (in case of
@@ -2063,10 +2063,10 @@ ranking.vsel <- function(object, ...) {
 #' @param cumulate A single logical value indicating whether the ranking
 #'   proportions should be cumulated across increasing submodel sizes (`TRUE`)
 #'   or not (`FALSE`).
-#' @param nterms_max A single numeric value giving the maximum submodel size
-#'   (number of predictor terms) to include in the returned matrix. Note that
-#'   `nterms_max` does not count the intercept, so `nterms_max = 1` corresponds
-#'   to the submodel consisting of the first (non-intercept) predictor term.
+#' @param nterms_max Maximum submodel size (number of predictor terms) to
+#'   include in the returned matrix. Note that `nterms_max` does not count the
+#'   intercept, so `nterms_max = 1` corresponds to the submodel consisting of
+#'   the first (non-intercept) predictor term.
 #' @param ... For [cv_proportions.vsel()]: arguments passed to
 #'   [cv_proportions.ranking()]. For [cv_proportions.ranking()]: currently
 #'   ignored.

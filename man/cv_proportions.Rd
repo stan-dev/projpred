@@ -31,10 +31,10 @@ ignored.}
 proportions should be cumulated across increasing submodel sizes (\code{TRUE})
 or not (\code{FALSE}).}
 
-\item{nterms_max}{A single numeric value giving the maximum submodel size
-(number of predictor terms) to include in the returned matrix. Note that
-\code{nterms_max} does not count the intercept, so \code{nterms_max = 1} corresponds
-to the submodel consisting of the first (non-intercept) predictor term.}
+\item{nterms_max}{Maximum submodel size (number of predictor terms) to
+include in the returned matrix. Note that \code{nterms_max} does not count the
+intercept, so \code{nterms_max = 1} corresponds to the submodel consisting of
+the first (non-intercept) predictor term.}
 }
 \value{
 A numeric matrix containing the ranking proportions. This matrix has

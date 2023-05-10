@@ -81,12 +81,12 @@ submodels along the solution path again (\code{TRUE}) or to retrieve their fits
 from the search part (\code{FALSE}) before using those (re-)fits in the
 evaluation part.}
 
-\item{nterms_max}{Maximum number of predictor terms until which the search is
-continued. If \code{NULL}, then \code{min(19, D)} is used where \code{D} is the number of
-terms in the reference model (or in \code{search_terms}, if supplied). Note that
-\code{nterms_max} does not count the intercept, so use \code{nterms_max = 0} for the
-intercept-only model. (Correspondingly, \code{D} above does not count the
-intercept.)}
+\item{nterms_max}{Maximum submodel size (number of predictor terms) up to
+which the search is continued. If \code{NULL}, then \code{min(19, D)} is used where
+\code{D} is the number of terms in the reference model (or in \code{search_terms}, if
+supplied). Note that \code{nterms_max} does not count the intercept, so use
+\code{nterms_max = 0} for the intercept-only model. (Correspondingly, \code{D} above
+does not count the intercept.)}
 
 \item{penalty}{Only relevant for L1 search. A numeric vector determining the
 relative penalties or costs for the predictors. A value of \code{0} means that
