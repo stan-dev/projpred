@@ -190,7 +190,8 @@ plot(cvvs, stats = "mlpd", deltas = TRUE)
 
 Based on that plot, we decide for a submodel size.
 Usually, the aim is to find the smallest submodel size where the predictive performance of the submodels levels off and is close enough to the reference model's predictive performance (the dashed red horizontal line).
-Sometimes (as here), the plot may be ambiguous and one may have to find a suitable trade-off between predictive performance (accuracy) and model size (sparsity) in the context of subject-matter knowledge.
+Sometimes (as here), the plot may be ambiguous because after reaching the reference model's performance, the submodels may perform even better than the reference model.
+In that case, one has to find a suitable trade-off between predictive performance (accuracy) and model size (sparsity) in the context of subject-matter knowledge.
 Here, we assume that the focus of our predictive model is sparsity (not accuracy).
 Hence, based on the plot, we decide for a submodel size of 6 because this is the smallest size where the submodel MLPD is close enough to the reference model MLPD:
 ```{r size_man}
