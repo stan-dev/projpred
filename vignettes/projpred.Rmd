@@ -252,7 +252,7 @@ plot(cv_proportions(rk, cumulate = TRUE))
 This plot confirms (from a slightly different perspective) that the two CV folds agree on the *set* of the two most relevant predictors (`X1` and `X14`): When looking at `<=2` on the x-axis, all tiles above and including the second main diagonal element are at 100&nbsp;%.
 Similarly, the two CV folds agree on the *sets* of the seven and eight most relevant predictors.
 Looking at `<=6` on the x-axis, we see that for our chosen submodel size of 6, both CV folds have most terms from `predictors_final` included among the first 6 terms of their predictor ranking, except for `X6`.
-Only one of the two CV folds includes `X6` among the first 6 terms, but the other CV fold includes it shortly after that (at size 7, see also the `plot(pr_rk)` call above), which indicates that `X6` might indeed be relevant.
+Only one of the two CV folds includes `X6` among the first 6 terms, but the other CV fold includes it shortly after that (at size 7, see also the `plot(pr_rk)` call above), which indicates that `X6` might indeed be a helpful term.
 
 Although not demonstrated here, the cumulated ranking proportions could also have guided the decision for a submodel size (if we had not been willing to follow a strict rule based on accuracy or sparsity):
 From their plot, we can see that size 9 might have been an unfortunate choice because `X10` (which---by cutting off the full-data predictor ranking at size 9---would then have been selected as the ninth predictor in the final submodel) is not included among the first 9 terms by any CV fold.
