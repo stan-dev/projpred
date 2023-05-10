@@ -15,7 +15,7 @@ vignette: >
   %\VignetteEncoding{UTF-8}
 ---
 
-```{r child="children/SETTINGS-knitr.txt"}
+```{r, child="children/SETTINGS-knitr.txt"}
 ```
 
 ## Introduction {#intro}
@@ -236,7 +236,7 @@ rk[["fulldata"]]
 Note that we have cut off the search at `nterms_max = 9` (which is smaller than the number of predictor terms in the full model, 20 here), so the ranking proportions in the `pr_rk` matrix do not need to sum to 100&nbsp;% (neither column-wise nor row-wise).
 
 The matrix of ranking proportions can be visualized via `plot.cv_proportions()`:
-```{r plot_cv_proportions, fig.width = 6, out.width = "80%"}
+```{r plot_cv_proportions, fig.width=6, out.width="80%"}
 plot(pr_rk)
 ```
 
@@ -245,7 +245,7 @@ To retrieve the predictor terms of the final submodel (except for the intercept 
 ( predictors_final <- head(rk[["fulldata"]], size_decided) )
 ```
 At this place, it is again helpful to take the ranking proportions into account, but now in a cumulated fashion:
-```{r plot_cv_proportions_cumul, fig.width = 6, out.width = "80%"}
+```{r plot_cv_proportions_cumul, fig.width=6, out.width="80%"}
 plot(cv_proportions(rk, cumulate = TRUE))
 ```
 This plot tells us that both CV folds have all terms from `predictors_final` (except for `X6`) included among the first 6 terms of their predictor ranking (6 was the chosen submodel size, so we look at `<=6` on the x-axis).
