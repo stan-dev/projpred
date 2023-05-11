@@ -2373,7 +2373,8 @@ smmry_tester <- function(smmry, vsel_expected, nterms_max_expected = NULL,
     c("formula", "family", "nobs_train", "type_test", "nobs_test", "method",
       "cv_method", "K", "validate_search", "clust_used_search",
       "clust_used_eval", "nprjdraws_search", "nprjdraws_eval",
-      "search_included", "nterms", "selection", "resp_oscale", "deltas"),
+      "search_included", "nterms", "selection", "resp_oscale", "deltas",
+      "cumulate"),
     info = info_str
   )
 
@@ -2413,14 +2414,21 @@ smmry_tester <- function(smmry, vsel_expected, nterms_max_expected = NULL,
     nterms_ch <- nterms_ch - 1
   }
   expect_equal(smmry$nterms, nterms_ch, info = info_str)
+  if (isTRUE(vsel_expected$validate_search)) {
+    pr_rk_diag_expected <- head(diag(cv_proportions(vsel_expected)), nterms_ch)
+  } else {
+    pr_rk_diag_expected <- rep(NA, nterms_ch)
+  }
   smmry_sel_tester(smmry$selection,
                    summaries_ref = vsel_expected$summaries$ref,
                    nterms_max_expected = nterms_max_expected,
                    latent_expected = vsel_expected$refmodel$family$for_latent,
                    resp_oscale_expected = resp_oscale_expected,
+                   pr_rk_diag_expected = pr_rk_diag_expected,
                    info_str = info_str, ...)
   expect_identical(smmry$resp_oscale, resp_oscale_expected, info = info_str)
   expect_identical(smmry$deltas, FALSE, info = info_str)
+  expect_identical(smmry$cumulate, FALSE, info = info_str)
 
   return(invisible(TRUE))
 }
@@ -2450,6 +2458,8 @@ smmry_tester <- function(smmry, vsel_expected, nterms_max_expected = NULL,
 #   model is expected to be for latent projection (`TRUE`) or not (`FALSE`).
 # @param resp_oscale_expected A single logical value indicating whether argument
 #   `resp_oscale` of summary.vsel() was set to `TRUE` or `FALSE`.
+# @param pr_rk_diag_expected A numeric vector giving the expected values for
+#   column `cv_proportions_diag` of `smmry_sel` (except for the first one).
 # @param info_str A single character string giving information to be printed in
 #   case of failure.
 #
@@ -2465,6 +2475,9 @@ smmry_sel_tester <- function(
     from_datafit = FALSE,
     latent_expected = FALSE,
     resp_oscale_expected = TRUE,
+    pr_rk_diag_expected = rep(
+      NA, nterms_max_expected %||% length(solterms_expected)
+    ),
     info_str
 ) {
   if (is.null(stats_expected)) {
@@ -2486,7 +2499,7 @@ smmry_sel_tester <- function(
                    info = info_str)
 
   # Columns:
-  smmry_nms <- c("size", "solution_terms")
+  smmry_nms <- c("size", "solution_terms", "cv_proportions_diag")
   ### Requires R >= 4.0.1:
   # stats_mean_name <- paste0(
   #   stats_expected,
@@ -2521,6 +2534,9 @@ smmry_sel_tester <- function(
                    info = info_str)
   expect_identical(smmry_sel$solution_terms,
                    c(NA_character_, solterms_expected),
+                   info = info_str)
+  expect_identical(smmry_sel$cv_proportions_diag,
+                   c(NA, pr_rk_diag_expected),
                    info = info_str)
   is_lat_kfold <-  latent_expected && !resp_oscale_expected &&
     identical(cv_method_expected, "kfold")
