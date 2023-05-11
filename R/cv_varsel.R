@@ -38,13 +38,14 @@
 #'   number of parameters introduced by the search).
 #' @param seed Pseudorandom number generation (PRNG) seed by which the same
 #'   results can be obtained again if needed. Passed to argument `seed` of
-#'   [set.seed()], but can also be `NA` to not call [set.seed()] at all. Here,
-#'   this seed is used for clustering the reference model's posterior draws (if
-#'   `!is.null(nclusters)` or `!is.null(nclusters_pred)`), for subsampling LOO
-#'   CV folds (if `nloo` is smaller than the number of observations), for
-#'   sampling the folds in \eqn{K}-fold CV, and for drawing new group-level
-#'   effects when predicting from a multilevel submodel (however, not yet in
-#'   case of a GAMM).
+#'   [set.seed()], but can also be `NA` to not call [set.seed()] at all. If not
+#'   `NA`, then the PRNG state is reset (to the state before calling
+#'   [cv_varsel()]) upon exiting [cv_varsel()]. Here, `seed` is used for
+#'   clustering the reference model's posterior draws (if `!is.null(nclusters)`
+#'   or `!is.null(nclusters_pred)`), for subsampling LOO CV folds (if `nloo` is
+#'   smaller than the number of observations), for sampling the folds in
+#'   \eqn{K}-fold CV, and for drawing new group-level effects when predicting
+#'   from a multilevel submodel (however, not yet in case of a GAMM).
 #'
 #' @inherit varsel details return
 #'
@@ -133,16 +134,20 @@ cv_varsel.refmodel <- function(
     thresh = 1e-6,
     regul = 1e-4,
     validate_search = TRUE,
-    seed = sample.int(.Machine$integer.max, 1),
+    seed = NA,
     search_terms = NULL,
     ...
 ) {
-  # Set seed, but ensure the old RNG state is restored on exit:
   if (exists(".Random.seed", envir = .GlobalEnv)) {
     rng_state_old <- get(".Random.seed", envir = .GlobalEnv)
-    on.exit(assign(".Random.seed", rng_state_old, envir = .GlobalEnv))
   }
-  if (!is.na(seed)) set.seed(seed)
+  if (!is.na(seed)) {
+    # Set seed, but ensure the old RNG state is restored on exit:
+    if (exists(".Random.seed", envir = .GlobalEnv)) {
+      on.exit(assign(".Random.seed", rng_state_old, envir = .GlobalEnv))
+    }
+    set.seed(seed)
+  }
 
   refmodel <- object
   # Parse arguments which also exist in varsel():
@@ -944,7 +949,7 @@ get_kfold <- function(refmodel, K, verbose) {
                  "(using the fold-wise training data) ...")
       }
       nobs <- refmodel$nobs
-      folds <- cv_folds(nobs, K = K)
+      folds <- cv_folds(nobs, K = K, seed = sample.int(.Machine$integer.max, 1))
       cvfits <- refmodel$cvfun(folds)
       verb_out("-----", verbose = verbose)
     } else {

@@ -7,16 +7,11 @@
 \alias{cv_ids}
 \title{Create cross-validation folds}
 \usage{
-cv_folds(n, K, seed = sample.int(.Machine$integer.max, 1))
+cv_folds(n, K, seed = NA)
 
-cvfolds(n, K, seed = sample.int(.Machine$integer.max, 1))
+cvfolds(n, K, seed = NA)
 
-cv_ids(
-  n,
-  K,
-  out = c("foldwise", "indices"),
-  seed = sample.int(.Machine$integer.max, 1)
-)
+cv_ids(n, K, out = c("foldwise", "indices"), seed = NA)
 }
 \arguments{
 \item{n}{Number of observations.}
@@ -25,7 +20,9 @@ cv_ids(
 
 \item{seed}{Pseudorandom number generation (PRNG) seed by which the same
 results can be obtained again if needed. Passed to argument \code{seed} of
-\code{\link[=set.seed]{set.seed()}}, but can also be \code{NA} to not call \code{\link[=set.seed]{set.seed()}} at all.}
+\code{\link[=set.seed]{set.seed()}}, but can also be \code{NA} to not call \code{\link[=set.seed]{set.seed()}} at all. If not
+\code{NA}, then the PRNG state is reset (to the state before calling
+\code{\link[=cv_folds]{cv_folds()}} or \code{\link[=cv_ids]{cv_ids()}}) upon exiting \code{\link[=cv_folds]{cv_folds()}} or \code{\link[=cv_ids]{cv_ids()}}.}
 
 \item{out}{Format of the output, either \code{"foldwise"} or \code{"indices"}. See
 below for details.}
@@ -54,7 +51,7 @@ below for details.
 n <- 100
 set.seed(1234)
 y <- rnorm(n)
-cv <- cv_ids(n, K = 5, seed = 9876)
+cv <- cv_ids(n, K = 5)
 # Mean within the test set of each fold:
 cvmeans <- sapply(cv, function(fold) mean(y[fold$ts]))
 

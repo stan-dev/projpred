@@ -75,11 +75,12 @@
 #'   additional information during the computations.
 #' @param seed Pseudorandom number generation (PRNG) seed by which the same
 #'   results can be obtained again if needed. Passed to argument `seed` of
-#'   [set.seed()], but can also be `NA` to not call [set.seed()] at all. Here,
-#'   this seed is used for clustering the reference model's posterior draws (if
-#'   `!is.null(nclusters)` or `!is.null(nclusters_pred)`) and for drawing new
-#'   group-level effects when predicting from a multilevel submodel (however,
-#'   not yet in case of a GAMM).
+#'   [set.seed()], but can also be `NA` to not call [set.seed()] at all. If not
+#'   `NA`, then the PRNG state is reset (to the state before calling [varsel()])
+#'   upon exiting [varsel()]. Here, `seed` is used for clustering the reference
+#'   model's posterior draws (if `!is.null(nclusters)` or
+#'   `!is.null(nclusters_pred)`) and for drawing new group-level effects when
+#'   predicting from a multilevel submodel (however, not yet in case of a GAMM).
 #' @param ... Arguments passed to [get_refmodel()] as well as to the divergence
 #'   minimizer (during a forward search and also during the evaluation part, but
 #'   the latter only if `refit_prj` is `TRUE`).
@@ -200,14 +201,17 @@ varsel.refmodel <- function(object, d_test = NULL, method = NULL,
                             nterms_max = NULL, verbose = TRUE,
                             lambda_min_ratio = 1e-5, nlambda = 150,
                             thresh = 1e-6, regul = 1e-4, penalty = NULL,
-                            search_terms = NULL,
-                            seed = sample.int(.Machine$integer.max, 1), ...) {
-  # Set seed, but ensure the old RNG state is restored on exit:
+                            search_terms = NULL, seed = NA, ...) {
   if (exists(".Random.seed", envir = .GlobalEnv)) {
     rng_state_old <- get(".Random.seed", envir = .GlobalEnv)
-    on.exit(assign(".Random.seed", rng_state_old, envir = .GlobalEnv))
   }
-  if (!is.na(seed)) set.seed(seed)
+  if (!is.na(seed)) {
+    # Set seed, but ensure the old RNG state is restored on exit:
+    if (exists(".Random.seed", envir = .GlobalEnv)) {
+      on.exit(assign(".Random.seed", rng_state_old, envir = .GlobalEnv))
+    }
+    set.seed(seed)
+  }
 
   refmodel <- object
 

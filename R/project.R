@@ -37,12 +37,14 @@
 #'   `NULL`, see argument `ndraws`. See also section "Details" below.
 #' @param seed Pseudorandom number generation (PRNG) seed by which the same
 #'   results can be obtained again if needed. Passed to argument `seed` of
-#'   [set.seed()], but can also be `NA` to not call [set.seed()] at all. Here,
-#'   this seed is used for clustering the reference model's posterior draws (if
-#'   `!is.null(nclusters)`) and for drawing new group-level effects when
-#'   predicting from a multilevel submodel (however, not yet in case of a GAMM)
-#'   and having global option `projpred.mlvl_pred_new` set to `TRUE`. (Such a
-#'   prediction takes place when calculating output elements `dis` and `ce`.)
+#'   [set.seed()], but can also be `NA` to not call [set.seed()] at all. If not
+#'   `NA`, then the PRNG state is reset (to the state before calling
+#'   [project()]) upon exiting [project()]. Here, `seed` is used for clustering
+#'   the reference model's posterior draws (if `!is.null(nclusters)`) and for
+#'   drawing new group-level effects when predicting from a multilevel submodel
+#'   (however, not yet in case of a GAMM) and having global option
+#'   `projpred.mlvl_pred_new` set to `TRUE`. (Such a prediction takes place when
+#'   calculating output elements `dis` and `ce`.)
 #' @inheritParams varsel
 #' @param ... Arguments passed to [get_refmodel()] (if [get_refmodel()] is
 #'   actually used; see argument `object`) as well as to the divergence
@@ -135,9 +137,8 @@
 #'
 #' @export
 project <- function(object, nterms = NULL, solution_terms = NULL,
-                    refit_prj = TRUE, ndraws = 400, nclusters = NULL,
-                    seed = sample.int(.Machine$integer.max, 1), regul = 1e-4,
-                    ...) {
+                    refit_prj = TRUE, ndraws = 400, nclusters = NULL, seed = NA,
+                    regul = 1e-4, ...) {
   if (inherits(object, "datafit")) {
     stop("project() does not support an `object` of class \"datafit\".")
   }
@@ -152,12 +153,16 @@ project <- function(object, nterms = NULL, solution_terms = NULL,
 
   refmodel <- get_refmodel(object, ...)
 
-  # Set seed, but ensure the old RNG state is restored on exit:
   if (exists(".Random.seed", envir = .GlobalEnv)) {
     rng_state_old <- get(".Random.seed", envir = .GlobalEnv)
-    on.exit(assign(".Random.seed", rng_state_old, envir = .GlobalEnv))
   }
-  if (!is.na(seed)) set.seed(seed)
+  if (!is.na(seed)) {
+    # Set seed, but ensure the old RNG state is restored on exit:
+    if (exists(".Random.seed", envir = .GlobalEnv)) {
+      on.exit(assign(".Random.seed", rng_state_old, envir = .GlobalEnv))
+    }
+    set.seed(seed)
+  }
 
   if (refit_prj && inherits(refmodel, "datafit")) {
     warning("Automatically setting `refit_prj` to `FALSE` since the reference ",

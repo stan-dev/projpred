@@ -14,7 +14,7 @@ proj_linpred(
   filter_nterms = NULL,
   transform = FALSE,
   integrated = FALSE,
-  .seed = sample.int(.Machine$integer.max, 1),
+  .seed = NA,
   ...
 )
 
@@ -25,7 +25,7 @@ proj_predict(
   weightsnew = NULL,
   filter_nterms = NULL,
   nresample_clusters = 1000,
-  .seed = sample.int(.Machine$integer.max, 1),
+  .seed = NA,
   resp_oscale = TRUE,
   ...
 )
@@ -67,13 +67,18 @@ posterior draws (\code{TRUE}) or not (\code{FALSE}).}
 
 \item{.seed}{Pseudorandom number generation (PRNG) seed by which the same
 results can be obtained again if needed. Passed to argument \code{seed} of
-\code{\link[=set.seed]{set.seed()}}, but can also be \code{NA} to not call \code{\link[=set.seed]{set.seed()}} at all. Here,
-this seed is used for drawing new group-level effects in case of a
-multilevel submodel (however, not yet in case of a GAMM) and for drawing
-from the predictive distributions of the submodel(s) in case of
+\code{\link[=set.seed]{set.seed()}}, but can also be \code{NA} to not call \code{\link[=set.seed]{set.seed()}} at all. If not
+\code{NA}, then the PRNG state is reset (to the state before calling
+\code{\link[=proj_linpred]{proj_linpred()}} or \code{\link[=proj_predict]{proj_predict()}}) upon exiting \code{\link[=proj_linpred]{proj_linpred()}} or
+\code{\link[=proj_predict]{proj_predict()}}. Here, \code{.seed} is used for drawing new group-level effects
+in case of a multilevel submodel (however, not yet in case of a GAMM) and
+for drawing from the predictive distributions of the submodel(s) in case of
 \code{\link[=proj_predict]{proj_predict()}}. If a clustered projection was performed, then in
 \code{\link[=proj_predict]{proj_predict()}}, \code{.seed} is also used for drawing from the set of
-projected clusters of posterior draws (see argument \code{nresample_clusters}).}
+projected clusters of posterior draws (see argument \code{nresample_clusters}).
+If \code{\link[=project]{project()}} is called internally with \code{seed = NA} (or with \code{seed} being
+a lazily evaluated expression that uses the PRNG), then \code{.seed} also
+affects the PRNG usage there.}
 
 \item{...}{Arguments passed to \code{\link[=project]{project()}} if \code{object} is not already an
 object returned by \code{\link[=project]{project()}}.}

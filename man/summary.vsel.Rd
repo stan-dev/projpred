@@ -83,9 +83,8 @@ original response scale (\code{TRUE}) or on latent scale (\code{FALSE}).}
 \item{...}{Arguments passed to the internal function which is used for
 bootstrapping (if applicable; see argument \code{stats}). Currently, relevant
 arguments are \code{B} (the number of bootstrap samples, defaulting to \code{2000})
-and \code{seed} (see \code{\link[=set.seed]{set.seed()}}, defaulting to
-\code{sample.int(.Machine$integer.max, 1)}, but can also be \code{NA} to not call
-\code{\link[=set.seed]{set.seed()}} at all).}
+and \code{seed} (see \code{\link[=set.seed]{set.seed()}}, but defaulting to \code{NA} so that \code{\link[=set.seed]{set.seed()}}
+is not called within that function at all).}
 }
 \value{
 An object of class \code{vselsummary}.
