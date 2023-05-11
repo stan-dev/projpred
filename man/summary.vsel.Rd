@@ -13,6 +13,7 @@
   alpha = 2 * pnorm(-1),
   baseline = if (!inherits(object$refmodel, "datafit")) "ref" else "best",
   resp_oscale = TRUE,
+  cumulate = FALSE,
   ...
 )
 }
@@ -80,6 +81,9 @@ terms of \code{stats[1]}), respectively.}
 value indicating whether to calculate the performance statistics on the
 original response scale (\code{TRUE}) or on latent scale (\code{FALSE}).}
 
+\item{cumulate}{Passed to argument \code{cumulate} of \code{\link[=cv_proportions]{cv_proportions()}}. Affects
+column \code{cv_proportions_diag} of the summary table.}
+
 \item{...}{Arguments passed to the internal function which is used for
 bootstrapping (if applicable; see argument \code{stats}). Currently, relevant
 arguments are \code{B} (the number of bootstrap samples, defaulting to \code{2000})
@@ -92,9 +96,10 @@ An object of class \code{vselsummary}.
 \description{
 This is the \code{\link[=summary]{summary()}} method for \code{vsel} objects (returned by \code{\link[=varsel]{varsel()}} or
 \code{\link[=cv_varsel]{cv_varsel()}}), which consists of some general information about the
-\code{\link[=varsel]{varsel()}} or \code{\link[=cv_varsel]{cv_varsel()}} run, the full-data solution path, and
-user-specified predictive performance statistics. For plotting the latter,
-see \code{\link[=plot.vsel]{plot.vsel()}}.
+\code{\link[=varsel]{varsel()}} or \code{\link[=cv_varsel]{cv_varsel()}} run, the full-data solution path, some basic
+information about the (CV) variability in the ranking of the predictors (if
+available; inferred from \code{\link[=cv_proportions]{cv_proportions()}}), and user-specified predictive
+performance statistics. For plotting the latter, see \code{\link[=plot.vsel]{plot.vsel()}}.
 }
 \details{
 The \code{stats} options \code{"mse"} and \code{"rmse"} are only available for:
