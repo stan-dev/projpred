@@ -53,7 +53,6 @@ Imports:
     gamm4,
     MASS,
     ordinal,
-    ucminf,
     nnet,
     mclogit
 Suggests:
@@ -69,6 +68,7 @@ Suggests:
     bayesplot (>= 1.5.0),
     nlme,
     optimx,
+    ucminf,
     posterior,
     parallel,
     foreach,

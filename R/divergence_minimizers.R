@@ -702,7 +702,11 @@ fit_cumul_mlvl <- function(formula, data, family, weights, ...) {
     names(dot_args),
     c(methods::formalArgs(ordinal::clmm),
       methods::formalArgs(ordinal::clm.control),
-      methods::formalArgs(ucminf::ucminf),
+      if (requireNamespace("ucminf", quietly = TRUE)) {
+        methods::formalArgs(ucminf::ucminf)
+      } else {
+        character()
+      },
       methods::formalArgs(stats::nlminb),
       methods::formalArgs(stats::optim))
   )]
