@@ -547,6 +547,12 @@ proj_predict_aux <- function(proj, newdata, offset, weights,
 #'   close enough to the baseline model's ELPD. An equivalent rule is applied in
 #'   case of the MLPD. See [suggest_size()] for a formalization. Supplying `NA`
 #'   deactivates this.
+#' @param cumulate Passed to argument `cumulate` of [cv_proportions()]. Affects
+#'   the ranking proportions given on the x-axis (below the full-data predictor
+#'   ranking).
+#' @param text_angle Passed to argument `angle` of [ggplot2::element_text()] for
+#'   the x-axis tick labels. In case of long predictor names (and/or large
+#'   `nterms_max`), `text_angle = 45` might be helpful (for example).
 #'
 #' @inherit summary.vsel details
 #'
@@ -596,6 +602,8 @@ plot.vsel <- function(
     baseline = if (!inherits(x$refmodel, "datafit")) "ref" else "best",
     thres_elpd = NA,
     resp_oscale = TRUE,
+    cumulate = FALSE,
+    text_angle = NULL,
     ...
 ) {
   object <- x
@@ -677,6 +685,45 @@ plot.vsel <- function(
     )
   }
 
+  # Predictor ranking(s):
+  rk <- ranking(object, nterms_max = nterms_max)
+  if (!is.null(rk[["foldwise"]])) {
+    pr_rk <- diag(cv_proportions(rk, cumulate = cumulate))
+  } else {
+    pr_rk <- rep(NA, length(rk[["fulldata"]]))
+  }
+  rk_dfr <- data.frame(
+    size = c(0L, seq_along(rk[["fulldata"]])),
+    rk_fulldata = c(NA_character_, rk[["fulldata"]]),
+    cv_props_diag = c(NA, pr_rk)
+  )
+  rk_dfr[["cv_props_diag"]] <- paste(round(100 * rk_dfr[["cv_props_diag"]]),
+                                     "%")
+  rk_dfr_empty <- do.call(rbind, lapply(
+    setdiff(breaks, rk_dfr[["size"]]),
+    function(br_j) {
+      data.frame(size = as.integer(br_j), rk_fulldata = "", cv_props_diag = "")
+    }
+  ))
+  rk_dfr <- rbind(rk_dfr, rk_dfr_empty)
+  rk_dfr[["size_with_predictor_and_cvpropdiag"]] <- paste(
+    rk_dfr[["size"]], rk_dfr[["rk_fulldata"]], rk_dfr[["cv_props_diag"]],
+    sep = "\n"
+  )
+
+  # x-axis label (title):
+  if (cumulate) {
+    cumul_pretty <- " cumulated "
+  } else {
+    cumul_pretty <- " "
+  }
+  xlab <- paste0(
+    "Submodel size (number of predictor terms)\n",
+    "Corresponding predictor from full-data predictor ranking\n",
+    "Corresponding main diagonal element from", cumul_pretty, "CV ranking ",
+    "proportions matrix"
+  )
+
   # plot submodel results
   pp <- ggplot(data = subset(stats_sub, stats_sub$size <= nterms_max),
                mapping = aes(x = .data[["size"]]))
@@ -731,10 +778,14 @@ plot.vsel <- function(
     # Miscellaneous stuff (axes, theming, faceting, etc.):
     scale_x_continuous(
       breaks = breaks, minor_breaks = minor_breaks,
-      limits = c(min(breaks), max(breaks))
+      limits = c(min(breaks), max(breaks)),
+      labels = rk_dfr[order(match(rk_dfr[["size"]], breaks), na.last = NA),
+                      "size_with_predictor_and_cvpropdiag"]
     ) +
-    labs(x = "Submodel size (number of predictor terms)", y = ylab) +
-    theme(legend.position = "none") +
+    labs(x = xlab, y = ylab) +
+    theme(legend.position = "none",
+          axis.text.x = element_text(angle = text_angle, hjust = 0.5,
+                                     vjust = 0.5)) +
     facet_grid(statistic ~ ., scales = "free_y")
   return(pp)
 }

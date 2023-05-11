@@ -13,6 +13,8 @@
   baseline = if (!inherits(x$refmodel, "datafit")) "ref" else "best",
   thres_elpd = NA,
   resp_oscale = TRUE,
+  cumulate = FALSE,
+  text_angle = NULL,
   ...
 )
 }
@@ -76,6 +78,14 @@ deactivates this.}
 \item{resp_oscale}{Only relevant for the latent projection. A single logical
 value indicating whether to calculate the performance statistics on the
 original response scale (\code{TRUE}) or on latent scale (\code{FALSE}).}
+
+\item{cumulate}{Passed to argument \code{cumulate} of \code{\link[=cv_proportions]{cv_proportions()}}. Affects
+the ranking proportions given on the x-axis (below the full-data predictor
+ranking).}
+
+\item{text_angle}{Passed to argument \code{angle} of \code{\link[ggplot2:element]{ggplot2::element_text()}} for
+the x-axis tick labels. In case of long predictor names (and/or large
+\code{nterms_max}), \code{text_angle = 45} might be helpful (for example).}
 
 \item{...}{Arguments passed to the internal function which is used for
 bootstrapping (if applicable; see argument \code{stats}). Currently, relevant
