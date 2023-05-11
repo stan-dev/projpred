@@ -130,7 +130,7 @@ refm_fit_poiss <- stan_glm(
   ### Only for the sake of speed (not recommended in general):
   chains = 2, iter = 1000,
   ###
-  seed = 7286013, QR = TRUE, refresh = 0
+  QR = TRUE, refresh = 0
 )
 ```
 
@@ -161,8 +161,10 @@ time_lat <- system.time(vs_lat <- varsel(
   nterms_max = 14,
   ### In interactive use, we recommend not to deactivate the verbose mode:
   verbose = FALSE,
-  ### 
+  ###
+  ### For comparability with varsel() based on the traditional projection:
   seed = 95930
+  ###
 ))
 ```
 ```{r time_lat}
@@ -225,8 +227,10 @@ time_trad <- system.time(vs_trad <- varsel(
   nterms_max = 14,
   ### In interactive use, we recommend not to deactivate the verbose mode:
   verbose = FALSE,
-  ### 
+  ###
+  ### For comparability with varsel() based on the latent projection:
   seed = 95930
+  ###
 ))
 ```
 ```{r post_vs_trad}
@@ -269,7 +273,7 @@ refm_fit_nebin <- stan_glm(
   ### Only for the sake of speed (not recommended in general):
   chains = 2, iter = 1000,
   ###
-  seed = 7304, QR = TRUE, refresh = 0
+  QR = TRUE, refresh = 0
 )
 ```
 
@@ -310,9 +314,8 @@ vs_nebin <- varsel(
   ###
   nterms_max = 14,
   ### In interactive use, we recommend not to deactivate the verbose mode:
-  verbose = FALSE,
-  ### 
-  seed = 95930
+  verbose = FALSE
+  ###
 )
 ```
 Again, the message telling that `<refmodel>$dis` consists of only `NA`s will not concern us here because we will only be focusing on response-scale post-processing. The message concerning `latent_ilink` can be safely ignored here (the internal default based on `family$linkinv` works correctly in this case).
