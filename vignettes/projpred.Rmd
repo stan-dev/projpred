@@ -209,7 +209,9 @@ The predictive performance statistic(s) plotted by `plot.vsel()` can be retrieve
 For the output of `summary.vsel()`, there is a sophisticated `print()` method (`print.vselsummary()`) which is also called by the shortcut method `print.vsel()`^[`print.vsel()` is the method that is called when simply printing an object resulting from `varsel()` or `cv_varsel()`.].
 For example, we can create the summary table matching the predictive performance plot above (and also adjust the minimum number of printed significant digits):
 ```{r smmry_vsel}
-print(summary(cvvs, stats = "mlpd", deltas = TRUE), digits = 1)
+smmry <- summary(cvvs, stats = "mlpd", type = c("mean", "lower", "upper"),
+                 deltas = TRUE)
+print(smmry, digits = 1)
 ```
 
 As highlighted by the message above, the predictor ranking from column `solution_terms` is based on the full-data search.
