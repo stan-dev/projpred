@@ -8,12 +8,7 @@
 \usage{
 cv_proportions(object, ...)
 
-\method{cv_proportions}{ranking}(
-  object,
-  cumulate = FALSE,
-  nterms_max = ncol(object[["foldwise"]]),
-  ...
-)
+\method{cv_proportions}{ranking}(object, cumulate = FALSE, ...)
 
 \method{cv_proportions}{vsel}(object, ...)
 }
@@ -23,22 +18,18 @@ cv_proportions(object, ...)
 \code{vsel} (returned by \code{\link[=varsel]{varsel()}} or \code{\link[=cv_varsel]{cv_varsel()}}) that \code{\link[=ranking]{ranking()}} will be
 applied to internally before then calling \code{\link[=cv_proportions.ranking]{cv_proportions.ranking()}}.}
 
-\item{...}{For \code{\link[=cv_proportions.vsel]{cv_proportions.vsel()}}: arguments passed to
-\code{\link[=cv_proportions.ranking]{cv_proportions.ranking()}}. For \code{\link[=cv_proportions.ranking]{cv_proportions.ranking()}}: currently
+\item{...}{For \code{\link[=cv_proportions.vsel]{cv_proportions.vsel()}}: arguments passed to \code{\link[=ranking.vsel]{ranking.vsel()}}
+and \code{\link[=cv_proportions.ranking]{cv_proportions.ranking()}}. For \code{\link[=cv_proportions.ranking]{cv_proportions.ranking()}}: currently
 ignored.}
 
 \item{cumulate}{A single logical value indicating whether the ranking
 proportions should be cumulated across increasing submodel sizes (\code{TRUE})
 or not (\code{FALSE}).}
-
-\item{nterms_max}{Maximum submodel size (number of predictor terms) to
-include in the returned matrix. Note that \code{nterms_max} does not count the
-intercept, so \code{nterms_max = 1} corresponds to the submodel consisting of
-the first (non-intercept) predictor term.}
 }
 \value{
 A numeric matrix containing the ranking proportions. This matrix has
-\code{nterms_max} rows and \code{nterms_max} columns: The rows correspond to the
+\code{nterms_max} rows and \code{nterms_max} columns, with \code{nterms_max} as specified
+in the (possibly implicit) \code{\link[=ranking]{ranking()}} call. The rows correspond to the
 submodel sizes and the columns to the predictor terms (sorted according to
 the full-data predictor ranking). If \code{cumulate} is \code{FALSE}, then the
 returned matrix is of class \code{cv_proportions}. If \code{cumulate} is \code{TRUE}, then
@@ -46,10 +37,10 @@ the returned matrix is of classes \code{cv_proportions_cumul} and
 \code{cv_proportions} (in this order).
 
 Note that if \code{cumulate} is \code{FALSE}, then the values in the returned matrix
-only need to sum to 1 (column-wise and row-wise) if \code{nterms_max} is equal
-to the full model size. Likewise, if \code{cumulate} is \code{TRUE}, then the value
-\code{1} only needs to occur in each column of the returned matrix if
-\code{nterms_max} is equal to the full model size.
+only need to sum to 1 (column-wise and row-wise) if \code{nterms_max} (see
+above) is equal to the full model size. Likewise, if \code{cumulate} is \code{TRUE},
+then the value \code{1} only needs to occur in each column of the returned
+matrix if \code{nterms_max} is equal to the full model size.
 
 The \code{\link[=cv_proportions]{cv_proportions()}} function is only applicable if the \code{ranking} object
 includes fold-wise predictor rankings (i.e., if it is based on a \code{vsel}

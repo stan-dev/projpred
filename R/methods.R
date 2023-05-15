@@ -2027,6 +2027,13 @@ predictor_terms.projection <- function(object, ...) {
 #' @param object The object from which to retrieve the predictor ranking(s).
 #'   Possible classes may be inferred from the names of the corresponding
 #'   methods (see also the description).
+#' @param nterms_max Maximum submodel size (number of predictor terms) for the
+#'   predictor ranking(s), i.e., the submodel size at which to cut off the
+#'   predictor ranking(s). Using `NULL` is effectively the same as setting
+#'   `nterms_max` to the full model size, i.e., this means to not cut off the
+#'   predictor ranking(s) at all. Note that `nterms_max` does not count the
+#'   intercept, so `nterms_max = 1` corresponds to the submodel consisting of
+#'   the first (non-intercept) predictor term.
 #' @param ... Currently ignored.
 #'
 #' @return An object of class `ranking` which is a `list` with the following
@@ -2051,7 +2058,7 @@ ranking <- function(object, ...) {
 
 #' @rdname ranking
 #' @export
-ranking.vsel <- function(object, ...) {
+ranking.vsel <- function(object, nterms_max = NULL, ...) {
   if (is.null(object$projpred_version) && !is.null(object$cv_method)) {
     warning(
       "It seems like a projpred version <= 2.5.0 was used for creating the ",
@@ -2061,6 +2068,18 @@ ranking.vsel <- function(object, ...) {
   }
   out <- list(fulldata = object[["solution_terms"]],
               foldwise = object[["solution_terms_cv"]])
+  if (!is.null(nterms_max)) {
+    out[["fulldata"]] <- utils::head(out[["fulldata"]], nterms_max)
+    if (!is.null(out[["foldwise"]])) {
+      out[["foldwise"]] <- out[["foldwise"]][, seq_len(nterms_max),
+                                             drop = FALSE]
+    }
+  }
+  if (!is.null(out[["foldwise"]]) &&
+      length(out[["fulldata"]]) != ncol(out[["foldwise"]])) {
+    stop("Unexpected dimensions of ranking() output. Please notify the ",
+         "package maintainer.")
+  }
   class(out) <- "ranking"
   return(out)
 }
@@ -2083,16 +2102,13 @@ ranking.vsel <- function(object, ...) {
 #' @param cumulate A single logical value indicating whether the ranking
 #'   proportions should be cumulated across increasing submodel sizes (`TRUE`)
 #'   or not (`FALSE`).
-#' @param nterms_max Maximum submodel size (number of predictor terms) to
-#'   include in the returned matrix. Note that `nterms_max` does not count the
-#'   intercept, so `nterms_max = 1` corresponds to the submodel consisting of
-#'   the first (non-intercept) predictor term.
-#' @param ... For [cv_proportions.vsel()]: arguments passed to
-#'   [cv_proportions.ranking()]. For [cv_proportions.ranking()]: currently
+#' @param ... For [cv_proportions.vsel()]: arguments passed to [ranking.vsel()]
+#'   and [cv_proportions.ranking()]. For [cv_proportions.ranking()]: currently
 #'   ignored.
 #'
 #' @return A numeric matrix containing the ranking proportions. This matrix has
-#'   `nterms_max` rows and `nterms_max` columns: The rows correspond to the
+#'   `nterms_max` rows and `nterms_max` columns, with `nterms_max` as specified
+#'   in the (possibly implicit) [ranking()] call. The rows correspond to the
 #'   submodel sizes and the columns to the predictor terms (sorted according to
 #'   the full-data predictor ranking). If `cumulate` is `FALSE`, then the
 #'   returned matrix is of class `cv_proportions`. If `cumulate` is `TRUE`, then
@@ -2100,10 +2116,10 @@ ranking.vsel <- function(object, ...) {
 #'   `cv_proportions` (in this order).
 #'
 #'   Note that if `cumulate` is `FALSE`, then the values in the returned matrix
-#'   only need to sum to 1 (column-wise and row-wise) if `nterms_max` is equal
-#'   to the full model size. Likewise, if `cumulate` is `TRUE`, then the value
-#'   `1` only needs to occur in each column of the returned matrix if
-#'   `nterms_max` is equal to the full model size.
+#'   only need to sum to 1 (column-wise and row-wise) if `nterms_max` (see
+#'   above) is equal to the full model size. Likewise, if `cumulate` is `TRUE`,
+#'   then the value `1` only needs to occur in each column of the returned
+#'   matrix if `nterms_max` is equal to the full model size.
 #'
 #'   The [cv_proportions()] function is only applicable if the `ranking` object
 #'   includes fold-wise predictor rankings (i.e., if it is based on a `vsel`
@@ -2126,9 +2142,7 @@ cv_proportions <- function(object, ...) {
 
 #' @rdname cv_proportions
 #' @export
-cv_proportions.ranking <- function(object, cumulate = FALSE,
-                                   nterms_max = ncol(object[["foldwise"]]),
-                                   ...) {
+cv_proportions.ranking <- function(object, cumulate = FALSE, ...) {
   cv_paths <- object[["foldwise"]]
   if (is.null(cv_paths)) {
     stop("Could not find fold-wise predictor rankings from which to calculate ",
@@ -2136,12 +2150,13 @@ cv_proportions.ranking <- function(object, cumulate = FALSE,
          "based on a cross-validation or that the search has been excluded ",
          "from the cross-validation.")
   }
-  stopifnot("Needing `nterms_max >= 1`." = isTRUE(nterms_max >= 1))
-  cv_paths <- cv_paths[, seq_len(nterms_max), drop = FALSE]
+  if (ncol(cv_paths) == 0) {
+    stop("Needing `nterms_max >= 1` in the (possibly implicit) ranking() call.")
+  }
   # Calculate the ranking proportions. Note that the following code assumes that
   # all CV folds have equal weight.
   cv_props <- do.call(cbind, lapply(
-    setNames(nm = utils::head(object[["fulldata"]], nterms_max)),
+    setNames(nm = object[["fulldata"]]),
     function(predictor_j) {
       # We need `na.rm = TRUE` for subsampled LOO CV:
       colMeans(cv_paths == predictor_j, na.rm = TRUE)
@@ -2164,7 +2179,7 @@ cv_proportions.ranking <- function(object, cumulate = FALSE,
 #' @rdname cv_proportions
 #' @export
 cv_proportions.vsel <- function(object, ...) {
-  cv_proportions(ranking(object), ...)
+  cv_proportions(ranking(object, ...), ...)
 }
 
 #' Plot ranking proportions from fold-wise predictor rankings

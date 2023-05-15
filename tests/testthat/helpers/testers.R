@@ -2603,17 +2603,28 @@ smmry_sel_tester <- function(
 # @param rk A `ranking` object as returned by ranking().
 # @param fulldata_expected The expected `fulldata` element of `rk`.
 # @param foldwise_expected The expected `foldwise` element of `rk`.
+# @param nterms_max_expected A single numeric value as supplied to
+#   ranking.vsel()'s argument `nterms_max`.
 # @param info_str A single character string giving information to be printed in
 #   case of failure.
 #
 # @return `TRUE` (invisible).
-ranking_tester <- function(rk, fulldata_expected, foldwise_expected, info_str) {
+ranking_tester <- function(rk, fulldata_expected, foldwise_expected,
+                           nterms_max_expected, info_str) {
   expect_s3_class(rk, "ranking", exact = TRUE)
   expect_type(rk, "list")
   expect_named(rk, c("fulldata", "foldwise"), info = info_str)
   # Since we test elements `solution_terms` and `solution_terms_cv` already
   # thoroughly in vsel_tester(), we can simply plug these into
-  # `fulldata_expected` and `foldwise_expected` and then test via identical():
+  # `fulldata_expected` and `foldwise_expected` and then test via identical()
+  # (after taking `nterms_max` into account):
+  if (!is.null(nterms_max_expected)) {
+    fulldata_expected <- head(fulldata_expected, nterms_max_expected)
+    if (!is.null(foldwise_expected)) {
+      foldwise_expected <- foldwise_expected[, seq_len(nterms_max_expected),
+                                             drop = FALSE]
+    }
+  }
   expect_identical(rk[["fulldata"]], fulldata_expected, info = info_str)
   expect_identical(rk[["foldwise"]], foldwise_expected, info = info_str)
   return(invisible(TRUE))
@@ -2625,8 +2636,9 @@ ranking_tester <- function(rk, fulldata_expected, foldwise_expected, info_str) {
 # @param pr A `cv_proportions` object as returned by cv_proportions().
 # @param cumulate_expected A single logical value indicating whether
 #   cv_proportions() was run with `cumulate = TRUE` (`TRUE`) or not (`FALSE`).
-# @param nterms_max_expected A single numeric value as supplied to
-#   cv_proportions.ranking()'s argument `nterms_max`.
+# @param nterms_max_expected A single numeric value as supplied to the
+#   underlying ranking.vsel() call's argument `nterms_max`, but must not be
+#   `NULL`.
 # @param info_str A single character string giving information to be printed in
 #   case of failure.
 #

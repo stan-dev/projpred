@@ -930,9 +930,10 @@ nterms_max_smmry <- list(
   zero = 0L
 )
 
-nterms_max_pr <- list(
-  default_nterms_max_pr = list(),
-  halfway = list(nterms_max = nterms_max_tst %/% 2L)
+nterms_max_rk <- list(
+  default_nterms_max_rk = list(),
+  halfway = list(nterms_max = nterms_max_tst %/% 2L),
+  zero = list(nterms_max = 0L)
 )
 
 ## Reference model --------------------------------------------------------
@@ -1633,9 +1634,12 @@ if (run_more) {
 
 if (run_vs) {
   args_rk_vs <- lapply(setNames(nm = names(vss)), function(tstsetup_vsel) {
-    return(c(
-      nlist(tstsetup_vsel), only_nonargs(args_vs[[tstsetup_vsel]])
-    ))
+    lapply(nterms_max_rk, function(nterms_crr) {
+      return(c(
+        nlist(tstsetup_vsel), only_nonargs(args_vs[[tstsetup_vsel]]),
+        nterms_crr
+      ))
+    })
   })
   args_rk_vs <- unlist_cust(args_rk_vs)
 
@@ -1651,9 +1655,12 @@ if (run_vs) {
 
 if (run_cvvs) {
   args_rk_cvvs <- lapply(setNames(nm = names(cvvss)), function(tstsetup_vsel) {
-    return(c(
-      nlist(tstsetup_vsel), only_nonargs(args_cvvs[[tstsetup_vsel]])
-    ))
+    lapply(nterms_max_rk, function(nterms_crr) {
+      return(c(
+        nlist(tstsetup_vsel), only_nonargs(args_cvvs[[tstsetup_vsel]]),
+        nterms_crr
+      ))
+    })
   })
   args_rk_cvvs <- unlist_cust(args_rk_cvvs)
 
@@ -1701,13 +1708,10 @@ if (run_vs) {
 if (run_cvvs) {
   args_pr_cvvs <- lapply(setNames(nm = names(rks_cvvs)), function(tstsetup_rk) {
     lapply(cumulate_tst, function(cumulate_crr) {
-      lapply(nterms_max_pr, function(nterms_crr) {
-        return(c(
-          nlist(tstsetup_rk), only_nonargs(args_rk_cvvs[[tstsetup_rk]]),
-          list(cumulate = cumulate_crr),
-          nterms_crr
-        ))
-      })
+      return(c(
+        nlist(tstsetup_rk), only_nonargs(args_rk_cvvs[[tstsetup_rk]]),
+        list(cumulate = cumulate_crr)
+      ))
     })
   })
   args_pr_cvvs <- unlist_cust(args_pr_cvvs)
@@ -1715,6 +1719,10 @@ if (run_cvvs) {
   prs_cvvs <- lapply(args_pr_cvvs, function(args_pr_cvvs_i) {
     if (isFALSE(args_cvvs[[args_pr_cvvs_i$tstsetup_vsel]]$validate_search)) {
       err_expected <- err_no_foldwise_rk
+    } else if (isTRUE(
+      args_rk_cvvs[[args_pr_cvvs_i$tstsetup_rk]]$nterms_max == 0
+    )) {
+      err_expected <- "Needing `nterms_max >= 1`"
     } else {
       err_expected <- NA
     }

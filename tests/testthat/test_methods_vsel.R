@@ -368,10 +368,12 @@ test_that("`object` of class `vsel` (created by varsel()) works", {
   skip_if_not(run_vs)
   for (tstsetup in names(rks_vs)) {
     tstsetup_vs <- args_rk_vs[[tstsetup]]$tstsetup_vsel
+    nterms_max_expected_crr <- args_rk_vs[[tstsetup]][["nterms_max"]]
     ranking_tester(
       rks_vs[[tstsetup]],
       fulldata_expected = vss[[tstsetup_vs]][["solution_terms"]],
-      foldwise_expected = vss[[tstsetup_vs]][["solution_terms_cv"]],
+      foldwise_expected = NULL,
+      nterms_max_expected = nterms_max_expected_crr,
       info_str = tstsetup
     )
   }
@@ -381,10 +383,12 @@ test_that("`object` of class `vsel` (created by cv_varsel()) works", {
   skip_if_not(run_cvvs)
   for (tstsetup in names(rks_cvvs)) {
     tstsetup_cvvs <- args_rk_cvvs[[tstsetup]]$tstsetup_vsel
+    nterms_max_expected_crr <- args_rk_cvvs[[tstsetup]][["nterms_max"]]
     ranking_tester(
       rks_cvvs[[tstsetup]],
       fulldata_expected = cvvss[[tstsetup_cvvs]][["solution_terms"]],
       foldwise_expected = cvvss[[tstsetup_cvvs]][["solution_terms_cv"]],
+      nterms_max_expected = nterms_max_expected_crr,
       info_str = tstsetup
     )
   }
@@ -405,9 +409,10 @@ test_that(paste(
 ), {
   skip_if_not(run_cvvs)
   for (tstsetup in names(prs_cvvs)) {
-    nterms_max_expected_crr <- args_pr_cvvs[[tstsetup]][["nterms_max"]]
+    tstsetup_cvvs <- args_pr_cvvs[[tstsetup]]$tstsetup_vsel
+    tstsetup_rk <- args_pr_cvvs[[tstsetup]]$tstsetup_rk
+    nterms_max_expected_crr <- args_rk_cvvs[[tstsetup_rk]][["nterms_max"]]
     if (is.null(nterms_max_expected_crr)) {
-      tstsetup_cvvs <- args_pr_cvvs[[tstsetup]]$tstsetup_vsel
       nterms_max_expected_crr <- args_cvvs[[tstsetup_cvvs]][["nterms_max"]]
     }
     cv_proportions_tester(
@@ -424,9 +429,10 @@ test_that("cv_proportions.vsel() is a shortcut", {
   skip_if_not(run_cvvs)
   for (tstsetup in names(prs_cvvs)) {
     args_pr_cvvs_i <- args_pr_cvvs[[tstsetup]]
+    args_rk_cvvs_i <- args_rk_cvvs[[args_pr_cvvs_i$tstsetup_rk]]
     pr_from_vsel <- do.call(cv_proportions, c(
       list(object = cvvss[[args_pr_cvvs_i$tstsetup_vsel]]),
-      excl_nonargs(args_pr_cvvs_i)
+      excl_nonargs(args_pr_cvvs_i), excl_nonargs(args_rk_cvvs_i)
     ))
     expect_identical(pr_from_vsel, prs_cvvs[[tstsetup]], info = tstsetup)
   }
@@ -449,10 +455,6 @@ rk <- structure(
 pr_cF <- cv_proportions(rk)
 # With `cumulate = TRUE`:
 pr_cT <- cv_proportions(rk, cumulate = TRUE)
-
-test_that("`nterms_max = 0` fails", {
-  expect_error(cv_proportions(rk, nterms_max = 0), "Needing `nterms_max >= 1`")
-})
 
 test_that("`cumulate = TRUE` works", {
   pr_cT_ch <- structure(apply(pr_cF, 2, cumsum),

@@ -7,7 +7,7 @@
 \usage{
 ranking(object, ...)
 
-\method{ranking}{vsel}(object, ...)
+\method{ranking}{vsel}(object, nterms_max = NULL, ...)
 }
 \arguments{
 \item{object}{The object from which to retrieve the predictor ranking(s).
@@ -15,6 +15,14 @@ Possible classes may be inferred from the names of the corresponding
 methods (see also the description).}
 
 \item{...}{Currently ignored.}
+
+\item{nterms_max}{Maximum submodel size (number of predictor terms) for the
+predictor ranking(s), i.e., the submodel size at which to cut off the
+predictor ranking(s). Using \code{NULL} is effectively the same as setting
+\code{nterms_max} to the full model size, i.e., this means to not cut off the
+predictor ranking(s) at all. Note that \code{nterms_max} does not count the
+intercept, so \code{nterms_max = 1} corresponds to the submodel consisting of
+the first (non-intercept) predictor term.}
 }
 \value{
 An object of class \code{ranking} which is a \code{list} with the following
