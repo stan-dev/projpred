@@ -926,7 +926,8 @@ nterms_avail <- c(nterms_avail, list(
 
 nterms_max_smmry <- list(
   default_nterms_max_smmry = NULL,
-  halfway = nterms_max_tst %/% 2L
+  halfway = nterms_max_tst %/% 2L,
+  zero = 0L
 )
 
 nterms_max_pr <- list(
@@ -1542,7 +1543,7 @@ cre_args_smmry_vsel <- function(args_obj) {
             is.null(args_obj[[tstsetup_vsel]]$search_terms) &&
             length(stats_crr) == 0) {
           nterms_tst <- nterms_max_smmry[c("default_nterms_max_smmry",
-                                           "halfway")]
+                                           "halfway", "zero")]
         } else {
           nterms_tst <- nterms_max_smmry["default_nterms_max_smmry"]
         }
