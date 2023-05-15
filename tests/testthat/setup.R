@@ -1574,6 +1574,8 @@ if (run_vs) {
   args_smmry_vs <- cre_args_smmry_vsel(args_vs)
   args_smmry_vs <- unlist_cust(args_smmry_vs)
   args_smmry_vs <- rm_dummies(args_smmry_vs)
+  has_zero_vs <- any(sapply(lapply(args_smmry_vs, "[[", "nterms_max"),
+                            identical, 0L))
 
   smmrys_vs <- lapply(args_smmry_vs, function(args_smmry_vs_i) {
     if (any(c("rmse", "auc") %in% args_smmry_vs_i$stats)) {
@@ -1595,6 +1597,8 @@ if (run_cvvs) {
   args_smmry_cvvs <- cre_args_smmry_vsel(args_cvvs)
   args_smmry_cvvs <- unlist_cust(args_smmry_cvvs)
   args_smmry_cvvs <- rm_dummies(args_smmry_cvvs)
+  has_zero_cvvs <- any(sapply(lapply(args_smmry_cvvs, "[[", "nterms_max"),
+                              identical, 0L))
 
   smmrys_cvvs <- lapply(args_smmry_cvvs, function(args_smmry_cvvs_i) {
     if (any(c("rmse", "auc") %in% args_smmry_cvvs_i$stats)) {
@@ -1608,6 +1612,19 @@ if (run_cvvs) {
       smmry_seed
     ))
   })
+}
+
+if (run_more) {
+  has_zero_combined <- logical()
+  if (run_vs) {
+    has_zero_combined <- c(has_zero_combined, has_zero_vs)
+  }
+  if (run_cvvs) {
+    has_zero_combined <- c(has_zero_combined, has_zero_cvvs)
+  }
+  if (length(has_zero_combined)) {
+    stopifnot(any(has_zero_combined))
+  }
 }
 
 ## ranking() --------------------------------------------------------------
