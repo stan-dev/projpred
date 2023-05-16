@@ -1549,6 +1549,9 @@ cre_args_smmry_vsel <- function(args_obj) {
           nterms_tst <- nterms_max_smmry["default_nterms_max_smmry"]
         }
       }
+      if (length(stats_crr)) {
+        cumulate_tst <- cumulate_tst["cuFALSE"]
+      }
       lapply(nterms_tst, function(nterms_crr) {
         if (prj_crr != "latent") {
           resp_oscale_tst <- resp_oscale_tst["default_r_oscale"]
@@ -1558,11 +1561,13 @@ cre_args_smmry_vsel <- function(args_obj) {
               any(setdiff(stats_binom, stats_common) %in% stats_crr$stats)) {
             return(dummy_glob)
           }
-          return(c(
-            nlist(tstsetup_vsel), only_nonargs(args_obj[[tstsetup_vsel]]),
-            list(type = type_tst, nterms_max = nterms_crr),
-            stats_crr, resp_oscale_crr
-          ))
+          lapply(cumulate_tst, function(cumulate_crr) {
+            return(c(
+              nlist(tstsetup_vsel), only_nonargs(args_obj[[tstsetup_vsel]]),
+              list(type = type_tst, nterms_max = nterms_crr),
+              stats_crr, resp_oscale_crr, list(cumulate = cumulate_crr)
+            ))
+          })
         })
       })
     })

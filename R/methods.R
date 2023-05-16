@@ -743,9 +743,10 @@ plot.vsel <- function(
 #'
 #' This is the [summary()] method for `vsel` objects (returned by [varsel()] or
 #' [cv_varsel()]), which consists of some general information about the
-#' [varsel()] or [cv_varsel()] run, the full-data solution path, and
-#' user-specified predictive performance statistics. For plotting the latter,
-#' see [plot.vsel()].
+#' [varsel()] or [cv_varsel()] run, the full-data solution path, some basic
+#' information about the (CV) variability in the ranking of the predictors (if
+#' available; inferred from [cv_proportions()]), and user-specified predictive
+#' performance statistics. For plotting the latter, see [plot.vsel()].
 #'
 #' @param object An object of class `vsel` (returned by [varsel()] or
 #'   [cv_varsel()]).
@@ -802,6 +803,8 @@ plot.vsel <- function(
 #' @param resp_oscale Only relevant for the latent projection. A single logical
 #'   value indicating whether to calculate the performance statistics on the
 #'   original response scale (`TRUE`) or on latent scale (`FALSE`).
+#' @param cumulate Passed to argument `cumulate` of [cv_proportions()]. Affects
+#'   column `cv_proportions_diag` of the summary table.
 #' @param ... Arguments passed to the internal function which is used for
 #'   bootstrapping (if applicable; see argument `stats`). Currently, relevant
 #'   arguments are `B` (the number of bootstrap samples, defaulting to `2000`)
@@ -865,6 +868,7 @@ summary.vsel <- function(
     alpha = 2 * pnorm(-1),
     baseline = if (!inherits(object$refmodel, "datafit")) "ref" else "best",
     resp_oscale = TRUE,
+    cumulate = FALSE,
     ...
 ) {
   validate_vsel_object_stats(object, stats, resp_oscale = resp_oscale)
@@ -933,11 +937,21 @@ summary.vsel <- function(
     })))
   }
 
+  # Predictor ranking(s) and associated ranking proportions from fold-wise
+  # predictor rankings (if existing):
+  rk <- ranking(object)
+  if (!is.null(rk[["foldwise"]]) && ncol(rk[["foldwise"]]) > 0) {
+    pr_rk <- diag(cv_proportions(rk, cumulate = cumulate))
+  } else {
+    pr_rk <- rep(NA, length(rk[["fulldata"]]))
+  }
+
   # Construct the (almost) final output table by looping over all requested
   # statistics, reshaping the corresponding data in `stats_table`, and selecting
   # only the requested `type`s:
   arr <- data.frame(size = unique(stats_table$size),
-                    solution_terms = c(NA, object$solution_terms))
+                    solution_terms = c(NA, rk[["fulldata"]]),
+                    cv_proportions_diag = c(NA, pr_rk))
   for (i in seq_along(stats)) {
     temp <- subset(stats_table, stats_table$statistic == stats[i], qty)
     newnames <- suffix[[i]]
@@ -954,6 +968,7 @@ summary.vsel <- function(
   out$selection <- subset(arr, arr$size <= nterms_max)
   out$resp_oscale <- resp_oscale
   out$deltas <- deltas
+  out$cumulate <- cumulate
   return(out)
 }
 
@@ -964,6 +979,11 @@ summary.vsel <- function(
 #'
 #' @param x An object of class `vselsummary`.
 #' @param ... Arguments passed to [print.data.frame()].
+#'
+#' @details In the table printed at the bottom, column `solution_terms` contains
+#'   the full-data predictor ranking and column `cv_proportions_diag` contains
+#'   the main diagonal of the matrix returned by [cv_proportions()] (with
+#'   `cumulate` as set in the [summary.vsel()] call that created `x`).
 #'
 #' @return The output of [summary.vsel()] (invisible).
 #'
@@ -1033,14 +1053,17 @@ print.vselsummary <- function(x, ...) {
     scale_string <- ""
   }
   cat("Performance evaluation summary", scale_string, " with `deltas = ",
-      x$deltas, "`:\n", sep = "")
+      x$deltas, "` and `cumulate = ", x$cumulate, "`:\n", sep = "")
   print(x$selection, row.names = FALSE, ...)
   if (isTRUE(x$validate_search)) {
     message(
       "Column `solution_terms` contains the full-data predictor ranking. To ",
       "retrieve the fold-wise predictor rankings, use the ranking() function, ",
       "possibly followed by cv_proportions() for computing the ranking ",
-      "proportions (which can be visualized by plot.cv_proportions())."
+      "proportions (which can be visualized by plot.cv_proportions()). The ",
+      "main diagonal of the matrix returned by cv_proportions() (with ",
+      "`cumulate = ", x$cumulate, "`) is contained in column ",
+      "`cv_proportions_diag`."
     )
   }
   return(invisible(x))
