@@ -547,6 +547,13 @@ proj_predict_aux <- function(proj, newdata, offset, weights,
 #'   close enough to the baseline model's ELPD. An equivalent rule is applied in
 #'   case of the MLPD. See [suggest_size()] for a formalization. Supplying `NA`
 #'   deactivates this.
+#' @param ranking_nterms_max Maximum submodel size (number of predictor terms)
+#'   for which the predictor names and the corresponding ranking proportions are
+#'   added on the x-axis. Using `NULL` is effectively the same as using
+#'   `nterms_max`. Using `NA` causes the predictor names and the corresponding
+#'   ranking proportions to be omitted. Note that `ranking_nterms_max` does not
+#'   count the intercept, so `ranking_nterms_max = 1` corresponds to the
+#'   submodel consisting of the first (non-intercept) predictor term.
 #' @param cumulate Passed to argument `cumulate` of [cv_proportions()]. Affects
 #'   the ranking proportions given on the x-axis (below the full-data predictor
 #'   ranking).
@@ -602,6 +609,7 @@ plot.vsel <- function(
     baseline = if (!inherits(x$refmodel, "datafit")) "ref" else "best",
     thres_elpd = NA,
     resp_oscale = TRUE,
+    ranking_nterms_max = NULL,
     cumulate = FALSE,
     text_angle = NULL,
     ...
@@ -675,6 +683,19 @@ plot.vsel <- function(
   } else {
     NULL
   }
+  if (is.null(ranking_nterms_max)) {
+    ranking_nterms_max <- nterms_max
+  } else if (!is.na(ranking_nterms_max)) {
+    ranking_nterms_max <- min(ranking_nterms_max, nterms_max)
+    if (!is_wholenumber(ranking_nterms_max)) {
+      stop("`ranking_nterms_max` must be a whole number.")
+    }
+    ranking_nterms_max <- as.integer(ranking_nterms_max)
+  }
+  if (!is.na(ranking_nterms_max)) {
+    breaks <- sort(union(breaks, seq_len(ranking_nterms_max)))
+    minor_breaks <- setdiff(minor_breaks, breaks)
+  }
 
   if (!is.na(thres_elpd)) {
     # Table of thresholds used in extended suggest_size() heuristics (only in
@@ -685,51 +706,56 @@ plot.vsel <- function(
     )
   }
 
-  # Predictor ranking(s):
-  rk <- ranking(object, nterms_max = nterms_max)
-  if (!is.null(rk[["foldwise"]])) {
-    pr_rk <- diag(cv_proportions(rk, cumulate = cumulate))
-  } else {
-    pr_rk <- rep(NA, length(rk[["fulldata"]]))
-  }
-  rk_dfr <- data.frame(
-    size = c(0L, seq_along(rk[["fulldata"]])),
-    rk_fulldata = c("", rk[["fulldata"]]),
-    cv_props_diag = c(NA, pr_rk)
-  )
-  rk_dfr[["cv_props_diag"]] <- paste(round(100 * rk_dfr[["cv_props_diag"]]),
-                                     "%")
-  rk_dfr[["cv_props_diag"]][1] <- "" # empty model
-  rk_dfr_empty <- do.call(rbind, lapply(
-    setdiff(breaks, rk_dfr[["size"]]),
-    function(br_j) {
-      data.frame(size = as.integer(br_j), rk_fulldata = "", cv_props_diag = "")
-    }
-  ))
-  rk_dfr <- rbind(rk_dfr, rk_dfr_empty)
-  rk_dfr[["size_with_predictor_and_cvpropdiag"]] <- paste(
-    rk_dfr[["size"]], rk_dfr[["rk_fulldata"]], sep = "\n"
-  )
-  if (!is.null(rk[["foldwise"]])) {
-    rk_dfr[["size_with_predictor_and_cvpropdiag"]] <- paste(
-      rk_dfr[["size_with_predictor_and_cvpropdiag"]], rk_dfr[["cv_props_diag"]],
-      sep = "\n"
-    )
-  }
+  # Start x-axis label (title):
+  xlab <- "Submodel size (number of predictor terms)"
 
-  # x-axis label (title):
-  xlab <- paste("Submodel size (number of predictor terms)",
-                "Corresponding predictor from full-data predictor ranking",
-                sep = "\n")
-  if (!is.null(rk[["foldwise"]])) {
-    if (cumulate) {
-      cumul_pretty <- " cumulated "
+  if (!is.na(ranking_nterms_max)) {
+    # Predictor ranking(s):
+    rk <- ranking(object, nterms_max = ranking_nterms_max)
+    if (!is.null(rk[["foldwise"]])) {
+      pr_rk <- diag(cv_proportions(rk, cumulate = cumulate))
     } else {
-      cumul_pretty <- " "
+      pr_rk <- rep(NA, length(rk[["fulldata"]]))
     }
-    xlab_cumul <- paste0("Corresponding main diagonal element from",
-                         cumul_pretty, "CV ranking proportions matrix")
-    xlab <- paste(xlab, xlab_cumul, sep = "\n")
+    rk_dfr <- data.frame(
+      size = c(0L, seq_along(rk[["fulldata"]])),
+      rk_fulldata = c("", rk[["fulldata"]]),
+      cv_props_diag = c(NA, pr_rk)
+    )
+    rk_dfr[["cv_props_diag"]] <- paste(round(100 * rk_dfr[["cv_props_diag"]]),
+                                       "%")
+    rk_dfr[["cv_props_diag"]][1] <- "" # empty model
+    rk_dfr_empty <- do.call(rbind, lapply(
+      setdiff(breaks, rk_dfr[["size"]]),
+      function(br_j) {
+        data.frame(size = as.integer(br_j), rk_fulldata = "",
+                   cv_props_diag = "")
+      }
+    ))
+    rk_dfr <- rbind(rk_dfr, rk_dfr_empty)
+    rk_dfr[["size_with_predictor_and_cvpropdiag"]] <- paste(
+      rk_dfr[["size"]], rk_dfr[["rk_fulldata"]], sep = "\n"
+    )
+    if (!is.null(rk[["foldwise"]])) {
+      rk_dfr[["size_with_predictor_and_cvpropdiag"]] <- paste(
+        rk_dfr[["size_with_predictor_and_cvpropdiag"]],
+        rk_dfr[["cv_props_diag"]], sep = "\n"
+      )
+    }
+
+    # Continue x-axis label (title):
+    xlab_rk <- "Corresponding predictor from full-data predictor ranking"
+    xlab <- paste(xlab, xlab_rk, sep = "\n")
+    if (!is.null(rk[["foldwise"]])) {
+      if (cumulate) {
+        cumul_pretty <- " cumulated "
+      } else {
+        cumul_pretty <- " "
+      }
+      xlab_cumul <- paste0("Corresponding main diagonal element from",
+                           cumul_pretty, "CV ranking proportions matrix")
+      xlab <- paste(xlab, xlab_cumul, sep = "\n")
+    }
   }
 
   # plot submodel results
@@ -777,6 +803,12 @@ plot.vsel <- function(
                    color = "darkgreen", linetype = "longdash")
     }
   }
+  if (!is.na(ranking_nterms_max)) {
+    tick_labs_x <- rk_dfr[order(match(rk_dfr[["size"]], breaks), na.last = NA),
+                          "size_with_predictor_and_cvpropdiag"]
+  } else {
+    tick_labs_x <- waiver()
+  }
   pp <- pp +
     # The submodel-specific graphical elements:
     geom_linerange(aes(ymin = .data[["lq"]], ymax = .data[["uq"]],
@@ -787,8 +819,7 @@ plot.vsel <- function(
     scale_x_continuous(
       breaks = breaks, minor_breaks = minor_breaks,
       limits = c(min(breaks), max(breaks)),
-      labels = rk_dfr[order(match(rk_dfr[["size"]], breaks), na.last = NA),
-                      "size_with_predictor_and_cvpropdiag"]
+      labels = tick_labs_x
     ) +
     labs(x = xlab, y = ylab) +
     theme(legend.position = "none",

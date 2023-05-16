@@ -13,6 +13,7 @@
   baseline = if (!inherits(x$refmodel, "datafit")) "ref" else "best",
   thres_elpd = NA,
   resp_oscale = TRUE,
+  ranking_nterms_max = NULL,
   cumulate = FALSE,
   text_angle = NULL,
   ...
@@ -78,6 +79,14 @@ deactivates this.}
 \item{resp_oscale}{Only relevant for the latent projection. A single logical
 value indicating whether to calculate the performance statistics on the
 original response scale (\code{TRUE}) or on latent scale (\code{FALSE}).}
+
+\item{ranking_nterms_max}{Maximum submodel size (number of predictor terms)
+for which the predictor names and the corresponding ranking proportions are
+added on the x-axis. Using \code{NULL} is effectively the same as using
+\code{nterms_max}. Using \code{NA} causes the predictor names and the corresponding
+ranking proportions to be omitted. Note that \code{ranking_nterms_max} does not
+count the intercept, so \code{ranking_nterms_max = 1} corresponds to the
+submodel consisting of the first (non-intercept) predictor term.}
 
 \item{cumulate}{Passed to argument \code{cumulate} of \code{\link[=cv_proportions]{cv_proportions()}}. Affects
 the ranking proportions given on the x-axis (below the full-data predictor
