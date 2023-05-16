@@ -694,11 +694,12 @@ plot.vsel <- function(
   }
   rk_dfr <- data.frame(
     size = c(0L, seq_along(rk[["fulldata"]])),
-    rk_fulldata = c(NA_character_, rk[["fulldata"]]),
+    rk_fulldata = c("", rk[["fulldata"]]),
     cv_props_diag = c(NA, pr_rk)
   )
   rk_dfr[["cv_props_diag"]] <- paste(round(100 * rk_dfr[["cv_props_diag"]]),
                                      "%")
+  rk_dfr[["cv_props_diag"]][1] <- "" # empty model
   rk_dfr_empty <- do.call(rbind, lapply(
     setdiff(breaks, rk_dfr[["size"]]),
     function(br_j) {
