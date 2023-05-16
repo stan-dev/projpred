@@ -707,22 +707,29 @@ plot.vsel <- function(
   ))
   rk_dfr <- rbind(rk_dfr, rk_dfr_empty)
   rk_dfr[["size_with_predictor_and_cvpropdiag"]] <- paste(
-    rk_dfr[["size"]], rk_dfr[["rk_fulldata"]], rk_dfr[["cv_props_diag"]],
-    sep = "\n"
+    rk_dfr[["size"]], rk_dfr[["rk_fulldata"]], sep = "\n"
   )
+  if (!is.null(rk[["foldwise"]])) {
+    rk_dfr[["size_with_predictor_and_cvpropdiag"]] <- paste(
+      rk_dfr[["size_with_predictor_and_cvpropdiag"]], rk_dfr[["cv_props_diag"]],
+      sep = "\n"
+    )
+  }
 
   # x-axis label (title):
-  if (cumulate) {
-    cumul_pretty <- " cumulated "
-  } else {
-    cumul_pretty <- " "
+  xlab <- paste("Submodel size (number of predictor terms)",
+                "Corresponding predictor from full-data predictor ranking",
+                sep = "\n")
+  if (!is.null(rk[["foldwise"]])) {
+    if (cumulate) {
+      cumul_pretty <- " cumulated "
+    } else {
+      cumul_pretty <- " "
+    }
+    xlab_cumul <- paste0("Corresponding main diagonal element from",
+                         cumul_pretty, "CV ranking proportions matrix")
+    xlab <- paste(xlab, xlab_cumul, sep = "\n")
   }
-  xlab <- paste0(
-    "Submodel size (number of predictor terms)\n",
-    "Corresponding predictor from full-data predictor ranking\n",
-    "Corresponding main diagonal element from", cumul_pretty, "CV ranking ",
-    "proportions matrix"
-  )
 
   # plot submodel results
   pp <- ggplot(data = subset(stats_sub, stats_sub$size <= nterms_max),
