@@ -2356,6 +2356,8 @@ vsel_tester <- function(
 # @param search_trms_empty_size A single logical value indicating whether
 #   `search_terms` was constructed in a way that causes a model size to be
 #   without candidate models.
+# @param cumul_expected A single logical value indicating whether argument
+#   `cumulate` of summary.vsel() was set to `TRUE` or `FALSE`.
 # @param info_str A single character string giving information to be printed in
 #   case of failure.
 # @param ... Arguments passed to smmry_sel_tester(), apart from
@@ -2365,7 +2367,8 @@ vsel_tester <- function(
 # @return `TRUE` (invisible).
 smmry_tester <- function(smmry, vsel_expected, nterms_max_expected = NULL,
                          resp_oscale_expected = TRUE,
-                         search_trms_empty_size = FALSE, info_str, ...) {
+                         search_trms_empty_size = FALSE, cumul_expected = FALSE,
+                         info_str, ...) {
   expect_s3_class(smmry, "vselsummary")
   expect_type(smmry, "list")
   expect_named(
@@ -2415,7 +2418,9 @@ smmry_tester <- function(smmry, vsel_expected, nterms_max_expected = NULL,
   }
   expect_equal(smmry$nterms, nterms_ch, info = info_str)
   if (isTRUE(vsel_expected$validate_search)) {
-    pr_rk_diag_expected <- head(diag(cv_proportions(vsel_expected)), nterms_ch)
+    pr_rk_diag_expected <- head(diag(cv_proportions(vsel_expected,
+                                                    cumulate = cumul_expected)),
+                                nterms_ch)
   } else {
     pr_rk_diag_expected <- rep(NA, nterms_ch)
   }
@@ -2428,7 +2433,7 @@ smmry_tester <- function(smmry, vsel_expected, nterms_max_expected = NULL,
                    info_str = info_str, ...)
   expect_identical(smmry$resp_oscale, resp_oscale_expected, info = info_str)
   expect_identical(smmry$deltas, FALSE, info = info_str)
-  expect_identical(smmry$cumulate, FALSE, info = info_str)
+  expect_identical(smmry$cumulate, cumul_expected, info = info_str)
 
   return(invisible(TRUE))
 }
