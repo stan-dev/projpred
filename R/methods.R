@@ -653,6 +653,10 @@ plot.vsel <- function(
   if (nterms_max < 1) {
     stop("nterms_max must be at least 1")
   }
+  if (!is_wholenumber(nterms_max)) {
+    stop("`nterms_max` must be a whole number.")
+  }
+  nterms_max <- as.integer(nterms_max)
   if (baseline == "ref") {
     baseline_pretty <- "reference model"
   } else {
@@ -672,14 +676,16 @@ plot.vsel <- function(
   }
 
   # make sure that breaks on the x-axis are integers
-  n_opts <- c(4, 5, 6)
+  n_opts <- 4:6
   n_possible <- Filter(function(x) nterms_max %% x == 0, n_opts)
   n_alt <- n_opts[which.min(n_opts - (nterms_max %% n_opts))]
   nb <- ifelse(length(n_possible) > 0, min(n_possible), n_alt)
-  by <- ceiling(nterms_max / min(nterms_max, nb))
-  breaks <- seq(0, by * min(nterms_max, nb), by)
+  # Using as.integer() only to make it clear that this is an integer (just like
+  # `breaks` and `minor_breaks`):
+  by <- as.integer(ceiling(nterms_max / min(nterms_max, nb)))
+  breaks <- seq(0L, by * min(nterms_max, nb), by)
   minor_breaks <- if (by %% 2 == 0) {
-    seq(by / 2, by * min(nterms_max, nb), by)
+    seq(by %/% 2L, by * min(nterms_max, nb), by)
   } else {
     NULL
   }
@@ -728,8 +734,7 @@ plot.vsel <- function(
     rk_dfr_empty <- do.call(rbind, lapply(
       setdiff(breaks, rk_dfr[["size"]]),
       function(br_j) {
-        data.frame(size = as.integer(br_j), rk_fulldata = "",
-                   cv_props_diag = "")
+        data.frame(size = br_j, rk_fulldata = "", cv_props_diag = "")
       }
     ))
     rk_dfr <- rbind(rk_dfr, rk_dfr_empty)
