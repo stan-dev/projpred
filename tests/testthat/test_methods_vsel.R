@@ -272,24 +272,40 @@ test_that("invalid `nterms_max` fails", {
   }
 })
 
-test_that("`nterms_max` is capped to the maximum model size", {
+test_that(paste(
+  "`nterms_max` is capped to the maximum model size (for varsel() output)"
+), {
   skip_if_not(run_vs)
-  for (tstsetup in names(vss)) {
-    plot_default <- plot(vss[[tstsetup]])
-    expect_s3_class(plot_default, c("gg", "ggplot"))
-    expect_visible(plot_default, label = tstsetup)
-    if (run_snaps) {
-      vdiffr::expect_doppelganger(paste(tstsetup, "default", sep = "__"),
-                                  plot_default)
-    }
-
-    plot_capped <- plot(vss[[tstsetup]],
-                        nterms_max = args_vs[[tstsetup]]$nterms_max + 1L)
+  tstsetups <- grep(paste("\\.default_nterms_max_smmry", "\\.default_rk_max",
+                          "\\.cuFALSE", "\\.default_angle", sep = ".*"),
+                    names(plots_vs), value = TRUE)
+  for (tstsetup in tstsetups) {
+    tstsetup_vsel <- args_plot_vs[[tstsetup]]$tstsetup_vsel
+    plot_capped <- plot(vss[[tstsetup_vsel]],
+                        nterms_max = args_vs[[tstsetup_vsel]]$nterms_max + 1L)
     expect_s3_class(plot_capped, c("gg", "ggplot"))
     expect_visible(plot_capped, label = tstsetup)
     if (run_snaps) {
-      vdiffr::expect_doppelganger(paste(tstsetup, "default", sep = "__"),
-                                  plot_capped)
+      vdiffr::expect_doppelganger(tstsetup, plot_capped)
+    }
+  }
+})
+
+test_that(paste(
+  "`nterms_max` is capped to the maximum model size (for cv_varsel() output)"
+), {
+  skip_if_not(run_cvvs)
+  tstsetups <- grep(paste("\\.default_nterms_max_smmry", "\\.default_rk_max",
+                          "\\.cuFALSE", "\\.default_angle", sep = ".*"),
+                    names(plots_cvvs), value = TRUE)
+  for (tstsetup in tstsetups) {
+    tstsetup_vsel <- args_plot_cvvs[[tstsetup]]$tstsetup_vsel
+    plot_capped <- plot(cvvss[[tstsetup_vsel]],
+                        nterms_max = args_cvvs[[tstsetup_vsel]]$nterms_max + 1L)
+    expect_s3_class(plot_capped, c("gg", "ggplot"))
+    expect_visible(plot_capped, label = tstsetup)
+    if (run_snaps) {
+      vdiffr::expect_doppelganger(tstsetup, plot_capped)
     }
   }
 })
