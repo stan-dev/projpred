@@ -45,7 +45,7 @@ args_datafit <- lapply(setNames(
   tstsetup_fit <- args_ref[[tstsetup_ref]]$tstsetup_fit
   c(nlist(tstsetup_fit), only_nonargs(args_fit[[tstsetup_fit]]))
 })
-# The augmented-data projection is not supported yet for `datafit`s:
+# The latent and the augmented-data projection are not supported for `datafit`s:
 args_datafit <- args_datafit[!grepl("\\.(latent|augdat)", names(args_datafit))]
 
 datafits <- lapply(args_datafit, function(args_datafit_i) {
