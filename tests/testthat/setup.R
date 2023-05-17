@@ -896,6 +896,11 @@ type_tst <- c("mean", "lower", "upper", "se")
 cumulate_tst <- as.list(setNames(nm = c(FALSE, TRUE)))
 names(cumulate_tst) <- paste0("cu", names(cumulate_tst))
 
+angle_tst <- list(
+  default_angle = list(),
+  angle45 = list(text_angle = 45)
+)
+
 ### nterms ----------------------------------------------------------------
 
 ntermss <- sapply(mod_nms, function(mod_nm) {
@@ -934,6 +939,12 @@ nterms_max_rk <- list(
   default_nterms_max_rk = list(),
   halfway = list(nterms_max = nterms_max_tst %/% 2L),
   zero = list(nterms_max = 0L)
+)
+
+rk_max_tst <- list(
+  default_rk_max = list(),
+  rk_max_NA = list(ranking_nterms_max = NA),
+  rk_max_1 = list(ranking_nterms_max = 1)
 )
 
 ## Reference model --------------------------------------------------------
@@ -1635,20 +1646,32 @@ if (run_more) {
 
 ## plot.vsel() ------------------------------------------------------------
 
+cre_args_plot_vsel <- function(args_obj) {
+  lapply(
+    setNames(nm = grep("\\.brnll\\.", names(args_obj), value = TRUE)),
+    function(tstsetup_vsel) {
+      lapply(nterms_max_smmry["halfway"], function(nterms_crr) {
+        lapply(rk_max_tst["rk_max_NA"], function(rk_max_crr) {
+          lapply(cumulate_tst["cuFALSE"], function(cumulate_crr) {
+            lapply(angle_tst["default_angle"], function(angle_crr) {
+              return(c(
+                nlist(tstsetup_vsel), only_nonargs(args_obj[[tstsetup_vsel]]),
+                list(nterms_max = nterms_crr),
+                rk_max_crr,
+                list(cumulate = cumulate_crr),
+                angle_crr
+              ))
+            })
+          })
+        })
+      })
+    })
+}
+
 ### varsel() --------------------------------------------------------------
 
 if (run_vs) {
-  args_plot_vs <- lapply(
-    setNames(nm = grep("\\.brnll\\.", names(vss), value = TRUE)),
-    function(tstsetup_vsel) {
-      return(c(
-        nlist(tstsetup_vsel), only_nonargs(args_vs[[tstsetup_vsel]]),
-        list(nterms_max = nterms_avail$single,
-             ranking_nterms_max = NA,
-             cumulate = FALSE,
-             text_angle = NULL)
-      ))
-    })
+  args_plot_vs <- cre_args_plot_vsel(args_vs)
   args_plot_vs <- unlist_cust(args_plot_vs)
 
   plots_vs <- lapply(args_plot_vs, function(args_plot_vs_i) {
@@ -1662,17 +1685,7 @@ if (run_vs) {
 ### cv_varsel() -----------------------------------------------------------
 
 if (run_cvvs) {
-  args_plot_cvvs <- lapply(
-    setNames(nm = grep("\\.brnll\\.", names(cvvss), value = TRUE)),
-    function(tstsetup_vsel) {
-      return(c(
-        nlist(tstsetup_vsel), only_nonargs(args_cvvs[[tstsetup_vsel]]),
-        list(nterms_max = nterms_avail$single,
-             ranking_nterms_max = NA,
-             cumulate = FALSE,
-             text_angle = NULL)
-      ))
-    })
+  args_plot_cvvs <- cre_args_plot_vsel(args_cvvs)
   args_plot_cvvs <- unlist_cust(args_plot_cvvs)
 
   plots_cvvs <- lapply(args_plot_cvvs, function(args_plot_cvvs_i) {
