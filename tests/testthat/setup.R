@@ -452,10 +452,18 @@ dat_indep$offs_col <- offs_indep
 ## Setup ------------------------------------------------------------------
 
 if (!requireNamespace("rstanarm", quietly = TRUE)) {
-  stop("Package \"rstanarm\" is needed for these tests. Please install it.",
-       call. = FALSE)
+  warning("Package 'rstanarm' is needed for the rstanarm tests, but could not ",
+          "be found. Deactivating the rstanarm tests now. Furthermore, in ",
+          "this case, `run_prj`, `run_vs`, and `run_cvvs` are currently set ",
+          "to `FALSE`.")
+  pkg_nms <- character()
+  # TODO: Adapt the tests to avoid the following line, at least if `run_brms` is
+  # `TRUE` (better: avoid it in any case, no matter whether `run_brms` is `TRUE`
+  # or `FALSE`).
+  run_prj <- run_vs <- run_cvvs <- FALSE
+} else {
+  pkg_nms <- "rstanarm"
 }
-pkg_nms <- "rstanarm"
 
 if (run_brms && !requireNamespace("brms", quietly = TRUE)) {
   warning("Package 'brms' is needed for the brms tests, but could not be ",
@@ -755,7 +763,7 @@ args_fit <- lapply(setNames(nm = names(args_fit)), function(args_fit_nm) {
   return(args_fit[[args_fit_nm]])
 })
 
-if (!run_more) {
+if (!run_more && length(pkg_nms)) {
   sel_fits <- c(
     "rstanarm.glm.gauss.stdformul.with_wobs.with_offs",
     "rstanarm.glm.brnll.stdformul.without_wobs.without_offs",
@@ -789,8 +797,11 @@ if (!run_more) {
                      invert = TRUE)
   }
   args_fit <- args_fit[names(args_fit) %in% sel_fits]
-  if (run_brms) {
+  if (run_brms && "rstanarm" %in% pkg_nms) {
     stopifnot(setequal(names(args_fit), sel_fits))
+  } else if (run_brms && !"rstanarm" %in% pkg_nms) {
+    stopifnot(setequal(names(args_fit),
+                       grep("^brms\\.", sel_fits, value = TRUE)))
   } else {
     stopifnot(setequal(names(args_fit),
                        grep("^brms\\.", sel_fits, value = TRUE, invert = TRUE)))

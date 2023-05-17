@@ -9,7 +9,10 @@
 #   next sublist is unnamed or contains an element with name given in
 #   `nm_stop`).
 unlist_cust <- function(x, nm_stop = "mod_nm") {
-  stopifnot(is.list(x), length(x) > 0)
+  stopifnot(is.list(x))
+  if (!length(x)) {
+    return(x)
+  }
   if (is.null(names(x[[1]])) || nm_stop %in% names(x[[1]])) {
     return(x)
   } else {

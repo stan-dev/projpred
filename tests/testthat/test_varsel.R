@@ -1241,6 +1241,7 @@ test_that("`validate_search` works", {
 ## Arguments specific to K-fold CV ----------------------------------------
 
 test_that("invalid `K` fails", {
+  skip_if_not(length(fits) > 0)
   expect_error(cv_varsel(refmods[[1]], cv_method = "kfold", K = 1),
                "^`K` must be at least 2\\.$")
   expect_error(cv_varsel(refmods[[1]], cv_method = "kfold", K = 1000),

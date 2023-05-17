@@ -47,6 +47,7 @@ test_that("`object` of class \"stanreg\" or \"brmsfit\" works", {
 })
 
 test_that("missing `data` fails", {
+  skip_if_not_installed("rstanarm")
   fit_nodata <- suppressWarnings(rstanarm::stan_glm(
     dat$y_glm_gauss ~ dat$xco.1 + dat$xco.2 + dat$xco.3 +
       dat$xca.1 + dat$xca.2 + offset(dat$offs_col),
@@ -62,6 +63,7 @@ test_that("missing `data` fails", {
 })
 
 test_that("`formula` as a character string fails", {
+  skip_if_not_installed("rstanarm")
   # If `formula` is a character string, rstanarm::stan_glm() is not able to find
   # objects supplied to arguments `weights` or `offset`, at least when using
   # devtools::test():
@@ -132,6 +134,7 @@ test_that(paste(
   "binomial family with 1-column response and weights which are not all ones",
   "errors"
 ), {
+  skip_if_not_installed("rstanarm")
   dat_prop <- within(dat, {
     ybinprop_glm <- y_glm_binom / wobs_col
   })
@@ -208,11 +211,13 @@ test_that("get_refmodel() is idempotent", {
 context("predict.refmodel()")
 
 test_that("invalid `type` fails", {
+  skip_if_not(length(fits) > 0)
   expect_error(predict(refmods[[1]], dat, type = "zzz"),
                "^type should be one of")
 })
 
 test_that("invalid `ynew` fails", {
+  skip_if_not(length(fits) > 0)
   expect_error(predict(refmods[[1]], dat, ynew = dat),
                "^Argument `ynew` must be a numeric vector\\.$")
 })
