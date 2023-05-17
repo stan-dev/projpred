@@ -14,6 +14,8 @@
   thres_elpd = NA,
   resp_oscale = TRUE,
   ranking_nterms_max = NULL,
+  ranking_abbreviate = FALSE,
+  abbreviate_args = list(),
   cumulate = FALSE,
   text_angle = NULL,
   ...
@@ -87,6 +89,14 @@ added on the x-axis. Using \code{NULL} is effectively the same as using
 ranking proportions to be omitted. Note that \code{ranking_nterms_max} does not
 count the intercept, so \code{ranking_nterms_max = 1} corresponds to the
 submodel consisting of the first (non-intercept) predictor term.}
+
+\item{ranking_abbreviate}{A single logical value indicating whether the
+predictor names in the full-data predictor ranking should be abbreviated
+automatically by \code{\link[=abbreviate]{abbreviate()}} (\code{TRUE}) or not (\code{FALSE}). See also
+argument \code{abbreviate_args}.}
+
+\item{abbreviate_args}{A \code{list} of arguments (except for \code{names.arg}) to be
+passed to \code{\link[=abbreviate]{abbreviate()}} in case of \code{ranking_abbreviate = TRUE}.}
 
 \item{cumulate}{Passed to argument \code{cumulate} of \code{\link[=cv_proportions]{cv_proportions()}}. Affects
 the ranking proportions given on the x-axis (below the full-data predictor

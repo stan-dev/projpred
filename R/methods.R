@@ -554,6 +554,12 @@ proj_predict_aux <- function(proj, newdata, offset, weights,
 #'   ranking proportions to be omitted. Note that `ranking_nterms_max` does not
 #'   count the intercept, so `ranking_nterms_max = 1` corresponds to the
 #'   submodel consisting of the first (non-intercept) predictor term.
+#' @param ranking_abbreviate A single logical value indicating whether the
+#'   predictor names in the full-data predictor ranking should be abbreviated
+#'   automatically by [abbreviate()] (`TRUE`) or not (`FALSE`). See also
+#'   argument `abbreviate_args`.
+#' @param abbreviate_args A `list` of arguments (except for `names.arg`) to be
+#'   passed to [abbreviate()] in case of `ranking_abbreviate = TRUE`.
 #' @param cumulate Passed to argument `cumulate` of [cv_proportions()]. Affects
 #'   the ranking proportions given on the x-axis (below the full-data predictor
 #'   ranking).
@@ -610,6 +616,8 @@ plot.vsel <- function(
     thres_elpd = NA,
     resp_oscale = TRUE,
     ranking_nterms_max = NULL,
+    ranking_abbreviate = FALSE,
+    abbreviate_args = list(),
     cumulate = FALSE,
     text_angle = NULL,
     ...
@@ -738,6 +746,12 @@ plot.vsel <- function(
       }
     ))
     rk_dfr <- rbind(rk_dfr, rk_dfr_empty)
+    if (ranking_abbreviate) {
+      rk_dfr[["rk_fulldata"]] <- do.call(abbreviate, c(
+        list(names.arg = rk_dfr[["rk_fulldata"]]),
+        abbreviate_args
+      ))
+    }
     rk_dfr[["size_with_predictor_and_cvpropdiag"]] <- paste(
       rk_dfr[["size"]], rk_dfr[["rk_fulldata"]], sep = "\n"
     )
