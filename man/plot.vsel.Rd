@@ -91,9 +91,9 @@ count the intercept, so \code{ranking_nterms_max = 1} corresponds to the
 submodel consisting of the first (non-intercept) predictor term.}
 
 \item{ranking_abbreviate}{A single logical value indicating whether the
-predictor names in the full-data predictor ranking should be abbreviated
-automatically by \code{\link[=abbreviate]{abbreviate()}} (\code{TRUE}) or not (\code{FALSE}). See also
-argument \code{ranking_abbreviate_args}.}
+predictor names in the full-data predictor ranking should be abbreviated by
+\code{\link[=abbreviate]{abbreviate()}} (\code{TRUE}) or not (\code{FALSE}). See also argument
+\code{ranking_abbreviate_args} and section "Value".}
 
 \item{ranking_abbreviate_args}{A \code{list} of arguments (except for \code{names.arg})
 to be passed to \code{\link[=abbreviate]{abbreviate()}} in case of \code{ranking_abbreviate = TRUE}.}
@@ -113,7 +113,10 @@ and \code{seed} (see \code{\link[=set.seed]{set.seed()}}, but defaulting to \cod
 is not called within that function at all).}
 }
 \value{
-A \pkg{ggplot2} plotting object (of class \code{gg} and \code{ggplot}).
+A \pkg{ggplot2} plotting object (of class \code{gg} and \code{ggplot}). If
+\code{ranking_abbreviate} is \code{TRUE}, the output of \code{\link[=abbreviate]{abbreviate()}} is stored in
+an attribute called \code{projpred_ranking_abbreviated} (to allow the
+abbreviations to be easily mapped back to the original predictor names).
 }
 \description{
 This is the \code{\link[=plot]{plot()}} method for \code{vsel} objects (returned by \code{\link[=varsel]{varsel()}} or

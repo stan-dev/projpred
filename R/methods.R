@@ -555,9 +555,9 @@ proj_predict_aux <- function(proj, newdata, offset, weights,
 #'   count the intercept, so `ranking_nterms_max = 1` corresponds to the
 #'   submodel consisting of the first (non-intercept) predictor term.
 #' @param ranking_abbreviate A single logical value indicating whether the
-#'   predictor names in the full-data predictor ranking should be abbreviated
-#'   automatically by [abbreviate()] (`TRUE`) or not (`FALSE`). See also
-#'   argument `ranking_abbreviate_args`.
+#'   predictor names in the full-data predictor ranking should be abbreviated by
+#'   [abbreviate()] (`TRUE`) or not (`FALSE`). See also argument
+#'   `ranking_abbreviate_args` and section "Value".
 #' @param ranking_abbreviate_args A `list` of arguments (except for `names.arg`)
 #'   to be passed to [abbreviate()] in case of `ranking_abbreviate = TRUE`.
 #' @param cumulate Passed to argument `cumulate` of [cv_proportions()]. Affects
@@ -569,7 +569,10 @@ proj_predict_aux <- function(proj, newdata, offset, weights,
 #'
 #' @inherit summary.vsel details
 #'
-#' @return A \pkg{ggplot2} plotting object (of class `gg` and `ggplot`).
+#' @return A \pkg{ggplot2} plotting object (of class `gg` and `ggplot`). If
+#'   `ranking_abbreviate` is `TRUE`, the output of [abbreviate()] is stored in
+#'   an attribute called `projpred_ranking_abbreviated` (to allow the
+#'   abbreviations to be easily mapped back to the original predictor names).
 #'
 #' @details
 #'
@@ -747,10 +750,11 @@ plot.vsel <- function(
     ))
     rk_dfr <- rbind(rk_dfr, rk_dfr_empty)
     if (ranking_abbreviate) {
-      rk_dfr[["rk_fulldata"]] <- do.call(abbreviate, c(
+      rk_fulldata_abbv <- do.call(abbreviate, c(
         list(names.arg = rk_dfr[["rk_fulldata"]]),
         ranking_abbreviate_args
       ))
+      rk_dfr[["rk_fulldata"]] <- rk_fulldata_abbv
     }
     rk_dfr[["size_with_predictor_and_cvpropdiag"]] <- paste(
       rk_dfr[["size"]], rk_dfr[["rk_fulldata"]], sep = "\n"
@@ -845,6 +849,9 @@ plot.vsel <- function(
           axis.text.x = element_text(angle = text_angle, hjust = 0.5,
                                      vjust = 0.5)) +
     facet_grid(statistic ~ ., scales = "free_y")
+  if (!is.na(ranking_nterms_max) && ranking_abbreviate) {
+    attr(pp, "projpred_ranking_abbreviated") <- rk_fulldata_abbv
+  }
   return(pp)
 }
 
