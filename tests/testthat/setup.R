@@ -1633,6 +1633,56 @@ if (run_more) {
   }
 }
 
+## plot.vsel() ------------------------------------------------------------
+
+### varsel() --------------------------------------------------------------
+
+if (run_vs) {
+  args_plot_vs <- lapply(
+    setNames(nm = grep("\\.brnll\\.", names(vss), value = TRUE)),
+    function(tstsetup_vsel) {
+      return(c(
+        nlist(tstsetup_vsel), only_nonargs(args_vs[[tstsetup_vsel]]),
+        list(nterms_max = nterms_avail$single,
+             ranking_nterms_max = NA,
+             cumulate = FALSE,
+             text_angle = NULL)
+      ))
+    })
+  args_plot_vs <- unlist_cust(args_plot_vs)
+
+  plots_vs <- lapply(args_plot_vs, function(args_plot_vs_i) {
+    do.call(plot, c(
+      list(x = vss[[args_plot_vs_i$tstsetup_vsel]]),
+      excl_nonargs(args_plot_vs_i)
+    ))
+  })
+}
+
+### cv_varsel() -----------------------------------------------------------
+
+if (run_cvvs) {
+  args_plot_cvvs <- lapply(
+    setNames(nm = grep("\\.brnll\\.", names(cvvss), value = TRUE)),
+    function(tstsetup_vsel) {
+      return(c(
+        nlist(tstsetup_vsel), only_nonargs(args_cvvs[[tstsetup_vsel]]),
+        list(nterms_max = nterms_avail$single,
+             ranking_nterms_max = NA,
+             cumulate = FALSE,
+             text_angle = NULL)
+      ))
+    })
+  args_plot_cvvs <- unlist_cust(args_plot_cvvs)
+
+  plots_cvvs <- lapply(args_plot_cvvs, function(args_plot_cvvs_i) {
+    do.call(plot, c(
+      list(x = cvvss[[args_plot_cvvs_i$tstsetup_vsel]]),
+      excl_nonargs(args_plot_cvvs_i)
+    ))
+  })
+}
+
 ## ranking() --------------------------------------------------------------
 
 ### varsel() --------------------------------------------------------------

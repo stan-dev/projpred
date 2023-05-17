@@ -230,24 +230,22 @@ context("plot()")
 
 test_that("`x` of class \"vsel\" (created by varsel()) works", {
   skip_if_not(run_vs)
-  for (tstsetup in grep("\\.brnll\\.", names(vss), value = TRUE)) {
-    plot_obj <- plot(vss[[tstsetup]], nterms_max = nterms_avail$single)
-    expect_s3_class(plot_obj, c("gg", "ggplot"))
-    expect_visible(plot_obj, label = tstsetup)
+  for (tstsetup in names(plots_vs)) {
+    expect_s3_class(plots_vs[[tstsetup]], c("gg", "ggplot"))
+    expect_visible(plots_vs[[tstsetup]], label = tstsetup)
     if (run_snaps) {
-      vdiffr::expect_doppelganger(tstsetup, plot_obj)
+      vdiffr::expect_doppelganger(tstsetup, plots_vs[[tstsetup]])
     }
   }
 })
 
 test_that("`x` of class \"vsel\" (created by cv_varsel()) works", {
   skip_if_not(run_cvvs)
-  for (tstsetup in grep("\\.brnll\\.", names(cvvss), value = TRUE)) {
-    plot_obj <- plot(cvvss[[tstsetup]], nterms_max = nterms_avail$single)
-    expect_s3_class(plot_obj, c("gg", "ggplot"))
-    expect_visible(plot_obj, label = tstsetup)
+  for (tstsetup in names(plots_cvvs)) {
+    expect_s3_class(plots_cvvs[[tstsetup]], c("gg", "ggplot"))
+    expect_visible(plots_cvvs[[tstsetup]], label = tstsetup)
     if (run_snaps) {
-      vdiffr::expect_doppelganger(tstsetup, plot_obj)
+      vdiffr::expect_doppelganger(tstsetup, plots_cvvs[[tstsetup]])
     }
   }
 })
@@ -256,7 +254,7 @@ test_that("invalid `baseline` fails", {
   skip_if_not(run_vs)
   for (tstsetup in head(names(vss), 1)) {
     expect_error(
-      plot(vss[[tstsetup]], baseline = "zzz"),
+      plot(vss[[tstsetup]], baseline = "zzz", ranking_nterms_max = NA),
       "^Argument 'baseline' must be either 'ref' or 'best'\\.$",
       info = tstsetup
     )
@@ -267,7 +265,7 @@ test_that("invalid `nterms_max` fails", {
   skip_if_not(run_vs)
   for (tstsetup in head(names(vss), 1)) {
     expect_error(
-      plot(vss[[tstsetup]], nterms_max = 0),
+      plot(vss[[tstsetup]], nterms_max = 0, ranking_nterms_max = NA),
       "^nterms_max must be at least 1$",
       info = tstsetup
     )
@@ -277,7 +275,7 @@ test_that("invalid `nterms_max` fails", {
 test_that("`nterms_max` is capped to the maximum model size", {
   skip_if_not(run_vs)
   for (tstsetup in names(vss)) {
-    plot_default <- plot(vss[[tstsetup]])
+    plot_default <- plot(vss[[tstsetup]], ranking_nterms_max = NA)
     expect_s3_class(plot_default, c("gg", "ggplot"))
     expect_visible(plot_default, label = tstsetup)
     if (run_snaps) {
@@ -286,7 +284,8 @@ test_that("`nterms_max` is capped to the maximum model size", {
     }
 
     plot_capped <- plot(vss[[tstsetup]],
-                        nterms_max = args_vs[[tstsetup]]$nterms_max + 1L)
+                        nterms_max = args_vs[[tstsetup]]$nterms_max + 1L,
+                        ranking_nterms_max = NA)
     expect_s3_class(plot_capped, c("gg", "ggplot"))
     expect_visible(plot_capped, label = tstsetup)
     if (run_snaps) {
