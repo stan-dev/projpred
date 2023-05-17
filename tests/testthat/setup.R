@@ -1650,10 +1650,12 @@ cre_args_plot_vsel <- function(args_obj) {
   lapply(
     setNames(nm = grep("\\.brnll\\.", names(args_obj), value = TRUE)),
     function(tstsetup_vsel) {
-      lapply(nterms_max_smmry["halfway"], function(nterms_crr) {
-        lapply(rk_max_tst["rk_max_NA"], function(rk_max_crr) {
-          lapply(cumulate_tst["cuFALSE"], function(cumulate_crr) {
-            lapply(angle_tst["default_angle"], function(angle_crr) {
+      nterms_max_plot <- nterms_max_smmry[c("default_nterms_max_smmry",
+                                            "halfway")]
+      lapply(nterms_max_plot, function(nterms_crr) {
+        lapply(rk_max_tst, function(rk_max_crr) {
+          lapply(cumulate_tst, function(cumulate_crr) {
+            lapply(angle_tst, function(angle_crr) {
               return(c(
                 nlist(tstsetup_vsel), only_nonargs(args_obj[[tstsetup_vsel]]),
                 list(nterms_max = nterms_crr),
