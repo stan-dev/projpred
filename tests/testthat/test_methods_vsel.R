@@ -231,22 +231,14 @@ context("plot()")
 test_that("`x` of class \"vsel\" (created by varsel()) works", {
   skip_if_not(run_vs)
   for (tstsetup in names(plots_vs)) {
-    expect_s3_class(plots_vs[[tstsetup]], c("gg", "ggplot"))
-    expect_visible(plots_vs[[tstsetup]], label = tstsetup)
-    if (run_snaps) {
-      vdiffr::expect_doppelganger(tstsetup, plots_vs[[tstsetup]])
-    }
+    plot_vsel_tester(plots_vs[[tstsetup]], info_str = tstsetup)
   }
 })
 
 test_that("`x` of class \"vsel\" (created by cv_varsel()) works", {
   skip_if_not(run_cvvs)
   for (tstsetup in names(plots_cvvs)) {
-    expect_s3_class(plots_cvvs[[tstsetup]], c("gg", "ggplot"))
-    expect_visible(plots_cvvs[[tstsetup]], label = tstsetup)
-    if (run_snaps) {
-      vdiffr::expect_doppelganger(tstsetup, plots_cvvs[[tstsetup]])
-    }
+    plot_vsel_tester(plots_cvvs[[tstsetup]], info_str = tstsetup)
   }
 })
 
@@ -284,11 +276,7 @@ test_that(paste(
     tstsetup_vsel <- args_plot_vs[[tstsetup]]$tstsetup_vsel
     plot_capped <- plot(vss[[tstsetup_vsel]],
                         nterms_max = args_vs[[tstsetup_vsel]]$nterms_max + 1L)
-    expect_s3_class(plot_capped, c("gg", "ggplot"))
-    expect_visible(plot_capped, label = tstsetup)
-    if (run_snaps) {
-      vdiffr::expect_doppelganger(tstsetup, plot_capped)
-    }
+    plot_vsel_tester(plot_capped, info_str = tstsetup)
   }
 })
 
@@ -304,11 +292,7 @@ test_that(paste(
     tstsetup_vsel <- args_plot_cvvs[[tstsetup]]$tstsetup_vsel
     plot_capped <- plot(cvvss[[tstsetup_vsel]],
                         nterms_max = args_cvvs[[tstsetup_vsel]]$nterms_max + 1L)
-    expect_s3_class(plot_capped, c("gg", "ggplot"))
-    expect_visible(plot_capped, label = tstsetup)
-    if (run_snaps) {
-      vdiffr::expect_doppelganger(tstsetup, plot_capped)
-    }
+    plot_vsel_tester(plot_capped, info_str = tstsetup)
   }
 })
 

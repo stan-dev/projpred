@@ -2618,6 +2618,27 @@ smmry_sel_tester <- function(
   return(invisible(TRUE))
 }
 
+# A helper function for testing the structure of the return value of
+# plot.vsel().
+#
+# @param plot_vsel The return value of plot.vsel().
+# @param info_str A single character string giving information to be printed in
+#   case of failure.
+#
+# @return `TRUE` (invisible).
+plot_vsel_tester <- function(
+    plot_vsel,
+    info_str
+) {
+  expect_s3_class(plot_vsel, c("gg", "ggplot"))
+  expect_visible(plot_vsel, label = info_str)
+  if (run_snaps) {
+    vdiffr::expect_doppelganger(info_str, plot_vsel)
+  }
+
+  return(invisible(TRUE))
+}
+
 # A helper function for testing the structure of a `ranking` object as returned
 # by ranking().
 #
