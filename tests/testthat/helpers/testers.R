@@ -2622,16 +2622,45 @@ smmry_sel_tester <- function(
 # plot.vsel().
 #
 # @param plot_vsel The return value of plot.vsel().
+# @param nterms_max_expected The value that was passed to argument `nterms_max`
+#   of plot.vsel().
+# @param rk_max_expected The value that was passed to argument
+#   `ranking_nterms_max` of plot.vsel().
+# @param rk_expected The full-data predictor ranking that is expected to have
+#   been used in `plot_vsel`.
+# @param abbv_expected The value that was passed to argument
+#   `ranking_abbreviate` of plot.vsel().
+# @param abbv_args_expected The `list` that was passed to argument
+#   `ranking_abbreviate_args` of plot.vsel().
 # @param info_str A single character string giving information to be printed in
 #   case of failure.
 #
 # @return `TRUE` (invisible).
 plot_vsel_tester <- function(
     plot_vsel,
+    nterms_max_expected = NULL,
+    rk_max_expected = NULL,
+    rk_expected,
+    abbv_expected = NULL,
+    abbv_args_expected = list(),
     info_str
 ) {
   expect_s3_class(plot_vsel, c("gg", "ggplot"))
   expect_visible(plot_vsel, label = info_str)
+  if (isTRUE(abbv_expected) &&
+      (is.null(rk_max_expected) || !is.na(rk_max_expected))) {
+    if (!is.null(rk_max_expected)) {
+      rk_expected <- head(rk_expected, rk_max_expected)
+    } else if (!is.null(nterms_max_expected)) {
+      rk_expected <- head(rk_expected, nterms_max_expected)
+    }
+    attr_abbv_expected <- do.call(abbreviate, c(list(names.arg = rk_expected),
+                                                abbv_args_expected))
+  } else {
+    attr_abbv_expected <- NULL
+  }
+  expect_identical(attr(plot_vsel, "projpred_ranking_abbreviated"),
+                   attr_abbv_expected, info = info_str)
   if (run_snaps) {
     vdiffr::expect_doppelganger(info_str, plot_vsel)
   }

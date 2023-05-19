@@ -231,14 +231,34 @@ context("plot()")
 test_that("`x` of class \"vsel\" (created by varsel()) works", {
   skip_if_not(run_vs)
   for (tstsetup in names(plots_vs)) {
-    plot_vsel_tester(plots_vs[[tstsetup]], info_str = tstsetup)
+    args_plot_i <- args_plot_vs[[tstsetup]]
+    plot_vsel_tester(
+      plots_vs[[tstsetup]],
+      nterms_max_expected = args_plot_i$nterms_max %||%
+        args_vs[[args_plot_i$tstsetup_vsel]]$nterms_max,
+      rk_max_expected = args_plot_i$ranking_nterms_max,
+      rk_expected = ranking(vss[[args_plot_i$tstsetup_vsel]])[["fulldata"]],
+      abbv_expected = args_plot_i$ranking_abbreviate,
+      abbv_args_expected = args_plot_i$ranking_abbreviate_args,
+      info_str = tstsetup
+    )
   }
 })
 
 test_that("`x` of class \"vsel\" (created by cv_varsel()) works", {
   skip_if_not(run_cvvs)
   for (tstsetup in names(plots_cvvs)) {
-    plot_vsel_tester(plots_cvvs[[tstsetup]], info_str = tstsetup)
+    args_plot_i <- args_plot_cvvs[[tstsetup]]
+    plot_vsel_tester(
+      plots_cvvs[[tstsetup]],
+      nterms_max_expected = args_plot_i$nterms_max %||%
+        args_cvvs[[args_plot_i$tstsetup_vsel]]$nterms_max,
+      rk_max_expected = args_plot_i$ranking_nterms_max,
+      rk_expected = ranking(cvvss[[args_plot_i$tstsetup_vsel]])[["fulldata"]],
+      abbv_expected = args_plot_i$ranking_abbreviate,
+      abbv_args_expected = args_plot_i$ranking_abbreviate_args,
+      info_str = tstsetup
+    )
   }
 })
 
@@ -273,10 +293,19 @@ test_that(paste(
                           sep = ".*"),
                     names(plots_vs), value = TRUE)
   for (tstsetup in tstsetups) {
-    tstsetup_vsel <- args_plot_vs[[tstsetup]]$tstsetup_vsel
-    plot_capped <- plot(vss[[tstsetup_vsel]],
-                        nterms_max = args_vs[[tstsetup_vsel]]$nterms_max + 1L)
-    plot_vsel_tester(plot_capped, info_str = tstsetup)
+    args_plot_i <- args_plot_vs[[tstsetup]]
+    nterms_max_crr <- args_vs[[args_plot_i$tstsetup_vsel]]$nterms_max + 1L
+    plot_capped <- plot(vss[[args_plot_i$tstsetup_vsel]],
+                        nterms_max = nterms_max_crr)
+    plot_vsel_tester(
+      plot_capped,
+      nterms_max_expected = nterms_max_crr,
+      rk_max_expected = args_plot_i$ranking_nterms_max,
+      rk_expected = ranking(vss[[args_plot_i$tstsetup_vsel]])[["fulldata"]],
+      abbv_expected = args_plot_i$ranking_abbreviate,
+      abbv_args_expected = args_plot_i$ranking_abbreviate_args,
+      info_str = tstsetup
+    )
   }
 })
 
@@ -289,10 +318,19 @@ test_that(paste(
                           sep = ".*"),
                     names(plots_cvvs), value = TRUE)
   for (tstsetup in tstsetups) {
-    tstsetup_vsel <- args_plot_cvvs[[tstsetup]]$tstsetup_vsel
-    plot_capped <- plot(cvvss[[tstsetup_vsel]],
-                        nterms_max = args_cvvs[[tstsetup_vsel]]$nterms_max + 1L)
-    plot_vsel_tester(plot_capped, info_str = tstsetup)
+    args_plot_i <- args_plot_cvvs[[tstsetup]]
+    nterms_max_crr <- args_cvvs[[args_plot_i$tstsetup_vsel]]$nterms_max + 1L
+    plot_capped <- plot(cvvss[[args_plot_i$tstsetup_vsel]],
+                        nterms_max = nterms_max_crr)
+    plot_vsel_tester(
+      plot_capped,
+      nterms_max_expected = nterms_max_crr,
+      rk_max_expected = args_plot_i$ranking_nterms_max,
+      rk_expected = ranking(cvvss[[args_plot_i$tstsetup_vsel]])[["fulldata"]],
+      abbv_expected = args_plot_i$ranking_abbreviate,
+      abbv_args_expected = args_plot_i$ranking_abbreviate_args,
+      info_str = tstsetup
+    )
   }
 })
 
