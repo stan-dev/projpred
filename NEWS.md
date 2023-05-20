@@ -23,7 +23,7 @@ If you read this from a place other than <https://mc-stan.org/projpred/news/inde
 * Enhancements in the vignettes. In particular, the new functions `ranking()`, `cv_proportions()`, and `plot.cv_proportions()` (see "Major changes" above) are now illustrated in the main vignette. (GitHub: #407, #411)
 
 ## Bug fixes
-    
+
 * Fixed a bug causing L1 search to throw an error in case of some `I()` terms. (GitHub: #404, #408)
 * Fixed a bug causing L1 search to throw an error in case of `poly()` or `polym()` terms. Note that just like `step()` and `MASS::stepAIC()`, **projpred**'s search algorithms do not split up a `poly()` or `polym()` term into its lower-degree polynomial terms (which would be helpful, for example, if the linear part of a `poly()` term with `degrees = 2` was relevant but the quadratic part not). Such a split-up of a `poly()` or `polym()` term needs to be performed manually (if desired). (GitHub: #183, #409)
 * Fixed a bug causing some non-smooth predictor terms to be treated as smooth terms. (GitHub: #182, #410)
