@@ -16,6 +16,8 @@
   ranking_nterms_max = NULL,
   ranking_abbreviate = FALSE,
   ranking_abbreviate_args = list(),
+  ranking_repel = NULL,
+  ranking_repel_args = list(),
   cumulate = FALSE,
   text_angle = NULL,
   ...
@@ -97,6 +99,17 @@ predictor names in the full-data predictor ranking should be abbreviated by
 
 \item{ranking_abbreviate_args}{A \code{list} of arguments (except for \code{names.arg})
 to be passed to \code{\link[=abbreviate]{abbreviate()}} in case of \code{ranking_abbreviate = TRUE}.}
+
+\item{ranking_repel}{Either \code{NULL}, \code{"text"}, or \code{"label"}. By \code{NULL}, the
+full-data predictor ranking and the corresponding ranking proportions are
+placed below the x-axis. By \code{"text"} or \code{"label"}, they are placed within
+the plotting area, using \code{\link[ggrepel:geom_text_repel]{ggrepel::geom_text_repel()}} or
+\code{\link[ggrepel:geom_text_repel]{ggrepel::geom_label_repel()}}, respectively.}
+
+\item{ranking_repel_args}{A \code{list} of arguments (except for \code{mapping}) to be
+passed to \code{\link[ggrepel:geom_text_repel]{ggrepel::geom_text_repel()}} or \code{\link[ggrepel:geom_text_repel]{ggrepel::geom_label_repel()}} in
+case of \code{ranking_repel = "text"} or \code{ranking_repel = "label"},
+respectively.}
 
 \item{cumulate}{Passed to argument \code{cumulate} of \code{\link[=cv_proportions]{cv_proportions()}}. Affects
 the ranking proportions given on the x-axis (below the full-data predictor
