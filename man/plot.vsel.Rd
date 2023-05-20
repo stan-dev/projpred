@@ -120,11 +120,12 @@ abbreviations to be easily mapped back to the original predictor names).
 }
 \description{
 This is the \code{\link[=plot]{plot()}} method for \code{vsel} objects (returned by \code{\link[=varsel]{varsel()}} or
-\code{\link[=cv_varsel]{cv_varsel()}}). It displays the predictive performance of the reference model
-(possibly also that of some other "baseline" model) and that of the submodels
-(more precisely, of the submodel \emph{sizes}) along the solution path. For a
-tabular representation of the plotted performance statistics, see
-\code{\link[=summary.vsel]{summary.vsel()}}.
+\code{\link[=cv_varsel]{cv_varsel()}}). It visualizes the predictive performance of the reference
+model (possibly also that of some other "baseline" model) and that of the
+submodels along the full-data predictor ranking. Basic information about the
+(CV) variability in the ranking of the predictors is included as well (if
+available; inferred from \code{\link[=cv_proportions]{cv_proportions()}}). For a tabular representation,
+see \code{\link[=summary.vsel]{summary.vsel()}}.
 }
 \details{
 The \code{stats} options \code{"mse"} and \code{"rmse"} are only available for:

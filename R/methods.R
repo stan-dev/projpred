@@ -533,11 +533,12 @@ proj_predict_aux <- function(proj, newdata, offset, weights,
 #' Plot predictive performance
 #'
 #' This is the [plot()] method for `vsel` objects (returned by [varsel()] or
-#' [cv_varsel()]). It displays the predictive performance of the reference model
-#' (possibly also that of some other "baseline" model) and that of the submodels
-#' (more precisely, of the submodel *sizes*) along the solution path. For a
-#' tabular representation of the plotted performance statistics, see
-#' [summary.vsel()].
+#' [cv_varsel()]). It visualizes the predictive performance of the reference
+#' model (possibly also that of some other "baseline" model) and that of the
+#' submodels along the full-data predictor ranking. Basic information about the
+#' (CV) variability in the ranking of the predictors is included as well (if
+#' available; inferred from [cv_proportions()]). For a tabular representation,
+#' see [summary.vsel()].
 #'
 #' @inheritParams summary.vsel
 #' @param x An object of class `vsel` (returned by [varsel()] or [cv_varsel()]).
@@ -860,11 +861,12 @@ plot.vsel <- function(
 #' Summary of a [varsel()] or [cv_varsel()] run
 #'
 #' This is the [summary()] method for `vsel` objects (returned by [varsel()] or
-#' [cv_varsel()]), which consists of some general information about the
-#' [varsel()] or [cv_varsel()] run, the full-data solution path, some basic
+#' [cv_varsel()]). Apart from some general information about the [varsel()] or
+#' [cv_varsel()] run, it shows the full-data predictor ranking, basic
 #' information about the (CV) variability in the ranking of the predictors (if
-#' available; inferred from [cv_proportions()]), and user-specified predictive
-#' performance statistics. For plotting the latter, see [plot.vsel()].
+#' available; inferred from [cv_proportions()]), and estimates for
+#' user-specified predictive performance statistics. For a graphical
+#' representation, see [plot.vsel()].
 #'
 #' @param object An object of class `vsel` (returned by [varsel()] or
 #'   [cv_varsel()]).
