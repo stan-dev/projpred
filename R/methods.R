@@ -850,7 +850,9 @@ plot.vsel <- function(
                                      vjust = 0.5)) +
     facet_grid(statistic ~ ., scales = "free_y")
   if (!is.na(ranking_nterms_max) && ranking_abbreviate) {
-    attr(pp, "projpred_ranking_abbreviated") <- rk_fulldata_abbv
+    attr(pp, "projpred_ranking_abbreviated") <- rk_fulldata_abbv[
+      rk_fulldata_abbv != ""
+    ]
   }
   return(pp)
 }
