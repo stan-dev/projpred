@@ -192,7 +192,7 @@ This is also the size that `suggest_size()` would suggest:
 suggest_size(vs_lat, stat = "mlpd")
 ```
 
-We can also inspect further results from the `varsel()` run and, in particular, the predictor ranking (also known as solution path):
+To obtain the results from the `varsel()` run in tabular form, we call `summary.vsel()`:
 ```{r smmry_vsel_lat}
 smmry_lat <- summary(vs_lat, stats = "mlpd",
                      type = c("mean", "lower", "upper", "diff"))
@@ -334,14 +334,14 @@ This is not the size that `suggest_size()` would suggest, but as mentioned in th
 suggest_size(vs_nebin, stat = "mlpd")
 ```
 
-We can also inspect further results from the `varsel()` run and, in particular, the predictor ranking:
+Again, we call `summary.vsel()` to obtain the results from the `varsel()` run in tabular form:
 ```{r smmry_vsel_nebin}
 smmry_nebin <- summary(vs_nebin, stats = "mlpd",
                        type = c("mean", "lower", "upper", "diff"))
 print(smmry_nebin, digits = 2)
 ```
 
-As we can see from the predictor ranking, our selected `r if (!params$EVAL) character() else size_decided_nebin` predictor terms lack one truly relevant predictor (`x.9`) and include one noise term (`xn.29`). More explicitly, our selected predictor terms are:
+As we can see from the predictor ranking included in the plot and in the summary table, our selected `r if (!params$EVAL) character() else size_decided_nebin` predictor terms lack one truly relevant predictor (`x.9`) and include one noise term (`xn.29`). More explicitly, our selected predictor terms are:
 ```{r predictors_final_nebin}
 rk_nebin <- ranking(vs_nebin)
 ( predictors_final_nebin <- head(rk_nebin[["fulldata"]],
