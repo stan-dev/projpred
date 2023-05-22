@@ -1123,7 +1123,7 @@ summary.vsel <- function(
   # statistics, reshaping the corresponding data in `stats_table`, and selecting
   # only the requested `type`s:
   arr <- data.frame(size = unique(stats_table$size),
-                    solution_terms = c(NA, rk[["fulldata"]]),
+                    solution_terms = c(NA_character_, rk[["fulldata"]]),
                     cv_proportions_diag = c(NA, pr_rk))
   for (i in seq_along(stats)) {
     temp <- subset(stats_table, stats_table$statistic == stats[i], qty)
