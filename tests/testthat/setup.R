@@ -55,12 +55,13 @@ if (identical(run_snaps, "")) {
   run_snaps <- as.logical(toupper(run_snaps))
   stopifnot(isTRUE(run_snaps) || isFALSE(run_snaps))
 }
+if (run_snaps && !requireNamespace("rlang", quietly = TRUE)) {
+  warning("Package 'rlang' is needed for snapshot testing, but could not be ",
+          "found. Deactivating snapshot testing now.")
+  run_snaps <- FALSE
+}
 if (run_snaps) {
   testthat_ed_max2 <- edition_get() <= 2
-  if (!requireNamespace("rlang", quietly = TRUE)) {
-    stop("Package \"rlang\" is needed for the snapshots. Please install it.",
-         call. = FALSE)
-  }
 }
 # Run parallel tests?:
 # Notes:
@@ -91,21 +92,23 @@ if (run_prll) {
   # package (which is still slower than a sequential run, though):
   if (!identical(.Platform$OS.type, "windows")) {
     if (!requireNamespace("doParallel", quietly = TRUE)) {
-      stop("Package \"doParallel\" is needed for these tests. Please ",
-           "install it.",
-           call. = FALSE)
+      warning("Package 'doParallel' is needed for the parallel tests, but ",
+              "could not be found. Deactivating the parallel tests now.")
+      run_prll <- FALSE
+    } else {
+      dopar_backend <- "doParallel"
     }
-    dopar_backend <- "doParallel"
   } else {
     # This case (which should not be possible by default) is only included
     # here to demonstrate how parallelization should be used on Windows (but
     # currently, this makes no sense, as explained above).
     if (!requireNamespace("doFuture", quietly = TRUE)) {
-      stop("Package \"doFuture\" is needed for these tests. Please ",
-           "install it.",
-           call. = FALSE)
+      warning("Package 'doFuture' is needed for the parallel tests, but ",
+              "could not be found. Deactivating the parallel tests now.")
+      run_prll <- FALSE
+    } else {
+      dopar_backend <- "doFuture"
     }
-    dopar_backend <- "doFuture"
     if (identical(.Platform$OS.type, "windows")) {
       ### Not used in this case because the 'future.callr' package provides a
       ### faster alternative on Windows (which is still slower than a sequential
@@ -113,11 +116,12 @@ if (run_prll) {
       # future_plan <- "multisession"
       ###
       if (!requireNamespace("future.callr", quietly = TRUE)) {
-        stop("Package \"future.callr\" is needed for these tests. Please ",
-             "install it.",
-             call. = FALSE)
+        warning("Package 'future.callr' is needed for the parallel tests, but ",
+                "could not be found. Deactivating the parallel tests now.")
+        run_prll <- FALSE
+      } else {
+        future_plan <- "callr"
       }
-      future_plan <- "callr"
     } else {
       # This case (which should not be possible by default) is only included
       # here to demonstrate how other systems should be used with the 'doFuture'
@@ -448,16 +452,25 @@ dat_indep$offs_col <- offs_indep
 ## Setup ------------------------------------------------------------------
 
 if (!requireNamespace("rstanarm", quietly = TRUE)) {
-  stop("Package \"rstanarm\" is needed for these tests. Please install it.",
-       call. = FALSE)
+  warning("Package 'rstanarm' is needed for the rstanarm tests, but could not ",
+          "be found. Deactivating the rstanarm tests now. Furthermore, in ",
+          "this case, `run_prj`, `run_vs`, and `run_cvvs` are currently set ",
+          "to `FALSE`.")
+  pkg_nms <- character()
+  # TODO: Adapt the tests to avoid the following line, at least if `run_brms` is
+  # `TRUE` (better: avoid it in any case, no matter whether `run_brms` is `TRUE`
+  # or `FALSE`).
+  run_prj <- run_vs <- run_cvvs <- FALSE
+} else {
+  pkg_nms <- "rstanarm"
 }
-pkg_nms <- "rstanarm"
 
+if (run_brms && !requireNamespace("brms", quietly = TRUE)) {
+  warning("Package 'brms' is needed for the brms tests, but could not be ",
+          "found. Deactivating the brms tests now.")
+  run_brms <- FALSE
+}
 if (run_brms) {
-  if (!requireNamespace("brms", quietly = TRUE)) {
-    stop("Package \"brms\" is needed for these tests. Please install it.",
-         call. = FALSE)
-  }
   pkg_nms <- c(pkg_nms, "brms")
   # For storing "brmsfit"s locally:
   file_pth <- testthat::test_path("bfits")
@@ -750,7 +763,7 @@ args_fit <- lapply(setNames(nm = names(args_fit)), function(args_fit_nm) {
   return(args_fit[[args_fit_nm]])
 })
 
-if (!run_more) {
+if (!run_more && length(pkg_nms)) {
   sel_fits <- c(
     "rstanarm.glm.gauss.stdformul.with_wobs.with_offs",
     "rstanarm.glm.brnll.stdformul.without_wobs.without_offs",
@@ -784,8 +797,11 @@ if (!run_more) {
                      invert = TRUE)
   }
   args_fit <- args_fit[names(args_fit) %in% sel_fits]
-  if (run_brms) {
+  if (run_brms && "rstanarm" %in% pkg_nms) {
     stopifnot(setequal(names(args_fit), sel_fits))
+  } else if (run_brms && !"rstanarm" %in% pkg_nms) {
+    stopifnot(setequal(names(args_fit),
+                       grep("^brms\\.", sel_fits, value = TRUE)))
   } else {
     stopifnot(setequal(names(args_fit),
                        grep("^brms\\.", sel_fits, value = TRUE, invert = TRUE)))

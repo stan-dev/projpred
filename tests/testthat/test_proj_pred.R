@@ -216,16 +216,18 @@ test_that("`object` not of class \"vsel\" and missing `solution_terms` fails", {
     paste("^Please provide an `object` of class \"vsel\" or use argument",
           "`solution_terms`\\.$")
   )
-  expect_error(
-    proj_linpred(fits[[1]], .seed = seed2_tst),
-    paste("^Please provide an `object` of class \"vsel\" or use argument",
-          "`solution_terms`\\.$")
-  )
-  expect_error(
-    proj_linpred(refmods[[1]], .seed = seed2_tst),
-    paste("^Please provide an `object` of class \"vsel\" or use argument",
-          "`solution_terms`\\.$")
-  )
+  if (length(fits)) {
+    expect_error(
+      proj_linpred(fits[[1]], .seed = seed2_tst),
+      paste("^Please provide an `object` of class \"vsel\" or use argument",
+            "`solution_terms`\\.$")
+    )
+    expect_error(
+      proj_linpred(refmods[[1]], .seed = seed2_tst),
+      paste("^Please provide an `object` of class \"vsel\" or use argument",
+            "`solution_terms`\\.$")
+    )
+  }
   if (run_prj) {
     expect_error(
       proj_linpred(c(prjs, list(dat)), .seed = seed2_tst),
@@ -1065,16 +1067,18 @@ test_that("`object` not of class \"vsel\" and missing `solution_terms` fails", {
     paste("^Please provide an `object` of class \"vsel\" or use argument",
           "`solution_terms`\\.$")
   )
-  expect_error(
-    proj_predict(fits[[1]], .seed = seed2_tst),
-    paste("^Please provide an `object` of class \"vsel\" or use argument",
-          "`solution_terms`\\.$")
-  )
-  expect_error(
-    proj_predict(refmods[[1]], .seed = seed2_tst),
-    paste("^Please provide an `object` of class \"vsel\" or use argument",
-          "`solution_terms`\\.$")
-  )
+  if (length(fits)) {
+    expect_error(
+      proj_predict(fits[[1]], .seed = seed2_tst),
+      paste("^Please provide an `object` of class \"vsel\" or use argument",
+            "`solution_terms`\\.$")
+    )
+    expect_error(
+      proj_predict(refmods[[1]], .seed = seed2_tst),
+      paste("^Please provide an `object` of class \"vsel\" or use argument",
+            "`solution_terms`\\.$")
+    )
+  }
   if (run_prj) {
     expect_error(
       proj_predict(c(prjs, list(dat)), .seed = seed2_tst),

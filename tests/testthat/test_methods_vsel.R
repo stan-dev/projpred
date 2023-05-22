@@ -5,9 +5,17 @@ context("summary(), plot(), suggest_size()")
 test_that("invalid `object` fails", {
   objs_invalid <- nlist(
     NULL,
-    fit = fits[[1]],
-    refmod = refmods[[1]]
+    some_numbers = 1:3,
+    some_letters = head(letters, 17)
   )
+  if (length(fits)) {
+    objs_invalid <- c(
+      objs_invalid,
+      nlist(NULL,
+            fit = fits[[1]],
+            refmod = refmods[[1]])
+    )
+  }
   if (run_prj) {
     objs_invalid <- c(
       objs_invalid,
