@@ -565,7 +565,8 @@ proj_predict_aux <- function(proj, newdata, offset, weights,
 #'   full-data predictor ranking and the corresponding ranking proportions are
 #'   placed below the x-axis. By `"text"` or `"label"`, they are placed within
 #'   the plotting area, using [ggrepel::geom_text_repel()] or
-#'   [ggrepel::geom_label_repel()], respectively.
+#'   [ggrepel::geom_label_repel()], respectively. See also argument
+#'   `ranking_repel_args`.
 #' @param ranking_repel_args A `list` of arguments (except for `mapping`) to be
 #'   passed to [ggrepel::geom_text_repel()] or [ggrepel::geom_label_repel()] in
 #'   case of `ranking_repel = "text"` or `ranking_repel = "label"`,

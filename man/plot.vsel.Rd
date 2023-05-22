@@ -104,7 +104,8 @@ to be passed to \code{\link[=abbreviate]{abbreviate()}} in case of \code{ranking
 full-data predictor ranking and the corresponding ranking proportions are
 placed below the x-axis. By \code{"text"} or \code{"label"}, they are placed within
 the plotting area, using \code{\link[ggrepel:geom_text_repel]{ggrepel::geom_text_repel()}} or
-\code{\link[ggrepel:geom_text_repel]{ggrepel::geom_label_repel()}}, respectively.}
+\code{\link[ggrepel:geom_text_repel]{ggrepel::geom_label_repel()}}, respectively. See also argument
+\code{ranking_repel_args}.}
 
 \item{ranking_repel_args}{A \code{list} of arguments (except for \code{mapping}) to be
 passed to \code{\link[ggrepel:geom_text_repel]{ggrepel::geom_text_repel()}} or \code{\link[ggrepel:geom_text_repel]{ggrepel::geom_label_repel()}} in
