@@ -141,10 +141,11 @@ cvvs_fast <- cv_varsel(
 ```
 In this case, we ignore the Pareto-$k$ warning due to the reduced values for `chains` and `iter` in the reference model fit.
 
-To find a suitable value for `nterms_max` in subsequent runs, we take a look at a plot of at least one predictive performance statistic in dependence of the submodel size.
-Here, we choose the mean log predictive density (MLPD; see the documentation for argument `stats` of `summary.vsel()` for details) as the only performance statistic:
+To find a suitable value for `nterms_max` in subsequent `cv_varsel()` runs, we take a look at a plot of at least one predictive performance statistic in dependence of the submodel size.
+Here, we choose the mean log predictive density (MLPD; see the documentation for argument `stats` of `summary.vsel()` for details) as the only performance statistic.
+Since we will be using the following plot only to determine `nterms_max` for subsequent `cv_varsel()` runs, we can omit the predictor ranking from the plot by setting `ranking_nterms_max` to `NA`:
 ```{r plot_vsel_fast}
-plot(cvvs_fast, stats = "mlpd")
+plot(cvvs_fast, stats = "mlpd", ranking_nterms_max = NA)
 ```
 This plot (see `?plot.vsel` for a description) shows that the submodel MLPD does not change much after submodel size 8, so in our final `cv_varsel()` run, we set `nterms_max` to a value slightly higher than 8 (here: `nterms_max = 9`) to ensure that we see the MLPD leveling off.
 
@@ -184,7 +185,7 @@ In this case, we ignore the bulk-ESS warning due to the reduced values for `chai
 We can now select a final submodel size by looking at a predictive performance plot similar to the one created for the preliminary `cv_varsel()` run above.
 By default, the performance statistics are plotted on their original scale, but with `deltas = TRUE`, they are plotted as differences from a baseline model (which is the reference model by default, at least in the most common cases).
 Since the differences and the (frequentist) uncertainty in their estimation are usually of more interest than the original-scale performance statistics (at least with regard to the decision for a final submodel size), we directly plot with `deltas = TRUE` here:
-```{r plot_vsel}
+```{r plot_vsel, fig.width=6, out.width="80%"}
 plot(cvvs, stats = "mlpd", deltas = TRUE)
 ```
 
@@ -198,6 +199,7 @@ Hence, based on the plot, we decide for a submodel size of 6 because this is the
 size_decided <- 6
 ```
 If the focus of our predictive model had been accuracy (not sparsity), size 8 would have been a natural choice because at size 8, the submodel MLPD "levels off" (in fact, size 8 here even comes with the maximum submodel MLPD among all plotted sizes, but in general, this does not need to be the case).
+Further below, the predictor ranking and the (CV) ranking proportions that are shown in the plot (below the submodel sizes on the x-axis) are explained in detail---and also how they could have been incorporated into our decision for a submodel size.
 
 The `suggest_size()` function offered by **projpred** may help in the decision for a submodel size, but this is a rather heuristic method and needs to be interpreted with caution (see `?suggest_size`):
 ```{r size_sgg}
@@ -205,9 +207,9 @@ suggest_size(cvvs, stat = "mlpd")
 ```
 With this heuristic, we would get the same final submodel size (`6`) as by our manual (sparsity-based) decision.
 
-The predictive performance statistic(s) plotted by `plot.vsel()` can be retrieved in tabular form via `summary.vsel()`.
+A tabular representation of the plot created by `plot.vsel()` can be achieved via `summary.vsel()`.
 For the output of `summary.vsel()`, there is a sophisticated `print()` method (`print.vselsummary()`) which is also called by the shortcut method `print.vsel()`^[`print.vsel()` is the method that is called when simply printing an object resulting from `varsel()` or `cv_varsel()`.].
-For example, we can create the summary table matching the predictive performance plot above (and also adjust the minimum number of printed significant digits):
+Specifically, to create the summary table matching the predictive performance plot above as closely as possible (and to also adjust the minimum number of printed significant digits), we may call `summary.vsel()` and `print.vselsummary()` as follows:
 ```{r smmry_vsel}
 smmry <- summary(cvvs, stats = "mlpd", type = c("mean", "lower", "upper"),
                  deltas = TRUE)
@@ -261,6 +263,9 @@ Only one of the two CV folds includes `X6` among the first 6 terms, but the othe
 Although not demonstrated here, the cumulated ranking proportions could also have guided the decision for a submodel size (if we had not been willing to follow a strict rule based on accuracy or sparsity):
 From their plot, we can see that size 9 might have been an unfortunate choice because `X10` (which---by cutting off the full-data predictor ranking at size 9---would then have been selected as the ninth predictor in the final submodel) is not included among the first 9 terms by any CV fold.
 However, since `K = 2` is too small for reliable statements regarding the variability of the predictor ranking, we did not take the cumulated ranking proportions into account when we made our decision for a submodel size above.
+
+In a real-world application, we also might have been able to incorporate the full-data predictor ranking into our decision for a submodel size (usually, this requires to also take into account the variability of the predictor ranking, as reflected by the---possibly cumulated---ranking proportions).
+For example, the predictors might be associated with different measurement costs, so that we might have wanted to select a costly predictor only if the submodel size at which it would be selected (according to the full-data predictor ranking, but taking into account that there might be variability in the ranking of the predictors) comes with a considerable increase in predictive performance.
 
 ## Post-selection inference
 
