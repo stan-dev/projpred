@@ -918,7 +918,7 @@ rk_abbv_tst <- list(
 rk_repel_tst <- list(
   default_repel = list(),
   repelText = list(ranking_repel = "text",
-                   ranking_repel_args = list(point.size = NA))
+                   ranking_repel_args = list(seed = seed3_tst))
 )
 
 cumulate_tst <- as.list(setNames(nm = c(FALSE, TRUE)))
