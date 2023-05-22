@@ -13,6 +13,11 @@
   baseline = if (!inherits(x$refmodel, "datafit")) "ref" else "best",
   thres_elpd = NA,
   resp_oscale = TRUE,
+  ranking_nterms_max = NULL,
+  ranking_abbreviate = FALSE,
+  ranking_abbreviate_args = list(),
+  cumulate = FALSE,
+  text_angle = NULL,
   ...
 )
 }
@@ -77,6 +82,30 @@ deactivates this.}
 value indicating whether to calculate the performance statistics on the
 original response scale (\code{TRUE}) or on latent scale (\code{FALSE}).}
 
+\item{ranking_nterms_max}{Maximum submodel size (number of predictor terms)
+for which the predictor names and the corresponding ranking proportions are
+added on the x-axis. Using \code{NULL} is effectively the same as using
+\code{nterms_max}. Using \code{NA} causes the predictor names and the corresponding
+ranking proportions to be omitted. Note that \code{ranking_nterms_max} does not
+count the intercept, so \code{ranking_nterms_max = 1} corresponds to the
+submodel consisting of the first (non-intercept) predictor term.}
+
+\item{ranking_abbreviate}{A single logical value indicating whether the
+predictor names in the full-data predictor ranking should be abbreviated by
+\code{\link[=abbreviate]{abbreviate()}} (\code{TRUE}) or not (\code{FALSE}). See also argument
+\code{ranking_abbreviate_args} and section "Value".}
+
+\item{ranking_abbreviate_args}{A \code{list} of arguments (except for \code{names.arg})
+to be passed to \code{\link[=abbreviate]{abbreviate()}} in case of \code{ranking_abbreviate = TRUE}.}
+
+\item{cumulate}{Passed to argument \code{cumulate} of \code{\link[=cv_proportions]{cv_proportions()}}. Affects
+the ranking proportions given on the x-axis (below the full-data predictor
+ranking).}
+
+\item{text_angle}{Passed to argument \code{angle} of \code{\link[ggplot2:element]{ggplot2::element_text()}} for
+the x-axis tick labels. In case of long predictor names (and/or large
+\code{nterms_max}), \code{text_angle = 45} might be helpful (for example).}
+
 \item{...}{Arguments passed to the internal function which is used for
 bootstrapping (if applicable; see argument \code{stats}). Currently, relevant
 arguments are \code{B} (the number of bootstrap samples, defaulting to \code{2000})
@@ -84,15 +113,19 @@ and \code{seed} (see \code{\link[=set.seed]{set.seed()}}, but defaulting to \cod
 is not called within that function at all).}
 }
 \value{
-A \pkg{ggplot2} plotting object (of class \code{gg} and \code{ggplot}).
+A \pkg{ggplot2} plotting object (of class \code{gg} and \code{ggplot}). If
+\code{ranking_abbreviate} is \code{TRUE}, the output of \code{\link[=abbreviate]{abbreviate()}} is stored in
+an attribute called \code{projpred_ranking_abbreviated} (to allow the
+abbreviations to be easily mapped back to the original predictor names).
 }
 \description{
 This is the \code{\link[=plot]{plot()}} method for \code{vsel} objects (returned by \code{\link[=varsel]{varsel()}} or
-\code{\link[=cv_varsel]{cv_varsel()}}). It displays the predictive performance of the reference model
-(possibly also that of some other "baseline" model) and that of the submodels
-(more precisely, of the submodel \emph{sizes}) along the solution path. For a
-tabular representation of the plotted performance statistics, see
-\code{\link[=summary.vsel]{summary.vsel()}}.
+\code{\link[=cv_varsel]{cv_varsel()}}). It visualizes the predictive performance of the reference
+model (possibly also that of some other "baseline" model) and that of the
+submodels along the full-data predictor ranking. Basic information about the
+(CV) variability in the ranking of the predictors is included as well (if
+available; inferred from \code{\link[=cv_proportions]{cv_proportions()}}). For a tabular representation,
+see \code{\link[=summary.vsel]{summary.vsel()}}.
 }
 \details{
 The \code{stats} options \code{"mse"} and \code{"rmse"} are only available for:

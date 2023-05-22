@@ -230,25 +230,35 @@ context("plot()")
 
 test_that("`x` of class \"vsel\" (created by varsel()) works", {
   skip_if_not(run_vs)
-  for (tstsetup in grep("\\.brnll\\.", names(vss), value = TRUE)) {
-    plot_obj <- plot(vss[[tstsetup]], nterms_max = nterms_avail$single)
-    expect_s3_class(plot_obj, c("gg", "ggplot"))
-    expect_visible(plot_obj, label = tstsetup)
-    if (run_snaps) {
-      vdiffr::expect_doppelganger(tstsetup, plot_obj)
-    }
+  for (tstsetup in names(plots_vs)) {
+    args_plot_i <- args_plot_vs[[tstsetup]]
+    plot_vsel_tester(
+      plots_vs[[tstsetup]],
+      nterms_max_expected = args_plot_i$nterms_max %||%
+        args_vs[[args_plot_i$tstsetup_vsel]]$nterms_max,
+      rk_max_expected = args_plot_i$ranking_nterms_max,
+      rk_expected = ranking(vss[[args_plot_i$tstsetup_vsel]])[["fulldata"]],
+      abbv_expected = args_plot_i$ranking_abbreviate,
+      abbv_args_expected = args_plot_i$ranking_abbreviate_args,
+      info_str = tstsetup
+    )
   }
 })
 
 test_that("`x` of class \"vsel\" (created by cv_varsel()) works", {
   skip_if_not(run_cvvs)
-  for (tstsetup in grep("\\.brnll\\.", names(cvvss), value = TRUE)) {
-    plot_obj <- plot(cvvss[[tstsetup]], nterms_max = nterms_avail$single)
-    expect_s3_class(plot_obj, c("gg", "ggplot"))
-    expect_visible(plot_obj, label = tstsetup)
-    if (run_snaps) {
-      vdiffr::expect_doppelganger(tstsetup, plot_obj)
-    }
+  for (tstsetup in names(plots_cvvs)) {
+    args_plot_i <- args_plot_cvvs[[tstsetup]]
+    plot_vsel_tester(
+      plots_cvvs[[tstsetup]],
+      nterms_max_expected = args_plot_i$nterms_max %||%
+        args_cvvs[[args_plot_i$tstsetup_vsel]]$nterms_max,
+      rk_max_expected = args_plot_i$ranking_nterms_max,
+      rk_expected = ranking(cvvss[[args_plot_i$tstsetup_vsel]])[["fulldata"]],
+      abbv_expected = args_plot_i$ranking_abbreviate,
+      abbv_args_expected = args_plot_i$ranking_abbreviate_args,
+      info_str = tstsetup
+    )
   }
 })
 
@@ -274,25 +284,53 @@ test_that("invalid `nterms_max` fails", {
   }
 })
 
-test_that("`nterms_max` is capped to the maximum model size", {
+test_that(paste(
+  "`nterms_max` is capped to the maximum model size (for varsel() output)"
+), {
   skip_if_not(run_vs)
-  for (tstsetup in names(vss)) {
-    plot_default <- plot(vss[[tstsetup]])
-    expect_s3_class(plot_default, c("gg", "ggplot"))
-    expect_visible(plot_default, label = tstsetup)
-    if (run_snaps) {
-      vdiffr::expect_doppelganger(paste(tstsetup, "default", sep = "__"),
-                                  plot_default)
-    }
+  tstsetups <- grep(paste("\\.default_nterms_max_smmry", "\\.default_rk_max",
+                          "\\.default_abbv", "\\.cuFALSE", "\\.default_angle",
+                          sep = ".*"),
+                    names(plots_vs), value = TRUE)
+  for (tstsetup in tstsetups) {
+    args_plot_i <- args_plot_vs[[tstsetup]]
+    nterms_max_crr <- args_vs[[args_plot_i$tstsetup_vsel]]$nterms_max + 1L
+    plot_capped <- plot(vss[[args_plot_i$tstsetup_vsel]],
+                        nterms_max = nterms_max_crr)
+    plot_vsel_tester(
+      plot_capped,
+      nterms_max_expected = nterms_max_crr,
+      rk_max_expected = args_plot_i$ranking_nterms_max,
+      rk_expected = ranking(vss[[args_plot_i$tstsetup_vsel]])[["fulldata"]],
+      abbv_expected = args_plot_i$ranking_abbreviate,
+      abbv_args_expected = args_plot_i$ranking_abbreviate_args,
+      info_str = tstsetup
+    )
+  }
+})
 
-    plot_capped <- plot(vss[[tstsetup]],
-                        nterms_max = args_vs[[tstsetup]]$nterms_max + 1L)
-    expect_s3_class(plot_capped, c("gg", "ggplot"))
-    expect_visible(plot_capped, label = tstsetup)
-    if (run_snaps) {
-      vdiffr::expect_doppelganger(paste(tstsetup, "default", sep = "__"),
-                                  plot_capped)
-    }
+test_that(paste(
+  "`nterms_max` is capped to the maximum model size (for cv_varsel() output)"
+), {
+  skip_if_not(run_cvvs)
+  tstsetups <- grep(paste("\\.default_nterms_max_smmry", "\\.default_rk_max",
+                          "\\.default_abbv", "\\.cuFALSE", "\\.default_angle",
+                          sep = ".*"),
+                    names(plots_cvvs), value = TRUE)
+  for (tstsetup in tstsetups) {
+    args_plot_i <- args_plot_cvvs[[tstsetup]]
+    nterms_max_crr <- args_cvvs[[args_plot_i$tstsetup_vsel]]$nterms_max + 1L
+    plot_capped <- plot(cvvss[[args_plot_i$tstsetup_vsel]],
+                        nterms_max = nterms_max_crr)
+    plot_vsel_tester(
+      plot_capped,
+      nterms_max_expected = nterms_max_crr,
+      rk_max_expected = args_plot_i$ranking_nterms_max,
+      rk_expected = ranking(cvvss[[args_plot_i$tstsetup_vsel]])[["fulldata"]],
+      abbv_expected = args_plot_i$ranking_abbreviate,
+      abbv_args_expected = args_plot_i$ranking_abbreviate_args,
+      info_str = tstsetup
+    )
   }
 })
 

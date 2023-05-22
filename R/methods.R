@@ -533,11 +533,12 @@ proj_predict_aux <- function(proj, newdata, offset, weights,
 #' Plot predictive performance
 #'
 #' This is the [plot()] method for `vsel` objects (returned by [varsel()] or
-#' [cv_varsel()]). It displays the predictive performance of the reference model
-#' (possibly also that of some other "baseline" model) and that of the submodels
-#' (more precisely, of the submodel *sizes*) along the solution path. For a
-#' tabular representation of the plotted performance statistics, see
-#' [summary.vsel()].
+#' [cv_varsel()]). It visualizes the predictive performance of the reference
+#' model (possibly also that of some other "baseline" model) and that of the
+#' submodels along the full-data predictor ranking. Basic information about the
+#' (CV) variability in the ranking of the predictors is included as well (if
+#' available; inferred from [cv_proportions()]). For a tabular representation,
+#' see [summary.vsel()].
 #'
 #' @inheritParams summary.vsel
 #' @param x An object of class `vsel` (returned by [varsel()] or [cv_varsel()]).
@@ -547,10 +548,32 @@ proj_predict_aux <- function(proj, newdata, offset, weights,
 #'   close enough to the baseline model's ELPD. An equivalent rule is applied in
 #'   case of the MLPD. See [suggest_size()] for a formalization. Supplying `NA`
 #'   deactivates this.
+#' @param ranking_nterms_max Maximum submodel size (number of predictor terms)
+#'   for which the predictor names and the corresponding ranking proportions are
+#'   added on the x-axis. Using `NULL` is effectively the same as using
+#'   `nterms_max`. Using `NA` causes the predictor names and the corresponding
+#'   ranking proportions to be omitted. Note that `ranking_nterms_max` does not
+#'   count the intercept, so `ranking_nterms_max = 1` corresponds to the
+#'   submodel consisting of the first (non-intercept) predictor term.
+#' @param ranking_abbreviate A single logical value indicating whether the
+#'   predictor names in the full-data predictor ranking should be abbreviated by
+#'   [abbreviate()] (`TRUE`) or not (`FALSE`). See also argument
+#'   `ranking_abbreviate_args` and section "Value".
+#' @param ranking_abbreviate_args A `list` of arguments (except for `names.arg`)
+#'   to be passed to [abbreviate()] in case of `ranking_abbreviate = TRUE`.
+#' @param cumulate Passed to argument `cumulate` of [cv_proportions()]. Affects
+#'   the ranking proportions given on the x-axis (below the full-data predictor
+#'   ranking).
+#' @param text_angle Passed to argument `angle` of [ggplot2::element_text()] for
+#'   the x-axis tick labels. In case of long predictor names (and/or large
+#'   `nterms_max`), `text_angle = 45` might be helpful (for example).
 #'
 #' @inherit summary.vsel details
 #'
-#' @return A \pkg{ggplot2} plotting object (of class `gg` and `ggplot`).
+#' @return A \pkg{ggplot2} plotting object (of class `gg` and `ggplot`). If
+#'   `ranking_abbreviate` is `TRUE`, the output of [abbreviate()] is stored in
+#'   an attribute called `projpred_ranking_abbreviated` (to allow the
+#'   abbreviations to be easily mapped back to the original predictor names).
 #'
 #' @details
 #'
@@ -596,6 +619,11 @@ plot.vsel <- function(
     baseline = if (!inherits(x$refmodel, "datafit")) "ref" else "best",
     thres_elpd = NA,
     resp_oscale = TRUE,
+    ranking_nterms_max = NULL,
+    ranking_abbreviate = FALSE,
+    ranking_abbreviate_args = list(),
+    cumulate = FALSE,
+    text_angle = NULL,
     ...
 ) {
   object <- x
@@ -637,6 +665,10 @@ plot.vsel <- function(
   if (nterms_max < 1) {
     stop("nterms_max must be at least 1")
   }
+  if (!is_wholenumber(nterms_max)) {
+    stop("`nterms_max` must be a whole number.")
+  }
+  nterms_max <- as.integer(nterms_max)
   if (baseline == "ref") {
     baseline_pretty <- "reference model"
   } else {
@@ -656,16 +688,31 @@ plot.vsel <- function(
   }
 
   # make sure that breaks on the x-axis are integers
-  n_opts <- c(4, 5, 6)
+  n_opts <- 4:6
   n_possible <- Filter(function(x) nterms_max %% x == 0, n_opts)
   n_alt <- n_opts[which.min(n_opts - (nterms_max %% n_opts))]
   nb <- ifelse(length(n_possible) > 0, min(n_possible), n_alt)
-  by <- ceiling(nterms_max / min(nterms_max, nb))
-  breaks <- seq(0, by * min(nterms_max, nb), by)
+  # Using as.integer() only to make it clear that this is an integer (just like
+  # `breaks` and `minor_breaks`):
+  by <- as.integer(ceiling(nterms_max / min(nterms_max, nb)))
+  breaks <- seq(0L, by * min(nterms_max, nb), by)
   minor_breaks <- if (by %% 2 == 0) {
-    seq(by / 2, by * min(nterms_max, nb), by)
+    seq(by %/% 2L, by * min(nterms_max, nb), by)
   } else {
     NULL
+  }
+  if (is.null(ranking_nterms_max)) {
+    ranking_nterms_max <- nterms_max
+  } else if (!is.na(ranking_nterms_max)) {
+    ranking_nterms_max <- min(ranking_nterms_max, nterms_max)
+    if (!is_wholenumber(ranking_nterms_max)) {
+      stop("`ranking_nterms_max` must be a whole number.")
+    }
+    ranking_nterms_max <- as.integer(ranking_nterms_max)
+  }
+  if (!is.na(ranking_nterms_max)) {
+    breaks <- sort(union(breaks, seq_len(ranking_nterms_max)))
+    minor_breaks <- setdiff(minor_breaks, breaks)
   }
 
   if (!is.na(thres_elpd)) {
@@ -675,6 +722,64 @@ plot.vsel <- function(
       statistic = c("elpd", "mlpd"),
       thres = c(thres_elpd, thres_elpd / object$nobs_test)
     )
+  }
+
+  # Start x-axis label (title):
+  xlab <- "Submodel size (number of predictor terms)"
+
+  if (!is.na(ranking_nterms_max)) {
+    # Predictor ranking(s):
+    rk <- ranking(object, nterms_max = ranking_nterms_max)
+    if (!is.null(rk[["foldwise"]])) {
+      pr_rk <- diag(cv_proportions(rk, cumulate = cumulate))
+    } else {
+      pr_rk <- rep(NA, length(rk[["fulldata"]]))
+    }
+    rk_dfr <- data.frame(
+      size = c(0L, seq_along(rk[["fulldata"]])),
+      rk_fulldata = c("", rk[["fulldata"]]),
+      cv_props_diag = c(NA, pr_rk)
+    )
+    rk_dfr[["cv_props_diag"]] <- paste(round(100 * rk_dfr[["cv_props_diag"]]),
+                                       "%")
+    rk_dfr[["cv_props_diag"]][1] <- "" # empty model
+    rk_dfr_empty <- do.call(rbind, lapply(
+      setdiff(breaks, rk_dfr[["size"]]),
+      function(br_j) {
+        data.frame(size = br_j, rk_fulldata = "", cv_props_diag = "")
+      }
+    ))
+    rk_dfr <- rbind(rk_dfr, rk_dfr_empty)
+    if (ranking_abbreviate) {
+      rk_fulldata_abbv <- do.call(abbreviate, c(
+        list(names.arg = rk_dfr[["rk_fulldata"]]),
+        ranking_abbreviate_args
+      ))
+      rk_dfr[["rk_fulldata"]] <- rk_fulldata_abbv
+    }
+    rk_dfr[["size_with_predictor_and_cvpropdiag"]] <- paste(
+      rk_dfr[["size"]], rk_dfr[["rk_fulldata"]], sep = "\n"
+    )
+    if (!is.null(rk[["foldwise"]])) {
+      rk_dfr[["size_with_predictor_and_cvpropdiag"]] <- paste(
+        rk_dfr[["size_with_predictor_and_cvpropdiag"]],
+        rk_dfr[["cv_props_diag"]], sep = "\n"
+      )
+    }
+
+    # Continue x-axis label (title):
+    xlab_rk <- "Corresponding predictor from full-data predictor ranking"
+    xlab <- paste(xlab, xlab_rk, sep = "\n")
+    if (!is.null(rk[["foldwise"]])) {
+      if (cumulate) {
+        cumul_pretty <- " cumulated "
+      } else {
+        cumul_pretty <- " "
+      }
+      xlab_cumul <- paste0("Corresponding main diagonal element from",
+                           cumul_pretty, "CV ranking proportions matrix")
+      xlab <- paste(xlab, xlab_cumul, sep = "\n")
+    }
   }
 
   # plot submodel results
@@ -722,6 +827,12 @@ plot.vsel <- function(
                    color = "darkgreen", linetype = "longdash")
     }
   }
+  if (!is.na(ranking_nterms_max)) {
+    tick_labs_x <- rk_dfr[order(match(rk_dfr[["size"]], breaks), na.last = NA),
+                          "size_with_predictor_and_cvpropdiag"]
+  } else {
+    tick_labs_x <- waiver()
+  }
   pp <- pp +
     # The submodel-specific graphical elements:
     geom_linerange(aes(ymin = .data[["lq"]], ymax = .data[["uq"]],
@@ -731,22 +842,31 @@ plot.vsel <- function(
     # Miscellaneous stuff (axes, theming, faceting, etc.):
     scale_x_continuous(
       breaks = breaks, minor_breaks = minor_breaks,
-      limits = c(min(breaks), max(breaks))
+      limits = c(min(breaks), max(breaks)),
+      labels = tick_labs_x
     ) +
-    labs(x = "Submodel size (number of predictor terms)", y = ylab) +
-    theme(legend.position = "none") +
+    labs(x = xlab, y = ylab) +
+    theme(legend.position = "none",
+          axis.text.x = element_text(angle = text_angle, hjust = 0.5,
+                                     vjust = 0.5)) +
     facet_grid(statistic ~ ., scales = "free_y")
+  if (!is.na(ranking_nterms_max) && ranking_abbreviate) {
+    attr(pp, "projpred_ranking_abbreviated") <- rk_fulldata_abbv[
+      rk_fulldata_abbv != ""
+    ]
+  }
   return(pp)
 }
 
 #' Summary of a [varsel()] or [cv_varsel()] run
 #'
 #' This is the [summary()] method for `vsel` objects (returned by [varsel()] or
-#' [cv_varsel()]), which consists of some general information about the
-#' [varsel()] or [cv_varsel()] run, the full-data solution path, some basic
+#' [cv_varsel()]). Apart from some general information about the [varsel()] or
+#' [cv_varsel()] run, it shows the full-data predictor ranking, basic
 #' information about the (CV) variability in the ranking of the predictors (if
-#' available; inferred from [cv_proportions()]), and user-specified predictive
-#' performance statistics. For plotting the latter, see [plot.vsel()].
+#' available; inferred from [cv_proportions()]), and estimates for
+#' user-specified predictive performance statistics. For a graphical
+#' representation, see [plot.vsel()].
 #'
 #' @param object An object of class `vsel` (returned by [varsel()] or
 #'   [cv_varsel()]).

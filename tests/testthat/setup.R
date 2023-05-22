@@ -893,8 +893,19 @@ stats_tst <- list(
 )
 type_tst <- c("mean", "lower", "upper", "se")
 
+rk_abbv_tst <- list(
+  default_abbv = list(),
+  abbv3 = list(ranking_abbreviate = TRUE,
+               ranking_abbreviate_args = list(minlength = 3))
+)
+
 cumulate_tst <- as.list(setNames(nm = c(FALSE, TRUE)))
 names(cumulate_tst) <- paste0("cu", names(cumulate_tst))
+
+angle_tst <- list(
+  default_angle = list(),
+  angle45 = list(text_angle = 45)
+)
 
 ### nterms ----------------------------------------------------------------
 
@@ -934,6 +945,12 @@ nterms_max_rk <- list(
   default_nterms_max_rk = list(),
   halfway = list(nterms_max = nterms_max_tst %/% 2L),
   zero = list(nterms_max = 0L)
+)
+
+rk_max_tst <- list(
+  default_rk_max = list(),
+  rk_max_NA = list(ranking_nterms_max = NA),
+  rk_max_1 = list(ranking_nterms_max = 1)
 )
 
 ## Reference model --------------------------------------------------------
@@ -1631,6 +1648,62 @@ if (run_more) {
   if (length(has_zero_combined)) {
     stopifnot(any(has_zero_combined))
   }
+}
+
+## plot.vsel() ------------------------------------------------------------
+
+cre_args_plot_vsel <- function(args_obj) {
+  lapply(
+    setNames(nm = grep("\\.brnll\\.", names(args_obj), value = TRUE)),
+    function(tstsetup_vsel) {
+      nterms_max_plot <- nterms_max_smmry[c("default_nterms_max_smmry",
+                                            "halfway")]
+      lapply(nterms_max_plot, function(nterms_crr) {
+        lapply(rk_max_tst, function(rk_max_crr) {
+          lapply(rk_abbv_tst, function(rk_abbv_crr) {
+            lapply(cumulate_tst, function(cumulate_crr) {
+              lapply(angle_tst, function(angle_crr) {
+                return(c(
+                  nlist(tstsetup_vsel), only_nonargs(args_obj[[tstsetup_vsel]]),
+                  list(nterms_max = nterms_crr),
+                  rk_max_crr, rk_abbv_crr,
+                  list(cumulate = cumulate_crr),
+                  angle_crr
+                ))
+              })
+            })
+          })
+        })
+      })
+    })
+}
+
+### varsel() --------------------------------------------------------------
+
+if (run_vs) {
+  args_plot_vs <- cre_args_plot_vsel(args_vs)
+  args_plot_vs <- unlist_cust(args_plot_vs)
+
+  plots_vs <- lapply(args_plot_vs, function(args_plot_vs_i) {
+    do.call(plot, c(
+      list(x = vss[[args_plot_vs_i$tstsetup_vsel]]),
+      excl_nonargs(args_plot_vs_i)
+    ))
+  })
+}
+
+### cv_varsel() -----------------------------------------------------------
+
+if (run_cvvs) {
+  args_plot_cvvs <- cre_args_plot_vsel(args_cvvs)
+  args_plot_cvvs <- unlist_cust(args_plot_cvvs)
+
+  plots_cvvs <- lapply(args_plot_cvvs, function(args_plot_cvvs_i) {
+    do.call(plot, c(
+      list(x = cvvss[[args_plot_cvvs_i$tstsetup_vsel]]),
+      excl_nonargs(args_plot_cvvs_i)
+    ))
+  })
 }
 
 ## ranking() --------------------------------------------------------------
