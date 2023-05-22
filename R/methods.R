@@ -561,6 +561,15 @@ proj_predict_aux <- function(proj, newdata, offset, weights,
 #'   `ranking_abbreviate_args` and section "Value".
 #' @param ranking_abbreviate_args A `list` of arguments (except for `names.arg`)
 #'   to be passed to [abbreviate()] in case of `ranking_abbreviate = TRUE`.
+#' @param ranking_repel Either `NULL`, `"text"`, or `"label"`. By `NULL`, the
+#'   full-data predictor ranking and the corresponding ranking proportions are
+#'   placed below the x-axis. By `"text"` or `"label"`, they are placed within
+#'   the plotting area, using [ggrepel::geom_text_repel()] or
+#'   [ggrepel::geom_label_repel()], respectively.
+#' @param ranking_repel_args A `list` of arguments (except for `mapping`) to be
+#'   passed to [ggrepel::geom_text_repel()] or [ggrepel::geom_label_repel()] in
+#'   case of `ranking_repel = "text"` or `ranking_repel = "label"`,
+#'   respectively.
 #' @param cumulate Passed to argument `cumulate` of [cv_proportions()]. Affects
 #'   the ranking proportions given on the x-axis (below the full-data predictor
 #'   ranking).
@@ -622,6 +631,8 @@ plot.vsel <- function(
     ranking_nterms_max = NULL,
     ranking_abbreviate = FALSE,
     ranking_abbreviate_args = list(),
+    ranking_repel = NULL,
+    ranking_repel_args = list(),
     cumulate = FALSE,
     text_angle = NULL,
     ...
@@ -629,6 +640,14 @@ plot.vsel <- function(
   object <- x
   validate_vsel_object_stats(object, stats, resp_oscale = resp_oscale)
   baseline <- validate_baseline(object$refmodel, baseline, deltas)
+  if (!is.null(ranking_repel) && !requireNamespace("ggrepel", quietly = TRUE)) {
+    warning("Package 'ggrepel' is needed for a non-`NULL` argument ",
+            "`ranking_repel`, but could not be found. Setting `ranking_repel` ",
+            "to `NULL` now.")
+    ranking_repel <- NULL
+  } else if (!is.null(ranking_repel)) {
+    stopifnot(isTRUE(ranking_repel %in% c("text", "label")))
+  }
 
   ## compute all the statistics and fetch only those that were asked
   nfeat_baseline <- get_nfeat_baseline(object, baseline, stats[1],
@@ -757,18 +776,23 @@ plot.vsel <- function(
       ))
       rk_dfr[["rk_fulldata"]] <- rk_fulldata_abbv
     }
-    rk_dfr[["size_with_predictor_and_cvpropdiag"]] <- paste(
-      rk_dfr[["size"]], rk_dfr[["rk_fulldata"]], sep = "\n"
-    )
+    rk_dfr[["rkfulldt_cvpropdiag"]] <- rk_dfr[["rk_fulldata"]]
     if (!is.null(rk[["foldwise"]])) {
-      rk_dfr[["size_with_predictor_and_cvpropdiag"]] <- paste(
-        rk_dfr[["size_with_predictor_and_cvpropdiag"]],
-        rk_dfr[["cv_props_diag"]], sep = "\n"
-      )
+      rk_dfr[["rkfulldt_cvpropdiag"]] <- paste(rk_dfr[["rkfulldt_cvpropdiag"]],
+                                               rk_dfr[["cv_props_diag"]],
+                                               sep = "\n")
     }
+    rk_dfr[["size_rkfulldt_cvpropdiag"]] <- paste(
+      rk_dfr[["size"]], rk_dfr[["rkfulldt_cvpropdiag"]], sep = "\n"
+    )
 
     # Continue x-axis label (title):
     xlab_rk <- "Corresponding predictor from full-data predictor ranking"
+    if (identical(ranking_repel, "text")) {
+      xlab_rk <- paste("Text:", xlab_rk)
+    } else if (identical(ranking_repel, "label")) {
+      xlab_rk <- paste("Label:", xlab_rk)
+    }
     xlab <- paste(xlab, xlab_rk, sep = "\n")
     if (!is.null(rk[["foldwise"]])) {
       if (cumulate) {
@@ -778,12 +802,28 @@ plot.vsel <- function(
       }
       xlab_cumul <- paste0("Corresponding main diagonal element from",
                            cumul_pretty, "CV ranking proportions matrix")
+      if (identical(ranking_repel, "text")) {
+        xlab_cumul <- paste("Text:", xlab_cumul)
+      } else if (identical(ranking_repel, "label")) {
+        xlab_cumul <- paste("Label:", xlab_cumul)
+      }
       xlab <- paste(xlab, xlab_cumul, sep = "\n")
     }
   }
 
   # plot submodel results
-  pp <- ggplot(data = subset(stats_sub, stats_sub$size <= nterms_max),
+  data_gg <- subset(stats_sub, stats_sub$size <= nterms_max)
+  if (!is.na(ranking_nterms_max) && !is.null(ranking_repel)) {
+    colnms_orig <- names(data_gg)
+    data_gg[["row_idx"]] <- seq_len(nrow(data_gg))
+    data_gg <- merge(data_gg,
+                     rk_dfr[, c("size", "rkfulldt_cvpropdiag"), drop = FALSE],
+                     by = "size", all.x = TRUE, all.y = FALSE, sort = FALSE)
+    data_gg <- data_gg[order(data_gg[["row_idx"]]), , drop = FALSE]
+    data_gg[["row_idx"]] <- NULL
+    data_gg <- data_gg[, c(colnms_orig, "rkfulldt_cvpropdiag"), drop = FALSE]
+  }
+  pp <- ggplot(data = data_gg,
                mapping = aes(x = .data[["size"]]))
   if (!all(is.na(stats_ref$se))) {
     # add reference model results if they exist
@@ -827,9 +867,9 @@ plot.vsel <- function(
                    color = "darkgreen", linetype = "longdash")
     }
   }
-  if (!is.na(ranking_nterms_max)) {
+  if (!is.na(ranking_nterms_max) && is.null(ranking_repel)) {
     tick_labs_x <- rk_dfr[order(match(rk_dfr[["size"]], breaks), na.last = NA),
-                          "size_with_predictor_and_cvpropdiag"]
+                          "size_rkfulldt_cvpropdiag"]
   } else {
     tick_labs_x <- waiver()
   }
@@ -850,6 +890,19 @@ plot.vsel <- function(
           axis.text.x = element_text(angle = text_angle, hjust = 0.5,
                                      vjust = 0.5)) +
     facet_grid(statistic ~ ., scales = "free_y")
+  if (!is.na(ranking_nterms_max) && !is.null(ranking_repel)) {
+    if (identical(ranking_repel, "text")) {
+      geom_repel_fun <- ggrepel::geom_text_repel
+    } else if (identical(ranking_repel, "label")) {
+      geom_repel_fun <- ggrepel::geom_label_repel
+    }
+    pp <- pp +
+      do.call(geom_repel_fun, c(
+        list(mapping = aes(y = .data[["value"]],
+                           label = .data[["rkfulldt_cvpropdiag"]])),
+        ranking_repel_args
+      ))
+  }
   if (!is.na(ranking_nterms_max) && ranking_abbreviate) {
     attr(pp, "projpred_ranking_abbreviated") <- rk_fulldata_abbv[
       rk_fulldata_abbv != ""
