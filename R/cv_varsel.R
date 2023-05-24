@@ -579,7 +579,6 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
                "each of the N = ", nloo, " LOO CV folds separately ...")
       pb <- utils::txtProgressBar(min = 0, max = nloo, style = 3, initial = 0)
     }
-
     for (run_index in seq_along(inds)) {
       # Observation index:
       i <- inds[run_index]
@@ -800,15 +799,17 @@ kfold_varsel <- function(refmodel, method, nterms_max, ndraws,
     # induce a dependency between training and test data:
     refmodel$y <- rep(NA, refmodel$nobs)
   }
+  y_wobs_test <- as.data.frame(refmodel[nms_y_wobs_test()])
 
-  # Run the search for each fold:
   if (verbose) {
-    verb_out("-----\nRunning the search K = ", K, " times (using the ",
-             "fold-wise training data) ...")
+    verb_out("-----\nRunning the search and the performance evaluation for ",
+             "each of the K = ", K, " CV folds separately ...")
     pb <- utils::txtProgressBar(min = 0, max = K, style = 3, initial = 0)
   }
-  search_path_cv <- lapply(seq_along(list_cv), function(fold_index) {
+  res_cv <- lapply(seq_along(list_cv), function(fold_index) {
     fold <- list_cv[[fold_index]]
+
+    # Run the search for the current fold:
     p_sel <- get_refdist(fold$refmodel, ndraws, nclusters)
     search_path <- select(
       method = method, p_sel = p_sel, refmodel = fold$refmodel,
@@ -816,29 +817,10 @@ kfold_varsel <- function(refmodel, method, nterms_max, ndraws,
       verbose = verbose && getOption("projpred.extra_verbose", FALSE),
       opt = opt, search_terms = search_terms, ...
     )
-    if (verbose) {
-      utils::setTxtProgressBar(pb, fold_index)
-    }
-    return(search_path)
-  })
-  solution_terms_cv <- do.call(rbind, lapply(search_path_cv, function(e) {
-    e$solution_terms
-  }))
-  if (verbose) {
-    close(pb)
-  }
-  verb_out("-----", verbose = verbose)
 
-  # For the performance evaluation: Re-project along the solution path (or fetch
-  # the projections from the search results) of each fold:
-  if (verbose && refit_prj) {
-    verb_out("-----\nFor performance evaluation: Re-projecting (using the ",
-             "fold-wise training data) onto the submodels along the K = ", K,
-             " fold-wise solution paths ...")
-    pb <- utils::txtProgressBar(min = 0, max = K, style = 3, initial = 0)
-  }
-  get_submodls_cv <- function(search_path, fold_index) {
-    fold <- list_cv[[fold_index]]
+    # For performance evaluation: Re-project (using the training data of the
+    # current fold) along the predictor ranking (or fetch the projections from
+    # the search output) of the current fold:
     p_pred <- get_refdist(fold$refmodel, ndraws_pred, nclusters_pred)
     submodls <- get_submodls(
       search_path = search_path,
@@ -846,34 +828,45 @@ kfold_varsel <- function(refmodel, method, nterms_max, ndraws,
       p_ref = p_pred, refmodel = fold$refmodel, regul = opt$regul,
       refit_prj = refit_prj, ...
     )
-    if (verbose && refit_prj) {
+
+    # Performance evaluation for the re-projected or fetched submodels of the
+    # current fold:
+    summaries_sub <- get_sub_summaries(submodls = submodls,
+                                       refmodel = refmodel,
+                                       test_points = fold$omitted)
+
+    # Performance evaluation for the reference model of the current fold:
+    eta_test <- fold$refmodel$ref_predfun(
+      fold$refmodel$fit,
+      newdata = refmodel$fetch_data(obs = fold$omitted),
+      excl_offs = FALSE
+    )
+    mu_test <- fold$refmodel$family$linkinv(eta_test)
+    summaries_ref <- weighted_summary_means(
+      y_wobs_test = y_wobs_test[fold$omitted, , drop = FALSE],
+      family = fold$refmodel$family,
+      wdraws = fold$refmodel$wdraws_ref,
+      mu = mu_test,
+      dis = fold$refmodel$dis,
+      cl_ref = seq_along(fold$refmodel$wdraws_ref)
+    )
+
+    if (verbose) {
       utils::setTxtProgressBar(pb, fold_index)
     }
-    return(submodls)
-  }
-  submodls_cv <- mapply(get_submodls_cv, search_path_cv, seq_along(list_cv),
-                        SIMPLIFY = FALSE)
-  if (verbose && refit_prj) {
+    return(nlist(predictor_ranking = search_path[["solution_terms"]],
+                 summaries_sub, summaries_ref))
+  })
+  if (verbose) {
     close(pb)
   }
   verb_out("-----", verbose = verbose)
+  solution_terms_cv <- do.call(rbind, lapply(res_cv, "[[", "predictor_ranking"))
 
-  # The performance evaluation itself, i.e., the calculation of the predictive
-  # performance statistic(s) for the submodels along the solution path of each
-  # fold:
-  get_summaries_submodls_cv <- function(submodls, fold) {
-    get_sub_summaries(submodls = submodls,
-                      refmodel = refmodel,
-                      test_points = fold$omitted)
-  }
-  sub_cv_summaries <- mapply(get_summaries_submodls_cv, submodls_cv, list_cv)
-  # Combine the results from the K folds into a single results list:
-  if (is.null(dim(sub_cv_summaries))) {
-    summ_dim <- dim(solution_terms_cv)
-    summ_dim[2] <- summ_dim[2] + 1L # +1 is for the empty model
-    dim(sub_cv_summaries) <- rev(summ_dim)
-  }
-  sub <- apply(sub_cv_summaries, 1, rbind2list)
+  # Handle the submodels' performance evaluation results:
+  sub_foldwise <- simplify2array(lapply(res_cv, "[[", "summaries_sub"),
+                                 higher = FALSE, except = NULL)
+  sub <- apply(sub_foldwise, 1, rbind2list)
   idxs_sorted_by_fold <- unlist(lapply(list_cv, function(fold) {
     fold$omitted
   }))
@@ -905,26 +898,8 @@ kfold_varsel <- function(refmodel, method, nterms_max, ndraws,
     return(summ)
   })
 
-  # Needed later:
-  y_wobs_test <- as.data.frame(refmodel[nms_y_wobs_test()])
-
-  # Perform the evaluation of the reference model for each fold:
-  ref <- rbind2list(lapply(list_cv, function(fold) {
-    eta_test <- fold$refmodel$ref_predfun(
-      fold$refmodel$fit,
-      newdata = refmodel$fetch_data(obs = fold$omitted),
-      excl_offs = FALSE
-    )
-    mu_test <- fold$refmodel$family$linkinv(eta_test)
-    weighted_summary_means(
-      y_wobs_test = y_wobs_test[fold$omitted, , drop = FALSE],
-      family = fold$refmodel$family,
-      wdraws = fold$refmodel$wdraws_ref,
-      mu = mu_test,
-      dis = fold$refmodel$dis,
-      cl_ref = seq_along(fold$refmodel$wdraws_ref)
-    )
-  }))
+  # Handle the reference model's performance evaluation results:
+  ref <- rbind2list(lapply(res_cv, "[[", "summaries_ref"))
   ref$mu <- ref$mu[order(idxs_sorted_by_fold_flx)]
   ref$lppd <- ref$lppd[order(idxs_sorted_by_fold)]
   if (!is.null(ref$oscale)) {
