@@ -948,8 +948,8 @@ get_kfold <- function(refmodel, K, verbose) {
         verb_out("-----\nRefitting the reference model K = ", K, " times ",
                  "(using the fold-wise training data) ...")
       }
-      nobs <- refmodel$nobs
-      folds <- cv_folds(nobs, K = K, seed = sample.int(.Machine$integer.max, 1))
+      folds <- cv_folds(refmodel$nobs, K = K,
+                        seed = sample.int(.Machine$integer.max, 1))
       cvfits <- refmodel$cvfun(folds)
       verb_out("-----", verbose = verbose)
     } else {
