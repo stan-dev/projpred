@@ -963,20 +963,15 @@ get_kfold <- function(refmodel, K, verbose) {
     folds <- attr(cvfits, "folds")
     cvfits <- cvfits$fits
   }
-  cvfits <- lapply(seq_len(K), function(k) {
+  return(lapply(seq_len(K), function(k) {
     cvfit <- cvfits[[k]]
     # Add the omitted observation indices for this fold:
     cvfit$omitted <- which(folds == k)
     # Add the fold index:
     cvfit$projpred_k <- k
-    return(cvfit)
-  })
-  return(lapply(cvfits, init_kfold_refmodel, refmodel = refmodel))
-}
-
-init_kfold_refmodel <- function(cvfit, refmodel) {
-  return(list(refmodel = refmodel$cvrefbuilder(cvfit),
-              omitted = cvfit$omitted))
+    return(list(refmodel = refmodel$cvrefbuilder(cvfit),
+                omitted = cvfit$omitted))
+  }))
 }
 
 # ## decide which points to go through in the validation (i.e., which points
