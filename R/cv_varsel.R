@@ -958,8 +958,8 @@ get_kfold <- function(refmodel, K, verbose) {
            "`?init_refmodel`).")
     }
   } else {
+    K <- length(refmodel$cvfits$fits)
     cvfits <- refmodel$cvfits
-    K <- length(cvfits$fits)
     folds <- attr(cvfits, "folds")
     cvfits <- cvfits$fits
   }
