@@ -277,7 +277,7 @@ parse_args_cv_varsel <- function(refmodel, cv_method, K, validate_search) {
 
   if (cv_method == "kfold") {
     if (!is.null(refmodel$cvfits)) {
-      K <- attr(refmodel$cvfits, "K")
+      K <- length(refmodel$cvfits$fits)
     }
     stopifnot(!is.null(K))
     if (length(K) > 1 || !is.numeric(K) || !is_wholenumber(K)) {
@@ -959,7 +959,7 @@ get_kfold <- function(refmodel, K, verbose) {
     }
   } else {
     cvfits <- refmodel$cvfits
-    K <- attr(cvfits, "K")
+    K <- length(cvfits$fits)
     folds <- attr(cvfits, "folds")
     cvfits <- cvfits$fits
   }
