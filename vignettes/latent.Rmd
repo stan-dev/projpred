@@ -70,6 +70,7 @@ First, we generate a training and a test dataset with a Poisson-distributed resp
 # Number of observations in the training dataset (= number of observations in
 # the test dataset):
 N <- 71
+# Data-generating function:
 sim_poiss <- function(nobs = 2 * N, ncon = 10, ngrpPL = 4, nnoise = 39) {
   # Regression coefficients for continuous predictors:
   coefs_con <- rnorm(ncon)
@@ -103,6 +104,7 @@ sim_poiss <- function(nobs = 2 * N, ncon = 10, ngrpPL = 4, nnoise = 39) {
   rownames(dat_sim) <- NULL
   return(dat_sim)
 }
+# Generate data:
 set.seed(300417)
 dat_poiss <- sim_poiss()
 dat_poiss_train <- head(dat_poiss, N)
