@@ -82,13 +82,12 @@
 #' @param cvfits For \eqn{K}-fold CV only. A `list` containing a sub-`list`
 #'   called `fits` containing the \eqn{K} model fits from which reference model
 #'   structures are created. The `cvfits` `list` (i.e., the super-`list`) needs
-#'   to have attributes `K` and `folds`: `K` has to be a single integer giving
-#'   the number of folds and `folds` has to be an integer vector giving the fold
-#'   indices (one fold index per observation). Each element of `cvfits$fits`
-#'   (i.e., each of the \eqn{K} model fits) needs to be a list. Only one of
-#'   `cvfits` and `cvfun` needs to be provided (for \eqn{K}-fold CV). Note that
-#'   `cvfits` takes precedence over `cvfun`, i.e., if both are provided,
-#'   `cvfits` is used.
+#'   to have an attribute called `folds`, consisting of an integer vector giving
+#'   the fold indices (one fold index per observation). Each element of
+#'   `cvfits$fits` (i.e., each of the \eqn{K} model fits) needs to be a list.
+#'   Only one of `cvfits` and `cvfun` needs to be provided (for \eqn{K}-fold
+#'   CV). Note that `cvfits` takes precedence over `cvfun`, i.e., if both are
+#'   provided, `cvfits` is used.
 #' @param cvfun For \eqn{K}-fold CV only. A function that, given a fold indices
 #'   vector, fits the reference model separately for each fold and returns the
 #'   \eqn{K} model fits as a `list`. Each of the \eqn{K} model fits needs to be

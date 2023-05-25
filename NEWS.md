@@ -21,6 +21,7 @@ If you read this from a place other than <https://mc-stan.org/projpred/news/inde
 ## Minor changes
 
 * Enhancements in the vignettes. In particular, the new functions `ranking()`, `cv_proportions()`, and `plot.cv_proportions()` (see "Major changes" above) are now illustrated in the main vignette. (GitHub: #407, #411)
+* Reduced the peak memory usage of `cv_varsel()` with `cv_method = "kfold"`. (GitHub: #419)
 
 ## Bug fixes
 

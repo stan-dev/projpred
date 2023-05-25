@@ -126,13 +126,12 @@ i.e., if both are provided, \code{cvfits} is used.}
 \item{cvfits}{For \eqn{K}-fold CV only. A \code{list} containing a sub-\code{list}
 called \code{fits} containing the \eqn{K} model fits from which reference model
 structures are created. The \code{cvfits} \code{list} (i.e., the super-\code{list}) needs
-to have attributes \code{K} and \code{folds}: \code{K} has to be a single integer giving
-the number of folds and \code{folds} has to be an integer vector giving the fold
-indices (one fold index per observation). Each element of \code{cvfits$fits}
-(i.e., each of the \eqn{K} model fits) needs to be a list. Only one of
-\code{cvfits} and \code{cvfun} needs to be provided (for \eqn{K}-fold CV). Note that
-\code{cvfits} takes precedence over \code{cvfun}, i.e., if both are provided,
-\code{cvfits} is used.}
+to have an attribute called \code{folds}, consisting of an integer vector giving
+the fold indices (one fold index per observation). Each element of
+\code{cvfits$fits} (i.e., each of the \eqn{K} model fits) needs to be a list.
+Only one of \code{cvfits} and \code{cvfun} needs to be provided (for \eqn{K}-fold
+CV). Note that \code{cvfits} takes precedence over \code{cvfun}, i.e., if both are
+provided, \code{cvfits} is used.}
 
 \item{cvrefbuilder}{For \eqn{K}-fold CV only. A function that, given a
 reference model fit for fold \eqn{k \in \{1, ..., K\}}{k = 1, ..., K} (this
