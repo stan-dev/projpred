@@ -71,7 +71,7 @@ First, we generate a training and a test dataset with a Poisson-distributed resp
 # the test dataset):
 N <- 71
 # Data-generating function:
-sim_poiss <- function(nobs = 2 * N, ncon = 10, ngrpPL = 4, nnoise = 39) {
+sim_poiss <- function(nobs = 2 * N, ncon = 10, ncats = 4, nnoise = 39) {
   # Regression coefficients for continuous predictors:
   coefs_con <- rnorm(ncon)
   # Continuous predictors:
@@ -79,16 +79,16 @@ sim_poiss <- function(nobs = 2 * N, ncon = 10, ngrpPL = 4, nnoise = 39) {
   # Start linear predictor:
   linpred <- 2.1 + dat_sim %*% coefs_con
   
-  # Population-level (PL) categorical predictor:
+  # Categorical predictor:
   dat_sim <- data.frame(
     x = dat_sim,
-    grpPL = gl(n = ngrpPL, k = nobs %/% ngrpPL, length = nobs,
-               labels = paste0("grpPL", seq_len(ngrpPL)))
+    xcat = gl(n = ncats, k = nobs %/% ncats, length = nobs,
+              labels = paste0("cat", seq_len(ncats)))
   )
-  # Regression coefficients for the PL categorical predictor:
-  coefs_catPL <- rnorm(ngrpPL)
+  # Regression coefficients for the categorical predictor:
+  coefs_cat <- rnorm(ncats)
   # Continue linear predictor:
-  linpred <- linpred + coefs_catPL[dat_sim$grpPL]
+  linpred <- linpred + coefs_cat[dat_sim$xcat]
   
   # Noise predictors:
   dat_sim <- data.frame(
@@ -119,7 +119,7 @@ library(rstanarm)
 ```
 ```{r ref_fit_poiss}
 # Number of regression coefficients:
-( D <- sum(grepl("^x|^grpPL", names(dat_poiss_train))) )
+( D <- sum(grepl("^x", names(dat_poiss_train))) )
 # Prior guess for the number of relevant (i.e., non-zero) regression
 # coefficients:
 p0 <- 10
@@ -136,7 +136,7 @@ ncores <- min(ncores, 2L)
 ###
 options(mc.cores = ncores)
 refm_fml <- as.formula(paste("y", "~", paste(
-  grep("^x|^grpPL", names(dat_poiss_train), value = TRUE),
+  grep("^x", names(dat_poiss_train), value = TRUE),
   collapse = " + "
 )))
 refm_fit_poiss <- stan_glm(
