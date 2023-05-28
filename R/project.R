@@ -21,10 +21,10 @@
 #'   performed. Argument `nterms` is ignored in that case. For an `object` which
 #'   is not of class `vsel`, `solution_terms` must not be `NULL`.
 #' @param refit_prj A single logical value indicating whether to fit the
-#'   submodels (again) (`TRUE`) or to retrieve the fitted submodels from
+#'   submodels (again) (`TRUE`) or---if `object` is of class `vsel`---to re-use
+#'   the submodel fits from the full-data search that was run when creating
 #'   `object` (`FALSE`). For an `object` which is not of class `vsel`,
-#'   `refit_prj` must be `TRUE`. Note that currently, `refit_prj = FALSE`
-#'   requires some caution, see GitHub issue #168.
+#'   `refit_prj` must be `TRUE`. See also section "Details" below.
 #' @param ndraws Only relevant if `refit_prj` is `TRUE`. Number of posterior
 #'   draws to be projected. Ignored if `nclusters` is not `NULL` or if the
 #'   reference model is of class `datafit` (in which case one cluster is used).
@@ -57,8 +57,13 @@
 #'   projection performance. Increasing these arguments affects the computation
 #'   time linearly.
 #'
-#'   Note that if [project()] is applied to output from [cv_varsel()], then
-#'   `refit_prj = FALSE` will take the results from the *full-data* search.
+#'   If `refit_prj = FALSE` (which is only possible if `object` is of class
+#'   `vsel`), [project()] retrieves the submodel fits from the full-data search
+#'   that was run when creating `object`. Usually, the search relies on a rather
+#'   coarse clustering or thinning of the reference model's posterior draws (by
+#'   default, [varsel()] and [cv_varsel()] use `nclusters = 20`). Consequently,
+#'   [project()] with `refit_prj = FALSE` then inherits this coarse clustering
+#'   or thinning.
 #'
 #' @return If the projection is performed onto a single submodel (i.e.,
 #'   `length(nterms) == 1 || !is.null(solution_terms)`), an object of class
@@ -177,11 +182,6 @@ project <- function(object, nterms = NULL, solution_terms = NULL,
     warning("The given `solution_terms` are not part of the solution path ",
             "(from `object`), so `refit_prj` is automatically set to `TRUE`.")
     refit_prj <- TRUE
-  }
-
-  if (!refit_prj) {
-    warning("Currently, `refit_prj = FALSE` requires some caution, see GitHub ",
-            "issue #168.")
   }
 
   if (!is.null(solution_terms)) {

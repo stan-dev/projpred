@@ -166,16 +166,11 @@ if (run_vs) {
   })
 
   prjs_vs_datafit <- lapply(args_prj_vs_datafit, function(args_prj_vs_i) {
-    expect_warning(
-      do.call(project, c(
-        list(object = vss_datafit[[args_prj_vs_i$tstsetup_vsel]],
-             refit_prj = FALSE),
-        excl_nonargs(args_prj_vs_i)
-      )),
-      paste("^Currently, `refit_prj = FALSE` requires some caution, see GitHub",
-            "issue #168\\.$"),
-      info = args_prj_vs_i$tstsetup_vsel
-    )
+    do.call(project, c(
+      list(object = vss_datafit[[args_prj_vs_i$tstsetup_vsel]],
+           refit_prj = FALSE),
+      excl_nonargs(args_prj_vs_i)
+    ))
   })
 }
 
@@ -692,15 +687,10 @@ test_that(paste(
       method = "L1", lambda_min_ratio = lambda_min_ratio,
       nlambda = nlambda, thresh = 1e-12, verbose = FALSE
     ))
-    expect_warning(
-      pred1 <- proj_linpred(vs,
-                            newdata = data.frame(x = x, weights = weights),
-                            transform = FALSE, .seed = seed2_tst,
-                            nterms = 0:nterms, refit_prj = FALSE),
-      paste("^Currently, `refit_prj = FALSE` requires some caution, see GitHub",
-            "issue #168\\.$"),
-      info = fam$family
-    )
+    pred1 <- proj_linpred(vs,
+                          newdata = data.frame(x = x, weights = weights),
+                          transform = FALSE, .seed = seed2_tst,
+                          nterms = 0:nterms, refit_prj = FALSE)
 
     # compute the results for the Lasso
     lasso <- glmnet::glmnet(x, y_glmnet,
