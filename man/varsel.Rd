@@ -135,10 +135,10 @@ vignette and \link{projpred-package}).
 }
 \description{
 Run the \emph{search} part and the \emph{evaluation} part for a projection predictive
-variable selection. The search part determines the solution path, i.e., the
-best submodel for each submodel size (number of predictor terms). The
-evaluation part determines the predictive performance of the submodels along
-the solution path.
+variable selection. The search part determines the predictor ranking (also
+known as solution path), i.e., the best submodel for each submodel size
+(number of predictor terms). The evaluation part determines the predictive
+performance of the submodels along the predictor ranking.
 }
 \details{
 Arguments \code{ndraws}, \code{nclusters}, \code{nclusters_pred}, and \code{ndraws_pred}
