@@ -72,10 +72,9 @@ number of posterior draws from the reference model is used for
 clusters of posterior draws used in the evaluation part. For the meaning of
 \code{NULL}, see argument \code{ndraws_pred}. See also section "Details" below.}
 
-\item{refit_prj}{A single logical value indicating whether to fit the
-submodels along the solution path again (\code{TRUE}) or to retrieve their fits
-from the search part (\code{FALSE}) before using those (re-)fits in the
-evaluation part.}
+\item{refit_prj}{For the evaluation part, should the submodels along the
+predictor ranking be fitted again (\code{TRUE}) or should their fits from the
+search part be re-used (\code{FALSE})?}
 
 \item{nterms_max}{Maximum submodel size (number of predictor terms) up to
 which the search is continued. If \code{NULL}, then \code{min(19, D)} is used where

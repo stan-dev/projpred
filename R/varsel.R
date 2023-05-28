@@ -18,10 +18,9 @@
 #'   `"L1"` is used, except if (i) the reference model has multilevel or
 #'   additive terms, (ii) if `!is.null(search_terms)`, or (iii) if the
 #'   augmented-data projection is used. See also section "Details" below.
-#' @param refit_prj A single logical value indicating whether to fit the
-#'   submodels along the solution path again (`TRUE`) or to retrieve their fits
-#'   from the search part (`FALSE`) before using those (re-)fits in the
-#'   evaluation part.
+#' @param refit_prj For the evaluation part, should the submodels along the
+#'   predictor ranking be fitted again (`TRUE`) or should their fits from the
+#'   search part be re-used (`FALSE`)?
 #' @param ndraws Number of posterior draws used in the search part. Ignored if
 #'   `nclusters` is not `NULL` or in case of L1 search (because L1 search always
 #'   uses a single cluster). If both (`nclusters` and `ndraws`) are `NULL`, the
