@@ -1675,8 +1675,9 @@ if (run_more) {
 ## plot.vsel() ------------------------------------------------------------
 
 cre_args_plot_vsel <- function(args_obj) {
+  tstsetups <- grep("\\.brnll\\..*\\.trad", names(args_obj), value = TRUE)
   lapply(
-    setNames(nm = grep("\\.brnll\\.", names(args_obj), value = TRUE)),
+    setNames(nm = tstsetups),
     function(tstsetup_vsel) {
       nterms_max_plot <- nterms_max_smmry[c("default_nterms_max_smmry",
                                             "halfway")]
