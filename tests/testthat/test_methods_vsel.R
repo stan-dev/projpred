@@ -238,8 +238,28 @@ context("plot()")
 
 test_that("`x` of class \"vsel\" (created by varsel()) works", {
   skip_if_not(run_vs)
+  common_elements <- c("tstsetup_vsel", "nterms_max", "ranking_nterms_max",
+                       "text_angle")
   for (tstsetup in names(plots_vs)) {
     args_plot_i <- args_plot_vs[[tstsetup]]
+    if (identical(args_plot_i$ranking_nterms_max, NA)) {
+      matches_tstsetup <- sapply(names(plots_vs), function(tstsetup2) {
+        common_elements <- intersect(common_elements, names(args_plot_i))
+        args_plot_i2 <- args_plot_vs[[tstsetup2]]
+        common_elements2 <- intersect(common_elements, names(args_plot_i2))
+        if (!setequal(common_elements, common_elements2)) {
+          return(FALSE)
+        }
+        identical(args_plot_i[common_elements], args_plot_i2[common_elements])
+      })
+      if (any(matches_tstsetup)) {
+        tstsetup_target <- names(which.max(matches_tstsetup))
+      } else {
+        tstsetup_target <- tstsetup
+      }
+    } else {
+      tstsetup_target <- tstsetup
+    }
     plot_vsel_tester(
       plots_vs[[tstsetup]],
       nterms_max_expected = args_plot_i$nterms_max %||%
@@ -248,15 +268,35 @@ test_that("`x` of class \"vsel\" (created by varsel()) works", {
       rk_expected = ranking(vss[[args_plot_i$tstsetup_vsel]])[["fulldata"]],
       abbv_expected = args_plot_i$ranking_abbreviate,
       abbv_args_expected = args_plot_i$ranking_abbreviate_args,
-      info_str = tstsetup
+      info_str = tstsetup_target
     )
   }
 })
 
 test_that("`x` of class \"vsel\" (created by cv_varsel()) works", {
   skip_if_not(run_cvvs)
+  common_elements <- c("tstsetup_vsel", "nterms_max", "ranking_nterms_max",
+                       "text_angle")
   for (tstsetup in names(plots_cvvs)) {
     args_plot_i <- args_plot_cvvs[[tstsetup]]
+    if (identical(args_plot_i$ranking_nterms_max, NA)) {
+      matches_tstsetup <- sapply(names(plots_cvvs), function(tstsetup2) {
+        common_elements <- intersect(common_elements, names(args_plot_i))
+        args_plot_i2 <- args_plot_cvvs[[tstsetup2]]
+        common_elements2 <- intersect(common_elements, names(args_plot_i2))
+        if (!setequal(common_elements, common_elements2)) {
+          return(FALSE)
+        }
+        identical(args_plot_i[common_elements], args_plot_i2[common_elements])
+      })
+      if (any(matches_tstsetup)) {
+        tstsetup_target <- names(which.max(matches_tstsetup))
+      } else {
+        tstsetup_target <- tstsetup
+      }
+    } else {
+      tstsetup_target <- tstsetup
+    }
     plot_vsel_tester(
       plots_cvvs[[tstsetup]],
       nterms_max_expected = args_plot_i$nterms_max %||%
@@ -265,7 +305,7 @@ test_that("`x` of class \"vsel\" (created by cv_varsel()) works", {
       rk_expected = ranking(cvvss[[args_plot_i$tstsetup_vsel]])[["fulldata"]],
       abbv_expected = args_plot_i$ranking_abbreviate,
       abbv_args_expected = args_plot_i$ranking_abbreviate_args,
-      info_str = tstsetup
+      info_str = tstsetup_target
     )
   }
 })

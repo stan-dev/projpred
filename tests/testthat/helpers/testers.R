@@ -2633,7 +2633,7 @@ smmry_sel_tester <- function(
 # @param abbv_args_expected The `list` that was passed to argument
 #   `ranking_abbreviate_args` of plot.vsel().
 # @param info_str A single character string giving information to be printed in
-#   case of failure.
+#   case of failure and also for naming vdiffr::expect_doppelganger() output.
 #
 # @return `TRUE` (invisible).
 plot_vsel_tester <- function(
