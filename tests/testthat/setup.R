@@ -1676,6 +1676,15 @@ if (run_more) {
 
 cre_args_plot_vsel <- function(args_obj) {
   tstsetups <- grep("\\.brnll\\..*\\.trad", names(args_obj), value = TRUE)
+  tstsetups <- union(
+    tstsetups,
+    grep("\\.default_search_trms|\\.alltrms", names(args_obj), value = TRUE,
+         invert = TRUE)
+  )
+  tstsetups <- union(
+    tstsetups,
+    head(grep("\\.spclformul", names(args_obj), value = TRUE), 1)
+  )
   lapply(
     setNames(nm = tstsetups),
     function(tstsetup_vsel) {
