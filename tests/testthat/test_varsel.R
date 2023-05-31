@@ -311,7 +311,7 @@ test_that(paste(
 
     if (!(getOption("projpred.mlvl_pred_new", FALSE) &&
           mod_crr %in% c("glmm", "gamm") &&
-          any(grepl("\\|", solution_terms(vs_indep))))) {
+          any(grepl("\\|", vs_indep$solution_terms)))) {
       # In the negation of this case (i.e., multilevel models with option
       # `projpred.mlvl_pred_new` being set to `TRUE`), proj_linpred() can't be
       # used to calculate the reference model's performance statistics because
@@ -328,8 +328,6 @@ test_that(paste(
       set.seed(args_vs_i$seed)
       p_sel_dummy <- get_refdist(refmods[[tstsetup_ref]],
                                  nclusters = vs_indep$nprjdraws_search)
-      # As soon as GitHub issue #168 is fixed, we can use `refit_prj = FALSE`
-      # here:
       expect_warning(
         pl_indep <- proj_linpred(
           vs_indep,
@@ -362,8 +360,6 @@ test_that(paste(
         set.seed(args_vs_i$seed)
         p_sel_dummy <- get_refdist(refmods[[tstsetup_ref]],
                                    nclusters = vs_indep$nprjdraws_search)
-        # As soon as GitHub issue #168 is fixed, we can use `refit_prj = FALSE`
-        # here:
         dat_indep_crr[[paste0(".", y_nm_crr)]] <- d_test_crr$y
         pl_indep_lat <- proj_linpred(
           vs_indep,
@@ -823,16 +819,26 @@ test_that("for L1 search, `penalty` has an expected effect", {
     len_penal <- length(penal_possbl)
     penal_crr <- rep(1, len_penal)
     stopifnot(len_penal >= 3)
-    idx_penal_0 <- c(1, 2) # A few variables without cost.
-    idx_penal_Inf <- c(3) # One variable with infinite penalty.
+    # TODO: This test should be extended to also test the case where a
+    # categorical predictor (more precisely, one of its dummy variables) or a
+    # poly() term (more precisely, one of its lower-order terms resulting from
+    # the expansion of the poly() term) gets zero or infinite penalty. For now,
+    # the following code ensures that no categorical predictors and no poly()
+    # terms get zero or infinite penalty.
+    idx_cat <- grep("xca\\.", penal_possbl)
+    idx_poly <- grep("poly[m]*\\(", penal_possbl)
+    # Two predictors without cost:
+    idx_penal_0 <- head(setdiff(seq_along(penal_crr),
+                                c(idx_cat, idx_poly)),
+                        2)
+    stopifnot(length(idx_penal_0) == 2)
+    # One predictor with infinite penalty:
+    idx_penal_Inf <- head(setdiff(seq_along(penal_crr),
+                                  c(idx_penal_0, idx_cat, idx_poly)),
+                          1)
+    stopifnot(length(idx_penal_Inf) == 1)
     penal_crr[idx_penal_0] <- 0
     penal_crr[idx_penal_Inf] <- Inf
-    # TODO: This test should be extended to also test the case where a
-    # categorical predictor (more precisely, one of its dummy variables) gets
-    # zero or infinite penalty. For now, the following check ensures that no
-    # categorical predictors get zero or infinite penalty:
-    stopifnot(all(grep("^xca\\.", penal_possbl) >= max(c(idx_penal_0,
-                                                         idx_penal_Inf))))
 
     vs_penal <- do.call(varsel, c(
       list(object = refmods[[args_vs_i$tstsetup_ref]],
@@ -852,6 +858,8 @@ test_that("for L1 search, `penalty` has an expected effect", {
     # Check that the variables with no cost are selected first and the ones
     # with infinite penalty last:
     solterms_penal <- vs_penal$solution_terms
+    solterms_penal <- sub("(I\\(.*as\\.logical\\(.*\\)\\))", "\\1TRUE",
+                          solterms_penal)
     expect_identical(solterms_penal[seq_along(idx_penal_0)],
                      penal_possbl[idx_penal_0],
                      info = tstsetup)
@@ -886,7 +894,7 @@ test_that(paste(
     # In principle, `search_trms_tst$fixed$search_terms[1]` could be used
     # instead of `"xco.1"`, but that would seem like the forced term always has
     # to come first in `search_terms` (which is not the case):
-    expect_identical(solution_terms(vss[[tstsetup]])[1], "xco.1",
+    expect_identical(vss[[tstsetup]]$solution_terms[1], "xco.1",
                      info = tstsetup)
   }
 })
@@ -898,7 +906,7 @@ test_that(paste(
   skip_if_not(run_vs)
   tstsetups <- grep("\\.excluded", names(vss), value = TRUE)
   for (tstsetup in tstsetups) {
-    expect_false("xco.1" %in% solution_terms(vss[[tstsetup]]), info = tstsetup)
+    expect_false("xco.1" %in% vss[[tstsetup]]$solution_terms, info = tstsetup)
   }
 })
 
@@ -908,7 +916,7 @@ test_that(paste(
   skip_if_not(run_vs)
   tstsetups <- grep("\\.empty_size", names(vss), value = TRUE)
   for (tstsetup in tstsetups) {
-    soltrms_out <- solution_terms(vss[[tstsetup]])
+    soltrms_out <- vss[[tstsetup]]$solution_terms
     expect_true(
       grepl("\\+", soltrms_out[1]) && !any(grepl("\\+", soltrms_out[-1])),
       info = tstsetup
@@ -941,7 +949,7 @@ test_that(paste(
     "An interaction has been selected before all involved main effects",
     info = "rstanarm.glm.gauss.stdformul.with_wobs.with_offs"
   )
-  soltrms_all <- solution_terms(vs_ia)
+  soltrms_all <- vs_ia$solution_terms
   idx_ia <- grep(":", soltrms_all)
   soltrms_ia_main <- unlist(strsplit(grep(":", soltrms_all, value = TRUE), ":"))
   idxs_main <- match(soltrms_ia_main, soltrms_all)
@@ -1229,6 +1237,7 @@ test_that("`validate_search` works", {
 ## Arguments specific to K-fold CV ----------------------------------------
 
 test_that("invalid `K` fails", {
+  skip_if_not(length(fits) > 0)
   expect_error(cv_varsel(refmods[[1]], cv_method = "kfold", K = 1),
                "^`K` must be at least 2\\.$")
   expect_error(cv_varsel(refmods[[1]], cv_method = "kfold", K = 1000),
@@ -1285,7 +1294,7 @@ test_that(paste(
       folds_vec <- loo::kfold_split_grouped(K = K_crr, x = dat$z.1)
       if (exists("rng_old")) assign(".Random.seed", rng_old, envir = .GlobalEnv)
     } else {
-      folds_vec <- cvfolds(nobsv, K = K_crr, seed = seed2_tst)
+      folds_vec <- cv_folds(nobsv, K = K_crr, seed = seed2_tst)
     }
     # Additionally to suppressWarnings(), suppressMessages() could be used here
     # (but is not necessary since messages seem to be suppressed within
@@ -1401,9 +1410,9 @@ test_that(paste(
       folds_vec <- loo::kfold_split_grouped(K = K_crr, x = dat$z.1)
       if (exists("rng_old")) assign(".Random.seed", rng_old, envir = .GlobalEnv)
     } else if (grepl("\\.gam\\.", tstsetup)) {
-      folds_vec <- cvfolds(nobsv, K = K_crr, seed = seed2_tst + 10L)
+      folds_vec <- cv_folds(nobsv, K = K_crr, seed = seed2_tst + 10L)
     } else {
-      folds_vec <- cvfolds(nobsv, K = K_crr, seed = seed2_tst)
+      folds_vec <- cv_folds(nobsv, K = K_crr, seed = seed2_tst)
     }
     kfold_obj <- kfold(fit_crr,
                        K = K_crr,

@@ -4,7 +4,7 @@
 \alias{cv_varsel}
 \alias{cv_varsel.default}
 \alias{cv_varsel.refmodel}
-\title{Variable selection with cross-validation}
+\title{Run search and performance evaluation with cross-validation}
 \usage{
 cv_varsel(object, ...)
 
@@ -29,7 +29,7 @@ cv_varsel(object, ...)
   thresh = 1e-06,
   regul = 1e-04,
   validate_search = TRUE,
-  seed = sample.int(.Machine$integer.max, 1),
+  seed = NA,
   search_terms = NULL,
   ...
 )
@@ -76,17 +76,16 @@ number of posterior draws from the reference model is used for
 clusters of posterior draws used in the evaluation part. For the meaning of
 \code{NULL}, see argument \code{ndraws_pred}. See also section "Details" below.}
 
-\item{refit_prj}{A single logical value indicating whether to fit the
-submodels along the solution path again (\code{TRUE}) or to retrieve their fits
-from the search part (\code{FALSE}) before using those (re-)fits in the
-evaluation part.}
+\item{refit_prj}{For the evaluation part, should the submodels along the
+predictor ranking be fitted again (\code{TRUE}) or should their fits from the
+search part be re-used (\code{FALSE})?}
 
-\item{nterms_max}{Maximum number of predictor terms until which the search is
-continued. If \code{NULL}, then \code{min(19, D)} is used where \code{D} is the number of
-terms in the reference model (or in \code{search_terms}, if supplied). Note that
-\code{nterms_max} does not count the intercept, so use \code{nterms_max = 0} for the
-intercept-only model. (Correspondingly, \code{D} above does not count the
-intercept.)}
+\item{nterms_max}{Maximum submodel size (number of predictor terms) up to
+which the search is continued. If \code{NULL}, then \code{min(19, D)} is used where
+\code{D} is the number of terms in the reference model (or in \code{search_terms}, if
+supplied). Note that \code{nterms_max} does not count the intercept, so use
+\code{nterms_max = 0} for the intercept-only model. (Correspondingly, \code{D} above
+does not count the intercept.)}
 
 \item{penalty}{Only relevant for L1 search. A numeric vector determining the
 relative penalties or costs for the predictors. A value of \code{0} means that
@@ -133,19 +132,20 @@ whether to run the search separately for each CV fold (\code{TRUE}) or not
 this is known to bias the predictive performance estimates of the selected
 submodels. However, setting this to \code{FALSE} can sometimes be useful because
 comparing the results to the case where this argument is \code{TRUE} gives an
-idea of how strongly the variable selection is (over-)fitted to the data
-(the difference corresponds to the search degrees of freedom or the
-effective number of parameters introduced by the search).}
+idea of how strongly the search is (over-)fitted to the data (the
+difference corresponds to the search degrees of freedom or the effective
+number of parameters introduced by the search).}
 
 \item{seed}{Pseudorandom number generation (PRNG) seed by which the same
 results can be obtained again if needed. Passed to argument \code{seed} of
-\code{\link[=set.seed]{set.seed()}}, but can also be \code{NA} to not call \code{\link[=set.seed]{set.seed()}} at all. Here,
-this seed is used for clustering the reference model's posterior draws (if
-\code{!is.null(nclusters)} or \code{!is.null(nclusters_pred)}), for subsampling LOO
-CV folds (if \code{nloo} is smaller than the number of observations), for
-sampling the folds in K-fold CV, and for drawing new group-level effects
-when predicting from a multilevel submodel (however, not yet in case of a
-GAMM).}
+\code{\link[=set.seed]{set.seed()}}, but can also be \code{NA} to not call \code{\link[=set.seed]{set.seed()}} at all. If not
+\code{NA}, then the PRNG state is reset (to the state before calling
+\code{\link[=cv_varsel]{cv_varsel()}}) upon exiting \code{\link[=cv_varsel]{cv_varsel()}}. Here, \code{seed} is used for
+clustering the reference model's posterior draws (if \code{!is.null(nclusters)}
+or \code{!is.null(nclusters_pred)}), for subsampling LOO CV folds (if \code{nloo} is
+smaller than the number of observations), for sampling the folds in
+\eqn{K}-fold CV, and for drawing new group-level effects when predicting
+from a multilevel submodel (however, not yet in case of a GAMM).}
 
 \item{search_terms}{Only relevant for forward search. A custom character
 vector of predictor term blocks to consider for the search. Section
@@ -162,14 +162,14 @@ vignette and \link{projpred-package}).
 }
 \description{
 Run the \emph{search} part and the \emph{evaluation} part for a projection predictive
-variable selection. The search part determines the solution path, i.e., the
-best submodel for each submodel size (number of predictor terms). The
-evaluation part determines the predictive performance of the submodels along
-the solution path. In contrast to \code{\link[=varsel]{varsel()}}, \code{\link[=cv_varsel]{cv_varsel()}} performs a
-cross-validation (CV) by running the search part with the training data of
-each CV fold separately (an exception is explained in section "Note" below)
-and running the evaluation part on the corresponding test set of each CV
-fold.
+variable selection. The search part determines the predictor ranking (also
+known as solution path), i.e., the best submodel for each submodel size
+(number of predictor terms). The evaluation part determines the predictive
+performance of the submodels along the predictor ranking. In contrast to
+\code{\link[=varsel]{varsel()}}, \code{\link[=cv_varsel]{cv_varsel()}} performs a cross-validation (CV) by running the
+search part with the training data of each CV fold separately (an exception
+is explained in section "Note" below) and by running the evaluation part on
+the corresponding test set of each CV fold.
 }
 \details{
 Arguments \code{ndraws}, \code{nclusters}, \code{nclusters_pred}, and \code{ndraws_pred}
@@ -219,14 +219,13 @@ the only candidate. As another example, to exclude \code{x1} from the search,
 specify \code{search_terms = c("x2", "x3", "x2 + x3")}.
 }
 \note{
-The case \code{cv_method == "LOO" && !validate_search} constitutes an
-exception where the search part is not cross-validated. In that case, the
-evaluation part is based on a PSIS-LOO CV also for the submodels.
+If \code{validate_search} is \code{FALSE}, the search is not included in the CV
+so that only a single full-data search is run.
 
-For all PSIS-LOO CVs, \pkg{projpred} calls \code{\link[loo:psis]{loo::psis()}} with \code{r_eff = NA}.
-This is only a problem if there was extreme autocorrelation between the
-MCMC iterations when the reference model was built. In those cases however,
-the reference model should not have been used anyway, so we don't expect
+For PSIS-LOO CV, \pkg{projpred} calls \code{\link[loo:psis]{loo::psis()}} with \code{r_eff = NA}. This
+is only a problem if there was extreme autocorrelation between the MCMC
+iterations when the reference model was built. In those cases however, the
+reference model should not have been used anyway, so we don't expect
 \pkg{projpred}'s \code{r_eff = NA} to be a problem.
 }
 \examples{
@@ -242,16 +241,16 @@ if (requireNamespace("rstanarm", quietly = TRUE)) {
   # example; this is not recommended in general):
   fit <- rstanarm::stan_glm(
     y ~ X1 + X2 + X3 + X4 + X5, family = gaussian(), data = dat_gauss,
-    QR = TRUE, chains = 2, iter = 500, refresh = 0, seed = 9876
+    QR = TRUE, chains = 2, iter = 1000, refresh = 0, seed = 9876
   )
 
-  # Variable selection with cross-validation (with small values
-  # for `nterms_max`, `nclusters`, and `nclusters_pred`, but only for the
-  # sake of speed in this example; this is not recommended in general):
-  cvvs <- cv_varsel(fit, nterms_max = 3, nclusters = 5, nclusters_pred = 10,
-                    seed = 5555, verbose = FALSE)
+  # Run cv_varsel() (with small values for `K`, `nterms_max`, `nclusters`,
+  # and `nclusters_pred`, but only for the sake of speed in this example;
+  # this is not recommended in general):
+  cvvs <- cv_varsel(fit, cv_method = "kfold", K = 2, nterms_max = 3,
+                    nclusters = 5, nclusters_pred = 10, seed = 5555, verbose = FALSE)
   # Now see, for example, `?print.vsel`, `?plot.vsel`, `?suggest_size.vsel`,
-  # and `?solution_terms.vsel` for possible post-processing functions.
+  # and `?ranking` for possible post-processing functions.
 }
 \dontshow{\}) # examplesIf}
 }

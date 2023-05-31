@@ -216,16 +216,18 @@ test_that("`object` not of class \"vsel\" and missing `solution_terms` fails", {
     paste("^Please provide an `object` of class \"vsel\" or use argument",
           "`solution_terms`\\.$")
   )
-  expect_error(
-    proj_linpred(fits[[1]], .seed = seed2_tst),
-    paste("^Please provide an `object` of class \"vsel\" or use argument",
-          "`solution_terms`\\.$")
-  )
-  expect_error(
-    proj_linpred(refmods[[1]], .seed = seed2_tst),
-    paste("^Please provide an `object` of class \"vsel\" or use argument",
-          "`solution_terms`\\.$")
-  )
+  if (length(fits)) {
+    expect_error(
+      proj_linpred(fits[[1]], .seed = seed2_tst),
+      paste("^Please provide an `object` of class \"vsel\" or use argument",
+            "`solution_terms`\\.$")
+    )
+    expect_error(
+      proj_linpred(refmods[[1]], .seed = seed2_tst),
+      paste("^Please provide an `object` of class \"vsel\" or use argument",
+            "`solution_terms`\\.$")
+    )
+  }
   if (run_prj) {
     expect_error(
       proj_linpred(c(prjs, list(dat)), .seed = seed2_tst),
@@ -847,21 +849,16 @@ test_that("`.seed` works (and restores the RNG state afterwards)", {
     .Random.seed_repr2 <- .Random.seed
     rand_repr <- runif(1) # Just to advance `.Random.seed[2]`.
     .Random.seed_null1 <- .Random.seed
-    pp_null <- proj_predict(prjs[[tstsetup]])
-    .Random.seed_null2 <- .Random.seed
 
     expect_equal(pp_orig, pp_repr, info = tstsetup)
     if (!args_prj[[tstsetup]]$fam_nm %in% c("brnll")) {
       # The Bernoulli family is excluded because two possible response values
       # are too few to reliably check non-equality:
       expect_false(isTRUE(all.equal(pp_orig, pp_new)), info = tstsetup)
-      expect_false(isTRUE(all.equal(pp_orig, pp_null)), info = tstsetup)
-      expect_false(isTRUE(all.equal(pp_new, pp_null)), info = tstsetup)
     }
 
     expect_equal(.Random.seed_new2, .Random.seed_new1, info = tstsetup)
     expect_equal(.Random.seed_repr2, .Random.seed_repr1, info = tstsetup)
-    expect_equal(.Random.seed_null2, .Random.seed_null1, info = tstsetup)
 
     expect_false(isTRUE(all.equal(rand_new, rand_orig)), info = tstsetup)
     expect_false(isTRUE(all.equal(rand_repr, rand_orig)), info = tstsetup)
@@ -1070,16 +1067,18 @@ test_that("`object` not of class \"vsel\" and missing `solution_terms` fails", {
     paste("^Please provide an `object` of class \"vsel\" or use argument",
           "`solution_terms`\\.$")
   )
-  expect_error(
-    proj_predict(fits[[1]], .seed = seed2_tst),
-    paste("^Please provide an `object` of class \"vsel\" or use argument",
-          "`solution_terms`\\.$")
-  )
-  expect_error(
-    proj_predict(refmods[[1]], .seed = seed2_tst),
-    paste("^Please provide an `object` of class \"vsel\" or use argument",
-          "`solution_terms`\\.$")
-  )
+  if (length(fits)) {
+    expect_error(
+      proj_predict(fits[[1]], .seed = seed2_tst),
+      paste("^Please provide an `object` of class \"vsel\" or use argument",
+            "`solution_terms`\\.$")
+    )
+    expect_error(
+      proj_predict(refmods[[1]], .seed = seed2_tst),
+      paste("^Please provide an `object` of class \"vsel\" or use argument",
+            "`solution_terms`\\.$")
+    )
+  }
   if (run_prj) {
     expect_error(
       proj_predict(c(prjs, list(dat)), .seed = seed2_tst),

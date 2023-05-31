@@ -11,7 +11,7 @@ project(
   refit_prj = TRUE,
   ndraws = 400,
   nclusters = NULL,
-  seed = sample.int(.Machine$integer.max, 1),
+  seed = NA,
   regul = 1e-04,
   ...
 )
@@ -36,10 +36,10 @@ performed. Argument \code{nterms} is ignored in that case. For an \code{object} 
 is not of class \code{vsel}, \code{solution_terms} must not be \code{NULL}.}
 
 \item{refit_prj}{A single logical value indicating whether to fit the
-submodels (again) (\code{TRUE}) or to retrieve the fitted submodels from
+submodels (again) (\code{TRUE}) or---if \code{object} is of class \code{vsel}---to re-use
+the submodel fits from the full-data search that was run when creating
 \code{object} (\code{FALSE}). For an \code{object} which is not of class \code{vsel},
-\code{refit_prj} must be \code{TRUE}. Note that currently, \code{refit_prj = FALSE}
-requires some caution, see GitHub issue #168.}
+\code{refit_prj} must be \code{TRUE}. See also section "Details" below.}
 
 \item{ndraws}{Only relevant if \code{refit_prj} is \code{TRUE}. Number of posterior
 draws to be projected. Ignored if \code{nclusters} is not \code{NULL} or if the
@@ -55,12 +55,14 @@ class \code{datafit} (in which case one cluster is used). For the meaning of
 
 \item{seed}{Pseudorandom number generation (PRNG) seed by which the same
 results can be obtained again if needed. Passed to argument \code{seed} of
-\code{\link[=set.seed]{set.seed()}}, but can also be \code{NA} to not call \code{\link[=set.seed]{set.seed()}} at all. Here,
-this seed is used for clustering the reference model's posterior draws (if
-\code{!is.null(nclusters)}) and for drawing new group-level effects when
-predicting from a multilevel submodel (however, not yet in case of a GAMM)
-and having global option \code{projpred.mlvl_pred_new} set to \code{TRUE}. (Such a
-prediction takes place when calculating output elements \code{dis} and \code{ce}.)}
+\code{\link[=set.seed]{set.seed()}}, but can also be \code{NA} to not call \code{\link[=set.seed]{set.seed()}} at all. If not
+\code{NA}, then the PRNG state is reset (to the state before calling
+\code{\link[=project]{project()}}) upon exiting \code{\link[=project]{project()}}. Here, \code{seed} is used for clustering
+the reference model's posterior draws (if \code{!is.null(nclusters)}) and for
+drawing new group-level effects when predicting from a multilevel submodel
+(however, not yet in case of a GAMM) and having global option
+\code{projpred.mlvl_pred_new} set to \code{TRUE}. (Such a prediction takes place when
+calculating output elements \code{dis} and \code{ce}.)}
 
 \item{regul}{A number giving the amount of ridge regularization when
 projecting onto (i.e., fitting) submodels which are GLMs. Usually there is
@@ -130,8 +132,13 @@ posterior draws in the reference model may result in slightly inaccurate
 projection performance. Increasing these arguments affects the computation
 time linearly.
 
-Note that if \code{\link[=project]{project()}} is applied to output from \code{\link[=cv_varsel]{cv_varsel()}}, then
-\code{refit_prj = FALSE} will take the results from the \emph{full-data} search.
+If \code{refit_prj = FALSE} (which is only possible if \code{object} is of class
+\code{vsel}), \code{\link[=project]{project()}} retrieves the submodel fits from the full-data search
+that was run when creating \code{object}. Usually, the search relies on a rather
+coarse clustering or thinning of the reference model's posterior draws (by
+default, \code{\link[=varsel]{varsel()}} and \code{\link[=cv_varsel]{cv_varsel()}} use \code{nclusters = 20}). Consequently,
+\code{\link[=project]{project()}} with \code{refit_prj = FALSE} then inherits this coarse clustering
+or thinning.
 }
 \examples{
 if (requireNamespace("rstanarm", quietly = TRUE)) {
@@ -146,9 +153,9 @@ if (requireNamespace("rstanarm", quietly = TRUE)) {
     QR = TRUE, chains = 2, iter = 500, refresh = 0, seed = 9876
   )
 
-  # Variable selection (here without cross-validation and with small values
-  # for `nterms_max`, `nclusters`, and `nclusters_pred`, but only for the
-  # sake of speed in this example; this is not recommended in general):
+  # Run varsel() (here without cross-validation and with small values for
+  # `nterms_max`, `nclusters`, and `nclusters_pred`, but only for the sake of
+  # speed in this example; this is not recommended in general):
   vs <- varsel(fit, nterms_max = 3, nclusters = 5, nclusters_pred = 10,
                seed = 5555)
 

@@ -1,14 +1,14 @@
-#' Variable selection with cross-validation
+#' Run search and performance evaluation with cross-validation
 #'
 #' Run the *search* part and the *evaluation* part for a projection predictive
-#' variable selection. The search part determines the solution path, i.e., the
-#' best submodel for each submodel size (number of predictor terms). The
-#' evaluation part determines the predictive performance of the submodels along
-#' the solution path. In contrast to [varsel()], [cv_varsel()] performs a
-#' cross-validation (CV) by running the search part with the training data of
-#' each CV fold separately (an exception is explained in section "Note" below)
-#' and running the evaluation part on the corresponding test set of each CV
-#' fold.
+#' variable selection. The search part determines the predictor ranking (also
+#' known as solution path), i.e., the best submodel for each submodel size
+#' (number of predictor terms). The evaluation part determines the predictive
+#' performance of the submodels along the predictor ranking. In contrast to
+#' [varsel()], [cv_varsel()] performs a cross-validation (CV) by running the
+#' search part with the training data of each CV fold separately (an exception
+#' is explained in section "Note" below) and by running the evaluation part on
+#' the corresponding test set of each CV fold.
 #'
 #' @inheritParams varsel
 #' @param cv_method The CV method, either `"LOO"` or `"kfold"`. In the `"LOO"`
@@ -33,29 +33,29 @@
 #'   this is known to bias the predictive performance estimates of the selected
 #'   submodels. However, setting this to `FALSE` can sometimes be useful because
 #'   comparing the results to the case where this argument is `TRUE` gives an
-#'   idea of how strongly the variable selection is (over-)fitted to the data
-#'   (the difference corresponds to the search degrees of freedom or the
-#'   effective number of parameters introduced by the search).
+#'   idea of how strongly the search is (over-)fitted to the data (the
+#'   difference corresponds to the search degrees of freedom or the effective
+#'   number of parameters introduced by the search).
 #' @param seed Pseudorandom number generation (PRNG) seed by which the same
 #'   results can be obtained again if needed. Passed to argument `seed` of
-#'   [set.seed()], but can also be `NA` to not call [set.seed()] at all. Here,
-#'   this seed is used for clustering the reference model's posterior draws (if
-#'   `!is.null(nclusters)` or `!is.null(nclusters_pred)`), for subsampling LOO
-#'   CV folds (if `nloo` is smaller than the number of observations), for
-#'   sampling the folds in K-fold CV, and for drawing new group-level effects
-#'   when predicting from a multilevel submodel (however, not yet in case of a
-#'   GAMM).
+#'   [set.seed()], but can also be `NA` to not call [set.seed()] at all. If not
+#'   `NA`, then the PRNG state is reset (to the state before calling
+#'   [cv_varsel()]) upon exiting [cv_varsel()]. Here, `seed` is used for
+#'   clustering the reference model's posterior draws (if `!is.null(nclusters)`
+#'   or `!is.null(nclusters_pred)`), for subsampling LOO CV folds (if `nloo` is
+#'   smaller than the number of observations), for sampling the folds in
+#'   \eqn{K}-fold CV, and for drawing new group-level effects when predicting
+#'   from a multilevel submodel (however, not yet in case of a GAMM).
 #'
 #' @inherit varsel details return
 #'
-#' @note The case `cv_method == "LOO" && !validate_search` constitutes an
-#'   exception where the search part is not cross-validated. In that case, the
-#'   evaluation part is based on a PSIS-LOO CV also for the submodels.
+#' @note If `validate_search` is `FALSE`, the search is not included in the CV
+#'   so that only a single full-data search is run.
 #'
-#'   For all PSIS-LOO CVs, \pkg{projpred} calls [loo::psis()] with `r_eff = NA`.
-#'   This is only a problem if there was extreme autocorrelation between the
-#'   MCMC iterations when the reference model was built. In those cases however,
-#'   the reference model should not have been used anyway, so we don't expect
+#'   For PSIS-LOO CV, \pkg{projpred} calls [loo::psis()] with `r_eff = NA`. This
+#'   is only a problem if there was extreme autocorrelation between the MCMC
+#'   iterations when the reference model was built. In those cases however, the
+#'   reference model should not have been used anyway, so we don't expect
 #'   \pkg{projpred}'s `r_eff = NA` to be a problem.
 #'
 #' @references
@@ -89,16 +89,16 @@
 #'   # example; this is not recommended in general):
 #'   fit <- rstanarm::stan_glm(
 #'     y ~ X1 + X2 + X3 + X4 + X5, family = gaussian(), data = dat_gauss,
-#'     QR = TRUE, chains = 2, iter = 500, refresh = 0, seed = 9876
+#'     QR = TRUE, chains = 2, iter = 1000, refresh = 0, seed = 9876
 #'   )
 #'
-#'   # Variable selection with cross-validation (with small values
-#'   # for `nterms_max`, `nclusters`, and `nclusters_pred`, but only for the
-#'   # sake of speed in this example; this is not recommended in general):
-#'   cvvs <- cv_varsel(fit, nterms_max = 3, nclusters = 5, nclusters_pred = 10,
-#'                     seed = 5555, verbose = FALSE)
+#'   # Run cv_varsel() (with small values for `K`, `nterms_max`, `nclusters`,
+#'   # and `nclusters_pred`, but only for the sake of speed in this example;
+#'   # this is not recommended in general):
+#'   cvvs <- cv_varsel(fit, cv_method = "kfold", K = 2, nterms_max = 3,
+#'                     nclusters = 5, nclusters_pred = 10, seed = 5555, verbose = FALSE)
 #'   # Now see, for example, `?print.vsel`, `?plot.vsel`, `?suggest_size.vsel`,
-#'   # and `?solution_terms.vsel` for possible post-processing functions.
+#'   # and `?ranking` for possible post-processing functions.
 #' }
 #'
 #' @export
@@ -134,16 +134,20 @@ cv_varsel.refmodel <- function(
     thresh = 1e-6,
     regul = 1e-4,
     validate_search = TRUE,
-    seed = sample.int(.Machine$integer.max, 1),
+    seed = NA,
     search_terms = NULL,
     ...
 ) {
-  # Set seed, but ensure the old RNG state is restored on exit:
   if (exists(".Random.seed", envir = .GlobalEnv)) {
     rng_state_old <- get(".Random.seed", envir = .GlobalEnv)
-    on.exit(assign(".Random.seed", rng_state_old, envir = .GlobalEnv))
   }
-  if (!is.na(seed)) set.seed(seed)
+  if (!is.na(seed)) {
+    # Set seed, but ensure the old RNG state is restored on exit:
+    if (exists(".Random.seed", envir = .GlobalEnv)) {
+      on.exit(assign(".Random.seed", rng_state_old, envir = .GlobalEnv))
+    }
+    set.seed(seed)
+  }
 
   refmodel <- object
   # Parse arguments which also exist in varsel():
@@ -201,24 +205,9 @@ cv_varsel.refmodel <- function(
     )
     verb_out("-----", verbose = verbose)
     ce_out <- rep(NA_real_, length(search_path_full_data$solution_terms) + 1L)
-
-    # Create `pct_solution_terms_cv`, a summary table of the fold-wise solution
-    # paths. For the column names (and therefore the order of the solution terms
-    # in the columns), the solution path from the full-data search is used. Note
-    # that the following code assumes that all CV folds have equal weight.
-    pct_solution_terms_cv <- cbind(
-      size = seq_len(ncol(sel_cv$solution_terms_cv)),
-      do.call(cbind, lapply(
-        setNames(nm = search_path_full_data$solution_terms),
-        function(soltrm_k) {
-          colMeans(sel_cv$solution_terms_cv == soltrm_k, na.rm = TRUE)
-        }
-      ))
-    )
   } else {
     search_path_full_data <- sel_cv$search_path
     ce_out <- sel_cv$ce
-    pct_solution_terms_cv <- NULL
   }
 
   # Defined here for `nobs_test` later:
@@ -240,7 +229,7 @@ cv_varsel.refmodel <- function(
               nobs_train = refmodel$nobs,
               search_path = search_path_full_data,
               solution_terms = search_path_full_data$solution_terms,
-              pct_solution_terms_cv,
+              solution_terms_cv = sel_cv$solution_terms_cv,
               ce = ce_out,
               type_test = cv_method,
               y_wobs_test,
@@ -255,7 +244,8 @@ cv_varsel.refmodel <- function(
               clust_used_search = search_path_full_data$p_sel$clust_used,
               clust_used_eval = refdist_eval_dummy$clust_used,
               nprjdraws_search = NCOL(search_path_full_data$p_sel$mu),
-              nprjdraws_eval = NCOL(refdist_eval_dummy$mu))
+              nprjdraws_eval = NCOL(refdist_eval_dummy$mu),
+              projpred_version = utils::packageVersion("projpred"))
   class(vs) <- "vsel"
   return(vs)
 }
@@ -287,7 +277,7 @@ parse_args_cv_varsel <- function(refmodel, cv_method, K, validate_search) {
 
   if (cv_method == "kfold") {
     if (!is.null(refmodel$cvfits)) {
-      K <- attr(refmodel$cvfits, "K")
+      K <- length(refmodel$cvfits$fits)
     }
     stopifnot(!is.null(K))
     if (length(K) > 1 || !is.numeric(K) || !is_wholenumber(K)) {
@@ -589,7 +579,6 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
                "each of the N = ", nloo, " LOO CV folds separately ...")
       pb <- utils::txtProgressBar(min = 0, max = nloo, style = 3, initial = 0)
     }
-
     for (run_index in seq_along(inds)) {
       # Observation index:
       i <- inds[run_index]
@@ -810,15 +799,17 @@ kfold_varsel <- function(refmodel, method, nterms_max, ndraws,
     # induce a dependency between training and test data:
     refmodel$y <- rep(NA, refmodel$nobs)
   }
+  y_wobs_test <- as.data.frame(refmodel[nms_y_wobs_test()])
 
-  # Run the search for each fold:
   if (verbose) {
-    verb_out("-----\nRunning the search K = ", K, " times (using the ",
-             "fold-wise training data) ...")
+    verb_out("-----\nRunning the search and the performance evaluation for ",
+             "each of the K = ", K, " CV folds separately ...")
     pb <- utils::txtProgressBar(min = 0, max = K, style = 3, initial = 0)
   }
-  search_path_cv <- lapply(seq_along(list_cv), function(fold_index) {
+  res_cv <- lapply(seq_along(list_cv), function(fold_index) {
     fold <- list_cv[[fold_index]]
+
+    # Run the search for the current fold:
     p_sel <- get_refdist(fold$refmodel, ndraws, nclusters)
     search_path <- select(
       method = method, p_sel = p_sel, refmodel = fold$refmodel,
@@ -826,29 +817,10 @@ kfold_varsel <- function(refmodel, method, nterms_max, ndraws,
       verbose = verbose && getOption("projpred.extra_verbose", FALSE),
       opt = opt, search_terms = search_terms, ...
     )
-    if (verbose) {
-      utils::setTxtProgressBar(pb, fold_index)
-    }
-    return(search_path)
-  })
-  solution_terms_cv <- do.call(rbind, lapply(search_path_cv, function(e) {
-    e$solution_terms
-  }))
-  if (verbose) {
-    close(pb)
-  }
-  verb_out("-----", verbose = verbose)
 
-  # For the performance evaluation: Re-project along the solution path (or fetch
-  # the projections from the search results) of each fold:
-  if (verbose && refit_prj) {
-    verb_out("-----\nFor performance evaluation: Re-projecting (using the ",
-             "fold-wise training data) onto the submodels along the K = ", K,
-             " fold-wise solution paths ...")
-    pb <- utils::txtProgressBar(min = 0, max = K, style = 3, initial = 0)
-  }
-  get_submodls_cv <- function(search_path, fold_index) {
-    fold <- list_cv[[fold_index]]
+    # For performance evaluation: Re-project (using the training data of the
+    # current fold) along the predictor ranking (or fetch the projections from
+    # the search output) of the current fold:
     p_pred <- get_refdist(fold$refmodel, ndraws_pred, nclusters_pred)
     submodls <- get_submodls(
       search_path = search_path,
@@ -856,34 +828,45 @@ kfold_varsel <- function(refmodel, method, nterms_max, ndraws,
       p_ref = p_pred, refmodel = fold$refmodel, regul = opt$regul,
       refit_prj = refit_prj, ...
     )
-    if (verbose && refit_prj) {
+
+    # Performance evaluation for the re-projected or fetched submodels of the
+    # current fold:
+    summaries_sub <- get_sub_summaries(submodls = submodls,
+                                       refmodel = refmodel,
+                                       test_points = fold$omitted)
+
+    # Performance evaluation for the reference model of the current fold:
+    eta_test <- fold$refmodel$ref_predfun(
+      fold$refmodel$fit,
+      newdata = refmodel$fetch_data(obs = fold$omitted),
+      excl_offs = FALSE
+    )
+    mu_test <- fold$refmodel$family$linkinv(eta_test)
+    summaries_ref <- weighted_summary_means(
+      y_wobs_test = y_wobs_test[fold$omitted, , drop = FALSE],
+      family = fold$refmodel$family,
+      wdraws = fold$refmodel$wdraws_ref,
+      mu = mu_test,
+      dis = fold$refmodel$dis,
+      cl_ref = seq_along(fold$refmodel$wdraws_ref)
+    )
+
+    if (verbose) {
       utils::setTxtProgressBar(pb, fold_index)
     }
-    return(submodls)
-  }
-  submodls_cv <- mapply(get_submodls_cv, search_path_cv, seq_along(list_cv),
-                        SIMPLIFY = FALSE)
-  if (verbose && refit_prj) {
+    return(nlist(predictor_ranking = search_path[["solution_terms"]],
+                 summaries_sub, summaries_ref))
+  })
+  if (verbose) {
     close(pb)
   }
   verb_out("-----", verbose = verbose)
+  solution_terms_cv <- do.call(rbind, lapply(res_cv, "[[", "predictor_ranking"))
 
-  # The performance evaluation itself, i.e., the calculation of the predictive
-  # performance statistic(s) for the submodels along the solution path of each
-  # fold:
-  get_summaries_submodls_cv <- function(submodls, fold) {
-    get_sub_summaries(submodls = submodls,
-                      refmodel = refmodel,
-                      test_points = fold$omitted)
-  }
-  sub_cv_summaries <- mapply(get_summaries_submodls_cv, submodls_cv, list_cv)
-  # Combine the results from the K folds into a single results list:
-  if (is.null(dim(sub_cv_summaries))) {
-    summ_dim <- dim(solution_terms_cv)
-    summ_dim[2] <- summ_dim[2] + 1L # +1 is for the empty model
-    dim(sub_cv_summaries) <- rev(summ_dim)
-  }
-  sub <- apply(sub_cv_summaries, 1, rbind2list)
+  # Handle the submodels' performance evaluation results:
+  sub_foldwise <- simplify2array(lapply(res_cv, "[[", "summaries_sub"),
+                                 higher = FALSE, except = NULL)
+  sub <- apply(sub_foldwise, 1, rbind2list)
   idxs_sorted_by_fold <- unlist(lapply(list_cv, function(fold) {
     fold$omitted
   }))
@@ -915,26 +898,8 @@ kfold_varsel <- function(refmodel, method, nterms_max, ndraws,
     return(summ)
   })
 
-  # Needed later:
-  y_wobs_test <- as.data.frame(refmodel[nms_y_wobs_test()])
-
-  # Perform the evaluation of the reference model for each fold:
-  ref <- rbind2list(lapply(list_cv, function(fold) {
-    eta_test <- fold$refmodel$ref_predfun(
-      fold$refmodel$fit,
-      newdata = refmodel$fetch_data(obs = fold$omitted),
-      excl_offs = FALSE
-    )
-    mu_test <- fold$refmodel$family$linkinv(eta_test)
-    weighted_summary_means(
-      y_wobs_test = y_wobs_test[fold$omitted, , drop = FALSE],
-      family = fold$refmodel$family,
-      wdraws = fold$refmodel$wdraws_ref,
-      mu = mu_test,
-      dis = fold$refmodel$dis,
-      cl_ref = seq_along(fold$refmodel$wdraws_ref)
-    )
-  }))
+  # Handle the reference model's performance evaluation results:
+  ref <- rbind2list(lapply(res_cv, "[[", "summaries_ref"))
   ref$mu <- ref$mu[order(idxs_sorted_by_fold_flx)]
   ref$lppd <- ref$lppd[order(idxs_sorted_by_fold)]
   if (!is.null(ref$oscale)) {
@@ -958,8 +923,8 @@ get_kfold <- function(refmodel, K, verbose) {
         verb_out("-----\nRefitting the reference model K = ", K, " times ",
                  "(using the fold-wise training data) ...")
       }
-      nobs <- refmodel$nobs
-      folds <- cvfolds(nobs, K = K)
+      folds <- cv_folds(refmodel$nobs, K = K,
+                        seed = sample.int(.Machine$integer.max, 1))
       cvfits <- refmodel$cvfun(folds)
       verb_out("-----", verbose = verbose)
     } else {
@@ -968,25 +933,18 @@ get_kfold <- function(refmodel, K, verbose) {
            "`?init_refmodel`).")
     }
   } else {
-    cvfits <- refmodel$cvfits
-    K <- attr(cvfits, "K")
-    folds <- attr(cvfits, "folds")
-    cvfits <- cvfits$fits
+    folds <- attr(refmodel$cvfits, "folds")
+    cvfits <- refmodel$cvfits$fits
   }
-  cvfits <- lapply(seq_len(K), function(k) {
+  return(lapply(seq_len(K), function(k) {
     cvfit <- cvfits[[k]]
     # Add the omitted observation indices for this fold:
     cvfit$omitted <- which(folds == k)
     # Add the fold index:
     cvfit$projpred_k <- k
-    return(cvfit)
-  })
-  return(lapply(cvfits, init_kfold_refmodel, refmodel = refmodel))
-}
-
-init_kfold_refmodel <- function(cvfit, refmodel) {
-  return(list(refmodel = refmodel$cvrefbuilder(cvfit),
-              omitted = cvfit$omitted))
+    return(list(refmodel = refmodel$cvrefbuilder(cvfit),
+                omitted = cvfit$omitted))
+  }))
 }
 
 # ## decide which points to go through in the validation (i.e., which points

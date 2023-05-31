@@ -2,7 +2,7 @@
 % Please edit documentation in R/methods.R
 \name{plot.vsel}
 \alias{plot.vsel}
-\title{Plot summary statistics of a variable selection}
+\title{Plot predictive performance}
 \usage{
 \method{plot}{vsel}(
   x,
@@ -13,17 +13,24 @@
   baseline = if (!inherits(x$refmodel, "datafit")) "ref" else "best",
   thres_elpd = NA,
   resp_oscale = TRUE,
+  ranking_nterms_max = NULL,
+  ranking_abbreviate = FALSE,
+  ranking_abbreviate_args = list(),
+  ranking_repel = NULL,
+  ranking_repel_args = list(),
+  cumulate = FALSE,
+  text_angle = NULL,
   ...
 )
 }
 \arguments{
 \item{x}{An object of class \code{vsel} (returned by \code{\link[=varsel]{varsel()}} or \code{\link[=cv_varsel]{cv_varsel()}}).}
 
-\item{nterms_max}{Maximum submodel size for which the statistics are
-calculated. Using \code{NULL} is effectively the same as using
-\code{length(solution_terms(object))}. Note that \code{nterms_max} does not count the
-intercept, so use \code{nterms_max = 0} for the intercept-only model. For
-\code{\link[=plot.vsel]{plot.vsel()}}, \code{nterms_max} must be at least \code{1}.}
+\item{nterms_max}{Maximum submodel size (number of predictor terms) for which
+the performance statistics are calculated. Using \code{NULL} is effectively the
+same as \code{length(ranking(object)[["fulldata"]])}. Note that \code{nterms_max}
+does not count the intercept, so use \code{nterms_max = 0} for the
+intercept-only model. For \code{\link[=plot.vsel]{plot.vsel()}}, \code{nterms_max} must be at least \code{1}.}
 
 \item{stats}{One or more character strings determining which performance
 statistics (i.e., utilities or losses) to estimate based on the
@@ -77,19 +84,62 @@ deactivates this.}
 value indicating whether to calculate the performance statistics on the
 original response scale (\code{TRUE}) or on latent scale (\code{FALSE}).}
 
+\item{ranking_nterms_max}{Maximum submodel size (number of predictor terms)
+for which the predictor names and the corresponding ranking proportions are
+added on the x-axis. Using \code{NULL} is effectively the same as using
+\code{nterms_max}. Using \code{NA} causes the predictor names and the corresponding
+ranking proportions to be omitted. Note that \code{ranking_nterms_max} does not
+count the intercept, so \code{ranking_nterms_max = 1} corresponds to the
+submodel consisting of the first (non-intercept) predictor term.}
+
+\item{ranking_abbreviate}{A single logical value indicating whether the
+predictor names in the full-data predictor ranking should be abbreviated by
+\code{\link[=abbreviate]{abbreviate()}} (\code{TRUE}) or not (\code{FALSE}). See also argument
+\code{ranking_abbreviate_args} and section "Value".}
+
+\item{ranking_abbreviate_args}{A \code{list} of arguments (except for \code{names.arg})
+to be passed to \code{\link[=abbreviate]{abbreviate()}} in case of \code{ranking_abbreviate = TRUE}.}
+
+\item{ranking_repel}{Either \code{NULL}, \code{"text"}, or \code{"label"}. By \code{NULL}, the
+full-data predictor ranking and the corresponding ranking proportions are
+placed below the x-axis. By \code{"text"} or \code{"label"}, they are placed within
+the plotting area, using \code{\link[ggrepel:geom_text_repel]{ggrepel::geom_text_repel()}} or
+\code{\link[ggrepel:geom_text_repel]{ggrepel::geom_label_repel()}}, respectively. See also argument
+\code{ranking_repel_args}.}
+
+\item{ranking_repel_args}{A \code{list} of arguments (except for \code{mapping}) to be
+passed to \code{\link[ggrepel:geom_text_repel]{ggrepel::geom_text_repel()}} or \code{\link[ggrepel:geom_text_repel]{ggrepel::geom_label_repel()}} in
+case of \code{ranking_repel = "text"} or \code{ranking_repel = "label"},
+respectively.}
+
+\item{cumulate}{Passed to argument \code{cumulate} of \code{\link[=cv_proportions]{cv_proportions()}}. Affects
+the ranking proportions given on the x-axis (below the full-data predictor
+ranking).}
+
+\item{text_angle}{Passed to argument \code{angle} of \code{\link[ggplot2:element]{ggplot2::element_text()}} for
+the x-axis tick labels. In case of long predictor names (and/or large
+\code{nterms_max}), \code{text_angle = 45} might be helpful (for example).}
+
 \item{...}{Arguments passed to the internal function which is used for
 bootstrapping (if applicable; see argument \code{stats}). Currently, relevant
 arguments are \code{B} (the number of bootstrap samples, defaulting to \code{2000})
-and \code{seed} (see \code{\link[=set.seed]{set.seed()}}, defaulting to
-\code{sample.int(.Machine$integer.max, 1)}, but can also be \code{NA} to not call
-\code{\link[=set.seed]{set.seed()}} at all).}
+and \code{seed} (see \code{\link[=set.seed]{set.seed()}}, but defaulting to \code{NA} so that \code{\link[=set.seed]{set.seed()}}
+is not called within that function at all).}
 }
 \value{
-A \pkg{ggplot2} plotting object (of class \code{gg} and \code{ggplot}).
+A \pkg{ggplot2} plotting object (of class \code{gg} and \code{ggplot}). If
+\code{ranking_abbreviate} is \code{TRUE}, the output of \code{\link[=abbreviate]{abbreviate()}} is stored in
+an attribute called \code{projpred_ranking_abbreviated} (to allow the
+abbreviations to be easily mapped back to the original predictor names).
 }
 \description{
 This is the \code{\link[=plot]{plot()}} method for \code{vsel} objects (returned by \code{\link[=varsel]{varsel()}} or
-\code{\link[=cv_varsel]{cv_varsel()}}).
+\code{\link[=cv_varsel]{cv_varsel()}}). It visualizes the predictive performance of the reference
+model (possibly also that of some other "baseline" model) and that of the
+submodels along the full-data predictor ranking. Basic information about the
+(CV) variability in the ranking of the predictors is included as well (if
+available; inferred from \code{\link[=cv_proportions]{cv_proportions()}}). For a tabular representation,
+see \code{\link[=summary.vsel]{summary.vsel()}}.
 }
 \details{
 The \code{stats} options \code{"mse"} and \code{"rmse"} are only available for:
@@ -144,9 +194,9 @@ if (requireNamespace("rstanarm", quietly = TRUE)) {
     QR = TRUE, chains = 2, iter = 500, refresh = 0, seed = 9876
   )
 
-  # Variable selection (here without cross-validation and with small values
-  # for `nterms_max`, `nclusters`, and `nclusters_pred`, but only for the
-  # sake of speed in this example; this is not recommended in general):
+  # Run varsel() (here without cross-validation and with small values for
+  # `nterms_max`, `nclusters`, and `nclusters_pred`, but only for the sake of
+  # speed in this example; this is not recommended in general):
   vs <- varsel(fit, nterms_max = 3, nclusters = 5, nclusters_pred = 10,
                seed = 5555)
   print(plot(vs))

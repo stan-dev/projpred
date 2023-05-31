@@ -1,9 +1,9 @@
 context("cv-indices")
 
-# tests for cvfolds and cv_ids
+# tests for cv_folds and cv_ids
 
 test_that("k is valid", {
-  cvfuns <- c(cvfolds, cv_ids)
+  cvfuns <- c(cv_folds, cv_ids)
   for (cvfun in cvfuns) {
     expect_error(cvfun(n = 10, K = 1000),
                  "cannot exceed n")
@@ -16,8 +16,8 @@ test_that("k is valid", {
   }
 })
 
-test_that("cvfolds produces sensible results", {
-  out <- cvfolds(n = 10, K = 3)
+test_that("cv_folds produces sensible results", {
+  out <- cv_folds(n = 10, K = 3)
   expect_equal(length(out), 10)
   expect_equal(min(out), 1)
   expect_equal(max(out), 3)

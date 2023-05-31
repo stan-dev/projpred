@@ -4,7 +4,7 @@
 \alias{varsel}
 \alias{varsel.default}
 \alias{varsel.refmodel}
-\title{Variable selection without cross-validation}
+\title{Run search and performance evaluation without cross-validation}
 \usage{
 varsel(object, ...)
 
@@ -27,7 +27,7 @@ varsel(object, ...)
   regul = 1e-04,
   penalty = NULL,
   search_terms = NULL,
-  seed = sample.int(.Machine$integer.max, 1),
+  seed = NA,
   ...
 )
 }
@@ -72,17 +72,16 @@ number of posterior draws from the reference model is used for
 clusters of posterior draws used in the evaluation part. For the meaning of
 \code{NULL}, see argument \code{ndraws_pred}. See also section "Details" below.}
 
-\item{refit_prj}{A single logical value indicating whether to fit the
-submodels along the solution path again (\code{TRUE}) or to retrieve their fits
-from the search part (\code{FALSE}) before using those (re-)fits in the
-evaluation part.}
+\item{refit_prj}{For the evaluation part, should the submodels along the
+predictor ranking be fitted again (\code{TRUE}) or should their fits from the
+search part be re-used (\code{FALSE})?}
 
-\item{nterms_max}{Maximum number of predictor terms until which the search is
-continued. If \code{NULL}, then \code{min(19, D)} is used where \code{D} is the number of
-terms in the reference model (or in \code{search_terms}, if supplied). Note that
-\code{nterms_max} does not count the intercept, so use \code{nterms_max = 0} for the
-intercept-only model. (Correspondingly, \code{D} above does not count the
-intercept.)}
+\item{nterms_max}{Maximum submodel size (number of predictor terms) up to
+which the search is continued. If \code{NULL}, then \code{min(19, D)} is used where
+\code{D} is the number of terms in the reference model (or in \code{search_terms}, if
+supplied). Note that \code{nterms_max} does not count the intercept, so use
+\code{nterms_max = 0} for the intercept-only model. (Correspondingly, \code{D} above
+does not count the intercept.)}
 
 \item{verbose}{A single logical value indicating whether to print out
 additional information during the computations.}
@@ -121,11 +120,12 @@ formula.}
 
 \item{seed}{Pseudorandom number generation (PRNG) seed by which the same
 results can be obtained again if needed. Passed to argument \code{seed} of
-\code{\link[=set.seed]{set.seed()}}, but can also be \code{NA} to not call \code{\link[=set.seed]{set.seed()}} at all. Here,
-this seed is used for clustering the reference model's posterior draws (if
-\code{!is.null(nclusters)} or \code{!is.null(nclusters_pred)}) and for drawing new
-group-level effects when predicting from a multilevel submodel (however,
-not yet in case of a GAMM).}
+\code{\link[=set.seed]{set.seed()}}, but can also be \code{NA} to not call \code{\link[=set.seed]{set.seed()}} at all. If not
+\code{NA}, then the PRNG state is reset (to the state before calling \code{\link[=varsel]{varsel()}})
+upon exiting \code{\link[=varsel]{varsel()}}. Here, \code{seed} is used for clustering the reference
+model's posterior draws (if \code{!is.null(nclusters)} or
+\code{!is.null(nclusters_pred)}) and for drawing new group-level effects when
+predicting from a multilevel submodel (however, not yet in case of a GAMM).}
 }
 \value{
 An object of class \code{vsel}. The elements of this object are not meant
@@ -134,10 +134,10 @@ vignette and \link{projpred-package}).
 }
 \description{
 Run the \emph{search} part and the \emph{evaluation} part for a projection predictive
-variable selection. The search part determines the solution path, i.e., the
-best submodel for each submodel size (number of predictor terms). The
-evaluation part determines the predictive performance of the submodels along
-the solution path.
+variable selection. The search part determines the predictor ranking (also
+known as solution path), i.e., the best submodel for each submodel size
+(number of predictor terms). The evaluation part determines the predictive
+performance of the submodels along the predictor ranking.
 }
 \details{
 Arguments \code{ndraws}, \code{nclusters}, \code{nclusters_pred}, and \code{ndraws_pred}
@@ -218,13 +218,13 @@ if (requireNamespace("rstanarm", quietly = TRUE)) {
     QR = TRUE, chains = 2, iter = 500, refresh = 0, seed = 9876
   )
 
-  # Variable selection (here without cross-validation and with small values
-  # for `nterms_max`, `nclusters`, and `nclusters_pred`, but only for the
-  # sake of speed in this example; this is not recommended in general):
+  # Run varsel() (here without cross-validation and with small values for
+  # `nterms_max`, `nclusters`, and `nclusters_pred`, but only for the sake of
+  # speed in this example; this is not recommended in general):
   vs <- varsel(fit, nterms_max = 3, nclusters = 5, nclusters_pred = 10,
                seed = 5555)
   # Now see, for example, `?print.vsel`, `?plot.vsel`, `?suggest_size.vsel`,
-  # and `?solution_terms.vsel` for possible post-processing functions.
+  # and `?ranking` for possible post-processing functions.
 }
 
 }

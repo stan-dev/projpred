@@ -702,7 +702,11 @@ fit_cumul_mlvl <- function(formula, data, family, weights, ...) {
     names(dot_args),
     c(methods::formalArgs(ordinal::clmm),
       methods::formalArgs(ordinal::clm.control),
-      methods::formalArgs(ucminf::ucminf),
+      if (requireNamespace("ucminf", quietly = TRUE)) {
+        methods::formalArgs(ucminf::ucminf)
+      } else {
+        character()
+      },
       methods::formalArgs(stats::nlminb),
       methods::formalArgs(stats::optim))
   )]
@@ -1080,8 +1084,16 @@ predict.subfit <- function(subfit, newdata = NULL) {
       x <- model.matrix(delete.response(terms(subfit$formula)), data = newdata,
                         xlev = subfit$xlvls)
       if (!identical(colnames(x), c("(Intercept)", colnames(subfit$x)))) {
-        if (identical(sort(colnames(x)),
-                      sort(c("(Intercept)", colnames(subfit$x))))) {
+        # Note: In the following `if` condition, we were previously using
+        # `identical(sort(colnames(x)),
+        #            sort(c("(Intercept)", colnames(subfit$x))))`
+        # instead of
+        # `all(c("(Intercept)", colnames(subfit$x)) %in% colnames(x))`.
+        # However, the case where `x` has non-intercept columns that `subfit$x`
+        # doesn't have may occur in case of an L1 search with interactions being
+        # selected before all involved main effects are selected (and at least
+        # one of the main effects being a categorical predictor).
+        if (all(c("(Intercept)", colnames(subfit$x)) %in% colnames(x))) {
           x <- x[, c("(Intercept)", colnames(subfit$x)), drop = FALSE]
         } else {
           stop("The column names of the new model matrix don't match the ",

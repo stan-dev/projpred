@@ -436,9 +436,13 @@ refmodel_tester <- function(
                 grep("z\\.", colnames(drws), value = TRUE)),
         drop = FALSE
       ]
+      predictors_cont <- colnames(drws_beta_cont)
+      predictors_cont <- sub("(I\\(.*as\\.logical\\(.*\\)\\))TRUE", "\\1",
+                             predictors_cont)
+      predictors_cont <- unique(sub("(poly[m]*\\(.*\\))[[:digit:]]+", "\\1",
+                                    predictors_cont))
       mm_cont <- model.matrix(
-        as.formula(paste("~",
-                         paste(colnames(drws_beta_cont), collapse = " + "))),
+        as.formula(paste("~", paste(predictors_cont, collapse = " + "))),
         data = data_expected
       )
       stopifnot(identical(c("(Intercept)", colnames(drws_beta_cont)),
@@ -748,14 +752,25 @@ outdmin_tester_trad <- function(
     sub_x_expected <- sub_x_expected[
       , colnames(sub_x_expected) != "(Intercept)", drop = FALSE
     ]
+    I_logic_excl <- grep("I\\(.*as\\.logical\\(.*\\)\\)FALSE",
+                         colnames(sub_x_expected), value = TRUE)
+    if (length(I_logic_excl) && from_vsel_L1_search) {
+      sub_x_expected <- sub_x_expected[
+        , setdiff(colnames(sub_x_expected), I_logic_excl), drop = FALSE
+      ]
+    }
     ncoefs <- ncol(sub_x_expected)
     if (from_vsel_L1_search) {
       # Unfortunately, model.matrix() uses terms() and there seems to be no way
       # to set `keep.order = TRUE` in that internal terms() call. Thus, we have
       # to reorder the columns manually:
-      if (length(solterms_vsel_L1_search) > 0) {
+      if (length(solterms_vsel_L1_search)) {
         terms_contr_expd <- lapply(solterms_vsel_L1_search, function(term_crr) {
           if (!is.factor(sub_data[[term_crr]])) {
+            term_crr <- sub("(I\\(.*as\\.logical\\(.*\\)\\))", "\\1TRUE",
+                            term_crr)
+            term_crr <- expand_poly(term_crr,
+                                    info_str = paste0(info_str, "__", term_crr))
             return(term_crr)
           } else {
             return(paste0(term_crr, levels(sub_data[[term_crr]])[-1]))
@@ -854,8 +869,7 @@ outdmin_tester_trad <- function(
 
         x_to_test <- outdmin_totest[[j]]$x
         x_ch <- sub_x_expected
-        if (!identical(dimnames(x_to_test)[[2]],
-                       dimnames(x_ch)[[2]])) {
+        if (!identical(dimnames(x_to_test)[[2]], dimnames(x_ch)[[2]])) {
           # Try reversing the order of individual terms within ":" interaction
           # terms:
           dimnames(x_ch)[[2]][grep(":", dimnames(x_ch)[[2]])] <- revIA(
@@ -1071,7 +1085,6 @@ outdmin_tester_aug <- function(
     has_grp = formula_contains_group_terms(sub_formul[[1]]),
     has_add = formula_contains_additive_terms(sub_formul[[1]]),
     wobs_expected = wobs_tst,
-    solterms_vsel_L1_search = NULL,
     with_offs = FALSE,
     augdat_cats = NULL,
     allow_w_zero = FALSE,
@@ -1423,7 +1436,6 @@ outdmin_tester <- function(
       has_grp = has_grp,
       has_add = has_add,
       wobs_expected = wobs_expected,
-      solterms_vsel_L1_search = solterms_vsel_L1_search,
       with_offs = with_offs,
       augdat_cats = augdat_cats,
       allow_w_zero = allow_w_zero,
@@ -2249,11 +2261,7 @@ vsel_tester <- function(
     soltrms <- setdiff(soltrms, soltrms_plus)
     soltrms <- c(soltrms, labels(terms(as.formula(paste(". ~", soltrms_plus)))))
   }
-  expect_true(
-    all(soltrms %in% split_formula(vs$refmodel$formula,
-                                   add_main_effects = FALSE)),
-    info = info_str
-  )
+  expect_true(all(soltrms %in% trms_universe_split), info = info_str)
 
   # ce
   if (with_cv && (valsearch_expected || cv_method_expected == "kfold")) {
@@ -2268,25 +2276,25 @@ vsel_tester <- function(
                 info = info_str)
   }
 
-  # pct_solution_terms_cv
+  # solution_terms_cv
   if (with_cv && isTRUE(vs$validate_search)) {
-    expect_true(is.matrix(vs$pct_solution_terms_cv), info = info_str)
-    expect_type(vs$pct_solution_terms_cv, "double")
-    expect_identical(dim(vs$pct_solution_terms_cv),
-                     c(solterms_len_expected, 1L + solterms_len_expected),
+    expect_true(is.matrix(vs$solution_terms_cv), info = info_str)
+    expect_type(vs$solution_terms_cv, "character")
+    if (identical(cv_method_expected, "kfold")) {
+      n_folds <- K_tst
+    } else {
+      n_folds <- nobsv
+    }
+    expect_identical(dim(vs$solution_terms_cv),
+                     c(n_folds, solterms_len_expected),
                      info = info_str)
-    expect_identical(colnames(vs$pct_solution_terms_cv),
-                     c("size", vs$solution_terms),
-                     info = info_str)
-    expect_identical(vs$pct_solution_terms_cv[, "size"],
-                     as.numeric(seq_len(solterms_len_expected)),
-                     info = info_str)
-    pct_nonsize_nms <- setdiff(colnames(vs$pct_solution_terms_cv), "size")
-    pct_solterms <- vs$pct_solution_terms_cv[, pct_nonsize_nms, drop = FALSE]
-    expect_false(anyNA(pct_solterms), info = info_str)
-    expect_true(all(pct_solterms >= 0 & pct_solterms <= 1), info = info_str)
+    # We need the addition of `NA_character_` because of subsampled LOO CV:
+    expect_true(
+      all(vs$solution_terms_cv %in% c(trms_universe_split, NA_character_)),
+      info = info_str
+    )
   } else {
-    expect_null(vs$pct_solution_terms_cv, info = info_str)
+    expect_null(vs$solution_terms_cv, info = info_str)
   }
 
   # nterms_max
@@ -2329,6 +2337,9 @@ vsel_tester <- function(
   # nprjdraws_eval
   expect_equal(vs$nprjdraws_eval, nprjdraws_eval_expected, info = info_str)
 
+  # projpred_version
+  expect_true(is.package_version(vs$projpred_version), info = info_str)
+
   return(invisible(TRUE))
 }
 
@@ -2345,6 +2356,8 @@ vsel_tester <- function(
 # @param search_trms_empty_size A single logical value indicating whether
 #   `search_terms` was constructed in a way that causes a model size to be
 #   without candidate models.
+# @param cumul_expected A single logical value indicating whether argument
+#   `cumulate` of summary.vsel() was set to `TRUE` or `FALSE`.
 # @param info_str A single character string giving information to be printed in
 #   case of failure.
 # @param ... Arguments passed to smmry_sel_tester(), apart from
@@ -2354,16 +2367,17 @@ vsel_tester <- function(
 # @return `TRUE` (invisible).
 smmry_tester <- function(smmry, vsel_expected, nterms_max_expected = NULL,
                          resp_oscale_expected = TRUE,
-                         search_trms_empty_size = FALSE, info_str, ...) {
+                         search_trms_empty_size = FALSE, cumul_expected = FALSE,
+                         info_str, ...) {
   expect_s3_class(smmry, "vselsummary")
   expect_type(smmry, "list")
   expect_named(
     smmry,
-    c("formula", "family", "nobs_train", "pct_solution_terms_cv", "type_test",
-      "nobs_test", "method", "cv_method", "K", "validate_search",
-      "clust_used_search", "clust_used_eval", "nprjdraws_search",
-      "nprjdraws_eval", "search_included", "nterms", "selection",
-      "resp_oscale", "deltas"),
+    c("formula", "family", "nobs_train", "type_test", "nobs_test", "method",
+      "cv_method", "K", "validate_search", "clust_used_search",
+      "clust_used_eval", "nprjdraws_search", "nprjdraws_eval",
+      "search_included", "nterms", "selection", "resp_oscale", "deltas",
+      "cumulate"),
     info = info_str
   )
 
@@ -2373,8 +2387,8 @@ smmry_tester <- function(smmry, vsel_expected, nterms_max_expected = NULL,
   expect_identical(smmry$family, vsel_expected$refmodel$family,
                    info = info_str)
   for (nm in c(
-    "nobs_train", "pct_solution_terms_cv", "type_test", "nobs_test", "method",
-    "cv_method", "K", "validate_search", "clust_used_search", "clust_used_eval",
+    "nobs_train", "type_test", "nobs_test", "method", "cv_method", "K",
+    "validate_search", "clust_used_search", "clust_used_eval",
     "nprjdraws_search", "nprjdraws_eval"
   )) {
     expect_identical(smmry[[nm]], vsel_expected[[nm]],
@@ -2403,14 +2417,23 @@ smmry_tester <- function(smmry, vsel_expected, nterms_max_expected = NULL,
     nterms_ch <- nterms_ch - 1
   }
   expect_equal(smmry$nterms, nterms_ch, info = info_str)
+  if (isTRUE(vsel_expected$validate_search)) {
+    pr_rk_diag_expected <- head(diag(cv_proportions(vsel_expected,
+                                                    cumulate = cumul_expected)),
+                                nterms_ch)
+  } else {
+    pr_rk_diag_expected <- rep(NA, nterms_ch)
+  }
   smmry_sel_tester(smmry$selection,
                    summaries_ref = vsel_expected$summaries$ref,
                    nterms_max_expected = nterms_max_expected,
                    latent_expected = vsel_expected$refmodel$family$for_latent,
                    resp_oscale_expected = resp_oscale_expected,
+                   pr_rk_diag_expected = pr_rk_diag_expected,
                    info_str = info_str, ...)
   expect_identical(smmry$resp_oscale, resp_oscale_expected, info = info_str)
   expect_identical(smmry$deltas, FALSE, info = info_str)
+  expect_identical(smmry$cumulate, cumul_expected, info = info_str)
 
   return(invisible(TRUE))
 }
@@ -2440,6 +2463,8 @@ smmry_tester <- function(smmry, vsel_expected, nterms_max_expected = NULL,
 #   model is expected to be for latent projection (`TRUE`) or not (`FALSE`).
 # @param resp_oscale_expected A single logical value indicating whether argument
 #   `resp_oscale` of summary.vsel() was set to `TRUE` or `FALSE`.
+# @param pr_rk_diag_expected A numeric vector giving the expected values for
+#   column `cv_proportions_diag` of `smmry_sel` (except for the first one).
 # @param info_str A single character string giving information to be printed in
 #   case of failure.
 #
@@ -2455,6 +2480,9 @@ smmry_sel_tester <- function(
     from_datafit = FALSE,
     latent_expected = FALSE,
     resp_oscale_expected = TRUE,
+    pr_rk_diag_expected = rep(
+      NA, nterms_max_expected %||% length(solterms_expected)
+    ),
     info_str
 ) {
   if (is.null(stats_expected)) {
@@ -2476,7 +2504,7 @@ smmry_sel_tester <- function(
                    info = info_str)
 
   # Columns:
-  smmry_nms <- c("size", "solution_terms")
+  smmry_nms <- c("size", "solution_terms", "cv_proportions_diag")
   ### Requires R >= 4.0.1:
   # stats_mean_name <- paste0(
   #   stats_expected,
@@ -2511,6 +2539,9 @@ smmry_sel_tester <- function(
                    info = info_str)
   expect_identical(smmry_sel$solution_terms,
                    c(NA_character_, solterms_expected),
+                   info = info_str)
+  expect_identical(smmry_sel$cv_proportions_diag,
+                   c(NA, pr_rk_diag_expected),
                    info = info_str)
   is_lat_kfold <-  latent_expected && !resp_oscale_expected &&
     identical(cv_method_expected, "kfold")
@@ -2584,5 +2615,125 @@ smmry_sel_tester <- function(
     }
   }
 
+  return(invisible(TRUE))
+}
+
+# A helper function for testing the structure of the return value of
+# plot.vsel().
+#
+# @param plot_vsel The return value of plot.vsel().
+# @param nterms_max_expected The value that was passed to argument `nterms_max`
+#   of plot.vsel().
+# @param rk_max_expected The value that was passed to argument
+#   `ranking_nterms_max` of plot.vsel().
+# @param rk_expected The full-data predictor ranking that is expected to have
+#   been used in `plot_vsel`.
+# @param abbv_expected The value that was passed to argument
+#   `ranking_abbreviate` of plot.vsel().
+# @param abbv_args_expected The `list` that was passed to argument
+#   `ranking_abbreviate_args` of plot.vsel().
+# @param info_str A single character string giving information to be printed in
+#   case of failure and also for naming vdiffr::expect_doppelganger() output.
+#
+# @return `TRUE` (invisible).
+plot_vsel_tester <- function(
+    plot_vsel,
+    nterms_max_expected = NULL,
+    rk_max_expected = NULL,
+    rk_expected,
+    abbv_expected = NULL,
+    abbv_args_expected = list(),
+    info_str
+) {
+  expect_s3_class(plot_vsel, c("gg", "ggplot"))
+  expect_visible(plot_vsel, label = info_str)
+  if (isTRUE(abbv_expected) &&
+      (is.null(rk_max_expected) || !is.na(rk_max_expected))) {
+    if (!is.null(rk_max_expected)) {
+      rk_expected <- head(rk_expected, rk_max_expected)
+    } else if (!is.null(nterms_max_expected)) {
+      rk_expected <- head(rk_expected, nterms_max_expected)
+    }
+    attr_abbv_expected <- do.call(abbreviate, c(list(names.arg = rk_expected),
+                                                abbv_args_expected))
+  } else {
+    attr_abbv_expected <- NULL
+  }
+  expect_identical(attr(plot_vsel, "projpred_ranking_abbreviated"),
+                   attr_abbv_expected, info = info_str)
+  if (run_snaps) {
+    vdiffr::expect_doppelganger(info_str, plot_vsel)
+  }
+
+  return(invisible(TRUE))
+}
+
+# A helper function for testing the structure of a `ranking` object as returned
+# by ranking().
+#
+# @param rk A `ranking` object as returned by ranking().
+# @param fulldata_expected The expected `fulldata` element of `rk`.
+# @param foldwise_expected The expected `foldwise` element of `rk`.
+# @param nterms_max_expected A single numeric value as supplied to
+#   ranking.vsel()'s argument `nterms_max`.
+# @param info_str A single character string giving information to be printed in
+#   case of failure.
+#
+# @return `TRUE` (invisible).
+ranking_tester <- function(rk, fulldata_expected, foldwise_expected,
+                           nterms_max_expected, info_str) {
+  expect_s3_class(rk, "ranking", exact = TRUE)
+  expect_type(rk, "list")
+  expect_named(rk, c("fulldata", "foldwise"), info = info_str)
+  # Since we test elements `solution_terms` and `solution_terms_cv` already
+  # thoroughly in vsel_tester(), we can simply plug these into
+  # `fulldata_expected` and `foldwise_expected` and then test via identical()
+  # (after taking `nterms_max` into account):
+  if (!is.null(nterms_max_expected)) {
+    fulldata_expected <- head(fulldata_expected, nterms_max_expected)
+    if (!is.null(foldwise_expected)) {
+      foldwise_expected <- foldwise_expected[, seq_len(nterms_max_expected),
+                                             drop = FALSE]
+    }
+  }
+  expect_identical(rk[["fulldata"]], fulldata_expected, info = info_str)
+  expect_identical(rk[["foldwise"]], foldwise_expected, info = info_str)
+  return(invisible(TRUE))
+}
+
+# A helper function for testing the structure of a `cv_proportions` object as
+# returned by cv_proportions().
+#
+# @param pr A `cv_proportions` object as returned by cv_proportions().
+# @param cumulate_expected A single logical value indicating whether
+#   cv_proportions() was run with `cumulate = TRUE` (`TRUE`) or not (`FALSE`).
+# @param nterms_max_expected A single numeric value as supplied to the
+#   underlying ranking.vsel() call's argument `nterms_max`, but must not be
+#   `NULL`.
+# @param info_str A single character string giving information to be printed in
+#   case of failure.
+#
+# @return `TRUE` (invisible).
+cv_proportions_tester <- function(pr, cumulate_expected = FALSE,
+                                  nterms_max_expected, cnms_expected,
+                                  info_str) {
+  classes_expected <- "cv_proportions"
+  if (cumulate_expected) {
+    classes_expected <- c("cv_proportions_cumul", classes_expected)
+  }
+  expect_s3_class(pr, classes_expected, exact = TRUE)
+  expect_equal(dim(pr), c(nterms_max_expected, nterms_max_expected),
+               info = info_str)
+  expect_true(is.numeric(pr), info = info_str)
+  rnms_expected <- as.character(seq_len(nterms_max_expected))
+  if (cumulate_expected) {
+    rnms_expected <- paste0("<=", rnms_expected)
+  }
+  if (length(cnms_expected) > nterms_max_expected) {
+    cnms_expected <- head(cnms_expected, nterms_max_expected)
+  }
+  expect_identical(dimnames(pr),
+                   list("size" = rnms_expected, "predictor" = cnms_expected),
+                   info = info_str)
   return(invisible(TRUE))
 }

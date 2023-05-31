@@ -21,10 +21,10 @@
 #'   performed. Argument `nterms` is ignored in that case. For an `object` which
 #'   is not of class `vsel`, `solution_terms` must not be `NULL`.
 #' @param refit_prj A single logical value indicating whether to fit the
-#'   submodels (again) (`TRUE`) or to retrieve the fitted submodels from
+#'   submodels (again) (`TRUE`) or---if `object` is of class `vsel`---to re-use
+#'   the submodel fits from the full-data search that was run when creating
 #'   `object` (`FALSE`). For an `object` which is not of class `vsel`,
-#'   `refit_prj` must be `TRUE`. Note that currently, `refit_prj = FALSE`
-#'   requires some caution, see GitHub issue #168.
+#'   `refit_prj` must be `TRUE`. See also section "Details" below.
 #' @param ndraws Only relevant if `refit_prj` is `TRUE`. Number of posterior
 #'   draws to be projected. Ignored if `nclusters` is not `NULL` or if the
 #'   reference model is of class `datafit` (in which case one cluster is used).
@@ -37,12 +37,14 @@
 #'   `NULL`, see argument `ndraws`. See also section "Details" below.
 #' @param seed Pseudorandom number generation (PRNG) seed by which the same
 #'   results can be obtained again if needed. Passed to argument `seed` of
-#'   [set.seed()], but can also be `NA` to not call [set.seed()] at all. Here,
-#'   this seed is used for clustering the reference model's posterior draws (if
-#'   `!is.null(nclusters)`) and for drawing new group-level effects when
-#'   predicting from a multilevel submodel (however, not yet in case of a GAMM)
-#'   and having global option `projpred.mlvl_pred_new` set to `TRUE`. (Such a
-#'   prediction takes place when calculating output elements `dis` and `ce`.)
+#'   [set.seed()], but can also be `NA` to not call [set.seed()] at all. If not
+#'   `NA`, then the PRNG state is reset (to the state before calling
+#'   [project()]) upon exiting [project()]. Here, `seed` is used for clustering
+#'   the reference model's posterior draws (if `!is.null(nclusters)`) and for
+#'   drawing new group-level effects when predicting from a multilevel submodel
+#'   (however, not yet in case of a GAMM) and having global option
+#'   `projpred.mlvl_pred_new` set to `TRUE`. (Such a prediction takes place when
+#'   calculating output elements `dis` and `ce`.)
 #' @inheritParams varsel
 #' @param ... Arguments passed to [get_refmodel()] (if [get_refmodel()] is
 #'   actually used; see argument `object`) as well as to the divergence
@@ -55,8 +57,13 @@
 #'   projection performance. Increasing these arguments affects the computation
 #'   time linearly.
 #'
-#'   Note that if [project()] is applied to output from [cv_varsel()], then
-#'   `refit_prj = FALSE` will take the results from the *full-data* search.
+#'   If `refit_prj = FALSE` (which is only possible if `object` is of class
+#'   `vsel`), [project()] retrieves the submodel fits from the full-data search
+#'   that was run when creating `object`. Usually, the search relies on a rather
+#'   coarse clustering or thinning of the reference model's posterior draws (by
+#'   default, [varsel()] and [cv_varsel()] use `nclusters = 20`). Consequently,
+#'   [project()] with `refit_prj = FALSE` then inherits this coarse clustering
+#'   or thinning.
 #'
 #' @return If the projection is performed onto a single submodel (i.e.,
 #'   `length(nterms) == 1 || !is.null(solution_terms)`), an object of class
@@ -115,9 +122,9 @@
 #'     QR = TRUE, chains = 2, iter = 500, refresh = 0, seed = 9876
 #'   )
 #'
-#'   # Variable selection (here without cross-validation and with small values
-#'   # for `nterms_max`, `nclusters`, and `nclusters_pred`, but only for the
-#'   # sake of speed in this example; this is not recommended in general):
+#'   # Run varsel() (here without cross-validation and with small values for
+#'   # `nterms_max`, `nclusters`, and `nclusters_pred`, but only for the sake of
+#'   # speed in this example; this is not recommended in general):
 #'   vs <- varsel(fit, nterms_max = 3, nclusters = 5, nclusters_pred = 10,
 #'                seed = 5555)
 #'
@@ -135,9 +142,8 @@
 #'
 #' @export
 project <- function(object, nterms = NULL, solution_terms = NULL,
-                    refit_prj = TRUE, ndraws = 400, nclusters = NULL,
-                    seed = sample.int(.Machine$integer.max, 1), regul = 1e-4,
-                    ...) {
+                    refit_prj = TRUE, ndraws = 400, nclusters = NULL, seed = NA,
+                    regul = 1e-4, ...) {
   if (inherits(object, "datafit")) {
     stop("project() does not support an `object` of class \"datafit\".")
   }
@@ -152,12 +158,16 @@ project <- function(object, nterms = NULL, solution_terms = NULL,
 
   refmodel <- get_refmodel(object, ...)
 
-  # Set seed, but ensure the old RNG state is restored on exit:
   if (exists(".Random.seed", envir = .GlobalEnv)) {
     rng_state_old <- get(".Random.seed", envir = .GlobalEnv)
-    on.exit(assign(".Random.seed", rng_state_old, envir = .GlobalEnv))
   }
-  if (!is.na(seed)) set.seed(seed)
+  if (!is.na(seed)) {
+    # Set seed, but ensure the old RNG state is restored on exit:
+    if (exists(".Random.seed", envir = .GlobalEnv)) {
+      on.exit(assign(".Random.seed", rng_state_old, envir = .GlobalEnv))
+    }
+    set.seed(seed)
+  }
 
   if (refit_prj && inherits(refmodel, "datafit")) {
     warning("Automatically setting `refit_prj` to `FALSE` since the reference ",
@@ -168,18 +178,10 @@ project <- function(object, nterms = NULL, solution_terms = NULL,
   stopifnot(is.null(solution_terms) || is.vector(solution_terms, "character"))
   if (!refit_prj &&
       !is.null(solution_terms) &&
-      any(
-        solution_terms(object)[seq_along(solution_terms)] != solution_terms
-      )) {
+      any(object$solution_terms[seq_along(solution_terms)] != solution_terms)) {
     warning("The given `solution_terms` are not part of the solution path ",
-            "(from `solution_terms(object)`), so `refit_prj` is automatically ",
-            "set to `TRUE`.")
+            "(from `object`), so `refit_prj` is automatically set to `TRUE`.")
     refit_prj <- TRUE
-  }
-
-  if (!refit_prj) {
-    warning("Currently, `refit_prj = FALSE` requires some caution, see GitHub ",
-            "issue #168.")
   }
 
   if (!is.null(solution_terms)) {
@@ -214,7 +216,7 @@ project <- function(object, nterms = NULL, solution_terms = NULL,
     nterms <- length(solution_terms)
   } else {
     ## by default take the variable ordering from the selection
-    solution_terms <- solution_terms(object)
+    solution_terms <- object$solution_terms
     if (is.null(nterms)) {
       sgg_size <- try(suggest_size(object, warnings = FALSE), silent = TRUE)
       if (!inherits(sgg_size, "try-error") && !is.null(sgg_size) &&

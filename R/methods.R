@@ -43,13 +43,18 @@
 #'   determined by argument `nclusters` of [project()]).
 #' @param .seed Pseudorandom number generation (PRNG) seed by which the same
 #'   results can be obtained again if needed. Passed to argument `seed` of
-#'   [set.seed()], but can also be `NA` to not call [set.seed()] at all. Here,
-#'   this seed is used for drawing new group-level effects in case of a
-#'   multilevel submodel (however, not yet in case of a GAMM) and for drawing
-#'   from the predictive distributions of the submodel(s) in case of
+#'   [set.seed()], but can also be `NA` to not call [set.seed()] at all. If not
+#'   `NA`, then the PRNG state is reset (to the state before calling
+#'   [proj_linpred()] or [proj_predict()]) upon exiting [proj_linpred()] or
+#'   [proj_predict()]. Here, `.seed` is used for drawing new group-level effects
+#'   in case of a multilevel submodel (however, not yet in case of a GAMM) and
+#'   for drawing from the predictive distributions of the submodel(s) in case of
 #'   [proj_predict()]. If a clustered projection was performed, then in
 #'   [proj_predict()], `.seed` is also used for drawing from the set of
 #'   projected clusters of posterior draws (see argument `nresample_clusters`).
+#'   If [project()] is called internally with `seed = NA` (or with `seed` being
+#'   a lazily evaluated expression that uses the PRNG), then `.seed` also
+#'   affects the PRNG usage there.
 #' @param resp_oscale Only relevant for the latent projection. A single logical
 #'   value indicating whether to draw from the posterior-projection predictive
 #'   distributions on the original response scale (`TRUE`) or on latent scale
@@ -254,14 +259,18 @@ proj_helper <- function(object, newdata, offsetnew, weightsnew, onesub_fun,
 #' @export
 proj_linpred <- function(object, newdata = NULL, offsetnew = NULL,
                          weightsnew = NULL, filter_nterms = NULL,
-                         transform = FALSE, integrated = FALSE,
-                         .seed = sample.int(.Machine$integer.max, 1), ...) {
-  # Set seed, but ensure the old RNG state is restored on exit:
+                         transform = FALSE, integrated = FALSE, .seed = NA,
+                         ...) {
   if (exists(".Random.seed", envir = .GlobalEnv)) {
     rng_state_old <- get(".Random.seed", envir = .GlobalEnv)
-    on.exit(assign(".Random.seed", rng_state_old, envir = .GlobalEnv))
   }
-  if (!is.na(.seed)) set.seed(.seed)
+  if (!is.na(.seed)) {
+    # Set seed, but ensure the old RNG state is restored on exit:
+    if (exists(".Random.seed", envir = .GlobalEnv)) {
+      on.exit(assign(".Random.seed", rng_state_old, envir = .GlobalEnv))
+    }
+    set.seed(.seed)
+  }
 
   ## proj_helper lapplies fun to each projection in object
   proj_helper(
@@ -426,15 +435,18 @@ compute_lpd <- function(ynew, pred_sub, proj, weights, transformed) {
 #' @export
 proj_predict <- function(object, newdata = NULL, offsetnew = NULL,
                          weightsnew = NULL, filter_nterms = NULL,
-                         nresample_clusters = 1000,
-                         .seed = sample.int(.Machine$integer.max, 1),
+                         nresample_clusters = 1000, .seed = NA,
                          resp_oscale = TRUE, ...) {
-  # Set seed, but ensure the old RNG state is restored on exit:
   if (exists(".Random.seed", envir = .GlobalEnv)) {
     rng_state_old <- get(".Random.seed", envir = .GlobalEnv)
-    on.exit(assign(".Random.seed", rng_state_old, envir = .GlobalEnv))
   }
-  if (!is.na(.seed)) set.seed(.seed)
+  if (!is.na(.seed)) {
+    # Set seed, but ensure the old RNG state is restored on exit:
+    if (exists(".Random.seed", envir = .GlobalEnv)) {
+      on.exit(assign(".Random.seed", rng_state_old, envir = .GlobalEnv))
+    }
+    set.seed(.seed)
+  }
 
   ## proj_helper lapplies fun to each projection in object
   proj_helper(
@@ -518,10 +530,15 @@ proj_predict_aux <- function(proj, newdata, offset, weights,
   return(structure(pppd_out, cats = cats_aug))
 }
 
-#' Plot summary statistics of a variable selection
+#' Plot predictive performance
 #'
 #' This is the [plot()] method for `vsel` objects (returned by [varsel()] or
-#' [cv_varsel()]).
+#' [cv_varsel()]). It visualizes the predictive performance of the reference
+#' model (possibly also that of some other "baseline" model) and that of the
+#' submodels along the full-data predictor ranking. Basic information about the
+#' (CV) variability in the ranking of the predictors is included as well (if
+#' available; inferred from [cv_proportions()]). For a tabular representation,
+#' see [summary.vsel()].
 #'
 #' @inheritParams summary.vsel
 #' @param x An object of class `vsel` (returned by [varsel()] or [cv_varsel()]).
@@ -531,10 +548,42 @@ proj_predict_aux <- function(proj, newdata, offset, weights,
 #'   close enough to the baseline model's ELPD. An equivalent rule is applied in
 #'   case of the MLPD. See [suggest_size()] for a formalization. Supplying `NA`
 #'   deactivates this.
+#' @param ranking_nterms_max Maximum submodel size (number of predictor terms)
+#'   for which the predictor names and the corresponding ranking proportions are
+#'   added on the x-axis. Using `NULL` is effectively the same as using
+#'   `nterms_max`. Using `NA` causes the predictor names and the corresponding
+#'   ranking proportions to be omitted. Note that `ranking_nterms_max` does not
+#'   count the intercept, so `ranking_nterms_max = 1` corresponds to the
+#'   submodel consisting of the first (non-intercept) predictor term.
+#' @param ranking_abbreviate A single logical value indicating whether the
+#'   predictor names in the full-data predictor ranking should be abbreviated by
+#'   [abbreviate()] (`TRUE`) or not (`FALSE`). See also argument
+#'   `ranking_abbreviate_args` and section "Value".
+#' @param ranking_abbreviate_args A `list` of arguments (except for `names.arg`)
+#'   to be passed to [abbreviate()] in case of `ranking_abbreviate = TRUE`.
+#' @param ranking_repel Either `NULL`, `"text"`, or `"label"`. By `NULL`, the
+#'   full-data predictor ranking and the corresponding ranking proportions are
+#'   placed below the x-axis. By `"text"` or `"label"`, they are placed within
+#'   the plotting area, using [ggrepel::geom_text_repel()] or
+#'   [ggrepel::geom_label_repel()], respectively. See also argument
+#'   `ranking_repel_args`.
+#' @param ranking_repel_args A `list` of arguments (except for `mapping`) to be
+#'   passed to [ggrepel::geom_text_repel()] or [ggrepel::geom_label_repel()] in
+#'   case of `ranking_repel = "text"` or `ranking_repel = "label"`,
+#'   respectively.
+#' @param cumulate Passed to argument `cumulate` of [cv_proportions()]. Affects
+#'   the ranking proportions given on the x-axis (below the full-data predictor
+#'   ranking).
+#' @param text_angle Passed to argument `angle` of [ggplot2::element_text()] for
+#'   the x-axis tick labels. In case of long predictor names (and/or large
+#'   `nterms_max`), `text_angle = 45` might be helpful (for example).
 #'
 #' @inherit summary.vsel details
 #'
-#' @return A \pkg{ggplot2} plotting object (of class `gg` and `ggplot`).
+#' @return A \pkg{ggplot2} plotting object (of class `gg` and `ggplot`). If
+#'   `ranking_abbreviate` is `TRUE`, the output of [abbreviate()] is stored in
+#'   an attribute called `projpred_ranking_abbreviated` (to allow the
+#'   abbreviations to be easily mapped back to the original predictor names).
 #'
 #' @details
 #'
@@ -562,9 +611,9 @@ proj_predict_aux <- function(proj, newdata, offset, weights,
 #'     QR = TRUE, chains = 2, iter = 500, refresh = 0, seed = 9876
 #'   )
 #'
-#'   # Variable selection (here without cross-validation and with small values
-#'   # for `nterms_max`, `nclusters`, and `nclusters_pred`, but only for the
-#'   # sake of speed in this example; this is not recommended in general):
+#'   # Run varsel() (here without cross-validation and with small values for
+#'   # `nterms_max`, `nclusters`, and `nclusters_pred`, but only for the sake of
+#'   # speed in this example; this is not recommended in general):
 #'   vs <- varsel(fit, nterms_max = 3, nclusters = 5, nclusters_pred = 10,
 #'                seed = 5555)
 #'   print(plot(vs))
@@ -580,11 +629,26 @@ plot.vsel <- function(
     baseline = if (!inherits(x$refmodel, "datafit")) "ref" else "best",
     thres_elpd = NA,
     resp_oscale = TRUE,
+    ranking_nterms_max = NULL,
+    ranking_abbreviate = FALSE,
+    ranking_abbreviate_args = list(),
+    ranking_repel = NULL,
+    ranking_repel_args = list(),
+    cumulate = FALSE,
+    text_angle = NULL,
     ...
 ) {
   object <- x
   validate_vsel_object_stats(object, stats, resp_oscale = resp_oscale)
   baseline <- validate_baseline(object$refmodel, baseline, deltas)
+  if (!is.null(ranking_repel) && !requireNamespace("ggrepel", quietly = TRUE)) {
+    warning("Package 'ggrepel' is needed for a non-`NULL` argument ",
+            "`ranking_repel`, but could not be found. Setting `ranking_repel` ",
+            "to `NULL` now.")
+    ranking_repel <- NULL
+  } else if (!is.null(ranking_repel)) {
+    stopifnot(isTRUE(ranking_repel %in% c("text", "label")))
+  }
 
   ## compute all the statistics and fetch only those that were asked
   nfeat_baseline <- get_nfeat_baseline(object, baseline, stats[1],
@@ -621,6 +685,10 @@ plot.vsel <- function(
   if (nterms_max < 1) {
     stop("nterms_max must be at least 1")
   }
+  if (!is_wholenumber(nterms_max)) {
+    stop("`nterms_max` must be a whole number.")
+  }
+  nterms_max <- as.integer(nterms_max)
   if (baseline == "ref") {
     baseline_pretty <- "reference model"
   } else {
@@ -640,16 +708,31 @@ plot.vsel <- function(
   }
 
   # make sure that breaks on the x-axis are integers
-  n_opts <- c(4, 5, 6)
+  n_opts <- 4:6
   n_possible <- Filter(function(x) nterms_max %% x == 0, n_opts)
   n_alt <- n_opts[which.min(n_opts - (nterms_max %% n_opts))]
   nb <- ifelse(length(n_possible) > 0, min(n_possible), n_alt)
-  by <- ceiling(nterms_max / min(nterms_max, nb))
-  breaks <- seq(0, by * min(nterms_max, nb), by)
+  # Using as.integer() only to make it clear that this is an integer (just like
+  # `breaks` and `minor_breaks`):
+  by <- as.integer(ceiling(nterms_max / min(nterms_max, nb)))
+  breaks <- seq(0L, by * min(nterms_max, nb), by)
   minor_breaks <- if (by %% 2 == 0) {
-    seq(by / 2, by * min(nterms_max, nb), by)
+    seq(by %/% 2L, by * min(nterms_max, nb), by)
   } else {
     NULL
+  }
+  if (is.null(ranking_nterms_max)) {
+    ranking_nterms_max <- nterms_max
+  } else if (!is.na(ranking_nterms_max)) {
+    ranking_nterms_max <- min(ranking_nterms_max, nterms_max)
+    if (!is_wholenumber(ranking_nterms_max)) {
+      stop("`ranking_nterms_max` must be a whole number.")
+    }
+    ranking_nterms_max <- as.integer(ranking_nterms_max)
+  }
+  if (!is.na(ranking_nterms_max)) {
+    breaks <- sort(union(breaks, seq_len(ranking_nterms_max)))
+    minor_breaks <- setdiff(minor_breaks, breaks)
   }
 
   if (!is.na(thres_elpd)) {
@@ -661,8 +744,87 @@ plot.vsel <- function(
     )
   }
 
+  # Start x-axis label (title):
+  xlab <- "Submodel size (number of predictor terms)"
+
+  if (!is.na(ranking_nterms_max)) {
+    # Predictor ranking(s):
+    rk <- ranking(object, nterms_max = ranking_nterms_max)
+    if (!is.null(rk[["foldwise"]])) {
+      pr_rk <- diag(cv_proportions(rk, cumulate = cumulate))
+    } else {
+      pr_rk <- rep(NA, length(rk[["fulldata"]]))
+    }
+    rk_dfr <- data.frame(
+      size = c(0L, seq_along(rk[["fulldata"]])),
+      rk_fulldata = c("", rk[["fulldata"]]),
+      cv_props_diag = c(NA, pr_rk)
+    )
+    rk_dfr[["cv_props_diag"]] <- paste(round(100 * rk_dfr[["cv_props_diag"]]),
+                                       "%")
+    rk_dfr[["cv_props_diag"]][1] <- "" # empty model
+    rk_dfr_empty <- do.call(rbind, lapply(
+      setdiff(breaks, rk_dfr[["size"]]),
+      function(br_j) {
+        data.frame(size = br_j, rk_fulldata = "", cv_props_diag = "")
+      }
+    ))
+    rk_dfr <- rbind(rk_dfr, rk_dfr_empty)
+    if (ranking_abbreviate) {
+      rk_fulldata_abbv <- do.call(abbreviate, c(
+        list(names.arg = rk_dfr[["rk_fulldata"]]),
+        ranking_abbreviate_args
+      ))
+      rk_dfr[["rk_fulldata"]] <- rk_fulldata_abbv
+    }
+    rk_dfr[["rkfulldt_cvpropdiag"]] <- rk_dfr[["rk_fulldata"]]
+    if (!is.null(rk[["foldwise"]])) {
+      rk_dfr[["rkfulldt_cvpropdiag"]] <- paste(rk_dfr[["rkfulldt_cvpropdiag"]],
+                                               rk_dfr[["cv_props_diag"]],
+                                               sep = "\n")
+    }
+    rk_dfr[["size_rkfulldt_cvpropdiag"]] <- paste(
+      rk_dfr[["size"]], rk_dfr[["rkfulldt_cvpropdiag"]], sep = "\n"
+    )
+
+    # Continue x-axis label (title):
+    xlab_rk <- "Corresponding predictor from full-data predictor ranking"
+    if (identical(ranking_repel, "text")) {
+      xlab_rk <- paste("Text:", xlab_rk)
+    } else if (identical(ranking_repel, "label")) {
+      xlab_rk <- paste("Label:", xlab_rk)
+    }
+    xlab <- paste(xlab, xlab_rk, sep = "\n")
+    if (!is.null(rk[["foldwise"]])) {
+      if (cumulate) {
+        cumul_pretty <- " cumulated "
+      } else {
+        cumul_pretty <- " "
+      }
+      xlab_cumul <- paste0("Corresponding main diagonal element from",
+                           cumul_pretty, "CV ranking proportions matrix")
+      if (identical(ranking_repel, "text")) {
+        xlab_cumul <- paste("Text:", xlab_cumul)
+      } else if (identical(ranking_repel, "label")) {
+        xlab_cumul <- paste("Label:", xlab_cumul)
+      }
+      xlab <- paste(xlab, xlab_cumul, sep = "\n")
+    }
+  }
+
   # plot submodel results
-  pp <- ggplot(data = subset(stats_sub, stats_sub$size <= nterms_max),
+  data_gg <- subset(stats_sub, stats_sub$size <= nterms_max)
+  if (!is.na(ranking_nterms_max) && !is.null(ranking_repel)) {
+    colnms_orig <- names(data_gg)
+    data_gg[["row_idx"]] <- seq_len(nrow(data_gg))
+    data_gg <- merge(data_gg,
+                     rk_dfr[, c("size", "rkfulldt_cvpropdiag"), drop = FALSE],
+                     by = "size", all.x = TRUE, all.y = FALSE, sort = FALSE)
+    data_gg <- data_gg[order(data_gg[["row_idx"]]), , drop = FALSE]
+    data_gg[["row_idx"]] <- NULL
+    data_gg <- data_gg[, c(colnms_orig, "rkfulldt_cvpropdiag"), drop = FALSE]
+  }
+  pp <- ggplot(data = data_gg,
                mapping = aes(x = .data[["size"]]))
   if (!all(is.na(stats_ref$se))) {
     # add reference model results if they exist
@@ -706,6 +868,12 @@ plot.vsel <- function(
                    color = "darkgreen", linetype = "longdash")
     }
   }
+  if (!is.na(ranking_nterms_max) && is.null(ranking_repel)) {
+    tick_labs_x <- rk_dfr[order(match(rk_dfr[["size"]], breaks), na.last = NA),
+                          "size_rkfulldt_cvpropdiag"]
+  } else {
+    tick_labs_x <- waiver()
+  }
   pp <- pp +
     # The submodel-specific graphical elements:
     geom_linerange(aes(ymin = .data[["lq"]], ymax = .data[["uq"]],
@@ -715,26 +883,52 @@ plot.vsel <- function(
     # Miscellaneous stuff (axes, theming, faceting, etc.):
     scale_x_continuous(
       breaks = breaks, minor_breaks = minor_breaks,
-      limits = c(min(breaks), max(breaks))
+      limits = c(min(breaks), max(breaks)),
+      labels = tick_labs_x
     ) +
-    labs(x = "Submodel size (number of predictor terms)", y = ylab) +
-    theme(legend.position = "none") +
+    labs(x = xlab, y = ylab) +
+    theme(legend.position = "none",
+          axis.text.x = element_text(angle = text_angle, hjust = 0.5,
+                                     vjust = 0.5)) +
     facet_grid(statistic ~ ., scales = "free_y")
+  if (!is.na(ranking_nterms_max) && !is.null(ranking_repel)) {
+    if (identical(ranking_repel, "text")) {
+      geom_repel_fun <- ggrepel::geom_text_repel
+    } else if (identical(ranking_repel, "label")) {
+      geom_repel_fun <- ggrepel::geom_label_repel
+    }
+    pp <- pp +
+      do.call(geom_repel_fun, c(
+        list(mapping = aes(y = .data[["value"]],
+                           label = .data[["rkfulldt_cvpropdiag"]])),
+        ranking_repel_args
+      ))
+  }
+  if (!is.na(ranking_nterms_max) && ranking_abbreviate) {
+    attr(pp, "projpred_ranking_abbreviated") <- rk_fulldata_abbv[
+      rk_fulldata_abbv != ""
+    ]
+  }
   return(pp)
 }
 
-#' Summary statistics of a variable selection
+#' Summary of a [varsel()] or [cv_varsel()] run
 #'
 #' This is the [summary()] method for `vsel` objects (returned by [varsel()] or
-#' [cv_varsel()]).
+#' [cv_varsel()]). Apart from some general information about the [varsel()] or
+#' [cv_varsel()] run, it shows the full-data predictor ranking, basic
+#' information about the (CV) variability in the ranking of the predictors (if
+#' available; inferred from [cv_proportions()]), and estimates for
+#' user-specified predictive performance statistics. For a graphical
+#' representation, see [plot.vsel()].
 #'
 #' @param object An object of class `vsel` (returned by [varsel()] or
 #'   [cv_varsel()]).
-#' @param nterms_max Maximum submodel size for which the statistics are
-#'   calculated. Using `NULL` is effectively the same as using
-#'   `length(solution_terms(object))`. Note that `nterms_max` does not count the
-#'   intercept, so use `nterms_max = 0` for the intercept-only model. For
-#'   [plot.vsel()], `nterms_max` must be at least `1`.
+#' @param nterms_max Maximum submodel size (number of predictor terms) for which
+#'   the performance statistics are calculated. Using `NULL` is effectively the
+#'   same as `length(ranking(object)[["fulldata"]])`. Note that `nterms_max`
+#'   does not count the intercept, so use `nterms_max = 0` for the
+#'   intercept-only model. For [plot.vsel()], `nterms_max` must be at least `1`.
 #' @param stats One or more character strings determining which performance
 #'   statistics (i.e., utilities or losses) to estimate based on the
 #'   observations in the evaluation (or "test") set (in case of
@@ -783,12 +977,13 @@ plot.vsel <- function(
 #' @param resp_oscale Only relevant for the latent projection. A single logical
 #'   value indicating whether to calculate the performance statistics on the
 #'   original response scale (`TRUE`) or on latent scale (`FALSE`).
+#' @param cumulate Passed to argument `cumulate` of [cv_proportions()]. Affects
+#'   column `cv_proportions_diag` of the summary table.
 #' @param ... Arguments passed to the internal function which is used for
 #'   bootstrapping (if applicable; see argument `stats`). Currently, relevant
 #'   arguments are `B` (the number of bootstrap samples, defaulting to `2000`)
-#'   and `seed` (see [set.seed()], defaulting to
-#'   `sample.int(.Machine$integer.max, 1)`, but can also be `NA` to not call
-#'   [set.seed()] at all).
+#'   and `seed` (see [set.seed()], but defaulting to `NA` so that [set.seed()]
+#'   is not called within that function at all).
 #'
 #' @details The `stats` options `"mse"` and `"rmse"` are only available for:
 #'   * the traditional projection,
@@ -829,9 +1024,9 @@ plot.vsel <- function(
 #'     QR = TRUE, chains = 2, iter = 500, refresh = 0, seed = 9876
 #'   )
 #'
-#'   # Variable selection (here without cross-validation and with small values
-#'   # for `nterms_max`, `nclusters`, and `nclusters_pred`, but only for the
-#'   # sake of speed in this example; this is not recommended in general):
+#'   # Run varsel() (here without cross-validation and with small values for
+#'   # `nterms_max`, `nclusters`, and `nclusters_pred`, but only for the sake of
+#'   # speed in this example; this is not recommended in general):
 #'   vs <- varsel(fit, nterms_max = 3, nclusters = 5, nclusters_pred = 10,
 #'                seed = 5555)
 #'   print(summary(vs), digits = 1)
@@ -847,6 +1042,7 @@ summary.vsel <- function(
     alpha = 2 * pnorm(-1),
     baseline = if (!inherits(object$refmodel, "datafit")) "ref" else "best",
     resp_oscale = TRUE,
+    cumulate = FALSE,
     ...
 ) {
   validate_vsel_object_stats(object, stats, resp_oscale = resp_oscale)
@@ -855,9 +1051,9 @@ summary.vsel <- function(
   # Initialize output:
   out <- c(
     object$refmodel[c("formula", "family")],
-    object[c("nobs_train", "pct_solution_terms_cv", "type_test", "nobs_test",
-             "method", "cv_method", "K", "validate_search", "clust_used_search",
-             "clust_used_eval", "nprjdraws_search", "nprjdraws_eval")]
+    object[c("nobs_train", "type_test", "nobs_test", "method", "cv_method", "K",
+             "validate_search", "clust_used_search", "clust_used_eval",
+             "nprjdraws_search", "nprjdraws_eval")]
   )
   if (isTRUE(out$validate_search)) {
     out$search_included <- "search included (i.e., fold-wise searches)"
@@ -915,11 +1111,21 @@ summary.vsel <- function(
     })))
   }
 
+  # Predictor ranking(s) and associated ranking proportions from fold-wise
+  # predictor rankings (if existing):
+  rk <- ranking(object)
+  if (!is.null(rk[["foldwise"]]) && ncol(rk[["foldwise"]]) > 0) {
+    pr_rk <- diag(cv_proportions(rk, cumulate = cumulate))
+  } else {
+    pr_rk <- rep(NA, length(rk[["fulldata"]]))
+  }
+
   # Construct the (almost) final output table by looping over all requested
   # statistics, reshaping the corresponding data in `stats_table`, and selecting
   # only the requested `type`s:
   arr <- data.frame(size = unique(stats_table$size),
-                    solution_terms = c(NA, object$solution_terms))
+                    solution_terms = c(NA_character_, rk[["fulldata"]]),
+                    cv_proportions_diag = c(NA, pr_rk))
   for (i in seq_along(stats)) {
     temp <- subset(stats_table, stats_table$statistic == stats[i], qty)
     newnames <- suffix[[i]]
@@ -936,17 +1142,22 @@ summary.vsel <- function(
   out$selection <- subset(arr, arr$size <= nterms_max)
   out$resp_oscale <- resp_oscale
   out$deltas <- deltas
+  out$cumulate <- cumulate
   return(out)
 }
 
-#' Print summary of variable selection
+#' Print summary of a [varsel()] or [cv_varsel()] run
 #'
 #' This is the [print()] method for summary objects created by [summary.vsel()].
-#' It displays a summary of the results of the projection predictive variable
-#' selection.
+#' It displays a summary of the results from a [varsel()] or [cv_varsel()] run.
 #'
 #' @param x An object of class `vselsummary`.
 #' @param ... Arguments passed to [print.data.frame()].
+#'
+#' @details In the table printed at the bottom, column `solution_terms` contains
+#'   the full-data predictor ranking and column `cv_proportions_diag` contains
+#'   the main diagonal of the matrix returned by [cv_proportions()] (with
+#'   `cumulate` as set in the [summary.vsel()] call that created `x`).
 #'
 #' @return The output of [summary.vsel()] (invisible).
 #'
@@ -1016,17 +1227,27 @@ print.vselsummary <- function(x, ...) {
     scale_string <- ""
   }
   cat("Performance evaluation summary", scale_string, " with `deltas = ",
-      x$deltas, "`:\n", sep = "")
+      x$deltas, "` and `cumulate = ", x$cumulate, "`:\n", sep = "")
   print(x$selection, row.names = FALSE, ...)
+  if (isTRUE(x$validate_search)) {
+    message(
+      "Column `solution_terms` contains the full-data predictor ranking. To ",
+      "retrieve the fold-wise predictor rankings, use the ranking() function, ",
+      "possibly followed by cv_proportions() for computing the ranking ",
+      "proportions (which can be visualized by plot.cv_proportions()). The ",
+      "main diagonal of the matrix returned by cv_proportions() (with ",
+      "`cumulate = ", x$cumulate, "`) is contained in column ",
+      "`cv_proportions_diag`."
+    )
+  }
   return(invisible(x))
 }
 
-#' Print results (summary) of variable selection
+#' Print results (summary) of a [varsel()] or [cv_varsel()] run
 #'
 #' This is the [print()] method for `vsel` objects (returned by [varsel()] or
-#' [cv_varsel()]). It displays a summary of the results of the projection
-#' predictive variable selection by first calling [summary.vsel()] and then
-#' [print.vselsummary()].
+#' [cv_varsel()]). It displays a summary of a [varsel()] or [cv_varsel()] run by
+#' first calling [summary.vsel()] and then [print.vselsummary()].
 #'
 #' @param x An object of class `vsel` (returned by [varsel()] or [cv_varsel()]).
 #' @param ... Arguments passed to [summary.vsel()] (apart from argument `digits`
@@ -1144,9 +1365,9 @@ print.vsel <- function(x, ...) {
 #'     QR = TRUE, chains = 2, iter = 500, refresh = 0, seed = 9876
 #'   )
 #'
-#'   # Variable selection (here without cross-validation and with small values
-#'   # for `nterms_max`, `nclusters`, and `nclusters_pred`, but only for the
-#'   # sake of speed in this example; this is not recommended in general):
+#'   # Run varsel() (here without cross-validation and with small values for
+#'   # `nterms_max`, `nclusters`, and `nclusters_pred`, but only for the sake of
+#'   # speed in this example; this is not recommended in general):
 #'   vs <- varsel(fit, nterms_max = 3, nclusters = 5, nclusters_pred = 10,
 #'                seed = 5555)
 #'   print(suggest_size(vs))
@@ -1264,11 +1485,15 @@ replace_population_names <- function(population_effects, nm_scheme) {
 }
 
 # Escape special characters in each element of a character vector, to give a
-# character vector of the same length which may be used in regular expressions:
+# character vector of the same length which may be used in regular expressions.
+# Copied over from brms::escape_all() (GitHub commit
+# e42e8da64fc48919085fabd6cba40b7b86668f4b) with Paul Bürkner's consent.
+# Slightly refactored afterwards.
 esc_chars <- function(chr_vec) {
-  gsub("\\)", "\\\\)",
-       gsub("\\(", "\\\\(",
-            gsub("\\.", "\\\\.", chr_vec)))
+  for (chr_spcl in c(".", "*", "+", "?", "^", "$", "(", ")", "[", "]", "|")) {
+    chr_vec <- gsub(chr_spcl, paste0("\\", chr_spcl), chr_vec, fixed = TRUE)
+  }
+  return(chr_vec)
 }
 
 # Helper function for removing underscores in response category names (as done
@@ -1785,8 +2010,10 @@ as.matrix.projection <- function(x, nm_scheme = "auto", ...) {
 #' These are helper functions to create cross-validation (CV) folds, i.e., to
 #' split up the indices from 1 to `n` into `K` subsets ("folds") for
 #' \eqn{K}-fold CV. These functions are potentially useful when creating the
-#' `cvfits` and `cvfun` arguments for [init_refmodel()]. The return value is
-#' different for these two methods, see below for details.
+#' `cvfits` and `cvfun` arguments for [init_refmodel()]. Function [cvfolds()] is
+#' deprecated; please use [cv_folds()] instead (apart from the name, they are
+#' the same). The return value of [cv_folds()] and [cv_ids()] is different, see
+#' below for details.
 #'
 #' @name cv-indices
 #'
@@ -1796,9 +2023,11 @@ as.matrix.projection <- function(x, nm_scheme = "auto", ...) {
 #'   below for details.
 #' @param seed Pseudorandom number generation (PRNG) seed by which the same
 #'   results can be obtained again if needed. Passed to argument `seed` of
-#'   [set.seed()], but can also be `NA` to not call [set.seed()] at all.
+#'   [set.seed()], but can also be `NA` to not call [set.seed()] at all. If not
+#'   `NA`, then the PRNG state is reset (to the state before calling
+#'   [cv_folds()] or [cv_ids()]) upon exiting [cv_folds()] or [cv_ids()].
 #'
-#' @return [cvfolds()] returns a vector of length `n` such that each element is
+#' @return [cv_folds()] returns a vector of length `n` such that each element is
 #'   an integer between 1 and `K` denoting which fold the corresponding data
 #'   point belongs to. The return value of [cv_ids()] depends on the `out`
 #'   argument. If `out = "foldwise"`, the return value is a `list` with `K`
@@ -1812,7 +2041,7 @@ as.matrix.projection <- function(x, nm_scheme = "auto", ...) {
 #' n <- 100
 #' set.seed(1234)
 #' y <- rnorm(n)
-#' cv <- cv_ids(n, K = 5, seed = 9876)
+#' cv <- cv_ids(n, K = 5)
 #' # Mean within the test set of each fold:
 #' cvmeans <- sapply(cv, function(fold) mean(y[fold$ts]))
 #'
@@ -1820,15 +2049,19 @@ NULL
 
 #' @rdname cv-indices
 #' @export
-cvfolds <- function(n, K, seed = sample.int(.Machine$integer.max, 1)) {
+cv_folds <- function(n, K, seed = NA) {
   validate_num_folds(K, n)
 
-  # Set seed, but ensure the old RNG state is restored on exit:
   if (exists(".Random.seed", envir = .GlobalEnv)) {
     rng_state_old <- get(".Random.seed", envir = .GlobalEnv)
-    on.exit(assign(".Random.seed", rng_state_old, envir = .GlobalEnv))
   }
-  if (!is.na(seed)) set.seed(seed)
+  if (!is.na(seed)) {
+    # Set seed, but ensure the old RNG state is restored on exit:
+    if (exists(".Random.seed", envir = .GlobalEnv)) {
+      on.exit(assign(".Random.seed", rng_state_old, envir = .GlobalEnv))
+    }
+    set.seed(seed)
+  }
 
   ## create and shuffle the indices
   folds <- rep_len(seq_len(K), length.out = n)
@@ -1839,17 +2072,27 @@ cvfolds <- function(n, K, seed = sample.int(.Machine$integer.max, 1)) {
 
 #' @rdname cv-indices
 #' @export
-cv_ids <- function(n, K, out = c("foldwise", "indices"),
-                   seed = sample.int(.Machine$integer.max, 1)) {
+cvfolds <- function(n, K, seed = NA) {
+  warning("cvfolds() is deprecated. Please use cv_folds() instead.")
+  cv_folds(n = n, K = K, seed = seed)
+}
+
+#' @rdname cv-indices
+#' @export
+cv_ids <- function(n, K, out = c("foldwise", "indices"), seed = NA) {
   validate_num_folds(K, n)
   out <- match.arg(out)
 
-  # Set seed, but ensure the old RNG state is restored on exit:
   if (exists(".Random.seed", envir = .GlobalEnv)) {
     rng_state_old <- get(".Random.seed", envir = .GlobalEnv)
-    on.exit(assign(".Random.seed", rng_state_old, envir = .GlobalEnv))
   }
-  if (!is.na(seed)) set.seed(seed)
+  if (!is.na(seed)) {
+    # Set seed, but ensure the old RNG state is restored on exit:
+    if (exists(".Random.seed", envir = .GlobalEnv)) {
+      on.exit(assign(".Random.seed", rng_state_old, envir = .GlobalEnv))
+    }
+    set.seed(seed)
+  }
 
   # shuffle the indices
   ind <- sample(seq_len(n), n, replace = FALSE)
@@ -1875,20 +2118,65 @@ cv_ids <- function(n, K, out = c("foldwise", "indices"),
   return(cv)
 }
 
-#' Retrieve predictor solution path or predictor combination
+#' Retrieve the full-data solution path from a [varsel()] or [cv_varsel()] run
+#' or the predictor combination from a [project()] run
 #'
-#' This function retrieves the "solution terms" from an `object`. For `vsel`
-#' objects (returned by [varsel()] or [cv_varsel()]), this is the predictor
-#' solution path of the variable selection. For `projection` objects (returned
-#' by [project()], possibly as elements of a `list`), this is the predictor
-#' combination onto which the projection was performed.
+#' The [solution_terms.vsel()] method retrieves the solution path from a
+#' full-data search (`vsel` objects are returned by [varsel()] or
+#' [cv_varsel()]). The [solution_terms.projection()] method retrieves the
+#' predictor combination onto which a projection was performed (`projection`
+#' objects are returned by [project()], possibly as elements of a `list`). Both
+#' methods (and hence also the [solution_terms()] generic) are deprecated and
+#' will be removed in a future release. Please use [ranking()] instead of
+#' [solution_terms.vsel()] ([ranking()]'s output element `fulldata` contains the
+#' full-data predictor ranking that is extracted by [solution_terms.vsel()];
+#' [ranking()]'s output element `foldwise` contains the fold-wise predictor
+#' rankings---if available---which were previously not accessible via a built-in
+#' function) and [predictor_terms()] instead of [solution_terms.projection()].
 #'
-#' @param object The object from which to retrieve the solution terms. Possible
+#' @param object The object from which to retrieve the predictor terms. Possible
 #'   classes may be inferred from the names of the corresponding methods (see
 #'   also the description).
 #' @param ... Currently ignored.
 #'
-#' @return A character vector of solution terms.
+#' @return A character vector of predictor terms.
+#'
+#' @export
+solution_terms <- function(object, ...) {
+  UseMethod("solution_terms")
+}
+
+#' @rdname solution_terms
+#' @export
+solution_terms.vsel <- function(object, ...) {
+  warning("solution_terms.vsel() is deprecated. Please use ranking() instead ",
+          "(ranking()'s output element `fulldata` contains the full-data ",
+          "predictor ranking that is also extracted by solution_terms.vsel(); ",
+          "ranking()'s output element `foldwise` contains fold-wise predictor ",
+          "rankings which were previously not accessible via a function).")
+  return(ranking(object)[["fulldata"]])
+}
+
+#' @rdname solution_terms
+#' @export
+solution_terms.projection <- function(object, ...) {
+  warning("solution_terms.projection() is deprecated. Please use ",
+          "predictor_terms() instead.")
+  return(predictor_terms(object))
+}
+
+#' Predictor terms used in a [project()] run
+#'
+#' For a `projection` object (returned by [project()], possibly as elements of a
+#' `list`), this function extracts the combination of predictor terms onto which
+#' the projection was performed.
+#'
+#' @param object An object of class `projection` (returned by [project()],
+#'   possibly as elements of a `list`) from which to retrieve the predictor
+#'   terms.
+#' @param ... Currently ignored.
+#'
+#' @return A character vector of predictor terms.
 #'
 #' @examples
 #' if (requireNamespace("rstanarm", quietly = TRUE)) {
@@ -1903,34 +2191,296 @@ cv_ids <- function(n, K, out = c("foldwise", "indices"),
 #'     QR = TRUE, chains = 2, iter = 500, refresh = 0, seed = 9876
 #'   )
 #'
-#'   # Variable selection (here without cross-validation and with small values
-#'   # for `nterms_max`, `nclusters`, and `nclusters_pred`, but only for the
-#'   # sake of speed in this example; this is not recommended in general):
-#'   vs <- varsel(fit, nterms_max = 3, nclusters = 5, nclusters_pred = 10,
-#'                seed = 5555)
-#'   print(solution_terms(vs))
-#'
 #'   # Projection onto an arbitrary combination of predictor terms (with a small
 #'   # value for `nclusters`, but only for the sake of speed in this example;
 #'   # this is not recommended in general):
 #'   prj <- project(fit, solution_terms = c("X1", "X3", "X5"), nclusters = 10,
 #'                  seed = 9182)
-#'   print(solution_terms(prj)) # gives `c("X1", "X3", "X5")`
+#'   print(predictor_terms(prj)) # gives `c("X1", "X3", "X5")`
 #' }
 #'
 #' @export
-solution_terms <- function(object, ...) {
-  UseMethod("solution_terms")
+predictor_terms <- function(object, ...) {
+  UseMethod("predictor_terms")
 }
 
-#' @rdname solution_terms
+#' @rdname predictor_terms
 #' @export
-solution_terms.vsel <- function(object, ...) {
-  return(object$solution_terms)
+predictor_terms.projection <- function(object, ...) {
+  return(object[["solution_terms"]])
 }
 
-#' @rdname solution_terms
+#' Predictor ranking(s)
+#'
+#' Extracts the *predictor ranking(s)* from an object of class `vsel` (returned
+#' by [varsel()] or [cv_varsel()]). A predictor ranking is simply a character
+#' vector of predictor terms ranked by predictive relevance (with the most
+#' relevant term first). In any case, objects of class `vsel` contain the
+#' predictor ranking based on the *full-data* search. If an object of class
+#' `vsel` is based on a cross-validation (CV) with fold-wise searches (i.e., if
+#' it was created by [cv_varsel()] with `validate_search = TRUE`), then it also
+#' contains *fold-wise* predictor rankings.
+#'
+#' @param object The object from which to retrieve the predictor ranking(s).
+#'   Possible classes may be inferred from the names of the corresponding
+#'   methods (see also the description).
+#' @param nterms_max Maximum submodel size (number of predictor terms) for the
+#'   predictor ranking(s), i.e., the submodel size at which to cut off the
+#'   predictor ranking(s). Using `NULL` is effectively the same as setting
+#'   `nterms_max` to the full model size, i.e., this means to not cut off the
+#'   predictor ranking(s) at all. Note that `nterms_max` does not count the
+#'   intercept, so `nterms_max = 1` corresponds to the submodel consisting of
+#'   the first (non-intercept) predictor term.
+#' @param ... Currently ignored.
+#'
+#' @return An object of class `ranking` which is a `list` with the following
+#'   elements:
+#'   * `fulldata`: The predictor ranking from the full-data search.
+#'   * `foldwise`: The predictor rankings from the fold-wise
+#'   searches in the form of a character matrix (only available if `object` is
+#'   based on a CV with fold-wise searches, otherwise element `foldwise` is
+#'   `NULL`). The rows of this matrix correspond to the CV folds and the columns
+#'   to the submodel sizes. Each row contains the predictor ranking from the
+#'   search of that CV fold.
+#'
+#' @seealso [cv_proportions()]
+#'
+#' @examples
+#' # For an example, see `?plot.cv_proportions`.
+#'
 #' @export
-solution_terms.projection <- function(object, ...) {
-  return(object$solution_terms)
+ranking <- function(object, ...) {
+  UseMethod("ranking")
+}
+
+#' @rdname ranking
+#' @export
+ranking.vsel <- function(object, nterms_max = NULL, ...) {
+  if (is.null(object$projpred_version) && !is.null(object$cv_method)) {
+    warning(
+      "It seems like a projpred version <= 2.5.0 was used for creating the ",
+      "`vsel` object. Thus, even if there are fold-wise searches, the ",
+      "corresponding fold-wise predictor rankings cannot be extracted."
+    )
+  }
+  out <- list(fulldata = object[["solution_terms"]],
+              foldwise = object[["solution_terms_cv"]])
+  if (!is.null(nterms_max)) {
+    out[["fulldata"]] <- utils::head(out[["fulldata"]], nterms_max)
+    if (!is.null(out[["foldwise"]])) {
+      out[["foldwise"]] <- out[["foldwise"]][, seq_len(nterms_max),
+                                             drop = FALSE]
+    }
+  }
+  if (!is.null(out[["foldwise"]]) &&
+      length(out[["fulldata"]]) != ncol(out[["foldwise"]])) {
+    stop("Unexpected dimensions of ranking() output. Please notify the ",
+         "package maintainer.")
+  }
+  class(out) <- "ranking"
+  return(out)
+}
+
+#' Ranking proportions from fold-wise predictor rankings
+#'
+#' Calculates the *ranking proportions* from the fold-wise predictor rankings in
+#' a cross-validation (CV) with fold-wise searches. For a given predictor
+#' \eqn{x} and a given submodel size \eqn{j}, the ranking proportion is the
+#' proportion of CV folds which have predictor \eqn{x} at position \eqn{j} of
+#' their predictor ranking. While these ranking proportions are helpful for
+#' investigating variability in the predictor ranking, they can also be
+#' *cumulated* across submodel sizes. The cumulated ranking proportions are more
+#' helpful when it comes to model selection.
+#'
+#' @param object For [cv_proportions.ranking()]: an object of class `ranking`
+#'   (returned by [ranking()]). For [cv_proportions.vsel()]: an object of class
+#'   `vsel` (returned by [varsel()] or [cv_varsel()]) that [ranking()] will be
+#'   applied to internally before then calling [cv_proportions.ranking()].
+#' @param cumulate A single logical value indicating whether the ranking
+#'   proportions should be cumulated across increasing submodel sizes (`TRUE`)
+#'   or not (`FALSE`).
+#' @param ... For [cv_proportions.vsel()]: arguments passed to [ranking.vsel()]
+#'   and [cv_proportions.ranking()]. For [cv_proportions.ranking()]: currently
+#'   ignored.
+#'
+#' @return A numeric matrix containing the ranking proportions. This matrix has
+#'   `nterms_max` rows and `nterms_max` columns, with `nterms_max` as specified
+#'   in the (possibly implicit) [ranking()] call. The rows correspond to the
+#'   submodel sizes and the columns to the predictor terms (sorted according to
+#'   the full-data predictor ranking). If `cumulate` is `FALSE`, then the
+#'   returned matrix is of class `cv_proportions`. If `cumulate` is `TRUE`, then
+#'   the returned matrix is of classes `cv_proportions_cumul` and
+#'   `cv_proportions` (in this order).
+#'
+#'   Note that if `cumulate` is `FALSE`, then the values in the returned matrix
+#'   only need to sum to 1 (column-wise and row-wise) if `nterms_max` (see
+#'   above) is equal to the full model size. Likewise, if `cumulate` is `TRUE`,
+#'   then the value `1` only needs to occur in each column of the returned
+#'   matrix if `nterms_max` is equal to the full model size.
+#'
+#'   The [cv_proportions()] function is only applicable if the `ranking` object
+#'   includes fold-wise predictor rankings (i.e., if it is based on a `vsel`
+#'   object created by [cv_varsel()] with `validate_search = TRUE`). If the
+#'   `ranking` object contains only a full-data predictor ranking (i.e., if it
+#'   is based on a `vsel` object created by [varsel()] or by [cv_varsel()], but
+#'   the latter with `validate_search = FALSE`), then an error is thrown because
+#'   in that case, there are no fold-wise predictor rankings from which to
+#'   calculate ranking proportions.
+#'
+#' @seealso [plot.cv_proportions()]
+#'
+#' @examples
+#' # For an example, see `?plot.cv_proportions`.
+#'
+#' @export
+cv_proportions <- function(object, ...) {
+  UseMethod("cv_proportions")
+}
+
+#' @rdname cv_proportions
+#' @export
+cv_proportions.ranking <- function(object, cumulate = FALSE, ...) {
+  cv_paths <- object[["foldwise"]]
+  if (is.null(cv_paths)) {
+    stop("Could not find fold-wise predictor rankings from which to calculate ",
+         "ranking proportions. The reason is probably that `object` is not ",
+         "based on a cross-validation or that the search has been excluded ",
+         "from the cross-validation.")
+  }
+  if (ncol(cv_paths) == 0) {
+    stop("Needing `nterms_max >= 1` in the (possibly implicit) ranking() call.")
+  }
+  # Calculate the ranking proportions. Note that the following code assumes that
+  # all CV folds have equal weight.
+  cv_props <- do.call(cbind, lapply(
+    setNames(nm = object[["fulldata"]]),
+    function(predictor_j) {
+      # We need `na.rm = TRUE` for subsampled LOO CV:
+      colMeans(cv_paths == predictor_j, na.rm = TRUE)
+    }
+  ))
+  rownames(cv_props) <- seq_len(nrow(cv_props))
+  classes_out <- "cv_proportions"
+  if (cumulate) {
+    cv_props <- do.call(cbind, apply(cv_props, 2, cumsum, simplify = FALSE))
+    rownames(cv_props) <- paste0("<=", rownames(cv_props))
+    classes_out <- c("cv_proportions_cumul", classes_out)
+  }
+  # Setting the `dimnames` names here (not before the `if (cumulate)` part)
+  # because `simplify = FALSE` in apply() makes it impossible to keep these:
+  names(dimnames(cv_props)) <- c("size", "predictor")
+  class(cv_props) <- classes_out
+  return(cv_props)
+}
+
+#' @rdname cv_proportions
+#' @export
+cv_proportions.vsel <- function(object, ...) {
+  cv_proportions(ranking(object, ...), ...)
+}
+
+#' Plot ranking proportions from fold-wise predictor rankings
+#'
+#' Plots the ranking proportions (see [cv_proportions()]) from the fold-wise
+#' predictor rankings in a cross-validation with fold-wise searches. This is a
+#' visualization of the *transposed* matrix returned by [cv_proportions()]. The
+#' proportions printed as text inside of the colored tiles are rounded to whole
+#' percentage points (the plotted proportions themselves are not rounded).
+#'
+#' @param x For [plot.cv_proportions()]: an object of class `cv_proportions`
+#'   (returned by [cv_proportions()], possibly with `cumulate = TRUE`). For
+#'   [plot.ranking()]: an object of class `ranking` (returned by [ranking()])
+#'   that [cv_proportions()] will be applied to internally before then calling
+#'   [plot.cv_proportions()].
+#' @param text_angle Passed to argument `angle` of [ggplot2::element_text()] for
+#'   the y-axis tick labels. In case of long predictor names, `text_angle = 45`
+#'   might be helpful (for example).
+#' @param ... For [plot.ranking()]: arguments passed to
+#'   [cv_proportions.ranking()] and [plot.cv_proportions()]. For
+#'   [plot.cv_proportions()]: currently ignored.
+#'
+#' @return A \pkg{ggplot2} plotting object (of class `gg` and `ggplot`).
+#'
+#' @author Idea and original code by Aki Vehtari. Slight modifications of the
+#'   original code by Frank Weber, Yann McLatchie, and Sölvi Rögnvaldsson. Final
+#'   implementation in \pkg{projpred} by Frank Weber.
+#'
+#' @examplesIf identical(Sys.getenv("RUN_EX"), "true")
+#' # Note: The code from this example is not executed when called via example().
+#' # To execute it, you have to copy and paste it manually to the console.
+#' if (requireNamespace("rstanarm", quietly = TRUE)) {
+#'   # Data:
+#'   dat_gauss <- data.frame(y = df_gaussian$y, df_gaussian$x)
+#'
+#'   # The "stanreg" fit which will be used as the reference model (with small
+#'   # values for `chains` and `iter`, but only for technical reasons in this
+#'   # example; this is not recommended in general):
+#'   fit <- rstanarm::stan_glm(
+#'     y ~ X1 + X2 + X3 + X4 + X5, family = gaussian(), data = dat_gauss,
+#'     QR = TRUE, chains = 2, iter = 1000, refresh = 0, seed = 9876
+#'   )
+#'
+#'   # Run cv_varsel() (with small values for `K`, `nterms_max`, `nclusters`,
+#'   # and `nclusters_pred`, but only for the sake of speed in this example;
+#'   # this is not recommended in general):
+#'   cvvs <- cv_varsel(fit, cv_method = "kfold", K = 2, nterms_max = 3,
+#'                     nclusters = 5, nclusters_pred = 10, seed = 5555)
+#'
+#'   # Extract predictor rankings:
+#'   rk <- ranking(cvvs)
+#'
+#'   # Compute ranking proportions:
+#'   pr_rk <- cv_proportions(rk)
+#'
+#'   # Visualize the ranking proportions:
+#'   gg_pr_rk <- plot(pr_rk)
+#'   print(gg_pr_rk)
+#'
+#'   # Since the object returned by plot.cv_proportions() is a standard ggplot2
+#'   # plotting object, you can modify the plot easily, e.g., to remove the
+#'   # legend:
+#'   print(gg_pr_rk + ggplot2::theme(legend.position = "none"))
+#' }
+#'
+#' @export
+plot.cv_proportions <- function(x, text_angle = NULL, ...) {
+  cv_props_long <- data.frame(
+    msize = factor(rep(rownames(x), times = ncol(x)), levels = rownames(x)),
+    pterm = factor(rep(colnames(x), each = nrow(x)), levels = colnames(x)),
+    propcv = as.vector(x)
+  )
+  cv_props_long$txtcolor <- ifelse(cv_props_long$propcv > 0.5, "white", "black")
+  gg_cv_props <- ggplot(data = cv_props_long,
+                        mapping = aes(x = .data[["msize"]],
+                                      y = .data[["pterm"]])) +
+    geom_tile(mapping = aes(fill = .data[["propcv"]]),
+              width = 1, height = 1, linewidth = 1, color = "white") +
+    # Note: The original code for this function specified argument `fontface`
+    # in the aes() call of geom_text(), but incorrectly (as constantly `1`):
+    geom_text(mapping = aes(label = paste(round(100 * .data[["propcv"]]), "%"),
+                            color = I(.data[["txtcolor"]])),
+              size = 3) +
+    scale_y_discrete(limits = rev(levels(cv_props_long$pterm))) +
+    # Filling color:
+    ### Option 1:
+    scale_fill_gradient(name = "Proportion\nof CV folds",
+                        labels = scales::label_percent(suffix = " %"),
+                        limits = c(0, 1),
+                        low = "#ededed", high = "#0f365c") +
+    ###
+    ### Option 2 (requires the 'RColorBrewer' package):
+    # scale_fill_distiller(name = "Proportion\nof CV folds",
+    #                      labels = scales::label_percent(suffix = " %"),
+    #                      direction = 1) +
+    ###
+    labs(x = "Submodel size (number of predictor terms)", y = "Predictor") +
+    coord_cartesian(expand = FALSE) +
+    theme(axis.text.y = element_text(angle = text_angle))
+  return(gg_cv_props)
+}
+
+#' @rdname plot.cv_proportions
+#' @export
+plot.ranking <- function(x, ...) {
+  plot(cv_proportions(x, ...), ...)
 }

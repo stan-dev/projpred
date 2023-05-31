@@ -2,7 +2,7 @@
 % Please edit documentation in R/methods.R
 \name{summary.vsel}
 \alias{summary.vsel}
-\title{Summary statistics of a variable selection}
+\title{Summary of a \code{\link[=varsel]{varsel()}} or \code{\link[=cv_varsel]{cv_varsel()}} run}
 \usage{
 \method{summary}{vsel}(
   object,
@@ -13,6 +13,7 @@
   alpha = 2 * pnorm(-1),
   baseline = if (!inherits(object$refmodel, "datafit")) "ref" else "best",
   resp_oscale = TRUE,
+  cumulate = FALSE,
   ...
 )
 }
@@ -20,11 +21,11 @@
 \item{object}{An object of class \code{vsel} (returned by \code{\link[=varsel]{varsel()}} or
 \code{\link[=cv_varsel]{cv_varsel()}}).}
 
-\item{nterms_max}{Maximum submodel size for which the statistics are
-calculated. Using \code{NULL} is effectively the same as using
-\code{length(solution_terms(object))}. Note that \code{nterms_max} does not count the
-intercept, so use \code{nterms_max = 0} for the intercept-only model. For
-\code{\link[=plot.vsel]{plot.vsel()}}, \code{nterms_max} must be at least \code{1}.}
+\item{nterms_max}{Maximum submodel size (number of predictor terms) for which
+the performance statistics are calculated. Using \code{NULL} is effectively the
+same as \code{length(ranking(object)[["fulldata"]])}. Note that \code{nterms_max}
+does not count the intercept, so use \code{nterms_max = 0} for the
+intercept-only model. For \code{\link[=plot.vsel]{plot.vsel()}}, \code{nterms_max} must be at least \code{1}.}
 
 \item{stats}{One or more character strings determining which performance
 statistics (i.e., utilities or losses) to estimate based on the
@@ -80,19 +81,26 @@ terms of \code{stats[1]}), respectively.}
 value indicating whether to calculate the performance statistics on the
 original response scale (\code{TRUE}) or on latent scale (\code{FALSE}).}
 
+\item{cumulate}{Passed to argument \code{cumulate} of \code{\link[=cv_proportions]{cv_proportions()}}. Affects
+column \code{cv_proportions_diag} of the summary table.}
+
 \item{...}{Arguments passed to the internal function which is used for
 bootstrapping (if applicable; see argument \code{stats}). Currently, relevant
 arguments are \code{B} (the number of bootstrap samples, defaulting to \code{2000})
-and \code{seed} (see \code{\link[=set.seed]{set.seed()}}, defaulting to
-\code{sample.int(.Machine$integer.max, 1)}, but can also be \code{NA} to not call
-\code{\link[=set.seed]{set.seed()}} at all).}
+and \code{seed} (see \code{\link[=set.seed]{set.seed()}}, but defaulting to \code{NA} so that \code{\link[=set.seed]{set.seed()}}
+is not called within that function at all).}
 }
 \value{
 An object of class \code{vselsummary}.
 }
 \description{
 This is the \code{\link[=summary]{summary()}} method for \code{vsel} objects (returned by \code{\link[=varsel]{varsel()}} or
-\code{\link[=cv_varsel]{cv_varsel()}}).
+\code{\link[=cv_varsel]{cv_varsel()}}). Apart from some general information about the \code{\link[=varsel]{varsel()}} or
+\code{\link[=cv_varsel]{cv_varsel()}} run, it shows the full-data predictor ranking, basic
+information about the (CV) variability in the ranking of the predictors (if
+available; inferred from \code{\link[=cv_proportions]{cv_proportions()}}), and estimates for
+user-specified predictive performance statistics. For a graphical
+representation, see \code{\link[=plot.vsel]{plot.vsel()}}.
 }
 \details{
 The \code{stats} options \code{"mse"} and \code{"rmse"} are only available for:
@@ -136,9 +144,9 @@ if (requireNamespace("rstanarm", quietly = TRUE)) {
     QR = TRUE, chains = 2, iter = 500, refresh = 0, seed = 9876
   )
 
-  # Variable selection (here without cross-validation and with small values
-  # for `nterms_max`, `nclusters`, and `nclusters_pred`, but only for the
-  # sake of speed in this example; this is not recommended in general):
+  # Run varsel() (here without cross-validation and with small values for
+  # `nterms_max`, `nclusters`, and `nclusters_pred`, but only for the sake of
+  # speed in this example; this is not recommended in general):
   vs <- varsel(fit, nterms_max = 3, nclusters = 5, nclusters_pred = 10,
                seed = 5555)
   print(summary(vs), digits = 1)

@@ -1,10 +1,10 @@
-#' Variable selection without cross-validation
+#' Run search and performance evaluation without cross-validation
 #'
 #' Run the *search* part and the *evaluation* part for a projection predictive
-#' variable selection. The search part determines the solution path, i.e., the
-#' best submodel for each submodel size (number of predictor terms). The
-#' evaluation part determines the predictive performance of the submodels along
-#' the solution path.
+#' variable selection. The search part determines the predictor ranking (also
+#' known as solution path), i.e., the best submodel for each submodel size
+#' (number of predictor terms). The evaluation part determines the predictive
+#' performance of the submodels along the predictor ranking.
 #'
 #' @param object An object of class `refmodel` (returned by [get_refmodel()] or
 #'   [init_refmodel()]) or an object that can be passed to argument `object` of
@@ -18,10 +18,9 @@
 #'   `"L1"` is used, except if (i) the reference model has multilevel or
 #'   additive terms, (ii) if `!is.null(search_terms)`, or (iii) if the
 #'   augmented-data projection is used. See also section "Details" below.
-#' @param refit_prj A single logical value indicating whether to fit the
-#'   submodels along the solution path again (`TRUE`) or to retrieve their fits
-#'   from the search part (`FALSE`) before using those (re-)fits in the
-#'   evaluation part.
+#' @param refit_prj For the evaluation part, should the submodels along the
+#'   predictor ranking be fitted again (`TRUE`) or should their fits from the
+#'   search part be re-used (`FALSE`)?
 #' @param ndraws Number of posterior draws used in the search part. Ignored if
 #'   `nclusters` is not `NULL` or in case of L1 search (because L1 search always
 #'   uses a single cluster). If both (`nclusters` and `ndraws`) are `NULL`, the
@@ -39,12 +38,12 @@
 #' @param nclusters_pred Only relevant if `refit_prj` is `TRUE`. Number of
 #'   clusters of posterior draws used in the evaluation part. For the meaning of
 #'   `NULL`, see argument `ndraws_pred`. See also section "Details" below.
-#' @param nterms_max Maximum number of predictor terms until which the search is
-#'   continued. If `NULL`, then `min(19, D)` is used where `D` is the number of
-#'   terms in the reference model (or in `search_terms`, if supplied). Note that
-#'   `nterms_max` does not count the intercept, so use `nterms_max = 0` for the
-#'   intercept-only model. (Correspondingly, `D` above does not count the
-#'   intercept.)
+#' @param nterms_max Maximum submodel size (number of predictor terms) up to
+#'   which the search is continued. If `NULL`, then `min(19, D)` is used where
+#'   `D` is the number of terms in the reference model (or in `search_terms`, if
+#'   supplied). Note that `nterms_max` does not count the intercept, so use
+#'   `nterms_max = 0` for the intercept-only model. (Correspondingly, `D` above
+#'   does not count the intercept.)
 #' @param penalty Only relevant for L1 search. A numeric vector determining the
 #'   relative penalties or costs for the predictors. A value of `0` means that
 #'   those predictors have no cost and will therefore be selected first, whereas
@@ -75,11 +74,12 @@
 #'   additional information during the computations.
 #' @param seed Pseudorandom number generation (PRNG) seed by which the same
 #'   results can be obtained again if needed. Passed to argument `seed` of
-#'   [set.seed()], but can also be `NA` to not call [set.seed()] at all. Here,
-#'   this seed is used for clustering the reference model's posterior draws (if
-#'   `!is.null(nclusters)` or `!is.null(nclusters_pred)`) and for drawing new
-#'   group-level effects when predicting from a multilevel submodel (however,
-#'   not yet in case of a GAMM).
+#'   [set.seed()], but can also be `NA` to not call [set.seed()] at all. If not
+#'   `NA`, then the PRNG state is reset (to the state before calling [varsel()])
+#'   upon exiting [varsel()]. Here, `seed` is used for clustering the reference
+#'   model's posterior draws (if `!is.null(nclusters)` or
+#'   `!is.null(nclusters_pred)`) and for drawing new group-level effects when
+#'   predicting from a multilevel submodel (however, not yet in case of a GAMM).
 #' @param ... Arguments passed to [get_refmodel()] as well as to the divergence
 #'   minimizer (during a forward search and also during the evaluation part, but
 #'   the latter only if `refit_prj` is `TRUE`).
@@ -170,13 +170,13 @@
 #'     QR = TRUE, chains = 2, iter = 500, refresh = 0, seed = 9876
 #'   )
 #'
-#'   # Variable selection (here without cross-validation and with small values
-#'   # for `nterms_max`, `nclusters`, and `nclusters_pred`, but only for the
-#'   # sake of speed in this example; this is not recommended in general):
+#'   # Run varsel() (here without cross-validation and with small values for
+#'   # `nterms_max`, `nclusters`, and `nclusters_pred`, but only for the sake of
+#'   # speed in this example; this is not recommended in general):
 #'   vs <- varsel(fit, nterms_max = 3, nclusters = 5, nclusters_pred = 10,
 #'                seed = 5555)
 #'   # Now see, for example, `?print.vsel`, `?plot.vsel`, `?suggest_size.vsel`,
-#'   # and `?solution_terms.vsel` for possible post-processing functions.
+#'   # and `?ranking` for possible post-processing functions.
 #' }
 #'
 #' @export
@@ -200,14 +200,17 @@ varsel.refmodel <- function(object, d_test = NULL, method = NULL,
                             nterms_max = NULL, verbose = TRUE,
                             lambda_min_ratio = 1e-5, nlambda = 150,
                             thresh = 1e-6, regul = 1e-4, penalty = NULL,
-                            search_terms = NULL,
-                            seed = sample.int(.Machine$integer.max, 1), ...) {
-  # Set seed, but ensure the old RNG state is restored on exit:
+                            search_terms = NULL, seed = NA, ...) {
   if (exists(".Random.seed", envir = .GlobalEnv)) {
     rng_state_old <- get(".Random.seed", envir = .GlobalEnv)
-    on.exit(assign(".Random.seed", rng_state_old, envir = .GlobalEnv))
   }
-  if (!is.na(seed)) set.seed(seed)
+  if (!is.na(seed)) {
+    # Set seed, but ensure the old RNG state is restored on exit:
+    if (exists(".Random.seed", envir = .GlobalEnv)) {
+      on.exit(assign(".Random.seed", rng_state_old, envir = .GlobalEnv))
+    }
+    set.seed(seed)
+  }
 
   refmodel <- object
 
@@ -366,7 +369,7 @@ varsel.refmodel <- function(object, d_test = NULL, method = NULL,
               nobs_train = refmodel$nobs,
               search_path,
               solution_terms = search_path$solution_terms,
-              pct_solution_terms_cv = NULL,
+              solution_terms_cv = NULL,
               ce = sapply(submodls, "[[", "ce"),
               type_test = d_test$type,
               y_wobs_test,
@@ -381,7 +384,8 @@ varsel.refmodel <- function(object, d_test = NULL, method = NULL,
               clust_used_search = p_sel$clust_used,
               clust_used_eval = p_pred$clust_used,
               nprjdraws_search = NCOL(p_sel$mu),
-              nprjdraws_eval = NCOL(p_pred$mu))
+              nprjdraws_eval = NCOL(p_pred$mu),
+              projpred_version = utils::packageVersion("projpred"))
   class(vs) <- "vsel"
 
   return(vs)

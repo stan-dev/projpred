@@ -55,12 +55,13 @@ if (identical(run_snaps, "")) {
   run_snaps <- as.logical(toupper(run_snaps))
   stopifnot(isTRUE(run_snaps) || isFALSE(run_snaps))
 }
+if (run_snaps && !requireNamespace("rlang", quietly = TRUE)) {
+  warning("Package 'rlang' is needed for snapshot testing, but could not be ",
+          "found. Deactivating snapshot testing now.")
+  run_snaps <- FALSE
+}
 if (run_snaps) {
   testthat_ed_max2 <- edition_get() <= 2
-  if (!requireNamespace("rlang", quietly = TRUE)) {
-    stop("Package \"rlang\" is needed for the snapshots. Please install it.",
-         call. = FALSE)
-  }
 }
 # Run parallel tests?:
 # Notes:
@@ -91,21 +92,23 @@ if (run_prll) {
   # package (which is still slower than a sequential run, though):
   if (!identical(.Platform$OS.type, "windows")) {
     if (!requireNamespace("doParallel", quietly = TRUE)) {
-      stop("Package \"doParallel\" is needed for these tests. Please ",
-           "install it.",
-           call. = FALSE)
+      warning("Package 'doParallel' is needed for the parallel tests, but ",
+              "could not be found. Deactivating the parallel tests now.")
+      run_prll <- FALSE
+    } else {
+      dopar_backend <- "doParallel"
     }
-    dopar_backend <- "doParallel"
   } else {
     # This case (which should not be possible by default) is only included
     # here to demonstrate how parallelization should be used on Windows (but
     # currently, this makes no sense, as explained above).
     if (!requireNamespace("doFuture", quietly = TRUE)) {
-      stop("Package \"doFuture\" is needed for these tests. Please ",
-           "install it.",
-           call. = FALSE)
+      warning("Package 'doFuture' is needed for the parallel tests, but ",
+              "could not be found. Deactivating the parallel tests now.")
+      run_prll <- FALSE
+    } else {
+      dopar_backend <- "doFuture"
     }
-    dopar_backend <- "doFuture"
     if (identical(.Platform$OS.type, "windows")) {
       ### Not used in this case because the 'future.callr' package provides a
       ### faster alternative on Windows (which is still slower than a sequential
@@ -113,11 +116,12 @@ if (run_prll) {
       # future_plan <- "multisession"
       ###
       if (!requireNamespace("future.callr", quietly = TRUE)) {
-        stop("Package \"future.callr\" is needed for these tests. Please ",
-             "install it.",
-             call. = FALSE)
+        warning("Package 'future.callr' is needed for the parallel tests, but ",
+                "could not be found. Deactivating the parallel tests now.")
+        run_prll <- FALSE
+      } else {
+        future_plan <- "callr"
       }
-      future_plan <- "callr"
     } else {
       # This case (which should not be possible by default) is only included
       # here to demonstrate how other systems should be used with the 'doFuture'
@@ -136,12 +140,16 @@ run_additive <- TRUE
 # Use a factor or an integer response for ordinal and categorical families?:
 use_fac <- TRUE
 
+# Use polym() instead of poly()?:
+use_polym <- FALSE
+
 source(testthat::test_path("helpers", "unlist_cust.R"), local = TRUE)
 source(testthat::test_path("helpers", "testers.R"), local = TRUE)
 source(testthat::test_path("helpers", "args.R"), local = TRUE)
 source(testthat::test_path("helpers", "getters.R"), local = TRUE)
 source(testthat::test_path("helpers", "formul_handlers.R"), local = TRUE)
-source(testthat::test_path("helpers", "revIA.R"), local = TRUE)
+source(testthat::test_path("helpers", "predictor_handlers.R"), local = TRUE)
+source(testthat::test_path("helpers", "dummies.R"), local = TRUE)
 
 # Note: The following `mod_nms` refer to *generalized* (linear/additive,
 # multilevel) models. This is due to history (when these tests were written,
@@ -444,16 +452,25 @@ dat_indep$offs_col <- offs_indep
 ## Setup ------------------------------------------------------------------
 
 if (!requireNamespace("rstanarm", quietly = TRUE)) {
-  stop("Package \"rstanarm\" is needed for these tests. Please install it.",
-       call. = FALSE)
+  warning("Package 'rstanarm' is needed for the rstanarm tests, but could not ",
+          "be found. Deactivating the rstanarm tests now. Furthermore, in ",
+          "this case, `run_prj`, `run_vs`, and `run_cvvs` are currently set ",
+          "to `FALSE`.")
+  pkg_nms <- character()
+  # TODO: Adapt the tests to avoid the following line, at least if `run_brms` is
+  # `TRUE` (better: avoid it in any case, no matter whether `run_brms` is `TRUE`
+  # or `FALSE`).
+  run_prj <- run_vs <- run_cvvs <- FALSE
+} else {
+  pkg_nms <- "rstanarm"
 }
-pkg_nms <- "rstanarm"
 
+if (run_brms && !requireNamespace("brms", quietly = TRUE)) {
+  warning("Package 'brms' is needed for the brms tests, but could not be ",
+          "found. Deactivating the brms tests now.")
+  run_brms <- FALSE
+}
 if (run_brms) {
-  if (!requireNamespace("brms", quietly = TRUE)) {
-    stop("Package \"brms\" is needed for these tests. Please install it.",
-         call. = FALSE)
-  }
   pkg_nms <- c(pkg_nms, "brms")
   # For storing "brmsfit"s locally:
   file_pth <- testthat::test_path("bfits")
@@ -496,17 +513,48 @@ trms_common <- c("xco.1", "xco.2", "xco.3", "xca.1", "xca.2",
                  "offset(offs_col)")
 trms_grp <- c("(xco.1 | z.1)")
 trms_add <- c("s(s.1)") # , "s(s.2)", "s(s.3)"
-trms_common_spcl <- c("xco.1", "I(xco.1^2)",
-                      "exp(xco.2) * I(as.numeric(xco.3 > 0))", "xca.1", "xca.2",
-                      "offset(offs_col)")
+if (use_polym) {
+  trm_poly <- "polym(xco.1, degree = 2, raw = TRUE)"
+} else {
+  trm_poly <- "poly(xco.1, 2, raw = TRUE)"
+}
+trms_common_spcl <- c(trm_poly,
+                      "sqrt(abs(xco.3)^2) * I(!as.logical(xco.3 > 0))", "xca.1",
+                      "xca.2", "offset(offs_col)")
+trms_universe <- unique(c(trms_common, trms_grp, trms_add, trms_common_spcl))
+trms_universe_split <- setdiff(trms_universe, "offset(offs_col)")
+# Handle interaction terms:
+stopifnot(!any(grepl(":", trms_universe_split)))
+trms_universe_split_IA <- grep("\\*", trms_universe_split, value = TRUE)
+if (length(trms_universe_split_IA)) {
+  trms_universe_split_noIA <- setdiff(trms_universe_split,
+                                      trms_universe_split_IA)
+  # Replace " * " in interaction terms by ":":
+  trms_universe_split_IA <- gsub(" \\* ", ":", trms_universe_split_IA)
+  # Add main effects from interaction terms:
+  trms_universe_split_noIA <- union(
+    trms_universe_split_noIA,
+    unlist(strsplit(trms_universe_split_IA, split = ":"))
+  )
+  trms_universe_split <- c(trms_universe_split_noIA, trms_universe_split_IA)
+}
+# Add lower-order group-level terms:
+if ("(xco.1 | z.1)" %in% trms_universe_split) {
+  trms_universe_split <- union(trms_universe_split, "(1 | z.1)")
+}
+# Ensure that for all terms on the left-hand side of the `|` character in
+# group-level terms, corresponding population-level terms exist:
+if ("(xco.1 | z.1)" %in% trms_universe_split) {
+  trms_universe_split <- union(trms_universe_split, "xco.1")
+}
 
 # Solution terms for project()-ing from `"refmodel"`s:
 solterms_x <- c("xco.1", "xca.1")
 solterms_z <- c("(1 | z.1)", "(xco.1 | z.1)") # removing one of them later
 solterms_s <- c("s(s.1)") # , "s(s.2)"
-solterms_spcl <- c("xca.1", "xco.1", "I(xco.1^2)", "exp(xco.2)",
-                   "I(as.numeric(xco.3 > 0))",
-                   "exp(xco.2):I(as.numeric(xco.3 > 0))")
+solterms_spcl <- c("xca.1", trm_poly,
+                   "sqrt(abs(xco.3)^2)", "I(!as.logical(xco.3 > 0))",
+                   "sqrt(abs(xco.3)^2):I(!as.logical(xco.3 > 0))")
 
 ### Weights (observations) ------------------------------------------------
 
@@ -715,7 +763,7 @@ args_fit <- lapply(setNames(nm = names(args_fit)), function(args_fit_nm) {
   return(args_fit[[args_fit_nm]])
 })
 
-if (!run_more) {
+if (!run_more && length(pkg_nms)) {
   sel_fits <- c(
     "rstanarm.glm.gauss.stdformul.with_wobs.with_offs",
     "rstanarm.glm.brnll.stdformul.without_wobs.without_offs",
@@ -749,8 +797,11 @@ if (!run_more) {
                      invert = TRUE)
   }
   args_fit <- args_fit[names(args_fit) %in% sel_fits]
-  if (run_brms) {
+  if (run_brms && "rstanarm" %in% pkg_nms) {
     stopifnot(setequal(names(args_fit), sel_fits))
+  } else if (run_brms && !"rstanarm" %in% pkg_nms) {
+    stopifnot(setequal(names(args_fit),
+                       grep("^brms\\.", sel_fits, value = TRUE)))
   } else {
     stopifnot(setequal(names(args_fit),
                        grep("^brms\\.", sel_fits, value = TRUE, invert = TRUE)))
@@ -858,6 +909,26 @@ stats_tst <- list(
 )
 type_tst <- c("mean", "lower", "upper", "se")
 
+rk_abbv_tst <- list(
+  default_abbv = list(),
+  abbv3 = list(ranking_abbreviate = TRUE,
+               ranking_abbreviate_args = list(minlength = 3))
+)
+
+rk_repel_tst <- list(
+  default_repel = list(),
+  repelText = list(ranking_repel = "text",
+                   ranking_repel_args = list(seed = seed3_tst))
+)
+
+cumulate_tst <- as.list(setNames(nm = c(FALSE, TRUE)))
+names(cumulate_tst) <- paste0("cu", names(cumulate_tst))
+
+angle_tst <- list(
+  default_angle = list(),
+  angle45 = list(text_angle = 45)
+)
+
 ### nterms ----------------------------------------------------------------
 
 ntermss <- sapply(mod_nms, function(mod_nm) {
@@ -888,7 +959,20 @@ nterms_avail <- c(nterms_avail, list(
 
 nterms_max_smmry <- list(
   default_nterms_max_smmry = NULL,
-  halfway = nterms_max_tst %/% 2L
+  halfway = nterms_max_tst %/% 2L,
+  zero = 0L
+)
+
+nterms_max_rk <- list(
+  default_nterms_max_rk = list(),
+  halfway = list(nterms_max = nterms_max_tst %/% 2L),
+  zero = list(nterms_max = 0L)
+)
+
+rk_max_tst <- list(
+  default_rk_max = list(),
+  rk_max_NA = list(ranking_nterms_max = NA),
+  rk_max_1 = list(ranking_nterms_max = 1)
 )
 
 ## Reference model --------------------------------------------------------
@@ -1030,7 +1114,8 @@ if (run_vs) {
         list(object = refmods[[args_vs_i$tstsetup_ref]]),
         excl_nonargs(args_vs_i)
       )),
-      warn_expected
+      warn_expected,
+      info = args_vs_i$tstsetup_ref
     )
     return(vs_out)
   })
@@ -1270,7 +1355,8 @@ if (run_prj) {
         list(object = refmods[[args_prj_i$tstsetup_ref]]),
         excl_nonargs(args_prj_i)
       )),
-      warn_expected
+      warn_expected,
+      info = args_prj_i$tstsetup_ref
     )
     return(prj_out)
   })
@@ -1497,10 +1583,13 @@ cre_args_smmry_vsel <- function(args_obj) {
             is.null(args_obj[[tstsetup_vsel]]$search_terms) &&
             length(stats_crr) == 0) {
           nterms_tst <- nterms_max_smmry[c("default_nterms_max_smmry",
-                                           "halfway")]
+                                           "halfway", "zero")]
         } else {
           nterms_tst <- nterms_max_smmry["default_nterms_max_smmry"]
         }
+      }
+      if (length(stats_crr)) {
+        cumulate_tst <- cumulate_tst["cuFALSE"]
       }
       lapply(nterms_tst, function(nterms_crr) {
         if (prj_crr != "latent") {
@@ -1509,13 +1598,15 @@ cre_args_smmry_vsel <- function(args_obj) {
         lapply(resp_oscale_tst, function(resp_oscale_crr) {
           if (isFALSE(resp_oscale_crr$resp_oscale) &&
               any(setdiff(stats_binom, stats_common) %in% stats_crr$stats)) {
-            return("REMOVE THIS DUMMY ENTRY")
+            return(dummy_glob)
           }
-          return(c(
-            nlist(tstsetup_vsel), only_nonargs(args_obj[[tstsetup_vsel]]),
-            list(type = type_tst, nterms_max = nterms_crr),
-            stats_crr, resp_oscale_crr
-          ))
+          lapply(cumulate_tst, function(cumulate_crr) {
+            return(c(
+              nlist(tstsetup_vsel), only_nonargs(args_obj[[tstsetup_vsel]]),
+              list(type = type_tst, nterms_max = nterms_crr),
+              stats_crr, resp_oscale_crr, list(cumulate = cumulate_crr)
+            ))
+          })
         })
       })
     })
@@ -1527,7 +1618,9 @@ cre_args_smmry_vsel <- function(args_obj) {
 if (run_vs) {
   args_smmry_vs <- cre_args_smmry_vsel(args_vs)
   args_smmry_vs <- unlist_cust(args_smmry_vs)
-  args_smmry_vs <- rm_dummies_unlisted(args_smmry_vs)
+  args_smmry_vs <- rm_dummies(args_smmry_vs)
+  has_zero_vs <- any(sapply(lapply(args_smmry_vs, "[[", "nterms_max"),
+                            identical, 0L))
 
   smmrys_vs <- lapply(args_smmry_vs, function(args_smmry_vs_i) {
     if (any(c("rmse", "auc") %in% args_smmry_vs_i$stats)) {
@@ -1548,7 +1641,9 @@ if (run_vs) {
 if (run_cvvs) {
   args_smmry_cvvs <- cre_args_smmry_vsel(args_cvvs)
   args_smmry_cvvs <- unlist_cust(args_smmry_cvvs)
-  args_smmry_cvvs <- rm_dummies_unlisted(args_smmry_cvvs)
+  args_smmry_cvvs <- rm_dummies(args_smmry_cvvs)
+  has_zero_cvvs <- any(sapply(lapply(args_smmry_cvvs, "[[", "nterms_max"),
+                              identical, 0L))
 
   smmrys_cvvs <- lapply(args_smmry_cvvs, function(args_smmry_cvvs_i) {
     if (any(c("rmse", "auc") %in% args_smmry_cvvs_i$stats)) {
@@ -1564,28 +1659,245 @@ if (run_cvvs) {
   })
 }
 
+if (run_more) {
+  has_zero_combined <- logical()
+  if (run_vs) {
+    has_zero_combined <- c(has_zero_combined, has_zero_vs)
+  }
+  if (run_cvvs) {
+    has_zero_combined <- c(has_zero_combined, has_zero_cvvs)
+  }
+  if (length(has_zero_combined)) {
+    stopifnot(any(has_zero_combined))
+  }
+}
+
+## plot.vsel() ------------------------------------------------------------
+
+cre_args_plot_vsel <- function(args_obj) {
+  tstsetups <- grep("\\.brnll\\..*\\.trad", names(args_obj), value = TRUE)
+  tstsetups <- union(
+    tstsetups,
+    grep("\\.default_search_trms|\\.alltrms", names(args_obj), value = TRUE,
+         invert = TRUE)
+  )
+  tstsetups <- union(
+    tstsetups,
+    head(grep("\\.spclformul", names(args_obj), value = TRUE), 1)
+  )
+  lapply(
+    setNames(nm = tstsetups),
+    function(tstsetup_vsel) {
+      nterms_max_plot <- nterms_max_smmry[c("default_nterms_max_smmry",
+                                            "halfway")]
+      lapply(nterms_max_plot, function(nterms_crr) {
+        lapply(rk_max_tst, function(rk_max_crr) {
+          lapply(rk_abbv_tst, function(rk_abbv_crr) {
+            lapply(rk_repel_tst, function(rk_repel_crr) {
+              lapply(cumulate_tst, function(cumulate_crr) {
+                lapply(angle_tst, function(angle_crr) {
+                  return(c(
+                    nlist(tstsetup_vsel),
+                    only_nonargs(args_obj[[tstsetup_vsel]]),
+                    list(nterms_max = nterms_crr),
+                    rk_max_crr, rk_abbv_crr, rk_repel_crr,
+                    list(cumulate = cumulate_crr),
+                    angle_crr
+                  ))
+                })
+              })
+            })
+          })
+        })
+      })
+    })
+}
+
+### varsel() --------------------------------------------------------------
+
+if (run_vs) {
+  args_plot_vs <- cre_args_plot_vsel(args_vs)
+  args_plot_vs <- unlist_cust(args_plot_vs)
+
+  plots_vs <- lapply(args_plot_vs, function(args_plot_vs_i) {
+    do.call(plot, c(
+      list(x = vss[[args_plot_vs_i$tstsetup_vsel]]),
+      excl_nonargs(args_plot_vs_i)
+    ))
+  })
+}
+
+### cv_varsel() -----------------------------------------------------------
+
+if (run_cvvs) {
+  args_plot_cvvs <- cre_args_plot_vsel(args_cvvs)
+  args_plot_cvvs <- unlist_cust(args_plot_cvvs)
+
+  plots_cvvs <- lapply(args_plot_cvvs, function(args_plot_cvvs_i) {
+    do.call(plot, c(
+      list(x = cvvss[[args_plot_cvvs_i$tstsetup_vsel]]),
+      excl_nonargs(args_plot_cvvs_i)
+    ))
+  })
+}
+
+## ranking() --------------------------------------------------------------
+
+### varsel() --------------------------------------------------------------
+
+if (run_vs) {
+  args_rk_vs <- lapply(setNames(nm = names(vss)), function(tstsetup_vsel) {
+    lapply(nterms_max_rk, function(nterms_crr) {
+      return(c(
+        nlist(tstsetup_vsel), only_nonargs(args_vs[[tstsetup_vsel]]),
+        nterms_crr
+      ))
+    })
+  })
+  args_rk_vs <- unlist_cust(args_rk_vs)
+
+  rks_vs <- lapply(args_rk_vs, function(args_rk_vs_i) {
+    do.call(ranking, c(
+      list(object = vss[[args_rk_vs_i$tstsetup_vsel]]),
+      excl_nonargs(args_rk_vs_i)
+    ))
+  })
+}
+
+### cv_varsel() -----------------------------------------------------------
+
+if (run_cvvs) {
+  args_rk_cvvs <- lapply(setNames(nm = names(cvvss)), function(tstsetup_vsel) {
+    lapply(nterms_max_rk, function(nterms_crr) {
+      return(c(
+        nlist(tstsetup_vsel), only_nonargs(args_cvvs[[tstsetup_vsel]]),
+        nterms_crr
+      ))
+    })
+  })
+  args_rk_cvvs <- unlist_cust(args_rk_cvvs)
+
+  rks_cvvs <- lapply(args_rk_cvvs, function(args_rk_cvvs_i) {
+    do.call(ranking, c(
+      list(object = cvvss[[args_rk_cvvs_i$tstsetup_vsel]]),
+      excl_nonargs(args_rk_cvvs_i)
+    ))
+  })
+}
+
+## cv_proportions() -------------------------------------------------------
+
+err_no_foldwise_rk <- "Could not find fold-wise predictor rankings"
+
+### varsel() --------------------------------------------------------------
+
+if (run_vs) {
+  args_pr_vs <- lapply(setNames(nm = names(rks_vs)), function(tstsetup_rk) {
+    return(c(
+      nlist(tstsetup_rk), only_nonargs(args_rk_vs[[tstsetup_rk]])
+    ))
+  })
+  args_pr_vs <- unlist_cust(args_pr_vs)
+
+  prs_vs <- lapply(args_pr_vs, function(args_pr_vs_i) {
+    err_expected <- err_no_foldwise_rk
+    expect_error(
+      do.call(cv_proportions, c(
+        list(object = rks_vs[[args_pr_vs_i$tstsetup_rk]]),
+        excl_nonargs(args_pr_vs_i)
+      )),
+      err_expected,
+      info = args_pr_vs_i$tstsetup_rk
+    )
+    return(dummy_glob)
+  })
+  keep_prs_vs <- rm_dummies(prs_vs, return_logical = TRUE)
+  prs_vs <- prs_vs[keep_prs_vs]
+  args_pr_vs <- args_pr_vs[keep_prs_vs]
+}
+
+### cv_varsel() -----------------------------------------------------------
+
+if (run_cvvs) {
+  args_pr_cvvs <- lapply(setNames(nm = names(rks_cvvs)), function(tstsetup_rk) {
+    lapply(cumulate_tst, function(cumulate_crr) {
+      return(c(
+        nlist(tstsetup_rk), only_nonargs(args_rk_cvvs[[tstsetup_rk]]),
+        list(cumulate = cumulate_crr)
+      ))
+    })
+  })
+  args_pr_cvvs <- unlist_cust(args_pr_cvvs)
+
+  prs_cvvs <- lapply(args_pr_cvvs, function(args_pr_cvvs_i) {
+    if (isFALSE(args_cvvs[[args_pr_cvvs_i$tstsetup_vsel]]$validate_search)) {
+      err_expected <- err_no_foldwise_rk
+    } else if (isTRUE(
+      args_rk_cvvs[[args_pr_cvvs_i$tstsetup_rk]]$nterms_max == 0
+    )) {
+      err_expected <- "Needing `nterms_max >= 1`"
+    } else {
+      err_expected <- NA
+    }
+    expect_error(
+      pr_out <- do.call(cv_proportions, c(
+        list(object = rks_cvvs[[args_pr_cvvs_i$tstsetup_rk]]),
+        excl_nonargs(args_pr_cvvs_i)
+      )),
+      err_expected,
+      info = args_pr_cvvs_i$tstsetup_rk
+    )
+    if (is.na(err_expected)) {
+      return(pr_out)
+    } else {
+      return(dummy_glob)
+    }
+  })
+  keep_prs_cvvs <- rm_dummies(prs_cvvs, return_logical = TRUE)
+  prs_cvvs <- prs_cvvs[keep_prs_cvvs]
+  args_pr_cvvs <- args_pr_cvvs[keep_prs_cvvs]
+}
+
+## plot.cv_proportions() --------------------------------------------------
+
+if (run_cvvs) {
+  args_plotpr <- lapply(setNames(nm = names(prs_cvvs)), function(tstsetup_pr) {
+    return(c(
+      nlist(tstsetup_pr), only_nonargs(args_pr_cvvs[[tstsetup_pr]])
+    ))
+  })
+  args_plotpr <- unlist_cust(args_plotpr)
+
+  plotprs <- lapply(args_plotpr, function(args_plotpr_i) {
+    do.call(plot, c(
+      list(x = prs_cvvs[[args_plotpr_i$tstsetup_pr]]),
+      excl_nonargs(args_plotpr_i)
+    ))
+  })
+}
+
 ## Output names -----------------------------------------------------------
 
 vsel_nms <- c(
   "refmodel", "nobs_train", "search_path", "solution_terms",
-  "pct_solution_terms_cv", "ce", "type_test", "y_wobs_test", "nobs_test",
+  "solution_terms_cv", "ce", "type_test", "y_wobs_test", "nobs_test",
   "summaries", "nterms_all", "nterms_max", "method", "cv_method", "K",
   "validate_search", "clust_used_search", "clust_used_eval", "nprjdraws_search",
-  "nprjdraws_eval"
+  "nprjdraws_eval", "projpred_version"
 )
 # Related to prediction (in contrast to selection):
 vsel_nms_pred <- c("summaries", "solution_terms", "ce")
 vsel_nms_pred_opt <- c("solution_terms")
 # Related to `nloo`:
-vsel_nms_nloo <- c("summaries", "pct_solution_terms_cv")
-vsel_nms_nloo_opt <- c("pct_solution_terms_cv")
+vsel_nms_nloo <- c("summaries", "solution_terms_cv")
+vsel_nms_nloo_opt <- c("solution_terms_cv")
 # Related to `validate_search`:
 vsel_nms_valsearch <- c("validate_search", "summaries", "ce",
-                        "pct_solution_terms_cv")
+                        "solution_terms_cv")
 vsel_nms_valsearch_opt <- character()
 # Related to `cvfits`:
-vsel_nms_cvfits <- c("refmodel", "summaries", "pct_solution_terms_cv")
-vsel_nms_cvfits_opt <- c("pct_solution_terms_cv")
+vsel_nms_cvfits <- c("refmodel", "summaries", "solution_terms_cv")
+vsel_nms_cvfits_opt <- c("solution_terms_cv")
 vsel_smmrs_sub_nms <- vsel_smmrs_ref_nms <- c("mu", "lppd")
 
 ## Defaults ---------------------------------------------------------------

@@ -339,8 +339,8 @@ augdat_ilink_binom <- function(eta_arr, link = "logit") {
 }
 
 ## From brms --------------------------------------------------------------
-## The functions from this (sub-)section are copied over from brms (with consent
-## by Paul Buerkner) to avoid loading brms just for these special link and
+## The functions from this (sub-)section are copied over from brms (with Paul
+## Bürkner's consent) to avoid loading brms just for these special link and
 ## inverse-link functions. (After copying over, they have been slightly modified
 ## here to avoid dependencies on other brms-internal functions.)
 

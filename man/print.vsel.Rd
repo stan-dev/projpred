@@ -2,7 +2,7 @@
 % Please edit documentation in R/methods.R
 \name{print.vsel}
 \alias{print.vsel}
-\title{Print results (summary) of variable selection}
+\title{Print results (summary) of a \code{\link[=varsel]{varsel()}} or \code{\link[=cv_varsel]{cv_varsel()}} run}
 \usage{
 \method{print}{vsel}(x, ...)
 }
@@ -17,7 +17,6 @@ The output of \code{\link[=summary.vsel]{summary.vsel()}} (invisible).
 }
 \description{
 This is the \code{\link[=print]{print()}} method for \code{vsel} objects (returned by \code{\link[=varsel]{varsel()}} or
-\code{\link[=cv_varsel]{cv_varsel()}}). It displays a summary of the results of the projection
-predictive variable selection by first calling \code{\link[=summary.vsel]{summary.vsel()}} and then
-\code{\link[=print.vselsummary]{print.vselsummary()}}.
+\code{\link[=cv_varsel]{cv_varsel()}}). It displays a summary of a \code{\link[=varsel]{varsel()}} or \code{\link[=cv_varsel]{cv_varsel()}} run by
+first calling \code{\link[=summary.vsel]{summary.vsel()}} and then \code{\link[=print.vselsummary]{print.vselsummary()}}.
 }

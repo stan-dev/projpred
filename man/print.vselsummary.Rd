@@ -2,7 +2,7 @@
 % Please edit documentation in R/methods.R
 \name{print.vselsummary}
 \alias{print.vselsummary}
-\title{Print summary of variable selection}
+\title{Print summary of a \code{\link[=varsel]{varsel()}} or \code{\link[=cv_varsel]{cv_varsel()}} run}
 \usage{
 \method{print}{vselsummary}(x, ...)
 }
@@ -16,6 +16,11 @@ The output of \code{\link[=summary.vsel]{summary.vsel()}} (invisible).
 }
 \description{
 This is the \code{\link[=print]{print()}} method for summary objects created by \code{\link[=summary.vsel]{summary.vsel()}}.
-It displays a summary of the results of the projection predictive variable
-selection.
+It displays a summary of the results from a \code{\link[=varsel]{varsel()}} or \code{\link[=cv_varsel]{cv_varsel()}} run.
+}
+\details{
+In the table printed at the bottom, column \code{solution_terms} contains
+the full-data predictor ranking and column \code{cv_proportions_diag} contains
+the main diagonal of the matrix returned by \code{\link[=cv_proportions]{cv_proportions()}} (with
+\code{cumulate} as set in the \code{\link[=summary.vsel]{summary.vsel()}} call that created \code{x}).
 }

@@ -298,6 +298,7 @@ test_that(paste(
 })
 
 test_that("`object` not of class \"vsel\" and missing `solution_terms` fails", {
+  skip_if_not(length(fits) > 0)
   expect_error(
     project(fits[[1]]),
     paste("^Please provide an `object` of class \"vsel\" or use argument",

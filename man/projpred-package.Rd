@@ -62,10 +62,9 @@ which submodel \pkg{projpred} is currently projecting onto as well as (if
 which submodel has been selected at those steps of the forward search for
 which a percentage (of the maximum submodel size that the search is run up
 to) is printed. In general, however, we cannot recommend setting this global
-option to \code{TRUE} for \code{cv_varsel()} with \code{cv_method = "LOO"} and
-\code{validate_search = TRUE} or for \code{cv_varsel()} with \code{cv_method = "kfold"}
-(simply due to the amount of information that will be printed, but also due
-to the progress bar which will not work anymore as intended).
+option to \code{TRUE} for \code{cv_varsel()} with \code{validate_search = TRUE} (simply due
+to the amount of information that will be printed, but also due to the
+progress bar which will not work anymore as intended).
 
 The projection of the reference model onto a submodel can be run on multiple
 CPU cores in parallel (across the projected draws). This is powered by the
@@ -124,8 +123,9 @@ and \code{\link[=get_refmodel]{get_refmodel()}} are only rarely needed.}
 \emph{evaluation} part for a projection predictive variable selection, possibly
 with cross-validation (CV).}
 \item{\code{\link[=summary.vsel]{summary.vsel()}}, \code{\link[=print.vsel]{print.vsel()}}, \code{\link[=plot.vsel]{plot.vsel()}},
-\code{\link[=suggest_size.vsel]{suggest_size.vsel()}}, \code{\link[=solution_terms.vsel]{solution_terms.vsel()}}}{For post-processing the
-results from \code{\link[=varsel]{varsel()}} and \code{\link[=cv_varsel]{cv_varsel()}}.}
+\code{\link[=suggest_size.vsel]{suggest_size.vsel()}}, \code{\link[=ranking]{ranking()}}, \code{\link[=cv_proportions]{cv_proportions()}},
+\code{\link[=plot.cv_proportions]{plot.cv_proportions()}}}{For post-processing the results from \code{\link[=varsel]{varsel()}}
+and \code{\link[=cv_varsel]{cv_varsel()}}.}
 \item{\code{\link[=project]{project()}}}{For projecting the reference model onto submodel(s).
 Typically, this follows the variable selection, but it can also be applied
 directly (without a variable selection).}

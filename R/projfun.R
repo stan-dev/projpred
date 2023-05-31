@@ -1,7 +1,8 @@
 # Function to project the reference model onto a single submodel with predictor
 # terms given in `solution_terms`. Note that "single submodel" does not refer to
 # a single fit (there are as many fits for this single submodel as there are
-# projected draws).
+# projected draws). At the end, init_submodl() is called, so the output is of
+# class `submodl`.
 get_submodl_prj <- function(solution_terms, p_ref, refmodel, regul = 1e-4,
                             ...) {
   validparams <- validate_wobs_wdraws(refmodel$wobs, p_ref$wdraws_prj,
