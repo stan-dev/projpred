@@ -2439,7 +2439,7 @@ cv_proportions.vsel <- function(object, ...) {
 #'   # Since the object returned by plot.cv_proportions() is a standard ggplot2
 #'   # plotting object, you can modify the plot easily, e.g., to remove the
 #'   # legend:
-#'   print(gg_pr_rk + theme(legend.position = "none"))
+#'   print(gg_pr_rk + ggplot2::theme(legend.position = "none"))
 #' }
 #'
 #' @export
