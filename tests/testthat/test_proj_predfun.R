@@ -169,7 +169,7 @@ test_that("repair_re() works for GLMMs", {
 })
 
 test_that("repair_re() works for multilevel cumulative() models", {
-  skip_if_not(requireNamespace("brms", quietly = TRUE))
+  skip_if_not_installed("brms")
 
   # Setup -------------------------------------------------------------------
 
