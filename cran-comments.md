@@ -103,29 +103,6 @@ feasibility ...`:
     
     For the inaccessible URL, see above.
 
-On R-devel, the win-builder check also gave the following NOTE:
-    
-    * checking S3 generic/method consistency ... NOTE
-    Mismatches for apparent methods not registered:
-    predict:
-      function(object, ...)
-    predict.gamm4:
-      function(fit, newdata)
-    
-    predict:
-      function(object, ...)
-    predict.subfit:
-      function(subfit, newdata)
-    
-    formula:
-      function(x, ...)
-    formula.gamm4:
-      function(x)
-    See section 'Registering S3 methods' in the 'Writing R Extensions'
-    manual.
-
-This will be handled in a future release.
-
 The macOS builder check gave the following NOTE:
 
     * checking package dependencies ... NOTE
