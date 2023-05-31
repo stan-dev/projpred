@@ -248,7 +248,8 @@ if (requireNamespace("rstanarm", quietly = TRUE)) {
   # and `nclusters_pred`, but only for the sake of speed in this example;
   # this is not recommended in general):
   cvvs <- cv_varsel(fit, cv_method = "kfold", K = 2, nterms_max = 3,
-                    nclusters = 5, nclusters_pred = 10, seed = 5555, verbose = FALSE)
+                    nclusters = 5, nclusters_pred = 10, seed = 5555,
+                    verbose = FALSE)
   # Now see, for example, `?print.vsel`, `?plot.vsel`, `?suggest_size.vsel`,
   # and `?ranking` for possible post-processing functions.
 }
