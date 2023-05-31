@@ -584,11 +584,6 @@ test_that(paste(
 
 # Comparison with glmnet --------------------------------------------------
 
-if (!requireNamespace("glmnet", quietly = TRUE)) {
-  stop("Package \"glmnet\" is needed for these tests. Please install it.",
-       call. = FALSE)
-}
-
 # below are some tests that check Lasso solution computed with varsel is the
 # same as that of glmnet. (notice that glm_ridge and glm_elnet are already
 # tested separately, so these would only check that the results do not change
@@ -598,6 +593,7 @@ test_that(paste(
   "L1-projection with data reference gives the same results as",
   "Lasso from glmnet."
 ), {
+  skip_if_not_installed("glmnet")
   # This test sometimes behaves inpredictably when run in `R CMD check`, so skip
   # it on CRAN:
   skip_on_cran()
