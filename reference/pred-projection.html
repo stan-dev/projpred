@@ -29,7 +29,7 @@ project() call to an object of class vsel; see project())."><meta property="og:i
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">projpred</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">2.5.0</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">2.6.0</span>
       </span>
     </div>
 
@@ -140,7 +140,7 @@ submodels at once (for <code>object</code>s of class <code>vsel</code> or <code>
 <span>  filter_nterms <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  transform <span class="op">=</span> <span class="cn">FALSE</span>,</span>
 <span>  integrated <span class="op">=</span> <span class="cn">FALSE</span>,</span>
-<span>  .seed <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/sample.html" class="external-link">sample.int</a></span><span class="op">(</span><span class="va">.Machine</span><span class="op">$</span><span class="va">integer.max</span>, <span class="fl">1</span><span class="op">)</span>,</span>
+<span>  .seed <span class="op">=</span> <span class="cn">NA</span>,</span>
 <span>  <span class="va">...</span></span>
 <span><span class="op">)</span></span>
 <span></span>
@@ -151,7 +151,7 @@ submodels at once (for <code>object</code>s of class <code>vsel</code> or <code>
 <span>  weightsnew <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  filter_nterms <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  nresample_clusters <span class="op">=</span> <span class="fl">1000</span>,</span>
-<span>  .seed <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/sample.html" class="external-link">sample.int</a></span><span class="op">(</span><span class="va">.Machine</span><span class="op">$</span><span class="va">integer.max</span>, <span class="fl">1</span><span class="op">)</span>,</span>
+<span>  .seed <span class="op">=</span> <span class="cn">NA</span>,</span>
 <span>  resp_oscale <span class="op">=</span> <span class="cn">TRUE</span>,</span>
 <span>  <span class="va">...</span></span>
 <span><span class="op">)</span></span></code></pre></div>
@@ -210,13 +210,18 @@ posterior draws (<code>TRUE</code>) or not (<code>FALSE</code>).</p></dd>
 <dt>.seed</dt>
 <dd><p>Pseudorandom number generation (PRNG) seed by which the same
 results can be obtained again if needed. Passed to argument <code>seed</code> of
-<code><a href="https://rdrr.io/r/base/Random.html" class="external-link">set.seed()</a></code>, but can also be <code>NA</code> to not call <code><a href="https://rdrr.io/r/base/Random.html" class="external-link">set.seed()</a></code> at all. Here,
-this seed is used for drawing new group-level effects in case of a
-multilevel submodel (however, not yet in case of a GAMM) and for drawing
-from the predictive distributions of the submodel(s) in case of
+<code><a href="https://rdrr.io/r/base/Random.html" class="external-link">set.seed()</a></code>, but can also be <code>NA</code> to not call <code><a href="https://rdrr.io/r/base/Random.html" class="external-link">set.seed()</a></code> at all. If not
+<code>NA</code>, then the PRNG state is reset (to the state before calling
+<code>proj_linpred()</code> or <code>proj_predict()</code>) upon exiting <code>proj_linpred()</code> or
+<code>proj_predict()</code>. Here, <code>.seed</code> is used for drawing new group-level effects
+in case of a multilevel submodel (however, not yet in case of a GAMM) and
+for drawing from the predictive distributions of the submodel(s) in case of
 <code>proj_predict()</code>. If a clustered projection was performed, then in
 <code>proj_predict()</code>, <code>.seed</code> is also used for drawing from the set of
-projected clusters of posterior draws (see argument <code>nresample_clusters</code>).</p></dd>
+projected clusters of posterior draws (see argument <code>nresample_clusters</code>).
+If <code><a href="project.html">project()</a></code> is called internally with <code>seed = NA</code> (or with <code>seed</code> being
+a lazily evaluated expression that uses the PRNG), then <code>.seed</code> also
+affects the PRNG usage there.</p></dd>
 
 
 <dt>...</dt>

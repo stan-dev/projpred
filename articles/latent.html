@@ -40,7 +40,7 @@
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">projpred</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">2.5.0</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">2.6.0</span>
       </span>
     </div>
 
@@ -133,7 +133,7 @@
       <h1 data-toc-skip>Latent projection predictive feature
 selection</h1>
             
-            <h4 data-toc-skip class="date">2023-04-05</h4>
+            <h4 data-toc-skip class="date">2023-05-31</h4>
       
       <small class="dont-index">Source: <a href="https://github.com/stan-dev/projpred/blob/HEAD/vignettes/latent.Rmd" class="external-link"><code>vignettes/latent.Rmd</code></a></small>
       <div class="hidden name"><code>latent.Rmd</code></div>
@@ -169,13 +169,15 @@ original response values.</p>
 distribution, since it (i) constitutes a combination of predictor data
 and regression parameters which is often linear (in the parameters,
 but—less—often also in the predictor data) or at least additive (across
-the predictor terms) and (ii) has infinite support. Furthermore, the
-Gaussian distribution has the highest differential entropy over all
-distributions with two finite moments and infinite support <span class="citation">(see, e.g., <a href="#ref-cover_elements_1991" role="doc-biblioref">Cover and Thomas 1991</a>)</span>. In some cases,
-e.g., for the probit link, the Gaussian distribution is even part of the
-original statistical model. In case of the logit link, the Gaussian
-distribution with a standard deviation of 1.6 approximates the logistic
-distribution (with a scale parameter of 1).</p>
+the predictor terms) and (ii) has the complete real line as support.
+Furthermore, the Gaussian distribution has the highest differential
+entropy among all distributions with two finite moments and with the
+real line as support <span class="citation">(see, e.g., <a href="#ref-cover_elements_1991" role="doc-biblioref">Cover and Thomas
+1991</a>)</span>. In some cases, e.g., for the probit link, the Gaussian
+distribution is even part of the original statistical model. In case of
+the logit link, the Gaussian distribution with a standard deviation of
+1.6 approximates the logistic distribution (with a scale parameter of
+1).</p>
 <p>The assumption of a Gaussian distribution for the latent predictors
 makes things a lot easier because it allows us to make use of
 <strong>projpred</strong>’s traditional projection.</p>
@@ -210,9 +212,9 @@ arguments accepting R functions responsible for the inverse-link
 transformation from latent scale to response scale
 (<code>latent_ilink</code>), for the calculation of log-likelihood
 values on response scale (<code>latent_ll_oscale</code>), and for
-drawing from the predictive distribution on response scale
-(<code>latent_ppd_oscale</code>). For some families, these arguments
-have internal defaults implemented natively in
+drawing from the (posterior-projection) predictive distribution on
+response scale (<code>latent_ppd_oscale</code>). For some families,
+these arguments have internal defaults implemented natively in
 <strong>projpred</strong>. These families are listed in the main
 vignette (section <a href="https://mc-stan.org/projpred/articles/projpred.html#modtypes">“Supported
 types of models”</a>). For all other families, <strong>projpred</strong>
@@ -269,7 +271,8 @@ Poisson-distributed response:</p>
 <code class="sourceCode R"><span><span class="co"># Number of observations in the training dataset (= number of observations in</span></span>
 <span><span class="co"># the test dataset):</span></span>
 <span><span class="va">N</span> <span class="op">&lt;-</span> <span class="fl">71</span></span>
-<span><span class="va">sim_poiss</span> <span class="op">&lt;-</span> <span class="kw">function</span><span class="op">(</span><span class="va">nobs</span> <span class="op">=</span> <span class="fl">2</span> <span class="op">*</span> <span class="va">N</span>, <span class="va">ncon</span> <span class="op">=</span> <span class="fl">10</span>, <span class="va">ngrpPL</span> <span class="op">=</span> <span class="fl">4</span>, <span class="va">nnoise</span> <span class="op">=</span> <span class="fl">39</span><span class="op">)</span> <span class="op">{</span></span>
+<span><span class="co"># Data-generating function:</span></span>
+<span><span class="va">sim_poiss</span> <span class="op">&lt;-</span> <span class="kw">function</span><span class="op">(</span><span class="va">nobs</span> <span class="op">=</span> <span class="fl">2</span> <span class="op">*</span> <span class="va">N</span>, <span class="va">ncon</span> <span class="op">=</span> <span class="fl">10</span>, <span class="va">ncats</span> <span class="op">=</span> <span class="fl">4</span>, <span class="va">nnoise</span> <span class="op">=</span> <span class="fl">39</span><span class="op">)</span> <span class="op">{</span></span>
 <span>  <span class="co"># Regression coefficients for continuous predictors:</span></span>
 <span>  <span class="va">coefs_con</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/stats/Normal.html" class="external-link">rnorm</a></span><span class="op">(</span><span class="va">ncon</span><span class="op">)</span></span>
 <span>  <span class="co"># Continuous predictors:</span></span>
@@ -277,16 +280,16 @@ Poisson-distributed response:</p>
 <span>  <span class="co"># Start linear predictor:</span></span>
 <span>  <span class="va">linpred</span> <span class="op">&lt;-</span> <span class="fl">2.1</span> <span class="op">+</span> <span class="va">dat_sim</span> <span class="op"><a href="https://rdrr.io/r/base/matmult.html" class="external-link">%*%</a></span> <span class="va">coefs_con</span></span>
 <span>  </span>
-<span>  <span class="co"># Population-level (PL) categorical predictor:</span></span>
+<span>  <span class="co"># Categorical predictor:</span></span>
 <span>  <span class="va">dat_sim</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span></span>
 <span>    x <span class="op">=</span> <span class="va">dat_sim</span>,</span>
-<span>    grpPL <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/gl.html" class="external-link">gl</a></span><span class="op">(</span>n <span class="op">=</span> <span class="va">ngrpPL</span>, k <span class="op">=</span> <span class="va">nobs</span> <span class="op"><a href="https://rdrr.io/r/base/Arithmetic.html" class="external-link">%/%</a></span> <span class="va">ngrpPL</span>, length <span class="op">=</span> <span class="va">nobs</span>,</span>
-<span>               labels <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/paste.html" class="external-link">paste0</a></span><span class="op">(</span><span class="st">"grpPL"</span>, <span class="fu"><a href="https://rdrr.io/r/base/seq.html" class="external-link">seq_len</a></span><span class="op">(</span><span class="va">ngrpPL</span><span class="op">)</span><span class="op">)</span><span class="op">)</span></span>
+<span>    xcat <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/gl.html" class="external-link">gl</a></span><span class="op">(</span>n <span class="op">=</span> <span class="va">ncats</span>, k <span class="op">=</span> <span class="va">nobs</span> <span class="op"><a href="https://rdrr.io/r/base/Arithmetic.html" class="external-link">%/%</a></span> <span class="va">ncats</span>, length <span class="op">=</span> <span class="va">nobs</span>,</span>
+<span>              labels <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/paste.html" class="external-link">paste0</a></span><span class="op">(</span><span class="st">"cat"</span>, <span class="fu"><a href="https://rdrr.io/r/base/seq.html" class="external-link">seq_len</a></span><span class="op">(</span><span class="va">ncats</span><span class="op">)</span><span class="op">)</span><span class="op">)</span></span>
 <span>  <span class="op">)</span></span>
-<span>  <span class="co"># Regression coefficients for the PL categorical predictor:</span></span>
-<span>  <span class="va">coefs_catPL</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/stats/Normal.html" class="external-link">rnorm</a></span><span class="op">(</span><span class="va">ngrpPL</span><span class="op">)</span></span>
+<span>  <span class="co"># Regression coefficients for the categorical predictor:</span></span>
+<span>  <span class="va">coefs_cat</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/stats/Normal.html" class="external-link">rnorm</a></span><span class="op">(</span><span class="va">ncats</span><span class="op">)</span></span>
 <span>  <span class="co"># Continue linear predictor:</span></span>
-<span>  <span class="va">linpred</span> <span class="op">&lt;-</span> <span class="va">linpred</span> <span class="op">+</span> <span class="va">coefs_catPL</span><span class="op">[</span><span class="va">dat_sim</span><span class="op">$</span><span class="va">grpPL</span><span class="op">]</span></span>
+<span>  <span class="va">linpred</span> <span class="op">&lt;-</span> <span class="va">linpred</span> <span class="op">+</span> <span class="va">coefs_cat</span><span class="op">[</span><span class="va">dat_sim</span><span class="op">$</span><span class="va">xcat</span><span class="op">]</span></span>
 <span>  </span>
 <span>  <span class="co"># Noise predictors:</span></span>
 <span>  <span class="va">dat_sim</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span></span>
@@ -302,10 +305,11 @@ Poisson-distributed response:</p>
 <span>  <span class="fu"><a href="https://rdrr.io/r/base/colnames.html" class="external-link">rownames</a></span><span class="op">(</span><span class="va">dat_sim</span><span class="op">)</span> <span class="op">&lt;-</span> <span class="cn">NULL</span></span>
 <span>  <span class="kw"><a href="https://rdrr.io/r/base/function.html" class="external-link">return</a></span><span class="op">(</span><span class="va">dat_sim</span><span class="op">)</span></span>
 <span><span class="op">}</span></span>
+<span><span class="co"># Generate data:</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/Random.html" class="external-link">set.seed</a></span><span class="op">(</span><span class="fl">300417</span><span class="op">)</span></span>
 <span><span class="va">dat_poiss</span> <span class="op">&lt;-</span> <span class="fu">sim_poiss</span><span class="op">(</span><span class="op">)</span></span>
-<span><span class="va">dat_poiss_train</span> <span class="op">&lt;-</span> <span class="va">dat_poiss</span><span class="op">[</span><span class="fl">1</span><span class="op">:</span><span class="va">N</span>, , drop <span class="op">=</span> <span class="cn">FALSE</span><span class="op">]</span></span>
-<span><span class="va">dat_poiss_test</span> <span class="op">&lt;-</span> <span class="va">dat_poiss</span><span class="op">[</span><span class="op">(</span><span class="va">N</span> <span class="op">+</span> <span class="fl">1</span><span class="op">)</span><span class="op">:</span><span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">nrow</a></span><span class="op">(</span><span class="va">dat_poiss</span><span class="op">)</span>, , drop <span class="op">=</span> <span class="cn">FALSE</span><span class="op">]</span></span></code></pre></div>
+<span><span class="va">dat_poiss_train</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span><span class="va">dat_poiss</span>, <span class="va">N</span><span class="op">)</span></span>
+<span><span class="va">dat_poiss_test</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">tail</a></span><span class="op">(</span><span class="va">dat_poiss</span>, <span class="va">N</span><span class="op">)</span></span></code></pre></div>
 </div>
 <div class="section level3">
 <h3 id="reference-model">Reference model<a class="anchor" aria-label="anchor" href="#reference-model"></a>
@@ -315,11 +319,12 @@ in terms of predictive performance that we can construct (here, we
 assume that we don’t know about the true data-generating process even
 though the dataset was simulated):</p>
 <div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://mc-stan.org/rstanarm/" class="external-link">rstanarm</a></span><span class="op">)</span></span>
-<span><span class="co"># Number of regression coefficients:</span></span>
-<span><span class="op">(</span> <span class="va">D</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/sum.html" class="external-link">sum</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/grep.html" class="external-link">grepl</a></span><span class="op">(</span><span class="st">"^x|^grpPL"</span>, <span class="fu"><a href="https://rdrr.io/r/base/names.html" class="external-link">names</a></span><span class="op">(</span><span class="va">dat_poiss_train</span><span class="op">)</span><span class="op">)</span><span class="op">)</span> <span class="op">)</span></span></code></pre></div>
+<code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://mc-stan.org/rstanarm/" class="external-link">rstanarm</a></span><span class="op">)</span></span></code></pre></div>
+<div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="co"># Number of regression coefficients:</span></span>
+<span><span class="op">(</span> <span class="va">D</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/sum.html" class="external-link">sum</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/grep.html" class="external-link">grepl</a></span><span class="op">(</span><span class="st">"^x"</span>, <span class="fu"><a href="https://rdrr.io/r/base/names.html" class="external-link">names</a></span><span class="op">(</span><span class="va">dat_poiss_train</span><span class="op">)</span><span class="op">)</span><span class="op">)</span> <span class="op">)</span></span></code></pre></div>
 <pre><code>[1] 50</code></pre>
-<div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># Prior guess for the number of relevant (i.e., non-zero) regression</span></span>
 <span><span class="co"># coefficients:</span></span>
 <span><span class="va">p0</span> <span class="op">&lt;-</span> <span class="fl">10</span></span>
@@ -336,7 +341,7 @@ though the dataset was simulated):</p>
 <span><span class="co">###</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/options.html" class="external-link">options</a></span><span class="op">(</span>mc.cores <span class="op">=</span> <span class="va">ncores</span><span class="op">)</span></span>
 <span><span class="va">refm_fml</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/stats/formula.html" class="external-link">as.formula</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/paste.html" class="external-link">paste</a></span><span class="op">(</span><span class="st">"y"</span>, <span class="st">"~"</span>, <span class="fu"><a href="https://rdrr.io/r/base/paste.html" class="external-link">paste</a></span><span class="op">(</span></span>
-<span>  <span class="fu"><a href="https://rdrr.io/r/base/grep.html" class="external-link">grep</a></span><span class="op">(</span><span class="st">"^x|^grpPL"</span>, <span class="fu"><a href="https://rdrr.io/r/base/names.html" class="external-link">names</a></span><span class="op">(</span><span class="va">dat_poiss_train</span><span class="op">)</span>, value <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span>,</span>
+<span>  <span class="fu"><a href="https://rdrr.io/r/base/grep.html" class="external-link">grep</a></span><span class="op">(</span><span class="st">"^x"</span>, <span class="fu"><a href="https://rdrr.io/r/base/names.html" class="external-link">names</a></span><span class="op">(</span><span class="va">dat_poiss_train</span><span class="op">)</span>, value <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span>,</span>
 <span>  collapse <span class="op">=</span> <span class="st">" + "</span></span>
 <span><span class="op">)</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="va">refm_fit_poiss</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://mc-stan.org/rstanarm/reference/stan_glm.html" class="external-link">stan_glm</a></span><span class="op">(</span></span>
@@ -345,24 +350,25 @@ though the dataset was simulated):</p>
 <span>  data <span class="op">=</span> <span class="va">dat_poiss_train</span>,</span>
 <span>  prior <span class="op">=</span> <span class="fu"><a href="https://mc-stan.org/rstanarm/reference/priors.html" class="external-link">hs</a></span><span class="op">(</span>global_scale <span class="op">=</span> <span class="va">tau0</span>, slab_df <span class="op">=</span> <span class="fl">100</span>, slab_scale <span class="op">=</span> <span class="fl">1</span><span class="op">)</span>,</span>
 <span>  <span class="co">### Only for the sake of speed (not recommended in general):</span></span>
-<span>  chains <span class="op">=</span> <span class="fl">2</span>, iter <span class="op">=</span> <span class="fl">500</span>,</span>
+<span>  chains <span class="op">=</span> <span class="fl">2</span>, iter <span class="op">=</span> <span class="fl">1000</span>,</span>
 <span>  <span class="co">###</span></span>
-<span>  seed <span class="op">=</span> <span class="fl">7286013</span>, QR <span class="op">=</span> <span class="cn">TRUE</span>, refresh <span class="op">=</span> <span class="fl">0</span></span>
+<span>  QR <span class="op">=</span> <span class="cn">TRUE</span>, refresh <span class="op">=</span> <span class="fl">0</span></span>
 <span><span class="op">)</span></span></code></pre></div>
 </div>
 <div class="section level3">
 <h3 id="variable-selection-using-the-latent-projection">Variable selection using the latent projection<a class="anchor" aria-label="anchor" href="#variable-selection-using-the-latent-projection"></a>
 </h3>
-<p>We now run a variable selection with <code>latent = TRUE</code> in
-the <code><a href="../reference/refmodel-init-get.html">get_refmodel()</a></code> call (see section <a href="#impl">“Implementation”</a> for why <code><a href="../reference/refmodel-init-get.html">get_refmodel()</a></code> is
-called explicitly here) to request the latent projection. Since we have
-a hold-out test dataset available, we can use <code><a href="../reference/varsel.html">varsel()</a></code> with
-argument <code>d_test</code> instead of <code><a href="../reference/cv_varsel.html">cv_varsel()</a></code>.
-Furthermore, we measure the runtime to compare it to the traditional
+<p>Within <strong>projpred</strong>, we define the reference model
+object explicitly and set <code>latent = TRUE</code> in the
+corresponding <code><a href="../reference/refmodel-init-get.html">get_refmodel()</a></code> call (see section <a href="#impl">“Implementation”</a>) so that the latent projection is used
+in downstream functions. Since we have a hold-out test dataset
+available, we can use <code><a href="../reference/varsel.html">varsel()</a></code> with argument
+<code>d_test</code> instead of <code><a href="../reference/cv_varsel.html">cv_varsel()</a></code>. Furthermore, we
+measure the runtime to be able to compare it to the traditional
 projection’s later:</p>
-<div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://mc-stan.org/projpred/">projpred</a></span><span class="op">)</span></span></code></pre></div>
 <div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://mc-stan.org/projpred/">projpred</a></span><span class="op">)</span></span></code></pre></div>
+<div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">d_test_lat_poiss</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span></span>
 <span>  data <span class="op">=</span> <span class="va">dat_poiss_test</span>,</span>
 <span>  offset <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/rep.html" class="external-link">rep</a></span><span class="op">(</span><span class="fl">0</span>, <span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">nrow</a></span><span class="op">(</span><span class="va">dat_poiss_test</span><span class="op">)</span><span class="op">)</span>,</span>
@@ -374,8 +380,8 @@ projection’s later:</p>
 <span>  y_oscale <span class="op">=</span> <span class="va">dat_poiss_test</span><span class="op">$</span><span class="va">y</span></span>
 <span><span class="op">)</span></span>
 <span><span class="va">refm_poiss</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/refmodel-init-get.html">get_refmodel</a></span><span class="op">(</span><span class="va">refm_fit_poiss</span>, latent <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span></code></pre></div>
-<pre><code>Since `&lt;refmodel&gt;$dis` will consist of only `NA`s, downstream analyses based on this reference model won't be able to use log predictive density (LPD) values on latent scale. Furthermore, proj_predict() won't be able to draw from the latent Gaussian distribution.</code></pre>
-<div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
+<pre><code>Since `&lt;refmodel&gt;$dis` will consist of only `NA`s, downstream analyses based on this reference model object won't be able to use log predictive density (LPD) values on latent scale. Furthermore, proj_predict() won't be able to draw from the latent Gaussian distribution.</code></pre>
+<div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">time_lat</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/system.time.html" class="external-link">system.time</a></span><span class="op">(</span><span class="va">vs_lat</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/varsel.html">varsel</a></span><span class="op">(</span></span>
 <span>  <span class="va">refm_poiss</span>,</span>
 <span>  d_test <span class="op">=</span> <span class="va">d_test_lat_poiss</span>,</span>
@@ -383,47 +389,48 @@ projection’s later:</p>
 <span>  nclusters_pred <span class="op">=</span> <span class="fl">20</span>,</span>
 <span>  <span class="co">###</span></span>
 <span>  nterms_max <span class="op">=</span> <span class="fl">14</span>,</span>
+<span>  <span class="co">### In interactive use, we recommend not to deactivate the verbose mode:</span></span>
+<span>  verbose <span class="op">=</span> <span class="cn">FALSE</span>,</span>
+<span>  <span class="co">###</span></span>
+<span>  <span class="co">### For comparability with varsel() based on the traditional projection:</span></span>
 <span>  seed <span class="op">=</span> <span class="fl">95930</span></span>
+<span>  <span class="co">###</span></span>
 <span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
-<div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb10"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="va">time_lat</span><span class="op">)</span></span></code></pre></div>
 <pre><code>   user  system elapsed 
-  1.821   0.000   1.821 </code></pre>
+  0.871   0.000   0.871 </code></pre>
 <p>The message telling that <code>&lt;refmodel&gt;$dis</code> consists
 of only <code>NA</code>s will not concern us here because we will only
 be focusing on response-scale post-processing.</p>
 <p>In order to decide for a submodel size, we first inspect the
 <code><a href="https://rdrr.io/r/graphics/plot.default.html" class="external-link">plot()</a></code> results:</p>
-<div class="sourceCode" id="cb11"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb12"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="op">(</span> <span class="va">gg_lat</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/graphics/plot.default.html" class="external-link">plot</a></span><span class="op">(</span><span class="va">vs_lat</span>, stats <span class="op">=</span> <span class="st">"mlpd"</span>, deltas <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span> <span class="op">)</span></span></code></pre></div>
-<p><img src="latent_files/figure-html/unnamed-chunk-7-1.png" width="75%" style="display: block; margin: auto;"></p>
+<p><img src="latent_files/figure-html/plot_vsel_lat-1.png" width="75%" style="display: block; margin: auto;"></p>
 <p>Although the submodels’ MLPDs seem to be very close to the reference
 model’s MLPD from a submodel size of 6 on, a zoomed plot reveals that
-there is still some discrepancy at sizes 6 to 10 and that size 11 would
+there is still some discrepancy at sizes 6 to 11 and that size 12 would
 be a better choice (further down below in the <code><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary()</a></code>
 output, we will also see that on absolute scale, the discrepancy at
-sizes 6 to 10 is not negligible):</p>
-<div class="sourceCode" id="cb12"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">gg_lat</span> <span class="op">+</span> <span class="fu">ggplot2</span><span class="fu">::</span><span class="fu"><a href="https://ggplot2.tidyverse.org/reference/coord_cartesian.html" class="external-link">coord_cartesian</a></span><span class="op">(</span>ylim <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="op">-</span><span class="fl">10</span>, <span class="fl">0.05</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
-<p><img src="latent_files/figure-html/unnamed-chunk-8-1.png" width="75%" style="display: block; margin: auto;"></p>
-<p>Thus, we decide for a submodel size of 11:</p>
+sizes 6 to 11 is not negligible):</p>
 <div class="sourceCode" id="cb13"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">modsize_decided_lat</span> <span class="op">&lt;-</span> <span class="fl">11</span></span></code></pre></div>
+<code class="sourceCode R"><span><span class="va">gg_lat</span> <span class="op">+</span> <span class="fu">ggplot2</span><span class="fu">::</span><span class="fu"><a href="https://ggplot2.tidyverse.org/reference/coord_cartesian.html" class="external-link">coord_cartesian</a></span><span class="op">(</span>ylim <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="op">-</span><span class="fl">10</span>, <span class="fl">0.05</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
+<p><img src="latent_files/figure-html/plot_vsel_lat_zoom-1.png" width="75%" style="display: block; margin: auto;"></p>
+<p>Thus, we decide for a submodel size of 12:</p>
+<div class="sourceCode" id="cb14"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">size_decided_lat</span> <span class="op">&lt;-</span> <span class="fl">12</span></span></code></pre></div>
 <p>This is also the size that <code><a href="../reference/suggest_size.html">suggest_size()</a></code> would
 suggest:</p>
-<div class="sourceCode" id="cb14"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb15"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/suggest_size.html">suggest_size</a></span><span class="op">(</span><span class="va">vs_lat</span>, stat <span class="op">=</span> <span class="st">"mlpd"</span><span class="op">)</span></span></code></pre></div>
-<pre><code>[1] 11</code></pre>
-<p>Only now, after we have made a decision for the submodel size, we
-inspect further results from the variable selection and, in particular,
-the solution path:</p>
-<div class="sourceCode" id="cb16"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">smmry_lat</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary</a></span><span class="op">(</span></span>
-<span>  <span class="va">vs_lat</span>,</span>
-<span>  stats <span class="op">=</span> <span class="st">"mlpd"</span>,</span>
-<span>  type <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"mean"</span>, <span class="st">"se"</span>, <span class="st">"lower"</span>, <span class="st">"upper"</span>, <span class="st">"diff"</span>, <span class="st">"diff.se"</span><span class="op">)</span></span>
-<span><span class="op">)</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="va">smmry_lat</span>, digits <span class="op">=</span> <span class="fl">3</span><span class="op">)</span></span></code></pre></div>
+<pre><code>[1] 12</code></pre>
+<p>To obtain the results from the <code><a href="../reference/varsel.html">varsel()</a></code> run in tabular
+form, we call <code><a href="../reference/summary.vsel.html">summary.vsel()</a></code>:</p>
+<div class="sourceCode" id="cb17"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">smmry_lat</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary</a></span><span class="op">(</span><span class="va">vs_lat</span>, stats <span class="op">=</span> <span class="st">"mlpd"</span>,</span>
+<span>                     type <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"mean"</span>, <span class="st">"lower"</span>, <span class="st">"upper"</span>, <span class="st">"diff"</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="va">smmry_lat</span>, digits <span class="op">=</span> <span class="fl">2</span><span class="op">)</span></span></code></pre></div>
 <pre><code>------
 Response-scale family:
 
@@ -438,11 +445,11 @@ Link function: identity
 
 ------
 Formula: .y ~ x.1 + x.2 + x.3 + x.4 + x.5 + x.6 + x.7 + x.8 + x.9 + x.10 + 
-    grpPL + xn.1 + xn.2 + xn.3 + xn.4 + xn.5 + xn.6 + xn.7 + 
-    xn.8 + xn.9 + xn.10 + xn.11 + xn.12 + xn.13 + xn.14 + xn.15 + 
-    xn.16 + xn.17 + xn.18 + xn.19 + xn.20 + xn.21 + xn.22 + xn.23 + 
-    xn.24 + xn.25 + xn.26 + xn.27 + xn.28 + xn.29 + xn.30 + xn.31 + 
-    xn.32 + xn.33 + xn.34 + xn.35 + xn.36 + xn.37 + xn.38 + xn.39
+    xcat + xn.1 + xn.2 + xn.3 + xn.4 + xn.5 + xn.6 + xn.7 + xn.8 + 
+    xn.9 + xn.10 + xn.11 + xn.12 + xn.13 + xn.14 + xn.15 + xn.16 + 
+    xn.17 + xn.18 + xn.19 + xn.20 + xn.21 + xn.22 + xn.23 + xn.24 + 
+    xn.25 + xn.26 + xn.27 + xn.28 + xn.29 + xn.30 + xn.31 + xn.32 + 
+    xn.33 + xn.34 + xn.35 + xn.36 + xn.37 + xn.38 + xn.39
 Observations (training set): 71
 Observations (test set): 71
 Projection method: latent
@@ -451,41 +458,41 @@ Maximum submodel size for the search: 14
 Number of projected draws in the search: 1 (from clustered projection)
 Number of projected draws in the performance evaluation: 20 (from clustered projection)
 
-Performance evaluation summary (response scale) with `deltas = FALSE`:
- size solution_terms     mlpd       se    lower    upper      diff  diff.se
-    0           &lt;NA&gt; -6281.54 2793.417 -9074.95 -3488.12 -6278.324 2.79e+03
-    1            x.4 -4190.86 1866.360 -6057.22 -2324.50 -4187.650 1.87e+03
-    2            x.6 -1431.70  553.630 -1985.33  -878.07 -1428.491 5.53e+02
-    3           x.10  -471.56  203.944  -675.50  -267.61  -468.345 2.04e+02
-    4            x.3  -447.33  250.031  -697.36  -197.30  -444.118 2.50e+02
-    5            x.1  -166.19   84.658  -250.85   -81.53  -162.976 8.45e+01
-    6            x.2   -65.27   31.185   -96.45   -34.08   -62.058 3.10e+01
-    7            x.8  -112.69   58.348  -171.04   -54.35  -109.483 5.82e+01
-    8            x.7  -114.85   62.044  -176.89   -52.81  -111.639 6.19e+01
-    9            x.5  -125.54   75.647  -201.19   -49.89  -122.330 7.55e+01
-   10          grpPL   -13.04    6.509   -19.55    -6.54    -9.834 6.37e+00
-   11            x.9    -2.89    0.278    -3.17    -2.61     0.318 6.41e-02
-   12           xn.6    -2.89    0.279    -3.17    -2.61     0.319 6.66e-02
-   13          xn.29    -2.90    0.283    -3.18    -2.62     0.310 6.70e-02
-   14          xn.14    -2.98    0.304    -3.28    -2.67     0.236 7.80e-02</code></pre>
+Performance evaluation summary (response scale) with `deltas = FALSE` and `cumulate = FALSE`:
+ size solution_terms cv_proportions_diag    mlpd   lower   upper     diff
+    0           &lt;NA&gt;                  NA -6257.6 -9041.1 -3474.0 -6254.36
+    1            x.4                  NA -4185.6 -6049.0 -2322.2 -4182.39
+    2            x.6                  NA -1434.7 -1989.6  -879.8 -1431.46
+    3           x.10                  NA  -474.7  -679.9  -269.4  -471.45
+    4            x.3                  NA  -450.2  -703.2  -197.1  -446.98
+    5            x.1                  NA  -161.0  -244.8   -77.2  -157.77
+    6            x.2                  NA   -62.1   -90.6   -33.6   -58.89
+    7            x.8                  NA  -103.8  -158.4   -49.1  -100.58
+    8            x.7                  NA  -103.6  -158.5   -48.8  -100.42
+    9           xcat                  NA   -19.6   -31.9    -7.2   -16.35
+   10            x.5                  NA   -13.3   -19.7    -6.9   -10.09
+   11           xn.6                  NA   -13.4   -19.6    -7.2   -10.19
+   12            x.9                  NA    -2.9    -3.2    -2.6     0.30
+   13          xn.29                  NA    -2.9    -3.2    -2.6     0.28
+   14          xn.26                  NA    -2.9    -3.2    -2.6     0.28</code></pre>
 <p>On absolute scale (column <code>mlpd</code>), we see that submodel
-size 10 leads to an MLPD of <code>-13.045</code>, i.e., a geometric mean
+size 11 leads to an MLPD of <code>-13.4</code>, i.e., a geometric mean
 predictive density (GMPD; due to the discrete response family, the
 “density” values are probabilities here, so we will report the GMPD as
-percentage) of <code>exp(-13.045)</code> which is ca. 2e-04 % whereas
-size 11 leads to a GMPD of ca. 5.54 %. This is a considerable
-improvement from size 10 to size 11, so another justification for size
-11. (Size 12 would have resulted in a GMPD of ca. 5.55 % which is only a
-small improvement compared to size 11.)</p>
-<p>In the solution path up to the selected size of 11, we can see that
-in this case, <strong>projpred</strong> has correctly selected the truly
-relevant predictors first and only then the noise predictors. We can see
-this more clearly using the following code:</p>
-<div class="sourceCode" id="cb18"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">soltrms_lat</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/solution_terms.html">solution_terms</a></span><span class="op">(</span><span class="va">vs_lat</span><span class="op">)</span></span>
-<span><span class="op">(</span> <span class="va">soltrms_lat_final</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span><span class="va">soltrms_lat</span>, <span class="va">modsize_decided_lat</span><span class="op">)</span> <span class="op">)</span></span></code></pre></div>
-<pre><code> [1] "x.4"   "x.6"   "x.10"  "x.3"   "x.1"   "x.2"   "x.8"   "x.7"   "x.5"  
-[10] "grpPL" "x.9"  </code></pre>
+percentage) of <code>exp(-13.4)</code> which is ca. 2e-04 % whereas size
+12 leads to a GMPD of ca. 5.5 %. This is a considerable improvement from
+size 11 to size 12, so another justification for size 12. (Size 13 would
+have resulted in about the same GMPD as size 12.)</p>
+<p>In the predictor ranking up to the selected size of 12, we can see
+that apart from the noise term <code>xn.6</code>,
+<strong>projpred</strong> has correctly selected the truly relevant
+predictors first and only then the noise predictors. We can see this
+more clearly using the following code:</p>
+<div class="sourceCode" id="cb19"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">rk_lat</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/ranking.html">ranking</a></span><span class="op">(</span><span class="va">vs_lat</span><span class="op">)</span></span>
+<span><span class="op">(</span> <span class="va">predictors_final_lat</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span><span class="va">rk_lat</span><span class="op">[[</span><span class="st">"fulldata"</span><span class="op">]</span><span class="op">]</span>, <span class="va">size_decided_lat</span><span class="op">)</span> <span class="op">)</span></span></code></pre></div>
+<pre><code> [1] "x.4"  "x.6"  "x.10" "x.3"  "x.1"  "x.2"  "x.8"  "x.7"  "xcat" "x.5" 
+[11] "xn.6" "x.9" </code></pre>
 <p>We will skip post-selection inference here (see the main vignette for
 a demonstration of post-selection inference), but note that
 <code><a href="../reference/pred-projection.html">proj_predict()</a></code> has gained a new argument
@@ -499,7 +506,7 @@ is available in <code><a href="../reference/pred-projection.html">proj_linpred()
 </h3>
 <p>We will now look at what <strong>projpred</strong>’s traditional
 projection would have given:</p>
-<div class="sourceCode" id="cb20"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb21"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">d_test_trad_poiss</span> <span class="op">&lt;-</span> <span class="va">d_test_lat_poiss</span></span>
 <span><span class="va">d_test_trad_poiss</span><span class="op">$</span><span class="va">y</span> <span class="op">&lt;-</span> <span class="va">d_test_trad_poiss</span><span class="op">$</span><span class="va">y_oscale</span></span>
 <span><span class="va">d_test_trad_poiss</span><span class="op">$</span><span class="va">y_oscale</span> <span class="op">&lt;-</span> <span class="cn">NULL</span></span>
@@ -510,32 +517,34 @@ projection would have given:</p>
 <span>  nclusters_pred <span class="op">=</span> <span class="fl">20</span>,</span>
 <span>  <span class="co">###</span></span>
 <span>  nterms_max <span class="op">=</span> <span class="fl">14</span>,</span>
+<span>  <span class="co">### In interactive use, we recommend not to deactivate the verbose mode:</span></span>
+<span>  verbose <span class="op">=</span> <span class="cn">FALSE</span>,</span>
+<span>  <span class="co">###</span></span>
+<span>  <span class="co">### For comparability with varsel() based on the latent projection:</span></span>
 <span>  seed <span class="op">=</span> <span class="fl">95930</span></span>
+<span>  <span class="co">###</span></span>
 <span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
-<div class="sourceCode" id="cb21"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb22"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="va">time_trad</span><span class="op">)</span></span></code></pre></div>
 <pre><code>   user  system elapsed 
-  2.750   0.004   2.754 </code></pre>
-<div class="sourceCode" id="cb23"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="op">(</span> <span class="va">gg_trad</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/graphics/plot.default.html" class="external-link">plot</a></span><span class="op">(</span><span class="va">vs_trad</span>, stats <span class="op">=</span> <span class="st">"mlpd"</span>, deltas <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span> <span class="op">)</span></span></code></pre></div>
-<p><img src="latent_files/figure-html/unnamed-chunk-14-1.png" width="60%" style="display: block; margin: auto;"></p>
+  1.275   0.000   1.276 </code></pre>
 <div class="sourceCode" id="cb24"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">smmry_trad</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary</a></span><span class="op">(</span></span>
-<span>  <span class="va">vs_trad</span>,</span>
-<span>  stats <span class="op">=</span> <span class="st">"mlpd"</span>,</span>
-<span>  type <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"mean"</span>, <span class="st">"se"</span>, <span class="st">"lower"</span>, <span class="st">"upper"</span>, <span class="st">"diff"</span>, <span class="st">"diff.se"</span><span class="op">)</span></span>
-<span><span class="op">)</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="va">smmry_trad</span>, digits <span class="op">=</span> <span class="fl">3</span><span class="op">)</span></span></code></pre></div>
+<code class="sourceCode R"><span><span class="op">(</span> <span class="va">gg_trad</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/graphics/plot.default.html" class="external-link">plot</a></span><span class="op">(</span><span class="va">vs_trad</span>, stats <span class="op">=</span> <span class="st">"mlpd"</span>, deltas <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span> <span class="op">)</span></span></code></pre></div>
+<p><img src="latent_files/figure-html/post_vs_trad-1.png" width="60%" style="display: block; margin: auto;"></p>
+<div class="sourceCode" id="cb25"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">smmry_trad</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary</a></span><span class="op">(</span><span class="va">vs_trad</span>, stats <span class="op">=</span> <span class="st">"mlpd"</span>,</span>
+<span>                      type <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"mean"</span>, <span class="st">"lower"</span>, <span class="st">"upper"</span>, <span class="st">"diff"</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="va">smmry_trad</span>, digits <span class="op">=</span> <span class="fl">2</span><span class="op">)</span></span></code></pre></div>
 <pre><code>
 Family: poisson 
 Link function: log 
 
 Formula: y ~ x.1 + x.2 + x.3 + x.4 + x.5 + x.6 + x.7 + x.8 + x.9 + x.10 + 
-    grpPL + xn.1 + xn.2 + xn.3 + xn.4 + xn.5 + xn.6 + xn.7 + 
-    xn.8 + xn.9 + xn.10 + xn.11 + xn.12 + xn.13 + xn.14 + xn.15 + 
-    xn.16 + xn.17 + xn.18 + xn.19 + xn.20 + xn.21 + xn.22 + xn.23 + 
-    xn.24 + xn.25 + xn.26 + xn.27 + xn.28 + xn.29 + xn.30 + xn.31 + 
-    xn.32 + xn.33 + xn.34 + xn.35 + xn.36 + xn.37 + xn.38 + xn.39
+    xcat + xn.1 + xn.2 + xn.3 + xn.4 + xn.5 + xn.6 + xn.7 + xn.8 + 
+    xn.9 + xn.10 + xn.11 + xn.12 + xn.13 + xn.14 + xn.15 + xn.16 + 
+    xn.17 + xn.18 + xn.19 + xn.20 + xn.21 + xn.22 + xn.23 + xn.24 + 
+    xn.25 + xn.26 + xn.27 + xn.28 + xn.29 + xn.30 + xn.31 + xn.32 + 
+    xn.33 + xn.34 + xn.35 + xn.36 + xn.37 + xn.38 + xn.39
 Observations (training set): 71
 Observations (test set): 71
 Projection method: traditional
@@ -544,29 +553,29 @@ Maximum submodel size for the search: 14
 Number of projected draws in the search: 1 (from clustered projection)
 Number of projected draws in the performance evaluation: 20 (from clustered projection)
 
-Performance evaluation summary with `deltas = FALSE`:
- size solution_terms    mlpd     se lower   upper    diff diff.se
-    0           &lt;NA&gt; -3469.3 1593.1 -5062 -1876.2 -3466.1  1592.9
-    1            x.6 -2545.4 1068.0 -3613 -1477.4 -2542.2  1067.8
-    2          xn.12 -3560.3 1666.6 -5227 -1893.7 -3557.1  1666.4
-    3          grpPL -3774.1 1778.0 -5552 -1996.1 -3770.8  1777.8
-    4            x.4 -2438.1 1131.2 -3569 -1306.8 -2434.9  1131.1
-    5           x.10  -959.8  488.4 -1448  -471.4  -956.6   488.3
-    6            x.3  -821.7  518.8 -1340  -302.8  -818.4   518.7
-    7          xn.11  -686.5  439.2 -1126  -247.3  -683.3   439.0
-    8           xn.2 -1330.4  779.8 -2110  -550.6 -1327.2   779.7
-    9          xn.22 -1220.0  722.4 -1942  -497.6 -1216.8   722.3
-   10            x.2  -744.2  395.4 -1140  -348.8  -741.0   395.3
-   11            x.1  -107.8   37.0  -145   -70.8  -104.6    36.8
-   12          xn.23   -83.1   33.0  -116   -50.1   -79.9    32.8
-   13          xn.16  -120.7   67.8  -189   -52.9  -117.5    67.7
-   14            x.8   -93.0   45.2  -138   -47.8   -89.7    45.1</code></pre>
+Performance evaluation summary with `deltas = FALSE` and `cumulate = FALSE`:
+ size solution_terms cv_proportions_diag  mlpd lower upper  diff
+    0           &lt;NA&gt;                  NA -3471 -5064 -1877 -3467
+    1            x.6                  NA -2547 -3616 -1478 -2544
+    2          xn.12                  NA -3562 -5229 -1894 -3558
+    3           xcat                  NA -3776 -5555 -1998 -3773
+    4            x.4                  NA -2438 -3568 -1307 -2435
+    5           x.10                  NA  -966 -1459  -473  -963
+    6            x.3                  NA  -823 -1344  -302  -820
+    7          xn.11                  NA  -686 -1127  -246  -683
+    8           xn.2                  NA -1333 -2114  -551 -1329
+    9          xn.22                  NA -1225 -1950  -499 -1222
+   10            x.2                  NA  -742 -1136  -348  -739
+   11            x.1                  NA  -108  -145   -71  -105
+   12          xn.23                  NA   -84  -118   -51   -81
+   13          xn.16                  NA  -121  -188   -54  -118
+   14            x.8                  NA   -97  -144   -51   -94</code></pre>
 <p>As these results show, the traditional projection takes longer than
 the latent projection, although the difference is rather small on
 absolute scale (which is due to the fact that the L1 search is already
-quite fast). More importantly however, the submodel size selection plot
-is much more unstable and the solution path reveals that several noise
-terms enter the solution path before truly relevant ones.</p>
+quite fast). More importantly however, the predictive performance plot
+is much more unstable and the predictor ranking contains several noise
+terms before truly relevant ones.</p>
 </div>
 <div class="section level3">
 <h3 id="conclusion">Conclusion<a class="anchor" aria-label="anchor" href="#conclusion"></a>
@@ -576,15 +585,15 @@ advantageous also for families supported by <strong>projpred</strong>’s
 traditional projection by improving the runtime and the stability of the
 variable selection, eventually also leading to better variable selection
 results.</p>
-<p>One important point is that we have used the L1 search here. In case
+<p>An important point is that we have used the L1 search here. In case
 of the latent projection, a forward search would have given only
-slightly different results (in particular, a slightly smoother submodel
-size selection plot). However, in case of the traditional projection, a
-forward search would have given markedly better results (in particular,
-the submodel size selection plot would have been much smoother and all
-of the noise terms would have been selected after the truly relevant
-ones). Thus, the conclusions made for the L1 search here cannot be
-transmitted easily to the forward search.</p>
+slightly different results (in particular, a slightly smoother
+predictive performance plot). However, in case of the traditional
+projection, a forward search would have given markedly better results
+(in particular, the predictive performance plot would have been much
+smoother and all of the noise terms would have been selected after the
+truly relevant ones). Thus, the conclusions made for the L1 search here
+cannot be transmitted easily to the forward search.</p>
 </div>
 </div>
 <div class="section level2">
@@ -603,26 +612,31 @@ not supported by <strong>projpred</strong>’s traditional projection<a href="#f
 <h3 id="reference-model-1">Reference model<a class="anchor" aria-label="anchor" href="#reference-model-1"></a>
 </h3>
 <p>We now fit a reference model with the negative binomial distribution
-as response family<a href="#fn8" class="footnote-ref" id="fnref8"><sup>8</sup></a>:</p>
-<div class="sourceCode" id="cb26"><pre class="downlit sourceCode r">
+as response family. For the sake of simplicity, we won’t adjust
+<code>tau0</code> to this new family, but in a real-world example, such
+an adjustment would be necessary. However, since Table 1 of <span class="citation">Piironen and Vehtari (<a href="#ref-piironen_sparsity_2017" role="doc-biblioref">2017</a>)</span>
+doesn’t list the negative binomial distribution, this would first
+require a manual derivation of the pseudo-variance <span class="math inline">\(\tilde{\sigma}^2\)</span>.</p>
+<div class="sourceCode" id="cb27"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">refm_fit_nebin</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://mc-stan.org/rstanarm/reference/stan_glm.html" class="external-link">stan_glm</a></span><span class="op">(</span></span>
 <span>  formula <span class="op">=</span> <span class="va">refm_fml</span>,</span>
 <span>  family <span class="op">=</span> <span class="fu"><a href="https://mc-stan.org/rstanarm/reference/neg_binomial_2.html" class="external-link">neg_binomial_2</a></span><span class="op">(</span><span class="op">)</span>,</span>
 <span>  data <span class="op">=</span> <span class="va">dat_poiss_train</span>,</span>
 <span>  prior <span class="op">=</span> <span class="fu"><a href="https://mc-stan.org/rstanarm/reference/priors.html" class="external-link">hs</a></span><span class="op">(</span>global_scale <span class="op">=</span> <span class="va">tau0</span>, slab_df <span class="op">=</span> <span class="fl">100</span>, slab_scale <span class="op">=</span> <span class="fl">1</span><span class="op">)</span>,</span>
 <span>  <span class="co">### Only for the sake of speed (not recommended in general):</span></span>
-<span>  chains <span class="op">=</span> <span class="fl">2</span>, iter <span class="op">=</span> <span class="fl">500</span>,</span>
+<span>  chains <span class="op">=</span> <span class="fl">2</span>, iter <span class="op">=</span> <span class="fl">1000</span>,</span>
 <span>  <span class="co">###</span></span>
-<span>  seed <span class="op">=</span> <span class="fl">7304</span>, QR <span class="op">=</span> <span class="cn">TRUE</span>, refresh <span class="op">=</span> <span class="fl">0</span></span>
+<span>  QR <span class="op">=</span> <span class="cn">TRUE</span>, refresh <span class="op">=</span> <span class="fl">0</span></span>
 <span><span class="op">)</span></span></code></pre></div>
 </div>
 <div class="section level3">
 <h3 id="variable-selection-using-the-latent-projection-1">Variable selection using the latent projection<a class="anchor" aria-label="anchor" href="#variable-selection-using-the-latent-projection-1"></a>
 </h3>
-<p>To run a variable selection with <code>latent = TRUE</code>, we now
-also need to specify more arguments which will be passed to
-<code><a href="../reference/extend_family.html">extend_family()</a></code><a href="#fn9" class="footnote-ref" id="fnref9"><sup>9</sup></a>:</p>
-<div class="sourceCode" id="cb27"><pre class="downlit sourceCode r">
+<p>To request the latent projection with <code>latent = TRUE</code>, we
+now need to specify more arguments (<code>latent_ll_oscale</code> and
+<code>latent_ppd_oscale</code>) which will be passed to
+<code><a href="../reference/extend_family.html">extend_family()</a></code><a href="#fn8" class="footnote-ref" id="fnref8"><sup>8</sup></a>:</p>
+<div class="sourceCode" id="cb28"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">refm_prec</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/matrix.html" class="external-link">as.matrix</a></span><span class="op">(</span><span class="va">refm_fit_nebin</span><span class="op">)</span><span class="op">[</span>, <span class="st">"reciprocal_dispersion"</span>, drop <span class="op">=</span> <span class="cn">FALSE</span><span class="op">]</span></span>
 <span><span class="va">latent_ll_oscale_nebin</span> <span class="op">&lt;-</span> <span class="kw">function</span><span class="op">(</span><span class="va">ilpreds</span>, <span class="va">y_oscale</span>,</span>
 <span>                                   <span class="va">wobs</span> <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/rep.html" class="external-link">rep</a></span><span class="op">(</span><span class="fl">1</span>, <span class="fu"><a href="https://rdrr.io/r/base/length.html" class="external-link">length</a></span><span class="op">(</span><span class="va">y_oscale</span><span class="op">)</span><span class="op">)</span>, <span class="va">cl_ref</span>,</span>
@@ -649,16 +663,18 @@ also need to specify more arguments which will be passed to
 <span>                           latent_ll_oscale <span class="op">=</span> <span class="va">latent_ll_oscale_nebin</span>,</span>
 <span>                           latent_ppd_oscale <span class="op">=</span> <span class="va">latent_ppd_oscale_nebin</span><span class="op">)</span></span></code></pre></div>
 <pre><code>Defining `latent_ilink` as a function which calls `family$linkinv`, but there is no guarantee that this will work for all families. If relying on `family$linkinv` is not appropriate or if this raises an error in downstream functions, supply a custom `latent_ilink` function (which is also allowed to return only `NA`s if response-scale post-processing is not needed).</code></pre>
-<pre><code>Since `&lt;refmodel&gt;$dis` will consist of only `NA`s, downstream analyses based on this reference model won't be able to use log predictive density (LPD) values on latent scale. Furthermore, proj_predict() won't be able to draw from the latent Gaussian distribution.</code></pre>
-<div class="sourceCode" id="cb30"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">vs_lat_nebin</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/varsel.html">varsel</a></span><span class="op">(</span></span>
+<pre><code>Since `&lt;refmodel&gt;$dis` will consist of only `NA`s, downstream analyses based on this reference model object won't be able to use log predictive density (LPD) values on latent scale. Furthermore, proj_predict() won't be able to draw from the latent Gaussian distribution.</code></pre>
+<div class="sourceCode" id="cb31"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">vs_nebin</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/varsel.html">varsel</a></span><span class="op">(</span></span>
 <span>  <span class="va">refm_nebin</span>,</span>
 <span>  d_test <span class="op">=</span> <span class="va">d_test_lat_poiss</span>,</span>
 <span>  <span class="co">### Only for the sake of speed (not recommended in general):</span></span>
 <span>  nclusters_pred <span class="op">=</span> <span class="fl">20</span>,</span>
 <span>  <span class="co">###</span></span>
 <span>  nterms_max <span class="op">=</span> <span class="fl">14</span>,</span>
-<span>  seed <span class="op">=</span> <span class="fl">95930</span></span>
+<span>  <span class="co">### In interactive use, we recommend not to deactivate the verbose mode:</span></span>
+<span>  verbose <span class="op">=</span> <span class="cn">FALSE</span></span>
+<span>  <span class="co">###</span></span>
 <span><span class="op">)</span></span></code></pre></div>
 <p>Again, the message telling that <code>&lt;refmodel&gt;$dis</code>
 consists of only <code>NA</code>s will not concern us here because we
@@ -668,38 +684,34 @@ internal default based on <code>family$linkinv</code> works correctly in
 this case).</p>
 <p>Again, we first inspect the <code><a href="https://rdrr.io/r/graphics/plot.default.html" class="external-link">plot()</a></code> results to decide for
 a submodel size:</p>
-<div class="sourceCode" id="cb31"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="op">(</span> <span class="va">gg_lat_nebin</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/graphics/plot.default.html" class="external-link">plot</a></span><span class="op">(</span><span class="va">vs_lat_nebin</span>, stats <span class="op">=</span> <span class="st">"mlpd"</span>, deltas <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span> <span class="op">)</span></span></code></pre></div>
-<p><img src="latent_files/figure-html/unnamed-chunk-17-1.png" width="75%" style="display: block; margin: auto;"></p>
-<p>Again, a zoomed plot is more helpful:</p>
 <div class="sourceCode" id="cb32"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">gg_lat_nebin</span> <span class="op">+</span> <span class="fu">ggplot2</span><span class="fu">::</span><span class="fu"><a href="https://ggplot2.tidyverse.org/reference/coord_cartesian.html" class="external-link">coord_cartesian</a></span><span class="op">(</span>ylim <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="op">-</span><span class="fl">2.5</span>, <span class="fl">0.25</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
-<p><img src="latent_files/figure-html/unnamed-chunk-18-1.png" width="75%" style="display: block; margin: auto;"></p>
-<p>Although the submodels’ MLPDs approach the reference model’s already
-from a submodel size of 8 on (taking into account the uncertainty
-indicated by the error bars), the curve levels off only from a submodel
-size of 11 on. For a more informed decision, the GMPD could be taken
-into account again, but for the sake of brevity, we will simply decide
-for a submodel size of 11 here:</p>
+<code class="sourceCode R"><span><span class="op">(</span> <span class="va">gg_nebin</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/graphics/plot.default.html" class="external-link">plot</a></span><span class="op">(</span><span class="va">vs_nebin</span>, stats <span class="op">=</span> <span class="st">"mlpd"</span>, deltas <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span> <span class="op">)</span></span></code></pre></div>
+<p><img src="latent_files/figure-html/plot_vsel_nebin-1.png" width="75%" style="display: block; margin: auto;"></p>
+<p>Again, a zoomed plot is more helpful:</p>
 <div class="sourceCode" id="cb33"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">modsize_decided_lat_nebin</span> <span class="op">&lt;-</span> <span class="fl">11</span></span></code></pre></div>
+<code class="sourceCode R"><span><span class="va">gg_nebin</span> <span class="op">+</span> <span class="fu">ggplot2</span><span class="fu">::</span><span class="fu"><a href="https://ggplot2.tidyverse.org/reference/coord_cartesian.html" class="external-link">coord_cartesian</a></span><span class="op">(</span>ylim <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="op">-</span><span class="fl">2.5</span>, <span class="fl">0.25</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
+<p><img src="latent_files/figure-html/plot_vsel_nebin_zoom-1.png" width="75%" style="display: block; margin: auto;"></p>
+<p>Although the submodels’ MLPDs approach the reference model’s already
+from a submodel size of 9 on (taking into account the uncertainty bars),
+the curve levels off only from a submodel size of 11 on. For a more
+informed decision, the GMPD could be taken into account again, but for
+the sake of brevity, we will simply decide for a submodel size of 11
+here:</p>
+<div class="sourceCode" id="cb34"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">size_decided_nebin</span> <span class="op">&lt;-</span> <span class="fl">11</span></span></code></pre></div>
 <p>This is not the size that <code><a href="../reference/suggest_size.html">suggest_size()</a></code> would suggest,
 but as mentioned in the main vignette and in the documentation,
 <code><a href="../reference/suggest_size.html">suggest_size()</a></code> provides only a quite heuristic decision (so
 we stick with our manual decision here):</p>
-<div class="sourceCode" id="cb34"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu"><a href="../reference/suggest_size.html">suggest_size</a></span><span class="op">(</span><span class="va">vs_lat_nebin</span>, stat <span class="op">=</span> <span class="st">"mlpd"</span><span class="op">)</span></span></code></pre></div>
-<pre><code>[1] 8</code></pre>
-<p>Only now, after we have made a decision for the submodel size, we
-inspect further results from the variable selection and, in particular,
-the solution path:</p>
-<div class="sourceCode" id="cb36"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">smmry_lat_nebin</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary</a></span><span class="op">(</span></span>
-<span>  <span class="va">vs_lat_nebin</span>,</span>
-<span>  stats <span class="op">=</span> <span class="st">"mlpd"</span>,</span>
-<span>  type <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"mean"</span>, <span class="st">"se"</span>, <span class="st">"lower"</span>, <span class="st">"upper"</span>, <span class="st">"diff"</span>, <span class="st">"diff.se"</span><span class="op">)</span></span>
-<span><span class="op">)</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="va">smmry_lat_nebin</span>, digits <span class="op">=</span> <span class="fl">3</span><span class="op">)</span></span></code></pre></div>
+<div class="sourceCode" id="cb35"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="../reference/suggest_size.html">suggest_size</a></span><span class="op">(</span><span class="va">vs_nebin</span>, stat <span class="op">=</span> <span class="st">"mlpd"</span><span class="op">)</span></span></code></pre></div>
+<pre><code>[1] 9</code></pre>
+<p>Again, we call <code><a href="../reference/summary.vsel.html">summary.vsel()</a></code> to obtain the results from
+the <code><a href="../reference/varsel.html">varsel()</a></code> run in tabular form:</p>
+<div class="sourceCode" id="cb37"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">smmry_nebin</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary</a></span><span class="op">(</span><span class="va">vs_nebin</span>, stats <span class="op">=</span> <span class="st">"mlpd"</span>,</span>
+<span>                       type <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"mean"</span>, <span class="st">"lower"</span>, <span class="st">"upper"</span>, <span class="st">"diff"</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="va">smmry_nebin</span>, digits <span class="op">=</span> <span class="fl">2</span><span class="op">)</span></span></code></pre></div>
 <pre><code>------
 Response-scale family:
 
@@ -714,11 +726,11 @@ Link function: identity
 
 ------
 Formula: .y ~ x.1 + x.2 + x.3 + x.4 + x.5 + x.6 + x.7 + x.8 + x.9 + x.10 + 
-    grpPL + xn.1 + xn.2 + xn.3 + xn.4 + xn.5 + xn.6 + xn.7 + 
-    xn.8 + xn.9 + xn.10 + xn.11 + xn.12 + xn.13 + xn.14 + xn.15 + 
-    xn.16 + xn.17 + xn.18 + xn.19 + xn.20 + xn.21 + xn.22 + xn.23 + 
-    xn.24 + xn.25 + xn.26 + xn.27 + xn.28 + xn.29 + xn.30 + xn.31 + 
-    xn.32 + xn.33 + xn.34 + xn.35 + xn.36 + xn.37 + xn.38 + xn.39
+    xcat + xn.1 + xn.2 + xn.3 + xn.4 + xn.5 + xn.6 + xn.7 + xn.8 + 
+    xn.9 + xn.10 + xn.11 + xn.12 + xn.13 + xn.14 + xn.15 + xn.16 + 
+    xn.17 + xn.18 + xn.19 + xn.20 + xn.21 + xn.22 + xn.23 + xn.24 + 
+    xn.25 + xn.26 + xn.27 + xn.28 + xn.29 + xn.30 + xn.31 + xn.32 + 
+    xn.33 + xn.34 + xn.35 + xn.36 + xn.37 + xn.38 + xn.39
 Observations (training set): 71
 Observations (test set): 71
 Projection method: latent
@@ -727,33 +739,34 @@ Maximum submodel size for the search: 14
 Number of projected draws in the search: 1 (from clustered projection)
 Number of projected draws in the performance evaluation: 20 (from clustered projection)
 
-Performance evaluation summary (response scale) with `deltas = FALSE`:
- size solution_terms    mlpd      se   lower   upper     diff  diff.se
-    0           &lt;NA&gt; -386.10 157.030 -543.13 -229.07 -382.421 156.8118
-    1            x.4  -98.66  30.140 -128.80  -68.52  -94.985  29.8979
-    2            x.6  -20.54   6.219  -26.76  -14.33  -16.867   6.0514
-    3           x.10   -8.52   1.215   -9.73   -7.30   -4.839   1.0220
-    4            x.3   -5.68   0.720   -6.40   -4.96   -2.003   0.4969
-    5            x.1   -4.59   0.568   -5.15   -4.02   -0.908   0.3726
-    6            x.2   -4.07   0.470   -4.54   -3.61   -0.397   0.2686
-    7            x.8   -3.87   0.410   -4.28   -3.46   -0.194   0.1492
-    8            x.5   -3.79   0.403   -4.19   -3.38   -0.108   0.1325
-    9          xn.29   -3.78   0.403   -4.18   -3.38   -0.101   0.1332
-   10            x.7   -3.66   0.384   -4.04   -3.28    0.018   0.0967
-   11          grpPL   -3.43   0.343   -3.77   -3.09    0.247   0.0435
-   12          xn.31   -3.43   0.342   -3.77   -3.08    0.252   0.0409
-   13            x.9   -3.42   0.340   -3.76   -3.08    0.263   0.0374
-   14           xn.2   -3.42   0.341   -3.77   -3.08    0.254   0.0388</code></pre>
-<p>As we can see from the solution path, our selected 11 predictor terms
-lack one truly relevant predictor (<code>x.9</code>) and include one
-noise term (<code>xn.29</code>). More explicitly, our selected predictor
-terms are:</p>
-<div class="sourceCode" id="cb38"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">soltrms_lat_nebin</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/solution_terms.html">solution_terms</a></span><span class="op">(</span><span class="va">vs_lat_nebin</span><span class="op">)</span></span>
-<span><span class="op">(</span> <span class="va">soltrms_lat_nebin_final</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span><span class="va">soltrms_lat_nebin</span>,</span>
-<span>                                  <span class="va">modsize_decided_lat_nebin</span><span class="op">)</span> <span class="op">)</span></span></code></pre></div>
-<pre><code> [1] "x.4"   "x.6"   "x.10"  "x.3"   "x.1"   "x.2"   "x.8"   "x.5"   "xn.29"
-[10] "x.7"   "grpPL"</code></pre>
+Performance evaluation summary (response scale) with `deltas = FALSE` and `cumulate = FALSE`:
+ size solution_terms cv_proportions_diag   mlpd  lower  upper    diff
+    0           &lt;NA&gt;                  NA -439.3 -618.8 -259.7 -435.61
+    1            x.4                  NA -107.8 -141.1  -74.4 -104.09
+    2            x.6                  NA  -21.4  -28.2  -14.7  -17.77
+    3           x.10                  NA   -8.7  -10.0   -7.5   -5.06
+    4            x.3                  NA   -5.8   -6.5   -5.0   -2.08
+    5            x.1                  NA   -4.6   -5.2   -4.0   -0.94
+    6            x.2                  NA   -4.1   -4.5   -3.6   -0.40
+    7            x.8                  NA   -3.9   -4.3   -3.5   -0.22
+    8          xn.29                  NA   -3.9   -4.3   -3.5   -0.20
+    9            x.5                  NA   -3.8   -4.2   -3.4   -0.12
+   10            x.7                  NA   -3.7   -4.0   -3.3    0.01
+   11           xcat                  NA   -3.4   -3.8   -3.1    0.25
+   12            x.9                  NA   -3.4   -3.8   -3.1    0.26
+   13          xn.19                  NA   -3.4   -3.8   -3.1    0.26
+   14          xn.31                  NA   -3.4   -3.8   -3.1    0.26</code></pre>
+<p>As we can see from the predictor ranking included in the plot and in
+the summary table, our selected 11 predictor terms lack one truly
+relevant predictor (<code>x.9</code>) and include one noise term
+(<code>xn.29</code>). More explicitly, our selected predictor terms
+are:</p>
+<div class="sourceCode" id="cb39"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">rk_nebin</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/ranking.html">ranking</a></span><span class="op">(</span><span class="va">vs_nebin</span><span class="op">)</span></span>
+<span><span class="op">(</span> <span class="va">predictors_final_nebin</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span><span class="va">rk_nebin</span><span class="op">[[</span><span class="st">"fulldata"</span><span class="op">]</span><span class="op">]</span>,</span>
+<span>                                 <span class="va">size_decided_nebin</span><span class="op">)</span> <span class="op">)</span></span></code></pre></div>
+<pre><code> [1] "x.4"   "x.6"   "x.10"  "x.3"   "x.1"   "x.2"   "x.8"   "xn.29" "x.5"  
+[10] "x.7"   "xcat" </code></pre>
 <p>Again, we will skip post-selection inference here (see the main
 vignette for a demonstration of post-selection inference).</p>
 </div>
@@ -852,12 +865,7 @@ the class of DED families is not a subset of the class of ED families.
 GitHub issue <a href="https://github.com/stan-dev/projpred/issues/361" class="external-link">#361</a> explains
 why the “traditional” projection onto a DED-family submodel is currently
 not implemented in <strong>projpred</strong>.<a href="#fnref7" class="footnote-back">↩︎</a></p></li>
-<li id="fn8"><p>For the sake of simplicity, we won’t adjust
-<code>tau0</code> to this new family, but in a real-world example, such
-an adjustment would be necessary. However, since Table 1 of <span class="citation">Piironen and Vehtari (<a href="#ref-piironen_sparsity_2017" role="doc-biblioref">2017</a>)</span>
-doesn’t list the negative binomial distribution, this would first
-require a manual derivation of the pseudo-variance <span class="math inline">\(\tilde{\sigma}^2\)</span>.<a href="#fnref8" class="footnote-back">↩︎</a></p></li>
-<li id="fn9"><p>The suffix <code>_prec</code> in <code>refm_prec</code>
+<li id="fn8"><p>The suffix <code>_prec</code> in <code>refm_prec</code>
 stands for “precision” because here, we follow the Stan convention (see
 the Stan documentation for the <code>neg_binomial_2</code> distribution,
 the <code><a href="https://rdrr.io/pkg/brms/man/brmsfamily.html" class="external-link">brms::negbinomial()</a></code> documentation, and the <a href="https://paul-buerkner.github.io/brms/" class="external-link"><strong>brms</strong></a>
@@ -867,7 +875,7 @@ prefer the term <em>precision</em> parameter for what is denoted by
 <code>size</code> in <code><a href="https://rdrr.io/r/stats/NegBinomial.html" class="external-link">?stats::NegBinomial</a></code>—which is the same
 as <span class="math inline">\(\phi\)</span> from the Stan notation—is
 called the <em>dispersion</em> parameter there, although the variance is
-increased by its reciprocal).<a href="#fnref9" class="footnote-back">↩︎</a></p></li>
+increased by its reciprocal).<a href="#fnref8" class="footnote-back">↩︎</a></p></li>
 </ol>
 </div>
   </div>

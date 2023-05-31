@@ -49,10 +49,9 @@ method = &quot;forward&quot; and verbose = TRUE in varsel() or cv_varsel())
 which submodel has been selected at those steps of the forward search for
 which a percentage (of the maximum submodel size that the search is run up
 to) is printed. In general, however, we cannot recommend setting this global
-option to TRUE for cv_varsel() with cv_method = &quot;LOO&quot; and
-validate_search = TRUE or for cv_varsel() with cv_method = &quot;kfold&quot;
-(simply due to the amount of information that will be printed, but also due
-to the progress bar which will not work anymore as intended).
+option to TRUE for cv_varsel() with validate_search = TRUE (simply due
+to the amount of information that will be printed, but also due to the
+progress bar which will not work anymore as intended).
 The projection of the reference model onto a submodel can be run on multiple
 CPU cores in parallel (across the projected draws). This is powered by the
 foreach package. Thus, any parallel (or sequential) backend compatible
@@ -115,7 +114,7 @@ make sense if the group-level effects should be integrated out completely."><met
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">projpred</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">2.5.0</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">2.6.0</span>
       </span>
     </div>
 
@@ -247,10 +246,9 @@ which submodel <span class="pkg">projpred</span> is currently projecting onto as
 which submodel has been selected at those steps of the forward search for
 which a percentage (of the maximum submodel size that the search is run up
 to) is printed. In general, however, we cannot recommend setting this global
-option to <code>TRUE</code> for <code><a href="cv_varsel.html">cv_varsel()</a></code> with <code>cv_method = "LOO"</code> and
-<code>validate_search = TRUE</code> or for <code><a href="cv_varsel.html">cv_varsel()</a></code> with <code>cv_method = "kfold"</code>
-(simply due to the amount of information that will be printed, but also due
-to the progress bar which will not work anymore as intended).</p>
+option to <code>TRUE</code> for <code><a href="cv_varsel.html">cv_varsel()</a></code> with <code>validate_search = TRUE</code> (simply due
+to the amount of information that will be printed, but also due to the
+progress bar which will not work anymore as intended).</p>
 <p>The projection of the reference model onto a submodel can be run on multiple
 CPU cores in parallel (across the projected draws). This is powered by the
 <span class="pkg">foreach</span> package. Thus, any parallel (or sequential) backend compatible
@@ -314,9 +312,10 @@ and <code><a href="refmodel-init-get.html">get_refmodel()</a></code> are only ra
 with cross-validation (CV).</p></dd>
 
 <dt><code><a href="summary.vsel.html">summary.vsel()</a></code>, <code><a href="print.vsel.html">print.vsel()</a></code>, <code><a href="plot.vsel.html">plot.vsel()</a></code>,
-<code><a href="suggest_size.html">suggest_size.vsel()</a></code>, <code><a href="solution_terms.html">solution_terms.vsel()</a></code></dt>
-<dd><p>For post-processing the
-results from <code><a href="varsel.html">varsel()</a></code> and <code><a href="cv_varsel.html">cv_varsel()</a></code>.</p></dd>
+<code><a href="suggest_size.html">suggest_size.vsel()</a></code>, <code><a href="ranking.html">ranking()</a></code>, <code><a href="cv_proportions.html">cv_proportions()</a></code>,
+<code><a href="plot.cv_proportions.html">plot.cv_proportions()</a></code></dt>
+<dd><p>For post-processing the results from <code><a href="varsel.html">varsel()</a></code>
+and <code><a href="cv_varsel.html">cv_varsel()</a></code>.</p></dd>
 
 <dt><code><a href="project.html">project()</a></code></dt>
 <dd><p>For projecting the reference model onto submodel(s).

@@ -32,7 +32,7 @@ see cv_varsel() for the use of \(K\)-fold CV in projpred.'><meta property="og:im
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">projpred</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">2.5.0</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">2.6.0</span>
       </span>
     </div>
 
@@ -285,13 +285,12 @@ i.e., if both are provided, <code>cvfits</code> is used.</p></dd>
 <dd><p>For \(K\)-fold CV only. A <code>list</code> containing a sub-<code>list</code>
 called <code>fits</code> containing the \(K\) model fits from which reference model
 structures are created. The <code>cvfits</code> <code>list</code> (i.e., the super-<code>list</code>) needs
-to have attributes <code>K</code> and <code>folds</code>: <code>K</code> has to be a single integer giving
-the number of folds and <code>folds</code> has to be an integer vector giving the fold
-indices (one fold index per observation). Each element of <code>cvfits$fits</code>
-(i.e., each of the \(K\) model fits) needs to be a list. Only one of
-<code>cvfits</code> and <code>cvfun</code> needs to be provided (for \(K\)-fold CV). Note that
-<code>cvfits</code> takes precedence over <code>cvfun</code>, i.e., if both are provided,
-<code>cvfits</code> is used.</p></dd>
+to have an attribute called <code>folds</code>, consisting of an integer vector giving
+the fold indices (one fold index per observation). Each element of
+<code>cvfits$fits</code> (i.e., each of the \(K\) model fits) needs to be a list.
+Only one of <code>cvfits</code> and <code>cvfun</code> needs to be provided (for \(K\)-fold
+CV). Note that <code>cvfits</code> takes precedence over <code>cvfun</code>, i.e., if both are
+provided, <code>cvfits</code> is used.</p></dd>
 
 
 <dt>cvrefbuilder</dt>
@@ -314,8 +313,10 @@ and a function calling <code>init_refmodel()</code> appropriately (with the assu
 <p>An object that can be passed to all the functions that take the
 reference model fit as the first argument, such as <code><a href="varsel.html">varsel()</a></code>,
 <code><a href="cv_varsel.html">cv_varsel()</a></code>, <code><a href="project.html">project()</a></code>, <code><a href="pred-projection.html">proj_linpred()</a></code>, and <code><a href="pred-projection.html">proj_predict()</a></code>.
-Usually, the returned object is of class <code>refmodel</code>. However, if <code>object</code>
-is <code>NULL</code>, the returned object is of class <code>datafit</code> as well as of class
+Usually, the returned object is of class <code>refmodel</code>. However, if <code>object</code></p>
+
+
+<p>is <code>NULL</code>, the returned object is of class <code>datafit</code> as well as of class
 <code>refmodel</code> (with <code>datafit</code> being first). Objects of class <code>datafit</code> are
 handled differently at several places throughout this package.</p>
 

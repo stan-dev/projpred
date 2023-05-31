@@ -17,7 +17,7 @@
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">projpred</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">2.5.0</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">2.6.0</span>
       </span>
     </div>
 
@@ -126,13 +126,17 @@
         </td>
         <td><p>Weighted averaging within clusters of parameter draws</p></td>
       </tr><tr><td>
-          <p><code><a href="cv-indices.html">cvfolds()</a></code> <code><a href="cv-indices.html">cv_ids()</a></code> </p>
+          <p><code><a href="cv-indices.html">cv_folds()</a></code> <code><a href="cv-indices.html">cvfolds()</a></code> <code><a href="cv-indices.html">cv_ids()</a></code> </p>
         </td>
         <td><p>Create cross-validation folds</p></td>
       </tr><tr><td>
+          <p><code><a href="cv_proportions.html">cv_proportions()</a></code> </p>
+        </td>
+        <td><p>Ranking proportions from fold-wise predictor rankings</p></td>
+      </tr><tr><td>
           <p><code><a href="cv_varsel.html">cv_varsel()</a></code> </p>
         </td>
-        <td><p>Variable selection with cross-validation</p></td>
+        <td><p>Run search and performance evaluation with cross-validation</p></td>
       </tr><tr><td>
           <p><code><a href="df_binom.html">df_binom</a></code> </p>
         </td>
@@ -154,9 +158,13 @@
         </td>
         <td><p>Mesquite data set</p></td>
       </tr><tr><td>
+          <p><code><a href="plot.cv_proportions.html">plot(<i>&lt;cv_proportions&gt;</i>)</a></code> <code><a href="plot.cv_proportions.html">plot(<i>&lt;ranking&gt;</i>)</a></code> </p>
+        </td>
+        <td><p>Plot ranking proportions from fold-wise predictor rankings</p></td>
+      </tr><tr><td>
           <p><code><a href="plot.vsel.html">plot(<i>&lt;vsel&gt;</i>)</a></code> </p>
         </td>
-        <td><p>Plot summary statistics of a variable selection</p></td>
+        <td><p>Plot predictive performance</p></td>
       </tr><tr><td>
           <p><code><a href="pred-projection.html">proj_linpred()</a></code> <code><a href="pred-projection.html">proj_predict()</a></code> </p>
         </td>
@@ -166,13 +174,17 @@
         </td>
         <td><p>Predictions or log posterior predictive densities from a reference model</p></td>
       </tr><tr><td>
+          <p><code><a href="predictor_terms.html">predictor_terms()</a></code> </p>
+        </td>
+        <td><p>Predictor terms used in a <code><a href="../reference/project.html">project()</a></code> run</p></td>
+      </tr><tr><td>
           <p><code><a href="print.vsel.html">print(<i>&lt;vsel&gt;</i>)</a></code> </p>
         </td>
-        <td><p>Print results (summary) of variable selection</p></td>
+        <td><p>Print results (summary) of a <code><a href="../reference/varsel.html">varsel()</a></code> or <code><a href="../reference/cv_varsel.html">cv_varsel()</a></code> run</p></td>
       </tr><tr><td>
           <p><code><a href="print.vselsummary.html">print(<i>&lt;vselsummary&gt;</i>)</a></code> </p>
         </td>
-        <td><p>Print summary of variable selection</p></td>
+        <td><p>Print summary of a <code><a href="../reference/varsel.html">varsel()</a></code> or <code><a href="../reference/cv_varsel.html">cv_varsel()</a></code> run</p></td>
       </tr><tr><td>
           <p><code><a href="project.html">project()</a></code> </p>
         </td>
@@ -182,13 +194,18 @@
         </td>
         <td><p>Projection predictive feature selection</p></td>
       </tr><tr><td>
+          <p><code><a href="ranking.html">ranking()</a></code> </p>
+        </td>
+        <td><p>Predictor ranking(s)</p></td>
+      </tr><tr><td>
           <p><code><a href="refmodel-init-get.html">get_refmodel()</a></code> <code><a href="refmodel-init-get.html">init_refmodel()</a></code> </p>
         </td>
         <td><p>Reference model and more general information</p></td>
       </tr><tr><td>
           <p><code><a href="solution_terms.html">solution_terms()</a></code> </p>
         </td>
-        <td><p>Retrieve predictor solution path or predictor combination</p></td>
+        <td><p>Retrieve the full-data solution path from a <code><a href="../reference/varsel.html">varsel()</a></code> or <code><a href="../reference/cv_varsel.html">cv_varsel()</a></code> run
+or the predictor combination from a <code><a href="../reference/project.html">project()</a></code> run</p></td>
       </tr><tr><td>
           <p><code><a href="suggest_size.html">suggest_size()</a></code> </p>
         </td>
@@ -196,11 +213,11 @@
       </tr><tr><td>
           <p><code><a href="summary.vsel.html">summary(<i>&lt;vsel&gt;</i>)</a></code> </p>
         </td>
-        <td><p>Summary statistics of a variable selection</p></td>
+        <td><p>Summary of a <code><a href="../reference/varsel.html">varsel()</a></code> or <code><a href="../reference/cv_varsel.html">cv_varsel()</a></code> run</p></td>
       </tr><tr><td>
           <p><code><a href="varsel.html">varsel()</a></code> </p>
         </td>
-        <td><p>Variable selection without cross-validation</p></td>
+        <td><p>Run search and performance evaluation without cross-validation</p></td>
       </tr></tbody></table></div>
 
   <div class="col-md-3 hidden-xs hidden-sm" id="pkgdown-sidebar">

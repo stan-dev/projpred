@@ -49,6 +49,9 @@
     <loc>https://mc-stan.org/projpred/reference/cv-indices.html</loc>
   </url>
   <url>
+    <loc>https://mc-stan.org/projpred/reference/cv_proportions.html</loc>
+  </url>
+  <url>
     <loc>https://mc-stan.org/projpred/reference/cv_varsel.html</loc>
   </url>
   <url>
@@ -73,6 +76,9 @@
     <loc>https://mc-stan.org/projpred/reference/mesquite.html</loc>
   </url>
   <url>
+    <loc>https://mc-stan.org/projpred/reference/plot.cv_proportions.html</loc>
+  </url>
+  <url>
     <loc>https://mc-stan.org/projpred/reference/plot.vsel.html</loc>
   </url>
   <url>
@@ -80,6 +86,9 @@
   </url>
   <url>
     <loc>https://mc-stan.org/projpred/reference/predict.refmodel.html</loc>
+  </url>
+  <url>
+    <loc>https://mc-stan.org/projpred/reference/predictor_terms.html</loc>
   </url>
   <url>
     <loc>https://mc-stan.org/projpred/reference/print.vsel.html</loc>
@@ -92,6 +101,9 @@
   </url>
   <url>
     <loc>https://mc-stan.org/projpred/reference/projpred-package.html</loc>
+  </url>
+  <url>
+    <loc>https://mc-stan.org/projpred/reference/ranking.html</loc>
   </url>
   <url>
     <loc>https://mc-stan.org/projpred/reference/reexports.html</loc>
