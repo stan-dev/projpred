@@ -972,7 +972,7 @@ nterms_max_rk <- list(
 rk_max_tst <- list(
   default_rk_max = list(),
   rk_max_NA = list(ranking_nterms_max = NA),
-  rk_max_1 = list(ranking_nterms_max = 1)
+  rk_max_1 = list(ranking_nterms_max = 1L)
 )
 
 ## Reference model --------------------------------------------------------

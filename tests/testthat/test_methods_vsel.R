@@ -238,19 +238,39 @@ context("plot()")
 
 test_that("`x` of class \"vsel\" (created by varsel()) works", {
   skip_if_not(run_vs)
-  common_elements <- c("tstsetup_vsel", "nterms_max", "ranking_nterms_max",
-                       "text_angle")
+  common_for_rk_NA <- c("tstsetup_vsel", "text_angle", "nterms_max",
+                        "ranking_nterms_max")
+  common_for_rk_max <- c("tstsetup_vsel", "text_angle", "nterms_max",
+                         "ranking_abbreviate", "ranking_repel")
   for (tstsetup in names(plots_vs)) {
     args_plot_i <- args_plot_vs[[tstsetup]]
     if (identical(args_plot_i$ranking_nterms_max, NA)) {
       matches_tstsetup <- sapply(names(plots_vs), function(tstsetup2) {
-        common_elements <- intersect(common_elements, names(args_plot_i))
+        common_for_rk_NA <- intersect(common_for_rk_NA, names(args_plot_i))
         args_plot_i2 <- args_plot_vs[[tstsetup2]]
-        common_elements2 <- intersect(common_elements, names(args_plot_i2))
-        if (!setequal(common_elements, common_elements2)) {
+        common_for_rk_NA2 <- intersect(common_for_rk_NA, names(args_plot_i2))
+        if (!setequal(common_for_rk_NA, common_for_rk_NA2)) {
           return(FALSE)
         }
-        identical(args_plot_i[common_elements], args_plot_i2[common_elements])
+        identical(args_plot_i[common_for_rk_NA], args_plot_i2[common_for_rk_NA])
+      })
+      if (any(matches_tstsetup)) {
+        tstsetup_target <- names(which.max(matches_tstsetup))
+      } else {
+        tstsetup_target <- tstsetup
+      }
+    } else if (length(args_plot_i$ranking_nterms_max) &&
+               identical(args_plot_i$ranking_nterms_max,
+                         args_plot_i$nterms_max)) {
+      matches_tstsetup <- sapply(names(plots_vs), function(tstsetup2) {
+        common_for_rk_max <- intersect(common_for_rk_max, names(args_plot_i))
+        args_plot_i2 <- args_plot_vs[[tstsetup2]]
+        common_for_rk_max2 <- intersect(common_for_rk_max, names(args_plot_i2))
+        if (!setequal(common_for_rk_max, common_for_rk_max2)) {
+          return(FALSE)
+        }
+        identical(args_plot_i[common_for_rk_max],
+                  args_plot_i2[common_for_rk_max])
       })
       if (any(matches_tstsetup)) {
         tstsetup_target <- names(which.max(matches_tstsetup))
@@ -275,19 +295,40 @@ test_that("`x` of class \"vsel\" (created by varsel()) works", {
 
 test_that("`x` of class \"vsel\" (created by cv_varsel()) works", {
   skip_if_not(run_cvvs)
-  common_elements <- c("tstsetup_vsel", "nterms_max", "ranking_nterms_max",
-                       "text_angle")
+  common_for_rk_NA <- c("tstsetup_vsel", "text_angle", "nterms_max",
+                        "ranking_nterms_max")
+  common_for_rk_max <- c("tstsetup_vsel", "text_angle", "nterms_max",
+                         "ranking_abbreviate", "ranking_repel",
+                         "cumulate")
   for (tstsetup in names(plots_cvvs)) {
     args_plot_i <- args_plot_cvvs[[tstsetup]]
     if (identical(args_plot_i$ranking_nterms_max, NA)) {
       matches_tstsetup <- sapply(names(plots_cvvs), function(tstsetup2) {
-        common_elements <- intersect(common_elements, names(args_plot_i))
+        common_for_rk_NA <- intersect(common_for_rk_NA, names(args_plot_i))
         args_plot_i2 <- args_plot_cvvs[[tstsetup2]]
-        common_elements2 <- intersect(common_elements, names(args_plot_i2))
-        if (!setequal(common_elements, common_elements2)) {
+        common_for_rk_NA2 <- intersect(common_for_rk_NA, names(args_plot_i2))
+        if (!setequal(common_for_rk_NA, common_for_rk_NA2)) {
           return(FALSE)
         }
-        identical(args_plot_i[common_elements], args_plot_i2[common_elements])
+        identical(args_plot_i[common_for_rk_NA], args_plot_i2[common_for_rk_NA])
+      })
+      if (any(matches_tstsetup)) {
+        tstsetup_target <- names(which.max(matches_tstsetup))
+      } else {
+        tstsetup_target <- tstsetup
+      }
+    } else if (length(args_plot_i$ranking_nterms_max) &&
+               identical(args_plot_i$ranking_nterms_max,
+                         args_plot_i$nterms_max)) {
+      matches_tstsetup <- sapply(names(plots_cvvs), function(tstsetup2) {
+        common_for_rk_max <- intersect(common_for_rk_max, names(args_plot_i))
+        args_plot_i2 <- args_plot_cvvs[[tstsetup2]]
+        common_for_rk_max2 <- intersect(common_for_rk_max, names(args_plot_i2))
+        if (!setequal(common_for_rk_max, common_for_rk_max2)) {
+          return(FALSE)
+        }
+        identical(args_plot_i[common_for_rk_max],
+                  args_plot_i2[common_for_rk_max])
       })
       if (any(matches_tstsetup)) {
         tstsetup_target <- names(which.max(matches_tstsetup))
