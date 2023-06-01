@@ -1062,14 +1062,14 @@ subprd_augdat_binom <- function(fits, newdata) {
 }
 
 ## FIXME: find a way that allows us to remove this
-predict.subfit <- function(subfit, newdata = NULL) {
-  beta <- subfit$beta
-  alpha <- subfit$alpha
+predict.subfit <- function(object, newdata = NULL, ...) {
+  beta <- object$beta
+  alpha <- object$alpha
   if (is.null(newdata)) {
     if (is.null(beta)) {
-      return(as.matrix(rep(alpha, nrow(subfit$x))))
+      return(as.matrix(rep(alpha, nrow(object$x))))
     } else {
-      return(cbind(1, subfit$x) %*% rbind(alpha, beta))
+      return(cbind(1, object$x) %*% rbind(alpha, beta))
     }
   } else {
     if (is.null(beta)) {
@@ -1081,20 +1081,20 @@ predict.subfit <- function(subfit, newdata = NULL) {
       # more convenient to let users specify contrasts directly. At that
       # occasion, contrasts should also be tested thoroughly (not done until
       # now).
-      x <- model.matrix(delete.response(terms(subfit$formula)), data = newdata,
-                        xlev = subfit$xlvls)
-      if (!identical(colnames(x), c("(Intercept)", colnames(subfit$x)))) {
+      x <- model.matrix(delete.response(terms(object$formula)), data = newdata,
+                        xlev = object$xlvls)
+      if (!identical(colnames(x), c("(Intercept)", colnames(object$x)))) {
         # Note: In the following `if` condition, we were previously using
         # `identical(sort(colnames(x)),
-        #            sort(c("(Intercept)", colnames(subfit$x))))`
+        #            sort(c("(Intercept)", colnames(object$x))))`
         # instead of
-        # `all(c("(Intercept)", colnames(subfit$x)) %in% colnames(x))`.
-        # However, the case where `x` has non-intercept columns that `subfit$x`
+        # `all(c("(Intercept)", colnames(object$x)) %in% colnames(x))`.
+        # However, the case where `x` has non-intercept columns that `object$x`
         # doesn't have may occur in case of an L1 search with interactions being
         # selected before all involved main effects are selected (and at least
         # one of the main effects being a categorical predictor).
-        if (all(c("(Intercept)", colnames(subfit$x)) %in% colnames(x))) {
-          x <- x[, c("(Intercept)", colnames(subfit$x)), drop = FALSE]
+        if (all(c("(Intercept)", colnames(object$x)) %in% colnames(x))) {
+          x <- x[, c("(Intercept)", colnames(object$x)), drop = FALSE]
         } else {
           stop("The column names of the new model matrix don't match the ",
                "column names of the original model matrix. Please notify the ",
@@ -1106,20 +1106,20 @@ predict.subfit <- function(subfit, newdata = NULL) {
   }
 }
 
-predict.gamm4 <- function(fit, newdata = NULL) {
+predict.gamm4 <- function(object, newdata = NULL, ...) {
   if (is.null(newdata)) {
-    newdata <- model.frame(fit$mer)
+    newdata <- model.frame(object$mer)
   }
-  formula <- fit$formula
-  random <- fit$random
+  formula <- object$formula
+  random <- object$random
   gamm_struct <- model.matrix_gamm4(delete.response(terms(formula)),
                                     random = random, data = newdata)
-  ranef <- lme4::ranef(fit$mer) # TODO (GAMMs): Add `, condVar = FALSE` here?
+  ranef <- lme4::ranef(object$mer) # TODO (GAMMs): Add `, condVar = FALSE` here?
   b <- gamm_struct$b
   mf <- gamm_struct$mf
 
   ## base pred only smooth and fixed effects
-  gamm_pred <- predict(fit$mer, newdata = mf, re.form = NA)
+  gamm_pred <- predict(object$mer, newdata = mf, re.form = NA)
 
   ## gamm4 trick to replace dummy smooth variables with actual smooth terms
   sn <- names(ranef)

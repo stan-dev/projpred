@@ -2,12 +2,6 @@ context("elnet")
 
 # tests for glm_elnet
 
-if (!requireNamespace("glmnet", quietly = TRUE)) {
-  stop("glmnet needed for this test to work. Please install it.",
-       call. = FALSE
-  )
-}
-
 # Needed to clean up the workspace afterwards (i.e, after this test file):
 ls_bu <- ls()
 
@@ -37,6 +31,7 @@ test_that(paste(
   "glm_elnet: various families and setups, glm_elnet and glmnet",
   "should give same result"
 ), {
+  skip_if_not_installed("glmnet")
   fams <- list(gaussian(), binomial(), poisson())
   x_list <- lapply(fams, function(fam) x_tr)
   y_list <- lapply(fams, function(fam) {

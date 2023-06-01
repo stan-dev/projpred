@@ -552,6 +552,7 @@ test_that("`cumulate = TRUE` works", {
 })
 
 test_that("ranking proportions are computed correctly", {
+  skip_on_cran()
   # With `cumulate = FALSE`:
   cv_proportions_tester(pr_cF, nterms_max_expected = ntrms,
                         cnms_expected = rk_fdata, info_str = "cumulate = FALSE")

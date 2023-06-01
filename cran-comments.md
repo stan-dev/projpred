@@ -3,21 +3,32 @@
 * Local:
     + R version 4.2.3 (2023-03-15) on Ubuntu 22.04.2 LTS system (platform:
       x86_64-pc-linux-gnu (64-bit))
+    + R version 4.3.0 (2023-04-21) on Ubuntu 22.04.2 LTS system (platform:
+      x86_64-pc-linux-gnu (64-bit))
 * win-builder:
-    + R-devel (R version 4.3.0 alpha (2023-04-02 r84146 ucrt))
-    + R-release (R version 4.2.3 (2023-03-15 ucrt))
-    + R-oldrelease (R version 4.1.3 (2022-03-10))
+    + R-devel (R Under development (unstable) (2023-05-30 r84466 ucrt))
+    + R-release (R version 4.3.0 (2023-04-21 ucrt))
+    + R-oldrelease (R version 4.2.3 (2023-03-15 ucrt))
 * macOS builder:
-    + R version 4.2.1 Patched (2022-06-23 r82516) on macOS 11.5.2 (20G95) system
+    + R version 4.3.0 Patched (2023-05-18 r84451) on macOS Ventura 13.3.1 system
       (platform: aarch64-apple-darwin20 (64-bit))
-      (r-release-macosx-arm64|4.2.1|macosx|macOS 11.5.2 (20G95)|Mac mini|Apple
-      M1||en_US.UTF-8)
+      (r-release-macosx-arm64|4.3.0|macosx|macOS 13.3.1 (22E261)|Mac mini|Apple
+      M1||en_US.UTF-8|macOS 11.3|clang-1403.0.22.14.1|GNU Fortran (GCC) 12.2.0)
 
 ## R CMD check results
 
 All checks gave neither ERRORs nor WARNINGs.
 
-The local check gave the following NOTE:
+The local check with R version 4.3.0 gave the following NOTE:
+    
+    Maintainer: 'Frank Weber <fweber144[ at ]protonmail.com>'
+    
+    Suggests or Enhances not in mainstream repositories:
+      cmdstanr
+    Availability using Additional_repositories specification:
+      cmdstanr   yes   https://mc-stan.org/r-packages/
+
+The local check with R version 4.2.3 gave the following NOTE:
 
     * checking CRAN incoming feasibility ... NOTE
     Maintainer: 'Frank Weber <fweber144[ at ]protonmail.com>'
@@ -71,6 +82,17 @@ feasibility ...`:
       cmdstanr
     Availability using Additional_repositories specification:
       cmdstanr   yes   https://mc-stan.org/r-packages/
+    ```
+
+* On R-oldrelease, this latter NOTE reads:
+    
+    ```
+    Maintainer: 'Frank Weber <fweber144[ at ]protonmail.com>'
+    
+    Suggests or Enhances not in mainstream repositories:
+      cmdstanr
+    Availability using Additional_repositories specification:
+      cmdstanr   yes   https://mc-stan.org/r-packages/
     
     Found the following (possibly) invalid URLs:
       URL: https://doi.org/10.1002/0471200611
@@ -80,21 +102,6 @@ feasibility ...`:
     ```
     
     For the inaccessible URL, see above.
-
-* On R-oldrelease, this latter NOTE reads:
-    
-    ```
-    Maintainer: 'Frank Weber <fweber144[ at ]protonmail.com>'
-    
-    Possibly mis-spelled words in DESCRIPTION:
-      Bürkner (27:61, 31:29)
-      Paasiniemi (26:23)
-      Piironen (26:13)
-      Vehtari (26:39, 28:5, 29:59, 31:42)
-    ```
-    
-    The "Possibly mis-spelled words in DESCRIPTION" are names that are spelled
-    correctly.
 
 The macOS builder check gave the following NOTE:
 
