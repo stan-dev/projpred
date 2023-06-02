@@ -277,6 +277,20 @@ test_that("`x` of class \"vsel\" (created by varsel()) works", {
       } else {
         tstsetup_target <- tstsetup
       }
+    } else if (args_plot_i$cumulate) {
+      matches_tstsetup <- sapply(names(plots_vs), function(tstsetup2) {
+        args_plot_i2 <- args_plot_vs[[tstsetup2]]
+        if (!setequal(names(args_plot_i), names(args_plot_i2))) {
+          return(FALSE)
+        }
+        identical(args_plot_i[setdiff(names(args_plot_i), "cumulate")],
+                  args_plot_i2[setdiff(names(args_plot_i2), "cumulate")])
+      })
+      if (any(matches_tstsetup)) {
+        tstsetup_target <- names(which.max(matches_tstsetup))
+      } else {
+        tstsetup_target <- tstsetup
+      }
     } else {
       tstsetup_target <- tstsetup
     }
