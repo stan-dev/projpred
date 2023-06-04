@@ -4,6 +4,9 @@ If you read this from a place other than <https://mc-stan.org/projpred/news/inde
 
 # projpred 2.6.0.9000
 
+## Bug fixes
+
+* Fixed a bug in the printed number of projected draws for the performance evaluation when calling `print.vselsummary()` based on output from `varsel()` with `refit_prj = FALSE`.
 
 # projpred 2.6.0
 

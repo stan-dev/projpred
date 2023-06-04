@@ -277,7 +277,11 @@ varsel.refmodel <- function(object, d_test = NULL, method = NULL,
   # Clustering or thinning for the search:
   p_sel <- get_refdist(refmodel, ndraws, nclusters)
   # Clustering or thinning for the performance evaluation:
-  p_pred <- get_refdist(refmodel, ndraws_pred, nclusters_pred)
+  if (refit_prj) {
+    p_pred <- get_refdist(refmodel, ndraws_pred, nclusters_pred)
+  } else {
+    p_pred <- p_sel
+  }
 
   # Run the search:
   opt <- nlist(lambda_min_ratio, nlambda, thresh, regul)
