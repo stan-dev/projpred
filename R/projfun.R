@@ -5,8 +5,7 @@
 # class `submodl`.
 get_submodl_prj <- function(solution_terms, p_ref, refmodel, regul = 1e-4,
                             ...) {
-  validparams <- validate_wobs_wdraws(refmodel$wobs, p_ref$wdraws_prj,
-                                      p_ref$mu)
+  validparams <- validate_wobs_wdraws(refmodel$wobs, p_ref$wdraws_prj, p_ref$mu)
   wobs <- validparams$wobs
   wdraws_prj <- validparams$wdraws_prj
 
