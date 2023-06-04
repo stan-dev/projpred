@@ -523,6 +523,57 @@ test_that(paste(
   if (exists("rng_old")) assign(".Random.seed", rng_old, envir = .GlobalEnv)
 })
 
+## refit_prj --------------------------------------------------------------
+
+test_that("`refit_prj` works", {
+  skip_if_not(run_vs)
+  if (run_more) {
+    tstsetups <- names(vss)
+  } else {
+    tstsetups <- head(grep("\\.glm\\.", names(vss), value = TRUE), 1)
+  }
+  for (tstsetup in tstsetups) {
+    args_vs_i <- args_vs[[tstsetup]]
+    if (args_vs_i$prj_nm == "augdat" && args_vs_i$fam_nm == "cumul") {
+      warn_expected <- "non-integer #successes in a binomial glm!"
+    } else if (!is.null(args_vs_i$avoid.increase)) {
+      warn_expected <- warn_mclogit
+    } else {
+      warn_expected <- NA
+    }
+    expect_warning(
+      vs_reuse <- do.call(varsel, c(
+        list(object = refmods[[args_vs_i$tstsetup_ref]],
+             refit_prj = FALSE),
+        excl_nonargs(args_vs_i)
+      )),
+      warn_expected,
+      info = tstsetup
+    )
+    mod_crr <- args_vs_i$mod_nm
+    fam_crr <- args_vs_i$fam_nm
+    prj_crr <- args_vs_i$prj_nm
+    meth_exp_crr <- args_vs_i$method
+    if (is.null(meth_exp_crr)) {
+      meth_exp_crr <- ifelse(mod_crr == "glm" && prj_crr != "augdat",
+                             "L1", "forward")
+    }
+    vsel_tester(
+      vs_reuse,
+      refmod_expected = refmods[[args_vs_i$tstsetup_ref]],
+      solterms_len_expected = args_vs_i$nterms_max,
+      method_expected = meth_exp_crr,
+      refit_prj_expected = FALSE,
+      nprjdraws_search_expected = args_vs_i$nclusters,
+      nprjdraws_eval_expected = args_vs_i$nclusters,
+      search_trms_empty_size =
+        length(args_vs_i$search_terms) &&
+        all(grepl("\\+", args_vs_i$search_terms)),
+      info_str = tstsetup
+    )
+  }
+})
+
 ## Regularization ---------------------------------------------------------
 
 # In fact, `regul` is already checked in `test_project.R`, so the `regul` tests
@@ -1055,6 +1106,49 @@ test_that("`seed` works (and restores the RNG state afterwards)", {
     expect_equal(.Random.seed_repr2, .Random.seed_repr1, info = tstsetup)
     # Expected inequality:
     expect_false(isTRUE(all.equal(rand_new, rand_orig)), info = tstsetup)
+  }
+})
+
+## refit_prj --------------------------------------------------------------
+
+test_that("`refit_prj` works", {
+  skip_if_not(run_cvvs)
+  if (run_more) {
+    tstsetups <- names(cvvss)
+  } else {
+    tstsetups <- head(grep("\\.glm\\.", names(cvvss), value = TRUE), 1)
+  }
+  for (tstsetup in tstsetups) {
+    args_cvvs_i <- args_cvvs[[tstsetup]]
+    cvvs_reuse <- suppressWarnings(do.call(cv_varsel, c(
+      list(object = refmods[[args_cvvs_i$tstsetup_ref]],
+           refit_prj = FALSE),
+      excl_nonargs(args_cvvs_i)
+    )))
+    mod_crr <- args_cvvs_i$mod_nm
+    fam_crr <- args_cvvs_i$fam_nm
+    prj_crr <- args_cvvs_i$prj_nm
+    meth_exp_crr <- args_cvvs_i$method
+    if (is.null(meth_exp_crr)) {
+      meth_exp_crr <- ifelse(mod_crr == "glm" && prj_crr != "augdat",
+                             "L1", "forward")
+    }
+    vsel_tester(
+      cvvs_reuse,
+      with_cv = TRUE,
+      refmod_expected = refmods[[args_cvvs_i$tstsetup_ref]],
+      solterms_len_expected = args_cvvs_i$nterms_max,
+      method_expected = meth_exp_crr,
+      refit_prj_expected = FALSE,
+      cv_method_expected = args_cvvs_i$cv_method,
+      valsearch_expected = args_cvvs_i$validate_search,
+      nprjdraws_search_expected = args_cvvs_i$nclusters,
+      nprjdraws_eval_expected = args_cvvs_i$nclusters,
+      search_trms_empty_size =
+        length(args_cvvs_i$search_terms) &&
+        all(grepl("\\+", args_cvvs_i$search_terms)),
+      info_str = tstsetup
+    )
   }
 })
 

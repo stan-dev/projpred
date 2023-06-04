@@ -1900,6 +1900,9 @@ pp_tester <- function(pp,
 # @param method_expected The expected `vs$method` object.
 # @param cv_method_expected The expected `vs$cv_method` object.
 # @param valsearch_expected The expected `vs$validate_search` object.
+# @param refit_prj_expected A single logical value indicating whether argument
+#   `refit_prj` was set to `TRUE` when calling varsel() or cv_varsel() for
+#   creating `vs` (`TRUE`) or not (`FALSE`).
 # @param cl_search_expected The expected `vs$clust_used_search` object.
 # @param cl_eval_expected The expected `vs$clust_used_eval` object.
 # @param nprjdraws_search_expected The expected `vs$nprjdraws_search` object.
@@ -1928,6 +1931,7 @@ vsel_tester <- function(
     method_expected,
     cv_method_expected = NULL,
     valsearch_expected = NULL,
+    refit_prj_expected = TRUE,
     cl_search_expected = !from_datafit,
     cl_eval_expected = !from_datafit,
     nprjdraws_search_expected = if (!from_datafit) nclusters_tst else 1L,
@@ -1958,6 +1962,9 @@ vsel_tester <- function(
   if (method_expected == "L1") {
     cl_search_expected <- !from_datafit
     nprjdraws_search_expected <- 1
+    if (!refit_prj_expected) {
+      nprjdraws_eval_expected <- 1
+    }
   }
   if (search_trms_empty_size) {
     # This is the "empty_size" setting, so we have to subtract the skipped model
