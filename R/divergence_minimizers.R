@@ -9,7 +9,7 @@ if (getRversion() >= package_version("2.15.1")) {
   utils::globalVariables("projpred_formula_no_random_s")
 }
 
-divmin <- function(formula, projpred_var, ...) {
+divmin <- function(formula, projpred_var, projpred_verbose = FALSE, ...) {
   trms_all <- extract_terms_response(formula)
   has_grp <- length(trms_all$group_terms) > 0
   has_add <- length(trms_all$additive_terms) > 0
@@ -55,7 +55,15 @@ divmin <- function(formula, projpred_var, ...) {
     # foreach::`%do%`` here and then proceed as in the parallel case, but that
     # would require adding more "hard" dependencies (because packages 'foreach'
     # and 'iterators' would have to be moved from `Suggests:` to `Imports:`).
+    if (projpred_verbose) {
+      pb <- utils::txtProgressBar(min = 0, max = length(formulas), style = 3,
+                                  initial = 0)
+      on.exit(close(pb))
+    }
     return(lapply(seq_along(formulas), function(s) {
+      if (projpred_verbose) {
+        on.exit(utils::setTxtProgressBar(pb, s))
+      }
       sdivmin(
         formula = formulas[[s]],
         projpred_var = projpred_var[, s, drop = FALSE],
@@ -501,7 +509,7 @@ if (getRversion() >= package_version("2.15.1")) {
 }
 
 divmin_augdat <- function(formula, data, family, weights, projpred_var,
-                          projpred_ws_aug, ...) {
+                          projpred_ws_aug, projpred_verbose = FALSE, ...) {
   trms_all <- extract_terms_response(formula)
   has_grp <- length(trms_all$group_terms) > 0
   projpred_formula_no_random <- NA
@@ -554,7 +562,15 @@ divmin_augdat <- function(formula, data, family, weights, projpred_var,
     # foreach::`%do%`` here and then proceed as in the parallel case, but that
     # would require adding more "hard" dependencies (because packages 'foreach'
     # and 'iterators' would have to be moved from `Suggests:` to `Imports:`).
+    if (projpred_verbose) {
+      pb <- utils::txtProgressBar(min = 0, max = ncol(projpred_ws_aug),
+                                  style = 3, initial = 0)
+      on.exit(close(pb))
+    }
     return(lapply(seq_len(ncol(projpred_ws_aug)), function(s) {
+      if (projpred_verbose) {
+        on.exit(utils::setTxtProgressBar(pb, s))
+      }
       sdivmin(
         formula = formula,
         data = data,

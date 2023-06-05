@@ -45,6 +45,12 @@
 #'   (however, not yet in case of a GAMM) and having global option
 #'   `projpred.mlvl_pred_new` set to `TRUE`. (Such a prediction takes place when
 #'   calculating output elements `dis` and `ce`.)
+#' @param verbose A single logical value indicating whether to print out
+#'   additional information during the computations. More precisely, this gets
+#'   passed as `projpred_verbose` to the divergence minimizer function of the
+#'   `refmodel` object. For the built-in divergence minimizers, this only has an
+#'   effect in case of sequential computations (not in case of parallel
+#'   projection, which is described in [projpred-package]).
 #' @inheritParams varsel
 #' @param ... Arguments passed to [get_refmodel()] (if [get_refmodel()] is
 #'   actually used; see argument `object`) as well as to the divergence
@@ -143,6 +149,7 @@
 #' @export
 project <- function(object, nterms = NULL, solution_terms = NULL,
                     refit_prj = TRUE, ndraws = 400, nclusters = NULL, seed = NA,
+                    verbose = getOption("projpred.verbose_project", TRUE),
                     regul = 1e-4, ...) {
   if (inherits(object, "datafit")) {
     stop("project() does not support an `object` of class \"datafit\".")
@@ -258,7 +265,7 @@ project <- function(object, nterms = NULL, solution_terms = NULL,
       outdmins = object$search_path$outdmins
     ),
     nterms = nterms, p_ref = p_ref, refmodel = refmodel, regul = regul,
-    refit_prj = refit_prj, ...
+    refit_prj = refit_prj, projpred_verbose = verbose, ...
   )
 
   # Output:

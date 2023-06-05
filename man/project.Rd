@@ -12,6 +12,7 @@ project(
   ndraws = 400,
   nclusters = NULL,
   seed = NA,
+  verbose = getOption("projpred.verbose_project", TRUE),
   regul = 1e-04,
   ...
 )
@@ -63,6 +64,13 @@ drawing new group-level effects when predicting from a multilevel submodel
 (however, not yet in case of a GAMM) and having global option
 \code{projpred.mlvl_pred_new} set to \code{TRUE}. (Such a prediction takes place when
 calculating output elements \code{dis} and \code{ce}.)}
+
+\item{verbose}{A single logical value indicating whether to print out
+additional information during the computations. More precisely, this gets
+passed as \code{projpred_verbose} to the divergence minimizer function of the
+\code{refmodel} object. For the built-in divergence minimizers, this only has an
+effect in case of sequential computations (not in case of parallel
+projection, which is described in \link{projpred-package}).}
 
 \item{regul}{A number giving the amount of ridge regularization when
 projecting onto (i.e., fitting) submodels which are GLMs. Usually there is
