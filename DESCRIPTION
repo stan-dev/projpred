@@ -42,6 +42,7 @@ Imports:
     methods,
     utils,
     Rcpp,
+    gtools,
     ggplot2,
     scales,
     rstantools (>= 2.0.0),
