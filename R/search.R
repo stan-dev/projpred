@@ -164,10 +164,41 @@ search_L1 <- function(p_ref, refmodel, nterms_max, penalty, opt) {
     p_ref, nlist(x, weights = refmodel$wobs), refmodel$family,
     intercept = TRUE, ncol(x), penalty, opt
   )
-  solution_terms <- collapse_ranked_predictors(
+
+  solution_terms_orig <- collapse_ranked_predictors(
     path = colnames(x)[search_path$solution_terms], formula = refmodel$formula,
     data = fr
   )
+  solution_terms <- utils::head(solution_terms_orig, nterms_max)
+  # Check for interaction terms being selected before all involved main-effect
+  # terms have been selected (and reorder `solution_terms` if that is the case):
+  ia_terms <- grep(":", solution_terms, value = TRUE)
+  stopifnot(!any(duplicated(ia_terms))) # safety measure for which.max()
+  for (ia_term in ia_terms) {
+    idx_ia <- which.max(solution_terms == ia_term)
+    if (idx_ia > nterms_max) break
+    main_terms_ia <- strsplit(ia_term, ":")[[1]]
+    main_terms_ia <- intersect(main_terms_ia, solution_terms_orig)
+    prev_terms <- utils::head(solution_terms, idx_ia - 1L)
+    ia_sel_bef_main <- !all(main_terms_ia %in% prev_terms)
+    if (ia_sel_bef_main) {
+      if (getOption("projpred.warn_L1_interactions", TRUE)) {
+        warning(
+          "Interaction term `", ia_term, "` was selected before all involved ",
+          "main-effect terms have been selected. This is a known deficiency ",
+          "of L1 search. Use forward search to avoid this. Now modifying the ",
+          "predictor ranking such that this interaction term comes after the ",
+          "main-effect terms involved in it."
+        )
+      }
+      main_terms_ia <- main_terms_ia[order(match(main_terms_ia,
+                                                 solution_terms_orig))]
+      new_head <- c(prev_terms, setdiff(main_terms_ia, prev_terms), ia_term)
+      solution_terms <- c(new_head, setdiff(solution_terms, new_head))
+      solution_terms <- utils::head(solution_terms, nterms_max)
+    }
+  }
+
   outdmins <- lapply(0:length(solution_terms), function(nterms) {
     if (nterms == 0) {
       formula <- make_formula(c("1"))
@@ -210,21 +241,6 @@ search_L1 <- function(p_ref, refmodel, nterms_max, penalty, opt) {
     class(sub) <- "subfit"
     return(list(sub))
   })
-  solution_terms <- solution_terms[seq_len(nterms_max)]
-  outdmins <- outdmins[seq_len(nterms_max + 1)]
-
-  # Check for interaction terms being selected before all involved main effects
-  # have been selected (and throw a warning if that is the case):
-  ia_sel_bef_main <- sapply(grep(":", solution_terms), function(idx_ia) {
-    term_split <- strsplit(solution_terms[idx_ia], ":")[[1]]
-    !all(term_split %in% utils::head(solution_terms, idx_ia - 1L))
-  })
-  if (any(ia_sel_bef_main) &&
-      getOption("projpred.warn_L1_interactions", TRUE)) {
-    warning("An interaction has been selected before all involved main ",
-            "effects have been selected. This is a known deficiency of L1 ",
-            "search. Use forward search to avoid this.")
-  }
 
   return(nlist(solution_terms, outdmins))
 }
