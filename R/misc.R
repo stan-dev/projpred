@@ -600,3 +600,44 @@ parse_wobs_ppd <- function(wobs, n_obs) {
   }
   return(wobs)
 }
+
+# Constructs all possible permutations of a single interaction term `ia` (given
+# as a single character string):
+all_ia_perms <- function(ia) {
+  ia_split <- strsplit(ia, ":")[[1]]
+  ia_perms_split <- gtools::permutations(n = length(ia_split),
+                                         r = length(ia_split),
+                                         v = ia_split, set = FALSE)
+  return(unlist(
+    apply(ia_perms_split, 1, paste, collapse = ":", simplify = FALSE)
+  ))
+}
+
+# Reorders the main-effect terms involved in a single interaction term `ia`
+# (given as a single character string) such that it matches a corresponding
+# interaction term in a character vector `y` (e.g., `a:b` is considered to be
+# the same as `b:a`):
+reorder_ia <- function(ia, y) {
+  ia_perms <- all_ia_perms(ia)
+  ia_reordered <- intersect(ia_perms, y)
+  if (length(ia_reordered) == 0) {
+    ia_reordered <- NA_character_
+  } else if (length(ia_reordered) > 1) {
+    stop("Unexpected length of `ia_reordered`. Please contact the package ",
+         "maintainer.")
+  }
+  return(ia_reordered)
+}
+
+# For each interaction term in a character vector `x`, this function reorders
+# the main-effect terms involved in it such that the reordered interaction term
+# matches a corresponding interaction term in a character vector `y` (e.g.,
+# `a:b` is considered to be the same as `b:a`):
+reorder_ias <- function(x, y) {
+  ia_idxs <- grep(":", x)
+  ia_idxs <- ia_idxs[!x[ia_idxs] %in% y]
+  for (ia_idx in ia_idxs) {
+    x[ia_idx] <- reorder_ia(x[ia_idx], y)
+  }
+  return(x)
+}

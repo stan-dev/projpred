@@ -1086,26 +1086,8 @@ predict.subfit <- function(object, newdata = NULL, ...) {
       # Need to ensure that the columns of `x` match the coefficients (note that
       # `rownames(beta)` is the same as `colnames(object$x)`, see the tests):
       nms_to_use <- c("(Intercept)", colnames(object$x))
-      if (!all(nms_to_use %in% colnames(x))) {
-        for (ia_idx in grep(":", nms_to_use)) {
-          ia_split <- strsplit(nms_to_use[ia_idx], ":")[[1]]
-          ia_perms_split <- gtools::permutations(n = length(ia_split),
-                                                 r = length(ia_split),
-                                                 v = ia_split, set = FALSE)
-          ia_perms <- apply(ia_perms_split, 1, paste, collapse = ":",
-                            simplify = FALSE)
-          ia_perms <- unlist(ia_perms)
-          ia_reordered <- intersect(ia_perms, colnames(x))
-          if (length(ia_reordered) == 0) {
-            ia_reordered <- NA_character_
-          } else if (length(ia_reordered) > 1) {
-            stop("Unexpected length of `ia_reordered`. Please contact the ",
-                 "package maintainer.")
-          }
-          nms_to_use[ia_idx] <- ia_reordered
-        }
-      }
-      if (all(nms_to_use %in% colnames(x))) {
+      nms_to_use <- reorder_ias(nms_to_use, colnames(x))
+      if (all(!is.na(nms_to_use)) && all(nms_to_use %in% colnames(x))) {
         x <- x[, nms_to_use, drop = FALSE]
       } else {
         stop("The column names of the new model matrix don't match the ",
