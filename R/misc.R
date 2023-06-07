@@ -603,8 +603,12 @@ parse_wobs_ppd <- function(wobs, n_obs) {
 
 # Constructs all possible permutations of a single interaction term `ia` (given
 # as a single character string):
-all_ia_perms <- function(ia) {
-  ia_split <- strsplit(ia, ":")[[1]]
+all_ia_perms <- function(ia, is_split = FALSE) {
+  if (is_split) {
+    ia_split <- ia
+  } else {
+    ia_split <- strsplit(ia, ":")[[1]]
+  }
   ia_perms_split <- gtools::permutations(n = length(ia_split),
                                          r = length(ia_split),
                                          v = ia_split, set = FALSE)

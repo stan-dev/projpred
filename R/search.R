@@ -170,32 +170,39 @@ search_L1 <- function(p_ref, refmodel, nterms_max, penalty, opt) {
     data = fr
   )
   solution_terms <- utils::head(solution_terms_orig, nterms_max)
-  # Check for interaction terms being selected before all involved main-effect
-  # terms have been selected (and reorder `solution_terms` if that is the case):
-  ia_terms <- grep(":", solution_terms, value = TRUE)
-  stopifnot(!any(duplicated(ia_terms))) # safety measure for which.max()
-  for (ia_term in ia_terms) {
-    idx_ia <- which.max(solution_terms == ia_term)
-    if (idx_ia > nterms_max) break
-    main_terms_ia <- strsplit(ia_term, ":")[[1]]
-    main_terms_ia <- intersect(main_terms_ia, solution_terms_orig)
-    prev_terms <- utils::head(solution_terms, idx_ia - 1L)
-    ia_sel_bef_main <- !all(main_terms_ia %in% prev_terms)
-    if (ia_sel_bef_main) {
-      if (getOption("projpred.warn_L1_interactions", TRUE)) {
-        warning(
-          "Interaction term `", ia_term, "` was selected before all involved ",
-          "main-effect terms have been selected. This is a known deficiency ",
-          "of L1 search. Use forward search to avoid this. Now modifying the ",
-          "predictor ranking such that this interaction term comes after the ",
-          "main-effect terms involved in it."
-        )
+  # Place lower-order interaction terms before higher-order interaction terms,
+  # but otherwise preserve the ranking:
+  ia_orders <- sapply(gregexpr(":", solution_terms), function(greg_colon) {
+    sum(greg_colon != -1)
+  })
+  ia_order_max <- max(ia_orders)
+  for (ia_order in rev(seq_len(ia_order_max))) {
+    ias <- solution_terms[ia_orders == ia_order]
+    stopifnot(!any(duplicated(ias))) # safety measure for which.max()
+    for (ia in ias) {
+      ia_idx <- which.max(solution_terms == ia)
+      if (ia_idx > nterms_max) break
+      main_terms_ia <- strsplit(ia, ":")[[1]]
+      ias_lower_split <- utils::combn(main_terms_ia, m = ia_order,
+                                      simplify = FALSE)
+      ias_lower <- lapply(ias_lower_split, all_ia_perms, is_split = TRUE)
+      ias_lower <- unlist(ias_lower)
+      ias_lower <- intersect(ias_lower, solution_terms_orig)
+      prev_terms <- utils::head(solution_terms, ia_idx - 1L)
+      has_lower_after <- !all(ias_lower %in% prev_terms)
+      if (has_lower_after) {
+        if (getOption("projpred.warn_L1_interactions", TRUE)) {
+          warning("Interaction term `", ia, "` was selected before all ",
+                  "corresponding lower-order interaction terms have been ",
+                  "selected. This is a known deficiency of L1 search. Use ",
+                  "forward search to avoid this. Now ranking the lower-order ",
+                  "interaction terms before this interaction term.")
+        }
+        ias_lower <- ias_lower[order(match(ias_lower, solution_terms_orig))]
+        new_head <- c(prev_terms, setdiff(ias_lower, prev_terms), ia)
+        solution_terms <- c(new_head, setdiff(solution_terms, new_head))
+        solution_terms <- utils::head(solution_terms, nterms_max)
       }
-      main_terms_ia <- main_terms_ia[order(match(main_terms_ia,
-                                                 solution_terms_orig))]
-      new_head <- c(prev_terms, setdiff(main_terms_ia, prev_terms), ia_term)
-      solution_terms <- c(new_head, setdiff(solution_terms, new_head))
-      solution_terms <- utils::head(solution_terms, nterms_max)
     }
   }
 
