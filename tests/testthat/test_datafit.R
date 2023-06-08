@@ -166,9 +166,9 @@ if (run_vs) {
   })
 
   prjs_vs_datafit <- lapply(args_prj_vs_datafit, function(args_prj_vs_i) {
+    args_prj_vs_i$refit_prj <- FALSE
     do.call(project, c(
-      list(object = vss_datafit[[args_prj_vs_i$tstsetup_vsel]],
-           refit_prj = FALSE),
+      list(object = vss_datafit[[args_prj_vs_i$tstsetup_vsel]]),
       excl_nonargs(args_prj_vs_i)
     ))
   })
@@ -237,6 +237,14 @@ test_that(paste(
     if (is.null(meth_exp_crr)) {
       meth_exp_crr <- ifelse(mod_crr == "glm", "L1", "forward")
     }
+    extra_tol_crr <- 1.5
+    if (any(grepl(":", ranking(vss_datafit[[tstsetup]])[["fulldata"]]))) {
+      ### Testing for non-increasing element `ce` (for increasing model size)
+      ### doesn't make sense if the ranking of predictors involved in
+      ### interactions has been changed, so we choose a higher `extra_tol`:
+      extra_tol_crr <- 3
+      ###
+    }
     vsel_tester(
       vss_datafit[[tstsetup]],
       from_datafit = TRUE,
@@ -244,12 +252,10 @@ test_that(paste(
         datafits[[args_vs_datafit[[tstsetup]]$tstsetup_datafit]],
       solterms_len_expected = args_vs_datafit[[tstsetup]]$nterms_max,
       method_expected = meth_exp_crr,
-      nprjdraws_search_expected = 1L,
-      nprjdraws_eval_expected = 1L,
       search_trms_empty_size =
         length(args_vs_datafit[[tstsetup]]$search_terms) &&
         all(grepl("\\+", args_vs_datafit[[tstsetup]]$search_terms)),
-      extra_tol = 1.5,
+      extra_tol = extra_tol_crr,
       info_str = tstsetup
     )
   }
@@ -276,8 +282,6 @@ test_that(paste(
       method_expected = meth_exp_crr,
       cv_method_expected = "kfold",
       valsearch_expected = args_cvvs_datafit[[tstsetup]]$validate_search,
-      nprjdraws_search_expected = 1L,
-      nprjdraws_eval_expected = 1L,
       search_trms_empty_size =
         length(args_cvvs_datafit[[tstsetup]]$search_terms) &&
         all(grepl("\\+", args_cvvs_datafit[[tstsetup]]$search_terms)),
@@ -299,10 +303,10 @@ test_that("project(): `object` of class \"datafit\" fails", {
   for (tstsetup in tstsetups) {
     args_prj_i <- args_prj[[tstsetup]]
     if (!args_prj_i$tstsetup_ref %in% names(datafits)) next
+    args_prj_i$refit_prj <- FALSE
     expect_error(
       do.call(project, c(
-        list(object = datafits[[args_prj_i$tstsetup_ref]],
-             refit_prj = FALSE),
+        list(object = datafits[[args_prj_i$tstsetup_ref]]),
         excl_nonargs(args_prj_i)
       )),
       paste("^project\\(\\) does not support an `object` of class",

@@ -1083,23 +1083,16 @@ predict.subfit <- function(object, newdata = NULL, ...) {
       # now).
       x <- model.matrix(delete.response(terms(object$formula)), data = newdata,
                         xlev = object$xlvls)
-      if (!identical(colnames(x), c("(Intercept)", colnames(object$x)))) {
-        # Note: In the following `if` condition, we were previously using
-        # `identical(sort(colnames(x)),
-        #            sort(c("(Intercept)", colnames(object$x))))`
-        # instead of
-        # `all(c("(Intercept)", colnames(object$x)) %in% colnames(x))`.
-        # However, the case where `x` has non-intercept columns that `object$x`
-        # doesn't have may occur in case of an L1 search with interactions being
-        # selected before all involved main effects are selected (and at least
-        # one of the main effects being a categorical predictor).
-        if (all(c("(Intercept)", colnames(object$x)) %in% colnames(x))) {
-          x <- x[, c("(Intercept)", colnames(object$x)), drop = FALSE]
-        } else {
-          stop("The column names of the new model matrix don't match the ",
-               "column names of the original model matrix. Please notify the ",
-               "package maintainer.")
-        }
+      # Need to ensure that the columns of `x` match the coefficients (note that
+      # `rownames(beta)` is the same as `colnames(object$x)`, see the tests):
+      nms_to_use <- c("(Intercept)", colnames(object$x))
+      nms_to_use <- reorder_ias(nms_to_use, colnames(x))
+      if (all(!is.na(nms_to_use)) && all(nms_to_use %in% colnames(x))) {
+        x <- x[, nms_to_use, drop = FALSE]
+      } else {
+        stop("The column names of the new model matrix don't match the ",
+             "column names of the original model matrix. Please notify the ",
+             "package maintainer.")
       }
       return(x %*% rbind(alpha, beta))
     }

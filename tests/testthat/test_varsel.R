@@ -22,8 +22,6 @@ test_that(paste(
       refmod_expected = refmods[[tstsetup_ref]],
       solterms_len_expected = args_vs[[tstsetup]]$nterms_max,
       method_expected = meth_exp_crr,
-      nprjdraws_search_expected = args_vs[[tstsetup]]$nclusters,
-      nprjdraws_eval_expected = args_vs[[tstsetup]]$nclusters_pred,
       search_trms_empty_size =
         length(args_vs[[tstsetup]]$search_terms) &&
         all(grepl("\\+", args_vs[[tstsetup]]$search_terms)),
@@ -167,8 +165,6 @@ test_that(paste(
       ),
       solterms_len_expected = args_vs_i$nterms_max,
       method_expected = meth_exp_crr,
-      nprjdraws_search_expected = args_vs_i$nclusters,
-      nprjdraws_eval_expected = args_vs_i$nclusters_pred,
       search_trms_empty_size =
         length(args_vs_i$search_terms) &&
         all(grepl("\\+", args_vs_i$search_terms)),
@@ -299,8 +295,6 @@ test_that(paste(
       ),
       solterms_len_expected = args_vs_i$nterms_max,
       method_expected = meth_exp_crr,
-      nprjdraws_search_expected = args_vs_i$nclusters,
-      nprjdraws_eval_expected = args_vs_i$nclusters_pred,
       search_trms_empty_size =
         length(args_vs_i$search_terms) &&
         all(grepl("\\+", args_vs_i$search_terms)),
@@ -523,6 +517,65 @@ test_that(paste(
   if (exists("rng_old")) assign(".Random.seed", rng_old, envir = .GlobalEnv)
 })
 
+## refit_prj --------------------------------------------------------------
+
+test_that("`refit_prj` works", {
+  skip_if_not(run_vs)
+  if (run_more) {
+    tstsetups <- names(vss)
+  } else {
+    tstsetups <- head(grep("\\.glm\\.", names(vss), value = TRUE), 1)
+  }
+  for (tstsetup in tstsetups) {
+    args_vs_i <- args_vs[[tstsetup]]
+    args_vs_i$refit_prj <- FALSE
+    if (args_vs_i$prj_nm == "augdat" && args_vs_i$fam_nm == "cumul") {
+      warn_expected <- "non-integer #successes in a binomial glm!"
+    } else if (!is.null(args_vs_i$avoid.increase)) {
+      warn_expected <- warn_mclogit
+    } else {
+      warn_expected <- NA
+    }
+    expect_warning(
+      vs_reuse <- do.call(varsel, c(
+        list(object = refmods[[args_vs_i$tstsetup_ref]]),
+        excl_nonargs(args_vs_i)
+      )),
+      warn_expected,
+      info = tstsetup
+    )
+    mod_crr <- args_vs_i$mod_nm
+    fam_crr <- args_vs_i$fam_nm
+    prj_crr <- args_vs_i$prj_nm
+    meth_exp_crr <- args_vs_i$method
+    if (is.null(meth_exp_crr)) {
+      meth_exp_crr <- ifelse(mod_crr == "glm" && prj_crr != "augdat",
+                             "L1", "forward")
+    }
+    extra_tol_crr <- 1.1
+    if (meth_exp_crr == "L1" &&
+        any(grepl(":", ranking(vs_reuse)[["fulldata"]]))) {
+      ### Testing for non-increasing element `ce` (for increasing model size)
+      ### doesn't make sense if the ranking of predictors involved in
+      ### interactions has been changed, so we choose a higher `extra_tol`:
+      extra_tol_crr <- 1.2
+      ###
+    }
+    vsel_tester(
+      vs_reuse,
+      refmod_expected = refmods[[args_vs_i$tstsetup_ref]],
+      solterms_len_expected = args_vs_i$nterms_max,
+      method_expected = meth_exp_crr,
+      refit_prj_expected = FALSE,
+      search_trms_empty_size =
+        length(args_vs_i$search_terms) &&
+        all(grepl("\\+", args_vs_i$search_terms)),
+      extra_tol = extra_tol_crr,
+      info_str = tstsetup
+    )
+  }
+})
+
 ## Regularization ---------------------------------------------------------
 
 # In fact, `regul` is already checked in `test_project.R`, so the `regul` tests
@@ -562,8 +615,6 @@ test_that(paste(
           refmod_expected = refmods[[args_vs_i$tstsetup_ref]],
           solterms_len_expected = args_vs_i$nterms_max,
           method_expected = "L1",
-          nprjdraws_search_expected = args_vs_i$nclusters,
-          nprjdraws_eval_expected = args_vs_i$nclusters_pred,
           info_str = tstsetup
         )
         # Expect equality for all components not related to prediction:
@@ -649,8 +700,6 @@ test_that(paste(
           refmod_expected = refmods[[args_vs_i$tstsetup_ref]],
           solterms_len_expected = args_vs_i$nterms_max,
           method_expected = "forward",
-          nprjdraws_search_expected = args_vs_i$nclusters,
-          nprjdraws_eval_expected = args_vs_i$nclusters_pred,
           search_trms_empty_size =
             length(args_vs_i$search_terms) &&
             all(grepl("\\+", args_vs_i$search_terms)),
@@ -851,8 +900,6 @@ test_that("for L1 search, `penalty` has an expected effect", {
       refmod_expected = refmods[[args_vs_i$tstsetup_ref]],
       solterms_len_expected = nterms_max_crr,
       method_expected = "L1",
-      nprjdraws_search_expected = args_vs_i$nclusters,
-      nprjdraws_eval_expected = args_vs_i$nclusters_pred,
       info_str = tstsetup
     )
     # Check that the variables with no cost are selected first and the ones
@@ -867,6 +914,77 @@ test_that("for L1 search, `penalty` has an expected effect", {
                      rev(penal_possbl[idx_penal_Inf]),
                      info = tstsetup)
   }
+})
+
+## L1 search and interactions ---------------------------------------------
+
+test_that("L1 search handles three-way (second-order) interactions correctly", {
+  skip_if_not(run_vs)
+  skip_if_not_installed("rstanarm")
+  warn_L1_ia_orig <- options(projpred.warn_L1_interactions = TRUE)
+  main_terms_in_ia <- c("xca.2", "xco.3", "xco.1")
+  all_ias_split <- lapply(seq_along(main_terms_in_ia), combn,
+                          x = main_terms_in_ia, simplify = FALSE)
+  all_ias <- unlist(lapply(all_ias_split, function(ia_split) {
+    lapply(ia_split, all_ia_perms, is_split = TRUE)
+  }))
+  trms_universe_split_bu <- trms_universe_split
+  trms_universe_split <<- union(trms_universe_split, all_ias)
+  tstsetup <- head(grep("^rstanarm\\.glm", names(fits), value = TRUE), 1)
+  args_fit_i <- args_fit[[tstsetup]]
+  stopifnot(!(args_fit_i$pkg_nm == "rstanarm" && args_fit_i$fam_nm == "cumul"))
+  fit_fun_nm <- get_fit_fun_nm(args_fit_i)
+  args_fit_i$formula <- update(args_fit_i$formula,
+                               . ~ . + xca.2 * xco.3 * xco.1)
+  fit <- suppressWarnings(do.call(
+    get(fit_fun_nm, asNamespace(args_fit_i$pkg_nm)),
+    excl_nonargs(args_fit_i)
+  ))
+  args_ref_i <- args_ref[[paste0(tstsetup, ".trad")]]
+  refmod <- do.call(get_refmodel, c(
+    list(object = fit),
+    excl_nonargs(args_ref_i)
+  ))
+  args_vs_i <- args_vs[[paste0(tstsetup,
+                               ".trad.default_meth.default_search_trms")]]
+  args_vs_i$refit_prj <- FALSE
+  args_vs_i$nterms_max <- NULL
+  expect_warning(
+    vs <- do.call(varsel, c(
+      list(object = refmod),
+      excl_nonargs(args_vs_i)
+    )),
+    "was selected before all.+lower-order interaction terms have been selected",
+    info = tstsetup
+  )
+  vsel_tester(
+    vs,
+    refmod_expected = refmod,
+    solterms_len_expected = count_terms_in_formula(refmod$formula) - 1L,
+    method_expected = "L1",
+    refit_prj_expected = FALSE,
+    ### Testing for non-increasing element `ce` (for increasing model size)
+    ### doesn't make sense if the ranking of predictors involved in interactions
+    ### has been changed, so we choose a higher `extra_tol` than by default:
+    extra_tol = 1.2,
+    ###
+    info_str = tstsetup
+  )
+  rk <- ranking(vs)[["fulldata"]]
+  expect_true(
+    all(sapply(grep(":", rk), function(ia_idx) {
+      main_terms_in_ia <- strsplit(rk[ia_idx], ":")[[1]]
+      all_ias_split <- lapply(seq_len(length(main_terms_in_ia) - 1L), combn,
+                              x = main_terms_in_ia, simplify = FALSE)
+      ias_lower <- unlist(lapply(all_ias_split, function(ia_split) {
+        lapply(ia_split, all_ia_perms, is_split = TRUE)
+      }))
+      return(all(which(rk %in% ias_lower) < ia_idx))
+    })),
+    info = tstsetup
+  )
+  trms_universe_split <<- trms_universe_split_bu
+  options(warn_L1_ia_orig)
 })
 
 ## search_terms -----------------------------------------------------------
@@ -924,40 +1042,6 @@ test_that(paste(
   }
 })
 
-## L1 search warning for interactions -------------------------------------
-
-test_that(paste(
-  "L1 search warns if an interaction term is selected before all involved",
-  "main effects have been selected"
-), {
-  skip_if_not(run_vs)
-  warn_L1_ia_orig <- options(projpred.warn_L1_interactions = TRUE)
-  args_fit_i <- args_fit$rstanarm.glm.gauss.stdformul.with_wobs.with_offs
-  skip_if_not(!is.null(args_fit_i))
-  fit_fun_nm <- get_fit_fun_nm(args_fit_i)
-  fit_ia <- suppressWarnings(do.call(
-    get(fit_fun_nm, asNamespace(args_fit_i$pkg_nm)),
-    c(list(formula = update(args_fit_i$formula, . ~ . + xco.1:xca.2)),
-      excl_nonargs(args_fit_i, nms_excl_add = "formula"))
-  ))
-  args_vs_i <- args_vs$rstanarm.glm.gauss.stdformul.with_wobs.with_offs.trad.default_meth.default_search_trms
-  expect_warning(
-    vs_ia <- do.call(varsel, c(
-      list(object = fit_ia),
-      excl_nonargs(args_vs_i, nms_excl_add = "nterms_max")
-    )),
-    "An interaction has been selected before all involved main effects",
-    info = "rstanarm.glm.gauss.stdformul.with_wobs.with_offs"
-  )
-  soltrms_all <- vs_ia$solution_terms
-  idx_ia <- grep(":", soltrms_all)
-  soltrms_ia_main <- unlist(strsplit(grep(":", soltrms_all, value = TRUE), ":"))
-  idxs_main <- match(soltrms_ia_main, soltrms_all)
-  expect_true(any(idx_ia < idxs_main),
-              info = "rstanarm.glm.gauss.stdformul.with_wobs.with_offs")
-  options(warn_L1_ia_orig)
-})
-
 # cv_varsel() -------------------------------------------------------------
 
 context("cv_varsel()")
@@ -984,8 +1068,6 @@ test_that(paste(
       method_expected = meth_exp_crr,
       cv_method_expected = args_cvvs[[tstsetup]]$cv_method,
       valsearch_expected = args_cvvs[[tstsetup]]$validate_search,
-      nprjdraws_search_expected = args_cvvs[[tstsetup]]$nclusters,
-      nprjdraws_eval_expected = args_cvvs[[tstsetup]]$nclusters_pred,
       search_trms_empty_size =
         length(args_cvvs[[tstsetup]]$search_terms) &&
         all(grepl("\\+", args_cvvs[[tstsetup]]$search_terms)),
@@ -1058,6 +1140,47 @@ test_that("`seed` works (and restores the RNG state afterwards)", {
   }
 })
 
+## refit_prj --------------------------------------------------------------
+
+test_that("`refit_prj` works", {
+  skip_if_not(run_cvvs)
+  if (run_more) {
+    tstsetups <- names(cvvss)
+  } else {
+    tstsetups <- head(grep("\\.glm\\.", names(cvvss), value = TRUE), 1)
+  }
+  for (tstsetup in tstsetups) {
+    args_cvvs_i <- args_cvvs[[tstsetup]]
+    args_cvvs_i$refit_prj <- FALSE
+    cvvs_reuse <- suppressWarnings(do.call(cv_varsel, c(
+      list(object = refmods[[args_cvvs_i$tstsetup_ref]]),
+      excl_nonargs(args_cvvs_i)
+    )))
+    mod_crr <- args_cvvs_i$mod_nm
+    fam_crr <- args_cvvs_i$fam_nm
+    prj_crr <- args_cvvs_i$prj_nm
+    meth_exp_crr <- args_cvvs_i$method
+    if (is.null(meth_exp_crr)) {
+      meth_exp_crr <- ifelse(mod_crr == "glm" && prj_crr != "augdat",
+                             "L1", "forward")
+    }
+    vsel_tester(
+      cvvs_reuse,
+      with_cv = TRUE,
+      refmod_expected = refmods[[args_cvvs_i$tstsetup_ref]],
+      solterms_len_expected = args_cvvs_i$nterms_max,
+      method_expected = meth_exp_crr,
+      refit_prj_expected = FALSE,
+      cv_method_expected = args_cvvs_i$cv_method,
+      valsearch_expected = args_cvvs_i$validate_search,
+      search_trms_empty_size =
+        length(args_cvvs_i$search_terms) &&
+        all(grepl("\\+", args_cvvs_i$search_terms)),
+      info_str = tstsetup
+    )
+  }
+})
+
 ## nloo -------------------------------------------------------------------
 
 test_that("invalid `nloo` fails", {
@@ -1123,8 +1246,6 @@ test_that("setting `nloo` smaller than the number of observations works", {
       method_expected = meth_exp_crr,
       cv_method_expected = "LOO",
       valsearch_expected = args_cvvs_i$validate_search,
-      nprjdraws_search_expected = args_cvvs_i$nclusters,
-      nprjdraws_eval_expected = args_cvvs_i$nclusters_pred,
       nloo_expected = nloo_tst,
       search_trms_empty_size =
         length(args_cvvs_i$search_terms) &&
@@ -1185,8 +1306,6 @@ test_that("`validate_search` works", {
       method_expected = meth_exp_crr,
       cv_method_expected = "LOO",
       valsearch_expected = FALSE,
-      nprjdraws_search_expected = args_cvvs_i$nclusters,
-      nprjdraws_eval_expected = args_cvvs_i$nclusters_pred,
       search_trms_empty_size =
         length(args_cvvs_i$search_terms) &&
         all(grepl("\\+", args_cvvs_i$search_terms)),
@@ -1337,8 +1456,6 @@ test_that(paste(
       method_expected = meth_exp_crr,
       cv_method_expected = "kfold",
       valsearch_expected = args_cvvs_i$validate_search,
-      nprjdraws_search_expected = args_cvvs_i$nclusters,
-      nprjdraws_eval_expected = args_cvvs_i$nclusters_pred,
       search_trms_empty_size =
         length(args_cvvs_i$search_terms) &&
         all(grepl("\\+", args_cvvs_i$search_terms)),
@@ -1471,8 +1588,6 @@ test_that(paste(
       method_expected = meth_exp_crr,
       cv_method_expected = "kfold",
       valsearch_expected = args_cvvs_i$validate_search,
-      nprjdraws_search_expected = args_cvvs_i$nclusters,
-      nprjdraws_eval_expected = args_cvvs_i$nclusters_pred,
       search_trms_empty_size =
         length(args_cvvs_i$search_terms) &&
         all(grepl("\\+", args_cvvs_i$search_terms)),

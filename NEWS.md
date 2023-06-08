@@ -4,9 +4,14 @@ If you read this from a place other than <https://mc-stan.org/projpred/news/inde
 
 # projpred 2.6.0.9000
 
+## Minor changes
+
+* If an L1 search selects an interaction term before all involved lower-order interaction terms (including main-effect terms) have been selected, the predictor ranking is now automatically modified so that the lower-order interaction terms come before this interaction term. A corresponding warning is thrown, which may be deactivated by setting the global option `projpred.warn_L1_interactions` to `FALSE`. Previously, beginning with version 2.5.0, only a warning was thrown and this only if an L1 search selected an interaction term before all involved *main-effect* terms had been selected. (GitHub: #420)
+
 ## Bug fixes
 
 * Fixed a bug in the printed number of projected draws for the performance evaluation when calling `print.vselsummary()` based on output from `varsel()` with `refit_prj = FALSE`.
+* Fixed a bug sometimes causing an error when predicting from a submodel that is a GLM and has interactions. (GitHub: #420)
 
 # projpred 2.6.0
 
@@ -49,7 +54,7 @@ If you read this from a place other than <https://mc-stan.org/projpred/news/inde
 * Although bad practice (in general), a reference model lacking an intercept can now be used within **projpred**. However, it will always be projected onto submodels which *include* an intercept. The reason is that even if the true intercept in the reference model is zero, this does not need to hold for the submodels. An informational message mentioning the projection onto intercept-including submodels is thrown when **projpred** encounters a reference model lacking an intercept. (GitHub: #96, #391)
 * In case of non-predictor arguments of `s()` or `t2()`, **projpred** now throws an error. (This had already been documented before, but a suitable error message was missing.) (GitHub: #393, based on #156 and #269)
 * In case of the `brms::categorical()` family (supported since version 2.4.0), **projpred** now strips underscores from response category names in `as.matrix.projection()` output, as done by **brms**. (GitHub: #394)
-* L1 search now throws a warning if an interaction term is selected before all involved main effects have been selected. (GitHub: #395)
+* L1 search now throws a warning if an interaction term is selected before all involved main-effect terms have been selected. (GitHub: #395)
 * Documented that in multilevel (group-level) terms, function calls on the right-hand side of the `|` character (e.g., `(1 | gr(group_variable))`, which is possible in **brms**) are currently not allowed in **projpred**. A corresponding error message has also been added. (GitHub: #319)
 * Due to internal refactoring:
     

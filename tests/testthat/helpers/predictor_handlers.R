@@ -1,12 +1,3 @@
-# A function for reversing the order of the individual terms in ":" interaction
-# terms:
-revIA <- function(trms) {
-  trms_split <- strsplit(grep(":", trms, value = TRUE), ":")
-  return(unlist(lapply(trms_split, function(trm_split) {
-    paste(rev(trm_split), collapse = ":")
-  })))
-}
-
 # Expand poly() terms, e.g., `poly(x, 2, raw = TRUE)` to
 # `poly(x, 2, raw = TRUE)1` and `poly(x, 2, raw = TRUE)2`:
 expand_poly <- function(trms, info_str) {

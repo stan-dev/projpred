@@ -766,31 +766,26 @@ outdmin_tester_trad <- function(
       # to reorder the columns manually:
       if (length(solterms_vsel_L1_search)) {
         terms_contr_expd <- lapply(solterms_vsel_L1_search, function(term_crr) {
-          if (!is.factor(sub_data[[term_crr]])) {
-            term_crr <- sub("(I\\(.*as\\.logical\\(.*\\)\\))", "\\1TRUE",
-                            term_crr)
-            term_crr <- expand_poly(term_crr,
-                                    info_str = paste0(info_str, "__", term_crr))
-            return(term_crr)
-          } else {
-            return(paste0(term_crr, levels(sub_data[[term_crr]])[-1]))
-          }
+          term_crr <- strsplit(term_crr, ":")[[1]]
+          main_terms_expand <- lapply(term_crr, function(main_term_crr) {
+            if (!is.factor(sub_data[[main_term_crr]])) {
+              main_term_crr <- sub("(I\\(.*as\\.logical\\(.*\\)\\))", "\\1TRUE",
+                                   main_term_crr)
+              main_term_crr <- expand_poly(
+                main_term_crr, info_str = paste0(info_str, "__", main_term_crr)
+              )
+              return(main_term_crr)
+            } else {
+              return(paste0(main_term_crr,
+                            levels(sub_data[[main_term_crr]])[-1]))
+            }
+          })
+          return(apply(expand.grid(main_terms_expand), 1, paste,
+                       collapse = ":"))
         })
         terms_contr_expd <- unlist(terms_contr_expd)
-        colnms_x <- colnames(sub_x_expected)
-        colnms_x <- unlist(lapply(colnms_x, function(colnm_x) {
-          if (!colnm_x %in% terms_contr_expd) {
-            colon_found <- gregexpr(":", colnm_x)
-            if (length(colon_found) != 1 || colon_found == -1) {
-              stop("The following code is not general enough. It needs to be ",
-                   "adapted.")
-            }
-            return(paste(rev(strsplit(colnm_x, ":")[[1]]), collapse = ":"))
-          } else {
-            return(colnm_x)
-          }
-        }))
-        colnames(sub_x_expected) <- colnms_x
+        colnames(sub_x_expected) <- reorder_ias(colnames(sub_x_expected),
+                                                terms_contr_expd)
         sub_x_expected <- sub_x_expected[
           ,
           colnames(sub_x_expected)[order(match(colnames(sub_x_expected),
@@ -862,20 +857,14 @@ outdmin_tester_trad <- function(
                        info = info_str)
           trms_to_test <- labels(terms(outdmin_totest[[j]]$formula))
           trms_ch <- labels(terms(sub_formul[[j]]))
-          expect_true(setequal(c(trms_to_test, revIA(trms_to_test)),
-                               c(trms_ch, revIA(trms_ch))),
-                      info = info_str)
+          trms_ch <- reorder_ias(trms_ch, trms_to_test)
+          expect_identical(trms_to_test, trms_ch, info = info_str)
         }
 
         x_to_test <- outdmin_totest[[j]]$x
         x_ch <- sub_x_expected
-        if (!identical(dimnames(x_to_test)[[2]], dimnames(x_ch)[[2]])) {
-          # Try reversing the order of individual terms within ":" interaction
-          # terms:
-          dimnames(x_ch)[[2]][grep(":", dimnames(x_ch)[[2]])] <- revIA(
-            dimnames(x_ch)[[2]]
-          )
-        }
+        dimnames(x_ch)[[2]] <- reorder_ias(dimnames(x_ch)[[2]],
+                                           dimnames(x_to_test)[[2]])
         expect_identical(x_to_test, x_ch, info = info_str)
 
         if (!from_vsel_L1_search) {
@@ -896,6 +885,7 @@ outdmin_tester_trad <- function(
         # adapted.
         nms_fac <- grep("xca", labels(terms(outdmin_totest[[j]]$formula)),
                         value = TRUE)
+        nms_fac <- grep(":", nms_fac, value = TRUE, invert = TRUE)
         if (length(nms_fac)) {
           xlvls_ch <- lapply(setNames(nm = nms_fac), function(nm_fac) {
             levels(droplevels(sub_data[[nm_fac]]))
@@ -1900,6 +1890,9 @@ pp_tester <- function(pp,
 # @param method_expected The expected `vs$method` object.
 # @param cv_method_expected The expected `vs$cv_method` object.
 # @param valsearch_expected The expected `vs$validate_search` object.
+# @param refit_prj_expected A single logical value indicating whether argument
+#   `refit_prj` was set to `TRUE` when calling varsel() or cv_varsel() for
+#   creating `vs` (`TRUE`) or not (`FALSE`).
 # @param cl_search_expected The expected `vs$clust_used_search` object.
 # @param cl_eval_expected The expected `vs$clust_used_eval` object.
 # @param nprjdraws_search_expected The expected `vs$nprjdraws_search` object.
@@ -1928,10 +1921,22 @@ vsel_tester <- function(
     method_expected,
     cv_method_expected = NULL,
     valsearch_expected = NULL,
+    refit_prj_expected = TRUE,
     cl_search_expected = !from_datafit,
     cl_eval_expected = !from_datafit,
-    nprjdraws_search_expected = if (!from_datafit) nclusters_tst else 1L,
-    nprjdraws_eval_expected = if (!from_datafit) nclusters_pred_tst else 1L,
+    nprjdraws_search_expected = if (from_datafit || method_expected == "L1") {
+      1L
+    } else {
+      nclusters_tst
+    },
+    nprjdraws_eval_expected = if (from_datafit || (!refit_prj_expected &&
+                                                   method_expected == "L1")) {
+      1L
+    } else if (!refit_prj_expected) {
+      nclusters_tst
+    } else {
+      nclusters_pred_tst
+    },
     seed_expected = seed_tst,
     nloo_expected = NULL,
     search_trms_empty_size = FALSE,
@@ -1957,7 +1962,6 @@ vsel_tester <- function(
   }
   if (method_expected == "L1") {
     cl_search_expected <- !from_datafit
-    nprjdraws_search_expected <- 1
   }
   if (search_trms_empty_size) {
     # This is the "empty_size" setting, so we have to subtract the skipped model
