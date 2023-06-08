@@ -198,8 +198,9 @@ search_L1 <- function(p_ref, refmodel, nterms_max, penalty, opt) {
                   "forward search to avoid this. Now ranking the lower-order ",
                   "interaction terms before this interaction term.")
         }
+        ias_lower <- setdiff(ias_lower, prev_terms)
         ias_lower <- ias_lower[order(match(ias_lower, solution_terms_orig))]
-        new_head <- c(prev_terms, setdiff(ias_lower, prev_terms), ia)
+        new_head <- c(prev_terms, ias_lower, ia)
         solution_terms <- c(new_head, setdiff(solution_terms, new_head))
         solution_terms <- utils::head(solution_terms, nterms_max)
       }
