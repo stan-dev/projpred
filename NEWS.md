@@ -4,9 +4,14 @@ If you read this from a place other than <https://mc-stan.org/projpred/news/inde
 
 # projpred 2.6.0.9000
 
+## Minor changes
+
+* If an L1 search selects an interaction term before all involved lower-order interaction terms (including main-effect terms) have been selected, the predictor ranking is now automatically modified so that the lower-order interaction terms come before this interaction term. A corresponding warning is thrown, which may be deactivated by setting the global option `projpred.warn_L1_interactions` to `FALSE`. Previously, beginning with version 2.5.0, only a warning was thrown and this only if an L1 search selected an interaction term before all involved *main-effect* terms had been selected. (GitHub: #420)
+
 ## Bug fixes
 
 * Fixed a bug in the printed number of projected draws for the performance evaluation when calling `print.vselsummary()` based on output from `varsel()` with `refit_prj = FALSE`.
+* Fixed a bug sometimes causing an error when predicting from a submodel that is a GLM and has interactions. (GitHub: #420)
 
 # projpred 2.6.0
 
