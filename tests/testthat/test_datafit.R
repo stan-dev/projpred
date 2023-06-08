@@ -166,9 +166,9 @@ if (run_vs) {
   })
 
   prjs_vs_datafit <- lapply(args_prj_vs_datafit, function(args_prj_vs_i) {
+    args_prj_vs_i$refit_prj <- FALSE
     do.call(project, c(
-      list(object = vss_datafit[[args_prj_vs_i$tstsetup_vsel]],
-           refit_prj = FALSE),
+      list(object = vss_datafit[[args_prj_vs_i$tstsetup_vsel]]),
       excl_nonargs(args_prj_vs_i)
     ))
   })
@@ -307,10 +307,10 @@ test_that("project(): `object` of class \"datafit\" fails", {
   for (tstsetup in tstsetups) {
     args_prj_i <- args_prj[[tstsetup]]
     if (!args_prj_i$tstsetup_ref %in% names(datafits)) next
+    args_prj_i$refit_prj <- FALSE
     expect_error(
       do.call(project, c(
-        list(object = datafits[[args_prj_i$tstsetup_ref]],
-             refit_prj = FALSE),
+        list(object = datafits[[args_prj_i$tstsetup_ref]]),
         excl_nonargs(args_prj_i)
       )),
       paste("^project\\(\\) does not support an `object` of class",

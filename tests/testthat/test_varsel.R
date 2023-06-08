@@ -534,6 +534,7 @@ test_that("`refit_prj` works", {
   }
   for (tstsetup in tstsetups) {
     args_vs_i <- args_vs[[tstsetup]]
+    args_vs_i$refit_prj <- FALSE
     if (args_vs_i$prj_nm == "augdat" && args_vs_i$fam_nm == "cumul") {
       warn_expected <- "non-integer #successes in a binomial glm!"
     } else if (!is.null(args_vs_i$avoid.increase)) {
@@ -543,8 +544,7 @@ test_that("`refit_prj` works", {
     }
     expect_warning(
       vs_reuse <- do.call(varsel, c(
-        list(object = refmods[[args_vs_i$tstsetup_ref]],
-             refit_prj = FALSE),
+        list(object = refmods[[args_vs_i$tstsetup_ref]]),
         excl_nonargs(args_vs_i)
       )),
       warn_expected,
@@ -1168,9 +1168,9 @@ test_that("`refit_prj` works", {
   }
   for (tstsetup in tstsetups) {
     args_cvvs_i <- args_cvvs[[tstsetup]]
+    args_cvvs_i$refit_prj <- FALSE
     cvvs_reuse <- suppressWarnings(do.call(cv_varsel, c(
-      list(object = refmods[[args_cvvs_i$tstsetup_ref]],
-           refit_prj = FALSE),
+      list(object = refmods[[args_cvvs_i$tstsetup_ref]]),
       excl_nonargs(args_cvvs_i)
     )))
     mod_crr <- args_cvvs_i$mod_nm
