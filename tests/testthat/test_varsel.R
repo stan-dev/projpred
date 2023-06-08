@@ -920,6 +920,78 @@ test_that("for L1 search, `penalty` has an expected effect", {
   }
 })
 
+## L1 search and interactions ---------------------------------------------
+
+test_that("L1 search handles three-way (second-order) interactions correctly", {
+  skip_if_not(run_vs)
+  skip_if_not_installed("rstanarm")
+  warn_L1_ia_orig <- options(projpred.warn_L1_interactions = TRUE)
+  main_terms_in_ia <- c("xca.2", "xco.3", "xco.1")
+  all_ias_split <- lapply(seq_along(main_terms_in_ia), combn,
+                          x = main_terms_in_ia, simplify = FALSE)
+  all_ias <- unlist(lapply(all_ias_split, function(ia_split) {
+    lapply(ia_split, all_ia_perms, is_split = TRUE)
+  }))
+  trms_universe_split_bu <- trms_universe_split
+  trms_universe_split <<- union(trms_universe_split, all_ias)
+  tstsetup <- head(grep("^rstanarm\\.glm", names(fits), value = TRUE), 1)
+  args_fit_i <- args_fit[[tstsetup]]
+  stopifnot(!(args_fit_i$pkg_nm == "rstanarm" && args_fit_i$fam_nm == "cumul"))
+  fit_fun_nm <- get_fit_fun_nm(args_fit_i)
+  args_fit_i$formula <- update(args_fit_i$formula,
+                               . ~ . + xca.2 * xco.3 * xco.1)
+  fit <- suppressWarnings(do.call(
+    get(fit_fun_nm, asNamespace(args_fit_i$pkg_nm)),
+    excl_nonargs(args_fit_i)
+  ))
+  args_ref_i <- args_ref[[paste0(tstsetup, ".trad")]]
+  refmod <- do.call(get_refmodel, c(
+    list(object = fit),
+    excl_nonargs(args_ref_i)
+  ))
+  args_vs_i <- args_vs[[paste0(tstsetup,
+                               ".trad.default_meth.default_search_trms")]]
+  args_vs_i$refit_prj <- FALSE
+  args_vs_i$nterms_max <- NULL
+  expect_warning(
+    vs <- do.call(varsel, c(
+      list(object = refmod),
+      excl_nonargs(args_vs_i)
+    )),
+    "was selected before all.+lower-order interaction terms have been selected",
+    info = tstsetup
+  )
+  vsel_tester(
+    vs,
+    refmod_expected = refmod,
+    solterms_len_expected = count_terms_in_formula(refmod$formula) - 1L,
+    method_expected = "L1",
+    nprjdraws_search_expected = 1L,
+    nprjdraws_eval_expected = 1L,
+    ### Testing for non-increasing element `ce` (for increasing model size)
+    ### doesn't make sense if the ranking of predictors involved in interactions
+    ### has been changed, so we choose a higher `extra_tol` than by default:
+    extra_tol = 1.2,
+    ###
+    info_str = tstsetup
+  )
+  rk <- ranking(vs)[["fulldata"]]
+  expect_true(
+    all(sapply(grep(":", rk), function(ia_idx) {
+      main_terms_in_ia <- strsplit(rk[ia_idx], ":")[[1]]
+      all_ias_split <- lapply(seq_len(length(main_terms_in_ia) - 1L), combn,
+                              x = main_terms_in_ia, simplify = FALSE)
+      ias_lower <- unlist(lapply(all_ias_split, function(ia_split) {
+        lapply(ia_split, all_ia_perms, is_split = TRUE)
+      }))
+      return(all(which(rk %in% ias_lower) < ia_idx))
+    })),
+    info = tstsetup
+  )
+  trms_universe_split <<- trms_universe_split_bu
+  options(warn_L1_ia_orig)
+})
+
 ## search_terms -----------------------------------------------------------
 
 test_that(paste(
@@ -973,40 +1045,6 @@ test_that(paste(
       info = tstsetup
     )
   }
-})
-
-## L1 search warning for interactions -------------------------------------
-
-test_that(paste(
-  "L1 search warns if an interaction term is selected before all involved",
-  "main effects have been selected"
-), {
-  skip_if_not(run_vs)
-  warn_L1_ia_orig <- options(projpred.warn_L1_interactions = TRUE)
-  args_fit_i <- args_fit$rstanarm.glm.gauss.stdformul.with_wobs.with_offs
-  skip_if_not(!is.null(args_fit_i))
-  fit_fun_nm <- get_fit_fun_nm(args_fit_i)
-  fit_ia <- suppressWarnings(do.call(
-    get(fit_fun_nm, asNamespace(args_fit_i$pkg_nm)),
-    c(list(formula = update(args_fit_i$formula, . ~ . + xco.1:xca.2)),
-      excl_nonargs(args_fit_i, nms_excl_add = "formula"))
-  ))
-  args_vs_i <- args_vs$rstanarm.glm.gauss.stdformul.with_wobs.with_offs.trad.default_meth.default_search_trms
-  expect_warning(
-    vs_ia <- do.call(varsel, c(
-      list(object = fit_ia),
-      excl_nonargs(args_vs_i, nms_excl_add = "nterms_max")
-    )),
-    "An interaction has been selected before all involved main effects",
-    info = "rstanarm.glm.gauss.stdformul.with_wobs.with_offs"
-  )
-  soltrms_all <- vs_ia$solution_terms
-  idx_ia <- grep(":", soltrms_all)
-  soltrms_ia_main <- unlist(strsplit(grep(":", soltrms_all, value = TRUE), ":"))
-  idxs_main <- match(soltrms_ia_main, soltrms_all)
-  expect_true(any(idx_ia < idxs_main),
-              info = "rstanarm.glm.gauss.stdformul.with_wobs.with_offs")
-  options(warn_L1_ia_orig)
 })
 
 # cv_varsel() -------------------------------------------------------------
