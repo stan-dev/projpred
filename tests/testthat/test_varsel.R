@@ -558,6 +558,15 @@ test_that("`refit_prj` works", {
       meth_exp_crr <- ifelse(mod_crr == "glm" && prj_crr != "augdat",
                              "L1", "forward")
     }
+    extra_tol_crr <- 1.1
+    if (meth_exp_crr == "L1" &&
+        any(grepl(":", ranking(vs_reuse)[["fulldata"]]))) {
+      ### Testing for non-increasing element `ce` (for increasing model size)
+      ### doesn't make sense if the ranking of predictors involved in
+      ### interactions has been changed, so we choose a higher `extra_tol`:
+      extra_tol_crr <- 1.2
+      ###
+    }
     vsel_tester(
       vs_reuse,
       refmod_expected = refmods[[args_vs_i$tstsetup_ref]],
@@ -569,6 +578,7 @@ test_that("`refit_prj` works", {
       search_trms_empty_size =
         length(args_vs_i$search_terms) &&
         all(grepl("\\+", args_vs_i$search_terms)),
+      extra_tol = extra_tol_crr,
       info_str = tstsetup
     )
   }
