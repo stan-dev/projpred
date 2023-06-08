@@ -237,6 +237,14 @@ test_that(paste(
     if (is.null(meth_exp_crr)) {
       meth_exp_crr <- ifelse(mod_crr == "glm", "L1", "forward")
     }
+    extra_tol_crr <- 1.5
+    if (any(grepl(":", ranking(vss_datafit[[tstsetup]])[["fulldata"]]))) {
+      ### Testing for non-increasing element `ce` (for increasing model size)
+      ### doesn't make sense if the ranking of predictors involved in
+      ### interactions has been changed, so we choose a higher `extra_tol`:
+      extra_tol_crr <- 3
+      ###
+    }
     vsel_tester(
       vss_datafit[[tstsetup]],
       from_datafit = TRUE,
@@ -249,7 +257,7 @@ test_that(paste(
       search_trms_empty_size =
         length(args_vs_datafit[[tstsetup]]$search_terms) &&
         all(grepl("\\+", args_vs_datafit[[tstsetup]]$search_terms)),
-      extra_tol = 1.5,
+      extra_tol = extra_tol_crr,
       info_str = tstsetup
     )
   }
