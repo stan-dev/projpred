@@ -22,8 +22,6 @@ test_that(paste(
       refmod_expected = refmods[[tstsetup_ref]],
       solterms_len_expected = args_vs[[tstsetup]]$nterms_max,
       method_expected = meth_exp_crr,
-      nprjdraws_search_expected = args_vs[[tstsetup]]$nclusters,
-      nprjdraws_eval_expected = args_vs[[tstsetup]]$nclusters_pred,
       search_trms_empty_size =
         length(args_vs[[tstsetup]]$search_terms) &&
         all(grepl("\\+", args_vs[[tstsetup]]$search_terms)),
@@ -167,8 +165,6 @@ test_that(paste(
       ),
       solterms_len_expected = args_vs_i$nterms_max,
       method_expected = meth_exp_crr,
-      nprjdraws_search_expected = args_vs_i$nclusters,
-      nprjdraws_eval_expected = args_vs_i$nclusters_pred,
       search_trms_empty_size =
         length(args_vs_i$search_terms) &&
         all(grepl("\\+", args_vs_i$search_terms)),
@@ -299,8 +295,6 @@ test_that(paste(
       ),
       solterms_len_expected = args_vs_i$nterms_max,
       method_expected = meth_exp_crr,
-      nprjdraws_search_expected = args_vs_i$nclusters,
-      nprjdraws_eval_expected = args_vs_i$nclusters_pred,
       search_trms_empty_size =
         length(args_vs_i$search_terms) &&
         all(grepl("\\+", args_vs_i$search_terms)),
@@ -573,8 +567,6 @@ test_that("`refit_prj` works", {
       solterms_len_expected = args_vs_i$nterms_max,
       method_expected = meth_exp_crr,
       refit_prj_expected = FALSE,
-      nprjdraws_search_expected = args_vs_i$nclusters,
-      nprjdraws_eval_expected = args_vs_i$nclusters,
       search_trms_empty_size =
         length(args_vs_i$search_terms) &&
         all(grepl("\\+", args_vs_i$search_terms)),
@@ -623,8 +615,6 @@ test_that(paste(
           refmod_expected = refmods[[args_vs_i$tstsetup_ref]],
           solterms_len_expected = args_vs_i$nterms_max,
           method_expected = "L1",
-          nprjdraws_search_expected = args_vs_i$nclusters,
-          nprjdraws_eval_expected = args_vs_i$nclusters_pred,
           info_str = tstsetup
         )
         # Expect equality for all components not related to prediction:
@@ -710,8 +700,6 @@ test_that(paste(
           refmod_expected = refmods[[args_vs_i$tstsetup_ref]],
           solterms_len_expected = args_vs_i$nterms_max,
           method_expected = "forward",
-          nprjdraws_search_expected = args_vs_i$nclusters,
-          nprjdraws_eval_expected = args_vs_i$nclusters_pred,
           search_trms_empty_size =
             length(args_vs_i$search_terms) &&
             all(grepl("\\+", args_vs_i$search_terms)),
@@ -912,8 +900,6 @@ test_that("for L1 search, `penalty` has an expected effect", {
       refmod_expected = refmods[[args_vs_i$tstsetup_ref]],
       solterms_len_expected = nterms_max_crr,
       method_expected = "L1",
-      nprjdraws_search_expected = args_vs_i$nclusters,
-      nprjdraws_eval_expected = args_vs_i$nclusters_pred,
       info_str = tstsetup
     )
     # Check that the variables with no cost are selected first and the ones
@@ -976,8 +962,7 @@ test_that("L1 search handles three-way (second-order) interactions correctly", {
     refmod_expected = refmod,
     solterms_len_expected = count_terms_in_formula(refmod$formula) - 1L,
     method_expected = "L1",
-    nprjdraws_search_expected = 1L,
-    nprjdraws_eval_expected = 1L,
+    refit_prj_expected = FALSE,
     ### Testing for non-increasing element `ce` (for increasing model size)
     ### doesn't make sense if the ranking of predictors involved in interactions
     ### has been changed, so we choose a higher `extra_tol` than by default:
@@ -1083,8 +1068,6 @@ test_that(paste(
       method_expected = meth_exp_crr,
       cv_method_expected = args_cvvs[[tstsetup]]$cv_method,
       valsearch_expected = args_cvvs[[tstsetup]]$validate_search,
-      nprjdraws_search_expected = args_cvvs[[tstsetup]]$nclusters,
-      nprjdraws_eval_expected = args_cvvs[[tstsetup]]$nclusters_pred,
       search_trms_empty_size =
         length(args_cvvs[[tstsetup]]$search_terms) &&
         all(grepl("\\+", args_cvvs[[tstsetup]]$search_terms)),
@@ -1190,8 +1173,6 @@ test_that("`refit_prj` works", {
       refit_prj_expected = FALSE,
       cv_method_expected = args_cvvs_i$cv_method,
       valsearch_expected = args_cvvs_i$validate_search,
-      nprjdraws_search_expected = args_cvvs_i$nclusters,
-      nprjdraws_eval_expected = args_cvvs_i$nclusters,
       search_trms_empty_size =
         length(args_cvvs_i$search_terms) &&
         all(grepl("\\+", args_cvvs_i$search_terms)),
@@ -1265,8 +1246,6 @@ test_that("setting `nloo` smaller than the number of observations works", {
       method_expected = meth_exp_crr,
       cv_method_expected = "LOO",
       valsearch_expected = args_cvvs_i$validate_search,
-      nprjdraws_search_expected = args_cvvs_i$nclusters,
-      nprjdraws_eval_expected = args_cvvs_i$nclusters_pred,
       nloo_expected = nloo_tst,
       search_trms_empty_size =
         length(args_cvvs_i$search_terms) &&
@@ -1327,8 +1306,6 @@ test_that("`validate_search` works", {
       method_expected = meth_exp_crr,
       cv_method_expected = "LOO",
       valsearch_expected = FALSE,
-      nprjdraws_search_expected = args_cvvs_i$nclusters,
-      nprjdraws_eval_expected = args_cvvs_i$nclusters_pred,
       search_trms_empty_size =
         length(args_cvvs_i$search_terms) &&
         all(grepl("\\+", args_cvvs_i$search_terms)),
@@ -1479,8 +1456,6 @@ test_that(paste(
       method_expected = meth_exp_crr,
       cv_method_expected = "kfold",
       valsearch_expected = args_cvvs_i$validate_search,
-      nprjdraws_search_expected = args_cvvs_i$nclusters,
-      nprjdraws_eval_expected = args_cvvs_i$nclusters_pred,
       search_trms_empty_size =
         length(args_cvvs_i$search_terms) &&
         all(grepl("\\+", args_cvvs_i$search_terms)),
@@ -1613,8 +1588,6 @@ test_that(paste(
       method_expected = meth_exp_crr,
       cv_method_expected = "kfold",
       valsearch_expected = args_cvvs_i$validate_search,
-      nprjdraws_search_expected = args_cvvs_i$nclusters,
-      nprjdraws_eval_expected = args_cvvs_i$nclusters_pred,
       search_trms_empty_size =
         length(args_cvvs_i$search_terms) &&
         all(grepl("\\+", args_cvvs_i$search_terms)),

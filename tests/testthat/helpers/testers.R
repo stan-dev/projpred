@@ -1924,8 +1924,19 @@ vsel_tester <- function(
     refit_prj_expected = TRUE,
     cl_search_expected = !from_datafit,
     cl_eval_expected = !from_datafit,
-    nprjdraws_search_expected = if (!from_datafit) nclusters_tst else 1L,
-    nprjdraws_eval_expected = if (!from_datafit) nclusters_pred_tst else 1L,
+    nprjdraws_search_expected = if (from_datafit || method_expected == "L1") {
+      1L
+    } else {
+      nclusters_tst
+    },
+    nprjdraws_eval_expected = if (from_datafit || (!refit_prj_expected &&
+                                                   method_expected == "L1")) {
+      1L
+    } else if (!refit_prj_expected) {
+      nclusters_tst
+    } else {
+      nclusters_pred_tst
+    },
     seed_expected = seed_tst,
     nloo_expected = NULL,
     search_trms_empty_size = FALSE,
@@ -1951,10 +1962,6 @@ vsel_tester <- function(
   }
   if (method_expected == "L1") {
     cl_search_expected <- !from_datafit
-    nprjdraws_search_expected <- 1
-    if (!refit_prj_expected) {
-      nprjdraws_eval_expected <- 1
-    }
   }
   if (search_trms_empty_size) {
     # This is the "empty_size" setting, so we have to subtract the skipped model
