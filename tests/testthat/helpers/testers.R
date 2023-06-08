@@ -857,9 +857,8 @@ outdmin_tester_trad <- function(
                        info = info_str)
           trms_to_test <- labels(terms(outdmin_totest[[j]]$formula))
           trms_ch <- labels(terms(sub_formul[[j]]))
-          expect_true(setequal(c(trms_to_test, revIA(trms_to_test)),
-                               c(trms_ch, revIA(trms_ch))),
-                      info = info_str)
+          trms_ch <- reorder_ias(trms_ch, trms_to_test)
+          expect_identical(trms_to_test, trms_ch, info = info_str)
         }
 
         x_to_test <- outdmin_totest[[j]]$x
