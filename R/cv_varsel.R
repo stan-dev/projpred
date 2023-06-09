@@ -894,7 +894,7 @@ kfold_varsel <- function(refmodel, method, nterms_max, ndraws,
       ### the body of one_fold() also don't need to be exported, probably
       ### because they also exist in one_fold()'s enviroment. (At least for
       ### large objects like `refmodel` it makes sense to suppress the export.)
-      .noexport = c("list_cv", "refmodel")
+      .noexport = c("list_cv", "refmodel", "y_wobs_test")
     ) %do_projpred% {
       do.call(one_fold, c(list(fold = list_cv_k, verbose_search = FALSE),
                           dot_args))
