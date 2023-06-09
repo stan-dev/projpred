@@ -888,12 +888,8 @@ kfold_varsel <- function(refmodel, method, nterms_max, ndraws,
       # .options.snow = list(attachExportEnv = TRUE),
       .noexport = c("list_cv") # Can we list all objects (or at least the largest ones like `refmodel`) here? They should also exist in one_fold()'s enviroment.
     ) %do_projpred% {
-      do.call(
-        one_fold,
-        c(list(fold = list_cv_k,
-               verbose_search = FALSE),
-          dot_args)
-      )
+      do.call(one_fold, c(list(fold = list_cv_k, verbose_search = FALSE),
+                          dot_args))
     }
   }
   verb_out("-----", verbose = verbose)
