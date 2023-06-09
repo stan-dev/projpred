@@ -801,20 +801,19 @@ kfold_varsel <- function(refmodel, method, nterms_max, ndraws,
   }
   y_wobs_test <- as.data.frame(refmodel[nms_y_wobs_test()])
 
-  if (verbose) {
-    verb_out("-----\nRunning the search and the performance evaluation for ",
-             "each of the K = ", K, " CV folds separately ...")
-    pb <- utils::txtProgressBar(min = 0, max = K, style = 3, initial = 0)
-  }
-  res_cv <- lapply(seq_along(list_cv), function(fold_index) {
+  verb_out("-----\nRunning the search and the performance evaluation for ",
+           "each of the K = ", K, " CV folds separately ...", verbose = verbose)
+  one_fold <- function(fold_index,
+                       verbose_search = verbose &&
+                         getOption("projpred.extra_verbose", FALSE),
+                       ...) {
     fold <- list_cv[[fold_index]]
 
     # Run the search for the current fold:
     p_sel <- get_refdist(fold$refmodel, ndraws, nclusters)
     search_path <- select(
       method = method, p_sel = p_sel, refmodel = fold$refmodel,
-      nterms_max = nterms_max, penalty = penalty,
-      verbose = verbose && getOption("projpred.extra_verbose", FALSE),
+      nterms_max = nterms_max, penalty = penalty, verbose = verbose_search,
       opt = opt, search_terms = search_terms, ...
     )
 
@@ -851,14 +850,53 @@ kfold_varsel <- function(refmodel, method, nterms_max, ndraws,
       cl_ref = seq_along(fold$refmodel$wdraws_ref)
     )
 
-    if (verbose) {
-      utils::setTxtProgressBar(pb, fold_index)
-    }
     return(nlist(predictor_ranking = search_path[["solution_terms"]],
                  summaries_sub, summaries_ref))
-  })
-  if (verbose) {
-    close(pb)
+  }
+  if (!getOption("projpred.prll_cv", FALSE)) {
+    # Sequential case. Actually, we could simply use ``%do_projpred%` <-
+    # foreach::`%do%`` here and then proceed as in the parallel case, but that
+    # would require adding more "hard" dependencies (because packages 'foreach',
+    # 'iterators', and 'doRNG' would have to be moved from `Suggests:` to
+    # `Imports:`).
+    if (verbose) {
+      pb <- utils::txtProgressBar(min = 0, max = K, style = 3, initial = 0)
+    }
+    res_cv <- lapply(seq_along(list_cv), function(k) {
+      if (verbose) {
+        on.exit(utils::setTxtProgressBar(pb, k))
+      }
+      one_fold(k, ...)
+    })
+    if (verbose) {
+      close(pb)
+    }
+  } else {
+    # Parallel case.
+    if (!requireNamespace("foreach", quietly = TRUE)) {
+      stop("Please install the 'foreach' package.")
+    }
+    if (!requireNamespace("iterators", quietly = TRUE)) {
+      stop("Please install the 'iterators' package.")
+    }
+    if (!requireNamespace("doRNG", quietly = TRUE)) {
+      stop("Please install the 'doRNG' package.")
+    }
+    dot_args <- list(...)
+    `%do_projpred%` <- doRNG::`%dorng%`
+    res_cv <- foreach::foreach(
+      k = seq_along(list_cv),
+      .export = c("one_fold", "dot_args"),
+      # .options.snow = list(attachExportEnv = TRUE),
+      .noexport = NULL # Can we list all objects (or at least the largest ones like `refmodel` and `list_cv`) here? They should also exist in one_fold()'s enviroment.
+    ) %do_projpred% {
+      do.call(
+        one_fold,
+        c(list(fold_index = k,
+               verbose_search = FALSE),
+          dot_args)
+      )
+    }
   }
   verb_out("-----", verbose = verbose)
   solution_terms_cv <- do.call(rbind, lapply(res_cv, "[[", "predictor_ranking"))

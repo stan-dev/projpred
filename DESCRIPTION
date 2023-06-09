@@ -66,6 +66,7 @@ Suggests:
     parallel,
     foreach,
     iterators,
+    doRNG,
     testthat,
     vdiffr,
     knitr,
