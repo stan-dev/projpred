@@ -885,7 +885,10 @@ kfold_varsel <- function(refmodel, method, nterms_max, ndraws,
     res_cv <- foreach::foreach(
       list_cv_k = list_cv,
       .export = c("one_fold", "dot_args"),
+      ### Doesn't seem to be necessary for now (and would probably cause an
+      ### increase in runtime):
       # .options.snow = list(attachExportEnv = TRUE),
+      ###
       .noexport = c("list_cv") # Can we list all objects (or at least the largest ones like `refmodel`) here? They should also exist in one_fold()'s enviroment.
     ) %do_projpred% {
       do.call(one_fold, c(list(fold = list_cv_k, verbose_search = FALSE),
