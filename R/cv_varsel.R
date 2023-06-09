@@ -803,12 +803,10 @@ kfold_varsel <- function(refmodel, method, nterms_max, ndraws,
 
   verb_out("-----\nRunning the search and the performance evaluation for ",
            "each of the K = ", K, " CV folds separately ...", verbose = verbose)
-  one_fold <- function(fold_index,
+  one_fold <- function(fold,
                        verbose_search = verbose &&
                          getOption("projpred.extra_verbose", FALSE),
                        ...) {
-    fold <- list_cv[[fold_index]]
-
     # Run the search for the current fold:
     p_sel <- get_refdist(fold$refmodel, ndraws, nclusters)
     search_path <- select(
@@ -866,7 +864,7 @@ kfold_varsel <- function(refmodel, method, nterms_max, ndraws,
       if (verbose) {
         on.exit(utils::setTxtProgressBar(pb, k))
       }
-      one_fold(k, ...)
+      one_fold(list_cv[[k]], ...)
     })
     if (verbose) {
       close(pb)
@@ -885,14 +883,14 @@ kfold_varsel <- function(refmodel, method, nterms_max, ndraws,
     dot_args <- list(...)
     `%do_projpred%` <- doRNG::`%dorng%`
     res_cv <- foreach::foreach(
-      k = seq_along(list_cv),
+      list_cv_k = list_cv,
       .export = c("one_fold", "dot_args"),
       # .options.snow = list(attachExportEnv = TRUE),
-      .noexport = NULL # Can we list all objects (or at least the largest ones like `refmodel` and `list_cv`) here? They should also exist in one_fold()'s enviroment.
+      .noexport = c("list_cv") # Can we list all objects (or at least the largest ones like `refmodel`) here? They should also exist in one_fold()'s enviroment.
     ) %do_projpred% {
       do.call(
         one_fold,
-        c(list(fold_index = k,
+        c(list(fold = list_cv_k,
                verbose_search = FALSE),
           dot_args)
       )
