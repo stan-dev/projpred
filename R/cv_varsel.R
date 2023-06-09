@@ -889,7 +889,12 @@ kfold_varsel <- function(refmodel, method, nterms_max, ndraws,
       ### increase in runtime):
       # .options.snow = list(attachExportEnv = TRUE),
       ###
-      .noexport = c("list_cv") # Can we list all objects (or at least the largest ones like `refmodel`) here? They should also exist in one_fold()'s enviroment.
+      ### Object `list_cv` definitely doesn't need to be exported because we are
+      ### iterating over its elements. It seems like the other objects used in
+      ### the body of one_fold() also don't need to be exported, probably
+      ### because they also exist in one_fold()'s enviroment. (At least for
+      ### large objects like `refmodel` it makes sense to suppress the export.)
+      .noexport = c("list_cv", "refmodel")
     ) %do_projpred% {
       do.call(one_fold, c(list(fold = list_cv_k, verbose_search = FALSE),
                           dot_args))
