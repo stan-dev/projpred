@@ -311,14 +311,13 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
                        search_terms, ...) {
   # Pre-processing ----------------------------------------------------------
 
-  eta <- refmodel$eta
-  mu <- refmodel$mu
-  mu_offs <- refmodel$mu_offs
-  dis <- refmodel$dis
-  # Clustering or thinning for the search:
+  # Clustering or thinning for the search (note that in case of
+  # `validate_search = TRUE`, only `cl_sel` is used later, not `p_sel` itself):
   p_sel <- get_refdist(refmodel, ndraws = ndraws, nclusters = nclusters)
   cl_sel <- p_sel$cl
-  # Clustering or thinning for the performance evaluation:
+  # Clustering or thinning for the performance evaluation (note that in case of
+  # `validate_search = TRUE`, only `cl_pred` is used later, not `p_pred`
+  # itself):
   p_pred <- get_refdist(refmodel, ndraws = ndraws_pred,
                         nclusters = nclusters_pred)
   cl_pred <- p_pred$cl
@@ -332,7 +331,7 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
   # weights, but also for performance statistics like ELPD and MLPD):
   if (refmodel$family$for_latent) {
     mu_offs_oscale <- refmodel$family$latent_ilink(
-      t(mu_offs), cl_ref = seq_along(refmodel$wdraws_ref),
+      t(refmodel$mu_offs), cl_ref = seq_along(refmodel$wdraws_ref),
       wdraws_ref = refmodel$wdraws_ref
     )
     if (length(dim(mu_offs_oscale)) < 2) {
@@ -363,7 +362,7 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
     }
   } else {
     loglik_forPSIS <- t(refmodel$family$ll_fun(
-      mu_offs, dis, refmodel$y, refmodel$wobs
+      refmodel$mu_offs, refmodel$dis, refmodel$y, refmodel$wobs
     ))
   }
   n <- ncol(loglik_forPSIS)
@@ -411,9 +410,10 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
   loo_sub <- replicate(nterms_max + 1L, rep(NA, n), simplify = FALSE)
   mu_sub <- replicate(
     nterms_max + 1L,
-    structure(rep(NA, nrow(mu_offs)),
-              nobs_orig = attr(mu_offs, "nobs_orig"),
-              class = sub("augmat", "augvec", oldClass(mu_offs), fixed = TRUE)),
+    structure(rep(NA, nrow(refmodel$mu_offs)),
+              nobs_orig = attr(refmodel$mu_offs, "nobs_orig"),
+              class = sub("augmat", "augvec", oldClass(refmodel$mu_offs),
+                          fixed = TRUE)),
     simplify = FALSE
   )
   if (refmodel$family$for_latent) {
@@ -578,12 +578,14 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
 
       # Reweight the clusters (or thinned draws) according to the PSIS weights:
       p_sel <- get_p_clust(
-        family = refmodel$family, eta = eta, mu = mu, mu_offs = mu_offs,
-        dis = dis, wdraws = exp(lw[, i]), cl = cl_sel
+        family = refmodel$family, eta = refmodel$eta, mu = refmodel$mu,
+        mu_offs = refmodel$mu_offs, dis = refmodel$dis, wdraws = exp(lw[, i]),
+        cl = cl_sel
       )
       p_pred <- get_p_clust(
-        family = refmodel$family, eta = eta, mu = mu, mu_offs = mu_offs,
-        dis = dis, wdraws = exp(lw[, i]), cl = cl_pred
+        family = refmodel$family, eta = refmodel$eta, mu = refmodel$mu,
+        mu_offs = refmodel$mu_offs, dis = refmodel$dis, wdraws = exp(lw[, i]),
+        cl = cl_pred
       )
 
       # Run the search with the reweighted clusters (or thinned draws) (so the
@@ -701,12 +703,12 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
   # Reference model predictive performance:
   if (formula_contains_group_terms(refmodel$formula) &&
       getOption("projpred.mlvl_pred_new", FALSE)) {
-    # Need to use `mlvl_allrandom = TRUE` (`mu_offs` is based on
+    # Need to use `mlvl_allrandom = TRUE` (`refmodel$mu_offs` is based on
     # `mlvl_allrandom = getOption("projpred.mlvl_proj_ref_new", FALSE)`):
     eta_offs_mlvlRan <- refmodel$ref_predfun(refmodel$fit, excl_offs = FALSE)
     mu_offs_mlvlRan <- refmodel$family$linkinv(eta_offs_mlvlRan)
   } else {
-    mu_offs_mlvlRan <- mu_offs
+    mu_offs_mlvlRan <- refmodel$mu_offs
   }
   mu_ref <- do.call(c, lapply(seq_len(nrow(mu_offs_mlvlRan)), function(i) {
     # For the augmented-data projection, `mu_offs_mlvlRan` is an augmented-rows
@@ -726,7 +728,7 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
   )
   if (refmodel$family$for_latent) {
     loglik_lat <- t(refmodel$family$ll_fun(
-      mu_offs_mlvlRan, dis, refmodel$y, refmodel$wobs
+      mu_offs_mlvlRan, refmodel$dis, refmodel$y, refmodel$wobs
     ))
     lppd_ref <- apply(loglik_lat + lw, 2, log_sum_exp)
   } else {
@@ -735,7 +737,7 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
       # Need to use `mlvl_allrandom = TRUE` (`loo_ref_oscale` is based on
       # `mlvl_allrandom = getOption("projpred.mlvl_proj_ref_new", FALSE)`):
       loglik_mlvlRan <- t(refmodel$family$ll_fun(
-        mu_offs_mlvlRan, dis, refmodel$y, refmodel$wobs
+        mu_offs_mlvlRan, refmodel$dis, refmodel$y, refmodel$wobs
       ))
       lppd_ref <- apply(loglik_mlvlRan + lw, 2, log_sum_exp)
     } else {
