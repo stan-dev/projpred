@@ -451,9 +451,8 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
              "path ...", verbose = verbose && refit_prj)
     submodls <- get_submodls(
       search_path = search_path,
-      nterms = c(0, seq_along(search_path$solution_terms)),
-      p_ref = p_pred, refmodel = refmodel, regul = opt$regul,
-      refit_prj = refit_prj, ...
+      nterms = c(0, seq_along(search_path$solution_terms)), p_ref = p_pred,
+      refmodel = refmodel, regul = opt$regul, refit_prj = refit_prj, ...
     )
     verb_out("-----", verbose = verbose && refit_prj)
 
@@ -567,19 +566,13 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
   } else {
     # Case `validate_search = TRUE` -------------------------------------------
 
-    # Continue initializing objects where to store the results:
-    # For storing the fold-wise solution paths:
-    solution_terms_mat <- matrix(nrow = n, ncol = nterms_max)
-    # For checking that the number of solution terms is the same across all CV
-    # folds:
-    prv_len_soltrms <- NULL
-
-    if (verbose) {
-      verb_out("-----\nRunning the search and the performance evaluation for ",
-               "each of the N = ", nloo, " LOO CV folds separately ...")
-      pb <- utils::txtProgressBar(min = 0, max = nloo, style = 3, initial = 0)
-    }
-    for (run_index in seq_along(inds)) {
+    verb_out("-----\nRunning the search and the performance evaluation for ",
+             "each of the N = ", nloo, " LOO CV folds separately ...",
+             verbose = verbose)
+    one_obs <- function(run_index,
+                        verbose_search = verbose &&
+                          getOption("projpred.extra_verbose", FALSE),
+                        ...) {
       # Observation index:
       i <- inds[run_index]
 
@@ -599,8 +592,7 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
       # projection)):
       search_path <- select(
         method = method, p_sel = p_sel, refmodel = refmodel,
-        nterms_max = nterms_max, penalty = penalty,
-        verbose = verbose && getOption("projpred.extra_verbose", FALSE),
+        nterms_max = nterms_max, penalty = penalty, verbose = verbose_search,
         opt = opt, search_terms = search_terms, ...
       )
 
@@ -616,6 +608,56 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
       summaries_sub <- get_sub_summaries(submodls = submodls,
                                          refmodel = refmodel,
                                          test_points = i)
+
+      return(nlist(predictor_ranking = search_path[["solution_terms"]],
+                   summaries_sub))
+    }
+    if (!getOption("projpred.prll_cv", FALSE)) {
+      # Sequential case. Actually, we could simply use ``%do_projpred%` <-
+      # foreach::`%do%`` here and then proceed as in the parallel case, but that
+      # would require adding more "hard" dependencies (because packages
+      # 'foreach' and 'doRNG' would have to be moved from `Suggests:` to
+      # `Imports:`).
+      if (verbose) {
+        pb <- utils::txtProgressBar(min = 0, max = nloo, style = 3, initial = 0)
+      }
+      res_cv <- lapply(seq_along(inds), function(run_index) {
+        if (verbose) {
+          on.exit(utils::setTxtProgressBar(pb, run_index))
+        }
+        one_obs(run_index, ...)
+      })
+      if (verbose) {
+        close(pb)
+      }
+    } else {
+      # Parallel case.
+      if (!requireNamespace("foreach", quietly = TRUE)) {
+        stop("Please install the 'foreach' package.")
+      }
+      if (!requireNamespace("doRNG", quietly = TRUE)) {
+        stop("Please install the 'doRNG' package.")
+      }
+      dot_args <- list(...)
+      `%do_projpred%` <- doRNG::`%dorng%`
+      res_cv <- foreach::foreach(
+        run_index = seq_along(inds),
+        .export = c("one_obs", "dot_args")#,
+        # .noexport = c("<TODO>")
+      ) %do_projpred% {
+        do.call(one_obs, c(list(run_index = run_index, verbose_search = FALSE),
+                           dot_args))
+      }
+    }
+    # For storing the fold-wise solution paths:
+    solution_terms_mat <- matrix(nrow = n, ncol = nterms_max)
+    # For checking that the length of the predictor ranking is the same across
+    # all CV folds (and also for cutting off `solution_terms_mat` later):
+    prv_len_soltrms <- NULL
+    for (run_index in seq_along(inds)) {
+      i <- inds[run_index]
+
+      summaries_sub <- res_cv[[run_index]][["summaries_sub"]]
       i_aug <- i
       if (!is.null(refmodel$family$cats)) {
         i_aug <- i_aug + (seq_along(refmodel$family$cats) - 1L) * n
@@ -633,23 +675,13 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
         }
       }
 
-      # Store the solution path (after checking its length):
+      rk_i <- res_cv[[run_index]][["predictor_ranking"]]
       if (is.null(prv_len_soltrms)) {
-        prv_len_soltrms <- length(search_path$solution_terms)
+        prv_len_soltrms <- length(rk_i)
       } else {
-        stopifnot(identical(length(search_path$solution_terms),
-                            prv_len_soltrms))
+        stopifnot(identical(length(rk_i), prv_len_soltrms))
       }
-      solution_terms_mat[
-        i, seq_along(search_path$solution_terms)
-      ] <- search_path$solution_terms
-
-      if (verbose) {
-        utils::setTxtProgressBar(pb, run_index)
-      }
-    }
-    if (verbose) {
-      close(pb)
+      solution_terms_mat[i, seq_along(rk_i)] <- rk_i
     }
     verb_out("-----", verbose = verbose)
   }
@@ -772,7 +804,7 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
     out_list <- nlist(search_path, ce = sapply(submodls, "[[", "ce"))
   } else {
     out_list <- nlist(solution_terms_cv = solution_terms_mat[
-      , seq_along(search_path$solution_terms), drop = FALSE
+      , seq_len(prv_len_soltrms), drop = FALSE
     ])
   }
   out_list <- c(out_list,
