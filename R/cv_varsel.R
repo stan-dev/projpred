@@ -644,8 +644,10 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
       `%do_projpred%` <- doRNG::`%dorng%`
       res_cv <- foreach::foreach(
         run_index = seq_along(inds),
-        .export = c("one_obs", "dot_args")#,
-        # .noexport = c("<TODO>")
+        .export = c("one_obs", "dot_args"),
+        .noexport = c("p_sel", "p_pred", "mu_offs_oscale", "loglik_forPSIS",
+                      "psisloo", "y_lat_E", "loo_ref_oscale", "validset",
+                      "loo_sub", "mu_sub", "loo_sub_oscale", "mu_sub_oscale")
       ) %do_projpred% {
         do.call(one_obs, c(list(run_index = run_index, verbose_search = FALSE),
                            dot_args))
