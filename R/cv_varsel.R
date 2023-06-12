@@ -805,7 +805,8 @@ kfold_varsel <- function(refmodel, method, nterms_max, ndraws,
            "each of the K = ", K, " CV folds separately ...", verbose = verbose)
   one_fold <- function(fold,
                        verbose_search = verbose &&
-                         getOption("projpred.extra_verbose", FALSE)) {
+                         getOption("projpred.extra_verbose", FALSE),
+                       ...) {
     # Run the search for the current fold:
     p_sel <- get_refdist(fold$refmodel, ndraws, nclusters)
     search_path <- select(
@@ -863,7 +864,7 @@ kfold_varsel <- function(refmodel, method, nterms_max, ndraws,
       if (verbose) {
         on.exit(utils::setTxtProgressBar(pb, k))
       }
-      one_fold(list_cv[[k]])
+      one_fold(list_cv[[k]], ...)
     })
     if (verbose) {
       close(pb)
@@ -879,24 +880,15 @@ kfold_varsel <- function(refmodel, method, nterms_max, ndraws,
     if (!requireNamespace("doRNG", quietly = TRUE)) {
       stop("Please install the 'doRNG' package.")
     }
+    dot_args <- list(...)
     `%do_projpred%` <- doRNG::`%dorng%`
     res_cv <- foreach::foreach(
       list_cv_k = list_cv,
-      .export = c("one_fold"),
-      ### Doesn't seem to be necessary for now (and would probably cause an
-      ### increase in runtime):
-      # .options.snow = list(attachExportEnv = TRUE),
-      ###
-      ### Object `list_cv` definitely doesn't need to be exported because we are
-      ### iterating over its elements. It seems like the other objects used in
-      ### the body of one_fold() also don't need to be exported, probably
-      ### because they also exist in one_fold()'s enviroment. (At least for
-      ### large objects like `refmodel` it makes sense to suppress the export.)
-      ### So we suppress the export of the following objects:
-      .noexport = c("list_cv", "refmodel", "y_wobs_test")
-      ###
+      .export = c("one_fold", "dot_args"),
+      .noexport = c("list_cv")
     ) %do_projpred% {
-      one_fold(list_cv_k, verbose_search = FALSE)
+      do.call(one_fold, c(list(fold = list_cv_k, verbose_search = FALSE),
+                          dot_args))
     }
   }
   verb_out("-----", verbose = verbose)
