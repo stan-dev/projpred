@@ -854,9 +854,8 @@ kfold_varsel <- function(refmodel, method, nterms_max, ndraws,
   if (!getOption("projpred.prll_cv", FALSE)) {
     # Sequential case. Actually, we could simply use ``%do_projpred%` <-
     # foreach::`%do%`` here and then proceed as in the parallel case, but that
-    # would require adding more "hard" dependencies (because packages 'foreach',
-    # 'iterators', and 'doRNG' would have to be moved from `Suggests:` to
-    # `Imports:`).
+    # would require adding more "hard" dependencies (because packages 'foreach'
+    # and 'doRNG' would have to be moved from `Suggests:` to `Imports:`).
     if (verbose) {
       pb <- utils::txtProgressBar(min = 0, max = K, style = 3, initial = 0)
     }
@@ -873,9 +872,6 @@ kfold_varsel <- function(refmodel, method, nterms_max, ndraws,
     # Parallel case.
     if (!requireNamespace("foreach", quietly = TRUE)) {
       stop("Please install the 'foreach' package.")
-    }
-    if (!requireNamespace("iterators", quietly = TRUE)) {
-      stop("Please install the 'iterators' package.")
     }
     if (!requireNamespace("doRNG", quietly = TRUE)) {
       stop("Please install the 'doRNG' package.")
