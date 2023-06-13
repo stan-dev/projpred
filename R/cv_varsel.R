@@ -46,6 +46,9 @@
 #'   smaller than the number of observations), for sampling the folds in
 #'   \eqn{K}-fold CV, and for drawing new group-level effects when predicting
 #'   from a multilevel submodel (however, not yet in case of a GAMM).
+#' @param parallel A single logical value indicating whether to run costly parts
+#'   of the CV in parallel (`TRUE`) or not (`FALSE`). See also section "Note"
+#'   below.
 #'
 #' @inherit varsel details return
 #'
@@ -57,6 +60,15 @@
 #'   iterations when the reference model was built. In those cases however, the
 #'   reference model should not have been used anyway, so we don't expect
 #'   \pkg{projpred}'s `r_eff = NA` to be a problem.
+#'
+#'   With `parallel = TRUE`, costly parts of \pkg{projpred}'s CV are run in
+#'   parallel. Costly parts are the fold-wise searches and performance
+#'   evaluations in case of `validate_search = TRUE`. Note that argument
+#'   `parallel` only affects \pkg{projpred}'s CV, not the \eqn{K} reference
+#'   model refits in case of \eqn{K}-fold CV. The parallelization is powered by
+#'   the \pkg{foreach} package. Thus, any parallel (or sequential) backend
+#'   compatible with \pkg{foreach} can be used, e.g., the backends from packages
+#'   \pkg{doParallel}, \pkg{doMPI}, or \pkg{doFuture}.
 #'
 #' @references
 #'
@@ -136,6 +148,7 @@ cv_varsel.refmodel <- function(
     validate_search = TRUE,
     seed = NA,
     search_terms = NULL,
+    parallel = getOption("projpred.prll_cv", FALSE),
     ...
 ) {
   if (exists(".Random.seed", envir = .GlobalEnv)) {
@@ -184,14 +197,16 @@ cv_varsel.refmodel <- function(
       ndraws = ndraws, nclusters = nclusters, ndraws_pred = ndraws_pred,
       nclusters_pred = nclusters_pred, refit_prj = refit_prj, penalty = penalty,
       verbose = verbose, opt = opt, nloo = nloo,
-      validate_search = validate_search, search_terms = search_terms, ...
+      validate_search = validate_search, search_terms = search_terms,
+      parallel = parallel, ...
     )
   } else if (cv_method == "kfold") {
     sel_cv <- kfold_varsel(
       refmodel = refmodel, method = method, nterms_max = nterms_max,
       ndraws = ndraws, nclusters = nclusters, ndraws_pred = ndraws_pred,
       nclusters_pred = nclusters_pred, refit_prj = refit_prj, penalty = penalty,
-      verbose = verbose, opt = opt, K = K, search_terms = search_terms, ...
+      verbose = verbose, opt = opt, K = K, search_terms = search_terms,
+      parallel = parallel, ...
     )
   }
 
@@ -308,7 +323,7 @@ parse_args_cv_varsel <- function(refmodel, cv_method, K, validate_search) {
 loo_varsel <- function(refmodel, method, nterms_max, ndraws,
                        nclusters, ndraws_pred, nclusters_pred, refit_prj,
                        penalty, verbose, opt, nloo, validate_search,
-                       search_terms, ...) {
+                       search_terms, parallel, ...) {
   # Pre-processing ----------------------------------------------------------
 
   # Clustering or thinning for the search (note that in case of
@@ -614,7 +629,7 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
       return(nlist(predictor_ranking = search_path[["solution_terms"]],
                    summaries_sub))
     }
-    if (!getOption("projpred.prll_cv", FALSE)) {
+    if (!parallel) {
       # Sequential case. Actually, we could simply use ``%do_projpred%` <-
       # foreach::`%do%`` here and then proceed as in the parallel case, but that
       # would require adding more "hard" dependencies (because packages
@@ -820,7 +835,7 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
 kfold_varsel <- function(refmodel, method, nterms_max, ndraws,
                          nclusters, ndraws_pred, nclusters_pred,
                          refit_prj, penalty, verbose, opt, K,
-                         search_terms, ...) {
+                         search_terms, parallel, ...) {
   # Fetch the K reference model fits (or fit them now if not already done) and
   # create objects of class `refmodel` from them (and also store the `omitted`
   # indices):
@@ -887,7 +902,7 @@ kfold_varsel <- function(refmodel, method, nterms_max, ndraws,
     return(nlist(predictor_ranking = search_path[["solution_terms"]],
                  summaries_sub, summaries_ref))
   }
-  if (!getOption("projpred.prll_cv", FALSE)) {
+  if (!parallel) {
     # Sequential case. Actually, we could simply use ``%do_projpred%` <-
     # foreach::`%do%`` here and then proceed as in the parallel case, but that
     # would require adding more "hard" dependencies (because packages 'foreach'

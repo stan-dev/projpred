@@ -31,6 +31,7 @@ cv_varsel(object, ...)
   validate_search = TRUE,
   seed = NA,
   search_terms = NULL,
+  parallel = getOption("projpred.prll_cv", FALSE),
   ...
 )
 }
@@ -154,6 +155,10 @@ The intercept (\code{"1"}) is always included internally via \code{union()}, so
 there's no difference between including it explicitly or omitting it. The
 default \code{search_terms} considers all the terms in the reference model's
 formula.}
+
+\item{parallel}{A single logical value indicating whether to run costly parts
+of the CV in parallel (\code{TRUE}) or not (\code{FALSE}). See also section "Note"
+below.}
 }
 \value{
 An object of class \code{vsel}. The elements of this object are not meant
@@ -227,6 +232,15 @@ is only a problem if there was extreme autocorrelation between the MCMC
 iterations when the reference model was built. In those cases however, the
 reference model should not have been used anyway, so we don't expect
 \pkg{projpred}'s \code{r_eff = NA} to be a problem.
+
+With \code{parallel = TRUE}, costly parts of \pkg{projpred}'s CV are run in
+parallel. Costly parts are the fold-wise searches and performance
+evaluations in case of \code{validate_search = TRUE}. Note that argument
+\code{parallel} only affects \pkg{projpred}'s CV, not the \eqn{K} reference
+model refits in case of \eqn{K}-fold CV. The parallelization is powered by
+the \pkg{foreach} package. Thus, any parallel (or sequential) backend
+compatible with \pkg{foreach} can be used, e.g., the backends from packages
+\pkg{doParallel}, \pkg{doMPI}, or \pkg{doFuture}.
 }
 \examples{
 \dontshow{if (identical(Sys.getenv("RUN_EX"), "true")) (if (getRversion() >= "3.4") withAutoprint else force)(\{ # examplesIf}

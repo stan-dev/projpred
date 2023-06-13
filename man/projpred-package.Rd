@@ -66,25 +66,24 @@ option to \code{TRUE} for \code{cv_varsel()} with \code{validate_search = TRUE} 
 to the amount of information that will be printed, but also due to the
 progress bar which will not work anymore as intended).
 
-The projection of the reference model onto a submodel can be run on multiple
-CPU cores in parallel (across the projected draws). This is powered by the
-\pkg{foreach} package. Thus, any parallel (or sequential) backend compatible
-with \pkg{foreach} can be used, e.g., the backends from packages
-\pkg{doParallel}, \pkg{doMPI}, or \pkg{doFuture}. Using the global option
-\code{projpred.prll_prj_trigger}, the number of projected draws below which no
-parallelization is applied (even if a parallel backend is registered) can be
-modified. Such a "trigger" threshold exists because of the computational
-overhead of a parallelization which makes parallelization only useful for a
-sufficiently large number of projected draws. By default, parallelization is
-turned off, which can also be achieved by supplying \code{Inf} (or \code{NULL}) to
-option \code{projpred.prll_prj_trigger}. Note that we cannot recommend
-parallelizing the projection on Windows because in our experience, the
-parallelization overhead is larger there, causing a parallel run to take
-longer than a sequential run. Also note that the parallelization works well
-for GLMs, but for all other models, the fitted model objects are quite big,
-which---when running in parallel---may lead to excessive memory usage which
-in turn may crash the R session. Thus, we currently cannot recommend the
-parallelization for models other than GLMs.
+The projection of the reference model onto a submodel can be run in parallel
+(across the projected draws). This is powered by the \pkg{foreach} package.
+Thus, any parallel (or sequential) backend compatible with \pkg{foreach} can
+be used, e.g., the backends from packages \pkg{doParallel}, \pkg{doMPI}, or
+\pkg{doFuture}. Using the global option \code{projpred.prll_prj_trigger}, the
+number of projected draws below which no parallelization is applied (even if
+a parallel backend is registered) can be modified. Such a "trigger" threshold
+exists because of the computational overhead of a parallelization which makes
+parallelization only useful for a sufficiently large number of projected
+draws. By default, parallelization is turned off, which can also be achieved
+by supplying \code{Inf} (or \code{NULL}) to option \code{projpred.prll_prj_trigger}. Note
+that we cannot recommend parallelizing the projection on Windows because in
+our experience, the parallelization overhead is larger there, causing a
+parallel run to take longer than a sequential run. Also note that the
+parallelization works well for GLMs, but for all other models, the fitted
+model objects are quite big, which---when running in parallel---may lead to
+excessive memory usage which in turn may crash the R session. Thus, we
+currently cannot recommend the parallelization for models other than GLMs.
 
 In case of multilevel models, \pkg{projpred} offers two global options for
 "integrating out" group-level effects: \code{projpred.mlvl_pred_new} and
