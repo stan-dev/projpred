@@ -63,12 +63,20 @@
 #'
 #'   With `parallel = TRUE`, costly parts of \pkg{projpred}'s CV are run in
 #'   parallel. Costly parts are the fold-wise searches and performance
-#'   evaluations in case of `validate_search = TRUE`. Note that argument
-#'   `parallel` only affects \pkg{projpred}'s CV, not the \eqn{K} reference
-#'   model refits in case of \eqn{K}-fold CV. The parallelization is powered by
-#'   the \pkg{foreach} package. Thus, any parallel (or sequential) backend
-#'   compatible with \pkg{foreach} can be used, e.g., the backends from packages
-#'   \pkg{doParallel}, \pkg{doMPI}, or \pkg{doFuture}.
+#'   evaluations in case of `validate_search = TRUE`. (Note that in case of
+#'   \eqn{K}-fold CV, the \eqn{K} reference model refits are not affected by
+#'   argument `parallel`; only \pkg{projpred}'s CV is affected.) The
+#'   parallelization is powered by the \pkg{foreach} package. Thus, any parallel
+#'   (or sequential) backend compatible with \pkg{foreach} can be used, e.g.,
+#'   the backends from packages \pkg{doParallel}, \pkg{doMPI}, or
+#'   \pkg{doFuture}. For GLMs, this CV parallelization should work reliably, but
+#'   for other models (such as GLMMs), it may lead to excessive memory usage
+#'   which in turn may crash the R session (on Unix systems, setting an
+#'   appropriate memory limit via [unix::rlimit_as()] may avoid crashing the
+#'   whole machine). However, the problem of excessive memory usage is less
+#'   pronounced for the CV parallelization than for the projection
+#'   parallelization described in [projpred-package]. In that regard, the CV
+#'   parallelization is recommended over the projection parallelization.
 #'
 #' @references
 #'

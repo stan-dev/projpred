@@ -73,16 +73,21 @@
 #' number of projected draws below which no parallelization is applied (even if
 #' a parallel backend is registered) can be modified. Such a "trigger" threshold
 #' exists because of the computational overhead of a parallelization which makes
-#' parallelization only useful for a sufficiently large number of projected
-#' draws. By default, parallelization is turned off, which can also be achieved
-#' by supplying `Inf` (or `NULL`) to option `projpred.prll_prj_trigger`. Note
-#' that we cannot recommend parallelizing the projection on Windows because in
-#' our experience, the parallelization overhead is larger there, causing a
-#' parallel run to take longer than a sequential run. Also note that the
-#' parallelization works well for GLMs, but for all other models, the fitted
-#' model objects are quite big, which---when running in parallel---may lead to
-#' excessive memory usage which in turn may crash the R session. Thus, we
-#' currently cannot recommend the parallelization for models other than GLMs.
+#' the projection parallelization only useful for a sufficiently large number of
+#' projected draws. By default, the projection parallelization is turned off,
+#' which can also be achieved by supplying `Inf` (or `NULL`) to option
+#' `projpred.prll_prj_trigger`. Note that we cannot recommend the projection
+#' parallelization on Windows because in our experience, the parallelization
+#' overhead is larger there, causing a parallel run to take longer than a
+#' sequential run. Also note that the projection parallelization works well for
+#' GLMs, but for all other models, the fitted submodel objects are quite big,
+#' which---when running in parallel---may lead to excessive memory usage which
+#' in turn may crash the R session (on Unix systems, setting an appropriate
+#' memory limit via [unix::rlimit_as()] may avoid crashing the whole machine).
+#' Thus, we currently cannot recommend the projection parallelization for models
+#' other than GLMs. However, for [cv_varsel()], there is also a *CV*
+#' parallelization (i.e., a parallelization of \pkg{projpred}'s
+#' cross-validation) which can be activated via argument `parallel`.
 #'
 #' In case of multilevel models, \pkg{projpred} offers two global options for
 #' "integrating out" group-level effects: `projpred.mlvl_pred_new` and
