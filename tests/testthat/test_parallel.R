@@ -3,26 +3,8 @@ context("parallel")
 # Setup -------------------------------------------------------------------
 
 if (run_prll) {
+  cv_prev <- options(projpred.prll_cv = FALSE)
   trigger_default <- options(projpred.prll_prj_trigger = 0L)
-
-  if (dopar_backend == "doParallel") {
-    doParallel::registerDoParallel(ncores)
-  } else if (dopar_backend == "doFuture") {
-    doFuture::registerDoFuture()
-    export_default <- options(doFuture.foreach.export = ".export")
-    if (future_plan == "multicore") {
-      future::plan(future::multicore, workers = ncores)
-    } else if (future_plan == "multisession") {
-      future::plan(future::multisession, workers = ncores)
-    } else if (future_plan == "callr") {
-      future::plan(future.callr::callr, workers = ncores)
-    } else {
-      stop("Unrecognized `future_plan`.")
-    }
-  } else {
-    stop("Unrecognized `dopar_backend`.")
-  }
-  stopifnot(identical(foreach::getDoParWorkers(), ncores))
 }
 
 # project() ---------------------------------------------------------------
@@ -67,11 +49,19 @@ test_that("cv_varsel() in parallel gives the same results as sequentially", {
     args_cvvs_i <- args_cvvs[[tstsetup]]
     # Use suppressWarnings() because of occasional warnings concerning Pareto k
     # diagnostics:
-    cvvs_repr <- suppressWarnings(do.call(cv_varsel, c(
+    cvvs_expr <- expression(suppressWarnings(do.call(cv_varsel, c(
       list(object = refmods[[args_cvvs_i$tstsetup_ref]]),
       excl_nonargs(args_cvvs_i)
-    )))
-    expect_equal(cvvs_repr, cvvss[[tstsetup]], info = tstsetup)
+    ))))
+    cvvs_repr <- eval(cvvs_expr)
+    ### For the original (expected) cv_varsel() output, we cannot simply use
+    ### `cvvss[[tstsetup]]` because `cvvss[[tstsetup]]` made use of the CV
+    ### parallelization. So we need to run cv_varsel() again, but sequentially:
+    trigger_prev <- options(trigger_default)
+    cvvs_orig <- eval(cvvs_expr)
+    options(trigger_prev)
+    ###
+    expect_equal(cvvs_repr, cvvs_orig, info = tstsetup)
   }
 })
 
@@ -90,4 +80,6 @@ if (run_prll) {
 
   options(trigger_default)
   rm(trigger_default)
+  options(cv_prev)
+  rm(cv_prev)
 }
