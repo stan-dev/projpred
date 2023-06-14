@@ -109,7 +109,12 @@ if (run_prll) {
     } else {
       dopar_backend <- "doFuture"
     }
-    if (identical(.Platform$OS.type, "windows")) {
+    if (!identical(.Platform$OS.type, "windows")) {
+      # This case (which should not be possible by default) is only included
+      # here to demonstrate how other systems should be used with the 'doFuture'
+      # package.
+      future_plan <- "multicore"
+    } else {
       ### Not used in this case because the 'future.callr' package provides a
       ### faster alternative on Windows (which is still slower than a sequential
       ### run, though):
@@ -122,11 +127,6 @@ if (run_prll) {
       } else {
         future_plan <- "callr"
       }
-    } else {
-      # This case (which should not be possible by default) is only included
-      # here to demonstrate how other systems should be used with the 'doFuture'
-      # package.
-      future_plan <- "multicore"
     }
   }
 }
