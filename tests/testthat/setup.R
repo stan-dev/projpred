@@ -67,13 +67,12 @@ if (run_snaps) {
 # Notes:
 #   * We don't run the parallel tests on CRAN or continuous integration (CI)
 #   systems because parallelization might require special care there.
-#   * On Windows, at least the projection parallelization takes longer than when
-#   running sequentially. This makes the projection parallelization impractical
-#   on Windows, so we don't run the tests on Windows by default.
-#   * Currently, the projection parallelization only works reliably for GLMs
-#   (because of memory issues for more complex models like GLMMs, GAMs and
-#   GAMMs). Therefore, in `test_parallel.R`, we will test the projection
-#   parallelization only for GLMs.
+#   * Currently, parallelization on Windows takes longer than running
+#   sequentially. This makes parallelization impractical on Windows, so we
+#   don't run the tests on Windows by default.
+#   * Currently, parallelization only works reliably for GLMs (because of
+#   memory issues for more complex models like GLMMs, GAMs and GAMMs).
+#   Therefore, we will only test GLMs here.
 run_prll <- identical(Sys.getenv("NOT_CRAN"), "true") &&
   !identical(toupper(Sys.getenv("CI")), "TRUE") &&
   !identical(.Platform$OS.type, "windows")
@@ -84,17 +83,13 @@ if (run_prll) {
             "could be detected.")
     run_prll <- FALSE
   }
-  # On many local machines, running in parallel on more than 4 cores leads to
-  # memory issues, so use a maximum of 4 cores:
-  ncores <- min(ncores, 4L)
   # Do not run on more than 2 cores if requested so:
   if (identical(Sys.getenv("_R_CHECK_LIMIT_CORES_"), "TRUE")) {
     ncores <- min(ncores, 2L)
   }
-  # Use the 'doParallel' package on all platforms except Windows. On Windows, at
-  # least for the projection parallelization, the 'doFuture' package provides a
-  # faster alternative via the 'future.callr' package (which is still slower
-  # than a sequential run, though):
+  # Use the 'doParallel' package on all platforms except Windows. For Windows,
+  # the 'doFuture' package provides a faster alternative via the 'future.callr'
+  # package (which is still slower than a sequential run, though):
   if (!identical(.Platform$OS.type, "windows")) {
     if (!requireNamespace("doParallel", quietly = TRUE)) {
       warning("Package 'doParallel' is needed for the parallel tests, but ",
@@ -114,8 +109,6 @@ if (run_prll) {
     } else {
       dopar_backend <- "doFuture"
     }
-  }
-  if (dopar_backend == "doFuture") {
     if (!identical(.Platform$OS.type, "windows")) {
       # This case (which should not be possible by default) is only included
       # here to demonstrate how other systems should be used with the 'doFuture'
@@ -124,7 +117,7 @@ if (run_prll) {
     } else {
       ### Not used in this case because the 'future.callr' package provides a
       ### faster alternative on Windows (which is still slower than a sequential
-      ### run, though), at least for the projection parallelization:
+      ### run, though):
       # future_plan <- "multisession"
       ###
       if (!requireNamespace("future.callr", quietly = TRUE)) {
@@ -136,30 +129,6 @@ if (run_prll) {
       }
     }
   }
-}
-if (run_prll) {
-  options(projpred.prll_cv = TRUE)
-  if (dopar_backend == "doParallel") {
-    doParallel::registerDoParallel(ncores)
-  } else if (dopar_backend == "doFuture") {
-    doFuture::registerDoFuture()
-    export_default <- options(doFuture.foreach.export = ".export")
-    # export_default <- options(
-    #   doFuture.foreach.export = ".export-and-automatic-with-warning"
-    # )
-    if (future_plan == "multicore") {
-      future::plan(future::multicore, workers = ncores)
-    } else if (future_plan == "multisession") {
-      future::plan(future::multisession, workers = ncores)
-    } else if (future_plan == "callr") {
-      future::plan(future.callr::callr, workers = ncores)
-    } else {
-      stop("Unrecognized `future_plan`.")
-    }
-  } else {
-    stop("Unrecognized `dopar_backend`.")
-  }
-  stopifnot(identical(foreach::getDoParWorkers(), ncores))
 }
 # Run all test scripts (following this setup script) in a completely random RNG
 # state? (The tests should still pass then, because in all situations where RNG
