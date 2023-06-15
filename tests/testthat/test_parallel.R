@@ -68,16 +68,6 @@ test_that("cv_varsel() in parallel gives the same results as sequentially", {
 # Teardown ----------------------------------------------------------------
 
 if (run_prll) {
-  if (dopar_backend == "doParallel") {
-    doParallel::stopImplicitCluster()
-  } else if (dopar_backend == "doFuture") {
-    future::plan(future::sequential)
-    options(export_default)
-    rm(export_default)
-  } else {
-    stop("Unrecognized `dopar_backend`.")
-  }
-
   options(trigger_default)
   rm(trigger_default)
   options(cv_prev)
