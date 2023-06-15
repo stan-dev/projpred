@@ -63,8 +63,11 @@ if (run_snaps && !requireNamespace("rlang", quietly = TRUE)) {
 if (run_snaps) {
   testthat_ed_max2 <- edition_get() <= 2
 }
-# Run parallel tests?:
+# Run tests for the parallelization of the projection?:
 # Notes:
+#   * Throughout the tests, the terms "parallelization" and "parallel" refer to
+#   the parallelization of the projection ("projection parallelization"), not
+#   the parallelization of the CV ("CV parallelization").
 #   * We don't run the parallel tests on CRAN or continuous integration (CI)
 #   systems because parallelization might require special care there.
 #   * Currently, parallelization on Windows takes longer than running
