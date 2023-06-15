@@ -78,7 +78,6 @@ run_prll <- identical(Sys.getenv("NOT_CRAN"), "true") &&
   !identical(toupper(Sys.getenv("CI")), "TRUE") &&
   !identical(.Platform$OS.type, "windows")
 if (run_prll) {
-  options(projpred.prll_cv = TRUE)
   ncores <- parallel::detectCores(logical = FALSE)
   if (ncores == 1) {
     warning("Deactivating the parallel tests because only a single worker ",
@@ -116,14 +115,7 @@ if (run_prll) {
       dopar_backend <- "doFuture"
     }
   }
-  if (dopar_backend == "doParallel") {
-    doParallel::registerDoParallel(ncores)
-  } else if (dopar_backend == "doFuture") {
-    doFuture::registerDoFuture()
-    export_default <- options(doFuture.foreach.export = ".export")
-    # export_default <- options(
-    #   doFuture.foreach.export = ".export-and-automatic-with-warning"
-    # )
+  if (dopar_backend == "doFuture") {
     if (!identical(.Platform$OS.type, "windows")) {
       # This case (which should not be possible by default) is only included
       # here to demonstrate how other systems should be used with the 'doFuture'
@@ -143,6 +135,18 @@ if (run_prll) {
         future_plan <- "callr"
       }
     }
+  }
+}
+if (run_prll) {
+  options(projpred.prll_cv = TRUE)
+  if (dopar_backend == "doParallel") {
+    doParallel::registerDoParallel(ncores)
+  } else if (dopar_backend == "doFuture") {
+    doFuture::registerDoFuture()
+    export_default <- options(doFuture.foreach.export = ".export")
+    # export_default <- options(
+    #   doFuture.foreach.export = ".export-and-automatic-with-warning"
+    # )
     if (future_plan == "multicore") {
       future::plan(future::multicore, workers = ncores)
     } else if (future_plan == "multisession") {
