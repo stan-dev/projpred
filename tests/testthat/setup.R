@@ -85,6 +85,9 @@ if (run_prll) {
             "could be detected.")
     run_prll <- FALSE
   }
+  # On many local machines, running in parallel on more than 4 cores leads to
+  # memory issues, so use a maximum of 4 cores:
+  ncores <- min(ncores, 4L)
   # Do not run on more than 2 cores if requested so:
   if (identical(Sys.getenv("_R_CHECK_LIMIT_CORES_"), "TRUE")) {
     ncores <- min(ncores, 2L)
