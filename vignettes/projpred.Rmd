@@ -149,23 +149,12 @@ plot(cvvs_fast, stats = "mlpd", ranking_nterms_max = NA)
 ```
 This plot (see `?plot.vsel` for a description) shows that the submodel MLPD does not change much after submodel size 8, so in our final `cv_varsel()` run, we set `nterms_max` to a value slightly higher than 8 (here: `nterms_max = 9`) to ensure that we see the MLPD leveling off.
 
-<!-- In versions > 2.0.2, **projpred** offers a parallelization of the projection. -->
-<!-- Typically, this only makes sense for a large number of projected draws. -->
-<!-- Therefore, this parallelization is not activated by a simple logical switch, but by a threshold for the number of projected draws below which no parallelization will be used. -->
-<!-- Values greater than or equal to this threshold will trigger the parallelization. -->
-<!-- For more information, see the general package documentation available at ``?`projpred-package` ``. -->
-<!-- There, we also explain why we are not running the parallelization on Windows and why we cannot recommend the parallelization of the projection for some types of reference models (see also section ["Supported types of models"](#modtypes) below). -->
-<!-- ```{r prll_prep} -->
-<!-- if (!identical(.Platform$OS.type, "windows")) { -->
-<!--   trigger_default <- options(projpred.prll_prj_trigger = 200) -->
-<!--   library(doParallel) -->
-<!--   registerDoParallel(ncores) -->
-<!-- } -->
-<!-- ``` -->
-
 For this final `cv_varsel()` run, we use a $K$-fold CV with a small number of folds (`K = 2`) to make this vignette build faster.
 In practice, we recommend using either the default of `cv_method = "LOO"` (with `validate_search = TRUE`) or a larger value for `K` if this is possible in terms of computation time.
+We also illustrate how **projpred**'s CV can be parallelized, even though this is of little use here (we have only `K = 2` folds and the fold-wise searches and performance evaluations are quite fast, so the parallelization overhead eats up any runtime improvements).
 ```{r cv_varsel, message=FALSE}
+# For the CV parallelization (cv_varsel()'s argument `parallel`):
+doParallel::registerDoParallel(ncores)
 # Final cv_varsel() run:
 cvvs <- cv_varsel(
   refm_fit,
@@ -175,6 +164,7 @@ cvvs <- cv_varsel(
   nclusters_pred = 20,
   ###
   nterms_max = 9,
+  parallel = TRUE,
   ### In interactive use, we recommend not to deactivate the verbose mode:
   verbose = FALSE
   ### 
@@ -271,8 +261,25 @@ For example, the predictors might be associated with different measurement costs
 
 The `project()` function returns an object of class `projection` which forms the basis for convenient post-selection inference.
 By the following `project()` call, we project the reference model onto the final submodel once again^[During the search, the reference model is projected onto all candidate models (this is where arguments `ndraws` and `nclusters` of `varsel()` and `cv_varsel()` come into play; note that in case of an L1 search, the projection is L1-penalized). For the evaluation of the submodels along the predictor ranking returned by the search, the reference model is projected onto these submodels again (this is where arguments `ndraws_pred` and `nclusters_pred` of `varsel()` and `cv_varsel()` come into play; note that this only holds if argument `refit_prj` of `varsel()` and `cv_varsel()` is set to `TRUE`, as by default). Within `project()`, `refit_prj = FALSE` allows to re-use the submodel fits (that is, the projections) from the full-data search of a `vsel` object, but usually, the search relies on a rather coarse clustering or thinning of the reference model's posterior draws (by default, `varsel()` and `cv_varsel()` use `nclusters = 20`), which would then imply the same coarseness for a `project()` call where `refit_prj` is set to `FALSE`. In general, we want the final projection (that post-selection inference is based on) to be as accurate as possible, so here we call `project()` with the defaults of `refit_prj = TRUE` and `ndraws = 400`. For more accurate results, we could increase argument `ndraws` of `project()` (up to the number of posterior draws in the reference model). However, this would increase the runtime, which we don't want in this vignette.]:
+<!-- In versions > 2.0.2, **projpred** offers a parallelization of the projection. -->
+<!-- Typically, this only makes sense for a large number of projected draws. -->
+<!-- Therefore, this parallelization is not activated by a simple logical switch, but by a threshold for the number of projected draws below which no parallelization will be used. -->
+<!-- Values greater than or equal to this threshold will trigger the parallelization. -->
+<!-- For more information, see the general package documentation available at ``?`projpred-package` ``. -->
+<!-- There, we also explain why we are not running the parallelization on Windows and why we cannot recommend the parallelization of the projection for some types of reference models (see also section ["Supported types of models"](#modtypes) below). -->
+<!-- ```{r prll_prj_prep} -->
+<!-- if (!identical(.Platform$OS.type, "windows")) { -->
+<!--   trigger_default <- options(projpred.prll_prj_trigger = 200) -->
+<!-- } -->
+<!-- ``` -->
 ```{r project}
-prj <- project(refm_fit, solution_terms = predictors_final)
+prj <- project(
+  refm_fit,
+  solution_terms = predictors_final,
+  ### In interactive use, we recommend not to deactivate the verbose mode:
+  verbose = FALSE
+  ###
+)
 ```
 
 Next, we create a matrix containing the projected posterior draws stored in the depths of `project()`'s output:
@@ -357,17 +364,18 @@ ppc_dens_overlay(y = dat_gauss$y, yrep = prj_predict)
 
 This PPPC shows that our final projection is able to generate predictions similar to the observed response values, which indicates that this model is reasonable, at least in this regard.
 
-<!-- ## Teardown / clean-up -->
+## Teardown
 
-<!-- Finally, we clean up everything we have set up for the parallelization of the projection. -->
-<!-- This may not always be necessary, but sometimes it is and apart from that, it is simply good practice: -->
-<!-- ```{r prll_tear} -->
+Finally, we tear down our parallelization setup.
+<!-- ```{r prll_prj_tear} -->
 <!-- if (!identical(.Platform$OS.type, "windows")) { -->
-<!--   stopImplicitCluster() -->
-<!--   registerDoSEQ() -->
 <!--   options(trigger_default) -->
 <!-- } -->
 <!-- ``` -->
+```{r prll_tear}
+doParallel::stopImplicitCluster()
+foreach::registerDoSEQ()
+```
 
 ## Supported types of models {#modtypes}
 
