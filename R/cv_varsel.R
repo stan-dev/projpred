@@ -1,3 +1,5 @@
+# General functions for CV ------------------------------------------------
+
 #' Run search and performance evaluation with cross-validation
 #'
 #' Run the *search* part and the *evaluation* part for a projection predictive
@@ -322,6 +324,8 @@ parse_args_cv_varsel <- function(refmodel, cv_method, K, validate_search) {
 
   return(nlist(cv_method, K))
 }
+
+# PSIS-LOO CV -------------------------------------------------------------
 
 # Workhorse function for a variable selection with PSIS-LOO CV
 #
@@ -838,6 +842,13 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
                 nlist(summaries,
                       y_wobs_test = as.data.frame(refmodel[nms_y_wobs_test()])))
   return(out_list)
+}
+
+# K-fold CV ---------------------------------------------------------------
+
+# Needed to avoid a NOTE in `R CMD check`:
+if (getRversion() >= package_version("2.15.1")) {
+  utils::globalVariables("list_cv_k")
 }
 
 kfold_varsel <- function(refmodel, method, nterms_max, ndraws,
