@@ -31,6 +31,7 @@ cv_varsel(object, ...)
   validate_search = TRUE,
   seed = NA,
   search_terms = NULL,
+  parallel = getOption("projpred.prll_cv", FALSE),
   ...
 )
 }
@@ -154,6 +155,10 @@ The intercept (\code{"1"}) is always included internally via \code{union()}, so
 there's no difference between including it explicitly or omitting it. The
 default \code{search_terms} considers all the terms in the reference model's
 formula.}
+
+\item{parallel}{A single logical value indicating whether to run costly parts
+of the CV in parallel (\code{TRUE}) or not (\code{FALSE}). See also section "Note"
+below.}
 }
 \value{
 An object of class \code{vsel}. The elements of this object are not meant
@@ -227,6 +232,23 @@ is only a problem if there was extreme autocorrelation between the MCMC
 iterations when the reference model was built. In those cases however, the
 reference model should not have been used anyway, so we don't expect
 \pkg{projpred}'s \code{r_eff = NA} to be a problem.
+
+With \code{parallel = TRUE}, costly parts of \pkg{projpred}'s CV are run in
+parallel. Costly parts are the fold-wise searches and performance
+evaluations in case of \code{validate_search = TRUE}. (Note that in case of
+\eqn{K}-fold CV, the \eqn{K} reference model refits are not affected by
+argument \code{parallel}; only \pkg{projpred}'s CV is affected.) The
+parallelization is powered by the \pkg{foreach} package. Thus, any parallel
+(or sequential) backend compatible with \pkg{foreach} can be used, e.g.,
+the backends from packages \pkg{doParallel}, \pkg{doMPI}, or
+\pkg{doFuture}. For GLMs, this CV parallelization should work reliably, but
+for other models (such as GLMMs), it may lead to excessive memory usage
+which in turn may crash the R session (on Unix systems, setting an
+appropriate memory limit via \code{\link[unix:rlimit]{unix::rlimit_as()}} may avoid crashing the
+whole machine). However, the problem of excessive memory usage is less
+pronounced for the CV parallelization than for the projection
+parallelization described in \link{projpred-package}. In that regard, the CV
+parallelization is recommended over the projection parallelization.
 }
 \examples{
 \dontshow{if (identical(Sys.getenv("RUN_EX"), "true")) (if (getRversion() >= "3.4") withAutoprint else force)(\{ # examplesIf}

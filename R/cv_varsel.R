@@ -1,3 +1,5 @@
+# General functions for CV ------------------------------------------------
+
 #' Run search and performance evaluation with cross-validation
 #'
 #' Run the *search* part and the *evaluation* part for a projection predictive
@@ -46,6 +48,9 @@
 #'   smaller than the number of observations), for sampling the folds in
 #'   \eqn{K}-fold CV, and for drawing new group-level effects when predicting
 #'   from a multilevel submodel (however, not yet in case of a GAMM).
+#' @param parallel A single logical value indicating whether to run costly parts
+#'   of the CV in parallel (`TRUE`) or not (`FALSE`). See also section "Note"
+#'   below.
 #'
 #' @inherit varsel details return
 #'
@@ -57,6 +62,23 @@
 #'   iterations when the reference model was built. In those cases however, the
 #'   reference model should not have been used anyway, so we don't expect
 #'   \pkg{projpred}'s `r_eff = NA` to be a problem.
+#'
+#'   With `parallel = TRUE`, costly parts of \pkg{projpred}'s CV are run in
+#'   parallel. Costly parts are the fold-wise searches and performance
+#'   evaluations in case of `validate_search = TRUE`. (Note that in case of
+#'   \eqn{K}-fold CV, the \eqn{K} reference model refits are not affected by
+#'   argument `parallel`; only \pkg{projpred}'s CV is affected.) The
+#'   parallelization is powered by the \pkg{foreach} package. Thus, any parallel
+#'   (or sequential) backend compatible with \pkg{foreach} can be used, e.g.,
+#'   the backends from packages \pkg{doParallel}, \pkg{doMPI}, or
+#'   \pkg{doFuture}. For GLMs, this CV parallelization should work reliably, but
+#'   for other models (such as GLMMs), it may lead to excessive memory usage
+#'   which in turn may crash the R session (on Unix systems, setting an
+#'   appropriate memory limit via [unix::rlimit_as()] may avoid crashing the
+#'   whole machine). However, the problem of excessive memory usage is less
+#'   pronounced for the CV parallelization than for the projection
+#'   parallelization described in [projpred-package]. In that regard, the CV
+#'   parallelization is recommended over the projection parallelization.
 #'
 #' @references
 #'
@@ -136,6 +158,7 @@ cv_varsel.refmodel <- function(
     validate_search = TRUE,
     seed = NA,
     search_terms = NULL,
+    parallel = getOption("projpred.prll_cv", FALSE),
     ...
 ) {
   if (exists(".Random.seed", envir = .GlobalEnv)) {
@@ -184,14 +207,16 @@ cv_varsel.refmodel <- function(
       ndraws = ndraws, nclusters = nclusters, ndraws_pred = ndraws_pred,
       nclusters_pred = nclusters_pred, refit_prj = refit_prj, penalty = penalty,
       verbose = verbose, opt = opt, nloo = nloo,
-      validate_search = validate_search, search_terms = search_terms, ...
+      validate_search = validate_search, search_terms = search_terms,
+      parallel = parallel, ...
     )
   } else if (cv_method == "kfold") {
     sel_cv <- kfold_varsel(
       refmodel = refmodel, method = method, nterms_max = nterms_max,
       ndraws = ndraws, nclusters = nclusters, ndraws_pred = ndraws_pred,
       nclusters_pred = nclusters_pred, refit_prj = refit_prj, penalty = penalty,
-      verbose = verbose, opt = opt, K = K, search_terms = search_terms, ...
+      verbose = verbose, opt = opt, K = K, search_terms = search_terms,
+      parallel = parallel, ...
     )
   }
 
@@ -300,6 +325,8 @@ parse_args_cv_varsel <- function(refmodel, cv_method, K, validate_search) {
   return(nlist(cv_method, K))
 }
 
+# PSIS-LOO CV -------------------------------------------------------------
+
 # Workhorse function for a variable selection with PSIS-LOO CV
 #
 # Argument `validate_search` indicates whether the search is performed
@@ -308,17 +335,16 @@ parse_args_cv_varsel <- function(refmodel, cv_method, K, validate_search) {
 loo_varsel <- function(refmodel, method, nterms_max, ndraws,
                        nclusters, ndraws_pred, nclusters_pred, refit_prj,
                        penalty, verbose, opt, nloo, validate_search,
-                       search_terms, ...) {
+                       search_terms, parallel, ...) {
   # Pre-processing ----------------------------------------------------------
 
-  eta <- refmodel$eta
-  mu <- refmodel$mu
-  mu_offs <- refmodel$mu_offs
-  dis <- refmodel$dis
-  # Clustering or thinning for the search:
+  # Clustering or thinning for the search (note that in case of
+  # `validate_search = TRUE`, only `cl_sel` is used later, not `p_sel` itself):
   p_sel <- get_refdist(refmodel, ndraws = ndraws, nclusters = nclusters)
   cl_sel <- p_sel$cl
-  # Clustering or thinning for the performance evaluation:
+  # Clustering or thinning for the performance evaluation (note that in case of
+  # `validate_search = TRUE`, only `cl_pred` is used later, not `p_pred`
+  # itself):
   p_pred <- get_refdist(refmodel, ndraws = ndraws_pred,
                         nclusters = nclusters_pred)
   cl_pred <- p_pred$cl
@@ -332,7 +358,7 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
   # weights, but also for performance statistics like ELPD and MLPD):
   if (refmodel$family$for_latent) {
     mu_offs_oscale <- refmodel$family$latent_ilink(
-      t(mu_offs), cl_ref = seq_along(refmodel$wdraws_ref),
+      t(refmodel$mu_offs), cl_ref = seq_along(refmodel$wdraws_ref),
       wdraws_ref = refmodel$wdraws_ref
     )
     if (length(dim(mu_offs_oscale)) < 2) {
@@ -363,7 +389,7 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
     }
   } else {
     loglik_forPSIS <- t(refmodel$family$ll_fun(
-      mu_offs, dis, refmodel$y, refmodel$wobs
+      refmodel$mu_offs, refmodel$dis, refmodel$y, refmodel$wobs
     ))
   }
   n <- ncol(loglik_forPSIS)
@@ -411,9 +437,10 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
   loo_sub <- replicate(nterms_max + 1L, rep(NA, n), simplify = FALSE)
   mu_sub <- replicate(
     nterms_max + 1L,
-    structure(rep(NA, nrow(mu_offs)),
-              nobs_orig = attr(mu_offs, "nobs_orig"),
-              class = sub("augmat", "augvec", oldClass(mu_offs), fixed = TRUE)),
+    structure(rep(NA, nrow(refmodel$mu_offs)),
+              nobs_orig = attr(refmodel$mu_offs, "nobs_orig"),
+              class = sub("augmat", "augvec", oldClass(refmodel$mu_offs),
+                          fixed = TRUE)),
     simplify = FALSE
   )
   if (refmodel$family$for_latent) {
@@ -451,9 +478,8 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
              "path ...", verbose = verbose && refit_prj)
     submodls <- get_submodls(
       search_path = search_path,
-      nterms = c(0, seq_along(search_path$solution_terms)),
-      p_ref = p_pred, refmodel = refmodel, regul = opt$regul,
-      refit_prj = refit_prj, ...
+      nterms = c(0, seq_along(search_path$solution_terms)), p_ref = p_pred,
+      refmodel = refmodel, regul = opt$regul, refit_prj = refit_prj, ...
     )
     verb_out("-----", verbose = verbose && refit_prj)
 
@@ -567,30 +593,26 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
   } else {
     # Case `validate_search = TRUE` -------------------------------------------
 
-    # Continue initializing objects where to store the results:
-    # For storing the fold-wise solution paths:
-    solution_terms_mat <- matrix(nrow = n, ncol = nterms_max)
-    # For checking that the number of solution terms is the same across all CV
-    # folds:
-    prv_len_soltrms <- NULL
-
-    if (verbose) {
-      verb_out("-----\nRunning the search and the performance evaluation for ",
-               "each of the N = ", nloo, " LOO CV folds separately ...")
-      pb <- utils::txtProgressBar(min = 0, max = nloo, style = 3, initial = 0)
-    }
-    for (run_index in seq_along(inds)) {
+    verb_out("-----\nRunning the search and the performance evaluation for ",
+             "each of the N = ", nloo, " LOO CV folds separately ...",
+             verbose = verbose)
+    one_obs <- function(run_index,
+                        verbose_search = verbose &&
+                          getOption("projpred.extra_verbose", FALSE),
+                        ...) {
       # Observation index:
       i <- inds[run_index]
 
       # Reweight the clusters (or thinned draws) according to the PSIS weights:
       p_sel <- get_p_clust(
-        family = refmodel$family, eta = eta, mu = mu, mu_offs = mu_offs,
-        dis = dis, wdraws = exp(lw[, i]), cl = cl_sel
+        family = refmodel$family, eta = refmodel$eta, mu = refmodel$mu,
+        mu_offs = refmodel$mu_offs, dis = refmodel$dis, wdraws = exp(lw[, i]),
+        cl = cl_sel
       )
       p_pred <- get_p_clust(
-        family = refmodel$family, eta = eta, mu = mu, mu_offs = mu_offs,
-        dis = dis, wdraws = exp(lw[, i]), cl = cl_pred
+        family = refmodel$family, eta = refmodel$eta, mu = refmodel$mu,
+        mu_offs = refmodel$mu_offs, dis = refmodel$dis, wdraws = exp(lw[, i]),
+        cl = cl_pred
       )
 
       # Run the search with the reweighted clusters (or thinned draws) (so the
@@ -599,8 +621,7 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
       # projection)):
       search_path <- select(
         method = method, p_sel = p_sel, refmodel = refmodel,
-        nterms_max = nterms_max, penalty = penalty,
-        verbose = verbose && getOption("projpred.extra_verbose", FALSE),
+        nterms_max = nterms_max, penalty = penalty, verbose = verbose_search,
         opt = opt, search_terms = search_terms, ...
       )
 
@@ -616,6 +637,58 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
       summaries_sub <- get_sub_summaries(submodls = submodls,
                                          refmodel = refmodel,
                                          test_points = i)
+
+      return(nlist(predictor_ranking = search_path[["solution_terms"]],
+                   summaries_sub))
+    }
+    if (!parallel) {
+      # Sequential case. Actually, we could simply use ``%do_projpred%` <-
+      # foreach::`%do%`` here and then proceed as in the parallel case, but that
+      # would require adding more "hard" dependencies (because packages
+      # 'foreach' and 'doRNG' would have to be moved from `Suggests:` to
+      # `Imports:`).
+      if (verbose) {
+        pb <- utils::txtProgressBar(min = 0, max = nloo, style = 3, initial = 0)
+      }
+      res_cv <- lapply(seq_along(inds), function(run_index) {
+        if (verbose) {
+          on.exit(utils::setTxtProgressBar(pb, run_index))
+        }
+        one_obs(run_index, ...)
+      })
+      if (verbose) {
+        close(pb)
+      }
+    } else {
+      # Parallel case.
+      if (!requireNamespace("foreach", quietly = TRUE)) {
+        stop("Please install the 'foreach' package.")
+      }
+      if (!requireNamespace("doRNG", quietly = TRUE)) {
+        stop("Please install the 'doRNG' package.")
+      }
+      dot_args <- list(...)
+      `%do_projpred%` <- doRNG::`%dorng%`
+      res_cv <- foreach::foreach(
+        run_index = seq_along(inds),
+        .export = c("one_obs", "dot_args"),
+        .noexport = c("p_sel", "p_pred", "mu_offs_oscale", "loglik_forPSIS",
+                      "psisloo", "y_lat_E", "loo_ref_oscale", "validset",
+                      "loo_sub", "mu_sub", "loo_sub_oscale", "mu_sub_oscale")
+      ) %do_projpred% {
+        do.call(one_obs, c(list(run_index = run_index, verbose_search = FALSE),
+                           dot_args))
+      }
+    }
+    # For storing the fold-wise solution paths:
+    solution_terms_mat <- matrix(nrow = n, ncol = nterms_max)
+    # For checking that the length of the predictor ranking is the same across
+    # all CV folds (and also for cutting off `solution_terms_mat` later):
+    prv_len_soltrms <- NULL
+    for (run_index in seq_along(inds)) {
+      i <- inds[run_index]
+
+      summaries_sub <- res_cv[[run_index]][["summaries_sub"]]
       i_aug <- i
       if (!is.null(refmodel$family$cats)) {
         i_aug <- i_aug + (seq_along(refmodel$family$cats) - 1L) * n
@@ -633,23 +706,13 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
         }
       }
 
-      # Store the solution path (after checking its length):
+      rk_i <- res_cv[[run_index]][["predictor_ranking"]]
       if (is.null(prv_len_soltrms)) {
-        prv_len_soltrms <- length(search_path$solution_terms)
+        prv_len_soltrms <- length(rk_i)
       } else {
-        stopifnot(identical(length(search_path$solution_terms),
-                            prv_len_soltrms))
+        stopifnot(identical(length(rk_i), prv_len_soltrms))
       }
-      solution_terms_mat[
-        i, seq_along(search_path$solution_terms)
-      ] <- search_path$solution_terms
-
-      if (verbose) {
-        utils::setTxtProgressBar(pb, run_index)
-      }
-    }
-    if (verbose) {
-      close(pb)
+      solution_terms_mat[i, seq_along(rk_i)] <- rk_i
     }
     verb_out("-----", verbose = verbose)
   }
@@ -669,12 +732,12 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
   # Reference model predictive performance:
   if (formula_contains_group_terms(refmodel$formula) &&
       getOption("projpred.mlvl_pred_new", FALSE)) {
-    # Need to use `mlvl_allrandom = TRUE` (`mu_offs` is based on
+    # Need to use `mlvl_allrandom = TRUE` (`refmodel$mu_offs` is based on
     # `mlvl_allrandom = getOption("projpred.mlvl_proj_ref_new", FALSE)`):
     eta_offs_mlvlRan <- refmodel$ref_predfun(refmodel$fit, excl_offs = FALSE)
     mu_offs_mlvlRan <- refmodel$family$linkinv(eta_offs_mlvlRan)
   } else {
-    mu_offs_mlvlRan <- mu_offs
+    mu_offs_mlvlRan <- refmodel$mu_offs
   }
   mu_ref <- do.call(c, lapply(seq_len(nrow(mu_offs_mlvlRan)), function(i) {
     # For the augmented-data projection, `mu_offs_mlvlRan` is an augmented-rows
@@ -694,7 +757,7 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
   )
   if (refmodel$family$for_latent) {
     loglik_lat <- t(refmodel$family$ll_fun(
-      mu_offs_mlvlRan, dis, refmodel$y, refmodel$wobs
+      mu_offs_mlvlRan, refmodel$dis, refmodel$y, refmodel$wobs
     ))
     lppd_ref <- apply(loglik_lat + lw, 2, log_sum_exp)
   } else {
@@ -703,7 +766,7 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
       # Need to use `mlvl_allrandom = TRUE` (`loo_ref_oscale` is based on
       # `mlvl_allrandom = getOption("projpred.mlvl_proj_ref_new", FALSE)`):
       loglik_mlvlRan <- t(refmodel$family$ll_fun(
-        mu_offs_mlvlRan, dis, refmodel$y, refmodel$wobs
+        mu_offs_mlvlRan, refmodel$dis, refmodel$y, refmodel$wobs
       ))
       lppd_ref <- apply(loglik_mlvlRan + lw, 2, log_sum_exp)
     } else {
@@ -772,7 +835,7 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
     out_list <- nlist(search_path, ce = sapply(submodls, "[[", "ce"))
   } else {
     out_list <- nlist(solution_terms_cv = solution_terms_mat[
-      , seq_along(search_path$solution_terms), drop = FALSE
+      , seq_len(prv_len_soltrms), drop = FALSE
     ])
   }
   out_list <- c(out_list,
@@ -781,10 +844,17 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
   return(out_list)
 }
 
+# K-fold CV ---------------------------------------------------------------
+
+# Needed to avoid a NOTE in `R CMD check`:
+if (getRversion() >= package_version("2.15.1")) {
+  utils::globalVariables("list_cv_k")
+}
+
 kfold_varsel <- function(refmodel, method, nterms_max, ndraws,
                          nclusters, ndraws_pred, nclusters_pred,
                          refit_prj, penalty, verbose, opt, K,
-                         search_terms, ...) {
+                         search_terms, parallel, ...) {
   # Fetch the K reference model fits (or fit them now if not already done) and
   # create objects of class `refmodel` from them (and also store the `omitted`
   # indices):
@@ -801,20 +871,17 @@ kfold_varsel <- function(refmodel, method, nterms_max, ndraws,
   }
   y_wobs_test <- as.data.frame(refmodel[nms_y_wobs_test()])
 
-  if (verbose) {
-    verb_out("-----\nRunning the search and the performance evaluation for ",
-             "each of the K = ", K, " CV folds separately ...")
-    pb <- utils::txtProgressBar(min = 0, max = K, style = 3, initial = 0)
-  }
-  res_cv <- lapply(seq_along(list_cv), function(fold_index) {
-    fold <- list_cv[[fold_index]]
-
+  verb_out("-----\nRunning the search and the performance evaluation for ",
+           "each of the K = ", K, " CV folds separately ...", verbose = verbose)
+  one_fold <- function(fold,
+                       verbose_search = verbose &&
+                         getOption("projpred.extra_verbose", FALSE),
+                       ...) {
     # Run the search for the current fold:
     p_sel <- get_refdist(fold$refmodel, ndraws, nclusters)
     search_path <- select(
       method = method, p_sel = p_sel, refmodel = fold$refmodel,
-      nterms_max = nterms_max, penalty = penalty,
-      verbose = verbose && getOption("projpred.extra_verbose", FALSE),
+      nterms_max = nterms_max, penalty = penalty, verbose = verbose_search,
       opt = opt, search_terms = search_terms, ...
     )
 
@@ -851,14 +918,44 @@ kfold_varsel <- function(refmodel, method, nterms_max, ndraws,
       cl_ref = seq_along(fold$refmodel$wdraws_ref)
     )
 
-    if (verbose) {
-      utils::setTxtProgressBar(pb, fold_index)
-    }
     return(nlist(predictor_ranking = search_path[["solution_terms"]],
                  summaries_sub, summaries_ref))
-  })
-  if (verbose) {
-    close(pb)
+  }
+  if (!parallel) {
+    # Sequential case. Actually, we could simply use ``%do_projpred%` <-
+    # foreach::`%do%`` here and then proceed as in the parallel case, but that
+    # would require adding more "hard" dependencies (because packages 'foreach'
+    # and 'doRNG' would have to be moved from `Suggests:` to `Imports:`).
+    if (verbose) {
+      pb <- utils::txtProgressBar(min = 0, max = K, style = 3, initial = 0)
+    }
+    res_cv <- lapply(seq_along(list_cv), function(k) {
+      if (verbose) {
+        on.exit(utils::setTxtProgressBar(pb, k))
+      }
+      one_fold(list_cv[[k]], ...)
+    })
+    if (verbose) {
+      close(pb)
+    }
+  } else {
+    # Parallel case.
+    if (!requireNamespace("foreach", quietly = TRUE)) {
+      stop("Please install the 'foreach' package.")
+    }
+    if (!requireNamespace("doRNG", quietly = TRUE)) {
+      stop("Please install the 'doRNG' package.")
+    }
+    dot_args <- list(...)
+    `%do_projpred%` <- doRNG::`%dorng%`
+    res_cv <- foreach::foreach(
+      list_cv_k = list_cv,
+      .export = c("one_fold", "dot_args"),
+      .noexport = c("list_cv")
+    ) %do_projpred% {
+      do.call(one_fold, c(list(fold = list_cv_k, verbose_search = FALSE),
+                          dot_args))
+    }
   }
   verb_out("-----", verbose = verbose)
   solution_terms_cv <- do.call(rbind, lapply(res_cv, "[[", "predictor_ranking"))

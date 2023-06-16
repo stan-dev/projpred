@@ -184,24 +184,22 @@ fit_glm_callback <- function(formula, family, ...) {
 }
 
 # Use package "mgcv" to fit additive non-multilevel submodels:
-#' @importFrom mgcv gam
 fit_gam_callback <- function(formula, ...) {
   # Exclude arguments from `...` which cannot be passed to mgcv::gam():
   dot_args <- list(...)
   dot_args <- dot_args[intersect(
     names(dot_args),
-    c(methods::formalArgs(gam),
+    c(methods::formalArgs(mgcv::gam),
       methods::formalArgs(mgcv::gam.fit))
   )]
   # Call the submodel fitter:
-  return(suppressMessages(suppressWarnings(do.call(gam, c(
+  return(suppressMessages(suppressWarnings(do.call(mgcv::gam, c(
     list(formula = formula),
     dot_args
   )))))
 }
 
 # Use package "gamm4" to fit additive multilevel submodels:
-#' @importFrom gamm4 gamm4
 fit_gamm_callback <- function(formula, projpred_formula_no_random,
                               projpred_random, data, family,
                               control = control_callback(family), ...) {
@@ -209,13 +207,13 @@ fit_gamm_callback <- function(formula, projpred_formula_no_random,
   dot_args <- list(...)
   dot_args <- dot_args[intersect(
     names(dot_args),
-    c(methods::formalArgs(gamm4),
+    c(methods::formalArgs(gamm4::gamm4),
       methods::formalArgs(lme4::lFormula),
       methods::formalArgs(lme4::glFormula))
   )]
   # Call the submodel fitter:
   fit <- tryCatch({
-    suppressMessages(suppressWarnings(do.call(gamm4, c(
+    suppressMessages(suppressWarnings(do.call(gamm4::gamm4, c(
       list(formula = projpred_formula_no_random, random = projpred_random,
            data = data, family = family, control = control),
       dot_args

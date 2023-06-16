@@ -63,8 +63,11 @@ if (run_snaps && !requireNamespace("rlang", quietly = TRUE)) {
 if (run_snaps) {
   testthat_ed_max2 <- edition_get() <= 2
 }
-# Run parallel tests?:
+# Run tests for the parallelization of the projection?:
 # Notes:
+#   * Throughout the tests, the terms "parallelization" and "parallel" refer to
+#   the parallelization of the projection ("projection parallelization"), not
+#   the parallelization of the CV ("CV parallelization").
 #   * We don't run the parallel tests on CRAN or continuous integration (CI)
 #   systems because parallelization might require special care there.
 #   * Currently, parallelization on Windows takes longer than running
@@ -109,7 +112,12 @@ if (run_prll) {
     } else {
       dopar_backend <- "doFuture"
     }
-    if (identical(.Platform$OS.type, "windows")) {
+    if (!identical(.Platform$OS.type, "windows")) {
+      # This case (which should not be possible by default) is only included
+      # here to demonstrate how other systems should be used with the 'doFuture'
+      # package.
+      future_plan <- "multicore"
+    } else {
       ### Not used in this case because the 'future.callr' package provides a
       ### faster alternative on Windows (which is still slower than a sequential
       ### run, though):
@@ -122,11 +130,6 @@ if (run_prll) {
       } else {
         future_plan <- "callr"
       }
-    } else {
-      # This case (which should not be possible by default) is only included
-      # here to demonstrate how other systems should be used with the 'doFuture'
-      # package.
-      future_plan <- "multicore"
     }
   }
 }
