@@ -962,7 +962,7 @@ kfold_varsel <- function(refmodel, method, nterms_max, ndraws,
 
   # Handle the submodels' performance evaluation results:
   sub_foldwise <- simplify2array(lapply(res_cv, "[[", "summaries_sub"),
-                                 higher = FALSE, except = NULL)
+                                 higher = FALSE)
   sub <- apply(sub_foldwise, 1, rbind2list)
   idxs_sorted_by_fold <- unlist(lapply(list_cv, function(fold) {
     fold$omitted
