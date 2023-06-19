@@ -173,7 +173,7 @@ cvvs <- cv_varsel(
 doParallel::stopImplicitCluster()
 foreach::registerDoSEQ()
 ```
-In this case, we ignore the bulk-ESS warning due to the reduced values for `chains` and `iter` in the reference model fit.
+In this case, we ignore the tail-ESS warning due to the reduced values for `chains` and `iter` in the reference model fit.
 
 We can now select a final submodel size by looking at a predictive performance plot similar to the one created for the preliminary `cv_varsel()` run above.
 By default, the performance statistics are plotted on their original scale, but with `deltas = TRUE`, they are plotted as differences from a baseline model (which is the reference model by default, at least in the most common cases).
