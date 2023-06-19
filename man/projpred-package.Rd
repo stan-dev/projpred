@@ -81,14 +81,18 @@ which can also be achieved by supplying \code{Inf} (or \code{NULL}) to option
 parallelization on Windows because in our experience, the parallelization
 overhead is larger there, causing a parallel run to take longer than a
 sequential run. Also note that the projection parallelization works well for
-GLMs, but for all other models, the fitted submodel objects are quite big,
-which---when running in parallel---may lead to excessive memory usage which
-in turn may crash the R session (on Unix systems, setting an appropriate
-memory limit via \code{\link[unix:rlimit]{unix::rlimit_as()}} may avoid crashing the whole machine).
-Thus, we currently cannot recommend the projection parallelization for models
-other than GLMs. However, for \code{\link[=cv_varsel]{cv_varsel()}}, there is also a \emph{CV}
-parallelization (i.e., a parallelization of \pkg{projpred}'s
-cross-validation) which can be activated via argument \code{parallel}.
+submodels which are GLMs (and hence also for the latent projection if the
+submodel has no multilevel or additive predictor terms), but for all other
+types of submodels, the fitted submodel objects are quite big, which---when
+running in parallel---may lead to excessive memory usage which in turn may
+crash the R session (on Unix systems, setting an appropriate memory limit via
+\code{\link[unix:rlimit]{unix::rlimit_as()}} may avoid crashing the whole machine). Thus, we currently
+cannot recommend parallelizing projections onto submodels which are GLMs (in
+this context, the latent projection onto a submodel without multilevel and
+without additive terms may be regarded as a projection onto a submodel which
+is a GLM). However, for \code{\link[=cv_varsel]{cv_varsel()}}, there is also a \emph{CV} parallelization
+(i.e., a parallelization of \pkg{projpred}'s cross-validation) which can be
+activated via argument \code{parallel}.
 
 In case of multilevel models, \pkg{projpred} offers two global options for
 "integrating out" group-level effects: \code{projpred.mlvl_pred_new} and
