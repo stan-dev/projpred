@@ -169,6 +169,9 @@ cvvs <- cv_varsel(
   verbose = FALSE
   ### 
 )
+# Tear down the CV parallelization setup:
+doParallel::stopImplicitCluster()
+foreach::registerDoSEQ()
 ```
 In this case, we ignore the bulk-ESS warning due to the reduced values for `chains` and `iter` in the reference model fit.
 
@@ -269,6 +272,7 @@ By the following `project()` call, we project the reference model onto the final
 <!-- There, we also explain why we are not running the parallelization on Windows and why we cannot recommend the parallelization of the projection for some types of reference models (see also section ["Supported types of models"](#modtypes) below). -->
 <!-- ```{r prll_prj_prep} -->
 <!-- if (!identical(.Platform$OS.type, "windows")) { -->
+<!--   doParallel::registerDoParallel(ncores) -->
 <!--   trigger_default <- options(projpred.prll_prj_trigger = 200) -->
 <!-- } -->
 <!-- ``` -->
@@ -281,6 +285,13 @@ prj <- project(
   ###
 )
 ```
+<!-- ```{r prll_prj_tear} -->
+<!-- if (!identical(.Platform$OS.type, "windows")) { -->
+<!--   options(trigger_default) -->
+<!--   doParallel::stopImplicitCluster() -->
+<!--   foreach::registerDoSEQ() -->
+<!-- } -->
+<!-- ``` -->
 
 Next, we create a matrix containing the projected posterior draws stored in the depths of `project()`'s output:
 ```{r as_matrix_prj}
@@ -363,19 +374,6 @@ ppc_dens_overlay(y = dat_gauss$y, yrep = prj_predict)
 ```
 
 This PPPC shows that our final projection is able to generate predictions similar to the observed response values, which indicates that this model is reasonable, at least in this regard.
-
-## Teardown
-
-Finally, we tear down our parallelization setup.
-<!-- ```{r prll_prj_tear} -->
-<!-- if (!identical(.Platform$OS.type, "windows")) { -->
-<!--   options(trigger_default) -->
-<!-- } -->
-<!-- ``` -->
-```{r prll_tear}
-doParallel::stopImplicitCluster()
-foreach::registerDoSEQ()
-```
 
 ## Supported types of models {#modtypes}
 
