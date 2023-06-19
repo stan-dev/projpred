@@ -173,10 +173,12 @@ cv_varsel.refmodel <- function(
   }
 
   refmodel <- object
+  nterms_all <- count_terms_in_formula(refmodel$formula) - 1L
   # Parse arguments which also exist in varsel():
   args <- parse_args_varsel(
     refmodel = refmodel, method = method, refit_prj = refit_prj,
-    nterms_max = nterms_max, nclusters = nclusters, search_terms = search_terms
+    nterms_max = nterms_max, nclusters = nclusters, search_terms = search_terms,
+    nterms_all = nterms_all
   )
   method <- args$method
   refit_prj <- args$refit_prj
@@ -260,7 +262,7 @@ cv_varsel.refmodel <- function(
               y_wobs_test,
               nobs_test = nrow(y_wobs_test),
               summaries = sel_cv$summaries,
-              nterms_all = count_terms_in_formula(refmodel$formula) - 1L,
+              nterms_all,
               nterms_max,
               method,
               cv_method,
