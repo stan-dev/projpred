@@ -608,12 +608,13 @@ test_that("`cumulate = TRUE` works", {
 
 test_that("ranking proportions are computed correctly", {
   skip_on_cran()
+  tol_abs <- sqrt(.Machine$double.eps)
   # With `cumulate = FALSE`:
   cv_proportions_tester(pr_cF, nterms_max_expected = ntrms,
                         cnms_expected = rk_fdata, info_str = "cumulate = FALSE")
-  expect_true(all(pr_cF == 1 / ntrms), info = "cumulate = FALSE")
-  expect_true(all(rowSums(pr_cF) == 1), info = "cumulate = FALSE")
-  expect_true(all(colSums(pr_cF) == 1), info = "cumulate = FALSE")
+  expect_true(all(abs(pr_cF - 1 / ntrms) < tol_abs), info = "cumulate = FALSE")
+  expect_true(all(abs(rowSums(pr_cF) - 1) < tol_abs), info = "cumulate = FALSE")
+  expect_true(all(abs(colSums(pr_cF) - 1) < tol_abs), info = "cumulate = FALSE")
 
   # With `cumulate = TRUE`:
   cv_proportions_tester(pr_cT, cumulate_expected = TRUE,
@@ -623,7 +624,9 @@ test_that("ranking proportions are computed correctly", {
   class(pr_cT_expected) <- c("cv_proportions_cumul", "cv_proportions")
   expect_equal(pr_cT, pr_cT_expected, check.attributes = FALSE,
                tolerance = .Machine$double.eps, info = "cumulate = TRUE")
-  has_1_colwise <- all(apply(pr_cT, 2, function(x_col) 1 %in% x_col))
+  has_1_colwise <- all(apply(pr_cT, 2, function(x_col) {
+    any(abs(x_col - 1) < tol_abs)
+  }))
   expect_true(has_1_colwise, info = "cumulate = TRUE")
 })
 
