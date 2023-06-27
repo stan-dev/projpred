@@ -213,11 +213,13 @@ varsel.refmodel <- function(object, d_test = NULL, method = NULL,
   }
 
   refmodel <- object
+  nterms_all <- count_terms_in_formula(refmodel$formula) - 1L
 
   # Parse arguments:
   args <- parse_args_varsel(
     refmodel = refmodel, method = method, refit_prj = refit_prj,
-    nterms_max = nterms_max, nclusters = nclusters, search_terms = search_terms
+    nterms_max = nterms_max, nclusters = nclusters, search_terms = search_terms,
+    nterms_all = nterms_all
   )
   method <- args$method
   refit_prj <- args$refit_prj
@@ -379,7 +381,7 @@ varsel.refmodel <- function(object, d_test = NULL, method = NULL,
               y_wobs_test,
               nobs_test,
               summaries = nlist(sub, ref),
-              nterms_all = count_terms_in_formula(refmodel$formula) - 1L,
+              nterms_all,
               nterms_max,
               method,
               cv_method = NULL,
@@ -425,7 +427,7 @@ select <- function(method, p_sel, refmodel, nterms_max, penalty, verbose, opt,
 # them in with the default values. The purpose of this function is to avoid
 # repeating the same code both in varsel() and cv_varsel().
 parse_args_varsel <- function(refmodel, method, refit_prj, nterms_max,
-                              nclusters, search_terms) {
+                              nclusters, search_terms, nterms_all) {
   search_terms_was_null <- is.null(search_terms)
   if (search_terms_was_null) {
     search_terms <- split_formula(refmodel$formula,
@@ -485,6 +487,19 @@ parse_args_varsel <- function(refmodel, method, refit_prj, nterms_max,
     nterms_max <- 19
   }
   nterms_max <- min(max_nv_possible, nterms_max)
+
+  if (nterms_max == nterms_all && has_group_features &&
+      (refmodel$family$family == "gaussian" || refmodel$family$for_latent)) {
+    warning(
+      "In case of the Gaussian family (also in case of the latent projection) ",
+      "and multilevel terms, the projection onto the full model can be ",
+      "instable and even lead to an error, see GitHub issue #323. If you ",
+      "experience this and may refrain from the projection onto the full ",
+      "model, set `nterms_max` to the number of predictor terms in the full ",
+      "model minus 1 (possibly accounting for submodel sizes skipped by ",
+      "custom `search_terms`)."
+    )
+  }
 
   return(nlist(method, refit_prj, nterms_max, nclusters, search_terms))
 }

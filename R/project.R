@@ -252,6 +252,18 @@ project <- function(object, nterms = NULL, solution_terms = NULL,
     nclusters <- 1
   }
 
+  nterms_max <- max(nterms)
+  nterms_all <- count_terms_in_formula(refmodel$formula) - 1L
+  if (nterms_max == nterms_all &&
+      formula_contains_group_terms(refmodel$formula) &&
+      (refmodel$family$family == "gaussian" || refmodel$family$for_latent)) {
+    warning(
+      "In case of the Gaussian family (also in case of the latent projection) ",
+      "and multilevel terms, the projection onto the full model can be ",
+      "instable and even lead to an error, see GitHub issue #323."
+    )
+  }
+
   ## get the clustering or thinning
   if (refit_prj) {
     p_ref <- get_refdist(refmodel, ndraws = ndraws, nclusters = nclusters)

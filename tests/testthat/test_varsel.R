@@ -1105,9 +1105,11 @@ test_that("invalid `method` fails", {
 
 test_that("invalid `cv_method` fails", {
   for (tstsetup in names(refmods)) {
-    expect_error(cv_varsel(refmods[[tstsetup]], cv_method = "k-fold"),
-                 "^Unknown `cv_method`\\.$",
-                 info = tstsetup)
+    expect_error(
+      suppressWarnings(cv_varsel(refmods[[tstsetup]], cv_method = "k-fold")),
+      "^Unknown `cv_method`\\.$",
+      info = tstsetup
+    )
   }
 })
 
