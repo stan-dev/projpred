@@ -338,7 +338,7 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
                        nclusters, ndraws_pred, nclusters_pred, refit_prj,
                        penalty, verbose, opt, nloo, validate_search,
                        search_terms, parallel, ...) {
-  # Pre-processing ----------------------------------------------------------
+  ## Pre-processing ---------------------------------------------------------
 
   # Clustering or thinning for the search (note that in case of
   # `validate_search = TRUE`, only `cl_sel` is used later, not `p_sel` itself):
@@ -464,7 +464,7 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
   }
 
   if (!validate_search) {
-    # Case `validate_search = FALSE` ------------------------------------------
+    ## Case `validate_search = FALSE` -----------------------------------------
 
     verb_out("-----\nRunning the search using the full dataset ...",
              verbose = verbose)
@@ -593,7 +593,7 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
     }
     verb_out("-----", verbose = verbose)
   } else {
-    # Case `validate_search = TRUE` -------------------------------------------
+    ## Case `validate_search = TRUE` ------------------------------------------
 
     verb_out("-----\nRunning the search and the performance evaluation for ",
              "each of the N = ", nloo, " LOO CV folds separately ...",
@@ -719,7 +719,7 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
     verb_out("-----", verbose = verbose)
   }
 
-  # Post-processing ---------------------------------------------------------
+  ## Post-processing --------------------------------------------------------
 
   # Submodel predictive performance:
   summ_sub <- lapply(seq_len(nterms_max + 1L), function(k) {
