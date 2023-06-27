@@ -877,9 +877,9 @@ plot.vsel <- function(
   }
   pp <- pp +
     # The submodel-specific graphical elements:
-    geom_linerange(alpha = 0.55) +
+    geom_linerange(alpha = 0.55, linewidth = 1) +
     geom_line() +
-    geom_point() +
+    geom_point(size = 3) +
     # Miscellaneous stuff (axes, theming, faceting, etc.):
     scale_x_continuous(
       breaks = breaks, minor_breaks = minor_breaks,
