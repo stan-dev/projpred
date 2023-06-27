@@ -70,7 +70,10 @@ used for quantities like predictions and fitted values related to the
 case the family is retrieved from \code{object}. For custom reference models,
 \code{family} does not have to coincide with the family of the reference model
 (if the reference model possesses a formal \code{family} at all). In typical
-reference models, however, these families do coincide.}
+reference models, however, these families do coincide. Furthermore, the
+latent projection is an exception where \code{family} is not the family of the
+submodels (in that case, the family of the submodels is the \code{\link[=gaussian]{gaussian()}}
+family).}
 
 \item{latent}{A single logical value indicating whether to use the latent
 projection (\code{TRUE}) or not (\code{FALSE}). Note that setting \code{latent = TRUE}

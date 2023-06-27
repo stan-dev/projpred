@@ -78,7 +78,10 @@
 #'   case the family is retrieved from `object`. For custom reference models,
 #'   `family` does not have to coincide with the family of the reference model
 #'   (if the reference model possesses a formal `family` at all). In typical
-#'   reference models, however, these families do coincide.
+#'   reference models, however, these families do coincide. Furthermore, the
+#'   latent projection is an exception where `family` is not the family of the
+#'   submodels (in that case, the family of the submodels is the [gaussian()]
+#'   family).
 #' @param cvfits For \eqn{K}-fold CV only. A `list` containing a sub-`list`
 #'   called `fits` containing the \eqn{K} model fits from which reference model
 #'   structures are created. The `cvfits` `list` (i.e., the super-`list`) needs
