@@ -876,8 +876,8 @@ plot.vsel <- function(
   }
   pp <- pp +
     # The submodel-specific graphical elements:
-    geom_linerange(aes(ymin = .data[["lq"]], ymax = .data[["uq"]],
-                       alpha = 0.1)) +
+    geom_linerange(aes(ymin = .data[["lq"]], ymax = .data[["uq"]]),
+                   alpha = 0.55) +
     geom_line(aes(y = .data[["value"]])) +
     geom_point(aes(y = .data[["value"]])) +
     # Miscellaneous stuff (axes, theming, faceting, etc.):
@@ -887,8 +887,7 @@ plot.vsel <- function(
       labels = tick_labs_x
     ) +
     labs(x = xlab, y = ylab) +
-    theme(legend.position = "none",
-          axis.text.x = element_text(angle = text_angle, hjust = 0.5,
+    theme(axis.text.x = element_text(angle = text_angle, hjust = 0.5,
                                      vjust = 0.5)) +
     facet_grid(statistic ~ ., scales = "free_y")
   if (!is.na(ranking_nterms_max) && !is.null(ranking_repel)) {
