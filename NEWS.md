@@ -10,6 +10,7 @@ If you read this from a place other than <https://mc-stan.org/projpred/news/inde
 * Added a progress bar for `project()` (when using the built-in divergence minimizers). For this, `project()` has gained a new argument `verbose` which can also be controlled via the global option `projpred.verbose_project`. By default, the new progress bar is activated. (GitHub: #421)
 * Added a new argument `parallel` to `cv_varsel()`. With `parallel = TRUE`, costly parts of **projpred**'s cross-validation (CV) can be run in parallel. See the documentation of that new argument (and section "Note" of `cv_varsel()`'s documentation) for details. (GitHub: #422)
 * Throw a warning for issue #323 (for multilevel Gaussian models, the projection onto the full model can be instable). (GitHub: #426)
+* `plot.vsel()`: The uncertainty bars are slightly thicker now and the points slightly larger. (GitHub: #429)
 
 ## Bug fixes
 
