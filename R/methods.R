@@ -825,7 +825,8 @@ plot.vsel <- function(
     data_gg <- data_gg[, c(colnms_orig, "rkfulldt_cvpropdiag"), drop = FALSE]
   }
   pp <- ggplot(data = data_gg,
-               mapping = aes(x = .data[["size"]]))
+               mapping = aes(x = .data[["size"]], y = .data[["value"]],
+                             ymin = .data[["lq"]], ymax = .data[["uq"]]))
   if (!all(is.na(stats_ref$se))) {
     # add reference model results if they exist
 
@@ -876,10 +877,9 @@ plot.vsel <- function(
   }
   pp <- pp +
     # The submodel-specific graphical elements:
-    geom_linerange(aes(ymin = .data[["lq"]], ymax = .data[["uq"]]),
-                   alpha = 0.55) +
-    geom_line(aes(y = .data[["value"]])) +
-    geom_point(aes(y = .data[["value"]])) +
+    geom_linerange(alpha = 0.55) +
+    geom_line() +
+    geom_point() +
     # Miscellaneous stuff (axes, theming, faceting, etc.):
     scale_x_continuous(
       breaks = breaks, minor_breaks = minor_breaks,
@@ -898,8 +898,7 @@ plot.vsel <- function(
     }
     pp <- pp +
       do.call(geom_repel_fun, c(
-        list(mapping = aes(y = .data[["value"]],
-                           label = .data[["rkfulldt_cvpropdiag"]])),
+        list(mapping = aes(label = .data[["rkfulldt_cvpropdiag"]])),
         ranking_repel_args
       ))
   }
