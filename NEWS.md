@@ -15,6 +15,7 @@ If you read this from a place other than <https://mc-stan.org/projpred/news/inde
 
 * Fixed a bug in the printed number of projected draws for the performance evaluation when calling `print.vselsummary()` based on output from `varsel()` with `refit_prj = FALSE`.
 * Fixed a bug sometimes causing an error when predicting from a submodel that is a GLM and has interactions. (GitHub: #420)
+* Fixed an incompatibility of K-fold CV with R versions < 4.2.0. (GitHub: #423, #427)
 
 # projpred 2.6.0
 
