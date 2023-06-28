@@ -926,6 +926,9 @@ rk_repel_tst <- list(
                    ranking_repel_args = list(seed = seed3_tst))
 )
 
+rk_col_tst <- as.list(setNames(nm = c(FALSE, TRUE)))
+names(rk_col_tst) <- paste0("col", names(rk_col_tst))
+
 cumulate_tst <- as.list(setNames(nm = c(FALSE, TRUE)))
 names(cumulate_tst) <- paste0("cu", names(cumulate_tst))
 
@@ -1699,16 +1702,19 @@ cre_args_plot_vsel <- function(args_obj) {
         lapply(rk_max_tst, function(rk_max_crr) {
           lapply(rk_abbv_tst, function(rk_abbv_crr) {
             lapply(rk_repel_tst, function(rk_repel_crr) {
-              lapply(cumulate_tst, function(cumulate_crr) {
-                lapply(angle_tst, function(angle_crr) {
-                  return(c(
-                    nlist(tstsetup_vsel),
-                    only_nonargs(args_obj[[tstsetup_vsel]]),
-                    list(nterms_max = nterms_crr),
-                    rk_max_crr, rk_abbv_crr, rk_repel_crr,
-                    list(cumulate = cumulate_crr),
-                    angle_crr
-                  ))
+              lapply(rk_col_tst, function(rk_col_crr) {
+                lapply(cumulate_tst, function(cumulate_crr) {
+                  lapply(angle_tst, function(angle_crr) {
+                    return(c(
+                      nlist(tstsetup_vsel),
+                      only_nonargs(args_obj[[tstsetup_vsel]]),
+                      list(nterms_max = nterms_crr),
+                      rk_max_crr, rk_abbv_crr, rk_repel_crr,
+                      list(ranking_colored = rk_col_crr,
+                           cumulate = cumulate_crr),
+                      angle_crr
+                    ))
+                  })
                 })
               })
             })

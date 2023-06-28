@@ -571,6 +571,15 @@ proj_predict_aux <- function(proj, newdata, offset, weights,
 #'   passed to [ggrepel::geom_text_repel()] or [ggrepel::geom_label_repel()] in
 #'   case of `ranking_repel = "text"` or `ranking_repel = "label"`,
 #'   respectively.
+#' @param ranking_colored A single logical value indicating whether the points
+#'   and the uncertainty bars should be gradient-colored according to the CV
+#'   ranking proportions (`TRUE`) or not (`FALSE`). The CV ranking proportions
+#'   may be cumulated (see argument `cumulate`). Note that the point and the
+#'   uncertainty bar at submodel size 0 (i.e., at the intercept-only model) are
+#'   always colored in gray because the intercept is forced to be selected
+#'   before any predictors are selected (in other words, the reason is that for
+#'   submodel size 0, the question of variability across CV folds is not
+#'   appropriate in the first place).
 #' @param cumulate Passed to argument `cumulate` of [cv_proportions()]. Affects
 #'   the ranking proportions given on the x-axis (below the full-data predictor
 #'   ranking).
@@ -634,6 +643,7 @@ plot.vsel <- function(
     ranking_abbreviate_args = list(),
     ranking_repel = NULL,
     ranking_repel_args = list(),
+    ranking_colored = FALSE,
     cumulate = FALSE,
     text_angle = NULL,
     ...
@@ -760,13 +770,15 @@ plot.vsel <- function(
       rk_fulldata = c("", rk[["fulldata"]]),
       cv_props_diag = c(NA, pr_rk)
     )
+    rk_dfr[["cv_props_diag_num"]] <- rk_dfr[["cv_props_diag"]]
     rk_dfr[["cv_props_diag"]] <- paste(round(100 * rk_dfr[["cv_props_diag"]]),
                                        "%")
     rk_dfr[["cv_props_diag"]][1] <- "" # empty model
     rk_dfr_empty <- do.call(rbind, lapply(
       setdiff(breaks, rk_dfr[["size"]]),
       function(br_j) {
-        data.frame(size = br_j, rk_fulldata = "", cv_props_diag = "")
+        data.frame(size = br_j, rk_fulldata = "", cv_props_diag = "",
+                   cv_props_diag_num = NA)
       }
     ))
     rk_dfr <- rbind(rk_dfr, rk_dfr_empty)
@@ -814,15 +826,18 @@ plot.vsel <- function(
 
   # plot submodel results
   data_gg <- subset(stats_sub, stats_sub$size <= nterms_max)
-  if (!is.na(ranking_nterms_max) && !is.null(ranking_repel)) {
+  if (!is.na(ranking_nterms_max) &&
+      (!is.null(ranking_repel) ||
+       (ranking_colored && !is.null(rk[["foldwise"]])))) {
     colnms_orig <- names(data_gg)
     data_gg[["row_idx"]] <- seq_len(nrow(data_gg))
+    cols_add <- c("cv_props_diag_num", "rkfulldt_cvpropdiag")
     data_gg <- merge(data_gg,
-                     rk_dfr[, c("size", "rkfulldt_cvpropdiag"), drop = FALSE],
+                     rk_dfr[, c("size", cols_add), drop = FALSE],
                      by = "size", all.x = TRUE, all.y = FALSE, sort = FALSE)
     data_gg <- data_gg[order(data_gg[["row_idx"]]), , drop = FALSE]
     data_gg[["row_idx"]] <- NULL
-    data_gg <- data_gg[, c(colnms_orig, "rkfulldt_cvpropdiag"), drop = FALSE]
+    data_gg <- data_gg[, c(colnms_orig, cols_add), drop = FALSE]
   }
   pp <- ggplot(data = data_gg,
                mapping = aes(x = .data[["size"]], y = .data[["value"]],
@@ -869,23 +884,46 @@ plot.vsel <- function(
                    color = "darkgreen", linetype = "longdash")
     }
   }
+  if (!is.na(ranking_nterms_max) && ranking_colored &&
+      !is.null(rk[["foldwise"]])) {
+    aes_linerg_pt <- aes(color = .data[["cv_props_diag_num"]])
+    alpha_linerg <- 1
+  } else {
+    aes_linerg_pt <- NULL
+    alpha_linerg <- 0.55
+  }
   if (!is.na(ranking_nterms_max) && is.null(ranking_repel)) {
     tick_labs_x <- rk_dfr[order(match(rk_dfr[["size"]], breaks), na.last = NA),
                           "size_rkfulldt_cvpropdiag"]
   } else {
     tick_labs_x <- waiver()
   }
+  # The submodel-specific graphical elements:
   pp <- pp +
-    # The submodel-specific graphical elements:
-    geom_linerange(alpha = 0.55, linewidth = 1) +
+    geom_linerange(aes_linerg_pt, alpha = alpha_linerg, linewidth = 1) +
     geom_line() +
-    geom_point(size = 3) +
-    # Miscellaneous stuff (axes, theming, faceting, etc.):
-    scale_x_continuous(
-      breaks = breaks, minor_breaks = minor_breaks,
-      limits = c(min(breaks), max(breaks)),
-      labels = tick_labs_x
-    ) +
+    geom_point(aes_linerg_pt, size = 3)
+  # Miscellaneous stuff (axes, theming, faceting, etc.):
+  if (!is.na(ranking_nterms_max) && ranking_colored &&
+      !is.null(rk[["foldwise"]])) {
+    ### Option 1:
+    pp <- pp +
+      scale_color_gradient(name = "Proportion\nof CV folds",
+                           labels = scales::label_percent(suffix = " %"),
+                           limits = c(0, 1),
+                           low = "#ededed", high = "#0f365c")
+    ###
+    ### Option 2 (requires the 'RColorBrewer' package):
+    # pp <- pp +
+    #   scale_color_distiller(name = "Proportion\nof CV folds",
+    #                        labels = scales::label_percent(suffix = " %"),
+    #                        direction = 1)
+    ###
+  }
+  pp <- pp +
+    scale_x_continuous(breaks = breaks, minor_breaks = minor_breaks,
+                       limits = c(min(breaks), max(breaks)),
+                       labels = tick_labs_x) +
     labs(x = xlab, y = ylab) +
     theme(axis.text.x = element_text(angle = text_angle, hjust = 0.5,
                                      vjust = 0.5)) +
