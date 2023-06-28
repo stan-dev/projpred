@@ -1702,7 +1702,7 @@ cre_args_plot_vsel <- function(args_obj) {
         lapply(rk_max_tst, function(rk_max_crr) {
           lapply(rk_abbv_tst, function(rk_abbv_crr) {
             lapply(rk_repel_tst, function(rk_repel_crr) {
-              lapply(rk_col_tst["colFALSE"], function(rk_col_crr) {
+              lapply(rk_col_tst, function(rk_col_crr) {
                 lapply(cumulate_tst, function(cumulate_crr) {
                   lapply(angle_tst, function(angle_crr) {
                     return(c(
