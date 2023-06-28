@@ -277,6 +277,20 @@ test_that("`x` of class \"vsel\" (created by varsel()) works", {
       } else {
         tstsetup_target <- tstsetup
       }
+    } else if (args_plot_i$ranking_colored) {
+      matches_tstsetup <- sapply(names(plots_vs), function(tstsetup2) {
+        args_plot_i2 <- args_plot_vs[[tstsetup2]]
+        if (!setequal(names(args_plot_i), names(args_plot_i2))) {
+          return(FALSE)
+        }
+        identical(args_plot_i[setdiff(names(args_plot_i), "ranking_colored")],
+                  args_plot_i2[setdiff(names(args_plot_i2), "ranking_colored")])
+      })
+      if (any(matches_tstsetup)) {
+        tstsetup_target <- names(which.max(matches_tstsetup))
+      } else {
+        tstsetup_target <- tstsetup
+      }
     } else if (args_plot_i$cumulate) {
       matches_tstsetup <- sapply(names(plots_vs), function(tstsetup2) {
         args_plot_i2 <- args_plot_vs[[tstsetup2]]
@@ -313,7 +327,7 @@ test_that("`x` of class \"vsel\" (created by cv_varsel()) works", {
                         "ranking_nterms_max")
   common_for_rk_max <- c("tstsetup_vsel", "text_angle", "nterms_max",
                          "ranking_abbreviate", "ranking_repel",
-                         "cumulate")
+                         "ranking_colored", "cumulate")
   for (tstsetup in names(plots_cvvs)) {
     args_plot_i <- args_plot_cvvs[[tstsetup]]
     if (identical(args_plot_i$ranking_nterms_max, NA)) {
@@ -392,8 +406,8 @@ test_that(paste(
 ), {
   skip_if_not(run_vs)
   tstsetups <- grep(paste("\\.default_nterms_max_smmry", "\\.default_rk_max",
-                          "\\.default_abbv", "\\.default_repel", "\\.cuFALSE",
-                          "\\.default_angle", sep = ".*"),
+                          "\\.default_abbv", "\\.default_repel", "\\.colFALSE",
+                          "\\.cuFALSE", "\\.default_angle", sep = ".*"),
                     names(plots_vs), value = TRUE)
   for (tstsetup in tstsetups) {
     args_plot_i <- args_plot_vs[[tstsetup]]
@@ -417,8 +431,8 @@ test_that(paste(
 ), {
   skip_if_not(run_cvvs)
   tstsetups <- grep(paste("\\.default_nterms_max_smmry", "\\.default_rk_max",
-                          "\\.default_abbv", "\\.default_repel", "\\.cuFALSE",
-                          "\\.default_angle", sep = ".*"),
+                          "\\.default_abbv", "\\.default_repel", "\\.colFALSE",
+                          "\\.cuFALSE", "\\.default_angle", sep = ".*"),
                     names(plots_cvvs), value = TRUE)
   for (tstsetup in tstsetups) {
     args_plot_i <- args_plot_cvvs[[tstsetup]]
