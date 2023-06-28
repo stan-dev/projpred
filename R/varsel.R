@@ -479,6 +479,17 @@ parse_args_varsel <- function(refmodel, method, refit_prj, nterms_max,
     nclusters <- 1
   }
 
+  if (!has_group_features &&
+      getOption("projpred.warn_instable_projections", TRUE) &&
+      method == "L1" && refmodel$family$family == "poisson") {
+    warning(
+      "For non-multilevel Poisson models, an L1 search based on the ",
+      "traditional projection may be instable. The latent projection may be a ",
+      "remedy. See section \"Troubleshooting\" of the main vignette for more ",
+      "information."
+    )
+  }
+
   search_terms_unq <- unique(unlist(
     strsplit(search_terms, split = "+", fixed = TRUE)
   ))

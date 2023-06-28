@@ -1060,6 +1060,29 @@ init_refmodel <- function(object, data, formula, family, ref_predfun = NULL,
       warning("Support for additive models is still experimental.")
     }
   }
+  if (formula_contains_group_terms(formula) &&
+      getOption("projpred.warn_instable_projections", TRUE) &&
+      !called_from_cvrefbuilder) {
+    if (family$for_augdat) {
+      warning(
+        "For multilevel models, the augmented-data projection may not work ",
+        "properly. The latent projection may be a remedy. See section ",
+        "\"Troubleshooting\" of the main vignette for more information."
+      )
+    } else if (family$family == "binomial") {
+      warning(
+        "For multilevel binomial models, the traditional projection may not ",
+        "work properly. The latent projection may be a remedy. See section ",
+        "\"Troubleshooting\" of the main vignette for more information."
+      )
+    } else if (family$family == "poisson") {
+      warning(
+        "For multilevel Poisson models, the traditional projection may take ",
+        "very long. The latent projection may be a remedy. See section ",
+        "\"Troubleshooting\" of the main vignette for more information."
+      )
+    }
+  }
   if (family$family == "categorical" &&
       length(fml_extractions$offset_terms) > 0) {
     stop("Currently, offsets are not supported in case of the ",
