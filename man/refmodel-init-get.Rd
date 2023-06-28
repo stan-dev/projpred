@@ -33,6 +33,7 @@ init_refmodel(
   cvfits = NULL,
   dis = NULL,
   cvrefbuilder = NULL,
+  called_from_cvrefbuilder = FALSE,
   ...
 )
 }
@@ -146,6 +147,14 @@ same type as \code{\link[=init_refmodel]{init_refmodel()}} does. Argument \code{
 for using an internal default: \code{\link[=get_refmodel]{get_refmodel()}} if \code{object} is not \code{NULL}
 and a function calling \code{\link[=init_refmodel]{init_refmodel()}} appropriately (with the assumption
 \code{dis = 0}) if \code{object} is \code{NULL}.}
+
+\item{called_from_cvrefbuilder}{A single logical value indicating whether
+\code{\link[=init_refmodel]{init_refmodel()}} is called from a \code{cvrefbuilder} function (\code{TRUE}) or not
+(\code{FALSE}). Currently, \code{TRUE} only causes some warnings to be suppressed
+(warnings which don't need to be thrown for each of the \eqn{K} reference
+model objects because it is sufficient to throw them for the original
+reference model object only). This argument is mainly for internal use, but
+may also be helpful for users with a custom \code{cvrefbuilder} function.}
 }
 \value{
 An object that can be passed to all the functions that take the

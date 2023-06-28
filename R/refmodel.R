@@ -108,6 +108,13 @@
 #'   for using an internal default: [get_refmodel()] if `object` is not `NULL`
 #'   and a function calling [init_refmodel()] appropriately (with the assumption
 #'   `dis = 0`) if `object` is `NULL`.
+#' @param called_from_cvrefbuilder A single logical value indicating whether
+#'   [init_refmodel()] is called from a `cvrefbuilder` function (`TRUE`) or not
+#'   (`FALSE`). Currently, `TRUE` only causes some warnings to be suppressed
+#'   (warnings which don't need to be thrown for each of the \eqn{K} reference
+#'   model objects because it is sufficient to throw them for the original
+#'   reference model object only). This argument is mainly for internal use, but
+#'   may also be helpful for users with a custom `cvrefbuilder` function.
 #' @param dis A vector of posterior draws for the reference model's dispersion
 #'   parameter or---more precisely---the posterior values for the reference
 #'   model's parameter-conditional predictive variance (assuming that this
@@ -884,7 +891,8 @@ get_refmodel.stanreg <- function(object, latent = FALSE, dis = NULL, ...) {
   }
 
   cvrefbuilder <- function(cvfit) {
-    get_refmodel(cvfit, latent = latent, dis = dis, ...)
+    get_refmodel(cvfit, latent = latent, dis = dis,
+                 called_from_cvrefbuilder = TRUE, ...)
   }
 
   # Miscellaneous -----------------------------------------------------------
@@ -961,15 +969,18 @@ get_refmodel.stanreg <- function(object, latent = FALSE, dis = NULL, ...) {
 init_refmodel <- function(object, data, formula, family, ref_predfun = NULL,
                           div_minimizer = NULL, proj_predfun = NULL,
                           extract_model_data, cvfun = NULL,
-                          cvfits = NULL, dis = NULL, cvrefbuilder = NULL, ...) {
+                          cvfits = NULL, dis = NULL, cvrefbuilder = NULL,
+                          called_from_cvrefbuilder = FALSE, ...) {
   # Family ------------------------------------------------------------------
 
   family <- extend_family(family, ...)
 
-  if (family$family == "Student_t") {
-    warning("Support for the `Student_t` family is still experimental.")
-  } else if (family$family == "Gamma") {
-    warning("Support for the `Gamma` family is still experimental.")
+  if (!called_from_cvrefbuilder) {
+    if (family$family == "Student_t") {
+      warning("Support for the `Student_t` family is still experimental.")
+    } else if (family$family == "Gamma") {
+      warning("Support for the `Gamma` family is still experimental.")
+    }
   }
 
   family$mu_fun <- function(fits, obs = NULL, newdata = NULL, offset = NULL,
@@ -1044,7 +1055,8 @@ init_refmodel <- function(object, data, formula, family, ref_predfun = NULL,
     if (family$for_augdat) {
       stop("Currently, the augmented-data projection may not be combined with ",
            "additive models.")
-    } else if (isTRUE(getOption("projpred.warn_additive_experimental", TRUE))) {
+    } else if (isTRUE(getOption("projpred.warn_additive_experimental", TRUE)) &&
+               !called_from_cvrefbuilder) {
       warning("Support for additive models is still experimental.")
     }
   }
@@ -1252,7 +1264,9 @@ init_refmodel <- function(object, data, formula, family, ref_predfun = NULL,
 
   if (is.null(cvrefbuilder)) {
     if (proper_model) {
-      cvrefbuilder <- get_refmodel
+      cvrefbuilder <- function(cvfit) {
+        get_refmodel(cvfit, called_from_cvrefbuilder = TRUE)
+      }
     } else {
       cvrefbuilder <- function(cvfit) {
         init_refmodel(
@@ -1263,7 +1277,8 @@ init_refmodel <- function(object, data, formula, family, ref_predfun = NULL,
           family = family,
           div_minimizer = div_minimizer,
           proj_predfun = proj_predfun,
-          extract_model_data = extract_model_data
+          extract_model_data = extract_model_data,
+          called_from_cvrefbuilder = TRUE
         )
       }
     }
