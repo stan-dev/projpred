@@ -12,6 +12,7 @@ If you read this from a place other than <https://mc-stan.org/projpred/news/inde
 * Throw a warning for issue #323 (for multilevel Gaussian models, the projection onto the full model can be instable). (GitHub: #426)
 * `plot.vsel()`: The uncertainty bars are slightly thicker now and the points slightly larger. (GitHub: #429)
 * `plot.vsel()`: Added argument `ranking_colored` for coloring the points and the uncertainty bars according to the magnitude of the (possibly cumulated) CV ranking proportions. (GitHub: #430; thanks to @yannmclatchie for the suggestion)
+* Added warnings for most of the problems described in section ["Troubleshooting"](https://mc-stan.org/projpred/articles/projpred.html#troubleshooting) of the main vignette. (GitHub: #431)
 
 ## Bug fixes
 
