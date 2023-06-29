@@ -98,7 +98,7 @@
 #'     posterior draws in the reference model, giving the weights of these
 #'     draws. These weights should be treated as not being normalized (i.e.,
 #'     they don't necessarily sum to `1`).}
-#'     \item{`constant_wdraws`}{A single logical value indicating whether the
+#'     \item{`const_wdraws_prj`}{A single logical value indicating whether the
 #'     projected draws have constant weights (`TRUE`) or not (`FALSE`).}
 #'     \item{`refmodel`}{The reference model object.}
 #'   }
@@ -287,7 +287,7 @@ project <- function(object, nterms = NULL, solution_terms = NULL,
   }
   projs <- lapply(submodls, function(submodl) {
     proj_k <- submodl
-    proj_k$constant_wdraws <- length(unique(refdist_obj$wdraws_prj)) == 1
+    proj_k$const_wdraws_prj <- length(unique(refdist_obj$wdraws_prj)) == 1
     proj_k$refmodel <- refmodel
     class(proj_k) <- "projection"
     return(proj_k)

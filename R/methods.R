@@ -469,7 +469,7 @@ proj_predict_aux <- function(proj, newdata, offset, weights,
   mu <- proj$refmodel$family$mu_fun(proj$outdmin,
                                     newdata = newdata,
                                     offset = offset)
-  if (!proj$constant_wdraws) {
+  if (!proj$const_wdraws_prj) {
     # In this case, the posterior draws have nonconstant weights.
     draw_inds <- sample(x = seq_along(proj$wdraws_prj),
                         size = nresample_clusters, replace = TRUE,
@@ -2025,7 +2025,7 @@ as.matrix.projection <- function(x, nm_scheme = "auto", ...) {
     stop("as.matrix.projection() does not work for objects based on ",
          "\"datafit\"s.")
   }
-  if (!x$constant_wdraws) {
+  if (!x$const_wdraws_prj) {
     warning("The projected draws have different (i.e., nonconstant) weights. ",
             "Therefore, the results from this as.matrix() method should not ",
             "be used without taking these weights into account.")

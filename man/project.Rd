@@ -109,7 +109,7 @@ these draws.}
 posterior draws in the reference model, giving the weights of these
 draws. These weights should be treated as not being normalized (i.e.,
 they don't necessarily sum to \code{1}).}
-\item{\code{constant_wdraws}}{A single logical value indicating whether the
+\item{\code{const_wdraws_prj}}{A single logical value indicating whether the
 projected draws have constant weights (\code{TRUE}) or not (\code{FALSE}).}
 \item{\code{refmodel}}{The reference model object.}
 }
