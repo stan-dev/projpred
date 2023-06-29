@@ -233,6 +233,9 @@ We will skip post-selection inference here (see the main vignette for a demonstr
 ### Variable selection using the traditional projection
 
 We will now look at what **projpred**'s traditional projection would have given:
+```{r suppress_warn_poiss, include=FALSE}
+warn_instable_orig <- options(projpred.warn_instable_projections = FALSE)
+```
 ```{r vs_trad}
 d_test_trad_poiss <- d_test_lat_poiss
 d_test_trad_poiss$y <- d_test_trad_poiss$y_oscale
@@ -251,6 +254,10 @@ time_trad <- system.time(vs_trad <- varsel(
   seed = 95930
   ###
 ))
+```
+```{r unsuppress_warn_poiss, include=FALSE}
+options(warn_instable_orig)
+rm(warn_instable_orig)
 ```
 ```{r post_vs_trad}
 print(time_trad)
