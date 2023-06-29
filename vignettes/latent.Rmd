@@ -192,12 +192,12 @@ print(time_lat)
 The message telling that `<refmodel>$dis` consists of only `NA`s will not concern us here because we will only be focusing on response-scale post-processing.
 
 In order to decide for a submodel size, we first inspect the `plot()` results:
-```{r plot_vsel_lat, fig.width = 6, out.width = "75%"}
+```{r plot_vsel_lat}
 ( gg_lat <- plot(vs_lat, stats = "mlpd", deltas = TRUE) )
 ```
 
 Although the submodels' MLPDs seem to be very close to the reference model's MLPD from a submodel size of 6 on, a zoomed plot reveals that there is still some discrepancy at sizes 6 to 11 and that size 12 would be a better choice (further down below in the `summary()` output, we will also see that on absolute scale, the discrepancy at sizes 6 to 11 is not negligible):
-```{r plot_vsel_lat_zoom, fig.width = 6, out.width = "75%"}
+```{r plot_vsel_lat_zoom}
 gg_lat + ggplot2::coord_cartesian(ylim = c(-10, 0.05))
 ```
 
@@ -349,12 +349,12 @@ Again, the message telling that `<refmodel>$dis` consists of only `NA`s will not
 The message concerning `latent_ilink` can be safely ignored here (the internal default based on `family$linkinv` works correctly in this case).
 
 Again, we first inspect the `plot()` results to decide for a submodel size:
-```{r plot_vsel_nebin, fig.width = 6, out.width = "75%"}
+```{r plot_vsel_nebin}
 ( gg_nebin <- plot(vs_nebin, stats = "mlpd", deltas = TRUE) )
 ```
 
 Again, a zoomed plot is more helpful:
-```{r plot_vsel_nebin_zoom, fig.width = 6, out.width = "75%"}
+```{r plot_vsel_nebin_zoom}
 gg_nebin + ggplot2::coord_cartesian(ylim = c(-2.5, 0.25))
 ```
 

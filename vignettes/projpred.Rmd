@@ -178,7 +178,7 @@ In this case, we ignore the tail-ESS warning due to the reduced values for `chai
 We can now select a final submodel size by looking at a predictive performance plot similar to the one created for the preliminary `cv_varsel()` run above.
 By default, the performance statistics are plotted on their original scale, but with `deltas = TRUE`, they are plotted as differences from a baseline model (which is the reference model by default, at least in the most common cases).
 Since the differences and the (frequentist) uncertainty in their estimation are usually of more interest than the original-scale performance statistics (at least with regard to the decision for a final submodel size), we directly plot with `deltas = TRUE` here:
-```{r plot_vsel, fig.width=6, out.width="80%"}
+```{r plot_vsel}
 plot(cvvs, stats = "mlpd", deltas = TRUE)
 ```
 
@@ -235,7 +235,7 @@ This is the same as column `solution_terms` in the `summary.vsel()` output above
 Note that we have cut off the search at `nterms_max = 9` (which is smaller than the number of predictor terms in the full model, 20 here), so the ranking proportions in the `pr_rk` matrix do not need to sum to 100&nbsp;% (neither column-wise nor row-wise).
 
 The *transposed* matrix of ranking proportions can be visualized via `plot.cv_proportions()`:
-```{r plot_cv_proportions, fig.width=6, out.width="80%"}
+```{r plot_cv_proportions}
 plot(pr_rk)
 ```
 Apart from visualizing the variability in the ranking of the predictors (here, this is of little use because of `K = 2`), this plot will be helpful later.
@@ -245,7 +245,7 @@ To retrieve the predictor terms of the final submodel (except for the intercept 
 ( predictors_final <- head(rk[["fulldata"]], size_decided) )
 ```
 At this place, it is again helpful to take the ranking proportions into account, but now in a cumulated fashion:
-```{r plot_cv_proportions_cumul, fig.width=6, out.width="80%"}
+```{r plot_cv_proportions_cumul}
 plot(cv_proportions(rk, cumulate = TRUE))
 ```
 This plot confirms (from a slightly different perspective) that the two CV folds agree on the *set* of the two most relevant predictors (`X1` and `X14`): When looking at `<=2` on the x-axis, all tiles above and including the second main diagonal element are at 100&nbsp;%.
