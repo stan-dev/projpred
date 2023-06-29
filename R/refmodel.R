@@ -1055,7 +1055,7 @@ init_refmodel <- function(object, data, formula, family, ref_predfun = NULL,
     if (family$for_augdat) {
       stop("Currently, the augmented-data projection may not be combined with ",
            "additive models.")
-    } else if (isTRUE(getOption("projpred.warn_additive_experimental", TRUE)) &&
+    } else if (getOption("projpred.warn_additive_experimental", TRUE) &&
                !called_from_cvrefbuilder) {
       warning("Support for additive models is still experimental.")
     }

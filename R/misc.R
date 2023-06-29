@@ -307,7 +307,7 @@ get_refdist <- function(refmodel, ndraws = NULL, nclusters = NULL,
     }
   } else {
     ndraws <- min(S, ndraws)
-    if (ndraws <= 20 && isTRUE(throw_mssg_ndraws)) {
+    if (ndraws <= 20 && throw_mssg_ndraws) {
       message("The number of draws to project is quite small (<= 20). In such ",
               "cases, it is usually better to use clustering.")
     }
