@@ -282,13 +282,13 @@ project <- function(object, nterms = NULL, solution_terms = NULL,
 
   # Output:
   if (refit_prj) {
-    refdist_eval <- p_ref
+    refdist_obj <- p_ref
   } else {
-    refdist_eval <- object$search_path$p_sel
+    refdist_obj <- object$search_path$p_sel
   }
   projs <- lapply(submodls, function(submodl) {
     proj_k <- submodl
-    proj_k$p_type <- refdist_eval$clust_used
+    proj_k$p_type <- refdist_obj$clust_used
     proj_k$refmodel <- refmodel
     class(proj_k) <- "projection"
     return(proj_k)
