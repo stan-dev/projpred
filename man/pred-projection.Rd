@@ -83,12 +83,13 @@ affects the PRNG usage there.}
 \item{...}{Arguments passed to \code{\link[=project]{project()}} if \code{object} is not already an
 object returned by \code{\link[=project]{project()}}.}
 
-\item{nresample_clusters}{For \code{\link[=proj_predict]{proj_predict()}} with clustered projection
-only. Number of draws to return from the predictive distributions of the
-submodel(s). Not to be confused with argument \code{nclusters} of \code{\link[=project]{project()}}:
-\code{nresample_clusters} gives the number of draws (\emph{with} replacement) from
-the set of clustered posterior draws after projection (with this set being
-determined by argument \code{nclusters} of \code{\link[=project]{project()}}).}
+\item{nresample_clusters}{For \code{\link[=proj_predict]{proj_predict()}} with clustered projection (and
+nonconstant weights for the projected draws) only. Number of draws to
+return from the predictive distributions of the submodel(s). Not to be
+confused with argument \code{nclusters} of \code{\link[=project]{project()}}: \code{nresample_clusters}
+gives the number of draws (\emph{with} replacement) from the set of clustered
+posterior draws after projection (with this set being determined by
+argument \code{nclusters} of \code{\link[=project]{project()}}).}
 
 \item{resp_oscale}{Only relevant for the latent projection. A single logical
 value indicating whether to draw from the posterior-projection predictive

@@ -1552,8 +1552,10 @@ refdist_tester <- function(refd,
 #   terms, or `NULL` for not testing the solution terms at all.
 # @param nprjdraws_expected A single numeric value giving the expected number of
 #   projected draws.
-# @param p_type_expected A single logical value giving the expected value for
-#   `p$p_type`.
+# @param with_clusters A single logical value indicating whether clustering was
+#   used (`TRUE`) or not (`FALSE`).
+# @param const_wdraws_prj_expected A single logical value giving the expected
+#   value for `p$const_wdraws_prj`.
 # @param seed_expected The seed which was used for clustering the posterior
 #   draws of the reference model.
 # @param prjdraw_weights_expected The expected weights for the projected draws
@@ -1569,7 +1571,8 @@ projection_tester <- function(p,
                               refmod_expected,
                               solterms_expected,
                               nprjdraws_expected,
-                              p_type_expected,
+                              with_clusters,
+                              const_wdraws_prj_expected,
                               seed_expected = seed_tst,
                               prjdraw_weights_expected = NULL,
                               from_vsel_L1_search = FALSE,
@@ -1582,7 +1585,7 @@ projection_tester <- function(p,
   expect_named(
     p,
     c("dis", "ce", "wdraws_prj", "solution_terms", "outdmin", "cl_ref",
-      "wdraws_ref", "p_type", "refmodel"),
+      "wdraws_ref", "const_wdraws_prj", "refmodel"),
     info = info_str
   )
 
@@ -1653,7 +1656,7 @@ projection_tester <- function(p,
     return(fml_tmp)
   })
   sub_data_crr <- p$refmodel$fetch_data()
-  if (p_type_expected) {
+  if (with_clusters) {
     if (exists(".Random.seed", envir = .GlobalEnv)) {
       rng_state_old <- get(".Random.seed", envir = .GlobalEnv)
       on.exit(assign(".Random.seed", rng_state_old, envir = .GlobalEnv))
@@ -1722,8 +1725,9 @@ projection_tester <- function(p,
   expect_identical(p$wdraws_ref, rep(1, length(p$refmodel$wdraws_ref)),
                    info = info_str)
 
-  # p_type
-  expect_identical(p$p_type, p_type_expected, info = info_str)
+  # const_wdraws_prj
+  expect_identical(p$const_wdraws_prj, const_wdraws_prj_expected,
+                   info = info_str)
 
   return(invisible(TRUE))
 }

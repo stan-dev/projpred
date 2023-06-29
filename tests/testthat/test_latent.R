@@ -217,7 +217,7 @@ test_that(paste(
     ))
     tstsetup_mod <- sub("\\.with_wobs\\.", ".without_wobs.", tstsetup)
     if (ndr_ncl$clust_used) {
-      warn_prjmat_expect <- "the clusters might have different weights"
+      warn_prjmat_expect <- "The projected draws have different .*weights"
     } else {
       warn_prjmat_expect <- NA
     }

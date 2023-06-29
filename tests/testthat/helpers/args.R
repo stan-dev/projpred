@@ -43,8 +43,8 @@ excl_nonargs <- function(args_i, nms_excl_add = character()) {
 #   * `ndr_ncl_nm`: The name of the actually used argument (`ndraws` or
 #     `nclusters`).
 #   * `nprjdraws`: The value of the actually used argument.
-#   * `clust_used`: A single logical value indicating whether in fact,
-#     clustering is used or not.
+#   * `clust_used`: A single logical value indicating whether the projected
+#     draws will have nonconstant weights (`TRUE`) or not (`FALSE`).
 #   * `nprjdraws_out`: The number of projected draws in the output. In contrast
 #     to `nprjdraws`, this also takes proj_predict()'s argument
 #     `nresample_clusters` into account.
@@ -58,7 +58,7 @@ ndr_ncl_dtls <- function(args_i,
     stopifnot(length(ndr_ncl_nm) == 1)
     nprjdraws <- args_i[[ndr_ncl_nm]]
   }
-  clust_used <- ndr_ncl_nm == "nclusters"
+  clust_used <- ndr_ncl_nm == "nclusters" && nprjdraws > 1
   if (clust_used) {
     nprjdraws_out <- nresample_clusters_crr
   } else {

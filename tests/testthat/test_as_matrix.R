@@ -28,7 +28,7 @@ test_that("as.matrix.projection() works", {
     # warning; NA means no warning) for as.matrix.projection():
     if (ndr_ncl$clust_used) {
       # Clustered projection, so we expect a warning:
-      warn_prjmat_expect <- "the clusters might have different weights"
+      warn_prjmat_expect <- "The projected draws have different .*weights"
     } else {
       warn_prjmat_expect <- NA
     }
@@ -263,7 +263,7 @@ if (run_snaps) {
       # warning; NA means no warning) for as.matrix.projection():
       if (ndr_ncl$clust_used) {
         # Clustered projection, so we expect a warning:
-        warn_prjmat_expect <- "the clusters might have different weights"
+        warn_prjmat_expect <- "The projected draws have different .*weights"
       } else {
         warn_prjmat_expect <- NA
       }
@@ -309,7 +309,7 @@ if (run_snaps) {
       # warning; NA means no warning) for as.matrix.projection():
       if (ndr_ncl$clust_used) {
         # Clustered projection, so we expect a warning:
-        warn_prjmat_expect <- "the clusters might have different weights"
+        warn_prjmat_expect <- "The projected draws have different .*weights"
       } else {
         warn_prjmat_expect <- NA
       }

@@ -98,9 +98,8 @@
 #'     posterior draws in the reference model, giving the weights of these
 #'     draws. These weights should be treated as not being normalized (i.e.,
 #'     they don't necessarily sum to `1`).}
-#'     \item{`p_type`}{A single logical value indicating whether the
-#'     reference model's posterior draws have been clustered for the projection
-#'     (`TRUE`) or not (`FALSE`).}
+#'     \item{`const_wdraws_prj`}{A single logical value indicating whether the
+#'     projected draws have constant weights (`TRUE`) or not (`FALSE`).}
 #'     \item{`refmodel`}{The reference model object.}
 #'   }
 #'   If the projection is performed onto more than one submodel, the output from
@@ -282,13 +281,13 @@ project <- function(object, nterms = NULL, solution_terms = NULL,
 
   # Output:
   if (refit_prj) {
-    refdist_eval <- p_ref
+    refdist_obj <- p_ref
   } else {
-    refdist_eval <- object$search_path$p_sel
+    refdist_obj <- object$search_path$p_sel
   }
   projs <- lapply(submodls, function(submodl) {
     proj_k <- submodl
-    proj_k$p_type <- refdist_eval$clust_used
+    proj_k$const_wdraws_prj <- length(unique(refdist_obj$wdraws_prj)) == 1
     proj_k$refmodel <- refmodel
     class(proj_k) <- "projection"
     return(proj_k)

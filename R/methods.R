@@ -35,12 +35,13 @@
 #' @param integrated For [proj_linpred()] only. A single logical value
 #'   indicating whether the output should be averaged across the projected
 #'   posterior draws (`TRUE`) or not (`FALSE`).
-#' @param nresample_clusters For [proj_predict()] with clustered projection
-#'   only. Number of draws to return from the predictive distributions of the
-#'   submodel(s). Not to be confused with argument `nclusters` of [project()]:
-#'   `nresample_clusters` gives the number of draws (*with* replacement) from
-#'   the set of clustered posterior draws after projection (with this set being
-#'   determined by argument `nclusters` of [project()]).
+#' @param nresample_clusters For [proj_predict()] with clustered projection (and
+#'   nonconstant weights for the projected draws) only. Number of draws to
+#'   return from the predictive distributions of the submodel(s). Not to be
+#'   confused with argument `nclusters` of [project()]: `nresample_clusters`
+#'   gives the number of draws (*with* replacement) from the set of clustered
+#'   posterior draws after projection (with this set being determined by
+#'   argument `nclusters` of [project()]).
 #' @param .seed Pseudorandom number generation (PRNG) seed by which the same
 #'   results can be obtained again if needed. Passed to argument `seed` of
 #'   [set.seed()], but can also be `NA` to not call [set.seed()] at all. If not
@@ -468,8 +469,8 @@ proj_predict_aux <- function(proj, newdata, offset, weights,
   mu <- proj$refmodel$family$mu_fun(proj$outdmin,
                                     newdata = newdata,
                                     offset = offset)
-  if (proj$p_type) {
-    # In this case, the posterior draws have been clustered.
+  if (!proj$const_wdraws_prj) {
+    # In this case, the posterior draws have nonconstant weights.
     draw_inds <- sample(x = seq_along(proj$wdraws_prj),
                         size = nresample_clusters, replace = TRUE,
                         prob = proj$wdraws_prj)
@@ -2024,9 +2025,10 @@ as.matrix.projection <- function(x, nm_scheme = "auto", ...) {
     stop("as.matrix.projection() does not work for objects based on ",
          "\"datafit\"s.")
   }
-  if (x$p_type) {
-    warning("Note that projection was performed using clustering and the ",
-            "clusters might have different weights.")
+  if (!x$const_wdraws_prj) {
+    warning("The projected draws have different (i.e., nonconstant) weights. ",
+            "Therefore, the results from this as.matrix() method should not ",
+            "be used without taking these weights into account.")
   }
   if (identical(nm_scheme, "auto")) {
     if (inherits(x$refmodel$fit, "brmsfit")) {
