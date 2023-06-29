@@ -1552,6 +1552,8 @@ refdist_tester <- function(refd,
 #   terms, or `NULL` for not testing the solution terms at all.
 # @param nprjdraws_expected A single numeric value giving the expected number of
 #   projected draws.
+# @param with_clusters A single logical value indicating whether clustering was
+#   used (`TRUE`) or not (`FALSE`).
 # @param p_type_expected A single logical value giving the expected value for
 #   `p$p_type`.
 # @param seed_expected The seed which was used for clustering the posterior
@@ -1569,6 +1571,7 @@ projection_tester <- function(p,
                               refmod_expected,
                               solterms_expected,
                               nprjdraws_expected,
+                              with_clusters,
                               p_type_expected,
                               seed_expected = seed_tst,
                               prjdraw_weights_expected = NULL,
@@ -1653,7 +1656,7 @@ projection_tester <- function(p,
     return(fml_tmp)
   })
   sub_data_crr <- p$refmodel$fetch_data()
-  if (p_type_expected) {
+  if (with_clusters) {
     if (exists(".Random.seed", envir = .GlobalEnv)) {
       rng_state_old <- get(".Random.seed", envir = .GlobalEnv)
       on.exit(assign(".Random.seed", rng_state_old, envir = .GlobalEnv))

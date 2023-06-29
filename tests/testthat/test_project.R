@@ -14,6 +14,7 @@ test_that(paste(
                       refmod_expected = refmods[[args_prj_i$tstsetup_ref]],
                       solterms_expected = args_prj_i$solution_terms,
                       nprjdraws_expected = ndr_ncl$nprjdraws,
+                      with_clusters = ndr_ncl$ndr_ncl_nm == "nclusters",
                       p_type_expected = ndr_ncl$clust_used,
                       info_str = tstsetup)
   }
@@ -85,6 +86,7 @@ test_that("invalid `solution_terms` warns or fails", {
                         refmod_expected = refmods[[args_prj_i$tstsetup_ref]],
                         solterms_expected = character(),
                         nprjdraws_expected = nclusters_pred_tst,
+                        with_clusters = TRUE,
                         p_type_expected = TRUE,
                         info_str = tstsetup_crr)
     }
@@ -130,6 +132,7 @@ test_that(paste(
         refmod_expected = refmods[[args_prj_vs[[tstsetup]]$tstsetup_ref]],
         solterms_expected = solterms_expected_crr,
         nprjdraws_expected = args_prj_vs[[tstsetup]]$nclusters,
+        with_clusters = TRUE,
         p_type_expected = TRUE,
         info_str = tstsetup
       )
@@ -195,6 +198,7 @@ test_that(paste(
         info_str = tstsetup,
         refmod_expected = refmods[[args_prj_vs[[tstsetup]]$tstsetup_ref]],
         nprjdraws_expected = args_prj_vs[[tstsetup]]$nclusters,
+        with_clusters = TRUE,
         p_type_expected = TRUE,
         prjdraw_weights_expected = prjs_vs[[tstsetup]][[1]]$wdraws_prj
       )
@@ -225,6 +229,7 @@ test_that(paste(
         refmod_expected = refmods[[args_prj_cvvs[[tstsetup]]$tstsetup_ref]],
         solterms_expected = solterms_expected_crr,
         nprjdraws_expected = args_prj_cvvs[[tstsetup]]$nclusters,
+        with_clusters = TRUE,
         p_type_expected = TRUE,
         info_str = tstsetup
       )
@@ -290,6 +295,7 @@ test_that(paste(
         info_str = tstsetup,
         refmod_expected = refmods[[args_prj_cvvs[[tstsetup]]$tstsetup_ref]],
         nprjdraws_expected = args_prj_cvvs[[tstsetup]]$nclusters,
+        with_clusters = TRUE,
         p_type_expected = TRUE,
         prjdraw_weights_expected = prjs_cvvs[[tstsetup]][[1]]$wdraws_prj
       )
@@ -465,6 +471,7 @@ test_that("for GLMs, `regul` has an expected effect", {
           refmod_expected = refmods[[args_prj_i$tstsetup_ref]],
           solterms_expected = args_prj_i$solution_terms,
           nprjdraws_expected = ndr_ncl$nprjdraws,
+          with_clusters = ndr_ncl$ndr_ncl_nm == "nclusters",
           p_type_expected = ndr_ncl$clust_used,
           info_str = paste(tstsetup, j, sep = "__")
         )
@@ -473,7 +480,7 @@ test_that("for GLMs, `regul` has an expected effect", {
       # Run as.matrix.projection():
       if (ndr_ncl$clust_used) {
         # Clustered projection, so we expect a warning:
-        warn_prjmat_expect <- "the clusters might have different weights"
+        warn_prjmat_expect <- "The projected draws have different .*weights"
       } else {
         warn_prjmat_expect <- NA
       }

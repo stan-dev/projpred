@@ -99,8 +99,7 @@
 #'     draws. These weights should be treated as not being normalized (i.e.,
 #'     they don't necessarily sum to `1`).}
 #'     \item{`p_type`}{A single logical value indicating whether the
-#'     reference model's posterior draws have been clustered for the projection
-#'     (`TRUE`) or not (`FALSE`).}
+#'     projected draws have nonconstant weights (`TRUE`) or not (`FALSE`).}
 #'     \item{`refmodel`}{The reference model object.}
 #'   }
 #'   If the projection is performed onto more than one submodel, the output from
@@ -288,7 +287,7 @@ project <- function(object, nterms = NULL, solution_terms = NULL,
   }
   projs <- lapply(submodls, function(submodl) {
     proj_k <- submodl
-    proj_k$p_type <- refdist_obj$clust_used
+    proj_k$p_type <- length(unique(refdist_obj$wdraws_prj)) != 1
     proj_k$refmodel <- refmodel
     class(proj_k) <- "projection"
     return(proj_k)
