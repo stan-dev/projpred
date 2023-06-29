@@ -871,6 +871,8 @@ options(projpred.warn_L1_interactions = FALSE)
 options(projpred.warn_wobs_ppd = FALSE)
 # Suppress the verbose-mode progress bar in project():
 options(projpred.verbose_project = FALSE)
+# Suppress instability warnings:
+options(projpred.warn_instable_projections = FALSE)
 
 search_trms_tst <- list(
   default_search_trms = list(),
