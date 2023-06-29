@@ -1554,8 +1554,8 @@ refdist_tester <- function(refd,
 #   projected draws.
 # @param with_clusters A single logical value indicating whether clustering was
 #   used (`TRUE`) or not (`FALSE`).
-# @param p_type_expected A single logical value giving the expected value for
-#   `p$p_type`.
+# @param constant_wdraws_expected A single logical value giving the expected
+#   value for `p$constant_wdraws`.
 # @param seed_expected The seed which was used for clustering the posterior
 #   draws of the reference model.
 # @param prjdraw_weights_expected The expected weights for the projected draws
@@ -1572,7 +1572,7 @@ projection_tester <- function(p,
                               solterms_expected,
                               nprjdraws_expected,
                               with_clusters,
-                              p_type_expected,
+                              constant_wdraws_expected,
                               seed_expected = seed_tst,
                               prjdraw_weights_expected = NULL,
                               from_vsel_L1_search = FALSE,
@@ -1585,7 +1585,7 @@ projection_tester <- function(p,
   expect_named(
     p,
     c("dis", "ce", "wdraws_prj", "solution_terms", "outdmin", "cl_ref",
-      "wdraws_ref", "p_type", "refmodel"),
+      "wdraws_ref", "constant_wdraws", "refmodel"),
     info = info_str
   )
 
@@ -1725,8 +1725,8 @@ projection_tester <- function(p,
   expect_identical(p$wdraws_ref, rep(1, length(p$refmodel$wdraws_ref)),
                    info = info_str)
 
-  # p_type
-  expect_identical(p$p_type, p_type_expected, info = info_str)
+  # constant_wdraws
+  expect_identical(p$constant_wdraws, constant_wdraws_expected, info = info_str)
 
   return(invisible(TRUE))
 }
