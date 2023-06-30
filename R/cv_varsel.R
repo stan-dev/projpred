@@ -381,13 +381,10 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
       # In this case, `mu_offs_oscale` is a 3-dimensional array (S x N x C), so
       # coerce it to an augmented-rows matrix:
       mu_offs_oscale <- arr2augmat(mu_offs_oscale, margin_draws = 1)
-      n_aug <- nrow(mu_offs_oscale)
-    } else {
-      # In this case, `mu_offs_oscale` is a matrix (S x N). Transposing it to an
-      # N x S matrix would be more consistent with projpred's internal
-      # convention, but avoiding the transposition is computationally more
-      # efficient:
-      n_aug <- ncol(mu_offs_oscale)
+      # In the corresponding `else` case, `mu_offs_oscale` is a matrix (S x N).
+      # Transposing it to an N x S matrix would be more consistent with
+      # projpred's internal convention, but avoiding the transposition is
+      # computationally more efficient.
     }
   } else {
     loglik_forPSIS <- t(refmodel$family$ll_fun(
@@ -741,17 +738,21 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
   } else {
     mu_offs_mlvlRan <- refmodel$mu_offs
   }
-  mu_ref <- do.call(c, lapply(seq_len(nrow(mu_offs_mlvlRan)), function(i) {
+  mu_ref <- as.vector(do.call(rbind, lapply(seq_len(n), function(i) {
     # For the augmented-data projection, `mu_offs_mlvlRan` is an augmented-rows
     # matrix whereas the columns of `lw` refer to the original (non-augmented)
-    # observations. Since `i` refers to the rows of `mu_offs_mlvlRan`, the index
-    # for `lw` needs to be adapted:
-    i_nonaug <- i %% n
-    if (i_nonaug == 0) {
-      i_nonaug <- n
+    # observations. Since `i` refers to the columns of `lw` (we have
+    # `n == ncol(lw)`), the indices for `mu_offs_mlvlRan` need to be adapted:
+    i_aug <- i
+    if (!is.null(refmodel$family$cats)) {
+      i_aug <- i_aug + (seq_along(refmodel$family$cats) - 1L) * n
     }
-    mu_offs_mlvlRan[i, ] %*% exp(lw[, i_nonaug])
-  }))
+    i_flx <- i_aug
+    if (refmodel$family$for_latent && !is.null(refmodel$family$cats)) {
+      i_flx <- i
+    }
+    return(as.vector(mu_offs_mlvlRan[i_flx, ] %*% exp(lw[, i])))
+  })))
   mu_ref <- structure(
     mu_ref,
     nobs_orig = attr(mu_offs_mlvlRan, "nobs_orig"),
@@ -793,21 +794,21 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
     } else {
       mu_offs_mlvlRan_oscale <- mu_offs_oscale
     }
-    mu_ref_oscale <- do.call(c, lapply(seq_len(n_aug), function(i) {
-      i_nonaug <- i %% n
-      if (i_nonaug == 0) {
-        i_nonaug <- n
+    mu_ref_oscale <- as.vector(do.call(rbind, lapply(seq_len(n), function(i) {
+      i_aug <- i
+      if (!is.null(refmodel$family$cats)) {
+        i_aug <- i_aug + (seq_along(refmodel$family$cats) - 1L) * n
       }
       if (inherits(mu_offs_mlvlRan_oscale, "augmat")) {
-        return(mu_offs_mlvlRan_oscale[i, ] %*% exp(lw[, i_nonaug]))
+        return(as.vector(mu_offs_mlvlRan_oscale[i_aug, ] %*% exp(lw[, i])))
       } else {
         # In principle, we could use the same code for averaging across the
         # draws as above in the `"augmat"` case. However, that would require
         # `mu_offs_mlvlRan_oscale <- t(mu_offs_mlvlRan_oscale)` beforehand, so
         # the following should be more efficient:
-        return(exp(lw[, i_nonaug]) %*% mu_offs_mlvlRan_oscale[, i])
+        return(exp(lw[, i]) %*% mu_offs_mlvlRan_oscale[, i_aug])
       }
-    }))
+    })))
     mu_ref_oscale <- structure(
       mu_ref_oscale,
       nobs_orig = attr(mu_offs_mlvlRan_oscale, "nobs_orig"),

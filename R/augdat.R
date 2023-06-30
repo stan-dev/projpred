@@ -107,30 +107,66 @@ t.augvec <- function(x) {
 }
 
 # A method for subsetting an object of class `augmat` (mainly following
-# `[.factor`). This method keeps the `nobs_orig` attribute. It also keeps the
-# class, except if the result is a vector (in which case the class is changed
-# from `augmat` to `augvec`).
+# `[.factor`). This method keeps the `nobs_orig` attribute (modifying it if
+# necessary, see "Note" below). It also keeps the class, except if the result is
+# a vector (in which case the class is changed from `augmat` to `augvec`).
+#
+# Note: Subsetting the rows of an augmented-rows matrix is only legal in terms
+# of the observations (individuals), not in terms of the (possibly latent)
+# response categories.
 #' @noRd
 #' @export
 `[.augmat` <- function(x, ..., drop = TRUE) {
   x_out <- NextMethod("[")
-  attr(x_out, "nobs_orig") <- attr(x, "nobs_orig")
+  nobs_orig_x <- attr(x, "nobs_orig")
+  stopifnot(!is.null(nobs_orig_x))
+  n_discr <- nrow(x) / nobs_orig_x
+  stopifnot(is_wholenumber(n_discr))
+  n_discr <- as.integer(round(n_discr))
   cls_out <- oldClass(x)
   if (is.null(dim(x_out))) {
+    nobs_orig_x_out <- length(x_out) / n_discr
     cls_out <- sub("augmat", "augvec", cls_out, fixed = TRUE)
+  } else {
+    nobs_orig_x_out <- nrow(x_out) / n_discr
   }
+  if (isTRUE(getOption("projpred.check_nobs_orig", FALSE))) {
+    # This check is not run by default because it would require a custom str()
+    # and print() method for `augmat` objects and because there would be a high
+    # risk of false positive alarms if there are generics other than str() and
+    # print() which use a "head" of this matrix (or also if other functions
+    # iterate over the rows one-by-one and use subsetting for that).
+    stopifnot(is_wholenumber(nobs_orig_x_out))
+  }
+  nobs_orig_x_out <- as.integer(round(nobs_orig_x_out))
+  attr(x_out, "nobs_orig") <- nobs_orig_x_out
   class(x_out) <- cls_out
   return(x_out)
 }
 
 # A method for subsetting an object of class `augvec` (mainly following
-# `[.factor`). This method keeps the `nobs_orig` attribute and the class. It
-# should not be necessary, but it's probably safer to have it.
+# `[.factor`). This method keeps the `nobs_orig` attribute (modifying it if
+# necessary, see "Note" below) and the class.
+#
+# Note: Subsetting an augmented-length vector is only legal in terms of the
+# observations (individuals), not in terms of the (possibly latent) response
+# categories.
 #' @noRd
 #' @export
 `[.augvec` <- function(x, ..., drop = TRUE) {
   x_out <- NextMethod("[")
-  attr(x_out, "nobs_orig") <- attr(x, "nobs_orig")
+  nobs_orig_x <- attr(x, "nobs_orig")
+  stopifnot(!is.null(nobs_orig_x))
+  n_discr <- length(x) / nobs_orig_x
+  stopifnot(is_wholenumber(n_discr))
+  n_discr <- as.integer(round(n_discr))
+  nobs_orig_x_out <- length(x_out) / n_discr
+  if (isTRUE(getOption("projpred.check_nobs_orig", FALSE))) {
+    # See `[.augmat` for why this check is not run by default.
+    stopifnot(is_wholenumber(nobs_orig_x_out))
+  }
+  nobs_orig_x_out <- as.integer(round(nobs_orig_x_out))
+  attr(x_out, "nobs_orig") <- nobs_orig_x_out
   class(x_out) <- oldClass(x)
   return(x_out)
 }
