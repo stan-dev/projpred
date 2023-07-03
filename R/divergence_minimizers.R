@@ -502,7 +502,7 @@ control_callback <- function(family, ...) {
 
 # Needed to avoid a NOTE in `R CMD check`:
 if (getRversion() >= package_version("2.15.1")) {
-  utils::globalVariables("s")
+  utils::globalVariables("projpred_w_aug_s")
   utils::globalVariables("projpred_internal_w_aug")
 }
 
