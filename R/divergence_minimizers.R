@@ -502,7 +502,7 @@ control_callback <- function(family, ...) {
 
 # Needed to avoid a NOTE in `R CMD check`:
 if (getRversion() >= package_version("2.15.1")) {
-  utils::globalVariables("s")
+  utils::globalVariables("projpred_w_aug_s")
   utils::globalVariables("projpred_internal_w_aug")
 }
 
@@ -555,6 +555,11 @@ divmin_augdat <- function(formula, data, family, weights, projpred_var,
     stop("Family `", family$family, "` is not supported by divmin_augdat().")
   }
 
+  # Coerce augmented-data matrices to ordinary matrices and augmented-length
+  # vectors to ordinary vectors so that external packages may subset as usual:
+  projpred_ws_aug <- unclass(projpred_ws_aug)
+  attr(projpred_ws_aug, "nobs_orig") <- NULL
+
   if (ncol(projpred_ws_aug) < getOption("projpred.prll_prj_trigger", Inf)) {
     # Sequential case. Actually, we could simply use ``%do_projpred%` <-
     # foreach::`%do%`` here and then proceed as in the parallel case, but that
@@ -584,22 +589,20 @@ divmin_augdat <- function(formula, data, family, weights, projpred_var,
     if (!requireNamespace("foreach", quietly = TRUE)) {
       stop("Please install the 'foreach' package.")
     }
-    # Unfortunately, iterators::iter() seems to conflict with augmented-data
-    # matrices (see note below). Thus, `requireNamespace("iterators")` is not
-    # necessary here.
+    if (!requireNamespace("iterators", quietly = TRUE)) {
+      stop("Please install the 'iterators' package.")
+    }
     dot_args <- list(...)
     `%do_projpred%` <- foreach::`%dopar%`
     return(foreach::foreach(
-      # Unfortunately, iterators::iter() seems to conflict with augmented-data
-      # matrices, even if using unclass(). Thus, iterate over the indices:
-      s = seq_len(ncol(projpred_ws_aug)),
+      projpred_w_aug_s = iterators::iter(projpred_ws_aug, by = "column"),
       .export = c(
-        "sdivmin", "formula", "data", "family", "projpred_ws_aug",
-        "projpred_formula_no_random", "projpred_random", "dot_args"
+        "sdivmin", "formula", "data", "family", "projpred_formula_no_random",
+        "projpred_random", "dot_args"
       ),
       .noexport = c(
         "object", "p_sel", "p_pred", "search_path", "p_ref", "refmodel",
-        "linkobjs"
+        "projpred_var", "projpred_ws_aug", "linkobjs"
       )
     ) %do_projpred% {
       do.call(
@@ -607,7 +610,7 @@ divmin_augdat <- function(formula, data, family, weights, projpred_var,
         c(list(formula = formula,
                data = data,
                family = family,
-               weights = projpred_ws_aug[, s],
+               weights = as.vector(projpred_w_aug_s),
                projpred_formula_no_random = projpred_formula_no_random,
                projpred_random = projpred_random),
           dot_args)

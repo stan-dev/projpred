@@ -237,7 +237,7 @@ weighted_summary_means <- function(y_wobs_test, family, wdraws, mu, dis, cl_ref,
         val <- res_ref$value + res_diff$value
         val.se <- sqrt(res_ref$se^2 + res_diff$se^2)
         if (stat %in% c("rmse", "auc")) {
-          # TODO (subsampling LOO-CV): Use bootstrap for lower and upper
+          # TODO (subsampled PSIS-LOO CV): Use bootstrap for lower and upper
           # confidence interval bounds.
           warning("Lower and upper confidence interval bounds of performance ",
                   "statistic `", stat, "` are based on a normal ",
@@ -291,9 +291,9 @@ check_sub_NA <- function(summ_sub_k, el_nm) {
 ## ..., N and N denoting the number of observations) contains the weight of the
 ## CV fold that observation i is in. In case of varsel() output, this is `NULL`.
 ## Currently, these `wcv` are nonconstant (and not `NULL`) only in case of
-## subsampled LOO CV. The actual observation weights (specified by the user) are
-## contained in `y_wobs_test$wobs`. These are already taken into account by
-## `<refmodel_object>$family$ll_fun()` (or
+## subsampled PSIS-LOO CV. The actual observation weights (specified by the
+## user) are contained in `y_wobs_test$wobs`. These are already taken into
+## account by `<refmodel_object>$family$ll_fun()` (or
 ## `<refmodel_object>$family$latent_ll_oscale()`) and are thus already taken
 ## into account in `lppd`. However, `mu` does not take them into account, so
 ## some further adjustments are necessary below.

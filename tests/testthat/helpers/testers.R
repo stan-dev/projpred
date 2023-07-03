@@ -2296,7 +2296,7 @@ vsel_tester <- function(
     expect_identical(dim(vs$solution_terms_cv),
                      c(n_folds, solterms_len_expected),
                      info = info_str)
-    # We need the addition of `NA_character_` because of subsampled LOO CV:
+    # We need the addition of `NA_character_` because of subsampled PSIS-LOO CV:
     expect_true(
       all(vs$solution_terms_cv %in% c(trms_universe_split, NA_character_)),
       info = info_str

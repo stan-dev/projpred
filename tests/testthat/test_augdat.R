@@ -55,6 +55,8 @@ test_that("t.augmat()", {
 ## `[.augmat`() -----------------------------------------------------------
 
 test_that("`[.augmat`()", {
+  # Subsetting:
+  # Subsetting with selection of all elements:
   expect_identical(augmtst[], augmtst)
   # Subsetting columns:
   expect_identical(augmtst[, 1:2],
@@ -70,25 +72,36 @@ test_that("`[.augmat`()", {
                    structure(head(xtst, nobs_orig_tst * ncat_tst),
                              nobs_orig = nobs_orig_tst,
                              class = "augvec"))
-  # Subsetting rows (in fact, this is not of interest, at least currently):
-  xrow1 <- xtst[nobs_orig_tst * ncat_tst * (seq_len(ndraws_tst) - 1L) + 1L]
-  expect_identical(augmtst[1, , drop = FALSE],
-                   structure(t(xrow1),
-                             nobs_orig = nobs_orig_tst,
+  # Subsetting rows:
+  xrows1 <- xtst[as.vector(t(sapply(
+    nobs_orig_tst * (seq_len(ncat_tst) - 1L) + 1L,
+    function(idx) {
+      nobs_orig_tst * ncat_tst * (seq_len(ndraws_tst) - 1L) + idx
+    }
+  )))]
+  xrows1 <- matrix(xrows1, nrow = ncat_tst)
+  expect_identical(augmtst[nobs_orig_tst * (seq_len(ncat_tst) - 1L) + 1L, ,
+                           drop = FALSE],
+                   structure(xrows1,
+                             nobs_orig = 1L,
                              class = "augmat"))
-  expect_identical(augmtst[1, ],
-                   structure(xrow1,
-                             nobs_orig = nobs_orig_tst,
-                             class = "augvec"))
+  expect_error(augmtst[1, ], "is_wholenumber.+ is not TRUE")
+  expect_error(augmtst[1, , drop = FALSE], "is_wholenumber.+ is not TRUE")
   # Subsetting rows and columns:
-  expect_identical(augmtst[1:2, 1:2],
-                   structure(arrtst[1:2, 1, 1:2],
-                             nobs_orig = nobs_orig_tst,
-                             class = "augmat"))
-  expect_identical(augmtst[1, 1],
-                   structure(head(xtst, 1),
-                             nobs_orig = nobs_orig_tst,
+  expect_identical(
+    augmtst[sort(c(nobs_orig_tst * (seq_len(ncat_tst) - 1L) + 1L,
+                   nobs_orig_tst * (seq_len(ncat_tst) - 1L) + 2L)), 1:2],
+    structure(cbind(as.vector(arrtst[1:2, , 1]), as.vector(arrtst[1:2, , 2])),
+              nobs_orig = 2L,
+              class = "augmat")
+  )
+  expect_identical(augmtst[nobs_orig_tst * (seq_len(ncat_tst) - 1L) + 1L, 1],
+                   structure(xrows1[, 1],
+                             nobs_orig = 1L,
                              class = "augvec"))
+  expect_error(augmtst[1:3, 1:2], "is_wholenumber.+ is not TRUE")
+  expect_error(augmtst[1, 1], "is_wholenumber.+ is not TRUE")
+  expect_error(augmtst[1, 1, drop = FALSE], "is_wholenumber.+ is not TRUE")
 
   # Assigning:
   augmtst[1, 1] <- 0
@@ -119,18 +132,17 @@ test_that("t.augvec()", {
 ## `[.augvec`() -----------------------------------------------------------
 
 test_that("`[.augvec`()", {
+  # Subsetting:
   expect_identical(augvtst[], augvtst)
-  expect_identical(augvtst[1:2],
-                   structure(head(xtst, 2),
-                             nobs_orig = nobs_orig_tst,
+  xrows1_1 <- xtst[nobs_orig_tst * (seq_len(ncat_tst) - 1L) + 1L]
+  expect_identical(augvtst[nobs_orig_tst * (seq_len(ncat_tst) - 1L) + 1L],
+                   structure(xrows1_1,
+                             nobs_orig = 1L,
                              class = "augvec"))
-  expect_identical(augvtst[1],
-                   structure(head(xtst, 1),
-                             nobs_orig = nobs_orig_tst,
-                             class = "augvec"))
+  expect_error(augvtst[1], "is_wholenumber.+ is not TRUE")
   expect_identical(augvtst[integer()],
-                   structure(head(xtst, 0),
-                             nobs_orig = nobs_orig_tst,
+                   structure(integer(),
+                             nobs_orig = 0L,
                              class = "augvec"))
 
   # Assigning:
