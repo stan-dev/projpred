@@ -351,8 +351,10 @@
 #'         newdata <- dat_gauss
 #'       }
 #'
-#'       args <- projpred:::nlist(object, newdata, wrhs, orhs, resp_form)
-#'       return(projpred::do_call(projpred:::.extract_model_data, args))
+#'       return(projpred:::.extract_model_data(
+#'         object = object, newdata = newdata, wrhs = wrhs, orhs = orhs,
+#'         resp_form = resp_form
+#'       ))
 #'     },
 #'     cvfun = function(folds) {
 #'       kfold(
@@ -712,8 +714,8 @@ get_refmodel.default <- function(object, formula, family = NULL, ...) {
   extract_model_data <- function(object, newdata = NULL, wrhs = NULL,
                                  orhs = NULL, extract_y = TRUE) {
     resp_form <- if (!extract_y) NULL else lhs(formula)
-    args <- nlist(object, newdata, wrhs, orhs, resp_form)
-    return(do_call(.extract_model_data, args))
+    return(.extract_model_data(object = object, newdata = newdata, wrhs = wrhs,
+                               orhs = orhs, resp_form = resp_form))
   }
 
   refmodel <- init_refmodel(
@@ -827,13 +829,11 @@ get_refmodel.stanreg <- function(object, latent = FALSE, dis = NULL, ...) {
     if (!extract_y) {
       resp_form <- NULL
     }
-
     if (is.null(newdata)) {
       newdata <- data
     }
-
-    args <- nlist(object, newdata, wrhs, orhs, resp_form)
-    return(do_call(.extract_model_data, args))
+    return(.extract_model_data(object = object, newdata = newdata, wrhs = wrhs,
+                               orhs = orhs, resp_form = resp_form))
   }
 
   ref_predfun <- function(fit, newdata = NULL) {

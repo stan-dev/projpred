@@ -412,8 +412,10 @@ if (requireNamespace("rstanarm", quietly = TRUE)) {
         newdata <- dat_gauss
       }
 
-      args <- projpred:::nlist(object, newdata, wrhs, orhs, resp_form)
-      return(projpred::do_call(projpred:::.extract_model_data, args))
+      return(projpred:::.extract_model_data(
+        object = object, newdata = newdata, wrhs = wrhs, orhs = orhs,
+        resp_form = resp_form
+      ))
     },
     cvfun = function(folds) {
       kfold(

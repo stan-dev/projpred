@@ -660,8 +660,8 @@ test_that(paste(
       }
     }
 
-    args <- nlist(object, newdata, wrhs, orhs, resp_form)
-    return(do_call(.extract_model_data, args))
+    return(.extract_model_data(object = object, newdata = newdata, wrhs = wrhs,
+                               orhs = orhs, resp_form = resp_form))
   }
 
   for (i in seq_along(fams)) {
