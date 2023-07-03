@@ -19,11 +19,11 @@
 #'   contrast to a standard LOO CV). In the `"kfold"` case, a \eqn{K}-fold CV is
 #'   performed.
 #' @param nloo **Caution:** Still experimental. Only relevant if `cv_method =
-#'   "LOO"`. Number of subsampled LOO CV folds, i.e., number of observations
-#'   used for the LOO CV (anything between 1 and the original number of
-#'   observations). Smaller values lead to faster computation but higher
-#'   uncertainty in the evaluation part. If `NULL`, all observations are used,
-#'   but for faster experimentation, one can set this to a smaller value.
+#'   "LOO"`. Number of subsampled PSIS-LOO CV folds, i.e., number of
+#'   observations used for the LOO CV (anything between 1 and the original
+#'   number of observations). Smaller values lead to faster computation but
+#'   higher uncertainty in the evaluation part. If `NULL`, all observations are
+#'   used, but for faster experimentation, one can set this to a smaller value.
 #' @param K Only relevant if `cv_method = "kfold"` and if the reference model
 #'   was created with `cvfits` being `NULL` (which is the case for
 #'   [get_refmodel.stanreg()] and [brms::get_refmodel.brmsfit()]). Number of
@@ -44,9 +44,9 @@
 #'   `NA`, then the PRNG state is reset (to the state before calling
 #'   [cv_varsel()]) upon exiting [cv_varsel()]. Here, `seed` is used for
 #'   clustering the reference model's posterior draws (if `!is.null(nclusters)`
-#'   or `!is.null(nclusters_pred)`), for subsampling LOO CV folds (if `nloo` is
-#'   smaller than the number of observations), for sampling the folds in
-#'   \eqn{K}-fold CV, and for drawing new group-level effects when predicting
+#'   or `!is.null(nclusters_pred)`), for subsampling PSIS-LOO CV folds (if
+#'   `nloo` is smaller than the number of observations), for sampling the folds
+#'   in \eqn{K}-fold CV, and for drawing new group-level effects when predicting
 #'   from a multilevel submodel (however, not yet in case of a GAMM).
 #' @param parallel A single logical value indicating whether to run costly parts
 #'   of the CV in parallel (`TRUE`) or not (`FALSE`). See also section "Note"
@@ -425,7 +425,7 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
   if (nloo < 1) {
     stop("nloo must be at least 1")
   } else if (nloo < n) {
-    warning("Subsampled LOO CV is still experimental.")
+    warning("Subsampled PSIS-LOO CV is still experimental.")
   }
   # validset <- loo_subsample(n, nloo, pareto_k)
   loo_ref_oscale <- apply(loglik_forPSIS + lw, 2, log_sum_exp)

@@ -97,11 +97,11 @@ used for each predictor.}
 \item{verbose}{A single logical value indicating whether to print out
 additional information during the computations.}
 
-\item{nloo}{\strong{Caution:} Still experimental. Only relevant if \code{cv_method = "LOO"}. Number of subsampled LOO CV folds, i.e., number of observations
-used for the LOO CV (anything between 1 and the original number of
-observations). Smaller values lead to faster computation but higher
-uncertainty in the evaluation part. If \code{NULL}, all observations are used,
-but for faster experimentation, one can set this to a smaller value.}
+\item{nloo}{\strong{Caution:} Still experimental. Only relevant if \code{cv_method = "LOO"}. Number of subsampled PSIS-LOO CV folds, i.e., number of
+observations used for the LOO CV (anything between 1 and the original
+number of observations). Smaller values lead to faster computation but
+higher uncertainty in the evaluation part. If \code{NULL}, all observations are
+used, but for faster experimentation, one can set this to a smaller value.}
 
 \item{K}{Only relevant if \code{cv_method = "kfold"} and if the reference model
 was created with \code{cvfits} being \code{NULL} (which is the case for
@@ -143,9 +143,9 @@ results can be obtained again if needed. Passed to argument \code{seed} of
 \code{NA}, then the PRNG state is reset (to the state before calling
 \code{\link[=cv_varsel]{cv_varsel()}}) upon exiting \code{\link[=cv_varsel]{cv_varsel()}}. Here, \code{seed} is used for
 clustering the reference model's posterior draws (if \code{!is.null(nclusters)}
-or \code{!is.null(nclusters_pred)}), for subsampling LOO CV folds (if \code{nloo} is
-smaller than the number of observations), for sampling the folds in
-\eqn{K}-fold CV, and for drawing new group-level effects when predicting
+or \code{!is.null(nclusters_pred)}), for subsampling PSIS-LOO CV folds (if
+\code{nloo} is smaller than the number of observations), for sampling the folds
+in \eqn{K}-fold CV, and for drawing new group-level effects when predicting
 from a multilevel submodel (however, not yet in case of a GAMM).}
 
 \item{search_terms}{Only relevant for forward search. A custom character

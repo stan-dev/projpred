@@ -20,7 +20,7 @@ If you read this from a place other than <https://mc-stan.org/projpred/news/inde
 * Fixed a bug in the printed number of projected draws for the performance evaluation when calling `print.vselsummary()` based on output from `varsel()` with `refit_prj = FALSE`.
 * Fixed a bug sometimes causing an error when predicting from a submodel that is a GLM and has interactions. (GitHub: #420)
 * Fixed a bug introduced in version 2.6.0, causing an incompatibility of K-fold CV with R versions < 4.2.0. (GitHub: #423, #427)
-* Fixed a bug for the augmented-data projection in combination with subsampled LOO. (GitHub: #433)
+* Fixed a bug for the augmented-data projection in combination with subsampled PSIS-LOO CV. (GitHub: #433)
 
 # projpred 2.6.0
 
@@ -212,7 +212,7 @@ If you read this from a place other than <https://mc-stan.org/projpred/news/inde
 
 ## Major changes
 
-* Added support for weighted LOO proportional-to-size subsampling based on [Magnusson et al. (2019)](https://proceedings.mlr.press/v97/magnusson19a.html). However, subsampled LOO CV is now regarded as experimental. Therefore, a corresponding warning is thrown when calling `cv_varsel()` with `nloo < n` where `n` denotes the number of observations. (GitHub: #94, #252, commit feea39e)
+* Added support for weighted LOO proportional-to-size subsampling based on [Magnusson et al. (2019)](https://proceedings.mlr.press/v97/magnusson19a.html). However, subsampled PSIS-LOO CV is currently regarded as experimental. Therefore, a corresponding warning is thrown when calling `cv_varsel()` with `nloo < n` where `n` denotes the number of observations. (GitHub: #94, #252, commit feea39e)
 * Automatically explore both linear and smooths components in GAM models. This allows the user to gauge the impact of the smooth term against its linear counterpart.
 * Fast approximate LOO computation for `validate_search = FALSE` in `cv_varsel()`.
 * Formerly, the defaults for arguments `nclusters` (= `1`) and `nclusters_pred` (= `5`) of `varsel()` and `cv_varsel()` were set internally (the user-visible defaults were `NULL`). Now, `nclusters` and `ndraws_pred` (note the `ndraws_pred`, not `nclusters_pred`) have non-`NULL` user-visible defaults of `20` and `400`, respectively. In general, this increases the runtime of these functions a lot. With respect to `cv_varsel()`, the new vignette (see [vignettes](https://mc-stan.org/projpred/articles/)) mentions two ways to quickly obtain some rough preliminary results which in general should not be used as final results, though: (i) `varsel()` and (ii) `cv_varsel()` with `validate_search = FALSE` (which only takes effect for `cv_method = "LOO"`). (GitHub: #291 and several commits beforehand, in particular bbd0f0a, babe031, 4ef95d3, and ce7d1e0)

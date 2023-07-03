@@ -2393,7 +2393,7 @@ cv_proportions.ranking <- function(object, cumulate = FALSE, ...) {
   cv_props <- do.call(cbind, lapply(
     setNames(nm = object[["fulldata"]]),
     function(predictor_j) {
-      # We need `na.rm = TRUE` for subsampled LOO CV:
+      # We need `na.rm = TRUE` for subsampled PSIS-LOO CV:
       colMeans(cv_paths == predictor_j, na.rm = TRUE)
     }
   ))
