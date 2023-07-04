@@ -394,7 +394,32 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
   n <- ncol(loglik_forPSIS)
 
   # PSIS-LOO CV weights:
-  psisloo <- loo::psis(-loglik_forPSIS, cores = 1, r_eff = NA)
+  # TODO: Check for small number of draws and other loo::psis() warnings.
+  # Alternatively, see if utils::capture.output() can be used (search for other
+  # occurrences of it).
+  psisloo <- suppressWarnings(loo::psis(-loglik_forPSIS, cores = 1, r_eff = NA))
+  pareto_n07 <- sum(loo::pareto_k_values(psisloo) > 0.7)
+  if (pareto_n07 > 0) {
+    # Within projpred, moment matching and mixture importance sampling (as well
+    # as reference model refits leaving out each problematic observation in
+    # turn, i.e., brms's `reloo` argument) currently cannot be used because all
+    # these techniques result in new MCMC draws for the reference model, meaning
+    # that the projection would have to be adapted. Therefore, it is easier to
+    # recommend K-fold CV (for the reference model refits, i.e., brms's `reloo`
+    # argument, another reason is that they can quickly become as costly as
+    # K-fold CV).
+    warning(
+      "In the calculation of the reference model's PSIS-LOO CV weights, ",
+      pareto_n07, " (out of ", n, ") Pareto k-value(s) exceeded the threshold ",
+      "of 0.7. Moment matching (see the loo package), mixture importance ",
+      "sampling (see the loo package), and `reloo`-ing (see the brms package) ",
+      "are not supported by projpred. If these techniques (run outside of ",
+      "projpred, i.e., for the reference model only; note that `reloo`-ing ",
+      "may be computationally costly) result in a markedly different ",
+      "reference model ELPD estimate than ordinary PSIS-LOO CV does, we ",
+      "recommend to use K-fold CV within projpred."
+    )
+  }
   lw <- weights(psisloo)
   # pareto_k <- loo::pareto_k_values(psisloo)
 
@@ -412,10 +437,17 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
       psis_object = psisloo,
       log_ratios = -loglik_forPSIS
     )
-    if (any(y_lat_E$pareto_k > 0.7)) {
-      warning("In the recalculation of the latent response values, ",
-              sum(y_lat_E$pareto_k > 0.7), " (of ", n, ") Pareto k-value(s) ",
-              "exceeded the threshold of 0.7.")
+    pareto_n07_y_lat <- sum(y_lat_E$pareto_k > 0.7)
+    if (pareto_n07_y_lat > 0) {
+      # The k-values are h-specific (expectation-specific) here (see Vehtari et
+      # al., 2022, <https://doi.org/10.48550/arXiv.1507.02646>, beginning of
+      # section 3, section 3.2.8, appendix D, and appendix E).
+      warning(
+        "In the recalculation of the latent response values, ",
+        pareto_n07_y_lat, " (out of ", n, ") expectation-specific Pareto ",
+        "k-value(s) exceeded the threshold of 0.7. In general, we recommend ",
+        "K-fold CV in this case."
+      )
     }
     refmodel$y <- y_lat_E$value
   }
@@ -525,10 +557,92 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
         refmodel$y[inds], refmodel$wobs[inds]
       ))
     }
+    # Usually, we have a small number of projected draws here (400 by default),
+    # which means that the 'loo' package will automatically perform the
+    # regularization from Vehtari et al. (2022,
+    # <https://doi.org/10.48550/arXiv.1507.02646>, appendix G). However, users
+    # may request a number of projected draws that is much smaller than 400,
+    # which can be problematic for PSIS. Thus, `no_psis_eval` (see below)
+    # indicates whether loo::psis() performs the Pareto smoothing or not (see
+    # loo:::n_pareto() and loo:::enough_tail_samples(), keeping in mind that we
+    # have `r_eff = 1` for all observations here).
+    # TODO: Use loo::sis() if the projected draws (i.e., the draws resulting
+    # from the clustering or thinning) have nonconstant weights.
+    S_for_psis_eval <- nrow(log_lik_ref)
+    no_psis_eval <- ceiling(min(0.2 * S_for_psis_eval,
+                                3 * sqrt(S_for_psis_eval))) < 5
+    if (no_psis_eval) { # TODO: Add a global option here.
+      warn_sis_eval <- paste0(
+        "In the recalculation of the reference model's PSIS-LOO CV weights ",
+        "for the performance evaluation, the number of draws after clustering ",
+        "or thinning is too small for Pareto smoothing. Using standard ",
+        "importance sampling (SIS) instead."
+      )
+      if (pareto_n07 == 0) {
+        warn_sis_eval <- paste0(
+          warn_sis_eval,
+          " Since there were no k-values > 0.7 in the complete-draws Pareto ",
+          "smoothing, we recommend to increase the number of draws resulting ",
+          "from the clustering or thinning for the performance evaluation ",
+          "until this warning disappears (or to use K-fold CV)."
+        )
+      } else {
+        warn_sis_eval <- paste0(
+          warn_sis_eval,
+          " Since there were k-values > 0.7 in the complete-draws Pareto ",
+          "smoothing, we recommend to perform the checks mentioned in the ",
+          "complete-draws warning message and, if these checks reveal that ",
+          "the complete-draws Pareto smoothing can be used, to increase the ",
+          "number of draws resulting from the clustering or thinning for the ",
+          "performance evaluation until this warning disappears (or rather ",
+          "until this warning is replaced with another warning). If these ",
+          "checks reveal that the complete-draws Pareto smoothing should not ",
+          "be used, then we recommend to use K-fold CV."
+        )
+      }
+      warning(warn_sis_eval)
+    }
     sub_psisloo <- suppressWarnings(
       loo::psis(-log_lik_ref, cores = 1, r_eff = NA)
     )
-    lw_sub <- suppressWarnings(weights(sub_psisloo))
+    pareto_n07_eval <- sum(loo::pareto_k_values(sub_psisloo) > 0.7)
+    if (pareto_n07_eval > 0) {
+      warn_khat_eval <- paste0(
+        "In the recalculation of the reference model's PSIS-LOO CV weights ",
+        "for the performance evaluation (based on clustered or thinned ",
+        "posterior draws), ", pareto_n07_eval, " (out of ", nloo, ") Pareto ",
+        "k-value(s) exceeded the threshold of 0.7."
+      )
+      if (pareto_n07 == 0) {
+        warn_khat_eval <- paste0(
+          warn_khat_eval,
+          " Since there were no k-values > 0.7 in the complete-draws Pareto ",
+          "smoothing, we recommend to increase the number of draws resulting ",
+          "from the clustering or thinning for the performance evaluation ",
+          "until this warning disappears (or to use K-fold CV)."
+        )
+      } else {
+        if (S_for_psis_eval == nrow(loglik_forPSIS)) {
+          recomm <- "ignore this warning"
+        } else {
+          recomm <- paste0(
+            "increase the number of draws resulting from the clustering or ",
+            "thinning for the performance evaluation"
+          )
+        }
+        warn_khat_eval <- paste0(
+          warn_khat_eval,
+          " Since there were k-values > 0.7 in the complete-draws Pareto ",
+          "smoothing, we recommend to perform the checks mentioned in the ",
+          "complete-draws warning message and, if these checks reveal that ",
+          "the complete-draws Pareto smoothing can be used, to ", recomm, ". ",
+          "If these checks reveal that the complete-draws Pareto smoothing ",
+          "should not be used, then we recommend to use K-fold CV."
+        )
+      }
+      warning(warn_khat_eval)
+    }
+    lw_sub <- weights(sub_psisloo)
     # Take into account that clustered draws usually have different weights:
     lw_sub <- lw_sub + log(refdist_eval$wdraws_prj)
     # This re-weighting requires a re-normalization (as.array() is applied to
