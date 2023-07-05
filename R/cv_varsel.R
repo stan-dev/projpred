@@ -1210,7 +1210,11 @@ get_kfold <- function(refmodel, K, verbose) {
       }
       folds <- cv_folds(refmodel$nobs, K = K,
                         seed = sample.int(.Machine$integer.max, 1))
-      cvfits <- refmodel$cvfun(folds)
+      if (getOption("projpred.warn_kfold_refits", TRUE)) {
+        cvfits <- refmodel$cvfun(folds)
+      } else {
+        cvfits <- suppressWarnings(refmodel$cvfun(folds))
+      }
       verb_out("-----", verbose = verbose)
     } else {
       stop("For a reference model which is not of class `datafit`, either ",
