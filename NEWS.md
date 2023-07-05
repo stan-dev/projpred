@@ -15,6 +15,7 @@ If you read this from a place other than <https://mc-stan.org/projpred/news/inde
 * Added warnings for most of the problems described in section ["Troubleshooting"](https://mc-stan.org/projpred/articles/projpred.html#troubleshooting) of the main vignette. (GitHub: #431)
 * Output element `p_type` of `project()` has been removed. Instead, output element `const_wdraws_prj` has been added, but its definition is essentially the inverse of former element `p_type` (see the updated documentation of `project()`'s output). This should not be a breaking change for users (as `p_type` was mainly intended for internal use and the new element `const_wdraws_prj` is so, too) but this slightly enhances the cases where `as.matrix.projection()` throws a warning concerning the weights of the projected draws and the cases where `proj_predict()` resamples from the projected draws using argument `nresample_clusters`. (GitHub: #432)
 * Function `do_call()` is deprecated and will be removed in a future release. Where possible, please use direct function calls instead. If this is not possible, please use `do.call()` instead.
+* Improved the handling of PSIS-LOO CV warnings. (GitHub: #434)
 
 ## Bug fixes
 
