@@ -1152,10 +1152,20 @@ test_that("`refit_prj` works", {
   for (tstsetup in tstsetups) {
     args_cvvs_i <- args_cvvs[[tstsetup]]
     args_cvvs_i$refit_prj <- FALSE
-    cvvs_reuse <- do.call(cv_varsel, c(
-      list(object = refmods[[args_cvvs_i$tstsetup_ref]]),
-      excl_nonargs(args_cvvs_i)
-    ))
+    if (args_cvvs_i$prj_nm == "augdat" && args_cvvs_i$fam_nm == "cumul") {
+      warn_expected <- "non-integer #successes in a binomial glm!"
+    } else if (!is.null(args_cvvs_i$avoid.increase)) {
+      warn_expected <- warn_mclogit
+    } else {
+      warn_expected <- NA
+    }
+    expect_warning(
+      cvvs_reuse <- do.call(cv_varsel, c(
+        list(object = refmods[[args_cvvs_i$tstsetup_ref]]),
+        excl_nonargs(args_cvvs_i)
+      )),
+      warn_expected
+    )
     mod_crr <- args_cvvs_i$mod_nm
     fam_crr <- args_cvvs_i$fam_nm
     prj_crr <- args_cvvs_i$prj_nm
