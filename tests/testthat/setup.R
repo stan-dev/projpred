@@ -865,6 +865,8 @@ meth_tst <- list(
 )
 # Suppress the PSIS warnings:
 options(projpred.warn_psis = FALSE)
+# Suppress the subsampled PSIS-LOO CV warnings:
+options(projpred.warn_subsampled_loo = FALSE)
 # Suppress the warning for interaction terms being selected before all involved
 # main effects have been selected (only concerns L1 search):
 options(projpred.warn_L1_interactions = FALSE)
