@@ -1960,6 +1960,12 @@ get_subparams.mmblogit <- function(x, ...) {
 #'   Either `"auto"`, `"rstanarm"`, or `"brms"`, where `"auto"` chooses
 #'   `"rstanarm"` or `"brms"` based on the class of the reference model fit (and
 #'   uses `"rstanarm"` if the reference model fit is of an unknown class).
+#' @param allow_nonconst_weights A single logical value indicating whether to
+#'   allow the return of projected draws with different (i.e., nonconstant)
+#'   weights (`TRUE`) or not (`FALSE`). **CAUTION**: Expert use only because if
+#'   set to `TRUE`, the weights of the projected draws are stored in an
+#'   attribute `wdraws_prj` and handling this attribute requires special care
+#'   (e.g., when subsetting the returned matrix).
 #' @param ... Currently ignored.
 #'
 #' @details In case of the augmented-data projection for a multilevel submodel
@@ -1970,7 +1976,10 @@ get_subparams.mmblogit <- function(x, ...) {
 #'
 #' @return An \eqn{S_{\mathrm{prj}} \times Q}{S_prj x Q} matrix of projected
 #'   draws, with \eqn{S_{\mathrm{prj}}}{S_prj} denoting the number of projected
-#'   draws and \eqn{Q} the number of parameters.
+#'   draws and \eqn{Q} the number of parameters. If `allow_nonconst_weights` is
+#'   set to `TRUE`, the weights of the projected draws are stored in an
+#'   attribute `wdraws_prj`. (If `allow_nonconst_weights` is `FALSE`, projected
+#'   draws with nonconstant weights cause an error.)
 #'
 #' @examples
 #' if (requireNamespace("rstanarm", quietly = TRUE)) {
@@ -2020,15 +2029,17 @@ get_subparams.mmblogit <- function(x, ...) {
 #'
 #' @method as.matrix projection
 #' @export
-as.matrix.projection <- function(x, nm_scheme = "auto", ...) {
+as.matrix.projection <- function(x, nm_scheme = "auto",
+                                 allow_nonconst_weights = FALSE, ...) {
   if (inherits(x$refmodel, "datafit")) {
     stop("as.matrix.projection() does not work for objects based on ",
          "\"datafit\"s.")
   }
-  if (!x$const_wdraws_prj) {
-    warning("The projected draws have different (i.e., nonconstant) weights. ",
-            "Therefore, the results from this as.matrix() method should not ",
-            "be used without taking these weights into account.")
+  if (!x$const_wdraws_prj && !allow_nonconst_weights) {
+    stop("The projected draws have different (i.e., nonconstant) weights, so ",
+         "please use `allow_nonconst_weights = TRUE` (and then don't forget ",
+         "that all downstream analyses need to take the weights into account) ",
+         "or posterior::as_draws_matrix(), the latter being recommended.")
   }
   if (identical(nm_scheme, "auto")) {
     if (inherits(x$refmodel$fit, "brmsfit")) {
@@ -2040,6 +2051,9 @@ as.matrix.projection <- function(x, nm_scheme = "auto", ...) {
   stopifnot(nm_scheme %in% c("rstanarm", "brms"))
   res <- do.call(rbind, lapply(x$outdmin, get_subparams, nm_scheme = nm_scheme))
   if (x$refmodel$family$family == "gaussian") res <- cbind(res, sigma = x$dis)
+  if (!x$const_wdraws_prj) {
+    attr(res, "wdraws_prj") <- x[["wdraws_prj"]]
+  }
   return(res)
 }
 
