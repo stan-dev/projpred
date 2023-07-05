@@ -473,7 +473,7 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
   nloo <- min(nloo, n)
   if (nloo < 1) {
     stop("nloo must be at least 1")
-  } else if (nloo < n) {
+  } else if (nloo < n && getOption("projpred.warn_subsampled_loo", TRUE)) {
     warning("Subsampled PSIS-LOO CV is still experimental.")
   }
   # validset <- loo_subsample(n, nloo, pareto_k)
