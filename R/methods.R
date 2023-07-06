@@ -2057,6 +2057,89 @@ as.matrix.projection <- function(x, nm_scheme = "auto",
   return(res)
 }
 
+#' Extract projected parameter draws and coerce to `draws_matrix` (see package
+#' \pkg{posterior})
+#'
+#' This is the [posterior::as_draws_matrix()] method for `projection` objects
+#' (returned by [project()], possibly as elements of a `list`). It extracts the
+#' projected parameter draws and returns them as a `draws_matrix`. In case of
+#' different (i.e., nonconstant) weights for the projected draws, this
+#' [posterior::as_draws_matrix()] method allows for a safer handling of these
+#' weights (safer in contrast to [as.matrix.projection()]) and provides the
+#' natural input for [posterior::resample_draws()].
+#'
+#' @param x An object of class `projection` (returned by [project()], possibly
+#'   as elements of a `list`).
+#' @param ... Arguments passed to [as.matrix.projection()], except for
+#'   `allow_nonconst_weights`.
+#'
+#' @inherit as.matrix.projection details
+#'
+#' @return An \eqn{S_{\mathrm{prj}} \times Q}{S_prj x Q} `draws_matrix` (see
+#'   [posterior::draws_matrix()]) of projected draws, with
+#'   \eqn{S_{\mathrm{prj}}}{S_prj} denoting the number of projected draws and
+#'   \eqn{Q} the number of parameters. If the projected draws have nonconstant
+#'   weights, [posterior::weight_draws()] is applied internally.
+#'
+#' @examples
+#' if (requireNamespace("rstanarm", quietly = TRUE) &&
+#'     requireNamespace("posterior", quietly = TRUE)) {
+#'   # Data:
+#'   dat_gauss <- data.frame(y = df_gaussian$y, df_gaussian$x)
+#'
+#'   # The "stanreg" fit which will be used as the reference model (with small
+#'   # values for `chains` and `iter`, but only for technical reasons in this
+#'   # example; this is not recommended in general):
+#'   fit <- rstanarm::stan_glm(
+#'     y ~ X1 + X2 + X3 + X4 + X5, family = gaussian(), data = dat_gauss,
+#'     QR = TRUE, chains = 2, iter = 500, refresh = 0, seed = 9876
+#'   )
+#'
+#'   # Projection onto an arbitrary combination of predictor terms (with a small
+#'   # value for `nclusters`, but only for illustrative purposes; this is not
+#'   # recommended in general):
+#'   prj <- project(fit, solution_terms = c("X1", "X3", "X5"), nclusters = 5,
+#'                  seed = 9182)
+#'
+#'   # Applying the posterior::as_draws_matrix() generic to the output of
+#'   # project() dispatches to the projpred::as_draws_matrix.projection()
+#'   # method:
+#'   prj_draws <- posterior::as_draws_matrix(prj)
+#'
+#'   # Resample the projected draws according to their weights:
+#'   set.seed(3456)
+#'   prj_draws_resampled <- posterior::resample_draws(prj_draws, ndraws = 1000)
+#'
+#'   # The values from the following two objects should be the same (in general,
+#'   # this only holds approximately):
+#'   print(proportions(table(rownames(prj_draws_resampled))))
+#'   print(weights(prj_draws))
+#'
+#'   # Treat the resampled draws like ordinary draws, e.g., summarize them:
+#'   print(posterior::summarize_draws(
+#'     prj_draws_resampled,
+#'     "median", "mad", function(x) quantile(x, probs = c(0.025, 0.975))
+#'   ))
+#'   # Or visualize them using the `bayesplot` package:
+#'   if (requireNamespace("bayesplot", quietly = TRUE)) {
+#'     print(bayesplot::mcmc_intervals(prj_draws_resampled))
+#'   }
+#' }
+#'
+#' @exportS3Method posterior::as_draws_matrix projection
+as_draws_matrix.projection <- function(x, ...) {
+  if (!requireNamespace("posterior", quietly = TRUE)) {
+    stop("Please install the 'posterior' package.")
+  }
+  xmat <- as.matrix(x, allow_nonconst_weights = TRUE, ...)
+  drmat <- posterior::as_draws_matrix(structure(xmat, wdraws_prj = NULL))
+  wdr <- attr(xmat, "wdraws_prj")
+  if (!is.null(wdr)) {
+    drmat <- posterior::weight_draws(drmat, weights = wdr)
+  }
+  return(drmat)
+}
+
 #' Create cross-validation folds
 #'
 #' These are helper functions to create cross-validation (CV) folds, i.e., to
