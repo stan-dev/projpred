@@ -108,11 +108,8 @@
 #'
 #'   The elements of an object of class `projection` are not meant to be
 #'   accessed directly but instead via helper functions (see the main vignette
-#'   and [projpred-package]). An exception is element `wdraws_prj` which is
-#'   currently needed to weight quantities derived from the projected draws in
-#'   case of clustered projection, e.g., after applying [as.matrix.projection()]
-#'   (which throws a warning in case of clustered projection to make users aware
-#'   of this problem).
+#'   and [projpred-package]; see also [as.matrix.projection()] and
+#'   [as_draws_matrix.projection()] for element `wdraws_prj`).
 #'
 #' @examples
 #' if (requireNamespace("rstanarm", quietly = TRUE)) {
