@@ -62,7 +62,7 @@ if (requireNamespace("rstanarm", quietly = TRUE)) {
   # Projection onto an arbitrary combination of predictor terms (with a small
   # value for `ndraws`, but only for the sake of speed in this example; this
   # is not recommended in general):
-  prj <- project(fit, solution_terms = c("X1", "X3", "X5"), ndraws = 10,
+  prj <- project(fit, solution_terms = c("X1", "X3", "X5"), ndraws = 21,
                  seed = 9182)
 
   # Applying the as.matrix() generic to the output of project() dispatches to
