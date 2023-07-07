@@ -4,6 +4,10 @@ If you read this from a place other than <https://mc-stan.org/projpred/news/inde
 
 # projpred 2.6.0.9000
 
+## Major changes
+
+* In case of projected draws with different (i.e., nonconstant) weights, `as.matrix.projection()` will now throw an error (by default; this can be changed by setting the new argument `allow_nonconst_weights` to `TRUE`, but this is for expert use only because in that case, the weights of the projected draws are stored in an attribute `wdraws_prj` and handling this attribute requires special care, e.g., when subsetting the returned matrix). For such cases, a `posterior::as_draws_matrix()` method (`as_draws_matrix.projection()`) has been added which allows for a safer handling of these weights (e.g., with the help of `posterior::resample_draws()`, see section "Examples" of the `?as_draws_matrix.projection` help). Just like `as.matrix.projection()`, `as_draws_matrix.projection()` also works for the more common case of projected draws with constant weights. (GitHub: **TODO**)
+
 ## Minor changes
 
 * If an L1 search selects an interaction term before all involved lower-order interaction terms (including main-effect terms) have been selected, the predictor ranking is now automatically modified so that the lower-order interaction terms come before this interaction term. A corresponding warning is thrown, which may be deactivated by setting the global option `projpred.warn_L1_interactions` to `FALSE`. Previously, beginning with version 2.5.0, only a warning was thrown and this only if an L1 search selected an interaction term before all involved *main-effect* terms had been selected. (GitHub: #420)
