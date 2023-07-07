@@ -130,7 +130,7 @@ t.augvec <- function(x) {
   } else {
     nobs_orig_x_out <- nrow(x_out) / n_discr
   }
-  if (isTRUE(getOption("projpred.check_nobs_orig", FALSE))) {
+  if (isTRUE(getOption("projpred.subset_aug_checks", FALSE))) {
     # This check is not run by default because it would require a custom str()
     # and print() method for `augmat` objects and because there would be a high
     # risk of false positive alarms if there are generics other than str() and
@@ -161,7 +161,7 @@ t.augvec <- function(x) {
   stopifnot(is_wholenumber(n_discr))
   n_discr <- as.integer(round(n_discr))
   nobs_orig_x_out <- length(x_out) / n_discr
-  if (isTRUE(getOption("projpred.check_nobs_orig", FALSE))) {
+  if (isTRUE(getOption("projpred.subset_aug_checks", FALSE))) {
     # See `[.augmat` for why this check is not run by default.
     stopifnot(is_wholenumber(nobs_orig_x_out))
   }
