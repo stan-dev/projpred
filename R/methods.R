@@ -260,8 +260,9 @@ proj_helper <- function(object, newdata, offsetnew, weightsnew, onesub_fun,
 #' @export
 proj_linpred <- function(object, newdata = NULL, offsetnew = NULL,
                          weightsnew = NULL, filter_nterms = NULL,
-                         transform = FALSE, integrated = FALSE, .seed = NA,
-                         ...) {
+                         transform = FALSE, integrated = FALSE,
+                         allow_nonconst_wdraws_prj = return_draws_matrix,
+                         return_draws_matrix = FALSE, .seed = NA, ...) {
   if (exists(".Random.seed", envir = .GlobalEnv)) {
     rng_state_old <- get(".Random.seed", envir = .GlobalEnv)
   }
@@ -273,18 +274,34 @@ proj_linpred <- function(object, newdata = NULL, offsetnew = NULL,
     set.seed(.seed)
   }
 
+  if (return_draws_matrix) {
+    allow_nonconst_wdraws_prj <- TRUE
+  }
+
   ## proj_helper lapplies fun to each projection in object
   proj_helper(
     object = object, newdata = newdata,
     offsetnew = offsetnew, weightsnew = weightsnew,
     onesub_fun = proj_linpred_aux, filter_nterms = filter_nterms,
-    transform = transform, integrated = integrated, ...
+    transform = transform, integrated = integrated,
+    allow_nonconst_wdraws_prj = allow_nonconst_wdraws_prj,
+    return_draws_matrix = return_draws_matrix, ...
   )
 }
 
 ## function applied to each projected submodel in case of proj_linpred()
 proj_linpred_aux <- function(proj, newdata, offset, weights, transform = FALSE,
-                             integrated = FALSE, extract_y_ind = TRUE, ...) {
+                             integrated = FALSE, extract_y_ind = TRUE,
+                             allow_nonconst_wdraws_prj = return_draws_matrix,
+                             return_draws_matrix = FALSE, ...) {
+  if (!proj[["const_wdraws_prj"]] && !allow_nonconst_wdraws_prj &&
+      !integrated) {
+    stop("The projected draws have different (i.e., nonconstant) weights, so ",
+         "please use either `allow_nonconst_wdraws_prj = TRUE` (and then ",
+         "don't forget that all downstream analyses need to take the weights ",
+         "into account) or `return_draws_matrix = TRUE`, the latter being ",
+         "recommended.")
+  }
   pred_sub <- proj$refmodel$family$mu_fun(proj$outdmin, newdata = newdata,
                                           offset = offset,
                                           transform = transform)
@@ -362,6 +379,18 @@ proj_linpred_aux <- function(proj, newdata, offset, weights, transform = FALSE,
        (proj$refmodel$family$for_latent && integrated) ||
        (proj$refmodel$family$for_latent && !transform))) {
     lpd_out <- t(lpd_out)
+  }
+  if (!proj[["const_wdraws_prj"]] && !integrated) {
+    attr(pred_sub, "wdraws_prj") <- proj[["wdraws_prj"]]
+    attr(lpd_out, "wdraws_prj") <- proj[["wdraws_prj"]]
+  }
+  if (return_draws_matrix) {
+    if (length(dim(pred_sub)) == 3) {
+      pred_sub <- structure(t(arr2augmat(pred_sub, margin_draws = 1)),
+                            wdraws_prj = attr(pred_sub, "wdraws_prj"))
+    }
+    pred_sub <- mat2drmat(pred_sub)
+    lpd_out <- mat2drmat(lpd_out)
   }
   return(nlist(pred = pred_sub, lpd = lpd_out))
 }

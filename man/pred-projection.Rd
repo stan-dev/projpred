@@ -14,6 +14,8 @@ proj_linpred(
   filter_nterms = NULL,
   transform = FALSE,
   integrated = FALSE,
+  allow_nonconst_wdraws_prj = return_draws_matrix,
+  return_draws_matrix = FALSE,
   .seed = NA,
   ...
 )
