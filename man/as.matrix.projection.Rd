@@ -4,7 +4,7 @@
 \alias{as.matrix.projection}
 \title{Extract projected parameter draws and coerce to matrix}
 \usage{
-\method{as.matrix}{projection}(x, nm_scheme = "auto", allow_nonconst_weights = FALSE, ...)
+\method{as.matrix}{projection}(x, nm_scheme = "auto", allow_nonconst_wdraws_prj = FALSE, ...)
 }
 \arguments{
 \item{x}{An object of class \code{projection} (returned by \code{\link[=project]{project()}}, possibly
@@ -15,7 +15,7 @@ Either \code{"auto"}, \code{"rstanarm"}, or \code{"brms"}, where \code{"auto"} c
 \code{"rstanarm"} or \code{"brms"} based on the class of the reference model fit (and
 uses \code{"rstanarm"} if the reference model fit is of an unknown class).}
 
-\item{allow_nonconst_weights}{A single logical value indicating whether to
+\item{allow_nonconst_wdraws_prj}{A single logical value indicating whether to
 allow the return of projected draws with different (i.e., nonconstant)
 weights (\code{TRUE}) or not (\code{FALSE}). \strong{CAUTION}: Expert use only because if
 set to \code{TRUE}, the weights of the projected draws are stored in an
@@ -27,10 +27,10 @@ attribute \code{wdraws_prj} and handling this attribute requires special care
 \value{
 An \eqn{S_{\mathrm{prj}} \times Q}{S_prj x Q} matrix of projected
 draws, with \eqn{S_{\mathrm{prj}}}{S_prj} denoting the number of projected
-draws and \eqn{Q} the number of parameters. If \code{allow_nonconst_weights} is
-set to \code{TRUE}, the weights of the projected draws are stored in an
-attribute \code{wdraws_prj}. (If \code{allow_nonconst_weights} is \code{FALSE}, projected
-draws with nonconstant weights cause an error.)
+draws and \eqn{Q} the number of parameters. If \code{allow_nonconst_wdraws_prj}
+is set to \code{TRUE}, the weights of the projected draws are stored in an
+attribute \code{wdraws_prj}. (If \code{allow_nonconst_wdraws_prj} is \code{FALSE},
+projected draws with nonconstant weights cause an error.)
 }
 \description{
 This is the \code{\link[=as.matrix]{as.matrix()}} method for \code{projection} objects (returned by

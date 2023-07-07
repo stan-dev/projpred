@@ -12,7 +12,7 @@
 as elements of a \code{list}).}
 
 \item{...}{Arguments passed to \code{\link[=as.matrix.projection]{as.matrix.projection()}}, except for
-\code{allow_nonconst_weights}.}
+\code{allow_nonconst_wdraws_prj}.}
 }
 \value{
 An \eqn{S_{\mathrm{prj}} \times Q}{S_prj x Q} \code{draws_matrix} (see
