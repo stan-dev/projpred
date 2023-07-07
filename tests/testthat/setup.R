@@ -875,7 +875,7 @@ options(projpred.verbose_project = FALSE)
 options(projpred.warn_instable_projections = FALSE)
 # Run the check for attribute `nobs_orig` when subsetting `augmat` and `augvec`
 # objects:
-options(projpred.check_nobs_orig = TRUE)
+options(projpred.subset_aug_checks = TRUE)
 
 search_trms_tst <- list(
   default_search_trms = list(),

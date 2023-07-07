@@ -121,7 +121,14 @@ t.augvec <- function(x) {
   nobs_orig_x <- attr(x, "nobs_orig")
   stopifnot(!is.null(nobs_orig_x))
   n_discr <- nrow(x) / nobs_orig_x
-  stopifnot(is_wholenumber(n_discr))
+  if (isTRUE(getOption("projpred.subset_aug_checks", FALSE))) {
+    # This check is not run by default because it could require custom str() and
+    # print() (or even more) methods for `augmat` objects and because there
+    # could be a high risk of false positive alarms if external functions like
+    # str() and print() use a "head" of this matrix (or if external functions
+    # iterate over the rows one-by-one and use subsetting for that).
+    stopifnot(is_wholenumber(n_discr))
+  }
   n_discr <- as.integer(round(n_discr))
   cls_out <- oldClass(x)
   if (is.null(dim(x_out))) {
@@ -130,12 +137,9 @@ t.augvec <- function(x) {
   } else {
     nobs_orig_x_out <- nrow(x_out) / n_discr
   }
-  if (isTRUE(getOption("projpred.check_nobs_orig", FALSE))) {
-    # This check is not run by default because it would require a custom str()
-    # and print() method for `augmat` objects and because there would be a high
-    # risk of false positive alarms if there are generics other than str() and
-    # print() which use a "head" of this matrix (or also if other functions
-    # iterate over the rows one-by-one and use subsetting for that).
+  if (isTRUE(getOption("projpred.subset_aug_checks", FALSE))) {
+    # See above for why this check is not run by default (in this case, we
+    # indeed had a false alarm at least once).
     stopifnot(is_wholenumber(nobs_orig_x_out))
   }
   nobs_orig_x_out <- as.integer(round(nobs_orig_x_out))
@@ -158,11 +162,16 @@ t.augvec <- function(x) {
   nobs_orig_x <- attr(x, "nobs_orig")
   stopifnot(!is.null(nobs_orig_x))
   n_discr <- length(x) / nobs_orig_x
-  stopifnot(is_wholenumber(n_discr))
+  if (isTRUE(getOption("projpred.subset_aug_checks", FALSE))) {
+    # See `[.augmat` for why this check is not run by default (in this case, we
+    # indeed had a false alarm at least once).
+    stopifnot(is_wholenumber(n_discr))
+  }
   n_discr <- as.integer(round(n_discr))
   nobs_orig_x_out <- length(x_out) / n_discr
-  if (isTRUE(getOption("projpred.check_nobs_orig", FALSE))) {
-    # See `[.augmat` for why this check is not run by default.
+  if (isTRUE(getOption("projpred.subset_aug_checks", FALSE))) {
+    # See `[.augmat` for why this check is not run by default (in this case, we
+    # indeed had a false alarm at least once).
     stopifnot(is_wholenumber(nobs_orig_x_out))
   }
   nobs_orig_x_out <- as.integer(round(nobs_orig_x_out))
