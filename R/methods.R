@@ -469,7 +469,7 @@ proj_predict_aux <- function(proj, newdata, offset, weights,
   mu <- proj$refmodel$family$mu_fun(proj$outdmin,
                                     newdata = newdata,
                                     offset = offset)
-  if (!proj$const_wdraws_prj) {
+  if (!proj[["const_wdraws_prj"]]) {
     # In this case, the posterior draws have nonconstant weights.
     draw_inds <- sample(x = seq_along(proj$wdraws_prj),
                         size = nresample_clusters, replace = TRUE,
@@ -2029,7 +2029,7 @@ as.matrix.projection <- function(x, nm_scheme = "auto",
     stop("as.matrix.projection() does not work for objects based on ",
          "\"datafit\"s.")
   }
-  if (!x$const_wdraws_prj && !allow_nonconst_weights) {
+  if (!x[["const_wdraws_prj"]] && !allow_nonconst_weights) {
     stop("The projected draws have different (i.e., nonconstant) weights, so ",
          "please use `allow_nonconst_weights = TRUE` (and then don't forget ",
          "that all downstream analyses need to take the weights into account) ",
@@ -2045,7 +2045,7 @@ as.matrix.projection <- function(x, nm_scheme = "auto",
   stopifnot(nm_scheme %in% c("rstanarm", "brms"))
   res <- do.call(rbind, lapply(x$outdmin, get_subparams, nm_scheme = nm_scheme))
   if (x$refmodel$family$family == "gaussian") res <- cbind(res, sigma = x$dis)
-  if (!x$const_wdraws_prj) {
+  if (!x[["const_wdraws_prj"]]) {
     attr(res, "wdraws_prj") <- x[["wdraws_prj"]]
   }
   return(res)
