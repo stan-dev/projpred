@@ -27,8 +27,9 @@ This is the \code{\link[posterior:draws_matrix]{posterior::as_draws_matrix()}} m
 projected parameter draws and returns them as a \code{draws_matrix}. In case of
 different (i.e., nonconstant) weights for the projected draws, this
 \code{\link[posterior:draws_matrix]{posterior::as_draws_matrix()}} method allows for a safer handling of these
-weights (safer in contrast to \code{\link[=as.matrix.projection]{as.matrix.projection()}}) and provides the
-natural input for \code{\link[posterior:resample_draws]{posterior::resample_draws()}}.
+weights (safer in contrast to \code{\link[=as.matrix.projection]{as.matrix.projection()}}), in particular by
+providing the natural input for \code{\link[posterior:resample_draws]{posterior::resample_draws()}} (see section
+"Examples" below).
 }
 \details{
 In case of the augmented-data projection for a multilevel submodel

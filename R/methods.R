@@ -2060,8 +2060,9 @@ as.matrix.projection <- function(x, nm_scheme = "auto",
 #' projected parameter draws and returns them as a `draws_matrix`. In case of
 #' different (i.e., nonconstant) weights for the projected draws, this
 #' [posterior::as_draws_matrix()] method allows for a safer handling of these
-#' weights (safer in contrast to [as.matrix.projection()]) and provides the
-#' natural input for [posterior::resample_draws()].
+#' weights (safer in contrast to [as.matrix.projection()]), in particular by
+#' providing the natural input for [posterior::resample_draws()] (see section
+#' "Examples" below).
 #'
 #' @param x An object of class `projection` (returned by [project()], possibly
 #'   as elements of a `list`).
