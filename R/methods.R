@@ -2124,10 +2124,17 @@ as.matrix.projection <- function(x, nm_scheme = "auto",
 #'
 #' @exportS3Method posterior::as_draws_matrix projection
 as_draws_matrix.projection <- function(x, ...) {
+  xmat <- as.matrix(x, allow_nonconst_wdraws_prj = TRUE, ...)
+  return(mat2drmat(xmat))
+}
+
+# Helper function for converting a matrix `xmat` (possibly possessing an
+# argument `wdraws_prj`) to a `draws_matrix` (which will be weighted if `xmat`
+# possesses an argument `wdraws_prj`).
+mat2drmat <- function(xmat) {
   if (!requireNamespace("posterior", quietly = TRUE)) {
     stop("Please install the 'posterior' package.")
   }
-  xmat <- as.matrix(x, allow_nonconst_wdraws_prj = TRUE, ...)
   drmat <- posterior::as_draws_matrix(structure(xmat, wdraws_prj = NULL))
   wdr <- attr(xmat, "wdraws_prj")
   if (!is.null(wdr)) {
