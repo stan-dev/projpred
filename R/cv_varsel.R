@@ -557,21 +557,33 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
         refmodel$y[inds], refmodel$wobs[inds]
       ))
     }
-    # Usually, we have a small number of projected draws here (400 by default),
-    # which means that the 'loo' package will automatically perform the
-    # regularization from Vehtari et al. (2022,
-    # <https://doi.org/10.48550/arXiv.1507.02646>, appendix G). However, users
-    # may request a number of projected draws that is much smaller than 400,
-    # which can be problematic for PSIS. Thus, `no_psis_eval` (see below)
-    # indicates whether loo::psis() performs the Pareto smoothing or not (see
-    # loo:::n_pareto() and loo:::enough_tail_samples(), keeping in mind that we
-    # have `r_eff = 1` for all observations here).
-    # TODO: Use loo::sis() if the projected draws (i.e., the draws resulting
-    # from the clustering or thinning) have nonconstant weights.
-    S_for_psis_eval <- nrow(log_lik_ref)
-    no_psis_eval <- ceiling(min(0.2 * S_for_psis_eval,
-                                3 * sqrt(S_for_psis_eval))) < 5
-    if (no_psis_eval) { # TODO: Add a global option here.
+    # Use loo::sis() if the projected draws (i.e., the draws resulting
+    # from the clustering or thinning) have nonconstant weights:
+    const_wdraws_prj_eval <- length(unique(refdist_eval$wdraws_prj)) == 1
+    if (const_wdraws_prj_eval) {
+      importance_sampling_func <- loo::psis
+      # Usually, we have a small number of projected draws here (400 by
+      # default), which means that the 'loo' package will automatically perform
+      # the regularization from Vehtari et al. (2022,
+      # <https://doi.org/10.48550/arXiv.1507.02646>, appendix G). However, users
+      # may request a number of projected draws that is much smaller than 400,
+      # which can be problematic for PSIS. Thus, `no_psis_eval` (see below)
+      # indicates whether loo::psis() performs the Pareto smoothing or not (see
+      # loo:::n_pareto() and loo:::enough_tail_samples(), keeping in mind that
+      # we have `r_eff = 1` for all observations here).
+      S_for_psis_eval <- nrow(log_lik_ref)
+      no_psis_eval <- ceiling(min(0.2 * S_for_psis_eval,
+                                  3 * sqrt(S_for_psis_eval))) < 5
+    } else {
+      warning(
+        "The projected draws used for the performance evaluation have ",
+        "different (i.e., nonconstant) weights, so using standard importance ",
+        "sampling (SIS) instead of Pareto-smoothed importance sampling ",
+        "(PSIS). In general, PSIS is recommended over SIS."
+      )
+      importance_sampling_func <- loo::sis
+    }
+    if (const_wdraws_prj_eval && no_psis_eval) { # TODO: Add a global option here.
       warn_sis_eval <- paste0(
         "In the recalculation of the reference model's PSIS-LOO CV weights ",
         "for the performance evaluation, the number of draws after clustering ",
@@ -603,10 +615,12 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
       warning(warn_sis_eval)
     }
     sub_psisloo <- suppressWarnings(
-      loo::psis(-log_lik_ref, cores = 1, r_eff = NA)
+      importance_sampling_func(-log_lik_ref, cores = 1, r_eff = NA)
     )
-    pareto_n07_eval <- sum(loo::pareto_k_values(sub_psisloo) > 0.7)
-    if (pareto_n07_eval > 0) {
+    if (const_wdraws_prj_eval) {
+      pareto_n07_eval <- sum(loo::pareto_k_values(sub_psisloo) > 0.7)
+    }
+    if (const_wdraws_prj_eval && pareto_n07_eval > 0) {
       warn_khat_eval <- paste0(
         "In the recalculation of the reference model's PSIS-LOO CV weights ",
         "for the performance evaluation (based on clustered or thinned ",
