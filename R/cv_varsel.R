@@ -399,7 +399,7 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
   # occurrences of it).
   psisloo <- suppressWarnings(loo::psis(-loglik_forPSIS, cores = 1, r_eff = NA))
   pareto_n07 <- sum(loo::pareto_k_values(psisloo) > 0.7)
-  if (pareto_n07 > 0) {
+  if (pareto_n07 > 0 && getOption("projpred.warn_psis", TRUE)) {
     # Within projpred, moment matching and mixture importance sampling (as well
     # as reference model refits leaving out each problematic observation in
     # turn, i.e., brms's `reloo` argument) currently cannot be used because all
@@ -438,7 +438,7 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
       log_ratios = -loglik_forPSIS
     )
     pareto_n07_y_lat <- sum(y_lat_E$pareto_k > 0.7)
-    if (pareto_n07_y_lat > 0) {
+    if (pareto_n07_y_lat > 0 && getOption("projpred.warn_psis", TRUE)) {
       # The k-values are h-specific (expectation-specific) here (see Vehtari et
       # al., 2022, <https://doi.org/10.48550/arXiv.1507.02646>, beginning of
       # section 3, section 3.2.8, appendix D, and appendix E).
@@ -575,15 +575,18 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
       no_psis_eval <- ceiling(min(0.2 * S_for_psis_eval,
                                   3 * sqrt(S_for_psis_eval))) < 5
     } else {
-      warning(
-        "The projected draws used for the performance evaluation have ",
-        "different (i.e., nonconstant) weights, so using standard importance ",
-        "sampling (SIS) instead of Pareto-smoothed importance sampling ",
-        "(PSIS). In general, PSIS is recommended over SIS."
-      )
+      if (getOption("projpred.warn_psis", TRUE)) {
+        warning(
+          "The projected draws used for the performance evaluation have ",
+          "different (i.e., nonconstant) weights, so using standard ",
+          "importance sampling (SIS) instead of Pareto-smoothed importance ",
+          "sampling (PSIS). In general, PSIS is recommended over SIS."
+        )
+      }
       importance_sampling_func <- loo::sis
     }
-    if (const_wdraws_prj_eval && no_psis_eval) { # TODO: Add a global option here.
+    if (const_wdraws_prj_eval && no_psis_eval &&
+        getOption("projpred.warn_psis", TRUE)) {
       warn_sis_eval <- paste0(
         "In the recalculation of the reference model's PSIS-LOO CV weights ",
         "for the performance evaluation, the number of draws after clustering ",
@@ -613,14 +616,17 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
         )
       }
       warning(warn_sis_eval)
+      # TODO: Re-assign `importance_sampling_func <- loo::sis`? Wouldn't be
+      # necessary, though. (But affects the Pareto k-values, see below.)
     }
     sub_psisloo <- suppressWarnings(
       importance_sampling_func(-log_lik_ref, cores = 1, r_eff = NA)
     )
-    if (const_wdraws_prj_eval) {
+    if (const_wdraws_prj_eval && !no_psis_eval) {
       pareto_n07_eval <- sum(loo::pareto_k_values(sub_psisloo) > 0.7)
     }
-    if (const_wdraws_prj_eval && pareto_n07_eval > 0) {
+    if (const_wdraws_prj_eval && !no_psis_eval && pareto_n07_eval > 0 &&
+        getOption("projpred.warn_psis", TRUE)) {
       warn_khat_eval <- paste0(
         "In the recalculation of the reference model's PSIS-LOO CV weights ",
         "for the performance evaluation (based on clustered or thinned ",
