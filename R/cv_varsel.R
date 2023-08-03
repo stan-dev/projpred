@@ -394,6 +394,10 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
   n <- ncol(loglik_forPSIS)
 
   # PSIS-LOO CV weights:
+  if (length(unique(refmodel$wdraws_ref)) != 1) {
+    stop("Currently, projpred requires the reference model's posterior draws ",
+         "to have constant weights.")
+  }
   # TODO: Check for small number of draws and other loo::psis() warnings.
   # Alternatively, see if utils::capture.output() can be used (search for other
   # occurrences of it).
