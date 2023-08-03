@@ -602,36 +602,16 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
                                   3 * sqrt(S_for_psis_eval))) < 5
       if (no_psis_eval) {
         if (getOption("projpred.warn_psis", TRUE)) {
-          warn_sis_eval <- paste0(
+          warning(
             "In the recalculation of the reference model's PSIS-LOO CV ",
             "weights for the performance evaluation, the number of draws ",
             "after clustering or thinning is too small for Pareto smoothing. ",
-            "Using standard importance sampling (SIS) instead."
+            "Using standard importance sampling (SIS) instead. Watch out for ",
+            "warnings thrown by the original-draws Pareto smoothing to see ",
+            "whether it makes sense to increase the number of draws ",
+            "(resulting from the clustering or thinning for the performance ",
+            "evaluation). Alternatively, K-fold CV can be used."
           )
-          if (pareto_n07 == 0) {
-            warn_sis_eval <- paste0(
-              warn_sis_eval,
-              " Since there were no k-values > 0.7 in the complete-draws ",
-              "Pareto smoothing, we recommend to increase the number of draws ",
-              "resulting from the clustering or thinning for the performance ",
-              "evaluation until this warning disappears (or to use K-fold CV)."
-            )
-          } else {
-            warn_sis_eval <- paste0(
-              warn_sis_eval,
-              " Since there were k-values > 0.7 in the complete-draws Pareto ",
-              "smoothing, we recommend to perform the checks mentioned in the ",
-              "complete-draws warning message and, if these checks reveal ",
-              "that the complete-draws Pareto smoothing can be used, to ",
-              "increase the number of draws resulting from the clustering or ",
-              "thinning for the performance evaluation until this warning ",
-              "disappears (or rather until this warning is replaced with ",
-              "another warning). If these checks reveal that the ",
-              "complete-draws Pareto smoothing should not be used, then we ",
-              "recommend to use K-fold CV."
-            )
-          }
-          warning(warn_sis_eval)
         }
         # Use loo::sis().
         # In principle, we could rely on loo::psis() here (because in such a
@@ -678,40 +658,16 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
     if (importance_sampling_nm == "psis") {
       pareto_n07_eval <- sum(loo::pareto_k_values(sub_psisloo) > 0.7)
       if (pareto_n07_eval > 0 && getOption("projpred.warn_psis", TRUE)) {
-        warn_khat_eval <- paste0(
+        warning(
           "In the recalculation of the reference model's PSIS-LOO CV weights ",
           "for the performance evaluation (based on clustered or thinned ",
           "posterior draws), ", pareto_n07_eval, " (out of ", nloo, ") Pareto ",
-          "k-value(s) exceeded the threshold of 0.7."
+          "k-value(s) exceeded the threshold of 0.7. Watch out for warnings ",
+          "thrown by the original-draws Pareto smoothing to see whether it ",
+          "makes sense to increase the number of draws (resulting from the ",
+          "clustering or thinning for the performance evaluation). ",
+          "Alternatively, K-fold CV can be used."
         )
-        if (pareto_n07 == 0) {
-          warn_khat_eval <- paste0(
-            warn_khat_eval,
-            " Since there were no k-values > 0.7 in the complete-draws Pareto ",
-            "smoothing, we recommend to increase the number of draws ",
-            "resulting from the clustering or thinning for the performance ",
-            "evaluation until this warning disappears (or to use K-fold CV)."
-          )
-        } else {
-          if (S_for_psis_eval == nrow(loglik_forPSIS)) {
-            recomm <- "ignore this warning"
-          } else {
-            recomm <- paste0(
-              "increase the number of draws resulting from the clustering or ",
-              "thinning for the performance evaluation"
-            )
-          }
-          warn_khat_eval <- paste0(
-            warn_khat_eval,
-            " Since there were k-values > 0.7 in the complete-draws Pareto ",
-            "smoothing, we recommend to perform the checks mentioned in the ",
-            "complete-draws warning message and, if these checks reveal that ",
-            "the complete-draws Pareto smoothing can be used, to ", recomm,
-            ". If these checks reveal that the complete-draws Pareto ",
-            "smoothing should not be used, then we recommend to use K-fold CV."
-          )
-        }
-        warning(warn_khat_eval)
       }
     }
     lw_sub <- weights(sub_psisloo)
