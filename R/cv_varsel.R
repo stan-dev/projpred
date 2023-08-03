@@ -398,10 +398,23 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
     stop("Currently, projpred requires the reference model's posterior draws ",
          "to have constant weights.")
   }
-  # TODO: Check for small number of draws and other loo::psis() warnings.
-  # Alternatively, see if utils::capture.output() can be used (search for other
-  # occurrences of it).
-  psisloo <- suppressWarnings(loo::psis(-loglik_forPSIS, cores = 1, r_eff = NA))
+  # Call loo::psis() and while doing so, catch warnings via capture.output() to
+  # filter out some of them.
+  # Note: capture.output() should only be used to filter out warning messages
+  # (not to make downstream code dependent on catched warnings), see
+  # <https://github.com/stan-dev/loo/issues/227#issuecomment-1663499985>.
+  warn_orig <- options(warn = 1)
+  warn_capt <- utils::capture.output({
+    psisloo <- loo::psis(-loglik_forPSIS, cores = 1, r_eff = NA)
+  }, type = "message")
+  options(warn_orig)
+  warn_capt <- setdiff(warn_capt, "")
+  # Filter out the Pareto k-value warning (we throw a customized one instead):
+  warn_capt <- grep("Some Pareto k diagnostic values are (too|slightly) high",
+                    warn_capt, value = TRUE, invert = TRUE)
+  if (length(warn_capt) > 0) {
+    warning(warn_capt)
+  }
   pareto_n07 <- sum(loo::pareto_k_values(psisloo) > 0.7)
   if (pareto_n07 > 0 && getOption("projpred.warn_psis", TRUE)) {
     # Within projpred, moment matching and mixture importance sampling (as well
@@ -639,9 +652,19 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
       importance_sampling_nm <- "sis"
     }
     importance_sampling_func <- get(importance_sampling_nm, asNamespace("loo"))
-    sub_psisloo <- suppressWarnings(
-      importance_sampling_func(-log_lik_ref, cores = 1, r_eff = NA)
-    )
+    warn_orig <- options(warn = 1)
+    warn_capt <- utils::capture.output({
+      sub_psisloo <- importance_sampling_func(-log_lik_ref, cores = 1,
+                                              r_eff = NA)
+    }, type = "message")
+    options(warn_orig)
+    warn_capt <- setdiff(warn_capt, "")
+    # Filter out the Pareto k-value warning (we throw a customized one instead):
+    warn_capt <- grep("Some Pareto k diagnostic values are (too|slightly) high",
+                      warn_capt, value = TRUE, invert = TRUE)
+    if (length(warn_capt) > 0) {
+      warning(warn_capt)
+    }
     if (importance_sampling_nm == "psis") {
       pareto_n07_eval <- sum(loo::pareto_k_values(sub_psisloo) > 0.7)
       if (pareto_n07_eval > 0 && getOption("projpred.warn_psis", TRUE)) {
