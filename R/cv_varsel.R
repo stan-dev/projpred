@@ -17,13 +17,14 @@
 #'   case, a Pareto-smoothed importance sampling leave-one-out CV (PSIS-LOO CV)
 #'   is performed, which avoids refitting the reference model `nloo` times (in
 #'   contrast to a standard LOO CV). In the `"kfold"` case, a \eqn{K}-fold CV is
-#'   performed.
+#'   performed. See also section "Note" below.
 #' @param nloo **Caution:** Still experimental. Only relevant if `cv_method =
 #'   "LOO"`. Number of subsampled PSIS-LOO CV folds, i.e., number of
-#'   observations used for the LOO CV (anything between 1 and the original
-#'   number of observations). Smaller values lead to faster computation but
-#'   higher uncertainty in the evaluation part. If `NULL`, all observations are
-#'   used, but for faster experimentation, one can set this to a smaller value.
+#'   observations used for the approximate LOO CV (anything between 1 and the
+#'   original number of observations). Smaller values lead to faster computation
+#'   but higher uncertainty in the evaluation part. If `NULL`, all observations
+#'   are used, but for faster experimentation, one can set this to a smaller
+#'   value.
 #' @param K Only relevant if `cv_method = "kfold"` and if the reference model
 #'   was created with `cvfits` being `NULL` (which is the case for
 #'   [get_refmodel.stanreg()] and [brms::get_refmodel.brmsfit()]). Number of
@@ -57,11 +58,18 @@
 #' @note If `validate_search` is `FALSE`, the search is not included in the CV
 #'   so that only a single full-data search is run.
 #'
-#'   For PSIS-LOO CV, \pkg{projpred} calls [loo::psis()] with `r_eff = NA`. This
-#'   is only a problem if there was extreme autocorrelation between the MCMC
-#'   iterations when the reference model was built. In those cases however, the
-#'   reference model should not have been used anyway, so we don't expect
-#'   \pkg{projpred}'s `r_eff = NA` to be a problem.
+#'   For PSIS-LOO CV, \pkg{projpred} calls [loo::psis()] (or, exceptionally,
+#'   [loo::sis()], see below) with `r_eff = NA`. This is only a problem if there
+#'   was extreme autocorrelation between the MCMC iterations when the reference
+#'   model was built. In those cases however, the reference model should not
+#'   have been used anyway, so we don't expect \pkg{projpred}'s `r_eff = NA` to
+#'   be a problem.
+#'
+#'   PSIS cannot be used if the draws have different (i.e., nonconstant) weights
+#'   or if the number of draws is too small. In such cases, \pkg{projpred}
+#'   resorts to standard importance sampling (SIS) and throws a warning about
+#'   this. Throughout the documentation, the term "PSIS" is used even though in
+#'   fact, \pkg{projpred} resorts to SIS in these special cases.
 #'
 #'   With `parallel = TRUE`, costly parts of \pkg{projpred}'s CV are run in
 #'   parallel. Costly parts are the fold-wise searches and performance
