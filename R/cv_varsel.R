@@ -633,6 +633,7 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
           }
           warning(warn_sis_eval)
         }
+        # Use loo::sis().
         # In principle, we could rely on loo::psis() here (because in such a
         # case, it would internally switch to SIS automatically), but using
         # loo::sis() explicitly is safer because if the loo package changes its
@@ -641,12 +642,12 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
         # stan-dev/loo#227.
         importance_sampling_nm <- "sis"
       } else {
-        # Use loo::psis():
-        importance_sampling_nm <- "psis"
-        # Note: Usually, we have a small number of projected draws here (400 by
+        # Use loo::psis().
+        # Usually, we have a small number of projected draws here (400 by
         # default), which means that the 'loo' package will automatically
         # perform the regularization from Vehtari et al. (2022,
         # <https://doi.org/10.48550/arXiv.1507.02646>, appendix G).
+        importance_sampling_nm <- "psis"
       }
     } else {
       if (getOption("projpred.warn_psis", TRUE)) {
@@ -657,6 +658,7 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
           "sampling (PSIS). In general, PSIS is recommended over SIS."
         )
       }
+      # Use loo::sis().
       importance_sampling_nm <- "sis"
     }
     importance_sampling_func <- get(importance_sampling_nm, asNamespace("loo"))
