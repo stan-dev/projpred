@@ -646,7 +646,6 @@ fit_cumul <- function(formula, data, family, weights, ...) {
   # For catching warnings via capture.output() (which is necessary to filter out
   # the warning "non-integer #successes in a binomial glm!"):
   warn_orig <- options(warn = 1)
-  on.exit(options(warn_orig))
   # Call the submodel fitter:
   warn_capt <- utils::capture.output({
     fitobj <- try(do.call(MASS::polr, c(
@@ -658,6 +657,7 @@ fit_cumul <- function(formula, data, family, weights, ...) {
       dot_args
     )), silent = TRUE)
   }, type = "message")
+  options(warn_orig)
   if (inherits(fitobj, "try-error") &&
       grepl(paste("initial value in 'vmmin' is not finite",
                   "attempt to find suitable starting values failed",
@@ -676,6 +676,7 @@ fit_cumul <- function(formula, data, family, weights, ...) {
     # Start with thresholds which imply equal probabilities for the response
     # categories:
     start_thres <- linkfun_raw(seq_len(nthres) / ncats, link_nm = link_nm)
+    warn_orig <- options(warn = 1)
     warn_capt <- utils::capture.output({
       fitobj <- try(do.call(MASS::polr, c(
         list(formula = formula,
@@ -687,6 +688,7 @@ fit_cumul <- function(formula, data, family, weights, ...) {
         dot_args
       )), silent = TRUE)
     }, type = "message")
+    options(warn_orig)
   }
   if (inherits(fitobj, "try-error")) {
     stop(attr(fitobj, "condition")$message)
@@ -741,7 +743,6 @@ fit_cumul_mlvl <- function(formula, data, family, weights, ...) {
   # the warning "Using formula(x) is deprecated when x is a character vector of
   # length > 1. [...]"):
   warn_orig <- options(warn = 1)
-  on.exit(options(warn_orig))
   # Call the submodel fitter:
   warn_capt <- utils::capture.output({
     fitobj <- try(do.call(ordinal::clmm, c(
@@ -755,6 +756,7 @@ fit_cumul_mlvl <- function(formula, data, family, weights, ...) {
       dot_args
     )), silent = TRUE)
   }, type = "message")
+  options(warn_orig)
   if (inherits(fitobj, "try-error")) {
     stop(attr(fitobj, "condition")$message)
   }
