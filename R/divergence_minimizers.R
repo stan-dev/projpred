@@ -693,11 +693,9 @@ fit_cumul <- function(formula, data, family, weights, ...) {
   if (inherits(fitobj, "try-error")) {
     stop(attr(fitobj, "condition")$message)
   }
-  warn_capt <- setdiff(
-    warn_capt,
-    c("Warning in eval(family$initialize) :",
-      "  non-integer #successes in a binomial glm!")
-  )
+  warn_capt <- grep("Warning in .*:$", warn_capt, value = TRUE, invert = TRUE)
+  warn_capt <- grep("non-integer #successes in a binomial glm!$", warn_capt,
+                    value = TRUE, invert = TRUE)
   if (length(warn_capt) > 0) {
     warning(warn_capt)
   }
@@ -760,11 +758,14 @@ fit_cumul_mlvl <- function(formula, data, family, weights, ...) {
   if (inherits(fitobj, "try-error")) {
     stop(attr(fitobj, "condition")$message)
   }
-  warn_capt <- setdiff(
-    warn_capt,
-    c(paste("Warning: Using formula(x) is deprecated when x is a character",
-            "vector of length > 1."),
-      "  Consider formula(paste(x, collapse = \" \")) instead.")
+  warn_capt <- grep(
+    paste("Using formula\\(x\\) is deprecated when x is a character vector of",
+          "length > 1\\.$"),
+    warn_capt, value = TRUE, invert = TRUE
+  )
+  warn_capt <- grep(
+    "Consider formula\\(paste\\(x, collapse = .*\\)\\) instead\\.$",
+    warn_capt, value = TRUE, invert = TRUE
   )
   if (length(warn_capt) > 0) {
     warning(warn_capt)
