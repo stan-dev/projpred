@@ -915,7 +915,7 @@ check_conv <- function(fit) {
              fit_s@optinfo$conv$lme4$code >= 0) ||
             is.null(fit_s@optinfo$conv$lme4$code)
         ),
-        no_warnings = length(fit_s@optinfo$warnings) &&
+        no_warnings = length(fit_s@optinfo$warnings) == 0 &&
           length(unlist(fit_s@optinfo$conv$lme4$messages)) == 0 && (
             # Since lme4::.prt.warn() does not refer to `optinfo$conv$lme4$code`,
             # that element might not always exist:
