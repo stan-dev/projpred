@@ -500,6 +500,7 @@ parse_args_varsel <- function(refmodel, method, refit_prj, nterms_max,
   nterms_max <- min(max_nv_possible, nterms_max)
 
   if (nterms_max == nterms_all && has_group_features &&
+      getOption("projpred.warn_instable_projections", TRUE) &&
       (refmodel$family$family == "gaussian" || refmodel$family$for_latent)) {
     warning(
       "In case of the Gaussian family (also in case of the latent projection) ",

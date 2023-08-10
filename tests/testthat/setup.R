@@ -863,6 +863,12 @@ meth_tst <- list(
   L1 = list(method = "L1"),
   forward = list(method = "forward")
 )
+# Suppress the PSIS warnings:
+options(projpred.warn_psis = FALSE)
+# Suppress the subsampled PSIS-LOO CV warnings:
+options(projpred.warn_subsampled_loo = FALSE)
+# Suppress the warnings for the K reference model refits in case of K-fold CV:
+options(projpred.warn_kfold_refits = FALSE)
 # Suppress the warning for interaction terms being selected before all involved
 # main effects have been selected (only concerns L1 search):
 options(projpred.warn_L1_interactions = FALSE)
@@ -1229,10 +1235,7 @@ if (run_cvvs) {
   })
   args_cvvs <- unlist_cust(args_cvvs)
 
-  # Use suppressWarnings() because of occasional warnings concerning Pareto k
-  # diagnostics. Additionally to suppressWarnings(), suppressMessages() could be
-  # used here (because of the refits in K-fold CV):
-  cvvss <- suppressWarnings(lapply(args_cvvs, function(args_cvvs_i) {
+  cvvss <- lapply(args_cvvs, function(args_cvvs_i) {
     cvvs_expr <- expression(do.call(cv_varsel, c(
       list(object = refmods[[args_cvvs_i$tstsetup_ref]]),
       excl_nonargs(args_cvvs_i)
@@ -1244,7 +1247,7 @@ if (run_cvvs) {
     } else {
       return(eval(cvvs_expr))
     }
-  }))
+  })
   success_cvvs <- !sapply(cvvss, inherits, "try-error")
   err_ok <- sapply(cvvss[!success_cvvs], function(cvvs_err) {
     attr(cvvs_err, "condition")$message ==
