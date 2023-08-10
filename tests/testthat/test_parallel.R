@@ -65,10 +65,12 @@ test_that("cv_varsel() in parallel gives the same results as sequentially", {
   tstsetups <- grep("\\.glm\\.", names(cvvss), value = TRUE)
   for (tstsetup in tstsetups) {
     args_cvvs_i <- args_cvvs[[tstsetup]]
-    cvvs_repr <- do.call(cv_varsel, c(
+    # Use suppressWarnings() because of occasional warnings concerning Pareto k
+    # diagnostics:
+    cvvs_repr <- suppressWarnings(do.call(cv_varsel, c(
       list(object = refmods[[args_cvvs_i$tstsetup_ref]]),
       excl_nonargs(args_cvvs_i)
-    ))
+    )))
     expect_equal(cvvs_repr, cvvss[[tstsetup]], info = tstsetup)
   }
 })

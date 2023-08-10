@@ -1126,10 +1126,12 @@ test_that("`seed` works (and restores the RNG state afterwards)", {
     cvvs_orig <- cvvss[[tstsetup]]
     rand_orig <- runif(1) # Just to advance `.Random.seed[2]`.
     .Random.seed_repr1 <- .Random.seed
-    cvvs_repr <- do.call(cv_varsel, c(
+    # Use suppressWarnings() because of occasional warnings concerning Pareto k
+    # diagnostics:
+    cvvs_repr <- suppressWarnings(do.call(cv_varsel, c(
       list(object = refmods[[args_cvvs_i$tstsetup_ref]]),
       excl_nonargs(args_cvvs_i)
-    ))
+    )))
     .Random.seed_repr2 <- .Random.seed
     rand_new <- runif(1) # Just to advance `.Random.seed[2]`.
     # Expected equality:
@@ -1152,20 +1154,10 @@ test_that("`refit_prj` works", {
   for (tstsetup in tstsetups) {
     args_cvvs_i <- args_cvvs[[tstsetup]]
     args_cvvs_i$refit_prj <- FALSE
-    if (args_cvvs_i$prj_nm == "augdat" && args_cvvs_i$fam_nm == "cumul") {
-      warn_expected <- "non-integer #successes in a binomial glm!"
-    } else if (!is.null(args_cvvs_i$avoid.increase)) {
-      warn_expected <- warn_mclogit
-    } else {
-      warn_expected <- NA
-    }
-    expect_warning(
-      cvvs_reuse <- do.call(cv_varsel, c(
-        list(object = refmods[[args_cvvs_i$tstsetup_ref]]),
-        excl_nonargs(args_cvvs_i)
-      )),
-      warn_expected
-    )
+    cvvs_reuse <- suppressWarnings(do.call(cv_varsel, c(
+      list(object = refmods[[args_cvvs_i$tstsetup_ref]]),
+      excl_nonargs(args_cvvs_i)
+    )))
     mod_crr <- args_cvvs_i$mod_nm
     fam_crr <- args_cvvs_i$fam_nm
     prj_crr <- args_cvvs_i$prj_nm
@@ -1195,7 +1187,9 @@ test_that("`refit_prj` works", {
 
 test_that("invalid `nloo` fails", {
   for (tstsetup in names(refmods)) {
-    expect_error(cv_varsel(refmods[[tstsetup]], nloo = -1),
+    # Use suppressWarnings() because of occasional warnings concerning Pareto k
+    # diagnostics:
+    expect_error(suppressWarnings(cv_varsel(refmods[[tstsetup]], nloo = -1)),
                  "^nloo must be at least 1$",
                  info = tstsetup)
   }
@@ -1211,11 +1205,13 @@ test_that(paste(
                     value = TRUE)
   for (tstsetup in tstsetups) {
     args_cvvs_i <- args_cvvs[[tstsetup]]
-    cvvs_nloo <- do.call(cv_varsel, c(
+    # Use suppressWarnings() because of occasional warnings concerning Pareto k
+    # diagnostics:
+    cvvs_nloo <- suppressWarnings(do.call(cv_varsel, c(
       list(object = refmods[[args_cvvs_i$tstsetup_ref]],
            nloo = nloo_tst),
       excl_nonargs(args_cvvs_i)
-    ))
+    )))
     expect_equal(cvvs_nloo, cvvss[[tstsetup]], info = tstsetup)
   }
 })
@@ -1236,11 +1232,13 @@ test_that("setting `nloo` smaller than the number of observations works", {
       meth_exp_crr <- ifelse(mod_crr == "glm" && prj_crr != "augdat",
                              "L1", "forward")
     }
-    cvvs_nloo <- do.call(cv_varsel, c(
+    # Use suppressWarnings() because of occasional warnings concerning Pareto k
+    # diagnostics:
+    cvvs_nloo <- suppressWarnings(do.call(cv_varsel, c(
       list(object = refmods[[args_cvvs_i$tstsetup_ref]],
            nloo = nloo_tst),
       excl_nonargs(args_cvvs_i)
-    ))
+    )))
     vsel_tester(
       cvvs_nloo,
       with_cv = TRUE,
@@ -1335,11 +1333,13 @@ test_that("`validate_search` works", {
       meth_exp_crr <- ifelse(mod_crr == "glm" && prj_crr != "augdat",
                              "L1", "forward")
     }
-    cvvs_valsearch <- do.call(cv_varsel, c(
+    # Use suppressWarnings() because of occasional warnings concerning Pareto k
+    # diagnostics:
+    cvvs_valsearch <- suppressWarnings(do.call(cv_varsel, c(
       list(object = refmods[[args_cvvs_i$tstsetup_ref]],
            validate_search = FALSE),
       excl_nonargs(args_cvvs_i)
-    ))
+    )))
     vsel_tester(
       cvvs_valsearch,
       with_cv = TRUE,
