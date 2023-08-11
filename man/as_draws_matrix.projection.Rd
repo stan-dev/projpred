@@ -2,10 +2,13 @@
 % Please edit documentation in R/methods.R
 \name{as_draws_matrix.projection}
 \alias{as_draws_matrix.projection}
+\alias{as_draws.projection}
 \title{Extract projected parameter draws and coerce to \code{draws_matrix} (see package
 \pkg{posterior})}
 \usage{
 \method{as_draws_matrix}{projection}(x, ...)
+
+\method{as_draws}{projection}(x, ...)
 }
 \arguments{
 \item{x}{An object of class \code{projection} (returned by \code{\link[=project]{project()}}, possibly
@@ -22,14 +25,14 @@ An \eqn{S_{\mathrm{prj}} \times Q}{S_prj x Q} \code{draws_matrix} (see
 weights, \code{\link[posterior:weight_draws]{posterior::weight_draws()}} is applied internally.
 }
 \description{
-This is the \code{\link[posterior:draws_matrix]{posterior::as_draws_matrix()}} method for \code{projection} objects
-(returned by \code{\link[=project]{project()}}, possibly as elements of a \code{list}). It extracts the
-projected parameter draws and returns them as a \code{draws_matrix}. In case of
-different (i.e., nonconstant) weights for the projected draws, this
-\code{\link[posterior:draws_matrix]{posterior::as_draws_matrix()}} method allows for a safer handling of these
-weights (safer in contrast to \code{\link[=as.matrix.projection]{as.matrix.projection()}}), in particular by
-providing the natural input for \code{\link[posterior:resample_draws]{posterior::resample_draws()}} (see section
-"Examples" below).
+These are the \code{\link[posterior:draws]{posterior::as_draws()}} and \code{\link[posterior:draws_matrix]{posterior::as_draws_matrix()}}
+methods for \code{projection} objects (returned by \code{\link[=project]{project()}}, possibly as
+elements of a \code{list}). They extract the projected parameter draws and return
+them as a \code{draws_matrix}. In case of different (i.e., nonconstant) weights
+for the projected draws, a \code{draws_matrix} allows for a safer handling of
+these weights (safer in contrast to the matrix returned by
+\code{\link[=as.matrix.projection]{as.matrix.projection()}}), in particular by providing the natural input for
+\code{\link[posterior:resample_draws]{posterior::resample_draws()}} (see section "Examples" below).
 }
 \details{
 In case of the augmented-data projection for a multilevel submodel

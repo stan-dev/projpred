@@ -2084,14 +2084,14 @@ as.matrix.projection <- function(x, nm_scheme = "auto",
 #' Extract projected parameter draws and coerce to `draws_matrix` (see package
 #' \pkg{posterior})
 #'
-#' This is the [posterior::as_draws_matrix()] method for `projection` objects
-#' (returned by [project()], possibly as elements of a `list`). It extracts the
-#' projected parameter draws and returns them as a `draws_matrix`. In case of
-#' different (i.e., nonconstant) weights for the projected draws, this
-#' [posterior::as_draws_matrix()] method allows for a safer handling of these
-#' weights (safer in contrast to [as.matrix.projection()]), in particular by
-#' providing the natural input for [posterior::resample_draws()] (see section
-#' "Examples" below).
+#' These are the [posterior::as_draws()] and [posterior::as_draws_matrix()]
+#' methods for `projection` objects (returned by [project()], possibly as
+#' elements of a `list`). They extract the projected parameter draws and return
+#' them as a `draws_matrix`. In case of different (i.e., nonconstant) weights
+#' for the projected draws, a `draws_matrix` allows for a safer handling of
+#' these weights (safer in contrast to the matrix returned by
+#' [as.matrix.projection()]), in particular by providing the natural input for
+#' [posterior::resample_draws()] (see section "Examples" below).
 #'
 #' @param x An object of class `projection` (returned by [project()], possibly
 #'   as elements of a `list`).
@@ -2155,6 +2155,12 @@ as.matrix.projection <- function(x, nm_scheme = "auto",
 as_draws_matrix.projection <- function(x, ...) {
   xmat <- as.matrix(x, allow_nonconst_wdraws_prj = TRUE, ...)
   return(mat2drmat(xmat))
+}
+
+#' @rdname as_draws_matrix.projection
+#' @exportS3Method posterior::as_draws projection
+as_draws.projection <- function(x, ...) {
+  return(as_draws_matrix.projection(x, ...))
 }
 
 # Helper function for converting a matrix `xmat` (possibly possessing an
