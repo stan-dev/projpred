@@ -27,6 +27,7 @@ proj_predict(
   weightsnew = NULL,
   filter_nterms = NULL,
   nresample_clusters = 1000,
+  return_draws_matrix = FALSE,
   .seed = NA,
   resp_oscale = TRUE,
   ...

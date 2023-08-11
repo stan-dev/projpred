@@ -465,8 +465,8 @@ compute_lpd <- function(ynew, pred_sub, proj, weights, transformed) {
 #' @export
 proj_predict <- function(object, newdata = NULL, offsetnew = NULL,
                          weightsnew = NULL, filter_nterms = NULL,
-                         nresample_clusters = 1000, .seed = NA,
-                         resp_oscale = TRUE, ...) {
+                         nresample_clusters = 1000, return_draws_matrix = FALSE,
+                         .seed = NA, resp_oscale = TRUE, ...) {
   if (exists(".Random.seed", envir = .GlobalEnv)) {
     rng_state_old <- get(".Random.seed", envir = .GlobalEnv)
   }
@@ -483,14 +483,15 @@ proj_predict <- function(object, newdata = NULL, offsetnew = NULL,
     object = object, newdata = newdata,
     offsetnew = offsetnew, weightsnew = weightsnew,
     onesub_fun = proj_predict_aux, filter_nterms = filter_nterms,
-    nresample_clusters = nresample_clusters, resp_oscale = resp_oscale, ...
+    nresample_clusters = nresample_clusters, resp_oscale = resp_oscale,
+    return_draws_matrix = return_draws_matrix, ...
   )
 }
 
 ## function applied to each projected submodel in case of proj_predict()
 proj_predict_aux <- function(proj, newdata, offset, weights,
                              nresample_clusters = 1000, resp_oscale = TRUE,
-                             ...) {
+                             return_draws_matrix = FALSE, ...) {
   if (!proj$refmodel$family$for_latent && !resp_oscale) {
     stop("`resp_oscale = FALSE` can only be used in case of the latent ",
          "projection.")
@@ -556,6 +557,9 @@ proj_predict_aux <- function(proj, newdata, offset, weights,
     pppd_out <- do.call(rbind, lapply(draw_inds, function(i) {
       proj$refmodel$family$ppd(mu[, i], proj$dis[i], weights)
     }))
+  }
+  if (return_draws_matrix) {
+    pppd_out <- mat2drmat(pppd_out)
   }
   return(structure(pppd_out, cats = cats_aug))
 }
