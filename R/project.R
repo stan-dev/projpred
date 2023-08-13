@@ -108,8 +108,10 @@
 #'
 #'   The elements of an object of class `projection` are not meant to be
 #'   accessed directly but instead via helper functions (see the main vignette
-#'   and [projpred-package]; see also [as_draws_matrix.projection()] for the
-#'   intended use of the weights stored in element `wdraws_prj`).
+#'   and [projpred-package]; see also [as_draws_matrix.projection()], argument
+#'   `return_draws_matrix` of [proj_linpred()], and argument
+#'   `nresample_clusters` of [proj_predict()] for the intended use of the
+#'   weights stored in element `wdraws_prj`).
 #'
 #' @examples
 #' if (requireNamespace("rstanarm", quietly = TRUE)) {

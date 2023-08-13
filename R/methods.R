@@ -42,6 +42,21 @@
 #'   gives the number of draws (*with* replacement) from the set of clustered
 #'   posterior draws after projection (with this set being determined by
 #'   argument `nclusters` of [project()]).
+#' @param allow_nonconst_wdraws_prj Only relevant for [proj_linpred()] and only
+#'   if `integrated` is `FALSE`. A single logical value indicating whether to
+#'   allow projected draws with different (i.e., nonconstant) weights (`TRUE`)
+#'   or not (`FALSE`). If `return_draws_matrix` is `TRUE`,
+#'   `allow_nonconst_wdraws_prj` is internally set to `TRUE` as well.
+#'   **CAUTION**: Expert use only because if set to `TRUE`, the weights of the
+#'   projected draws are stored in attributes `wdraws_prj` and handling these
+#'   attributes requires special care (e.g., when subsetting the returned
+#'   matrices).
+#' @param return_draws_matrix A single logical value indicating whether to
+#'   return an object (in case of [proj_predict()]) or objects (in case of
+#'   [proj_linpred()]) of class `draws_matrix` (see
+#'   [posterior::draws_matrix()]). In case of [proj_linpred()] and projected
+#'   draws with nonconstant weights (as well as `integrated` being `FALSE`),
+#'   [posterior::weight_draws()] is applied internally.
 #' @param .seed Pseudorandom number generation (PRNG) seed by which the same
 #'   results can be obtained again if needed. Passed to argument `seed` of
 #'   [set.seed()], but can also be `NA` to not call [set.seed()] at all. If not
@@ -105,21 +120,37 @@
 #'       `transform = TRUE` and `<refmodel>$family$cats` (where `<refmodel>` is
 #'       an object resulting from [init_refmodel()]; see also
 #'       [extend_family()]'s argument `latent_y_unqs`) being `NULL`, both
-#'       elements are \eqn{S_{\mathrm{prj}} \times N}{S_prj x N} matrices. In
-#'       case of (i) the augmented-data projection or (ii) the latent projection
-#'       with `transform = TRUE` and `<refmodel>$family$cats` being not `NULL`,
-#'       `pred` is an \eqn{S_{\mathrm{prj}} \times N \times C}{S_prj x N x C}
-#'       array and `lpd` is an \eqn{S_{\mathrm{prj}} \times N}{S_prj x N}
-#'       matrix.
+#'       elements are \eqn{S_{\mathrm{prj}} \times N}{S_prj x N} matrices
+#'       (converted to a---possibly weighted---`draws_matrix` if argument
+#'       `return_draws_matrix` is `TRUE`, see the description of this argument).
+#'       In case of (i) the augmented-data projection or (ii) the latent
+#'       projection with `transform = TRUE` and `<refmodel>$family$cats` being
+#'       not `NULL`, `pred` is an \eqn{S_{\mathrm{prj}} \times N \times C}{S_prj
+#'       x N x C} array ("compressed" to an \eqn{S_{\mathrm{prj}} \times (N
+#'       \cdot C)}{S_prj x (N * C)} matrix---with the columns consisting of
+#'       \eqn{C} blocks of \eqn{N} rows---and then converted to a---possibly
+#'       weighted---`draws_matrix` if argument `return_draws_matrix` is `TRUE`)
+#'       and `lpd` is an \eqn{S_{\mathrm{prj}} \times N}{S_prj x N} matrix
+#'       (converted to a---possibly weighted---`draws_matrix` if argument
+#'       `return_draws_matrix` is `TRUE`). If `return_draws_matrix` is `FALSE`
+#'       and `allow_nonconst_wdraws_prj` is `TRUE` and `integrated` is `FALSE`
+#'       and the projected draws have different weights, then both `list`
+#'       elements have the weights of these draws stored in an attribute
+#'       `wdraws_prj`. (If `return_draws_matrix`, `allow_nonconst_wdraws_prj`,
+#'       and `integrated` are all `FALSE`, then projected draws with nonconstant
+#'       weights cause an error.)
 #'   * [proj_predict()] returns an \eqn{S_{\mathrm{prj}} \times N}{S_prj x N}
 #'   matrix of predictions where \eqn{S_{\mathrm{prj}}}{S_prj} denotes
-#'   `nresample_clusters` in case of clustered projection. In case of (i) the
+#'   `nresample_clusters` in case of clustered projection (or, more generally,
+#'   in case of projected draws with different weights). If argument
+#'   `return_draws_matrix` is `TRUE`, the returned matrix is converted to a
+#'   `draws_matrix` (see [posterior::draws_matrix()]). In case of (i) the
 #'   augmented-data projection or (ii) the latent projection with `resp_oscale =
-#'   TRUE` and `<refmodel>$family$cats` being not `NULL`, this matrix has an
-#'   attribute called `cats` (the character vector of response categories) and
-#'   the values of the matrix are the predicted indices of the response
-#'   categories (these indices refer to the order of the response categories
-#'   from attribute `cats`).
+#'   TRUE` and `<refmodel>$family$cats` being not `NULL`, the returned matrix
+#'   (or `draws_matrix`) has an attribute called `cats` (the character vector of
+#'   response categories) and the values of the matrix (or `draws_matrix`) are
+#'   the predicted indices of the response categories (these indices refer to
+#'   the order of the response categories from attribute `cats`).
 #'
 #'   If the prediction is done for more than one submodel, the output from above
 #'   is returned for each submodel, giving a named `list` with one element for

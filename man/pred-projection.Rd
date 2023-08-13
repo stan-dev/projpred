@@ -68,6 +68,23 @@ elements \code{pred} and \code{lpd} (see sections "Details" and "Value" below).}
 indicating whether the output should be averaged across the projected
 posterior draws (\code{TRUE}) or not (\code{FALSE}).}
 
+\item{allow_nonconst_wdraws_prj}{Only relevant for \code{\link[=proj_linpred]{proj_linpred()}} and only
+if \code{integrated} is \code{FALSE}. A single logical value indicating whether to
+allow projected draws with different (i.e., nonconstant) weights (\code{TRUE})
+or not (\code{FALSE}). If \code{return_draws_matrix} is \code{TRUE},
+\code{allow_nonconst_wdraws_prj} is internally set to \code{TRUE} as well.
+\strong{CAUTION}: Expert use only because if set to \code{TRUE}, the weights of the
+projected draws are stored in attributes \code{wdraws_prj} and handling these
+attributes requires special care (e.g., when subsetting the returned
+matrices).}
+
+\item{return_draws_matrix}{A single logical value indicating whether to
+return an object (in case of \code{\link[=proj_predict]{proj_predict()}}) or objects (in case of
+\code{\link[=proj_linpred]{proj_linpred()}}) of class \code{draws_matrix} (see
+\code{\link[posterior:draws_matrix]{posterior::draws_matrix()}}). In case of \code{\link[=proj_linpred]{proj_linpred()}} and projected
+draws with nonconstant weights (as well as \code{integrated} being \code{FALSE}),
+\code{\link[posterior:weight_draws]{posterior::weight_draws()}} is applied internally.}
+
 \item{.seed}{Pseudorandom number generation (PRNG) seed by which the same
 results can be obtained again if needed. Passed to argument \code{seed} of
 \code{\link[=set.seed]{set.seed()}}, but can also be \code{NA} to not call \code{\link[=set.seed]{set.seed()}} at all. If not
@@ -125,20 +142,36 @@ with \code{transform = FALSE}, or (iii) the latent projection with
 \code{transform = TRUE} and \verb{<refmodel>$family$cats} (where \verb{<refmodel>} is
 an object resulting from \code{\link[=init_refmodel]{init_refmodel()}}; see also
 \code{\link[=extend_family]{extend_family()}}'s argument \code{latent_y_unqs}) being \code{NULL}, both
-elements are \eqn{S_{\mathrm{prj}} \times N}{S_prj x N} matrices. In
-case of (i) the augmented-data projection or (ii) the latent projection
-with \code{transform = TRUE} and \verb{<refmodel>$family$cats} being not \code{NULL},
-\code{pred} is an \eqn{S_{\mathrm{prj}} \times N \times C}{S_prj x N x C}
-array and \code{lpd} is an \eqn{S_{\mathrm{prj}} \times N}{S_prj x N}
-matrix.
+elements are \eqn{S_{\mathrm{prj}} \times N}{S_prj x N} matrices
+(converted to a---possibly weighted---\code{draws_matrix} if argument
+\code{return_draws_matrix} is \code{TRUE}, see the description of this argument).
+In case of (i) the augmented-data projection or (ii) the latent
+projection with \code{transform = TRUE} and \verb{<refmodel>$family$cats} being
+not \code{NULL}, \code{pred} is an \eqn{S_{\mathrm{prj}} \times N \times C}{S_prj
+      x N x C} array ("compressed" to an \eqn{S_{\mathrm{prj}} \times (N
+      \cdot C)}{S_prj x (N * C)} matrix---with the columns consisting of
+\eqn{C} blocks of \eqn{N} rows---and then converted to a---possibly
+weighted---\code{draws_matrix} if argument \code{return_draws_matrix} is \code{TRUE})
+and \code{lpd} is an \eqn{S_{\mathrm{prj}} \times N}{S_prj x N} matrix
+(converted to a---possibly weighted---\code{draws_matrix} if argument
+\code{return_draws_matrix} is \code{TRUE}). If \code{return_draws_matrix} is \code{FALSE}
+and \code{allow_nonconst_wdraws_prj} is \code{TRUE} and \code{integrated} is \code{FALSE}
+and the projected draws have different weights, then both \code{list}
+elements have the weights of these draws stored in an attribute
+\code{wdraws_prj}. (If \code{return_draws_matrix}, \code{allow_nonconst_wdraws_prj},
+and \code{integrated} are all \code{FALSE}, then projected draws with nonconstant
+weights cause an error.)
 \item \code{\link[=proj_predict]{proj_predict()}} returns an \eqn{S_{\mathrm{prj}} \times N}{S_prj x N}
 matrix of predictions where \eqn{S_{\mathrm{prj}}}{S_prj} denotes
-\code{nresample_clusters} in case of clustered projection. In case of (i) the
-augmented-data projection or (ii) the latent projection with \code{resp_oscale =   TRUE} and \verb{<refmodel>$family$cats} being not \code{NULL}, this matrix has an
-attribute called \code{cats} (the character vector of response categories) and
-the values of the matrix are the predicted indices of the response
-categories (these indices refer to the order of the response categories
-from attribute \code{cats}).
+\code{nresample_clusters} in case of clustered projection (or, more generally,
+in case of projected draws with different weights). If argument
+\code{return_draws_matrix} is \code{TRUE}, the returned matrix is converted to a
+\code{draws_matrix} (see \code{\link[posterior:draws_matrix]{posterior::draws_matrix()}}). In case of (i) the
+augmented-data projection or (ii) the latent projection with \code{resp_oscale =   TRUE} and \verb{<refmodel>$family$cats} being not \code{NULL}, the returned matrix
+(or \code{draws_matrix}) has an attribute called \code{cats} (the character vector of
+response categories) and the values of the matrix (or \code{draws_matrix}) are
+the predicted indices of the response categories (these indices refer to
+the order of the response categories from attribute \code{cats}).
 }
 
 If the prediction is done for more than one submodel, the output from above
