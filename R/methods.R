@@ -1996,11 +1996,11 @@ get_subparams.mmblogit <- function(x, ...) {
 #'   `"rstanarm"` or `"brms"` based on the class of the reference model fit (and
 #'   uses `"rstanarm"` if the reference model fit is of an unknown class).
 #' @param allow_nonconst_wdraws_prj A single logical value indicating whether to
-#'   allow the return of projected draws with different (i.e., nonconstant)
-#'   weights (`TRUE`) or not (`FALSE`). **CAUTION**: Expert use only because if
-#'   set to `TRUE`, the weights of the projected draws are stored in an
-#'   attribute `wdraws_prj` and handling this attribute requires special care
-#'   (e.g., when subsetting the returned matrix).
+#'   allow projected draws with different (i.e., nonconstant) weights (`TRUE`)
+#'   or not (`FALSE`). **CAUTION**: Expert use only because if set to `TRUE`,
+#'   the weights of the projected draws are stored in an attribute `wdraws_prj`
+#'   and handling this attribute requires special care (e.g., when subsetting
+#'   the returned matrix).
 #' @param ... Currently ignored.
 #'
 #' @details In case of the augmented-data projection for a multilevel submodel

@@ -16,11 +16,11 @@ Either \code{"auto"}, \code{"rstanarm"}, or \code{"brms"}, where \code{"auto"} c
 uses \code{"rstanarm"} if the reference model fit is of an unknown class).}
 
 \item{allow_nonconst_wdraws_prj}{A single logical value indicating whether to
-allow the return of projected draws with different (i.e., nonconstant)
-weights (\code{TRUE}) or not (\code{FALSE}). \strong{CAUTION}: Expert use only because if
-set to \code{TRUE}, the weights of the projected draws are stored in an
-attribute \code{wdraws_prj} and handling this attribute requires special care
-(e.g., when subsetting the returned matrix).}
+allow projected draws with different (i.e., nonconstant) weights (\code{TRUE})
+or not (\code{FALSE}). \strong{CAUTION}: Expert use only because if set to \code{TRUE},
+the weights of the projected draws are stored in an attribute \code{wdraws_prj}
+and handling this attribute requires special care (e.g., when subsetting
+the returned matrix).}
 
 \item{...}{Currently ignored.}
 }

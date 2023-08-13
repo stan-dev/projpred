@@ -119,8 +119,8 @@ each submodel.
 
 The elements of an object of class \code{projection} are not meant to be
 accessed directly but instead via helper functions (see the main vignette
-and \link{projpred-package}; see also \code{\link[=as.matrix.projection]{as.matrix.projection()}} and
-\code{\link[=as_draws_matrix.projection]{as_draws_matrix.projection()}} for element \code{wdraws_prj}).
+and \link{projpred-package}; see also \code{\link[=as_draws_matrix.projection]{as_draws_matrix.projection()}} for the
+intended use of the weights stored in element \code{wdraws_prj}).
 }
 \description{
 Project the posterior of the reference model onto the parameter space of a
