@@ -78,6 +78,7 @@ bibentry(
   title = "Projection Predictive Variable Selection for Discrete Response Families with Finite Support",
   author = c(
     person("Frank", "Weber"),
+    person("Änne", "Glass"),
     person("Aki", "Vehtari")
   ),
   year = "2023",

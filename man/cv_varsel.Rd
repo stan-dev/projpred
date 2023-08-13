@@ -54,7 +54,7 @@ augmented-data projection is used. See also section "Details" below.}
 case, a Pareto-smoothed importance sampling leave-one-out CV (PSIS-LOO CV)
 is performed, which avoids refitting the reference model \code{nloo} times (in
 contrast to a standard LOO CV). In the \code{"kfold"} case, a \eqn{K}-fold CV is
-performed.}
+performed. See also section "Note" below.}
 
 \item{ndraws}{Number of posterior draws used in the search part. Ignored if
 \code{nclusters} is not \code{NULL} or in case of L1 search (because L1 search always
@@ -98,10 +98,11 @@ used for each predictor.}
 additional information during the computations.}
 
 \item{nloo}{\strong{Caution:} Still experimental. Only relevant if \code{cv_method = "LOO"}. Number of subsampled PSIS-LOO CV folds, i.e., number of
-observations used for the LOO CV (anything between 1 and the original
-number of observations). Smaller values lead to faster computation but
-higher uncertainty in the evaluation part. If \code{NULL}, all observations are
-used, but for faster experimentation, one can set this to a smaller value.}
+observations used for the approximate LOO CV (anything between 1 and the
+original number of observations). Smaller values lead to faster computation
+but higher uncertainty in the evaluation part. If \code{NULL}, all observations
+are used, but for faster experimentation, one can set this to a smaller
+value.}
 
 \item{K}{Only relevant if \code{cv_method = "kfold"} and if the reference model
 was created with \code{cvfits} being \code{NULL} (which is the case for
@@ -227,11 +228,18 @@ specify \code{search_terms = c("x2", "x3", "x2 + x3")}.
 If \code{validate_search} is \code{FALSE}, the search is not included in the CV
 so that only a single full-data search is run.
 
-For PSIS-LOO CV, \pkg{projpred} calls \code{\link[loo:psis]{loo::psis()}} with \code{r_eff = NA}. This
-is only a problem if there was extreme autocorrelation between the MCMC
-iterations when the reference model was built. In those cases however, the
-reference model should not have been used anyway, so we don't expect
-\pkg{projpred}'s \code{r_eff = NA} to be a problem.
+For PSIS-LOO CV, \pkg{projpred} calls \code{\link[loo:psis]{loo::psis()}} (or, exceptionally,
+\code{\link[loo:sis]{loo::sis()}}, see below) with \code{r_eff = NA}. This is only a problem if there
+was extreme autocorrelation between the MCMC iterations when the reference
+model was built. In those cases however, the reference model should not
+have been used anyway, so we don't expect \pkg{projpred}'s \code{r_eff = NA} to
+be a problem.
+
+PSIS cannot be used if the draws have different (i.e., nonconstant) weights
+or if the number of draws is too small. In such cases, \pkg{projpred}
+resorts to standard importance sampling (SIS) and throws a warning about
+this. Throughout the documentation, the term "PSIS" is used even though in
+fact, \pkg{projpred} resorts to SIS in these special cases.
 
 With \code{parallel = TRUE}, costly parts of \pkg{projpred}'s CV are run in
 parallel. Costly parts are the fold-wise searches and performance

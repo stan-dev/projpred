@@ -252,6 +252,7 @@ project <- function(object, nterms = NULL, solution_terms = NULL,
   nterms_all <- count_terms_in_formula(refmodel$formula) - 1L
   if (nterms_max == nterms_all &&
       formula_contains_group_terms(refmodel$formula) &&
+      getOption("projpred.warn_instable_projections", TRUE) &&
       (refmodel$family$family == "gaussian" || refmodel$family$for_latent)) {
     warning(
       "In case of the Gaussian family (also in case of the latent projection) ",
