@@ -414,7 +414,9 @@ proj_linpred_aux <- function(proj, newdata, offset, weights, transform = FALSE,
   }
   if (!proj[["const_wdraws_prj"]] && !integrated) {
     attr(pred_sub, "wdraws_prj") <- proj[["wdraws_prj"]]
-    attr(lpd_out, "wdraws_prj") <- proj[["wdraws_prj"]]
+    if (!is.null(lpd_out)) {
+      attr(lpd_out, "wdraws_prj") <- proj[["wdraws_prj"]]
+    }
   }
   if (return_draws_matrix) {
     if (length(dim(pred_sub)) == 3) {
@@ -422,7 +424,9 @@ proj_linpred_aux <- function(proj, newdata, offset, weights, transform = FALSE,
                             wdraws_prj = attr(pred_sub, "wdraws_prj"))
     }
     pred_sub <- mat2drmat(pred_sub)
-    lpd_out <- mat2drmat(lpd_out)
+    if (!is.null(lpd_out)) {
+      lpd_out <- mat2drmat(lpd_out)
+    }
   }
   return(nlist(pred = pred_sub, lpd = lpd_out))
 }
