@@ -1511,7 +1511,8 @@ if (run_cvvs) {
 ### From "projection" -----------------------------------------------------
 
 if (run_prj) {
-  pls <- lapply(prjs, proj_linpred, .seed = seed2_tst)
+  pls <- lapply(prjs, proj_linpred, allow_nonconst_wdraws_prj = TRUE,
+                .seed = seed2_tst)
   pps <- lapply(prjs, proj_predict, .seed = seed2_tst)
 }
 
@@ -1520,14 +1521,16 @@ if (run_prj) {
 #### varsel() -------------------------------------------------------------
 
 if (run_vs) {
-  pls_vs <- lapply(prjs_vs, proj_linpred, .seed = seed2_tst)
+  pls_vs <- lapply(prjs_vs, proj_linpred, allow_nonconst_wdraws_prj = TRUE,
+                   .seed = seed2_tst)
   pps_vs <- lapply(prjs_vs, proj_predict, .seed = seed2_tst)
 }
 
 #### cv_varsel() ----------------------------------------------------------
 
 if (run_cvvs) {
-  pls_cvvs <- lapply(prjs_cvvs, proj_linpred, .seed = seed2_tst)
+  pls_cvvs <- lapply(prjs_cvvs, proj_linpred, allow_nonconst_wdraws_prj = TRUE,
+                     .seed = seed2_tst)
   pps_cvvs <- lapply(prjs_cvvs, proj_predict, .seed = seed2_tst)
 }
 

@@ -1639,8 +1639,10 @@ projection_tester <- function(p,
     # Number of projected draws in as.matrix.projection() (note that more
     # extensive tests for as.matrix.projection() may be found in
     # "test_as_matrix.R"):
-    expect_identical(suppressWarnings(NROW(as.matrix(p))), nprjdraws_expected,
-                     info = info_str)
+    expect_identical(
+      nrow(as.matrix(p, allow_nonconst_wdraws_prj = TRUE)), nprjdraws_expected,
+      info = info_str
+    )
   }
   if (!p$refmodel$family$for_augdat && nprjdraws_expected > 1) {
     y_nms <- paste0(y_nms, ".", seq_len(nprjdraws_expected))
@@ -1790,6 +1792,8 @@ proj_list_tester <- function(p,
 # @param pl An object resulting from a call to proj_linpred().
 # @param len_expected The number of `"projection"` objects used for `pl`.
 # @param nprjdraws_expected The expected number of projected draws in `pl`.
+# @param wdraws_prj_expected The expected attribute `wdraws_prj` (containing the
+#   weights of the projected draws) of the `pred` and `lpd` elements.
 # @param nobsv_expected The expected number of observations in `pl`.
 # @param lpd_null_expected A single logical value indicating whether output
 #   element `lpd` is expected to be `NULL` (`TRUE`) or not (`FALSE`).
@@ -1806,6 +1810,7 @@ proj_list_tester <- function(p,
 pl_tester <- function(pl,
                       len_expected = 1,
                       nprjdraws_expected = nclusters_pred_tst,
+                      wdraws_prj_expected = NULL,
                       nobsv_expected = nobsv,
                       lpd_null_expected = FALSE,
                       ncats_nlats_expected = replicate(len_expected,
@@ -1825,9 +1830,13 @@ pl_tester <- function(pl,
       c(nprjdraws_expected, nobsv_expected, ncats_nlats_expected[[!!j]]),
       info = info_str
     )
+    expect_identical(attr(pl[[!!j]]$pred, "wdraws_prj"), wdraws_prj_expected,
+                     info = info_str)
     if (!lpd_null_expected) {
       expect_identical(dim(pl[[!!j]]$lpd),
                        c(nprjdraws_expected, nobsv_expected),
+                       info = info_str)
+      expect_identical(attr(pl[[!!j]]$lpd, "wdraws_prj"), wdraws_prj_expected,
                        info = info_str)
     } else {
       expect_null(pl[[!!j]]$lpd, info = info_str)
