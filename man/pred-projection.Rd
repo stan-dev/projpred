@@ -105,7 +105,8 @@ In the following, \eqn{S_{\mathrm{prj}}}{S_prj}, \eqn{N},
 topic \link{refmodel-init-get} are used. (For \code{\link[=proj_linpred]{proj_linpred()}} with \code{integrated = TRUE}, we have \eqn{S_{\mathrm{prj}} = 1}{S_prj = 1}.) Furthermore, let
 \eqn{C} denote either \eqn{C_{\mathrm{cat}}}{C_cat} (if \code{transform = TRUE})
 or \eqn{C_{\mathrm{lat}}}{C_lat} (if \code{transform = FALSE}). Then, if the
-prediction is done for one submodel only (i.e., \code{length(nterms) == 1 || !is.null(solution_terms)} in the call to \code{\link[=project]{project()}}):
+prediction is done for one submodel only (i.e., \code{length(nterms) == 1 || !is.null(solution_terms)} in the explicit or implicit call to \code{\link[=project]{project()}},
+see argument \code{object}):
 \itemize{
 \item \code{\link[=proj_linpred]{proj_linpred()}} returns a \code{list} with the following elements:
 \itemize{

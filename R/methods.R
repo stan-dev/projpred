@@ -88,7 +88,8 @@
 #'   \eqn{C} denote either \eqn{C_{\mathrm{cat}}}{C_cat} (if `transform = TRUE`)
 #'   or \eqn{C_{\mathrm{lat}}}{C_lat} (if `transform = FALSE`). Then, if the
 #'   prediction is done for one submodel only (i.e., `length(nterms) == 1 ||
-#'   !is.null(solution_terms)` in the call to [project()]):
+#'   !is.null(solution_terms)` in the explicit or implicit call to [project()],
+#'   see argument `object`):
 #'   * [proj_linpred()] returns a `list` with the following elements:
 #'       + Element `pred` contains the actual predictions, i.e., the linear
 #'       predictors, possibly transformed to response scale (depending on
