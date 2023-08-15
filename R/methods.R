@@ -135,14 +135,15 @@
 #'       weighted---`draws_matrix` if argument `return_draws_matrix` is `TRUE`).
 #'       If `return_draws_matrix` is `FALSE` and `allow_nonconst_wdraws_prj` is
 #'       `TRUE` and `integrated` is `FALSE` and the projected draws have
-#'       different weights, then both `list` elements have the weights of these
-#'       draws stored in an attribute `wdraws_prj`. (If `return_draws_matrix`,
-#'       `allow_nonconst_wdraws_prj`, and `integrated` are all `FALSE`, then
-#'       projected draws with nonconstant weights cause an error.)
+#'       nonconstant weights, then both `list` elements have the weights of
+#'       these draws stored in an attribute `wdraws_prj`. (If
+#'       `return_draws_matrix`, `allow_nonconst_wdraws_prj`, and `integrated`
+#'       are all `FALSE`, then projected draws with nonconstant weights cause an
+#'       error.)
 #'   * [proj_predict()] returns an \eqn{S_{\mathrm{prj}} \times N}{S_prj x N}
 #'   matrix of predictions where \eqn{S_{\mathrm{prj}}}{S_prj} denotes
 #'   `nresample_clusters` in case of clustered projection (or, more generally,
-#'   in case of projected draws with different weights). If argument
+#'   in case of projected draws with nonconstant weights). If argument
 #'   `return_draws_matrix` is `TRUE`, the returned matrix is converted to a
 #'   `draws_matrix` (see [posterior::draws_matrix()]). In case of (i) the
 #'   augmented-data projection or (ii) the latent projection with `resp_oscale =
