@@ -35,7 +35,6 @@ proportions printed as text inside of the colored tiles are rounded to whole
 percentage points (the plotted proportions themselves are not rounded).
 }
 \examples{
-\dontshow{if (identical(Sys.getenv("RUN_EX"), "true")) (if (getRversion() >= "3.4") withAutoprint else force)(\{ # examplesIf}
 # Note: The code from this example is not executed when called via example().
 # To execute it, you have to copy and paste it manually to the console.
 if (requireNamespace("rstanarm", quietly = TRUE)) {
@@ -71,7 +70,7 @@ if (requireNamespace("rstanarm", quietly = TRUE)) {
   # legend:
   print(gg_pr_rk + ggplot2::theme(legend.position = "none"))
 }
-\dontshow{\}) # examplesIf}
+
 }
 \author{
 Idea and original code by Aki Vehtari. Slight modifications of the

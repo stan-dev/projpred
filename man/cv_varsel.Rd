@@ -259,7 +259,6 @@ parallelization described in \link{projpred-package}. In that regard, the CV
 parallelization is recommended over the projection parallelization.
 }
 \examples{
-\dontshow{if (identical(Sys.getenv("RUN_EX"), "true")) (if (getRversion() >= "3.4") withAutoprint else force)(\{ # examplesIf}
 # Note: The code from this example is not executed when called via example().
 # To execute it, you have to copy and paste it manually to the console.
 if (requireNamespace("rstanarm", quietly = TRUE)) {
@@ -282,7 +281,7 @@ if (requireNamespace("rstanarm", quietly = TRUE)) {
   # Now see, for example, `?print.vsel`, `?plot.vsel`, `?suggest_size.vsel`,
   # and `?ranking` for possible post-processing functions.
 }
-\dontshow{\}) # examplesIf}
+
 }
 \references{
 Magnusson, Måns, Michael Andersen, Johan Jonasson, and Aki Vehtari. 2019.

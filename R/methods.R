@@ -2619,7 +2619,7 @@ cv_proportions.vsel <- function(object, ...) {
 #'   original code by Frank Weber, Yann McLatchie, and Sölvi Rögnvaldsson. Final
 #'   implementation in \pkg{projpred} by Frank Weber.
 #'
-#' @examplesIf identical(Sys.getenv("RUN_EX"), "true")
+#' @examples
 #' # Note: The code from this example is not executed when called via example().
 #' # To execute it, you have to copy and paste it manually to the console.
 #' if (requireNamespace("rstanarm", quietly = TRUE)) {
