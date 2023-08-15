@@ -148,23 +148,24 @@ elements are \eqn{S_{\mathrm{prj}} \times N}{S_prj x N} matrices
 In case of (i) the augmented-data projection or (ii) the latent
 projection with \code{transform = TRUE} and \verb{<refmodel>$family$cats} being
 not \code{NULL}, \code{pred} is an \eqn{S_{\mathrm{prj}} \times N \times C}{S_prj
-      x N x C} array ("compressed" to an \eqn{S_{\mathrm{prj}} \times (N
-      \cdot C)}{S_prj x (N * C)} matrix---with the columns consisting of
-\eqn{C} blocks of \eqn{N} rows---and then converted to a---possibly
-weighted---\code{draws_matrix} if argument \code{return_draws_matrix} is \code{TRUE})
-and \code{lpd} is an \eqn{S_{\mathrm{prj}} \times N}{S_prj x N} matrix
-(converted to a---possibly weighted---\code{draws_matrix} if argument
-\code{return_draws_matrix} is \code{TRUE}). If \code{return_draws_matrix} is \code{FALSE}
-and \code{allow_nonconst_wdraws_prj} is \code{TRUE} and \code{integrated} is \code{FALSE}
-and the projected draws have different weights, then both \code{list}
-elements have the weights of these draws stored in an attribute
-\code{wdraws_prj}. (If \code{return_draws_matrix}, \code{allow_nonconst_wdraws_prj},
-and \code{integrated} are all \code{FALSE}, then projected draws with nonconstant
-weights cause an error.)
+      x N x C} array (if argument \code{return_draws_matrix} is \code{TRUE}, this array
+is "compressed" to an \eqn{S_{\mathrm{prj}} \times (N \cdot C)}{S_prj x
+      (N * C)} matrix---with the columns consisting of \eqn{C} blocks of
+\eqn{N} rows---and then converted to a---possibly
+weighted---\code{draws_matrix}) and \code{lpd} is an \eqn{S_{\mathrm{prj}} \times
+      N}{S_prj x N} matrix (converted to a---possibly
+weighted---\code{draws_matrix} if argument \code{return_draws_matrix} is \code{TRUE}).
+If \code{return_draws_matrix} is \code{FALSE} and \code{allow_nonconst_wdraws_prj} is
+\code{TRUE} and \code{integrated} is \code{FALSE} and the projected draws have
+nonconstant weights, then both \code{list} elements have the weights of
+these draws stored in an attribute \code{wdraws_prj}. (If
+\code{return_draws_matrix}, \code{allow_nonconst_wdraws_prj}, and \code{integrated}
+are all \code{FALSE}, then projected draws with nonconstant weights cause an
+error.)
 \item \code{\link[=proj_predict]{proj_predict()}} returns an \eqn{S_{\mathrm{prj}} \times N}{S_prj x N}
 matrix of predictions where \eqn{S_{\mathrm{prj}}}{S_prj} denotes
 \code{nresample_clusters} in case of clustered projection (or, more generally,
-in case of projected draws with different weights). If argument
+in case of projected draws with nonconstant weights). If argument
 \code{return_draws_matrix} is \code{TRUE}, the returned matrix is converted to a
 \code{draws_matrix} (see \code{\link[posterior:draws_matrix]{posterior::draws_matrix()}}). In case of (i) the
 augmented-data projection or (ii) the latent projection with \code{resp_oscale =   TRUE} and \verb{<refmodel>$family$cats} being not \code{NULL}, the returned matrix
