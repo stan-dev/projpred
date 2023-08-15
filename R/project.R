@@ -108,11 +108,10 @@
 #'
 #'   The elements of an object of class `projection` are not meant to be
 #'   accessed directly but instead via helper functions (see the main vignette
-#'   and [projpred-package]). An exception is element `wdraws_prj` which is
-#'   currently needed to weight quantities derived from the projected draws in
-#'   case of clustered projection, e.g., after applying [as.matrix.projection()]
-#'   (which throws a warning in case of clustered projection to make users aware
-#'   of this problem).
+#'   and [projpred-package]; see also [as_draws_matrix.projection()], argument
+#'   `return_draws_matrix` of [proj_linpred()], and argument
+#'   `nresample_clusters` of [proj_predict()] for the intended use of the
+#'   weights stored in element `wdraws_prj`).
 #'
 #' @examples
 #' if (requireNamespace("rstanarm", quietly = TRUE)) {
@@ -288,7 +287,7 @@ project <- function(object, nterms = NULL, solution_terms = NULL,
   }
   projs <- lapply(submodls, function(submodl) {
     proj_k <- submodl
-    proj_k$const_wdraws_prj <- length(unique(refdist_obj$wdraws_prj)) == 1
+    proj_k[["const_wdraws_prj"]] <- length(unique(refdist_obj$wdraws_prj)) == 1
     proj_k$refmodel <- refmodel
     class(proj_k) <- "projection"
     return(proj_k)

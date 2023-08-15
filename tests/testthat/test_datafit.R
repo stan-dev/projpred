@@ -350,7 +350,7 @@ test_that(paste(
       ### `datafit`s. Fix this.
       # if (run_snaps) {
       #   if (testthat_ed_max2) local_edition(3)
-      #   suppressWarnings(m <- as.matrix(prjs_vs_datafit[[tstsetup]]))
+      #   m <- as.matrix(prjs_vs_datafit[[tstsetup]])
       #   expect_snapshot({
       #     print(tstsetup)
       #     print(rlang::hash(m)) # cat(m)
@@ -377,7 +377,7 @@ test_that(paste(
       # if (run_snaps) {
       #   if (testthat_ed_max2) local_edition(3)
       #   res_vs <- lapply(prjs_vs_datafit[[tstsetup]], function(prjs_vs_i) {
-      #     suppressWarnings(m <- as.matrix(prjs_vs_i))
+      #     m <- as.matrix(prjs_vs_i)
       #     expect_snapshot({
       #       print(tstsetup)
       #       print(prjs_vs_i$solution_terms)

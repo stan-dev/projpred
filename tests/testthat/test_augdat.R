@@ -229,8 +229,10 @@ test_that(paste(
     tstsetup_trad <- sub("\\.augdat\\.", ".trad_compare.", tstsetup)
     if (!tstsetup_trad %in% names(prjs)) next
 
-    prjmat <- suppressWarnings(as.matrix(prjs[[tstsetup]]))
-    prjmat_trad <- suppressWarnings(as.matrix(prjs[[tstsetup_trad]]))
+    cl_used <- ndr_ncl_dtls(args_prj[[tstsetup]])$clust_used
+    prjmat <- as.matrix(prjs[[tstsetup]], allow_nonconst_wdraws_prj = cl_used)
+    prjmat_trad <- as.matrix(prjs[[tstsetup_trad]],
+                             allow_nonconst_wdraws_prj = cl_used)
 
     tol_coefs <- ifelse(
       args_prj[[tstsetup]]$mod_nm == "glmm" &&
@@ -263,11 +265,11 @@ test_that(paste(
       list(object = refmods[[args_prj_i_trad$tstsetup_ref]], regul = 0),
       excl_nonargs(args_prj_i_trad)
     ))
-    prjmat <- suppressWarnings(as.matrix(prj))
-    prjmat_trad <- suppressWarnings(as.matrix(prj_trad))
+    cl_used <- ndr_ncl_dtls(args_prj_i)$clust_used
+    prjmat <- as.matrix(prj, allow_nonconst_wdraws_prj = cl_used)
+    prjmat_trad <- as.matrix(prj_trad, allow_nonconst_wdraws_prj = cl_used)
 
-    tol_coefs <- ifelse(ndr_ncl_dtls(args_prj_i)$clust_used,
-                        1e-9, 1e-14)
+    tol_coefs <- ifelse(cl_used, 1e-9, 1e-14)
     expect_equal(prjmat, prjmat_trad, tolerance = tol_coefs, info = tstsetup)
   }
 })
@@ -288,9 +290,10 @@ test_that(paste(
     pl <- pls[[tstsetup]]
     expect_length(dim(pl$pred), 3)
     expect_identical(dim(pl$pred)[3], 1L)
-    pl$pred <- matrix(pl$pred,
-                      nrow = dim(pl$pred)[1],
-                      ncol = dim(pl$pred)[2])
+    pl$pred <- structure(matrix(pl$pred,
+                                nrow = dim(pl$pred)[1],
+                                ncol = dim(pl$pred)[2]),
+                         wdraws_prj = attr(pl$pred, "wdraws_prj"))
     dimnames(pl$pred) <- list(NULL, as.character(seq_len(ncol(pl$pred))))
     dimnames(pl$lpd) <- list(NULL, as.character(seq_len(ncol(pl$lpd))))
     pl_trad <- pls[[tstsetup_trad]]

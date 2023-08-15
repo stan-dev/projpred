@@ -58,11 +58,11 @@ families.
 
 Setting the global option \code{projpred.extra_verbose} to \code{TRUE} will print out
 which submodel \pkg{projpred} is currently projecting onto as well as (if
-\code{method = "forward"} and \code{verbose = TRUE} in \code{varsel()} or \code{cv_varsel()})
+\code{method = "forward"} and \code{verbose = TRUE} in \code{\link[=varsel]{varsel()}} or \code{\link[=cv_varsel]{cv_varsel()}})
 which submodel has been selected at those steps of the forward search for
 which a percentage (of the maximum submodel size that the search is run up
 to) is printed. In general, however, we cannot recommend setting this global
-option to \code{TRUE} for \code{cv_varsel()} with \code{validate_search = TRUE} (simply due
+option to \code{TRUE} for \code{\link[=cv_varsel]{cv_varsel()}} with \code{validate_search = TRUE} (simply due
 to the amount of information that will be printed, but also due to the
 progress bar which will not work anymore as intended).
 
@@ -102,24 +102,25 @@ In case of multilevel models, \pkg{projpred} offers two global options for
 training data as \emph{new} group levels, implying that their group-level effects
 are drawn randomly from a (multivariate) Gaussian distribution. This concerns
 both, the reference model and the (i.e., any) submodel. Furthermore, setting
-\code{projpred.mlvl_pred_new} to \code{TRUE} causes \code{as.matrix.projection()} to omit
-the projected group-level effects (for the group levels from the original
-dataset). When setting \code{projpred.mlvl_proj_ref_new} to \code{TRUE} (default is
-\code{FALSE}), then at \emph{projection} time, the reference model's fitted values
-(that the submodels fit to) will be computed by treating the group levels
-from the original dataset as \emph{new} group levels, implying that their
-group-level effects will be drawn randomly from a (multivariate) Gaussian
-distribution (as long as the reference model is a multilevel model,
-which---for custom reference models---does not need to be the case). This
-also affects the latent response values for a latent projection
-correspondingly. Setting \code{projpred.mlvl_pred_new} to \code{TRUE} makes sense,
-e.g., when the prediction task is such that any group level will be treated
-as a new one. Typically, setting \code{projpred.mlvl_proj_ref_new} to \code{TRUE} only
-makes sense when \code{projpred.mlvl_pred_new} is already set to \code{TRUE}. In that
-case, the default of \code{FALSE} for \code{projpred.mlvl_proj_ref_new} ensures that at
-projection time, the submodels fit to the best possible fitted values from
-the reference model, and setting \code{projpred.mlvl_proj_ref_new} to \code{TRUE} would
-make sense if the group-level effects should be integrated out completely.
+\code{projpred.mlvl_pred_new} to \code{TRUE} causes \code{\link[=as.matrix.projection]{as.matrix.projection()}} and
+\code{\link[=as_draws_matrix.projection]{as_draws_matrix.projection()}} to omit the projected group-level effects (for
+the group levels from the original dataset). When setting
+\code{projpred.mlvl_proj_ref_new} to \code{TRUE} (default is \code{FALSE}), then at
+\emph{projection} time, the reference model's fitted values (that the submodels
+fit to) will be computed by treating the group levels from the original
+dataset as \emph{new} group levels, implying that their group-level effects will
+be drawn randomly from a (multivariate) Gaussian distribution (as long as the
+reference model is a multilevel model, which---for custom reference
+models---does not need to be the case). This also affects the latent response
+values for a latent projection correspondingly. Setting
+\code{projpred.mlvl_pred_new} to \code{TRUE} makes sense, e.g., when the prediction
+task is such that any group level will be treated as a new one. Typically,
+setting \code{projpred.mlvl_proj_ref_new} to \code{TRUE} only makes sense when
+\code{projpred.mlvl_pred_new} is already set to \code{TRUE}. In that case, the default
+of \code{FALSE} for \code{projpred.mlvl_proj_ref_new} ensures that at projection time,
+the submodels fit to the best possible fitted values from the reference
+model, and setting \code{projpred.mlvl_proj_ref_new} to \code{TRUE} would make sense if
+the group-level effects should be integrated out completely.
 }
 \section{Functions}{
 \describe{
@@ -137,7 +138,8 @@ and \code{\link[=cv_varsel]{cv_varsel()}}.}
 \item{\code{\link[=project]{project()}}}{For projecting the reference model onto submodel(s).
 Typically, this follows the variable selection, but it can also be applied
 directly (without a variable selection).}
-\item{\code{\link[=as.matrix.projection]{as.matrix.projection()}}}{For extracting projected parameter draws.}
+\item{\code{\link[=as.matrix.projection]{as.matrix.projection()}} and \code{\link[=as_draws_matrix.projection]{as_draws_matrix.projection()}}}{For
+extracting projected parameter draws.}
 \item{\code{\link[=proj_linpred]{proj_linpred()}}, \code{\link[=proj_predict]{proj_predict()}}}{For making predictions from a
 submodel (after projecting the reference model onto it).}
 }

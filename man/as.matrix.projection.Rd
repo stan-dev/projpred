@@ -2,9 +2,9 @@
 % Please edit documentation in R/methods.R
 \name{as.matrix.projection}
 \alias{as.matrix.projection}
-\title{Extract projected parameter draws}
+\title{Extract projected parameter draws and coerce to matrix}
 \usage{
-\method{as.matrix}{projection}(x, nm_scheme = "auto", ...)
+\method{as.matrix}{projection}(x, nm_scheme = "auto", allow_nonconst_wdraws_prj = FALSE, ...)
 }
 \arguments{
 \item{x}{An object of class \code{projection} (returned by \code{\link[=project]{project()}}, possibly
@@ -15,17 +15,29 @@ Either \code{"auto"}, \code{"rstanarm"}, or \code{"brms"}, where \code{"auto"} c
 \code{"rstanarm"} or \code{"brms"} based on the class of the reference model fit (and
 uses \code{"rstanarm"} if the reference model fit is of an unknown class).}
 
+\item{allow_nonconst_wdraws_prj}{A single logical value indicating whether to
+allow projected draws with different (i.e., nonconstant) weights (\code{TRUE})
+or not (\code{FALSE}). \strong{CAUTION}: Expert use only because if set to \code{TRUE},
+the weights of the projected draws are stored in an attribute \code{wdraws_prj}
+and handling this attribute requires special care (e.g., when subsetting
+the returned matrix).}
+
 \item{...}{Currently ignored.}
 }
 \value{
 An \eqn{S_{\mathrm{prj}} \times Q}{S_prj x Q} matrix of projected
 draws, with \eqn{S_{\mathrm{prj}}}{S_prj} denoting the number of projected
-draws and \eqn{Q} the number of parameters.
+draws and \eqn{Q} the number of parameters. If \code{allow_nonconst_wdraws_prj}
+is set to \code{TRUE}, the weights of the projected draws are stored in an
+attribute \code{wdraws_prj}. (If \code{allow_nonconst_wdraws_prj} is \code{FALSE},
+projected draws with nonconstant weights cause an error.)
 }
 \description{
 This is the \code{\link[=as.matrix]{as.matrix()}} method for \code{projection} objects (returned by
 \code{\link[=project]{project()}}, possibly as elements of a \code{list}). It extracts the projected
-parameter draws and returns them as a matrix.
+parameter draws and returns them as a matrix. In case of different (i.e.,
+nonconstant) weights for the projected draws, see
+\code{\link[=as_draws_matrix.projection]{as_draws_matrix.projection()}} for a better solution.
 }
 \details{
 In case of the augmented-data projection for a multilevel submodel
@@ -48,36 +60,28 @@ if (requireNamespace("rstanarm", quietly = TRUE)) {
   )
 
   # Projection onto an arbitrary combination of predictor terms (with a small
-  # value for `nclusters`, but only for the sake of speed in this example;
-  # this is not recommended in general):
-  prj <- project(fit, solution_terms = c("X1", "X3", "X5"), nclusters = 10,
+  # value for `ndraws`, but only for the sake of speed in this example; this
+  # is not recommended in general):
+  prj <- project(fit, solution_terms = c("X1", "X3", "X5"), ndraws = 21,
                  seed = 9182)
-  prjmat <- as.matrix(prj)
-  ### For further post-processing (e.g., via packages `bayesplot` and
-  ### `posterior`), we will here ignore the fact that clustering was used
-  ### (due to argument `nclusters` above). CAUTION: Ignoring the clustering
-  ### is not recommended and only shown here for demonstrative purposes. A
-  ### better solution for the clustering case is explained below.
-  # If the `bayesplot` package is installed, the output from
-  # as.matrix.projection() can be used there. For example:
-  if (requireNamespace("bayesplot", quietly = TRUE)) {
-    print(bayesplot::mcmc_intervals(prjmat))
-  }
-  # If the `posterior` package is installed, the output from
-  # as.matrix.projection() can be used there. For example:
+
+  # Applying the as.matrix() generic to the output of project() dispatches to
+  # the projpred::as.matrix.projection() method:
+  prj_mat <- as.matrix(prj)
+
+  # Since the draws have all the same weight here, we can treat them like
+  # ordinary MCMC draws, e.g., we can summarize them using the `posterior`
+  # package:
   if (requireNamespace("posterior", quietly = TRUE)) {
-    prjdrws <- posterior::as_draws_matrix(prjmat)
     print(posterior::summarize_draws(
-      prjdrws,
+      posterior::as_draws_matrix(prj_mat),
       "median", "mad", function(x) quantile(x, probs = c(0.025, 0.975))
     ))
   }
-  ### Better solution for post-processing clustered draws (e.g., via
-  ### `bayesplot` or `posterior`): Don't ignore the fact that clustering was
-  ### used. Instead, resample the clusters according to their weights (e.g.,
-  ### via posterior::resample_draws()). However, this requires access to the
-  ### cluster weights which is not implemented in `projpred` yet. This
-  ### example will be extended as soon as those weights are accessible.
+  # Or visualize them using the `bayesplot` package:
+  if (requireNamespace("bayesplot", quietly = TRUE)) {
+    print(bayesplot::mcmc_intervals(prj_mat))
+  }
 }
 
 }

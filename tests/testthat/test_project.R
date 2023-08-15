@@ -478,14 +478,8 @@ test_that("for GLMs, `regul` has an expected effect", {
       }
 
       # Run as.matrix.projection():
-      if (ndr_ncl$clust_used) {
-        # Clustered projection, so we expect a warning:
-        warn_prjmat_expect <- "The projected draws have different .*weights"
-      } else {
-        warn_prjmat_expect <- NA
-      }
-      expect_warning(prjmat <- as.matrix(prj_regul, nm_scheme = "brms"),
-                     warn_prjmat_expect, info = tstsetup)
+      prjmat <- as.matrix(prj_regul, nm_scheme = "brms",
+                          allow_nonconst_wdraws_prj = ndr_ncl$clust_used)
 
       # Reduce to only those columns which are necessary here:
       prjmat <- prjmat[, grep("^b_", colnames(prjmat)), drop = FALSE]

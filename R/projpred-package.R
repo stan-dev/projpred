@@ -57,11 +57,11 @@
 #'
 #' Setting the global option `projpred.extra_verbose` to `TRUE` will print out
 #' which submodel \pkg{projpred} is currently projecting onto as well as (if
-#' `method = "forward"` and `verbose = TRUE` in `varsel()` or `cv_varsel()`)
+#' `method = "forward"` and `verbose = TRUE` in [varsel()] or [cv_varsel()])
 #' which submodel has been selected at those steps of the forward search for
 #' which a percentage (of the maximum submodel size that the search is run up
 #' to) is printed. In general, however, we cannot recommend setting this global
-#' option to `TRUE` for `cv_varsel()` with `validate_search = TRUE` (simply due
+#' option to `TRUE` for [cv_varsel()] with `validate_search = TRUE` (simply due
 #' to the amount of information that will be printed, but also due to the
 #' progress bar which will not work anymore as intended).
 #'
@@ -101,24 +101,25 @@
 #' training data as *new* group levels, implying that their group-level effects
 #' are drawn randomly from a (multivariate) Gaussian distribution. This concerns
 #' both, the reference model and the (i.e., any) submodel. Furthermore, setting
-#' `projpred.mlvl_pred_new` to `TRUE` causes `as.matrix.projection()` to omit
-#' the projected group-level effects (for the group levels from the original
-#' dataset). When setting `projpred.mlvl_proj_ref_new` to `TRUE` (default is
-#' `FALSE`), then at *projection* time, the reference model's fitted values
-#' (that the submodels fit to) will be computed by treating the group levels
-#' from the original dataset as *new* group levels, implying that their
-#' group-level effects will be drawn randomly from a (multivariate) Gaussian
-#' distribution (as long as the reference model is a multilevel model,
-#' which---for custom reference models---does not need to be the case). This
-#' also affects the latent response values for a latent projection
-#' correspondingly. Setting `projpred.mlvl_pred_new` to `TRUE` makes sense,
-#' e.g., when the prediction task is such that any group level will be treated
-#' as a new one. Typically, setting `projpred.mlvl_proj_ref_new` to `TRUE` only
-#' makes sense when `projpred.mlvl_pred_new` is already set to `TRUE`. In that
-#' case, the default of `FALSE` for `projpred.mlvl_proj_ref_new` ensures that at
-#' projection time, the submodels fit to the best possible fitted values from
-#' the reference model, and setting `projpred.mlvl_proj_ref_new` to `TRUE` would
-#' make sense if the group-level effects should be integrated out completely.
+#' `projpred.mlvl_pred_new` to `TRUE` causes [as.matrix.projection()] and
+#' [as_draws_matrix.projection()] to omit the projected group-level effects (for
+#' the group levels from the original dataset). When setting
+#' `projpred.mlvl_proj_ref_new` to `TRUE` (default is `FALSE`), then at
+#' *projection* time, the reference model's fitted values (that the submodels
+#' fit to) will be computed by treating the group levels from the original
+#' dataset as *new* group levels, implying that their group-level effects will
+#' be drawn randomly from a (multivariate) Gaussian distribution (as long as the
+#' reference model is a multilevel model, which---for custom reference
+#' models---does not need to be the case). This also affects the latent response
+#' values for a latent projection correspondingly. Setting
+#' `projpred.mlvl_pred_new` to `TRUE` makes sense, e.g., when the prediction
+#' task is such that any group level will be treated as a new one. Typically,
+#' setting `projpred.mlvl_proj_ref_new` to `TRUE` only makes sense when
+#' `projpred.mlvl_pred_new` is already set to `TRUE`. In that case, the default
+#' of `FALSE` for `projpred.mlvl_proj_ref_new` ensures that at projection time,
+#' the submodels fit to the best possible fitted values from the reference
+#' model, and setting `projpred.mlvl_proj_ref_new` to `TRUE` would make sense if
+#' the group-level effects should be integrated out completely.
 #'
 #' @details
 #'
@@ -139,7 +140,8 @@
 #'   \item{[project()]}{For projecting the reference model onto submodel(s).
 #'   Typically, this follows the variable selection, but it can also be applied
 #'   directly (without a variable selection).}
-#'   \item{[as.matrix.projection()]}{For extracting projected parameter draws.}
+#'   \item{[as.matrix.projection()] and [as_draws_matrix.projection()]}{For
+#'   extracting projected parameter draws.}
 #'   \item{[proj_linpred()], [proj_predict()]}{For making predictions from a
 #'   submodel (after projecting the reference model onto it).}
 #' }

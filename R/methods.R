@@ -42,6 +42,21 @@
 #'   gives the number of draws (*with* replacement) from the set of clustered
 #'   posterior draws after projection (with this set being determined by
 #'   argument `nclusters` of [project()]).
+#' @param allow_nonconst_wdraws_prj Only relevant for [proj_linpred()] and only
+#'   if `integrated` is `FALSE`. A single logical value indicating whether to
+#'   allow projected draws with different (i.e., nonconstant) weights (`TRUE`)
+#'   or not (`FALSE`). If `return_draws_matrix` is `TRUE`,
+#'   `allow_nonconst_wdraws_prj` is internally set to `TRUE` as well.
+#'   **CAUTION**: Expert use only because if set to `TRUE`, the weights of the
+#'   projected draws are stored in attributes `wdraws_prj` and handling these
+#'   attributes requires special care (e.g., when subsetting the returned
+#'   matrices).
+#' @param return_draws_matrix A single logical value indicating whether to
+#'   return an object (in case of [proj_predict()]) or objects (in case of
+#'   [proj_linpred()]) of class `draws_matrix` (see
+#'   [posterior::draws_matrix()]). In case of [proj_linpred()] and projected
+#'   draws with nonconstant weights (as well as `integrated` being `FALSE`),
+#'   [posterior::weight_draws()] is applied internally.
 #' @param .seed Pseudorandom number generation (PRNG) seed by which the same
 #'   results can be obtained again if needed. Passed to argument `seed` of
 #'   [set.seed()], but can also be `NA` to not call [set.seed()] at all. If not
@@ -88,7 +103,8 @@
 #'   \eqn{C} denote either \eqn{C_{\mathrm{cat}}}{C_cat} (if `transform = TRUE`)
 #'   or \eqn{C_{\mathrm{lat}}}{C_lat} (if `transform = FALSE`). Then, if the
 #'   prediction is done for one submodel only (i.e., `length(nterms) == 1 ||
-#'   !is.null(solution_terms)` in the call to [project()]):
+#'   !is.null(solution_terms)` in the explicit or implicit call to [project()],
+#'   see argument `object`):
 #'   * [proj_linpred()] returns a `list` with the following elements:
 #'       + Element `pred` contains the actual predictions, i.e., the linear
 #'       predictors, possibly transformed to response scale (depending on
@@ -104,21 +120,38 @@
 #'       `transform = TRUE` and `<refmodel>$family$cats` (where `<refmodel>` is
 #'       an object resulting from [init_refmodel()]; see also
 #'       [extend_family()]'s argument `latent_y_unqs`) being `NULL`, both
-#'       elements are \eqn{S_{\mathrm{prj}} \times N}{S_prj x N} matrices. In
-#'       case of (i) the augmented-data projection or (ii) the latent projection
-#'       with `transform = TRUE` and `<refmodel>$family$cats` being not `NULL`,
-#'       `pred` is an \eqn{S_{\mathrm{prj}} \times N \times C}{S_prj x N x C}
-#'       array and `lpd` is an \eqn{S_{\mathrm{prj}} \times N}{S_prj x N}
-#'       matrix.
+#'       elements are \eqn{S_{\mathrm{prj}} \times N}{S_prj x N} matrices
+#'       (converted to a---possibly weighted---`draws_matrix` if argument
+#'       `return_draws_matrix` is `TRUE`, see the description of this argument).
+#'       In case of (i) the augmented-data projection or (ii) the latent
+#'       projection with `transform = TRUE` and `<refmodel>$family$cats` being
+#'       not `NULL`, `pred` is an \eqn{S_{\mathrm{prj}} \times N \times C}{S_prj
+#'       x N x C} array (if argument `return_draws_matrix` is `TRUE`, this array
+#'       is "compressed" to an \eqn{S_{\mathrm{prj}} \times (N \cdot C)}{S_prj x
+#'       (N * C)} matrix---with the columns consisting of \eqn{C} blocks of
+#'       \eqn{N} rows---and then converted to a---possibly
+#'       weighted---`draws_matrix`) and `lpd` is an \eqn{S_{\mathrm{prj}} \times
+#'       N}{S_prj x N} matrix (converted to a---possibly
+#'       weighted---`draws_matrix` if argument `return_draws_matrix` is `TRUE`).
+#'       If `return_draws_matrix` is `FALSE` and `allow_nonconst_wdraws_prj` is
+#'       `TRUE` and `integrated` is `FALSE` and the projected draws have
+#'       nonconstant weights, then both `list` elements have the weights of
+#'       these draws stored in an attribute `wdraws_prj`. (If
+#'       `return_draws_matrix`, `allow_nonconst_wdraws_prj`, and `integrated`
+#'       are all `FALSE`, then projected draws with nonconstant weights cause an
+#'       error.)
 #'   * [proj_predict()] returns an \eqn{S_{\mathrm{prj}} \times N}{S_prj x N}
 #'   matrix of predictions where \eqn{S_{\mathrm{prj}}}{S_prj} denotes
-#'   `nresample_clusters` in case of clustered projection. In case of (i) the
+#'   `nresample_clusters` in case of clustered projection (or, more generally,
+#'   in case of projected draws with nonconstant weights). If argument
+#'   `return_draws_matrix` is `TRUE`, the returned matrix is converted to a
+#'   `draws_matrix` (see [posterior::draws_matrix()]). In case of (i) the
 #'   augmented-data projection or (ii) the latent projection with `resp_oscale =
-#'   TRUE` and `<refmodel>$family$cats` being not `NULL`, this matrix has an
-#'   attribute called `cats` (the character vector of response categories) and
-#'   the values of the matrix are the predicted indices of the response
-#'   categories (these indices refer to the order of the response categories
-#'   from attribute `cats`).
+#'   TRUE` and `<refmodel>$family$cats` being not `NULL`, the returned matrix
+#'   (or `draws_matrix`) has an attribute called `cats` (the character vector of
+#'   response categories) and the values of the matrix (or `draws_matrix`) are
+#'   the predicted indices of the response categories (these indices refer to
+#'   the order of the response categories from attribute `cats`).
 #'
 #'   If the prediction is done for more than one submodel, the output from above
 #'   is returned for each submodel, giving a named `list` with one element for
@@ -139,9 +172,9 @@
 #'   )
 #'
 #'   # Projection onto an arbitrary combination of predictor terms (with a small
-#'   # value for `nclusters`, but only for the sake of speed in this example;
-#'   # this is not recommended in general):
-#'   prj <- project(fit, solution_terms = c("X1", "X3", "X5"), nclusters = 10,
+#'   # value for `ndraws`, but only for the sake of speed in this example; this
+#'   # is not recommended in general):
+#'   prj <- project(fit, solution_terms = c("X1", "X3", "X5"), ndraws = 21,
 #'                  seed = 9182)
 #'
 #'   # Predictions (at the training points) from the submodel onto which the
@@ -260,8 +293,9 @@ proj_helper <- function(object, newdata, offsetnew, weightsnew, onesub_fun,
 #' @export
 proj_linpred <- function(object, newdata = NULL, offsetnew = NULL,
                          weightsnew = NULL, filter_nterms = NULL,
-                         transform = FALSE, integrated = FALSE, .seed = NA,
-                         ...) {
+                         transform = FALSE, integrated = FALSE,
+                         allow_nonconst_wdraws_prj = return_draws_matrix,
+                         return_draws_matrix = FALSE, .seed = NA, ...) {
   if (exists(".Random.seed", envir = .GlobalEnv)) {
     rng_state_old <- get(".Random.seed", envir = .GlobalEnv)
   }
@@ -273,18 +307,34 @@ proj_linpred <- function(object, newdata = NULL, offsetnew = NULL,
     set.seed(.seed)
   }
 
+  if (return_draws_matrix) {
+    allow_nonconst_wdraws_prj <- TRUE
+  }
+
   ## proj_helper lapplies fun to each projection in object
   proj_helper(
     object = object, newdata = newdata,
     offsetnew = offsetnew, weightsnew = weightsnew,
     onesub_fun = proj_linpred_aux, filter_nterms = filter_nterms,
-    transform = transform, integrated = integrated, ...
+    transform = transform, integrated = integrated,
+    allow_nonconst_wdraws_prj = allow_nonconst_wdraws_prj,
+    return_draws_matrix = return_draws_matrix, ...
   )
 }
 
 ## function applied to each projected submodel in case of proj_linpred()
 proj_linpred_aux <- function(proj, newdata, offset, weights, transform = FALSE,
-                             integrated = FALSE, extract_y_ind = TRUE, ...) {
+                             integrated = FALSE, extract_y_ind = TRUE,
+                             allow_nonconst_wdraws_prj = return_draws_matrix,
+                             return_draws_matrix = FALSE, ...) {
+  if (!proj[["const_wdraws_prj"]] && !allow_nonconst_wdraws_prj &&
+      !integrated) {
+    stop("The projected draws have different (i.e., nonconstant) weights, so ",
+         "please use either `allow_nonconst_wdraws_prj = TRUE` (and then ",
+         "don't forget that all downstream analyses need to take the weights ",
+         "into account) or `return_draws_matrix = TRUE`, the latter being ",
+         "recommended.")
+  }
   pred_sub <- proj$refmodel$family$mu_fun(proj$outdmin, newdata = newdata,
                                           offset = offset,
                                           transform = transform)
@@ -363,6 +413,22 @@ proj_linpred_aux <- function(proj, newdata, offset, weights, transform = FALSE,
        (proj$refmodel$family$for_latent && !transform))) {
     lpd_out <- t(lpd_out)
   }
+  if (!proj[["const_wdraws_prj"]] && !integrated) {
+    attr(pred_sub, "wdraws_prj") <- proj[["wdraws_prj"]]
+    if (!is.null(lpd_out)) {
+      attr(lpd_out, "wdraws_prj") <- proj[["wdraws_prj"]]
+    }
+  }
+  if (return_draws_matrix) {
+    if (length(dim(pred_sub)) == 3) {
+      pred_sub <- structure(t(arr2augmat(pred_sub, margin_draws = 1)),
+                            wdraws_prj = attr(pred_sub, "wdraws_prj"))
+    }
+    pred_sub <- mat2drmat(pred_sub)
+    if (!is.null(lpd_out)) {
+      lpd_out <- mat2drmat(lpd_out)
+    }
+  }
   return(nlist(pred = pred_sub, lpd = lpd_out))
 }
 
@@ -436,8 +502,8 @@ compute_lpd <- function(ynew, pred_sub, proj, weights, transformed) {
 #' @export
 proj_predict <- function(object, newdata = NULL, offsetnew = NULL,
                          weightsnew = NULL, filter_nterms = NULL,
-                         nresample_clusters = 1000, .seed = NA,
-                         resp_oscale = TRUE, ...) {
+                         nresample_clusters = 1000, return_draws_matrix = FALSE,
+                         .seed = NA, resp_oscale = TRUE, ...) {
   if (exists(".Random.seed", envir = .GlobalEnv)) {
     rng_state_old <- get(".Random.seed", envir = .GlobalEnv)
   }
@@ -454,14 +520,15 @@ proj_predict <- function(object, newdata = NULL, offsetnew = NULL,
     object = object, newdata = newdata,
     offsetnew = offsetnew, weightsnew = weightsnew,
     onesub_fun = proj_predict_aux, filter_nterms = filter_nterms,
-    nresample_clusters = nresample_clusters, resp_oscale = resp_oscale, ...
+    nresample_clusters = nresample_clusters, resp_oscale = resp_oscale,
+    return_draws_matrix = return_draws_matrix, ...
   )
 }
 
 ## function applied to each projected submodel in case of proj_predict()
 proj_predict_aux <- function(proj, newdata, offset, weights,
                              nresample_clusters = 1000, resp_oscale = TRUE,
-                             ...) {
+                             return_draws_matrix = FALSE, ...) {
   if (!proj$refmodel$family$for_latent && !resp_oscale) {
     stop("`resp_oscale = FALSE` can only be used in case of the latent ",
          "projection.")
@@ -469,7 +536,7 @@ proj_predict_aux <- function(proj, newdata, offset, weights,
   mu <- proj$refmodel$family$mu_fun(proj$outdmin,
                                     newdata = newdata,
                                     offset = offset)
-  if (!proj$const_wdraws_prj) {
+  if (!proj[["const_wdraws_prj"]]) {
     # In this case, the posterior draws have nonconstant weights.
     draw_inds <- sample(x = seq_along(proj$wdraws_prj),
                         size = nresample_clusters, replace = TRUE,
@@ -527,6 +594,9 @@ proj_predict_aux <- function(proj, newdata, offset, weights,
     pppd_out <- do.call(rbind, lapply(draw_inds, function(i) {
       proj$refmodel$family$ppd(mu[, i], proj$dis[i], weights)
     }))
+  }
+  if (return_draws_matrix) {
+    pppd_out <- mat2drmat(pppd_out)
   }
   return(structure(pppd_out, cats = cats_aug))
 }
@@ -1948,11 +2018,13 @@ get_subparams.mmblogit <- function(x, ...) {
   return(subparams)
 }
 
-#' Extract projected parameter draws
+#' Extract projected parameter draws and coerce to matrix
 #'
 #' This is the [as.matrix()] method for `projection` objects (returned by
 #' [project()], possibly as elements of a `list`). It extracts the projected
-#' parameter draws and returns them as a matrix.
+#' parameter draws and returns them as a matrix. In case of different (i.e.,
+#' nonconstant) weights for the projected draws, see
+#' [as_draws_matrix.projection()] for a better solution.
 #'
 #' @param x An object of class `projection` (returned by [project()], possibly
 #'   as elements of a `list`).
@@ -1960,6 +2032,12 @@ get_subparams.mmblogit <- function(x, ...) {
 #'   Either `"auto"`, `"rstanarm"`, or `"brms"`, where `"auto"` chooses
 #'   `"rstanarm"` or `"brms"` based on the class of the reference model fit (and
 #'   uses `"rstanarm"` if the reference model fit is of an unknown class).
+#' @param allow_nonconst_wdraws_prj A single logical value indicating whether to
+#'   allow projected draws with different (i.e., nonconstant) weights (`TRUE`)
+#'   or not (`FALSE`). **CAUTION**: Expert use only because if set to `TRUE`,
+#'   the weights of the projected draws are stored in an attribute `wdraws_prj`
+#'   and handling this attribute requires special care (e.g., when subsetting
+#'   the returned matrix).
 #' @param ... Currently ignored.
 #'
 #' @details In case of the augmented-data projection for a multilevel submodel
@@ -1970,7 +2048,10 @@ get_subparams.mmblogit <- function(x, ...) {
 #'
 #' @return An \eqn{S_{\mathrm{prj}} \times Q}{S_prj x Q} matrix of projected
 #'   draws, with \eqn{S_{\mathrm{prj}}}{S_prj} denoting the number of projected
-#'   draws and \eqn{Q} the number of parameters.
+#'   draws and \eqn{Q} the number of parameters. If `allow_nonconst_wdraws_prj`
+#'   is set to `TRUE`, the weights of the projected draws are stored in an
+#'   attribute `wdraws_prj`. (If `allow_nonconst_wdraws_prj` is `FALSE`,
+#'   projected draws with nonconstant weights cause an error.)
 #'
 #' @examples
 #' if (requireNamespace("rstanarm", quietly = TRUE)) {
@@ -1986,49 +2067,44 @@ get_subparams.mmblogit <- function(x, ...) {
 #'   )
 #'
 #'   # Projection onto an arbitrary combination of predictor terms (with a small
-#'   # value for `nclusters`, but only for the sake of speed in this example;
-#'   # this is not recommended in general):
-#'   prj <- project(fit, solution_terms = c("X1", "X3", "X5"), nclusters = 10,
+#'   # value for `ndraws`, but only for the sake of speed in this example; this
+#'   # is not recommended in general):
+#'   prj <- project(fit, solution_terms = c("X1", "X3", "X5"), ndraws = 21,
 #'                  seed = 9182)
-#'   prjmat <- as.matrix(prj)
-#'   ### For further post-processing (e.g., via packages `bayesplot` and
-#'   ### `posterior`), we will here ignore the fact that clustering was used
-#'   ### (due to argument `nclusters` above). CAUTION: Ignoring the clustering
-#'   ### is not recommended and only shown here for demonstrative purposes. A
-#'   ### better solution for the clustering case is explained below.
-#'   # If the `bayesplot` package is installed, the output from
-#'   # as.matrix.projection() can be used there. For example:
-#'   if (requireNamespace("bayesplot", quietly = TRUE)) {
-#'     print(bayesplot::mcmc_intervals(prjmat))
-#'   }
-#'   # If the `posterior` package is installed, the output from
-#'   # as.matrix.projection() can be used there. For example:
+#'
+#'   # Applying the as.matrix() generic to the output of project() dispatches to
+#'   # the projpred::as.matrix.projection() method:
+#'   prj_mat <- as.matrix(prj)
+#'
+#'   # Since the draws have all the same weight here, we can treat them like
+#'   # ordinary MCMC draws, e.g., we can summarize them using the `posterior`
+#'   # package:
 #'   if (requireNamespace("posterior", quietly = TRUE)) {
-#'     prjdrws <- posterior::as_draws_matrix(prjmat)
 #'     print(posterior::summarize_draws(
-#'       prjdrws,
+#'       posterior::as_draws_matrix(prj_mat),
 #'       "median", "mad", function(x) quantile(x, probs = c(0.025, 0.975))
 #'     ))
 #'   }
-#'   ### Better solution for post-processing clustered draws (e.g., via
-#'   ### `bayesplot` or `posterior`): Don't ignore the fact that clustering was
-#'   ### used. Instead, resample the clusters according to their weights (e.g.,
-#'   ### via posterior::resample_draws()). However, this requires access to the
-#'   ### cluster weights which is not implemented in `projpred` yet. This
-#'   ### example will be extended as soon as those weights are accessible.
+#'   # Or visualize them using the `bayesplot` package:
+#'   if (requireNamespace("bayesplot", quietly = TRUE)) {
+#'     print(bayesplot::mcmc_intervals(prj_mat))
+#'   }
 #' }
 #'
 #' @method as.matrix projection
 #' @export
-as.matrix.projection <- function(x, nm_scheme = "auto", ...) {
+as.matrix.projection <- function(x, nm_scheme = "auto",
+                                 allow_nonconst_wdraws_prj = FALSE, ...) {
   if (inherits(x$refmodel, "datafit")) {
     stop("as.matrix.projection() does not work for objects based on ",
          "\"datafit\"s.")
   }
-  if (!x$const_wdraws_prj) {
-    warning("The projected draws have different (i.e., nonconstant) weights. ",
-            "Therefore, the results from this as.matrix() method should not ",
-            "be used without taking these weights into account.")
+  if (!x[["const_wdraws_prj"]] && !allow_nonconst_wdraws_prj) {
+    stop("The projected draws have different (i.e., nonconstant) weights, so ",
+         "please use either `allow_nonconst_wdraws_prj = TRUE` (and then ",
+         "don't forget that all downstream analyses need to take the weights ",
+         "into account) or posterior::as_draws_matrix(), the latter being ",
+         "recommended.")
   }
   if (identical(nm_scheme, "auto")) {
     if (inherits(x$refmodel$fit, "brmsfit")) {
@@ -2040,7 +2116,107 @@ as.matrix.projection <- function(x, nm_scheme = "auto", ...) {
   stopifnot(nm_scheme %in% c("rstanarm", "brms"))
   res <- do.call(rbind, lapply(x$outdmin, get_subparams, nm_scheme = nm_scheme))
   if (x$refmodel$family$family == "gaussian") res <- cbind(res, sigma = x$dis)
+  if (!x[["const_wdraws_prj"]]) {
+    attr(res, "wdraws_prj") <- x[["wdraws_prj"]]
+  }
   return(res)
+}
+
+#' Extract projected parameter draws and coerce to `draws_matrix` (see package
+#' \pkg{posterior})
+#'
+#' These are the [posterior::as_draws()] and [posterior::as_draws_matrix()]
+#' methods for `projection` objects (returned by [project()], possibly as
+#' elements of a `list`). They extract the projected parameter draws and return
+#' them as a `draws_matrix`. In case of different (i.e., nonconstant) weights
+#' for the projected draws, a `draws_matrix` allows for a safer handling of
+#' these weights (safer in contrast to the matrix returned by
+#' [as.matrix.projection()]), in particular by providing the natural input for
+#' [posterior::resample_draws()] (see section "Examples" below).
+#'
+#' @param x An object of class `projection` (returned by [project()], possibly
+#'   as elements of a `list`).
+#' @param ... Arguments passed to [as.matrix.projection()], except for
+#'   `allow_nonconst_wdraws_prj`.
+#'
+#' @inherit as.matrix.projection details
+#'
+#' @return An \eqn{S_{\mathrm{prj}} \times Q}{S_prj x Q} `draws_matrix` (see
+#'   [posterior::draws_matrix()]) of projected draws, with
+#'   \eqn{S_{\mathrm{prj}}}{S_prj} denoting the number of projected draws and
+#'   \eqn{Q} the number of parameters. If the projected draws have nonconstant
+#'   weights, [posterior::weight_draws()] is applied internally.
+#'
+#' @examples
+#' if (requireNamespace("rstanarm", quietly = TRUE) &&
+#'     requireNamespace("posterior", quietly = TRUE)) {
+#'   # Data:
+#'   dat_gauss <- data.frame(y = df_gaussian$y, df_gaussian$x)
+#'
+#'   # The "stanreg" fit which will be used as the reference model (with small
+#'   # values for `chains` and `iter`, but only for technical reasons in this
+#'   # example; this is not recommended in general):
+#'   fit <- rstanarm::stan_glm(
+#'     y ~ X1 + X2 + X3 + X4 + X5, family = gaussian(), data = dat_gauss,
+#'     QR = TRUE, chains = 2, iter = 500, refresh = 0, seed = 9876
+#'   )
+#'
+#'   # Projection onto an arbitrary combination of predictor terms (with a small
+#'   # value for `nclusters`, but only for illustrative purposes; this is not
+#'   # recommended in general):
+#'   prj <- project(fit, solution_terms = c("X1", "X3", "X5"), nclusters = 5,
+#'                  seed = 9182)
+#'
+#'   # Applying the posterior::as_draws_matrix() generic to the output of
+#'   # project() dispatches to the projpred::as_draws_matrix.projection()
+#'   # method:
+#'   prj_draws <- posterior::as_draws_matrix(prj)
+#'
+#'   # Resample the projected draws according to their weights:
+#'   set.seed(3456)
+#'   prj_draws_resampled <- posterior::resample_draws(prj_draws, ndraws = 1000)
+#'
+#'   # The values from the following two objects should be the same (in general,
+#'   # this only holds approximately):
+#'   print(proportions(table(rownames(prj_draws_resampled))))
+#'   print(weights(prj_draws))
+#'
+#'   # Treat the resampled draws like ordinary draws, e.g., summarize them:
+#'   print(posterior::summarize_draws(
+#'     prj_draws_resampled,
+#'     "median", "mad", function(x) quantile(x, probs = c(0.025, 0.975))
+#'   ))
+#'   # Or visualize them using the `bayesplot` package:
+#'   if (requireNamespace("bayesplot", quietly = TRUE)) {
+#'     print(bayesplot::mcmc_intervals(prj_draws_resampled))
+#'   }
+#' }
+#'
+#' @exportS3Method posterior::as_draws_matrix projection
+as_draws_matrix.projection <- function(x, ...) {
+  xmat <- as.matrix(x, allow_nonconst_wdraws_prj = TRUE, ...)
+  return(mat2drmat(xmat))
+}
+
+#' @rdname as_draws_matrix.projection
+#' @exportS3Method posterior::as_draws projection
+as_draws.projection <- function(x, ...) {
+  return(as_draws_matrix.projection(x, ...))
+}
+
+# Helper function for converting a matrix `xmat` (possibly possessing an
+# argument `wdraws_prj`) to a `draws_matrix` (which will be weighted if `xmat`
+# possesses an argument `wdraws_prj`).
+mat2drmat <- function(xmat) {
+  if (!requireNamespace("posterior", quietly = TRUE)) {
+    stop("Please install the 'posterior' package.")
+  }
+  drmat <- posterior::as_draws_matrix(structure(xmat, wdraws_prj = NULL))
+  wdr <- attr(xmat, "wdraws_prj")
+  if (!is.null(wdr)) {
+    drmat <- posterior::weight_draws(drmat, weights = wdr)
+  }
+  return(drmat)
 }
 
 #' Create cross-validation folds
