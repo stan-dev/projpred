@@ -126,19 +126,19 @@
 #'       In case of (i) the augmented-data projection or (ii) the latent
 #'       projection with `transform = TRUE` and `<refmodel>$family$cats` being
 #'       not `NULL`, `pred` is an \eqn{S_{\mathrm{prj}} \times N \times C}{S_prj
-#'       x N x C} array ("compressed" to an \eqn{S_{\mathrm{prj}} \times (N
-#'       \cdot C)}{S_prj x (N * C)} matrix---with the columns consisting of
-#'       \eqn{C} blocks of \eqn{N} rows---and then converted to a---possibly
-#'       weighted---`draws_matrix` if argument `return_draws_matrix` is `TRUE`)
-#'       and `lpd` is an \eqn{S_{\mathrm{prj}} \times N}{S_prj x N} matrix
-#'       (converted to a---possibly weighted---`draws_matrix` if argument
-#'       `return_draws_matrix` is `TRUE`). If `return_draws_matrix` is `FALSE`
-#'       and `allow_nonconst_wdraws_prj` is `TRUE` and `integrated` is `FALSE`
-#'       and the projected draws have different weights, then both `list`
-#'       elements have the weights of these draws stored in an attribute
-#'       `wdraws_prj`. (If `return_draws_matrix`, `allow_nonconst_wdraws_prj`,
-#'       and `integrated` are all `FALSE`, then projected draws with nonconstant
-#'       weights cause an error.)
+#'       x N x C} array (if argument `return_draws_matrix` is `TRUE`, this array
+#'       is "compressed" to an \eqn{S_{\mathrm{prj}} \times (N \cdot C)}{S_prj x
+#'       (N * C)} matrix---with the columns consisting of \eqn{C} blocks of
+#'       \eqn{N} rows---and then converted to a---possibly
+#'       weighted---`draws_matrix`) and `lpd` is an \eqn{S_{\mathrm{prj}} \times
+#'       N}{S_prj x N} matrix (converted to a---possibly
+#'       weighted---`draws_matrix` if argument `return_draws_matrix` is `TRUE`).
+#'       If `return_draws_matrix` is `FALSE` and `allow_nonconst_wdraws_prj` is
+#'       `TRUE` and `integrated` is `FALSE` and the projected draws have
+#'       different weights, then both `list` elements have the weights of these
+#'       draws stored in an attribute `wdraws_prj`. (If `return_draws_matrix`,
+#'       `allow_nonconst_wdraws_prj`, and `integrated` are all `FALSE`, then
+#'       projected draws with nonconstant weights cause an error.)
 #'   * [proj_predict()] returns an \eqn{S_{\mathrm{prj}} \times N}{S_prj x N}
 #'   matrix of predictions where \eqn{S_{\mathrm{prj}}}{S_prj} denotes
 #'   `nresample_clusters` in case of clustered projection (or, more generally,
