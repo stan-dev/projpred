@@ -236,6 +236,8 @@ varsel.refmodel <- function(object, d_test = NULL, method = NULL,
       d_test$y_oscale <- d_test$y
     }
     d_test <- d_test[nms_d_test()]
+    invisible(lapply(setNames(nm = setdiff(nms_d_test(), c("y", "y_oscale"))),
+                     function(d_nm) na.fail(d_test[[d_nm]])))
     if (refmodel$family$for_augdat) {
       d_test$y <- as.factor(d_test$y)
       if (!all(levels(d_test$y) %in% refmodel$family$cats)) {
