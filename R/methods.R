@@ -1371,8 +1371,9 @@ print.vsel <- function(x, ...) {
 #' This function can suggest an appropriate submodel size based on a decision
 #' rule described in section "Details" below. Note that this decision is quite
 #' heuristic and should be interpreted with caution. It is recommended to
-#' examine the results via [plot.vsel()] and/or [summary.vsel()] and to make the
-#' final decision based on what is most appropriate for the problem at hand.
+#' examine the results via [plot.vsel()], [cv_proportions()],
+#' [plot.cv_proportions()], and/or [summary.vsel()] and to make the final
+#' decision based on what is most appropriate for the problem at hand.
 #'
 #' @param object An object of class `vsel` (returned by [varsel()] or
 #'   [cv_varsel()]).
