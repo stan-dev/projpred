@@ -131,7 +131,7 @@ cvvs_fast <- cv_varsel(
   refm_fit,
   validate_search = FALSE,
   ### Only for the sake of speed (not recommended in general):
-  nclusters_pred = 20,
+  nclusters_pred = 25,
   ###
   nterms_max = 20,
   ### In interactive use, we recommend not to deactivate the verbose mode:
