@@ -649,7 +649,7 @@ refprd <- function(fit, newdata = NULL) {
 }
 
 .extract_model_data <- function(object, newdata, wrhs = NULL, orhs = NULL,
-                                resp_form = NULL) {
+                                resp_form) {
   if (inherits(wrhs, "formula")) {
     if (is.null(newdata)) {
       stop(".extract_model_data() needs non-NULL `newdata` in this case.")
