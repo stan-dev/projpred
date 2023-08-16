@@ -16,7 +16,7 @@ get_refmodel(object, ...)
 
 \method{get_refmodel}{vsel}(object, ...)
 
-\method{get_refmodel}{default}(object, formula, family = NULL, ...)
+\method{get_refmodel}{default}(object, data, formula, family = NULL, ...)
 
 \method{get_refmodel}{stanreg}(object, latent = FALSE, dis = NULL, ...)
 
@@ -41,17 +41,24 @@ init_refmodel(
 \item{object}{For \code{\link[=init_refmodel]{init_refmodel()}}, an object that the functions from
 arguments \code{extract_model_data} and \code{ref_predfun} can be applied to, with a
 \code{NULL} object being treated specially (see section "Value" below). For
-\code{\link[=get_refmodel.default]{get_refmodel.default()}}, an object of type \code{list} that (i) function
-\code{\link[=family]{family()}} can be applied to in order to retrieve the family (if argument
-\code{family} is \code{NULL}) and (ii) has an element called \code{data} containing the
-original dataset (see argument \code{data} of \code{\link[=init_refmodel]{init_refmodel()}}), additionally
-to the properties required for \code{\link[=init_refmodel]{init_refmodel()}}. For non-default methods
-of \code{\link[=get_refmodel]{get_refmodel()}}, an object of the corresponding class.}
+\code{\link[=get_refmodel.default]{get_refmodel.default()}}, an object that function \code{\link[=family]{family()}} can be applied
+to in order to retrieve the family (if argument \code{family} is \code{NULL}),
+additionally to the properties required for \code{\link[=init_refmodel]{init_refmodel()}}. For
+non-default methods of \code{\link[=get_refmodel]{get_refmodel()}}, an object of the corresponding
+class.}
 
 \item{...}{For \code{\link[=get_refmodel.default]{get_refmodel.default()}} and \code{\link[=get_refmodel.stanreg]{get_refmodel.stanreg()}}:
 arguments passed to \code{\link[=init_refmodel]{init_refmodel()}}. For the \code{\link[=get_refmodel]{get_refmodel()}} generic:
 arguments passed to the appropriate method. For \code{\link[=init_refmodel]{init_refmodel()}}:
 arguments passed to \code{\link[=extend_family]{extend_family()}} (apart from \code{family}).}
+
+\item{data}{A \code{data.frame} containing the data to use for the projection
+predictive variable selection. Any \code{contrasts} attributes of the dataset's
+columns are silently removed. For custom reference models, the columns of
+\code{data} do not necessarily have to coincide with those of the dataset used
+for fitting the reference model, but keep in mind that a row-subset of
+\code{data} is used for argument \code{newdata} of \code{ref_predfun} during \eqn{K}-fold
+CV.}
 
 \item{formula}{The full formula to use for the search procedure. For custom
 reference models, this does not necessarily coincide with the reference
@@ -88,14 +95,6 @@ have no dispersion parameter or if the submodels do have a dispersion
 parameter, but \code{object} is \code{NULL} (in which case \code{0} is used for \code{dis}).
 Note that for the \code{\link[=gaussian]{gaussian()}} \code{family}, \code{dis} is the standard deviation,
 not the variance.}
-
-\item{data}{A \code{data.frame} containing the data to use for the projection
-predictive variable selection. Any \code{contrasts} attributes of the dataset's
-columns are silently removed. For custom reference models, the columns of
-\code{data} do not necessarily have to coincide with those of the dataset used
-for fitting the reference model, but keep in mind that a row-subset of
-\code{data} is used for argument \code{newdata} of \code{ref_predfun} during \eqn{K}-fold
-CV.}
 
 \item{ref_predfun}{Prediction function for the linear predictor of the
 reference model, including offsets (if existing). See also section
@@ -407,11 +406,9 @@ ref_cust <- init_refmodel(
     } else {
       resp_form <- ~ y
     }
-
     if (is.null(newdata)) {
       newdata <- dat_gauss
     }
-
     return(projpred:::.extract_model_data(
       object = object, newdata = newdata, wrhs = wrhs, orhs = orhs,
       resp_form = resp_form

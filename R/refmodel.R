@@ -30,12 +30,11 @@
 #' @param object For [init_refmodel()], an object that the functions from
 #'   arguments `extract_model_data` and `ref_predfun` can be applied to, with a
 #'   `NULL` object being treated specially (see section "Value" below). For
-#'   [get_refmodel.default()], an object of type `list` that (i) function
-#'   [family()] can be applied to in order to retrieve the family (if argument
-#'   `family` is `NULL`) and (ii) has an element called `data` containing the
-#'   original dataset (see argument `data` of [init_refmodel()]), additionally
-#'   to the properties required for [init_refmodel()]. For non-default methods
-#'   of [get_refmodel()], an object of the corresponding class.
+#'   [get_refmodel.default()], an object that function [family()] can be applied
+#'   to in order to retrieve the family (if argument `family` is `NULL`),
+#'   additionally to the properties required for [init_refmodel()]. For
+#'   non-default methods of [get_refmodel()], an object of the corresponding
+#'   class.
 #' @param data A `data.frame` containing the data to use for the projection
 #'   predictive variable selection. Any `contrasts` attributes of the dataset's
 #'   columns are silently removed. For custom reference models, the columns of
@@ -345,11 +344,9 @@
 #'     } else {
 #'       resp_form <- ~ y
 #'     }
-#'
 #'     if (is.null(newdata)) {
 #'       newdata <- dat_gauss
 #'     }
-#'
 #'     return(projpred:::.extract_model_data(
 #'       object = object, newdata = newdata, wrhs = wrhs, orhs = orhs,
 #'       resp_form = resp_form
@@ -651,29 +648,40 @@ refprd <- function(fit, newdata = NULL) {
   return(linpred_out)
 }
 
-.extract_model_data <- function(object, newdata = NULL, wrhs = NULL,
-                                orhs = NULL, resp_form = NULL) {
-  if (is.null(newdata)) {
-    newdata <- object$data
-  }
-
+.extract_model_data <- function(object, newdata, wrhs = NULL, orhs = NULL,
+                                resp_form = NULL) {
   if (inherits(wrhs, "formula")) {
+    if (is.null(newdata)) {
+      stop(".extract_model_data() needs non-NULL `newdata` in this case.")
+    }
     weights <- eval_rhs(wrhs, newdata)
   } else if (is.null(wrhs)) {
+    if (is.null(newdata)) {
+      stop(".extract_model_data() needs non-NULL `newdata` in this case.")
+    }
     weights <- rep(1, nrow(newdata))
   } else {
     weights <- wrhs
   }
 
   if (inherits(orhs, "formula")) {
+    if (is.null(newdata)) {
+      stop(".extract_model_data() needs non-NULL `newdata` in this case.")
+    }
     offset <- eval_rhs(orhs, newdata)
   } else if (is.null(orhs)) {
+    if (is.null(newdata)) {
+      stop(".extract_model_data() needs non-NULL `newdata` in this case.")
+    }
     offset <- rep(0, nrow(newdata))
   } else {
     offset <- orhs
   }
 
   if (inherits(resp_form, "formula")) {
+    if (is.null(newdata)) {
+      stop(".extract_model_data() needs non-NULL `newdata` in this case.")
+    }
     y <- eval_el2(resp_form, newdata)
   } else {
     y <- NULL
@@ -704,20 +712,21 @@ get_refmodel.vsel <- function(object, ...) {
 
 #' @rdname refmodel-init-get
 #' @export
-get_refmodel.default <- function(object, formula, family = NULL, ...) {
+get_refmodel.default <- function(object, data, formula, family = NULL, ...) {
   if (is.null(family)) {
     family <- family(object)
   }
-
   extract_model_data <- function(object, newdata = NULL, wrhs = NULL,
                                  orhs = NULL, extract_y = TRUE) {
     resp_form <- if (!extract_y) NULL else lhs(formula)
+    if (is.null(newdata)) {
+      newdata <- data
+    }
     return(.extract_model_data(object = object, newdata = newdata, wrhs = wrhs,
                                orhs = orhs, resp_form = resp_form))
   }
-
   refmodel <- init_refmodel(
-    object = object, formula = formula, family = family,
+    object = object, data = data, formula = formula, family = family,
     extract_model_data = extract_model_data, ...
   )
   return(refmodel)
