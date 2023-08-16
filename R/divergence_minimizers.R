@@ -228,6 +228,11 @@ fit_gamm_callback <- function(formula, projpred_formula_no_random,
              "anymore. You will probably have to tweak gamm4 tuning ",
              "parameters manually (via `...`).")
       }
+      if (!requireNamespace("optimx", quietly = TRUE)) {
+        stop("Trying to fix an lme4 error with the help of an optimx ",
+             "optimizer, but cannot find the optimx package. Please install ",
+             "it to be able to try this fix.")
+      }
       return(fit_gamm_callback(
         formula = formula,
         projpred_formula_no_random = projpred_formula_no_random,
@@ -367,6 +372,11 @@ fit_glmer_callback <- function(formula, projpred_formula_no_random,
              "the lme4 fitting procedure, but cannot fix this automatically ",
              "anymore. You will probably have to tweak lme4 tuning parameters ",
              "manually (via `...`).")
+      }
+      if (!requireNamespace("optimx", quietly = TRUE)) {
+        stop("Trying to fix an lme4 error with the help of an optimx ",
+             "optimizer, but cannot find the optimx package. Please install ",
+             "it to be able to try this fix.")
       }
       return(fit_glmer_callback(
         formula = formula,
