@@ -113,36 +113,34 @@
 #'   `nresample_clusters` of [proj_predict()] for the intended use of the
 #'   weights stored in element `wdraws_prj`).
 #'
-#' @examples
-#' if (requireNamespace("rstanarm", quietly = TRUE)) {
-#'   # Data:
-#'   dat_gauss <- data.frame(y = df_gaussian$y, df_gaussian$x)
+#' @examplesIf requireNamespace("rstanarm", quietly = TRUE)
+#' # Data:
+#' dat_gauss <- data.frame(y = df_gaussian$y, df_gaussian$x)
 #'
-#'   # The "stanreg" fit which will be used as the reference model (with small
-#'   # values for `chains` and `iter`, but only for technical reasons in this
-#'   # example; this is not recommended in general):
-#'   fit <- rstanarm::stan_glm(
-#'     y ~ X1 + X2 + X3 + X4 + X5, family = gaussian(), data = dat_gauss,
-#'     QR = TRUE, chains = 2, iter = 500, refresh = 0, seed = 9876
-#'   )
+#' # The "stanreg" fit which will be used as the reference model (with small
+#' # values for `chains` and `iter`, but only for technical reasons in this
+#' # example; this is not recommended in general):
+#' fit <- rstanarm::stan_glm(
+#'   y ~ X1 + X2 + X3 + X4 + X5, family = gaussian(), data = dat_gauss,
+#'   QR = TRUE, chains = 2, iter = 500, refresh = 0, seed = 9876
+#' )
 #'
-#'   # Run varsel() (here without cross-validation and with small values for
-#'   # `nterms_max`, `nclusters`, and `nclusters_pred`, but only for the sake of
-#'   # speed in this example; this is not recommended in general):
-#'   vs <- varsel(fit, nterms_max = 3, nclusters = 5, nclusters_pred = 10,
-#'                seed = 5555)
+#' # Run varsel() (here without cross-validation and with small values for
+#' # `nterms_max`, `nclusters`, and `nclusters_pred`, but only for the sake of
+#' # speed in this example; this is not recommended in general):
+#' vs <- varsel(fit, nterms_max = 3, nclusters = 5, nclusters_pred = 10,
+#'              seed = 5555)
 #'
-#'   # Projection onto the best submodel with 2 predictor terms (with a small
-#'   # value for `nclusters`, but only for the sake of speed in this example;
-#'   # this is not recommended in general):
-#'   prj_from_vs <- project(vs, nterms = 2, nclusters = 10, seed = 9182)
+#' # Projection onto the best submodel with 2 predictor terms (with a small
+#' # value for `nclusters`, but only for the sake of speed in this example;
+#' # this is not recommended in general):
+#' prj_from_vs <- project(vs, nterms = 2, nclusters = 10, seed = 9182)
 #'
-#'   # Projection onto an arbitrary combination of predictor terms (with a small
-#'   # value for `nclusters`, but only for the sake of speed in this example;
-#'   # this is not recommended in general):
-#'   prj <- project(fit, solution_terms = c("X1", "X3", "X5"), nclusters = 10,
-#'                  seed = 9182)
-#' }
+#' # Projection onto an arbitrary combination of predictor terms (with a small
+#' # value for `nclusters`, but only for the sake of speed in this example;
+#' # this is not recommended in general):
+#' prj <- project(fit, solution_terms = c("X1", "X3", "X5"), nclusters = 10,
+#'                seed = 9182)
 #'
 #' @export
 project <- function(object, nterms = NULL, solution_terms = NULL,

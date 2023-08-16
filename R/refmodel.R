@@ -310,62 +310,60 @@
 #'   but instead via downstream functions (see the functions mentioned above as
 #'   well as [predict.refmodel()]).
 #'
-#' @examples
-#' if (requireNamespace("rstanarm", quietly = TRUE)) {
-#'   # Data:
-#'   dat_gauss <- data.frame(y = df_gaussian$y, df_gaussian$x)
+#' @examplesIf requireNamespace("rstanarm", quietly = TRUE)
+#' # Data:
+#' dat_gauss <- data.frame(y = df_gaussian$y, df_gaussian$x)
 #'
-#'   # The "stanreg" fit which will be used as the reference model (with small
-#'   # values for `chains` and `iter`, but only for technical reasons in this
-#'   # example; this is not recommended in general):
-#'   fit <- rstanarm::stan_glm(
-#'     y ~ X1 + X2 + X3 + X4 + X5, family = gaussian(), data = dat_gauss,
-#'     QR = TRUE, chains = 2, iter = 500, refresh = 0, seed = 9876
-#'   )
+#' # The "stanreg" fit which will be used as the reference model (with small
+#' # values for `chains` and `iter`, but only for technical reasons in this
+#' # example; this is not recommended in general):
+#' fit <- rstanarm::stan_glm(
+#'   y ~ X1 + X2 + X3 + X4 + X5, family = gaussian(), data = dat_gauss,
+#'   QR = TRUE, chains = 2, iter = 500, refresh = 0, seed = 9876
+#' )
 #'
-#'   # Define the reference model explicitly:
-#'   ref <- get_refmodel(fit)
-#'   print(class(ref)) # gives `"refmodel"`
-#'   # Now see, for example, `?varsel`, `?cv_varsel`, and `?project` for
-#'   # possible post-processing functions. Most of the post-processing functions
-#'   # call get_refmodel() internally at the beginning, so you will rarely need
-#'   # to call get_refmodel() yourself.
+#' # Define the reference model explicitly:
+#' ref <- get_refmodel(fit)
+#' print(class(ref)) # gives `"refmodel"`
+#' # Now see, for example, `?varsel`, `?cv_varsel`, and `?project` for
+#' # possible post-processing functions. Most of the post-processing functions
+#' # call get_refmodel() internally at the beginning, so you will rarely need
+#' # to call get_refmodel() yourself.
 #'
-#'   # A custom reference model which may be used in a variable selection where
-#'   # the candidate predictors are not a subset of those used for the reference
-#'   # model's predictions:
-#'   ref_cust <- init_refmodel(
-#'     fit,
-#'     data = dat_gauss,
-#'     formula = y ~ X6 + X7,
-#'     family = gaussian(),
-#'     extract_model_data = function(object, newdata = NULL, wrhs = NULL,
-#'                                   orhs = NULL, extract_y = TRUE) {
-#'       if (!extract_y) {
-#'         resp_form <- NULL
-#'       } else {
-#'         resp_form <- ~ y
-#'       }
+#' # A custom reference model which may be used in a variable selection where
+#' # the candidate predictors are not a subset of those used for the reference
+#' # model's predictions:
+#' ref_cust <- init_refmodel(
+#'   fit,
+#'   data = dat_gauss,
+#'   formula = y ~ X6 + X7,
+#'   family = gaussian(),
+#'   extract_model_data = function(object, newdata = NULL, wrhs = NULL,
+#'                                 orhs = NULL, extract_y = TRUE) {
+#'     if (!extract_y) {
+#'       resp_form <- NULL
+#'     } else {
+#'       resp_form <- ~ y
+#'     }
 #'
-#'       if (is.null(newdata)) {
-#'         newdata <- dat_gauss
-#'       }
+#'     if (is.null(newdata)) {
+#'       newdata <- dat_gauss
+#'     }
 #'
-#'       return(projpred:::.extract_model_data(
-#'         object = object, newdata = newdata, wrhs = wrhs, orhs = orhs,
-#'         resp_form = resp_form
-#'       ))
-#'     },
-#'     cvfun = function(folds) {
-#'       kfold(
-#'         fit, K = max(folds), save_fits = TRUE, folds = folds, cores = 1
-#'       )$fits[, "fit"]
-#'     },
-#'     dis = as.matrix(fit)[, "sigma"]
-#'   )
-#'   # Now, the post-processing functions mentioned above (for example,
-#'   # varsel(), cv_varsel(), and project()) may be applied to `ref_cust`.
-#' }
+#'     return(projpred:::.extract_model_data(
+#'       object = object, newdata = newdata, wrhs = wrhs, orhs = orhs,
+#'       resp_form = resp_form
+#'     ))
+#'   },
+#'   cvfun = function(folds) {
+#'     kfold(
+#'       fit, K = max(folds), save_fits = TRUE, folds = folds, cores = 1
+#'     )$fits[, "fit"]
+#'   },
+#'   dis = as.matrix(fit)[, "sigma"]
+#' )
+#' # Now, the post-processing functions mentioned above (for example,
+#' # varsel(), cv_varsel(), and project()) may be applied to `ref_cust`.
 #'
 NULL
 

@@ -107,29 +107,25 @@
 #'
 #' @seealso [varsel()]
 #'
-#' @examples
-#' # Note: The code from this example is not executed when called via example().
-#' # To execute it, you have to copy and paste it manually to the console.
-#' if (requireNamespace("rstanarm", quietly = TRUE)) {
-#'   # Data:
-#'   dat_gauss <- data.frame(y = df_gaussian$y, df_gaussian$x)
+#' @examplesIf requireNamespace("rstanarm", quietly = TRUE)
+#' # Data:
+#' dat_gauss <- data.frame(y = df_gaussian$y, df_gaussian$x)
 #'
-#'   # The "stanreg" fit which will be used as the reference model (with small
-#'   # values for `chains` and `iter`, but only for technical reasons in this
-#'   # example; this is not recommended in general):
-#'   fit <- rstanarm::stan_glm(
-#'     y ~ X1 + X2 + X3 + X4 + X5, family = gaussian(), data = dat_gauss,
-#'     QR = TRUE, chains = 2, iter = 1000, refresh = 0, seed = 9876
-#'   )
+#' # The "stanreg" fit which will be used as the reference model (with small
+#' # values for `chains` and `iter`, but only for technical reasons in this
+#' # example; this is not recommended in general):
+#' fit <- rstanarm::stan_glm(
+#'   y ~ X1 + X2 + X3 + X4 + X5, family = gaussian(), data = dat_gauss,
+#'   QR = TRUE, chains = 2, iter = 1000, refresh = 0, seed = 9876
+#' )
 #'
-#'   # Run cv_varsel() (with small values for `K`, `nterms_max`, `nclusters`,
-#'   # and `nclusters_pred`, but only for the sake of speed in this example;
-#'   # this is not recommended in general):
-#'   cvvs <- cv_varsel(fit, cv_method = "kfold", K = 2, nterms_max = 3,
-#'                     nclusters = 5, nclusters_pred = 10, seed = 5555)
-#'   # Now see, for example, `?print.vsel`, `?plot.vsel`, `?suggest_size.vsel`,
-#'   # and `?ranking` for possible post-processing functions.
-#' }
+#' # Run cv_varsel() (with small values for `K`, `nterms_max`, `nclusters`,
+#' # and `nclusters_pred`, but only for the sake of speed in this example;
+#' # this is not recommended in general):
+#' cvvs <- cv_varsel(fit, cv_method = "kfold", K = 2, nterms_max = 3,
+#'                   nclusters = 5, nclusters_pred = 10, seed = 5555)
+#' # Now see, for example, `?print.vsel`, `?plot.vsel`, `?suggest_size.vsel`,
+#' # and `?ranking` for possible post-processing functions.
 #'
 #' @export
 cv_varsel <- function(object, ...) {

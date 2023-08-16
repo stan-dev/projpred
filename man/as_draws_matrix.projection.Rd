@@ -42,48 +42,46 @@ reference model fit (see section "Augmented-data projection" in
 \code{\link[=extend_family]{extend_family()}}'s documentation).
 }
 \examples{
-if (requireNamespace("rstanarm", quietly = TRUE) &&
-    requireNamespace("posterior", quietly = TRUE)) {
-  # Data:
-  dat_gauss <- data.frame(y = df_gaussian$y, df_gaussian$x)
+\dontshow{if (requireNamespace("rstanarm", quietly = TRUE) && requireNamespace("posterior", quietly = TRUE)) (if (getRversion() >= "3.4") withAutoprint else force)(\{ # examplesIf}
+# Data:
+dat_gauss <- data.frame(y = df_gaussian$y, df_gaussian$x)
 
-  # The "stanreg" fit which will be used as the reference model (with small
-  # values for `chains` and `iter`, but only for technical reasons in this
-  # example; this is not recommended in general):
-  fit <- rstanarm::stan_glm(
-    y ~ X1 + X2 + X3 + X4 + X5, family = gaussian(), data = dat_gauss,
-    QR = TRUE, chains = 2, iter = 500, refresh = 0, seed = 9876
-  )
+# The "stanreg" fit which will be used as the reference model (with small
+# values for `chains` and `iter`, but only for technical reasons in this
+# example; this is not recommended in general):
+fit <- rstanarm::stan_glm(
+  y ~ X1 + X2 + X3 + X4 + X5, family = gaussian(), data = dat_gauss,
+  QR = TRUE, chains = 2, iter = 500, refresh = 0, seed = 9876
+)
 
-  # Projection onto an arbitrary combination of predictor terms (with a small
-  # value for `nclusters`, but only for illustrative purposes; this is not
-  # recommended in general):
-  prj <- project(fit, solution_terms = c("X1", "X3", "X5"), nclusters = 5,
-                 seed = 9182)
+# Projection onto an arbitrary combination of predictor terms (with a small
+# value for `nclusters`, but only for illustrative purposes; this is not
+# recommended in general):
+prj <- project(fit, solution_terms = c("X1", "X3", "X5"), nclusters = 5,
+               seed = 9182)
 
-  # Applying the posterior::as_draws_matrix() generic to the output of
-  # project() dispatches to the projpred::as_draws_matrix.projection()
-  # method:
-  prj_draws <- posterior::as_draws_matrix(prj)
+# Applying the posterior::as_draws_matrix() generic to the output of
+# project() dispatches to the projpred::as_draws_matrix.projection()
+# method:
+prj_draws <- posterior::as_draws_matrix(prj)
 
-  # Resample the projected draws according to their weights:
-  set.seed(3456)
-  prj_draws_resampled <- posterior::resample_draws(prj_draws, ndraws = 1000)
+# Resample the projected draws according to their weights:
+set.seed(3456)
+prj_draws_resampled <- posterior::resample_draws(prj_draws, ndraws = 1000)
 
-  # The values from the following two objects should be the same (in general,
-  # this only holds approximately):
-  print(proportions(table(rownames(prj_draws_resampled))))
-  print(weights(prj_draws))
+# The values from the following two objects should be the same (in general,
+# this only holds approximately):
+print(proportions(table(rownames(prj_draws_resampled))))
+print(weights(prj_draws))
 
-  # Treat the resampled draws like ordinary draws, e.g., summarize them:
-  print(posterior::summarize_draws(
-    prj_draws_resampled,
-    "median", "mad", function(x) quantile(x, probs = c(0.025, 0.975))
-  ))
-  # Or visualize them using the `bayesplot` package:
-  if (requireNamespace("bayesplot", quietly = TRUE)) {
-    print(bayesplot::mcmc_intervals(prj_draws_resampled))
-  }
+# Treat the resampled draws like ordinary draws, e.g., summarize them:
+print(posterior::summarize_draws(
+  prj_draws_resampled,
+  "median", "mad", function(x) quantile(x, probs = c(0.025, 0.975))
+))
+# Or visualize them using the `bayesplot` package:
+if (requireNamespace("bayesplot", quietly = TRUE)) {
+  print(bayesplot::mcmc_intervals(prj_draws_resampled))
 }
-
+\dontshow{\}) # examplesIf}
 }

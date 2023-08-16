@@ -121,6 +121,9 @@
 #' model, and setting `projpred.mlvl_proj_ref_new` to `TRUE` would make sense if
 #' the group-level effects should be integrated out completely.
 #'
+#' Technical note: Most examples are not executed when called via [example()].
+#' To execute them, you have to copy and paste them manually to the console.
+#'
 #' @details
 #'
 #' # Functions
