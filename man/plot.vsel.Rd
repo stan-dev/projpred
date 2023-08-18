@@ -13,6 +13,8 @@
   baseline = if (!inherits(x$refmodel, "datafit")) "ref" else "best",
   thres_elpd = NA,
   resp_oscale = TRUE,
+  point_size = 3,
+  bar_thickness = 1,
   ranking_nterms_max = NULL,
   ranking_abbreviate = FALSE,
   ranking_abbreviate_args = list(),
@@ -84,6 +86,13 @@ deactivates this.}
 \item{resp_oscale}{Only relevant for the latent projection. A single logical
 value indicating whether to calculate the performance statistics on the
 original response scale (\code{TRUE}) or on latent scale (\code{FALSE}).}
+
+\item{point_size}{Passed to argument \code{size} of \code{\link[ggplot2:geom_point]{ggplot2::geom_point()}} and
+controls the size of the points.}
+
+\item{bar_thickness}{Passed to argument \code{linewidth} of
+\code{\link[ggplot2:geom_linerange]{ggplot2::geom_linerange()}} and controls the thickness of the uncertainty
+bars.}
 
 \item{ranking_nterms_max}{Maximum submodel size (number of predictor terms)
 for which the predictor names and the corresponding ranking proportions are

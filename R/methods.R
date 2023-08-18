@@ -617,6 +617,11 @@ proj_predict_aux <- function(proj, newdata, offset, weights,
 #'   close enough to the baseline model's ELPD. An equivalent rule is applied in
 #'   case of the MLPD. See [suggest_size()] for a formalization. Supplying `NA`
 #'   deactivates this.
+#' @param point_size Passed to argument `size` of [ggplot2::geom_point()] and
+#'   controls the size of the points.
+#' @param bar_thickness Passed to argument `linewidth` of
+#'   [ggplot2::geom_linerange()] and controls the thickness of the uncertainty
+#'   bars.
 #' @param ranking_nterms_max Maximum submodel size (number of predictor terms)
 #'   for which the predictor names and the corresponding ranking proportions are
 #'   added on the x-axis. Using `NULL` is effectively the same as using
@@ -705,6 +710,8 @@ plot.vsel <- function(
     baseline = if (!inherits(x$refmodel, "datafit")) "ref" else "best",
     thres_elpd = NA,
     resp_oscale = TRUE,
+    point_size = 3,
+    bar_thickness = 1,
     ranking_nterms_max = NULL,
     ranking_abbreviate = FALSE,
     ranking_abbreviate_args = list(),
@@ -967,9 +974,10 @@ plot.vsel <- function(
   }
   # The submodel-specific graphical elements:
   pp <- pp +
-    geom_linerange(aes_linerg_pt, alpha = alpha_linerg, linewidth = 1) +
+    geom_linerange(aes_linerg_pt, alpha = alpha_linerg,
+                   linewidth = bar_thickness) +
     geom_line() +
-    geom_point(aes_linerg_pt, size = 3)
+    geom_point(aes_linerg_pt, size = point_size)
   # Miscellaneous stuff (axes, theming, faceting, etc.):
   if (!is.na(ranking_nterms_max) && ranking_colored &&
       !is.null(rk[["foldwise"]])) {
