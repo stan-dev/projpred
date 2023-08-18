@@ -87,6 +87,13 @@ deactivates this.}
 value indicating whether to calculate the performance statistics on the
 original response scale (\code{TRUE}) or on latent scale (\code{FALSE}).}
 
+\item{point_size}{Passed to argument \code{size} of \code{\link[ggplot2:geom_point]{ggplot2::geom_point()}} and
+controls the size of the points.}
+
+\item{bar_thickness}{Passed to argument \code{linewidth} of
+\code{\link[ggplot2:geom_linerange]{ggplot2::geom_linerange()}} and controls the thickness of the uncertainty
+bars.}
+
 \item{ranking_nterms_max}{Maximum submodel size (number of predictor terms)
 for which the predictor names and the corresponding ranking proportions are
 added on the x-axis. Using \code{NULL} is effectively the same as using

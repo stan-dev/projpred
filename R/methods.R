@@ -617,6 +617,11 @@ proj_predict_aux <- function(proj, newdata, offset, weights,
 #'   close enough to the baseline model's ELPD. An equivalent rule is applied in
 #'   case of the MLPD. See [suggest_size()] for a formalization. Supplying `NA`
 #'   deactivates this.
+#' @param point_size Passed to argument `size` of [ggplot2::geom_point()] and
+#'   controls the size of the points.
+#' @param bar_thickness Passed to argument `linewidth` of
+#'   [ggplot2::geom_linerange()] and controls the thickness of the uncertainty
+#'   bars.
 #' @param ranking_nterms_max Maximum submodel size (number of predictor terms)
 #'   for which the predictor names and the corresponding ranking proportions are
 #'   added on the x-axis. Using `NULL` is effectively the same as using
