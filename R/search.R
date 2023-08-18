@@ -16,23 +16,17 @@ search_forward <- function(p_ref, refmodel, nterms_max, verbose = TRUE, opt,
       next
     full_cands <- lapply(cands, function(cand) c(chosen, cand))
 
-    # Function for selecting the best candidate for the given `size` and
-    # retrieving its results only (to take advantage of R's garbage collection
-    # and thus to reduce the peak memory usage):
-    best_at_size <- function() {
-      # Perform the projections:
-      submodls <- lapply(full_cands, get_submodl_prj, p_ref = p_ref,
-                         refmodel = refmodel, regul = opt$regul, ...)
-      # Select best candidate:
-      imin <- which.min(sapply(submodls, "[[", "ce"))
-      # Return the predictor term and the `outdmin` object (i.e., the object
-      # containing the projection results) corresponding to the best candidate:
-      return(list(cand_best = cands[imin],
-                  outdmin_best = submodls[[imin]]$outdmin))
-    }
-    cand_outdmin_best <- best_at_size()
-    chosen <- c(chosen, cand_outdmin_best[["cand_best"]])
-    outdmins <- c(outdmins, list(cand_outdmin_best[["outdmin_best"]]))
+    # Perform the projections:
+    submodls <- lapply(full_cands, get_submodl_prj, p_ref = p_ref,
+                       refmodel = refmodel, regul = opt$regul, ...)
+
+    # Select best candidate:
+    imin <- which.min(sapply(submodls, "[[", "ce"))
+    chosen <- c(chosen, cands[imin])
+
+    # Store `outdmin` (i.e., the object containing the projection results)
+    # corresponding to the best candidate:
+    outdmins <- c(outdmins, list(submodls[[imin]]$outdmin))
 
     # Verbose mode output:
     ct_chosen <- count_terms_chosen(chosen)
@@ -44,12 +38,9 @@ search_forward <- function(p_ref, refmodel, nterms_max, verbose = TRUE, opt,
       verb_out(vtxt)
     }
 
-    ### TODO: Remove this? Or move this up?:
     # Free up some memory:
-    rm(best_at_size)
-    rm(cand_outdmin_best)
+    rm(submodls)
     gc()
-    ###
   }
 
   # For `solution_terms`, `reduce_models(chosen)` used to be used instead of
