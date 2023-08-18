@@ -40,7 +40,6 @@ search_forward <- function(p_ref, refmodel, nterms_max, verbose = TRUE, opt,
 
     # Free up some memory:
     rm(submodls)
-    gc()
   }
 
   # For `solution_terms`, `reduce_models(chosen)` used to be used instead of
