@@ -121,6 +121,12 @@
 #' model, and setting `projpred.mlvl_proj_ref_new` to `TRUE` would make sense if
 #' the group-level effects should be integrated out completely.
 #'
+#' By setting the global option `projpred.run_gc` to `TRUE`, \pkg{projpred} will
+#' call [gc()] at some places (e.g., after each size that the forward search
+#' passes through) to free up some memory. These [gc()] calls are not always
+#' necessary to reduce the peak memory usage, but they add runtime (hence the
+#' default of `FALSE` for that global option).
+#'
 #' Technical note: Most examples are not executed when called via [example()].
 #' To execute them, you have to copy and paste them manually to the console.
 #'

@@ -122,6 +122,12 @@ the submodels fit to the best possible fitted values from the reference
 model, and setting \code{projpred.mlvl_proj_ref_new} to \code{TRUE} would make sense if
 the group-level effects should be integrated out completely.
 
+By setting the global option \code{projpred.run_gc} to \code{TRUE}, \pkg{projpred} will
+call \code{\link[=gc]{gc()}} at some places (e.g., after each size that the forward search
+passes through) to free up some memory. These \code{\link[=gc]{gc()}} calls are not always
+necessary to reduce the peak memory usage, but they add runtime (hence the
+default of \code{FALSE} for that global option).
+
 Technical note: Most examples are not executed when called via \code{\link[=example]{example()}}.
 To execute them, you have to copy and paste them manually to the console.
 }

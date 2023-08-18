@@ -10,20 +10,25 @@ search_forward <- function(p_ref, refmodel, nterms_max, verbose = TRUE, opt,
   outdmins <- c()
 
   for (size in seq_len(nterms_max_with_icpt)) {
+    # Determine candidate predictors for the current size:
     cands <- select_possible_terms_size(chosen, search_terms, size = size)
     if (is.null(cands))
       next
     full_cands <- lapply(cands, function(cand) c(chosen, cand))
+
+    # Perform the projections:
     submodls <- lapply(full_cands, get_submodl_prj, p_ref = p_ref,
                        refmodel = refmodel, regul = opt$regul, ...)
 
-    ## select best candidate
+    # Select best candidate:
     imin <- which.min(sapply(submodls, "[[", "ce"))
     chosen <- c(chosen, cands[imin])
 
-    ## append `outdmin`
+    # Store `outdmin` (i.e., the object containing the projection results)
+    # corresponding to the best candidate:
     outdmins <- c(outdmins, list(submodls[[imin]]$outdmin))
 
+    # Verbose mode output:
     ct_chosen <- count_terms_chosen(chosen)
     if (verbose && ct_chosen %in% iq) {
       vtxt <- paste(names(iq)[max(which(ct_chosen == iq))], "of terms selected")
@@ -31,6 +36,12 @@ search_forward <- function(p_ref, refmodel, nterms_max, verbose = TRUE, opt,
         vtxt <- paste0(vtxt, ": ", paste(chosen, collapse = " + "))
       }
       verb_out(vtxt)
+    }
+
+    # Free up some memory:
+    rm(submodls)
+    if (getOption("projpred.run_gc", FALSE)) {
+      gc()
     }
   }
 
