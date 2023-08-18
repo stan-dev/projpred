@@ -908,6 +908,20 @@ get_refmodel.stanreg <- function(object, latent = FALSE, dis = NULL, ...) {
     dis <- data.frame(object)[, "sigma"]
   }
 
+  # Needed for multilevel models with `:` between grouping variables because
+  # repair_re() currently requires a corresponding column in the `data.frame`:
+  grp_trms <- extract_terms_response(formula)$group_terms
+  if (length(grp_trms) > 0) {
+    for (nm_IA in grep(":", grp_trms, value = TRUE)) {
+      nm_IA <- sub(".*\\|[[:blank:]]*", "", nm_IA)
+      if (!nm_IA %in% names(data)) {
+        data[[nm_IA]] <- do.call(paste,
+                                 c(unname(data[strsplit(nm_IA, ":")[[1]]]),
+                                   list(sep = ":")))
+      }
+    }
+  }
+
   # Augmented-data projection -----------------------------------------------
 
   aug_data <- object$stan_function == "stan_polr" && !latent
