@@ -40,7 +40,7 @@ search_forward <- function(p_ref, refmodel, nterms_max, verbose = TRUE, opt,
 
     # Free up some memory:
     rm(submodls)
-    if (getOption("projpred.run_gc", TRUE)) {
+    if (getOption("projpred.run_gc", FALSE)) {
       gc()
     }
   }
