@@ -121,6 +121,13 @@
 #' model, and setting `projpred.mlvl_proj_ref_new` to `TRUE` would make sense if
 #' the group-level effects should be integrated out completely.
 #'
+#' At some places (e.g., after each size that the forward search passes
+#' through), \pkg{projpred} calls [gc()] to free up some memory. According to
+#' our experiments, these [gc()] calls reduce the peak memory usage
+#' considerably, whereas the additional runtime that they introduce is
+#' comparatively small. If these [gc()] calls are not desired (in order to have
+#' a minor speed-up), set the global option `projpred.run_gc` to `FALSE`.
+#'
 #' Technical note: Most examples are not executed when called via [example()].
 #' To execute them, you have to copy and paste them manually to the console.
 #'
