@@ -13,6 +13,8 @@
   baseline = if (!inherits(x$refmodel, "datafit")) "ref" else "best",
   thres_elpd = NA,
   resp_oscale = TRUE,
+  point_size = 3,
+  bar_thickness = 1,
   ranking_nterms_max = NULL,
   ranking_abbreviate = FALSE,
   ranking_abbreviate_args = list(),

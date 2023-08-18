@@ -705,6 +705,8 @@ plot.vsel <- function(
     baseline = if (!inherits(x$refmodel, "datafit")) "ref" else "best",
     thres_elpd = NA,
     resp_oscale = TRUE,
+    point_size = 3,
+    bar_thickness = 1,
     ranking_nterms_max = NULL,
     ranking_abbreviate = FALSE,
     ranking_abbreviate_args = list(),
@@ -967,9 +969,10 @@ plot.vsel <- function(
   }
   # The submodel-specific graphical elements:
   pp <- pp +
-    geom_linerange(aes_linerg_pt, alpha = alpha_linerg, linewidth = 1) +
+    geom_linerange(aes_linerg_pt, alpha = alpha_linerg,
+                   linewidth = bar_thickness) +
     geom_line() +
-    geom_point(aes_linerg_pt, size = 3)
+    geom_point(aes_linerg_pt, size = point_size)
   # Miscellaneous stuff (axes, theming, faceting, etc.):
   if (!is.na(ranking_nterms_max) && ranking_colored &&
       !is.null(rk[["foldwise"]])) {
