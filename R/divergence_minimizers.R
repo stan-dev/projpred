@@ -1228,14 +1228,24 @@ repair_re.merMod <- function(object, newdata) {
   lvls_list <- lapply(setNames(nm = vnms), function(vnm) {
     from_fit <- rownames(ranef_tmp[[vnm]])
     if (!vnm %in% names(newdata)) {
-      if (any(grepl("\\|.+/", labels(terms(formula(object)))))) {
-        stop("The `/` syntax for nested group-level terms is currently not ",
-             "supported. Please try to write out the interaction term implied ",
-             "by the `/` syntax (see Table 2 in lme4's vignette called ",
-             "\"Fitting Linear Mixed-Effects Models Using lme4\").")
-      } else {
-        stop("Could not find column `", vnm, "` in `newdata`.")
+      for (special_char in c("/", ":")) {
+        if (any(grepl(paste0("\\|.+", special_char),
+                      labels(terms(formula(object)))))) {
+          if (special_char == "/") {
+            add_hint <- paste0(
+              " implied by the `", special_char, "` syntax (see lme4 vignette ",
+              "\"Fitting Linear Mixed-Effects Models Using lme4\", Table 2)"
+            )
+          } else {
+            add_hint <- ""
+          }
+          stop("The `", special_char, "` syntax for grouping variables is ",
+               "currently not supported. Please write out (i.e., create ",
+               "corresponding columns in the dataset manually and then adapt ",
+               "the model formula) interaction terms", add_hint, ".")
+        }
       }
+      stop("Could not find column `", vnm, "` in `newdata`.")
     }
     from_new <- unique(newdata[, vnm])
     if (is.factor(from_new)) {
@@ -1314,14 +1324,24 @@ repair_re.clmm <- function(object, newdata) {
   lvls_list <- lapply(setNames(nm = vnms), function(vnm) {
     from_fit <- rownames(ranef_tmp[[vnm]])
     if (!vnm %in% names(newdata)) {
-      if (any(grepl("\\|.+/", labels(terms(formula(object)))))) {
-        stop("The `/` syntax for nested group-level terms is currently not ",
-             "supported. Please try to write out the interaction term implied ",
-             "by the `/` syntax (see Table 2 in lme4's vignette called ",
-             "\"Fitting Linear Mixed-Effects Models Using lme4\").")
-      } else {
-        stop("Could not find column `", vnm, "` in `newdata`.")
+      for (special_char in c("/", ":")) {
+        if (any(grepl(paste0("\\|.+", special_char),
+                      labels(terms(formula(object)))))) {
+          if (special_char == "/") {
+            add_hint <- paste0(
+              " implied by the `", special_char, "` syntax (see lme4 vignette ",
+              "\"Fitting Linear Mixed-Effects Models Using lme4\", Table 2)"
+            )
+          } else {
+            add_hint <- ""
+          }
+          stop("The `", special_char, "` syntax for grouping variables is ",
+               "currently not supported. Please write out (i.e., create ",
+               "corresponding columns in the dataset manually and then adapt ",
+               "the model formula) interaction terms", add_hint, ".")
+        }
       }
+      stop("Could not find column `", vnm, "` in `newdata`.")
     }
     from_new <- unique(newdata[, vnm])
     if (is.factor(from_new)) {
