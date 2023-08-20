@@ -1058,7 +1058,9 @@ init_refmodel <- function(object, data, formula, family, ref_predfun = NULL,
     response_name <- paste0(".", response_name[1])
   }
   formula <- update(formula, paste(response_name[1], "~ ."))
-  if (formula_contains_additive_terms(formula)) {
+  add_trms <- fml_extractions$additive_terms
+  grp_trms <- fml_extractions$group_terms
+  if (length(add_trms) > 0) {
     if (family$for_augdat) {
       stop("Currently, the augmented-data projection may not be combined with ",
            "additive models.")
@@ -1067,7 +1069,7 @@ init_refmodel <- function(object, data, formula, family, ref_predfun = NULL,
       warning("Support for additive models is still experimental.")
     }
   }
-  if (formula_contains_group_terms(formula) &&
+  if (length(grp_trms) > 0 &&
       getOption("projpred.warn_instable_projections", TRUE) &&
       !called_from_cvrefbuilder) {
     if (family$for_augdat) {
@@ -1428,7 +1430,6 @@ init_refmodel <- function(object, data, formula, family, ref_predfun = NULL,
   # Needed for rstanarm (and possibly custom) multilevel models with `:` between
   # grouping variables (reason: repair_re() currently requires a corresponding
   # column in the `data.frame`; brms does this correctly):
-  grp_trms <- fml_extractions$group_terms
   if (length(grp_trms) > 0) {
     for (nm_IA in grep(":", grp_trms, value = TRUE)) {
       nm_IA <- sub(".*\\|[[:blank:]]*", "", nm_IA)
