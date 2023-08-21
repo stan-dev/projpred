@@ -927,6 +927,11 @@ check_conv <- function(fit) {
           (!is.null(fit_s@optinfo$conv$lme4$code) &&
              all(fit_s@optinfo$conv$lme4$code >= 0)) ||
             is.null(fit_s@optinfo$conv$lme4$code)
+        ) && (
+          length(unlist(fit_s@optinfo$conv$lme4$messages)) == 0 || (
+            !any(grepl("failed to converge",
+                       unlist(fit_s@optinfo$conv$lme4$messages)))
+          )
         ),
         no_warnings = length(fit_s@optinfo$warnings) == 0 &&
           length(unlist(fit_s@optinfo$conv$lme4$messages)) == 0 && (
