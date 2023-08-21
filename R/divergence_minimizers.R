@@ -925,15 +925,15 @@ check_conv <- function(fit) {
           # Since lme4::.prt.warn() does not refer to `optinfo$conv$lme4$code`,
           # that element might not always exist:
           (!is.null(fit_s@optinfo$conv$lme4$code) &&
-             fit_s@optinfo$conv$lme4$code >= 0) ||
+             all(fit_s@optinfo$conv$lme4$code >= 0)) ||
             is.null(fit_s@optinfo$conv$lme4$code)
         ),
         no_warnings = length(fit_s@optinfo$warnings) == 0 &&
           length(unlist(fit_s@optinfo$conv$lme4$messages)) == 0 && (
-            # Since lme4::.prt.warn() does not refer to `optinfo$conv$lme4$code`,
-            # that element might not always exist:
+            # Since lme4::.prt.warn() does not refer to
+            # `optinfo$conv$lme4$code`, that element might not always exist:
             (!is.null(fit_s@optinfo$conv$lme4$code) &&
-               fit_s@optinfo$conv$lme4$code == 0) ||
+               all(fit_s@optinfo$conv$lme4$code == 0)) ||
               is.null(fit_s@optinfo$conv$lme4$code)
           )
       ))
