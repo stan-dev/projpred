@@ -905,69 +905,47 @@ fit_categ_mlvl <- function(formula, projpred_formula_no_random,
 # Convergence checker -----------------------------------------------------
 
 check_conv <- function(fit) {
-  conv_info <- do.call(cbind, lapply(fit, function(fit_s) {
+  is_conv <- unlist(lapply(fit, function(fit_s) {
     if (inherits(fit_s, "gam")) {
-      # TODO (GAMs):
-      #   1. For GAMs, there is also `fit_s$mgcv.conv` (see
-      #   `?mgcv::gamObject`). Do we need to take this into account?
-      #   2. If there is a (convenient) way to retrieve warnings, then this
-      #   should be done to get a sensible value for `no_warnings` below.
-      return(c(no_gross_fail = fit_s$converged, no_warnings = TRUE))
+      # TODO (GAMs): There is also `fit_s$mgcv.conv` (see `?mgcv::gamObject`).
+      # Do we need to take this into account?
+      return(fit_s$converged)
     } else if (inherits(fit_s, "gamm4")) {
-      # TODO (GAMMs): Both, `no_gross_fail` and `no_warnings` need to be
-      # implemented. Return `TRUE` for now.
-      return(c(no_gross_fail = TRUE, no_warnings = TRUE))
+      # TODO (GAMMs): Needs to be implemented. Return `TRUE` for now.
+      return(TRUE)
     } else if (inherits(fit_s, c("lmerMod", "glmerMod"))) {
       # The following was inferred from the source code of lme4::checkConv() and
       # lme4::.prt.warn() (see also `?lme4::mkMerMod`).
-      return(c(
-        no_gross_fail = fit_s@optinfo$conv$opt == 0 && (
-          # Since lme4::.prt.warn() does not refer to `optinfo$conv$lme4$code`,
-          # that element might not always exist:
-          (!is.null(fit_s@optinfo$conv$lme4$code) &&
-             fit_s@optinfo$conv$lme4$code >= 0) ||
-            is.null(fit_s@optinfo$conv$lme4$code)
-        ),
-        no_warnings = length(fit_s@optinfo$warnings) == 0 &&
-          length(unlist(fit_s@optinfo$conv$lme4$messages)) == 0 && (
-            # Since lme4::.prt.warn() does not refer to `optinfo$conv$lme4$code`,
-            # that element might not always exist:
-            (!is.null(fit_s@optinfo$conv$lme4$code) &&
-               fit_s@optinfo$conv$lme4$code == 0) ||
-              is.null(fit_s@optinfo$conv$lme4$code)
-          )
-      ))
+      return(fit_s@optinfo$conv$opt == 0 && (
+        # Since lme4::.prt.warn() does not refer to `optinfo$conv$lme4$code`,
+        # that element might not always exist:
+        (!is.null(fit_s@optinfo$conv$lme4$code) &&
+           all(fit_s@optinfo$conv$lme4$code == 0)) ||
+          is.null(fit_s@optinfo$conv$lme4$code)
+      ) && length(unlist(fit_s@optinfo$conv$lme4$messages)) == 0 &&
+        length(fit_s@optinfo$warnings) == 0)
     } else if (inherits(fit_s, "glm")) {
-      # TODO (GLMs): If there is a (convenient) way to retrieve warnings, then
-      # this should be done to get a sensible value for `no_warnings` below.
-      return(c(no_gross_fail = fit_s$converged, no_warnings = TRUE))
+      return(fit_s$converged)
     } else if (inherits(fit_s, "lm")) {
       # Note: There doesn't seem to be a better way to check for convergence
       # other than checking `NA` coefficients (see below).
-      # TODO (LMs): If there is a (convenient) way to retrieve warnings, then
-      # this should be done to get a sensible value for `no_warnings` below.
-      return(c(no_gross_fail = all(!is.na(coef(fit_s))), no_warnings = TRUE))
+      return(all(!is.na(coef(fit_s))))
     } else if (inherits(fit_s, "subfit")) {
       # Note: There doesn't seem to be any way to check for convergence, so
       # return `TRUE` for now.
       # TODO (GLMs with ridge regularization): Add a logical indicating
       # convergence to objects of class `subfit` (i.e., from glm_ridge())?
-      return(c(no_gross_fail = TRUE, no_warnings = TRUE))
+      return(TRUE)
     } else {
       stop("Unrecognized submodel fit. Please notify the package maintainer.")
     }
   }))
-  is_conv <- conv_info["no_gross_fail", ]
   if (any(!is_conv)) {
     warning(sum(!is_conv), " out of ", length(is_conv), " submodel fits ",
-            "(there is one submodel fit per projected draw) did not converge. ",
-            "Formula (right-hand side): ", update(formula(fit[[1]]), NULL ~ .))
-  }
-  no_warns <- conv_info["no_warnings", ]
-  if (any(!no_warns)) {
-    warning(sum(!no_warns), " out of ", length(no_warns), " submodel fits ",
-            "(there is one submodel fit per projected draw) threw a warning ",
-            "which might be relevant for convergence. ",
+            "(there is one submodel fit per projected draw) probably have not ",
+            "converged (appropriately). It is recommended to inspect this in ",
+            "detail and (if necessary) to adjust lme4's tuning parameters via ",
+            "`...` or via a custom `divergence_minimizer` function. ",
             "Formula (right-hand side): ", update(formula(fit[[1]]), NULL ~ .))
   }
   return(invisible(TRUE))
