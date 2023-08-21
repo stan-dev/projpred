@@ -33,6 +33,7 @@ If you read this from a place other than <https://mc-stan.org/projpred/news/inde
 * Fixed a bug introduced in version 2.6.0, causing an incompatibility of K-fold CV with R versions < 4.2.0. (GitHub: #423, #427)
 * Fixed a bug for the augmented-data projection in combination with subsampled PSIS-LOO CV. (GitHub: #433)
 * `cv_varsel()` with `validate_search = FALSE` used to call `loo::psis()` (for the submodel performance evaluation PSIS-LOO CV) even in case of draws with different (i.e., nonconstant) weights. In such cases, `loo::sis()` is called now (with a warning). (GitHub: #438)
+* Fixed a bug for **rstanarm** (and custom) multilevel reference models with interactions (`:` syntax) between grouping variables, caused by missing columns in the reference model's `data.frame` (for **brms** reference models, this was already done correctly). (GitHub: #445)
 
 # projpred 2.6.0
 
