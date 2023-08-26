@@ -1027,7 +1027,9 @@ kfold_varsel <- function(refmodel, method, nterms_max, ndraws,
     # For performance evaluation: Re-project (using the training data of the
     # current fold) along the predictor ranking (or fetch the projections from
     # the search output) of the current fold:
-    p_pred <- get_refdist(fold$refmodel, ndraws_pred, nclusters_pred)
+    if (refit_prj) {
+      p_pred <- get_refdist(fold$refmodel, ndraws_pred, nclusters_pred)
+    }
     submodls <- get_submodls(
       search_path = search_path,
       nterms = c(0, seq_along(search_path$solution_terms)),
