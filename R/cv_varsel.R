@@ -344,6 +344,8 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
                        search_terms, parallel, ...) {
   ## Pre-processing ---------------------------------------------------------
 
+  has_grp <- formula_contains_group_terms(refmodel$formula)
+
   # Clustering or thinning for the search (note that in case of
   # `validate_search = TRUE`, only `cl_sel` is used later, not `p_sel` itself):
   p_sel <- get_refdist(refmodel, ndraws = ndraws, nclusters = nclusters)
@@ -867,8 +869,7 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
   })
 
   # Reference model predictive performance:
-  if (formula_contains_group_terms(refmodel$formula) &&
-      getOption("projpred.mlvl_pred_new", FALSE)) {
+  if (has_grp && getOption("projpred.mlvl_pred_new", FALSE)) {
     # Need to use `mlvl_allrandom = TRUE` (`refmodel$mu_offs` is based on
     # `mlvl_allrandom = getOption("projpred.mlvl_proj_ref_new", FALSE)`):
     eta_offs_mlvlRan <- refmodel$ref_predfun(refmodel$fit, excl_offs = FALSE)
@@ -902,8 +903,7 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
     ))
     lppd_ref <- apply(loglik_lat + lw, 2, log_sum_exp)
   } else {
-    if (formula_contains_group_terms(refmodel$formula) &&
-        getOption("projpred.mlvl_pred_new", FALSE)) {
+    if (has_grp && getOption("projpred.mlvl_pred_new", FALSE)) {
       # Need to use `mlvl_allrandom = TRUE` (`loo_ref_oscale` is based on
       # `mlvl_allrandom = getOption("projpred.mlvl_proj_ref_new", FALSE)`):
       loglik_mlvlRan <- t(refmodel$family$ll_fun(
@@ -916,8 +916,7 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
   }
   summ_ref <- list(lppd = lppd_ref, mu = mu_ref)
   if (refmodel$family$for_latent) {
-    if (formula_contains_group_terms(refmodel$formula) &&
-        getOption("projpred.mlvl_pred_new", FALSE)) {
+    if (has_grp && getOption("projpred.mlvl_pred_new", FALSE)) {
       # Need to use `mlvl_allrandom = TRUE` (`mu_offs_oscale` is based on
       # `mlvl_allrandom = getOption("projpred.mlvl_proj_ref_new", FALSE)`):
       mu_offs_mlvlRan_oscale <- refmodel$family$latent_ilink(
@@ -953,8 +952,7 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
       class = sub("augmat", "augvec", oldClass(mu_offs_mlvlRan_oscale),
                   fixed = TRUE)
     )
-    if (formula_contains_group_terms(refmodel$formula) &&
-        getOption("projpred.mlvl_pred_new", FALSE)) {
+    if (has_grp && getOption("projpred.mlvl_pred_new", FALSE)) {
       # Need to use `mlvl_allrandom = TRUE` (`loo_ref_oscale` is based on
       # `mlvl_allrandom = getOption("projpred.mlvl_proj_ref_new", FALSE)`):
       loglik_mlvlRan <- refmodel$family$latent_ll_oscale(
