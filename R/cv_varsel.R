@@ -244,15 +244,17 @@ cv_varsel.refmodel <- function(
   # Defined here for `nobs_test` later:
   y_wobs_test <- sel_cv$y_wobs_test
 
-  # Just a dummy object which is not used as usual, but only for inferring the
-  # output elements `clust_used_eval` and `nprjdraws_eval` (this get_refdist()
-  # call is much cheaper than calling varsel() with its re-projections (if
-  # `refit_prj = TRUE`) instead of select() above in the case
-  # `if (validate_search)`, see GitHub PR #385):
+  # Information about the clustering/thinning used for the search:
+  refdist_info_search <- list(
+    clust_used = search_path_full_data$p_sel$clust_used,
+    nprjdraws = NCOL(search_path_full_data$p_sel$mu)
+  )
+  # Information about the clustering/thinning used for the performance
+  # evaluation:
   if (refit_prj) {
-    refdist_eval_dummy <- get_refdist(refmodel, ndraws_pred, nclusters_pred)
+    refdist_info_eval <- sel_cv[c("clust_used_eval", "nprjdraws_eval")]
   } else {
-    refdist_eval_dummy <- search_path_full_data$p_sel
+    refdist_info_eval <- refdist_info_search
   }
 
   # The object to be returned:
@@ -272,10 +274,10 @@ cv_varsel.refmodel <- function(
               cv_method,
               K = K,
               validate_search,
-              clust_used_search = search_path_full_data$p_sel$clust_used,
-              clust_used_eval = refdist_eval_dummy$clust_used,
-              nprjdraws_search = NCOL(search_path_full_data$p_sel$mu),
-              nprjdraws_eval = NCOL(refdist_eval_dummy$mu),
+              clust_used_search = refdist_info_search$clust_used,
+              clust_used_eval = refdist_info_eval$clust_used,
+              nprjdraws_search = refdist_info_search$nprjdraws,
+              nprjdraws_eval = refdist_info_eval$nprjdraws,
               projpred_version = utils::packageVersion("projpred"))
   class(vs) <- "vsel"
   return(vs)
@@ -537,6 +539,10 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
       nterms = c(0, seq_along(search_path$solution_terms)), p_ref = p_pred,
       refmodel = refmodel, regul = opt$regul, refit_prj = refit_prj, ...
     )
+    clust_used_eval <- unique(unlist(lapply(submodls, "[[", "clust_used")))
+    stopifnot(length(clust_used_eval) == 1)
+    nprjdraws_eval <- unique(unlist(lapply(submodls, "[[", "nprjdraws")))
+    stopifnot(length(nprjdraws_eval) == 1)
     verb_out("-----", verbose = verbose && refit_prj)
 
     verb_out("-----\nCalculating the full-data performance evaluation ",
@@ -776,13 +782,18 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
         p_ref = p_pred, refmodel = refmodel, regul = opt$regul,
         refit_prj = refit_prj, ...
       )
+      clust_used_eval <- unique(unlist(lapply(submodls, "[[", "clust_used")))
+      stopifnot(length(clust_used_eval) == 1)
+      nprjdraws_eval <- unique(unlist(lapply(submodls, "[[", "nprjdraws")))
+      stopifnot(length(nprjdraws_eval) == 1)
+
       # Predictive performance at the omitted observation:
       summaries_sub <- get_sub_summaries(submodls = submodls,
                                          refmodel = refmodel,
                                          test_points = i)
 
       return(nlist(predictor_ranking = search_path[["solution_terms"]],
-                   summaries_sub))
+                   summaries_sub, clust_used_eval, nprjdraws_eval))
     }
     if (!parallel) {
       # Sequential case. Actually, we could simply use ``%do_projpred%` <-
@@ -828,6 +839,12 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
     # For checking that the length of the predictor ranking is the same across
     # all CV folds (and also for cutting off `solution_terms_mat` later):
     prv_len_soltrms <- NULL
+    # For checking that `clust_used_eval` is the same across all CV folds (and
+    # also for storing it):
+    clust_used_eval <- NULL
+    # For checking that `nprjdraws_eval` is the same across all CV folds (and
+    # also for storing it):
+    nprjdraws_eval <- NULL
     for (run_index in seq_along(inds)) {
       i <- inds[run_index]
 
@@ -856,6 +873,19 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
         stopifnot(identical(length(rk_i), prv_len_soltrms))
       }
       solution_terms_mat[i, seq_along(rk_i)] <- rk_i
+
+      if (is.null(clust_used_eval)) {
+        clust_used_eval <- res_cv[[run_index]][["clust_used_eval"]]
+      } else {
+        stopifnot(identical(res_cv[[run_index]][["clust_used_eval"]],
+                            clust_used_eval))
+      }
+      if (is.null(nprjdraws_eval)) {
+        nprjdraws_eval <- res_cv[[run_index]][["nprjdraws_eval"]]
+      } else {
+        stopifnot(identical(res_cv[[run_index]][["nprjdraws_eval"]],
+                            nprjdraws_eval))
+      }
     }
     verb_out("-----", verbose = verbose)
   }
@@ -983,7 +1013,8 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
   }
   out_list <- c(out_list,
                 nlist(summaries,
-                      y_wobs_test = as.data.frame(refmodel[nms_y_wobs_test()])))
+                      y_wobs_test = as.data.frame(refmodel[nms_y_wobs_test()]),
+                      clust_used_eval, nprjdraws_eval))
   return(out_list)
 }
 
@@ -1040,6 +1071,10 @@ kfold_varsel <- function(refmodel, method, nterms_max, ndraws,
       p_ref = p_pred, refmodel = fold$refmodel, regul = opt$regul,
       refit_prj = refit_prj, ...
     )
+    clust_used_eval <- unique(unlist(lapply(submodls, "[[", "clust_used")))
+    stopifnot(length(clust_used_eval) == 1)
+    nprjdraws_eval <- unique(unlist(lapply(submodls, "[[", "nprjdraws")))
+    stopifnot(length(nprjdraws_eval) == 1)
 
     # Performance evaluation for the re-projected or fetched submodels of the
     # current fold:
@@ -1064,7 +1099,7 @@ kfold_varsel <- function(refmodel, method, nterms_max, ndraws,
     )
 
     return(nlist(predictor_ranking = search_path[["solution_terms"]],
-                 summaries_sub, summaries_ref))
+                 summaries_sub, summaries_ref, clust_used_eval, nprjdraws_eval))
   }
   if (!parallel) {
     # Sequential case. Actually, we could simply use ``%do_projpred%` <-
@@ -1104,6 +1139,10 @@ kfold_varsel <- function(refmodel, method, nterms_max, ndraws,
   }
   verb_out("-----", verbose = verbose)
   solution_terms_cv <- do.call(rbind, lapply(res_cv, "[[", "predictor_ranking"))
+  clust_used_eval <- unique(unlist(lapply(res_cv, "[[", "clust_used_eval")))
+  stopifnot(length(clust_used_eval) == 1)
+  nprjdraws_eval <- unique(unlist(lapply(res_cv, "[[", "nprjdraws_eval")))
+  stopifnot(length(nprjdraws_eval) == 1)
 
   # Handle the submodels' performance evaluation results:
   sub_foldwise <- lapply(res_cv, "[[", "summaries_sub")
@@ -1158,7 +1197,8 @@ kfold_varsel <- function(refmodel, method, nterms_max, ndraws,
     ref$oscale$lppd <- ref$oscale$lppd[order(idxs_sorted_by_fold)]
   }
 
-  return(nlist(solution_terms_cv, summaries = nlist(sub, ref), y_wobs_test))
+  return(nlist(solution_terms_cv, summaries = nlist(sub, ref), y_wobs_test,
+               clust_used_eval, nprjdraws_eval))
 }
 
 # Re-fit the reference model K times (once for each fold; `cvfun` case) or fetch
