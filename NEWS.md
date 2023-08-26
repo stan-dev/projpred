@@ -25,6 +25,7 @@ If you read this from a place other than <https://mc-stan.org/projpred/news/inde
 * Function `do_call()` is deprecated and will be removed in a future release. Where possible, please use direct function calls instead. If this is not possible, please use `do.call()` instead.
 * Improved handling of PSIS-LOO CV warnings. (GitHub: #438)
 * Reduced peak memory usage during forward search. A global option `projpred.run_gc` has also been added, see the general package documentation (available [online](https://mc-stan.org/projpred/reference/projpred-package.html) or by typing `` ?`projpred-package` ``). (GitHub: #442)
+* Slightly improved efficiency in K-fold CV, especially in case of a large number of observations. If `refit_prj` is `FALSE`, `nclusters` is internally greater than `1` (which requires forward search), and `nclusters_pred` is not `NULL`, this change might affect the results, due to a different pseudorandom number generator (PRNG) state in folds other than the first one. (GitHub: #446)
 
 ## Bug fixes
 
