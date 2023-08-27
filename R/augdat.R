@@ -121,7 +121,7 @@ t.augvec <- function(x) {
   nobs_orig_x <- attr(x, "nobs_orig")
   stopifnot(!is.null(nobs_orig_x))
   n_discr <- nrow(x) / nobs_orig_x
-  if (isTRUE(getOption("projpred.subset_aug_checks", FALSE))) {
+  if (isTRUE(getOption("projpred.additional_checks", FALSE))) {
     # This check is not run by default because it could require custom str() and
     # print() (or even more) methods for `augmat` objects and because there
     # could be a high risk of false positive alarms if external functions like
@@ -137,7 +137,7 @@ t.augvec <- function(x) {
   } else {
     nobs_orig_x_out <- nrow(x_out) / n_discr
   }
-  if (isTRUE(getOption("projpred.subset_aug_checks", FALSE))) {
+  if (isTRUE(getOption("projpred.additional_checks", FALSE))) {
     # See above for why this check is not run by default (in this case, we
     # indeed had a false alarm at least once).
     stopifnot(is_wholenumber(nobs_orig_x_out))
@@ -162,14 +162,14 @@ t.augvec <- function(x) {
   nobs_orig_x <- attr(x, "nobs_orig")
   stopifnot(!is.null(nobs_orig_x))
   n_discr <- length(x) / nobs_orig_x
-  if (isTRUE(getOption("projpred.subset_aug_checks", FALSE))) {
+  if (isTRUE(getOption("projpred.additional_checks", FALSE))) {
     # See `[.augmat` for why this check is not run by default (in this case, we
     # indeed had a false alarm at least once).
     stopifnot(is_wholenumber(n_discr))
   }
   n_discr <- as.integer(round(n_discr))
   nobs_orig_x_out <- length(x_out) / n_discr
-  if (isTRUE(getOption("projpred.subset_aug_checks", FALSE))) {
+  if (isTRUE(getOption("projpred.additional_checks", FALSE))) {
     # See `[.augmat` for why this check is not run by default (in this case, we
     # indeed had a false alarm at least once).
     stopifnot(is_wholenumber(nobs_orig_x_out))
