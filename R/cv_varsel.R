@@ -539,10 +539,8 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
       nterms = c(0, seq_along(search_path$solution_terms)), p_ref = p_pred,
       refmodel = refmodel, regul = opt$regul, refit_prj = refit_prj, ...
     )
-    clust_used_eval <- unique(unlist(lapply(submodls, "[[", "clust_used")))
-    stopifnot(length(clust_used_eval) == 1)
-    nprjdraws_eval <- unique(unlist(lapply(submodls, "[[", "nprjdraws")))
-    stopifnot(length(nprjdraws_eval) == 1)
+    clust_used_eval <- element_unq(submodls, nm = "clust_used")
+    nprjdraws_eval <- element_unq(submodls, nm = "nprjdraws")
     verb_out("-----", verbose = verbose && refit_prj)
 
     verb_out("-----\nCalculating the full-data performance evaluation ",
@@ -782,10 +780,8 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
         p_ref = p_pred, refmodel = refmodel, regul = opt$regul,
         refit_prj = refit_prj, ...
       )
-      clust_used_eval <- unique(unlist(lapply(submodls, "[[", "clust_used")))
-      stopifnot(length(clust_used_eval) == 1)
-      nprjdraws_eval <- unique(unlist(lapply(submodls, "[[", "nprjdraws")))
-      stopifnot(length(nprjdraws_eval) == 1)
+      clust_used_eval <- element_unq(submodls, nm = "clust_used")
+      nprjdraws_eval <- element_unq(submodls, nm = "nprjdraws")
 
       # Predictive performance at the omitted observation:
       summaries_sub <- get_sub_summaries(submodls = submodls,
@@ -869,20 +865,20 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
       rk_i <- res_cv[[run_index]][["predictor_ranking"]]
       if (is.null(prv_len_soltrms)) {
         prv_len_soltrms <- length(rk_i)
-      } else {
+      } else if (getOption("projpred.additional_checks", FALSE)) {
         stopifnot(identical(length(rk_i), prv_len_soltrms))
       }
       solution_terms_mat[i, seq_along(rk_i)] <- rk_i
 
       if (is.null(clust_used_eval)) {
         clust_used_eval <- res_cv[[run_index]][["clust_used_eval"]]
-      } else {
+      } else if (getOption("projpred.additional_checks", FALSE)) {
         stopifnot(identical(res_cv[[run_index]][["clust_used_eval"]],
                             clust_used_eval))
       }
       if (is.null(nprjdraws_eval)) {
         nprjdraws_eval <- res_cv[[run_index]][["nprjdraws_eval"]]
-      } else {
+      } else if (getOption("projpred.additional_checks", FALSE)) {
         stopifnot(identical(res_cv[[run_index]][["nprjdraws_eval"]],
                             nprjdraws_eval))
       }
@@ -1071,10 +1067,8 @@ kfold_varsel <- function(refmodel, method, nterms_max, ndraws,
       p_ref = p_pred, refmodel = fold$refmodel, regul = opt$regul,
       refit_prj = refit_prj, ...
     )
-    clust_used_eval <- unique(unlist(lapply(submodls, "[[", "clust_used")))
-    stopifnot(length(clust_used_eval) == 1)
-    nprjdraws_eval <- unique(unlist(lapply(submodls, "[[", "nprjdraws")))
-    stopifnot(length(nprjdraws_eval) == 1)
+    clust_used_eval <- element_unq(submodls, nm = "clust_used")
+    nprjdraws_eval <- element_unq(submodls, nm = "nprjdraws")
 
     # Performance evaluation for the re-projected or fetched submodels of the
     # current fold:
@@ -1139,10 +1133,8 @@ kfold_varsel <- function(refmodel, method, nterms_max, ndraws,
   }
   verb_out("-----", verbose = verbose)
   solution_terms_cv <- do.call(rbind, lapply(res_cv, "[[", "predictor_ranking"))
-  clust_used_eval <- unique(unlist(lapply(res_cv, "[[", "clust_used_eval")))
-  stopifnot(length(clust_used_eval) == 1)
-  nprjdraws_eval <- unique(unlist(lapply(res_cv, "[[", "nprjdraws_eval")))
-  stopifnot(length(nprjdraws_eval) == 1)
+  clust_used_eval <- element_unq(res_cv, nm = "clust_used_eval")
+  nprjdraws_eval <- element_unq(res_cv, nm = "nprjdraws_eval")
 
   # Handle the submodels' performance evaluation results:
   sub_foldwise <- lapply(res_cv, "[[", "summaries_sub")

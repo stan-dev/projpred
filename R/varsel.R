@@ -304,10 +304,8 @@ varsel.refmodel <- function(object, d_test = NULL, method = NULL,
     p_ref = p_pred, refmodel = refmodel, regul = regul, refit_prj = refit_prj,
     ...
   )
-  clust_used_eval <- unique(unlist(lapply(submodls, "[[", "clust_used")))
-  stopifnot(length(clust_used_eval) == 1)
-  nprjdraws_eval <- unique(unlist(lapply(submodls, "[[", "nprjdraws")))
-  stopifnot(length(nprjdraws_eval) == 1)
+  clust_used_eval <- element_unq(submodls, nm = "clust_used")
+  nprjdraws_eval <- element_unq(submodls, nm = "nprjdraws")
   verb_out("-----", verbose = verbose && refit_prj)
   # The performance evaluation itself, i.e., the calculation of the predictive
   # performance statistic(s) for the submodels along the solution path:
