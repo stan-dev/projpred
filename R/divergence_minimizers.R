@@ -88,8 +88,8 @@ divmin <- function(formula, projpred_var, projpred_verbose = FALSE, ...) {
       projpred_formula_no_random_s = projpred_formulas_no_random,
       .export = c("sdivmin", "projpred_random", "dot_args"),
       .noexport = c(
-        "object", "p_sel", "p_pred", "search_path", "p_ref", "refmodel",
-        "formulas", "projpred_var", "projpred_formulas_no_random"
+        "object", "p_sel", "search_path", "p_ref", "refmodel", "formulas",
+        "projpred_var", "projpred_formulas_no_random"
       )
     ) %do_projpred% {
       do.call(
@@ -611,8 +611,8 @@ divmin_augdat <- function(formula, data, family, weights, projpred_var,
         "projpred_random", "dot_args"
       ),
       .noexport = c(
-        "object", "p_sel", "p_pred", "search_path", "p_ref", "refmodel",
-        "projpred_var", "projpred_ws_aug", "linkobjs"
+        "object", "p_sel", "search_path", "p_ref", "refmodel", "projpred_var",
+        "projpred_ws_aug", "linkobjs"
       )
     ) %do_projpred% {
       do.call(

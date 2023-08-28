@@ -276,18 +276,11 @@ varsel.refmodel <- function(object, d_test = NULL, method = NULL,
   )
   nobs_test <- nrow(y_wobs_test)
 
-  # Clustering or thinning for the search:
-  p_sel <- get_refdist(refmodel, ndraws, nclusters)
-  # Clustering or thinning for the performance evaluation:
-  if (refit_prj) {
-    p_pred <- get_refdist(refmodel, ndraws_pred, nclusters_pred)
-  }
-
   # Run the search:
   opt <- nlist(lambda_min_ratio, nlambda, thresh, regul)
   verb_out("-----\nRunning the search ...", verbose = verbose)
   search_path <- select(
-    method = method, p_sel = p_sel, refmodel = refmodel,
+    method = method, refmodel = refmodel, ndraws = ndraws, nclusters = nclusters,
     nterms_max = nterms_max, penalty = penalty, verbose = verbose, opt = opt,
     search_terms = search_terms, ...
   )
@@ -301,7 +294,8 @@ varsel.refmodel <- function(object, d_test = NULL, method = NULL,
   submodls <- get_submodls(
     search_path = search_path,
     nterms = c(0, seq_along(search_path$solution_terms)),
-    p_ref = p_pred, refmodel = refmodel, regul = regul, refit_prj = refit_prj,
+    refmodel = refmodel, regul = regul, refit_prj = refit_prj,
+    ndraws = ndraws_pred, nclusters = nclusters_pred,
     ...
   )
   clust_used_eval <- element_unq(submodls, nm = "clust_used")
@@ -387,9 +381,9 @@ varsel.refmodel <- function(object, d_test = NULL, method = NULL,
               cv_method = NULL,
               K = NULL,
               validate_search = NULL,
-              clust_used_search = p_sel$clust_used,
+              clust_used_search = search_path$p_sel$clust_used,
               clust_used_eval,
-              nprjdraws_search = NCOL(p_sel$mu),
+              nprjdraws_search = NCOL(search_path$p_sel$mu),
               nprjdraws_eval,
               projpred_version = utils::packageVersion("projpred"))
   class(vs) <- "vsel"
@@ -399,15 +393,23 @@ varsel.refmodel <- function(object, d_test = NULL, method = NULL,
 
 # Workhorse function for the search
 #
-# Argument `p_sel` accepts output from get_refdist() or get_p_clust(). For all
-# other arguments, see the documentation of varsel().
+# For the arguments, see the documentation of varsel().
 #
 # @return A list with elements `solution_terms` (the solution path), `outdmins`
 #   (the submodel fits along the solution path, with the number of fits per
 #   model size being equal to the number of projected draws), and `p_sel` (the
-#   same as the input argument `p_sel`).
-select <- function(method, p_sel, refmodel, nterms_max, penalty, verbose, opt,
-                   search_terms, ...) {
+#   output from get_refdist() for the search).
+select <- function(method, refmodel, ndraws, nclusters, wdraws_ref = NULL,
+                   nterms_max, penalty, verbose, opt, search_terms, ...) {
+  p_sel <- get_refdist(refmodel, ndraws = ndraws, nclusters = nclusters)
+  if (!is.null(wdraws_ref)) {
+    # Reweight the clusters (or thinned draws) according to the PSIS weights:
+    p_sel <- get_p_clust(
+      family = refmodel$family, eta = refmodel$eta, mu = refmodel$mu,
+      mu_offs = refmodel$mu_offs, dis = refmodel$dis, wdraws = wdraws_ref,
+      cl = p_sel$cl
+    )
+  }
   if (method == "L1") {
     search_path <- search_L1(p_sel, refmodel, nterms_max, penalty, opt)
     search_path$p_sel <- p_sel

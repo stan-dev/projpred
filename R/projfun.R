@@ -52,21 +52,22 @@ get_submodl_prj <- function(solution_terms, p_ref, refmodel, regul = 1e-4,
 # Function to fetch init_submodl() output (of class `submodl`) for each of given
 # model sizes `nterms`, so this gives a list of objects, each of class
 # `submodl`.
-get_submodls <- function(search_path, nterms, p_ref, refmodel, regul,
-                         refit_prj = FALSE, ...) {
+get_submodls <- function(search_path, nterms, refmodel, regul,
+                         refit_prj = FALSE, ndraws, nclusters,
+                         wdraws_ref = NULL, return_p_ref = FALSE, ...) {
   if (!refit_prj) {
+    p_ref <- search_path$p_sel
     # In this case, simply fetch the already computed projections, so don't
     # project again.
     fetch_submodl <- function(nterms, ...) {
-      validparams <- validate_wobs_wdraws(refmodel$wobs,
-                                          search_path$p_sel$wdraws_prj,
-                                          search_path$p_sel$mu)
+      validparams <- validate_wobs_wdraws(refmodel$wobs, p_ref$wdraws_prj,
+                                          p_ref$mu)
       wobs <- validparams$wobs
       wdraws_prj <- validparams$wdraws_prj
       return(init_submodl(
         # Re-use the submodel fits from the search:
         outdmin = search_path$outdmins[[nterms + 1]],
-        p_ref = search_path$p_sel,
+        p_ref = p_ref,
         refmodel = refmodel,
         solution_terms = utils::head(search_path$solution_terms, nterms),
         wobs = wobs,
@@ -75,6 +76,15 @@ get_submodls <- function(search_path, nterms, p_ref, refmodel, regul,
     }
   } else {
     # In this case, project again.
+    p_ref <- get_refdist(refmodel, ndraws = ndraws, nclusters = nclusters)
+    if (!is.null(wdraws_ref)) {
+      # Reweight the clusters (or thinned draws) according to the PSIS weights:
+      p_ref <- get_p_clust(
+        family = refmodel$family, eta = refmodel$eta, mu = refmodel$mu,
+        mu_offs = refmodel$mu_offs, dis = refmodel$dis, wdraws = wdraws_ref,
+        cl = p_ref$cl
+      )
+    }
     fetch_submodl <- function(nterms, ...) {
       return(get_submodl_prj(
         solution_terms = utils::head(search_path$solution_terms, nterms),
@@ -82,7 +92,11 @@ get_submodls <- function(search_path, nterms, p_ref, refmodel, regul,
       ))
     }
   }
-  return(lapply(nterms, fetch_submodl, ...))
+  out <- lapply(nterms, fetch_submodl, ...)
+  if (return_p_ref) {
+    out <- list(submodls = out, p_ref = p_ref)
+  }
+  return(out)
 }
 
 validate_wobs_wdraws <- function(ref_wobs, ref_wdraws, ref_mu) {

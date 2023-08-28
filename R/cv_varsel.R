@@ -204,7 +204,15 @@ cv_varsel.refmodel <- function(
     # or thinning here for consistent PRNG states between the full-data search
     # in the `validate_search == FALSE` case and the full-data search in the
     # `validate_search == TRUE` case we are in here):
-    p_sel <- get_refdist(refmodel, ndraws, nclusters)
+    verb_out("-----\nRunning the search using the full dataset ...",
+             verbose = verbose)
+    search_path_full_data <- select(
+      method = method, refmodel = refmodel, ndraws = ndraws, nclusters = nclusters,
+      nterms_max = nterms_max, penalty = penalty, verbose = verbose, opt = opt,
+      search_terms = search_terms, ...
+    )
+    verb_out("-----", verbose = verbose)
+    ce_out <- rep(NA_real_, length(search_path_full_data$solution_terms) + 1L)
   }
 
   if (cv_method == "LOO") {
@@ -226,17 +234,9 @@ cv_varsel.refmodel <- function(
     )
   }
 
-  if (validate_search) {
-    verb_out("-----\nRunning a final search using the full dataset ...",
-             verbose = verbose)
-    search_path_full_data <- select(
-      method = method, p_sel = p_sel, refmodel = refmodel,
-      nterms_max = nterms_max, penalty = penalty, verbose = verbose, opt = opt,
-      search_terms = search_terms, ...
-    )
-    verb_out("-----", verbose = verbose)
-    ce_out <- rep(NA_real_, length(search_path_full_data$solution_terms) + 1L)
-  } else {
+  if (!validate_search) {
+    # If `validate_search` is `FALSE`, the full-data search is run inside of
+    # loo_varsel(), so we need to retrieve the search results here:
     search_path_full_data <- sel_cv$search_path
     ce_out <- sel_cv$ce
   }
@@ -347,19 +347,6 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
   ## Pre-processing ---------------------------------------------------------
 
   has_grp <- formula_contains_group_terms(refmodel$formula)
-
-  # Clustering or thinning for the search (note that in case of
-  # `validate_search = TRUE`, only `cl_sel` is used later, not `p_sel` itself):
-  p_sel <- get_refdist(refmodel, ndraws = ndraws, nclusters = nclusters)
-  cl_sel <- p_sel$cl
-  if (refit_prj) {
-    # Clustering or thinning for the performance evaluation (note that in case
-    # of `validate_search = TRUE`, only `cl_pred` is used later, not `p_pred`
-    # itself):
-    p_pred <- get_refdist(refmodel, ndraws = ndraws_pred,
-                          nclusters = nclusters_pred)
-    cl_pred <- p_pred$cl
-  }
 
   if (inherits(refmodel, "datafit")) {
     stop("LOO can be performed only if the reference model is a genuine ",
@@ -525,7 +512,7 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
     verb_out("-----\nRunning the search using the full dataset ...",
              verbose = verbose)
     search_path <- select(
-      method = method, p_sel = p_sel, refmodel = refmodel,
+      method = method, refmodel = refmodel, ndraws = ndraws, nclusters = nclusters,
       nterms_max = nterms_max, penalty = penalty, verbose = verbose, opt = opt,
       search_terms = search_terms, ...
     )
@@ -536,9 +523,12 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
              "path ...", verbose = verbose && refit_prj)
     submodls <- get_submodls(
       search_path = search_path,
-      nterms = c(0, seq_along(search_path$solution_terms)), p_ref = p_pred,
-      refmodel = refmodel, regul = opt$regul, refit_prj = refit_prj, ...
+      nterms = c(0, seq_along(search_path$solution_terms)),
+      refmodel = refmodel, regul = opt$regul, refit_prj = refit_prj,
+      ndraws = ndraws_pred, nclusters = nclusters_pred, return_p_ref = TRUE, ...
     )
+    refdist_eval <- submodls$p_ref
+    submodls <- submodls$submodls
     clust_used_eval <- element_unq(submodls, nm = "clust_used")
     nprjdraws_eval <- element_unq(submodls, nm = "nprjdraws")
     verb_out("-----", verbose = verbose && refit_prj)
@@ -546,11 +536,6 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
     verb_out("-----\nCalculating the full-data performance evaluation ",
              "results and weighting those results according to the PSIS-LOO ",
              "CV weights ...", verbose = verbose)
-    if (refit_prj) {
-      refdist_eval <- p_pred
-    } else {
-      refdist_eval <- p_sel
-    }
     if (refmodel$family$for_latent) {
       refdist_eval_mu_offs_oscale <- refmodel$family$latent_ilink(
         t(refdist_eval$mu_offs), cl_ref = refdist_eval$cl,
@@ -748,26 +733,13 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
       # Observation index:
       i <- inds[run_index]
 
-      # Reweight the clusters (or thinned draws) according to the PSIS weights:
-      p_sel <- get_p_clust(
-        family = refmodel$family, eta = refmodel$eta, mu = refmodel$mu,
-        mu_offs = refmodel$mu_offs, dis = refmodel$dis, wdraws = exp(lw[, i]),
-        cl = cl_sel
-      )
-      if (refit_prj) {
-        p_pred <- get_p_clust(
-          family = refmodel$family, eta = refmodel$eta, mu = refmodel$mu,
-          mu_offs = refmodel$mu_offs, dis = refmodel$dis, wdraws = exp(lw[, i]),
-          cl = cl_pred
-        )
-      }
-
       # Run the search with the reweighted clusters (or thinned draws) (so the
       # *reweighted* fitted response values from the reference model act as
       # artifical response values in the projection (or L1-penalized
       # projection)):
       search_path <- select(
-        method = method, p_sel = p_sel, refmodel = refmodel,
+        method = method, refmodel = refmodel, ndraws = ndraws, nclusters = nclusters,
+        wdraws_ref = exp(lw[, i]),
         nterms_max = nterms_max, penalty = penalty, verbose = verbose_search,
         opt = opt, search_terms = search_terms, ...
       )
@@ -777,8 +749,9 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
       submodls <- get_submodls(
         search_path = search_path,
         nterms = c(0, seq_along(search_path$solution_terms)),
-        p_ref = p_pred, refmodel = refmodel, regul = opt$regul,
-        refit_prj = refit_prj, ...
+        refmodel = refmodel, regul = opt$regul,
+        refit_prj = refit_prj, ndraws = ndraws_pred, nclusters = nclusters_pred,
+        wdraws_ref = exp(lw[, i]), ...
       )
       clust_used_eval <- element_unq(submodls, nm = "clust_used")
       nprjdraws_eval <- element_unq(submodls, nm = "nprjdraws")
@@ -822,9 +795,9 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
       res_cv <- foreach::foreach(
         run_index = seq_along(inds),
         .export = c("one_obs", "dot_args"),
-        .noexport = c("p_sel", "p_pred", "mu_offs_oscale", "loglik_forPSIS",
-                      "psisloo", "y_lat_E", "loo_ref_oscale", "validset",
-                      "loo_sub", "mu_sub", "loo_sub_oscale", "mu_sub_oscale")
+        .noexport = c("mu_offs_oscale", "loglik_forPSIS", "psisloo", "y_lat_E",
+                      "loo_ref_oscale", "validset", "loo_sub", "mu_sub",
+                      "loo_sub_oscale", "mu_sub_oscale")
       ) %do_projpred% {
         do.call(one_obs, c(list(run_index = run_index, verbose_search = FALSE),
                            dot_args))
@@ -1048,9 +1021,8 @@ kfold_varsel <- function(refmodel, method, nterms_max, ndraws,
                          getOption("projpred.extra_verbose", FALSE),
                        ...) {
     # Run the search for the current fold:
-    p_sel <- get_refdist(fold$refmodel, ndraws, nclusters)
     search_path <- select(
-      method = method, p_sel = p_sel, refmodel = fold$refmodel,
+      method = method, refmodel = fold$refmodel, ndraws = ndraws, nclusters = nclusters,
       nterms_max = nterms_max, penalty = penalty, verbose = verbose_search,
       opt = opt, search_terms = search_terms, ...
     )
@@ -1058,14 +1030,12 @@ kfold_varsel <- function(refmodel, method, nterms_max, ndraws,
     # For performance evaluation: Re-project (using the training data of the
     # current fold) along the predictor ranking (or fetch the projections from
     # the search output) of the current fold:
-    if (refit_prj) {
-      p_pred <- get_refdist(fold$refmodel, ndraws_pred, nclusters_pred)
-    }
     submodls <- get_submodls(
       search_path = search_path,
       nterms = c(0, seq_along(search_path$solution_terms)),
-      p_ref = p_pred, refmodel = fold$refmodel, regul = opt$regul,
-      refit_prj = refit_prj, ...
+      refmodel = fold$refmodel, regul = opt$regul,
+      refit_prj = refit_prj, ndraws = ndraws_pred, nclusters = nclusters_pred,
+      ...
     )
     clust_used_eval <- element_unq(submodls, nm = "clust_used")
     nprjdraws_eval <- element_unq(submodls, nm = "nprjdraws")
