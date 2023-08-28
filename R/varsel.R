@@ -412,14 +412,12 @@ select <- function(refmodel, ndraws, nclusters, wdraws_ref = NULL, method,
   }
   if (method == "L1") {
     search_path <- search_L1(p_sel, refmodel, nterms_max, penalty, opt)
-    search_path$p_sel <- p_sel
-    return(search_path)
   } else if (method == "forward") {
     search_path <- search_forward(p_sel, refmodel, nterms_max, verbose, opt,
                                   search_terms = search_terms, ...)
-    search_path$p_sel <- p_sel
-    return(search_path)
   }
+  search_path$p_sel <- p_sel
+  return(search_path)
 }
 
 # Auxiliary function for parsing the arguments of varsel()
