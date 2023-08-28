@@ -295,8 +295,7 @@ varsel.refmodel <- function(object, d_test = NULL, method = NULL,
     search_path = search_path,
     nterms = c(0, seq_along(search_path$solution_terms)),
     refmodel = refmodel, regul = regul, refit_prj = refit_prj,
-    ndraws = ndraws_pred, nclusters = nclusters_pred,
-    ...
+    ndraws = ndraws_pred, nclusters = nclusters_pred, ...
   )
   clust_used_eval <- element_unq(submodls, nm = "clust_used")
   nprjdraws_eval <- element_unq(submodls, nm = "nprjdraws")

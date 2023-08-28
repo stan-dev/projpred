@@ -749,8 +749,8 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
       submodls <- get_submodls(
         search_path = search_path,
         nterms = c(0, seq_along(search_path$solution_terms)),
-        refmodel = refmodel, regul = opt$regul,
-        refit_prj = refit_prj, ndraws = ndraws_pred, nclusters = nclusters_pred,
+        refmodel = refmodel, regul = opt$regul, refit_prj = refit_prj,
+        ndraws = ndraws_pred, nclusters = nclusters_pred,
         wdraws_ref = exp(lw[, i]), ...
       )
       clust_used_eval <- element_unq(submodls, nm = "clust_used")
@@ -1033,9 +1033,8 @@ kfold_varsel <- function(refmodel, method, nterms_max, ndraws,
     submodls <- get_submodls(
       search_path = search_path,
       nterms = c(0, seq_along(search_path$solution_terms)),
-      refmodel = fold$refmodel, regul = opt$regul,
-      refit_prj = refit_prj, ndraws = ndraws_pred, nclusters = nclusters_pred,
-      ...
+      refmodel = fold$refmodel, regul = opt$regul, refit_prj = refit_prj,
+      ndraws = ndraws_pred, nclusters = nclusters_pred, ...
     )
     clust_used_eval <- element_unq(submodls, nm = "clust_used")
     nprjdraws_eval <- element_unq(submodls, nm = "nprjdraws")
