@@ -207,9 +207,9 @@ cv_varsel.refmodel <- function(
     verb_out("-----\nRunning the search using the full dataset ...",
              verbose = verbose)
     search_path_full_data <- select(
-      method = method, refmodel = refmodel, ndraws = ndraws, nclusters = nclusters,
-      nterms_max = nterms_max, penalty = penalty, verbose = verbose, opt = opt,
-      search_terms = search_terms, ...
+      refmodel = refmodel, ndraws = ndraws, nclusters = nclusters,
+      method = method, nterms_max = nterms_max, penalty = penalty,
+      verbose = verbose, opt = opt, search_terms = search_terms, ...
     )
     verb_out("-----", verbose = verbose)
     ce_out <- rep(NA_real_, length(search_path_full_data$solution_terms) + 1L)
@@ -512,9 +512,9 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
     verb_out("-----\nRunning the search using the full dataset ...",
              verbose = verbose)
     search_path <- select(
-      method = method, refmodel = refmodel, ndraws = ndraws, nclusters = nclusters,
-      nterms_max = nterms_max, penalty = penalty, verbose = verbose, opt = opt,
-      search_terms = search_terms, ...
+      refmodel = refmodel, ndraws = ndraws, nclusters = nclusters,
+      method = method, nterms_max = nterms_max, penalty = penalty,
+      verbose = verbose, opt = opt, search_terms = search_terms, ...
     )
     verb_out("-----", verbose = verbose)
 
@@ -738,10 +738,10 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
       # artifical response values in the projection (or L1-penalized
       # projection)):
       search_path <- select(
-        method = method, refmodel = refmodel, ndraws = ndraws, nclusters = nclusters,
-        wdraws_ref = exp(lw[, i]),
-        nterms_max = nterms_max, penalty = penalty, verbose = verbose_search,
-        opt = opt, search_terms = search_terms, ...
+        refmodel = refmodel, ndraws = ndraws, nclusters = nclusters,
+        wdraws_ref = exp(lw[, i]), method = method, nterms_max = nterms_max,
+        penalty = penalty, verbose = verbose_search, opt = opt,
+        search_terms = search_terms, ...
       )
 
       # Re-project along the solution path (or fetch the projections from the
@@ -1022,9 +1022,9 @@ kfold_varsel <- function(refmodel, method, nterms_max, ndraws,
                        ...) {
     # Run the search for the current fold:
     search_path <- select(
-      method = method, refmodel = fold$refmodel, ndraws = ndraws, nclusters = nclusters,
-      nterms_max = nterms_max, penalty = penalty, verbose = verbose_search,
-      opt = opt, search_terms = search_terms, ...
+      refmodel = fold$refmodel, ndraws = ndraws, nclusters = nclusters,
+      method = method, nterms_max = nterms_max, penalty = penalty,
+      verbose = verbose_search, opt = opt, search_terms = search_terms, ...
     )
 
     # For performance evaluation: Re-project (using the training data of the

@@ -280,9 +280,9 @@ varsel.refmodel <- function(object, d_test = NULL, method = NULL,
   opt <- nlist(lambda_min_ratio, nlambda, thresh, regul)
   verb_out("-----\nRunning the search ...", verbose = verbose)
   search_path <- select(
-    method = method, refmodel = refmodel, ndraws = ndraws, nclusters = nclusters,
-    nterms_max = nterms_max, penalty = penalty, verbose = verbose, opt = opt,
-    search_terms = search_terms, ...
+    refmodel = refmodel, ndraws = ndraws, nclusters = nclusters,
+    method = method, nterms_max = nterms_max, penalty = penalty,
+    verbose = verbose, opt = opt, search_terms = search_terms, ...
   )
   verb_out("-----", verbose = verbose)
 
@@ -399,7 +399,7 @@ varsel.refmodel <- function(object, d_test = NULL, method = NULL,
 #   (the submodel fits along the solution path, with the number of fits per
 #   model size being equal to the number of projected draws), and `p_sel` (the
 #   output from get_refdist() for the search).
-select <- function(method, refmodel, ndraws, nclusters, wdraws_ref = NULL,
+select <- function(refmodel, ndraws, nclusters, wdraws_ref = NULL, method,
                    nterms_max, penalty, verbose, opt, search_terms, ...) {
   p_sel <- get_refdist(refmodel, ndraws = ndraws, nclusters = nclusters)
   if (!is.null(wdraws_ref)) {
