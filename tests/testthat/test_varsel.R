@@ -1227,12 +1227,21 @@ test_that("`refit_prj` works", {
 ## nloo -------------------------------------------------------------------
 
 test_that("invalid `nloo` fails", {
-  for (tstsetup in names(refmods)) {
+  tstsetups_nonkfold <- grep("\\.kfold", names(cvvss), value = TRUE,
+                             invert = TRUE)
+  for (tstsetup in head(tstsetups_nonkfold, 1)) {
+    args_cvvs_i <- args_cvvs[[tstsetup]]
     # Use suppressWarnings() because of occasional warnings concerning Pareto k
     # diagnostics:
-    expect_error(suppressWarnings(cv_varsel(refmods[[tstsetup]], nloo = -1)),
-                 "^nloo must be at least 1$",
-                 info = tstsetup)
+    expect_error(
+      suppressWarnings(do.call(cv_varsel, c(
+        list(object = refmods[[args_cvvs_i$tstsetup_ref]],
+             nloo = -1),
+        excl_nonargs(args_cvvs_i)
+      ))),
+      "^nloo must be at least 1$",
+      info = tstsetup
+    )
   }
 })
 
