@@ -1584,8 +1584,8 @@ projection_tester <- function(p,
   # would have to be updated:
   expect_named(
     p,
-    c("dis", "ce", "wdraws_prj", "solution_terms", "outdmin", "cl_ref",
-      "wdraws_ref", "clust_used", "nprjdraws", "const_wdraws_prj", "refmodel"),
+    c("dis", "ce", "wdraws_prj", "const_wdraws_prj", "solution_terms",
+      "outdmin", "cl_ref", "wdraws_ref", "clust_used", "nprjdraws", "refmodel"),
     info = info_str
   )
 
