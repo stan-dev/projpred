@@ -41,8 +41,7 @@ get_submodl_prj <- function(solution_terms, p_ref, refmodel, regul = 1e-4,
 
   return(init_submodl(
     outdmin = outdmin, p_ref = p_ref, refmodel = refmodel,
-    solution_terms = solution_terms, wobs = refmodel$wobs,
-    wdraws_prj = p_ref$wdraws_prj
+    solution_terms = solution_terms, wobs = refmodel$wobs
   ))
 }
 
@@ -63,8 +62,7 @@ get_submodls <- function(search_path, nterms, refmodel, regul,
         p_ref = p_ref,
         refmodel = refmodel,
         solution_terms = utils::head(search_path$solution_terms, nterms),
-        wobs = refmodel$wobs,
-        wdraws_prj = p_ref$wdraws_prj
+        wobs = refmodel$wobs
       ))
     }
   } else {
@@ -95,8 +93,7 @@ get_submodls <- function(search_path, nterms, refmodel, regul,
 
 # Process the output of the `divergence_minimizer` function (see
 # init_refmodel()) to create an object of class `submodl`.
-init_submodl <- function(outdmin, p_ref, refmodel, solution_terms, wobs,
-                         wdraws_prj) {
+init_submodl <- function(outdmin, p_ref, refmodel, solution_terms, wobs) {
   p_ref$mu <- p_ref$mu_offs
   if (!(all(is.na(p_ref$var)) ||
         refmodel$family$family %in% c("gaussian", "Student_t"))) {
@@ -132,10 +129,10 @@ init_submodl <- function(outdmin, p_ref, refmodel, solution_terms, wobs,
     refmodel$family$ce(p_ref,
                        nlist(weights = wobs),
                        nlist(mu, dis)),
-    wdraws_prj
+    p_ref$wdraws_prj
   )
   return(structure(
-    nlist(dis, ce, wdraws_prj = wdraws_prj, solution_terms, outdmin,
+    nlist(dis, ce, wdraws_prj = p_ref$wdraws_prj, solution_terms, outdmin,
           cl_ref = p_ref$cl, wdraws_ref = p_ref$wdraws_orig,
           clust_used = p_ref$clust_used, nprjdraws = NCOL(p_ref$mu)),
     class = "submodl"
