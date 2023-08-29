@@ -5,8 +5,6 @@
 # class `submodl`.
 get_submodl_prj <- function(solution_terms, p_ref, refmodel, regul = 1e-4,
                             ...) {
-  wobs <- refmodel$wobs %||% rep(1, NROW(p_ref$mu))
-
   y_unqs_aug <- refmodel$family$cats
   if (refmodel$family$for_latent && !is.null(y_unqs_aug)) {
     y_unqs_aug <- NULL
@@ -43,7 +41,8 @@ get_submodl_prj <- function(solution_terms, p_ref, refmodel, regul = 1e-4,
 
   return(init_submodl(
     outdmin = outdmin, p_ref = p_ref, refmodel = refmodel,
-    solution_terms = solution_terms, wobs = wobs, wdraws_prj = p_ref$wdraws_prj
+    solution_terms = solution_terms, wobs = refmodel$wobs,
+    wdraws_prj = p_ref$wdraws_prj
   ))
 }
 
@@ -58,14 +57,13 @@ get_submodls <- function(search_path, nterms, refmodel, regul,
     # In this case, simply fetch the already computed projections, so don't
     # project again.
     fetch_submodl <- function(nterms, ...) {
-      wobs <- refmodel$wobs %||% rep(1, NROW(p_ref$mu))
       return(init_submodl(
         # Re-use the submodel fits from the search:
         outdmin = search_path$outdmins[[nterms + 1]],
         p_ref = p_ref,
         refmodel = refmodel,
         solution_terms = utils::head(search_path$solution_terms, nterms),
-        wobs = wobs,
+        wobs = refmodel$wobs,
         wdraws_prj = p_ref$wdraws_prj
       ))
     }
