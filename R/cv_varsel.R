@@ -723,6 +723,12 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
   } else {
     ## Case `validate_search = TRUE` ------------------------------------------
 
+    cl_sel <- get_refdist(refmodel, ndraws = ndraws, nclusters = nclusters)$cl
+    if (refit_prj) {
+      cl_pred <- get_refdist(refmodel, ndraws = ndraws_pred,
+                             nclusters = nclusters_pred)$cl
+    }
+
     verb_out("-----\nRunning the search and the performance evaluation for ",
              "each of the N = ", nloo, " LOO CV folds separately ...",
              verbose = verbose)
@@ -739,9 +745,9 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
       # projection)):
       search_path <- select(
         refmodel = refmodel, ndraws = ndraws, nclusters = nclusters,
-        wdraws_ref = exp(lw[, i]), method = method, nterms_max = nterms_max,
-        penalty = penalty, verbose = verbose_search, opt = opt,
-        search_terms = search_terms, ...
+        reweighting_args = list(cl_ref = cl_sel, wdraws_ref = exp(lw[, i])),
+        method = method, nterms_max = nterms_max, penalty = penalty,
+        verbose = verbose_search, opt = opt, search_terms = search_terms, ...
       )
 
       # Re-project along the solution path (or fetch the projections from the
@@ -751,7 +757,8 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
         nterms = c(0, seq_along(search_path$solution_terms)),
         refmodel = refmodel, regul = opt$regul, refit_prj = refit_prj,
         ndraws = ndraws_pred, nclusters = nclusters_pred,
-        wdraws_ref = exp(lw[, i]), ...
+        reweighting_args = list(cl_ref = cl_pred, wdraws_ref = exp(lw[, i])),
+        ...
       )
       clust_used_eval <- element_unq(submodls, nm = "clust_used")
       nprjdraws_eval <- element_unq(submodls, nm = "nprjdraws")

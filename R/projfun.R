@@ -54,7 +54,7 @@ get_submodl_prj <- function(solution_terms, p_ref, refmodel, regul = 1e-4,
 # `submodl`.
 get_submodls <- function(search_path, nterms, refmodel, regul,
                          refit_prj = FALSE, ndraws, nclusters,
-                         wdraws_ref = NULL, return_p_ref = FALSE, ...) {
+                         reweighting_args = NULL, return_p_ref = FALSE, ...) {
   if (!refit_prj) {
     p_ref <- search_path$p_sel
     # In this case, simply fetch the already computed projections, so don't
@@ -76,13 +76,14 @@ get_submodls <- function(search_path, nterms, refmodel, regul,
     }
   } else {
     # In this case, project again.
-    p_ref <- get_refdist(refmodel, ndraws = ndraws, nclusters = nclusters)
-    if (!is.null(wdraws_ref)) {
+    if (is.null(reweighting_args)) {
+      p_ref <- get_refdist(refmodel, ndraws = ndraws, nclusters = nclusters)
+    } else {
       # Reweight the clusters (or thinned draws) according to the PSIS weights:
       p_ref <- get_p_clust(
         family = refmodel$family, eta = refmodel$eta, mu = refmodel$mu,
-        mu_offs = refmodel$mu_offs, dis = refmodel$dis, wdraws = wdraws_ref,
-        cl = p_ref$cl
+        mu_offs = refmodel$mu_offs, dis = refmodel$dis,
+        wdraws = reweighting_args$wdraws_ref, cl = reweighting_args$cl_ref
       )
     }
     fetch_submodl <- function(nterms, ...) {

@@ -392,21 +392,27 @@ varsel.refmodel <- function(object, d_test = NULL, method = NULL,
 
 # Workhorse function for the search
 #
-# For the arguments, see the documentation of varsel().
+# @param reweighting_args If the projected draws (i.e., those obtained from
+#   clustering or thinning) should be re-weighted (usually according to PSIS
+#   weights), then this needs to be a `list` with elements `wdraws_ref` and
+#   `cl_ref`. For these two elements, see the (internal) documentation of
+#   weighted_summary_means().
+# For all other arguments, see the documentation of varsel().
 #
 # @return A list with elements `solution_terms` (the solution path), `outdmins`
 #   (the submodel fits along the solution path, with the number of fits per
 #   model size being equal to the number of projected draws), and `p_sel` (the
 #   output from get_refdist() for the search).
-select <- function(refmodel, ndraws, nclusters, wdraws_ref = NULL, method,
+select <- function(refmodel, ndraws, nclusters, reweighting_args = NULL, method,
                    nterms_max, penalty, verbose, opt, search_terms, ...) {
-  p_sel <- get_refdist(refmodel, ndraws = ndraws, nclusters = nclusters)
-  if (!is.null(wdraws_ref)) {
+  if (is.null(reweighting_args)) {
+    p_sel <- get_refdist(refmodel, ndraws = ndraws, nclusters = nclusters)
+  } else {
     # Reweight the clusters (or thinned draws) according to the PSIS weights:
     p_sel <- get_p_clust(
       family = refmodel$family, eta = refmodel$eta, mu = refmodel$mu,
-      mu_offs = refmodel$mu_offs, dis = refmodel$dis, wdraws = wdraws_ref,
-      cl = p_sel$cl
+      mu_offs = refmodel$mu_offs, dis = refmodel$dis,
+      wdraws = reweighting_args$wdraws_ref, cl = reweighting_args$cl_ref
     )
   }
   if (method == "L1") {
