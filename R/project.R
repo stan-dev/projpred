@@ -275,7 +275,6 @@ project <- function(object, nterms = NULL, solution_terms = NULL,
   # Output:
   projs <- lapply(submodls, function(submodl) {
     proj_k <- submodl
-    proj_k[["const_wdraws_prj"]] <- length(unique(submodl$wdraws_prj)) == 1
     proj_k$refmodel <- refmodel
     class(proj_k) <- "projection"
     return(proj_k)
