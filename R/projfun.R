@@ -5,9 +5,7 @@
 # class `submodl`.
 get_submodl_prj <- function(solution_terms, p_ref, refmodel, regul = 1e-4,
                             ...) {
-  validparams <- validate_wobs_wdraws(refmodel$wobs, p_ref$wdraws_prj, p_ref$mu)
-  wobs <- validparams$wobs
-  wdraws_prj <- validparams$wdraws_prj
+  wobs <- refmodel$wobs %||% rep(1, NROW(p_ref$mu))
 
   y_unqs_aug <- refmodel$family$cats
   if (refmodel$family$for_latent && !is.null(y_unqs_aug)) {
@@ -45,7 +43,7 @@ get_submodl_prj <- function(solution_terms, p_ref, refmodel, regul = 1e-4,
 
   return(init_submodl(
     outdmin = outdmin, p_ref = p_ref, refmodel = refmodel,
-    solution_terms = solution_terms, wobs = wobs, wdraws_prj = wdraws_prj
+    solution_terms = solution_terms, wobs = wobs, wdraws_prj = p_ref$wdraws_prj
   ))
 }
 
@@ -60,10 +58,7 @@ get_submodls <- function(search_path, nterms, refmodel, regul,
     # In this case, simply fetch the already computed projections, so don't
     # project again.
     fetch_submodl <- function(nterms, ...) {
-      validparams <- validate_wobs_wdraws(refmodel$wobs, p_ref$wdraws_prj,
-                                          p_ref$mu)
-      wobs <- validparams$wobs
-      wdraws_prj <- validparams$wdraws_prj
+      wobs <- refmodel$wobs %||% rep(1, NROW(p_ref$mu))
       return(init_submodl(
         # Re-use the submodel fits from the search:
         outdmin = search_path$outdmins[[nterms + 1]],
@@ -71,7 +66,7 @@ get_submodls <- function(search_path, nterms, refmodel, regul,
         refmodel = refmodel,
         solution_terms = utils::head(search_path$solution_terms, nterms),
         wobs = wobs,
-        wdraws_prj = wdraws_prj
+        wdraws_prj = p_ref$wdraws_prj
       ))
     }
   } else {
@@ -98,23 +93,6 @@ get_submodls <- function(search_path, nterms, refmodel, regul,
     out <- list(submodls = out, p_ref = p_ref)
   }
   return(out)
-}
-
-validate_wobs_wdraws <- function(ref_wobs, ref_wdraws, ref_mu) {
-  if (is.null(ref_wobs)) {
-    wobs <- rep(1.0, NROW(ref_mu))
-  } else {
-    wobs <- ref_wobs
-  }
-
-  if (is.null(ref_wdraws)) {
-    wdraws_prj <- rep(1.0, NCOL(ref_mu))
-  } else {
-    wdraws_prj <- ref_wdraws
-  }
-
-  wdraws_prj <- wdraws_prj / sum(wdraws_prj)
-  return(nlist(wobs, wdraws_prj))
 }
 
 # Process the output of the `divergence_minimizer` function (see
