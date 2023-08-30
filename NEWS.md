@@ -28,6 +28,7 @@ If you read this from a place other than <https://mc-stan.org/projpred/news/inde
 * Slightly improved efficiency in K-fold and PSIS-LOO CV, especially in case of a large number of observations. If `refit_prj` is `FALSE`, `nclusters` is internally greater than `1` (which requires forward search), and `nclusters_pred` is not `NULL`, this change might affect K-fold CV results, due to a different pseudorandom number generator (PRNG) state in folds other than the first one. Likewise, the PRNG state for LOO subsampling (see argument `nloo`) is affected if `refit_prj` is `FALSE` and `nclusters_pred` is not `NULL`. (GitHub: #446)
 * Slightly improved efficiency at the end of `cv_varsel()`, especially in case of a large number of observations. (GitHub: #447)
 * Slightly improved memory usage in `varsel()`, `cv_varsel()`, and `project()`. In case of LOO subsampling (see argument `nloo`), this change may lead to slightly different results due to a different PRNG state when clustering the reference model's posterior draws. (GitHub: #448)
+* The internal function `.extract_model_data` has been removed. As an alternative (with some differences compared to `.extract_model_data`), the new function `y_wobs_offs()` is exported.
 
 ## Bug fixes
 

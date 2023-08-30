@@ -660,8 +660,8 @@ test_that(paste(
       }
     }
 
-    return(.extract_model_data(object = object, newdata = newdata, wrhs = wrhs,
-                               orhs = orhs, resp_form = resp_form))
+    return(y_wobs_offs(newdata = newdata, wrhs = wrhs, orhs = orhs,
+                       resp_form = resp_form))
   }
 
   for (i in seq_along(fams)) {

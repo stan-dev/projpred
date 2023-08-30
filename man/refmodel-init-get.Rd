@@ -409,10 +409,8 @@ ref_cust <- init_refmodel(
     if (is.null(newdata)) {
       newdata <- dat_gauss
     }
-    return(projpred:::.extract_model_data(
-      object = object, newdata = newdata, wrhs = wrhs, orhs = orhs,
-      resp_form = resp_form
-    ))
+    return(y_wobs_offs(newdata = newdata, wrhs = wrhs, orhs = orhs,
+                       resp_form = resp_form))
   },
   cvfun = function(folds) {
     kfold(

@@ -347,10 +347,8 @@
 #'     if (is.null(newdata)) {
 #'       newdata <- dat_gauss
 #'     }
-#'     return(projpred:::.extract_model_data(
-#'       object = object, newdata = newdata, wrhs = wrhs, orhs = orhs,
-#'       resp_form = resp_form
-#'     ))
+#'     return(y_wobs_offs(newdata = newdata, wrhs = wrhs, orhs = orhs,
+#'                        resp_form = resp_form))
 #'   },
 #'   cvfun = function(folds) {
 #'     kfold(
@@ -648,16 +646,51 @@ refprd <- function(fit, newdata = NULL) {
   return(linpred_out)
 }
 
-.extract_model_data <- function(object, newdata, wrhs = NULL, orhs = NULL,
-                                resp_form) {
+#' Extract response values, observation weights, and offsets
+#'
+#' A helper function for extracting response values, observation weights, and
+#' offsets from a dataset. It is designed for use in the `extract_model_data`
+#' function of custom reference model objects (see [init_refmodel()]).
+#'
+#' @param newdata The `data.frame` from which at least the response values
+#'   should be extracted.
+#' @param wrhs Either a right-hand side formula consisting only of the variable
+#'   in `newdata` containing the weights, `NULL` (for using a vector of ones),
+#'   or directly the numeric vector of observation weights.
+#' @param orhs Either a right-hand side formula consisting only of the variable
+#'   in `newdata` containing the offsets, `NULL` (for using a vector of zeros),
+#'   or directly the numeric vector of offsets.
+#' @param resp_form If this is a formula, then the second element of this
+#'   formula (if the formula is a standard formula with both left-hand and
+#'   right-hand side, then its second element is the left-hand side; if the
+#'   formula is a right-hand side formula, then its second element is the
+#'   right-hand side) will be extracted from `newdata` (so `resp_form` may be
+#'   either a standard formula or a right-hand side formula, but in the latter
+#'   case, the right-hand side should consist only of the response variable). In
+#'   all other cases, `NULL` will be returned for element `y` of the output
+#'   `list`.
+#'
+#' @return A `list` with elements `y`, `weights`, and `offset`, each being a
+#'   numeric vector containing the data for the response, the observation
+#'   weights, and the offsets, respectively. An exception is that `y` may also
+#'   be `NULL` (depending on argument `resp_form`), a non-numeric vector, or a
+#'   `factor`.
+#'
+#' @seealso [init_refmodel()]
+#'
+#' @examples
+#' # For an example, see `?init_refmodel`.
+#'
+#' @export
+y_wobs_offs <- function(newdata, wrhs = NULL, orhs = NULL, resp_form) {
   if (inherits(wrhs, "formula")) {
     if (is.null(newdata)) {
-      stop(".extract_model_data() needs non-NULL `newdata` in this case.")
+      stop("y_wobs_offs() needs non-NULL `newdata` in this case.")
     }
     weights <- eval_rhs(wrhs, newdata)
   } else if (is.null(wrhs)) {
     if (is.null(newdata)) {
-      stop(".extract_model_data() needs non-NULL `newdata` in this case.")
+      stop("y_wobs_offs() needs non-NULL `newdata` in this case.")
     }
     weights <- rep(1, nrow(newdata))
   } else {
@@ -666,12 +699,12 @@ refprd <- function(fit, newdata = NULL) {
 
   if (inherits(orhs, "formula")) {
     if (is.null(newdata)) {
-      stop(".extract_model_data() needs non-NULL `newdata` in this case.")
+      stop("y_wobs_offs() needs non-NULL `newdata` in this case.")
     }
     offset <- eval_rhs(orhs, newdata)
   } else if (is.null(orhs)) {
     if (is.null(newdata)) {
-      stop(".extract_model_data() needs non-NULL `newdata` in this case.")
+      stop("y_wobs_offs() needs non-NULL `newdata` in this case.")
     }
     offset <- rep(0, nrow(newdata))
   } else {
@@ -680,7 +713,7 @@ refprd <- function(fit, newdata = NULL) {
 
   if (inherits(resp_form, "formula")) {
     if (is.null(newdata)) {
-      stop(".extract_model_data() needs non-NULL `newdata` in this case.")
+      stop("y_wobs_offs() needs non-NULL `newdata` in this case.")
     }
     y <- eval_el2(resp_form, newdata)
   } else {
@@ -722,8 +755,8 @@ get_refmodel.default <- function(object, data, formula, family = NULL, ...) {
     if (is.null(newdata)) {
       newdata <- data
     }
-    return(.extract_model_data(object = object, newdata = newdata, wrhs = wrhs,
-                               orhs = orhs, resp_form = resp_form))
+    return(y_wobs_offs(newdata = newdata, wrhs = wrhs, orhs = orhs,
+                       resp_form = resp_form))
   }
   refmodel <- init_refmodel(
     object = object, data = data, formula = formula, family = family,
@@ -839,8 +872,8 @@ get_refmodel.stanreg <- function(object, latent = FALSE, dis = NULL, ...) {
     if (is.null(newdata)) {
       newdata <- data
     }
-    return(.extract_model_data(object = object, newdata = newdata, wrhs = wrhs,
-                               orhs = orhs, resp_form = resp_form))
+    return(y_wobs_offs(newdata = newdata, wrhs = wrhs, orhs = orhs,
+                       resp_form = resp_form))
   }
 
   ref_predfun <- function(fit, newdata = NULL) {
