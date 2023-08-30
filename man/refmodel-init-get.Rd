@@ -311,8 +311,7 @@ where:
 \item \code{object} accepts the reference model fit as given in argument \code{object} (but
 possibly re-fitted to a subset of the observations, as done in \eqn{K}-fold
 CV).
-\item \code{newdata} accepts either \code{NULL} (for using the original dataset, typically
-stored in \code{object}) or data for new observations (at least in the form of a
+\item \code{newdata} accepts data for new observations (at least in the form of a
 \code{data.frame}).
 \item \code{wrhs} accepts at least either \code{NULL} (for using a vector of ones) or a
 right-hand side formula consisting only of the variable in \code{newdata}
@@ -399,15 +398,12 @@ ref_cust <- init_refmodel(
   data = dat_gauss,
   formula = y ~ X6 + X7,
   family = gaussian(),
-  extract_model_data = function(object, newdata = NULL, wrhs = NULL,
-                                orhs = NULL, extract_y = TRUE) {
+  extract_model_data = function(object, newdata, wrhs = NULL, orhs = NULL,
+                                extract_y = TRUE) {
     if (!extract_y) {
       resp_form <- NULL
     } else {
       resp_form <- ~ y
-    }
-    if (is.null(newdata)) {
-      newdata <- dat_gauss
     }
     return(y_wobs_offs(newdata = newdata, wrhs = wrhs, orhs = orhs,
                        resp_form = resp_form))

@@ -8,12 +8,8 @@ context("datafit")
 # it might do in the future. Then, either the scenarios including offsets have
 # to be excluded or new data has to be generated without offsets.
 
-.extrmoddat_datafit <- function(object, newdata = NULL, wrhs = NULL,
-                                orhs = NULL, resp_form = NULL) {
-  if (is.null(newdata)) {
-    newdata <- object$data
-  }
-
+.extrmoddat_datafit <- function(object, newdata, wrhs = NULL, orhs = NULL,
+                                resp_form = NULL) {
   if (inherits(wrhs, "formula")) {
     weights <- eval_rhs(wrhs, newdata)
   } else if (is.null(wrhs)) {
@@ -57,12 +53,9 @@ datafits <- lapply(args_datafit, function(args_datafit_i) {
       tail(as.character(args_fit[[args_datafit_i$tstsetup_fit]]$random), 1)
     ))
   }
-  extrmoddat <- function(object, newdata = NULL, wrhs = NULL, orhs = NULL,
+  extrmoddat <- function(object, newdata, wrhs = NULL, orhs = NULL,
                          extract_y = TRUE) {
     resp_form <- if (!extract_y) NULL else lhs(formul_crr)
-    if (is.null(newdata)) {
-      newdata <- dat
-    }
     if (args_datafit_i$fam_nm == "brnll") {
       newdata$wobs_col <- 1
     }
@@ -636,18 +629,14 @@ test_that(paste(
     nlist(y, y_glmnet, weights)
   })
 
-  extract_model_data <- function(object, newdata = NULL, wrhs = NULL,
-                                 orhs = NULL, extract_y = FALSE) {
+  extract_model_data <- function(object, newdata, wrhs = NULL, orhs = NULL,
+                                 extract_y = FALSE) {
     if (!is.null(object)) {
       formula <- formula(object)
       tt <- extract_terms_response(formula)
       response_name <- tt$response
     } else {
       response_name <- NULL
-    }
-
-    if (is.null(newdata)) {
-      newdata <- object$data
     }
 
     resp_form <- NULL
