@@ -55,11 +55,11 @@ datafits <- lapply(args_datafit, function(args_datafit_i) {
   }
   extrmoddat <- function(object, newdata, wrhs = NULL, orhs = NULL,
                          extract_y = TRUE) {
-    resp_form <- if (!extract_y) NULL else lhs(formul_crr)
     if (args_datafit_i$fam_nm == "brnll") {
       newdata$wobs_col <- 1
     }
-    args <- nlist(object, newdata, wrhs, orhs, resp_form)
+    args <- nlist(object, newdata, wrhs, orhs,
+                  resp_form = if (extract_y) lhs(formul_crr) else NULL)
     return(do.call(.extrmoddat_datafit, args))
   }
   return(init_refmodel(

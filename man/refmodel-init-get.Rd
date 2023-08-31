@@ -400,13 +400,8 @@ ref_cust <- init_refmodel(
   family = gaussian(),
   extract_model_data = function(object, newdata, wrhs = NULL, orhs = NULL,
                                 extract_y = TRUE) {
-    if (!extract_y) {
-      resp_form <- NULL
-    } else {
-      resp_form <- ~ y
-    }
     return(y_wobs_offs(newdata = newdata, wrhs = wrhs, orhs = orhs,
-                       resp_form = resp_form))
+                       resp_form = if (extract_y) ~ y else NULL))
   },
   cvfun = function(folds) {
     kfold(
