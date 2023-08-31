@@ -297,12 +297,13 @@ refmodel_tester <- function(
 ) {
   # Preparations:
   needs_wobs_added <- !is_datafit && pkg_nm == "rstanarm" &&
-    length(refmod$fit$weights) > 0
+    ((length(refmod$fit$weights) > 0 && !all(refmod$fit$weights == 1)) ||
+       fam_nm == "binom")
   if (needs_wobs_added) {
-    data_expected$projpred_internal_wobs_stanreg <- refmod$fit$weights
+    data_expected$projpred_internal_wobs_stanreg <- wobs_expected
   }
   needs_offs_added <- !is_datafit && pkg_nm == "rstanarm" &&
-    length(refmod$fit$offset) > 0
+    length(refmod$fit$offset) > 0 && !all(refmod$fit$offset == 0)
   if (needs_offs_added) {
     data_expected$projpred_internal_offs_stanreg <- refmod$fit$offset
   }
@@ -357,6 +358,10 @@ refmodel_tester <- function(
   expect_named(refmod, refmod_nms, info = info_str)
 
   # fit
+  if (!is_datafit && pkg_nm == "rstanarm" && mod_nm == "gamm" &&
+      !all(wobs_expected == 1)) {
+    fit_expected$weights <- wobs_expected
+  }
   expect_identical(refmod$fit, fit_expected, info = info_str)
 
   # formula
@@ -608,6 +613,12 @@ refmodel_tester <- function(
     }
     if ((!is_datafit && pkg_nm != "brms") ||
         (is_datafit && (pkg_nm == "brms" || fam_nm != "binom"))) {
+      if (pkg_nm != "brms" && fam_nm == "binom" && needs_wobs_added) {
+        data_expected <- data_expected[, c(
+          setdiff(names(data_expected), "projpred_internal_wobs_stanreg"),
+          "projpred_internal_wobs_stanreg"
+        )]
+      }
       expect_identical(refmod$fetch_data(), data_expected, info = info_str)
     } else if (!is_datafit && pkg_nm == "brms") {
       if (!with_spclformul) {

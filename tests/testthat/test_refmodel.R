@@ -231,6 +231,17 @@ test_that(paste(
     fam_crr <- args_ref[[tstsetup]]$fam_nm
     prj_crr <- args_ref[[tstsetup]]$prj_nm
 
+    if (grepl("\\.with_wobs|\\.binom", tstsetup)) {
+      wobs_crr <- wobs_tst
+    } else {
+      wobs_crr <- NULL
+    }
+    if (grepl("\\.with_offs", tstsetup)) {
+      offs_crr <- offs_tst
+    } else {
+      offs_crr <- NULL
+    }
+
     y_crr <- dat[, paste("y", mod_crr, fam_crr, sep = "_")]
     if (prj_crr == "latent") {
       dat_crr <- dat
@@ -247,14 +258,18 @@ test_that(paste(
     }
 
     # Without `ynew`:
-    predref_resp <- predict(refmods[[tstsetup]], dat, type = "response")
-    predref_link <- predict(refmods[[tstsetup]], dat, type = "link")
+    predref_resp <- predict(refmods[[tstsetup]], dat, weightsnew = wobs_crr,
+                            offsetnew = offs_crr, type = "response")
+    predref_link <- predict(refmods[[tstsetup]], dat, weightsnew = wobs_crr,
+                            offsetnew = offs_crr, type = "link")
 
     # With `ynew`:
-    predref_ynew_resp <- predict(refmods[[tstsetup]], dat, ynew = y_crr,
-                                 type = "response")
-    predref_ynew_link <- predict(refmods[[tstsetup]], dat, ynew = y_crr_link,
-                                 type = "link")
+    predref_ynew_resp <- predict(refmods[[tstsetup]], dat,
+                                 weightsnew = wobs_crr, offsetnew = offs_crr,
+                                 ynew = y_crr, type = "response")
+    predref_ynew_link <- predict(refmods[[tstsetup]], dat,
+                                 weightsnew = wobs_crr, offsetnew = offs_crr,
+                                 ynew = y_crr_link, type = "link")
 
     # Checks without `ynew`:
     if (prj_crr %in% c("latent", "augdat")) {

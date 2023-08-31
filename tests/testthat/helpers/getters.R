@@ -49,7 +49,8 @@ get_formul_from_fit <- function(fit_obj) {
 # A function to adapt a given dataset (`dat`) appropriately to a given formula
 # (`formul_crr`):
 get_dat_formul <- function(formul_crr, needs_adj, dat_crr = dat,
-                           add_offs_dummy = FALSE) {
+                           add_offs_dummy = FALSE, wobs_brms = NULL,
+                           offs_brms = NULL) {
   if (needs_adj) {
     stdized_lhs <- stdize_lhs(formul_crr)
     dat_crr[[stdized_lhs$y_nm]] <- eval(str2lang(stdized_lhs$y_nm_orig),
@@ -61,12 +62,18 @@ get_dat_formul <- function(formul_crr, needs_adj, dat_crr = dat,
     # used. The specific value doesn't matter:
     dat_crr$offs_col <- 42
   }
+  if (!is.null(offs_brms)) {
+    dat_crr$offs_col <- offs_brms
+  }
+  if (!is.null(wobs_brms)) {
+    dat_crr$wobs_col <- wobs_brms
+  }
   return(dat_crr)
 }
 
 # A function to adapt a given dataset (`dat`) appropriately to a given "test
 # setup" (`tstsetup`):
-get_dat <- function(tstsetup, dat_crr = dat, offs_ylat = 0, ...) {
+get_dat <- function(tstsetup, dat_crr = dat, offs_ylat = offs_tst, ...) {
   dat_crr <- get_dat_formul(
     args_fit[[args_prj[[tstsetup]]$tstsetup_fit]]$formula,
     needs_adj = grepl("\\.spclformul", tstsetup), dat_crr = dat_crr, ...
