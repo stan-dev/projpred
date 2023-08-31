@@ -738,13 +738,16 @@ get_refmodel.vsel <- function(object, ...) {
 #' @export
 get_refmodel.default <- function(object, data, formula, family = NULL, ...) {
   refmodel <- init_refmodel(
-    object = object, data = data, formula = formula,
+    object = object,
+    data = data,
+    formula = formula,
     family = family %||% family(object),
     extract_model_data = function(object, newdata, wrhs = NULL, orhs = NULL,
                                   extract_y = TRUE) {
       return(y_wobs_offs(newdata = newdata, wrhs = wrhs, orhs = orhs,
                          resp_form = if (extract_y) lhs(formula) else NULL))
-    }, ...
+    },
+    ...
   )
   return(refmodel)
 }
