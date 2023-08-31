@@ -53,21 +53,20 @@ datafits <- lapply(args_datafit, function(args_datafit_i) {
       tail(as.character(args_fit[[args_datafit_i$tstsetup_fit]]$random), 1)
     ))
   }
-  extrmoddat <- function(object, newdata, wrhs = NULL, orhs = NULL,
-                         extract_y = TRUE) {
-    if (args_datafit_i$fam_nm == "brnll") {
-      newdata$wobs_col <- 1
-    }
-    args <- nlist(object, newdata, wrhs, orhs,
-                  resp_form = if (extract_y) lhs(formul_crr) else NULL)
-    return(do.call(.extrmoddat_datafit, args))
-  }
   return(init_refmodel(
     object = NULL,
     data = dat,
     formula = formul_crr,
     family = get(paste0("f_", args_datafit_i$fam_nm)),
-    extract_model_data = extrmoddat
+    extract_model_data = function(object, newdata, wrhs = NULL, orhs = NULL,
+                                  extract_y = TRUE) {
+      if (args_datafit_i$fam_nm == "brnll") {
+        newdata$wobs_col <- 1
+      }
+      args <- nlist(object, newdata, wrhs, orhs,
+                    resp_form = if (extract_y) lhs(formul_crr) else NULL)
+      return(do.call(.extrmoddat_datafit, args))
+    }
   ))
 })
 
