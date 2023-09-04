@@ -739,7 +739,7 @@ get_refmodel.vsel <- function(object, ...) {
 #' @rdname refmodel-init-get
 #' @export
 get_refmodel.default <- function(object, data, formula, family = NULL, ...) {
-  refmodel <- init_refmodel(
+  return(init_refmodel(
     object = object,
     data = data,
     formula = formula,
@@ -750,8 +750,7 @@ get_refmodel.default <- function(object, data, formula, family = NULL, ...) {
                          resp_form = if (extract_y) lhs(formula) else NULL))
     },
     ...
-  )
-  return(refmodel)
+  ))
 }
 
 #' @rdname refmodel-init-get
