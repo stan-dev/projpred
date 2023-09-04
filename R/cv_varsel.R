@@ -350,12 +350,14 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
   # `validate_search = TRUE`, only `cl_sel` is used later, not `p_sel` itself):
   p_sel <- get_refdist(refmodel, ndraws = ndraws, nclusters = nclusters)
   cl_sel <- p_sel$cl
-  # Clustering or thinning for the performance evaluation (note that in case of
-  # `validate_search = TRUE`, only `cl_pred` is used later, not `p_pred`
-  # itself):
-  p_pred <- get_refdist(refmodel, ndraws = ndraws_pred,
-                        nclusters = nclusters_pred)
-  cl_pred <- p_pred$cl
+  if (refit_prj) {
+    # Clustering or thinning for the performance evaluation (note that in case
+    # of `validate_search = TRUE`, only `cl_pred` is used later, not `p_pred`
+    # itself):
+    p_pred <- get_refdist(refmodel, ndraws = ndraws_pred,
+                          nclusters = nclusters_pred)
+    cl_pred <- p_pred$cl
+  }
 
   if (inherits(refmodel, "datafit")) {
     stop("LOO can be performed only if the reference model is a genuine ",
@@ -748,11 +750,13 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
         mu_offs = refmodel$mu_offs, dis = refmodel$dis, wdraws = exp(lw[, i]),
         cl = cl_sel
       )
-      p_pred <- get_p_clust(
-        family = refmodel$family, eta = refmodel$eta, mu = refmodel$mu,
-        mu_offs = refmodel$mu_offs, dis = refmodel$dis, wdraws = exp(lw[, i]),
-        cl = cl_pred
-      )
+      if (refit_prj) {
+        p_pred <- get_p_clust(
+          family = refmodel$family, eta = refmodel$eta, mu = refmodel$mu,
+          mu_offs = refmodel$mu_offs, dis = refmodel$dis, wdraws = exp(lw[, i]),
+          cl = cl_pred
+        )
+      }
 
       # Run the search with the reweighted clusters (or thinned draws) (so the
       # *reweighted* fitted response values from the reference model act as
@@ -1027,7 +1031,9 @@ kfold_varsel <- function(refmodel, method, nterms_max, ndraws,
     # For performance evaluation: Re-project (using the training data of the
     # current fold) along the predictor ranking (or fetch the projections from
     # the search output) of the current fold:
-    p_pred <- get_refdist(fold$refmodel, ndraws_pred, nclusters_pred)
+    if (refit_prj) {
+      p_pred <- get_refdist(fold$refmodel, ndraws_pred, nclusters_pred)
+    }
     submodls <- get_submodls(
       search_path = search_path,
       nterms = c(0, seq_along(search_path$solution_terms)),
