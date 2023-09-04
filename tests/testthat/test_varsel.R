@@ -578,44 +578,45 @@ test_that("`refit_prj` works", {
 
 ## Warning for full Gaussian multilevel models ----------------------------
 
-test_that(paste(
-  "the warning for full Gaussian multilevel models is thrown correctly"
-), {
-  skip_if_not(run_more)
-  skip_if_not(run_vs)
-  warn_instable_orig <- options(projpred.warn_instable_projections = NULL)
-  tstsetups <- names(vss)
-  pick_these <- sapply(tstsetups, function(tstsetup) {
-    refmod_i <- refmods[[args_vs[[tstsetup]]$tstsetup_ref]]
-    return(
-      (refmod_i$family$family == "gaussian" || refmod_i$family$for_latent) &&
-        is.null(args_vs[[tstsetup]]$search_terms)
-    )
-  })
-  tstsetups <- tstsetups[pick_these]
-  skip_if_not(length(tstsetups) > 0)
-  for (tstsetup in tstsetups) {
-    args_vs_i <- args_vs[[tstsetup]]
-    if (identical(args_vs_i$nterms_max, unname(ntermss[args_vs_i$mod_nm])) &&
-        any(grepl("\\|", labels(terms(
-          args_fit[[args_vs_i$tstsetup_fit]]$formula
-        ))))) {
-      warn_expected <- "the projection onto the full model can be instable"
-    } else {
-      warn_expected <- NA
+if (run_more) {
+  test_that(paste(
+    "the warning for full Gaussian multilevel models is thrown correctly"
+  ), {
+    skip_if_not(run_vs)
+    warn_instable_orig <- options(projpred.warn_instable_projections = NULL)
+    tstsetups <- names(vss)
+    pick_these <- sapply(tstsetups, function(tstsetup) {
+      refmod_i <- refmods[[args_vs[[tstsetup]]$tstsetup_ref]]
+      return(
+        (refmod_i$family$family == "gaussian" || refmod_i$family$for_latent) &&
+          is.null(args_vs[[tstsetup]]$search_terms)
+      )
+    })
+    tstsetups <- tstsetups[pick_these]
+    skip_if_not(length(tstsetups) > 0)
+    for (tstsetup in tstsetups) {
+      args_vs_i <- args_vs[[tstsetup]]
+      if (identical(args_vs_i$nterms_max, unname(ntermss[args_vs_i$mod_nm])) &&
+          any(grepl("\\|", labels(terms(
+            args_fit[[args_vs_i$tstsetup_fit]]$formula
+          ))))) {
+        warn_expected <- "the projection onto the full model can be instable"
+      } else {
+        warn_expected <- NA
+      }
+      args_vs_i$refit_prj <- FALSE
+      expect_warning(
+        vs_tmp <- do.call(varsel, c(
+          list(object = refmods[[args_vs_i$tstsetup_ref]]),
+          excl_nonargs(args_vs_i)
+        )),
+        warn_expected,
+        info = tstsetup
+      )
     }
-    args_vs_i$refit_prj <- FALSE
-    expect_warning(
-      vs_tmp <- do.call(varsel, c(
-        list(object = refmods[[args_vs_i$tstsetup_ref]]),
-        excl_nonargs(args_vs_i)
-      )),
-      warn_expected,
-      info = tstsetup
-    )
-  }
-  options(warn_instable_orig)
-})
+    options(warn_instable_orig)
+  })
+}
 
 ## Regularization ---------------------------------------------------------
 
