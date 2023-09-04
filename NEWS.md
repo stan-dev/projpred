@@ -29,6 +29,10 @@ If you read this from a place other than <https://mc-stan.org/projpred/news/inde
 * Slightly improved efficiency at the end of `cv_varsel()`, especially in case of a large number of observations. (GitHub: #447)
 * Slightly improved memory usage in `varsel()`, `cv_varsel()`, and `project()`. In case of LOO subsampling (see argument `nloo`), this change may lead to slightly different results due to a different PRNG state when clustering the reference model's posterior draws. (GitHub: #448)
 * The internal function `.extract_model_data` has been removed. As an alternative (with some differences compared to `.extract_model_data`), the new function `y_wobs_offs()` is exported.
+* Fixes/enhancements with respect to observation weights and offsets (GitHub: #449; see also "Bug fixes" below):
+    
+    + In case of an **rstanarm** reference model, the default for arguments `weightsnew` and `offsetnew` (see `proj_linpred()`, `proj_predict()`, and `predict.refmodel()`) now causes the original observation weights and offsets to be used (instead of ones and zeros, respectively) if possible. For **brms** reference models, this behavior had already been implemented before.
+    + An error is now thrown if a length-zero element `weights` or `offset` is returned by the function supplied to argument `extract_model_data` of `init_refmodel()` (before, a vector of ones or zeros was used silently for the observation weights and offsets, respectively).
 
 ## Bug fixes
 
@@ -38,6 +42,7 @@ If you read this from a place other than <https://mc-stan.org/projpred/news/inde
 * Fixed a bug for the augmented-data projection in combination with subsampled PSIS-LOO CV. (GitHub: #433)
 * `cv_varsel()` with `validate_search = FALSE` used to call `loo::psis()` (for the submodel performance evaluation PSIS-LOO CV) even in case of draws with different (i.e., nonconstant) weights. In such cases, `loo::sis()` is called now (with a warning). (GitHub: #438)
 * Fixed a bug for **rstanarm** (and custom) multilevel reference models with interactions (`:` syntax) between grouping variables, caused by missing columns in the reference model's `data.frame` (for **brms** reference models, this was already done correctly). (GitHub: #445)
+* In case of an **rstanarm** reference model, the default for arguments `weightsnew` and `offsetnew` (see `proj_linpred()`, `proj_predict()`, and `predict.refmodel()`) now causes the original observation weights and offsets to be used (instead of ones and zeros, respectively) if possible. For **brms** reference models, this behavior had already been implemented before. (GitHub: #449; see also "Minor changes" above)
 
 # projpred 2.6.0
 
