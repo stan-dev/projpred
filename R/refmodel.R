@@ -242,12 +242,16 @@
 #' CV).
 #' * `newdata` accepts data for new observations (at least in the form of a
 #' `data.frame`).
-#' * `wrhs` accepts at least either `NULL` (for using a vector of ones) or a
-#' right-hand side formula consisting only of the variable in `newdata`
-#' containing the weights.
-#' * `orhs` accepts at least either `NULL` (for using a vector of zeros) or a
-#' right-hand side formula consisting only of the variable in `newdata`
-#' containing the offsets.
+#' * `wrhs` accepts at least (i) a right-hand side formula consisting only of
+#' the variable in `newdata` containing the observation weights or (ii) `NULL`
+#' (for typical \pkg{rstanarm} and \pkg{brms} reference models, `NULL` causes
+#' the original observation weights to be used if the model was fitted with
+#' weights, otherwise a vector of ones is used).
+#' * `orhs` accepts at least (i) a right-hand side formula consisting only of
+#' the variable in `newdata` containing the offsets or (ii) `NULL` (for typical
+#' \pkg{rstanarm} and \pkg{brms} reference models, `NULL` causes the original
+#' offsets to be used if the model was fitted with offsets, otherwise a vector
+#' of zeros is used).
 #' * `extract_y` accepts a single logical value indicating whether output
 #' element `y` (see below) shall be `NULL` (`TRUE`) or not (`FALSE`).
 #'
