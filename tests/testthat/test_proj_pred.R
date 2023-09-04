@@ -287,10 +287,12 @@ test_that("invalid `newdata` fails", {
     "must be a data\\.frame or a matrix"
   )
   stopifnot(length(solterms_x) > 1)
+  prj_crr <- prjs[[head(grep("\\.glm\\.gauss.*\\.solterms_x", names(prjs)), 1)]]
   expect_error(
-    proj_linpred(prjs[[head(grep("\\.glm\\.gauss.*\\.solterms_x", names(prjs)),
-                            1)]],
+    proj_linpred(prj_crr,
                  newdata = dat[, head(solterms_x, -1), drop = FALSE],
+                 weightsnew = prj_crr$refmodel$wobs,
+                 offsetnew = prj_crr$refmodel$offset,
                  .seed = seed2_tst),
     "^object '.*' not found$"
   )
@@ -305,7 +307,7 @@ test_that("`newdata` and `integrated` work (even in edge cases)", {
     } else {
       wdr_crr <- NULL
     }
-    dat_crr <- get_dat(tstsetup, offs_ylat = offs_tst)
+    dat_crr <- get_dat(tstsetup)
     for (nobsv_crr in nobsv_tst) {
       if (args_prj[[tstsetup]]$mod_nm == "gamm") {
         # TODO (GAMMs): Fix this.
@@ -318,8 +320,20 @@ test_that("`newdata` and `integrated` work (even in edge cases)", {
       } else {
         ncats_nlats_expected_crr <- integer()
       }
+      if (grepl("\\.with_wobs|\\.binom", tstsetup)) {
+        wobs_crr <- head(prjs[[tstsetup]]$refmodel$wobs, nobsv_crr)
+      } else {
+        wobs_crr <- NULL
+      }
+      if (grepl("\\.with_offs", tstsetup)) {
+        offs_crr <- head(prjs[[tstsetup]]$refmodel$offset, nobsv_crr)
+      } else {
+        offs_crr <- NULL
+      }
       pl_false <- proj_linpred(prjs[[tstsetup]],
                                newdata = head(dat_crr, nobsv_crr),
+                               weightsnew = wobs_crr,
+                               offsetnew = offs_crr,
                                allow_nonconst_wdraws_prj = ndr_ncl$clust_used,
                                .seed = seed2_tst)
       pl_tester(pl_false,
@@ -330,6 +344,8 @@ test_that("`newdata` and `integrated` work (even in edge cases)", {
                 info_str = paste(tstsetup, nobsv_crr, sep = "__"))
       pl_true <- proj_linpred(prjs[[tstsetup]],
                               newdata = head(dat_crr, nobsv_crr),
+                              weightsnew = wobs_crr,
+                              offsetnew = offs_crr,
                               integrated = TRUE,
                               .seed = seed2_tst)
       pl_tester(pl_true,
@@ -356,14 +372,26 @@ test_that("`newdata` set to the original dataset doesn't change results", {
   for (tstsetup in names(prjs)) {
     ndr_ncl <- ndr_ncl_dtls(args_prj[[tstsetup]])
     dat_crr <- get_dat(tstsetup)
+    if (grepl("\\.with_wobs|\\.binom", tstsetup)) {
+      wobs_crr <- wobs_tst
+    } else {
+      wobs_crr <- NULL
+    }
+    if (grepl("\\.with_offs", tstsetup)) {
+      offs_crr <- offs_tst
+    } else {
+      offs_crr <- NULL
+    }
     # With `transform = FALSE`:
     pl_newdata <- proj_linpred(prjs[[tstsetup]], newdata = dat_crr,
+                               weightsnew = wobs_crr, offsetnew = offs_crr,
                                allow_nonconst_wdraws_prj = ndr_ncl$clust_used,
                                .seed = seed2_tst)
     pl_orig <- pls[[tstsetup]]
     expect_equal(pl_newdata, pl_orig, info = tstsetup)
     # With `transform = TRUE`:
     pl_newdata_t <- proj_linpred(prjs[[tstsetup]], newdata = dat_crr,
+                                 weightsnew = wobs_crr, offsetnew = offs_crr,
                                  allow_nonconst_wdraws_prj = ndr_ncl$clust_used,
                                  transform = TRUE, .seed = seed2_tst)
     pl_orig_t <- proj_linpred(prjs[[tstsetup]], transform = TRUE,
@@ -397,9 +425,21 @@ test_that(paste(
     }
     stopifnot(!exists(resp_nm))
     dat_crr <- get_dat(tstsetup)
+    if (grepl("\\.with_wobs|\\.binom", tstsetup)) {
+      wobs_crr <- wobs_tst
+    } else {
+      wobs_crr <- NULL
+    }
+    if (grepl("\\.with_offs", tstsetup)) {
+      offs_crr <- offs_tst
+    } else {
+      offs_crr <- NULL
+    }
     pl_noresp <- proj_linpred(
       prjs[[tstsetup]],
       newdata = dat_crr[, setdiff(names(dat_crr), resp_nm)],
+      weightsnew = wobs_crr,
+      offsetnew = offs_crr,
       allow_nonconst_wdraws_prj = ndr_ncl$clust_used,
       .seed = seed2_tst
     )
@@ -432,6 +472,11 @@ test_that("`weightsnew` works", {
     } else {
       wdr_crr <- NULL
     }
+    if (grepl("\\.with_offs", tstsetup)) {
+      offs_crr <- offs_tst
+    } else {
+      offs_crr <- NULL
+    }
     if (args_prj[[tstsetup]]$prj_nm == "augdat") {
       ncats_nlats_expected_crr <- length(
         refmods[[args_prj[[tstsetup]]$tstsetup_ref]]$family$cats
@@ -440,24 +485,24 @@ test_that("`weightsnew` works", {
       ncats_nlats_expected_crr <- integer()
     }
     pl_orig <- pls[[tstsetup]]
-    if (!(args_prj[[tstsetup]]$pkg_nm == "brms" &&
-          args_prj[[tstsetup]]$fam_nm == "binom")) {
-      # TODO (brms): Fix or document why this doesn't work for "brmsfit"s.
-      pl_ones <- proj_linpred(prjs[[tstsetup]],
-                              newdata = get_dat(tstsetup, dat_wobs_ones),
-                              weightsnew = ~ wobs_col_ones,
-                              allow_nonconst_wdraws_prj = ndr_ncl$clust_used,
-                              .seed = seed2_tst)
-      pl_tester(pl_ones,
-                nprjdraws_expected = ndr_ncl$nprjdraws,
-                wdraws_prj_expected = wdr_crr,
-                ncats_nlats_expected = list(ncats_nlats_expected_crr),
-                info_str = tstsetup)
-    }
+    pl_ones <- proj_linpred(prjs[[tstsetup]],
+                            newdata = get_dat(tstsetup, dat_wobs_ones,
+                                              wobs_brms = 1),
+                            weightsnew = ~ wobs_col_ones,
+                            offsetnew = offs_crr,
+                            allow_nonconst_wdraws_prj = ndr_ncl$clust_used,
+                            .seed = seed2_tst)
+    pl_tester(pl_ones,
+              nprjdraws_expected = ndr_ncl$nprjdraws,
+              wdraws_prj_expected = wdr_crr,
+              ncats_nlats_expected = list(ncats_nlats_expected_crr),
+              info_str = tstsetup)
     if (!args_prj[[tstsetup]]$prj_nm %in% c("latent", "augdat")) {
       pl <- proj_linpred(prjs[[tstsetup]],
-                         newdata = get_dat(tstsetup, dat),
+                         newdata = get_dat(tstsetup, dat,
+                                           wobs_brms = dat$wobs_col),
                          weightsnew = ~ wobs_col,
+                         offsetnew = offs_crr,
                          allow_nonconst_wdraws_prj = ndr_ncl$clust_used,
                          .seed = seed2_tst)
       pl_tester(pl,
@@ -465,14 +510,14 @@ test_that("`weightsnew` works", {
                 wdraws_prj_expected = wdr_crr,
                 ncats_nlats_expected = list(ncats_nlats_expected_crr),
                 info_str = tstsetup)
-    }
-    if (!(args_prj[[tstsetup]]$pkg_nm == "brms" &&
-          args_prj[[tstsetup]]$fam_nm == "binom") &&
-        !args_prj[[tstsetup]]$prj_nm %in% c("latent", "augdat")) {
-      # TODO (brms): Fix or document why this doesn't work for "brmsfit"s.
       plw <- proj_linpred(prjs[[tstsetup]],
-                          newdata = get_dat(tstsetup, dat_wobs_new),
+                          newdata = get_dat(
+                            tstsetup,
+                            dat_wobs_new,
+                            wobs_brms = dat_wobs_new$wobs_col_new
+                          ),
                           weightsnew = ~ wobs_col_new,
+                          offsetnew = offs_crr,
                           allow_nonconst_wdraws_prj = ndr_ncl$clust_used,
                           .seed = seed2_tst)
       pl_tester(plw,
@@ -481,59 +526,29 @@ test_that("`weightsnew` works", {
                 ncats_nlats_expected = list(ncats_nlats_expected_crr),
                 info_str = tstsetup)
     }
-    if (!(args_prj[[tstsetup]]$pkg_nm == "brms" &&
-          args_prj[[tstsetup]]$fam_nm == "binom")) {
-      expect_equal(pl_ones$pred, pl_orig$pred, info = tstsetup)
-    }
+    expect_equal(pl_ones$pred, pl_orig$pred, info = tstsetup)
     if (!args_prj[[tstsetup]]$prj_nm %in% c("latent", "augdat")) {
       expect_equal(pl$pred, pl_orig$pred, info = tstsetup)
-      if (!(args_prj[[tstsetup]]$pkg_nm == "brms" &&
-            args_prj[[tstsetup]]$fam_nm == "binom")) {
-        expect_equal(plw$pred, pl_orig$pred, info = tstsetup)
-      }
+      expect_equal(plw$pred, pl_orig$pred, info = tstsetup)
     }
-    if (grepl("\\.with_wobs", tstsetup)) {
-      if (args_prj[[tstsetup]]$pkg_nm == "rstanarm") {
-        ### TODO: This might in fact be undesired:
-        expect_equal(pl_ones$lpd, pl_orig$lpd, info = tstsetup)
-        expect_false(isTRUE(all.equal(pl$lpd, pl_orig$lpd)), info = tstsetup)
-        ###
-      } else if (args_prj[[tstsetup]]$pkg_nm == "brms") {
-        expect_false(isTRUE(all.equal(pl_ones$lpd, pl_orig$lpd)),
-                     info = tstsetup)
+    if (grepl("\\.with_wobs|\\.binom", tstsetup)) {
+      expect_false(isTRUE(all.equal(pl_ones$lpd, pl_orig$lpd)), info = tstsetup)
+      if (!args_prj[[tstsetup]]$prj_nm %in% c("latent", "augdat")) {
         expect_equal(pl$lpd, pl_orig$lpd, info = tstsetup)
-      }
-      expect_false(isTRUE(all.equal(plw$lpd, pl_orig$lpd)), info = tstsetup)
-      expect_false(isTRUE(all.equal(pl$lpd, pl_ones$lpd)), info = tstsetup)
-      if (args_prj[[tstsetup]]$pkg_nm == "rstanarm") {
-        expect_false(isTRUE(all.equal(plw$lpd, pl_ones$lpd)), info = tstsetup)
-      } else if (args_prj[[tstsetup]]$pkg_nm == "brms") {
-        expect_equal(plw$lpd, pl_ones$lpd, info = tstsetup)
-      }
-      expect_false(isTRUE(all.equal(plw$lpd, pl$lpd)), info = tstsetup)
-    } else {
-      if (!(args_prj[[tstsetup]]$pkg_nm == "brms" &&
-            args_prj[[tstsetup]]$fam_nm == "binom")) {
-        expect_equal(pl_ones$lpd, pl_orig$lpd, info = tstsetup)
-      }
-      if (args_prj[[tstsetup]]$pkg_nm == "rstanarm" &&
-          !args_prj[[tstsetup]]$prj_nm %in% c("latent", "augdat")) {
-        expect_false(isTRUE(all.equal(pl$lpd, pl_orig$lpd)), info = tstsetup)
-        expect_false(isTRUE(all.equal(plw$lpd, pl_orig$lpd)), info = tstsetup)
-        expect_false(isTRUE(all.equal(pl$lpd, pl_ones$lpd)), info = tstsetup)
         expect_false(isTRUE(all.equal(plw$lpd, pl_ones$lpd)), info = tstsetup)
         expect_false(isTRUE(all.equal(plw$lpd, pl$lpd)), info = tstsetup)
-      } else if (args_prj[[tstsetup]]$pkg_nm == "brms" &&
-                 !args_prj[[tstsetup]]$prj_nm %in% c("latent", "augdat")) {
-        ### TODO: This might in fact be undesired:
-        expect_equal(pl$lpd, pl_orig$lpd, info = tstsetup)
-        if (args_prj[[tstsetup]]$fam_nm != "binom") {
+      }
+    } else {
+      expect_equal(pl_ones$lpd, pl_orig$lpd, info = tstsetup)
+      if (!args_prj[[tstsetup]]$prj_nm %in% c("latent", "augdat")) {
+        if (args_prj[[tstsetup]]$pkg_nm == "rstanarm") {
+          expect_false(isTRUE(all.equal(pl$lpd, pl_orig$lpd)), info = tstsetup)
+          expect_false(isTRUE(all.equal(plw$lpd, pl_orig$lpd)), info = tstsetup)
+          expect_false(isTRUE(all.equal(plw$lpd, pl$lpd)), info = tstsetup)
+        } else if (args_prj[[tstsetup]]$pkg_nm == "brms") {
+          expect_equal(pl$lpd, pl_orig$lpd, info = tstsetup)
           expect_equal(plw$lpd, pl_orig$lpd, info = tstsetup)
-          expect_equal(pl$lpd, pl_ones$lpd, info = tstsetup)
-          expect_equal(plw$lpd, pl_ones$lpd, info = tstsetup)
-          expect_equal(plw$lpd, pl$lpd, info = tstsetup)
         }
-        ###
       }
     }
   }
@@ -550,6 +565,11 @@ test_that("`offsetnew` works", {
     } else {
       wdr_crr <- NULL
     }
+    if (grepl("\\.with_wobs|\\.binom", tstsetup)) {
+      wobs_crr <- wobs_tst
+    } else {
+      wobs_crr <- NULL
+    }
     if (args_prj[[tstsetup]]$prj_nm == "augdat") {
       ncats_nlats_expected_crr <- length(
         refmods[[args_prj[[tstsetup]]$tstsetup_ref]]$family$cats
@@ -558,24 +578,26 @@ test_that("`offsetnew` works", {
       ncats_nlats_expected_crr <- integer()
     }
     pl_orig <- pls[[tstsetup]]
-    if (args_prj[[tstsetup]]$pkg_nm != "brms") {
-      # TODO (brms): Fix or document why this doesn't work for "brmsfit"s.
-      add_offs_crr <- args_prj[[tstsetup]]$prj_nm == "latent" &&
-        grepl("\\.with_offs\\.", tstsetup)
-      pl_zeros <- proj_linpred(prjs[[tstsetup]],
-                               newdata = get_dat(tstsetup, dat_offs_zeros,
-                                                 add_offs_dummy = add_offs_crr),
-                               offsetnew = ~ offs_col_zeros,
-                               allow_nonconst_wdraws_prj = ndr_ncl$clust_used,
-                               .seed = seed2_tst)
-      pl_tester(pl_zeros,
-                nprjdraws_expected = ndr_ncl$nprjdraws,
-                wdraws_prj_expected = wdr_crr,
-                ncats_nlats_expected = list(ncats_nlats_expected_crr),
-                info_str = tstsetup)
-    }
+    add_offs_crr <- args_prj[[tstsetup]]$prj_nm == "latent" &&
+      args_prj[[tstsetup]]$pkg_nm == "rstanarm" &&
+      grepl("\\.with_offs\\.", tstsetup)
+    pl_zeros <- proj_linpred(prjs[[tstsetup]],
+                             newdata = get_dat(tstsetup, dat_offs_zeros,
+                                               offs_ylat = 0,
+                                               add_offs_dummy = add_offs_crr,
+                                               offs_brms = 0),
+                             weightsnew = wobs_crr,
+                             offsetnew = ~ offs_col_zeros,
+                             allow_nonconst_wdraws_prj = ndr_ncl$clust_used,
+                             .seed = seed2_tst)
+    pl_tester(pl_zeros,
+              nprjdraws_expected = ndr_ncl$nprjdraws,
+              wdraws_prj_expected = wdr_crr,
+              ncats_nlats_expected = list(ncats_nlats_expected_crr),
+              info_str = tstsetup)
     pl <- proj_linpred(prjs[[tstsetup]],
-                       newdata = get_dat(tstsetup, dat, offs_ylat = offs_tst),
+                       newdata = get_dat(tstsetup, dat),
+                       weightsnew = wobs_crr,
                        offsetnew = ~ offs_col,
                        allow_nonconst_wdraws_prj = ndr_ncl$clust_used,
                        .seed = seed2_tst)
@@ -584,80 +606,55 @@ test_that("`offsetnew` works", {
               wdraws_prj_expected = wdr_crr,
               ncats_nlats_expected = list(ncats_nlats_expected_crr),
               info_str = tstsetup)
-    if (args_prj[[tstsetup]]$pkg_nm != "brms") {
-      # TODO (brms): Fix or document why this doesn't work for "brmsfit"s.
-      plo <- proj_linpred(prjs[[tstsetup]],
-                          newdata = get_dat(
-                            tstsetup, dat_offs_new,
-                            offs_ylat = dat_offs_new$offs_col_new,
-                            add_offs_dummy = add_offs_crr
-                          ),
-                          offsetnew = ~ offs_col_new,
-                          allow_nonconst_wdraws_prj = ndr_ncl$clust_used,
-                          .seed = seed2_tst)
-      pl_tester(plo,
-                nprjdraws_expected = ndr_ncl$nprjdraws,
-                wdraws_prj_expected = wdr_crr,
-                ncats_nlats_expected = list(ncats_nlats_expected_crr),
-                info_str = tstsetup)
-    }
+    plo <- proj_linpred(prjs[[tstsetup]],
+                        newdata = get_dat(
+                          tstsetup, dat_offs_new,
+                          offs_ylat = dat_offs_new$offs_col_new,
+                          add_offs_dummy = add_offs_crr,
+                          offs_brms = dat_offs_new$offs_col_new
+                        ),
+                        weightsnew = wobs_crr,
+                        offsetnew = ~ offs_col_new,
+                        allow_nonconst_wdraws_prj = ndr_ncl$clust_used,
+                        .seed = seed2_tst)
+    pl_tester(plo,
+              nprjdraws_expected = ndr_ncl$nprjdraws,
+              wdraws_prj_expected = wdr_crr,
+              ncats_nlats_expected = list(ncats_nlats_expected_crr),
+              info_str = tstsetup)
     pred_pl <- pl$pred
     pred_pl_orig <- pl_orig$pred
-    if (args_prj[[tstsetup]]$pkg_nm != "brms") {
-      # TODO (brms): Fix or document why this doesn't work for "brmsfit"s.
-      pred_plo <- plo$pred
-    }
+    pred_plo <- plo$pred
     if (args_prj[[tstsetup]]$prj_nm == "augdat") {
       pred_pl <- t(arr2augmat(pred_pl, margin_draws = 1))
       pred_pl_orig <- t(arr2augmat(pred_pl_orig, margin_draws = 1))
-      if (args_prj[[tstsetup]]$pkg_nm != "brms") {
-        # TODO (brms): Fix or document why this doesn't work for "brmsfit"s.
-        pred_plo <- t(arr2augmat(pred_plo, margin_draws = 1))
-      }
+      pred_plo <- t(arr2augmat(pred_plo, margin_draws = 1))
     }
     if (grepl("\\.with_offs", tstsetup)) {
-      if (args_prj[[tstsetup]]$pkg_nm == "rstanarm") {
-        ### TODO: This might in fact be undesired:
-        expect_equal(pl_zeros, pl_orig, info = tstsetup)
-        expect_false(isTRUE(all.equal(pl, pl_orig)), info = tstsetup)
-        pred_pl_no_offs <- t(pred_pl)
-        if (args_prj[[tstsetup]]$prj_nm == "augdat" &&
-            get_fam_long(args_prj[[tstsetup]]$fam_nm) %in% fams_neg_linpred()) {
-          pred_pl_no_offs <- pred_pl_no_offs + dat$offs_col
-        } else {
-          pred_pl_no_offs <- pred_pl_no_offs - dat$offs_col
-        }
-        expect_equal(pred_pl_no_offs, t(pred_pl_orig), info = tstsetup)
-        pred_plo_no_offs <- t(pred_plo)
-        if (args_prj[[tstsetup]]$prj_nm == "augdat" &&
-            get_fam_long(args_prj[[tstsetup]]$fam_nm) %in% fams_neg_linpred()) {
-          pred_plo_no_offs <- pred_plo_no_offs + dat_offs_new$offs_col_new
-        } else {
-          pred_plo_no_offs <- pred_plo_no_offs - dat_offs_new$offs_col_new
-        }
-        expect_equal(pred_plo_no_offs, t(pred_pl_orig), info = tstsetup)
-        if (args_prj[[tstsetup]]$prj_nm != "latent") {
-          expect_false(isTRUE(all.equal(pl$lpd, pl_orig$lpd)), info = tstsetup)
-          expect_false(isTRUE(all.equal(plo$lpd, pl_orig$lpd)), info = tstsetup)
-          expect_false(isTRUE(all.equal(plo$lpd, pl$lpd)), info = tstsetup)
-        } else {
-          # Latent projection is an exception because the reference model's
-          # latent predictions (i.e., the artificial latent response `ynew`
-          # recomputed inside of proj_linpred_aux()) are shifted by the same
-          # offsets as the submodel's predictions (i.e., the mean values for the
-          # latent Gaussian distributions), so the log predictive values are
-          # unchanged:
-          expect_equal(pl$lpd, pl_orig$lpd, info = tstsetup)
-          expect_equal(plo$lpd, pl_orig$lpd, info = tstsetup)
-          expect_equal(plo$lpd, pl$lpd, info = tstsetup)
-        }
-        ###
-      } else if (args_prj[[tstsetup]]$pkg_nm == "brms") {
-        expect_equal(pl, pl_orig, info = tstsetup)
+      expect_equal(pl, pl_orig, info = tstsetup)
+      expect_false(isTRUE(all.equal(pl_zeros, pl)), info = tstsetup)
+      expect_false(isTRUE(all.equal(plo, pl)), info = tstsetup)
+      if (args_prj[[tstsetup]]$prj_nm != "latent") {
+        expect_false(isTRUE(all.equal(pl_zeros$pred, pl$pred)), info = tstsetup)
+        expect_false(isTRUE(all.equal(plo$pred, pl$pred)), info = tstsetup)
+        expect_false(isTRUE(all.equal(pl_zeros$lpd, pl$lpd)), info = tstsetup)
+        expect_false(isTRUE(all.equal(plo$lpd, pl$lpd)), info = tstsetup)
+      } else {
+        # Latent projection is an exception because the reference model's
+        # latent predictions (i.e., the artificial latent response `ynew`
+        # recomputed inside of proj_linpred_aux()) are shifted by the same
+        # offsets as the submodel's predictions (i.e., the mean values for the
+        # latent Gaussian distributions), so the log predictive values are
+        # unchanged:
+        expect_false(isTRUE(all.equal(pl_zeros$pred, pl$pred)), info = tstsetup)
+        expect_false(isTRUE(all.equal(plo$pred, pl$pred)), info = tstsetup)
+        expect_equal(pl_zeros$lpd, pl$lpd, info = tstsetup)
+        expect_equal(plo$lpd, pl$lpd, info = tstsetup)
       }
     } else {
+      expect_equal(pl_zeros, pl_orig, info = tstsetup)
       if (args_prj[[tstsetup]]$pkg_nm == "rstanarm") {
-        expect_equal(pl_zeros, pl_orig, info = tstsetup)
+        expect_false(isTRUE(all.equal(plo, pl)), info = tstsetup)
         if (args_prj[[tstsetup]]$fam_nm %in% c("brnll", "binom")) {
           # To avoid failing tests due to numerical inaccuracies for extreme
           # values:
@@ -687,9 +684,8 @@ test_that("`offsetnew` works", {
         expect_false(isTRUE(all.equal(plo$lpd, pl_orig$lpd)), info = tstsetup)
         expect_false(isTRUE(all.equal(plo$lpd, pl$lpd)), info = tstsetup)
       } else if (args_prj[[tstsetup]]$pkg_nm == "brms") {
-        ### TODO: This might in fact be undesired:
         expect_equal(pl, pl_orig, info = tstsetup)
-        ###
+        expect_equal(plo, pl_orig, info = tstsetup)
       }
     }
   }
@@ -894,6 +890,16 @@ test_that(paste(
       # TODO (GAMMs): Fix this.
       next
     }
+    if (grepl("\\.with_wobs|\\.binom", tstsetup)) {
+      wobs_crr <- head(wobs_tst, 1)
+    } else {
+      wobs_crr <- NULL
+    }
+    if (grepl("\\.with_offs", tstsetup)) {
+      offs_crr <- head(offs_tst, 1)
+    } else {
+      offs_crr <- NULL
+    }
     if (args_prj[[tstsetup]]$prj_nm == "augdat") {
       ncats_nlats_expected_crr <- length(
         refmods[[args_prj[[tstsetup]]$tstsetup_ref]]$family$cats
@@ -910,6 +916,8 @@ test_that(paste(
     }
     pl_args <- list(refmods[[args_prj[[tstsetup]]$tstsetup_ref]],
                     newdata = head(get_dat(tstsetup), 1),
+                    weightsnew = wobs_crr,
+                    offsetnew = offs_crr,
                     .seed = seed2_tst,
                     solution_terms = args_prj[[tstsetup]]$solution_terms,
                     nclusters = 1L,
@@ -1265,10 +1273,13 @@ test_that("invalid `newdata` fails", {
     "must be a data\\.frame or a matrix"
   )
   stopifnot(length(solterms_x) > 1)
+  prj_crr <- prjs[[head(grep("\\.glm\\.gauss.*\\.solterms_x", names(prjs)), 1)]]
   expect_error(
     proj_predict(prjs[[head(grep("\\.glm\\.gauss.*\\.solterms_x", names(prjs)),
                             1)]],
                  newdata = dat[, head(solterms_x, -1), drop = FALSE],
+                 weightsnew = prj_crr$refmodel$wobs,
+                 offsetnew = prj_crr$refmodel$offset,
                  .seed = seed2_tst,
                  solution_terms = solterms_x),
     "^object '.*' not found$"
@@ -1283,9 +1294,21 @@ test_that("`newdata` and `nresample_clusters` work (even in edge cases)", {
         # TODO (GAMMs): Fix this.
         next
       }
+      if (grepl("\\.with_wobs|\\.binom", tstsetup)) {
+        wobs_crr <- head(prjs[[tstsetup]]$refmodel$wobs, nobsv_crr)
+      } else {
+        wobs_crr <- NULL
+      }
+      if (grepl("\\.with_offs", tstsetup)) {
+        offs_crr <- head(prjs[[tstsetup]]$refmodel$offset, nobsv_crr)
+      } else {
+        offs_crr <- NULL
+      }
       for (nresample_clusters_crr in nresample_clusters_tst) {
         pp <- proj_predict(prjs[[tstsetup]],
                            newdata = head(dat, nobsv_crr),
+                           weightsnew = wobs_crr,
+                           offsetnew = offs_crr,
                            nresample_clusters = nresample_clusters_crr,
                            .seed = seed2_tst)
         ndr_ncl <- ndr_ncl_dtls(args_prj[[tstsetup]],
@@ -1306,8 +1329,20 @@ test_that("`newdata` and `nresample_clusters` work (even in edge cases)", {
 test_that("`newdata` set to the original dataset doesn't change results", {
   skip_if_not(run_prj)
   for (tstsetup in names(prjs)) {
+    if (grepl("\\.with_wobs|\\.binom", tstsetup)) {
+      wobs_crr <- wobs_tst
+    } else {
+      wobs_crr <- NULL
+    }
+    if (grepl("\\.with_offs", tstsetup)) {
+      offs_crr <- offs_tst
+    } else {
+      offs_crr <- NULL
+    }
     pp_newdata <- proj_predict(prjs[[tstsetup]],
                                newdata = dat,
+                               weightsnew = wobs_crr,
+                               offsetnew = offs_crr,
                                .seed = seed2_tst)
     pp_orig <- pps[[tstsetup]]
     expect_equal(pp_newdata, pp_orig, info = tstsetup)
@@ -1323,12 +1358,24 @@ test_that(paste(
     if (args_prj[[tstsetup]]$pkg_nm == "brms") {
       next
     }
+    if (grepl("\\.with_wobs|\\.binom", tstsetup)) {
+      wobs_crr <- wobs_tst
+    } else {
+      wobs_crr <- NULL
+    }
+    if (grepl("\\.with_offs", tstsetup)) {
+      offs_crr <- offs_tst
+    } else {
+      offs_crr <- NULL
+    }
     resp_nm <- extract_terms_response(
       prjs[[tstsetup]]$refmodel$formula
     )$response
     stopifnot(!exists(resp_nm))
     pp_noresp <- proj_predict(prjs[[tstsetup]],
                               newdata = dat[, setdiff(names(dat), resp_nm)],
+                              weightsnew = wobs_crr,
+                              offsetnew = offs_crr,
                               .seed = seed2_tst)
     pp_orig <- pps[[tstsetup]]
     expect_equal(pp_noresp, pp_orig, info = tstsetup)
@@ -1341,25 +1388,30 @@ test_that("`weightsnew` works", {
   skip_if_not(run_prj)
   for (tstsetup in names(prjs)) {
     ndr_ncl <- ndr_ncl_dtls(args_prj[[tstsetup]])
-    pp_orig <- pps[[tstsetup]]
-    if (!(args_prj[[tstsetup]]$pkg_nm == "brms" &&
-          args_prj[[tstsetup]]$fam_nm == "binom")) {
-      # TODO (brms): Fix or document why this doesn't work for "brmsfit"s.
-      pp_ones <- proj_predict(prjs[[tstsetup]],
-                              newdata = dat_wobs_ones,
-                              weightsnew = ~ wobs_col_ones,
-                              .seed = seed2_tst)
-      pp_tester(pp_ones,
-                nprjdraws_out_expected = ndr_ncl$nprjdraws_out,
-                cats_expected = list(
-                  refmods[[args_prj[[tstsetup]]$tstsetup_ref]]$family$cats
-                ),
-                info_str = tstsetup)
+    if (grepl("\\.with_offs", tstsetup)) {
+      offs_crr <- offs_tst
+    } else {
+      offs_crr <- NULL
     }
+    pp_orig <- pps[[tstsetup]]
+    pp_ones <- proj_predict(prjs[[tstsetup]],
+                            newdata = get_dat(tstsetup, dat_wobs_ones,
+                                              wobs_brms = 1),
+                            weightsnew = ~ wobs_col_ones,
+                            offsetnew = offs_crr,
+                            .seed = seed2_tst)
+    pp_tester(pp_ones,
+              nprjdraws_out_expected = ndr_ncl$nprjdraws_out,
+              cats_expected = list(
+                refmods[[args_prj[[tstsetup]]$tstsetup_ref]]$family$cats
+              ),
+              info_str = tstsetup)
     if (!args_prj[[tstsetup]]$prj_nm %in% c("latent", "augdat")) {
       pp <- proj_predict(prjs[[tstsetup]],
-                         newdata = dat,
+                         newdata = get_dat(tstsetup, dat,
+                                           wobs_brms = dat$wobs_col),
                          weightsnew = ~ wobs_col,
+                         offsetnew = offs_crr,
                          .seed = seed2_tst)
       pp_tester(pp,
                 nprjdraws_out_expected = ndr_ncl$nprjdraws_out,
@@ -1367,14 +1419,14 @@ test_that("`weightsnew` works", {
                   refmods[[args_prj[[tstsetup]]$tstsetup_ref]]$family$cats
                 ),
                 info_str = tstsetup)
-    }
-    if (!(args_prj[[tstsetup]]$pkg_nm == "brms" &&
-          args_prj[[tstsetup]]$fam_nm == "binom") &&
-        !args_prj[[tstsetup]]$prj_nm %in% c("latent", "augdat")) {
-      # TODO (brms): Fix or document why this doesn't work for "brmsfit"s.
       ppw <- proj_predict(prjs[[tstsetup]],
-                          newdata = dat_wobs_new,
+                          newdata = get_dat(
+                            tstsetup,
+                            dat_wobs_new,
+                            wobs_brms = dat_wobs_new$wobs_col_new
+                          ),
                           weightsnew = ~ wobs_col_new,
+                          offsetnew = offs_crr,
                           .seed = seed2_tst)
       pp_tester(ppw,
                 nprjdraws_out_expected = ndr_ncl$nprjdraws_out,
@@ -1392,34 +1444,22 @@ test_that("`weightsnew` works", {
       }
     } else if (args_prj[[tstsetup]]$fam_nm == "brnll") {
       expect_equal(pp_ones, pp_orig, info = tstsetup)
-      if (args_prj[[tstsetup]]$pkg_nm == "rstanarm" &&
-          !args_prj[[tstsetup]]$prj_nm %in% c("latent", "augdat")) {
-        expect_false(isTRUE(all.equal(pp, pp_orig)), info = tstsetup)
-        expect_false(isTRUE(all.equal(ppw, pp_orig)), info = tstsetup)
-        expect_false(isTRUE(all.equal(ppw, pp)), info = tstsetup)
-      } else if (args_prj[[tstsetup]]$pkg_nm == "brms" &&
-                 !args_prj[[tstsetup]]$prj_nm %in% c("latent", "augdat")) {
-        ### TODO: This might in fact be undesired:
-        expect_equal(pp, pp_orig, info = tstsetup)
-        expect_equal(ppw, pp_orig, info = tstsetup)
-        expect_equal(ppw, pp, info = tstsetup)
-        ###
-      }
-    } else if (args_prj[[tstsetup]]$fam_nm == "binom") {
-      if (args_prj[[tstsetup]]$pkg_nm == "rstanarm") {
-        ### TODO: This might in fact be undesired:
-        expect_equal(pp_ones, pp_orig, info = tstsetup)
-        ###
-        if (!args_prj[[tstsetup]]$prj_nm %in% c("latent", "augdat")) {
-          ### TODO: This might in fact be undesired:
+      if (!args_prj[[tstsetup]]$prj_nm %in% c("latent", "augdat")) {
+        if (args_prj[[tstsetup]]$pkg_nm == "rstanarm") {
           expect_false(isTRUE(all.equal(pp, pp_orig)), info = tstsetup)
-          ###
           expect_false(isTRUE(all.equal(ppw, pp_orig)), info = tstsetup)
           expect_false(isTRUE(all.equal(ppw, pp)), info = tstsetup)
+        } else if (args_prj[[tstsetup]]$pkg_nm == "brms") {
+          expect_equal(pp, pp_orig, info = tstsetup)
+          expect_equal(ppw, pp_orig, info = tstsetup)
         }
-      } else if (args_prj[[tstsetup]]$pkg_nm == "brms" &&
-                 !args_prj[[tstsetup]]$prj_nm %in% c("latent", "augdat")) {
+      }
+    } else if (args_prj[[tstsetup]]$fam_nm == "binom") {
+      expect_false(isTRUE(all.equal(pp_ones, pp_orig)), info = tstsetup)
+      if (!args_prj[[tstsetup]]$prj_nm %in% c("latent", "augdat")) {
         expect_equal(pp, pp_orig, info = tstsetup)
+        expect_false(isTRUE(all.equal(ppw, pp_orig)), info = tstsetup)
+        expect_false(isTRUE(all.equal(ppw, pp_ones)), info = tstsetup)
       }
     }
   }
@@ -1431,25 +1471,31 @@ test_that("`offsetnew` works", {
   skip_if_not(run_prj)
   for (tstsetup in names(prjs)) {
     ndr_ncl <- ndr_ncl_dtls(args_prj[[tstsetup]])
-    pp_orig <- pps[[tstsetup]]
-    if (args_prj[[tstsetup]]$pkg_nm != "brms") {
-      # TODO (brms): Fix or document why this doesn't work for "brmsfit"s.
-      add_offs_crr <- args_prj[[tstsetup]]$prj_nm == "latent" &&
-        grepl("\\.with_offs\\.", tstsetup)
-      pp_zeros <- proj_predict(prjs[[tstsetup]],
-                               newdata = get_dat(tstsetup, dat_offs_zeros,
-                                                 add_offs_dummy = add_offs_crr),
-                               offsetnew = ~ offs_col_zeros,
-                               .seed = seed2_tst)
-      pp_tester(pp_zeros,
-                nprjdraws_out_expected = ndr_ncl$nprjdraws_out,
-                cats_expected = list(
-                  refmods[[args_prj[[tstsetup]]$tstsetup_ref]]$family$cats
-                ),
-                info_str = tstsetup)
+    if (grepl("\\.with_wobs|\\.binom", tstsetup)) {
+      wobs_crr <- wobs_tst
+    } else {
+      wobs_crr <- NULL
     }
+    pp_orig <- pps[[tstsetup]]
+    add_offs_crr <- args_prj[[tstsetup]]$prj_nm == "latent" &&
+      args_prj[[tstsetup]]$pkg_nm == "rstanarm" &&
+      grepl("\\.with_offs\\.", tstsetup)
+    pp_zeros <- proj_predict(prjs[[tstsetup]],
+                             newdata = get_dat(tstsetup, dat_offs_zeros,
+                                               add_offs_dummy = add_offs_crr,
+                                               offs_brms = 0),
+                             weightsnew = wobs_crr,
+                             offsetnew = ~ offs_col_zeros,
+                             .seed = seed2_tst)
+    pp_tester(pp_zeros,
+              nprjdraws_out_expected = ndr_ncl$nprjdraws_out,
+              cats_expected = list(
+                refmods[[args_prj[[tstsetup]]$tstsetup_ref]]$family$cats
+              ),
+              info_str = tstsetup)
     pp <- proj_predict(prjs[[tstsetup]],
                        newdata = dat,
+                       weightsnew = wobs_crr,
                        offsetnew = ~ offs_col,
                        .seed = seed2_tst)
     pp_tester(pp,
@@ -1458,43 +1504,32 @@ test_that("`offsetnew` works", {
                 refmods[[args_prj[[tstsetup]]$tstsetup_ref]]$family$cats
               ),
               info_str = tstsetup)
-    if (args_prj[[tstsetup]]$pkg_nm != "brms") {
-      # TODO (brms): Fix or document why this doesn't work for "brmsfit"s.
-      ppo <- proj_predict(prjs[[tstsetup]],
-                          newdata = get_dat(
-                            tstsetup, dat_offs_new,
-                            offs_ylat = dat_offs_new$offs_col_new,
-                            add_offs_dummy = add_offs_crr
-                          ),
-                          offsetnew = ~ offs_col_new,
-                          .seed = seed2_tst)
-      pp_tester(ppo,
-                nprjdraws_out_expected = ndr_ncl$nprjdraws_out,
-                cats_expected = list(
-                  refmods[[args_prj[[tstsetup]]$tstsetup_ref]]$family$cats
-                ),
-                info_str = tstsetup)
-    }
+    ppo <- proj_predict(prjs[[tstsetup]],
+                        newdata = get_dat(
+                          tstsetup, dat_offs_new,
+                          offs_ylat = dat_offs_new$offs_col_new,
+                          add_offs_dummy = add_offs_crr,
+                          offs_brms = dat_offs_new$offs_col_new
+                        ),
+                        weightsnew = wobs_crr,
+                        offsetnew = ~ offs_col_new,
+                        .seed = seed2_tst)
+    pp_tester(ppo,
+              nprjdraws_out_expected = ndr_ncl$nprjdraws_out,
+              cats_expected = list(
+                refmods[[args_prj[[tstsetup]]$tstsetup_ref]]$family$cats
+              ),
+              info_str = tstsetup)
     if (grepl("\\.with_offs", tstsetup)) {
-      if (args_prj[[tstsetup]]$pkg_nm == "rstanarm") {
-        ### TODO: This might in fact be undesired:
-        expect_equal(pp_zeros, pp_orig, info = tstsetup)
-        expect_false(isTRUE(all.equal(pp, pp_orig)), info = tstsetup)
-        ###
-        # For the gaussian() family, we can perform an easy check (because of
-        # the identity link):
-        if (args_prj[[tstsetup]]$fam_nm == "gauss") {
-          ### TODO: This might in fact be undesired (see above):
-          expect_equal(t(pp) - dat$offs_col, t(pp_orig), info = tstsetup)
-          expect_equal(t(ppo) - dat_offs_new$offs_col_new, t(pp_orig),
-                       info = tstsetup)
-          ###
-        } else {
-          expect_false(isTRUE(all.equal(ppo, pp_orig)), info = tstsetup)
-          expect_false(isTRUE(all.equal(ppo, pp)), info = tstsetup)
-        }
-      } else if (args_prj[[tstsetup]]$pkg_nm == "brms") {
-        expect_equal(pp, pp_orig, info = tstsetup)
+      expect_equal(pp, pp_orig, info = tstsetup)
+      expect_false(isTRUE(all.equal(pp_zeros, pp_orig)), info = tstsetup)
+      expect_false(isTRUE(all.equal(ppo, pp_orig)), info = tstsetup)
+      # For the gaussian() family, we can perform an easy check (because of
+      # the identity link):
+      if (args_prj[[tstsetup]]$fam_nm == "gauss") {
+        expect_equal(t(pp) - dat$offs_col, t(pp_zeros), info = tstsetup)
+        expect_equal(t(ppo) - dat_offs_new$offs_col_new, t(pp_zeros),
+                     info = tstsetup)
       }
     } else {
       if (args_prj[[tstsetup]]$pkg_nm == "rstanarm") {
@@ -1511,9 +1546,7 @@ test_that("`offsetnew` works", {
           expect_false(isTRUE(all.equal(ppo, pp)), info = tstsetup)
         }
       } else if (args_prj[[tstsetup]]$pkg_nm == "brms") {
-        ### TODO: This might in fact be undesired:
         expect_equal(pp, pp_orig, info = tstsetup)
-        ###
       }
     }
   }
@@ -1603,6 +1636,16 @@ test_that(paste(
       # TODO (GAMMs): Fix this.
       next
     }
+    if (grepl("\\.with_wobs|\\.binom", tstsetup)) {
+      wobs_crr <- head(wobs_tst, 1)
+    } else {
+      wobs_crr <- NULL
+    }
+    if (grepl("\\.with_offs", tstsetup)) {
+      offs_crr <- head(offs_tst, 1)
+    } else {
+      offs_crr <- NULL
+    }
     if (args_prj[[tstsetup]]$prj_nm == "augdat" &&
         args_prj[[tstsetup]]$fam_nm == "cumul" &&
         !any(grepl("\\|", args_prj[[tstsetup]]$solution_terms))) {
@@ -1612,6 +1655,8 @@ test_that(paste(
     }
     pp_args <- list(refmods[[args_prj[[tstsetup]]$tstsetup_ref]],
                     newdata = head(get_dat(tstsetup), 1),
+                    weightsnew = wobs_crr,
+                    offsetnew = offs_crr,
                     nresample_clusters = 1L,
                     .seed = seed2_tst,
                     solution_terms = args_prj[[tstsetup]]$solution_terms,

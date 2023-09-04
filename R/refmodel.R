@@ -240,15 +240,18 @@
 #' * `object` accepts the reference model fit as given in argument `object` (but
 #' possibly re-fitted to a subset of the observations, as done in \eqn{K}-fold
 #' CV).
-#' * `newdata` accepts either `NULL` (for using the original dataset, typically
-#' stored in `object`) or data for new observations (at least in the form of a
+#' * `newdata` accepts data for new observations (at least in the form of a
 #' `data.frame`).
-#' * `wrhs` accepts at least either `NULL` (for using a vector of ones) or a
-#' right-hand side formula consisting only of the variable in `newdata`
-#' containing the weights.
-#' * `orhs` accepts at least either `NULL` (for using a vector of zeros) or a
-#' right-hand side formula consisting only of the variable in `newdata`
-#' containing the offsets.
+#' * `wrhs` accepts at least (i) a right-hand side formula consisting only of
+#' the variable in `newdata` containing the observation weights or (ii) `NULL`
+#' (for typical \pkg{rstanarm} and \pkg{brms} reference models, `NULL` causes
+#' the original observation weights to be used if the model was fitted with
+#' weights, otherwise a vector of ones is used).
+#' * `orhs` accepts at least (i) a right-hand side formula consisting only of
+#' the variable in `newdata` containing the offsets or (ii) `NULL` (for typical
+#' \pkg{rstanarm} and \pkg{brms} reference models, `NULL` causes the original
+#' offsets to be used if the model was fitted with offsets, otherwise a vector
+#' of zeros is used).
 #' * `extract_y` accepts a single logical value indicating whether output
 #' element `y` (see below) shall be `NULL` (`TRUE`) or not (`FALSE`).
 #'
@@ -337,18 +340,10 @@
 #'   data = dat_gauss,
 #'   formula = y ~ X6 + X7,
 #'   family = gaussian(),
-#'   extract_model_data = function(object, newdata = NULL, wrhs = NULL,
-#'                                 orhs = NULL, extract_y = TRUE) {
-#'     if (!extract_y) {
-#'       resp_form <- NULL
-#'     } else {
-#'       resp_form <- ~ y
-#'     }
-#'     if (is.null(newdata)) {
-#'       newdata <- dat_gauss
-#'     }
+#'   extract_model_data = function(object, newdata, wrhs = NULL, orhs = NULL,
+#'                                 extract_y = TRUE) {
 #'     return(y_wobs_offs(newdata = newdata, wrhs = wrhs, orhs = orhs,
-#'                        resp_form = resp_form))
+#'                        resp_form = if (extract_y) ~ y else NULL))
 #'   },
 #'   cvfun = function(folds) {
 #'     kfold(
@@ -475,10 +470,12 @@ predict.refmodel <- function(object, newdata = NULL, ynew = NULL,
   weightsnew <- w_o$weights
   offsetnew <- w_o$offset
   if (length(weightsnew) == 0) {
-    weightsnew <- rep(1, nobs_new)
+    stop("The function supplied to argument `extract_model_data` of ",
+         "init_refmodel() must not return a length-zero element `weights`.")
   }
   if (length(offsetnew) == 0) {
-    offsetnew <- rep(0, nobs_new)
+    stop("The function supplied to argument `extract_model_data` of ",
+         "init_refmodel() must not return a length-zero element `offset`.")
   }
   if (refmodel$family$for_augdat && !all(weightsnew == 1)) {
     stop("Currently, the augmented-data projection may not be combined with ",
@@ -746,23 +743,18 @@ get_refmodel.vsel <- function(object, ...) {
 #' @rdname refmodel-init-get
 #' @export
 get_refmodel.default <- function(object, data, formula, family = NULL, ...) {
-  if (is.null(family)) {
-    family <- family(object)
-  }
-  extract_model_data <- function(object, newdata = NULL, wrhs = NULL,
-                                 orhs = NULL, extract_y = TRUE) {
-    resp_form <- if (!extract_y) NULL else lhs(formula)
-    if (is.null(newdata)) {
-      newdata <- data
-    }
-    return(y_wobs_offs(newdata = newdata, wrhs = wrhs, orhs = orhs,
-                       resp_form = resp_form))
-  }
-  refmodel <- init_refmodel(
-    object = object, data = data, formula = formula, family = family,
-    extract_model_data = extract_model_data, ...
-  )
-  return(refmodel)
+  return(init_refmodel(
+    object = object,
+    data = data,
+    formula = formula,
+    family = family %||% family(object),
+    extract_model_data = function(object, newdata, wrhs = NULL, orhs = NULL,
+                                  extract_y = TRUE) {
+      return(y_wobs_offs(newdata = newdata, wrhs = wrhs, orhs = orhs,
+                         resp_form = if (extract_y) lhs(formula) else NULL))
+    },
+    ...
+  ))
 }
 
 #' @rdname refmodel-init-get
@@ -799,7 +791,15 @@ get_refmodel.stanreg <- function(object, latent = FALSE, dis = NULL, ...) {
     stop("In case of the binomial family, projpred cannot handle observation ",
          "weights (apart from the numbers of trials).")
   }
-  if (length(object$weights) > 0) {
+  # rstanarm::stan_gamm4() doesn't store obs. weights in `object$weights`:
+  if (object$stan_function == "stan_gamm4" &&
+      "weights" %in% names(as.list(object$call)) &&
+      "(weights)" %in% names(data) &&
+      length(object$weights) == 0) {
+    object$weights <- data[["(weights)"]]
+  }
+  # The `!all(object$weights == 1)` check is needed for stan_polr() fits:
+  if (length(object$weights) > 0 && !all(object$weights == 1)) {
     if ("projpred_internal_wobs_stanreg" %in% names(data)) {
       stop("Need to write to column `projpred_internal_wobs_stanreg` of ",
            "`data`, but that column already exists. Please rename this ",
@@ -812,7 +812,8 @@ get_refmodel.stanreg <- function(object, latent = FALSE, dis = NULL, ...) {
   }
 
   # Offsets:
-  if (length(object$offset) > 0) {
+  # The `!all(object$offset == 0)` check is needed for stan_polr() fits:
+  if (length(object$offset) > 0 && !all(object$offset == 0)) {
     # Element `stan_function` (needed here for handling rstanarm issue #546) is
     # not documented in `?rstanarm::`stanreg-objects``, so check at least its
     # length and type:
@@ -852,9 +853,22 @@ get_refmodel.stanreg <- function(object, latent = FALSE, dis = NULL, ...) {
     if (family$family != "binomial") {
       stop("For non-binomial families, a two-column response is not allowed.")
     }
-    default_wrhs <- as.formula(paste(
-      "~", response_name[2], "+", response_name[1]
-    ))
+    if (!is.null(default_wrhs)) {
+      stop("Observation weights other than the numbers of trials are not ",
+           "allowed for the binomial family.")
+    }
+    if ("projpred_internal_wobs_stanreg" %in% names(data)) {
+      stop("Need to write to column `projpred_internal_wobs_stanreg` of ",
+           "`data`, but that column already exists. Please rename this ",
+           "column in `data` and try again.")
+    }
+    data$projpred_internal_wobs_stanreg <- eval_rhs(
+      as.formula(paste(
+        "~", response_name[2], "+", response_name[1]
+      )),
+      data = data
+    )
+    default_wrhs <- ~ projpred_internal_wobs_stanreg
     response_name <- response_name[1]
   } else if (length(response_name) > 2) {
     stop("The response is not allowed to have more than two columns.")
@@ -864,13 +878,36 @@ get_refmodel.stanreg <- function(object, latent = FALSE, dis = NULL, ...) {
 
   # Functions ---------------------------------------------------------------
 
-  extract_model_data <- function(object, newdata = NULL, wrhs = default_wrhs,
-                                 orhs = default_orhs, extract_y = TRUE) {
+  extract_model_data <- function(object, newdata, wrhs = NULL, orhs = NULL,
+                                 extract_y = TRUE) {
     if (!extract_y) {
       resp_form <- NULL
     }
     if (is.null(newdata)) {
       newdata <- data
+      if (is.null(wrhs)) {
+        wrhs <- default_wrhs
+      }
+      if (is.null(orhs)) {
+        orhs <- default_orhs
+      }
+    } else {
+      if (!is.null(default_wrhs) && is.null(wrhs)) {
+        if ("projpred_internal_wobs_stanreg" %in% names(newdata)) {
+          wrhs <- default_wrhs
+        } else {
+          stop("Observation weights for `newdata` must not be `NULL` if the ",
+               "original model was fitted with observation weights.")
+        }
+      }
+      if (!is.null(default_orhs) && is.null(orhs)) {
+        if ("projpred_internal_offs_stanreg" %in% names(newdata)) {
+          orhs <- default_orhs
+        } else {
+          stop("Offsets for `newdata` must not be `NULL` if the original ",
+               "model was fitted with offsets.")
+        }
+      }
     }
     return(y_wobs_offs(newdata = newdata, wrhs = wrhs, orhs = orhs,
                        resp_form = resp_form))
@@ -884,14 +921,13 @@ get_refmodel.stanreg <- function(object, latent = FALSE, dis = NULL, ...) {
     # to include offsets explicitly in the call to
     # rstanarm:::posterior_linpred.stanreg().
 
-    # Observation weights are not needed here, so use `wrhs = NULL` to avoid
-    # potential conflicts for a non-`NULL` default `wrhs`:
-    offs <- extract_model_data(fit, newdata = newdata, wrhs = NULL,
+    # Observation weights are not needed here, so use a vector of ones for
+    # `wrhs` to avoid potential conflicts for a non-`NULL` default `wrhs`:
+    offs <- extract_model_data(fit, newdata = newdata,
+                               wrhs = rep(1, nrow(newdata %||% data)),
                                extract_y = FALSE)$offset
     n_obs <- nrow(newdata %||% data)
-    if (length(offs) == 0) {
-      offs <- rep(0, n_obs)
-    } else if (length(offs) == 1) {
+    if (length(offs) == 1) {
       offs <- rep(offs, n_obs)
     } else if (length(offs) != n_obs) {
       stop("Unexpected length of element `offset` returned by ",
@@ -1133,6 +1169,13 @@ init_refmodel <- function(object, data, formula, family, ref_predfun = NULL,
 
   # Functions ---------------------------------------------------------------
 
+  # Wrap `extract_model_data` in order to retrieve the correct `newdata` when
+  # `newdata` is `NULL`:
+  extract_model_data_usr <- extract_model_data
+  extract_model_data <- function(object, newdata, ...) {
+    extract_model_data_usr(object = object, newdata = newdata %||% data, ...)
+  }
+
   if (proper_model) {
     if (is.null(ref_predfun)) {
       ref_predfun <- refprd
@@ -1255,17 +1298,16 @@ init_refmodel <- function(object, data, formula, family, ref_predfun = NULL,
       linpred_out <- unname(linpred_out)
 
       if (excl_offs) {
-        # Observation weights are not needed here, so use `wrhs = NULL` to avoid
-        # potential conflicts for a non-`NULL` default `wrhs`:
-        offs <- extract_model_data(fit, newdata = newdata, wrhs = NULL,
+        # Observation weights are not needed here, so use a vector of ones for
+        # `wrhs` to avoid potential conflicts for a non-`NULL` default `wrhs`:
+        offs <- extract_model_data(fit, newdata = newdata,
+                                   wrhs = rep(1, nrow(newdata %||% data)),
                                    extract_y = FALSE)$offset
-        if (length(offs) > 0) {
-          stopifnot(length(offs) %in% c(1L, n_obs))
-          if (family$family %in% fams_neg_linpred()) {
-            linpred_out <- linpred_out + offs
-          } else {
-            linpred_out <- linpred_out - offs
-          }
+        stopifnot(length(offs) %in% c(1L, n_obs))
+        if (family$family %in% fams_neg_linpred()) {
+          linpred_out <- linpred_out + offs
+        } else {
+          linpred_out <- linpred_out - offs
         }
       }
       return(linpred_out)
@@ -1351,9 +1393,17 @@ init_refmodel <- function(object, data, formula, family, ref_predfun = NULL,
 
   # Data --------------------------------------------------------------------
 
-  model_data <- extract_model_data(object, newdata = data, extract_y = TRUE)
+  model_data <- extract_model_data(object, newdata = NULL, extract_y = TRUE)
   weights <- model_data$weights
   offset <- model_data$offset
+  if (length(weights) == 0) {
+    stop("The function supplied to argument `extract_model_data` of ",
+         "init_refmodel() must not return a length-zero element `weights`.")
+  }
+  if (length(offset) == 0) {
+    stop("The function supplied to argument `extract_model_data` of ",
+         "init_refmodel() must not return a length-zero element `offset`.")
+  }
   if (family$for_latent) {
     y <- rowMeans(ref_predfun(
       object, excl_offs = FALSE,
@@ -1438,10 +1488,6 @@ init_refmodel <- function(object, data, formula, family, ref_predfun = NULL,
   if (family$for_latent && !all(weights == 1)) {
     stop("Currently, the latent projection may not be combined with ",
          "observation weights (other than 1).")
-  }
-
-  if (is.null(offset)) {
-    offset <- rep(0, length(y))
   }
 
   if (!proper_model && !all(offset == 0)) {

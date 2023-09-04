@@ -311,15 +311,18 @@ where:
 \item \code{object} accepts the reference model fit as given in argument \code{object} (but
 possibly re-fitted to a subset of the observations, as done in \eqn{K}-fold
 CV).
-\item \code{newdata} accepts either \code{NULL} (for using the original dataset, typically
-stored in \code{object}) or data for new observations (at least in the form of a
+\item \code{newdata} accepts data for new observations (at least in the form of a
 \code{data.frame}).
-\item \code{wrhs} accepts at least either \code{NULL} (for using a vector of ones) or a
-right-hand side formula consisting only of the variable in \code{newdata}
-containing the weights.
-\item \code{orhs} accepts at least either \code{NULL} (for using a vector of zeros) or a
-right-hand side formula consisting only of the variable in \code{newdata}
-containing the offsets.
+\item \code{wrhs} accepts at least (i) a right-hand side formula consisting only of
+the variable in \code{newdata} containing the observation weights or (ii) \code{NULL}
+(for typical \pkg{rstanarm} and \pkg{brms} reference models, \code{NULL} causes
+the original observation weights to be used if the model was fitted with
+weights, otherwise a vector of ones is used).
+\item \code{orhs} accepts at least (i) a right-hand side formula consisting only of
+the variable in \code{newdata} containing the offsets or (ii) \code{NULL} (for typical
+\pkg{rstanarm} and \pkg{brms} reference models, \code{NULL} causes the original
+offsets to be used if the model was fitted with offsets, otherwise a vector
+of zeros is used).
 \item \code{extract_y} accepts a single logical value indicating whether output
 element \code{y} (see below) shall be \code{NULL} (\code{TRUE}) or not (\code{FALSE}).
 }
@@ -399,18 +402,10 @@ ref_cust <- init_refmodel(
   data = dat_gauss,
   formula = y ~ X6 + X7,
   family = gaussian(),
-  extract_model_data = function(object, newdata = NULL, wrhs = NULL,
-                                orhs = NULL, extract_y = TRUE) {
-    if (!extract_y) {
-      resp_form <- NULL
-    } else {
-      resp_form <- ~ y
-    }
-    if (is.null(newdata)) {
-      newdata <- dat_gauss
-    }
+  extract_model_data = function(object, newdata, wrhs = NULL, orhs = NULL,
+                                extract_y = TRUE) {
     return(y_wobs_offs(newdata = newdata, wrhs = wrhs, orhs = orhs,
-                       resp_form = resp_form))
+                       resp_form = if (extract_y) ~ y else NULL))
   },
   cvfun = function(folds) {
     kfold(
