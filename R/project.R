@@ -261,11 +261,6 @@ project <- function(object, nterms = NULL, solution_terms = NULL,
     )
   }
 
-  ## get the clustering or thinning
-  if (refit_prj) {
-    p_ref <- get_refdist(refmodel, ndraws = ndraws, nclusters = nclusters)
-  }
-
   ## project onto the submodels
   submodls <- get_submodls(
     search_path = nlist(
@@ -273,19 +268,14 @@ project <- function(object, nterms = NULL, solution_terms = NULL,
       p_sel = object$search_path$p_sel,
       outdmins = object$search_path$outdmins
     ),
-    nterms = nterms, p_ref = p_ref, refmodel = refmodel, regul = regul,
-    refit_prj = refit_prj, projpred_verbose = verbose, ...
+    nterms = nterms, refmodel = refmodel, regul = regul, refit_prj = refit_prj,
+    ndraws = ndraws, nclusters = nclusters, projpred_verbose = verbose, ...
   )
 
   # Output:
-  if (refit_prj) {
-    refdist_obj <- p_ref
-  } else {
-    refdist_obj <- object$search_path$p_sel
-  }
   projs <- lapply(submodls, function(submodl) {
     proj_k <- submodl
-    proj_k[["const_wdraws_prj"]] <- length(unique(refdist_obj$wdraws_prj)) == 1
+    proj_k[["const_wdraws_prj"]] <- length(unique(submodl$wdraws_prj)) == 1
     proj_k$refmodel <- refmodel
     class(proj_k) <- "projection"
     return(proj_k)

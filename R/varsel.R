@@ -276,20 +276,13 @@ varsel.refmodel <- function(object, d_test = NULL, method = NULL,
   )
   nobs_test <- nrow(y_wobs_test)
 
-  # Clustering or thinning for the search:
-  p_sel <- get_refdist(refmodel, ndraws, nclusters)
-  # Clustering or thinning for the performance evaluation:
-  if (refit_prj) {
-    p_pred <- get_refdist(refmodel, ndraws_pred, nclusters_pred)
-  }
-
   # Run the search:
   opt <- nlist(lambda_min_ratio, nlambda, thresh, regul)
   verb_out("-----\nRunning the search ...", verbose = verbose)
   search_path <- select(
-    method = method, p_sel = p_sel, refmodel = refmodel,
-    nterms_max = nterms_max, penalty = penalty, verbose = verbose, opt = opt,
-    search_terms = search_terms, ...
+    refmodel = refmodel, ndraws = ndraws, nclusters = nclusters,
+    method = method, nterms_max = nterms_max, penalty = penalty,
+    verbose = verbose, opt = opt, search_terms = search_terms, ...
   )
   verb_out("-----", verbose = verbose)
 
@@ -301,8 +294,8 @@ varsel.refmodel <- function(object, d_test = NULL, method = NULL,
   submodls <- get_submodls(
     search_path = search_path,
     nterms = c(0, seq_along(search_path$solution_terms)),
-    p_ref = p_pred, refmodel = refmodel, regul = regul, refit_prj = refit_prj,
-    ...
+    refmodel = refmodel, regul = regul, refit_prj = refit_prj,
+    ndraws = ndraws_pred, nclusters = nclusters_pred, ...
   )
   clust_used_eval <- element_unq(submodls, nm = "clust_used")
   nprjdraws_eval <- element_unq(submodls, nm = "nprjdraws")
@@ -387,9 +380,9 @@ varsel.refmodel <- function(object, d_test = NULL, method = NULL,
               cv_method = NULL,
               K = NULL,
               validate_search = NULL,
-              clust_used_search = p_sel$clust_used,
+              clust_used_search = search_path$p_sel$clust_used,
               clust_used_eval,
-              nprjdraws_search = NCOL(p_sel$mu),
+              nprjdraws_search = NCOL(search_path$p_sel$mu),
               nprjdraws_eval,
               projpred_version = utils::packageVersion("projpred"))
   class(vs) <- "vsel"
@@ -399,25 +392,42 @@ varsel.refmodel <- function(object, d_test = NULL, method = NULL,
 
 # Workhorse function for the search
 #
-# Argument `p_sel` accepts output from get_refdist() or get_p_clust(). For all
-# other arguments, see the documentation of varsel().
+# @param reweighting_args If the projected draws (i.e., those obtained from
+#   clustering or thinning) should be re-weighted (usually according to PSIS
+#   weights), then this needs to be a `list` with elements `wdraws_ref` and
+#   `cl_ref`. For these two elements, see the (internal) documentation of
+#   weighted_summary_means().
+# For all other arguments, see the documentation of varsel().
 #
 # @return A list with elements `solution_terms` (the solution path), `outdmins`
 #   (the submodel fits along the solution path, with the number of fits per
 #   model size being equal to the number of projected draws), and `p_sel` (the
-#   same as the input argument `p_sel`).
-select <- function(method, p_sel, refmodel, nterms_max, penalty, verbose, opt,
-                   search_terms, ...) {
-  if (method == "L1") {
-    search_path <- search_L1(p_sel, refmodel, nterms_max, penalty, opt)
-    search_path$p_sel <- p_sel
-    return(search_path)
-  } else if (method == "forward") {
-    search_path <- search_forward(p_sel, refmodel, nterms_max, verbose, opt,
-                                  search_terms = search_terms, ...)
-    search_path$p_sel <- p_sel
-    return(search_path)
+#   output from get_refdist() for the search).
+select <- function(refmodel, ndraws, nclusters, reweighting_args = NULL, method,
+                   nterms_max, penalty, verbose, opt, search_terms, ...) {
+  if (is.null(reweighting_args)) {
+    p_sel <- get_refdist(refmodel, ndraws = ndraws, nclusters = nclusters)
+  } else {
+    # Reweight the clusters (or thinned draws) according to the PSIS weights:
+    p_sel <- get_p_clust(
+      family = refmodel$family, eta = refmodel$eta, mu = refmodel$mu,
+      mu_offs = refmodel$mu_offs, dis = refmodel$dis,
+      wdraws = reweighting_args$wdraws_ref, cl = reweighting_args$cl_ref
+    )
   }
+  if (method == "L1") {
+    search_path <- search_L1(
+      p_ref = p_sel, refmodel = refmodel, nterms_max = nterms_max,
+      penalty = penalty, opt = opt
+    )
+  } else if (method == "forward") {
+    search_path <- search_forward(
+      p_ref = p_sel, refmodel = refmodel, nterms_max = nterms_max,
+      verbose = verbose, opt = opt, search_terms = search_terms, ...
+    )
+  }
+  search_path$p_sel <- p_sel
+  return(search_path)
 }
 
 # Auxiliary function for parsing the arguments of varsel()
