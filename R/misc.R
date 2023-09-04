@@ -650,3 +650,15 @@ reorder_ias <- function(x, y) {
   }
   return(x)
 }
+
+# Retrieves an element (with name given in argument `nm`) that is duplicated
+# across the elements of a `list`, typically a `list` of `submodl`s:
+element_unq <- function(list_obj, nm) {
+  if (getOption("projpred.additional_checks", FALSE)) {
+    el_unq <- unique(unlist(lapply(list_obj, "[[", nm)))
+    stopifnot(length(el_unq) == 1)
+  } else {
+    el_unq <- list_obj[[1]][[nm]]
+  }
+  return(el_unq)
+}

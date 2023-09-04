@@ -1585,7 +1585,7 @@ projection_tester <- function(p,
   expect_named(
     p,
     c("dis", "ce", "wdraws_prj", "solution_terms", "outdmin", "cl_ref",
-      "wdraws_ref", "const_wdraws_prj", "refmodel"),
+      "wdraws_ref", "clust_used", "nprjdraws", "const_wdraws_prj", "refmodel"),
     info = info_str
   )
 
@@ -1726,6 +1726,12 @@ projection_tester <- function(p,
   # wdraws_ref
   expect_identical(p$wdraws_ref, rep(1, length(p$refmodel$wdraws_ref)),
                    info = info_str)
+
+  # clust_used
+  expect_identical(p$clust_used, with_clusters, info = info_str)
+
+  # nprjdraws
+  expect_identical(p$nprjdraws, nprjdraws_expected, info = info_str)
 
   # const_wdraws_prj
   expect_identical(p$const_wdraws_prj, const_wdraws_prj_expected,

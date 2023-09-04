@@ -281,8 +281,6 @@ varsel.refmodel <- function(object, d_test = NULL, method = NULL,
   # Clustering or thinning for the performance evaluation:
   if (refit_prj) {
     p_pred <- get_refdist(refmodel, ndraws_pred, nclusters_pred)
-  } else {
-    p_pred <- p_sel
   }
 
   # Run the search:
@@ -306,6 +304,8 @@ varsel.refmodel <- function(object, d_test = NULL, method = NULL,
     p_ref = p_pred, refmodel = refmodel, regul = regul, refit_prj = refit_prj,
     ...
   )
+  clust_used_eval <- element_unq(submodls, nm = "clust_used")
+  nprjdraws_eval <- element_unq(submodls, nm = "nprjdraws")
   verb_out("-----", verbose = verbose && refit_prj)
   # The performance evaluation itself, i.e., the calculation of the predictive
   # performance statistic(s) for the submodels along the solution path:
@@ -388,9 +388,9 @@ varsel.refmodel <- function(object, d_test = NULL, method = NULL,
               K = NULL,
               validate_search = NULL,
               clust_used_search = p_sel$clust_used,
-              clust_used_eval = p_pred$clust_used,
+              clust_used_eval,
               nprjdraws_search = NCOL(p_sel$mu),
-              nprjdraws_eval = NCOL(p_pred$mu),
+              nprjdraws_eval,
               projpred_version = utils::packageVersion("projpred"))
   class(vs) <- "vsel"
 

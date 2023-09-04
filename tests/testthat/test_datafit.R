@@ -341,7 +341,7 @@ test_that(paste(
           datafits[[args_prj_vs_datafit[[tstsetup]]$tstsetup_datafit]],
         solterms_expected = solterms_expected_crr,
         nprjdraws_expected = 1L,
-        with_clusters = TRUE,
+        with_clusters = FALSE,
         const_wdraws_prj_expected = TRUE,
         from_vsel_L1_search = with_L1,
         info_str = tstsetup
@@ -367,7 +367,7 @@ test_that(paste(
         refmod_expected =
           datafits[[args_prj_vs_datafit[[tstsetup]]$tstsetup_datafit]],
         nprjdraws_expected = 1L,
-        with_clusters = TRUE,
+        with_clusters = FALSE,
         const_wdraws_prj_expected = TRUE,
         prjdraw_weights_expected = prjs_vs_datafit[[tstsetup]][[1]]$wdraws_prj,
         from_vsel_L1_search = with_L1
