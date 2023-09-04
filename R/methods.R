@@ -267,10 +267,12 @@ proj_helper <- function(object, newdata, offsetnew, weightsnew, onesub_fun,
     weightsnew <- w_o$weights
     offsetnew <- w_o$offset
     if (length(weightsnew) == 0) {
-      weightsnew <- rep(1, nrow(newdata) %||% proj$refmodel$nobs)
+      stop("The function supplied to argument `extract_model_data` of ",
+           "init_refmodel() must not return a length-zero element `weights`.")
     }
     if (length(offsetnew) == 0) {
-      offsetnew <- rep(0, nrow(newdata) %||% proj$refmodel$nobs)
+      stop("The function supplied to argument `extract_model_data` of ",
+           "init_refmodel() must not return a length-zero element `offset`.")
     }
     if (proj$refmodel$family$for_augdat && !all(weightsnew == 1)) {
       stop("Currently, the augmented-data projection may not be combined with ",

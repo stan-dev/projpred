@@ -466,10 +466,12 @@ predict.refmodel <- function(object, newdata = NULL, ynew = NULL,
   weightsnew <- w_o$weights
   offsetnew <- w_o$offset
   if (length(weightsnew) == 0) {
-    weightsnew <- rep(1, nobs_new)
+    stop("The function supplied to argument `extract_model_data` of ",
+         "init_refmodel() must not return a length-zero element `weights`.")
   }
   if (length(offsetnew) == 0) {
-    offsetnew <- rep(0, nobs_new)
+    stop("The function supplied to argument `extract_model_data` of ",
+         "init_refmodel() must not return a length-zero element `offset`.")
   }
   if (refmodel$family$for_augdat && !all(weightsnew == 1)) {
     stop("Currently, the augmented-data projection may not be combined with ",
@@ -922,9 +924,7 @@ get_refmodel.stanreg <- function(object, latent = FALSE, dis = NULL, ...) {
                                wrhs = rep(1, nrow(newdata %||% data)),
                                extract_y = FALSE)$offset
     n_obs <- nrow(newdata %||% data)
-    if (length(offs) == 0) {
-      offs <- rep(0, n_obs)
-    } else if (length(offs) == 1) {
+    if (length(offs) == 1) {
       offs <- rep(offs, n_obs)
     } else if (length(offs) != n_obs) {
       stop("Unexpected length of element `offset` returned by ",
@@ -1300,13 +1300,11 @@ init_refmodel <- function(object, data, formula, family, ref_predfun = NULL,
         offs <- extract_model_data(fit, newdata = newdata,
                                    wrhs = rep(1, nrow(newdata %||% data)),
                                    extract_y = FALSE)$offset
-        if (length(offs) > 0) {
-          stopifnot(length(offs) %in% c(1L, n_obs))
-          if (family$family %in% fams_neg_linpred()) {
-            linpred_out <- linpred_out + offs
-          } else {
-            linpred_out <- linpred_out - offs
-          }
+        stopifnot(length(offs) %in% c(1L, n_obs))
+        if (family$family %in% fams_neg_linpred()) {
+          linpred_out <- linpred_out + offs
+        } else {
+          linpred_out <- linpred_out - offs
         }
       }
       return(linpred_out)
@@ -1395,6 +1393,14 @@ init_refmodel <- function(object, data, formula, family, ref_predfun = NULL,
   model_data <- extract_model_data(object, newdata = NULL, extract_y = TRUE)
   weights <- model_data$weights
   offset <- model_data$offset
+  if (length(weights) == 0) {
+    stop("The function supplied to argument `extract_model_data` of ",
+         "init_refmodel() must not return a length-zero element `weights`.")
+  }
+  if (length(offset) == 0) {
+    stop("The function supplied to argument `extract_model_data` of ",
+         "init_refmodel() must not return a length-zero element `offset`.")
+  }
   if (family$for_latent) {
     y <- rowMeans(ref_predfun(
       object, excl_offs = FALSE,
@@ -1479,10 +1485,6 @@ init_refmodel <- function(object, data, formula, family, ref_predfun = NULL,
   if (family$for_latent && !all(weights == 1)) {
     stop("Currently, the latent projection may not be combined with ",
          "observation weights (other than 1).")
-  }
-
-  if (is.null(offset)) {
-    offset <- rep(0, length(y))
   }
 
   if (!proper_model && !all(offset == 0)) {
