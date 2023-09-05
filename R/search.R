@@ -54,6 +54,59 @@ search_forward <- function(p_ref, refmodel, nterms_max, verbose = TRUE, opt,
   return(nlist(solution_terms = setdiff(chosen, "1"), outdmins))
 }
 
+#' Force search terms
+#'
+#' A helper function to construct the input for argument `search_terms` of
+#' [varsel()] or [cv_varsel()] if certain predictor terms should be forced to be
+#' selected first whereas other predictor terms are optional (i.e., they are
+#' subject to the variable selection, but only after the inclusion of the
+#' "forced" terms).
+#'
+#' @param forced_terms A character vector of predictor terms that should be
+#'   selected first.
+#' @param optional_terms A character vector of predictor terms that should be
+#'   subject to the variable selection after the inclusion of the "forced"
+#'   terms.
+#'
+#' @return A character vector that may be used as input for argument
+#'   `search_terms` of [varsel()] or [cv_varsel()].
+#'
+#' @seealso [varsel()], [cv_varsel()]
+#'
+#' @examplesIf requireNamespace("rstanarm", quietly = TRUE)
+#' # Data:
+#' dat_gauss <- data.frame(y = df_gaussian$y, df_gaussian$x)
+#'
+#' # The "stanreg" fit which will be used as the reference model (with small
+#' # values for `chains` and `iter`, but only for technical reasons in this
+#' # example; this is not recommended in general):
+#' fit <- rstanarm::stan_glm(
+#'   y ~ X1 + X2 + X3 + X4 + X5, family = gaussian(), data = dat_gauss,
+#'   QR = TRUE, chains = 2, iter = 500, refresh = 0, seed = 9876
+#' )
+#'
+#' # We will force X1 and X2 to be selected first:
+#' search_terms_forced <- force_search_terms(
+#'   forced_terms = paste0("X", 1:2),
+#'   optional_terms = paste0("X", 3:5)
+#' )
+#'
+#' # Run varsel() (here without cross-validation and with small values for
+#' # `nterms_max`, `nclusters`, and `nclusters_pred`, but only for the sake of
+#' # speed in this example; this is not recommended in general):
+#' vs <- varsel(fit, nclusters = 5, nclusters_pred = 10,
+#'              search_terms = search_terms_forced, seed = 5555)
+#' # Now see, for example, `?print.vsel`, `?plot.vsel`, `?suggest_size.vsel`,
+#' # and `?ranking` for possible post-processing functions.
+#'
+#' @export
+force_search_terms <- function(forced_terms, optional_terms) {
+  stopifnot(length(forced_terms) > 0)
+  stopifnot(length(optional_terms) > 0)
+  forced_terms <- paste(forced_terms, collapse = " + ")
+  return(c(forced_terms, paste0(forced_terms, " + ", optional_terms)))
+}
+
 search_L1_surrogate <- function(p_ref, d_train, family, intercept, nterms_max,
                                 penalty, opt) {
 
