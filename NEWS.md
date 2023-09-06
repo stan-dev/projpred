@@ -33,7 +33,7 @@ If you read this from a place other than <https://mc-stan.org/projpred/news/inde
     
     + In case of an **rstanarm** reference model, the default for arguments `weightsnew` and `offsetnew` (see `proj_linpred()`, `proj_predict()`, and `predict.refmodel()`) now causes the original observation weights and offsets to be used (instead of ones and zeros, respectively) if possible. For **brms** reference models, this behavior had already been implemented before.
     + An error is now thrown if a length-zero element `weights` or `offset` is returned by the function supplied to argument `extract_model_data` of `init_refmodel()` (before, a vector of ones or zeros was used silently for the observation weights and offsets, respectively).
-* Added the helper function `force_search_terms()` which allows to construct `search_terms` where certain predictor terms are forced to be included (i.e., they are forced to be selected first) whereas other predictor terms are optional (i.e., they are subject to the variable selection, but only after the inclusion of the "forced" terms). (GitHub: #346, #450)
+* Added the helper function `force_search_terms()` which allows to construct `search_terms` where certain predictor terms are forced to be included (i.e., they are forced to be selected first) whereas other predictor terms are optional (i.e., they are subject to the variable selection, but only after the inclusion of the "forced" terms). (GitHub: #346)
 
 ## Bug fixes
 
