@@ -286,30 +286,19 @@ varsel.refmodel <- function(object, d_test = NULL, method = NULL,
   )
   verb_out("-----", verbose = verbose)
 
-  # For the performance evaluation: Re-project along the solution path (or fetch
-  # the projections from the search results):
-  verb_out("-----\nFor performance evaluation: Re-projecting onto the ",
-           "submodels along the solution path ...",
+  # "Run" the performance evaluation for the submodels along the predictor
+  # ranking (in fact, we only prepare the performance evaluation by computing
+  # precursor quantities, but for users, this difference is not perceivable):
+  verb_out("-----\nRunning the performance evaluation ...",
            verbose = verbose && refit_prj)
-  submodls <- get_submodls(
-    search_path = search_path,
-    nterms = c(0, seq_along(search_path$solution_terms)),
-    refmodel = refmodel, regul = regul, refit_prj = refit_prj,
-    ndraws = ndraws_pred, nclusters = nclusters_pred, ...
+  perf_eval_out <- perf_eval(
+    search_path = search_path, refmodel = refmodel, regul = regul,
+    refit_prj = refit_prj, ndraws = ndraws_pred, nclusters = nclusters_pred,
+    indices_test = NULL, newdata_test = d_test$data,
+    offset_test = d_test$offset, wobs_test = d_test$weights, y_test = d_test$y,
+    y_oscale_test = d_test$y_oscale, ...
   )
-  clust_used_eval <- element_unq(submodls, nm = "clust_used")
-  nprjdraws_eval <- element_unq(submodls, nm = "nprjdraws")
   verb_out("-----", verbose = verbose && refit_prj)
-  # The performance evaluation itself, i.e., the calculation of the predictive
-  # performance statistic(s) for the submodels along the solution path:
-  sub <- get_sub_summaries(submodls = submodls,
-                           refmodel = refmodel,
-                           test_points = NULL,
-                           newdata = d_test$data,
-                           offset = d_test$offset,
-                           wobs = d_test$weights,
-                           y = d_test$y,
-                           y_oscale = d_test$y_oscale)
 
   # Predictive performance of the reference model:
   if (inherits(refmodel, "datafit")) {
@@ -369,11 +358,11 @@ varsel.refmodel <- function(object, d_test = NULL, method = NULL,
               search_path,
               solution_terms = search_path$solution_terms,
               solution_terms_cv = NULL,
-              ce = sapply(submodls, "[[", "ce"),
+              ce = perf_eval_out[["ce"]],
               type_test = d_test$type,
               y_wobs_test,
               nobs_test,
-              summaries = nlist(sub, ref),
+              summaries = nlist(perf_eval_out[["sub_summaries"]], ref),
               nterms_all,
               nterms_max,
               method,
@@ -381,9 +370,9 @@ varsel.refmodel <- function(object, d_test = NULL, method = NULL,
               K = NULL,
               validate_search = NULL,
               clust_used_search = search_path$p_sel$clust_used,
-              clust_used_eval,
+              clust_used_eval = perf_eval_out[["clust_used"]],
               nprjdraws_search = NCOL(search_path$p_sel$mu),
-              nprjdraws_eval,
+              nprjdraws_eval = perf_eval_out[["nprjdraws"]],
               projpred_version = utils::packageVersion("projpred"))
   class(vs) <- "vsel"
 

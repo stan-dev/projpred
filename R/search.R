@@ -49,7 +49,7 @@ search_forward <- function(p_ref, refmodel, nterms_max, verbose = TRUE, opt,
   # `chosen`. However, `reduce_models(chosen)` and `chosen` should be identical
   # at this place because select_possible_terms_size() already avoids redundant
   # models. Thus, use `chosen` here because it matches `outdmins` (this
-  # matching is necessary because later in get_submodls()'s `!refit_prj` case,
+  # matching is necessary because later in perf_eval()'s `!refit_prj` case,
   # `outdmins` is indexed with integers which are based on `solution_terms`):
   return(nlist(solution_terms = setdiff(chosen, "1"), outdmins))
 }
