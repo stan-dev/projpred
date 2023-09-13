@@ -518,24 +518,23 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
     )
     verb_out("-----", verbose = verbose)
 
-    verb_out("-----\nFor performance evaluation: Re-projecting (using the ",
+    verb_out("-----\nPerformance evaluation, step 1: Re-projecting (using the ",
              "full dataset) onto the submodels along the full-data solution ",
-             "path ...", verbose = verbose && refit_prj)
-    submodls <- get_submodls(
-      search_path = search_path,
-      nterms = c(0, seq_along(search_path$solution_terms)),
-      refmodel = refmodel, regul = opt$regul, refit_prj = refit_prj,
-      ndraws = ndraws_pred, nclusters = nclusters_pred, return_p_ref = TRUE, ...
+             "path and evaluating their predictive performance ...",
+             verbose = verbose && refit_prj)
+    perf_eval_out <- perf_eval(
+      search_path = search_path, refmodel = refmodel, regul = opt$regul,
+      refit_prj = refit_prj, ndraws = ndraws_pred, nclusters = nclusters_pred,
+      return_p_ref = TRUE, return_preds = TRUE, indices_test = inds, ...
     )
-    refdist_eval <- submodls$p_ref
-    submodls <- submodls$submodls
-    clust_used_eval <- element_unq(submodls, nm = "clust_used")
-    nprjdraws_eval <- element_unq(submodls, nm = "nprjdraws")
+    clust_used_eval <- perf_eval_out[["clust_used"]]
+    nprjdraws_eval <- perf_eval_out[["nprjdraws"]]
+    refdist_eval <- perf_eval_out[["p_ref"]]
     verb_out("-----", verbose = verbose && refit_prj)
 
-    verb_out("-----\nCalculating the full-data performance evaluation ",
-             "results and weighting those results according to the PSIS-LOO ",
-             "CV weights ...", verbose = verbose)
+    verb_out("-----\nPerformance evaluation, step 2: Weighting the full-data ",
+             "performance evaluation results according to the PSIS-LOO CV ",
+             "weights ...", verbose = verbose)
     if (refmodel$family$for_latent) {
       refdist_eval_mu_offs_oscale <- refmodel$family$latent_ilink(
         t(refdist_eval$mu_offs), cl_ref = refdist_eval$cl,
@@ -665,13 +664,10 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
     # This re-weighting requires a re-normalization (as.array() is applied to
     # have stricter consistency checks, see `?sweep`):
     lw_sub <- sweep(lw_sub, 2, as.array(apply(lw_sub, 2, log_sum_exp)))
-    for (k in seq_along(submodls)) {
-      mu_k <- refmodel$family$mu_fun(submodls[[k]]$outdmin,
-                                     obs = inds,
-                                     offset = refmodel$offset[inds])
-      log_lik_sub <- t(refmodel$family$ll_fun(
-        mu_k, submodls[[k]]$dis, refmodel$y[inds], refmodel$wobs[inds]
-      ))
+    for (k in seq_len(1 + length(search_path$solution_terms))) {
+      # TODO: For consistency, replace `k` in this `for` loop by `j`.
+      mu_k <- perf_eval_out[["mu_by_size"]][[k]]
+      log_lik_sub <- perf_eval_out[["lppd_by_size"]][[k]]
       loo_sub[[k]][inds] <- apply(log_lik_sub + lw_sub, 2, log_sum_exp)
       if (refmodel$family$for_latent) {
         mu_k_oscale <- refmodel$family$latent_ilink(
@@ -750,26 +746,19 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
         verbose = verbose_search, opt = opt, search_terms = search_terms, ...
       )
 
-      # Re-project along the solution path (or fetch the projections from the
-      # search results) of the current fold:
-      submodls <- get_submodls(
-        search_path = search_path,
-        nterms = c(0, seq_along(search_path$solution_terms)),
-        refmodel = refmodel, regul = opt$regul, refit_prj = refit_prj,
-        ndraws = ndraws_pred, nclusters = nclusters_pred,
+      # Run the performance evaluation for the submodels along the predictor
+      # ranking:
+      perf_eval_out <- perf_eval(
+        search_path = search_path, refmodel = refmodel, regul = opt$regul,
+        refit_prj = refit_prj, ndraws = ndraws_pred, nclusters = nclusters_pred,
         reweighting_args = list(cl_ref = cl_pred, wdraws_ref = exp(lw[, i])),
-        ...
+        indices_test = i, ...
       )
-      clust_used_eval <- element_unq(submodls, nm = "clust_used")
-      nprjdraws_eval <- element_unq(submodls, nm = "nprjdraws")
-
-      # Predictive performance at the omitted observation:
-      summaries_sub <- get_sub_summaries(submodls = submodls,
-                                         refmodel = refmodel,
-                                         test_points = i)
 
       return(nlist(predictor_ranking = search_path[["solution_terms"]],
-                   summaries_sub, clust_used_eval, nprjdraws_eval))
+                   summaries_sub = perf_eval_out[["sub_summaries"]],
+                   clust_used_eval = perf_eval_out[["clust_used"]],
+                   nprjdraws_eval = perf_eval_out[["nprjdraws"]]))
     }
     if (!parallel) {
       # Sequential case. Actually, we could simply use ``%do_projpred%` <-
@@ -981,7 +970,7 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
   summaries <- list(sub = summ_sub, ref = summ_ref)
 
   if (!validate_search) {
-    out_list <- nlist(search_path, ce = sapply(submodls, "[[", "ce"))
+    out_list <- nlist(search_path, ce = perf_eval_out[["ce"]])
   } else {
     out_list <- nlist(solution_terms_cv = solution_terms_mat[
       , seq_len(prv_len_soltrms), drop = FALSE
@@ -1034,23 +1023,13 @@ kfold_varsel <- function(refmodel, method, nterms_max, ndraws,
       verbose = verbose_search, opt = opt, search_terms = search_terms, ...
     )
 
-    # For performance evaluation: Re-project (using the training data of the
-    # current fold) along the predictor ranking (or fetch the projections from
-    # the search output) of the current fold:
-    submodls <- get_submodls(
-      search_path = search_path,
-      nterms = c(0, seq_along(search_path$solution_terms)),
-      refmodel = fold$refmodel, regul = opt$regul, refit_prj = refit_prj,
-      ndraws = ndraws_pred, nclusters = nclusters_pred, ...
+    # Run the performance evaluation for the submodels along the predictor
+    # ranking:
+    perf_eval_out <- perf_eval(
+      search_path = search_path, refmodel = fold$refmodel, regul = opt$regul,
+      refit_prj = refit_prj, ndraws = ndraws_pred, nclusters = nclusters_pred,
+      refmodel_fulldata = refmodel, indices_test = fold$omitted, ...
     )
-    clust_used_eval <- element_unq(submodls, nm = "clust_used")
-    nprjdraws_eval <- element_unq(submodls, nm = "nprjdraws")
-
-    # Performance evaluation for the re-projected or fetched submodels of the
-    # current fold:
-    summaries_sub <- get_sub_summaries(submodls = submodls,
-                                       refmodel = refmodel,
-                                       test_points = fold$omitted)
 
     # Performance evaluation for the reference model of the current fold:
     eta_test <- fold$refmodel$ref_predfun(
@@ -1069,7 +1048,9 @@ kfold_varsel <- function(refmodel, method, nterms_max, ndraws,
     )
 
     return(nlist(predictor_ranking = search_path[["solution_terms"]],
-                 summaries_sub, summaries_ref, clust_used_eval, nprjdraws_eval))
+                 summaries_sub = perf_eval_out[["sub_summaries"]],
+                 summaries_ref, clust_used_eval = perf_eval_out[["clust_used"]],
+                 nprjdraws_eval = perf_eval_out[["nprjdraws"]]))
   }
   if (!parallel) {
     # Sequential case. Actually, we could simply use ``%do_projpred%` <-

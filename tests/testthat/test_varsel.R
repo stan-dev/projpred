@@ -622,9 +622,9 @@ if (run_more) {
 
 # In fact, `regul` is already checked in `test_project.R`, so the `regul` tests
 # could be omitted here since varsel() and cv_varsel() also pass `regul` to
-# get_submodl_prj() (usually via get_submodls(), just like project()). This
-# doesn't hold for L1 search, though. So for L1 search, the `regul` tests are
-# still needed.
+# get_submodl_prj() (usually via perf_eval(), just like project()). This doesn't
+# hold for L1 search, though. So for L1 search, the `regul` tests are still
+# needed.
 
 test_that(paste(
   "for GLMs with L1 search, `regul` only has an effect on prediction, not on",

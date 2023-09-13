@@ -45,23 +45,33 @@ get_submodl_prj <- function(solution_terms, p_ref, refmodel, regul = 1e-4,
   ))
 }
 
-# Function to fetch init_submodl() output (of class `submodl`) for each of given
-# model sizes `nterms`, so this gives a list of objects, each of class
-# `submodl`.
-get_submodls <- function(search_path, nterms, refmodel, regul,
-                         refit_prj = FALSE, ndraws, nclusters,
-                         reweighting_args = NULL, return_p_ref = FALSE, ...) {
+# Function to prepare the performance evaluation. For each submodel size along
+# the predictor ranking, it first fetches the init_submodl() output (of class
+# `submodl`) and then calculates the submodel "summary" (precursor quantities)
+# for the actual performance evaluation performed by summary.vsel() later.
+perf_eval <- function(search_path,
+                      nterms = c(0, seq_along(search_path$solution_terms)),
+                      refmodel, regul, refit_prj = FALSE, ndraws, nclusters,
+                      reweighting_args = NULL, return_submodls = FALSE,
+                      return_preds = FALSE, return_p_ref = FALSE,
+                      refmodel_fulldata = refmodel,
+                      indices_test, newdata_test = NULL,
+                      offset_test = refmodel_fulldata$offset[indices_test],
+                      wobs_test = refmodel_fulldata$wobs[indices_test],
+                      y_test = refmodel_fulldata$y[indices_test],
+                      y_oscale_test = refmodel_fulldata$y_oscale[indices_test],
+                      ...) {
   if (!refit_prj) {
     p_ref <- search_path$p_sel
     # In this case, simply fetch the already computed projections, so don't
     # project again.
-    fetch_submodl <- function(nterms, ...) {
+    fetch_submodl <- function(size_j, ...) {
       return(init_submodl(
         # Re-use the submodel fits from the search:
-        outdmin = search_path$outdmins[[nterms + 1]],
+        outdmin = search_path$outdmins[[size_j + 1]],
         p_ref = p_ref,
         refmodel = refmodel,
-        solution_terms = utils::head(search_path$solution_terms, nterms),
+        solution_terms = utils::head(search_path$solution_terms, size_j),
         wobs = refmodel$wobs
       ))
     }
@@ -77,16 +87,64 @@ get_submodls <- function(search_path, nterms, refmodel, regul,
         wdraws = reweighting_args$wdraws_ref, cl = reweighting_args$cl_ref
       )
     }
-    fetch_submodl <- function(nterms, ...) {
+    fetch_submodl <- function(size_j, ...) {
       return(get_submodl_prj(
-        solution_terms = utils::head(search_path$solution_terms, nterms),
+        solution_terms = utils::head(search_path$solution_terms, size_j),
         p_ref = p_ref, refmodel = refmodel, regul = regul, ...
       ))
     }
   }
-  out <- lapply(nterms, fetch_submodl, ...)
+  out_by_size <- lapply(nterms, function(size_j) {
+    # Fetch the init_submodl() output (of class `submodl`) for the submodel at
+    # position `size_j + 1` of the predictor ranking:
+    submodl <- fetch_submodl(size_j, ...)
+    if (return_submodls) {
+      # Currently only called in project().
+      return(submodl)
+    }
+    if (return_preds) {
+      # Currently only called in loo_varsel()'s `validate_search = FALSE` case.
+      mu_j <- refmodel$family$mu_fun(submodl$outdmin, obs = indices_test,
+                                     offset = refmodel$offset[indices_test])
+      lppd_j <- t(refmodel$family$ll_fun(
+        mu_j, submodl$dis, refmodel$y[indices_test], refmodel$wobs[indices_test]
+      ))
+      out_j <- nlist(mu_j, lppd_j)
+    } else {
+      # Calculate precursor quantities for predictive performance statistic(s)
+      # of the submodel at position `size_j + 1` of the predictor ranking:
+      sub_summary <- weighted_summary_means(
+        y_wobs_test = data.frame(y = y_test, y_oscale = y_oscale_test,
+                                 wobs = wobs_test),
+        family = refmodel_fulldata$family,
+        wdraws = submodl$wdraws_prj,
+        mu = refmodel_fulldata$family$mu_fun(submodl$outdmin,
+                                             obs = indices_test,
+                                             newdata = newdata_test,
+                                             offset = offset_test),
+        dis = submodl$dis,
+        cl_ref = submodl$cl_ref,
+        wdraws_ref = submodl$wdraws_ref
+      )
+      out_j <- nlist(sub_summary)
+    }
+    return(c(out_j, list(ce = submodl[["ce"]])))
+  })
+  if (return_submodls) {
+    return(out_by_size)
+  }
+  if (return_preds) {
+    out <- list(mu_by_size = lapply(out_by_size, "[[", "mu_j"),
+                lppd_by_size = lapply(out_by_size, "[[", "lppd_j"))
+  } else {
+    out <- list(sub_summaries = lapply(out_by_size, "[[", "sub_summary"))
+  }
+  out <- c(out, list(ce = sapply(out_by_size, "[[", "ce"),
+                     clust_used = p_ref$clust_used,
+                     nprjdraws = NCOL(p_ref$mu)))
   if (return_p_ref) {
-    out <- list(submodls = out, p_ref = p_ref)
+    # Currently only called in loo_varsel()'s `validate_search = FALSE` case.
+    out <- c(out, nlist(p_ref))
   }
   return(out)
 }

@@ -262,14 +262,15 @@ project <- function(object, nterms = NULL, solution_terms = NULL,
   }
 
   ## project onto the submodels
-  submodls <- get_submodls(
+  submodls <- perf_eval(
     search_path = nlist(
       solution_terms,
       p_sel = object$search_path$p_sel,
       outdmins = object$search_path$outdmins
     ),
     nterms = nterms, refmodel = refmodel, regul = regul, refit_prj = refit_prj,
-    ndraws = ndraws, nclusters = nclusters, projpred_verbose = verbose, ...
+    ndraws = ndraws, nclusters = nclusters, return_submodls = TRUE,
+    projpred_verbose = verbose, ...
   )
 
   # Output:

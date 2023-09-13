@@ -1,22 +1,3 @@
-get_sub_summaries <- function(submodls, refmodel, test_points, newdata = NULL,
-                              offset = refmodel$offset[test_points],
-                              wobs = refmodel$wobs[test_points],
-                              y = refmodel$y[test_points],
-                              y_oscale = refmodel$y_oscale[test_points]) {
-  lapply(submodls, function(submodl) {
-    weighted_summary_means(
-      y_wobs_test = data.frame(y, y_oscale, wobs),
-      family = refmodel$family,
-      wdraws = submodl$wdraws_prj,
-      mu = refmodel$family$mu_fun(submodl$outdmin, obs = test_points,
-                                  newdata = newdata, offset = offset),
-      dis = submodl$dis,
-      cl_ref = submodl$cl_ref,
-      wdraws_ref = submodl$wdraws_ref
-    )
-  })
-}
-
 # Calculate log posterior(-projection) predictive density values and average
 # them across parameter draws (together with the corresponding expected response
 # values).
