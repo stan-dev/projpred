@@ -1028,7 +1028,7 @@ kfold_varsel <- function(refmodel, method, nterms_max, ndraws,
     perf_eval_out <- perf_eval(
       search_path = search_path, refmodel = fold$refmodel, regul = opt$regul,
       refit_prj = refit_prj, ndraws = ndraws_pred, nclusters = nclusters_pred,
-      indices_test = fold$omitted, ...
+      refmodel_fulldata = refmodel, indices_test = fold$omitted, ...
     )
 
     # Performance evaluation for the reference model of the current fold:

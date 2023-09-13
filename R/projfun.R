@@ -54,11 +54,13 @@ perf_eval <- function(search_path,
                       refmodel, regul, refit_prj = FALSE, ndraws, nclusters,
                       reweighting_args = NULL, return_submodls = FALSE,
                       return_preds = FALSE, return_p_ref = FALSE,
+                      refmodel_fulldata = refmodel,
                       indices_test, newdata_test = NULL,
-                      offset_test = refmodel$offset[indices_test],
-                      wobs_test = refmodel$wobs[indices_test],
-                      y_test = refmodel$y[indices_test],
-                      y_oscale_test = refmodel$y_oscale[indices_test], ...) {
+                      offset_test = refmodel_fulldata$offset[indices_test],
+                      wobs_test = refmodel_fulldata$wobs[indices_test],
+                      y_test = refmodel_fulldata$y[indices_test],
+                      y_oscale_test = refmodel_fulldata$y_oscale[indices_test],
+                      ...) {
   if (!refit_prj) {
     p_ref <- search_path$p_sel
     # In this case, simply fetch the already computed projections, so don't
@@ -114,11 +116,12 @@ perf_eval <- function(search_path,
       sub_summary <- weighted_summary_means(
         y_wobs_test = data.frame(y = y_test, y_oscale = y_oscale_test,
                                  wobs = wobs_test),
-        family = refmodel$family,
+        family = refmodel_fulldata$family,
         wdraws = submodl$wdraws_prj,
-        mu = refmodel$family$mu_fun(submodl$outdmin, obs = indices_test,
-                                    newdata = newdata_test,
-                                    offset = offset_test),
+        mu = refmodel_fulldata$family$mu_fun(submodl$outdmin,
+                                             obs = indices_test,
+                                             newdata = newdata_test,
+                                             offset = offset_test),
         dis = submodl$dis,
         cl_ref = submodl$cl_ref,
         wdraws_ref = submodl$wdraws_ref
