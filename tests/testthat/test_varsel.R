@@ -618,6 +618,50 @@ if (run_more) {
   })
 }
 
+## Message when cutting off the search ------------------------------------
+
+if (run_more) {
+  test_that("the message when cutting off the search is thrown correctly", {
+    skip_if_not(run_vs)
+    skip_if_not_installed("rstanarm")
+    mssg_cut_search_orig <- options(projpred.mssg_cut_search = NULL)
+    dat_gauss <- data.frame(y = df_gaussian$y, df_gaussian$x)
+    stopifnot(sum(grepl("^X", names(dat_gauss))) > 19)
+    fit_exceed <- suppressWarnings(rstanarm::stan_glm(
+      y ~ ., family = gaussian(), data = dat_gauss, QR = TRUE, chains = 1,
+      iter = 500, refresh = 0, seed = 9876
+    ))
+    fit_not_exceed <- suppressWarnings(rstanarm::stan_glm(
+      y ~ . - X20, family = gaussian(), data = dat_gauss, QR = TRUE, chains = 1,
+      iter = 500, refresh = 0, seed = 9876
+    ))
+    for (nterms_max_i in list(NULL, 0, 20)) {
+      if (is.null(nterms_max_i)) {
+        mssg_expected <- "Cutting off the search at size 19\\."
+      } else {
+        mssg_expected <- NA
+      }
+      expect_message(
+        vs_tmp <- varsel(
+          fit_exceed, method = "forward", nterms_max = nterms_max_i,
+          nclusters = 1, refit_prj = FALSE, seed = 5555, verbose = FALSE
+        ),
+        mssg_expected,
+        info = paste("fit_exceed, nterms_max =", nterms_max_i %||% "NULL")
+      )
+      expect_message(
+        vs_tmp <- varsel(
+          fit_not_exceed, method = "forward", nterms_max = nterms_max_i,
+          nclusters = 1, refit_prj = FALSE, seed = 5555, verbose = FALSE
+        ),
+        NA,
+        info = paste("fit_not_exceed, nterms_max =", nterms_max_i %||% "NULL")
+      )
+    }
+    options(mssg_cut_search_orig)
+  })
+}
+
 ## Regularization ---------------------------------------------------------
 
 # In fact, `regul` is already checked in `test_project.R`, so the `regul` tests
@@ -1224,6 +1268,52 @@ test_that("`refit_prj` works", {
     )
   }
 })
+
+## Message when cutting off the search ------------------------------------
+
+if (run_more) {
+  test_that("the message when cutting off the search is thrown correctly", {
+    skip_if_not(run_vs)
+    skip_if_not_installed("rstanarm")
+    mssg_cut_search_orig <- options(projpred.mssg_cut_search = NULL)
+    dat_gauss <- data.frame(y = df_gaussian$y, df_gaussian$x)
+    stopifnot(sum(grepl("^X", names(dat_gauss))) > 19)
+    fit_exceed <- suppressWarnings(rstanarm::stan_glm(
+      y ~ ., family = gaussian(), data = dat_gauss, QR = TRUE, chains = 1,
+      iter = 500, refresh = 0, seed = 9876
+    ))
+    fit_not_exceed <- suppressWarnings(rstanarm::stan_glm(
+      y ~ . - X20, family = gaussian(), data = dat_gauss, QR = TRUE, chains = 1,
+      iter = 500, refresh = 0, seed = 9876
+    ))
+    for (nterms_max_i in list(NULL, 0, 20)) {
+      if (is.null(nterms_max_i)) {
+        mssg_expected <- "Cutting off the search at size 19\\."
+      } else {
+        mssg_expected <- NA
+      }
+      expect_message(
+        vs_tmp <- suppressWarnings(cv_varsel(
+          fit_exceed, validate_search = FALSE, method = "forward",
+          nterms_max = nterms_max_i, nclusters = 2, refit_prj = FALSE,
+          seed = 5555, verbose = FALSE
+        )),
+        mssg_expected,
+        info = paste("fit_exceed, nterms_max =", nterms_max_i %||% "NULL")
+      )
+      expect_message(
+        vs_tmp <- suppressWarnings(cv_varsel(
+          fit_not_exceed, validate_search = FALSE, method = "forward",
+          nterms_max = nterms_max_i, nclusters = 2, refit_prj = FALSE,
+          seed = 5555, verbose = FALSE
+        )),
+        NA,
+        info = paste("fit_not_exceed, nterms_max =", nterms_max_i %||% "NULL")
+      )
+    }
+    options(mssg_cut_search_orig)
+  })
+}
 
 ## nloo -------------------------------------------------------------------
 

@@ -35,6 +35,7 @@ If you read this from a place other than <https://mc-stan.org/projpred/news/inde
     + An error is now thrown if a length-zero element `weights` or `offset` is returned by the function supplied to argument `extract_model_data` of `init_refmodel()` (before, a vector of ones or zeros was used silently for the observation weights and offsets, respectively).
 * Added the helper function `force_search_terms()` which allows to construct `search_terms` where certain predictor terms are forced to be included (i.e., they are forced to be selected first) whereas other predictor terms are optional (i.e., they are subject to the variable selection, but only after the inclusion of the "forced" terms). (GitHub: #346)
 * Reduced peak memory usage during performance evaluation (more precisely, during the re-projections done for the performance evaluation). This reduction is considerable especially for multilevel submodels, but possibly also for additive submodels. (GitHub: #440, #450)
+* A message is thrown now when cutting off the search at `nterms_max`'s internal default of (currently) `19`. (GitHub: #452)
 
 ## Bug fixes
 
