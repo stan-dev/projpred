@@ -863,6 +863,9 @@ meth_tst <- list(
   L1 = list(method = "L1"),
   forward = list(method = "forward")
 )
+
+# Suppress the message when cutting off the search at `nterms_max = 19`:
+options(projpred.mssg_cut_search = FALSE)
 # Suppress the PSIS warnings:
 options(projpred.warn_psis = FALSE)
 # Suppress the subsampled PSIS-LOO CV warnings:
