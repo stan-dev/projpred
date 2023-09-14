@@ -60,6 +60,11 @@ if (run_snaps && !requireNamespace("rlang", quietly = TRUE)) {
           "found. Deactivating snapshot testing now.")
   run_snaps <- FALSE
 }
+if (run_snaps && !requireNamespace("vdiffr", quietly = TRUE)) {
+  warning("Package 'vdiffr' is needed for snapshot testing, but could not be ",
+          "found. Deactivating snapshot testing now.")
+  run_snaps <- FALSE
+}
 if (run_snaps) {
   testthat_ed_max2 <- edition_get() <= 2
 }
@@ -111,6 +116,11 @@ if (run_prll) {
       run_prll <- FALSE
     } else {
       dopar_backend <- "doFuture"
+    }
+    if (!requireNamespace("future", quietly = TRUE)) {
+      warning("Package 'future' is needed for the parallel tests, but ",
+              "could not be found. Deactivating the parallel tests now.")
+      run_prll <- FALSE
     }
     if (!identical(.Platform$OS.type, "windows")) {
       # This case (which should not be possible by default) is only included
