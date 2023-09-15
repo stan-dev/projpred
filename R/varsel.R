@@ -13,11 +13,9 @@
 #'   `d_test`" below, providing test data for evaluating the predictive
 #'   performance of the submodels as well as of the reference model. If `NULL`,
 #'   the training data is used.
-#' @param method The method for the search part. Possible options are `"L1"` for
-#'   L1 search and `"forward"` for forward search. If `NULL`, then internally,
-#'   `"L1"` is used, except if (i) the reference model has multilevel or
-#'   additive terms, (ii) if `!is.null(search_terms)`, or (iii) if the
-#'   augmented-data projection is used. See also section "Details" below.
+#' @param method The method for the search part. Possible options are
+#'   `"forward"` for forward search and `"L1"` for L1 search. See also section
+#'   "Details" below.
 #' @param refit_prj For the evaluation part, should the submodels along the
 #'   predictor ranking be fitted again (`TRUE`) or should their fits from the
 #'   search part be re-used (`FALSE`)?
@@ -198,7 +196,7 @@ varsel.default <- function(object, ...) {
 
 #' @rdname varsel
 #' @export
-varsel.refmodel <- function(object, d_test = NULL, method = NULL,
+varsel.refmodel <- function(object, d_test = NULL, method = "forward",
                             ndraws = NULL, nclusters = 20, ndraws_pred = 400,
                             nclusters_pred = NULL,
                             refit_prj = !inherits(object, "datafit"),
@@ -206,6 +204,11 @@ varsel.refmodel <- function(object, d_test = NULL, method = NULL,
                             lambda_min_ratio = 1e-5, nlambda = 150,
                             thresh = 1e-6, regul = 1e-4, penalty = NULL,
                             search_terms = NULL, seed = NA, ...) {
+  if (missing(method) && getOption("projpred.mssg_method_changed", TRUE)) {
+    message("NOTE: In projpred 2.7.0, the default search method ",
+            "was set to \"forward\" for all kinds of models.")
+  }
+
   if (exists(".Random.seed", envir = .GlobalEnv)) {
     rng_state_old <- get(".Random.seed", envir = .GlobalEnv)
   }
@@ -443,35 +446,26 @@ parse_args_varsel <- function(refmodel, method, refit_prj, nterms_max,
   has_group_features <- formula_contains_group_terms(refmodel$formula)
   has_additive_features <- formula_contains_additive_terms(refmodel$formula)
 
-  if (is.null(method)) {
-    if (has_group_features || has_additive_features || !search_terms_was_null ||
-        refmodel$family$for_augdat) {
-      method <- "forward"
-    } else {
-      method <- "L1"
+  stopifnot(!is.null(method))
+  if (method == "l1") {
+    method <- toupper(method)
+  }
+  if (method == "L1") {
+    if (has_group_features || has_additive_features) {
+      stop("L1 search is only supported for reference models without ",
+           "multilevel and without additive (\"smoothing\") terms.")
     }
-  } else {
-    if (method == "l1") {
-      method <- toupper(method)
+    if (!search_terms_was_null) {
+      warning("Argument `search_terms` only takes effect if ",
+              "`method = \"forward\"`.")
     }
-    if (method == "L1") {
-      if (has_group_features || has_additive_features) {
-        stop("L1 search is only supported for reference models without ",
-             "multilevel and without additive (\"smoothing\") terms.")
-      }
-      if (!search_terms_was_null) {
-        warning("Argument `search_terms` only takes effect if ",
-                "`method = \"forward\"`.")
-      }
-      if (refmodel$family$for_augdat) {
-        stop("Currently, the augmented-data projection may not be combined ",
-             "with an L1 search.")
-      }
+    if (refmodel$family$for_augdat) {
+      stop("Currently, the augmented-data projection may not be combined ",
+           "with an L1 search.")
     }
   }
-
-  if (!(method %in% c("L1", "forward"))) {
-    stop("Unknown search method")
+  if (!method %in% c("L1", "forward")) {
+    stop("Unexpected value for argument `method`.")
   }
 
   stopifnot(!is.null(refit_prj))
