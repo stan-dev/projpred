@@ -172,22 +172,23 @@ of several predictor terms connected by the \code{+} symbol. To understand how
 these building blocks work, it is important to know how \pkg{projpred}'s
 forward search works: It starts with an empty vector \code{chosen} which will
 later contain already selected predictor terms. Then, the search iterates
-over model sizes \eqn{j \in \{1, ..., J\}}{j = 1, ..., J}. The candidate
-models at model size \eqn{j} are constructed from those elements from
-\code{search_terms} which yield model size \eqn{j} when combined with the
+over model sizes \eqn{j \in \{0, ..., J\}}{j = 0, ..., J} (with \eqn{J}
+denoting the maximum submodel size, not counting the intercept). The
+candidate models at model size \eqn{j} are constructed from those elements
+from \code{search_terms} which yield model size \eqn{j} when combined with the
 \code{chosen} predictor terms. Note that sometimes, there may be no candidate
 models for model size \eqn{j}. Also note that internally, \code{search_terms} is
 expanded to include the intercept (\code{"1"}), so the first step of the search
-(model size 1) always consists of the intercept-only model as the only
+(model size 0) always consists of the intercept-only model as the only
 candidate.
 
 As a \code{search_terms} example, consider a reference model with formula \code{y ~ x1 + x2 + x3}. Then, to ensure that \code{x1} is always included in the
 candidate models, specify \code{search_terms = c("x1", "x1 + x2", "x1 + x3", "x1 + x2 + x3")} (or, in a simpler way that leads to the same results,
 \code{search_terms = c("x1", "x1 + x2", "x1 + x3")}, for which helper function
 \code{\link[=force_search_terms]{force_search_terms()}} exists). This search would start with \code{y ~ 1} as the
-only candidate at model size 1. At model size 2, \code{y ~ x1} would be the only
-candidate. At model size 3, \code{y ~ x1 + x2} and \code{y ~ x1 + x3} would be the
-two candidates. At the last model size of 4, \code{y ~ x1 + x2 + x3} would be
+only candidate at model size 0. At model size 1, \code{y ~ x1} would be the only
+candidate. At model size 2, \code{y ~ x1 + x2} and \code{y ~ x1 + x3} would be the
+two candidates. At the last model size of 3, \code{y ~ x1 + x2 + x3} would be
 the only candidate. As another example, to exclude \code{x1} from the search,
 specify \code{search_terms = c("x2", "x3", "x2 + x3")} (or, in a simpler way
 that leads to the same results, \code{search_terms = c("x2", "x3")}).
