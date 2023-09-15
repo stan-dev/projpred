@@ -147,12 +147,15 @@
 #'   As a `search_terms` example, consider a reference model with formula `y ~
 #'   x1 + x2 + x3`. Then, to ensure that `x1` is always included in the
 #'   candidate models, specify `search_terms = c("x1", "x1 + x2", "x1 + x3",
-#'   "x1 + x2 + x3")`. This search would start with `y ~ 1` as the only
-#'   candidate at model size 1. At model size 2, `y ~ x1` would be the only
-#'   candidate. At model size 3, `y ~ x1 + x2` and `y ~ x1 + x3` would be the
-#'   two candidates. At the last model size of 4, `y ~ x1 + x2 + x3` would be
-#'   the only candidate. As another example, to exclude `x1` from the search,
-#'   specify `search_terms = c("x2", "x3", "x2 + x3")`.
+#'   "x1 + x2 + x3")` (or, in a simpler way that leads to the same results,
+#'   `search_terms = c("x1", "x1 + x2", "x1 + x3")`). This search would start
+#'   with `y ~ 1` as the only candidate at model size 1. At model size 2,
+#'   `y ~ x1` would be the only candidate. At model size 3, `y ~ x1 + x2` and
+#'   `y ~ x1 + x3` would be the two candidates. At the last model size of 4,
+#'   `y ~ x1 + x2 + x3` would be the only candidate. As another example, to
+#'   exclude `x1` from the search, specify `search_terms = c("x2", "x3",
+#'   "x2 + x3")` (or, in a simpler way that leads to the same results,
+#'   `search_terms = c("x2", "x3")`).
 #'
 #' @return An object of class `vsel`. The elements of this object are not meant
 #'   to be accessed directly but instead via helper functions (see the main
