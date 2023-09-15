@@ -197,9 +197,12 @@ accurate. Furthermore, forward search may find a sparser model with
 comparable performance to that found by L1 search, but it may also start
 overfitting when more predictors are added.
 
-An L1 search may select interaction terms before the corresponding main
-terms are selected. If this is undesired, choose the forward search
-instead.
+An L1 search may select an interaction term before all involved lower-order
+interaction terms (including main-effect terms) have been selected. In
+\pkg{projpred} versions > 2.6.0, the resulting predictor ranking is
+automatically modified so that the lower-order interaction terms come
+before this interaction term, but if this is conceptually undesired, choose
+the forward search instead.
 
 The elements of the \code{search_terms} character vector don't need to be
 individual predictor terms. Instead, they can be building blocks consisting
