@@ -194,6 +194,7 @@ cv_varsel.refmodel <- function(
   nterms_max <- args$nterms_max
   nclusters <- args$nclusters
   search_terms <- args$search_terms
+  search_terms_was_null <- args$search_terms_was_null
   # Parse arguments specific to cv_varsel():
   args <- parse_args_cv_varsel(
     refmodel = refmodel, cv_method = cv_method, K = K,
@@ -214,7 +215,8 @@ cv_varsel.refmodel <- function(
     search_path_full_data <- select(
       refmodel = refmodel, ndraws = ndraws, nclusters = nclusters,
       method = method, nterms_max = nterms_max, penalty = penalty,
-      verbose = verbose, opt = opt, search_terms = search_terms, ...
+      verbose = verbose, opt = opt, search_terms = search_terms,
+      search_terms_was_null = search_terms_was_null, ...
     )
     verb_out("-----", verbose = verbose)
     ce_out <- rep(NA_real_, length(search_path_full_data$solution_terms) + 1L)
@@ -227,7 +229,7 @@ cv_varsel.refmodel <- function(
       nclusters_pred = nclusters_pred, refit_prj = refit_prj, penalty = penalty,
       verbose = verbose, opt = opt, nloo = nloo,
       validate_search = validate_search, search_terms = search_terms,
-      parallel = parallel, ...
+      search_terms_was_null = search_terms_was_null, parallel = parallel, ...
     )
   } else if (cv_method == "kfold") {
     sel_cv <- kfold_varsel(
@@ -348,7 +350,7 @@ parse_args_cv_varsel <- function(refmodel, cv_method, K, validate_search) {
 loo_varsel <- function(refmodel, method, nterms_max, ndraws,
                        nclusters, ndraws_pred, nclusters_pred, refit_prj,
                        penalty, verbose, opt, nloo, validate_search,
-                       search_terms, parallel, ...) {
+                       search_terms, search_terms_was_null, parallel, ...) {
   ## Pre-processing ---------------------------------------------------------
 
   has_grp <- formula_contains_group_terms(refmodel$formula)
@@ -521,7 +523,8 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
     search_path <- select(
       refmodel = refmodel, ndraws = ndraws, nclusters = nclusters,
       method = method, nterms_max = nterms_max, penalty = penalty,
-      verbose = verbose, opt = opt, search_terms = search_terms, ...
+      verbose = verbose, opt = opt, search_terms = search_terms,
+      search_terms_was_null = search_terms_was_null, ...
     )
     verb_out("-----", verbose = verbose)
 
@@ -756,7 +759,8 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
         refmodel = refmodel, ndraws = ndraws, nclusters = nclusters,
         reweighting_args = list(cl_ref = cl_sel, wdraws_ref = exp(lw[, i])),
         method = method, nterms_max = nterms_max, penalty = penalty,
-        verbose = verbose_search, opt = opt, search_terms = search_terms, ...
+        verbose = verbose_search, opt = opt, search_terms = search_terms,
+        est_runtime = FALSE, ...
       )
 
       # Run the performance evaluation for the submodels along the predictor
@@ -1052,7 +1056,8 @@ kfold_varsel <- function(refmodel, method, nterms_max, ndraws,
     search_path <- select(
       refmodel = fold$refmodel, ndraws = ndraws, nclusters = nclusters,
       method = method, nterms_max = nterms_max, penalty = penalty,
-      verbose = verbose_search, opt = opt, search_terms = search_terms, ...
+      verbose = verbose_search, opt = opt, search_terms = search_terms,
+      est_runtime = FALSE, ...
     )
 
     # Run the performance evaluation for the submodels along the predictor

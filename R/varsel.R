@@ -234,6 +234,7 @@ varsel.refmodel <- function(object, d_test = NULL, method = "forward",
   nterms_max <- args$nterms_max
   nclusters <- args$nclusters
   search_terms <- args$search_terms
+  search_terms_was_null <- args$search_terms_was_null
 
   # Pre-process `d_test`:
   if (is.null(d_test)) {
@@ -292,7 +293,8 @@ varsel.refmodel <- function(object, d_test = NULL, method = "forward",
   search_path <- select(
     refmodel = refmodel, ndraws = ndraws, nclusters = nclusters,
     method = method, nterms_max = nterms_max, penalty = penalty,
-    verbose = verbose, opt = opt, search_terms = search_terms, ...
+    verbose = verbose, opt = opt, search_terms = search_terms,
+    search_terms_was_null = search_terms_was_null, ...
   )
   verb_out("-----", verbose = verbose)
 
@@ -517,5 +519,6 @@ parse_args_varsel <- function(refmodel, method, refit_prj, nterms_max,
     )
   }
 
-  return(nlist(method, refit_prj, nterms_max, nclusters, search_terms))
+  return(nlist(method, refit_prj, nterms_max, nclusters, search_terms,
+               search_terms_was_null))
 }
