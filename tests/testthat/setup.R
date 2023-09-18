@@ -878,6 +878,8 @@ meth_tst <- list(
 options(projpred.mssg_cut_search = FALSE)
 # Suppress the message about the default `method`:
 options(projpred.mssg_method_changed = FALSE)
+# Suppress the message for the runtime of the forward search:
+options(projpred.mssg_time = FALSE)
 # Suppress the PSIS warnings:
 options(projpred.warn_psis = FALSE)
 # Suppress the subsampled PSIS-LOO CV warnings:
