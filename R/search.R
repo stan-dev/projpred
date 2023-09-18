@@ -19,16 +19,16 @@ search_forward <- function(p_ref, refmodel, nterms_max, verbose = TRUE, opt,
 
     # Perform the projections (for the intercept-only model, we measure the
     # runtime to estimate the total runtime for the search):
-    if (size == 1 && est_runtime) {
+    if (size == 1 && est_runtime && getOption("projpred.mssg_time", TRUE)) {
       time_bef <- Sys.time()
     }
     submodls <- lapply(full_cands, get_submodl_prj, p_ref = p_ref,
                        refmodel = refmodel, regul = opt$regul, ...)
-    if (size == 1 && est_runtime) {
+    if (size == 1 && est_runtime && getOption("projpred.mssg_time", TRUE)) {
       time_aft <- Sys.time()
       dtime <- difftime(time_aft, time_bef, units = "secs")
       time_est <- dtime * nterms_max * (nterms_max + 1) / 2
-      if (time_est > 3 * 60 && getOption("projpred.mssg_time", TRUE)) {
+      if (time_est > 3 * 60) {
         mssg_time <- paste0(
           "Based on the runtime for the intercept-only model, the remaining ",
           "forward search is estimated to take ca. ", round(time_est / 60, 1),
