@@ -405,7 +405,7 @@ varsel.refmodel <- function(object, d_test = NULL, method = "forward",
 #   model size being equal to the number of projected draws), and `p_sel` (the
 #   output from get_refdist() for the search).
 select <- function(refmodel, ndraws, nclusters, reweighting_args = NULL, method,
-                   nterms_max, penalty, verbose, opt, search_terms, ...) {
+                   nterms_max, penalty, verbose, opt, ...) {
   if (is.null(reweighting_args)) {
     p_sel <- get_refdist(refmodel, ndraws = ndraws, nclusters = nclusters)
   } else {
@@ -424,7 +424,7 @@ select <- function(refmodel, ndraws, nclusters, reweighting_args = NULL, method,
   } else if (method == "forward") {
     search_path <- search_forward(
       p_ref = p_sel, refmodel = refmodel, nterms_max = nterms_max,
-      verbose = verbose, opt = opt, search_terms = search_terms, ...
+      verbose = verbose, opt = opt, ...
     )
   }
   search_path$p_sel <- p_sel
