@@ -206,10 +206,10 @@ cv_varsel.refmodel <- function(
   opt <- nlist(lambda_min_ratio, nlambda, thresh, regul)
 
   if (validate_search) {
-    # Clustering or thinning for the final full-data search (already clustering
-    # or thinning here for consistent PRNG states between the full-data search
-    # in the `validate_search == FALSE` case and the full-data search in the
-    # `validate_search == TRUE` case we are in here):
+    # Full-data search (already done here and not at the end to ensure
+    # consistent PRNG states between the full-data search in the
+    # `validate_search = FALSE` case and the full-data search in the
+    # `validate_search = TRUE` case we are in here):
     verb_out("-----\nRunning the search using the full dataset ...",
              verbose = verbose)
     search_path_full_data <- select(
