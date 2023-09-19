@@ -403,6 +403,10 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
     stop("Currently, projpred requires the reference model's posterior draws ",
          "to have constant weights.")
   }
+  if (nrow(loglik_forPSIS) <= 1) {
+    stop("Currently, more than one posterior draw from the reference model is ",
+         "needed (because projpred relies on loo::psis() for PSIS-LOO CV).")
+  }
   # Call loo::psis() and while doing so, catch warnings via capture.output() to
   # filter out some of them.
   # Note: capture.output() should only be used to filter out warning messages
@@ -581,101 +585,108 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
         refmodel$y[inds], refmodel$wobs[inds]
       ))
     }
-    # Use loo::sis() if the projected draws (i.e., the draws resulting
-    # from the clustering or thinning) have nonconstant weights:
-    const_wdraws_prj_eval <- length(unique(refdist_eval$wdraws_prj)) == 1
-    if (const_wdraws_prj_eval) {
-      # Internally, loo::psis() doesn't perform the Pareto smoothing if the
-      # number of draws is small (as indicated by object `no_psis_eval`, see
-      # below). In projpred, this can occur, e.g., if users request a number of
-      # projected draws (for performance evaluation, either after clustering or
-      # thinning the reference model's posterior draws) that is much smaller
-      # than the default of 400. In order to throw a customized warning message
-      # (and to avoid the calculation of Pareto k-values, see loo issue
-      # stan-dev/loo#227), object `no_psis_eval` indicates whether loo::psis()
-      # would perform the Pareto smoothing or not (for the decision rule, see
-      # loo:::n_pareto() and loo:::enough_tail_samples(), keeping in mind that
-      # we have `r_eff = 1` for all observations here).
-      S_for_psis_eval <- nrow(log_lik_ref)
-      no_psis_eval <- ceiling(min(0.2 * S_for_psis_eval,
-                                  3 * sqrt(S_for_psis_eval))) < 5
-      if (no_psis_eval) {
+    if (nrow(log_lik_ref) > 1) {
+      # Use loo::sis() if the projected draws (i.e., the draws resulting
+      # from the clustering or thinning) have nonconstant weights:
+      const_wdraws_prj_eval <- length(unique(refdist_eval$wdraws_prj)) == 1
+      if (const_wdraws_prj_eval) {
+        # Internally, loo::psis() doesn't perform the Pareto smoothing if the
+        # number of draws is small (as indicated by object `no_psis_eval`, see
+        # below). In projpred, this can occur, e.g., if users request a number
+        # of projected draws (for performance evaluation, either after
+        # clustering or thinning the reference model's posterior draws) that is
+        # much smaller than the default of 400. In order to throw a customized
+        # warning message (and to avoid the calculation of Pareto k-values, see
+        # loo issue stan-dev/loo#227), object `no_psis_eval` indicates whether
+        # loo::psis() would perform the Pareto smoothing or not (for the
+        # decision rule, see loo:::n_pareto() and loo:::enough_tail_samples(),
+        # keeping in mind that we have `r_eff = 1` for all observations here).
+        S_for_psis_eval <- nrow(log_lik_ref)
+        no_psis_eval <- ceiling(min(0.2 * S_for_psis_eval,
+                                    3 * sqrt(S_for_psis_eval))) < 5
+        if (no_psis_eval) {
+          if (getOption("projpred.warn_psis", TRUE)) {
+            warning(
+              "In the recalculation of the reference model's PSIS-LOO CV ",
+              "weights for the performance evaluation, the number of draws ",
+              "after clustering or thinning is too small for Pareto ",
+              "smoothing. Using standard importance sampling (SIS) instead. ",
+              "Watch out for warnings thrown by the original-draws Pareto ",
+              "smoothing to see whether it makes sense to increase the number ",
+              "of draws (resulting from the clustering or thinning for the ",
+              "performance evaluation). Alternatively, K-fold CV can be used."
+            )
+          }
+          # Use loo::sis().
+          # In principle, we could rely on loo::psis() here (because in such a
+          # case, it would internally switch to SIS automatically), but using
+          # loo::sis() explicitly is safer because if the loo package changes
+          # its decision rule, we would get a mismatch between our customized
+          # warning here and the IS method used by loo. See also loo issue
+          # stan-dev/loo#227.
+          importance_sampling_nm <- "sis"
+        } else {
+          # Use loo::psis().
+          # Usually, we have a small number of projected draws here (400 by
+          # default), which means that the 'loo' package will automatically
+          # perform the regularization from Vehtari et al. (2022,
+          # <https://doi.org/10.48550/arXiv.1507.02646>, appendix G).
+          importance_sampling_nm <- "psis"
+        }
+      } else {
         if (getOption("projpred.warn_psis", TRUE)) {
           warning(
-            "In the recalculation of the reference model's PSIS-LOO CV ",
-            "weights for the performance evaluation, the number of draws ",
-            "after clustering or thinning is too small for Pareto smoothing. ",
-            "Using standard importance sampling (SIS) instead. Watch out for ",
-            "warnings thrown by the original-draws Pareto smoothing to see ",
-            "whether it makes sense to increase the number of draws ",
-            "(resulting from the clustering or thinning for the performance ",
-            "evaluation). Alternatively, K-fold CV can be used."
+            "The projected draws used for the performance evaluation have ",
+            "different (i.e., nonconstant) weights, so using standard ",
+            "importance sampling (SIS) instead of Pareto-smoothed importance ",
+            "sampling (PSIS). In general, PSIS is recommended over SIS."
           )
         }
         # Use loo::sis().
-        # In principle, we could rely on loo::psis() here (because in such a
-        # case, it would internally switch to SIS automatically), but using
-        # loo::sis() explicitly is safer because if the loo package changes its
-        # decision rule, we would get a mismatch between our customized warning
-        # here and the IS method used by loo. See also loo issue
-        # stan-dev/loo#227.
         importance_sampling_nm <- "sis"
-      } else {
-        # Use loo::psis().
-        # Usually, we have a small number of projected draws here (400 by
-        # default), which means that the 'loo' package will automatically
-        # perform the regularization from Vehtari et al. (2022,
-        # <https://doi.org/10.48550/arXiv.1507.02646>, appendix G).
-        importance_sampling_nm <- "psis"
       }
-    } else {
-      if (getOption("projpred.warn_psis", TRUE)) {
-        warning(
-          "The projected draws used for the performance evaluation have ",
-          "different (i.e., nonconstant) weights, so using standard ",
-          "importance sampling (SIS) instead of Pareto-smoothed importance ",
-          "sampling (PSIS). In general, PSIS is recommended over SIS."
-        )
-      }
-      # Use loo::sis().
-      importance_sampling_nm <- "sis"
-    }
-    importance_sampling_func <- get(importance_sampling_nm, asNamespace("loo"))
-    warn_orig <- options(warn = 1)
-    warn_capt <- utils::capture.output({
-      sub_psisloo <- importance_sampling_func(-log_lik_ref, cores = 1,
-                                              r_eff = NA)
-    }, type = "message")
-    options(warn_orig)
-    warn_capt <- setdiff(warn_capt, "")
-    # Filter out the Pareto k-value warning (we throw a customized one instead):
-    warn_capt <- grep("Some Pareto k diagnostic values are (too|slightly) high",
-                      warn_capt, value = TRUE, invert = TRUE)
-    if (length(warn_capt) > 0) {
-      warning(warn_capt)
-    }
-    if (importance_sampling_nm == "psis") {
-      pareto_k_eval <- loo::pareto_k_values(sub_psisloo)
-      warn_pareto(
-        n07 = sum(pareto_k_eval > 0.7),
-        n05 = sum(0.7 >= pareto_k_eval & pareto_k_eval > 0.5),
-        warn_txt_start = paste0(
-          "In the recalculation of the reference model's PSIS-LOO CV weights ",
-          "for the performance evaluation (based on clustered or thinned ",
-          "posterior draws), "
-        ),
-        warn_txt_mid_common = paste0(
-          " (out of ", nloo, ") Pareto k-values are "
-        ),
-        warn_txt_end = paste0(
-          ". Watch out for warnings thrown by the original-draws Pareto ",
-          "smoothing to see whether it makes sense to increase the number of ",
-          "draws (resulting from the clustering or thinning for the ",
-          "performance evaluation). Alternatively, K-fold CV can be used."
-        )
+      importance_sampling_func <- get(importance_sampling_nm,
+                                      asNamespace("loo"))
+      warn_orig <- options(warn = 1)
+      warn_capt <- utils::capture.output({
+        sub_psisloo <- importance_sampling_func(-log_lik_ref, cores = 1,
+                                                r_eff = NA)
+      }, type = "message")
+      options(warn_orig)
+      warn_capt <- setdiff(warn_capt, "")
+      # Filter out Pareto k-value warnings (we throw a customized one instead):
+      warn_capt <- grep(
+        "Some Pareto k diagnostic values are (too|slightly) high", warn_capt,
+        value = TRUE, invert = TRUE
       )
+      if (length(warn_capt) > 0) {
+        warning(warn_capt)
+      }
+      if (importance_sampling_nm == "psis") {
+        pareto_k_eval <- loo::pareto_k_values(sub_psisloo)
+        warn_pareto(
+          n07 = sum(pareto_k_eval > 0.7),
+          n05 = sum(0.7 >= pareto_k_eval & pareto_k_eval > 0.5),
+          warn_txt_start = paste0(
+            "In the recalculation of the reference model's PSIS-LOO CV ",
+            "weights for the performance evaluation (based on clustered or ",
+            "thinned posterior draws), "
+          ),
+          warn_txt_mid_common = paste0(
+            " (out of ", nloo, ") Pareto k-values are "
+          ),
+          warn_txt_end = paste0(
+            ". Watch out for warnings thrown by the original-draws Pareto ",
+            "smoothing to see whether it makes sense to increase the number ",
+            "of draws (resulting from the clustering or thinning for the ",
+            "performance evaluation). Alternatively, K-fold CV can be used."
+          )
+        )
+      }
+      lw_sub <- weights(sub_psisloo)
+    } else {
+      lw_sub <- matrix(0, nrow = nrow(log_lik_ref), ncol = ncol(log_lik_ref))
     }
-    lw_sub <- weights(sub_psisloo)
     # Take into account that clustered draws usually have different weights:
     lw_sub <- lw_sub + log(refdist_eval$wdraws_prj)
     # This re-weighting requires a re-normalization (as.array() is applied to
