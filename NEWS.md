@@ -47,6 +47,7 @@ If you read this from a place other than <https://mc-stan.org/projpred/news/inde
 * `cv_varsel()` with `validate_search = FALSE` used to call `loo::psis()` (for the submodel performance evaluation PSIS-LOO CV) even in case of draws with different (i.e., nonconstant) weights. In such cases, `loo::sis()` is called now (with a warning). (GitHub: #438)
 * Fixed a bug for **rstanarm** (and custom) multilevel reference models with interactions (`:` syntax) between grouping variables, caused by missing columns in the reference model's `data.frame` (for **brms** reference models, this was already done correctly). (GitHub: #445)
 * In case of an **rstanarm** reference model, the default for arguments `weightsnew` and `offsetnew` (see `proj_linpred()`, `proj_predict()`, and `predict.refmodel()`) now causes the original observation weights and offsets to be used (instead of ones and zeros, respectively) if possible. For **brms** reference models, this behavior had already been implemented before. (GitHub: #449; see also "Minor changes" above)
+* Fixed a bug causing PSIS-LOO CV with `validate_search = FALSE` to fail in case of a single projected draw. (GitHub: #454)
 
 # projpred 2.6.0
 
