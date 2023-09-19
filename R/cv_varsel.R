@@ -403,6 +403,10 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
     stop("Currently, projpred requires the reference model's posterior draws ",
          "to have constant weights.")
   }
+  if (nrow(loglik_forPSIS) <= 1) {
+    stop("Currently, more than one posterior draw from the reference model is ",
+         "needed (because projpred relies on loo::psis() for PSIS-LOO CV).")
+  }
   # Call loo::psis() and while doing so, catch warnings via capture.output() to
   # filter out some of them.
   # Note: capture.output() should only be used to filter out warning messages
