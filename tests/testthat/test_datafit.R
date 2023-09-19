@@ -225,10 +225,7 @@ test_that(paste(
   skip_if_not(run_vs)
   for (tstsetup in names(vss_datafit)) {
     mod_crr <- args_vs_datafit[[tstsetup]]$mod_nm
-    meth_exp_crr <- args_vs_datafit[[tstsetup]]$method
-    if (is.null(meth_exp_crr)) {
-      meth_exp_crr <- ifelse(mod_crr == "glm", "L1", "forward")
-    }
+    meth_exp_crr <- args_vs_datafit[[tstsetup]]$method %||% "forward"
     extra_tol_crr <- 1.5
     if (any(grepl(":", ranking(vss_datafit[[tstsetup]])[["fulldata"]]))) {
       ### Testing for non-increasing element `ce` (for increasing model size)
@@ -260,10 +257,7 @@ test_that(paste(
   skip_if_not(run_cvvs)
   for (tstsetup in names(cvvss_datafit)) {
     mod_crr <- args_cvvs_datafit[[tstsetup]]$mod_nm
-    meth_exp_crr <- args_cvvs_datafit[[tstsetup]]$method
-    if (is.null(meth_exp_crr)) {
-      meth_exp_crr <- ifelse(mod_crr == "glm", "L1", "forward")
-    }
+    meth_exp_crr <- args_cvvs_datafit[[tstsetup]]$method %||% "forward"
     vsel_tester(
       cvvss_datafit[[tstsetup]],
       with_cv = TRUE,
@@ -320,9 +314,7 @@ test_that(paste(
     if (is.null(nterms_crr)) {
       nterms_crr <- suggest_size(vss_datafit[[tstsetup_vs]], warnings = FALSE)
     }
-    with_L1 <- (args_vs_datafit[[tstsetup_vs]]$mod_nm == "glm" &&
-                  is.null(args_vs_datafit[[tstsetup_vs]]$method)) ||
-      identical(args_vs_datafit[[tstsetup_vs]]$method, "L1")
+    with_L1 <- identical(args_vs_datafit[[tstsetup_vs]]$method, "L1")
     if (length(nterms_crr) == 1) {
       solterms_expected_crr <- vss_datafit[[tstsetup_vs]]$solution_terms[
         seq_len(nterms_crr)

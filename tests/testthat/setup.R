@@ -1084,24 +1084,20 @@ if (run_vs) {
     fam_crr <- args_ref[[tstsetup_ref]]$fam_nm
     prj_crr <- args_ref[[tstsetup_ref]]$prj_nm
     if (prj_crr == "trad" && mod_crr == "glm" && fam_crr == "gauss") {
-      # Here, we test the default `method` (which is L1 search here) as well as
-      # forward search:
-      meth <- meth_tst[setdiff(names(meth_tst), "L1")]
-    } else if (prj_crr %in% c("trad_compare", "latent")) {
-      # For traditional settings which correspond to an augmented-data setting,
-      # choose forward search (needed for comparing the two approaches);
-      # correspondingly, we also need forward search for the latent projection
-      # (even though in principle, the latent projection can be used with L1
-      # search):
-      meth <- meth_tst["forward"]
+      # Here, we test the default `method` (forward search) as well as L1
+      # search:
+      meth <- meth_tst[setdiff(names(meth_tst), "forward")]
+    } else if (prj_crr == "trad" && mod_crr == "glm") {
+      # Here, we only test L1 search:
+      meth <- meth_tst["L1"]
     } else {
-      # Here, we only test the default `method`:
+      # Here, we only test the default `method` (forward search):
       meth <- meth_tst["default_meth"]
     }
     lapply(meth, function(meth_i) {
       if (mod_crr == "glm" && fam_crr == "gauss" &&
           grepl("\\.stdformul\\.", tstsetup_ref) &&
-          identical(meth_i$method, "forward")) {
+          !identical(meth_i$method, "L1")) {
         # Here, we also test non-NULL `search_terms`:
         search_trms <- search_trms_tst
       } else {
@@ -1183,12 +1179,8 @@ if (run_cvvs) {
     mod_crr <- args_ref[[tstsetup_ref]]$mod_nm
     fam_crr <- args_ref[[tstsetup_ref]]$fam_nm
     prj_crr <- args_ref[[tstsetup_ref]]$prj_nm
-    if (prj_crr %in% c("trad_compare", "latent")) {
-      # For traditional settings which correspond to an augmented-data setting
-      # (`trad_compare`), choose forward search (needed for comparing the two
-      # approaches; therefore also necessary for the `latent` setting even
-      # though in principle, the latent projection can be used with L1 search):
-      meth <- meth_tst["forward"]
+    if (prj_crr == "trad" && mod_crr == "glm") {
+      meth <- meth_tst["L1"]
     } else {
       meth <- meth_tst["default_meth"]
     }
@@ -1222,9 +1214,7 @@ if (run_cvvs) {
              (prj_crr %in% c("latent", "augdat", "trad_compare") &&
               !run_valsearch_aug_lat)) &&
             # Forward search:
-            ((length(meth_i) == 0 &&
-              (mod_crr != "glm" || prj_crr == "augdat")) ||
-             (length(meth_i) > 0 && meth_i$method == "forward"))) {
+            !identical(meth_i$method, "L1")) {
           # These are cases with forward search, LOO CV, and
           # `!run_valsearch_always` where we want to save time by using
           # `validate_search = FALSE`:
@@ -1441,15 +1431,14 @@ cre_args_prj_vsel <- function(tstsetups_prj_vsel) {
 if (run_vs) {
   tstsetups_prj_vs <- unlist(lapply(mod_nms, function(mod_nm) {
     if (any(grepl(paste0("\\.", mod_nm, "\\.gauss\\."), names(vss)))) {
-      tstsetups_out <- grep(
-        paste0("\\.", mod_nm, "\\.gauss\\..*\\.default_meth"), names(vss),
-        value = TRUE
-      )
+      tstsetups_out <- grep(paste0("\\.", mod_nm, "\\.gauss\\."), names(vss),
+                            value = TRUE)
     } else {
-      tstsetups_out <- grep(
-        paste0("\\.", mod_nm, "\\..*\\.default_meth"), names(vss),
-        value = TRUE
-      )
+      tstsetups_out <- grep(paste0("\\.", mod_nm, "\\."), names(vss),
+                            value = TRUE)
+    }
+    if (any(grepl("\\.L1\\.", tstsetups_out))) {
+      tstsetups_out <- grep("\\.L1\\.", tstsetups_out, value = TRUE)
     }
     if (!run_more) {
       tstsetups_out <- head(tstsetups_out, 1)
@@ -1482,16 +1471,15 @@ if (run_vs) {
 if (run_cvvs) {
   tstsetups_prj_cvvs <- unlist(lapply(mod_nms, function(mod_nm) {
     if (any(grepl(paste0("\\.", mod_nm, "\\.gauss\\."), names(cvvss)))) {
-      tstsetups_out <- grep(
-        paste0("\\.", mod_nm,
-               "\\.gauss\\..*\\.default_meth\\.default_cvmeth"),
-        names(cvvss), value = TRUE
-      )
+      tstsetups_out <- grep(paste0("\\.", mod_nm,
+                                   "\\.gauss\\..*\\.default_cvmeth"),
+                            names(cvvss), value = TRUE)
     } else {
-      tstsetups_out <- grep(
-        paste0("\\.", mod_nm, "\\..*\\.default_meth\\.default_cvmeth"),
-        names(cvvss), value = TRUE
-      )
+      tstsetups_out <- grep(paste0("\\.", mod_nm, "\\..*\\.default_cvmeth"),
+                            names(cvvss), value = TRUE)
+    }
+    if (any(grepl("\\.L1\\.", tstsetups_out))) {
+      tstsetups_out <- grep("\\.L1\\.", tstsetups_out, value = TRUE)
     }
     if (!run_more) {
       tstsetups_out <- head(tstsetups_out, 1)

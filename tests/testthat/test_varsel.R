@@ -12,11 +12,7 @@ test_that(paste(
     mod_crr <- args_vs[[tstsetup]]$mod_nm
     fam_crr <- args_vs[[tstsetup]]$fam_nm
     prj_crr <- args_vs[[tstsetup]]$prj_nm
-    meth_exp_crr <- args_vs[[tstsetup]]$method
-    if (is.null(meth_exp_crr)) {
-      meth_exp_crr <- ifelse(mod_crr == "glm" && prj_crr != "augdat",
-                             "L1", "forward")
-    }
+    meth_exp_crr <- args_vs[[tstsetup]]$method %||% "forward"
     vsel_tester(
       vss[[tstsetup]],
       refmod_expected = refmods[[tstsetup_ref]],
@@ -38,7 +34,7 @@ test_that("invalid `object` fails", {
 test_that("invalid `method` fails", {
   for (tstsetup in names(refmods)) {
     expect_error(varsel(refmods[[tstsetup]], method = "k-fold"),
-                 "Unknown search method",
+                 "^Unexpected value for argument `method`\\.$",
                  info = tstsetup)
     if (args_ref[[tstsetup]]$mod_nm != "glm") {
       expect_error(varsel(refmods[[tstsetup]], method = "L1"),
@@ -151,11 +147,7 @@ test_that(paste(
       )),
       warn_expected
     )
-    meth_exp_crr <- args_vs_i$method
-    if (is.null(meth_exp_crr)) {
-      meth_exp_crr <- ifelse(mod_crr == "glm" && prj_crr != "augdat",
-                             "L1", "forward")
-    }
+    meth_exp_crr <- args_vs_i$method %||% "forward"
     vsel_tester(
       vs_repr,
       refmod_expected = refmods[[tstsetup_ref]],
@@ -281,11 +273,7 @@ test_that(paste(
       )),
       warn_expected
     )
-    meth_exp_crr <- args_vs_i$method
-    if (is.null(meth_exp_crr)) {
-      meth_exp_crr <- ifelse(mod_crr == "glm" && prj_crr != "augdat",
-                             "L1", "forward")
-    }
+    meth_exp_crr <- args_vs_i$method %||% "forward"
     vsel_tester(
       vs_indep,
       refmod_expected = refmods[[tstsetup_ref]],
@@ -547,11 +535,7 @@ test_that("`refit_prj` works", {
     mod_crr <- args_vs_i$mod_nm
     fam_crr <- args_vs_i$fam_nm
     prj_crr <- args_vs_i$prj_nm
-    meth_exp_crr <- args_vs_i$method
-    if (is.null(meth_exp_crr)) {
-      meth_exp_crr <- ifelse(mod_crr == "glm" && prj_crr != "augdat",
-                             "L1", "forward")
-    }
+    meth_exp_crr <- args_vs_i$method %||% "forward"
     extra_tol_crr <- 1.1
     if (meth_exp_crr == "L1" &&
         any(grepl(":", ranking(vs_reuse)[["fulldata"]]))) {
@@ -678,11 +662,7 @@ test_that(paste(
   regul_tst <- c(regul_default, 1e-1, 1e2)
   stopifnot(regul_tst[1] == regul_default)
   stopifnot(all(diff(regul_tst) > 0))
-  tstsetups <- setdiff(
-    setdiff(grep("\\.glm\\.", names(vss), value = TRUE),
-            grep("\\.glm\\..*\\.forward", names(vss), value = TRUE)),
-    grep("\\.glm\\..*\\.augdat\\.", names(vss), value = TRUE)
-  )
+  tstsetups <- grep("\\.glm\\..*\\.L1\\.", names(vss), value = TRUE)
   for (tstsetup in tstsetups) {
     args_vs_i <- args_vs[[tstsetup]]
     m_max <- args_vs_i$nterms_max + 1L
@@ -756,8 +736,8 @@ test_that(paste(
   regul_tst <- c(regul_default, 1e-1, 1e2)
   stopifnot(regul_tst[1] == regul_default)
   stopifnot(all(diff(regul_tst) > 0))
-  tstsetups <- union(grep("\\.glm\\..*\\.forward", names(vss), value = TRUE),
-                     grep("\\.glm\\..*\\.augdat\\.", names(vss), value = TRUE))
+  tstsetups <- setdiff(grep("\\.glm\\.", names(vss), value = TRUE),
+                       grep("\\.glm\\..*\\.L1\\.", names(vss), value = TRUE))
   tstsetups <- grep(fam_nms_aug_regex, tstsetups, value = TRUE, invert = TRUE)
   for (tstsetup in tstsetups) {
     args_vs_i <- args_vs[[tstsetup]]
@@ -876,11 +856,7 @@ test_that(paste(
 
 test_that("`penalty` of invalid length fails", {
   skip_if_not(run_vs)
-  tstsetups <- setdiff(
-    setdiff(grep("\\.glm\\.", names(args_vs), value = TRUE),
-            grep("\\.glm\\..*\\.forward", names(args_vs), value = TRUE)),
-    grep("\\.glm\\..*\\.augdat\\.", names(args_vs), value = TRUE)
-  )
+  tstsetups <- grep("\\.L1\\.", names(vss), value = TRUE)
   for (tstsetup in tstsetups) {
     args_vs_i <- args_vs[[tstsetup]]
     formul_crr <- get_formul_from_fit(fits[[args_vs_i$tstsetup_fit]])
@@ -908,11 +884,7 @@ test_that("`penalty` of invalid length fails", {
 test_that("for forward search, `penalty` has no effect", {
   skip_if_not(run_vs)
   penal_tst <- 2
-  tstsetups <- union(
-    union(grep("\\.forward", names(vss), value = TRUE),
-          grep("\\.glm\\.", names(vss), value = TRUE, invert = TRUE)),
-    grep("\\.augdat\\.", names(vss), value = TRUE)
-  )
+  tstsetups <- grep("\\.L1\\.", names(vss), value = TRUE, invert = TRUE)
   # To save time:
   if (!run_more) {
     tstsetups <- head(tstsetups, 1)
@@ -940,11 +912,7 @@ test_that("for forward search, `penalty` has no effect", {
 
 test_that("for L1 search, `penalty` has an expected effect", {
   skip_if_not(run_vs)
-  tstsetups <- setdiff(
-    setdiff(grep("\\.glm\\.", names(vss), value = TRUE),
-            grep("\\.glm\\..*\\.forward", names(vss), value = TRUE)),
-    grep("\\.glm\\..*\\.augdat\\.", names(vss), value = TRUE)
-  )
+  tstsetups <- grep("\\.L1\\.", names(vss), value = TRUE)
   for (tstsetup in tstsetups) {
     args_vs_i <- args_vs[[tstsetup]]
 
@@ -1016,7 +984,7 @@ test_that("L1 search handles three-way (second-order) interactions correctly", {
   }))
   trms_universe_split_bu <- trms_universe_split
   trms_universe_split <<- union(trms_universe_split, all_ias)
-  tstsetup <- head(grep("^rstanarm\\.glm", names(fits), value = TRUE), 1)
+  tstsetup <- head(grep("^rstanarm\\.glm\\.", names(fits), value = TRUE), 1)
   args_fit_i <- args_fit[[tstsetup]]
   stopifnot(!(args_fit_i$pkg_nm == "rstanarm" && args_fit_i$fam_nm == "cumul"))
   fit_fun_nm <- get_fit_fun_nm(args_fit_i)
@@ -1031,8 +999,7 @@ test_that("L1 search handles three-way (second-order) interactions correctly", {
     list(object = fit),
     excl_nonargs(args_ref_i)
   ))
-  args_vs_i <- args_vs[[paste0(tstsetup,
-                               ".trad.default_meth.default_search_trms")]]
+  args_vs_i <- args_vs[[paste0(tstsetup, ".trad.L1.default_search_trms")]]
   args_vs_i$refit_prj <- FALSE
   args_vs_i$nterms_max <- NULL
   expect_warning(
@@ -1141,11 +1108,7 @@ test_that(paste(
     mod_crr <- args_cvvs[[tstsetup]]$mod_nm
     fam_crr <- args_cvvs[[tstsetup]]$fam_nm
     prj_crr <- args_cvvs[[tstsetup]]$prj_nm
-    meth_exp_crr <- args_cvvs[[tstsetup]]$method
-    if (is.null(meth_exp_crr)) {
-      meth_exp_crr <- ifelse(mod_crr == "glm" && prj_crr != "augdat",
-                             "L1", "forward")
-    }
+    meth_exp_crr <- args_cvvs[[tstsetup]]$method %||% "forward"
     vsel_tester(
       cvvss[[tstsetup]],
       with_cv = TRUE,
@@ -1170,7 +1133,7 @@ test_that("invalid `object` fails", {
 test_that("invalid `method` fails", {
   for (tstsetup in names(refmods)) {
     expect_error(cv_varsel(refmods[[tstsetup]], method = "k-fold"),
-                 "^Unknown search method$",
+                 "^Unexpected value for argument `method`\\.$",
                  info = tstsetup)
     if (args_ref[[tstsetup]]$mod_nm != "glm") {
       expect_error(cv_varsel(refmods[[tstsetup]], method = "L1"),
@@ -1247,11 +1210,7 @@ test_that("`refit_prj` works", {
     mod_crr <- args_cvvs_i$mod_nm
     fam_crr <- args_cvvs_i$fam_nm
     prj_crr <- args_cvvs_i$prj_nm
-    meth_exp_crr <- args_cvvs_i$method
-    if (is.null(meth_exp_crr)) {
-      meth_exp_crr <- ifelse(mod_crr == "glm" && prj_crr != "augdat",
-                             "L1", "forward")
-    }
+    meth_exp_crr <- args_cvvs_i$method %||% "forward"
     vsel_tester(
       cvvs_reuse,
       with_cv = TRUE,
@@ -1368,11 +1327,7 @@ test_that("setting `nloo` smaller than the number of observations works", {
     mod_crr <- args_cvvs_i$mod_nm
     fam_crr <- args_cvvs_i$fam_nm
     prj_crr <- args_cvvs_i$prj_nm
-    meth_exp_crr <- args_cvvs_i$method
-    if (is.null(meth_exp_crr)) {
-      meth_exp_crr <- ifelse(mod_crr == "glm" && prj_crr != "augdat",
-                             "L1", "forward")
-    }
+    meth_exp_crr <- args_cvvs_i$method %||% "forward"
     # Use suppressWarnings() because of occasional warnings concerning Pareto k
     # diagnostics:
     cvvs_nloo <- suppressWarnings(do.call(cv_varsel, c(
@@ -1428,11 +1383,7 @@ test_that("`validate_search` works", {
     mod_crr <- args_cvvs_i$mod_nm
     fam_crr <- args_cvvs_i$fam_nm
     prj_crr <- args_cvvs_i$prj_nm
-    meth_exp_crr <- args_cvvs_i$method
-    if (is.null(meth_exp_crr)) {
-      meth_exp_crr <- ifelse(mod_crr == "glm" && prj_crr != "augdat",
-                             "L1", "forward")
-    }
+    meth_exp_crr <- args_cvvs_i$method %||% "forward"
     # Use suppressWarnings() because of occasional warnings concerning Pareto k
     # diagnostics:
     cvvs_valsearch <- suppressWarnings(do.call(cv_varsel, c(
@@ -1530,11 +1481,7 @@ test_that(paste(
     mod_crr <- args_cvvs_i$mod_nm
     fam_crr <- args_cvvs_i$fam_nm
     prj_crr <- args_cvvs_i$prj_nm
-    meth_exp_crr <- args_cvvs_i$method
-    if (is.null(meth_exp_crr)) {
-      meth_exp_crr <- ifelse(mod_crr == "glm" && prj_crr != "augdat",
-                             "L1", "forward")
-    }
+    meth_exp_crr <- args_cvvs_i$method %||% "forward"
     fit_crr <- fits[[tstsetup_fit]]
     K_crr <- args_cvvs_i$K
 
@@ -1644,11 +1591,7 @@ test_that(paste(
     mod_crr <- args_cvvs_i$mod_nm
     fam_crr <- args_cvvs_i$fam_nm
     prj_crr <- args_cvvs_i$prj_nm
-    meth_exp_crr <- args_cvvs_i$method
-    if (is.null(meth_exp_crr)) {
-      meth_exp_crr <- ifelse(mod_crr == "glm" && prj_crr != "augdat",
-                             "L1", "forward")
-    }
+    meth_exp_crr <- args_cvvs_i$method %||% "forward"
     fit_crr <- fits[[tstsetup_fit]]
     K_crr <- args_cvvs_i$K
 

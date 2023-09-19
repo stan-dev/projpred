@@ -207,8 +207,10 @@ test_that(paste(
   "to project() works"
 ), {
   skip_if_not(run_vs)
-  tstsetups <- grep("\\.brnll\\..*\\.default_meth\\..*\\.subvec",
-                    names(prjs_vs), value = TRUE)
+  tstsetups <- grep("\\.brnll\\..*\\.subvec", names(prjs_vs), value = TRUE)
+  if (any(grepl("\\.L1\\.", tstsetups))) {
+    tstsetups <- grep("\\.L1\\.", tstsetups, value = TRUE)
+  }
   stopifnot(length(tstsetups) > 0)
   for (tstsetup in tstsetups) {
     args_prj_vs_i <- args_prj_vs[[tstsetup]]
@@ -227,16 +229,18 @@ test_that(paste(
   "to project() works"
 ), {
   skip_if_not(run_cvvs)
-  tstsetups <- grep(
-    "\\.brnll\\..*\\.default_meth\\.default_cvmeth\\..*\\.subvec",
-    names(prjs_cvvs), value = TRUE
-  )
+  tstsetups <- grep("\\.brnll\\..*\\.default_cvmeth\\..*\\.subvec",
+                    names(prjs_cvvs), value = TRUE)
+  if (any(grepl("\\.L1\\.", tstsetups))) {
+    tstsetups <- grep("\\.L1\\.", tstsetups, value = TRUE)
+  }
   if (length(tstsetups) == 0) {
-    tstsetups <- head(
-      grep("\\.glm\\.gauss.*\\.default_meth\\.default_cvmeth\\..*\\.subvec",
-           names(prjs_cvvs), value = TRUE),
-      1
-    )
+    tstsetups <- grep("\\.glm\\.gauss.*\\.default_cvmeth\\..*\\.subvec",
+                      names(prjs_cvvs), value = TRUE)
+    if (any(grepl("\\.L1\\.", tstsetups))) {
+      tstsetups <- grep("\\.L1\\.", tstsetups, value = TRUE)
+    }
+    tstsetups <- head(tstsetups, 1)
   }
   stopifnot(length(tstsetups) > 0)
   for (tstsetup in tstsetups) {
@@ -821,8 +825,10 @@ test_that(paste(
   "`filter_nterms` works (for an `object` of (informal) class \"proj_list\")"
 ), {
   skip_if_not(run_vs)
-  tstsetups <- grep("\\.glm\\..*\\.default_meth\\..*\\.full$", names(prjs_vs),
-                    value = TRUE)
+  tstsetups <- grep("\\.glm\\..*\\.full$", names(prjs_vs), value = TRUE)
+  if (any(grepl("\\.L1\\.", tstsetups))) {
+    tstsetups <- grep("\\.L1\\.", tstsetups, value = TRUE)
+  }
   for (tstsetup in tstsetups) {
     ndr_ncl <- ndr_ncl_dtls(args_prj_vs[[tstsetup]])
     if (ndr_ncl$clust_used) {
@@ -1193,8 +1199,10 @@ test_that(paste(
   "to project() works"
 ), {
   skip_if_not(run_vs)
-  tstsetups <- grep("\\.brnll\\..*\\.default_meth\\..*\\.subvec",
-                    names(prjs_vs), value = TRUE)
+  tstsetups <- grep("\\.brnll\\..*\\.subvec", names(prjs_vs), value = TRUE)
+  if (any(grepl("\\.L1\\.", tstsetups))) {
+    tstsetups <- grep("\\.L1\\.", tstsetups, value = TRUE)
+  }
   stopifnot(length(tstsetups) > 0)
   for (tstsetup in tstsetups) {
     args_prj_vs_i <- args_prj_vs[[tstsetup]]
@@ -1213,16 +1221,18 @@ test_that(paste(
   "to project() works"
 ), {
   skip_if_not(run_cvvs)
-  tstsetups <- grep(
-    "\\.brnll\\..*\\.default_meth\\.default_cvmeth\\..*\\.subvec",
-    names(prjs_cvvs), value = TRUE
-  )
+  tstsetups <- grep("\\.brnll\\..*\\.default_cvmeth\\..*\\.subvec",
+                    names(prjs_cvvs), value = TRUE)
+  if (any(grepl("\\.L1\\.", tstsetups))) {
+    tstsetups <- grep("\\.L1\\.", tstsetups, value = TRUE)
+  }
   if (length(tstsetups) == 0) {
-    tstsetups <- head(
-      grep("\\.glm\\.gauss.*\\.default_meth\\.default_cvmeth\\..*\\.subvec",
-           names(prjs_cvvs), value = TRUE),
-      1
-    )
+    tstsetups <- grep("\\.glm\\.gauss.*\\.default_cvmeth\\..*\\.subvec",
+                      names(prjs_cvvs), value = TRUE)
+    if (any(grepl("\\.L1\\.", tstsetups))) {
+      tstsetups <- grep("\\.L1\\.", tstsetups, value = TRUE)
+    }
+    tstsetups <- head(tstsetups, 1)
   }
   stopifnot(length(tstsetups) > 0)
   for (tstsetup in tstsetups) {
@@ -1581,8 +1591,10 @@ test_that(paste(
   "`filter_nterms` works (for an `object` of (informal) class \"proj_list\")"
 ), {
   skip_if_not(run_vs)
-  tstsetups <- grep("\\.glm\\..*\\.default_meth\\..*\\.full$", names(prjs_vs),
-                    value = TRUE)
+  tstsetups <- grep("\\.glm\\..*\\.full$", names(prjs_vs), value = TRUE)
+  if (any(grepl("\\.L1\\.", tstsetups))) {
+    tstsetups <- grep("\\.L1\\.", tstsetups, value = TRUE)
+  }
   for (tstsetup in tstsetups) {
     # Unavailable number(s) of terms:
     for (filter_nterms_crr in nterms_unavail) {
