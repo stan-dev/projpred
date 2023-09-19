@@ -585,6 +585,7 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
         refmodel$y[inds], refmodel$wobs[inds]
       ))
     }
+    if (nrow(log_lik_ref) > 1) {
     # Use loo::sis() if the projected draws (i.e., the draws resulting
     # from the clustering or thinning) have nonconstant weights:
     const_wdraws_prj_eval <- length(unique(refdist_eval$wdraws_prj)) == 1
@@ -680,6 +681,9 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
       )
     }
     lw_sub <- weights(sub_psisloo)
+    } else {
+      lw_sub <- matrix(0, nrow = nrow(log_lik_ref), ncol = ncol(log_lik_ref))
+    }
     # Take into account that clustered draws usually have different weights:
     lw_sub <- lw_sub + log(refdist_eval$wdraws_prj)
     # This re-weighting requires a re-normalization (as.array() is applied to
