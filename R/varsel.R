@@ -13,11 +13,9 @@
 #'   `d_test`" below, providing test data for evaluating the predictive
 #'   performance of the submodels as well as of the reference model. If `NULL`,
 #'   the training data is used.
-#' @param method The method for the search part. Possible options are `"L1"` for
-#'   L1 search and `"forward"` for forward search. If `NULL`, then internally,
-#'   `"L1"` is used, except if (i) the reference model has multilevel or
-#'   additive terms, (ii) if `!is.null(search_terms)`, or (iii) if the
-#'   augmented-data projection is used. See also section "Details" below.
+#' @param method The method for the search part. Possible options are
+#'   `"forward"` for forward search and `"L1"` for L1 search. See also section
+#'   "Details" below.
 #' @param refit_prj For the evaluation part, should the submodels along the
 #'   predictor ranking be fitted again (`TRUE`) or should their fits from the
 #'   search part be re-used (`FALSE`)?
@@ -176,11 +174,11 @@
 #'   QR = TRUE, chains = 2, iter = 500, refresh = 0, seed = 9876
 #' )
 #'
-#' # Run varsel() (here without cross-validation and with small values for
-#' # `nterms_max`, `nclusters`, and `nclusters_pred`, but only for the sake of
-#' # speed in this example; this is not recommended in general):
-#' vs <- varsel(fit, nterms_max = 3, nclusters = 5, nclusters_pred = 10,
-#'              seed = 5555)
+#' # Run varsel() (here without cross-validation, with L1 search, and with small
+#' # values for `nterms_max`, `nclusters`, and `nclusters_pred`, but only for
+#' # the sake of speed in this example; this is not recommended in general):
+#' vs <- varsel(fit, method = "L1", nterms_max = 3, nclusters = 5,
+#'              nclusters_pred = 10, seed = 5555)
 #' # Now see, for example, `?print.vsel`, `?plot.vsel`, `?suggest_size.vsel`,
 #' # and `?ranking` for possible post-processing functions.
 #'
@@ -198,7 +196,7 @@ varsel.default <- function(object, ...) {
 
 #' @rdname varsel
 #' @export
-varsel.refmodel <- function(object, d_test = NULL, method = NULL,
+varsel.refmodel <- function(object, d_test = NULL, method = "forward",
                             ndraws = NULL, nclusters = 20, ndraws_pred = 400,
                             nclusters_pred = NULL,
                             refit_prj = !inherits(object, "datafit"),
@@ -206,6 +204,11 @@ varsel.refmodel <- function(object, d_test = NULL, method = NULL,
                             lambda_min_ratio = 1e-5, nlambda = 150,
                             thresh = 1e-6, regul = 1e-4, penalty = NULL,
                             search_terms = NULL, seed = NA, ...) {
+  if (missing(method) && getOption("projpred.mssg_method_changed", TRUE)) {
+    message("NOTE: In projpred 2.7.0, the default search method ",
+            "was set to \"forward\" for all kinds of models.")
+  }
+
   if (exists(".Random.seed", envir = .GlobalEnv)) {
     rng_state_old <- get(".Random.seed", envir = .GlobalEnv)
   }
@@ -231,6 +234,7 @@ varsel.refmodel <- function(object, d_test = NULL, method = NULL,
   nterms_max <- args$nterms_max
   nclusters <- args$nclusters
   search_terms <- args$search_terms
+  search_terms_was_null <- args$search_terms_was_null
 
   # Pre-process `d_test`:
   if (is.null(d_test)) {
@@ -289,7 +293,8 @@ varsel.refmodel <- function(object, d_test = NULL, method = NULL,
   search_path <- select(
     refmodel = refmodel, ndraws = ndraws, nclusters = nclusters,
     method = method, nterms_max = nterms_max, penalty = penalty,
-    verbose = verbose, opt = opt, search_terms = search_terms, ...
+    verbose = verbose, opt = opt, search_terms = search_terms,
+    search_terms_was_null = search_terms_was_null, ...
   )
   verb_out("-----", verbose = verbose)
 
@@ -400,7 +405,7 @@ varsel.refmodel <- function(object, d_test = NULL, method = NULL,
 #   model size being equal to the number of projected draws), and `p_sel` (the
 #   output from get_refdist() for the search).
 select <- function(refmodel, ndraws, nclusters, reweighting_args = NULL, method,
-                   nterms_max, penalty, verbose, opt, search_terms, ...) {
+                   nterms_max, penalty, verbose, opt, ...) {
   if (is.null(reweighting_args)) {
     p_sel <- get_refdist(refmodel, ndraws = ndraws, nclusters = nclusters)
   } else {
@@ -419,7 +424,7 @@ select <- function(refmodel, ndraws, nclusters, reweighting_args = NULL, method,
   } else if (method == "forward") {
     search_path <- search_forward(
       p_ref = p_sel, refmodel = refmodel, nterms_max = nterms_max,
-      verbose = verbose, opt = opt, search_terms = search_terms, ...
+      verbose = verbose, opt = opt, ...
     )
   }
   search_path$p_sel <- p_sel
@@ -443,35 +448,26 @@ parse_args_varsel <- function(refmodel, method, refit_prj, nterms_max,
   has_group_features <- formula_contains_group_terms(refmodel$formula)
   has_additive_features <- formula_contains_additive_terms(refmodel$formula)
 
-  if (is.null(method)) {
-    if (has_group_features || has_additive_features || !search_terms_was_null ||
-        refmodel$family$for_augdat) {
-      method <- "forward"
-    } else {
-      method <- "L1"
+  stopifnot(!is.null(method))
+  if (method == "l1") {
+    method <- toupper(method)
+  }
+  if (method == "L1") {
+    if (has_group_features || has_additive_features) {
+      stop("L1 search is only supported for reference models without ",
+           "multilevel and without additive (\"smoothing\") terms.")
     }
-  } else {
-    if (method == "l1") {
-      method <- toupper(method)
+    if (!search_terms_was_null) {
+      warning("Argument `search_terms` only takes effect if ",
+              "`method = \"forward\"`.")
     }
-    if (method == "L1") {
-      if (has_group_features || has_additive_features) {
-        stop("L1 search is only supported for reference models without ",
-             "multilevel and without additive (\"smoothing\") terms.")
-      }
-      if (!search_terms_was_null) {
-        warning("Argument `search_terms` only takes effect if ",
-                "`method = \"forward\"`.")
-      }
-      if (refmodel$family$for_augdat) {
-        stop("Currently, the augmented-data projection may not be combined ",
-             "with an L1 search.")
-      }
+    if (refmodel$family$for_augdat) {
+      stop("Currently, the augmented-data projection may not be combined ",
+           "with an L1 search.")
     }
   }
-
-  if (!(method %in% c("L1", "forward"))) {
-    stop("Unknown search method")
+  if (!method %in% c("L1", "forward")) {
+    stop("Unexpected value for argument `method`.")
   }
 
   stopifnot(!is.null(refit_prj))
@@ -523,5 +519,6 @@ parse_args_varsel <- function(refmodel, method, refit_prj, nterms_max,
     )
   }
 
-  return(nlist(method, refit_prj, nterms_max, nclusters, search_terms))
+  return(nlist(method, refit_prj, nterms_max, nclusters, search_terms,
+               search_terms_was_null))
 }

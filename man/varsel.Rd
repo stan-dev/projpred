@@ -13,7 +13,7 @@ varsel(object, ...)
 \method{varsel}{refmodel}(
   object,
   d_test = NULL,
-  method = NULL,
+  method = "forward",
   ndraws = NULL,
   nclusters = 20,
   ndraws_pred = 400,
@@ -45,11 +45,9 @@ the latter only if \code{refit_prj} is \code{TRUE}).}
 performance of the submodels as well as of the reference model. If \code{NULL},
 the training data is used.}
 
-\item{method}{The method for the search part. Possible options are \code{"L1"} for
-L1 search and \code{"forward"} for forward search. If \code{NULL}, then internally,
-\code{"L1"} is used, except if (i) the reference model has multilevel or
-additive terms, (ii) if \code{!is.null(search_terms)}, or (iii) if the
-augmented-data projection is used. See also section "Details" below.}
+\item{method}{The method for the search part. Possible options are
+\code{"forward"} for forward search and \code{"L1"} for L1 search. See also section
+"Details" below.}
 
 \item{ndraws}{Number of posterior draws used in the search part. Ignored if
 \code{nclusters} is not \code{NULL} or in case of L1 search (because L1 search always
@@ -225,11 +223,11 @@ fit <- rstanarm::stan_glm(
   QR = TRUE, chains = 2, iter = 500, refresh = 0, seed = 9876
 )
 
-# Run varsel() (here without cross-validation and with small values for
-# `nterms_max`, `nclusters`, and `nclusters_pred`, but only for the sake of
-# speed in this example; this is not recommended in general):
-vs <- varsel(fit, nterms_max = 3, nclusters = 5, nclusters_pred = 10,
-             seed = 5555)
+# Run varsel() (here without cross-validation, with L1 search, and with small
+# values for `nterms_max`, `nclusters`, and `nclusters_pred`, but only for
+# the sake of speed in this example; this is not recommended in general):
+vs <- varsel(fit, method = "L1", nterms_max = 3, nclusters = 5,
+             nclusters_pred = 10, seed = 5555)
 # Now see, for example, `?print.vsel`, `?plot.vsel`, `?suggest_size.vsel`,
 # and `?ranking` for possible post-processing functions.
 \dontshow{\}) # examplesIf}

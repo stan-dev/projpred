@@ -124,13 +124,16 @@ Because of its most thorough protection against overfitting^[Currently, neither 
 Nonetheless, a preliminary and comparatively fast run of `varsel()` or `cv_varsel()` with `validate_search = FALSE` can give a rough idea of the performance of the submodels and can be used for finding a suitable value for argument `nterms_max` in subsequent runs (argument `nterms_max` imposes a limit on the submodel size up to which the search is continued and is thus able to reduce the runtime considerably).
 
 To illustrate a preliminary `cv_varsel()` run with `validate_search = FALSE`, we set `nterms_max` to the number of predictor terms in the full model, i.e., `nterms_max = 20`.
-To speed up the building of the vignette (this is not recommended in general), we stick with the default search `method` (here: L1 search, but in general, the forward search is more desirable, see `?varsel` or `?cv_varsel` for details) and set `nclusters_pred` to a comparatively low value of `20`.
+To speed up the building of the vignette (this is not recommended in general), we choose the `"L1"` search `method`
+<!-- (in general, the default of forward search is more desirable, see `?varsel` or `?cv_varsel` for details) -->
+and set `nclusters_pred` to a comparatively low value of `20`.
 ```{r cv_varsel_fast}
 # Preliminary cv_varsel() run:
 cvvs_fast <- cv_varsel(
   refm_fit,
   validate_search = FALSE,
   ### Only for the sake of speed (not recommended in general):
+  method = "L1",
   nclusters_pred = 20,
   ###
   nterms_max = 20,
@@ -162,6 +165,7 @@ cvvs <- cv_varsel(
   cv_method = "kfold",
   ### Only for the sake of speed (not recommended in general):
   K = 2,
+  method = "L1",
   nclusters_pred = 20,
   ###
   nterms_max = 9,

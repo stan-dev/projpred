@@ -119,11 +119,12 @@
 #'   QR = TRUE, chains = 2, iter = 1000, refresh = 0, seed = 9876
 #' )
 #'
-#' # Run cv_varsel() (with small values for `K`, `nterms_max`, `nclusters`,
-#' # and `nclusters_pred`, but only for the sake of speed in this example;
-#' # this is not recommended in general):
-#' cvvs <- cv_varsel(fit, cv_method = "kfold", K = 2, nterms_max = 3,
-#'                   nclusters = 5, nclusters_pred = 10, seed = 5555)
+#' # Run cv_varsel() (with L1 search and small values for `K`, `nterms_max`,
+#' # `nclusters`, and `nclusters_pred`, but only for the sake of speed in this
+#' # example; this is not recommended in general):
+#' cvvs <- cv_varsel(fit, method = "L1", cv_method = "kfold", K = 2,
+#'                   nterms_max = 3, nclusters = 5, nclusters_pred = 10,
+#'                   seed = 5555)
 #' # Now see, for example, `?print.vsel`, `?plot.vsel`, `?suggest_size.vsel`,
 #' # and `?ranking` for possible post-processing functions.
 #'
@@ -143,7 +144,7 @@ cv_varsel.default <- function(object, ...) {
 #' @export
 cv_varsel.refmodel <- function(
     object,
-    method = NULL,
+    method = "forward",
     cv_method = if (!inherits(object, "datafit")) "LOO" else "kfold",
     ndraws = NULL,
     nclusters = 20,
@@ -165,6 +166,11 @@ cv_varsel.refmodel <- function(
     parallel = getOption("projpred.prll_cv", FALSE),
     ...
 ) {
+  if (missing(method) && getOption("projpred.mssg_method_changed", TRUE)) {
+    message("NOTE: In projpred 2.7.0, the default search method ",
+            "was set to \"forward\" for all kinds of models.")
+  }
+
   if (exists(".Random.seed", envir = .GlobalEnv)) {
     rng_state_old <- get(".Random.seed", envir = .GlobalEnv)
   }
@@ -189,6 +195,7 @@ cv_varsel.refmodel <- function(
   nterms_max <- args$nterms_max
   nclusters <- args$nclusters
   search_terms <- args$search_terms
+  search_terms_was_null <- args$search_terms_was_null
   # Parse arguments specific to cv_varsel():
   args <- parse_args_cv_varsel(
     refmodel = refmodel, cv_method = cv_method, K = K,
@@ -200,16 +207,17 @@ cv_varsel.refmodel <- function(
   opt <- nlist(lambda_min_ratio, nlambda, thresh, regul)
 
   if (validate_search) {
-    # Clustering or thinning for the final full-data search (already clustering
-    # or thinning here for consistent PRNG states between the full-data search
-    # in the `validate_search == FALSE` case and the full-data search in the
-    # `validate_search == TRUE` case we are in here):
+    # Full-data search (already done here and not at the end to ensure
+    # consistent PRNG states between the full-data search in the
+    # `validate_search = FALSE` case and the full-data search in the
+    # `validate_search = TRUE` case we are in here):
     verb_out("-----\nRunning the search using the full dataset ...",
              verbose = verbose)
     search_path_full_data <- select(
       refmodel = refmodel, ndraws = ndraws, nclusters = nclusters,
       method = method, nterms_max = nterms_max, penalty = penalty,
-      verbose = verbose, opt = opt, search_terms = search_terms, ...
+      verbose = verbose, opt = opt, search_terms = search_terms,
+      search_terms_was_null = search_terms_was_null, ...
     )
     verb_out("-----", verbose = verbose)
     ce_out <- rep(NA_real_, length(search_path_full_data$solution_terms) + 1L)
@@ -222,7 +230,7 @@ cv_varsel.refmodel <- function(
       nclusters_pred = nclusters_pred, refit_prj = refit_prj, penalty = penalty,
       verbose = verbose, opt = opt, nloo = nloo,
       validate_search = validate_search, search_terms = search_terms,
-      parallel = parallel, ...
+      search_terms_was_null = search_terms_was_null, parallel = parallel, ...
     )
   } else if (cv_method == "kfold") {
     sel_cv <- kfold_varsel(
@@ -343,7 +351,7 @@ parse_args_cv_varsel <- function(refmodel, cv_method, K, validate_search) {
 loo_varsel <- function(refmodel, method, nterms_max, ndraws,
                        nclusters, ndraws_pred, nclusters_pred, refit_prj,
                        penalty, verbose, opt, nloo, validate_search,
-                       search_terms, parallel, ...) {
+                       search_terms, search_terms_was_null, parallel, ...) {
   ## Pre-processing ---------------------------------------------------------
 
   has_grp <- formula_contains_group_terms(refmodel$formula)
@@ -516,7 +524,8 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
     search_path <- select(
       refmodel = refmodel, ndraws = ndraws, nclusters = nclusters,
       method = method, nterms_max = nterms_max, penalty = penalty,
-      verbose = verbose, opt = opt, search_terms = search_terms, ...
+      verbose = verbose, opt = opt, search_terms = search_terms,
+      search_terms_was_null = search_terms_was_null, ...
     )
     verb_out("-----", verbose = verbose)
 
@@ -751,7 +760,8 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
         refmodel = refmodel, ndraws = ndraws, nclusters = nclusters,
         reweighting_args = list(cl_ref = cl_sel, wdraws_ref = exp(lw[, i])),
         method = method, nterms_max = nterms_max, penalty = penalty,
-        verbose = verbose_search, opt = opt, search_terms = search_terms, ...
+        verbose = verbose_search, opt = opt, search_terms = search_terms,
+        est_runtime = FALSE, ...
       )
 
       # Run the performance evaluation for the submodels along the predictor
@@ -1047,7 +1057,8 @@ kfold_varsel <- function(refmodel, method, nterms_max, ndraws,
     search_path <- select(
       refmodel = fold$refmodel, ndraws = ndraws, nclusters = nclusters,
       method = method, nterms_max = nterms_max, penalty = penalty,
-      verbose = verbose_search, opt = opt, search_terms = search_terms, ...
+      verbose = verbose_search, opt = opt, search_terms = search_terms,
+      est_runtime = FALSE, ...
     )
 
     # Run the performance evaluation for the submodels along the predictor

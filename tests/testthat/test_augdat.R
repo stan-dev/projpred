@@ -317,8 +317,7 @@ test_that(paste(
   skip_if_not(run_vs)
   tstsetups <- grep("\\.brnll\\..*\\.augdat\\.", names(vss), value = TRUE)
   for (tstsetup in tstsetups) {
-    tstsetup_trad <- sub("\\.augdat\\.default_meth", ".trad_compare.forward",
-                         tstsetup)
+    tstsetup_trad <- sub("\\.augdat\\.", ".trad_compare.", tstsetup)
     if (!tstsetup_trad %in% names(vss)) next
 
     vs <- vss[[tstsetup]]
@@ -359,8 +358,7 @@ test_that(paste(
   skip_if_not(run_vs)
   tstsetups <- grep("\\.brnll\\..*\\.augdat\\.", names(smmrys_vs), value = TRUE)
   for (tstsetup in tstsetups) {
-    tstsetup_trad <- sub("\\.augdat\\.default_meth", ".trad_compare.forward",
-                         tstsetup)
+    tstsetup_trad <- sub("\\.augdat\\.", ".trad_compare.", tstsetup)
     if (!tstsetup_trad %in% names(smmrys_vs)) next
 
     smmry_vs <- smmrys_vs[[tstsetup]]
@@ -393,8 +391,7 @@ test_that(paste(
   tstsetups <- grep("\\.brnll\\..*\\.augdat_stats\\.", names(smmrys_vs),
                     value = TRUE)
   for (tstsetup in tstsetups) {
-    tstsetup_trad <- sub("\\.augdat\\.default_meth", ".trad_compare.forward",
-                         tstsetup)
+    tstsetup_trad <- sub("\\.augdat\\.", ".trad_compare.", tstsetup)
     tstsetup_trad <- sub("\\.augdat_stats\\.", ".binom_stats.", tstsetup_trad)
     if (!tstsetup_trad %in% names(smmrys_vs)) next
 
@@ -430,8 +427,7 @@ test_that(paste(
   skip_if_not(run_cvvs)
   tstsetups <- grep("\\.brnll\\..*\\.augdat\\.", names(cvvss), value = TRUE)
   for (tstsetup in tstsetups) {
-    tstsetup_trad <- sub("\\.augdat\\.default_meth", ".trad_compare.forward",
-                         tstsetup)
+    tstsetup_trad <- sub("\\.augdat\\.", ".trad_compare.", tstsetup)
     if (!tstsetup_trad %in% names(cvvss)) next
 
     cvvs <- cvvss[[tstsetup]]
@@ -490,8 +486,7 @@ test_that(paste(
   tstsetups <- grep("\\.brnll\\..*\\.augdat\\.", names(smmrys_cvvs),
                     value = TRUE)
   for (tstsetup in tstsetups) {
-    tstsetup_trad <- sub("\\.augdat\\.default_meth", ".trad_compare.forward",
-                         tstsetup)
+    tstsetup_trad <- sub("\\.augdat\\.", ".trad_compare.", tstsetup)
     if (!tstsetup_trad %in% names(smmrys_cvvs)) next
 
     smmry_cvvs <- smmrys_cvvs[[tstsetup]]
@@ -561,8 +556,7 @@ test_that(paste(
   tstsetups <- grep("\\.brnll\\..*\\.augdat_stats\\.", names(smmrys_cvvs),
                     value = TRUE)
   for (tstsetup in tstsetups) {
-    tstsetup_trad <- sub("\\.augdat\\.default_meth", ".trad_compare.forward",
-                         tstsetup)
+    tstsetup_trad <- sub("\\.augdat\\.", ".trad_compare.", tstsetup)
     tstsetup_trad <- sub("\\.augdat_stats\\.", ".binom_stats.", tstsetup_trad)
     if (!tstsetup_trad %in% names(smmrys_cvvs)) next
 

@@ -1,5 +1,6 @@
 search_forward <- function(p_ref, refmodel, nterms_max, verbose = TRUE, opt,
-                           search_terms, ...) {
+                           search_terms, est_runtime = TRUE,
+                           search_terms_was_null, ...) {
   nterms_max_with_icpt <- nterms_max + 1L
   iq <- ceiling(quantile(seq_len(nterms_max_with_icpt), 1:10 / 10))
   if (is.null(search_terms)) {
@@ -16,9 +17,48 @@ search_forward <- function(p_ref, refmodel, nterms_max, verbose = TRUE, opt,
       next
     full_cands <- lapply(cands, function(cand) c(chosen, cand))
 
-    # Perform the projections:
+    # Perform the projections (for the intercept-only model, we measure the
+    # runtime to estimate the total runtime for the search):
+    if (size == 1 && est_runtime && getOption("projpred.mssg_time", TRUE)) {
+      time_bef <- Sys.time()
+    }
     submodls <- lapply(full_cands, get_submodl_prj, p_ref = p_ref,
                        refmodel = refmodel, regul = opt$regul, ...)
+    if (size == 1 && est_runtime && getOption("projpred.mssg_time", TRUE)) {
+      time_aft <- Sys.time()
+      dtime <- difftime(time_aft, time_bef, units = "secs")
+      time_est <- dtime * nterms_max * (nterms_max + 1) / 2
+      if (time_est > 3 * 60) {
+        mssg_time <- paste0(
+          "Based on the runtime for the intercept-only model, the remaining ",
+          "forward search is estimated to take ca. ", round(time_est / 60, 1),
+          "minutes (current time: ", time_aft, "; estimated end time: ",
+          time_aft + time_est, ")."
+        )
+        if (any(grepl("\\|", search_terms))) {
+          mssg_time <- paste0(mssg_time, " ", paste0(
+            "Since there are multilevel predictor terms, the runtime estimate ",
+            "is likely a considerable underestimate."
+          ))
+        }
+        if (length(parse_additive_terms(
+          # grep(":|\\|", search_terms, value = TRUE, invert = TRUE)
+          search_terms
+        )) > 0) {
+          mssg_time <- paste0(mssg_time, " ", paste0(
+            "Since there are additive (\"smooth\") predictor terms, the ",
+            "runtime estimate is likely a considerable underestimate."
+          ))
+        }
+        if (!search_terms_was_null) {
+          mssg_time <- paste0(mssg_time, " ", paste0(
+            "Since argument `search_terms` differs from its default, the ",
+            "runtime estimate may be a considerable overestimate."
+          ))
+        }
+        message(mssg_time)
+      }
+    }
 
     # Select best candidate:
     imin <- which.min(sapply(submodls, "[[", "ce"))
@@ -91,10 +131,10 @@ search_forward <- function(p_ref, refmodel, nterms_max, verbose = TRUE, opt,
 #'   optional_terms = paste0("X", 3:5)
 #' )
 #'
-#' # Run varsel() (here without cross-validation and with small values for
-#' # `nterms_max`, `nclusters`, and `nclusters_pred`, but only for the sake of
-#' # speed in this example; this is not recommended in general):
-#' vs <- varsel(fit, nclusters = 5, nclusters_pred = 10,
+#' # Run varsel() (here without cross-validation, with L1 search, and with small
+#' # values for `nterms_max`, `nclusters`, and `nclusters_pred`, but only for
+#' # the sake of speed in this example; this is not recommended in general):
+#' vs <- varsel(fit, method = "L1", nclusters = 5, nclusters_pred = 10,
 #'              search_terms = search_terms_forced, seed = 5555)
 #' # Now see, for example, `?print.vsel`, `?plot.vsel`, `?suggest_size.vsel`,
 #' # and `?ranking` for possible post-processing functions.
