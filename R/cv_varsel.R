@@ -318,7 +318,19 @@ parse_args_cv_varsel <- function(refmodel, cv_method, K, validate_search) {
 
   if (cv_method == "kfold") {
     if (!is.null(refmodel$cvfits)) {
-      K <- length(refmodel$cvfits$fits)
+      cvfits_for_K <- refmodel$cvfits
+      if (identical(names(cvfits_for_K), "fits")) {
+        ### Not throwing this warning here because it is already thrown by
+        ### get_kfold() (where it makes more sense):
+        # warning(
+        #   "The content of `cvfits`'s sub-list called `fits` should be ",
+        #   "moved one level up (and element `fits` removed). The old ",
+        #   "structure will continue to work for a while, but is deprecated."
+        # )
+        ###
+        cvfits_for_K <- cvfits_for_K$fits
+      }
+      K <- length(cvfits_for_K)
     }
     stopifnot(!is.null(K))
     if (length(K) > 1 || !is.numeric(K) || !is_wholenumber(K)) {
@@ -1227,7 +1239,13 @@ get_kfold <- function(refmodel, K, verbose) {
     }
   } else {
     folds <- attr(refmodel$cvfits, "folds")
-    cvfits <- refmodel$cvfits$fits
+    cvfits <- refmodel$cvfits
+    if (identical(names(cvfits), "fits")) {
+      warning("The content of `cvfits`'s sub-list called `fits` should be ",
+              "moved one level up (and element `fits` removed). The old ",
+              "structure will continue to work for a while, but is deprecated.")
+      cvfits <- cvfits$fits
+    }
   }
   return(lapply(seq_len(K), function(k) {
     cvfit <- cvfits[[k]]

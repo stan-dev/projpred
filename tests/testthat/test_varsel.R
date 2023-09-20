@@ -1520,9 +1520,7 @@ test_that(paste(
           attr(kfold_obj, "condition")$message, "\"\n", sep = "")
       next
     }
-    kfold_obj <- structure(list(fits = kfold_obj$fits[, "fit"]),
-                           K = K_crr,
-                           folds = folds_vec)
+    kfold_obj <- structure(kfold_obj$fits[, "fit"], folds = folds_vec)
 
     # Create `"refmodel"` object with `cvfits`:
     refmod_crr <- do.call(get_refmodel, c(
@@ -1621,9 +1619,7 @@ test_that(paste(
                        folds = folds_vec,
                        save_fits = TRUE,
                        seed = seed_fit)
-    kfold_obj <- structure(list(fits = kfold_obj$fits[, "fit"]),
-                           K = K_crr,
-                           folds = folds_vec)
+    kfold_obj <- structure(kfold_obj$fits[, "fit"], folds = folds_vec)
 
     # Create `"refmodel"` object with `cvfits`:
     refmod_crr <- do.call(get_refmodel, c(
