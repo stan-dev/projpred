@@ -83,7 +83,7 @@
 #'   family).
 #' @param cvfits For \eqn{K}-fold CV only. A `list` containing a sub-`list`
 #'   called `fits` containing the \eqn{K} model fits from which reference model
-#'   structures are created. The `cvfits` `list` (i.e., the super-`list`) needs
+#'   objects are created. The `cvfits` `list` (i.e., the super-`list`) needs
 #'   to have an attribute called `folds`, consisting of an integer vector giving
 #'   the fold indices (one fold index per observation). Each element of
 #'   `cvfits$fits` (i.e., each of the \eqn{K} model fits) needs to be a list.

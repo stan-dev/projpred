@@ -128,7 +128,7 @@ i.e., if both are provided, \code{cvfits} is used.}
 
 \item{cvfits}{For \eqn{K}-fold CV only. A \code{list} containing a sub-\code{list}
 called \code{fits} containing the \eqn{K} model fits from which reference model
-structures are created. The \code{cvfits} \code{list} (i.e., the super-\code{list}) needs
+objects are created. The \code{cvfits} \code{list} (i.e., the super-\code{list}) needs
 to have an attribute called \code{folds}, consisting of an integer vector giving
 the fold indices (one fold index per observation). Each element of
 \code{cvfits$fits} (i.e., each of the \eqn{K} model fits) needs to be a list.
