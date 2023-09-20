@@ -106,7 +106,7 @@ refm_fit <- stan_glm(
 Usually, we would now have to check the convergence diagnostics (see, e.g., `?posterior::diagnostics` and `?posterior::default_convergence_measures`; the bulk-ESS warning already indicates a problem).
 However, due to the technical reasons for which we reduced `chains` and `iter`, we skip this step here (and hence ignore the bulk-ESS warning).
 
-## Variable selection
+## Variable selection {#variableselection}
 
 Now, **projpred** comes into play.
 ```{r projpred_attach, message=FALSE}
@@ -470,12 +470,12 @@ Re-fitting the reference model and thereby ensuring a narrower posterior (usuall
 1. For non-Gaussian models, the discrepancy may be due to the fact that the penalized iteratively reweighted least squares (PIRLS) algorithm might have convergence issues [@catalina_latent_2021].
 In this case, the latent-space approach by @catalina_latent_2021 might help, see also the latent-projection vignette linked above.
 
-### Overfitting
+### Overfitting {#overfitting}
 
 If you are using `varsel()`, then the lack of CV in `varsel()` may lead to overconfident and overfitted results.
 In this case, try running `cv_varsel()` instead of `varsel()` (which you should in any case for your final results).
 
-Similarly, `cv_varsel()` with `validate_search = TRUE` is less prone to overfitting than `cv_varsel()` with `validate_search = FALSE`.
+Similarly, `cv_varsel()` with `validate_search = FALSE` is more prone to overfitting than `cv_varsel()` with `validate_search = TRUE`.
 
 ### Issues with the traditional projection
 
@@ -493,5 +493,43 @@ Finally, as illustrated in the Poisson example of the latent-projection vignette
 For multilevel models, the augmented-data projection seems to suffer from the same issue as the traditional projection for the binomial family (see above), i.e., it may not work properly and give suboptimal results, see [#353](https://github.com/stan-dev/projpred/pull/353) (the underlying issue is probably similar to the one described in **lme4** issue [#682](https://github.com/lme4/lme4/issues/682)).
 With suboptimality of the results, we mean that in such cases, the relevance of the group-level terms can be underestimated.
 According to the simulation-based case study from [#353](https://github.com/stan-dev/projpred/pull/353), the latent projection should be considered as a remedy in such cases.
+
+### Speed
+
+There are many ways to speed up **projpred**, but in general, such speed-ups lead to results that are less accurate and hence should only be considered as *preliminary* results.
+Some speed-up possibilities are:
+
+1.  Using `cv_varsel()` with `validate_search = FALSE` (which requires `cv_method = "LOO"`) instead of `validate_search = TRUE`.
+    This approach (`cv_varsel()` with `validate_search = FALSE`) has comparable runtime to `varsel()`, but accounts for some overfitting, namely that induced by `varsel()`'s in-sample predictions during the predictive performance evaluation.
+    However, as explained in section ["Variable selection"](#variableselection) (see also section ["Overfitting"](#overfitting)), `cv_varsel()` with `validate_search = FALSE` is more prone to overfitting than `cv_varsel()` with `validate_search = TRUE`.
+
+1.  Using `cv_varsel()` with $K$-fold CV instead of PSIS-LOO CV (with `validate_search = TRUE`).
+    Whether this provides a speed improvement mainly depends on the number of observations and the complexity of the reference model.
+    Note that PSIS-LOO CV is often more accurate than $K$-fold CV if argument `K` is (much) smaller than the number of observations.
+
+1.  Using a "custom" reference model with a dimension reduction technique for the predictor data (e.g., by computing principal components from the original predictors, using these principal components as predictors when fitting the reference model, and then performing the variable selection in terms of the *original* predictor terms).
+    Examples are given in @piironen_projective_2020 and @pavone_using_2022.
+    This approach makes sense if there is a large number of predictor variables, in which case this aims at improving the runtime required for fitting the reference model and hence improving the runtime of $K$-fold CV.
+
+1.  Using `varsel()` with its argument `d_test` for evaluating predictive performance on a hold-out dataset instead of doing this with `cv_varsel()`'s CV approach.
+    Typically, the hold-out approach requires a large amount of data.
+
+1.  Reducing `nterms_max` in `varsel()` or `cv_varsel()`.
+    The resulting predictive performance plot(s) should be inspected to check that the search is not terminated too early (i.e., before the submodel performance levels off), which would indicate that `nterms_max` has been reduced too much.
+
+1.  Reducing argument `nclusters` (of `varsel()` or `cv_varsel()`) below `20` and/or setting `nclusters_pred` to some non-`NULL` (and smaller than `400`, the default for `ndraws_pred`) value.
+    If setting `nclusters_pred` as low as `nclusters` (and using forward search), `refit_prj` can instead be set to `FALSE`, see below.
+
+1.  Using L1 search (see argument `method` of `varsel()` or `cv_varsel()`) instead of forward search.
+    Note that L1 search implies `nclusters = 1` and is not always supported.
+    In general, forward search is more accurate than L1 search and hence more desirable (see section "Details" in `?varsel` or `?cv_varsel` for a more detailed comparison of the two).
+    The issue demonstrated in the Poisson example from the latent-projection vignette is related to this.
+
+1.  Setting argument `refit_prj` (of `varsel()` or `cv_varsel()`) to `FALSE`, which basically means to set `ndraws_pred = ndraws` and `nclusters_pred = nclusters`, but in a more efficient (i.e., faster) way.
+    In case of L1 search, this means that the L1-penalized projections of the regression coefficients are used for the predictive performance evaluation, which may be undesired [@piironen_projective_2020, section 4].
+    In case of forward search, this issue does not exist.
+
+1.  Parallelizing costly parts of the CV implied by `cv_varsel()` (this was demonstrated in the example above; see argument `parallel` of `cv_varsel()`).
+    When using `project()`, parallelizing the projection might also help (see the general package documentation available [online](https://mc-stan.org/projpred/reference/projpred-package.html) or by typing `` ?`projpred-package` ``).
 
 ## References
