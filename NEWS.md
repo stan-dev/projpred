@@ -37,6 +37,7 @@ If you read this from a place other than <https://mc-stan.org/projpred/news/inde
 * Added the helper function `force_search_terms()` which allows to construct `search_terms` where certain predictor terms are forced to be included (i.e., they are forced to be selected first) whereas other predictor terms are optional (i.e., they are subject to the variable selection, but only after the inclusion of the "forced" terms). (GitHub: #346)
 * Reduced peak memory usage during performance evaluation (more precisely, during the re-projections done for the performance evaluation). This reduction is considerable especially for multilevel submodels, but possibly also for additive submodels. (GitHub: #440, #450)
 * A message is thrown now when cutting off the search at `nterms_max`'s internal default of (currently) `19`. (GitHub: #452)
+* Added sub-section "Speed" to the main vignette's ["Troubleshooting"](https://mc-stan.org/projpred/articles/projpred.html#troubleshooting) section. (GitHub: #455)
 
 ## Bug fixes
 

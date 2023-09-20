@@ -106,7 +106,7 @@ refm_fit <- stan_glm(
 Usually, we would now have to check the convergence diagnostics (see, e.g., `?posterior::diagnostics` and `?posterior::default_convergence_measures`; the bulk-ESS warning already indicates a problem).
 However, due to the technical reasons for which we reduced `chains` and `iter`, we skip this step here (and hence ignore the bulk-ESS warning).
 
-## Variable selection
+## Variable selection {#variableselection}
 
 Now, **projpred** comes into play.
 ```{r projpred_attach, message=FALSE}
@@ -391,22 +391,22 @@ In the following and throughout **projpred**'s documentation, the term "traditio
 Apart from the `gaussian()` response family used in this vignette, **projpred**'s traditional projection also supports the `binomial()`^[Via `brms::get_refmodel.brmsfit()`, the `brms::bernoulli()` family is supported as well.] and the `poisson()` family.
 
 The families supported by **projpred**'s augmented-data projection [@weber_projection_2023] are `binomial()`^[Currently, the augmented-data support for the `binomial()` family does not include binomial distributions with more than one trial.
-In such a case, a workaround is to de-aggregate the Bernoulli trials which belong to the same (aggregated) observation, i.e., to use a "long" dataset.] ^[Like the traditional projection, the augmented-data projection also supports the `brms::bernoulli()` family via `brms::get_refmodel.brmsfit()`.], `brms::cumulative()`, `rstanarm::stan_polr()` fits, and `brms::categorical()`^[For the augmented-data projection based on a "typical" **brms** reference model, **brms** version 2.17.0 or later is needed.] ^[More **brms** families might be supported in the future.].
-See `?extend_family` (which is called by `init_refmodel()`) for an explanation how to apply the augmented-data projection to "custom" reference models.
-For "typical" reference models (i.e., those created by `get_refmodel.stanreg()` or `brms::get_refmodel.brmsfit()`), the augmented-data projection is applied automatically if the family is supported by the augmented-data projection and neither `binomial()` nor `brms::bernoulli()`.
+In such a case, a workaround is to de-aggregate the Bernoulli trials which belong to the same (aggregated) observation, i.e., to use a "long" dataset.] ^[Like the traditional projection, the augmented-data projection also supports the `brms::bernoulli()` family via `brms::get_refmodel.brmsfit()`.], `brms::cumulative()`, `rstanarm::stan_polr()` fits, and `brms::categorical()`^[For the augmented-data projection based on a "typical" **brms** reference model object, **brms** version 2.17.0 or later is needed.] ^[More **brms** families might be supported in the future.].
+See `?extend_family` (which is called by `init_refmodel()`) for an explanation how to apply the augmented-data projection to "custom" reference model objects.
+For "typical" reference model objects (i.e., those created by `get_refmodel.stanreg()` or `brms::get_refmodel.brmsfit()`), the augmented-data projection is applied automatically if the family is supported by the augmented-data projection and neither `binomial()` nor `brms::bernoulli()`.
 For applying the augmented-data projection to the `binomial()` (or `brms::bernoulli()`) family, see `?extend_family` as well as `?augdat_link_binom` and `?augdat_ilink_binom`.
 Finally, we note that there are some restrictions with respect to the augmented-data projection; **projpred** will throw an informative error if a requested feature is currently not supported for the augmented-data projection.
 
 The latent projection [@catalina_latent_2021] is a quite general principle for extending **projpred**'s traditional projection to more response families.
 The latent projection is applied when setting argument `latent` of `extend_family()` (which is called by `init_refmodel()`) to `TRUE`.
-The families for which full latent-projection functionality (in particular, `resp_oscale = TRUE`, i.e., post-processing on the original response scale) is currently available are `binomial()`^[Currently, the latent-projection support for the `binomial()` family does not include binomial distributions with more than one trial. In such a case, a workaround is to de-aggregate the Bernoulli trials which belong to the same (aggregated) observation, i.e., to use a "long" dataset.] ^[Like the traditional projection, the latent projection also supports the `brms::bernoulli()` family via `brms::get_refmodel.brmsfit()`.], `poisson()`, `brms::cumulative()`, and `rstanarm::stan_polr()` fits^[For the latent projection based on a "typical" **brms** reference model, **brms** version 2.19.0 or later is needed.].
+The families for which full latent-projection functionality (in particular, `resp_oscale = TRUE`, i.e., post-processing on the original response scale) is currently available are `binomial()`^[Currently, the latent-projection support for the `binomial()` family does not include binomial distributions with more than one trial. In such a case, a workaround is to de-aggregate the Bernoulli trials which belong to the same (aggregated) observation, i.e., to use a "long" dataset.] ^[Like the traditional projection, the latent projection also supports the `brms::bernoulli()` family via `brms::get_refmodel.brmsfit()`.], `poisson()`, `brms::cumulative()`, and `rstanarm::stan_polr()` fits^[For the latent projection based on a "typical" **brms** reference model object, **brms** version 2.19.0 or later is needed.].
 For all other families, you can try to use the latent projection (by setting `latent = TRUE`) and **projpred** should tell you if any features are not available and how to make them available.
 More details concerning the latent projection are given in the corresponding [latent-projection vignette](https://mc-stan.org/projpred/articles/latent.html).
 Note that there are some restrictions with respect to the latent projection; **projpred** will throw an informative error if a requested feature is currently not supported for the latent projection.
 
 On the side of the predictors, **projpred** not only supports linear main effects as shown in this vignette, but also interactions, multilevel^[Multilevel models are also known as *hierarchical* models or models with *partially pooled*, *group-level*, or---in frequentist terms---*random* effects.], and---as an experimental feature---additive^[Additive terms are also known as *smooth* terms.] terms.
 
-Transferring this vignette to such more complex problems is straightforward (also because this vignette employs a "typical" reference model): Basically, only the code for fitting the reference model via **rstanarm** or **brms** needs to be adapted.
+Transferring this vignette to such more complex problems is straightforward (also because this vignette employs a "typical" reference model object): Basically, only the code for fitting the reference model via **rstanarm** or **brms** needs to be adapted.
 The **projpred** code stays almost the same.
 Only note that in case of multilevel or additive reference models,
 <!-- the parallelization of the projection is not recommended and that -->
@@ -470,12 +470,12 @@ Re-fitting the reference model and thereby ensuring a narrower posterior (usuall
 1. For non-Gaussian models, the discrepancy may be due to the fact that the penalized iteratively reweighted least squares (PIRLS) algorithm might have convergence issues [@catalina_latent_2021].
 In this case, the latent-space approach by @catalina_latent_2021 might help, see also the latent-projection vignette linked above.
 
-### Overfitting
+### Overfitting {#overfitting}
 
 If you are using `varsel()`, then the lack of CV in `varsel()` may lead to overconfident and overfitted results.
 In this case, try running `cv_varsel()` instead of `varsel()` (which you should in any case for your final results).
 
-Similarly, `cv_varsel()` with `validate_search = TRUE` is less prone to overfitting than `cv_varsel()` with `validate_search = FALSE`.
+Similarly, `cv_varsel()` with `validate_search = FALSE` is more prone to overfitting than `cv_varsel()` with `validate_search = TRUE`.
 
 ### Issues with the traditional projection
 
@@ -493,5 +493,43 @@ Finally, as illustrated in the Poisson example of the latent-projection vignette
 For multilevel models, the augmented-data projection seems to suffer from the same issue as the traditional projection for the binomial family (see above), i.e., it may not work properly and give suboptimal results, see [#353](https://github.com/stan-dev/projpred/pull/353) (the underlying issue is probably similar to the one described in **lme4** issue [#682](https://github.com/lme4/lme4/issues/682)).
 With suboptimality of the results, we mean that in such cases, the relevance of the group-level terms can be underestimated.
 According to the simulation-based case study from [#353](https://github.com/stan-dev/projpred/pull/353), the latent projection should be considered as a remedy in such cases.
+
+### Speed
+
+There are many ways to speed up **projpred**, but in general, such speed-ups lead to results that are less accurate and hence should only be considered as *preliminary* results.
+Some speed-up possibilities are:
+
+1.  Using `cv_varsel()` with `validate_search = FALSE` (which requires `cv_method = "LOO"`) instead of `validate_search = TRUE`.
+    This approach (`cv_varsel()` with `validate_search = FALSE`) has comparable runtime to `varsel()`, but accounts for some overfitting, namely that induced by `varsel()`'s in-sample predictions during the predictive performance evaluation.
+    However, as explained in section ["Variable selection"](#variableselection) (see also section ["Overfitting"](#overfitting)), `cv_varsel()` with `validate_search = FALSE` is more prone to overfitting than `cv_varsel()` with `validate_search = TRUE`.
+
+1.  Using `cv_varsel()` with $K$-fold CV instead of PSIS-LOO CV (with `validate_search = TRUE`).
+    Whether this provides a speed improvement mainly depends on the number of observations and the complexity of the reference model.
+    Note that PSIS-LOO CV is often more accurate than $K$-fold CV if argument `K` is (much) smaller than the number of observations.
+
+1.  Using a "custom" reference model object with a dimension reduction technique for the predictor data (e.g., by computing principal components from the original predictors, using these principal components as predictors when fitting the reference model, and then performing the variable selection in terms of the *original* predictor terms).
+    Examples are given in @piironen_projective_2020 and @pavone_using_2022.
+    This approach makes sense if there is a large number of predictor variables, in which case this aims at improving the runtime required for fitting the reference model and hence improving the runtime of $K$-fold CV.
+
+1.  Using `varsel()` with its argument `d_test` for evaluating predictive performance on a hold-out dataset instead of doing this with `cv_varsel()`'s CV approach.
+    Typically, the hold-out approach requires a large amount of data.
+
+1.  Reducing `nterms_max` in `varsel()` or `cv_varsel()`.
+    The resulting predictive performance plot(s) should be inspected to check that the search is not terminated too early (i.e., before the submodel performance levels off), which would indicate that `nterms_max` has been reduced too much.
+
+1.  Reducing argument `nclusters` (of `varsel()` or `cv_varsel()`) below `20` and/or setting `nclusters_pred` to some non-`NULL` (and smaller than `400`, the default for `ndraws_pred`) value.
+    If setting `nclusters_pred` as low as `nclusters` (and using forward search), `refit_prj` can instead be set to `FALSE`, see below.
+
+1.  Using L1 search (see argument `method` of `varsel()` or `cv_varsel()`) instead of forward search.
+    Note that L1 search implies `nclusters = 1` and is not always supported.
+    In general, forward search is more accurate than L1 search and hence more desirable (see section "Details" in `?varsel` or `?cv_varsel` for a more detailed comparison of the two).
+    The issue demonstrated in the Poisson example from the latent-projection vignette is related to this.
+
+1.  Setting argument `refit_prj` (of `varsel()` or `cv_varsel()`) to `FALSE`, which basically means to set `ndraws_pred = ndraws` and `nclusters_pred = nclusters`, but in a more efficient (i.e., faster) way.
+    In case of L1 search, this means that the L1-penalized projections of the regression coefficients are used for the predictive performance evaluation, which may be undesired [@piironen_projective_2020, section 4].
+    In case of forward search, this issue does not exist.
+
+1.  Parallelizing costly parts of the CV implied by `cv_varsel()` (this was demonstrated in the example above; see argument `parallel` of `cv_varsel()`).
+    When using `project()`, parallelizing the projection might also help (see the general package documentation available [online](https://mc-stan.org/projpred/reference/projpred-package.html) or by typing `` ?`projpred-package` ``).
 
 ## References
