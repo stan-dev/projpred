@@ -131,10 +131,10 @@ search_forward <- function(p_ref, refmodel, nterms_max, verbose = TRUE, opt,
 #'   optional_terms = paste0("X", 3:5)
 #' )
 #'
-#' # Run varsel() (here without cross-validation, with L1 search, and with small
-#' # values for `nterms_max`, `nclusters`, and `nclusters_pred`, but only for
-#' # the sake of speed in this example; this is not recommended in general):
-#' vs <- varsel(fit, method = "L1", nclusters = 5, nclusters_pred = 10,
+#' # Run varsel() (here without cross-validation and with small values for
+#' # `nterms_max`, `nclusters`, and `nclusters_pred`, but only for the sake of
+#' # speed in this example; this is not recommended in general):
+#' vs <- varsel(fit, nclusters = 5, nclusters_pred = 10,
 #'              search_terms = search_terms_forced, seed = 5555)
 #' # Now see, for example, `?print.vsel`, `?plot.vsel`, `?suggest_size.vsel`,
 #' # and `?ranking` for possible post-processing functions.
