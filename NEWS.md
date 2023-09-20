@@ -70,6 +70,7 @@ If you read this from a place other than <https://mc-stan.org/projpred/news/inde
 
 * Enhancements in the vignettes. In particular, the new functions `ranking()`, `cv_proportions()`, and `plot.cv_proportions()` (see "Major changes" above) are now illustrated in the main vignette. (GitHub: #407, #411)
 * Reduced the peak memory usage of `cv_varsel()` with `cv_method = "kfold"`. This may slightly change results from such a `cv_varsel()` run compared to older **projpred** versions due to different pseudorandom number generator (PRNG) states when clustering posterior draws. (GitHub: #419)
+* The `cvfits` list (see `init_refmodel()`) does not need to have an attribute called `K` anymore.
 
 ## Bug fixes
 
