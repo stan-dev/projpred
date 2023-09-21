@@ -1249,12 +1249,18 @@ get_kfold <- function(refmodel, K, verbose) {
   }
   return(lapply(seq_len(K), function(k) {
     cvfit <- cvfits[[k]]
-    # Add the omitted observation indices for this fold:
-    cvfit$omitted <- which(folds == k)
-    # Add the fold index:
-    cvfit$projpred_k <- k
+    # Add the omitted observation indices for this fold (and the fold index `k`
+    # itself):
+    omitted_idxs <- which(folds == k)
+    if (is.list(cvfit)) {
+      cvfit$omitted <- omitted_idxs
+      cvfit$projpred_k <- k
+    } else {
+      attr(cvfit, "omitted") <- omitted_idxs
+      attr(cvfit, "projpred_k") <- k
+    }
     return(list(refmodel = refmodel$cvrefbuilder(cvfit),
-                omitted = cvfit$omitted))
+                omitted = omitted_idxs))
   }))
 }
 
