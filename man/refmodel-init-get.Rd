@@ -135,17 +135,18 @@ that \code{cvfits} takes precedence over \code{cvfun}, i.e., if both are provide
 \code{cvfits} is used.}
 
 \item{cvrefbuilder}{For \eqn{K}-fold CV only. A function that, given a
-reference model fit for fold \eqn{k \in \{1, ..., K\}}{k = 1, ..., K} (this
-model fit is the \eqn{k}-th element of the return value of \code{cvfun} or the
-\eqn{k}-th element of the \code{list} supplied to \code{cvfits}, extended by elements
-\code{omitted} (containing the indices of the left-out observations in that
-fold) and \code{projpred_k} (containing the integer \eqn{k}) if that \eqn{k}-th
-element is a \code{list} itself (otherwise, \code{omitted} and \code{projpred_k} are
-appended as attributes)), returns an object of the same type as
-\code{\link[=init_refmodel]{init_refmodel()}} does. Argument \code{cvrefbuilder} may be \code{NULL} for using an
-internal default: \code{\link[=get_refmodel]{get_refmodel()}} if \code{object} is not \code{NULL} and a function
-calling \code{\link[=init_refmodel]{init_refmodel()}} appropriately (with the assumption \code{dis = 0}) if
-\code{object} is \code{NULL}.}
+reference model fit for fold \eqn{k \in \{1, ..., K\}}{k = 1, ..., K},
+returns an object of the same type as \code{\link[=init_refmodel]{init_refmodel()}} does. The reference
+model fit for fold \eqn{k} is the \eqn{k}-th element of the return value of
+\code{cvfun} or the \eqn{k}-th element of the \code{list} supplied to \code{cvfits},
+extended by elements \code{omitted} (containing the indices of the left-out
+observations in that fold) and \code{projpred_k} (containing the integer
+\eqn{k}) if that \eqn{k}-th element is a \code{list} itself (otherwise,
+\code{omitted} and \code{projpred_k} are appended as attributes). Argument
+\code{cvrefbuilder} may be \code{NULL} for using an internal default:
+\code{\link[=get_refmodel]{get_refmodel()}} if \code{object} is not \code{NULL} and a function calling
+\code{\link[=init_refmodel]{init_refmodel()}} appropriately (with the assumption \code{dis = 0}) if \code{object}
+is \code{NULL}.}
 
 \item{called_from_cvrefbuilder}{A single logical value indicating whether
 \code{\link[=init_refmodel]{init_refmodel()}} is called from a \code{cvrefbuilder} function (\code{TRUE}) or not

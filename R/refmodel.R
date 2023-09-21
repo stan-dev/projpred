@@ -96,17 +96,18 @@
 #'   (for \eqn{K}-fold CV). Note that `cvfits` takes precedence over `cvfun`,
 #'   i.e., if both are provided, `cvfits` is used.
 #' @param cvrefbuilder For \eqn{K}-fold CV only. A function that, given a
-#'   reference model fit for fold \eqn{k \in \{1, ..., K\}}{k = 1, ..., K} (this
-#'   model fit is the \eqn{k}-th element of the return value of `cvfun` or the
-#'   \eqn{k}-th element of the `list` supplied to `cvfits`, extended by elements
-#'   `omitted` (containing the indices of the left-out observations in that
-#'   fold) and `projpred_k` (containing the integer \eqn{k}) if that \eqn{k}-th
-#'   element is a `list` itself (otherwise, `omitted` and `projpred_k` are
-#'   appended as attributes)), returns an object of the same type as
-#'   [init_refmodel()] does. Argument `cvrefbuilder` may be `NULL` for using an
-#'   internal default: [get_refmodel()] if `object` is not `NULL` and a function
-#'   calling [init_refmodel()] appropriately (with the assumption `dis = 0`) if
-#'   `object` is `NULL`.
+#'   reference model fit for fold \eqn{k \in \{1, ..., K\}}{k = 1, ..., K},
+#'   returns an object of the same type as [init_refmodel()] does. The reference
+#'   model fit for fold \eqn{k} is the \eqn{k}-th element of the return value of
+#'   `cvfun` or the \eqn{k}-th element of the `list` supplied to `cvfits`,
+#'   extended by elements `omitted` (containing the indices of the left-out
+#'   observations in that fold) and `projpred_k` (containing the integer
+#'   \eqn{k}) if that \eqn{k}-th element is a `list` itself (otherwise,
+#'   `omitted` and `projpred_k` are appended as attributes). Argument
+#'   `cvrefbuilder` may be `NULL` for using an internal default:
+#'   [get_refmodel()] if `object` is not `NULL` and a function calling
+#'   [init_refmodel()] appropriately (with the assumption `dis = 0`) if `object`
+#'   is `NULL`.
 #' @param called_from_cvrefbuilder A single logical value indicating whether
 #'   [init_refmodel()] is called from a `cvrefbuilder` function (`TRUE`) or not
 #'   (`FALSE`). Currently, `TRUE` only causes some warnings to be suppressed
