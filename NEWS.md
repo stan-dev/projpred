@@ -38,6 +38,7 @@ If you read this from a place other than <https://mc-stan.org/projpred/news/inde
 * Reduced peak memory usage during performance evaluation (more precisely, during the re-projections done for the performance evaluation). This reduction is considerable especially for multilevel submodels, but possibly also for additive submodels. (GitHub: #440, #450)
 * A message is thrown now when cutting off the search at `nterms_max`'s internal default of (currently) `19`. (GitHub: #452)
 * Added sub-section "Speed" to the main vignette's ["Troubleshooting"](https://mc-stan.org/projpred/articles/projpred.html#troubleshooting) section. (GitHub: #455)
+* The `list` passed to argument `cvfits` of `init_refmodel()` should not have a sub-`list` called `fits` anymore. Instead, the content of this former sub-`list` called `fits` should be moved one level up, i.e., should be placed directly in the `list` passed to `cvfits` (the empty element `fits` should then be removed). For some time, the old structure will continue to work, but this possibility is deprecated and will be removed in the future. (GitHub: #456)
 
 ## Bug fixes
 
