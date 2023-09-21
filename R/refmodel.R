@@ -1370,6 +1370,10 @@ init_refmodel <- function(object, data, formula, family, ref_predfun = NULL,
   }
 
   if (is.null(cvrefbuilder)) {
+    warning("`cvrefbuilder` was `NULL`, so using an internal default. ",
+            "However, this internal default might not take all arguments of ",
+            "get_refmodel() and init_refmodel() appropriately into account, ",
+            "so a custom `cvrefbuilder` is recommended.")
     if (proper_model) {
       cvrefbuilder <- function(cvfit) {
         get_refmodel(cvfit, called_from_cvrefbuilder = TRUE)
