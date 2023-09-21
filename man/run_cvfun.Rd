@@ -75,13 +75,11 @@ cvvs_L1 <- cv_varsel(fit, method = "L1", cv_method = "kfold",
 # Now see, for example, `?print.vsel`, `?plot.vsel`, `?suggest_size.vsel`,
 # and `?ranking` for possible post-processing functions.
 
-### The purpose of run_cvfun() is to create an object that can be used in
-### multiple cv_varsel() calls, e.g., to check the sensitivity to the search
-### method (L1 or forward) (commented here to avoid that this example takes
-### overly long):
-# cvvs_fw <- cv_varsel(fit, method = "forward", cv_method = "kfold",
-#                      cvfits = cvfits, nterms_max = 3, nclusters = 5,
-#                      nclusters_pred = 10, seed = 5555)
-###
+# The purpose of run_cvfun() is to create an object that can be used in
+# multiple cv_varsel() calls, e.g., to check the sensitivity to the search
+# method (L1 or forward):
+cvvs_fw <- cv_varsel(fit, method = "forward", cv_method = "kfold",
+                     cvfits = cvfits, nterms_max = 3, nclusters = 5,
+                     nclusters_pred = 10, seed = 5555)
 \dontshow{\}) # examplesIf}
 }
