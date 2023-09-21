@@ -3,12 +3,15 @@
 \name{varsel}
 \alias{varsel}
 \alias{varsel.default}
+\alias{varsel.vsel}
 \alias{varsel.refmodel}
 \title{Run search and performance evaluation without cross-validation}
 \usage{
 varsel(object, ...)
 
 \method{varsel}{default}(object, ...)
+
+\method{varsel}{vsel}(object, ...)
 
 \method{varsel}{refmodel}(
   object,

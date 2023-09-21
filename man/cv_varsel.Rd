@@ -3,12 +3,15 @@
 \name{cv_varsel}
 \alias{cv_varsel}
 \alias{cv_varsel.default}
+\alias{cv_varsel.vsel}
 \alias{cv_varsel.refmodel}
 \title{Run search and performance evaluation with cross-validation}
 \usage{
 cv_varsel(object, ...)
 
 \method{cv_varsel}{default}(object, ...)
+
+\method{cv_varsel}{vsel}(object, ...)
 
 \method{cv_varsel}{refmodel}(
   object,

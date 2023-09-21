@@ -145,6 +145,14 @@ cv_varsel.default <- function(object, ...) {
 
 #' @rdname cv_varsel
 #' @export
+cv_varsel.vsel <- function(object, ...) {
+  stop("Purpose and content of cv_varsel.vsel() will be changed in a future ",
+       "release. Please use cv_varsel(get_refmodel(<vsel_object>), <...>) ",
+       "instead of cv_varsel(<vsel_object>, <...>).")
+}
+
+#' @rdname cv_varsel
+#' @export
 cv_varsel.refmodel <- function(
     object,
     method = "forward",

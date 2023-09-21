@@ -196,6 +196,14 @@ varsel.default <- function(object, ...) {
 
 #' @rdname varsel
 #' @export
+varsel.vsel <- function(object, ...) {
+  stop("Purpose and content of varsel.vsel() will be changed in a future ",
+       "release. Please use varsel(get_refmodel(<vsel_object>), <...>) ",
+       "instead of varsel(<vsel_object>, <...>).")
+}
+
+#' @rdname varsel
+#' @export
 varsel.refmodel <- function(object, d_test = NULL, method = "forward",
                             ndraws = NULL, nclusters = 20, ndraws_pred = 400,
                             nclusters_pred = NULL,
