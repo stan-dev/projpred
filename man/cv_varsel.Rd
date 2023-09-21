@@ -24,6 +24,7 @@ cv_varsel(object, ...)
   verbose = TRUE,
   nloo = NULL,
   K = if (!inherits(object, "datafit")) 5 else 10,
+  cvfits = object$cvfits,
   lambda_min_ratio = 1e-05,
   nlambda = 150,
   thresh = 1e-06,
@@ -102,10 +103,14 @@ but higher uncertainty in the evaluation part. If \code{NULL}, all observations
 are used, but for faster experimentation, one can set this to a smaller
 value.}
 
-\item{K}{Only relevant if \code{cv_method = "kfold"} and if the reference model
-was created with \code{cvfits} being \code{NULL} (which is the case for
-\code{\link[=get_refmodel.stanreg]{get_refmodel.stanreg()}} and \code{\link[brms:get_refmodel.brmsfit]{brms::get_refmodel.brmsfit()}}). Number of
+\item{K}{Only relevant if \code{cv_method = "kfold"} and if \code{cvfits} is \code{NULL}
+(which is the case for reference model objects created by
+\code{\link[=get_refmodel.stanreg]{get_refmodel.stanreg()}} or \code{\link[brms:get_refmodel.brmsfit]{brms::get_refmodel.brmsfit()}}). Number of
 folds in \eqn{K}-fold CV.}
+
+\item{cvfits}{Only relevant if \code{cv_method = "kfold"}. The same as argument
+\code{cvfits} of \code{\link[=init_refmodel]{init_refmodel()}}, but repeated here for the sake of
+flexibility.}
 
 \item{lambda_min_ratio}{Only relevant for L1 search. Ratio between the
 smallest and largest lambda in the L1-penalized search. This parameter

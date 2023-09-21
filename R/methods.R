@@ -2222,10 +2222,11 @@ mat2drmat <- function(xmat) {
 #' These are helper functions to create cross-validation (CV) folds, i.e., to
 #' split up the indices from 1 to `n` into `K` subsets ("folds") for
 #' \eqn{K}-fold CV. These functions are potentially useful when creating the
-#' `cvfits` and `cvfun` arguments for [init_refmodel()]. Function [cvfolds()] is
-#' deprecated; please use [cv_folds()] instead (apart from the name, they are
-#' the same). The return value of [cv_folds()] and [cv_ids()] is different, see
-#' below for details.
+#' input for arguments `cvfits` and `cvfun` of [init_refmodel()] (or argument
+#' `cvfits` of [cv_varsel.refmodel()]). Function [cvfolds()] is deprecated;
+#' please use [cv_folds()] instead (apart from the name, they are the same). The
+#' return value of [cv_folds()] and [cv_ids()] is different, see below for
+#' details.
 #'
 #' @name cv-indices
 #'

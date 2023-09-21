@@ -25,10 +25,13 @@
 #'   but higher uncertainty in the evaluation part. If `NULL`, all observations
 #'   are used, but for faster experimentation, one can set this to a smaller
 #'   value.
-#' @param K Only relevant if `cv_method = "kfold"` and if the reference model
-#'   was created with `cvfits` being `NULL` (which is the case for
-#'   [get_refmodel.stanreg()] and [brms::get_refmodel.brmsfit()]). Number of
+#' @param K Only relevant if `cv_method = "kfold"` and if `cvfits` is `NULL`
+#'   (which is the case for reference model objects created by
+#'   [get_refmodel.stanreg()] or [brms::get_refmodel.brmsfit()]). Number of
 #'   folds in \eqn{K}-fold CV.
+#' @param cvfits Only relevant if `cv_method = "kfold"`. The same as argument
+#'   `cvfits` of [init_refmodel()], but repeated here for the sake of
+#'   flexibility.
 #' @param validate_search Only relevant if `cv_method = "LOO"`. A single logical
 #'   value indicating whether to cross-validate also the search part, i.e.,
 #'   whether to run the search separately for each CV fold (`TRUE`) or not
@@ -156,6 +159,7 @@ cv_varsel.refmodel <- function(
     verbose = TRUE,
     nloo = NULL,
     K = if (!inherits(object, "datafit")) 5 else 10,
+    cvfits = object$cvfits,
     lambda_min_ratio = 1e-5,
     nlambda = 150,
     thresh = 1e-6,
@@ -198,11 +202,12 @@ cv_varsel.refmodel <- function(
   search_terms_was_null <- args$search_terms_was_null
   # Parse arguments specific to cv_varsel():
   args <- parse_args_cv_varsel(
-    refmodel = refmodel, cv_method = cv_method, K = K,
+    refmodel = refmodel, cv_method = cv_method, K = K, cvfits = cvfits,
     validate_search = validate_search
   )
   cv_method <- args$cv_method
   K <- args$K
+  cvfits <- args$cvfits
   # Arguments specific to the search:
   opt <- nlist(lambda_min_ratio, nlambda, thresh, regul)
 
@@ -237,8 +242,8 @@ cv_varsel.refmodel <- function(
       refmodel = refmodel, method = method, nterms_max = nterms_max,
       ndraws = ndraws, nclusters = nclusters, ndraws_pred = ndraws_pred,
       nclusters_pred = nclusters_pred, refit_prj = refit_prj, penalty = penalty,
-      verbose = verbose, opt = opt, K = K, search_terms = search_terms,
-      parallel = parallel, ...
+      verbose = verbose, opt = opt, K = K, cvfits = cvfits,
+      search_terms = search_terms, parallel = parallel, ...
     )
   }
 
@@ -299,10 +304,12 @@ cv_varsel.refmodel <- function(
 # @param refmodel See argument `object` of cv_varsel().
 # @param cv_method See argument `cv_method` of cv_varsel().
 # @param K See argument `K` of cv_varsel().
+# @param cvfits See argument `cvfits` of cv_varsel().
 # @param validate_search See argument `validate_search` of cv_varsel().
 #
-# @return A list with elements `cv_method` and `K`.
-parse_args_cv_varsel <- function(refmodel, cv_method, K, validate_search) {
+# @return A list with the processed elements `cv_method`, `K`, and `cvfits`.
+parse_args_cv_varsel <- function(refmodel, cv_method, K, cvfits,
+                                 validate_search) {
   stopifnot(!is.null(cv_method))
   if (cv_method == "loo") {
     cv_method <- toupper(cv_method)
@@ -317,20 +324,16 @@ parse_args_cv_varsel <- function(refmodel, cv_method, K, validate_search) {
   }
 
   if (cv_method == "kfold") {
-    if (!is.null(refmodel$cvfits)) {
-      cvfits_for_K <- refmodel$cvfits
-      if (identical(names(cvfits_for_K), "fits")) {
-        ### Not throwing this warning here because it is already thrown by
-        ### get_kfold() (where it makes more sense):
-        # warning(
-        #   "The content of `cvfits`'s sub-list called `fits` should be ",
-        #   "moved one level up (and element `fits` removed). The old ",
-        #   "structure will continue to work for a while, but is deprecated."
-        # )
-        ###
-        cvfits_for_K <- cvfits_for_K$fits
+    if (!is.null(cvfits)) {
+      if (identical(names(cvfits), "fits")) {
+        warning(
+          "The content of `cvfits`'s sub-list called `fits` should be moved ",
+          "one level up (and element `fits` removed). The old structure will ",
+          "continue to work for a while, but is deprecated."
+        )
+        cvfits <- cvfits$fits
       }
-      K <- length(cvfits_for_K)
+      K <- length(cvfits)
     }
     stopifnot(!is.null(K))
     if (length(K) > 1 || !is.numeric(K) || !is_wholenumber(K)) {
@@ -348,9 +351,10 @@ parse_args_cv_varsel <- function(refmodel, cv_method, K, validate_search) {
     }
   } else {
     K <- NULL
+    cvfits <- NULL
   }
 
-  return(nlist(cv_method, K))
+  return(nlist(cv_method, K, cvfits))
 }
 
 # PSIS-LOO CV -------------------------------------------------------------
@@ -1050,14 +1054,13 @@ if (getRversion() >= package_version("2.15.1")) {
   utils::globalVariables("list_cv_k")
 }
 
-kfold_varsel <- function(refmodel, method, nterms_max, ndraws,
-                         nclusters, ndraws_pred, nclusters_pred,
-                         refit_prj, penalty, verbose, opt, K,
-                         search_terms, parallel, ...) {
+kfold_varsel <- function(refmodel, method, nterms_max, ndraws, nclusters,
+                         ndraws_pred, nclusters_pred, refit_prj, penalty,
+                         verbose, opt, K, cvfits, search_terms, parallel, ...) {
   # Fetch the K reference model fits (or fit them now if not already done) and
   # create objects of class `refmodel` from them (and also store the `omitted`
   # indices):
-  list_cv <- get_kfold(refmodel, K, verbose)
+  list_cv <- get_kfold(refmodel, K = K, cvfits = cvfits, verbose = verbose)
   K <- length(list_cv)
 
   if (refmodel$family$for_latent) {
@@ -1216,8 +1219,8 @@ kfold_varsel <- function(refmodel, method, nterms_max, ndraws,
 # will return a list of length K, where each element is a list with elements
 # `refmodel` (output of init_refmodel()) and `omitted` (vector of indices of
 # those observations which were left out for the corresponding fold).
-get_kfold <- function(refmodel, K, verbose) {
-  if (is.null(refmodel$cvfits)) {
+get_kfold <- function(refmodel, K, cvfits, verbose) {
+  if (is.null(cvfits)) {
     if (!is.null(refmodel$cvfun)) {
       # In this case, cvfun() provided (and `cvfits` not), so run cvfun() now.
       if (verbose && !inherits(refmodel, "datafit")) {
@@ -1238,14 +1241,7 @@ get_kfold <- function(refmodel, K, verbose) {
            "`?init_refmodel`).")
     }
   } else {
-    folds <- attr(refmodel$cvfits, "folds")
-    cvfits <- refmodel$cvfits
-    if (identical(names(cvfits), "fits")) {
-      warning("The content of `cvfits`'s sub-list called `fits` should be ",
-              "moved one level up (and element `fits` removed). The old ",
-              "structure will continue to work for a while, but is deprecated.")
-      cvfits <- cvfits$fits
-    }
+    folds <- attr(cvfits, "folds")
   }
   return(lapply(seq_len(K), function(k) {
     cvfit <- cvfits[[k]]
