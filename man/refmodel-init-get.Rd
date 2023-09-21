@@ -127,7 +127,7 @@ internal default. Only one of \code{cvfits} and \code{cvfun} needs to be provide
 i.e., if both are provided, \code{cvfits} is used.}
 
 \item{cvfits}{For \eqn{K}-fold CV only. A \code{list} containing the \eqn{K}
-reference model fits from which reference model objects are created. This
+reference model refits from which reference model objects are created. This
 \code{list} needs to have an attribute called \code{folds}, consisting of an integer
 vector giving the fold indices (one fold index per observation). Only one
 of \code{cvfits} and \code{cvfun} needs to be provided (for \eqn{K}-fold CV). Note
@@ -387,7 +387,7 @@ fit <- rstanarm::stan_glm(
   QR = TRUE, chains = 2, iter = 500, refresh = 0, seed = 9876
 )
 
-# Define the reference model explicitly:
+# Define the reference model object explicitly:
 ref <- get_refmodel(fit)
 print(class(ref)) # gives `"refmodel"`
 # Now see, for example, `?varsel`, `?cv_varsel`, and `?project` for
@@ -395,9 +395,9 @@ print(class(ref)) # gives `"refmodel"`
 # call get_refmodel() internally at the beginning, so you will rarely need
 # to call get_refmodel() yourself.
 
-# A custom reference model which may be used in a variable selection where
-# the candidate predictors are not a subset of those used for the reference
-# model's predictions:
+# A custom reference model object which may be used in a variable selection
+# where the candidate predictors are not a subset of those used for the
+# reference model's predictions:
 ref_cust <- init_refmodel(
   fit,
   data = dat_gauss,

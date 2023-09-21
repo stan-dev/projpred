@@ -30,8 +30,8 @@
 #'   [get_refmodel.stanreg()] or [brms::get_refmodel.brmsfit()]). Number of
 #'   folds in \eqn{K}-fold CV.
 #' @param cvfits Only relevant if `cv_method = "kfold"`. The same as argument
-#'   `cvfits` of [init_refmodel()], but repeated here for the sake of
-#'   flexibility.
+#'   `cvfits` of [init_refmodel()], but repeated here so that output from
+#'   [run_cvfun()] can be inserted here straightforwardly.
 #' @param validate_search Only relevant if `cv_method = "LOO"`. A single logical
 #'   value indicating whether to cross-validate also the search part, i.e.,
 #'   whether to run the search separately for each CV fold (`TRUE`) or not
@@ -1259,6 +1259,110 @@ get_kfold <- function(refmodel, K, cvfits, verbose) {
                 omitted = omitted_idxs))
   }))
 }
+
+#' Create `cvfits` from `cvfun`
+#'
+#' A helper function that can be used to create input for
+#' [cv_varsel.refmodel()]'s argument `cvfits` by running first [cv_folds()] and
+#' then the reference model object's `cvfun` (see [init_refmodel()]). This is
+#' helpful if \eqn{K}-fold CV is run multiple times based on the same \eqn{K}
+#' reference model refits.
+#'
+#' @param object An object of class `refmodel` (returned by [get_refmodel()] or
+#'   [init_refmodel()]) or an object that can be passed to argument `object` of
+#'   [get_refmodel()].
+#' @param K Number of folds. Must be at least 2 and not exceed the number of
+#'   observations.
+#' @param seed Pseudorandom number generation (PRNG) seed by which the same
+#'   results can be obtained again if needed. Passed to argument `seed` of
+#'   [set.seed()], but can also be `NA` to not call [set.seed()] at all. If not
+#'   `NA`, then the PRNG state is reset (to the state before calling
+#'   [run_cvfun()]) upon exiting [run_cvfun()].
+#' @param ... For [run_cvfun.default()]: Arguments passed to [get_refmodel()].
+#'   For [run_cvfun.refmodel()]: Currently ignored.
+#'
+#' @return An object that can be used as input for [cv_varsel.refmodel()]'s
+#'   argument `cvfits`.
+#'
+#' @examplesIf requireNamespace("rstanarm", quietly = TRUE)
+#' # Data:
+#' dat_gauss <- data.frame(y = df_gaussian$y, df_gaussian$x)
+#'
+#' # The "stanreg" fit which will be used as the reference model (with small
+#' # values for `chains` and `iter`, but only for technical reasons in this
+#' # example; this is not recommended in general):
+#' fit <- rstanarm::stan_glm(
+#'   y ~ X1 + X2 + X3 + X4 + X5, family = gaussian(), data = dat_gauss,
+#'   QR = TRUE, chains = 2, iter = 500, refresh = 0, seed = 9876
+#' )
+#'
+#' # Define the reference model object explicitly:
+#' ref <- get_refmodel(fit)
+#'
+#' # Run the reference model object's `cvfun` (with a small value for `K`, but
+#' # only for the sake of speed in this example; this is not recommended in
+#' # general):
+#' cvfits <- run_cvfun(ref, K = 2, seed = 184)
+#'
+#' # Run cv_varsel() (with L1 search and small values for `nterms_max`,
+#' # `nclusters`, and `nclusters_pred`, but only for the sake of speed in this
+#' # example; this is not recommended in general) and use `cvfits` there:
+#' cvvs_L1 <- cv_varsel(fit, method = "L1", cv_method = "kfold",
+#'                      cvfits = cvfits, nterms_max = 3, nclusters = 5,
+#'                      nclusters_pred = 10, seed = 5555)
+#' # Now see, for example, `?print.vsel`, `?plot.vsel`, `?suggest_size.vsel`,
+#' # and `?ranking` for possible post-processing functions.
+#'
+#' ### The purpose of run_cvfun() is to create an object that can be used in
+#' ### multiple cv_varsel() calls, e.g., to check the sensitivity to the search
+#' ### method (L1 or forward) (commented here to avoid that this example takes
+#' ### overly long):
+#' # cvvs_fw <- cv_varsel(fit, method = "forward", cv_method = "kfold",
+#' #                      cvfits = cvfits, nterms_max = 3, nclusters = 5,
+#' #                      nclusters_pred = 10, seed = 5555)
+#' ###
+#'
+#' @export
+run_cvfun <- function(object, ...) {
+  UseMethod("run_cvfun")
+}
+
+#' @rdname run_cvfun
+#' @export
+run_cvfun.default <- function(object, ...) {
+  refmodel <- get_refmodel(object, ...)
+  return(run_cvfun(refmodel, ...))
+}
+
+#' @rdname run_cvfun
+#' @export
+run_cvfun.refmodel <- function(object,
+                               K = if (!inherits(object, "datafit")) 5 else 10,
+                               seed = NA, ...) {
+  if (exists(".Random.seed", envir = .GlobalEnv)) {
+    rng_state_old <- get(".Random.seed", envir = .GlobalEnv)
+  }
+  if (!is.na(seed)) {
+    # Set seed, but ensure the old RNG state is restored on exit:
+    if (exists(".Random.seed", envir = .GlobalEnv)) {
+      on.exit(assign(".Random.seed", rng_state_old, envir = .GlobalEnv))
+    }
+    set.seed(seed)
+  }
+
+  refmodel <- object
+  stopifnot(!is.null(refmodel$cvfun))
+
+  folds <- cv_folds(refmodel$nobs, K = K)
+  if (getOption("projpred.warn_kfold_refits", TRUE)) {
+    cvfits <- refmodel$cvfun(folds)
+  } else {
+    cvfits <- suppressWarnings(refmodel$cvfun(folds))
+  }
+  return(structure(cvfits, folds = folds))
+}
+
+# PSIS-LOO CV helpers -----------------------------------------------------
 
 # ## decide which points to go through in the validation (i.e., which points
 # ## belong to the semi random subsample of validation points)

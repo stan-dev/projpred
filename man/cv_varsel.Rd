@@ -109,8 +109,8 @@ value.}
 folds in \eqn{K}-fold CV.}
 
 \item{cvfits}{Only relevant if \code{cv_method = "kfold"}. The same as argument
-\code{cvfits} of \code{\link[=init_refmodel]{init_refmodel()}}, but repeated here for the sake of
-flexibility.}
+\code{cvfits} of \code{\link[=init_refmodel]{init_refmodel()}}, but repeated here so that output from
+\code{\link[=run_cvfun]{run_cvfun()}} can be inserted here straightforwardly.}
 
 \item{lambda_min_ratio}{Only relevant for L1 search. Ratio between the
 smallest and largest lambda in the L1-penalized search. This parameter
