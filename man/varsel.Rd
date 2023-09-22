@@ -30,6 +30,7 @@ varsel(object, ...)
   regul = 1e-04,
   penalty = NULL,
   search_terms = NULL,
+  search_out = NULL,
   seed = NA,
   ...
 )
@@ -119,6 +120,8 @@ there's no difference between including it explicitly or omitting it. The
 default \code{search_terms} considers all the terms in the reference model's
 formula.}
 
+\item{search_out}{Intended for internal use.}
+
 \item{seed}{Pseudorandom number generation (PRNG) seed by which the same
 results can be obtained again if needed. Passed to argument \code{seed} of
 \code{\link[=set.seed]{set.seed()}}, but can also be \code{NA} to not call \code{\link[=set.seed]{set.seed()}} at all. If not
@@ -138,7 +141,9 @@ Run the \emph{search} part and the \emph{evaluation} part for a projection predi
 variable selection. The search part determines the predictor ranking (also
 known as solution path), i.e., the best submodel for each submodel size
 (number of predictor terms). The evaluation part determines the predictive
-performance of the submodels along the predictor ranking.
+performance of the submodels along the predictor ranking. A special method is
+\code{\link[=varsel.vsel]{varsel.vsel()}} because it re-uses the search results from an earlier
+\code{\link[=varsel]{varsel()}} (or \code{\link[=cv_varsel]{cv_varsel()}}) run, as illustrated in the main vignette.
 }
 \details{
 Arguments \code{ndraws}, \code{nclusters}, \code{nclusters_pred}, and \code{ndraws_pred}

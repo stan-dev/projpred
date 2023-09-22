@@ -35,6 +35,7 @@ cv_varsel(object, ...)
   validate_search = TRUE,
   seed = NA,
   search_terms = NULL,
+  search_out = NULL,
   parallel = getOption("projpred.prll_cv", FALSE),
   ...
 )
@@ -163,6 +164,8 @@ there's no difference between including it explicitly or omitting it. The
 default \code{search_terms} considers all the terms in the reference model's
 formula.}
 
+\item{search_out}{Intended for internal use.}
+
 \item{parallel}{A single logical value indicating whether to run costly parts
 of the CV in parallel (\code{TRUE}) or not (\code{FALSE}). See also section "Note"
 below.}
@@ -181,7 +184,9 @@ performance of the submodels along the predictor ranking. In contrast to
 \code{\link[=varsel]{varsel()}}, \code{\link[=cv_varsel]{cv_varsel()}} performs a cross-validation (CV) by running the
 search part with the training data of each CV fold separately (an exception
 is explained in section "Note" below) and by running the evaluation part on
-the corresponding test set of each CV fold.
+the corresponding test set of each CV fold. A special method is
+\code{\link[=cv_varsel.vsel]{cv_varsel.vsel()}} because it re-uses the search results from an earlier
+\code{\link[=cv_varsel]{cv_varsel()}} (or \code{\link[=varsel]{varsel()}}) run, as illustrated in the main vignette.
 }
 \details{
 Arguments \code{ndraws}, \code{nclusters}, \code{nclusters_pred}, and \code{ndraws_pred}
