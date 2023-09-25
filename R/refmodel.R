@@ -84,11 +84,10 @@
 #' @param cvfits For \eqn{K}-fold CV only. A `list` containing the \eqn{K}
 #'   reference model fits from which reference model objects are created. This
 #'   `list` needs to have an attribute called `folds`, consisting of an integer
-#'   vector giving the fold indices (one fold index per observation). Each
-#'   element of this `list` (i.e., each of the \eqn{K} reference model fits)
-#'   needs to be a `list` itself. Only one of `cvfits` and `cvfun` needs to be
-#'   provided (for \eqn{K}-fold CV). Note that `cvfits` takes precedence over
-#'   `cvfun`, i.e., if both are provided, `cvfits` is used.
+#'   vector giving the fold indices (one fold index per observation). Only one
+#'   of `cvfits` and `cvfun` needs to be provided (for \eqn{K}-fold CV). Note
+#'   that `cvfits` takes precedence over `cvfun`, i.e., if both are provided,
+#'   `cvfits` is used.
 #' @param cvfun For \eqn{K}-fold CV only. A function that, given a fold indices
 #'   vector, fits the reference model separately for each fold and returns the
 #'   \eqn{K} model fits as a `list`. Each of the \eqn{K} model fits needs to be
@@ -97,15 +96,18 @@
 #'   (for \eqn{K}-fold CV). Note that `cvfits` takes precedence over `cvfun`,
 #'   i.e., if both are provided, `cvfits` is used.
 #' @param cvrefbuilder For \eqn{K}-fold CV only. A function that, given a
-#'   reference model fit for fold \eqn{k \in \{1, ..., K\}}{k = 1, ..., K} (this
-#'   model fit is the \eqn{k}-th element of the return value of `cvfun` or the
-#'   \eqn{k}-th element of the `list` supplied to `cvfits`, extended by elements
-#'   `omitted` (containing the indices of the left-out observations in that
-#'   fold) and `projpred_k` (containing the integer \eqn{k})), returns an object
-#'   of the same type as [init_refmodel()] does. Argument `cvrefbuilder` may be
-#'   `NULL` for using an internal default: [get_refmodel()] if `object` is not
-#'   `NULL` and a function calling [init_refmodel()] appropriately (with the
-#'   assumption `dis = 0`) if `object` is `NULL`.
+#'   reference model fit for fold \eqn{k \in \{1, ..., K\}}{k = 1, ..., K},
+#'   returns an object of the same type as [init_refmodel()] does. The reference
+#'   model fit for fold \eqn{k} is the \eqn{k}-th element of the return value of
+#'   `cvfun` or the \eqn{k}-th element of the `list` supplied to `cvfits`,
+#'   extended by elements `omitted` (containing the indices of the left-out
+#'   observations in that fold) and `projpred_k` (containing the integer
+#'   \eqn{k}) if that \eqn{k}-th element is a `list` itself (otherwise,
+#'   `omitted` and `projpred_k` are appended as attributes). Argument
+#'   `cvrefbuilder` may be `NULL` for using an internal default:
+#'   [get_refmodel()] if `object` is not `NULL` and a function calling
+#'   [init_refmodel()] appropriately (with the assumption `dis = 0`) if `object`
+#'   is `NULL`.
 #' @param called_from_cvrefbuilder A single logical value indicating whether
 #'   [init_refmodel()] is called from a `cvrefbuilder` function (`TRUE`) or not
 #'   (`FALSE`). Currently, `TRUE` only causes some warnings to be suppressed
@@ -1369,6 +1371,10 @@ init_refmodel <- function(object, data, formula, family, ref_predfun = NULL,
   }
 
   if (is.null(cvrefbuilder)) {
+    warning("`cvrefbuilder` was `NULL`, so using an internal default. ",
+            "However, this internal default might not take all arguments of ",
+            "get_refmodel() and init_refmodel() appropriately into account, ",
+            "so a custom `cvrefbuilder` is recommended.")
     if (proper_model) {
       cvrefbuilder <- function(cvfit) {
         get_refmodel(cvfit, called_from_cvrefbuilder = TRUE)
