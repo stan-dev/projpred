@@ -126,10 +126,10 @@
 #' )
 #'
 #' # Run varsel() (here without cross-validation, with L1 search, and with small
-#' # values for `nterms_max`, `nclusters`, and `nclusters_pred`, but only for
-#' # the sake of speed in this example; this is not recommended in general):
-#' vs <- varsel(fit, method = "L1", nterms_max = 3, nclusters = 5,
-#'              nclusters_pred = 10, seed = 5555)
+#' # values for `nterms_max` and `nclusters_pred`, but only for the sake of
+#' # speed in this example; this is not recommended in general):
+#' vs <- varsel(fit, method = "L1", nterms_max = 3, nclusters_pred = 10,
+#'              seed = 5555)
 #'
 #' # Projection onto the best submodel with 2 predictor terms (with a small
 #' # value for `nclusters`, but only for the sake of speed in this example;

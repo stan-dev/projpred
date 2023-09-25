@@ -66,12 +66,12 @@ ref <- get_refmodel(fit)
 # general):
 cvfits <- run_cvfun(ref, K = 2, seed = 184)
 
-# Run cv_varsel() (with L1 search and small values for `nterms_max`,
-# `nclusters`, and `nclusters_pred`, but only for the sake of speed in this
-# example; this is not recommended in general) and use `cvfits` there:
+# Run cv_varsel() (with L1 search and small values for `nterms_max` and
+# `nclusters_pred`, but only for the sake of speed in this example; this is
+# not recommended in general) and use `cvfits` there:
 cvvs_L1 <- cv_varsel(fit, method = "L1", cv_method = "kfold",
-                     cvfits = cvfits, nterms_max = 3, nclusters = 5,
-                     nclusters_pred = 10, seed = 5555)
+                     cvfits = cvfits, nterms_max = 3, nclusters_pred = 10,
+                     seed = 5555)
 # Now see, for example, `?print.vsel`, `?plot.vsel`, `?suggest_size.vsel`,
 # and `?ranking` for possible post-processing functions.
 

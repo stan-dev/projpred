@@ -696,10 +696,10 @@ proj_predict_aux <- function(proj, newdata, offset, weights,
 #' )
 #'
 #' # Run varsel() (here without cross-validation, with L1 search, and with small
-#' # values for `nterms_max`, `nclusters`, and `nclusters_pred`, but only for
-#' # the sake of speed in this example; this is not recommended in general):
-#' vs <- varsel(fit, method = "L1", nterms_max = 3, nclusters = 5,
-#'              nclusters_pred = 10, seed = 5555)
+#' # values for `nterms_max` and `nclusters_pred`, but only for the sake of
+#' # speed in this example; this is not recommended in general):
+#' vs <- varsel(fit, method = "L1", nterms_max = 3, nclusters_pred = 10,
+#'              seed = 5555)
 #' print(plot(vs))
 #'
 #' @export
@@ -1137,10 +1137,10 @@ plot.vsel <- function(
 #' )
 #'
 #' # Run varsel() (here without cross-validation, with L1 search, and with small
-#' # values for `nterms_max`, `nclusters`, and `nclusters_pred`, but only for
-#' # the sake of speed in this example; this is not recommended in general):
-#' vs <- varsel(fit, method = "L1", nterms_max = 3, nclusters = 5,
-#'              nclusters_pred = 10, seed = 5555)
+#' # values for `nterms_max` and `nclusters_pred`, but only for the sake of
+#' # speed in this example; this is not recommended in general):
+#' vs <- varsel(fit, method = "L1", nterms_max = 3, nclusters_pred = 10,
+#'              seed = 5555)
 #' print(summary(vs), digits = 1)
 #'
 #' @export
@@ -1477,10 +1477,10 @@ print.vsel <- function(x, ...) {
 #' )
 #'
 #' # Run varsel() (here without cross-validation, with L1 search, and with small
-#' # values for `nterms_max`, `nclusters`, and `nclusters_pred`, but only for
-#' # the sake of speed in this example; this is not recommended in general):
-#' vs <- varsel(fit, method = "L1", nterms_max = 3, nclusters = 5,
-#'              nclusters_pred = 10, seed = 5555)
+#' # values for `nterms_max` and `nclusters_pred`, but only for the sake of
+#' # speed in this example; this is not recommended in general):
+#' vs <- varsel(fit, method = "L1", nterms_max = 3, nclusters_pred = 10,
+#'              seed = 5555)
 #' print(suggest_size(vs))
 #'
 #' @export
@@ -2628,12 +2628,11 @@ cv_proportions.vsel <- function(object, ...) {
 #'   QR = TRUE, chains = 2, iter = 1000, refresh = 0, seed = 9876
 #' )
 #'
-#' # Run cv_varsel() (with L1 search and small values for `K`, `nterms_max`,
-#' # `nclusters`, and `nclusters_pred`, but only for the sake of speed in this
-#' # example; this is not recommended in general):
+#' # Run cv_varsel() (with L1 search and small values for `K`, `nterms_max`, and
+#' # `nclusters_pred`, but only for the sake of speed in this example; this is
+#' # not recommended in general):
 #' cvvs <- cv_varsel(fit, method = "L1", cv_method = "kfold", K = 2,
-#'                   nterms_max = 3, nclusters = 5, nclusters_pred = 10,
-#'                   seed = 5555)
+#'                   nterms_max = 3, nclusters_pred = 10, seed = 5555)
 #'
 #' # Extract predictor rankings:
 #' rk <- ranking(cvvs)
