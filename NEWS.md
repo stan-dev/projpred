@@ -38,6 +38,7 @@ If you read this from a place other than <https://mc-stan.org/projpred/news/inde
 * Reduced peak memory usage during performance evaluation (more precisely, during the re-projections done for the performance evaluation). This reduction is considerable especially for multilevel submodels, but possibly also for additive submodels. (GitHub: #440, #450)
 * A message is thrown now when cutting off the search at `nterms_max`'s internal default of (currently) `19`. (GitHub: #452)
 * Added sub-section "Speed" to the main vignette's ["Troubleshooting"](https://mc-stan.org/projpred/articles/projpred.html#troubleshooting) section. (GitHub: #455)
+* The `list` passed to argument `cvfits` of `init_refmodel()` should not have a sub-`list` called `fits` anymore. Instead, the content of this former sub-`list` called `fits` should be moved one level up, i.e., should be placed directly in the `list` passed to `cvfits` (the empty element `fits` should then be removed). For some time, the old structure will continue to work, but this possibility is deprecated and will be removed in the future. (GitHub: #456)
 
 ## Bug fixes
 
@@ -70,6 +71,7 @@ If you read this from a place other than <https://mc-stan.org/projpred/news/inde
 
 * Enhancements in the vignettes. In particular, the new functions `ranking()`, `cv_proportions()`, and `plot.cv_proportions()` (see "Major changes" above) are now illustrated in the main vignette. (GitHub: #407, #411)
 * Reduced the peak memory usage of `cv_varsel()` with `cv_method = "kfold"`. This may slightly change results from such a `cv_varsel()` run compared to older **projpred** versions due to different pseudorandom number generator (PRNG) states when clustering posterior draws. (GitHub: #419)
+* The `cvfits` list (see `init_refmodel()`) does not need to have an attribute called `K` anymore.
 
 ## Bug fixes
 
