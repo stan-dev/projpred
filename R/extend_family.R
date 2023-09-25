@@ -214,7 +214,7 @@
 #' `_ref`, `wdraws_ref` does not necessarily obtain weights for the *initial*
 #' reference model's posterior draws: In case of [cv_varsel()] with `cv_method =
 #' "kfold"`, these weights may refer to one of the \eqn{K} reference model
-#' re-fits (but in that case, they are constant anyway).
+#' refits (but in that case, they are constant anyway).
 #'
 #' If `family$cats` is not `NULL` (after taking `latent_y_unqs` into account),
 #' then the response vector resulting from `extract_model_data` (see

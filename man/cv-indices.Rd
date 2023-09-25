@@ -42,10 +42,11 @@ respectively, for each fold.
 These are helper functions to create cross-validation (CV) folds, i.e., to
 split up the indices from 1 to \code{n} into \code{K} subsets ("folds") for
 \eqn{K}-fold CV. These functions are potentially useful when creating the
-\code{cvfits} and \code{cvfun} arguments for \code{\link[=init_refmodel]{init_refmodel()}}. Function \code{\link[=cvfolds]{cvfolds()}} is
-deprecated; please use \code{\link[=cv_folds]{cv_folds()}} instead (apart from the name, they are
-the same). The return value of \code{\link[=cv_folds]{cv_folds()}} and \code{\link[=cv_ids]{cv_ids()}} is different, see
-below for details.
+input for arguments \code{cvfits} and \code{cvfun} of \code{\link[=init_refmodel]{init_refmodel()}} (or argument
+\code{cvfits} of \code{\link[=cv_varsel.refmodel]{cv_varsel.refmodel()}}). Function \code{\link[=cvfolds]{cvfolds()}} is deprecated;
+please use \code{\link[=cv_folds]{cv_folds()}} instead (apart from the name, they are the same). The
+return value of \code{\link[=cv_folds]{cv_folds()}} and \code{\link[=cv_ids]{cv_ids()}} is different, see below for
+details.
 }
 \examples{
 n <- 100
