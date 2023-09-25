@@ -1277,6 +1277,7 @@ if (run_more) {
 ## nloo -------------------------------------------------------------------
 
 test_that("invalid `nloo` fails", {
+  skip_if_not(run_cvvs)
   tstsetups_nonkfold <- grep("\\.kfold", names(cvvss), value = TRUE,
                              invert = TRUE)
   for (tstsetup in head(tstsetups_nonkfold, 1)) {
