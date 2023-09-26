@@ -397,23 +397,35 @@ print(class(ref)) # gives `"refmodel"`
 
 # A custom reference model object which may be used in a variable selection
 # where the candidate predictors are not a subset of those used for the
-# reference model's predictions:
+# reference model's predictions (defining the function for argument
+# `extract_model_data` first because it can be re-used for the `cvrefbuilder`
+# function here):
+extractor_cust <- function(object, newdata, wrhs = NULL, orhs = NULL,
+                           extract_y = TRUE) {
+  return(y_wobs_offs(newdata = newdata, wrhs = wrhs, orhs = orhs,
+                     resp_form = if (extract_y) ~ y else NULL))
+}
 ref_cust <- init_refmodel(
   fit,
   data = dat_gauss,
   formula = y ~ X6 + X7,
   family = gaussian(),
-  extract_model_data = function(object, newdata, wrhs = NULL, orhs = NULL,
-                                extract_y = TRUE) {
-    return(y_wobs_offs(newdata = newdata, wrhs = wrhs, orhs = orhs,
-                       resp_form = if (extract_y) ~ y else NULL))
-  },
+  extract_model_data = extractor_cust,
   cvfun = function(folds) {
     kfold(
       fit, K = max(folds), save_fits = TRUE, folds = folds, cores = 1
     )$fits[, "fit"]
   },
-  dis = as.matrix(fit)[, "sigma"]
+  dis = as.matrix(fit)[, "sigma"],
+  cvrefbuilder = function(cvfit) {
+    init_refmodel(cvfit,
+                  data = dat_gauss[-cvfit$omitted, , drop = FALSE],
+                  formula = y ~ X6 + X7,
+                  family = gaussian(),
+                  extract_model_data = extractor_cust,
+                  dis = as.matrix(cvfit)[, "sigma"],
+                  called_from_cvrefbuilder = TRUE)
+  }
 )
 # Now, the post-processing functions mentioned above (for example,
 # varsel(), cv_varsel(), and project()) may be applied to `ref_cust`.
