@@ -40,7 +40,7 @@
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">projpred</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">2.6.0</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">2.7.0</span>
       </span>
     </div>
 
@@ -133,7 +133,7 @@
       <h1 data-toc-skip>Latent projection predictive feature
 selection</h1>
             
-            <h4 data-toc-skip class="date">2023-06-01</h4>
+            <h4 data-toc-skip class="date">2023-09-26</h4>
       
       <small class="dont-index">Source: <a href="https://github.com/stan-dev/projpred/blob/HEAD/vignettes/latent.Rmd" class="external-link"><code>vignettes/latent.Rmd</code></a></small>
       <div class="hidden name"><code>latent.Rmd</code></div>
@@ -147,23 +147,22 @@ selection</h1>
 </h2>
 <p>This vignette shows how to use the latent projection predictive
 feature selection from <span class="citation">Catalina, Bürkner, and
-Vehtari (<a href="#ref-catalina_latent_2021" role="doc-biblioref">2021</a>)</span> in <strong>projpred</strong>. We
-recommend to read the main vignette first, as the latent-projection
-vignette presented here will skip some of the details explained in the
-main vignette.</p>
+Vehtari (<a href="#ref-catalina_latent_2021">2021</a>)</span> in
+<strong>projpred</strong>. We recommend to read the main vignette first,
+as the latent-projection vignette presented here will skip some of the
+details explained in the main vignette.</p>
 <div class="section level3">
 <h3 id="general-idea">General idea<a class="anchor" aria-label="anchor" href="#general-idea"></a>
 </h3>
-<p>The response families used in GLMs <span class="citation">(<a href="#ref-mccullagh_generalized_1989" role="doc-biblioref">McCullagh
-and Nelder 1989, chap. 2</a>)</span> (and in GLMMs, GAMs, and GAMMs) may
-be termed <em>exponential dispersion (ED)</em> families <span class="citation">(<a href="#ref-jorgensen_exponential_1987" role="doc-biblioref">Jørgensen 1987</a>)</span><a href="#fn1" class="footnote-ref" id="fnref1"><sup>1</sup></a>. For a response family
-that is not an ED family, the Kullback-Leibler (KL) divergence
-minimization problem <span class="citation">(see <a href="#ref-piironen_projective_2020" role="doc-biblioref">Piironen,
-Paasiniemi, and Vehtari 2020</a>)</span> is often not easy to solve
-analytically<a href="#fn2" class="footnote-ref" id="fnref2"><sup>2</sup></a>. In order to bypass this issue, the latent
-projection <span class="citation">(<a href="#ref-catalina_latent_2021" role="doc-biblioref">Catalina, Bürkner, and Vehtari 2021</a>)</span>
-solves the KL minimization problem in the predictive space of the latent
-predictors<a href="#fn3" class="footnote-ref" id="fnref3"><sup>3</sup></a> instead of in the predictive space of the
+<p>The response families used in GLMs <span class="citation">(<a href="#ref-mccullagh_generalized_1989">McCullagh and Nelder 1989, chap.
+2</a>)</span> (and in GLMMs, GAMs, and GAMMs) may be termed
+<em>exponential dispersion (ED)</em> families <span class="citation">(<a href="#ref-jorgensen_exponential_1987">Jørgensen 1987</a>)</span><a href="#fn1" class="footnote-ref" id="fnref1"><sup>1</sup></a>. For a
+response family that is not an ED family, the Kullback-Leibler (KL)
+divergence minimization problem <span class="citation">(see <a href="#ref-piironen_projective_2020">Piironen, Paasiniemi, and Vehtari
+2020</a>)</span> is often not easy to solve analytically<a href="#fn2" class="footnote-ref" id="fnref2"><sup>2</sup></a>. In order to bypass
+this issue, the latent projection <span class="citation">(<a href="#ref-catalina_latent_2021">Catalina, Bürkner, and Vehtari
+2021</a>)</span> solves the KL minimization problem in the predictive
+space of the latent predictors<a href="#fn3" class="footnote-ref" id="fnref3"><sup>3</sup></a> instead of in the predictive space of the
 original response values.</p>
 <p>To this end, the latent predictor is assumed to have a Gaussian
 distribution, since it (i) constitutes a combination of predictor data
@@ -172,12 +171,11 @@ but—less—often also in the predictor data) or at least additive (across
 the predictor terms) and (ii) has the complete real line as support.
 Furthermore, the Gaussian distribution has the highest differential
 entropy among all distributions with two finite moments and with the
-real line as support <span class="citation">(see, e.g., <a href="#ref-cover_elements_1991" role="doc-biblioref">Cover and Thomas
-1991</a>)</span>. In some cases, e.g., for the probit link, the Gaussian
-distribution is even part of the original statistical model. In case of
-the logit link, the Gaussian distribution with a standard deviation of
-1.6 approximates the logistic distribution (with a scale parameter of
-1).</p>
+real line as support <span class="citation">(see, e.g., <a href="#ref-cover_elements_1991">Cover and Thomas 1991</a>)</span>. In
+some cases, e.g., for the probit link, the Gaussian distribution is even
+part of the original statistical model. In case of the logit link, the
+Gaussian distribution with a standard deviation of 1.6 approximates the
+logistic distribution (with a scale parameter of 1).</p>
 <p>The assumption of a Gaussian distribution for the latent predictors
 makes things a lot easier because it allows us to make use of
 <strong>projpred</strong>’s traditional projection.</p>
@@ -242,7 +240,7 @@ documentation).</p>
 documentation.</p>
 <p>While the latent projection is an approximate solution to the KL
 divergence minimization problem in the original response space<a href="#fn5" class="footnote-ref" id="fnref5"><sup>5</sup></a>, the
-augmented-data projection <span class="citation">(<a href="#ref-weber_projection_2023" role="doc-biblioref">Weber and Vehtari
+augmented-data projection <span class="citation">(<a href="#ref-weber_projection_2023">Weber, Glass, and Vehtari
 2023</a>)</span> gives the exact<a href="#fn6" class="footnote-ref" id="fnref6"><sup>6</sup></a> solution for some non-ED families, namely
 those where the response distribution has finite support. However, the
 augmented-data projection comes with a higher runtime than the latent
@@ -385,6 +383,10 @@ projection’s later:</p>
 <code class="sourceCode R"><span><span class="va">time_lat</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/system.time.html" class="external-link">system.time</a></span><span class="op">(</span><span class="va">vs_lat</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/varsel.html">varsel</a></span><span class="op">(</span></span>
 <span>  <span class="va">refm_poiss</span>,</span>
 <span>  d_test <span class="op">=</span> <span class="va">d_test_lat_poiss</span>,</span>
+<span>  <span class="co">### Only for demonstrating an issue with the traditional projection in the</span></span>
+<span>  <span class="co">### next step (not recommended in general):</span></span>
+<span>  method <span class="op">=</span> <span class="st">"L1"</span>,</span>
+<span>  <span class="co">###</span></span>
 <span>  <span class="co">### Only for the sake of speed (not recommended in general):</span></span>
 <span>  nclusters_pred <span class="op">=</span> <span class="fl">20</span>,</span>
 <span>  <span class="co">###</span></span>
@@ -399,7 +401,7 @@ projection’s later:</p>
 <div class="sourceCode" id="cb10"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="va">time_lat</span><span class="op">)</span></span></code></pre></div>
 <pre><code>   user  system elapsed 
-  1.658   0.004   1.662 </code></pre>
+  1.670   0.012   1.682 </code></pre>
 <p>The message telling that <code>&lt;refmodel&gt;$dis</code> consists
 of only <code>NA</code>s will not concern us here because we will only
 be focusing on response-scale post-processing.</p>
@@ -407,7 +409,7 @@ be focusing on response-scale post-processing.</p>
 <code><a href="https://rdrr.io/r/graphics/plot.default.html" class="external-link">plot()</a></code> results:</p>
 <div class="sourceCode" id="cb12"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="op">(</span> <span class="va">gg_lat</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/graphics/plot.default.html" class="external-link">plot</a></span><span class="op">(</span><span class="va">vs_lat</span>, stats <span class="op">=</span> <span class="st">"mlpd"</span>, deltas <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span> <span class="op">)</span></span></code></pre></div>
-<p><img src="latent_files/figure-html/plot_vsel_lat-1.png" width="75%" style="display: block; margin: auto;"></p>
+<p><img src="latent_files/figure-html/plot_vsel_lat-1.png" width="90%" style="display: block; margin: auto;"></p>
 <p>Although the submodels’ MLPDs seem to be very close to the reference
 model’s MLPD from a submodel size of 6 on, a zoomed plot reveals that
 there is still some discrepancy at sizes 6 to 11 and that size 12 would
@@ -416,7 +418,7 @@ output, we will also see that on absolute scale, the discrepancy at
 sizes 6 to 11 is not negligible):</p>
 <div class="sourceCode" id="cb13"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">gg_lat</span> <span class="op">+</span> <span class="fu">ggplot2</span><span class="fu">::</span><span class="fu"><a href="https://ggplot2.tidyverse.org/reference/coord_cartesian.html" class="external-link">coord_cartesian</a></span><span class="op">(</span>ylim <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="op">-</span><span class="fl">10</span>, <span class="fl">0.05</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
-<p><img src="latent_files/figure-html/plot_vsel_lat_zoom-1.png" width="75%" style="display: block; margin: auto;"></p>
+<p><img src="latent_files/figure-html/plot_vsel_lat_zoom-1.png" width="90%" style="display: block; margin: auto;"></p>
 <p>Thus, we decide for a submodel size of 12:</p>
 <div class="sourceCode" id="cb14"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">size_decided_lat</span> <span class="op">&lt;-</span> <span class="fl">12</span></span></code></pre></div>
@@ -513,6 +515,10 @@ projection would have given:</p>
 <span><span class="va">time_trad</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/system.time.html" class="external-link">system.time</a></span><span class="op">(</span><span class="va">vs_trad</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/varsel.html">varsel</a></span><span class="op">(</span></span>
 <span>  <span class="va">refm_fit_poiss</span>,</span>
 <span>  d_test <span class="op">=</span> <span class="va">d_test_trad_poiss</span>,</span>
+<span>  <span class="co">### Only for demonstrating an issue with the traditional projection (not</span></span>
+<span>  <span class="co">### recommended in general):</span></span>
+<span>  method <span class="op">=</span> <span class="st">"L1"</span>,</span>
+<span>  <span class="co">###</span></span>
 <span>  <span class="co">### Only for the sake of speed (not recommended in general):</span></span>
 <span>  nclusters_pred <span class="op">=</span> <span class="fl">20</span>,</span>
 <span>  <span class="co">###</span></span>
@@ -527,10 +533,10 @@ projection would have given:</p>
 <div class="sourceCode" id="cb22"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="va">time_trad</span><span class="op">)</span></span></code></pre></div>
 <pre><code>   user  system elapsed 
-  2.743   0.000   2.744 </code></pre>
+  2.581   0.000   2.581 </code></pre>
 <div class="sourceCode" id="cb24"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="op">(</span> <span class="va">gg_trad</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/graphics/plot.default.html" class="external-link">plot</a></span><span class="op">(</span><span class="va">vs_trad</span>, stats <span class="op">=</span> <span class="st">"mlpd"</span>, deltas <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span> <span class="op">)</span></span></code></pre></div>
-<p><img src="latent_files/figure-html/post_vs_trad-1.png" width="60%" style="display: block; margin: auto;"></p>
+<p><img src="latent_files/figure-html/post_vs_trad-1.png" width="90%" style="display: block; margin: auto;"></p>
 <div class="sourceCode" id="cb25"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">smmry_trad</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary</a></span><span class="op">(</span><span class="va">vs_trad</span>, stats <span class="op">=</span> <span class="st">"mlpd"</span>,</span>
 <span>                      type <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"mean"</span>, <span class="st">"lower"</span>, <span class="st">"upper"</span>, <span class="st">"diff"</span><span class="op">)</span><span class="op">)</span></span>
@@ -614,9 +620,9 @@ not supported by <strong>projpred</strong>’s traditional projection<a href="#f
 <p>We now fit a reference model with the negative binomial distribution
 as response family. For the sake of simplicity, we won’t adjust
 <code>tau0</code> to this new family, but in a real-world example, such
-an adjustment would be necessary. However, since Table 1 of <span class="citation">Piironen and Vehtari (<a href="#ref-piironen_sparsity_2017" role="doc-biblioref">2017</a>)</span>
-doesn’t list the negative binomial distribution, this would first
-require a manual derivation of the pseudo-variance <span class="math inline">\(\tilde{\sigma}^2\)</span>.</p>
+an adjustment would be necessary. However, since Table 1 of <span class="citation">Piironen and Vehtari (<a href="#ref-piironen_sparsity_2017">2017</a>)</span> doesn’t list the
+negative binomial distribution, this would first require a manual
+derivation of the pseudo-variance <span class="math inline">\(\tilde{\sigma}^2\)</span>.</p>
 <div class="sourceCode" id="cb27"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">refm_fit_nebin</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://mc-stan.org/rstanarm/reference/stan_glm.html" class="external-link">stan_glm</a></span><span class="op">(</span></span>
 <span>  formula <span class="op">=</span> <span class="va">refm_fml</span>,</span>
@@ -669,6 +675,7 @@ now need to specify more arguments (<code>latent_ll_oscale</code> and
 <span>  <span class="va">refm_nebin</span>,</span>
 <span>  d_test <span class="op">=</span> <span class="va">d_test_lat_poiss</span>,</span>
 <span>  <span class="co">### Only for the sake of speed (not recommended in general):</span></span>
+<span>  method <span class="op">=</span> <span class="st">"L1"</span>,</span>
 <span>  nclusters_pred <span class="op">=</span> <span class="fl">20</span>,</span>
 <span>  <span class="co">###</span></span>
 <span>  nterms_max <span class="op">=</span> <span class="fl">14</span>,</span>
@@ -686,11 +693,11 @@ this case).</p>
 a submodel size:</p>
 <div class="sourceCode" id="cb32"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="op">(</span> <span class="va">gg_nebin</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/graphics/plot.default.html" class="external-link">plot</a></span><span class="op">(</span><span class="va">vs_nebin</span>, stats <span class="op">=</span> <span class="st">"mlpd"</span>, deltas <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span> <span class="op">)</span></span></code></pre></div>
-<p><img src="latent_files/figure-html/plot_vsel_nebin-1.png" width="75%" style="display: block; margin: auto;"></p>
+<p><img src="latent_files/figure-html/plot_vsel_nebin-1.png" width="90%" style="display: block; margin: auto;"></p>
 <p>Again, a zoomed plot is more helpful:</p>
 <div class="sourceCode" id="cb33"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">gg_nebin</span> <span class="op">+</span> <span class="fu">ggplot2</span><span class="fu">::</span><span class="fu"><a href="https://ggplot2.tidyverse.org/reference/coord_cartesian.html" class="external-link">coord_cartesian</a></span><span class="op">(</span>ylim <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="op">-</span><span class="fl">2.5</span>, <span class="fl">0.25</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
-<p><img src="latent_files/figure-html/plot_vsel_nebin_zoom-1.png" width="75%" style="display: block; margin: auto;"></p>
+<p><img src="latent_files/figure-html/plot_vsel_nebin_zoom-1.png" width="90%" style="display: block; margin: auto;"></p>
 <p>Although the submodels’ MLPDs approach the reference model’s already
 from a submodel size of 9 on (taking into account the uncertainty bars),
 the curve levels off only from a submodel size of 11 on. For a more
@@ -817,8 +824,8 @@ Regularization in the Horseshoe and Other Shrinkage Priors.”</span>
 <em>Electronic Journal of Statistics</em> 11 (2): 5018–51. <a href="https://doi.org/10.1214/17-EJS1337SI" class="external-link">https://doi.org/10.1214/17-EJS1337SI</a>.
 </div>
 <div id="ref-weber_projection_2023" class="csl-entry">
-Weber, Frank, and Aki Vehtari. 2023. <span>“Projection Predictive
-Variable Selection for Discrete Response Families with Finite
+Weber, Frank, Änne Glass, and Aki Vehtari. 2023. <span>“Projection
+Predictive Variable Selection for Discrete Response Families with Finite
 Support.”</span> <span>arXiv</span>. <a href="https://doi.org/10.48550/arXiv.2301.01660" class="external-link">https://doi.org/10.48550/arXiv.2301.01660</a>.
 </div>
 </div>
@@ -826,19 +833,19 @@ Support.”</span> <span>arXiv</span>. <a href="https://doi.org/10.48550/arXiv.2
 <div class="footnotes footnotes-end-of-document">
 <hr>
 <ol>
-<li id="fn1"><p><span class="citation">Jørgensen (<a href="#ref-jorgensen_exponential_1987" role="doc-biblioref">1987</a>)</span> himself only uses the term
-“exponential dispersion model”, but the discussion for that article
-mentions the term “ED [i.e., exponential dispersion] family”. <span class="citation">Jørgensen (<a href="#ref-jorgensen_exponential_1987" role="doc-biblioref">1987</a>)</span> also introduces the class of
-<em>discrete exponential dispersion</em> families (here abbreviated by
-“DED families”), see section <a href="#negbinex">“Example: Negative
-binomial distribution”</a>.<a href="#fnref1" class="footnote-back">↩︎</a></p></li>
+<li id="fn1"><p><span class="citation">Jørgensen (<a href="#ref-jorgensen_exponential_1987">1987</a>)</span> himself only
+uses the term “exponential dispersion model”, but the discussion for
+that article mentions the term “ED [i.e., exponential dispersion]
+family”. <span class="citation">Jørgensen (<a href="#ref-jorgensen_exponential_1987">1987</a>)</span> also introduces
+the class of <em>discrete exponential dispersion</em> families (here
+abbreviated by “DED families”), see section <a href="#negbinex">“Example: Negative binomial distribution”</a>.<a href="#fnref1" class="footnote-back">↩︎</a></p></li>
 <li id="fn2"><p>The set of families supported by
 <strong>projpred</strong>’s traditional—i.e., neither augmented-data nor
 latent—projection is only a subset of the set of all ED families
 (<strong>projpred</strong>’s traditional projection supports the
 <code><a href="https://rdrr.io/r/stats/family.html" class="external-link">gaussian()</a></code> family, the <code><a href="https://rdrr.io/r/stats/family.html" class="external-link">binomial()</a></code> family, the
-<code><a href="https://rdrr.io/pkg/brms/man/brmsfamily.html" class="external-link">brms::bernoulli()</a></code> family via
-<code><a href="https://rdrr.io/pkg/brms/man/get_refmodel.brmsfit.html" class="external-link">brms::get_refmodel.brmsfit()</a></code>, and the
+<code><a href="https://paul-buerkner.github.io/brms/reference/brmsfamily.html" class="external-link">brms::bernoulli()</a></code> family via
+<code><a href="https://paul-buerkner.github.io/brms/reference/get_refmodel.brmsfit.html" class="external-link">brms::get_refmodel.brmsfit()</a></code>, and the
 <code><a href="https://rdrr.io/r/stats/family.html" class="external-link">poisson()</a></code> family). Thus, we cannot use the term “ED
 families” equivalently to the term “families supported by
 <strong>projpred</strong>’s traditional projection”, but the concept of
@@ -859,16 +866,17 @@ latter.<a href="#fnref5" class="footnote-back">↩︎</a></p></li>
 simplifications which are also undertaken for the traditional
 projection.<a href="#fnref6" class="footnote-back">↩︎</a></p></li>
 <li id="fn7"><p>The negative binomial distribution belongs to the class
-of <em>discrete exponential dispersion</em> families <span class="citation">(<a href="#ref-jorgensen_exponential_1987" role="doc-biblioref">Jørgensen 1987</a>)</span> (here abbreviated by
-“DED families”). DED families are closely related to ED families <span class="citation">(<a href="#ref-jorgensen_exponential_1987" role="doc-biblioref">Jørgensen 1987</a>)</span>, but strictly speaking,
-the class of DED families is not a subset of the class of ED families.
-GitHub issue <a href="https://github.com/stan-dev/projpred/issues/361" class="external-link">#361</a> explains
+of <em>discrete exponential dispersion</em> families <span class="citation">(<a href="#ref-jorgensen_exponential_1987">Jørgensen
+1987</a>)</span> (here abbreviated by “DED families”). DED families are
+closely related to ED families <span class="citation">(<a href="#ref-jorgensen_exponential_1987">Jørgensen 1987</a>)</span>, but
+strictly speaking, the class of DED families is not a subset of the
+class of ED families. GitHub issue <a href="https://github.com/stan-dev/projpred/issues/361" class="external-link">#361</a> explains
 why the “traditional” projection onto a DED-family submodel is currently
 not implemented in <strong>projpred</strong>.<a href="#fnref7" class="footnote-back">↩︎</a></p></li>
 <li id="fn8"><p>The suffix <code>_prec</code> in <code>refm_prec</code>
 stands for “precision” because here, we follow the Stan convention (see
 the Stan documentation for the <code>neg_binomial_2</code> distribution,
-the <code><a href="https://rdrr.io/pkg/brms/man/brmsfamily.html" class="external-link">brms::negbinomial()</a></code> documentation, and the <a href="https://paul-buerkner.github.io/brms/" class="external-link"><strong>brms</strong></a>
+the <code><a href="https://paul-buerkner.github.io/brms/reference/brmsfamily.html" class="external-link">brms::negbinomial()</a></code> documentation, and the <a href="https://paul-buerkner.github.io/brms/" class="external-link"><strong>brms</strong></a>
 vignette “Parameterization of Response Distributions in brms”) and
 prefer the term <em>precision</em> parameter for what is denoted by
 <span class="math inline">\(\phi\)</span> there (confusingly, argument

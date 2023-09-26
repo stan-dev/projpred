@@ -19,7 +19,7 @@ init_refmodel(), so you will rarely need to call it yourself."><meta property="o
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">projpred</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">2.6.0</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">2.7.0</span>
       </span>
     </div>
 
@@ -264,11 +264,11 @@ argument <code>augdat_y_unqs</code>).</p></li>
 <p>For ordinal <span class="pkg">brms</span> families, be aware that the submodels (onto which the
 reference model is projected) currently have the following restrictions:</p><ul><li><p>The discrimination parameter <code>disc</code> is not supported (i.e., it is a
 constant with value 1).</p></li>
-<li><p>The thresholds are <code>"flexible"</code> (see <code><a href="https://rdrr.io/pkg/brms/man/brmsfamily.html" class="external-link">brms::brmsfamily()</a></code>).</p></li>
+<li><p>The thresholds are <code>"flexible"</code> (see <code><a href="https://paul-buerkner.github.io/brms/reference/brmsfamily.html" class="external-link">brms::brmsfamily()</a></code>).</p></li>
 <li><p>The thresholds do not vary across the levels of a <code>factor</code>-like variable
-(see argument <code>gr</code> of <code><a href="https://rdrr.io/pkg/brms/man/addition-terms.html" class="external-link">brms::resp_thres()</a></code>).</p></li>
+(see argument <code>gr</code> of <code><a href="https://paul-buerkner.github.io/brms/reference/addition-terms.html" class="external-link">brms::resp_thres()</a></code>).</p></li>
 <li><p>The <code>"probit_approx"</code> link is replaced by <code>"probit"</code>.</p></li>
-</ul><p>For the <code><a href="https://rdrr.io/pkg/brms/man/brmsfamily.html" class="external-link">brms::categorical()</a></code> family, be aware that:</p><ul><li><p>For multilevel submodels, the group-level effects are allowed to be
+</ul><p>For the <code><a href="https://paul-buerkner.github.io/brms/reference/brmsfamily.html" class="external-link">brms::categorical()</a></code> family, be aware that:</p><ul><li><p>For multilevel submodels, the group-level effects are allowed to be
 correlated between different response categories.</p></li>
 <li><p>For multilevel submodels, <span class="pkg">mclogit</span> versions &lt; 0.9.4 may throw the
 error <code>'a' (&lt;number&gt; x 1) must be square</code>. Updating <span class="pkg">mclogit</span> to a
@@ -341,7 +341,7 @@ In that case, the weights passed to this argument are the PSIS-LOO CV weights
 for one observation. Note that although argument <code>wdraws_ref</code> has the suffix
 <code>_ref</code>, <code>wdraws_ref</code> does not necessarily obtain weights for the <em>initial</em>
 reference model's posterior draws: In case of <code><a href="cv_varsel.html">cv_varsel()</a></code> with <code>cv_method = "kfold"</code>, these weights may refer to one of the \(K\) reference model
-re-fits (but in that case, they are constant anyway).</p>
+refits (but in that case, they are constant anyway).</p>
 <p>If <code>family$cats</code> is not <code>NULL</code> (after taking <code>latent_y_unqs</code> into account),
 then the response vector resulting from <code>extract_model_data</code> (see
 <code><a href="refmodel-init-get.html">init_refmodel()</a></code>) is coerced to a <code>factor</code> (using <code><a href="https://rdrr.io/r/base/factor.html" class="external-link">as.factor()</a></code>) at multiple

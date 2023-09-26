@@ -31,6 +31,9 @@
     <loc>https://mc-stan.org/projpred/reference/as.matrix.projection.html</loc>
   </url>
   <url>
+    <loc>https://mc-stan.org/projpred/reference/as_draws_matrix.projection.html</loc>
+  </url>
+  <url>
     <loc>https://mc-stan.org/projpred/reference/augdat-internals.html</loc>
   </url>
   <url>
@@ -68,6 +71,9 @@
   </url>
   <url>
     <loc>https://mc-stan.org/projpred/reference/extra-families.html</loc>
+  </url>
+  <url>
+    <loc>https://mc-stan.org/projpred/reference/force_search_terms.html</loc>
   </url>
   <url>
     <loc>https://mc-stan.org/projpred/reference/index.html</loc>
@@ -112,6 +118,9 @@
     <loc>https://mc-stan.org/projpred/reference/refmodel-init-get.html</loc>
   </url>
   <url>
+    <loc>https://mc-stan.org/projpred/reference/run_cvfun.html</loc>
+  </url>
+  <url>
     <loc>https://mc-stan.org/projpred/reference/solution_terms.html</loc>
   </url>
   <url>
@@ -122,5 +131,8 @@
   </url>
   <url>
     <loc>https://mc-stan.org/projpred/reference/varsel.html</loc>
+  </url>
+  <url>
+    <loc>https://mc-stan.org/projpred/reference/y_wobs_offs.html</loc>
   </url>
 </urlset>

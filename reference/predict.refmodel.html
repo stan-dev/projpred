@@ -21,7 +21,7 @@ response scale, or the log posterior predictive density."><meta property="og:ima
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">projpred</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">2.6.0</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">2.7.0</span>
       </span>
     </div>
 
@@ -139,8 +139,8 @@ response scale, or the log posterior predictive density.</p>
 <dd><p>Passed to argument <code>newdata</code> of the reference model's
 <code>extract_model_data</code> function (see <code><a href="refmodel-init-get.html">init_refmodel()</a></code>). Provides the
 predictor (and possibly also the response) data for the new (or old)
-observations. May also be <code>NULL</code> (see argument <code>extract_model_data</code> of
-<code><a href="refmodel-init-get.html">init_refmodel()</a></code>). If not <code>NULL</code>, any <code>NA</code>s will trigger an error.</p></dd>
+observations. May also be <code>NULL</code> for using the original dataset. If not
+<code>NULL</code>, any <code>NA</code>s will trigger an error.</p></dd>
 
 
 <dt>ynew</dt>
@@ -176,7 +176,7 @@ spirit to argument <code>resp_oscale</code> from other functions: If (i)
 <code>is.null(ynew)</code>, then argument <code>type</code> affects the predictions as described
 above. In that case, note that <code>type = "link"</code> yields the linear predictors
 without any modifications that may be due to the original response
-distribution (e.g., for a <code><a href="https://rdrr.io/pkg/brms/man/brmsfamily.html" class="external-link">brms::cumulative()</a></code> model, the ordered
+distribution (e.g., for a <code><a href="https://paul-buerkner.github.io/brms/reference/brmsfamily.html" class="external-link">brms::cumulative()</a></code> model, the ordered
 thresholds are not taken into account). If (ii) <code>!is.null(ynew)</code>, then
 argument <code>type</code> also affects the scale of the log posterior predictive
 densities (<code>type = "response"</code> for the original response scale, <code>type = "link"</code> for the latent Gaussian scale).</p></dd>

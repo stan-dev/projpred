@@ -21,7 +21,7 @@ percentage points (the plotted proportions themselves are not rounded)."><meta p
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">projpred</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">2.6.0</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">2.7.0</span>
       </span>
     </div>
 
@@ -160,54 +160,41 @@ implementation in <span class="pkg">projpred</span> by Frank Weber.</p>
 
     <div id="ref-examples">
     <h2>Examples</h2>
-    <div class="sourceCode"><pre class="sourceCode r"><code><span class="r-in"><span><span class="co"># Note: The code from this example is not executed when called via example().</span></span></span>
-<span class="r-in"><span><span class="co"># To execute it, you have to copy and paste it manually to the console.</span></span></span>
-<span class="r-in"><span><span class="kw">if</span> <span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/ns-load.html" class="external-link">requireNamespace</a></span><span class="op">(</span><span class="st">"rstanarm"</span>, quietly <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span><span class="op">)</span> <span class="op">{</span></span></span>
-<span class="r-in"><span>  <span class="co"># Data:</span></span></span>
-<span class="r-in"><span>  <span class="va">dat_gauss</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span>y <span class="op">=</span> <span class="va">df_gaussian</span><span class="op">$</span><span class="va">y</span>, <span class="va">df_gaussian</span><span class="op">$</span><span class="va">x</span><span class="op">)</span></span></span>
+    <div class="sourceCode"><pre class="sourceCode r"><code><span class="r-in"><span><span class="co"># Data:</span></span></span>
+<span class="r-in"><span><span class="va">dat_gauss</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span>y <span class="op">=</span> <span class="va">df_gaussian</span><span class="op">$</span><span class="va">y</span>, <span class="va">df_gaussian</span><span class="op">$</span><span class="va">x</span><span class="op">)</span></span></span>
 <span class="r-in"><span></span></span>
-<span class="r-in"><span>  <span class="co"># The "stanreg" fit which will be used as the reference model (with small</span></span></span>
-<span class="r-in"><span>  <span class="co"># values for `chains` and `iter`, but only for technical reasons in this</span></span></span>
-<span class="r-in"><span>  <span class="co"># example; this is not recommended in general):</span></span></span>
-<span class="r-in"><span>  <span class="va">fit</span> <span class="op">&lt;-</span> <span class="fu">rstanarm</span><span class="fu">::</span><span class="fu"><a href="https://mc-stan.org/rstanarm/reference/stan_glm.html" class="external-link">stan_glm</a></span><span class="op">(</span></span></span>
-<span class="r-in"><span>    <span class="va">y</span> <span class="op">~</span> <span class="va">X1</span> <span class="op">+</span> <span class="va">X2</span> <span class="op">+</span> <span class="va">X3</span> <span class="op">+</span> <span class="va">X4</span> <span class="op">+</span> <span class="va">X5</span>, family <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/stats/family.html" class="external-link">gaussian</a></span><span class="op">(</span><span class="op">)</span>, data <span class="op">=</span> <span class="va">dat_gauss</span>,</span></span>
-<span class="r-in"><span>    QR <span class="op">=</span> <span class="cn">TRUE</span>, chains <span class="op">=</span> <span class="fl">2</span>, iter <span class="op">=</span> <span class="fl">1000</span>, refresh <span class="op">=</span> <span class="fl">0</span>, seed <span class="op">=</span> <span class="fl">9876</span></span></span>
-<span class="r-in"><span>  <span class="op">)</span></span></span>
+<span class="r-in"><span><span class="co"># The "stanreg" fit which will be used as the reference model (with small</span></span></span>
+<span class="r-in"><span><span class="co"># values for `chains` and `iter`, but only for technical reasons in this</span></span></span>
+<span class="r-in"><span><span class="co"># example; this is not recommended in general):</span></span></span>
+<span class="r-in"><span><span class="va">fit</span> <span class="op">&lt;-</span> <span class="fu">rstanarm</span><span class="fu">::</span><span class="fu"><a href="https://mc-stan.org/rstanarm/reference/stan_glm.html" class="external-link">stan_glm</a></span><span class="op">(</span></span></span>
+<span class="r-in"><span>  <span class="va">y</span> <span class="op">~</span> <span class="va">X1</span> <span class="op">+</span> <span class="va">X2</span> <span class="op">+</span> <span class="va">X3</span> <span class="op">+</span> <span class="va">X4</span> <span class="op">+</span> <span class="va">X5</span>, family <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/stats/family.html" class="external-link">gaussian</a></span><span class="op">(</span><span class="op">)</span>, data <span class="op">=</span> <span class="va">dat_gauss</span>,</span></span>
+<span class="r-in"><span>  QR <span class="op">=</span> <span class="cn">TRUE</span>, chains <span class="op">=</span> <span class="fl">2</span>, iter <span class="op">=</span> <span class="fl">1000</span>, refresh <span class="op">=</span> <span class="fl">0</span>, seed <span class="op">=</span> <span class="fl">9876</span></span></span>
+<span class="r-in"><span><span class="op">)</span></span></span>
 <span class="r-in"><span></span></span>
-<span class="r-in"><span>  <span class="co"># Run cv_varsel() (with small values for `K`, `nterms_max`, `nclusters`,</span></span></span>
-<span class="r-in"><span>  <span class="co"># and `nclusters_pred`, but only for the sake of speed in this example;</span></span></span>
-<span class="r-in"><span>  <span class="co"># this is not recommended in general):</span></span></span>
-<span class="r-in"><span>  <span class="va">cvvs</span> <span class="op">&lt;-</span> <span class="fu"><a href="cv_varsel.html">cv_varsel</a></span><span class="op">(</span><span class="va">fit</span>, cv_method <span class="op">=</span> <span class="st">"kfold"</span>, K <span class="op">=</span> <span class="fl">2</span>, nterms_max <span class="op">=</span> <span class="fl">3</span>,</span></span>
-<span class="r-in"><span>                    nclusters <span class="op">=</span> <span class="fl">5</span>, nclusters_pred <span class="op">=</span> <span class="fl">10</span>, seed <span class="op">=</span> <span class="fl">5555</span><span class="op">)</span></span></span>
-<span class="r-in"><span></span></span>
-<span class="r-in"><span>  <span class="co"># Extract predictor rankings:</span></span></span>
-<span class="r-in"><span>  <span class="va">rk</span> <span class="op">&lt;-</span> <span class="fu"><a href="ranking.html">ranking</a></span><span class="op">(</span><span class="va">cvvs</span><span class="op">)</span></span></span>
-<span class="r-in"><span></span></span>
-<span class="r-in"><span>  <span class="co"># Compute ranking proportions:</span></span></span>
-<span class="r-in"><span>  <span class="va">pr_rk</span> <span class="op">&lt;-</span> <span class="fu"><a href="cv_proportions.html">cv_proportions</a></span><span class="op">(</span><span class="va">rk</span><span class="op">)</span></span></span>
-<span class="r-in"><span></span></span>
-<span class="r-in"><span>  <span class="co"># Visualize the ranking proportions:</span></span></span>
-<span class="r-in"><span>  <span class="va">gg_pr_rk</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/graphics/plot.default.html" class="external-link">plot</a></span><span class="op">(</span><span class="va">pr_rk</span><span class="op">)</span></span></span>
-<span class="r-in"><span>  <span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="va">gg_pr_rk</span><span class="op">)</span></span></span>
-<span class="r-in"><span></span></span>
-<span class="r-in"><span>  <span class="co"># Since the object returned by plot.cv_proportions() is a standard ggplot2</span></span></span>
-<span class="r-in"><span>  <span class="co"># plotting object, you can modify the plot easily, e.g., to remove the</span></span></span>
-<span class="r-in"><span>  <span class="co"># legend:</span></span></span>
-<span class="r-in"><span>  <span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="va">gg_pr_rk</span> <span class="op">+</span> <span class="fu">ggplot2</span><span class="fu">::</span><span class="fu"><a href="https://ggplot2.tidyverse.org/reference/theme.html" class="external-link">theme</a></span><span class="op">(</span>legend.position <span class="op">=</span> <span class="st">"none"</span><span class="op">)</span><span class="op">)</span></span></span>
-<span class="r-in"><span><span class="op">}</span></span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> -----</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> Refitting the reference model K = 2 times (using the fold-wise training data) ...</span>
+<span class="r-in"><span><span class="co"># Run cv_varsel() (with L1 search and small values for `K`, `nterms_max`, and</span></span></span>
+<span class="r-in"><span><span class="co"># `nclusters_pred`, but only for the sake of speed in this example; this is</span></span></span>
+<span class="r-in"><span><span class="co"># not recommended in general):</span></span></span>
+<span class="r-in"><span><span class="va">cvvs</span> <span class="op">&lt;-</span> <span class="fu"><a href="cv_varsel.html">cv_varsel</a></span><span class="op">(</span><span class="va">fit</span>, method <span class="op">=</span> <span class="st">"L1"</span>, cv_method <span class="op">=</span> <span class="st">"kfold"</span>, K <span class="op">=</span> <span class="fl">2</span>,</span></span>
+<span class="r-in"><span>                  nterms_max <span class="op">=</span> <span class="fl">3</span>, nclusters_pred <span class="op">=</span> <span class="fl">10</span>, seed <span class="op">=</span> <span class="fl">5555</span>,</span></span>
+<span class="r-in"><span>                  verbose <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span></span>
 <span class="r-msg co"><span class="r-pr">#&gt;</span> Fitting model 1 out of 2</span>
 <span class="r-msg co"><span class="r-pr">#&gt;</span> Fitting model 2 out of 2</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> -----</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> -----</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> Running the search and the performance evaluation for each of the K = 2 CV folds separately ...</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>   |                                                                              |                                                                      |   0%  |                                                                              |===================================                                   |  50%  |                                                                              |======================================================================| 100%</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> -----</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> -----</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> Running a final search using the full dataset ...</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> -----</span>
+<span class="r-in"><span></span></span>
+<span class="r-in"><span><span class="co"># Extract predictor rankings:</span></span></span>
+<span class="r-in"><span><span class="va">rk</span> <span class="op">&lt;-</span> <span class="fu"><a href="ranking.html">ranking</a></span><span class="op">(</span><span class="va">cvvs</span><span class="op">)</span></span></span>
+<span class="r-in"><span></span></span>
+<span class="r-in"><span><span class="co"># Compute ranking proportions:</span></span></span>
+<span class="r-in"><span><span class="va">pr_rk</span> <span class="op">&lt;-</span> <span class="fu"><a href="cv_proportions.html">cv_proportions</a></span><span class="op">(</span><span class="va">rk</span><span class="op">)</span></span></span>
+<span class="r-in"><span></span></span>
+<span class="r-in"><span><span class="co"># Visualize the ranking proportions:</span></span></span>
+<span class="r-in"><span><span class="va">gg_pr_rk</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/graphics/plot.default.html" class="external-link">plot</a></span><span class="op">(</span><span class="va">pr_rk</span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="va">gg_pr_rk</span><span class="op">)</span></span></span>
 <span class="r-plt img"><img src="plot.cv_proportions-1.png" alt="" width="700" height="433"></span>
+<span class="r-in"><span></span></span>
+<span class="r-in"><span><span class="co"># Since the object returned by plot.cv_proportions() is a standard ggplot2</span></span></span>
+<span class="r-in"><span><span class="co"># plotting object, you can modify the plot easily, e.g., to remove the</span></span></span>
+<span class="r-in"><span><span class="co"># legend:</span></span></span>
+<span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="va">gg_pr_rk</span> <span class="op">+</span> <span class="fu">ggplot2</span><span class="fu">::</span><span class="fu"><a href="https://ggplot2.tidyverse.org/reference/theme.html" class="external-link">theme</a></span><span class="op">(</span>legend.position <span class="op">=</span> <span class="st">"none"</span><span class="op">)</span><span class="op">)</span></span></span>
 <span class="r-plt img"><img src="plot.cv_proportions-2.png" alt="" width="700" height="433"></span>
 </code></pre></div>
     </div>

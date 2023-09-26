@@ -21,7 +21,7 @@ performance of the submodels along the predictor ranking."><meta property="og:im
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">projpred</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">2.6.0</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">2.7.0</span>
       </span>
     </div>
 
@@ -121,11 +121,14 @@ performance of the submodels along the predictor ranking.</p>
 <span><span class="co"># S3 method for default</span></span>
 <span><span class="fu">varsel</span><span class="op">(</span><span class="va">object</span>, <span class="va">...</span><span class="op">)</span></span>
 <span></span>
+<span><span class="co"># S3 method for vsel</span></span>
+<span><span class="fu">varsel</span><span class="op">(</span><span class="va">object</span>, <span class="va">...</span><span class="op">)</span></span>
+<span></span>
 <span><span class="co"># S3 method for refmodel</span></span>
 <span><span class="fu">varsel</span><span class="op">(</span></span>
 <span>  <span class="va">object</span>,</span>
 <span>  d_test <span class="op">=</span> <span class="cn">NULL</span>,</span>
-<span>  method <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  method <span class="op">=</span> <span class="st">"forward"</span>,</span>
 <span>  ndraws <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  nclusters <span class="op">=</span> <span class="fl">20</span>,</span>
 <span>  ndraws_pred <span class="op">=</span> <span class="fl">400</span>,</span>
@@ -166,11 +169,9 @@ the training data is used.</p></dd>
 
 
 <dt>method</dt>
-<dd><p>The method for the search part. Possible options are <code>"L1"</code> for
-L1 search and <code>"forward"</code> for forward search. If <code>NULL</code>, then internally,
-<code>"L1"</code> is used, except if (i) the reference model has multilevel or
-additive terms, (ii) if <code>!is.null(search_terms)</code>, or (iii) if the
-augmented-data projection is used. See also section "Details" below.</p></dd>
+<dd><p>The method for the search part. Possible options are
+<code>"forward"</code> for forward search and <code>"L1"</code> for L1 search. See also section
+"Details" below.</p></dd>
 
 
 <dt>ndraws</dt>
@@ -303,30 +304,37 @@ effect.</p>
 accurate. Furthermore, forward search may find a sparser model with
 comparable performance to that found by L1 search, but it may also start
 overfitting when more predictors are added.</p>
-<p>An L1 search may select interaction terms before the corresponding main
-terms are selected. If this is undesired, choose the forward search
-instead.</p>
+<p>An L1 search may select an interaction term before all involved lower-order
+interaction terms (including main-effect terms) have been selected. In
+<span class="pkg">projpred</span> versions &gt; 2.6.0, the resulting predictor ranking is
+automatically modified so that the lower-order interaction terms come
+before this interaction term, but if this is conceptually undesired, choose
+the forward search instead.</p>
 <p>The elements of the <code>search_terms</code> character vector don't need to be
 individual predictor terms. Instead, they can be building blocks consisting
 of several predictor terms connected by the <code>+</code> symbol. To understand how
 these building blocks work, it is important to know how <span class="pkg">projpred</span>'s
 forward search works: It starts with an empty vector <code>chosen</code> which will
 later contain already selected predictor terms. Then, the search iterates
-over model sizes \(j \in \{1, ..., J\}\). The candidate
-models at model size \(j\) are constructed from those elements from
-<code>search_terms</code> which yield model size \(j\) when combined with the
+over model sizes \(j \in \{0, ..., J\}\) (with \(J\)
+denoting the maximum submodel size, not counting the intercept). The
+candidate models at model size \(j\) are constructed from those elements
+from <code>search_terms</code> which yield model size \(j\) when combined with the
 <code>chosen</code> predictor terms. Note that sometimes, there may be no candidate
 models for model size \(j\). Also note that internally, <code>search_terms</code> is
 expanded to include the intercept (<code>"1"</code>), so the first step of the search
-(model size 1) always consists of the intercept-only model as the only
+(model size 0) always consists of the intercept-only model as the only
 candidate.</p>
 <p>As a <code>search_terms</code> example, consider a reference model with formula <code>y ~ x1 + x2 + x3</code>. Then, to ensure that <code>x1</code> is always included in the
-candidate models, specify <code>search_terms = c("x1", "x1 + x2", "x1 + x3", "x1 + x2 + x3")</code>. This search would start with <code>y ~ 1</code> as the only
-candidate at model size 1. At model size 2, <code>y ~ x1</code> would be the only
-candidate. At model size 3, <code>y ~ x1 + x2</code> and <code>y ~ x1 + x3</code> would be the
-two candidates. At the last model size of 4, <code>y ~ x1 + x2 + x3</code> would be
+candidate models, specify <code>search_terms = c("x1", "x1 + x2", "x1 + x3", "x1 + x2 + x3")</code> (or, in a simpler way that leads to the same results,
+<code>search_terms = c("x1", "x1 + x2", "x1 + x3")</code>, for which helper function
+<code><a href="force_search_terms.html">force_search_terms()</a></code> exists). This search would start with <code>y ~ 1</code> as the
+only candidate at model size 0. At model size 1, <code>y ~ x1</code> would be the only
+candidate. At model size 2, <code>y ~ x1 + x2</code> and <code>y ~ x1 + x3</code> would be the
+two candidates. At the last model size of 3, <code>y ~ x1 + x2 + x3</code> would be
 the only candidate. As another example, to exclude <code>x1</code> from the search,
-specify <code>search_terms = c("x2", "x3", "x2 + x3")</code>.</p>
+specify <code>search_terms = c("x2", "x3", "x2 + x3")</code> (or, in a simpler way
+that leads to the same results, <code>search_terms = c("x2", "x3")</code>).</p>
     </div>
     <div id="argument-d-test">
     <h2>Argument <code>d_test</code></h2>
@@ -351,33 +359,30 @@ where this needs to be a vector or a <code>factor</code> containing the <em>orig
 
     <div id="ref-examples">
     <h2>Examples</h2>
-    <div class="sourceCode"><pre class="sourceCode r"><code><span class="r-in"><span><span class="kw">if</span> <span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/ns-load.html" class="external-link">requireNamespace</a></span><span class="op">(</span><span class="st">"rstanarm"</span>, quietly <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span><span class="op">)</span> <span class="op">{</span></span></span>
-<span class="r-in"><span>  <span class="co"># Data:</span></span></span>
-<span class="r-in"><span>  <span class="va">dat_gauss</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span>y <span class="op">=</span> <span class="va">df_gaussian</span><span class="op">$</span><span class="va">y</span>, <span class="va">df_gaussian</span><span class="op">$</span><span class="va">x</span><span class="op">)</span></span></span>
+    <div class="sourceCode"><pre class="sourceCode r"><code><span class="r-in"><span><span class="co"># Data:</span></span></span>
+<span class="r-in"><span><span class="va">dat_gauss</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span>y <span class="op">=</span> <span class="va">df_gaussian</span><span class="op">$</span><span class="va">y</span>, <span class="va">df_gaussian</span><span class="op">$</span><span class="va">x</span><span class="op">)</span></span></span>
 <span class="r-in"><span></span></span>
-<span class="r-in"><span>  <span class="co"># The "stanreg" fit which will be used as the reference model (with small</span></span></span>
-<span class="r-in"><span>  <span class="co"># values for `chains` and `iter`, but only for technical reasons in this</span></span></span>
-<span class="r-in"><span>  <span class="co"># example; this is not recommended in general):</span></span></span>
-<span class="r-in"><span>  <span class="va">fit</span> <span class="op">&lt;-</span> <span class="fu">rstanarm</span><span class="fu">::</span><span class="fu"><a href="https://mc-stan.org/rstanarm/reference/stan_glm.html" class="external-link">stan_glm</a></span><span class="op">(</span></span></span>
-<span class="r-in"><span>    <span class="va">y</span> <span class="op">~</span> <span class="va">X1</span> <span class="op">+</span> <span class="va">X2</span> <span class="op">+</span> <span class="va">X3</span> <span class="op">+</span> <span class="va">X4</span> <span class="op">+</span> <span class="va">X5</span>, family <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/stats/family.html" class="external-link">gaussian</a></span><span class="op">(</span><span class="op">)</span>, data <span class="op">=</span> <span class="va">dat_gauss</span>,</span></span>
-<span class="r-in"><span>    QR <span class="op">=</span> <span class="cn">TRUE</span>, chains <span class="op">=</span> <span class="fl">2</span>, iter <span class="op">=</span> <span class="fl">500</span>, refresh <span class="op">=</span> <span class="fl">0</span>, seed <span class="op">=</span> <span class="fl">9876</span></span></span>
-<span class="r-in"><span>  <span class="op">)</span></span></span>
+<span class="r-in"><span><span class="co"># The "stanreg" fit which will be used as the reference model (with small</span></span></span>
+<span class="r-in"><span><span class="co"># values for `chains` and `iter`, but only for technical reasons in this</span></span></span>
+<span class="r-in"><span><span class="co"># example; this is not recommended in general):</span></span></span>
+<span class="r-in"><span><span class="va">fit</span> <span class="op">&lt;-</span> <span class="fu">rstanarm</span><span class="fu">::</span><span class="fu"><a href="https://mc-stan.org/rstanarm/reference/stan_glm.html" class="external-link">stan_glm</a></span><span class="op">(</span></span></span>
+<span class="r-in"><span>  <span class="va">y</span> <span class="op">~</span> <span class="va">X1</span> <span class="op">+</span> <span class="va">X2</span> <span class="op">+</span> <span class="va">X3</span> <span class="op">+</span> <span class="va">X4</span> <span class="op">+</span> <span class="va">X5</span>, family <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/stats/family.html" class="external-link">gaussian</a></span><span class="op">(</span><span class="op">)</span>, data <span class="op">=</span> <span class="va">dat_gauss</span>,</span></span>
+<span class="r-in"><span>  QR <span class="op">=</span> <span class="cn">TRUE</span>, chains <span class="op">=</span> <span class="fl">2</span>, iter <span class="op">=</span> <span class="fl">500</span>, refresh <span class="op">=</span> <span class="fl">0</span>, seed <span class="op">=</span> <span class="fl">9876</span></span></span>
+<span class="r-in"><span><span class="op">)</span></span></span>
 <span class="r-in"><span></span></span>
-<span class="r-in"><span>  <span class="co"># Run varsel() (here without cross-validation and with small values for</span></span></span>
-<span class="r-in"><span>  <span class="co"># `nterms_max`, `nclusters`, and `nclusters_pred`, but only for the sake of</span></span></span>
-<span class="r-in"><span>  <span class="co"># speed in this example; this is not recommended in general):</span></span></span>
-<span class="r-in"><span>  <span class="va">vs</span> <span class="op">&lt;-</span> <span class="fu">varsel</span><span class="op">(</span><span class="va">fit</span>, nterms_max <span class="op">=</span> <span class="fl">3</span>, nclusters <span class="op">=</span> <span class="fl">5</span>, nclusters_pred <span class="op">=</span> <span class="fl">10</span>,</span></span>
-<span class="r-in"><span>               seed <span class="op">=</span> <span class="fl">5555</span><span class="op">)</span></span></span>
-<span class="r-in"><span>  <span class="co"># Now see, for example, `?print.vsel`, `?plot.vsel`, `?suggest_size.vsel`,</span></span></span>
-<span class="r-in"><span>  <span class="co"># and `?ranking` for possible post-processing functions.</span></span></span>
-<span class="r-in"><span><span class="op">}</span></span></span>
+<span class="r-in"><span><span class="co"># Run varsel() (here without cross-validation, with L1 search, and with small</span></span></span>
+<span class="r-in"><span><span class="co"># values for `nterms_max` and `nclusters_pred`, but only for the sake of</span></span></span>
+<span class="r-in"><span><span class="co"># speed in this example; this is not recommended in general):</span></span></span>
+<span class="r-in"><span><span class="va">vs</span> <span class="op">&lt;-</span> <span class="fu">varsel</span><span class="op">(</span><span class="va">fit</span>, method <span class="op">=</span> <span class="st">"L1"</span>, nterms_max <span class="op">=</span> <span class="fl">3</span>, nclusters_pred <span class="op">=</span> <span class="fl">10</span>,</span></span>
+<span class="r-in"><span>             seed <span class="op">=</span> <span class="fl">5555</span><span class="op">)</span></span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> -----</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Running the search ...</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> -----</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> -----</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> For performance evaluation: Re-projecting onto the submodels along the solution path ...</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Running the performance evaluation ...</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> -----</span>
-<span class="r-in"><span></span></span>
+<span class="r-in"><span><span class="co"># Now see, for example, `?print.vsel`, `?plot.vsel`, `?suggest_size.vsel`,</span></span></span>
+<span class="r-in"><span><span class="co"># and `?ranking` for possible post-processing functions.</span></span></span>
 </code></pre></div>
     </div>
   </div>

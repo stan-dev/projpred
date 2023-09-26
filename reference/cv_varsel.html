@@ -25,7 +25,7 @@ the corresponding test set of each CV fold.'><meta property="og:image" content="
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">projpred</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">2.6.0</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">2.7.0</span>
       </span>
     </div>
 
@@ -129,10 +129,13 @@ the corresponding test set of each CV fold.</p>
 <span><span class="co"># S3 method for default</span></span>
 <span><span class="fu">cv_varsel</span><span class="op">(</span><span class="va">object</span>, <span class="va">...</span><span class="op">)</span></span>
 <span></span>
+<span><span class="co"># S3 method for vsel</span></span>
+<span><span class="fu">cv_varsel</span><span class="op">(</span><span class="va">object</span>, <span class="va">...</span><span class="op">)</span></span>
+<span></span>
 <span><span class="co"># S3 method for refmodel</span></span>
 <span><span class="fu">cv_varsel</span><span class="op">(</span></span>
 <span>  <span class="va">object</span>,</span>
-<span>  method <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  method <span class="op">=</span> <span class="st">"forward"</span>,</span>
 <span>  cv_method <span class="op">=</span> <span class="kw">if</span> <span class="op">(</span><span class="op">!</span><span class="fu"><a href="https://rdrr.io/r/base/class.html" class="external-link">inherits</a></span><span class="op">(</span><span class="va">object</span>, <span class="st">"datafit"</span><span class="op">)</span><span class="op">)</span> <span class="st">"LOO"</span> <span class="kw">else</span> <span class="st">"kfold"</span>,</span>
 <span>  ndraws <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  nclusters <span class="op">=</span> <span class="fl">20</span>,</span>
@@ -144,6 +147,7 @@ the corresponding test set of each CV fold.</p>
 <span>  verbose <span class="op">=</span> <span class="cn">TRUE</span>,</span>
 <span>  nloo <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  K <span class="op">=</span> <span class="kw">if</span> <span class="op">(</span><span class="op">!</span><span class="fu"><a href="https://rdrr.io/r/base/class.html" class="external-link">inherits</a></span><span class="op">(</span><span class="va">object</span>, <span class="st">"datafit"</span><span class="op">)</span><span class="op">)</span> <span class="fl">5</span> <span class="kw">else</span> <span class="fl">10</span>,</span>
+<span>  cvfits <span class="op">=</span> <span class="va">object</span><span class="op">$</span><span class="va">cvfits</span>,</span>
 <span>  lambda_min_ratio <span class="op">=</span> <span class="fl">1e-05</span>,</span>
 <span>  nlambda <span class="op">=</span> <span class="fl">150</span>,</span>
 <span>  thresh <span class="op">=</span> <span class="fl">1e-06</span>,</span>
@@ -151,6 +155,7 @@ the corresponding test set of each CV fold.</p>
 <span>  validate_search <span class="op">=</span> <span class="cn">TRUE</span>,</span>
 <span>  seed <span class="op">=</span> <span class="cn">NA</span>,</span>
 <span>  search_terms <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  parallel <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/options.html" class="external-link">getOption</a></span><span class="op">(</span><span class="st">"projpred.prll_cv"</span>, <span class="cn">FALSE</span><span class="op">)</span>,</span>
 <span>  <span class="va">...</span></span>
 <span><span class="op">)</span></span></code></pre></div>
     </div>
@@ -170,11 +175,9 @@ the latter only if <code>refit_prj</code> is <code>TRUE</code>).</p></dd>
 
 
 <dt>method</dt>
-<dd><p>The method for the search part. Possible options are <code>"L1"</code> for
-L1 search and <code>"forward"</code> for forward search. If <code>NULL</code>, then internally,
-<code>"L1"</code> is used, except if (i) the reference model has multilevel or
-additive terms, (ii) if <code>!is.null(search_terms)</code>, or (iii) if the
-augmented-data projection is used. See also section "Details" below.</p></dd>
+<dd><p>The method for the search part. Possible options are
+<code>"forward"</code> for forward search and <code>"L1"</code> for L1 search. See also section
+"Details" below.</p></dd>
 
 
 <dt>cv_method</dt>
@@ -182,7 +185,7 @@ augmented-data projection is used. See also section "Details" below.</p></dd>
 case, a Pareto-smoothed importance sampling leave-one-out CV (PSIS-LOO CV)
 is performed, which avoids refitting the reference model <code>nloo</code> times (in
 contrast to a standard LOO CV). In the <code>"kfold"</code> case, a \(K\)-fold CV is
-performed.</p></dd>
+performed. See also section "Note" below.</p></dd>
 
 
 <dt>ndraws</dt>
@@ -243,18 +246,25 @@ additional information during the computations.</p></dd>
 
 
 <dt>nloo</dt>
-<dd><p><strong>Caution:</strong> Still experimental. Only relevant if <code>cv_method = "LOO"</code>. Number of subsampled LOO CV folds, i.e., number of observations
-used for the LOO CV (anything between 1 and the original number of
-observations). Smaller values lead to faster computation but higher
-uncertainty in the evaluation part. If <code>NULL</code>, all observations are used,
-but for faster experimentation, one can set this to a smaller value.</p></dd>
+<dd><p><strong>Caution:</strong> Still experimental. Only relevant if <code>cv_method = "LOO"</code>. Number of subsampled PSIS-LOO CV folds, i.e., number of
+observations used for the approximate LOO CV (anything between 1 and the
+original number of observations). Smaller values lead to faster computation
+but higher uncertainty in the evaluation part. If <code>NULL</code>, all observations
+are used, but for faster experimentation, one can set this to a smaller
+value.</p></dd>
 
 
 <dt>K</dt>
-<dd><p>Only relevant if <code>cv_method = "kfold"</code> and if the reference model
-was created with <code>cvfits</code> being <code>NULL</code> (which is the case for
-<code><a href="refmodel-init-get.html">get_refmodel.stanreg()</a></code> and <code><a href="https://rdrr.io/pkg/brms/man/get_refmodel.brmsfit.html" class="external-link">brms::get_refmodel.brmsfit()</a></code>). Number of
+<dd><p>Only relevant if <code>cv_method = "kfold"</code> and if <code>cvfits</code> is <code>NULL</code>
+(which is the case for reference model objects created by
+<code><a href="refmodel-init-get.html">get_refmodel.stanreg()</a></code> or <code><a href="https://paul-buerkner.github.io/brms/reference/get_refmodel.brmsfit.html" class="external-link">brms::get_refmodel.brmsfit()</a></code>). Number of
 folds in \(K\)-fold CV.</p></dd>
+
+
+<dt>cvfits</dt>
+<dd><p>Only relevant if <code>cv_method = "kfold"</code>. The same as argument
+<code>cvfits</code> of <code><a href="refmodel-init-get.html">init_refmodel()</a></code>, but repeated here so that output from
+<code><a href="run_cvfun.html">run_cvfun()</a></code> can be inserted here straightforwardly.</p></dd>
 
 
 <dt>lambda_min_ratio</dt>
@@ -303,9 +313,9 @@ results can be obtained again if needed. Passed to argument <code>seed</code> of
 <code>NA</code>, then the PRNG state is reset (to the state before calling
 <code>cv_varsel()</code>) upon exiting <code>cv_varsel()</code>. Here, <code>seed</code> is used for
 clustering the reference model's posterior draws (if <code>!is.null(nclusters)</code>
-or <code>!is.null(nclusters_pred)</code>), for subsampling LOO CV folds (if <code>nloo</code> is
-smaller than the number of observations), for sampling the folds in
-\(K\)-fold CV, and for drawing new group-level effects when predicting
+or <code>!is.null(nclusters_pred)</code>), for subsampling PSIS-LOO CV folds (if
+<code>nloo</code> is smaller than the number of observations), for sampling the folds
+in \(K\)-fold CV, and for drawing new group-level effects when predicting
 from a multilevel submodel (however, not yet in case of a GAMM).</p></dd>
 
 
@@ -317,6 +327,12 @@ The intercept (<code>"1"</code>) is always included internally via <code><a href
 there's no difference between including it explicitly or omitting it. The
 default <code>search_terms</code> considers all the terms in the reference model's
 formula.</p></dd>
+
+
+<dt>parallel</dt>
+<dd><p>A single logical value indicating whether to run costly parts
+of the CV in parallel (<code>TRUE</code>) or not (<code>FALSE</code>). See also section "Note"
+below.</p></dd>
 
 </dl></div>
     <div id="value">
@@ -345,40 +361,69 @@ effect.</p>
 accurate. Furthermore, forward search may find a sparser model with
 comparable performance to that found by L1 search, but it may also start
 overfitting when more predictors are added.</p>
-<p>An L1 search may select interaction terms before the corresponding main
-terms are selected. If this is undesired, choose the forward search
-instead.</p>
+<p>An L1 search may select an interaction term before all involved lower-order
+interaction terms (including main-effect terms) have been selected. In
+<span class="pkg">projpred</span> versions &gt; 2.6.0, the resulting predictor ranking is
+automatically modified so that the lower-order interaction terms come
+before this interaction term, but if this is conceptually undesired, choose
+the forward search instead.</p>
 <p>The elements of the <code>search_terms</code> character vector don't need to be
 individual predictor terms. Instead, they can be building blocks consisting
 of several predictor terms connected by the <code>+</code> symbol. To understand how
 these building blocks work, it is important to know how <span class="pkg">projpred</span>'s
 forward search works: It starts with an empty vector <code>chosen</code> which will
 later contain already selected predictor terms. Then, the search iterates
-over model sizes \(j \in \{1, ..., J\}\). The candidate
-models at model size \(j\) are constructed from those elements from
-<code>search_terms</code> which yield model size \(j\) when combined with the
+over model sizes \(j \in \{0, ..., J\}\) (with \(J\)
+denoting the maximum submodel size, not counting the intercept). The
+candidate models at model size \(j\) are constructed from those elements
+from <code>search_terms</code> which yield model size \(j\) when combined with the
 <code>chosen</code> predictor terms. Note that sometimes, there may be no candidate
 models for model size \(j\). Also note that internally, <code>search_terms</code> is
 expanded to include the intercept (<code>"1"</code>), so the first step of the search
-(model size 1) always consists of the intercept-only model as the only
+(model size 0) always consists of the intercept-only model as the only
 candidate.</p>
 <p>As a <code>search_terms</code> example, consider a reference model with formula <code>y ~ x1 + x2 + x3</code>. Then, to ensure that <code>x1</code> is always included in the
-candidate models, specify <code>search_terms = c("x1", "x1 + x2", "x1 + x3", "x1 + x2 + x3")</code>. This search would start with <code>y ~ 1</code> as the only
-candidate at model size 1. At model size 2, <code>y ~ x1</code> would be the only
-candidate. At model size 3, <code>y ~ x1 + x2</code> and <code>y ~ x1 + x3</code> would be the
-two candidates. At the last model size of 4, <code>y ~ x1 + x2 + x3</code> would be
+candidate models, specify <code>search_terms = c("x1", "x1 + x2", "x1 + x3", "x1 + x2 + x3")</code> (or, in a simpler way that leads to the same results,
+<code>search_terms = c("x1", "x1 + x2", "x1 + x3")</code>, for which helper function
+<code><a href="force_search_terms.html">force_search_terms()</a></code> exists). This search would start with <code>y ~ 1</code> as the
+only candidate at model size 0. At model size 1, <code>y ~ x1</code> would be the only
+candidate. At model size 2, <code>y ~ x1 + x2</code> and <code>y ~ x1 + x3</code> would be the
+two candidates. At the last model size of 3, <code>y ~ x1 + x2 + x3</code> would be
 the only candidate. As another example, to exclude <code>x1</code> from the search,
-specify <code>search_terms = c("x2", "x3", "x2 + x3")</code>.</p>
+specify <code>search_terms = c("x2", "x3", "x2 + x3")</code> (or, in a simpler way
+that leads to the same results, <code>search_terms = c("x2", "x3")</code>).</p>
     </div>
     <div id="note">
     <h2>Note</h2>
     <p>If <code>validate_search</code> is <code>FALSE</code>, the search is not included in the CV
 so that only a single full-data search is run.</p>
-<p>For PSIS-LOO CV, <span class="pkg">projpred</span> calls <code><a href="https://mc-stan.org/loo/reference/psis.html" class="external-link">loo::psis()</a></code> with <code>r_eff = NA</code>. This
-is only a problem if there was extreme autocorrelation between the MCMC
-iterations when the reference model was built. In those cases however, the
-reference model should not have been used anyway, so we don't expect
-<span class="pkg">projpred</span>'s <code>r_eff = NA</code> to be a problem.</p>
+<p>For PSIS-LOO CV, <span class="pkg">projpred</span> calls <code><a href="https://mc-stan.org/loo/reference/psis.html" class="external-link">loo::psis()</a></code> (or, exceptionally,
+<code><a href="https://mc-stan.org/loo/reference/sis.html" class="external-link">loo::sis()</a></code>, see below) with <code>r_eff = NA</code>. This is only a problem if there
+was extreme autocorrelation between the MCMC iterations when the reference
+model was built. In those cases however, the reference model should not
+have been used anyway, so we don't expect <span class="pkg">projpred</span>'s <code>r_eff = NA</code> to
+be a problem.</p>
+<p>PSIS cannot be used if the draws have different (i.e., nonconstant) weights
+or if the number of draws is too small. In such cases, <span class="pkg">projpred</span>
+resorts to standard importance sampling (SIS) and throws a warning about
+this. Throughout the documentation, the term "PSIS" is used even though in
+fact, <span class="pkg">projpred</span> resorts to SIS in these special cases.</p>
+<p>With <code>parallel = TRUE</code>, costly parts of <span class="pkg">projpred</span>'s CV are run in
+parallel. Costly parts are the fold-wise searches and performance
+evaluations in case of <code>validate_search = TRUE</code>. (Note that in case of
+\(K\)-fold CV, the \(K\) reference model refits are not affected by
+argument <code>parallel</code>; only <span class="pkg">projpred</span>'s CV is affected.) The
+parallelization is powered by the <span class="pkg">foreach</span> package. Thus, any parallel
+(or sequential) backend compatible with <span class="pkg">foreach</span> can be used, e.g.,
+the backends from packages <span class="pkg">doParallel</span>, <span class="pkg">doMPI</span>, or
+<span class="pkg">doFuture</span>. For GLMs, this CV parallelization should work reliably, but
+for other models (such as GLMMs), it may lead to excessive memory usage
+which in turn may crash the R session (on Unix systems, setting an
+appropriate memory limit via <code><a href="https://rdrr.io/pkg/unix/man/rlimit.html" class="external-link">unix::rlimit_as()</a></code> may avoid crashing the
+whole machine). However, the problem of excessive memory usage is less
+pronounced for the CV parallelization than for the projection
+parallelization described in <a href="projpred-package.html">projpred-package</a>. In that regard, the CV
+parallelization is recommended over the projection parallelization.</p>
     </div>
     <div id="references">
     <h2>References</h2>
@@ -404,31 +449,27 @@ Computing</em> 27 (5): 1413--32. <a href="https://doi.org/10.1007/s11222-016-969
 
     <div id="ref-examples">
     <h2>Examples</h2>
-    <div class="sourceCode"><pre class="sourceCode r"><code><span class="r-in"><span><span class="co"># Note: The code from this example is not executed when called via example().</span></span></span>
-<span class="r-in"><span><span class="co"># To execute it, you have to copy and paste it manually to the console.</span></span></span>
-<span class="r-in"><span><span class="kw">if</span> <span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/ns-load.html" class="external-link">requireNamespace</a></span><span class="op">(</span><span class="st">"rstanarm"</span>, quietly <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span><span class="op">)</span> <span class="op">{</span></span></span>
-<span class="r-in"><span>  <span class="co"># Data:</span></span></span>
-<span class="r-in"><span>  <span class="va">dat_gauss</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span>y <span class="op">=</span> <span class="va">df_gaussian</span><span class="op">$</span><span class="va">y</span>, <span class="va">df_gaussian</span><span class="op">$</span><span class="va">x</span><span class="op">)</span></span></span>
+    <div class="sourceCode"><pre class="sourceCode r"><code><span class="r-in"><span><span class="co"># Data:</span></span></span>
+<span class="r-in"><span><span class="va">dat_gauss</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span>y <span class="op">=</span> <span class="va">df_gaussian</span><span class="op">$</span><span class="va">y</span>, <span class="va">df_gaussian</span><span class="op">$</span><span class="va">x</span><span class="op">)</span></span></span>
 <span class="r-in"><span></span></span>
-<span class="r-in"><span>  <span class="co"># The "stanreg" fit which will be used as the reference model (with small</span></span></span>
-<span class="r-in"><span>  <span class="co"># values for `chains` and `iter`, but only for technical reasons in this</span></span></span>
-<span class="r-in"><span>  <span class="co"># example; this is not recommended in general):</span></span></span>
-<span class="r-in"><span>  <span class="va">fit</span> <span class="op">&lt;-</span> <span class="fu">rstanarm</span><span class="fu">::</span><span class="fu"><a href="https://mc-stan.org/rstanarm/reference/stan_glm.html" class="external-link">stan_glm</a></span><span class="op">(</span></span></span>
-<span class="r-in"><span>    <span class="va">y</span> <span class="op">~</span> <span class="va">X1</span> <span class="op">+</span> <span class="va">X2</span> <span class="op">+</span> <span class="va">X3</span> <span class="op">+</span> <span class="va">X4</span> <span class="op">+</span> <span class="va">X5</span>, family <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/stats/family.html" class="external-link">gaussian</a></span><span class="op">(</span><span class="op">)</span>, data <span class="op">=</span> <span class="va">dat_gauss</span>,</span></span>
-<span class="r-in"><span>    QR <span class="op">=</span> <span class="cn">TRUE</span>, chains <span class="op">=</span> <span class="fl">2</span>, iter <span class="op">=</span> <span class="fl">1000</span>, refresh <span class="op">=</span> <span class="fl">0</span>, seed <span class="op">=</span> <span class="fl">9876</span></span></span>
-<span class="r-in"><span>  <span class="op">)</span></span></span>
+<span class="r-in"><span><span class="co"># The "stanreg" fit which will be used as the reference model (with small</span></span></span>
+<span class="r-in"><span><span class="co"># values for `chains` and `iter`, but only for technical reasons in this</span></span></span>
+<span class="r-in"><span><span class="co"># example; this is not recommended in general):</span></span></span>
+<span class="r-in"><span><span class="va">fit</span> <span class="op">&lt;-</span> <span class="fu">rstanarm</span><span class="fu">::</span><span class="fu"><a href="https://mc-stan.org/rstanarm/reference/stan_glm.html" class="external-link">stan_glm</a></span><span class="op">(</span></span></span>
+<span class="r-in"><span>  <span class="va">y</span> <span class="op">~</span> <span class="va">X1</span> <span class="op">+</span> <span class="va">X2</span> <span class="op">+</span> <span class="va">X3</span> <span class="op">+</span> <span class="va">X4</span> <span class="op">+</span> <span class="va">X5</span>, family <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/stats/family.html" class="external-link">gaussian</a></span><span class="op">(</span><span class="op">)</span>, data <span class="op">=</span> <span class="va">dat_gauss</span>,</span></span>
+<span class="r-in"><span>  QR <span class="op">=</span> <span class="cn">TRUE</span>, chains <span class="op">=</span> <span class="fl">2</span>, iter <span class="op">=</span> <span class="fl">1000</span>, refresh <span class="op">=</span> <span class="fl">0</span>, seed <span class="op">=</span> <span class="fl">9876</span></span></span>
+<span class="r-in"><span><span class="op">)</span></span></span>
 <span class="r-in"><span></span></span>
-<span class="r-in"><span>  <span class="co"># Run cv_varsel() (with small values for `K`, `nterms_max`, `nclusters`,</span></span></span>
-<span class="r-in"><span>  <span class="co"># and `nclusters_pred`, but only for the sake of speed in this example;</span></span></span>
-<span class="r-in"><span>  <span class="co"># this is not recommended in general):</span></span></span>
-<span class="r-in"><span>  <span class="va">cvvs</span> <span class="op">&lt;-</span> <span class="fu">cv_varsel</span><span class="op">(</span><span class="va">fit</span>, cv_method <span class="op">=</span> <span class="st">"kfold"</span>, K <span class="op">=</span> <span class="fl">2</span>, nterms_max <span class="op">=</span> <span class="fl">3</span>,</span></span>
-<span class="r-in"><span>                    nclusters <span class="op">=</span> <span class="fl">5</span>, nclusters_pred <span class="op">=</span> <span class="fl">10</span>, seed <span class="op">=</span> <span class="fl">5555</span>,</span></span>
-<span class="r-in"><span>                    verbose <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span></span>
-<span class="r-in"><span>  <span class="co"># Now see, for example, `?print.vsel`, `?plot.vsel`, `?suggest_size.vsel`,</span></span></span>
-<span class="r-in"><span>  <span class="co"># and `?ranking` for possible post-processing functions.</span></span></span>
-<span class="r-in"><span><span class="op">}</span></span></span>
+<span class="r-in"><span><span class="co"># Run cv_varsel() (with L1 search and small values for `K`, `nterms_max`, and</span></span></span>
+<span class="r-in"><span><span class="co"># `nclusters_pred`, but only for the sake of speed in this example; this is</span></span></span>
+<span class="r-in"><span><span class="co"># not recommended in general):</span></span></span>
+<span class="r-in"><span><span class="va">cvvs</span> <span class="op">&lt;-</span> <span class="fu">cv_varsel</span><span class="op">(</span><span class="va">fit</span>, method <span class="op">=</span> <span class="st">"L1"</span>, cv_method <span class="op">=</span> <span class="st">"kfold"</span>, K <span class="op">=</span> <span class="fl">2</span>,</span></span>
+<span class="r-in"><span>                  nterms_max <span class="op">=</span> <span class="fl">3</span>, nclusters_pred <span class="op">=</span> <span class="fl">10</span>, seed <span class="op">=</span> <span class="fl">5555</span>,</span></span>
+<span class="r-in"><span>                  verbose <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span></span>
 <span class="r-msg co"><span class="r-pr">#&gt;</span> Fitting model 1 out of 2</span>
 <span class="r-msg co"><span class="r-pr">#&gt;</span> Fitting model 2 out of 2</span>
+<span class="r-in"><span><span class="co"># Now see, for example, `?print.vsel`, `?plot.vsel`, `?suggest_size.vsel`,</span></span></span>
+<span class="r-in"><span><span class="co"># and `?ranking` for possible post-processing functions.</span></span></span>
 </code></pre></div>
     </div>
   </div>
