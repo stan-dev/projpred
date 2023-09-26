@@ -10,12 +10,12 @@ if (run_prll) {
   } else if (dopar_backend == "doFuture") {
     doFuture::registerDoFuture()
     export_default <- options(doFuture.foreach.export = ".export")
-    if (future_plan == "callr") {
-      future::plan(future.callr::callr, workers = ncores)
+    if (future_plan == "multicore") {
+      future::plan(future::multicore, workers = ncores)
     } else if (future_plan == "multisession") {
       future::plan(future::multisession, workers = ncores)
-    } else if (future_plan == "multicore") {
-      future::plan(future::multicore, workers = ncores)
+    } else if (future_plan == "callr") {
+      future::plan(future.callr::callr, workers = ncores)
     } else {
       stop("Unrecognized `future_plan`.")
     }

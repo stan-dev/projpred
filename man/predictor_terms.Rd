@@ -25,24 +25,23 @@ For a \code{projection} object (returned by \code{\link[=project]{project()}}, p
 the projection was performed.
 }
 \examples{
-if (requireNamespace("rstanarm", quietly = TRUE)) {
-  # Data:
-  dat_gauss <- data.frame(y = df_gaussian$y, df_gaussian$x)
+\dontshow{if (requireNamespace("rstanarm", quietly = TRUE)) (if (getRversion() >= "3.4") withAutoprint else force)(\{ # examplesIf}
+# Data:
+dat_gauss <- data.frame(y = df_gaussian$y, df_gaussian$x)
 
-  # The "stanreg" fit which will be used as the reference model (with small
-  # values for `chains` and `iter`, but only for technical reasons in this
-  # example; this is not recommended in general):
-  fit <- rstanarm::stan_glm(
-    y ~ X1 + X2 + X3 + X4 + X5, family = gaussian(), data = dat_gauss,
-    QR = TRUE, chains = 2, iter = 500, refresh = 0, seed = 9876
-  )
+# The "stanreg" fit which will be used as the reference model (with small
+# values for `chains` and `iter`, but only for technical reasons in this
+# example; this is not recommended in general):
+fit <- rstanarm::stan_glm(
+  y ~ X1 + X2 + X3 + X4 + X5, family = gaussian(), data = dat_gauss,
+  QR = TRUE, chains = 2, iter = 500, refresh = 0, seed = 9876
+)
 
-  # Projection onto an arbitrary combination of predictor terms (with a small
-  # value for `nclusters`, but only for the sake of speed in this example;
-  # this is not recommended in general):
-  prj <- project(fit, solution_terms = c("X1", "X3", "X5"), nclusters = 10,
-                 seed = 9182)
-  print(predictor_terms(prj)) # gives `c("X1", "X3", "X5")`
-}
-
+# Projection onto an arbitrary combination of predictor terms (with a small
+# value for `nclusters`, but only for the sake of speed in this example;
+# this is not recommended in general):
+prj <- project(fit, solution_terms = c("X1", "X3", "X5"), nclusters = 10,
+               seed = 9182, verbose = FALSE)
+print(predictor_terms(prj)) # gives `c("X1", "X3", "X5")`
+\dontshow{\}) # examplesIf}
 }

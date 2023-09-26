@@ -30,12 +30,11 @@
 #' @param object For [init_refmodel()], an object that the functions from
 #'   arguments `extract_model_data` and `ref_predfun` can be applied to, with a
 #'   `NULL` object being treated specially (see section "Value" below). For
-#'   [get_refmodel.default()], an object of type `list` that (i) function
-#'   [family()] can be applied to in order to retrieve the family (if argument
-#'   `family` is `NULL`) and (ii) has an element called `data` containing the
-#'   original dataset (see argument `data` of [init_refmodel()]), additionally
-#'   to the properties required for [init_refmodel()]. For non-default methods
-#'   of [get_refmodel()], an object of the corresponding class.
+#'   [get_refmodel.default()], an object that function [family()] can be applied
+#'   to in order to retrieve the family (if argument `family` is `NULL`),
+#'   additionally to the properties required for [init_refmodel()]. For
+#'   non-default methods of [get_refmodel()], an object of the corresponding
+#'   class.
 #' @param data A `data.frame` containing the data to use for the projection
 #'   predictive variable selection. Any `contrasts` attributes of the dataset's
 #'   columns are silently removed. For custom reference models, the columns of
@@ -78,16 +77,17 @@
 #'   case the family is retrieved from `object`. For custom reference models,
 #'   `family` does not have to coincide with the family of the reference model
 #'   (if the reference model possesses a formal `family` at all). In typical
-#'   reference models, however, these families do coincide.
-#' @param cvfits For \eqn{K}-fold CV only. A `list` containing a sub-`list`
-#'   called `fits` containing the \eqn{K} model fits from which reference model
-#'   structures are created. The `cvfits` `list` (i.e., the super-`list`) needs
-#'   to have an attribute called `folds`, consisting of an integer vector giving
-#'   the fold indices (one fold index per observation). Each element of
-#'   `cvfits$fits` (i.e., each of the \eqn{K} model fits) needs to be a list.
-#'   Only one of `cvfits` and `cvfun` needs to be provided (for \eqn{K}-fold
-#'   CV). Note that `cvfits` takes precedence over `cvfun`, i.e., if both are
-#'   provided, `cvfits` is used.
+#'   reference models, however, these families do coincide. Furthermore, the
+#'   latent projection is an exception where `family` is not the family of the
+#'   submodels (in that case, the family of the submodels is the [gaussian()]
+#'   family).
+#' @param cvfits For \eqn{K}-fold CV only. A `list` containing the \eqn{K}
+#'   reference model refits from which reference model objects are created. This
+#'   `list` needs to have an attribute called `folds`, consisting of an integer
+#'   vector giving the fold indices (one fold index per observation). Only one
+#'   of `cvfits` and `cvfun` needs to be provided (for \eqn{K}-fold CV). Note
+#'   that `cvfits` takes precedence over `cvfun`, i.e., if both are provided,
+#'   `cvfits` is used.
 #' @param cvfun For \eqn{K}-fold CV only. A function that, given a fold indices
 #'   vector, fits the reference model separately for each fold and returns the
 #'   \eqn{K} model fits as a `list`. Each of the \eqn{K} model fits needs to be
@@ -96,15 +96,25 @@
 #'   (for \eqn{K}-fold CV). Note that `cvfits` takes precedence over `cvfun`,
 #'   i.e., if both are provided, `cvfits` is used.
 #' @param cvrefbuilder For \eqn{K}-fold CV only. A function that, given a
-#'   reference model fit for fold \eqn{k \in \{1, ..., K\}}{k = 1, ..., K} (this
-#'   model fit is the \eqn{k}-th element of the return value of `cvfun` or the
-#'   \eqn{k}-th element of `cvfits$fits`, extended by elements `omitted`
-#'   (containing the indices of the left-out observations in that fold) and
-#'   `projpred_k` (containing the integer \eqn{k})), returns an object of the
-#'   same type as [init_refmodel()] does. Argument `cvrefbuilder` may be `NULL`
-#'   for using an internal default: [get_refmodel()] if `object` is not `NULL`
-#'   and a function calling [init_refmodel()] appropriately (with the assumption
-#'   `dis = 0`) if `object` is `NULL`.
+#'   reference model fit for fold \eqn{k \in \{1, ..., K\}}{k = 1, ..., K},
+#'   returns an object of the same type as [init_refmodel()] does. The reference
+#'   model fit for fold \eqn{k} is the \eqn{k}-th element of the return value of
+#'   `cvfun` or the \eqn{k}-th element of the `list` supplied to `cvfits`
+#'   (either here in [init_refmodel()] or in [cv_varsel.refmodel()]), extended
+#'   by elements `omitted` (containing the indices of the left-out observations
+#'   in that fold) and `projpred_k` (containing the integer \eqn{k}) if that
+#'   \eqn{k}-th element is a `list` itself (otherwise, `omitted` and
+#'   `projpred_k` are appended as attributes). Argument `cvrefbuilder` may be
+#'   `NULL` for using an internal default: [get_refmodel()] if `object` is not
+#'   `NULL` and a function calling [init_refmodel()] appropriately (with the
+#'   assumption `dis = 0`) if `object` is `NULL`.
+#' @param called_from_cvrefbuilder A single logical value indicating whether
+#'   [init_refmodel()] is called from a `cvrefbuilder` function (`TRUE`) or not
+#'   (`FALSE`). Currently, `TRUE` only causes some warnings to be suppressed
+#'   (warnings which don't need to be thrown for each of the \eqn{K} reference
+#'   model objects because it is sufficient to throw them for the original
+#'   reference model object only). This argument is mainly for internal use, but
+#'   may also be helpful for users with a custom `cvrefbuilder` function.
 #' @param dis A vector of posterior draws for the reference model's dispersion
 #'   parameter or---more precisely---the posterior values for the reference
 #'   model's parameter-conditional predictive variance (assuming that this
@@ -231,15 +241,18 @@
 #' * `object` accepts the reference model fit as given in argument `object` (but
 #' possibly re-fitted to a subset of the observations, as done in \eqn{K}-fold
 #' CV).
-#' * `newdata` accepts either `NULL` (for using the original dataset, typically
-#' stored in `object`) or data for new observations (at least in the form of a
+#' * `newdata` accepts data for new observations (at least in the form of a
 #' `data.frame`).
-#' * `wrhs` accepts at least either `NULL` (for using a vector of ones) or a
-#' right-hand side formula consisting only of the variable in `newdata`
-#' containing the weights.
-#' * `orhs` accepts at least either `NULL` (for using a vector of zeros) or a
-#' right-hand side formula consisting only of the variable in `newdata`
-#' containing the offsets.
+#' * `wrhs` accepts at least (i) a right-hand side formula consisting only of
+#' the variable in `newdata` containing the observation weights or (ii) `NULL`
+#' (for typical \pkg{rstanarm} and \pkg{brms} reference models, `NULL` causes
+#' the original observation weights to be used if the model was fitted with
+#' weights, otherwise a vector of ones is used).
+#' * `orhs` accepts at least (i) a right-hand side formula consisting only of
+#' the variable in `newdata` containing the offsets or (ii) `NULL` (for typical
+#' \pkg{rstanarm} and \pkg{brms} reference models, `NULL` causes the original
+#' offsets to be used if the model was fitted with offsets, otherwise a vector
+#' of zeros is used).
 #' * `extract_y` accepts a single logical value indicating whether output
 #' element `y` (see below) shall be `NULL` (`TRUE`) or not (`FALSE`).
 #'
@@ -300,60 +313,60 @@
 #'   but instead via downstream functions (see the functions mentioned above as
 #'   well as [predict.refmodel()]).
 #'
-#' @examples
-#' if (requireNamespace("rstanarm", quietly = TRUE)) {
-#'   # Data:
-#'   dat_gauss <- data.frame(y = df_gaussian$y, df_gaussian$x)
+#' @examplesIf requireNamespace("rstanarm", quietly = TRUE)
+#' # Data:
+#' dat_gauss <- data.frame(y = df_gaussian$y, df_gaussian$x)
 #'
-#'   # The "stanreg" fit which will be used as the reference model (with small
-#'   # values for `chains` and `iter`, but only for technical reasons in this
-#'   # example; this is not recommended in general):
-#'   fit <- rstanarm::stan_glm(
-#'     y ~ X1 + X2 + X3 + X4 + X5, family = gaussian(), data = dat_gauss,
-#'     QR = TRUE, chains = 2, iter = 500, refresh = 0, seed = 9876
-#'   )
+#' # The "stanreg" fit which will be used as the reference model (with small
+#' # values for `chains` and `iter`, but only for technical reasons in this
+#' # example; this is not recommended in general):
+#' fit <- rstanarm::stan_glm(
+#'   y ~ X1 + X2 + X3 + X4 + X5, family = gaussian(), data = dat_gauss,
+#'   QR = TRUE, chains = 2, iter = 500, refresh = 0, seed = 9876
+#' )
 #'
-#'   # Define the reference model explicitly:
-#'   ref <- get_refmodel(fit)
-#'   print(class(ref)) # gives `"refmodel"`
-#'   # Now see, for example, `?varsel`, `?cv_varsel`, and `?project` for
-#'   # possible post-processing functions. Most of the post-processing functions
-#'   # call get_refmodel() internally at the beginning, so you will rarely need
-#'   # to call get_refmodel() yourself.
+#' # Define the reference model object explicitly:
+#' ref <- get_refmodel(fit)
+#' print(class(ref)) # gives `"refmodel"`
+#' # Now see, for example, `?varsel`, `?cv_varsel`, and `?project` for
+#' # possible post-processing functions. Most of the post-processing functions
+#' # call get_refmodel() internally at the beginning, so you will rarely need
+#' # to call get_refmodel() yourself.
 #'
-#'   # A custom reference model which may be used in a variable selection where
-#'   # the candidate predictors are not a subset of those used for the reference
-#'   # model's predictions:
-#'   ref_cust <- init_refmodel(
-#'     fit,
-#'     data = dat_gauss,
-#'     formula = y ~ X6 + X7,
-#'     family = gaussian(),
-#'     extract_model_data = function(object, newdata = NULL, wrhs = NULL,
-#'                                   orhs = NULL, extract_y = TRUE) {
-#'       if (!extract_y) {
-#'         resp_form <- NULL
-#'       } else {
-#'         resp_form <- ~ y
-#'       }
-#'
-#'       if (is.null(newdata)) {
-#'         newdata <- dat_gauss
-#'       }
-#'
-#'       args <- projpred:::nlist(object, newdata, wrhs, orhs, resp_form)
-#'       return(projpred::do_call(projpred:::.extract_model_data, args))
-#'     },
-#'     cvfun = function(folds) {
-#'       kfold(
-#'         fit, K = max(folds), save_fits = TRUE, folds = folds, cores = 1
-#'       )$fits[, "fit"]
-#'     },
-#'     dis = as.matrix(fit)[, "sigma"]
-#'   )
-#'   # Now, the post-processing functions mentioned above (for example,
-#'   # varsel(), cv_varsel(), and project()) may be applied to `ref_cust`.
+#' # A custom reference model object which may be used in a variable selection
+#' # where the candidate predictors are not a subset of those used for the
+#' # reference model's predictions (defining the function for argument
+#' # `extract_model_data` first because it can be re-used for the `cvrefbuilder`
+#' # function here):
+#' extractor_cust <- function(object, newdata, wrhs = NULL, orhs = NULL,
+#'                            extract_y = TRUE) {
+#'   return(y_wobs_offs(newdata = newdata, wrhs = wrhs, orhs = orhs,
+#'                      resp_form = if (extract_y) ~ y else NULL))
 #' }
+#' ref_cust <- init_refmodel(
+#'   fit,
+#'   data = dat_gauss,
+#'   formula = y ~ X6 + X7,
+#'   family = gaussian(),
+#'   extract_model_data = extractor_cust,
+#'   cvfun = function(folds) {
+#'     kfold(
+#'       fit, K = max(folds), save_fits = TRUE, folds = folds, cores = 1
+#'     )$fits[, "fit"]
+#'   },
+#'   dis = as.matrix(fit)[, "sigma"],
+#'   cvrefbuilder = function(cvfit) {
+#'     init_refmodel(cvfit,
+#'                   data = dat_gauss[-cvfit$omitted, , drop = FALSE],
+#'                   formula = y ~ X6 + X7,
+#'                   family = gaussian(),
+#'                   extract_model_data = extractor_cust,
+#'                   dis = as.matrix(cvfit)[, "sigma"],
+#'                   called_from_cvrefbuilder = TRUE)
+#'   }
+#' )
+#' # Now, the post-processing functions mentioned above (for example,
+#' # varsel(), cv_varsel(), and project()) may be applied to `ref_cust`.
 #'
 NULL
 
@@ -470,10 +483,12 @@ predict.refmodel <- function(object, newdata = NULL, ynew = NULL,
   weightsnew <- w_o$weights
   offsetnew <- w_o$offset
   if (length(weightsnew) == 0) {
-    weightsnew <- rep(1, nobs_new)
+    stop("The function supplied to argument `extract_model_data` of ",
+         "init_refmodel() must not return a length-zero element `weights`.")
   }
   if (length(offsetnew) == 0) {
-    offsetnew <- rep(0, nobs_new)
+    stop("The function supplied to argument `extract_model_data` of ",
+         "init_refmodel() must not return a length-zero element `offset`.")
   }
   if (refmodel$family$for_augdat && !all(weightsnew == 1)) {
     stop("Currently, the augmented-data projection may not be combined with ",
@@ -641,29 +656,75 @@ refprd <- function(fit, newdata = NULL) {
   return(linpred_out)
 }
 
-.extract_model_data <- function(object, newdata = NULL, wrhs = NULL,
-                                orhs = NULL, resp_form = NULL) {
-  if (is.null(newdata)) {
-    newdata <- object$data
-  }
-
+#' Extract response values, observation weights, and offsets
+#'
+#' A helper function for extracting response values, observation weights, and
+#' offsets from a dataset. It is designed for use in the `extract_model_data`
+#' function of custom reference model objects (see [init_refmodel()]).
+#'
+#' @param newdata The `data.frame` from which at least the response values
+#'   should be extracted.
+#' @param wrhs Either a right-hand side formula consisting only of the variable
+#'   in `newdata` containing the weights, `NULL` (for using a vector of ones),
+#'   or directly the numeric vector of observation weights.
+#' @param orhs Either a right-hand side formula consisting only of the variable
+#'   in `newdata` containing the offsets, `NULL` (for using a vector of zeros),
+#'   or directly the numeric vector of offsets.
+#' @param resp_form If this is a formula, then the second element of this
+#'   formula (if the formula is a standard formula with both left-hand and
+#'   right-hand side, then its second element is the left-hand side; if the
+#'   formula is a right-hand side formula, then its second element is the
+#'   right-hand side) will be extracted from `newdata` (so `resp_form` may be
+#'   either a standard formula or a right-hand side formula, but in the latter
+#'   case, the right-hand side should consist only of the response variable). In
+#'   all other cases, `NULL` will be returned for element `y` of the output
+#'   `list`.
+#'
+#' @return A `list` with elements `y`, `weights`, and `offset`, each being a
+#'   numeric vector containing the data for the response, the observation
+#'   weights, and the offsets, respectively. An exception is that `y` may also
+#'   be `NULL` (depending on argument `resp_form`), a non-numeric vector, or a
+#'   `factor`.
+#'
+#' @seealso [init_refmodel()]
+#'
+#' @examples
+#' # For an example, see `?init_refmodel`.
+#'
+#' @export
+y_wobs_offs <- function(newdata, wrhs = NULL, orhs = NULL, resp_form) {
   if (inherits(wrhs, "formula")) {
+    if (is.null(newdata)) {
+      stop("y_wobs_offs() needs non-NULL `newdata` in this case.")
+    }
     weights <- eval_rhs(wrhs, newdata)
   } else if (is.null(wrhs)) {
+    if (is.null(newdata)) {
+      stop("y_wobs_offs() needs non-NULL `newdata` in this case.")
+    }
     weights <- rep(1, nrow(newdata))
   } else {
     weights <- wrhs
   }
 
   if (inherits(orhs, "formula")) {
+    if (is.null(newdata)) {
+      stop("y_wobs_offs() needs non-NULL `newdata` in this case.")
+    }
     offset <- eval_rhs(orhs, newdata)
   } else if (is.null(orhs)) {
+    if (is.null(newdata)) {
+      stop("y_wobs_offs() needs non-NULL `newdata` in this case.")
+    }
     offset <- rep(0, nrow(newdata))
   } else {
     offset <- orhs
   }
 
   if (inherits(resp_form, "formula")) {
+    if (is.null(newdata)) {
+      stop("y_wobs_offs() needs non-NULL `newdata` in this case.")
+    }
     y <- eval_el2(resp_form, newdata)
   } else {
     y <- NULL
@@ -694,23 +755,19 @@ get_refmodel.vsel <- function(object, ...) {
 
 #' @rdname refmodel-init-get
 #' @export
-get_refmodel.default <- function(object, formula, family = NULL, ...) {
-  if (is.null(family)) {
-    family <- family(object)
-  }
-
-  extract_model_data <- function(object, newdata = NULL, wrhs = NULL,
-                                 orhs = NULL, extract_y = TRUE) {
-    resp_form <- if (!extract_y) NULL else lhs(formula)
-    args <- nlist(object, newdata, wrhs, orhs, resp_form)
-    return(do_call(.extract_model_data, args))
-  }
-
-  refmodel <- init_refmodel(
-    object = object, formula = formula, family = family,
-    extract_model_data = extract_model_data, ...
-  )
-  return(refmodel)
+get_refmodel.default <- function(object, data, formula, family = NULL, ...) {
+  return(init_refmodel(
+    object = object,
+    data = data,
+    formula = formula,
+    family = family %||% family(object),
+    extract_model_data = function(object, newdata, wrhs = NULL, orhs = NULL,
+                                  extract_y = TRUE) {
+      return(y_wobs_offs(newdata = newdata, wrhs = wrhs, orhs = orhs,
+                         resp_form = if (extract_y) lhs(formula) else NULL))
+    },
+    ...
+  ))
 }
 
 #' @rdname refmodel-init-get
@@ -747,7 +804,15 @@ get_refmodel.stanreg <- function(object, latent = FALSE, dis = NULL, ...) {
     stop("In case of the binomial family, projpred cannot handle observation ",
          "weights (apart from the numbers of trials).")
   }
-  if (length(object$weights) > 0) {
+  # rstanarm::stan_gamm4() doesn't store obs. weights in `object$weights`:
+  if (object$stan_function == "stan_gamm4" &&
+      "weights" %in% names(as.list(object$call)) &&
+      "(weights)" %in% names(data) &&
+      length(object$weights) == 0) {
+    object$weights <- data[["(weights)"]]
+  }
+  # The `!all(object$weights == 1)` check is needed for stan_polr() fits:
+  if (length(object$weights) > 0 && !all(object$weights == 1)) {
     if ("projpred_internal_wobs_stanreg" %in% names(data)) {
       stop("Need to write to column `projpred_internal_wobs_stanreg` of ",
            "`data`, but that column already exists. Please rename this ",
@@ -760,7 +825,8 @@ get_refmodel.stanreg <- function(object, latent = FALSE, dis = NULL, ...) {
   }
 
   # Offsets:
-  if (length(object$offset) > 0) {
+  # The `!all(object$offset == 0)` check is needed for stan_polr() fits:
+  if (length(object$offset) > 0 && !all(object$offset == 0)) {
     # Element `stan_function` (needed here for handling rstanarm issue #546) is
     # not documented in `?rstanarm::`stanreg-objects``, so check at least its
     # length and type:
@@ -800,9 +866,22 @@ get_refmodel.stanreg <- function(object, latent = FALSE, dis = NULL, ...) {
     if (family$family != "binomial") {
       stop("For non-binomial families, a two-column response is not allowed.")
     }
-    default_wrhs <- as.formula(paste(
-      "~", response_name[2], "+", response_name[1]
-    ))
+    if (!is.null(default_wrhs)) {
+      stop("Observation weights other than the numbers of trials are not ",
+           "allowed for the binomial family.")
+    }
+    if ("projpred_internal_wobs_stanreg" %in% names(data)) {
+      stop("Need to write to column `projpred_internal_wobs_stanreg` of ",
+           "`data`, but that column already exists. Please rename this ",
+           "column in `data` and try again.")
+    }
+    data$projpred_internal_wobs_stanreg <- eval_rhs(
+      as.formula(paste(
+        "~", response_name[2], "+", response_name[1]
+      )),
+      data = data
+    )
+    default_wrhs <- ~ projpred_internal_wobs_stanreg
     response_name <- response_name[1]
   } else if (length(response_name) > 2) {
     stop("The response is not allowed to have more than two columns.")
@@ -812,18 +891,39 @@ get_refmodel.stanreg <- function(object, latent = FALSE, dis = NULL, ...) {
 
   # Functions ---------------------------------------------------------------
 
-  extract_model_data <- function(object, newdata = NULL, wrhs = default_wrhs,
-                                 orhs = default_orhs, extract_y = TRUE) {
+  extract_model_data <- function(object, newdata, wrhs = NULL, orhs = NULL,
+                                 extract_y = TRUE) {
     if (!extract_y) {
       resp_form <- NULL
     }
-
     if (is.null(newdata)) {
       newdata <- data
+      if (is.null(wrhs)) {
+        wrhs <- default_wrhs
+      }
+      if (is.null(orhs)) {
+        orhs <- default_orhs
+      }
+    } else {
+      if (!is.null(default_wrhs) && is.null(wrhs)) {
+        if ("projpred_internal_wobs_stanreg" %in% names(newdata)) {
+          wrhs <- default_wrhs
+        } else {
+          stop("Observation weights for `newdata` must not be `NULL` if the ",
+               "original model was fitted with observation weights.")
+        }
+      }
+      if (!is.null(default_orhs) && is.null(orhs)) {
+        if ("projpred_internal_offs_stanreg" %in% names(newdata)) {
+          orhs <- default_orhs
+        } else {
+          stop("Offsets for `newdata` must not be `NULL` if the original ",
+               "model was fitted with offsets.")
+        }
+      }
     }
-
-    args <- nlist(object, newdata, wrhs, orhs, resp_form)
-    return(do_call(.extract_model_data, args))
+    return(y_wobs_offs(newdata = newdata, wrhs = wrhs, orhs = orhs,
+                       resp_form = resp_form))
   }
 
   ref_predfun <- function(fit, newdata = NULL) {
@@ -834,14 +934,13 @@ get_refmodel.stanreg <- function(object, latent = FALSE, dis = NULL, ...) {
     # to include offsets explicitly in the call to
     # rstanarm:::posterior_linpred.stanreg().
 
-    # Observation weights are not needed here, so use `wrhs = NULL` to avoid
-    # potential conflicts for a non-`NULL` default `wrhs`:
-    offs <- extract_model_data(fit, newdata = newdata, wrhs = NULL,
+    # Observation weights are not needed here, so use a vector of ones for
+    # `wrhs` to avoid potential conflicts for a non-`NULL` default `wrhs`:
+    offs <- extract_model_data(fit, newdata = newdata,
+                               wrhs = rep(1, nrow(newdata %||% data)),
                                extract_y = FALSE)$offset
     n_obs <- nrow(newdata %||% data)
-    if (length(offs) == 0) {
-      offs <- rep(0, n_obs)
-    } else if (length(offs) == 1) {
+    if (length(offs) == 1) {
       offs <- rep(offs, n_obs)
     } else if (length(offs) != n_obs) {
       stop("Unexpected length of element `offset` returned by ",
@@ -881,7 +980,8 @@ get_refmodel.stanreg <- function(object, latent = FALSE, dis = NULL, ...) {
   }
 
   cvrefbuilder <- function(cvfit) {
-    get_refmodel(cvfit, latent = latent, dis = dis, ...)
+    get_refmodel(cvfit, latent = latent, dis = dis,
+                 called_from_cvrefbuilder = TRUE, ...)
   }
 
   # Miscellaneous -----------------------------------------------------------
@@ -958,15 +1058,18 @@ get_refmodel.stanreg <- function(object, latent = FALSE, dis = NULL, ...) {
 init_refmodel <- function(object, data, formula, family, ref_predfun = NULL,
                           div_minimizer = NULL, proj_predfun = NULL,
                           extract_model_data, cvfun = NULL,
-                          cvfits = NULL, dis = NULL, cvrefbuilder = NULL, ...) {
+                          cvfits = NULL, dis = NULL, cvrefbuilder = NULL,
+                          called_from_cvrefbuilder = FALSE, ...) {
   # Family ------------------------------------------------------------------
 
   family <- extend_family(family, ...)
 
-  if (family$family == "Student_t") {
-    warning("Support for the `Student_t` family is still experimental.")
-  } else if (family$family == "Gamma") {
-    warning("Support for the `Gamma` family is still experimental.")
+  if (!called_from_cvrefbuilder) {
+    if (family$family == "Student_t") {
+      warning("Support for the `Student_t` family is still experimental.")
+    } else if (family$family == "Gamma") {
+      warning("Support for the `Gamma` family is still experimental.")
+    }
   }
 
   family$mu_fun <- function(fits, obs = NULL, newdata = NULL, offset = NULL,
@@ -1037,12 +1140,38 @@ init_refmodel <- function(object, data, formula, family, ref_predfun = NULL,
     response_name <- paste0(".", response_name[1])
   }
   formula <- update(formula, paste(response_name[1], "~ ."))
-  if (formula_contains_additive_terms(formula)) {
+  add_trms <- fml_extractions$additive_terms
+  grp_trms <- fml_extractions$group_terms
+  if (length(add_trms) > 0) {
     if (family$for_augdat) {
       stop("Currently, the augmented-data projection may not be combined with ",
            "additive models.")
-    } else if (isTRUE(getOption("projpred.warn_additive_experimental", TRUE))) {
+    } else if (getOption("projpred.warn_additive_experimental", TRUE) &&
+               !called_from_cvrefbuilder) {
       warning("Support for additive models is still experimental.")
+    }
+  }
+  if (length(grp_trms) > 0 &&
+      getOption("projpred.warn_instable_projections", TRUE) &&
+      !called_from_cvrefbuilder) {
+    if (family$for_augdat) {
+      warning(
+        "For multilevel models, the augmented-data projection may not work ",
+        "properly. The latent projection may be a remedy. See section ",
+        "\"Troubleshooting\" of the main vignette for more information."
+      )
+    } else if (family$family == "binomial") {
+      warning(
+        "For multilevel binomial models, the traditional projection may not ",
+        "work properly. The latent projection may be a remedy. See section ",
+        "\"Troubleshooting\" of the main vignette for more information."
+      )
+    } else if (family$family == "poisson") {
+      warning(
+        "For multilevel Poisson models, the traditional projection may take ",
+        "very long. The latent projection may be a remedy. See section ",
+        "\"Troubleshooting\" of the main vignette for more information."
+      )
     }
   }
   if (family$family == "categorical" &&
@@ -1052,6 +1181,13 @@ init_refmodel <- function(object, data, formula, family, ref_predfun = NULL,
   }
 
   # Functions ---------------------------------------------------------------
+
+  # Wrap `extract_model_data` in order to retrieve the correct `newdata` when
+  # `newdata` is `NULL`:
+  extract_model_data_usr <- extract_model_data
+  extract_model_data <- function(object, newdata, ...) {
+    extract_model_data_usr(object = object, newdata = newdata %||% data, ...)
+  }
 
   if (proper_model) {
     if (is.null(ref_predfun)) {
@@ -1175,17 +1311,16 @@ init_refmodel <- function(object, data, formula, family, ref_predfun = NULL,
       linpred_out <- unname(linpred_out)
 
       if (excl_offs) {
-        # Observation weights are not needed here, so use `wrhs = NULL` to avoid
-        # potential conflicts for a non-`NULL` default `wrhs`:
-        offs <- extract_model_data(fit, newdata = newdata, wrhs = NULL,
+        # Observation weights are not needed here, so use a vector of ones for
+        # `wrhs` to avoid potential conflicts for a non-`NULL` default `wrhs`:
+        offs <- extract_model_data(fit, newdata = newdata,
+                                   wrhs = rep(1, nrow(newdata %||% data)),
                                    extract_y = FALSE)$offset
-        if (length(offs) > 0) {
-          stopifnot(length(offs) %in% c(1L, n_obs))
-          if (family$family %in% fams_neg_linpred()) {
-            linpred_out <- linpred_out + offs
-          } else {
-            linpred_out <- linpred_out - offs
-          }
+        stopifnot(length(offs) %in% c(1L, n_obs))
+        if (family$family %in% fams_neg_linpred()) {
+          linpred_out <- linpred_out + offs
+        } else {
+          linpred_out <- linpred_out - offs
         }
       }
       return(linpred_out)
@@ -1248,8 +1383,16 @@ init_refmodel <- function(object, data, formula, family, ref_predfun = NULL,
   }
 
   if (is.null(cvrefbuilder)) {
+    if (!called_from_cvrefbuilder) {
+      warning("`cvrefbuilder` was `NULL`, so using an internal default. ",
+              "However, this internal default might not take all arguments of ",
+              "get_refmodel() and init_refmodel() appropriately into account, ",
+              "so a custom `cvrefbuilder` is recommended.")
+    }
     if (proper_model) {
-      cvrefbuilder <- get_refmodel
+      cvrefbuilder <- function(cvfit) {
+        get_refmodel(cvfit, called_from_cvrefbuilder = TRUE)
+      }
     } else {
       cvrefbuilder <- function(cvfit) {
         init_refmodel(
@@ -1260,7 +1403,8 @@ init_refmodel <- function(object, data, formula, family, ref_predfun = NULL,
           family = family,
           div_minimizer = div_minimizer,
           proj_predfun = proj_predfun,
-          extract_model_data = extract_model_data
+          extract_model_data = extract_model_data,
+          called_from_cvrefbuilder = TRUE
         )
       }
     }
@@ -1268,9 +1412,17 @@ init_refmodel <- function(object, data, formula, family, ref_predfun = NULL,
 
   # Data --------------------------------------------------------------------
 
-  model_data <- extract_model_data(object, newdata = data, extract_y = TRUE)
+  model_data <- extract_model_data(object, newdata = NULL, extract_y = TRUE)
   weights <- model_data$weights
   offset <- model_data$offset
+  if (length(weights) == 0) {
+    stop("The function supplied to argument `extract_model_data` of ",
+         "init_refmodel() must not return a length-zero element `weights`.")
+  }
+  if (length(offset) == 0) {
+    stop("The function supplied to argument `extract_model_data` of ",
+         "init_refmodel() must not return a length-zero element `offset`.")
+  }
   if (family$for_latent) {
     y <- rowMeans(ref_predfun(
       object, excl_offs = FALSE,
@@ -1357,10 +1509,6 @@ init_refmodel <- function(object, data, formula, family, ref_predfun = NULL,
          "observation weights (other than 1).")
   }
 
-  if (is.null(offset)) {
-    offset <- rep(0, length(y))
-  }
-
   if (!proper_model && !all(offset == 0)) {
     # Disallow offsets for `datafit`s because the submodel fitting does not take
     # offsets into account (but `<refmodel>$mu` contains the observed response
@@ -1375,6 +1523,20 @@ init_refmodel <- function(object, data, formula, family, ref_predfun = NULL,
   })
   for (idx_col in which(has_contr)) {
     attr(data[[idx_col]], "contrasts") <- NULL
+  }
+
+  # Needed for rstanarm (and possibly custom) multilevel models with `:` between
+  # grouping variables (reason: repair_re() currently requires a corresponding
+  # column in the `data.frame`; brms does this correctly):
+  if (length(grp_trms) > 0) {
+    for (nm_IA in grep(":", grp_trms, value = TRUE)) {
+      nm_IA <- sub(".*\\|[[:blank:]]*", "", nm_IA)
+      if (!nm_IA %in% names(data)) {
+        data[[nm_IA]] <- do.call(paste,
+                                 c(unname(data[strsplit(nm_IA, ":")[[1]]]),
+                                   list(sep = ":")))
+      }
+    }
   }
 
   # mu ----------------------------------------------------------------------

@@ -24,16 +24,14 @@ test_that("as.matrix.projection() works", {
     solterms <- args_prj[[tstsetup]]$solution_terms
     ndr_ncl <- ndr_ncl_dtls(args_prj[[tstsetup]])
 
-    # Expected warning (more precisely: regexp which is matched against the
-    # warning; NA means no warning) for as.matrix.projection():
+    m <- as.matrix(prjs[[tstsetup]],
+                   allow_nonconst_wdraws_prj = ndr_ncl$clust_used)
     if (ndr_ncl$clust_used) {
-      # Clustered projection, so we expect a warning:
-      warn_prjmat_expect <- "the clusters might have different weights"
+      wdr_crr <- prjs[[tstsetup]][["wdraws_prj"]]
     } else {
-      warn_prjmat_expect <- NA
+      wdr_crr <- NULL
     }
-    expect_warning(m <- as.matrix(prjs[[tstsetup]]),
-                   warn_prjmat_expect, info = tstsetup)
+    expect_identical(attr(m, "wdraws_prj"), wdr_crr, info = tstsetup)
 
     if (fam_crr == "gauss" || prj_crr == "latent") {
       npars_fam <- "sigma"
@@ -234,6 +232,76 @@ test_that("as.matrix.projection() works", {
   }
 })
 
+test_that("`allow_nonconst_wdraws_prj = FALSE` causes an error", {
+  skip_if_not(run_prj)
+  for (tstsetup in grep("\\.clust", names(prjs), value = TRUE)) {
+    if (grepl("\\.clust1", tstsetup)) {
+      err_expected <- NA
+    } else {
+      err_expected <- "different .* weights"
+    }
+    expect_error(as.matrix(prjs[[tstsetup]]), err_expected, info = tstsetup)
+  }
+})
+
+test_that(paste(
+  "as_draws_matrix.projection() is a conversion of as.matrix.projection(),",
+  "with different weights of the projected draws causing the application of",
+  "posterior::weight_draws()"
+), {
+  skip_if_not(run_prj)
+  skip_if_not_installed("posterior")
+  for (tstsetup in names(prjs)) {
+    if (args_prj[[tstsetup]]$mod_nm == "gamm") {
+      # Skipping GAMMs because of issue #131.
+      # TODO (GAMMs): Fix this.
+      next
+    }
+    ndr_ncl <- ndr_ncl_dtls(args_prj[[tstsetup]])
+    m <- as.matrix(prjs[[tstsetup]],
+                   allow_nonconst_wdraws_prj = ndr_ncl$clust_used)
+    m_dr <- posterior::as_draws_matrix(prjs[[tstsetup]])
+    m_dr_repl <- posterior::as_draws_matrix(m)
+    if (ndr_ncl$clust_used) {
+      m_dr_repl <- posterior::weight_draws(m_dr_repl,
+                                           weights = attr(m, "wdraws_prj"))
+    }
+    expect_identical(m_dr, m_dr_repl, info = tstsetup)
+  }
+})
+
+test_that(paste(
+  "as_draws_matrix.projection() passes argument `nm_scheme` to",
+  "as.matrix.projection()"
+), {
+  skip_if_not(run_prj)
+  skip_if_not_installed("posterior")
+  for (tstsetup in grep("rstanarm\\.glm\\.", names(prjs), value = TRUE)) {
+    ndr_ncl <- ndr_ncl_dtls(args_prj[[tstsetup]])
+    m <- as.matrix(prjs[[tstsetup]], nm_scheme = "brms",
+                   allow_nonconst_wdraws_prj = ndr_ncl$clust_used)
+    m_dr <- posterior::as_draws_matrix(prjs[[tstsetup]], nm_scheme = "brms")
+    m_dr_repl <- posterior::as_draws_matrix(m)
+    if (ndr_ncl$clust_used) {
+      m_dr_repl <- posterior::weight_draws(m_dr_repl,
+                                           weights = attr(m, "wdraws_prj"))
+    }
+    expect_identical(m_dr, m_dr_repl, info = tstsetup)
+  }
+})
+
+test_that(paste(
+  "as_draws.projection() is a wrapper for as_draws_matrix.projection()"
+), {
+  skip_if_not(run_prj)
+  skip_if_not_installed("posterior")
+  for (tstsetup in grep("rstanarm\\.glm\\.", names(prjs), value = TRUE)) {
+    m_dr <- posterior::as_draws_matrix(prjs[[tstsetup]], nm_scheme = "brms")
+    m_dr_unspec <- posterior::as_draws(prjs[[tstsetup]], nm_scheme = "brms")
+    expect_identical(m_dr, m_dr_unspec, info = tstsetup)
+  }
+})
+
 if (run_snaps) {
   if (testthat_ed_max2) local_edition(3)
   width_orig <- options(width = 145)
@@ -259,21 +327,13 @@ if (run_snaps) {
       ndr_ncl <- ndr_ncl_dtls(args_prj_vs[[tstsetup]])
       nterms_crr <- args_prj_vs[[tstsetup]]$nterms
 
-      # Expected warning (more precisely: regexp which is matched against the
-      # warning; NA means no warning) for as.matrix.projection():
-      if (ndr_ncl$clust_used) {
-        # Clustered projection, so we expect a warning:
-        warn_prjmat_expect <- "the clusters might have different weights"
-      } else {
-        warn_prjmat_expect <- NA
-      }
       prjs_vs_l <- prjs_vs[[tstsetup]]
       if (length(nterms_crr) <= 1) {
         prjs_vs_l <- list(prjs_vs_l)
       }
       res_vs <- lapply(prjs_vs_l, function(prjs_vs_i) {
-        expect_warning(m <- as.matrix(prjs_vs_i),
-                       warn_prjmat_expect, info = tstsetup)
+        m <- as.matrix(prjs_vs_i,
+                       allow_nonconst_wdraws_prj = ndr_ncl$clust_used)
         expect_snapshot({
           print(tstsetup)
           print(prjs_vs_i$solution_terms)
@@ -305,21 +365,13 @@ if (run_snaps) {
       ndr_ncl <- ndr_ncl_dtls(args_prj_cvvs[[tstsetup]])
       nterms_crr <- args_prj_cvvs[[tstsetup]]$nterms
 
-      # Expected warning (more precisely: regexp which is matched against the
-      # warning; NA means no warning) for as.matrix.projection():
-      if (ndr_ncl$clust_used) {
-        # Clustered projection, so we expect a warning:
-        warn_prjmat_expect <- "the clusters might have different weights"
-      } else {
-        warn_prjmat_expect <- NA
-      }
       prjs_cvvs_l <- prjs_cvvs[[tstsetup]]
       if (length(nterms_crr) <= 1) {
         prjs_cvvs_l <- list(prjs_cvvs_l)
       }
       res_cvvs <- lapply(prjs_cvvs_l, function(prjs_cvvs_i) {
-        expect_warning(m <- as.matrix(prjs_cvvs_i),
-                       warn_prjmat_expect, info = tstsetup)
+        m <- as.matrix(prjs_cvvs_i,
+                       allow_nonconst_wdraws_prj = ndr_ncl$clust_used)
         expect_snapshot({
           print(tstsetup)
           print(prjs_cvvs_i$solution_terms)

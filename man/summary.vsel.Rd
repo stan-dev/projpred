@@ -132,26 +132,25 @@ latent projection with \code{resp_oscale = TRUE} in combination with
 }
 }
 \examples{
-if (requireNamespace("rstanarm", quietly = TRUE)) {
-  # Data:
-  dat_gauss <- data.frame(y = df_gaussian$y, df_gaussian$x)
+\dontshow{if (requireNamespace("rstanarm", quietly = TRUE)) (if (getRversion() >= "3.4") withAutoprint else force)(\{ # examplesIf}
+# Data:
+dat_gauss <- data.frame(y = df_gaussian$y, df_gaussian$x)
 
-  # The "stanreg" fit which will be used as the reference model (with small
-  # values for `chains` and `iter`, but only for technical reasons in this
-  # example; this is not recommended in general):
-  fit <- rstanarm::stan_glm(
-    y ~ X1 + X2 + X3 + X4 + X5, family = gaussian(), data = dat_gauss,
-    QR = TRUE, chains = 2, iter = 500, refresh = 0, seed = 9876
-  )
+# The "stanreg" fit which will be used as the reference model (with small
+# values for `chains` and `iter`, but only for technical reasons in this
+# example; this is not recommended in general):
+fit <- rstanarm::stan_glm(
+  y ~ X1 + X2 + X3 + X4 + X5, family = gaussian(), data = dat_gauss,
+  QR = TRUE, chains = 2, iter = 500, refresh = 0, seed = 9876
+)
 
-  # Run varsel() (here without cross-validation and with small values for
-  # `nterms_max`, `nclusters`, and `nclusters_pred`, but only for the sake of
-  # speed in this example; this is not recommended in general):
-  vs <- varsel(fit, nterms_max = 3, nclusters = 5, nclusters_pred = 10,
-               seed = 5555)
-  print(summary(vs), digits = 1)
-}
-
+# Run varsel() (here without cross-validation, with L1 search, and with small
+# values for `nterms_max` and `nclusters_pred`, but only for the sake of
+# speed in this example; this is not recommended in general):
+vs <- varsel(fit, method = "L1", nterms_max = 3, nclusters_pred = 10,
+             seed = 5555)
+print(summary(vs), digits = 1)
+\dontshow{\}) # examplesIf}
 }
 \seealso{
 \code{\link[=print.vselsummary]{print.vselsummary()}}

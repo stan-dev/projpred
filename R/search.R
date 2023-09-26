@@ -1,5 +1,6 @@
 search_forward <- function(p_ref, refmodel, nterms_max, verbose = TRUE, opt,
-                           search_terms, ...) {
+                           search_terms, est_runtime = TRUE,
+                           search_terms_was_null, ...) {
   nterms_max_with_icpt <- nterms_max + 1L
   iq <- ceiling(quantile(seq_len(nterms_max_with_icpt), 1:10 / 10))
   if (is.null(search_terms)) {
@@ -10,20 +11,64 @@ search_forward <- function(p_ref, refmodel, nterms_max, verbose = TRUE, opt,
   outdmins <- c()
 
   for (size in seq_len(nterms_max_with_icpt)) {
+    # Determine candidate predictors for the current size:
     cands <- select_possible_terms_size(chosen, search_terms, size = size)
     if (is.null(cands))
       next
     full_cands <- lapply(cands, function(cand) c(chosen, cand))
+
+    # Perform the projections (for the intercept-only model, we measure the
+    # runtime to estimate the total runtime for the search):
+    if (size == 1 && est_runtime && getOption("projpred.mssg_time", TRUE)) {
+      time_bef <- Sys.time()
+    }
     submodls <- lapply(full_cands, get_submodl_prj, p_ref = p_ref,
                        refmodel = refmodel, regul = opt$regul, ...)
+    if (size == 1 && est_runtime && getOption("projpred.mssg_time", TRUE)) {
+      time_aft <- Sys.time()
+      dtime <- difftime(time_aft, time_bef, units = "secs")
+      time_est <- dtime * nterms_max * (nterms_max + 1) / 2
+      if (time_est > 3 * 60) {
+        mssg_time <- paste0(
+          "Based on the runtime for the intercept-only model, the remaining ",
+          "forward search is estimated to take ca. ", round(time_est / 60, 1),
+          "minutes (current time: ", time_aft, "; estimated end time: ",
+          time_aft + time_est, ")."
+        )
+        if (any(grepl("\\|", search_terms))) {
+          mssg_time <- paste0(mssg_time, " ", paste0(
+            "Since there are multilevel predictor terms, the runtime estimate ",
+            "is likely a considerable underestimate."
+          ))
+        }
+        if (length(parse_additive_terms(
+          # grep(":|\\|", search_terms, value = TRUE, invert = TRUE)
+          search_terms
+        )) > 0) {
+          mssg_time <- paste0(mssg_time, " ", paste0(
+            "Since there are additive (\"smooth\") predictor terms, the ",
+            "runtime estimate is likely a considerable underestimate."
+          ))
+        }
+        if (!search_terms_was_null) {
+          mssg_time <- paste0(mssg_time, " ", paste0(
+            "Since argument `search_terms` differs from its default, the ",
+            "runtime estimate may be a considerable overestimate."
+          ))
+        }
+        message(mssg_time)
+      }
+    }
 
-    ## select best candidate
+    # Select best candidate:
     imin <- which.min(sapply(submodls, "[[", "ce"))
     chosen <- c(chosen, cands[imin])
 
-    ## append `outdmin`
+    # Store `outdmin` (i.e., the object containing the projection results)
+    # corresponding to the best candidate:
     outdmins <- c(outdmins, list(submodls[[imin]]$outdmin))
 
+    # Verbose mode output:
     ct_chosen <- count_terms_chosen(chosen)
     if (verbose && ct_chosen %in% iq) {
       vtxt <- paste(names(iq)[max(which(ct_chosen == iq))], "of terms selected")
@@ -32,15 +77,74 @@ search_forward <- function(p_ref, refmodel, nterms_max, verbose = TRUE, opt,
       }
       verb_out(vtxt)
     }
+
+    # Free up some memory:
+    rm(submodls)
+    if (getOption("projpred.run_gc", FALSE)) {
+      gc()
+    }
   }
 
   # For `solution_terms`, `reduce_models(chosen)` used to be used instead of
   # `chosen`. However, `reduce_models(chosen)` and `chosen` should be identical
   # at this place because select_possible_terms_size() already avoids redundant
   # models. Thus, use `chosen` here because it matches `outdmins` (this
-  # matching is necessary because later in get_submodls()'s `!refit_prj` case,
+  # matching is necessary because later in perf_eval()'s `!refit_prj` case,
   # `outdmins` is indexed with integers which are based on `solution_terms`):
   return(nlist(solution_terms = setdiff(chosen, "1"), outdmins))
+}
+
+#' Force search terms
+#'
+#' A helper function to construct the input for argument `search_terms` of
+#' [varsel()] or [cv_varsel()] if certain predictor terms should be forced to be
+#' selected first whereas other predictor terms are optional (i.e., they are
+#' subject to the variable selection, but only after the inclusion of the
+#' "forced" terms).
+#'
+#' @param forced_terms A character vector of predictor terms that should be
+#'   selected first.
+#' @param optional_terms A character vector of predictor terms that should be
+#'   subject to the variable selection after the inclusion of the "forced"
+#'   terms.
+#'
+#' @return A character vector that may be used as input for argument
+#'   `search_terms` of [varsel()] or [cv_varsel()].
+#'
+#' @seealso [varsel()], [cv_varsel()]
+#'
+#' @examplesIf requireNamespace("rstanarm", quietly = TRUE)
+#' # Data:
+#' dat_gauss <- data.frame(y = df_gaussian$y, df_gaussian$x)
+#'
+#' # The "stanreg" fit which will be used as the reference model (with small
+#' # values for `chains` and `iter`, but only for technical reasons in this
+#' # example; this is not recommended in general):
+#' fit <- rstanarm::stan_glm(
+#'   y ~ X1 + X2 + X3 + X4 + X5, family = gaussian(), data = dat_gauss,
+#'   QR = TRUE, chains = 2, iter = 500, refresh = 0, seed = 9876
+#' )
+#'
+#' # We will force X1 and X2 to be selected first:
+#' search_terms_forced <- force_search_terms(
+#'   forced_terms = paste0("X", 1:2),
+#'   optional_terms = paste0("X", 3:5)
+#' )
+#'
+#' # Run varsel() (here without cross-validation and with small values for
+#' # `nterms_max`, `nclusters`, and `nclusters_pred`, but only for the sake of
+#' # speed in this example; this is not recommended in general):
+#' vs <- varsel(fit, nclusters = 5, nclusters_pred = 10,
+#'              search_terms = search_terms_forced, seed = 5555)
+#' # Now see, for example, `?print.vsel`, `?plot.vsel`, `?suggest_size.vsel`,
+#' # and `?ranking` for possible post-processing functions.
+#'
+#' @export
+force_search_terms <- function(forced_terms, optional_terms) {
+  stopifnot(length(forced_terms) > 0)
+  stopifnot(length(optional_terms) > 0)
+  forced_terms <- paste(forced_terms, collapse = " + ")
+  return(c(forced_terms, paste0(forced_terms, " + ", optional_terms)))
 }
 
 search_L1_surrogate <- function(p_ref, d_train, family, intercept, nterms_max,
@@ -164,10 +268,49 @@ search_L1 <- function(p_ref, refmodel, nterms_max, penalty, opt) {
     p_ref, nlist(x, weights = refmodel$wobs), refmodel$family,
     intercept = TRUE, ncol(x), penalty, opt
   )
-  solution_terms <- collapse_ranked_predictors(
+
+  solution_terms_orig <- collapse_ranked_predictors(
     path = colnames(x)[search_path$solution_terms], formula = refmodel$formula,
     data = fr
   )
+  solution_terms <- utils::head(solution_terms_orig, nterms_max)
+  # Place lower-order interaction terms before higher-order interaction terms,
+  # but otherwise preserve the ranking:
+  ia_orders <- sapply(gregexpr(":", solution_terms), function(greg_colon) {
+    sum(greg_colon != -1)
+  })
+  ia_order_max <- max(ia_orders)
+  for (ia_order in rev(seq_len(ia_order_max))) {
+    ias <- solution_terms[ia_orders == ia_order]
+    stopifnot(!any(duplicated(ias))) # safety measure for which.max()
+    for (ia in ias) {
+      ia_idx <- which.max(solution_terms == ia)
+      if (ia_idx > nterms_max) break
+      main_terms_ia <- strsplit(ia, ":")[[1]]
+      ias_lower_split <- utils::combn(main_terms_ia, m = ia_order,
+                                      simplify = FALSE)
+      ias_lower <- lapply(ias_lower_split, all_ia_perms, is_split = TRUE)
+      ias_lower <- unlist(ias_lower)
+      ias_lower <- intersect(ias_lower, solution_terms_orig)
+      prev_terms <- utils::head(solution_terms, ia_idx - 1L)
+      has_lower_after <- !all(ias_lower %in% prev_terms)
+      if (has_lower_after) {
+        if (getOption("projpred.warn_L1_interactions", TRUE)) {
+          warning("Interaction term `", ia, "` was selected before all ",
+                  "corresponding lower-order interaction terms have been ",
+                  "selected. This is a known deficiency of L1 search. Use ",
+                  "forward search to avoid this. Now ranking the lower-order ",
+                  "interaction terms before this interaction term.")
+        }
+        ias_lower <- setdiff(ias_lower, prev_terms)
+        ias_lower <- ias_lower[order(match(ias_lower, solution_terms_orig))]
+        new_head <- c(prev_terms, ias_lower, ia)
+        solution_terms <- c(new_head, setdiff(solution_terms, new_head))
+        solution_terms <- utils::head(solution_terms, nterms_max)
+      }
+    }
+  }
+
   outdmins <- lapply(0:length(solution_terms), function(nterms) {
     if (nterms == 0) {
       formula <- make_formula(c("1"))
@@ -210,21 +353,6 @@ search_L1 <- function(p_ref, refmodel, nterms_max, penalty, opt) {
     class(sub) <- "subfit"
     return(list(sub))
   })
-  solution_terms <- solution_terms[seq_len(nterms_max)]
-  outdmins <- outdmins[seq_len(nterms_max + 1)]
-
-  # Check for interaction terms being selected before all involved main effects
-  # have been selected (and throw a warning if that is the case):
-  ia_sel_bef_main <- sapply(grep(":", solution_terms), function(idx_ia) {
-    term_split <- strsplit(solution_terms[idx_ia], ":")[[1]]
-    !all(term_split %in% utils::head(solution_terms, idx_ia - 1L))
-  })
-  if (any(ia_sel_bef_main) &&
-      getOption("projpred.warn_L1_interactions", TRUE)) {
-    warning("An interaction has been selected before all involved main ",
-            "effects have been selected. This is a known deficiency of L1 ",
-            "search. Use forward search to avoid this.")
-  }
 
   return(nlist(solution_terms, outdmins))
 }

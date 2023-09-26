@@ -14,7 +14,8 @@ test_that(paste(
                       refmod_expected = refmods[[args_prj_i$tstsetup_ref]],
                       solterms_expected = args_prj_i$solution_terms,
                       nprjdraws_expected = ndr_ncl$nprjdraws,
-                      p_type_expected = ndr_ncl$clust_used,
+                      with_clusters = ndr_ncl$ndr_ncl_nm == "nclusters",
+                      const_wdraws_prj_expected = !ndr_ncl$clust_used,
                       info_str = tstsetup)
   }
 })
@@ -85,7 +86,8 @@ test_that("invalid `solution_terms` warns or fails", {
                         refmod_expected = refmods[[args_prj_i$tstsetup_ref]],
                         solterms_expected = character(),
                         nprjdraws_expected = nclusters_pred_tst,
-                        p_type_expected = TRUE,
+                        with_clusters = TRUE,
+                        const_wdraws_prj_expected = FALSE,
                         info_str = tstsetup_crr)
     }
   }
@@ -130,7 +132,8 @@ test_that(paste(
         refmod_expected = refmods[[args_prj_vs[[tstsetup]]$tstsetup_ref]],
         solterms_expected = solterms_expected_crr,
         nprjdraws_expected = args_prj_vs[[tstsetup]]$nclusters,
-        p_type_expected = TRUE,
+        with_clusters = TRUE,
+        const_wdraws_prj_expected = FALSE,
         info_str = tstsetup
       )
       # Check that projecting from the "vsel" object onto a single submodel
@@ -195,7 +198,8 @@ test_that(paste(
         info_str = tstsetup,
         refmod_expected = refmods[[args_prj_vs[[tstsetup]]$tstsetup_ref]],
         nprjdraws_expected = args_prj_vs[[tstsetup]]$nclusters,
-        p_type_expected = TRUE,
+        with_clusters = TRUE,
+        const_wdraws_prj_expected = FALSE,
         prjdraw_weights_expected = prjs_vs[[tstsetup]][[1]]$wdraws_prj
       )
     }
@@ -225,7 +229,8 @@ test_that(paste(
         refmod_expected = refmods[[args_prj_cvvs[[tstsetup]]$tstsetup_ref]],
         solterms_expected = solterms_expected_crr,
         nprjdraws_expected = args_prj_cvvs[[tstsetup]]$nclusters,
-        p_type_expected = TRUE,
+        with_clusters = TRUE,
+        const_wdraws_prj_expected = FALSE,
         info_str = tstsetup
       )
       # Check that projecting from the "vsel" object onto a single submodel
@@ -290,7 +295,8 @@ test_that(paste(
         info_str = tstsetup,
         refmod_expected = refmods[[args_prj_cvvs[[tstsetup]]$tstsetup_ref]],
         nprjdraws_expected = args_prj_cvvs[[tstsetup]]$nclusters,
-        p_type_expected = TRUE,
+        with_clusters = TRUE,
+        const_wdraws_prj_expected = FALSE,
         prjdraw_weights_expected = prjs_cvvs[[tstsetup]][[1]]$wdraws_prj
       )
     }
@@ -465,20 +471,15 @@ test_that("for GLMs, `regul` has an expected effect", {
           refmod_expected = refmods[[args_prj_i$tstsetup_ref]],
           solterms_expected = args_prj_i$solution_terms,
           nprjdraws_expected = ndr_ncl$nprjdraws,
-          p_type_expected = ndr_ncl$clust_used,
+          with_clusters = ndr_ncl$ndr_ncl_nm == "nclusters",
+          const_wdraws_prj_expected = !ndr_ncl$clust_used,
           info_str = paste(tstsetup, j, sep = "__")
         )
       }
 
       # Run as.matrix.projection():
-      if (ndr_ncl$clust_used) {
-        # Clustered projection, so we expect a warning:
-        warn_prjmat_expect <- "the clusters might have different weights"
-      } else {
-        warn_prjmat_expect <- NA
-      }
-      expect_warning(prjmat <- as.matrix(prj_regul, nm_scheme = "brms"),
-                     warn_prjmat_expect, info = tstsetup)
+      prjmat <- as.matrix(prj_regul, nm_scheme = "brms",
+                          allow_nonconst_wdraws_prj = ndr_ncl$clust_used)
 
       # Reduce to only those columns which are necessary here:
       prjmat <- prjmat[, grep("^b_", colnames(prjmat)), drop = FALSE]

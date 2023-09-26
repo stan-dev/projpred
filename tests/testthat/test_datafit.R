@@ -8,12 +8,8 @@ context("datafit")
 # it might do in the future. Then, either the scenarios including offsets have
 # to be excluded or new data has to be generated without offsets.
 
-.extrmoddat_datafit <- function(object, newdata = NULL, wrhs = NULL,
-                                orhs = NULL, resp_form = NULL) {
-  if (is.null(newdata)) {
-    newdata <- object$data
-  }
-
+.extrmoddat_datafit <- function(object, newdata, wrhs = NULL, orhs = NULL,
+                                resp_form = NULL) {
   if (inherits(wrhs, "formula")) {
     weights <- eval_rhs(wrhs, newdata)
   } else if (is.null(wrhs)) {
@@ -57,24 +53,20 @@ datafits <- lapply(args_datafit, function(args_datafit_i) {
       tail(as.character(args_fit[[args_datafit_i$tstsetup_fit]]$random), 1)
     ))
   }
-  extrmoddat <- function(object, newdata = NULL, wrhs = NULL, orhs = NULL,
-                         extract_y = TRUE) {
-    resp_form <- if (!extract_y) NULL else lhs(formul_crr)
-    if (is.null(newdata)) {
-      newdata <- dat
-    }
-    if (args_datafit_i$fam_nm == "brnll") {
-      newdata$wobs_col <- 1
-    }
-    args <- nlist(object, newdata, wrhs, orhs, resp_form)
-    return(do.call(.extrmoddat_datafit, args))
-  }
   return(init_refmodel(
     object = NULL,
     data = dat,
     formula = formul_crr,
     family = get(paste0("f_", args_datafit_i$fam_nm)),
-    extract_model_data = extrmoddat
+    extract_model_data = function(object, newdata, wrhs = NULL, orhs = NULL,
+                                  extract_y = TRUE) {
+      if (args_datafit_i$fam_nm == "brnll") {
+        newdata$wobs_col <- 1
+      }
+      args <- nlist(object, newdata, wrhs, orhs,
+                    resp_form = if (extract_y) lhs(formul_crr) else NULL)
+      return(do.call(.extrmoddat_datafit, args))
+    }
   ))
 })
 
@@ -166,9 +158,9 @@ if (run_vs) {
   })
 
   prjs_vs_datafit <- lapply(args_prj_vs_datafit, function(args_prj_vs_i) {
+    args_prj_vs_i$refit_prj <- FALSE
     do.call(project, c(
-      list(object = vss_datafit[[args_prj_vs_i$tstsetup_vsel]],
-           refit_prj = FALSE),
+      list(object = vss_datafit[[args_prj_vs_i$tstsetup_vsel]]),
       excl_nonargs(args_prj_vs_i)
     ))
   })
@@ -233,9 +225,14 @@ test_that(paste(
   skip_if_not(run_vs)
   for (tstsetup in names(vss_datafit)) {
     mod_crr <- args_vs_datafit[[tstsetup]]$mod_nm
-    meth_exp_crr <- args_vs_datafit[[tstsetup]]$method
-    if (is.null(meth_exp_crr)) {
-      meth_exp_crr <- ifelse(mod_crr == "glm", "L1", "forward")
+    meth_exp_crr <- args_vs_datafit[[tstsetup]]$method %||% "forward"
+    extra_tol_crr <- 1.5
+    if (any(grepl(":", ranking(vss_datafit[[tstsetup]])[["fulldata"]]))) {
+      ### Testing for non-increasing element `ce` (for increasing model size)
+      ### doesn't make sense if the ranking of predictors involved in
+      ### interactions has been changed, so we choose a higher `extra_tol`:
+      extra_tol_crr <- 3
+      ###
     }
     vsel_tester(
       vss_datafit[[tstsetup]],
@@ -244,12 +241,10 @@ test_that(paste(
         datafits[[args_vs_datafit[[tstsetup]]$tstsetup_datafit]],
       solterms_len_expected = args_vs_datafit[[tstsetup]]$nterms_max,
       method_expected = meth_exp_crr,
-      nprjdraws_search_expected = 1L,
-      nprjdraws_eval_expected = 1L,
       search_trms_empty_size =
         length(args_vs_datafit[[tstsetup]]$search_terms) &&
         all(grepl("\\+", args_vs_datafit[[tstsetup]]$search_terms)),
-      extra_tol = 1.5,
+      extra_tol = extra_tol_crr,
       info_str = tstsetup
     )
   }
@@ -262,10 +257,7 @@ test_that(paste(
   skip_if_not(run_cvvs)
   for (tstsetup in names(cvvss_datafit)) {
     mod_crr <- args_cvvs_datafit[[tstsetup]]$mod_nm
-    meth_exp_crr <- args_cvvs_datafit[[tstsetup]]$method
-    if (is.null(meth_exp_crr)) {
-      meth_exp_crr <- ifelse(mod_crr == "glm", "L1", "forward")
-    }
+    meth_exp_crr <- args_cvvs_datafit[[tstsetup]]$method %||% "forward"
     vsel_tester(
       cvvss_datafit[[tstsetup]],
       with_cv = TRUE,
@@ -276,8 +268,6 @@ test_that(paste(
       method_expected = meth_exp_crr,
       cv_method_expected = "kfold",
       valsearch_expected = args_cvvs_datafit[[tstsetup]]$validate_search,
-      nprjdraws_search_expected = 1L,
-      nprjdraws_eval_expected = 1L,
       search_trms_empty_size =
         length(args_cvvs_datafit[[tstsetup]]$search_terms) &&
         all(grepl("\\+", args_cvvs_datafit[[tstsetup]]$search_terms)),
@@ -299,10 +289,10 @@ test_that("project(): `object` of class \"datafit\" fails", {
   for (tstsetup in tstsetups) {
     args_prj_i <- args_prj[[tstsetup]]
     if (!args_prj_i$tstsetup_ref %in% names(datafits)) next
+    args_prj_i$refit_prj <- FALSE
     expect_error(
       do.call(project, c(
-        list(object = datafits[[args_prj_i$tstsetup_ref]],
-             refit_prj = FALSE),
+        list(object = datafits[[args_prj_i$tstsetup_ref]]),
         excl_nonargs(args_prj_i)
       )),
       paste("^project\\(\\) does not support an `object` of class",
@@ -324,9 +314,7 @@ test_that(paste(
     if (is.null(nterms_crr)) {
       nterms_crr <- suggest_size(vss_datafit[[tstsetup_vs]], warnings = FALSE)
     }
-    with_L1 <- (args_vs_datafit[[tstsetup_vs]]$mod_nm == "glm" &&
-                  is.null(args_vs_datafit[[tstsetup_vs]]$method)) ||
-      identical(args_vs_datafit[[tstsetup_vs]]$method, "L1")
+    with_L1 <- identical(args_vs_datafit[[tstsetup_vs]]$method, "L1")
     if (length(nterms_crr) == 1) {
       solterms_expected_crr <- vss_datafit[[tstsetup_vs]]$solution_terms[
         seq_len(nterms_crr)
@@ -337,7 +325,8 @@ test_that(paste(
           datafits[[args_prj_vs_datafit[[tstsetup]]$tstsetup_datafit]],
         solterms_expected = solterms_expected_crr,
         nprjdraws_expected = 1L,
-        p_type_expected = FALSE,
+        with_clusters = FALSE,
+        const_wdraws_prj_expected = TRUE,
         from_vsel_L1_search = with_L1,
         info_str = tstsetup
       )
@@ -345,7 +334,7 @@ test_that(paste(
       ### `datafit`s. Fix this.
       # if (run_snaps) {
       #   if (testthat_ed_max2) local_edition(3)
-      #   suppressWarnings(m <- as.matrix(prjs_vs_datafit[[tstsetup]]))
+      #   m <- as.matrix(prjs_vs_datafit[[tstsetup]])
       #   expect_snapshot({
       #     print(tstsetup)
       #     print(rlang::hash(m)) # cat(m)
@@ -362,7 +351,8 @@ test_that(paste(
         refmod_expected =
           datafits[[args_prj_vs_datafit[[tstsetup]]$tstsetup_datafit]],
         nprjdraws_expected = 1L,
-        p_type_expected = FALSE,
+        with_clusters = FALSE,
+        const_wdraws_prj_expected = TRUE,
         prjdraw_weights_expected = prjs_vs_datafit[[tstsetup]][[1]]$wdraws_prj,
         from_vsel_L1_search = with_L1
       )
@@ -371,7 +361,7 @@ test_that(paste(
       # if (run_snaps) {
       #   if (testthat_ed_max2) local_edition(3)
       #   res_vs <- lapply(prjs_vs_datafit[[tstsetup]], function(prjs_vs_i) {
-      #     suppressWarnings(m <- as.matrix(prjs_vs_i))
+      #     m <- as.matrix(prjs_vs_i)
       #     expect_snapshot({
       #       print(tstsetup)
       #       print(prjs_vs_i$solution_terms)
@@ -630,18 +620,14 @@ test_that(paste(
     nlist(y, y_glmnet, weights)
   })
 
-  extract_model_data <- function(object, newdata = NULL, wrhs = NULL,
-                                 orhs = NULL, extract_y = FALSE) {
+  extract_model_data <- function(object, newdata, wrhs = NULL, orhs = NULL,
+                                 extract_y = FALSE) {
     if (!is.null(object)) {
       formula <- formula(object)
       tt <- extract_terms_response(formula)
       response_name <- tt$response
     } else {
       response_name <- NULL
-    }
-
-    if (is.null(newdata)) {
-      newdata <- object$data
     }
 
     resp_form <- NULL
@@ -654,8 +640,8 @@ test_that(paste(
       }
     }
 
-    args <- nlist(object, newdata, wrhs, orhs, resp_form)
-    return(do_call(.extract_model_data, args))
+    return(y_wobs_offs(newdata = newdata, wrhs = wrhs, orhs = orhs,
+                       resp_form = resp_form))
   }
 
   for (i in seq_along(fams)) {

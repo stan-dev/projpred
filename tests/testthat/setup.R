@@ -60,11 +60,19 @@ if (run_snaps && !requireNamespace("rlang", quietly = TRUE)) {
           "found. Deactivating snapshot testing now.")
   run_snaps <- FALSE
 }
+if (run_snaps && !requireNamespace("vdiffr", quietly = TRUE)) {
+  warning("Package 'vdiffr' is needed for snapshot testing, but could not be ",
+          "found. Deactivating snapshot testing now.")
+  run_snaps <- FALSE
+}
 if (run_snaps) {
   testthat_ed_max2 <- edition_get() <= 2
 }
-# Run parallel tests?:
+# Run tests for the parallelization of the projection?:
 # Notes:
+#   * Throughout the tests, the terms "parallelization" and "parallel" refer to
+#   the parallelization of the projection ("projection parallelization"), not
+#   the parallelization of the CV ("CV parallelization").
 #   * We don't run the parallel tests on CRAN or continuous integration (CI)
 #   systems because parallelization might require special care there.
 #   * Currently, parallelization on Windows takes longer than running
@@ -109,7 +117,17 @@ if (run_prll) {
     } else {
       dopar_backend <- "doFuture"
     }
-    if (identical(.Platform$OS.type, "windows")) {
+    if (!requireNamespace("future", quietly = TRUE)) {
+      warning("Package 'future' is needed for the parallel tests, but ",
+              "could not be found. Deactivating the parallel tests now.")
+      run_prll <- FALSE
+    }
+    if (!identical(.Platform$OS.type, "windows")) {
+      # This case (which should not be possible by default) is only included
+      # here to demonstrate how other systems should be used with the 'doFuture'
+      # package.
+      future_plan <- "multicore"
+    } else {
       ### Not used in this case because the 'future.callr' package provides a
       ### faster alternative on Windows (which is still slower than a sequential
       ### run, though):
@@ -122,11 +140,6 @@ if (run_prll) {
       } else {
         future_plan <- "callr"
       }
-    } else {
-      # This case (which should not be possible by default) is only included
-      # here to demonstrate how other systems should be used with the 'doFuture'
-      # package.
-      future_plan <- "multicore"
     }
   }
 }
@@ -860,12 +873,32 @@ meth_tst <- list(
   L1 = list(method = "L1"),
   forward = list(method = "forward")
 )
+
+# Suppress the message when cutting off the search at `nterms_max = 19`:
+options(projpred.mssg_cut_search = FALSE)
+# Suppress the message about the default `method`:
+options(projpred.mssg_method_changed = FALSE)
+# Suppress the message for the runtime of the forward search:
+options(projpred.mssg_time = FALSE)
+# Suppress the PSIS warnings:
+options(projpred.warn_psis = FALSE)
+# Suppress the subsampled PSIS-LOO CV warnings:
+options(projpred.warn_subsampled_loo = FALSE)
+# Suppress the warnings for the K reference model refits in case of K-fold CV:
+options(projpred.warn_kfold_refits = FALSE)
 # Suppress the warning for interaction terms being selected before all involved
 # main effects have been selected (only concerns L1 search):
 options(projpred.warn_L1_interactions = FALSE)
 # Suppress the warning thrown by proj_predict() in case of observation weights
 # that are not all equal to `1`:
 options(projpred.warn_wobs_ppd = FALSE)
+# Suppress the verbose-mode progress bar in project():
+options(projpred.verbose_project = FALSE)
+# Suppress instability warnings:
+options(projpred.warn_instable_projections = FALSE)
+# Run additional checks, e.g., the check for attribute `nobs_orig` when
+# subsetting `augmat` and `augvec` objects:
+options(projpred.additional_checks = TRUE)
 
 search_trms_tst <- list(
   default_search_trms = list(),
@@ -921,6 +954,9 @@ rk_repel_tst <- list(
                    ranking_repel_args = list(seed = seed3_tst))
 )
 
+rk_col_tst <- as.list(setNames(nm = c(FALSE, TRUE)))
+names(rk_col_tst) <- paste0("col", names(rk_col_tst))
+
 cumulate_tst <- as.list(setNames(nm = c(FALSE, TRUE)))
 names(cumulate_tst) <- paste0("cu", names(cumulate_tst))
 
@@ -972,7 +1008,7 @@ nterms_max_rk <- list(
 rk_max_tst <- list(
   default_rk_max = list(),
   rk_max_NA = list(ranking_nterms_max = NA),
-  rk_max_1 = list(ranking_nterms_max = 1)
+  rk_max_1 = list(ranking_nterms_max = 1L)
 )
 
 ## Reference model --------------------------------------------------------
@@ -1048,24 +1084,20 @@ if (run_vs) {
     fam_crr <- args_ref[[tstsetup_ref]]$fam_nm
     prj_crr <- args_ref[[tstsetup_ref]]$prj_nm
     if (prj_crr == "trad" && mod_crr == "glm" && fam_crr == "gauss") {
-      # Here, we test the default `method` (which is L1 search here) as well as
-      # forward search:
-      meth <- meth_tst[setdiff(names(meth_tst), "L1")]
-    } else if (prj_crr %in% c("trad_compare", "latent")) {
-      # For traditional settings which correspond to an augmented-data setting,
-      # choose forward search (needed for comparing the two approaches);
-      # correspondingly, we also need forward search for the latent projection
-      # (even though in principle, the latent projection can be used with L1
-      # search):
-      meth <- meth_tst["forward"]
+      # Here, we test the default `method` (forward search) as well as L1
+      # search:
+      meth <- meth_tst[setdiff(names(meth_tst), "forward")]
+    } else if (prj_crr == "trad" && mod_crr == "glm") {
+      # Here, we only test L1 search:
+      meth <- meth_tst["L1"]
     } else {
-      # Here, we only test the default `method`:
+      # Here, we only test the default `method` (forward search):
       meth <- meth_tst["default_meth"]
     }
     lapply(meth, function(meth_i) {
       if (mod_crr == "glm" && fam_crr == "gauss" &&
           grepl("\\.stdformul\\.", tstsetup_ref) &&
-          identical(meth_i$method, "forward")) {
+          !identical(meth_i$method, "L1")) {
         # Here, we also test non-NULL `search_terms`:
         search_trms <- search_trms_tst
       } else {
@@ -1147,12 +1179,8 @@ if (run_cvvs) {
     mod_crr <- args_ref[[tstsetup_ref]]$mod_nm
     fam_crr <- args_ref[[tstsetup_ref]]$fam_nm
     prj_crr <- args_ref[[tstsetup_ref]]$prj_nm
-    if (prj_crr %in% c("trad_compare", "latent")) {
-      # For traditional settings which correspond to an augmented-data setting
-      # (`trad_compare`), choose forward search (needed for comparing the two
-      # approaches; therefore also necessary for the `latent` setting even
-      # though in principle, the latent projection can be used with L1 search):
-      meth <- meth_tst["forward"]
+    if (prj_crr == "trad" && mod_crr == "glm") {
+      meth <- meth_tst["L1"]
     } else {
       meth <- meth_tst["default_meth"]
     }
@@ -1186,9 +1214,7 @@ if (run_cvvs) {
              (prj_crr %in% c("latent", "augdat", "trad_compare") &&
               !run_valsearch_aug_lat)) &&
             # Forward search:
-            ((length(meth_i) == 0 &&
-              (mod_crr != "glm" || prj_crr == "augdat")) ||
-             (length(meth_i) > 0 && meth_i$method == "forward"))) {
+            !identical(meth_i$method, "L1")) {
           # These are cases with forward search, LOO CV, and
           # `!run_valsearch_always` where we want to save time by using
           # `validate_search = FALSE`:
@@ -1216,10 +1242,7 @@ if (run_cvvs) {
   })
   args_cvvs <- unlist_cust(args_cvvs)
 
-  # Use suppressWarnings() because of occasional warnings concerning Pareto k
-  # diagnostics. Additionally to suppressWarnings(), suppressMessages() could be
-  # used here (because of the refits in K-fold CV):
-  cvvss <- suppressWarnings(lapply(args_cvvs, function(args_cvvs_i) {
+  cvvss <- lapply(args_cvvs, function(args_cvvs_i) {
     cvvs_expr <- expression(do.call(cv_varsel, c(
       list(object = refmods[[args_cvvs_i$tstsetup_ref]]),
       excl_nonargs(args_cvvs_i)
@@ -1231,7 +1254,7 @@ if (run_cvvs) {
     } else {
       return(eval(cvvs_expr))
     }
-  }))
+  })
   success_cvvs <- !sapply(cvvss, inherits, "try-error")
   err_ok <- sapply(cvvss[!success_cvvs], function(cvvs_err) {
     attr(cvvs_err, "condition")$message ==
@@ -1408,15 +1431,14 @@ cre_args_prj_vsel <- function(tstsetups_prj_vsel) {
 if (run_vs) {
   tstsetups_prj_vs <- unlist(lapply(mod_nms, function(mod_nm) {
     if (any(grepl(paste0("\\.", mod_nm, "\\.gauss\\."), names(vss)))) {
-      tstsetups_out <- grep(
-        paste0("\\.", mod_nm, "\\.gauss\\..*\\.default_meth"), names(vss),
-        value = TRUE
-      )
+      tstsetups_out <- grep(paste0("\\.", mod_nm, "\\.gauss\\."), names(vss),
+                            value = TRUE)
     } else {
-      tstsetups_out <- grep(
-        paste0("\\.", mod_nm, "\\..*\\.default_meth"), names(vss),
-        value = TRUE
-      )
+      tstsetups_out <- grep(paste0("\\.", mod_nm, "\\."), names(vss),
+                            value = TRUE)
+    }
+    if (any(grepl("\\.L1\\.", tstsetups_out))) {
+      tstsetups_out <- grep("\\.L1\\.", tstsetups_out, value = TRUE)
     }
     if (!run_more) {
       tstsetups_out <- head(tstsetups_out, 1)
@@ -1449,16 +1471,15 @@ if (run_vs) {
 if (run_cvvs) {
   tstsetups_prj_cvvs <- unlist(lapply(mod_nms, function(mod_nm) {
     if (any(grepl(paste0("\\.", mod_nm, "\\.gauss\\."), names(cvvss)))) {
-      tstsetups_out <- grep(
-        paste0("\\.", mod_nm,
-               "\\.gauss\\..*\\.default_meth\\.default_cvmeth"),
-        names(cvvss), value = TRUE
-      )
+      tstsetups_out <- grep(paste0("\\.", mod_nm,
+                                   "\\.gauss\\..*\\.default_cvmeth"),
+                            names(cvvss), value = TRUE)
     } else {
-      tstsetups_out <- grep(
-        paste0("\\.", mod_nm, "\\..*\\.default_meth\\.default_cvmeth"),
-        names(cvvss), value = TRUE
-      )
+      tstsetups_out <- grep(paste0("\\.", mod_nm, "\\..*\\.default_cvmeth"),
+                            names(cvvss), value = TRUE)
+    }
+    if (any(grepl("\\.L1\\.", tstsetups_out))) {
+      tstsetups_out <- grep("\\.L1\\.", tstsetups_out, value = TRUE)
     }
     if (!run_more) {
       tstsetups_out <- head(tstsetups_out, 1)
@@ -1495,7 +1516,8 @@ if (run_cvvs) {
 ### From "projection" -----------------------------------------------------
 
 if (run_prj) {
-  pls <- lapply(prjs, proj_linpred, .seed = seed2_tst)
+  pls <- lapply(prjs, proj_linpred, allow_nonconst_wdraws_prj = TRUE,
+                .seed = seed2_tst)
   pps <- lapply(prjs, proj_predict, .seed = seed2_tst)
 }
 
@@ -1504,14 +1526,16 @@ if (run_prj) {
 #### varsel() -------------------------------------------------------------
 
 if (run_vs) {
-  pls_vs <- lapply(prjs_vs, proj_linpred, .seed = seed2_tst)
+  pls_vs <- lapply(prjs_vs, proj_linpred, allow_nonconst_wdraws_prj = TRUE,
+                   .seed = seed2_tst)
   pps_vs <- lapply(prjs_vs, proj_predict, .seed = seed2_tst)
 }
 
 #### cv_varsel() ----------------------------------------------------------
 
 if (run_cvvs) {
-  pls_cvvs <- lapply(prjs_cvvs, proj_linpred, .seed = seed2_tst)
+  pls_cvvs <- lapply(prjs_cvvs, proj_linpred, allow_nonconst_wdraws_prj = TRUE,
+                     .seed = seed2_tst)
   pps_cvvs <- lapply(prjs_cvvs, proj_predict, .seed = seed2_tst)
 }
 
@@ -1694,16 +1718,19 @@ cre_args_plot_vsel <- function(args_obj) {
         lapply(rk_max_tst, function(rk_max_crr) {
           lapply(rk_abbv_tst, function(rk_abbv_crr) {
             lapply(rk_repel_tst, function(rk_repel_crr) {
-              lapply(cumulate_tst, function(cumulate_crr) {
-                lapply(angle_tst, function(angle_crr) {
-                  return(c(
-                    nlist(tstsetup_vsel),
-                    only_nonargs(args_obj[[tstsetup_vsel]]),
-                    list(nterms_max = nterms_crr),
-                    rk_max_crr, rk_abbv_crr, rk_repel_crr,
-                    list(cumulate = cumulate_crr),
-                    angle_crr
-                  ))
+              lapply(rk_col_tst, function(rk_col_crr) {
+                lapply(cumulate_tst, function(cumulate_crr) {
+                  lapply(angle_tst, function(angle_crr) {
+                    return(c(
+                      nlist(tstsetup_vsel),
+                      only_nonargs(args_obj[[tstsetup_vsel]]),
+                      list(nterms_max = nterms_crr),
+                      rk_max_crr, rk_abbv_crr, rk_repel_crr,
+                      list(ranking_colored = rk_col_crr,
+                           cumulate = cumulate_crr),
+                      angle_crr
+                    ))
+                  })
                 })
               })
             })

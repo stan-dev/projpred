@@ -1,8 +1,8 @@
 Package: projpred
 Encoding: UTF-8
 Title: Projection Predictive Feature Selection
-Version: 2.6.0
-Date: 2023-05-25
+Version: 2.7.0
+Date: 2023-09-25
 Authors@R: c(person("Juho", "Piironen", role = c("aut"),
                     email = "juho.t.piironen@gmail.com"),
              person("Markus", "Paasiniemi", role = "aut"),
@@ -26,7 +26,7 @@ Description:
     models (Piironen, Paasiniemi, and Vehtari, 2020, <doi:10.1214/20-EJS1711>)
     with or without multilevel or additive terms (Catalina, Bürkner, and
     Vehtari, 2022, <https://proceedings.mlr.press/v151/catalina22a.html>), for
-    some ordinal and nominal regression models (Weber and Vehtari, 2023,
+    some ordinal and nominal regression models (Weber, Glass, and Vehtari, 2023,
     <arXiv:2301.01660>), and for many other regression models (using the latent
     projection by Catalina, Bürkner, and Vehtari, 2021, <arXiv:2109.04702>,
     which can also be applied to most of the former models). The package is
@@ -37,11 +37,12 @@ License: GPL-3 | file LICENSE
 URL: https://mc-stan.org/projpred/, https://discourse.mc-stan.org
 BugReports: https://github.com/stan-dev/projpred/issues/
 Depends:
-    R (>= 3.5.0)
+    R (>= 3.6.0)
 Imports:
     methods,
     utils,
     Rcpp,
+    gtools,
     ggplot2,
     scales,
     rstantools (>= 2.0.0),
@@ -65,6 +66,7 @@ Suggests:
     parallel,
     foreach,
     iterators,
+    doRNG,
     testthat,
     vdiffr,
     knitr,

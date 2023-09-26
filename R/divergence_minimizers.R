@@ -9,7 +9,7 @@ if (getRversion() >= package_version("2.15.1")) {
   utils::globalVariables("projpred_formula_no_random_s")
 }
 
-divmin <- function(formula, projpred_var, ...) {
+divmin <- function(formula, projpred_var, projpred_verbose = FALSE, ...) {
   trms_all <- extract_terms_response(formula)
   has_grp <- length(trms_all$group_terms) > 0
   has_add <- length(trms_all$additive_terms) > 0
@@ -55,7 +55,15 @@ divmin <- function(formula, projpred_var, ...) {
     # foreach::`%do%`` here and then proceed as in the parallel case, but that
     # would require adding more "hard" dependencies (because packages 'foreach'
     # and 'iterators' would have to be moved from `Suggests:` to `Imports:`).
+    if (projpred_verbose) {
+      pb <- utils::txtProgressBar(min = 0, max = length(formulas), style = 3,
+                                  initial = 0)
+      on.exit(close(pb))
+    }
     return(lapply(seq_along(formulas), function(s) {
+      if (projpred_verbose) {
+        on.exit(utils::setTxtProgressBar(pb, s))
+      }
       sdivmin(
         formula = formulas[[s]],
         projpred_var = projpred_var[, s, drop = FALSE],
@@ -80,8 +88,8 @@ divmin <- function(formula, projpred_var, ...) {
       projpred_formula_no_random_s = projpred_formulas_no_random,
       .export = c("sdivmin", "projpred_random", "dot_args"),
       .noexport = c(
-        "object", "p_sel", "p_pred", "search_path", "p_ref", "refmodel",
-        "formulas", "projpred_var", "projpred_formulas_no_random"
+        "object", "p_sel", "search_path", "p_ref", "refmodel", "formulas",
+        "projpred_var", "projpred_formulas_no_random"
       )
     ) %do_projpred% {
       do.call(
@@ -176,24 +184,22 @@ fit_glm_callback <- function(formula, family, ...) {
 }
 
 # Use package "mgcv" to fit additive non-multilevel submodels:
-#' @importFrom mgcv gam
 fit_gam_callback <- function(formula, ...) {
   # Exclude arguments from `...` which cannot be passed to mgcv::gam():
   dot_args <- list(...)
   dot_args <- dot_args[intersect(
     names(dot_args),
-    c(methods::formalArgs(gam),
+    c(methods::formalArgs(mgcv::gam),
       methods::formalArgs(mgcv::gam.fit))
   )]
   # Call the submodel fitter:
-  return(suppressMessages(suppressWarnings(do.call(gam, c(
+  return(suppressMessages(suppressWarnings(do.call(mgcv::gam, c(
     list(formula = formula),
     dot_args
   )))))
 }
 
 # Use package "gamm4" to fit additive multilevel submodels:
-#' @importFrom gamm4 gamm4
 fit_gamm_callback <- function(formula, projpred_formula_no_random,
                               projpred_random, data, family,
                               control = control_callback(family), ...) {
@@ -201,13 +207,13 @@ fit_gamm_callback <- function(formula, projpred_formula_no_random,
   dot_args <- list(...)
   dot_args <- dot_args[intersect(
     names(dot_args),
-    c(methods::formalArgs(gamm4),
+    c(methods::formalArgs(gamm4::gamm4),
       methods::formalArgs(lme4::lFormula),
       methods::formalArgs(lme4::glFormula))
   )]
   # Call the submodel fitter:
   fit <- tryCatch({
-    suppressMessages(suppressWarnings(do.call(gamm4, c(
+    suppressMessages(suppressWarnings(do.call(gamm4::gamm4, c(
       list(formula = projpred_formula_no_random, random = projpred_random,
            data = data, family = family, control = control),
       dot_args
@@ -221,6 +227,11 @@ fit_gamm_callback <- function(formula, projpred_formula_no_random,
              "the lme4 fitting procedure, but cannot fix this automatically ",
              "anymore. You will probably have to tweak gamm4 tuning ",
              "parameters manually (via `...`).")
+      }
+      if (!requireNamespace("optimx", quietly = TRUE)) {
+        stop("Trying to fix an lme4 error with the help of an optimx ",
+             "optimizer, but cannot find the optimx package. Please install ",
+             "it to be able to try this fix.")
       }
       return(fit_gamm_callback(
         formula = formula,
@@ -362,6 +373,11 @@ fit_glmer_callback <- function(formula, projpred_formula_no_random,
              "anymore. You will probably have to tweak lme4 tuning parameters ",
              "manually (via `...`).")
       }
+      if (!requireNamespace("optimx", quietly = TRUE)) {
+        stop("Trying to fix an lme4 error with the help of an optimx ",
+             "optimizer, but cannot find the optimx package. Please install ",
+             "it to be able to try this fix.")
+      }
       return(fit_glmer_callback(
         formula = formula,
         projpred_formula_no_random = projpred_formula_no_random,
@@ -496,12 +512,12 @@ control_callback <- function(family, ...) {
 
 # Needed to avoid a NOTE in `R CMD check`:
 if (getRversion() >= package_version("2.15.1")) {
-  utils::globalVariables("s")
+  utils::globalVariables("projpred_w_aug_s")
   utils::globalVariables("projpred_internal_w_aug")
 }
 
 divmin_augdat <- function(formula, data, family, weights, projpred_var,
-                          projpred_ws_aug, ...) {
+                          projpred_ws_aug, projpred_verbose = FALSE, ...) {
   trms_all <- extract_terms_response(formula)
   has_grp <- length(trms_all$group_terms) > 0
   projpred_formula_no_random <- NA
@@ -549,12 +565,25 @@ divmin_augdat <- function(formula, data, family, weights, projpred_var,
     stop("Family `", family$family, "` is not supported by divmin_augdat().")
   }
 
+  # Coerce augmented-data matrices to ordinary matrices and augmented-length
+  # vectors to ordinary vectors so that external packages may subset as usual:
+  projpred_ws_aug <- unclass(projpred_ws_aug)
+  attr(projpred_ws_aug, "nobs_orig") <- NULL
+
   if (ncol(projpred_ws_aug) < getOption("projpred.prll_prj_trigger", Inf)) {
     # Sequential case. Actually, we could simply use ``%do_projpred%` <-
     # foreach::`%do%`` here and then proceed as in the parallel case, but that
     # would require adding more "hard" dependencies (because packages 'foreach'
     # and 'iterators' would have to be moved from `Suggests:` to `Imports:`).
+    if (projpred_verbose) {
+      pb <- utils::txtProgressBar(min = 0, max = ncol(projpred_ws_aug),
+                                  style = 3, initial = 0)
+      on.exit(close(pb))
+    }
     return(lapply(seq_len(ncol(projpred_ws_aug)), function(s) {
+      if (projpred_verbose) {
+        on.exit(utils::setTxtProgressBar(pb, s))
+      }
       sdivmin(
         formula = formula,
         data = data,
@@ -570,22 +599,20 @@ divmin_augdat <- function(formula, data, family, weights, projpred_var,
     if (!requireNamespace("foreach", quietly = TRUE)) {
       stop("Please install the 'foreach' package.")
     }
-    # Unfortunately, iterators::iter() seems to conflict with augmented-data
-    # matrices (see note below). Thus, `requireNamespace("iterators")` is not
-    # necessary here.
+    if (!requireNamespace("iterators", quietly = TRUE)) {
+      stop("Please install the 'iterators' package.")
+    }
     dot_args <- list(...)
     `%do_projpred%` <- foreach::`%dopar%`
     return(foreach::foreach(
-      # Unfortunately, iterators::iter() seems to conflict with augmented-data
-      # matrices, even if using unclass(). Thus, iterate over the indices:
-      s = seq_len(ncol(projpred_ws_aug)),
+      projpred_w_aug_s = iterators::iter(projpred_ws_aug, by = "column"),
       .export = c(
-        "sdivmin", "formula", "data", "family", "projpred_ws_aug",
-        "projpred_formula_no_random", "projpred_random", "dot_args"
+        "sdivmin", "formula", "data", "family", "projpred_formula_no_random",
+        "projpred_random", "dot_args"
       ),
       .noexport = c(
-        "object", "p_sel", "p_pred", "search_path", "p_ref", "refmodel",
-        "linkobjs"
+        "object", "p_sel", "search_path", "p_ref", "refmodel", "projpred_var",
+        "projpred_ws_aug", "linkobjs"
       )
     ) %do_projpred% {
       do.call(
@@ -593,7 +620,7 @@ divmin_augdat <- function(formula, data, family, weights, projpred_var,
         c(list(formula = formula,
                data = data,
                family = family,
-               weights = projpred_ws_aug[, s],
+               weights = as.vector(projpred_w_aug_s),
                projpred_formula_no_random = projpred_formula_no_random,
                projpred_random = projpred_random),
           dot_args)
@@ -629,7 +656,6 @@ fit_cumul <- function(formula, data, family, weights, ...) {
   # For catching warnings via capture.output() (which is necessary to filter out
   # the warning "non-integer #successes in a binomial glm!"):
   warn_orig <- options(warn = 1)
-  on.exit(options(warn_orig))
   # Call the submodel fitter:
   warn_capt <- utils::capture.output({
     fitobj <- try(do.call(MASS::polr, c(
@@ -641,6 +667,7 @@ fit_cumul <- function(formula, data, family, weights, ...) {
       dot_args
     )), silent = TRUE)
   }, type = "message")
+  options(warn_orig)
   if (inherits(fitobj, "try-error") &&
       grepl(paste("initial value in 'vmmin' is not finite",
                   "attempt to find suitable starting values failed",
@@ -659,6 +686,7 @@ fit_cumul <- function(formula, data, family, weights, ...) {
     # Start with thresholds which imply equal probabilities for the response
     # categories:
     start_thres <- linkfun_raw(seq_len(nthres) / ncats, link_nm = link_nm)
+    warn_orig <- options(warn = 1)
     warn_capt <- utils::capture.output({
       fitobj <- try(do.call(MASS::polr, c(
         list(formula = formula,
@@ -670,15 +698,14 @@ fit_cumul <- function(formula, data, family, weights, ...) {
         dot_args
       )), silent = TRUE)
     }, type = "message")
+    options(warn_orig)
   }
   if (inherits(fitobj, "try-error")) {
     stop(attr(fitobj, "condition")$message)
   }
-  warn_capt <- setdiff(
-    warn_capt,
-    c("Warning in eval(family$initialize) :",
-      "  non-integer #successes in a binomial glm!")
-  )
+  warn_capt <- grep("Warning in .*:$", warn_capt, value = TRUE, invert = TRUE)
+  warn_capt <- grep("non-integer #successes in a binomial glm!$", warn_capt,
+                    value = TRUE, invert = TRUE)
   if (length(warn_capt) > 0) {
     warning(warn_capt)
   }
@@ -724,7 +751,6 @@ fit_cumul_mlvl <- function(formula, data, family, weights, ...) {
   # the warning "Using formula(x) is deprecated when x is a character vector of
   # length > 1. [...]"):
   warn_orig <- options(warn = 1)
-  on.exit(options(warn_orig))
   # Call the submodel fitter:
   warn_capt <- utils::capture.output({
     fitobj <- try(do.call(ordinal::clmm, c(
@@ -738,14 +764,18 @@ fit_cumul_mlvl <- function(formula, data, family, weights, ...) {
       dot_args
     )), silent = TRUE)
   }, type = "message")
+  options(warn_orig)
   if (inherits(fitobj, "try-error")) {
     stop(attr(fitobj, "condition")$message)
   }
-  warn_capt <- setdiff(
-    warn_capt,
-    c(paste("Warning: Using formula(x) is deprecated when x is a character",
-            "vector of length > 1."),
-      "  Consider formula(paste(x, collapse = \" \")) instead.")
+  warn_capt <- grep(
+    paste("Using formula\\(x\\) is deprecated when x is a character vector of",
+          "length > 1\\.$"),
+    warn_capt, value = TRUE, invert = TRUE
+  )
+  warn_capt <- grep(
+    "Consider formula\\(paste\\(x, collapse = .*\\)\\) instead\\.$",
+    warn_capt, value = TRUE, invert = TRUE
   )
   if (length(warn_capt) > 0) {
     warning(warn_capt)
@@ -875,69 +905,47 @@ fit_categ_mlvl <- function(formula, projpred_formula_no_random,
 # Convergence checker -----------------------------------------------------
 
 check_conv <- function(fit) {
-  conv_info <- do.call(cbind, lapply(fit, function(fit_s) {
+  is_conv <- unlist(lapply(fit, function(fit_s) {
     if (inherits(fit_s, "gam")) {
-      # TODO (GAMs):
-      #   1. For GAMs, there is also `fit_s$mgcv.conv` (see
-      #   `?mgcv::gamObject`). Do we need to take this into account?
-      #   2. If there is a (convenient) way to retrieve warnings, then this
-      #   should be done to get a sensible value for `no_warnings` below.
-      return(c(no_gross_fail = fit_s$converged, no_warnings = TRUE))
+      # TODO (GAMs): There is also `fit_s$mgcv.conv` (see `?mgcv::gamObject`).
+      # Do we need to take this into account?
+      return(fit_s$converged)
     } else if (inherits(fit_s, "gamm4")) {
-      # TODO (GAMMs): Both, `no_gross_fail` and `no_warnings` need to be
-      # implemented. Return `TRUE` for now.
-      return(c(no_gross_fail = TRUE, no_warnings = TRUE))
+      # TODO (GAMMs): Needs to be implemented. Return `TRUE` for now.
+      return(TRUE)
     } else if (inherits(fit_s, c("lmerMod", "glmerMod"))) {
       # The following was inferred from the source code of lme4::checkConv() and
       # lme4::.prt.warn() (see also `?lme4::mkMerMod`).
-      return(c(
-        no_gross_fail = fit_s@optinfo$conv$opt == 0 && (
-          # Since lme4::.prt.warn() does not refer to `optinfo$conv$lme4$code`,
-          # that element might not always exist:
-          (!is.null(fit_s@optinfo$conv$lme4$code) &&
-             fit_s@optinfo$conv$lme4$code >= 0) ||
-            is.null(fit_s@optinfo$conv$lme4$code)
-        ),
-        no_warnings = length(fit_s@optinfo$warnings) &&
-          length(unlist(fit_s@optinfo$conv$lme4$messages)) == 0 && (
-            # Since lme4::.prt.warn() does not refer to `optinfo$conv$lme4$code`,
-            # that element might not always exist:
-            (!is.null(fit_s@optinfo$conv$lme4$code) &&
-               fit_s@optinfo$conv$lme4$code == 0) ||
-              is.null(fit_s@optinfo$conv$lme4$code)
-          )
-      ))
+      return(fit_s@optinfo$conv$opt == 0 && (
+        # Since lme4::.prt.warn() does not refer to `optinfo$conv$lme4$code`,
+        # that element might not always exist:
+        (!is.null(fit_s@optinfo$conv$lme4$code) &&
+           all(fit_s@optinfo$conv$lme4$code == 0)) ||
+          is.null(fit_s@optinfo$conv$lme4$code)
+      ) && length(unlist(fit_s@optinfo$conv$lme4$messages)) == 0 &&
+        length(fit_s@optinfo$warnings) == 0)
     } else if (inherits(fit_s, "glm")) {
-      # TODO (GLMs): If there is a (convenient) way to retrieve warnings, then
-      # this should be done to get a sensible value for `no_warnings` below.
-      return(c(no_gross_fail = fit_s$converged, no_warnings = TRUE))
+      return(fit_s$converged)
     } else if (inherits(fit_s, "lm")) {
       # Note: There doesn't seem to be a better way to check for convergence
       # other than checking `NA` coefficients (see below).
-      # TODO (LMs): If there is a (convenient) way to retrieve warnings, then
-      # this should be done to get a sensible value for `no_warnings` below.
-      return(c(no_gross_fail = all(!is.na(coef(fit_s))), no_warnings = TRUE))
+      return(all(!is.na(coef(fit_s))))
     } else if (inherits(fit_s, "subfit")) {
       # Note: There doesn't seem to be any way to check for convergence, so
       # return `TRUE` for now.
       # TODO (GLMs with ridge regularization): Add a logical indicating
       # convergence to objects of class `subfit` (i.e., from glm_ridge())?
-      return(c(no_gross_fail = TRUE, no_warnings = TRUE))
+      return(TRUE)
     } else {
       stop("Unrecognized submodel fit. Please notify the package maintainer.")
     }
   }))
-  is_conv <- conv_info["no_gross_fail", ]
   if (any(!is_conv)) {
     warning(sum(!is_conv), " out of ", length(is_conv), " submodel fits ",
-            "(there is one submodel fit per projected draw) did not converge. ",
-            "Formula (right-hand side): ", update(formula(fit[[1]]), NULL ~ .))
-  }
-  no_warns <- conv_info["no_warnings", ]
-  if (any(!no_warns)) {
-    warning(sum(!no_warns), " out of ", length(no_warns), " submodel fits ",
-            "(there is one submodel fit per projected draw) threw a warning ",
-            "which might be relevant for convergence. ",
+            "(there is one submodel fit per projected draw) probably have not ",
+            "converged (appropriately). It is recommended to inspect this in ",
+            "detail and (if necessary) to adjust lme4's tuning parameters via ",
+            "`...` or via a custom `divergence_minimizer` function. ",
             "Formula (right-hand side): ", update(formula(fit[[1]]), NULL ~ .))
   }
   return(invisible(TRUE))
@@ -1083,23 +1091,16 @@ predict.subfit <- function(object, newdata = NULL, ...) {
       # now).
       x <- model.matrix(delete.response(terms(object$formula)), data = newdata,
                         xlev = object$xlvls)
-      if (!identical(colnames(x), c("(Intercept)", colnames(object$x)))) {
-        # Note: In the following `if` condition, we were previously using
-        # `identical(sort(colnames(x)),
-        #            sort(c("(Intercept)", colnames(object$x))))`
-        # instead of
-        # `all(c("(Intercept)", colnames(object$x)) %in% colnames(x))`.
-        # However, the case where `x` has non-intercept columns that `object$x`
-        # doesn't have may occur in case of an L1 search with interactions being
-        # selected before all involved main effects are selected (and at least
-        # one of the main effects being a categorical predictor).
-        if (all(c("(Intercept)", colnames(object$x)) %in% colnames(x))) {
-          x <- x[, c("(Intercept)", colnames(object$x)), drop = FALSE]
-        } else {
-          stop("The column names of the new model matrix don't match the ",
-               "column names of the original model matrix. Please notify the ",
-               "package maintainer.")
-        }
+      # Need to ensure that the columns of `x` match the coefficients (note that
+      # `rownames(beta)` is the same as `colnames(object$x)`, see the tests):
+      nms_to_use <- c("(Intercept)", colnames(object$x))
+      nms_to_use <- reorder_ias(nms_to_use, colnames(x))
+      if (all(!is.na(nms_to_use)) && all(nms_to_use %in% colnames(x))) {
+        x <- x[, nms_to_use, drop = FALSE]
+      } else {
+        stop("The column names of the new model matrix don't match the ",
+             "column names of the original model matrix. Please notify the ",
+             "package maintainer.")
       }
       return(x %*% rbind(alpha, beta))
     }
@@ -1227,14 +1228,24 @@ repair_re.merMod <- function(object, newdata) {
   lvls_list <- lapply(setNames(nm = vnms), function(vnm) {
     from_fit <- rownames(ranef_tmp[[vnm]])
     if (!vnm %in% names(newdata)) {
-      if (any(grepl("\\|.+/", labels(terms(formula(object)))))) {
-        stop("The `/` syntax for nested group-level terms is currently not ",
-             "supported. Please try to write out the interaction term implied ",
-             "by the `/` syntax (see Table 2 in lme4's vignette called ",
-             "\"Fitting Linear Mixed-Effects Models Using lme4\").")
-      } else {
-        stop("Could not find column `", vnm, "` in `newdata`.")
+      for (special_char in c("/", ":")) {
+        if (any(grepl(paste0("\\|.+", special_char),
+                      labels(terms(formula(object)))))) {
+          if (special_char == "/") {
+            add_hint <- paste0(
+              " implied by the `", special_char, "` syntax (see lme4 vignette ",
+              "\"Fitting Linear Mixed-Effects Models Using lme4\", Table 2)"
+            )
+          } else {
+            add_hint <- ""
+          }
+          stop("The `", special_char, "` syntax for grouping variables is ",
+               "currently not supported. Please write out (i.e., create ",
+               "corresponding columns in the dataset manually and then adapt ",
+               "the model formula) interaction terms", add_hint, ".")
+        }
       }
+      stop("Could not find column `", vnm, "` in `newdata`.")
     }
     from_new <- unique(newdata[, vnm])
     if (is.factor(from_new)) {
@@ -1313,14 +1324,24 @@ repair_re.clmm <- function(object, newdata) {
   lvls_list <- lapply(setNames(nm = vnms), function(vnm) {
     from_fit <- rownames(ranef_tmp[[vnm]])
     if (!vnm %in% names(newdata)) {
-      if (any(grepl("\\|.+/", labels(terms(formula(object)))))) {
-        stop("The `/` syntax for nested group-level terms is currently not ",
-             "supported. Please try to write out the interaction term implied ",
-             "by the `/` syntax (see Table 2 in lme4's vignette called ",
-             "\"Fitting Linear Mixed-Effects Models Using lme4\").")
-      } else {
-        stop("Could not find column `", vnm, "` in `newdata`.")
+      for (special_char in c("/", ":")) {
+        if (any(grepl(paste0("\\|.+", special_char),
+                      labels(terms(formula(object)))))) {
+          if (special_char == "/") {
+            add_hint <- paste0(
+              " implied by the `", special_char, "` syntax (see lme4 vignette ",
+              "\"Fitting Linear Mixed-Effects Models Using lme4\", Table 2)"
+            )
+          } else {
+            add_hint <- ""
+          }
+          stop("The `", special_char, "` syntax for grouping variables is ",
+               "currently not supported. Please write out (i.e., create ",
+               "corresponding columns in the dataset manually and then adapt ",
+               "the model formula) interaction terms", add_hint, ".")
+        }
       }
+      stop("Could not find column `", vnm, "` in `newdata`.")
     }
     from_new <- unique(newdata[, vnm])
     if (is.factor(from_new)) {

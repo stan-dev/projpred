@@ -12,6 +12,7 @@ project(
   ndraws = 400,
   nclusters = NULL,
   seed = NA,
+  verbose = getOption("projpred.verbose_project", TRUE),
   regul = 1e-04,
   ...
 )
@@ -64,6 +65,13 @@ drawing new group-level effects when predicting from a multilevel submodel
 \code{projpred.mlvl_pred_new} set to \code{TRUE}. (Such a prediction takes place when
 calculating output elements \code{dis} and \code{ce}.)}
 
+\item{verbose}{A single logical value indicating whether to print out
+additional information during the computations. More precisely, this gets
+passed as \code{projpred_verbose} to the divergence minimizer function of the
+\code{refmodel} object. For the built-in divergence minimizers, this only has an
+effect in case of sequential computations (not in case of parallel
+projection, which is described in \link{projpred-package}).}
+
 \item{regul}{A number giving the amount of ridge regularization when
 projecting onto (i.e., fitting) submodels which are GLMs. Usually there is
 no need for regularization, but sometimes we need to add some
@@ -101,9 +109,8 @@ these draws.}
 posterior draws in the reference model, giving the weights of these
 draws. These weights should be treated as not being normalized (i.e.,
 they don't necessarily sum to \code{1}).}
-\item{\code{p_type}}{A single logical value indicating whether the
-reference model's posterior draws have been clustered for the projection
-(\code{TRUE}) or not (\code{FALSE}).}
+\item{\code{const_wdraws_prj}}{A single logical value indicating whether the
+projected draws have constant weights (\code{TRUE}) or not (\code{FALSE}).}
 \item{\code{refmodel}}{The reference model object.}
 }
 If the projection is performed onto more than one submodel, the output from
@@ -112,11 +119,10 @@ each submodel.
 
 The elements of an object of class \code{projection} are not meant to be
 accessed directly but instead via helper functions (see the main vignette
-and \link{projpred-package}). An exception is element \code{wdraws_prj} which is
-currently needed to weight quantities derived from the projected draws in
-case of clustered projection, e.g., after applying \code{\link[=as.matrix.projection]{as.matrix.projection()}}
-(which throws a warning in case of clustered projection to make users aware
-of this problem).
+and \link{projpred-package}; see also \code{\link[=as_draws_matrix.projection]{as_draws_matrix.projection()}}, argument
+\code{return_draws_matrix} of \code{\link[=proj_linpred]{proj_linpred()}}, and argument
+\code{nresample_clusters} of \code{\link[=proj_predict]{proj_predict()}} for the intended use of the
+weights stored in element \code{wdraws_prj}).
 }
 \description{
 Project the posterior of the reference model onto the parameter space of a
@@ -141,34 +147,34 @@ default, \code{\link[=varsel]{varsel()}} and \code{\link[=cv_varsel]{cv_varsel()
 or thinning.
 }
 \examples{
-if (requireNamespace("rstanarm", quietly = TRUE)) {
-  # Data:
-  dat_gauss <- data.frame(y = df_gaussian$y, df_gaussian$x)
+\dontshow{if (requireNamespace("rstanarm", quietly = TRUE)) (if (getRversion() >= "3.4") withAutoprint else force)(\{ # examplesIf}
+# Data:
+dat_gauss <- data.frame(y = df_gaussian$y, df_gaussian$x)
 
-  # The "stanreg" fit which will be used as the reference model (with small
-  # values for `chains` and `iter`, but only for technical reasons in this
-  # example; this is not recommended in general):
-  fit <- rstanarm::stan_glm(
-    y ~ X1 + X2 + X3 + X4 + X5, family = gaussian(), data = dat_gauss,
-    QR = TRUE, chains = 2, iter = 500, refresh = 0, seed = 9876
-  )
+# The "stanreg" fit which will be used as the reference model (with small
+# values for `chains` and `iter`, but only for technical reasons in this
+# example; this is not recommended in general):
+fit <- rstanarm::stan_glm(
+  y ~ X1 + X2 + X3 + X4 + X5, family = gaussian(), data = dat_gauss,
+  QR = TRUE, chains = 2, iter = 500, refresh = 0, seed = 9876
+)
 
-  # Run varsel() (here without cross-validation and with small values for
-  # `nterms_max`, `nclusters`, and `nclusters_pred`, but only for the sake of
-  # speed in this example; this is not recommended in general):
-  vs <- varsel(fit, nterms_max = 3, nclusters = 5, nclusters_pred = 10,
-               seed = 5555)
+# Run varsel() (here without cross-validation, with L1 search, and with small
+# values for `nterms_max` and `nclusters_pred`, but only for the sake of
+# speed in this example; this is not recommended in general):
+vs <- varsel(fit, method = "L1", nterms_max = 3, nclusters_pred = 10,
+             seed = 5555)
 
-  # Projection onto the best submodel with 2 predictor terms (with a small
-  # value for `nclusters`, but only for the sake of speed in this example;
-  # this is not recommended in general):
-  prj_from_vs <- project(vs, nterms = 2, nclusters = 10, seed = 9182)
+# Projection onto the best submodel with 2 predictor terms (with a small
+# value for `nclusters`, but only for the sake of speed in this example;
+# this is not recommended in general):
+prj_from_vs <- project(vs, nterms = 2, nclusters = 10, seed = 9182,
+                       verbose = FALSE)
 
-  # Projection onto an arbitrary combination of predictor terms (with a small
-  # value for `nclusters`, but only for the sake of speed in this example;
-  # this is not recommended in general):
-  prj <- project(fit, solution_terms = c("X1", "X3", "X5"), nclusters = 10,
-                 seed = 9182)
-}
-
+# Projection onto an arbitrary combination of predictor terms (with a small
+# value for `nclusters`, but only for the sake of speed in this example;
+# this is not recommended in general):
+prj <- project(fit, solution_terms = c("X1", "X3", "X5"), nclusters = 10,
+               seed = 9182, verbose = FALSE)
+\dontshow{\}) # examplesIf}
 }

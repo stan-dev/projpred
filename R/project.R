@@ -45,6 +45,12 @@
 #'   (however, not yet in case of a GAMM) and having global option
 #'   `projpred.mlvl_pred_new` set to `TRUE`. (Such a prediction takes place when
 #'   calculating output elements `dis` and `ce`.)
+#' @param verbose A single logical value indicating whether to print out
+#'   additional information during the computations. More precisely, this gets
+#'   passed as `projpred_verbose` to the divergence minimizer function of the
+#'   `refmodel` object. For the built-in divergence minimizers, this only has an
+#'   effect in case of sequential computations (not in case of parallel
+#'   projection, which is described in [projpred-package]).
 #' @inheritParams varsel
 #' @param ... Arguments passed to [get_refmodel()] (if [get_refmodel()] is
 #'   actually used; see argument `object`) as well as to the divergence
@@ -92,9 +98,8 @@
 #'     posterior draws in the reference model, giving the weights of these
 #'     draws. These weights should be treated as not being normalized (i.e.,
 #'     they don't necessarily sum to `1`).}
-#'     \item{`p_type`}{A single logical value indicating whether the
-#'     reference model's posterior draws have been clustered for the projection
-#'     (`TRUE`) or not (`FALSE`).}
+#'     \item{`const_wdraws_prj`}{A single logical value indicating whether the
+#'     projected draws have constant weights (`TRUE`) or not (`FALSE`).}
 #'     \item{`refmodel`}{The reference model object.}
 #'   }
 #'   If the projection is performed onto more than one submodel, the output from
@@ -103,46 +108,45 @@
 #'
 #'   The elements of an object of class `projection` are not meant to be
 #'   accessed directly but instead via helper functions (see the main vignette
-#'   and [projpred-package]). An exception is element `wdraws_prj` which is
-#'   currently needed to weight quantities derived from the projected draws in
-#'   case of clustered projection, e.g., after applying [as.matrix.projection()]
-#'   (which throws a warning in case of clustered projection to make users aware
-#'   of this problem).
+#'   and [projpred-package]; see also [as_draws_matrix.projection()], argument
+#'   `return_draws_matrix` of [proj_linpred()], and argument
+#'   `nresample_clusters` of [proj_predict()] for the intended use of the
+#'   weights stored in element `wdraws_prj`).
 #'
-#' @examples
-#' if (requireNamespace("rstanarm", quietly = TRUE)) {
-#'   # Data:
-#'   dat_gauss <- data.frame(y = df_gaussian$y, df_gaussian$x)
+#' @examplesIf requireNamespace("rstanarm", quietly = TRUE)
+#' # Data:
+#' dat_gauss <- data.frame(y = df_gaussian$y, df_gaussian$x)
 #'
-#'   # The "stanreg" fit which will be used as the reference model (with small
-#'   # values for `chains` and `iter`, but only for technical reasons in this
-#'   # example; this is not recommended in general):
-#'   fit <- rstanarm::stan_glm(
-#'     y ~ X1 + X2 + X3 + X4 + X5, family = gaussian(), data = dat_gauss,
-#'     QR = TRUE, chains = 2, iter = 500, refresh = 0, seed = 9876
-#'   )
+#' # The "stanreg" fit which will be used as the reference model (with small
+#' # values for `chains` and `iter`, but only for technical reasons in this
+#' # example; this is not recommended in general):
+#' fit <- rstanarm::stan_glm(
+#'   y ~ X1 + X2 + X3 + X4 + X5, family = gaussian(), data = dat_gauss,
+#'   QR = TRUE, chains = 2, iter = 500, refresh = 0, seed = 9876
+#' )
 #'
-#'   # Run varsel() (here without cross-validation and with small values for
-#'   # `nterms_max`, `nclusters`, and `nclusters_pred`, but only for the sake of
-#'   # speed in this example; this is not recommended in general):
-#'   vs <- varsel(fit, nterms_max = 3, nclusters = 5, nclusters_pred = 10,
-#'                seed = 5555)
+#' # Run varsel() (here without cross-validation, with L1 search, and with small
+#' # values for `nterms_max` and `nclusters_pred`, but only for the sake of
+#' # speed in this example; this is not recommended in general):
+#' vs <- varsel(fit, method = "L1", nterms_max = 3, nclusters_pred = 10,
+#'              seed = 5555)
 #'
-#'   # Projection onto the best submodel with 2 predictor terms (with a small
-#'   # value for `nclusters`, but only for the sake of speed in this example;
-#'   # this is not recommended in general):
-#'   prj_from_vs <- project(vs, nterms = 2, nclusters = 10, seed = 9182)
+#' # Projection onto the best submodel with 2 predictor terms (with a small
+#' # value for `nclusters`, but only for the sake of speed in this example;
+#' # this is not recommended in general):
+#' prj_from_vs <- project(vs, nterms = 2, nclusters = 10, seed = 9182,
+#'                        verbose = FALSE)
 #'
-#'   # Projection onto an arbitrary combination of predictor terms (with a small
-#'   # value for `nclusters`, but only for the sake of speed in this example;
-#'   # this is not recommended in general):
-#'   prj <- project(fit, solution_terms = c("X1", "X3", "X5"), nclusters = 10,
-#'                  seed = 9182)
-#' }
+#' # Projection onto an arbitrary combination of predictor terms (with a small
+#' # value for `nclusters`, but only for the sake of speed in this example;
+#' # this is not recommended in general):
+#' prj <- project(fit, solution_terms = c("X1", "X3", "X5"), nclusters = 10,
+#'                seed = 9182, verbose = FALSE)
 #'
 #' @export
 project <- function(object, nterms = NULL, solution_terms = NULL,
                     refit_prj = TRUE, ndraws = 400, nclusters = NULL, seed = NA,
+                    verbose = getOption("projpred.verbose_project", TRUE),
                     regul = 1e-4, ...) {
   if (inherits(object, "datafit")) {
     stop("project() does not support an `object` of class \"datafit\".")
@@ -245,31 +249,34 @@ project <- function(object, nterms = NULL, solution_terms = NULL,
     nclusters <- 1
   }
 
-  ## get the clustering or thinning
-  if (refit_prj) {
-    p_ref <- get_refdist(refmodel, ndraws = ndraws, nclusters = nclusters)
+  nterms_max <- max(nterms)
+  nterms_all <- count_terms_in_formula(refmodel$formula) - 1L
+  if (nterms_max == nterms_all &&
+      formula_contains_group_terms(refmodel$formula) &&
+      getOption("projpred.warn_instable_projections", TRUE) &&
+      (refmodel$family$family == "gaussian" || refmodel$family$for_latent)) {
+    warning(
+      "In case of the Gaussian family (also in case of the latent projection) ",
+      "and multilevel terms, the projection onto the full model can be ",
+      "instable and even lead to an error, see GitHub issue #323."
+    )
   }
 
   ## project onto the submodels
-  submodls <- get_submodls(
+  submodls <- perf_eval(
     search_path = nlist(
       solution_terms,
       p_sel = object$search_path$p_sel,
       outdmins = object$search_path$outdmins
     ),
-    nterms = nterms, p_ref = p_ref, refmodel = refmodel, regul = regul,
-    refit_prj = refit_prj, ...
+    nterms = nterms, refmodel = refmodel, regul = regul, refit_prj = refit_prj,
+    ndraws = ndraws, nclusters = nclusters, return_submodls = TRUE,
+    projpred_verbose = verbose, ...
   )
 
   # Output:
-  if (refit_prj) {
-    refdist_eval <- p_ref
-  } else {
-    refdist_eval <- object$search_path$p_sel
-  }
   projs <- lapply(submodls, function(submodl) {
     proj_k <- submodl
-    proj_k$p_type <- refdist_eval$clust_used
     proj_k$refmodel <- refmodel
     class(proj_k) <- "projection"
     return(proj_k)

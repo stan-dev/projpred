@@ -13,11 +13,14 @@
   baseline = if (!inherits(x$refmodel, "datafit")) "ref" else "best",
   thres_elpd = NA,
   resp_oscale = TRUE,
+  point_size = 3,
+  bar_thickness = 1,
   ranking_nterms_max = NULL,
   ranking_abbreviate = FALSE,
   ranking_abbreviate_args = list(),
   ranking_repel = NULL,
   ranking_repel_args = list(),
+  ranking_colored = FALSE,
   cumulate = FALSE,
   text_angle = NULL,
   ...
@@ -84,6 +87,13 @@ deactivates this.}
 value indicating whether to calculate the performance statistics on the
 original response scale (\code{TRUE}) or on latent scale (\code{FALSE}).}
 
+\item{point_size}{Passed to argument \code{size} of \code{\link[ggplot2:geom_point]{ggplot2::geom_point()}} and
+controls the size of the points.}
+
+\item{bar_thickness}{Passed to argument \code{linewidth} of
+\code{\link[ggplot2:geom_linerange]{ggplot2::geom_linerange()}} and controls the thickness of the uncertainty
+bars.}
+
 \item{ranking_nterms_max}{Maximum submodel size (number of predictor terms)
 for which the predictor names and the corresponding ranking proportions are
 added on the x-axis. Using \code{NULL} is effectively the same as using
@@ -111,6 +121,16 @@ the plotting area, using \code{\link[ggrepel:geom_text_repel]{ggrepel::geom_text
 passed to \code{\link[ggrepel:geom_text_repel]{ggrepel::geom_text_repel()}} or \code{\link[ggrepel:geom_text_repel]{ggrepel::geom_label_repel()}} in
 case of \code{ranking_repel = "text"} or \code{ranking_repel = "label"},
 respectively.}
+
+\item{ranking_colored}{A single logical value indicating whether the points
+and the uncertainty bars should be gradient-colored according to the CV
+ranking proportions (\code{TRUE}) or not (\code{FALSE}). The CV ranking proportions
+may be cumulated (see argument \code{cumulate}). Note that the point and the
+uncertainty bar at submodel size 0 (i.e., at the intercept-only model) are
+always colored in gray because the intercept is forced to be selected
+before any predictors are selected (in other words, the reason is that for
+submodel size 0, the question of variability across CV folds is not
+appropriate in the first place).}
 
 \item{cumulate}{Passed to argument \code{cumulate} of \code{\link[=cv_proportions]{cv_proportions()}}. Affects
 the ranking proportions given on the x-axis (below the full-data predictor
@@ -182,24 +202,23 @@ green horizontal line for the baseline model.
 }
 
 \examples{
-if (requireNamespace("rstanarm", quietly = TRUE)) {
-  # Data:
-  dat_gauss <- data.frame(y = df_gaussian$y, df_gaussian$x)
+\dontshow{if (requireNamespace("rstanarm", quietly = TRUE)) (if (getRversion() >= "3.4") withAutoprint else force)(\{ # examplesIf}
+# Data:
+dat_gauss <- data.frame(y = df_gaussian$y, df_gaussian$x)
 
-  # The "stanreg" fit which will be used as the reference model (with small
-  # values for `chains` and `iter`, but only for technical reasons in this
-  # example; this is not recommended in general):
-  fit <- rstanarm::stan_glm(
-    y ~ X1 + X2 + X3 + X4 + X5, family = gaussian(), data = dat_gauss,
-    QR = TRUE, chains = 2, iter = 500, refresh = 0, seed = 9876
-  )
+# The "stanreg" fit which will be used as the reference model (with small
+# values for `chains` and `iter`, but only for technical reasons in this
+# example; this is not recommended in general):
+fit <- rstanarm::stan_glm(
+  y ~ X1 + X2 + X3 + X4 + X5, family = gaussian(), data = dat_gauss,
+  QR = TRUE, chains = 2, iter = 500, refresh = 0, seed = 9876
+)
 
-  # Run varsel() (here without cross-validation and with small values for
-  # `nterms_max`, `nclusters`, and `nclusters_pred`, but only for the sake of
-  # speed in this example; this is not recommended in general):
-  vs <- varsel(fit, nterms_max = 3, nclusters = 5, nclusters_pred = 10,
-               seed = 5555)
-  print(plot(vs))
-}
-
+# Run varsel() (here without cross-validation, with L1 search, and with small
+# values for `nterms_max` and `nclusters_pred`, but only for the sake of
+# speed in this example; this is not recommended in general):
+vs <- varsel(fit, method = "L1", nterms_max = 3, nclusters_pred = 10,
+             seed = 5555)
+print(plot(vs))
+\dontshow{\}) # examplesIf}
 }

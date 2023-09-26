@@ -67,6 +67,59 @@ test_that(paste(
   if (exists("rng_old")) assign(".Random.seed", rng_old, envir = .GlobalEnv)
 })
 
+# force_search_terms() ----------------------------------------------------
+
+test_that("force_search_terms() works", {
+  expect_identical(
+    force_search_terms(
+      forced_terms = paste0("X", 1:2),
+      optional_terms = paste0("X", 3:5)
+    ),
+    c("X1 + X2", "X1 + X2 + X3", "X1 + X2 + X4", "X1 + X2 + X5"),
+    info = "two forced, three optional terms"
+  )
+  expect_identical(
+    force_search_terms(
+      forced_terms = paste0("X", 1),
+      optional_terms = paste0("X", 3:5)
+    ),
+    c("X1", "X1 + X3", "X1 + X4", "X1 + X5"),
+    info = "one forced, three optional terms"
+  )
+  expect_identical(
+    force_search_terms(
+      forced_terms = paste0("X", 1:2),
+      optional_terms = paste0("X", 3)
+    ),
+    c("X1 + X2", "X1 + X2 + X3"),
+    info = "two forced, one optional term"
+  )
+  expect_identical(
+    force_search_terms(
+      forced_terms = paste0("X", 1),
+      optional_terms = paste0("X", 3)
+    ),
+    c("X1", "X1 + X3"),
+    info = "one forced, one optional term"
+  )
+  expect_error(
+    force_search_terms(
+      forced_terms = character(),
+      optional_terms = paste0("X", 3)
+    ),
+    "length\\(forced_terms\\) > 0 is not TRUE",
+    info = "zero forced, one optional term"
+  )
+  expect_error(
+    force_search_terms(
+      forced_terms = paste0("X", 1),
+      optional_terms = character()
+    ),
+    "length\\(optional_terms\\) > 0 is not TRUE",
+    info = "one forced, zero optional terms"
+  )
+})
+
 # rstanarm: special formulas ----------------------------------------------
 
 test_that("rstanarm: special formulas work", {

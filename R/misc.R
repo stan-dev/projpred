@@ -1,6 +1,11 @@
 .onAttach <- function(...) {
   ver <- utils::packageVersion("projpred")
   msg <- paste0("This is projpred version ", ver, ".")
+  msg <- paste0(msg, " ", "NOTE: In projpred 2.7.0, the default search method ",
+                "was set to \"forward\" (for all kinds of models). ",
+                "The corresponding NOTE thrown by varsel() and cv_varsel() ",
+                "can be suppressed by setting ",
+                "`options(projpred.mssg_method_changed = FALSE)`.")
   packageStartupMessage(msg)
 }
 
@@ -307,7 +312,7 @@ get_refdist <- function(refmodel, ndraws = NULL, nclusters = NULL,
     }
   } else {
     ndraws <- min(S, ndraws)
-    if (ndraws <= 20 && isTRUE(throw_mssg_ndraws)) {
+    if (ndraws <= 20 && throw_mssg_ndraws) {
       message("The number of draws to project is quite small (<= 20). In such ",
               "cases, it is usually better to use clustering.")
     }
@@ -453,10 +458,12 @@ nlist <- function(...) {
   x
 }
 
-#' Execute a function call
+#' Execute a function call (deprecated)
 #'
 #' Execute a function call similar to [do.call()], but without deparsing
-#' function arguments.
+#' function arguments. This function is deprecated and will be removed in a
+#' future release. Where possible, please use direct function calls instead. If
+#' this is not possible, please use [do.call()] instead.
 #'
 #' @param what Either a function or a non-empty character string naming the
 #'   function to be called.
@@ -470,6 +477,9 @@ nlist <- function(...) {
 #' @keywords internal
 #' @export
 do_call <- function(what, args, pkg = NULL) {
+  warning("projpred::do_call() is deprecated and will be removed in a future ",
+          "release. Where possible, please use direct function calls instead. ",
+          "If this is not possible, please use base::do.call() instead.")
   call <- ""
   if (length(args)) {
     if (!is.list(args)) {
@@ -599,4 +609,61 @@ parse_wobs_ppd <- function(wobs, n_obs) {
             "to `1`.")
   }
   return(wobs)
+}
+
+# Constructs all possible permutations of a single interaction term `ia` (given
+# as a single character string):
+all_ia_perms <- function(ia, is_split = FALSE) {
+  if (is_split) {
+    ia_split <- ia
+  } else {
+    ia_split <- strsplit(ia, ":")[[1]]
+  }
+  ia_perms_split <- gtools::permutations(n = length(ia_split),
+                                         r = length(ia_split),
+                                         v = ia_split, set = FALSE)
+  return(unlist(
+    apply(ia_perms_split, 1, paste, collapse = ":", simplify = FALSE)
+  ))
+}
+
+# Reorders the main-effect terms involved in a single interaction term `ia`
+# (given as a single character string) such that it matches a corresponding
+# interaction term in a character vector `y` (e.g., `a:b` is considered to be
+# the same as `b:a`):
+reorder_ia <- function(ia, y) {
+  ia_perms <- all_ia_perms(ia)
+  ia_reordered <- intersect(ia_perms, y)
+  if (length(ia_reordered) == 0) {
+    ia_reordered <- NA_character_
+  } else if (length(ia_reordered) > 1) {
+    stop("Unexpected length of `ia_reordered`. Please contact the package ",
+         "maintainer.")
+  }
+  return(ia_reordered)
+}
+
+# For each interaction term in a character vector `x`, this function reorders
+# the main-effect terms involved in it such that the reordered interaction term
+# matches a corresponding interaction term in a character vector `y` (e.g.,
+# `a:b` is considered to be the same as `b:a`):
+reorder_ias <- function(x, y) {
+  ia_idxs <- grep(":", x)
+  ia_idxs <- ia_idxs[!x[ia_idxs] %in% y]
+  for (ia_idx in ia_idxs) {
+    x[ia_idx] <- reorder_ia(x[ia_idx], y)
+  }
+  return(x)
+}
+
+# Retrieves an element (with name given in argument `nm`) that is duplicated
+# across the elements of a `list`, typically a `list` of `submodl`s:
+element_unq <- function(list_obj, nm) {
+  if (getOption("projpred.additional_checks", FALSE)) {
+    el_unq <- unique(unlist(lapply(list_obj, "[[", nm)))
+    stopifnot(length(el_unq) == 1)
+  } else {
+    el_unq <- list_obj[[1]][[nm]]
+  }
+  return(el_unq)
 }

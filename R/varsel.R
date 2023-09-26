@@ -13,11 +13,9 @@
 #'   `d_test`" below, providing test data for evaluating the predictive
 #'   performance of the submodels as well as of the reference model. If `NULL`,
 #'   the training data is used.
-#' @param method The method for the search part. Possible options are `"L1"` for
-#'   L1 search and `"forward"` for forward search. If `NULL`, then internally,
-#'   `"L1"` is used, except if (i) the reference model has multilevel or
-#'   additive terms, (ii) if `!is.null(search_terms)`, or (iii) if the
-#'   augmented-data projection is used. See also section "Details" below.
+#' @param method The method for the search part. Possible options are
+#'   `"forward"` for forward search and `"L1"` for L1 search. See also section
+#'   "Details" below.
 #' @param refit_prj For the evaluation part, should the submodels along the
 #'   predictor ranking be fitted again (`TRUE`) or should their fits from the
 #'   search part be re-used (`FALSE`)?
@@ -122,9 +120,12 @@
 #'   comparable performance to that found by L1 search, but it may also start
 #'   overfitting when more predictors are added.
 #'
-#'   An L1 search may select interaction terms before the corresponding main
-#'   terms are selected. If this is undesired, choose the forward search
-#'   instead.
+#'   An L1 search may select an interaction term before all involved lower-order
+#'   interaction terms (including main-effect terms) have been selected. In
+#'   \pkg{projpred} versions > 2.6.0, the resulting predictor ranking is
+#'   automatically modified so that the lower-order interaction terms come
+#'   before this interaction term, but if this is conceptually undesired, choose
+#'   the forward search instead.
 #'
 #'   The elements of the `search_terms` character vector don't need to be
 #'   individual predictor terms. Instead, they can be building blocks consisting
@@ -132,24 +133,28 @@
 #'   these building blocks work, it is important to know how \pkg{projpred}'s
 #'   forward search works: It starts with an empty vector `chosen` which will
 #'   later contain already selected predictor terms. Then, the search iterates
-#'   over model sizes \eqn{j \in \{1, ..., J\}}{j = 1, ..., J}. The candidate
-#'   models at model size \eqn{j} are constructed from those elements from
-#'   `search_terms` which yield model size \eqn{j} when combined with the
+#'   over model sizes \eqn{j \in \{0, ..., J\}}{j = 0, ..., J} (with \eqn{J}
+#'   denoting the maximum submodel size, not counting the intercept). The
+#'   candidate models at model size \eqn{j} are constructed from those elements
+#'   from `search_terms` which yield model size \eqn{j} when combined with the
 #'   `chosen` predictor terms. Note that sometimes, there may be no candidate
 #'   models for model size \eqn{j}. Also note that internally, `search_terms` is
 #'   expanded to include the intercept (`"1"`), so the first step of the search
-#'   (model size 1) always consists of the intercept-only model as the only
+#'   (model size 0) always consists of the intercept-only model as the only
 #'   candidate.
 #'
 #'   As a `search_terms` example, consider a reference model with formula `y ~
 #'   x1 + x2 + x3`. Then, to ensure that `x1` is always included in the
 #'   candidate models, specify `search_terms = c("x1", "x1 + x2", "x1 + x3",
-#'   "x1 + x2 + x3")`. This search would start with `y ~ 1` as the only
-#'   candidate at model size 1. At model size 2, `y ~ x1` would be the only
-#'   candidate. At model size 3, `y ~ x1 + x2` and `y ~ x1 + x3` would be the
-#'   two candidates. At the last model size of 4, `y ~ x1 + x2 + x3` would be
+#'   "x1 + x2 + x3")` (or, in a simpler way that leads to the same results,
+#'   `search_terms = c("x1", "x1 + x2", "x1 + x3")`, for which helper function
+#'   [force_search_terms()] exists). This search would start with `y ~ 1` as the
+#'   only candidate at model size 0. At model size 1, `y ~ x1` would be the only
+#'   candidate. At model size 2, `y ~ x1 + x2` and `y ~ x1 + x3` would be the
+#'   two candidates. At the last model size of 3, `y ~ x1 + x2 + x3` would be
 #'   the only candidate. As another example, to exclude `x1` from the search,
-#'   specify `search_terms = c("x2", "x3", "x2 + x3")`.
+#'   specify `search_terms = c("x2", "x3", "x2 + x3")` (or, in a simpler way
+#'   that leads to the same results, `search_terms = c("x2", "x3")`).
 #'
 #' @return An object of class `vsel`. The elements of this object are not meant
 #'   to be accessed directly but instead via helper functions (see the main
@@ -157,27 +162,25 @@
 #'
 #' @seealso [cv_varsel()]
 #'
-#' @examples
-#' if (requireNamespace("rstanarm", quietly = TRUE)) {
-#'   # Data:
-#'   dat_gauss <- data.frame(y = df_gaussian$y, df_gaussian$x)
+#' @examplesIf requireNamespace("rstanarm", quietly = TRUE)
+#' # Data:
+#' dat_gauss <- data.frame(y = df_gaussian$y, df_gaussian$x)
 #'
-#'   # The "stanreg" fit which will be used as the reference model (with small
-#'   # values for `chains` and `iter`, but only for technical reasons in this
-#'   # example; this is not recommended in general):
-#'   fit <- rstanarm::stan_glm(
-#'     y ~ X1 + X2 + X3 + X4 + X5, family = gaussian(), data = dat_gauss,
-#'     QR = TRUE, chains = 2, iter = 500, refresh = 0, seed = 9876
-#'   )
+#' # The "stanreg" fit which will be used as the reference model (with small
+#' # values for `chains` and `iter`, but only for technical reasons in this
+#' # example; this is not recommended in general):
+#' fit <- rstanarm::stan_glm(
+#'   y ~ X1 + X2 + X3 + X4 + X5, family = gaussian(), data = dat_gauss,
+#'   QR = TRUE, chains = 2, iter = 500, refresh = 0, seed = 9876
+#' )
 #'
-#'   # Run varsel() (here without cross-validation and with small values for
-#'   # `nterms_max`, `nclusters`, and `nclusters_pred`, but only for the sake of
-#'   # speed in this example; this is not recommended in general):
-#'   vs <- varsel(fit, nterms_max = 3, nclusters = 5, nclusters_pred = 10,
-#'                seed = 5555)
-#'   # Now see, for example, `?print.vsel`, `?plot.vsel`, `?suggest_size.vsel`,
-#'   # and `?ranking` for possible post-processing functions.
-#' }
+#' # Run varsel() (here without cross-validation, with L1 search, and with small
+#' # values for `nterms_max` and `nclusters_pred`, but only for the sake of
+#' # speed in this example; this is not recommended in general):
+#' vs <- varsel(fit, method = "L1", nterms_max = 3, nclusters_pred = 10,
+#'              seed = 5555)
+#' # Now see, for example, `?print.vsel`, `?plot.vsel`, `?suggest_size.vsel`,
+#' # and `?ranking` for possible post-processing functions.
 #'
 #' @export
 varsel <- function(object, ...) {
@@ -193,7 +196,15 @@ varsel.default <- function(object, ...) {
 
 #' @rdname varsel
 #' @export
-varsel.refmodel <- function(object, d_test = NULL, method = NULL,
+varsel.vsel <- function(object, ...) {
+  stop("Purpose and content of varsel.vsel() will be changed in a future ",
+       "release. Please use varsel(get_refmodel(<vsel_object>), <...>) ",
+       "instead of varsel(<vsel_object>, <...>).")
+}
+
+#' @rdname varsel
+#' @export
+varsel.refmodel <- function(object, d_test = NULL, method = "forward",
                             ndraws = NULL, nclusters = 20, ndraws_pred = 400,
                             nclusters_pred = NULL,
                             refit_prj = !inherits(object, "datafit"),
@@ -201,6 +212,11 @@ varsel.refmodel <- function(object, d_test = NULL, method = NULL,
                             lambda_min_ratio = 1e-5, nlambda = 150,
                             thresh = 1e-6, regul = 1e-4, penalty = NULL,
                             search_terms = NULL, seed = NA, ...) {
+  if (missing(method) && getOption("projpred.mssg_method_changed", TRUE)) {
+    message("NOTE: In projpred 2.7.0, the default search method ",
+            "was set to \"forward\" for all kinds of models.")
+  }
+
   if (exists(".Random.seed", envir = .GlobalEnv)) {
     rng_state_old <- get(".Random.seed", envir = .GlobalEnv)
   }
@@ -213,17 +229,20 @@ varsel.refmodel <- function(object, d_test = NULL, method = NULL,
   }
 
   refmodel <- object
+  nterms_all <- count_terms_in_formula(refmodel$formula) - 1L
 
   # Parse arguments:
   args <- parse_args_varsel(
     refmodel = refmodel, method = method, refit_prj = refit_prj,
-    nterms_max = nterms_max, nclusters = nclusters, search_terms = search_terms
+    nterms_max = nterms_max, nclusters = nclusters, search_terms = search_terms,
+    nterms_all = nterms_all
   )
   method <- args$method
   refit_prj <- args$refit_prj
   nterms_max <- args$nterms_max
   nclusters <- args$nclusters
   search_terms <- args$search_terms
+  search_terms_was_null <- args$search_terms_was_null
 
   # Pre-process `d_test`:
   if (is.null(d_test)) {
@@ -236,6 +255,8 @@ varsel.refmodel <- function(object, d_test = NULL, method = NULL,
       d_test$y_oscale <- d_test$y
     }
     d_test <- d_test[nms_d_test()]
+    invisible(lapply(setNames(nm = setdiff(nms_d_test(), c("y", "y_oscale"))),
+                     function(d_nm) na.fail(d_test[[d_nm]])))
     if (refmodel$family$for_augdat) {
       d_test$y <- as.factor(d_test$y)
       if (!all(levels(d_test$y) %in% refmodel$family$cats)) {
@@ -274,43 +295,30 @@ varsel.refmodel <- function(object, d_test = NULL, method = NULL,
   )
   nobs_test <- nrow(y_wobs_test)
 
-  # Clustering or thinning for the search:
-  p_sel <- get_refdist(refmodel, ndraws, nclusters)
-  # Clustering or thinning for the performance evaluation:
-  p_pred <- get_refdist(refmodel, ndraws_pred, nclusters_pred)
-
   # Run the search:
   opt <- nlist(lambda_min_ratio, nlambda, thresh, regul)
   verb_out("-----\nRunning the search ...", verbose = verbose)
   search_path <- select(
-    method = method, p_sel = p_sel, refmodel = refmodel,
-    nterms_max = nterms_max, penalty = penalty, verbose = verbose, opt = opt,
-    search_terms = search_terms, ...
+    refmodel = refmodel, ndraws = ndraws, nclusters = nclusters,
+    method = method, nterms_max = nterms_max, penalty = penalty,
+    verbose = verbose, opt = opt, search_terms = search_terms,
+    search_terms_was_null = search_terms_was_null, ...
   )
   verb_out("-----", verbose = verbose)
 
-  # For the performance evaluation: Re-project along the solution path (or fetch
-  # the projections from the search results):
-  verb_out("-----\nFor performance evaluation: Re-projecting onto the ",
-           "submodels along the solution path ...",
+  # "Run" the performance evaluation for the submodels along the predictor
+  # ranking (in fact, we only prepare the performance evaluation by computing
+  # precursor quantities, but for users, this difference is not perceivable):
+  verb_out("-----\nRunning the performance evaluation ...",
            verbose = verbose && refit_prj)
-  submodls <- get_submodls(
-    search_path = search_path,
-    nterms = c(0, seq_along(search_path$solution_terms)),
-    p_ref = p_pred, refmodel = refmodel, regul = regul, refit_prj = refit_prj,
-    ...
+  perf_eval_out <- perf_eval(
+    search_path = search_path, refmodel = refmodel, regul = regul,
+    refit_prj = refit_prj, ndraws = ndraws_pred, nclusters = nclusters_pred,
+    indices_test = NULL, newdata_test = d_test$data,
+    offset_test = d_test$offset, wobs_test = d_test$weights, y_test = d_test$y,
+    y_oscale_test = d_test$y_oscale, ...
   )
   verb_out("-----", verbose = verbose && refit_prj)
-  # The performance evaluation itself, i.e., the calculation of the predictive
-  # performance statistic(s) for the submodels along the solution path:
-  sub <- get_sub_summaries(submodls = submodls,
-                           refmodel = refmodel,
-                           test_points = NULL,
-                           newdata = d_test$data,
-                           offset = d_test$offset,
-                           wobs = d_test$weights,
-                           y = d_test$y,
-                           y_oscale = d_test$y_oscale)
 
   # Predictive performance of the reference model:
   if (inherits(refmodel, "datafit")) {
@@ -370,21 +378,21 @@ varsel.refmodel <- function(object, d_test = NULL, method = NULL,
               search_path,
               solution_terms = search_path$solution_terms,
               solution_terms_cv = NULL,
-              ce = sapply(submodls, "[[", "ce"),
+              ce = perf_eval_out[["ce"]],
               type_test = d_test$type,
               y_wobs_test,
               nobs_test,
-              summaries = nlist(sub, ref),
-              nterms_all = count_terms_in_formula(refmodel$formula) - 1L,
+              summaries = nlist(sub = perf_eval_out[["sub_summaries"]], ref),
+              nterms_all,
               nterms_max,
               method,
               cv_method = NULL,
               K = NULL,
               validate_search = NULL,
-              clust_used_search = p_sel$clust_used,
-              clust_used_eval = p_pred$clust_used,
-              nprjdraws_search = NCOL(p_sel$mu),
-              nprjdraws_eval = NCOL(p_pred$mu),
+              clust_used_search = search_path$p_sel$clust_used,
+              clust_used_eval = perf_eval_out[["clust_used"]],
+              nprjdraws_search = NCOL(search_path$p_sel$mu),
+              nprjdraws_eval = perf_eval_out[["nprjdraws"]],
               projpred_version = utils::packageVersion("projpred"))
   class(vs) <- "vsel"
 
@@ -393,25 +401,42 @@ varsel.refmodel <- function(object, d_test = NULL, method = NULL,
 
 # Workhorse function for the search
 #
-# Argument `p_sel` accepts output from get_refdist() or get_p_clust(). For all
-# other arguments, see the documentation of varsel().
+# @param reweighting_args If the projected draws (i.e., those obtained from
+#   clustering or thinning) should be re-weighted (usually according to PSIS
+#   weights), then this needs to be a `list` with elements `wdraws_ref` and
+#   `cl_ref`. For these two elements, see the (internal) documentation of
+#   weighted_summary_means().
+# For all other arguments, see the documentation of varsel().
 #
 # @return A list with elements `solution_terms` (the solution path), `outdmins`
 #   (the submodel fits along the solution path, with the number of fits per
 #   model size being equal to the number of projected draws), and `p_sel` (the
-#   same as the input argument `p_sel`).
-select <- function(method, p_sel, refmodel, nterms_max, penalty, verbose, opt,
-                   search_terms, ...) {
-  if (method == "L1") {
-    search_path <- search_L1(p_sel, refmodel, nterms_max, penalty, opt)
-    search_path$p_sel <- p_sel
-    return(search_path)
-  } else if (method == "forward") {
-    search_path <- search_forward(p_sel, refmodel, nterms_max, verbose, opt,
-                                  search_terms = search_terms, ...)
-    search_path$p_sel <- p_sel
-    return(search_path)
+#   output from get_refdist() for the search).
+select <- function(refmodel, ndraws, nclusters, reweighting_args = NULL, method,
+                   nterms_max, penalty, verbose, opt, ...) {
+  if (is.null(reweighting_args)) {
+    p_sel <- get_refdist(refmodel, ndraws = ndraws, nclusters = nclusters)
+  } else {
+    # Reweight the clusters (or thinned draws) according to the PSIS weights:
+    p_sel <- get_p_clust(
+      family = refmodel$family, eta = refmodel$eta, mu = refmodel$mu,
+      mu_offs = refmodel$mu_offs, dis = refmodel$dis,
+      wdraws = reweighting_args$wdraws_ref, cl = reweighting_args$cl_ref
+    )
   }
+  if (method == "L1") {
+    search_path <- search_L1(
+      p_ref = p_sel, refmodel = refmodel, nterms_max = nterms_max,
+      penalty = penalty, opt = opt
+    )
+  } else if (method == "forward") {
+    search_path <- search_forward(
+      p_ref = p_sel, refmodel = refmodel, nterms_max = nterms_max,
+      verbose = verbose, opt = opt, ...
+    )
+  }
+  search_path$p_sel <- p_sel
+  return(search_path)
 }
 
 # Auxiliary function for parsing the arguments of varsel()
@@ -421,7 +446,7 @@ select <- function(method, p_sel, refmodel, nterms_max, penalty, verbose, opt,
 # them in with the default values. The purpose of this function is to avoid
 # repeating the same code both in varsel() and cv_varsel().
 parse_args_varsel <- function(refmodel, method, refit_prj, nterms_max,
-                              nclusters, search_terms) {
+                              nclusters, search_terms, nterms_all) {
   search_terms_was_null <- is.null(search_terms)
   if (search_terms_was_null) {
     search_terms <- split_formula(refmodel$formula,
@@ -431,35 +456,26 @@ parse_args_varsel <- function(refmodel, method, refit_prj, nterms_max,
   has_group_features <- formula_contains_group_terms(refmodel$formula)
   has_additive_features <- formula_contains_additive_terms(refmodel$formula)
 
-  if (is.null(method)) {
-    if (has_group_features || has_additive_features || !search_terms_was_null ||
-        refmodel$family$for_augdat) {
-      method <- "forward"
-    } else {
-      method <- "L1"
+  stopifnot(!is.null(method))
+  if (method == "l1") {
+    method <- toupper(method)
+  }
+  if (method == "L1") {
+    if (has_group_features || has_additive_features) {
+      stop("L1 search is only supported for reference models without ",
+           "multilevel and without additive (\"smoothing\") terms.")
     }
-  } else {
-    if (method == "l1") {
-      method <- toupper(method)
+    if (!search_terms_was_null) {
+      warning("Argument `search_terms` only takes effect if ",
+              "`method = \"forward\"`.")
     }
-    if (method == "L1") {
-      if (has_group_features || has_additive_features) {
-        stop("L1 search is only supported for reference models without ",
-             "multilevel and without additive (\"smoothing\") terms.")
-      }
-      if (!search_terms_was_null) {
-        warning("Argument `search_terms` only takes effect if ",
-                "`method = \"forward\"`.")
-      }
-      if (refmodel$family$for_augdat) {
-        stop("Currently, the augmented-data projection may not be combined ",
-             "with an L1 search.")
-      }
+    if (refmodel$family$for_augdat) {
+      stop("Currently, the augmented-data projection may not be combined ",
+           "with an L1 search.")
     }
   }
-
-  if (!(method %in% c("L1", "forward"))) {
-    stop("Unknown search method")
+  if (!method %in% c("L1", "forward")) {
+    stop("Unexpected value for argument `method`.")
   }
 
   stopifnot(!is.null(refit_prj))
@@ -473,14 +489,44 @@ parse_args_varsel <- function(refmodel, method, refit_prj, nterms_max,
     nclusters <- 1
   }
 
+  if (!has_group_features &&
+      getOption("projpred.warn_instable_projections", TRUE) &&
+      method == "L1" && refmodel$family$family == "poisson") {
+    warning(
+      "For non-multilevel Poisson models, an L1 search based on the ",
+      "traditional projection may be instable. The latent projection may be a ",
+      "remedy. See section \"Troubleshooting\" of the main vignette for more ",
+      "information."
+    )
+  }
+
   search_terms_unq <- unique(unlist(
     strsplit(search_terms, split = "+", fixed = TRUE)
   ))
   max_nv_possible <- count_terms_chosen(search_terms_unq) - 1L
   if (is.null(nterms_max)) {
     nterms_max <- 19
+    if (nterms_max < max_nv_possible &&
+        getOption("projpred.mssg_cut_search", TRUE)) {
+      message("Cutting off the search at size ", nterms_max, ".")
+    }
   }
   nterms_max <- min(max_nv_possible, nterms_max)
 
-  return(nlist(method, refit_prj, nterms_max, nclusters, search_terms))
+  if (nterms_max == nterms_all && has_group_features &&
+      getOption("projpred.warn_instable_projections", TRUE) &&
+      (refmodel$family$family == "gaussian" || refmodel$family$for_latent)) {
+    warning(
+      "In case of the Gaussian family (also in case of the latent projection) ",
+      "and multilevel terms, the projection onto the full model can be ",
+      "instable and even lead to an error, see GitHub issue #323. If you ",
+      "experience this and may refrain from the projection onto the full ",
+      "model, set `nterms_max` to the number of predictor terms in the full ",
+      "model minus 1 (possibly accounting for submodel sizes skipped by ",
+      "custom `search_terms`)."
+    )
+  }
+
+  return(nlist(method, refit_prj, nterms_max, nclusters, search_terms,
+               search_terms_was_null))
 }

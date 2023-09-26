@@ -12,18 +12,12 @@ test_that(paste(
     mod_crr <- args_vs[[tstsetup]]$mod_nm
     fam_crr <- args_vs[[tstsetup]]$fam_nm
     prj_crr <- args_vs[[tstsetup]]$prj_nm
-    meth_exp_crr <- args_vs[[tstsetup]]$method
-    if (is.null(meth_exp_crr)) {
-      meth_exp_crr <- ifelse(mod_crr == "glm" && prj_crr != "augdat",
-                             "L1", "forward")
-    }
+    meth_exp_crr <- args_vs[[tstsetup]]$method %||% "forward"
     vsel_tester(
       vss[[tstsetup]],
       refmod_expected = refmods[[tstsetup_ref]],
       solterms_len_expected = args_vs[[tstsetup]]$nterms_max,
       method_expected = meth_exp_crr,
-      nprjdraws_search_expected = args_vs[[tstsetup]]$nclusters,
-      nprjdraws_eval_expected = args_vs[[tstsetup]]$nclusters_pred,
       search_trms_empty_size =
         length(args_vs[[tstsetup]]$search_terms) &&
         all(grepl("\\+", args_vs[[tstsetup]]$search_terms)),
@@ -40,7 +34,7 @@ test_that("invalid `object` fails", {
 test_that("invalid `method` fails", {
   for (tstsetup in names(refmods)) {
     expect_error(varsel(refmods[[tstsetup]], method = "k-fold"),
-                 "Unknown search method",
+                 "^Unexpected value for argument `method`\\.$",
                  info = tstsetup)
     if (args_ref[[tstsetup]]$mod_nm != "glm") {
       expect_error(varsel(refmods[[tstsetup]], method = "L1"),
@@ -153,11 +147,7 @@ test_that(paste(
       )),
       warn_expected
     )
-    meth_exp_crr <- args_vs_i$method
-    if (is.null(meth_exp_crr)) {
-      meth_exp_crr <- ifelse(mod_crr == "glm" && prj_crr != "augdat",
-                             "L1", "forward")
-    }
+    meth_exp_crr <- args_vs_i$method %||% "forward"
     vsel_tester(
       vs_repr,
       refmod_expected = refmods[[tstsetup_ref]],
@@ -167,8 +157,6 @@ test_that(paste(
       ),
       solterms_len_expected = args_vs_i$nterms_max,
       method_expected = meth_exp_crr,
-      nprjdraws_search_expected = args_vs_i$nclusters,
-      nprjdraws_eval_expected = args_vs_i$nclusters_pred,
       search_trms_empty_size =
         length(args_vs_i$search_terms) &&
         all(grepl("\\+", args_vs_i$search_terms)),
@@ -285,11 +273,7 @@ test_that(paste(
       )),
       warn_expected
     )
-    meth_exp_crr <- args_vs_i$method
-    if (is.null(meth_exp_crr)) {
-      meth_exp_crr <- ifelse(mod_crr == "glm" && prj_crr != "augdat",
-                             "L1", "forward")
-    }
+    meth_exp_crr <- args_vs_i$method %||% "forward"
     vsel_tester(
       vs_indep,
       refmod_expected = refmods[[tstsetup_ref]],
@@ -299,8 +283,6 @@ test_that(paste(
       ),
       solterms_len_expected = args_vs_i$nterms_max,
       method_expected = meth_exp_crr,
-      nprjdraws_search_expected = args_vs_i$nclusters,
-      nprjdraws_eval_expected = args_vs_i$nclusters_pred,
       search_trms_empty_size =
         length(args_vs_i$search_terms) &&
         all(grepl("\\+", args_vs_i$search_terms)),
@@ -523,13 +505,154 @@ test_that(paste(
   if (exists("rng_old")) assign(".Random.seed", rng_old, envir = .GlobalEnv)
 })
 
+## refit_prj --------------------------------------------------------------
+
+test_that("`refit_prj` works", {
+  skip_if_not(run_vs)
+  if (run_more) {
+    tstsetups <- names(vss)
+  } else {
+    tstsetups <- head(grep("\\.glm\\.", names(vss), value = TRUE), 1)
+  }
+  for (tstsetup in tstsetups) {
+    args_vs_i <- args_vs[[tstsetup]]
+    args_vs_i$refit_prj <- FALSE
+    if (args_vs_i$prj_nm == "augdat" && args_vs_i$fam_nm == "cumul") {
+      warn_expected <- "non-integer #successes in a binomial glm!"
+    } else if (!is.null(args_vs_i$avoid.increase)) {
+      warn_expected <- warn_mclogit
+    } else {
+      warn_expected <- NA
+    }
+    expect_warning(
+      vs_reuse <- do.call(varsel, c(
+        list(object = refmods[[args_vs_i$tstsetup_ref]]),
+        excl_nonargs(args_vs_i)
+      )),
+      warn_expected,
+      info = tstsetup
+    )
+    mod_crr <- args_vs_i$mod_nm
+    fam_crr <- args_vs_i$fam_nm
+    prj_crr <- args_vs_i$prj_nm
+    meth_exp_crr <- args_vs_i$method %||% "forward"
+    extra_tol_crr <- 1.1
+    if (meth_exp_crr == "L1" &&
+        any(grepl(":", ranking(vs_reuse)[["fulldata"]]))) {
+      ### Testing for non-increasing element `ce` (for increasing model size)
+      ### doesn't make sense if the ranking of predictors involved in
+      ### interactions has been changed, so we choose a higher `extra_tol`:
+      extra_tol_crr <- 1.2
+      ###
+    }
+    vsel_tester(
+      vs_reuse,
+      refmod_expected = refmods[[args_vs_i$tstsetup_ref]],
+      solterms_len_expected = args_vs_i$nterms_max,
+      method_expected = meth_exp_crr,
+      refit_prj_expected = FALSE,
+      search_trms_empty_size =
+        length(args_vs_i$search_terms) &&
+        all(grepl("\\+", args_vs_i$search_terms)),
+      extra_tol = extra_tol_crr,
+      info_str = tstsetup
+    )
+  }
+})
+
+## Warning for full Gaussian multilevel models ----------------------------
+
+if (run_more) {
+  test_that(paste(
+    "the warning for full Gaussian multilevel models is thrown correctly"
+  ), {
+    skip_if_not(run_vs)
+    warn_instable_orig <- options(projpred.warn_instable_projections = NULL)
+    tstsetups <- names(vss)
+    pick_these <- sapply(tstsetups, function(tstsetup) {
+      refmod_i <- refmods[[args_vs[[tstsetup]]$tstsetup_ref]]
+      return(
+        (refmod_i$family$family == "gaussian" || refmod_i$family$for_latent) &&
+          is.null(args_vs[[tstsetup]]$search_terms)
+      )
+    })
+    tstsetups <- tstsetups[pick_these]
+    skip_if_not(length(tstsetups) > 0)
+    for (tstsetup in tstsetups) {
+      args_vs_i <- args_vs[[tstsetup]]
+      if (identical(args_vs_i$nterms_max, unname(ntermss[args_vs_i$mod_nm])) &&
+          any(grepl("\\|", labels(terms(
+            args_fit[[args_vs_i$tstsetup_fit]]$formula
+          ))))) {
+        warn_expected <- "the projection onto the full model can be instable"
+      } else {
+        warn_expected <- NA
+      }
+      args_vs_i$refit_prj <- FALSE
+      expect_warning(
+        vs_tmp <- do.call(varsel, c(
+          list(object = refmods[[args_vs_i$tstsetup_ref]]),
+          excl_nonargs(args_vs_i)
+        )),
+        warn_expected,
+        info = tstsetup
+      )
+    }
+    options(warn_instable_orig)
+  })
+}
+
+## Message when cutting off the search ------------------------------------
+
+if (run_more) {
+  test_that("the message when cutting off the search is thrown correctly", {
+    skip_if_not(run_vs)
+    skip_if_not_installed("rstanarm")
+    mssg_cut_search_orig <- options(projpred.mssg_cut_search = NULL)
+    dat_gauss <- data.frame(y = df_gaussian$y, df_gaussian$x)
+    stopifnot(sum(grepl("^X", names(dat_gauss))) > 19)
+    fit_exceed <- suppressWarnings(rstanarm::stan_glm(
+      y ~ ., family = gaussian(), data = dat_gauss, QR = TRUE, chains = 1,
+      iter = 500, refresh = 0, seed = 9876
+    ))
+    fit_not_exceed <- suppressWarnings(rstanarm::stan_glm(
+      y ~ . - X20, family = gaussian(), data = dat_gauss, QR = TRUE, chains = 1,
+      iter = 500, refresh = 0, seed = 9876
+    ))
+    for (nterms_max_i in list(NULL, 0, 20)) {
+      if (is.null(nterms_max_i)) {
+        mssg_expected <- "Cutting off the search at size 19\\."
+      } else {
+        mssg_expected <- NA
+      }
+      expect_message(
+        vs_tmp <- varsel(
+          fit_exceed, method = "forward", nterms_max = nterms_max_i,
+          nclusters = 1, refit_prj = FALSE, seed = 5555, verbose = FALSE
+        ),
+        mssg_expected,
+        info = paste("fit_exceed, nterms_max =", nterms_max_i %||% "NULL")
+      )
+      expect_message(
+        vs_tmp <- varsel(
+          fit_not_exceed, method = "forward", nterms_max = nterms_max_i,
+          nclusters = 1, refit_prj = FALSE, seed = 5555, verbose = FALSE
+        ),
+        NA,
+        info = paste("fit_not_exceed, nterms_max =", nterms_max_i %||% "NULL")
+      )
+    }
+    options(mssg_cut_search_orig)
+  })
+}
+
 ## Regularization ---------------------------------------------------------
 
 # In fact, `regul` is already checked in `test_project.R`, so the `regul` tests
 # could be omitted here since varsel() and cv_varsel() also pass `regul` to
-# get_submodl_prj() (usually via get_submodls(), just like project()). This
-# doesn't hold for L1 search, though. So for L1 search, the `regul` tests are
-# still needed.
+# get_submodl_prj() (usually via perf_eval(), just like project()). This doesn't
+# hold for L1 search, though. So for L1 search, the `regul` tests are still
+# needed.
 
 test_that(paste(
   "for GLMs with L1 search, `regul` only has an effect on prediction, not on",
@@ -539,11 +662,7 @@ test_that(paste(
   regul_tst <- c(regul_default, 1e-1, 1e2)
   stopifnot(regul_tst[1] == regul_default)
   stopifnot(all(diff(regul_tst) > 0))
-  tstsetups <- setdiff(
-    setdiff(grep("\\.glm\\.", names(vss), value = TRUE),
-            grep("\\.glm\\..*\\.forward", names(vss), value = TRUE)),
-    grep("\\.glm\\..*\\.augdat\\.", names(vss), value = TRUE)
-  )
+  tstsetups <- grep("\\.glm\\..*\\.L1\\.", names(vss), value = TRUE)
   for (tstsetup in tstsetups) {
     args_vs_i <- args_vs[[tstsetup]]
     m_max <- args_vs_i$nterms_max + 1L
@@ -562,8 +681,6 @@ test_that(paste(
           refmod_expected = refmods[[args_vs_i$tstsetup_ref]],
           solterms_len_expected = args_vs_i$nterms_max,
           method_expected = "L1",
-          nprjdraws_search_expected = args_vs_i$nclusters,
-          nprjdraws_eval_expected = args_vs_i$nclusters_pred,
           info_str = tstsetup
         )
         # Expect equality for all components not related to prediction:
@@ -619,8 +736,8 @@ test_that(paste(
   regul_tst <- c(regul_default, 1e-1, 1e2)
   stopifnot(regul_tst[1] == regul_default)
   stopifnot(all(diff(regul_tst) > 0))
-  tstsetups <- union(grep("\\.glm\\..*\\.forward", names(vss), value = TRUE),
-                     grep("\\.glm\\..*\\.augdat\\.", names(vss), value = TRUE))
+  tstsetups <- setdiff(grep("\\.glm\\.", names(vss), value = TRUE),
+                       grep("\\.glm\\..*\\.L1\\.", names(vss), value = TRUE))
   tstsetups <- grep(fam_nms_aug_regex, tstsetups, value = TRUE, invert = TRUE)
   for (tstsetup in tstsetups) {
     args_vs_i <- args_vs[[tstsetup]]
@@ -649,8 +766,6 @@ test_that(paste(
           refmod_expected = refmods[[args_vs_i$tstsetup_ref]],
           solterms_len_expected = args_vs_i$nterms_max,
           method_expected = "forward",
-          nprjdraws_search_expected = args_vs_i$nclusters,
-          nprjdraws_eval_expected = args_vs_i$nclusters_pred,
           search_trms_empty_size =
             length(args_vs_i$search_terms) &&
             all(grepl("\\+", args_vs_i$search_terms)),
@@ -741,11 +856,7 @@ test_that(paste(
 
 test_that("`penalty` of invalid length fails", {
   skip_if_not(run_vs)
-  tstsetups <- setdiff(
-    setdiff(grep("\\.glm\\.", names(args_vs), value = TRUE),
-            grep("\\.glm\\..*\\.forward", names(args_vs), value = TRUE)),
-    grep("\\.glm\\..*\\.augdat\\.", names(args_vs), value = TRUE)
-  )
+  tstsetups <- grep("\\.L1\\.", names(vss), value = TRUE)
   for (tstsetup in tstsetups) {
     args_vs_i <- args_vs[[tstsetup]]
     formul_crr <- get_formul_from_fit(fits[[args_vs_i$tstsetup_fit]])
@@ -773,11 +884,7 @@ test_that("`penalty` of invalid length fails", {
 test_that("for forward search, `penalty` has no effect", {
   skip_if_not(run_vs)
   penal_tst <- 2
-  tstsetups <- union(
-    union(grep("\\.forward", names(vss), value = TRUE),
-          grep("\\.glm\\.", names(vss), value = TRUE, invert = TRUE)),
-    grep("\\.augdat\\.", names(vss), value = TRUE)
-  )
+  tstsetups <- grep("\\.L1\\.", names(vss), value = TRUE, invert = TRUE)
   # To save time:
   if (!run_more) {
     tstsetups <- head(tstsetups, 1)
@@ -805,11 +912,7 @@ test_that("for forward search, `penalty` has no effect", {
 
 test_that("for L1 search, `penalty` has an expected effect", {
   skip_if_not(run_vs)
-  tstsetups <- setdiff(
-    setdiff(grep("\\.glm\\.", names(vss), value = TRUE),
-            grep("\\.glm\\..*\\.forward", names(vss), value = TRUE)),
-    grep("\\.glm\\..*\\.augdat\\.", names(vss), value = TRUE)
-  )
+  tstsetups <- grep("\\.L1\\.", names(vss), value = TRUE)
   for (tstsetup in tstsetups) {
     args_vs_i <- args_vs[[tstsetup]]
 
@@ -851,8 +954,6 @@ test_that("for L1 search, `penalty` has an expected effect", {
       refmod_expected = refmods[[args_vs_i$tstsetup_ref]],
       solterms_len_expected = nterms_max_crr,
       method_expected = "L1",
-      nprjdraws_search_expected = args_vs_i$nclusters,
-      nprjdraws_eval_expected = args_vs_i$nclusters_pred,
       info_str = tstsetup
     )
     # Check that the variables with no cost are selected first and the ones
@@ -867,6 +968,76 @@ test_that("for L1 search, `penalty` has an expected effect", {
                      rev(penal_possbl[idx_penal_Inf]),
                      info = tstsetup)
   }
+})
+
+## L1 search and interactions ---------------------------------------------
+
+test_that("L1 search handles three-way (second-order) interactions correctly", {
+  skip_if_not(run_vs)
+  skip_if_not_installed("rstanarm")
+  warn_L1_ia_orig <- options(projpred.warn_L1_interactions = TRUE)
+  main_terms_in_ia <- c("xca.2", "xco.3", "xco.1")
+  all_ias_split <- lapply(seq_along(main_terms_in_ia), combn,
+                          x = main_terms_in_ia, simplify = FALSE)
+  all_ias <- unlist(lapply(all_ias_split, function(ia_split) {
+    lapply(ia_split, all_ia_perms, is_split = TRUE)
+  }))
+  trms_universe_split_bu <- trms_universe_split
+  trms_universe_split <<- union(trms_universe_split, all_ias)
+  tstsetup <- head(grep("^rstanarm\\.glm\\.", names(fits), value = TRUE), 1)
+  args_fit_i <- args_fit[[tstsetup]]
+  stopifnot(!(args_fit_i$pkg_nm == "rstanarm" && args_fit_i$fam_nm == "cumul"))
+  fit_fun_nm <- get_fit_fun_nm(args_fit_i)
+  args_fit_i$formula <- update(args_fit_i$formula,
+                               . ~ . + xca.2 * xco.3 * xco.1)
+  fit <- suppressWarnings(do.call(
+    get(fit_fun_nm, asNamespace(args_fit_i$pkg_nm)),
+    excl_nonargs(args_fit_i)
+  ))
+  args_ref_i <- args_ref[[paste0(tstsetup, ".trad")]]
+  refmod <- do.call(get_refmodel, c(
+    list(object = fit),
+    excl_nonargs(args_ref_i)
+  ))
+  args_vs_i <- args_vs[[paste0(tstsetup, ".trad.L1.default_search_trms")]]
+  args_vs_i$refit_prj <- FALSE
+  args_vs_i$nterms_max <- NULL
+  expect_warning(
+    vs <- do.call(varsel, c(
+      list(object = refmod),
+      excl_nonargs(args_vs_i)
+    )),
+    "was selected before all.+lower-order interaction terms have been selected",
+    info = tstsetup
+  )
+  vsel_tester(
+    vs,
+    refmod_expected = refmod,
+    solterms_len_expected = count_terms_in_formula(refmod$formula) - 1L,
+    method_expected = "L1",
+    refit_prj_expected = FALSE,
+    ### Testing for non-increasing element `ce` (for increasing model size)
+    ### doesn't make sense if the ranking of predictors involved in interactions
+    ### has been changed, so we choose a higher `extra_tol` than by default:
+    extra_tol = 1.2,
+    ###
+    info_str = tstsetup
+  )
+  rk <- ranking(vs)[["fulldata"]]
+  expect_true(
+    all(sapply(grep(":", rk), function(ia_idx) {
+      main_terms_in_ia <- strsplit(rk[ia_idx], ":")[[1]]
+      all_ias_split <- lapply(seq_len(length(main_terms_in_ia) - 1L), combn,
+                              x = main_terms_in_ia, simplify = FALSE)
+      ias_lower <- unlist(lapply(all_ias_split, function(ia_split) {
+        lapply(ia_split, all_ia_perms, is_split = TRUE)
+      }))
+      return(all(which(rk %in% ias_lower) < ia_idx))
+    })),
+    info = tstsetup
+  )
+  trms_universe_split <<- trms_universe_split_bu
+  options(warn_L1_ia_orig)
 })
 
 ## search_terms -----------------------------------------------------------
@@ -924,40 +1095,6 @@ test_that(paste(
   }
 })
 
-## L1 search warning for interactions -------------------------------------
-
-test_that(paste(
-  "L1 search warns if an interaction term is selected before all involved",
-  "main effects have been selected"
-), {
-  skip_if_not(run_vs)
-  warn_L1_ia_orig <- options(projpred.warn_L1_interactions = TRUE)
-  args_fit_i <- args_fit$rstanarm.glm.gauss.stdformul.with_wobs.with_offs
-  skip_if_not(!is.null(args_fit_i))
-  fit_fun_nm <- get_fit_fun_nm(args_fit_i)
-  fit_ia <- suppressWarnings(do.call(
-    get(fit_fun_nm, asNamespace(args_fit_i$pkg_nm)),
-    c(list(formula = update(args_fit_i$formula, . ~ . + xco.1:xca.2)),
-      excl_nonargs(args_fit_i, nms_excl_add = "formula"))
-  ))
-  args_vs_i <- args_vs$rstanarm.glm.gauss.stdformul.with_wobs.with_offs.trad.default_meth.default_search_trms
-  expect_warning(
-    vs_ia <- do.call(varsel, c(
-      list(object = fit_ia),
-      excl_nonargs(args_vs_i, nms_excl_add = "nterms_max")
-    )),
-    "An interaction has been selected before all involved main effects",
-    info = "rstanarm.glm.gauss.stdformul.with_wobs.with_offs"
-  )
-  soltrms_all <- vs_ia$solution_terms
-  idx_ia <- grep(":", soltrms_all)
-  soltrms_ia_main <- unlist(strsplit(grep(":", soltrms_all, value = TRUE), ":"))
-  idxs_main <- match(soltrms_ia_main, soltrms_all)
-  expect_true(any(idx_ia < idxs_main),
-              info = "rstanarm.glm.gauss.stdformul.with_wobs.with_offs")
-  options(warn_L1_ia_orig)
-})
-
 # cv_varsel() -------------------------------------------------------------
 
 context("cv_varsel()")
@@ -971,11 +1108,7 @@ test_that(paste(
     mod_crr <- args_cvvs[[tstsetup]]$mod_nm
     fam_crr <- args_cvvs[[tstsetup]]$fam_nm
     prj_crr <- args_cvvs[[tstsetup]]$prj_nm
-    meth_exp_crr <- args_cvvs[[tstsetup]]$method
-    if (is.null(meth_exp_crr)) {
-      meth_exp_crr <- ifelse(mod_crr == "glm" && prj_crr != "augdat",
-                             "L1", "forward")
-    }
+    meth_exp_crr <- args_cvvs[[tstsetup]]$method %||% "forward"
     vsel_tester(
       cvvss[[tstsetup]],
       with_cv = TRUE,
@@ -984,8 +1117,6 @@ test_that(paste(
       method_expected = meth_exp_crr,
       cv_method_expected = args_cvvs[[tstsetup]]$cv_method,
       valsearch_expected = args_cvvs[[tstsetup]]$validate_search,
-      nprjdraws_search_expected = args_cvvs[[tstsetup]]$nclusters,
-      nprjdraws_eval_expected = args_cvvs[[tstsetup]]$nclusters_pred,
       search_trms_empty_size =
         length(args_cvvs[[tstsetup]]$search_terms) &&
         all(grepl("\\+", args_cvvs[[tstsetup]]$search_terms)),
@@ -1002,7 +1133,7 @@ test_that("invalid `object` fails", {
 test_that("invalid `method` fails", {
   for (tstsetup in names(refmods)) {
     expect_error(cv_varsel(refmods[[tstsetup]], method = "k-fold"),
-                 "^Unknown search method$",
+                 "^Unexpected value for argument `method`\\.$",
                  info = tstsetup)
     if (args_ref[[tstsetup]]$mod_nm != "glm") {
       expect_error(cv_varsel(refmods[[tstsetup]], method = "L1"),
@@ -1044,6 +1175,8 @@ test_that("`seed` works (and restores the RNG state afterwards)", {
     cvvs_orig <- cvvss[[tstsetup]]
     rand_orig <- runif(1) # Just to advance `.Random.seed[2]`.
     .Random.seed_repr1 <- .Random.seed
+    # Use suppressWarnings() because of occasional warnings concerning Pareto k
+    # diagnostics:
     cvvs_repr <- suppressWarnings(do.call(cv_varsel, c(
       list(object = refmods[[args_cvvs_i$tstsetup_ref]]),
       excl_nonargs(args_cvvs_i)
@@ -1058,15 +1191,108 @@ test_that("`seed` works (and restores the RNG state afterwards)", {
   }
 })
 
+## refit_prj --------------------------------------------------------------
+
+test_that("`refit_prj` works", {
+  skip_if_not(run_cvvs)
+  if (run_more) {
+    tstsetups <- names(cvvss)
+  } else {
+    tstsetups <- head(grep("\\.glm\\.", names(cvvss), value = TRUE), 1)
+  }
+  for (tstsetup in tstsetups) {
+    args_cvvs_i <- args_cvvs[[tstsetup]]
+    args_cvvs_i$refit_prj <- FALSE
+    cvvs_reuse <- suppressWarnings(do.call(cv_varsel, c(
+      list(object = refmods[[args_cvvs_i$tstsetup_ref]]),
+      excl_nonargs(args_cvvs_i)
+    )))
+    mod_crr <- args_cvvs_i$mod_nm
+    fam_crr <- args_cvvs_i$fam_nm
+    prj_crr <- args_cvvs_i$prj_nm
+    meth_exp_crr <- args_cvvs_i$method %||% "forward"
+    vsel_tester(
+      cvvs_reuse,
+      with_cv = TRUE,
+      refmod_expected = refmods[[args_cvvs_i$tstsetup_ref]],
+      solterms_len_expected = args_cvvs_i$nterms_max,
+      method_expected = meth_exp_crr,
+      refit_prj_expected = FALSE,
+      cv_method_expected = args_cvvs_i$cv_method,
+      valsearch_expected = args_cvvs_i$validate_search,
+      search_trms_empty_size =
+        length(args_cvvs_i$search_terms) &&
+        all(grepl("\\+", args_cvvs_i$search_terms)),
+      info_str = tstsetup
+    )
+  }
+})
+
+## Message when cutting off the search ------------------------------------
+
+if (run_more) {
+  test_that("the message when cutting off the search is thrown correctly", {
+    skip_if_not(run_vs)
+    skip_if_not_installed("rstanarm")
+    mssg_cut_search_orig <- options(projpred.mssg_cut_search = NULL)
+    dat_gauss <- data.frame(y = df_gaussian$y, df_gaussian$x)
+    stopifnot(sum(grepl("^X", names(dat_gauss))) > 19)
+    fit_exceed <- suppressWarnings(rstanarm::stan_glm(
+      y ~ ., family = gaussian(), data = dat_gauss, QR = TRUE, chains = 1,
+      iter = 500, refresh = 0, seed = 9876
+    ))
+    fit_not_exceed <- suppressWarnings(rstanarm::stan_glm(
+      y ~ . - X20, family = gaussian(), data = dat_gauss, QR = TRUE, chains = 1,
+      iter = 500, refresh = 0, seed = 9876
+    ))
+    for (nterms_max_i in list(NULL, 0, 20)) {
+      if (is.null(nterms_max_i)) {
+        mssg_expected <- "Cutting off the search at size 19\\."
+      } else {
+        mssg_expected <- NA
+      }
+      expect_message(
+        vs_tmp <- suppressWarnings(cv_varsel(
+          fit_exceed, validate_search = FALSE, method = "forward",
+          nterms_max = nterms_max_i, nclusters = 2, refit_prj = FALSE,
+          seed = 5555, verbose = FALSE
+        )),
+        mssg_expected,
+        info = paste("fit_exceed, nterms_max =", nterms_max_i %||% "NULL")
+      )
+      expect_message(
+        vs_tmp <- suppressWarnings(cv_varsel(
+          fit_not_exceed, validate_search = FALSE, method = "forward",
+          nterms_max = nterms_max_i, nclusters = 2, refit_prj = FALSE,
+          seed = 5555, verbose = FALSE
+        )),
+        NA,
+        info = paste("fit_not_exceed, nterms_max =", nterms_max_i %||% "NULL")
+      )
+    }
+    options(mssg_cut_search_orig)
+  })
+}
+
 ## nloo -------------------------------------------------------------------
 
 test_that("invalid `nloo` fails", {
-  for (tstsetup in names(refmods)) {
+  skip_if_not(run_cvvs)
+  tstsetups_nonkfold <- grep("\\.kfold", names(cvvss), value = TRUE,
+                             invert = TRUE)
+  for (tstsetup in head(tstsetups_nonkfold, 1)) {
+    args_cvvs_i <- args_cvvs[[tstsetup]]
     # Use suppressWarnings() because of occasional warnings concerning Pareto k
     # diagnostics:
-    expect_error(suppressWarnings(cv_varsel(refmods[[tstsetup]], nloo = -1)),
-                 "^nloo must be at least 1$",
-                 info = tstsetup)
+    expect_error(
+      suppressWarnings(do.call(cv_varsel, c(
+        list(object = refmods[[args_cvvs_i$tstsetup_ref]],
+             nloo = -1),
+        excl_nonargs(args_cvvs_i)
+      ))),
+      "^nloo must be at least 1$",
+      info = tstsetup
+    )
   }
 })
 
@@ -1102,14 +1328,9 @@ test_that("setting `nloo` smaller than the number of observations works", {
     mod_crr <- args_cvvs_i$mod_nm
     fam_crr <- args_cvvs_i$fam_nm
     prj_crr <- args_cvvs_i$prj_nm
-    meth_exp_crr <- args_cvvs_i$method
-    if (is.null(meth_exp_crr)) {
-      meth_exp_crr <- ifelse(mod_crr == "glm" && prj_crr != "augdat",
-                             "L1", "forward")
-    }
+    meth_exp_crr <- args_cvvs_i$method %||% "forward"
     # Use suppressWarnings() because of occasional warnings concerning Pareto k
-    # diagnostics and also because of the warning concerning subsampled LOO CV
-    # (see issue #94):
+    # diagnostics:
     cvvs_nloo <- suppressWarnings(do.call(cv_varsel, c(
       list(object = refmods[[args_cvvs_i$tstsetup_ref]],
            nloo = nloo_tst),
@@ -1123,8 +1344,6 @@ test_that("setting `nloo` smaller than the number of observations works", {
       method_expected = meth_exp_crr,
       cv_method_expected = "LOO",
       valsearch_expected = args_cvvs_i$validate_search,
-      nprjdraws_search_expected = args_cvvs_i$nclusters,
-      nprjdraws_eval_expected = args_cvvs_i$nclusters_pred,
       nloo_expected = nloo_tst,
       search_trms_empty_size =
         length(args_cvvs_i$search_terms) &&
@@ -1165,11 +1384,7 @@ test_that("`validate_search` works", {
     mod_crr <- args_cvvs_i$mod_nm
     fam_crr <- args_cvvs_i$fam_nm
     prj_crr <- args_cvvs_i$prj_nm
-    meth_exp_crr <- args_cvvs_i$method
-    if (is.null(meth_exp_crr)) {
-      meth_exp_crr <- ifelse(mod_crr == "glm" && prj_crr != "augdat",
-                             "L1", "forward")
-    }
+    meth_exp_crr <- args_cvvs_i$method %||% "forward"
     # Use suppressWarnings() because of occasional warnings concerning Pareto k
     # diagnostics:
     cvvs_valsearch <- suppressWarnings(do.call(cv_varsel, c(
@@ -1185,8 +1400,6 @@ test_that("`validate_search` works", {
       method_expected = meth_exp_crr,
       cv_method_expected = "LOO",
       valsearch_expected = FALSE,
-      nprjdraws_search_expected = args_cvvs_i$nclusters,
-      nprjdraws_eval_expected = args_cvvs_i$nclusters_pred,
       search_trms_empty_size =
         length(args_cvvs_i$search_terms) &&
         all(grepl("\\+", args_cvvs_i$search_terms)),
@@ -1269,11 +1482,7 @@ test_that(paste(
     mod_crr <- args_cvvs_i$mod_nm
     fam_crr <- args_cvvs_i$fam_nm
     prj_crr <- args_cvvs_i$prj_nm
-    meth_exp_crr <- args_cvvs_i$method
-    if (is.null(meth_exp_crr)) {
-      meth_exp_crr <- ifelse(mod_crr == "glm" && prj_crr != "augdat",
-                             "L1", "forward")
-    }
+    meth_exp_crr <- args_cvvs_i$method %||% "forward"
     fit_crr <- fits[[tstsetup_fit]]
     K_crr <- args_cvvs_i$K
 
@@ -1312,9 +1521,7 @@ test_that(paste(
           attr(kfold_obj, "condition")$message, "\"\n", sep = "")
       next
     }
-    kfold_obj <- structure(list(fits = kfold_obj$fits[, "fit"]),
-                           K = K_crr,
-                           folds = folds_vec)
+    kfold_obj <- structure(kfold_obj$fits[, "fit"], folds = folds_vec)
 
     # Create `"refmodel"` object with `cvfits`:
     refmod_crr <- do.call(get_refmodel, c(
@@ -1337,8 +1544,6 @@ test_that(paste(
       method_expected = meth_exp_crr,
       cv_method_expected = "kfold",
       valsearch_expected = args_cvvs_i$validate_search,
-      nprjdraws_search_expected = args_cvvs_i$nclusters,
-      nprjdraws_eval_expected = args_cvvs_i$nclusters_pred,
       search_trms_empty_size =
         length(args_cvvs_i$search_terms) &&
         all(grepl("\\+", args_cvvs_i$search_terms)),
@@ -1385,11 +1590,7 @@ test_that(paste(
     mod_crr <- args_cvvs_i$mod_nm
     fam_crr <- args_cvvs_i$fam_nm
     prj_crr <- args_cvvs_i$prj_nm
-    meth_exp_crr <- args_cvvs_i$method
-    if (is.null(meth_exp_crr)) {
-      meth_exp_crr <- ifelse(mod_crr == "glm" && prj_crr != "augdat",
-                             "L1", "forward")
-    }
+    meth_exp_crr <- args_cvvs_i$method %||% "forward"
     fit_crr <- fits[[tstsetup_fit]]
     K_crr <- args_cvvs_i$K
 
@@ -1419,9 +1620,7 @@ test_that(paste(
                        folds = folds_vec,
                        save_fits = TRUE,
                        seed = seed_fit)
-    kfold_obj <- structure(list(fits = kfold_obj$fits[, "fit"]),
-                           K = K_crr,
-                           folds = folds_vec)
+    kfold_obj <- structure(kfold_obj$fits[, "fit"], folds = folds_vec)
 
     # Create `"refmodel"` object with `cvfits`:
     refmod_crr <- do.call(get_refmodel, c(
@@ -1471,8 +1670,6 @@ test_that(paste(
       method_expected = meth_exp_crr,
       cv_method_expected = "kfold",
       valsearch_expected = args_cvvs_i$validate_search,
-      nprjdraws_search_expected = args_cvvs_i$nclusters,
-      nprjdraws_eval_expected = args_cvvs_i$nclusters_pred,
       search_trms_empty_size =
         length(args_cvvs_i$search_terms) &&
         all(grepl("\\+", args_cvvs_i$search_terms)),

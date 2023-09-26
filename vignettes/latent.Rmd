@@ -174,6 +174,10 @@ refm_poiss <- get_refmodel(refm_fit_poiss, latent = TRUE)
 time_lat <- system.time(vs_lat <- varsel(
   refm_poiss,
   d_test = d_test_lat_poiss,
+  ### Only for demonstrating an issue with the traditional projection in the
+  ### next step (not recommended in general):
+  method = "L1",
+  ###
   ### Only for the sake of speed (not recommended in general):
   nclusters_pred = 20,
   ###
@@ -192,12 +196,12 @@ print(time_lat)
 The message telling that `<refmodel>$dis` consists of only `NA`s will not concern us here because we will only be focusing on response-scale post-processing.
 
 In order to decide for a submodel size, we first inspect the `plot()` results:
-```{r plot_vsel_lat, fig.width = 6, out.width = "75%"}
+```{r plot_vsel_lat}
 ( gg_lat <- plot(vs_lat, stats = "mlpd", deltas = TRUE) )
 ```
 
 Although the submodels' MLPDs seem to be very close to the reference model's MLPD from a submodel size of 6 on, a zoomed plot reveals that there is still some discrepancy at sizes 6 to 11 and that size 12 would be a better choice (further down below in the `summary()` output, we will also see that on absolute scale, the discrepancy at sizes 6 to 11 is not negligible):
-```{r plot_vsel_lat_zoom, fig.width = 6, out.width = "75%"}
+```{r plot_vsel_lat_zoom}
 gg_lat + ggplot2::coord_cartesian(ylim = c(-10, 0.05))
 ```
 
@@ -233,6 +237,9 @@ We will skip post-selection inference here (see the main vignette for a demonstr
 ### Variable selection using the traditional projection
 
 We will now look at what **projpred**'s traditional projection would have given:
+```{r suppress_warn_poiss, include=FALSE}
+warn_instable_orig <- options(projpred.warn_instable_projections = FALSE)
+```
 ```{r vs_trad}
 d_test_trad_poiss <- d_test_lat_poiss
 d_test_trad_poiss$y <- d_test_trad_poiss$y_oscale
@@ -240,6 +247,10 @@ d_test_trad_poiss$y_oscale <- NULL
 time_trad <- system.time(vs_trad <- varsel(
   refm_fit_poiss,
   d_test = d_test_trad_poiss,
+  ### Only for demonstrating an issue with the traditional projection (not
+  ### recommended in general):
+  method = "L1",
+  ###
   ### Only for the sake of speed (not recommended in general):
   nclusters_pred = 20,
   ###
@@ -251,6 +262,10 @@ time_trad <- system.time(vs_trad <- varsel(
   seed = 95930
   ###
 ))
+```
+```{r unsuppress_warn_poiss, include=FALSE}
+options(warn_instable_orig)
+rm(warn_instable_orig)
 ```
 ```{r post_vs_trad}
 print(time_trad)
@@ -330,6 +345,7 @@ vs_nebin <- varsel(
   refm_nebin,
   d_test = d_test_lat_poiss,
   ### Only for the sake of speed (not recommended in general):
+  method = "L1",
   nclusters_pred = 20,
   ###
   nterms_max = 14,
@@ -342,12 +358,12 @@ Again, the message telling that `<refmodel>$dis` consists of only `NA`s will not
 The message concerning `latent_ilink` can be safely ignored here (the internal default based on `family$linkinv` works correctly in this case).
 
 Again, we first inspect the `plot()` results to decide for a submodel size:
-```{r plot_vsel_nebin, fig.width = 6, out.width = "75%"}
+```{r plot_vsel_nebin}
 ( gg_nebin <- plot(vs_nebin, stats = "mlpd", deltas = TRUE) )
 ```
 
 Again, a zoomed plot is more helpful:
-```{r plot_vsel_nebin_zoom, fig.width = 6, out.width = "75%"}
+```{r plot_vsel_nebin_zoom}
 gg_nebin + ggplot2::coord_cartesian(ylim = c(-2.5, 0.25))
 ```
 

@@ -3,6 +3,7 @@
 \name{cv_varsel}
 \alias{cv_varsel}
 \alias{cv_varsel.default}
+\alias{cv_varsel.vsel}
 \alias{cv_varsel.refmodel}
 \title{Run search and performance evaluation with cross-validation}
 \usage{
@@ -10,9 +11,11 @@ cv_varsel(object, ...)
 
 \method{cv_varsel}{default}(object, ...)
 
+\method{cv_varsel}{vsel}(object, ...)
+
 \method{cv_varsel}{refmodel}(
   object,
-  method = NULL,
+  method = "forward",
   cv_method = if (!inherits(object, "datafit")) "LOO" else "kfold",
   ndraws = NULL,
   nclusters = 20,
@@ -24,6 +27,7 @@ cv_varsel(object, ...)
   verbose = TRUE,
   nloo = NULL,
   K = if (!inherits(object, "datafit")) 5 else 10,
+  cvfits = object$cvfits,
   lambda_min_ratio = 1e-05,
   nlambda = 150,
   thresh = 1e-06,
@@ -31,6 +35,7 @@ cv_varsel(object, ...)
   validate_search = TRUE,
   seed = NA,
   search_terms = NULL,
+  parallel = getOption("projpred.prll_cv", FALSE),
   ...
 )
 }
@@ -43,17 +48,15 @@ cv_varsel(object, ...)
 minimizer (during a forward search and also during the evaluation part, but
 the latter only if \code{refit_prj} is \code{TRUE}).}
 
-\item{method}{The method for the search part. Possible options are \code{"L1"} for
-L1 search and \code{"forward"} for forward search. If \code{NULL}, then internally,
-\code{"L1"} is used, except if (i) the reference model has multilevel or
-additive terms, (ii) if \code{!is.null(search_terms)}, or (iii) if the
-augmented-data projection is used. See also section "Details" below.}
+\item{method}{The method for the search part. Possible options are
+\code{"forward"} for forward search and \code{"L1"} for L1 search. See also section
+"Details" below.}
 
 \item{cv_method}{The CV method, either \code{"LOO"} or \code{"kfold"}. In the \code{"LOO"}
 case, a Pareto-smoothed importance sampling leave-one-out CV (PSIS-LOO CV)
 is performed, which avoids refitting the reference model \code{nloo} times (in
 contrast to a standard LOO CV). In the \code{"kfold"} case, a \eqn{K}-fold CV is
-performed.}
+performed. See also section "Note" below.}
 
 \item{ndraws}{Number of posterior draws used in the search part. Ignored if
 \code{nclusters} is not \code{NULL} or in case of L1 search (because L1 search always
@@ -96,16 +99,21 @@ used for each predictor.}
 \item{verbose}{A single logical value indicating whether to print out
 additional information during the computations.}
 
-\item{nloo}{\strong{Caution:} Still experimental. Only relevant if \code{cv_method = "LOO"}. Number of subsampled LOO CV folds, i.e., number of observations
-used for the LOO CV (anything between 1 and the original number of
-observations). Smaller values lead to faster computation but higher
-uncertainty in the evaluation part. If \code{NULL}, all observations are used,
-but for faster experimentation, one can set this to a smaller value.}
+\item{nloo}{\strong{Caution:} Still experimental. Only relevant if \code{cv_method = "LOO"}. Number of subsampled PSIS-LOO CV folds, i.e., number of
+observations used for the approximate LOO CV (anything between 1 and the
+original number of observations). Smaller values lead to faster computation
+but higher uncertainty in the evaluation part. If \code{NULL}, all observations
+are used, but for faster experimentation, one can set this to a smaller
+value.}
 
-\item{K}{Only relevant if \code{cv_method = "kfold"} and if the reference model
-was created with \code{cvfits} being \code{NULL} (which is the case for
-\code{\link[=get_refmodel.stanreg]{get_refmodel.stanreg()}} and \code{\link[brms:get_refmodel.brmsfit]{brms::get_refmodel.brmsfit()}}). Number of
+\item{K}{Only relevant if \code{cv_method = "kfold"} and if \code{cvfits} is \code{NULL}
+(which is the case for reference model objects created by
+\code{\link[=get_refmodel.stanreg]{get_refmodel.stanreg()}} or \code{\link[brms:get_refmodel.brmsfit]{brms::get_refmodel.brmsfit()}}). Number of
 folds in \eqn{K}-fold CV.}
+
+\item{cvfits}{Only relevant if \code{cv_method = "kfold"}. The same as argument
+\code{cvfits} of \code{\link[=init_refmodel]{init_refmodel()}}, but repeated here so that output from
+\code{\link[=run_cvfun]{run_cvfun()}} can be inserted here straightforwardly.}
 
 \item{lambda_min_ratio}{Only relevant for L1 search. Ratio between the
 smallest and largest lambda in the L1-penalized search. This parameter
@@ -142,9 +150,9 @@ results can be obtained again if needed. Passed to argument \code{seed} of
 \code{NA}, then the PRNG state is reset (to the state before calling
 \code{\link[=cv_varsel]{cv_varsel()}}) upon exiting \code{\link[=cv_varsel]{cv_varsel()}}. Here, \code{seed} is used for
 clustering the reference model's posterior draws (if \code{!is.null(nclusters)}
-or \code{!is.null(nclusters_pred)}), for subsampling LOO CV folds (if \code{nloo} is
-smaller than the number of observations), for sampling the folds in
-\eqn{K}-fold CV, and for drawing new group-level effects when predicting
+or \code{!is.null(nclusters_pred)}), for subsampling PSIS-LOO CV folds (if
+\code{nloo} is smaller than the number of observations), for sampling the folds
+in \eqn{K}-fold CV, and for drawing new group-level effects when predicting
 from a multilevel submodel (however, not yet in case of a GAMM).}
 
 \item{search_terms}{Only relevant for forward search. A custom character
@@ -154,6 +162,10 @@ The intercept (\code{"1"}) is always included internally via \code{union()}, so
 there's no difference between including it explicitly or omitting it. The
 default \code{search_terms} considers all the terms in the reference model's
 formula.}
+
+\item{parallel}{A single logical value indicating whether to run costly parts
+of the CV in parallel (\code{TRUE}) or not (\code{FALSE}). See also section "Note"
+below.}
 }
 \value{
 An object of class \code{vsel}. The elements of this object are not meant
@@ -191,9 +203,12 @@ accurate. Furthermore, forward search may find a sparser model with
 comparable performance to that found by L1 search, but it may also start
 overfitting when more predictors are added.
 
-An L1 search may select interaction terms before the corresponding main
-terms are selected. If this is undesired, choose the forward search
-instead.
+An L1 search may select an interaction term before all involved lower-order
+interaction terms (including main-effect terms) have been selected. In
+\pkg{projpred} versions > 2.6.0, the resulting predictor ranking is
+automatically modified so that the lower-order interaction terms come
+before this interaction term, but if this is conceptually undesired, choose
+the forward search instead.
 
 The elements of the \code{search_terms} character vector don't need to be
 individual predictor terms. Instead, they can be building blocks consisting
@@ -201,58 +216,82 @@ of several predictor terms connected by the \code{+} symbol. To understand how
 these building blocks work, it is important to know how \pkg{projpred}'s
 forward search works: It starts with an empty vector \code{chosen} which will
 later contain already selected predictor terms. Then, the search iterates
-over model sizes \eqn{j \in \{1, ..., J\}}{j = 1, ..., J}. The candidate
-models at model size \eqn{j} are constructed from those elements from
-\code{search_terms} which yield model size \eqn{j} when combined with the
+over model sizes \eqn{j \in \{0, ..., J\}}{j = 0, ..., J} (with \eqn{J}
+denoting the maximum submodel size, not counting the intercept). The
+candidate models at model size \eqn{j} are constructed from those elements
+from \code{search_terms} which yield model size \eqn{j} when combined with the
 \code{chosen} predictor terms. Note that sometimes, there may be no candidate
 models for model size \eqn{j}. Also note that internally, \code{search_terms} is
 expanded to include the intercept (\code{"1"}), so the first step of the search
-(model size 1) always consists of the intercept-only model as the only
+(model size 0) always consists of the intercept-only model as the only
 candidate.
 
 As a \code{search_terms} example, consider a reference model with formula \code{y ~ x1 + x2 + x3}. Then, to ensure that \code{x1} is always included in the
-candidate models, specify \code{search_terms = c("x1", "x1 + x2", "x1 + x3", "x1 + x2 + x3")}. This search would start with \code{y ~ 1} as the only
-candidate at model size 1. At model size 2, \code{y ~ x1} would be the only
-candidate. At model size 3, \code{y ~ x1 + x2} and \code{y ~ x1 + x3} would be the
-two candidates. At the last model size of 4, \code{y ~ x1 + x2 + x3} would be
+candidate models, specify \code{search_terms = c("x1", "x1 + x2", "x1 + x3", "x1 + x2 + x3")} (or, in a simpler way that leads to the same results,
+\code{search_terms = c("x1", "x1 + x2", "x1 + x3")}, for which helper function
+\code{\link[=force_search_terms]{force_search_terms()}} exists). This search would start with \code{y ~ 1} as the
+only candidate at model size 0. At model size 1, \code{y ~ x1} would be the only
+candidate. At model size 2, \code{y ~ x1 + x2} and \code{y ~ x1 + x3} would be the
+two candidates. At the last model size of 3, \code{y ~ x1 + x2 + x3} would be
 the only candidate. As another example, to exclude \code{x1} from the search,
-specify \code{search_terms = c("x2", "x3", "x2 + x3")}.
+specify \code{search_terms = c("x2", "x3", "x2 + x3")} (or, in a simpler way
+that leads to the same results, \code{search_terms = c("x2", "x3")}).
 }
 \note{
 If \code{validate_search} is \code{FALSE}, the search is not included in the CV
 so that only a single full-data search is run.
 
-For PSIS-LOO CV, \pkg{projpred} calls \code{\link[loo:psis]{loo::psis()}} with \code{r_eff = NA}. This
-is only a problem if there was extreme autocorrelation between the MCMC
-iterations when the reference model was built. In those cases however, the
-reference model should not have been used anyway, so we don't expect
-\pkg{projpred}'s \code{r_eff = NA} to be a problem.
+For PSIS-LOO CV, \pkg{projpred} calls \code{\link[loo:psis]{loo::psis()}} (or, exceptionally,
+\code{\link[loo:sis]{loo::sis()}}, see below) with \code{r_eff = NA}. This is only a problem if there
+was extreme autocorrelation between the MCMC iterations when the reference
+model was built. In those cases however, the reference model should not
+have been used anyway, so we don't expect \pkg{projpred}'s \code{r_eff = NA} to
+be a problem.
+
+PSIS cannot be used if the draws have different (i.e., nonconstant) weights
+or if the number of draws is too small. In such cases, \pkg{projpred}
+resorts to standard importance sampling (SIS) and throws a warning about
+this. Throughout the documentation, the term "PSIS" is used even though in
+fact, \pkg{projpred} resorts to SIS in these special cases.
+
+With \code{parallel = TRUE}, costly parts of \pkg{projpred}'s CV are run in
+parallel. Costly parts are the fold-wise searches and performance
+evaluations in case of \code{validate_search = TRUE}. (Note that in case of
+\eqn{K}-fold CV, the \eqn{K} reference model refits are not affected by
+argument \code{parallel}; only \pkg{projpred}'s CV is affected.) The
+parallelization is powered by the \pkg{foreach} package. Thus, any parallel
+(or sequential) backend compatible with \pkg{foreach} can be used, e.g.,
+the backends from packages \pkg{doParallel}, \pkg{doMPI}, or
+\pkg{doFuture}. For GLMs, this CV parallelization should work reliably, but
+for other models (such as GLMMs), it may lead to excessive memory usage
+which in turn may crash the R session (on Unix systems, setting an
+appropriate memory limit via \code{\link[unix:rlimit]{unix::rlimit_as()}} may avoid crashing the
+whole machine). However, the problem of excessive memory usage is less
+pronounced for the CV parallelization than for the projection
+parallelization described in \link{projpred-package}. In that regard, the CV
+parallelization is recommended over the projection parallelization.
 }
 \examples{
-\dontshow{if (identical(Sys.getenv("RUN_EX"), "true")) (if (getRversion() >= "3.4") withAutoprint else force)(\{ # examplesIf}
-# Note: The code from this example is not executed when called via example().
-# To execute it, you have to copy and paste it manually to the console.
-if (requireNamespace("rstanarm", quietly = TRUE)) {
-  # Data:
-  dat_gauss <- data.frame(y = df_gaussian$y, df_gaussian$x)
+\dontshow{if (requireNamespace("rstanarm", quietly = TRUE)) (if (getRversion() >= "3.4") withAutoprint else force)(\{ # examplesIf}
+# Data:
+dat_gauss <- data.frame(y = df_gaussian$y, df_gaussian$x)
 
-  # The "stanreg" fit which will be used as the reference model (with small
-  # values for `chains` and `iter`, but only for technical reasons in this
-  # example; this is not recommended in general):
-  fit <- rstanarm::stan_glm(
-    y ~ X1 + X2 + X3 + X4 + X5, family = gaussian(), data = dat_gauss,
-    QR = TRUE, chains = 2, iter = 1000, refresh = 0, seed = 9876
-  )
+# The "stanreg" fit which will be used as the reference model (with small
+# values for `chains` and `iter`, but only for technical reasons in this
+# example; this is not recommended in general):
+fit <- rstanarm::stan_glm(
+  y ~ X1 + X2 + X3 + X4 + X5, family = gaussian(), data = dat_gauss,
+  QR = TRUE, chains = 2, iter = 1000, refresh = 0, seed = 9876
+)
 
-  # Run cv_varsel() (with small values for `K`, `nterms_max`, `nclusters`,
-  # and `nclusters_pred`, but only for the sake of speed in this example;
-  # this is not recommended in general):
-  cvvs <- cv_varsel(fit, cv_method = "kfold", K = 2, nterms_max = 3,
-                    nclusters = 5, nclusters_pred = 10, seed = 5555,
-                    verbose = FALSE)
-  # Now see, for example, `?print.vsel`, `?plot.vsel`, `?suggest_size.vsel`,
-  # and `?ranking` for possible post-processing functions.
-}
+# Run cv_varsel() (with L1 search and small values for `K`, `nterms_max`, and
+# `nclusters_pred`, but only for the sake of speed in this example; this is
+# not recommended in general):
+cvvs <- cv_varsel(fit, method = "L1", cv_method = "kfold", K = 2,
+                  nterms_max = 3, nclusters_pred = 10, seed = 5555,
+                  verbose = FALSE)
+# Now see, for example, `?print.vsel`, `?plot.vsel`, `?suggest_size.vsel`,
+# and `?ranking` for possible post-processing functions.
 \dontshow{\}) # examplesIf}
 }
 \references{

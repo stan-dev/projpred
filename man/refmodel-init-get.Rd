@@ -16,7 +16,7 @@ get_refmodel(object, ...)
 
 \method{get_refmodel}{vsel}(object, ...)
 
-\method{get_refmodel}{default}(object, formula, family = NULL, ...)
+\method{get_refmodel}{default}(object, data, formula, family = NULL, ...)
 
 \method{get_refmodel}{stanreg}(object, latent = FALSE, dis = NULL, ...)
 
@@ -33,6 +33,7 @@ init_refmodel(
   cvfits = NULL,
   dis = NULL,
   cvrefbuilder = NULL,
+  called_from_cvrefbuilder = FALSE,
   ...
 )
 }
@@ -40,17 +41,24 @@ init_refmodel(
 \item{object}{For \code{\link[=init_refmodel]{init_refmodel()}}, an object that the functions from
 arguments \code{extract_model_data} and \code{ref_predfun} can be applied to, with a
 \code{NULL} object being treated specially (see section "Value" below). For
-\code{\link[=get_refmodel.default]{get_refmodel.default()}}, an object of type \code{list} that (i) function
-\code{\link[=family]{family()}} can be applied to in order to retrieve the family (if argument
-\code{family} is \code{NULL}) and (ii) has an element called \code{data} containing the
-original dataset (see argument \code{data} of \code{\link[=init_refmodel]{init_refmodel()}}), additionally
-to the properties required for \code{\link[=init_refmodel]{init_refmodel()}}. For non-default methods
-of \code{\link[=get_refmodel]{get_refmodel()}}, an object of the corresponding class.}
+\code{\link[=get_refmodel.default]{get_refmodel.default()}}, an object that function \code{\link[=family]{family()}} can be applied
+to in order to retrieve the family (if argument \code{family} is \code{NULL}),
+additionally to the properties required for \code{\link[=init_refmodel]{init_refmodel()}}. For
+non-default methods of \code{\link[=get_refmodel]{get_refmodel()}}, an object of the corresponding
+class.}
 
 \item{...}{For \code{\link[=get_refmodel.default]{get_refmodel.default()}} and \code{\link[=get_refmodel.stanreg]{get_refmodel.stanreg()}}:
 arguments passed to \code{\link[=init_refmodel]{init_refmodel()}}. For the \code{\link[=get_refmodel]{get_refmodel()}} generic:
 arguments passed to the appropriate method. For \code{\link[=init_refmodel]{init_refmodel()}}:
 arguments passed to \code{\link[=extend_family]{extend_family()}} (apart from \code{family}).}
+
+\item{data}{A \code{data.frame} containing the data to use for the projection
+predictive variable selection. Any \code{contrasts} attributes of the dataset's
+columns are silently removed. For custom reference models, the columns of
+\code{data} do not necessarily have to coincide with those of the dataset used
+for fitting the reference model, but keep in mind that a row-subset of
+\code{data} is used for argument \code{newdata} of \code{ref_predfun} during \eqn{K}-fold
+CV.}
 
 \item{formula}{The full formula to use for the search procedure. For custom
 reference models, this does not necessarily coincide with the reference
@@ -70,7 +78,10 @@ used for quantities like predictions and fitted values related to the
 case the family is retrieved from \code{object}. For custom reference models,
 \code{family} does not have to coincide with the family of the reference model
 (if the reference model possesses a formal \code{family} at all). In typical
-reference models, however, these families do coincide.}
+reference models, however, these families do coincide. Furthermore, the
+latent projection is an exception where \code{family} is not the family of the
+submodels (in that case, the family of the submodels is the \code{\link[=gaussian]{gaussian()}}
+family).}
 
 \item{latent}{A single logical value indicating whether to use the latent
 projection (\code{TRUE}) or not (\code{FALSE}). Note that setting \code{latent = TRUE}
@@ -84,14 +95,6 @@ have no dispersion parameter or if the submodels do have a dispersion
 parameter, but \code{object} is \code{NULL} (in which case \code{0} is used for \code{dis}).
 Note that for the \code{\link[=gaussian]{gaussian()}} \code{family}, \code{dis} is the standard deviation,
 not the variance.}
-
-\item{data}{A \code{data.frame} containing the data to use for the projection
-predictive variable selection. Any \code{contrasts} attributes of the dataset's
-columns are silently removed. For custom reference models, the columns of
-\code{data} do not necessarily have to coincide with those of the dataset used
-for fitting the reference model, but keep in mind that a row-subset of
-\code{data} is used for argument \code{newdata} of \code{ref_predfun} during \eqn{K}-fold
-CV.}
 
 \item{ref_predfun}{Prediction function for the linear predictor of the
 reference model, including offsets (if existing). See also section
@@ -123,26 +126,35 @@ internal default. Only one of \code{cvfits} and \code{cvfun} needs to be provide
 (for \eqn{K}-fold CV). Note that \code{cvfits} takes precedence over \code{cvfun},
 i.e., if both are provided, \code{cvfits} is used.}
 
-\item{cvfits}{For \eqn{K}-fold CV only. A \code{list} containing a sub-\code{list}
-called \code{fits} containing the \eqn{K} model fits from which reference model
-structures are created. The \code{cvfits} \code{list} (i.e., the super-\code{list}) needs
-to have an attribute called \code{folds}, consisting of an integer vector giving
-the fold indices (one fold index per observation). Each element of
-\code{cvfits$fits} (i.e., each of the \eqn{K} model fits) needs to be a list.
-Only one of \code{cvfits} and \code{cvfun} needs to be provided (for \eqn{K}-fold
-CV). Note that \code{cvfits} takes precedence over \code{cvfun}, i.e., if both are
-provided, \code{cvfits} is used.}
+\item{cvfits}{For \eqn{K}-fold CV only. A \code{list} containing the \eqn{K}
+reference model refits from which reference model objects are created. This
+\code{list} needs to have an attribute called \code{folds}, consisting of an integer
+vector giving the fold indices (one fold index per observation). Only one
+of \code{cvfits} and \code{cvfun} needs to be provided (for \eqn{K}-fold CV). Note
+that \code{cvfits} takes precedence over \code{cvfun}, i.e., if both are provided,
+\code{cvfits} is used.}
 
 \item{cvrefbuilder}{For \eqn{K}-fold CV only. A function that, given a
-reference model fit for fold \eqn{k \in \{1, ..., K\}}{k = 1, ..., K} (this
-model fit is the \eqn{k}-th element of the return value of \code{cvfun} or the
-\eqn{k}-th element of \code{cvfits$fits}, extended by elements \code{omitted}
-(containing the indices of the left-out observations in that fold) and
-\code{projpred_k} (containing the integer \eqn{k})), returns an object of the
-same type as \code{\link[=init_refmodel]{init_refmodel()}} does. Argument \code{cvrefbuilder} may be \code{NULL}
-for using an internal default: \code{\link[=get_refmodel]{get_refmodel()}} if \code{object} is not \code{NULL}
-and a function calling \code{\link[=init_refmodel]{init_refmodel()}} appropriately (with the assumption
-\code{dis = 0}) if \code{object} is \code{NULL}.}
+reference model fit for fold \eqn{k \in \{1, ..., K\}}{k = 1, ..., K},
+returns an object of the same type as \code{\link[=init_refmodel]{init_refmodel()}} does. The reference
+model fit for fold \eqn{k} is the \eqn{k}-th element of the return value of
+\code{cvfun} or the \eqn{k}-th element of the \code{list} supplied to \code{cvfits}
+(either here in \code{\link[=init_refmodel]{init_refmodel()}} or in \code{\link[=cv_varsel.refmodel]{cv_varsel.refmodel()}}), extended
+by elements \code{omitted} (containing the indices of the left-out observations
+in that fold) and \code{projpred_k} (containing the integer \eqn{k}) if that
+\eqn{k}-th element is a \code{list} itself (otherwise, \code{omitted} and
+\code{projpred_k} are appended as attributes). Argument \code{cvrefbuilder} may be
+\code{NULL} for using an internal default: \code{\link[=get_refmodel]{get_refmodel()}} if \code{object} is not
+\code{NULL} and a function calling \code{\link[=init_refmodel]{init_refmodel()}} appropriately (with the
+assumption \code{dis = 0}) if \code{object} is \code{NULL}.}
+
+\item{called_from_cvrefbuilder}{A single logical value indicating whether
+\code{\link[=init_refmodel]{init_refmodel()}} is called from a \code{cvrefbuilder} function (\code{TRUE}) or not
+(\code{FALSE}). Currently, \code{TRUE} only causes some warnings to be suppressed
+(warnings which don't need to be thrown for each of the \eqn{K} reference
+model objects because it is sufficient to throw them for the original
+reference model object only). This argument is mainly for internal use, but
+may also be helpful for users with a custom \code{cvrefbuilder} function.}
 }
 \value{
 An object that can be passed to all the functions that take the
@@ -300,15 +312,18 @@ where:
 \item \code{object} accepts the reference model fit as given in argument \code{object} (but
 possibly re-fitted to a subset of the observations, as done in \eqn{K}-fold
 CV).
-\item \code{newdata} accepts either \code{NULL} (for using the original dataset, typically
-stored in \code{object}) or data for new observations (at least in the form of a
+\item \code{newdata} accepts data for new observations (at least in the form of a
 \code{data.frame}).
-\item \code{wrhs} accepts at least either \code{NULL} (for using a vector of ones) or a
-right-hand side formula consisting only of the variable in \code{newdata}
-containing the weights.
-\item \code{orhs} accepts at least either \code{NULL} (for using a vector of zeros) or a
-right-hand side formula consisting only of the variable in \code{newdata}
-containing the offsets.
+\item \code{wrhs} accepts at least (i) a right-hand side formula consisting only of
+the variable in \code{newdata} containing the observation weights or (ii) \code{NULL}
+(for typical \pkg{rstanarm} and \pkg{brms} reference models, \code{NULL} causes
+the original observation weights to be used if the model was fitted with
+weights, otherwise a vector of ones is used).
+\item \code{orhs} accepts at least (i) a right-hand side formula consisting only of
+the variable in \code{newdata} containing the offsets or (ii) \code{NULL} (for typical
+\pkg{rstanarm} and \pkg{brms} reference models, \code{NULL} causes the original
+offsets to be used if the model was fitted with offsets, otherwise a vector
+of zeros is used).
 \item \code{extract_y} accepts a single logical value indicating whether output
 element \code{y} (see below) shall be \code{NULL} (\code{TRUE}) or not (\code{FALSE}).
 }
@@ -360,58 +375,59 @@ supported in case of the latent projection.
 }
 
 \examples{
-if (requireNamespace("rstanarm", quietly = TRUE)) {
-  # Data:
-  dat_gauss <- data.frame(y = df_gaussian$y, df_gaussian$x)
+\dontshow{if (requireNamespace("rstanarm", quietly = TRUE)) (if (getRversion() >= "3.4") withAutoprint else force)(\{ # examplesIf}
+# Data:
+dat_gauss <- data.frame(y = df_gaussian$y, df_gaussian$x)
 
-  # The "stanreg" fit which will be used as the reference model (with small
-  # values for `chains` and `iter`, but only for technical reasons in this
-  # example; this is not recommended in general):
-  fit <- rstanarm::stan_glm(
-    y ~ X1 + X2 + X3 + X4 + X5, family = gaussian(), data = dat_gauss,
-    QR = TRUE, chains = 2, iter = 500, refresh = 0, seed = 9876
-  )
+# The "stanreg" fit which will be used as the reference model (with small
+# values for `chains` and `iter`, but only for technical reasons in this
+# example; this is not recommended in general):
+fit <- rstanarm::stan_glm(
+  y ~ X1 + X2 + X3 + X4 + X5, family = gaussian(), data = dat_gauss,
+  QR = TRUE, chains = 2, iter = 500, refresh = 0, seed = 9876
+)
 
-  # Define the reference model explicitly:
-  ref <- get_refmodel(fit)
-  print(class(ref)) # gives `"refmodel"`
-  # Now see, for example, `?varsel`, `?cv_varsel`, and `?project` for
-  # possible post-processing functions. Most of the post-processing functions
-  # call get_refmodel() internally at the beginning, so you will rarely need
-  # to call get_refmodel() yourself.
+# Define the reference model object explicitly:
+ref <- get_refmodel(fit)
+print(class(ref)) # gives `"refmodel"`
+# Now see, for example, `?varsel`, `?cv_varsel`, and `?project` for
+# possible post-processing functions. Most of the post-processing functions
+# call get_refmodel() internally at the beginning, so you will rarely need
+# to call get_refmodel() yourself.
 
-  # A custom reference model which may be used in a variable selection where
-  # the candidate predictors are not a subset of those used for the reference
-  # model's predictions:
-  ref_cust <- init_refmodel(
-    fit,
-    data = dat_gauss,
-    formula = y ~ X6 + X7,
-    family = gaussian(),
-    extract_model_data = function(object, newdata = NULL, wrhs = NULL,
-                                  orhs = NULL, extract_y = TRUE) {
-      if (!extract_y) {
-        resp_form <- NULL
-      } else {
-        resp_form <- ~ y
-      }
-
-      if (is.null(newdata)) {
-        newdata <- dat_gauss
-      }
-
-      args <- projpred:::nlist(object, newdata, wrhs, orhs, resp_form)
-      return(projpred::do_call(projpred:::.extract_model_data, args))
-    },
-    cvfun = function(folds) {
-      kfold(
-        fit, K = max(folds), save_fits = TRUE, folds = folds, cores = 1
-      )$fits[, "fit"]
-    },
-    dis = as.matrix(fit)[, "sigma"]
-  )
-  # Now, the post-processing functions mentioned above (for example,
-  # varsel(), cv_varsel(), and project()) may be applied to `ref_cust`.
+# A custom reference model object which may be used in a variable selection
+# where the candidate predictors are not a subset of those used for the
+# reference model's predictions (defining the function for argument
+# `extract_model_data` first because it can be re-used for the `cvrefbuilder`
+# function here):
+extractor_cust <- function(object, newdata, wrhs = NULL, orhs = NULL,
+                           extract_y = TRUE) {
+  return(y_wobs_offs(newdata = newdata, wrhs = wrhs, orhs = orhs,
+                     resp_form = if (extract_y) ~ y else NULL))
 }
-
+ref_cust <- init_refmodel(
+  fit,
+  data = dat_gauss,
+  formula = y ~ X6 + X7,
+  family = gaussian(),
+  extract_model_data = extractor_cust,
+  cvfun = function(folds) {
+    kfold(
+      fit, K = max(folds), save_fits = TRUE, folds = folds, cores = 1
+    )$fits[, "fit"]
+  },
+  dis = as.matrix(fit)[, "sigma"],
+  cvrefbuilder = function(cvfit) {
+    init_refmodel(cvfit,
+                  data = dat_gauss[-cvfit$omitted, , drop = FALSE],
+                  formula = y ~ X6 + X7,
+                  family = gaussian(),
+                  extract_model_data = extractor_cust,
+                  dis = as.matrix(cvfit)[, "sigma"],
+                  called_from_cvrefbuilder = TRUE)
+  }
+)
+# Now, the post-processing functions mentioned above (for example,
+# varsel(), cv_varsel(), and project()) may be applied to `ref_cust`.
+\dontshow{\}) # examplesIf}
 }

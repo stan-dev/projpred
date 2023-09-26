@@ -297,12 +297,13 @@ refmodel_tester <- function(
 ) {
   # Preparations:
   needs_wobs_added <- !is_datafit && pkg_nm == "rstanarm" &&
-    length(refmod$fit$weights) > 0
+    ((length(refmod$fit$weights) > 0 && !all(refmod$fit$weights == 1)) ||
+       fam_nm == "binom")
   if (needs_wobs_added) {
-    data_expected$projpred_internal_wobs_stanreg <- refmod$fit$weights
+    data_expected$projpred_internal_wobs_stanreg <- wobs_expected
   }
   needs_offs_added <- !is_datafit && pkg_nm == "rstanarm" &&
-    length(refmod$fit$offset) > 0
+    length(refmod$fit$offset) > 0 && !all(refmod$fit$offset == 0)
   if (needs_offs_added) {
     data_expected$projpred_internal_offs_stanreg <- refmod$fit$offset
   }
@@ -357,6 +358,10 @@ refmodel_tester <- function(
   expect_named(refmod, refmod_nms, info = info_str)
 
   # fit
+  if (!is_datafit && pkg_nm == "rstanarm" && mod_nm == "gamm" &&
+      !all(wobs_expected == 1)) {
+    fit_expected$weights <- wobs_expected
+  }
   expect_identical(refmod$fit, fit_expected, info = info_str)
 
   # formula
@@ -608,6 +613,12 @@ refmodel_tester <- function(
     }
     if ((!is_datafit && pkg_nm != "brms") ||
         (is_datafit && (pkg_nm == "brms" || fam_nm != "binom"))) {
+      if (pkg_nm != "brms" && fam_nm == "binom" && needs_wobs_added) {
+        data_expected <- data_expected[, c(
+          setdiff(names(data_expected), "projpred_internal_wobs_stanreg"),
+          "projpred_internal_wobs_stanreg"
+        )]
+      }
       expect_identical(refmod$fetch_data(), data_expected, info = info_str)
     } else if (!is_datafit && pkg_nm == "brms") {
       if (!with_spclformul) {
@@ -766,31 +777,26 @@ outdmin_tester_trad <- function(
       # to reorder the columns manually:
       if (length(solterms_vsel_L1_search)) {
         terms_contr_expd <- lapply(solterms_vsel_L1_search, function(term_crr) {
-          if (!is.factor(sub_data[[term_crr]])) {
-            term_crr <- sub("(I\\(.*as\\.logical\\(.*\\)\\))", "\\1TRUE",
-                            term_crr)
-            term_crr <- expand_poly(term_crr,
-                                    info_str = paste0(info_str, "__", term_crr))
-            return(term_crr)
-          } else {
-            return(paste0(term_crr, levels(sub_data[[term_crr]])[-1]))
-          }
+          term_crr <- strsplit(term_crr, ":")[[1]]
+          main_terms_expand <- lapply(term_crr, function(main_term_crr) {
+            if (!is.factor(sub_data[[main_term_crr]])) {
+              main_term_crr <- sub("(I\\(.*as\\.logical\\(.*\\)\\))", "\\1TRUE",
+                                   main_term_crr)
+              main_term_crr <- expand_poly(
+                main_term_crr, info_str = paste0(info_str, "__", main_term_crr)
+              )
+              return(main_term_crr)
+            } else {
+              return(paste0(main_term_crr,
+                            levels(sub_data[[main_term_crr]])[-1]))
+            }
+          })
+          return(apply(expand.grid(main_terms_expand), 1, paste,
+                       collapse = ":"))
         })
         terms_contr_expd <- unlist(terms_contr_expd)
-        colnms_x <- colnames(sub_x_expected)
-        colnms_x <- unlist(lapply(colnms_x, function(colnm_x) {
-          if (!colnm_x %in% terms_contr_expd) {
-            colon_found <- gregexpr(":", colnm_x)
-            if (length(colon_found) != 1 || colon_found == -1) {
-              stop("The following code is not general enough. It needs to be ",
-                   "adapted.")
-            }
-            return(paste(rev(strsplit(colnm_x, ":")[[1]]), collapse = ":"))
-          } else {
-            return(colnm_x)
-          }
-        }))
-        colnames(sub_x_expected) <- colnms_x
+        colnames(sub_x_expected) <- reorder_ias(colnames(sub_x_expected),
+                                                terms_contr_expd)
         sub_x_expected <- sub_x_expected[
           ,
           colnames(sub_x_expected)[order(match(colnames(sub_x_expected),
@@ -862,20 +868,14 @@ outdmin_tester_trad <- function(
                        info = info_str)
           trms_to_test <- labels(terms(outdmin_totest[[j]]$formula))
           trms_ch <- labels(terms(sub_formul[[j]]))
-          expect_true(setequal(c(trms_to_test, revIA(trms_to_test)),
-                               c(trms_ch, revIA(trms_ch))),
-                      info = info_str)
+          trms_ch <- reorder_ias(trms_ch, trms_to_test)
+          expect_identical(trms_to_test, trms_ch, info = info_str)
         }
 
         x_to_test <- outdmin_totest[[j]]$x
         x_ch <- sub_x_expected
-        if (!identical(dimnames(x_to_test)[[2]], dimnames(x_ch)[[2]])) {
-          # Try reversing the order of individual terms within ":" interaction
-          # terms:
-          dimnames(x_ch)[[2]][grep(":", dimnames(x_ch)[[2]])] <- revIA(
-            dimnames(x_ch)[[2]]
-          )
-        }
+        dimnames(x_ch)[[2]] <- reorder_ias(dimnames(x_ch)[[2]],
+                                           dimnames(x_to_test)[[2]])
         expect_identical(x_to_test, x_ch, info = info_str)
 
         if (!from_vsel_L1_search) {
@@ -896,6 +896,7 @@ outdmin_tester_trad <- function(
         # adapted.
         nms_fac <- grep("xca", labels(terms(outdmin_totest[[j]]$formula)),
                         value = TRUE)
+        nms_fac <- grep(":", nms_fac, value = TRUE, invert = TRUE)
         if (length(nms_fac)) {
           xlvls_ch <- lapply(setNames(nm = nms_fac), function(nm_fac) {
             levels(droplevels(sub_data[[nm_fac]]))
@@ -1562,8 +1563,10 @@ refdist_tester <- function(refd,
 #   terms, or `NULL` for not testing the solution terms at all.
 # @param nprjdraws_expected A single numeric value giving the expected number of
 #   projected draws.
-# @param p_type_expected A single logical value giving the expected value for
-#   `p$p_type`.
+# @param with_clusters A single logical value indicating whether clustering was
+#   used (`TRUE`) or not (`FALSE`).
+# @param const_wdraws_prj_expected A single logical value giving the expected
+#   value for `p$const_wdraws_prj`.
 # @param seed_expected The seed which was used for clustering the posterior
 #   draws of the reference model.
 # @param prjdraw_weights_expected The expected weights for the projected draws
@@ -1579,7 +1582,8 @@ projection_tester <- function(p,
                               refmod_expected,
                               solterms_expected,
                               nprjdraws_expected,
-                              p_type_expected,
+                              with_clusters,
+                              const_wdraws_prj_expected,
                               seed_expected = seed_tst,
                               prjdraw_weights_expected = NULL,
                               from_vsel_L1_search = FALSE,
@@ -1591,8 +1595,8 @@ projection_tester <- function(p,
   # would have to be updated:
   expect_named(
     p,
-    c("dis", "ce", "wdraws_prj", "solution_terms", "outdmin", "cl_ref",
-      "wdraws_ref", "p_type", "refmodel"),
+    c("dis", "ce", "wdraws_prj", "const_wdraws_prj", "solution_terms",
+      "outdmin", "cl_ref", "wdraws_ref", "clust_used", "nprjdraws", "refmodel"),
     info = info_str
   )
 
@@ -1646,8 +1650,10 @@ projection_tester <- function(p,
     # Number of projected draws in as.matrix.projection() (note that more
     # extensive tests for as.matrix.projection() may be found in
     # "test_as_matrix.R"):
-    expect_identical(suppressWarnings(NROW(as.matrix(p))), nprjdraws_expected,
-                     info = info_str)
+    expect_identical(
+      nrow(as.matrix(p, allow_nonconst_wdraws_prj = TRUE)), nprjdraws_expected,
+      info = info_str
+    )
   }
   if (!p$refmodel$family$for_augdat && nprjdraws_expected > 1) {
     y_nms <- paste0(y_nms, ".", seq_len(nprjdraws_expected))
@@ -1663,7 +1669,7 @@ projection_tester <- function(p,
     return(fml_tmp)
   })
   sub_data_crr <- p$refmodel$fetch_data()
-  if (p_type_expected) {
+  if (with_clusters) {
     if (exists(".Random.seed", envir = .GlobalEnv)) {
       rng_state_old <- get(".Random.seed", envir = .GlobalEnv)
       on.exit(assign(".Random.seed", rng_state_old, envir = .GlobalEnv))
@@ -1732,8 +1738,15 @@ projection_tester <- function(p,
   expect_identical(p$wdraws_ref, rep(1, length(p$refmodel$wdraws_ref)),
                    info = info_str)
 
-  # p_type
-  expect_identical(p$p_type, p_type_expected, info = info_str)
+  # clust_used
+  expect_identical(p$clust_used, with_clusters, info = info_str)
+
+  # nprjdraws
+  expect_identical(p$nprjdraws, nprjdraws_expected, info = info_str)
+
+  # const_wdraws_prj
+  expect_identical(p$const_wdraws_prj, const_wdraws_prj_expected,
+                   info = info_str)
 
   return(invisible(TRUE))
 }
@@ -1796,6 +1809,8 @@ proj_list_tester <- function(p,
 # @param pl An object resulting from a call to proj_linpred().
 # @param len_expected The number of `"projection"` objects used for `pl`.
 # @param nprjdraws_expected The expected number of projected draws in `pl`.
+# @param wdraws_prj_expected The expected attribute `wdraws_prj` (containing the
+#   weights of the projected draws) of the `pred` and `lpd` elements.
 # @param nobsv_expected The expected number of observations in `pl`.
 # @param lpd_null_expected A single logical value indicating whether output
 #   element `lpd` is expected to be `NULL` (`TRUE`) or not (`FALSE`).
@@ -1812,6 +1827,7 @@ proj_list_tester <- function(p,
 pl_tester <- function(pl,
                       len_expected = 1,
                       nprjdraws_expected = nclusters_pred_tst,
+                      wdraws_prj_expected = NULL,
                       nobsv_expected = nobsv,
                       lpd_null_expected = FALSE,
                       ncats_nlats_expected = replicate(len_expected,
@@ -1831,9 +1847,13 @@ pl_tester <- function(pl,
       c(nprjdraws_expected, nobsv_expected, ncats_nlats_expected[[!!j]]),
       info = info_str
     )
+    expect_identical(attr(pl[[!!j]]$pred, "wdraws_prj"), wdraws_prj_expected,
+                     info = info_str)
     if (!lpd_null_expected) {
       expect_identical(dim(pl[[!!j]]$lpd),
                        c(nprjdraws_expected, nobsv_expected),
+                       info = info_str)
+      expect_identical(attr(pl[[!!j]]$lpd, "wdraws_prj"), wdraws_prj_expected,
                        info = info_str)
     } else {
       expect_null(pl[[!!j]]$lpd, info = info_str)
@@ -1900,6 +1920,9 @@ pp_tester <- function(pp,
 # @param method_expected The expected `vs$method` object.
 # @param cv_method_expected The expected `vs$cv_method` object.
 # @param valsearch_expected The expected `vs$validate_search` object.
+# @param refit_prj_expected A single logical value indicating whether argument
+#   `refit_prj` was set to `TRUE` when calling varsel() or cv_varsel() for
+#   creating `vs` (`TRUE`) or not (`FALSE`).
 # @param cl_search_expected The expected `vs$clust_used_search` object.
 # @param cl_eval_expected The expected `vs$clust_used_eval` object.
 # @param nprjdraws_search_expected The expected `vs$nprjdraws_search` object.
@@ -1928,10 +1951,22 @@ vsel_tester <- function(
     method_expected,
     cv_method_expected = NULL,
     valsearch_expected = NULL,
+    refit_prj_expected = TRUE,
     cl_search_expected = !from_datafit,
     cl_eval_expected = !from_datafit,
-    nprjdraws_search_expected = if (!from_datafit) nclusters_tst else 1L,
-    nprjdraws_eval_expected = if (!from_datafit) nclusters_pred_tst else 1L,
+    nprjdraws_search_expected = if (from_datafit || method_expected == "L1") {
+      1L
+    } else {
+      nclusters_tst
+    },
+    nprjdraws_eval_expected = if (from_datafit || (!refit_prj_expected &&
+                                                   method_expected == "L1")) {
+      1L
+    } else if (!refit_prj_expected) {
+      nclusters_tst
+    } else {
+      nclusters_pred_tst
+    },
     seed_expected = seed_tst,
     nloo_expected = NULL,
     search_trms_empty_size = FALSE,
@@ -1957,7 +1992,6 @@ vsel_tester <- function(
   }
   if (method_expected == "L1") {
     cl_search_expected <- !from_datafit
-    nprjdraws_search_expected <- 1
   }
   if (search_trms_empty_size) {
     # This is the "empty_size" setting, so we have to subtract the skipped model
@@ -2288,7 +2322,7 @@ vsel_tester <- function(
     expect_identical(dim(vs$solution_terms_cv),
                      c(n_folds, solterms_len_expected),
                      info = info_str)
-    # We need the addition of `NA_character_` because of subsampled LOO CV:
+    # We need the addition of `NA_character_` because of subsampled PSIS-LOO CV:
     expect_true(
       all(vs$solution_terms_cv %in% c(trms_universe_split, NA_character_)),
       info = info_str

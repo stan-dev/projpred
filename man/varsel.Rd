@@ -3,6 +3,7 @@
 \name{varsel}
 \alias{varsel}
 \alias{varsel.default}
+\alias{varsel.vsel}
 \alias{varsel.refmodel}
 \title{Run search and performance evaluation without cross-validation}
 \usage{
@@ -10,10 +11,12 @@ varsel(object, ...)
 
 \method{varsel}{default}(object, ...)
 
+\method{varsel}{vsel}(object, ...)
+
 \method{varsel}{refmodel}(
   object,
   d_test = NULL,
-  method = NULL,
+  method = "forward",
   ndraws = NULL,
   nclusters = 20,
   ndraws_pred = 400,
@@ -45,11 +48,9 @@ the latter only if \code{refit_prj} is \code{TRUE}).}
 performance of the submodels as well as of the reference model. If \code{NULL},
 the training data is used.}
 
-\item{method}{The method for the search part. Possible options are \code{"L1"} for
-L1 search and \code{"forward"} for forward search. If \code{NULL}, then internally,
-\code{"L1"} is used, except if (i) the reference model has multilevel or
-additive terms, (ii) if \code{!is.null(search_terms)}, or (iii) if the
-augmented-data projection is used. See also section "Details" below.}
+\item{method}{The method for the search part. Possible options are
+\code{"forward"} for forward search and \code{"L1"} for L1 search. See also section
+"Details" below.}
 
 \item{ndraws}{Number of posterior draws used in the search part. Ignored if
 \code{nclusters} is not \code{NULL} or in case of L1 search (because L1 search always
@@ -159,9 +160,12 @@ accurate. Furthermore, forward search may find a sparser model with
 comparable performance to that found by L1 search, but it may also start
 overfitting when more predictors are added.
 
-An L1 search may select interaction terms before the corresponding main
-terms are selected. If this is undesired, choose the forward search
-instead.
+An L1 search may select an interaction term before all involved lower-order
+interaction terms (including main-effect terms) have been selected. In
+\pkg{projpred} versions > 2.6.0, the resulting predictor ranking is
+automatically modified so that the lower-order interaction terms come
+before this interaction term, but if this is conceptually undesired, choose
+the forward search instead.
 
 The elements of the \code{search_terms} character vector don't need to be
 individual predictor terms. Instead, they can be building blocks consisting
@@ -169,22 +173,26 @@ of several predictor terms connected by the \code{+} symbol. To understand how
 these building blocks work, it is important to know how \pkg{projpred}'s
 forward search works: It starts with an empty vector \code{chosen} which will
 later contain already selected predictor terms. Then, the search iterates
-over model sizes \eqn{j \in \{1, ..., J\}}{j = 1, ..., J}. The candidate
-models at model size \eqn{j} are constructed from those elements from
-\code{search_terms} which yield model size \eqn{j} when combined with the
+over model sizes \eqn{j \in \{0, ..., J\}}{j = 0, ..., J} (with \eqn{J}
+denoting the maximum submodel size, not counting the intercept). The
+candidate models at model size \eqn{j} are constructed from those elements
+from \code{search_terms} which yield model size \eqn{j} when combined with the
 \code{chosen} predictor terms. Note that sometimes, there may be no candidate
 models for model size \eqn{j}. Also note that internally, \code{search_terms} is
 expanded to include the intercept (\code{"1"}), so the first step of the search
-(model size 1) always consists of the intercept-only model as the only
+(model size 0) always consists of the intercept-only model as the only
 candidate.
 
 As a \code{search_terms} example, consider a reference model with formula \code{y ~ x1 + x2 + x3}. Then, to ensure that \code{x1} is always included in the
-candidate models, specify \code{search_terms = c("x1", "x1 + x2", "x1 + x3", "x1 + x2 + x3")}. This search would start with \code{y ~ 1} as the only
-candidate at model size 1. At model size 2, \code{y ~ x1} would be the only
-candidate. At model size 3, \code{y ~ x1 + x2} and \code{y ~ x1 + x3} would be the
-two candidates. At the last model size of 4, \code{y ~ x1 + x2 + x3} would be
+candidate models, specify \code{search_terms = c("x1", "x1 + x2", "x1 + x3", "x1 + x2 + x3")} (or, in a simpler way that leads to the same results,
+\code{search_terms = c("x1", "x1 + x2", "x1 + x3")}, for which helper function
+\code{\link[=force_search_terms]{force_search_terms()}} exists). This search would start with \code{y ~ 1} as the
+only candidate at model size 0. At model size 1, \code{y ~ x1} would be the only
+candidate. At model size 2, \code{y ~ x1 + x2} and \code{y ~ x1 + x3} would be the
+two candidates. At the last model size of 3, \code{y ~ x1 + x2 + x3} would be
 the only candidate. As another example, to exclude \code{x1} from the search,
-specify \code{search_terms = c("x2", "x3", "x2 + x3")}.
+specify \code{search_terms = c("x2", "x3", "x2 + x3")} (or, in a simpler way
+that leads to the same results, \code{search_terms = c("x2", "x3")}).
 }
 \section{Argument \code{d_test}}{
 If not \code{NULL}, then \code{d_test} needs to be a \code{list} with the following
@@ -206,27 +214,26 @@ where this needs to be a vector or a \code{factor} containing the \emph{original
 }
 
 \examples{
-if (requireNamespace("rstanarm", quietly = TRUE)) {
-  # Data:
-  dat_gauss <- data.frame(y = df_gaussian$y, df_gaussian$x)
+\dontshow{if (requireNamespace("rstanarm", quietly = TRUE)) (if (getRversion() >= "3.4") withAutoprint else force)(\{ # examplesIf}
+# Data:
+dat_gauss <- data.frame(y = df_gaussian$y, df_gaussian$x)
 
-  # The "stanreg" fit which will be used as the reference model (with small
-  # values for `chains` and `iter`, but only for technical reasons in this
-  # example; this is not recommended in general):
-  fit <- rstanarm::stan_glm(
-    y ~ X1 + X2 + X3 + X4 + X5, family = gaussian(), data = dat_gauss,
-    QR = TRUE, chains = 2, iter = 500, refresh = 0, seed = 9876
-  )
+# The "stanreg" fit which will be used as the reference model (with small
+# values for `chains` and `iter`, but only for technical reasons in this
+# example; this is not recommended in general):
+fit <- rstanarm::stan_glm(
+  y ~ X1 + X2 + X3 + X4 + X5, family = gaussian(), data = dat_gauss,
+  QR = TRUE, chains = 2, iter = 500, refresh = 0, seed = 9876
+)
 
-  # Run varsel() (here without cross-validation and with small values for
-  # `nterms_max`, `nclusters`, and `nclusters_pred`, but only for the sake of
-  # speed in this example; this is not recommended in general):
-  vs <- varsel(fit, nterms_max = 3, nclusters = 5, nclusters_pred = 10,
-               seed = 5555)
-  # Now see, for example, `?print.vsel`, `?plot.vsel`, `?suggest_size.vsel`,
-  # and `?ranking` for possible post-processing functions.
-}
-
+# Run varsel() (here without cross-validation, with L1 search, and with small
+# values for `nterms_max` and `nclusters_pred`, but only for the sake of
+# speed in this example; this is not recommended in general):
+vs <- varsel(fit, method = "L1", nterms_max = 3, nclusters_pred = 10,
+             seed = 5555)
+# Now see, for example, `?print.vsel`, `?plot.vsel`, `?suggest_size.vsel`,
+# and `?ranking` for possible post-processing functions.
+\dontshow{\}) # examplesIf}
 }
 \seealso{
 \code{\link[=cv_varsel]{cv_varsel()}}

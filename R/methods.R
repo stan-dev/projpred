@@ -35,12 +35,28 @@
 #' @param integrated For [proj_linpred()] only. A single logical value
 #'   indicating whether the output should be averaged across the projected
 #'   posterior draws (`TRUE`) or not (`FALSE`).
-#' @param nresample_clusters For [proj_predict()] with clustered projection
-#'   only. Number of draws to return from the predictive distributions of the
-#'   submodel(s). Not to be confused with argument `nclusters` of [project()]:
-#'   `nresample_clusters` gives the number of draws (*with* replacement) from
-#'   the set of clustered posterior draws after projection (with this set being
-#'   determined by argument `nclusters` of [project()]).
+#' @param nresample_clusters For [proj_predict()] with clustered projection (and
+#'   nonconstant weights for the projected draws) only. Number of draws to
+#'   return from the predictive distributions of the submodel(s). Not to be
+#'   confused with argument `nclusters` of [project()]: `nresample_clusters`
+#'   gives the number of draws (*with* replacement) from the set of clustered
+#'   posterior draws after projection (with this set being determined by
+#'   argument `nclusters` of [project()]).
+#' @param allow_nonconst_wdraws_prj Only relevant for [proj_linpred()] and only
+#'   if `integrated` is `FALSE`. A single logical value indicating whether to
+#'   allow projected draws with different (i.e., nonconstant) weights (`TRUE`)
+#'   or not (`FALSE`). If `return_draws_matrix` is `TRUE`,
+#'   `allow_nonconst_wdraws_prj` is internally set to `TRUE` as well.
+#'   **CAUTION**: Expert use only because if set to `TRUE`, the weights of the
+#'   projected draws are stored in attributes `wdraws_prj` and handling these
+#'   attributes requires special care (e.g., when subsetting the returned
+#'   matrices).
+#' @param return_draws_matrix A single logical value indicating whether to
+#'   return an object (in case of [proj_predict()]) or objects (in case of
+#'   [proj_linpred()]) of class `draws_matrix` (see
+#'   [posterior::draws_matrix()]). In case of [proj_linpred()] and projected
+#'   draws with nonconstant weights (as well as `integrated` being `FALSE`),
+#'   [posterior::weight_draws()] is applied internally.
 #' @param .seed Pseudorandom number generation (PRNG) seed by which the same
 #'   results can be obtained again if needed. Passed to argument `seed` of
 #'   [set.seed()], but can also be `NA` to not call [set.seed()] at all. If not
@@ -87,7 +103,8 @@
 #'   \eqn{C} denote either \eqn{C_{\mathrm{cat}}}{C_cat} (if `transform = TRUE`)
 #'   or \eqn{C_{\mathrm{lat}}}{C_lat} (if `transform = FALSE`). Then, if the
 #'   prediction is done for one submodel only (i.e., `length(nterms) == 1 ||
-#'   !is.null(solution_terms)` in the call to [project()]):
+#'   !is.null(solution_terms)` in the explicit or implicit call to [project()],
+#'   see argument `object`):
 #'   * [proj_linpred()] returns a `list` with the following elements:
 #'       + Element `pred` contains the actual predictions, i.e., the linear
 #'       predictors, possibly transformed to response scale (depending on
@@ -103,51 +120,66 @@
 #'       `transform = TRUE` and `<refmodel>$family$cats` (where `<refmodel>` is
 #'       an object resulting from [init_refmodel()]; see also
 #'       [extend_family()]'s argument `latent_y_unqs`) being `NULL`, both
-#'       elements are \eqn{S_{\mathrm{prj}} \times N}{S_prj x N} matrices. In
-#'       case of (i) the augmented-data projection or (ii) the latent projection
-#'       with `transform = TRUE` and `<refmodel>$family$cats` being not `NULL`,
-#'       `pred` is an \eqn{S_{\mathrm{prj}} \times N \times C}{S_prj x N x C}
-#'       array and `lpd` is an \eqn{S_{\mathrm{prj}} \times N}{S_prj x N}
-#'       matrix.
+#'       elements are \eqn{S_{\mathrm{prj}} \times N}{S_prj x N} matrices
+#'       (converted to a---possibly weighted---`draws_matrix` if argument
+#'       `return_draws_matrix` is `TRUE`, see the description of this argument).
+#'       In case of (i) the augmented-data projection or (ii) the latent
+#'       projection with `transform = TRUE` and `<refmodel>$family$cats` being
+#'       not `NULL`, `pred` is an \eqn{S_{\mathrm{prj}} \times N \times C}{S_prj
+#'       x N x C} array (if argument `return_draws_matrix` is `TRUE`, this array
+#'       is "compressed" to an \eqn{S_{\mathrm{prj}} \times (N \cdot C)}{S_prj x
+#'       (N * C)} matrix---with the columns consisting of \eqn{C} blocks of
+#'       \eqn{N} rows---and then converted to a---possibly
+#'       weighted---`draws_matrix`) and `lpd` is an \eqn{S_{\mathrm{prj}} \times
+#'       N}{S_prj x N} matrix (converted to a---possibly
+#'       weighted---`draws_matrix` if argument `return_draws_matrix` is `TRUE`).
+#'       If `return_draws_matrix` is `FALSE` and `allow_nonconst_wdraws_prj` is
+#'       `TRUE` and `integrated` is `FALSE` and the projected draws have
+#'       nonconstant weights, then both `list` elements have the weights of
+#'       these draws stored in an attribute `wdraws_prj`. (If
+#'       `return_draws_matrix`, `allow_nonconst_wdraws_prj`, and `integrated`
+#'       are all `FALSE`, then projected draws with nonconstant weights cause an
+#'       error.)
 #'   * [proj_predict()] returns an \eqn{S_{\mathrm{prj}} \times N}{S_prj x N}
 #'   matrix of predictions where \eqn{S_{\mathrm{prj}}}{S_prj} denotes
-#'   `nresample_clusters` in case of clustered projection. In case of (i) the
+#'   `nresample_clusters` in case of clustered projection (or, more generally,
+#'   in case of projected draws with nonconstant weights). If argument
+#'   `return_draws_matrix` is `TRUE`, the returned matrix is converted to a
+#'   `draws_matrix` (see [posterior::draws_matrix()]). In case of (i) the
 #'   augmented-data projection or (ii) the latent projection with `resp_oscale =
-#'   TRUE` and `<refmodel>$family$cats` being not `NULL`, this matrix has an
-#'   attribute called `cats` (the character vector of response categories) and
-#'   the values of the matrix are the predicted indices of the response
-#'   categories (these indices refer to the order of the response categories
-#'   from attribute `cats`).
+#'   TRUE` and `<refmodel>$family$cats` being not `NULL`, the returned matrix
+#'   (or `draws_matrix`) has an attribute called `cats` (the character vector of
+#'   response categories) and the values of the matrix (or `draws_matrix`) are
+#'   the predicted indices of the response categories (these indices refer to
+#'   the order of the response categories from attribute `cats`).
 #'
 #'   If the prediction is done for more than one submodel, the output from above
 #'   is returned for each submodel, giving a named `list` with one element for
 #'   each submodel (the names of this `list` being the numbers of solution terms
 #'   of the submodels when counting the intercept, too).
 #'
-#' @examples
-#' if (requireNamespace("rstanarm", quietly = TRUE)) {
-#'   # Data:
-#'   dat_gauss <- data.frame(y = df_gaussian$y, df_gaussian$x)
+#' @examplesIf requireNamespace("rstanarm", quietly = TRUE)
+#' # Data:
+#' dat_gauss <- data.frame(y = df_gaussian$y, df_gaussian$x)
 #'
-#'   # The "stanreg" fit which will be used as the reference model (with small
-#'   # values for `chains` and `iter`, but only for technical reasons in this
-#'   # example; this is not recommended in general):
-#'   fit <- rstanarm::stan_glm(
-#'     y ~ X1 + X2 + X3 + X4 + X5, family = gaussian(), data = dat_gauss,
-#'     QR = TRUE, chains = 2, iter = 500, refresh = 0, seed = 9876
-#'   )
+#' # The "stanreg" fit which will be used as the reference model (with small
+#' # values for `chains` and `iter`, but only for technical reasons in this
+#' # example; this is not recommended in general):
+#' fit <- rstanarm::stan_glm(
+#'   y ~ X1 + X2 + X3 + X4 + X5, family = gaussian(), data = dat_gauss,
+#'   QR = TRUE, chains = 2, iter = 500, refresh = 0, seed = 9876
+#' )
 #'
-#'   # Projection onto an arbitrary combination of predictor terms (with a small
-#'   # value for `nclusters`, but only for the sake of speed in this example;
-#'   # this is not recommended in general):
-#'   prj <- project(fit, solution_terms = c("X1", "X3", "X5"), nclusters = 10,
-#'                  seed = 9182)
+#' # Projection onto an arbitrary combination of predictor terms (with a small
+#' # value for `ndraws`, but only for the sake of speed in this example; this
+#' # is not recommended in general):
+#' prj <- project(fit, solution_terms = c("X1", "X3", "X5"), ndraws = 21,
+#'                seed = 9182, verbose = FALSE)
 #'
-#'   # Predictions (at the training points) from the submodel onto which the
-#'   # reference model was projected:
-#'   prjl <- proj_linpred(prj)
-#'   prjp <- proj_predict(prj, .seed = 7364)
-#' }
+#' # Predictions (at the training points) from the submodel onto which the
+#' # reference model was projected:
+#' prjl <- proj_linpred(prj)
+#' prjp <- proj_predict(prj, .seed = 7364)
 #'
 NULL
 
@@ -235,10 +267,12 @@ proj_helper <- function(object, newdata, offsetnew, weightsnew, onesub_fun,
     weightsnew <- w_o$weights
     offsetnew <- w_o$offset
     if (length(weightsnew) == 0) {
-      weightsnew <- rep(1, nrow(newdata) %||% proj$refmodel$nobs)
+      stop("The function supplied to argument `extract_model_data` of ",
+           "init_refmodel() must not return a length-zero element `weights`.")
     }
     if (length(offsetnew) == 0) {
-      offsetnew <- rep(0, nrow(newdata) %||% proj$refmodel$nobs)
+      stop("The function supplied to argument `extract_model_data` of ",
+           "init_refmodel() must not return a length-zero element `offset`.")
     }
     if (proj$refmodel$family$for_augdat && !all(weightsnew == 1)) {
       stop("Currently, the augmented-data projection may not be combined with ",
@@ -259,8 +293,9 @@ proj_helper <- function(object, newdata, offsetnew, weightsnew, onesub_fun,
 #' @export
 proj_linpred <- function(object, newdata = NULL, offsetnew = NULL,
                          weightsnew = NULL, filter_nterms = NULL,
-                         transform = FALSE, integrated = FALSE, .seed = NA,
-                         ...) {
+                         transform = FALSE, integrated = FALSE,
+                         allow_nonconst_wdraws_prj = return_draws_matrix,
+                         return_draws_matrix = FALSE, .seed = NA, ...) {
   if (exists(".Random.seed", envir = .GlobalEnv)) {
     rng_state_old <- get(".Random.seed", envir = .GlobalEnv)
   }
@@ -272,18 +307,34 @@ proj_linpred <- function(object, newdata = NULL, offsetnew = NULL,
     set.seed(.seed)
   }
 
+  if (return_draws_matrix) {
+    allow_nonconst_wdraws_prj <- TRUE
+  }
+
   ## proj_helper lapplies fun to each projection in object
   proj_helper(
     object = object, newdata = newdata,
     offsetnew = offsetnew, weightsnew = weightsnew,
     onesub_fun = proj_linpred_aux, filter_nterms = filter_nterms,
-    transform = transform, integrated = integrated, ...
+    transform = transform, integrated = integrated,
+    allow_nonconst_wdraws_prj = allow_nonconst_wdraws_prj,
+    return_draws_matrix = return_draws_matrix, ...
   )
 }
 
 ## function applied to each projected submodel in case of proj_linpred()
 proj_linpred_aux <- function(proj, newdata, offset, weights, transform = FALSE,
-                             integrated = FALSE, extract_y_ind = TRUE, ...) {
+                             integrated = FALSE, extract_y_ind = TRUE,
+                             allow_nonconst_wdraws_prj = return_draws_matrix,
+                             return_draws_matrix = FALSE, ...) {
+  if (!proj[["const_wdraws_prj"]] && !allow_nonconst_wdraws_prj &&
+      !integrated) {
+    stop("The projected draws have different (i.e., nonconstant) weights, so ",
+         "please use either `allow_nonconst_wdraws_prj = TRUE` (and then ",
+         "don't forget that all downstream analyses need to take the weights ",
+         "into account) or `return_draws_matrix = TRUE`, the latter being ",
+         "recommended.")
+  }
   pred_sub <- proj$refmodel$family$mu_fun(proj$outdmin, newdata = newdata,
                                           offset = offset,
                                           transform = transform)
@@ -362,6 +413,22 @@ proj_linpred_aux <- function(proj, newdata, offset, weights, transform = FALSE,
        (proj$refmodel$family$for_latent && !transform))) {
     lpd_out <- t(lpd_out)
   }
+  if (!proj[["const_wdraws_prj"]] && !integrated) {
+    attr(pred_sub, "wdraws_prj") <- proj[["wdraws_prj"]]
+    if (!is.null(lpd_out)) {
+      attr(lpd_out, "wdraws_prj") <- proj[["wdraws_prj"]]
+    }
+  }
+  if (return_draws_matrix) {
+    if (length(dim(pred_sub)) == 3) {
+      pred_sub <- structure(t(arr2augmat(pred_sub, margin_draws = 1)),
+                            wdraws_prj = attr(pred_sub, "wdraws_prj"))
+    }
+    pred_sub <- mat2drmat(pred_sub)
+    if (!is.null(lpd_out)) {
+      lpd_out <- mat2drmat(lpd_out)
+    }
+  }
   return(nlist(pred = pred_sub, lpd = lpd_out))
 }
 
@@ -435,8 +502,8 @@ compute_lpd <- function(ynew, pred_sub, proj, weights, transformed) {
 #' @export
 proj_predict <- function(object, newdata = NULL, offsetnew = NULL,
                          weightsnew = NULL, filter_nterms = NULL,
-                         nresample_clusters = 1000, .seed = NA,
-                         resp_oscale = TRUE, ...) {
+                         nresample_clusters = 1000, return_draws_matrix = FALSE,
+                         .seed = NA, resp_oscale = TRUE, ...) {
   if (exists(".Random.seed", envir = .GlobalEnv)) {
     rng_state_old <- get(".Random.seed", envir = .GlobalEnv)
   }
@@ -453,14 +520,15 @@ proj_predict <- function(object, newdata = NULL, offsetnew = NULL,
     object = object, newdata = newdata,
     offsetnew = offsetnew, weightsnew = weightsnew,
     onesub_fun = proj_predict_aux, filter_nterms = filter_nterms,
-    nresample_clusters = nresample_clusters, resp_oscale = resp_oscale, ...
+    nresample_clusters = nresample_clusters, resp_oscale = resp_oscale,
+    return_draws_matrix = return_draws_matrix, ...
   )
 }
 
 ## function applied to each projected submodel in case of proj_predict()
 proj_predict_aux <- function(proj, newdata, offset, weights,
                              nresample_clusters = 1000, resp_oscale = TRUE,
-                             ...) {
+                             return_draws_matrix = FALSE, ...) {
   if (!proj$refmodel$family$for_latent && !resp_oscale) {
     stop("`resp_oscale = FALSE` can only be used in case of the latent ",
          "projection.")
@@ -468,8 +536,8 @@ proj_predict_aux <- function(proj, newdata, offset, weights,
   mu <- proj$refmodel$family$mu_fun(proj$outdmin,
                                     newdata = newdata,
                                     offset = offset)
-  if (proj$p_type) {
-    # In this case, the posterior draws have been clustered.
+  if (!proj[["const_wdraws_prj"]]) {
+    # In this case, the posterior draws have nonconstant weights.
     draw_inds <- sample(x = seq_along(proj$wdraws_prj),
                         size = nresample_clusters, replace = TRUE,
                         prob = proj$wdraws_prj)
@@ -527,6 +595,9 @@ proj_predict_aux <- function(proj, newdata, offset, weights,
       proj$refmodel$family$ppd(mu[, i], proj$dis[i], weights)
     }))
   }
+  if (return_draws_matrix) {
+    pppd_out <- mat2drmat(pppd_out)
+  }
   return(structure(pppd_out, cats = cats_aug))
 }
 
@@ -548,6 +619,11 @@ proj_predict_aux <- function(proj, newdata, offset, weights,
 #'   close enough to the baseline model's ELPD. An equivalent rule is applied in
 #'   case of the MLPD. See [suggest_size()] for a formalization. Supplying `NA`
 #'   deactivates this.
+#' @param point_size Passed to argument `size` of [ggplot2::geom_point()] and
+#'   controls the size of the points.
+#' @param bar_thickness Passed to argument `linewidth` of
+#'   [ggplot2::geom_linerange()] and controls the thickness of the uncertainty
+#'   bars.
 #' @param ranking_nterms_max Maximum submodel size (number of predictor terms)
 #'   for which the predictor names and the corresponding ranking proportions are
 #'   added on the x-axis. Using `NULL` is effectively the same as using
@@ -571,6 +647,15 @@ proj_predict_aux <- function(proj, newdata, offset, weights,
 #'   passed to [ggrepel::geom_text_repel()] or [ggrepel::geom_label_repel()] in
 #'   case of `ranking_repel = "text"` or `ranking_repel = "label"`,
 #'   respectively.
+#' @param ranking_colored A single logical value indicating whether the points
+#'   and the uncertainty bars should be gradient-colored according to the CV
+#'   ranking proportions (`TRUE`) or not (`FALSE`). The CV ranking proportions
+#'   may be cumulated (see argument `cumulate`). Note that the point and the
+#'   uncertainty bar at submodel size 0 (i.e., at the intercept-only model) are
+#'   always colored in gray because the intercept is forced to be selected
+#'   before any predictors are selected (in other words, the reason is that for
+#'   submodel size 0, the question of variability across CV folds is not
+#'   appropriate in the first place).
 #' @param cumulate Passed to argument `cumulate` of [cv_proportions()]. Affects
 #'   the ranking proportions given on the x-axis (below the full-data predictor
 #'   ranking).
@@ -598,26 +683,24 @@ proj_predict_aux <- function(proj, newdata, offset, weights,
 #' line for the reference model and, if `baseline = "best"`, as a long-dashed
 #' green horizontal line for the baseline model.
 #'
-#' @examples
-#' if (requireNamespace("rstanarm", quietly = TRUE)) {
-#'   # Data:
-#'   dat_gauss <- data.frame(y = df_gaussian$y, df_gaussian$x)
+#' @examplesIf requireNamespace("rstanarm", quietly = TRUE)
+#' # Data:
+#' dat_gauss <- data.frame(y = df_gaussian$y, df_gaussian$x)
 #'
-#'   # The "stanreg" fit which will be used as the reference model (with small
-#'   # values for `chains` and `iter`, but only for technical reasons in this
-#'   # example; this is not recommended in general):
-#'   fit <- rstanarm::stan_glm(
-#'     y ~ X1 + X2 + X3 + X4 + X5, family = gaussian(), data = dat_gauss,
-#'     QR = TRUE, chains = 2, iter = 500, refresh = 0, seed = 9876
-#'   )
+#' # The "stanreg" fit which will be used as the reference model (with small
+#' # values for `chains` and `iter`, but only for technical reasons in this
+#' # example; this is not recommended in general):
+#' fit <- rstanarm::stan_glm(
+#'   y ~ X1 + X2 + X3 + X4 + X5, family = gaussian(), data = dat_gauss,
+#'   QR = TRUE, chains = 2, iter = 500, refresh = 0, seed = 9876
+#' )
 #'
-#'   # Run varsel() (here without cross-validation and with small values for
-#'   # `nterms_max`, `nclusters`, and `nclusters_pred`, but only for the sake of
-#'   # speed in this example; this is not recommended in general):
-#'   vs <- varsel(fit, nterms_max = 3, nclusters = 5, nclusters_pred = 10,
-#'                seed = 5555)
-#'   print(plot(vs))
-#' }
+#' # Run varsel() (here without cross-validation, with L1 search, and with small
+#' # values for `nterms_max` and `nclusters_pred`, but only for the sake of
+#' # speed in this example; this is not recommended in general):
+#' vs <- varsel(fit, method = "L1", nterms_max = 3, nclusters_pred = 10,
+#'              seed = 5555)
+#' print(plot(vs))
 #'
 #' @export
 plot.vsel <- function(
@@ -629,11 +712,14 @@ plot.vsel <- function(
     baseline = if (!inherits(x$refmodel, "datafit")) "ref" else "best",
     thres_elpd = NA,
     resp_oscale = TRUE,
+    point_size = 3,
+    bar_thickness = 1,
     ranking_nterms_max = NULL,
     ranking_abbreviate = FALSE,
     ranking_abbreviate_args = list(),
     ranking_repel = NULL,
     ranking_repel_args = list(),
+    ranking_colored = FALSE,
     cumulate = FALSE,
     text_angle = NULL,
     ...
@@ -760,13 +846,15 @@ plot.vsel <- function(
       rk_fulldata = c("", rk[["fulldata"]]),
       cv_props_diag = c(NA, pr_rk)
     )
+    rk_dfr[["cv_props_diag_num"]] <- rk_dfr[["cv_props_diag"]]
     rk_dfr[["cv_props_diag"]] <- paste(round(100 * rk_dfr[["cv_props_diag"]]),
                                        "%")
     rk_dfr[["cv_props_diag"]][1] <- "" # empty model
     rk_dfr_empty <- do.call(rbind, lapply(
       setdiff(breaks, rk_dfr[["size"]]),
       function(br_j) {
-        data.frame(size = br_j, rk_fulldata = "", cv_props_diag = "")
+        data.frame(size = br_j, rk_fulldata = "", cv_props_diag = "",
+                   cv_props_diag_num = NA)
       }
     ))
     rk_dfr <- rbind(rk_dfr, rk_dfr_empty)
@@ -814,18 +902,22 @@ plot.vsel <- function(
 
   # plot submodel results
   data_gg <- subset(stats_sub, stats_sub$size <= nterms_max)
-  if (!is.na(ranking_nterms_max) && !is.null(ranking_repel)) {
+  if (!is.na(ranking_nterms_max) &&
+      (!is.null(ranking_repel) ||
+       (ranking_colored && !is.null(rk[["foldwise"]])))) {
     colnms_orig <- names(data_gg)
     data_gg[["row_idx"]] <- seq_len(nrow(data_gg))
+    cols_add <- c("cv_props_diag_num", "rkfulldt_cvpropdiag")
     data_gg <- merge(data_gg,
-                     rk_dfr[, c("size", "rkfulldt_cvpropdiag"), drop = FALSE],
+                     rk_dfr[, c("size", cols_add), drop = FALSE],
                      by = "size", all.x = TRUE, all.y = FALSE, sort = FALSE)
     data_gg <- data_gg[order(data_gg[["row_idx"]]), , drop = FALSE]
     data_gg[["row_idx"]] <- NULL
-    data_gg <- data_gg[, c(colnms_orig, "rkfulldt_cvpropdiag"), drop = FALSE]
+    data_gg <- data_gg[, c(colnms_orig, cols_add), drop = FALSE]
   }
   pp <- ggplot(data = data_gg,
-               mapping = aes(x = .data[["size"]]))
+               mapping = aes(x = .data[["size"]], y = .data[["value"]],
+                             ymin = .data[["lq"]], ymax = .data[["uq"]]))
   if (!all(is.na(stats_ref$se))) {
     # add reference model results if they exist
 
@@ -868,27 +960,49 @@ plot.vsel <- function(
                    color = "darkgreen", linetype = "longdash")
     }
   }
+  if (!is.na(ranking_nterms_max) && ranking_colored &&
+      !is.null(rk[["foldwise"]])) {
+    aes_linerg_pt <- aes(color = .data[["cv_props_diag_num"]])
+    alpha_linerg <- 1
+  } else {
+    aes_linerg_pt <- NULL
+    alpha_linerg <- 0.55
+  }
   if (!is.na(ranking_nterms_max) && is.null(ranking_repel)) {
     tick_labs_x <- rk_dfr[order(match(rk_dfr[["size"]], breaks), na.last = NA),
                           "size_rkfulldt_cvpropdiag"]
   } else {
     tick_labs_x <- waiver()
   }
+  # The submodel-specific graphical elements:
   pp <- pp +
-    # The submodel-specific graphical elements:
-    geom_linerange(aes(ymin = .data[["lq"]], ymax = .data[["uq"]],
-                       alpha = 0.1)) +
-    geom_line(aes(y = .data[["value"]])) +
-    geom_point(aes(y = .data[["value"]])) +
-    # Miscellaneous stuff (axes, theming, faceting, etc.):
-    scale_x_continuous(
-      breaks = breaks, minor_breaks = minor_breaks,
-      limits = c(min(breaks), max(breaks)),
-      labels = tick_labs_x
-    ) +
+    geom_linerange(aes_linerg_pt, alpha = alpha_linerg,
+                   linewidth = bar_thickness) +
+    geom_line() +
+    geom_point(aes_linerg_pt, size = point_size)
+  # Miscellaneous stuff (axes, theming, faceting, etc.):
+  if (!is.na(ranking_nterms_max) && ranking_colored &&
+      !is.null(rk[["foldwise"]])) {
+    ### Option 1:
+    pp <- pp +
+      scale_color_gradient(name = "Proportion\nof CV folds",
+                           labels = scales::label_percent(suffix = " %"),
+                           limits = c(0, 1),
+                           low = "#ededed", high = "#0f365c")
+    ###
+    ### Option 2 (requires the 'RColorBrewer' package):
+    # pp <- pp +
+    #   scale_color_distiller(name = "Proportion\nof CV folds",
+    #                        labels = scales::label_percent(suffix = " %"),
+    #                        direction = 1)
+    ###
+  }
+  pp <- pp +
+    scale_x_continuous(breaks = breaks, minor_breaks = minor_breaks,
+                       limits = c(min(breaks), max(breaks)),
+                       labels = tick_labs_x) +
     labs(x = xlab, y = ylab) +
-    theme(legend.position = "none",
-          axis.text.x = element_text(angle = text_angle, hjust = 0.5,
+    theme(axis.text.x = element_text(angle = text_angle, hjust = 0.5,
                                      vjust = 0.5)) +
     facet_grid(statistic ~ ., scales = "free_y")
   if (!is.na(ranking_nterms_max) && !is.null(ranking_repel)) {
@@ -899,8 +1013,7 @@ plot.vsel <- function(
     }
     pp <- pp +
       do.call(geom_repel_fun, c(
-        list(mapping = aes(y = .data[["value"]],
-                           label = .data[["rkfulldt_cvpropdiag"]])),
+        list(mapping = aes(label = .data[["rkfulldt_cvpropdiag"]])),
         ranking_repel_args
       ))
   }
@@ -1011,26 +1124,24 @@ plot.vsel <- function(
 #'
 #' @seealso [print.vselsummary()]
 #'
-#' @examples
-#' if (requireNamespace("rstanarm", quietly = TRUE)) {
-#'   # Data:
-#'   dat_gauss <- data.frame(y = df_gaussian$y, df_gaussian$x)
+#' @examplesIf requireNamespace("rstanarm", quietly = TRUE)
+#' # Data:
+#' dat_gauss <- data.frame(y = df_gaussian$y, df_gaussian$x)
 #'
-#'   # The "stanreg" fit which will be used as the reference model (with small
-#'   # values for `chains` and `iter`, but only for technical reasons in this
-#'   # example; this is not recommended in general):
-#'   fit <- rstanarm::stan_glm(
-#'     y ~ X1 + X2 + X3 + X4 + X5, family = gaussian(), data = dat_gauss,
-#'     QR = TRUE, chains = 2, iter = 500, refresh = 0, seed = 9876
-#'   )
+#' # The "stanreg" fit which will be used as the reference model (with small
+#' # values for `chains` and `iter`, but only for technical reasons in this
+#' # example; this is not recommended in general):
+#' fit <- rstanarm::stan_glm(
+#'   y ~ X1 + X2 + X3 + X4 + X5, family = gaussian(), data = dat_gauss,
+#'   QR = TRUE, chains = 2, iter = 500, refresh = 0, seed = 9876
+#' )
 #'
-#'   # Run varsel() (here without cross-validation and with small values for
-#'   # `nterms_max`, `nclusters`, and `nclusters_pred`, but only for the sake of
-#'   # speed in this example; this is not recommended in general):
-#'   vs <- varsel(fit, nterms_max = 3, nclusters = 5, nclusters_pred = 10,
-#'                seed = 5555)
-#'   print(summary(vs), digits = 1)
-#' }
+#' # Run varsel() (here without cross-validation, with L1 search, and with small
+#' # values for `nterms_max` and `nclusters_pred`, but only for the sake of
+#' # speed in this example; this is not recommended in general):
+#' vs <- varsel(fit, method = "L1", nterms_max = 3, nclusters_pred = 10,
+#'              seed = 5555)
+#' print(summary(vs), digits = 1)
 #'
 #' @export
 summary.vsel <- function(
@@ -1270,8 +1381,9 @@ print.vsel <- function(x, ...) {
 #' This function can suggest an appropriate submodel size based on a decision
 #' rule described in section "Details" below. Note that this decision is quite
 #' heuristic and should be interpreted with caution. It is recommended to
-#' examine the results via [plot.vsel()] and/or [summary.vsel()] and to make the
-#' final decision based on what is most appropriate for the problem at hand.
+#' examine the results via [plot.vsel()], [cv_proportions()],
+#' [plot.cv_proportions()], and/or [summary.vsel()] and to make the final
+#' decision based on what is most appropriate for the problem at hand.
 #'
 #' @param object An object of class `vsel` (returned by [varsel()] or
 #'   [cv_varsel()]).
@@ -1352,26 +1464,24 @@ print.vsel <- function(x, ...) {
 #'   The intercept is not counted by [suggest_size()], so a suggested size of
 #'   zero stands for the intercept-only model.
 #'
-#' @examples
-#' if (requireNamespace("rstanarm", quietly = TRUE)) {
-#'   # Data:
-#'   dat_gauss <- data.frame(y = df_gaussian$y, df_gaussian$x)
+#' @examplesIf requireNamespace("rstanarm", quietly = TRUE)
+#' # Data:
+#' dat_gauss <- data.frame(y = df_gaussian$y, df_gaussian$x)
 #'
-#'   # The "stanreg" fit which will be used as the reference model (with small
-#'   # values for `chains` and `iter`, but only for technical reasons in this
-#'   # example; this is not recommended in general):
-#'   fit <- rstanarm::stan_glm(
-#'     y ~ X1 + X2 + X3 + X4 + X5, family = gaussian(), data = dat_gauss,
-#'     QR = TRUE, chains = 2, iter = 500, refresh = 0, seed = 9876
-#'   )
+#' # The "stanreg" fit which will be used as the reference model (with small
+#' # values for `chains` and `iter`, but only for technical reasons in this
+#' # example; this is not recommended in general):
+#' fit <- rstanarm::stan_glm(
+#'   y ~ X1 + X2 + X3 + X4 + X5, family = gaussian(), data = dat_gauss,
+#'   QR = TRUE, chains = 2, iter = 500, refresh = 0, seed = 9876
+#' )
 #'
-#'   # Run varsel() (here without cross-validation and with small values for
-#'   # `nterms_max`, `nclusters`, and `nclusters_pred`, but only for the sake of
-#'   # speed in this example; this is not recommended in general):
-#'   vs <- varsel(fit, nterms_max = 3, nclusters = 5, nclusters_pred = 10,
-#'                seed = 5555)
-#'   print(suggest_size(vs))
-#' }
+#' # Run varsel() (here without cross-validation, with L1 search, and with small
+#' # values for `nterms_max` and `nclusters_pred`, but only for the sake of
+#' # speed in this example; this is not recommended in general):
+#' vs <- varsel(fit, method = "L1", nterms_max = 3, nclusters_pred = 10,
+#'              seed = 5555)
+#' print(suggest_size(vs))
 #'
 #' @export
 suggest_size <- function(object, ...) {
@@ -1911,11 +2021,13 @@ get_subparams.mmblogit <- function(x, ...) {
   return(subparams)
 }
 
-#' Extract projected parameter draws
+#' Extract projected parameter draws and coerce to matrix
 #'
 #' This is the [as.matrix()] method for `projection` objects (returned by
 #' [project()], possibly as elements of a `list`). It extracts the projected
-#' parameter draws and returns them as a matrix.
+#' parameter draws and returns them as a matrix. In case of different (i.e.,
+#' nonconstant) weights for the projected draws, see
+#' [as_draws_matrix.projection()] for a better solution.
 #'
 #' @param x An object of class `projection` (returned by [project()], possibly
 #'   as elements of a `list`).
@@ -1923,6 +2035,12 @@ get_subparams.mmblogit <- function(x, ...) {
 #'   Either `"auto"`, `"rstanarm"`, or `"brms"`, where `"auto"` chooses
 #'   `"rstanarm"` or `"brms"` based on the class of the reference model fit (and
 #'   uses `"rstanarm"` if the reference model fit is of an unknown class).
+#' @param allow_nonconst_wdraws_prj A single logical value indicating whether to
+#'   allow projected draws with different (i.e., nonconstant) weights (`TRUE`)
+#'   or not (`FALSE`). **CAUTION**: Expert use only because if set to `TRUE`,
+#'   the weights of the projected draws are stored in an attribute `wdraws_prj`
+#'   and handling this attribute requires special care (e.g., when subsetting
+#'   the returned matrix).
 #' @param ... Currently ignored.
 #'
 #' @details In case of the augmented-data projection for a multilevel submodel
@@ -1933,64 +2051,61 @@ get_subparams.mmblogit <- function(x, ...) {
 #'
 #' @return An \eqn{S_{\mathrm{prj}} \times Q}{S_prj x Q} matrix of projected
 #'   draws, with \eqn{S_{\mathrm{prj}}}{S_prj} denoting the number of projected
-#'   draws and \eqn{Q} the number of parameters.
+#'   draws and \eqn{Q} the number of parameters. If `allow_nonconst_wdraws_prj`
+#'   is set to `TRUE`, the weights of the projected draws are stored in an
+#'   attribute `wdraws_prj`. (If `allow_nonconst_wdraws_prj` is `FALSE`,
+#'   projected draws with nonconstant weights cause an error.)
 #'
-#' @examples
-#' if (requireNamespace("rstanarm", quietly = TRUE)) {
-#'   # Data:
-#'   dat_gauss <- data.frame(y = df_gaussian$y, df_gaussian$x)
+#' @examplesIf requireNamespace("rstanarm", quietly = TRUE)
+#' # Data:
+#' dat_gauss <- data.frame(y = df_gaussian$y, df_gaussian$x)
 #'
-#'   # The "stanreg" fit which will be used as the reference model (with small
-#'   # values for `chains` and `iter`, but only for technical reasons in this
-#'   # example; this is not recommended in general):
-#'   fit <- rstanarm::stan_glm(
-#'     y ~ X1 + X2 + X3 + X4 + X5, family = gaussian(), data = dat_gauss,
-#'     QR = TRUE, chains = 2, iter = 500, refresh = 0, seed = 9876
-#'   )
+#' # The "stanreg" fit which will be used as the reference model (with small
+#' # values for `chains` and `iter`, but only for technical reasons in this
+#' # example; this is not recommended in general):
+#' fit <- rstanarm::stan_glm(
+#'   y ~ X1 + X2 + X3 + X4 + X5, family = gaussian(), data = dat_gauss,
+#'   QR = TRUE, chains = 2, iter = 500, refresh = 0, seed = 9876
+#' )
 #'
-#'   # Projection onto an arbitrary combination of predictor terms (with a small
-#'   # value for `nclusters`, but only for the sake of speed in this example;
-#'   # this is not recommended in general):
-#'   prj <- project(fit, solution_terms = c("X1", "X3", "X5"), nclusters = 10,
-#'                  seed = 9182)
-#'   prjmat <- as.matrix(prj)
-#'   ### For further post-processing (e.g., via packages `bayesplot` and
-#'   ### `posterior`), we will here ignore the fact that clustering was used
-#'   ### (due to argument `nclusters` above). CAUTION: Ignoring the clustering
-#'   ### is not recommended and only shown here for demonstrative purposes. A
-#'   ### better solution for the clustering case is explained below.
-#'   # If the `bayesplot` package is installed, the output from
-#'   # as.matrix.projection() can be used there. For example:
-#'   if (requireNamespace("bayesplot", quietly = TRUE)) {
-#'     print(bayesplot::mcmc_intervals(prjmat))
-#'   }
-#'   # If the `posterior` package is installed, the output from
-#'   # as.matrix.projection() can be used there. For example:
-#'   if (requireNamespace("posterior", quietly = TRUE)) {
-#'     prjdrws <- posterior::as_draws_matrix(prjmat)
-#'     print(posterior::summarize_draws(
-#'       prjdrws,
-#'       "median", "mad", function(x) quantile(x, probs = c(0.025, 0.975))
-#'     ))
-#'   }
-#'   ### Better solution for post-processing clustered draws (e.g., via
-#'   ### `bayesplot` or `posterior`): Don't ignore the fact that clustering was
-#'   ### used. Instead, resample the clusters according to their weights (e.g.,
-#'   ### via posterior::resample_draws()). However, this requires access to the
-#'   ### cluster weights which is not implemented in `projpred` yet. This
-#'   ### example will be extended as soon as those weights are accessible.
+#' # Projection onto an arbitrary combination of predictor terms (with a small
+#' # value for `ndraws`, but only for the sake of speed in this example; this
+#' # is not recommended in general):
+#' prj <- project(fit, solution_terms = c("X1", "X3", "X5"), ndraws = 21,
+#'                seed = 9182, verbose = FALSE)
+#'
+#' # Applying the as.matrix() generic to the output of project() dispatches to
+#' # the projpred::as.matrix.projection() method:
+#' prj_mat <- as.matrix(prj)
+#'
+#' # Since the draws have all the same weight here, we can treat them like
+#' # ordinary MCMC draws, e.g., we can summarize them using the `posterior`
+#' # package:
+#' if (requireNamespace("posterior", quietly = TRUE)) {
+#'   print(posterior::summarize_draws(
+#'     posterior::as_draws_matrix(prj_mat),
+#'     "median", "mad", function(x) quantile(x, probs = c(0.025, 0.975))
+#'   ))
+#' }
+#' # Or visualize them using the `bayesplot` package:
+#' if (requireNamespace("bayesplot", quietly = TRUE)) {
+#'   print(bayesplot::mcmc_intervals(prj_mat))
 #' }
 #'
 #' @method as.matrix projection
 #' @export
-as.matrix.projection <- function(x, nm_scheme = "auto", ...) {
+as.matrix.projection <- function(x, nm_scheme = "auto",
+                                 allow_nonconst_wdraws_prj = FALSE, ...) {
   if (inherits(x$refmodel, "datafit")) {
     stop("as.matrix.projection() does not work for objects based on ",
          "\"datafit\"s.")
   }
-  if (x$p_type) {
-    warning("Note that projection was performed using clustering and the ",
-            "clusters might have different weights.")
+  if (!x[["const_wdraws_prj"]] && !allow_nonconst_wdraws_prj) {
+    stop("The projected draws have different (i.e., nonconstant) weights, so ",
+         "please use either `allow_nonconst_wdraws_prj = TRUE` (and then ",
+         "don't forget that all downstream analyses need to take the weights ",
+         "into account) or posterior::as_draws_matrix(), the latter being ",
+         "recommended.")
   }
   if (identical(nm_scheme, "auto")) {
     if (inherits(x$refmodel$fit, "brmsfit")) {
@@ -2002,7 +2117,104 @@ as.matrix.projection <- function(x, nm_scheme = "auto", ...) {
   stopifnot(nm_scheme %in% c("rstanarm", "brms"))
   res <- do.call(rbind, lapply(x$outdmin, get_subparams, nm_scheme = nm_scheme))
   if (x$refmodel$family$family == "gaussian") res <- cbind(res, sigma = x$dis)
+  if (!x[["const_wdraws_prj"]]) {
+    attr(res, "wdraws_prj") <- x[["wdraws_prj"]]
+  }
   return(res)
+}
+
+#' Extract projected parameter draws and coerce to `draws_matrix` (see package
+#' \pkg{posterior})
+#'
+#' These are the [posterior::as_draws()] and [posterior::as_draws_matrix()]
+#' methods for `projection` objects (returned by [project()], possibly as
+#' elements of a `list`). They extract the projected parameter draws and return
+#' them as a `draws_matrix`. In case of different (i.e., nonconstant) weights
+#' for the projected draws, a `draws_matrix` allows for a safer handling of
+#' these weights (safer in contrast to the matrix returned by
+#' [as.matrix.projection()]), in particular by providing the natural input for
+#' [posterior::resample_draws()] (see section "Examples" below).
+#'
+#' @param x An object of class `projection` (returned by [project()], possibly
+#'   as elements of a `list`).
+#' @param ... Arguments passed to [as.matrix.projection()], except for
+#'   `allow_nonconst_wdraws_prj`.
+#'
+#' @inherit as.matrix.projection details
+#'
+#' @return An \eqn{S_{\mathrm{prj}} \times Q}{S_prj x Q} `draws_matrix` (see
+#'   [posterior::draws_matrix()]) of projected draws, with
+#'   \eqn{S_{\mathrm{prj}}}{S_prj} denoting the number of projected draws and
+#'   \eqn{Q} the number of parameters. If the projected draws have nonconstant
+#'   weights, [posterior::weight_draws()] is applied internally.
+#'
+#' @examplesIf requireNamespace("rstanarm", quietly = TRUE) && requireNamespace("posterior", quietly = TRUE)
+#' # Data:
+#' dat_gauss <- data.frame(y = df_gaussian$y, df_gaussian$x)
+#'
+#' # The "stanreg" fit which will be used as the reference model (with small
+#' # values for `chains` and `iter`, but only for technical reasons in this
+#' # example; this is not recommended in general):
+#' fit <- rstanarm::stan_glm(
+#'   y ~ X1 + X2 + X3 + X4 + X5, family = gaussian(), data = dat_gauss,
+#'   QR = TRUE, chains = 2, iter = 500, refresh = 0, seed = 9876
+#' )
+#'
+#' # Projection onto an arbitrary combination of predictor terms (with a small
+#' # value for `nclusters`, but only for illustrative purposes; this is not
+#' # recommended in general):
+#' prj <- project(fit, solution_terms = c("X1", "X3", "X5"), nclusters = 5,
+#'                seed = 9182, verbose = FALSE)
+#'
+#' # Applying the posterior::as_draws_matrix() generic to the output of
+#' # project() dispatches to the projpred::as_draws_matrix.projection()
+#' # method:
+#' prj_draws <- posterior::as_draws_matrix(prj)
+#'
+#' # Resample the projected draws according to their weights:
+#' set.seed(3456)
+#' prj_draws_resampled <- posterior::resample_draws(prj_draws, ndraws = 1000)
+#'
+#' # The values from the following two objects should be the same (in general,
+#' # this only holds approximately):
+#' print(proportions(table(rownames(prj_draws_resampled))))
+#' print(weights(prj_draws))
+#'
+#' # Treat the resampled draws like ordinary draws, e.g., summarize them:
+#' print(posterior::summarize_draws(
+#'   prj_draws_resampled,
+#'   "median", "mad", function(x) quantile(x, probs = c(0.025, 0.975))
+#' ))
+#' # Or visualize them using the `bayesplot` package:
+#' if (requireNamespace("bayesplot", quietly = TRUE)) {
+#'   print(bayesplot::mcmc_intervals(prj_draws_resampled))
+#' }
+#'
+#' @exportS3Method posterior::as_draws_matrix projection
+as_draws_matrix.projection <- function(x, ...) {
+  xmat <- as.matrix(x, allow_nonconst_wdraws_prj = TRUE, ...)
+  return(mat2drmat(xmat))
+}
+
+#' @rdname as_draws_matrix.projection
+#' @exportS3Method posterior::as_draws projection
+as_draws.projection <- function(x, ...) {
+  return(as_draws_matrix.projection(x, ...))
+}
+
+# Helper function for converting a matrix `xmat` (possibly possessing an
+# argument `wdraws_prj`) to a `draws_matrix` (which will be weighted if `xmat`
+# possesses an argument `wdraws_prj`).
+mat2drmat <- function(xmat) {
+  if (!requireNamespace("posterior", quietly = TRUE)) {
+    stop("Please install the 'posterior' package.")
+  }
+  drmat <- posterior::as_draws_matrix(structure(xmat, wdraws_prj = NULL))
+  wdr <- attr(xmat, "wdraws_prj")
+  if (!is.null(wdr)) {
+    drmat <- posterior::weight_draws(drmat, weights = wdr)
+  }
+  return(drmat)
 }
 
 #' Create cross-validation folds
@@ -2010,10 +2222,11 @@ as.matrix.projection <- function(x, nm_scheme = "auto", ...) {
 #' These are helper functions to create cross-validation (CV) folds, i.e., to
 #' split up the indices from 1 to `n` into `K` subsets ("folds") for
 #' \eqn{K}-fold CV. These functions are potentially useful when creating the
-#' `cvfits` and `cvfun` arguments for [init_refmodel()]. Function [cvfolds()] is
-#' deprecated; please use [cv_folds()] instead (apart from the name, they are
-#' the same). The return value of [cv_folds()] and [cv_ids()] is different, see
-#' below for details.
+#' input for arguments `cvfits` and `cvfun` of [init_refmodel()] (or argument
+#' `cvfits` of [cv_varsel.refmodel()]). Function [cvfolds()] is deprecated;
+#' please use [cv_folds()] instead (apart from the name, they are the same). The
+#' return value of [cv_folds()] and [cv_ids()] is different, see below for
+#' details.
 #'
 #' @name cv-indices
 #'
@@ -2178,26 +2391,24 @@ solution_terms.projection <- function(object, ...) {
 #'
 #' @return A character vector of predictor terms.
 #'
-#' @examples
-#' if (requireNamespace("rstanarm", quietly = TRUE)) {
-#'   # Data:
-#'   dat_gauss <- data.frame(y = df_gaussian$y, df_gaussian$x)
+#' @examplesIf requireNamespace("rstanarm", quietly = TRUE)
+#' # Data:
+#' dat_gauss <- data.frame(y = df_gaussian$y, df_gaussian$x)
 #'
-#'   # The "stanreg" fit which will be used as the reference model (with small
-#'   # values for `chains` and `iter`, but only for technical reasons in this
-#'   # example; this is not recommended in general):
-#'   fit <- rstanarm::stan_glm(
-#'     y ~ X1 + X2 + X3 + X4 + X5, family = gaussian(), data = dat_gauss,
-#'     QR = TRUE, chains = 2, iter = 500, refresh = 0, seed = 9876
-#'   )
+#' # The "stanreg" fit which will be used as the reference model (with small
+#' # values for `chains` and `iter`, but only for technical reasons in this
+#' # example; this is not recommended in general):
+#' fit <- rstanarm::stan_glm(
+#'   y ~ X1 + X2 + X3 + X4 + X5, family = gaussian(), data = dat_gauss,
+#'   QR = TRUE, chains = 2, iter = 500, refresh = 0, seed = 9876
+#' )
 #'
-#'   # Projection onto an arbitrary combination of predictor terms (with a small
-#'   # value for `nclusters`, but only for the sake of speed in this example;
-#'   # this is not recommended in general):
-#'   prj <- project(fit, solution_terms = c("X1", "X3", "X5"), nclusters = 10,
-#'                  seed = 9182)
-#'   print(predictor_terms(prj)) # gives `c("X1", "X3", "X5")`
-#' }
+#' # Projection onto an arbitrary combination of predictor terms (with a small
+#' # value for `nclusters`, but only for the sake of speed in this example;
+#' # this is not recommended in general):
+#' prj <- project(fit, solution_terms = c("X1", "X3", "X5"), nclusters = 10,
+#'                seed = 9182, verbose = FALSE)
+#' print(predictor_terms(prj)) # gives `c("X1", "X3", "X5")`
 #'
 #' @export
 predictor_terms <- function(object, ...) {
@@ -2355,7 +2566,7 @@ cv_proportions.ranking <- function(object, cumulate = FALSE, ...) {
   cv_props <- do.call(cbind, lapply(
     setNames(nm = object[["fulldata"]]),
     function(predictor_j) {
-      # We need `na.rm = TRUE` for subsampled LOO CV:
+      # We need `na.rm = TRUE` for subsampled PSIS-LOO CV:
       colMeans(cv_paths == predictor_j, na.rm = TRUE)
     }
   ))
@@ -2405,42 +2616,39 @@ cv_proportions.vsel <- function(object, ...) {
 #'   original code by Frank Weber, Yann McLatchie, and Sölvi Rögnvaldsson. Final
 #'   implementation in \pkg{projpred} by Frank Weber.
 #'
-#' @examplesIf identical(Sys.getenv("RUN_EX"), "true")
-#' # Note: The code from this example is not executed when called via example().
-#' # To execute it, you have to copy and paste it manually to the console.
-#' if (requireNamespace("rstanarm", quietly = TRUE)) {
-#'   # Data:
-#'   dat_gauss <- data.frame(y = df_gaussian$y, df_gaussian$x)
+#' @examplesIf requireNamespace("rstanarm", quietly = TRUE)
+#' # Data:
+#' dat_gauss <- data.frame(y = df_gaussian$y, df_gaussian$x)
 #'
-#'   # The "stanreg" fit which will be used as the reference model (with small
-#'   # values for `chains` and `iter`, but only for technical reasons in this
-#'   # example; this is not recommended in general):
-#'   fit <- rstanarm::stan_glm(
-#'     y ~ X1 + X2 + X3 + X4 + X5, family = gaussian(), data = dat_gauss,
-#'     QR = TRUE, chains = 2, iter = 1000, refresh = 0, seed = 9876
-#'   )
+#' # The "stanreg" fit which will be used as the reference model (with small
+#' # values for `chains` and `iter`, but only for technical reasons in this
+#' # example; this is not recommended in general):
+#' fit <- rstanarm::stan_glm(
+#'   y ~ X1 + X2 + X3 + X4 + X5, family = gaussian(), data = dat_gauss,
+#'   QR = TRUE, chains = 2, iter = 1000, refresh = 0, seed = 9876
+#' )
 #'
-#'   # Run cv_varsel() (with small values for `K`, `nterms_max`, `nclusters`,
-#'   # and `nclusters_pred`, but only for the sake of speed in this example;
-#'   # this is not recommended in general):
-#'   cvvs <- cv_varsel(fit, cv_method = "kfold", K = 2, nterms_max = 3,
-#'                     nclusters = 5, nclusters_pred = 10, seed = 5555)
+#' # Run cv_varsel() (with L1 search and small values for `K`, `nterms_max`, and
+#' # `nclusters_pred`, but only for the sake of speed in this example; this is
+#' # not recommended in general):
+#' cvvs <- cv_varsel(fit, method = "L1", cv_method = "kfold", K = 2,
+#'                   nterms_max = 3, nclusters_pred = 10, seed = 5555,
+#'                   verbose = FALSE)
 #'
-#'   # Extract predictor rankings:
-#'   rk <- ranking(cvvs)
+#' # Extract predictor rankings:
+#' rk <- ranking(cvvs)
 #'
-#'   # Compute ranking proportions:
-#'   pr_rk <- cv_proportions(rk)
+#' # Compute ranking proportions:
+#' pr_rk <- cv_proportions(rk)
 #'
-#'   # Visualize the ranking proportions:
-#'   gg_pr_rk <- plot(pr_rk)
-#'   print(gg_pr_rk)
+#' # Visualize the ranking proportions:
+#' gg_pr_rk <- plot(pr_rk)
+#' print(gg_pr_rk)
 #'
-#'   # Since the object returned by plot.cv_proportions() is a standard ggplot2
-#'   # plotting object, you can modify the plot easily, e.g., to remove the
-#'   # legend:
-#'   print(gg_pr_rk + ggplot2::theme(legend.position = "none"))
-#' }
+#' # Since the object returned by plot.cv_proportions() is a standard ggplot2
+#' # plotting object, you can modify the plot easily, e.g., to remove the
+#' # legend:
+#' print(gg_pr_rk + ggplot2::theme(legend.position = "none"))
 #'
 #' @export
 plot.cv_proportions <- function(x, text_angle = NULL, ...) {
