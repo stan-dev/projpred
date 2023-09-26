@@ -1383,7 +1383,8 @@ init_refmodel <- function(object, data, formula, family, ref_predfun = NULL,
   }
 
   if (is.null(cvrefbuilder)) {
-    if (!called_from_cvrefbuilder) {
+    if (!called_from_cvrefbuilder &&
+        getOption("projpred.warn_cvrefbuilder_NULL", TRUE)) {
       warning("`cvrefbuilder` was `NULL`, so using an internal default. ",
               "However, this internal default might not take all arguments of ",
               "get_refmodel() and init_refmodel() appropriately into account, ",
