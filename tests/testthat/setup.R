@@ -899,6 +899,9 @@ options(projpred.warn_instable_projections = FALSE)
 # Run additional checks, e.g., the check for attribute `nobs_orig` when
 # subsetting `augmat` and `augvec` objects:
 options(projpred.additional_checks = TRUE)
+# Suppress the warning thrown if `cvrefbuilder` is `NULL` (here in the tests,
+# this should only be relevant for `datafit`s):
+options(projpred.warn_cvrefbuilder_NULL = FALSE)
 
 search_trms_tst <- list(
   default_search_trms = list(),

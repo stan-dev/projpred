@@ -508,7 +508,8 @@ parse_args_varsel <- function(refmodel, method, refit_prj, nterms_max,
     nterms_max <- 19
     if (nterms_max < max_nv_possible &&
         getOption("projpred.mssg_cut_search", TRUE)) {
-      message("Cutting off the search at size ", nterms_max, ".")
+      message("Cutting off the search at size ", nterms_max, ". Use argument ",
+              "`nterms_max` to customize this.")
     }
   }
   nterms_max <- min(max_nv_possible, nterms_max)
