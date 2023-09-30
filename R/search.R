@@ -27,34 +27,82 @@ search_forward <- function(p_ref, refmodel, nterms_max, verbose = TRUE, opt,
     if (size == 1 && est_runtime && getOption("projpred.mssg_time", TRUE)) {
       time_aft <- Sys.time()
       dtime <- difftime(time_aft, time_bef, units = "secs")
-      time_est <- dtime * nterms_max * (nterms_max + 1) / 2
-      if (time_est > 3 * 60) {
-        mssg_time <- paste0(
-          "Based on the runtime for the intercept-only model, the remaining ",
-          "forward search is estimated to take ca. ", round(time_est / 60, 1),
-          "minutes (current time: ", time_aft, "; estimated end time: ",
-          time_aft + time_est, ")."
-        )
-        if (any(grepl("\\|", search_terms))) {
-          mssg_time <- paste0(mssg_time, " ", paste0(
-            "Since there are multilevel predictor terms, the runtime estimate ",
-            "is likely a considerable underestimate."
-          ))
+      # Scale up to the remaining forward search where we have p * (p + 1) / 2
+      # projections (with `p = nterms_max`) if `search_terms` is at its default:
+      time_est_min <- dtime * nterms_max * (nterms_max + 1) / 2
+      # Scale from the intercept-only submodel to GLM submodels (see PR #459 for
+      # an empirical derivation of the factor):
+      time_est_min <- time_est_min * 1.3
+      # Initialize upper bound:
+      time_est_max <- time_est_min
+      # Adjust for multilevel and/or additive terms if necessary (see PR #459
+      # for an empirical derivation of the factors):
+      has_mlvl <- any(grepl("\\|", search_terms))
+      has_smooth <- length(parse_additive_terms(search_terms)) > 0
+      if (has_mlvl && !has_smooth) {
+        time_est_max <- time_est_max * 26.9
+      } else if (!has_mlvl && has_smooth) {
+        time_est_max <- time_est_max * 9.8
+      } else if (has_mlvl && has_smooth) {
+        time_est_max <- time_est_max * 57.6
+      }
+      if (time_est_max > 3 * 60) {
+        mssg_time_start <- "The remaining forward search is estimated to take "
+        if (time_est_max == time_est_min) {
+          mssg_time_est <- paste0(
+            "ca. ", round(time_est_min / 60, 1), " minutes "
+          )
+        } else {
+          mssg_time_est <- paste0(
+            "between ca. ", round(time_est_min / 60, 1), " and ",
+            round(time_est_max / 60, 1), " minutes "
+          )
         }
-        if (length(parse_additive_terms(
-          # grep(":|\\|", search_terms, value = TRUE, invert = TRUE)
-          search_terms
-        )) > 0) {
-          mssg_time <- paste0(mssg_time, " ", paste0(
-            "Since there are additive (\"smooth\") predictor terms, the ",
-            "runtime estimate is likely a considerable underestimate."
-          ))
+        mssg_time_start_curr <- paste0(
+          "(current time: ", format(time_aft, usetz = TRUE),
+          "; estimated end time: "
+        )
+        if (time_est_max == time_est_min) {
+          mssg_time_est_curr <- paste0(
+            format(time_aft + time_est_min, usetz = TRUE), "). Note that ",
+            "this is only a rough estimate."
+          )
+        } else {
+          mssg_time_est_curr <- paste0(
+            "between ", format(time_aft + time_est_min, usetz = TRUE), " and ",
+            format(time_aft + time_est_max, usetz = TRUE), "). Note that ",
+            "these are not guaranteed bounds but the bounds of a rough ",
+            "interval estimate."
+          )
+        }
+        mssg_time <- paste0(mssg_time_start, mssg_time_est,
+                            mssg_time_start_curr, mssg_time_est_curr)
+        if (has_mlvl) {
+          # The empirically derived factor used above assumes that *all*
+          # projections involve one multilevel term (and apart from that, the
+          # empirical derivation used only group-level intercepts, not
+          # group-level slopes):
+          mssg_time <- paste0(
+            mssg_time, " Furthermore, since there are multilevel predictor ",
+            "terms, this estimate may be even more unreliable."
+          )
+        }
+        if (has_smooth) {
+          # The empirically derived factor used above assumes that *all*
+          # projections involve one multilevel and one smooth term (and apart
+          # from that, the empirical derivation used only group-level intercepts
+          # and an s() smooth term, not more complex terms):
+          mssg_time <- paste0(
+            mssg_time, " Furthermore, since there are additive (\"smooth\") ",
+            "predictor terms, this estimate may be even more unreliable."
+          )
         }
         if (!search_terms_was_null) {
-          mssg_time <- paste0(mssg_time, " ", paste0(
-            "Since argument `search_terms` differs from its default, the ",
-            "runtime estimate may be a considerable overestimate."
-          ))
+          # In case of custom `search_terms`, some model sizes may be skipped:
+          mssg_time <- paste0(
+            mssg_time, " Since argument `search_terms` differs from its ",
+            "default, this estimate may be an overestimate."
+          )
         }
         message(mssg_time)
       }
