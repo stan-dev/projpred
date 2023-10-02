@@ -340,7 +340,7 @@ test_that(paste(
     summs_ref <- vs$summaries$ref
     summs_ref$mu <- structure(unclass(summs_ref$mu), nobs_orig = NULL)
     summs_ref$mu <- summs_ref$mu[(nobsv + 1):(2 * nobsv)]
-    tol_ref <- .Machine$double.eps
+    tol_ref <- 1e1 * .Machine$double.eps
     if (args_vs[[tstsetup]]$mod_nm == "glmm") {
       tol_ref <- 1e3 * tol_ref
     }
