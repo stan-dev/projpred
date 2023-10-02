@@ -67,6 +67,7 @@ Suggests:
     foreach,
     iterators,
     doRNG,
+    unix,
     testthat,
     vdiffr,
     knitr,
