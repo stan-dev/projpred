@@ -610,11 +610,11 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
   if (!validate_search) {
     ## Case `validate_search = FALSE` -----------------------------------------
 
+    # Run the search:
     if (!is.null(search_out)) {
       search_path <- search_out[["search_path"]]
     } else {
-      verb_out("-----\nRunning the search using the full dataset ...",
-               verbose = verbose)
+      verb_out("-----\nRunning the search ...", verbose = verbose)
       search_path <- select(
         refmodel = refmodel, ndraws = ndraws, nclusters = nclusters,
         method = method, nterms_max = nterms_max, penalty = penalty,
@@ -624,10 +624,12 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
       verb_out("-----", verbose = verbose)
     }
 
-    verb_out("-----\nPerformance evaluation, step 1: Re-projecting (using the ",
-             "full dataset) onto the submodels along the full-data solution ",
-             "path and evaluating their predictive performance ...",
-             verbose = verbose && refit_prj)
+    # "Run" the performance evaluation for the submodels along the predictor
+    # ranking (in fact, we only prepare the performance evaluation by computing
+    # precursor quantities, but for users, this difference is not perceivable):
+    verb_out("-----\nRunning the performance evaluation ...", verbose = verbose)
+    # Step 1: Re-project (using the full dataset) onto the submodels along the
+    # full-data predictor ranking and evaluate their predictive performance.
     perf_eval_out <- perf_eval(
       search_path = search_path, refmodel = refmodel, regul = opt$regul,
       refit_prj = refit_prj, ndraws = ndraws_pred, nclusters = nclusters_pred,
@@ -636,11 +638,9 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
     clust_used_eval <- perf_eval_out[["clust_used"]]
     nprjdraws_eval <- perf_eval_out[["nprjdraws"]]
     refdist_eval <- perf_eval_out[["p_ref"]]
-    verb_out("-----", verbose = verbose && refit_prj)
 
-    verb_out("-----\nPerformance evaluation, step 2: Weighting the full-data ",
-             "performance evaluation results according to the PSIS-LOO CV ",
-             "weights ...", verbose = verbose)
+    # Step 2: Weight the full-data performance evaluation results according to
+    # the PSIS-LOO CV weights.
     if (refmodel$family$for_latent) {
       refdist_eval_mu_offs_oscale <- refmodel$family$latent_ilink(
         t(refdist_eval$mu_offs), cl_ref = refdist_eval$cl,

@@ -333,8 +333,7 @@ varsel.refmodel <- function(object, d_test = NULL, method = "forward",
   # "Run" the performance evaluation for the submodels along the predictor
   # ranking (in fact, we only prepare the performance evaluation by computing
   # precursor quantities, but for users, this difference is not perceivable):
-  verb_out("-----\nRunning the performance evaluation ...",
-           verbose = verbose && refit_prj)
+  verb_out("-----\nRunning the performance evaluation ...", verbose = verbose)
   perf_eval_out <- perf_eval(
     search_path = search_path, refmodel = refmodel, regul = regul,
     refit_prj = refit_prj, ndraws = ndraws_pred, nclusters = nclusters_pred,
@@ -342,7 +341,7 @@ varsel.refmodel <- function(object, d_test = NULL, method = "forward",
     offset_test = d_test$offset, wobs_test = d_test$weights, y_test = d_test$y,
     y_oscale_test = d_test$y_oscale, ...
   )
-  verb_out("-----", verbose = verbose && refit_prj)
+  verb_out("-----", verbose = verbose)
 
   # Predictive performance of the reference model:
   if (inherits(refmodel, "datafit")) {
