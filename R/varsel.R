@@ -81,9 +81,11 @@
 #'   model's posterior draws (if `!is.null(nclusters)` or
 #'   `!is.null(nclusters_pred)`) and for drawing new group-level effects when
 #'   predicting from a multilevel submodel (however, not yet in case of a GAMM).
-#' @param ... Arguments passed to [get_refmodel()] as well as to the divergence
-#'   minimizer (during a forward search and also during the evaluation part, but
-#'   the latter only if `refit_prj` is `TRUE`).
+#' @param ... For [varsel.default()]: Arguments passed to [get_refmodel()] as
+#'   well as to [varsel.refmodel()]. For [varsel.vsel()]: Arguments passed to
+#'   [varsel.refmodel()]. For [varsel.refmodel()]: Arguments passed to the
+#'   divergence minimizer (during a forward search and also during the
+#'   evaluation part, but the latter only if `refit_prj` is `TRUE`).
 #'
 #' @details
 #'

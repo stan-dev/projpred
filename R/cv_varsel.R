@@ -57,6 +57,11 @@
 #' @param parallel A single logical value indicating whether to run costly parts
 #'   of the CV in parallel (`TRUE`) or not (`FALSE`). See also section "Note"
 #'   below.
+#' @param ... For [cv_varsel.default()]: Arguments passed to [get_refmodel()] as
+#'   well as to [cv_varsel.refmodel()]. For [cv_varsel.vsel()]: Arguments passed
+#'   to [cv_varsel.refmodel()]. For [cv_varsel.refmodel()]: Arguments passed to
+#'   the divergence minimizer (during a forward search and also during the
+#'   evaluation part, but the latter only if `refit_prj` is `TRUE`).
 #'
 #' @inherit varsel details return
 #'

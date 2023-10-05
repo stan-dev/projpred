@@ -40,9 +40,11 @@ varsel(object, ...)
 \code{\link[=init_refmodel]{init_refmodel()}}) or an object that can be passed to argument \code{object} of
 \code{\link[=get_refmodel]{get_refmodel()}}.}
 
-\item{...}{Arguments passed to \code{\link[=get_refmodel]{get_refmodel()}} as well as to the divergence
-minimizer (during a forward search and also during the evaluation part, but
-the latter only if \code{refit_prj} is \code{TRUE}).}
+\item{...}{For \code{\link[=varsel.default]{varsel.default()}}: Arguments passed to \code{\link[=get_refmodel]{get_refmodel()}} as
+well as to \code{\link[=varsel.refmodel]{varsel.refmodel()}}. For \code{\link[=varsel.vsel]{varsel.vsel()}}: Arguments passed to
+\code{\link[=varsel.refmodel]{varsel.refmodel()}}. For \code{\link[=varsel.refmodel]{varsel.refmodel()}}: Arguments passed to the
+divergence minimizer (during a forward search and also during the
+evaluation part, but the latter only if \code{refit_prj} is \code{TRUE}).}
 
 \item{d_test}{A \code{list} of the structure outlined in section "Argument
 \code{d_test}" below, providing test data for evaluating the predictive
