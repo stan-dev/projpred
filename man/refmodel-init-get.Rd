@@ -120,11 +120,10 @@ argument \code{data}) or from a new dataset. See also section "Argument
 
 \item{cvfun}{For \eqn{K}-fold CV only. A function that, given a fold indices
 vector, fits the reference model separately for each fold and returns the
-\eqn{K} model fits as a \code{list}. Each of the \eqn{K} model fits needs to be
-a \code{list}. If \code{object} is \code{NULL}, \code{cvfun} may be \code{NULL} for using an
-internal default. Only one of \code{cvfits} and \code{cvfun} needs to be provided
-(for \eqn{K}-fold CV). Note that \code{cvfits} takes precedence over \code{cvfun},
-i.e., if both are provided, \code{cvfits} is used.}
+\eqn{K} model fits as a \code{list}. If \code{object} is \code{NULL}, \code{cvfun} may be
+\code{NULL} for using an internal default. Only one of \code{cvfits} and \code{cvfun}
+needs to be provided (for \eqn{K}-fold CV). Note that \code{cvfits} takes
+precedence over \code{cvfun}, i.e., if both are provided, \code{cvfits} is used.}
 
 \item{cvfits}{For \eqn{K}-fold CV only. A \code{list} containing the \eqn{K}
 reference model refits from which reference model objects are created. This

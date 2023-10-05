@@ -90,11 +90,10 @@
 #'   `cvfits` is used.
 #' @param cvfun For \eqn{K}-fold CV only. A function that, given a fold indices
 #'   vector, fits the reference model separately for each fold and returns the
-#'   \eqn{K} model fits as a `list`. Each of the \eqn{K} model fits needs to be
-#'   a `list`. If `object` is `NULL`, `cvfun` may be `NULL` for using an
-#'   internal default. Only one of `cvfits` and `cvfun` needs to be provided
-#'   (for \eqn{K}-fold CV). Note that `cvfits` takes precedence over `cvfun`,
-#'   i.e., if both are provided, `cvfits` is used.
+#'   \eqn{K} model fits as a `list`. If `object` is `NULL`, `cvfun` may be
+#'   `NULL` for using an internal default. Only one of `cvfits` and `cvfun`
+#'   needs to be provided (for \eqn{K}-fold CV). Note that `cvfits` takes
+#'   precedence over `cvfun`, i.e., if both are provided, `cvfits` is used.
 #' @param cvrefbuilder For \eqn{K}-fold CV only. A function that, given a
 #'   reference model fit for fold \eqn{k \in \{1, ..., K\}}{k = 1, ..., K},
 #'   returns an object of the same type as [init_refmodel()] does. The reference
