@@ -1367,6 +1367,214 @@ run_cvfun.refmodel <- function(object,
   return(structure(cvfits, folds = folds))
 }
 
+# Exact LFO-CV ---------------------------------------------------------------
+
+lfo_varsel <- function(refmodel, method, nterms_max, ndraws, nclusters,
+                       ndraws_pred, nclusters_pred, refit_prj, penalty,
+                       verbose, opt, L, cvfits, search_terms, parallel, ...) {
+  # Fetch the K reference model fits (or fit them now if not already done) and
+  # create objects of class `refmodel` from them (and also store the `omitted`
+  # indices):
+  list_cv <- get_lfo(refmodel, L = L, cvfits = cvfits, verbose = verbose)
+  K <- length(list_cv)
+
+  if (refmodel$family$for_latent) {
+    # Need to set the latent response values in `refmodel$y` to `NA`s because
+    # `refmodel$y` resulted from applying `colMeans(posterior_linpred())` to the
+    # original (full-data) reference model fit, so using the `fold$omitted`
+    # subset of `refmodel$y` as (latent) response values in fold k of K would
+    # induce a dependency between training and test data:
+    refmodel$y <- rep(NA, refmodel$nobs)
+  }
+  y_wobs_test <- as.data.frame(refmodel[nms_y_wobs_test()])
+
+  verb_out("-----\nRunning the search and the performance evaluation for ",
+           "each of the K = ", K, " CV folds separately ...", verbose = verbose)
+  one_fold <- function(fold,
+                       verbose_search = verbose &&
+                         getOption("projpred.extra_verbose", FALSE),
+                       ...) {
+    # Run the search for the current fold:
+    search_path <- select(
+      refmodel = fold$refmodel, ndraws = ndraws, nclusters = nclusters,
+      method = method, nterms_max = nterms_max, penalty = penalty,
+      verbose = verbose_search, opt = opt, search_terms = search_terms,
+      est_runtime = FALSE, ...
+    )
+
+    # Run the performance evaluation for the submodels along the predictor
+    # ranking:
+    perf_eval_out <- perf_eval(
+      search_path = search_path, refmodel = fold$refmodel, regul = opt$regul,
+      refit_prj = refit_prj, ndraws = ndraws_pred, nclusters = nclusters_pred,
+      refmodel_fulldata = refmodel, indices_test = fold$omitted, ...
+    )
+
+    # Performance evaluation for the reference model of the current fold:
+    eta_test <- fold$refmodel$ref_predfun(
+      fold$refmodel$fit,
+      newdata = refmodel$fetch_data(obs = fold$omitted),
+      excl_offs = FALSE
+    )
+    mu_test <- fold$refmodel$family$linkinv(eta_test)
+    summaries_ref <- weighted_summary_means(
+      y_wobs_test = y_wobs_test[fold$omitted, , drop = FALSE],
+      family = fold$refmodel$family,
+      wdraws = fold$refmodel$wdraws_ref,
+      mu = mu_test,
+      dis = fold$refmodel$dis,
+      cl_ref = seq_along(fold$refmodel$wdraws_ref)
+    )
+
+    return(nlist(predictor_ranking = search_path[["solution_terms"]],
+                 summaries_sub = perf_eval_out[["sub_summaries"]],
+                 summaries_ref, clust_used_eval = perf_eval_out[["clust_used"]],
+                 nprjdraws_eval = perf_eval_out[["nprjdraws"]]))
+  }
+  if (!parallel) {
+    # Sequential case. Actually, we could simply use ``%do_projpred%` <-
+    # foreach::`%do%`` here and then proceed as in the parallel case, but that
+    # would require adding more "hard" dependencies (because packages 'foreach'
+    # and 'doRNG' would have to be moved from `Suggests:` to `Imports:`).
+    if (verbose) {
+      pb <- utils::txtProgressBar(min = 0, max = K, style = 3, initial = 0)
+    }
+    res_cv <- lapply(seq_along(list_cv), function(k) {
+      if (verbose) {
+        on.exit(utils::setTxtProgressBar(pb, k))
+      }
+      one_fold(list_cv[[k]], ...)
+    })
+    if (verbose) {
+      close(pb)
+    }
+  } else {
+    # Parallel case.
+    if (!requireNamespace("foreach", quietly = TRUE)) {
+      stop("Please install the 'foreach' package.")
+    }
+    if (!requireNamespace("doRNG", quietly = TRUE)) {
+      stop("Please install the 'doRNG' package.")
+    }
+    dot_args <- list(...)
+    `%do_projpred%` <- doRNG::`%dorng%`
+    res_cv <- foreach::foreach(
+      list_cv_k = list_cv,
+      .export = c("one_fold", "dot_args"),
+      .noexport = c("list_cv")
+    ) %do_projpred% {
+      do.call(one_fold, c(list(fold = list_cv_k, verbose_search = FALSE),
+                          dot_args))
+    }
+  }
+  verb_out("-----", verbose = verbose)
+  solution_terms_cv <- do.call(rbind, lapply(res_cv, "[[", "predictor_ranking"))
+  clust_used_eval <- element_unq(res_cv, nm = "clust_used_eval")
+  nprjdraws_eval <- element_unq(res_cv, nm = "nprjdraws_eval")
+
+  # Handle the submodels' performance evaluation results:
+  sub_foldwise <- lapply(res_cv, "[[", "summaries_sub")
+  if (getRversion() >= package_version("4.2.0")) {
+    sub_foldwise <- simplify2array(sub_foldwise, higher = FALSE, except = NULL)
+  } else {
+    sub_foldwise <- simplify2array(sub_foldwise, higher = FALSE)
+    if (is.null(dim(sub_foldwise))) {
+      sub_dim <- dim(solution_terms_cv)
+      sub_dim[2] <- sub_dim[2] + 1L # +1 is for the empty model
+      dim(sub_foldwise) <- rev(sub_dim)
+    }
+  }
+  sub <- apply(sub_foldwise, 1, rbind2list)
+  idxs_sorted_by_fold <- unlist(lapply(list_cv, function(fold) {
+    fold$omitted
+  }))
+  idxs_sorted_by_fold_aug <- idxs_sorted_by_fold
+  if (!is.null(refmodel$family$cats)) {
+    idxs_sorted_by_fold_aug <- idxs_sorted_by_fold_aug + rep(
+      (seq_along(refmodel$family$cats) - 1L) * refmodel$nobs,
+      each = length(idxs_sorted_by_fold_aug)
+    )
+  }
+  idxs_sorted_by_fold_flx <- idxs_sorted_by_fold_aug
+  if (refmodel$family$for_latent && !is.null(refmodel$family$cats)) {
+    idxs_sorted_by_fold_flx <- idxs_sorted_by_fold
+  }
+  sub <- lapply(sub, function(summ) {
+    summ$mu <- summ$mu[order(idxs_sorted_by_fold_flx)]
+    summ$lppd <- summ$lppd[order(idxs_sorted_by_fold)]
+
+    # Add fold-specific weights (see the discussion at GitHub issue #94 for why
+    # this might have to be changed):
+    summ$wcv <- rep(1, length(summ$lppd))
+    summ$wcv <- summ$wcv / sum(summ$wcv)
+
+    if (!is.null(summ$oscale)) {
+      summ$oscale$mu <- summ$oscale$mu[order(idxs_sorted_by_fold_aug)]
+      summ$oscale$lppd <- summ$oscale$lppd[order(idxs_sorted_by_fold)]
+      summ$oscale$wcv <- summ$wcv
+    }
+    return(summ)
+  })
+
+  # Handle the reference model's performance evaluation results:
+  ref <- rbind2list(lapply(res_cv, "[[", "summaries_ref"))
+  ref$mu <- ref$mu[order(idxs_sorted_by_fold_flx)]
+  ref$lppd <- ref$lppd[order(idxs_sorted_by_fold)]
+  if (!is.null(ref$oscale)) {
+    ref$oscale$mu <- ref$oscale$mu[order(idxs_sorted_by_fold_aug)]
+    ref$oscale$lppd <- ref$oscale$lppd[order(idxs_sorted_by_fold)]
+  }
+
+  return(nlist(solution_terms_cv, summaries = nlist(sub, ref), y_wobs_test,
+               clust_used_eval, nprjdraws_eval))
+}
+
+# Re-fit the reference model K times (once for each fold; `cvfun` case) or fetch
+# the K reference model fits if already computed (`cvfits` case). This function
+# will return a list of length K, where each element is a list with elements
+# `refmodel` (output of init_refmodel()) and `omitted` (vector of indices of
+# those observations which were left out for the corresponding fold).
+get_lfo <- function(refmodel, L, cvfits, verbose) {
+  if (is.null(cvfits)) {
+    if (!is.null(refmodel$cvfun)) {
+      # In this case, cvfun() provided (and `cvfits` not), so run cvfun() now.
+      if (verbose && !inherits(refmodel, "datafit")) {
+        verb_out("-----\nRefitting the reference model K = ", K, " times ",
+                 "(using the fold-wise training data) ...")
+      }
+      folds <- lfo_folds(refmodel$nobs, L = L,
+                         seed = sample.int(.Machine$integer.max, 1))
+      if (getOption("projpred.warn_kfold_refits", TRUE)) {
+        cvfits <- refmodel$cvfun(folds)
+      } else {
+        cvfits <- suppressWarnings(refmodel$cvfun(folds))
+      }
+      verb_out("-----", verbose = verbose)
+    } else {
+      stop("For a reference model which is not of class `datafit`, either ",
+           "`cvfits` or `cvfun` needs to be provided for K-fold CV (see ",
+           "`?init_refmodel`).")
+    }
+  } else {
+    folds <- attr(cvfits, "folds")
+  }
+  return(lapply(seq_len(K), function(k) {
+    cvfit <- cvfits[[k]]
+    # Add the omitted observation indices for this fold (and the fold index `k`
+    # itself):
+    omitted_idxs <- which(folds == k)
+    if (is.list(cvfit)) {
+      cvfit$omitted <- omitted_idxs
+      cvfit$projpred_k <- k
+    } else {
+      attr(cvfit, "omitted") <- omitted_idxs
+      attr(cvfit, "projpred_k") <- k
+    }
+    return(list(refmodel = refmodel$cvrefbuilder(cvfit),
+                omitted = omitted_idxs))
+  }))
+}
+
 # PSIS-LOO CV helpers -----------------------------------------------------
 
 # ## decide which points to go through in the validation (i.e., which points

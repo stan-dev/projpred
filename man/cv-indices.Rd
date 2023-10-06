@@ -5,6 +5,7 @@
 \alias{cv_folds}
 \alias{cvfolds}
 \alias{cv_ids}
+\alias{lfo_folds}
 \title{Create cross-validation folds}
 \usage{
 cv_folds(n, K, seed = NA)
@@ -12,6 +13,8 @@ cv_folds(n, K, seed = NA)
 cvfolds(n, K, seed = NA)
 
 cv_ids(n, K, out = c("foldwise", "indices"), seed = NA)
+
+lfo_folds(T, L, seed = NA)
 }
 \arguments{
 \item{n}{Number of observations.}
@@ -26,6 +29,10 @@ results can be obtained again if needed. Passed to argument \code{seed} of
 
 \item{out}{Format of the output, either \code{"foldwise"} or \code{"indices"}. See
 below for details.}
+
+\item{T}{the total number of time observations}
+
+\item{L}{the number of observations to fit the initial fold with}
 }
 \value{
 \code{\link[=cv_folds]{cv_folds()}} returns a vector of length \code{n} such that each element is

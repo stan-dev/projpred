@@ -133,6 +133,18 @@ validate_num_folds <- function(k, n) {
   }
 }
 
+validate_lfo_folds <- function(T, L) {
+  if (!is.numeric(L) || length(L) != 1 || !is_wholenumber(L)) {
+    stop("Number of folds must be a single integer value.")
+  }
+  if (L < 1) {
+    stop("Number of initial observations must be at least 1.")
+  }
+  if (L > T) {
+    stop("Number of initial observations cannot exceed total observations.")
+  }
+}
+
 validate_vsel_object_stats <- function(object, stats, resp_oscale = TRUE) {
   if (!inherits(object, c("vsel"))) {
     stop("The object is not a variable selection object. Run variable ",

@@ -6,9 +6,9 @@
 \title{Extract projected parameter draws and coerce to \code{draws_matrix} (see package
 \pkg{posterior})}
 \usage{
-\method{as_draws_matrix}{projection}(x, ...)
+as_draws_matrix.projection(x, ...)
 
-\method{as_draws}{projection}(x, ...)
+as_draws.projection(x, ...)
 }
 \arguments{
 \item{x}{An object of class \code{projection} (returned by \code{\link[=project]{project()}}, possibly

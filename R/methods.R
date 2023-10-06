@@ -2331,6 +2331,34 @@ cv_ids <- function(n, K, out = c("foldwise", "indices"), seed = NA) {
   return(cv)
 }
 
+#' @rdname cv-indices
+#' @export
+#' @param T the total number of time observations
+#' @param L the number of observations to fit the initial fold with
+lfo_folds <- function(T, L, seed = NA) {
+  validate_lfo_folds(T, L)
+
+  if (exists(".Random.seed", envir = .GlobalEnv)) {
+    rng_state_old <- get(".Random.seed", envir = .GlobalEnv)
+  }
+  if (!is.na(seed)) {
+    # Set seed, but ensure the old RNG state is restored on exit:
+    if (exists(".Random.seed", envir = .GlobalEnv)) {
+      on.exit(assign(".Random.seed", rng_state_old, envir = .GlobalEnv))
+    }
+    set.seed(seed)
+  }
+
+  ## create fold indices
+  # these indices, unlike for K-fold indicate the observations to use to the
+  # fit the model at the i-th fold
+  folds <- rep(1, T)
+  for (t in (L + 1) : (T)) {
+    folds[t] <- t - L
+  }
+  return(folds)
+}
+
 #' Retrieve the full-data solution path from a [varsel()] or [cv_varsel()] run
 #' or the predictor combination from a [project()] run
 #'
