@@ -1529,11 +1529,12 @@ lfo_varsel <- function(refmodel, method, nterms_max, ndraws, nclusters,
                clust_used_eval, nprjdraws_eval))
 }
 
-# Re-fit the reference model K times (once for each fold; `cvfun` case) or fetch
-# the K reference model fits if already computed (`cvfits` case). This function
-# will return a list of length K, where each element is a list with elements
-# `refmodel` (output of init_refmodel()) and `omitted` (vector of indices of
-# those observations which were left out for the corresponding fold).
+# Re-fit the reference model T-L-1 times (once for each observation from L to
+# the second-to-last observation; `cvfun` case) or fetch the fits if already
+# computed (`cvfits` case). This function will return a list of length T-L-1,
+# where each element is a list with elements `refmodel` (output of
+# init_refmodel()) and `omitted` (vector of indices of those observations which
+# were left out for the corresponding fold).
 get_lfo <- function(refmodel, L, cvfits, verbose) {
   if (is.null(cvfits)) {
     if (!is.null(refmodel$cvfun)) {
