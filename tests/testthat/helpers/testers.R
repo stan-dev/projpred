@@ -2366,12 +2366,12 @@ vsel_tester <- function(
   expect_identical(vs$validate_search, valsearch_expected, info = info_str)
 
   # cvfits
-  if (is.null(cv_method_expected)) {
+  if (!identical(cv_method_expected, "kfold")) {
     expect_null(vs$cvfits, info = info_str)
   } else {
     ### Currently, we are testing argument `cvfits` only implicitly via the
     ### examples and via the main vignette:
-    expect_identical(vs$cvfits, NA, info = info_str)
+    expect_identical(vs$cvfits, "auto", info = info_str)
     ###
   }
 
@@ -2392,12 +2392,10 @@ vsel_tester <- function(
       lambda_min_ratio = 1e-5, nlambda = 150, thresh = 1e-6,
       penalty = penalty_expected,
       search_terms = if (is.null(search_terms_expected)) {
-        union("1", split_formula(vs$refmodel$formula,
-                                 data = vs$refmodel$fetch_data()))
+        NULL
       } else {
         union("1", search_terms_expected)
-      },
-      search_terms_was_null = is.null(search_terms_expected)
+      }
     ),
     info = info_str
   )

@@ -152,7 +152,7 @@ cv_varsel.default <- function(object, ...) {
 #' @rdname cv_varsel
 #' @export
 cv_varsel.vsel <- function(object, ...) {
-  args <- list(
+  return(cv_varsel(
     object = get_refmodel(object),
     method = object[["args_search"]][["method"]],
     ndraws = object[["args_search"]][["ndraws"]],
@@ -162,23 +162,16 @@ cv_varsel.vsel <- function(object, ...) {
     nlambda = object[["args_search"]][["nlambda"]],
     thresh = object[["args_search"]][["thresh"]],
     penalty = object[["args_search"]][["penalty"]],
-    search_terms = if (object[["args_search"]][["search_terms_was_null"]]) {
-      NULL
-    } else {
-      object[["args_search"]][["search_terms"]]
-    },
+    search_terms = object[["args_search"]][["search_terms"]],
     cv_method = object[["cv_method"]] %||% "LOO",
     nloo = object[["nloo"]],
     K = object[["K"]],
+    cvfits = object[["cvfits"]],
     validate_search = isTRUE(object[["validate_search"]]),
     search_out = list(search_path = object[["search_path"]],
                       ranking = ranking(object)),
     ...
-  )
-  if (!is.null(object[["cvfits"]]) && !is.na(object[["cvfits"]])) {
-    args <- c(args, list(cvfits = object[["cvfits"]]))
-  }
-  return(do.call(cv_varsel, args))
+  ))
 }
 
 #' @rdname cv_varsel
@@ -262,7 +255,7 @@ cv_varsel.refmodel <- function(
   search_terms <- args$search_terms
   search_terms_was_null <- args$search_terms_was_null
   # Parse arguments specific to cv_varsel():
-  cvfits_cust <- !missing(cvfits)
+  cvfits_was_missing <- missing(cvfits)
   args <- parse_args_cv_varsel(
     refmodel = refmodel, cv_method = cv_method, K = K, cvfits = cvfits,
     validate_search = validate_search
@@ -270,6 +263,7 @@ cv_varsel.refmodel <- function(
   cv_method <- args$cv_method
   K <- args$K
   cvfits <- args$cvfits
+  cvfits_was_auto <- args$cvfits_was_auto
   # Arguments specific to the search:
   opt <- nlist(lambda_min_ratio, nlambda, thresh, regul)
 
@@ -357,10 +351,17 @@ cv_varsel.refmodel <- function(
               nloo,
               K,
               validate_search,
-              cvfits = if (cvfits_cust) cvfits else NA,
+              cvfits = if (is.null(cvfits_was_auto)) {
+                NULL
+              } else if (cvfits_was_missing || cvfits_was_auto) {
+                "auto"
+              } else {
+                cvfits
+              },
               args_search = nlist(
                 method, ndraws, nclusters, nterms_max, lambda_min_ratio,
-                nlambda, thresh, penalty, search_terms, search_terms_was_null
+                nlambda, thresh, penalty,
+                search_terms = if (search_terms_was_null) NULL else search_terms
               ),
               clust_used_search = refdist_info_search$clust_used,
               clust_used_eval = refdist_info_eval$clust_used,
@@ -399,6 +400,10 @@ parse_args_cv_varsel <- function(refmodel, cv_method, K, cvfits,
   }
 
   if (cv_method == "kfold") {
+    cvfits_was_auto <- identical(cvfits, "auto")
+    if (cvfits_was_auto) {
+      cvfits <- refmodel[["cvfits"]]
+    }
     if (!is.null(cvfits)) {
       if (identical(names(cvfits), "fits")) {
         warning(
@@ -427,9 +432,10 @@ parse_args_cv_varsel <- function(refmodel, cv_method, K, cvfits,
   } else {
     K <- NULL
     cvfits <- NULL
+    cvfits_was_auto <- NULL
   }
 
-  return(nlist(cv_method, K, cvfits))
+  return(nlist(cv_method, K, cvfits, cvfits_was_auto))
 }
 
 # PSIS-LOO CV -------------------------------------------------------------

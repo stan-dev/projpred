@@ -202,7 +202,7 @@ varsel.default <- function(object, ...) {
 #' @rdname varsel
 #' @export
 varsel.vsel <- function(object, ...) {
-  return(do.call(varsel, list(
+  return(varsel(
     object = get_refmodel(object),
     method = object[["args_search"]][["method"]],
     ndraws = object[["args_search"]][["ndraws"]],
@@ -212,15 +212,11 @@ varsel.vsel <- function(object, ...) {
     nlambda = object[["args_search"]][["nlambda"]],
     thresh = object[["args_search"]][["thresh"]],
     penalty = object[["args_search"]][["penalty"]],
-    search_terms = if (object[["args_search"]][["search_terms_was_null"]]) {
-      NULL
-    } else {
-      object[["args_search"]][["search_terms"]]
-    },
+    search_terms = object[["args_search"]][["search_terms"]],
     search_out = list(search_path = object[["search_path"]],
                       ranking = ranking(object)),
     ...
-  )))
+  ))
 }
 
 #' @rdname varsel
@@ -418,7 +414,8 @@ varsel.refmodel <- function(object, d_test = NULL, method = "forward",
               cvfits = NULL,
               args_search = nlist(
                 method, ndraws, nclusters, nterms_max, lambda_min_ratio,
-                nlambda, thresh, penalty, search_terms, search_terms_was_null
+                nlambda, thresh, penalty,
+                search_terms = if (search_terms_was_null) NULL else search_terms
               ),
               clust_used_search = search_path$p_sel$clust_used,
               clust_used_eval = perf_eval_out[["clust_used"]],

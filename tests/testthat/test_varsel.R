@@ -1062,7 +1062,7 @@ test_that(paste(
     tstsetup_default <- sub("\\.alltrms", "\\.default_search_trms", tstsetup)
     if (!tstsetup_default %in% names(vss)) next
     vs_search_terms <- vss[[tstsetup]]
-    vs_search_terms$args_search$search_terms_was_null <- TRUE
+    vs_search_terms$args_search["search_terms"] <- list(NULL)
     expect_identical(vs_search_terms, vss[[tstsetup_default]], info = tstsetup)
   }
 })
