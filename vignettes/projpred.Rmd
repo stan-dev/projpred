@@ -126,7 +126,7 @@ Nonetheless, a preliminary and comparatively fast run of `varsel()` or `cv_varse
 To illustrate a preliminary `cv_varsel()` run with `validate_search = FALSE`, we set `nterms_max` to the number of predictor terms in the full model, i.e., `nterms_max = 20`.
 To speed up the building of the vignette (this is not recommended in general), we choose the `"L1"` search `method`
 <!-- (in general, the default of forward search is more desirable, see `?varsel` or `?cv_varsel` for details) -->
-and set `nclusters_pred` to a comparatively low value of `20`.
+and set `refit_prj` to `FALSE`.
 ```{r cv_varsel_fast}
 # Preliminary cv_varsel() run:
 cvvs_fast <- cv_varsel(
@@ -134,7 +134,7 @@ cvvs_fast <- cv_varsel(
   validate_search = FALSE,
   ### Only for the sake of speed (not recommended in general):
   method = "L1",
-  nclusters_pred = 20,
+  refit_prj = FALSE,
   ###
   nterms_max = 20,
   ### In interactive use, we recommend not to deactivate the verbose mode:
@@ -151,10 +151,35 @@ Since we will be using the following plot only to determine `nterms_max` for sub
 ```{r plot_vsel_fast}
 plot(cvvs_fast, stats = "mlpd", ranking_nterms_max = NA)
 ```
-This plot (see `?plot.vsel` for a description) shows that the submodel MLPD does not change much after submodel size 8, so in our final `cv_varsel()` run, we set `nterms_max` to a value slightly higher than 8 (here: `nterms_max = 9`) to ensure that we see the MLPD leveling off.
+This plot (see `?plot.vsel` for a description) suggests that the submodel MLPD does not change much after submodel size 9, although it keeps slightly increasing even after submodel size 9.
+However, we used L1 search with `refit_prj = FALSE`, which means that the projections employed for the predictive performance evaluation are L1-penalized, which is usually undesired [@piironen_projective_2020, section 4].
+Thus, to investigate the impact of `refit_prj = FALSE`, we re-run `cv_varsel()`, but this time with the default of `refit_prj = TRUE` and re-using the search results (and also most of the arguments) from the former `cv_varsel()` call (this is done by applying `cv_varsel()` to `cvvs_fast` instead of `refm_fit` so that the `cv_varsel()` generic dispatches to the `cv_varsel.vsel()` method that has been introduced in **projpred** 2.8.0).
+To save time, we also set `nclusters_pred` to a comparatively low value of `20`:
+```{r cv_varsel_fast_refit}
+# Preliminary cv_varsel() run with `refit_prj = TRUE`:
+cvvs_fast_refit <- cv_varsel(
+  cvvs_fast,
+  ### Only for the sake of speed (not recommended in general):
+  nclusters_pred = 20,
+  ###
+  ### In interactive use, we recommend not to deactivate the verbose mode:
+  verbose = FALSE
+  ### 
+)
+```
+As explained above, we ignore the Pareto $\hat{k}$ warnings and also the warning that SIS is used instead of PSIS here.
+
+With the `refit_prj = TRUE` results, the predictive performance plot from above now looks as follows:
+```{r plot_vsel_fast_refit}
+plot(cvvs_fast_refit, stats = "mlpd", ranking_nterms_max = NA)
+```
+This refined plot shows that the submodel MLPD does not change much after submodel size 8, so in our final `cv_varsel()` run, we set `nterms_max` to a value slightly higher than 8 (here: `nterms_max = 9`) to ensure that we see the MLPD leveling off.
+The re-use of previous search results, achieved via `cv_varsel.vsel()`^[Analogous functionality exists for `varsel()`, implemented in `varsel.vsel()`.], could now be used again for investigating how much the results would change when increasing `nclusters_pred` or when using `ndraws_pred`.
+Here, we skip this for the sake of brevity and instead head over to the final `cv_varsel()` run.
 
 For this final `cv_varsel()` run, we use a $K$-fold CV with a small number of folds (`K = 2`) to make this vignette build faster.
 In practice, we recommend using either the default of `cv_method = "LOO"` (with `validate_search = TRUE`) or a larger value for `K` if this is possible in terms of computation time.
+<!-- For the sake of speed, we also set `nclusters_pred` to a comparatively low value of `20`. Furthermore, we illustrate -->
 We also illustrate how **projpred**'s CV can be parallelized, even though this is of little use here (we have only `K = 2` folds and the fold-wise searches and performance evaluations are quite fast, so the parallelization overhead eats up any runtime improvements).
 ```{r cv_varsel, message=FALSE}
 # For the CV parallelization (cv_varsel()'s argument `parallel`):
@@ -522,11 +547,12 @@ Some speed-up possibilities are:
 
 1.  Using L1 search (see argument `method` of `varsel()` or `cv_varsel()`) instead of forward search.
     Note that L1 search implies `nclusters = 1` and is not always supported.
+    <!-- Caution is also required when using L1 search in combination with `refit_prj = FALSE` because in that case, the projections used for the predictive performance evaluation are L1-penalized, which is usually undesired [@piironen_projective_2020, section 4]. -->
     In general, forward search is more accurate than L1 search and hence more desirable (see section "Details" in `?varsel` or `?cv_varsel` for a more detailed comparison of the two).
     The issue demonstrated in the Poisson example from the latent-projection vignette is related to this.
 
 1.  Setting argument `refit_prj` (of `varsel()` or `cv_varsel()`) to `FALSE`, which basically means to set `ndraws_pred = ndraws` and `nclusters_pred = nclusters`, but in a more efficient (i.e., faster) way.
-    In case of L1 search, this means that the L1-penalized projections of the regression coefficients are used for the predictive performance evaluation, which may be undesired [@piironen_projective_2020, section 4].
+    In case of L1 search, this means that the L1-penalized projections of the regression coefficients are used for the predictive performance evaluation, which is usually undesired [@piironen_projective_2020, section 4].
     In case of forward search, this issue does not exist.
 
 1.  Parallelizing costly parts of the CV implied by `cv_varsel()` (this was demonstrated in the example above; see argument `parallel` of `cv_varsel()`).
