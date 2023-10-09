@@ -1221,7 +1221,7 @@ kfold_varsel <- function(refmodel, method, nterms_max, ndraws, nclusters,
                clust_used_eval, nprjdraws_eval))
 }
 
-# Re-fit the reference model K times (once for each fold; `cvfun` case) or fetch
+# Refit the reference model K times (once for each fold; `cvfun` case) or fetch
 # the K reference model fits if already computed (`cvfits` case). This function
 # will return a list of length K, where each element is a list with elements
 # `refmodel` (output of init_refmodel()) and `omitted` (vector of indices of

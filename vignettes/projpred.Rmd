@@ -466,7 +466,7 @@ There are different reasons that can explain this behavior (the following list m
 1. The reference model's posterior may be so wide that the default `ndraws_pred` could be too small.
 Usually, this comes in combination with a difference in predictive performance which is comparatively small.
 Increasing `ndraws_pred` should help, but it also increases the computational cost.
-Re-fitting the reference model and thereby ensuring a narrower posterior (usually by employing a stronger sparsifying prior) should have a similar effect.
+Refitting the reference model and thereby ensuring a narrower posterior (usually by employing a stronger sparsifying prior) should have a similar effect.
 1. For non-Gaussian models, the discrepancy may be due to the fact that the penalized iteratively reweighted least squares (PIRLS) algorithm might have convergence issues [@catalina_latent_2021].
 In this case, the latent-space approach by @catalina_latent_2021 might help, see also the latent-projection vignette linked above.
 
