@@ -1309,13 +1309,13 @@ get_kfold <- function(refmodel, K, cvfits, verbose) {
 #' # Run the reference model object's `cvfun` (with a small value for `K`, but
 #' # only for the sake of speed in this example; this is not recommended in
 #' # general):
-#' cvfits <- run_cvfun(ref, K = 2, seed = 184)
+#' cv_fits <- run_cvfun(ref, K = 2, seed = 184)
 #'
 #' # Run cv_varsel() (with L1 search and small values for `nterms_max` and
 #' # `nclusters_pred`, but only for the sake of speed in this example; this is
-#' # not recommended in general) and use `cvfits` there:
+#' # not recommended in general) and use `cv_fits` there:
 #' cvvs_L1 <- cv_varsel(fit, method = "L1", cv_method = "kfold",
-#'                      cvfits = cvfits, nterms_max = 3, nclusters_pred = 10,
+#'                      cvfits = cv_fits, nterms_max = 3, nclusters_pred = 10,
 #'                      seed = 5555)
 #' # Now see, for example, `?print.vsel`, `?plot.vsel`, `?suggest_size.vsel`,
 #' # and `?ranking` for possible post-processing functions.
@@ -1324,7 +1324,7 @@ get_kfold <- function(refmodel, K, cvfits, verbose) {
 #' # multiple cv_varsel() calls, e.g., to check the sensitivity to the search
 #' # method (L1 or forward):
 #' cvvs_fw <- cv_varsel(fit, method = "forward", cv_method = "kfold",
-#'                      cvfits = cvfits, nterms_max = 3, nclusters = 5,
+#'                      cvfits = cv_fits, nterms_max = 3, nclusters = 5,
 #'                      nclusters_pred = 10, seed = 5555)
 #'
 #' @export
