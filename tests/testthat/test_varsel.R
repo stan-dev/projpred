@@ -1107,6 +1107,89 @@ test_that(paste(
   }
 })
 
+## varsel.vsel() ----------------------------------------------------------
+
+test_that("varsel.vsel() works for `vsel` objects from varsel()", {
+  skip_if_not(run_vs)
+  tstsetups <- names(vss)
+  if (!run_more) {
+    tstsetups <- head(tstsetups, 1)
+  }
+  for (tstsetup in tstsetups) {
+    vs_eval <- varsel(vss[[tstsetup]], refit_prj = FALSE, verbose = FALSE,
+                      seed = seed2_tst)
+    tstsetup_ref <- args_vs[[tstsetup]]$tstsetup_ref
+    mod_crr <- args_vs[[tstsetup]]$mod_nm
+    fam_crr <- args_vs[[tstsetup]]$fam_nm
+    prj_crr <- args_vs[[tstsetup]]$prj_nm
+    meth_exp_crr <- args_vs[[tstsetup]]$method %||% "forward"
+    vsel_tester(
+      vs_eval,
+      refmod_expected = refmods[[tstsetup_ref]],
+      solterms_len_expected = args_vs[[tstsetup]]$nterms_max,
+      method_expected = meth_exp_crr,
+      refit_prj_expected = FALSE,
+      search_terms_expected = args_vs[[tstsetup]]$search_terms,
+      search_trms_empty_size =
+        length(args_vs[[tstsetup]]$search_terms) &&
+        all(grepl("\\+", args_vs[[tstsetup]]$search_terms)),
+      info_str = tstsetup
+    )
+  }
+})
+
+# TODO: Also test `refit_prj = FALSE` here?
+test_that(paste(
+  "varsel.vsel() works for `vsel` objects from cv_varsel() (called with",
+  "`validate_search = FALSE`)"
+), {
+  skip_if_not(run_vs)
+  skip_if_not(run_cvvs)
+  tstsetup_counter <- 0L
+  for (tstsetup in names(cvvss)) {
+    if (!identical(args_cvvs[[tstsetup]]$validate_search, FALSE)) {
+      next
+    }
+    if (!run_more && tstsetup_counter > 0L) {
+      next
+    }
+    mod_crr <- args_cvvs[[tstsetup]]$mod_nm
+    fam_crr <- args_cvvs[[tstsetup]]$fam_nm
+    prj_crr <- args_cvvs[[tstsetup]]$prj_nm
+    if (prj_crr == "augdat" && fam_crr == "cumul") {
+      warn_expected <- "non-integer #successes in a binomial glm!"
+    } else if (!is.null(args_cvvs[[tstsetup]]$avoid.increase)) {
+      warn_expected <- warn_mclogit
+    } else {
+      warn_expected <- NA
+    }
+    expect_warning(
+      vs_eval <- varsel(
+        cvvss[[tstsetup]],
+        nclusters_pred = args_cvvs[[tstsetup]]$nclusters_pred + 1L,
+        verbose = FALSE,
+        seed = seed2_tst
+      ),
+      warn_expected
+    )
+    tstsetup_ref <- args_cvvs[[tstsetup]]$tstsetup_ref
+    meth_exp_crr <- args_cvvs[[tstsetup]]$method %||% "forward"
+    vsel_tester(
+      vs_eval,
+      refmod_expected = refmods[[tstsetup_ref]],
+      solterms_len_expected = args_cvvs[[tstsetup]]$nterms_max,
+      method_expected = meth_exp_crr,
+      nprjdraws_eval_expected = nclusters_pred_tst + 1L,
+      search_terms_expected = args_cvvs[[tstsetup]]$search_terms,
+      search_trms_empty_size =
+        length(args_cvvs[[tstsetup]]$search_terms) &&
+        all(grepl("\\+", args_cvvs[[tstsetup]]$search_terms)),
+      info_str = tstsetup
+    )
+    tstsetup_counter <- tstsetup_counter + 1L
+  }
+})
+
 # cv_varsel() -------------------------------------------------------------
 
 context("cv_varsel()")
@@ -1720,5 +1803,99 @@ test_that(paste(
                                     cvvss[[tstsetup]][[vsel_nm]])),
                    info = paste(tstsetup, vsel_nm, sep = "__"))
     }
+  }
+})
+
+## cv_varsel.vsel() -------------------------------------------------------
+
+test_that("cv_varsel.vsel() works for `vsel` objects from cv_varsel()", {
+  skip_if_not(run_cvvs)
+  tstsetups <- names(cvvss)
+  if (!run_more) {
+    tstsetups <- head(tstsetups, 1)
+  }
+  for (tstsetup in tstsetups) {
+    refit_prj_crr <- !identical(args_cvvs[[tstsetup]]$validate_search, FALSE)
+    nclusters_pred_crr <- nclusters_pred_tst + if (refit_prj_crr) 1L else 0L
+    # Use suppressWarnings() because of occasional warnings concerning Pareto k
+    # diagnostics:
+    cvvs_eval <- suppressWarnings(cv_varsel(
+      cvvss[[tstsetup]], refit_prj = refit_prj_crr,
+      nclusters_pred = nclusters_pred_crr, verbose = FALSE, seed = seed2_tst
+    ))
+    tstsetup_ref <- args_cvvs[[tstsetup]]$tstsetup_ref
+    mod_crr <- args_cvvs[[tstsetup]]$mod_nm
+    fam_crr <- args_cvvs[[tstsetup]]$fam_nm
+    prj_crr <- args_cvvs[[tstsetup]]$prj_nm
+    meth_exp_crr <- args_cvvs[[tstsetup]]$method %||% "forward"
+    vsel_tester(
+      cvvs_eval,
+      with_cv = TRUE,
+      refmod_expected = refmods[[tstsetup_ref]],
+      solterms_len_expected = args_cvvs[[tstsetup]]$nterms_max,
+      method_expected = meth_exp_crr,
+      cv_method_expected = args_cvvs[[tstsetup]]$cv_method,
+      valsearch_expected = args_cvvs[[tstsetup]]$validate_search,
+      refit_prj_expected = refit_prj_crr,
+      nprjdraws_eval_expected = if (!refit_prj_crr && meth_exp_crr == "L1") {
+        1L
+      } else if (!refit_prj_crr) {
+        nclusters_tst
+      } else {
+        nclusters_pred_crr
+      },
+      search_terms_expected = args_cvvs[[tstsetup]]$search_terms,
+      search_trms_empty_size =
+        length(args_cvvs[[tstsetup]]$search_terms) &&
+        all(grepl("\\+", args_cvvs[[tstsetup]]$search_terms)),
+      info_str = tstsetup
+    )
+  }
+})
+
+# TODO: Also test `refit_prj = FALSE` here?
+test_that(paste(
+  "cv_varsel.vsel() (internally called with `validate_search = FALSE`) works",
+  "for `vsel` objects from varsel()"
+), {
+  ### TODO: Needs to be finished:
+  skip_if_not(FALSE)
+  ###
+  skip_if_not(run_vs)
+  skip_if_not(run_cvvs)
+  tstsetup_counter <- 0L
+  for (tstsetup in names(vss)) {
+    if (!run_more && tstsetup_counter > 0L) {
+      next
+    }
+    mod_crr <- args_vs[[tstsetup]]$mod_nm
+    fam_crr <- args_vs[[tstsetup]]$fam_nm
+    prj_crr <- args_vs[[tstsetup]]$prj_nm
+    # Use suppressWarnings() because of occasional warnings concerning Pareto k
+    # diagnostics:
+    cvvs_eval <- suppressWarnings(cv_varsel(
+      vss[[tstsetup]],
+      nclusters_pred = args_vs[[tstsetup]]$nclusters_pred + 1L,
+      verbose = FALSE,
+      seed = seed2_tst
+    ))
+    tstsetup_ref <- args_vs[[tstsetup]]$tstsetup_ref
+    meth_exp_crr <- args_vs[[tstsetup]]$method %||% "forward"
+    vsel_tester(
+      cvvs_eval,
+      with_cv = TRUE,
+      refmod_expected = refmods[[tstsetup_ref]],
+      solterms_len_expected = args_vs[[tstsetup]]$nterms_max,
+      method_expected = meth_exp_crr,
+      cv_method_expected = "LOO",
+      valsearch_expected = FALSE,
+      nprjdraws_eval_expected = nclusters_pred_tst + 1L,
+      search_terms_expected = args_vs[[tstsetup]]$search_terms,
+      search_trms_empty_size =
+        length(args_vs[[tstsetup]]$search_terms) &&
+        all(grepl("\\+", args_vs[[tstsetup]]$search_terms)),
+      info_str = tstsetup
+    )
+    tstsetup_counter <- tstsetup_counter + 1L
   }
 })
