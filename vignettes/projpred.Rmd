@@ -578,6 +578,12 @@ Some speed-up possibilities are:
 1.  Parallelizing costly parts of the CV implied by `cv_varsel()` (this was demonstrated in the example above; see argument `parallel` of `cv_varsel()`).
     When using `project()`, parallelizing the projection might also help (see the general package documentation available [online](https://mc-stan.org/projpred/reference/projpred-package.html) or by typing `` ?`projpred-package` ``).
 
+1.  Using `varsel.vsel()` or `cv_varsel.vsel()` to re-use previous search results for new performance evaluation(s).
+    This is helpful if the performance evaluation part is run multiple times based on the same search results (e.g., when only arguments `ndraws_pred` or `nclusters_pred` of `varsel()` or `cv_varsel()` are changed).
+    In the example above, this was illustrated when `cv_varsel()` was applied to `cvvs_fast` instead of `refm_fit` to yield `cvvs_fast_refit`.
+    In that example, search and performance evaluation were effectively run *separately* by the `cv_varsel()` calls yielding `cvvs_fast` and `cvvs_fast_refit`, respectively.
+    This is because `cv_varsel()` with `refit_prj = FALSE` (used for `cvvs_fast`) has almost only the computational cost of the search (the performance evaluation with `refit_prj = FALSE` has almost no computational cost) and `cv_varsel.vsel()` (used for `cvvs_fast_refit`) has almost only the computational cost of the performance evaluation (the search in `cv_varsel.vsel()` has no computational cost at all).
+
 1.  Using `run_cvfun()` in case of repeated $K$-fold CV with the same $K$ reference model refits.
     The output of `run_cvfun()` is typically used as input for argument `cvfits` of `cv_varsel.refmodel()` (so in order to have a speed improvement, the output of `run_cvfun()` needs to be assigned to an object which is then re-used in multiple `cv_varsel()` calls).
 
