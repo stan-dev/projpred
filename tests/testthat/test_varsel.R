@@ -1858,9 +1858,6 @@ test_that(paste(
   "cv_varsel.vsel() (internally called with `validate_search = FALSE`) works",
   "for `vsel` objects from varsel()"
 ), {
-  ### TODO: Needs to be finished:
-  skip_if_not(FALSE)
-  ###
   skip_if_not(run_vs)
   skip_if_not(run_cvvs)
   tstsetup_counter <- 0L
