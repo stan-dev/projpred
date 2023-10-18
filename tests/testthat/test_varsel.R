@@ -1123,6 +1123,15 @@ test_that("varsel.vsel() works for `vsel` objects from varsel()", {
     fam_crr <- args_vs[[tstsetup]]$fam_nm
     prj_crr <- args_vs[[tstsetup]]$prj_nm
     meth_exp_crr <- args_vs[[tstsetup]]$method %||% "forward"
+    extra_tol_crr <- 1.1
+    if (meth_exp_crr == "L1" &&
+        any(grepl(":", ranking(vs_eval)[["fulldata"]]))) {
+      ### Testing for non-increasing element `ce` (for increasing model size)
+      ### doesn't make sense if the ranking of predictors involved in
+      ### interactions has been changed, so we choose a higher `extra_tol`:
+      extra_tol_crr <- 1.2
+      ###
+    }
     vsel_tester(
       vs_eval,
       refmod_expected = refmods[[tstsetup_ref]],
@@ -1133,6 +1142,7 @@ test_that("varsel.vsel() works for `vsel` objects from varsel()", {
       search_trms_empty_size =
         length(args_vs[[tstsetup]]$search_terms) &&
         all(grepl("\\+", args_vs[[tstsetup]]$search_terms)),
+      extra_tol = extra_tol_crr,
       info_str = tstsetup
     )
   }
