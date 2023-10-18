@@ -1908,26 +1908,18 @@ if (run_cvvs) {
 
 ## Output names -----------------------------------------------------------
 
+# Output elements of `vsel` objects:
 vsel_nms <- c(
   "refmodel", "nobs_train", "search_path", "solution_terms",
   "solution_terms_cv", "ce", "type_test", "y_wobs_test", "nobs_test",
-  "summaries", "nterms_all", "nterms_max", "method", "cv_method", "K",
-  "validate_search", "clust_used_search", "clust_used_eval", "nprjdraws_search",
-  "nprjdraws_eval", "projpred_version"
+  "summaries", "nterms_all", "nterms_max", "method", "cv_method", "nloo", "K",
+  "validate_search", "cvfits", "args_search", "clust_used_search",
+  "clust_used_eval", "nprjdraws_search", "nprjdraws_eval", "projpred_version"
 )
-# Related to prediction (in contrast to selection):
-vsel_nms_pred <- c("summaries", "solution_terms", "ce")
-vsel_nms_pred_opt <- c("solution_terms")
-# Related to `nloo`:
-vsel_nms_nloo <- c("summaries", "solution_terms_cv")
-vsel_nms_nloo_opt <- c("solution_terms_cv")
-# Related to `validate_search`:
-vsel_nms_valsearch <- c("validate_search", "summaries", "ce",
-                        "solution_terms_cv")
-vsel_nms_valsearch_opt <- character()
-# Related to `cvfits`:
+# Output elements of `vsel` objects that may be influenced by `cvfits`:
 vsel_nms_cvfits <- c("refmodel", "summaries", "solution_terms_cv")
 vsel_nms_cvfits_opt <- c("solution_terms_cv")
+# Sub-elements of `summaries`'s `sub` and `ref` elements:
 vsel_smmrs_sub_nms <- vsel_smmrs_ref_nms <- c("mu", "lppd")
 
 ## Defaults ---------------------------------------------------------------

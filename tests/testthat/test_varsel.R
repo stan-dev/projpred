@@ -18,6 +18,7 @@ test_that(paste(
       refmod_expected = refmods[[tstsetup_ref]],
       solterms_len_expected = args_vs[[tstsetup]]$nterms_max,
       method_expected = meth_exp_crr,
+      search_terms_expected = args_vs[[tstsetup]]$search_terms,
       search_trms_empty_size =
         length(args_vs[[tstsetup]]$search_terms) &&
         all(grepl("\\+", args_vs[[tstsetup]]$search_terms)),
@@ -157,6 +158,7 @@ test_that(paste(
       ),
       solterms_len_expected = args_vs_i$nterms_max,
       method_expected = meth_exp_crr,
+      search_terms_expected = args_vs_i$search_terms,
       search_trms_empty_size =
         length(args_vs_i$search_terms) &&
         all(grepl("\\+", args_vs_i$search_terms)),
@@ -283,6 +285,7 @@ test_that(paste(
       ),
       solterms_len_expected = args_vs_i$nterms_max,
       method_expected = meth_exp_crr,
+      search_terms_expected = args_vs_i$search_terms,
       search_trms_empty_size =
         length(args_vs_i$search_terms) &&
         all(grepl("\\+", args_vs_i$search_terms)),
@@ -551,6 +554,7 @@ test_that("`refit_prj` works", {
       solterms_len_expected = args_vs_i$nterms_max,
       method_expected = meth_exp_crr,
       refit_prj_expected = FALSE,
+      search_terms_expected = args_vs_i$search_terms,
       search_trms_empty_size =
         length(args_vs_i$search_terms) &&
         all(grepl("\\+", args_vs_i$search_terms)),
@@ -662,6 +666,10 @@ test_that(paste(
   regul_tst <- c(regul_default, 1e-1, 1e2)
   stopifnot(regul_tst[1] == regul_default)
   stopifnot(all(diff(regul_tst) > 0))
+  # Output elements of `vsel` objects that may be influenced by `regul`:
+  vsel_nms_regul <- c("summaries", "ce")
+  vsel_nms_regul_opt <- character()
+  # The setups that should be tested:
   tstsetups <- grep("\\.glm\\..*\\.L1\\.", names(vss), value = TRUE)
   for (tstsetup in tstsetups) {
     args_vs_i <- args_vs[[tstsetup]]
@@ -683,14 +691,13 @@ test_that(paste(
           method_expected = "L1",
           info_str = tstsetup
         )
-        # Expect equality for all components not related to prediction:
-        expect_equal(vs_regul[setdiff(vsel_nms, vsel_nms_pred)],
-                     vss[[tstsetup]][setdiff(vsel_nms, vsel_nms_pred)],
+        # Expect equality for all components not related to `regul`:
+        expect_equal(vs_regul[setdiff(vsel_nms, vsel_nms_regul)],
+                     vss[[tstsetup]][setdiff(vsel_nms, vsel_nms_regul)],
                      info = paste(tstsetup, j, sep = "__"))
-        # Expect inequality for the components related to prediction (but note
-        # that the components from `vsel_nms_pred_opt` can be, but don't need to
-        # be differing):
-        for (vsel_nm in setdiff(vsel_nms_pred, vsel_nms_pred_opt)) {
+        # Expect inequality for the elements related to `regul` (the elements
+        # from `vsel_nms_regul_opt` can be, but don't need to be differing):
+        for (vsel_nm in setdiff(vsel_nms_regul, vsel_nms_regul_opt)) {
           expect_false(isTRUE(all.equal(vs_regul[[vsel_nm]],
                                         vss[[tstsetup]][[vsel_nm]])),
                        info = paste(tstsetup, j, vsel_nm, sep = "__"))
@@ -766,6 +773,7 @@ test_that(paste(
           refmod_expected = refmods[[args_vs_i$tstsetup_ref]],
           solterms_len_expected = args_vs_i$nterms_max,
           method_expected = "forward",
+          search_terms_expected = args_vs_i$search_terms,
           search_trms_empty_size =
             length(args_vs_i$search_terms) &&
             all(grepl("\\+", args_vs_i$search_terms)),
@@ -906,6 +914,7 @@ test_that("for forward search, `penalty` has no effect", {
       )),
       warn_expected
     )
+    vs_penal$args_search["penalty"] <- list(NULL)
     expect_equal(vs_penal, vss[[tstsetup]], info = tstsetup)
   }
 })
@@ -954,6 +963,7 @@ test_that("for L1 search, `penalty` has an expected effect", {
       refmod_expected = refmods[[args_vs_i$tstsetup_ref]],
       solterms_len_expected = nterms_max_crr,
       method_expected = "L1",
+      penalty_expected = penal_crr,
       info_str = tstsetup
     )
     # Check that the variables with no cost are selected first and the ones
@@ -1051,7 +1061,9 @@ test_that(paste(
   for (tstsetup in tstsetups) {
     tstsetup_default <- sub("\\.alltrms", "\\.default_search_trms", tstsetup)
     if (!tstsetup_default %in% names(vss)) next
-    expect_identical(vss[[tstsetup]], vss[[tstsetup_default]], info = tstsetup)
+    vs_search_terms <- vss[[tstsetup]]
+    vs_search_terms$args_search["search_terms"] <- list(NULL)
+    expect_identical(vs_search_terms, vss[[tstsetup_default]], info = tstsetup)
   }
 })
 
@@ -1095,6 +1107,110 @@ test_that(paste(
   }
 })
 
+## varsel.vsel() ----------------------------------------------------------
+
+test_that("varsel.vsel() works for `vsel` objects from varsel()", {
+  skip_if_not(run_vs)
+  tstsetups <- names(vss)
+  if (!run_more) {
+    tstsetups <- head(tstsetups, 1)
+  }
+  for (tstsetup in tstsetups) {
+    vs_eval <- varsel(vss[[tstsetup]], refit_prj = FALSE, verbose = FALSE,
+                      seed = seed2_tst)
+    tstsetup_ref <- args_vs[[tstsetup]]$tstsetup_ref
+    mod_crr <- args_vs[[tstsetup]]$mod_nm
+    fam_crr <- args_vs[[tstsetup]]$fam_nm
+    prj_crr <- args_vs[[tstsetup]]$prj_nm
+    meth_exp_crr <- args_vs[[tstsetup]]$method %||% "forward"
+    extra_tol_crr <- 1.1
+    if (meth_exp_crr == "L1" &&
+        any(grepl(":", ranking(vs_eval)[["fulldata"]]))) {
+      ### Testing for non-increasing element `ce` (for increasing model size)
+      ### doesn't make sense if the ranking of predictors involved in
+      ### interactions has been changed, so we choose a higher `extra_tol`:
+      extra_tol_crr <- 1.2
+      ###
+    }
+    vsel_tester(
+      vs_eval,
+      refmod_expected = refmods[[tstsetup_ref]],
+      solterms_len_expected = args_vs[[tstsetup]]$nterms_max,
+      method_expected = meth_exp_crr,
+      refit_prj_expected = FALSE,
+      search_terms_expected = args_vs[[tstsetup]]$search_terms,
+      search_trms_empty_size =
+        length(args_vs[[tstsetup]]$search_terms) &&
+        all(grepl("\\+", args_vs[[tstsetup]]$search_terms)),
+      extra_tol = extra_tol_crr,
+      info_str = tstsetup
+    )
+  }
+})
+
+test_that(paste(
+  "varsel.vsel() works for `vsel` objects from cv_varsel() (called with",
+  "`validate_search = FALSE`)"
+), {
+  skip_if_not(run_vs)
+  skip_if_not(run_cvvs)
+  tstsetup_counter <- 0L
+  for (tstsetup in names(cvvss)) {
+    if (!identical(args_cvvs[[tstsetup]]$validate_search, FALSE)) {
+      next
+    }
+    if (!run_more && tstsetup_counter > 0L) {
+      next
+    } else if (run_more && tstsetup_counter > 0L) {
+      refit_prj_crr <- TRUE
+      nclusters_pred_crr <- args_cvvs[[tstsetup]]$nclusters_pred + 1L
+    } else {
+      refit_prj_crr <- FALSE
+      nclusters_pred_crr <- args_cvvs[[tstsetup]]$nclusters_pred
+    }
+    mod_crr <- args_cvvs[[tstsetup]]$mod_nm
+    fam_crr <- args_cvvs[[tstsetup]]$fam_nm
+    prj_crr <- args_cvvs[[tstsetup]]$prj_nm
+    if (refit_prj_crr && prj_crr == "augdat" && fam_crr == "cumul") {
+      warn_expected <- "non-integer #successes in a binomial glm!"
+    } else if (refit_prj_crr &&
+               !is.null(args_cvvs[[tstsetup]]$avoid.increase)) {
+      warn_expected <- warn_mclogit
+    } else {
+      warn_expected <- NA
+    }
+    expect_warning(
+      vs_eval <- varsel(
+        cvvss[[tstsetup]], refit_prj = refit_prj_crr,
+        nclusters_pred = nclusters_pred_crr, verbose = FALSE, seed = seed2_tst
+      ),
+      warn_expected
+    )
+    tstsetup_ref <- args_cvvs[[tstsetup]]$tstsetup_ref
+    meth_exp_crr <- args_cvvs[[tstsetup]]$method %||% "forward"
+    vsel_tester(
+      vs_eval,
+      refmod_expected = refmods[[tstsetup_ref]],
+      solterms_len_expected = args_cvvs[[tstsetup]]$nterms_max,
+      method_expected = meth_exp_crr,
+      refit_prj_expected = refit_prj_crr,
+      nprjdraws_eval_expected = if (!refit_prj_crr && meth_exp_crr == "L1") {
+        1L
+      } else if (!refit_prj_crr) {
+        nclusters_tst
+      } else {
+        nclusters_pred_crr
+      },
+      search_terms_expected = args_cvvs[[tstsetup]]$search_terms,
+      search_trms_empty_size =
+        length(args_cvvs[[tstsetup]]$search_terms) &&
+        all(grepl("\\+", args_cvvs[[tstsetup]]$search_terms)),
+      info_str = tstsetup
+    )
+    tstsetup_counter <- tstsetup_counter + 1L
+  }
+})
+
 # cv_varsel() -------------------------------------------------------------
 
 context("cv_varsel()")
@@ -1117,6 +1233,7 @@ test_that(paste(
       method_expected = meth_exp_crr,
       cv_method_expected = args_cvvs[[tstsetup]]$cv_method,
       valsearch_expected = args_cvvs[[tstsetup]]$validate_search,
+      search_terms_expected = args_cvvs[[tstsetup]]$search_terms,
       search_trms_empty_size =
         length(args_cvvs[[tstsetup]]$search_terms) &&
         all(grepl("\\+", args_cvvs[[tstsetup]]$search_terms)),
@@ -1220,6 +1337,7 @@ test_that("`refit_prj` works", {
       refit_prj_expected = FALSE,
       cv_method_expected = args_cvvs_i$cv_method,
       valsearch_expected = args_cvvs_i$validate_search,
+      search_terms_expected = args_cvvs_i$search_terms,
       search_trms_empty_size =
         length(args_cvvs_i$search_terms) &&
         all(grepl("\\+", args_cvvs_i$search_terms)),
@@ -1313,6 +1431,7 @@ test_that(paste(
            nloo = nloo_tst),
       excl_nonargs(args_cvvs_i)
     )))
+    cvvs_nloo["nloo"] <- list(NULL)
     expect_equal(cvvs_nloo, cvvss[[tstsetup]], info = tstsetup)
   }
 })
@@ -1320,6 +1439,10 @@ test_that(paste(
 test_that("setting `nloo` smaller than the number of observations works", {
   skip_if_not(run_cvvs)
   nloo_tst <- nobsv %/% 5L
+  # Output elements of `vsel` objects that may be influenced by `nloo`:
+  vsel_nms_nloo <- c("summaries", "solution_terms_cv", "nloo")
+  vsel_nms_nloo_opt <- c("solution_terms_cv")
+  # The setups that should be tested:
   tstsetups <- grep("\\.glm\\.gauss\\..*\\.default_cvmeth", names(cvvss),
                     value = TRUE)
   for (tstsetup in tstsetups) {
@@ -1345,16 +1468,17 @@ test_that("setting `nloo` smaller than the number of observations works", {
       cv_method_expected = "LOO",
       valsearch_expected = args_cvvs_i$validate_search,
       nloo_expected = nloo_tst,
+      search_terms_expected = args_cvvs_i$search_terms,
       search_trms_empty_size =
         length(args_cvvs_i$search_terms) &&
         all(grepl("\\+", args_cvvs_i$search_terms)),
       info_str = tstsetup
     )
-    # Expected equality for most components with a few exceptions:
+    # Expected equality for most elements with a few exceptions:
     expect_equal(cvvs_nloo[setdiff(vsel_nms, vsel_nms_nloo)],
                  cvvss[[tstsetup]][setdiff(vsel_nms, vsel_nms_nloo)],
                  info = tstsetup)
-    # Expected inequality for the exceptions (but note that the components from
+    # Expected inequality for the exceptions (the elements from
     # `vsel_nms_nloo_opt` can be, but don't need to be differing):
     for (vsel_nm in setdiff(vsel_nms_nloo, vsel_nms_nloo_opt)) {
       expect_false(isTRUE(all.equal(cvvs_nloo[[vsel_nm]],
@@ -1368,6 +1492,12 @@ test_that("setting `nloo` smaller than the number of observations works", {
 
 test_that("`validate_search` works", {
   skip_if_not(run_cvvs)
+  # Output elements of `vsel` objects that may be influenced by
+  # `validate_search`:
+  vsel_nms_valsearch <- c("validate_search", "summaries", "ce",
+                          "solution_terms_cv")
+  vsel_nms_valsearch_opt <- character()
+  # The setups that should be tested:
   tstsetups <- grep("\\.default_cvmeth", names(cvvss), value = TRUE)
   if (!run_valsearch_always) {
     has_valsearch_true <- sapply(tstsetups, function(tstsetup_cvvs) {
@@ -1400,19 +1530,20 @@ test_that("`validate_search` works", {
       method_expected = meth_exp_crr,
       cv_method_expected = "LOO",
       valsearch_expected = FALSE,
+      search_terms_expected = args_cvvs_i$search_terms,
       search_trms_empty_size =
         length(args_cvvs_i$search_terms) &&
         all(grepl("\\+", args_cvvs_i$search_terms)),
       info_str = tstsetup
     )
-    # Expected equality for most components with a few exceptions:
+    # Expected equality for most elements with a few exceptions:
     expect_equal(cvvs_valsearch[setdiff(vsel_nms, vsel_nms_valsearch)],
                  cvvss[[tstsetup]][setdiff(vsel_nms, vsel_nms_valsearch)],
                  info = tstsetup)
     expect_identical(cvvs_valsearch$summaries$ref,
                      cvvss[[tstsetup]]$summaries$ref,
                      info = tstsetup)
-    # Expected inequality for the exceptions (but note that the components from
+    # Expected inequality for the exceptions (the elements from
     # `vsel_nms_valsearch_opt` can be, but don't need to be differing):
     for (vsel_nm in setdiff(vsel_nms_valsearch, vsel_nms_valsearch_opt)) {
       expect_false(isTRUE(all.equal(cvvs_valsearch[[vsel_nm]],
@@ -1544,12 +1675,13 @@ test_that(paste(
       method_expected = meth_exp_crr,
       cv_method_expected = "kfold",
       valsearch_expected = args_cvvs_i$validate_search,
+      search_terms_expected = args_cvvs_i$search_terms,
       search_trms_empty_size =
         length(args_cvvs_i$search_terms) &&
         all(grepl("\\+", args_cvvs_i$search_terms)),
       info_str = tstsetup
     )
-    # Expected equality for some components:
+    # Expected equality for most elements with a few exceptions:
     # TODO: Currently, `check.environment = FALSE` is needed. The reason is
     # probably that in the divergence minimizers, the projpred-extended family
     # is passed to argument `family` of the external model fitting functions
@@ -1559,9 +1691,8 @@ test_that(paste(
                  cvvss[[tstsetup]][setdiff(vsel_nms, vsel_nms_cvfits)],
                  check.environment = FALSE,
                  info = tstsetup)
-    # Expected inequality for the remaining components (but note that the
-    # components from `vsel_nms_cvfits_opt` can be, but don't need to be
-    # differing):
+    # Expected inequality for the exceptions (the elements from
+    # `vsel_nms_cvfits_opt` can be, but don't need to be differing):
     for (vsel_nm in setdiff(vsel_nms_cvfits, vsel_nms_cvfits_opt)) {
       expect_false(isTRUE(all.equal(cvvs_cvfits[[vsel_nm]],
                                     cvvss[[tstsetup]][[vsel_nm]])),
@@ -1670,12 +1801,13 @@ test_that(paste(
       method_expected = meth_exp_crr,
       cv_method_expected = "kfold",
       valsearch_expected = args_cvvs_i$validate_search,
+      search_terms_expected = args_cvvs_i$search_terms,
       search_trms_empty_size =
         length(args_cvvs_i$search_terms) &&
         all(grepl("\\+", args_cvvs_i$search_terms)),
       info_str = tstsetup
     )
-    # Expected equality for some components:
+    # Expected equality for most elements with a few exceptions:
     # TODO: Currently, `check.environment = FALSE` is needed. The reason is
     # probably that in the divergence minimizers, the projpred-extended family
     # is passed to argument `family` of the external model fitting functions
@@ -1685,13 +1817,113 @@ test_that(paste(
                  cvvss[[tstsetup]][setdiff(vsel_nms, vsel_nms_cvfits)],
                  check.environment = FALSE,
                  info = tstsetup)
-    # Expected inequality for the remaining components (but note that the
-    # components from `vsel_nms_cvfits_opt` can be, but don't need to be
-    # differing):
+    # Expected inequality for the exceptions (the elements from
+    # `vsel_nms_cvfits_opt` can be, but don't need to be differing):
     for (vsel_nm in setdiff(vsel_nms_cvfits, vsel_nms_cvfits_opt)) {
       expect_false(isTRUE(all.equal(cvvs_cvfits[[vsel_nm]],
                                     cvvss[[tstsetup]][[vsel_nm]])),
                    info = paste(tstsetup, vsel_nm, sep = "__"))
     }
+  }
+})
+
+## cv_varsel.vsel() -------------------------------------------------------
+
+test_that("cv_varsel.vsel() works for `vsel` objects from cv_varsel()", {
+  skip_if_not(run_cvvs)
+  tstsetups <- names(cvvss)
+  if (!run_more) {
+    tstsetups <- head(tstsetups, 1)
+  }
+  for (tstsetup in tstsetups) {
+    refit_prj_crr <- !identical(args_cvvs[[tstsetup]]$validate_search, FALSE)
+    nclusters_pred_crr <- nclusters_pred_tst + if (refit_prj_crr) 1L else 0L
+    # Use suppressWarnings() because of occasional warnings concerning Pareto k
+    # diagnostics:
+    cvvs_eval <- suppressWarnings(cv_varsel(
+      cvvss[[tstsetup]], refit_prj = refit_prj_crr,
+      nclusters_pred = nclusters_pred_crr, verbose = FALSE, seed = seed2_tst
+    ))
+    tstsetup_ref <- args_cvvs[[tstsetup]]$tstsetup_ref
+    mod_crr <- args_cvvs[[tstsetup]]$mod_nm
+    fam_crr <- args_cvvs[[tstsetup]]$fam_nm
+    prj_crr <- args_cvvs[[tstsetup]]$prj_nm
+    meth_exp_crr <- args_cvvs[[tstsetup]]$method %||% "forward"
+    vsel_tester(
+      cvvs_eval,
+      with_cv = TRUE,
+      refmod_expected = refmods[[tstsetup_ref]],
+      solterms_len_expected = args_cvvs[[tstsetup]]$nterms_max,
+      method_expected = meth_exp_crr,
+      cv_method_expected = args_cvvs[[tstsetup]]$cv_method,
+      valsearch_expected = args_cvvs[[tstsetup]]$validate_search,
+      refit_prj_expected = refit_prj_crr,
+      nprjdraws_eval_expected = if (!refit_prj_crr && meth_exp_crr == "L1") {
+        1L
+      } else if (!refit_prj_crr) {
+        nclusters_tst
+      } else {
+        nclusters_pred_crr
+      },
+      search_terms_expected = args_cvvs[[tstsetup]]$search_terms,
+      search_trms_empty_size =
+        length(args_cvvs[[tstsetup]]$search_terms) &&
+        all(grepl("\\+", args_cvvs[[tstsetup]]$search_terms)),
+      info_str = tstsetup
+    )
+  }
+})
+
+test_that(paste(
+  "cv_varsel.vsel() (internally called with `validate_search = FALSE`) works",
+  "for `vsel` objects from varsel()"
+), {
+  skip_if_not(run_vs)
+  skip_if_not(run_cvvs)
+  tstsetup_counter <- 0L
+  for (tstsetup in names(vss)) {
+    if (!run_more && tstsetup_counter > 0L) {
+      next
+    } else if (run_more && tstsetup_counter > 0L) {
+      refit_prj_crr <- TRUE
+      nclusters_pred_crr <- args_vs[[tstsetup]]$nclusters_pred + 1L
+    } else {
+      refit_prj_crr <- FALSE
+      nclusters_pred_crr <- args_vs[[tstsetup]]$nclusters_pred
+    }
+    mod_crr <- args_vs[[tstsetup]]$mod_nm
+    fam_crr <- args_vs[[tstsetup]]$fam_nm
+    prj_crr <- args_vs[[tstsetup]]$prj_nm
+    # Use suppressWarnings() because of occasional warnings concerning Pareto k
+    # diagnostics:
+    cvvs_eval <- suppressWarnings(cv_varsel(
+      vss[[tstsetup]], refit_prj = refit_prj_crr,
+      nclusters_pred = nclusters_pred_crr, verbose = FALSE, seed = seed2_tst
+    ))
+    tstsetup_ref <- args_vs[[tstsetup]]$tstsetup_ref
+    meth_exp_crr <- args_vs[[tstsetup]]$method %||% "forward"
+    vsel_tester(
+      cvvs_eval,
+      with_cv = TRUE,
+      refmod_expected = refmods[[tstsetup_ref]],
+      solterms_len_expected = args_vs[[tstsetup]]$nterms_max,
+      method_expected = meth_exp_crr,
+      cv_method_expected = "LOO",
+      valsearch_expected = FALSE,
+      refit_prj_expected = refit_prj_crr,
+      nprjdraws_eval_expected = if (!refit_prj_crr && meth_exp_crr == "L1") {
+        1L
+      } else if (!refit_prj_crr) {
+        nclusters_tst
+      } else {
+        nclusters_pred_crr
+      },
+      search_terms_expected = args_vs[[tstsetup]]$search_terms,
+      search_trms_empty_size =
+        length(args_vs[[tstsetup]]$search_terms) &&
+        all(grepl("\\+", args_vs[[tstsetup]]$search_terms)),
+      info_str = tstsetup
+    )
+    tstsetup_counter <- tstsetup_counter + 1L
   }
 })

@@ -1969,6 +1969,8 @@ vsel_tester <- function(
     },
     seed_expected = seed_tst,
     nloo_expected = NULL,
+    penalty_expected = NULL,
+    search_terms_expected = NULL,
     search_trms_empty_size = FALSE,
     extra_tol = 1.1,
     info_str = ""
@@ -1998,6 +2000,7 @@ vsel_tester <- function(
     # size (see issue #307):
     solterms_len_expected <- solterms_len_expected - 1L
   }
+  nloo_expected_orig <- nloo_expected
 
   # Test the general structure of the object:
   expect_s3_class(vs, "vsel")
@@ -2117,6 +2120,50 @@ vsel_tester <- function(
                  fam_expected = vs$refmodel$family$family,
                  info_str = info_str)
 
+  # solution_terms
+  expect_type(vs$solution_terms, "character")
+  expect_length(vs$solution_terms, solterms_len_expected)
+  soltrms <- vs$solution_terms
+  for (soltrms_plus in grep("\\+", soltrms, value = TRUE)) {
+    soltrms <- setdiff(soltrms, soltrms_plus)
+    soltrms <- c(soltrms, labels(terms(as.formula(paste(". ~", soltrms_plus)))))
+  }
+  expect_true(all(soltrms %in% trms_universe_split), info = info_str)
+
+  # solution_terms_cv
+  if (with_cv && isTRUE(vs$validate_search)) {
+    expect_true(is.matrix(vs$solution_terms_cv), info = info_str)
+    expect_type(vs$solution_terms_cv, "character")
+    if (identical(cv_method_expected, "kfold")) {
+      n_folds <- K_tst
+    } else {
+      n_folds <- nobsv
+    }
+    expect_identical(dim(vs$solution_terms_cv),
+                     c(n_folds, solterms_len_expected),
+                     info = info_str)
+    # We need the addition of `NA_character_` because of subsampled PSIS-LOO CV:
+    expect_true(
+      all(vs$solution_terms_cv %in% c(trms_universe_split, NA_character_)),
+      info = info_str
+    )
+  } else {
+    expect_null(vs$solution_terms_cv, info = info_str)
+  }
+
+  # ce
+  if (with_cv && (valsearch_expected || cv_method_expected == "kfold")) {
+    expect_identical(vs$ce, rep(NA_real_, solterms_len_expected + 1))
+  } else {
+    expect_type(vs$ce, "double")
+    expect_length(vs$ce, solterms_len_expected + 1)
+    # Expected to be non-increasing for increasing model size:
+    expect_true(all(ifelse(sign(head(vs$ce, -1)) == 1,
+                           tail(vs$ce, -1) <= extra_tol * head(vs$ce, -1),
+                           tail(vs$ce, -1) <= 1 / extra_tol * head(vs$ce, -1))),
+                info = info_str)
+  }
+
   # type_test
   type_test_expected <- cv_method_expected
   if (length(type_test_expected) == 0) {
@@ -2136,6 +2183,32 @@ vsel_tester <- function(
     if (vs$refmodel$family$for_latent && with_cv) {
       if (identical(cv_method_expected, "kfold")) {
         expect_true(all(is.na(vs$y_wobs_test$y)), info = info_str)
+      } else if (inherits(vs$refmodel$fit, "stanreg") &&
+                 formula_contains_additive_terms(vs$refmodel$formula) &&
+                 formula_contains_group_terms(vs$refmodel$formula)) {
+        # Due to rstanarm issue stan-dev/rstanarm#604, we need to be consistent
+        # with loo_varsel() in case of an rstanarm GAMM reference model:
+        mu_offs_oscale_tst <- vs$refmodel$family$latent_ilink(
+          t(vs$refmodel$mu_offs), cl_ref = seq_along(vs$refmodel$wdraws_ref),
+          wdraws_ref = vs$refmodel$wdraws_ref
+        )
+        ll_forPSIS <- vs$refmodel$family$latent_ll_oscale(
+          mu_offs_oscale_tst, y_oscale = vs$refmodel$y_oscale,
+          wobs = vs$refmodel$wobs, cl_ref = seq_along(vs$refmodel$wdraws_ref),
+          wdraws_ref = vs$refmodel$wdraws_ref
+        )
+        psisloo_tst <- suppressWarnings(
+          loo::psis(-ll_forPSIS, cores = 1, r_eff = NA)
+        )
+        y_lat_loo <- loo::E_loo(
+          t(vs$refmodel$ref_predfun(
+            vs$refmodel$fit, excl_offs = FALSE,
+            mlvl_allrandom = getOption("projpred.mlvl_proj_ref_new", FALSE)
+          )),
+          psis_object = psisloo_tst,
+          log_ratios = -ll_forPSIS
+        )
+        expect_equal(vs$y_wobs_test$y, y_lat_loo$value, info = info_str)
       } else {
         ll_forPSIS <- rstantools::log_lik(vs$refmodel$fit)
         lwdraws_ref <- weights(suppressWarnings(
@@ -2287,49 +2360,10 @@ vsel_tester <- function(
     smmrs_ref_tester(vs$summaries$ref$oscale, tests_oscale = TRUE)
   }
 
-  # solution_terms
-  expect_type(vs$solution_terms, "character")
-  expect_length(vs$solution_terms, solterms_len_expected)
-  soltrms <- vs$solution_terms
-  for (soltrms_plus in grep("\\+", soltrms, value = TRUE)) {
-    soltrms <- setdiff(soltrms, soltrms_plus)
-    soltrms <- c(soltrms, labels(terms(as.formula(paste(". ~", soltrms_plus)))))
-  }
-  expect_true(all(soltrms %in% trms_universe_split), info = info_str)
-
-  # ce
-  if (with_cv && (valsearch_expected || cv_method_expected == "kfold")) {
-    expect_identical(vs$ce, rep(NA_real_, solterms_len_expected + 1))
-  } else {
-    expect_type(vs$ce, "double")
-    expect_length(vs$ce, solterms_len_expected + 1)
-    # Expected to be non-increasing for increasing model size:
-    expect_true(all(ifelse(sign(head(vs$ce, -1)) == 1,
-                           tail(vs$ce, -1) <= extra_tol * head(vs$ce, -1),
-                           tail(vs$ce, -1) <= 1 / extra_tol * head(vs$ce, -1))),
-                info = info_str)
-  }
-
-  # solution_terms_cv
-  if (with_cv && isTRUE(vs$validate_search)) {
-    expect_true(is.matrix(vs$solution_terms_cv), info = info_str)
-    expect_type(vs$solution_terms_cv, "character")
-    if (identical(cv_method_expected, "kfold")) {
-      n_folds <- K_tst
-    } else {
-      n_folds <- nobsv
-    }
-    expect_identical(dim(vs$solution_terms_cv),
-                     c(n_folds, solterms_len_expected),
-                     info = info_str)
-    # We need the addition of `NA_character_` because of subsampled PSIS-LOO CV:
-    expect_true(
-      all(vs$solution_terms_cv %in% c(trms_universe_split, NA_character_)),
-      info = info_str
-    )
-  } else {
-    expect_null(vs$solution_terms_cv, info = info_str)
-  }
+  # nterms_all
+  expect_identical(vs$nterms_all,
+                   count_terms_in_formula(vs$refmodel$formula) - 1L,
+                   info = info_str)
 
   # nterms_max
   nterms_max_expected <- solterms_len_expected
@@ -2338,16 +2372,14 @@ vsel_tester <- function(
   }
   expect_equal(vs$nterms_max, nterms_max_expected, info = info_str)
 
-  # nterms_all
-  expect_identical(vs$nterms_all,
-                   count_terms_in_formula(vs$refmodel$formula) - 1L,
-                   info = info_str)
-
   # method
   expect_identical(vs$method, method_expected, info = info_str)
 
   # cv_method
   expect_identical(vs$cv_method, cv_method_expected, info = info_str)
+
+  # nloo
+  expect_identical(vs$nloo, nloo_expected_orig, info = info_str)
 
   # K
   if (identical(cv_method_expected, "kfold")) {
@@ -2358,6 +2390,41 @@ vsel_tester <- function(
 
   # validate_search
   expect_identical(vs$validate_search, valsearch_expected, info = info_str)
+
+  # cvfits
+  if (!identical(cv_method_expected, "kfold")) {
+    expect_null(vs$cvfits, info = info_str)
+  } else {
+    ### Currently, we are testing argument `cvfits` only implicitly via the
+    ### examples and via the main vignette:
+    expect_identical(vs$cvfits, "auto", info = info_str)
+    ###
+  }
+
+  # args_search
+  expect_equal(
+    vs$args_search,
+    list(
+      method = method_expected,
+      ndraws = NULL,
+      nclusters = if (from_datafit && method_expected == "forward") {
+        20
+      } else if (cl_search_expected || from_datafit) {
+        nprjdraws_search_expected
+      } else {
+        NULL
+      },
+      nterms_max = vs$nterms_max,
+      lambda_min_ratio = 1e-5, nlambda = 150, thresh = 1e-6,
+      penalty = penalty_expected,
+      search_terms = if (is.null(search_terms_expected)) {
+        NULL
+      } else {
+        union("1", search_terms_expected)
+      }
+    ),
+    info = info_str
+  )
 
   # clust_used_search
   expect_equal(vs$clust_used_search, cl_search_expected, info = info_str)

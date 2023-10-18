@@ -241,6 +241,7 @@ test_that(paste(
         datafits[[args_vs_datafit[[tstsetup]]$tstsetup_datafit]],
       solterms_len_expected = args_vs_datafit[[tstsetup]]$nterms_max,
       method_expected = meth_exp_crr,
+      search_terms_expected = args_vs_datafit[[tstsetup]]$search_terms,
       search_trms_empty_size =
         length(args_vs_datafit[[tstsetup]]$search_terms) &&
         all(grepl("\\+", args_vs_datafit[[tstsetup]]$search_terms)),
@@ -268,6 +269,7 @@ test_that(paste(
       method_expected = meth_exp_crr,
       cv_method_expected = "kfold",
       valsearch_expected = args_cvvs_datafit[[tstsetup]]$validate_search,
+      search_terms_expected = args_cvvs_datafit[[tstsetup]]$search_terms,
       search_trms_empty_size =
         length(args_cvvs_datafit[[tstsetup]]$search_terms) &&
         all(grepl("\\+", args_cvvs_datafit[[tstsetup]]$search_terms)),
