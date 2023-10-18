@@ -1138,7 +1138,6 @@ test_that("varsel.vsel() works for `vsel` objects from varsel()", {
   }
 })
 
-# TODO: Also test `refit_prj = FALSE` here?
 test_that(paste(
   "varsel.vsel() works for `vsel` objects from cv_varsel() (called with",
   "`validate_search = FALSE`)"
@@ -1152,23 +1151,28 @@ test_that(paste(
     }
     if (!run_more && tstsetup_counter > 0L) {
       next
+    } else if (run_more && tstsetup_counter > 0L) {
+      refit_prj_crr <- TRUE
+      nclusters_pred_crr <- args_cvvs[[tstsetup]]$nclusters_pred + 1L
+    } else {
+      refit_prj_crr <- FALSE
+      nclusters_pred_crr <- args_cvvs[[tstsetup]]$nclusters_pred
     }
     mod_crr <- args_cvvs[[tstsetup]]$mod_nm
     fam_crr <- args_cvvs[[tstsetup]]$fam_nm
     prj_crr <- args_cvvs[[tstsetup]]$prj_nm
-    if (prj_crr == "augdat" && fam_crr == "cumul") {
+    if (refit_prj_crr && prj_crr == "augdat" && fam_crr == "cumul") {
       warn_expected <- "non-integer #successes in a binomial glm!"
-    } else if (!is.null(args_cvvs[[tstsetup]]$avoid.increase)) {
+    } else if (refit_prj_crr &&
+               !is.null(args_cvvs[[tstsetup]]$avoid.increase)) {
       warn_expected <- warn_mclogit
     } else {
       warn_expected <- NA
     }
     expect_warning(
       vs_eval <- varsel(
-        cvvss[[tstsetup]],
-        nclusters_pred = args_cvvs[[tstsetup]]$nclusters_pred + 1L,
-        verbose = FALSE,
-        seed = seed2_tst
+        cvvss[[tstsetup]], refit_prj = refit_prj_crr,
+        nclusters_pred = nclusters_pred_crr, verbose = FALSE, seed = seed2_tst
       ),
       warn_expected
     )
@@ -1179,7 +1183,14 @@ test_that(paste(
       refmod_expected = refmods[[tstsetup_ref]],
       solterms_len_expected = args_cvvs[[tstsetup]]$nterms_max,
       method_expected = meth_exp_crr,
-      nprjdraws_eval_expected = nclusters_pred_tst + 1L,
+      refit_prj_expected = refit_prj_crr,
+      nprjdraws_eval_expected = if (!refit_prj_crr && meth_exp_crr == "L1") {
+        1L
+      } else if (!refit_prj_crr) {
+        nclusters_tst
+      } else {
+        nclusters_pred_crr
+      },
       search_terms_expected = args_cvvs[[tstsetup]]$search_terms,
       search_trms_empty_size =
         length(args_cvvs[[tstsetup]]$search_terms) &&
@@ -1853,7 +1864,6 @@ test_that("cv_varsel.vsel() works for `vsel` objects from cv_varsel()", {
   }
 })
 
-# TODO: Also test `refit_prj = FALSE` here?
 test_that(paste(
   "cv_varsel.vsel() (internally called with `validate_search = FALSE`) works",
   "for `vsel` objects from varsel()"
@@ -1864,6 +1874,12 @@ test_that(paste(
   for (tstsetup in names(vss)) {
     if (!run_more && tstsetup_counter > 0L) {
       next
+    } else if (run_more && tstsetup_counter > 0L) {
+      refit_prj_crr <- TRUE
+      nclusters_pred_crr <- args_vs[[tstsetup]]$nclusters_pred + 1L
+    } else {
+      refit_prj_crr <- FALSE
+      nclusters_pred_crr <- args_vs[[tstsetup]]$nclusters_pred
     }
     mod_crr <- args_vs[[tstsetup]]$mod_nm
     fam_crr <- args_vs[[tstsetup]]$fam_nm
@@ -1871,10 +1887,8 @@ test_that(paste(
     # Use suppressWarnings() because of occasional warnings concerning Pareto k
     # diagnostics:
     cvvs_eval <- suppressWarnings(cv_varsel(
-      vss[[tstsetup]],
-      nclusters_pred = args_vs[[tstsetup]]$nclusters_pred + 1L,
-      verbose = FALSE,
-      seed = seed2_tst
+      vss[[tstsetup]], refit_prj = refit_prj_crr,
+      nclusters_pred = nclusters_pred_crr, verbose = FALSE, seed = seed2_tst
     ))
     tstsetup_ref <- args_vs[[tstsetup]]$tstsetup_ref
     meth_exp_crr <- args_vs[[tstsetup]]$method %||% "forward"
@@ -1886,7 +1900,14 @@ test_that(paste(
       method_expected = meth_exp_crr,
       cv_method_expected = "LOO",
       valsearch_expected = FALSE,
-      nprjdraws_eval_expected = nclusters_pred_tst + 1L,
+      refit_prj_expected = refit_prj_crr,
+      nprjdraws_eval_expected = if (!refit_prj_crr && meth_exp_crr == "L1") {
+        1L
+      } else if (!refit_prj_crr) {
+        nclusters_tst
+      } else {
+        nclusters_pred_crr
+      },
       search_terms_expected = args_vs[[tstsetup]]$search_terms,
       search_trms_empty_size =
         length(args_vs[[tstsetup]]$search_terms) &&
