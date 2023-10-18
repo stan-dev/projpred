@@ -846,6 +846,8 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
       }
     }
     verb_out("-----", verbose = verbose)
+    # Needed for cutting off post-processed results later:
+    prv_len_soltrms <- length(search_path$solution_terms)
   } else {
     ## Case `validate_search = TRUE` ------------------------------------------
 
@@ -948,8 +950,8 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
     }
     # For storing the fold-wise solution paths:
     solution_terms_mat <- matrix(nrow = n, ncol = nterms_max)
-    # For checking that the length of the predictor ranking is the same across
-    # all CV folds (and also for cutting off `solution_terms_mat` later):
+    # Needed for checking that the length of the predictor ranking is the same
+    # across all CV folds and for cutting off post-processed results later:
     prv_len_soltrms <- NULL
     # For checking that `clust_used_eval` is the same across all CV folds (and
     # also for storing it):
@@ -1005,7 +1007,7 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
   ## Post-processing --------------------------------------------------------
 
   # Submodel predictive performance:
-  summ_sub <- lapply(seq_len(nterms_max + 1L), function(k) {
+  summ_sub <- lapply(seq_len(prv_len_soltrms + 1L), function(k) {
     summ_k <- list(lppd = loo_sub[[k]], mu = mu_sub[[k]], wcv = validset$wcv)
     if (refmodel$family$for_latent) {
       summ_k$oscale <- list(lppd = loo_sub_oscale[[k]], mu = mu_sub_oscale[[k]],
