@@ -2,10 +2,7 @@
   ver <- utils::packageVersion("projpred")
   msg <- paste0("This is projpred version ", ver, ".")
   msg <- paste0(msg, " ", "NOTE: In projpred 2.7.0, the default search method ",
-                "was set to \"forward\" (for all kinds of models). ",
-                "The corresponding NOTE thrown by varsel() and cv_varsel() ",
-                "can be suppressed by setting ",
-                "`options(projpred.mssg_method_changed = FALSE)`.")
+                "was set to \"forward\" (for all kinds of models).")
   packageStartupMessage(msg)
 }
 

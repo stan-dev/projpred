@@ -202,11 +202,6 @@ cv_varsel.refmodel <- function(
     parallel = getOption("projpred.prll_cv", FALSE),
     ...
 ) {
-  if (missing(method) && getOption("projpred.mssg_method_changed", TRUE)) {
-    message("NOTE: In projpred 2.7.0, the default search method ",
-            "was set to \"forward\" for all kinds of models.")
-  }
-
   if (exists(".Random.seed", envir = .GlobalEnv)) {
     rng_state_old <- get(".Random.seed", envir = .GlobalEnv)
   }

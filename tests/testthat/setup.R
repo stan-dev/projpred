@@ -876,8 +876,6 @@ meth_tst <- list(
 
 # Suppress the message when cutting off the search at `nterms_max = 19`:
 options(projpred.mssg_cut_search = FALSE)
-# Suppress the message about the default `method`:
-options(projpred.mssg_method_changed = FALSE)
 # Suppress the message for the runtime of the forward search:
 options(projpred.mssg_time = FALSE)
 # Suppress the PSIS warnings:
