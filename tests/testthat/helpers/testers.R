@@ -2184,17 +2184,31 @@ vsel_tester <- function(
       if (identical(cv_method_expected, "kfold")) {
         expect_true(all(is.na(vs$y_wobs_test$y)), info = info_str)
       } else {
-        ll_forPSIS <- rstantools::log_lik(vs$refmodel$fit)
-        lwdraws_ref <- weights(suppressWarnings(
+        # In principle, we could use
+        # `ll_forPSIS <- rstantools::log_lik(vs$refmodel$fit)`, but due to
+        # rstanarm issue stan-dev/rstanarm#604, we need to be consistent with
+        # loo_varsel():
+        mu_offs_oscale_tst <- vs$refmodel$family$latent_ilink(
+          t(vs$refmodel$mu_offs), cl_ref = seq_along(vs$refmodel$wdraws_ref),
+          wdraws_ref = vs$refmodel$wdraws_ref
+        )
+        ll_forPSIS <- vs$refmodel$family$latent_ll_oscale(
+          mu_offs_oscale_tst, y_oscale = vs$refmodel$y_oscale,
+          wobs = vs$refmodel$wobs, cl_ref = seq_along(vs$refmodel$wdraws_ref),
+          wdraws_ref = vs$refmodel$wdraws_ref
+        )
+        psisloo_tst <- suppressWarnings(
           loo::psis(-ll_forPSIS, cores = 1, r_eff = NA)
-        ))
-        y_lat_loo <- colSums(
+        )
+        y_lat_loo <- loo::E_loo(
           t(vs$refmodel$ref_predfun(
             vs$refmodel$fit, excl_offs = FALSE,
             mlvl_allrandom = getOption("projpred.mlvl_proj_ref_new", FALSE)
-          )) * exp(lwdraws_ref)
+          )),
+          psis_object = psisloo_tst,
+          log_ratios = -ll_forPSIS
         )
-        expect_equal(vs$y_wobs_test$y, y_lat_loo, info = info_str)
+        expect_equal(vs$y_wobs_test$y, y_lat_loo$value, info = info_str)
       }
     } else {
       expect_identical(vs$y_wobs_test$y, vs$refmodel$y, info = info_str)
