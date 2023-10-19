@@ -151,7 +151,11 @@ cv_varsel.default <- function(object, ...) {
 
 #' @rdname cv_varsel
 #' @export
-cv_varsel.vsel <- function(object, ...) {
+cv_varsel.vsel <- function(
+    object,
+    validate_search = isTRUE(object[["validate_search"]]),
+    ...
+) {
   return(cv_varsel(
     object = get_refmodel(object),
     method = object[["args_search"]][["method"]],
@@ -167,7 +171,7 @@ cv_varsel.vsel <- function(object, ...) {
     nloo = object[["nloo"]],
     K = object[["K"]],
     cvfits = object[["cvfits"]],
-    validate_search = isTRUE(object[["validate_search"]]),
+    validate_search = validate_search,
     search_out = list(search_path = object[["search_path"]],
                       ranking = ranking(object)),
     ...
