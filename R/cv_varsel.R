@@ -858,7 +858,8 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
   } else {
     ## Case `validate_search = TRUE` ------------------------------------------
 
-    if (is.null(search_out_rk)) {
+    search_out_rk_was_null <- is.null(search_out_rk)
+    if (search_out_rk_was_null) {
       cl_sel <- get_refdist(refmodel, ndraws = ndraws, nclusters = nclusters)$cl
     }
     if (refit_prj) {
@@ -868,7 +869,7 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
 
     if (verbose) {
       verb_txt_start <- "-----\nRunning "
-      if (!is.null(search_out_rk)) {
+      if (!search_out_rk_was_null) {
         verb_txt_mid <- ""
       } else {
         verb_txt_mid <- "the search and "
@@ -887,7 +888,7 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
       # *reweighted* fitted response values from the reference model act as
       # artifical response values in the projection (or L1-penalized
       # projection)):
-      if (!is.null(search_out_rk)) {
+      if (!search_out_rk_was_null) {
         search_path <- list(solution_terms = search_out_rk[[run_index]])
       } else {
         search_path <- select(
@@ -1204,7 +1205,7 @@ kfold_varsel <- function(refmodel, method, nterms_max, ndraws, nclusters,
                          getOption("projpred.extra_verbose", FALSE),
                        ...) {
     # Run the search for the current fold:
-    if (!is.null(rk)) {
+    if (!search_out_rk_was_null) {
       search_path <- list(solution_terms = rk)
     } else {
       search_path <- select(
