@@ -283,7 +283,7 @@ cv_varsel.refmodel <- function(
 
   # Full-data search:
   if (!is.null(search_out)) {
-    search_path_full_data <- search_out[["search_path"]]
+    search_path_fulldata <- search_out[["search_path"]]
   } else {
     verb_txt_search <- "-----\nRunning the search "
     if (validate_search) {
@@ -294,7 +294,7 @@ cv_varsel.refmodel <- function(
     }
     verb_txt_search <- paste0(verb_txt_search, "...")
     verb_out(verb_txt_search, verbose = verbose)
-    search_path_full_data <- select(
+    search_path_fulldata <- select(
       refmodel = refmodel, ndraws = ndraws, nclusters = nclusters,
       method = method, nterms_max = nterms_max, penalty = penalty,
       verbose = verbose, opt = opt, search_terms = search_terms,
@@ -323,12 +323,12 @@ cv_varsel.refmodel <- function(
       nclusters_pred = nclusters_pred, refit_prj = refit_prj, penalty = penalty,
       verbose = verbose, opt = opt, nloo = nloo,
       validate_search = validate_search,
-      search_path_full_data = if (validate_search) {
+      search_path_fulldata = if (validate_search) {
         # Not needed in this case, so for computational efficiency, avoiding
-        # passing the large object `search_path_full_data` to loo_varsel():
+        # passing the large object `search_path_fulldata` to loo_varsel():
         NULL
       } else {
-        search_path_full_data
+        search_path_fulldata
       },
       search_terms = search_terms,
       search_terms_was_null = search_terms_was_null,
@@ -346,7 +346,7 @@ cv_varsel.refmodel <- function(
   }
 
   if (validate_search) {
-    ce_out <- rep(NA_real_, length(search_path_full_data$solution_terms) + 1L)
+    ce_out <- rep(NA_real_, length(search_path_fulldata$solution_terms) + 1L)
   } else {
     ce_out <- sel_cv$ce
   }
@@ -356,8 +356,8 @@ cv_varsel.refmodel <- function(
 
   # Information about the clustering/thinning used for the search:
   refdist_info_search <- list(
-    clust_used = search_path_full_data$p_sel$clust_used,
-    nprjdraws = NCOL(search_path_full_data$p_sel$mu)
+    clust_used = search_path_fulldata$p_sel$clust_used,
+    nprjdraws = NCOL(search_path_fulldata$p_sel$mu)
   )
   # Information about the clustering/thinning used for the performance
   # evaluation:
@@ -370,8 +370,8 @@ cv_varsel.refmodel <- function(
   # The object to be returned:
   vs <- nlist(refmodel,
               nobs_train = refmodel$nobs,
-              search_path = search_path_full_data,
-              solution_terms = search_path_full_data$solution_terms,
+              search_path = search_path_fulldata,
+              solution_terms = search_path_fulldata$solution_terms,
               solution_terms_cv = sel_cv$solution_terms_cv,
               ce = ce_out,
               type_test = cv_method,
@@ -468,7 +468,7 @@ parse_args_cv_varsel <- function(refmodel, cv_method, K, cvfits,
 loo_varsel <- function(refmodel, method, nterms_max, ndraws,
                        nclusters, ndraws_pred, nclusters_pred, refit_prj,
                        penalty, verbose, opt, nloo, validate_search,
-                       search_path_full_data, search_terms,
+                       search_path_fulldata, search_terms,
                        search_terms_was_null, search_out_rk, parallel, ...) {
   ## Pre-processing ---------------------------------------------------------
 
@@ -648,7 +648,7 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
     # Step 1: Re-project (using the full dataset) onto the submodels along the
     # full-data predictor ranking and evaluate their predictive performance.
     perf_eval_out <- perf_eval(
-      search_path = search_path_full_data, refmodel = refmodel,
+      search_path = search_path_fulldata, refmodel = refmodel,
       regul = opt$regul, refit_prj = refit_prj, ndraws = ndraws_pred,
       nclusters = nclusters_pred, return_p_ref = TRUE, return_preds = TRUE,
       indices_test = inds, ...
@@ -801,7 +801,7 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
     # This re-weighting requires a re-normalization (as.array() is applied to
     # have stricter consistency checks, see `?sweep`):
     lw_sub <- sweep(lw_sub, 2, as.array(apply(lw_sub, 2, log_sum_exp)))
-    for (k in seq_len(1 + length(search_path_full_data$solution_terms))) {
+    for (k in seq_len(1 + length(search_path_fulldata$solution_terms))) {
       # TODO: For consistency, replace `k` in this `for` loop by `j`.
       mu_k <- perf_eval_out[["mu_by_size"]][[k]]
       log_lik_sub <- perf_eval_out[["lppd_by_size"]][[k]]
@@ -854,7 +854,7 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
     }
     verb_out("-----", verbose = verbose)
     # Needed for cutting off post-processed results later:
-    prv_len_soltrms <- length(search_path_full_data$solution_terms)
+    prv_len_soltrms <- length(search_path_fulldata$solution_terms)
   } else {
     ## Case `validate_search = TRUE` ------------------------------------------
 
