@@ -1173,7 +1173,8 @@ kfold_varsel <- function(refmodel, method, nterms_max, ndraws, nclusters,
   list_cv <- get_kfold(refmodel, K = K, cvfits = cvfits, verbose = verbose)
   K <- length(list_cv)
 
-  if (is.null(search_out_rk)) {
+  search_out_rk_was_null <- is.null(search_out_rk)
+  if (search_out_rk_was_null) {
     search_out_rk <- replicate(K, NULL, simplify = FALSE)
   }
 
@@ -1189,7 +1190,7 @@ kfold_varsel <- function(refmodel, method, nterms_max, ndraws, nclusters,
 
   if (verbose) {
     verb_txt_start <- "-----\nRunning "
-    if (!all(sapply(search_out_rk, is.null))) {
+    if (!search_out_rk_was_null) {
       verb_txt_mid <- ""
     } else {
       verb_txt_mid <- "the search and "
