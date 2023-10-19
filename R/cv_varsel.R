@@ -303,6 +303,19 @@ cv_varsel.refmodel <- function(
     verb_out("-----", verbose = verbose)
   }
 
+  if (!is.null(search_out) && validate_search) {
+    # Extract the fold-wise predictor rankings (to avoid passing the large
+    # object `search_out` itself) and coerce them to a `list` (in a row-wise
+    # manner) which is needed for the K-fold CV parallelization:
+    search_out_rk <- search_out[["ranking"]][["foldwise"]]
+    n_folds <- nrow(search_out_rk)
+    search_out_rk <- lapply(seq_len(n_folds), function(row_idx) {
+      search_out_rk[row_idx, ]
+    })
+  } else {
+    search_out_rk <- NULL
+  }
+
   if (cv_method == "LOO") {
     sel_cv <- loo_varsel(
       refmodel = refmodel, method = method, nterms_max = nterms_max,
@@ -319,13 +332,7 @@ cv_varsel.refmodel <- function(
       },
       search_terms = search_terms,
       search_terms_was_null = search_terms_was_null,
-      search_out_rk = if (validate_search) {
-        search_out[["ranking"]][["foldwise"]]
-      } else {
-        # Not needed in this case, so pass `NULL` to make this clear:
-        NULL
-      },
-      parallel = parallel, ...
+      search_out_rk = search_out_rk, parallel = parallel, ...
     )
   } else if (cv_method == "kfold") {
     sel_cv <- kfold_varsel(
@@ -333,8 +340,7 @@ cv_varsel.refmodel <- function(
       ndraws = ndraws, nclusters = nclusters, ndraws_pred = ndraws_pred,
       nclusters_pred = nclusters_pred, refit_prj = refit_prj, penalty = penalty,
       verbose = verbose, opt = opt, K = K, cvfits = cvfits,
-      search_terms = search_terms,
-      search_out_rk = search_out[["ranking"]][["foldwise"]],
+      search_terms = search_terms, search_out_rk = search_out_rk,
       parallel = parallel, ...
     )
   }
@@ -882,7 +888,7 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
       # artifical response values in the projection (or L1-penalized
       # projection)):
       if (!is.null(search_out_rk)) {
-        search_path <- list(solution_terms = search_out_rk[run_index, ])
+        search_path <- list(solution_terms = search_out_rk[[run_index]])
       } else {
         search_path <- select(
           refmodel = refmodel, ndraws = ndraws, nclusters = nclusters,
@@ -1167,12 +1173,7 @@ kfold_varsel <- function(refmodel, method, nterms_max, ndraws, nclusters,
   list_cv <- get_kfold(refmodel, K = K, cvfits = cvfits, verbose = verbose)
   K <- length(list_cv)
 
-  if (!is.null(search_out_rk)) {
-    stopifnot(nrow(search_out_rk) == K)
-    search_out_rk <- lapply(seq_len(K), function(row_idx) {
-      search_out_rk[row_idx, ]
-    })
-  } else {
+  if (is.null(search_out_rk)) {
     search_out_rk <- replicate(K, NULL, simplify = FALSE)
   }
 
