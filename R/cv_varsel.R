@@ -153,9 +153,26 @@ cv_varsel.default <- function(object, ...) {
 #' @export
 cv_varsel.vsel <- function(
     object,
+    cv_method = object[["cv_method"]] %||% "LOO",
+    K = object[["K"]],
+    cvfits = object[["cvfits"]],
     validate_search = isTRUE(object[["validate_search"]]),
     ...
 ) {
+  if (validate_search) {
+    if (!identical(cv_method, object[["cv_method"]])) {
+      stop("In case of `validate_search = TRUE`, cv_varsel.vsel() requires ",
+           "`cv_method` to be the same as `object$cv_method`.")
+    }
+    if (!identical(K, object[["K"]])) {
+      stop("In case of `validate_search = TRUE`, cv_varsel.vsel() requires ",
+           "`K` to be the same as `object$K`.")
+    }
+    if (!identical(cvfits, object[["cvfits"]])) {
+      stop("In case of `validate_search = TRUE`, cv_varsel.vsel() requires ",
+           "`cvfits` to be the same as `object$cvfits`.")
+    }
+  }
   return(cv_varsel(
     object = get_refmodel(object),
     method = object[["args_search"]][["method"]],
@@ -167,10 +184,10 @@ cv_varsel.vsel <- function(
     thresh = object[["args_search"]][["thresh"]],
     penalty = object[["args_search"]][["penalty"]],
     search_terms = object[["args_search"]][["search_terms"]],
-    cv_method = object[["cv_method"]] %||% "LOO",
+    cv_method = cv_method,
     nloo = object[["nloo"]],
-    K = object[["K"]],
-    cvfits = object[["cvfits"]],
+    K = K,
+    cvfits = cvfits,
     validate_search = validate_search,
     search_out = list(search_path = object[["search_path"]],
                       ranking = ranking(object)),
