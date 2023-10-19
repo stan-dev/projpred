@@ -318,7 +318,13 @@ cv_varsel.refmodel <- function(
         search_path_full_data
       },
       search_terms = search_terms,
-      search_terms_was_null = search_terms_was_null, search_out = search_out,
+      search_terms_was_null = search_terms_was_null,
+      search_out_rk = if (validate_search) {
+        search_out[["ranking"]][["foldwise"]]
+      } else {
+        # Not needed in this case, so pass `NULL` to make this clear:
+        NULL
+      },
       parallel = parallel, ...
     )
   } else if (cv_method == "kfold") {
@@ -457,7 +463,7 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
                        nclusters, ndraws_pred, nclusters_pred, refit_prj,
                        penalty, verbose, opt, nloo, validate_search,
                        search_path_full_data, search_terms,
-                       search_terms_was_null, search_out, parallel, ...) {
+                       search_terms_was_null, search_out_rk, parallel, ...) {
   ## Pre-processing ---------------------------------------------------------
 
   has_grp <- formula_contains_group_terms(refmodel$formula)
@@ -845,9 +851,6 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
     prv_len_soltrms <- length(search_path_full_data$solution_terms)
   } else {
     ## Case `validate_search = TRUE` ------------------------------------------
-
-    search_out_rk <- search_out[["ranking"]][["foldwise"]]
-    rm(search_out)
 
     if (is.null(search_out_rk)) {
       cl_sel <- get_refdist(refmodel, ndraws = ndraws, nclusters = nclusters)$cl
