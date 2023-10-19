@@ -73,16 +73,16 @@ folds in \eqn{K}-fold CV.}
 \code{cvfits} of \code{\link[=init_refmodel]{init_refmodel()}}, but repeated here so that output from
 \code{\link[=run_cvfun]{run_cvfun()}} can be inserted here straightforwardly.}
 
-\item{validate_search}{Only relevant if \code{cv_method = "LOO"}. A single logical
-value indicating whether to cross-validate also the search part, i.e.,
-whether to run the search separately for each CV fold (\code{TRUE}) or not
-(\code{FALSE}). We strongly do not recommend setting this to \code{FALSE}, because
-this is known to bias the predictive performance estimates of the selected
-submodels. However, setting this to \code{FALSE} can sometimes be useful because
-comparing the results to the case where this argument is \code{TRUE} gives an
-idea of how strongly the search is (over-)fitted to the data (the
-difference corresponds to the search degrees of freedom or the effective
-number of parameters introduced by the search).}
+\item{validate_search}{A single logical value indicating whether to
+cross-validate also the search part, i.e., whether to run the search
+separately for each CV fold (\code{TRUE}) or not (\code{FALSE}). We strongly do not
+recommend setting this to \code{FALSE}, because this is known to bias the
+predictive performance estimates of the selected submodels. However,
+setting this to \code{FALSE} can sometimes be useful because comparing the
+results to the case where this argument is \code{TRUE} gives an idea of how
+strongly the search is (over-)fitted to the data (the difference
+corresponds to the search degrees of freedom or the effective number of
+parameters introduced by the search).}
 
 \item{method}{The method for the search part. Possible options are
 \code{"forward"} for forward search and \code{"L1"} for L1 search. See also section
