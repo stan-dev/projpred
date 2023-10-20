@@ -267,7 +267,6 @@ cv_varsel.refmodel <- function(
   search_terms <- args$search_terms
   search_terms_was_null <- args$search_terms_was_null
   # Parse arguments specific to cv_varsel():
-  cvfits_was_missing <- missing(cvfits)
   args <- parse_args_cv_varsel(
     refmodel = refmodel, cv_method = cv_method, K = K, cvfits = cvfits,
     validate_search = validate_search
@@ -275,7 +274,6 @@ cv_varsel.refmodel <- function(
   cv_method <- args$cv_method
   K <- args$K
   cvfits <- args$cvfits
-  cvfits_was_auto <- args$cvfits_was_auto
   # Arguments specific to the search:
   opt <- nlist(lambda_min_ratio, nlambda, thresh, regul)
 
@@ -363,11 +361,7 @@ cv_varsel.refmodel <- function(
               nloo,
               K,
               validate_search,
-              cvfits = if (cvfits_was_missing || cvfits_was_auto) {
-                "auto"
-              } else {
-                cvfits
-              },
+              cvfits,
               args_search = nlist(
                 method, ndraws, nclusters, nterms_max, lambda_min_ratio,
                 nlambda, thresh, penalty,
@@ -409,10 +403,6 @@ parse_args_cv_varsel <- function(refmodel, cv_method, K, cvfits,
     cv_method <- "kfold"
   }
 
-  cvfits_was_auto <- identical(cvfits, "auto")
-  if (cvfits_was_auto) {
-    cvfits <- refmodel[["cvfits"]]
-  }
   if (cv_method == "kfold") {
     if (!is.null(cvfits)) {
       if (identical(names(cvfits), "fits")) {
@@ -441,7 +431,7 @@ parse_args_cv_varsel <- function(refmodel, cv_method, K, cvfits,
     }
   }
 
-  return(nlist(cv_method, K, cvfits, cvfits_was_auto))
+  return(nlist(cv_method, K, cvfits))
 }
 
 # PSIS-LOO CV -------------------------------------------------------------
