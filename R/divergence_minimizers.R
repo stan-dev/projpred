@@ -678,7 +678,7 @@ fit_cumul <- function(formula, data, family, weights, ...) {
     # construction*, we expect an intercept here; later code might be general
     # enough to deal with a missing intercept, but that's not the point).
     stopifnot(attr(terms(formula), "intercept") == 1)
-    ncoefs <- count_terms_in_formula(formula) -
+    ncoefs <- ncol(model.matrix(formula, data = data)) -
       attr(terms(formula), "intercept")
     start_coefs <- rep(0, ncoefs)
     ncats <- length(unique(eval_lhs(formula = formula, data = data)))
