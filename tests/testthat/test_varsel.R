@@ -1148,17 +1148,11 @@ test_that("varsel.vsel() works for `vsel` objects from varsel()", {
   }
 })
 
-test_that(paste(
-  "varsel.vsel() works for `vsel` objects from cv_varsel() (called with",
-  "`validate_search = FALSE`)"
-), {
+test_that("varsel.vsel() works for `vsel` objects from cv_varsel()", {
   skip_if_not(run_vs)
   skip_if_not(run_cvvs)
   tstsetup_counter <- 0L
   for (tstsetup in names(cvvss)) {
-    if (!identical(args_cvvs[[tstsetup]]$validate_search, FALSE)) {
-      next
-    }
     if (!run_more && tstsetup_counter > 0L) {
       next
     } else if (run_more && tstsetup_counter > 0L) {
@@ -1925,5 +1919,64 @@ test_that(paste(
       info_str = tstsetup
     )
     tstsetup_counter <- tstsetup_counter + 1L
+  }
+})
+
+test_that(paste(
+  "cv_varsel.vsel() with `validate_search = FALSE` and PSIS-LOO CV works for",
+  "`vsel` objects from cv_varsel() created with `validate_search = TRUE`"
+), {
+  skip_if_not(run_cvvs)
+  tstsetups <- names(cvvss)
+  if (!run_more) {
+    tstsetups <- head(tstsetups, 1)
+  }
+  for (tstsetup in tstsetups) {
+    if (isFALSE(args_cvvs[[tstsetup]]$validate_search)) {
+      next
+    }
+    # Use suppressWarnings() because of occasional warnings concerning Pareto k
+    # diagnostics:
+    if (identical(args_cvvs[[tstsetup]]$cv_method, "kfold")) {
+      cvvs_eval <- suppressWarnings(cv_varsel(
+        cvvss[[tstsetup]], cv_method = "LOO", validate_search = FALSE,
+        refit_prj = FALSE, verbose = FALSE, seed = seed2_tst
+      ))
+    } else {
+      cvvs_eval <- suppressWarnings(cv_varsel(
+        cvvss[[tstsetup]], validate_search = FALSE, refit_prj = FALSE,
+        verbose = FALSE, seed = seed2_tst
+      ))
+    }
+    tstsetup_ref <- args_cvvs[[tstsetup]]$tstsetup_ref
+    mod_crr <- args_cvvs[[tstsetup]]$mod_nm
+    fam_crr <- args_cvvs[[tstsetup]]$fam_nm
+    prj_crr <- args_cvvs[[tstsetup]]$prj_nm
+    meth_exp_crr <- args_cvvs[[tstsetup]]$method %||% "forward"
+    extra_tol_crr <- 1.1
+    if (meth_exp_crr == "L1" &&
+        any(grepl(":", ranking(cvvs_eval)[["fulldata"]]))) {
+      ### Testing for non-increasing element `ce` (for increasing model size)
+      ### doesn't make sense if the ranking of predictors involved in
+      ### interactions has been changed, so we choose a higher `extra_tol`:
+      extra_tol_crr <- 1.2
+      ###
+    }
+    vsel_tester(
+      cvvs_eval,
+      with_cv = TRUE,
+      refmod_expected = refmods[[tstsetup_ref]],
+      solterms_len_expected = args_cvvs[[tstsetup]]$nterms_max,
+      method_expected = meth_exp_crr,
+      cv_method_expected = "LOO",
+      valsearch_expected = FALSE,
+      refit_prj_expected = FALSE,
+      search_terms_expected = args_cvvs[[tstsetup]]$search_terms,
+      search_trms_empty_size =
+        length(args_cvvs[[tstsetup]]$search_terms) &&
+        all(grepl("\\+", args_cvvs[[tstsetup]]$search_terms)),
+      extra_tol = extra_tol_crr,
+      info_str = tstsetup
+    )
   }
 })
