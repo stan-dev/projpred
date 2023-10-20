@@ -1891,7 +1891,7 @@ test_that(paste(
     # Use suppressWarnings() because of occasional warnings concerning Pareto k
     # diagnostics:
     cvvs_eval <- suppressWarnings(cv_varsel(
-      vss[[tstsetup]], refit_prj = refit_prj_crr,
+      vss[[tstsetup]], validate_search = FALSE, refit_prj = refit_prj_crr,
       nclusters_pred = nclusters_pred_crr, verbose = FALSE, seed = seed2_tst
     ))
     tstsetup_ref <- args_vs[[tstsetup]]$tstsetup_ref
