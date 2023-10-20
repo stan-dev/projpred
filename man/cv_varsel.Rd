@@ -14,7 +14,7 @@ cv_varsel(object, ...)
 \method{cv_varsel}{vsel}(
   object,
   cv_method = object$cv_method \%||\% "LOO",
-  K = object$K,
+  K = object$K \%||\% if (!inherits(object, "datafit")) 5 else 10,
   cvfits = object$cvfits,
   validate_search = isTRUE(object$validate_search),
   ...
