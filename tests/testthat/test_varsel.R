@@ -1971,6 +1971,7 @@ test_that(paste(
       cv_method_expected = "LOO",
       valsearch_expected = FALSE,
       refit_prj_expected = FALSE,
+      K_expected = args_cvvs[[tstsetup]]$K,
       search_terms_expected = args_cvvs[[tstsetup]]$search_terms,
       search_trms_empty_size =
         length(args_cvvs[[tstsetup]]$search_terms) &&

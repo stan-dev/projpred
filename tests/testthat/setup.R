@@ -1915,7 +1915,7 @@ vsel_nms <- c(
   "clust_used_eval", "nprjdraws_search", "nprjdraws_eval", "projpred_version"
 )
 # Output elements of `vsel` objects that may be influenced by `cvfits`:
-vsel_nms_cvfits <- c("refmodel", "summaries", "solution_terms_cv")
+vsel_nms_cvfits <- c("refmodel", "cvfits", "summaries", "solution_terms_cv")
 vsel_nms_cvfits_opt <- c("solution_terms_cv")
 # Sub-elements of `summaries`'s `sub` and `ref` elements:
 vsel_smmrs_sub_nms <- vsel_smmrs_ref_nms <- c("mu", "lppd")
