@@ -363,9 +363,7 @@ cv_varsel.refmodel <- function(
               nloo,
               K,
               validate_search,
-              cvfits = if (is.null(cvfits_was_auto)) {
-                NULL
-              } else if (cvfits_was_missing || cvfits_was_auto) {
+              cvfits = if (cvfits_was_missing || cvfits_was_auto) {
                 "auto"
               } else {
                 cvfits
@@ -411,11 +409,11 @@ parse_args_cv_varsel <- function(refmodel, cv_method, K, cvfits,
     cv_method <- "kfold"
   }
 
+  cvfits_was_auto <- identical(cvfits, "auto")
+  if (cvfits_was_auto) {
+    cvfits <- refmodel[["cvfits"]]
+  }
   if (cv_method == "kfold") {
-    cvfits_was_auto <- identical(cvfits, "auto")
-    if (cvfits_was_auto) {
-      cvfits <- refmodel[["cvfits"]]
-    }
     if (!is.null(cvfits)) {
       if (identical(names(cvfits), "fits")) {
         warning(
@@ -441,10 +439,6 @@ parse_args_cv_varsel <- function(refmodel, cv_method, K, cvfits,
       stop("`cv_method = \"kfold\"` cannot be used with ",
            "`validate_search = FALSE`.")
     }
-  } else {
-    K <- NULL
-    cvfits <- NULL
-    cvfits_was_auto <- NULL
   }
 
   return(nlist(cv_method, K, cvfits, cvfits_was_auto))
