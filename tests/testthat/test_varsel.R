@@ -1119,9 +1119,6 @@ test_that("varsel.vsel() works for `vsel` objects from varsel()", {
     vs_eval <- varsel(vss[[tstsetup]], refit_prj = FALSE, verbose = FALSE,
                       seed = seed2_tst)
     tstsetup_ref <- args_vs[[tstsetup]]$tstsetup_ref
-    mod_crr <- args_vs[[tstsetup]]$mod_nm
-    fam_crr <- args_vs[[tstsetup]]$fam_nm
-    prj_crr <- args_vs[[tstsetup]]$prj_nm
     meth_exp_crr <- args_vs[[tstsetup]]$method %||% "forward"
     extra_tol_crr <- 1.1
     if (meth_exp_crr == "L1" &&
@@ -1162,7 +1159,6 @@ test_that("varsel.vsel() works for `vsel` objects from cv_varsel()", {
       refit_prj_crr <- FALSE
       nclusters_pred_crr <- args_cvvs[[tstsetup]]$nclusters_pred
     }
-    mod_crr <- args_cvvs[[tstsetup]]$mod_nm
     fam_crr <- args_cvvs[[tstsetup]]$fam_nm
     prj_crr <- args_cvvs[[tstsetup]]$prj_nm
     if (refit_prj_crr && prj_crr == "augdat" && fam_crr == "cumul") {
@@ -1840,9 +1836,6 @@ test_that("cv_varsel.vsel() works for `vsel` objects from cv_varsel()", {
       nclusters_pred = nclusters_pred_crr, verbose = FALSE, seed = seed2_tst
     ))
     tstsetup_ref <- args_cvvs[[tstsetup]]$tstsetup_ref
-    mod_crr <- args_cvvs[[tstsetup]]$mod_nm
-    fam_crr <- args_cvvs[[tstsetup]]$fam_nm
-    prj_crr <- args_cvvs[[tstsetup]]$prj_nm
     meth_exp_crr <- args_cvvs[[tstsetup]]$method %||% "forward"
     vsel_tester(
       cvvs_eval,
@@ -1886,9 +1879,6 @@ test_that(paste(
       refit_prj_crr <- FALSE
       nclusters_pred_crr <- args_vs[[tstsetup]]$nclusters_pred
     }
-    mod_crr <- args_vs[[tstsetup]]$mod_nm
-    fam_crr <- args_vs[[tstsetup]]$fam_nm
-    prj_crr <- args_vs[[tstsetup]]$prj_nm
     # Use suppressWarnings() because of occasional warnings concerning Pareto k
     # diagnostics:
     cvvs_eval <- suppressWarnings(cv_varsel(
@@ -2003,9 +1993,6 @@ test_that(paste(
       ))
     }
     tstsetup_ref <- args_cvvs[[tstsetup]]$tstsetup_ref
-    mod_crr <- args_cvvs[[tstsetup]]$mod_nm
-    fam_crr <- args_cvvs[[tstsetup]]$fam_nm
-    prj_crr <- args_cvvs[[tstsetup]]$prj_nm
     meth_exp_crr <- args_cvvs[[tstsetup]]$method %||% "forward"
     extra_tol_crr <- 1.1
     if (meth_exp_crr == "L1" &&
