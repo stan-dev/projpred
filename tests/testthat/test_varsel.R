@@ -1830,7 +1830,8 @@ test_that("cv_varsel.vsel() works for `vsel` objects from cv_varsel()", {
     tstsetups <- head(tstsetups, 1)
   }
   for (tstsetup in tstsetups) {
-    refit_prj_crr <- !identical(args_cvvs[[tstsetup]]$validate_search, FALSE)
+    refit_prj_crr <- !identical(args_cvvs[[tstsetup]]$validate_search, FALSE) ||
+      identical(args_cvvs[[tstsetup]]$cv_method, "kfold")
     nclusters_pred_crr <- nclusters_pred_tst + if (refit_prj_crr) 1L else 0L
     # Use suppressWarnings() because of occasional warnings concerning Pareto k
     # diagnostics:
@@ -1923,6 +1924,59 @@ test_that(paste(
 })
 
 test_that(paste(
+  "cv_varsel.vsel() with K-fold CV (and with `validate_search = FALSE`) works",
+  "for `vsel` objects from varsel()"
+), {
+  skip_if_not(run_vs)
+  skip_if_not(run_cvvs)
+  tstsetup_counter <- 0L
+  for (tstsetup in names(vss)) {
+    tstsetup_ref <- args_vs[[tstsetup]]$tstsetup_ref
+    if (grepl("\\.with_wobs", tstsetup_ref) &&
+        args_vs[[tstsetup]]$pkg_nm == "rstanarm") {
+      # Currently, rstanarm:::kfold.stanreg() doesn't support observation
+      # weights:
+      next
+    } else if (args_vs[[tstsetup]]$fam_nm == "cumul" &&
+               args_vs[[tstsetup]]$pkg_nm == "rstanarm") {
+      # Currently, rstanarm:::kfold.stanreg() doesn't work for
+      # rstanarm::stan_polr() fits, see rstanarm issue stan-dev/rstanarm#564:
+      next
+    }
+    if (!run_more && tstsetup_counter > 0L) {
+      next
+    } else if (run_more && tstsetup_counter > 0L) {
+      nclusters_pred_crr <- args_vs[[tstsetup]]$nclusters_pred + 1L
+    } else {
+      nclusters_pred_crr <- args_vs[[tstsetup]]$nclusters_pred
+    }
+    # Use suppressWarnings() because of occasional warnings concerning Pareto k
+    # diagnostics:
+    cvvs_eval <- suppressWarnings(cv_varsel(
+      vss[[tstsetup]], cv_method = "kfold", K = K_tst, validate_search = FALSE,
+      nclusters_pred = nclusters_pred_crr, verbose = FALSE, seed = seed2_tst
+    ))
+    meth_exp_crr <- args_vs[[tstsetup]]$method %||% "forward"
+    vsel_tester(
+      cvvs_eval,
+      with_cv = TRUE,
+      refmod_expected = refmods[[tstsetup_ref]],
+      solterms_len_expected = args_vs[[tstsetup]]$nterms_max,
+      method_expected = meth_exp_crr,
+      cv_method_expected = "kfold",
+      valsearch_expected = FALSE,
+      nprjdraws_eval_expected = nclusters_pred_crr,
+      search_terms_expected = args_vs[[tstsetup]]$search_terms,
+      search_trms_empty_size =
+        length(args_vs[[tstsetup]]$search_terms) &&
+        all(grepl("\\+", args_vs[[tstsetup]]$search_terms)),
+      info_str = tstsetup
+    )
+    tstsetup_counter <- tstsetup_counter + 1L
+  }
+})
+
+test_that(paste(
   "cv_varsel.vsel() with `validate_search = FALSE` and PSIS-LOO CV works for",
   "`vsel` objects from cv_varsel() created with `validate_search = TRUE`"
 ), {
@@ -1977,6 +2031,125 @@ test_that(paste(
         length(args_cvvs[[tstsetup]]$search_terms) &&
         all(grepl("\\+", args_cvvs[[tstsetup]]$search_terms)),
       extra_tol = extra_tol_crr,
+      info_str = tstsetup
+    )
+  }
+})
+
+test_that(paste(
+  "cv_varsel.vsel() with `validate_search = FALSE` and K-fold CV works for",
+  "`vsel` objects from cv_varsel() created with `validate_search = TRUE`"
+), {
+  skip_if_not(run_cvvs)
+  tstsetups <- names(cvvss)
+  if (!run_more) {
+    tstsetups <- head(tstsetups, 1)
+  }
+  for (tstsetup in tstsetups) {
+    tstsetup_ref <- args_cvvs[[tstsetup]]$tstsetup_ref
+    if (isFALSE(args_cvvs[[tstsetup]]$validate_search)) {
+      next
+    } else if (grepl("\\.with_wobs", tstsetup_ref) &&
+               args_cvvs[[tstsetup]]$pkg_nm == "rstanarm") {
+      # Currently, rstanarm:::kfold.stanreg() doesn't support observation
+      # weights:
+      next
+    } else if (args_cvvs[[tstsetup]]$fam_nm == "cumul" &&
+               args_cvvs[[tstsetup]]$pkg_nm == "rstanarm") {
+      # Currently, rstanarm:::kfold.stanreg() doesn't work for
+      # rstanarm::stan_polr() fits, see rstanarm issue stan-dev/rstanarm#564:
+      next
+    }
+    nclusters_pred_crr <- args_cvvs[[tstsetup]]$nclusters_pred + 1L
+    # Use suppressWarnings() because of occasional warnings concerning Pareto k
+    # diagnostics:
+    if (identical(args_cvvs[[tstsetup]]$cv_method, "kfold")) {
+      cvvs_eval <- suppressWarnings(cv_varsel(
+        cvvss[[tstsetup]], validate_search = FALSE,
+        nclusters_pred = nclusters_pred_crr, verbose = FALSE, seed = seed2_tst
+      ))
+    } else {
+      cvvs_eval <- suppressWarnings(cv_varsel(
+        cvvss[[tstsetup]], cv_method = "kfold", K = K_tst,
+        validate_search = FALSE, nclusters_pred = nclusters_pred_crr,
+        verbose = FALSE, seed = seed2_tst
+      ))
+    }
+    meth_exp_crr <- args_cvvs[[tstsetup]]$method %||% "forward"
+    vsel_tester(
+      cvvs_eval,
+      with_cv = TRUE,
+      refmod_expected = refmods[[tstsetup_ref]],
+      solterms_len_expected = args_cvvs[[tstsetup]]$nterms_max,
+      method_expected = meth_exp_crr,
+      cv_method_expected = "kfold",
+      valsearch_expected = FALSE,
+      K_expected = K_tst,
+      nprjdraws_eval_expected = nclusters_pred_crr,
+      search_terms_expected = args_cvvs[[tstsetup]]$search_terms,
+      search_trms_empty_size =
+        length(args_cvvs[[tstsetup]]$search_terms) &&
+        all(grepl("\\+", args_cvvs[[tstsetup]]$search_terms)),
+      info_str = tstsetup
+    )
+  }
+})
+
+test_that(paste(
+  "switching the CV method in cv_varsel.vsel() works for `vsel` objects from",
+  "cv_varsel() created with `validate_search = FALSE`"
+), {
+  skip_if_not(run_cvvs)
+  tstsetups <- names(cvvss)
+  if (!run_more) {
+    tstsetups <- head(tstsetups, 1)
+  }
+  for (tstsetup in tstsetups) {
+    tstsetup_ref <- args_cvvs[[tstsetup]]$tstsetup_ref
+    if (!isFALSE(args_cvvs[[tstsetup]]$validate_search)) {
+      next
+    } else if (grepl("\\.with_wobs", tstsetup_ref) &&
+               args_cvvs[[tstsetup]]$pkg_nm == "rstanarm") {
+      # Currently, rstanarm:::kfold.stanreg() doesn't support observation
+      # weights:
+      next
+    } else if (args_cvvs[[tstsetup]]$fam_nm == "cumul" &&
+               args_cvvs[[tstsetup]]$pkg_nm == "rstanarm") {
+      # Currently, rstanarm:::kfold.stanreg() doesn't work for
+      # rstanarm::stan_polr() fits, see rstanarm issue stan-dev/rstanarm#564:
+      next
+    }
+    nclusters_pred_crr <- args_cvvs[[tstsetup]]$nclusters_pred - 1L
+    # Use suppressWarnings() because of occasional warnings concerning Pareto k
+    # diagnostics:
+    if (identical(args_cvvs[[tstsetup]]$cv_method, "kfold")) {
+      cv_meth_crr <- "LOO"
+      cvvs_eval <- suppressWarnings(cv_varsel(
+        cvvss[[tstsetup]], cv_method = cv_meth_crr,
+        nclusters_pred = nclusters_pred_crr, verbose = FALSE, seed = seed2_tst
+      ))
+    } else {
+      cv_meth_crr <- "kfold"
+      cvvs_eval <- suppressWarnings(cv_varsel(
+        cvvss[[tstsetup]], cv_method = cv_meth_crr, K = K_tst,
+        nclusters_pred = nclusters_pred_crr, verbose = FALSE, seed = seed2_tst
+      ))
+    }
+    meth_exp_crr <- args_cvvs[[tstsetup]]$method %||% "forward"
+    vsel_tester(
+      cvvs_eval,
+      with_cv = TRUE,
+      refmod_expected = refmods[[tstsetup_ref]],
+      solterms_len_expected = args_cvvs[[tstsetup]]$nterms_max,
+      method_expected = meth_exp_crr,
+      cv_method_expected = cv_meth_crr,
+      valsearch_expected = FALSE,
+      K_expected = if (cv_meth_crr == "LOO") K_tst else NULL,
+      nprjdraws_eval_expected = nclusters_pred_crr,
+      search_terms_expected = args_cvvs[[tstsetup]]$search_terms,
+      search_trms_empty_size =
+        length(args_cvvs[[tstsetup]]$search_terms) &&
+        all(grepl("\\+", args_cvvs[[tstsetup]]$search_terms)),
       info_str = tstsetup
     )
   }
