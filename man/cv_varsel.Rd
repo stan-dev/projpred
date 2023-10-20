@@ -13,10 +13,10 @@ cv_varsel(object, ...)
 
 \method{cv_varsel}{vsel}(
   object,
-  cv_method = object[["cv_method"]] \%||\% "LOO",
-  K = object[["K"]],
-  cvfits = object[["cvfits"]],
-  validate_search = isTRUE(object[["validate_search"]]),
+  cv_method = object$cv_method \%||\% "LOO",
+  K = object$K,
+  cvfits = object$cvfits,
+  validate_search = isTRUE(object$validate_search),
   ...
 )
 

@@ -151,14 +151,10 @@ cv_varsel.default <- function(object, ...) {
 
 #' @rdname cv_varsel
 #' @export
-cv_varsel.vsel <- function(
-    object,
-    cv_method = object[["cv_method"]] %||% "LOO",
-    K = object[["K"]],
-    cvfits = object[["cvfits"]],
-    validate_search = isTRUE(object[["validate_search"]]),
-    ...
-) {
+cv_varsel.vsel <- function(object, cv_method = object$cv_method %||% "LOO",
+                           K = object$K, cvfits = object$cvfits,
+                           validate_search = isTRUE(object$validate_search),
+                           ...) {
   if (validate_search) {
     if (!identical(cv_method, object[["cv_method"]])) {
       stop("In case of `validate_search = TRUE`, cv_varsel.vsel() requires ",
