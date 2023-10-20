@@ -1869,8 +1869,8 @@ test_that("cv_varsel.vsel() works for `vsel` objects from cv_varsel()", {
 })
 
 test_that(paste(
-  "cv_varsel.vsel() (internally called with `validate_search = FALSE`) works",
-  "for `vsel` objects from varsel()"
+  "cv_varsel.vsel() (with `validate_search = FALSE`) works for `vsel` objects",
+  "from varsel()"
 ), {
   skip_if_not(run_vs)
   skip_if_not(run_cvvs)
