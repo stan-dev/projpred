@@ -1309,6 +1309,12 @@ test_that("`refit_prj` works", {
   }
   for (tstsetup in tstsetups) {
     args_cvvs_i <- args_cvvs[[tstsetup]]
+    if (identical(args_cvvs_i$cv_method, "kfold") &&
+        isFALSE(args_cvvs_i$validate_search)) {
+      # K-fold CV with `validate_search = FALSE` does not allow to specify
+      # `refit_prj = FALSE`:
+      next
+    }
     args_cvvs_i$refit_prj <- FALSE
     cvvs_reuse <- suppressWarnings(do.call(cv_varsel, c(
       list(object = refmods[[args_cvvs_i$tstsetup_ref]]),

@@ -1214,16 +1214,13 @@ if (run_cvvs) {
     }
     lapply(meth, function(meth_i) {
       lapply(cvmeth, function(cvmeth_i) {
-        if (!run_valsearch_always && !identical(cvmeth_i$cv_method, "kfold") &&
-            # Handle augmented-data and corresponding traditional projection:
+        if (!run_valsearch_always &&
             (!prj_crr %in% c("latent", "augdat", "trad_compare") ||
              (prj_crr %in% c("latent", "augdat", "trad_compare") &&
               !run_valsearch_aug_lat)) &&
-            # Forward search:
             !identical(meth_i$method, "L1")) {
-          # These are cases with forward search, LOO CV, and
-          # `!run_valsearch_always` where we want to save time by using
-          # `validate_search = FALSE`:
+          # These are cases with forward search and `!run_valsearch_always`
+          # where we want to save time by using `validate_search = FALSE`:
           meth_i <- c(meth_i, list(validate_search = FALSE))
         }
         search_trms <- search_trms_tst["default_search_trms"]
