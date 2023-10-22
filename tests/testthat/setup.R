@@ -852,6 +852,11 @@ seed3_tst <- 1208499
 
 nclusters_tst <- 2L
 nclusters_pred_tst <- 3L
+### Later, we will subtract 1L and still wish to have `nclusters_pred >= 2` in
+### order to differentiate this from `nclusters_pred == 1` which is more or less
+### a special case:
+stopifnot(nclusters_pred_tst >= 3)
+###
 if (!run_more) {
   ndr_ncl_pred_tst <- list()
 } else {

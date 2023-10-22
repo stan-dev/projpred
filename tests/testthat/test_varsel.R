@@ -1154,7 +1154,7 @@ test_that("varsel.vsel() works for `vsel` objects from cv_varsel()", {
       next
     } else if (run_more && tstsetup_counter > 0L) {
       refit_prj_crr <- TRUE
-      nclusters_pred_crr <- args_cvvs[[tstsetup]]$nclusters_pred + 1L
+      nclusters_pred_crr <- args_cvvs[[tstsetup]]$nclusters_pred - 1L
     } else {
       refit_prj_crr <- FALSE
       nclusters_pred_crr <- args_cvvs[[tstsetup]]$nclusters_pred
@@ -1828,7 +1828,7 @@ test_that("cv_varsel.vsel() works for `vsel` objects from cv_varsel()", {
   for (tstsetup in tstsetups) {
     refit_prj_crr <- !identical(args_cvvs[[tstsetup]]$validate_search, FALSE) ||
       identical(args_cvvs[[tstsetup]]$cv_method, "kfold")
-    nclusters_pred_crr <- nclusters_pred_tst + if (refit_prj_crr) 1L else 0L
+    nclusters_pred_crr <- nclusters_pred_tst - if (refit_prj_crr) 1L else 0L
     # Use suppressWarnings() because of occasional warnings concerning Pareto k
     # diagnostics:
     cvvs_eval <- suppressWarnings(cv_varsel(
@@ -1874,7 +1874,7 @@ test_that(paste(
       next
     } else if (run_more && tstsetup_counter > 0L) {
       refit_prj_crr <- TRUE
-      nclusters_pred_crr <- args_vs[[tstsetup]]$nclusters_pred + 1L
+      nclusters_pred_crr <- args_vs[[tstsetup]]$nclusters_pred - 1L
     } else {
       refit_prj_crr <- FALSE
       nclusters_pred_crr <- args_vs[[tstsetup]]$nclusters_pred
@@ -1936,7 +1936,7 @@ test_that(paste(
     if (!run_more && tstsetup_counter > 0L) {
       next
     } else if (run_more && tstsetup_counter > 0L) {
-      nclusters_pred_crr <- args_vs[[tstsetup]]$nclusters_pred + 1L
+      nclusters_pred_crr <- args_vs[[tstsetup]]$nclusters_pred - 1L
     } else {
       nclusters_pred_crr <- args_vs[[tstsetup]]$nclusters_pred
     }
@@ -2047,7 +2047,7 @@ test_that(paste(
       # rstanarm::stan_polr() fits, see rstanarm issue stan-dev/rstanarm#564:
       next
     }
-    nclusters_pred_crr <- args_cvvs[[tstsetup]]$nclusters_pred + 1L
+    nclusters_pred_crr <- args_cvvs[[tstsetup]]$nclusters_pred - 1L
     # Use suppressWarnings() because of occasional warnings concerning Pareto k
     # diagnostics:
     if (identical(args_cvvs[[tstsetup]]$cv_method, "kfold")) {
