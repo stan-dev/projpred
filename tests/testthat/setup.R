@@ -1214,14 +1214,11 @@ if (run_cvvs) {
     }
     lapply(meth, function(meth_i) {
       lapply(cvmeth, function(cvmeth_i) {
-        if (!run_valsearch_always &&
+        if (!identical(meth_i$method, "L1") && !run_valsearch_always &&
             (!prj_crr %in% c("latent", "augdat", "trad_compare") ||
              (prj_crr %in% c("latent", "augdat", "trad_compare") &&
-              !run_valsearch_aug_lat)) &&
-            !identical(meth_i$method, "L1")) {
-          # These are cases with forward search and `!run_valsearch_always`
-          # where we want to save time by using `validate_search = FALSE`:
-          meth_i <- c(meth_i, list(validate_search = FALSE))
+              !run_valsearch_aug_lat))) {
+          cvmeth_i <- c(cvmeth_i, list(validate_search = FALSE))
         }
         search_trms <- search_trms_tst["default_search_trms"]
         lapply(search_trms, function(search_trms_i) {
