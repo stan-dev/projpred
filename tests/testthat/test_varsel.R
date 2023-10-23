@@ -1825,7 +1825,10 @@ test_that(paste(
 
 ## cv_varsel.vsel() -------------------------------------------------------
 
-test_that("cv_varsel.vsel() works for `vsel` objects from cv_varsel()", {
+test_that(paste(
+  "cv_varsel.vsel() (in particular, re-using `cv_method` and",
+  "`validate_search`) works for `vsel` objects from cv_varsel()"
+), {
   skip_if_not(run_cvvs)
   tstsetups <- names(cvvss)
   if (!run_more) {
@@ -1869,8 +1872,8 @@ test_that("cv_varsel.vsel() works for `vsel` objects from cv_varsel()", {
 })
 
 test_that(paste(
-  "cv_varsel.vsel() (with `validate_search = FALSE`) works for `vsel` objects",
-  "from varsel()"
+  "cv_varsel.vsel() with PSIS-LOO CV and `validate_search = FALSE` works for",
+  "`vsel` objects from varsel()"
 ), {
   skip_if_not(run_vs)
   skip_if_not(run_cvvs)
@@ -1920,8 +1923,8 @@ test_that(paste(
 })
 
 test_that(paste(
-  "cv_varsel.vsel() with K-fold CV (and with `validate_search = FALSE`) works",
-  "for `vsel` objects from varsel()"
+  "cv_varsel.vsel() with K-fold CV and `validate_search = FALSE` works for",
+  "`vsel` objects from varsel()"
 ), {
   skip_if_not(run_vs)
   skip_if_not(run_cvvs)
@@ -1973,7 +1976,7 @@ test_that(paste(
 })
 
 test_that(paste(
-  "cv_varsel.vsel() with `validate_search = FALSE` and PSIS-LOO CV works for",
+  "cv_varsel.vsel() with PSIS-LOO CV and `validate_search = FALSE` works for",
   "`vsel` objects from cv_varsel() created with `validate_search = TRUE`"
 ), {
   skip_if_not(run_cvvs)
@@ -2030,7 +2033,7 @@ test_that(paste(
 })
 
 test_that(paste(
-  "cv_varsel.vsel() with `validate_search = FALSE` and K-fold CV works for",
+  "cv_varsel.vsel() with K-fold CV and `validate_search = FALSE` works for",
   "`vsel` objects from cv_varsel() created with `validate_search = TRUE`"
 ), {
   skip_if_not(run_cvvs)
@@ -2138,6 +2141,365 @@ test_that(paste(
       cv_method_expected = cv_meth_crr,
       valsearch_expected = FALSE,
       K_expected = if (cv_meth_crr == "LOO") K_tst else NULL,
+      nprjdraws_eval_expected = nclusters_pred_crr,
+      search_terms_expected = args_cvvs[[tstsetup]]$search_terms,
+      search_trms_empty_size =
+        length(args_cvvs[[tstsetup]]$search_terms) &&
+        all(grepl("\\+", args_cvvs[[tstsetup]]$search_terms)),
+      info_str = tstsetup
+    )
+  }
+})
+
+test_that(paste(
+  "switching the CV method in cv_varsel.vsel() works for `vsel` objects from",
+  "cv_varsel() created with `validate_search = TRUE`"
+), {
+  skip_if_not(run_cvvs)
+  tstsetups <- names(cvvss)
+  if (!run_more) {
+    tstsetups <- head(tstsetups, 1)
+  }
+  for (tstsetup in tstsetups) {
+    tstsetup_ref <- args_cvvs[[tstsetup]]$tstsetup_ref
+    if (isFALSE(args_cvvs[[tstsetup]]$validate_search)) {
+      next
+    } else if (grepl("\\.with_wobs", tstsetup_ref) &&
+               args_cvvs[[tstsetup]]$pkg_nm == "rstanarm") {
+      # Currently, rstanarm:::kfold.stanreg() doesn't support observation
+      # weights:
+      next
+    } else if (args_cvvs[[tstsetup]]$fam_nm == "cumul" &&
+               args_cvvs[[tstsetup]]$pkg_nm == "rstanarm") {
+      # Currently, rstanarm:::kfold.stanreg() doesn't work for
+      # rstanarm::stan_polr() fits, see rstanarm issue stan-dev/rstanarm#564:
+      next
+    }
+    nclusters_pred_crr <- args_cvvs[[tstsetup]]$nclusters_pred - 1L
+    # Use suppressWarnings() because of occasional warnings concerning Pareto k
+    # diagnostics:
+    if (identical(args_cvvs[[tstsetup]]$cv_method, "kfold")) {
+      cv_meth_crr <- "LOO"
+      cvvs_eval <- suppressWarnings(cv_varsel(
+        cvvss[[tstsetup]], cv_method = cv_meth_crr,
+        nclusters_pred = nclusters_pred_crr, verbose = FALSE, seed = seed2_tst
+      ))
+    } else {
+      cv_meth_crr <- "kfold"
+      cvvs_eval <- suppressWarnings(cv_varsel(
+        cvvss[[tstsetup]], cv_method = cv_meth_crr, K = K_tst,
+        nclusters_pred = nclusters_pred_crr, verbose = FALSE, seed = seed2_tst
+      ))
+    }
+    meth_exp_crr <- args_cvvs[[tstsetup]]$method %||% "forward"
+    vsel_tester(
+      cvvs_eval,
+      with_cv = TRUE,
+      refmod_expected = refmods[[tstsetup_ref]],
+      solterms_len_expected = args_cvvs[[tstsetup]]$nterms_max,
+      method_expected = meth_exp_crr,
+      cv_method_expected = cv_meth_crr,
+      valsearch_expected = TRUE,
+      K_expected = if (cv_meth_crr == "LOO") K_tst else NULL,
+      nprjdraws_eval_expected = nclusters_pred_crr,
+      search_terms_expected = args_cvvs[[tstsetup]]$search_terms,
+      search_trms_empty_size =
+        length(args_cvvs[[tstsetup]]$search_terms) &&
+        all(grepl("\\+", args_cvvs[[tstsetup]]$search_terms)),
+      info_str = tstsetup
+    )
+  }
+})
+
+test_that(paste(
+  "cv_varsel.vsel() with PSIS-LOO CV and `validate_search = TRUE` works for",
+  "`vsel` objects from varsel()"
+), {
+  skip_if_not(run_vs)
+  skip_if_not(run_cvvs)
+  tstsetup_counter <- 0L
+  for (tstsetup in names(vss)) {
+    if ((!run_more && tstsetup_counter > 0L) ||
+        (run_more && !args_vs[[tstsetup]]$mod_nm %in% c("glm", "gam"))) {
+      next
+    } else if (run_more && tstsetup_counter > 0L) {
+      nclusters_pred_crr <- args_vs[[tstsetup]]$nclusters_pred - 1L
+    } else {
+      nclusters_pred_crr <- args_vs[[tstsetup]]$nclusters_pred
+    }
+    # Use suppressWarnings() because of occasional warnings concerning Pareto k
+    # diagnostics:
+    cvvs_eval <- try(
+      suppressWarnings(cv_varsel(
+        vss[[tstsetup]], nclusters_pred = nclusters_pred_crr, verbose = FALSE,
+        seed = seed2_tst
+      )),
+      silent = TRUE
+    )
+    if (inherits(cvvs_eval, "try-error")) {
+      cat("Failure for `tstsetup = \"", tstsetup, "\"` in a cv_varsel.vsel() ",
+          "test. Error message: \"",
+          attr(cvvs_eval, "condition")$message, "\"\n", sep = "")
+      # Check that this is a "pwrssUpdate" failure in lme4, so for solving this,
+      # we would either need to tweak the lme4 tuning parameters manually (via
+      # `...`) or change the data-generating mechanism here in the tests (to
+      # obtain less extreme or more data):
+      expect_true(grepl("pwrssUpdate", attr(cvvs_eval, "condition")$message),
+                  info = tstsetup)
+      # Furthermore, this should only occur in the `run_more = TRUE` case, so it
+      # can be skipped (because there are enough other `tstsetups` for which
+      # this works):
+      expect_true(run_more, info = tstsetup)
+      next
+    }
+    tstsetup_ref <- args_vs[[tstsetup]]$tstsetup_ref
+    meth_exp_crr <- args_vs[[tstsetup]]$method %||% "forward"
+    vsel_tester(
+      cvvs_eval,
+      with_cv = TRUE,
+      refmod_expected = refmods[[tstsetup_ref]],
+      solterms_len_expected = args_vs[[tstsetup]]$nterms_max,
+      method_expected = meth_exp_crr,
+      cv_method_expected = "LOO",
+      valsearch_expected = TRUE,
+      nprjdraws_eval_expected = nclusters_pred_crr,
+      search_terms_expected = args_vs[[tstsetup]]$search_terms,
+      search_trms_empty_size =
+        length(args_vs[[tstsetup]]$search_terms) &&
+        all(grepl("\\+", args_vs[[tstsetup]]$search_terms)),
+      info_str = tstsetup
+    )
+    tstsetup_counter <- tstsetup_counter + 1L
+  }
+})
+
+test_that(paste(
+  "cv_varsel.vsel() with K-fold CV and `validate_search = TRUE` works for",
+  "`vsel` objects from varsel()"
+), {
+  skip_if_not(run_vs)
+  skip_if_not(run_cvvs)
+  tstsetup_counter <- 0L
+  for (tstsetup in names(vss)) {
+    tstsetup_ref <- args_vs[[tstsetup]]$tstsetup_ref
+    if (grepl("\\.with_wobs", tstsetup_ref) &&
+        args_vs[[tstsetup]]$pkg_nm == "rstanarm") {
+      # Currently, rstanarm:::kfold.stanreg() doesn't support observation
+      # weights:
+      next
+    } else if (args_vs[[tstsetup]]$fam_nm == "cumul" &&
+               args_vs[[tstsetup]]$pkg_nm == "rstanarm") {
+      # Currently, rstanarm:::kfold.stanreg() doesn't work for
+      # rstanarm::stan_polr() fits, see rstanarm issue stan-dev/rstanarm#564:
+      next
+    }
+    if (!run_more && tstsetup_counter > 0L) {
+      next
+    } else if (run_more && tstsetup_counter > 0L) {
+      nclusters_pred_crr <- args_vs[[tstsetup]]$nclusters_pred - 1L
+    } else {
+      nclusters_pred_crr <- args_vs[[tstsetup]]$nclusters_pred
+    }
+    # Use suppressWarnings() because of occasional warnings concerning Pareto k
+    # diagnostics:
+    cvvs_eval <- try(
+      suppressWarnings(cv_varsel(
+        vss[[tstsetup]], cv_method = "kfold", K = K_tst,
+        nclusters_pred = nclusters_pred_crr, verbose = FALSE, seed = seed2_tst
+      )),
+      silent = TRUE
+    )
+    if (inherits(cvvs_eval, "try-error")) {
+      cat("Failure for `tstsetup = \"", tstsetup, "\"` in a cv_varsel.vsel() ",
+          "test. Error message: \"",
+          attr(cvvs_eval, "condition")$message, "\"\n", sep = "")
+      # Check that this is a "pwrssUpdate" failure in lme4, so for solving this,
+      # we would either need to tweak the lme4 tuning parameters manually (via
+      # `...`) or change the data-generating mechanism here in the tests (to
+      # obtain less extreme or more data):
+      expect_true(grepl("pwrssUpdate", attr(cvvs_eval, "condition")$message),
+                  info = tstsetup)
+      # Furthermore, this should only occur in the `run_more = TRUE` case, so it
+      # can be skipped (because there are enough other `tstsetups` for which
+      # this works):
+      expect_true(run_more, info = tstsetup)
+      next
+    }
+    meth_exp_crr <- args_vs[[tstsetup]]$method %||% "forward"
+    vsel_tester(
+      cvvs_eval,
+      with_cv = TRUE,
+      refmod_expected = refmods[[tstsetup_ref]],
+      solterms_len_expected = args_vs[[tstsetup]]$nterms_max,
+      method_expected = meth_exp_crr,
+      cv_method_expected = "kfold",
+      valsearch_expected = TRUE,
+      nprjdraws_eval_expected = nclusters_pred_crr,
+      search_terms_expected = args_vs[[tstsetup]]$search_terms,
+      search_trms_empty_size =
+        length(args_vs[[tstsetup]]$search_terms) &&
+        all(grepl("\\+", args_vs[[tstsetup]]$search_terms)),
+      info_str = tstsetup
+    )
+    tstsetup_counter <- tstsetup_counter + 1L
+  }
+})
+
+test_that(paste(
+  "cv_varsel.vsel() with PSIS-LOO CV and `validate_search = TRUE` works for",
+  "`vsel` objects from cv_varsel() created with `validate_search = FALSE`"
+), {
+  skip_if_not(run_cvvs)
+  tstsetups <- names(cvvss)
+  if (!run_more) {
+    tstsetups <- head(tstsetups, 1)
+  }
+  for (tstsetup in tstsetups) {
+    if (run_more && !args_cvvs[[tstsetup]]$mod_nm %in% c("glm", "gam")) {
+      # Save some time:
+      next
+    }
+    if (!isFALSE(args_cvvs[[tstsetup]]$validate_search)) {
+      next
+    }
+    nclusters_pred_crr <- args_cvvs[[tstsetup]]$nclusters_pred - 1L
+    # Use suppressWarnings() because of occasional warnings concerning Pareto k
+    # diagnostics:
+    if (identical(args_cvvs[[tstsetup]]$cv_method, "kfold")) {
+      cvvs_eval <- try(
+        suppressWarnings(cv_varsel(
+          cvvss[[tstsetup]], cv_method = "LOO", validate_search = TRUE,
+          nclusters_pred = nclusters_pred_crr, verbose = FALSE, seed = seed2_tst
+        )),
+        silent = TRUE
+      )
+    } else {
+      cvvs_eval <- try(
+        suppressWarnings(cv_varsel(
+          cvvss[[tstsetup]], validate_search = TRUE,
+          nclusters_pred = nclusters_pred_crr, verbose = FALSE, seed = seed2_tst
+        )),
+        silent = TRUE
+      )
+    }
+    if (inherits(cvvs_eval, "try-error")) {
+      cat("Failure for `tstsetup = \"", tstsetup, "\"` in a cv_varsel.vsel() ",
+          "test. Error message: \"",
+          attr(cvvs_eval, "condition")$message, "\"\n", sep = "")
+      # Check that this is a "pwrssUpdate" failure in lme4, so for solving this,
+      # we would either need to tweak the lme4 tuning parameters manually (via
+      # `...`) or change the data-generating mechanism here in the tests (to
+      # obtain less extreme or more data):
+      expect_true(grepl("pwrssUpdate", attr(cvvs_eval, "condition")$message),
+                  info = tstsetup)
+      # Furthermore, this should only occur in the `run_more = TRUE` case, so it
+      # can be skipped (because there are enough other `tstsetups` for which
+      # this works):
+      expect_true(run_more, info = tstsetup)
+      next
+    }
+    tstsetup_ref <- args_cvvs[[tstsetup]]$tstsetup_ref
+    meth_exp_crr <- args_cvvs[[tstsetup]]$method %||% "forward"
+    extra_tol_crr <- 1.1
+    if (meth_exp_crr == "L1" &&
+        any(grepl(":", ranking(cvvs_eval)[["fulldata"]]))) {
+      ### Testing for non-increasing element `ce` (for increasing model size)
+      ### doesn't make sense if the ranking of predictors involved in
+      ### interactions has been changed, so we choose a higher `extra_tol`:
+      extra_tol_crr <- 1.2
+      ###
+    }
+    vsel_tester(
+      cvvs_eval,
+      with_cv = TRUE,
+      refmod_expected = refmods[[tstsetup_ref]],
+      solterms_len_expected = args_cvvs[[tstsetup]]$nterms_max,
+      method_expected = meth_exp_crr,
+      cv_method_expected = "LOO",
+      valsearch_expected = TRUE,
+      nprjdraws_eval_expected = nclusters_pred_crr,
+      K_expected = args_cvvs[[tstsetup]]$K,
+      search_terms_expected = args_cvvs[[tstsetup]]$search_terms,
+      search_trms_empty_size =
+        length(args_cvvs[[tstsetup]]$search_terms) &&
+        all(grepl("\\+", args_cvvs[[tstsetup]]$search_terms)),
+      extra_tol = extra_tol_crr,
+      info_str = tstsetup
+    )
+  }
+})
+
+test_that(paste(
+  "cv_varsel.vsel() with K-fold CV and `validate_search = TRUE` works for",
+  "`vsel` objects from cv_varsel() created with `validate_search = FALSE`"
+), {
+  skip_if_not(run_cvvs)
+  tstsetups <- names(cvvss)
+  if (!run_more) {
+    tstsetups <- head(tstsetups, 1)
+  }
+  for (tstsetup in tstsetups) {
+    tstsetup_ref <- args_cvvs[[tstsetup]]$tstsetup_ref
+    if (!isFALSE(args_cvvs[[tstsetup]]$validate_search)) {
+      next
+    } else if (grepl("\\.with_wobs", tstsetup_ref) &&
+               args_cvvs[[tstsetup]]$pkg_nm == "rstanarm") {
+      # Currently, rstanarm:::kfold.stanreg() doesn't support observation
+      # weights:
+      next
+    } else if (args_cvvs[[tstsetup]]$fam_nm == "cumul" &&
+               args_cvvs[[tstsetup]]$pkg_nm == "rstanarm") {
+      # Currently, rstanarm:::kfold.stanreg() doesn't work for
+      # rstanarm::stan_polr() fits, see rstanarm issue stan-dev/rstanarm#564:
+      next
+    }
+    nclusters_pred_crr <- args_cvvs[[tstsetup]]$nclusters_pred - 1L
+    # Use suppressWarnings() because of occasional warnings concerning Pareto k
+    # diagnostics:
+    if (identical(args_cvvs[[tstsetup]]$cv_method, "kfold")) {
+      cvvs_eval <- try(
+        suppressWarnings(cv_varsel(
+          cvvss[[tstsetup]], validate_search = TRUE,
+          nclusters_pred = nclusters_pred_crr, verbose = FALSE, seed = seed2_tst
+        )),
+        silent = TRUE
+      )
+    } else {
+      cvvs_eval <- try(
+        suppressWarnings(cv_varsel(
+          cvvss[[tstsetup]], cv_method = "kfold", K = K_tst,
+          validate_search = TRUE, nclusters_pred = nclusters_pred_crr,
+          verbose = FALSE, seed = seed2_tst
+        )),
+        silent = TRUE
+      )
+    }
+    if (inherits(cvvs_eval, "try-error")) {
+      cat("Failure for `tstsetup = \"", tstsetup, "\"` in a cv_varsel.vsel() ",
+          "test. Error message: \"",
+          attr(cvvs_eval, "condition")$message, "\"\n", sep = "")
+      # Check that this is a "pwrssUpdate" failure in lme4, so for solving this,
+      # we would either need to tweak the lme4 tuning parameters manually (via
+      # `...`) or change the data-generating mechanism here in the tests (to
+      # obtain less extreme or more data):
+      expect_true(grepl("pwrssUpdate", attr(cvvs_eval, "condition")$message),
+                  info = tstsetup)
+      # Furthermore, this should only occur in the `run_more = TRUE` case, so it
+      # can be skipped (because there are enough other `tstsetups` for which
+      # this works):
+      expect_true(run_more, info = tstsetup)
+      next
+    }
+    meth_exp_crr <- args_cvvs[[tstsetup]]$method %||% "forward"
+    vsel_tester(
+      cvvs_eval,
+      with_cv = TRUE,
+      refmod_expected = refmods[[tstsetup_ref]],
+      solterms_len_expected = args_cvvs[[tstsetup]]$nterms_max,
+      method_expected = meth_exp_crr,
+      cv_method_expected = "kfold",
+      valsearch_expected = TRUE,
+      K_expected = K_tst,
       nprjdraws_eval_expected = nclusters_pred_crr,
       search_terms_expected = args_cvvs[[tstsetup]]$search_terms,
       search_trms_empty_size =
