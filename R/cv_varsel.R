@@ -159,13 +159,13 @@ cv_varsel.vsel <- function(
     validate_search = object$validate_search %||% TRUE,
     ...
 ) {
-  rk_obj <- ranking(object)
+  rk_foldwise <- ranking(object)[["foldwise"]]
   if (validate_search) {
     if (!identical(cv_method, object[["cv_method"]])) {
       # When switching the CV method (which could also mean to use varsel()
       # output in cv_varsel.vsel()), previous fold-wise predictor rankings
       # cannot be re-used for a `validate_search = TRUE` run:
-      rk_obj["foldwise"] <- list(NULL)
+      rk_foldwise <- NULL
     }
     if (identical(cv_method, "kfold") &&
         identical(object[["cv_method"]], "kfold") &&
@@ -196,8 +196,7 @@ cv_varsel.vsel <- function(
     K = K,
     cvfits = cvfits,
     validate_search = validate_search,
-    search_out = list(search_path = object[["search_path"]],
-                      ranking = rk_obj),
+    search_out = nlist(search_path = object[["search_path"]], rk_foldwise),
     ...
   ))
 }
@@ -294,7 +293,7 @@ cv_varsel.refmodel <- function(
     # Extract the fold-wise predictor rankings (to avoid passing the large
     # object `search_out` itself) and coerce them to a `list` (in a row-wise
     # manner) which is needed for the K-fold CV parallelization:
-    search_out_rks <- search_out[["ranking"]][["foldwise"]]
+    search_out_rks <- search_out[["rk_foldwise"]]
     if (!is.null(search_out_rks)) {
       n_folds <- nrow(search_out_rks)
       search_out_rks <- lapply(seq_len(n_folds), function(row_idx) {
