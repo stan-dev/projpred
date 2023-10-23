@@ -2080,7 +2080,6 @@ test_that(paste(
       method_expected = meth_exp_crr,
       cv_method_expected = "kfold",
       valsearch_expected = FALSE,
-      K_expected = K_tst,
       nprjdraws_eval_expected = nclusters_pred_crr,
       search_terms_expected = args_cvvs[[tstsetup]]$search_terms,
       search_trms_empty_size =
@@ -2140,7 +2139,7 @@ test_that(paste(
       method_expected = meth_exp_crr,
       cv_method_expected = cv_meth_crr,
       valsearch_expected = FALSE,
-      K_expected = if (cv_meth_crr == "LOO") K_tst else NULL,
+      K_expected = args_cvvs[[tstsetup]]$K,
       nprjdraws_eval_expected = nclusters_pred_crr,
       search_terms_expected = args_cvvs[[tstsetup]]$search_terms,
       search_trms_empty_size =
@@ -2200,7 +2199,7 @@ test_that(paste(
       method_expected = meth_exp_crr,
       cv_method_expected = cv_meth_crr,
       valsearch_expected = TRUE,
-      K_expected = if (cv_meth_crr == "LOO") K_tst else NULL,
+      K_expected = args_cvvs[[tstsetup]]$K,
       nprjdraws_eval_expected = nclusters_pred_crr,
       search_terms_expected = args_cvvs[[tstsetup]]$search_terms,
       search_trms_empty_size =
@@ -2499,7 +2498,6 @@ test_that(paste(
       method_expected = meth_exp_crr,
       cv_method_expected = "kfold",
       valsearch_expected = TRUE,
-      K_expected = K_tst,
       nprjdraws_eval_expected = nclusters_pred_crr,
       search_terms_expected = args_cvvs[[tstsetup]]$search_terms,
       search_trms_empty_size =
