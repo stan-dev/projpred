@@ -294,15 +294,15 @@ cv_varsel.refmodel <- function(
     # Extract the fold-wise predictor rankings (to avoid passing the large
     # object `search_out` itself) and coerce them to a `list` (in a row-wise
     # manner) which is needed for the K-fold CV parallelization:
-    search_out_rk <- search_out[["ranking"]][["foldwise"]]
-    if (!is.null(search_out_rk)) {
-      n_folds <- nrow(search_out_rk)
-      search_out_rk <- lapply(seq_len(n_folds), function(row_idx) {
-        search_out_rk[row_idx, ]
+    search_out_rks <- search_out[["ranking"]][["foldwise"]]
+    if (!is.null(search_out_rks)) {
+      n_folds <- nrow(search_out_rks)
+      search_out_rks <- lapply(seq_len(n_folds), function(row_idx) {
+        search_out_rks[row_idx, ]
       })
     }
   } else {
-    search_out_rk <- NULL
+    search_out_rks <- NULL
   }
 
   if (cv_method == "LOO") {
@@ -321,7 +321,7 @@ cv_varsel.refmodel <- function(
       },
       search_terms = search_terms,
       search_terms_was_null = search_terms_was_null,
-      search_out_rk = search_out_rk, parallel = parallel, ...
+      search_out_rks = search_out_rks, parallel = parallel, ...
     )
   } else if (cv_method == "kfold") {
     sel_cv <- kfold_varsel(
@@ -339,7 +339,7 @@ cv_varsel.refmodel <- function(
         # `refit_prj = FALSE`, so all that we need is element `solution_terms`:
         search_path_fulldata["solution_terms"]
       },
-      search_terms = search_terms, search_out_rk = search_out_rk,
+      search_terms = search_terms, search_out_rks = search_out_rks,
       parallel = parallel, ...
     )
   }
@@ -487,7 +487,7 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
                        nclusters, ndraws_pred, nclusters_pred, refit_prj,
                        penalty, verbose, opt, nloo, validate_search,
                        search_path_fulldata, search_terms,
-                       search_terms_was_null, search_out_rk, parallel, ...) {
+                       search_terms_was_null, search_out_rks, parallel, ...) {
   ## Pre-processing ---------------------------------------------------------
 
   has_grp <- formula_contains_group_terms(refmodel$formula)
@@ -876,8 +876,8 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
   } else {
     ## Case `validate_search = TRUE` ------------------------------------------
 
-    search_out_rk_was_null <- is.null(search_out_rk)
-    if (search_out_rk_was_null) {
+    search_out_rks_was_null <- is.null(search_out_rks)
+    if (search_out_rks_was_null) {
       cl_sel <- get_refdist(refmodel, ndraws = ndraws, nclusters = nclusters)$cl
     }
     if (refit_prj) {
@@ -887,7 +887,7 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
 
     if (verbose) {
       verb_txt_start <- "-----\nRunning "
-      if (!search_out_rk_was_null) {
+      if (!search_out_rks_was_null) {
         verb_txt_mid <- ""
       } else {
         verb_txt_mid <- "the search and "
@@ -906,8 +906,8 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
       # *reweighted* fitted response values from the reference model act as
       # artifical response values in the projection (or L1-penalized
       # projection)):
-      if (!search_out_rk_was_null) {
-        search_path <- list(solution_terms = search_out_rk[[run_index]])
+      if (!search_out_rks_was_null) {
+        search_path <- list(solution_terms = search_out_rks[[run_index]])
       } else {
         search_path <- select(
           refmodel = refmodel, ndraws = ndraws, nclusters = nclusters,
@@ -1179,13 +1179,13 @@ warn_pareto <- function(n07, n05, warn_txt_start, warn_txt_mid_common,
 # Needed to avoid a NOTE in `R CMD check`:
 if (getRversion() >= package_version("2.15.1")) {
   utils::globalVariables("list_cv_k")
-  utils::globalVariables("search_out_rk_k")
+  utils::globalVariables("search_out_rks_k")
 }
 
 kfold_varsel <- function(refmodel, method, nterms_max, ndraws, nclusters,
                          ndraws_pred, nclusters_pred, refit_prj, penalty,
                          verbose, opt, K, cvfits, validate_search,
-                         search_path_fulldata, search_terms, search_out_rk,
+                         search_path_fulldata, search_terms, search_out_rks,
                          parallel, ...) {
   # Fetch the K reference model fits (or fit them now if not already done) and
   # create objects of class `refmodel` from them (and also store the `omitted`
@@ -1193,9 +1193,9 @@ kfold_varsel <- function(refmodel, method, nterms_max, ndraws, nclusters,
   list_cv <- get_kfold(refmodel, K = K, cvfits = cvfits, verbose = verbose)
   K <- length(list_cv)
 
-  search_out_rk_was_null <- is.null(search_out_rk)
-  if (search_out_rk_was_null) {
-    search_out_rk <- replicate(K, NULL, simplify = FALSE)
+  search_out_rks_was_null <- is.null(search_out_rks)
+  if (search_out_rks_was_null) {
+    search_out_rks <- replicate(K, NULL, simplify = FALSE)
   }
 
   if (refmodel$family$for_latent) {
@@ -1210,7 +1210,7 @@ kfold_varsel <- function(refmodel, method, nterms_max, ndraws, nclusters,
 
   if (verbose) {
     verb_txt_start <- "-----\nRunning "
-    if (!search_out_rk_was_null || !validate_search) {
+    if (!search_out_rks_was_null || !validate_search) {
       verb_txt_mid <- ""
     } else {
       verb_txt_mid <- "the search and "
@@ -1226,7 +1226,7 @@ kfold_varsel <- function(refmodel, method, nterms_max, ndraws, nclusters,
     # Run the search for the current fold:
     if (!validate_search) {
       search_path <- search_path_fulldata
-    } else if (!search_out_rk_was_null) {
+    } else if (!search_out_rks_was_null) {
       search_path <- list(solution_terms = rk)
     } else {
       search_path <- select(
@@ -1278,7 +1278,7 @@ kfold_varsel <- function(refmodel, method, nterms_max, ndraws, nclusters,
       if (verbose) {
         on.exit(utils::setTxtProgressBar(pb, k))
       }
-      one_fold(fold = list_cv[[k]], rk = search_out_rk[[k]], ...)
+      one_fold(fold = list_cv[[k]], rk = search_out_rks[[k]], ...)
     })
     if (verbose) {
       close(pb)
@@ -1295,11 +1295,11 @@ kfold_varsel <- function(refmodel, method, nterms_max, ndraws, nclusters,
     `%do_projpred%` <- doRNG::`%dorng%`
     res_cv <- foreach::foreach(
       list_cv_k = list_cv,
-      search_out_rk_k = search_out_rk,
+      search_out_rks_k = search_out_rks,
       .export = c("one_fold", "dot_args"),
-      .noexport = c("list_cv", "search_out_rk")
+      .noexport = c("list_cv", "search_out_rks")
     ) %do_projpred% {
-      do.call(one_fold, c(list(fold = list_cv_k, rk = search_out_rk_k,
+      do.call(one_fold, c(list(fold = list_cv_k, rk = search_out_rks_k,
                                verbose_search = FALSE),
                           dot_args))
     }
