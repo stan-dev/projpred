@@ -244,22 +244,6 @@ cv_varsel.refmodel <- function(
   refmodel <- object
   nterms_all <- count_terms_in_formula(refmodel$formula) - 1L
 
-  # Restrictions in case of old search results which should be re-used:
-  if (!is.null(search_out)) {
-    if (cv_method %in% c("loo", "LOO") && !is.null(nloo) &&
-        nloo != refmodel[["nobs"]]) {
-      stop("Currently, `nloo == n` is needed to re-use old search results.")
-    }
-    if (validate_search) {
-      # For `refit_prj = FALSE`, we would need the fold-wise submodel fits
-      # (along the fold-wise predictor rankings), which are currently not
-      # available:
-      if (!refit_prj) {
-        stop("Currently, for `validate_search = TRUE`, old search results can ",
-             "only be re-used if `refit_prj` is `TRUE`.")
-      }
-    }
-  }
   # Parse arguments which also exist in varsel():
   args <- parse_args_varsel(
     refmodel = refmodel, method = method, refit_prj = refit_prj,
@@ -274,8 +258,9 @@ cv_varsel.refmodel <- function(
   search_terms_was_null <- args$search_terms_was_null
   # Parse arguments specific to cv_varsel():
   args <- parse_args_cv_varsel(
-    refmodel = refmodel, cv_method = cv_method, K = K, cvfits = cvfits,
-    validate_search = validate_search, refit_prj = refit_prj
+    refmodel = refmodel, cv_method = cv_method, nloo = nloo, K = K,
+    cvfits = cvfits, validate_search = validate_search, refit_prj = refit_prj,
+    search_out = search_out
   )
   cv_method <- args$cv_method
   K <- args$K
@@ -426,8 +411,8 @@ cv_varsel.refmodel <- function(
 # @param validate_search See argument `validate_search` of cv_varsel().
 #
 # @return A list with the processed elements `cv_method`, `K`, and `cvfits`.
-parse_args_cv_varsel <- function(refmodel, cv_method, K, cvfits,
-                                 validate_search, refit_prj) {
+parse_args_cv_varsel <- function(refmodel, cv_method, nloo, K, cvfits,
+                                 validate_search, refit_prj, search_out) {
   stopifnot(!is.null(cv_method))
   if (cv_method == "loo") {
     cv_method <- toupper(cv_method)
@@ -468,6 +453,23 @@ parse_args_cv_varsel <- function(refmodel, cv_method, K, cvfits,
       # test data:
       stop("For K-fold CV, `validate_search = FALSE` may not be combined with ",
            "`refit_prj = FALSE`.")
+    }
+  }
+
+  # Restrictions in case of previous search results which should be re-used:
+  if (!is.null(search_out)) {
+    if (cv_method == "LOO" && !is.null(nloo) && nloo != refmodel[["nobs"]]) {
+      # It would be hard (if not impossible) to ensure that the same PSIS-LOO CV
+      # folds (i.e., observations) are subsampled:
+      stop("Subsampled PSIS-LOO CV (see argument `nloo`) cannot be combined ",
+           "with the re-use of previous search results.")
+    }
+    if (validate_search && !refit_prj) {
+      # For `validate_search = TRUE` and `refit_prj = FALSE`, we would need the
+      # fold-wise submodel fits (along the fold-wise predictor rankings), which
+      # are currently not available:
+      stop("If `validate_search = TRUE`, then `refit_prj = FALSE` cannot be ",
+           "combined with the re-use of previous search results.")
     }
   }
 
