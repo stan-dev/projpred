@@ -1039,9 +1039,9 @@ plot.vsel <- function(
 #'   [cv_varsel()]).
 #' @param nterms_max Maximum submodel size (number of predictor terms) for which
 #'   the performance statistics are calculated. Using `NULL` is effectively the
-#'   same as `length(ranking(object)[["fulldata"]])`. Note that `nterms_max`
-#'   does not count the intercept, so use `nterms_max = 0` for the
-#'   intercept-only model. For [plot.vsel()], `nterms_max` must be at least `1`.
+#'   same as `length(ranking(object)$fulldata)`. Note that `nterms_max` does not
+#'   count the intercept, so use `nterms_max = 0` for the intercept-only model.
+#'   For [plot.vsel()], `nterms_max` must be at least `1`.
 #' @param stats One or more character strings determining which performance
 #'   statistics (i.e., utilities or losses) to estimate based on the
 #'   observations in the evaluation (or "test") set (in case of

@@ -6,7 +6,7 @@ If you read this from a place other than <https://mc-stan.org/projpred/news/inde
 
 ## Major changes
 
-* Search results generated in an earlier `varsel()` or `cv_varsel()` call can now be re-used by the help of the new `varsel.vsel()` and `cv_varsel.vsel()` methods (i.e., by applying `varsel()` or `cv_varsel()` to the output of the earlier `varsel()` or `cv_varsel()` call). This can save a lot of time when re-running the predictive performance evaluation part multiple times based on the same search results. An illustration may be found in the updated main vignette (section ["Preliminary `cv_varsel()` run"](https://mc-stan.org/projpred/articles/projpred.html#preliminary-cv_varsel-run); a more general description may also be found in section ["Speed"](https://mc-stan.org/projpred/articles/projpred.html#speed)). (GitHub: #461)
+* Search results generated in an earlier `varsel()` or `cv_varsel()` call can now be re-used by the help of the new `varsel.vsel()` and `cv_varsel.vsel()` methods (i.e., by applying `varsel()` or `cv_varsel()` to the output of the earlier `varsel()` or `cv_varsel()` call). This can save a lot of time when re-running the predictive performance evaluation part multiple times based on the same search results. An illustration may be found in the updated main vignette (section ["Preliminary `cv_varsel()` run"](https://mc-stan.org/projpred/articles/projpred.html#preliminary-cv_varsel-run); a more general description may also be found in section ["Speed"](https://mc-stan.org/projpred/articles/projpred.html#speed)). (GitHub: #461, #463)
 
 # projpred 2.7.0
 

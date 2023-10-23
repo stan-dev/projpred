@@ -151,7 +151,28 @@ cv_varsel.default <- function(object, ...) {
 
 #' @rdname cv_varsel
 #' @export
-cv_varsel.vsel <- function(object, ...) {
+cv_varsel.vsel <- function(
+    object,
+    cv_method = object$cv_method %||% "LOO",
+    K = object$K %||% if (!inherits(object, "datafit")) 5 else 10,
+    cvfits = object$cvfits,
+    validate_search = object$validate_search %||% TRUE,
+    ...
+) {
+  if (validate_search) {
+    if (!identical(cv_method, object[["cv_method"]])) {
+      stop("In case of `validate_search = TRUE`, cv_varsel.vsel() requires ",
+           "`cv_method` to be the same as `object$cv_method`.")
+    }
+    if (!identical(K, object[["K"]])) {
+      stop("In case of `validate_search = TRUE`, cv_varsel.vsel() requires ",
+           "`K` to be the same as `object$K`.")
+    }
+    if (!identical(cvfits, object[["cvfits"]])) {
+      stop("In case of `validate_search = TRUE`, cv_varsel.vsel() requires ",
+           "`cvfits` to be the same as `object$cvfits`.")
+    }
+  }
   return(cv_varsel(
     object = get_refmodel(object),
     method = object[["args_search"]][["method"]],
@@ -163,11 +184,11 @@ cv_varsel.vsel <- function(object, ...) {
     thresh = object[["args_search"]][["thresh"]],
     penalty = object[["args_search"]][["penalty"]],
     search_terms = object[["args_search"]][["search_terms"]],
-    cv_method = object[["cv_method"]] %||% "LOO",
+    cv_method = cv_method,
     nloo = object[["nloo"]],
-    K = object[["K"]],
-    cvfits = object[["cvfits"]],
-    validate_search = isTRUE(object[["validate_search"]]),
+    K = K,
+    cvfits = cvfits,
+    validate_search = validate_search,
     search_out = list(search_path = object[["search_path"]],
                       ranking = ranking(object)),
     ...
@@ -250,7 +271,6 @@ cv_varsel.refmodel <- function(
   search_terms <- args$search_terms
   search_terms_was_null <- args$search_terms_was_null
   # Parse arguments specific to cv_varsel():
-  cvfits_was_missing <- missing(cvfits)
   args <- parse_args_cv_varsel(
     refmodel = refmodel, cv_method = cv_method, K = K, cvfits = cvfits,
     validate_search = validate_search
@@ -258,7 +278,6 @@ cv_varsel.refmodel <- function(
   cv_method <- args$cv_method
   K <- args$K
   cvfits <- args$cvfits
-  cvfits_was_auto <- args$cvfits_was_auto
   # Arguments specific to the search:
   opt <- nlist(lambda_min_ratio, nlambda, thresh, regul)
 
@@ -346,13 +365,7 @@ cv_varsel.refmodel <- function(
               nloo,
               K,
               validate_search,
-              cvfits = if (is.null(cvfits_was_auto)) {
-                NULL
-              } else if (cvfits_was_missing || cvfits_was_auto) {
-                "auto"
-              } else {
-                cvfits
-              },
+              cvfits,
               args_search = nlist(
                 method, ndraws, nclusters, nterms_max, lambda_min_ratio,
                 nlambda, thresh, penalty,
@@ -395,10 +408,6 @@ parse_args_cv_varsel <- function(refmodel, cv_method, K, cvfits,
   }
 
   if (cv_method == "kfold") {
-    cvfits_was_auto <- identical(cvfits, "auto")
-    if (cvfits_was_auto) {
-      cvfits <- refmodel[["cvfits"]]
-    }
     if (!is.null(cvfits)) {
       if (identical(names(cvfits), "fits")) {
         warning(
@@ -424,13 +433,9 @@ parse_args_cv_varsel <- function(refmodel, cv_method, K, cvfits,
       stop("`cv_method = \"kfold\"` cannot be used with ",
            "`validate_search = FALSE`.")
     }
-  } else {
-    K <- NULL
-    cvfits <- NULL
-    cvfits_was_auto <- NULL
   }
 
-  return(nlist(cv_method, K, cvfits, cvfits_was_auto))
+  return(nlist(cv_method, K, cvfits))
 }
 
 # PSIS-LOO CV -------------------------------------------------------------

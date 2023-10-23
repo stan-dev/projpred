@@ -11,7 +11,14 @@ cv_varsel(object, ...)
 
 \method{cv_varsel}{default}(object, ...)
 
-\method{cv_varsel}{vsel}(object, ...)
+\method{cv_varsel}{vsel}(
+  object,
+  cv_method = object$cv_method \%||\% "LOO",
+  K = object$K \%||\% if (!inherits(object, "datafit")) 5 else 10,
+  cvfits = object$cvfits,
+  validate_search = object$validate_search \%||\% TRUE,
+  ...
+)
 
 \method{cv_varsel}{refmodel}(
   object,
@@ -51,15 +58,35 @@ to \code{\link[=cv_varsel.refmodel]{cv_varsel.refmodel()}}. For \code{\link[=cv_
 the divergence minimizer (during a forward search and also during the
 evaluation part, but the latter only if \code{refit_prj} is \code{TRUE}).}
 
-\item{method}{The method for the search part. Possible options are
-\code{"forward"} for forward search and \code{"L1"} for L1 search. See also section
-"Details" below.}
-
 \item{cv_method}{The CV method, either \code{"LOO"} or \code{"kfold"}. In the \code{"LOO"}
 case, a Pareto-smoothed importance sampling leave-one-out CV (PSIS-LOO CV)
 is performed, which avoids refitting the reference model \code{nloo} times (in
 contrast to a standard LOO CV). In the \code{"kfold"} case, a \eqn{K}-fold CV is
 performed. See also section "Note" below.}
+
+\item{K}{Only relevant if \code{cv_method = "kfold"} and if \code{cvfits} is \code{NULL}
+(which is the case for reference model objects created by
+\code{\link[=get_refmodel.stanreg]{get_refmodel.stanreg()}} or \code{\link[brms:get_refmodel.brmsfit]{brms::get_refmodel.brmsfit()}}). Number of
+folds in \eqn{K}-fold CV.}
+
+\item{cvfits}{Only relevant if \code{cv_method = "kfold"}. The same as argument
+\code{cvfits} of \code{\link[=init_refmodel]{init_refmodel()}}, but repeated here so that output from
+\code{\link[=run_cvfun]{run_cvfun()}} can be inserted here straightforwardly.}
+
+\item{validate_search}{Only relevant if \code{cv_method = "LOO"}. A single logical
+value indicating whether to cross-validate also the search part, i.e.,
+whether to run the search separately for each CV fold (\code{TRUE}) or not
+(\code{FALSE}). We strongly do not recommend setting this to \code{FALSE}, because
+this is known to bias the predictive performance estimates of the selected
+submodels. However, setting this to \code{FALSE} can sometimes be useful because
+comparing the results to the case where this argument is \code{TRUE} gives an
+idea of how strongly the search is (over-)fitted to the data (the
+difference corresponds to the search degrees of freedom or the effective
+number of parameters introduced by the search).}
+
+\item{method}{The method for the search part. Possible options are
+\code{"forward"} for forward search and \code{"L1"} for L1 search. See also section
+"Details" below.}
 
 \item{ndraws}{Number of posterior draws used in the search part. Ignored if
 \code{nclusters} is not \code{NULL} or in case of L1 search (because L1 search always
@@ -109,15 +136,6 @@ but higher uncertainty in the evaluation part. If \code{NULL}, all observations
 are used, but for faster experimentation, one can set this to a smaller
 value.}
 
-\item{K}{Only relevant if \code{cv_method = "kfold"} and if \code{cvfits} is \code{NULL}
-(which is the case for reference model objects created by
-\code{\link[=get_refmodel.stanreg]{get_refmodel.stanreg()}} or \code{\link[brms:get_refmodel.brmsfit]{brms::get_refmodel.brmsfit()}}). Number of
-folds in \eqn{K}-fold CV.}
-
-\item{cvfits}{Only relevant if \code{cv_method = "kfold"}. The same as argument
-\code{cvfits} of \code{\link[=init_refmodel]{init_refmodel()}}, but repeated here so that output from
-\code{\link[=run_cvfun]{run_cvfun()}} can be inserted here straightforwardly.}
-
 \item{lambda_min_ratio}{Only relevant for L1 search. Ratio between the
 smallest and largest lambda in the L1-penalized search. This parameter
 essentially determines how long the search is carried out, i.e., how large
@@ -135,17 +153,6 @@ computing the L1 path. Usually, there is no need to change this.}
 projecting onto (i.e., fitting) submodels which are GLMs. Usually there is
 no need for regularization, but sometimes we need to add some
 regularization to avoid numerical problems.}
-
-\item{validate_search}{Only relevant if \code{cv_method = "LOO"}. A single logical
-value indicating whether to cross-validate also the search part, i.e.,
-whether to run the search separately for each CV fold (\code{TRUE}) or not
-(\code{FALSE}). We strongly do not recommend setting this to \code{FALSE}, because
-this is known to bias the predictive performance estimates of the selected
-submodels. However, setting this to \code{FALSE} can sometimes be useful because
-comparing the results to the case where this argument is \code{TRUE} gives an
-idea of how strongly the search is (over-)fitted to the data (the
-difference corresponds to the search degrees of freedom or the effective
-number of parameters introduced by the search).}
 
 \item{seed}{Pseudorandom number generation (PRNG) seed by which the same
 results can be obtained again if needed. Passed to argument \code{seed} of

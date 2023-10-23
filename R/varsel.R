@@ -406,7 +406,12 @@ varsel.refmodel <- function(object, d_test = NULL, method = "forward",
               nloo = NULL,
               K = NULL,
               validate_search = NULL,
-              cvfits = NULL,
+              ### Not set to `NULL` because in K-fold CV (relevant when using
+              ### cv_varsel.vsel() based on this `vsel` object), `cvfits = NULL`
+              ### would mean to use `cvfun`; instead, the default should be
+              ### element `cvfits` from `refmodel`, so:
+              cvfits = refmodel$cvfits,
+              ###
               args_search = nlist(
                 method, ndraws, nclusters, nterms_max, lambda_min_ratio,
                 nlambda, thresh, penalty,

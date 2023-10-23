@@ -1969,6 +1969,7 @@ vsel_tester <- function(
     },
     seed_expected = seed_tst,
     nloo_expected = NULL,
+    K_expected = NULL,
     penalty_expected = NULL,
     search_terms_expected = NULL,
     search_trms_empty_size = FALSE,
@@ -2382,8 +2383,12 @@ vsel_tester <- function(
   expect_identical(vs$nloo, nloo_expected_orig, info = info_str)
 
   # K
-  if (identical(cv_method_expected, "kfold")) {
+  if (!is.null(K_expected)) {
+    expect_identical(vs$K, K_expected, info = info_str)
+  } else if (identical(cv_method_expected, "kfold")) {
     expect_identical(vs$K, K_tst, info = info_str)
+  } else if (with_cv) {
+    expect_identical(vs$K, if (from_datafit) 10 else 5, info = info_str)
   } else {
     expect_null(vs$K, info = info_str)
   }
@@ -2392,14 +2397,10 @@ vsel_tester <- function(
   expect_identical(vs$validate_search, valsearch_expected, info = info_str)
 
   # cvfits
-  if (!identical(cv_method_expected, "kfold")) {
-    expect_null(vs$cvfits, info = info_str)
-  } else {
-    ### Currently, we are testing argument `cvfits` only implicitly via the
-    ### examples and via the main vignette:
-    expect_identical(vs$cvfits, "auto", info = info_str)
-    ###
-  }
+  ### Currently, we are testing argument `cvfits` only implicitly via the
+  ### examples and via the main vignette:
+  expect_identical(vs$cvfits, refmod_expected$cvfits, info = info_str)
+  ###
 
   # args_search
   expect_equal(
