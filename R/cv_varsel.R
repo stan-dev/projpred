@@ -159,16 +159,23 @@ cv_varsel.vsel <- function(
     validate_search = object$validate_search %||% TRUE,
     ...
 ) {
+  rk_obj <- ranking(object)
   if (validate_search) {
     if (!identical(cv_method, object[["cv_method"]])) {
-      stop("In case of `validate_search = TRUE`, cv_varsel.vsel() requires ",
-           "`cv_method` to be the same as `object$cv_method`.")
+      # When switching the CV method (which could also mean to use varsel()
+      # output in cv_varsel.vsel()), previous fold-wise predictor rankings
+      # cannot be re-used for a `validate_search = TRUE` run:
+      rk_obj["foldwise"] <- list(NULL)
     }
-    if (!identical(K, object[["K"]])) {
+    if (identical(cv_method, "kfold") &&
+        identical(object[["cv_method"]], "kfold") &&
+        !identical(K, object[["K"]])) {
       stop("In case of `validate_search = TRUE`, cv_varsel.vsel() requires ",
            "`K` to be the same as `object$K`.")
     }
-    if (!identical(cvfits, object[["cvfits"]])) {
+    if (identical(cv_method, "kfold") &&
+        identical(object[["cv_method"]], "kfold") &&
+        !identical(cvfits, object[["cvfits"]])) {
       stop("In case of `validate_search = TRUE`, cv_varsel.vsel() requires ",
            "`cvfits` to be the same as `object$cvfits`.")
     }
@@ -190,7 +197,7 @@ cv_varsel.vsel <- function(
     cvfits = cvfits,
     validate_search = validate_search,
     search_out = list(search_path = object[["search_path"]],
-                      ranking = ranking(object)),
+                      ranking = rk_obj),
     ...
   ))
 }
@@ -244,11 +251,6 @@ cv_varsel.refmodel <- function(
       stop("Currently, `nloo == n` is needed to re-use old search results.")
     }
     if (validate_search) {
-      # We will need the fold-wise predictor rankings later:
-      if (is.null(search_out[["ranking"]][["foldwise"]])) {
-        stop("For `validate_search = TRUE`, old search results can only be ",
-             "re-used if the old search was performed in a fold-wise manner.")
-      }
       # For `refit_prj = FALSE`, we would need the fold-wise submodel fits
       # (along the fold-wise predictor rankings), which are currently not
       # available:
@@ -308,10 +310,12 @@ cv_varsel.refmodel <- function(
     # object `search_out` itself) and coerce them to a `list` (in a row-wise
     # manner) which is needed for the K-fold CV parallelization:
     search_out_rk <- search_out[["ranking"]][["foldwise"]]
-    n_folds <- nrow(search_out_rk)
-    search_out_rk <- lapply(seq_len(n_folds), function(row_idx) {
-      search_out_rk[row_idx, ]
-    })
+    if (!is.null(search_out_rk)) {
+      n_folds <- nrow(search_out_rk)
+      search_out_rk <- lapply(seq_len(n_folds), function(row_idx) {
+        search_out_rk[row_idx, ]
+      })
+    }
   } else {
     search_out_rk <- NULL
   }
