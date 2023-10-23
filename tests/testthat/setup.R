@@ -9,7 +9,7 @@ options(warn = 1)
 # These switches may be set to `FALSE` to save time (e.g., when debugging
 # interactively):
 # Run more tests, at the downside of increased runtime?:
-run_more <- FALSE
+run_more <- identical(Sys.getenv("RUN_MORE"), "true")
 # Run project()?:
 run_prj <- identical(Sys.getenv("NOT_CRAN"), "true")
 # Run varsel()?:
