@@ -2144,8 +2144,14 @@ vsel_tester <- function(
                      c(n_folds, solterms_len_expected),
                      info = info_str)
     # We need the addition of `NA_character_` because of subsampled PSIS-LOO CV:
+    soltrms_cv <- unique(as.vector(vs$solution_terms_cv))
+    for (soltrms_cv_plus in grep("\\+", soltrms_cv, value = TRUE)) {
+      soltrms_cv <- setdiff(soltrms_cv, soltrms_cv_plus)
+      soltrms_cv <- c(soltrms_cv,
+                      labels(terms(as.formula(paste(". ~", soltrms_cv_plus)))))
+    }
     expect_true(
-      all(vs$solution_terms_cv %in% c(trms_universe_split, NA_character_)),
+      all(soltrms_cv %in% c(trms_universe_split, NA_character_)),
       info = info_str
     )
   } else {
