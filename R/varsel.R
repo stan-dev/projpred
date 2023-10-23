@@ -213,8 +213,7 @@ varsel.vsel <- function(object, ...) {
     thresh = object[["args_search"]][["thresh"]],
     penalty = object[["args_search"]][["penalty"]],
     search_terms = object[["args_search"]][["search_terms"]],
-    search_out = list(search_path = object[["search_path"]],
-                      rk_foldwise = ranking(object)[["foldwise"]]),
+    search_out = list(search_path = object[["search_path"]]),
     ...
   ))
 }
