@@ -190,6 +190,7 @@ In practice, we recommend using either the default of `cv_method = "LOO"` or a l
 Here, we also perform the $K$ reference model refits outside of `cv_varsel()`.
 Although not strictly necessary here, this is helpful in practice because often, `cv_varsel()` needs to be re-run multiple times in order to try out different argument settings.
 We also illustrate how **projpred**'s CV (i.e., the CV comprising search and performance evaluation, after refitting the reference model $K$ times) can be parallelized, even though this is of little use here (we have only `K = 2` folds and the fold-wise searches and performance evaluations are quite fast, so the parallelization overhead eats up any runtime improvements).
+Note that for this final `cv_varsel()` run, we cannot make use of `cv_varsel.vsel()` (by applying `cv_varsel()` to `cvvs_fast` or `cvvs_fast_refit` instead of `refm_fit`) because of the change in `nterms_max` (here: 9, for `cvvs_fast` and `cvvs_fast_refit`: 20).
 ```{r cv_varsel, message=FALSE}
 # Refit the reference model K times:
 cv_fits <- run_cvfun(
