@@ -34,16 +34,16 @@
 #' @param cvfits Only relevant if `cv_method = "kfold"`. The same as argument
 #'   `cvfits` of [init_refmodel()], but repeated here so that output from
 #'   [run_cvfun()] can be inserted here straightforwardly.
-#' @param validate_search Only relevant if `cv_method = "LOO"`. A single logical
-#'   value indicating whether to cross-validate also the search part, i.e.,
-#'   whether to run the search separately for each CV fold (`TRUE`) or not
-#'   (`FALSE`). We strongly do not recommend setting this to `FALSE`, because
-#'   this is known to bias the predictive performance estimates of the selected
-#'   submodels. However, setting this to `FALSE` can sometimes be useful because
-#'   comparing the results to the case where this argument is `TRUE` gives an
-#'   idea of how strongly the search is (over-)fitted to the data (the
-#'   difference corresponds to the search degrees of freedom or the effective
-#'   number of parameters introduced by the search).
+#' @param validate_search A single logical value indicating whether to
+#'   cross-validate also the search part, i.e., whether to run the search
+#'   separately for each CV fold (`TRUE`) or not (`FALSE`). We strongly do not
+#'   recommend setting this to `FALSE`, because this is known to bias the
+#'   predictive performance estimates of the selected submodels. However,
+#'   setting this to `FALSE` can sometimes be useful because comparing the
+#'   results to the case where this argument is `TRUE` gives an idea of how
+#'   strongly the search is (over-)fitted to the data (the difference
+#'   corresponds to the search degrees of freedom or the effective number of
+#'   parameters introduced by the search).
 #' @param seed Pseudorandom number generation (PRNG) seed by which the same
 #'   results can be obtained again if needed. Passed to argument `seed` of
 #'   [set.seed()], but can also be `NA` to not call [set.seed()] at all. If not
@@ -273,7 +273,7 @@ cv_varsel.refmodel <- function(
   # Parse arguments specific to cv_varsel():
   args <- parse_args_cv_varsel(
     refmodel = refmodel, cv_method = cv_method, K = K, cvfits = cvfits,
-    validate_search = validate_search
+    validate_search = validate_search, refit_prj = refit_prj
   )
   cv_method <- args$cv_method
   K <- args$K
@@ -281,25 +281,39 @@ cv_varsel.refmodel <- function(
   # Arguments specific to the search:
   opt <- nlist(lambda_min_ratio, nlambda, thresh, regul)
 
-  if (validate_search) {
-    # Full-data search (already done here and not at the end to ensure
-    # consistent PRNG states between the full-data search in the
-    # `validate_search = FALSE` case and the full-data search in the
-    # `validate_search = TRUE` case we are in here):
-    if (!is.null(search_out)) {
-      search_path_full_data <- search_out[["search_path"]]
-    } else {
-      verb_out("-----\nRunning the search using the full dataset ...",
-               verbose = verbose)
-      search_path_full_data <- select(
-        refmodel = refmodel, ndraws = ndraws, nclusters = nclusters,
-        method = method, nterms_max = nterms_max, penalty = penalty,
-        verbose = verbose, opt = opt, search_terms = search_terms,
-        search_terms_was_null = search_terms_was_null, ...
-      )
-      verb_out("-----", verbose = verbose)
+  # Full-data search:
+  if (!is.null(search_out)) {
+    search_path_fulldata <- search_out[["search_path"]]
+  } else {
+    verb_txt_search <- "-----\nRunning the search "
+    if (validate_search) {
+      # Point out that this is the full-data search (if `validate_search` is
+      # `FALSE`, this is still a full-data search, but in that case, there are
+      # no fold-wise searches, so pointing out "full-data" could be confusing):
+      verb_txt_search <- paste0(verb_txt_search, "using the full dataset ")
     }
-    ce_out <- rep(NA_real_, length(search_path_full_data$solution_terms) + 1L)
+    verb_txt_search <- paste0(verb_txt_search, "...")
+    verb_out(verb_txt_search, verbose = verbose)
+    search_path_fulldata <- select(
+      refmodel = refmodel, ndraws = ndraws, nclusters = nclusters,
+      method = method, nterms_max = nterms_max, penalty = penalty,
+      verbose = verbose, opt = opt, search_terms = search_terms,
+      search_terms_was_null = search_terms_was_null, ...
+    )
+    verb_out("-----", verbose = verbose)
+  }
+
+  if (!is.null(search_out) && validate_search) {
+    # Extract the fold-wise predictor rankings (to avoid passing the large
+    # object `search_out` itself) and coerce them to a `list` (in a row-wise
+    # manner) which is needed for the K-fold CV parallelization:
+    search_out_rk <- search_out[["ranking"]][["foldwise"]]
+    n_folds <- nrow(search_out_rk)
+    search_out_rk <- lapply(seq_len(n_folds), function(row_idx) {
+      search_out_rk[row_idx, ]
+    })
+  } else {
+    search_out_rk <- NULL
   }
 
   if (cv_method == "LOO") {
@@ -308,9 +322,17 @@ cv_varsel.refmodel <- function(
       ndraws = ndraws, nclusters = nclusters, ndraws_pred = ndraws_pred,
       nclusters_pred = nclusters_pred, refit_prj = refit_prj, penalty = penalty,
       verbose = verbose, opt = opt, nloo = nloo,
-      validate_search = validate_search, search_terms = search_terms,
-      search_terms_was_null = search_terms_was_null, search_out = search_out,
-      parallel = parallel, ...
+      validate_search = validate_search,
+      search_path_fulldata = if (validate_search) {
+        # Not needed in this case, so for computational efficiency, avoiding
+        # passing the large object `search_path_fulldata` to loo_varsel():
+        NULL
+      } else {
+        search_path_fulldata
+      },
+      search_terms = search_terms,
+      search_terms_was_null = search_terms_was_null,
+      search_out_rk = search_out_rk, parallel = parallel, ...
     )
   } else if (cv_method == "kfold") {
     sel_cv <- kfold_varsel(
@@ -318,17 +340,25 @@ cv_varsel.refmodel <- function(
       ndraws = ndraws, nclusters = nclusters, ndraws_pred = ndraws_pred,
       nclusters_pred = nclusters_pred, refit_prj = refit_prj, penalty = penalty,
       verbose = verbose, opt = opt, K = K, cvfits = cvfits,
-      search_terms = search_terms,
-      search_out_rk = search_out[["ranking"]][["foldwise"]],
+      validate_search = validate_search,
+      search_path_fulldata = if (validate_search) {
+        # Not needed in this case, so for computational efficiency, avoiding
+        # passing the large object `search_path_fulldata` to loo_varsel():
+        NULL
+      } else {
+        # For K-fold CV, `validate_search = FALSE` may not be combined with
+        # `refit_prj = FALSE`, so all that we need is element `solution_terms`:
+        search_path_fulldata["solution_terms"]
+      },
+      search_terms = search_terms, search_out_rk = search_out_rk,
       parallel = parallel, ...
     )
   }
 
-  if (!validate_search) {
-    # If `validate_search` is `FALSE`, the full-data search is run inside of
-    # loo_varsel(), so we need to retrieve the search results here:
-    search_path_full_data <- sel_cv$search_path
+  if (!validate_search && cv_method == "LOO") {
     ce_out <- sel_cv$ce
+  } else {
+    ce_out <- rep(NA_real_, length(search_path_fulldata$solution_terms) + 1L)
   }
 
   # Defined here for `nobs_test` later:
@@ -336,8 +366,8 @@ cv_varsel.refmodel <- function(
 
   # Information about the clustering/thinning used for the search:
   refdist_info_search <- list(
-    clust_used = search_path_full_data$p_sel$clust_used,
-    nprjdraws = NCOL(search_path_full_data$p_sel$mu)
+    clust_used = search_path_fulldata$p_sel$clust_used,
+    nprjdraws = NCOL(search_path_fulldata$p_sel$mu)
   )
   # Information about the clustering/thinning used for the performance
   # evaluation:
@@ -350,8 +380,8 @@ cv_varsel.refmodel <- function(
   # The object to be returned:
   vs <- nlist(refmodel,
               nobs_train = refmodel$nobs,
-              search_path = search_path_full_data,
-              solution_terms = search_path_full_data$solution_terms,
+              search_path = search_path_fulldata,
+              solution_terms = search_path_fulldata$solution_terms,
               solution_terms_cv = sel_cv$solution_terms_cv,
               ce = ce_out,
               type_test = cv_method,
@@ -393,7 +423,7 @@ cv_varsel.refmodel <- function(
 #
 # @return A list with the processed elements `cv_method`, `K`, and `cvfits`.
 parse_args_cv_varsel <- function(refmodel, cv_method, K, cvfits,
-                                 validate_search) {
+                                 validate_search, refit_prj) {
   stopifnot(!is.null(cv_method))
   if (cv_method == "loo") {
     cv_method <- toupper(cv_method)
@@ -429,9 +459,11 @@ parse_args_cv_varsel <- function(refmodel, cv_method, K, cvfits,
     if (K > NROW(refmodel$y)) {
       stop("`K` cannot exceed the number of observations.")
     }
-    if (!validate_search) {
-      stop("`cv_method = \"kfold\"` cannot be used with ",
-           "`validate_search = FALSE`.")
+    if (!validate_search && !refit_prj) {
+      # Not allowed because this would induce a dependency between training and
+      # test data:
+      stop("For K-fold CV, `validate_search = FALSE` may not be combined with ",
+           "`refit_prj = FALSE`.")
     }
   }
 
@@ -448,8 +480,8 @@ parse_args_cv_varsel <- function(refmodel, cv_method, K, cvfits,
 loo_varsel <- function(refmodel, method, nterms_max, ndraws,
                        nclusters, ndraws_pred, nclusters_pred, refit_prj,
                        penalty, verbose, opt, nloo, validate_search,
-                       search_terms, search_terms_was_null, search_out,
-                       parallel, ...) {
+                       search_path_fulldata, search_terms,
+                       search_terms_was_null, search_out_rk, parallel, ...) {
   ## Pre-processing ---------------------------------------------------------
 
   has_grp <- formula_contains_group_terms(refmodel$formula)
@@ -621,20 +653,6 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
   if (!validate_search) {
     ## Case `validate_search = FALSE` -----------------------------------------
 
-    # Run the search:
-    if (!is.null(search_out)) {
-      search_path <- search_out[["search_path"]]
-    } else {
-      verb_out("-----\nRunning the search ...", verbose = verbose)
-      search_path <- select(
-        refmodel = refmodel, ndraws = ndraws, nclusters = nclusters,
-        method = method, nterms_max = nterms_max, penalty = penalty,
-        verbose = verbose, opt = opt, search_terms = search_terms,
-        search_terms_was_null = search_terms_was_null, ...
-      )
-      verb_out("-----", verbose = verbose)
-    }
-
     # "Run" the performance evaluation for the submodels along the predictor
     # ranking (in fact, we only prepare the performance evaluation by computing
     # precursor quantities, but for users, this difference is not perceivable):
@@ -642,9 +660,10 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
     # Step 1: Re-project (using the full dataset) onto the submodels along the
     # full-data predictor ranking and evaluate their predictive performance.
     perf_eval_out <- perf_eval(
-      search_path = search_path, refmodel = refmodel, regul = opt$regul,
-      refit_prj = refit_prj, ndraws = ndraws_pred, nclusters = nclusters_pred,
-      return_p_ref = TRUE, return_preds = TRUE, indices_test = inds, ...
+      search_path = search_path_fulldata, refmodel = refmodel,
+      regul = opt$regul, refit_prj = refit_prj, ndraws = ndraws_pred,
+      nclusters = nclusters_pred, return_p_ref = TRUE, return_preds = TRUE,
+      indices_test = inds, ...
     )
     clust_used_eval <- perf_eval_out[["clust_used"]]
     nprjdraws_eval <- perf_eval_out[["nprjdraws"]]
@@ -794,7 +813,7 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
     # This re-weighting requires a re-normalization (as.array() is applied to
     # have stricter consistency checks, see `?sweep`):
     lw_sub <- sweep(lw_sub, 2, as.array(apply(lw_sub, 2, log_sum_exp)))
-    for (k in seq_len(1 + length(search_path$solution_terms))) {
+    for (k in seq_len(1 + length(search_path_fulldata$solution_terms))) {
       # TODO: For consistency, replace `k` in this `for` loop by `j`.
       mu_k <- perf_eval_out[["mu_by_size"]][[k]]
       log_lik_sub <- perf_eval_out[["lppd_by_size"]][[k]]
@@ -847,14 +866,12 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
     }
     verb_out("-----", verbose = verbose)
     # Needed for cutting off post-processed results later:
-    prv_len_soltrms <- length(search_path$solution_terms)
+    prv_len_soltrms <- length(search_path_fulldata$solution_terms)
   } else {
     ## Case `validate_search = TRUE` ------------------------------------------
 
-    search_out_rk <- search_out[["ranking"]][["foldwise"]]
-    rm(search_out)
-
-    if (is.null(search_out_rk)) {
+    search_out_rk_was_null <- is.null(search_out_rk)
+    if (search_out_rk_was_null) {
       cl_sel <- get_refdist(refmodel, ndraws = ndraws, nclusters = nclusters)$cl
     }
     if (refit_prj) {
@@ -864,7 +881,7 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
 
     if (verbose) {
       verb_txt_start <- "-----\nRunning "
-      if (!is.null(search_out_rk)) {
+      if (!search_out_rk_was_null) {
         verb_txt_mid <- ""
       } else {
         verb_txt_mid <- "the search and "
@@ -883,8 +900,8 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
       # *reweighted* fitted response values from the reference model act as
       # artifical response values in the projection (or L1-penalized
       # projection)):
-      if (!is.null(search_out_rk)) {
-        search_path <- list(solution_terms = search_out_rk[run_index, ])
+      if (!search_out_rk_was_null) {
+        search_path <- list(solution_terms = search_out_rk[[run_index]])
       } else {
         search_path <- select(
           refmodel = refmodel, ndraws = ndraws, nclusters = nclusters,
@@ -1119,7 +1136,7 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
   summaries <- list(sub = summ_sub, ref = summ_ref)
 
   if (!validate_search) {
-    out_list <- nlist(search_path, ce = perf_eval_out[["ce"]])
+    out_list <- nlist(ce = perf_eval_out[["ce"]])
   } else {
     out_list <- nlist(solution_terms_cv = solution_terms_mat[
       , seq_len(prv_len_soltrms), drop = FALSE
@@ -1161,7 +1178,8 @@ if (getRversion() >= package_version("2.15.1")) {
 
 kfold_varsel <- function(refmodel, method, nterms_max, ndraws, nclusters,
                          ndraws_pred, nclusters_pred, refit_prj, penalty,
-                         verbose, opt, K, cvfits, search_terms, search_out_rk,
+                         verbose, opt, K, cvfits, validate_search,
+                         search_path_fulldata, search_terms, search_out_rk,
                          parallel, ...) {
   # Fetch the K reference model fits (or fit them now if not already done) and
   # create objects of class `refmodel` from them (and also store the `omitted`
@@ -1169,12 +1187,8 @@ kfold_varsel <- function(refmodel, method, nterms_max, ndraws, nclusters,
   list_cv <- get_kfold(refmodel, K = K, cvfits = cvfits, verbose = verbose)
   K <- length(list_cv)
 
-  if (!is.null(search_out_rk)) {
-    stopifnot(nrow(search_out_rk) == K)
-    search_out_rk <- lapply(seq_len(K), function(row_idx) {
-      search_out_rk[row_idx, ]
-    })
-  } else {
+  search_out_rk_was_null <- is.null(search_out_rk)
+  if (search_out_rk_was_null) {
     search_out_rk <- replicate(K, NULL, simplify = FALSE)
   }
 
@@ -1190,7 +1204,7 @@ kfold_varsel <- function(refmodel, method, nterms_max, ndraws, nclusters,
 
   if (verbose) {
     verb_txt_start <- "-----\nRunning "
-    if (!all(sapply(search_out_rk, is.null))) {
+    if (!search_out_rk_was_null || !validate_search) {
       verb_txt_mid <- ""
     } else {
       verb_txt_mid <- "the search and "
@@ -1204,7 +1218,9 @@ kfold_varsel <- function(refmodel, method, nterms_max, ndraws, nclusters,
                          getOption("projpred.extra_verbose", FALSE),
                        ...) {
     # Run the search for the current fold:
-    if (!is.null(rk)) {
+    if (!validate_search) {
+      search_path <- search_path_fulldata
+    } else if (!search_out_rk_was_null) {
       search_path <- list(solution_terms = rk)
     } else {
       search_path <- select(
@@ -1340,8 +1356,15 @@ kfold_varsel <- function(refmodel, method, nterms_max, ndraws, nclusters,
     ref$oscale$lppd <- ref$oscale$lppd[order(idxs_sorted_by_fold)]
   }
 
-  return(nlist(solution_terms_cv, summaries = nlist(sub, ref), y_wobs_test,
-               clust_used_eval, nprjdraws_eval))
+  if (!validate_search) {
+    out_list <- list()
+  } else {
+    out_list <- nlist(solution_terms_cv)
+  }
+  out_list <- c(out_list,
+                nlist(summaries = nlist(sub, ref), y_wobs_test, clust_used_eval,
+                      nprjdraws_eval))
+  return(out_list)
 }
 
 # Refit the reference model K times (once for each fold; `cvfun` case) or fetch

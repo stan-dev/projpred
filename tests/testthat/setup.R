@@ -852,6 +852,11 @@ seed3_tst <- 1208499
 
 nclusters_tst <- 2L
 nclusters_pred_tst <- 3L
+### Later, we will subtract 1L and still wish to have `nclusters_pred >= 2` in
+### order to differentiate this from `nclusters_pred == 1` which is more or less
+### a special case:
+stopifnot(nclusters_pred_tst >= 3)
+###
 if (!run_more) {
   ndr_ncl_pred_tst <- list()
 } else {
@@ -1209,17 +1214,11 @@ if (run_cvvs) {
     }
     lapply(meth, function(meth_i) {
       lapply(cvmeth, function(cvmeth_i) {
-        if (!run_valsearch_always && !identical(cvmeth_i$cv_method, "kfold") &&
-            # Handle augmented-data and corresponding traditional projection:
+        if (!identical(meth_i$method, "L1") && !run_valsearch_always &&
             (!prj_crr %in% c("latent", "augdat", "trad_compare") ||
              (prj_crr %in% c("latent", "augdat", "trad_compare") &&
-              !run_valsearch_aug_lat)) &&
-            # Forward search:
-            !identical(meth_i$method, "L1")) {
-          # These are cases with forward search, LOO CV, and
-          # `!run_valsearch_always` where we want to save time by using
-          # `validate_search = FALSE`:
-          meth_i <- c(meth_i, list(validate_search = FALSE))
+              !run_valsearch_aug_lat))) {
+          cvmeth_i <- c(cvmeth_i, list(validate_search = FALSE))
         }
         search_trms <- search_trms_tst["default_search_trms"]
         lapply(search_trms, function(search_trms_i) {
