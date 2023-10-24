@@ -164,24 +164,13 @@ cv_varsel.vsel <- function(
   rk_foldwise <- ranking(object)[["foldwise"]]
   if (validate_search) {
     if (!identical(cv_method, object[["cv_method"]]) ||
+        (identical(cv_method, object[["cv_method"]]) &&
+         identical(cv_method, "kfold") &&
+         (is.null(cvfits) || !identical(cvfits, object[["cvfits"]]))) ||
         !identical(nloo, refmodel[["nobs"]])) {
-      # When switching the CV method (which could also mean to use varsel()
-      # output in cv_varsel.vsel()) or using subsampled PSIS-LOO CV, previous
-      # fold-wise predictor rankings cannot be re-used for a `validate_search =
-      # TRUE` run:
+      # In these cases, previous fold-wise predictor rankings cannot be re-used
+      # for the `validate_search = TRUE` run requested here:
       rk_foldwise <- NULL
-    }
-    if (identical(cv_method, "kfold") &&
-        identical(object[["cv_method"]], "kfold") &&
-        !identical(K, object[["K"]])) {
-      stop("In case of `validate_search = TRUE`, cv_varsel.vsel() requires ",
-           "`K` to be the same as `object$K`.")
-    }
-    if (identical(cv_method, "kfold") &&
-        identical(object[["cv_method"]], "kfold") &&
-        !identical(cvfits, object[["cvfits"]])) {
-      stop("In case of `validate_search = TRUE`, cv_varsel.vsel() requires ",
-           "`cvfits` to be the same as `object$cvfits`.")
     }
   }
   return(cv_varsel(
