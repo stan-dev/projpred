@@ -172,6 +172,20 @@ cv_varsel.vsel <- function(
       # for the `validate_search = TRUE` run requested here:
       rk_foldwise <- NULL
     }
+    if (identical(cv_method, object[["cv_method"]]) &&
+        identical(cv_method, "kfold") &&
+        identical(cvfits, object[["cvfits"]]) &&
+        inherits(refmodel[["fit"]], "brmsfit") &&
+        getOption("projpred.mlvl_proj_ref_new", FALSE) &&
+        formula_contains_group_terms(refmodel[["formula"]])) {
+      # In this case, the call(s) to ref_predfun() that is/are performed when
+      # initializing the fold-wise reference model objects via init_refmodel()
+      # (within cvrefbuilder()) involve(s) using the PRNG, so in order to be
+      # able to re-use previous fold-wise predictor rankings, argument
+      # `brms_seed` of brms:::get_refmodel.brmsfit() needs to be set:
+      warning("Please make sure that you have set argument `brms_seed` of ",
+              "brms:::get_refmodel.brmsfit() to some non-`NULL` value.")
+    }
   }
   return(cv_varsel(
     object = refmodel,
