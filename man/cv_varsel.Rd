@@ -14,6 +14,7 @@ cv_varsel(object, ...)
 \method{cv_varsel}{vsel}(
   object,
   cv_method = object$cv_method \%||\% "LOO",
+  nloo = object$nloo,
   K = object$K \%||\% if (!inherits(object, "datafit")) 5 else 10,
   cvfits = object$cvfits,
   validate_search = object$validate_search \%||\% TRUE,
@@ -63,6 +64,13 @@ case, a Pareto-smoothed importance sampling leave-one-out CV (PSIS-LOO CV)
 is performed, which avoids refitting the reference model \code{nloo} times (in
 contrast to a standard LOO CV). In the \code{"kfold"} case, a \eqn{K}-fold CV is
 performed. See also section "Note" below.}
+
+\item{nloo}{\strong{Caution:} Still experimental. Only relevant if \code{cv_method = "LOO"}. Number of subsampled PSIS-LOO CV folds, i.e., number of
+observations used for the approximate LOO CV (anything between 1 and the
+original number of observations). Smaller values lead to faster computation
+but higher uncertainty in the evaluation part. If \code{NULL}, all observations
+are used, but for faster experimentation, one can set this to a smaller
+value.}
 
 \item{K}{Only relevant if \code{cv_method = "kfold"} and if \code{cvfits} is \code{NULL}
 (which is the case for reference model objects created by
@@ -128,13 +136,6 @@ used for each predictor.}
 
 \item{verbose}{A single logical value indicating whether to print out
 additional information during the computations.}
-
-\item{nloo}{\strong{Caution:} Still experimental. Only relevant if \code{cv_method = "LOO"}. Number of subsampled PSIS-LOO CV folds, i.e., number of
-observations used for the approximate LOO CV (anything between 1 and the
-original number of observations). Smaller values lead to faster computation
-but higher uncertainty in the evaluation part. If \code{NULL}, all observations
-are used, but for faster experimentation, one can set this to a smaller
-value.}
 
 \item{lambda_min_ratio}{Only relevant for L1 search. Ratio between the
 smallest and largest lambda in the L1-penalized search. This parameter

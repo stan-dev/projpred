@@ -154,17 +154,21 @@ cv_varsel.default <- function(object, ...) {
 cv_varsel.vsel <- function(
     object,
     cv_method = object$cv_method %||% "LOO",
+    nloo = object$nloo,
     K = object$K %||% if (!inherits(object, "datafit")) 5 else 10,
     cvfits = object$cvfits,
     validate_search = object$validate_search %||% TRUE,
     ...
 ) {
+  refmodel <- get_refmodel(object)
   rk_foldwise <- ranking(object)[["foldwise"]]
   if (validate_search) {
-    if (!identical(cv_method, object[["cv_method"]])) {
+    if (!identical(cv_method, object[["cv_method"]]) ||
+        !identical(nloo, refmodel[["nobs"]])) {
       # When switching the CV method (which could also mean to use varsel()
-      # output in cv_varsel.vsel()), previous fold-wise predictor rankings
-      # cannot be re-used for a `validate_search = TRUE` run:
+      # output in cv_varsel.vsel()) or using subsampled PSIS-LOO CV, previous
+      # fold-wise predictor rankings cannot be re-used for a `validate_search =
+      # TRUE` run:
       rk_foldwise <- NULL
     }
     if (identical(cv_method, "kfold") &&
@@ -181,7 +185,7 @@ cv_varsel.vsel <- function(
     }
   }
   return(cv_varsel(
-    object = get_refmodel(object),
+    object = refmodel,
     method = object[["args_search"]][["method"]],
     ndraws = object[["args_search"]][["ndraws"]],
     nclusters = object[["args_search"]][["nclusters"]],
@@ -192,7 +196,7 @@ cv_varsel.vsel <- function(
     penalty = object[["args_search"]][["penalty"]],
     search_terms = object[["args_search"]][["search_terms"]],
     cv_method = cv_method,
-    nloo = object[["nloo"]],
+    nloo = nloo,
     K = K,
     cvfits = cvfits,
     validate_search = validate_search,
@@ -467,12 +471,6 @@ parse_args_cv_varsel <- function(refmodel, cv_method, nloo, K, cvfits,
 
   # Restrictions in case of previous search results which should be re-used:
   if (!is.null(search_out)) {
-    if (cv_method == "LOO" && nloo < refmodel[["nobs"]]) {
-      # It would be hard (if not impossible) to ensure that the same PSIS-LOO CV
-      # folds (i.e., observations) are subsampled:
-      stop("Subsampled PSIS-LOO CV (see argument `nloo`) cannot be combined ",
-           "with the re-use of previous search results.")
-    }
     if (validate_search && !refit_prj) {
       # For `validate_search = TRUE` and `refit_prj = FALSE`, we would need the
       # fold-wise submodel fits (along the fold-wise predictor rankings), which
