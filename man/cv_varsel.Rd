@@ -32,7 +32,7 @@ cv_varsel(object, ...)
   nterms_max = NULL,
   penalty = NULL,
   verbose = TRUE,
-  nloo = NULL,
+  nloo = object$nobs,
   K = if (!inherits(object, "datafit")) 5 else 10,
   cvfits = object$cvfits,
   lambda_min_ratio = 1e-05,

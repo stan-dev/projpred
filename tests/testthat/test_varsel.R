@@ -1427,7 +1427,7 @@ test_that(paste(
            nloo = nloo_tst),
       excl_nonargs(args_cvvs_i)
     )))
-    cvvs_nloo["nloo"] <- list(NULL)
+    cvvs_nloo[["nloo"]] <- nobsv
     expect_equal(cvvs_nloo, cvvss[[tstsetup]], info = tstsetup)
   }
 })
@@ -1963,6 +1963,7 @@ test_that(paste(
       solterms_len_expected = args_vs[[tstsetup]]$nterms_max,
       method_expected = meth_exp_crr,
       cv_method_expected = "kfold",
+      nloo_expected = NULL,
       valsearch_expected = FALSE,
       nprjdraws_eval_expected = nclusters_pred_crr,
       search_terms_expected = args_vs[[tstsetup]]$search_terms,
@@ -2332,6 +2333,7 @@ test_that(paste(
       solterms_len_expected = args_vs[[tstsetup]]$nterms_max,
       method_expected = meth_exp_crr,
       cv_method_expected = "kfold",
+      nloo_expected = NULL,
       valsearch_expected = TRUE,
       nprjdraws_eval_expected = nclusters_pred_crr,
       search_terms_expected = args_vs[[tstsetup]]$search_terms,

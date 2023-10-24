@@ -215,7 +215,7 @@ cv_varsel.refmodel <- function(
     nterms_max = NULL,
     penalty = NULL,
     verbose = TRUE,
-    nloo = NULL,
+    nloo = object$nobs,
     K = if (!inherits(object, "datafit")) 5 else 10,
     cvfits = object$cvfits,
     lambda_min_ratio = 1e-5,
@@ -262,6 +262,7 @@ cv_varsel.refmodel <- function(
     search_out = search_out
   )
   cv_method <- args$cv_method
+  nloo <- args$nloo
   K <- args$K
   cvfits <- args$cvfits
   # Arguments specific to the search:
@@ -453,11 +454,20 @@ parse_args_cv_varsel <- function(refmodel, cv_method, nloo, K, cvfits,
       stop("For K-fold CV, `validate_search = FALSE` may not be combined with ",
            "`refit_prj = FALSE`.")
     }
+  } else {
+    stopifnot(!is.null(refmodel[["nobs"]]))
+    nloo <- min(nloo, refmodel[["nobs"]])
+    if (nloo < 1) {
+      stop("nloo must be at least 1")
+    } else if (nloo < refmodel[["nobs"]] &&
+               getOption("projpred.warn_subsampled_loo", TRUE)) {
+      warning("Subsampled PSIS-LOO CV is still experimental.")
+    }
   }
 
   # Restrictions in case of previous search results which should be re-used:
   if (!is.null(search_out)) {
-    if (cv_method == "LOO" && !is.null(nloo) && nloo != refmodel[["nobs"]]) {
+    if (cv_method == "LOO" && nloo < refmodel[["nobs"]]) {
       # It would be hard (if not impossible) to ensure that the same PSIS-LOO CV
       # folds (i.e., observations) are subsampled:
       stop("Subsampled PSIS-LOO CV (see argument `nloo`) cannot be combined ",
@@ -472,7 +482,7 @@ parse_args_cv_varsel <- function(refmodel, cv_method, nloo, K, cvfits,
     }
   }
 
-  return(nlist(cv_method, K, cvfits))
+  return(nlist(cv_method, nloo, K, cvfits))
 }
 
 # PSIS-LOO CV -------------------------------------------------------------
@@ -616,12 +626,6 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
   }
 
   # LOO subsampling (by default, don't subsample, but use all observations):
-  nloo <- min(nloo, n)
-  if (nloo < 1) {
-    stop("nloo must be at least 1")
-  } else if (nloo < n && getOption("projpred.warn_subsampled_loo", TRUE)) {
-    warning("Subsampled PSIS-LOO CV is still experimental.")
-  }
   # validset <- loo_subsample(n, nloo, pareto_k)
   loo_ref_oscale <- apply(loglik_forPSIS + lw, 2, log_sum_exp)
   validset <- loo_subsample_pps(nloo, loo_ref_oscale)
@@ -1567,9 +1571,7 @@ loo_subsample_pps <- function(nloo, lppd) {
   # Note: A seed is not set here because this function is not exported and has a
   # calling stack at the beginning of which a seed is set.
 
-  if (nloo > length(lppd)) {
-    stop("Argument `nloo` must not be larger than the number of observations.")
-  } else if (nloo == length(lppd)) {
+  if (nloo == length(lppd)) {
     inds <- seq_len(nloo)
     wcv <- rep(1, nloo)
   } else if (nloo < length(lppd)) {

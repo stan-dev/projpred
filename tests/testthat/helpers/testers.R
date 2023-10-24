@@ -1968,7 +1968,7 @@ vsel_tester <- function(
       nclusters_pred_tst
     },
     seed_expected = seed_tst,
-    nloo_expected = NULL,
+    nloo_expected = if (with_cv) refmod_expected$nobs else NULL,
     K_expected = NULL,
     penalty_expected = NULL,
     search_terms_expected = NULL,
