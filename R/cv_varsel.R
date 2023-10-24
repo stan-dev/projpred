@@ -471,12 +471,12 @@ parse_args_cv_varsel <- function(refmodel, cv_method, nloo, K, cvfits,
 
   # Restrictions in case of previous search results which should be re-used:
   if (!is.null(search_out)) {
-    if (validate_search && !refit_prj) {
-      # For `validate_search = TRUE` and `refit_prj = FALSE`, we would need the
-      # fold-wise submodel fits (along the fold-wise predictor rankings), which
-      # are currently not available:
-      stop("If `validate_search = TRUE`, then `refit_prj = FALSE` cannot be ",
-           "combined with the re-use of previous search results.")
+    if (validate_search && !is.null(search_out[["rk_foldwise"]]) &&
+        !refit_prj) {
+      # In this case, we would need the fold-wise submodel fits (along the
+      # fold-wise predictor rankings), which are currently not available:
+      stop("If `validate_search = TRUE`, then in general, `refit_prj = FALSE` ",
+           "cannot be combined with the re-use of previous search results.")
     }
   }
 
