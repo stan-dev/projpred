@@ -802,6 +802,7 @@ plot.vsel <- function(
   # `breaks` and `minor_breaks`):
   by <- as.integer(ceiling(nterms_max / min(nterms_max, nb)))
   breaks <- seq(0L, by * min(nterms_max, nb), by)
+  breaks <- breaks[breaks <= nterms_max]
   minor_breaks <- if (by %% 2 == 0) {
     seq(by %/% 2L, by * min(nterms_max, nb), by)
   } else {
