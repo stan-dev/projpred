@@ -2612,11 +2612,10 @@ test_that(paste(
         nloo = nloo_tst, refit_prj = FALSE, nclusters_pred = nclusters_pred_crr,
         verbose = FALSE, seed = seed2_tst
       ))
-      # TODO: Use `refit_prj = FALSE`:
       cvvs_eval_valT <- suppressWarnings(cv_varsel(
         cvvss[[tstsetup]], cv_method = "LOO", validate_search = TRUE,
-        nloo = nloo_tst, nclusters_pred = nclusters_pred_crr, verbose = FALSE,
-        seed = seed2_tst
+        nloo = nloo_tst, refit_prj = FALSE, nclusters_pred = nclusters_pred_crr,
+        verbose = FALSE, seed = seed2_tst
       ))
     } else {
       cvvs_eval_valF <- suppressWarnings(cv_varsel(
@@ -2626,7 +2625,8 @@ test_that(paste(
       ))
       cvvs_eval_valT <- suppressWarnings(cv_varsel(
         cvvss[[tstsetup]], nloo = nloo_tst, validate_search = TRUE,
-        nclusters_pred = nclusters_pred_crr, verbose = FALSE, seed = seed2_tst
+        refit_prj = FALSE, nclusters_pred = nclusters_pred_crr, verbose = FALSE,
+        seed = seed2_tst
       ))
     }
     meth_exp_crr <- args_cvvs[[tstsetup]]$method %||% "forward"
@@ -2671,7 +2671,12 @@ test_that(paste(
       cv_method_expected = "LOO",
       nloo_expected = nloo_tst,
       valsearch_expected = TRUE,
-      nprjdraws_eval_expected = nclusters_pred_crr,
+      refit_prj_expected = FALSE,
+      nprjdraws_eval_expected = if (meth_exp_crr == "L1") {
+        1L
+      } else {
+        nclusters_tst
+      },
       K_expected = args_cvvs[[tstsetup]]$K,
       search_terms_expected = args_cvvs[[tstsetup]]$search_terms,
       search_trms_empty_size =
