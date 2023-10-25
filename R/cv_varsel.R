@@ -172,6 +172,8 @@ cv_varsel.vsel <- function(
          !identical(nloo, refmodel[["nobs"]]))) {
       # In these cases, previous fold-wise predictor rankings cannot be re-used
       # for the `validate_search = TRUE` run requested here:
+      message("In this case, previous fold-wise search results cannot be ",
+              "re-used, so the fold-wise searches will have to be run again.")
       rk_foldwise <- NULL
     }
     if (identical(cv_method, object[["cv_method"]]) &&
