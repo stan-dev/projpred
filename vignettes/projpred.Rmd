@@ -155,7 +155,7 @@ plot(cvvs_fast, stats = "mlpd", ranking_nterms_max = NA)
 ```
 This plot suggests that the submodel MLPD levels off for the first time from submodel size 9 to 10 and that it increases only slightly afterwards.
 However, we used L1 search with `refit_prj = FALSE`, which means that the projections employed for the predictive performance evaluation are L1-penalized, which is usually undesired [@piironen_projective_2020, section 4].
-Thus, to investigate the impact of `refit_prj = FALSE`, we re-run `cv_varsel()`, but this time with the default of `refit_prj = TRUE` and re-using the search results (and also most of the arguments) from the former `cv_varsel()` call (this is done by applying `cv_varsel()` to `cvvs_fast` instead of `refm_fit` so that the `cv_varsel()` generic dispatches to the `cv_varsel.vsel()` method that was introduced in **projpred** 2.8.0^[Analogous functionality has been implemented for `varsel()`, namely in `varsel.vsel()`.]).
+Thus, to investigate the impact of `refit_prj = FALSE`, we re-run `cv_varsel()`, but this time with the default of `refit_prj = TRUE` and re-using the search results (as well as the CV-related arguments such as `validate_search`; see section "Usage" in `?cv_varsel.vsel`) from the former `cv_varsel()` call (this is done by applying `cv_varsel()` to `cvvs_fast` instead of `refm_fit` so that the `cv_varsel()` generic dispatches to the `cv_varsel.vsel()` method that was introduced in **projpred** 2.8.0^[Analogous functionality has been implemented for `varsel()`, namely in `varsel.vsel()`.]).
 To save time, we also set `nclusters_pred` to a comparatively low value of `20`:
 ```{r cv_varsel_fast_refit}
 # Preliminary cv_varsel() run with `refit_prj = TRUE`:
