@@ -167,7 +167,9 @@ cv_varsel.vsel <- function(
         (identical(cv_method, object[["cv_method"]]) &&
          identical(cv_method, "kfold") &&
          (is.null(cvfits) || !identical(cvfits, object[["cvfits"]]))) ||
-        !identical(nloo, refmodel[["nobs"]])) {
+        (identical(cv_method, object[["cv_method"]]) &&
+         (identical(cv_method, "LOO") || identical(cv_method, "loo")) &&
+         !identical(nloo, refmodel[["nobs"]]))) {
       # In these cases, previous fold-wise predictor rankings cannot be re-used
       # for the `validate_search = TRUE` run requested here:
       rk_foldwise <- NULL
