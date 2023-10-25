@@ -68,7 +68,12 @@ test_that("cv_varsel() in parallel gives the same results as sequentially", {
     # Use suppressWarnings() because of occasional warnings concerning Pareto k
     # diagnostics:
     cvvs_repr <- suppressWarnings(do.call(cv_varsel, c(
-      list(object = refmods[[args_cvvs_i$tstsetup_ref]]),
+      list(object = refmods[[args_cvvs_i$tstsetup_ref]],
+           cvfits = if (identical(args_cvvs_i$cv_method, "kfold")) {
+             cvfitss[[args_cvvs_i$tstsetup_ref]]
+           } else {
+             refmods[[args_cvvs_i$tstsetup_ref]]$cvfits # should be `NULL`
+           }),
       excl_nonargs(args_cvvs_i)
     )))
     expect_equal(cvvs_repr, cvvss[[tstsetup]], info = tstsetup)

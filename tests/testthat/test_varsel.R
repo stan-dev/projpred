@@ -1219,6 +1219,12 @@ test_that(paste(
       cvvss[[tstsetup]],
       with_cv = TRUE,
       refmod_expected = refmods[[args_cvvs[[tstsetup]]$tstsetup_ref]],
+      cvfits_expected = if (identical(args_cvvs[[tstsetup]]$cv_method,
+                                      "kfold")) {
+        cvfitss[[args_cvvs[[tstsetup]]$tstsetup_ref]]
+      } else {
+        refmods[[args_cvvs[[tstsetup]]$tstsetup_ref]]$cvfits
+      },
       solterms_len_expected = args_cvvs[[tstsetup]]$nterms_max,
       method_expected = meth_exp_crr,
       cv_method_expected = args_cvvs[[tstsetup]]$cv_method,
@@ -1285,7 +1291,12 @@ test_that("`seed` works (and restores the RNG state afterwards)", {
     # Use suppressWarnings() because of occasional warnings concerning Pareto k
     # diagnostics:
     cvvs_repr <- suppressWarnings(do.call(cv_varsel, c(
-      list(object = refmods[[args_cvvs_i$tstsetup_ref]]),
+      list(object = refmods[[args_cvvs_i$tstsetup_ref]],
+           cvfits = if (identical(args_cvvs_i$cv_method, "kfold")) {
+             cvfitss[[args_cvvs_i$tstsetup_ref]]
+           } else {
+             refmods[[args_cvvs_i$tstsetup_ref]]$cvfits # should be `NULL`
+           }),
       excl_nonargs(args_cvvs_i)
     )))
     .Random.seed_repr2 <- .Random.seed
@@ -1317,7 +1328,12 @@ test_that("`refit_prj` works", {
     }
     args_cvvs_i$refit_prj <- FALSE
     cvvs_reuse <- suppressWarnings(do.call(cv_varsel, c(
-      list(object = refmods[[args_cvvs_i$tstsetup_ref]]),
+      list(object = refmods[[args_cvvs_i$tstsetup_ref]],
+           cvfits = if (identical(args_cvvs_i$cv_method, "kfold")) {
+             cvfitss[[args_cvvs_i$tstsetup_ref]]
+           } else {
+             refmods[[args_cvvs_i$tstsetup_ref]]$cvfits # should be `NULL`
+           }),
       excl_nonargs(args_cvvs_i)
     )))
     mod_crr <- args_cvvs_i$mod_nm
@@ -1328,6 +1344,11 @@ test_that("`refit_prj` works", {
       cvvs_reuse,
       with_cv = TRUE,
       refmod_expected = refmods[[args_cvvs_i$tstsetup_ref]],
+      cvfits_expected = if (identical(args_cvvs_i$cv_method, "kfold")) {
+        cvfitss[[args_cvvs_i$tstsetup_ref]]
+      } else {
+        refmods[[args_cvvs_i$tstsetup_ref]]$cvfits
+      },
       solterms_len_expected = args_cvvs_i$nterms_max,
       method_expected = meth_exp_crr,
       refit_prj_expected = FALSE,
@@ -1611,7 +1632,7 @@ test_that(paste(
     prj_crr <- args_cvvs_i$prj_nm
     meth_exp_crr <- args_cvvs_i$method %||% "forward"
     fit_crr <- fits[[tstsetup_fit]]
-    K_crr <- args_cvvs_i$K
+    K_crr <- K_tst
 
     # Refit `K_crr` times (note: below, the seed for constructing `folds_vec`
     # had to be changed in some cases to avoid unfavorable PRNG situations,
@@ -1667,6 +1688,7 @@ test_that(paste(
       cvvs_cvfits,
       with_cv = TRUE,
       refmod_expected = refmod_crr,
+      cvfits_expected = kfold_obj,
       solterms_len_expected = args_cvvs_i$nterms_max,
       method_expected = meth_exp_crr,
       cv_method_expected = "kfold",
@@ -1690,9 +1712,13 @@ test_that(paste(
     # Expected inequality for the exceptions (the elements from
     # `vsel_nms_cvfits_opt` can be, but don't need to be differing):
     for (vsel_nm in setdiff(vsel_nms_cvfits, vsel_nms_cvfits_opt)) {
-      expect_false(isTRUE(all.equal(cvvs_cvfits[[vsel_nm]],
-                                    cvvss[[tstsetup]][[vsel_nm]])),
-                   info = paste(tstsetup, vsel_nm, sep = "__"))
+      # Suppress warning
+      # "longer object length is not a multiple of shorter object length":
+      suppressWarnings(
+        expect_false(isTRUE(all.equal(cvvs_cvfits[[vsel_nm]],
+                                      cvvss[[tstsetup]][[vsel_nm]])),
+                     info = paste(tstsetup, vsel_nm, sep = "__"))
+      )
     }
   }
 })
@@ -1718,7 +1744,7 @@ test_that(paste(
     prj_crr <- args_cvvs_i$prj_nm
     meth_exp_crr <- args_cvvs_i$method %||% "forward"
     fit_crr <- fits[[tstsetup_fit]]
-    K_crr <- args_cvvs_i$K
+    K_crr <- K_tst
 
     # Refit `K_crr` times (note: below, the seed for constructing `folds_vec`
     # had to be changed in some cases to avoid unfavorable PRNG situations,
@@ -1792,6 +1818,7 @@ test_that(paste(
       cvvs_cvfits,
       with_cv = TRUE,
       refmod_expected = refmod_crr,
+      cvfits_expected = kfold_obj,
       solterms_len_expected = args_cvvs_i$nterms_max,
       method_expected = meth_exp_crr,
       cv_method_expected = "kfold",
@@ -1815,10 +1842,43 @@ test_that(paste(
     # Expected inequality for the exceptions (the elements from
     # `vsel_nms_cvfits_opt` can be, but don't need to be differing):
     for (vsel_nm in setdiff(vsel_nms_cvfits, vsel_nms_cvfits_opt)) {
-      expect_false(isTRUE(all.equal(cvvs_cvfits[[vsel_nm]],
-                                    cvvss[[tstsetup]][[vsel_nm]])),
-                   info = paste(tstsetup, vsel_nm, sep = "__"))
+      # Suppress warning
+      # "longer object length is not a multiple of shorter object length":
+      suppressWarnings(
+        expect_false(isTRUE(all.equal(cvvs_cvfits[[vsel_nm]],
+                                      cvvss[[tstsetup]][[vsel_nm]])),
+                     info = paste(tstsetup, vsel_nm, sep = "__"))
+      )
     }
+  }
+})
+
+test_that("`cvfun` included in the `refmodel` object works", {
+  skip_if_not(run_cvvs)
+  tstsetups <- c(
+    head(grep("^rstanarm\\..*\\.kfold", names(cvvss), value = TRUE), 1),
+    head(grep("^brms\\..*\\.kfold", names(cvvss), value = TRUE), 1)
+  )
+  for (tstsetup in tstsetups) {
+    cvvs_cvfun <- do.call(cv_varsel, c(
+      list(object = refmods[[args_cvvs[[tstsetup]]$tstsetup_ref]], K = K_tst),
+      excl_nonargs(args_cvvs[[tstsetup]])
+    ))
+    vsel_tester(
+      cvvs_cvfun,
+      with_cv = TRUE,
+      refmod_expected = refmods[[args_cvvs[[tstsetup]]$tstsetup_ref]],
+      cvfits_expected = NULL,
+      solterms_len_expected = args_cvvs[[tstsetup]]$nterms_max,
+      method_expected = args_cvvs[[tstsetup]]$method %||% "forward",
+      cv_method_expected = "kfold",
+      valsearch_expected = args_cvvs[[tstsetup]]$validate_search,
+      search_terms_expected = args_cvvs[[tstsetup]]$search_terms,
+      search_trms_empty_size =
+        length(args_cvvs[[tstsetup]]$search_terms) &&
+        all(grepl("\\+", args_cvvs[[tstsetup]]$search_terms)),
+      info_str = tstsetup
+    )
   }
 })
 
@@ -1849,6 +1909,12 @@ test_that(paste(
       cvvs_eval,
       with_cv = TRUE,
       refmod_expected = refmods[[tstsetup_ref]],
+      cvfits_expected = if (identical(args_cvvs[[tstsetup]]$cv_method,
+                                      "kfold")) {
+        cvfitss[[tstsetup_ref]]
+      } else {
+        refmods[[tstsetup_ref]]$cvfits
+      },
       solterms_len_expected = args_cvvs[[tstsetup]]$nterms_max,
       method_expected = meth_exp_crr,
       cv_method_expected = args_cvvs[[tstsetup]]$cv_method,
@@ -1940,6 +2006,9 @@ test_that(paste(
       # Currently, rstanarm:::kfold.stanreg() doesn't work for
       # rstanarm::stan_polr() fits, see rstanarm issue stan-dev/rstanarm#564:
       next
+    } else if (!tstsetup_ref %in% names(cvfitss)) {
+      # We would need to call run_cvfun() for this reference model object:
+      next
     }
     if (!run_more && tstsetup_counter > 0L) {
       next
@@ -1951,14 +2020,16 @@ test_that(paste(
     # Use suppressWarnings() because of occasional warnings concerning Pareto k
     # diagnostics:
     cvvs_eval <- suppressWarnings(cv_varsel(
-      vss[[tstsetup]], cv_method = "kfold", K = K_tst, validate_search = FALSE,
-      nclusters_pred = nclusters_pred_crr, verbose = FALSE, seed = seed2_tst
+      vss[[tstsetup]], cv_method = "kfold", cvfits = cvfitss[[tstsetup_ref]],
+      validate_search = FALSE, nclusters_pred = nclusters_pred_crr,
+      verbose = FALSE, seed = seed2_tst
     ))
     meth_exp_crr <- args_vs[[tstsetup]]$method %||% "forward"
     vsel_tester(
       cvvs_eval,
       with_cv = TRUE,
       refmod_expected = refmods[[tstsetup_ref]],
+      cvfits_expected = cvfitss[[tstsetup_ref]],
       solterms_len_expected = args_vs[[tstsetup]]$nterms_max,
       method_expected = meth_exp_crr,
       cv_method_expected = "kfold",
@@ -2016,12 +2087,22 @@ test_that(paste(
       cvvs_eval,
       with_cv = TRUE,
       refmod_expected = refmods[[tstsetup_ref]],
+      cvfits_expected = if (identical(args_cvvs[[tstsetup]]$cv_method,
+                                      "kfold")) {
+        cvfitss[[tstsetup_ref]]
+      } else {
+        refmods[[tstsetup_ref]]$cvfits
+      },
       solterms_len_expected = args_cvvs[[tstsetup]]$nterms_max,
       method_expected = meth_exp_crr,
       cv_method_expected = "LOO",
       valsearch_expected = FALSE,
       refit_prj_expected = FALSE,
-      K_expected = args_cvvs[[tstsetup]]$K,
+      K_expected = if (identical(args_cvvs[[tstsetup]]$cv_method, "kfold")) {
+        K_tst
+      } else {
+        NULL
+      },
       search_terms_expected = args_cvvs[[tstsetup]]$search_terms,
       search_trms_empty_size =
         length(args_cvvs[[tstsetup]]$search_terms) &&
@@ -2067,8 +2148,8 @@ test_that(paste(
     } else {
       cvvs_eval <- suppressWarnings(cv_varsel(
         cvvss[[tstsetup]], cv_method = "kfold", K = K_tst,
-        validate_search = FALSE, nclusters_pred = nclusters_pred_crr,
-        verbose = FALSE, seed = seed2_tst
+        cvfits = cvfitss[[tstsetup_ref]], validate_search = FALSE,
+        nclusters_pred = nclusters_pred_crr, verbose = FALSE, seed = seed2_tst
       ))
     }
     meth_exp_crr <- args_cvvs[[tstsetup]]$method %||% "forward"
@@ -2076,6 +2157,7 @@ test_that(paste(
       cvvs_eval,
       with_cv = TRUE,
       refmod_expected = refmods[[tstsetup_ref]],
+      cvfits_expected = cvfitss[[tstsetup_ref]],
       solterms_len_expected = args_cvvs[[tstsetup]]$nterms_max,
       method_expected = meth_exp_crr,
       cv_method_expected = "kfold",
@@ -2127,7 +2209,8 @@ test_that(paste(
       cv_meth_crr <- "kfold"
       cvvs_eval <- suppressWarnings(cv_varsel(
         cvvss[[tstsetup]], cv_method = cv_meth_crr, K = K_tst,
-        nclusters_pred = nclusters_pred_crr, verbose = FALSE, seed = seed2_tst
+        cvfits = cvfitss[[tstsetup_ref]], nclusters_pred = nclusters_pred_crr,
+        verbose = FALSE, seed = seed2_tst
       ))
     }
     meth_exp_crr <- args_cvvs[[tstsetup]]$method %||% "forward"
@@ -2135,11 +2218,12 @@ test_that(paste(
       cvvs_eval,
       with_cv = TRUE,
       refmod_expected = refmods[[tstsetup_ref]],
+      cvfits_expected = cvfitss[[tstsetup_ref]],
       solterms_len_expected = args_cvvs[[tstsetup]]$nterms_max,
       method_expected = meth_exp_crr,
       cv_method_expected = cv_meth_crr,
       valsearch_expected = FALSE,
-      K_expected = args_cvvs[[tstsetup]]$K,
+      K_expected = K_tst,
       nprjdraws_eval_expected = nclusters_pred_crr,
       search_terms_expected = args_cvvs[[tstsetup]]$search_terms,
       search_trms_empty_size =
@@ -2187,7 +2271,8 @@ test_that(paste(
       cv_meth_crr <- "kfold"
       cvvs_eval <- suppressWarnings(cv_varsel(
         cvvss[[tstsetup]], cv_method = cv_meth_crr, K = K_tst,
-        nclusters_pred = nclusters_pred_crr, verbose = FALSE, seed = seed2_tst
+        cvfits = cvfitss[[tstsetup_ref]], nclusters_pred = nclusters_pred_crr,
+        verbose = FALSE, seed = seed2_tst
       ))
     }
     meth_exp_crr <- args_cvvs[[tstsetup]]$method %||% "forward"
@@ -2195,11 +2280,12 @@ test_that(paste(
       cvvs_eval,
       with_cv = TRUE,
       refmod_expected = refmods[[tstsetup_ref]],
+      cvfits_expected = cvfitss[[tstsetup_ref]],
       solterms_len_expected = args_cvvs[[tstsetup]]$nterms_max,
       method_expected = meth_exp_crr,
       cv_method_expected = cv_meth_crr,
       valsearch_expected = TRUE,
-      K_expected = args_cvvs[[tstsetup]]$K,
+      K_expected = K_tst,
       nprjdraws_eval_expected = nclusters_pred_crr,
       search_terms_expected = args_cvvs[[tstsetup]]$search_terms,
       search_trms_empty_size =
@@ -2291,6 +2377,9 @@ test_that(paste(
       # Currently, rstanarm:::kfold.stanreg() doesn't work for
       # rstanarm::stan_polr() fits, see rstanarm issue stan-dev/rstanarm#564:
       next
+    } else if (!tstsetup_ref %in% names(cvfitss)) {
+      # We would need to call run_cvfun() for this reference model object:
+      next
     }
     if (!run_more && tstsetup_counter > 0L) {
       next
@@ -2303,7 +2392,7 @@ test_that(paste(
     # diagnostics:
     cvvs_eval <- try(
       suppressWarnings(cv_varsel(
-        vss[[tstsetup]], cv_method = "kfold", K = K_tst,
+        vss[[tstsetup]], cv_method = "kfold", cvfits = cvfitss[[tstsetup_ref]],
         nclusters_pred = nclusters_pred_crr, verbose = FALSE, seed = seed2_tst
       )),
       silent = TRUE
@@ -2329,6 +2418,7 @@ test_that(paste(
       cvvs_eval,
       with_cv = TRUE,
       refmod_expected = refmods[[tstsetup_ref]],
+      cvfits_expected = cvfitss[[tstsetup_ref]],
       solterms_len_expected = args_vs[[tstsetup]]$nterms_max,
       method_expected = meth_exp_crr,
       cv_method_expected = "kfold",
@@ -2413,12 +2503,22 @@ test_that(paste(
       cvvs_eval,
       with_cv = TRUE,
       refmod_expected = refmods[[tstsetup_ref]],
+      cvfits_expected = if (identical(args_cvvs[[tstsetup]]$cv_method,
+                                      "kfold")) {
+        cvfitss[[tstsetup_ref]]
+      } else {
+        refmods[[tstsetup_ref]]$cvfits
+      },
       solterms_len_expected = args_cvvs[[tstsetup]]$nterms_max,
       method_expected = meth_exp_crr,
       cv_method_expected = "LOO",
       valsearch_expected = TRUE,
       nprjdraws_eval_expected = nclusters_pred_crr,
-      K_expected = args_cvvs[[tstsetup]]$K,
+      K_expected = if (identical(args_cvvs[[tstsetup]]$cv_method, "kfold")) {
+        K_tst
+      } else {
+        NULL
+      },
       search_terms_expected = args_cvvs[[tstsetup]]$search_terms,
       search_trms_empty_size =
         length(args_cvvs[[tstsetup]]$search_terms) &&
@@ -2468,8 +2568,8 @@ test_that(paste(
       cvvs_eval <- try(
         suppressWarnings(cv_varsel(
           cvvss[[tstsetup]], cv_method = "kfold", K = K_tst,
-          validate_search = TRUE, nclusters_pred = nclusters_pred_crr,
-          verbose = FALSE, seed = seed2_tst
+          cvfits = cvfitss[[tstsetup_ref]], validate_search = TRUE,
+          nclusters_pred = nclusters_pred_crr, verbose = FALSE, seed = seed2_tst
         )),
         silent = TRUE
       )
@@ -2495,6 +2595,7 @@ test_that(paste(
       cvvs_eval,
       with_cv = TRUE,
       refmod_expected = refmods[[tstsetup_ref]],
+      cvfits_expected = cvfitss[[tstsetup_ref]],
       solterms_len_expected = args_cvvs[[tstsetup]]$nterms_max,
       method_expected = meth_exp_crr,
       cv_method_expected = "kfold",
@@ -2637,6 +2738,12 @@ test_that(paste(
       cvvs_eval_valF,
       with_cv = TRUE,
       refmod_expected = refmods[[args_cvvs[[tstsetup]]$tstsetup_ref]],
+      cvfits_expected = if (identical(args_cvvs[[tstsetup]]$cv_method,
+                                      "kfold")) {
+        cvfitss[[args_cvvs[[tstsetup]]$tstsetup_ref]]
+      } else {
+        refmods[[args_cvvs[[tstsetup]]$tstsetup_ref]]$cvfits
+      },
       solterms_len_expected = args_cvvs[[tstsetup]]$nterms_max,
       method_expected = meth_exp_crr,
       cv_method_expected = "LOO",
@@ -2648,7 +2755,11 @@ test_that(paste(
       } else {
         nclusters_tst
       },
-      K_expected = args_cvvs[[tstsetup]]$K,
+      K_expected = if (identical(args_cvvs[[tstsetup]]$cv_method, "kfold")) {
+        K_tst
+      } else {
+        NULL
+      },
       search_terms_expected = args_cvvs[[tstsetup]]$search_terms,
       search_trms_empty_size =
         length(args_cvvs[[tstsetup]]$search_terms) &&
@@ -2660,6 +2771,12 @@ test_that(paste(
       cvvs_eval_valT,
       with_cv = TRUE,
       refmod_expected = refmods[[args_cvvs[[tstsetup]]$tstsetup_ref]],
+      cvfits_expected = if (identical(args_cvvs[[tstsetup]]$cv_method,
+                                      "kfold")) {
+        cvfitss[[args_cvvs[[tstsetup]]$tstsetup_ref]]
+      } else {
+        refmods[[args_cvvs[[tstsetup]]$tstsetup_ref]]$cvfits
+      },
       solterms_len_expected = args_cvvs[[tstsetup]]$nterms_max,
       method_expected = meth_exp_crr,
       cv_method_expected = "LOO",
@@ -2671,7 +2788,11 @@ test_that(paste(
       } else {
         nclusters_tst
       },
-      K_expected = args_cvvs[[tstsetup]]$K,
+      K_expected = if (identical(args_cvvs[[tstsetup]]$cv_method, "kfold")) {
+        K_tst
+      } else {
+        NULL
+      },
       search_terms_expected = args_cvvs[[tstsetup]]$search_terms,
       search_trms_empty_size =
         length(args_cvvs[[tstsetup]]$search_terms) &&
