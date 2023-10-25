@@ -2603,30 +2603,25 @@ test_that(paste(
     stopifnot(any(valsearches), any(!valsearches))
   }
   for (tstsetup in tstsetups) {
-    nclusters_pred_crr <- args_cvvs[[tstsetup]]$nclusters_pred - 1L
     # Use suppressWarnings() because of occasional warnings concerning Pareto k
     # diagnostics:
     if (identical(args_cvvs[[tstsetup]]$cv_method, "kfold")) {
       cvvs_eval_valF <- suppressWarnings(cv_varsel(
         cvvss[[tstsetup]], cv_method = "LOO", validate_search = FALSE,
-        nloo = nloo_tst, refit_prj = FALSE, nclusters_pred = nclusters_pred_crr,
-        verbose = FALSE, seed = seed2_tst
+        nloo = nloo_tst, refit_prj = FALSE, verbose = FALSE, seed = seed2_tst
       ))
       cvvs_eval_valT <- suppressWarnings(cv_varsel(
         cvvss[[tstsetup]], cv_method = "LOO", validate_search = TRUE,
-        nloo = nloo_tst, refit_prj = FALSE, nclusters_pred = nclusters_pred_crr,
-        verbose = FALSE, seed = seed2_tst
+        nloo = nloo_tst, refit_prj = FALSE, verbose = FALSE, seed = seed2_tst
       ))
     } else {
       cvvs_eval_valF <- suppressWarnings(cv_varsel(
         cvvss[[tstsetup]], nloo = nloo_tst, validate_search = FALSE,
-        refit_prj = FALSE, nclusters_pred = nclusters_pred_crr, verbose = FALSE,
-        seed = seed2_tst
+        refit_prj = FALSE, verbose = FALSE, seed = seed2_tst
       ))
       cvvs_eval_valT <- suppressWarnings(cv_varsel(
         cvvss[[tstsetup]], nloo = nloo_tst, validate_search = TRUE,
-        refit_prj = FALSE, nclusters_pred = nclusters_pred_crr, verbose = FALSE,
-        seed = seed2_tst
+        refit_prj = FALSE, verbose = FALSE, seed = seed2_tst
       ))
     }
     meth_exp_crr <- args_cvvs[[tstsetup]]$method %||% "forward"
