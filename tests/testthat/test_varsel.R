@@ -1591,7 +1591,7 @@ test_that("invalid `K` fails", {
 })
 
 test_that(paste(
-  "`cvfits` (actually passed to init_refmodel()) works for rstanarm reference",
+  "`cvfits` included in the `refmodel` object works for rstanarm reference",
   "models"
 ), {
   skip_if_not(run_cvvs)
@@ -1698,8 +1698,7 @@ test_that(paste(
 })
 
 test_that(paste(
-  "`cvfits` (actually passed to init_refmodel()) works for brms reference",
-  "models"
+  "`cvfits` included in the `refmodel` object works for brms reference models"
 ), {
   skip_if_not(run_cvvs)
   skip_if_not(packageVersion("brms") >= "2.16.4")
