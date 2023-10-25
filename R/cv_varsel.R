@@ -154,34 +154,45 @@ cv_varsel.default <- function(object, ...) {
 cv_varsel.vsel <- function(
     object,
     cv_method = object$cv_method %||% "LOO",
+    nloo = object$nloo,
     K = object$K %||% if (!inherits(object, "datafit")) 5 else 10,
     cvfits = object$cvfits,
     validate_search = object$validate_search %||% TRUE,
     ...
 ) {
+  refmodel <- get_refmodel(object)
   rk_foldwise <- ranking(object)[["foldwise"]]
-  if (validate_search) {
-    if (!identical(cv_method, object[["cv_method"]])) {
-      # When switching the CV method (which could also mean to use varsel()
-      # output in cv_varsel.vsel()), previous fold-wise predictor rankings
-      # cannot be re-used for a `validate_search = TRUE` run:
+  if (validate_search && !is.null(rk_foldwise)) {
+    if (!identical(cv_method, object[["cv_method"]]) ||
+        (identical(cv_method, object[["cv_method"]]) &&
+         identical(cv_method, "kfold") &&
+         (is.null(cvfits) || !identical(cvfits, object[["cvfits"]]))) ||
+        (identical(cv_method, object[["cv_method"]]) &&
+         (identical(cv_method, "LOO") || identical(cv_method, "loo")) &&
+         !identical(nloo, refmodel[["nobs"]]))) {
+      # In these cases, previous fold-wise predictor rankings cannot be re-used
+      # for the `validate_search = TRUE` run requested here:
+      message("In this case, the previous fold-wise search results cannot be ",
+              "re-used, so the fold-wise searches are run again.")
       rk_foldwise <- NULL
     }
-    if (identical(cv_method, "kfold") &&
-        identical(object[["cv_method"]], "kfold") &&
-        !identical(K, object[["K"]])) {
-      stop("In case of `validate_search = TRUE`, cv_varsel.vsel() requires ",
-           "`K` to be the same as `object$K`.")
-    }
-    if (identical(cv_method, "kfold") &&
-        identical(object[["cv_method"]], "kfold") &&
-        !identical(cvfits, object[["cvfits"]])) {
-      stop("In case of `validate_search = TRUE`, cv_varsel.vsel() requires ",
-           "`cvfits` to be the same as `object$cvfits`.")
+    if (identical(cv_method, object[["cv_method"]]) &&
+        identical(cv_method, "kfold") &&
+        identical(cvfits, object[["cvfits"]]) &&
+        inherits(refmodel[["fit"]], "brmsfit") &&
+        getOption("projpred.mlvl_proj_ref_new", FALSE) &&
+        formula_contains_group_terms(refmodel[["formula"]])) {
+      # In this case, the call(s) to ref_predfun() that is/are performed when
+      # initializing the fold-wise reference model objects via init_refmodel()
+      # (within cvrefbuilder()) involve(s) using the PRNG, so in order to be
+      # able to re-use previous fold-wise predictor rankings, argument
+      # `brms_seed` of brms:::get_refmodel.brmsfit() needs to be set:
+      warning("Please make sure that you have set argument `brms_seed` of ",
+              "brms:::get_refmodel.brmsfit() to some non-`NULL` value.")
     }
   }
   return(cv_varsel(
-    object = get_refmodel(object),
+    object = refmodel,
     method = object[["args_search"]][["method"]],
     ndraws = object[["args_search"]][["ndraws"]],
     nclusters = object[["args_search"]][["nclusters"]],
@@ -192,7 +203,7 @@ cv_varsel.vsel <- function(
     penalty = object[["args_search"]][["penalty"]],
     search_terms = object[["args_search"]][["search_terms"]],
     cv_method = cv_method,
-    nloo = object[["nloo"]],
+    nloo = nloo,
     K = K,
     cvfits = cvfits,
     validate_search = validate_search,
@@ -215,7 +226,7 @@ cv_varsel.refmodel <- function(
     nterms_max = NULL,
     penalty = NULL,
     verbose = TRUE,
-    nloo = NULL,
+    nloo = object$nobs,
     K = if (!inherits(object, "datafit")) 5 else 10,
     cvfits = object$cvfits,
     lambda_min_ratio = 1e-5,
@@ -262,6 +273,7 @@ cv_varsel.refmodel <- function(
     search_out = search_out
   )
   cv_method <- args$cv_method
+  nloo <- args$nloo
   K <- args$K
   cvfits <- args$cvfits
   # Arguments specific to the search:
@@ -453,26 +465,29 @@ parse_args_cv_varsel <- function(refmodel, cv_method, nloo, K, cvfits,
       stop("For K-fold CV, `validate_search = FALSE` may not be combined with ",
            "`refit_prj = FALSE`.")
     }
+  } else {
+    stopifnot(!is.null(refmodel[["nobs"]]))
+    nloo <- min(nloo, refmodel[["nobs"]])
+    if (nloo < 1) {
+      stop("nloo must be at least 1")
+    } else if (nloo < refmodel[["nobs"]] &&
+               getOption("projpred.warn_subsampled_loo", TRUE)) {
+      warning("Subsampled PSIS-LOO CV is still experimental.")
+    }
   }
 
   # Restrictions in case of previous search results which should be re-used:
   if (!is.null(search_out)) {
-    if (cv_method == "LOO" && !is.null(nloo) && nloo != refmodel[["nobs"]]) {
-      # It would be hard (if not impossible) to ensure that the same PSIS-LOO CV
-      # folds (i.e., observations) are subsampled:
-      stop("Subsampled PSIS-LOO CV (see argument `nloo`) cannot be combined ",
-           "with the re-use of previous search results.")
-    }
-    if (validate_search && !refit_prj) {
-      # For `validate_search = TRUE` and `refit_prj = FALSE`, we would need the
-      # fold-wise submodel fits (along the fold-wise predictor rankings), which
-      # are currently not available:
-      stop("If `validate_search = TRUE`, then `refit_prj = FALSE` cannot be ",
-           "combined with the re-use of previous search results.")
+    if (validate_search && !is.null(search_out[["rk_foldwise"]]) &&
+        !refit_prj) {
+      # In this case, we would need the fold-wise submodel fits (along the
+      # fold-wise predictor rankings), which are currently not available:
+      stop("If `validate_search = TRUE`, then in general, `refit_prj = FALSE` ",
+           "cannot be combined with the re-use of previous search results.")
     }
   }
 
-  return(nlist(cv_method, K, cvfits))
+  return(nlist(cv_method, nloo, K, cvfits))
 }
 
 # PSIS-LOO CV -------------------------------------------------------------
@@ -616,12 +631,6 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
   }
 
   # LOO subsampling (by default, don't subsample, but use all observations):
-  nloo <- min(nloo, n)
-  if (nloo < 1) {
-    stop("nloo must be at least 1")
-  } else if (nloo < n && getOption("projpred.warn_subsampled_loo", TRUE)) {
-    warning("Subsampled PSIS-LOO CV is still experimental.")
-  }
   # validset <- loo_subsample(n, nloo, pareto_k)
   loo_ref_oscale <- apply(loglik_forPSIS + lw, 2, log_sum_exp)
   validset <- loo_subsample_pps(nloo, loo_ref_oscale)
@@ -1567,9 +1576,7 @@ loo_subsample_pps <- function(nloo, lppd) {
   # Note: A seed is not set here because this function is not exported and has a
   # calling stack at the beginning of which a seed is set.
 
-  if (nloo > length(lppd)) {
-    stop("Argument `nloo` must not be larger than the number of observations.")
-  } else if (nloo == length(lppd)) {
+  if (nloo == length(lppd)) {
     inds <- seq_len(nloo)
     wcv <- rep(1, nloo)
   } else if (nloo < length(lppd)) {

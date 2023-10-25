@@ -1947,6 +1947,7 @@ vsel_tester <- function(
     from_datafit = FALSE,
     refmod_expected,
     ywtest_expected = NULL,
+    cvfits_expected = refmod_expected$cvfits,
     solterms_len_expected,
     method_expected,
     cv_method_expected = NULL,
@@ -1968,7 +1969,7 @@ vsel_tester <- function(
       nclusters_pred_tst
     },
     seed_expected = seed_tst,
-    nloo_expected = NULL,
+    nloo_expected = if (with_cv) refmod_expected$nobs else NULL,
     K_expected = NULL,
     penalty_expected = NULL,
     search_terms_expected = NULL,
@@ -2403,10 +2404,7 @@ vsel_tester <- function(
   expect_identical(vs$validate_search, valsearch_expected, info = info_str)
 
   # cvfits
-  ### Currently, we are testing argument `cvfits` only implicitly via the
-  ### examples and via the main vignette:
-  expect_identical(vs$cvfits, refmod_expected$cvfits, info = info_str)
-  ###
+  expect_identical(vs$cvfits, cvfits_expected, info = info_str)
 
   # args_search
   expect_equal(

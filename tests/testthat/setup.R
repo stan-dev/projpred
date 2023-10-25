@@ -920,7 +920,7 @@ K_tst <- 2L
 cvmeth_tst <- list(
   default_cvmeth = list(),
   LOO = list(cv_method = "LOO"),
-  kfold = list(cv_method = "kfold", K = K_tst)
+  kfold = list(cv_method = "kfold")
 )
 
 resp_oscale_tst <- list(
@@ -1242,9 +1242,44 @@ if (run_cvvs) {
   })
   args_cvvs <- unlist_cust(args_cvvs)
 
+  args_cvvs_kfold <- args_cvvs[
+    sapply(lapply(args_cvvs, "[[", "cv_method"), identical, "kfold")
+  ]
+  tstsetups_cvvs_ref_kfold <- setNames(nm = unique(unname(
+    sapply(args_cvvs_kfold, "[[", "tstsetup_ref")
+  )))
+  cvfitss <- lapply(tstsetups_cvvs_ref_kfold, function(tstsetup_ref) {
+    # Due to rstanarm:::kfold.stanreg() failing sometimes, we have to wrap the
+    # call to run_cvfun() in try():
+    return(try(run_cvfun(object = refmods[[tstsetup_ref]], K = K_tst,
+                         seed = seed3_tst), silent = TRUE))
+  })
+  success_cvfits <- !sapply(cvfitss, inherits, "try-error")
+  err_ok_cvfits <- sapply(cvfitss[!success_cvfits], function(cvfits_err) {
+    attr(cvfits_err, "condition")$message ==
+      "pwrssUpdate did not converge in (maxit) iterations"
+  })
+  expect_true(
+    all(err_ok_cvfits),
+    info = paste("Unexpected error for",
+                 paste(names(cvfitss[!success_cvfits])[!err_ok_cvfits],
+                       collapse = ", "))
+  )
+  args_cvvs_kfold <- args_cvvs_kfold[!sapply(
+    lapply(args_cvvs_kfold, "[[", "tstsetup_ref"),
+    `%in%`, names(cvfitss)[!success_cvfits]
+  )]
+  args_cvvs <- args_cvvs[!sapply(lapply(args_cvvs, "[[", "tstsetup_ref"),
+                                 `%in%`, names(cvfitss)[!success_cvfits])]
+
   cvvss <- lapply(args_cvvs, function(args_cvvs_i) {
     cvvs_expr <- expression(do.call(cv_varsel, c(
-      list(object = refmods[[args_cvvs_i$tstsetup_ref]]),
+      list(object = refmods[[args_cvvs_i$tstsetup_ref]],
+           cvfits = if (identical(args_cvvs_i$cv_method, "kfold")) {
+             cvfitss[[args_cvvs_i$tstsetup_ref]]
+           } else {
+             refmods[[args_cvvs_i$tstsetup_ref]]$cvfits # should be `NULL`
+           }),
       excl_nonargs(args_cvvs_i)
     )))
     if (args_cvvs_i$mod_nm == "gamm" &&
@@ -1256,14 +1291,15 @@ if (run_cvvs) {
     }
   })
   success_cvvs <- !sapply(cvvss, inherits, "try-error")
-  err_ok <- sapply(cvvss[!success_cvvs], function(cvvs_err) {
+  err_ok_cvvs <- sapply(cvvss[!success_cvvs], function(cvvs_err) {
     attr(cvvs_err, "condition")$message ==
       "Not enough (non-NA) data to do anything meaningful"
   })
   expect_true(
-    all(err_ok),
+    all(err_ok_cvvs),
     info = paste("Unexpected error for",
-                 paste(names(cvvss[!success_cvvs])[!err_ok], collapse = ", "))
+                 paste(names(cvvss[!success_cvvs])[!err_ok_cvvs],
+                       collapse = ", "))
   )
   cvvss <- cvvss[success_cvvs]
   args_cvvs <- args_cvvs[success_cvvs]
