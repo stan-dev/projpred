@@ -1367,7 +1367,7 @@ run_cvfun.refmodel <- function(object,
   return(structure(cvfits, folds = folds))
 }
 
-# Exact LFO-CV ---------------------------------------------------------------
+# Exact LFO CV ------------------------------------------------------------
 
 lfo_varsel <- function(refmodel, method, nterms_max, ndraws, nclusters,
                        ndraws_pred, nclusters_pred, refit_prj, penalty,
