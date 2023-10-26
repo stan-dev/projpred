@@ -2483,7 +2483,7 @@ smmry_tester <- function(smmry, vsel_expected, nterms_max_expected = NULL,
   expect_named(
     smmry,
     c("formula", "family", "nobs_train", "type_test", "nobs_test", "method",
-      "cv_method", "K", "validate_search", "clust_used_search",
+      "cv_method", "nloo", "K", "validate_search", "clust_used_search",
       "clust_used_eval", "nprjdraws_search", "nprjdraws_eval", "refit_prj",
       "search_included", "nterms", "selection", "resp_oscale", "deltas",
       "cumulate"),
@@ -2496,7 +2496,7 @@ smmry_tester <- function(smmry, vsel_expected, nterms_max_expected = NULL,
   expect_identical(smmry$family, vsel_expected$refmodel$family,
                    info = info_str)
   for (nm in c(
-    "nobs_train", "type_test", "nobs_test", "method", "cv_method", "K",
+    "nobs_train", "type_test", "nobs_test", "method", "cv_method", "nloo", "K",
     "validate_search", "clust_used_search", "clust_used_eval",
     "nprjdraws_search", "nprjdraws_eval", "refit_prj"
   )) {

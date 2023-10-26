@@ -1163,9 +1163,10 @@ summary.vsel <- function(
   # Initialize output:
   out <- c(
     object$refmodel[c("formula", "family")],
-    object[c("nobs_train", "type_test", "nobs_test", "method", "cv_method", "K",
-             "validate_search", "clust_used_search", "clust_used_eval",
-             "nprjdraws_search", "nprjdraws_eval", "refit_prj")]
+    object[c("nobs_train", "type_test", "nobs_test", "method", "cv_method",
+             "nloo", "K", "validate_search", "clust_used_search",
+             "clust_used_eval", "nprjdraws_search", "nprjdraws_eval",
+             "refit_prj")]
   )
   if (isTRUE(out$validate_search)) {
     out$search_included <- "search included (i.e., fold-wise searches)"
@@ -1311,6 +1312,9 @@ print.vselsummary <- function(x, ...) {
     }
     cat("CV method: ", cv_meth_pretty, " CV with ", K_pretty, x$search_included,
         "\n", sep = "")
+    if (isTRUE(x$nloo < x$nobs_train)) {
+      cat("Subsampled observations (for PSIS-LOO CV): ", x$nloo, "\n", sep = "")
+    }
   }
   cat("Search method: ", x$method, "\n", sep = "")
   cat("Maximum submodel size for the search: ", x$nterms, "\n", sep = "")
