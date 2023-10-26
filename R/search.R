@@ -148,7 +148,8 @@ search_forward <- function(p_ref, refmodel, nterms_max, verbose = TRUE, opt,
 #' [varsel()] or [cv_varsel()] if certain predictor terms should be forced to be
 #' selected first whereas other predictor terms are optional (i.e., they are
 #' subject to the variable selection, but only after the inclusion of the
-#' "forced" terms).
+#' "forced" terms). Function [forced_search_terms()] is simply an alias for
+#' [force_search_terms()].
 #'
 #' @param forced_terms A character vector of predictor terms that should be
 #'   selected first.
@@ -194,6 +195,10 @@ force_search_terms <- function(forced_terms, optional_terms) {
   forced_terms <- paste(forced_terms, collapse = " + ")
   return(c(forced_terms, paste0(forced_terms, " + ", optional_terms)))
 }
+
+#' @rdname force_search_terms
+#' @export
+forced_search_terms <- force_search_terms
 
 search_L1_surrogate <- function(p_ref, d_train, family, intercept, nterms_max,
                                 penalty, opt) {

@@ -2,9 +2,12 @@
 % Please edit documentation in R/search.R
 \name{force_search_terms}
 \alias{force_search_terms}
+\alias{forced_search_terms}
 \title{Force search terms}
 \usage{
 force_search_terms(forced_terms, optional_terms)
+
+forced_search_terms(forced_terms, optional_terms)
 }
 \arguments{
 \item{forced_terms}{A character vector of predictor terms that should be
@@ -23,7 +26,8 @@ A helper function to construct the input for argument \code{search_terms} of
 \code{\link[=varsel]{varsel()}} or \code{\link[=cv_varsel]{cv_varsel()}} if certain predictor terms should be forced to be
 selected first whereas other predictor terms are optional (i.e., they are
 subject to the variable selection, but only after the inclusion of the
-"forced" terms).
+"forced" terms). Function \code{\link[=forced_search_terms]{forced_search_terms()}} is simply an alias for
+\code{\link[=force_search_terms]{force_search_terms()}}.
 }
 \examples{
 \dontshow{if (requireNamespace("rstanarm", quietly = TRUE)) (if (getRversion() >= "3.4") withAutoprint else force)(\{ # examplesIf}
