@@ -2222,7 +2222,8 @@ mat2drmat <- function(xmat) {
 #'
 #' These are helper functions to create cross-validation (CV) folds, i.e., to
 #' split up the indices from 1 to `n` into `K` subsets ("folds") for
-#' \eqn{K}-fold CV. These functions are potentially useful when creating the
+#' \eqn{K}-fold CV (via [cv_folds()] or [cv_ids()]) or to **TODO** (via
+#' [lfo_folds()]). These functions are potentially useful when creating the
 #' input for arguments `cvfits` and `cvfun` of [init_refmodel()] (or argument
 #' `cvfits` of [cv_varsel.refmodel()]). Function [cvfolds()] is deprecated;
 #' please use [cv_folds()] instead (apart from the name, they are the same). The
@@ -2241,17 +2242,22 @@ mat2drmat <- function(xmat) {
 #'   [set.seed()], but can also be `NA` to not call [set.seed()] at all. If not
 #'   `NA`, then the PRNG state is reset (to the state before calling
 #'   [cv_folds()] or [cv_ids()]) upon exiting [cv_folds()] or [cv_ids()].
-#' @param L the number of observations to fit the initial fold with
+#' @param L Number of observations (time points) to fit the initial fold with.
+#'   Must be at least 1 and not exceed `n`.
 #'
 #' @return [cv_folds()] returns a vector of length `n` such that each element is
 #'   an integer between 1 and `K` denoting which fold the corresponding data
-#'   point belongs to. The return value of [cv_ids()] depends on the `out`
+#'   point belongs to.
+#'
+#'   The return value of [cv_ids()] depends on the `out`
 #'   argument. If `out = "foldwise"`, the return value is a `list` with `K`
 #'   elements, each being a `list` with elements `tr` and `ts` giving the
 #'   training and test indices, respectively, for the corresponding fold. If
 #'   `out = "indices"`, the return value is a `list` with elements `tr` and `ts`
 #'   each being a `list` with `K` elements giving the training and test indices,
 #'   respectively, for each fold.
+#'
+#'   The return value of [lfo_folds()] is **TODO**.
 #'
 #' @examples
 #' n <- 100
@@ -2260,6 +2266,8 @@ mat2drmat <- function(xmat) {
 #' cv <- cv_ids(n, K = 5)
 #' # Mean within the test set of each fold:
 #' cvmeans <- sapply(cv, function(fold) mean(y[fold$ts]))
+#'
+#' # TODO: lfo_folds() example
 #'
 NULL
 
