@@ -2033,9 +2033,9 @@ get_subparams.mmblogit <- function(x, ...) {
 #' @param x An object of class `projection` (returned by [project()], possibly
 #'   as elements of a `list`).
 #' @param nm_scheme The naming scheme for the columns of the output matrix.
-#'   Either `"auto"`, `"rstanarm"`, or `"brms"`, where `"auto"` chooses
-#'   `"rstanarm"` or `"brms"` based on the class of the reference model fit (and
-#'   uses `"rstanarm"` if the reference model fit is of an unknown class).
+#'   Either `NULL`, `"rstanarm"`, or `"brms"`, where `NULL` chooses `"rstanarm"`
+#'   or `"brms"` based on the class of the reference model fit (and uses
+#'   `"rstanarm"` if the reference model fit is of an unknown class).
 #' @param allow_nonconst_wdraws_prj A single logical value indicating whether to
 #'   allow projected draws with different (i.e., nonconstant) weights (`TRUE`)
 #'   or not (`FALSE`). **CAUTION**: Expert use only because if set to `TRUE`,
@@ -2095,7 +2095,7 @@ get_subparams.mmblogit <- function(x, ...) {
 #'
 #' @method as.matrix projection
 #' @export
-as.matrix.projection <- function(x, nm_scheme = "auto",
+as.matrix.projection <- function(x, nm_scheme = NULL,
                                  allow_nonconst_wdraws_prj = FALSE, ...) {
   if (inherits(x$refmodel, "datafit")) {
     stop("as.matrix.projection() does not work for objects based on ",
@@ -2109,6 +2109,11 @@ as.matrix.projection <- function(x, nm_scheme = "auto",
          "recommended.")
   }
   if (identical(nm_scheme, "auto")) {
+    warning("The possibility of `nm_scheme = \"auto\"` is deprecated and will ",
+            "be removed in the future. Please use `nm_scheme = NULL` instead.")
+    nm_scheme <- NULL
+  }
+  if (is.null(nm_scheme)) {
     if (inherits(x$refmodel$fit, "brmsfit")) {
       nm_scheme <- "brms"
     } else {

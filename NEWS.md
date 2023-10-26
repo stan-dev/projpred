@@ -9,6 +9,10 @@ If you read this from a place other than <https://mc-stan.org/projpred/news/inde
 * Search results generated in an earlier `varsel()` or `cv_varsel()` call can now be re-used by the help of the new `varsel.vsel()` and `cv_varsel.vsel()` methods (i.e., by applying `varsel()` or `cv_varsel()` to the output of the earlier `varsel()` or `cv_varsel()` call). This can save a lot of time when re-running the predictive performance evaluation part multiple times based on the same search results. An illustration may be found in the updated main vignette (section ["Preliminary `cv_varsel()` run"](https://mc-stan.org/projpred/articles/projpred.html#preliminary-cv_varsel-run); a more general description may also be found in section ["Speed"](https://mc-stan.org/projpred/articles/projpred.html#speed)). (GitHub: #461, #463, #465, #466)
 * K-fold CV can now be combined with `validate_search = FALSE`. Related to this is an internal change which may cause LOO subsampling (see argument `nloo`) with clustered projection during the search (i.e., `1 < nclusters && nclusters < S`, where `S` denotes the number of posterior draws in the reference model) to yield slightly different results due to different internal pseudorandom number generator (PRNG) states. Furthermore, if `is.na(seed)`, then the PRNG state for code downstream of such a `cv_varsel()` call will be different due to this internal change. (GitHub: #464)
 
+## Minor changes
+
+* In `as.matrix.projection()`, `nm_scheme = "auto"` is deprecated. Please use `nm_scheme = NULL` instead.
+
 ## Bug fixes
 
 * Fixed a bug sometimes causing `plot.vsel()` to produce extra ("empty") ticks on the x-axis. (GitHub: #462)

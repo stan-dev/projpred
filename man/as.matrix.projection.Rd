@@ -4,16 +4,16 @@
 \alias{as.matrix.projection}
 \title{Extract projected parameter draws and coerce to matrix}
 \usage{
-\method{as.matrix}{projection}(x, nm_scheme = "auto", allow_nonconst_wdraws_prj = FALSE, ...)
+\method{as.matrix}{projection}(x, nm_scheme = NULL, allow_nonconst_wdraws_prj = FALSE, ...)
 }
 \arguments{
 \item{x}{An object of class \code{projection} (returned by \code{\link[=project]{project()}}, possibly
 as elements of a \code{list}).}
 
 \item{nm_scheme}{The naming scheme for the columns of the output matrix.
-Either \code{"auto"}, \code{"rstanarm"}, or \code{"brms"}, where \code{"auto"} chooses
-\code{"rstanarm"} or \code{"brms"} based on the class of the reference model fit (and
-uses \code{"rstanarm"} if the reference model fit is of an unknown class).}
+Either \code{NULL}, \code{"rstanarm"}, or \code{"brms"}, where \code{NULL} chooses \code{"rstanarm"}
+or \code{"brms"} based on the class of the reference model fit (and uses
+\code{"rstanarm"} if the reference model fit is of an unknown class).}
 
 \item{allow_nonconst_wdraws_prj}{A single logical value indicating whether to
 allow projected draws with different (i.e., nonconstant) weights (\code{TRUE})
