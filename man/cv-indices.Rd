@@ -14,7 +14,7 @@ cvfolds(n, K, seed = NA)
 
 cv_ids(n, K, out = c("foldwise", "indices"), seed = NA)
 
-lfo_folds(n, L, seed = NA)
+lfo_folds(n, L)
 }
 \arguments{
 \item{n}{Number of observations (in case of a time-series model, this is the

@@ -2344,19 +2344,8 @@ cv_ids <- function(n, K, out = c("foldwise", "indices"), seed = NA) {
 
 #' @rdname cv-indices
 #' @export
-lfo_folds <- function(n, L, seed = NA) {
+lfo_folds <- function(n, L) {
   validate_num_folds_lfo(L = L, n = n)
-
-  if (exists(".Random.seed", envir = .GlobalEnv)) {
-    rng_state_old <- get(".Random.seed", envir = .GlobalEnv)
-  }
-  if (!is.na(seed)) {
-    # Set seed, but ensure the old RNG state is restored on exit:
-    if (exists(".Random.seed", envir = .GlobalEnv)) {
-      on.exit(assign(".Random.seed", rng_state_old, envir = .GlobalEnv))
-    }
-    set.seed(seed)
-  }
 
   ## create fold indices
   # these indices, unlike for K-fold indicate the observations to use to the
