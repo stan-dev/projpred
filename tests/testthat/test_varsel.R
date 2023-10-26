@@ -844,9 +844,7 @@ test_that(paste(
         }
       }
     }
-    sum_as_unexpected <- 0L
-    expect_true(sum(!ssq_regul_sel_beta_cond) <= sum_as_unexpected,
-                info = tstsetup)
+    expect_true(all(ssq_regul_sel_beta_cond), info = tstsetup)
     # Prediction:
     # For the intercept-only model, the linear predictor consists only
     # of the intercept, so we expect no variation in `mu_jm_regul`:
@@ -1513,9 +1511,8 @@ test_that("`validate_search` works", {
   # `validate_search`:
   vsel_nms_valsearch <- c("validate_search", "summaries", "ce",
                           "solution_terms_cv")
-  vsel_nms_valsearch_opt <- character()
   # The setups that should be tested:
-  tstsetups <- grep("\\.default_cvmeth", names(cvvss), value = TRUE)
+  tstsetups <- names(cvvss)
   if (!run_valsearch_always) {
     has_valsearch_true <- sapply(tstsetups, function(tstsetup_cvvs) {
       !isFALSE(args_cvvs[[tstsetup_cvvs]]$validate_search)
@@ -1536,16 +1533,26 @@ test_that("`validate_search` works", {
     # diagnostics:
     cvvs_valsearch <- suppressWarnings(do.call(cv_varsel, c(
       list(object = refmods[[args_cvvs_i$tstsetup_ref]],
-           validate_search = FALSE),
-      excl_nonargs(args_cvvs_i)
+           validate_search = FALSE,
+           cvfits = if (identical(args_cvvs_i$cv_method, "kfold")) {
+             cvfitss[[args_cvvs_i$tstsetup_ref]]
+           } else {
+             refmods[[args_cvvs_i$tstsetup_ref]]$cvfits # should be `NULL`
+           }),
+      excl_nonargs(args_cvvs_i, nms_excl_add = "validate_search")
     )))
     vsel_tester(
       cvvs_valsearch,
       with_cv = TRUE,
       refmod_expected = refmods[[tstsetup_ref]],
+      cvfits_expected = if (identical(args_cvvs_i$cv_method, "kfold")) {
+        cvfitss[[args_cvvs_i$tstsetup_ref]]
+      } else {
+        refmods[[args_cvvs_i$tstsetup_ref]]$cvfits
+      },
       solterms_len_expected = args_cvvs_i$nterms_max,
       method_expected = meth_exp_crr,
-      cv_method_expected = "LOO",
+      cv_method_expected = args_cvvs_i$cv_method,
       valsearch_expected = FALSE,
       search_terms_expected = args_cvvs_i$search_terms,
       search_trms_empty_size =
@@ -1554,45 +1561,62 @@ test_that("`validate_search` works", {
       info_str = tstsetup
     )
     # Expected equality for most elements with a few exceptions:
-    expect_equal(cvvs_valsearch[setdiff(vsel_nms, vsel_nms_valsearch)],
-                 cvvss[[tstsetup]][setdiff(vsel_nms, vsel_nms_valsearch)],
+    vsel_nms_valsearch_crr <- vsel_nms_valsearch
+    if (identical(args_cvvs_i$cv_method, "kfold")) {
+      vsel_nms_valsearch_crr <- setdiff(vsel_nms_valsearch_crr, "ce")
+    }
+    expect_equal(cvvs_valsearch[setdiff(vsel_nms, vsel_nms_valsearch_crr)],
+                 cvvss[[tstsetup]][setdiff(vsel_nms, vsel_nms_valsearch_crr)],
                  info = tstsetup)
     expect_identical(cvvs_valsearch$summaries$ref,
                      cvvss[[tstsetup]]$summaries$ref,
                      info = tstsetup)
-    # Expected inequality for the exceptions (the elements from
-    # `vsel_nms_valsearch_opt` can be, but don't need to be differing):
-    for (vsel_nm in setdiff(vsel_nms_valsearch, vsel_nms_valsearch_opt)) {
+    # Expected inequality for the exceptions:
+    for (vsel_nm in vsel_nms_valsearch_crr) {
       expect_false(isTRUE(all.equal(cvvs_valsearch[[vsel_nm]],
                                     cvvss[[tstsetup]][[vsel_nm]])),
                    info = paste(tstsetup, vsel_nm, sep = "__"))
     }
     # Check the expected inequalities more specifically:
     # Without a validated search, we expect increased LPPDs (and consequently
-    # also an increased ELPD) in the submodels (since the hold-out fold was
-    # included in the dataset for fitting the submodels):
+    # also an increased ELPD) in the submodels (due to overfitting):
     tol_crr <- 2e-1
     # Allow for just a small proportion of extreme differences:
-    prop_as_expected <- 0.9
+    prop_as_expected <- if (identical(args_cvvs_i$cv_method, "kfold")) {
+      0.8
+    } else {
+      0.9
+    }
     for (j in seq_along(cvvs_valsearch$summaries$sub)) {
       expect_true(mean(cvvs_valsearch$summaries$sub[[j]]$lppd >=
                          cvvss[[tstsetup]]$summaries$sub[[j]]$lppd - tol_crr) >=
                     prop_as_expected,
                   info = paste(tstsetup, j, sep = "__"))
     }
-    expect_true(all(summary(cvvs_valsearch)$selection$elpd.loo >=
-                      summary(cvvss[[tstsetup]])$selection$elpd.loo),
-                info = tstsetup)
-    # Without a validated search, we expect overfitting in the suggested model
-    # size:
+    # Again allow for just a small proportion of extreme differences:
+    prop_sizes_as_expected <- if (identical(args_cvvs_i$cv_method, "kfold")) {
+      0.5
+    } else {
+      1
+    }
+    expect_true(
+      mean(
+        summary(cvvs_valsearch)$selection[[
+          paste0("elpd.", tolower(args_cvvs_i$cv_method %||% "LOO"))
+        ]] >=
+          summary(cvvss[[tstsetup]])$selection[[
+            paste0("elpd.", tolower(args_cvvs_i$cv_method %||% "LOO"))
+          ]]) >= prop_sizes_as_expected,
+      info = tstsetup
+    )
+    # Without a validated search, we expect overfitting in the suggested size:
     sgg_size_valsearch <- suggest_size(cvvs_valsearch, warnings = FALSE)
     sgg_size <- suggest_size(cvvss[[tstsetup]], warnings = FALSE)
     if (!is.na(sgg_size_valsearch) & !is.na(sgg_size)) {
       suggsize_cond[tstsetup] <- sgg_size_valsearch >= sgg_size
     }
   }
-  sum_as_unexpected <- 2L
-  expect_true(sum(!suggsize_cond, na.rm = TRUE) <= sum_as_unexpected)
+  expect_true(mean(!suggsize_cond, na.rm = TRUE) <= 0.25)
 })
 
 ## Arguments specific to K-fold CV ----------------------------------------
