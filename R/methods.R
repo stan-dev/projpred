@@ -2240,6 +2240,8 @@ mat2drmat <- function(xmat) {
 #'   [set.seed()], but can also be `NA` to not call [set.seed()] at all. If not
 #'   `NA`, then the PRNG state is reset (to the state before calling
 #'   [cv_folds()] or [cv_ids()]) upon exiting [cv_folds()] or [cv_ids()].
+#' @param T the total number of time observations
+#' @param L the number of observations to fit the initial fold with
 #'
 #' @return [cv_folds()] returns a vector of length `n` such that each element is
 #'   an integer between 1 and `K` denoting which fold the corresponding data
@@ -2334,8 +2336,6 @@ cv_ids <- function(n, K, out = c("foldwise", "indices"), seed = NA) {
 
 #' @rdname cv-indices
 #' @export
-#' @param T the total number of time observations
-#' @param L the number of observations to fit the initial fold with
 lfo_folds <- function(T, L, seed = NA) {
   validate_lfo_folds(T, L)
 
