@@ -1612,6 +1612,14 @@ init_refmodel <- function(object, data, formula, family, ref_predfun = NULL,
     }
   } else {
     stopifnot(length(dis) == ndraws)
+    if (!proper_model) {
+      warning(
+        "A non-`NULL` argument `dis` was supplied for a `datafit`. The ",
+        "(internal) default `dis` for `datafit`s is zero (see equations (19) ",
+        "and (20) of Piironen et al., 2020, DOI: 10.1214/20-EJS1711). A ",
+        "non-zero value should only be used if you know what you are doing."
+      )
+    }
   }
   if (getOption("projpred.mlvl_pred_new", FALSE) && warn_allrandom_dis &&
       !all(is.na(dis))) {
