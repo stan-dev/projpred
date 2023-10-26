@@ -147,6 +147,10 @@ project <- function(object, nterms = NULL, solution_terms = NULL,
                     refit_prj = TRUE, ndraws = 400, nclusters = NULL, seed = NA,
                     verbose = getOption("projpred.verbose_project", TRUE),
                     regul = 1e-4, ...) {
+  # Parse input -------------------------------------------------------------
+
+  ## `object` ---------------------------------------------------------------
+
   if (inherits(object, "datafit")) {
     stop("project() does not support an `object` of class \"datafit\".")
   }
@@ -161,6 +165,8 @@ project <- function(object, nterms = NULL, solution_terms = NULL,
 
   refmodel <- get_refmodel(object, ...)
 
+  ## `seed` -----------------------------------------------------------------
+
   if (exists(".Random.seed", envir = .GlobalEnv)) {
     rng_state_old <- get(".Random.seed", envir = .GlobalEnv)
   }
@@ -171,6 +177,8 @@ project <- function(object, nterms = NULL, solution_terms = NULL,
     }
     set.seed(seed)
   }
+
+  ## `refit_prj` ------------------------------------------------------------
 
   if (refit_prj && inherits(refmodel, "datafit")) {
     warning("Automatically setting `refit_prj` to `FALSE` since the reference ",
@@ -187,21 +195,20 @@ project <- function(object, nterms = NULL, solution_terms = NULL,
     refit_prj <- TRUE
   }
 
+  ## `solution_terms` and `nterms` ------------------------------------------
+
   if (!is.null(solution_terms)) {
-    ## if solution_terms is given, nterms is ignored
-    ## (project only onto the given submodel)
+    # In this case, `solution_terms` is given, so `nterms` is ignored.
+    # The table of possible predictor terms:
     if (!is.null(object$solution_terms)) {
       vars <- object$solution_terms
     } else {
-      ## project only the given model on a fit object
-      vars <- setdiff(
-        split_formula(refmodel$formula,
-                      data = refmodel$fetch_data(),
-                      add_main_effects = FALSE),
-        "1"
-      )
+      vars <- split_formula(refmodel$formula, data = refmodel$fetch_data(),
+                            add_main_effects = FALSE)
+      vars <- setdiff(vars, "1")
     }
-
+    # Reduce `solution_terms` to those predictor terms that can be found in the
+    # table of possible solution terms:
     if (!all(solution_terms %in% vars)) {
       warning(
         "The following element(s) of `solution_terms` could not be found in ",
@@ -214,17 +221,17 @@ project <- function(object, nterms = NULL, solution_terms = NULL,
         paste(vars, collapse = "\", \""), "\")`.)"
       )
     }
-
     solution_terms <- intersect(solution_terms, vars)
     nterms <- length(solution_terms)
   } else {
-    ## by default take the variable ordering from the selection
+    # In this case, `solution_terms` is not given, so it is fetched from
+    # `object$solution_terms` and `nterms` becomes relevant.
     solution_terms <- object$solution_terms
     if (is.null(nterms)) {
+      # In this case, `nterms` is not given, so we infer it via suggest_size().
       sgg_size <- try(suggest_size(object, warnings = FALSE), silent = TRUE)
       if (!inherits(sgg_size, "try-error") && !is.null(sgg_size) &&
           !is.na(sgg_size)) {
-        ## by default, project onto the suggested model size
         nterms <- min(sgg_size, length(solution_terms))
       } else {
         stop("Could not suggest a submodel size automatically; please specify ",
@@ -244,9 +251,13 @@ project <- function(object, nterms = NULL, solution_terms = NULL,
     }
   }
 
+  ## `nclusters` ------------------------------------------------------------
+
   if (inherits(refmodel, "datafit")) {
     nclusters <- 1
   }
+
+  ## Warnings ---------------------------------------------------------------
 
   nterms_max <- max(nterms)
   nterms_all <- count_terms_in_formula(refmodel$formula) - 1L
@@ -261,7 +272,8 @@ project <- function(object, nterms = NULL, solution_terms = NULL,
     )
   }
 
-  ## project onto the submodels
+  # Projection --------------------------------------------------------------
+
   submodls <- perf_eval(
     search_path = nlist(
       solution_terms,
@@ -273,13 +285,15 @@ project <- function(object, nterms = NULL, solution_terms = NULL,
     projpred_verbose = verbose, ...
   )
 
-  # Output:
+  # Output ------------------------------------------------------------------
+
   projs <- lapply(submodls, function(submodl) {
     proj_k <- submodl
     proj_k$refmodel <- refmodel
     class(proj_k) <- "projection"
     return(proj_k)
   })
-  ## If only one model size, just return the proj instead of a list of projs
+  # If there is only a single submodel size, just return the `projection` object
+  # instead of returning it in a list of length 1:
   return(unlist_proj(projs))
 }
