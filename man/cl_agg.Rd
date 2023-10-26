@@ -16,8 +16,10 @@ cl_agg(
 \eqn{P} denoting the number of parameters.}
 
 \item{cl}{A numeric vector of length \eqn{S}, giving the cluster indices for
-the draws. Draws that should be dropped (e.g., by thinning) need to have an
-\code{NA} in \code{cl}.}
+the draws. The cluster indices need to be values from the set \eqn{\{1,
+  ..., S_{\mathrm{cl}}\}}{{1, ..., S_cl}}, except for draws that should be
+dropped (e.g., by thinning), in which case \code{NA} needs to be provided at the
+positions of \code{cl} corresponding to these draws.}
 
 \item{wdraws}{A numeric vector of length \eqn{S}, giving the weights of the
 draws. It doesn't matter whether these are normalized (i.e., sum to \code{1}) or

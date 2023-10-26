@@ -11,7 +11,15 @@ cv_varsel(object, ...)
 
 \method{cv_varsel}{default}(object, ...)
 
-\method{cv_varsel}{vsel}(object, ...)
+\method{cv_varsel}{vsel}(
+  object,
+  cv_method = object$cv_method \%||\% "LOO",
+  nloo = object$nloo,
+  K = object$K \%||\% if (!inherits(object, "datafit")) 5 else 10,
+  cvfits = object$cvfits,
+  validate_search = object$validate_search \%||\% TRUE,
+  ...
+)
 
 \method{cv_varsel}{refmodel}(
   object,
@@ -25,7 +33,7 @@ cv_varsel(object, ...)
   nterms_max = NULL,
   penalty = NULL,
   verbose = TRUE,
-  nloo = NULL,
+  nloo = object$nobs,
   K = if (!inherits(object, "datafit")) 5 else 10,
   cvfits = object$cvfits,
   lambda_min_ratio = 1e-05,
@@ -35,6 +43,7 @@ cv_varsel(object, ...)
   validate_search = TRUE,
   seed = NA,
   search_terms = NULL,
+  search_out = NULL,
   parallel = getOption("projpred.prll_cv", FALSE),
   ...
 )
@@ -44,19 +53,48 @@ cv_varsel(object, ...)
 \code{\link[=init_refmodel]{init_refmodel()}}) or an object that can be passed to argument \code{object} of
 \code{\link[=get_refmodel]{get_refmodel()}}.}
 
-\item{...}{Arguments passed to \code{\link[=get_refmodel]{get_refmodel()}} as well as to the divergence
-minimizer (during a forward search and also during the evaluation part, but
-the latter only if \code{refit_prj} is \code{TRUE}).}
-
-\item{method}{The method for the search part. Possible options are
-\code{"forward"} for forward search and \code{"L1"} for L1 search. See also section
-"Details" below.}
+\item{...}{For \code{\link[=cv_varsel.default]{cv_varsel.default()}}: Arguments passed to \code{\link[=get_refmodel]{get_refmodel()}} as
+well as to \code{\link[=cv_varsel.refmodel]{cv_varsel.refmodel()}}. For \code{\link[=cv_varsel.vsel]{cv_varsel.vsel()}}: Arguments passed
+to \code{\link[=cv_varsel.refmodel]{cv_varsel.refmodel()}}. For \code{\link[=cv_varsel.refmodel]{cv_varsel.refmodel()}}: Arguments passed to
+the divergence minimizer (during a forward search and also during the
+evaluation part, but the latter only if \code{refit_prj} is \code{TRUE}).}
 
 \item{cv_method}{The CV method, either \code{"LOO"} or \code{"kfold"}. In the \code{"LOO"}
 case, a Pareto-smoothed importance sampling leave-one-out CV (PSIS-LOO CV)
 is performed, which avoids refitting the reference model \code{nloo} times (in
 contrast to a standard LOO CV). In the \code{"kfold"} case, a \eqn{K}-fold CV is
 performed. See also section "Note" below.}
+
+\item{nloo}{\strong{Caution:} Still experimental. Only relevant if \code{cv_method = "LOO"}. Number of subsampled PSIS-LOO CV folds, i.e., number of
+observations used for the approximate LOO CV (anything between 1 and the
+original number of observations). Smaller values lead to faster computation
+but higher uncertainty in the evaluation part. If \code{NULL}, all observations
+are used, but for faster experimentation, one can set this to a smaller
+value.}
+
+\item{K}{Only relevant if \code{cv_method = "kfold"} and if \code{cvfits} is \code{NULL}
+(which is the case for reference model objects created by
+\code{\link[=get_refmodel.stanreg]{get_refmodel.stanreg()}} or \code{\link[brms:get_refmodel.brmsfit]{brms::get_refmodel.brmsfit()}}). Number of
+folds in \eqn{K}-fold CV.}
+
+\item{cvfits}{Only relevant if \code{cv_method = "kfold"}. The same as argument
+\code{cvfits} of \code{\link[=init_refmodel]{init_refmodel()}}, but repeated here so that output from
+\code{\link[=run_cvfun]{run_cvfun()}} can be inserted here straightforwardly.}
+
+\item{validate_search}{A single logical value indicating whether to
+cross-validate also the search part, i.e., whether to run the search
+separately for each CV fold (\code{TRUE}) or not (\code{FALSE}). We strongly do not
+recommend setting this to \code{FALSE}, because this is known to bias the
+predictive performance estimates of the selected submodels. However,
+setting this to \code{FALSE} can sometimes be useful because comparing the
+results to the case where this argument is \code{TRUE} gives an idea of how
+strongly the search is (over-)fitted to the data (the difference
+corresponds to the search degrees of freedom or the effective number of
+parameters introduced by the search).}
+
+\item{method}{The method for the search part. Possible options are
+\code{"forward"} for forward search and \code{"L1"} for L1 search. See also section
+"Details" below.}
 
 \item{ndraws}{Number of posterior draws used in the search part. Ignored if
 \code{nclusters} is not \code{NULL} or in case of L1 search (because L1 search always
@@ -99,22 +137,6 @@ used for each predictor.}
 \item{verbose}{A single logical value indicating whether to print out
 additional information during the computations.}
 
-\item{nloo}{\strong{Caution:} Still experimental. Only relevant if \code{cv_method = "LOO"}. Number of subsampled PSIS-LOO CV folds, i.e., number of
-observations used for the approximate LOO CV (anything between 1 and the
-original number of observations). Smaller values lead to faster computation
-but higher uncertainty in the evaluation part. If \code{NULL}, all observations
-are used, but for faster experimentation, one can set this to a smaller
-value.}
-
-\item{K}{Only relevant if \code{cv_method = "kfold"} and if \code{cvfits} is \code{NULL}
-(which is the case for reference model objects created by
-\code{\link[=get_refmodel.stanreg]{get_refmodel.stanreg()}} or \code{\link[brms:get_refmodel.brmsfit]{brms::get_refmodel.brmsfit()}}). Number of
-folds in \eqn{K}-fold CV.}
-
-\item{cvfits}{Only relevant if \code{cv_method = "kfold"}. The same as argument
-\code{cvfits} of \code{\link[=init_refmodel]{init_refmodel()}}, but repeated here so that output from
-\code{\link[=run_cvfun]{run_cvfun()}} can be inserted here straightforwardly.}
-
 \item{lambda_min_ratio}{Only relevant for L1 search. Ratio between the
 smallest and largest lambda in the L1-penalized search. This parameter
 essentially determines how long the search is carried out, i.e., how large
@@ -132,17 +154,6 @@ computing the L1 path. Usually, there is no need to change this.}
 projecting onto (i.e., fitting) submodels which are GLMs. Usually there is
 no need for regularization, but sometimes we need to add some
 regularization to avoid numerical problems.}
-
-\item{validate_search}{Only relevant if \code{cv_method = "LOO"}. A single logical
-value indicating whether to cross-validate also the search part, i.e.,
-whether to run the search separately for each CV fold (\code{TRUE}) or not
-(\code{FALSE}). We strongly do not recommend setting this to \code{FALSE}, because
-this is known to bias the predictive performance estimates of the selected
-submodels. However, setting this to \code{FALSE} can sometimes be useful because
-comparing the results to the case where this argument is \code{TRUE} gives an
-idea of how strongly the search is (over-)fitted to the data (the
-difference corresponds to the search degrees of freedom or the effective
-number of parameters introduced by the search).}
 
 \item{seed}{Pseudorandom number generation (PRNG) seed by which the same
 results can be obtained again if needed. Passed to argument \code{seed} of
@@ -163,6 +174,8 @@ there's no difference between including it explicitly or omitting it. The
 default \code{search_terms} considers all the terms in the reference model's
 formula.}
 
+\item{search_out}{Intended for internal use.}
+
 \item{parallel}{A single logical value indicating whether to run costly parts
 of the CV in parallel (\code{TRUE}) or not (\code{FALSE}). See also section "Note"
 below.}
@@ -181,7 +194,9 @@ performance of the submodels along the predictor ranking. In contrast to
 \code{\link[=varsel]{varsel()}}, \code{\link[=cv_varsel]{cv_varsel()}} performs a cross-validation (CV) by running the
 search part with the training data of each CV fold separately (an exception
 is explained in section "Note" below) and by running the evaluation part on
-the corresponding test set of each CV fold.
+the corresponding test set of each CV fold. A special method is
+\code{\link[=cv_varsel.vsel]{cv_varsel.vsel()}} because it re-uses the search results from an earlier
+\code{\link[=cv_varsel]{cv_varsel()}} (or \code{\link[=varsel]{varsel()}}) run, as illustrated in the main vignette.
 }
 \details{
 Arguments \code{ndraws}, \code{nclusters}, \code{nclusters_pred}, and \code{ndraws_pred}

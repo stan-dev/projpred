@@ -170,7 +170,7 @@
 #' following prototypes:
 #' * `ref_predfun`: `ref_predfun(fit, newdata = NULL)` where:
 #'     + `fit` accepts the reference model fit as given in argument `object`
-#'     (but possibly re-fitted to a subset of the observations, as done in
+#'     (but possibly refitted to a subset of the observations, as done in
 #'     \eqn{K}-fold CV).
 #'     + `newdata` accepts either `NULL` (for using the original dataset,
 #'     typically stored in `fit`) or data for new observations (at least in the
@@ -238,7 +238,7 @@
 #' ```
 #' where:
 #' * `object` accepts the reference model fit as given in argument `object` (but
-#' possibly re-fitted to a subset of the observations, as done in \eqn{K}-fold
+#' possibly refitted to a subset of the observations, as done in \eqn{K}-fold
 #' CV).
 #' * `newdata` accepts data for new observations (at least in the form of a
 #' `data.frame`).

@@ -84,8 +84,10 @@ latent_ppd_oscale_NA <- function(ilpreds_resamp, wobs, cl_ref,
 #' @param draws An \eqn{S \times P}{S x P} matrix of parameter draws, with
 #'   \eqn{P} denoting the number of parameters.
 #' @param cl A numeric vector of length \eqn{S}, giving the cluster indices for
-#'   the draws. Draws that should be dropped (e.g., by thinning) need to have an
-#'   `NA` in `cl`.
+#'   the draws. The cluster indices need to be values from the set \eqn{\{1,
+#'   ..., S_{\mathrm{cl}}\}}{{1, ..., S_cl}}, except for draws that should be
+#'   dropped (e.g., by thinning), in which case `NA` needs to be provided at the
+#'   positions of `cl` corresponding to these draws.
 #' @param wdraws A numeric vector of length \eqn{S}, giving the weights of the
 #'   draws. It doesn't matter whether these are normalized (i.e., sum to `1`) or
 #'   not because internally, these weights are normalized to sum to `1` within
@@ -127,8 +129,10 @@ cl_agg <- function(draws,
                    # context of projpred because cl_agg() is meant to be applied
                    # to parameter draws from the reference model and these are
                    # usually assumed to have the same weight (see
-                   # init_refmodel()), except for the `validate_search = TRUE`
-                   # case of loo_varsel() where the PSIS weights are used.
+                   # init_refmodel()), except for loo_varsel() where the PSIS
+                   # weights are used (however, only the `validate_search =
+                   # TRUE` case of loo_varsel() is relevant for argument
+                   # `wdraws` of cl_agg()).
                    wdraws = rep(1, nrow(draws)),
                    eps_wdraws = 0) {
   n_cl <- max(cl, na.rm = TRUE)

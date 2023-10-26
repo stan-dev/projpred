@@ -4,6 +4,14 @@ If you read this from a place other than <https://mc-stan.org/projpred/news/inde
 
 # projpred 2.7.0.9000
 
+## Major changes
+
+* Search results generated in an earlier `varsel()` or `cv_varsel()` call can now be re-used by the help of the new `varsel.vsel()` and `cv_varsel.vsel()` methods (i.e., by applying `varsel()` or `cv_varsel()` to the output of the earlier `varsel()` or `cv_varsel()` call). This can save a lot of time when re-running the predictive performance evaluation part multiple times based on the same search results. An illustration may be found in the updated main vignette (section ["Preliminary `cv_varsel()` run"](https://mc-stan.org/projpred/articles/projpred.html#preliminary-cv_varsel-run); a more general description may also be found in section ["Speed"](https://mc-stan.org/projpred/articles/projpred.html#speed)). (GitHub: #461, #463, #465, #466)
+* K-fold CV can now be combined with `validate_search = FALSE`. Related to this is an internal change which may cause LOO subsampling (see argument `nloo`) with clustered projection during the search (i.e., `1 < nclusters && nclusters < S`, where `S` denotes the number of posterior draws in the reference model) to yield slightly different results due to different internal pseudorandom number generator (PRNG) states. Furthermore, if `is.na(seed)`, then the PRNG state for code downstream of such a `cv_varsel()` call will be different due to this internal change. (GitHub: #464)
+
+## Bug fixes
+
+* Fixed a bug sometimes causing `plot.vsel()` to produce extra ("empty") ticks on the x-axis. (GitHub: #462)
 
 # projpred 2.7.0
 
@@ -42,7 +50,7 @@ If you read this from a place other than <https://mc-stan.org/projpred/news/inde
 * Added the helper function `force_search_terms()` which allows to construct `search_terms` where certain predictor terms are forced to be included (i.e., they are forced to be selected first) whereas other predictor terms are optional (i.e., they are subject to the variable selection, but only after the inclusion of the "forced" terms). (GitHub: #346)
 * Reduced peak memory usage during performance evaluation (more precisely, during the re-projections done for the performance evaluation). This reduction is considerable especially for multilevel submodels, but possibly also for additive submodels. (GitHub: #440, #450)
 * A message is now thrown when cutting off the search at `nterms_max`'s internal default of (currently) `19`. (GitHub: #452)
-* Added sub-section "Speed" to the main vignette's ["Troubleshooting"](https://mc-stan.org/projpred/articles/projpred.html#troubleshooting) section. (GitHub: #455)
+* Added sub-section ["Speed"](https://mc-stan.org/projpred/articles/projpred.html#speed) to the main vignette's ["Troubleshooting"](https://mc-stan.org/projpred/articles/projpred.html#troubleshooting) section. (GitHub: #455)
 * In case of K-fold CV, the `list` passed to argument `cvfits` of `init_refmodel()` should not have a sub-`list` called `fits` anymore. Instead, the content of this former sub-`list` called `fits` should be moved one level up, i.e., should be placed directly in the `list` passed to `cvfits` (the empty element `fits` should then be removed). For some time, the old structure will continue to work, but this possibility is deprecated and will be removed in the future. (GitHub: #456)
 * In case of K-fold CV, the `K` reference model fits (i.e., the elements of the return value of the function passed to argument `cvfun` of `init_refmodel()` or the elements of the `list` supplied to argument `cvfits` of `init_refmodel()`) do not need to be `list`s anymore (see the documentation for argument `cvrefbuilder` of `init_refmodel()`). (GitHub: #457)
 

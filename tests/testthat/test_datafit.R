@@ -115,7 +115,7 @@ if (run_cvvs) {
     args_cvvs_i$cv_method <- NULL
     args_cvvs_i$K <- NULL
     args_cvvs_i$validate_search <- TRUE
-    return(c(args_cvvs_i, list(cv_method = "kfold", K = K_tst)))
+    return(c(args_cvvs_i, list(cv_method = "kfold")))
   })
   names(args_cvvs_datafit) <- gsub("default_cvmeth", "kfold",
                                    names(args_cvvs_datafit))
@@ -128,9 +128,18 @@ if (run_cvvs) {
                                  "ndraws_pred", "nclusters_pred"))])
   })
 
+  tstsetups_cvvs_datafit <- setNames(nm = unname(
+    sapply(args_cvvs_datafit, "[[", "tstsetup_datafit")
+  ))
+  cvfitss_datafit <- lapply(tstsetups_cvvs_datafit, function(tstsetup_datafit) {
+    return(run_cvfun(object = datafits[[tstsetup_datafit]], K = K_tst,
+                     seed = seed3_tst))
+  })
+
   cvvss_datafit <- lapply(args_cvvs_datafit, function(args_cvvs_i) {
     do.call(cv_varsel, c(
-      list(object = datafits[[args_cvvs_i$tstsetup_datafit]]),
+      list(object = datafits[[args_cvvs_i$tstsetup_datafit]],
+           cvfits = cvfitss_datafit[[args_cvvs_i$tstsetup_datafit]]),
       excl_nonargs(args_cvvs_i)
     ))
   })
@@ -241,6 +250,7 @@ test_that(paste(
         datafits[[args_vs_datafit[[tstsetup]]$tstsetup_datafit]],
       solterms_len_expected = args_vs_datafit[[tstsetup]]$nterms_max,
       method_expected = meth_exp_crr,
+      search_terms_expected = args_vs_datafit[[tstsetup]]$search_terms,
       search_trms_empty_size =
         length(args_vs_datafit[[tstsetup]]$search_terms) &&
         all(grepl("\\+", args_vs_datafit[[tstsetup]]$search_terms)),
@@ -264,10 +274,13 @@ test_that(paste(
       from_datafit = TRUE,
       refmod_expected =
         datafits[[args_cvvs_datafit[[tstsetup]]$tstsetup_datafit]],
+      cvfits_expected =
+        cvfitss_datafit[[args_cvvs_datafit[[tstsetup]]$tstsetup_datafit]],
       solterms_len_expected = args_cvvs_datafit[[tstsetup]]$nterms_max,
       method_expected = meth_exp_crr,
       cv_method_expected = "kfold",
       valsearch_expected = args_cvvs_datafit[[tstsetup]]$validate_search,
+      search_terms_expected = args_cvvs_datafit[[tstsetup]]$search_terms,
       search_trms_empty_size =
         length(args_cvvs_datafit[[tstsetup]]$search_terms) &&
         all(grepl("\\+", args_cvvs_datafit[[tstsetup]]$search_terms)),

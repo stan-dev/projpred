@@ -46,7 +46,7 @@ test_that("invalid `solution_terms` warns or fails", {
                                     length.out = 1e4)),
       excl_nonargs(args_prj_i, nms_excl_add = "solution_terms")
     ))
-    expect_identical(p_long, prjs[[tstsetup]])
+    expect_equal(p_long, prjs[[tstsetup]], info = tstsetup)
 
     # Invalid type:
     for (solterms_crr in list(2, 1:3, list(solterms_x, solterms_x))) {

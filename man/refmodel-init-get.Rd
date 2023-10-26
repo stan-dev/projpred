@@ -231,7 +231,7 @@ following prototypes:
 \item \code{ref_predfun}: \code{ref_predfun(fit, newdata = NULL)} where:
 \itemize{
 \item \code{fit} accepts the reference model fit as given in argument \code{object}
-(but possibly re-fitted to a subset of the observations, as done in
+(but possibly refitted to a subset of the observations, as done in
 \eqn{K}-fold CV).
 \item \code{newdata} accepts either \code{NULL} (for using the original dataset,
 typically stored in \code{fit}) or data for new observations (at least in the
@@ -309,7 +309,7 @@ prototype
 where:
 \itemize{
 \item \code{object} accepts the reference model fit as given in argument \code{object} (but
-possibly re-fitted to a subset of the observations, as done in \eqn{K}-fold
+possibly refitted to a subset of the observations, as done in \eqn{K}-fold
 CV).
 \item \code{newdata} accepts data for new observations (at least in the form of a
 \code{data.frame}).

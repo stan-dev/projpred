@@ -9,7 +9,7 @@ options(warn = 1)
 # These switches may be set to `FALSE` to save time (e.g., when debugging
 # interactively):
 # Run more tests, at the downside of increased runtime?:
-run_more <- FALSE
+run_more <- identical(Sys.getenv("RUN_MORE"), "true")
 # Run project()?:
 run_prj <- identical(Sys.getenv("NOT_CRAN"), "true")
 # Run varsel()?:
@@ -852,6 +852,11 @@ seed3_tst <- 1208499
 
 nclusters_tst <- 2L
 nclusters_pred_tst <- 3L
+### Later, we will subtract 1L and still wish to have `nclusters_pred >= 2` in
+### order to differentiate this from `nclusters_pred == 1` which is more or less
+### a special case:
+stopifnot(nclusters_pred_tst >= 3)
+###
 if (!run_more) {
   ndr_ncl_pred_tst <- list()
 } else {
@@ -876,8 +881,6 @@ meth_tst <- list(
 
 # Suppress the message when cutting off the search at `nterms_max = 19`:
 options(projpred.mssg_cut_search = FALSE)
-# Suppress the message about the default `method`:
-options(projpred.mssg_method_changed = FALSE)
 # Suppress the message for the runtime of the forward search:
 options(projpred.mssg_time = FALSE)
 # Suppress the PSIS warnings:
@@ -917,7 +920,7 @@ K_tst <- 2L
 cvmeth_tst <- list(
   default_cvmeth = list(),
   LOO = list(cv_method = "LOO"),
-  kfold = list(cv_method = "kfold", K = K_tst)
+  kfold = list(cv_method = "kfold")
 )
 
 resp_oscale_tst <- list(
@@ -1211,17 +1214,11 @@ if (run_cvvs) {
     }
     lapply(meth, function(meth_i) {
       lapply(cvmeth, function(cvmeth_i) {
-        if (!run_valsearch_always && !identical(cvmeth_i$cv_method, "kfold") &&
-            # Handle augmented-data and corresponding traditional projection:
+        if (!identical(meth_i$method, "L1") && !run_valsearch_always &&
             (!prj_crr %in% c("latent", "augdat", "trad_compare") ||
              (prj_crr %in% c("latent", "augdat", "trad_compare") &&
-              !run_valsearch_aug_lat)) &&
-            # Forward search:
-            !identical(meth_i$method, "L1")) {
-          # These are cases with forward search, LOO CV, and
-          # `!run_valsearch_always` where we want to save time by using
-          # `validate_search = FALSE`:
-          meth_i <- c(meth_i, list(validate_search = FALSE))
+              !run_valsearch_aug_lat))) {
+          cvmeth_i <- c(cvmeth_i, list(validate_search = FALSE))
         }
         search_trms <- search_trms_tst["default_search_trms"]
         lapply(search_trms, function(search_trms_i) {
@@ -1245,9 +1242,44 @@ if (run_cvvs) {
   })
   args_cvvs <- unlist_cust(args_cvvs)
 
+  args_cvvs_kfold <- args_cvvs[
+    sapply(lapply(args_cvvs, "[[", "cv_method"), identical, "kfold")
+  ]
+  tstsetups_cvvs_ref_kfold <- setNames(nm = unique(unname(
+    sapply(args_cvvs_kfold, "[[", "tstsetup_ref")
+  )))
+  cvfitss <- lapply(tstsetups_cvvs_ref_kfold, function(tstsetup_ref) {
+    # Due to rstanarm:::kfold.stanreg() failing sometimes, we have to wrap the
+    # call to run_cvfun() in try():
+    return(try(run_cvfun(object = refmods[[tstsetup_ref]], K = K_tst,
+                         seed = seed3_tst), silent = TRUE))
+  })
+  success_cvfits <- !sapply(cvfitss, inherits, "try-error")
+  err_ok_cvfits <- sapply(cvfitss[!success_cvfits], function(cvfits_err) {
+    attr(cvfits_err, "condition")$message ==
+      "pwrssUpdate did not converge in (maxit) iterations"
+  })
+  expect_true(
+    all(err_ok_cvfits),
+    info = paste("Unexpected error for",
+                 paste(names(cvfitss[!success_cvfits])[!err_ok_cvfits],
+                       collapse = ", "))
+  )
+  args_cvvs_kfold <- args_cvvs_kfold[!sapply(
+    lapply(args_cvvs_kfold, "[[", "tstsetup_ref"),
+    `%in%`, names(cvfitss)[!success_cvfits]
+  )]
+  args_cvvs <- args_cvvs[!sapply(lapply(args_cvvs, "[[", "tstsetup_ref"),
+                                 `%in%`, names(cvfitss)[!success_cvfits])]
+
   cvvss <- lapply(args_cvvs, function(args_cvvs_i) {
     cvvs_expr <- expression(do.call(cv_varsel, c(
-      list(object = refmods[[args_cvvs_i$tstsetup_ref]]),
+      list(object = refmods[[args_cvvs_i$tstsetup_ref]],
+           cvfits = if (identical(args_cvvs_i$cv_method, "kfold")) {
+             cvfitss[[args_cvvs_i$tstsetup_ref]]
+           } else {
+             refmods[[args_cvvs_i$tstsetup_ref]]$cvfits # should be `NULL`
+           }),
       excl_nonargs(args_cvvs_i)
     )))
     if (args_cvvs_i$mod_nm == "gamm" &&
@@ -1259,14 +1291,15 @@ if (run_cvvs) {
     }
   })
   success_cvvs <- !sapply(cvvss, inherits, "try-error")
-  err_ok <- sapply(cvvss[!success_cvvs], function(cvvs_err) {
+  err_ok_cvvs <- sapply(cvvss[!success_cvvs], function(cvvs_err) {
     attr(cvvs_err, "condition")$message ==
       "Not enough (non-NA) data to do anything meaningful"
   })
   expect_true(
-    all(err_ok),
+    all(err_ok_cvvs),
     info = paste("Unexpected error for",
-                 paste(names(cvvss[!success_cvvs])[!err_ok], collapse = ", "))
+                 paste(names(cvvss[!success_cvvs])[!err_ok_cvvs],
+                       collapse = ", "))
   )
   cvvss <- cvvss[success_cvvs]
   args_cvvs <- args_cvvs[success_cvvs]
@@ -1908,26 +1941,18 @@ if (run_cvvs) {
 
 ## Output names -----------------------------------------------------------
 
+# Output elements of `vsel` objects:
 vsel_nms <- c(
   "refmodel", "nobs_train", "search_path", "solution_terms",
   "solution_terms_cv", "ce", "type_test", "y_wobs_test", "nobs_test",
-  "summaries", "nterms_all", "nterms_max", "method", "cv_method", "K",
-  "validate_search", "clust_used_search", "clust_used_eval", "nprjdraws_search",
-  "nprjdraws_eval", "projpred_version"
+  "summaries", "nterms_all", "nterms_max", "method", "cv_method", "nloo", "K",
+  "validate_search", "cvfits", "args_search", "clust_used_search",
+  "clust_used_eval", "nprjdraws_search", "nprjdraws_eval", "projpred_version"
 )
-# Related to prediction (in contrast to selection):
-vsel_nms_pred <- c("summaries", "solution_terms", "ce")
-vsel_nms_pred_opt <- c("solution_terms")
-# Related to `nloo`:
-vsel_nms_nloo <- c("summaries", "solution_terms_cv")
-vsel_nms_nloo_opt <- c("solution_terms_cv")
-# Related to `validate_search`:
-vsel_nms_valsearch <- c("validate_search", "summaries", "ce",
-                        "solution_terms_cv")
-vsel_nms_valsearch_opt <- character()
-# Related to `cvfits`:
-vsel_nms_cvfits <- c("refmodel", "summaries", "solution_terms_cv")
+# Output elements of `vsel` objects that may be influenced by `cvfits`:
+vsel_nms_cvfits <- c("refmodel", "cvfits", "summaries", "solution_terms_cv")
 vsel_nms_cvfits_opt <- c("solution_terms_cv")
+# Sub-elements of `summaries`'s `sub` and `ref` elements:
 vsel_smmrs_sub_nms <- vsel_smmrs_ref_nms <- c("mu", "lppd")
 
 ## Defaults ---------------------------------------------------------------

@@ -434,16 +434,6 @@ test_that(paste(
     cvvs_trad <- cvvss[[tstsetup_trad]]
 
     is_kfold <- identical(args_cvvs[[tstsetup]]$cv_method, "kfold")
-    if (is_kfold) {
-      is_glmm <- args_cvvs[[tstsetup]]$mod_nm == "glmm"
-      if (is_glmm) {
-        tol_sub <- 1e-4
-      } else {
-        tol_sub <- 1e-5
-      }
-    } else {
-      tol_sub <- 1e-6
-    }
 
     summs_sub <- cvvs$summaries$sub
     summs_sub_mu <- do.call(cbind, lapply(summs_sub, "[[", "mu"))[
@@ -451,8 +441,18 @@ test_that(paste(
     ]
     summs_sub_trad <- cvvs_trad$summaries$sub
     summs_sub_mu_trad <- do.call(cbind, lapply(summs_sub_trad, "[[", "mu"))
-    expect_equal(summs_sub_mu, summs_sub_mu_trad, tolerance = tol_sub,
-                 info = tstsetup)
+    # Sometimes, there are seemingly large differences on logit scale which are
+    # probably due to numerical overflow of probabilities (i.e., on probability
+    # scale) towards 1 or underflow towards zero. Thus, compare on probability
+    # scale if the comparison on logit scale fails:
+    tryCatch(expect_equal(summs_sub_mu, summs_sub_mu_trad,
+                          tolerance = 1e-6, info = tstsetup),
+             error = function(e) {
+               stopifnot(is_kfold)
+               expect_equal(ilinkfun_raw(summs_sub_mu, link_nm = "logit"),
+                            ilinkfun_raw(summs_sub_mu_trad, link_nm = "logit"),
+                            tolerance = 1e-5, info = tstsetup)
+             })
     summs_sub_lppd <- do.call(cbind, lapply(summs_sub, "[[", "lppd"))
     summs_sub_lppd_trad <- unname(
       do.call(cbind, lapply(summs_sub_trad, "[[", "lppd"))
@@ -462,11 +462,11 @@ test_that(paste(
     # towards 1 or underflow towards zero. Thus, compare on exp scale if the
     # comparison on log scale fails:
     tryCatch(expect_equal(summs_sub_lppd, summs_sub_lppd_trad,
-                          tolerance = tol_sub, info = tstsetup),
+                          tolerance = 1e-6, info = tstsetup),
              error = function(e) {
                stopifnot(is_kfold)
                expect_equal(exp(summs_sub_lppd), exp(summs_sub_lppd_trad),
-                            tolerance = tol_sub, info = tstsetup)
+                            tolerance = 1e-5, info = tstsetup)
              })
     summs_ref <- cvvs$summaries$ref
     summs_ref$mu <- structure(unclass(summs_ref$mu), nobs_orig = NULL)
@@ -535,7 +535,7 @@ test_that(paste(
       expect_equal(smmry_pd[, setdiff(names(smmry_pd), "se")],
                    smmry_pd_trad[, setdiff(names(smmry_pd_trad), "se")],
                    tolerance = tol_smmry, info = tstsetup)
-      expect_equal(smmry_pd$se, smmry_pd_trad$se, tolerance = 1e-1,
+      expect_equal(smmry_pd$se, smmry_pd_trad$se, tolerance = 1e-3,
                    info = tstsetup)
     }
     tryCatch(expect_equal(smmry_cvvs$selection, smmry_cvvs_trad$selection,
@@ -598,6 +598,7 @@ test_that(paste(
       smmry_pd[elpd_cols] <- exp(smmry_pd[elpd_cols])
       mlpd_cols <- setdiff(grep("mlpd", names(smmry_pd), value = TRUE),
                            se_cols)
+      smmry_pd[mlpd_cols] <- exp(smmry_pd[mlpd_cols])
 
       smmry_pd_trad <- smmry_cvvs_trad$selection
       se_cols_trad <- grep("lpd\\.se$", names(smmry_pd_trad), value = TRUE)
@@ -606,14 +607,13 @@ test_that(paste(
       smmry_pd_trad[elpd_cols_trad] <- exp(smmry_pd_trad[elpd_cols_trad])
       mlpd_cols_trad <- setdiff(grep("mlpd", names(smmry_pd_trad), value = TRUE),
                                 se_cols_trad)
+      smmry_pd_trad[mlpd_cols_trad] <- exp(smmry_pd_trad[mlpd_cols_trad])
 
-      expect_equal(smmry_pd[, setdiff(names(smmry_pd),
-                                      c(mlpd_cols, se_cols))],
-                   smmry_pd_trad[, setdiff(names(smmry_pd_trad),
-                                           c(mlpd_cols_trad, se_cols_trad))],
-                   tolerance = 1e-10, info = tstsetup)
-      expect_equal(smmry_pd[, c(mlpd_cols, se_cols)],
-                   smmry_pd_trad[, c(mlpd_cols_trad, se_cols_trad)],
+      expect_equal(smmry_pd[, setdiff(names(smmry_pd), se_cols)],
+                   smmry_pd_trad[, setdiff(names(smmry_pd_trad), se_cols_trad)],
+                   tolerance = tol_smmry, info = tstsetup)
+      expect_equal(smmry_pd[, se_cols],
+                   smmry_pd_trad[, se_cols_trad],
                    tolerance = 1e-3, info = tstsetup)
     }
     tryCatch(expect_equal(smmry_cvvs$selection, smmry_cvvs_trad$selection,

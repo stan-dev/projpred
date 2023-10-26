@@ -4,7 +4,9 @@
 #' variable selection. The search part determines the predictor ranking (also
 #' known as solution path), i.e., the best submodel for each submodel size
 #' (number of predictor terms). The evaluation part determines the predictive
-#' performance of the submodels along the predictor ranking.
+#' performance of the submodels along the predictor ranking. A special method is
+#' [varsel.vsel()] because it re-uses the search results from an earlier
+#' [varsel()] (or [cv_varsel()]) run, as illustrated in the main vignette.
 #'
 #' @param object An object of class `refmodel` (returned by [get_refmodel()] or
 #'   [init_refmodel()]) or an object that can be passed to argument `object` of
@@ -68,6 +70,7 @@
 #'   there's no difference between including it explicitly or omitting it. The
 #'   default `search_terms` considers all the terms in the reference model's
 #'   formula.
+#' @param search_out Intended for internal use.
 #' @param verbose A single logical value indicating whether to print out
 #'   additional information during the computations.
 #' @param seed Pseudorandom number generation (PRNG) seed by which the same
@@ -78,9 +81,11 @@
 #'   model's posterior draws (if `!is.null(nclusters)` or
 #'   `!is.null(nclusters_pred)`) and for drawing new group-level effects when
 #'   predicting from a multilevel submodel (however, not yet in case of a GAMM).
-#' @param ... Arguments passed to [get_refmodel()] as well as to the divergence
-#'   minimizer (during a forward search and also during the evaluation part, but
-#'   the latter only if `refit_prj` is `TRUE`).
+#' @param ... For [varsel.default()]: Arguments passed to [get_refmodel()] as
+#'   well as to [varsel.refmodel()]. For [varsel.vsel()]: Arguments passed to
+#'   [varsel.refmodel()]. For [varsel.refmodel()]: Arguments passed to the
+#'   divergence minimizer (during a forward search and also during the
+#'   evaluation part, but the latter only if `refit_prj` is `TRUE`).
 #'
 #' @details
 #'
@@ -197,9 +202,20 @@ varsel.default <- function(object, ...) {
 #' @rdname varsel
 #' @export
 varsel.vsel <- function(object, ...) {
-  stop("Purpose and content of varsel.vsel() will be changed in a future ",
-       "release. Please use varsel(get_refmodel(<vsel_object>), <...>) ",
-       "instead of varsel(<vsel_object>, <...>).")
+  return(varsel(
+    object = get_refmodel(object),
+    method = object[["args_search"]][["method"]],
+    ndraws = object[["args_search"]][["ndraws"]],
+    nclusters = object[["args_search"]][["nclusters"]],
+    nterms_max = object[["args_search"]][["nterms_max"]],
+    lambda_min_ratio = object[["args_search"]][["lambda_min_ratio"]],
+    nlambda = object[["args_search"]][["nlambda"]],
+    thresh = object[["args_search"]][["thresh"]],
+    penalty = object[["args_search"]][["penalty"]],
+    search_terms = object[["args_search"]][["search_terms"]],
+    search_out = list(search_path = object[["search_path"]]),
+    ...
+  ))
 }
 
 #' @rdname varsel
@@ -211,12 +227,8 @@ varsel.refmodel <- function(object, d_test = NULL, method = "forward",
                             nterms_max = NULL, verbose = TRUE,
                             lambda_min_ratio = 1e-5, nlambda = 150,
                             thresh = 1e-6, regul = 1e-4, penalty = NULL,
-                            search_terms = NULL, seed = NA, ...) {
-  if (missing(method) && getOption("projpred.mssg_method_changed", TRUE)) {
-    message("NOTE: In projpred 2.7.0, the default search method ",
-            "was set to \"forward\" for all kinds of models.")
-  }
-
+                            search_terms = NULL, search_out = NULL, seed = NA,
+                            ...) {
   if (exists(".Random.seed", envir = .GlobalEnv)) {
     rng_state_old <- get(".Random.seed", envir = .GlobalEnv)
   }
@@ -296,21 +308,24 @@ varsel.refmodel <- function(object, d_test = NULL, method = "forward",
   nobs_test <- nrow(y_wobs_test)
 
   # Run the search:
-  opt <- nlist(lambda_min_ratio, nlambda, thresh, regul)
-  verb_out("-----\nRunning the search ...", verbose = verbose)
-  search_path <- select(
-    refmodel = refmodel, ndraws = ndraws, nclusters = nclusters,
-    method = method, nterms_max = nterms_max, penalty = penalty,
-    verbose = verbose, opt = opt, search_terms = search_terms,
-    search_terms_was_null = search_terms_was_null, ...
-  )
-  verb_out("-----", verbose = verbose)
+  if (!is.null(search_out)) {
+    search_path <- search_out[["search_path"]]
+  } else {
+    opt <- nlist(lambda_min_ratio, nlambda, thresh, regul)
+    verb_out("-----\nRunning the search ...", verbose = verbose)
+    search_path <- select(
+      refmodel = refmodel, ndraws = ndraws, nclusters = nclusters,
+      method = method, nterms_max = nterms_max, penalty = penalty,
+      verbose = verbose, opt = opt, search_terms = search_terms,
+      search_terms_was_null = search_terms_was_null, ...
+    )
+    verb_out("-----", verbose = verbose)
+  }
 
   # "Run" the performance evaluation for the submodels along the predictor
   # ranking (in fact, we only prepare the performance evaluation by computing
   # precursor quantities, but for users, this difference is not perceivable):
-  verb_out("-----\nRunning the performance evaluation ...",
-           verbose = verbose && refit_prj)
+  verb_out("-----\nRunning the performance evaluation ...", verbose = verbose)
   perf_eval_out <- perf_eval(
     search_path = search_path, refmodel = refmodel, regul = regul,
     refit_prj = refit_prj, ndraws = ndraws_pred, nclusters = nclusters_pred,
@@ -318,7 +333,7 @@ varsel.refmodel <- function(object, d_test = NULL, method = "forward",
     offset_test = d_test$offset, wobs_test = d_test$weights, y_test = d_test$y,
     y_oscale_test = d_test$y_oscale, ...
   )
-  verb_out("-----", verbose = verbose && refit_prj)
+  verb_out("-----", verbose = verbose)
 
   # Predictive performance of the reference model:
   if (inherits(refmodel, "datafit")) {
@@ -387,8 +402,20 @@ varsel.refmodel <- function(object, d_test = NULL, method = "forward",
               nterms_max,
               method,
               cv_method = NULL,
+              nloo = NULL,
               K = NULL,
               validate_search = NULL,
+              ### Not set to `NULL` because in K-fold CV (relevant when using
+              ### cv_varsel.vsel() based on this `vsel` object), `cvfits = NULL`
+              ### would mean to use `cvfun`; instead, the default should be
+              ### element `cvfits` from `refmodel`, so:
+              cvfits = refmodel$cvfits,
+              ###
+              args_search = nlist(
+                method, ndraws, nclusters, nterms_max, lambda_min_ratio,
+                nlambda, thresh, penalty,
+                search_terms = if (search_terms_was_null) NULL else search_terms
+              ),
               clust_used_search = search_path$p_sel$clust_used,
               clust_used_eval = perf_eval_out[["clust_used"]],
               nprjdraws_search = NCOL(search_path$p_sel$mu),
