@@ -2352,7 +2352,7 @@ lfo_folds <- function(n, L) {
   # fit the model at the i-th fold
   folds <- rep(1, n)
   for (t in (L + 1) : (n)) {
-    folds[t] <- t - L
+    folds[t] <- t - L + 1
   }
   return(folds)
 }
