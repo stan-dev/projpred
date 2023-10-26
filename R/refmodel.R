@@ -539,13 +539,9 @@ predict.refmodel <- function(object, newdata = NULL, ynew = NULL,
     was_augmat <- inherits(pred, "augmat")
     ## integrate over the draws
     if (type == "link" || !refmodel$family$for_latent || was_augmat) {
-      if (ncol(pred) > 1) {
-        pred <- rowMeans(pred)
-      }
+      pred <- rowMeans(pred)
     } else {
-      if (nrow(pred) > 1) {
-        pred <- colMeans(pred)
-      }
+      pred <- colMeans(pred)
     }
     if (was_augmat) {
       pred <- structure(pred, nobs_orig = nobs_new, class = "augvec")
