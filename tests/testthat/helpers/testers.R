@@ -1952,7 +1952,7 @@ vsel_tester <- function(
     method_expected,
     cv_method_expected = NULL,
     valsearch_expected = NULL,
-    refit_prj_expected = TRUE,
+    refit_prj_expected = !from_datafit,
     cl_search_expected = !from_datafit,
     cl_eval_expected = !from_datafit,
     nprjdraws_search_expected = if (from_datafit || method_expected == "L1") {
@@ -2443,6 +2443,9 @@ vsel_tester <- function(
   # nprjdraws_eval
   expect_equal(vs$nprjdraws_eval, nprjdraws_eval_expected, info = info_str)
 
+  # refit_prj
+  expect_equal(vs$refit_prj, refit_prj_expected, info = info_str)
+
   # projpred_version
   expect_true(is.package_version(vs$projpred_version), info = info_str)
 
@@ -2481,7 +2484,7 @@ smmry_tester <- function(smmry, vsel_expected, nterms_max_expected = NULL,
     smmry,
     c("formula", "family", "nobs_train", "type_test", "nobs_test", "method",
       "cv_method", "K", "validate_search", "clust_used_search",
-      "clust_used_eval", "nprjdraws_search", "nprjdraws_eval",
+      "clust_used_eval", "nprjdraws_search", "nprjdraws_eval", "refit_prj",
       "search_included", "nterms", "selection", "resp_oscale", "deltas",
       "cumulate"),
     info = info_str
@@ -2495,7 +2498,7 @@ smmry_tester <- function(smmry, vsel_expected, nterms_max_expected = NULL,
   for (nm in c(
     "nobs_train", "type_test", "nobs_test", "method", "cv_method", "K",
     "validate_search", "clust_used_search", "clust_used_eval",
-    "nprjdraws_search", "nprjdraws_eval"
+    "nprjdraws_search", "nprjdraws_eval", "refit_prj"
   )) {
     expect_identical(smmry[[nm]], vsel_expected[[nm]],
                      info = paste(info_str, nm, sep = "__"))

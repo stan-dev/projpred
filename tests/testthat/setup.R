@@ -1947,7 +1947,8 @@ vsel_nms <- c(
   "solution_terms_cv", "ce", "type_test", "y_wobs_test", "nobs_test",
   "summaries", "nterms_all", "nterms_max", "method", "cv_method", "nloo", "K",
   "validate_search", "cvfits", "args_search", "clust_used_search",
-  "clust_used_eval", "nprjdraws_search", "nprjdraws_eval", "projpred_version"
+  "clust_used_eval", "nprjdraws_search", "nprjdraws_eval", "refit_prj",
+  "projpred_version"
 )
 # Output elements of `vsel` objects that may be influenced by `cvfits`:
 vsel_nms_cvfits <- c("refmodel", "cvfits", "summaries", "solution_terms_cv")

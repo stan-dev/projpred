@@ -421,6 +421,7 @@ varsel.refmodel <- function(object, d_test = NULL, method = "forward",
               clust_used_eval = perf_eval_out[["clust_used"]],
               nprjdraws_search = NCOL(search_path$p_sel$mu),
               nprjdraws_eval = perf_eval_out[["nprjdraws"]],
+              refit_prj,
               projpred_version = utils::packageVersion("projpred"))
   class(vs) <- "vsel"
 

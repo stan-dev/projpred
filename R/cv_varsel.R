@@ -405,6 +405,7 @@ cv_varsel.refmodel <- function(
               clust_used_eval = refdist_info_eval$clust_used,
               nprjdraws_search = refdist_info_search$nprjdraws,
               nprjdraws_eval = refdist_info_eval$nprjdraws,
+              refit_prj,
               projpred_version = utils::packageVersion("projpred"))
   class(vs) <- "vsel"
   return(vs)

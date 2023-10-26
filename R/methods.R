@@ -1165,7 +1165,7 @@ summary.vsel <- function(
     object$refmodel[c("formula", "family")],
     object[c("nobs_train", "type_test", "nobs_test", "method", "cv_method", "K",
              "validate_search", "clust_used_search", "clust_used_eval",
-             "nprjdraws_search", "nprjdraws_eval")]
+             "nprjdraws_search", "nprjdraws_eval", "refit_prj")]
   )
   if (isTRUE(out$validate_search)) {
     out$search_included <- "search included (i.e., fold-wise searches)"
@@ -1328,6 +1328,9 @@ print.vselsummary <- function(x, ...) {
       clust_search_pretty, "\n", sep = "")
   cat("Number of projected draws in the performance evaluation: ",
       x$nprjdraws_eval, clust_eval_pretty, "\n", sep = "")
+  # Re-fitted projections along the predictor ranking(s) (it is probably clearer
+  # to just refer to the argument name):
+  cat("Argument `refit_prj`: ", x$refit_prj, "\n", sep = "")
   cat("\n")
   if (x$family$for_latent) {
     if (x$resp_oscale) {
