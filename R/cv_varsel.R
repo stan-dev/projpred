@@ -1720,9 +1720,9 @@ lfo_varsel <- function(refmodel, method, nterms_max, ndraws, nclusters,
   return(out_list)
 }
 
-# Re-fit the reference model T-L-1 times (once for each observation from L to
+# Re-fit the reference model T-L times (once for each observation from L to
 # the second-to-last observation; `cvfun` case) or fetch the fits if already
-# computed (`cvfits` case). This function will return a list of length T-L-1,
+# computed (`cvfits` case). This function will return a list of length T-L,
 # where each element is a list with elements `refmodel` (output of
 # init_refmodel()) and `omitted` (vector of indices of those observations which
 # were left out for the corresponding fold).
