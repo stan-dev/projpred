@@ -2231,7 +2231,8 @@ mat2drmat <- function(xmat) {
 #'
 #' @name cv-indices
 #'
-#' @param n Number of observations.
+#' @param n Number of observations (in case of a time-series model, this is the
+#'   number of time points).
 #' @param K Number of folds. Must be at least 2 and not exceed `n`.
 #' @param out Format of the output, either `"foldwise"` or `"indices"`. See
 #'   below for details.
@@ -2240,7 +2241,6 @@ mat2drmat <- function(xmat) {
 #'   [set.seed()], but can also be `NA` to not call [set.seed()] at all. If not
 #'   `NA`, then the PRNG state is reset (to the state before calling
 #'   [cv_folds()] or [cv_ids()]) upon exiting [cv_folds()] or [cv_ids()].
-#' @param T the total number of time observations
 #' @param L the number of observations to fit the initial fold with
 #'
 #' @return [cv_folds()] returns a vector of length `n` such that each element is
@@ -2336,8 +2336,8 @@ cv_ids <- function(n, K, out = c("foldwise", "indices"), seed = NA) {
 
 #' @rdname cv-indices
 #' @export
-lfo_folds <- function(T, L, seed = NA) {
-  validate_lfo_folds(T, L)
+lfo_folds <- function(n, L, seed = NA) {
+  validate_lfo_folds(n, L)
 
   if (exists(".Random.seed", envir = .GlobalEnv)) {
     rng_state_old <- get(".Random.seed", envir = .GlobalEnv)
@@ -2353,8 +2353,8 @@ lfo_folds <- function(T, L, seed = NA) {
   ## create fold indices
   # these indices, unlike for K-fold indicate the observations to use to the
   # fit the model at the i-th fold
-  folds <- rep(1, T)
-  for (t in (L + 1) : (T)) {
+  folds <- rep(1, n)
+  for (t in (L + 1) : (n)) {
     folds[t] <- t - L
   }
   return(folds)

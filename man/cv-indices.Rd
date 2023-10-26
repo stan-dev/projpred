@@ -14,10 +14,11 @@ cvfolds(n, K, seed = NA)
 
 cv_ids(n, K, out = c("foldwise", "indices"), seed = NA)
 
-lfo_folds(T, L, seed = NA)
+lfo_folds(n, L, seed = NA)
 }
 \arguments{
-\item{n}{Number of observations.}
+\item{n}{Number of observations (in case of a time-series model, this is the
+number of time points).}
 
 \item{K}{Number of folds. Must be at least 2 and not exceed \code{n}.}
 
@@ -29,8 +30,6 @@ results can be obtained again if needed. Passed to argument \code{seed} of
 
 \item{out}{Format of the output, either \code{"foldwise"} or \code{"indices"}. See
 below for details.}
-
-\item{T}{the total number of time observations}
 
 \item{L}{the number of observations to fit the initial fold with}
 }
