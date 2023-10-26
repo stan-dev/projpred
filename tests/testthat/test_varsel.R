@@ -2144,7 +2144,7 @@ test_that(paste(
   skip_if_not(run_cvvs)
   tstsetups <- names(cvvss)
   if (!run_more) {
-    tstsetups <- head(tstsetups, 1)
+    tstsetups <- head(tstsetups, 8)
   }
   for (tstsetup in tstsetups) {
     tstsetup_ref <- args_cvvs[[tstsetup]]$tstsetup_ref
@@ -2203,7 +2203,7 @@ test_that(paste(
   skip_if_not(run_cvvs)
   tstsetups <- names(cvvss)
   if (!run_more) {
-    tstsetups <- head(tstsetups, 1)
+    tstsetups <- head(tstsetups, 2)
   }
   for (tstsetup in tstsetups) {
     tstsetup_ref <- args_cvvs[[tstsetup]]$tstsetup_ref
@@ -2265,7 +2265,7 @@ test_that(paste(
   skip_if_not(run_cvvs)
   tstsetups <- names(cvvss)
   if (!run_more) {
-    tstsetups <- head(tstsetups, 1)
+    tstsetups <- head(tstsetups, 8)
   }
   for (tstsetup in tstsetups) {
     tstsetup_ref <- args_cvvs[[tstsetup]]$tstsetup_ref
@@ -2466,7 +2466,7 @@ test_that(paste(
   skip_if_not(run_cvvs)
   tstsetups <- names(cvvss)
   if (!run_more) {
-    tstsetups <- head(tstsetups, 1)
+    tstsetups <- head(tstsetups, 2)
   }
   for (tstsetup in tstsetups) {
     if (run_more && !args_cvvs[[tstsetup]]$mod_nm %in% c("glm", "gam")) {
@@ -2560,7 +2560,7 @@ test_that(paste(
   skip_if_not(run_cvvs)
   tstsetups <- names(cvvss)
   if (!run_more) {
-    tstsetups <- head(tstsetups, 1)
+    tstsetups <- head(tstsetups, 2)
   }
   for (tstsetup in tstsetups) {
     tstsetup_ref <- args_cvvs[[tstsetup]]$tstsetup_ref
