@@ -670,7 +670,8 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
     # "Run" the performance evaluation for the submodels along the predictor
     # ranking (in fact, we only prepare the performance evaluation by computing
     # precursor quantities, but for users, this difference is not perceivable):
-    verb_out("-----\nRunning the performance evaluation ...", verbose = verbose)
+    verb_out("-----\nRunning the performance evaluation with `refit_prj = ",
+             refit_prj, "` ...", verbose = verbose)
     # Step 1: Re-project (using the full dataset) onto the submodels along the
     # full-data predictor ranking and evaluate their predictive performance.
     perf_eval_out <- perf_eval(
@@ -900,8 +901,9 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
       } else {
         verb_txt_mid <- "the search and "
       }
-      verb_out(verb_txt_start, verb_txt_mid, "the performance evaluation for ",
-               "each of the N = ", nloo, " LOO CV folds separately ...")
+      verb_out(verb_txt_start, verb_txt_mid, "the performance evaluation with ",
+               "`refit_prj = ", refit_prj, "` for each of the N = ", nloo, " ",
+               "LOO CV folds separately ...")
     }
     one_obs <- function(run_index,
                         verbose_search = verbose &&
@@ -1223,8 +1225,9 @@ kfold_varsel <- function(refmodel, method, nterms_max, ndraws, nclusters,
     } else {
       verb_txt_mid <- "the search and "
     }
-    verb_out(verb_txt_start, verb_txt_mid, "the performance evaluation for ",
-             "each of the K = ", K, " CV folds separately ...")
+    verb_out(verb_txt_start, verb_txt_mid, "the performance evaluation with ",
+             "`refit_prj = ", refit_prj, "` for each of the K = ", K, " CV ",
+             "folds separately ...")
   }
   one_fold <- function(fold,
                        rk,

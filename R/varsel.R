@@ -325,7 +325,8 @@ varsel.refmodel <- function(object, d_test = NULL, method = "forward",
   # "Run" the performance evaluation for the submodels along the predictor
   # ranking (in fact, we only prepare the performance evaluation by computing
   # precursor quantities, but for users, this difference is not perceivable):
-  verb_out("-----\nRunning the performance evaluation ...", verbose = verbose)
+  verb_out("-----\nRunning the performance evaluation with `refit_prj = ",
+           refit_prj, "` ...", verbose = verbose)
   perf_eval_out <- perf_eval(
     search_path = search_path, refmodel = refmodel, regul = regul,
     refit_prj = refit_prj, ndraws = ndraws_pred, nclusters = nclusters_pred,
