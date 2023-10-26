@@ -130,7 +130,7 @@ validate_num_folds <- function(k, n) {
   }
 }
 
-validate_num_folds_lfo <- function(n, L) {
+validate_num_folds_lfo <- function(L, n) {
   if (!is.numeric(L) || length(L) != 1 || !is_wholenumber(L)) {
     stop("Number of folds must be a single integer value.")
   }

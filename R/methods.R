@@ -2345,7 +2345,7 @@ cv_ids <- function(n, K, out = c("foldwise", "indices"), seed = NA) {
 #' @rdname cv-indices
 #' @export
 lfo_folds <- function(n, L, seed = NA) {
-  validate_num_folds_lfo(n, L)
+  validate_num_folds_lfo(L = L, n = n)
 
   if (exists(".Random.seed", envir = .GlobalEnv)) {
     rng_state_old <- get(".Random.seed", envir = .GlobalEnv)
