@@ -1186,7 +1186,13 @@ if (run_cvvs) {
     fam_crr <- args_ref[[tstsetup_ref]]$fam_nm
     prj_crr <- args_ref[[tstsetup_ref]]$prj_nm
     if (prj_crr == "trad" && mod_crr == "glm") {
-      meth <- meth_tst["L1"]
+      if (run_more && fam_crr == "gauss" &&
+          grepl("\\.stdformul\\.", tstsetup_ref)) {
+        # Needed for testing non-default `search_terms`:
+        meth <- meth_tst["default_meth"]
+      } else {
+        meth <- meth_tst["L1"]
+      }
     } else {
       meth <- meth_tst["default_meth"]
     }
@@ -1213,6 +1219,11 @@ if (run_cvvs) {
       cvmeth <- cvmeth_tst["default_cvmeth"]
     }
     lapply(meth, function(meth_i) {
+      if (run_more && mod_crr == "glm" && fam_crr == "gauss" &&
+          grepl("\\.stdformul\\.", tstsetup_ref) && pkg_crr == "brms") {
+        # Needed for testing non-default `search_terms` with K-fold CV:
+        cvmeth <- cvmeth_tst["kfold"]
+      }
       lapply(cvmeth, function(cvmeth_i) {
         if (!identical(meth_i$method, "L1") && !run_valsearch_always &&
             (!prj_crr %in% c("latent", "augdat", "trad_compare") ||
@@ -1220,7 +1231,13 @@ if (run_cvvs) {
               !run_valsearch_aug_lat))) {
           cvmeth_i <- c(cvmeth_i, list(validate_search = FALSE))
         }
-        search_trms <- search_trms_tst["default_search_trms"]
+        if (run_more && mod_crr == "glm" && fam_crr == "gauss" &&
+            grepl("\\.stdformul\\.", tstsetup_ref)) {
+          # Here, we also test non-NULL `search_terms`:
+          search_trms <- search_trms_tst
+        } else {
+          search_trms <- search_trms_tst["default_search_trms"]
+        }
         lapply(search_trms, function(search_trms_i) {
           if (length(search_trms_i) &&
               !identical(search_trms_i$search_terms,
@@ -1611,6 +1628,21 @@ cre_args_smmry_vsel <- function(args_obj) {
       )
     }))
   )
+
+  # In case of `run_more = TRUE`, we need to make sure to include the following:
+  if (run_more) {
+    tstsetups_smmry_vsel <- union(
+      tstsetups_smmry_vsel,
+      head(
+        tstsetups[sapply(tstsetups, function(tstsetup_vsel) {
+          args_obj[[tstsetup_vsel]]$mod_nm == "glm" &&
+            args_obj[[tstsetup_vsel]]$fam_nm == "gauss" &&
+            is.null(args_obj[[tstsetup_vsel]]$search_terms)
+        })],
+        1
+      )
+    )
+  }
 
   tstsetups_smmry_vsel <- setNames(nm = tstsetups_smmry_vsel)
   stopifnot(length(tstsetups_smmry_vsel) > 0)

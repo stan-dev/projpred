@@ -1275,7 +1275,7 @@ test_that("`seed` works (and restores the RNG state afterwards)", {
   skip_if_not(run_cvvs)
   # To save time:
   tstsetups <- union(
-    grep("\\.glm\\.gauss", names(cvvss), value = TRUE),
+    grep("\\.glm\\.gauss.*\\.default_search_trms", names(cvvss), value = TRUE),
     # Important for testing get_refmodel.brmsfit()'s internal `kfold_seed` (and
     # also `refprd_seed` if we are lucky and get a fold which separates out at
     # least one group):
@@ -1435,8 +1435,10 @@ test_that(paste(
 ), {
   skip_if_not(run_cvvs)
   nloo_tst <- nobsv + 1L
-  tstsetups <- grep("\\.glm\\.gauss\\..*\\.default_cvmeth", names(cvvss),
-                    value = TRUE)
+  tstsetups <- grep(
+    "\\.glm\\.gauss\\..*\\.default_cvmeth\\.default_search_trms",
+    names(cvvss), value = TRUE
+  )
   for (tstsetup in tstsetups) {
     args_cvvs_i <- args_cvvs[[tstsetup]]
     # Use suppressWarnings() because of occasional warnings concerning Pareto k
@@ -1458,8 +1460,10 @@ test_that("setting `nloo` smaller than the number of observations works", {
   vsel_nms_nloo <- c("summaries", "solution_terms_cv", "nloo")
   vsel_nms_nloo_opt <- c("solution_terms_cv")
   # The setups that should be tested:
-  tstsetups <- grep("\\.glm\\.gauss\\..*\\.default_cvmeth", names(cvvss),
-                    value = TRUE)
+  tstsetups <- grep(
+    "\\.glm\\.gauss\\..*\\.default_cvmeth\\.default_search_trms",
+    names(cvvss), value = TRUE
+  )
   for (tstsetup in tstsetups) {
     args_cvvs_i <- args_cvvs[[tstsetup]]
     tstsetup_ref <- args_cvvs_i$tstsetup_ref
