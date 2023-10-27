@@ -1457,8 +1457,13 @@ test_that("setting `nloo` smaller than the number of observations works", {
   skip_if_not(run_cvvs)
   nloo_tst <- nobsv %/% 5L
   # Output elements of `vsel` objects that may be influenced by `nloo`:
-  vsel_nms_nloo <- c("summaries", "solution_terms_cv", "nloo")
-  vsel_nms_nloo_opt <- c("solution_terms_cv")
+  vsel_nms_nloo <- c("summaries", "solution_terms_cv", "nloo", "ce")
+  # In general, element `ce` is affected as well (because the PRNG state when
+  # doing the clustering for the performance evaluation is different when `nloo`
+  # is smaller than the number of observations compared to when `nloo` is equal
+  # to the number of observations), but the changes in `ce` may be so small that
+  # they are not detected by all.equal():
+  vsel_nms_nloo_opt <- c("ce")
   # The setups that should be tested:
   tstsetups <- grep(
     "\\.glm\\.gauss\\..*\\.default_cvmeth\\.default_search_trms",
@@ -1494,12 +1499,16 @@ test_that("setting `nloo` smaller than the number of observations works", {
       info_str = tstsetup
     )
     # Expected equality for most elements with a few exceptions:
-    expect_equal(cvvs_nloo[setdiff(vsel_nms, vsel_nms_nloo)],
-                 cvvss[[tstsetup]][setdiff(vsel_nms, vsel_nms_nloo)],
+    vsel_nms_nloo_crr <- vsel_nms_nloo
+    if (isFALSE(args_cvvs_i$validate_search)) {
+      vsel_nms_nloo_crr <- setdiff(vsel_nms_nloo_crr, "solution_terms_cv")
+    }
+    expect_equal(cvvs_nloo[setdiff(vsel_nms, vsel_nms_nloo_crr)],
+                 cvvss[[tstsetup]][setdiff(vsel_nms, vsel_nms_nloo_crr)],
                  info = tstsetup)
     # Expected inequality for the exceptions (the elements from
     # `vsel_nms_nloo_opt` can be, but don't need to be differing):
-    for (vsel_nm in setdiff(vsel_nms_nloo, vsel_nms_nloo_opt)) {
+    for (vsel_nm in setdiff(vsel_nms_nloo_crr, vsel_nms_nloo_opt)) {
       expect_false(isTRUE(all.equal(cvvs_nloo[[vsel_nm]],
                                     cvvss[[tstsetup]][[vsel_nm]])),
                    info = paste(tstsetup, vsel_nm, sep = "__"))
