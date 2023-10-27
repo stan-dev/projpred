@@ -1268,7 +1268,7 @@ summary.vsel <- function(
 
   # Output (and also cut `perf_sub` at `nterms_max` (if provided)):
   if (is.null(nterms_max)) {
-    nterms_max <- max(stats_table_sub$size)
+    nterms_max <- max(perf_sub$size)
   }
   out$nterms <- nterms_max
   out$selection <- subset(perf_sub, perf_sub$size <= nterms_max)
