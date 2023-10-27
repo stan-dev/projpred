@@ -1247,22 +1247,22 @@ summary.vsel <- function(
   # Construct the (almost) final output table by looping over all requested
   # statistics, reshaping the corresponding data in `stats_table`, and selecting
   # only the requested `type`s:
-  arr <- data.frame(size = unique(stats_table$size),
-                    solution_terms = c(NA_character_, rk[["fulldata"]]),
-                    cv_proportions_diag = c(NA, pr_rk))
+  perf_sub <- data.frame(size = unique(stats_table$size),
+                         solution_terms = c(NA_character_, rk[["fulldata"]]),
+                         cv_proportions_diag = c(NA, pr_rk))
   for (i in seq_along(stats)) {
     perf_sub_add <- subset(stats_table, stats_table$statistic == stats[i], qty)
     colnames(perf_sub_add) <- colnms_clean[[i]]
-    arr <- cbind(arr, perf_sub_add)
+    perf_sub <- cbind(perf_sub, perf_sub_add)
   }
-  row.names(arr) <- NULL
+  row.names(perf_sub) <- NULL
 
-  # Output (and also cut `arr` at `nterms_max` (if provided)):
+  # Output (and also cut `perf_sub` at `nterms_max` (if provided)):
   if (is.null(nterms_max)) {
     nterms_max <- max(stats_table$size)
   }
   out$nterms <- nterms_max
-  out$selection <- subset(arr, arr$size <= nterms_max)
+  out$selection <- subset(perf_sub, perf_sub$size <= nterms_max)
   out$resp_oscale <- resp_oscale
   out$deltas <- deltas
   out$cumulate <- cumulate
