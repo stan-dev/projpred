@@ -998,11 +998,21 @@ plot.vsel <- function(
     #                        direction = 1)
     ###
   }
+  if (all(stats %in% c("rmse", "auc"))) {
+    ci_type <- "bootstrap "
+  } else if (all(!stats %in% c("rmse", "auc"))) {
+    ci_type <- "normal approximation "
+  } else {
+    ci_type <- ""
+  }
   pp <- pp +
     scale_x_continuous(breaks = breaks, minor_breaks = minor_breaks,
                        limits = c(min(breaks), max(breaks)),
                        labels = tick_labs_x) +
-    labs(x = xlab, y = ylab) +
+    labs(x = xlab, y = ylab, title = "Predictive performance",
+         subtitle = paste0("Vertical bars indicate ",
+                           round(100 * (1 - alpha), 1), "% ", ci_type,
+                           "confidence intervals")) +
     theme(axis.text.x = element_text(angle = text_angle, hjust = 0.5,
                                      vjust = 0.5)) +
     facet_grid(statistic ~ ., scales = "free_y")
