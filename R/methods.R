@@ -729,6 +729,7 @@ plot.vsel <- function(
     text_angle = NULL,
     ...
 ) {
+  # Parse input:
   object <- x
   validate_vsel_object_stats(object, stats, resp_oscale = resp_oscale)
   baseline <- validate_baseline(object$refmodel, baseline, deltas)
@@ -741,7 +742,8 @@ plot.vsel <- function(
     stopifnot(isTRUE(ranking_repel %in% c("text", "label")))
   }
 
-  ## compute all the statistics and fetch only those that were asked
+  # Define `nfeat_baseline` and a slightly modified variant that can be used for
+  # .tabulate_stats()'s argument `nfeat_baseline`:
   nfeat_baseline <- get_nfeat_baseline(object, baseline, stats[1],
                                        resp_oscale = resp_oscale)
   if (deltas) {
@@ -749,6 +751,8 @@ plot.vsel <- function(
   } else {
     nfeat_baseline_for_tab <- NULL
   }
+
+  # Compute the predictive performance statistics:
   stats_table <- .tabulate_stats(object, stats, alpha = alpha,
                                  nfeat_baseline = nfeat_baseline_for_tab,
                                  resp_oscale = resp_oscale, ...)
@@ -756,12 +760,13 @@ plot.vsel <- function(
   stats_sub <- subset(stats_table, stats_table$size != Inf)
   stats_bs <- subset(stats_table, stats_table$size == nfeat_baseline)
 
-
+  # Catch unexpected output from .tabulate_stats():
   if (NROW(stats_sub) == 0) {
     stop(ifelse(length(stats) > 1, "Statistics ", "Statistic "),
          paste0(unique(stats), collapse = ", "), " not available.")
   }
 
+  # Define `nterms_max`:
   max_size <- max(stats_sub$size)
   if (max_size == 0) {
     stop("plot.vsel() cannot be used if there is just the intercept-only ",
@@ -770,7 +775,7 @@ plot.vsel <- function(
   if (is.null(nterms_max)) {
     nterms_max <- max_size
   } else {
-    # don't exceed the maximum submodel size
+    # Don't exceed the maximum submodel size:
     nterms_max <- min(nterms_max, max_size)
   }
   if (nterms_max < 1) {
@@ -780,6 +785,8 @@ plot.vsel <- function(
     stop("`nterms_max` must be a whole number.")
   }
   nterms_max <- as.integer(nterms_max)
+
+  # Define some "pretty" text strings for the plot:
   if (baseline == "ref") {
     baseline_pretty <- "reference model"
   } else {
@@ -798,12 +805,13 @@ plot.vsel <- function(
     }
   }
 
-  # make sure that breaks on the x-axis are integers
+  # The following block defines the x-axis breaks (in doing so, we ensure that
+  # these are integers):
   n_opts <- 4:6
   n_possible <- Filter(function(x) nterms_max %% x == 0, n_opts)
   n_alt <- n_opts[which.min(n_opts - (nterms_max %% n_opts))]
   nb <- ifelse(length(n_possible) > 0, min(n_possible), n_alt)
-  # Using as.integer() only to make it clear that this is an integer (just like
+  # Using as.integer() only to make it clear that `by` is an integer (just like
   # `breaks` and `minor_breaks`):
   by <- as.integer(ceiling(nterms_max / min(nterms_max, nb)))
   breaks <- seq(0L, by * min(nterms_max, nb), by)
@@ -909,7 +917,7 @@ plot.vsel <- function(
     }
   }
 
-  # plot submodel results
+  # Define the data for the plot:
   data_gg <- subset(stats_sub, stats_sub$size <= nterms_max)
   if (!is.na(ranking_nterms_max) &&
       (!is.null(ranking_repel) ||
@@ -924,18 +932,18 @@ plot.vsel <- function(
     data_gg[["row_idx"]] <- NULL
     data_gg <- data_gg[, c(colnms_orig, cols_add), drop = FALSE]
   }
+
+  # Create the plot:
   pp <- ggplot(data = data_gg,
                mapping = aes(x = .data[["size"]], y = .data[["value"]],
                              ymin = .data[["lq"]], ymax = .data[["uq"]]))
   if (!all(is.na(stats_ref$se))) {
-    # add reference model results if they exist
-
+    # In this case, add the predictive performance of the reference model.
     pp <- pp +
       # The reference model's dashed red horizontal line:
       geom_hline(aes(yintercept = .data[["value"]]),
                  data = stats_ref,
                  color = "darkred", linetype = 2)
-
     if (!is.na(thres_elpd)) {
       # The thresholds used in extended suggest_size() heuristics:
       thres_tab_ref <- merge(thres_tab_basic,
@@ -949,14 +957,12 @@ plot.vsel <- function(
     }
   }
   if (baseline != "ref") {
-    # add baseline model results (if different from the reference model)
-
+    # In this case, add the predictive performance of the baseline model.
     pp <- pp +
       # The baseline model's dotted black horizontal line:
       geom_hline(aes(yintercept = .data[["value"]]),
                  data = stats_bs,
                  color = "black", linetype = 3)
-
     if (!is.na(thres_elpd)) {
       # The thresholds used in extended suggest_size() heuristics:
       thres_tab_bs <- merge(thres_tab_basic,
