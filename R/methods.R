@@ -1199,6 +1199,15 @@ summary.vsel <- function(
   }
   class(out) <- "vselsummary"
 
+  # Predictor ranking(s) and associated ranking proportions from fold-wise
+  # predictor rankings (if existing):
+  rk <- ranking(object)
+  if (!is.null(rk[["foldwise"]]) && ncol(rk[["foldwise"]]) > 0) {
+    pr_rk <- diag(cv_proportions(rk, cumulate = cumulate))
+  } else {
+    pr_rk <- rep(NA, length(rk[["fulldata"]]))
+  }
+
   # The full table of the performance statistics from `stats`:
   if (deltas) {
     nfeat_baseline_for_tab <- get_nfeat_baseline(object, baseline, stats[1],
@@ -1233,15 +1242,6 @@ summary.vsel <- function(
     colnms_clean <- type
     colnms_clean[colnms_clean == "mean"] <- stats
     colnms_clean <- list(colnms_clean)
-  }
-
-  # Predictor ranking(s) and associated ranking proportions from fold-wise
-  # predictor rankings (if existing):
-  rk <- ranking(object)
-  if (!is.null(rk[["foldwise"]]) && ncol(rk[["foldwise"]]) > 0) {
-    pr_rk <- diag(cv_proportions(rk, cumulate = cumulate))
-  } else {
-    pr_rk <- rep(NA, length(rk[["fulldata"]]))
   }
 
   # Construct the (almost) final output table by looping over all requested
