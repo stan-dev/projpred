@@ -1236,10 +1236,10 @@ summary.vsel <- function(
     type <- setdiff(type, c("diff", "diff.se"))
   }
   # 2) The column names of `stats_table` corresponding to the requested `type`s:
-  colnms_old <- unname(sapply(type, function(t) {
-    switch(t, mean = "value", upper = "uq", lower = "lq", se = "se",
-           diff = "diff", diff.se = "diff.se")
-  }))
+  colnms_old <- type
+  colnms_old[colnms_old == "mean"] <- "value"
+  colnms_old[colnms_old == "upper"] <- "uq"
+  colnms_old[colnms_old == "lower"] <- "lq"
   # 3) The clean column names that should be used in the output table:
   if (length(stats) > 1) {
     type_dot <- paste0(".", type)
