@@ -1225,23 +1225,17 @@ summary.vsel <- function(
     switch(t, mean = "value", upper = "uq", lower = "lq", se = "se",
            diff = "diff", diff.se = "diff.se")
   }))
-  if (!is.null(object$cv_method)) {
-    cv_suffix <- unname(switch(object$cv_method,
-                               LOO = ".loo", kfold = ".kfold"))
-  } else {
-    cv_suffix <- NULL
-  }
   if (length(stats) > 1) {
     suffix <- lapply(stats, function(s) {
       unname(sapply(type, function(t) {
         paste0(s,
-               switch(t, mean = cv_suffix, upper = ".upper", lower = ".lower",
+               switch(t, mean = "", upper = ".upper", lower = ".lower",
                       se = ".se", diff = ".diff", diff.se = ".diff.se"))
       }))
     })
   } else {
     suffix <- list(unname(sapply(type, function(t) {
-      switch(t, mean = paste0(stats, cv_suffix), upper = "upper",
+      switch(t, mean = stats, upper = "upper",
              lower = "lower", se = "se",
              diff = "diff", diff.se = "diff.se")
     })))
@@ -1550,17 +1544,9 @@ suggest_size.vsel <- function(
       type <- "upper"
     }
   }
-  if (!is.null(object$cv_method)) {
-    suffix <- paste0(".", tolower(object$cv_method))
-  } else {
-    suffix <- ""
-  }
   bound <- type
 
-  util_null <- sgn * unlist(unname(subset(
-    stats, stats$size == 0,
-    paste0(stat, suffix)
-  )))
+  util_null <- sgn * unlist(unname(subset(stats, stats$size == 0, stat)))
   util_cutoff <- pct * util_null
   if (is.na(thres_elpd)) {
     thres_elpd <- Inf
@@ -1568,8 +1554,8 @@ suggest_size.vsel <- function(
   nobs_test <- object$nobs_test
   res <- stats[
     (sgn * stats[, bound] >= util_cutoff) |
-      (stat == "elpd" & stats[, paste0(stat, suffix)] > thres_elpd) |
-      (stat == "mlpd" & stats[, paste0(stat, suffix)] > thres_elpd / nobs_test),
+      (stat == "elpd" & stats[, stat] > thres_elpd) |
+      (stat == "mlpd" & stats[, stat] > thres_elpd / nobs_test),
     "size", drop = FALSE
   ]
 
