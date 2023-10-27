@@ -744,14 +744,16 @@ plot.vsel <- function(
   ## compute all the statistics and fetch only those that were asked
   nfeat_baseline <- get_nfeat_baseline(object, baseline, stats[1],
                                        resp_oscale = resp_oscale)
-  tab <- rbind(
-    .tabulate_stats(object, stats, alpha = alpha,
-                    nfeat_baseline = nfeat_baseline, resp_oscale = resp_oscale,
-                    ...),
-    .tabulate_stats(object, stats, alpha = alpha, resp_oscale = resp_oscale,
-                    ...)
-  )
-  stats_table <- subset(tab, tab$delta == deltas)
+  if (deltas) {
+    stats_table <- .tabulate_stats(object, stats, alpha = alpha,
+                                   nfeat_baseline = nfeat_baseline,
+                                   resp_oscale = resp_oscale,
+                                   ...)
+  } else {
+    stats_table <- .tabulate_stats(object, stats, alpha = alpha,
+                                   resp_oscale = resp_oscale,
+                                   ...)
+  }
   stats_ref <- subset(stats_table, stats_table$size == Inf)
   stats_sub <- subset(stats_table, stats_table$size != Inf)
   stats_bs <- subset(stats_table, stats_table$size == nfeat_baseline)
