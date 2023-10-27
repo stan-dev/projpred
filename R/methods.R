@@ -1234,11 +1234,9 @@ summary.vsel <- function(
       }))
     })
   } else {
-    suffix <- list(unname(sapply(type, function(t) {
-      switch(t, mean = stats, upper = "upper",
-             lower = "lower", se = "se",
-             diff = "diff", diff.se = "diff.se")
-    })))
+    suffix <- type
+    suffix[suffix == "mean"] <- stats
+    suffix <- list(suffix)
   }
 
   # Predictor ranking(s) and associated ranking proportions from fold-wise
