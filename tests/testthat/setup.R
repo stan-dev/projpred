@@ -1205,8 +1205,9 @@ if (run_cvvs) {
         # using K-fold CV, so use LOO CV:
         cvmeth <- cvmeth_tst["default_cvmeth"]
       } else if (pkg_crr == "brms" && mod_crr == "gamm") {
-        # For GAMMs fitted by brms, there is a (random, i.e., only occasional)
-        # reproducibility issue when using K-fold CV, so use LOO CV:
+        # For GAMMs fitted by brms with the rstan backend, there is a (random,
+        # i.e., only occasional) reproducibility issue when using K-fold CV (see
+        # rstan issue stan-dev/rstan#989), so use LOO CV:
         cvmeth <- cvmeth_tst["default_cvmeth"]
       } else if (prj_crr %in% c("latent", "augdat") && fam_crr != "brnll") {
         # We also want to test the latent and the augmented-data projection with
