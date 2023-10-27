@@ -1218,15 +1218,18 @@ summary.vsel <- function(
   stats_table <- .tabulate_stats(object, stats, alpha = alpha,
                                  nfeat_baseline = nfeat_baseline_for_tab,
                                  resp_oscale = resp_oscale, ...)
-  stats_table <- subset(stats_table, stats_table$size != Inf)
-  stats_table <- do.call(rbind,
-                         lapply(split(stats_table, stats_table$statistic),
-                                utils::head,
-                                n = length(object$solution_terms) + 1))
-  row.names(stats_table) <- NULL
+
+  # Extract the submodel performance results from `stats_table`:
+  stats_table_sub <- subset(stats_table, stats_table$size != Inf)
+  stats_table_sub <- do.call(
+    rbind,
+    lapply(split(stats_table_sub, stats_table_sub$statistic), utils::head,
+           n = length(object$solution_terms) + 1)
+  )
+  row.names(stats_table_sub) <- NULL
 
   # Initialize the output table for the submodel performance:
-  perf_sub <- data.frame(size = unique(stats_table$size),
+  perf_sub <- data.frame(size = unique(stats_table_sub$size),
                          solution_terms = c(NA_character_, rk[["fulldata"]]),
                          cv_proportions_diag = c(NA, pr_rk))
 
@@ -1252,10 +1255,11 @@ summary.vsel <- function(
   }
 
   # Fill the output table for the submodel performance (essentially, we reshape
-  # `stats_table`, thereby selecting only the requested `type`s and renaming the
-  # output columns):
+  # `stats_table_sub`, thereby selecting only the requested `type`s and renaming
+  # the output columns):
   for (i in seq_along(stats)) {
-    perf_sub_add <- subset(stats_table, stats_table$statistic == stats[i],
+    perf_sub_add <- subset(stats_table_sub,
+                           stats_table_sub$statistic == stats[i],
                            colnms_old)
     colnames(perf_sub_add) <- colnms_clean[[i]]
     perf_sub <- cbind(perf_sub, perf_sub_add)
@@ -1264,7 +1268,7 @@ summary.vsel <- function(
 
   # Output (and also cut `perf_sub` at `nterms_max` (if provided)):
   if (is.null(nterms_max)) {
-    nterms_max <- max(stats_table$size)
+    nterms_max <- max(stats_table_sub$size)
   }
   out$nterms <- nterms_max
   out$selection <- subset(perf_sub, perf_sub$size <= nterms_max)
