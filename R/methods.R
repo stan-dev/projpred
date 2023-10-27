@@ -1236,7 +1236,7 @@ summary.vsel <- function(
     type <- setdiff(type, c("diff", "diff.se"))
   }
   # 2) The column names of `stats_table` corresponding to the requested `type`s:
-  qty <- unname(sapply(type, function(t) {
+  colnms_old <- unname(sapply(type, function(t) {
     switch(t, mean = "value", upper = "uq", lower = "lq", se = "se",
            diff = "diff", diff.se = "diff.se")
   }))
@@ -1255,7 +1255,8 @@ summary.vsel <- function(
   # `stats_table`, thereby selecting only the requested `type`s and renaming the
   # output columns):
   for (i in seq_along(stats)) {
-    perf_sub_add <- subset(stats_table, stats_table$statistic == stats[i], qty)
+    perf_sub_add <- subset(stats_table, stats_table$statistic == stats[i],
+                           colnms_old)
     colnames(perf_sub_add) <- colnms_clean[[i]]
     perf_sub <- cbind(perf_sub, perf_sub_add)
   }
