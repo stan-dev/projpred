@@ -1225,15 +1225,22 @@ summary.vsel <- function(
                                 n = length(object$solution_terms) + 1))
   row.names(stats_table) <- NULL
 
+  # Initialize the output table for the submodel performance:
+  perf_sub <- data.frame(size = unique(stats_table$size),
+                         solution_terms = c(NA_character_, rk[["fulldata"]]),
+                         cv_proportions_diag = c(NA, pr_rk))
+
+  # Preparations for filling the output table for the submodel performance:
+  # 1) Pre-process `type`:
   if (deltas) {
     type <- setdiff(type, c("diff", "diff.se"))
   }
-  # The column names of `stats_table` corresponding to all items from `type`:
+  # 2) The column names of `stats_table` corresponding to the requested `type`s:
   qty <- unname(sapply(type, function(t) {
     switch(t, mean = "value", upper = "uq", lower = "lq", se = "se",
            diff = "diff", diff.se = "diff.se")
   }))
-  # The clean column names that should be used in the output table:
+  # 3) The clean column names that should be used in the output table:
   if (length(stats) > 1) {
     type_dot <- paste0(".", type)
     type_dot[type_dot == ".mean"] <- ""
@@ -1244,12 +1251,9 @@ summary.vsel <- function(
     colnms_clean <- list(colnms_clean)
   }
 
-  # Construct the (almost) final output table by looping over all requested
-  # statistics, reshaping the corresponding data in `stats_table`, and selecting
-  # only the requested `type`s:
-  perf_sub <- data.frame(size = unique(stats_table$size),
-                         solution_terms = c(NA_character_, rk[["fulldata"]]),
-                         cv_proportions_diag = c(NA, pr_rk))
+  # Fill the output table for the submodel performance (essentially, we reshape
+  # `stats_table`, thereby selecting only the requested `type`s and renaming the
+  # output columns):
   for (i in seq_along(stats)) {
     perf_sub_add <- subset(stats_table, stats_table$statistic == stats[i], qty)
     colnames(perf_sub_add) <- colnms_clean[[i]]
