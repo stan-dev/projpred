@@ -1219,6 +1219,9 @@ summary.vsel <- function(
                                  nfeat_baseline = nfeat_baseline_for_tab,
                                  resp_oscale = resp_oscale, ...)
 
+  # Extract the reference model performance results from `stats_table`:
+  stats_table_ref <- subset(stats_table, stats_table$size == Inf)
+
   # Extract the submodel performance results from `stats_table`:
   stats_table_sub <- subset(stats_table, stats_table$size != Inf)
   stats_table_sub <- do.call(
@@ -1228,31 +1231,30 @@ summary.vsel <- function(
   )
   row.names(stats_table_sub) <- NULL
 
+  # Initialize the output table for the reference model performance:
+  perf_ref <- as.data.frame(matrix(nrow = 1, ncol = 0))
+
   # Initialize the output table for the submodel performance:
   perf_sub <- data.frame(size = unique(stats_table_sub$size),
                          solution_terms = c(NA_character_, rk[["fulldata"]]),
                          cv_proportions_diag = c(NA, pr_rk))
 
-  # Preparations for filling the output table for the submodel performance:
-  # 1) Pre-process `type`:
-  if (deltas) {
-    type <- setdiff(type, c("diff", "diff.se"))
+  # For renaming columns of the two output tables (one for the reference model
+  # performance and for the submodel performance):
+  colnms_ref <- mk_colnms_smmry(type = type, stats = stats, deltas = NULL)
+  colnms_sub <- mk_colnms_smmry(type = type, stats = stats, deltas = deltas)
+
+  # Fill the output table for the reference model performance (essentially, we
+  # reshape `stats_table_ref`, thereby selecting only the requested `type`s and
+  # renaming the output columns):
+  for (i in seq_along(stats)) {
+    perf_ref_add <- subset(stats_table_ref,
+                           stats_table_ref$statistic == stats[i],
+                           colnms_ref[["nms_old"]])
+    colnames(perf_ref_add) <- colnms_ref[["nms_new"]][[i]]
+    perf_ref <- cbind(perf_ref, perf_ref_add)
   }
-  # 2) The column names of `stats_table` corresponding to the requested `type`s:
-  colnms_old <- type
-  colnms_old[colnms_old == "mean"] <- "value"
-  colnms_old[colnms_old == "upper"] <- "uq"
-  colnms_old[colnms_old == "lower"] <- "lq"
-  # 3) The clean column names that should be used in the output table:
-  if (length(stats) > 1) {
-    type_dot <- paste0(".", type)
-    type_dot[type_dot == ".mean"] <- ""
-    colnms_clean <- lapply(stats, paste0, type_dot)
-  } else {
-    colnms_clean <- type
-    colnms_clean[colnms_clean == "mean"] <- stats
-    colnms_clean <- list(colnms_clean)
-  }
+  row.names(perf_ref) <- NULL
 
   # Fill the output table for the submodel performance (essentially, we reshape
   # `stats_table_sub`, thereby selecting only the requested `type`s and renaming
@@ -1260,8 +1262,8 @@ summary.vsel <- function(
   for (i in seq_along(stats)) {
     perf_sub_add <- subset(stats_table_sub,
                            stats_table_sub$statistic == stats[i],
-                           colnms_old)
-    colnames(perf_sub_add) <- colnms_clean[[i]]
+                           colnms_sub[["nms_old"]])
+    colnames(perf_sub_add) <- colnms_sub[["nms_new"]][[i]]
     perf_sub <- cbind(perf_sub, perf_sub_add)
   }
   row.names(perf_sub) <- NULL
@@ -1272,10 +1274,38 @@ summary.vsel <- function(
   }
   out$nterms <- nterms_max
   out$selection <- subset(perf_sub, perf_sub$size <= nterms_max)
+  stopifnot(nrow(perf_ref) == 1)
+  # out$perf_ref <- as.matrix(perf_ref)[1, ]
   out$resp_oscale <- resp_oscale
   out$deltas <- deltas
   out$cumulate <- cumulate
   return(out)
+}
+
+# Helper function for renaming columns of the two main output tables of
+# `vselsummary` objects (these two main output tables are one table for the
+# reference model performance and one table for the submodel performance):
+mk_colnms_smmry <- function(type, stats, deltas) {
+  # Pre-process `type`:
+  if (is.null(deltas) || deltas) {
+    type <- setdiff(type, c("diff", "diff.se"))
+  }
+  # The column names of `stats_table` corresponding to the requested `type`s:
+  nms_old <- type
+  nms_old[nms_old == "mean"] <- "value"
+  nms_old[nms_old == "upper"] <- "uq"
+  nms_old[nms_old == "lower"] <- "lq"
+  # The clean column names that should be used in the output table:
+  if (length(stats) > 1) {
+    type_dot <- paste0(".", type)
+    type_dot[type_dot == ".mean"] <- ""
+    nms_new <- lapply(stats, paste0, type_dot)
+  } else {
+    nms_new <- type
+    nms_new[nms_new == "mean"] <- stats
+    nms_new <- list(nms_new)
+  }
+  return(nlist(nms_old, nms_new))
 }
 
 #' Print summary of a [varsel()] or [cv_varsel()] run
