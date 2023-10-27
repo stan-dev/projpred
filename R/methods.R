@@ -1251,10 +1251,9 @@ summary.vsel <- function(
                     solution_terms = c(NA_character_, rk[["fulldata"]]),
                     cv_proportions_diag = c(NA, pr_rk))
   for (i in seq_along(stats)) {
-    temp <- subset(stats_table, stats_table$statistic == stats[i], qty)
-    newnames <- colnms_clean[[i]]
-    colnames(temp) <- newnames
-    arr <- cbind(arr, temp)
+    perf_sub_add <- subset(stats_table, stats_table$statistic == stats[i], qty)
+    colnames(perf_sub_add) <- colnms_clean[[i]]
+    arr <- cbind(arr, perf_sub_add)
   }
   row.names(arr) <- NULL
 
