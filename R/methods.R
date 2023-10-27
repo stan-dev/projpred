@@ -1228,11 +1228,11 @@ summary.vsel <- function(
   if (length(stats) > 1) {
     type_dot <- paste0(".", type)
     type_dot[type_dot == ".mean"] <- ""
-    suffix <- lapply(stats, paste0, type_dot)
+    colnms_clean <- lapply(stats, paste0, type_dot)
   } else {
-    suffix <- type
-    suffix[suffix == "mean"] <- stats
-    suffix <- list(suffix)
+    colnms_clean <- type
+    colnms_clean[colnms_clean == "mean"] <- stats
+    colnms_clean <- list(colnms_clean)
   }
 
   # Predictor ranking(s) and associated ranking proportions from fold-wise
@@ -1252,7 +1252,7 @@ summary.vsel <- function(
                     cv_proportions_diag = c(NA, pr_rk))
   for (i in seq_along(stats)) {
     temp <- subset(stats_table, stats_table$statistic == stats[i], qty)
-    newnames <- suffix[[i]]
+    newnames <- colnms_clean[[i]]
     colnames(temp) <- newnames
     arr <- cbind(arr, temp)
   }
