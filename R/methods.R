@@ -1206,10 +1206,10 @@ summary.vsel <- function(
   } else {
     nfeat_baseline_for_tab <- NULL
   }
-  tab <- .tabulate_stats(object, stats, alpha = alpha,
-                         nfeat_baseline = nfeat_baseline_for_tab,
-                         resp_oscale = resp_oscale, ...)
-  stats_table <- subset(tab, tab$size != Inf)
+  stats_table <- .tabulate_stats(object, stats, alpha = alpha,
+                                 nfeat_baseline = nfeat_baseline_for_tab,
+                                 resp_oscale = resp_oscale, ...)
+  stats_table <- subset(stats_table, stats_table$size != Inf)
   stats_table <- do.call(rbind,
                          lapply(split(stats_table, stats_table$statistic),
                                 utils::head,
