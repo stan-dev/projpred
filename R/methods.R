@@ -1226,13 +1226,9 @@ summary.vsel <- function(
            diff = "diff", diff.se = "diff.se")
   }))
   if (length(stats) > 1) {
-    suffix <- lapply(stats, function(s) {
-      unname(sapply(type, function(t) {
-        paste0(s,
-               switch(t, mean = "", upper = ".upper", lower = ".lower",
-                      se = ".se", diff = ".diff", diff.se = ".diff.se"))
-      }))
-    })
+    type_dot <- paste0(".", type)
+    type_dot[type_dot == ".mean"] <- ""
+    suffix <- lapply(stats, paste0, type_dot)
   } else {
     suffix <- type
     suffix[suffix == "mean"] <- stats
