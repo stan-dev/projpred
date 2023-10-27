@@ -1225,15 +1225,15 @@ summary.vsel <- function(
                                 n = length(object$solution_terms) + 1))
   row.names(stats_table) <- NULL
 
-  # Get the names of `stats_table` corresponding to all items from `type`, and
-  # set up their suffices in the table to be returned:
   if (deltas) {
     type <- setdiff(type, c("diff", "diff.se"))
   }
+  # The column names of `stats_table` corresponding to all items from `type`:
   qty <- unname(sapply(type, function(t) {
     switch(t, mean = "value", upper = "uq", lower = "lq", se = "se",
            diff = "diff", diff.se = "diff.se")
   }))
+  # The clean column names that should be used in the output table:
   if (length(stats) > 1) {
     type_dot <- paste0(".", type)
     type_dot[type_dot == ".mean"] <- ""
