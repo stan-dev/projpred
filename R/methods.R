@@ -1273,7 +1273,7 @@ summary.vsel <- function(
     nterms_max <- max(perf_sub$size)
   }
   out$nterms <- nterms_max
-  out$selection <- subset(perf_sub, perf_sub$size <= nterms_max)
+  out$perf_sub <- subset(perf_sub, perf_sub$size <= nterms_max)
   stopifnot(nrow(perf_ref) == 1)
   # out$perf_ref <- as.matrix(perf_ref)[1, ]
   out$resp_oscale <- resp_oscale
@@ -1390,7 +1390,7 @@ print.vselsummary <- function(x, ...) {
   }
   cat("Performance evaluation summary", scale_string, " with `deltas = ",
       x$deltas, "` and `cumulate = ", x$cumulate, "`:\n", sep = "")
-  print(x$selection, row.names = FALSE, ...)
+  print(x$perf_sub, row.names = FALSE, ...)
   if (isTRUE(x$validate_search)) {
     message(
       "Column `solution_terms` contains the full-data predictor ranking. To ",
@@ -1558,7 +1558,7 @@ suggest_size.vsel <- function(
                         type = c("mean", "upper", "lower"),
                         deltas = TRUE,
                         ...)
-  stats <- stats$selection
+  stats <- stats$perf_sub
 
   if (is_util(stat)) {
     sgn <- 1
