@@ -753,12 +753,12 @@ plot.vsel <- function(
   }
 
   # Compute the predictive performance statistics:
-  stats_table <- .tabulate_stats(object, stats, alpha = alpha,
-                                 nfeat_baseline = nfeat_baseline_for_tab,
-                                 resp_oscale = resp_oscale, ...)
-  stats_ref <- subset(stats_table, stats_table$size == Inf)
-  stats_sub <- subset(stats_table, stats_table$size != Inf)
-  stats_bs <- subset(stats_table, stats_table$size == nfeat_baseline)
+  stats_table_all <- .tabulate_stats(object, stats, alpha = alpha,
+                                     nfeat_baseline = nfeat_baseline_for_tab,
+                                     resp_oscale = resp_oscale, ...)
+  stats_ref <- subset(stats_table_all, stats_table_all$size == Inf)
+  stats_sub <- subset(stats_table_all, stats_table_all$size != Inf)
+  stats_bs <- subset(stats_table_all, stats_table_all$size == nfeat_baseline)
 
   # Catch unexpected output from .tabulate_stats():
   if (NROW(stats_sub) == 0) {
