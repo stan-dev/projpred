@@ -122,6 +122,67 @@ test_that(paste(
   }
 })
 
+# performances() ----------------------------------------------------------
+
+context("performances()")
+
+test_that("`object` of class `vsel` (created by varsel()) works", {
+  skip_if_not(run_vs)
+  for (tstsetup in names(perfs_vs)) {
+    tstsetup_smmry_vs <- args_perf_vs[[tstsetup]]$tstsetup_smmry_vsel
+    performances_tester(
+      perfs_vs[[tstsetup]],
+      smmry_expected = smmrys_vs[[tstsetup_smmry_vs]],
+      info_str = tstsetup
+    )
+  }
+})
+
+test_that("`object` of class `vsel` (created by cv_varsel()) works", {
+  skip_if_not(run_cvvs)
+  for (tstsetup in names(perfs_cvvs)) {
+    tstsetup_smmry_cvvs <- args_perf_cvvs[[tstsetup]]$tstsetup_smmry_vsel
+    performances_tester(
+      perfs_cvvs[[tstsetup]],
+      smmry_expected = smmrys_cvvs[[tstsetup_smmry_cvvs]],
+      info_str = tstsetup
+    )
+  }
+})
+
+test_that("performances.vsel() is a shortcut", {
+  skip_if_not(run_vs)
+  skip_if_not(run_cvvs)
+  for (tstsetup in names(smmrys_vs)) {
+    args_smmry_i <- args_smmry_vs[[tstsetup]]
+    if (any(c("rmse", "auc") %in% args_smmry_i$stats)) {
+      smmry_seed <- list(seed = seed3_tst)
+    } else {
+      smmry_seed <- list()
+    }
+    perf_from_vsel <- do.call(performances, c(
+      list(object = vss[[args_smmry_i$tstsetup_vsel]]),
+      excl_nonargs(args_smmry_i),
+      smmry_seed
+    ))
+    expect_identical(perf_from_vsel, perfs_vs[[tstsetup]], info = tstsetup)
+  }
+  for (tstsetup in names(smmrys_cvvs)) {
+    args_smmry_i <- args_smmry_cvvs[[tstsetup]]
+    if (any(c("rmse", "auc") %in% args_smmry_i$stats)) {
+      smmry_seed <- list(seed = seed3_tst)
+    } else {
+      smmry_seed <- list()
+    }
+    perf_from_vsel <- do.call(performances, c(
+      list(object = cvvss[[args_smmry_i$tstsetup_vsel]]),
+      excl_nonargs(args_smmry_i),
+      smmry_seed
+    ))
+    expect_identical(perf_from_vsel, perfs_cvvs[[tstsetup]], info = tstsetup)
+  }
+})
+
 # print() -----------------------------------------------------------------
 
 context("print()")

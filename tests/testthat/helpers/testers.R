@@ -2793,6 +2793,39 @@ smmry_ref_tester <- function(
 }
 
 # A helper function for testing the structure of the return value of
+# performances().
+#
+# @param perf_vsel The return value of performances().
+# @param smmry_expected The `vselsummary` object which was used in the
+#   performances() call.
+# @param info_str A single character string giving information to be printed in
+#   case of failure and also for naming vdiffr::expect_doppelganger() output.
+#
+# @return `TRUE` (invisible).
+performances_tester <- function(
+    perf_vsel,
+    smmry_expected,
+    info_str
+) {
+  expect_type(perf_vsel, "list")
+  expect_named(perf_vsel, c("submodels", "reference_model"), info = info_str)
+
+  # submodels
+  smmry_expected_sub <- smmry_expected[["perf_sub"]]
+  smmry_expected_sub <- smmry_expected_sub[
+    , -grep("ranking_fulldata|cv_proportions_diag", names(smmry_expected_sub))
+  ]
+  expect_identical(perf_vsel[["submodels"]], smmry_expected_sub,
+                   info = info_str)
+
+  # reference_model
+  expect_identical(perf_vsel[["reference_model"]], smmry_expected[["perf_ref"]],
+                   info = info_str)
+
+  return(invisible(TRUE))
+}
+
+# A helper function for testing the structure of the return value of
 # plot.vsel().
 #
 # @param plot_vsel The return value of plot.vsel().

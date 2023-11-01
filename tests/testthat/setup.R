@@ -1765,6 +1765,52 @@ if (run_more) {
   }
 }
 
+## performances() ---------------------------------------------------------
+
+### varsel() --------------------------------------------------------------
+
+if (run_vs) {
+  args_perf_vs <- lapply(
+    setNames(nm = names(smmrys_vs)),
+    function(tstsetup_smmry_vsel) {
+      return(c(
+        nlist(tstsetup_smmry_vsel),
+        only_nonargs(args_smmry_vs[[tstsetup_smmry_vsel]])
+      ))
+    }
+  )
+  args_perf_vs <- unlist_cust(args_perf_vs)
+
+  perfs_vs <- lapply(args_perf_vs, function(args_perf_vs_i) {
+    do.call(performances, c(
+      list(object = smmrys_vs[[args_perf_vs_i$tstsetup_smmry_vsel]]),
+      excl_nonargs(args_perf_vs_i)
+    ))
+  })
+}
+
+### cv_varsel() -----------------------------------------------------------
+
+if (run_cvvs) {
+  args_perf_cvvs <- lapply(
+    setNames(nm = names(smmrys_cvvs)),
+    function(tstsetup_smmry_vsel) {
+      return(c(
+        nlist(tstsetup_smmry_vsel),
+        only_nonargs(args_smmry_cvvs[[tstsetup_smmry_vsel]])
+      ))
+    }
+  )
+  args_perf_cvvs <- unlist_cust(args_perf_cvvs)
+
+  perfs_cvvs <- lapply(args_perf_cvvs, function(args_perf_cvvs_i) {
+    do.call(performances, c(
+      list(object = smmrys_cvvs[[args_perf_cvvs_i$tstsetup_smmry_vsel]]),
+      excl_nonargs(args_perf_cvvs_i)
+    ))
+  })
+}
+
 ## plot.vsel() ------------------------------------------------------------
 
 cre_args_plot_vsel <- function(args_obj) {
