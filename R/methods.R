@@ -1296,15 +1296,9 @@ mk_colnms_smmry <- function(type, stats, deltas) {
   nms_old[nms_old == "upper"] <- "uq"
   nms_old[nms_old == "lower"] <- "lq"
   # The clean column names that should be used in the output table:
-  if (length(stats) > 1) {
-    type_dot <- paste0(".", type)
-    type_dot[type_dot == ".mean"] <- ""
-    nms_new <- lapply(stats, paste0, type_dot)
-  } else {
-    nms_new <- type
-    nms_new[nms_new == "mean"] <- stats
-    nms_new <- list(nms_new)
-  }
+  type_dot <- paste0(".", type)
+  type_dot[type_dot == ".mean"] <- ""
+  nms_new <- lapply(stats, paste0, type_dot)
   return(nlist(nms_old, nms_new))
 }
 
@@ -1576,7 +1570,7 @@ suggest_size.vsel <- function(
       type <- "upper"
     }
   }
-  bound <- type
+  bound <- paste0(stat, ".", type)
 
   util_null <- sgn * unlist(unname(subset(stats, stats$size == 0, stat)))
   util_cutoff <- pct * util_null
