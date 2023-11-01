@@ -860,7 +860,7 @@ plot.vsel <- function(
     }
     rk_dfr <- data.frame(
       size = c(0L, seq_along(rk[["fulldata"]])),
-      rk_fulldata = c("", rk[["fulldata"]]),
+      rk_fulldata = c("(Intercept)", rk[["fulldata"]]),
       cv_props_diag = c(NA, pr_rk)
     )
     rk_dfr[["cv_props_diag_num"]] <- rk_dfr[["cv_props_diag"]]
