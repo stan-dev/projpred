@@ -1215,15 +1215,15 @@ summary.vsel <- function(
   } else {
     nfeat_baseline_for_tab <- NULL
   }
-  stats_table <- .tabulate_stats(object, stats, alpha = alpha,
-                                 nfeat_baseline = nfeat_baseline_for_tab,
-                                 resp_oscale = resp_oscale, ...)
+  stats_table_all <- .tabulate_stats(object, stats, alpha = alpha,
+                                     nfeat_baseline = nfeat_baseline_for_tab,
+                                     resp_oscale = resp_oscale, ...)
 
-  # Extract the reference model performance results from `stats_table`:
-  stats_table_ref <- subset(stats_table, stats_table$size == Inf)
+  # Extract the reference model performance results from `stats_table_all`:
+  stats_table_ref <- subset(stats_table_all, stats_table_all$size == Inf)
 
-  # Extract the submodel performance results from `stats_table`:
-  stats_table_sub <- subset(stats_table, stats_table$size != Inf)
+  # Extract the submodel performance results from `stats_table_all`:
+  stats_table_sub <- subset(stats_table_all, stats_table_all$size != Inf)
   stats_table_sub <- do.call(
     rbind,
     lapply(split(stats_table_sub, stats_table_sub$statistic), utils::head,
@@ -1292,7 +1292,8 @@ mk_colnms_smmry <- function(type, stats, deltas) {
   }
   type_dot <- paste0(".", type)
   type_dot[type_dot == ".mean"] <- ""
-  # The column names of `stats_table` corresponding to the requested `type`s:
+  # The column names of `stats_table_all`, but only those corresponding to the
+  # requested `type`s:
   nms_old <- type
   nms_old[nms_old == "mean"] <- "value"
   nms_old[nms_old == "upper"] <- "uq"
