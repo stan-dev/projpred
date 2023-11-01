@@ -1416,11 +1416,10 @@ print.vselsummary <- function(x, ...) {
 #' @export
 print.vsel <- function(x, ...) {
   dot_args <- list(...)
-  stats <- do.call(summary.vsel, c(list(object = x),
-                                   dot_args[names(dot_args) != "digits"]))
-  do.call(print, c(list(x = stats),
-                   dot_args[names(dot_args) == "digits"]))
-  return(invisible(stats))
+  smmry <- do.call(summary,
+                   c(list(object = x), dot_args[names(dot_args) != "digits"]))
+  do.call(print, c(list(x = smmry), dot_args[names(dot_args) == "digits"]))
+  return(invisible(smmry))
 }
 
 #' Suggest submodel size
