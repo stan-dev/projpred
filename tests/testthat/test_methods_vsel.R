@@ -129,13 +129,10 @@ context("print()")
 test_that("`x` of class \"vselsummary\" (based on varsel()) works", {
   skip_if_not(run_vs)
   for (tstsetup in names(smmrys_vs)) {
-    expect_message(
-      expect_output(
-        print_obj <- print(smmrys_vs[[tstsetup]]),
-        "Family:.*Link function:.*Formula:.*Observations:",
-        info = tstsetup
-      ),
-      NA
+    expect_output(
+      print_obj <- print(smmrys_vs[[tstsetup]]),
+      "Family:.*Link function:.*Formula:.*Observations:",
+      info = tstsetup
     )
     expect_identical(print_obj, smmrys_vs[[tstsetup]], info = tstsetup)
     if (run_snaps) {
@@ -155,18 +152,10 @@ test_that("`x` of class \"vselsummary\" (based on cv_varsel())  works", {
   skip_if_not(run_cvvs)
   for (tstsetup in names(smmrys_cvvs)) {
     args_crr <- args_cvvs[[args_smmry_cvvs[[tstsetup]]$tstsetup_vsel]]
-    if (isFALSE(args_crr$validate_search)) {
-      mssg_expected <- NA
-    } else {
-      mssg_expected <- "Column.*contains the full-data predictor ranking"
-    }
-    expect_message(
-      expect_output(
-        print_obj <- print(smmrys_cvvs[[tstsetup]]),
-        "Family:.*Link function:.*Formula:.*Observations:",
-        info = tstsetup
-      ),
-      mssg_expected
+    expect_output(
+      print_obj <- print(smmrys_cvvs[[tstsetup]]),
+      "Family:.*Link function:.*Formula:.*Observations:",
+      info = tstsetup
     )
     expect_identical(print_obj, smmrys_cvvs[[tstsetup]], info = tstsetup)
     if (run_snaps) {
