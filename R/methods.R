@@ -609,7 +609,7 @@ proj_predict_aux <- function(proj, newdata, offset, weights,
 #' submodels along the full-data predictor ranking. Basic information about the
 #' (CV) variability in the ranking of the predictors is included as well (if
 #' available; inferred from [cv_proportions()]). For a tabular representation,
-#' see [summary.vsel()].
+#' see [summary.vsel()] and [performances()].
 #'
 #' @inheritParams summary.vsel
 #' @param x An object of class `vsel` (returned by [varsel()] or [cv_varsel()]).
@@ -1058,7 +1058,9 @@ plot.vsel <- function(
 #' information about the (CV) variability in the ranking of the predictors (if
 #' available; inferred from [cv_proportions()]), and estimates for
 #' user-specified predictive performance statistics. For a graphical
-#' representation, see [plot.vsel()].
+#' representation, see [plot.vsel()]. For extracting the predictive performance
+#' results printed at the bottom of the output created by this [summary()]
+#' method, see [performances()].
 #'
 #' @param object An object of class `vsel` (returned by [varsel()] or
 #'   [cv_varsel()]).
@@ -1311,13 +1313,14 @@ mk_colnms_smmry <- function(type, stats, deltas) {
 #' @param x An object of class `vselsummary`.
 #' @param ... Arguments passed to [print.data.frame()].
 #'
-#' @details In the table printed at the bottom, column `ranking_fulldata`
-#'   contains the full-data predictor ranking and column `cv_proportions_diag`
-#'   contains the main diagonal of the matrix returned by [cv_proportions()]
-#'   (with `cumulate` as set in the [summary.vsel()] call that created `x`). To
-#'   retrieve the fold-wise predictor rankings, use the [ranking()] function,
-#'   possibly followed by [cv_proportions()] for computing the ranking
-#'   proportions (which can be visualized by [plot.cv_proportions()]).
+#' @details In the submodel predictive performance table printed at (or towards)
+#'   the bottom, column `ranking_fulldata` contains the full-data predictor
+#'   ranking and column `cv_proportions_diag` contains the main diagonal of the
+#'   matrix returned by [cv_proportions()] (with `cumulate` as set in the
+#'   [summary.vsel()] call that created `x`). To retrieve the fold-wise
+#'   predictor rankings, use the [ranking()] function, possibly followed by
+#'   [cv_proportions()] for computing the ranking proportions (which can be
+#'   visualized by [plot.cv_proportions()]).
 #'
 #' @return The output of [summary.vsel()] (invisible).
 #'
@@ -1601,6 +1604,71 @@ suggest_size.vsel <- function(
   }
 
   return(suggested_size)
+}
+
+#' Predictive performance results
+#'
+#' Retrieves the predictive performance summaries after running [varsel()] or
+#' [cv_varsel()]. These summaries are computed by [summary.vsel()], so the main
+#' method of [performances()] is [performances.vselsummary()] (objects of class
+#' `vselsummary` are returned by [summary.vsel()]). As a shortcut method,
+#' [performances.vsel()] is provided as well (objects of class `vsel` are
+#' returned by [varsel()] and [cv_varsel()]). For a graphical representation,
+#' see [plot.vsel()].
+#'
+#' @param object The object from which to retrieve the predictive performance
+#'   results. Possible classes may be inferred from the names of the
+#'   corresponding methods (see also the description).
+#' @param ... For [performances.vsel()]: arguments passed to [summary.vsel()].
+#'   For [performances.vselsummary()]: currently ignored.
+#'
+#' @return An object of class `performances` which is a `list` with the
+#'   following elements:
+#'   * `submodels`: The predictive performance results for the submodels, as a
+#'     `data.frame`.
+#'   * `reference_model`: The predictive performance results for the reference
+#'     model, as a named vector.
+#'
+#' @examplesIf requireNamespace("rstanarm", quietly = TRUE)
+#' # Data:
+#' dat_gauss <- data.frame(y = df_gaussian$y, df_gaussian$x)
+#'
+#' # The "stanreg" fit which will be used as the reference model (with small
+#' # values for `chains` and `iter`, but only for technical reasons in this
+#' # example; this is not recommended in general):
+#' fit <- rstanarm::stan_glm(
+#'   y ~ X1 + X2 + X3 + X4 + X5, family = gaussian(), data = dat_gauss,
+#'   QR = TRUE, chains = 2, iter = 500, refresh = 0, seed = 9876
+#' )
+#'
+#' # Run varsel() (here without cross-validation, with L1 search, and with small
+#' # values for `nterms_max` and `nclusters_pred`, but only for the sake of
+#' # speed in this example; this is not recommended in general):
+#' vs <- varsel(fit, method = "L1", nterms_max = 3, nclusters_pred = 10,
+#'              seed = 5555)
+#' print(performances(vs))
+#'
+#' @export
+performances <- function(object, ...) {
+  UseMethod("performances")
+}
+
+#' @rdname performances
+#' @export
+performances.vselsummary <- function(object, ...) {
+  perf_sub <- object[["perf_sub"]]
+  perf_cols <- setdiff(names(perf_sub),
+                       c("ranking_fulldata", "cv_proportions_diag"))
+  perf_sub <- perf_sub[, perf_cols, drop = FALSE]
+  return(structure(list(submodels = perf_sub,
+                        reference_model = object[["perf_ref"]]),
+                   class = "performances"))
+}
+
+#' @rdname performances
+#' @export
+performances.vsel <- function(object, ...) {
+  return(performances(summary(object, ...)))
 }
 
 # Make the parameter name(s) for the intercept(s) adhere to the naming scheme

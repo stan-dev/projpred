@@ -144,8 +144,8 @@
 #'   with cross-validation (CV).}
 #'   \item{[summary.vsel()], [print.vsel()], [plot.vsel()],
 #'   [suggest_size.vsel()], [ranking()], [cv_proportions()],
-#'   [plot.cv_proportions()]}{For post-processing the results from [varsel()]
-#'   and [cv_varsel()].}
+#'   [plot.cv_proportions()], [performances()]}{For post-processing the results
+#'   from [varsel()] and [cv_varsel()].}
 #'   \item{[project()]}{For projecting the reference model onto submodel(s).
 #'   Typically, this follows the variable selection, but it can also be applied
 #'   directly (without a variable selection).}

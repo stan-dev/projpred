@@ -100,7 +100,9 @@ This is the \code{\link[=summary]{summary()}} method for \code{vsel} objects (re
 information about the (CV) variability in the ranking of the predictors (if
 available; inferred from \code{\link[=cv_proportions]{cv_proportions()}}), and estimates for
 user-specified predictive performance statistics. For a graphical
-representation, see \code{\link[=plot.vsel]{plot.vsel()}}.
+representation, see \code{\link[=plot.vsel]{plot.vsel()}}. For extracting the predictive performance
+results printed at the bottom of the output created by this \code{\link[=summary]{summary()}}
+method, see \code{\link[=performances]{performances()}}.
 }
 \details{
 The \code{stats} options \code{"mse"} and \code{"rmse"} are only available for:

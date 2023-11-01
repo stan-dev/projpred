@@ -165,7 +165,7 @@ model (possibly also that of some other "baseline" model) and that of the
 submodels along the full-data predictor ranking. Basic information about the
 (CV) variability in the ranking of the predictors is included as well (if
 available; inferred from \code{\link[=cv_proportions]{cv_proportions()}}). For a tabular representation,
-see \code{\link[=summary.vsel]{summary.vsel()}}.
+see \code{\link[=summary.vsel]{summary.vsel()}} and \code{\link[=performances]{performances()}}.
 }
 \details{
 The \code{stats} options \code{"mse"} and \code{"rmse"} are only available for:
