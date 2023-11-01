@@ -1236,7 +1236,7 @@ summary.vsel <- function(
 
   # Initialize the output table for the submodel performance:
   perf_sub <- data.frame(size = unique(stats_table_sub$size),
-                         solution_terms = c("(Intercept)", rk[["fulldata"]]),
+                         ranking_fulldata = c("(Intercept)", rk[["fulldata"]]),
                          cv_proportions_diag = c(NA, pr_rk))
 
   # For renaming columns of the two output tables (one for the reference model
@@ -1310,10 +1310,13 @@ mk_colnms_smmry <- function(type, stats, deltas) {
 #' @param x An object of class `vselsummary`.
 #' @param ... Arguments passed to [print.data.frame()].
 #'
-#' @details In the table printed at the bottom, column `solution_terms` contains
-#'   the full-data predictor ranking and column `cv_proportions_diag` contains
-#'   the main diagonal of the matrix returned by [cv_proportions()] (with
-#'   `cumulate` as set in the [summary.vsel()] call that created `x`).
+#' @details In the table printed at the bottom, column `ranking_fulldata`
+#'   contains the full-data predictor ranking and column `cv_proportions_diag`
+#'   contains the main diagonal of the matrix returned by [cv_proportions()]
+#'   (with `cumulate` as set in the [summary.vsel()] call that created `x`). To
+#'   retrieve the fold-wise predictor rankings, use the [ranking()] function,
+#'   possibly followed by [cv_proportions()] for computing the ranking
+#'   proportions (which can be visualized by [plot.cv_proportions()]).
 #'
 #' @return The output of [summary.vsel()] (invisible).
 #'
@@ -1391,17 +1394,6 @@ print.vselsummary <- function(x, ...) {
   cat("Performance evaluation summary", scale_string, " with `deltas = ",
       x$deltas, "` and `cumulate = ", x$cumulate, "`:\n", sep = "")
   print(x$perf_sub, row.names = FALSE, ...)
-  if (isTRUE(x$validate_search)) {
-    message(
-      "Column `solution_terms` contains the full-data predictor ranking. To ",
-      "retrieve the fold-wise predictor rankings, use the ranking() function, ",
-      "possibly followed by cv_proportions() for computing the ranking ",
-      "proportions (which can be visualized by plot.cv_proportions()). The ",
-      "main diagonal of the matrix returned by cv_proportions() (with ",
-      "`cumulate = ", x$cumulate, "`) is contained in column ",
-      "`cv_proportions_diag`."
-    )
-  }
   return(invisible(x))
 }
 
