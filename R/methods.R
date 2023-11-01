@@ -1275,7 +1275,7 @@ summary.vsel <- function(
   out$nterms <- nterms_max
   out$perf_sub <- subset(perf_sub, perf_sub$size <= nterms_max)
   stopifnot(nrow(perf_ref) == 1)
-  # out$perf_ref <- as.matrix(perf_ref)[1, ]
+  out$perf_ref <- as.matrix(perf_ref)[1, ]
   out$resp_oscale <- resp_oscale
   out$deltas <- deltas
   out$cumulate <- cumulate
