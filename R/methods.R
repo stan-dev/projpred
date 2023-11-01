@@ -1290,14 +1290,14 @@ mk_colnms_smmry <- function(type, stats, deltas) {
   if (is.null(deltas) || deltas) {
     type <- setdiff(type, c("diff", "diff.se"))
   }
+  type_dot <- paste0(".", type)
+  type_dot[type_dot == ".mean"] <- ""
   # The column names of `stats_table` corresponding to the requested `type`s:
   nms_old <- type
   nms_old[nms_old == "mean"] <- "value"
   nms_old[nms_old == "upper"] <- "uq"
   nms_old[nms_old == "lower"] <- "lq"
   # The clean column names that should be used in the output table:
-  type_dot <- paste0(".", type)
-  type_dot[type_dot == ".mean"] <- ""
   nms_new <- lapply(stats, paste0, type_dot)
   return(nlist(nms_old, nms_new))
 }
