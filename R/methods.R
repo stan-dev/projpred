@@ -1236,7 +1236,7 @@ summary.vsel <- function(
 
   # Initialize the output table for the submodel performance:
   perf_sub <- data.frame(size = unique(stats_table_sub$size),
-                         solution_terms = c(NA_character_, rk[["fulldata"]]),
+                         solution_terms = c("(Intercept)", rk[["fulldata"]]),
                          cv_proportions_diag = c(NA, pr_rk))
 
   # For renaming columns of the two output tables (one for the reference model
