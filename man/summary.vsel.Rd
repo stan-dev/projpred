@@ -91,7 +91,9 @@ and \code{seed} (see \code{\link[=set.seed]{set.seed()}}, but defaulting to \cod
 is not called within that function at all).}
 }
 \value{
-An object of class \code{vselsummary}.
+An object of class \code{vselsummary}. The elements of this object are not
+meant to be accessed directly but instead via helper functions
+(\code{\link[=print.vselsummary]{print.vselsummary()}} and \code{\link[=performances.vselsummary]{performances.vselsummary()}}).
 }
 \description{
 This is the \code{\link[=summary]{summary()}} method for \code{vsel} objects (returned by \code{\link[=varsel]{varsel()}} or
@@ -155,5 +157,5 @@ print(summary(vs), digits = 1)
 \dontshow{\}) # examplesIf}
 }
 \seealso{
-\code{\link[=print.vselsummary]{print.vselsummary()}}
+\code{\link[=print.vselsummary]{print.vselsummary()}}, \code{\link[=performances.vselsummary]{performances.vselsummary()}}
 }

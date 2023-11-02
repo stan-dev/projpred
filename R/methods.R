@@ -1147,9 +1147,11 @@ plot.vsel <- function(
 #'   latent projection with `resp_oscale = TRUE` in combination with
 #'   `<refmodel>$family$cats` being `NULL`.
 #'
-#' @return An object of class `vselsummary`.
+#' @return An object of class `vselsummary`. The elements of this object are not
+#'   meant to be accessed directly but instead via helper functions
+#'   ([print.vselsummary()] and [performances.vselsummary()]).
 #'
-#' @seealso [print.vselsummary()]
+#' @seealso [print.vselsummary()], [performances.vselsummary()]
 #'
 #' @examplesIf requireNamespace("rstanarm", quietly = TRUE)
 #' # Data:
