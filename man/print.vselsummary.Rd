@@ -9,7 +9,8 @@
 \arguments{
 \item{x}{An object of class \code{vselsummary}.}
 
-\item{...}{Arguments passed to \code{\link[=print.data.frame]{print.data.frame()}}.}
+\item{...}{Arguments passed to \code{\link[=print.data.frame]{print.data.frame()}} and (if \code{\link[=summary.vsel]{summary.vsel()}}
+was called with \code{deltas = FALSE}) to \code{\link[=print.default]{print.default()}}.}
 }
 \value{
 The output of \code{\link[=summary.vsel]{summary.vsel()}} (invisible).

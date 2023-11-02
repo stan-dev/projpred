@@ -1311,7 +1311,8 @@ mk_colnms_smmry <- function(type, stats, deltas) {
 #' It displays a summary of the results from a [varsel()] or [cv_varsel()] run.
 #'
 #' @param x An object of class `vselsummary`.
-#' @param ... Arguments passed to [print.data.frame()].
+#' @param ... Arguments passed to [print.data.frame()] and (if [summary.vsel()]
+#'   was called with `deltas = FALSE`) to [print.default()].
 #'
 #' @details In the submodel predictive performance table printed at (or towards)
 #'   the bottom, column `ranking_fulldata` contains the full-data predictor
@@ -1395,9 +1396,16 @@ print.vselsummary <- function(x, ...) {
   } else {
     scale_string <- ""
   }
-  cat("Performance evaluation summary", scale_string, " with `deltas = ",
-      x$deltas, "` and `cumulate = ", x$cumulate, "`:\n", sep = "")
+  cat("Submodel performance evaluation summary", scale_string, " with ",
+      "`deltas = ", x$deltas, "` and `cumulate = ", x$cumulate, "`:\n",
+      sep = "")
   print(x$perf_sub, row.names = FALSE, ...)
+  if (!x$deltas) {
+    cat("\n")
+    cat("Reference model performance evaluation summary", scale_string, ":\n",
+        sep = "")
+    print(x$perf_ref, ...)
+  }
   return(invisible(x))
 }
 
