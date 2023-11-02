@@ -1311,7 +1311,9 @@ mk_colnms_smmry <- function(type, stats, deltas) {
 #' It displays a summary of the results from a [varsel()] or [cv_varsel()] run.
 #'
 #' @param x An object of class `vselsummary`.
-#' @param ... Arguments passed to [print.data.frame()] and [print.default()].
+#' @param ... Arguments passed to [print.data.frame()] (for the table containing
+#'   the submodel performance evaluation results) and [print.default()] (for the
+#'   vector containing the reference model performance evaluation results).
 #'
 #' @details In the submodel predictive performance table printed at (or towards)
 #'   the bottom, column `ranking_fulldata` contains the full-data predictor

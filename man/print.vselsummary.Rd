@@ -9,7 +9,9 @@
 \arguments{
 \item{x}{An object of class \code{vselsummary}.}
 
-\item{...}{Arguments passed to \code{\link[=print.data.frame]{print.data.frame()}} and \code{\link[=print.default]{print.default()}}.}
+\item{...}{Arguments passed to \code{\link[=print.data.frame]{print.data.frame()}} (for the table containing
+the submodel performance evaluation results) and \code{\link[=print.default]{print.default()}} (for the
+vector containing the reference model performance evaluation results).}
 }
 \value{
 The output of \code{\link[=summary.vsel]{summary.vsel()}} (invisible).
