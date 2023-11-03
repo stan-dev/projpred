@@ -103,7 +103,7 @@
 #'   \eqn{C} denote either \eqn{C_{\mathrm{cat}}}{C_cat} (if `transform = TRUE`)
 #'   or \eqn{C_{\mathrm{lat}}}{C_lat} (if `transform = FALSE`). Then, if the
 #'   prediction is done for one submodel only (i.e., `length(nterms) == 1 ||
-#'   !is.null(solution_terms)` in the explicit or implicit call to [project()],
+#'   !is.null(predictor_terms)` in the explicit or implicit call to [project()],
 #'   see argument `object`):
 #'   * [proj_linpred()] returns a `list` with the following elements:
 #'       + Element `pred` contains the actual predictions, i.e., the linear
@@ -173,7 +173,7 @@
 #' # Projection onto an arbitrary combination of predictor terms (with a small
 #' # value for `ndraws`, but only for the sake of speed in this example; this
 #' # is not recommended in general):
-#' prj <- project(fit, solution_terms = c("X1", "X3", "X5"), ndraws = 21,
+#' prj <- project(fit, predictor_terms = c("X1", "X3", "X5"), ndraws = 21,
 #'                seed = 9182)
 #'
 #' # Predictions (at the training points) from the submodel onto which the
@@ -2183,7 +2183,7 @@ get_subparams.mmblogit <- function(x, ...) {
 #' # Projection onto an arbitrary combination of predictor terms (with a small
 #' # value for `ndraws`, but only for the sake of speed in this example; this
 #' # is not recommended in general):
-#' prj <- project(fit, solution_terms = c("X1", "X3", "X5"), ndraws = 21,
+#' prj <- project(fit, predictor_terms = c("X1", "X3", "X5"), ndraws = 21,
 #'                seed = 9182)
 #'
 #' # Applying the as.matrix() generic to the output of project() dispatches to
@@ -2280,7 +2280,7 @@ as.matrix.projection <- function(x, nm_scheme = NULL,
 #' # Projection onto an arbitrary combination of predictor terms (with a small
 #' # value for `nclusters`, but only for illustrative purposes; this is not
 #' # recommended in general):
-#' prj <- project(fit, solution_terms = c("X1", "X3", "X5"), nclusters = 5,
+#' prj <- project(fit, predictor_terms = c("X1", "X3", "X5"), nclusters = 5,
 #'                seed = 9182)
 #'
 #' # Applying the posterior::as_draws_matrix() generic to the output of
@@ -2523,7 +2523,7 @@ solution_terms.projection <- function(object, ...) {
 #' # Projection onto an arbitrary combination of predictor terms (with a small
 #' # value for `nclusters`, but only for the sake of speed in this example;
 #' # this is not recommended in general):
-#' prj <- project(fit, solution_terms = c("X1", "X3", "X5"), nclusters = 10,
+#' prj <- project(fit, predictor_terms = c("X1", "X3", "X5"), nclusters = 10,
 #'                seed = 9182)
 #' print(predictor_terms(prj)) # gives `c("X1", "X3", "X5")`
 #'
