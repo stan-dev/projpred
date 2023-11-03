@@ -91,7 +91,7 @@ test_that(paste(
       stats_expected = args_smmry_vs[[tstsetup]]$stats,
       type_expected = args_smmry_vs[[tstsetup]]$type,
       nterms_max_expected = args_smmry_vs[[tstsetup]]$nterms_max,
-      solterms_expected = vss[[tstsetup_vs]]$solution_terms
+      solterms_expected = vss[[tstsetup_vs]]$predictor_ranking
     )
   }
 })
@@ -117,7 +117,7 @@ test_that(paste(
       nterms_max_expected = args_smmry_cvvs[[tstsetup]]$nterms_max,
       cv_method_expected =
         args_cvvs[[tstsetup_cvvs]]$cv_method %||% "LOO",
-      solterms_expected = cvvss[[tstsetup_cvvs]]$solution_terms
+      solterms_expected = cvvss[[tstsetup_cvvs]]$predictor_ranking
     )
   }
 })
@@ -565,7 +565,7 @@ test_that("`object` of class `vsel` (created by varsel()) works", {
     nterms_max_expected_crr <- args_rk_vs[[tstsetup]][["nterms_max"]]
     ranking_tester(
       rks_vs[[tstsetup]],
-      fulldata_expected = vss[[tstsetup_vs]][["solution_terms"]],
+      fulldata_expected = vss[[tstsetup_vs]][["predictor_ranking"]],
       foldwise_expected = NULL,
       nterms_max_expected = nterms_max_expected_crr,
       info_str = tstsetup
@@ -580,8 +580,8 @@ test_that("`object` of class `vsel` (created by cv_varsel()) works", {
     nterms_max_expected_crr <- args_rk_cvvs[[tstsetup]][["nterms_max"]]
     ranking_tester(
       rks_cvvs[[tstsetup]],
-      fulldata_expected = cvvss[[tstsetup_cvvs]][["solution_terms"]],
-      foldwise_expected = cvvss[[tstsetup_cvvs]][["solution_terms_cv"]],
+      fulldata_expected = cvvss[[tstsetup_cvvs]][["predictor_ranking"]],
+      foldwise_expected = cvvss[[tstsetup_cvvs]][["predictor_ranking_cv"]],
       nterms_max_expected = nterms_max_expected_crr,
       info_str = tstsetup
     )
@@ -613,7 +613,7 @@ test_that(paste(
       prs_cvvs[[tstsetup]],
       cumulate_expected = args_pr_cvvs[[tstsetup]][["cumulate"]],
       nterms_max_expected = nterms_max_expected_crr,
-      cnms_expected = cvvss[[tstsetup_cvvs]][["solution_terms"]],
+      cnms_expected = cvvss[[tstsetup_cvvs]][["predictor_ranking"]],
       info_str = tstsetup
     )
   }

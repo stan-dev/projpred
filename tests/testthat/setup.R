@@ -1409,7 +1409,7 @@ if (run_prj) {
         }
         return(c(
           nlist(tstsetup_ref), only_nonargs(args_ref[[tstsetup_ref]]),
-          list(solution_terms = solterms[[solterms_nm_i]], seed = seed_tst),
+          list(predictor_terms = solterms[[solterms_nm_i]], seed = seed_tst),
           ndr_ncl_pred_i, divmin_args
         ))
       })
@@ -1419,10 +1419,10 @@ if (run_prj) {
 
   prjs <- lapply(args_prj, function(args_prj_i) {
     if (args_prj_i$prj_nm == "augdat" && args_prj_i$fam_nm == "cumul" &&
-        !any(grepl("\\|", args_prj_i$solution_terms))) {
+        !any(grepl("\\|", args_prj_i$predictor_terms))) {
       warn_expected <- "non-integer #successes in a binomial glm!"
     } else if (!is.null(args_prj_i$avoid.increase) &&
-               any(grepl("\\|", args_prj_i$solution_terms))) {
+               any(grepl("\\|", args_prj_i$predictor_terms))) {
       warn_expected <- warn_mclogit
     } else {
       warn_expected <- NA
@@ -2022,16 +2022,16 @@ if (run_cvvs) {
 
 # Output elements of `vsel` objects:
 vsel_nms <- c(
-  "refmodel", "nobs_train", "search_path", "solution_terms",
-  "solution_terms_cv", "ce", "type_test", "y_wobs_test", "nobs_test",
+  "refmodel", "nobs_train", "search_path", "predictor_ranking",
+  "predictor_ranking_cv", "ce", "type_test", "y_wobs_test", "nobs_test",
   "summaries", "nterms_all", "nterms_max", "method", "cv_method", "nloo", "K",
   "validate_search", "cvfits", "args_search", "clust_used_search",
   "clust_used_eval", "nprjdraws_search", "nprjdraws_eval", "refit_prj",
   "projpred_version"
 )
 # Output elements of `vsel` objects that may be influenced by `cvfits`:
-vsel_nms_cvfits <- c("refmodel", "cvfits", "summaries", "solution_terms_cv")
-vsel_nms_cvfits_opt <- c("solution_terms_cv")
+vsel_nms_cvfits <- c("refmodel", "cvfits", "summaries", "predictor_ranking_cv")
+vsel_nms_cvfits_opt <- c("predictor_ranking_cv")
 # Sub-elements of `summaries`'s `sub` and `ref` elements:
 vsel_smmrs_sub_nms <- vsel_smmrs_ref_nms <- c("mu", "lppd")
 

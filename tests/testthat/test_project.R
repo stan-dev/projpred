@@ -1,9 +1,9 @@
 context("project()")
 
-# object, solution_terms, ndraws / nclusters, nterms ----------------------
+# object, predictor_terms, ndraws / nclusters, nterms ---------------------
 
 test_that(paste(
-  "`object` of class \"refmodel\", `solution_terms`, and `ndraws` (or",
+  "`object` of class \"refmodel\", `predictor_terms`, and `ndraws` (or",
   "`nclusters`) work"
 ), {
   skip_if_not(run_prj)
@@ -12,7 +12,7 @@ test_that(paste(
     ndr_ncl <- ndr_ncl_dtls(args_prj_i)
     projection_tester(prjs[[tstsetup]],
                       refmod_expected = refmods[[args_prj_i$tstsetup_ref]],
-                      solterms_expected = args_prj_i$solution_terms,
+                      solterms_expected = args_prj_i$predictor_terms,
                       nprjdraws_expected = ndr_ncl$nprjdraws,
                       with_clusters = ndr_ncl$ndr_ncl_nm == "nclusters",
                       const_wdraws_prj_expected = !ndr_ncl$clust_used,
@@ -20,31 +20,31 @@ test_that(paste(
   }
 })
 
-test_that("invalid `solution_terms` warns or fails", {
+test_that("invalid `predictor_terms` warns or fails", {
   skip_if_not(run_prj)
   tstsetups <- grep("\\.glm\\.gauss.*\\.solterms_x\\.clust$", names(prjs),
                     value = TRUE)
   for (tstsetup in tstsetups) {
     args_prj_i <- args_prj[[tstsetup]]
 
-    # Non-`vsel` object combined with `solution_terms = NULL`:
+    # Non-`vsel` object combined with `predictor_terms = NULL`:
     expect_error(
       do.call(project, c(
         list(object = refmods[[args_prj_i$tstsetup_ref]],
-             solution_terms = NULL),
-        excl_nonargs(args_prj_i, nms_excl_add = "solution_terms")
+             predictor_terms = NULL),
+        excl_nonargs(args_prj_i, nms_excl_add = "predictor_terms")
       )),
       paste("^Please provide an `object` of class \"vsel\" or use argument",
-            "`solution_terms`\\.$"),
+            "`predictor_terms`\\.$"),
       info = tstsetup
     )
 
-    # Repeating solution terms:
+    # Repeating `predictor_terms`:
     p_long <- do.call(project, c(
       list(object = refmods[[args_prj_i$tstsetup_ref]],
-           solution_terms = rep_len(args_prj_i$solution_terms,
-                                    length.out = 1e4)),
-      excl_nonargs(args_prj_i, nms_excl_add = "solution_terms")
+           predictor_terms = rep_len(args_prj_i$predictor_terms,
+                                     length.out = 1e4)),
+      excl_nonargs(args_prj_i, nms_excl_add = "predictor_terms")
     ))
     expect_equal(p_long, prjs[[tstsetup]], info = tstsetup)
 
@@ -55,12 +55,12 @@ test_that("invalid `solution_terms` warns or fails", {
       expect_error(
         do.call(project, c(
           list(object = refmods[[args_prj_i$tstsetup_ref]],
-               solution_terms = solterms_crr),
-          excl_nonargs(args_prj_i, nms_excl_add = "solution_terms")
+               predictor_terms = solterms_crr),
+          excl_nonargs(args_prj_i, nms_excl_add = "predictor_terms")
         )),
         paste(
-          "^is\\.null\\(solution_terms\\) \\|\\| is\\.vector\\(solution_terms,",
-          "\"character\"\\) is not TRUE$"
+          "^is\\.null\\(predictor_terms\\) \\|\\|",
+          "is\\.vector\\(predictor_terms, \"character\"\\) is not TRUE$"
         ),
         info = tstsetup_crr
       )
@@ -75,10 +75,10 @@ test_that("invalid `solution_terms` warns or fails", {
       expect_warning(
         p <- do.call(project, c(
           list(object = refmods[[args_prj_i$tstsetup_ref]],
-               solution_terms = solterms_crr),
-          excl_nonargs(args_prj_i, nms_excl_add = "solution_terms")
+               predictor_terms = solterms_crr),
+          excl_nonargs(args_prj_i, nms_excl_add = "predictor_terms")
         )),
-        paste("The following element\\(s\\) of `solution_terms` could not be",
+        paste("The following element\\(s\\) of `predictor_terms` could not be",
               "found in the table of possible solution terms"),
         info = tstsetup_crr
       )
@@ -124,7 +124,7 @@ test_that(paste(
       nterms_crr <- suggest_size(vss[[tstsetup_vs]], warnings = FALSE)
     }
     if (length(nterms_crr) == 1) {
-      solterms_expected_crr <- vss[[tstsetup_vs]]$solution_terms[
+      solterms_expected_crr <- vss[[tstsetup_vs]]$predictor_ranking[
         seq_len(nterms_crr)
       ]
       projection_tester(
@@ -148,18 +148,18 @@ test_that(paste(
         value = TRUE
       )
       match_prj <- sapply(tstsetup_tries, function(tstsetup_try) {
-        setequal(solterms_expected_crr, prjs[[tstsetup_try]]$solution_terms) &&
+        setequal(solterms_expected_crr, prjs[[tstsetup_try]]$predictor_terms) &&
           args_prj_vs[[tstsetup]]$prj_nm == args_prj[[tstsetup_try]]$prj_nm
       })
       tstsetup_match_prj <- tstsetup_tries[match_prj]
       if (length(tstsetup_match_prj) == 1) {
-        if (identical(prjs_vs[[tstsetup]]$solution_terms,
-                      prjs[[tstsetup_match_prj]]$solution_terms)) {
+        if (identical(prjs_vs[[tstsetup]]$predictor_terms,
+                      prjs[[tstsetup_match_prj]]$predictor_terms)) {
           expect_identical(prjs_vs[[tstsetup]], prjs[[tstsetup_match_prj]],
                            ignore.environment = TRUE, info = tstsetup)
         } else {
-          expect_setequal(prjs_vs[[tstsetup]]$solution_terms,
-                          prjs[[tstsetup_match_prj]]$solution_terms)
+          expect_setequal(prjs_vs[[tstsetup]]$predictor_terms,
+                          prjs[[tstsetup_match_prj]]$predictor_terms)
           expect_equal(
             lapply(seq_along(prjs_vs[[tstsetup]]$outdmin), function(s_idx) {
               outdmin_s <- prjs_vs[[tstsetup]]$outdmin[[s_idx]]
@@ -182,7 +182,7 @@ test_that(paste(
           prj_nms <- names(prjs_vs[[tstsetup]])
           expect_identical(prj_nms, names(prjs[[tstsetup_match_prj]]),
                            info = tstsetup)
-          prj_el_excl <- !prj_nms %in% c("solution_terms", "outdmin")
+          prj_el_excl <- !prj_nms %in% c("predictor_terms", "outdmin")
           expect_equal(prjs_vs[[tstsetup]][prj_el_excl],
                        prjs[[tstsetup_match_prj]][prj_el_excl],
                        tolerance = .Machine$double.eps, info = tstsetup)
@@ -221,7 +221,7 @@ test_that(paste(
       nterms_crr <- suggest_size(cvvss[[tstsetup_cvvs]], warnings = FALSE)
     }
     if (length(nterms_crr) == 1) {
-      solterms_expected_crr <- cvvss[[tstsetup_cvvs]]$solution_terms[
+      solterms_expected_crr <- cvvss[[tstsetup_cvvs]]$predictor_ranking[
         seq_len(nterms_crr)
       ]
       projection_tester(
@@ -245,18 +245,18 @@ test_that(paste(
         value = TRUE
       )
       match_prj <- sapply(tstsetup_tries, function(tstsetup_try) {
-        setequal(solterms_expected_crr, prjs[[tstsetup_try]]$solution_terms) &&
+        setequal(solterms_expected_crr, prjs[[tstsetup_try]]$predictor_terms) &&
           args_prj_cvvs[[tstsetup]]$prj_nm == args_prj[[tstsetup_try]]$prj_nm
       })
       tstsetup_match_prj <- tstsetup_tries[match_prj]
       if (length(tstsetup_match_prj) == 1) {
-        if (identical(prjs_cvvs[[tstsetup]]$solution_terms,
-                      prjs[[tstsetup_match_prj]]$solution_terms)) {
+        if (identical(prjs_cvvs[[tstsetup]]$predictor_terms,
+                      prjs[[tstsetup_match_prj]]$predictor_terms)) {
           expect_identical(prjs_cvvs[[tstsetup]], prjs[[tstsetup_match_prj]],
                            ignore.environment = TRUE, info = tstsetup)
         } else {
-          expect_setequal(prjs_cvvs[[tstsetup]]$solution_terms,
-                          prjs[[tstsetup_match_prj]]$solution_terms)
+          expect_setequal(prjs_cvvs[[tstsetup]]$predictor_terms,
+                          prjs[[tstsetup_match_prj]]$predictor_terms)
           expect_equal(
             lapply(seq_along(prjs_cvvs[[tstsetup]]$outdmin), function(s_idx) {
               outdmin_s <- prjs_cvvs[[tstsetup]]$outdmin[[s_idx]]
@@ -279,7 +279,7 @@ test_that(paste(
           prj_nms <- names(prjs_cvvs[[tstsetup]])
           expect_identical(prj_nms, names(prjs[[tstsetup_match_prj]]),
                            info = tstsetup)
-          prj_el_excl <- !prj_nms %in% c("solution_terms", "outdmin")
+          prj_el_excl <- !prj_nms %in% c("predictor_terms", "outdmin")
           expect_equal(prjs_cvvs[[tstsetup]][prj_el_excl],
                        prjs[[tstsetup_match_prj]][prj_el_excl],
                        tolerance = .Machine$double.eps, info = tstsetup)
@@ -303,17 +303,17 @@ test_that(paste(
   }
 })
 
-test_that("`object` not of class \"vsel\" and missing `solution_terms` fails", {
+test_that("`object` not of class `vsel` and missing `predictor_terms` fails", {
   skip_if_not(length(fits) > 0)
   expect_error(
     project(fits[[1]]),
     paste("^Please provide an `object` of class \"vsel\" or use argument",
-          "`solution_terms`\\.$")
+          "`predictor_terms`\\.$")
   )
   expect_error(
     project(refmods[[1]]),
     paste("^Please provide an `object` of class \"vsel\" or use argument",
-          "`solution_terms`\\.$")
+          "`predictor_terms`\\.$")
   )
 })
 
@@ -348,10 +348,10 @@ test_that("non-clustered projection does not require a seed", {
     p_orig <- prjs[[tstsetup]]
     rand_new1 <- runif(1) # Just to advance `.Random.seed[2]`.
     if (args_prj_i$prj_nm == "augdat" && args_prj_i$fam_nm == "cumul" &&
-        !any(grepl("\\|", args_prj_i$solution_terms))) {
+        !any(grepl("\\|", args_prj_i$predictor_terms))) {
       warn_expected <- "non-integer #successes in a binomial glm!"
     } else if (!is.null(args_prj_i$avoid.increase) &&
-               any(grepl("\\|", args_prj_i$solution_terms))) {
+               any(grepl("\\|", args_prj_i$predictor_terms))) {
       warn_expected <- warn_mclogit
     } else {
       warn_expected <- NA
@@ -364,7 +364,7 @@ test_that("non-clustered projection does not require a seed", {
       warn_expected
     )
     if (args_prj_i$mod_nm %in% c("glmm", "gamm") &&
-        any(grepl("\\|", args_prj_i$solution_terms))) {
+        any(grepl("\\|", args_prj_i$predictor_terms))) {
       if (getOption("projpred.mlvl_pred_new", FALSE)) {
         # In this case, the multilevel submodel fitters (fit_glmer_callback(),
         # fit_gamm_callback(), fit_cumul_mlvl(), fit_categ_mlvl()) should still
@@ -469,7 +469,7 @@ test_that("for GLMs, `regul` has an expected effect", {
         projection_tester(
           prj_regul,
           refmod_expected = refmods[[args_prj_i$tstsetup_ref]],
-          solterms_expected = args_prj_i$solution_terms,
+          solterms_expected = args_prj_i$predictor_terms,
           nprjdraws_expected = ndr_ncl$nprjdraws,
           with_clusters = ndr_ncl$ndr_ncl_nm == "nclusters",
           const_wdraws_prj_expected = !ndr_ncl$clust_used,
@@ -496,7 +496,7 @@ test_that("for GLMs, `regul` has an expected effect", {
     }
 
     # Checks:
-    if (length(args_prj_i$solution_terms) == 0) {
+    if (length(args_prj_i$predictor_terms) == 0) {
       # For an intercept-only model:
       expect_length(unique(ssq_regul_alpha), 1)
       stopifnot(all(is.na(ssq_regul_beta)))

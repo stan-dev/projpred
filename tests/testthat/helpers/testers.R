@@ -1595,7 +1595,7 @@ projection_tester <- function(p,
   # would have to be updated:
   expect_named(
     p,
-    c("dis", "ce", "wdraws_prj", "const_wdraws_prj", "solution_terms",
+    c("dis", "ce", "wdraws_prj", "const_wdraws_prj", "predictor_terms",
       "outdmin", "cl_ref", "wdraws_ref", "clust_used", "nprjdraws", "refmodel"),
     info = info_str
   )
@@ -1605,18 +1605,18 @@ projection_tester <- function(p,
   # refmodel_tester().
   expect_identical(p$refmodel, refmod_expected, info = info_str)
 
-  # solution_terms
+  # predictor_terms
   if (is.numeric(solterms_expected)) {
-    expect_length(p$solution_terms, solterms_expected)
+    expect_length(p$predictor_terms, solterms_expected)
     # Same check, but using count_terms_chosen():
-    expect_equal(count_terms_chosen(p$solution_terms), solterms_expected + 1,
+    expect_equal(count_terms_chosen(p$predictor_terms), solterms_expected + 1,
                  info = info_str)
   } else if (is.character(solterms_expected)) {
-    expect_identical(p$solution_terms, solterms_expected, info = info_str)
+    expect_identical(p$predictor_terms, solterms_expected, info = info_str)
   }
 
   # outdmin
-  sub_trms_crr <- p$solution_terms
+  sub_trms_crr <- p$predictor_terms
   if (length(sub_trms_crr) == 0) {
     sub_trms_crr <- "1"
   }
@@ -1625,7 +1625,7 @@ projection_tester <- function(p,
     solterms_vsel_L1_search_crr <- NULL
   } else {
     y_nm <- ""
-    solterms_vsel_L1_search_crr <- p$solution_terms
+    solterms_vsel_L1_search_crr <- p$predictor_terms
   }
   y_nms <- y_nm
   # For checking for the augmented-data projection case, we use the "unsafer"
@@ -2017,9 +2017,9 @@ vsel_tester <- function(
 
   # search_path
   expect_type(vs$search_path, "list")
-  expect_named(vs$search_path, c("solution_terms", "outdmins", "p_sel"),
+  expect_named(vs$search_path, c("predictor_ranking", "outdmins", "p_sel"),
                info = info_str)
-  expect_identical(vs$search_path$solution_terms, vs$solution_terms,
+  expect_identical(vs$search_path$predictor_ranking, vs$predictor_ranking,
                    info = info_str)
   expect_type(vs$search_path$outdmins, "list")
   expect_length(vs$search_path$outdmins, solterms_len_expected + 1)
@@ -2041,7 +2041,7 @@ vsel_tester <- function(
     solterms_vsel_L1_search_crr <- NULL
   } else {
     y_nm <- ""
-    solterms_vsel_L1_search_crr <- vs$solution_terms
+    solterms_vsel_L1_search_crr <- vs$predictor_ranking
   }
   y_nms <- y_nm
   # For checking for the augmented-data projection case, we use the "unsafer"
@@ -2074,7 +2074,7 @@ vsel_tester <- function(
   } else {
     wobs_expected_crr <- vs$refmodel$wobs
   }
-  solterms_for_sub <- c("1", vs$solution_terms)
+  solterms_for_sub <- c("1", vs$predictor_ranking)
   for (i in seq_along(vs$search_path$outdmins)) {
     sub_trms_crr <- head(solterms_for_sub, i)
     if (length(sub_trms_crr) > 1) {
@@ -2122,30 +2122,30 @@ vsel_tester <- function(
                  fam_expected = vs$refmodel$family$family,
                  info_str = info_str)
 
-  # solution_terms
-  expect_type(vs$solution_terms, "character")
-  expect_length(vs$solution_terms, solterms_len_expected)
-  soltrms <- vs$solution_terms
+  # predictor_ranking
+  expect_type(vs$predictor_ranking, "character")
+  expect_length(vs$predictor_ranking, solterms_len_expected)
+  soltrms <- vs$predictor_ranking
   for (soltrms_plus in grep("\\+", soltrms, value = TRUE)) {
     soltrms <- setdiff(soltrms, soltrms_plus)
     soltrms <- c(soltrms, labels(terms(as.formula(paste(". ~", soltrms_plus)))))
   }
   expect_true(all(soltrms %in% trms_universe_split), info = info_str)
 
-  # solution_terms_cv
+  # predictor_ranking_cv
   if (with_cv && isTRUE(vs$validate_search)) {
-    expect_true(is.matrix(vs$solution_terms_cv), info = info_str)
-    expect_type(vs$solution_terms_cv, "character")
+    expect_true(is.matrix(vs$predictor_ranking_cv), info = info_str)
+    expect_type(vs$predictor_ranking_cv, "character")
     if (identical(cv_method_expected, "kfold")) {
       n_folds <- K_tst
     } else {
       n_folds <- nobsv
     }
-    expect_identical(dim(vs$solution_terms_cv),
+    expect_identical(dim(vs$predictor_ranking_cv),
                      c(n_folds, solterms_len_expected),
                      info = info_str)
     # We need the addition of `NA_character_` because of subsampled PSIS-LOO CV:
-    soltrms_cv <- unique(as.vector(vs$solution_terms_cv))
+    soltrms_cv <- unique(as.vector(vs$predictor_ranking_cv))
     for (soltrms_cv_plus in grep("\\+", soltrms_cv, value = TRUE)) {
       soltrms_cv <- setdiff(soltrms_cv, soltrms_cv_plus)
       soltrms_cv <- c(soltrms_cv,
@@ -2156,7 +2156,7 @@ vsel_tester <- function(
       info = info_str
     )
   } else {
-    expect_null(vs$solution_terms_cv, info = info_str)
+    expect_null(vs$predictor_ranking_cv, info = info_str)
   }
 
   # ce
@@ -2894,8 +2894,8 @@ ranking_tester <- function(rk, fulldata_expected, foldwise_expected,
   expect_s3_class(rk, "ranking", exact = TRUE)
   expect_type(rk, "list")
   expect_named(rk, c("fulldata", "foldwise"), info = info_str)
-  # Since we test elements `solution_terms` and `solution_terms_cv` already
-  # thoroughly in vsel_tester(), we can simply plug these into
+  # Since we test elements `predictor_ranking` and `predictor_ranking_cv`
+  # already thoroughly in vsel_tester(), we can simply plug these into
   # `fulldata_expected` and `foldwise_expected` and then test via identical()
   # (after taking `nterms_max` into account):
   if (!is.null(nterms_max_expected)) {

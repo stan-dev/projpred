@@ -296,7 +296,7 @@ test_that(paste(
 
     if (!(getOption("projpred.mlvl_pred_new", FALSE) &&
           mod_crr %in% c("glmm", "gamm") &&
-          any(grepl("\\|", vs_indep$solution_terms)))) {
+          any(grepl("\\|", vs_indep$predictor_ranking)))) {
       # In the negation of this case (i.e., multilevel models with option
       # `projpred.mlvl_pred_new` being set to `TRUE`), proj_linpred() can't be
       # used to calculate the reference model's performance statistics because
@@ -322,7 +322,7 @@ test_that(paste(
           transform = TRUE,
           integrated = TRUE,
           .seed = NA,
-          nterms = c(0L, seq_along(vs_indep$solution_terms)),
+          nterms = c(0L, seq_along(vs_indep$predictor_ranking)),
           nclusters = args_vs_i$nclusters_pred,
           seed = NA
         ),
@@ -354,7 +354,7 @@ test_that(paste(
           transform = FALSE,
           integrated = TRUE,
           .seed = NA,
-          nterms = c(0L, seq_along(vs_indep$solution_terms)),
+          nterms = c(0L, seq_along(vs_indep$predictor_ranking)),
           nclusters = args_vs_i$nclusters_pred,
           seed = NA
         )
@@ -966,7 +966,7 @@ test_that("for L1 search, `penalty` has an expected effect", {
     )
     # Check that the variables with no cost are selected first and the ones
     # with infinite penalty last:
-    solterms_penal <- vs_penal$solution_terms
+    solterms_penal <- vs_penal$predictor_ranking
     solterms_penal <- sub("(I\\(.*as\\.logical\\(.*\\)\\))", "\\1TRUE",
                           solterms_penal)
     expect_identical(solterms_penal[seq_along(idx_penal_0)],
@@ -1075,7 +1075,7 @@ test_that(paste(
     # In principle, `search_trms_tst$fixed$search_terms[1]` could be used
     # instead of `"xco.1"`, but that would seem like the forced term always has
     # to come first in `search_terms` (which is not the case):
-    expect_identical(vss[[tstsetup]]$solution_terms[1], "xco.1",
+    expect_identical(vss[[tstsetup]]$predictor_ranking[1], "xco.1",
                      info = tstsetup)
   }
 })
@@ -1087,7 +1087,8 @@ test_that(paste(
   skip_if_not(run_vs)
   tstsetups <- grep("\\.excluded", names(vss), value = TRUE)
   for (tstsetup in tstsetups) {
-    expect_false("xco.1" %in% vss[[tstsetup]]$solution_terms, info = tstsetup)
+    expect_false("xco.1" %in% vss[[tstsetup]]$predictor_ranking,
+                 info = tstsetup)
   }
 })
 
@@ -1097,7 +1098,7 @@ test_that(paste(
   skip_if_not(run_vs)
   tstsetups <- grep("\\.empty_size", names(vss), value = TRUE)
   for (tstsetup in tstsetups) {
-    soltrms_out <- vss[[tstsetup]]$solution_terms
+    soltrms_out <- vss[[tstsetup]]$predictor_ranking
     expect_true(
       grepl("\\+", soltrms_out[1]) && !any(grepl("\\+", soltrms_out[-1])),
       info = tstsetup
@@ -1457,7 +1458,7 @@ test_that("setting `nloo` smaller than the number of observations works", {
   skip_if_not(run_cvvs)
   nloo_tst <- nobsv %/% 5L
   # Output elements of `vsel` objects that may be influenced by `nloo`:
-  vsel_nms_nloo <- c("summaries", "solution_terms_cv", "nloo", "ce")
+  vsel_nms_nloo <- c("summaries", "predictor_ranking_cv", "nloo", "ce")
   # In general, element `ce` is affected as well (because the PRNG state when
   # doing the clustering for the performance evaluation is different when `nloo`
   # is smaller than the number of observations compared to when `nloo` is equal
@@ -1501,7 +1502,7 @@ test_that("setting `nloo` smaller than the number of observations works", {
     # Expected equality for most elements with a few exceptions:
     vsel_nms_nloo_crr <- vsel_nms_nloo
     if (isFALSE(args_cvvs_i$validate_search)) {
-      vsel_nms_nloo_crr <- setdiff(vsel_nms_nloo_crr, "solution_terms_cv")
+      vsel_nms_nloo_crr <- setdiff(vsel_nms_nloo_crr, "predictor_ranking_cv")
     }
     expect_equal(cvvs_nloo[setdiff(vsel_nms, vsel_nms_nloo_crr)],
                  cvvss[[tstsetup]][setdiff(vsel_nms, vsel_nms_nloo_crr)],
@@ -1523,7 +1524,7 @@ test_that("`validate_search` works", {
   # Output elements of `vsel` objects that may be influenced by
   # `validate_search`:
   vsel_nms_valsearch <- c("validate_search", "summaries", "ce",
-                          "solution_terms_cv")
+                          "predictor_ranking_cv")
   # The setups that should be tested:
   tstsetups <- names(cvvss)
   if (!run_valsearch_always) {

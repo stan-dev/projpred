@@ -21,7 +21,7 @@ test_that("as.matrix.projection() works", {
     fam_crr <- args_prj[[tstsetup]]$fam_nm
     pkg_crr <- args_prj[[tstsetup]]$pkg_nm
     prj_crr <- args_prj[[tstsetup]]$prj_nm
-    solterms <- args_prj[[tstsetup]]$solution_terms
+    solterms <- args_prj[[tstsetup]]$predictor_terms
     ndr_ncl <- ndr_ncl_dtls(args_prj[[tstsetup]])
 
     m <- as.matrix(prjs[[tstsetup]],
@@ -336,7 +336,7 @@ if (run_snaps) {
                        allow_nonconst_wdraws_prj = ndr_ncl$clust_used)
         expect_snapshot({
           print(tstsetup)
-          print(prjs_vs_i$solution_terms)
+          print(prjs_vs_i$predictor_terms)
           print(rlang::hash(m)) # cat(m)
         })
         return(invisible(TRUE))
@@ -374,7 +374,7 @@ if (run_snaps) {
                        allow_nonconst_wdraws_prj = ndr_ncl$clust_used)
         expect_snapshot({
           print(tstsetup)
-          print(prjs_cvvs_i$solution_terms)
+          print(prjs_cvvs_i$predictor_terms)
           print(rlang::hash(m)) # cat(m)
         })
         return(invisible(TRUE))
