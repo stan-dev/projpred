@@ -1098,11 +1098,10 @@ test_that(paste(
   skip_if_not(run_vs)
   tstsetups <- grep("\\.empty_size", names(vss), value = TRUE)
   for (tstsetup in tstsetups) {
-    soltrms_out <- vss[[tstsetup]]$predictor_ranking
-    expect_true(
-      grepl("\\+", soltrms_out[1]) && !any(grepl("\\+", soltrms_out[-1])),
-      info = tstsetup
-    )
+    rk_fulldata_out <- vss[[tstsetup]]$predictor_ranking
+    expect_true(grepl("\\+", rk_fulldata_out[1]) &&
+                  !any(grepl("\\+", rk_fulldata_out[-1])),
+                info = tstsetup)
   }
 })
 

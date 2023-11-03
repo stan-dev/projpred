@@ -2125,12 +2125,13 @@ vsel_tester <- function(
   # predictor_ranking
   expect_type(vs$predictor_ranking, "character")
   expect_length(vs$predictor_ranking, solterms_len_expected)
-  soltrms <- vs$predictor_ranking
-  for (soltrms_plus in grep("\\+", soltrms, value = TRUE)) {
-    soltrms <- setdiff(soltrms, soltrms_plus)
-    soltrms <- c(soltrms, labels(terms(as.formula(paste(". ~", soltrms_plus)))))
+  rk_fulldata <- vs$predictor_ranking
+  for (rk_fulldata_plus in grep("\\+", rk_fulldata, value = TRUE)) {
+    rk_fulldata <- setdiff(rk_fulldata, rk_fulldata_plus)
+    rk_fulldata <- c(rk_fulldata,
+                     labels(terms(as.formula(paste(". ~", rk_fulldata_plus)))))
   }
-  expect_true(all(soltrms %in% trms_universe_split), info = info_str)
+  expect_true(all(rk_fulldata %in% trms_universe_split), info = info_str)
 
   # predictor_ranking_cv
   if (with_cv && isTRUE(vs$validate_search)) {
@@ -2145,14 +2146,13 @@ vsel_tester <- function(
                      c(n_folds, solterms_len_expected),
                      info = info_str)
     # We need the addition of `NA_character_` because of subsampled PSIS-LOO CV:
-    soltrms_cv <- unique(as.vector(vs$predictor_ranking_cv))
-    for (soltrms_cv_plus in grep("\\+", soltrms_cv, value = TRUE)) {
-      soltrms_cv <- setdiff(soltrms_cv, soltrms_cv_plus)
-      soltrms_cv <- c(soltrms_cv,
-                      labels(terms(as.formula(paste(". ~", soltrms_cv_plus)))))
+    rk_cv <- unique(as.vector(vs$predictor_ranking_cv))
+    for (rk_cv_plus in grep("\\+", rk_cv, value = TRUE)) {
+      rk_cv <- setdiff(rk_cv, rk_cv_plus)
+      rk_cv <- c(rk_cv, labels(terms(as.formula(paste(". ~", rk_cv_plus)))))
     }
     expect_true(
-      all(soltrms_cv %in% c(trms_universe_split, NA_character_)),
+      all(rk_cv %in% c(trms_universe_split, NA_character_)),
       info = info_str
     )
   } else {
