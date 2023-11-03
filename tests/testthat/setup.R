@@ -561,7 +561,7 @@ if ("(xco.1 | z.1)" %in% trms_universe_split) {
   trms_universe_split <- union(trms_universe_split, "xco.1")
 }
 
-# Solution terms for project()-ing from `"refmodel"`s:
+# Predictor terms for project()-ing from `"refmodel"`s:
 solterms_x <- c("xco.1", "xca.1")
 solterms_z <- c("(1 | z.1)", "(xco.1 | z.1)") # removing one of them later
 solterms_s <- c("s(s.1)") # , "s(s.2)"

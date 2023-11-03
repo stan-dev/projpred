@@ -201,8 +201,9 @@ project <- function(object, nterms = NULL, solution_terms = predictor_terms,
       any(
         object$predictor_ranking[seq_along(predictor_terms)] != predictor_terms
       )) {
-    warning("The given `predictor_terms` are not part of the solution path ",
-            "(from `object`), so `refit_prj` is automatically set to `TRUE`.")
+    warning("The given `predictor_terms` are not part of the predictor ",
+            "ranking (from `object`), so `refit_prj` is automatically set to ",
+            "`TRUE`.")
     refit_prj <- TRUE
   }
 
@@ -219,16 +220,16 @@ project <- function(object, nterms = NULL, solution_terms = predictor_terms,
       vars <- setdiff(vars, "1")
     }
     # Reduce `predictor_terms` to those predictor terms that can be found in the
-    # table of possible solution terms:
+    # table of possible predictor terms:
     if (!all(predictor_terms %in% vars)) {
       warning(
         "The following element(s) of `predictor_terms` could not be found in ",
-        "the table of possible solution terms: `c(\"",
+        "the table of possible predictor terms: `c(\"",
         paste(setdiff(predictor_terms, vars), collapse = "\", \""), "\")`. ",
-        "These elements are ignored. (The table of solution terms is either ",
+        "These elements are ignored. (The table of predictor terms is either ",
         "`object$predictor_ranking` or the vector of terms in the reference ",
         "model, depending on whether `object$predictor_ranking` is `NULL` or ",
-        "not. Here, the table of solution terms is: `c(\"",
+        "not. Here, the table of predictor terms is: `c(\"",
         paste(vars, collapse = "\", \""), "\")`.)"
       )
     }

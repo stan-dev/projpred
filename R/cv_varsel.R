@@ -982,7 +982,7 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
                            dot_args))
       }
     }
-    # For storing the fold-wise solution paths:
+    # For storing the fold-wise predictor rankings:
     predictor_ranking_mat <- matrix(nrow = n, ncol = nterms_max)
     # Needed for checking that the length of the predictor ranking is the same
     # across all CV folds and for cutting off post-processed results later:

@@ -53,7 +53,7 @@ weights for the new (or old) observations.}
 
 \item{filter_nterms}{Only applies if \code{object} is an object returned by
 \code{\link[=project]{project()}}. In that case, \code{filter_nterms} can be used to filter \code{object}
-for only those elements (submodels) with a number of solution terms in
+for only those elements (submodels) with a number of predictor terms in
 \code{filter_nterms}. Therefore, needs to be a numeric vector or \code{NULL}. If
 \code{NULL}, use all submodels.}
 
@@ -177,8 +177,8 @@ the order of the response categories from attribute \code{cats}).
 
 If the prediction is done for more than one submodel, the output from above
 is returned for each submodel, giving a named \code{list} with one element for
-each submodel (the names of this \code{list} being the numbers of solution terms
-of the submodels when counting the intercept, too).
+each submodel (the names of this \code{list} being the numbers of predictor
+terms of the submodels when counting the intercept, too).
 }
 \description{
 After the projection of the reference model onto a submodel, the linear

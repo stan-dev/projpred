@@ -23,7 +23,7 @@
 #'   passed to argument `object` of [project()].
 #' @param filter_nterms Only applies if `object` is an object returned by
 #'   [project()]. In that case, `filter_nterms` can be used to filter `object`
-#'   for only those elements (submodels) with a number of solution terms in
+#'   for only those elements (submodels) with a number of predictor terms in
 #'   `filter_nterms`. Therefore, needs to be a numeric vector or `NULL`. If
 #'   `NULL`, use all submodels.
 #' @param transform For [proj_linpred()] only. A single logical value indicating
@@ -155,8 +155,8 @@
 #'
 #'   If the prediction is done for more than one submodel, the output from above
 #'   is returned for each submodel, giving a named `list` with one element for
-#'   each submodel (the names of this `list` being the numbers of solution terms
-#'   of the submodels when counting the intercept, too).
+#'   each submodel (the names of this `list` being the numbers of predictor
+#'   terms of the submodels when counting the intercept, too).
 #'
 #' @examplesIf requireNamespace("rstanarm", quietly = TRUE)
 #' # Data:

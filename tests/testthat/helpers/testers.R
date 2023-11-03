@@ -1381,8 +1381,8 @@ outdmin_tester_aug <- function(
 #   on whether the submodel is non-multilevel or multilevel, respectively).
 # @param wobs_expected The expected numeric vector of observation weights.
 # @param solterms_vsel_L1_search If `outdmin_totest` comes from the L1
-#   `search_path` of an object of class `"vsel"`, provide here the solution
-#   terms. Otherwise, use `NULL`.
+#   `search_path` of an object of class `"vsel"`, provide here the predictor
+#   ranking. Otherwise, use `NULL`.
 # @param with_offs A single logical value indicating whether `outdmin_totest` is
 #   expected to include offsets (`TRUE`) or not (`FALSE`).
 # @param augdat_cats A character vector of response levels in case of the
@@ -1558,9 +1558,9 @@ refdist_tester <- function(refd,
 #
 # @param p An object of class `"projection"` (at least expected so).
 # @param solterms_expected Either a single numeric value giving the expected
-#   number of solution terms (not counting the intercept, even for the
-#   intercept-only model), a character vector giving the expected solution
-#   terms, or `NULL` for not testing the solution terms at all.
+#   length of the predictor ranking (not counting the intercept, even for the
+#   intercept-only model), a character vector giving the expected predictor
+#   ranking, or `NULL` for not testing the predictor ranking at all.
 # @param nprjdraws_expected A single numeric value giving the expected number of
 #   projected draws.
 # @param with_clusters A single logical value indicating whether clustering was
@@ -1757,7 +1757,7 @@ projection_tester <- function(p,
 # @param p An object of (informal) class `"proj_list"` (at least expected so).
 # @param len_expected The expected length of `p`.
 # @param is_seq A single logical value indicating whether `p` is expected to be
-#   sequential (i.e., the number of solution terms increases by 1 from one
+#   sequential (i.e., the number of predictor terms increases by 1 from one
 #   element of `p` to the next).
 # @param extra_tol A single numeric value giving the relative tolerance when
 #   checking the monotonicity of the KL divergences. Because this is a
@@ -1780,7 +1780,7 @@ proj_list_tester <- function(p,
 
   for (j in seq_along(p)) {
     if (is_seq) {
-      # The j-th element should have j solution terms (not counting the
+      # The j-th element should have j predictor terms (not counting the
       # intercept, even for the intercept-only model):
       solterms_expected_crr <- j - 1
     } else {
@@ -1914,9 +1914,9 @@ pp_tester <- function(pp,
 # @param ywtest_expected If `vs` was created with a non-`NULL` argument `d_test`
 #   (which is only possible for varsel()), then this needs to be the expected
 #   `vs$y_wobs_test` object. Otherwise, this needs to be `NULL`.
-# @param solterms_len_expected A single numeric value giving the expected number
-#   of solution terms (not counting the intercept, even for the intercept-only
-#   model).
+# @param solterms_len_expected A single numeric value giving the expected length
+#   of the predictor ranking (not counting the intercept, even for the
+#   intercept-only model).
 # @param method_expected The expected `vs$method` object.
 # @param cv_method_expected The expected `vs$cv_method` object.
 # @param valsearch_expected The expected `vs$validate_search` object.
@@ -2567,8 +2567,8 @@ smmry_tester <- function(smmry, vsel_expected, nterms_max_expected = NULL,
 # @param cv_method_expected Either `character()` for the no-CV case or a single
 #   character string giving the CV method (see argument `cv_method` of
 #   cv_varsel()).
-# @param solterms_expected A character vector giving the expected solution terms
-#   (not counting the intercept, even for the intercept-only model).
+# @param solterms_expected A character vector giving the expected predictor
+#   ranking (not counting the intercept, even for the intercept-only model).
 # @param from_datafit A single logical value indicating whether an object of
 #   class `"datafit"` was used for creating the `"vsel"` object (from which
 #   `smmry_sub` was created) (`TRUE`) or not (`FALSE`).

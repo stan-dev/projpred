@@ -78,7 +78,7 @@ test_that(paste(
                 w <- rep(1, n)
               }
 
-              # compute the whole solution paths
+              # compute the whole predictor rankings
               fit1 <- glm_elnet(x, y, fam,
                                 alpha = alpha,
                                 lambda_min_ratio = 0.1 * lambda_min_ratio,

@@ -79,7 +79,7 @@ test_that("invalid `predictor_terms` warns or fails", {
           excl_nonargs(args_prj_i, nms_excl_add = "predictor_terms")
         )),
         paste("The following element\\(s\\) of `predictor_terms` could not be",
-              "found in the table of possible solution terms"),
+              "found in the table of possible predictor terms"),
         info = tstsetup_crr
       )
       projection_tester(p,
