@@ -882,7 +882,7 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
     }
     verb_out("-----", verbose = verbose)
     # Needed for cutting off post-processed results later:
-    prv_len_soltrms <- length(search_path_fulldata$predictor_ranking)
+    prv_len_rk <- length(search_path_fulldata$predictor_ranking)
   } else {
     ## Case `validate_search = TRUE` ------------------------------------------
 
@@ -986,7 +986,7 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
     predictor_ranking_mat <- matrix(nrow = n, ncol = nterms_max)
     # Needed for checking that the length of the predictor ranking is the same
     # across all CV folds and for cutting off post-processed results later:
-    prv_len_soltrms <- NULL
+    prv_len_rk <- NULL
     # For checking that `clust_used_eval` is the same across all CV folds (and
     # also for storing it):
     clust_used_eval <- NULL
@@ -1015,10 +1015,10 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
       }
 
       rk_i <- res_cv[[run_index]][["predictor_ranking"]]
-      if (is.null(prv_len_soltrms)) {
-        prv_len_soltrms <- length(rk_i)
+      if (is.null(prv_len_rk)) {
+        prv_len_rk <- length(rk_i)
       } else if (getOption("projpred.additional_checks", FALSE)) {
-        stopifnot(identical(length(rk_i), prv_len_soltrms))
+        stopifnot(identical(length(rk_i), prv_len_rk))
       }
       predictor_ranking_mat[i, seq_along(rk_i)] <- rk_i
 
@@ -1041,7 +1041,7 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
   ## Post-processing --------------------------------------------------------
 
   # Submodel predictive performance:
-  summ_sub <- lapply(seq_len(prv_len_soltrms + 1L), function(k) {
+  summ_sub <- lapply(seq_len(prv_len_rk + 1L), function(k) {
     summ_k <- list(lppd = loo_sub[[k]], mu = mu_sub[[k]], wcv = validset$wcv)
     if (refmodel$family$for_latent) {
       summ_k$oscale <- list(lppd = loo_sub_oscale[[k]], mu = mu_sub_oscale[[k]],
@@ -1156,7 +1156,7 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
     out_list <- nlist(ce = perf_eval_out[["ce"]])
   } else {
     out_list <- nlist(predictor_ranking_cv = predictor_ranking_mat[
-      , seq_len(prv_len_soltrms), drop = FALSE
+      , seq_len(prv_len_rk), drop = FALSE
     ])
   }
   out_list <- c(out_list,
