@@ -248,7 +248,7 @@ test_that(paste(
       from_datafit = TRUE,
       refmod_expected =
         datafits[[args_vs_datafit[[tstsetup]]$tstsetup_datafit]],
-      solterms_len_expected = args_vs_datafit[[tstsetup]]$nterms_max,
+      prd_trms_len_expected = args_vs_datafit[[tstsetup]]$nterms_max,
       method_expected = meth_exp_crr,
       search_terms_expected = args_vs_datafit[[tstsetup]]$search_terms,
       search_trms_empty_size =
@@ -276,7 +276,7 @@ test_that(paste(
         datafits[[args_cvvs_datafit[[tstsetup]]$tstsetup_datafit]],
       cvfits_expected =
         cvfitss_datafit[[args_cvvs_datafit[[tstsetup]]$tstsetup_datafit]],
-      solterms_len_expected = args_cvvs_datafit[[tstsetup]]$nterms_max,
+      prd_trms_len_expected = args_cvvs_datafit[[tstsetup]]$nterms_max,
       method_expected = meth_exp_crr,
       cv_method_expected = "kfold",
       valsearch_expected = args_cvvs_datafit[[tstsetup]]$validate_search,
@@ -298,7 +298,7 @@ test_that("project(): `object` of class \"datafit\" fails", {
   # adapted):
   stopifnot(all(names(args_datafit) %in% names(args_ref)))
 
-  tstsetups <- grep("\\.solterms_x.*\\.clust$", names(args_prj), value = TRUE)
+  tstsetups <- grep("\\.prd_trms_x.*\\.clust$", names(args_prj), value = TRUE)
   for (tstsetup in tstsetups) {
     args_prj_i <- args_prj[[tstsetup]]
     if (!args_prj_i$tstsetup_ref %in% names(datafits)) next
@@ -329,14 +329,14 @@ test_that(paste(
     }
     with_L1 <- identical(args_vs_datafit[[tstsetup_vs]]$method, "L1")
     if (length(nterms_crr) == 1) {
-      solterms_expected_crr <- vss_datafit[[tstsetup_vs]]$predictor_ranking[
+      prd_trms_expected_crr <- vss_datafit[[tstsetup_vs]]$predictor_ranking[
         seq_len(nterms_crr)
       ]
       projection_tester(
         prjs_vs_datafit[[tstsetup]],
         refmod_expected =
           datafits[[args_prj_vs_datafit[[tstsetup]]$tstsetup_datafit]],
-        solterms_expected = solterms_expected_crr,
+        prd_trms_expected = prd_trms_expected_crr,
         nprjdraws_expected = 1L,
         with_clusters = FALSE,
         const_wdraws_prj_expected = TRUE,
@@ -528,7 +528,7 @@ test_that(paste(
       info_str = tstsetup,
       stats_expected = stats_common,
       type_expected = type_tst,
-      solterms_expected = vss_datafit[[tstsetup]]$predictor_ranking,
+      prd_trms_expected = vss_datafit[[tstsetup]]$predictor_ranking,
       from_datafit = TRUE
     )
     if (run_snaps) {
@@ -571,7 +571,7 @@ test_that(paste(
       type_expected = type_tst,
       cv_method_expected =
         args_cvvs_datafit[[tstsetup]]$cv_method %||% "LOO",
-      solterms_expected = cvvss_datafit[[tstsetup]]$predictor_ranking,
+      prd_trms_expected = cvvss_datafit[[tstsetup]]$predictor_ranking,
       from_datafit = TRUE
     )
     if (run_snaps) {

@@ -168,7 +168,7 @@ test_that(paste(
   "`object` of class \"refmodel\" and passing arguments to project() works"
 ), {
   skip_if_not(run_prj)
-  tstsetups <- grep("\\.brnll\\..*\\.solterms_x\\.clust$", names(prjs),
+  tstsetups <- grep("\\.brnll\\..*\\.prd_trms_x\\.clust$", names(prjs),
                     value = TRUE)
   for (tstsetup in tstsetups) {
     args_prj_i <- args_prj[[tstsetup]]
@@ -187,7 +187,7 @@ test_that(paste(
   "project() works"
 ), {
   skip_if_not(run_prj)
-  tstsetups <- grep("\\.brnll\\..*\\.solterms_x\\.clust$", names(prjs),
+  tstsetups <- grep("\\.brnll\\..*\\.prd_trms_x\\.clust$", names(prjs),
                     value = TRUE)
   for (tstsetup in tstsetups) {
     args_prj_i <- args_prj[[tstsetup]]
@@ -290,11 +290,11 @@ test_that("invalid `newdata` fails", {
     proj_linpred(prjs, newdata = dat[, 1], .seed = seed2_tst),
     "must be a data\\.frame or a matrix"
   )
-  stopifnot(length(solterms_x) > 1)
-  prj_crr <- prjs[[head(grep("\\.glm\\.gauss.*\\.solterms_x", names(prjs)), 1)]]
+  stopifnot(length(prd_trms_x) > 1)
+  prj_crr <- prjs[[head(grep("\\.glm\\.gauss.*\\.prd_trms_x", names(prjs)), 1)]]
   expect_error(
     proj_linpred(prj_crr,
-                 newdata = dat[, head(solterms_x, -1), drop = FALSE],
+                 newdata = dat[, head(prd_trms_x, -1), drop = FALSE],
                  weightsnew = prj_crr$refmodel$wobs,
                  offsetnew = prj_crr$refmodel$offset,
                  .seed = seed2_tst),
@@ -762,7 +762,7 @@ test_that("`regul` works", {
   skip_if_not(run_prj)
   regul_tst <- c(1e-6, 1e-1, 1e2)
   stopifnot(identical(regul_tst, sort(regul_tst)))
-  tstsetups <- grep("\\.glm\\..*\\.solterms_x\\.clust$", names(prjs),
+  tstsetups <- grep("\\.glm\\..*\\.prd_trms_x\\.clust$", names(prjs),
                     value = TRUE)
   tstsetups <- grep(fam_nms_aug_regex, tstsetups, value = TRUE, invert = TRUE)
   for (tstsetup in tstsetups) {
@@ -798,7 +798,7 @@ test_that("`regul` works", {
 
 test_that("`filter_nterms` works (for an `object` of class \"projection\")", {
   skip_if_not(run_prj)
-  tstsetups <- grep("\\.brnll\\..*\\.solterms_x\\.clust$", names(prjs),
+  tstsetups <- grep("\\.brnll\\..*\\.prd_trms_x\\.clust$", names(prjs),
                     value = TRUE)
   for (tstsetup in tstsetups) {
     nterms_avail_crr <- length(args_prj[[tstsetup]]$predictor_terms)
@@ -1160,7 +1160,7 @@ test_that(paste(
   "`object` of class \"refmodel\" and passing arguments to project() works"
 ), {
   skip_if_not(run_prj)
-  tstsetups <- grep("\\.brnll\\..*\\.solterms_x\\.clust$", names(prjs),
+  tstsetups <- grep("\\.brnll\\..*\\.prd_trms_x\\.clust$", names(prjs),
                     value = TRUE)
   for (tstsetup in tstsetups) {
     args_prj_i <- args_prj[[tstsetup]]
@@ -1179,7 +1179,7 @@ test_that(paste(
   "project() works"
 ), {
   skip_if_not(run_prj)
-  tstsetups <- grep("\\.brnll\\..*\\.solterms_x\\.clust$", names(prjs),
+  tstsetups <- grep("\\.brnll\\..*\\.prd_trms_x\\.clust$", names(prjs),
                     value = TRUE)
   for (tstsetup in tstsetups) {
     args_prj_i <- args_prj[[tstsetup]]
@@ -1282,16 +1282,16 @@ test_that("invalid `newdata` fails", {
     proj_predict(prjs, newdata = dat[, 1], .seed = seed2_tst),
     "must be a data\\.frame or a matrix"
   )
-  stopifnot(length(solterms_x) > 1)
-  prj_crr <- prjs[[head(grep("\\.glm\\.gauss.*\\.solterms_x", names(prjs)), 1)]]
+  stopifnot(length(prd_trms_x) > 1)
+  prj_crr <- prjs[[head(grep("\\.glm\\.gauss.*\\.prd_trms_x", names(prjs)), 1)]]
   expect_error(
-    proj_predict(prjs[[head(grep("\\.glm\\.gauss.*\\.solterms_x", names(prjs)),
+    proj_predict(prjs[[head(grep("\\.glm\\.gauss.*\\.prd_trms_x", names(prjs)),
                             1)]],
-                 newdata = dat[, head(solterms_x, -1), drop = FALSE],
+                 newdata = dat[, head(prd_trms_x, -1), drop = FALSE],
                  weightsnew = prj_crr$refmodel$wobs,
                  offsetnew = prj_crr$refmodel$offset,
                  .seed = seed2_tst,
-                 predictor_terms = solterms_x),
+                 predictor_terms = prd_trms_x),
     "^object '.*' not found$"
   )
 })
@@ -1566,7 +1566,7 @@ test_that("`offsetnew` works", {
 
 test_that("`filter_nterms` works (for an `object` of class \"projection\")", {
   skip_if_not(run_prj)
-  tstsetups <- grep("\\.brnll\\..*\\.solterms_x\\.clust$", names(prjs),
+  tstsetups <- grep("\\.brnll\\..*\\.prd_trms_x\\.clust$", names(prjs),
                     value = TRUE)
   for (tstsetup in tstsetups) {
     nterms_avail_crr <- length(args_prj[[tstsetup]]$predictor_terms)

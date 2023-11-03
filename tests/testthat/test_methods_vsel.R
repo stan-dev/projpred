@@ -91,7 +91,7 @@ test_that(paste(
       stats_expected = args_smmry_vs[[tstsetup]]$stats,
       type_expected = args_smmry_vs[[tstsetup]]$type,
       nterms_max_expected = args_smmry_vs[[tstsetup]]$nterms_max,
-      solterms_expected = vss[[tstsetup_vs]]$predictor_ranking
+      prd_trms_expected = vss[[tstsetup_vs]]$predictor_ranking
     )
   }
 })
@@ -117,7 +117,7 @@ test_that(paste(
       nterms_max_expected = args_smmry_cvvs[[tstsetup]]$nterms_max,
       cv_method_expected =
         args_cvvs[[tstsetup_cvvs]]$cv_method %||% "LOO",
-      solterms_expected = cvvss[[tstsetup_cvvs]]$predictor_ranking
+      prd_trms_expected = cvvss[[tstsetup_cvvs]]$predictor_ranking
     )
   }
 })
