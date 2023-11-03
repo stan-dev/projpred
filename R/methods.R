@@ -200,7 +200,7 @@ proj_helper <- function(object, newdata, offsetnew, weightsnew, onesub_fun,
       }
       projs <- Filter(
         function(x) {
-          count_terms_chosen(x$solution_terms) %in% (filter_nterms + 1)
+          count_terms_chosen(x$predictor_terms) %in% (filter_nterms + 1)
         },
         object
       )
@@ -256,7 +256,7 @@ proj_helper <- function(object, newdata, offsetnew, weightsnew, onesub_fun,
   }
 
   names(projs) <- sapply(projs, function(proj) {
-    count_terms_chosen(proj$solution_terms)
+    count_terms_chosen(proj$predictor_terms)
   })
 
   preds <- lapply(projs, function(proj) {
@@ -2535,7 +2535,7 @@ predictor_terms <- function(object, ...) {
 #' @rdname predictor_terms
 #' @export
 predictor_terms.projection <- function(object, ...) {
-  return(object[["solution_terms"]])
+  return(object[["predictor_terms"]])
 }
 
 #' Predictor ranking(s)

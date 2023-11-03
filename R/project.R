@@ -85,7 +85,7 @@
 #'     case of the Gaussian family, that reduced cross-entropy is further
 #'     modified, yielding merely a proxy.}
 #'     \item{`wdraws_prj`}{Weights for the projected draws.}
-#'     \item{`solution_terms`}{A character vector of the submodel's predictor
+#'     \item{`predictor_terms`}{A character vector of the submodel's predictor
 #'     terms.}
 #'     \item{`outdmin`}{A `list` containing the submodel fits (one fit per
 #'     projected draw). This is the same as the return value of the

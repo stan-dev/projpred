@@ -1,16 +1,16 @@
 # Function to project the reference model onto a single submodel with predictor
-# terms given in `solution_terms`. Note that "single submodel" does not refer to
-# a single fit (there are as many fits for this single submodel as there are
+# terms given in `predictor_terms`. Note that "single submodel" does not refer
+# to a single fit (there are as many fits for this single submodel as there are
 # projected draws). At the end, init_submodl() is called, so the output is of
 # class `submodl`.
-get_submodl_prj <- function(solution_terms, p_ref, refmodel, regul = 1e-4,
+get_submodl_prj <- function(predictor_terms, p_ref, refmodel, regul = 1e-4,
                             ...) {
   y_unqs_aug <- refmodel$family$cats
   if (refmodel$family$for_latent && !is.null(y_unqs_aug)) {
     y_unqs_aug <- NULL
   }
   subset <- subset_formula_and_data(
-    formula = refmodel$formula, terms_ = unique(unlist(solution_terms)),
+    formula = refmodel$formula, terms_ = unique(unlist(predictor_terms)),
     data = refmodel$fetch_data(), y = p_ref$mu, y_unqs = y_unqs_aug
   )
   fml_divmin <- flatten_formula(subset$formula)
@@ -41,7 +41,7 @@ get_submodl_prj <- function(solution_terms, p_ref, refmodel, regul = 1e-4,
 
   return(init_submodl(
     outdmin = outdmin, p_ref = p_ref, refmodel = refmodel,
-    solution_terms = solution_terms, wobs = refmodel$wobs
+    predictor_terms = predictor_terms, wobs = refmodel$wobs
   ))
 }
 
@@ -71,7 +71,7 @@ perf_eval <- function(search_path,
         outdmin = search_path$outdmins[[size_j + 1]],
         p_ref = p_ref,
         refmodel = refmodel,
-        solution_terms = utils::head(search_path$solution_terms, size_j),
+        predictor_terms = utils::head(search_path$solution_terms, size_j),
         wobs = refmodel$wobs
       ))
     }
@@ -89,7 +89,7 @@ perf_eval <- function(search_path,
     }
     fetch_submodl <- function(size_j, ...) {
       return(get_submodl_prj(
-        solution_terms = utils::head(search_path$solution_terms, size_j),
+        predictor_terms = utils::head(search_path$solution_terms, size_j),
         p_ref = p_ref, refmodel = refmodel, regul = regul, ...
       ))
     }
@@ -151,7 +151,7 @@ perf_eval <- function(search_path,
 
 # Process the output of the `divergence_minimizer` function (see
 # init_refmodel()) to create an object of class `submodl`.
-init_submodl <- function(outdmin, p_ref, refmodel, solution_terms, wobs) {
+init_submodl <- function(outdmin, p_ref, refmodel, predictor_terms, wobs) {
   p_ref$mu <- p_ref$mu_offs
   if (!(all(is.na(p_ref$var)) ||
         refmodel$family$family %in% c("gaussian", "Student_t"))) {
@@ -192,7 +192,7 @@ init_submodl <- function(outdmin, p_ref, refmodel, solution_terms, wobs) {
   return(structure(
     nlist(dis, ce, wdraws_prj = p_ref$wdraws_prj,
           const_wdraws_prj = length(unique(p_ref$wdraws_prj)) == 1,
-          solution_terms, outdmin, cl_ref = p_ref$cl,
+          predictor_terms, outdmin, cl_ref = p_ref$cl,
           wdraws_ref = p_ref$wdraws_orig, clust_used = p_ref$clust_used,
           nprjdraws = NCOL(p_ref$mu)),
     class = "submodl"
