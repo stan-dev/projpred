@@ -24,9 +24,8 @@
 #'   "LOO"`. Number of subsampled PSIS-LOO CV folds, i.e., number of
 #'   observations used for the approximate LOO CV (anything from 1 to the number
 #'   of all observations). Smaller values lead to faster computation but higher
-#'   uncertainty in the evaluation part. Currently, subsampled PSIS-LOO CV
-#'   should only be used for faster experimentation. If `NULL`, all observations
-#'   are used (as by default).
+#'   uncertainty in the evaluation part. If `NULL`, all observations are used
+#'   (as by default).
 #' @param K Only relevant if `cv_method = "kfold"` and if `cvfits` is `NULL`
 #'   (which is the case for reference model objects created by
 #'   [get_refmodel.stanreg()] or [brms::get_refmodel.brmsfit()]). Number of

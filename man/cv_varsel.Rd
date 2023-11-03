@@ -68,9 +68,8 @@ performed. See also section "Note" below.}
 \item{nloo}{\strong{Caution:} Still experimental. Only relevant if \code{cv_method = "LOO"}. Number of subsampled PSIS-LOO CV folds, i.e., number of
 observations used for the approximate LOO CV (anything from 1 to the number
 of all observations). Smaller values lead to faster computation but higher
-uncertainty in the evaluation part. Currently, subsampled PSIS-LOO CV
-should only be used for faster experimentation. If \code{NULL}, all observations
-are used (as by default).}
+uncertainty in the evaluation part. If \code{NULL}, all observations are used
+(as by default).}
 
 \item{K}{Only relevant if \code{cv_method = "kfold"} and if \code{cvfits} is \code{NULL}
 (which is the case for reference model objects created by
