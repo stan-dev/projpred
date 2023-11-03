@@ -4,7 +4,7 @@ context("proj_linpred()")
 
 ## object -----------------------------------------------------------------
 
-test_that("pl: `object` of class \"projection\" works", {
+test_that("pl: `object` of class `projection` works", {
   skip_if_not(run_prj)
   for (tstsetup in names(prjs)) {
     if (args_prj[[tstsetup]]$prj_nm == "augdat") {
@@ -39,7 +39,7 @@ test_that("pl: `object` of class \"projection\" works", {
 })
 
 test_that(paste(
-  "pl: `object` of (informal) class \"proj_list\" (based on varsel()) works"
+  "pl: `object` of (informal) class `proj_list` (based on varsel()) works"
 ), {
   skip_if_not(run_vs)
   for (tstsetup in names(prjs_vs)) {
@@ -88,7 +88,7 @@ test_that(paste(
 })
 
 test_that(paste(
-  "pl: `object` of (informal) class \"proj_list\" (based on cv_varsel()) works"
+  "pl: `object` of (informal) class `proj_list` (based on cv_varsel()) works"
 ), {
   skip_if_not(run_cvvs)
   for (tstsetup in names(prjs_cvvs)) {
@@ -137,7 +137,7 @@ test_that(paste(
 })
 
 test_that(paste(
-  "`object` of (informal) class \"proj_list\" (created manually) works"
+  "`object` of (informal) class `proj_list` (created manually) works"
 ), {
   skip_if_not(run_prj)
   tstsetups <- grep(
@@ -165,7 +165,7 @@ test_that(paste(
 })
 
 test_that(paste(
-  "`object` of class \"refmodel\" and passing arguments to project() works"
+  "`object` of class `refmodel` and passing arguments to project() works"
 ), {
   skip_if_not(run_prj)
   tstsetups <- grep("\\.brnll\\..*\\.prd_trms_x\\.clust$", names(prjs),
@@ -183,7 +183,7 @@ test_that(paste(
 })
 
 test_that(paste(
-  "`object` of class \"stanreg\" or \"brmsfit\" and passing arguments to",
+  "`object` of class `stanreg` or `brmsfit` and passing arguments to",
   "project() works"
 ), {
   skip_if_not(run_prj)
@@ -203,7 +203,7 @@ test_that(paste(
 })
 
 test_that(paste(
-  "`object` of class \"vsel\" (created by varsel()) and passing arguments",
+  "`object` of class `vsel` (created by varsel()) and passing arguments",
   "to project() works"
 ), {
   skip_if_not(run_vs)
@@ -225,7 +225,7 @@ test_that(paste(
 })
 
 test_that(paste(
-  "`object` of class \"vsel\" (created by cv_varsel()) and passing arguments",
+  "`object` of class `vsel` (created by cv_varsel()) and passing arguments",
   "to project() works"
 ), {
   skip_if_not(run_cvvs)
@@ -258,25 +258,25 @@ test_that(paste(
 test_that("`object` not of class `vsel` and missing `predictor_terms` fails", {
   expect_error(
     proj_linpred(1, .seed = seed2_tst),
-    paste("^Please provide an `object` of class \"vsel\" or use argument",
+    paste("^Please provide an `object` of class `vsel` or use argument",
           "`predictor_terms`\\.$")
   )
   if (length(fits)) {
     expect_error(
       proj_linpred(fits[[1]], .seed = seed2_tst),
-      paste("^Please provide an `object` of class \"vsel\" or use argument",
+      paste("^Please provide an `object` of class `vsel` or use argument",
             "`predictor_terms`\\.$")
     )
     expect_error(
       proj_linpred(refmods[[1]], .seed = seed2_tst),
-      paste("^Please provide an `object` of class \"vsel\" or use argument",
+      paste("^Please provide an `object` of class `vsel` or use argument",
             "`predictor_terms`\\.$")
     )
   }
   if (run_prj) {
     expect_error(
       proj_linpred(c(prjs, list(dat)), .seed = seed2_tst),
-      paste("Please provide an `object` of class \"vsel\" or use argument",
+      paste("Please provide an `object` of class `vsel` or use argument",
             "`predictor_terms`\\.")
     )
   }
@@ -406,7 +406,7 @@ test_that("`newdata` set to the original dataset doesn't change results", {
 })
 
 test_that(paste(
-  "omitting the response in `newdata` (not possible for `\"brmsfit\"`-based",
+  "omitting the response in `newdata` (not possible for ``brmsfit``-based",
   "reference models) causes output element `lpd` to be `NULL` but doesn't",
   "change results otherwise"
 ), {
@@ -796,7 +796,7 @@ test_that("`regul` works", {
 
 ## filter_nterms ----------------------------------------------------------
 
-test_that("`filter_nterms` works (for an `object` of class \"projection\")", {
+test_that("`filter_nterms` works (for an `object` of class `projection`)", {
   skip_if_not(run_prj)
   tstsetups <- grep("\\.brnll\\..*\\.prd_trms_x\\.clust$", names(prjs),
                     value = TRUE)
@@ -822,7 +822,7 @@ test_that("`filter_nterms` works (for an `object` of class \"projection\")", {
 })
 
 test_that(paste(
-  "`filter_nterms` works (for an `object` of (informal) class \"proj_list\")"
+  "`filter_nterms` works (for an `object` of (informal) class `proj_list`)"
 ), {
   skip_if_not(run_vs)
   tstsetups <- grep("\\.glm\\..*\\.full$", names(prjs_vs), value = TRUE)
@@ -1050,7 +1050,7 @@ test_that("`.seed` works (and restores the RNG state afterwards)", {
 
 ## object -----------------------------------------------------------------
 
-test_that("pp: `object` of class \"projection\" works", {
+test_that("pp: `object` of class `projection` works", {
   skip_if_not(run_prj)
   for (tstsetup in names(prjs)) {
     pp_tester(pps[[tstsetup]],
@@ -1073,7 +1073,7 @@ test_that("pp: `object` of class \"projection\" works", {
 })
 
 test_that(paste(
-  "pp: `object` of (informal) class \"proj_list\" (based on varsel()) works"
+  "pp: `object` of (informal) class `proj_list` (based on varsel()) works"
 ), {
   skip_if_not(run_vs)
   for (tstsetup in names(prjs_vs)) {
@@ -1106,7 +1106,7 @@ test_that(paste(
 })
 
 test_that(paste(
-  "pp: `object` of (informal) class \"proj_list\" (based on cv_varsel()) works"
+  "pp: `object` of (informal) class `proj_list` (based on cv_varsel()) works"
 ), {
   skip_if_not(run_cvvs)
   for (tstsetup in names(prjs_cvvs)) {
@@ -1139,7 +1139,7 @@ test_that(paste(
 })
 
 test_that(paste(
-  "`object` of (informal) class \"proj_list\" (created manually) works"
+  "`object` of (informal) class `proj_list` (created manually) works"
 ), {
   skip_if_not(run_prj)
   tstsetups <- grep("\\.trad\\..*\\.clust$", names(prjs), value = TRUE)
@@ -1157,7 +1157,7 @@ test_that(paste(
 })
 
 test_that(paste(
-  "`object` of class \"refmodel\" and passing arguments to project() works"
+  "`object` of class `refmodel` and passing arguments to project() works"
 ), {
   skip_if_not(run_prj)
   tstsetups <- grep("\\.brnll\\..*\\.prd_trms_x\\.clust$", names(prjs),
@@ -1175,7 +1175,7 @@ test_that(paste(
 })
 
 test_that(paste(
-  "`object` of class \"stanreg\" or \"brmsfit\" and passing arguments to",
+  "`object` of class `stanreg` or `brmsfit` and passing arguments to",
   "project() works"
 ), {
   skip_if_not(run_prj)
@@ -1195,7 +1195,7 @@ test_that(paste(
 })
 
 test_that(paste(
-  "`object` of class \"vsel\" (created by varsel()) and passing arguments",
+  "`object` of class `vsel` (created by varsel()) and passing arguments",
   "to project() works"
 ), {
   skip_if_not(run_vs)
@@ -1217,7 +1217,7 @@ test_that(paste(
 })
 
 test_that(paste(
-  "`object` of class \"vsel\" (created by cv_varsel()) and passing arguments",
+  "`object` of class `vsel` (created by cv_varsel()) and passing arguments",
   "to project() works"
 ), {
   skip_if_not(run_cvvs)
@@ -1250,25 +1250,25 @@ test_that(paste(
 test_that("`object` not of class `vsel` and missing `predictor_terms` fails", {
   expect_error(
     proj_predict(1, .seed = seed2_tst),
-    paste("^Please provide an `object` of class \"vsel\" or use argument",
+    paste("^Please provide an `object` of class `vsel` or use argument",
           "`predictor_terms`\\.$")
   )
   if (length(fits)) {
     expect_error(
       proj_predict(fits[[1]], .seed = seed2_tst),
-      paste("^Please provide an `object` of class \"vsel\" or use argument",
+      paste("^Please provide an `object` of class `vsel` or use argument",
             "`predictor_terms`\\.$")
     )
     expect_error(
       proj_predict(refmods[[1]], .seed = seed2_tst),
-      paste("^Please provide an `object` of class \"vsel\" or use argument",
+      paste("^Please provide an `object` of class `vsel` or use argument",
             "`predictor_terms`\\.$")
     )
   }
   if (run_prj) {
     expect_error(
       proj_predict(c(prjs, list(dat)), .seed = seed2_tst),
-      paste("Please provide an `object` of class \"vsel\" or use argument",
+      paste("Please provide an `object` of class `vsel` or use argument",
             "`predictor_terms`\\.")
     )
   }
@@ -1360,7 +1360,7 @@ test_that("`newdata` set to the original dataset doesn't change results", {
 })
 
 test_that(paste(
-  "omitting the response in `newdata` (not possible for `\"brmsfit\"`-based",
+  "omitting the response in `newdata` (not possible for ``brmsfit``-based",
   "reference models) doesn't change results"
 ), {
   skip_if_not(run_prj)
@@ -1564,7 +1564,7 @@ test_that("`offsetnew` works", {
 
 ## filter_nterms ----------------------------------------------------------
 
-test_that("`filter_nterms` works (for an `object` of class \"projection\")", {
+test_that("`filter_nterms` works (for an `object` of class `projection`)", {
   skip_if_not(run_prj)
   tstsetups <- grep("\\.brnll\\..*\\.prd_trms_x\\.clust$", names(prjs),
                     value = TRUE)
@@ -1588,7 +1588,7 @@ test_that("`filter_nterms` works (for an `object` of class \"projection\")", {
 })
 
 test_that(paste(
-  "`filter_nterms` works (for an `object` of (informal) class \"proj_list\")"
+  "`filter_nterms` works (for an `object` of (informal) class `proj_list`)"
 ), {
   skip_if_not(run_vs)
   tstsetups <- grep("\\.glm\\..*\\.full$", names(prjs_vs), value = TRUE)

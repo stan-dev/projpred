@@ -171,7 +171,7 @@
 #' # Data:
 #' dat_gauss <- data.frame(y = df_gaussian$y, df_gaussian$x)
 #'
-#' # The "stanreg" fit which will be used as the reference model (with small
+#' # The `stanreg` fit which will be used as the reference model (with small
 #' # values for `chains` and `iter`, but only for technical reasons in this
 #' # example; this is not recommended in general):
 #' fit <- rstanarm::stan_glm(
@@ -510,8 +510,8 @@ parse_args_varsel <- function(refmodel, method, refit_prj, nterms_max,
 
   stopifnot(!is.null(refit_prj))
   if (refit_prj && inherits(refmodel, "datafit")) {
-    warning("For an `object` of class \"datafit\", `refit_prj` is ",
-            "automatically set to `FALSE`.")
+    warning("For an `object` of class `datafit`, `refit_prj` is automatically ",
+            "set to `FALSE`.")
     refit_prj <- FALSE
   }
 

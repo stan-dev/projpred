@@ -3,8 +3,8 @@
 context("varsel()")
 
 test_that(paste(
-  "`object` of class \"refmodel\", `method`, `nterms_max`, `nclusters`, and",
-  "`nclusters_pred` work"
+  "`object` of class `refmodel` and arguments `method`, `nterms_max`,",
+  "`nclusters`, and `nclusters_pred` work"
 ), {
   skip_if_not(run_vs)
   for (tstsetup in names(vss)) {
@@ -1204,8 +1204,8 @@ test_that("varsel.vsel() works for `vsel` objects from cv_varsel()", {
 context("cv_varsel()")
 
 test_that(paste(
-  "`object` of class \"refmodel\", `method`, `cv_method`, `nterms_max`,",
-  "`nclusters`, and `nclusters_pred` work"
+  "`object` of class `refmodel` and arguments `method`, `cv_method`,",
+  "`nterms_max`, `nclusters`, and `nclusters_pred` work"
 ), {
   skip_if_not(run_cvvs)
   for (tstsetup in names(cvvss)) {
@@ -1705,7 +1705,7 @@ test_that(paste(
     }
     kfold_obj <- structure(kfold_obj$fits[, "fit"], folds = folds_vec)
 
-    # Create `"refmodel"` object with `cvfits`:
+    # Create `refmodel` object with `cvfits`:
     refmod_crr <- do.call(get_refmodel, c(
       list(object = fit_crr, cvfits = kfold_obj),
       excl_nonargs(args_ref[[args_cvvs_i$tstsetup_ref]])
@@ -1808,7 +1808,7 @@ test_that(paste(
                        seed = seed_fit)
     kfold_obj <- structure(kfold_obj$fits[, "fit"], folds = folds_vec)
 
-    # Create `"refmodel"` object with `cvfits`:
+    # Create `refmodel` object with `cvfits`:
     refmod_crr <- do.call(get_refmodel, c(
       list(object = fit_crr, cvfits = kfold_obj),
       excl_nonargs(args_ref[[args_cvvs_i$tstsetup_ref]])

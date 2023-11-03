@@ -316,7 +316,7 @@
 #' # Data:
 #' dat_gauss <- data.frame(y = df_gaussian$y, df_gaussian$x)
 #'
-#' # The "stanreg" fit which will be used as the reference model (with small
+#' # The `stanreg` fit which will be used as the reference model (with small
 #' # values for `chains` and `iter`, but only for technical reasons in this
 #' # example; this is not recommended in general):
 #' fit <- rstanarm::stan_glm(
@@ -437,7 +437,7 @@ predict.refmodel <- function(object, newdata = NULL, ynew = NULL,
                              offsetnew = NULL, weightsnew = NULL,
                              type = "response", ...) {
   if (inherits(object, "datafit")) {
-    stop("Cannot make predictions for an `object` of class \"datafit\".")
+    stop("Cannot make predictions for an `object` of class `datafit`.")
   }
   refmodel <- object
   if (!type %in% c("response", "link")) {
@@ -737,14 +737,14 @@ get_refmodel <- function(object, ...) {
 #' @rdname refmodel-init-get
 #' @export
 get_refmodel.refmodel <- function(object, ...) {
-  # If the object is already of class "refmodel", then simply return it as is:
+  # If the object is already of class `refmodel`, then simply return it as is:
   object
 }
 
 #' @rdname refmodel-init-get
 #' @export
 get_refmodel.vsel <- function(object, ...) {
-  # The reference model is stored in the `object` of class "vsel":
+  # The reference model is stored in the `object` of class `vsel`:
   object$refmodel
 }
 

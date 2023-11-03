@@ -2,7 +2,7 @@
 
 context("get_refmodel()")
 
-test_that("`object` of class \"stanreg\" or \"brmsfit\" works", {
+test_that("`object` of class `stanreg` or `brmsfit` works", {
   for (tstsetup in names(refmods)) {
     tstsetup_fit <- args_ref[[tstsetup]]$tstsetup_fit
     with_spclformul_crr <- grepl("\\.spclformul", tstsetup)
@@ -223,7 +223,8 @@ test_that("invalid `ynew` fails", {
 })
 
 test_that(paste(
-  "`object` of class `\"refmodel\"`, `newdata`, `ynew`, and `type` work"
+  "`object` of class `refmodel` and arguments `newdata`, `ynew`, and `type`",
+  "work"
 ), {
   for (tstsetup in names(refmods)) {
     pkg_crr <- args_ref[[tstsetup]]$pkg_nm

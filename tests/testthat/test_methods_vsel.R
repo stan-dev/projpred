@@ -73,8 +73,8 @@ test_that("invalid `baseline` fails", {
 })
 
 test_that(paste(
-  "`object` of class \"vsel\" (created by varsel()), `nterms_max`, `stats`,",
-  "and `type` work"
+  "`object` of class `vsel` (created by varsel()) and arguments `nterms_max`,",
+  "`stats`, and `type` work"
 ), {
   skip_if_not(run_vs)
   for (tstsetup in names(smmrys_vs)) {
@@ -97,8 +97,8 @@ test_that(paste(
 })
 
 test_that(paste(
-  "`object` of class \"vsel\" (created by cv_varsel()), `nterms_max`, `stats`,",
-  "and `type` work"
+  "`object` of class `vsel` (created by cv_varsel()) and arguments",
+  "`nterms_max`, `stats`, and `type` work"
 ), {
   skip_if_not(run_cvvs)
   for (tstsetup in names(smmrys_cvvs)) {
@@ -187,7 +187,7 @@ test_that("performances.vsel() is a shortcut", {
 
 context("print()")
 
-test_that("`x` of class \"vselsummary\" (based on varsel()) works", {
+test_that("`x` of class `vselsummary` (based on varsel()) works", {
   skip_if_not(run_vs)
   for (tstsetup in names(smmrys_vs)) {
     expect_output(
@@ -209,7 +209,7 @@ test_that("`x` of class \"vselsummary\" (based on varsel()) works", {
   }
 })
 
-test_that("`x` of class \"vselsummary\" (based on cv_varsel())  works", {
+test_that("`x` of class `vselsummary` (based on cv_varsel())  works", {
   skip_if_not(run_cvvs)
   for (tstsetup in names(smmrys_cvvs)) {
     args_crr <- args_cvvs[[args_smmry_cvvs[[tstsetup]]$tstsetup_vsel]]
@@ -233,7 +233,7 @@ test_that("`x` of class \"vselsummary\" (based on cv_varsel())  works", {
 })
 
 test_that(paste(
-  "`x` of class \"vsel\" (created by varsel()) and passing arguments to",
+  "`x` of class `vsel` (created by varsel()) and passing arguments to",
   "summary.vsel() works"
 ), {
   skip_if_not(run_vs)
@@ -258,7 +258,7 @@ test_that(paste(
 })
 
 test_that(paste(
-  "`x` of class \"vsel\" (created by cv_varsel()) and passing arguments to",
+  "`x` of class `vsel` (created by cv_varsel()) and passing arguments to",
   "summary.vsel() works"
 ), {
   skip_if_not(run_cvvs)
@@ -286,7 +286,7 @@ test_that(paste(
 
 context("plot()")
 
-test_that("`x` of class \"vsel\" (created by varsel()) works", {
+test_that("`x` of class `vsel` (created by varsel()) works", {
   skip_if_not(run_vs)
   common_for_rk_NA <- c("tstsetup_vsel", "text_angle", "nterms_max",
                         "ranking_nterms_max")
@@ -358,7 +358,7 @@ test_that("`x` of class \"vsel\" (created by varsel()) works", {
   }
 })
 
-test_that("`x` of class \"vsel\" (created by cv_varsel()) works", {
+test_that("`x` of class `vsel` (created by cv_varsel()) works", {
   skip_if_not(run_cvvs)
   common_for_rk_NA <- c("tstsetup_vsel", "text_angle", "nterms_max",
                         "ranking_nterms_max")

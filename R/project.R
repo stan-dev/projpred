@@ -119,7 +119,7 @@
 #' # Data:
 #' dat_gauss <- data.frame(y = df_gaussian$y, df_gaussian$x)
 #'
-#' # The "stanreg" fit which will be used as the reference model (with small
+#' # The `stanreg` fit which will be used as the reference model (with small
 #' # values for `chains` and `iter`, but only for technical reasons in this
 #' # example; this is not recommended in general):
 #' fit <- rstanarm::stan_glm(
@@ -161,14 +161,14 @@ project <- function(object, nterms = NULL, solution_terms = predictor_terms,
   ## `object` ---------------------------------------------------------------
 
   if (inherits(object, "datafit")) {
-    stop("project() does not support an `object` of class \"datafit\".")
+    stop("project() does not support an `object` of class `datafit`.")
   }
   if (!inherits(object, "vsel") && is.null(predictor_terms)) {
-    stop("Please provide an `object` of class \"vsel\" or use argument ",
+    stop("Please provide an `object` of class `vsel` or use argument ",
          "`predictor_terms`.")
   }
   if (!inherits(object, "vsel") && !refit_prj) {
-    stop("Please provide an `object` of class \"vsel\" or use ",
+    stop("Please provide an `object` of class `vsel` or use ",
          "`refit_prj = TRUE`.")
   }
 
@@ -191,7 +191,7 @@ project <- function(object, nterms = NULL, solution_terms = predictor_terms,
 
   if (refit_prj && inherits(refmodel, "datafit")) {
     warning("Automatically setting `refit_prj` to `FALSE` since the reference ",
-            "model is of class \"datafit\".")
+            "model is of class `datafit`.")
     refit_prj <- FALSE
   }
 

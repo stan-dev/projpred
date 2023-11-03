@@ -30,7 +30,7 @@ context("datafit")
 }
 
 ## Reference model --------------------------------------------------------
-## (actually "datafit"s)
+## (actually `datafit`s)
 
 # Exclude brms reference models (since `datafit`s don't make use of a reference
 # model fit, it doesn't make a difference if rstanarm or brms is used as the
@@ -83,7 +83,7 @@ if (run_vs) {
     names(args_vs_i)[names(args_vs_i) == "tstsetup_ref"] <- "tstsetup_datafit"
     return(args_vs_i)
   })
-  # For `"datafit"`s, we always have 1 cluster by default, so omit related
+  # For `datafit`s, we always have 1 cluster by default, so omit related
   # arguments:
   args_vs_datafit <- lapply(args_vs_datafit, function(args_vs_i) {
     return(args_vs_i[setdiff(names(args_vs_i),
@@ -110,7 +110,7 @@ if (run_cvvs) {
       "tstsetup_datafit"
     return(args_cvvs_i)
   })
-  # (PSIS-)LOO CV is not possible for `"datafit"`s, so only use K-fold CV:
+  # (PSIS-)LOO CV is not possible for `datafit`s, so only use K-fold CV:
   args_cvvs_datafit <- lapply(args_cvvs_datafit, function(args_cvvs_i) {
     args_cvvs_i$cv_method <- NULL
     args_cvvs_i$K <- NULL
@@ -120,7 +120,7 @@ if (run_cvvs) {
   names(args_cvvs_datafit) <- gsub("default_cvmeth", "kfold",
                                    names(args_cvvs_datafit))
   args_cvvs_datafit <- args_cvvs_datafit[unique(names(args_cvvs_datafit))]
-  # For `"datafit"`s, we always have 1 cluster by default, so omit related
+  # For `datafit`s, we always have 1 cluster by default, so omit related
   # arguments:
   args_cvvs_datafit <- lapply(args_cvvs_datafit, function(args_cvvs_i) {
     return(args_cvvs_i[setdiff(names(args_cvvs_i),
@@ -159,7 +159,7 @@ if (run_vs) {
       "tstsetup_datafit"
     return(args_prj_vs_i)
   })
-  # For `"datafit"`s, we always have 1 cluster by default, so omit related
+  # For `datafit`s, we always have 1 cluster by default, so omit related
   # arguments:
   args_prj_vs_datafit <- lapply(args_prj_vs_datafit, function(args_prj_vs_i) {
     return(args_prj_vs_i[setdiff(names(args_prj_vs_i),
@@ -177,7 +177,7 @@ if (run_vs) {
 
 ## Prediction -------------------------------------------------------------
 
-### From "proj_list" ------------------------------------------------------
+### From `proj_list` ------------------------------------------------------
 
 if (run_vs) {
   pls_vs_datafit <- lapply(prjs_vs_datafit, proj_linpred, .seed = seed2_tst)
@@ -188,7 +188,7 @@ if (run_vs) {
 
 ## Reference model --------------------------------------------------------
 
-test_that("init_refmodel(): `object` of class \"datafit\" works", {
+test_that("init_refmodel(): `object` of class `datafit` works", {
   for (tstsetup in names(datafits)) {
     tstsetup_fit <- args_datafit[[tstsetup]]$tstsetup_fit
     with_spclformul_crr <- grepl("\\.spclformul", tstsetup)
@@ -216,11 +216,11 @@ test_that("init_refmodel(): `object` of class \"datafit\" works", {
   }
 })
 
-test_that("predict.refmodel(): `object` of class \"datafit\" fails", {
+test_that("predict.refmodel(): `object` of class `datafit` fails", {
   for (tstsetup in names(datafits)) {
     expect_error(
       predict(datafits[[tstsetup]], newdata = dat),
-      "^Cannot make predictions for an `object` of class \"datafit\"\\.$",
+      "^Cannot make predictions for an `object` of class `datafit`\\.$",
       info = tstsetup
     )
   }
@@ -229,7 +229,8 @@ test_that("predict.refmodel(): `object` of class \"datafit\" fails", {
 ## Variable selection -----------------------------------------------------
 
 test_that(paste(
-  "varsel(): `object` of class \"datafit\", `method`, and `nterms_max` work"
+  "varsel(): `object` of class `datafit` and arguments `method` and",
+  "`nterms_max` work"
 ), {
   skip_if_not(run_vs)
   for (tstsetup in names(vss_datafit)) {
@@ -261,8 +262,8 @@ test_that(paste(
 })
 
 test_that(paste(
-  "cv_varsel(): `object` of class \"datafit\", `method`, `cv_method`, and",
-  "`nterms_max` work"
+  "cv_varsel(): `object` of class `datafit` and arguments `method`,",
+  "`cv_method`, and `nterms_max` work"
 ), {
   skip_if_not(run_cvvs)
   for (tstsetup in names(cvvss_datafit)) {
@@ -292,7 +293,7 @@ test_that(paste(
 
 ## Projection -------------------------------------------------------------
 
-test_that("project(): `object` of class \"datafit\" fails", {
+test_that("project(): `object` of class `datafit` fails", {
   skip_if_not(run_prj)
   # A prerequisite for this project() test (otherwise, it would have to be
   # adapted):
@@ -309,15 +310,15 @@ test_that("project(): `object` of class \"datafit\" fails", {
         excl_nonargs(args_prj_i)
       )),
       paste("^project\\(\\) does not support an `object` of class",
-            "\"datafit\"\\.$"),
+            "`datafit`\\.$"),
       info = tstsetup
     )
   }
 })
 
 test_that(paste(
-  "project(): `object` of class \"vsel\" (created by varsel() applied to an",
-  "`object` of class \"datafit\"), `nclusters`, and `nterms` work"
+  "project(): `object` of class `vsel` (created by varsel() applied to an",
+  "`object` of class `datafit`) and arguments `nclusters` and `nterms` work"
 ), {
   skip_if_not(run_vs)
   for (tstsetup in names(prjs_vs_datafit)) {
@@ -392,7 +393,7 @@ test_that(paste(
 ## Prediction -------------------------------------------------------------
 
 test_that(paste(
-  "proj_linpred(): `object` of (informal) class \"proj_list\" (based on",
+  "proj_linpred(): `object` of (informal) class `proj_list` (based on",
   "varsel()) works"
 ), {
   skip_if_not(run_vs)
@@ -438,7 +439,7 @@ test_that(paste(
 })
 
 test_that(paste(
-  "proj_predict(): `object` of (informal) class \"proj_list\" (based on",
+  "proj_predict(): `object` of (informal) class `proj_list` (based on",
   "varsel()) works"
 ), {
   skip_if_not(run_vs)
@@ -480,7 +481,7 @@ test_that(paste(
 
 ## summary.vsel() ---------------------------------------------------------
 
-test_that("summary.vsel(): `object` of class \"datafit\" fails", {
+test_that("summary.vsel(): `object` of class `datafit` fails", {
   for (tstsetup in names(datafits)) {
     expect_error(
       summary.vsel(datafits[[tstsetup]]),
@@ -504,8 +505,8 @@ test_that("summary.vsel(): `baseline = \"ref\"` and `deltas = TRUE` fails", {
 })
 
 test_that(paste(
-  "summary.vsel(): `object` of class \"vsel\" (created by varsel() applied to",
-  "an `object` of class \"datafit\"), `stats`, and `type` work"
+  "summary.vsel(): `object` of class `vsel` (created by varsel() applied to",
+  "an `object` of class `datafit`) and arguments `stats` and `type` work"
 ), {
   skip_if_not(run_vs)
   tstsetups <- unname(unlist(lapply(mod_nms, function(mod_nm) {
@@ -545,8 +546,8 @@ test_that(paste(
 })
 
 test_that(paste(
-  "summary.vsel(): `object` of class \"vsel\" (created by cv_varsel() applied",
-  "to an `object` of class \"datafit\"), `stats`, and `type` work"
+  "summary.vsel(): `object` of class `vsel` (created by cv_varsel() applied",
+  "to an `object` of class `datafit`) and arguments `stats` and `type` work"
 ), {
   skip_if_not(run_cvvs)
   tstsetups <- unname(unlist(lapply(mod_nms, function(mod_nm) {

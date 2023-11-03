@@ -1,15 +1,15 @@
-# A helper function for testing the structure of an expected extended `"family"`
+# A helper function for testing the structure of an expected extended `family`
 # object.
 #
-# @param extfam An object of class `"family"` (at least expected so) which has
+# @param extfam An object of class `family` (at least expected so) which has
 #   been extended by projpred.
-# @param fam_orig The original object of class `"family"` which has been used as
+# @param fam_orig The original object of class `family` which has been used as
 #   input to extend_family().
 # @param extfam_nms_add2 A character vector of additional element names which
 #   do not exist in the output of extend_family() (needed for testing
 #   `get_refmodel([...])$family`).
 # @param from_brms A single logical value indicating whether the extended family
-#   was created for a reference model based on a `"brmsfit"` (`TRUE`) or not
+#   was created for a reference model based on a `brmsfit` (`TRUE`) or not
 #   (`FALSE`).
 # @param augdat_expected A single logical value indicating whether the extended
 #   family is expected to be for augmented-data projection (`TRUE`) or not
@@ -239,14 +239,13 @@ extfam_tester <- function(extfam,
   return(invisible(TRUE))
 }
 
-# A helper function for testing the structure of an expected `"refmodel"`
-# object.
+# A helper function for testing the structure of an expected `refmodel` object.
 #
-# @param refmod An object of class `"refmodel"` (at least expected so).
+# @param refmod An object of class `refmodel` (at least expected so).
 # @param is_datafit A single logical value indicating whether the reference
-#   model is expected to be a `"datafit"` (`TRUE`) or not (`FALSE`).
+#   model is expected to be a `datafit` (`TRUE`) or not (`FALSE`).
 # @param pkg_nm A single character string specifying the name of the package
-#   upon whose fit the reference model (or `"datafit"`) is based.
+#   upon whose fit the reference model (or `datafit`) is based.
 # @param fit_expected The expected `refmod$fit` object.
 # @param formul_expected The expected `refmod$formula` object. A cbind()
 #   expression on the left-hand side of the formula is handled automatically.
@@ -261,7 +260,7 @@ extfam_tester <- function(extfam,
 # @param offs_expected The expected numeric vector of offsets.
 # @param nrefdraws_expected A single integer value giving the expected number of
 #   posterior draws in the reference model.
-# @param fam_orig The original object of class `"family"` which has been used as
+# @param fam_orig The original object of class `family` which has been used as
 #   input to extend_family().
 # @param mod_nm A single character string specifying the type of model (see
 #   object `mod_nms`.
@@ -1374,14 +1373,14 @@ outdmin_tester_aug <- function(
 # @param sub_data The dataset used for fitting the submodel.
 # @param sub_fam A single character string giving the submodel's family.
 # @param has_grp A single logical value indicating whether the fits in
-#   `outdmin_totest` are expected to be of class `"lmerMod"` or `"glmerMod"`
-#   (if, at the same time, `has_add` is `FALSE`).
+#   `outdmin_totest` are expected to be of class `lmerMod` or `glmerMod` (if, at
+#   the same time, `has_add` is `FALSE`).
 # @param has_add A single logical value indicating whether the fits in
-#   `outdmin_totest` are expected to be of class `"gam"` or `"gamm4"` (depending
-#   on whether the submodel is non-multilevel or multilevel, respectively).
+#   `outdmin_totest` are expected to be of class `gam` or `gamm4` (depending on
+#   whether the submodel is non-multilevel or multilevel, respectively).
 # @param wobs_expected The expected numeric vector of observation weights.
 # @param prd_trms_vsel_L1_search If `outdmin_totest` comes from the L1
-#   `search_path` of an object of class `"vsel"`, provide here the predictor
+#   `search_path` of an object of class `vsel`, provide here the predictor
 #   ranking. Otherwise, use `NULL`.
 # @param with_offs A single logical value indicating whether `outdmin_totest` is
 #   expected to include offsets (`TRUE`) or not (`FALSE`).
@@ -1553,10 +1552,10 @@ refdist_tester <- function(refd,
   return(invisible(TRUE))
 }
 
-# A helper function for testing the structure of an expected `"projection"`
+# A helper function for testing the structure of an expected `projection`
 # object.
 #
-# @param p An object of class `"projection"` (at least expected so).
+# @param p An object of class `projection` (at least expected so).
 # @param prd_trms_expected Either a single numeric value giving the expected
 #   length of the predictor ranking (not counting the intercept, even for the
 #   intercept-only model), a character vector giving the expected predictor
@@ -1572,7 +1571,7 @@ refdist_tester <- function(refd,
 # @param prjdraw_weights_expected The expected weights for the projected draws
 #   or `NULL` for not testing these weights at all.
 # @param from_vsel_L1_search A single logical value indicating whether `p` uses
-#   the L1 `search_path` of an object of class `"vsel"` for extracting the
+#   the L1 `search_path` of an object of class `vsel` for extracting the
 #   subfit(s) (`TRUE`) or not (`FALSE`).
 # @param info_str A single character string giving information to be printed in
 #   case of failure.
@@ -1601,7 +1600,7 @@ projection_tester <- function(p,
   )
 
   # refmodel
-  # Note: Extensive tests for `"refmodel"`s and `"datafit"`s may be run via
+  # Note: Extensive tests for `refmodel`s and `datafit`s may be run via
   # refmodel_tester().
   expect_identical(p$refmodel, refmod_expected, info = info_str)
 
@@ -1635,7 +1634,7 @@ projection_tester <- function(p,
   if (!p$refmodel$family$for_augdat) {
     y_nms <- paste0(".", y_nms)
   }
-  # A preliminary check for `nprjdraws_expected` (doesn't work for "datafit"s
+  # A preliminary check for `nprjdraws_expected` (doesn't work for `datafit`s
   # and, because of issue #131, for submodels which are GAMMs):
   sub_formul_crr_rhs <- as.formula(paste(
     "~", paste(sub_trms_crr, collapse = " + ")
@@ -1751,10 +1750,10 @@ projection_tester <- function(p,
   return(invisible(TRUE))
 }
 
-# A helper function for testing the structure of an expected `"proj_list"`
+# A helper function for testing the structure of an expected `proj_list`
 # object.
 #
-# @param p An object of (informal) class `"proj_list"` (at least expected so).
+# @param p An object of (informal) class `proj_list` (at least expected so).
 # @param len_expected The expected length of `p`.
 # @param is_seq A single logical value indicating whether `p` is expected to be
 #   sequential (i.e., the number of predictor terms increases by 1 from one
@@ -1792,7 +1791,7 @@ proj_list_tester <- function(p,
                       ...)
   }
   if (is_seq) {
-    # For a sequential `"proj_list"` object and training data, `ce` should be
+    # For a sequential `proj_list` object and training data, `ce` should be
     # non-increasing for increasing model size:
     ceseq <- sapply(p, function(x) sum(x$ce))
     expect_true(all(ifelse(sign(head(ceseq, -1)) == 1,
@@ -1807,7 +1806,7 @@ proj_list_tester <- function(p,
 # proj_linpred().
 #
 # @param pl An object resulting from a call to proj_linpred().
-# @param len_expected The number of `"projection"` objects used for `pl`.
+# @param len_expected The number of `projection` objects used for `pl`.
 # @param nprjdraws_expected The expected number of projected draws in `pl`.
 # @param wdraws_prj_expected The expected attribute `wdraws_prj` (containing the
 #   weights of the projected draws) of the `pred` and `lpd` elements.
@@ -1866,7 +1865,7 @@ pl_tester <- function(pl,
 # proj_predict().
 #
 # @param pp An object resulting from a call to proj_predict().
-# @param len_expected The number of `"projection"` objects used for `pp`.
+# @param len_expected The number of `projection` objects used for `pp`.
 # @param nprjdraws_out_expected The expected number of projected draws in `pp`.
 #   In contrast to argument `nprjdraws_expected` of pl_tester(), this also needs
 #   to take proj_predict()'s argument `nresample_clusters` into account.
@@ -1905,9 +1904,9 @@ pp_tester <- function(pp,
   return(invisible(TRUE))
 }
 
-# A helper function for testing the structure of an expected `"vsel"` object.
+# A helper function for testing the structure of an expected `vsel` object.
 #
-# @param vs An object of class `"vsel"` (at least expected so).
+# @param vs An object of class `vsel` (at least expected so).
 # @param with_cv A single logical value indicating whether `vs` was created by
 #   cv_varsel() (`TRUE`) or not (`FALSE`).
 # @param refmod_expected The expected `vs$refmodel` object.
@@ -2456,7 +2455,7 @@ vsel_tester <- function(
 # summary.vsel().
 #
 # @param smmry An object as returned by summary.vsel().
-# @param vsel_expected The `"vsel"` object which was used in the summary.vsel()
+# @param vsel_expected The `vsel` object which was used in the summary.vsel()
 #   call.
 # @param nterms_max_expected A single numeric value as supplied to
 #   summary.vsel()'s argument `nterms_max`.
@@ -2570,7 +2569,7 @@ smmry_tester <- function(smmry, vsel_expected, nterms_max_expected = NULL,
 # @param prd_trms_expected A character vector giving the expected predictor
 #   ranking (not counting the intercept, even for the intercept-only model).
 # @param from_datafit A single logical value indicating whether an object of
-#   class `"datafit"` was used for creating the `"vsel"` object (from which
+#   class `datafit` was used for creating the `vsel` object (from which
 #   `smmry_sub` was created) (`TRUE`) or not (`FALSE`).
 # @param latent_expected A single logical value indicating whether the reference
 #   model is expected to be for latent projection (`TRUE`) or not (`FALSE`).
@@ -2713,7 +2712,7 @@ smmry_sub_tester <- function(
 #   character string giving the CV method (see argument `cv_method` of
 #   cv_varsel()).
 # @param from_datafit A single logical value indicating whether an object of
-#   class `"datafit"` was used for creating the `"vsel"` object (from which
+#   class `datafit` was used for creating the `vsel` object (from which
 #   `smmry_sub` was created) (`TRUE`) or not (`FALSE`).
 # @param latent_expected A single logical value indicating whether the reference
 #   model is expected to be for latent projection (`TRUE`) or not (`FALSE`).

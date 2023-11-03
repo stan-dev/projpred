@@ -120,7 +120,7 @@
 #' # Data:
 #' dat_gauss <- data.frame(y = df_gaussian$y, df_gaussian$x)
 #'
-#' # The "stanreg" fit which will be used as the reference model (with small
+#' # The `stanreg` fit which will be used as the reference model (with small
 #' # values for `chains` and `iter`, but only for technical reasons in this
 #' # example; this is not recommended in general):
 #' fit <- rstanarm::stan_glm(
@@ -432,8 +432,8 @@ parse_args_cv_varsel <- function(refmodel, cv_method, nloo, K, cvfits,
     stop("Unknown `cv_method`.")
   }
   if (cv_method == "LOO" && inherits(refmodel, "datafit")) {
-    warning("For an `object` of class \"datafit\", `cv_method` is ",
-            "automatically set to \"kfold\".")
+    warning("For an `object` of class `datafit`, `cv_method` is automatically ",
+            "set to \"kfold\".")
     cv_method <- "kfold"
   }
 
@@ -870,7 +870,7 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
               exp(lw_sub[, run_index])
           } else {
             # In principle, we could use the same code for averaging across the
-            # draws as above in the `"augmat"` case. However, that would require
+            # draws as above in the `augmat` case. However, that would require
             # `mu_k_oscale <- t(mu_k_oscale)` beforehand, so the following
             # should be more efficient:
             mu_sub_oscale[[k]][i_aug] <- exp(lw_sub[, run_index]) %*%
@@ -1121,7 +1121,7 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
         return(as.vector(mu_offs_mlvlRan_oscale[i_aug, ] %*% exp(lw[, i])))
       } else {
         # In principle, we could use the same code for averaging across the
-        # draws as above in the `"augmat"` case. However, that would require
+        # draws as above in the `augmat` case. However, that would require
         # `mu_offs_mlvlRan_oscale <- t(mu_offs_mlvlRan_oscale)` beforehand, so
         # the following should be more efficient:
         return(exp(lw[, i]) %*% mu_offs_mlvlRan_oscale[, i_aug])
@@ -1459,7 +1459,7 @@ get_kfold <- function(refmodel, K, cvfits, verbose) {
 #' # Data:
 #' dat_gauss <- data.frame(y = df_gaussian$y, df_gaussian$x)
 #'
-#' # The "stanreg" fit which will be used as the reference model (with small
+#' # The `stanreg` fit which will be used as the reference model (with small
 #' # values for `chains` and `iter`, but only for technical reasons in this
 #' # example; this is not recommended in general):
 #' fit <- rstanarm::stan_glm(

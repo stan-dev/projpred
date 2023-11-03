@@ -143,8 +143,8 @@ weighted_summary_means <- function(y_wobs_test, family, wdraws, mu, dis, cl_ref,
       }
     }
   }
-  # Just to avoid that `$y` gets expanded to `$y_oscale` if element `"y"` does
-  # not exist (for whatever reason; actually, it should always exist):
+  # Just to avoid that `$y` gets expanded to `$y_oscale` if element `y` does not
+  # exist (for whatever reason; actually, it should always exist):
   varsel$y_wobs_test$y_oscale <- NULL
 
   if (resp_oscale && !is.null(varsel$refmodel$family$cats) &&

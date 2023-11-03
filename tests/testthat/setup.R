@@ -28,7 +28,7 @@ run_valsearch_aug_lat <- FALSE
 # first one among the GLMMs (`FALSE`; note that if there is no GLMM available in
 # that test, the first test setup among those for K-fold CV is used)?:
 run_cvfits_all <- run_more
-# Run tests for "brmsfit"s?:
+# Run tests for `brmsfit`s?:
 run_brms <- identical(Sys.getenv("NOT_CRAN"), "true")
 # Run snapshot tests?:
 # Notes:
@@ -485,7 +485,7 @@ if (run_brms && !requireNamespace("brms", quietly = TRUE)) {
 }
 if (run_brms) {
   pkg_nms <- c(pkg_nms, "brms")
-  # For storing "brmsfit"s locally:
+  # For storing `brmsfit`s locally:
   file_pth <- testthat::test_path("bfits")
   if (!dir.exists(file_pth)) dir.create(file_pth)
   # Backend:
@@ -561,7 +561,7 @@ if ("(xco.1 | z.1)" %in% trms_universe_split) {
   trms_universe_split <- union(trms_universe_split, "xco.1")
 }
 
-# Predictor terms for project()-ing from `"refmodel"`s:
+# Predictor terms for project()-ing from `refmodel`s:
 prd_trms_x <- c("xco.1", "xca.1")
 prd_trms_z <- c("(1 | z.1)", "(xco.1 | z.1)") # removing one of them later
 prd_trms_s <- c("s(s.1)") # , "s(s.2)"
@@ -763,7 +763,7 @@ args_fit <- lapply(pkg_nms, function(pkg_nm) {
 })
 args_fit <- unlist_cust(args_fit)
 stopifnot(length(unique(names(args_fit))) == length(args_fit))
-# For "brmsfit"s, set a unique file name (done here because during the creation
+# For `brmsfit`s, set a unique file name (done here because during the creation
 # of `args_fit`, these unique names are not easily accessible):
 args_fit <- lapply(setNames(nm = names(args_fit)), function(args_fit_nm) {
   if (args_fit[[args_fit_nm]]$pkg_nm == "brms" &&
@@ -1325,7 +1325,7 @@ if (run_cvvs) {
 
 ## Projection -------------------------------------------------------------
 
-### From "refmodel" -------------------------------------------------------
+### From `refmodel` -------------------------------------------------------
 
 if (run_prj) {
   # Some families are not supported yet, apart from the creation of a `refmodel`
@@ -1439,7 +1439,7 @@ if (run_prj) {
   })
 }
 
-### From "vsel" -----------------------------------------------------------
+### From `vsel` -----------------------------------------------------------
 
 # A helper function to create the argument list for project() for a given
 # character vector of test setups (referring to either `vss` or `cvvss`):
@@ -1567,7 +1567,7 @@ if (run_cvvs) {
 
 ## Prediction -------------------------------------------------------------
 
-### From "projection" -----------------------------------------------------
+### From `projection` -----------------------------------------------------
 
 if (run_prj) {
   pls <- lapply(prjs, proj_linpred, allow_nonconst_wdraws_prj = TRUE,
@@ -1575,7 +1575,7 @@ if (run_prj) {
   pps <- lapply(prjs, proj_predict, .seed = seed2_tst)
 }
 
-### From "proj_list" ------------------------------------------------------
+### From `proj_list` ------------------------------------------------------
 
 #### varsel() -------------------------------------------------------------
 

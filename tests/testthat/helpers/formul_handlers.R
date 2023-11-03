@@ -1,5 +1,5 @@
 # A function to remove the "cbind" part from the response in a formula (in fact,
-# only relevant for formulas from "stanreg" fits with a binomial family
+# only relevant for formulas from `stanreg` fits with a binomial family
 # with > 1 trials, but it doesn't harm to apply it to other formulas as well):
 rm_cbind <- function(formul) {
   formul_chr <- as.character(formul)
@@ -11,7 +11,7 @@ rm_cbind <- function(formul) {
 }
 
 # A function to remove additional response information from a formula (in fact,
-# only relevant for formulas from "brmsfit"s, but it doesn't harm to apply it to
+# only relevant for formulas from `brmsfit`s, but it doesn't harm to apply it to
 # other formulas as well):
 rm_addresp <- function(formul) {
   formul_chr <- as.character(formul)

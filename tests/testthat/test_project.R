@@ -3,8 +3,8 @@ context("project()")
 # object, predictor_terms, ndraws / nclusters, nterms ---------------------
 
 test_that(paste(
-  "`object` of class \"refmodel\", `predictor_terms`, and `ndraws` (or",
-  "`nclusters`) work"
+  "`object` of class `refmodel` and arguments `predictor_terms` and `ndraws`",
+  "(or `nclusters`) work"
 ), {
   skip_if_not(run_prj)
   for (tstsetup in names(prjs)) {
@@ -34,7 +34,7 @@ test_that("invalid `predictor_terms` warns or fails", {
              predictor_terms = NULL),
         excl_nonargs(args_prj_i, nms_excl_add = "predictor_terms")
       )),
-      paste("^Please provide an `object` of class \"vsel\" or use argument",
+      paste("^Please provide an `object` of class `vsel` or use argument",
             "`predictor_terms`\\.$"),
       info = tstsetup
     )
@@ -93,7 +93,7 @@ test_that("invalid `predictor_terms` warns or fails", {
   }
 })
 
-test_that("`object` of class \"stanreg\" or \"brmsfit\" works", {
+test_that("`object` of class `stanreg` or `brmsfit` works", {
   skip_if_not(run_prj)
   tstsetups <- grep("\\.brnll\\..*\\.prd_trms_x\\.clust$", names(prjs),
                     value = TRUE)
@@ -110,8 +110,8 @@ test_that("`object` of class \"stanreg\" or \"brmsfit\" works", {
 })
 
 test_that(paste(
-  "`object` of class \"vsel\" (created by varsel()), `nclusters`, and",
-  "`nterms` work"
+  "`object` of class `vsel` (created by varsel()) and arguments `nclusters`",
+  "and `nterms` work"
 ), {
   skip_if_not(run_vs)
   for (tstsetup in names(prjs_vs)) {
@@ -136,7 +136,7 @@ test_that(paste(
         const_wdraws_prj_expected = FALSE,
         info_str = tstsetup
       )
-      # Check that projecting from the "vsel" object onto a single submodel
+      # Check that projecting from the `vsel` object onto a single submodel
       # gives the same output as projecting the reference model onto that
       # submodel directly:
       tstsetup_tries <- grep(
@@ -207,8 +207,8 @@ test_that(paste(
 })
 
 test_that(paste(
-  "`object` of class \"vsel\" (created by cv_varsel()), `nclusters`, and",
-  "`nterms` work"
+  "`object` of class `vsel` (created by cv_varsel()) and arguments",
+  "`nclusters` and `nterms` work"
 ), {
   skip_if_not(run_cvvs)
   for (tstsetup in names(prjs_cvvs)) {
@@ -233,7 +233,7 @@ test_that(paste(
         const_wdraws_prj_expected = FALSE,
         info_str = tstsetup
       )
-      # Check that projecting from the "vsel" object onto a single submodel
+      # Check that projecting from the `vsel` object onto a single submodel
       # gives the same output as projecting the reference model onto that
       # submodel directly:
       tstsetup_tries <- grep(
@@ -307,12 +307,12 @@ test_that("`object` not of class `vsel` and missing `predictor_terms` fails", {
   skip_if_not(length(fits) > 0)
   expect_error(
     project(fits[[1]]),
-    paste("^Please provide an `object` of class \"vsel\" or use argument",
+    paste("^Please provide an `object` of class `vsel` or use argument",
           "`predictor_terms`\\.$")
   )
   expect_error(
     project(refmods[[1]]),
-    paste("^Please provide an `object` of class \"vsel\" or use argument",
+    paste("^Please provide an `object` of class `vsel` or use argument",
           "`predictor_terms`\\.$")
   )
 })
@@ -393,7 +393,7 @@ test_that("non-clustered projection does not require a seed", {
                  args_prj_i$fam_nm == "cumul" && args_prj_i$mod_nm == "glmm") {
         for (idx_s in seq_along(p_new$outdmin)) {
           if (!is.null(p_new$outdmin[[idx_s]][["L"]])) {
-            # We could also use `"sparseMatrix"` instead of `"Matrix"`:
+            # We could also use `sparseMatrix` instead of `Matrix`:
             expect_equal(as(p_new$outdmin[[idx_s]][["L"]], "Matrix"),
                          as(p_orig$outdmin[[idx_s]][["L"]], "Matrix"),
                          info = tstsetup)
