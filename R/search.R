@@ -133,13 +133,13 @@ search_forward <- function(p_ref, refmodel, nterms_max, verbose = TRUE, opt,
     }
   }
 
-  # For `solution_terms`, `reduce_models(chosen)` used to be used instead of
+  # For `predictor_ranking`, `reduce_models(chosen)` used to be used instead of
   # `chosen`. However, `reduce_models(chosen)` and `chosen` should be identical
   # at this place because select_possible_terms_size() already avoids redundant
   # models. Thus, use `chosen` here because it matches `outdmins` (this
   # matching is necessary because later in perf_eval()'s `!refit_prj` case,
-  # `outdmins` is indexed with integers which are based on `solution_terms`):
-  return(nlist(solution_terms = setdiff(chosen, "1"), outdmins))
+  # `outdmins` is indexed with integers which are based on `predictor_ranking`):
+  return(nlist(predictor_ranking = setdiff(chosen, "1"), outdmins))
 }
 
 #' Force search terms
@@ -269,8 +269,8 @@ search_L1_surrogate <- function(p_ref, d_train, family, intercept, nterms_max,
     }
   }
 
-  out$solution_terms <- order[seq_len(nterms_max)]
-  if (any(is.na(out$solution_terms)) &&
+  out$predictor_ranking <- order[seq_len(nterms_max)]
+  if (any(is.na(out$predictor_ranking)) &&
       length(entered_variables) < nterms_max) {
     if (length(setdiff(notentered_variables,
                        which(penalty == Inf))) > 0) {
@@ -317,30 +317,30 @@ search_L1 <- function(p_ref, refmodel, nterms_max, penalty, opt) {
     intercept = TRUE, ncol(x), penalty, opt
   )
 
-  solution_terms_orig <- collapse_ranked_predictors(
-    path = colnames(x)[search_path$solution_terms], formula = refmodel$formula,
-    data = fr
+  predictor_ranking_orig <- collapse_ranked_predictors(
+    path = colnames(x)[search_path$predictor_ranking],
+    formula = refmodel$formula, data = fr
   )
-  solution_terms <- utils::head(solution_terms_orig, nterms_max)
+  predictor_ranking <- utils::head(predictor_ranking_orig, nterms_max)
   # Place lower-order interaction terms before higher-order interaction terms,
   # but otherwise preserve the ranking:
-  ia_orders <- sapply(gregexpr(":", solution_terms), function(greg_colon) {
+  ia_orders <- sapply(gregexpr(":", predictor_ranking), function(greg_colon) {
     sum(greg_colon != -1)
   })
   ia_order_max <- max(ia_orders)
   for (ia_order in rev(seq_len(ia_order_max))) {
-    ias <- solution_terms[ia_orders == ia_order]
+    ias <- predictor_ranking[ia_orders == ia_order]
     stopifnot(!any(duplicated(ias))) # safety measure for which.max()
     for (ia in ias) {
-      ia_idx <- which.max(solution_terms == ia)
+      ia_idx <- which.max(predictor_ranking == ia)
       if (ia_idx > nterms_max) break
       main_terms_ia <- strsplit(ia, ":")[[1]]
       ias_lower_split <- utils::combn(main_terms_ia, m = ia_order,
                                       simplify = FALSE)
       ias_lower <- lapply(ias_lower_split, all_ia_perms, is_split = TRUE)
       ias_lower <- unlist(ias_lower)
-      ias_lower <- intersect(ias_lower, solution_terms_orig)
-      prev_terms <- utils::head(solution_terms, ia_idx - 1L)
+      ias_lower <- intersect(ias_lower, predictor_ranking_orig)
+      prev_terms <- utils::head(predictor_ranking, ia_idx - 1L)
       has_lower_after <- !all(ias_lower %in% prev_terms)
       if (has_lower_after) {
         if (getOption("projpred.warn_L1_interactions", TRUE)) {
@@ -351,23 +351,23 @@ search_L1 <- function(p_ref, refmodel, nterms_max, penalty, opt) {
                   "interaction terms before this interaction term.")
         }
         ias_lower <- setdiff(ias_lower, prev_terms)
-        ias_lower <- ias_lower[order(match(ias_lower, solution_terms_orig))]
+        ias_lower <- ias_lower[order(match(ias_lower, predictor_ranking_orig))]
         new_head <- c(prev_terms, ias_lower, ia)
-        solution_terms <- c(new_head, setdiff(solution_terms, new_head))
-        solution_terms <- utils::head(solution_terms, nterms_max)
+        predictor_ranking <- c(new_head, setdiff(predictor_ranking, new_head))
+        predictor_ranking <- utils::head(predictor_ranking, nterms_max)
       }
     }
   }
 
-  outdmins <- lapply(0:length(solution_terms), function(nterms) {
+  outdmins <- lapply(0:length(predictor_ranking), function(nterms) {
     if (nterms == 0) {
       formula <- make_formula(c("1"))
       beta <- NULL
       x <- x[, numeric(), drop = FALSE]
     } else {
-      formula <- make_formula(solution_terms[seq_len(nterms)])
+      formula <- make_formula(predictor_ranking[seq_len(nterms)])
       variables <- unlist(lapply(
-        solution_terms[seq_len(nterms)],
+        predictor_ranking[seq_len(nterms)],
         function(term) {
           # TODO: In the following model.matrix() call, allow user-specified
           # contrasts to be passed to argument `contrasts.arg`. The
@@ -379,13 +379,15 @@ search_L1 <- function(p_ref, refmodel, nterms_max, penalty, opt) {
           return(setdiff(colnames(mm), "(Intercept)"))
         }
       ))
-      indices <- match(variables, colnames(x)[search_path$solution_terms])
+      indices <- match(variables, colnames(x)[search_path$predictor_ranking])
       indices <- indices[!is.na(indices)]
       beta <- search_path$beta[indices, max(indices) + 1, drop = FALSE]
       # Also reduce `x` (important for coef.subfit(), for example); note that
       # `x <- x[, variables, drop = FALSE]` should also be possible, but the
       # re-use of `colnames(x)` should provide another sanity check:
-      x <- x[, colnames(x)[search_path$solution_terms[indices]], drop = FALSE]
+      x <- x[
+        , colnames(x)[search_path$predictor_ranking[indices]], drop = FALSE
+      ]
       # For consistency with fit_glm_ridge_callback():
       rownames(beta) <- colnames(x)
     }
@@ -402,5 +404,5 @@ search_L1 <- function(p_ref, refmodel, nterms_max, penalty, opt) {
     return(list(sub))
   })
 
-  return(nlist(solution_terms, outdmins))
+  return(nlist(predictor_ranking, outdmins))
 }

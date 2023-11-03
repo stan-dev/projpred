@@ -19,6 +19,7 @@ If you read this from a place other than <https://mc-stan.org/projpred/news/inde
 * Renamed `summary.vsel()`'s output element `selection` to `perf_sub` and made the names of this `data.frame`'s columns more consistent so that it is easier to handle that `data.frame` programmatically. This should not be a breaking change because elements of `vselsummary` objects (i.e., elements of objects returned by `summary.vsel()`) are not meant to be accessed directly (for elements `perf_sub` and `perf_ref`, the new helper function `performances()` has been added, see "Major changes" above). (GitHub: #471)
 * In `summary.vsel()` and `plot.vsel()`, the `NA_character_` "string" (which was previously used as a placeholder for the predictor term of the intercept-only model at size `0`) was replaced by the string `"(Intercept)"`. (GitHub: #471)
 * Renamed `project()`'s output element `solution_terms` to `predictor_terms`. This should not be a breaking change because that element is meant to be accessed via `predictor_terms()`. (GitHub: #472)
+* Renamed elements `solution_terms` and `solution_terms_cv` of `vsel` objects (returned by `varsel()` and `cv_varsel()`) to `predictor_ranking` and `predictor_ranking_cv`, respectively. This should not be a breaking change because those elements are meant to be accessed via `ranking()`. (GitHub: #472)
 
 ## Bug fixes
 

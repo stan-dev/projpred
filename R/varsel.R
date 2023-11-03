@@ -392,8 +392,8 @@ varsel.refmodel <- function(object, d_test = NULL, method = "forward",
   vs <- nlist(refmodel,
               nobs_train = refmodel$nobs,
               search_path,
-              solution_terms = search_path$solution_terms,
-              solution_terms_cv = NULL,
+              predictor_ranking = search_path$predictor_ranking,
+              predictor_ranking_cv = NULL,
               ce = perf_eval_out[["ce"]],
               type_test = d_test$type,
               y_wobs_test,
@@ -437,10 +437,11 @@ varsel.refmodel <- function(object, d_test = NULL, method = "forward",
 #   weighted_summary_means().
 # For all other arguments, see the documentation of varsel().
 #
-# @return A list with elements `solution_terms` (the solution path), `outdmins`
-#   (the submodel fits along the solution path, with the number of fits per
-#   model size being equal to the number of projected draws), and `p_sel` (the
-#   output from get_refdist() for the search).
+# @return A list with elements `predictor_ranking` (the predictor ranking
+#   resulting from the search, see `?ranking` for a formal definition),
+#   `outdmins` (the submodel fits along the predictor ranking, with the number
+#   of fits per model size being equal to the number of projected draws), and
+#   `p_sel` (the output from get_refdist() for the search).
 select <- function(refmodel, ndraws, nclusters, reweighting_args = NULL, method,
                    nterms_max, penalty, verbose, opt, ...) {
   if (is.null(reweighting_args)) {

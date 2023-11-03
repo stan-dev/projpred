@@ -347,8 +347,8 @@ cv_varsel.refmodel <- function(
         NULL
       } else {
         # For K-fold CV, `validate_search = FALSE` may not be combined with
-        # `refit_prj = FALSE`, so all that we need is element `solution_terms`:
-        search_path_fulldata["solution_terms"]
+        # `refit_prj = FALSE`, so element `predictor_ranking` is all we need:
+        search_path_fulldata["predictor_ranking"]
       },
       search_terms = search_terms, search_out_rks = search_out_rks,
       parallel = parallel, ...
@@ -358,7 +358,7 @@ cv_varsel.refmodel <- function(
   if (!validate_search && cv_method == "LOO") {
     ce_out <- sel_cv$ce
   } else {
-    ce_out <- rep(NA_real_, length(search_path_fulldata$solution_terms) + 1L)
+    ce_out <- rep(NA_real_, length(search_path_fulldata$predictor_ranking) + 1L)
   }
 
   # Defined here for `nobs_test` later:
@@ -381,8 +381,8 @@ cv_varsel.refmodel <- function(
   vs <- nlist(refmodel,
               nobs_train = refmodel$nobs,
               search_path = search_path_fulldata,
-              solution_terms = search_path_fulldata$solution_terms,
-              solution_terms_cv = sel_cv$solution_terms_cv,
+              predictor_ranking = search_path_fulldata$predictor_ranking,
+              predictor_ranking_cv = sel_cv$predictor_ranking_cv,
               ce = ce_out,
               type_test = cv_method,
               y_wobs_test,
@@ -829,7 +829,7 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
     # This re-weighting requires a re-normalization (as.array() is applied to
     # have stricter consistency checks, see `?sweep`):
     lw_sub <- sweep(lw_sub, 2, as.array(apply(lw_sub, 2, log_sum_exp)))
-    for (k in seq_len(1 + length(search_path_fulldata$solution_terms))) {
+    for (k in seq_len(1 + length(search_path_fulldata$predictor_ranking))) {
       # TODO: For consistency, replace `k` in this `for` loop by `j`.
       mu_k <- perf_eval_out[["mu_by_size"]][[k]]
       log_lik_sub <- perf_eval_out[["lppd_by_size"]][[k]]
@@ -882,7 +882,7 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
     }
     verb_out("-----", verbose = verbose)
     # Needed for cutting off post-processed results later:
-    prv_len_soltrms <- length(search_path_fulldata$solution_terms)
+    prv_len_soltrms <- length(search_path_fulldata$predictor_ranking)
   } else {
     ## Case `validate_search = TRUE` ------------------------------------------
 
@@ -918,7 +918,7 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
       # artifical response values in the projection (or L1-penalized
       # projection)):
       if (!search_out_rks_was_null) {
-        search_path <- list(solution_terms = search_out_rks[[run_index]])
+        search_path <- list(predictor_ranking = search_out_rks[[run_index]])
       } else {
         search_path <- select(
           refmodel = refmodel, ndraws = ndraws, nclusters = nclusters,
@@ -938,7 +938,7 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
         indices_test = i, ...
       )
 
-      return(nlist(predictor_ranking = search_path[["solution_terms"]],
+      return(nlist(predictor_ranking = search_path[["predictor_ranking"]],
                    summaries_sub = perf_eval_out[["sub_summaries"]],
                    clust_used_eval = perf_eval_out[["clust_used"]],
                    nprjdraws_eval = perf_eval_out[["nprjdraws"]]))
@@ -983,7 +983,7 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
       }
     }
     # For storing the fold-wise solution paths:
-    solution_terms_mat <- matrix(nrow = n, ncol = nterms_max)
+    predictor_ranking_mat <- matrix(nrow = n, ncol = nterms_max)
     # Needed for checking that the length of the predictor ranking is the same
     # across all CV folds and for cutting off post-processed results later:
     prv_len_soltrms <- NULL
@@ -1020,7 +1020,7 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
       } else if (getOption("projpred.additional_checks", FALSE)) {
         stopifnot(identical(length(rk_i), prv_len_soltrms))
       }
-      solution_terms_mat[i, seq_along(rk_i)] <- rk_i
+      predictor_ranking_mat[i, seq_along(rk_i)] <- rk_i
 
       if (is.null(clust_used_eval)) {
         clust_used_eval <- res_cv[[run_index]][["clust_used_eval"]]
@@ -1155,7 +1155,7 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
   if (!validate_search) {
     out_list <- nlist(ce = perf_eval_out[["ce"]])
   } else {
-    out_list <- nlist(solution_terms_cv = solution_terms_mat[
+    out_list <- nlist(predictor_ranking_cv = predictor_ranking_mat[
       , seq_len(prv_len_soltrms), drop = FALSE
     ])
   }
@@ -1239,7 +1239,7 @@ kfold_varsel <- function(refmodel, method, nterms_max, ndraws, nclusters,
     if (!validate_search) {
       search_path <- search_path_fulldata
     } else if (!search_out_rks_was_null) {
-      search_path <- list(solution_terms = rk)
+      search_path <- list(predictor_ranking = rk)
     } else {
       search_path <- select(
         refmodel = fold$refmodel, ndraws = ndraws, nclusters = nclusters,
@@ -1273,7 +1273,7 @@ kfold_varsel <- function(refmodel, method, nterms_max, ndraws, nclusters,
       cl_ref = seq_along(fold$refmodel$wdraws_ref)
     )
 
-    return(nlist(predictor_ranking = search_path[["solution_terms"]],
+    return(nlist(predictor_ranking = search_path[["predictor_ranking"]],
                  summaries_sub = perf_eval_out[["sub_summaries"]],
                  summaries_ref, clust_used_eval = perf_eval_out[["clust_used"]],
                  nprjdraws_eval = perf_eval_out[["nprjdraws"]]))
@@ -1317,7 +1317,8 @@ kfold_varsel <- function(refmodel, method, nterms_max, ndraws, nclusters,
     }
   }
   verb_out("-----", verbose = verbose)
-  solution_terms_cv <- do.call(rbind, lapply(res_cv, "[[", "predictor_ranking"))
+  predictor_ranking_cv <- do.call(rbind,
+                                  lapply(res_cv, "[[", "predictor_ranking"))
   clust_used_eval <- element_unq(res_cv, nm = "clust_used_eval")
   nprjdraws_eval <- element_unq(res_cv, nm = "nprjdraws_eval")
 
@@ -1328,7 +1329,7 @@ kfold_varsel <- function(refmodel, method, nterms_max, ndraws, nclusters,
   } else {
     sub_foldwise <- simplify2array(sub_foldwise, higher = FALSE)
     if (is.null(dim(sub_foldwise))) {
-      sub_dim <- dim(solution_terms_cv)
+      sub_dim <- dim(predictor_ranking_cv)
       sub_dim[2] <- sub_dim[2] + 1L # +1 is for the empty model
       dim(sub_foldwise) <- rev(sub_dim)
     }
@@ -1377,7 +1378,7 @@ kfold_varsel <- function(refmodel, method, nterms_max, ndraws, nclusters,
   if (!validate_search) {
     out_list <- list()
   } else {
-    out_list <- nlist(solution_terms_cv)
+    out_list <- nlist(predictor_ranking_cv)
   }
   out_list <- c(out_list,
                 nlist(summaries = nlist(sub, ref), y_wobs_test, clust_used_eval,

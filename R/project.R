@@ -199,7 +199,7 @@ project <- function(object, nterms = NULL, solution_terms = predictor_terms,
   if (!refit_prj &&
       !is.null(predictor_terms) &&
       any(
-        object$solution_terms[seq_along(predictor_terms)] != predictor_terms
+        object$predictor_ranking[seq_along(predictor_terms)] != predictor_terms
       )) {
     warning("The given `predictor_terms` are not part of the solution path ",
             "(from `object`), so `refit_prj` is automatically set to `TRUE`.")
@@ -211,8 +211,8 @@ project <- function(object, nterms = NULL, solution_terms = predictor_terms,
   if (!is.null(predictor_terms)) {
     # In this case, `predictor_terms` is given, so `nterms` is ignored.
     # The table of possible predictor terms:
-    if (!is.null(object$solution_terms)) {
-      vars <- object$solution_terms
+    if (!is.null(object$predictor_ranking)) {
+      vars <- object$predictor_ranking
     } else {
       vars <- split_formula(refmodel$formula, data = refmodel$fetch_data(),
                             add_main_effects = FALSE)
@@ -226,8 +226,8 @@ project <- function(object, nterms = NULL, solution_terms = predictor_terms,
         "the table of possible solution terms: `c(\"",
         paste(setdiff(predictor_terms, vars), collapse = "\", \""), "\")`. ",
         "These elements are ignored. (The table of solution terms is either ",
-        "`object$solution_terms` or the vector of terms in the reference ",
-        "model, depending on whether `object$solution_terms` is `NULL` or ",
+        "`object$predictor_ranking` or the vector of terms in the reference ",
+        "model, depending on whether `object$predictor_ranking` is `NULL` or ",
         "not. Here, the table of solution terms is: `c(\"",
         paste(vars, collapse = "\", \""), "\")`.)"
       )
@@ -236,8 +236,8 @@ project <- function(object, nterms = NULL, solution_terms = predictor_terms,
     nterms <- length(predictor_terms)
   } else {
     # In this case, `predictor_terms` is not given, so it is fetched from
-    # `object$solution_terms` and `nterms` becomes relevant.
-    predictor_terms <- object$solution_terms
+    # `object$predictor_ranking` and `nterms` becomes relevant.
+    predictor_terms <- object$predictor_ranking
     if (is.null(nterms)) {
       # In this case, `nterms` is not given, so we infer it via suggest_size().
       sgg_size <- try(suggest_size(object, warnings = FALSE), silent = TRUE)
@@ -286,7 +286,7 @@ project <- function(object, nterms = NULL, solution_terms = predictor_terms,
   # Projection --------------------------------------------------------------
 
   submodls <- perf_eval(
-    search_path = list(solution_terms = predictor_terms,
+    search_path = list(predictor_ranking = predictor_terms,
                        p_sel = object$search_path$p_sel,
                        outdmins = object$search_path$outdmins),
     nterms = nterms, refmodel = refmodel, regul = regul, refit_prj = refit_prj,

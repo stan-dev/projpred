@@ -50,7 +50,7 @@ get_submodl_prj <- function(predictor_terms, p_ref, refmodel, regul = 1e-4,
 # `submodl`) and then calculates the submodel "summary" (precursor quantities)
 # for the actual performance evaluation performed by summary.vsel() later.
 perf_eval <- function(search_path,
-                      nterms = c(0, seq_along(search_path$solution_terms)),
+                      nterms = c(0, seq_along(search_path$predictor_ranking)),
                       refmodel, regul, refit_prj = FALSE, ndraws, nclusters,
                       reweighting_args = NULL, return_submodls = FALSE,
                       return_preds = FALSE, return_p_ref = FALSE,
@@ -71,7 +71,7 @@ perf_eval <- function(search_path,
         outdmin = search_path$outdmins[[size_j + 1]],
         p_ref = p_ref,
         refmodel = refmodel,
-        predictor_terms = utils::head(search_path$solution_terms, size_j),
+        predictor_terms = utils::head(search_path$predictor_ranking, size_j),
         wobs = refmodel$wobs
       ))
     }
@@ -89,7 +89,7 @@ perf_eval <- function(search_path,
     }
     fetch_submodl <- function(size_j, ...) {
       return(get_submodl_prj(
-        predictor_terms = utils::head(search_path$solution_terms, size_j),
+        predictor_terms = utils::head(search_path$predictor_ranking, size_j),
         p_ref = p_ref, refmodel = refmodel, regul = regul, ...
       ))
     }

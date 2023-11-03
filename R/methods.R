@@ -1231,7 +1231,7 @@ summary.vsel <- function(
   stats_table_sub <- do.call(
     rbind,
     lapply(split(stats_table_sub, stats_table_sub$statistic), utils::head,
-           n = length(object$solution_terms) + 1)
+           n = length(object$predictor_ranking) + 1)
   )
   row.names(stats_table_sub) <- NULL
 
@@ -2591,8 +2591,8 @@ ranking.vsel <- function(object, nterms_max = NULL, ...) {
       "corresponding fold-wise predictor rankings cannot be extracted."
     )
   }
-  out <- list(fulldata = object[["solution_terms"]],
-              foldwise = object[["solution_terms_cv"]])
+  out <- list(fulldata = object[["predictor_ranking"]],
+              foldwise = object[["predictor_ranking_cv"]])
   if (!is.null(nterms_max)) {
     out[["fulldata"]] <- utils::head(out[["fulldata"]], nterms_max)
     if (!is.null(out[["foldwise"]])) {
