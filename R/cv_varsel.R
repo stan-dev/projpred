@@ -641,7 +641,7 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
   mu_sub <- replicate(
     nterms_max + 1L,
     structure(rep(NA, nrow(refmodel$mu_offs)),
-              nobs_orig = attr(refmodel$mu_offs, "nobs_orig"),
+              ndiscrete = attr(refmodel$mu_offs, "ndiscrete"),
               class = sub("augmat", "augvec", oldClass(refmodel$mu_offs),
                           fixed = TRUE)),
     simplify = FALSE
@@ -655,7 +655,7 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
       mu_sub_oscale <- replicate(
         nterms_max + 1L,
         structure(rep(NA, n * length(refmodel$family$cats)),
-                  nobs_orig = n,
+                  ndiscrete = length(refmodel$family$cats),
                   class = "augvec"),
         simplify = FALSE
       )
@@ -1075,7 +1075,7 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
   })))
   mu_ref <- structure(
     mu_ref,
-    nobs_orig = attr(mu_offs_mlvlRan, "nobs_orig"),
+    ndiscrete = attr(mu_offs_mlvlRan, "ndiscrete"),
     class = sub("augmat", "augvec", oldClass(mu_offs_mlvlRan), fixed = TRUE)
   )
   if (refmodel$family$for_latent) {
@@ -1129,7 +1129,7 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
     })))
     mu_ref_oscale <- structure(
       mu_ref_oscale,
-      nobs_orig = attr(mu_offs_mlvlRan_oscale, "nobs_orig"),
+      ndiscrete = attr(mu_offs_mlvlRan_oscale, "ndiscrete"),
       class = sub("augmat", "augvec", oldClass(mu_offs_mlvlRan_oscale),
                   fixed = TRUE)
     )

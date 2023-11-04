@@ -21,8 +21,8 @@
 #' increasingly. The columns of an augmented-rows matrix have to correspond to
 #' the \eqn{S} parameter draws, just like for the traditional projection. An
 #' augmented-rows matrix is of class `augmat` (inheriting from classes `matrix`
-#' and `array`) and needs to have the value of \eqn{N} stored in an attribute
-#' called `nobs_orig`. An augmented-length vector (class `augvec`) is the vector
+#' and `array`) and needs to have the value of \eqn{C} stored in an attribute
+#' called `ndiscrete`. An augmented-length vector (class `augvec`) is the vector
 #' resulting from subsetting an augmented-rows matrix to extract a single column
 #' and thereby dropping dimensions.
 #'
@@ -50,7 +50,7 @@ arr2augmat <- function(arr, margin_draws = 3) {
   }
   augmat <- apply(arr, margin_draws, as.vector, simplify = FALSE)
   augmat <- do.call(cbind, augmat)
-  attr(augmat, "nobs_orig") <- dim(arr)[margin_obs]
+  attr(augmat, "ndiscrete") <- dim(arr)[-c(margin_draws, margin_obs)]
   class(augmat) <- "augmat"
   return(augmat)
 }
@@ -59,8 +59,9 @@ arr2augmat <- function(arr, margin_draws = 3) {
 # 3-dimensional array.
 #
 # @param augmat An augmented-rows matrix.
-# @param nobs_orig The number of observations (N). Usually should not have to be
-#   specified manually (i.e., the default should always work).
+# @param ndiscrete The number of (possibly latent) response categories (C).
+#   Usually should not have to be specified manually (i.e., the default should
+#   always work).
 # @param margin_draws The index of the returned array's margin which shall
 #   correspond to the parameter draws (i.e., the margin which shall be of length
 #   S). Restricted to values `1` and `3`.
@@ -69,47 +70,47 @@ arr2augmat <- function(arr, margin_draws = 3) {
 #   N x C x S. If `margin_draws` is `1`, a 3-dimensional array with dimensions
 #   S x N x C.
 augmat2arr <- function(augmat,
-                       nobs_orig = attr(augmat, "nobs_orig"),
+                       ndiscrete = attr(augmat, "ndiscrete"),
                        margin_draws = 3) {
   stopifnot(inherits(augmat, "augmat"))
   stopifnot(!is.null(dim(augmat)))
-  stopifnot(!is.null(nobs_orig))
+  stopifnot(!is.null(ndiscrete))
   stopifnot(margin_draws %in% c(1, 3))
-  n_discr <- nrow(augmat) / nobs_orig
-  stopifnot(is_wholenumber(n_discr))
-  n_discr <- as.integer(round(n_discr))
-  arr <- array(augmat, dim = c(nobs_orig, n_discr, ncol(augmat)))
+  nobs <- nrow(augmat) / ndiscrete
+  stopifnot(is_wholenumber(nobs))
+  nobs <- as.integer(round(nobs))
+  arr <- array(augmat, dim = c(nobs, ndiscrete, ncol(augmat)))
   if (margin_draws == 1) {
     arr <- aperm(arr, perm = c(3, 1, 2))
   }
   return(arr)
 }
 
-# A t() method for class `augmat`, dropping the class and the `nobs_orig`
+# A t() method for class `augmat`, dropping the class and the `ndiscrete`
 # attribute. This is necessary for clustering with kmeans(), for example.
 #' @noRd
 #' @export
 t.augmat <- function(x) {
   class(x) <- NULL
-  attr(x, "nobs_orig") <- NULL
+  attr(x, "ndiscrete") <- NULL
   return(t(x))
 }
 
-# A t() method for class `augvec`, dropping the class and the `nobs_orig`
+# A t() method for class `augvec`, dropping the class and the `ndiscrete`
 # attribute. This should not be necessary, but it's probably safer to have such
 # a method (to avoid that the attributes are carried around after a t() call).
 #' @noRd
 #' @export
 t.augvec <- function(x) {
   class(x) <- NULL
-  attr(x, "nobs_orig") <- NULL
+  attr(x, "ndiscrete") <- NULL
   return(t(x))
 }
 
 # A method for subsetting an object of class `augmat` (mainly following
-# `[.factor`). This method keeps the `nobs_orig` attribute (modifying it if
-# necessary, see "Note" below). It also keeps the class, except if the result is
-# a vector (in which case the class is changed from `augmat` to `augvec`).
+# `[.factor`). This method keeps the `ndiscrete` attribute. It also keeps the
+# class, except if the result is a vector (in which case the class is changed
+# from `augmat` to `augvec`).
 #
 # Note: Subsetting the rows of an augmented-rows matrix is only legal in terms
 # of the observations (individuals), not in terms of the (possibly latent)
@@ -118,39 +119,17 @@ t.augvec <- function(x) {
 #' @export
 `[.augmat` <- function(x, ..., drop = TRUE) {
   x_out <- NextMethod("[")
-  nobs_orig_x <- attr(x, "nobs_orig")
-  stopifnot(!is.null(nobs_orig_x))
-  n_discr <- nrow(x) / nobs_orig_x
-  if (isTRUE(getOption("projpred.additional_checks", FALSE))) {
-    # This check is not run by default because it could require custom str() and
-    # print() (or even more) methods for `augmat` objects and because there
-    # could be a high risk of false positive alarms if external functions like
-    # str() and print() use a "head" of this matrix (or if external functions
-    # iterate over the rows one-by-one and use subsetting for that).
-    stopifnot(is_wholenumber(n_discr))
-  }
-  n_discr <- as.integer(round(n_discr))
+  attr(x_out, "ndiscrete") <- attr(x, "ndiscrete")
   cls_out <- oldClass(x)
   if (is.null(dim(x_out))) {
-    nobs_orig_x_out <- length(x_out) / n_discr
     cls_out <- sub("augmat", "augvec", cls_out, fixed = TRUE)
-  } else {
-    nobs_orig_x_out <- nrow(x_out) / n_discr
   }
-  if (isTRUE(getOption("projpred.additional_checks", FALSE))) {
-    # See above for why this check is not run by default (in this case, we
-    # indeed had a false alarm at least once).
-    stopifnot(is_wholenumber(nobs_orig_x_out))
-  }
-  nobs_orig_x_out <- as.integer(round(nobs_orig_x_out))
-  attr(x_out, "nobs_orig") <- nobs_orig_x_out
   class(x_out) <- cls_out
   return(x_out)
 }
 
 # A method for subsetting an object of class `augvec` (mainly following
-# `[.factor`). This method keeps the `nobs_orig` attribute (modifying it if
-# necessary, see "Note" below) and the class.
+# `[.factor`). This method keeps the `ndiscrete` attribute and the class.
 #
 # Note: Subsetting an augmented-length vector is only legal in terms of the
 # observations (individuals), not in terms of the (possibly latent) response
@@ -159,23 +138,7 @@ t.augvec <- function(x) {
 #' @export
 `[.augvec` <- function(x, ..., drop = TRUE) {
   x_out <- NextMethod("[")
-  nobs_orig_x <- attr(x, "nobs_orig")
-  stopifnot(!is.null(nobs_orig_x))
-  n_discr <- length(x) / nobs_orig_x
-  if (isTRUE(getOption("projpred.additional_checks", FALSE))) {
-    # See `[.augmat` for why this check is not run by default (in this case, we
-    # indeed had a false alarm at least once).
-    stopifnot(is_wholenumber(n_discr))
-  }
-  n_discr <- as.integer(round(n_discr))
-  nobs_orig_x_out <- length(x_out) / n_discr
-  if (isTRUE(getOption("projpred.additional_checks", FALSE))) {
-    # See `[.augmat` for why this check is not run by default (in this case, we
-    # indeed had a false alarm at least once).
-    stopifnot(is_wholenumber(nobs_orig_x_out))
-  }
-  nobs_orig_x_out <- as.integer(round(nobs_orig_x_out))
-  attr(x_out, "nobs_orig") <- nobs_orig_x_out
+  attr(x_out, "ndiscrete") <- attr(x, "ndiscrete")
   class(x_out) <- oldClass(x)
   return(x_out)
 }
@@ -190,7 +153,7 @@ augvec2augmat <- function(augvec) {
   stopifnot(inherits(augvec, "augvec"))
   return(structure(
     as.matrix(augvec),
-    nobs_orig = attr(augvec, "nobs_orig"),
+    ndiscrete = attr(augvec, "ndiscrete"),
     class = sub("augvec", "augmat", oldClass(augvec), fixed = TRUE)
   ))
 }

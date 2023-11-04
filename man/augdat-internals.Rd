@@ -21,8 +21,8 @@ blocks of \eqn{N} rows, i.e., with the \eqn{N} observations nested in the
 increasingly. The columns of an augmented-rows matrix have to correspond to
 the \eqn{S} parameter draws, just like for the traditional projection. An
 augmented-rows matrix is of class \code{augmat} (inheriting from classes \code{matrix}
-and \code{array}) and needs to have the value of \eqn{N} stored in an attribute
-called \code{nobs_orig}. An augmented-length vector (class \code{augvec}) is the vector
+and \code{array}) and needs to have the value of \eqn{C} stored in an attribute
+called \code{ndiscrete}. An augmented-length vector (class \code{augvec}) is the vector
 resulting from subsetting an augmented-rows matrix to extract a single column
 and thereby dropping dimensions.
 }

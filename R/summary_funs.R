@@ -42,7 +42,7 @@ weighted_summary_means <- function(y_wobs_test, family, wdraws, mu, dis, cl_ref,
   # Average over the draws, taking their weights into account:
   avg <- list(
     mu = structure(c(mu %*% wdraws),
-                   nobs_orig = attr(mu, "nobs_orig"),
+                   ndiscrete = attr(mu, "ndiscrete"),
                    class = sub("augmat", "augvec", oldClass(mu), fixed = TRUE)),
     lppd = apply(loglik, 1, log_weighted_mean_exp, wdraws)
   )
@@ -65,7 +65,7 @@ weighted_summary_means <- function(y_wobs_test, family, wdraws, mu, dis, cl_ref,
       mu_oscale <- arr2augmat(mu_oscale, margin_draws = 1)
       mu_oscale_avg <- structure(
         c(mu_oscale %*% wdraws),
-        nobs_orig = attr(mu_oscale, "nobs_orig"),
+        ndiscrete = attr(mu_oscale, "ndiscrete"),
         class = sub("augmat", "augvec", oldClass(mu_oscale), fixed = TRUE)
       )
     } else {

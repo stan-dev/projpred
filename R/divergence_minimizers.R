@@ -581,7 +581,7 @@ divmin_augdat <- function(
   # Coerce augmented-data matrices to ordinary matrices and augmented-length
   # vectors to ordinary vectors so that external packages may subset as usual:
   projpred_ws_aug <- unclass(projpred_ws_aug)
-  attr(projpred_ws_aug, "nobs_orig") <- NULL
+  attr(projpred_ws_aug, "ndiscrete") <- NULL
 
   if (ncol(projpred_ws_aug) < getOption("projpred.prll_prj_trigger", Inf)) {
     # Sequential case. Actually, we could simply use ``%do_projpred%` <-
