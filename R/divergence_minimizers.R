@@ -9,7 +9,12 @@ if (getRversion() >= package_version("2.15.1")) {
   utils::globalVariables("projpred_formula_no_random_s")
 }
 
-divmin <- function(formula, projpred_var, projpred_verbose = FALSE, ...) {
+divmin <- function(
+    formula,
+    projpred_var,
+    projpred_verbose = getOption("projpred.verbose_project", FALSE),
+    ...
+) {
   trms_all <- extract_terms_response(formula)
   has_grp <- length(trms_all$group_terms) > 0
   has_add <- length(trms_all$additive_terms) > 0
@@ -516,8 +521,16 @@ if (getRversion() >= package_version("2.15.1")) {
   utils::globalVariables("projpred_internal_w_aug")
 }
 
-divmin_augdat <- function(formula, data, family, weights, projpred_var,
-                          projpred_ws_aug, projpred_verbose = FALSE, ...) {
+divmin_augdat <- function(
+    formula,
+    data,
+    family,
+    weights,
+    projpred_var,
+    projpred_ws_aug,
+    projpred_verbose = getOption("projpred.verbose_project", FALSE),
+    ...
+) {
   trms_all <- extract_terms_response(formula)
   has_grp <- length(trms_all$group_terms) > 0
   projpred_formula_no_random <- NA
