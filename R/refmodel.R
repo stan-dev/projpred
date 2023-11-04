@@ -371,6 +371,52 @@ NULL
 
 # Function definitions ----------------------------------------------------
 
+#' Print information about a reference model object
+#'
+#' This is the [print()] method for reference model objects (objects of class
+#' `refmodel`). This method mainly exists to avoid cluttering the console when
+#' printing such objects accidentally.
+#'
+#' @param x An object of class `refmodel` (returned by [get_refmodel()] or
+#'   [init_refmodel()]).
+#' @param ... Currently ignored.
+#'
+#' @return The input object `x` (invisible).
+#'
+#' @export
+print.refmodel <- function(x, ...) {
+  # Print information about `x` (the order of that information is from most
+  # strongly tied uniquely to the reference model (top) to most strongly tied
+  # uniquely to the submodels (bottom)).
+  cat("Class of `fit` (first class only): ", utils::head(class(x$fit), 1), "\n",
+      sep = "")
+  if (!inherits(x, "datafit")) {
+    cat("Number of posterior draws: ", length(x$wdraws_ref), "\n", sep = "")
+  }
+  cat("Number of observations: ", x$nobs, "\n", sep = "")
+  if (x$family$for_augdat) {
+    prj_meth <- "augmented-data"
+  } else if (x$family$for_latent) {
+    prj_meth <- "latent"
+  } else {
+    prj_meth <- "traditional"
+  }
+  cat("Projection method: ", prj_meth, "\n", sep = "")
+  if (x$family$for_latent) {
+    cat("------\nResponse-scale family:\n")
+    print(structure(x$family[c("family_oscale", "link_oscale")],
+                    class = "family"))
+    cat("------\nLatent-scale family:\n")
+  }
+  print(x$family)
+  if (x$family$for_latent) {
+    cat("------\n")
+  }
+  cat("Formula: ")
+  print(x$formula, showEnv = FALSE)
+  return(invisible(x))
+}
+
 #' Predictions or log posterior predictive densities from a reference model
 #'
 #' This is the [predict()] method for `refmodel` objects (returned by
