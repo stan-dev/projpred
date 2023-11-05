@@ -334,9 +334,11 @@ test_that(paste(
         pl_indep_k$mu <- unname(drop(pl_indep_k$mu))
         pl_indep_k$lppd <- drop(pl_indep_k$lppd)
         if (!is.null(refmods[[tstsetup_ref]]$family$cats)) {
-          pl_indep_k$mu <- structure(as.vector(pl_indep_k$mu),
-                                     class = "augvec",
-                                     nobs_orig = nrow(pl_indep_k$mu))
+          pl_indep_k$mu <- structure(
+            as.vector(pl_indep_k$mu),
+            ndiscrete = length(refmods[[tstsetup_ref]]$family$cats),
+            class = "augvec"
+          )
         }
         return(pl_indep_k)
       })
@@ -467,9 +469,10 @@ test_that(paste(
     } else if (length(dim(mu_new)) == 3) {
       # In fact, we have `identical(colMeans(mu_new), apply(mu_new, c(2, 3),
       # mean))` giving `TRUE`, but it's better to be explicit:
+      ncat_crr <- dim(mu_new)[3]
       mu_new <- apply(mu_new, c(2, 3), mean)
-      mu_new <- structure(as.vector(mu_new), class = "augvec",
-                          nobs_orig = nobsv_indep)
+      mu_new <- structure(as.vector(mu_new), ndiscrete = ncat_crr,
+                          class = "augvec")
     } else {
       stop("Unexpected number of margins for `mu_new`.")
     }
@@ -479,8 +482,7 @@ test_that(paste(
     )
     if (prj_crr == "augdat" && fam_crr %in% c("brnll", "binom")) {
       summ_ref_ch$mu <- structure(c(1 - summ_ref_ch$mu, summ_ref_ch$mu),
-                                  class = "augvec",
-                                  nobs_orig = length(summ_ref_ch$mu))
+                                  ndiscrete = 2, class = "augvec")
     }
     if (prj_crr == "latent") {
       y_lat_mat <- matrix(d_test_crr$y, nrow = nrefdraws, ncol = nobsv_indep,
