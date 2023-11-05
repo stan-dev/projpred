@@ -16,14 +16,14 @@ either \eqn{S_{\mathrm{ref}}}{S_ref} or \eqn{S_{\mathrm{prj}}}{S_prj},
 whichever is appropriate in the context where it is used. Then an
 augmented-rows matrix is a matrix with \eqn{N \cdot C}{N * C} rows in \eqn{C}
 blocks of \eqn{N} rows, i.e., with the \eqn{N} observations nested in the
-\eqn{C} (latent) response categories. For ordered response categories, the
-\eqn{C} (latent) response categories (i.e., the row blocks) have to be sorted
-increasingly. The columns of an augmented-rows matrix have to correspond to
-the \eqn{S} parameter draws, just like for the traditional projection. An
-augmented-rows matrix is of class \code{augmat} (inheriting from classes \code{matrix}
-and \code{array}) and needs to have the value of \eqn{C} stored in an attribute
-called \code{ndiscrete}. An augmented-length vector (class \code{augvec}) is the vector
-resulting from subsetting an augmented-rows matrix to extract a single column
-and thereby dropping dimensions.
+\eqn{C} (possibly latent) response categories. For ordered response
+categories, the \eqn{C} (possibly latent) response categories (i.e., the row
+blocks) have to be sorted increasingly. The columns of an augmented-rows
+matrix have to correspond to the \eqn{S} parameter draws, just like for the
+traditional projection. An augmented-rows matrix is of class \code{augmat}
+(inheriting from classes \code{matrix} and \code{array}) and needs to have the value of
+\eqn{C} stored in an attribute called \code{ndiscrete}. An augmented-length vector
+(class \code{augvec}) is the vector resulting from subsetting an augmented-rows
+matrix to extract a single column and thereby dropping dimensions.
 }
 \keyword{internal}
