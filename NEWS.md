@@ -13,6 +13,7 @@ If you read this from a place other than <https://mc-stan.org/projpred/news/inde
 
 * In `as.matrix.projection()`, `nm_scheme = "auto"` is deprecated. Please use `nm_scheme = NULL` instead.
 * The plot produced by `plot.vsel()` now includes a title and a subtitle, with the subtitle mentioning the nominal coverage as well as the type of the confidence intervals (CIs) explicitly. However, in case of a facetted plot (i.e., if multiple `stats` are specified) and some `stats` implying a different CI type than other `stats`, the CI type is omitted (because mentioning it would make the subtitle too complicated). (GitHub: #468)
+* `plot.vsel()` has gained a new argument `show_cv_proportions`, allowing to omit the CV ranking proportions. (GitHub: #470)
 
 ## Bug fixes
 
