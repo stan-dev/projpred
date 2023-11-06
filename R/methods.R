@@ -649,13 +649,17 @@ proj_predict_aux <- function(proj, newdata, offset, weights,
 #'   respectively.
 #' @param ranking_colored A single logical value indicating whether the points
 #'   and the uncertainty bars should be gradient-colored according to the CV
-#'   ranking proportions (`TRUE`) or not (`FALSE`). The CV ranking proportions
-#'   may be cumulated (see argument `cumulate`). Note that the point and the
+#'   ranking proportions (`TRUE`, currently only works if `show_cv_proportions`
+#'   is `TRUE` as well) or not (`FALSE`). The CV ranking proportions may be
+#'   cumulated (see argument `cumulate`). Note that the point and the
 #'   uncertainty bar at submodel size 0 (i.e., at the intercept-only model) are
 #'   always colored in gray because the intercept is forced to be selected
 #'   before any predictors are selected (in other words, the reason is that for
 #'   submodel size 0, the question of variability across CV folds is not
 #'   appropriate in the first place).
+#' @param show_cv_proportions A single logical value indicating whether the CV
+#'   ranking proportions (see [cv_proportions()]) should be displayed (`TRUE`)
+#'   or not (`FALSE`).
 #' @param cumulate Passed to argument `cumulate` of [cv_proportions()]. Affects
 #'   the ranking proportions given on the x-axis (below the full-data predictor
 #'   ranking).
@@ -720,6 +724,7 @@ plot.vsel <- function(
     ranking_repel = NULL,
     ranking_repel_args = list(),
     ranking_colored = FALSE,
+    show_cv_proportions = TRUE,
     cumulate = FALSE,
     text_angle = NULL,
     ...
@@ -837,6 +842,9 @@ plot.vsel <- function(
   if (!is.na(ranking_nterms_max)) {
     # Predictor ranking(s):
     rk <- ranking(object, nterms_max = ranking_nterms_max)
+    if (!show_cv_proportions) {
+      rk["foldwise"] <- list(NULL)
+    }
     if (!is.null(rk[["foldwise"]])) {
       pr_rk <- diag(cv_proportions(rk, cumulate = cumulate))
     } else {

@@ -21,6 +21,7 @@
   ranking_repel = NULL,
   ranking_repel_args = list(),
   ranking_colored = FALSE,
+  show_cv_proportions = TRUE,
   cumulate = FALSE,
   text_angle = NULL,
   ...
@@ -124,13 +125,18 @@ respectively.}
 
 \item{ranking_colored}{A single logical value indicating whether the points
 and the uncertainty bars should be gradient-colored according to the CV
-ranking proportions (\code{TRUE}) or not (\code{FALSE}). The CV ranking proportions
-may be cumulated (see argument \code{cumulate}). Note that the point and the
+ranking proportions (\code{TRUE}, currently only works if \code{show_cv_proportions}
+is \code{TRUE} as well) or not (\code{FALSE}). The CV ranking proportions may be
+cumulated (see argument \code{cumulate}). Note that the point and the
 uncertainty bar at submodel size 0 (i.e., at the intercept-only model) are
 always colored in gray because the intercept is forced to be selected
 before any predictors are selected (in other words, the reason is that for
 submodel size 0, the question of variability across CV folds is not
 appropriate in the first place).}
+
+\item{show_cv_proportions}{A single logical value indicating whether the CV
+ranking proportions (see \code{\link[=cv_proportions]{cv_proportions()}}) should be displayed (\code{TRUE})
+or not (\code{FALSE}).}
 
 \item{cumulate}{Passed to argument \code{cumulate} of \code{\link[=cv_proportions]{cv_proportions()}}. Affects
 the ranking proportions given on the x-axis (below the full-data predictor
