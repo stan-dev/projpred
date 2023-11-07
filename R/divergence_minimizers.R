@@ -939,9 +939,8 @@ check_conv <- function(fit) {
 # a whole `outdmin` object):
 check_conv_s <- function(fit_s) {
   if (inherits(fit_s, "gam")) {
-    # TODO (GAMs): There is also `fit_s$mgcv.conv` (see `?mgcv::gamObject`).
-    # Do we need to take this into account?
-    return(fit_s$converged)
+    # TODO (GAMs): Is this correct?:
+    return(fit_s$converged && fit_s$mgcv.conv$fully.converged)
   } else if (inherits(fit_s, "gamm4")) {
     # TODO (GAMMs): I couldn't find any convergence-related information in
     # element `fit_s$gam`, so the GAM part is currently not checked for
