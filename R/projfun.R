@@ -39,7 +39,7 @@ proj_to_submodl <- function(predictor_terms, p_ref, refmodel,
   }
   outdmin <- do.call(refmodel$div_minimizer, args_divmin)
 
-  if (isTRUE(getOption("projpred.check_conv", FALSE))) {
+  if (getOption("projpred.check_conv", TRUE)) {
     check_conv(outdmin)
   }
 
