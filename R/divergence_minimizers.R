@@ -142,11 +142,17 @@ fit_glm_ridge_callback <- function(formula, data,
     methods::formalArgs(glm_ridge)
   )]
   # Call the submodel fitter:
-  fit <- do.call(glm_ridge, c(
-    list(x = x, y = y, obsvar = projpred_var, lambda = regul,
-         thresh = thresh_conv),
-    dot_args
-  ))
+  out_capt <- utils::capture.output(
+    fit <- do.call(glm_ridge, c(
+      list(x = x, y = y, obsvar = projpred_var, lambda = regul,
+           thresh = thresh_conv),
+      dot_args
+    ))
+  )
+  out_capt <- grep("[Ww]arning|bug", out_capt, value = TRUE)
+  if (length(out_capt) > 0) {
+    warning(paste(out_capt, collapse = "\n"))
+  }
   # Post-processing:
   rownames(fit$beta) <- colnames(x)
   sub <- nlist(alpha = fit$beta0, beta = fit$beta, w = fit$w, formula, x, y,
