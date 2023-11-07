@@ -330,7 +330,7 @@ By the following `project()` call, we project the reference model onto the final
 ```{r project}
 prj <- project(
   refm_fit,
-  solution_terms = predictors_final,
+  predictor_terms = predictors_final,
   ### In interactive use, we recommend not to deactivate the verbose mode:
   verbose = FALSE
   ###

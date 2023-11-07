@@ -561,11 +561,11 @@ if ("(xco.1 | z.1)" %in% trms_universe_split) {
   trms_universe_split <- union(trms_universe_split, "xco.1")
 }
 
-# Solution terms for project()-ing from `"refmodel"`s:
-solterms_x <- c("xco.1", "xca.1")
-solterms_z <- c("(1 | z.1)", "(xco.1 | z.1)") # removing one of them later
-solterms_s <- c("s(s.1)") # , "s(s.2)"
-solterms_spcl <- c("xca.1", trm_poly,
+# Predictor terms for project()-ing from `"refmodel"`s:
+prd_trms_x <- c("xco.1", "xca.1")
+prd_trms_z <- c("(1 | z.1)", "(xco.1 | z.1)") # removing one of them later
+prd_trms_s <- c("s(s.1)") # , "s(s.2)"
+prd_trms_spcl <- c("xca.1", trm_poly,
                    "sqrt(abs(xco.3)^2)", "I(!as.logical(xco.3 > 0))",
                    "sqrt(abs(xco.3)^2):I(!as.logical(xco.3 > 0))")
 
@@ -1339,49 +1339,49 @@ if (run_prj) {
     fam_crr <- args_ref[[tstsetup_ref]]$fam_nm
     prj_crr <- args_ref[[tstsetup_ref]]$prj_nm
     if (grepl("\\.spclformul", tstsetup_ref)) {
-      solterms_x <- solterms_spcl
+      prd_trms_x <- prd_trms_spcl
     }
-    solterms <- nlist(empty = character(), solterms_x)
+    prd_trms <- nlist(empty = character(), prd_trms_x)
     if (prj_crr %in% c("augdat", "trad_compare") && fam_crr == "brnll" &&
         mod_crr == "glmm") {
       # We need a single group-level term (which only consists of group-level
       # intercepts) to be able to use `nAGQ` later:
-      solterms_z <- setdiff(solterms_z, "(xco.1 | z.1)")
+      prd_trms_z <- setdiff(prd_trms_z, "(xco.1 | z.1)")
     } else {
-      solterms_z <- setdiff(solterms_z, "(1 | z.1)")
+      prd_trms_z <- setdiff(prd_trms_z, "(1 | z.1)")
     }
     if (mod_crr %in% c("glmm", "gamm")) {
-      solterms <- c(solterms,
-                    nlist(solterms_z, solterms_xz = c(solterms_x, solterms_z)))
+      prd_trms <- c(prd_trms,
+                    nlist(prd_trms_z, prd_trms_xz = c(prd_trms_x, prd_trms_z)))
     }
     if (mod_crr %in% c("gam", "gamm")) {
-      solterms <- c(solterms,
-                    nlist(solterms_s, solterms_xs = c(solterms_x, solterms_s)))
+      prd_trms <- c(prd_trms,
+                    nlist(prd_trms_s, prd_trms_xs = c(prd_trms_x, prd_trms_s)))
     }
     if (mod_crr == "gamm") {
-      solterms <- c(solterms,
-                    nlist(solterms_sz = c(solterms_s, solterms_z),
-                          solterms_xsz = c(solterms_x, solterms_s, solterms_z)))
+      prd_trms <- c(prd_trms,
+                    nlist(prd_trms_sz = c(prd_trms_s, prd_trms_z),
+                          prd_trms_xsz = c(prd_trms_x, prd_trms_s, prd_trms_z)))
     }
     if (!run_more &&
         (fam_crr != "gauss" || grepl("\\.spclformul", tstsetup_ref))) {
-      solterms <- tail(solterms, 1)
+      prd_trms <- tail(prd_trms, 1)
     }
-    lapply(setNames(nm = names(solterms)), function(solterms_nm_i) {
+    lapply(setNames(nm = names(prd_trms)), function(prd_trms_nm_i) {
       if (pkg_crr == "rstanarm" && mod_crr == "glm" &&
-          fam_crr == "gauss" && solterms_nm_i == "solterms_x") {
+          fam_crr == "gauss" && prd_trms_nm_i == "prd_trms_x") {
         ndr_ncl_pred <- ndr_ncl_pred_tst
       } else if (pkg_crr == "rstanarm" && mod_crr == "glm" &&
-                 fam_crr == "gauss" && solterms_nm_i == "empty") {
+                 fam_crr == "gauss" && prd_trms_nm_i == "empty") {
         ndr_ncl_pred <- ndr_ncl_pred_tst[c("noclust", "clust", "clust1")]
       } else if (
         (run_more && (
           (pkg_crr == "rstanarm" && mod_crr == "glmm" &&
-           fam_crr == "brnll" && solterms_nm_i == "solterms_xz") ||
+           fam_crr == "brnll" && prd_trms_nm_i == "prd_trms_xz") ||
           (pkg_crr == "rstanarm" && mod_crr == "gam" &&
-           fam_crr == "binom" && solterms_nm_i == "solterms_xs") ||
+           fam_crr == "binom" && prd_trms_nm_i == "prd_trms_xs") ||
           (pkg_crr == "rstanarm" && mod_crr == "gamm" &&
-           fam_crr == "brnll" && solterms_nm_i == "solterms_xsz")
+           fam_crr == "brnll" && prd_trms_nm_i == "prd_trms_xsz")
         )) ||
         (!run_more && mod_crr %in% c("glmm", "gam", "gamm")) ||
         prj_crr %in% c("latent", "augdat", "trad_compare")
@@ -1393,7 +1393,7 @@ if (run_prj) {
         ndr_ncl_pred <- ndr_ncl_pred_tst[c("clust")]
       }
       if (prj_crr %in% c("augdat", "trad_compare") && fam_crr == "brnll" &&
-          mod_crr == "glmm" && grepl("z", solterms_nm_i)) {
+          mod_crr == "glmm" && grepl("z", prd_trms_nm_i)) {
         # We need an increased accuracy to be able to compare traditional and
         # augmented-data projection:
         divmin_args <- list(nAGQ = 30L)
@@ -1409,7 +1409,7 @@ if (run_prj) {
         }
         return(c(
           nlist(tstsetup_ref), only_nonargs(args_ref[[tstsetup_ref]]),
-          list(solution_terms = solterms[[solterms_nm_i]], seed = seed_tst),
+          list(predictor_terms = prd_trms[[prd_trms_nm_i]], seed = seed_tst),
           ndr_ncl_pred_i, divmin_args
         ))
       })
@@ -1419,10 +1419,10 @@ if (run_prj) {
 
   prjs <- lapply(args_prj, function(args_prj_i) {
     if (args_prj_i$prj_nm == "augdat" && args_prj_i$fam_nm == "cumul" &&
-        !any(grepl("\\|", args_prj_i$solution_terms))) {
+        !any(grepl("\\|", args_prj_i$predictor_terms))) {
       warn_expected <- "non-integer #successes in a binomial glm!"
     } else if (!is.null(args_prj_i$avoid.increase) &&
-               any(grepl("\\|", args_prj_i$solution_terms))) {
+               any(grepl("\\|", args_prj_i$predictor_terms))) {
       warn_expected <- warn_mclogit
     } else {
       warn_expected <- NA
@@ -2022,16 +2022,16 @@ if (run_cvvs) {
 
 # Output elements of `vsel` objects:
 vsel_nms <- c(
-  "refmodel", "nobs_train", "search_path", "solution_terms",
-  "solution_terms_cv", "ce", "type_test", "y_wobs_test", "nobs_test",
+  "refmodel", "nobs_train", "search_path", "predictor_ranking",
+  "predictor_ranking_cv", "ce", "type_test", "y_wobs_test", "nobs_test",
   "summaries", "nterms_all", "nterms_max", "method", "cv_method", "nloo", "K",
   "validate_search", "cvfits", "args_search", "clust_used_search",
   "clust_used_eval", "nprjdraws_search", "nprjdraws_eval", "refit_prj",
   "projpred_version"
 )
 # Output elements of `vsel` objects that may be influenced by `cvfits`:
-vsel_nms_cvfits <- c("refmodel", "cvfits", "summaries", "solution_terms_cv")
-vsel_nms_cvfits_opt <- c("solution_terms_cv")
+vsel_nms_cvfits <- c("refmodel", "cvfits", "summaries", "predictor_ranking_cv")
+vsel_nms_cvfits_opt <- c("predictor_ranking_cv")
 # Sub-elements of `summaries`'s `sub` and `ref` elements:
 vsel_smmrs_sub_nms <- vsel_smmrs_ref_nms <- c("mu", "lppd")
 

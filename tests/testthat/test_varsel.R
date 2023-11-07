@@ -16,7 +16,7 @@ test_that(paste(
     vsel_tester(
       vss[[tstsetup]],
       refmod_expected = refmods[[tstsetup_ref]],
-      solterms_len_expected = args_vs[[tstsetup]]$nterms_max,
+      prd_trms_len_expected = args_vs[[tstsetup]]$nterms_max,
       method_expected = meth_exp_crr,
       search_terms_expected = args_vs[[tstsetup]]$search_terms,
       search_trms_empty_size =
@@ -156,7 +156,7 @@ test_that(paste(
         as.data.frame(d_test_crr[nms_y_wobs_test(wobs_nm = "weights")]),
         nms_y_wobs_test()
       ),
-      solterms_len_expected = args_vs_i$nterms_max,
+      prd_trms_len_expected = args_vs_i$nterms_max,
       method_expected = meth_exp_crr,
       search_terms_expected = args_vs_i$search_terms,
       search_trms_empty_size =
@@ -283,7 +283,7 @@ test_that(paste(
         as.data.frame(d_test_crr[nms_y_wobs_test(wobs_nm = "weights")]),
         nms_y_wobs_test()
       ),
-      solterms_len_expected = args_vs_i$nterms_max,
+      prd_trms_len_expected = args_vs_i$nterms_max,
       method_expected = meth_exp_crr,
       search_terms_expected = args_vs_i$search_terms,
       search_trms_empty_size =
@@ -296,7 +296,7 @@ test_that(paste(
 
     if (!(getOption("projpred.mlvl_pred_new", FALSE) &&
           mod_crr %in% c("glmm", "gamm") &&
-          any(grepl("\\|", vs_indep$solution_terms)))) {
+          any(grepl("\\|", vs_indep$predictor_ranking)))) {
       # In the negation of this case (i.e., multilevel models with option
       # `projpred.mlvl_pred_new` being set to `TRUE`), proj_linpred() can't be
       # used to calculate the reference model's performance statistics because
@@ -322,7 +322,7 @@ test_that(paste(
           transform = TRUE,
           integrated = TRUE,
           .seed = NA,
-          nterms = c(0L, seq_along(vs_indep$solution_terms)),
+          nterms = c(0L, seq_along(vs_indep$predictor_ranking)),
           nclusters = args_vs_i$nclusters_pred,
           seed = NA
         ),
@@ -354,7 +354,7 @@ test_that(paste(
           transform = FALSE,
           integrated = TRUE,
           .seed = NA,
-          nterms = c(0L, seq_along(vs_indep$solution_terms)),
+          nterms = c(0L, seq_along(vs_indep$predictor_ranking)),
           nclusters = args_vs_i$nclusters_pred,
           seed = NA
         )
@@ -551,7 +551,7 @@ test_that("`refit_prj` works", {
     vsel_tester(
       vs_reuse,
       refmod_expected = refmods[[args_vs_i$tstsetup_ref]],
-      solterms_len_expected = args_vs_i$nterms_max,
+      prd_trms_len_expected = args_vs_i$nterms_max,
       method_expected = meth_exp_crr,
       refit_prj_expected = FALSE,
       search_terms_expected = args_vs_i$search_terms,
@@ -687,7 +687,7 @@ test_that(paste(
         vsel_tester(
           vs_regul,
           refmod_expected = refmods[[args_vs_i$tstsetup_ref]],
-          solterms_len_expected = args_vs_i$nterms_max,
+          prd_trms_len_expected = args_vs_i$nterms_max,
           method_expected = "L1",
           info_str = tstsetup
         )
@@ -771,7 +771,7 @@ test_that(paste(
         vsel_tester(
           vs_regul,
           refmod_expected = refmods[[args_vs_i$tstsetup_ref]],
-          solterms_len_expected = args_vs_i$nterms_max,
+          prd_trms_len_expected = args_vs_i$nterms_max,
           method_expected = "forward",
           search_terms_expected = args_vs_i$search_terms,
           search_trms_empty_size =
@@ -959,20 +959,20 @@ test_that("for L1 search, `penalty` has an expected effect", {
     vsel_tester(
       vs_penal,
       refmod_expected = refmods[[args_vs_i$tstsetup_ref]],
-      solterms_len_expected = nterms_max_crr,
+      prd_trms_len_expected = nterms_max_crr,
       method_expected = "L1",
       penalty_expected = penal_crr,
       info_str = tstsetup
     )
     # Check that the variables with no cost are selected first and the ones
     # with infinite penalty last:
-    solterms_penal <- vs_penal$solution_terms
-    solterms_penal <- sub("(I\\(.*as\\.logical\\(.*\\)\\))", "\\1TRUE",
-                          solterms_penal)
-    expect_identical(solterms_penal[seq_along(idx_penal_0)],
+    prd_trms_penal <- vs_penal$predictor_ranking
+    prd_trms_penal <- sub("(I\\(.*as\\.logical\\(.*\\)\\))", "\\1TRUE",
+                          prd_trms_penal)
+    expect_identical(prd_trms_penal[seq_along(idx_penal_0)],
                      penal_possbl[idx_penal_0],
                      info = tstsetup)
-    expect_identical(rev(solterms_penal)[seq_along(idx_penal_Inf)],
+    expect_identical(rev(prd_trms_penal)[seq_along(idx_penal_Inf)],
                      rev(penal_possbl[idx_penal_Inf]),
                      info = tstsetup)
   }
@@ -1021,7 +1021,7 @@ test_that("L1 search handles three-way (second-order) interactions correctly", {
   vsel_tester(
     vs,
     refmod_expected = refmod,
-    solterms_len_expected = count_terms_in_formula(refmod$formula) - 1L,
+    prd_trms_len_expected = count_terms_in_formula(refmod$formula) - 1L,
     method_expected = "L1",
     refit_prj_expected = FALSE,
     ### Testing for non-increasing element `ce` (for increasing model size)
@@ -1075,7 +1075,7 @@ test_that(paste(
     # In principle, `search_trms_tst$fixed$search_terms[1]` could be used
     # instead of `"xco.1"`, but that would seem like the forced term always has
     # to come first in `search_terms` (which is not the case):
-    expect_identical(vss[[tstsetup]]$solution_terms[1], "xco.1",
+    expect_identical(vss[[tstsetup]]$predictor_ranking[1], "xco.1",
                      info = tstsetup)
   }
 })
@@ -1087,7 +1087,8 @@ test_that(paste(
   skip_if_not(run_vs)
   tstsetups <- grep("\\.excluded", names(vss), value = TRUE)
   for (tstsetup in tstsetups) {
-    expect_false("xco.1" %in% vss[[tstsetup]]$solution_terms, info = tstsetup)
+    expect_false("xco.1" %in% vss[[tstsetup]]$predictor_ranking,
+                 info = tstsetup)
   }
 })
 
@@ -1097,11 +1098,10 @@ test_that(paste(
   skip_if_not(run_vs)
   tstsetups <- grep("\\.empty_size", names(vss), value = TRUE)
   for (tstsetup in tstsetups) {
-    soltrms_out <- vss[[tstsetup]]$solution_terms
-    expect_true(
-      grepl("\\+", soltrms_out[1]) && !any(grepl("\\+", soltrms_out[-1])),
-      info = tstsetup
-    )
+    rk_fulldata_out <- vss[[tstsetup]]$predictor_ranking
+    expect_true(grepl("\\+", rk_fulldata_out[1]) &&
+                  !any(grepl("\\+", rk_fulldata_out[-1])),
+                info = tstsetup)
   }
 })
 
@@ -1130,7 +1130,7 @@ test_that("varsel.vsel() works for `vsel` objects from varsel()", {
     vsel_tester(
       vs_eval,
       refmod_expected = refmods[[tstsetup_ref]],
-      solterms_len_expected = args_vs[[tstsetup]]$nterms_max,
+      prd_trms_len_expected = args_vs[[tstsetup]]$nterms_max,
       method_expected = meth_exp_crr,
       refit_prj_expected = FALSE,
       search_terms_expected = args_vs[[tstsetup]]$search_terms,
@@ -1179,7 +1179,7 @@ test_that("varsel.vsel() works for `vsel` objects from cv_varsel()", {
     vsel_tester(
       vs_eval,
       refmod_expected = refmods[[tstsetup_ref]],
-      solterms_len_expected = args_cvvs[[tstsetup]]$nterms_max,
+      prd_trms_len_expected = args_cvvs[[tstsetup]]$nterms_max,
       method_expected = meth_exp_crr,
       refit_prj_expected = refit_prj_crr,
       nprjdraws_eval_expected = if (!refit_prj_crr && meth_exp_crr == "L1") {
@@ -1223,7 +1223,7 @@ test_that(paste(
       } else {
         refmods[[args_cvvs[[tstsetup]]$tstsetup_ref]]$cvfits
       },
-      solterms_len_expected = args_cvvs[[tstsetup]]$nterms_max,
+      prd_trms_len_expected = args_cvvs[[tstsetup]]$nterms_max,
       method_expected = meth_exp_crr,
       cv_method_expected = args_cvvs[[tstsetup]]$cv_method,
       valsearch_expected = args_cvvs[[tstsetup]]$validate_search,
@@ -1347,7 +1347,7 @@ test_that("`refit_prj` works", {
       } else {
         refmods[[args_cvvs_i$tstsetup_ref]]$cvfits
       },
-      solterms_len_expected = args_cvvs_i$nterms_max,
+      prd_trms_len_expected = args_cvvs_i$nterms_max,
       method_expected = meth_exp_crr,
       refit_prj_expected = FALSE,
       cv_method_expected = args_cvvs_i$cv_method,
@@ -1457,7 +1457,7 @@ test_that("setting `nloo` smaller than the number of observations works", {
   skip_if_not(run_cvvs)
   nloo_tst <- nobsv %/% 5L
   # Output elements of `vsel` objects that may be influenced by `nloo`:
-  vsel_nms_nloo <- c("summaries", "solution_terms_cv", "nloo", "ce")
+  vsel_nms_nloo <- c("summaries", "predictor_ranking_cv", "nloo", "ce")
   # In general, element `ce` is affected as well (because the PRNG state when
   # doing the clustering for the performance evaluation is different when `nloo`
   # is smaller than the number of observations compared to when `nloo` is equal
@@ -1487,7 +1487,7 @@ test_that("setting `nloo` smaller than the number of observations works", {
       cvvs_nloo,
       with_cv = TRUE,
       refmod_expected = refmods[[tstsetup_ref]],
-      solterms_len_expected = args_cvvs_i$nterms_max,
+      prd_trms_len_expected = args_cvvs_i$nterms_max,
       method_expected = meth_exp_crr,
       cv_method_expected = "LOO",
       valsearch_expected = args_cvvs_i$validate_search,
@@ -1501,7 +1501,7 @@ test_that("setting `nloo` smaller than the number of observations works", {
     # Expected equality for most elements with a few exceptions:
     vsel_nms_nloo_crr <- vsel_nms_nloo
     if (isFALSE(args_cvvs_i$validate_search)) {
-      vsel_nms_nloo_crr <- setdiff(vsel_nms_nloo_crr, "solution_terms_cv")
+      vsel_nms_nloo_crr <- setdiff(vsel_nms_nloo_crr, "predictor_ranking_cv")
     }
     expect_equal(cvvs_nloo[setdiff(vsel_nms, vsel_nms_nloo_crr)],
                  cvvss[[tstsetup]][setdiff(vsel_nms, vsel_nms_nloo_crr)],
@@ -1523,7 +1523,7 @@ test_that("`validate_search` works", {
   # Output elements of `vsel` objects that may be influenced by
   # `validate_search`:
   vsel_nms_valsearch <- c("validate_search", "summaries", "ce",
-                          "solution_terms_cv")
+                          "predictor_ranking_cv")
   # The setups that should be tested:
   tstsetups <- names(cvvss)
   if (!run_valsearch_always) {
@@ -1563,7 +1563,7 @@ test_that("`validate_search` works", {
       } else {
         refmods[[args_cvvs_i$tstsetup_ref]]$cvfits
       },
-      solterms_len_expected = args_cvvs_i$nterms_max,
+      prd_trms_len_expected = args_cvvs_i$nterms_max,
       method_expected = meth_exp_crr,
       cv_method_expected = args_cvvs_i$cv_method,
       valsearch_expected = FALSE,
@@ -1723,7 +1723,7 @@ test_that(paste(
       with_cv = TRUE,
       refmod_expected = refmod_crr,
       cvfits_expected = kfold_obj,
-      solterms_len_expected = args_cvvs_i$nterms_max,
+      prd_trms_len_expected = args_cvvs_i$nterms_max,
       method_expected = meth_exp_crr,
       cv_method_expected = "kfold",
       valsearch_expected = args_cvvs_i$validate_search,
@@ -1853,7 +1853,7 @@ test_that(paste(
       with_cv = TRUE,
       refmod_expected = refmod_crr,
       cvfits_expected = kfold_obj,
-      solterms_len_expected = args_cvvs_i$nterms_max,
+      prd_trms_len_expected = args_cvvs_i$nterms_max,
       method_expected = meth_exp_crr,
       cv_method_expected = "kfold",
       valsearch_expected = args_cvvs_i$validate_search,
@@ -1903,7 +1903,7 @@ test_that("`cvfun` included in the `refmodel` object works", {
       with_cv = TRUE,
       refmod_expected = refmods[[args_cvvs[[tstsetup]]$tstsetup_ref]],
       cvfits_expected = NULL,
-      solterms_len_expected = args_cvvs[[tstsetup]]$nterms_max,
+      prd_trms_len_expected = args_cvvs[[tstsetup]]$nterms_max,
       method_expected = args_cvvs[[tstsetup]]$method %||% "forward",
       cv_method_expected = "kfold",
       valsearch_expected = args_cvvs[[tstsetup]]$validate_search,
@@ -1949,7 +1949,7 @@ test_that(paste(
       } else {
         refmods[[tstsetup_ref]]$cvfits
       },
-      solterms_len_expected = args_cvvs[[tstsetup]]$nterms_max,
+      prd_trms_len_expected = args_cvvs[[tstsetup]]$nterms_max,
       method_expected = meth_exp_crr,
       cv_method_expected = args_cvvs[[tstsetup]]$cv_method,
       valsearch_expected = args_cvvs[[tstsetup]]$validate_search,
@@ -1999,7 +1999,7 @@ test_that(paste(
       cvvs_eval,
       with_cv = TRUE,
       refmod_expected = refmods[[tstsetup_ref]],
-      solterms_len_expected = args_vs[[tstsetup]]$nterms_max,
+      prd_trms_len_expected = args_vs[[tstsetup]]$nterms_max,
       method_expected = meth_exp_crr,
       cv_method_expected = "LOO",
       valsearch_expected = FALSE,
@@ -2064,7 +2064,7 @@ test_that(paste(
       with_cv = TRUE,
       refmod_expected = refmods[[tstsetup_ref]],
       cvfits_expected = cvfitss[[tstsetup_ref]],
-      solterms_len_expected = args_vs[[tstsetup]]$nterms_max,
+      prd_trms_len_expected = args_vs[[tstsetup]]$nterms_max,
       method_expected = meth_exp_crr,
       cv_method_expected = "kfold",
       nloo_expected = NULL,
@@ -2127,7 +2127,7 @@ test_that(paste(
       } else {
         refmods[[tstsetup_ref]]$cvfits
       },
-      solterms_len_expected = args_cvvs[[tstsetup]]$nterms_max,
+      prd_trms_len_expected = args_cvvs[[tstsetup]]$nterms_max,
       method_expected = meth_exp_crr,
       cv_method_expected = "LOO",
       valsearch_expected = FALSE,
@@ -2192,7 +2192,7 @@ test_that(paste(
       with_cv = TRUE,
       refmod_expected = refmods[[tstsetup_ref]],
       cvfits_expected = cvfitss[[tstsetup_ref]],
-      solterms_len_expected = args_cvvs[[tstsetup]]$nterms_max,
+      prd_trms_len_expected = args_cvvs[[tstsetup]]$nterms_max,
       method_expected = meth_exp_crr,
       cv_method_expected = "kfold",
       valsearch_expected = FALSE,
@@ -2253,7 +2253,7 @@ test_that(paste(
       with_cv = TRUE,
       refmod_expected = refmods[[tstsetup_ref]],
       cvfits_expected = cvfitss[[tstsetup_ref]],
-      solterms_len_expected = args_cvvs[[tstsetup]]$nterms_max,
+      prd_trms_len_expected = args_cvvs[[tstsetup]]$nterms_max,
       method_expected = meth_exp_crr,
       cv_method_expected = cv_meth_crr,
       valsearch_expected = FALSE,
@@ -2315,7 +2315,7 @@ test_that(paste(
       with_cv = TRUE,
       refmod_expected = refmods[[tstsetup_ref]],
       cvfits_expected = cvfitss[[tstsetup_ref]],
-      solterms_len_expected = args_cvvs[[tstsetup]]$nterms_max,
+      prd_trms_len_expected = args_cvvs[[tstsetup]]$nterms_max,
       method_expected = meth_exp_crr,
       cv_method_expected = cv_meth_crr,
       valsearch_expected = TRUE,
@@ -2377,7 +2377,7 @@ test_that(paste(
       cvvs_eval,
       with_cv = TRUE,
       refmod_expected = refmods[[tstsetup_ref]],
-      solterms_len_expected = args_vs[[tstsetup]]$nterms_max,
+      prd_trms_len_expected = args_vs[[tstsetup]]$nterms_max,
       method_expected = meth_exp_crr,
       cv_method_expected = "LOO",
       valsearch_expected = TRUE,
@@ -2453,7 +2453,7 @@ test_that(paste(
       with_cv = TRUE,
       refmod_expected = refmods[[tstsetup_ref]],
       cvfits_expected = cvfitss[[tstsetup_ref]],
-      solterms_len_expected = args_vs[[tstsetup]]$nterms_max,
+      prd_trms_len_expected = args_vs[[tstsetup]]$nterms_max,
       method_expected = meth_exp_crr,
       cv_method_expected = "kfold",
       nloo_expected = NULL,
@@ -2543,7 +2543,7 @@ test_that(paste(
       } else {
         refmods[[tstsetup_ref]]$cvfits
       },
-      solterms_len_expected = args_cvvs[[tstsetup]]$nterms_max,
+      prd_trms_len_expected = args_cvvs[[tstsetup]]$nterms_max,
       method_expected = meth_exp_crr,
       cv_method_expected = "LOO",
       valsearch_expected = TRUE,
@@ -2630,7 +2630,7 @@ test_that(paste(
       with_cv = TRUE,
       refmod_expected = refmods[[tstsetup_ref]],
       cvfits_expected = cvfitss[[tstsetup_ref]],
-      solterms_len_expected = args_cvvs[[tstsetup]]$nterms_max,
+      prd_trms_len_expected = args_cvvs[[tstsetup]]$nterms_max,
       method_expected = meth_exp_crr,
       cv_method_expected = "kfold",
       valsearch_expected = TRUE,
@@ -2678,7 +2678,7 @@ test_that("cv_varsel.vsel(): `nloo` works for `vsel` objects from varsel()", {
       cvvs_eval_valF,
       with_cv = TRUE,
       refmod_expected = refmods[[tstsetup_ref]],
-      solterms_len_expected = args_vs[[tstsetup]]$nterms_max,
+      prd_trms_len_expected = args_vs[[tstsetup]]$nterms_max,
       method_expected = meth_exp_crr,
       cv_method_expected = "LOO",
       nloo_expected = nloo_tst,
@@ -2701,7 +2701,7 @@ test_that("cv_varsel.vsel(): `nloo` works for `vsel` objects from varsel()", {
       cvvs_eval_valT,
       with_cv = TRUE,
       refmod_expected = refmods[[tstsetup_ref]],
-      solterms_len_expected = args_vs[[tstsetup]]$nterms_max,
+      prd_trms_len_expected = args_vs[[tstsetup]]$nterms_max,
       method_expected = meth_exp_crr,
       cv_method_expected = "LOO",
       nloo_expected = nloo_tst,
@@ -2778,7 +2778,7 @@ test_that(paste(
       } else {
         refmods[[args_cvvs[[tstsetup]]$tstsetup_ref]]$cvfits
       },
-      solterms_len_expected = args_cvvs[[tstsetup]]$nterms_max,
+      prd_trms_len_expected = args_cvvs[[tstsetup]]$nterms_max,
       method_expected = meth_exp_crr,
       cv_method_expected = "LOO",
       nloo_expected = nloo_tst,
@@ -2811,7 +2811,7 @@ test_that(paste(
       } else {
         refmods[[args_cvvs[[tstsetup]]$tstsetup_ref]]$cvfits
       },
-      solterms_len_expected = args_cvvs[[tstsetup]]$nterms_max,
+      prd_trms_len_expected = args_cvvs[[tstsetup]]$nterms_max,
       method_expected = meth_exp_crr,
       cv_method_expected = "LOO",
       nloo_expected = nloo_tst,

@@ -248,7 +248,7 @@ test_that(paste(
       from_datafit = TRUE,
       refmod_expected =
         datafits[[args_vs_datafit[[tstsetup]]$tstsetup_datafit]],
-      solterms_len_expected = args_vs_datafit[[tstsetup]]$nterms_max,
+      prd_trms_len_expected = args_vs_datafit[[tstsetup]]$nterms_max,
       method_expected = meth_exp_crr,
       search_terms_expected = args_vs_datafit[[tstsetup]]$search_terms,
       search_trms_empty_size =
@@ -276,7 +276,7 @@ test_that(paste(
         datafits[[args_cvvs_datafit[[tstsetup]]$tstsetup_datafit]],
       cvfits_expected =
         cvfitss_datafit[[args_cvvs_datafit[[tstsetup]]$tstsetup_datafit]],
-      solterms_len_expected = args_cvvs_datafit[[tstsetup]]$nterms_max,
+      prd_trms_len_expected = args_cvvs_datafit[[tstsetup]]$nterms_max,
       method_expected = meth_exp_crr,
       cv_method_expected = "kfold",
       valsearch_expected = args_cvvs_datafit[[tstsetup]]$validate_search,
@@ -298,7 +298,7 @@ test_that("project(): `object` of class \"datafit\" fails", {
   # adapted):
   stopifnot(all(names(args_datafit) %in% names(args_ref)))
 
-  tstsetups <- grep("\\.solterms_x.*\\.clust$", names(args_prj), value = TRUE)
+  tstsetups <- grep("\\.prd_trms_x.*\\.clust$", names(args_prj), value = TRUE)
   for (tstsetup in tstsetups) {
     args_prj_i <- args_prj[[tstsetup]]
     if (!args_prj_i$tstsetup_ref %in% names(datafits)) next
@@ -329,14 +329,14 @@ test_that(paste(
     }
     with_L1 <- identical(args_vs_datafit[[tstsetup_vs]]$method, "L1")
     if (length(nterms_crr) == 1) {
-      solterms_expected_crr <- vss_datafit[[tstsetup_vs]]$solution_terms[
+      prd_trms_expected_crr <- vss_datafit[[tstsetup_vs]]$predictor_ranking[
         seq_len(nterms_crr)
       ]
       projection_tester(
         prjs_vs_datafit[[tstsetup]],
         refmod_expected =
           datafits[[args_prj_vs_datafit[[tstsetup]]$tstsetup_datafit]],
-        solterms_expected = solterms_expected_crr,
+        prd_trms_expected = prd_trms_expected_crr,
         nprjdraws_expected = 1L,
         with_clusters = FALSE,
         const_wdraws_prj_expected = TRUE,
@@ -377,7 +377,7 @@ test_that(paste(
       #     m <- as.matrix(prjs_vs_i)
       #     expect_snapshot({
       #       print(tstsetup)
-      #       print(prjs_vs_i$solution_terms)
+      #       print(prjs_vs_i$predictor_terms)
       #       print(rlang::hash(m)) # cat(m)
       #     })
       #     return(invisible(TRUE))
@@ -528,7 +528,7 @@ test_that(paste(
       info_str = tstsetup,
       stats_expected = stats_common,
       type_expected = type_tst,
-      solterms_expected = vss_datafit[[tstsetup]]$solution_terms,
+      prd_trms_expected = vss_datafit[[tstsetup]]$predictor_ranking,
       from_datafit = TRUE
     )
     if (run_snaps) {
@@ -571,7 +571,7 @@ test_that(paste(
       type_expected = type_tst,
       cv_method_expected =
         args_cvvs_datafit[[tstsetup]]$cv_method %||% "LOO",
-      solterms_expected = cvvss_datafit[[tstsetup]]$solution_terms,
+      prd_trms_expected = cvvss_datafit[[tstsetup]]$predictor_ranking,
       from_datafit = TRUE
     )
     if (run_snaps) {
@@ -694,19 +694,19 @@ test_that(paste(
                             family = fam$family, weights = weights,
                             lambda.min.ratio = lambda_min_ratio,
                             nlambda = nlambda, thresh = 1e-12)
-    solution_terms <- predict(lasso, type = "nonzero", s = lasso$lambda)
-    nselected <- sapply(solution_terms, function(e) length(e))
+    predictor_ranking <- predict(lasso, type = "nonzero", s = lasso$lambda)
+    nselected <- sapply(predictor_ranking, function(e) length(e))
     lambdainds <- sapply(unique(nselected), function(nterms) {
       max(which(nselected == nterms))
     })
     lambdaval <- lasso$lambda[lambdainds]
     pred2 <- predict(lasso, newx = x, type = "link", s = lambdaval)
-    solution_terms_lasso <- integer()
+    predictor_ranking_lasso <- integer()
     lasso_coefs <- as.matrix(lasso$beta[, tail(lambdainds, -1), drop = FALSE])
     for (ii in seq_len(ncol(lasso_coefs))) {
-      solution_terms_lasso <- c(
-        solution_terms_lasso,
-        setdiff(which(lasso_coefs[, ii] > 0), solution_terms_lasso)
+      predictor_ranking_lasso <- c(
+        predictor_ranking_lasso,
+        setdiff(which(lasso_coefs[, ii] > 0), predictor_ranking_lasso)
       )
     }
 
@@ -721,7 +721,7 @@ test_that(paste(
     expect_equal(pred1, pred2, tolerance = 1e-2, info = as.character(i))
 
     # check that the coefficients are similar
-    ind <- match(vs$solution_terms, setdiff(split_formula(formula), "1"))
+    ind <- match(vs$predictor_ranking, setdiff(split_formula(formula), "1"))
     betas <- sapply(vs$search_path$outdmins, function(x) x[[1]]$beta %||% 0)
     delta <- sapply(seq_len(length(lambdainds) - 1), function(i) {
       abs(t(betas[[i + 1]]) - lasso$beta[ind[1:i], lambdainds[i + 1]])
@@ -736,10 +736,10 @@ test_that(paste(
     ) < 1.5e-1)
     # Sometimes, glmnet terminates the coefficient path computation too early
     # for some reason:
-    if (length(ind) > length(solution_terms_lasso)) {
-      ind <- ind[seq_along(solution_terms_lasso)]
+    if (length(ind) > length(predictor_ranking_lasso)) {
+      ind <- ind[seq_along(predictor_ranking_lasso)]
     }
-    expect_identical(ind, solution_terms_lasso, info = as.character(i))
+    expect_identical(ind, predictor_ranking_lasso, info = as.character(i))
   }
   RNGversion(getRversion())
   if (exists("rng_old")) assign(".Random.seed", rng_old, envir = .GlobalEnv)

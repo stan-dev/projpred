@@ -21,7 +21,7 @@ test_that("as.matrix.projection() works", {
     fam_crr <- args_prj[[tstsetup]]$fam_nm
     pkg_crr <- args_prj[[tstsetup]]$pkg_nm
     prj_crr <- args_prj[[tstsetup]]$prj_nm
-    solterms <- args_prj[[tstsetup]]$solution_terms
+    prd_trms <- args_prj[[tstsetup]]$predictor_terms
     ndr_ncl <- ndr_ncl_dtls(args_prj[[tstsetup]])
 
     m <- as.matrix(prjs[[tstsetup]],
@@ -59,7 +59,7 @@ test_that("as.matrix.projection() works", {
     }
     colnms_prjmat_expect <- c(
       icpt_nm,
-      grep("\\|", grep("x(co|ca)\\.[[:digit:]]", solterms, value = TRUE),
+      grep("\\|", grep("x(co|ca)\\.[[:digit:]]", prd_trms, value = TRUE),
            value = TRUE, invert = TRUE)
     )
     xca_idxs <- as.integer(
@@ -101,7 +101,7 @@ test_that("as.matrix.projection() works", {
       }
       colnms_prjmat_expect <- paste0("b_", colnms_prjmat_expect)
     }
-    if (any(c("(1 | z.1)", "(xco.1 | z.1)") %in% solterms)) {
+    if (any(c("(1 | z.1)", "(xco.1 | z.1)") %in% prd_trms)) {
       if (pkg_crr == "brms") {
         mlvl_icpt_str <- "Intercept"
         if (fam_crr == "categ") {
@@ -134,7 +134,7 @@ test_that("as.matrix.projection() works", {
         }
       }
     }
-    if ("(xco.1 | z.1)" %in% solterms) {
+    if ("(xco.1 | z.1)" %in% prd_trms) {
       if (pkg_crr == "brms") {
         mlvl_xco_str <- "xco.1"
         if (fam_crr == "categ") {
@@ -174,7 +174,7 @@ test_that("as.matrix.projection() works", {
     }
     s_nms <- sub("\\)$", "",
                  sub("^s\\(", "",
-                     grep("^s\\(.*\\)$", solterms, value = TRUE)))
+                     grep("^s\\(.*\\)$", prd_trms, value = TRUE)))
     if (length(s_nms)) {
       stopifnot(inherits(refmods[[tstsetup_ref]]$fit, "stanreg"))
       # Get the number of basis coefficients:
@@ -336,7 +336,7 @@ if (run_snaps) {
                        allow_nonconst_wdraws_prj = ndr_ncl$clust_used)
         expect_snapshot({
           print(tstsetup)
-          print(prjs_vs_i$solution_terms)
+          print(prjs_vs_i$predictor_terms)
           print(rlang::hash(m)) # cat(m)
         })
         return(invisible(TRUE))
@@ -374,7 +374,7 @@ if (run_snaps) {
                        allow_nonconst_wdraws_prj = ndr_ncl$clust_used)
         expect_snapshot({
           print(tstsetup)
-          print(prjs_cvvs_i$solution_terms)
+          print(prjs_cvvs_i$predictor_terms)
           print(rlang::hash(m)) # cat(m)
         })
         return(invisible(TRUE))

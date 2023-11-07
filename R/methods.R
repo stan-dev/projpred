@@ -23,7 +23,7 @@
 #'   passed to argument `object` of [project()].
 #' @param filter_nterms Only applies if `object` is an object returned by
 #'   [project()]. In that case, `filter_nterms` can be used to filter `object`
-#'   for only those elements (submodels) with a number of solution terms in
+#'   for only those elements (submodels) with a number of predictor terms in
 #'   `filter_nterms`. Therefore, needs to be a numeric vector or `NULL`. If
 #'   `NULL`, use all submodels.
 #' @param transform For [proj_linpred()] only. A single logical value indicating
@@ -103,7 +103,7 @@
 #'   \eqn{C} denote either \eqn{C_{\mathrm{cat}}}{C_cat} (if `transform = TRUE`)
 #'   or \eqn{C_{\mathrm{lat}}}{C_lat} (if `transform = FALSE`). Then, if the
 #'   prediction is done for one submodel only (i.e., `length(nterms) == 1 ||
-#'   !is.null(solution_terms)` in the explicit or implicit call to [project()],
+#'   !is.null(predictor_terms)` in the explicit or implicit call to [project()],
 #'   see argument `object`):
 #'   * [proj_linpred()] returns a `list` with the following elements:
 #'       + Element `pred` contains the actual predictions, i.e., the linear
@@ -155,8 +155,8 @@
 #'
 #'   If the prediction is done for more than one submodel, the output from above
 #'   is returned for each submodel, giving a named `list` with one element for
-#'   each submodel (the names of this `list` being the numbers of solution terms
-#'   of the submodels when counting the intercept, too).
+#'   each submodel (the names of this `list` being the numbers of predictor
+#'   terms of the submodels when counting the intercept, too).
 #'
 #' @examplesIf requireNamespace("rstanarm", quietly = TRUE)
 #' # Data:
@@ -173,7 +173,7 @@
 #' # Projection onto an arbitrary combination of predictor terms (with a small
 #' # value for `ndraws`, but only for the sake of speed in this example; this
 #' # is not recommended in general):
-#' prj <- project(fit, solution_terms = c("X1", "X3", "X5"), ndraws = 21,
+#' prj <- project(fit, predictor_terms = c("X1", "X3", "X5"), ndraws = 21,
 #'                seed = 9182)
 #'
 #' # Predictions (at the training points) from the submodel onto which the
@@ -200,7 +200,7 @@ proj_helper <- function(object, newdata, offsetnew, weightsnew, onesub_fun,
       }
       projs <- Filter(
         function(x) {
-          count_terms_chosen(x$solution_terms) %in% (filter_nterms + 1)
+          count_terms_chosen(x$predictor_terms) %in% (filter_nterms + 1)
         },
         object
       )
@@ -256,7 +256,7 @@ proj_helper <- function(object, newdata, offsetnew, weightsnew, onesub_fun,
   }
 
   names(projs) <- sapply(projs, function(proj) {
-    count_terms_chosen(proj$solution_terms)
+    count_terms_chosen(proj$predictor_terms)
   })
 
   preds <- lapply(projs, function(proj) {
@@ -1231,7 +1231,7 @@ summary.vsel <- function(
   stats_table_sub <- do.call(
     rbind,
     lapply(split(stats_table_sub, stats_table_sub$statistic), utils::head,
-           n = length(object$solution_terms) + 1)
+           n = length(object$predictor_ranking) + 1)
   )
   row.names(stats_table_sub) <- NULL
 
@@ -2183,7 +2183,7 @@ get_subparams.mmblogit <- function(x, ...) {
 #' # Projection onto an arbitrary combination of predictor terms (with a small
 #' # value for `ndraws`, but only for the sake of speed in this example; this
 #' # is not recommended in general):
-#' prj <- project(fit, solution_terms = c("X1", "X3", "X5"), ndraws = 21,
+#' prj <- project(fit, predictor_terms = c("X1", "X3", "X5"), ndraws = 21,
 #'                seed = 9182)
 #'
 #' # Applying the as.matrix() generic to the output of project() dispatches to
@@ -2280,7 +2280,7 @@ as.matrix.projection <- function(x, nm_scheme = NULL,
 #' # Projection onto an arbitrary combination of predictor terms (with a small
 #' # value for `nclusters`, but only for illustrative purposes; this is not
 #' # recommended in general):
-#' prj <- project(fit, solution_terms = c("X1", "X3", "X5"), nclusters = 5,
+#' prj <- project(fit, predictor_terms = c("X1", "X3", "X5"), nclusters = 5,
 #'                seed = 9182)
 #'
 #' # Applying the posterior::as_draws_matrix() generic to the output of
@@ -2523,7 +2523,7 @@ solution_terms.projection <- function(object, ...) {
 #' # Projection onto an arbitrary combination of predictor terms (with a small
 #' # value for `nclusters`, but only for the sake of speed in this example;
 #' # this is not recommended in general):
-#' prj <- project(fit, solution_terms = c("X1", "X3", "X5"), nclusters = 10,
+#' prj <- project(fit, predictor_terms = c("X1", "X3", "X5"), nclusters = 10,
 #'                seed = 9182)
 #' print(predictor_terms(prj)) # gives `c("X1", "X3", "X5")`
 #'
@@ -2535,7 +2535,7 @@ predictor_terms <- function(object, ...) {
 #' @rdname predictor_terms
 #' @export
 predictor_terms.projection <- function(object, ...) {
-  return(object[["solution_terms"]])
+  return(object[["predictor_terms"]])
 }
 
 #' Predictor ranking(s)
@@ -2591,8 +2591,8 @@ ranking.vsel <- function(object, nterms_max = NULL, ...) {
       "corresponding fold-wise predictor rankings cannot be extracted."
     )
   }
-  out <- list(fulldata = object[["solution_terms"]],
-              foldwise = object[["solution_terms_cv"]])
+  out <- list(fulldata = object[["predictor_ranking"]],
+              foldwise = object[["predictor_ranking_cv"]])
   if (!is.null(nterms_max)) {
     out[["fulldata"]] <- utils::head(out[["fulldata"]], nterms_max)
     if (!is.null(out[["foldwise"]])) {

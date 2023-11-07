@@ -168,7 +168,7 @@ test_that(paste(
   "`object` of class \"refmodel\" and passing arguments to project() works"
 ), {
   skip_if_not(run_prj)
-  tstsetups <- grep("\\.brnll\\..*\\.solterms_x\\.clust$", names(prjs),
+  tstsetups <- grep("\\.brnll\\..*\\.prd_trms_x\\.clust$", names(prjs),
                     value = TRUE)
   for (tstsetup in tstsetups) {
     args_prj_i <- args_prj[[tstsetup]]
@@ -187,7 +187,7 @@ test_that(paste(
   "project() works"
 ), {
   skip_if_not(run_prj)
-  tstsetups <- grep("\\.brnll\\..*\\.solterms_x\\.clust$", names(prjs),
+  tstsetups <- grep("\\.brnll\\..*\\.prd_trms_x\\.clust$", names(prjs),
                     value = TRUE)
   for (tstsetup in tstsetups) {
     args_prj_i <- args_prj[[tstsetup]]
@@ -255,29 +255,29 @@ test_that(paste(
   }
 })
 
-test_that("`object` not of class \"vsel\" and missing `solution_terms` fails", {
+test_that("`object` not of class `vsel` and missing `predictor_terms` fails", {
   expect_error(
     proj_linpred(1, .seed = seed2_tst),
     paste("^Please provide an `object` of class \"vsel\" or use argument",
-          "`solution_terms`\\.$")
+          "`predictor_terms`\\.$")
   )
   if (length(fits)) {
     expect_error(
       proj_linpred(fits[[1]], .seed = seed2_tst),
       paste("^Please provide an `object` of class \"vsel\" or use argument",
-            "`solution_terms`\\.$")
+            "`predictor_terms`\\.$")
     )
     expect_error(
       proj_linpred(refmods[[1]], .seed = seed2_tst),
       paste("^Please provide an `object` of class \"vsel\" or use argument",
-            "`solution_terms`\\.$")
+            "`predictor_terms`\\.$")
     )
   }
   if (run_prj) {
     expect_error(
       proj_linpred(c(prjs, list(dat)), .seed = seed2_tst),
       paste("Please provide an `object` of class \"vsel\" or use argument",
-            "`solution_terms`\\.")
+            "`predictor_terms`\\.")
     )
   }
 })
@@ -290,11 +290,11 @@ test_that("invalid `newdata` fails", {
     proj_linpred(prjs, newdata = dat[, 1], .seed = seed2_tst),
     "must be a data\\.frame or a matrix"
   )
-  stopifnot(length(solterms_x) > 1)
-  prj_crr <- prjs[[head(grep("\\.glm\\.gauss.*\\.solterms_x", names(prjs)), 1)]]
+  stopifnot(length(prd_trms_x) > 1)
+  prj_crr <- prjs[[head(grep("\\.glm\\.gauss.*\\.prd_trms_x", names(prjs)), 1)]]
   expect_error(
     proj_linpred(prj_crr,
-                 newdata = dat[, head(solterms_x, -1), drop = FALSE],
+                 newdata = dat[, head(prd_trms_x, -1), drop = FALSE],
                  weightsnew = prj_crr$refmodel$wobs,
                  offsetnew = prj_crr$refmodel$offset,
                  .seed = seed2_tst),
@@ -762,7 +762,7 @@ test_that("`regul` works", {
   skip_if_not(run_prj)
   regul_tst <- c(1e-6, 1e-1, 1e2)
   stopifnot(identical(regul_tst, sort(regul_tst)))
-  tstsetups <- grep("\\.glm\\..*\\.solterms_x\\.clust$", names(prjs),
+  tstsetups <- grep("\\.glm\\..*\\.prd_trms_x\\.clust$", names(prjs),
                     value = TRUE)
   tstsetups <- grep(fam_nms_aug_regex, tstsetups, value = TRUE, invert = TRUE)
   for (tstsetup in tstsetups) {
@@ -798,10 +798,10 @@ test_that("`regul` works", {
 
 test_that("`filter_nterms` works (for an `object` of class \"projection\")", {
   skip_if_not(run_prj)
-  tstsetups <- grep("\\.brnll\\..*\\.solterms_x\\.clust$", names(prjs),
+  tstsetups <- grep("\\.brnll\\..*\\.prd_trms_x\\.clust$", names(prjs),
                     value = TRUE)
   for (tstsetup in tstsetups) {
-    nterms_avail_crr <- length(args_prj[[tstsetup]]$solution_terms)
+    nterms_avail_crr <- length(args_prj[[tstsetup]]$predictor_terms)
     nterms_unavail_crr <- c(0L, nterms_avail_crr + 130L)
     stopifnot(!nterms_avail_crr %in% nterms_unavail_crr)
     for (filter_nterms_crr in nterms_unavail_crr) {
@@ -915,7 +915,7 @@ test_that(paste(
     }
     if (args_prj[[tstsetup]]$prj_nm == "augdat" &&
         args_prj[[tstsetup]]$fam_nm == "cumul" &&
-        !any(grepl("\\|", args_prj[[tstsetup]]$solution_terms))) {
+        !any(grepl("\\|", args_prj[[tstsetup]]$predictor_terms))) {
       warn_expected <- "non-integer #successes in a binomial glm!"
     } else {
       warn_expected <- NA
@@ -925,11 +925,11 @@ test_that(paste(
                     weightsnew = wobs_crr,
                     offsetnew = offs_crr,
                     .seed = seed2_tst,
-                    solution_terms = args_prj[[tstsetup]]$solution_terms,
+                    predictor_terms = args_prj[[tstsetup]]$predictor_terms,
                     nclusters = 1L,
                     seed = seed_tst)
     if (args_prj[[tstsetup]]$fam_nm == "categ" &&
-        any(grepl("\\|", args_prj[[tstsetup]]$solution_terms))) {
+        any(grepl("\\|", args_prj[[tstsetup]]$predictor_terms))) {
       pl_args <- c(pl_args, list(avoid.increase = TRUE))
       warn_expected <- warn_mclogit
     }
@@ -1160,7 +1160,7 @@ test_that(paste(
   "`object` of class \"refmodel\" and passing arguments to project() works"
 ), {
   skip_if_not(run_prj)
-  tstsetups <- grep("\\.brnll\\..*\\.solterms_x\\.clust$", names(prjs),
+  tstsetups <- grep("\\.brnll\\..*\\.prd_trms_x\\.clust$", names(prjs),
                     value = TRUE)
   for (tstsetup in tstsetups) {
     args_prj_i <- args_prj[[tstsetup]]
@@ -1179,7 +1179,7 @@ test_that(paste(
   "project() works"
 ), {
   skip_if_not(run_prj)
-  tstsetups <- grep("\\.brnll\\..*\\.solterms_x\\.clust$", names(prjs),
+  tstsetups <- grep("\\.brnll\\..*\\.prd_trms_x\\.clust$", names(prjs),
                     value = TRUE)
   for (tstsetup in tstsetups) {
     args_prj_i <- args_prj[[tstsetup]]
@@ -1247,29 +1247,29 @@ test_that(paste(
   }
 })
 
-test_that("`object` not of class \"vsel\" and missing `solution_terms` fails", {
+test_that("`object` not of class `vsel` and missing `predictor_terms` fails", {
   expect_error(
     proj_predict(1, .seed = seed2_tst),
     paste("^Please provide an `object` of class \"vsel\" or use argument",
-          "`solution_terms`\\.$")
+          "`predictor_terms`\\.$")
   )
   if (length(fits)) {
     expect_error(
       proj_predict(fits[[1]], .seed = seed2_tst),
       paste("^Please provide an `object` of class \"vsel\" or use argument",
-            "`solution_terms`\\.$")
+            "`predictor_terms`\\.$")
     )
     expect_error(
       proj_predict(refmods[[1]], .seed = seed2_tst),
       paste("^Please provide an `object` of class \"vsel\" or use argument",
-            "`solution_terms`\\.$")
+            "`predictor_terms`\\.$")
     )
   }
   if (run_prj) {
     expect_error(
       proj_predict(c(prjs, list(dat)), .seed = seed2_tst),
       paste("Please provide an `object` of class \"vsel\" or use argument",
-            "`solution_terms`\\.")
+            "`predictor_terms`\\.")
     )
   }
 })
@@ -1282,16 +1282,16 @@ test_that("invalid `newdata` fails", {
     proj_predict(prjs, newdata = dat[, 1], .seed = seed2_tst),
     "must be a data\\.frame or a matrix"
   )
-  stopifnot(length(solterms_x) > 1)
-  prj_crr <- prjs[[head(grep("\\.glm\\.gauss.*\\.solterms_x", names(prjs)), 1)]]
+  stopifnot(length(prd_trms_x) > 1)
+  prj_crr <- prjs[[head(grep("\\.glm\\.gauss.*\\.prd_trms_x", names(prjs)), 1)]]
   expect_error(
-    proj_predict(prjs[[head(grep("\\.glm\\.gauss.*\\.solterms_x", names(prjs)),
+    proj_predict(prjs[[head(grep("\\.glm\\.gauss.*\\.prd_trms_x", names(prjs)),
                             1)]],
-                 newdata = dat[, head(solterms_x, -1), drop = FALSE],
+                 newdata = dat[, head(prd_trms_x, -1), drop = FALSE],
                  weightsnew = prj_crr$refmodel$wobs,
                  offsetnew = prj_crr$refmodel$offset,
                  .seed = seed2_tst,
-                 solution_terms = solterms_x),
+                 predictor_terms = prd_trms_x),
     "^object '.*' not found$"
   )
 })
@@ -1566,10 +1566,10 @@ test_that("`offsetnew` works", {
 
 test_that("`filter_nterms` works (for an `object` of class \"projection\")", {
   skip_if_not(run_prj)
-  tstsetups <- grep("\\.brnll\\..*\\.solterms_x\\.clust$", names(prjs),
+  tstsetups <- grep("\\.brnll\\..*\\.prd_trms_x\\.clust$", names(prjs),
                     value = TRUE)
   for (tstsetup in tstsetups) {
-    nterms_avail_crr <- length(args_prj[[tstsetup]]$solution_terms)
+    nterms_avail_crr <- length(args_prj[[tstsetup]]$predictor_terms)
     nterms_unavail_crr <- c(0L, nterms_avail_crr + 130L)
     stopifnot(!nterms_avail_crr %in% nterms_unavail_crr)
     for (filter_nterms_crr in nterms_unavail_crr) {
@@ -1660,7 +1660,7 @@ test_that(paste(
     }
     if (args_prj[[tstsetup]]$prj_nm == "augdat" &&
         args_prj[[tstsetup]]$fam_nm == "cumul" &&
-        !any(grepl("\\|", args_prj[[tstsetup]]$solution_terms))) {
+        !any(grepl("\\|", args_prj[[tstsetup]]$predictor_terms))) {
       warn_expected <- "non-integer #successes in a binomial glm!"
     } else {
       warn_expected <- NA
@@ -1671,11 +1671,11 @@ test_that(paste(
                     offsetnew = offs_crr,
                     nresample_clusters = 1L,
                     .seed = seed2_tst,
-                    solution_terms = args_prj[[tstsetup]]$solution_terms,
+                    predictor_terms = args_prj[[tstsetup]]$predictor_terms,
                     nclusters = 1L,
                     seed = seed_tst)
     if (args_prj[[tstsetup]]$fam_nm == "categ" &&
-        any(grepl("\\|", args_prj[[tstsetup]]$solution_terms))) {
+        any(grepl("\\|", args_prj[[tstsetup]]$predictor_terms))) {
       pp_args <- c(pp_args, list(avoid.increase = TRUE))
       warn_expected <- warn_mclogit
     }
