@@ -922,12 +922,15 @@ fit_categ_mlvl <- function(formula, projpred_formula_no_random,
 check_conv <- function(fit) {
   is_conv <- unlist(lapply(fit, check_conv_s))
   if (any(!is_conv)) {
-    warning(sum(!is_conv), " out of ", length(is_conv), " submodel fits ",
-            "(there is one submodel fit per projected draw) probably have not ",
-            "converged (appropriately). It is recommended to inspect this in ",
-            "detail and (if necessary) to adjust lme4's tuning parameters via ",
-            "`...` or via a custom `divergence_minimizer` function. ",
-            "Formula (right-hand side): ", update(formula(fit[[1]]), NULL ~ .))
+    warning(
+      sum(!is_conv), " out of ", length(is_conv), " submodel fits (there is ",
+      "one submodel fit per projected draw) probably have not converged ",
+      "(appropriately). It is recommended to inspect this in detail and (if ",
+      "necessary) to adjust tuning parameters (e.g., for the lme4 package in ",
+      "case of a multilevel submodel) via `...` or via a custom ",
+      "`divergence_minimizer` function. Formula (right-hand side): ",
+      update(formula(fit[[1]]), NULL ~ .)
+    )
   }
   return(invisible(TRUE))
 }
