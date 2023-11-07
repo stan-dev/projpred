@@ -528,7 +528,8 @@ test_that(paste(
       info_str = tstsetup,
       stats_expected = stats_common,
       type_expected = type_tst,
-      solterms_expected = vss_datafit[[tstsetup]]$solution_terms
+      solterms_expected = vss_datafit[[tstsetup]]$solution_terms,
+      from_datafit = TRUE
     )
     if (run_snaps) {
       if (testthat_ed_max2) local_edition(3)
@@ -570,7 +571,8 @@ test_that(paste(
       type_expected = type_tst,
       cv_method_expected =
         args_cvvs_datafit[[tstsetup]]$cv_method %||% "LOO",
-      solterms_expected = cvvss_datafit[[tstsetup]]$solution_terms
+      solterms_expected = cvvss_datafit[[tstsetup]]$solution_terms,
+      from_datafit = TRUE
     )
     if (run_snaps) {
       if (testthat_ed_max2) local_edition(3)

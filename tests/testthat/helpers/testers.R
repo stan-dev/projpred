@@ -2469,9 +2469,9 @@ vsel_tester <- function(
 #   `cumulate` of summary.vsel() was set to `TRUE` or `FALSE`.
 # @param info_str A single character string giving information to be printed in
 #   case of failure.
-# @param ... Arguments passed to smmry_sel_tester(), apart from
-#   smmry_sel_tester()'s arguments `smmry_sel`, `nterms_max_expected`, and
-#   `info_str`.
+# @param ... Arguments passed to smmry_sub_tester() / smmry_sub_tester(), apart
+#   from smmry_sub_tester() / smmry_ref_tester()'s arguments `smmry_sub` /
+#   `smmry_ref`, `nterms_max_expected`, and `info_str`.
 #
 # @return `TRUE` (invisible).
 smmry_tester <- function(smmry, vsel_expected, nterms_max_expected = NULL,
@@ -2485,8 +2485,8 @@ smmry_tester <- function(smmry, vsel_expected, nterms_max_expected = NULL,
     c("formula", "family", "nobs_train", "type_test", "nobs_test", "method",
       "cv_method", "nloo", "K", "validate_search", "clust_used_search",
       "clust_used_eval", "nprjdraws_search", "nprjdraws_eval", "refit_prj",
-      "search_included", "nterms", "selection", "resp_oscale", "deltas",
-      "cumulate"),
+      "search_included", "nterms", "perf_sub", "perf_ref", "resp_oscale",
+      "deltas", "cumulate"),
     info = info_str
   )
 
@@ -2533,12 +2533,16 @@ smmry_tester <- function(smmry, vsel_expected, nterms_max_expected = NULL,
   } else {
     pr_rk_diag_expected <- rep(NA, nterms_ch)
   }
-  smmry_sel_tester(smmry$selection,
+  smmry_sub_tester(smmry$perf_sub,
                    summaries_ref = vsel_expected$summaries$ref,
                    nterms_max_expected = nterms_max_expected,
                    latent_expected = vsel_expected$refmodel$family$for_latent,
                    resp_oscale_expected = resp_oscale_expected,
                    pr_rk_diag_expected = pr_rk_diag_expected,
+                   info_str = info_str, ...)
+  smmry_ref_tester(smmry$perf_ref,
+                   latent_expected = vsel_expected$refmodel$family$for_latent,
+                   resp_oscale_expected = resp_oscale_expected,
                    info_str = info_str, ...)
   expect_identical(smmry$resp_oscale, resp_oscale_expected, info = info_str)
   expect_identical(smmry$deltas, FALSE, info = info_str)
@@ -2548,10 +2552,10 @@ smmry_tester <- function(smmry, vsel_expected, nterms_max_expected = NULL,
 }
 
 # A helper function for testing the structure of a `data.frame` as returned by
-# summary.vsel() in its output element `selection`.
+# summary.vsel() in its output element `perf_sub`.
 #
-# @param smmry_sel A `data.frame` as returned by summary.vsel() in its output
-#   element `selection`.
+# @param smmry_sub A `data.frame` as returned by summary.vsel() in its output
+#   element `perf_sub`.
 # @param summaries_ref The reference model's summaries, as stored in
 #   `<vsel_object>$summaries$ref`.
 # @param stats_expected A character vector of expected `stats` (see the
@@ -2567,19 +2571,19 @@ smmry_tester <- function(smmry, vsel_expected, nterms_max_expected = NULL,
 #   (not counting the intercept, even for the intercept-only model).
 # @param from_datafit A single logical value indicating whether an object of
 #   class `"datafit"` was used for creating the `"vsel"` object (from which
-#   `smmry_sel` was created) (`TRUE`) or not (`FALSE`).
+#   `smmry_sub` was created) (`TRUE`) or not (`FALSE`).
 # @param latent_expected A single logical value indicating whether the reference
 #   model is expected to be for latent projection (`TRUE`) or not (`FALSE`).
 # @param resp_oscale_expected A single logical value indicating whether argument
 #   `resp_oscale` of summary.vsel() was set to `TRUE` or `FALSE`.
 # @param pr_rk_diag_expected A numeric vector giving the expected values for
-#   column `cv_proportions_diag` of `smmry_sel` (except for the first one).
+#   column `cv_proportions_diag` of `smmry_sub` (except for the first one).
 # @param info_str A single character string giving information to be printed in
 #   case of failure.
 #
 # @return `TRUE` (invisible).
-smmry_sel_tester <- function(
-    smmry_sel,
+smmry_sub_tester <- function(
+    smmry_sub,
     summaries_ref,
     stats_expected = NULL,
     type_expected = NULL,
@@ -2606,71 +2610,48 @@ smmry_sel_tester <- function(
     solterms_expected <- head(solterms_expected, nterms_max_expected)
   }
 
-  expect_s3_class(smmry_sel, "data.frame")
+  expect_s3_class(smmry_sub, "data.frame")
 
   # Rows:
-  expect_identical(nrow(smmry_sel), nterms_max_expected + 1L,
+  expect_identical(nrow(smmry_sub), nterms_max_expected + 1L,
                    info = info_str)
 
   # Columns:
-  smmry_nms <- c("size", "solution_terms", "cv_proportions_diag")
-  ### Requires R >= 4.0.1:
-  # stats_mean_name <- paste0(
-  #   stats_expected,
-  #   paste0(".", tolower(cv_method_expected), recycle0 = TRUE)
-  # )
-  ###
-  ### Without relying on R >= 4.0.1:
-  if (length(cv_method_expected) == 0) {
-    stats_mean_name <- stats_expected
-  } else {
-    stopifnot(length(cv_method_expected) == 1)
-    stats_mean_name <- paste(stats_expected, tolower(cv_method_expected),
-                             sep = ".")
-  }
-  ###
-  if (length(stats_expected) == 1) {
-    smmry_nms <- c(smmry_nms, stats_mean_name, setdiff(type_expected, "mean"))
-  } else {
-    smmry_nms <- c(
-      smmry_nms,
-      sapply(seq_along(stats_expected), function(stat_idx) {
-        c(stats_mean_name[stat_idx],
-          paste(stats_expected[stat_idx], setdiff(type_expected, "mean"),
-                sep = "."))
-      })
-    )
-  }
-  expect_named(smmry_sel, smmry_nms, info = info_str)
+  smmry_nms <- c("size", "ranking_fulldata", "cv_proportions_diag")
+  stats_mean_name <- stats_expected
+  smmry_nms <- c(smmry_nms,
+                 sapply(seq_along(stats_expected), function(stat_idx) {
+                   c(stats_mean_name[stat_idx],
+                     paste(stats_expected[stat_idx],
+                           setdiff(type_expected, "mean"),
+                           sep = "."))
+                 }))
+  expect_named(smmry_sub, smmry_nms, info = info_str)
 
   # Columns in detail:
-  expect_identical(smmry_sel$size, seq_len(nrow(smmry_sel)) - 1,
+  expect_identical(smmry_sub$size, seq_len(nrow(smmry_sub)) - 1,
                    info = info_str)
-  expect_identical(smmry_sel$solution_terms,
-                   c(NA_character_, solterms_expected),
+  expect_identical(smmry_sub$ranking_fulldata,
+                   c("(Intercept)", solterms_expected),
                    info = info_str)
-  expect_identical(smmry_sel$cv_proportions_diag,
+  expect_identical(smmry_sub$cv_proportions_diag,
                    c(NA, pr_rk_diag_expected),
                    info = info_str)
   is_lat_kfold <-  latent_expected && !resp_oscale_expected &&
     identical(cv_method_expected, "kfold")
   if (is_lat_kfold) {
     for (stat_idx in seq_along(stats_expected)) {
-      expect_true(all(is.na(smmry_sel[, stats_mean_name[stat_idx]])),
+      expect_true(all(is.na(smmry_sub[, stats_mean_name[stat_idx]])),
                   info = info_str)
     }
   }
   if ("diff" %in% type_expected) {
-    if (length(stats_expected) == 1) {
-      diff_nm <- "diff"
-    } else {
-      diff_nm <- paste(stats_expected, "diff", sep = ".")
-    }
+    diff_nm <- paste(stats_expected, "diff", sep = ".")
     for (stat_idx in seq_along(stats_expected)) {
       if (!from_datafit && !is_lat_kfold) {
         expect_equal(
-          diff(smmry_sel[, stats_mean_name[stat_idx]]),
-          diff(smmry_sel[, diff_nm[stat_idx]]),
+          diff(smmry_sub[, stats_mean_name[stat_idx]]),
+          diff(smmry_sub[, diff_nm[stat_idx]]),
           info = info_str
         )
         if (stats_expected[stat_idx] == "elpd") {
@@ -2683,46 +2664,163 @@ smmry_sel_tester <- function(
         }
         if (!is.null(stat_ref)) {
           expect_equal(
-            smmry_sel[, stats_mean_name[stat_idx]] - stat_ref,
-            smmry_sel[, diff_nm[stat_idx]],
+            smmry_sub[, stats_mean_name[stat_idx]] - stat_ref,
+            smmry_sub[, diff_nm[stat_idx]],
             tolerance = 1e-12, info = info_str
           )
         }
       } else {
-        expect_true(all(is.na(smmry_sel[, diff_nm[stat_idx]])), info = info_str)
+        expect_true(all(is.na(smmry_sub[, diff_nm[stat_idx]])), info = info_str)
       }
     }
   }
   if ("lower" %in% type_expected && !is_lat_kfold) {
-    if (length(stats_expected) == 1) {
-      lower_nm <- "lower"
-    } else {
-      lower_nm <- paste(stats_expected, "lower", sep = ".")
-    }
+    lower_nm <- paste(stats_expected, "lower", sep = ".")
     for (stat_idx in seq_along(stats_expected)) {
       if (!stats_expected[stat_idx] %in% c("rmse", "auc")) {
         # RMSE and AUC are excluded here because of PR #347.
-        expect_true(all(smmry_sel[, stats_mean_name[stat_idx]] >=
-                          smmry_sel[, lower_nm[stat_idx]]),
+        expect_true(all(smmry_sub[, stats_mean_name[stat_idx]] >=
+                          smmry_sub[, lower_nm[stat_idx]]),
                     info = info_str)
       }
     }
   }
   if ("upper" %in% type_expected && !is_lat_kfold) {
-    if (length(stats_expected) == 1) {
-      upper_nm <- "upper"
-    } else {
-      upper_nm <- paste(stats_expected, "upper", sep = ".")
-    }
+    upper_nm <- paste(stats_expected, "upper", sep = ".")
     for (stat_idx in seq_along(stats_expected)) {
       if (!stats_expected[stat_idx] %in% c("rmse", "auc")) {
         # RMSE and AUC are excluded here because of PR #347.
-        expect_true(all(smmry_sel[, stats_mean_name[stat_idx]] <=
-                          smmry_sel[, upper_nm[stat_idx]]),
+        expect_true(all(smmry_sub[, stats_mean_name[stat_idx]] <=
+                          smmry_sub[, upper_nm[stat_idx]]),
                     info = info_str)
       }
     }
   }
+
+  return(invisible(TRUE))
+}
+
+# A helper function for testing the structure of a `data.frame` as returned by
+# summary.vsel() in its output element `perf_ref`.
+#
+# @param smmry_ref A vector as returned by summary.vsel() in its output element
+#   `perf_ref`.
+# @param stats_expected A character vector of expected `stats` (see the
+#   corresponding argument of summary.vsel()). Use `NULL` for the default.
+# @param type_expected A character vector of expected `type`s (see the
+#   corresponding argument of summary.vsel()). Use `NULL` for the default.
+# @param cv_method_expected Either `character()` for the no-CV case or a single
+#   character string giving the CV method (see argument `cv_method` of
+#   cv_varsel()).
+# @param from_datafit A single logical value indicating whether an object of
+#   class `"datafit"` was used for creating the `"vsel"` object (from which
+#   `smmry_sub` was created) (`TRUE`) or not (`FALSE`).
+# @param latent_expected A single logical value indicating whether the reference
+#   model is expected to be for latent projection (`TRUE`) or not (`FALSE`).
+# @param resp_oscale_expected A single logical value indicating whether argument
+#   `resp_oscale` of summary.vsel() was set to `TRUE` or `FALSE`.
+# @param info_str A single character string giving information to be printed in
+#   case of failure.
+#
+# @return `TRUE` (invisible).
+smmry_ref_tester <- function(
+    smmry_ref,
+    stats_expected = NULL,
+    type_expected = NULL,
+    cv_method_expected = character(),
+    from_datafit = FALSE,
+    latent_expected = FALSE,
+    resp_oscale_expected = TRUE,
+    info_str,
+    ...
+) {
+  if (is.null(stats_expected)) {
+    stats_expected <- "elpd"
+  }
+  if (is.null(type_expected)) {
+    type_expected <- c("mean", "se", "diff", "diff.se")
+  }
+  is_lat_kfold <-  latent_expected && !resp_oscale_expected &&
+    identical(cv_method_expected, "kfold")
+
+  if (is_lat_kfold) {
+    expect_true(is.vector(smmry_ref, "logical"), info = info_str)
+  } else {
+    expect_true(is.vector(smmry_ref, "numeric"), info = info_str)
+  }
+  smmry_nms <- character()
+  stats_mean_name <- stats_expected
+  smmry_nms <- c(smmry_nms,
+                 sapply(seq_along(stats_expected), function(stat_idx) {
+                   c(stats_mean_name[stat_idx],
+                     paste(stats_expected[stat_idx],
+                           setdiff(type_expected, "mean"),
+                           sep = "."))
+                 }))
+  expect_named(smmry_ref, smmry_nms, info = info_str)
+
+  # Elements in detail:
+  if (is_lat_kfold) {
+    for (stat_idx in seq_along(stats_expected)) {
+      expect_true(all(is.na(smmry_ref[stats_mean_name[stat_idx]])),
+                  info = info_str)
+    }
+  }
+  if ("lower" %in% type_expected && !is_lat_kfold && !from_datafit) {
+    lower_nm <- paste(stats_expected, "lower", sep = ".")
+    for (stat_idx in seq_along(stats_expected)) {
+      if (!stats_expected[stat_idx] %in% c("rmse", "auc")) {
+        # RMSE and AUC are excluded here because of PR #347.
+        expect_true(all(smmry_ref[stats_mean_name[stat_idx]] >=
+                          smmry_ref[lower_nm[stat_idx]]),
+                    info = info_str)
+      }
+    }
+  }
+  if ("upper" %in% type_expected && !is_lat_kfold && !from_datafit) {
+    upper_nm <- paste(stats_expected, "upper", sep = ".")
+    for (stat_idx in seq_along(stats_expected)) {
+      if (!stats_expected[stat_idx] %in% c("rmse", "auc")) {
+        # RMSE and AUC are excluded here because of PR #347.
+        expect_true(all(smmry_ref[stats_mean_name[stat_idx]] <=
+                          smmry_ref[upper_nm[stat_idx]]),
+                    info = info_str)
+      }
+    }
+  }
+
+  return(invisible(TRUE))
+}
+
+# A helper function for testing the structure of the return value of
+# performances().
+#
+# @param perf_vsel The return value of performances().
+# @param smmry_expected The `vselsummary` object which was used in the
+#   performances() call.
+# @param info_str A single character string giving information to be printed in
+#   case of failure and also for naming vdiffr::expect_doppelganger() output.
+#
+# @return `TRUE` (invisible).
+performances_tester <- function(
+    perf_vsel,
+    smmry_expected,
+    info_str
+) {
+  expect_type(perf_vsel, "list")
+  expect_named(perf_vsel, c("submodels", "reference_model"), info = info_str)
+
+  # submodels
+  smmry_expected_sub <- smmry_expected[["perf_sub"]]
+  smmry_expected_sub <- smmry_expected_sub[
+    , -grep("ranking_fulldata|cv_proportions_diag", names(smmry_expected_sub))
+  ]
+  expect_identical(perf_vsel[["submodels"]], smmry_expected_sub,
+                   info = info_str)
+
+  # reference_model
+  expect_identical(perf_vsel[["reference_model"]], smmry_expected[["perf_ref"]],
+                   info = info_str)
 
   return(invisible(TRUE))
 }
@@ -2763,8 +2861,10 @@ plot_vsel_tester <- function(
     } else if (!is.null(nterms_max_expected)) {
       rk_expected <- head(rk_expected, nterms_max_expected)
     }
-    attr_abbv_expected <- do.call(abbreviate, c(list(names.arg = rk_expected),
-                                                abbv_args_expected))
+    attr_abbv_expected <- do.call(
+      abbreviate,
+      c(list(names.arg = c("(Intercept)", rk_expected)), abbv_args_expected)
+    )
   } else {
     attr_abbv_expected <- NULL
   }

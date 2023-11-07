@@ -1614,12 +1614,9 @@ test_that("`validate_search` works", {
     }
     expect_true(
       mean(
-        summary(cvvs_valsearch)$selection[[
-          paste0("elpd.", tolower(args_cvvs_i$cv_method %||% "LOO"))
-        ]] >=
-          summary(cvvss[[tstsetup]])$selection[[
-            paste0("elpd.", tolower(args_cvvs_i$cv_method %||% "LOO"))
-          ]]) >= prop_sizes_as_expected,
+        summary(cvvs_valsearch)$perf_sub$elpd >=
+          summary(cvvss[[tstsetup]])$perf_sub$elpd
+      ) >= prop_sizes_as_expected,
       info = tstsetup
     )
     # Without a validated search, we expect overfitting in the suggested size:

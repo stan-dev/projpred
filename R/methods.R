@@ -609,7 +609,7 @@ proj_predict_aux <- function(proj, newdata, offset, weights,
 #' submodels along the full-data predictor ranking. Basic information about the
 #' (CV) variability in the ranking of the predictors is included as well (if
 #' available; inferred from [cv_proportions()]). For a tabular representation,
-#' see [summary.vsel()].
+#' see [summary.vsel()] and [performances()].
 #'
 #' @inheritParams summary.vsel
 #' @param x An object of class `vsel` (returned by [varsel()] or [cv_varsel()]).
@@ -729,6 +729,7 @@ plot.vsel <- function(
     text_angle = NULL,
     ...
 ) {
+  # Parse input:
   object <- x
   validate_vsel_object_stats(object, stats, resp_oscale = resp_oscale)
   baseline <- validate_baseline(object$refmodel, baseline, deltas)
@@ -741,27 +742,31 @@ plot.vsel <- function(
     stopifnot(isTRUE(ranking_repel %in% c("text", "label")))
   }
 
-  ## compute all the statistics and fetch only those that were asked
+  # Define `nfeat_baseline` and a slightly modified variant that can be used for
+  # .tabulate_stats()'s argument `nfeat_baseline`:
   nfeat_baseline <- get_nfeat_baseline(object, baseline, stats[1],
                                        resp_oscale = resp_oscale)
-  tab <- rbind(
-    .tabulate_stats(object, stats, alpha = alpha,
-                    nfeat_baseline = nfeat_baseline, resp_oscale = resp_oscale,
-                    ...),
-    .tabulate_stats(object, stats, alpha = alpha, resp_oscale = resp_oscale,
-                    ...)
-  )
-  stats_table <- subset(tab, tab$delta == deltas)
-  stats_ref <- subset(stats_table, stats_table$size == Inf)
-  stats_sub <- subset(stats_table, stats_table$size != Inf)
-  stats_bs <- subset(stats_table, stats_table$size == nfeat_baseline)
+  if (deltas) {
+    nfeat_baseline_for_tab <- nfeat_baseline
+  } else {
+    nfeat_baseline_for_tab <- NULL
+  }
 
+  # Compute the predictive performance statistics:
+  stats_table_all <- .tabulate_stats(object, stats, alpha = alpha,
+                                     nfeat_baseline = nfeat_baseline_for_tab,
+                                     resp_oscale = resp_oscale, ...)
+  stats_ref <- subset(stats_table_all, stats_table_all$size == Inf)
+  stats_sub <- subset(stats_table_all, stats_table_all$size != Inf)
+  stats_bs <- subset(stats_table_all, stats_table_all$size == nfeat_baseline)
 
+  # Catch unexpected output from .tabulate_stats():
   if (NROW(stats_sub) == 0) {
     stop(ifelse(length(stats) > 1, "Statistics ", "Statistic "),
          paste0(unique(stats), collapse = ", "), " not available.")
   }
 
+  # Define `nterms_max`:
   max_size <- max(stats_sub$size)
   if (max_size == 0) {
     stop("plot.vsel() cannot be used if there is just the intercept-only ",
@@ -770,7 +775,7 @@ plot.vsel <- function(
   if (is.null(nterms_max)) {
     nterms_max <- max_size
   } else {
-    # don't exceed the maximum submodel size
+    # Don't exceed the maximum submodel size:
     nterms_max <- min(nterms_max, max_size)
   }
   if (nterms_max < 1) {
@@ -780,6 +785,8 @@ plot.vsel <- function(
     stop("`nterms_max` must be a whole number.")
   }
   nterms_max <- as.integer(nterms_max)
+
+  # Define some "pretty" text strings for the plot:
   if (baseline == "ref") {
     baseline_pretty <- "reference model"
   } else {
@@ -798,12 +805,13 @@ plot.vsel <- function(
     }
   }
 
-  # make sure that breaks on the x-axis are integers
+  # The following block defines the x-axis breaks (in doing so, we ensure that
+  # these are integers):
   n_opts <- 4:6
   n_possible <- Filter(function(x) nterms_max %% x == 0, n_opts)
   n_alt <- n_opts[which.min(n_opts - (nterms_max %% n_opts))]
   nb <- ifelse(length(n_possible) > 0, min(n_possible), n_alt)
-  # Using as.integer() only to make it clear that this is an integer (just like
+  # Using as.integer() only to make it clear that `by` is an integer (just like
   # `breaks` and `minor_breaks`):
   by <- as.integer(ceiling(nterms_max / min(nterms_max, nb)))
   breaks <- seq(0L, by * min(nterms_max, nb), by)
@@ -852,7 +860,7 @@ plot.vsel <- function(
     }
     rk_dfr <- data.frame(
       size = c(0L, seq_along(rk[["fulldata"]])),
-      rk_fulldata = c("", rk[["fulldata"]]),
+      rk_fulldata = c("(Intercept)", rk[["fulldata"]]),
       cv_props_diag = c(NA, pr_rk)
     )
     rk_dfr[["cv_props_diag_num"]] <- rk_dfr[["cv_props_diag"]]
@@ -909,7 +917,7 @@ plot.vsel <- function(
     }
   }
 
-  # plot submodel results
+  # Define the data for the plot:
   data_gg <- subset(stats_sub, stats_sub$size <= nterms_max)
   if (!is.na(ranking_nterms_max) &&
       (!is.null(ranking_repel) ||
@@ -924,18 +932,18 @@ plot.vsel <- function(
     data_gg[["row_idx"]] <- NULL
     data_gg <- data_gg[, c(colnms_orig, cols_add), drop = FALSE]
   }
+
+  # Create the plot:
   pp <- ggplot(data = data_gg,
                mapping = aes(x = .data[["size"]], y = .data[["value"]],
                              ymin = .data[["lq"]], ymax = .data[["uq"]]))
   if (!all(is.na(stats_ref$se))) {
-    # add reference model results if they exist
-
+    # In this case, add the predictive performance of the reference model.
     pp <- pp +
       # The reference model's dashed red horizontal line:
       geom_hline(aes(yintercept = .data[["value"]]),
                  data = stats_ref,
                  color = "darkred", linetype = 2)
-
     if (!is.na(thres_elpd)) {
       # The thresholds used in extended suggest_size() heuristics:
       thres_tab_ref <- merge(thres_tab_basic,
@@ -949,14 +957,12 @@ plot.vsel <- function(
     }
   }
   if (baseline != "ref") {
-    # add baseline model results (if different from the reference model)
-
+    # In this case, add the predictive performance of the baseline model.
     pp <- pp +
       # The baseline model's dotted black horizontal line:
       geom_hline(aes(yintercept = .data[["value"]]),
                  data = stats_bs,
                  color = "black", linetype = 3)
-
     if (!is.na(thres_elpd)) {
       # The thresholds used in extended suggest_size() heuristics:
       thres_tab_bs <- merge(thres_tab_basic,
@@ -1052,7 +1058,9 @@ plot.vsel <- function(
 #' information about the (CV) variability in the ranking of the predictors (if
 #' available; inferred from [cv_proportions()]), and estimates for
 #' user-specified predictive performance statistics. For a graphical
-#' representation, see [plot.vsel()].
+#' representation, see [plot.vsel()]. For extracting the predictive performance
+#' results printed at the bottom of the output created by this [summary()]
+#' method, see [performances()].
 #'
 #' @param object An object of class `vsel` (returned by [varsel()] or
 #'   [cv_varsel()]).
@@ -1139,9 +1147,11 @@ plot.vsel <- function(
 #'   latent projection with `resp_oscale = TRUE` in combination with
 #'   `<refmodel>$family$cats` being `NULL`.
 #'
-#' @return An object of class `vselsummary`.
+#' @return An object of class `vselsummary`. The elements of this object are not
+#'   meant to be accessed directly but instead via helper functions
+#'   ([print.vselsummary()] and [performances.vselsummary()]).
 #'
-#' @seealso [print.vselsummary()]
+#' @seealso [print.vselsummary()], [performances.vselsummary()]
 #'
 #' @examplesIf requireNamespace("rstanarm", quietly = TRUE)
 #' # Data:
@@ -1193,55 +1203,6 @@ summary.vsel <- function(
   }
   class(out) <- "vselsummary"
 
-  # The full table of the performance statistics from `stats`:
-  if (deltas) {
-    nfeat_baseline <- get_nfeat_baseline(object, baseline, stats[1],
-                                         resp_oscale = resp_oscale)
-    tab <- .tabulate_stats(object, stats, alpha = alpha,
-                           nfeat_baseline = nfeat_baseline,
-                           resp_oscale = resp_oscale, ...)
-  } else {
-    tab <- .tabulate_stats(object, stats, alpha = alpha,
-                           resp_oscale = resp_oscale, ...)
-  }
-  stats_table <- subset(tab, tab$size != Inf)
-  stats_table <- do.call(rbind,
-                         lapply(split(stats_table, stats_table$statistic),
-                                utils::head,
-                                n = length(object$solution_terms) + 1))
-  row.names(stats_table) <- NULL
-
-  # Get the names of `stats_table` corresponding to all items from `type`, and
-  # set up their suffices in the table to be returned:
-  if (deltas) {
-    type <- setdiff(type, c("diff", "diff.se"))
-  }
-  qty <- unname(sapply(type, function(t) {
-    switch(t, mean = "value", upper = "uq", lower = "lq", se = "se",
-           diff = "diff", diff.se = "diff.se")
-  }))
-  if (!is.null(object$cv_method)) {
-    cv_suffix <- unname(switch(object$cv_method,
-                               LOO = ".loo", kfold = ".kfold"))
-  } else {
-    cv_suffix <- NULL
-  }
-  if (length(stats) > 1) {
-    suffix <- lapply(stats, function(s) {
-      unname(sapply(type, function(t) {
-        paste0(s,
-               switch(t, mean = cv_suffix, upper = ".upper", lower = ".lower",
-                      se = ".se", diff = ".diff", diff.se = ".diff.se"))
-      }))
-    })
-  } else {
-    suffix <- list(unname(sapply(type, function(t) {
-      switch(t, mean = paste0(stats, cv_suffix), upper = "upper",
-             lower = "lower", se = "se",
-             diff = "diff", diff.se = "diff.se")
-    })))
-  }
-
   # Predictor ranking(s) and associated ranking proportions from fold-wise
   # predictor rankings (if existing):
   rk <- ranking(object)
@@ -1251,30 +1212,99 @@ summary.vsel <- function(
     pr_rk <- rep(NA, length(rk[["fulldata"]]))
   }
 
-  # Construct the (almost) final output table by looping over all requested
-  # statistics, reshaping the corresponding data in `stats_table`, and selecting
-  # only the requested `type`s:
-  arr <- data.frame(size = unique(stats_table$size),
-                    solution_terms = c(NA_character_, rk[["fulldata"]]),
-                    cv_proportions_diag = c(NA, pr_rk))
-  for (i in seq_along(stats)) {
-    temp <- subset(stats_table, stats_table$statistic == stats[i], qty)
-    newnames <- suffix[[i]]
-    colnames(temp) <- newnames
-    arr <- cbind(arr, temp)
+  # The full table of the performance statistics from `stats`:
+  if (deltas) {
+    nfeat_baseline_for_tab <- get_nfeat_baseline(object, baseline, stats[1],
+                                                 resp_oscale = resp_oscale)
+  } else {
+    nfeat_baseline_for_tab <- NULL
   }
-  row.names(arr) <- NULL
+  stats_table_all <- .tabulate_stats(object, stats, alpha = alpha,
+                                     nfeat_baseline = nfeat_baseline_for_tab,
+                                     resp_oscale = resp_oscale, ...)
 
-  # Output (and also cut `arr` at `nterms_max` (if provided)):
+  # Extract the reference model performance results from `stats_table_all`:
+  stats_table_ref <- subset(stats_table_all, stats_table_all$size == Inf)
+
+  # Extract the submodel performance results from `stats_table_all`:
+  stats_table_sub <- subset(stats_table_all, stats_table_all$size != Inf)
+  stats_table_sub <- do.call(
+    rbind,
+    lapply(split(stats_table_sub, stats_table_sub$statistic), utils::head,
+           n = length(object$solution_terms) + 1)
+  )
+  row.names(stats_table_sub) <- NULL
+
+  # Initialize the output table for the reference model performance:
+  perf_ref <- as.data.frame(matrix(nrow = 1, ncol = 0))
+
+  # Initialize the output table for the submodel performance:
+  perf_sub <- data.frame(size = unique(stats_table_sub$size),
+                         ranking_fulldata = c("(Intercept)", rk[["fulldata"]]),
+                         cv_proportions_diag = c(NA, pr_rk))
+
+  # For renaming columns of the two output tables (one for the reference model
+  # performance and for the submodel performance):
+  colnms_ref <- mk_colnms_smmry(type = type, stats = stats, deltas = NULL)
+  colnms_sub <- mk_colnms_smmry(type = type, stats = stats, deltas = deltas)
+
+  # Fill the output table for the reference model performance (essentially, we
+  # reshape `stats_table_ref`, thereby selecting only the requested `type`s and
+  # renaming the output columns):
+  for (i in seq_along(stats)) {
+    perf_ref_add <- subset(stats_table_ref,
+                           stats_table_ref$statistic == stats[i],
+                           colnms_ref[["nms_old"]])
+    colnames(perf_ref_add) <- colnms_ref[["nms_new"]][[i]]
+    perf_ref <- cbind(perf_ref, perf_ref_add)
+  }
+  row.names(perf_ref) <- NULL
+
+  # Fill the output table for the submodel performance (essentially, we reshape
+  # `stats_table_sub`, thereby selecting only the requested `type`s and renaming
+  # the output columns):
+  for (i in seq_along(stats)) {
+    perf_sub_add <- subset(stats_table_sub,
+                           stats_table_sub$statistic == stats[i],
+                           colnms_sub[["nms_old"]])
+    colnames(perf_sub_add) <- colnms_sub[["nms_new"]][[i]]
+    perf_sub <- cbind(perf_sub, perf_sub_add)
+  }
+  row.names(perf_sub) <- NULL
+
+  # Output (and also cut `perf_sub` at `nterms_max` (if provided)):
   if (is.null(nterms_max)) {
-    nterms_max <- max(stats_table$size)
+    nterms_max <- max(perf_sub$size)
   }
   out$nterms <- nterms_max
-  out$selection <- subset(arr, arr$size <= nterms_max)
+  out$perf_sub <- subset(perf_sub, perf_sub$size <= nterms_max)
+  stopifnot(nrow(perf_ref) == 1)
+  out$perf_ref <- as.matrix(perf_ref)[1, ]
   out$resp_oscale <- resp_oscale
   out$deltas <- deltas
   out$cumulate <- cumulate
   return(out)
+}
+
+# Helper function for renaming columns of the two main output tables of
+# `vselsummary` objects (these two main output tables are one table for the
+# reference model performance and one table for the submodel performance):
+mk_colnms_smmry <- function(type, stats, deltas) {
+  # Pre-process `type`:
+  if (is.null(deltas) || deltas) {
+    type <- setdiff(type, c("diff", "diff.se"))
+  }
+  type_dot <- paste0(".", type)
+  type_dot[type_dot == ".mean"] <- ""
+  # The column names of `stats_table_all`, but only those corresponding to the
+  # requested `type`s:
+  nms_old <- type
+  nms_old[nms_old == "mean"] <- "value"
+  nms_old[nms_old == "upper"] <- "uq"
+  nms_old[nms_old == "lower"] <- "lq"
+  # The clean column names that should be used in the output table:
+  nms_new <- lapply(stats, paste0, type_dot)
+  return(nlist(nms_old, nms_new))
 }
 
 #' Print summary of a [varsel()] or [cv_varsel()] run
@@ -1283,12 +1313,18 @@ summary.vsel <- function(
 #' It displays a summary of the results from a [varsel()] or [cv_varsel()] run.
 #'
 #' @param x An object of class `vselsummary`.
-#' @param ... Arguments passed to [print.data.frame()].
+#' @param ... Arguments passed to [print.data.frame()] (for the table containing
+#'   the submodel performance evaluation results) and [print.default()] (for the
+#'   vector containing the reference model performance evaluation results).
 #'
-#' @details In the table printed at the bottom, column `solution_terms` contains
-#'   the full-data predictor ranking and column `cv_proportions_diag` contains
-#'   the main diagonal of the matrix returned by [cv_proportions()] (with
-#'   `cumulate` as set in the [summary.vsel()] call that created `x`).
+#' @details In the submodel predictive performance table printed at (or towards)
+#'   the bottom, column `ranking_fulldata` contains the full-data predictor
+#'   ranking and column `cv_proportions_diag` contains the main diagonal of the
+#'   matrix returned by [cv_proportions()] (with `cumulate` as set in the
+#'   [summary.vsel()] call that created `x`). To retrieve the fold-wise
+#'   predictor rankings, use the [ranking()] function, possibly followed by
+#'   [cv_proportions()] for computing the ranking proportions (which can be
+#'   visualized by [plot.cv_proportions()]).
 #'
 #' @return The output of [summary.vsel()] (invisible).
 #'
@@ -1363,20 +1399,14 @@ print.vselsummary <- function(x, ...) {
   } else {
     scale_string <- ""
   }
-  cat("Performance evaluation summary", scale_string, " with `deltas = ",
-      x$deltas, "` and `cumulate = ", x$cumulate, "`:\n", sep = "")
-  print(x$selection, row.names = FALSE, ...)
-  if (isTRUE(x$validate_search)) {
-    message(
-      "Column `solution_terms` contains the full-data predictor ranking. To ",
-      "retrieve the fold-wise predictor rankings, use the ranking() function, ",
-      "possibly followed by cv_proportions() for computing the ranking ",
-      "proportions (which can be visualized by plot.cv_proportions()). The ",
-      "main diagonal of the matrix returned by cv_proportions() (with ",
-      "`cumulate = ", x$cumulate, "`) is contained in column ",
-      "`cv_proportions_diag`."
-    )
-  }
+  cat("Submodel performance evaluation summary", scale_string, " with ",
+      "`deltas = ", x$deltas, "` and `cumulate = ", x$cumulate, "`:\n",
+      sep = "")
+  print(x$perf_sub, row.names = FALSE, ...)
+  cat("\n")
+  cat("Reference model performance evaluation summary", scale_string, " with ",
+      "`deltas = ", x$deltas, "`:\n", sep = "")
+  print(x$perf_ref, ...)
   return(invisible(x))
 }
 
@@ -1395,11 +1425,10 @@ print.vselsummary <- function(x, ...) {
 #' @export
 print.vsel <- function(x, ...) {
   dot_args <- list(...)
-  stats <- do.call(summary.vsel, c(list(object = x),
-                                   dot_args[names(dot_args) != "digits"]))
-  do.call(print, c(list(x = stats),
-                   dot_args[names(dot_args) == "digits"]))
-  return(invisible(stats))
+  smmry <- do.call(summary,
+                   c(list(object = x), dot_args[names(dot_args) != "digits"]))
+  do.call(print, c(list(x = smmry), dot_args[names(dot_args) == "digits"]))
+  return(invisible(smmry))
 }
 
 #' Suggest submodel size
@@ -1533,7 +1562,7 @@ suggest_size.vsel <- function(
                         type = c("mean", "upper", "lower"),
                         deltas = TRUE,
                         ...)
-  stats <- stats$selection
+  stats <- stats$perf_sub
 
   if (is_util(stat)) {
     sgn <- 1
@@ -1545,17 +1574,9 @@ suggest_size.vsel <- function(
       type <- "upper"
     }
   }
-  if (!is.null(object$cv_method)) {
-    suffix <- paste0(".", tolower(object$cv_method))
-  } else {
-    suffix <- ""
-  }
-  bound <- type
+  bound <- paste0(stat, ".", type)
 
-  util_null <- sgn * unlist(unname(subset(
-    stats, stats$size == 0,
-    paste0(stat, suffix)
-  )))
+  util_null <- sgn * unlist(unname(subset(stats, stats$size == 0, stat)))
   util_cutoff <- pct * util_null
   if (is.na(thres_elpd)) {
     thres_elpd <- Inf
@@ -1563,8 +1584,8 @@ suggest_size.vsel <- function(
   nobs_test <- object$nobs_test
   res <- stats[
     (sgn * stats[, bound] >= util_cutoff) |
-      (stat == "elpd" & stats[, paste0(stat, suffix)] > thres_elpd) |
-      (stat == "mlpd" & stats[, paste0(stat, suffix)] > thres_elpd / nobs_test),
+      (stat == "elpd" & stats[, stat] > thres_elpd) |
+      (stat == "mlpd" & stats[, stat] > thres_elpd / nobs_test),
     "size", drop = FALSE
   ]
 
@@ -1591,6 +1612,71 @@ suggest_size.vsel <- function(
   }
 
   return(suggested_size)
+}
+
+#' Predictive performance results
+#'
+#' Retrieves the predictive performance summaries after running [varsel()] or
+#' [cv_varsel()]. These summaries are computed by [summary.vsel()], so the main
+#' method of [performances()] is [performances.vselsummary()] (objects of class
+#' `vselsummary` are returned by [summary.vsel()]). As a shortcut method,
+#' [performances.vsel()] is provided as well (objects of class `vsel` are
+#' returned by [varsel()] and [cv_varsel()]). For a graphical representation,
+#' see [plot.vsel()].
+#'
+#' @param object The object from which to retrieve the predictive performance
+#'   results. Possible classes may be inferred from the names of the
+#'   corresponding methods (see also the description).
+#' @param ... For [performances.vsel()]: arguments passed to [summary.vsel()].
+#'   For [performances.vselsummary()]: currently ignored.
+#'
+#' @return An object of class `performances` which is a `list` with the
+#'   following elements:
+#'   * `submodels`: The predictive performance results for the submodels, as a
+#'     `data.frame`.
+#'   * `reference_model`: The predictive performance results for the reference
+#'     model, as a named vector.
+#'
+#' @examplesIf requireNamespace("rstanarm", quietly = TRUE)
+#' # Data:
+#' dat_gauss <- data.frame(y = df_gaussian$y, df_gaussian$x)
+#'
+#' # The "stanreg" fit which will be used as the reference model (with small
+#' # values for `chains` and `iter`, but only for technical reasons in this
+#' # example; this is not recommended in general):
+#' fit <- rstanarm::stan_glm(
+#'   y ~ X1 + X2 + X3 + X4 + X5, family = gaussian(), data = dat_gauss,
+#'   QR = TRUE, chains = 2, iter = 500, refresh = 0, seed = 9876
+#' )
+#'
+#' # Run varsel() (here without cross-validation, with L1 search, and with small
+#' # values for `nterms_max` and `nclusters_pred`, but only for the sake of
+#' # speed in this example; this is not recommended in general):
+#' vs <- varsel(fit, method = "L1", nterms_max = 3, nclusters_pred = 10,
+#'              seed = 5555)
+#' print(performances(vs))
+#'
+#' @export
+performances <- function(object, ...) {
+  UseMethod("performances")
+}
+
+#' @rdname performances
+#' @export
+performances.vselsummary <- function(object, ...) {
+  perf_sub <- object[["perf_sub"]]
+  perf_cols <- setdiff(names(perf_sub),
+                       c("ranking_fulldata", "cv_proportions_diag"))
+  perf_sub <- perf_sub[, perf_cols, drop = FALSE]
+  return(structure(list(submodels = perf_sub,
+                        reference_model = object[["perf_ref"]]),
+                   class = "performances"))
+}
+
+#' @rdname performances
+#' @export
+performances.vsel <- function(object, ...) {
+  return(performances(summary(object, ...)))
 }
 
 # Make the parameter name(s) for the intercept(s) adhere to the naming scheme

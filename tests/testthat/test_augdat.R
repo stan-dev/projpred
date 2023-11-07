@@ -365,16 +365,16 @@ test_that(paste(
     smmry_vs_trad <- smmrys_vs[[tstsetup_trad]]
 
     expect_equal(
-      smmry_vs[setdiff(names(smmry_vs), c("family", "selection"))],
-      smmry_vs_trad[setdiff(names(smmry_vs_trad), c("family", "selection"))],
+      smmry_vs[setdiff(names(smmry_vs), c("family", "perf_sub"))],
+      smmry_vs_trad[setdiff(names(smmry_vs_trad), c("family", "perf_sub"))],
       info = tstsetup
     )
     expect_identical(
-      smmry_vs$selection[, c("size", "solution_terms")],
-      smmry_vs_trad$selection[, c("size", "solution_terms")],
+      smmry_vs$perf_sub[, c("size", "ranking_fulldata")],
+      smmry_vs_trad$perf_sub[, c("size", "ranking_fulldata")],
       info = tstsetup
     )
-    expect_equal(smmry_vs$selection, smmry_vs_trad$selection, tolerance = 1e-6,
+    expect_equal(smmry_vs$perf_sub, smmry_vs_trad$perf_sub, tolerance = 1e-6,
                  info = tstsetup)
   }
 })
@@ -399,23 +399,29 @@ test_that(paste(
     smmry_vs_trad <- smmrys_vs[[tstsetup_trad]]
 
     expect_equal(
-      smmry_vs[setdiff(names(smmry_vs), c("family", "selection"))],
+      smmry_vs[setdiff(names(smmry_vs), c("family", "perf_sub", "perf_ref"))],
       smmry_vs_trad[setdiff(names(smmry_vs_trad),
-                            c("family", "selection"))],
+                            c("family", "perf_sub", "perf_ref"))],
       info = tstsetup
     )
     expect_identical(
-      smmry_vs$selection[, c("size", "solution_terms")],
-      smmry_vs_trad$selection[, c("size", "solution_terms")],
+      smmry_vs$perf_sub[, c("size", "ranking_fulldata", "cv_proportions_diag")],
+      smmry_vs_trad$perf_sub[
+        , c("size", "ranking_fulldata", "cv_proportions_diag")
+      ],
       info = tstsetup
     )
     # Exclude statistics which are not supported for the augmented-data
     # projection:
-    smmry_vs_trad$selection <- smmry_vs_trad$selection[
-      , -grep("mse|auc", names(smmry_vs_trad$selection)), drop = FALSE
+    smmry_vs_trad$perf_sub <- smmry_vs_trad$perf_sub[
+      , -grep("mse|auc", names(smmry_vs_trad$perf_sub)), drop = FALSE
     ]
-    expect_equal(smmry_vs$selection, smmry_vs_trad$selection,
+    smmry_vs_trad$perf_ref <- smmry_vs_trad$perf_ref[
+      -grep("mse|auc", names(smmry_vs_trad$perf_ref))
+    ]
+    expect_equal(smmry_vs$perf_sub, smmry_vs_trad$perf_sub,
                  tolerance = 1e-6, info = tstsetup)
+    expect_equal(smmry_vs$perf_ref, smmry_vs_trad$perf_ref, info = tstsetup)
   }
 })
 
@@ -493,14 +499,18 @@ test_that(paste(
     smmry_cvvs_trad <- smmrys_cvvs[[tstsetup_trad]]
 
     expect_equal(
-      smmry_cvvs[setdiff(names(smmry_cvvs), c("family", "selection"))],
+      smmry_cvvs[setdiff(names(smmry_cvvs), c("family", "perf_sub"))],
       smmry_cvvs_trad[setdiff(names(smmry_cvvs_trad),
-                              c("family", "selection"))],
+                              c("family", "perf_sub"))],
       info = tstsetup
     )
     expect_identical(
-      smmry_cvvs$selection[, c("size", "solution_terms")],
-      smmry_cvvs_trad$selection[, c("size", "solution_terms")],
+      smmry_cvvs$perf_sub[
+        , c("size", "ranking_fulldata", "cv_proportions_diag")
+      ],
+      smmry_cvvs_trad$perf_sub[
+        , c("size", "ranking_fulldata", "cv_proportions_diag")
+      ],
       info = tstsetup
     )
     is_kfold <- identical(
@@ -518,27 +528,23 @@ test_that(paste(
       # ELPD:
       stopifnot(is.null(args_smmry_cvvs[[tstsetup]]$stats))
 
-      smmry_pd <- smmry_cvvs$selection
-      smmry_pd[[grep("elpd", names(smmry_pd), value = TRUE)]] <- exp(
-        smmry_pd[[grep("elpd", names(smmry_pd), value = TRUE)]]
-      )
-      smmry_pd$lower <- exp(smmry_pd$lower)
-      smmry_pd$upper <- exp(smmry_pd$upper)
+      smmry_pd <- smmry_cvvs$perf_sub
+      smmry_pd$elpd <- exp(smmry_pd$elpd)
+      smmry_pd$elpd.lower <- exp(smmry_pd$elpd.lower)
+      smmry_pd$elpd.upper <- exp(smmry_pd$elpd.upper)
 
-      smmry_pd_trad <- smmry_cvvs_trad$selection
-      smmry_pd_trad[[grep("elpd", names(smmry_pd_trad), value = TRUE)]] <- exp(
-        smmry_pd_trad[[grep("elpd", names(smmry_pd_trad), value = TRUE)]]
-      )
-      smmry_pd_trad$lower <- exp(smmry_pd_trad$lower)
-      smmry_pd_trad$upper <- exp(smmry_pd_trad$upper)
+      smmry_pd_trad <- smmry_cvvs_trad$perf_sub
+      smmry_pd_trad$elpd <- exp(smmry_pd_trad$elpd)
+      smmry_pd_trad$elpd.lower <- exp(smmry_pd_trad$elpd.lower)
+      smmry_pd_trad$elpd.upper <- exp(smmry_pd_trad$elpd.upper)
 
-      expect_equal(smmry_pd[, setdiff(names(smmry_pd), "se")],
-                   smmry_pd_trad[, setdiff(names(smmry_pd_trad), "se")],
+      expect_equal(smmry_pd[, setdiff(names(smmry_pd), "elpd.se")],
+                   smmry_pd_trad[, setdiff(names(smmry_pd_trad), "elpd.se")],
                    tolerance = tol_smmry, info = tstsetup)
-      expect_equal(smmry_pd$se, smmry_pd_trad$se, tolerance = 1e-3,
+      expect_equal(smmry_pd$elpd.se, smmry_pd_trad$elpd.se, tolerance = 1e-3,
                    info = tstsetup)
     }
-    tryCatch(expect_equal(smmry_cvvs$selection, smmry_cvvs_trad$selection,
+    tryCatch(expect_equal(smmry_cvvs$perf_sub, smmry_cvvs_trad$perf_sub,
                           tolerance = tol_smmry, info = tstsetup),
              error = compare_exp)
   }
@@ -564,20 +570,28 @@ test_that(paste(
     smmry_cvvs_trad <- smmrys_cvvs[[tstsetup_trad]]
 
     expect_equal(
-      smmry_cvvs[setdiff(names(smmry_cvvs), c("family", "selection"))],
+      smmry_cvvs[setdiff(names(smmry_cvvs),
+                         c("family", "perf_sub", "perf_ref"))],
       smmry_cvvs_trad[setdiff(names(smmry_cvvs_trad),
-                              c("family", "selection"))],
+                              c("family", "perf_sub", "perf_ref"))],
       info = tstsetup
     )
     expect_identical(
-      smmry_cvvs$selection[, c("size", "solution_terms")],
-      smmry_cvvs_trad$selection[, c("size", "solution_terms")],
+      smmry_cvvs$perf_sub[
+        , c("size", "ranking_fulldata", "cv_proportions_diag")
+      ],
+      smmry_cvvs_trad$perf_sub[
+        , c("size", "ranking_fulldata", "cv_proportions_diag")
+      ],
       info = tstsetup
     )
     # Exclude statistics which are not supported for the augmented-data
     # projection:
-    smmry_cvvs_trad$selection <- smmry_cvvs_trad$selection[
-      , -grep("mse\\.|auc\\.", names(smmry_cvvs_trad$selection)), drop = FALSE
+    smmry_cvvs_trad$perf_sub <- smmry_cvvs_trad$perf_sub[
+      , -grep("mse|auc", names(smmry_cvvs_trad$perf_sub)), drop = FALSE
+    ]
+    smmry_cvvs_trad$perf_ref <- smmry_cvvs_trad$perf_ref[
+      -grep("mse|auc", names(smmry_cvvs_trad$perf_ref))
     ]
     is_kfold <- identical(
       args_cvvs[[args_smmry_cvvs[[tstsetup]]$tstsetup_vsel]]$cv_method,
@@ -591,7 +605,7 @@ test_that(paste(
     compare_exp <- function(e) {
       stopifnot(is_kfold)
 
-      smmry_pd <- smmry_cvvs$selection
+      smmry_pd <- smmry_cvvs$perf_sub
       se_cols <- grep("lpd\\.se$", names(smmry_pd), value = TRUE)
       elpd_cols <- setdiff(grep("elpd", names(smmry_pd), value = TRUE),
                            se_cols)
@@ -600,25 +614,31 @@ test_that(paste(
                            se_cols)
       smmry_pd[mlpd_cols] <- exp(smmry_pd[mlpd_cols])
 
-      smmry_pd_trad <- smmry_cvvs_trad$selection
+      smmry_pd_trad <- smmry_cvvs_trad$perf_sub
       se_cols_trad <- grep("lpd\\.se$", names(smmry_pd_trad), value = TRUE)
-      elpd_cols_trad <- setdiff(grep("elpd", names(smmry_pd_trad), value = TRUE),
-                                se_cols_trad)
+      elpd_cols_trad <- setdiff(
+        grep("elpd", names(smmry_pd_trad), value = TRUE),
+        se_cols_trad
+      )
       smmry_pd_trad[elpd_cols_trad] <- exp(smmry_pd_trad[elpd_cols_trad])
-      mlpd_cols_trad <- setdiff(grep("mlpd", names(smmry_pd_trad), value = TRUE),
-                                se_cols_trad)
+      mlpd_cols_trad <- setdiff(
+        grep("mlpd", names(smmry_pd_trad), value = TRUE),
+        se_cols_trad
+      )
       smmry_pd_trad[mlpd_cols_trad] <- exp(smmry_pd_trad[mlpd_cols_trad])
 
-      expect_equal(smmry_pd[, setdiff(names(smmry_pd), se_cols)],
-                   smmry_pd_trad[, setdiff(names(smmry_pd_trad), se_cols_trad)],
+      expect_equal(smmry_pd[setdiff(names(smmry_pd), se_cols)],
+                   smmry_pd_trad[setdiff(names(smmry_pd_trad), se_cols_trad)],
                    tolerance = tol_smmry, info = tstsetup)
-      expect_equal(smmry_pd[, se_cols],
-                   smmry_pd_trad[, se_cols_trad],
+      expect_equal(smmry_pd[se_cols],
+                   smmry_pd_trad[se_cols_trad],
                    tolerance = 1e-3, info = tstsetup)
     }
-    tryCatch(expect_equal(smmry_cvvs$selection, smmry_cvvs_trad$selection,
+    tryCatch(expect_equal(smmry_cvvs$perf_sub, smmry_cvvs_trad$perf_sub,
                           tolerance = tol_smmry, info = tstsetup),
              error = compare_exp)
+    expect_equal(smmry_cvvs$perf_ref, smmry_cvvs_trad$perf_ref,
+                 tolerance = tol_smmry, info = tstsetup)
   }
 })
 
