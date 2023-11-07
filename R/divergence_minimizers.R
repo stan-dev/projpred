@@ -918,42 +918,9 @@ fit_categ_mlvl <- function(formula, projpred_formula_no_random,
 
 # Convergence checker -----------------------------------------------------
 
+# For checking the convergence of a whole `outdmin` object:
 check_conv <- function(fit) {
-  is_conv <- unlist(lapply(fit, function(fit_s) {
-    if (inherits(fit_s, "gam")) {
-      # TODO (GAMs): There is also `fit_s$mgcv.conv` (see `?mgcv::gamObject`).
-      # Do we need to take this into account?
-      return(fit_s$converged)
-    } else if (inherits(fit_s, "gamm4")) {
-      # TODO (GAMMs): Needs to be implemented. Return `TRUE` for now.
-      return(TRUE)
-    } else if (inherits(fit_s, c("lmerMod", "glmerMod"))) {
-      # The following was inferred from the source code of lme4::checkConv() and
-      # lme4::.prt.warn() (see also `?lme4::mkMerMod`).
-      return(fit_s@optinfo$conv$opt == 0 && (
-        # Since lme4::.prt.warn() does not refer to `optinfo$conv$lme4$code`,
-        # that element might not always exist:
-        (!is.null(fit_s@optinfo$conv$lme4$code) &&
-           all(fit_s@optinfo$conv$lme4$code == 0)) ||
-          is.null(fit_s@optinfo$conv$lme4$code)
-      ) && length(unlist(fit_s@optinfo$conv$lme4$messages)) == 0 &&
-        length(fit_s@optinfo$warnings) == 0)
-    } else if (inherits(fit_s, "glm")) {
-      return(fit_s$converged)
-    } else if (inherits(fit_s, "lm")) {
-      # Note: There doesn't seem to be a better way to check for convergence
-      # other than checking `NA` coefficients (see below).
-      return(all(!is.na(coef(fit_s))))
-    } else if (inherits(fit_s, "subfit")) {
-      # Note: There doesn't seem to be any way to check for convergence, so
-      # return `TRUE` for now.
-      # TODO (GLMs with ridge regularization): Add a logical indicating
-      # convergence to objects of class `subfit` (i.e., from glm_ridge())?
-      return(TRUE)
-    } else {
-      stop("Unrecognized submodel fit. Please notify the package maintainer.")
-    }
-  }))
+  is_conv <- unlist(lapply(fit, check_conv_s))
   if (any(!is_conv)) {
     warning(sum(!is_conv), " out of ", length(is_conv), " submodel fits ",
             "(there is one submodel fit per projected draw) probably have not ",
@@ -963,6 +930,44 @@ check_conv <- function(fit) {
             "Formula (right-hand side): ", update(formula(fit[[1]]), NULL ~ .))
   }
   return(invisible(TRUE))
+}
+
+# Helper function for checking the convergence of a single submodel fit (not of
+# a whole `outdmin` object):
+check_conv_s <- function(fit_s) {
+  if (inherits(fit_s, "gam")) {
+    # TODO (GAMs): There is also `fit_s$mgcv.conv` (see `?mgcv::gamObject`).
+    # Do we need to take this into account?
+    return(fit_s$converged)
+  } else if (inherits(fit_s, "gamm4")) {
+    # TODO (GAMMs): Needs to be implemented. Return `TRUE` for now.
+    return(TRUE)
+  } else if (inherits(fit_s, c("lmerMod", "glmerMod"))) {
+    # The following was inferred from the source code of lme4::checkConv() and
+    # lme4::.prt.warn() (see also `?lme4::mkMerMod`).
+    return(fit_s@optinfo$conv$opt == 0 && (
+      # Since lme4::.prt.warn() does not refer to `optinfo$conv$lme4$code`,
+      # that element might not always exist:
+      (!is.null(fit_s@optinfo$conv$lme4$code) &&
+         all(fit_s@optinfo$conv$lme4$code == 0)) ||
+        is.null(fit_s@optinfo$conv$lme4$code)
+    ) && length(unlist(fit_s@optinfo$conv$lme4$messages)) == 0 &&
+      length(fit_s@optinfo$warnings) == 0)
+  } else if (inherits(fit_s, "glm")) {
+    return(fit_s$converged)
+  } else if (inherits(fit_s, "lm")) {
+    # Note: There doesn't seem to be a better way to check for convergence
+    # other than checking `NA` coefficients (see below).
+    return(all(!is.na(coef(fit_s))))
+  } else if (inherits(fit_s, "subfit")) {
+    # Note: There doesn't seem to be any way to check for convergence, so
+    # return `TRUE` for now.
+    # TODO (GLMs with ridge regularization): Add a logical indicating
+    # convergence to objects of class `subfit` (i.e., from glm_ridge())?
+    return(TRUE)
+  } else {
+    stop("Unrecognized submodel fit. Please notify the package maintainer.")
+  }
 }
 
 # Prediction functions for submodels --------------------------------------
