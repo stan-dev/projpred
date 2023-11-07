@@ -943,8 +943,11 @@ check_conv_s <- function(fit_s) {
     # Do we need to take this into account?
     return(fit_s$converged)
   } else if (inherits(fit_s, "gamm4")) {
-    # TODO (GAMMs): Needs to be implemented. Return `TRUE` for now.
-    return(TRUE)
+    # TODO (GAMMs): I couldn't find any convergence-related information in
+    # element `fit_s$gam`, so the GAM part is currently not checked for
+    # convergence. For now, all we can check is the GLMM part from element
+    # `fit_s$mer`:
+    return(check_conv_s(fit_s$mer))
   } else if (inherits(fit_s, c("lmerMod", "glmerMod"))) {
     # The following was inferred from the source code of lme4::checkConv() and
     # lme4::.prt.warn() (see also `?lme4::mkMerMod`).
