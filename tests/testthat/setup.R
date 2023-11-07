@@ -899,8 +899,7 @@ options(projpred.warn_wobs_ppd = FALSE)
 options(projpred.verbose_project = FALSE)
 # Suppress instability warnings:
 options(projpred.warn_instable_projections = FALSE)
-# Run additional checks, e.g., the check for attribute `nobs_orig` when
-# subsetting `augmat` and `augvec` objects:
+# Run additional checks:
 options(projpred.additional_checks = TRUE)
 # Suppress the warning thrown if `cvrefbuilder` is `NULL` (here in the tests,
 # this should only be relevant for `datafit`s):

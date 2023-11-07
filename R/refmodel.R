@@ -590,9 +590,7 @@ predict.refmodel <- function(object, newdata = NULL, ynew = NULL,
       pred <- colMeans(pred)
     }
     if (was_augmat) {
-      pred <- structure(pred, nobs_orig = nobs_new, class = "augvec")
-      pred <- augmat2arr(augvec2augmat(pred))
-      pred <- matrix(pred, nrow = dim(pred)[1], ncol = dim(pred)[2])
+      pred <- matrix(pred, nrow = nobs_new)
     }
     return(pred)
   } else {
@@ -1343,8 +1341,8 @@ init_refmodel <- function(object, data, formula, family, ref_predfun = NULL,
         # `?init_refmodel` for a definition of these dimensions). Therefore, it
         # is converted to an augmented-rows matrix (see `?`augdat-internals``
         # for a definition):
+        n_obs <- dim(linpred_out)[2]
         linpred_out <- arr2augmat(linpred_out, margin_draws = 1)
-        n_obs <- attr(linpred_out, "nobs_orig")
       } else {
         stop("Unexpected structure for `linpred_out`. Does the return value ",
              "of `ref_predfun` have the correct structure?")

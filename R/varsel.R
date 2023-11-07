@@ -348,7 +348,7 @@ varsel.refmodel <- function(object, d_test = NULL, method = "forward",
       if (!is.null(refmodel$family$cats)) {
         mu_oscale <- structure(rep(NA,
                                    nobs_test * length(refmodel$family$cats)),
-                               nobs_orig = nobs_test,
+                               ndiscrete = length(refmodel$family$cats),
                                class = "augvec")
       } else {
         mu_oscale <- ref$mu

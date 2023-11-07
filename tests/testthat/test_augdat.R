@@ -18,17 +18,14 @@ augmtst <- arr2augmat(arrtst)
 
 test_that("arr2augmat(), augmat2arr()", {
   expect_identical(augmtst, structure(matrix(xtst, ncol = ndraws_tst),
-                                      nobs_orig = nobs_orig_tst,
-                                      class = "augmat"))
+                                      ndiscrete = ncat_tst, class = "augmat"))
 
   # With "margin_draws = 3":
   xtst_m3 <- 0.1
   stopifnot(length(xtst_m3) == 1)
   arr_m3 <- array(xtst_m3, dim = c(1, 1, 1))
   augmat_m3 <- arr2augmat(arr_m3)
-  augmat_m3_ch <- structure(matrix(xtst_m3),
-                            nobs_orig = 1L,
-                            class = "augmat")
+  augmat_m3_ch <- structure(matrix(xtst_m3), ndiscrete = 1L, class = "augmat")
   expect_identical(augmat_m3, augmat_m3_ch)
   arr_m3_ch <- augmat2arr(augmat_m3)
   expect_identical(arr_m3_ch, arr_m3)
@@ -39,8 +36,7 @@ test_that("arr2augmat(), augmat2arr()", {
   arr_m1 <- array(xtst_m1, dim = c(7, 3, 1))
   augmat_m1 <- arr2augmat(arr_m1, margin_draws = 1)
   augmat_m1_ch <- structure(matrix(xtst_m1, ncol = 7, byrow = TRUE),
-                            nobs_orig = 3L,
-                            class = "augmat")
+                            ndiscrete = 1L, class = "augmat")
   expect_identical(augmat_m1, augmat_m1_ch)
   arr_m1_ch <- augmat2arr(augmat_m1, margin_draws = 1)
   expect_identical(arr_m1_ch, arr_m1)
@@ -62,16 +58,13 @@ test_that("`[.augmat`()", {
   expect_identical(augmtst[, 1:2],
                    structure(matrix(head(xtst, nobs_orig_tst * ncat_tst * 2),
                                     ncol = 2),
-                             nobs_orig = nobs_orig_tst,
-                             class = "augmat"))
+                             ndiscrete = ncat_tst, class = "augmat"))
   expect_identical(augmtst[, 1, drop = FALSE],
                    structure(matrix(head(xtst, nobs_orig_tst * ncat_tst)),
-                             nobs_orig = nobs_orig_tst,
-                             class = "augmat"))
+                             ndiscrete = ncat_tst, class = "augmat"))
   expect_identical(augmtst[, 1],
                    structure(head(xtst, nobs_orig_tst * ncat_tst),
-                             nobs_orig = nobs_orig_tst,
-                             class = "augvec"))
+                             ndiscrete = ncat_tst, class = "augvec"))
   # Subsetting rows:
   xrows1 <- xtst[as.vector(t(sapply(
     nobs_orig_tst * (seq_len(ncat_tst) - 1L) + 1L,
@@ -82,32 +75,42 @@ test_that("`[.augmat`()", {
   xrows1 <- matrix(xrows1, nrow = ncat_tst)
   expect_identical(augmtst[nobs_orig_tst * (seq_len(ncat_tst) - 1L) + 1L, ,
                            drop = FALSE],
-                   structure(xrows1,
-                             nobs_orig = 1L,
-                             class = "augmat"))
-  expect_error(augmtst[1, ], "is_wholenumber.+ is not TRUE")
-  expect_error(augmtst[1, , drop = FALSE], "is_wholenumber.+ is not TRUE")
+                   structure(xrows1, ndiscrete = ncat_tst, class = "augmat"))
+  # "Illegally" subsetting not only observations, but also the (possibly latent)
+  # response categories (within projpred, this should never be used, but testing
+  # here anyway for the sake of completeness):
+  xrow1 <- xtst[nobs_orig_tst * ncat_tst * (seq_len(ndraws_tst) - 1L) + 1L]
+  expect_identical(augmtst[1, ],
+                   structure(xrow1, ndiscrete = ncat_tst, class = "augvec"))
+  expect_identical(augmtst[1, , drop = FALSE],
+                   structure(t(xrow1), ndiscrete = ncat_tst, class = "augmat"))
   # Subsetting rows and columns:
   expect_identical(
     augmtst[sort(c(nobs_orig_tst * (seq_len(ncat_tst) - 1L) + 1L,
                    nobs_orig_tst * (seq_len(ncat_tst) - 1L) + 2L)), 1:2],
     structure(cbind(as.vector(arrtst[1:2, , 1]), as.vector(arrtst[1:2, , 2])),
-              nobs_orig = 2L,
-              class = "augmat")
+              ndiscrete = ncat_tst, class = "augmat")
   )
   expect_identical(augmtst[nobs_orig_tst * (seq_len(ncat_tst) - 1L) + 1L, 1],
-                   structure(xrows1[, 1],
-                             nobs_orig = 1L,
+                   structure(xrows1[, 1], ndiscrete = ncat_tst,
                              class = "augvec"))
-  expect_error(augmtst[1:3, 1:2], "is_wholenumber.+ is not TRUE")
-  expect_error(augmtst[1, 1], "is_wholenumber.+ is not TRUE")
-  expect_error(augmtst[1, 1, drop = FALSE], "is_wholenumber.+ is not TRUE")
+  # "Illegally" subsetting not only observations, but also the (possibly latent)
+  # response categories (within projpred, this should never be used, but testing
+  # here anyway for the sake of completeness):
+  expect_identical(augmtst[1:3, 1:2],
+                   structure(arrtst[1:3, 1, 1:2], ndiscrete = ncat_tst,
+                             class = "augmat"))
+  expect_identical(augmtst[1, 1],
+                   structure(head(xtst, 1), ndiscrete = ncat_tst,
+                             class = "augvec"))
+  expect_identical(augmtst[1, 1, drop = FALSE],
+                   structure(matrix(head(xtst, 1)), ndiscrete = ncat_tst,
+                             class = "augmat"))
 
   # Assigning:
   augmtst[1, 1] <- 0
   expect_identical(augmtst, structure(matrix(c(0, xtst[-1]), ncol = ndraws_tst),
-                                      nobs_orig = nobs_orig_tst,
-                                      class = "augmat"))
+                                      ndiscrete = ncat_tst, class = "augmat"))
 })
 
 ## augmat2augvec(), augvec2augmat() ---------------------------------------
@@ -136,21 +139,21 @@ test_that("`[.augvec`()", {
   expect_identical(augvtst[], augvtst)
   xrows1_1 <- xtst[nobs_orig_tst * (seq_len(ncat_tst) - 1L) + 1L]
   expect_identical(augvtst[nobs_orig_tst * (seq_len(ncat_tst) - 1L) + 1L],
-                   structure(xrows1_1,
-                             nobs_orig = 1L,
+                   structure(xrows1_1, ndiscrete = ncat_tst, class = "augvec"))
+  expect_identical(augvtst[1:2],
+                   structure(head(xtst, 2), ndiscrete = ncat_tst,
                              class = "augvec"))
-  expect_error(augvtst[1], "is_wholenumber.+ is not TRUE")
+  expect_identical(augvtst[1],
+                   structure(head(xtst, 1), ndiscrete = ncat_tst,
+                             class = "augvec"))
   expect_identical(augvtst[integer()],
-                   structure(integer(),
-                             nobs_orig = 0L,
-                             class = "augvec"))
+                   structure(integer(), ndiscrete = ncat_tst, class = "augvec"))
 
   # Assigning:
   augvtst[1] <- 0
   expect_identical(augvtst,
                    structure(c(0, head(xtst, nobs_orig_tst * ncat_tst)[-1]),
-                             nobs_orig = nobs_orig_tst,
-                             class = "augvec"))
+                             ndiscrete = ncat_tst, class = "augvec"))
 })
 
 ## catmaxprb() ------------------------------------------------------------
@@ -161,9 +164,7 @@ test_that("catmaxprb()", {
                    factor(rep("1", nobs_orig_tst), levels = c("0", "1")))
 
   # With probabilities (and a single observation):
-  augvtst_pr <- structure(c(0.7, 0.3),
-                          nobs_orig = 1L,
-                          class = "augvec")
+  augvtst_pr <- structure(c(0.7, 0.3), ndiscrete = 2L, class = "augvec")
   expect_identical(catmaxprb(augvtst_pr, lvls = c("lvl1", "lvl2")),
                    factor("lvl1", levels = c("lvl1", "lvl2")))
 })
@@ -210,7 +211,7 @@ test_that(paste(
 
     eta_aug <- refmod_crr$family$linkfun(pref_aug$mu)
     eta_trad <- refmod_crr_trad$family$linkfun(pref_trad$mu)
-    expect_identical(structure(unclass(eta_aug), nobs_orig = NULL), eta_trad,
+    expect_identical(structure(unclass(eta_aug), ndiscrete = NULL), eta_trad,
                      info = tstsetup)
   }
   if (exists("rng_old")) assign(".Random.seed", rng_old, envir = .GlobalEnv)
@@ -338,7 +339,7 @@ test_that(paste(
     expect_equal(summs_sub_lppd, summs_sub_lppd_trad, tolerance = 1e-6,
                  info = tstsetup)
     summs_ref <- vs$summaries$ref
-    summs_ref$mu <- structure(unclass(summs_ref$mu), nobs_orig = NULL)
+    summs_ref$mu <- structure(unclass(summs_ref$mu), ndiscrete = NULL)
     summs_ref$mu <- summs_ref$mu[(nobsv + 1):(2 * nobsv)]
     tol_ref <- 1e1 * .Machine$double.eps
     if (args_vs[[tstsetup]]$mod_nm == "glmm") {
@@ -475,7 +476,7 @@ test_that(paste(
                             tolerance = 1e-5, info = tstsetup)
              })
     summs_ref <- cvvs$summaries$ref
-    summs_ref$mu <- structure(unclass(summs_ref$mu), nobs_orig = NULL)
+    summs_ref$mu <- structure(unclass(summs_ref$mu), ndiscrete = NULL)
     summs_ref$mu <- summs_ref$mu[(nobsv + 1):(2 * nobsv)]
     expect_equal(summs_ref, cvvs_trad$summaries$ref, tolerance = 1e-12,
                  info = tstsetup)

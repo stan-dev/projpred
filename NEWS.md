@@ -10,6 +10,7 @@ If you read this from a place other than <https://mc-stan.org/projpred/news/inde
 * K-fold CV can now be combined with `validate_search = FALSE`. Related to this is an internal change which may cause LOO subsampling (see argument `nloo`) with clustered projection during the search (i.e., `1 < nclusters && nclusters < S`, where `S` denotes the number of posterior draws in the reference model) to yield slightly different results due to different internal pseudorandom number generator (PRNG) states. Furthermore, if `is.na(seed)`, then the PRNG state for code downstream of such a `cv_varsel()` call will be different due to this internal change. (GitHub: #464)
 * `print.vselsummary()` (and hence also `print.vsel()`) now prints the reference model's performance evaluation results as well (not just those of the submodels). Correspondingly, a new helper function `performances()` has been added which allows to access the reference model's (as well as the submodels') performance evaluation results. (GitHub: #471)
 * Argument `solution_terms` of `project()` has been deprecated. Please use the new argument `predictor_terms` instead. (GitHub: #472)
+* For expert users of the augmented-data projection only: Objects of class `augmat` or `augvec` do not need to have an attribute called `nobs_orig` anymore, but a new attribute called `ndiscrete`, giving the number of (possibly latent) response categories instead of the number of observations (see `` ?`augdat-internals` ``). This simplifies the subsetting of such objects. (GitHub: #473)
 
 ## Minor changes
 

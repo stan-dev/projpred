@@ -388,7 +388,7 @@ proj_linpred_aux <- function(proj, newdata, offset, weights, transform = FALSE,
       pred_sub <- proj$wdraws_prj %*% pred_sub
     } else {
       pred_sub <- structure(pred_sub %*% proj$wdraws_prj,
-                            nobs_orig = attr(pred_sub, "nobs_orig"),
+                            ndiscrete = attr(pred_sub, "ndiscrete"),
                             class = oldClass(pred_sub))
     }
     if (!is.null(lpd_out)) {

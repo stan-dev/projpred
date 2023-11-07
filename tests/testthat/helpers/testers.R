@@ -522,9 +522,7 @@ refmodel_tester <- function(
       mu_expected <- t(mu_expected)
     }
     if (refmod$family$for_augdat && refmod$family$family == "binomial") {
-      mu_expected <- structure(mu_expected,
-                               nobs_orig = nobsv,
-                               class = "augmat")
+      mu_expected <- structure(mu_expected, ndiscrete = 2L, class = "augmat")
     }
     expect_equal(refmod$mu, mu_expected, info = info_str)
   } else {
@@ -1004,7 +1002,7 @@ outdmin_tester_trad <- function(
       }
       if (!is.null(wobs_expected)) {
         expect_equal(structure(outdmin_totest[[!!j]]@frame$`(weights)`,
-                               nobs_orig = NULL,
+                               ndiscrete = NULL,
                                class = NULL),
                      outdmin_totest[[!!j]]@resp$weights,
                      info = info_str)
