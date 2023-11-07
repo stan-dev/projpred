@@ -992,10 +992,10 @@ check_conv_s <- function(fit_s) {
     # checking `NA` coefficients:
     return(all(!is.na(coef(fit_s))))
   } else if (inherits(fit_s, "subfit")) {
-    # Note: There doesn't seem to be any way to check for convergence, so
-    # return `TRUE` for now.
-    # TODO (GLMs with ridge regularization): Add a logical indicating
-    # convergence to objects of class `subfit` (i.e., from glm_ridge())?
+    # For a submodel of class `subfit`, non-convergence is only indicated by
+    # output written to the console (which is converted to a warning in
+    # fit_glm_ridge_callback() and then checked in check_conv()), so we need to
+    # return `TRUE` here:
     return(TRUE)
   } else {
     warning("Unrecognized submodel fit. Please notify the package maintainer.")
