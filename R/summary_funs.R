@@ -426,10 +426,14 @@ get_stat <- function(mu, lppd, y_wobs_test, stat, mu.bs = NULL, lppd.bs = NULL,
         mu[is.na(mu.bs)] <- NA # for which both mu and mu.bs are non-NA
         auc.data.bs <- cbind(y, mu.bs, wcv)
         value <- auc(auc.data) - auc(auc.data.bs)
+        idxs_cols <- seq_len(ncol(auc.data))
+        idxs_cols_bs <- setdiff(seq_len(ncol(auc.data) + ncol(auc.data.bs)),
+                                idxs_cols)
         diffvalue.bootstrap <- bootstrap(
           cbind(auc.data, auc.data.bs),
           function(x) {
-            auc(x[, 1:3, drop = FALSE]) - auc(x[, 4:6, drop = FALSE])
+            auc(x[, idxs_cols, drop = FALSE]) -
+              auc(x[, idxs_cols_bs, drop = FALSE])
           },
           ...
         )
