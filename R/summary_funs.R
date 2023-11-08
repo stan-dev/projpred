@@ -348,22 +348,16 @@ get_stat <- function(mu, lppd, y_wobs_test, stat, mu.bs = NULL, lppd.bs = NULL,
         mu[is.na(mu.bs)] <- NA # for which both mu and mu.bs are non-NA
         value <- sqrt(mean(wcv * (mu - y)^2, na.rm = TRUE)) -
           sqrt(mean(wcv * (mu.bs - y)^2, na.rm = TRUE))
-        value.bootstrap1 <- bootstrap(
-          (mu - y)^2,
+        diffvalue.bootstrap <- bootstrap(
+          cbind((mu - y)^2, (mu.bs - y)^2),
           function(resid2) {
-            sqrt(mean(wcv * resid2, na.rm = TRUE))
+            sqrt(mean(wcv * resid2[, 1], na.rm = TRUE)) -
+              sqrt(mean(wcv * resid2[, 2], na.rm = TRUE))
           },
           ...
         )
-        value.bootstrap2 <- bootstrap(
-          (mu.bs - y)^2,
-          function(resid2) {
-            sqrt(mean(wcv * resid2, na.rm = TRUE))
-          },
-          ...
-        )
-        value.se <- sd(value.bootstrap1 - value.bootstrap2)
-        lq_uq <- quantile(value.bootstrap1 - value.bootstrap2,
+        value.se <- sd(diffvalue.bootstrap)
+        lq_uq <- quantile(diffvalue.bootstrap,
                           probs = c(alpha_half, one_minus_alpha_half),
                           names = FALSE, na.rm = TRUE)
       } else {
@@ -432,10 +426,15 @@ get_stat <- function(mu, lppd, y_wobs_test, stat, mu.bs = NULL, lppd.bs = NULL,
         mu[is.na(mu.bs)] <- NA # for which both mu and mu.bs are non-NA
         auc.data.bs <- cbind(y, mu.bs, wcv)
         value <- auc(auc.data) - auc(auc.data.bs)
-        value.bootstrap1 <- bootstrap(auc.data, auc, ...)
-        value.bootstrap2 <- bootstrap(auc.data.bs, auc, ...)
-        value.se <- sd(value.bootstrap1 - value.bootstrap2, na.rm = TRUE)
-        lq_uq <- quantile(value.bootstrap1 - value.bootstrap2,
+        diffvalue.bootstrap <- bootstrap(
+          cbind(auc.data, auc.data.bs),
+          function(x) {
+            auc(x[, 1:3]) - auc(x[, 4:6])
+          },
+          ...
+        )
+        value.se <- sd(diffvalue.bootstrap, na.rm = TRUE)
+        lq_uq <- quantile(diffvalue.bootstrap,
                           probs = c(alpha_half, one_minus_alpha_half),
                           names = FALSE, na.rm = TRUE)
       } else {
