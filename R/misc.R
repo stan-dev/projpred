@@ -108,7 +108,7 @@ bootstrap <- function(x, fun = mean, B = 2000, seed = NA, ...) {
   bsstat <- rep(NA, B)
   for (i in 1:B) {
     bsind <- sample(seq_x, replace = TRUE)
-    bsstat[i] <- fun(if (is_vector) x[bsind] else x[bsind, ], ...)
+    bsstat[i] <- fun(if (is_vector) x[bsind] else x[bsind, , drop = FALSE], ...)
   }
   return(bsstat)
 }

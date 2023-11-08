@@ -429,7 +429,7 @@ get_stat <- function(mu, lppd, y_wobs_test, stat, mu.bs = NULL, lppd.bs = NULL,
         diffvalue.bootstrap <- bootstrap(
           cbind(auc.data, auc.data.bs),
           function(x) {
-            auc(x[, 1:3]) - auc(x[, 4:6])
+            auc(x[, 1:3, drop = FALSE]) - auc(x[, 4:6, drop = FALSE])
           },
           ...
         )
