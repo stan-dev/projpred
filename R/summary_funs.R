@@ -344,8 +344,10 @@ get_stat <- function(mu, lppd, y_wobs_test, stat, mu.bs = NULL, lppd.bs = NULL,
       }
     } else if (stat == "rmse") {
       if (!is.null(mu.bs)) {
-        mu.bs[is.na(mu)] <- NA # compute the RMSEs using only those points
-        mu[is.na(mu.bs)] <- NA # for which both mu and mu.bs are non-NA
+        # Compute the RMSEs using only those observations for which both `mu`
+        # and `mu.bs` are not `NA`:
+        mu.bs[is.na(mu)] <- NA
+        mu[is.na(mu.bs)] <- NA
         value <- sqrt(mean(wcv * (mu - y)^2, na.rm = TRUE)) -
           sqrt(mean(wcv * (mu.bs - y)^2, na.rm = TRUE))
         diffvalue.bootstrap <- bootstrap(
@@ -422,8 +424,10 @@ get_stat <- function(mu, lppd, y_wobs_test, stat, mu.bs = NULL, lppd.bs = NULL,
     } else if (stat == "auc") {
       auc.data <- cbind(y, mu, wcv)
       if (!is.null(mu.bs)) {
-        mu.bs[is.na(mu)] <- NA # compute the AUCs using only those points
-        mu[is.na(mu.bs)] <- NA # for which both mu and mu.bs are non-NA
+        # Compute the AUCs using only those observations for which both `mu` and
+        # `mu.bs` are not `NA`:
+        mu.bs[is.na(mu)] <- NA
+        mu[is.na(mu.bs)] <- NA
         auc.data.bs <- cbind(y, mu.bs, wcv)
         value <- auc(auc.data) - auc(auc.data.bs)
         idxs_cols <- seq_len(ncol(auc.data))
