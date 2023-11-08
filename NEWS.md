@@ -27,6 +27,7 @@ If you read this from a place other than <https://mc-stan.org/projpred/news/inde
 ## Bug fixes
 
 * Fixed a bug sometimes causing `plot.vsel()` to produce extra ("empty") ticks on the x-axis. (GitHub: #462)
+* Fixed a bug in `summary.vsel()` and `plot.vsel()` causing bootstrap results (i.e., standard error and confidence interval for RMSE and AUC) to be incorrect if `deltas = TRUE`. (GitHub: #474)
 
 # projpred 2.7.0
 
