@@ -422,12 +422,12 @@ get_stat <- function(mu, lppd, y_wobs_test, stat, mu.bs = NULL, lppd.bs = NULL,
         value.se <- weighted.sd(crrct, wcv, na.rm = TRUE) / sqrt(n_notna)
       }
     } else if (stat == "auc") {
-      auc.data <- cbind(y, mu, wcv)
       if (!is.null(mu.bs)) {
         # Compute the AUCs using only those observations for which both `mu` and
         # `mu.bs` are not `NA`:
         mu[is.na(mu.bs)] <- NA
         mu.bs[is.na(mu)] <- NA
+        auc.data <- cbind(y, mu, wcv)
         auc.data.bs <- cbind(y, mu.bs, wcv)
         value <- auc(auc.data) - auc(auc.data.bs)
         idxs_cols <- seq_len(ncol(auc.data))
@@ -446,6 +446,7 @@ get_stat <- function(mu, lppd, y_wobs_test, stat, mu.bs = NULL, lppd.bs = NULL,
                           probs = c(alpha_half, one_minus_alpha_half),
                           names = FALSE, na.rm = TRUE)
       } else {
+        auc.data <- cbind(y, mu, wcv)
         value <- auc(auc.data)
         value.bootstrap <- bootstrap(auc.data, auc, ...)
         value.se <- sd(value.bootstrap, na.rm = TRUE)
