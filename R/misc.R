@@ -64,8 +64,8 @@ auc <- function(x) {
   resp <- x[, 1]
   pred <- x[, 2]
   wcv <- x[, 3]
-  n <- nrow(x)
-  ord <- order(pred, decreasing = TRUE)
+  ord <- order(pred, decreasing = TRUE, na.last = NA)
+  n <- length(ord)
   resp <- resp[ord]
   pred <- pred[ord]
   wcv <- wcv[ord]
