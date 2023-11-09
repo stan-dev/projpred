@@ -22,6 +22,9 @@ weighted.sd <- function(x, w, na.rm = FALSE) {
     n <- length(x)
     ind <- rep(TRUE, n)
   }
+  if (n %in% c(0, 1)) {
+    return(NA_real_)
+  }
   w <- w / sum(w[ind])
   m <- sum(x[ind] * w[ind])
   sqrt(n / (n - 1) * sum(w[ind] * (x[ind] - m)^2))
@@ -64,12 +67,20 @@ auc <- function(x) {
   resp <- x[, 1]
   pred <- x[, 2]
   wcv <- x[, 3]
-  n <- nrow(x)
-  ord <- order(pred, decreasing = TRUE)
+
+  # Make it explicit that `x` should not be used anymore (due to the possibility
+  # of `NA`s, but also due to the re-ordering):
+  rm(x)
+
+  ord <- order(pred, decreasing = TRUE, na.last = NA)
+  n <- length(ord)
+
   resp <- resp[ord]
   pred <- pred[ord]
   wcv <- wcv[ord]
+
   w0 <- w1 <- wcv
+  # CAUTION: The following check also ensures that `resp` does not have `NA`s:
   stopifnot(all(resp %in% c(0, 1)))
   w0[resp == 1] <- 0 # for calculating the false positive rate (fpr)
   w1[resp == 0] <- 0 # for calculating the true positive rate (tpr)

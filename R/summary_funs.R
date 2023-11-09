@@ -193,7 +193,7 @@ weighted_summary_means <- function(y_wobs_test, family, wdraws, mu, dis, cl_ref,
     ## reference model statistics
     summ <- summ_ref
     res <- get_stat(summ$mu, summ$lppd, varsel$y_wobs_test, stat, mu.bs = mu.bs,
-                    lppd.bs = lppd.bs, wcv = summ$wcv, alpha = alpha, ...)
+                    lppd.bs = lppd.bs, alpha = alpha, ...)
     row <- data.frame(
       data = varsel$type_test, size = Inf, delta = delta, statistic = stat,
       value = res$value, lq = res$lq, uq = res$uq, se = res$se, diff = NA,
@@ -210,19 +210,24 @@ weighted_summary_means <- function(y_wobs_test, family, wdraws, mu, dis, cl_ref,
         ## results to get more accurate statistic fot the submodel on the actual
         ## scale
         res_ref <- get_stat(summ_ref$mu, summ_ref$lppd, varsel$y_wobs_test,
-                            stat, mu.bs = NULL, lppd.bs = NULL,
-                            wcv = summ_ref$wcv, alpha = alpha, ...)
+                            stat, mu.bs = NULL, lppd.bs = NULL, alpha = alpha,
+                            ...)
         res_diff <- get_stat(summ$mu, summ$lppd, varsel$y_wobs_test, stat,
                              mu.bs = summ_ref$mu, lppd.bs = summ_ref$lppd,
                              wcv = summ$wcv, alpha = alpha, ...)
         val <- res_ref$value + res_diff$value
+        # TODO (subsampled PSIS-LOO CV): Is `val.se` really computed correctly
+        # or do we need to take into account that `res_ref$se` and `res_diff$se`
+        # might be stochastically dependent?
         val.se <- sqrt(res_ref$se^2 + res_diff$se^2)
         if (stat %in% c("rmse", "auc")) {
           # TODO (subsampled PSIS-LOO CV): Use bootstrap for lower and upper
-          # confidence interval bounds.
+          # confidence interval bounds as well as for the standard error.
           warning("Lower and upper confidence interval bounds of performance ",
                   "statistic `", stat, "` are based on a normal ",
-                  "approximation, not the bootstrap.")
+                  "approximation, not the bootstrap. The standard error of ",
+                  "performance statistic `", stat, "` is also not based on a ",
+                  "bootstrap.")
         }
         lq <- qnorm(alpha / 2, mean = val, sd = val.se)
         uq <- qnorm(1 - alpha / 2, mean = val, sd = val.se)
@@ -282,19 +287,31 @@ get_stat <- function(mu, lppd, y_wobs_test, stat, mu.bs = NULL, lppd.bs = NULL,
                      wcv = NULL, alpha = 0.1, ...) {
   n_notna.bs <- NULL
   if (stat %in% c("mlpd", "elpd")) {
-    n <- length(lppd)
-    n_notna <- sum(!is.na(lppd))
     if (!is.null(lppd.bs)) {
+      # Compute the performance statistics using only those observations for
+      # which both `lppd` and `lppd.bs` are not `NA`:
+      lppd[is.na(lppd.bs)] <- NA
+      lppd.bs[is.na(lppd)] <- NA
       n_notna.bs <- sum(!is.na(lppd.bs))
     }
+    n_notna <- sum(!is.na(lppd))
+    n <- length(lppd)
   } else {
-    n <- length(mu)
-    n_notna <- sum(!is.na(mu) & !is.na(y_wobs_test$y_prop %||% y_wobs_test$y))
+    hasNA_y <- is.na(y_wobs_test$y_prop %||% y_wobs_test$y)
     if (!is.null(mu.bs)) {
-      n_notna.bs <- sum(!is.na(mu.bs))
+      # Compute the performance statistics using only those observations for
+      # which both `mu` and `mu.bs` are not `NA`:
+      mu[is.na(mu.bs)] <- NA
+      mu.bs[is.na(mu)] <- NA
+      n_notna.bs <- sum(!is.na(mu.bs) & !hasNA_y)
     }
+    n_notna <- sum(!is.na(mu) & !hasNA_y)
+    n <- length(mu)
   }
-  if (n_notna == 0 || (!is.null(n_notna.bs) && n_notna.bs == 0)) {
+  if (!is.null(n_notna.bs) && getOption("projpred.additional_checks", FALSE)) {
+    stopifnot(n_notna == n_notna.bs)
+  }
+  if (n_notna == 0) {
     return(list(value = NA, se = NA, lq = NA, uq = NA))
   }
 
@@ -307,6 +324,7 @@ get_stat <- function(mu, lppd, y_wobs_test, stat, mu.bs = NULL, lppd.bs = NULL,
 
   alpha_half <- alpha / 2
   one_minus_alpha_half <- 1 - alpha_half
+
   if (stat %in% c("mlpd", "elpd")) {
     if (!is.null(lppd.bs)) {
       value <- sum((lppd - lppd.bs) * wcv, na.rm = TRUE)
@@ -322,11 +340,7 @@ get_stat <- function(mu, lppd, y_wobs_test, stat, mu.bs = NULL, lppd.bs = NULL,
       value.se <- value.se / n_notna
     }
   } else if (stat %in% c("mse", "rmse")) {
-    if (is.null(y_wobs_test$y_prop)) {
-      y <- y_wobs_test$y
-    } else {
-      y <- y_wobs_test$y_prop
-    }
+    y <- y_wobs_test$y_prop %||% y_wobs_test$y
     if (!all(y_wobs_test$wobs == 1)) {
       wcv <- wcv * y_wobs_test$wobs
       wcv <- n_notna * wcv / sum(wcv)
@@ -344,8 +358,6 @@ get_stat <- function(mu, lppd, y_wobs_test, stat, mu.bs = NULL, lppd.bs = NULL,
       }
     } else if (stat == "rmse") {
       if (!is.null(mu.bs)) {
-        mu.bs[is.na(mu)] <- NA # compute the RMSEs using only those points
-        mu[is.na(mu.bs)] <- NA # for which both mu and mu.bs are non-NA
         value <- sqrt(mean(wcv * (mu - y)^2, na.rm = TRUE)) -
           sqrt(mean(wcv * (mu.bs - y)^2, na.rm = TRUE))
         diffvalue.bootstrap <- bootstrap(
@@ -378,10 +390,9 @@ get_stat <- function(mu, lppd, y_wobs_test, stat, mu.bs = NULL, lppd.bs = NULL,
   } else if (stat %in% c("acc", "pctcorr", "auc")) {
     y <- y_wobs_test$y
     if (!is.null(y_wobs_test$y_prop)) {
-      # In fact, the following stopifnot() checks should not be necessary
-      # because this case should only occur for the binomial family (where
-      # `y_wobs_test$wobs` contains the numbers of trials) with more than 1
-      # trial for at least one observation:
+      # CAUTION: The following checks also ensure that `y` does not have `NA`s
+      # (see the other "CAUTION" comments below for changes that are needed if
+      # `y` is allowed to have `NA`s here):
       stopifnot(all(is_wholenumber(y_wobs_test$wobs)))
       stopifnot(all(is_wholenumber(y)))
       stopifnot(all(0 <= y & y <= y_wobs_test$wobs))
@@ -392,8 +403,17 @@ get_stat <- function(mu, lppd, y_wobs_test, stat, mu.bs = NULL, lppd.bs = NULL,
       mu <- rep(mu, y_wobs_test$wobs)
       if (!is.null(mu.bs)) {
         mu.bs <- rep(mu.bs, y_wobs_test$wobs)
+        # CAUTION: If `y` is allowed to have `NA`s here, then `n_notna.bs` needs
+        # to be adapted:
+        n_notna.bs <- sum(!is.na(mu.bs))
       }
-      n_notna <- sum(y_wobs_test$wobs)
+      # CAUTION: If `y` is allowed to have `NA`s here, then `n_notna` needs to
+      # be adapted:
+      n_notna <- sum(!is.na(mu))
+      if (!is.null(n_notna.bs) &&
+          getOption("projpred.additional_checks", FALSE)) {
+        stopifnot(n_notna == n_notna.bs)
+      }
       wcv <- rep(wcv, y_wobs_test$wobs)
       wcv <- n_notna * wcv / sum(wcv)
     } else {
@@ -420,10 +440,8 @@ get_stat <- function(mu, lppd, y_wobs_test, stat, mu.bs = NULL, lppd.bs = NULL,
         value.se <- weighted.sd(crrct, wcv, na.rm = TRUE) / sqrt(n_notna)
       }
     } else if (stat == "auc") {
-      auc.data <- cbind(y, mu, wcv)
       if (!is.null(mu.bs)) {
-        mu.bs[is.na(mu)] <- NA # compute the AUCs using only those points
-        mu[is.na(mu.bs)] <- NA # for which both mu and mu.bs are non-NA
+        auc.data <- cbind(y, mu, wcv)
         auc.data.bs <- cbind(y, mu.bs, wcv)
         value <- auc(auc.data) - auc(auc.data.bs)
         idxs_cols <- seq_len(ncol(auc.data))
@@ -442,6 +460,7 @@ get_stat <- function(mu, lppd, y_wobs_test, stat, mu.bs = NULL, lppd.bs = NULL,
                           probs = c(alpha_half, one_minus_alpha_half),
                           names = FALSE, na.rm = TRUE)
       } else {
+        auc.data <- cbind(y, mu, wcv)
         value <- auc(auc.data)
         value.bootstrap <- bootstrap(auc.data, auc, ...)
         value.se <- sd(value.bootstrap, na.rm = TRUE)

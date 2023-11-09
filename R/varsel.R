@@ -269,6 +269,14 @@ varsel.refmodel <- function(object, d_test = NULL, method = "forward",
     d_test <- d_test[nms_d_test()]
     invisible(lapply(setNames(nm = setdiff(nms_d_test(), c("y", "y_oscale"))),
                      function(d_nm) na.fail(d_test[[d_nm]])))
+    hasNA_y_test <- is.na(d_test[["y"]])
+    if (any(hasNA_y_test)) {
+      stopifnot(all(hasNA_y_test))
+    }
+    hasNA_y_oscale_test <- is.na(d_test[["y_oscale"]])
+    if (any(hasNA_y_oscale_test)) {
+      stopifnot(all(hasNA_y_oscale_test))
+    }
     if (refmodel$family$for_augdat) {
       d_test$y <- as.factor(d_test$y)
       if (!all(levels(d_test$y) %in% refmodel$family$cats)) {
