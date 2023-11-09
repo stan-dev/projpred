@@ -216,10 +216,13 @@ weighted_summary_means <- function(y_wobs_test, family, wdraws, mu, dis, cl_ref,
                              mu.bs = summ_ref$mu, lppd.bs = summ_ref$lppd,
                              wcv = summ$wcv, alpha = alpha, ...)
         val <- res_ref$value + res_diff$value
+        # TODO (subsampled PSIS-LOO CV): Is `val.se` really computed correctly
+        # or do we need to take into account that `res_ref$se` and `res_diff$se`
+        # might be stochastically dependent?
         val.se <- sqrt(res_ref$se^2 + res_diff$se^2)
         if (stat %in% c("rmse", "auc")) {
           # TODO (subsampled PSIS-LOO CV): Use bootstrap for lower and upper
-          # confidence interval bounds.
+          # confidence interval bounds as well as for the standard error.
           warning("Lower and upper confidence interval bounds of performance ",
                   "statistic `", stat, "` are based on a normal ",
                   "approximation, not the bootstrap.")
