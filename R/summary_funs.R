@@ -390,10 +390,9 @@ get_stat <- function(mu, lppd, y_wobs_test, stat, mu.bs = NULL, lppd.bs = NULL,
   } else if (stat %in% c("acc", "pctcorr", "auc")) {
     y <- y_wobs_test$y
     if (!is.null(y_wobs_test$y_prop)) {
-      # In fact, the following stopifnot() checks should not be necessary
-      # because this case should only occur for the binomial family (where
-      # `y_wobs_test$wobs` contains the numbers of trials) with more than 1
-      # trial for at least one observation:
+      # CAUTION: The following checks also ensure that `y` does not have `NA`s
+      # (see the other "CAUTION" comments below for changes that are needed if
+      # `y` is allowed to have `NA`s here):
       stopifnot(all(is_wholenumber(y_wobs_test$wobs)))
       stopifnot(all(is_wholenumber(y)))
       stopifnot(all(0 <= y & y <= y_wobs_test$wobs))
@@ -404,8 +403,17 @@ get_stat <- function(mu, lppd, y_wobs_test, stat, mu.bs = NULL, lppd.bs = NULL,
       mu <- rep(mu, y_wobs_test$wobs)
       if (!is.null(mu.bs)) {
         mu.bs <- rep(mu.bs, y_wobs_test$wobs)
+        # CAUTION: If `y` is allowed to have `NA`s here, then `n_notna.bs` needs
+        # to be adapted:
+        n_notna.bs <- sum(!is.na(mu.bs))
       }
-      n_notna <- sum(y_wobs_test$wobs)
+      # CAUTION: If `y` is allowed to have `NA`s here, then `n_notna` needs to
+      # be adapted:
+      n_notna <- sum(!is.na(mu))
+      if (!is.null(n_notna.bs) &&
+          getOption("projpred.additional_checks", FALSE)) {
+        stopifnot(n_notna == n_notna.bs)
+      }
       wcv <- rep(wcv, y_wobs_test$wobs)
       wcv <- n_notna * wcv / sum(wcv)
     } else {

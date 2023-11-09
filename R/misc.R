@@ -80,6 +80,7 @@ auc <- function(x) {
   wcv <- wcv[ord]
 
   w0 <- w1 <- wcv
+  # CAUTION: The following check also ensures that `resp` does not have `NA`s:
   stopifnot(all(resp %in% c(0, 1)))
   w0[resp == 1] <- 0 # for calculating the false positive rate (fpr)
   w1[resp == 0] <- 0 # for calculating the true positive rate (tpr)
