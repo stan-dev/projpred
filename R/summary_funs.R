@@ -192,6 +192,11 @@ weighted_summary_means <- function(y_wobs_test, family, wdraws, mu, dis, cl_ref,
 
     ## reference model statistics
     summ <- summ_ref
+    # TODO (subsampled PSIS-LOO CV): Should `summ_ref$wcv` be non-`NULL` (see
+    # <https://github.com/stan-dev/projpred/issues/94#issuecomment-1195207164>)?
+    # If it is OK that `summ_ref$wcv` is always `NULL`, it is probably better to
+    # replace `summ$wcv` by `NULL` explicitly or to omit argument `wcv` so that
+    # `NULL` is used as its default:
     res <- get_stat(summ$mu, summ$lppd, varsel$y_wobs_test, stat, mu.bs = mu.bs,
                     lppd.bs = lppd.bs, wcv = summ$wcv, alpha = alpha, ...)
     row <- data.frame(
