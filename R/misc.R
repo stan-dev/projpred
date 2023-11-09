@@ -22,6 +22,9 @@ weighted.sd <- function(x, w, na.rm = FALSE) {
     n <- length(x)
     ind <- rep(TRUE, n)
   }
+  if (n %in% c(0, 1)) {
+    return(NA_real_)
+  }
   w <- w / sum(w[ind])
   m <- sum(x[ind] * w[ind])
   sqrt(n / (n - 1) * sum(w[ind] * (x[ind] - m)^2))
