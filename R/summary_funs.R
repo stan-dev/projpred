@@ -225,7 +225,9 @@ weighted_summary_means <- function(y_wobs_test, family, wdraws, mu, dis, cl_ref,
           # confidence interval bounds as well as for the standard error.
           warning("Lower and upper confidence interval bounds of performance ",
                   "statistic `", stat, "` are based on a normal ",
-                  "approximation, not the bootstrap.")
+                  "approximation, not the bootstrap. The standard error of ",
+                  "performance statistic `", stat, "` is also not based on a ",
+                  "bootstrap.")
         }
         lq <- qnorm(alpha / 2, mean = val, sd = val.se)
         uq <- qnorm(1 - alpha / 2, mean = val, sd = val.se)
