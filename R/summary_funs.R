@@ -297,14 +297,15 @@ get_stat <- function(mu, lppd, y_wobs_test, stat, mu.bs = NULL, lppd.bs = NULL,
     n_notna <- sum(!is.na(lppd))
     n <- length(lppd)
   } else {
+    hasNA_y <- is.na(y_wobs_test$y_prop %||% y_wobs_test$y)
     if (!is.null(mu.bs)) {
       # Compute the performance statistics using only those observations for
       # which both `mu` and `mu.bs` are not `NA`:
       mu[is.na(mu.bs)] <- NA
       mu.bs[is.na(mu)] <- NA
-      n_notna.bs <- sum(!is.na(mu.bs))
+      n_notna.bs <- sum(!is.na(mu.bs) & !hasNA_y)
     }
-    n_notna <- sum(!is.na(mu) & !is.na(y_wobs_test$y_prop %||% y_wobs_test$y))
+    n_notna <- sum(!is.na(mu) & !hasNA_y)
     n <- length(mu)
   }
   if (!is.null(n_notna.bs) && getOption("projpred.additional_checks", FALSE)) {
@@ -339,11 +340,7 @@ get_stat <- function(mu, lppd, y_wobs_test, stat, mu.bs = NULL, lppd.bs = NULL,
       value.se <- value.se / n_notna
     }
   } else if (stat %in% c("mse", "rmse")) {
-    if (is.null(y_wobs_test$y_prop)) {
-      y <- y_wobs_test$y
-    } else {
-      y <- y_wobs_test$y_prop
-    }
+    y <- y_wobs_test$y_prop %||% y_wobs_test$y
     if (!all(y_wobs_test$wobs == 1)) {
       wcv <- wcv * y_wobs_test$wobs
       wcv <- n_notna * wcv / sum(wcv)
