@@ -1310,7 +1310,7 @@ kfold_varsel <- function(refmodel, method, nterms_max, ndraws, nclusters,
       .export = c("one_fold", "dot_args"),
       .noexport = c("list_cv", "search_out_rks")
     ) %do_projpred% {
-      do.call(one_fold, c(list(fold = list_cv_k, rk = search_out_rks_k,
+      do_call(one_fold, c(list(fold = list_cv_k, rk = search_out_rks_k,
                                verbose_search = FALSE),
                           dot_args))
     }

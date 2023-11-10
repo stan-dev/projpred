@@ -1075,7 +1075,7 @@ get_refmodel.stanreg <- function(object, latent = FALSE, dis = NULL, ...) {
     ref_predfun = ref_predfun, extract_model_data = extract_model_data,
     dis = dis, cvfun = cvfun, cvrefbuilder = cvrefbuilder
   )
-  return(do.call(init_refmodel, args = c(args_basic, args_augdat, args_latent,
+  return(do_call(init_refmodel, args = c(args_basic, args_augdat, args_latent,
                                          list(...))))
 }
 
