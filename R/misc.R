@@ -466,12 +466,10 @@ nlist <- function(...) {
   x
 }
 
-#' Execute a function call (deprecated)
+#' Execute a function call
 #'
 #' Execute a function call similar to [do.call()], but without deparsing
-#' function arguments. This function is deprecated and will be removed in a
-#' future release. Where possible, please use direct function calls instead. If
-#' this is not possible, please use [do.call()] instead.
+#' function arguments.
 #'
 #' @param what Either a function or a non-empty character string naming the
 #'   function to be called.
@@ -485,9 +483,6 @@ nlist <- function(...) {
 #' @keywords internal
 #' @export
 do_call <- function(what, args, pkg = NULL) {
-  warning("projpred::do_call() is deprecated and will be removed in a future ",
-          "release. Where possible, please use direct function calls instead. ",
-          "If this is not possible, please use base::do.call() instead.")
   call <- ""
   if (length(args)) {
     if (!is.list(args)) {
