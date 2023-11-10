@@ -344,9 +344,8 @@ refmodel_tester <- function(
   # Test the general structure of the object:
   refmod_nms <- c(
     "fit", "formula", "div_minimizer", "family", "eta", "mu", "mu_offs", "dis",
-    "y", "proj_predfun", "fetch_data", "wobs", "wdraws_ref", "offset", "cvfun",
-    "cvfits", "extract_model_data", "ref_predfun", "cvrefbuilder", "y_oscale",
-    "nobs"
+    "y", "fetch_data", "wobs", "wdraws_ref", "offset", "cvfun", "cvfits",
+    "extract_model_data", "ref_predfun", "cvrefbuilder", "y_oscale", "nobs"
   )
   refmod_class_expected <- "refmodel"
   if (is_datafit) {
@@ -597,9 +596,6 @@ refmodel_tester <- function(
     }
   }
   expect_identical(refmod$y, y_expected, info = info_str)
-
-  # proj_predfun
-  expect_type(refmod$proj_predfun, "closure")
 
   # fetch_data
   expect_type(refmod$fetch_data, "closure")

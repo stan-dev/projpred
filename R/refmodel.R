@@ -1682,8 +1682,8 @@ init_refmodel <- function(object, data, formula, family, ref_predfun = NULL,
 
   refmodel <- nlist(
     fit = object, formula, div_minimizer, family, eta, mu, mu_offs, dis, y,
-    proj_predfun, fetch_data = fetch_data_wrapper, wobs = weights, wdraws_ref,
-    offset, cvfun, cvfits, extract_model_data, ref_predfun, cvrefbuilder,
+    fetch_data = fetch_data_wrapper, wobs = weights, wdraws_ref, offset, cvfun,
+    cvfits, extract_model_data, ref_predfun, cvrefbuilder,
     y_oscale = y_oscale %||% y, nobs = nrow(data)
   )
   if (proper_model) {
