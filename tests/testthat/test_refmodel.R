@@ -152,7 +152,7 @@ test_that(paste(
     )
   }
   expect_error(get_refmodel(fit_binom_1col_wobs),
-               "response must contain numbers of successes")
+               "response values must be numbers of successes")
 })
 
 test_that("function calls in group terms fail", {

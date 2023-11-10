@@ -1494,19 +1494,16 @@ init_refmodel <- function(object, data, formula, family, ref_predfun = NULL,
         # proportions of successes), in contrast to glm() where this is possible
         # for a 1-column response if the multiplication with the weights gives
         # whole numbers:
-        stop(
-          "In projpred, the response must contain numbers of successes (not ",
-          "proportions of successes)."
-        )
+        stop("If the original family is the binomial family, the original ",
+             "response values must be numbers of successes (not proportions ",
+             "of successes).")
       } else if (all(y_oscale %in% c(0, 1)) &&
                  length(response_name) == 1 &&
                  !all(weights == 1)) {
         # Assuming that the response contains numbers of successes (not
         # proportions of successes), in contrast to glm():
-        warning(
-          "Assuming that the response contains numbers of successes (not ",
-          "proportions of successes)."
-        )
+        warning("Assuming that the original response values are numbers of ",
+                "successes (not proportions of successes).")
       }
     }
   } else {
@@ -1536,15 +1533,15 @@ init_refmodel <- function(object, data, formula, family, ref_predfun = NULL,
       # proportions of successes), in contrast to glm() where this is possible
       # for a 1-column response if the multiplication with the weights gives
       # whole numbers:
-      stop("In projpred, the response must contain numbers of successes (not ",
-           "proportions of successes).")
+      stop("In case of the binomial family, the response values must be ",
+           "numbers of successes (not proportions of successes).")
     } else if (all(y %in% c(0, 1)) &&
                length(response_name) == 1 &&
                !all(weights == 1)) {
       # Assuming that the response contains numbers of successes (not
       # proportions of successes), in contrast to glm():
-      warning("Assuming that the response contains numbers of successes (not ",
-              "proportions of successes).")
+      warning("Assuming that the response values are numbers of successes ",
+              "(not proportions of successes).")
     }
   }
 
