@@ -656,7 +656,7 @@ if (run_more) {
 
 # In fact, `regul` is already checked in `test_project.R`, so the `regul` tests
 # could be omitted here since varsel() and cv_varsel() also pass `regul` to
-# get_submodl_prj() (usually via perf_eval(), just like project()). This doesn't
+# proj_to_submodl() (usually via perf_eval(), just like project()). This doesn't
 # hold for L1 search, though. So for L1 search, the `regul` tests are still
 # needed.
 

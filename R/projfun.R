@@ -3,7 +3,7 @@
 # to a single fit (there are as many fits for this single submodel as there are
 # projected draws). At the end, init_submodl() is called, so the output is of
 # class `submodl`.
-get_submodl_prj <- function(predictor_terms, p_ref, refmodel, regul = 1e-4,
+proj_to_submodl <- function(predictor_terms, p_ref, refmodel, regul = 1e-4,
                             ...) {
   y_unqs_aug <- refmodel$family$cats
   if (refmodel$family$for_latent && !is.null(y_unqs_aug)) {
@@ -88,7 +88,7 @@ perf_eval <- function(search_path,
       )
     }
     fetch_submodl <- function(size_j, ...) {
-      return(get_submodl_prj(
+      return(proj_to_submodl(
         predictor_terms = utils::head(search_path$predictor_ranking, size_j),
         p_ref = p_ref, refmodel = refmodel, regul = regul, ...
       ))

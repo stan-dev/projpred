@@ -22,7 +22,7 @@ search_forward <- function(p_ref, refmodel, nterms_max, verbose = TRUE, opt,
     if (size == 1 && est_runtime && getOption("projpred.mssg_time", TRUE)) {
       time_bef <- Sys.time()
     }
-    submodls <- lapply(full_cands, get_submodl_prj, p_ref = p_ref,
+    submodls <- lapply(full_cands, proj_to_submodl, p_ref = p_ref,
                        refmodel = refmodel, regul = opt$regul, ...)
     if (size == 1 && est_runtime && getOption("projpred.mssg_time", TRUE)) {
       time_aft <- Sys.time()
