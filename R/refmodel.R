@@ -1098,26 +1098,6 @@ init_refmodel <- function(object, data, formula, family, ref_predfun = NULL,
     }
   }
 
-  mu_fun <- function(fits, obs = NULL, newdata = NULL, offset = NULL,
-                     transform = TRUE) {
-    newdata <- fetch_data(data, obs = obs, newdata = newdata)
-    if (is.null(offset)) {
-      offset <- rep(0, nrow(newdata))
-    } else {
-      stopifnot(length(offset) %in% c(1L, nrow(newdata)))
-    }
-    pred_sub <- proj_predfun(fits, newdata = newdata)
-    if (family$family %in% fams_neg_linpred()) {
-      pred_sub <- pred_sub - offset
-    } else {
-      pred_sub <- pred_sub + offset
-    }
-    if (transform) {
-      pred_sub <- family$linkinv(pred_sub)
-    }
-    return(pred_sub)
-  }
-
   if (family$family == "categorical" && family$link != "logit") {
     stop("For the brms::categorical() family, projpred only supports the ",
          "logit link.")
@@ -1398,6 +1378,26 @@ init_refmodel <- function(object, data, formula, family, ref_predfun = NULL,
       augprd_arr <- proj_predfun_usr(fits, newdata = newdata)
       return(arr2augmat(augprd_arr))
     }
+  }
+
+  mu_fun <- function(fits, obs = NULL, newdata = NULL, offset = NULL,
+                     transform = TRUE) {
+    newdata <- fetch_data(data, obs = obs, newdata = newdata)
+    if (is.null(offset)) {
+      offset <- rep(0, nrow(newdata))
+    } else {
+      stopifnot(length(offset) %in% c(1L, nrow(newdata)))
+    }
+    pred_sub <- proj_predfun(fits, newdata = newdata)
+    if (family$family %in% fams_neg_linpred()) {
+      pred_sub <- pred_sub - offset
+    } else {
+      pred_sub <- pred_sub + offset
+    }
+    if (transform) {
+      pred_sub <- family$linkinv(pred_sub)
+    }
+    return(pred_sub)
   }
 
   fetch_data_wrapper <- function(obs = NULL) {
