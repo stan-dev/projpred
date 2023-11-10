@@ -67,8 +67,9 @@
 #'   below.
 #' @param extract_model_data A function for fetching some variables (response,
 #'   observation weights, offsets) from the original dataset (supplied to
-#'   argument `data`) or from a new dataset. See also section "Argument
-#'   `extract_model_data`" below.
+#'   argument `data`) or from a new dataset. May be `NULL` for using an internal
+#'   default that essentially corresponds to [y_wobs_offs()]. See also section
+#'   "Argument `extract_model_data`" below.
 #' @param family An object of class `family` representing the observation model
 #'   (i.e., the distributional family for the response) of the *submodels*.
 #'   (However, the link and the inverse-link function of this `family` are also
@@ -334,20 +335,12 @@
 #'
 #' # A custom reference model object which may be used in a variable selection
 #' # where the candidate predictors are not a subset of those used for the
-#' # reference model's predictions (defining the function for argument
-#' # `extract_model_data` first because it can be re-used for the `cvrefbuilder`
-#' # function here):
-#' extractor_cust <- function(object, newdata, wrhs = NULL, orhs = NULL,
-#'                            extract_y = TRUE) {
-#'   return(y_wobs_offs(newdata = newdata, wrhs = wrhs, orhs = orhs,
-#'                      resp_form = if (extract_y) ~ y else NULL))
-#' }
+#' # reference model's predictions:
 #' ref_cust <- init_refmodel(
 #'   fit,
 #'   data = dat_gauss,
 #'   formula = y ~ X6 + X7,
 #'   family = gaussian(),
-#'   extract_model_data = extractor_cust,
 #'   cvfun = function(folds) {
 #'     kfold(
 #'       fit, K = max(folds), save_fits = TRUE, folds = folds, cores = 1
@@ -359,7 +352,6 @@
 #'                   data = dat_gauss[-cvfit$omitted, , drop = FALSE],
 #'                   formula = y ~ X6 + X7,
 #'                   family = gaussian(),
-#'                   extract_model_data = extractor_cust,
 #'                   dis = as.matrix(cvfit)[, "sigma"],
 #'                   called_from_cvrefbuilder = TRUE)
 #'   }
@@ -800,11 +792,6 @@ get_refmodel.default <- function(object, data, formula, family = NULL, ...) {
     data = data,
     formula = formula,
     family = family %||% family(object),
-    extract_model_data = function(object, newdata, wrhs = NULL, orhs = NULL,
-                                  extract_y = TRUE) {
-      return(y_wobs_offs(newdata = newdata, wrhs = wrhs, orhs = orhs,
-                         resp_form = if (extract_y) lhs(formula) else NULL))
-    },
     ...
   ))
 }
@@ -1096,7 +1083,7 @@ get_refmodel.stanreg <- function(object, latent = FALSE, dis = NULL, ...) {
 #' @export
 init_refmodel <- function(object, data, formula, family, ref_predfun = NULL,
                           div_minimizer = NULL, proj_predfun = NULL,
-                          extract_model_data, cvfun = NULL,
+                          extract_model_data = NULL, cvfun = NULL,
                           cvfits = NULL, dis = NULL, cvrefbuilder = NULL,
                           called_from_cvrefbuilder = FALSE, ...) {
   # Family ------------------------------------------------------------------
@@ -1221,6 +1208,13 @@ init_refmodel <- function(object, data, formula, family, ref_predfun = NULL,
 
   # Functions ---------------------------------------------------------------
 
+  if (is.null(extract_model_data)) {
+    extract_model_data <- function(object, newdata, wrhs = NULL, orhs = NULL,
+                                   extract_y = TRUE) {
+      return(y_wobs_offs(newdata = newdata, wrhs = wrhs, orhs = orhs,
+                         resp_form = if (extract_y) lhs(formula) else NULL))
+    }
+  }
   # Wrap `extract_model_data` in order to retrieve the correct `newdata` when
   # `newdata` is `NULL`:
   extract_model_data_usr <- extract_model_data
