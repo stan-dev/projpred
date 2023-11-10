@@ -1098,8 +1098,8 @@ init_refmodel <- function(object, data, formula, family, ref_predfun = NULL,
     }
   }
 
-  family$mu_fun <- function(fits, obs = NULL, newdata = NULL, offset = NULL,
-                            transform = TRUE) {
+  mu_fun <- function(fits, obs = NULL, newdata = NULL, offset = NULL,
+                     transform = TRUE) {
     newdata <- fetch_data(data, obs = obs, newdata = newdata)
     if (is.null(offset)) {
       offset <- rep(0, nrow(newdata))
@@ -1683,7 +1683,7 @@ init_refmodel <- function(object, data, formula, family, ref_predfun = NULL,
   refmodel <- nlist(
     fit = object, formula, div_minimizer, family, eta, mu, mu_offs, dis, y,
     fetch_data = fetch_data_wrapper, wobs = weights, wdraws_ref, offset, cvfun,
-    cvfits, extract_model_data, ref_predfun, cvrefbuilder,
+    cvfits, extract_model_data, ref_predfun, mu_fun, cvrefbuilder,
     y_oscale = y_oscale %||% y, nobs = nrow(data)
   )
   if (proper_model) {

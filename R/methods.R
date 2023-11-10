@@ -335,9 +335,8 @@ proj_linpred_aux <- function(proj, newdata, offset, weights, transform = FALSE,
          "into account) or `return_draws_matrix = TRUE`, the latter being ",
          "recommended.")
   }
-  pred_sub <- proj$refmodel$family$mu_fun(proj$outdmin, newdata = newdata,
-                                          offset = offset,
-                                          transform = transform)
+  pred_sub <- proj$refmodel$mu_fun(proj$outdmin, newdata = newdata,
+                                   offset = offset, transform = transform)
   if (proj$refmodel$family$for_latent && transform) {
     pred_sub <- proj$refmodel$family$latent_ilink(
       t(pred_sub), cl_ref = proj$cl_ref, wdraws_ref = proj$wdraws_ref
@@ -533,9 +532,7 @@ proj_predict_aux <- function(proj, newdata, offset, weights,
     stop("`resp_oscale = FALSE` can only be used in case of the latent ",
          "projection.")
   }
-  mu <- proj$refmodel$family$mu_fun(proj$outdmin,
-                                    newdata = newdata,
-                                    offset = offset)
+  mu <- proj$refmodel$mu_fun(proj$outdmin, newdata = newdata, offset = offset)
   if (!proj[["const_wdraws_prj"]]) {
     # In this case, the posterior draws have nonconstant weights.
     draw_inds <- sample(x = seq_along(proj$wdraws_prj),

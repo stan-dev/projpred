@@ -5,9 +5,6 @@
 #   been extended by projpred.
 # @param fam_orig The original object of class `family` which has been used as
 #   input to extend_family().
-# @param extfam_nms_add2 A character vector of additional element names which
-#   do not exist in the output of extend_family() (needed for testing
-#   `get_refmodel([...])$family`).
 # @param from_brms A single logical value indicating whether the extended family
 #   was created for a reference model based on a `brmsfit` (`TRUE`) or not
 #   (`FALSE`).
@@ -22,7 +19,6 @@
 # @return `TRUE` (invisible).
 extfam_tester <- function(extfam,
                           fam_orig,
-                          extfam_nms_add2 = character(),
                           from_brms = FALSE,
                           augdat_expected = FALSE,
                           latent_expected = FALSE,
@@ -92,7 +88,6 @@ extfam_tester <- function(extfam,
       extfam_nms_add <- c(extfam_nms_add, "cats")
     }
   }
-  extfam_nms_add <- c(extfam_nms_add, extfam_nms_add2)
   extfam_nms <- c(fam_orig_nms, extfam_nms_add)
   expect_true(all(extfam_nms %in% names(extfam)), info = info_str)
 
@@ -345,7 +340,8 @@ refmodel_tester <- function(
   refmod_nms <- c(
     "fit", "formula", "div_minimizer", "family", "eta", "mu", "mu_offs", "dis",
     "y", "fetch_data", "wobs", "wdraws_ref", "offset", "cvfun", "cvfits",
-    "extract_model_data", "ref_predfun", "cvrefbuilder", "y_oscale", "nobs"
+    "extract_model_data", "ref_predfun", "mu_fun", "cvrefbuilder", "y_oscale",
+    "nobs"
   )
   refmod_class_expected <- "refmodel"
   if (is_datafit) {
@@ -378,7 +374,6 @@ refmodel_tester <- function(
   # family
   extfam_tester(refmod$family,
                 fam_orig = fam_orig,
-                extfam_nms_add2 = "mu_fun",
                 from_brms = (pkg_nm == "brms"),
                 augdat_expected = augdat_expected,
                 latent_expected = latent_expected,
@@ -695,6 +690,9 @@ refmodel_tester <- function(
 
   # ref_predfun
   expect_type(refmod$ref_predfun, "closure")
+
+  # mu_fun
+  expect_type(refmod$mu_fun, "closure")
 
   # cvrefbuilder
   expect_type(refmod$cvrefbuilder, "closure")

@@ -104,8 +104,8 @@ perf_eval <- function(search_path,
     }
     if (return_preds) {
       # Currently only called in loo_varsel()'s `validate_search = FALSE` case.
-      mu_j <- refmodel$family$mu_fun(submodl$outdmin, obs = indices_test,
-                                     offset = refmodel$offset[indices_test])
+      mu_j <- refmodel$mu_fun(submodl$outdmin, obs = indices_test,
+                              offset = refmodel$offset[indices_test])
       lppd_j <- t(refmodel$family$ll_fun(
         mu_j, submodl$dis, refmodel$y[indices_test], refmodel$wobs[indices_test]
       ))
@@ -118,10 +118,10 @@ perf_eval <- function(search_path,
                                  wobs = wobs_test),
         family = refmodel_fulldata$family,
         wdraws = submodl$wdraws_prj,
-        mu = refmodel_fulldata$family$mu_fun(submodl$outdmin,
-                                             obs = indices_test,
-                                             newdata = newdata_test,
-                                             offset = offset_test),
+        mu = refmodel_fulldata$mu_fun(submodl$outdmin,
+                                      obs = indices_test,
+                                      newdata = newdata_test,
+                                      offset = offset_test),
         dis = submodl$dis,
         cl_ref = submodl$cl_ref,
         wdraws_ref = submodl$wdraws_ref
@@ -181,7 +181,7 @@ init_submodl <- function(outdmin, p_ref, refmodel, predictor_terms, wobs) {
     ###
   }
 
-  mu <- refmodel$family$mu_fun(outdmin, offset = refmodel$offset)
+  mu <- refmodel$mu_fun(outdmin, offset = refmodel$offset)
   dis <- refmodel$family$dis_fun(p_ref, nlist(mu), wobs)
   ce <- weighted.mean(
     refmodel$family$ce(p_ref,
