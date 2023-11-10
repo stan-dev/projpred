@@ -50,6 +50,13 @@ density values (with each of these predictive density values being
 a---possibly weighted---average across the parameter draws).
 \item \code{"mlpd"}: mean log predictive density, that is, \code{"elpd"} divided by the
 number of observations.
+\item \code{"gmpd"}: geometric mean predictive density (GMPD), that is, \code{\link[=exp]{exp()}} of
+\code{"mlpd"}. The GMPD is especially helpful for discrete response families
+(because there, the GMPD is bounded by zero and one). For the corresponding
+standard error, the delta method is used. The corresponding confidence
+interval type is an "exponentiated normal approximation" because the
+confidence interval bounds are the exponentiated confidence interval bounds
+of the \code{"mlpd"}.
 \item \code{"mse"}: mean squared error (only available in the situations mentioned
 in section "Details" below).
 \item \code{"rmse"}: root mean squared error (only available in the situations
@@ -62,27 +69,30 @@ mentioned in section "Details" below). For the corresponding standard error
 and lower and upper confidence interval bounds, bootstrapping is used.
 }}
 
-\item{deltas}{If \code{TRUE}, the submodel statistics are estimated as differences
-from the baseline model (see argument \code{baseline}). With a "difference
-\emph{from} the baseline model", we mean to take the submodel statistic minus
-the baseline model statistic (not the other way round).}
+\item{deltas}{If \code{TRUE}, the submodel statistics are estimated relatively to
+the baseline model (see argument \code{baseline}). For the GMPD, the term
+"relatively" refers to the ratio vs. the baseline model (i.e., the submodel
+statistic divided by the baseline model statistic). For all other \code{stats},
+"relatively" refers to the difference from the baseline model (i.e., the
+submodel statistic minus the baseline model statistic).}
 
 \item{alpha}{A number determining the (nominal) coverage \code{1 - alpha} of the
-normal-approximation (or bootstrap; see argument \code{stats}) confidence
-intervals. For example, in case of the normal approximation, \code{alpha = 2 * pnorm(-1)} corresponds to a confidence interval stretching by one standard
-error on either side of the point estimate.}
+normal-approximation (or bootstrap or exponentiated normal-approximation;
+see argument \code{stats}) confidence intervals. For example, in case of the
+normal approximation, \code{alpha = 2 * pnorm(-1)} corresponds to a confidence
+interval stretching by one standard error on either side of the point
+estimate.}
 
 \item{baseline}{For \code{\link[=summary.vsel]{summary.vsel()}}: Only relevant if \code{deltas} is \code{TRUE}.
 For \code{\link[=plot.vsel]{plot.vsel()}}: Always relevant. Either \code{"ref"} or \code{"best"}, indicating
 whether the baseline is the reference model or the best submodel found (in
 terms of \code{stats[1]}), respectively.}
 
-\item{thres_elpd}{Only relevant if \code{any(stats \%in\% c("elpd", "mlpd"))}. The
-threshold for the ELPD difference (taking the submodel's ELPD minus the
-baseline model's ELPD) above which the submodel's ELPD is considered to be
-close enough to the baseline model's ELPD. An equivalent rule is applied in
-case of the MLPD. See \code{\link[=suggest_size]{suggest_size()}} for a formalization. Supplying \code{NA}
-deactivates this.}
+\item{thres_elpd}{Only relevant if \code{any(stats \%in\% c("elpd", "mlpd", "gmpd"))}. The threshold for the ELPD difference (taking the submodel's
+ELPD minus the baseline model's ELPD) above which the submodel's ELPD is
+considered to be close enough to the baseline model's ELPD. An equivalent
+rule is applied in case of the MLPD and the GMPD. See \code{\link[=suggest_size]{suggest_size()}} for
+a formalization. Supplying \code{NA} deactivates this.}
 
 \item{resp_oscale}{Only relevant for the latent projection. A single logical
 value indicating whether to calculate the performance statistics on the
@@ -200,11 +210,11 @@ latent projection with \code{resp_oscale = TRUE} in combination with
 As long as the reference model's performance is computable, it is always
 shown in the plot as a dashed red horizontal line. If \code{baseline = "best"},
 the baseline model's performance is shown as a dotted black horizontal line.
-If \code{!is.na(thres_elpd)} and \code{any(stats \%in\% c("elpd", "mlpd"))}, the value
-supplied to \code{thres_elpd} (which is automatically adapted internally in case
-of the MLPD or \code{deltas = FALSE}) is shown as a dot-dashed gray horizontal
-line for the reference model and, if \code{baseline = "best"}, as a long-dashed
-green horizontal line for the baseline model.
+If \code{!is.na(thres_elpd)} and \code{any(stats \%in\% c("elpd", "mlpd", "gmpd"))}, the
+value supplied to \code{thres_elpd} (which is automatically adapted internally in
+case of the MLPD or the GMPD or \code{deltas = FALSE}) is shown as a dot-dashed
+gray horizontal line for the reference model and, if \code{baseline = "best"}, as
+a long-dashed green horizontal line for the baseline model.
 }
 
 \examples{

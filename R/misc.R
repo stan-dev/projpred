@@ -152,9 +152,10 @@ validate_vsel_object_stats <- function(object, stats, resp_oscale = TRUE) {
   }
   resp_oscale <- object$refmodel$family$for_latent && resp_oscale
 
-  trad_stats <- c("elpd", "mlpd", "mse", "rmse", "acc", "pctcorr", "auc")
+  trad_stats <- c("elpd", "mlpd", "gmpd", "mse", "rmse", "acc", "pctcorr",
+                  "auc")
   trad_stats_binom_only <- c("acc", "pctcorr", "auc")
-  augdat_stats <- c("elpd", "mlpd", "acc", "pctcorr")
+  augdat_stats <- c("elpd", "mlpd", "gmpd", "acc", "pctcorr")
   resp_oscale_stats_fac <- augdat_stats
 
   if (is.null(stats)) {
@@ -202,7 +203,7 @@ validate_baseline <- function(refmodel, baseline, deltas) {
   }
   if (baseline == "ref" && deltas == TRUE && inherits(refmodel, "datafit")) {
     # no reference model (or the results missing for some other reason),
-    # so cannot compute differences between the reference model and submodels
+    # so cannot compute differences (or ratios) vs. the reference model
     stop("Cannot use deltas = TRUE and baseline = 'ref' when there is no ",
          "reference model.")
   }

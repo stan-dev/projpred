@@ -223,8 +223,8 @@ foreach::registerDoSEQ()
 <!-- Again, we ignore the tail-ESS warnings due to the reduced values for `chains` and `iter` in the reference model fit. -->
 
 We can now select a final submodel size by looking at a predictive performance plot similar to the one created for the preliminary `cv_varsel()` run above.
-By default, the performance statistics are plotted on their original scale, but with `deltas = TRUE`, they are plotted as differences from a baseline model (which is the reference model by default, at least in the most common cases).
-Since the differences and the (frequentist) uncertainty in their estimation are usually of more interest than the original-scale performance statistics (at least with regard to the decision for a final submodel size), we directly plot with `deltas = TRUE` here:
+By default, the performance statistics are plotted on their original scale, but with `deltas = TRUE`, they are plotted as differences^[For the geometric mean predictive density (GMPD, see argument `stats` of `summary.vsel()`), `deltas = TRUE` means to calculate the GMPD *ratio* (not difference) vs. the baseline model.] from a baseline model (which is the reference model by default, at least in the most common cases).
+Since the differences^[For the GMPD, this is again a ratio.] and the (frequentist) uncertainty in their estimation are usually of more interest than the original-scale performance statistics (at least with regard to the decision for a final submodel size), we directly plot with `deltas = TRUE` here:
 ```{r plot_vsel}
 plot(cvvs, stats = "mlpd", deltas = TRUE)
 ```

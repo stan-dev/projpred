@@ -110,24 +110,24 @@ weighted_summary_means <- function(y_wobs_test, family, wdraws, mu, dis, cl_ref,
           "`latent_ilink` returned only `NA`s, so all performance statistics ",
           "will also be `NA` as long as `resp_oscale = TRUE`."
         )
-      } else if (any(stats %in% c("elpd", "mlpd")) &&
+      } else if (any(stats %in% c("elpd", "mlpd", "gmpd")) &&
                  (ref_lppd_NA || sub_lppd_NA)) {
         message(
-          "`latent_ll_oscale` returned only `NA`s, so ELPD and MLPD will also ",
-          "be `NA` as long as `resp_oscale = TRUE`."
+          "`latent_ll_oscale` returned only `NA`s, so ELPD, MLPD, and GMPD ",
+          "will also be `NA` as long as `resp_oscale = TRUE`."
         )
       }
       varsel$y_wobs_test$y <- varsel$y_wobs_test$y_oscale
     } else {
       if (all(is.na(varsel$refmodel$dis)) &&
-          any(stats %in% c("elpd", "mlpd"))) {
+          any(stats %in% c("elpd", "mlpd", "gmpd"))) {
         message(
-          "Cannot calculate ELPD or MLPD if `resp_oscale = FALSE` and ",
+          "Cannot calculate ELPD, MLPD, or GMPD if `resp_oscale = FALSE` and ",
           "`<refmodel>$dis` consists of only `NA`s. If it's not possible to ",
           "supply a suitable argument `dis` to init_refmodel(), consider (i) ",
           "switching to `resp_oscale = TRUE` (which might require the ",
           "specification of functions needed by extend_family()) or (ii) ",
-          "using a performance statistic other than ELPD or MLPD."
+          "using a performance statistic other than ELPD, MLPD, or GMPD."
         )
       }
       if (all(is.na(varsel$y_wobs_test$y))) {
@@ -271,8 +271,8 @@ check_sub_NA <- function(summ_sub_k, el_nm) {
 
 ## Calculates given statistic stat with standard error and confidence bounds.
 ## mu.bs and lppd.bs are the pointwise mu and lppd for another model that is
-## used as a baseline for computing the difference in the given statistic, for
-## example the relative elpd. If these arguments are not given (NULL) then the
+## used as a baseline for computing the difference (ratio in case of the GMPD)
+## in the given statistic. If these arguments are not given (NULL) then the
 ## actual (non-relative) value is computed. NOTE: Element `wcv[i]` (with i = 1,
 ## ..., N and N denoting the number of observations) contains the weight of the
 ## CV fold that observation i is in. In case of varsel() output, this is `NULL`.
@@ -286,7 +286,7 @@ check_sub_NA <- function(summ_sub_k, el_nm) {
 get_stat <- function(mu, lppd, y_wobs_test, stat, mu.bs = NULL, lppd.bs = NULL,
                      wcv = NULL, alpha = 0.1, ...) {
   n_notna.bs <- NULL
-  if (stat %in% c("mlpd", "elpd")) {
+  if (stat %in% c("elpd", "mlpd", "gmpd")) {
     if (!is.null(lppd.bs)) {
       # Compute the performance statistics using only those observations for
       # which both `lppd` and `lppd.bs` are not `NA`:
@@ -325,7 +325,7 @@ get_stat <- function(mu, lppd, y_wobs_test, stat, mu.bs = NULL, lppd.bs = NULL,
   alpha_half <- alpha / 2
   one_minus_alpha_half <- 1 - alpha_half
 
-  if (stat %in% c("mlpd", "elpd")) {
+  if (stat %in% c("elpd", "mlpd", "gmpd")) {
     if (!is.null(lppd.bs)) {
       value <- sum((lppd - lppd.bs) * wcv, na.rm = TRUE)
       value.se <- weighted.sd(lppd - lppd.bs, wcv, na.rm = TRUE) *
@@ -335,9 +335,14 @@ get_stat <- function(mu, lppd, y_wobs_test, stat, mu.bs = NULL, lppd.bs = NULL,
       value.se <- weighted.sd(lppd, wcv, na.rm = TRUE) *
         sqrt(n_notna)
     }
-    if (stat == "mlpd") {
+    if (stat %in% c("mlpd", "gmpd")) {
       value <- value / n_notna
       value.se <- value.se / n_notna
+      if (stat == "gmpd") {
+        value_gmpd <- exp(value)
+        # Delta method:
+        value_gmpd.se <- value.se * value_gmpd
+      }
     }
   } else if (stat %in% c("mse", "rmse")) {
     y <- y_wobs_test$y_prop %||% y_wobs_test$y
@@ -477,6 +482,13 @@ get_stat <- function(mu, lppd, y_wobs_test, stat, mu.bs = NULL, lppd.bs = NULL,
   } else {
     lq <- lq_uq[1]
     uq <- lq_uq[2]
+  }
+
+  if (stat == "gmpd") {
+    lq <- exp(lq)
+    uq <- exp(uq)
+    value <- value_gmpd
+    value.se <- value_gmpd.se
   }
 
   return(list(value = value, se = value.se, lq = lq, uq = uq))

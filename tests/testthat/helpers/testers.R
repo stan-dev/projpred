@@ -2649,6 +2649,8 @@ smmry_sub_tester <- function(
           stat_ref <- sum(summaries_ref$lppd)
         } else if (stats_expected[stat_idx] == "mlpd") {
           stat_ref <- mean(summaries_ref$lppd)
+        } else if (stats_expected[stat_idx] == "gmpd") {
+          stat_ref <- exp(mean(summaries_ref$lppd))
         } else {
           # TODO: Implement `stat_ref` for the remaining `stats`.
           stat_ref <- NULL

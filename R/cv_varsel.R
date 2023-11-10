@@ -512,7 +512,7 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
   }
 
   # Log-likelihood values for the reference model (necessary for the PSIS-LOO CV
-  # weights, but also for performance statistics like ELPD and MLPD):
+  # weights, but also for performance statistics like ELPD, MLPD, and GMPD):
   if (refmodel$family$for_latent) {
     mu_offs_oscale <- refmodel$family$latent_ilink(
       t(refmodel$mu_offs), cl_ref = seq_along(refmodel$wdraws_ref),
