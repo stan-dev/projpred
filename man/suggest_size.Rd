@@ -64,7 +64,7 @@ examine the results via \code{\link[=plot.vsel]{plot.vsel()}}, \code{\link[=cv_p
 decision based on what is most appropriate for the problem at hand.
 }
 \details{
-In general (beware of special extensions below), the suggested model
+In general (beware of special cases below), the suggested model
 size is the smallest model size \eqn{j \in \{0, 1, ...,
   \texttt{nterms\_max}\}}{{j = 0, 1, ..., nterms_max}} for which either the
 lower or upper bound (depending on argument \code{type}) of the
@@ -78,6 +78,14 @@ falls above (or is equal to) \deqn{\texttt{pct} \cdot (u_0 -
 model's estimated utility and \eqn{u_{\mathrm{base}}}{u_base} the baseline
 model's estimated utility. The baseline model is either the reference model
 or the best submodel found (see argument \code{baseline} of \code{\link[=summary.vsel]{summary.vsel()}}).
+
+In doing so, loss statistics like the root mean squared error (RMSE) and
+the mean squared error (MSE) are converted to utilities by multiplying them
+by \code{-1}, so a call such as \code{suggest_size(object, stat = "rmse", type = "upper")} finds the smallest model size whose upper confidence interval
+bound for the \emph{negative} RMSE or MSE exceeds the cutoff (or, equivalently,
+has the lower confidence interval bound for the RMSE or MSE below the
+cutoff). This is done to make the interpretation of argument \code{type} the
+same regardless of argument \code{stat}.
 
 If \code{!is.na(thres_elpd)} and \code{stat = "elpd"}, the decision rule above is
 extended: The suggested model size is then the smallest model size \eqn{j}
@@ -103,16 +111,6 @@ utility estimate (with that standard error referring to the utility
 Apart from the two \code{\link[=summary.vsel]{summary.vsel()}} arguments mentioned above (\code{alpha} and
 \code{baseline}), \code{resp_oscale} is another important \code{\link[=summary.vsel]{summary.vsel()}} argument
 that may be passed via \code{...}.
-}
-\note{
-Loss statistics like the root mean squared error (RMSE) and the mean
-squared error (MSE) are converted to utilities by multiplying them by \code{-1},
-so a call such as \code{suggest_size(object, stat = "rmse", type = "upper")}
-finds the smallest model size whose upper confidence interval bound for the
-\emph{negative} RMSE or MSE exceeds the cutoff (or, equivalently, has the lower
-confidence interval bound for the RMSE or MSE below the cutoff). This is
-done to make the interpretation of argument \code{type} the same regardless of
-argument \code{stat}.
 }
 \examples{
 \dontshow{if (requireNamespace("rstanarm", quietly = TRUE)) (if (getRversion() >= "3.4") withAutoprint else force)(\{ # examplesIf}
