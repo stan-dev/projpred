@@ -1480,10 +1480,10 @@ print.vsel <- function(x, ...) {
 #'   the mean squared error (MSE) are converted to utilities by multiplying them
 #'   by `-1`, so a call such as `suggest_size(object, stat = "rmse", type =
 #'   "upper")` finds the smallest model size whose upper confidence interval
-#'   bound for the *negative* RMSE or MSE exceeds the cutoff (or, equivalently,
-#'   has the lower confidence interval bound for the RMSE or MSE below the
-#'   cutoff). This is done to make the interpretation of argument `type` the
-#'   same regardless of argument `stat`.
+#'   bound for the *negative* RMSE or MSE exceeds (or is equal to) the cutoff
+#'   (or, equivalently, has the lower confidence interval bound for the RMSE or
+#'   MSE below---or equal to---the cutoff). This is done to make the
+#'   interpretation of argument `type` the same regardless of argument `stat`.
 #'
 #'   If `!is.na(thres_elpd)` and `stat = "elpd"`, the decision rule above is
 #'   extended: The suggested model size is then the smallest model size \eqn{j}

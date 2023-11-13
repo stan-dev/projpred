@@ -82,10 +82,10 @@ or the best submodel found (see argument \code{baseline} of \code{\link[=summary
 In doing so, loss statistics like the root mean squared error (RMSE) and
 the mean squared error (MSE) are converted to utilities by multiplying them
 by \code{-1}, so a call such as \code{suggest_size(object, stat = "rmse", type = "upper")} finds the smallest model size whose upper confidence interval
-bound for the \emph{negative} RMSE or MSE exceeds the cutoff (or, equivalently,
-has the lower confidence interval bound for the RMSE or MSE below the
-cutoff). This is done to make the interpretation of argument \code{type} the
-same regardless of argument \code{stat}.
+bound for the \emph{negative} RMSE or MSE exceeds (or is equal to) the cutoff
+(or, equivalently, has the lower confidence interval bound for the RMSE or
+MSE below---or equal to---the cutoff). This is done to make the
+interpretation of argument \code{type} the same regardless of argument \code{stat}.
 
 If \code{!is.na(thres_elpd)} and \code{stat = "elpd"}, the decision rule above is
 extended: The suggested model size is then the smallest model size \eqn{j}
