@@ -16,7 +16,7 @@ get_refmodel(object, ...)
 
 \method{get_refmodel}{vsel}(object, ...)
 
-\method{get_refmodel}{default}(object, data, formula, family = NULL, ...)
+\method{get_refmodel}{default}(object, family = NULL, ...)
 
 \method{get_refmodel}{stanreg}(object, latent = FALSE, dis = NULL, ...)
 
@@ -52,24 +52,6 @@ arguments passed to \code{\link[=init_refmodel]{init_refmodel()}}. For the \code
 arguments passed to the appropriate method. For \code{\link[=init_refmodel]{init_refmodel()}}:
 arguments passed to \code{\link[=extend_family]{extend_family()}} (apart from \code{family}).}
 
-\item{data}{A \code{data.frame} containing the data to use for the projection
-predictive variable selection. Any \code{contrasts} attributes of the dataset's
-columns are silently removed. For custom reference models, the columns of
-\code{data} do not necessarily have to coincide with those of the dataset used
-for fitting the reference model, but keep in mind that a row-subset of
-\code{data} is used for argument \code{newdata} of \code{ref_predfun} during \eqn{K}-fold
-CV.}
-
-\item{formula}{The full formula to use for the search procedure. For custom
-reference models, this does not necessarily coincide with the reference
-model's formula. For general information about formulas in \R, see
-\code{\link{formula}}. For information about possible right-hand side (i.e.,
-predictor) terms in \code{formula} here, see the main vignette and section
-"Formula terms" below. For multilevel formulas, see also package \pkg{lme4}
-(in particular, functions \code{\link[lme4:lmer]{lme4::lmer()}} and \code{\link[lme4:glmer]{lme4::glmer()}}). For additive
-formulas, see also packages \pkg{mgcv} (in particular, function
-\code{\link[mgcv:gam]{mgcv::gam()}}) and \pkg{gamm4} (in particular, function \code{\link[gamm4:gamm4]{gamm4::gamm4()}}).}
-
 \item{family}{An object of class \code{family} representing the observation model
 (i.e., the distributional family for the response) of the \emph{submodels}.
 (However, the link and the inverse-link function of this \code{family} are also
@@ -95,6 +77,24 @@ have no dispersion parameter or if the submodels do have a dispersion
 parameter, but \code{object} is \code{NULL} (in which case \code{0} is used for \code{dis}).
 Note that for the \code{\link[=gaussian]{gaussian()}} \code{family}, \code{dis} is the standard deviation,
 not the variance.}
+
+\item{data}{A \code{data.frame} containing the data to use for the projection
+predictive variable selection. Any \code{contrasts} attributes of the dataset's
+columns are silently removed. For custom reference models, the columns of
+\code{data} do not necessarily have to coincide with those of the dataset used
+for fitting the reference model, but keep in mind that a row-subset of
+\code{data} is used for argument \code{newdata} of \code{ref_predfun} during \eqn{K}-fold
+CV.}
+
+\item{formula}{The full formula to use for the search procedure. For custom
+reference models, this does not necessarily coincide with the reference
+model's formula. For general information about formulas in \R, see
+\code{\link{formula}}. For information about possible right-hand side (i.e.,
+predictor) terms in \code{formula} here, see the main vignette and section
+"Formula terms" below. For multilevel formulas, see also package \pkg{lme4}
+(in particular, functions \code{\link[lme4:lmer]{lme4::lmer()}} and \code{\link[lme4:glmer]{lme4::glmer()}}). For additive
+formulas, see also packages \pkg{mgcv} (in particular, function
+\code{\link[mgcv:gam]{mgcv::gam()}}) and \pkg{gamm4} (in particular, function \code{\link[gamm4:gamm4]{gamm4::gamm4()}}).}
 
 \item{ref_predfun}{Prediction function for the linear predictor of the
 reference model, including offsets (if existing). See also section

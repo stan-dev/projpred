@@ -786,14 +786,9 @@ get_refmodel.vsel <- function(object, ...) {
 
 #' @rdname refmodel-init-get
 #' @export
-get_refmodel.default <- function(object, data, formula, family = NULL, ...) {
-  return(init_refmodel(
-    object = object,
-    data = data,
-    formula = formula,
-    family = family %||% family(object),
-    ...
-  ))
+get_refmodel.default <- function(object, family = NULL, ...) {
+  return(init_refmodel(object = object, family = family %||% family(object),
+                       ...))
 }
 
 #' @rdname refmodel-init-get
