@@ -1418,17 +1418,15 @@ print.vselsummary <- function(x, digits = getOption("projpred.digits", 2),
 #' first calling [summary.vsel()] and then [print.vselsummary()].
 #'
 #' @param x An object of class `vsel` (returned by [varsel()] or [cv_varsel()]).
-#' @param ... Arguments passed to [summary.vsel()] (apart from argument `digits`
-#'   which is passed to [print.vselsummary()]).
+#' @param digits Passed to argument `digits` of [print.vselsummary()].
+#' @param ... Arguments passed to [summary.vsel()].
 #'
 #' @return The output of [summary.vsel()] (invisible).
 #'
 #' @export
-print.vsel <- function(x, ...) {
-  dot_args <- list(...)
-  smmry <- do_call(summary,
-                   c(list(object = x), dot_args[names(dot_args) != "digits"]))
-  do.call(print, c(list(x = smmry), dot_args[names(dot_args) == "digits"]))
+print.vsel <- function(x, digits = getOption("projpred.digits", 2), ...) {
+  smmry <- summary(x, ...)
+  print(smmry, digits = digits)
   return(invisible(smmry))
 }
 
