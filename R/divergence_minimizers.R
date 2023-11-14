@@ -65,18 +65,21 @@ divmin <- function(
                                   initial = 0)
       on.exit(close(pb))
     }
-    return(lapply(seq_along(formulas), function(s) {
+    outdmin <- lapply(seq_along(formulas), function(s) {
       if (verbose_divmin) {
         on.exit(utils::setTxtProgressBar(pb, s))
       }
-      sdivmin(
-        formula = formulas[[s]],
-        projpred_var = projpred_var[, s, drop = FALSE],
-        projpred_formula_no_random = projpred_formulas_no_random[[s]],
-        projpred_random = projpred_random,
-        ...
+      mssgs_warns_capt <- capt_mssgs_warns(
+        soutdmin <- sdivmin(
+          formula = formulas[[s]],
+          projpred_var = projpred_var[, s, drop = FALSE],
+          projpred_formula_no_random = projpred_formulas_no_random[[s]],
+          projpred_random = projpred_random,
+          ...
+        )
       )
-    }))
+      return(nlist(soutdmin, mssgs_warns_capt))
+    })
   } else {
     # Parallel case.
     if (!requireNamespace("foreach", quietly = TRUE)) {
@@ -87,7 +90,7 @@ divmin <- function(
     }
     dot_args <- list(...)
     `%do_projpred%` <- foreach::`%dopar%`
-    return(foreach::foreach(
+    outdmin <- foreach::foreach(
       formula_s = formulas,
       projpred_var_s = iterators::iter(projpred_var, by = "column"),
       projpred_formula_no_random_s = projpred_formulas_no_random,
@@ -97,16 +100,40 @@ divmin <- function(
         "projpred_var", "projpred_formulas_no_random"
       )
     ) %do_projpred% {
-      do.call(
-        sdivmin,
-        c(list(formula = formula_s,
-               projpred_var = projpred_var_s,
-               projpred_formula_no_random = projpred_formula_no_random_s,
-               projpred_random = projpred_random),
-          dot_args)
+      mssgs_warns_capt <- capt_mssgs_warns(
+        soutdmin <- do.call(
+          sdivmin,
+          c(list(formula = formula_s,
+                 projpred_var = projpred_var_s,
+                 projpred_formula_no_random = projpred_formula_no_random_s,
+                 projpred_random = projpred_random),
+            dot_args)
+        )
       )
-    })
+      return(nlist(soutdmin, mssgs_warns_capt))
+    }
   }
+  mssgs_warns_capts <- unlist(lapply(outdmin, "[[", "mssgs_warns_capt"))
+  outdmin <- lapply(outdmin, "[[", "soutdmin")
+  # Filter out some warnings:
+  mssgs_warns_capts <- setdiff(mssgs_warns_capts, "")
+  mssgs_warns_capts <- grep("Warning in .*:$", mssgs_warns_capts, value = TRUE,
+                            invert = TRUE)
+  mssgs_warns_capts <- grep("non-integer #successes in a binomial glm!$",
+                            mssgs_warns_capts, value = TRUE, invert = TRUE)
+  mssgs_warns_capts <- grep(paste("Using formula\\(x\\) is deprecated when x",
+                                  "is a character vector of length > 1\\.$"),
+                            mssgs_warns_capts, value = TRUE, invert = TRUE)
+  mssgs_warns_capts <- grep(
+    "Consider formula\\(paste\\(x, collapse = .*\\)\\) instead\\.$",
+    mssgs_warns_capts, value = TRUE, invert = TRUE
+  )
+  mssgs_warns_capts <- unique(mssgs_warns_capts)
+  if (length(mssgs_warns_capts) > 0 &&
+      getOption("projpred.warn_submodel_fits", TRUE)) {
+    warning(mssgs_warns_capts)
+  }
+  return(outdmin)
 }
 
 # Use projpred's own implementation to fit non-multilevel non-additive
@@ -175,10 +202,7 @@ fit_glm_callback <- function(formula, family, ...) {
         methods::formalArgs(stats::lm.wfit))
     )]
     # Call the submodel fitter:
-    return(suppressMessages(suppressWarnings(do.call(stats::lm, c(
-      list(formula = formula),
-      dot_args
-    )))))
+    return(do.call(stats::lm, c(list(formula = formula), dot_args)))
   } else {
     # Exclude arguments from `...` which cannot be passed to stats::glm():
     dot_args <- list(...)
@@ -188,10 +212,8 @@ fit_glm_callback <- function(formula, family, ...) {
         methods::formalArgs(stats::glm.control))
     )]
     # Call the submodel fitter:
-    return(suppressMessages(suppressWarnings(do.call(stats::glm, c(
-      list(formula = formula, family = family),
-      dot_args
-    )))))
+    return(do.call(stats::glm, c(list(formula = formula, family = family),
+                                 dot_args)))
   }
 }
 
@@ -205,10 +227,7 @@ fit_gam_callback <- function(formula, ...) {
       methods::formalArgs(mgcv::gam.fit))
   )]
   # Call the submodel fitter:
-  return(suppressMessages(suppressWarnings(do.call(mgcv::gam, c(
-    list(formula = formula),
-    dot_args
-  )))))
+  return(do.call(mgcv::gam, c(list(formula = formula), dot_args)))
 }
 
 # Use package "gamm4" to fit additive multilevel submodels:
@@ -225,11 +244,11 @@ fit_gamm_callback <- function(formula, projpred_formula_no_random,
   )]
   # Call the submodel fitter:
   fit <- tryCatch({
-    suppressMessages(suppressWarnings(do.call(gamm4::gamm4, c(
+    do.call(gamm4::gamm4, c(
       list(formula = projpred_formula_no_random, random = projpred_random,
            data = data, family = family, control = control),
       dot_args
-    ))))
+    ))
   }, error = function(e) {
     if (grepl("not positive definite", as.character(e))) {
       if ("optimx" %in% control$optimizer &&
@@ -334,11 +353,11 @@ fit_glmer_callback <- function(formula, projpred_formula_no_random,
         stop("Unexpected length of `random_fmls`.")
       }
       # Call the submodel fitter:
-      return(suppressMessages(suppressWarnings(do.call(MASS::glmmPQL, c(
+      return(do.call(MASS::glmmPQL, c(
         list(fixed = projpred_formula_no_random, random = random_fmls,
              family = family, control = control),
         dot_args
-      )))))
+      )))
     } else if (family$family == "gaussian" && family$link == "identity" &&
                getOption("projpred.gaussian_not_as_generalized", TRUE)) {
       # Exclude arguments from `...` which cannot be passed to lme4::lmer():
@@ -348,10 +367,8 @@ fit_glmer_callback <- function(formula, projpred_formula_no_random,
         methods::formalArgs(lme4::lmer)
       )]
       # Call the submodel fitter:
-      return(suppressMessages(suppressWarnings(do.call(lme4::lmer, c(
-        list(formula = formula, control = control),
-        dot_args
-      )))))
+      return(do.call(lme4::lmer, c(list(formula = formula, control = control),
+                                   dot_args)))
     } else {
       # Exclude arguments from `...` which cannot be passed to lme4::glmer():
       dot_args <- list(...)
@@ -360,10 +377,9 @@ fit_glmer_callback <- function(formula, projpred_formula_no_random,
         methods::formalArgs(lme4::glmer)
       )]
       # Call the submodel fitter:
-      return(suppressMessages(suppressWarnings(do.call(lme4::glmer, c(
-        list(formula = formula, family = family, control = control),
-        dot_args
-      )))))
+      return(do.call(lme4::glmer, c(list(formula = formula, family = family,
+                                         control = control),
+                                    dot_args)))
     }
   }, error = function(e) {
     if (grepl("No random effects", as.character(e))) {
@@ -673,21 +689,15 @@ fit_cumul <- function(formula, data, family, weights, ...) {
   } else if (link_nm == "probit_approx") {
     link_nm <- "probit"
   }
-  # For catching warnings via capture.output() (which is necessary to filter out
-  # the warning "non-integer #successes in a binomial glm!"):
-  warn_orig <- options(warn = 1)
   # Call the submodel fitter:
-  warn_capt <- utils::capture.output({
-    fitobj <- try(do.call(MASS::polr, c(
-      list(formula = formula,
-           data = data,
-           weights = quote(projpred_internal_w_aug),
-           model = FALSE,
-           method = link_nm),
-      dot_args
-    )), silent = TRUE)
-  }, type = "message")
-  options(warn_orig)
+  fitobj <- try(do.call(MASS::polr, c(
+    list(formula = formula,
+         data = data,
+         weights = quote(projpred_internal_w_aug),
+         model = FALSE,
+         method = link_nm),
+    dot_args
+  )), silent = TRUE)
   if (inherits(fitobj, "try-error") &&
       grepl(paste("initial value in 'vmmin' is not finite",
                   "attempt to find suitable starting values failed",
@@ -706,28 +716,18 @@ fit_cumul <- function(formula, data, family, weights, ...) {
     # Start with thresholds which imply equal probabilities for the response
     # categories:
     start_thres <- linkfun_raw(seq_len(nthres) / ncats, link_nm = link_nm)
-    warn_orig <- options(warn = 1)
-    warn_capt <- utils::capture.output({
-      fitobj <- try(do.call(MASS::polr, c(
-        list(formula = formula,
-             data = data,
-             weights = quote(projpred_internal_w_aug),
-             model = FALSE,
-             method = link_nm,
-             start = c(start_coefs, start_thres)),
-        dot_args
-      )), silent = TRUE)
-    }, type = "message")
-    options(warn_orig)
+    fitobj <- try(do.call(MASS::polr, c(
+      list(formula = formula,
+           data = data,
+           weights = quote(projpred_internal_w_aug),
+           model = FALSE,
+           method = link_nm,
+           start = c(start_coefs, start_thres)),
+      dot_args
+    )), silent = TRUE)
   }
   if (inherits(fitobj, "try-error")) {
     stop(attr(fitobj, "condition")$message)
-  }
-  warn_capt <- grep("Warning in .*:$", warn_capt, value = TRUE, invert = TRUE)
-  warn_capt <- grep("non-integer #successes in a binomial glm!$", warn_capt,
-                    value = TRUE, invert = TRUE)
-  if (length(warn_capt) > 0) {
-    warning(warn_capt)
   }
   return(fitobj)
 }
@@ -767,38 +767,19 @@ fit_cumul_mlvl <- function(formula, data, family, weights, ...) {
   if (link_nm == "probit_approx") {
     link_nm <- "probit"
   }
-  # For catching warnings via capture.output() (which is necessary to filter out
-  # the warning "Using formula(x) is deprecated when x is a character vector of
-  # length > 1. [...]"):
-  warn_orig <- options(warn = 1)
   # Call the submodel fitter:
-  warn_capt <- utils::capture.output({
-    fitobj <- try(do.call(ordinal::clmm, c(
-      list(formula = formula,
-           data = data,
-           weights = quote(projpred_internal_w_aug),
-           contrasts = NULL,
-           Hess = FALSE,
-           model = FALSE,
-           link = link_nm),
-      dot_args
-    )), silent = TRUE)
-  }, type = "message")
-  options(warn_orig)
+  fitobj <- try(do.call(ordinal::clmm, c(
+    list(formula = formula,
+         data = data,
+         weights = quote(projpred_internal_w_aug),
+         contrasts = NULL,
+         Hess = FALSE,
+         model = FALSE,
+         link = link_nm),
+    dot_args
+  )), silent = TRUE)
   if (inherits(fitobj, "try-error")) {
     stop(attr(fitobj, "condition")$message)
-  }
-  warn_capt <- grep(
-    paste("Using formula\\(x\\) is deprecated when x is a character vector of",
-          "length > 1\\.$"),
-    warn_capt, value = TRUE, invert = TRUE
-  )
-  warn_capt <- grep(
-    "Consider formula\\(paste\\(x, collapse = .*\\)\\) instead\\.$",
-    warn_capt, value = TRUE, invert = TRUE
-  )
-  if (length(warn_capt) > 0) {
-    warning(warn_capt)
   }
   # Needed for the ordinal:::predict.clm() workaround (the value `"negative"` is
   # the default, see `?ordinal::clm.control`):
@@ -839,16 +820,20 @@ fit_categ <- function(formula, data, family, weights, ...) {
     }
   }
   # Call the submodel fitter:
-  out_capt <- utils::capture.output({
+  out_capt <- utils::capture.output(
     fitobj <- do.call(nnet::multinom, c(
       list(formula = formula,
            data = data,
            weights = weights),
       dot_args
     ))
-  })
+  )
   if (utils::tail(out_capt, 1) != "converged") {
-    warning("The nnet::multinom() submodel fit did not converge.")
+    warning(
+      "Could not find the string \"converged\" at the end of the `stdout` ",
+      "output from the nnet::multinom() submodel fit, so perhaps this fitting ",
+      "procedure did not converge."
+    )
   }
   return(fitobj)
 }
@@ -903,7 +888,7 @@ fit_categ_mlvl <- function(formula, projpred_formula_no_random,
     random_fmls <- random_fmls[[1]]
   }
   # Call the submodel fitter:
-  out_capt <- utils::capture.output({
+  out_capt <- utils::capture.output(
     fitobj <- do.call(mclogit::mblogit, c(
       list(formula = projpred_formula_no_random,
            data = data,
@@ -915,9 +900,13 @@ fit_categ_mlvl <- function(formula, projpred_formula_no_random,
            method = "PQL"),
       dot_args
     ))
-  })
+  )
   if (utils::tail(out_capt, 1) != "converged") {
-    warning("The mclogit::mblogit() submodel fit did not converge.")
+    warning(
+      "Could not find the string \"converged\" at the end of the `stdout` ",
+      "output from the mclogit::mblogit() submodel fit, so perhaps this ",
+      "fitting procedure did not converge."
+    )
   }
   return(fitobj)
 }
