@@ -904,6 +904,8 @@ options(projpred.additional_checks = TRUE)
 # Suppress the warning thrown if `cvrefbuilder` is `NULL` (here in the tests,
 # this should only be relevant for `datafit`s):
 options(projpred.warn_cvrefbuilder_NULL = FALSE)
+# Set default number of significant digits to be printed:
+options(projpred.digits = getOption("digits"))
 
 search_trms_tst <- list(
   default_search_trms = list(),

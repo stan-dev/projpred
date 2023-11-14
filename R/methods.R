@@ -1310,6 +1310,9 @@ mk_colnms_smmry <- function(type, stats, deltas) {
 #' It displays a summary of the results from a [varsel()] or [cv_varsel()] run.
 #'
 #' @param x An object of class `vselsummary`.
+#' @param digits Passed to [print.data.frame()] (for the table containing the
+#'   submodel performance evaluation results) and [print.default()] (for the
+#'   vector containing the reference model performance evaluation results).
 #' @param ... Arguments passed to [print.data.frame()] (for the table containing
 #'   the submodel performance evaluation results) and [print.default()] (for the
 #'   vector containing the reference model performance evaluation results).
@@ -1326,7 +1329,8 @@ mk_colnms_smmry <- function(type, stats, deltas) {
 #' @return The output of [summary.vsel()] (invisible).
 #'
 #' @export
-print.vselsummary <- function(x, ...) {
+print.vselsummary <- function(x, digits = getOption("projpred.digits", 2),
+                              ...) {
   if (x$family$for_latent) {
     cat("------\nResponse-scale family:\n")
     print(structure(x$family[c("family_oscale", "link_oscale")],
@@ -1399,11 +1403,11 @@ print.vselsummary <- function(x, ...) {
   cat("Submodel performance evaluation summary", scale_string, " with ",
       "`deltas = ", x$deltas, "` and `cumulate = ", x$cumulate, "`:\n",
       sep = "")
-  print(x$perf_sub, row.names = FALSE, ...)
+  print(x$perf_sub, row.names = FALSE, digits = digits, ...)
   cat("\n")
   cat("Reference model performance evaluation summary", scale_string, " with ",
       "`deltas = ", x$deltas, "`:\n", sep = "")
-  print(x$perf_ref, ...)
+  print(x$perf_ref, digits = digits, ...)
   return(invisible(x))
 }
 

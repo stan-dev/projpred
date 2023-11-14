@@ -24,6 +24,7 @@ If you read this from a place other than <https://mc-stan.org/projpred/news/inde
 * Global option `projpred.verbose_project` now affects the verbosity of *all* projections performed by the built-in divergence minimizers (except for the built-in L1-projection divergence minimizer). In particular, the divergence minimizer (no matter whether built-in or user-specified) is also employed when calling `varsel()` or `cv_varsel()`, so setting option `projpred.verbose_project` to `TRUE` now shows the progress of the projections during a `varsel()` or `cv_varsel()` call. Previously, that option only affected the projections performed through `project()` (see the default for `project()`'s argument `verbose`). Usually, setting `projpred.verbose_project` to `TRUE` only makes sense when setting global option `projpred.extra_verbose` and argument `verbose` (of `varsel()` or `cv_varsel()`) to `TRUE` as well.
 * Added a `print()` method for objects of class `refmodel`, mainly to avoid cluttering the console when printing such objects accidentally.
 * Argument `extract_model_data` of `init_refmodel()` is now allowed to be `NULL` for using an internal default.
+* `print.vselsummary()` (and hence also `print.vsel()`) now use a minimum number of significant digits of `2` by default. The previous behavior can be restored by setting `options(projpred.digits = getOption("digits"))`.
 
 ## Bug fixes
 

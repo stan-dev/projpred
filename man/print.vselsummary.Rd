@@ -4,10 +4,14 @@
 \alias{print.vselsummary}
 \title{Print summary of a \code{\link[=varsel]{varsel()}} or \code{\link[=cv_varsel]{cv_varsel()}} run}
 \usage{
-\method{print}{vselsummary}(x, ...)
+\method{print}{vselsummary}(x, digits = getOption("projpred.digits", 2), ...)
 }
 \arguments{
 \item{x}{An object of class \code{vselsummary}.}
+
+\item{digits}{Passed to \code{\link[=print.data.frame]{print.data.frame()}} (for the table containing the
+submodel performance evaluation results) and \code{\link[=print.default]{print.default()}} (for the
+vector containing the reference model performance evaluation results).}
 
 \item{...}{Arguments passed to \code{\link[=print.data.frame]{print.data.frame()}} (for the table containing
 the submodel performance evaluation results) and \code{\link[=print.default]{print.default()}} (for the
