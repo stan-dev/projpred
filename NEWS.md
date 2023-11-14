@@ -25,6 +25,7 @@ If you read this from a place other than <https://mc-stan.org/projpred/news/inde
 * Added a `print()` method for objects of class `refmodel`, mainly to avoid cluttering the console when printing such objects accidentally.
 * Argument `extract_model_data` of `init_refmodel()` is now allowed to be `NULL` for using an internal default.
 * `print.vselsummary()` (and hence also `print.vsel()`) now use a minimum number of significant digits of `2` by default. The previous behavior can be restored by setting `options(projpred.digits = getOption("digits"))`.
+* Added a new performance statistic, the geometric mean predictive density (GMPD). This is particularly useful for discrete outcomes because there, the GMPD is a geometric mean of probabilities and hence bounded by zero and one. For details, see argument `stats` of the `?summary.vsel` help. (GitHub: #476)
 
 ## Bug fixes
 
