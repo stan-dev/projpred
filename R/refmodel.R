@@ -1208,16 +1208,17 @@ init_refmodel <- function(object, data, formula, family, ref_predfun = NULL,
 
   # Functions ---------------------------------------------------------------
 
-  if (is.null(extract_model_data)) {
-    extract_model_data <- function(object, newdata, wrhs = NULL, orhs = NULL,
-                                   extract_y = TRUE) {
+  # The internal default for `extract_model_data`:
+  extract_model_data_usr <- extract_model_data
+  if (is.null(extract_model_data_usr)) {
+    extract_model_data_usr <- function(object, newdata, wrhs = NULL,
+                                       orhs = NULL, extract_y = TRUE) {
       return(y_wobs_offs(newdata = newdata, wrhs = wrhs, orhs = orhs,
                          resp_form = if (extract_y) lhs(formula) else NULL))
     }
   }
-  # Wrap `extract_model_data` in order to retrieve the correct `newdata` when
-  # `newdata` is `NULL`:
-  extract_model_data_usr <- extract_model_data
+  # Wrap `extract_model_data_usr` in order to retrieve the correct `newdata`
+  # when `newdata` is `NULL`:
   extract_model_data <- function(object, newdata, ...) {
     extract_model_data_usr(object = object, newdata = newdata %||% data, ...)
   }
