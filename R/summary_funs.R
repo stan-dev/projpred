@@ -193,7 +193,7 @@ weighted_summary_means <- function(y_wobs_test, family, wdraws, mu, dis, cl_ref,
     ## reference model statistics
     summ <- summ_ref
     res <- get_stat(summ$mu, summ$lppd, varsel$y_wobs_test, stat, mu.bs = mu.bs,
-                    lppd.bs = lppd.bs, alpha = alpha, ...)
+                    lppd.bs = lppd.bs, wcv = NULL, alpha = alpha, ...)
     row <- data.frame(
       data = varsel$type_test, size = Inf, delta = delta, statistic = stat,
       value = res$value, lq = res$lq, uq = res$uq, se = res$se, diff = NA,
@@ -210,8 +210,8 @@ weighted_summary_means <- function(y_wobs_test, family, wdraws, mu, dis, cl_ref,
         ## results to get more accurate statistic fot the submodel on the actual
         ## scale
         res_ref <- get_stat(summ_ref$mu, summ_ref$lppd, varsel$y_wobs_test,
-                            stat, mu.bs = NULL, lppd.bs = NULL, alpha = alpha,
-                            ...)
+                            stat, mu.bs = NULL, lppd.bs = NULL, wcv = NULL,
+                            alpha = alpha, ...)
         res_diff <- get_stat(summ$mu, summ$lppd, varsel$y_wobs_test, stat,
                              mu.bs = summ_ref$mu, lppd.bs = summ_ref$lppd,
                              wcv = summ$wcv, alpha = alpha, ...)
