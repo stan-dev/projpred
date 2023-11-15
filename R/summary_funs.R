@@ -30,12 +30,12 @@
 #   containing the values for the quantities from the description above.
 weighted_summary_means <- function(y_wobs_test, family, wdraws, mu, dis, cl_ref,
                                    wdraws_ref = rep(1, length(cl_ref))) {
-  if (!is.matrix(mu)) {
+  if (!is.matrix(mu) || any(dim(mu) == 0)) {
     stop("Unexpected structure for `mu`. Do the return values of ",
          "`proj_predfun` and `ref_predfun` have the correct structure?")
   }
   loglik <- family$ll_fun(mu, dis, y_wobs_test$y, y_wobs_test$wobs)
-  if (!is.matrix(loglik)) {
+  if (!is.matrix(loglik) || any(dim(loglik) == 0)) {
     stop("Unexpected structure for `loglik`. Please notify the package ",
          "maintainer.")
   }
