@@ -1409,6 +1409,7 @@ get_kfold <- function(refmodel, K, cvfits, verbose) {
   } else {
     folds <- attr(cvfits, "folds")
   }
+  stopifnot(!is.null(folds))
   return(lapply(seq_len(K), function(k) {
     cvfit <- cvfits[[k]]
     # Add the omitted observation indices for this fold (and the fold index `k`
