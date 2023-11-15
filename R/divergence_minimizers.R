@@ -115,8 +115,8 @@ divmin <- function(
   }
   mssgs_warns_capts <- lapply(outdmin, "[[", "mssgs_warns_capt")
   outdmin <- lapply(outdmin, "[[", "soutdmin")
+  # Filter out some warnings:
   mssgs_warns_capts <- lapply(mssgs_warns_capts, function(mssgs_warns_capt) {
-    # Filter out some warnings:
     mssgs_warns_capt <- setdiff(mssgs_warns_capt, "")
     mssgs_warns_capt <- grep("Warning in [^:]*:$",
                              mssgs_warns_capt, value = TRUE, invert = TRUE)
@@ -131,10 +131,16 @@ divmin <- function(
     )
     return(mssgs_warns_capt)
   })
-  mssgs_warns_capts <- unique(unlist(mssgs_warns_capts))
-  if (length(mssgs_warns_capts) > 0 &&
-      getOption("projpred.warn_submodel_fits", TRUE)) {
-    warning(mssgs_warns_capts)
+  # Throw the unique set of messages and warnings:
+  if (getOption("projpred.warn_submodel_fits", TRUE)) {
+    mssgs_warns_capts_unq <- unique(unlist(mssgs_warns_capts))
+    if (length(mssgs_warns_capts_unq) > 0) {
+      warning(paste(
+        c("The following warnings have been thrown by submodel fitters:",
+          mssgs_warns_capts_unq),
+        collapse = "\n"
+      ))
+    }
   }
   return(outdmin)
 }
