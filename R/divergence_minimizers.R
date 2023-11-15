@@ -117,6 +117,13 @@ divmin <- function(
   }
   mssgs_warns_capts <- lapply(outdmin, "[[", "mssgs_warns_capt")
   outdmin <- lapply(outdmin, "[[", "soutdmin")
+  mssgs_warns_capts <- lapply(mssgs_warns_capts, function(mssgs_warns_capt) {
+    # Filter out some warnings.
+    mssgs_warns_capt <- setdiff(mssgs_warns_capt, "")
+    mssgs_warns_capt <- grep("Warning in [^:]*:$",
+                             mssgs_warns_capt, value = TRUE, invert = TRUE)
+    return(mssgs_warns_capt)
+  })
   warn_submodel_fits(mssgs_warns_capts, throw_warn = throw_warn_sdivmin)
   check_conv(outdmin, lengths(mssgs_warns_capts), do_check = do_check_conv)
   return(outdmin)
