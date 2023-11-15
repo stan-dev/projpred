@@ -143,9 +143,7 @@ divmin <- function(
     }
   }
   # Check convergence (also taking messages and warnings into account):
-  if (getOption("projpred.check_conv", TRUE)) {
-    check_conv(outdmin, lengths(mssgs_warns_capts))
-  }
+  check_conv(outdmin, lengths(mssgs_warns_capts))
   return(outdmin)
 }
 
@@ -924,6 +922,7 @@ fit_categ_mlvl <- function(formula, projpred_formula_no_random,
 
 # For checking the convergence of a whole `outdmin` object:
 check_conv <- function(outdmin, lengths_mssgs_warns) {
+  if (!getOption("projpred.check_conv", TRUE)) return()
   is_conv <- unlist(lapply(outdmin, check_conv_s))
   is_conv <- is_conv & (lengths_mssgs_warns == 0)
   if (any(!is_conv)) {
