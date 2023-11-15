@@ -597,6 +597,26 @@ verb_out <- function(..., verbose = TRUE) {
   }
 }
 
+# Ensure that stderr() is used for throwing an error, even while sink()-ing or
+# capture.output()-ing with `type = "message"`:
+throw_err <- function(e) {
+  sink(type = "message")
+  stop(e)
+}
+
+# A wrapper for capture.output() with `type = "message"`, but throwing error
+# messages appropriately (i.e., only messages and warnings are captured).
+# Note: This function should only be used to filter out messages or warnings
+# (not to make downstream code dependent on catched messages or warnings), see
+# <https://github.com/stan-dev/loo/issues/227#issuecomment-1663499985>.
+capt_mssgs_warns <- function(expr) {
+  if (getOption("warn") == 0) {
+    warn_orig <- options(warn = 1)
+    on.exit(options(warn_orig))
+  }
+  utils::capture.output(tryCatch(expr, error = throw_err), type = "message")
+}
+
 # Parse the argument containing the observation weights (`wobs` or `weights`)
 # for the <family_object>$ppd() functions used by proj_predict():
 parse_wobs_ppd <- function(wobs, n_obs) {
