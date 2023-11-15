@@ -936,7 +936,7 @@ check_conv <- function(outdmin, lengths_mssgs_warns) {
       update(formula(outdmin[[1]]), NULL ~ .)
     )
   }
-  return(invisible(TRUE))
+  return()
 }
 
 # Helper function for checking the convergence of a single submodel fit (not of
