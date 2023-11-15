@@ -71,7 +71,7 @@ calculating output elements \code{dis} and \code{ce}.)}
 
 \item{verbose}{A single logical value indicating whether to print out
 additional information during the computations. More precisely, this gets
-passed as \code{projpred_verbose} to the divergence minimizer function of the
+passed as \code{verbose_divmin} to the divergence minimizer function of the
 \code{refmodel} object. For the built-in divergence minimizers, this only has an
 effect in case of sequential computations (not in case of parallel
 projection, which is described in \link{projpred-package}).}

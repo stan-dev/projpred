@@ -49,7 +49,7 @@
 #'   calculating output elements `dis` and `ce`.)
 #' @param verbose A single logical value indicating whether to print out
 #'   additional information during the computations. More precisely, this gets
-#'   passed as `projpred_verbose` to the divergence minimizer function of the
+#'   passed as `verbose_divmin` to the divergence minimizer function of the
 #'   `refmodel` object. For the built-in divergence minimizers, this only has an
 #'   effect in case of sequential computations (not in case of parallel
 #'   projection, which is described in [projpred-package]).
@@ -292,7 +292,7 @@ project <- function(object, nterms = NULL, solution_terms = predictor_terms,
                        outdmins = object$search_path$outdmins),
     nterms = nterms, refmodel = refmodel, regul = regul, refit_prj = refit_prj,
     ndraws = ndraws, nclusters = nclusters, return_submodls = TRUE,
-    projpred_verbose = verbose, ...
+    verbose_divmin = verbose, ...
   )
 
   # Output ------------------------------------------------------------------

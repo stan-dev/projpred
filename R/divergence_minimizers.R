@@ -12,7 +12,7 @@ if (getRversion() >= package_version("2.15.1")) {
 divmin <- function(
     formula,
     projpred_var,
-    projpred_verbose = getOption("projpred.verbose_project", FALSE),
+    verbose_divmin = getOption("projpred.verbose_project", FALSE),
     ...
 ) {
   trms_all <- extract_terms_response(formula)
@@ -60,13 +60,13 @@ divmin <- function(
     # foreach::`%do%`` here and then proceed as in the parallel case, but that
     # would require adding more "hard" dependencies (because packages 'foreach'
     # and 'iterators' would have to be moved from `Suggests:` to `Imports:`).
-    if (projpred_verbose) {
+    if (verbose_divmin) {
       pb <- utils::txtProgressBar(min = 0, max = length(formulas), style = 3,
                                   initial = 0)
       on.exit(close(pb))
     }
     return(lapply(seq_along(formulas), function(s) {
-      if (projpred_verbose) {
+      if (verbose_divmin) {
         on.exit(utils::setTxtProgressBar(pb, s))
       }
       sdivmin(
@@ -528,7 +528,7 @@ divmin_augdat <- function(
     weights,
     projpred_var,
     projpred_ws_aug,
-    projpred_verbose = getOption("projpred.verbose_project", FALSE),
+    verbose_divmin = getOption("projpred.verbose_project", FALSE),
     ...
 ) {
   trms_all <- extract_terms_response(formula)
@@ -588,13 +588,13 @@ divmin_augdat <- function(
     # foreach::`%do%`` here and then proceed as in the parallel case, but that
     # would require adding more "hard" dependencies (because packages 'foreach'
     # and 'iterators' would have to be moved from `Suggests:` to `Imports:`).
-    if (projpred_verbose) {
+    if (verbose_divmin) {
       pb <- utils::txtProgressBar(min = 0, max = ncol(projpred_ws_aug),
                                   style = 3, initial = 0)
       on.exit(close(pb))
     }
     return(lapply(seq_len(ncol(projpred_ws_aug)), function(s) {
-      if (projpred_verbose) {
+      if (verbose_divmin) {
         on.exit(utils::setTxtProgressBar(pb, s))
       }
       sdivmin(
