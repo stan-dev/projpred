@@ -277,7 +277,8 @@ matrix of expected values for the response in case of the traditional or
 the latent projection and an \eqn{N_{\mathrm{augcat}} \times
     S_{\mathrm{prj}}}{N_augcat x S_prj} matrix of probabilities for the
 response categories in case of the augmented-data projection.
-\item \code{...} accepts further arguments specified by the user.
+\item \code{...} accepts further arguments specified by the user (or by
+\pkg{projpred}).
 }
 }
 

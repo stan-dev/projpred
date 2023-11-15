@@ -212,7 +212,8 @@
 #'     the latent projection and an \eqn{N_{\mathrm{augcat}} \times
 #'     S_{\mathrm{prj}}}{N_augcat x S_prj} matrix of probabilities for the
 #'     response categories in case of the augmented-data projection.
-#'     + `...` accepts further arguments specified by the user.
+#'     + `...` accepts further arguments specified by the user (or by
+#'     \pkg{projpred}).
 #'
 #' The return value of these functions needs to be:
 #' * `ref_predfun`: for the traditional or the latent projection, an \eqn{N
