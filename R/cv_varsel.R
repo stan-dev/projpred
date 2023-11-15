@@ -417,11 +417,13 @@ cv_varsel.refmodel <- function(
 #
 # @param refmodel See argument `object` of cv_varsel().
 # @param cv_method See argument `cv_method` of cv_varsel().
+# @param nloo See argument `nloo` of cv_varsel().
 # @param K See argument `K` of cv_varsel().
 # @param cvfits See argument `cvfits` of cv_varsel().
 # @param validate_search See argument `validate_search` of cv_varsel().
 #
-# @return A list with the processed elements `cv_method`, `K`, and `cvfits`.
+# @return A list with the processed elements `cv_method`, `nloo`, `K`, and
+#   `cvfits`.
 parse_args_cv_varsel <- function(refmodel, cv_method, nloo, K, cvfits,
                                  validate_search, refit_prj, search_out) {
   stopifnot(!is.null(cv_method))
