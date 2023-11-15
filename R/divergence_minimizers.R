@@ -117,25 +117,7 @@ divmin <- function(
   }
   mssgs_warns_capts <- lapply(outdmin, "[[", "mssgs_warns_capt")
   outdmin <- lapply(outdmin, "[[", "soutdmin")
-  # Filter out some warnings:
-  mssgs_warns_capts <- lapply(mssgs_warns_capts, function(mssgs_warns_capt) {
-    mssgs_warns_capt <- setdiff(mssgs_warns_capt, "")
-    mssgs_warns_capt <- grep("Warning in [^:]*:$",
-                             mssgs_warns_capt, value = TRUE, invert = TRUE)
-    mssgs_warns_capt <- grep("non-integer #successes in a binomial glm!$",
-                             mssgs_warns_capt, value = TRUE, invert = TRUE)
-    mssgs_warns_capt <- grep(paste("Using formula\\(x\\) is deprecated when x",
-                                   "is a character vector of length > 1\\.$"),
-                             mssgs_warns_capt, value = TRUE, invert = TRUE)
-    mssgs_warns_capt <- grep(
-      "Consider formula\\(paste\\(x, collapse = .*\\)\\) instead\\.$",
-      mssgs_warns_capt, value = TRUE, invert = TRUE
-    )
-    return(mssgs_warns_capt)
-  })
-  # Throw the unique set of messages and warnings:
   warn_submodel_fits(mssgs_warns_capts, throw_warn = throw_warn_sdivmin)
-  # Check convergence (also taking messages and warnings into account):
   check_conv(outdmin, lengths(mssgs_warns_capts), do_check = do_check_conv)
   return(outdmin)
 }
@@ -556,6 +538,8 @@ divmin_augdat <- function(
     projpred_var,
     projpred_ws_aug,
     verbose_divmin = getOption("projpred.verbose_project", FALSE),
+    throw_warn_sdivmin = getOption("projpred.warn_submodel_fits", TRUE),
+    do_check_conv = getOption("projpred.check_conv", TRUE),
     ...
 ) {
   trms_all <- extract_terms_response(formula)
@@ -620,20 +604,23 @@ divmin_augdat <- function(
                                   style = 3, initial = 0)
       on.exit(close(pb))
     }
-    return(lapply(seq_len(ncol(projpred_ws_aug)), function(s) {
+    outdmin <- lapply(seq_len(ncol(projpred_ws_aug)), function(s) {
       if (verbose_divmin) {
         on.exit(utils::setTxtProgressBar(pb, s))
       }
-      sdivmin(
-        formula = formula,
-        data = data,
-        family = family,
-        weights = projpred_ws_aug[, s],
-        projpred_formula_no_random = projpred_formula_no_random,
-        projpred_random = projpred_random,
-        ...
+      mssgs_warns_capt <- capt_mssgs_warns(
+        soutdmin <- sdivmin(
+          formula = formula,
+          data = data,
+          family = family,
+          weights = projpred_ws_aug[, s],
+          projpred_formula_no_random = projpred_formula_no_random,
+          projpred_random = projpred_random,
+          ...
+        )
       )
-    }))
+      return(nlist(soutdmin, mssgs_warns_capt))
+    })
   } else {
     # Parallel case.
     if (!requireNamespace("foreach", quietly = TRUE)) {
@@ -644,7 +631,7 @@ divmin_augdat <- function(
     }
     dot_args <- list(...)
     `%do_projpred%` <- foreach::`%dopar%`
-    return(foreach::foreach(
+    outdmin <- foreach::foreach(
       projpred_w_aug_s = iterators::iter(projpred_ws_aug, by = "column"),
       .export = c(
         "sdivmin", "formula", "data", "family", "projpred_formula_no_random",
@@ -655,18 +642,45 @@ divmin_augdat <- function(
         "projpred_ws_aug", "linkobjs"
       )
     ) %do_projpred% {
-      do.call(
-        sdivmin,
-        c(list(formula = formula,
-               data = data,
-               family = family,
-               weights = as.vector(projpred_w_aug_s),
-               projpred_formula_no_random = projpred_formula_no_random,
-               projpred_random = projpred_random),
-          dot_args)
+      mssgs_warns_capt <- capt_mssgs_warns(
+        soutdmin <- do.call(
+          sdivmin,
+          c(list(formula = formula,
+                 data = data,
+                 family = family,
+                 weights = as.vector(projpred_w_aug_s),
+                 projpred_formula_no_random = projpred_formula_no_random,
+                 projpred_random = projpred_random),
+            dot_args)
+        )
       )
-    })
+      return(nlist(soutdmin, mssgs_warns_capt))
+    }
   }
+  mssgs_warns_capts <- lapply(outdmin, "[[", "mssgs_warns_capt")
+  outdmin <- lapply(outdmin, "[[", "soutdmin")
+  mssgs_warns_capts <- lapply(mssgs_warns_capts, function(mssgs_warns_capt) {
+    # Filter out some warnings.
+    mssgs_warns_capt <- setdiff(mssgs_warns_capt, "")
+    mssgs_warns_capt <- grep("Warning in [^:]*:$",
+                             mssgs_warns_capt, value = TRUE, invert = TRUE)
+    # For MASS::polr():
+    mssgs_warns_capt <- grep("non-integer #successes in a binomial glm!$",
+                             mssgs_warns_capt, value = TRUE, invert = TRUE)
+    # For ordinal::clmm():
+    mssgs_warns_capt <- grep(paste("Using formula\\(x\\) is deprecated when x",
+                                   "is a character vector of length > 1\\.$"),
+                             mssgs_warns_capt, value = TRUE, invert = TRUE)
+    # For ordinal::clmm():
+    mssgs_warns_capt <- grep(
+      "Consider formula\\(paste\\(x, collapse = .*\\)\\) instead\\.$",
+      mssgs_warns_capt, value = TRUE, invert = TRUE
+    )
+    return(mssgs_warns_capt)
+  })
+  warn_submodel_fits(mssgs_warns_capts, throw_warn = throw_warn_sdivmin)
+  check_conv(outdmin, lengths(mssgs_warns_capts), do_check = do_check_conv)
+  return(outdmin)
 }
 
 # Use MASS::polr() to fit submodels for the brms::cumulative() family:
@@ -913,6 +927,7 @@ fit_categ_mlvl <- function(formula, projpred_formula_no_random,
 
 # Convergence issues ------------------------------------------------------
 
+# Throw unique messages and warnings from a list of messages and warnings:
 warn_submodel_fits <- function(mssgs_warns_capts, throw_warn = TRUE) {
   if (!throw_warn) return()
   mssgs_warns_capts_unq <- unique(unlist(mssgs_warns_capts))
@@ -926,7 +941,9 @@ warn_submodel_fits <- function(mssgs_warns_capts, throw_warn = TRUE) {
   return()
 }
 
-# For checking the convergence of a whole `outdmin` object:
+# Check the convergence of the submodel fits from a whole `outdmin` object, also
+# taking into account whether messages and warnings were thrown (indicated by
+# argument `lengths_mssgs_warns` which must be of the same length as `outdmin`):
 check_conv <- function(outdmin, lengths_mssgs_warns, do_check = TRUE) {
   if (!do_check) return()
   is_conv <- unlist(lapply(outdmin, check_conv_s))
