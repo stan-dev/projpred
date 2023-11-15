@@ -971,7 +971,8 @@ check_conv_s <- function(fit_s) {
     # convergence to objects of class `subfit` (i.e., from glm_ridge())?
     return(TRUE)
   } else {
-    stop("Unrecognized submodel fit. Please notify the package maintainer.")
+    warning("Unrecognized submodel fit. Please notify the package maintainer.")
+    return(TRUE)
   }
 }
 
