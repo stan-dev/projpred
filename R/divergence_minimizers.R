@@ -132,16 +132,7 @@ divmin <- function(
     return(mssgs_warns_capt)
   })
   # Throw the unique set of messages and warnings:
-  if (getOption("projpred.warn_submodel_fits", TRUE)) {
-    mssgs_warns_capts_unq <- unique(unlist(mssgs_warns_capts))
-    if (length(mssgs_warns_capts_unq) > 0) {
-      warning(paste(
-        c("The following warnings have been thrown by submodel fitters:",
-          mssgs_warns_capts_unq),
-        collapse = "\n"
-      ))
-    }
-  }
+  warn_submodel_fits(mssgs_warns_capts)
   # Check convergence (also taking messages and warnings into account):
   check_conv(outdmin, lengths(mssgs_warns_capts))
   return(outdmin)
@@ -918,7 +909,20 @@ fit_categ_mlvl <- function(formula, projpred_formula_no_random,
   return(fitobj)
 }
 
-# Convergence checker -----------------------------------------------------
+# Convergence issues ------------------------------------------------------
+
+warn_submodel_fits <- function(mssgs_warns_capts) {
+  if (!getOption("projpred.warn_submodel_fits", TRUE)) return()
+  mssgs_warns_capts_unq <- unique(unlist(mssgs_warns_capts))
+  if (length(mssgs_warns_capts_unq) > 0) {
+    warning(paste(
+      c("The following warnings have been thrown by submodel fitters:", "---",
+        mssgs_warns_capts_unq, "---"),
+      collapse = "\n"
+    ))
+  }
+  return()
+}
 
 # For checking the convergence of a whole `outdmin` object:
 check_conv <- function(outdmin, lengths_mssgs_warns) {
