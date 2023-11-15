@@ -411,7 +411,7 @@ test_that(paste(
     NA
   }
   expect_warning(
-    out_capt <- capture.output({
+    out_capt <- capture.output(
       mfit <- mclogit::mblogit(
         formula = cell ~ treat + age + Karn + prior,
         data = VA,
@@ -419,7 +419,7 @@ test_that(paste(
         model = FALSE,
         y = FALSE
       )
-    }),
+    ),
     warn_expected
   )
   expect_identical(tail(out_capt, 1), "converged")
@@ -653,7 +653,7 @@ test_that(paste(
     NA
   }
   expect_warning(
-    out_capt <- capture.output({
+    out_capt <- capture.output(
       mfit <- mclogit::mblogit(
         formula = cell ~ treat + age + Karn + prior,
         data = VA,
@@ -662,7 +662,7 @@ test_that(paste(
         model = FALSE,
         y = FALSE
       )
-    }),
+    ),
     warn_expected
   )
   expect_identical(tail(out_capt, 1), "converged")
