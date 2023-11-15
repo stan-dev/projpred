@@ -716,7 +716,7 @@ fit_cumul <- function(formula, data, family, weights, ...) {
     # Start with thresholds which imply equal probabilities for the response
     # categories:
     start_thres <- linkfun_raw(seq_len(nthres) / ncats, link_nm = link_nm)
-    fitobj <- try(do.call(MASS::polr, c(
+    fitobj <- do.call(MASS::polr, c(
       list(formula = formula,
            data = data,
            weights = quote(projpred_internal_w_aug),
@@ -724,9 +724,8 @@ fit_cumul <- function(formula, data, family, weights, ...) {
            method = link_nm,
            start = c(start_coefs, start_thres)),
       dot_args
-    )), silent = TRUE)
-  }
-  if (inherits(fitobj, "try-error")) {
+    ))
+  } else if (inherits(fitobj, "try-error")) {
     stop(attr(fitobj, "condition")$message)
   }
   return(fitobj)
@@ -768,7 +767,7 @@ fit_cumul_mlvl <- function(formula, data, family, weights, ...) {
     link_nm <- "probit"
   }
   # Call the submodel fitter:
-  fitobj <- try(do.call(ordinal::clmm, c(
+  fitobj <- do.call(ordinal::clmm, c(
     list(formula = formula,
          data = data,
          weights = quote(projpred_internal_w_aug),
@@ -777,10 +776,7 @@ fit_cumul_mlvl <- function(formula, data, family, weights, ...) {
          model = FALSE,
          link = link_nm),
     dot_args
-  )), silent = TRUE)
-  if (inherits(fitobj, "try-error")) {
-    stop(attr(fitobj, "condition")$message)
-  }
+  ))
   # Needed for the ordinal:::predict.clm() workaround (the value `"negative"` is
   # the default, see `?ordinal::clm.control`):
   fitobj$control$sign.location <- "negative"
