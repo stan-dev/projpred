@@ -959,8 +959,8 @@ check_conv_s <- function(fit_s) {
   } else if (inherits(fit_s, "glm")) {
     return(fit_s$converged)
   } else if (inherits(fit_s, "lm")) {
-    # Note: There doesn't seem to be a better way to check for convergence
-    # other than checking `NA` coefficients (see below).
+    # There doesn't seem to be a better way to check for convergence other than
+    # checking `NA` coefficients:
     return(all(!is.na(coef(fit_s))))
   } else if (inherits(fit_s, "subfit")) {
     # Note: There doesn't seem to be any way to check for convergence, so
