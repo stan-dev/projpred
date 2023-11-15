@@ -142,6 +142,10 @@ divmin <- function(
       ))
     }
   }
+  # Check convergence (also taking messages and warnings into account):
+  if (getOption("projpred.check_conv", TRUE)) {
+    check_conv(outdmin, lengths(mssgs_warns_capts))
+  }
   return(outdmin)
 }
 
@@ -919,8 +923,9 @@ fit_categ_mlvl <- function(formula, projpred_formula_no_random,
 # Convergence checker -----------------------------------------------------
 
 # For checking the convergence of a whole `outdmin` object:
-check_conv <- function(fit) {
-  is_conv <- unlist(lapply(fit, check_conv_s))
+check_conv <- function(outdmin, lengths_mssgs_warns) {
+  is_conv <- unlist(lapply(outdmin, check_conv_s))
+  is_conv <- is_conv & (lengths_mssgs_warns == 0)
   if (any(!is_conv)) {
     warning(
       sum(!is_conv), " out of ", length(is_conv), " submodel fits (there is ",
@@ -929,7 +934,7 @@ check_conv <- function(fit) {
       "necessary) to adjust tuning parameters (e.g., for the lme4 package in ",
       "case of a multilevel submodel) via `...` or via a custom ",
       "`divergence_minimizer` function. Formula (right-hand side): ",
-      update(formula(fit[[1]]), NULL ~ .)
+      update(formula(outdmin[[1]]), NULL ~ .)
     )
   }
   return(invisible(TRUE))
