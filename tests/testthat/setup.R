@@ -906,6 +906,8 @@ options(projpred.additional_checks = TRUE)
 options(projpred.warn_cvrefbuilder_NULL = FALSE)
 # Suppress warnings thrown while fitting the submodels:
 options(projpred.warn_submodel_fits = FALSE)
+# Don't use the convergence checker:
+options(projpred.check_conv = FALSE)
 # Set default number of significant digits to be printed:
 options(projpred.digits = getOption("digits"))
 
