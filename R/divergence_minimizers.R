@@ -117,8 +117,8 @@ divmin <- function(
   outdmin <- lapply(outdmin, "[[", "soutdmin")
   # Filter out some warnings:
   mssgs_warns_capts <- setdiff(mssgs_warns_capts, "")
-  mssgs_warns_capts <- grep("Warning in .*:$", mssgs_warns_capts, value = TRUE,
-                            invert = TRUE)
+  mssgs_warns_capts <- grep("Warning in [^:]*:$",
+                            mssgs_warns_capts, value = TRUE, invert = TRUE)
   mssgs_warns_capts <- grep("non-integer #successes in a binomial glm!$",
                             mssgs_warns_capts, value = TRUE, invert = TRUE)
   mssgs_warns_capts <- grep(paste("Using formula\\(x\\) is deprecated when x",
