@@ -445,7 +445,7 @@ parse_args_cv_varsel <- function(refmodel, cv_method, nloo, K, cvfits,
           "one level up (and element `fits` removed). The old structure will ",
           "continue to work for a while, but is deprecated."
         )
-        cvfits <- cvfits$fits
+        cvfits <- structure(cvfits$fits, folds = attr(cvfits, "folds"))
       }
       K <- length(cvfits)
     }

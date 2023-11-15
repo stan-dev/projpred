@@ -33,6 +33,7 @@ If you read this from a place other than <https://mc-stan.org/projpred/news/inde
 * Fixed a bug sometimes causing `plot.vsel()` to produce extra ("empty") ticks on the x-axis. (GitHub: #462)
 * Fixed a bug in `summary.vsel()` and `plot.vsel()` causing bootstrap results (i.e., standard error and confidence interval for RMSE and AUC) to be incorrect if `deltas = TRUE`. (GitHub: #474)
 * Fixed several bugs in `summary.vsel()` and `plot.vsel()` sometimes causing incorrect predictive performance results in case of subsampled PSIS-LOO CV (an experimental feature controlled by argument `nloo` of `cv_varsel()`). (GitHub: #475)
+* Fixed backward compatibility for the legacy structure of `cvfits` (the new structure was introduced by version 2.7.0, see GitHub pull request #456).
 
 # projpred 2.7.0
 
