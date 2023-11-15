@@ -149,8 +149,8 @@ perf_eval <- function(search_path,
   return(out)
 }
 
-# Process the output of the `divergence_minimizer` function (see
-# init_refmodel()) to create an object of class `submodl`.
+# Process the output of the `div_minimizer` function (see init_refmodel()) to
+# create an object of class `submodl`.
 init_submodl <- function(outdmin, p_ref, refmodel, predictor_terms, wobs) {
   p_ref$mu <- p_ref$mu_offs
   if (!(all(is.na(p_ref$var)) ||

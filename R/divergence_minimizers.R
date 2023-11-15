@@ -948,14 +948,27 @@ check_conv <- function(outdmin, lengths_mssgs_warns, do_check = TRUE) {
   if (!do_check) return()
   is_conv <- unlist(lapply(outdmin, check_conv_s))
   is_conv <- is_conv & (lengths_mssgs_warns == 0)
-  if (any(!is_conv)) {
+  not_conv <- sum(!is_conv)
+  if (not_conv > 0) {
+    if (getOption("projpred.additional_checks", FALSE)) {
+      cls <- unique(lapply(outdmin, class))
+      stopifnot(length(cls) == 1)
+      cls <- cls[[1]]
+    } else {
+      cls <- class(outdmin[[1]])
+    }
+    cls <- paste0("c(", paste(paste0("\"", cls, "\""), collapse = ", "), ")")
     warning(
-      sum(!is_conv), " out of ", length(is_conv), " submodel fits (there is ",
-      "one submodel fit per projected draw) probably have not converged ",
+      not_conv, " out of ", length(is_conv), " submodel fits (there is one ",
+      "submodel fit per projected draw) seem to have not converged ",
       "(appropriately). It is recommended to inspect this in detail and (if ",
-      "necessary) to adjust tuning parameters (e.g., for the lme4 package in ",
-      "case of a multilevel submodel) via `...` or via a custom ",
-      "`divergence_minimizer` function. Formula (right-hand side): ",
+      "necessary) to adjust tuning parameters via `...` (the ellipsis of the ",
+      "employed top-level function such as project(), varsel(), or ",
+      "cv_varsel()) or via a custom `div_minimizer` function (an argument of ",
+      "init_refmodel()). In the present case, the submodel fits are of ",
+      "class(es) `", cls, "`. Documentation for corresponding tuning ",
+      "parameters is linked in section \"Draw-wise divergence minimizers\" of ",
+      "`` ?`projpred-package` ``. Current submodel formula (right-hand side): ",
       update(formula(outdmin[[1]]), NULL ~ .)
     )
   }
