@@ -113,22 +113,25 @@ divmin <- function(
       return(nlist(soutdmin, mssgs_warns_capt))
     }
   }
-  mssgs_warns_capts <- unlist(lapply(outdmin, "[[", "mssgs_warns_capt"))
+  mssgs_warns_capts <- lapply(outdmin, "[[", "mssgs_warns_capt")
   outdmin <- lapply(outdmin, "[[", "soutdmin")
-  # Filter out some warnings:
-  mssgs_warns_capts <- setdiff(mssgs_warns_capts, "")
-  mssgs_warns_capts <- grep("Warning in [^:]*:$",
-                            mssgs_warns_capts, value = TRUE, invert = TRUE)
-  mssgs_warns_capts <- grep("non-integer #successes in a binomial glm!$",
-                            mssgs_warns_capts, value = TRUE, invert = TRUE)
-  mssgs_warns_capts <- grep(paste("Using formula\\(x\\) is deprecated when x",
-                                  "is a character vector of length > 1\\.$"),
-                            mssgs_warns_capts, value = TRUE, invert = TRUE)
-  mssgs_warns_capts <- grep(
-    "Consider formula\\(paste\\(x, collapse = .*\\)\\) instead\\.$",
-    mssgs_warns_capts, value = TRUE, invert = TRUE
-  )
-  mssgs_warns_capts <- unique(mssgs_warns_capts)
+  mssgs_warns_capts <- lapply(mssgs_warns_capts, function(mssgs_warns_capt) {
+    # Filter out some warnings:
+    mssgs_warns_capt <- setdiff(mssgs_warns_capt, "")
+    mssgs_warns_capt <- grep("Warning in [^:]*:$",
+                             mssgs_warns_capt, value = TRUE, invert = TRUE)
+    mssgs_warns_capt <- grep("non-integer #successes in a binomial glm!$",
+                             mssgs_warns_capt, value = TRUE, invert = TRUE)
+    mssgs_warns_capt <- grep(paste("Using formula\\(x\\) is deprecated when x",
+                                   "is a character vector of length > 1\\.$"),
+                             mssgs_warns_capt, value = TRUE, invert = TRUE)
+    mssgs_warns_capt <- grep(
+      "Consider formula\\(paste\\(x, collapse = .*\\)\\) instead\\.$",
+      mssgs_warns_capt, value = TRUE, invert = TRUE
+    )
+    return(mssgs_warns_capt)
+  })
+  mssgs_warns_capts <- unique(unlist(mssgs_warns_capts))
   if (length(mssgs_warns_capts) > 0 &&
       getOption("projpred.warn_submodel_fits", TRUE)) {
     warning(mssgs_warns_capts)
