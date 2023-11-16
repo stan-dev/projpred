@@ -985,7 +985,9 @@ check_conv <- function(outdmin, lengths_mssgs_warns, do_check = TRUE) {
 # Helper function for checking the convergence of a single submodel fit (not of
 # a whole `outdmin` object):
 check_conv_s <- function(fit_s) {
-  if (inherits(fit_s, "polr")) {
+  if (inherits(fit_s, "clmm")) {
+    return(fit_s$optRes$convergence == 0)
+  } else if (inherits(fit_s, "polr")) {
     return(fit_s$convergence == 0)
   } else if (inherits(fit_s, "gam")) {
     # TODO (GAMs): Is this correct?:
