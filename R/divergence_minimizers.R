@@ -985,18 +985,15 @@ check_conv <- function(outdmin, lengths_mssgs_warns, do_check = TRUE) {
 # Helper function for checking the convergence of a single submodel fit (not of
 # a whole `outdmin` object):
 check_conv_s <- function(fit_s) {
-  if (inherits(fit_s, "subfit")) {
-    # For a submodel of class `subfit`, non-convergence is only indicated by
-    # output written to the console (which is converted to a warning in
-    # fit_glm_ridge_callback() and then checked in check_conv()), so we need to
-    # return `TRUE` here:
-    return(TRUE)
-  } else if (inherits(fit_s, "lm")) {
-    # There doesn't seem to be a better way to check for convergence other than
-    # checking `NA` coefficients:
-    return(all(!is.na(coef(fit_s))))
-  } else if (inherits(fit_s, "glm")) {
-    return(fit_s$converged)
+  if (inherits(fit_s, "gam")) {
+    # TODO (GAMs): Is this correct?:
+    return(fit_s$converged && fit_s$mgcv.conv$fully.converged)
+  } else if (inherits(fit_s, "gamm4")) {
+    # TODO (GAMMs): I couldn't find any convergence-related information in
+    # element `fit_s$gam`, so the GAM part is currently not checked for
+    # convergence. For now, all we can check is the GLMM part from element
+    # `fit_s$mer`:
+    return(check_conv_s(fit_s$mer))
   } else if (inherits(fit_s, c("lmerMod", "glmerMod"))) {
     # The following was inferred from the source code of lme4::checkConv() and
     # lme4::.prt.warn() (see also `?lme4::mkMerMod`).
@@ -1008,15 +1005,18 @@ check_conv_s <- function(fit_s) {
         is.null(fit_s@optinfo$conv$lme4$code)
     ) && length(unlist(fit_s@optinfo$conv$lme4$messages)) == 0 &&
       length(fit_s@optinfo$warnings) == 0)
-  } else if (inherits(fit_s, "gam")) {
-    # TODO (GAMs): Is this correct?:
-    return(fit_s$converged && fit_s$mgcv.conv$fully.converged)
-  } else if (inherits(fit_s, "gamm4")) {
-    # TODO (GAMMs): I couldn't find any convergence-related information in
-    # element `fit_s$gam`, so the GAM part is currently not checked for
-    # convergence. For now, all we can check is the GLMM part from element
-    # `fit_s$mer`:
-    return(check_conv_s(fit_s$mer))
+  } else if (inherits(fit_s, "glm")) {
+    return(fit_s$converged)
+  } else if (inherits(fit_s, "lm")) {
+    # There doesn't seem to be a better way to check for convergence other than
+    # checking `NA` coefficients:
+    return(all(!is.na(coef(fit_s))))
+  } else if (inherits(fit_s, "subfit")) {
+    # For a submodel of class `subfit`, non-convergence is only indicated by
+    # output written to the console (which is converted to a warning in
+    # fit_glm_ridge_callback() and then checked in check_conv()), so we need to
+    # return `TRUE` here:
+    return(TRUE)
   } else {
     warning("Unrecognized submodel fit. Please notify the package maintainer.")
     return(TRUE)
