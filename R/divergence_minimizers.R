@@ -13,7 +13,7 @@ divmin <- function(
     formula,
     projpred_var,
     verbose_divmin = getOption("projpred.verbose_project", FALSE),
-    throw_warn_sdivmin = getOption("projpred.warn_submodel_fits", TRUE),
+    throw_warn_sdivmin = getOption("projpred.warn_prj_drawwise", TRUE),
     do_check_conv = getOption("projpred.check_conv", TRUE),
     ...
 ) {
@@ -124,7 +124,7 @@ divmin <- function(
                              mssgs_warns_capt, value = TRUE, invert = TRUE)
     return(mssgs_warns_capt)
   })
-  warn_submodel_fits(mssgs_warns_capts, throw_warn = throw_warn_sdivmin)
+  warn_prj_drawwise(mssgs_warns_capts, throw_warn = throw_warn_sdivmin)
   check_conv(outdmin, lengths(mssgs_warns_capts), do_check = do_check_conv)
   return(outdmin)
 }
@@ -545,7 +545,7 @@ divmin_augdat <- function(
     projpred_var,
     projpred_ws_aug,
     verbose_divmin = getOption("projpred.verbose_project", FALSE),
-    throw_warn_sdivmin = getOption("projpred.warn_submodel_fits", TRUE),
+    throw_warn_sdivmin = getOption("projpred.warn_prj_drawwise", TRUE),
     do_check_conv = getOption("projpred.check_conv", TRUE),
     ...
 ) {
@@ -685,7 +685,7 @@ divmin_augdat <- function(
     )
     return(mssgs_warns_capt)
   })
-  warn_submodel_fits(mssgs_warns_capts, throw_warn = throw_warn_sdivmin)
+  warn_prj_drawwise(mssgs_warns_capts, throw_warn = throw_warn_sdivmin)
   check_conv(outdmin, lengths(mssgs_warns_capts), do_check = do_check_conv)
   return(outdmin)
 }
@@ -935,7 +935,7 @@ fit_categ_mlvl <- function(formula, projpred_formula_no_random,
 # Convergence issues ------------------------------------------------------
 
 # Throw unique messages and warnings from a list of messages and warnings:
-warn_submodel_fits <- function(mssgs_warns_capts, throw_warn = TRUE) {
+warn_prj_drawwise <- function(mssgs_warns_capts, throw_warn = TRUE) {
   if (!throw_warn) return()
   mssgs_warns_capts_unq <- unique(unlist(mssgs_warns_capts))
   if (length(mssgs_warns_capts_unq) > 0) {
