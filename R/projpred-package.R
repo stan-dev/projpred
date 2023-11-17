@@ -49,7 +49,20 @@
 #'     projection in case of the [binomial()] or [brms::bernoulli()] family): An
 #'     internal C++ function which basically serves the same purpose as [lm()]
 #'     for the [gaussian()] family and [glm()] for all other families. The
-#'     returned object inherits from class `subfit`.
+#'     returned object inherits from class `subfit`. Possible tuning parameters
+#'     for this internal C++ function are: `regul` (amount of ridge
+#'     regularization; default: `1e-4`), `thresh_conv` (convergence threshold;
+#'     default: `1e-7`), `qa_updates_max` (maximum number of quadratic
+#'     approximation updates; default: `100`, but fixed to `1` in case of the
+#'     Gaussian family with identity link), `ls_iter_max` (maximum number of
+#'     line search iterations; default: `30`, but fixed to `1` in case of the
+#'     Gaussian family with identity link), `normalize` (single logical value
+#'     indicating whether to scale the predictors internally with the returned
+#'     regression coefficient estimates being back-adjusted appropriately;
+#'     default: `TRUE`), `beta0_init` (single numeric value giving the starting
+#'     value for the intercept at centered predictors; default: `0`), and
+#'     `beta_init` (numeric vector giving the starting values for the regression
+#'     coefficients; default: vector of `0`s).
 #'     + For the augmented-data projection: [MASS::polr()] (the returned object
 #'     inherits from class `polr`) for the [brms::cumulative()] family or
 #'     [rstanarm::stan_polr()] fits, [nnet::multinom()] (the returned object
