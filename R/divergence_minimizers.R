@@ -113,7 +113,7 @@ divmin <- function(
 # submodels:
 fit_glm_ridge_callback <- function(formula, data,
                                    projpred_var = matrix(nrow = nrow(data)),
-                                   regul = 1e-4, ...) {
+                                   regul = 1e-4, thresh_conv = 1e-7, ...) {
   # Preparations:
   fr <- model.frame(formula, data = data, drop.unused.levels = TRUE)
   da_classes <- attr(attr(fr, "terms"), "dataClasses")
@@ -143,7 +143,8 @@ fit_glm_ridge_callback <- function(formula, data,
   )]
   # Call the submodel fitter:
   fit <- do.call(glm_ridge, c(
-    list(x = x, y = y, lambda = regul, obsvar = projpred_var),
+    list(x = x, y = y, obsvar = projpred_var, lambda = regul,
+         thresh = thresh_conv),
     dot_args
   ))
   # Post-processing:
