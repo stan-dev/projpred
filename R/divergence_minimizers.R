@@ -940,8 +940,9 @@ warn_submodel_fits <- function(mssgs_warns_capts, throw_warn = TRUE) {
   mssgs_warns_capts_unq <- unique(unlist(mssgs_warns_capts))
   if (length(mssgs_warns_capts_unq) > 0) {
     warning(paste(
-      c("The following warnings have been thrown by submodel fitters:", "---",
-        mssgs_warns_capts_unq, "---"),
+      c(paste0("The following warnings have been thrown by the current ",
+               "draw-wise divergence minimizer (i.e., \"submodel fitter\"):"),
+        "---", mssgs_warns_capts_unq, "---"),
       collapse = "\n"
     ))
   }
