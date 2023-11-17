@@ -221,7 +221,7 @@ search_L1_surrogate <- function(p_ref, d_train, family, intercept, nterms_max,
       obsvar = v, penalty = penalty, thresh = search_control$thresh %||% 1e-6
     )
   )
-  out_capt <- grep("[Ww]arning|bug", out_capt, value = TRUE)
+  out_capt <- unique(grep("[Ww]arning|bug", out_capt, value = TRUE))
   if (length(out_capt) > 0) {
     warning(paste(out_capt, collapse = "\n"))
   }

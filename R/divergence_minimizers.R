@@ -169,7 +169,7 @@ fit_glm_ridge_callback <- function(formula, data,
       dot_args
     ))
   )
-  out_capt <- grep("[Ww]arning|bug", out_capt, value = TRUE)
+  out_capt <- unique(grep("[Ww]arning|bug", out_capt, value = TRUE))
   if (length(out_capt) > 0) {
     warning(paste(out_capt, collapse = "\n"))
   }
