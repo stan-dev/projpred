@@ -1,4 +1,4 @@
-search_forward <- function(p_ref, refmodel, nterms_max, verbose = TRUE, opt,
+search_forward <- function(p_ref, refmodel, nterms_max, verbose = TRUE,
                            search_terms, est_runtime = TRUE,
                            search_terms_was_null, ...) {
   nterms_max_with_icpt <- nterms_max + 1L
@@ -23,7 +23,7 @@ search_forward <- function(p_ref, refmodel, nterms_max, verbose = TRUE, opt,
       time_bef <- Sys.time()
     }
     submodls <- lapply(full_cands, proj_to_submodl, p_ref = p_ref,
-                       refmodel = refmodel, regul = opt$regul, ...)
+                       refmodel = refmodel, ...)
     if (size == 1 && est_runtime && getOption("projpred.mssg_time", TRUE)) {
       time_aft <- Sys.time()
       dtime <- difftime(time_aft, time_bef, units = "secs")

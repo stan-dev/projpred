@@ -39,7 +39,6 @@ cv_varsel(object, ...)
   lambda_min_ratio = 1e-05,
   nlambda = 150,
   thresh = 1e-06,
-  regul = 1e-04,
   validate_search = TRUE,
   seed = NA,
   search_terms = NULL,
@@ -148,11 +147,6 @@ gives a warning about this.}
 
 \item{thresh}{Only relevant for L1 search. Convergence threshold when
 computing the L1 path. Usually, there is no need to change this.}
-
-\item{regul}{A number giving the amount of ridge regularization when
-projecting onto (i.e., fitting) submodels which are GLMs. Usually there is
-no need for regularization, but sometimes we need to add some
-regularization to avoid numerical problems.}
 
 \item{seed}{Pseudorandom number generation (PRNG) seed by which the same
 results can be obtained again if needed. Passed to argument \code{seed} of

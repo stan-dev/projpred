@@ -14,7 +14,6 @@ project(
   nclusters = NULL,
   seed = NA,
   verbose = getOption("projpred.verbose_project", TRUE),
-  regul = 1e-04,
   ...
 )
 }
@@ -75,11 +74,6 @@ passed as \code{verbose_divmin} to the divergence minimizer function of the
 \code{refmodel} object. For the built-in divergence minimizers, this only has an
 effect in case of sequential computations (not in case of parallel
 projection, which is described in \link{projpred-package}).}
-
-\item{regul}{A number giving the amount of ridge regularization when
-projecting onto (i.e., fitting) submodels which are GLMs. Usually there is
-no need for regularization, but sometimes we need to add some
-regularization to avoid numerical problems.}
 
 \item{...}{Arguments passed to \code{\link[=get_refmodel]{get_refmodel()}} (if \code{\link[=get_refmodel]{get_refmodel()}} is
 actually used; see argument \code{object}) as well as to the divergence

@@ -270,8 +270,6 @@ matrix of predictive variances (necessary for \pkg{projpred}'s internal
 GLM fitter) in case of the traditional or the latent projection and an
 \eqn{N_{\mathrm{augcat}} \times S_{\mathrm{prj}}}{N_augcat x S_prj}
 matrix (containing only \code{NA}s) in case of the augmented-data projection.
-\item \code{projpred_regul} accepts a single numeric value as supplied to argument
-\code{regul} of \code{\link[=project]{project()}}, for example.
 \item \code{projpred_ws_aug} accepts an \eqn{N \times S_{\mathrm{prj}}}{N x S_prj}
 matrix of expected values for the response in case of the traditional or
 the latent projection and an \eqn{N_{\mathrm{augcat}} \times

@@ -59,10 +59,6 @@
 #'   gives a warning about this.
 #' @param thresh Only relevant for L1 search. Convergence threshold when
 #'   computing the L1 path. Usually, there is no need to change this.
-#' @param regul A number giving the amount of ridge regularization when
-#'   projecting onto (i.e., fitting) submodels which are GLMs. Usually there is
-#'   no need for regularization, but sometimes we need to add some
-#'   regularization to avoid numerical problems.
 #' @param search_terms Only relevant for forward search. A custom character
 #'   vector of predictor term blocks to consider for the search. Section
 #'   "Details" below describes more precisely what "predictor term block" means.
@@ -226,9 +222,8 @@ varsel.refmodel <- function(object, d_test = NULL, method = "forward",
                             refit_prj = !inherits(object, "datafit"),
                             nterms_max = NULL, verbose = TRUE,
                             lambda_min_ratio = 1e-5, nlambda = 150,
-                            thresh = 1e-6, regul = 1e-4, penalty = NULL,
-                            search_terms = NULL, search_out = NULL, seed = NA,
-                            ...) {
+                            thresh = 1e-6, penalty = NULL, search_terms = NULL,
+                            search_out = NULL, seed = NA, ...) {
   if (exists(".Random.seed", envir = .GlobalEnv)) {
     rng_state_old <- get(".Random.seed", envir = .GlobalEnv)
   }
@@ -319,7 +314,7 @@ varsel.refmodel <- function(object, d_test = NULL, method = "forward",
   if (!is.null(search_out)) {
     search_path <- search_out[["search_path"]]
   } else {
-    opt <- nlist(lambda_min_ratio, nlambda, thresh, regul)
+    opt <- nlist(lambda_min_ratio, nlambda, thresh)
     verb_out("-----\nRunning the search ...", verbose = verbose)
     search_path <- select(
       refmodel = refmodel, ndraws = ndraws, nclusters = nclusters,
@@ -336,10 +331,10 @@ varsel.refmodel <- function(object, d_test = NULL, method = "forward",
   verb_out("-----\nRunning the performance evaluation with `refit_prj = ",
            refit_prj, "` ...", verbose = verbose)
   perf_eval_out <- perf_eval(
-    search_path = search_path, refmodel = refmodel, regul = regul,
-    refit_prj = refit_prj, ndraws = ndraws_pred, nclusters = nclusters_pred,
-    indices_test = NULL, newdata_test = d_test$data,
-    offset_test = d_test$offset, wobs_test = d_test$weights, y_test = d_test$y,
+    search_path = search_path, refmodel = refmodel, refit_prj = refit_prj,
+    ndraws = ndraws_pred, nclusters = nclusters_pred, indices_test = NULL,
+    newdata_test = d_test$data, offset_test = d_test$offset,
+    wobs_test = d_test$weights, y_test = d_test$y,
     y_oscale_test = d_test$y_oscale, ...
   )
   verb_out("-----", verbose = verbose)
@@ -470,7 +465,7 @@ select <- function(refmodel, ndraws, nclusters, reweighting_args = NULL, method,
   } else if (method == "forward") {
     search_path <- search_forward(
       p_ref = p_sel, refmodel = refmodel, nterms_max = nterms_max,
-      verbose = verbose, opt = opt, ...
+      verbose = verbose, ...
     )
   }
   search_path$p_sel <- p_sel

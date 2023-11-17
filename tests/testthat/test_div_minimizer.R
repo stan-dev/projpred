@@ -28,7 +28,6 @@ test_that("divmin() works", {
       var_crr <- rep(NA, nobsv)
     }
     args_fit_i$projpred_var <- matrix(var_crr)
-    args_fit_i$projpred_regul <- regul_default
 
     if (pkg_crr == "brms" && grepl("\\.with_wobs", tstsetup)) {
       args_fit_i$formula <- rm_addresp(args_fit_i$formula)
@@ -66,7 +65,7 @@ test_that("divmin() works", {
     outdmin <- do.call(
       divmin,
       args_fit_i[intersect(c("formula", "data", "family", "weights",
-                             "projpred_var", "projpred_regul"),
+                             "projpred_var"),
                            names(args_fit_i))]
     )
     if (fam_crr == "brnll") {
@@ -133,7 +132,6 @@ test_that("divmin_augdat() works", {
     # Other arguments:
     args_fit_i$weights <- "currently unused"
     args_fit_i$projpred_var <- matrix(nrow = nobsv * ncats_crr)
-    args_fit_i$projpred_regul <- regul_default
     if (fam_crr == "brnll" && pkg_crr == "brms") {
       args_fit_i$family <- f_binom
       # Remove some terms which lead to extreme coefficients:
@@ -173,8 +171,8 @@ test_that("divmin_augdat() works", {
       outdmin <- do.call(
         divmin_augdat,
         args_fit_i[intersect(c("formula", "data", "family", "weights",
-                               "projpred_var", "projpred_regul",
-                               "projpred_ws_aug", "epsilon", "avoid.increase"),
+                               "projpred_var", "projpred_ws_aug", "epsilon",
+                               "avoid.increase"),
                              names(args_fit_i))]
       ),
       warn_expected

@@ -53,7 +53,6 @@
 #'   `refmodel` object. For the built-in divergence minimizers, this only has an
 #'   effect in case of sequential computations (not in case of parallel
 #'   projection, which is described in [projpred-package]).
-#' @inheritParams varsel
 #' @param ... Arguments passed to [get_refmodel()] (if [get_refmodel()] is
 #'   actually used; see argument `object`) as well as to the divergence
 #'   minimizer (if `refit_prj` is `TRUE`).
@@ -149,7 +148,7 @@ project <- function(object, nterms = NULL, solution_terms = predictor_terms,
                     predictor_terms = NULL, refit_prj = TRUE, ndraws = 400,
                     nclusters = NULL, seed = NA,
                     verbose = getOption("projpred.verbose_project", TRUE),
-                    regul = 1e-4, ...) {
+                    ...) {
   # Parse input -------------------------------------------------------------
 
   if (!missing(solution_terms)) {
@@ -290,7 +289,7 @@ project <- function(object, nterms = NULL, solution_terms = predictor_terms,
     search_path = list(predictor_ranking = predictor_terms,
                        p_sel = object$search_path$p_sel,
                        outdmins = object$search_path$outdmins),
-    nterms = nterms, refmodel = refmodel, regul = regul, refit_prj = refit_prj,
+    nterms = nterms, refmodel = refmodel, refit_prj = refit_prj,
     ndraws = ndraws, nclusters = nclusters, return_submodls = TRUE,
     verbose_divmin = verbose, ...
   )

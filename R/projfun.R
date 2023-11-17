@@ -3,8 +3,7 @@
 # to a single fit (there are as many fits for this single submodel as there are
 # projected draws). At the end, init_submodl() is called, so the output is of
 # class `submodl`.
-proj_to_submodl <- function(predictor_terms, p_ref, refmodel, regul = 1e-4,
-                            ...) {
+proj_to_submodl <- function(predictor_terms, p_ref, refmodel, ...) {
   y_unqs_aug <- refmodel$family$cats
   if (refmodel$family$for_latent && !is.null(y_unqs_aug)) {
     y_unqs_aug <- NULL
@@ -30,7 +29,6 @@ proj_to_submodl <- function(predictor_terms, p_ref, refmodel, regul = 1e-4,
     family = refmodel$family,
     weights = refmodel$wobs,
     projpred_var = p_ref$var,
-    projpred_regul = regul,
     projpred_ws_aug = p_ref$mu,
     ...
   )
@@ -51,7 +49,7 @@ proj_to_submodl <- function(predictor_terms, p_ref, refmodel, regul = 1e-4,
 # for the actual performance evaluation performed by summary.vsel() later.
 perf_eval <- function(search_path,
                       nterms = c(0, seq_along(search_path$predictor_ranking)),
-                      refmodel, regul, refit_prj = FALSE, ndraws, nclusters,
+                      refmodel, refit_prj = FALSE, ndraws, nclusters,
                       reweighting_args = NULL, return_submodls = FALSE,
                       return_preds = FALSE, return_p_ref = FALSE,
                       refmodel_fulldata = refmodel,
@@ -90,7 +88,7 @@ perf_eval <- function(search_path,
     fetch_submodl <- function(size_j, ...) {
       return(proj_to_submodl(
         predictor_terms = utils::head(search_path$predictor_ranking, size_j),
-        p_ref = p_ref, refmodel = refmodel, regul = regul, ...
+        p_ref = p_ref, refmodel = refmodel, ...
       ))
     }
   }

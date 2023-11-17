@@ -231,7 +231,6 @@ cv_varsel.refmodel <- function(
     lambda_min_ratio = 1e-5,
     nlambda = 150,
     thresh = 1e-6,
-    regul = 1e-4,
     validate_search = TRUE,
     seed = NA,
     search_terms = NULL,
@@ -276,7 +275,7 @@ cv_varsel.refmodel <- function(
   K <- args$K
   cvfits <- args$cvfits
   # Arguments specific to the search:
-  opt <- nlist(lambda_min_ratio, nlambda, thresh, regul)
+  opt <- nlist(lambda_min_ratio, nlambda, thresh)
 
   # Full-data search:
   if (!is.null(search_out)) {
@@ -675,9 +674,8 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
     # full-data predictor ranking and evaluate their predictive performance.
     perf_eval_out <- perf_eval(
       search_path = search_path_fulldata, refmodel = refmodel,
-      regul = opt$regul, refit_prj = refit_prj, ndraws = ndraws_pred,
-      nclusters = nclusters_pred, return_p_ref = TRUE, return_preds = TRUE,
-      indices_test = inds, ...
+      refit_prj = refit_prj, ndraws = ndraws_pred, nclusters = nclusters_pred,
+      return_p_ref = TRUE, return_preds = TRUE, indices_test = inds, ...
     )
     clust_used_eval <- perf_eval_out[["clust_used"]]
     nprjdraws_eval <- perf_eval_out[["nprjdraws"]]
@@ -928,8 +926,8 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
       # Run the performance evaluation for the submodels along the predictor
       # ranking:
       perf_eval_out <- perf_eval(
-        search_path = search_path, refmodel = refmodel, regul = opt$regul,
-        refit_prj = refit_prj, ndraws = ndraws_pred, nclusters = nclusters_pred,
+        search_path = search_path, refmodel = refmodel, refit_prj = refit_prj,
+        ndraws = ndraws_pred, nclusters = nclusters_pred,
         reweighting_args = list(cl_ref = cl_pred, wdraws_ref = exp(lw[, i])),
         indices_test = i, ...
       )
@@ -1248,7 +1246,7 @@ kfold_varsel <- function(refmodel, method, nterms_max, ndraws, nclusters,
     # Run the performance evaluation for the submodels along the predictor
     # ranking:
     perf_eval_out <- perf_eval(
-      search_path = search_path, refmodel = fold$refmodel, regul = opt$regul,
+      search_path = search_path, refmodel = fold$refmodel,
       refit_prj = refit_prj, ndraws = ndraws_pred, nclusters = nclusters_pred,
       refmodel_fulldata = refmodel, indices_test = fold$omitted, ...
     )

@@ -205,8 +205,6 @@
 #'     GLM fitter) in case of the traditional or the latent projection and an
 #'     \eqn{N_{\mathrm{augcat}} \times S_{\mathrm{prj}}}{N_augcat x S_prj}
 #'     matrix (containing only `NA`s) in case of the augmented-data projection.
-#'     + `projpred_regul` accepts a single numeric value as supplied to argument
-#'     `regul` of [project()], for example.
 #'     + `projpred_ws_aug` accepts an \eqn{N \times S_{\mathrm{prj}}}{N x S_prj}
 #'     matrix of expected values for the response in case of the traditional or
 #'     the latent projection and an \eqn{N_{\mathrm{augcat}} \times
