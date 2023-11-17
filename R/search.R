@@ -223,7 +223,15 @@ search_L1_surrogate <- function(p_ref, d_train, family, intercept, nterms_max,
   )
   out_capt <- unique(grep("[Ww]arning|bug", out_capt, value = TRUE))
   if (length(out_capt) > 0) {
-    warning(paste(out_capt, collapse = "\n"))
+    warning(paste(
+      c(paste0("The following warnings have been thrown by projpred's ",
+               "internal L1-search function:"),
+        "---", out_capt, "---",
+        paste0("It is recommended to inspect this in detail and (if ",
+               "necessary) to adjust tuning parameters via argument ",
+               "`search_control` (of varsel() or cv_varsel()).")),
+      collapse = "\n"
+    ))
   }
 
   ## sort the variables according to the order in which they enter the model in
