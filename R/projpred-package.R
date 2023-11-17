@@ -18,6 +18,10 @@
 #' [online](https://mc-stan.org/projpred/articles/projpred.html)) before
 #' continuing here.
 #'
+#' @details
+#'
+#' # Terminology
+#'
 #' Throughout the whole package documentation, we use the term "submodel" for
 #' all kinds of candidate models onto which the reference model is projected.
 #' For custom reference models, the candidate models don't need to be actual
@@ -32,6 +36,8 @@
 #' additive model), and GAMM (generalized additive multilevel---or
 #' "mixed"---model). Note that the term "generalized" includes the Gaussian
 #' family as well.
+#'
+#' # Draw-wise divergence minimizers
 #'
 #' For the projection of the reference model onto a submodel, \pkg{projpred}
 #' currently relies on the following functions (in other words, these are the
@@ -55,6 +61,8 @@
 #' * Submodel without multilevel but additive terms: [mgcv::gam()].
 #' * Submodel with multilevel and additive terms: [gamm4::gamm4()].
 #'
+#' # Verbosity
+#'
 #' Setting the global option `projpred.extra_verbose` to `TRUE` will print out
 #' which submodel \pkg{projpred} is currently projecting onto as well as (if
 #' `method = "forward"` and `verbose = TRUE` in [varsel()] or [cv_varsel()])
@@ -64,6 +72,8 @@
 #' option to `TRUE` for [cv_varsel()] with `validate_search = TRUE` (simply due
 #' to the amount of information that will be printed, but also due to the
 #' progress bar which will not work anymore as intended).
+#'
+#' # Parallelization
 #'
 #' The projection of the reference model onto a submodel can be run in parallel
 #' (across the projected draws). This is powered by the \pkg{foreach} package.
@@ -93,6 +103,8 @@
 #' (i.e., a parallelization of \pkg{projpred}'s cross-validation) which can be
 #' activated via argument `parallel`.
 #'
+#' # Multilevel models: "Integrating out" group-level effects
+#'
 #' In case of multilevel models, \pkg{projpred} offers two global options for
 #' "integrating out" group-level effects: `projpred.mlvl_pred_new` and
 #' `projpred.mlvl_proj_ref_new`. When setting `projpred.mlvl_pred_new` to `TRUE`
@@ -121,16 +133,18 @@
 #' model, and setting `projpred.mlvl_proj_ref_new` to `TRUE` would make sense if
 #' the group-level effects should be integrated out completely.
 #'
+#' # Memory usage
+#'
 #' By setting the global option `projpred.run_gc` to `TRUE`, \pkg{projpred} will
 #' call [gc()] at some places (e.g., after each size that the forward search
 #' passes through) to free up some memory. These [gc()] calls are not always
 #' necessary to reduce the peak memory usage, but they add runtime (hence the
 #' default of `FALSE` for that global option).
 #'
-#' Technical note: Most examples are not executed when called via [example()].
-#' To execute them, you have to copy and paste them manually to the console.
+#' # Other notes
 #'
-#' @details
+#' Most examples are not executed when called via [example()]. To execute them,
+#' you have to copy and paste them manually to the console.
 #'
 #' # Functions
 #'

@@ -12,7 +12,8 @@ The \R package \pkg{projpred} performs the projection predictive variable (or
 \href{https://mc-stan.org/projpred/}{online}) and the main vignette (\code{topic = "projpred"}, but also available
 \href{https://mc-stan.org/projpred/articles/projpred.html}{online}) before
 continuing here.
-
+}
+\section{Terminology}{
 Throughout the whole package documentation, we use the term "submodel" for
 all kinds of candidate models onto which the reference model is projected.
 For custom reference models, the candidate models don't need to be actual
@@ -27,7 +28,9 @@ throughout the documentation: GLM (generalized linear model), GLMM
 additive model), and GAMM (generalized additive multilevel---or
 "mixed"---model). Note that the term "generalized" includes the Gaussian
 family as well.
+}
 
+\section{Draw-wise divergence minimizers}{
 For the projection of the reference model onto a submodel, \pkg{projpred}
 currently relies on the following functions (in other words, these are the
 workhorse functions used by the default divergence minimizers):
@@ -55,7 +58,9 @@ families.
 \item Submodel without multilevel but additive terms: \code{\link[mgcv:gam]{mgcv::gam()}}.
 \item Submodel with multilevel and additive terms: \code{\link[gamm4:gamm4]{gamm4::gamm4()}}.
 }
+}
 
+\section{Verbosity}{
 Setting the global option \code{projpred.extra_verbose} to \code{TRUE} will print out
 which submodel \pkg{projpred} is currently projecting onto as well as (if
 \code{method = "forward"} and \code{verbose = TRUE} in \code{\link[=varsel]{varsel()}} or \code{\link[=cv_varsel]{cv_varsel()}})
@@ -65,7 +70,9 @@ to) is printed. In general, however, we cannot recommend setting this global
 option to \code{TRUE} for \code{\link[=cv_varsel]{cv_varsel()}} with \code{validate_search = TRUE} (simply due
 to the amount of information that will be printed, but also due to the
 progress bar which will not work anymore as intended).
+}
 
+\section{Parallelization}{
 The projection of the reference model onto a submodel can be run in parallel
 (across the projected draws). This is powered by the \pkg{foreach} package.
 Thus, any parallel (or sequential) backend compatible with \pkg{foreach} can
@@ -93,7 +100,9 @@ without additive terms may be regarded as a projection onto a submodel which
 is a GLM). However, for \code{\link[=cv_varsel]{cv_varsel()}}, there is also a \emph{CV} parallelization
 (i.e., a parallelization of \pkg{projpred}'s cross-validation) which can be
 activated via argument \code{parallel}.
+}
 
+\section{Multilevel models: "Integrating out" group-level effects}{
 In case of multilevel models, \pkg{projpred} offers two global options for
 "integrating out" group-level effects: \code{projpred.mlvl_pred_new} and
 \code{projpred.mlvl_proj_ref_new}. When setting \code{projpred.mlvl_pred_new} to \code{TRUE}
@@ -121,16 +130,21 @@ of \code{FALSE} for \code{projpred.mlvl_proj_ref_new} ensures that at projection
 the submodels fit to the best possible fitted values from the reference
 model, and setting \code{projpred.mlvl_proj_ref_new} to \code{TRUE} would make sense if
 the group-level effects should be integrated out completely.
+}
 
+\section{Memory usage}{
 By setting the global option \code{projpred.run_gc} to \code{TRUE}, \pkg{projpred} will
 call \code{\link[=gc]{gc()}} at some places (e.g., after each size that the forward search
 passes through) to free up some memory. These \code{\link[=gc]{gc()}} calls are not always
 necessary to reduce the peak memory usage, but they add runtime (hence the
 default of \code{FALSE} for that global option).
-
-Technical note: Most examples are not executed when called via \code{\link[=example]{example()}}.
-To execute them, you have to copy and paste them manually to the console.
 }
+
+\section{Other notes}{
+Most examples are not executed when called via \code{\link[=example]{example()}}. To execute them,
+you have to copy and paste them manually to the console.
+}
+
 \section{Functions}{
 \describe{
 \item{\code{\link[=init_refmodel]{init_refmodel()}}, \code{\link[=get_refmodel]{get_refmodel()}}}{For setting up an object
