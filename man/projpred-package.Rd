@@ -32,8 +32,10 @@ family as well.
 
 \section{Draw-wise divergence minimizers}{
 For the projection of the reference model onto a submodel, \pkg{projpred}
-currently relies on the following functions (in other words, these are the
-workhorse functions used by the default divergence minimizers):
+currently relies on the following functions as draw-wise divergence
+minimizers (in other words, these are the workhorse functions employed by
+\pkg{projpred}'s internal default \code{div_minimizer} functions, see
+\code{\link[=init_refmodel]{init_refmodel()}}):
 \itemize{
 \item Submodel without multilevel or additive terms:
 \itemize{
@@ -142,7 +144,7 @@ default of \code{FALSE} for that global option).
 
 \section{Other notes}{
 Most examples are not executed when called via \code{\link[=example]{example()}}. To execute them,
-you have to copy and paste them manually to the console.
+their code has to be copied and pasted manually to the console.
 }
 
 \section{Functions}{

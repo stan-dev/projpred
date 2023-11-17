@@ -40,8 +40,10 @@
 #' # Draw-wise divergence minimizers
 #'
 #' For the projection of the reference model onto a submodel, \pkg{projpred}
-#' currently relies on the following functions (in other words, these are the
-#' workhorse functions used by the default divergence minimizers):
+#' currently relies on the following functions as draw-wise divergence
+#' minimizers (in other words, these are the workhorse functions employed by
+#' \pkg{projpred}'s internal default `div_minimizer` functions, see
+#' [init_refmodel()]):
 #' * Submodel without multilevel or additive terms:
 #'     + For the traditional (or latent) projection (or the augmented-data
 #'     projection in case of the [binomial()] or [brms::bernoulli()] family): An
@@ -144,7 +146,7 @@
 #' # Other notes
 #'
 #' Most examples are not executed when called via [example()]. To execute them,
-#' you have to copy and paste them manually to the console.
+#' their code has to be copied and pasted manually to the console.
 #'
 #' # Functions
 #'
