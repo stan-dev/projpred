@@ -48,20 +48,26 @@
 #'     + For the traditional (or latent) projection (or the augmented-data
 #'     projection in case of the [binomial()] or [brms::bernoulli()] family): An
 #'     internal C++ function which basically serves the same purpose as [lm()]
-#'     for the [gaussian()] family and [glm()] for all other families.
-#'     + For the augmented-data projection: [MASS::polr()] for the
-#'     [brms::cumulative()] family or [rstanarm::stan_polr()] fits,
-#'     [nnet::multinom()] for the [brms::categorical()] family.
+#'     for the [gaussian()] family and [glm()] for all other families. The
+#'     returned object inherits from class `subfit`.
+#'     + For the augmented-data projection: [MASS::polr()] (the returned object
+#'     inherits from class `polr`) for the [brms::cumulative()] family or
+#'     [rstanarm::stan_polr()] fits, [nnet::multinom()] (the returned object
+#'     inherits from class `multinom`) for the [brms::categorical()] family.
 #' * Submodel with multilevel but no additive terms:
 #'     + For the traditional (or latent) projection (or the augmented-data
 #'     projection in case of the [binomial()] or [brms::bernoulli()] family):
-#'     [lme4::lmer()] for the [gaussian()] family, [lme4::glmer()] for all other
-#'     families.
-#'     + For the augmented-data projection: [ordinal::clmm()] for the
-#'     [brms::cumulative()] family, [mclogit::mblogit()] for the
-#'     [brms::categorical()] family.
-#' * Submodel without multilevel but additive terms: [mgcv::gam()].
-#' * Submodel with multilevel and additive terms: [gamm4::gamm4()].
+#'     [lme4::lmer()] (the returned object inherits from class `lmerMod`) for
+#'     the [gaussian()] family, [lme4::glmer()] (the returned object inherits
+#'     from class `glmerMod`) for all other families.
+#'     + For the augmented-data projection: [ordinal::clmm()] (the returned
+#'     object inherits from class `clmm`) for the [brms::cumulative()] family,
+#'     [mclogit::mblogit()] (the returned object inherits from class `mmblogit`)
+#'     for the [brms::categorical()] family.
+#' * Submodel without multilevel but additive terms: [mgcv::gam()] (the returned
+#' object inherits from class `gam`).
+#' * Submodel with multilevel and additive terms: [gamm4::gamm4()] (within
+#' \pkg{projpred}, the returned object inherits from class `gamm4`).
 #'
 #' # Verbosity
 #'

@@ -42,23 +42,29 @@ minimizers (in other words, these are the workhorse functions employed by
 \item For the traditional (or latent) projection (or the augmented-data
 projection in case of the \code{\link[=binomial]{binomial()}} or \code{\link[brms:brmsfamily]{brms::bernoulli()}} family): An
 internal C++ function which basically serves the same purpose as \code{\link[=lm]{lm()}}
-for the \code{\link[=gaussian]{gaussian()}} family and \code{\link[=glm]{glm()}} for all other families.
-\item For the augmented-data projection: \code{\link[MASS:polr]{MASS::polr()}} for the
-\code{\link[brms:brmsfamily]{brms::cumulative()}} family or \code{\link[rstanarm:stan_polr]{rstanarm::stan_polr()}} fits,
-\code{\link[nnet:multinom]{nnet::multinom()}} for the \code{\link[brms:brmsfamily]{brms::categorical()}} family.
+for the \code{\link[=gaussian]{gaussian()}} family and \code{\link[=glm]{glm()}} for all other families. The
+returned object inherits from class \code{subfit}.
+\item For the augmented-data projection: \code{\link[MASS:polr]{MASS::polr()}} (the returned object
+inherits from class \code{polr}) for the \code{\link[brms:brmsfamily]{brms::cumulative()}} family or
+\code{\link[rstanarm:stan_polr]{rstanarm::stan_polr()}} fits, \code{\link[nnet:multinom]{nnet::multinom()}} (the returned object
+inherits from class \code{multinom}) for the \code{\link[brms:brmsfamily]{brms::categorical()}} family.
 }
 \item Submodel with multilevel but no additive terms:
 \itemize{
 \item For the traditional (or latent) projection (or the augmented-data
 projection in case of the \code{\link[=binomial]{binomial()}} or \code{\link[brms:brmsfamily]{brms::bernoulli()}} family):
-\code{\link[lme4:lmer]{lme4::lmer()}} for the \code{\link[=gaussian]{gaussian()}} family, \code{\link[lme4:glmer]{lme4::glmer()}} for all other
-families.
-\item For the augmented-data projection: \code{\link[ordinal:clmm]{ordinal::clmm()}} for the
-\code{\link[brms:brmsfamily]{brms::cumulative()}} family, \code{\link[mclogit:mblogit]{mclogit::mblogit()}} for the
-\code{\link[brms:brmsfamily]{brms::categorical()}} family.
+\code{\link[lme4:lmer]{lme4::lmer()}} (the returned object inherits from class \code{lmerMod}) for
+the \code{\link[=gaussian]{gaussian()}} family, \code{\link[lme4:glmer]{lme4::glmer()}} (the returned object inherits
+from class \code{glmerMod}) for all other families.
+\item For the augmented-data projection: \code{\link[ordinal:clmm]{ordinal::clmm()}} (the returned
+object inherits from class \code{clmm}) for the \code{\link[brms:brmsfamily]{brms::cumulative()}} family,
+\code{\link[mclogit:mblogit]{mclogit::mblogit()}} (the returned object inherits from class \code{mmblogit})
+for the \code{\link[brms:brmsfamily]{brms::categorical()}} family.
 }
-\item Submodel without multilevel but additive terms: \code{\link[mgcv:gam]{mgcv::gam()}}.
-\item Submodel with multilevel and additive terms: \code{\link[gamm4:gamm4]{gamm4::gamm4()}}.
+\item Submodel without multilevel but additive terms: \code{\link[mgcv:gam]{mgcv::gam()}} (the returned
+object inherits from class \code{gam}).
+\item Submodel with multilevel and additive terms: \code{\link[gamm4:gamm4]{gamm4::gamm4()}} (within
+\pkg{projpred}, the returned object inherits from class \code{gamm4}).
 }
 }
 
