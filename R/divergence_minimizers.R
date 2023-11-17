@@ -934,14 +934,15 @@ fit_categ_mlvl <- function(formula, projpred_formula_no_random,
 
 # Convergence issues ------------------------------------------------------
 
-# Throw unique messages and warnings from a list of messages and warnings:
+# Throw unique messages and warnings from a list of messages and warnings
+# retrieved during draw-wise projections:
 warn_prj_drawwise <- function(mssgs_warns_capts, throw_warn = TRUE) {
   if (!throw_warn) return()
   mssgs_warns_capts_unq <- unique(unlist(mssgs_warns_capts))
   if (length(mssgs_warns_capts_unq) > 0) {
     warning(paste(
       c(paste0("The following warnings have been thrown by the current ",
-               "draw-wise divergence minimizer (i.e., \"submodel fitter\"):"),
+               "submodel fitter (i.e., draw-wise divergence minimizer):"),
         "---", mssgs_warns_capts_unq, "---"),
       collapse = "\n"
     ))
