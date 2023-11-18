@@ -1182,9 +1182,9 @@ init_refmodel <- function(object, data, formula, family, ref_predfun = NULL,
 
   # Functions ---------------------------------------------------------------
 
-  # The internal default for `extract_model_data`:
   extract_model_data_usr <- extract_model_data
   if (is.null(extract_model_data_usr)) {
+    # The internal default for `extract_model_data`:
     extract_model_data_usr <- function(object, newdata, wrhs = NULL,
                                        orhs = NULL, extract_y = TRUE) {
       return(y_wobs_offs(newdata = newdata, wrhs = wrhs, orhs = orhs,
