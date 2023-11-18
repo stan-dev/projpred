@@ -682,8 +682,9 @@ test_that(paste(
     )
     vs <- suppressWarnings(varsel(
       ref,
-      method = "L1", lambda_min_ratio = lambda_min_ratio,
-      nlambda = nlambda, thresh = 1e-12, verbose = FALSE
+      method = "L1",
+      search_control = nlist(lambda_min_ratio, nlambda, thresh = 1e-12),
+      verbose = FALSE
     ))
     pred1 <- proj_linpred(vs,
                           newdata = data.frame(x = x, weights = weights),

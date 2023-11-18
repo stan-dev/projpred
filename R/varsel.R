@@ -49,16 +49,21 @@
 #'   those predictors have no cost and will therefore be selected first, whereas
 #'   `Inf` means those predictors will never be selected. If `NULL`, then `1` is
 #'   used for each predictor.
-#' @param lambda_min_ratio Only relevant for L1 search. Ratio between the
-#'   smallest and largest lambda in the L1-penalized search. This parameter
-#'   essentially determines how long the search is carried out, i.e., how large
-#'   submodels are explored. No need to change this unless the program gives a
-#'   warning about this.
-#' @param nlambda Only relevant for L1 search. Number of values in the lambda
-#'   grid for L1-penalized search. No need to change this unless the program
-#'   gives a warning about this.
-#' @param thresh Only relevant for L1 search. Convergence threshold when
-#'   computing the L1 path. Usually, there is no need to change this.
+#' @param search_control A `list` of "control" arguments (i.e., tuning
+#'   parameters) for the search. In case of forward search, these arguments are
+#'   passed to the divergence minimizer (see argument `div_minimizer` of
+#'   [init_refmodel()] as well as section "Draw-wise divergence minimizers" of
+#'   [projpred-package]). In case of L1 search, possible arguments are:
+#'   * `lambda_min_ratio`: Ratio between the smallest and largest lambda in the
+#'   L1-penalized search (default: `1e-5`). This parameter essentially
+#'   determines how long the search is carried out, i.e., how large submodels
+#'   are explored. No need to change this unless the program gives a warning
+#'   about this.
+#'   * `nlambda`: Number of values in the lambda grid for L1-penalized search
+#'   (default: `150`). No need to change this unless the program gives a warning
+#'   about this.
+#'   * `thresh`: Convergence threshold when computing the L1 path (default:
+#'   `1e-6`). Usually, there is no need to change this.
 #' @param search_terms Only relevant for forward search. A custom character
 #'   vector of predictor term blocks to consider for the search. Section
 #'   "Details" below describes more precisely what "predictor term block" means.
@@ -80,8 +85,10 @@
 #' @param ... For [varsel.default()]: Arguments passed to [get_refmodel()] as
 #'   well as to [varsel.refmodel()]. For [varsel.vsel()]: Arguments passed to
 #'   [varsel.refmodel()]. For [varsel.refmodel()]: Arguments passed to the
-#'   divergence minimizer (during a forward search and also during the
-#'   evaluation part, but the latter only if `refit_prj` is `TRUE`).
+#'   divergence minimizer (see argument `div_minimizer` of [init_refmodel()] as
+#'   well as section "Draw-wise divergence minimizers" of [projpred-package])
+#'   when refitting the submodels for the performance evaluation (if `refit_prj`
+#'   is `TRUE`).
 #'
 #' @details
 #'
@@ -204,9 +211,7 @@ varsel.vsel <- function(object, ...) {
     ndraws = object[["args_search"]][["ndraws"]],
     nclusters = object[["args_search"]][["nclusters"]],
     nterms_max = object[["args_search"]][["nterms_max"]],
-    lambda_min_ratio = object[["args_search"]][["lambda_min_ratio"]],
-    nlambda = object[["args_search"]][["nlambda"]],
-    thresh = object[["args_search"]][["thresh"]],
+    search_control = object[["args_search"]][["search_control"]],
     penalty = object[["args_search"]][["penalty"]],
     search_terms = object[["args_search"]][["search_terms"]],
     search_out = list(search_path = object[["search_path"]]),
@@ -221,8 +226,8 @@ varsel.refmodel <- function(object, d_test = NULL, method = "forward",
                             nclusters_pred = NULL,
                             refit_prj = !inherits(object, "datafit"),
                             nterms_max = NULL, verbose = TRUE,
-                            lambda_min_ratio = 1e-5, nlambda = 150,
-                            thresh = 1e-6, penalty = NULL, search_terms = NULL,
+                            search_control = list(),
+                            penalty = NULL, search_terms = NULL,
                             search_out = NULL, seed = NA, ...) {
   if (exists(".Random.seed", envir = .GlobalEnv)) {
     rng_state_old <- get(".Random.seed", envir = .GlobalEnv)
@@ -314,12 +319,12 @@ varsel.refmodel <- function(object, d_test = NULL, method = "forward",
   if (!is.null(search_out)) {
     search_path <- search_out[["search_path"]]
   } else {
-    opt <- nlist(lambda_min_ratio, nlambda, thresh)
     verb_out("-----\nRunning the search ...", verbose = verbose)
     search_path <- select(
       refmodel = refmodel, ndraws = ndraws, nclusters = nclusters,
       method = method, nterms_max = nterms_max, penalty = penalty,
-      verbose = verbose, opt = opt, search_terms = search_terms,
+      verbose = verbose, search_control = search_control,
+      search_terms = search_terms,
       search_terms_was_null = search_terms_was_null, ...
     )
     verb_out("-----", verbose = verbose)
@@ -416,8 +421,7 @@ varsel.refmodel <- function(object, d_test = NULL, method = "forward",
               cvfits = refmodel$cvfits,
               ###
               args_search = nlist(
-                method, ndraws, nclusters, nterms_max, lambda_min_ratio,
-                nlambda, thresh, penalty,
+                method, ndraws, nclusters, nterms_max, search_control, penalty,
                 search_terms = if (search_terms_was_null) NULL else search_terms
               ),
               clust_used_search = search_path$p_sel$clust_used,
@@ -446,7 +450,7 @@ varsel.refmodel <- function(object, d_test = NULL, method = "forward",
 #   of fits per model size being equal to the number of projected draws), and
 #   `p_sel` (the output from get_refdist() for the search).
 select <- function(refmodel, ndraws, nclusters, reweighting_args = NULL, method,
-                   nterms_max, penalty, verbose, opt, ...) {
+                   nterms_max, penalty, verbose, search_control, ...) {
   if (is.null(reweighting_args)) {
     p_sel <- get_refdist(refmodel, ndraws = ndraws, nclusters = nclusters)
   } else {
@@ -460,12 +464,12 @@ select <- function(refmodel, ndraws, nclusters, reweighting_args = NULL, method,
   if (method == "L1") {
     search_path <- search_L1(
       p_ref = p_sel, refmodel = refmodel, nterms_max = nterms_max,
-      penalty = penalty, opt = opt
+      penalty = penalty, search_control = search_control
     )
   } else if (method == "forward") {
     search_path <- search_forward(
       p_ref = p_sel, refmodel = refmodel, nterms_max = nterms_max,
-      verbose = verbose, ...
+      verbose = verbose, search_control = search_control, ...
     )
   }
   search_path$p_sel <- p_sel

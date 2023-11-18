@@ -196,7 +196,7 @@ force_search_terms <- function(forced_terms, optional_terms) {
 }
 
 search_L1_surrogate <- function(p_ref, d_train, family, intercept, nterms_max,
-                                penalty, opt) {
+                                penalty, search_control) {
 
   ## predictive mean and variance of the reference model (with parameters
   ## integrated out)
@@ -212,13 +212,15 @@ search_L1_surrogate <- function(p_ref, d_train, family, intercept, nterms_max,
   ## (Notice: here we use pmax = nterms_max+1 so that the computation gets
   ## carried until all the way down to the least regularization also for model
   ## size nterms_max)
-  search <- glm_elnet(d_train$x, mu, family,
-                      lambda_min_ratio = opt$lambda_min_ratio,
-                      nlambda = opt$nlambda,
-                      pmax = nterms_max + 1, pmax_strict = FALSE,
-                      weights = d_train$weights,
-                      intercept = intercept, obsvar = v, penalty = penalty,
-                      thresh = opt$thresh)
+  search <- glm_elnet(
+    d_train$x, mu, family,
+    lambda_min_ratio = search_control$lambda_min_ratio %||% 1e-5,
+    nlambda = search_control$nlambda %||% 150,
+    pmax = nterms_max + 1, pmax_strict = FALSE,
+    weights = d_train$weights,
+    intercept = intercept, obsvar = v, penalty = penalty,
+    thresh = search_control$thresh %||% 1e-6
+  )
 
   ## sort the variables according to the order in which they enter the model in
   ## the L1-path
@@ -282,7 +284,7 @@ search_L1_surrogate <- function(p_ref, d_train, family, intercept, nterms_max,
   return(out)
 }
 
-search_L1 <- function(p_ref, refmodel, nterms_max, penalty, opt) {
+search_L1 <- function(p_ref, refmodel, nterms_max, penalty, search_control) {
   if (nterms_max == 0) {
     stop("L1 search cannot be used for an empty (i.e. intercept-only) ",
          "full-model formula or `nterms_max = 0`.")
@@ -314,7 +316,7 @@ search_L1 <- function(p_ref, refmodel, nterms_max, penalty, opt) {
   terms_ <- attr(tt, "term.labels")
   search_path <- search_L1_surrogate(
     p_ref, nlist(x, weights = refmodel$wobs), refmodel$family,
-    intercept = TRUE, ncol(x), penalty, opt
+    intercept = TRUE, ncol(x), penalty, search_control
   )
 
   predictor_ranking_orig <- collapse_ranked_predictors(

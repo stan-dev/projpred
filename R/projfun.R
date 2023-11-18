@@ -3,7 +3,8 @@
 # to a single fit (there are as many fits for this single submodel as there are
 # projected draws). At the end, init_submodl() is called, so the output is of
 # class `submodl`.
-proj_to_submodl <- function(predictor_terms, p_ref, refmodel, ...) {
+proj_to_submodl <- function(predictor_terms, p_ref, refmodel,
+                            search_control = list(), ...) {
   y_unqs_aug <- refmodel$family$cats
   if (refmodel$family$for_latent && !is.null(y_unqs_aug)) {
     y_unqs_aug <- NULL
@@ -23,15 +24,18 @@ proj_to_submodl <- function(predictor_terms, p_ref, refmodel, ...) {
     verb_out("  Projecting onto ", utils::tail(rhs_chr, 1))
   }
 
-  outdmin <- refmodel$div_minimizer(
-    formula = fml_divmin,
-    data = subset$data,
-    family = refmodel$family,
-    weights = refmodel$wobs,
-    projpred_var = p_ref$var,
-    projpred_ws_aug = p_ref$mu,
-    ...
-  )
+  args_divmin <- list(formula = fml_divmin,
+                      data = subset$data,
+                      family = refmodel$family,
+                      weights = refmodel$wobs,
+                      projpred_var = p_ref$var,
+                      projpred_ws_aug = p_ref$mu)
+  if (length(search_control) > 0) {
+    args_divmin <- c(args_divmin, search_control)
+  } else {
+    args_divmin <- c(args_divmin, list(...))
+  }
+  outdmin <- do.call(refmodel$div_minimizer, args_divmin)
 
   if (isTRUE(getOption("projpred.check_conv", FALSE))) {
     check_conv(outdmin)

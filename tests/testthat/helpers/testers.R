@@ -2411,7 +2411,7 @@ vsel_tester <- function(
         NULL
       },
       nterms_max = vs$nterms_max,
-      lambda_min_ratio = 1e-5, nlambda = 150, thresh = 1e-6,
+      search_control = list(),
       penalty = penalty_expected,
       search_terms = if (is.null(search_terms_expected)) {
         NULL

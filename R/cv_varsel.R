@@ -59,8 +59,10 @@
 #' @param ... For [cv_varsel.default()]: Arguments passed to [get_refmodel()] as
 #'   well as to [cv_varsel.refmodel()]. For [cv_varsel.vsel()]: Arguments passed
 #'   to [cv_varsel.refmodel()]. For [cv_varsel.refmodel()]: Arguments passed to
-#'   the divergence minimizer (during a forward search and also during the
-#'   evaluation part, but the latter only if `refit_prj` is `TRUE`).
+#'   the divergence minimizer (see argument `div_minimizer` of [init_refmodel()]
+#'   as well as section "Draw-wise divergence minimizers" of [projpred-package])
+#'   when refitting the submodels for the performance evaluation (if `refit_prj`
+#'   is `TRUE`).
 #'
 #' @inherit varsel details return
 #'
@@ -196,9 +198,7 @@ cv_varsel.vsel <- function(
     ndraws = object[["args_search"]][["ndraws"]],
     nclusters = object[["args_search"]][["nclusters"]],
     nterms_max = object[["args_search"]][["nterms_max"]],
-    lambda_min_ratio = object[["args_search"]][["lambda_min_ratio"]],
-    nlambda = object[["args_search"]][["nlambda"]],
-    thresh = object[["args_search"]][["thresh"]],
+    search_control = object[["args_search"]][["search_control"]],
     penalty = object[["args_search"]][["penalty"]],
     search_terms = object[["args_search"]][["search_terms"]],
     cv_method = cv_method,
@@ -228,9 +228,7 @@ cv_varsel.refmodel <- function(
     nloo = object$nobs,
     K = if (!inherits(object, "datafit")) 5 else 10,
     cvfits = object$cvfits,
-    lambda_min_ratio = 1e-5,
-    nlambda = 150,
-    thresh = 1e-6,
+    search_control = list(),
     validate_search = TRUE,
     seed = NA,
     search_terms = NULL,
@@ -274,8 +272,6 @@ cv_varsel.refmodel <- function(
   nloo <- args$nloo
   K <- args$K
   cvfits <- args$cvfits
-  # Arguments specific to the search:
-  opt <- nlist(lambda_min_ratio, nlambda, thresh)
 
   # Full-data search:
   if (!is.null(search_out)) {
@@ -293,7 +289,8 @@ cv_varsel.refmodel <- function(
     search_path_fulldata <- select(
       refmodel = refmodel, ndraws = ndraws, nclusters = nclusters,
       method = method, nterms_max = nterms_max, penalty = penalty,
-      verbose = verbose, opt = opt, search_terms = search_terms,
+      verbose = verbose, search_control = search_control,
+      search_terms = search_terms,
       search_terms_was_null = search_terms_was_null, ...
     )
     verb_out("-----", verbose = verbose)
@@ -319,7 +316,7 @@ cv_varsel.refmodel <- function(
       refmodel = refmodel, method = method, nterms_max = nterms_max,
       ndraws = ndraws, nclusters = nclusters, ndraws_pred = ndraws_pred,
       nclusters_pred = nclusters_pred, refit_prj = refit_prj, penalty = penalty,
-      verbose = verbose, opt = opt, nloo = nloo,
+      verbose = verbose, search_control = search_control, nloo = nloo,
       validate_search = validate_search,
       search_path_fulldata = if (validate_search) {
         # Not needed in this case, so for computational efficiency, avoiding
@@ -337,8 +334,8 @@ cv_varsel.refmodel <- function(
       refmodel = refmodel, method = method, nterms_max = nterms_max,
       ndraws = ndraws, nclusters = nclusters, ndraws_pred = ndraws_pred,
       nclusters_pred = nclusters_pred, refit_prj = refit_prj, penalty = penalty,
-      verbose = verbose, opt = opt, K = K, cvfits = cvfits,
-      validate_search = validate_search,
+      verbose = verbose, search_control = search_control, K = K,
+      cvfits = cvfits, validate_search = validate_search,
       search_path_fulldata = if (validate_search) {
         # Not needed in this case, so for computational efficiency, avoiding
         # passing the large object `search_path_fulldata` to loo_varsel():
@@ -395,8 +392,7 @@ cv_varsel.refmodel <- function(
               validate_search,
               cvfits,
               args_search = nlist(
-                method, ndraws, nclusters, nterms_max, lambda_min_ratio,
-                nlambda, thresh, penalty,
+                method, ndraws, nclusters, nterms_max, search_control, penalty,
                 search_terms = if (search_terms_was_null) NULL else search_terms
               ),
               clust_used_search = refdist_info_search$clust_used,
@@ -500,7 +496,7 @@ parse_args_cv_varsel <- function(refmodel, cv_method, nloo, K, cvfits,
 # all other arguments, see the documentation of cv_varsel().
 loo_varsel <- function(refmodel, method, nterms_max, ndraws,
                        nclusters, ndraws_pred, nclusters_pred, refit_prj,
-                       penalty, verbose, opt, nloo, validate_search,
+                       penalty, verbose, search_control, nloo, validate_search,
                        search_path_fulldata, search_terms,
                        search_terms_was_null, search_out_rks, parallel, ...) {
   ## Pre-processing ---------------------------------------------------------
@@ -918,8 +914,8 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
           refmodel = refmodel, ndraws = ndraws, nclusters = nclusters,
           reweighting_args = list(cl_ref = cl_sel, wdraws_ref = exp(lw[, i])),
           method = method, nterms_max = nterms_max, penalty = penalty,
-          verbose = verbose_search, opt = opt, search_terms = search_terms,
-          est_runtime = FALSE, ...
+          verbose = verbose_search, search_control = search_control,
+          search_terms = search_terms, est_runtime = FALSE, ...
         )
       }
 
@@ -1189,7 +1185,7 @@ if (getRversion() >= package_version("2.15.1")) {
 
 kfold_varsel <- function(refmodel, method, nterms_max, ndraws, nclusters,
                          ndraws_pred, nclusters_pred, refit_prj, penalty,
-                         verbose, opt, K, cvfits, validate_search,
+                         verbose, search_control, K, cvfits, validate_search,
                          search_path_fulldata, search_terms, search_out_rks,
                          parallel, ...) {
   # Fetch the K reference model fits (or fit them now if not already done) and
@@ -1238,8 +1234,8 @@ kfold_varsel <- function(refmodel, method, nterms_max, ndraws, nclusters,
       search_path <- select(
         refmodel = fold$refmodel, ndraws = ndraws, nclusters = nclusters,
         method = method, nterms_max = nterms_max, penalty = penalty,
-        verbose = verbose_search, opt = opt, search_terms = search_terms,
-        est_runtime = FALSE, ...
+        verbose = verbose_search, search_control = search_control,
+        search_terms = search_terms, est_runtime = FALSE, ...
       )
     }
 
