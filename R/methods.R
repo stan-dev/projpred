@@ -1033,9 +1033,9 @@ plot.vsel <- function(
   if (all(stats %in% c("rmse", "auc"))) {
     ci_type <- "bootstrap "
   } else if (all(stats %in% c("gmpd"))) {
-    ci_type <- "exponentiated normal approximation "
+    ci_type <- "exponentiated normal-approximation "
   } else if (all(!stats %in% c("rmse", "auc", "gmpd"))) {
-    ci_type <- "normal approximation "
+    ci_type <- "normal-approximation "
   } else {
     ci_type <- ""
   }
@@ -1106,7 +1106,7 @@ plot.vsel <- function(
 #'   `"mlpd"`. The GMPD is especially helpful for discrete response families
 #'   (because there, the GMPD is bounded by zero and one). For the corresponding
 #'   standard error, the delta method is used. The corresponding confidence
-#'   interval type is an "exponentiated normal approximation" because the
+#'   interval type is "exponentiated normal approximation" because the
 #'   confidence interval bounds are the exponentiated confidence interval bounds
 #'   of the `"mlpd"`.
 #'   * `"mse"`: mean squared error (only available in the situations mentioned

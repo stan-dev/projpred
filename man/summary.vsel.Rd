@@ -45,7 +45,7 @@ number of observations.
 \code{"mlpd"}. The GMPD is especially helpful for discrete response families
 (because there, the GMPD is bounded by zero and one). For the corresponding
 standard error, the delta method is used. The corresponding confidence
-interval type is an "exponentiated normal approximation" because the
+interval type is "exponentiated normal approximation" because the
 confidence interval bounds are the exponentiated confidence interval bounds
 of the \code{"mlpd"}.
 \item \code{"mse"}: mean squared error (only available in the situations mentioned
