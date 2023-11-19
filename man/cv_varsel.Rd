@@ -36,7 +36,7 @@ cv_varsel(object, ...)
   nloo = object$nobs,
   K = if (!inherits(object, "datafit")) 5 else 10,
   cvfits = object$cvfits,
-  search_control = list(),
+  search_control = NULL,
   validate_search = TRUE,
   seed = NA,
   search_terms = NULL,
@@ -139,7 +139,9 @@ additional information during the computations.}
 parameters) for the search. In case of forward search, these arguments are
 passed to the divergence minimizer (see argument \code{div_minimizer} of
 \code{\link[=init_refmodel]{init_refmodel()}} as well as section "Draw-wise divergence minimizers" of
-\link{projpred-package}). In case of L1 search, possible arguments are:
+\link{projpred-package}). In case of forward search, \code{NULL} causes \code{...} to be
+used not only for the performance evaluation, but also for the search. In
+case of L1 search, possible arguments are:
 \itemize{
 \item \code{lambda_min_ratio}: Ratio between the smallest and largest lambda in the
 L1-penalized search (default: \code{1e-5}). This parameter essentially

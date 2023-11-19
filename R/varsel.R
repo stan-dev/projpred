@@ -53,7 +53,9 @@
 #'   parameters) for the search. In case of forward search, these arguments are
 #'   passed to the divergence minimizer (see argument `div_minimizer` of
 #'   [init_refmodel()] as well as section "Draw-wise divergence minimizers" of
-#'   [projpred-package]). In case of L1 search, possible arguments are:
+#'   [projpred-package]). In case of forward search, `NULL` causes `...` to be
+#'   used not only for the performance evaluation, but also for the search. In
+#'   case of L1 search, possible arguments are:
 #'   * `lambda_min_ratio`: Ratio between the smallest and largest lambda in the
 #'   L1-penalized search (default: `1e-5`). This parameter essentially
 #'   determines how long the search is carried out, i.e., how large submodels
@@ -226,7 +228,7 @@ varsel.refmodel <- function(object, d_test = NULL, method = "forward",
                             nclusters_pred = NULL,
                             refit_prj = !inherits(object, "datafit"),
                             nterms_max = NULL, verbose = TRUE,
-                            search_control = list(),
+                            search_control = NULL,
                             penalty = NULL, search_terms = NULL,
                             search_out = NULL, seed = NA, ...) {
   if (exists(".Random.seed", envir = .GlobalEnv)) {
@@ -421,7 +423,11 @@ varsel.refmodel <- function(object, d_test = NULL, method = "forward",
               cvfits = refmodel$cvfits,
               ###
               args_search = nlist(
-                method, ndraws, nclusters, nterms_max, search_control, penalty,
+                method, ndraws, nclusters, nterms_max,
+                search_control = if (
+                  method == "forward" && is.null(search_control)
+                ) list(...) else search_control,
+                penalty,
                 search_terms = if (search_terms_was_null) NULL else search_terms
               ),
               clust_used_search = search_path$p_sel$clust_used,

@@ -228,7 +228,7 @@ cv_varsel.refmodel <- function(
     nloo = object$nobs,
     K = if (!inherits(object, "datafit")) 5 else 10,
     cvfits = object$cvfits,
-    search_control = list(),
+    search_control = NULL,
     validate_search = TRUE,
     seed = NA,
     search_terms = NULL,
@@ -392,7 +392,11 @@ cv_varsel.refmodel <- function(
               validate_search,
               cvfits,
               args_search = nlist(
-                method, ndraws, nclusters, nterms_max, search_control, penalty,
+                method, ndraws, nclusters, nterms_max,
+                search_control = if (
+                  method == "forward" && is.null(search_control)
+                ) list(...) else search_control,
+                penalty,
                 search_terms = if (search_terms_was_null) NULL else search_terms
               ),
               clust_used_search = refdist_info_search$clust_used,
