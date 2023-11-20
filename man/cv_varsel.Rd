@@ -37,6 +37,9 @@ cv_varsel(object, ...)
   K = if (!inherits(object, "datafit")) 5 else 10,
   cvfits = object$cvfits,
   search_control = NULL,
+  lambda_min_ratio = 1e-05,
+  nlambda = 150,
+  thresh = 1e-06,
   validate_search = TRUE,
   seed = NA,
   search_terms = NULL,
@@ -154,6 +157,21 @@ about this.
 \item \code{thresh}: Convergence threshold when computing the L1 path (default:
 \code{1e-6}). Usually, there is no need to change this.
 }}
+
+\item{lambda_min_ratio}{Deprecated (please use \code{search_control} instead).
+Only relevant for L1 search. Ratio between the smallest and largest lambda
+in the L1-penalized search. This parameter essentially determines how long
+the search is carried out, i.e., how large submodels are explored. No need
+to change this unless the program gives a warning about this.}
+
+\item{nlambda}{Deprecated (please use \code{search_control} instead). Only
+relevant for L1 search. Number of values in the lambda grid for
+L1-penalized search. No need to change this unless the program gives a
+warning about this.}
+
+\item{thresh}{Deprecated (please use \code{search_control} instead). Only relevant
+for L1 search. Convergence threshold when computing the L1 path. Usually,
+there is no need to change this.}
 
 \item{seed}{Pseudorandom number generation (PRNG) seed by which the same
 results can be obtained again if needed. Passed to argument \code{seed} of

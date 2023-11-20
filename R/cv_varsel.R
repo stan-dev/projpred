@@ -229,6 +229,9 @@ cv_varsel.refmodel <- function(
     K = if (!inherits(object, "datafit")) 5 else 10,
     cvfits = object$cvfits,
     search_control = NULL,
+    lambda_min_ratio = 1e-5,
+    nlambda = 150,
+    thresh = 1e-6,
     validate_search = TRUE,
     seed = NA,
     search_terms = NULL,
@@ -236,6 +239,26 @@ cv_varsel.refmodel <- function(
     parallel = getOption("projpred.prll_cv", FALSE),
     ...
 ) {
+  if (!missing(lambda_min_ratio)) {
+    warning("Argument `lambda_min_ratio` is deprecated. Please specify ",
+            "control arguments for the search via argument `search_control`. ",
+            "Now using `lambda_min_ratio` as element `lambda_min_ratio` of ",
+            "`search_control`.")
+    search_control$lambda_min_ratio <- lambda_min_ratio
+  }
+  if (!missing(nlambda)) {
+    warning("Argument `nlambda` is deprecated. Please specify control ",
+            "arguments for the search via argument `search_control`. ",
+            "Now using `nlambda` as element `nlambda` of `search_control`.")
+    search_control$nlambda <- nlambda
+  }
+  if (!missing(thresh)) {
+    warning("Argument `thresh` is deprecated. Please specify control ",
+            "arguments for the search via argument `search_control`. ",
+            "Now using `thresh` as element `thresh` of `search_control`.")
+    search_control$thresh <- thresh
+  }
+
   if (exists(".Random.seed", envir = .GlobalEnv)) {
     rng_state_old <- get(".Random.seed", envir = .GlobalEnv)
   }

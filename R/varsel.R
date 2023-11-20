@@ -66,6 +66,18 @@
 #'   about this.
 #'   * `thresh`: Convergence threshold when computing the L1 path (default:
 #'   `1e-6`). Usually, there is no need to change this.
+#' @param lambda_min_ratio Deprecated (please use `search_control` instead).
+#'   Only relevant for L1 search. Ratio between the smallest and largest lambda
+#'   in the L1-penalized search. This parameter essentially determines how long
+#'   the search is carried out, i.e., how large submodels are explored. No need
+#'   to change this unless the program gives a warning about this.
+#' @param nlambda Deprecated (please use `search_control` instead). Only
+#'   relevant for L1 search. Number of values in the lambda grid for
+#'   L1-penalized search. No need to change this unless the program gives a
+#'   warning about this.
+#' @param thresh Deprecated (please use `search_control` instead). Only relevant
+#'   for L1 search. Convergence threshold when computing the L1 path. Usually,
+#'   there is no need to change this.
 #' @param search_terms Only relevant for forward search. A custom character
 #'   vector of predictor term blocks to consider for the search. Section
 #'   "Details" below describes more precisely what "predictor term block" means.
@@ -228,9 +240,30 @@ varsel.refmodel <- function(object, d_test = NULL, method = "forward",
                             nclusters_pred = NULL,
                             refit_prj = !inherits(object, "datafit"),
                             nterms_max = NULL, verbose = TRUE,
-                            search_control = NULL,
-                            penalty = NULL, search_terms = NULL,
-                            search_out = NULL, seed = NA, ...) {
+                            search_control = NULL, lambda_min_ratio = 1e-5,
+                            nlambda = 150, thresh = 1e-6, penalty = NULL,
+                            search_terms = NULL, search_out = NULL, seed = NA,
+                            ...) {
+  if (!missing(lambda_min_ratio)) {
+    warning("Argument `lambda_min_ratio` is deprecated. Please specify ",
+            "control arguments for the search via argument `search_control`. ",
+            "Now using `lambda_min_ratio` as element `lambda_min_ratio` of ",
+            "`search_control`.")
+    search_control$lambda_min_ratio <- lambda_min_ratio
+  }
+  if (!missing(nlambda)) {
+    warning("Argument `nlambda` is deprecated. Please specify control ",
+            "arguments for the search via argument `search_control`. ",
+            "Now using `nlambda` as element `nlambda` of `search_control`.")
+    search_control$nlambda <- nlambda
+  }
+  if (!missing(thresh)) {
+    warning("Argument `thresh` is deprecated. Please specify control ",
+            "arguments for the search via argument `search_control`. ",
+            "Now using `thresh` as element `thresh` of `search_control`.")
+    search_control$thresh <- thresh
+  }
+
   if (exists(".Random.seed", envir = .GlobalEnv)) {
     rng_state_old <- get(".Random.seed", envir = .GlobalEnv)
   }
