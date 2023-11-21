@@ -904,10 +904,6 @@ options(projpred.additional_checks = TRUE)
 # Suppress the warning thrown if `cvrefbuilder` is `NULL` (here in the tests,
 # this should only be relevant for `datafit`s):
 options(projpred.warn_cvrefbuilder_NULL = FALSE)
-# Suppress warnings thrown while fitting the submodels:
-options(projpred.warn_prj_drawwise = FALSE)
-# Don't use the convergence checker:
-options(projpred.check_conv = FALSE)
 # Set default number of significant digits to be printed:
 options(projpred.digits = getOption("digits"))
 
@@ -1149,6 +1145,9 @@ if (run_vs) {
       warn_expected <- "non-integer #successes in a binomial glm!"
     } else if (!is.null(args_vs_i$avoid.increase)) {
       warn_expected <- warn_mclogit
+    } else if (args_vs_i$mod_nm %in% c("glmm", "gamm") &&
+               args_vs_i$fam_nm %in% c("brnll", "binom")) {
+      warn_expected <- "boundary"
     } else {
       warn_expected <- NA
     }
