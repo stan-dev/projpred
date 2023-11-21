@@ -433,17 +433,30 @@ fit_glmer_callback <- function(formula, projpred_formula_no_random,
     } else if (grepl("pwrssUpdate did not converge in \\(maxit\\) iterations",
                      as.character(e))) {
       tolPwrss_new <- 10 * control$tolPwrss
-      if (length(control$optCtrl$maxfun) > 0) {
-        maxfun_new <- 10 * control$optCtrl$maxfun
-      } else {
-        maxfun_new <- 1e4
+      optCtrl_new <- list()
+      if (length(control$optimizer) == 0) {
+        stop("Unexpected length of `control$optimizer`. Please notify the ",
+             "package maintainer.")
       }
-      if (length(control$optCtrl$maxit) > 0) {
-        maxit_new <- 10 * control$optCtrl$maxit
-      } else {
-        maxit_new <- 1e4
+      if (any(control$optimizer %in% c("Nelder_Mead", "bobyqa"))) {
+        if (length(control$optCtrl$maxfun) > 0) {
+          maxfun_new <- 10 * control$optCtrl$maxfun
+        } else {
+          maxfun_new <- 1e4
+        }
+        optCtrl_new <- c(optCtrl_new, list(maxfun = maxfun_new))
       }
-      if (tolPwrss_new > 1e-4 && maxfun_new > 1e7 && maxit_new > 1e7) {
+      if (any(!control$optimizer %in% c("Nelder_Mead", "bobyqa"))) {
+        if (length(control$optCtrl$maxit) > 0) {
+          maxit_new <- 10 * control$optCtrl$maxit
+        } else {
+          maxit_new <- 1e4
+        }
+        optCtrl_new <- c(optCtrl_new, list(maxit = maxit_new))
+      }
+      if (tolPwrss_new > 1e-4 &&
+          (optCtrl_new$maxfun %||% -Inf > 1e7 ||
+           optCtrl_new$maxit %||% -Inf > 1e7)) {
         stop("Encountering the ",
              "`pwrssUpdate did not converge in (maxit) iterations` error ",
              "while running the lme4 fitting procedure, but cannot fix this ",
@@ -456,8 +469,7 @@ fit_glmer_callback <- function(formula, projpred_formula_no_random,
         projpred_random = projpred_random,
         family = family,
         control = control_callback(family, tolPwrss = tolPwrss_new,
-                                   optCtrl = list(maxfun = maxfun_new,
-                                                  maxit = maxit_new)),
+                                   optCtrl = optCtrl_new),
         ...
       ))
     } else if (getOption("projpred.PQL", FALSE) &&
