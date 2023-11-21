@@ -1145,9 +1145,14 @@ if (run_vs) {
       warn_expected <- "non-integer #successes in a binomial glm!"
     } else if (!is.null(args_vs_i$avoid.increase)) {
       warn_expected <- warn_mclogit
-    } else if (args_vs_i$mod_nm %in% c("glmm", "gamm") &&
-               args_vs_i$fam_nm %in% c("brnll", "binom")) {
+    } else if ((args_vs_i$mod_nm == "glmm" &&
+                args_vs_i$fam_nm %in% c("brnll", "binom", "cumul")) ||
+               (args_vs_i$mod_nm == "gamm" &&
+                args_vs_i$fam_nm %in% c("brnll", "binom") &&
+                args_vs_i$prj_nm == "trad_compare")) {
       warn_expected <- "boundary"
+    } else if (args_vs_i$mod_nm == "gamm" && args_vs_i$fam_nm == "gauss") {
+      warn_expected <- "seem to have not converged"
     } else {
       warn_expected <- NA
     }
