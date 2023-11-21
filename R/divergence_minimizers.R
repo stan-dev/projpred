@@ -997,7 +997,7 @@ check_conv_s <- function(fit_s) {
     return(fit_s$convergence == 0)
   } else if (inherits(fit_s, "gam")) {
     # TODO (GAMs): Is this correct?:
-    return(fit_s$converged && fit_s$mgcv.conv$fully.converged)
+    return(fit_s$converged && fit_s$mgcv.conv$fully.converged %||% TRUE)
   } else if (inherits(fit_s, "gamm4")) {
     # TODO (GAMMs): I couldn't find any convergence-related information in
     # element `fit_s$gam`, so the GAM part is currently not checked for
