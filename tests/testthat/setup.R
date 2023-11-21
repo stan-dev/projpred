@@ -208,15 +208,6 @@ fam_nms_aug_regex <- paste0("\\.(", paste(fam_nms_aug, collapse = "|"), ")\\.")
 fam_nms_unsupp_regex <- paste0("\\.(", paste(fam_nms_unsupp, collapse = "|"),
                                ")\\.")
 
-# Needed for package mclogit (providing the submodel fitter for multilevel
-# brms::categorical() models):
-warn_mclogit <- if (packageVersion("mclogit") >= "0.9.6") {
-  "Inner iterations did not coverge"
-} else {
-  paste0("^step size truncated due to possible divergence$|",
-         "^Algorithm stopped due to false convergence$")
-}
-
 # Data --------------------------------------------------------------------
 
 ## Setup ------------------------------------------------------------------
@@ -904,6 +895,10 @@ options(projpred.additional_checks = TRUE)
 # Suppress the warning thrown if `cvrefbuilder` is `NULL` (here in the tests,
 # this should only be relevant for `datafit`s):
 options(projpred.warn_cvrefbuilder_NULL = FALSE)
+# Suppress warnings thrown while fitting the submodels:
+options(projpred.warn_prj_drawwise = FALSE)
+# Don't use the convergence checker:
+options(projpred.check_conv = FALSE)
 # Set default number of significant digits to be printed:
 options(projpred.digits = getOption("digits"))
 
@@ -1141,30 +1136,10 @@ if (run_vs) {
   })) >= 1)
 
   vss <- lapply(args_vs, function(args_vs_i) {
-    if (args_vs_i$prj_nm == "augdat" && args_vs_i$fam_nm == "cumul") {
-      warn_expected <- "non-integer #successes in a binomial glm!"
-    } else if (!is.null(args_vs_i$avoid.increase)) {
-      warn_expected <- warn_mclogit
-    } else if ((args_vs_i$mod_nm == "glmm" &&
-                args_vs_i$fam_nm %in% c("brnll", "binom", "cumul")) ||
-               (args_vs_i$mod_nm == "gamm" &&
-                args_vs_i$fam_nm %in% c("brnll", "binom") &&
-                args_vs_i$prj_nm == "trad_compare")) {
-      warn_expected <- "boundary"
-    } else if (args_vs_i$mod_nm == "gamm" && args_vs_i$fam_nm == "gauss") {
-      warn_expected <- "seem to have not converged"
-    } else {
-      warn_expected <- NA
-    }
-    expect_warning(
-      vs_out <- do.call(varsel, c(
-        list(object = refmods[[args_vs_i$tstsetup_ref]]),
-        excl_nonargs(args_vs_i)
-      )),
-      warn_expected,
-      info = args_vs_i$tstsetup_ref
-    )
-    return(vs_out)
+    do.call(varsel, c(
+      list(object = refmods[[args_vs_i$tstsetup_ref]]),
+      excl_nonargs(args_vs_i)
+    ))
   })
 }
 
@@ -1427,24 +1402,10 @@ if (run_prj) {
   args_prj <- unlist_cust(args_prj)
 
   prjs <- lapply(args_prj, function(args_prj_i) {
-    if (args_prj_i$prj_nm == "augdat" && args_prj_i$fam_nm == "cumul" &&
-        !any(grepl("\\|", args_prj_i$predictor_terms))) {
-      warn_expected <- "non-integer #successes in a binomial glm!"
-    } else if (!is.null(args_prj_i$avoid.increase) &&
-               any(grepl("\\|", args_prj_i$predictor_terms))) {
-      warn_expected <- warn_mclogit
-    } else {
-      warn_expected <- NA
-    }
-    expect_warning(
-      prj_out <- do.call(project, c(
-        list(object = refmods[[args_prj_i$tstsetup_ref]]),
-        excl_nonargs(args_prj_i)
-      )),
-      warn_expected,
-      info = args_prj_i$tstsetup_ref
-    )
-    return(prj_out)
+    do.call(project, c(
+      list(object = refmods[[args_prj_i$tstsetup_ref]]),
+      excl_nonargs(args_prj_i)
+    ))
   })
 }
 
@@ -1562,16 +1523,12 @@ if (run_cvvs) {
   args_prj_cvvs <- cre_args_prj_vsel(tstsetups_prj_cvvs)
   args_prj_cvvs <- unlist_cust(args_prj_cvvs)
 
-  # Use suppressWarnings() because of occasional pwrssUpdate() warnings:
-  prjs_cvvs <- suppressWarnings(lapply(
-    args_prj_cvvs,
-    function(args_prj_cvvs_i) {
-      do.call(project, c(
-        list(object = cvvss[[args_prj_cvvs_i$tstsetup_vsel]]),
-        excl_nonargs(args_prj_cvvs_i)
-      ))
-    }
-  ))
+  prjs_cvvs <- lapply(args_prj_cvvs, function(args_prj_cvvs_i) {
+    do.call(project, c(
+      list(object = cvvss[[args_prj_cvvs_i$tstsetup_vsel]]),
+      excl_nonargs(args_prj_cvvs_i)
+    ))
+  })
 }
 
 ## Prediction -------------------------------------------------------------

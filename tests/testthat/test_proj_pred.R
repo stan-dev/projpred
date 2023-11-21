@@ -913,13 +913,6 @@ test_that(paste(
     } else {
       ncats_nlats_expected_crr <- integer()
     }
-    if (args_prj[[tstsetup]]$prj_nm == "augdat" &&
-        args_prj[[tstsetup]]$fam_nm == "cumul" &&
-        !any(grepl("\\|", args_prj[[tstsetup]]$predictor_terms))) {
-      warn_expected <- "non-integer #successes in a binomial glm!"
-    } else {
-      warn_expected <- NA
-    }
     pl_args <- list(refmods[[args_prj[[tstsetup]]$tstsetup_ref]],
                     newdata = head(get_dat(tstsetup), 1),
                     weightsnew = wobs_crr,
@@ -931,12 +924,10 @@ test_that(paste(
     if (args_prj[[tstsetup]]$fam_nm == "categ" &&
         any(grepl("\\|", args_prj[[tstsetup]]$predictor_terms))) {
       pl_args <- c(pl_args, list(avoid.increase = TRUE))
-      warn_expected <- warn_mclogit
     }
-    expect_warning(
-      pl1 <- do.call(proj_linpred, pl_args),
-      warn_expected
-    )
+    # Use suppressWarnings() because test_that() somehow redirects stderr() and
+    # so throws warnings that projpred wants to capture internally:
+    pl1 <- suppressWarnings(do.call(proj_linpred, pl_args))
     pl_tester(pl1,
               nprjdraws_expected = 1L,
               nobsv_expected = 1L,
@@ -1658,13 +1649,6 @@ test_that(paste(
     } else {
       offs_crr <- NULL
     }
-    if (args_prj[[tstsetup]]$prj_nm == "augdat" &&
-        args_prj[[tstsetup]]$fam_nm == "cumul" &&
-        !any(grepl("\\|", args_prj[[tstsetup]]$predictor_terms))) {
-      warn_expected <- "non-integer #successes in a binomial glm!"
-    } else {
-      warn_expected <- NA
-    }
     pp_args <- list(refmods[[args_prj[[tstsetup]]$tstsetup_ref]],
                     newdata = head(get_dat(tstsetup), 1),
                     weightsnew = wobs_crr,
@@ -1677,12 +1661,10 @@ test_that(paste(
     if (args_prj[[tstsetup]]$fam_nm == "categ" &&
         any(grepl("\\|", args_prj[[tstsetup]]$predictor_terms))) {
       pp_args <- c(pp_args, list(avoid.increase = TRUE))
-      warn_expected <- warn_mclogit
     }
-    expect_warning(
-      pp1 <- do.call(proj_predict, pp_args),
-      warn_expected
-    )
+    # Use suppressWarnings() because test_that() somehow redirects stderr() and
+    # so throws warnings that projpred wants to capture internally:
+    pp1 <- suppressWarnings(do.call(proj_predict, pp_args))
     pp_tester(pp1,
               nprjdraws_out_expected = 1L,
               nobsv_expected = 1L,

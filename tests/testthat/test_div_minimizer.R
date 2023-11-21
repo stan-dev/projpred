@@ -163,7 +163,12 @@ test_that("divmin_augdat() works", {
         "length > 1"
       )
     } else if (fam_crr == "categ" && mod_crr == "glmm") {
-      warn_expected <- warn_mclogit
+      warn_expected <- if (packageVersion("mclogit") >= "0.9.6") {
+        "Inner iterations did not coverge"
+      } else {
+        paste0("^step size truncated due to possible divergence$|",
+               "^Algorithm stopped due to false convergence$")
+      }
     } else {
       warn_expected <- NA
     }
