@@ -1422,7 +1422,7 @@ print.vselsummary <- function(x, digits = getOption("projpred.digits", 2),
       clust_search_pretty, "\n", sep = "")
   cat("Number of projected draws in the performance evaluation: ",
       x$nprjdraws_eval, clust_eval_pretty, "\n", sep = "")
-  # Re-fitted projections along the predictor ranking(s) (it is probably clearer
+  # Refitted projections along the predictor ranking(s) (it is probably clearer
   # to just refer to the argument name):
   cat("Argument `refit_prj`: ", x$refit_prj, "\n", sep = "")
   cat("\n")
