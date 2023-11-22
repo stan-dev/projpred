@@ -12,6 +12,7 @@ if (getRversion() >= package_version("2.15.1")) {
 divmin <- function(
     formula,
     projpred_var,
+    projpred_ws_aug,
     verbose_divmin = getOption("projpred.verbose_project", FALSE),
     throw_warn_sdivmin = getOption("projpred.warn_prj_drawwise", TRUE),
     do_check_conv = getOption("projpred.check_conv", TRUE),
@@ -99,7 +100,7 @@ divmin <- function(
       .export = c("sdivmin", "projpred_random", "dot_args"),
       .noexport = c(
         "object", "p_sel", "search_path", "p_ref", "refmodel", "formulas",
-        "projpred_var", "projpred_formulas_no_random"
+        "projpred_var", "projpred_ws_aug", "projpred_formulas_no_random"
       )
     ) %do_projpred% {
       mssgs_warns_capt <- capt_mssgs_warns(
