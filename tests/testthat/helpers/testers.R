@@ -1965,6 +1965,7 @@ vsel_tester <- function(
     penalty_expected = NULL,
     search_terms_expected = NULL,
     search_trms_empty_size = FALSE,
+    search_control_expected = NULL,
     extra_tol = 1.1,
     info_str = ""
 ) {
@@ -2398,6 +2399,10 @@ vsel_tester <- function(
   expect_identical(vs$cvfits, cvfits_expected, info = info_str)
 
   # args_search
+  sce <- search_control_expected[!sapply(search_control_expected, is.null)]
+  if (!length(sce)) {
+    sce <- if (method_expected == "forward") list() else NULL
+  }
   expect_equal(
     vs$args_search,
     list(
@@ -2411,7 +2416,7 @@ vsel_tester <- function(
         NULL
       },
       nterms_max = vs$nterms_max,
-      lambda_min_ratio = 1e-5, nlambda = 150, thresh = 1e-6,
+      search_control = sce,
       penalty = penalty_expected,
       search_terms = if (is.null(search_terms_expected)) {
         NULL

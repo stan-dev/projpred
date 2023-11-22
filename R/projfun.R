@@ -1,9 +1,12 @@
 # Function to project the reference model onto a single submodel with predictor
 # terms given in `predictor_terms`. Note that "single submodel" does not refer
 # to a single fit (there are as many fits for this single submodel as there are
-# projected draws). At the end, init_submodl() is called, so the output is of
-# class `submodl`.
-proj_to_submodl <- function(predictor_terms, p_ref, refmodel, ...) {
+# projected draws). The case `is.null(search_control)` occurs in two situations:
+# (i) when called from search_forward() with `...` as the intended control
+# arguments and (ii) when called from perf_eval(). At the end, init_submodl() is
+# called, so the output is of class `submodl`.
+proj_to_submodl <- function(predictor_terms, p_ref, refmodel,
+                            search_control = NULL, ...) {
   y_unqs_aug <- refmodel$family$cats
   if (refmodel$family$for_latent && !is.null(y_unqs_aug)) {
     y_unqs_aug <- NULL
@@ -23,15 +26,18 @@ proj_to_submodl <- function(predictor_terms, p_ref, refmodel, ...) {
     verb_out("  Projecting onto ", utils::tail(rhs_chr, 1))
   }
 
-  outdmin <- refmodel$div_minimizer(
-    formula = fml_divmin,
-    data = subset$data,
-    family = refmodel$family,
-    weights = refmodel$wobs,
-    projpred_var = p_ref$var,
-    projpred_ws_aug = p_ref$mu,
-    ...
-  )
+  args_divmin <- list(formula = fml_divmin,
+                      data = subset$data,
+                      family = refmodel$family,
+                      weights = refmodel$wobs,
+                      projpred_var = p_ref$var,
+                      projpred_ws_aug = p_ref$mu)
+  if (!is.null(search_control)) {
+    args_divmin <- c(args_divmin, search_control)
+  } else {
+    args_divmin <- c(args_divmin, list(...))
+  }
+  outdmin <- do.call(refmodel$div_minimizer, args_divmin)
 
   if (isTRUE(getOption("projpred.check_conv", FALSE))) {
     check_conv(outdmin)

@@ -22,6 +22,7 @@ test_that(paste(
       search_trms_empty_size =
         length(args_vs[[tstsetup]]$search_terms) &&
         all(grepl("\\+", args_vs[[tstsetup]]$search_terms)),
+      search_control_expected = args_vs[[tstsetup]][c("avoid.increase")],
       info_str = tstsetup
     )
   }
@@ -162,6 +163,7 @@ test_that(paste(
       search_trms_empty_size =
         length(args_vs_i$search_terms) &&
         all(grepl("\\+", args_vs_i$search_terms)),
+      search_control_expected = args_vs_i[c("avoid.increase")],
       info_str = tstsetup
     )
     expect_equal(vs_repr[setdiff(names(vs_repr),
@@ -289,6 +291,7 @@ test_that(paste(
       search_trms_empty_size =
         length(args_vs_i$search_terms) &&
         all(grepl("\\+", args_vs_i$search_terms)),
+      search_control_expected = args_vs_i[c("avoid.increase")],
       info_str = tstsetup
     )
 
@@ -560,6 +563,7 @@ test_that("`refit_prj` works", {
       search_trms_empty_size =
         length(args_vs_i$search_terms) &&
         all(grepl("\\+", args_vs_i$search_terms)),
+      search_control_expected = args_vs_i[c("avoid.increase")],
       extra_tol = extra_tol_crr,
       info_str = tstsetup
     )
@@ -779,6 +783,8 @@ test_that(paste(
           search_trms_empty_size =
             length(args_vs_i$search_terms) &&
             all(grepl("\\+", args_vs_i$search_terms)),
+          search_control_expected = c(args_vs_i[c("avoid.increase")],
+                                      list(regul = regul_tst[j])),
           info_str = tstsetup
         )
       }
@@ -1139,6 +1145,7 @@ test_that("varsel.vsel() works for `vsel` objects from varsel()", {
       search_trms_empty_size =
         length(args_vs[[tstsetup]]$search_terms) &&
         all(grepl("\\+", args_vs[[tstsetup]]$search_terms)),
+      search_control_expected = args_vs[[tstsetup]][c("avoid.increase")],
       extra_tol = extra_tol_crr,
       info_str = tstsetup
     )
@@ -1195,6 +1202,7 @@ test_that("varsel.vsel() works for `vsel` objects from cv_varsel()", {
       search_trms_empty_size =
         length(args_cvvs[[tstsetup]]$search_terms) &&
         all(grepl("\\+", args_cvvs[[tstsetup]]$search_terms)),
+      search_control_expected = args_cvvs[[tstsetup]][c("avoid.increase")],
       info_str = tstsetup
     )
     tstsetup_counter <- tstsetup_counter + 1L
@@ -1233,6 +1241,7 @@ test_that(paste(
       search_trms_empty_size =
         length(args_cvvs[[tstsetup]]$search_terms) &&
         all(grepl("\\+", args_cvvs[[tstsetup]]$search_terms)),
+      search_control_expected = args_cvvs[[tstsetup]][c("avoid.increase")],
       info_str = tstsetup
     )
   }
@@ -1358,6 +1367,7 @@ test_that("`refit_prj` works", {
       search_trms_empty_size =
         length(args_cvvs_i$search_terms) &&
         all(grepl("\\+", args_cvvs_i$search_terms)),
+      search_control_expected = args_cvvs_i[c("avoid.increase")],
       info_str = tstsetup
     )
   }
@@ -1498,6 +1508,7 @@ test_that("setting `nloo` smaller than the number of observations works", {
       search_trms_empty_size =
         length(args_cvvs_i$search_terms) &&
         all(grepl("\\+", args_cvvs_i$search_terms)),
+      search_control_expected = args_cvvs_i[c("avoid.increase")],
       info_str = tstsetup
     )
     # Expected equality for most elements with a few exceptions:
@@ -1573,6 +1584,7 @@ test_that("`validate_search` works", {
       search_trms_empty_size =
         length(args_cvvs_i$search_terms) &&
         all(grepl("\\+", args_cvvs_i$search_terms)),
+      search_control_expected = args_cvvs_i[c("avoid.increase")],
       info_str = tstsetup
     )
     # Expected equality for most elements with a few exceptions:
@@ -1863,6 +1875,7 @@ test_that(paste(
       search_trms_empty_size =
         length(args_cvvs_i$search_terms) &&
         all(grepl("\\+", args_cvvs_i$search_terms)),
+      search_control_expected = args_cvvs_i[c("avoid.increase")],
       info_str = tstsetup
     )
     # Expected equality for most elements with a few exceptions:
@@ -1913,6 +1926,7 @@ test_that("`cvfun` included in the `refmodel` object works", {
       search_trms_empty_size =
         length(args_cvvs[[tstsetup]]$search_terms) &&
         all(grepl("\\+", args_cvvs[[tstsetup]]$search_terms)),
+      search_control_expected = args_cvvs[[tstsetup]][c("avoid.increase")],
       info_str = tstsetup
     )
   }
@@ -1967,6 +1981,7 @@ test_that(paste(
       search_trms_empty_size =
         length(args_cvvs[[tstsetup]]$search_terms) &&
         all(grepl("\\+", args_cvvs[[tstsetup]]$search_terms)),
+      search_control_expected = args_cvvs[[tstsetup]][c("avoid.increase")],
       info_str = tstsetup
     )
   }
@@ -2017,6 +2032,7 @@ test_that(paste(
       search_trms_empty_size =
         length(args_vs[[tstsetup]]$search_terms) &&
         all(grepl("\\+", args_vs[[tstsetup]]$search_terms)),
+      search_control_expected = args_vs[[tstsetup]][c("avoid.increase")],
       info_str = tstsetup
     )
     tstsetup_counter <- tstsetup_counter + 1L
@@ -2076,6 +2092,7 @@ test_that(paste(
       search_trms_empty_size =
         length(args_vs[[tstsetup]]$search_terms) &&
         all(grepl("\\+", args_vs[[tstsetup]]$search_terms)),
+      search_control_expected = args_vs[[tstsetup]][c("avoid.increase")],
       info_str = tstsetup
     )
     tstsetup_counter <- tstsetup_counter + 1L
@@ -2143,6 +2160,7 @@ test_that(paste(
       search_trms_empty_size =
         length(args_cvvs[[tstsetup]]$search_terms) &&
         all(grepl("\\+", args_cvvs[[tstsetup]]$search_terms)),
+      search_control_expected = args_cvvs[[tstsetup]][c("avoid.increase")],
       extra_tol = extra_tol_crr,
       info_str = tstsetup
     )
@@ -2203,6 +2221,7 @@ test_that(paste(
       search_trms_empty_size =
         length(args_cvvs[[tstsetup]]$search_terms) &&
         all(grepl("\\+", args_cvvs[[tstsetup]]$search_terms)),
+      search_control_expected = args_cvvs[[tstsetup]][c("avoid.increase")],
       info_str = tstsetup
     )
   }
@@ -2265,6 +2284,7 @@ test_that(paste(
       search_trms_empty_size =
         length(args_cvvs[[tstsetup]]$search_terms) &&
         all(grepl("\\+", args_cvvs[[tstsetup]]$search_terms)),
+      search_control_expected = args_cvvs[[tstsetup]][c("avoid.increase")],
       info_str = tstsetup
     )
   }
@@ -2327,6 +2347,7 @@ test_that(paste(
       search_trms_empty_size =
         length(args_cvvs[[tstsetup]]$search_terms) &&
         all(grepl("\\+", args_cvvs[[tstsetup]]$search_terms)),
+      search_control_expected = args_cvvs[[tstsetup]][c("avoid.increase")],
       info_str = tstsetup
     )
   }
@@ -2388,6 +2409,7 @@ test_that(paste(
       search_trms_empty_size =
         length(args_vs[[tstsetup]]$search_terms) &&
         all(grepl("\\+", args_vs[[tstsetup]]$search_terms)),
+      search_control_expected = args_vs[[tstsetup]][c("avoid.increase")],
       info_str = tstsetup
     )
     tstsetup_counter <- tstsetup_counter + 1L
@@ -2465,6 +2487,7 @@ test_that(paste(
       search_trms_empty_size =
         length(args_vs[[tstsetup]]$search_terms) &&
         all(grepl("\\+", args_vs[[tstsetup]]$search_terms)),
+      search_control_expected = args_vs[[tstsetup]][c("avoid.increase")],
       info_str = tstsetup
     )
     tstsetup_counter <- tstsetup_counter + 1L
@@ -2559,6 +2582,7 @@ test_that(paste(
       search_trms_empty_size =
         length(args_cvvs[[tstsetup]]$search_terms) &&
         all(grepl("\\+", args_cvvs[[tstsetup]]$search_terms)),
+      search_control_expected = args_cvvs[[tstsetup]][c("avoid.increase")],
       extra_tol = extra_tol_crr,
       info_str = tstsetup
     )
@@ -2641,6 +2665,7 @@ test_that(paste(
       search_trms_empty_size =
         length(args_cvvs[[tstsetup]]$search_terms) &&
         all(grepl("\\+", args_cvvs[[tstsetup]]$search_terms)),
+      search_control_expected = args_cvvs[[tstsetup]][c("avoid.increase")],
       info_str = tstsetup
     )
   }
@@ -2697,6 +2722,7 @@ test_that("cv_varsel.vsel(): `nloo` works for `vsel` objects from varsel()", {
       search_trms_empty_size =
         length(args_vs[[tstsetup]]$search_terms) &&
         all(grepl("\\+", args_vs[[tstsetup]]$search_terms)),
+      search_control_expected = args_vs[[tstsetup]][c("avoid.increase")],
       info_str = tstsetup
     )
     vsel_tester(
@@ -2713,6 +2739,7 @@ test_that("cv_varsel.vsel(): `nloo` works for `vsel` objects from varsel()", {
       search_trms_empty_size =
         length(args_vs[[tstsetup]]$search_terms) &&
         all(grepl("\\+", args_vs[[tstsetup]]$search_terms)),
+      search_control_expected = args_vs[[tstsetup]][c("avoid.increase")],
       info_str = tstsetup
     )
     tstsetup_counter <- tstsetup_counter + 1L
@@ -2800,6 +2827,7 @@ test_that(paste(
       search_trms_empty_size =
         length(args_cvvs[[tstsetup]]$search_terms) &&
         all(grepl("\\+", args_cvvs[[tstsetup]]$search_terms)),
+      search_control_expected = args_cvvs[[tstsetup]][c("avoid.increase")],
       extra_tol = extra_tol_crr,
       info_str = tstsetup
     )
@@ -2833,6 +2861,7 @@ test_that(paste(
       search_trms_empty_size =
         length(args_cvvs[[tstsetup]]$search_terms) &&
         all(grepl("\\+", args_cvvs[[tstsetup]]$search_terms)),
+      search_control_expected = args_cvvs[[tstsetup]][c("avoid.increase")],
       info_str = tstsetup
     )
   }
