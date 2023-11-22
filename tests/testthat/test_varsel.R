@@ -135,20 +135,12 @@ test_that(paste(
       }
     }
     d_test_crr$y_oscale <- y_oscale_crr
-    if (prj_crr == "augdat" && fam_crr == "cumul") {
-      warn_expected <- "non-integer #successes in a binomial glm!"
-    } else if (!is.null(args_vs_i$avoid.increase)) {
-      warn_expected <- warn_mclogit
-    } else {
-      warn_expected <- NA
-    }
-    expect_warning(
-      vs_repr <- do.call(varsel, c(
-        list(object = refmods[[tstsetup_ref]], d_test = d_test_crr),
-        excl_nonargs(args_vs_i)
-      )),
-      warn_expected
-    )
+    # Use suppressWarnings() because test_that() somehow redirects stderr() and
+    # so throws warnings that projpred wants to capture internally:
+    vs_repr <- suppressWarnings(do.call(varsel, c(
+      list(object = refmods[[tstsetup_ref]], d_test = d_test_crr),
+      excl_nonargs(args_vs_i)
+    )))
     meth_exp_crr <- args_vs_i$method %||% "forward"
     vsel_tester(
       vs_repr,
@@ -263,20 +255,12 @@ test_that(paste(
       }
     }
     d_test_crr$y_oscale <- y_oscale_crr
-    if (prj_crr == "augdat" && fam_crr == "cumul") {
-      warn_expected <- "non-integer #successes in a binomial glm!"
-    } else if (!is.null(args_vs_i$avoid.increase)) {
-      warn_expected <- warn_mclogit
-    } else {
-      warn_expected <- NA
-    }
-    expect_warning(
-      vs_indep <- do.call(varsel, c(
-        list(object = refmods[[tstsetup_ref]], d_test = d_test_crr),
-        excl_nonargs(args_vs_i)
-      )),
-      warn_expected
-    )
+    # Use suppressWarnings() because test_that() somehow redirects stderr() and
+    # so throws warnings that projpred wants to capture internally:
+    vs_indep <- suppressWarnings(do.call(varsel, c(
+      list(object = refmods[[tstsetup_ref]], d_test = d_test_crr),
+      excl_nonargs(args_vs_i)
+    )))
     meth_exp_crr <- args_vs_i$method %||% "forward"
     vsel_tester(
       vs_indep,
@@ -309,28 +293,22 @@ test_that(paste(
       # varsel() at the place where the new group-level effects are drawn (not
       # even `.seed = NA` with an appropriate preparation is possible).
 
-      if (!is.null(args_vs_i$avoid.increase)) {
-        warn_expected <- NA
-      }
       # For getting the correct seed in proj_linpred():
       set.seed(args_vs_i$seed)
       p_sel_dummy <- get_refdist(refmods[[tstsetup_ref]],
                                  nclusters = vs_indep$nprjdraws_search)
-      expect_warning(
-        pl_indep <- proj_linpred(
-          vs_indep,
-          newdata = dat_indep_crr,
-          offsetnew = d_test_crr$offset,
-          weightsnew = d_test_crr$weights,
-          transform = TRUE,
-          integrated = TRUE,
-          .seed = NA,
-          nterms = c(0L, seq_along(vs_indep$predictor_ranking)),
-          nclusters = args_vs_i$nclusters_pred,
-          seed = NA
-        ),
-        warn_expected
-      )
+      pl_indep <- suppressWarnings(proj_linpred(
+        vs_indep,
+        newdata = dat_indep_crr,
+        offsetnew = d_test_crr$offset,
+        weightsnew = d_test_crr$weights,
+        transform = TRUE,
+        integrated = TRUE,
+        .seed = NA,
+        nterms = c(0L, seq_along(vs_indep$predictor_ranking)),
+        nclusters = args_vs_i$nclusters_pred,
+        seed = NA
+      ))
       summ_sub_ch <- lapply(pl_indep, function(pl_indep_k) {
         names(pl_indep_k)[names(pl_indep_k) == "pred"] <- "mu"
         names(pl_indep_k)[names(pl_indep_k) == "lpd"] <- "lppd"
@@ -525,21 +503,12 @@ test_that("`refit_prj` works", {
   for (tstsetup in tstsetups) {
     args_vs_i <- args_vs[[tstsetup]]
     args_vs_i$refit_prj <- FALSE
-    if (args_vs_i$prj_nm == "augdat" && args_vs_i$fam_nm == "cumul") {
-      warn_expected <- "non-integer #successes in a binomial glm!"
-    } else if (!is.null(args_vs_i$avoid.increase)) {
-      warn_expected <- warn_mclogit
-    } else {
-      warn_expected <- NA
-    }
-    expect_warning(
-      vs_reuse <- do.call(varsel, c(
-        list(object = refmods[[args_vs_i$tstsetup_ref]]),
-        excl_nonargs(args_vs_i)
-      )),
-      warn_expected,
-      info = tstsetup
-    )
+    # Use suppressWarnings() because test_that() somehow redirects stderr() and
+    # so throws warnings that projpred wants to capture internally:
+    vs_reuse <- suppressWarnings(do.call(varsel, c(
+      list(object = refmods[[args_vs_i$tstsetup_ref]]),
+      excl_nonargs(args_vs_i)
+    )))
     mod_crr <- args_vs_i$mod_nm
     fam_crr <- args_vs_i$fam_nm
     prj_crr <- args_vs_i$prj_nm
@@ -905,21 +874,13 @@ test_that("for forward search, `penalty` has no effect", {
   }
   for (tstsetup in tstsetups) {
     args_vs_i <- args_vs[[tstsetup]]
-    if (args_vs_i$prj_nm == "augdat" && args_vs_i$fam_nm == "cumul") {
-      warn_expected <- "non-integer #successes in a binomial glm!"
-    } else if (!is.null(args_vs_i$avoid.increase)) {
-      warn_expected <- warn_mclogit
-    } else {
-      warn_expected <- NA
-    }
-    expect_warning(
-      vs_penal <- do.call(varsel, c(
-        list(object = refmods[[args_vs_i$tstsetup_ref]],
-             penalty = penal_tst),
-        excl_nonargs(args_vs_i)
-      )),
-      warn_expected
-    )
+    # Use suppressWarnings() because test_that() somehow redirects stderr() and
+    # so throws warnings that projpred wants to capture internally:
+    vs_penal <- suppressWarnings(do.call(varsel, c(
+      list(object = refmods[[args_vs_i$tstsetup_ref]],
+           penalty = penal_tst),
+      excl_nonargs(args_vs_i)
+    )))
     vs_penal$args_search["penalty"] <- list(NULL)
     expect_equal(vs_penal, vss[[tstsetup]], info = tstsetup)
   }
@@ -1168,21 +1129,12 @@ test_that("varsel.vsel() works for `vsel` objects from cv_varsel()", {
     }
     fam_crr <- args_cvvs[[tstsetup]]$fam_nm
     prj_crr <- args_cvvs[[tstsetup]]$prj_nm
-    if (refit_prj_crr && prj_crr == "augdat" && fam_crr == "cumul") {
-      warn_expected <- "non-integer #successes in a binomial glm!"
-    } else if (refit_prj_crr &&
-               !is.null(args_cvvs[[tstsetup]]$avoid.increase)) {
-      warn_expected <- warn_mclogit
-    } else {
-      warn_expected <- NA
-    }
-    expect_warning(
-      vs_eval <- varsel(
-        cvvss[[tstsetup]], refit_prj = refit_prj_crr,
-        nclusters_pred = nclusters_pred_crr, verbose = FALSE, seed = seed2_tst
-      ),
-      warn_expected
-    )
+    # Use suppressWarnings() because test_that() somehow redirects stderr() and
+    # so throws warnings that projpred wants to capture internally:
+    vs_eval <- suppressWarnings(varsel(
+      cvvss[[tstsetup]], refit_prj = refit_prj_crr,
+      nclusters_pred = nclusters_pred_crr, verbose = FALSE, seed = seed2_tst
+    ))
     tstsetup_ref <- args_cvvs[[tstsetup]]$tstsetup_ref
     meth_exp_crr <- args_cvvs[[tstsetup]]$method %||% "forward"
     vsel_tester(
@@ -1297,8 +1249,8 @@ test_that("`seed` works (and restores the RNG state afterwards)", {
     cvvs_orig <- cvvss[[tstsetup]]
     rand_orig <- runif(1) # Just to advance `.Random.seed[2]`.
     .Random.seed_repr1 <- .Random.seed
-    # Use suppressWarnings() because of occasional warnings concerning Pareto k
-    # diagnostics:
+    # Use suppressWarnings() because test_that() somehow redirects stderr() and
+    # so throws warnings that projpred wants to capture internally:
     cvvs_repr <- suppressWarnings(do.call(cv_varsel, c(
       list(object = refmods[[args_cvvs_i$tstsetup_ref]],
            cvfits = if (identical(args_cvvs_i$cv_method, "kfold")) {
@@ -1427,8 +1379,8 @@ test_that("invalid `nloo` fails", {
                              invert = TRUE)
   for (tstsetup in head(tstsetups_nonkfold, 1)) {
     args_cvvs_i <- args_cvvs[[tstsetup]]
-    # Use suppressWarnings() because of occasional warnings concerning Pareto k
-    # diagnostics:
+    # Use suppressWarnings() because test_that() somehow redirects stderr() and
+    # so throws warnings that projpred wants to capture internally:
     expect_error(
       suppressWarnings(do.call(cv_varsel, c(
         list(object = refmods[[args_cvvs_i$tstsetup_ref]],
@@ -1453,8 +1405,8 @@ test_that(paste(
   )
   for (tstsetup in tstsetups) {
     args_cvvs_i <- args_cvvs[[tstsetup]]
-    # Use suppressWarnings() because of occasional warnings concerning Pareto k
-    # diagnostics:
+    # Use suppressWarnings() because test_that() somehow redirects stderr() and
+    # so throws warnings that projpred wants to capture internally:
     cvvs_nloo <- suppressWarnings(do.call(cv_varsel, c(
       list(object = refmods[[args_cvvs_i$tstsetup_ref]],
            nloo = nloo_tst),
@@ -1488,8 +1440,8 @@ test_that("setting `nloo` smaller than the number of observations works", {
     fam_crr <- args_cvvs_i$fam_nm
     prj_crr <- args_cvvs_i$prj_nm
     meth_exp_crr <- args_cvvs_i$method %||% "forward"
-    # Use suppressWarnings() because of occasional warnings concerning Pareto k
-    # diagnostics:
+    # Use suppressWarnings() because test_that() somehow redirects stderr() and
+    # so throws warnings that projpred wants to capture internally:
     cvvs_nloo <- suppressWarnings(do.call(cv_varsel, c(
       list(object = refmods[[args_cvvs_i$tstsetup_ref]],
            nloo = nloo_tst),
@@ -1555,8 +1507,8 @@ test_that("`validate_search` works", {
     fam_crr <- args_cvvs_i$fam_nm
     prj_crr <- args_cvvs_i$prj_nm
     meth_exp_crr <- args_cvvs_i$method %||% "forward"
-    # Use suppressWarnings() because of occasional warnings concerning Pareto k
-    # diagnostics:
+    # Use suppressWarnings() because test_that() somehow redirects stderr() and
+    # so throws warnings that projpred wants to capture internally:
     cvvs_valsearch <- suppressWarnings(do.call(cv_varsel, c(
       list(object = refmods[[args_cvvs_i$tstsetup_ref]],
            validate_search = FALSE,
@@ -1726,10 +1678,12 @@ test_that(paste(
     ))
 
     # Run cv_varsel():
-    cvvs_cvfits <- do.call(cv_varsel, c(
+    # Use suppressWarnings() because test_that() somehow redirects stderr() and
+    # so throws warnings that projpred wants to capture internally:
+    cvvs_cvfits <- suppressWarnings(do.call(cv_varsel, c(
       list(object = refmod_crr),
       excl_nonargs(args_cvvs_i, nms_excl_add = "K")
-    ))
+    )))
 
     # Checks:
     vsel_tester(
@@ -1947,8 +1901,8 @@ test_that(paste(
     refit_prj_crr <- !identical(args_cvvs[[tstsetup]]$validate_search, FALSE) ||
       identical(args_cvvs[[tstsetup]]$cv_method, "kfold")
     nclusters_pred_crr <- nclusters_pred_tst - if (refit_prj_crr) 1L else 0L
-    # Use suppressWarnings() because of occasional warnings concerning Pareto k
-    # diagnostics:
+    # Use suppressWarnings() because test_that() somehow redirects stderr() and
+    # so throws warnings that projpred wants to capture internally:
     cvvs_eval <- suppressWarnings(cv_varsel(
       cvvss[[tstsetup]], refit_prj = refit_prj_crr,
       nclusters_pred = nclusters_pred_crr, verbose = FALSE, seed = seed2_tst
@@ -2004,8 +1958,8 @@ test_that(paste(
       refit_prj_crr <- FALSE
       nclusters_pred_crr <- args_vs[[tstsetup]]$nclusters_pred
     }
-    # Use suppressWarnings() because of occasional warnings concerning Pareto k
-    # diagnostics:
+    # Use suppressWarnings() because test_that() somehow redirects stderr() and
+    # so throws warnings that projpred wants to capture internally:
     cvvs_eval <- suppressWarnings(cv_varsel(
       vss[[tstsetup]], validate_search = FALSE, refit_prj = refit_prj_crr,
       nclusters_pred = nclusters_pred_crr, verbose = FALSE, seed = seed2_tst
@@ -2069,8 +2023,8 @@ test_that(paste(
     } else {
       nclusters_pred_crr <- args_vs[[tstsetup]]$nclusters_pred
     }
-    # Use suppressWarnings() because of occasional warnings concerning Pareto k
-    # diagnostics:
+    # Use suppressWarnings() because test_that() somehow redirects stderr() and
+    # so throws warnings that projpred wants to capture internally:
     cvvs_eval <- suppressWarnings(cv_varsel(
       vss[[tstsetup]], cv_method = "kfold", cvfits = cvfitss[[tstsetup_ref]],
       validate_search = FALSE, nclusters_pred = nclusters_pred_crr,
@@ -2112,8 +2066,8 @@ test_that(paste(
     if (isFALSE(args_cvvs[[tstsetup]]$validate_search)) {
       next
     }
-    # Use suppressWarnings() because of occasional warnings concerning Pareto k
-    # diagnostics:
+    # Use suppressWarnings() because test_that() somehow redirects stderr() and
+    # so throws warnings that projpred wants to capture internally:
     if (identical(args_cvvs[[tstsetup]]$cv_method, "kfold")) {
       cvvs_eval <- suppressWarnings(cv_varsel(
         cvvss[[tstsetup]], cv_method = "LOO", validate_search = FALSE,
@@ -2192,8 +2146,8 @@ test_that(paste(
       next
     }
     nclusters_pred_crr <- args_cvvs[[tstsetup]]$nclusters_pred - 1L
-    # Use suppressWarnings() because of occasional warnings concerning Pareto k
-    # diagnostics:
+    # Use suppressWarnings() because test_that() somehow redirects stderr() and
+    # so throws warnings that projpred wants to capture internally:
     if (identical(args_cvvs[[tstsetup]]$cv_method, "kfold")) {
       cvvs_eval <- suppressWarnings(cv_varsel(
         cvvss[[tstsetup]], validate_search = FALSE,
@@ -2252,8 +2206,8 @@ test_that(paste(
       next
     }
     nclusters_pred_crr <- args_cvvs[[tstsetup]]$nclusters_pred - 1L
-    # Use suppressWarnings() because of occasional warnings concerning Pareto k
-    # diagnostics:
+    # Use suppressWarnings() because test_that() somehow redirects stderr() and
+    # so throws warnings that projpred wants to capture internally:
     if (identical(args_cvvs[[tstsetup]]$cv_method, "kfold")) {
       cv_meth_crr <- "LOO"
       cvvs_eval <- suppressWarnings(cv_varsel(
@@ -2315,8 +2269,8 @@ test_that(paste(
       next
     }
     nclusters_pred_crr <- args_cvvs[[tstsetup]]$nclusters_pred - 1L
-    # Use suppressWarnings() because of occasional warnings concerning Pareto k
-    # diagnostics:
+    # Use suppressWarnings() because test_that() somehow redirects stderr() and
+    # so throws warnings that projpred wants to capture internally:
     if (identical(args_cvvs[[tstsetup]]$cv_method, "kfold")) {
       cv_meth_crr <- "LOO"
       cvvs_eval <- suppressWarnings(cv_varsel(
@@ -2369,8 +2323,8 @@ test_that(paste(
     } else {
       nclusters_pred_crr <- args_vs[[tstsetup]]$nclusters_pred
     }
-    # Use suppressWarnings() because of occasional warnings concerning Pareto k
-    # diagnostics:
+    # Use suppressWarnings() because test_that() somehow redirects stderr() and
+    # so throws warnings that projpred wants to capture internally:
     cvvs_eval <- try(
       suppressWarnings(cv_varsel(
         vss[[tstsetup]], nclusters_pred = nclusters_pred_crr, verbose = FALSE,
@@ -2446,8 +2400,8 @@ test_that(paste(
     } else {
       nclusters_pred_crr <- args_vs[[tstsetup]]$nclusters_pred
     }
-    # Use suppressWarnings() because of occasional warnings concerning Pareto k
-    # diagnostics:
+    # Use suppressWarnings() because test_that() somehow redirects stderr() and
+    # so throws warnings that projpred wants to capture internally:
     cvvs_eval <- try(
       suppressWarnings(cv_varsel(
         vss[[tstsetup]], cv_method = "kfold", cvfits = cvfitss[[tstsetup_ref]],
@@ -2512,8 +2466,8 @@ test_that(paste(
       next
     }
     nclusters_pred_crr <- args_cvvs[[tstsetup]]$nclusters_pred - 1L
-    # Use suppressWarnings() because of occasional warnings concerning Pareto k
-    # diagnostics:
+    # Use suppressWarnings() because test_that() somehow redirects stderr() and
+    # so throws warnings that projpred wants to capture internally:
     if (identical(args_cvvs[[tstsetup]]$cv_method, "kfold")) {
       cvvs_eval <- try(
         suppressWarnings(cv_varsel(
@@ -2614,8 +2568,8 @@ test_that(paste(
       next
     }
     nclusters_pred_crr <- args_cvvs[[tstsetup]]$nclusters_pred - 1L
-    # Use suppressWarnings() because of occasional warnings concerning Pareto k
-    # diagnostics:
+    # Use suppressWarnings() because test_that() somehow redirects stderr() and
+    # so throws warnings that projpred wants to capture internally:
     if (identical(args_cvvs[[tstsetup]]$cv_method, "kfold")) {
       cvvs_eval <- try(
         suppressWarnings(cv_varsel(
@@ -2688,8 +2642,8 @@ test_that("cv_varsel.vsel(): `nloo` works for `vsel` objects from varsel()", {
       refit_prj_crr <- FALSE
       nclusters_pred_crr <- args_vs[[tstsetup]]$nclusters_pred
     }
-    # Use suppressWarnings() because of occasional warnings concerning Pareto k
-    # diagnostics:
+    # Use suppressWarnings() because test_that() somehow redirects stderr() and
+    # so throws warnings that projpred wants to capture internally:
     cvvs_eval_valF <- suppressWarnings(cv_varsel(
       vss[[tstsetup]], nloo = nloo_tst, validate_search = FALSE,
       refit_prj = refit_prj_crr, nclusters_pred = nclusters_pred_crr,
@@ -2766,8 +2720,8 @@ test_that(paste(
     stopifnot(any(valsearches), any(!valsearches))
   }
   for (tstsetup in tstsetups) {
-    # Use suppressWarnings() because of occasional warnings concerning Pareto k
-    # diagnostics:
+    # Use suppressWarnings() because test_that() somehow redirects stderr() and
+    # so throws warnings that projpred wants to capture internally:
     if (identical(args_cvvs[[tstsetup]]$cv_method, "kfold")) {
       cvvs_eval_valF <- suppressWarnings(cv_varsel(
         cvvss[[tstsetup]], cv_method = "LOO", validate_search = FALSE,

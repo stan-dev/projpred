@@ -212,15 +212,27 @@ search_L1_surrogate <- function(p_ref, d_train, family, intercept, nterms_max,
   ## (Notice: here we use pmax = nterms_max+1 so that the computation gets
   ## carried until all the way down to the least regularization also for model
   ## size nterms_max)
-  search <- glm_elnet(
-    d_train$x, mu, family,
-    lambda_min_ratio = search_control$lambda_min_ratio %||% 1e-5,
-    nlambda = search_control$nlambda %||% 150,
-    pmax = nterms_max + 1, pmax_strict = FALSE,
-    weights = d_train$weights,
-    intercept = intercept, obsvar = v, penalty = penalty,
-    thresh = search_control$thresh %||% 1e-6
+  out_capt <- utils::capture.output(
+    search <- glm_elnet(
+      d_train$x, mu, family,
+      lambda_min_ratio = search_control$lambda_min_ratio %||% 1e-5,
+      nlambda = search_control$nlambda %||% 150, pmax = nterms_max + 1,
+      pmax_strict = FALSE, weights = d_train$weights, intercept = intercept,
+      obsvar = v, penalty = penalty, thresh = search_control$thresh %||% 1e-6
+    )
   )
+  out_capt <- unique(grep("[Ww]arning|bug", out_capt, value = TRUE))
+  if (length(out_capt) > 0) {
+    warning(paste(
+      c(paste0("The following warnings have been thrown by projpred's ",
+               "internal L1-search function:"),
+        "---", out_capt, "---",
+        paste0("It is recommended to inspect this in detail and (if ",
+               "necessary) to adjust tuning parameters via argument ",
+               "`search_control` (of varsel() or cv_varsel()).")),
+      collapse = "\n"
+    ))
+  }
 
   ## sort the variables according to the order in which they enter the model in
   ## the L1-path

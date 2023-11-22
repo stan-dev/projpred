@@ -347,22 +347,12 @@ test_that("non-clustered projection does not require a seed", {
     args_prj_i <- args_prj[[tstsetup]]
     p_orig <- prjs[[tstsetup]]
     rand_new1 <- runif(1) # Just to advance `.Random.seed[2]`.
-    if (args_prj_i$prj_nm == "augdat" && args_prj_i$fam_nm == "cumul" &&
-        !any(grepl("\\|", args_prj_i$predictor_terms))) {
-      warn_expected <- "non-integer #successes in a binomial glm!"
-    } else if (!is.null(args_prj_i$avoid.increase) &&
-               any(grepl("\\|", args_prj_i$predictor_terms))) {
-      warn_expected <- warn_mclogit
-    } else {
-      warn_expected <- NA
-    }
-    expect_warning(
-      p_new <- do.call(project, c(
-        list(object = refmods[[args_prj_i$tstsetup_ref]]),
-        excl_nonargs(args_prj_i, nms_excl_add = "seed")
-      )),
-      warn_expected
-    )
+    # Use suppressWarnings() because test_that() somehow redirects stderr() and
+    # so throws warnings that projpred wants to capture internally:
+    p_new <- suppressWarnings(do.call(project, c(
+      list(object = refmods[[args_prj_i$tstsetup_ref]]),
+      excl_nonargs(args_prj_i, nms_excl_add = "seed")
+    )))
     if (args_prj_i$mod_nm %in% c("glmm", "gamm") &&
         any(grepl("\\|", args_prj_i$predictor_terms))) {
       if (getOption("projpred.mlvl_pred_new", FALSE)) {

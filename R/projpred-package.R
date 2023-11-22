@@ -82,17 +82,28 @@
 #' * Submodel with multilevel and additive terms: [gamm4::gamm4()] (within
 #' \pkg{projpred}, the returned object inherits from class `gamm4`).
 #'
-#' # Verbosity
+#' # Verbosity, messages, warnings, errors
 #'
-#' Setting the global option `projpred.extra_verbose` to `TRUE` will print out
-#' which submodel \pkg{projpred} is currently projecting onto as well as (if
-#' `method = "forward"` and `verbose = TRUE` in [varsel()] or [cv_varsel()])
-#' which submodel has been selected at those steps of the forward search for
-#' which a percentage (of the maximum submodel size that the search is run up
-#' to) is printed. In general, however, we cannot recommend setting this global
-#' option to `TRUE` for [cv_varsel()] with `validate_search = TRUE` (simply due
-#' to the amount of information that will be printed, but also due to the
-#' progress bar which will not work anymore as intended).
+#' Setting global option `projpred.extra_verbose` to `TRUE` will print out which
+#' submodel \pkg{projpred} is currently projecting onto as well as (if `method =
+#' "forward"` and `verbose = TRUE` in [varsel()] or [cv_varsel()]) which
+#' submodel has been selected at those steps of the forward search for which a
+#' percentage (of the maximum submodel size that the search is run up to) is
+#' printed. In general, however, we cannot recommend setting this global option
+#' to `TRUE` for [cv_varsel()] with `validate_search = TRUE` (simply due to the
+#' amount of information that will be printed, but also due to the progress bar
+#' which will not work as intended anymore).
+#'
+#' By default, \pkg{projpred} catches messages and warnings from the draw-wise
+#' divergence minimizers and throws their unique collection after performing all
+#' draw-wise divergence minimizations (i.e., draw-wise projections). This can be
+#' deactivated by setting global option `projpred.warn_prj_drawwise` to `FALSE`.
+#'
+#' Furthermore, by default, \pkg{projpred} checks the convergence of the
+#' draw-wise divergence minimizers and throws a warning if any seem to have not
+#' converged. This warning is thrown after the warning message from global
+#' option `projpred.warn_prj_drawwise` (see above) and can be deactivated by
+#' setting global option `projpred.check_conv` to `FALSE`.
 #'
 #' # Parallelization
 #'

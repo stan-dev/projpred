@@ -81,16 +81,26 @@ object inherits from class \code{gam}).
 }
 }
 
-\section{Verbosity}{
-Setting the global option \code{projpred.extra_verbose} to \code{TRUE} will print out
-which submodel \pkg{projpred} is currently projecting onto as well as (if
-\code{method = "forward"} and \code{verbose = TRUE} in \code{\link[=varsel]{varsel()}} or \code{\link[=cv_varsel]{cv_varsel()}})
-which submodel has been selected at those steps of the forward search for
-which a percentage (of the maximum submodel size that the search is run up
-to) is printed. In general, however, we cannot recommend setting this global
-option to \code{TRUE} for \code{\link[=cv_varsel]{cv_varsel()}} with \code{validate_search = TRUE} (simply due
-to the amount of information that will be printed, but also due to the
-progress bar which will not work anymore as intended).
+\section{Verbosity, messages, warnings, errors}{
+Setting global option \code{projpred.extra_verbose} to \code{TRUE} will print out which
+submodel \pkg{projpred} is currently projecting onto as well as (if \code{method = "forward"} and \code{verbose = TRUE} in \code{\link[=varsel]{varsel()}} or \code{\link[=cv_varsel]{cv_varsel()}}) which
+submodel has been selected at those steps of the forward search for which a
+percentage (of the maximum submodel size that the search is run up to) is
+printed. In general, however, we cannot recommend setting this global option
+to \code{TRUE} for \code{\link[=cv_varsel]{cv_varsel()}} with \code{validate_search = TRUE} (simply due to the
+amount of information that will be printed, but also due to the progress bar
+which will not work as intended anymore).
+
+By default, \pkg{projpred} catches messages and warnings from the draw-wise
+divergence minimizers and throws their unique collection after performing all
+draw-wise divergence minimizations (i.e., draw-wise projections). This can be
+deactivated by setting global option \code{projpred.warn_prj_drawwise} to \code{FALSE}.
+
+Furthermore, by default, \pkg{projpred} checks the convergence of the
+draw-wise divergence minimizers and throws a warning if any seem to have not
+converged. This warning is thrown after the warning message from global
+option \code{projpred.warn_prj_drawwise} (see above) and can be deactivated by
+setting global option \code{projpred.check_conv} to \code{FALSE}.
 }
 
 \section{Parallelization}{

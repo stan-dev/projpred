@@ -11,6 +11,8 @@ If you read this from a place other than <https://mc-stan.org/projpred/news/inde
 * `print.vselsummary()` (and hence also `print.vsel()`) now prints the reference model's performance evaluation results as well (not just those of the submodels). Correspondingly, a new helper function `performances()` has been added which allows to access the reference model's (as well as the submodels') performance evaluation results. (GitHub: #471)
 * Argument `solution_terms` of `project()` has been deprecated. Please use the new argument `predictor_terms` instead. (GitHub: #472)
 * For expert users of the augmented-data projection only: Objects of class `augmat` or `augvec` do not need to have an attribute called `nobs_orig` anymore, but a new attribute called `ndiscrete`, giving the number of (possibly latent) response categories instead of the number of observations (see `` ?`augdat-internals` ``). This simplifies the subsetting of such objects. (GitHub: #473)
+* By default, **projpred** now catches messages and warnings from the draw-wise divergence minimizers and throws their unique collection after performing all draw-wise divergence minimizations (i.e., draw-wise projections). This can be deactivated by setting global option `projpred.warn_prj_drawwise` to `FALSE`. Previously, **projpred** suppressed such messages and warnings. (GitHub: #478)
+* By default, **projpred** now checks the convergence of the draw-wise divergence minimizers and throws a warning in case of potential convergence problems. This can be deactivated by setting global option `projpred.check_conv` to `FALSE`. (GitHub: #478)
 
 ## Minor changes
 
