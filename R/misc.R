@@ -661,7 +661,7 @@ reorder_ia <- function(ia, y) {
   if (length(ia_reordered) == 0) {
     ia_reordered <- NA_character_
   } else if (length(ia_reordered) > 1) {
-    stop("Unexpected length of `ia_reordered`. Please contact the package ",
+    stop("Unexpected length of `ia_reordered`. Please notify the package ",
          "maintainer.")
   }
   return(ia_reordered)
