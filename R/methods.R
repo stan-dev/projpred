@@ -1115,7 +1115,11 @@ plot.vsel <- function(
 #'   mentioned in section "Details" below). For the corresponding standard error
 #'   and lower and upper confidence interval bounds, bootstrapping is used.
 #'   * `"acc"` (or its alias, `"pctcorr"`): classification accuracy (only
-#'   available in the situations mentioned in section "Details" below).
+#'   available in the situations mentioned in section "Details" below). By
+#'   "classification accuracy", we mean the proportion of correctly classified
+#'   observations. For this, the response category ("class") with highest
+#'   probability (the probabilities are model-based) is taken as the prediction
+#'   ("classification") for an observation.
 #'   * `"auc"`: area under the ROC curve (only available in the situations
 #'   mentioned in section "Details" below). For the corresponding standard error
 #'   and lower and upper confidence interval bounds, bootstrapping is used.
