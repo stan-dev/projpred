@@ -953,8 +953,9 @@ warn_prj_drawwise <- function(mssgs_warns_capts, throw_warn = TRUE) {
   mssgs_warns_capts_unq <- unique(unlist(mssgs_warns_capts))
   if (length(mssgs_warns_capts_unq) > 0) {
     warning(paste(
-      c(paste0("The following warnings have been thrown by the current ",
-               "submodel fitter (i.e., draw-wise divergence minimizer):"),
+      c(paste0("The following messages and/or warnings have been thrown by ",
+               "the current submodel fitter (i.e., the current draw-wise ",
+               "divergence minimizer):"),
         "---", mssgs_warns_capts_unq, "---"),
       collapse = "\n"
     ))
