@@ -992,7 +992,7 @@ check_conv <- function(outdmin, lengths_mssgs_warns, do_check = TRUE) {
     cls <- paste0("c(", paste(paste0("\"", cls, "\""), collapse = ", "), ")")
     warning(
       not_conv, " out of ", length(is_conv), " submodel fits (there is one ",
-      "submodel fit per projected draw) seem to have not converged ",
+      "submodel fit per projected draw) might not have converged ",
       "(appropriately). It is recommended to inspect this in detail and (if ",
       "necessary) to adjust tuning parameters via `...` (the ellipsis of the ",
       "employed top-level function such as project(), varsel(), or ",
