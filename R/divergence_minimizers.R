@@ -967,7 +967,17 @@ warn_prj_drawwise <- function(mssgs_warns_capts, throw_warn = TRUE) {
 # argument `lengths_mssgs_warns` which must be of the same length as `outdmin`):
 check_conv <- function(outdmin, lengths_mssgs_warns, do_check = TRUE) {
   if (!do_check) return()
-  is_conv <- unlist(lapply(outdmin, check_conv_s))
+  is_conv <- tryCatch(
+    unlist(lapply(outdmin, check_conv_s)),
+    error = function(e) {
+      warning("The draw-wise convergence checker errored with message \n```\n",
+              e, "```\nso the convergence of the current submodel fits cannot ",
+              "be checked. Please notify the package maintainer. Current ",
+              "submodel formula (right-hand side): ",
+              update(formula(outdmin[[1]]), NULL ~ .))
+      return(rep(TRUE, length(outdmin)))
+    }
+  )
   is_conv <- is_conv & (lengths_mssgs_warns == 0)
   not_conv <- sum(!is_conv)
   if (not_conv > 0) {
