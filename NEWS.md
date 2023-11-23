@@ -30,6 +30,7 @@ If you read this from a place other than <https://mc-stan.org/projpred/news/inde
 * Added a new performance statistic, the geometric mean predictive density (GMPD). This is particularly useful for discrete outcomes because there, the GMPD is a geometric mean of probabilities and hence bounded by zero and one. For details, see argument `stats` of the `?summary.vsel` help. (GitHub: #476)
 * `project()`'s argument `verbose` now gets passed to argument `verbose_divmin` (not `projpred_verbose`) of the divergence minimizer function (see argument `div_minimizer` of `init_refmodel()`).
 * Arguments `lambda_min_ratio`, `nlambda`, and `thresh` of `varsel()` and `cv_varsel()` have been deprecated. Instead, `varsel()` and `cv_varsel()` have gained a new argument called `search_control` which accepts control arguments for the search as a `list`. Thus, former arguments `lambda_min_ratio`, `nlambda`, and `thresh` should now be specified via `search_control` (but note that `search_control` is more general because it also accepts control arguments for a *forward* search). (GitHub: #477)
+* `run_cvfun()` has gained a new argument `folds`, accepting a vector of fold indices (the default is `NULL`, meaning that the folds are constructed internally, as before). This new argument is helpful, for example, to perform a stratified K-fold CV in a convenient manner (an example of this has been added to the `?run_cvfun` help). (GitHub: #480)
 
 ## Bug fixes
 

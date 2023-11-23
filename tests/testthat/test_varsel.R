@@ -2820,3 +2820,24 @@ test_that(paste(
     )
   }
 })
+
+# run_cvfun() -------------------------------------------------------------
+
+test_that("argument `folds` of run_cvfun() works", {
+  skip_if_not(run_cvvs)
+  tstsetups <- names(cvfitss)
+  if (!run_more) {
+    tstsetups <- head(tstsetups, 1)
+  }
+  if (exists(".Random.seed", envir = .GlobalEnv)) {
+    rng_old <- get(".Random.seed", envir = .GlobalEnv)
+  }
+  for (tstsetup in tstsetups) {
+    set.seed(seed3_tst)
+    folds_sep <- cv_folds(nobsv, K = K_tst)
+    cvfits_sep <- run_cvfun(object = refmods[[tstsetup]], folds = folds_sep)
+    expect_identical(lapply(cvfits_sep, as.matrix),
+                     lapply(cvfitss[[tstsetup]], as.matrix), info = tstsetup)
+  }
+  if (exists("rng_old")) assign(".Random.seed", rng_old, envir = .GlobalEnv)
+})
