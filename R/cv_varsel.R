@@ -1518,13 +1518,20 @@ get_kfold <- function(refmodel, K, cvfits, verbose) {
 #'                      nclusters_pred = 10, seed = 5555)
 #'
 #' # Stratified K-fold CV is straightforward:
-#' n_strat <- 4L
-#' strat_fac <- gl(n = n_strat, k = floor(nrow(dat_gauss) / n_strat),
-#'                 length = nrow(dat_gauss),
-#'                 labels = paste0("lvl", seq_len(n_strat)))
+#' n_strat <- 3L
 #' set.seed(692)
+#' # Some example strata:
+#' strat_fac <- sample(paste0("lvl", seq_len(n_strat)), size = nrow(dat_gauss),
+#'                     replace = TRUE,
+#'                     prob = diff(c(0, pnorm(seq_len(n_strat - 1L) - 0.5), 1)))
+#' table(strat_fac)
+#' # Use loo::kfold_split_stratified() to create the folds vector:
 #' folds_strat <- loo::kfold_split_stratified(K = 2, x = strat_fac)
-#' cv_fits_strat <- run_cvfun(ref, folds = folds_strat)
+#' table(folds_strat, strat_fac)
+#' # Call run_cvfun(), but this time with argument `folds` instead of `K` (here,
+#' # specifying argument `seed` would not be necessary because of the set.seed()
+#' # call above, but we specify it nonetheless for the sake of generality):
+#' cv_fits_strat <- run_cvfun(ref, folds = folds_strat, seed = 391)
 #' # Now use `cv_fits_strat` analogously to `cv_fits` from above.
 #'
 #' @export
