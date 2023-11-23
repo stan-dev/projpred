@@ -1247,10 +1247,10 @@ if (run_cvvs) {
   args_cvvs_kfold <- args_cvvs[
     sapply(lapply(args_cvvs, "[[", "cv_method"), identical, "kfold")
   ]
-  tstsetups_cvvs_ref_kfold <- setNames(nm = unique(unname(
+  tstsetups_ref_kfold <- setNames(nm = unique(unname(
     sapply(args_cvvs_kfold, "[[", "tstsetup_ref")
   )))
-  cvfitss <- lapply(tstsetups_cvvs_ref_kfold, function(tstsetup_ref) {
+  cvfitss <- lapply(tstsetups_ref_kfold, function(tstsetup_ref) {
     # Due to rstanarm:::kfold.stanreg() failing sometimes, we have to wrap the
     # call to run_cvfun() in try():
     return(try(run_cvfun(object = refmods[[tstsetup_ref]], K = K_tst,
