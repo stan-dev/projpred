@@ -1517,6 +1517,16 @@ get_kfold <- function(refmodel, K, cvfits, verbose) {
 #'                      cvfits = cv_fits, nterms_max = 3, nclusters = 5,
 #'                      nclusters_pred = 10, seed = 5555)
 #'
+#' # Stratified K-fold CV is straightforward:
+#' n_strat <- 4L
+#' strat_fac <- gl(n = n_strat, k = floor(nrow(dat_gauss) / n_strat),
+#'                 length = nrow(dat_gauss),
+#'                 labels = paste0("lvl", seq_len(n_strat)))
+#' set.seed(692)
+#' folds_strat <- loo::kfold_split_stratified(K = 2, x = strat_fac)
+#' cv_fits_strat <- run_cvfun(ref, folds = folds_strat)
+#' # Now use `cv_fits_strat` analogously to `cv_fits` from above.
+#'
 #' @export
 run_cvfun <- function(object, ...) {
   UseMethod("run_cvfun")
