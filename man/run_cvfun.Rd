@@ -13,6 +13,7 @@ run_cvfun(object, ...)
 \method{run_cvfun}{refmodel}(
   object,
   K = if (!inherits(object, "datafit")) 5 else 10,
+  folds = NULL,
   seed = NA,
   ...
 )
@@ -26,7 +27,12 @@ run_cvfun(object, ...)
 For \code{\link[=run_cvfun.refmodel]{run_cvfun.refmodel()}}: Currently ignored.}
 
 \item{K}{Number of folds. Must be at least 2 and not exceed the number of
-observations.}
+observations. Ignored if \code{folds} is not \code{NULL}.}
+
+\item{folds}{Either \code{NULL} for determining the CV folds automatically via
+\code{\link[=cv_folds]{cv_folds()}} (using argument \code{K}) or a numeric (in fact, integer) vector
+giving the fold index for each observation. In the latter case, argument
+\code{K} is ignored.}
 
 \item{seed}{Pseudorandom number generation (PRNG) seed by which the same
 results can be obtained again if needed. Passed to argument \code{seed} of

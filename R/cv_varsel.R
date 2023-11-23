@@ -1462,7 +1462,11 @@ get_kfold <- function(refmodel, K, cvfits, verbose) {
 #'   [init_refmodel()]) or an object that can be passed to argument `object` of
 #'   [get_refmodel()].
 #' @param K Number of folds. Must be at least 2 and not exceed the number of
-#'   observations.
+#'   observations. Ignored if `folds` is not `NULL`.
+#' @param folds Either `NULL` for determining the CV folds automatically via
+#'   [cv_folds()] (using argument `K`) or a numeric (in fact, integer) vector
+#'   giving the fold index for each observation. In the latter case, argument
+#'   `K` is ignored.
 #' @param seed Pseudorandom number generation (PRNG) seed by which the same
 #'   results can be obtained again if needed. Passed to argument `seed` of
 #'   [set.seed()], but can also be `NA` to not call [set.seed()] at all. If not
@@ -1529,7 +1533,7 @@ run_cvfun.default <- function(object, ...) {
 #' @export
 run_cvfun.refmodel <- function(object,
                                K = if (!inherits(object, "datafit")) 5 else 10,
-                               seed = NA, ...) {
+                               folds = NULL, seed = NA, ...) {
   if (exists(".Random.seed", envir = .GlobalEnv)) {
     rng_state_old <- get(".Random.seed", envir = .GlobalEnv)
   }
@@ -1544,7 +1548,9 @@ run_cvfun.refmodel <- function(object,
   refmodel <- object
   stopifnot(!is.null(refmodel$cvfun))
 
-  folds <- cv_folds(refmodel$nobs, K = K)
+  if (is.null(folds)) {
+    folds <- cv_folds(refmodel$nobs, K = K)
+  }
   if (getOption("projpred.warn_kfold_refits", TRUE)) {
     cvfits <- refmodel$cvfun(folds)
   } else {
