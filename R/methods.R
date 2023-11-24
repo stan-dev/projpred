@@ -1046,7 +1046,7 @@ plot.vsel <- function(
     labs(x = xlab, y = ylab, title = "Predictive performance",
          subtitle = paste0("Vertical bars indicate ",
                            round(100 * (1 - alpha), 1), "% ", ci_type,
-                           "confidence intervals")) +
+                           "intervals")) +
     theme(axis.text.x = element_text(angle = text_angle, hjust = 0.5,
                                      vjust = 0.5)) +
     facet_grid(statistic ~ ., scales = "free_y")
