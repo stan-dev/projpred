@@ -742,7 +742,7 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
     if (nrow(log_lik_ref) > 1) {
       # Use loo::sis() if the projected draws (i.e., the draws resulting
       # from the clustering or thinning) have nonconstant weights:
-      const_wdraws_prj_eval <- length(unique(refdist_eval$wdraws_prj)) == 1
+      const_wdraws_prj_eval <- refdist_eval$const_wdraws_prj
       if (const_wdraws_prj_eval) {
         # Internally, loo::psis() doesn't perform the Pareto smoothing if the
         # number of draws is small (as indicated by object `no_psis_eval`, see

@@ -190,10 +190,9 @@ init_submodl <- function(outdmin, p_ref, refmodel, predictor_terms, wobs) {
   )
   return(structure(
     nlist(dis, ce, wdraws_prj = p_ref$wdraws_prj,
-          const_wdraws_prj = length(unique(p_ref$wdraws_prj)) == 1,
-          predictor_terms, outdmin, cl_ref = p_ref$cl,
-          wdraws_ref = p_ref$wdraws_orig, clust_used = p_ref$clust_used,
-          nprjdraws = p_ref$nprjdraws),
+          const_wdraws_prj = p_ref$const_wdraws_prj, predictor_terms, outdmin,
+          cl_ref = p_ref$cl, wdraws_ref = p_ref$wdraws_orig,
+          clust_used = p_ref$clust_used, nprjdraws = p_ref$nprjdraws),
     class = "submodl"
   ))
 }
