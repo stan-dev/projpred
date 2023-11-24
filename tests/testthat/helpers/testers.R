@@ -1486,8 +1486,8 @@ refdist_tester <- function(refd,
                            info_str) {
   # General structure:
   expect_type(refd, "list")
-  refd_nms <- c("mu", "mu_offs", "var", "dis", "wdraws_prj", "cl",
-                "wdraws_orig", "clust_used")
+  refd_nms <- c("mu", "mu_offs", "var", "dis", "wdraws_prj", "const_wdraws_prj",
+                "nprjdraws", "cl", "wdraws_orig", "clust_used")
   expect_named(refd, refd_nms, info = info_str)
 
   # mu
@@ -1529,6 +1529,13 @@ refdist_tester <- function(refd,
   # wdraws_prj
   expect_true(is.vector(refd$wdraws_prj, "numeric"), info = info_str)
   expect_length(refd$wdraws_prj, nprjdraws_expected)
+
+  # const_wdraws_prj
+  expect_identical(refd$const_wdraws_prj, length(unique(refd$wdraws_prj)) == 1,
+                   info = info_str)
+
+  # nprjdraws
+  expect_equal(refd$nprjdraws, nprjdraws_expected, info = info_str)
 
   # cl
   expect_true(is.vector(refd$cl, "numeric"), info = info_str)
@@ -1733,7 +1740,7 @@ projection_tester <- function(p,
   expect_identical(p$clust_used, with_clusters, info = info_str)
 
   # nprjdraws
-  expect_identical(p$nprjdraws, nprjdraws_expected, info = info_str)
+  expect_equal(p$nprjdraws, nprjdraws_expected, info = info_str)
 
   # const_wdraws_prj
   expect_identical(p$const_wdraws_prj, const_wdraws_prj_expected,
