@@ -25,8 +25,8 @@ test_that("as.matrix.projection() works", {
     ndr_ncl <- ndr_ncl_dtls(args_prj[[tstsetup]])
 
     m <- as.matrix(prjs[[tstsetup]],
-                   allow_nonconst_wdraws_prj = ndr_ncl$clust_used)
-    if (ndr_ncl$clust_used) {
+                   allow_nonconst_wdraws_prj = ndr_ncl$clust_used_gt1)
+    if (!has_const_wdr_prj(prjs[[tstsetup]])) {
       wdr_crr <- prjs[[tstsetup]][["wdraws_prj"]]
     } else {
       wdr_crr <- NULL
@@ -257,12 +257,13 @@ test_that(paste(
       # TODO (GAMMs): Fix this.
       next
     }
-    ndr_ncl <- ndr_ncl_dtls(args_prj[[tstsetup]])
     m <- as.matrix(prjs[[tstsetup]],
-                   allow_nonconst_wdraws_prj = ndr_ncl$clust_used)
+                   allow_nonconst_wdraws_prj = ndr_ncl_dtls(
+                     args_prj[[tstsetup]]
+                   )$clust_used_gt1)
     m_dr <- posterior::as_draws_matrix(prjs[[tstsetup]])
     m_dr_repl <- posterior::as_draws_matrix(m)
-    if (ndr_ncl$clust_used) {
+    if (!has_const_wdr_prj(prjs[[tstsetup]])) {
       m_dr_repl <- posterior::weight_draws(m_dr_repl,
                                            weights = attr(m, "wdraws_prj"))
     }
@@ -277,12 +278,13 @@ test_that(paste(
   skip_if_not(run_prj)
   skip_if_not_installed("posterior")
   for (tstsetup in grep("rstanarm\\.glm\\.", names(prjs), value = TRUE)) {
-    ndr_ncl <- ndr_ncl_dtls(args_prj[[tstsetup]])
     m <- as.matrix(prjs[[tstsetup]], nm_scheme = "brms",
-                   allow_nonconst_wdraws_prj = ndr_ncl$clust_used)
+                   allow_nonconst_wdraws_prj = ndr_ncl_dtls(
+                     args_prj[[tstsetup]]
+                   )$clust_used_gt1)
     m_dr <- posterior::as_draws_matrix(prjs[[tstsetup]], nm_scheme = "brms")
     m_dr_repl <- posterior::as_draws_matrix(m)
-    if (ndr_ncl$clust_used) {
+    if (!has_const_wdr_prj(prjs[[tstsetup]])) {
       m_dr_repl <- posterior::weight_draws(m_dr_repl,
                                            weights = attr(m, "wdraws_prj"))
     }
@@ -324,7 +326,6 @@ if (run_snaps) {
         # TODO (GAMMs): Fix this.
         next
       }
-      ndr_ncl <- ndr_ncl_dtls(args_prj_vs[[tstsetup]])
       nterms_crr <- args_prj_vs[[tstsetup]]$nterms
 
       prjs_vs_l <- prjs_vs[[tstsetup]]
@@ -333,7 +334,9 @@ if (run_snaps) {
       }
       res_vs <- lapply(prjs_vs_l, function(prjs_vs_i) {
         m <- as.matrix(prjs_vs_i,
-                       allow_nonconst_wdraws_prj = ndr_ncl$clust_used)
+                       allow_nonconst_wdraws_prj = ndr_ncl_dtls(
+                         args_prj_vs[[tstsetup]]
+                       )$clust_used_gt1)
         expect_snapshot({
           print(tstsetup)
           print(prjs_vs_i$predictor_terms)
@@ -362,7 +365,6 @@ if (run_snaps) {
         # TODO (GAMMs): Fix this.
         next
       }
-      ndr_ncl <- ndr_ncl_dtls(args_prj_cvvs[[tstsetup]])
       nterms_crr <- args_prj_cvvs[[tstsetup]]$nterms
 
       prjs_cvvs_l <- prjs_cvvs[[tstsetup]]
@@ -371,7 +373,9 @@ if (run_snaps) {
       }
       res_cvvs <- lapply(prjs_cvvs_l, function(prjs_cvvs_i) {
         m <- as.matrix(prjs_cvvs_i,
-                       allow_nonconst_wdraws_prj = ndr_ncl$clust_used)
+                       allow_nonconst_wdraws_prj = ndr_ncl_dtls(
+                         args_prj_cvvs[[tstsetup]]
+                       )$clust_used_gt1)
         expect_snapshot({
           print(tstsetup)
           print(prjs_cvvs_i$predictor_terms)

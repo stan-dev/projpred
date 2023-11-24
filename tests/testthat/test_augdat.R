@@ -230,10 +230,11 @@ test_that(paste(
     tstsetup_trad <- sub("\\.augdat\\.", ".trad_compare.", tstsetup)
     if (!tstsetup_trad %in% names(prjs)) next
 
-    cl_used <- ndr_ncl_dtls(args_prj[[tstsetup]])$clust_used
-    prjmat <- as.matrix(prjs[[tstsetup]], allow_nonconst_wdraws_prj = cl_used)
+    cl_used_gt1 <- ndr_ncl_dtls(args_prj[[tstsetup]])$clust_used_gt1
+    prjmat <- as.matrix(prjs[[tstsetup]],
+                        allow_nonconst_wdraws_prj = cl_used_gt1)
     prjmat_trad <- as.matrix(prjs[[tstsetup_trad]],
-                             allow_nonconst_wdraws_prj = cl_used)
+                             allow_nonconst_wdraws_prj = cl_used_gt1)
 
     tol_coefs <- ifelse(
       args_prj[[tstsetup]]$mod_nm == "glmm" &&
@@ -266,11 +267,11 @@ test_that(paste(
       list(object = refmods[[args_prj_i_trad$tstsetup_ref]], regul = 0),
       excl_nonargs(args_prj_i_trad)
     ))
-    cl_used <- ndr_ncl_dtls(args_prj_i)$clust_used
-    prjmat <- as.matrix(prj, allow_nonconst_wdraws_prj = cl_used)
-    prjmat_trad <- as.matrix(prj_trad, allow_nonconst_wdraws_prj = cl_used)
+    cl_used_gt1 <- ndr_ncl_dtls(args_prj_i)$clust_used_gt1
+    prjmat <- as.matrix(prj, allow_nonconst_wdraws_prj = cl_used_gt1)
+    prjmat_trad <- as.matrix(prj_trad, allow_nonconst_wdraws_prj = cl_used_gt1)
 
-    tol_coefs <- ifelse(cl_used, 1e-9, 1e-14)
+    tol_coefs <- ifelse(cl_used_gt1, 1e-9, 1e-14)
     expect_equal(prjmat, prjmat_trad, tolerance = tol_coefs, info = tstsetup)
   }
 })
