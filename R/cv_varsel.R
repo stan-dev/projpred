@@ -385,7 +385,7 @@ cv_varsel.refmodel <- function(
   # Information about the clustering/thinning used for the search:
   refdist_info_search <- list(
     clust_used = search_path_fulldata$p_sel$clust_used,
-    nprjdraws = NCOL(search_path_fulldata$p_sel$mu)
+    nprjdraws = search_path_fulldata$p_sel$nprjdraws
   )
   # Information about the clustering/thinning used for the performance
   # evaluation:

@@ -141,7 +141,7 @@ perf_eval <- function(search_path,
   }
   out <- c(out, list(ce = sapply(out_by_size, "[[", "ce"),
                      clust_used = p_ref$clust_used,
-                     nprjdraws = NCOL(p_ref$mu)))
+                     nprjdraws = p_ref$nprjdraws))
   if (return_p_ref) {
     # Currently only called in loo_varsel()'s `validate_search = FALSE` case.
     out <- c(out, nlist(p_ref))
@@ -194,7 +194,7 @@ init_submodl <- function(outdmin, p_ref, refmodel, predictor_terms, wobs) {
           const_wdraws_prj = length(unique(p_ref$wdraws_prj)) == 1,
           predictor_terms, outdmin, cl_ref = p_ref$cl,
           wdraws_ref = p_ref$wdraws_orig, clust_used = p_ref$clust_used,
-          nprjdraws = NCOL(p_ref$mu)),
+          nprjdraws = p_ref$nprjdraws),
     class = "submodl"
   ))
 }
