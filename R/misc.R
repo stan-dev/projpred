@@ -320,6 +320,10 @@ get_refdist <- function(refmodel, ndraws = NULL, nclusters = NULL,
                            nclusters = nclusters)
     }
   } else {
+    if (length(unique(refmodel$wdraws_ref)) != 1) {
+      stop("Currently, projpred requires the reference model's posterior ",
+           "draws to have constant weights.")
+    }
     ndraws <- min(S, ndraws)
     if (ndraws <= 20 && throw_mssg_ndraws) {
       message("The number of draws to project is quite small (<= 20). In such ",
