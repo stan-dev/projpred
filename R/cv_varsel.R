@@ -383,10 +383,8 @@ cv_varsel.refmodel <- function(
   y_wobs_test <- sel_cv$y_wobs_test
 
   # Information about the clustering/thinning used for the search:
-  refdist_info_search <- list(
-    clust_used = search_path_fulldata$p_sel$clust_used,
-    nprjdraws = search_path_fulldata$p_sel$nprjdraws
-  )
+  refdist_info_search <- search_path_fulldata$p_sel[c("clust_used",
+                                                      "nprjdraws")]
   # Information about the clustering/thinning used for the performance
   # evaluation:
   if (refit_prj) {

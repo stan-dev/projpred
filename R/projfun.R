@@ -139,9 +139,8 @@ perf_eval <- function(search_path,
   } else {
     out <- list(sub_summaries = lapply(out_by_size, "[[", "sub_summary"))
   }
-  out <- c(out, list(ce = sapply(out_by_size, "[[", "ce"),
-                     clust_used = p_ref$clust_used,
-                     nprjdraws = p_ref$nprjdraws))
+  out <- c(out, list(ce = sapply(out_by_size, "[[", "ce")),
+           p_ref[c("clust_used", "nprjdraws")])
   if (return_p_ref) {
     # Currently only called in loo_varsel()'s `validate_search = FALSE` case.
     out <- c(out, nlist(p_ref))
