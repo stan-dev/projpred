@@ -219,6 +219,16 @@ varsel.default <- function(object, ...) {
 #' @rdname varsel
 #' @export
 varsel.vsel <- function(object, ...) {
+  arg_nms_internal <- c("method", "ndraws", "nclusters", "nterms_max",
+                        "search_control", "penalty", "search_terms")
+  arg_nms_internal_used <- intersect(arg_nms_internal, ...names())
+  n_arg_nms_internal_used <- length(arg_nms_internal_used)
+  if (n_arg_nms_internal_used > 0) {
+    stop("Argument", if (n_arg_nms_internal_used > 1) "s" else "", " ",
+         paste(paste0("`", arg_nms_internal_used, "`"), collapse = ", "), " ",
+         "cannot be specified in this case because varsel.vsel() specifies ",
+         if (n_arg_nms_internal_used > 1) "them" else "it", " ", "internally.")
+  }
   return(varsel(
     object = get_refmodel(object),
     method = object[["args_search"]][["method"]],

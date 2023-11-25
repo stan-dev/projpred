@@ -161,6 +161,16 @@ cv_varsel.vsel <- function(
     validate_search = object$validate_search %||% TRUE,
     ...
 ) {
+  arg_nms_internal <- c("method", "ndraws", "nclusters", "nterms_max",
+                        "search_control", "penalty", "search_terms")
+  arg_nms_internal_used <- intersect(arg_nms_internal, ...names())
+  n_arg_nms_internal_used <- length(arg_nms_internal_used)
+  if (n_arg_nms_internal_used > 0) {
+    stop("Argument", if (n_arg_nms_internal_used > 1) "s" else "", " ",
+         paste(paste0("`", arg_nms_internal_used, "`"), collapse = ", "), " ",
+         "cannot be specified in this case because cv_varsel.vsel() specifies ",
+         if (n_arg_nms_internal_used > 1) "them" else "it", " ", "internally.")
+  }
   refmodel <- get_refmodel(object)
   rk_foldwise <- ranking(object)[["foldwise"]]
   if (validate_search && !is.null(rk_foldwise)) {
