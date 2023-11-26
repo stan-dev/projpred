@@ -785,6 +785,13 @@ get_refmodel.vsel <- function(object, ...) {
 
 #' @rdname refmodel-init-get
 #' @export
+get_refmodel.projection <- function(object, ...) {
+  # The reference model is stored in the `object` of class `projection`:
+  object$refmodel
+}
+
+#' @rdname refmodel-init-get
+#' @export
 get_refmodel.default <- function(object, family = NULL, ...) {
   return(init_refmodel(object = object, family = family %||% family(object),
                        ...))

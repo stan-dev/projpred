@@ -5,6 +5,7 @@
 \alias{get_refmodel}
 \alias{get_refmodel.refmodel}
 \alias{get_refmodel.vsel}
+\alias{get_refmodel.projection}
 \alias{get_refmodel.default}
 \alias{get_refmodel.stanreg}
 \alias{init_refmodel}
@@ -15,6 +16,8 @@ get_refmodel(object, ...)
 \method{get_refmodel}{refmodel}(object, ...)
 
 \method{get_refmodel}{vsel}(object, ...)
+
+\method{get_refmodel}{projection}(object, ...)
 
 \method{get_refmodel}{default}(object, family = NULL, ...)
 
