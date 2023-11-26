@@ -598,6 +598,12 @@ rbind2list <- function(x) {
   return(binded_list)
 }
 
+cat_cls <- function(x) {
+  cls <- paste0("`", class(x), "`")
+  cat("Object of class", if (length(cls) > 1) "es" else "", " ",
+      paste(cls, collapse = ", "), "\n\n", sep = "")
+}
+
 # Print out text via cat() if `verbose = TRUE`:
 verb_out <- function(..., verbose = TRUE) {
   if (verbose) {

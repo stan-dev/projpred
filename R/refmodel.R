@@ -376,6 +376,7 @@ NULL
 #'
 #' @export
 print.refmodel <- function(x, ...) {
+  cat_cls(x)
   # Print information about `x` (the order of that information is from most
   # strongly tied uniquely to the reference model (top) to most strongly tied
   # uniquely to the submodels (bottom)).
