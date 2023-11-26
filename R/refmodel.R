@@ -1357,11 +1357,7 @@ init_refmodel <- function(object, data, formula, family, ref_predfun = NULL,
                             mlvl_allrandom = getOption("projpred.mlvl_pred_new",
                                                        FALSE)) {
       stopifnot(is.null(fit))
-      if (is.null(newdata)) {
-        return(matrix(rep(NA_real_, nrow(data))))
-      } else {
-        return(matrix(rep(NA_real_, nrow(newdata))))
-      }
+      return(matrix(rep(NA_real_, nrow(newdata %||% data))))
     }
   }
 
