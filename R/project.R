@@ -306,3 +306,35 @@ project <- function(object, nterms = NULL, solution_terms = predictor_terms,
   # instead of returning it in a list of length 1:
   return(unlist_proj(projs))
 }
+
+#' Print information about [project()] output
+#'
+#' This is the [print()] method for objects of class `projection`. This method
+#' mainly exists to avoid cluttering the console when printing such objects
+#' accidentally.
+#'
+#' @param x An object of class `projection` (returned by [project()], possibly
+#'   as elements of a `list`).
+#' @param ... Currently ignored.
+#'
+#' @return The input object `x` (invisible).
+#'
+#' @export
+print.projection <- function(x, ...) {
+  cat_cls(x)
+  # Print information about `x` (only information that is unique to `x`; for the
+  # rest, print.refmodel() can be used).
+  if (x$clust_used) {
+    clust_pretty <- " (from clustered projection)"
+  } else {
+    clust_pretty <- ""
+  }
+  cat("Number of projected draws: ", x$nprjdraws, clust_pretty, "\n", sep = "")
+  cat("Predictor terms: ",
+      paste(paste0("\"", predictor_terms(x), "\""), collapse = ", "),
+      "\n", sep = "")
+  cat("\n")
+  cat("More information can be printed via `print(get_refmodel(<x>))`, where ",
+      "`<x>` denotes the object that is currently printed.", "\n", sep = "")
+  return(invisible(x))
+}
