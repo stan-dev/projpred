@@ -519,13 +519,21 @@ predict.refmodel <- function(object, newdata = NULL, ynew = NULL,
                                      extract_y = FALSE)
   weightsnew <- w_o$weights
   offsetnew <- w_o$offset
-  if (length(weightsnew) == 0) {
+  if (length(weightsnew) != nobs_new) {
+    # Within predict.refmodel(), `weightsnew` of length 1 might perhaps work,
+    # but already for consistency with init_refmodel(), require length
+    # `nobs_new` here:
     stop("The function supplied to argument `extract_model_data` of ",
-         "init_refmodel() must not return a length-zero element `weights`.")
+         "init_refmodel() needs to return an element `weights` with length ",
+         "equal to the number of observations.")
   }
-  if (length(offsetnew) == 0) {
+  if (length(offsetnew) != nobs_new) {
+    # Within predict.refmodel(), `offsetnew` of length 1 might perhaps work,
+    # but already for consistency with init_refmodel(), require length
+    # `nobs_new` here:
     stop("The function supplied to argument `extract_model_data` of ",
-         "init_refmodel() must not return a length-zero element `offset`.")
+         "init_refmodel() needs to return an element `offset` with length ",
+         "equal to the number of observations.")
   }
   if (refmodel$family$for_augdat && !all(weightsnew == 1)) {
     stop("Currently, the augmented-data projection may not be combined with ",
@@ -1452,13 +1460,15 @@ init_refmodel <- function(object, data, formula, family, ref_predfun = NULL,
   model_data <- extract_model_data(object, newdata = NULL, extract_y = TRUE)
   weights <- model_data$weights
   offset <- model_data$offset
-  if (length(weights) == 0) {
+  if (length(weights) != nrow(data)) {
     stop("The function supplied to argument `extract_model_data` of ",
-         "init_refmodel() must not return a length-zero element `weights`.")
+         "init_refmodel() needs to return an element `weights` with length ",
+         "equal to the number of observations.")
   }
-  if (length(offset) == 0) {
+  if (length(offset) != nrow(data)) {
     stop("The function supplied to argument `extract_model_data` of ",
-         "init_refmodel() must not return a length-zero element `offset`.")
+         "init_refmodel() needs to return an element `offset` with length ",
+         "equal to the number of observations.")
   }
   if (family$for_latent) {
     y <- rowMeans(ref_predfun(

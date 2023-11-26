@@ -259,6 +259,8 @@ proj_helper <- function(object, newdata, offsetnew, weightsnew, onesub_fun,
     count_terms_chosen(proj$predictor_terms)
   })
 
+  nobs_new <- nrow(newdata) %||% projs[[1]]$refmodel$nobs
+
   preds <- lapply(projs, function(proj) {
     w_o <- proj$refmodel$extract_model_data(
       proj$refmodel$fit, newdata = newdata, wrhs = weightsnew, orhs = offsetnew,
@@ -266,13 +268,19 @@ proj_helper <- function(object, newdata, offsetnew, weightsnew, onesub_fun,
     )
     weightsnew <- w_o$weights
     offsetnew <- w_o$offset
-    if (length(weightsnew) == 0) {
+    if (length(weightsnew) != nobs_new) {
+      # Here, `weightsnew` of length 1 might perhaps work, but already for
+      # consistency with init_refmodel(), require length `nobs_new` here:
       stop("The function supplied to argument `extract_model_data` of ",
-           "init_refmodel() must not return a length-zero element `weights`.")
+           "init_refmodel() needs to return an element `weights` with length ",
+           "equal to the number of observations.")
     }
-    if (length(offsetnew) == 0) {
+    if (length(offsetnew) != nobs_new) {
+      # Here, `offsetnew` of length 1 might perhaps work, but already for
+      # consistency with init_refmodel(), require length `nobs_new` here:
       stop("The function supplied to argument `extract_model_data` of ",
-           "init_refmodel() must not return a length-zero element `offset`.")
+           "init_refmodel() needs to return an element `offset` with length ",
+           "equal to the number of observations.")
     }
     if (proj$refmodel$family$for_augdat && !all(weightsnew == 1)) {
       stop("Currently, the augmented-data projection may not be combined with ",
