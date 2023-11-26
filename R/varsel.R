@@ -323,16 +323,10 @@ varsel.refmodel <- function(object, d_test = NULL, method = "forward",
       stopifnot(all(hasNA_y_oscale_test))
     }
     if (length(d_test[["weights"]]) != nrow(d_test[["data"]])) {
-      # Here, element `weights` of length 1 might perhaps work, but already for
-      # consistency with init_refmodel(), require length
-      # `nrow(d_test[["data"]])` here:
       stop("Element `d_test$weights` needs to have length equal to the number ",
            "of test observations.")
     }
     if (length(d_test[["offset"]]) != nrow(d_test[["data"]])) {
-      # Here, element `offset` of length 1 might perhaps work, but already for
-      # consistency with init_refmodel(), require length
-      # `nrow(d_test[["data"]])` here:
       stop("Element `d_test$offset` needs to have length equal to the number ",
            "of test observations.")
     }

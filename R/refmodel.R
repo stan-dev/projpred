@@ -520,17 +520,11 @@ predict.refmodel <- function(object, newdata = NULL, ynew = NULL,
   weightsnew <- w_o$weights
   offsetnew <- w_o$offset
   if (length(weightsnew) != nobs_new) {
-    # Within predict.refmodel(), `weightsnew` of length 1 might perhaps work,
-    # but already for consistency with init_refmodel(), require length
-    # `nobs_new` here:
     stop("The function supplied to argument `extract_model_data` of ",
          "init_refmodel() needs to return an element `weights` with length ",
          "equal to the number of observations.")
   }
   if (length(offsetnew) != nobs_new) {
-    # Within predict.refmodel(), `offsetnew` of length 1 might perhaps work,
-    # but already for consistency with init_refmodel(), require length
-    # `nobs_new` here:
     stop("The function supplied to argument `extract_model_data` of ",
          "init_refmodel() needs to return an element `offset` with length ",
          "equal to the number of observations.")
@@ -1457,11 +1451,17 @@ init_refmodel <- function(object, data, formula, family, ref_predfun = NULL,
   weights <- model_data$weights
   offset <- model_data$offset
   if (length(weights) != nrow(data)) {
+    # Length equal to the number of observations is necessary here, for example
+    # because perf_eval() subsets the weights vector with observation indices by
+    # default.
     stop("The function supplied to argument `extract_model_data` of ",
          "init_refmodel() needs to return an element `weights` with length ",
          "equal to the number of observations.")
   }
   if (length(offset) != nrow(data)) {
+    # Length equal to the number of observations is necessary here, for example
+    # because perf_eval() subsets the offsets vector with observation indices by
+    # default.
     stop("The function supplied to argument `extract_model_data` of ",
          "init_refmodel() needs to return an element `offset` with length ",
          "equal to the number of observations.")
