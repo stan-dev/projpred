@@ -1587,7 +1587,7 @@ run_cvfun.refmodel <- function(object,
 
 lfo_varsel <- function(refmodel, method, nterms_max, ndraws, nclusters,
                        ndraws_pred, nclusters_pred, refit_prj, penalty,
-                       verbose, opt, L, cvfits, validate_search,
+                       verbose, search_control, L, cvfits, validate_search,
                        search_path_fulldata, search_terms, search_out_rks,
                        parallel, ...) {
   # Fetch the K reference model fits (or fit them now if not already done) and
@@ -1618,8 +1618,9 @@ lfo_varsel <- function(refmodel, method, nterms_max, ndraws, nclusters,
     } else {
       verb_txt_mid <- "the search and "
     }
-    verb_out(verb_txt_start, verb_txt_mid, "the performance evaluation for ",
-             "each of the K = ", K, " CV folds separately ...")
+    verb_out(verb_txt_start, verb_txt_mid, "the performance evaluation with ",
+             "`refit_prj = ", refit_prj, "` for each of the K = ", K, " CV ",
+             "folds separately ...")
   }
   one_fold <- function(fold,
                        rk,
@@ -1630,20 +1631,20 @@ lfo_varsel <- function(refmodel, method, nterms_max, ndraws, nclusters,
     if (!validate_search) {
       search_path <- search_path_fulldata
     } else if (!search_out_rks_was_null) {
-      search_path <- list(solution_terms = rk)
+      search_path <- list(predictor_ranking = rk)
     } else {
       search_path <- select(
         refmodel = fold$refmodel, ndraws = ndraws, nclusters = nclusters,
         method = method, nterms_max = nterms_max, penalty = penalty,
-        verbose = verbose_search, opt = opt, search_terms = search_terms,
-        est_runtime = FALSE, ...
+        verbose = verbose_search, search_control = search_control,
+        search_terms = search_terms, est_runtime = FALSE, ...
       )
     }
 
     # Run the performance evaluation for the submodels along the predictor
     # ranking:
     perf_eval_out <- perf_eval(
-      search_path = search_path, refmodel = fold$refmodel, regul = opt$regul,
+      search_path = search_path, refmodel = fold$refmodel,
       refit_prj = refit_prj, ndraws = ndraws_pred, nclusters = nclusters_pred,
       refmodel_fulldata = refmodel, indices_test = fold$omitted, ...
     )
@@ -1664,7 +1665,7 @@ lfo_varsel <- function(refmodel, method, nterms_max, ndraws, nclusters,
       cl_ref = seq_along(fold$refmodel$wdraws_ref)
     )
 
-    return(nlist(predictor_ranking = search_path[["solution_terms"]],
+    return(nlist(predictor_ranking = search_path[["predictor_ranking"]],
                  summaries_sub = perf_eval_out[["sub_summaries"]],
                  summaries_ref, clust_used_eval = perf_eval_out[["clust_used"]],
                  nprjdraws_eval = perf_eval_out[["nprjdraws"]]))
@@ -1702,13 +1703,14 @@ lfo_varsel <- function(refmodel, method, nterms_max, ndraws, nclusters,
       .export = c("one_fold", "dot_args"),
       .noexport = c("list_cv", "search_out_rks")
     ) %do_projpred% {
-      do.call(one_fold, c(list(fold = list_cv_k, rk = search_out_rks_k,
+      do_call(one_fold, c(list(fold = list_cv_k, rk = search_out_rks_k,
                                verbose_search = FALSE),
                           dot_args))
     }
   }
   verb_out("-----", verbose = verbose)
-  solution_terms_cv <- do.call(rbind, lapply(res_cv, "[[", "predictor_ranking"))
+  predictor_ranking_cv <- do.call(rbind,
+                                  lapply(res_cv, "[[", "predictor_ranking"))
   clust_used_eval <- element_unq(res_cv, nm = "clust_used_eval")
   nprjdraws_eval <- element_unq(res_cv, nm = "nprjdraws_eval")
 
@@ -1719,7 +1721,7 @@ lfo_varsel <- function(refmodel, method, nterms_max, ndraws, nclusters,
   } else {
     sub_foldwise <- simplify2array(sub_foldwise, higher = FALSE)
     if (is.null(dim(sub_foldwise))) {
-      sub_dim <- dim(solution_terms_cv)
+      sub_dim <- dim(predictor_ranking_cv)
       sub_dim[2] <- sub_dim[2] + 1L # +1 is for the empty model
       dim(sub_foldwise) <- rev(sub_dim)
     }
@@ -1768,7 +1770,7 @@ lfo_varsel <- function(refmodel, method, nterms_max, ndraws, nclusters,
   if (!validate_search) {
     out_list <- list()
   } else {
-    out_list <- nlist(solution_terms_cv)
+    out_list <- nlist(predictor_ranking_cv)
   }
   out_list <- c(out_list,
                 nlist(summaries = nlist(sub, ref), y_wobs_test, clust_used_eval,
@@ -1776,8 +1778,8 @@ lfo_varsel <- function(refmodel, method, nterms_max, ndraws, nclusters,
   return(out_list)
 }
 
-# Re-fit the reference model T-L times (once for each observation from L to
-# the second-to-last observation; `cvfun` case) or fetch the fits if already
+# Refit the reference model T-L times (once for each observation from L to the
+# second-to-last observation; `cvfun` case) or fetch the fits if already
 # computed (`cvfits` case). This function will return a list of length T-L,
 # where each element is a list with elements `refmodel` (output of
 # init_refmodel()) and `omitted` (vector of indices of those observations which
@@ -1806,6 +1808,7 @@ get_lfo <- function(refmodel, L, cvfits, verbose) {
   } else {
     folds <- attr(cvfits, "folds")
   }
+  stopifnot(!is.null(folds))
   return(lapply(seq_len(K), function(k) {
     cvfit <- cvfits[[k]]
     # Add the omitted observation indices for this fold (and the fold index `k`
