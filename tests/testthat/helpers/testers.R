@@ -384,7 +384,7 @@ refmodel_tester <- function(
   # `refmod$family$linkfun(refmod$mu)`, but numerical underflow and overflow can
   # make this problematic. (Here in the unit tests, we generate rather extreme
   # linear predictors, which should be avoided in the first place, but doesn't
-  # seem to be that simple.)
+  # seem to be that simple in the context of these specific unit tests.)
   if (refmod$family$family %in% c("binomial")) {
     eta_cut <- refmod$eta
     mu_cut <- refmod$mu
