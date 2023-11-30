@@ -4,16 +4,16 @@
 \alias{as.matrix.projection}
 \title{Extract projected parameter draws and coerce to matrix}
 \usage{
-\method{as.matrix}{projection}(x, nm_scheme = "auto", allow_nonconst_wdraws_prj = FALSE, ...)
+\method{as.matrix}{projection}(x, nm_scheme = NULL, allow_nonconst_wdraws_prj = FALSE, ...)
 }
 \arguments{
 \item{x}{An object of class \code{projection} (returned by \code{\link[=project]{project()}}, possibly
 as elements of a \code{list}).}
 
 \item{nm_scheme}{The naming scheme for the columns of the output matrix.
-Either \code{"auto"}, \code{"rstanarm"}, or \code{"brms"}, where \code{"auto"} chooses
-\code{"rstanarm"} or \code{"brms"} based on the class of the reference model fit (and
-uses \code{"rstanarm"} if the reference model fit is of an unknown class).}
+Either \code{NULL}, \code{"rstanarm"}, or \code{"brms"}, where \code{NULL} chooses \code{"rstanarm"}
+or \code{"brms"} based on the class of the reference model fit (and uses
+\code{"rstanarm"} if the reference model fit is of an unknown class).}
 
 \item{allow_nonconst_wdraws_prj}{A single logical value indicating whether to
 allow projected draws with different (i.e., nonconstant) weights (\code{TRUE})
@@ -51,7 +51,7 @@ reference model fit (see section "Augmented-data projection" in
 # Data:
 dat_gauss <- data.frame(y = df_gaussian$y, df_gaussian$x)
 
-# The "stanreg" fit which will be used as the reference model (with small
+# The `stanreg` fit which will be used as the reference model (with small
 # values for `chains` and `iter`, but only for technical reasons in this
 # example; this is not recommended in general):
 fit <- rstanarm::stan_glm(
@@ -62,7 +62,7 @@ fit <- rstanarm::stan_glm(
 # Projection onto an arbitrary combination of predictor terms (with a small
 # value for `ndraws`, but only for the sake of speed in this example; this
 # is not recommended in general):
-prj <- project(fit, solution_terms = c("X1", "X3", "X5"), ndraws = 21,
+prj <- project(fit, predictor_terms = c("X1", "X3", "X5"), ndraws = 21,
                seed = 9182)
 
 # Applying the as.matrix() generic to the output of project() dispatches to

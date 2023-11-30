@@ -5,6 +5,7 @@
 \alias{get_refmodel}
 \alias{get_refmodel.refmodel}
 \alias{get_refmodel.vsel}
+\alias{get_refmodel.projection}
 \alias{get_refmodel.default}
 \alias{get_refmodel.stanreg}
 \alias{init_refmodel}
@@ -16,7 +17,9 @@ get_refmodel(object, ...)
 
 \method{get_refmodel}{vsel}(object, ...)
 
-\method{get_refmodel}{default}(object, data, formula, family = NULL, ...)
+\method{get_refmodel}{projection}(object, ...)
+
+\method{get_refmodel}{default}(object, family = NULL, ...)
 
 \method{get_refmodel}{stanreg}(object, latent = FALSE, dis = NULL, ...)
 
@@ -28,7 +31,7 @@ init_refmodel(
   ref_predfun = NULL,
   div_minimizer = NULL,
   proj_predfun = NULL,
-  extract_model_data,
+  extract_model_data = NULL,
   cvfun = NULL,
   cvfits = NULL,
   dis = NULL,
@@ -51,24 +54,6 @@ class.}
 arguments passed to \code{\link[=init_refmodel]{init_refmodel()}}. For the \code{\link[=get_refmodel]{get_refmodel()}} generic:
 arguments passed to the appropriate method. For \code{\link[=init_refmodel]{init_refmodel()}}:
 arguments passed to \code{\link[=extend_family]{extend_family()}} (apart from \code{family}).}
-
-\item{data}{A \code{data.frame} containing the data to use for the projection
-predictive variable selection. Any \code{contrasts} attributes of the dataset's
-columns are silently removed. For custom reference models, the columns of
-\code{data} do not necessarily have to coincide with those of the dataset used
-for fitting the reference model, but keep in mind that a row-subset of
-\code{data} is used for argument \code{newdata} of \code{ref_predfun} during \eqn{K}-fold
-CV.}
-
-\item{formula}{The full formula to use for the search procedure. For custom
-reference models, this does not necessarily coincide with the reference
-model's formula. For general information about formulas in \R, see
-\code{\link{formula}}. For information about possible right-hand side (i.e.,
-predictor) terms in \code{formula} here, see the main vignette and section
-"Formula terms" below. For multilevel formulas, see also package \pkg{lme4}
-(in particular, functions \code{\link[lme4:lmer]{lme4::lmer()}} and \code{\link[lme4:glmer]{lme4::glmer()}}). For additive
-formulas, see also packages \pkg{mgcv} (in particular, function
-\code{\link[mgcv:gam]{mgcv::gam()}}) and \pkg{gamm4} (in particular, function \code{\link[gamm4:gamm4]{gamm4::gamm4()}}).}
 
 \item{family}{An object of class \code{family} representing the observation model
 (i.e., the distributional family for the response) of the \emph{submodels}.
@@ -96,6 +81,24 @@ parameter, but \code{object} is \code{NULL} (in which case \code{0} is used for 
 Note that for the \code{\link[=gaussian]{gaussian()}} \code{family}, \code{dis} is the standard deviation,
 not the variance.}
 
+\item{data}{A \code{data.frame} containing the data to use for the projection
+predictive variable selection. Any \code{contrasts} attributes of the dataset's
+columns are silently removed. For custom reference models, the columns of
+\code{data} do not necessarily have to coincide with those of the dataset used
+for fitting the reference model, but keep in mind that a row-subset of
+\code{data} is used for argument \code{newdata} of \code{ref_predfun} during \eqn{K}-fold
+CV.}
+
+\item{formula}{The full formula to use for the search procedure. For custom
+reference models, this does not necessarily coincide with the reference
+model's formula. For general information about formulas in \R, see
+\code{\link{formula}}. For information about possible right-hand side (i.e.,
+predictor) terms in \code{formula} here, see the main vignette and section
+"Formula terms" below. For multilevel formulas, see also package \pkg{lme4}
+(in particular, functions \code{\link[lme4:lmer]{lme4::lmer()}} and \code{\link[lme4:glmer]{lme4::glmer()}}). For additive
+formulas, see also packages \pkg{mgcv} (in particular, function
+\code{\link[mgcv:gam]{mgcv::gam()}}) and \pkg{gamm4} (in particular, function \code{\link[gamm4:gamm4]{gamm4::gamm4()}}).}
+
 \item{ref_predfun}{Prediction function for the linear predictor of the
 reference model, including offsets (if existing). See also section
 "Arguments \code{ref_predfun}, \code{proj_predfun}, and \code{div_minimizer}" below. If
@@ -115,8 +118,9 @@ submodel onto which the reference model is projected. See also section
 
 \item{extract_model_data}{A function for fetching some variables (response,
 observation weights, offsets) from the original dataset (supplied to
-argument \code{data}) or from a new dataset. See also section "Argument
-\code{extract_model_data}" below.}
+argument \code{data}) or from a new dataset. May be \code{NULL} for using an internal
+default that essentially corresponds to \code{\link[=y_wobs_offs]{y_wobs_offs()}}. See also section
+"Argument \code{extract_model_data}" below.}
 
 \item{cvfun}{For \eqn{K}-fold CV only. A function that, given a fold indices
 vector, fits the reference model separately for each fold and returns the
@@ -269,14 +273,13 @@ matrix of predictive variances (necessary for \pkg{projpred}'s internal
 GLM fitter) in case of the traditional or the latent projection and an
 \eqn{N_{\mathrm{augcat}} \times S_{\mathrm{prj}}}{N_augcat x S_prj}
 matrix (containing only \code{NA}s) in case of the augmented-data projection.
-\item \code{projpred_regul} accepts a single numeric value as supplied to argument
-\code{regul} of \code{\link[=project]{project()}}, for example.
 \item \code{projpred_ws_aug} accepts an \eqn{N \times S_{\mathrm{prj}}}{N x S_prj}
 matrix of expected values for the response in case of the traditional or
 the latent projection and an \eqn{N_{\mathrm{augcat}} \times
     S_{\mathrm{prj}}}{N_augcat x S_prj} matrix of probabilities for the
 response categories in case of the augmented-data projection.
-\item \code{...} accepts further arguments specified by the user.
+\item \code{...} accepts further arguments specified by the user (or by
+\pkg{projpred}).
 }
 }
 
@@ -378,7 +381,7 @@ supported in case of the latent projection.
 # Data:
 dat_gauss <- data.frame(y = df_gaussian$y, df_gaussian$x)
 
-# The "stanreg" fit which will be used as the reference model (with small
+# The `stanreg` fit which will be used as the reference model (with small
 # values for `chains` and `iter`, but only for technical reasons in this
 # example; this is not recommended in general):
 fit <- rstanarm::stan_glm(
@@ -396,20 +399,12 @@ print(class(ref)) # gives `"refmodel"`
 
 # A custom reference model object which may be used in a variable selection
 # where the candidate predictors are not a subset of those used for the
-# reference model's predictions (defining the function for argument
-# `extract_model_data` first because it can be re-used for the `cvrefbuilder`
-# function here):
-extractor_cust <- function(object, newdata, wrhs = NULL, orhs = NULL,
-                           extract_y = TRUE) {
-  return(y_wobs_offs(newdata = newdata, wrhs = wrhs, orhs = orhs,
-                     resp_form = if (extract_y) ~ y else NULL))
-}
+# reference model's predictions:
 ref_cust <- init_refmodel(
   fit,
   data = dat_gauss,
   formula = y ~ X6 + X7,
   family = gaussian(),
-  extract_model_data = extractor_cust,
   cvfun = function(folds) {
     kfold(
       fit, K = max(folds), save_fits = TRUE, folds = folds, cores = 1
@@ -421,7 +416,6 @@ ref_cust <- init_refmodel(
                   data = dat_gauss[-cvfit$omitted, , drop = FALSE],
                   formula = y ~ X6 + X7,
                   family = gaussian(),
-                  extract_model_data = extractor_cust,
                   dis = as.matrix(cvfit)[, "sigma"],
                   called_from_cvrefbuilder = TRUE)
   }

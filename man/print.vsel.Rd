@@ -4,13 +4,14 @@
 \alias{print.vsel}
 \title{Print results (summary) of a \code{\link[=varsel]{varsel()}} or \code{\link[=cv_varsel]{cv_varsel()}} run}
 \usage{
-\method{print}{vsel}(x, ...)
+\method{print}{vsel}(x, digits = getOption("projpred.digits", 2), ...)
 }
 \arguments{
 \item{x}{An object of class \code{vsel} (returned by \code{\link[=varsel]{varsel()}} or \code{\link[=cv_varsel]{cv_varsel()}}).}
 
-\item{...}{Arguments passed to \code{\link[=summary.vsel]{summary.vsel()}} (apart from argument \code{digits}
-which is passed to \code{\link[=print.vselsummary]{print.vselsummary()}}).}
+\item{digits}{Passed to argument \code{digits} of \code{\link[=print.vselsummary]{print.vselsummary()}}.}
+
+\item{...}{Arguments passed to \code{\link[=summary.vsel]{summary.vsel()}}.}
 }
 \value{
 The output of \code{\link[=summary.vsel]{summary.vsel()}} (invisible).

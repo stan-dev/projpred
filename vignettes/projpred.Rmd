@@ -113,6 +113,11 @@ Now, **projpred** comes into play.
 library(projpred)
 ```
 
+From the reference model fit (called `refm_fit` here), we create a reference model object (i.e., an object of class `refmodel`) since this avoids redundant calculations in the remainder of this vignette^[Here, the `get_refmodel()` call is quite fast, but in other situations, it may take a while, so in general, it is better to create the `refmodel` object once explicitly and then to re-use it.]:
+```{r refmodel_create}
+refm_obj <- get_refmodel(refm_fit)
+```
+
 In **projpred**, the projection predictive variable selection relies on a so-called *search* part and a so-called *evaluation* part.
 The search part determines the predictor ranking (also known as solution path), i.e., the best submodel for each submodel size (the size is given by the number of predictor terms).
 The evaluation part determines the predictive performance of the increasingly complex submodels along the predictor ranking.
@@ -132,7 +137,7 @@ and set `refit_prj` to `FALSE`.
 ```{r cv_varsel_fast}
 # Preliminary cv_varsel() run:
 cvvs_fast <- cv_varsel(
-  refm_fit,
+  refm_obj,
   validate_search = FALSE,
   ### Only for the sake of speed (not recommended in general):
   method = "L1",
@@ -155,7 +160,7 @@ plot(cvvs_fast, stats = "mlpd", ranking_nterms_max = NA)
 ```
 This plot suggests that the submodel MLPD levels off for the first time from submodel size 9 to 10 and that it increases only slightly afterwards.
 However, we used L1 search with `refit_prj = FALSE`, which means that the projections employed for the predictive performance evaluation are L1-penalized, which is usually undesired [@piironen_projective_2020, section 4].
-Thus, to investigate the impact of `refit_prj = FALSE`, we re-run `cv_varsel()`, but this time with the default of `refit_prj = TRUE` and re-using the search results (as well as the CV-related arguments such as `validate_search`; see section "Usage" in `?cv_varsel.vsel`) from the former `cv_varsel()` call (this is done by applying `cv_varsel()` to `cvvs_fast` instead of `refm_fit` so that the `cv_varsel()` generic dispatches to the `cv_varsel.vsel()` method that was introduced in **projpred** 2.8.0^[Analogous functionality has been implemented for `varsel()`, namely in `varsel.vsel()`.]).
+Thus, to investigate the impact of `refit_prj = FALSE`, we re-run `cv_varsel()`, but this time with the default of `refit_prj = TRUE` and re-using the search results (as well as the CV-related arguments such as `validate_search`; see section "Usage" in `?cv_varsel.vsel`) from the former `cv_varsel()` call (this is done by applying `cv_varsel()` to `cvvs_fast` instead of `refm_obj` so that the `cv_varsel()` generic dispatches to the `cv_varsel.vsel()` method that was introduced in **projpred** 2.8.0^[Analogous functionality has been implemented for `varsel()`, namely in `varsel.vsel()`.]).
 To save time, we also set `nclusters_pred` to a comparatively low value of `20`:
 ```{r cv_varsel_fast_refit}
 # Preliminary cv_varsel() run with `refit_prj = TRUE`:
@@ -190,11 +195,11 @@ In practice, we recommend using either the default of `cv_method = "LOO"` or a l
 Here, we also perform the $K$ reference model refits outside of `cv_varsel()`.
 Although not strictly necessary here, this is helpful in practice because often, `cv_varsel()` needs to be re-run multiple times in order to try out different argument settings.
 We also illustrate how **projpred**'s CV (i.e., the CV comprising search and performance evaluation, after refitting the reference model $K$ times) can be parallelized, even though this is of little use here (we have only `K = 2` folds and the fold-wise searches and performance evaluations are quite fast, so the parallelization overhead eats up any runtime improvements).
-Note that for this final `cv_varsel()` run, we cannot make use of `cv_varsel.vsel()` (by applying `cv_varsel()` to `cvvs_fast` or `cvvs_fast_refit` instead of `refm_fit`) because of the change in `nterms_max` (here: 9, for `cvvs_fast` and `cvvs_fast_refit`: 20).
+Note that for this final `cv_varsel()` run, we cannot make use of `cv_varsel.vsel()` (by applying `cv_varsel()` to `cvvs_fast` or `cvvs_fast_refit` instead of `refm_obj`) because of the change in `nterms_max` (here: 9, for `cvvs_fast` and `cvvs_fast_refit`: 20).
 ```{r cv_varsel, message=FALSE}
 # Refit the reference model K times:
 cv_fits <- run_cvfun(
-  refm_fit,
+  refm_obj,
   ### Only for the sake of speed (not recommended in general):
   K = 2
   ###
@@ -203,7 +208,7 @@ cv_fits <- run_cvfun(
 doParallel::registerDoParallel(ncores)
 # Final cv_varsel() run:
 cvvs <- cv_varsel(
-  refm_fit,
+  refm_obj,
   cv_method = "kfold",
   cvfits = cv_fits,
   ### Only for the sake of speed (not recommended in general):
@@ -223,8 +228,8 @@ foreach::registerDoSEQ()
 <!-- Again, we ignore the tail-ESS warnings due to the reduced values for `chains` and `iter` in the reference model fit. -->
 
 We can now select a final submodel size by looking at a predictive performance plot similar to the one created for the preliminary `cv_varsel()` run above.
-By default, the performance statistics are plotted on their original scale, but with `deltas = TRUE`, they are plotted as differences from a baseline model (which is the reference model by default, at least in the most common cases).
-Since the differences and the (frequentist) uncertainty in their estimation are usually of more interest than the original-scale performance statistics (at least with regard to the decision for a final submodel size), we directly plot with `deltas = TRUE` here:
+By default, the performance statistics are plotted on their original scale, but with `deltas = TRUE`, they are plotted as differences^[For the geometric mean predictive density (GMPD, see argument `stats` of `summary.vsel()`), `deltas = TRUE` means to calculate the GMPD *ratio* (not difference) vs. the baseline model.] from a baseline model (which is the reference model by default, at least in the most common cases).
+Since the differences^[For the GMPD, this is again a ratio.] and the (frequentist) uncertainty in their estimation are usually of more interest than the original-scale performance statistics (at least with regard to the decision for a final submodel size), we directly plot with `deltas = TRUE` here:
 ```{r plot_vsel}
 plot(cvvs, stats = "mlpd", deltas = TRUE)
 ```
@@ -262,7 +267,7 @@ print(smmry, digits = 1)
 
 ### Predictor ranking(s) and identification of the selected submodel
 
-As highlighted by the message thrown by `summary.vsel()`, the predictor ranking from column `solution_terms` is based on the full-data search.
+As indicated by its column name, the predictor ranking from column `ranking_fulldata` of the `summary.vsel()` output is based on the full-data search.
 In case of `cv_varsel()` with `validate_search = TRUE`, there is not only the full-data search, but also fold-wise searches, implying that there are also fold-wise predictor rankings.
 All of these predictor rankings (the full-data one and---if available---the fold-wise ones) can be retrieved via `ranking()`:
 ```{r ranking}
@@ -282,7 +287,7 @@ To see this more explicitly, we can access element `fulldata` of the `ranking()`
 ```{r ranking_fulldata}
 rk[["fulldata"]]
 ```
-This is the same as column `solution_terms` in the `summary.vsel()` output above.
+This is the same as column `ranking_fulldata` in the `summary.vsel()` output above (apart from the intercept).
 (As also stated by the message thrown by `print.vselsummary()`, column `cv_proportions_diag` of the `summary.vsel()` output contains the main diagonal of the matrix that we stored manually as `pr_rk`.)
 
 Note that we have cut off the search at `nterms_max = 9` (which is smaller than the number of predictor terms in the full model, 20 here), so the ranking proportions in the `pr_rk` matrix do not need to sum to 100&nbsp;% (neither column-wise nor row-wise).
@@ -329,8 +334,8 @@ By the following `project()` call, we project the reference model onto the final
 <!-- ``` -->
 ```{r project}
 prj <- project(
-  refm_fit,
-  solution_terms = predictors_final,
+  refm_obj,
+  predictor_terms = predictors_final,
   ### In interactive use, we recommend not to deactivate the verbose mode:
   verbose = FALSE
   ###
@@ -581,7 +586,7 @@ Some speed-up possibilities are:
 
 1.  Using `varsel.vsel()` or `cv_varsel.vsel()` to re-use previous search results for new performance evaluation(s).
     This is helpful if the performance evaluation part is run multiple times based on the same search results (e.g., when only arguments `ndraws_pred` or `nclusters_pred` of `varsel()` or `cv_varsel()` are changed).
-    In the example above, this was illustrated when `cv_varsel()` was applied to `cvvs_fast` instead of `refm_fit` to yield `cvvs_fast_refit`.
+    In the example above, this was illustrated when `cv_varsel()` was applied to `cvvs_fast` instead of `refm_obj` to yield `cvvs_fast_refit`.
     In that example, search and performance evaluation were effectively run *separately* by the `cv_varsel()` calls yielding `cvvs_fast` and `cvvs_fast_refit`, respectively.
     This is because `cv_varsel()` with `refit_prj = FALSE` (used for `cvvs_fast`) has almost only the computational cost of the search (the performance evaluation with `refit_prj = FALSE` has almost no computational cost) and `cv_varsel.vsel()` (used for `cvvs_fast_refit`) has almost only the computational cost of the performance evaluation (the search in `cv_varsel.vsel()` has no computational cost at all).
 

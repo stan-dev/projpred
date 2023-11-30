@@ -104,7 +104,7 @@ parse_group_terms <- function(group_terms) {
   has_call <- sapply(strsplit(group_terms, "\\|"), function(grp_trm_split) {
     if (length(grp_trm_split) != 2) {
       stop("Unexpected number of `|` characters in group terms. Please ",
-           "contact the package maintainer.")
+           "notify the package maintainer.")
     }
     grepl("\\(", grp_trm_split[2])
   })

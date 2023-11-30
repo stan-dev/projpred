@@ -1,4 +1,4 @@
-search_forward <- function(p_ref, refmodel, nterms_max, verbose = TRUE, opt,
+search_forward <- function(p_ref, refmodel, nterms_max, verbose = TRUE,
                            search_terms, est_runtime = TRUE,
                            search_terms_was_null, ...) {
   nterms_max_with_icpt <- nterms_max + 1L
@@ -22,8 +22,8 @@ search_forward <- function(p_ref, refmodel, nterms_max, verbose = TRUE, opt,
     if (size == 1 && est_runtime && getOption("projpred.mssg_time", TRUE)) {
       time_bef <- Sys.time()
     }
-    submodls <- lapply(full_cands, get_submodl_prj, p_ref = p_ref,
-                       refmodel = refmodel, regul = opt$regul, ...)
+    submodls <- lapply(full_cands, proj_to_submodl, p_ref = p_ref,
+                       refmodel = refmodel, ...)
     if (size == 1 && est_runtime && getOption("projpred.mssg_time", TRUE)) {
       time_aft <- Sys.time()
       dtime <- difftime(time_aft, time_bef, units = "secs")
@@ -133,13 +133,13 @@ search_forward <- function(p_ref, refmodel, nterms_max, verbose = TRUE, opt,
     }
   }
 
-  # For `solution_terms`, `reduce_models(chosen)` used to be used instead of
+  # For `predictor_ranking`, `reduce_models(chosen)` used to be used instead of
   # `chosen`. However, `reduce_models(chosen)` and `chosen` should be identical
   # at this place because select_possible_terms_size() already avoids redundant
   # models. Thus, use `chosen` here because it matches `outdmins` (this
   # matching is necessary because later in perf_eval()'s `!refit_prj` case,
-  # `outdmins` is indexed with integers which are based on `solution_terms`):
-  return(nlist(solution_terms = setdiff(chosen, "1"), outdmins))
+  # `outdmins` is indexed with integers which are based on `predictor_ranking`):
+  return(nlist(predictor_ranking = setdiff(chosen, "1"), outdmins))
 }
 
 #' Force search terms
@@ -166,7 +166,7 @@ search_forward <- function(p_ref, refmodel, nterms_max, verbose = TRUE, opt,
 #' # Data:
 #' dat_gauss <- data.frame(y = df_gaussian$y, df_gaussian$x)
 #'
-#' # The "stanreg" fit which will be used as the reference model (with small
+#' # The `stanreg` fit which will be used as the reference model (with small
 #' # values for `chains` and `iter`, but only for technical reasons in this
 #' # example; this is not recommended in general):
 #' fit <- rstanarm::stan_glm(
@@ -249,7 +249,7 @@ ordered_search_terms <- function(ordered_terms) {
 }
 
 search_L1_surrogate <- function(p_ref, d_train, family, intercept, nterms_max,
-                                penalty, opt) {
+                                penalty, search_control) {
 
   ## predictive mean and variance of the reference model (with parameters
   ## integrated out)
@@ -265,13 +265,27 @@ search_L1_surrogate <- function(p_ref, d_train, family, intercept, nterms_max,
   ## (Notice: here we use pmax = nterms_max+1 so that the computation gets
   ## carried until all the way down to the least regularization also for model
   ## size nterms_max)
-  search <- glm_elnet(d_train$x, mu, family,
-                      lambda_min_ratio = opt$lambda_min_ratio,
-                      nlambda = opt$nlambda,
-                      pmax = nterms_max + 1, pmax_strict = FALSE,
-                      weights = d_train$weights,
-                      intercept = intercept, obsvar = v, penalty = penalty,
-                      thresh = opt$thresh)
+  out_capt <- utils::capture.output(
+    search <- glm_elnet(
+      d_train$x, mu, family,
+      lambda_min_ratio = search_control$lambda_min_ratio %||% 1e-5,
+      nlambda = search_control$nlambda %||% 150, pmax = nterms_max + 1,
+      pmax_strict = FALSE, weights = d_train$weights, intercept = intercept,
+      obsvar = v, penalty = penalty, thresh = search_control$thresh %||% 1e-6
+    )
+  )
+  out_capt <- unique(grep("[Ww]arning|bug", out_capt, value = TRUE))
+  if (length(out_capt) > 0) {
+    warning(paste(
+      c(paste0("The following warnings have been thrown by projpred's ",
+               "internal L1-search function:"),
+        "---", out_capt, "---",
+        paste0("It is recommended to inspect this in detail and (if ",
+               "necessary) to adjust tuning parameters via argument ",
+               "`search_control` (of varsel() or cv_varsel()).")),
+      collapse = "\n"
+    ))
+  }
 
   ## sort the variables according to the order in which they enter the model in
   ## the L1-path
@@ -322,8 +336,8 @@ search_L1_surrogate <- function(p_ref, d_train, family, intercept, nterms_max,
     }
   }
 
-  out$solution_terms <- order[seq_len(nterms_max)]
-  if (any(is.na(out$solution_terms)) &&
+  out$predictor_ranking <- order[seq_len(nterms_max)]
+  if (any(is.na(out$predictor_ranking)) &&
       length(entered_variables) < nterms_max) {
     if (length(setdiff(notentered_variables,
                        which(penalty == Inf))) > 0) {
@@ -335,7 +349,7 @@ search_L1_surrogate <- function(p_ref, d_train, family, intercept, nterms_max,
   return(out)
 }
 
-search_L1 <- function(p_ref, refmodel, nterms_max, penalty, opt) {
+search_L1 <- function(p_ref, refmodel, nterms_max, penalty, search_control) {
   if (nterms_max == 0) {
     stop("L1 search cannot be used for an empty (i.e. intercept-only) ",
          "full-model formula or `nterms_max = 0`.")
@@ -367,33 +381,33 @@ search_L1 <- function(p_ref, refmodel, nterms_max, penalty, opt) {
   terms_ <- attr(tt, "term.labels")
   search_path <- search_L1_surrogate(
     p_ref, nlist(x, weights = refmodel$wobs), refmodel$family,
-    intercept = TRUE, ncol(x), penalty, opt
+    intercept = TRUE, ncol(x), penalty, search_control
   )
 
-  solution_terms_orig <- collapse_ranked_predictors(
-    path = colnames(x)[search_path$solution_terms], formula = refmodel$formula,
-    data = fr
+  predictor_ranking_orig <- collapse_ranked_predictors(
+    path = colnames(x)[search_path$predictor_ranking],
+    formula = refmodel$formula, data = fr
   )
-  solution_terms <- utils::head(solution_terms_orig, nterms_max)
+  predictor_ranking <- utils::head(predictor_ranking_orig, nterms_max)
   # Place lower-order interaction terms before higher-order interaction terms,
   # but otherwise preserve the ranking:
-  ia_orders <- sapply(gregexpr(":", solution_terms), function(greg_colon) {
+  ia_orders <- sapply(gregexpr(":", predictor_ranking), function(greg_colon) {
     sum(greg_colon != -1)
   })
   ia_order_max <- max(ia_orders)
   for (ia_order in rev(seq_len(ia_order_max))) {
-    ias <- solution_terms[ia_orders == ia_order]
+    ias <- predictor_ranking[ia_orders == ia_order]
     stopifnot(!any(duplicated(ias))) # safety measure for which.max()
     for (ia in ias) {
-      ia_idx <- which.max(solution_terms == ia)
+      ia_idx <- which.max(predictor_ranking == ia)
       if (ia_idx > nterms_max) break
       main_terms_ia <- strsplit(ia, ":")[[1]]
       ias_lower_split <- utils::combn(main_terms_ia, m = ia_order,
                                       simplify = FALSE)
       ias_lower <- lapply(ias_lower_split, all_ia_perms, is_split = TRUE)
       ias_lower <- unlist(ias_lower)
-      ias_lower <- intersect(ias_lower, solution_terms_orig)
-      prev_terms <- utils::head(solution_terms, ia_idx - 1L)
+      ias_lower <- intersect(ias_lower, predictor_ranking_orig)
+      prev_terms <- utils::head(predictor_ranking, ia_idx - 1L)
       has_lower_after <- !all(ias_lower %in% prev_terms)
       if (has_lower_after) {
         if (getOption("projpred.warn_L1_interactions", TRUE)) {
@@ -404,23 +418,23 @@ search_L1 <- function(p_ref, refmodel, nterms_max, penalty, opt) {
                   "interaction terms before this interaction term.")
         }
         ias_lower <- setdiff(ias_lower, prev_terms)
-        ias_lower <- ias_lower[order(match(ias_lower, solution_terms_orig))]
+        ias_lower <- ias_lower[order(match(ias_lower, predictor_ranking_orig))]
         new_head <- c(prev_terms, ias_lower, ia)
-        solution_terms <- c(new_head, setdiff(solution_terms, new_head))
-        solution_terms <- utils::head(solution_terms, nterms_max)
+        predictor_ranking <- c(new_head, setdiff(predictor_ranking, new_head))
+        predictor_ranking <- utils::head(predictor_ranking, nterms_max)
       }
     }
   }
 
-  outdmins <- lapply(0:length(solution_terms), function(nterms) {
+  outdmins <- lapply(0:length(predictor_ranking), function(nterms) {
     if (nterms == 0) {
       formula <- make_formula(c("1"))
       beta <- NULL
       x <- x[, numeric(), drop = FALSE]
     } else {
-      formula <- make_formula(solution_terms[seq_len(nterms)])
+      formula <- make_formula(predictor_ranking[seq_len(nterms)])
       variables <- unlist(lapply(
-        solution_terms[seq_len(nterms)],
+        predictor_ranking[seq_len(nterms)],
         function(term) {
           # TODO: In the following model.matrix() call, allow user-specified
           # contrasts to be passed to argument `contrasts.arg`. The
@@ -432,13 +446,15 @@ search_L1 <- function(p_ref, refmodel, nterms_max, penalty, opt) {
           return(setdiff(colnames(mm), "(Intercept)"))
         }
       ))
-      indices <- match(variables, colnames(x)[search_path$solution_terms])
+      indices <- match(variables, colnames(x)[search_path$predictor_ranking])
       indices <- indices[!is.na(indices)]
       beta <- search_path$beta[indices, max(indices) + 1, drop = FALSE]
       # Also reduce `x` (important for coef.subfit(), for example); note that
       # `x <- x[, variables, drop = FALSE]` should also be possible, but the
       # re-use of `colnames(x)` should provide another sanity check:
-      x <- x[, colnames(x)[search_path$solution_terms[indices]], drop = FALSE]
+      x <- x[
+        , colnames(x)[search_path$predictor_ranking[indices]], drop = FALSE
+      ]
       # For consistency with fit_glm_ridge_callback():
       rownames(beta) <- colnames(x)
     }
@@ -455,5 +471,5 @@ search_L1 <- function(p_ref, refmodel, nterms_max, penalty, opt) {
     return(list(sub))
   })
 
-  return(nlist(solution_terms, outdmins))
+  return(nlist(predictor_ranking, outdmins))
 }

@@ -206,8 +206,8 @@ glm_elnet <- function(x, y, family = gaussian(), nlambda = 100,
 glm_ridge <- function(x, y, family = gaussian(), lambda = 0, thresh = 1e-7,
                       qa_updates_max = NULL, weights = NULL, offset = NULL,
                       obsvar = 0, intercept = TRUE, penalty = NULL,
-                      normalize = TRUE, la_approx = FALSE, beta_init = NULL,
-                      beta0_init = NULL, ls_iter_max = 30) {
+                      normalize = TRUE, beta_init = NULL, beta0_init = NULL,
+                      ls_iter_max = 30) {
   #
   # Fits GLM with ridge penalty on the regression coefficients.
   # Does not handle any dispersion parameters.

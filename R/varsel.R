@@ -49,20 +49,35 @@
 #'   those predictors have no cost and will therefore be selected first, whereas
 #'   `Inf` means those predictors will never be selected. If `NULL`, then `1` is
 #'   used for each predictor.
-#' @param lambda_min_ratio Only relevant for L1 search. Ratio between the
-#'   smallest and largest lambda in the L1-penalized search. This parameter
-#'   essentially determines how long the search is carried out, i.e., how large
-#'   submodels are explored. No need to change this unless the program gives a
+#' @param search_control A `list` of "control" arguments (i.e., tuning
+#'   parameters) for the search. In case of forward search, these arguments are
+#'   passed to the divergence minimizer (see argument `div_minimizer` of
+#'   [init_refmodel()] as well as section "Draw-wise divergence minimizers" of
+#'   [projpred-package]). In case of forward search, `NULL` causes `...` to be
+#'   used not only for the performance evaluation, but also for the search. In
+#'   case of L1 search, possible arguments are:
+#'   * `lambda_min_ratio`: Ratio between the smallest and largest lambda in the
+#'   L1-penalized search (default: `1e-5`). This parameter essentially
+#'   determines how long the search is carried out, i.e., how large submodels
+#'   are explored. No need to change this unless the program gives a warning
+#'   about this.
+#'   * `nlambda`: Number of values in the lambda grid for L1-penalized search
+#'   (default: `150`). No need to change this unless the program gives a warning
+#'   about this.
+#'   * `thresh`: Convergence threshold when computing the L1 path (default:
+#'   `1e-6`). Usually, there is no need to change this.
+#' @param lambda_min_ratio Deprecated (please use `search_control` instead).
+#'   Only relevant for L1 search. Ratio between the smallest and largest lambda
+#'   in the L1-penalized search. This parameter essentially determines how long
+#'   the search is carried out, i.e., how large submodels are explored. No need
+#'   to change this unless the program gives a warning about this.
+#' @param nlambda Deprecated (please use `search_control` instead). Only
+#'   relevant for L1 search. Number of values in the lambda grid for
+#'   L1-penalized search. No need to change this unless the program gives a
 #'   warning about this.
-#' @param nlambda Only relevant for L1 search. Number of values in the lambda
-#'   grid for L1-penalized search. No need to change this unless the program
-#'   gives a warning about this.
-#' @param thresh Only relevant for L1 search. Convergence threshold when
-#'   computing the L1 path. Usually, there is no need to change this.
-#' @param regul A number giving the amount of ridge regularization when
-#'   projecting onto (i.e., fitting) submodels which are GLMs. Usually there is
-#'   no need for regularization, but sometimes we need to add some
-#'   regularization to avoid numerical problems.
+#' @param thresh Deprecated (please use `search_control` instead). Only relevant
+#'   for L1 search. Convergence threshold when computing the L1 path. Usually,
+#'   there is no need to change this.
 #' @param search_terms Only relevant for forward search. A custom character
 #'   vector of predictor term blocks to consider for the search. Section
 #'   "Details" below describes more precisely what "predictor term block" means.
@@ -84,8 +99,10 @@
 #' @param ... For [varsel.default()]: Arguments passed to [get_refmodel()] as
 #'   well as to [varsel.refmodel()]. For [varsel.vsel()]: Arguments passed to
 #'   [varsel.refmodel()]. For [varsel.refmodel()]: Arguments passed to the
-#'   divergence minimizer (during a forward search and also during the
-#'   evaluation part, but the latter only if `refit_prj` is `TRUE`).
+#'   divergence minimizer (see argument `div_minimizer` of [init_refmodel()] as
+#'   well as section "Draw-wise divergence minimizers" of [projpred-package])
+#'   when refitting the submodels for the performance evaluation (if `refit_prj`
+#'   is `TRUE`).
 #'
 #' @details
 #'
@@ -171,7 +188,7 @@
 #' # Data:
 #' dat_gauss <- data.frame(y = df_gaussian$y, df_gaussian$x)
 #'
-#' # The "stanreg" fit which will be used as the reference model (with small
+#' # The `stanreg` fit which will be used as the reference model (with small
 #' # values for `chains` and `iter`, but only for technical reasons in this
 #' # example; this is not recommended in general):
 #' fit <- rstanarm::stan_glm(
@@ -202,15 +219,23 @@ varsel.default <- function(object, ...) {
 #' @rdname varsel
 #' @export
 varsel.vsel <- function(object, ...) {
+  arg_nms_internal <- c("method", "ndraws", "nclusters", "nterms_max",
+                        "search_control", "penalty", "search_terms")
+  arg_nms_internal_used <- intersect(arg_nms_internal, ...names())
+  n_arg_nms_internal_used <- length(arg_nms_internal_used)
+  if (n_arg_nms_internal_used > 0) {
+    stop("Argument", if (n_arg_nms_internal_used > 1) "s" else "", " ",
+         paste(paste0("`", arg_nms_internal_used, "`"), collapse = ", "), " ",
+         "cannot be specified in this case because varsel.vsel() specifies ",
+         if (n_arg_nms_internal_used > 1) "them" else "it", " ", "internally.")
+  }
   return(varsel(
     object = get_refmodel(object),
     method = object[["args_search"]][["method"]],
     ndraws = object[["args_search"]][["ndraws"]],
     nclusters = object[["args_search"]][["nclusters"]],
     nterms_max = object[["args_search"]][["nterms_max"]],
-    lambda_min_ratio = object[["args_search"]][["lambda_min_ratio"]],
-    nlambda = object[["args_search"]][["nlambda"]],
-    thresh = object[["args_search"]][["thresh"]],
+    search_control = object[["args_search"]][["search_control"]],
     penalty = object[["args_search"]][["penalty"]],
     search_terms = object[["args_search"]][["search_terms"]],
     search_out = list(search_path = object[["search_path"]]),
@@ -225,10 +250,30 @@ varsel.refmodel <- function(object, d_test = NULL, method = "forward",
                             nclusters_pred = NULL,
                             refit_prj = !inherits(object, "datafit"),
                             nterms_max = NULL, verbose = TRUE,
-                            lambda_min_ratio = 1e-5, nlambda = 150,
-                            thresh = 1e-6, regul = 1e-4, penalty = NULL,
+                            search_control = NULL, lambda_min_ratio = 1e-5,
+                            nlambda = 150, thresh = 1e-6, penalty = NULL,
                             search_terms = NULL, search_out = NULL, seed = NA,
                             ...) {
+  if (!missing(lambda_min_ratio)) {
+    warning("Argument `lambda_min_ratio` is deprecated. Please specify ",
+            "control arguments for the search via argument `search_control`. ",
+            "Now using `lambda_min_ratio` as element `lambda_min_ratio` of ",
+            "`search_control`.")
+    search_control$lambda_min_ratio <- lambda_min_ratio
+  }
+  if (!missing(nlambda)) {
+    warning("Argument `nlambda` is deprecated. Please specify control ",
+            "arguments for the search via argument `search_control`. ",
+            "Now using `nlambda` as element `nlambda` of `search_control`.")
+    search_control$nlambda <- nlambda
+  }
+  if (!missing(thresh)) {
+    warning("Argument `thresh` is deprecated. Please specify control ",
+            "arguments for the search via argument `search_control`. ",
+            "Now using `thresh` as element `thresh` of `search_control`.")
+    search_control$thresh <- thresh
+  }
+
   if (exists(".Random.seed", envir = .GlobalEnv)) {
     rng_state_old <- get(".Random.seed", envir = .GlobalEnv)
   }
@@ -269,6 +314,22 @@ varsel.refmodel <- function(object, d_test = NULL, method = "forward",
     d_test <- d_test[nms_d_test()]
     invisible(lapply(setNames(nm = setdiff(nms_d_test(), c("y", "y_oscale"))),
                      function(d_nm) na.fail(d_test[[d_nm]])))
+    hasNA_y_test <- is.na(d_test[["y"]])
+    if (any(hasNA_y_test)) {
+      stopifnot(all(hasNA_y_test))
+    }
+    hasNA_y_oscale_test <- is.na(d_test[["y_oscale"]])
+    if (any(hasNA_y_oscale_test)) {
+      stopifnot(all(hasNA_y_oscale_test))
+    }
+    if (length(d_test[["weights"]]) != nrow(d_test[["data"]])) {
+      stop("Element `d_test$weights` needs to have length equal to the number ",
+           "of test observations.")
+    }
+    if (length(d_test[["offset"]]) != nrow(d_test[["data"]])) {
+      stop("Element `d_test$offset` needs to have length equal to the number ",
+           "of test observations.")
+    }
     if (refmodel$family$for_augdat) {
       d_test$y <- as.factor(d_test$y)
       if (!all(levels(d_test$y) %in% refmodel$family$cats)) {
@@ -311,12 +372,12 @@ varsel.refmodel <- function(object, d_test = NULL, method = "forward",
   if (!is.null(search_out)) {
     search_path <- search_out[["search_path"]]
   } else {
-    opt <- nlist(lambda_min_ratio, nlambda, thresh, regul)
     verb_out("-----\nRunning the search ...", verbose = verbose)
     search_path <- select(
       refmodel = refmodel, ndraws = ndraws, nclusters = nclusters,
       method = method, nterms_max = nterms_max, penalty = penalty,
-      verbose = verbose, opt = opt, search_terms = search_terms,
+      verbose = verbose, search_control = search_control,
+      search_terms = search_terms,
       search_terms_was_null = search_terms_was_null, ...
     )
     verb_out("-----", verbose = verbose)
@@ -325,12 +386,13 @@ varsel.refmodel <- function(object, d_test = NULL, method = "forward",
   # "Run" the performance evaluation for the submodels along the predictor
   # ranking (in fact, we only prepare the performance evaluation by computing
   # precursor quantities, but for users, this difference is not perceivable):
-  verb_out("-----\nRunning the performance evaluation ...", verbose = verbose)
+  verb_out("-----\nRunning the performance evaluation with `refit_prj = ",
+           refit_prj, "` ...", verbose = verbose)
   perf_eval_out <- perf_eval(
-    search_path = search_path, refmodel = refmodel, regul = regul,
-    refit_prj = refit_prj, ndraws = ndraws_pred, nclusters = nclusters_pred,
-    indices_test = NULL, newdata_test = d_test$data,
-    offset_test = d_test$offset, wobs_test = d_test$weights, y_test = d_test$y,
+    search_path = search_path, refmodel = refmodel, refit_prj = refit_prj,
+    ndraws = ndraws_pred, nclusters = nclusters_pred, indices_test = NULL,
+    newdata_test = d_test$data, offset_test = d_test$offset,
+    wobs_test = d_test$weights, y_test = d_test$y,
     y_oscale_test = d_test$y_oscale, ...
   )
   verb_out("-----", verbose = verbose)
@@ -347,7 +409,7 @@ varsel.refmodel <- function(object, d_test = NULL, method = "forward",
       if (!is.null(refmodel$family$cats)) {
         mu_oscale <- structure(rep(NA,
                                    nobs_test * length(refmodel$family$cats)),
-                               nobs_orig = nobs_test,
+                               ndiscrete = length(refmodel$family$cats),
                                class = "augvec")
       } else {
         mu_oscale <- ref$mu
@@ -391,8 +453,8 @@ varsel.refmodel <- function(object, d_test = NULL, method = "forward",
   vs <- nlist(refmodel,
               nobs_train = refmodel$nobs,
               search_path,
-              solution_terms = search_path$solution_terms,
-              solution_terms_cv = NULL,
+              predictor_ranking = search_path$predictor_ranking,
+              predictor_ranking_cv = NULL,
               ce = perf_eval_out[["ce"]],
               type_test = d_test$type,
               y_wobs_test,
@@ -412,14 +474,18 @@ varsel.refmodel <- function(object, d_test = NULL, method = "forward",
               cvfits = refmodel$cvfits,
               ###
               args_search = nlist(
-                method, ndraws, nclusters, nterms_max, lambda_min_ratio,
-                nlambda, thresh, penalty,
+                method, ndraws, nclusters, nterms_max,
+                search_control = if (
+                  method == "forward" && is.null(search_control)
+                ) list(...) else search_control,
+                penalty,
                 search_terms = if (search_terms_was_null) NULL else search_terms
               ),
               clust_used_search = search_path$p_sel$clust_used,
               clust_used_eval = perf_eval_out[["clust_used"]],
               nprjdraws_search = NCOL(search_path$p_sel$mu),
               nprjdraws_eval = perf_eval_out[["nprjdraws"]],
+              refit_prj,
               projpred_version = utils::packageVersion("projpred"))
   class(vs) <- "vsel"
 
@@ -435,12 +501,13 @@ varsel.refmodel <- function(object, d_test = NULL, method = "forward",
 #   weighted_summary_means().
 # For all other arguments, see the documentation of varsel().
 #
-# @return A list with elements `solution_terms` (the solution path), `outdmins`
-#   (the submodel fits along the solution path, with the number of fits per
-#   model size being equal to the number of projected draws), and `p_sel` (the
-#   output from get_refdist() for the search).
+# @return A list with elements `predictor_ranking` (the predictor ranking
+#   resulting from the search, see `?ranking` for a formal definition),
+#   `outdmins` (the submodel fits along the predictor ranking, with the number
+#   of fits per model size being equal to the number of projected draws), and
+#   `p_sel` (the output from get_refdist() for the search).
 select <- function(refmodel, ndraws, nclusters, reweighting_args = NULL, method,
-                   nterms_max, penalty, verbose, opt, ...) {
+                   nterms_max, penalty, verbose, search_control, ...) {
   if (is.null(reweighting_args)) {
     p_sel <- get_refdist(refmodel, ndraws = ndraws, nclusters = nclusters)
   } else {
@@ -454,12 +521,12 @@ select <- function(refmodel, ndraws, nclusters, reweighting_args = NULL, method,
   if (method == "L1") {
     search_path <- search_L1(
       p_ref = p_sel, refmodel = refmodel, nterms_max = nterms_max,
-      penalty = penalty, opt = opt
+      penalty = penalty, search_control = search_control
     )
   } else if (method == "forward") {
     search_path <- search_forward(
       p_ref = p_sel, refmodel = refmodel, nterms_max = nterms_max,
-      verbose = verbose, opt = opt, ...
+      verbose = verbose, search_control = search_control, ...
     )
   }
   search_path$p_sel <- p_sel
@@ -507,8 +574,8 @@ parse_args_varsel <- function(refmodel, method, refit_prj, nterms_max,
 
   stopifnot(!is.null(refit_prj))
   if (refit_prj && inherits(refmodel, "datafit")) {
-    warning("For an `object` of class \"datafit\", `refit_prj` is ",
-            "automatically set to `FALSE`.")
+    warning("For an `object` of class `datafit`, `refit_prj` is automatically ",
+            "set to `FALSE`.")
     refit_prj <- FALSE
   }
 

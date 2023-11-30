@@ -36,10 +36,10 @@ cv_varsel(object, ...)
   nloo = object$nobs,
   K = if (!inherits(object, "datafit")) 5 else 10,
   cvfits = object$cvfits,
+  search_control = NULL,
   lambda_min_ratio = 1e-05,
   nlambda = 150,
   thresh = 1e-06,
-  regul = 1e-04,
   validate_search = TRUE,
   seed = NA,
   search_terms = NULL,
@@ -56,8 +56,10 @@ cv_varsel(object, ...)
 \item{...}{For \code{\link[=cv_varsel.default]{cv_varsel.default()}}: Arguments passed to \code{\link[=get_refmodel]{get_refmodel()}} as
 well as to \code{\link[=cv_varsel.refmodel]{cv_varsel.refmodel()}}. For \code{\link[=cv_varsel.vsel]{cv_varsel.vsel()}}: Arguments passed
 to \code{\link[=cv_varsel.refmodel]{cv_varsel.refmodel()}}. For \code{\link[=cv_varsel.refmodel]{cv_varsel.refmodel()}}: Arguments passed to
-the divergence minimizer (during a forward search and also during the
-evaluation part, but the latter only if \code{refit_prj} is \code{TRUE}).}
+the divergence minimizer (see argument \code{div_minimizer} of \code{\link[=init_refmodel]{init_refmodel()}}
+as well as section "Draw-wise divergence minimizers" of \link{projpred-package})
+when refitting the submodels for the performance evaluation (if \code{refit_prj}
+is \code{TRUE}).}
 
 \item{cv_method}{The CV method, either \code{"LOO"} or \code{"kfold"}. In the \code{"LOO"}
 case, a Pareto-smoothed importance sampling leave-one-out CV (PSIS-LOO CV)
@@ -66,11 +68,10 @@ contrast to a standard LOO CV). In the \code{"kfold"} case, a \eqn{K}-fold CV is
 performed. See also section "Note" below.}
 
 \item{nloo}{\strong{Caution:} Still experimental. Only relevant if \code{cv_method = "LOO"}. Number of subsampled PSIS-LOO CV folds, i.e., number of
-observations used for the approximate LOO CV (anything between 1 and the
-original number of observations). Smaller values lead to faster computation
-but higher uncertainty in the evaluation part. If \code{NULL}, all observations
-are used, but for faster experimentation, one can set this to a smaller
-value.}
+observations used for the approximate LOO CV (anything from 1 to the number
+of all observations). Smaller values lead to faster computation but higher
+uncertainty in the evaluation part. If \code{NULL}, all observations are used
+(as by default).}
 
 \item{K}{Only relevant if \code{cv_method = "kfold"} and if \code{cvfits} is \code{NULL}
 (which is the case for reference model objects created by
@@ -137,23 +138,40 @@ used for each predictor.}
 \item{verbose}{A single logical value indicating whether to print out
 additional information during the computations.}
 
-\item{lambda_min_ratio}{Only relevant for L1 search. Ratio between the
-smallest and largest lambda in the L1-penalized search. This parameter
-essentially determines how long the search is carried out, i.e., how large
-submodels are explored. No need to change this unless the program gives a
+\item{search_control}{A \code{list} of "control" arguments (i.e., tuning
+parameters) for the search. In case of forward search, these arguments are
+passed to the divergence minimizer (see argument \code{div_minimizer} of
+\code{\link[=init_refmodel]{init_refmodel()}} as well as section "Draw-wise divergence minimizers" of
+\link{projpred-package}). In case of forward search, \code{NULL} causes \code{...} to be
+used not only for the performance evaluation, but also for the search. In
+case of L1 search, possible arguments are:
+\itemize{
+\item \code{lambda_min_ratio}: Ratio between the smallest and largest lambda in the
+L1-penalized search (default: \code{1e-5}). This parameter essentially
+determines how long the search is carried out, i.e., how large submodels
+are explored. No need to change this unless the program gives a warning
+about this.
+\item \code{nlambda}: Number of values in the lambda grid for L1-penalized search
+(default: \code{150}). No need to change this unless the program gives a warning
+about this.
+\item \code{thresh}: Convergence threshold when computing the L1 path (default:
+\code{1e-6}). Usually, there is no need to change this.
+}}
+
+\item{lambda_min_ratio}{Deprecated (please use \code{search_control} instead).
+Only relevant for L1 search. Ratio between the smallest and largest lambda
+in the L1-penalized search. This parameter essentially determines how long
+the search is carried out, i.e., how large submodels are explored. No need
+to change this unless the program gives a warning about this.}
+
+\item{nlambda}{Deprecated (please use \code{search_control} instead). Only
+relevant for L1 search. Number of values in the lambda grid for
+L1-penalized search. No need to change this unless the program gives a
 warning about this.}
 
-\item{nlambda}{Only relevant for L1 search. Number of values in the lambda
-grid for L1-penalized search. No need to change this unless the program
-gives a warning about this.}
-
-\item{thresh}{Only relevant for L1 search. Convergence threshold when
-computing the L1 path. Usually, there is no need to change this.}
-
-\item{regul}{A number giving the amount of ridge regularization when
-projecting onto (i.e., fitting) submodels which are GLMs. Usually there is
-no need for regularization, but sometimes we need to add some
-regularization to avoid numerical problems.}
+\item{thresh}{Deprecated (please use \code{search_control} instead). Only relevant
+for L1 search. Convergence threshold when computing the L1 path. Usually,
+there is no need to change this.}
 
 \item{seed}{Pseudorandom number generation (PRNG) seed by which the same
 results can be obtained again if needed. Passed to argument \code{seed} of
@@ -291,7 +309,7 @@ parallelization is recommended over the projection parallelization.
 # Data:
 dat_gauss <- data.frame(y = df_gaussian$y, df_gaussian$x)
 
-# The "stanreg" fit which will be used as the reference model (with small
+# The `stanreg` fit which will be used as the reference model (with small
 # values for `chains` and `iter`, but only for technical reasons in this
 # example; this is not recommended in general):
 fit <- rstanarm::stan_glm(

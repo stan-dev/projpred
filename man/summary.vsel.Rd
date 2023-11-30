@@ -41,13 +41,24 @@ density values (with each of these predictive density values being
 a---possibly weighted---average across the parameter draws).
 \item \code{"mlpd"}: mean log predictive density, that is, \code{"elpd"} divided by the
 number of observations.
+\item \code{"gmpd"}: geometric mean predictive density (GMPD), that is, \code{\link[=exp]{exp()}} of
+\code{"mlpd"}. The GMPD is especially helpful for discrete response families
+(because there, the GMPD is bounded by zero and one). For the corresponding
+standard error, the delta method is used. The corresponding confidence
+interval type is "exponentiated normal approximation" because the
+confidence interval bounds are the exponentiated confidence interval bounds
+of the \code{"mlpd"}.
 \item \code{"mse"}: mean squared error (only available in the situations mentioned
 in section "Details" below).
 \item \code{"rmse"}: root mean squared error (only available in the situations
 mentioned in section "Details" below). For the corresponding standard error
 and lower and upper confidence interval bounds, bootstrapping is used.
 \item \code{"acc"} (or its alias, \code{"pctcorr"}): classification accuracy (only
-available in the situations mentioned in section "Details" below).
+available in the situations mentioned in section "Details" below). By
+"classification accuracy", we mean the proportion of correctly classified
+observations. For this, the response category ("class") with highest
+probability (the probabilities are model-based) is taken as the prediction
+("classification") for an observation.
 \item \code{"auc"}: area under the ROC curve (only available in the situations
 mentioned in section "Details" below). For the corresponding standard error
 and lower and upper confidence interval bounds, bootstrapping is used.
@@ -57,20 +68,27 @@ and lower and upper confidence interval bounds, bootstrapping is used.
 \code{"diff"}, and \code{"diff.se"} indicating which of these to compute for each
 item from \code{stats} (mean, standard error, lower and upper confidence
 interval bounds, mean difference to the corresponding statistic of the
-reference model, and standard error of this difference, respectively). The
-confidence interval bounds belong to normal-approximation (or bootstrap;
-see argument \code{stats}) confidence intervals with (nominal) coverage \code{1 - alpha}. Items \code{"diff"} and \code{"diff.se"} are only supported if \code{deltas} is
-\code{FALSE}.}
+reference model, and standard error of this difference, respectively; note
+that for the GMPD, \code{"diff"}, and \code{"diff.se"} actually refer to the ratio
+vs. the reference model, not the difference). The confidence interval
+bounds belong to normal-approximation (or bootstrap or exponentiated
+normal-approximation; see argument \code{stats}) confidence intervals with
+(nominal) coverage \code{1 - alpha}. Items \code{"diff"} and \code{"diff.se"} are only
+supported if \code{deltas} is \code{FALSE}.}
 
-\item{deltas}{If \code{TRUE}, the submodel statistics are estimated as differences
-from the baseline model (see argument \code{baseline}). With a "difference
-\emph{from} the baseline model", we mean to take the submodel statistic minus
-the baseline model statistic (not the other way round).}
+\item{deltas}{If \code{TRUE}, the submodel statistics are estimated relatively to
+the baseline model (see argument \code{baseline}). For the GMPD, the term
+"relatively" refers to the ratio vs. the baseline model (i.e., the submodel
+statistic divided by the baseline model statistic). For all other \code{stats},
+"relatively" refers to the difference from the baseline model (i.e., the
+submodel statistic minus the baseline model statistic).}
 
 \item{alpha}{A number determining the (nominal) coverage \code{1 - alpha} of the
-normal-approximation (or bootstrap; see argument \code{stats}) confidence
-intervals. For example, in case of the normal approximation, \code{alpha = 2 * pnorm(-1)} corresponds to a confidence interval stretching by one standard
-error on either side of the point estimate.}
+normal-approximation (or bootstrap or exponentiated normal-approximation;
+see argument \code{stats}) confidence intervals. For example, in case of the
+normal approximation, \code{alpha = 2 * pnorm(-1)} corresponds to a confidence
+interval stretching by one standard error on either side of the point
+estimate.}
 
 \item{baseline}{For \code{\link[=summary.vsel]{summary.vsel()}}: Only relevant if \code{deltas} is \code{TRUE}.
 For \code{\link[=plot.vsel]{plot.vsel()}}: Always relevant. Either \code{"ref"} or \code{"best"}, indicating
@@ -91,7 +109,9 @@ and \code{seed} (see \code{\link[=set.seed]{set.seed()}}, but defaulting to \cod
 is not called within that function at all).}
 }
 \value{
-An object of class \code{vselsummary}.
+An object of class \code{vselsummary}. The elements of this object are not
+meant to be accessed directly but instead via helper functions
+(\code{\link[=print.vselsummary]{print.vselsummary()}} and \code{\link[=performances.vselsummary]{performances.vselsummary()}}).
 }
 \description{
 This is the \code{\link[=summary]{summary()}} method for \code{vsel} objects (returned by \code{\link[=varsel]{varsel()}} or
@@ -100,7 +120,9 @@ This is the \code{\link[=summary]{summary()}} method for \code{vsel} objects (re
 information about the (CV) variability in the ranking of the predictors (if
 available; inferred from \code{\link[=cv_proportions]{cv_proportions()}}), and estimates for
 user-specified predictive performance statistics. For a graphical
-representation, see \code{\link[=plot.vsel]{plot.vsel()}}.
+representation, see \code{\link[=plot.vsel]{plot.vsel()}}. For extracting the predictive performance
+results printed at the bottom of the output created by this \code{\link[=summary]{summary()}}
+method, see \code{\link[=performances]{performances()}}.
 }
 \details{
 The \code{stats} options \code{"mse"} and \code{"rmse"} are only available for:
@@ -136,7 +158,7 @@ latent projection with \code{resp_oscale = TRUE} in combination with
 # Data:
 dat_gauss <- data.frame(y = df_gaussian$y, df_gaussian$x)
 
-# The "stanreg" fit which will be used as the reference model (with small
+# The `stanreg` fit which will be used as the reference model (with small
 # values for `chains` and `iter`, but only for technical reasons in this
 # example; this is not recommended in general):
 fit <- rstanarm::stan_glm(
@@ -153,5 +175,5 @@ print(summary(vs), digits = 1)
 \dontshow{\}) # examplesIf}
 }
 \seealso{
-\code{\link[=print.vselsummary]{print.vselsummary()}}
+\code{\link[=print.vselsummary]{print.vselsummary()}}, \code{\link[=performances.vselsummary]{performances.vselsummary()}}
 }

@@ -2,7 +2,7 @@
 
 context("get_refmodel()")
 
-test_that("`object` of class \"stanreg\" or \"brmsfit\" works", {
+test_that("`object` of class `stanreg` or `brmsfit` works", {
   for (tstsetup in names(refmods)) {
     tstsetup_fit <- args_ref[[tstsetup]]$tstsetup_fit
     with_spclformul_crr <- grepl("\\.spclformul", tstsetup)
@@ -91,8 +91,8 @@ test_that("reference models lacking an intercept work", {
     "Adding an intercept to `formula`",
     info = "rstanarm.glm.gauss.stdformul.with_wobs.with_offs"
   )
-  nms_compare <- c("formula", "div_minimizer", "y", "proj_predfun", "wobs",
-                   "wdraws_ref", "offset", "y_oscale")
+  nms_compare <- c("formula", "div_minimizer", "y", "wobs", "wdraws_ref",
+                   "offset", "y_oscale")
   expect_equal(
     refmod_no_icpt[nms_compare],
     refmods$rstanarm.glm.gauss.stdformul.with_wobs.with_offs[nms_compare],
@@ -120,8 +120,8 @@ test_that("offsets specified via argument `offset` work", {
     tolerance = 1e-12,
     info = "rstanarm.glm.gauss.stdformul.with_wobs.with_offs"
   )
-  nms_compare <- c("div_minimizer", "eta", "mu", "mu_offs", "dis", "y",
-                   "proj_predfun", "wobs", "wdraws_ref", "offset", "y_oscale")
+  nms_compare <- c("div_minimizer", "eta", "mu", "mu_offs", "dis", "y", "wobs",
+                   "wdraws_ref", "offset", "y_oscale")
   expect_equal(
     refmod_offs_arg[nms_compare],
     refmods$rstanarm.glm.gauss.stdformul.with_wobs.with_offs[nms_compare],
@@ -152,7 +152,7 @@ test_that(paste(
     )
   }
   expect_error(get_refmodel(fit_binom_1col_wobs),
-               "response must contain numbers of successes")
+               "response values must be numbers of successes")
 })
 
 test_that("function calls in group terms fail", {
@@ -223,7 +223,8 @@ test_that("invalid `ynew` fails", {
 })
 
 test_that(paste(
-  "`object` of class `\"refmodel\"`, `newdata`, `ynew`, and `type` work"
+  "`object` of class `refmodel` and arguments `newdata`, `ynew`, and `type`",
+  "work"
 ), {
   for (tstsetup in names(refmods)) {
     pkg_crr <- args_ref[[tstsetup]]$pkg_nm

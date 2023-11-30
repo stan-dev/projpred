@@ -1,16 +1,18 @@
 # Function to project the reference model onto a single submodel with predictor
-# terms given in `solution_terms`. Note that "single submodel" does not refer to
-# a single fit (there are as many fits for this single submodel as there are
-# projected draws). At the end, init_submodl() is called, so the output is of
-# class `submodl`.
-get_submodl_prj <- function(solution_terms, p_ref, refmodel, regul = 1e-4,
-                            ...) {
+# terms given in `predictor_terms`. Note that "single submodel" does not refer
+# to a single fit (there are as many fits for this single submodel as there are
+# projected draws). The case `is.null(search_control)` occurs in two situations:
+# (i) when called from search_forward() with `...` as the intended control
+# arguments and (ii) when called from perf_eval(). At the end, init_submodl() is
+# called, so the output is of class `submodl`.
+proj_to_submodl <- function(predictor_terms, p_ref, refmodel,
+                            search_control = NULL, ...) {
   y_unqs_aug <- refmodel$family$cats
   if (refmodel$family$for_latent && !is.null(y_unqs_aug)) {
     y_unqs_aug <- NULL
   }
   subset <- subset_formula_and_data(
-    formula = refmodel$formula, terms_ = unique(unlist(solution_terms)),
+    formula = refmodel$formula, terms_ = unique(unlist(predictor_terms)),
     data = refmodel$fetch_data(), y = p_ref$mu, y_unqs = y_unqs_aug
   )
   fml_divmin <- flatten_formula(subset$formula)
@@ -24,24 +26,22 @@ get_submodl_prj <- function(solution_terms, p_ref, refmodel, regul = 1e-4,
     verb_out("  Projecting onto ", utils::tail(rhs_chr, 1))
   }
 
-  outdmin <- refmodel$div_minimizer(
-    formula = fml_divmin,
-    data = subset$data,
-    family = refmodel$family,
-    weights = refmodel$wobs,
-    projpred_var = p_ref$var,
-    projpred_regul = regul,
-    projpred_ws_aug = p_ref$mu,
-    ...
-  )
-
-  if (isTRUE(getOption("projpred.check_conv", FALSE))) {
-    check_conv(outdmin)
+  args_divmin <- list(formula = fml_divmin,
+                      data = subset$data,
+                      family = refmodel$family,
+                      weights = refmodel$wobs,
+                      projpred_var = p_ref$var,
+                      projpred_ws_aug = p_ref$mu)
+  if (!is.null(search_control)) {
+    args_divmin <- c(args_divmin, search_control)
+  } else {
+    args_divmin <- c(args_divmin, list(...))
   }
+  outdmin <- do.call(refmodel$div_minimizer, args_divmin)
 
   return(init_submodl(
     outdmin = outdmin, p_ref = p_ref, refmodel = refmodel,
-    solution_terms = solution_terms, wobs = refmodel$wobs
+    predictor_terms = predictor_terms, wobs = refmodel$wobs
   ))
 }
 
@@ -50,8 +50,8 @@ get_submodl_prj <- function(solution_terms, p_ref, refmodel, regul = 1e-4,
 # `submodl`) and then calculates the submodel "summary" (precursor quantities)
 # for the actual performance evaluation performed by summary.vsel() later.
 perf_eval <- function(search_path,
-                      nterms = c(0, seq_along(search_path$solution_terms)),
-                      refmodel, regul, refit_prj = FALSE, ndraws, nclusters,
+                      nterms = c(0, seq_along(search_path$predictor_ranking)),
+                      refmodel, refit_prj = FALSE, ndraws, nclusters,
                       reweighting_args = NULL, return_submodls = FALSE,
                       return_preds = FALSE, return_p_ref = FALSE,
                       refmodel_fulldata = refmodel,
@@ -71,7 +71,7 @@ perf_eval <- function(search_path,
         outdmin = search_path$outdmins[[size_j + 1]],
         p_ref = p_ref,
         refmodel = refmodel,
-        solution_terms = utils::head(search_path$solution_terms, size_j),
+        predictor_terms = utils::head(search_path$predictor_ranking, size_j),
         wobs = refmodel$wobs
       ))
     }
@@ -88,9 +88,9 @@ perf_eval <- function(search_path,
       )
     }
     fetch_submodl <- function(size_j, ...) {
-      return(get_submodl_prj(
-        solution_terms = utils::head(search_path$solution_terms, size_j),
-        p_ref = p_ref, refmodel = refmodel, regul = regul, ...
+      return(proj_to_submodl(
+        predictor_terms = utils::head(search_path$predictor_ranking, size_j),
+        p_ref = p_ref, refmodel = refmodel, ...
       ))
     }
   }
@@ -104,8 +104,8 @@ perf_eval <- function(search_path,
     }
     if (return_preds) {
       # Currently only called in loo_varsel()'s `validate_search = FALSE` case.
-      mu_j <- refmodel$family$mu_fun(submodl$outdmin, obs = indices_test,
-                                     offset = refmodel$offset[indices_test])
+      mu_j <- refmodel$mu_fun(submodl$outdmin, obs = indices_test,
+                              offset = refmodel$offset[indices_test])
       lppd_j <- t(refmodel$family$ll_fun(
         mu_j, submodl$dis, refmodel$y[indices_test], refmodel$wobs[indices_test]
       ))
@@ -118,10 +118,10 @@ perf_eval <- function(search_path,
                                  wobs = wobs_test),
         family = refmodel_fulldata$family,
         wdraws = submodl$wdraws_prj,
-        mu = refmodel_fulldata$family$mu_fun(submodl$outdmin,
-                                             obs = indices_test,
-                                             newdata = newdata_test,
-                                             offset = offset_test),
+        mu = refmodel_fulldata$mu_fun(submodl$outdmin,
+                                      obs = indices_test,
+                                      newdata = newdata_test,
+                                      offset = offset_test),
         dis = submodl$dis,
         cl_ref = submodl$cl_ref,
         wdraws_ref = submodl$wdraws_ref
@@ -139,9 +139,8 @@ perf_eval <- function(search_path,
   } else {
     out <- list(sub_summaries = lapply(out_by_size, "[[", "sub_summary"))
   }
-  out <- c(out, list(ce = sapply(out_by_size, "[[", "ce"),
-                     clust_used = p_ref$clust_used,
-                     nprjdraws = NCOL(p_ref$mu)))
+  out <- c(out, list(ce = sapply(out_by_size, "[[", "ce")),
+           p_ref[c("clust_used", "nprjdraws")])
   if (return_p_ref) {
     # Currently only called in loo_varsel()'s `validate_search = FALSE` case.
     out <- c(out, nlist(p_ref))
@@ -149,9 +148,9 @@ perf_eval <- function(search_path,
   return(out)
 }
 
-# Process the output of the `divergence_minimizer` function (see
-# init_refmodel()) to create an object of class `submodl`.
-init_submodl <- function(outdmin, p_ref, refmodel, solution_terms, wobs) {
+# Process the output of the `div_minimizer` function (see init_refmodel()) to
+# create an object of class `submodl`.
+init_submodl <- function(outdmin, p_ref, refmodel, predictor_terms, wobs) {
   p_ref$mu <- p_ref$mu_offs
   if (!(all(is.na(p_ref$var)) ||
         refmodel$family$family %in% c("gaussian", "Student_t"))) {
@@ -181,7 +180,7 @@ init_submodl <- function(outdmin, p_ref, refmodel, solution_terms, wobs) {
     ###
   }
 
-  mu <- refmodel$family$mu_fun(outdmin, offset = refmodel$offset)
+  mu <- refmodel$mu_fun(outdmin, offset = refmodel$offset)
   dis <- refmodel$family$dis_fun(p_ref, nlist(mu), wobs)
   ce <- weighted.mean(
     refmodel$family$ce(p_ref,
@@ -191,10 +190,9 @@ init_submodl <- function(outdmin, p_ref, refmodel, solution_terms, wobs) {
   )
   return(structure(
     nlist(dis, ce, wdraws_prj = p_ref$wdraws_prj,
-          const_wdraws_prj = length(unique(p_ref$wdraws_prj)) == 1,
-          solution_terms, outdmin, cl_ref = p_ref$cl,
-          wdraws_ref = p_ref$wdraws_orig, clust_used = p_ref$clust_used,
-          nprjdraws = NCOL(p_ref$mu)),
+          const_wdraws_prj = p_ref$const_wdraws_prj, predictor_terms, outdmin,
+          cl_ref = p_ref$cl, wdraws_ref = p_ref$wdraws_orig,
+          clust_used = p_ref$clust_used, nprjdraws = p_ref$nprjdraws),
     class = "submodl"
   ))
 }

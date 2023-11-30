@@ -21,12 +21,12 @@ test_that("as.matrix.projection() works", {
     fam_crr <- args_prj[[tstsetup]]$fam_nm
     pkg_crr <- args_prj[[tstsetup]]$pkg_nm
     prj_crr <- args_prj[[tstsetup]]$prj_nm
-    solterms <- args_prj[[tstsetup]]$solution_terms
+    prd_trms <- args_prj[[tstsetup]]$predictor_terms
     ndr_ncl <- ndr_ncl_dtls(args_prj[[tstsetup]])
 
     m <- as.matrix(prjs[[tstsetup]],
-                   allow_nonconst_wdraws_prj = ndr_ncl$clust_used)
-    if (ndr_ncl$clust_used) {
+                   allow_nonconst_wdraws_prj = ndr_ncl$clust_used_gt1)
+    if (!has_const_wdr_prj(prjs[[tstsetup]])) {
       wdr_crr <- prjs[[tstsetup]][["wdraws_prj"]]
     } else {
       wdr_crr <- NULL
@@ -59,7 +59,7 @@ test_that("as.matrix.projection() works", {
     }
     colnms_prjmat_expect <- c(
       icpt_nm,
-      grep("\\|", grep("x(co|ca)\\.[[:digit:]]", solterms, value = TRUE),
+      grep("\\|", grep("x(co|ca)\\.[[:digit:]]", prd_trms, value = TRUE),
            value = TRUE, invert = TRUE)
     )
     xca_idxs <- as.integer(
@@ -101,7 +101,7 @@ test_that("as.matrix.projection() works", {
       }
       colnms_prjmat_expect <- paste0("b_", colnms_prjmat_expect)
     }
-    if (any(c("(1 | z.1)", "(xco.1 | z.1)") %in% solterms)) {
+    if (any(c("(1 | z.1)", "(xco.1 | z.1)") %in% prd_trms)) {
       if (pkg_crr == "brms") {
         mlvl_icpt_str <- "Intercept"
         if (fam_crr == "categ") {
@@ -134,7 +134,7 @@ test_that("as.matrix.projection() works", {
         }
       }
     }
-    if ("(xco.1 | z.1)" %in% solterms) {
+    if ("(xco.1 | z.1)" %in% prd_trms) {
       if (pkg_crr == "brms") {
         mlvl_xco_str <- "xco.1"
         if (fam_crr == "categ") {
@@ -174,7 +174,7 @@ test_that("as.matrix.projection() works", {
     }
     s_nms <- sub("\\)$", "",
                  sub("^s\\(", "",
-                     grep("^s\\(.*\\)$", solterms, value = TRUE)))
+                     grep("^s\\(.*\\)$", prd_trms, value = TRUE)))
     if (length(s_nms)) {
       stopifnot(inherits(refmods[[tstsetup_ref]]$fit, "stanreg"))
       # Get the number of basis coefficients:
@@ -257,12 +257,13 @@ test_that(paste(
       # TODO (GAMMs): Fix this.
       next
     }
-    ndr_ncl <- ndr_ncl_dtls(args_prj[[tstsetup]])
     m <- as.matrix(prjs[[tstsetup]],
-                   allow_nonconst_wdraws_prj = ndr_ncl$clust_used)
+                   allow_nonconst_wdraws_prj = ndr_ncl_dtls(
+                     args_prj[[tstsetup]]
+                   )$clust_used_gt1)
     m_dr <- posterior::as_draws_matrix(prjs[[tstsetup]])
     m_dr_repl <- posterior::as_draws_matrix(m)
-    if (ndr_ncl$clust_used) {
+    if (!has_const_wdr_prj(prjs[[tstsetup]])) {
       m_dr_repl <- posterior::weight_draws(m_dr_repl,
                                            weights = attr(m, "wdraws_prj"))
     }
@@ -277,12 +278,13 @@ test_that(paste(
   skip_if_not(run_prj)
   skip_if_not_installed("posterior")
   for (tstsetup in grep("rstanarm\\.glm\\.", names(prjs), value = TRUE)) {
-    ndr_ncl <- ndr_ncl_dtls(args_prj[[tstsetup]])
     m <- as.matrix(prjs[[tstsetup]], nm_scheme = "brms",
-                   allow_nonconst_wdraws_prj = ndr_ncl$clust_used)
+                   allow_nonconst_wdraws_prj = ndr_ncl_dtls(
+                     args_prj[[tstsetup]]
+                   )$clust_used_gt1)
     m_dr <- posterior::as_draws_matrix(prjs[[tstsetup]], nm_scheme = "brms")
     m_dr_repl <- posterior::as_draws_matrix(m)
-    if (ndr_ncl$clust_used) {
+    if (!has_const_wdr_prj(prjs[[tstsetup]])) {
       m_dr_repl <- posterior::weight_draws(m_dr_repl,
                                            weights = attr(m, "wdraws_prj"))
     }
@@ -324,7 +326,6 @@ if (run_snaps) {
         # TODO (GAMMs): Fix this.
         next
       }
-      ndr_ncl <- ndr_ncl_dtls(args_prj_vs[[tstsetup]])
       nterms_crr <- args_prj_vs[[tstsetup]]$nterms
 
       prjs_vs_l <- prjs_vs[[tstsetup]]
@@ -333,10 +334,12 @@ if (run_snaps) {
       }
       res_vs <- lapply(prjs_vs_l, function(prjs_vs_i) {
         m <- as.matrix(prjs_vs_i,
-                       allow_nonconst_wdraws_prj = ndr_ncl$clust_used)
+                       allow_nonconst_wdraws_prj = ndr_ncl_dtls(
+                         args_prj_vs[[tstsetup]]
+                       )$clust_used_gt1)
         expect_snapshot({
           print(tstsetup)
-          print(prjs_vs_i$solution_terms)
+          print(prjs_vs_i$predictor_terms)
           print(rlang::hash(m)) # cat(m)
         })
         return(invisible(TRUE))
@@ -362,7 +365,6 @@ if (run_snaps) {
         # TODO (GAMMs): Fix this.
         next
       }
-      ndr_ncl <- ndr_ncl_dtls(args_prj_cvvs[[tstsetup]])
       nterms_crr <- args_prj_cvvs[[tstsetup]]$nterms
 
       prjs_cvvs_l <- prjs_cvvs[[tstsetup]]
@@ -371,10 +373,12 @@ if (run_snaps) {
       }
       res_cvvs <- lapply(prjs_cvvs_l, function(prjs_cvvs_i) {
         m <- as.matrix(prjs_cvvs_i,
-                       allow_nonconst_wdraws_prj = ndr_ncl$clust_used)
+                       allow_nonconst_wdraws_prj = ndr_ncl_dtls(
+                         args_prj_cvvs[[tstsetup]]
+                       )$clust_used_gt1)
         expect_snapshot({
           print(tstsetup)
-          print(prjs_cvvs_i$solution_terms)
+          print(prjs_cvvs_i$predictor_terms)
           print(rlang::hash(m)) # cat(m)
         })
         return(invisible(TRUE))

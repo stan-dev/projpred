@@ -9,7 +9,15 @@ if (getRversion() >= package_version("2.15.1")) {
   utils::globalVariables("projpred_formula_no_random_s")
 }
 
-divmin <- function(formula, projpred_var, projpred_verbose = FALSE, ...) {
+divmin <- function(
+    formula,
+    projpred_var,
+    projpred_ws_aug,
+    verbose_divmin = getOption("projpred.verbose_project", FALSE),
+    throw_warn_sdivmin = getOption("projpred.warn_prj_drawwise", TRUE),
+    do_check_conv = getOption("projpred.check_conv", TRUE),
+    ...
+) {
   trms_all <- extract_terms_response(formula)
   has_grp <- length(trms_all$group_terms) > 0
   has_add <- length(trms_all$additive_terms) > 0
@@ -55,23 +63,26 @@ divmin <- function(formula, projpred_var, projpred_verbose = FALSE, ...) {
     # foreach::`%do%`` here and then proceed as in the parallel case, but that
     # would require adding more "hard" dependencies (because packages 'foreach'
     # and 'iterators' would have to be moved from `Suggests:` to `Imports:`).
-    if (projpred_verbose) {
+    if (verbose_divmin) {
       pb <- utils::txtProgressBar(min = 0, max = length(formulas), style = 3,
                                   initial = 0)
       on.exit(close(pb))
     }
-    return(lapply(seq_along(formulas), function(s) {
-      if (projpred_verbose) {
+    outdmin <- lapply(seq_along(formulas), function(s) {
+      if (verbose_divmin) {
         on.exit(utils::setTxtProgressBar(pb, s))
       }
-      sdivmin(
-        formula = formulas[[s]],
-        projpred_var = projpred_var[, s, drop = FALSE],
-        projpred_formula_no_random = projpred_formulas_no_random[[s]],
-        projpred_random = projpred_random,
-        ...
+      mssgs_warns_capt <- capt_mssgs_warns(
+        soutdmin <- sdivmin(
+          formula = formulas[[s]],
+          projpred_var = projpred_var[, s, drop = FALSE],
+          projpred_formula_no_random = projpred_formulas_no_random[[s]],
+          projpred_random = projpred_random,
+          ...
+        )
       )
-    }))
+      return(nlist(soutdmin, mssgs_warns_capt))
+    })
   } else {
     # Parallel case.
     if (!requireNamespace("foreach", quietly = TRUE)) {
@@ -82,33 +93,48 @@ divmin <- function(formula, projpred_var, projpred_verbose = FALSE, ...) {
     }
     dot_args <- list(...)
     `%do_projpred%` <- foreach::`%dopar%`
-    return(foreach::foreach(
+    outdmin <- foreach::foreach(
       formula_s = formulas,
       projpred_var_s = iterators::iter(projpred_var, by = "column"),
       projpred_formula_no_random_s = projpred_formulas_no_random,
       .export = c("sdivmin", "projpred_random", "dot_args"),
       .noexport = c(
         "object", "p_sel", "search_path", "p_ref", "refmodel", "formulas",
-        "projpred_var", "projpred_formulas_no_random"
+        "projpred_var", "projpred_ws_aug", "projpred_formulas_no_random"
       )
     ) %do_projpred% {
-      do.call(
-        sdivmin,
-        c(list(formula = formula_s,
-               projpred_var = projpred_var_s,
-               projpred_formula_no_random = projpred_formula_no_random_s,
-               projpred_random = projpred_random),
-          dot_args)
+      mssgs_warns_capt <- capt_mssgs_warns(
+        soutdmin <- do.call(
+          sdivmin,
+          c(list(formula = formula_s,
+                 projpred_var = projpred_var_s,
+                 projpred_formula_no_random = projpred_formula_no_random_s,
+                 projpred_random = projpred_random),
+            dot_args)
+        )
       )
-    })
+      return(nlist(soutdmin, mssgs_warns_capt))
+    }
   }
+  mssgs_warns_capts <- lapply(outdmin, "[[", "mssgs_warns_capt")
+  outdmin <- lapply(outdmin, "[[", "soutdmin")
+  mssgs_warns_capts <- lapply(mssgs_warns_capts, function(mssgs_warns_capt) {
+    # Filter out some warnings.
+    mssgs_warns_capt <- setdiff(mssgs_warns_capt, "")
+    mssgs_warns_capt <- grep("Warning in [^:]*:$",
+                             mssgs_warns_capt, value = TRUE, invert = TRUE)
+    return(mssgs_warns_capt)
+  })
+  warn_prj_drawwise(mssgs_warns_capts, throw_warn = throw_warn_sdivmin)
+  check_conv(outdmin, lengths(mssgs_warns_capts), do_check = do_check_conv)
+  return(outdmin)
 }
 
 # Use projpred's own implementation to fit non-multilevel non-additive
 # submodels:
 fit_glm_ridge_callback <- function(formula, data,
                                    projpred_var = matrix(nrow = nrow(data)),
-                                   projpred_regul = 1e-4, ...) {
+                                   regul = 1e-4, thresh_conv = 1e-7, ...) {
   # Preparations:
   fr <- model.frame(formula, data = data, drop.unused.levels = TRUE)
   da_classes <- attr(attr(fr, "terms"), "dataClasses")
@@ -137,10 +163,17 @@ fit_glm_ridge_callback <- function(formula, data,
     methods::formalArgs(glm_ridge)
   )]
   # Call the submodel fitter:
-  fit <- do.call(glm_ridge, c(
-    list(x = x, y = y, lambda = projpred_regul, obsvar = projpred_var),
-    dot_args
-  ))
+  out_capt <- utils::capture.output(
+    fit <- do.call(glm_ridge, c(
+      list(x = x, y = y, obsvar = projpred_var, lambda = regul,
+           thresh = thresh_conv),
+      dot_args
+    ))
+  )
+  out_capt <- unique(grep("[Ww]arning|bug", out_capt, value = TRUE))
+  if (length(out_capt) > 0) {
+    warning(paste(out_capt, collapse = "\n"))
+  }
   # Post-processing:
   rownames(fit$beta) <- colnames(x)
   sub <- nlist(alpha = fit$beta0, beta = fit$beta, w = fit$w, formula, x, y,
@@ -163,10 +196,7 @@ fit_glm_callback <- function(formula, family, ...) {
         methods::formalArgs(stats::lm.wfit))
     )]
     # Call the submodel fitter:
-    return(suppressMessages(suppressWarnings(do.call(stats::lm, c(
-      list(formula = formula),
-      dot_args
-    )))))
+    return(do.call(stats::lm, c(list(formula = formula), dot_args)))
   } else {
     # Exclude arguments from `...` which cannot be passed to stats::glm():
     dot_args <- list(...)
@@ -176,10 +206,8 @@ fit_glm_callback <- function(formula, family, ...) {
         methods::formalArgs(stats::glm.control))
     )]
     # Call the submodel fitter:
-    return(suppressMessages(suppressWarnings(do.call(stats::glm, c(
-      list(formula = formula, family = family),
-      dot_args
-    )))))
+    return(do.call(stats::glm, c(list(formula = formula, family = family),
+                                 dot_args)))
   }
 }
 
@@ -193,10 +221,7 @@ fit_gam_callback <- function(formula, ...) {
       methods::formalArgs(mgcv::gam.fit))
   )]
   # Call the submodel fitter:
-  return(suppressMessages(suppressWarnings(do.call(mgcv::gam, c(
-    list(formula = formula),
-    dot_args
-  )))))
+  return(do.call(mgcv::gam, c(list(formula = formula), dot_args)))
 }
 
 # Use package "gamm4" to fit additive multilevel submodels:
@@ -213,11 +238,11 @@ fit_gamm_callback <- function(formula, projpred_formula_no_random,
   )]
   # Call the submodel fitter:
   fit <- tryCatch({
-    suppressMessages(suppressWarnings(do.call(gamm4::gamm4, c(
+    do.call(gamm4::gamm4, c(
       list(formula = projpred_formula_no_random, random = projpred_random,
            data = data, family = family, control = control),
       dot_args
-    ))))
+    ))
   }, error = function(e) {
     if (grepl("not positive definite", as.character(e))) {
       if ("optimx" %in% control$optimizer &&
@@ -322,11 +347,11 @@ fit_glmer_callback <- function(formula, projpred_formula_no_random,
         stop("Unexpected length of `random_fmls`.")
       }
       # Call the submodel fitter:
-      return(suppressMessages(suppressWarnings(do.call(MASS::glmmPQL, c(
+      return(do.call(MASS::glmmPQL, c(
         list(fixed = projpred_formula_no_random, random = random_fmls,
              family = family, control = control),
         dot_args
-      )))))
+      )))
     } else if (family$family == "gaussian" && family$link == "identity" &&
                getOption("projpred.gaussian_not_as_generalized", TRUE)) {
       # Exclude arguments from `...` which cannot be passed to lme4::lmer():
@@ -336,10 +361,8 @@ fit_glmer_callback <- function(formula, projpred_formula_no_random,
         methods::formalArgs(lme4::lmer)
       )]
       # Call the submodel fitter:
-      return(suppressMessages(suppressWarnings(do.call(lme4::lmer, c(
-        list(formula = formula, control = control),
-        dot_args
-      )))))
+      return(do.call(lme4::lmer, c(list(formula = formula, control = control),
+                                   dot_args)))
     } else {
       # Exclude arguments from `...` which cannot be passed to lme4::glmer():
       dot_args <- list(...)
@@ -348,10 +371,9 @@ fit_glmer_callback <- function(formula, projpred_formula_no_random,
         methods::formalArgs(lme4::glmer)
       )]
       # Call the submodel fitter:
-      return(suppressMessages(suppressWarnings(do.call(lme4::glmer, c(
-        list(formula = formula, family = family, control = control),
-        dot_args
-      )))))
+      return(do.call(lme4::glmer, c(list(formula = formula, family = family,
+                                         control = control),
+                                    dot_args)))
     }
   }, error = function(e) {
     if (grepl("No random effects", as.character(e))) {
@@ -412,17 +434,30 @@ fit_glmer_callback <- function(formula, projpred_formula_no_random,
     } else if (grepl("pwrssUpdate did not converge in \\(maxit\\) iterations",
                      as.character(e))) {
       tolPwrss_new <- 10 * control$tolPwrss
-      if (length(control$optCtrl$maxfun) > 0) {
-        maxfun_new <- 10 * control$optCtrl$maxfun
-      } else {
-        maxfun_new <- 1e4
+      optCtrl_new <- list()
+      if (length(control$optimizer) == 0) {
+        stop("Unexpected length of `control$optimizer`. Please notify the ",
+             "package maintainer.")
       }
-      if (length(control$optCtrl$maxit) > 0) {
-        maxit_new <- 10 * control$optCtrl$maxit
-      } else {
-        maxit_new <- 1e4
+      if (any(control$optimizer %in% c("Nelder_Mead", "bobyqa"))) {
+        if (length(control$optCtrl$maxfun) > 0) {
+          maxfun_new <- 10 * control$optCtrl$maxfun
+        } else {
+          maxfun_new <- 1e4
+        }
+        optCtrl_new <- c(optCtrl_new, list(maxfun = maxfun_new))
       }
-      if (tolPwrss_new > 1e-4 && maxfun_new > 1e7 && maxit_new > 1e7) {
+      if (any(!control$optimizer %in% c("Nelder_Mead", "bobyqa"))) {
+        if (length(control$optCtrl$maxit) > 0) {
+          maxit_new <- 10 * control$optCtrl$maxit
+        } else {
+          maxit_new <- 1e4
+        }
+        optCtrl_new <- c(optCtrl_new, list(maxit = maxit_new))
+      }
+      if (tolPwrss_new > 1e-4 &&
+          (optCtrl_new$maxfun %||% -Inf > 1e7 ||
+           optCtrl_new$maxit %||% -Inf > 1e7)) {
         stop("Encountering the ",
              "`pwrssUpdate did not converge in (maxit) iterations` error ",
              "while running the lme4 fitting procedure, but cannot fix this ",
@@ -435,8 +470,7 @@ fit_glmer_callback <- function(formula, projpred_formula_no_random,
         projpred_random = projpred_random,
         family = family,
         control = control_callback(family, tolPwrss = tolPwrss_new,
-                                   optCtrl = list(maxfun = maxfun_new,
-                                                  maxit = maxit_new)),
+                                   optCtrl = optCtrl_new),
         ...
       ))
     } else if (getOption("projpred.PQL", FALSE) &&
@@ -516,8 +550,18 @@ if (getRversion() >= package_version("2.15.1")) {
   utils::globalVariables("projpred_internal_w_aug")
 }
 
-divmin_augdat <- function(formula, data, family, weights, projpred_var,
-                          projpred_ws_aug, projpred_verbose = FALSE, ...) {
+divmin_augdat <- function(
+    formula,
+    data,
+    family,
+    weights,
+    projpred_var,
+    projpred_ws_aug,
+    verbose_divmin = getOption("projpred.verbose_project", FALSE),
+    throw_warn_sdivmin = getOption("projpred.warn_prj_drawwise", TRUE),
+    do_check_conv = getOption("projpred.check_conv", TRUE),
+    ...
+) {
   trms_all <- extract_terms_response(formula)
   has_grp <- length(trms_all$group_terms) > 0
   projpred_formula_no_random <- NA
@@ -568,32 +612,35 @@ divmin_augdat <- function(formula, data, family, weights, projpred_var,
   # Coerce augmented-data matrices to ordinary matrices and augmented-length
   # vectors to ordinary vectors so that external packages may subset as usual:
   projpred_ws_aug <- unclass(projpred_ws_aug)
-  attr(projpred_ws_aug, "nobs_orig") <- NULL
+  attr(projpred_ws_aug, "ndiscrete") <- NULL
 
   if (ncol(projpred_ws_aug) < getOption("projpred.prll_prj_trigger", Inf)) {
     # Sequential case. Actually, we could simply use ``%do_projpred%` <-
     # foreach::`%do%`` here and then proceed as in the parallel case, but that
     # would require adding more "hard" dependencies (because packages 'foreach'
     # and 'iterators' would have to be moved from `Suggests:` to `Imports:`).
-    if (projpred_verbose) {
+    if (verbose_divmin) {
       pb <- utils::txtProgressBar(min = 0, max = ncol(projpred_ws_aug),
                                   style = 3, initial = 0)
       on.exit(close(pb))
     }
-    return(lapply(seq_len(ncol(projpred_ws_aug)), function(s) {
-      if (projpred_verbose) {
+    outdmin <- lapply(seq_len(ncol(projpred_ws_aug)), function(s) {
+      if (verbose_divmin) {
         on.exit(utils::setTxtProgressBar(pb, s))
       }
-      sdivmin(
-        formula = formula,
-        data = data,
-        family = family,
-        weights = projpred_ws_aug[, s],
-        projpred_formula_no_random = projpred_formula_no_random,
-        projpred_random = projpred_random,
-        ...
+      mssgs_warns_capt <- capt_mssgs_warns(
+        soutdmin <- sdivmin(
+          formula = formula,
+          data = data,
+          family = family,
+          weights = projpred_ws_aug[, s],
+          projpred_formula_no_random = projpred_formula_no_random,
+          projpred_random = projpred_random,
+          ...
+        )
       )
-    }))
+      return(nlist(soutdmin, mssgs_warns_capt))
+    })
   } else {
     # Parallel case.
     if (!requireNamespace("foreach", quietly = TRUE)) {
@@ -604,7 +651,7 @@ divmin_augdat <- function(formula, data, family, weights, projpred_var,
     }
     dot_args <- list(...)
     `%do_projpred%` <- foreach::`%dopar%`
-    return(foreach::foreach(
+    outdmin <- foreach::foreach(
       projpred_w_aug_s = iterators::iter(projpred_ws_aug, by = "column"),
       .export = c(
         "sdivmin", "formula", "data", "family", "projpred_formula_no_random",
@@ -615,18 +662,45 @@ divmin_augdat <- function(formula, data, family, weights, projpred_var,
         "projpred_ws_aug", "linkobjs"
       )
     ) %do_projpred% {
-      do.call(
-        sdivmin,
-        c(list(formula = formula,
-               data = data,
-               family = family,
-               weights = as.vector(projpred_w_aug_s),
-               projpred_formula_no_random = projpred_formula_no_random,
-               projpred_random = projpred_random),
-          dot_args)
+      mssgs_warns_capt <- capt_mssgs_warns(
+        soutdmin <- do.call(
+          sdivmin,
+          c(list(formula = formula,
+                 data = data,
+                 family = family,
+                 weights = as.vector(projpred_w_aug_s),
+                 projpred_formula_no_random = projpred_formula_no_random,
+                 projpred_random = projpred_random),
+            dot_args)
+        )
       )
-    })
+      return(nlist(soutdmin, mssgs_warns_capt))
+    }
   }
+  mssgs_warns_capts <- lapply(outdmin, "[[", "mssgs_warns_capt")
+  outdmin <- lapply(outdmin, "[[", "soutdmin")
+  mssgs_warns_capts <- lapply(mssgs_warns_capts, function(mssgs_warns_capt) {
+    # Filter out some warnings.
+    mssgs_warns_capt <- setdiff(mssgs_warns_capt, "")
+    mssgs_warns_capt <- grep("Warning in [^:]*:$",
+                             mssgs_warns_capt, value = TRUE, invert = TRUE)
+    # For MASS::polr():
+    mssgs_warns_capt <- grep("non-integer #successes in a binomial glm!$",
+                             mssgs_warns_capt, value = TRUE, invert = TRUE)
+    # For ordinal::clmm():
+    mssgs_warns_capt <- grep(paste("Using formula\\(x\\) is deprecated when x",
+                                   "is a character vector of length > 1\\.$"),
+                             mssgs_warns_capt, value = TRUE, invert = TRUE)
+    # For ordinal::clmm():
+    mssgs_warns_capt <- grep(
+      "Consider formula\\(paste\\(x, collapse = .*\\)\\) instead\\.$",
+      mssgs_warns_capt, value = TRUE, invert = TRUE
+    )
+    return(mssgs_warns_capt)
+  })
+  warn_prj_drawwise(mssgs_warns_capts, throw_warn = throw_warn_sdivmin)
+  check_conv(outdmin, lengths(mssgs_warns_capts), do_check = do_check_conv)
+  return(outdmin)
 }
 
 # Use MASS::polr() to fit submodels for the brms::cumulative() family:
@@ -653,21 +727,15 @@ fit_cumul <- function(formula, data, family, weights, ...) {
   } else if (link_nm == "probit_approx") {
     link_nm <- "probit"
   }
-  # For catching warnings via capture.output() (which is necessary to filter out
-  # the warning "non-integer #successes in a binomial glm!"):
-  warn_orig <- options(warn = 1)
   # Call the submodel fitter:
-  warn_capt <- utils::capture.output({
-    fitobj <- try(do.call(MASS::polr, c(
-      list(formula = formula,
-           data = data,
-           weights = quote(projpred_internal_w_aug),
-           model = FALSE,
-           method = link_nm),
-      dot_args
-    )), silent = TRUE)
-  }, type = "message")
-  options(warn_orig)
+  fitobj <- try(do.call(MASS::polr, c(
+    list(formula = formula,
+         data = data,
+         weights = quote(projpred_internal_w_aug),
+         model = FALSE,
+         method = link_nm),
+    dot_args
+  )), silent = TRUE)
   if (inherits(fitobj, "try-error") &&
       grepl(paste("initial value in 'vmmin' is not finite",
                   "attempt to find suitable starting values failed",
@@ -686,28 +754,17 @@ fit_cumul <- function(formula, data, family, weights, ...) {
     # Start with thresholds which imply equal probabilities for the response
     # categories:
     start_thres <- linkfun_raw(seq_len(nthres) / ncats, link_nm = link_nm)
-    warn_orig <- options(warn = 1)
-    warn_capt <- utils::capture.output({
-      fitobj <- try(do.call(MASS::polr, c(
-        list(formula = formula,
-             data = data,
-             weights = quote(projpred_internal_w_aug),
-             model = FALSE,
-             method = link_nm,
-             start = c(start_coefs, start_thres)),
-        dot_args
-      )), silent = TRUE)
-    }, type = "message")
-    options(warn_orig)
-  }
-  if (inherits(fitobj, "try-error")) {
+    fitobj <- do.call(MASS::polr, c(
+      list(formula = formula,
+           data = data,
+           weights = quote(projpred_internal_w_aug),
+           model = FALSE,
+           method = link_nm,
+           start = c(start_coefs, start_thres)),
+      dot_args
+    ))
+  } else if (inherits(fitobj, "try-error")) {
     stop(attr(fitobj, "condition")$message)
-  }
-  warn_capt <- grep("Warning in .*:$", warn_capt, value = TRUE, invert = TRUE)
-  warn_capt <- grep("non-integer #successes in a binomial glm!$", warn_capt,
-                    value = TRUE, invert = TRUE)
-  if (length(warn_capt) > 0) {
-    warning(warn_capt)
   }
   return(fitobj)
 }
@@ -747,39 +804,17 @@ fit_cumul_mlvl <- function(formula, data, family, weights, ...) {
   if (link_nm == "probit_approx") {
     link_nm <- "probit"
   }
-  # For catching warnings via capture.output() (which is necessary to filter out
-  # the warning "Using formula(x) is deprecated when x is a character vector of
-  # length > 1. [...]"):
-  warn_orig <- options(warn = 1)
   # Call the submodel fitter:
-  warn_capt <- utils::capture.output({
-    fitobj <- try(do.call(ordinal::clmm, c(
-      list(formula = formula,
-           data = data,
-           weights = quote(projpred_internal_w_aug),
-           contrasts = NULL,
-           Hess = FALSE,
-           model = FALSE,
-           link = link_nm),
-      dot_args
-    )), silent = TRUE)
-  }, type = "message")
-  options(warn_orig)
-  if (inherits(fitobj, "try-error")) {
-    stop(attr(fitobj, "condition")$message)
-  }
-  warn_capt <- grep(
-    paste("Using formula\\(x\\) is deprecated when x is a character vector of",
-          "length > 1\\.$"),
-    warn_capt, value = TRUE, invert = TRUE
-  )
-  warn_capt <- grep(
-    "Consider formula\\(paste\\(x, collapse = .*\\)\\) instead\\.$",
-    warn_capt, value = TRUE, invert = TRUE
-  )
-  if (length(warn_capt) > 0) {
-    warning(warn_capt)
-  }
+  fitobj <- do.call(ordinal::clmm, c(
+    list(formula = formula,
+         data = data,
+         weights = quote(projpred_internal_w_aug),
+         contrasts = NULL,
+         Hess = FALSE,
+         model = FALSE,
+         link = link_nm),
+    dot_args
+  ))
   # Needed for the ordinal:::predict.clm() workaround (the value `"negative"` is
   # the default, see `?ordinal::clm.control`):
   fitobj$control$sign.location <- "negative"
@@ -819,16 +854,20 @@ fit_categ <- function(formula, data, family, weights, ...) {
     }
   }
   # Call the submodel fitter:
-  out_capt <- utils::capture.output({
+  out_capt <- utils::capture.output(
     fitobj <- do.call(nnet::multinom, c(
       list(formula = formula,
            data = data,
            weights = weights),
       dot_args
     ))
-  })
+  )
   if (utils::tail(out_capt, 1) != "converged") {
-    warning("The nnet::multinom() submodel fit did not converge.")
+    warning(
+      "Could not find the string \"converged\" at the end of the `stdout` ",
+      "output from the nnet::multinom() submodel fit, so perhaps this fitting ",
+      "procedure did not converge."
+    )
   }
   return(fitobj)
 }
@@ -883,7 +922,7 @@ fit_categ_mlvl <- function(formula, projpred_formula_no_random,
     random_fmls <- random_fmls[[1]]
   }
   # Call the submodel fitter:
-  out_capt <- utils::capture.output({
+  out_capt <- utils::capture.output(
     fitobj <- do.call(mclogit::mblogit, c(
       list(formula = projpred_formula_no_random,
            data = data,
@@ -895,60 +934,127 @@ fit_categ_mlvl <- function(formula, projpred_formula_no_random,
            method = "PQL"),
       dot_args
     ))
-  })
+  )
   if (utils::tail(out_capt, 1) != "converged") {
-    warning("The mclogit::mblogit() submodel fit did not converge.")
+    warning(
+      "Could not find the string \"converged\" at the end of the `stdout` ",
+      "output from the mclogit::mblogit() submodel fit, so perhaps this ",
+      "fitting procedure did not converge."
+    )
   }
   return(fitobj)
 }
 
-# Convergence checker -----------------------------------------------------
+# Convergence issues ------------------------------------------------------
 
-check_conv <- function(fit) {
-  is_conv <- unlist(lapply(fit, function(fit_s) {
-    if (inherits(fit_s, "gam")) {
-      # TODO (GAMs): There is also `fit_s$mgcv.conv` (see `?mgcv::gamObject`).
-      # Do we need to take this into account?
-      return(fit_s$converged)
-    } else if (inherits(fit_s, "gamm4")) {
-      # TODO (GAMMs): Needs to be implemented. Return `TRUE` for now.
-      return(TRUE)
-    } else if (inherits(fit_s, c("lmerMod", "glmerMod"))) {
-      # The following was inferred from the source code of lme4::checkConv() and
-      # lme4::.prt.warn() (see also `?lme4::mkMerMod`).
-      return(fit_s@optinfo$conv$opt == 0 && (
-        # Since lme4::.prt.warn() does not refer to `optinfo$conv$lme4$code`,
-        # that element might not always exist:
-        (!is.null(fit_s@optinfo$conv$lme4$code) &&
-           all(fit_s@optinfo$conv$lme4$code == 0)) ||
-          is.null(fit_s@optinfo$conv$lme4$code)
-      ) && length(unlist(fit_s@optinfo$conv$lme4$messages)) == 0 &&
-        length(fit_s@optinfo$warnings) == 0)
-    } else if (inherits(fit_s, "glm")) {
-      return(fit_s$converged)
-    } else if (inherits(fit_s, "lm")) {
-      # Note: There doesn't seem to be a better way to check for convergence
-      # other than checking `NA` coefficients (see below).
-      return(all(!is.na(coef(fit_s))))
-    } else if (inherits(fit_s, "subfit")) {
-      # Note: There doesn't seem to be any way to check for convergence, so
-      # return `TRUE` for now.
-      # TODO (GLMs with ridge regularization): Add a logical indicating
-      # convergence to objects of class `subfit` (i.e., from glm_ridge())?
-      return(TRUE)
-    } else {
-      stop("Unrecognized submodel fit. Please notify the package maintainer.")
-    }
-  }))
-  if (any(!is_conv)) {
-    warning(sum(!is_conv), " out of ", length(is_conv), " submodel fits ",
-            "(there is one submodel fit per projected draw) probably have not ",
-            "converged (appropriately). It is recommended to inspect this in ",
-            "detail and (if necessary) to adjust lme4's tuning parameters via ",
-            "`...` or via a custom `divergence_minimizer` function. ",
-            "Formula (right-hand side): ", update(formula(fit[[1]]), NULL ~ .))
+# Throw unique messages and warnings from a list of messages and warnings
+# retrieved during draw-wise projections:
+warn_prj_drawwise <- function(mssgs_warns_capts, throw_warn = TRUE) {
+  if (!throw_warn) return()
+  mssgs_warns_capts_unq <- unique(unlist(mssgs_warns_capts))
+  if (length(mssgs_warns_capts_unq) > 0) {
+    warning(paste(
+      c(paste0("The following messages and/or warnings have been thrown by ",
+               "the current submodel fitter (i.e., the current draw-wise ",
+               "divergence minimizer):"),
+        "---", mssgs_warns_capts_unq, "---"),
+      collapse = "\n"
+    ))
   }
-  return(invisible(TRUE))
+  return()
+}
+
+# Check the convergence of the submodel fits from a whole `outdmin` object, also
+# taking into account whether messages and warnings were thrown (indicated by
+# argument `lengths_mssgs_warns` which must be of the same length as `outdmin`):
+check_conv <- function(outdmin, lengths_mssgs_warns, do_check = TRUE) {
+  if (!do_check) return()
+  is_conv <- tryCatch(
+    unlist(lapply(outdmin, check_conv_s)),
+    error = function(e) {
+      warning("The draw-wise convergence checker errored with message \n```\n",
+              e, "```\nso the convergence of the current submodel fits cannot ",
+              "be checked. Please notify the package maintainer. Current ",
+              "submodel formula (right-hand side): ",
+              update(formula(outdmin[[1]]), NULL ~ .))
+      return(rep(TRUE, length(outdmin)))
+    }
+  )
+  is_conv <- is_conv & (lengths_mssgs_warns == 0)
+  not_conv <- sum(!is_conv)
+  if (not_conv > 0) {
+    if (getOption("projpred.additional_checks", FALSE)) {
+      cls <- unique(lapply(outdmin, class))
+      stopifnot(length(cls) == 1)
+      cls <- cls[[1]]
+    } else {
+      cls <- class(outdmin[[1]])
+    }
+    cls <- paste0("c(", paste(paste0("\"", cls, "\""), collapse = ", "), ")")
+    warning(
+      not_conv, " out of ", length(is_conv), " submodel fits (there is one ",
+      "submodel fit per projected draw) might not have converged ",
+      "(appropriately). It is recommended to inspect this in detail and (if ",
+      "necessary) to adjust tuning parameters via `...` (the ellipsis of the ",
+      "employed top-level function such as project(), varsel(), or ",
+      "cv_varsel()) or via a custom `div_minimizer` function (an argument of ",
+      "init_refmodel()). In the present case, the submodel fits are of ",
+      "class(es) `", cls, "`. Documentation for corresponding tuning ",
+      "parameters is linked in section \"Draw-wise divergence minimizers\" of ",
+      "`` ?`projpred-package` ``. Current submodel formula (right-hand side): ",
+      update(formula(outdmin[[1]]), NULL ~ .)
+    )
+  }
+  return()
+}
+
+# Helper function for checking the convergence of a single submodel fit (not of
+# a whole `outdmin` object):
+check_conv_s <- function(fit_s) {
+  if (inherits(fit_s, "mmblogit")) {
+    return(fit_s$converged)
+  } else if (inherits(fit_s, "multinom")) {
+    return(fit_s$convergence == 0)
+  } else if (inherits(fit_s, "clmm")) {
+    return(fit_s$optRes$convergence == 0)
+  } else if (inherits(fit_s, "polr")) {
+    return(fit_s$convergence == 0)
+  } else if (inherits(fit_s, "gam")) {
+    # TODO (GAMs): Is this correct?:
+    return(fit_s$converged && fit_s$mgcv.conv$fully.converged %||% TRUE)
+  } else if (inherits(fit_s, "gamm4")) {
+    # TODO (GAMMs): I couldn't find any convergence-related information in
+    # element `fit_s$gam`, so the GAM part is currently not checked for
+    # convergence. For now, all we can check is the GLMM part from element
+    # `fit_s$mer`:
+    return(check_conv_s(fit_s$mer))
+  } else if (inherits(fit_s, c("lmerMod", "glmerMod"))) {
+    # The following was inferred from the source code of lme4::checkConv() and
+    # lme4::.prt.warn() (see also `?lme4::mkMerMod`).
+    return(fit_s@optinfo$conv$opt == 0 && (
+      # Since lme4::.prt.warn() does not refer to `optinfo$conv$lme4$code`,
+      # that element might not always exist:
+      (!is.null(fit_s@optinfo$conv$lme4$code) &&
+         all(fit_s@optinfo$conv$lme4$code == 0)) ||
+        is.null(fit_s@optinfo$conv$lme4$code)
+    ) && length(unlist(fit_s@optinfo$conv$lme4$messages)) == 0 &&
+      length(fit_s@optinfo$warnings) == 0)
+  } else if (inherits(fit_s, "glm")) {
+    return(fit_s$converged)
+  } else if (inherits(fit_s, "lm")) {
+    # There doesn't seem to be a better way to check for convergence other than
+    # checking `NA` coefficients:
+    return(all(!is.na(coef(fit_s))))
+  } else if (inherits(fit_s, "subfit")) {
+    # For a submodel of class `subfit`, non-convergence is only indicated by
+    # output written to the console (which is converted to a warning in
+    # fit_glm_ridge_callback() and then checked in check_conv()), so we need to
+    # return `TRUE` here:
+    return(TRUE)
+  } else {
+    warning("Unrecognized submodel fit. Please notify the package maintainer.")
+    return(TRUE)
+  }
 }
 
 # Prediction functions for submodels --------------------------------------

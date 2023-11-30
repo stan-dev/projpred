@@ -67,8 +67,9 @@
 #'   below.
 #' @param extract_model_data A function for fetching some variables (response,
 #'   observation weights, offsets) from the original dataset (supplied to
-#'   argument `data`) or from a new dataset. See also section "Argument
-#'   `extract_model_data`" below.
+#'   argument `data`) or from a new dataset. May be `NULL` for using an internal
+#'   default that essentially corresponds to [y_wobs_offs()]. See also section
+#'   "Argument `extract_model_data`" below.
 #' @param family An object of class `family` representing the observation model
 #'   (i.e., the distributional family for the response) of the *submodels*.
 #'   (However, the link and the inverse-link function of this `family` are also
@@ -204,14 +205,13 @@
 #'     GLM fitter) in case of the traditional or the latent projection and an
 #'     \eqn{N_{\mathrm{augcat}} \times S_{\mathrm{prj}}}{N_augcat x S_prj}
 #'     matrix (containing only `NA`s) in case of the augmented-data projection.
-#'     + `projpred_regul` accepts a single numeric value as supplied to argument
-#'     `regul` of [project()], for example.
 #'     + `projpred_ws_aug` accepts an \eqn{N \times S_{\mathrm{prj}}}{N x S_prj}
 #'     matrix of expected values for the response in case of the traditional or
 #'     the latent projection and an \eqn{N_{\mathrm{augcat}} \times
 #'     S_{\mathrm{prj}}}{N_augcat x S_prj} matrix of probabilities for the
 #'     response categories in case of the augmented-data projection.
-#'     + `...` accepts further arguments specified by the user.
+#'     + `...` accepts further arguments specified by the user (or by
+#'     \pkg{projpred}).
 #'
 #' The return value of these functions needs to be:
 #' * `ref_predfun`: for the traditional or the latent projection, an \eqn{N
@@ -316,7 +316,7 @@
 #' # Data:
 #' dat_gauss <- data.frame(y = df_gaussian$y, df_gaussian$x)
 #'
-#' # The "stanreg" fit which will be used as the reference model (with small
+#' # The `stanreg` fit which will be used as the reference model (with small
 #' # values for `chains` and `iter`, but only for technical reasons in this
 #' # example; this is not recommended in general):
 #' fit <- rstanarm::stan_glm(
@@ -334,20 +334,12 @@
 #'
 #' # A custom reference model object which may be used in a variable selection
 #' # where the candidate predictors are not a subset of those used for the
-#' # reference model's predictions (defining the function for argument
-#' # `extract_model_data` first because it can be re-used for the `cvrefbuilder`
-#' # function here):
-#' extractor_cust <- function(object, newdata, wrhs = NULL, orhs = NULL,
-#'                            extract_y = TRUE) {
-#'   return(y_wobs_offs(newdata = newdata, wrhs = wrhs, orhs = orhs,
-#'                      resp_form = if (extract_y) ~ y else NULL))
-#' }
+#' # reference model's predictions:
 #' ref_cust <- init_refmodel(
 #'   fit,
 #'   data = dat_gauss,
 #'   formula = y ~ X6 + X7,
 #'   family = gaussian(),
-#'   extract_model_data = extractor_cust,
 #'   cvfun = function(folds) {
 #'     kfold(
 #'       fit, K = max(folds), save_fits = TRUE, folds = folds, cores = 1
@@ -359,7 +351,6 @@
 #'                   data = dat_gauss[-cvfit$omitted, , drop = FALSE],
 #'                   formula = y ~ X6 + X7,
 #'                   family = gaussian(),
-#'                   extract_model_data = extractor_cust,
 #'                   dis = as.matrix(cvfit)[, "sigma"],
 #'                   called_from_cvrefbuilder = TRUE)
 #'   }
@@ -370,6 +361,53 @@
 NULL
 
 # Function definitions ----------------------------------------------------
+
+#' Print information about a reference model object
+#'
+#' This is the [print()] method for reference model objects (objects of class
+#' `refmodel`). This method mainly exists to avoid cluttering the console when
+#' printing such objects accidentally.
+#'
+#' @param x An object of class `refmodel` (returned by [get_refmodel()] or
+#'   [init_refmodel()]).
+#' @param ... Currently ignored.
+#'
+#' @return The input object `x` (invisible).
+#'
+#' @export
+print.refmodel <- function(x, ...) {
+  cat_cls(x)
+  # Print information about `x` (the order of that information is from most
+  # strongly tied uniquely to the reference model (top) to most strongly tied
+  # uniquely to the submodels (bottom)).
+  cat("Class of `fit` (first class only): ", utils::head(class(x$fit), 1), "\n",
+      sep = "")
+  if (!inherits(x, "datafit")) {
+    cat("Number of posterior draws: ", length(x$wdraws_ref), "\n", sep = "")
+  }
+  cat("Number of observations: ", x$nobs, "\n", sep = "")
+  if (x$family$for_augdat) {
+    prj_meth <- "augmented-data"
+  } else if (x$family$for_latent) {
+    prj_meth <- "latent"
+  } else {
+    prj_meth <- "traditional"
+  }
+  cat("Projection method: ", prj_meth, "\n", sep = "")
+  if (x$family$for_latent) {
+    cat("------\nResponse-scale family:\n")
+    print(structure(x$family[c("family_oscale", "link_oscale")],
+                    class = "family"))
+    cat("------\nLatent-scale family:\n")
+  }
+  print(x$family)
+  if (x$family$for_latent) {
+    cat("------\n")
+  }
+  cat("Formula: ")
+  print(x$formula, showEnv = FALSE)
+  return(invisible(x))
+}
 
 #' Predictions or log posterior predictive densities from a reference model
 #'
@@ -437,7 +475,7 @@ predict.refmodel <- function(object, newdata = NULL, ynew = NULL,
                              offsetnew = NULL, weightsnew = NULL,
                              type = "response", ...) {
   if (inherits(object, "datafit")) {
-    stop("Cannot make predictions for an `object` of class \"datafit\".")
+    stop("Cannot make predictions for an `object` of class `datafit`.")
   }
   refmodel <- object
   if (!type %in% c("response", "link")) {
@@ -481,13 +519,15 @@ predict.refmodel <- function(object, newdata = NULL, ynew = NULL,
                                      extract_y = FALSE)
   weightsnew <- w_o$weights
   offsetnew <- w_o$offset
-  if (length(weightsnew) == 0) {
+  if (length(weightsnew) != nobs_new) {
     stop("The function supplied to argument `extract_model_data` of ",
-         "init_refmodel() must not return a length-zero element `weights`.")
+         "init_refmodel() needs to return an element `weights` with length ",
+         "equal to the number of observations.")
   }
-  if (length(offsetnew) == 0) {
+  if (length(offsetnew) != nobs_new) {
     stop("The function supplied to argument `extract_model_data` of ",
-         "init_refmodel() must not return a length-zero element `offset`.")
+         "init_refmodel() needs to return an element `offset` with length ",
+         "equal to the number of observations.")
   }
   if (refmodel$family$for_augdat && !all(weightsnew == 1)) {
     stop("Currently, the augmented-data projection may not be combined with ",
@@ -539,18 +579,12 @@ predict.refmodel <- function(object, newdata = NULL, ynew = NULL,
     was_augmat <- inherits(pred, "augmat")
     ## integrate over the draws
     if (type == "link" || !refmodel$family$for_latent || was_augmat) {
-      if (ncol(pred) > 1) {
-        pred <- rowMeans(pred)
-      }
+      pred <- rowMeans(pred)
     } else {
-      if (nrow(pred) > 1) {
-        pred <- colMeans(pred)
-      }
+      pred <- colMeans(pred)
     }
     if (was_augmat) {
-      pred <- structure(pred, nobs_orig = nobs_new, class = "augvec")
-      pred <- augmat2arr(augvec2augmat(pred))
-      pred <- matrix(pred, nrow = dim(pred)[1], ncol = dim(pred)[2])
+      pred <- matrix(pred, nrow = nobs_new)
     }
     return(pred)
   } else {
@@ -741,32 +775,29 @@ get_refmodel <- function(object, ...) {
 #' @rdname refmodel-init-get
 #' @export
 get_refmodel.refmodel <- function(object, ...) {
-  # If the object is already of class "refmodel", then simply return it as is:
+  # If the object is already of class `refmodel`, then simply return it as is:
   object
 }
 
 #' @rdname refmodel-init-get
 #' @export
 get_refmodel.vsel <- function(object, ...) {
-  # The reference model is stored in the `object` of class "vsel":
+  # The reference model is stored in the `object` of class `vsel`:
   object$refmodel
 }
 
 #' @rdname refmodel-init-get
 #' @export
-get_refmodel.default <- function(object, data, formula, family = NULL, ...) {
-  return(init_refmodel(
-    object = object,
-    data = data,
-    formula = formula,
-    family = family %||% family(object),
-    extract_model_data = function(object, newdata, wrhs = NULL, orhs = NULL,
-                                  extract_y = TRUE) {
-      return(y_wobs_offs(newdata = newdata, wrhs = wrhs, orhs = orhs,
-                         resp_form = if (extract_y) lhs(formula) else NULL))
-    },
-    ...
-  ))
+get_refmodel.projection <- function(object, ...) {
+  # The reference model is stored in the `object` of class `projection`:
+  object$refmodel
+}
+
+#' @rdname refmodel-init-get
+#' @export
+get_refmodel.default <- function(object, family = NULL, ...) {
+  return(init_refmodel(object = object, family = family %||% family(object),
+                       ...))
 }
 
 #' @rdname refmodel-init-get
@@ -1048,7 +1079,7 @@ get_refmodel.stanreg <- function(object, latent = FALSE, dis = NULL, ...) {
     ref_predfun = ref_predfun, extract_model_data = extract_model_data,
     dis = dis, cvfun = cvfun, cvrefbuilder = cvrefbuilder
   )
-  return(do.call(init_refmodel, args = c(args_basic, args_augdat, args_latent,
+  return(do_call(init_refmodel, args = c(args_basic, args_augdat, args_latent,
                                          list(...))))
 }
 
@@ -1056,7 +1087,7 @@ get_refmodel.stanreg <- function(object, latent = FALSE, dis = NULL, ...) {
 #' @export
 init_refmodel <- function(object, data, formula, family, ref_predfun = NULL,
                           div_minimizer = NULL, proj_predfun = NULL,
-                          extract_model_data, cvfun = NULL,
+                          extract_model_data = NULL, cvfun = NULL,
                           cvfits = NULL, dis = NULL, cvrefbuilder = NULL,
                           called_from_cvrefbuilder = FALSE, ...) {
   # Family ------------------------------------------------------------------
@@ -1069,26 +1100,6 @@ init_refmodel <- function(object, data, formula, family, ref_predfun = NULL,
     } else if (family$family == "Gamma") {
       warning("Support for the `Gamma` family is still experimental.")
     }
-  }
-
-  family$mu_fun <- function(fits, obs = NULL, newdata = NULL, offset = NULL,
-                            transform = TRUE) {
-    newdata <- fetch_data(data, obs = obs, newdata = newdata)
-    if (is.null(offset)) {
-      offset <- rep(0, nrow(newdata))
-    } else {
-      stopifnot(length(offset) %in% c(1L, nrow(newdata)))
-    }
-    pred_sub <- proj_predfun(fits, newdata = newdata)
-    if (family$family %in% fams_neg_linpred()) {
-      pred_sub <- pred_sub - offset
-    } else {
-      pred_sub <- pred_sub + offset
-    }
-    if (transform) {
-      pred_sub <- family$linkinv(pred_sub)
-    }
-    return(pred_sub)
   }
 
   if (family$family == "categorical" && family$link != "logit") {
@@ -1181,9 +1192,17 @@ init_refmodel <- function(object, data, formula, family, ref_predfun = NULL,
 
   # Functions ---------------------------------------------------------------
 
-  # Wrap `extract_model_data` in order to retrieve the correct `newdata` when
-  # `newdata` is `NULL`:
   extract_model_data_usr <- extract_model_data
+  if (is.null(extract_model_data_usr)) {
+    # The internal default for `extract_model_data`:
+    extract_model_data_usr <- function(object, newdata, wrhs = NULL,
+                                       orhs = NULL, extract_y = TRUE) {
+      return(y_wobs_offs(newdata = newdata, wrhs = wrhs, orhs = orhs,
+                         resp_form = if (extract_y) lhs(formula) else NULL))
+    }
+  }
+  # Wrap `extract_model_data_usr` in order to retrieve the correct `newdata`
+  # when `newdata` is `NULL`:
   extract_model_data <- function(object, newdata, ...) {
     extract_model_data_usr(object = object, newdata = newdata %||% data, ...)
   }
@@ -1301,8 +1320,8 @@ init_refmodel <- function(object, data, formula, family, ref_predfun = NULL,
         # `?init_refmodel` for a definition of these dimensions). Therefore, it
         # is converted to an augmented-rows matrix (see `?`augdat-internals``
         # for a definition):
+        n_obs <- dim(linpred_out)[2]
         linpred_out <- arr2augmat(linpred_out, margin_draws = 1)
-        n_obs <- attr(linpred_out, "nobs_orig")
       } else {
         stop("Unexpected structure for `linpred_out`. Does the return value ",
              "of `ref_predfun` have the correct structure?")
@@ -1332,11 +1351,7 @@ init_refmodel <- function(object, data, formula, family, ref_predfun = NULL,
                             mlvl_allrandom = getOption("projpred.mlvl_pred_new",
                                                        FALSE)) {
       stopifnot(is.null(fit))
-      if (is.null(newdata)) {
-        return(matrix(rep(NA_real_, nrow(data))))
-      } else {
-        return(matrix(rep(NA_real_, nrow(newdata))))
-      }
+      return(matrix(rep(NA_real_, nrow(newdata %||% data))))
     }
   }
 
@@ -1363,6 +1378,26 @@ init_refmodel <- function(object, data, formula, family, ref_predfun = NULL,
       augprd_arr <- proj_predfun_usr(fits, newdata = newdata)
       return(arr2augmat(augprd_arr))
     }
+  }
+
+  mu_fun <- function(fits, obs = NULL, newdata = NULL, offset = NULL,
+                     transform = TRUE) {
+    newdata <- fetch_data(data, obs = obs, newdata = newdata)
+    if (is.null(offset)) {
+      offset <- rep(0, nrow(newdata))
+    } else {
+      stopifnot(length(offset) %in% c(1L, nrow(newdata)))
+    }
+    pred_sub <- proj_predfun(fits, newdata = newdata)
+    if (family$family %in% fams_neg_linpred()) {
+      pred_sub <- pred_sub - offset
+    } else {
+      pred_sub <- pred_sub + offset
+    }
+    if (transform) {
+      pred_sub <- family$linkinv(pred_sub)
+    }
+    return(pred_sub)
   }
 
   fetch_data_wrapper <- function(obs = NULL) {
@@ -1415,13 +1450,21 @@ init_refmodel <- function(object, data, formula, family, ref_predfun = NULL,
   model_data <- extract_model_data(object, newdata = NULL, extract_y = TRUE)
   weights <- model_data$weights
   offset <- model_data$offset
-  if (length(weights) == 0) {
+  if (length(weights) != nrow(data)) {
+    # Length equal to the number of observations is necessary here, for example
+    # because perf_eval() subsets the weights vector with observation indices by
+    # default.
     stop("The function supplied to argument `extract_model_data` of ",
-         "init_refmodel() must not return a length-zero element `weights`.")
+         "init_refmodel() needs to return an element `weights` with length ",
+         "equal to the number of observations.")
   }
-  if (length(offset) == 0) {
+  if (length(offset) != nrow(data)) {
+    # Length equal to the number of observations is necessary here, for example
+    # because perf_eval() subsets the offsets vector with observation indices by
+    # default.
     stop("The function supplied to argument `extract_model_data` of ",
-         "init_refmodel() must not return a length-zero element `offset`.")
+         "init_refmodel() needs to return an element `offset` with length ",
+         "equal to the number of observations.")
   }
   if (family$for_latent) {
     y <- rowMeans(ref_predfun(
@@ -1450,19 +1493,20 @@ init_refmodel <- function(object, data, formula, family, ref_predfun = NULL,
       }
     } else if (family$family_oscale == "binomial") {
       if (!all(is_wholenumber(y_oscale))) {
-        stop(
-          "In projpred, the response must contain numbers of successes (not ",
-          "proportions of successes), in contrast to glm() where this is ",
-          "possible for a 1-column response if the multiplication with the ",
-          "weights gives whole numbers."
-        )
+        # In projpred, the response must contain numbers of successes (not
+        # proportions of successes), in contrast to glm() where this is possible
+        # for a 1-column response if the multiplication with the weights gives
+        # whole numbers:
+        stop("If the original family is the binomial family, the original ",
+             "response values must be numbers of successes (not proportions ",
+             "of successes).")
       } else if (all(y_oscale %in% c(0, 1)) &&
                  length(response_name) == 1 &&
                  !all(weights == 1)) {
-        warning(
-          "Assuming that the response contains numbers of successes (not ",
-          "proportions of successes), in contrast to glm()."
-        )
+        # Assuming that the response contains numbers of successes (not
+        # proportions of successes), in contrast to glm():
+        warning("Assuming that the original response values are numbers of ",
+                "successes (not proportions of successes).")
       }
     }
   } else {
@@ -1488,15 +1532,19 @@ init_refmodel <- function(object, data, formula, family, ref_predfun = NULL,
     }
   } else if (family$family == "binomial") {
     if (!all(is_wholenumber(y))) {
-      stop("In projpred, the response must contain numbers of successes (not ",
-           "proportions of successes), in contrast to glm() where this is ",
-           "possible for a 1-column response if the multiplication with the ",
-           "weights gives whole numbers.")
+      # In projpred, the response must contain numbers of successes (not
+      # proportions of successes), in contrast to glm() where this is possible
+      # for a 1-column response if the multiplication with the weights gives
+      # whole numbers:
+      stop("In case of the binomial family, the response values must be ",
+           "numbers of successes (not proportions of successes).")
     } else if (all(y %in% c(0, 1)) &&
                length(response_name) == 1 &&
                !all(weights == 1)) {
-      warning("Assuming that the response contains numbers of successes (not ",
-              "proportions of successes), in contrast to glm().")
+      # Assuming that the response contains numbers of successes (not
+      # proportions of successes), in contrast to glm():
+      warning("Assuming that the response values are numbers of successes ",
+              "(not proportions of successes).")
     }
   }
 
@@ -1612,6 +1660,14 @@ init_refmodel <- function(object, data, formula, family, ref_predfun = NULL,
     }
   } else {
     stopifnot(length(dis) == ndraws)
+    if (!proper_model) {
+      warning(
+        "A non-`NULL` argument `dis` was supplied for a `datafit`. The ",
+        "(internal) default `dis` for `datafit`s is zero (see equations (19) ",
+        "and (20) of Piironen et al., 2020, DOI: 10.1214/20-EJS1711). A ",
+        "non-zero value should only be used if you know what you are doing."
+      )
+    }
   }
   if (getOption("projpred.mlvl_pred_new", FALSE) && warn_allrandom_dis &&
       !all(is.na(dis))) {
@@ -1634,8 +1690,8 @@ init_refmodel <- function(object, data, formula, family, ref_predfun = NULL,
 
   refmodel <- nlist(
     fit = object, formula, div_minimizer, family, eta, mu, mu_offs, dis, y,
-    proj_predfun, fetch_data = fetch_data_wrapper, wobs = weights, wdraws_ref,
-    offset, cvfun, cvfits, extract_model_data, ref_predfun, cvrefbuilder,
+    fetch_data = fetch_data_wrapper, wobs = weights, wdraws_ref, offset, cvfun,
+    cvfits, extract_model_data, ref_predfun, mu_fun, cvrefbuilder,
     y_oscale = y_oscale %||% y, nobs = nrow(data)
   )
   if (proper_model) {

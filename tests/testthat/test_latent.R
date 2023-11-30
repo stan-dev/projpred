@@ -216,10 +216,14 @@ test_that(paste(
       excl_nonargs(args_prj_i)
     ))
     tstsetup_mod <- sub("\\.with_wobs\\.", ".without_wobs.", tstsetup)
-    prjmat_crr_lat <- as.matrix(prj_crr_lat,
-                                allow_nonconst_wdraws_prj = ndr_ncl$clust_used)
-    prjmat_crr_trad <- as.matrix(prj_crr_trad,
-                                 allow_nonconst_wdraws_prj = ndr_ncl$clust_used)
+    prjmat_crr_lat <- as.matrix(
+      prj_crr_lat,
+      allow_nonconst_wdraws_prj = ndr_ncl$clust_used_gt1
+    )
+    prjmat_crr_trad <- as.matrix(
+      prj_crr_trad,
+      allow_nonconst_wdraws_prj = ndr_ncl$clust_used_gt1
+    )
     expect_identical(prjmat_crr_lat, prjmat_crr_trad, info = tstsetup_mod)
     prj_el_excl <- c("outdmin", "refmodel")
     expect_identical(prj_crr_lat[setdiff(names(prj_crr_lat), prj_el_excl)],
