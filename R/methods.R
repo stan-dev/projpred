@@ -905,7 +905,6 @@ plot.vsel <- function(
         rk_dfr[["size"]], rk_dfr[["rkfulldt_cvpropdiag"]], sep = "\n"
       )
     } else if (identical(size_position, "primary_x_top")) {
-      txt_size <- rk_dfr[["size"]]
       rk_dfr[["size_rkfulldt_cvpropdiag"]] <- rk_dfr[["rkfulldt_cvpropdiag"]]
     } else {
       stop("Unexpected value for argument `size_position`.")
@@ -940,7 +939,8 @@ plot.vsel <- function(
   data_gg <- subset(stats_sub, stats_sub$size <= nterms_max)
   if (!is.na(ranking_nterms_max) &&
       (!is.null(ranking_repel) ||
-       (ranking_colored && !is.null(rk[["foldwise"]])))) {
+       (ranking_colored && !is.null(rk[["foldwise"]])) ||
+       identical(size_position, "primary_x_top"))) {
     colnms_orig <- names(data_gg)
     data_gg[["row_idx"]] <- seq_len(nrow(data_gg))
     cols_add <- c("cv_props_diag_num", "rkfulldt_cvpropdiag")
@@ -950,6 +950,13 @@ plot.vsel <- function(
     data_gg <- data_gg[order(data_gg[["row_idx"]]), , drop = FALSE]
     data_gg[["row_idx"]] <- NULL
     data_gg <- data_gg[, c(colnms_orig, cols_add), drop = FALSE]
+    if (identical(size_position, "primary_x_top")) {
+      data_gg[["size_chr"]] <- as.character(data_gg[["size"]])
+      data_gg[["size_chr"]][
+        data_gg[["statistic"]] !=
+          utils::tail(levels(as.factor(data_gg[["statistic"]])), 1)
+      ] <- ""
+    }
   }
 
   # Create the plot:
@@ -1036,7 +1043,7 @@ plot.vsel <- function(
       x_color_txt <- "black"
     }
     pp <- pp +
-      geom_text(aes(y = -Inf, label = txt_size), vjust = -0.5,
+      geom_text(aes(y = -Inf, label = .data[["size_chr"]]), vjust = -0.5,
                 color = x_color_txt)
   }
   # Miscellaneous stuff (axes, theming, faceting, etc.):
