@@ -667,6 +667,9 @@ proj_predict_aux <- function(proj, newdata, offset, weights,
 #' @param text_angle Passed to argument `angle` of [ggplot2::element_text()] for
 #'   the x-axis tick labels. In case of long predictor names (and/or large
 #'   `nterms_max`), `text_angle = 45` might be helpful (for example).
+#' @param size_position A single character string specifying the position of the
+#'   submodel sizes. Either `"primary_x_bottom"` for including them in the
+#'   x-axis tick labels or `"primary_x_top"` for putting them above the x-axis.
 #'
 #' @inherit summary.vsel details
 #'
@@ -728,6 +731,7 @@ plot.vsel <- function(
     show_cv_proportions = TRUE,
     cumulate = FALSE,
     text_angle = NULL,
+    size_position = "primary_x_bottom",
     ...
 ) {
   # Parse input:
@@ -896,9 +900,16 @@ plot.vsel <- function(
                                                rk_dfr[["cv_props_diag"]],
                                                sep = "\n")
     }
-    rk_dfr[["size_rkfulldt_cvpropdiag"]] <- paste(
-      rk_dfr[["size"]], rk_dfr[["rkfulldt_cvpropdiag"]], sep = "\n"
-    )
+    if (identical(size_position, "primary_x_bottom")) {
+      rk_dfr[["size_rkfulldt_cvpropdiag"]] <- paste(
+        rk_dfr[["size"]], rk_dfr[["rkfulldt_cvpropdiag"]], sep = "\n"
+      )
+    } else if (identical(size_position, "primary_x_top")) {
+      txt_size <- rk_dfr[["size"]]
+      rk_dfr[["size_rkfulldt_cvpropdiag"]] <- rk_dfr[["rkfulldt_cvpropdiag"]]
+    } else {
+      stop("Unexpected value for argument `size_position`.")
+    }
 
     # Continue x-axis label (title):
     xlab_rk <- "Corresponding predictor from full-data predictor ranking"
@@ -1017,6 +1028,17 @@ plot.vsel <- function(
                    linewidth = bar_thickness) +
     geom_line() +
     geom_point(aes_linerg_pt, size = point_size)
+  if (identical(size_position, "primary_x_top")) {
+    x_color_txt <- calc_element("axis.text.x.bottom", theme_get())[["colour"]]
+    if (!is.character(x_color_txt) || length(x_color_txt) != 1) {
+      warning("Could not retrieve the color for the x-axis tick labels. Using ",
+              "`\"black\"` now.")
+      x_color_txt <- "black"
+    }
+    pp <- pp +
+      geom_text(aes(y = -Inf, label = txt_size), vjust = -0.5,
+                color = x_color_txt)
+  }
   # Miscellaneous stuff (axes, theming, faceting, etc.):
   if (!is.na(ranking_nterms_max) && ranking_colored &&
       !is.null(rk[["foldwise"]])) {

@@ -24,6 +24,7 @@
   show_cv_proportions = TRUE,
   cumulate = FALSE,
   text_angle = NULL,
+  size_position = "primary_x_bottom",
   ...
 )
 }
@@ -159,6 +160,10 @@ ranking).}
 \item{text_angle}{Passed to argument \code{angle} of \code{\link[ggplot2:element]{ggplot2::element_text()}} for
 the x-axis tick labels. In case of long predictor names (and/or large
 \code{nterms_max}), \code{text_angle = 45} might be helpful (for example).}
+
+\item{size_position}{A single character string specifying the position of the
+submodel sizes. Either \code{"primary_x_bottom"} for including them in the
+x-axis tick labels or \code{"primary_x_top"} for putting them above the x-axis.}
 
 \item{...}{Arguments passed to the internal function which is used for
 bootstrapping (if applicable; see argument \code{stats}). Currently, relevant
