@@ -670,7 +670,9 @@ proj_predict_aux <- function(proj, newdata, offset, weights,
 #' @param size_position A single character string specifying the position of the
 #'   submodel sizes. Either `"primary_x_bottom"` for including them in the
 #'   x-axis tick labels, `"primary_x_top"` for putting them above the x-axis, or
-#'   `"secondary_x"` for putting them into a secondary x-axis.
+#'   `"secondary_x"` for putting them into a secondary x-axis. Currently, both
+#'   of the non-default options may not be combined with `ranking_nterms_max =
+#'   NA`.
 #'
 #' @inherit summary.vsel details
 #'
@@ -941,6 +943,15 @@ plot.vsel <- function(
         xlab_cumul <- paste("Label:", xlab_cumul)
       }
       xlab <- paste(xlab, xlab_cumul, sep = "\n")
+    }
+  } else {
+    if (identical(size_position, "primary_x_top") ||
+        identical(size_position, "secondary_x")) {
+      stop("Currently, `size_position = \"primary_x_top\"` and `size_position ",
+           "= \"secondary_x\"` are not compatible with `ranking_nterms_max = ",
+           "NA`.")
+    } else if (!identical(size_position, "primary_x_bottom")) {
+      stop("Unexpected value for argument `size_position`.")
     }
   }
 
