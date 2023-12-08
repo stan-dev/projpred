@@ -1237,7 +1237,6 @@ init_refmodel <- function(object, data, formula, family, ref_predfun = NULL,
     ref_predfun <- function(fit, newdata = NULL, excl_offs = TRUE,
                             mlvl_allrandom = getOption("projpred.mlvl_pred_new",
                                                        FALSE)) {
-      newdata_orig <- newdata
       if (length(fml_extractions$group_terms) > 0 && mlvl_allrandom) {
         # Need to replace existing group levels by dummy ones to ensure that we
         # draw new group-level effects for *all* group levels (existing and new
@@ -1330,14 +1329,10 @@ init_refmodel <- function(object, data, formula, family, ref_predfun = NULL,
       linpred_out <- unname(linpred_out)
 
       if (excl_offs) {
-        # Observation weights are not needed here. To avoid an error in
-        # get_refmodel.stanreg()'s `extract_model_data` function in case of a
-        # non-`NULL` default `wrhs`, use `newdata_orig` (because above, `newdata
-        # = NULL` might have been replaced by the modified data.frame `data`;
-        # note that using `wrhs = rep(1, nrow(newdata %||% data))` in
-        # conjunction with `newdata = newdata` would cause a warning in newer
-        # brms versions):
-        offs <- extract_model_data(fit, newdata = newdata_orig,
+        # Observation weights are not needed here, so we can use the default of
+        # `wrhs = NULL` (using something like `wrhs = rep(1, nrow(newdata %||%
+        # data))` would cause a warning in newer brms versions):
+        offs <- extract_model_data(fit, newdata = newdata,
                                    extract_y = FALSE)$offset
         stopifnot(length(offs) %in% c(1L, n_obs))
         if (family$family %in% fams_neg_linpred()) {
