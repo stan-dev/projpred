@@ -669,7 +669,8 @@ proj_predict_aux <- function(proj, newdata, offset, weights,
 #'   `nterms_max`), `text_angle = 45` might be helpful (for example).
 #' @param size_position A single character string specifying the position of the
 #'   submodel sizes. Either `"primary_x_bottom"` for including them in the
-#'   x-axis tick labels or `"primary_x_top"` for putting them above the x-axis.
+#'   x-axis tick labels, `"primary_x_top"` for putting them above the x-axis, or
+#'   `"secondary_x"` for putting them into a secondary x-axis.
 #'
 #' @inherit summary.vsel details
 #'
@@ -906,6 +907,10 @@ plot.vsel <- function(
       )
     } else if (identical(size_position, "primary_x_top")) {
       rk_dfr[["size_rkfulldt_cvpropdiag"]] <- rk_dfr[["rkfulldt_cvpropdiag"]]
+    } else if (identical(size_position, "secondary_x")) {
+      rk_dfr[["size_rkfulldt_cvpropdiag"]] <- rk_dfr[["rkfulldt_cvpropdiag"]]
+      xlab_sec <- xlab
+      xlab <- NULL
     } else {
       stop("Unexpected value for argument `size_position`.")
     }
@@ -917,7 +922,11 @@ plot.vsel <- function(
     } else if (identical(ranking_repel, "label")) {
       xlab_rk <- paste("Label:", xlab_rk)
     }
-    xlab <- paste(xlab, xlab_rk, sep = "\n")
+    if (!is.null(xlab)) {
+      xlab <- paste(xlab, xlab_rk, sep = "\n")
+    } else {
+      xlab <- xlab_rk
+    }
     if (!is.null(rk[["foldwise"]])) {
       if (cumulate) {
         cumul_pretty <- " cumulated "
@@ -1072,16 +1081,26 @@ plot.vsel <- function(
   } else {
     ci_type <- ""
   }
+  if (identical(size_position, "secondary_x")) {
+    tick_labs_x_sec <- as.character(rk_dfr[
+      order(match(rk_dfr[["size"]], breaks), na.last = NA),
+      "size"
+    ])
+    x_axis_sec <- dup_axis(name = xlab_sec, labels = tick_labs_x_sec)
+  } else {
+    x_axis_sec <- waiver()
+  }
   pp <- pp +
     scale_x_continuous(breaks = breaks, minor_breaks = minor_breaks,
                        limits = c(min(breaks), max(breaks)),
-                       labels = tick_labs_x) +
+                       labels = tick_labs_x,
+                       sec.axis = x_axis_sec) +
     labs(x = xlab, y = ylab, title = "Predictive performance",
          subtitle = paste0("Vertical bars indicate ",
                            round(100 * (1 - alpha), 1), "% ", ci_type,
                            "intervals")) +
-    theme(axis.text.x = element_text(angle = text_angle, hjust = 0.5,
-                                     vjust = 0.5)) +
+    theme(axis.text.x.bottom = element_text(angle = text_angle, hjust = 0.5,
+                                            vjust = 0.5)) +
     facet_grid(statistic ~ ., scales = "free_y")
   if (!is.na(ranking_nterms_max) && !is.null(ranking_repel)) {
     if (identical(ranking_repel, "text")) {

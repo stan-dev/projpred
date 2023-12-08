@@ -163,7 +163,8 @@ the x-axis tick labels. In case of long predictor names (and/or large
 
 \item{size_position}{A single character string specifying the position of the
 submodel sizes. Either \code{"primary_x_bottom"} for including them in the
-x-axis tick labels or \code{"primary_x_top"} for putting them above the x-axis.}
+x-axis tick labels, \code{"primary_x_top"} for putting them above the x-axis, or
+\code{"secondary_x"} for putting them into a secondary x-axis.}
 
 \item{...}{Arguments passed to the internal function which is used for
 bootstrapping (if applicable; see argument \code{stats}). Currently, relevant
