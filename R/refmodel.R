@@ -244,14 +244,14 @@
 #' `data.frame`).
 #' * `wrhs` accepts at least (i) a right-hand side formula consisting only of
 #' the variable in `newdata` containing the observation weights or (ii) `NULL`
-#' (for typical \pkg{rstanarm} and \pkg{brms} reference models, `NULL` causes
-#' the original observation weights to be used if the model was fitted with
-#' weights, otherwise a vector of ones is used).
+#' for using the observation weights corresponding to `newdata` (typically, the
+#' observation weights are stored in a column of `newdata`; if the model was
+#' fitted without observation weights, a vector of ones should be used).
 #' * `orhs` accepts at least (i) a right-hand side formula consisting only of
-#' the variable in `newdata` containing the offsets or (ii) `NULL` (for typical
-#' \pkg{rstanarm} and \pkg{brms} reference models, `NULL` causes the original
-#' offsets to be used if the model was fitted with offsets, otherwise a vector
-#' of zeros is used).
+#' the variable in `newdata` containing the offsets or (ii) `NULL` for using the
+#' offsets corresponding to `newdata` (typically, the offsets are stored in a
+#' column of `newdata`; if the model was fitted without offsets, a vector of
+#' zeros should be used).
 #' * `extract_y` accepts a single logical value indicating whether output
 #' element `y` (see below) shall be `NULL` (`TRUE`) or not (`FALSE`).
 #'

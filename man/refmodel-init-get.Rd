@@ -318,14 +318,14 @@ CV).
 \code{data.frame}).
 \item \code{wrhs} accepts at least (i) a right-hand side formula consisting only of
 the variable in \code{newdata} containing the observation weights or (ii) \code{NULL}
-(for typical \pkg{rstanarm} and \pkg{brms} reference models, \code{NULL} causes
-the original observation weights to be used if the model was fitted with
-weights, otherwise a vector of ones is used).
+for using the observation weights corresponding to \code{newdata} (typically, the
+observation weights are stored in a column of \code{newdata}; if the model was
+fitted without observation weights, a vector of ones should be used).
 \item \code{orhs} accepts at least (i) a right-hand side formula consisting only of
-the variable in \code{newdata} containing the offsets or (ii) \code{NULL} (for typical
-\pkg{rstanarm} and \pkg{brms} reference models, \code{NULL} causes the original
-offsets to be used if the model was fitted with offsets, otherwise a vector
-of zeros is used).
+the variable in \code{newdata} containing the offsets or (ii) \code{NULL} for using the
+offsets corresponding to \code{newdata} (typically, the offsets are stored in a
+column of \code{newdata}; if the model was fitted without offsets, a vector of
+zeros should be used).
 \item \code{extract_y} accepts a single logical value indicating whether output
 element \code{y} (see below) shall be \code{NULL} (\code{TRUE}) or not (\code{FALSE}).
 }
