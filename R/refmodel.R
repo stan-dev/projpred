@@ -519,7 +519,6 @@ predict.refmodel <- function(object, newdata = NULL, ynew = NULL,
   if (!is.null(newdata)) {
     newdata <- na.fail(newdata)
   }
-  nobs_new <- nrow(newdata) %||% refmodel$nobs
   w_o <- refmodel$extract_model_data(refmodel$fit, newdata = newdata,
                                      wrhs = weightsnew, orhs = offsetnew,
                                      extract_y = FALSE)
@@ -572,7 +571,7 @@ predict.refmodel <- function(object, newdata = NULL, ynew = NULL,
       pred <- colMeans(pred)
     }
     if (was_augmat) {
-      pred <- matrix(pred, nrow = nobs_new)
+      pred <- matrix(pred, nrow = nrow(newdata) %||% refmodel$nobs)
     }
     return(pred)
   } else {
@@ -1193,13 +1192,12 @@ init_refmodel <- function(object, data, formula, family, ref_predfun = NULL,
   extract_model_data <- function(object, newdata, ...) {
     newdata <- newdata %||% data
     mdat <- extract_model_data_usr(object = object, newdata = newdata, ...)
-    nobs_new <- nrow(newdata)
-    if (length(mdat$weights) != nobs_new) {
+    if (length(mdat$weights) != nrow(newdata)) {
       stop("The function supplied to argument `extract_model_data` of ",
            "init_refmodel() needs to return an element `weights` with length ",
            "equal to the number of observations.")
     }
-    if (length(mdat$offset) != nobs_new) {
+    if (length(mdat$offset) != nrow(newdata)) {
       stop("The function supplied to argument `extract_model_data` of ",
            "init_refmodel() needs to return an element `offset` with length ",
            "equal to the number of observations.")
