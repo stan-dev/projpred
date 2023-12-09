@@ -1456,22 +1456,6 @@ init_refmodel <- function(object, data, formula, family, ref_predfun = NULL,
   model_data <- extract_model_data(object, newdata = NULL, extract_y = TRUE)
   weights <- model_data$weights
   offset <- model_data$offset
-  if (length(weights) != nrow(data)) {
-    # Length equal to the number of observations is necessary here, for example
-    # because perf_eval() subsets the weights vector with observation indices by
-    # default.
-    stop("The function supplied to argument `extract_model_data` of ",
-         "init_refmodel() needs to return an element `weights` with length ",
-         "equal to the number of observations.")
-  }
-  if (length(offset) != nrow(data)) {
-    # Length equal to the number of observations is necessary here, for example
-    # because perf_eval() subsets the offsets vector with observation indices by
-    # default.
-    stop("The function supplied to argument `extract_model_data` of ",
-         "init_refmodel() needs to return an element `offset` with length ",
-         "equal to the number of observations.")
-  }
   if (family$for_latent) {
     y <- rowMeans(ref_predfun(
       object, excl_offs = FALSE,
@@ -1552,15 +1536,6 @@ init_refmodel <- function(object, data, formula, family, ref_predfun = NULL,
       warning("Assuming that the response values are numbers of successes ",
               "(not proportions of successes).")
     }
-  }
-
-  if (family$for_augdat && !all(weights == 1)) {
-    stop("Currently, the augmented-data projection may not be combined with ",
-         "observation weights (other than 1).")
-  }
-  if (family$for_latent && !all(weights == 1)) {
-    stop("Currently, the latent projection may not be combined with ",
-         "observation weights (other than 1).")
   }
 
   if (!proper_model && !all(offset == 0)) {
