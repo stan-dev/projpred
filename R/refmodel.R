@@ -1538,6 +1538,18 @@ init_refmodel <- function(object, data, formula, family, ref_predfun = NULL,
     }
   }
 
+  # Already performed by extract_model_data(), but repeated here because
+  # get_standard_y() might have altered the observation weights (in case of a
+  # 2-column `y`):
+  if (family$for_augdat && !all(weights == 1)) {
+    stop("Currently, the augmented-data projection may not be combined with ",
+         "observation weights (other than 1).")
+  }
+  if (family$for_latent && !all(weights == 1)) {
+    stop("Currently, the latent projection may not be combined with ",
+         "observation weights (other than 1).")
+  }
+
   if (!proper_model && !all(offset == 0)) {
     # Disallow offsets for `datafit`s because the submodel fitting does not take
     # offsets into account (but `<refmodel>$mu` contains the observed response
