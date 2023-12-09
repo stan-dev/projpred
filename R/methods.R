@@ -339,7 +339,7 @@ proj_linpred_aux <- function(proj, newdata, offset, weights, transform = FALSE,
          "recommended.")
   }
   mdat <- mdat_proj(refmodel = proj$refmodel, newdata = newdata, wrhs = weights,
-                    orhs = offset, extract_y = FALSE)
+                    orhs = offset, extract_y = extract_y_ind)
   weights <- mdat$weights
   offset <- mdat$offset
   pred_sub <- proj$refmodel$mu_fun(proj$outdmin, newdata = newdata,
@@ -358,8 +358,7 @@ proj_linpred_aux <- function(proj, newdata, offset, weights, transform = FALSE,
       )
     }
   }
-  ynew <- proj$refmodel$extract_model_data(proj$refmodel$fit, newdata = newdata,
-                                           extract_y = extract_y_ind)$y
+  ynew <- mdat$y
   if (!is.null(ynew) && proj$refmodel$family$for_latent && !transform) {
     if (is.null(newdata)) {
       newdata_lat <- newdata
