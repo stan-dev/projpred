@@ -259,38 +259,37 @@ proj_helper <- function(object, newdata, offsetnew, weightsnew, onesub_fun,
     count_terms_chosen(proj$predictor_terms)
   })
 
-  nobs_new <- nrow(newdata) %||% projs[[1]]$refmodel$nobs
-
-  preds <- lapply(projs, function(proj) {
-    w_o <- proj$refmodel$extract_model_data(
-      proj$refmodel$fit, newdata = newdata, wrhs = weightsnew, orhs = offsetnew,
-      extract_y = FALSE
-    )
-    weightsnew <- w_o$weights
-    offsetnew <- w_o$offset
-    if (length(weightsnew) != nobs_new) {
-      stop("The function supplied to argument `extract_model_data` of ",
-           "init_refmodel() needs to return an element `weights` with length ",
-           "equal to the number of observations.")
-    }
-    if (length(offsetnew) != nobs_new) {
-      stop("The function supplied to argument `extract_model_data` of ",
-           "init_refmodel() needs to return an element `offset` with length ",
-           "equal to the number of observations.")
-    }
-    if (proj$refmodel$family$for_augdat && !all(weightsnew == 1)) {
-      stop("Currently, the augmented-data projection may not be combined with ",
-           "observation weights (other than 1).")
-    }
-    if (proj$refmodel$family$for_latent && !all(weightsnew == 1)) {
-      stop("Currently, the latent projection may not be combined with ",
-           "observation weights (other than 1).")
-    }
-    onesub_fun(proj, newdata = newdata, offset = offsetnew,
-               weights = weightsnew, extract_y_ind = extract_y_ind, ...)
-  })
+  preds <- lapply(projs, onesub_fun, newdata = newdata, offset = offsetnew,
+                  weights = weightsnew, extract_y_ind = extract_y_ind, ...)
 
   return(unlist_proj(preds))
+}
+
+# Wrapper for refmodel$extract_model_data() (currently used for `refmodel`s
+# stored in objects of class `projection`, but could probably be used more
+# generally):
+mdat_proj <- function(refmodel, newdata, ...) {
+  nobs_new <- nrow(newdata) %||% refmodel$nobs
+  mdat <- refmodel$extract_model_data(refmodel$fit, newdata = newdata, ...)
+  if (length(mdat$weights) != nobs_new) {
+    stop("The function supplied to argument `extract_model_data` of ",
+         "init_refmodel() needs to return an element `weights` with length ",
+         "equal to the number of observations.")
+  }
+  if (length(mdat$offset) != nobs_new) {
+    stop("The function supplied to argument `extract_model_data` of ",
+         "init_refmodel() needs to return an element `offset` with length ",
+         "equal to the number of observations.")
+  }
+  if (refmodel$family$for_augdat && !all(mdat$weights == 1)) {
+    stop("Currently, the augmented-data projection may not be combined with ",
+         "observation weights (other than 1).")
+  }
+  if (refmodel$family$for_latent && !all(mdat$weights == 1)) {
+    stop("Currently, the latent projection may not be combined with ",
+         "observation weights (other than 1).")
+  }
+  return(mdat)
 }
 
 #' @rdname pred-projection
@@ -339,6 +338,10 @@ proj_linpred_aux <- function(proj, newdata, offset, weights, transform = FALSE,
          "into account) or `return_draws_matrix = TRUE`, the latter being ",
          "recommended.")
   }
+  mdat <- mdat_proj(refmodel = proj$refmodel, newdata = newdata, wrhs = weights,
+                    orhs = offset, extract_y = FALSE)
+  weights <- mdat$weights
+  offset <- mdat$offset
   pred_sub <- proj$refmodel$mu_fun(proj$outdmin, newdata = newdata,
                                    offset = offset, transform = transform)
   if (proj$refmodel$family$for_latent && transform) {
@@ -533,6 +536,10 @@ proj_predict_aux <- function(proj, newdata, offset, weights,
     stop("`resp_oscale = FALSE` can only be used in case of the latent ",
          "projection.")
   }
+  mdat <- mdat_proj(refmodel = proj$refmodel, newdata = newdata, wrhs = weights,
+                    orhs = offset, extract_y = FALSE)
+  weights <- mdat$weights
+  offset <- mdat$offset
   mu <- proj$refmodel$mu_fun(proj$outdmin, newdata = newdata, offset = offset)
   if (!proj[["const_wdraws_prj"]]) {
     # In this case, the posterior draws have nonconstant weights.
