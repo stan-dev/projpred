@@ -191,8 +191,8 @@ NULL
 ## projections. For each projection, it evaluates the fun-function, which
 ## calculates the linear predictor if called from proj_linpred and samples from
 ## the predictive distribution if called from proj_predict.
-proj_helper <- function(object, newdata, offsetnew, weightsnew, onesub_fun,
-                        filter_nterms = NULL, ...) {
+proj_helper <- function(object, newdata, onesub_fun, filter_nterms = NULL,
+                        ...) {
   if (inherits(object, "projection") || is_proj_list(object)) {
     if (!is.null(filter_nterms)) {
       if (!is_proj_list(object)) {
@@ -259,8 +259,8 @@ proj_helper <- function(object, newdata, offsetnew, weightsnew, onesub_fun,
     count_terms_chosen(proj$predictor_terms)
   })
 
-  preds <- lapply(projs, onesub_fun, newdata = newdata, offset = offsetnew,
-                  weights = weightsnew, extract_y_ind = extract_y_ind, ...)
+  preds <- lapply(projs, onesub_fun, newdata = newdata,
+                  extract_y_ind = extract_y_ind, ...)
 
   return(unlist_proj(preds))
 }
@@ -326,8 +326,9 @@ proj_linpred <- function(object, newdata = NULL, offsetnew = NULL,
 }
 
 ## function applied to each projected submodel in case of proj_linpred()
-proj_linpred_aux <- function(proj, newdata, offset, weights, transform = FALSE,
-                             integrated = FALSE, extract_y_ind = TRUE,
+proj_linpred_aux <- function(proj, newdata, offsetnew, weightsnew,
+                             transform = FALSE, integrated = FALSE,
+                             extract_y_ind = TRUE,
                              allow_nonconst_wdraws_prj = return_draws_matrix,
                              return_draws_matrix = FALSE, ...) {
   if (!proj[["const_wdraws_prj"]] && !allow_nonconst_wdraws_prj &&
@@ -338,8 +339,9 @@ proj_linpred_aux <- function(proj, newdata, offset, weights, transform = FALSE,
          "into account) or `return_draws_matrix = TRUE`, the latter being ",
          "recommended.")
   }
-  mdat <- mdat_proj(refmodel = proj$refmodel, newdata = newdata, wrhs = weights,
-                    orhs = offset, extract_y = extract_y_ind)
+  mdat <- mdat_proj(refmodel = proj$refmodel, newdata = newdata,
+                    wrhs = weightsnew, orhs = offsetnew,
+                    extract_y = extract_y_ind)
   weights <- mdat$weights
   offset <- mdat$offset
   pred_sub <- proj$refmodel$mu_fun(proj$outdmin, newdata = newdata,
@@ -528,15 +530,15 @@ proj_predict <- function(object, newdata = NULL, offsetnew = NULL,
 }
 
 ## function applied to each projected submodel in case of proj_predict()
-proj_predict_aux <- function(proj, newdata, offset, weights,
+proj_predict_aux <- function(proj, newdata, offsetnew, weightsnew,
                              nresample_clusters = 1000, resp_oscale = TRUE,
                              return_draws_matrix = FALSE, ...) {
   if (!proj$refmodel$family$for_latent && !resp_oscale) {
     stop("`resp_oscale = FALSE` can only be used in case of the latent ",
          "projection.")
   }
-  mdat <- mdat_proj(refmodel = proj$refmodel, newdata = newdata, wrhs = weights,
-                    orhs = offset, extract_y = FALSE)
+  mdat <- mdat_proj(refmodel = proj$refmodel, newdata = newdata,
+                    wrhs = weightsnew, orhs = offsetnew, extract_y = FALSE)
   weights <- mdat$weights
   offset <- mdat$offset
   mu <- proj$refmodel$mu_fun(proj$outdmin, newdata = newdata, offset = offset)
