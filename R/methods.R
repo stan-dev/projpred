@@ -265,33 +265,6 @@ proj_helper <- function(object, newdata, onesub_fun, filter_nterms = NULL,
   return(unlist_proj(preds))
 }
 
-# Wrapper for refmodel$extract_model_data() (currently used for `refmodel`s
-# stored in objects of class `projection`, but could probably be used more
-# generally):
-mdat_proj <- function(refmodel, newdata, ...) {
-  nobs_new <- nrow(newdata) %||% refmodel$nobs
-  mdat <- refmodel$extract_model_data(refmodel$fit, newdata = newdata, ...)
-  if (length(mdat$weights) != nobs_new) {
-    stop("The function supplied to argument `extract_model_data` of ",
-         "init_refmodel() needs to return an element `weights` with length ",
-         "equal to the number of observations.")
-  }
-  if (length(mdat$offset) != nobs_new) {
-    stop("The function supplied to argument `extract_model_data` of ",
-         "init_refmodel() needs to return an element `offset` with length ",
-         "equal to the number of observations.")
-  }
-  if (refmodel$family$for_augdat && !all(mdat$weights == 1)) {
-    stop("Currently, the augmented-data projection may not be combined with ",
-         "observation weights (other than 1).")
-  }
-  if (refmodel$family$for_latent && !all(mdat$weights == 1)) {
-    stop("Currently, the latent projection may not be combined with ",
-         "observation weights (other than 1).")
-  }
-  return(mdat)
-}
-
 #' @rdname pred-projection
 #' @export
 proj_linpred <- function(object, newdata = NULL, offsetnew = NULL,
@@ -339,9 +312,9 @@ proj_linpred_aux <- function(proj, newdata, offsetnew, weightsnew,
          "into account) or `return_draws_matrix = TRUE`, the latter being ",
          "recommended.")
   }
-  mdat <- mdat_proj(refmodel = proj$refmodel, newdata = newdata,
-                    wrhs = weightsnew, orhs = offsetnew,
-                    extract_y = extract_y_ind)
+  mdat <- proj$refmodel$extract_model_data(proj$refmodel$fit, newdata = newdata,
+                                           wrhs = weightsnew, orhs = offsetnew,
+                                           extract_y = extract_y_ind)
   weights <- mdat$weights
   offset <- mdat$offset
   pred_sub <- proj$refmodel$mu_fun(proj$outdmin, newdata = newdata,
@@ -537,8 +510,9 @@ proj_predict_aux <- function(proj, newdata, offsetnew, weightsnew,
     stop("`resp_oscale = FALSE` can only be used in case of the latent ",
          "projection.")
   }
-  mdat <- mdat_proj(refmodel = proj$refmodel, newdata = newdata,
-                    wrhs = weightsnew, orhs = offsetnew, extract_y = FALSE)
+  mdat <- proj$refmodel$extract_model_data(proj$refmodel$fit, newdata = newdata,
+                                           wrhs = weightsnew, orhs = offsetnew,
+                                           extract_y = FALSE)
   weights <- mdat$weights
   offset <- mdat$offset
   mu <- proj$refmodel$mu_fun(proj$outdmin, newdata = newdata, offset = offset)

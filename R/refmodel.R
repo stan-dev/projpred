@@ -525,24 +525,6 @@ predict.refmodel <- function(object, newdata = NULL, ynew = NULL,
                                      extract_y = FALSE)
   weightsnew <- w_o$weights
   offsetnew <- w_o$offset
-  if (length(weightsnew) != nobs_new) {
-    stop("The function supplied to argument `extract_model_data` of ",
-         "init_refmodel() needs to return an element `weights` with length ",
-         "equal to the number of observations.")
-  }
-  if (length(offsetnew) != nobs_new) {
-    stop("The function supplied to argument `extract_model_data` of ",
-         "init_refmodel() needs to return an element `offset` with length ",
-         "equal to the number of observations.")
-  }
-  if (refmodel$family$for_augdat && !all(weightsnew == 1)) {
-    stop("Currently, the augmented-data projection may not be combined with ",
-         "observation weights (other than 1).")
-  }
-  if (refmodel$family$for_latent && !all(weightsnew == 1)) {
-    stop("Currently, the latent projection may not be combined with ",
-         "observation weights (other than 1).")
-  }
   if (!is.null(newdata) && inherits(refmodel$fit, "stanreg") &&
       length(refmodel$fit$offset) > 0) {
     if ("projpred_internal_offs_stanreg" %in% names(newdata)) {
@@ -1207,10 +1189,30 @@ init_refmodel <- function(object, data, formula, family, ref_predfun = NULL,
                          resp_form = if (extract_y) lhs(formula) else NULL))
     }
   }
-  # Wrap `extract_model_data_usr` in order to retrieve the correct `newdata`
-  # when `newdata` is `NULL`:
+  # Wrap `extract_model_data_usr`:
   extract_model_data <- function(object, newdata, ...) {
-    extract_model_data_usr(object = object, newdata = newdata %||% data, ...)
+    newdata <- newdata %||% data
+    mdat <- extract_model_data_usr(object = object, newdata = newdata, ...)
+    nobs_new <- nrow(newdata)
+    if (length(mdat$weights) != nobs_new) {
+      stop("The function supplied to argument `extract_model_data` of ",
+           "init_refmodel() needs to return an element `weights` with length ",
+           "equal to the number of observations.")
+    }
+    if (length(mdat$offset) != nobs_new) {
+      stop("The function supplied to argument `extract_model_data` of ",
+           "init_refmodel() needs to return an element `offset` with length ",
+           "equal to the number of observations.")
+    }
+    if (family$for_augdat && !all(mdat$weights == 1)) {
+      stop("Currently, the augmented-data projection may not be combined with ",
+           "observation weights (other than 1).")
+    }
+    if (family$for_latent && !all(mdat$weights == 1)) {
+      stop("Currently, the latent projection may not be combined with ",
+           "observation weights (other than 1).")
+    }
+    return(mdat)
   }
 
   if (proper_model) {
