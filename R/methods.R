@@ -356,8 +356,7 @@ proj_linpred_aux <- function(proj, newdata, offset, weights, transform = FALSE,
     }
   }
   w_o <- proj$refmodel$extract_model_data(
-    proj$refmodel$fit, newdata = newdata, wrhs = weights,
-    orhs = offset, extract_y = extract_y_ind
+    proj$refmodel$fit, newdata = newdata, extract_y = extract_y_ind
   )
   ynew <- w_o$y
   if (!is.null(ynew) && proj$refmodel$family$for_latent && !transform) {
