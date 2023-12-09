@@ -264,6 +264,12 @@
 #' The weights and offsets returned by `extract_model_data` will be assumed to
 #' hold for the reference model as well as for the submodels.
 #'
+#' Above, arguments `wrhs` and `orhs` were assumed to have defaults of `NULL`.
+#' It should be possible to use defaults other than `NULL`, but we strongly
+#' recommend to use `NULL`. If defaults other than `NULL` are used, they need to
+#' imply the behaviors described at items "(ii)" (see the descriptions of `wrhs`
+#' and `orhs`).
+#'
 #' # Augmented-data projection
 #'
 #' If a custom reference model for an augmented-data projection is needed, see

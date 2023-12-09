@@ -338,6 +338,12 @@ a non-numeric vector, or a \code{factor}.
 
 The weights and offsets returned by \code{extract_model_data} will be assumed to
 hold for the reference model as well as for the submodels.
+
+Above, arguments \code{wrhs} and \code{orhs} were assumed to have defaults of \code{NULL}.
+It should be possible to use defaults other than \code{NULL}, but we strongly
+recommend to use \code{NULL}. If defaults other than \code{NULL} are used, they need to
+imply the behaviors described at items "(ii)" (see the descriptions of \code{wrhs}
+and \code{orhs}).
 }
 
 \section{Augmented-data projection}{
