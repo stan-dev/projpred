@@ -334,13 +334,18 @@ test_that("`newdata` and `integrated` work (even in edge cases)", {
       } else {
         offs_crr <- NULL
       }
-      pl_false <- proj_linpred(
-        prjs[[tstsetup]],
-        newdata = head(dat_crr, nobsv_crr),
-        weightsnew = wobs_crr,
-        offsetnew = offs_crr,
-        allow_nonconst_wdraws_prj = ndr_ncl$clust_used_gt1,
-        .seed = seed2_tst
+      expect_warning(
+        pl_false <- proj_linpred(
+          prjs[[tstsetup]],
+          newdata = head(dat_crr, nobsv_crr),
+          weightsnew = wobs_crr,
+          offsetnew = offs_crr,
+          allow_nonconst_wdraws_prj = ndr_ncl$clust_used_gt1,
+          .seed = seed2_tst
+        ),
+        get_warn_wrhs_orhs(tstsetup, weightsnew = wobs_crr,
+                           offsetnew = offs_crr),
+        info = tstsetup
       )
       pl_tester(pl_false,
                 nprjdraws_expected = ndr_ncl$nprjdraws,
@@ -348,12 +353,17 @@ test_that("`newdata` and `integrated` work (even in edge cases)", {
                 nobsv_expected = nobsv_crr,
                 ncats_nlats_expected = list(ncats_nlats_expected_crr),
                 info_str = paste(tstsetup, nobsv_crr, sep = "__"))
-      pl_true <- proj_linpred(prjs[[tstsetup]],
-                              newdata = head(dat_crr, nobsv_crr),
-                              weightsnew = wobs_crr,
-                              offsetnew = offs_crr,
-                              integrated = TRUE,
-                              .seed = seed2_tst)
+      expect_warning(
+        pl_true <- proj_linpred(prjs[[tstsetup]],
+                                newdata = head(dat_crr, nobsv_crr),
+                                weightsnew = wobs_crr,
+                                offsetnew = offs_crr,
+                                integrated = TRUE,
+                                .seed = seed2_tst),
+        get_warn_wrhs_orhs(tstsetup, weightsnew = wobs_crr,
+                           offsetnew = offs_crr),
+        info = tstsetup
+      )
       pl_tester(pl_true,
                 nprjdraws_expected = 1L,
                 nobsv_expected = nobsv_crr,
@@ -389,18 +399,29 @@ test_that("`newdata` set to the original dataset doesn't change results", {
       offs_crr <- NULL
     }
     # With `transform = FALSE`:
-    pl_newdata <- proj_linpred(
-      prjs[[tstsetup]], newdata = dat_crr, weightsnew = wobs_crr,
-      offsetnew = offs_crr, allow_nonconst_wdraws_prj = ndr_ncl$clust_used_gt1,
-      .seed = seed2_tst
+    expect_warning(
+      pl_newdata <- proj_linpred(
+        prjs[[tstsetup]], newdata = dat_crr, weightsnew = wobs_crr,
+        offsetnew = offs_crr,
+        allow_nonconst_wdraws_prj = ndr_ncl$clust_used_gt1, .seed = seed2_tst
+      ),
+      get_warn_wrhs_orhs(tstsetup, weightsnew = wobs_crr,
+                         offsetnew = offs_crr),
+      info = tstsetup
     )
     pl_orig <- pls[[tstsetup]]
     expect_equal(pl_newdata, pl_orig, info = tstsetup)
     # With `transform = TRUE`:
-    pl_newdata_t <- proj_linpred(
-      prjs[[tstsetup]], newdata = dat_crr, weightsnew = wobs_crr,
-      offsetnew = offs_crr, allow_nonconst_wdraws_prj = ndr_ncl$clust_used_gt1,
-      transform = TRUE, .seed = seed2_tst
+    expect_warning(
+      pl_newdata_t <- proj_linpred(
+        prjs[[tstsetup]], newdata = dat_crr, weightsnew = wobs_crr,
+        offsetnew = offs_crr,
+        allow_nonconst_wdraws_prj = ndr_ncl$clust_used_gt1, transform = TRUE,
+        .seed = seed2_tst
+      ),
+      get_warn_wrhs_orhs(tstsetup, weightsnew = wobs_crr,
+                         offsetnew = offs_crr),
+      info = tstsetup
     )
     pl_orig_t <- proj_linpred(
       prjs[[tstsetup]], transform = TRUE,
@@ -494,41 +515,58 @@ test_that("`weightsnew` works", {
       ncats_nlats_expected_crr <- integer()
     }
     pl_orig <- pls[[tstsetup]]
-    pl_ones <- proj_linpred(prjs[[tstsetup]],
-                            newdata = get_dat(tstsetup, dat_wobs_ones,
-                                              wobs_brms = 1),
-                            weightsnew = ~ wobs_col_ones,
-                            offsetnew = offs_crr,
-                            allow_nonconst_wdraws_prj = ndr_ncl$clust_used_gt1,
-                            .seed = seed2_tst)
+    expect_warning(
+      pl_ones <- proj_linpred(
+        prjs[[tstsetup]],
+        newdata = get_dat(tstsetup, dat_wobs_ones,
+                          wobs_brms = 1),
+        weightsnew = ~ wobs_col_ones,
+        offsetnew = offs_crr,
+        allow_nonconst_wdraws_prj = ndr_ncl$clust_used_gt1,
+        .seed = seed2_tst
+      ),
+      get_warn_wrhs_orhs(tstsetup, weightsnew = ~ wobs_col_ones,
+                         offsetnew = offs_crr),
+      info = tstsetup
+    )
     pl_tester(pl_ones,
               nprjdraws_expected = ndr_ncl$nprjdraws,
               wdraws_prj_expected = wdr_crr,
               ncats_nlats_expected = list(ncats_nlats_expected_crr),
               info_str = tstsetup)
     if (!args_prj[[tstsetup]]$prj_nm %in% c("latent", "augdat")) {
-      pl <- proj_linpred(prjs[[tstsetup]],
-                         newdata = get_dat(tstsetup, dat,
-                                           wobs_brms = dat$wobs_col),
-                         weightsnew = ~ wobs_col,
-                         offsetnew = offs_crr,
-                         allow_nonconst_wdraws_prj = ndr_ncl$clust_used_gt1,
-                         .seed = seed2_tst)
+      expect_warning(
+        pl <- proj_linpred(prjs[[tstsetup]],
+                           newdata = get_dat(tstsetup, dat,
+                                             wobs_brms = dat$wobs_col),
+                           weightsnew = ~ wobs_col,
+                           offsetnew = offs_crr,
+                           allow_nonconst_wdraws_prj = ndr_ncl$clust_used_gt1,
+                           .seed = seed2_tst),
+        get_warn_wrhs_orhs(tstsetup, weightsnew = ~ wobs_col,
+                           offsetnew = offs_crr),
+        info = tstsetup
+      )
       pl_tester(pl,
                 nprjdraws_expected = ndr_ncl$nprjdraws,
                 wdraws_prj_expected = wdr_crr,
                 ncats_nlats_expected = list(ncats_nlats_expected_crr),
                 info_str = tstsetup)
-      plw <- proj_linpred(prjs[[tstsetup]],
-                          newdata = get_dat(
-                            tstsetup,
-                            dat_wobs_new,
-                            wobs_brms = dat_wobs_new$wobs_col_new
-                          ),
-                          weightsnew = ~ wobs_col_new,
-                          offsetnew = offs_crr,
-                          allow_nonconst_wdraws_prj = ndr_ncl$clust_used_gt1,
-                          .seed = seed2_tst)
+      expect_warning(
+        plw <- proj_linpred(prjs[[tstsetup]],
+                            newdata = get_dat(
+                              tstsetup,
+                              dat_wobs_new,
+                              wobs_brms = dat_wobs_new$wobs_col_new
+                            ),
+                            weightsnew = ~ wobs_col_new,
+                            offsetnew = offs_crr,
+                            allow_nonconst_wdraws_prj = ndr_ncl$clust_used_gt1,
+                            .seed = seed2_tst),
+        get_warn_wrhs_orhs(tstsetup, weightsnew = ~ wobs_col_new,
+                           offsetnew = offs_crr),
+        info = tstsetup
+      )
       pl_tester(plw,
                 nprjdraws_expected = ndr_ncl$nprjdraws,
                 wdraws_prj_expected = wdr_crr,
@@ -590,42 +628,59 @@ test_that("`offsetnew` works", {
     add_offs_crr <- args_prj[[tstsetup]]$prj_nm == "latent" &&
       args_prj[[tstsetup]]$pkg_nm == "rstanarm" &&
       grepl("\\.with_offs\\.", tstsetup)
-    pl_zeros <- proj_linpred(prjs[[tstsetup]],
-                             newdata = get_dat(tstsetup, dat_offs_zeros,
-                                               offs_ylat = 0,
-                                               add_offs_dummy = add_offs_crr,
-                                               offs_brms = 0),
-                             weightsnew = wobs_crr,
-                             offsetnew = ~ offs_col_zeros,
-                             allow_nonconst_wdraws_prj = ndr_ncl$clust_used_gt1,
-                             .seed = seed2_tst)
+    expect_warning(
+      pl_zeros <- proj_linpred(
+        prjs[[tstsetup]],
+        newdata = get_dat(tstsetup, dat_offs_zeros,
+                          offs_ylat = 0,
+                          add_offs_dummy = add_offs_crr,
+                          offs_brms = 0),
+        weightsnew = wobs_crr,
+        offsetnew = ~ offs_col_zeros,
+        allow_nonconst_wdraws_prj = ndr_ncl$clust_used_gt1,
+        .seed = seed2_tst
+      ),
+      get_warn_wrhs_orhs(tstsetup, weightsnew = wobs_crr,
+                         offsetnew = ~ offs_col_zeros),
+      info = tstsetup
+    )
     pl_tester(pl_zeros,
               nprjdraws_expected = ndr_ncl$nprjdraws,
               wdraws_prj_expected = wdr_crr,
               ncats_nlats_expected = list(ncats_nlats_expected_crr),
               info_str = tstsetup)
-    pl <- proj_linpred(prjs[[tstsetup]],
-                       newdata = get_dat(tstsetup, dat),
-                       weightsnew = wobs_crr,
-                       offsetnew = ~ offs_col,
-                       allow_nonconst_wdraws_prj = ndr_ncl$clust_used_gt1,
-                       .seed = seed2_tst)
+    expect_warning(
+      pl <- proj_linpred(prjs[[tstsetup]],
+                         newdata = get_dat(tstsetup, dat),
+                         weightsnew = wobs_crr,
+                         offsetnew = ~ offs_col,
+                         allow_nonconst_wdraws_prj = ndr_ncl$clust_used_gt1,
+                         .seed = seed2_tst),
+      get_warn_wrhs_orhs(tstsetup, weightsnew = wobs_crr,
+                         offsetnew = ~ offs_col),
+      info = tstsetup
+    )
     pl_tester(pl,
               nprjdraws_expected = ndr_ncl$nprjdraws,
               wdraws_prj_expected = wdr_crr,
               ncats_nlats_expected = list(ncats_nlats_expected_crr),
               info_str = tstsetup)
-    plo <- proj_linpred(prjs[[tstsetup]],
-                        newdata = get_dat(
-                          tstsetup, dat_offs_new,
-                          offs_ylat = dat_offs_new$offs_col_new,
-                          add_offs_dummy = add_offs_crr,
-                          offs_brms = dat_offs_new$offs_col_new
-                        ),
-                        weightsnew = wobs_crr,
-                        offsetnew = ~ offs_col_new,
-                        allow_nonconst_wdraws_prj = ndr_ncl$clust_used_gt1,
-                        .seed = seed2_tst)
+    expect_warning(
+      plo <- proj_linpred(prjs[[tstsetup]],
+                          newdata = get_dat(
+                            tstsetup, dat_offs_new,
+                            offs_ylat = dat_offs_new$offs_col_new,
+                            add_offs_dummy = add_offs_crr,
+                            offs_brms = dat_offs_new$offs_col_new
+                          ),
+                          weightsnew = wobs_crr,
+                          offsetnew = ~ offs_col_new,
+                          allow_nonconst_wdraws_prj = ndr_ncl$clust_used_gt1,
+                          .seed = seed2_tst),
+      get_warn_wrhs_orhs(tstsetup, weightsnew = wobs_crr,
+                         offsetnew = ~ offs_col_new),
+      info = tstsetup
+    )
     pl_tester(plo,
               nprjdraws_expected = ndr_ncl$nprjdraws,
               wdraws_prj_expected = wdr_crr,
@@ -1316,12 +1371,17 @@ test_that("`newdata` and `nresample_clusters` work (even in edge cases)", {
         offs_crr <- NULL
       }
       for (nresample_clusters_crr in nresample_clusters_tst) {
-        pp <- proj_predict(prjs[[tstsetup]],
-                           newdata = head(dat, nobsv_crr),
-                           weightsnew = wobs_crr,
-                           offsetnew = offs_crr,
-                           nresample_clusters = nresample_clusters_crr,
-                           .seed = seed2_tst)
+        expect_warning(
+          pp <- proj_predict(prjs[[tstsetup]],
+                             newdata = head(dat, nobsv_crr),
+                             weightsnew = wobs_crr,
+                             offsetnew = offs_crr,
+                             nresample_clusters = nresample_clusters_crr,
+                             .seed = seed2_tst),
+          get_warn_wrhs_orhs(tstsetup, weightsnew = wobs_crr,
+                             offsetnew = offs_crr),
+          info = tstsetup
+        )
         pp_tester(pp,
                   nprjdraws_out_expected = ndr_pp_out(
                     args_prj[[tstsetup]], prj_out = prjs[[tstsetup]],
@@ -1351,11 +1411,16 @@ test_that("`newdata` set to the original dataset doesn't change results", {
     } else {
       offs_crr <- NULL
     }
-    pp_newdata <- proj_predict(prjs[[tstsetup]],
-                               newdata = dat,
-                               weightsnew = wobs_crr,
-                               offsetnew = offs_crr,
-                               .seed = seed2_tst)
+    expect_warning(
+      pp_newdata <- proj_predict(prjs[[tstsetup]],
+                                 newdata = dat,
+                                 weightsnew = wobs_crr,
+                                 offsetnew = offs_crr,
+                                 .seed = seed2_tst),
+      get_warn_wrhs_orhs(tstsetup, weightsnew = wobs_crr,
+                         offsetnew = offs_crr),
+      info = tstsetup
+    )
     pp_orig <- pps[[tstsetup]]
     expect_equal(pp_newdata, pp_orig, info = tstsetup)
   }
@@ -1407,12 +1472,17 @@ test_that("`weightsnew` works", {
       offs_crr <- NULL
     }
     pp_orig <- pps[[tstsetup]]
-    pp_ones <- proj_predict(prjs[[tstsetup]],
-                            newdata = get_dat(tstsetup, dat_wobs_ones,
-                                              wobs_brms = 1),
-                            weightsnew = ~ wobs_col_ones,
-                            offsetnew = offs_crr,
-                            .seed = seed2_tst)
+    expect_warning(
+      pp_ones <- proj_predict(prjs[[tstsetup]],
+                              newdata = get_dat(tstsetup, dat_wobs_ones,
+                                                wobs_brms = 1),
+                              weightsnew = ~ wobs_col_ones,
+                              offsetnew = offs_crr,
+                              .seed = seed2_tst),
+      get_warn_wrhs_orhs(tstsetup, weightsnew = ~ wobs_col_ones,
+                         offsetnew = offs_crr),
+      info = tstsetup
+    )
     pp_tester(pp_ones,
               nprjdraws_out_expected = nprjdraws_out_crr,
               cats_expected = list(
@@ -1420,27 +1490,37 @@ test_that("`weightsnew` works", {
               ),
               info_str = tstsetup)
     if (!args_prj[[tstsetup]]$prj_nm %in% c("latent", "augdat")) {
-      pp <- proj_predict(prjs[[tstsetup]],
-                         newdata = get_dat(tstsetup, dat,
-                                           wobs_brms = dat$wobs_col),
-                         weightsnew = ~ wobs_col,
-                         offsetnew = offs_crr,
-                         .seed = seed2_tst)
+      expect_warning(
+        pp <- proj_predict(prjs[[tstsetup]],
+                           newdata = get_dat(tstsetup, dat,
+                                             wobs_brms = dat$wobs_col),
+                           weightsnew = ~ wobs_col,
+                           offsetnew = offs_crr,
+                           .seed = seed2_tst),
+        get_warn_wrhs_orhs(tstsetup, weightsnew = ~ wobs_col,
+                           offsetnew = offs_crr),
+        info = tstsetup
+      )
       pp_tester(pp,
                 nprjdraws_out_expected = nprjdraws_out_crr,
                 cats_expected = list(
                   refmods[[args_prj[[tstsetup]]$tstsetup_ref]]$family$cats
                 ),
                 info_str = tstsetup)
-      ppw <- proj_predict(prjs[[tstsetup]],
-                          newdata = get_dat(
-                            tstsetup,
-                            dat_wobs_new,
-                            wobs_brms = dat_wobs_new$wobs_col_new
-                          ),
-                          weightsnew = ~ wobs_col_new,
-                          offsetnew = offs_crr,
-                          .seed = seed2_tst)
+      expect_warning(
+        ppw <- proj_predict(prjs[[tstsetup]],
+                            newdata = get_dat(
+                              tstsetup,
+                              dat_wobs_new,
+                              wobs_brms = dat_wobs_new$wobs_col_new
+                            ),
+                            weightsnew = ~ wobs_col_new,
+                            offsetnew = offs_crr,
+                            .seed = seed2_tst),
+        get_warn_wrhs_orhs(tstsetup, weightsnew = ~ wobs_col_new,
+                           offsetnew = offs_crr),
+        info = tstsetup
+      )
       pp_tester(ppw,
                 nprjdraws_out_expected = nprjdraws_out_crr,
                 cats_expected = list(
@@ -1494,40 +1574,55 @@ test_that("`offsetnew` works", {
     add_offs_crr <- args_prj[[tstsetup]]$prj_nm == "latent" &&
       args_prj[[tstsetup]]$pkg_nm == "rstanarm" &&
       grepl("\\.with_offs\\.", tstsetup)
-    pp_zeros <- proj_predict(prjs[[tstsetup]],
-                             newdata = get_dat(tstsetup, dat_offs_zeros,
-                                               add_offs_dummy = add_offs_crr,
-                                               offs_brms = 0),
-                             weightsnew = wobs_crr,
-                             offsetnew = ~ offs_col_zeros,
-                             .seed = seed2_tst)
+    expect_warning(
+      pp_zeros <- proj_predict(prjs[[tstsetup]],
+                               newdata = get_dat(tstsetup, dat_offs_zeros,
+                                                 add_offs_dummy = add_offs_crr,
+                                                 offs_brms = 0),
+                               weightsnew = wobs_crr,
+                               offsetnew = ~ offs_col_zeros,
+                               .seed = seed2_tst),
+      get_warn_wrhs_orhs(tstsetup, weightsnew = wobs_crr,
+                         offsetnew = ~ offs_col_zeros),
+      info = tstsetup
+    )
     pp_tester(pp_zeros,
               nprjdraws_out_expected = nprjdraws_out_crr,
               cats_expected = list(
                 refmods[[args_prj[[tstsetup]]$tstsetup_ref]]$family$cats
               ),
               info_str = tstsetup)
-    pp <- proj_predict(prjs[[tstsetup]],
-                       newdata = dat,
-                       weightsnew = wobs_crr,
-                       offsetnew = ~ offs_col,
-                       .seed = seed2_tst)
+    expect_warning(
+      pp <- proj_predict(prjs[[tstsetup]],
+                         newdata = dat,
+                         weightsnew = wobs_crr,
+                         offsetnew = ~ offs_col,
+                         .seed = seed2_tst),
+      get_warn_wrhs_orhs(tstsetup, weightsnew = wobs_crr,
+                         offsetnew = ~ offs_col),
+      info = tstsetup
+    )
     pp_tester(pp,
               nprjdraws_out_expected = nprjdraws_out_crr,
               cats_expected = list(
                 refmods[[args_prj[[tstsetup]]$tstsetup_ref]]$family$cats
               ),
               info_str = tstsetup)
-    ppo <- proj_predict(prjs[[tstsetup]],
-                        newdata = get_dat(
-                          tstsetup, dat_offs_new,
-                          offs_ylat = dat_offs_new$offs_col_new,
-                          add_offs_dummy = add_offs_crr,
-                          offs_brms = dat_offs_new$offs_col_new
-                        ),
-                        weightsnew = wobs_crr,
-                        offsetnew = ~ offs_col_new,
-                        .seed = seed2_tst)
+    expect_warning(
+      ppo <- proj_predict(prjs[[tstsetup]],
+                          newdata = get_dat(
+                            tstsetup, dat_offs_new,
+                            offs_ylat = dat_offs_new$offs_col_new,
+                            add_offs_dummy = add_offs_crr,
+                            offs_brms = dat_offs_new$offs_col_new
+                          ),
+                          weightsnew = wobs_crr,
+                          offsetnew = ~ offs_col_new,
+                          .seed = seed2_tst),
+      get_warn_wrhs_orhs(tstsetup, weightsnew = wobs_crr,
+                         offsetnew = ~ offs_col_new),
+      info = tstsetup
+    )
     pp_tester(ppo,
               nprjdraws_out_expected = nprjdraws_out_crr,
               cats_expected = list(
