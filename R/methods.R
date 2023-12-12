@@ -666,7 +666,10 @@ proj_predict_aux <- function(proj, newdata, offset, weights,
 #'   ranking).
 #' @param text_angle Passed to argument `angle` of [ggplot2::element_text()] for
 #'   the x-axis tick labels. In case of long predictor names (and/or large
-#'   `nterms_max`), `text_angle = 45` might be helpful (for example).
+#'   `nterms_max`), `text_angle = 45` might be helpful (for example). If
+#'   `text_angle > 0` (`< 0`), the x-axis text is automatically right-aligned
+#'   (left-aligned). If `-90 < text_angle && text_angle < 90 && text_angle !=
+#'   0`, the x-axis text is also top-aligned.
 #' @param size_position A single character string specifying the position of the
 #'   submodel sizes. Either `"primary_x_bottom"` for including them in the
 #'   x-axis tick labels, `"primary_x_top"` for putting them above the x-axis, or
@@ -1101,6 +1104,21 @@ plot.vsel <- function(
   } else {
     x_axis_sec <- waiver()
   }
+  hjust_val <- 0.5
+  vjust_val <- 0.5
+  if (!is.null(text_angle)) {
+    if (text_angle > 0) {
+      hjust_val <- 1
+      if (text_angle < 90) {
+        vjust_val <- 1
+      }
+    } else if (text_angle < 0) {
+      hjust_val <- 0
+      if (text_angle > -90) {
+        vjust_val <- 1
+      }
+    }
+  }
   pp <- pp +
     scale_x_continuous(breaks = breaks, minor_breaks = minor_breaks,
                        limits = c(min(breaks), max(breaks)),
@@ -1110,8 +1128,9 @@ plot.vsel <- function(
          subtitle = paste0("Vertical bars indicate ",
                            round(100 * (1 - alpha), 1), "% ", ci_type,
                            "intervals")) +
-    theme(axis.text.x.bottom = element_text(angle = text_angle, hjust = 0.5,
-                                            vjust = 0.5)) +
+    theme(axis.text.x.bottom = element_text(angle = text_angle,
+                                            hjust = hjust_val,
+                                            vjust = vjust_val)) +
     facet_grid(statistic ~ ., scales = "free_y")
   if (!is.na(ranking_nterms_max) && !is.null(ranking_repel)) {
     if (identical(ranking_repel, "text")) {
