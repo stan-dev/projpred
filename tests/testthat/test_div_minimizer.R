@@ -9,6 +9,8 @@ ls_bu <- ls()
 
 test_that("divmin() works", {
   skip_on_cran()
+  # Currently, version < 1.6-4 of package 'Matrix' is needed here:
+  skip_if(packageVersion("Matrix") >= "1.6-4")
   # For comparison with the divmin_augdat() test:
   outdmin_brnll_tmp <- list()
 
@@ -93,6 +95,8 @@ test_that("divmin() works", {
 
 test_that("divmin_augdat() works", {
   skip_on_cran()
+  # Currently, version < 1.6-4 of package 'Matrix' is needed here:
+  skip_if(packageVersion("Matrix") >= "1.6-4")
   # For comparison with the divmin() test:
   outdmin_brnll_tmp <- list()
 
@@ -208,6 +212,8 @@ test_that(paste(
   "`brnll` family)"
 ), {
   skip_on_cran()
+  # Currently, version < 1.6-4 of package 'Matrix' is needed here:
+  skip_if(packageVersion("Matrix") >= "1.6-4")
   for (tstsetup in names(outdmin_brnll_augdat)) {
     args_ref_i <- args_ref[[tstsetup]]
     outdmin_augdat <- outdmin_brnll_augdat[[tstsetup]]
