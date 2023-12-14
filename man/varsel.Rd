@@ -24,12 +24,13 @@ varsel(object, ...)
   refit_prj = !inherits(object, "datafit"),
   nterms_max = NULL,
   verbose = TRUE,
+  search_control = NULL,
   lambda_min_ratio = 1e-05,
   nlambda = 150,
   thresh = 1e-06,
-  regul = 1e-04,
   penalty = NULL,
   search_terms = NULL,
+  search_out = NULL,
   seed = NA,
   ...
 )
@@ -39,9 +40,13 @@ varsel(object, ...)
 \code{\link[=init_refmodel]{init_refmodel()}}) or an object that can be passed to argument \code{object} of
 \code{\link[=get_refmodel]{get_refmodel()}}.}
 
-\item{...}{Arguments passed to \code{\link[=get_refmodel]{get_refmodel()}} as well as to the divergence
-minimizer (during a forward search and also during the evaluation part, but
-the latter only if \code{refit_prj} is \code{TRUE}).}
+\item{...}{For \code{\link[=varsel.default]{varsel.default()}}: Arguments passed to \code{\link[=get_refmodel]{get_refmodel()}} as
+well as to \code{\link[=varsel.refmodel]{varsel.refmodel()}}. For \code{\link[=varsel.vsel]{varsel.vsel()}}: Arguments passed to
+\code{\link[=varsel.refmodel]{varsel.refmodel()}}. For \code{\link[=varsel.refmodel]{varsel.refmodel()}}: Arguments passed to the
+divergence minimizer (see argument \code{div_minimizer} of \code{\link[=init_refmodel]{init_refmodel()}} as
+well as section "Draw-wise divergence minimizers" of \link{projpred-package})
+when refitting the submodels for the performance evaluation (if \code{refit_prj}
+is \code{TRUE}).}
 
 \item{d_test}{A \code{list} of the structure outlined in section "Argument
 \code{d_test}" below, providing test data for evaluating the predictive
@@ -87,23 +92,40 @@ does not count the intercept.)}
 \item{verbose}{A single logical value indicating whether to print out
 additional information during the computations.}
 
-\item{lambda_min_ratio}{Only relevant for L1 search. Ratio between the
-smallest and largest lambda in the L1-penalized search. This parameter
-essentially determines how long the search is carried out, i.e., how large
-submodels are explored. No need to change this unless the program gives a
+\item{search_control}{A \code{list} of "control" arguments (i.e., tuning
+parameters) for the search. In case of forward search, these arguments are
+passed to the divergence minimizer (see argument \code{div_minimizer} of
+\code{\link[=init_refmodel]{init_refmodel()}} as well as section "Draw-wise divergence minimizers" of
+\link{projpred-package}). In case of forward search, \code{NULL} causes \code{...} to be
+used not only for the performance evaluation, but also for the search. In
+case of L1 search, possible arguments are:
+\itemize{
+\item \code{lambda_min_ratio}: Ratio between the smallest and largest lambda in the
+L1-penalized search (default: \code{1e-5}). This parameter essentially
+determines how long the search is carried out, i.e., how large submodels
+are explored. No need to change this unless the program gives a warning
+about this.
+\item \code{nlambda}: Number of values in the lambda grid for L1-penalized search
+(default: \code{150}). No need to change this unless the program gives a warning
+about this.
+\item \code{thresh}: Convergence threshold when computing the L1 path (default:
+\code{1e-6}). Usually, there is no need to change this.
+}}
+
+\item{lambda_min_ratio}{Deprecated (please use \code{search_control} instead).
+Only relevant for L1 search. Ratio between the smallest and largest lambda
+in the L1-penalized search. This parameter essentially determines how long
+the search is carried out, i.e., how large submodels are explored. No need
+to change this unless the program gives a warning about this.}
+
+\item{nlambda}{Deprecated (please use \code{search_control} instead). Only
+relevant for L1 search. Number of values in the lambda grid for
+L1-penalized search. No need to change this unless the program gives a
 warning about this.}
 
-\item{nlambda}{Only relevant for L1 search. Number of values in the lambda
-grid for L1-penalized search. No need to change this unless the program
-gives a warning about this.}
-
-\item{thresh}{Only relevant for L1 search. Convergence threshold when
-computing the L1 path. Usually, there is no need to change this.}
-
-\item{regul}{A number giving the amount of ridge regularization when
-projecting onto (i.e., fitting) submodels which are GLMs. Usually there is
-no need for regularization, but sometimes we need to add some
-regularization to avoid numerical problems.}
+\item{thresh}{Deprecated (please use \code{search_control} instead). Only relevant
+for L1 search. Convergence threshold when computing the L1 path. Usually,
+there is no need to change this.}
 
 \item{penalty}{Only relevant for L1 search. A numeric vector determining the
 relative penalties or costs for the predictors. A value of \code{0} means that
@@ -118,6 +140,8 @@ The intercept (\code{"1"}) is always included internally via \code{union()}, so
 there's no difference between including it explicitly or omitting it. The
 default \code{search_terms} considers all the terms in the reference model's
 formula.}
+
+\item{search_out}{Intended for internal use.}
 
 \item{seed}{Pseudorandom number generation (PRNG) seed by which the same
 results can be obtained again if needed. Passed to argument \code{seed} of
@@ -138,7 +162,9 @@ Run the \emph{search} part and the \emph{evaluation} part for a projection predi
 variable selection. The search part determines the predictor ranking (also
 known as solution path), i.e., the best submodel for each submodel size
 (number of predictor terms). The evaluation part determines the predictive
-performance of the submodels along the predictor ranking.
+performance of the submodels along the predictor ranking. A special method is
+\code{\link[=varsel.vsel]{varsel.vsel()}} because it re-uses the search results from an earlier
+\code{\link[=varsel]{varsel()}} (or \code{\link[=cv_varsel]{cv_varsel()}}) run, as illustrated in the main vignette.
 }
 \details{
 Arguments \code{ndraws}, \code{nclusters}, \code{nclusters_pred}, and \code{ndraws_pred}
@@ -218,7 +244,7 @@ where this needs to be a vector or a \code{factor} containing the \emph{original
 # Data:
 dat_gauss <- data.frame(y = df_gaussian$y, df_gaussian$x)
 
-# The "stanreg" fit which will be used as the reference model (with small
+# The `stanreg` fit which will be used as the reference model (with small
 # values for `chains` and `iter`, but only for technical reasons in this
 # example; this is not recommended in general):
 fit <- rstanarm::stan_glm(

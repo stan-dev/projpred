@@ -2,10 +2,7 @@
   ver <- utils::packageVersion("projpred")
   msg <- paste0("This is projpred version ", ver, ".")
   msg <- paste0(msg, " ", "NOTE: In projpred 2.7.0, the default search method ",
-                "was set to \"forward\" (for all kinds of models). ",
-                "The corresponding NOTE thrown by varsel() and cv_varsel() ",
-                "can be suppressed by setting ",
-                "`options(projpred.mssg_method_changed = FALSE)`.")
+                "was set to \"forward\" (for all kinds of models).")
   packageStartupMessage(msg)
 }
 
@@ -24,6 +21,9 @@ weighted.sd <- function(x, w, na.rm = FALSE) {
   } else {
     n <- length(x)
     ind <- rep(TRUE, n)
+  }
+  if (n %in% c(0, 1)) {
+    return(NA_real_)
   }
   w <- w / sum(w[ind])
   m <- sum(x[ind] * w[ind])
@@ -67,12 +67,20 @@ auc <- function(x) {
   resp <- x[, 1]
   pred <- x[, 2]
   wcv <- x[, 3]
-  n <- nrow(x)
-  ord <- order(pred, decreasing = TRUE)
+
+  # Make it explicit that `x` should not be used anymore (due to the possibility
+  # of `NA`s, but also due to the re-ordering):
+  rm(x)
+
+  ord <- order(pred, decreasing = TRUE, na.last = NA)
+  n <- length(ord)
+
   resp <- resp[ord]
   pred <- pred[ord]
   wcv <- wcv[ord]
+
   w0 <- w1 <- wcv
+  # CAUTION: The following check also ensures that `resp` does not have `NA`s:
   stopifnot(all(resp %in% c(0, 1)))
   w0[resp == 1] <- 0 # for calculating the false positive rate (fpr)
   w1[resp == 0] <- 0 # for calculating the true positive rate (tpr)
@@ -111,7 +119,7 @@ bootstrap <- function(x, fun = mean, B = 2000, seed = NA, ...) {
   bsstat <- rep(NA, B)
   for (i in 1:B) {
     bsind <- sample(seq_x, replace = TRUE)
-    bsstat[i] <- fun(if (is_vector) x[bsind] else x[bsind, ], ...)
+    bsstat[i] <- fun(if (is_vector) x[bsind] else x[bsind, , drop = FALSE], ...)
   }
   return(bsstat)
 }
@@ -144,9 +152,10 @@ validate_vsel_object_stats <- function(object, stats, resp_oscale = TRUE) {
   }
   resp_oscale <- object$refmodel$family$for_latent && resp_oscale
 
-  trad_stats <- c("elpd", "mlpd", "mse", "rmse", "acc", "pctcorr", "auc")
+  trad_stats <- c("elpd", "mlpd", "gmpd", "mse", "rmse", "acc", "pctcorr",
+                  "auc")
   trad_stats_binom_only <- c("acc", "pctcorr", "auc")
-  augdat_stats <- c("elpd", "mlpd", "acc", "pctcorr")
+  augdat_stats <- c("elpd", "mlpd", "gmpd", "acc", "pctcorr")
   resp_oscale_stats_fac <- augdat_stats
 
   if (is.null(stats)) {
@@ -194,7 +203,7 @@ validate_baseline <- function(refmodel, baseline, deltas) {
   }
   if (baseline == "ref" && deltas == TRUE && inherits(refmodel, "datafit")) {
     # no reference model (or the results missing for some other reason),
-    # so cannot compute differences between the reference model and submodels
+    # so cannot compute differences (or ratios) vs. the reference model
     stop("Cannot use deltas = TRUE and baseline = 'ref' when there is no ",
          "reference model.")
   }
@@ -311,6 +320,10 @@ get_refdist <- function(refmodel, ndraws = NULL, nclusters = NULL,
                            nclusters = nclusters)
     }
   } else {
+    if (length(unique(refmodel$wdraws_ref)) != 1) {
+      stop("Currently, projpred requires the reference model's posterior ",
+           "draws to have constant weights.")
+    }
     ndraws <- min(S, ndraws)
     if (ndraws <= 20 && throw_mssg_ndraws) {
       message("The number of draws to project is quite small (<= 20). In such ",
@@ -331,10 +344,12 @@ get_refdist <- function(refmodel, ndraws = NULL, nclusters = NULL,
       mu = refmodel$mu[, s_ind, drop = FALSE],
       mu_offs = refmodel$mu_offs[, s_ind, drop = FALSE],
       var = structure(predvar,
-                      nobs_orig = attr(refmodel$mu, "nobs_orig"),
+                      ndiscrete = attr(refmodel$mu, "ndiscrete"),
                       class = oldClass(refmodel$mu)),
       dis = refmodel$dis[s_ind],
       wdraws_prj = rep(1 / ndraws, ndraws),
+      const_wdraws_prj = TRUE,
+      nprjdraws = ndraws,
       cl = cl,
       wdraws_orig = rep(1, S),
       clust_used = FALSE
@@ -401,16 +416,18 @@ get_p_clust <- function(family, eta, mu, mu_offs, dis, nclusters = 10,
   # combine the results
   return(list(
     mu = structure(unname(centers),
-                   nobs_orig = attr(mu, "nobs_orig"),
+                   ndiscrete = attr(mu, "ndiscrete"),
                    class = oldClass(mu)),
     mu_offs = structure(unname(centers_offs),
-                        nobs_orig = attr(mu_offs, "nobs_orig"),
+                        ndiscrete = attr(mu_offs, "ndiscrete"),
                         class = oldClass(mu_offs)),
     var = structure(predvar,
-                    nobs_orig = attr(mu, "nobs_orig"),
+                    ndiscrete = attr(mu, "ndiscrete"),
                     class = oldClass(mu)),
     dis = dis_agg,
     wdraws_prj = wcluster,
+    const_wdraws_prj = length(unique(wcluster)) == 1,
+    nprjdraws = nclusters,
     cl = cl,
     wdraws_orig = wdraws,
     clust_used = TRUE
@@ -458,12 +475,10 @@ nlist <- function(...) {
   x
 }
 
-#' Execute a function call (deprecated)
+#' Execute a function call
 #'
 #' Execute a function call similar to [do.call()], but without deparsing
-#' function arguments. This function is deprecated and will be removed in a
-#' future release. Where possible, please use direct function calls instead. If
-#' this is not possible, please use [do.call()] instead.
+#' function arguments.
 #'
 #' @param what Either a function or a non-empty character string naming the
 #'   function to be called.
@@ -477,9 +492,6 @@ nlist <- function(...) {
 #' @keywords internal
 #' @export
 do_call <- function(what, args, pkg = NULL) {
-  warning("projpred::do_call() is deprecated and will be removed in a future ",
-          "release. Where possible, please use direct function calls instead. ",
-          "If this is not possible, please use base::do.call() instead.")
   call <- ""
   if (length(args)) {
     if (!is.list(args)) {
@@ -586,11 +598,37 @@ rbind2list <- function(x) {
   return(binded_list)
 }
 
+cat_cls <- function(x) {
+  cls <- paste0("`", class(x), "`")
+  cat("Object of class", if (length(cls) > 1) "es" else "", " ",
+      paste(cls, collapse = ", "), "\n\n", sep = "")
+}
+
 # Print out text via cat() if `verbose = TRUE`:
 verb_out <- function(..., verbose = TRUE) {
   if (verbose) {
     cat(..., "\n", sep = "")
   }
+}
+
+# Ensure that stderr() is used for throwing an error, even while sink()-ing or
+# capture.output()-ing with `type = "message"`:
+throw_err <- function(e) {
+  sink(type = "message")
+  stop(e)
+}
+
+# A wrapper for capture.output() with `type = "message"`, but throwing error
+# messages appropriately (i.e., only messages and warnings are captured).
+# Note: This function should only be used to filter out messages or warnings
+# (not to make downstream code dependent on catched messages or warnings), see
+# <https://github.com/stan-dev/loo/issues/227#issuecomment-1663499985>.
+capt_mssgs_warns <- function(expr) {
+  if (getOption("warn") == 0) {
+    warn_orig <- options(warn = 1)
+    on.exit(options(warn_orig))
+  }
+  utils::capture.output(tryCatch(expr, error = throw_err), type = "message")
 }
 
 # Parse the argument containing the observation weights (`wobs` or `weights`)
@@ -637,7 +675,7 @@ reorder_ia <- function(ia, y) {
   if (length(ia_reordered) == 0) {
     ia_reordered <- NA_character_
   } else if (length(ia_reordered) > 1) {
-    stop("Unexpected length of `ia_reordered`. Please contact the package ",
+    stop("Unexpected length of `ia_reordered`. Please notify the package ",
          "maintainer.")
   }
   return(ia_reordered)

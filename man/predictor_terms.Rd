@@ -29,7 +29,7 @@ the projection was performed.
 # Data:
 dat_gauss <- data.frame(y = df_gaussian$y, df_gaussian$x)
 
-# The "stanreg" fit which will be used as the reference model (with small
+# The `stanreg` fit which will be used as the reference model (with small
 # values for `chains` and `iter`, but only for technical reasons in this
 # example; this is not recommended in general):
 fit <- rstanarm::stan_glm(
@@ -40,7 +40,7 @@ fit <- rstanarm::stan_glm(
 # Projection onto an arbitrary combination of predictor terms (with a small
 # value for `nclusters`, but only for the sake of speed in this example;
 # this is not recommended in general):
-prj <- project(fit, solution_terms = c("X1", "X3", "X5"), nclusters = 10,
+prj <- project(fit, predictor_terms = c("X1", "X3", "X5"), nclusters = 10,
                seed = 9182, verbose = FALSE)
 print(predictor_terms(prj)) # gives `c("X1", "X3", "X5")`
 \dontshow{\}) # examplesIf}

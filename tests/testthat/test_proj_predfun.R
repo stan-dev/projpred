@@ -3,6 +3,9 @@ context("proj_predfun")
 test_that("repair_re() works for GLMMs", {
   # Setup -------------------------------------------------------------------
 
+  # Currently, version < 1.6-4 of package 'Matrix' is needed here:
+  skip_if(packageVersion("Matrix") >= "1.6-4")
+
   if (exists(".Random.seed", envir = .GlobalEnv)) {
     rng_old <- get(".Random.seed", envir = .GlobalEnv)
   }
@@ -411,7 +414,7 @@ test_that(paste(
     NA
   }
   expect_warning(
-    out_capt <- capture.output({
+    out_capt <- capture.output(
       mfit <- mclogit::mblogit(
         formula = cell ~ treat + age + Karn + prior,
         data = VA,
@@ -419,7 +422,7 @@ test_that(paste(
         model = FALSE,
         y = FALSE
       )
-    }),
+    ),
     warn_expected
   )
   expect_identical(tail(out_capt, 1), "converged")
@@ -653,7 +656,7 @@ test_that(paste(
     NA
   }
   expect_warning(
-    out_capt <- capture.output({
+    out_capt <- capture.output(
       mfit <- mclogit::mblogit(
         formula = cell ~ treat + age + Karn + prior,
         data = VA,
@@ -662,7 +665,7 @@ test_that(paste(
         model = FALSE,
         y = FALSE
       )
-    }),
+    ),
     warn_expected
   )
   expect_identical(tail(out_capt, 1), "converged")

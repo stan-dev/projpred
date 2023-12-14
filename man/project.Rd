@@ -7,13 +7,13 @@
 project(
   object,
   nterms = NULL,
-  solution_terms = NULL,
+  solution_terms = predictor_terms,
+  predictor_terms = NULL,
   refit_prj = TRUE,
   ndraws = 400,
   nclusters = NULL,
   seed = NA,
   verbose = getOption("projpred.verbose_project", TRUE),
-  regul = 1e-04,
   ...
 )
 }
@@ -22,19 +22,22 @@ project(
 particular, objects of class \code{refmodel}).}
 
 \item{nterms}{Only relevant if \code{object} is of class \code{vsel} (returned by
-\code{\link[=varsel]{varsel()}} or \code{\link[=cv_varsel]{cv_varsel()}}). Ignored if \code{!is.null(solution_terms)}. Number
-of terms for the submodel (the corresponding combination of predictor terms
-is taken from \code{object}). If a numeric vector, then the projection is
-performed for each element of this vector. If \code{NULL} (and
-\code{is.null(solution_terms)}), then the value suggested by \code{\link[=suggest_size]{suggest_size()}} is
-taken (with default arguments for \code{\link[=suggest_size]{suggest_size()}}, implying that this
+\code{\link[=varsel]{varsel()}} or \code{\link[=cv_varsel]{cv_varsel()}}). Ignored if \code{!is.null(predictor_terms)}.
+Number of terms for the submodel (the corresponding combination of
+predictor terms is taken from \code{object}). If a numeric vector, then the
+projection is performed for each element of this vector. If \code{NULL} (and
+\code{is.null(predictor_terms)}), then the value suggested by \code{\link[=suggest_size]{suggest_size()}}
+is taken (with default arguments for \code{\link[=suggest_size]{suggest_size()}}, implying that this
 suggested size is based on the ELPD). Note that \code{nterms} does not count the
 intercept, so use \code{nterms = 0} for the intercept-only model.}
 
-\item{solution_terms}{If not \code{NULL}, then this needs to be a character vector
-of predictor terms for the submodel onto which the projection will be
-performed. Argument \code{nterms} is ignored in that case. For an \code{object} which
-is not of class \code{vsel}, \code{solution_terms} must not be \code{NULL}.}
+\item{solution_terms}{Deprecated. Please use argument \code{predictor_terms}
+instead.}
+
+\item{predictor_terms}{If not \code{NULL}, then this needs to be a character
+vector of predictor terms for the submodel onto which the projection will
+be performed. Argument \code{nterms} is ignored in that case. For an \code{object}
+which is not of class \code{vsel}, \code{predictor_terms} must not be \code{NULL}.}
 
 \item{refit_prj}{A single logical value indicating whether to fit the
 submodels (again) (\code{TRUE}) or---if \code{object} is of class \code{vsel}---to re-use
@@ -67,15 +70,10 @@ calculating output elements \code{dis} and \code{ce}.)}
 
 \item{verbose}{A single logical value indicating whether to print out
 additional information during the computations. More precisely, this gets
-passed as \code{projpred_verbose} to the divergence minimizer function of the
+passed as \code{verbose_divmin} to the divergence minimizer function of the
 \code{refmodel} object. For the built-in divergence minimizers, this only has an
 effect in case of sequential computations (not in case of parallel
 projection, which is described in \link{projpred-package}).}
-
-\item{regul}{A number giving the amount of ridge regularization when
-projecting onto (i.e., fitting) submodels which are GLMs. Usually there is
-no need for regularization, but sometimes we need to add some
-regularization to avoid numerical problems.}
 
 \item{...}{Arguments passed to \code{\link[=get_refmodel]{get_refmodel()}} (if \code{\link[=get_refmodel]{get_refmodel()}} is
 actually used; see argument \code{object}) as well as to the divergence
@@ -83,7 +81,7 @@ minimizer (if \code{refit_prj} is \code{TRUE}).}
 }
 \value{
 If the projection is performed onto a single submodel (i.e.,
-\code{length(nterms) == 1 || !is.null(solution_terms)}), an object of class
+\code{length(nterms) == 1 || !is.null(predictor_terms)}), an object of class
 \code{projection} which is a \code{list} containing the following elements:
 \describe{
 \item{\code{dis}}{Projected draws for the dispersion parameter.}
@@ -94,7 +92,7 @@ would cancel out when calculating the KL divergence have been dropped. In
 case of the Gaussian family, that reduced cross-entropy is further
 modified, yielding merely a proxy.}
 \item{\code{wdraws_prj}}{Weights for the projected draws.}
-\item{\code{solution_terms}}{A character vector of the submodel's predictor
+\item{\code{predictor_terms}}{A character vector of the submodel's predictor
 terms.}
 \item{\code{outdmin}}{A \code{list} containing the submodel fits (one fit per
 projected draw). This is the same as the return value of the
@@ -151,7 +149,7 @@ or thinning.
 # Data:
 dat_gauss <- data.frame(y = df_gaussian$y, df_gaussian$x)
 
-# The "stanreg" fit which will be used as the reference model (with small
+# The `stanreg` fit which will be used as the reference model (with small
 # values for `chains` and `iter`, but only for technical reasons in this
 # example; this is not recommended in general):
 fit <- rstanarm::stan_glm(
@@ -174,7 +172,7 @@ prj_from_vs <- project(vs, nterms = 2, nclusters = 10, seed = 9182,
 # Projection onto an arbitrary combination of predictor terms (with a small
 # value for `nclusters`, but only for the sake of speed in this example;
 # this is not recommended in general):
-prj <- project(fit, solution_terms = c("X1", "X3", "X5"), nclusters = 10,
+prj <- project(fit, predictor_terms = c("X1", "X3", "X5"), nclusters = 10,
                seed = 9182, verbose = FALSE)
 \dontshow{\}) # examplesIf}
 }

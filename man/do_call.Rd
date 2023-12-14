@@ -2,7 +2,7 @@
 % Please edit documentation in R/misc.R
 \name{do_call}
 \alias{do_call}
-\title{Execute a function call (deprecated)}
+\title{Execute a function call}
 \usage{
 do_call(what, args, pkg = NULL)
 }
@@ -21,8 +21,6 @@ The result of the (evaluated) function call.
 }
 \description{
 Execute a function call similar to \code{\link[=do.call]{do.call()}}, but without deparsing
-function arguments. This function is deprecated and will be removed in a
-future release. Where possible, please use direct function calls instead. If
-this is not possible, please use \code{\link[=do.call]{do.call()}} instead.
+function arguments.
 }
 \keyword{internal}

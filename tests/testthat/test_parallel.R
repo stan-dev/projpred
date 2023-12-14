@@ -65,10 +65,15 @@ test_that("cv_varsel() in parallel gives the same results as sequentially", {
   tstsetups <- grep("\\.glm\\.", names(cvvss), value = TRUE)
   for (tstsetup in tstsetups) {
     args_cvvs_i <- args_cvvs[[tstsetup]]
-    # Use suppressWarnings() because of occasional warnings concerning Pareto k
-    # diagnostics:
+    # Use suppressWarnings() because test_that() somehow redirects stderr() and
+    # so throws warnings that projpred wants to capture internally:
     cvvs_repr <- suppressWarnings(do.call(cv_varsel, c(
-      list(object = refmods[[args_cvvs_i$tstsetup_ref]]),
+      list(object = refmods[[args_cvvs_i$tstsetup_ref]],
+           cvfits = if (identical(args_cvvs_i$cv_method, "kfold")) {
+             cvfitss[[args_cvvs_i$tstsetup_ref]]
+           } else {
+             refmods[[args_cvvs_i$tstsetup_ref]]$cvfits # should be `NULL`
+           }),
       excl_nonargs(args_cvvs_i)
     )))
     expect_equal(cvvs_repr, cvvss[[tstsetup]], info = tstsetup)

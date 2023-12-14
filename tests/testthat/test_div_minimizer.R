@@ -9,6 +9,8 @@ ls_bu <- ls()
 
 test_that("divmin() works", {
   skip_on_cran()
+  # Currently, version < 1.6-4 of package 'Matrix' is needed here:
+  skip_if(packageVersion("Matrix") >= "1.6-4")
   # For comparison with the divmin_augdat() test:
   outdmin_brnll_tmp <- list()
 
@@ -28,7 +30,6 @@ test_that("divmin() works", {
       var_crr <- rep(NA, nobsv)
     }
     args_fit_i$projpred_var <- matrix(var_crr)
-    args_fit_i$projpred_regul <- regul_default
 
     if (pkg_crr == "brms" && grepl("\\.with_wobs", tstsetup)) {
       args_fit_i$formula <- rm_addresp(args_fit_i$formula)
@@ -66,7 +67,7 @@ test_that("divmin() works", {
     outdmin <- do.call(
       divmin,
       args_fit_i[intersect(c("formula", "data", "family", "weights",
-                             "projpred_var", "projpred_regul"),
+                             "projpred_var"),
                            names(args_fit_i))]
     )
     if (fam_crr == "brnll") {
@@ -94,6 +95,8 @@ test_that("divmin() works", {
 
 test_that("divmin_augdat() works", {
   skip_on_cran()
+  # Currently, version < 1.6-4 of package 'Matrix' is needed here:
+  skip_if(packageVersion("Matrix") >= "1.6-4")
   # For comparison with the divmin() test:
   outdmin_brnll_tmp <- list()
 
@@ -133,7 +136,6 @@ test_that("divmin_augdat() works", {
     # Other arguments:
     args_fit_i$weights <- "currently unused"
     args_fit_i$projpred_var <- matrix(nrow = nobsv * ncats_crr)
-    args_fit_i$projpred_regul <- regul_default
     if (fam_crr == "brnll" && pkg_crr == "brms") {
       args_fit_i$family <- f_binom
       # Remove some terms which lead to extreme coefficients:
@@ -165,7 +167,12 @@ test_that("divmin_augdat() works", {
         "length > 1"
       )
     } else if (fam_crr == "categ" && mod_crr == "glmm") {
-      warn_expected <- warn_mclogit
+      warn_expected <- if (packageVersion("mclogit") >= "0.9.6") {
+        "Inner iterations did not coverge"
+      } else {
+        paste0("^step size truncated due to possible divergence$|",
+               "^Algorithm stopped due to false convergence$")
+      }
     } else {
       warn_expected <- NA
     }
@@ -173,8 +180,8 @@ test_that("divmin_augdat() works", {
       outdmin <- do.call(
         divmin_augdat,
         args_fit_i[intersect(c("formula", "data", "family", "weights",
-                               "projpred_var", "projpred_regul",
-                               "projpred_ws_aug", "epsilon", "avoid.increase"),
+                               "projpred_var", "projpred_ws_aug", "epsilon",
+                               "avoid.increase"),
                              names(args_fit_i))]
       ),
       warn_expected
@@ -205,6 +212,8 @@ test_that(paste(
   "`brnll` family)"
 ), {
   skip_on_cran()
+  # Currently, version < 1.6-4 of package 'Matrix' is needed here:
+  skip_if(packageVersion("Matrix") >= "1.6-4")
   for (tstsetup in names(outdmin_brnll_augdat)) {
     args_ref_i <- args_ref[[tstsetup]]
     outdmin_augdat <- outdmin_brnll_augdat[[tstsetup]]

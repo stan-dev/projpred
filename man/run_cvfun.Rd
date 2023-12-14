@@ -13,6 +13,7 @@ run_cvfun(object, ...)
 \method{run_cvfun}{refmodel}(
   object,
   K = if (!inherits(object, "datafit")) 5 else 10,
+  folds = NULL,
   seed = NA,
   ...
 )
@@ -26,7 +27,12 @@ run_cvfun(object, ...)
 For \code{\link[=run_cvfun.refmodel]{run_cvfun.refmodel()}}: Currently ignored.}
 
 \item{K}{Number of folds. Must be at least 2 and not exceed the number of
-observations.}
+observations. Ignored if \code{folds} is not \code{NULL}.}
+
+\item{folds}{Either \code{NULL} for determining the CV folds automatically via
+\code{\link[=cv_folds]{cv_folds()}} (using argument \code{K}) or a numeric (in fact, integer) vector
+giving the fold index for each observation. In the latter case, argument
+\code{K} is ignored.}
 
 \item{seed}{Pseudorandom number generation (PRNG) seed by which the same
 results can be obtained again if needed. Passed to argument \code{seed} of
@@ -50,7 +56,7 @@ reference model refits.
 # Data:
 dat_gauss <- data.frame(y = df_gaussian$y, df_gaussian$x)
 
-# The "stanreg" fit which will be used as the reference model (with small
+# The `stanreg` fit which will be used as the reference model (with small
 # values for `chains` and `iter`, but only for technical reasons in this
 # example; this is not recommended in general):
 fit <- rstanarm::stan_glm(
@@ -58,19 +64,22 @@ fit <- rstanarm::stan_glm(
   QR = TRUE, chains = 2, iter = 500, refresh = 0, seed = 9876
 )
 
-# Define the reference model object explicitly:
+# Define the reference model object explicitly (not really necessary here
+# because the get_refmodel() call is quite fast in this example, but in
+# general, this approach is faster than defining the reference model object
+# multiple times implicitly):
 ref <- get_refmodel(fit)
 
 # Run the reference model object's `cvfun` (with a small value for `K`, but
 # only for the sake of speed in this example; this is not recommended in
 # general):
-cvfits <- run_cvfun(ref, K = 2, seed = 184)
+cv_fits <- run_cvfun(ref, K = 2, seed = 184)
 
 # Run cv_varsel() (with L1 search and small values for `nterms_max` and
 # `nclusters_pred`, but only for the sake of speed in this example; this is
-# not recommended in general) and use `cvfits` there:
-cvvs_L1 <- cv_varsel(fit, method = "L1", cv_method = "kfold",
-                     cvfits = cvfits, nterms_max = 3, nclusters_pred = 10,
+# not recommended in general) and use `cv_fits` there:
+cvvs_L1 <- cv_varsel(ref, method = "L1", cv_method = "kfold",
+                     cvfits = cv_fits, nterms_max = 3, nclusters_pred = 10,
                      seed = 5555, verbose = FALSE)
 # Now see, for example, `?print.vsel`, `?plot.vsel`, `?suggest_size.vsel`,
 # and `?ranking` for possible post-processing functions.
@@ -78,8 +87,25 @@ cvvs_L1 <- cv_varsel(fit, method = "L1", cv_method = "kfold",
 # The purpose of run_cvfun() is to create an object that can be used in
 # multiple cv_varsel() calls, e.g., to check the sensitivity to the search
 # method (L1 or forward):
-cvvs_fw <- cv_varsel(fit, method = "forward", cv_method = "kfold",
-                     cvfits = cvfits, nterms_max = 3, nclusters = 5,
+cvvs_fw <- cv_varsel(ref, method = "forward", cv_method = "kfold",
+                     cvfits = cv_fits, nterms_max = 3, nclusters = 5,
                      nclusters_pred = 10, seed = 5555, verbose = FALSE)
+
+# Stratified K-fold CV is straightforward:
+n_strat <- 3L
+set.seed(692)
+# Some example strata:
+strat_fac <- sample(paste0("lvl", seq_len(n_strat)), size = nrow(dat_gauss),
+                    replace = TRUE,
+                    prob = diff(c(0, pnorm(seq_len(n_strat - 1L) - 0.5), 1)))
+table(strat_fac)
+# Use loo::kfold_split_stratified() to create the folds vector:
+folds_strat <- loo::kfold_split_stratified(K = 2, x = strat_fac)
+table(folds_strat, strat_fac)
+# Call run_cvfun(), but this time with argument `folds` instead of `K` (here,
+# specifying argument `seed` would not be necessary because of the set.seed()
+# call above, but we specify it nonetheless for the sake of generality):
+cv_fits_strat <- run_cvfun(ref, folds = folds_strat, seed = 391)
+# Now use `cv_fits_strat` analogously to `cv_fits` from above.
 \dontshow{\}) # examplesIf}
 }

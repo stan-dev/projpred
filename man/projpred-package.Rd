@@ -12,7 +12,8 @@ The \R package \pkg{projpred} performs the projection predictive variable (or
 \href{https://mc-stan.org/projpred/}{online}) and the main vignette (\code{topic = "projpred"}, but also available
 \href{https://mc-stan.org/projpred/articles/projpred.html}{online}) before
 continuing here.
-
+}
+\section{Terminology}{
 Throughout the whole package documentation, we use the term "submodel" for
 all kinds of candidate models onto which the reference model is projected.
 For custom reference models, the candidate models don't need to be actual
@@ -27,45 +28,82 @@ throughout the documentation: GLM (generalized linear model), GLMM
 additive model), and GAMM (generalized additive multilevel---or
 "mixed"---model). Note that the term "generalized" includes the Gaussian
 family as well.
+}
 
+\section{Draw-wise divergence minimizers}{
 For the projection of the reference model onto a submodel, \pkg{projpred}
-currently relies on the following functions (in other words, these are the
-workhorse functions used by the default divergence minimizers):
+currently relies on the following functions as draw-wise divergence
+minimizers (in other words, these are the workhorse functions employed by
+\pkg{projpred}'s internal default \code{div_minimizer} functions, see
+\code{\link[=init_refmodel]{init_refmodel()}}):
 \itemize{
 \item Submodel without multilevel or additive terms:
 \itemize{
 \item For the traditional (or latent) projection (or the augmented-data
 projection in case of the \code{\link[=binomial]{binomial()}} or \code{\link[brms:brmsfamily]{brms::bernoulli()}} family): An
 internal C++ function which basically serves the same purpose as \code{\link[=lm]{lm()}}
-for the \code{\link[=gaussian]{gaussian()}} family and \code{\link[=glm]{glm()}} for all other families.
-\item For the augmented-data projection: \code{\link[MASS:polr]{MASS::polr()}} for the
-\code{\link[brms:brmsfamily]{brms::cumulative()}} family or \code{\link[rstanarm:stan_polr]{rstanarm::stan_polr()}} fits,
-\code{\link[nnet:multinom]{nnet::multinom()}} for the \code{\link[brms:brmsfamily]{brms::categorical()}} family.
+for the \code{\link[=gaussian]{gaussian()}} family and \code{\link[=glm]{glm()}} for all other families. The
+returned object inherits from class \code{subfit}. Possible tuning parameters
+for this internal C++ function are: \code{regul} (amount of ridge
+regularization; default: \code{1e-4}), \code{thresh_conv} (convergence threshold;
+default: \code{1e-7}), \code{qa_updates_max} (maximum number of quadratic
+approximation updates; default: \code{100}, but fixed to \code{1} in case of the
+Gaussian family with identity link), \code{ls_iter_max} (maximum number of
+line search iterations; default: \code{30}, but fixed to \code{1} in case of the
+Gaussian family with identity link), \code{normalize} (single logical value
+indicating whether to scale the predictors internally with the returned
+regression coefficient estimates being back-adjusted appropriately;
+default: \code{TRUE}), \code{beta0_init} (single numeric value giving the starting
+value for the intercept at centered predictors; default: \code{0}), and
+\code{beta_init} (numeric vector giving the starting values for the regression
+coefficients; default: vector of \code{0}s).
+\item For the augmented-data projection: \code{\link[MASS:polr]{MASS::polr()}} (the returned object
+inherits from class \code{polr}) for the \code{\link[brms:brmsfamily]{brms::cumulative()}} family or
+\code{\link[rstanarm:stan_polr]{rstanarm::stan_polr()}} fits, \code{\link[nnet:multinom]{nnet::multinom()}} (the returned object
+inherits from class \code{multinom}) for the \code{\link[brms:brmsfamily]{brms::categorical()}} family.
 }
 \item Submodel with multilevel but no additive terms:
 \itemize{
 \item For the traditional (or latent) projection (or the augmented-data
 projection in case of the \code{\link[=binomial]{binomial()}} or \code{\link[brms:brmsfamily]{brms::bernoulli()}} family):
-\code{\link[lme4:lmer]{lme4::lmer()}} for the \code{\link[=gaussian]{gaussian()}} family, \code{\link[lme4:glmer]{lme4::glmer()}} for all other
-families.
-\item For the augmented-data projection: \code{\link[ordinal:clmm]{ordinal::clmm()}} for the
-\code{\link[brms:brmsfamily]{brms::cumulative()}} family, \code{\link[mclogit:mblogit]{mclogit::mblogit()}} for the
-\code{\link[brms:brmsfamily]{brms::categorical()}} family.
+\code{\link[lme4:lmer]{lme4::lmer()}} (the returned object inherits from class \code{lmerMod}) for
+the \code{\link[=gaussian]{gaussian()}} family, \code{\link[lme4:glmer]{lme4::glmer()}} (the returned object inherits
+from class \code{glmerMod}) for all other families.
+\item For the augmented-data projection: \code{\link[ordinal:clmm]{ordinal::clmm()}} (the returned
+object inherits from class \code{clmm}) for the \code{\link[brms:brmsfamily]{brms::cumulative()}} family,
+\code{\link[mclogit:mblogit]{mclogit::mblogit()}} (the returned object inherits from class \code{mmblogit})
+for the \code{\link[brms:brmsfamily]{brms::categorical()}} family.
 }
-\item Submodel without multilevel but additive terms: \code{\link[mgcv:gam]{mgcv::gam()}}.
-\item Submodel with multilevel and additive terms: \code{\link[gamm4:gamm4]{gamm4::gamm4()}}.
+\item Submodel without multilevel but additive terms: \code{\link[mgcv:gam]{mgcv::gam()}} (the returned
+object inherits from class \code{gam}).
+\item Submodel with multilevel and additive terms: \code{\link[gamm4:gamm4]{gamm4::gamm4()}} (within
+\pkg{projpred}, the returned object inherits from class \code{gamm4}).
+}
 }
 
-Setting the global option \code{projpred.extra_verbose} to \code{TRUE} will print out
-which submodel \pkg{projpred} is currently projecting onto as well as (if
-\code{method = "forward"} and \code{verbose = TRUE} in \code{\link[=varsel]{varsel()}} or \code{\link[=cv_varsel]{cv_varsel()}})
-which submodel has been selected at those steps of the forward search for
-which a percentage (of the maximum submodel size that the search is run up
-to) is printed. In general, however, we cannot recommend setting this global
-option to \code{TRUE} for \code{\link[=cv_varsel]{cv_varsel()}} with \code{validate_search = TRUE} (simply due
-to the amount of information that will be printed, but also due to the
-progress bar which will not work anymore as intended).
+\section{Verbosity, messages, warnings, errors}{
+Setting global option \code{projpred.extra_verbose} to \code{TRUE} will print out which
+submodel \pkg{projpred} is currently projecting onto as well as (if \code{method = "forward"} and \code{verbose = TRUE} in \code{\link[=varsel]{varsel()}} or \code{\link[=cv_varsel]{cv_varsel()}}) which
+submodel has been selected at those steps of the forward search for which a
+percentage (of the maximum submodel size that the search is run up to) is
+printed. In general, however, we cannot recommend setting this global option
+to \code{TRUE} for \code{\link[=cv_varsel]{cv_varsel()}} with \code{validate_search = TRUE} (simply due to the
+amount of information that will be printed, but also due to the progress bar
+which will not work as intended anymore).
 
+By default, \pkg{projpred} catches messages and warnings from the draw-wise
+divergence minimizers and throws their unique collection after performing all
+draw-wise divergence minimizations (i.e., draw-wise projections). This can be
+deactivated by setting global option \code{projpred.warn_prj_drawwise} to \code{FALSE}.
+
+Furthermore, by default, \pkg{projpred} checks the convergence of the
+draw-wise divergence minimizers and throws a warning if any seem to have not
+converged. This warning is thrown after the warning message from global
+option \code{projpred.warn_prj_drawwise} (see above) and can be deactivated by
+setting global option \code{projpred.check_conv} to \code{FALSE}.
+}
+
+\section{Parallelization}{
 The projection of the reference model onto a submodel can be run in parallel
 (across the projected draws). This is powered by the \pkg{foreach} package.
 Thus, any parallel (or sequential) backend compatible with \pkg{foreach} can
@@ -93,7 +131,9 @@ without additive terms may be regarded as a projection onto a submodel which
 is a GLM). However, for \code{\link[=cv_varsel]{cv_varsel()}}, there is also a \emph{CV} parallelization
 (i.e., a parallelization of \pkg{projpred}'s cross-validation) which can be
 activated via argument \code{parallel}.
+}
 
+\section{Multilevel models: "Integrating out" group-level effects}{
 In case of multilevel models, \pkg{projpred} offers two global options for
 "integrating out" group-level effects: \code{projpred.mlvl_pred_new} and
 \code{projpred.mlvl_proj_ref_new}. When setting \code{projpred.mlvl_pred_new} to \code{TRUE}
@@ -121,16 +161,21 @@ of \code{FALSE} for \code{projpred.mlvl_proj_ref_new} ensures that at projection
 the submodels fit to the best possible fitted values from the reference
 model, and setting \code{projpred.mlvl_proj_ref_new} to \code{TRUE} would make sense if
 the group-level effects should be integrated out completely.
+}
 
+\section{Memory usage}{
 By setting the global option \code{projpred.run_gc} to \code{TRUE}, \pkg{projpred} will
 call \code{\link[=gc]{gc()}} at some places (e.g., after each size that the forward search
 passes through) to free up some memory. These \code{\link[=gc]{gc()}} calls are not always
 necessary to reduce the peak memory usage, but they add runtime (hence the
 default of \code{FALSE} for that global option).
-
-Technical note: Most examples are not executed when called via \code{\link[=example]{example()}}.
-To execute them, you have to copy and paste them manually to the console.
 }
+
+\section{Other notes}{
+Most examples are not executed when called via \code{\link[=example]{example()}}. To execute them,
+their code has to be copied and pasted manually to the console.
+}
+
 \section{Functions}{
 \describe{
 \item{\code{\link[=init_refmodel]{init_refmodel()}}, \code{\link[=get_refmodel]{get_refmodel()}}}{For setting up an object
@@ -142,8 +187,8 @@ and \code{\link[=get_refmodel]{get_refmodel()}} are only rarely needed.}
 with cross-validation (CV).}
 \item{\code{\link[=summary.vsel]{summary.vsel()}}, \code{\link[=print.vsel]{print.vsel()}}, \code{\link[=plot.vsel]{plot.vsel()}},
 \code{\link[=suggest_size.vsel]{suggest_size.vsel()}}, \code{\link[=ranking]{ranking()}}, \code{\link[=cv_proportions]{cv_proportions()}},
-\code{\link[=plot.cv_proportions]{plot.cv_proportions()}}}{For post-processing the results from \code{\link[=varsel]{varsel()}}
-and \code{\link[=cv_varsel]{cv_varsel()}}.}
+\code{\link[=plot.cv_proportions]{plot.cv_proportions()}}, \code{\link[=performances]{performances()}}}{For post-processing the results
+from \code{\link[=varsel]{varsel()}} and \code{\link[=cv_varsel]{cv_varsel()}}.}
 \item{\code{\link[=project]{project()}}}{For projecting the reference model onto submodel(s).
 Typically, this follows the variable selection, but it can also be applied
 directly (without a variable selection).}

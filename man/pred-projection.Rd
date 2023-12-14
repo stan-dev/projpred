@@ -53,7 +53,7 @@ weights for the new (or old) observations.}
 
 \item{filter_nterms}{Only applies if \code{object} is an object returned by
 \code{\link[=project]{project()}}. In that case, \code{filter_nterms} can be used to filter \code{object}
-for only those elements (submodels) with a number of solution terms in
+for only those elements (submodels) with a number of predictor terms in
 \code{filter_nterms}. Therefore, needs to be a numeric vector or \code{NULL}. If
 \code{NULL}, use all submodels.}
 
@@ -122,7 +122,7 @@ In the following, \eqn{S_{\mathrm{prj}}}{S_prj}, \eqn{N},
 topic \link{refmodel-init-get} are used. (For \code{\link[=proj_linpred]{proj_linpred()}} with \code{integrated = TRUE}, we have \eqn{S_{\mathrm{prj}} = 1}{S_prj = 1}.) Furthermore, let
 \eqn{C} denote either \eqn{C_{\mathrm{cat}}}{C_cat} (if \code{transform = TRUE})
 or \eqn{C_{\mathrm{lat}}}{C_lat} (if \code{transform = FALSE}). Then, if the
-prediction is done for one submodel only (i.e., \code{length(nterms) == 1 || !is.null(solution_terms)} in the explicit or implicit call to \code{\link[=project]{project()}},
+prediction is done for one submodel only (i.e., \code{length(nterms) == 1 || !is.null(predictor_terms)} in the explicit or implicit call to \code{\link[=project]{project()}},
 see argument \code{object}):
 \itemize{
 \item \code{\link[=proj_linpred]{proj_linpred()}} returns a \code{list} with the following elements:
@@ -177,8 +177,8 @@ the order of the response categories from attribute \code{cats}).
 
 If the prediction is done for more than one submodel, the output from above
 is returned for each submodel, giving a named \code{list} with one element for
-each submodel (the names of this \code{list} being the numbers of solution terms
-of the submodels when counting the intercept, too).
+each submodel (the names of this \code{list} being the numbers of predictor
+terms of the submodels when counting the intercept, too).
 }
 \description{
 After the projection of the reference model onto a submodel, the linear
@@ -221,7 +221,7 @@ is another requirement (even though \verb{.<response_name>} is actually used).
 # Data:
 dat_gauss <- data.frame(y = df_gaussian$y, df_gaussian$x)
 
-# The "stanreg" fit which will be used as the reference model (with small
+# The `stanreg` fit which will be used as the reference model (with small
 # values for `chains` and `iter`, but only for technical reasons in this
 # example; this is not recommended in general):
 fit <- rstanarm::stan_glm(
@@ -232,7 +232,7 @@ fit <- rstanarm::stan_glm(
 # Projection onto an arbitrary combination of predictor terms (with a small
 # value for `ndraws`, but only for the sake of speed in this example; this
 # is not recommended in general):
-prj <- project(fit, solution_terms = c("X1", "X3", "X5"), ndraws = 21,
+prj <- project(fit, predictor_terms = c("X1", "X3", "X5"), ndraws = 21,
                seed = 9182, verbose = FALSE)
 
 # Predictions (at the training points) from the submodel onto which the

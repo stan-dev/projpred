@@ -23,7 +23,7 @@
 #'   passed to argument `object` of [project()].
 #' @param filter_nterms Only applies if `object` is an object returned by
 #'   [project()]. In that case, `filter_nterms` can be used to filter `object`
-#'   for only those elements (submodels) with a number of solution terms in
+#'   for only those elements (submodels) with a number of predictor terms in
 #'   `filter_nterms`. Therefore, needs to be a numeric vector or `NULL`. If
 #'   `NULL`, use all submodels.
 #' @param transform For [proj_linpred()] only. A single logical value indicating
@@ -103,7 +103,7 @@
 #'   \eqn{C} denote either \eqn{C_{\mathrm{cat}}}{C_cat} (if `transform = TRUE`)
 #'   or \eqn{C_{\mathrm{lat}}}{C_lat} (if `transform = FALSE`). Then, if the
 #'   prediction is done for one submodel only (i.e., `length(nterms) == 1 ||
-#'   !is.null(solution_terms)` in the explicit or implicit call to [project()],
+#'   !is.null(predictor_terms)` in the explicit or implicit call to [project()],
 #'   see argument `object`):
 #'   * [proj_linpred()] returns a `list` with the following elements:
 #'       + Element `pred` contains the actual predictions, i.e., the linear
@@ -155,14 +155,14 @@
 #'
 #'   If the prediction is done for more than one submodel, the output from above
 #'   is returned for each submodel, giving a named `list` with one element for
-#'   each submodel (the names of this `list` being the numbers of solution terms
-#'   of the submodels when counting the intercept, too).
+#'   each submodel (the names of this `list` being the numbers of predictor
+#'   terms of the submodels when counting the intercept, too).
 #'
 #' @examplesIf requireNamespace("rstanarm", quietly = TRUE)
 #' # Data:
 #' dat_gauss <- data.frame(y = df_gaussian$y, df_gaussian$x)
 #'
-#' # The "stanreg" fit which will be used as the reference model (with small
+#' # The `stanreg` fit which will be used as the reference model (with small
 #' # values for `chains` and `iter`, but only for technical reasons in this
 #' # example; this is not recommended in general):
 #' fit <- rstanarm::stan_glm(
@@ -173,7 +173,7 @@
 #' # Projection onto an arbitrary combination of predictor terms (with a small
 #' # value for `ndraws`, but only for the sake of speed in this example; this
 #' # is not recommended in general):
-#' prj <- project(fit, solution_terms = c("X1", "X3", "X5"), ndraws = 21,
+#' prj <- project(fit, predictor_terms = c("X1", "X3", "X5"), ndraws = 21,
 #'                seed = 9182, verbose = FALSE)
 #'
 #' # Predictions (at the training points) from the submodel onto which the
@@ -191,8 +191,8 @@ NULL
 ## projections. For each projection, it evaluates the fun-function, which
 ## calculates the linear predictor if called from proj_linpred and samples from
 ## the predictive distribution if called from proj_predict.
-proj_helper <- function(object, newdata, offsetnew, weightsnew, onesub_fun,
-                        filter_nterms = NULL, ...) {
+proj_helper <- function(object, newdata, onesub_fun, filter_nterms = NULL,
+                        ...) {
   if (inherits(object, "projection") || is_proj_list(object)) {
     if (!is.null(filter_nterms)) {
       if (!is_proj_list(object)) {
@@ -200,7 +200,7 @@ proj_helper <- function(object, newdata, offsetnew, weightsnew, onesub_fun,
       }
       projs <- Filter(
         function(x) {
-          count_terms_chosen(x$solution_terms) %in% (filter_nterms + 1)
+          count_terms_chosen(x$predictor_terms) %in% (filter_nterms + 1)
         },
         object
       )
@@ -256,35 +256,11 @@ proj_helper <- function(object, newdata, offsetnew, weightsnew, onesub_fun,
   }
 
   names(projs) <- sapply(projs, function(proj) {
-    count_terms_chosen(proj$solution_terms)
+    count_terms_chosen(proj$predictor_terms)
   })
 
-  preds <- lapply(projs, function(proj) {
-    w_o <- proj$refmodel$extract_model_data(
-      proj$refmodel$fit, newdata = newdata, wrhs = weightsnew, orhs = offsetnew,
-      extract_y = FALSE
-    )
-    weightsnew <- w_o$weights
-    offsetnew <- w_o$offset
-    if (length(weightsnew) == 0) {
-      stop("The function supplied to argument `extract_model_data` of ",
-           "init_refmodel() must not return a length-zero element `weights`.")
-    }
-    if (length(offsetnew) == 0) {
-      stop("The function supplied to argument `extract_model_data` of ",
-           "init_refmodel() must not return a length-zero element `offset`.")
-    }
-    if (proj$refmodel$family$for_augdat && !all(weightsnew == 1)) {
-      stop("Currently, the augmented-data projection may not be combined with ",
-           "observation weights (other than 1).")
-    }
-    if (proj$refmodel$family$for_latent && !all(weightsnew == 1)) {
-      stop("Currently, the latent projection may not be combined with ",
-           "observation weights (other than 1).")
-    }
-    onesub_fun(proj, newdata = newdata, offset = offsetnew,
-               weights = weightsnew, extract_y_ind = extract_y_ind, ...)
-  })
+  preds <- lapply(projs, onesub_fun, newdata = newdata,
+                  extract_y_ind = extract_y_ind, ...)
 
   return(unlist_proj(preds))
 }
@@ -323,8 +299,9 @@ proj_linpred <- function(object, newdata = NULL, offsetnew = NULL,
 }
 
 ## function applied to each projected submodel in case of proj_linpred()
-proj_linpred_aux <- function(proj, newdata, offset, weights, transform = FALSE,
-                             integrated = FALSE, extract_y_ind = TRUE,
+proj_linpred_aux <- function(proj, newdata, offsetnew, weightsnew,
+                             transform = FALSE, integrated = FALSE,
+                             extract_y_ind = TRUE,
                              allow_nonconst_wdraws_prj = return_draws_matrix,
                              return_draws_matrix = FALSE, ...) {
   if (!proj[["const_wdraws_prj"]] && !allow_nonconst_wdraws_prj &&
@@ -335,9 +312,13 @@ proj_linpred_aux <- function(proj, newdata, offset, weights, transform = FALSE,
          "into account) or `return_draws_matrix = TRUE`, the latter being ",
          "recommended.")
   }
-  pred_sub <- proj$refmodel$family$mu_fun(proj$outdmin, newdata = newdata,
-                                          offset = offset,
-                                          transform = transform)
+  mdat <- proj$refmodel$extract_model_data(proj$refmodel$fit, newdata = newdata,
+                                           wrhs = weightsnew, orhs = offsetnew,
+                                           extract_y = extract_y_ind)
+  weights <- mdat$weights
+  offset <- mdat$offset
+  pred_sub <- proj$refmodel$mu_fun(proj$outdmin, newdata = newdata,
+                                   offset = offset, transform = transform)
   if (proj$refmodel$family$for_latent && transform) {
     pred_sub <- proj$refmodel$family$latent_ilink(
       t(pred_sub), cl_ref = proj$cl_ref, wdraws_ref = proj$wdraws_ref
@@ -352,11 +333,7 @@ proj_linpred_aux <- function(proj, newdata, offset, weights, transform = FALSE,
       )
     }
   }
-  w_o <- proj$refmodel$extract_model_data(
-    proj$refmodel$fit, newdata = newdata, wrhs = weights,
-    orhs = offset, extract_y = extract_y_ind
-  )
-  ynew <- w_o$y
+  ynew <- mdat$y
   if (!is.null(ynew) && proj$refmodel$family$for_latent && !transform) {
     if (is.null(newdata)) {
       newdata_lat <- newdata
@@ -388,7 +365,7 @@ proj_linpred_aux <- function(proj, newdata, offset, weights, transform = FALSE,
       pred_sub <- proj$wdraws_prj %*% pred_sub
     } else {
       pred_sub <- structure(pred_sub %*% proj$wdraws_prj,
-                            nobs_orig = attr(pred_sub, "nobs_orig"),
+                            ndiscrete = attr(pred_sub, "ndiscrete"),
                             class = oldClass(pred_sub))
     }
     if (!is.null(lpd_out)) {
@@ -526,16 +503,19 @@ proj_predict <- function(object, newdata = NULL, offsetnew = NULL,
 }
 
 ## function applied to each projected submodel in case of proj_predict()
-proj_predict_aux <- function(proj, newdata, offset, weights,
+proj_predict_aux <- function(proj, newdata, offsetnew, weightsnew,
                              nresample_clusters = 1000, resp_oscale = TRUE,
                              return_draws_matrix = FALSE, ...) {
   if (!proj$refmodel$family$for_latent && !resp_oscale) {
     stop("`resp_oscale = FALSE` can only be used in case of the latent ",
          "projection.")
   }
-  mu <- proj$refmodel$family$mu_fun(proj$outdmin,
-                                    newdata = newdata,
-                                    offset = offset)
+  mdat <- proj$refmodel$extract_model_data(proj$refmodel$fit, newdata = newdata,
+                                           wrhs = weightsnew, orhs = offsetnew,
+                                           extract_y = FALSE)
+  weights <- mdat$weights
+  offset <- mdat$offset
+  mu <- proj$refmodel$mu_fun(proj$outdmin, newdata = newdata, offset = offset)
   if (!proj[["const_wdraws_prj"]]) {
     # In this case, the posterior draws have nonconstant weights.
     draw_inds <- sample(x = seq_along(proj$wdraws_prj),
@@ -609,16 +589,16 @@ proj_predict_aux <- function(proj, newdata, offset, weights,
 #' submodels along the full-data predictor ranking. Basic information about the
 #' (CV) variability in the ranking of the predictors is included as well (if
 #' available; inferred from [cv_proportions()]). For a tabular representation,
-#' see [summary.vsel()].
+#' see [summary.vsel()] and [performances()].
 #'
 #' @inheritParams summary.vsel
 #' @param x An object of class `vsel` (returned by [varsel()] or [cv_varsel()]).
-#' @param thres_elpd Only relevant if `any(stats %in% c("elpd", "mlpd"))`. The
-#'   threshold for the ELPD difference (taking the submodel's ELPD minus the
-#'   baseline model's ELPD) above which the submodel's ELPD is considered to be
-#'   close enough to the baseline model's ELPD. An equivalent rule is applied in
-#'   case of the MLPD. See [suggest_size()] for a formalization. Supplying `NA`
-#'   deactivates this.
+#' @param thres_elpd Only relevant if `any(stats %in% c("elpd", "mlpd",
+#'   "gmpd"))`. The threshold for the ELPD difference (taking the submodel's
+#'   ELPD minus the baseline model's ELPD) above which the submodel's ELPD is
+#'   considered to be close enough to the baseline model's ELPD. An equivalent
+#'   rule is applied in case of the MLPD and the GMPD. See [suggest_size()] for
+#'   a formalization. Supplying `NA` deactivates this.
 #' @param point_size Passed to argument `size` of [ggplot2::geom_point()] and
 #'   controls the size of the points.
 #' @param bar_thickness Passed to argument `linewidth` of
@@ -649,19 +629,32 @@ proj_predict_aux <- function(proj, newdata, offset, weights,
 #'   respectively.
 #' @param ranking_colored A single logical value indicating whether the points
 #'   and the uncertainty bars should be gradient-colored according to the CV
-#'   ranking proportions (`TRUE`) or not (`FALSE`). The CV ranking proportions
-#'   may be cumulated (see argument `cumulate`). Note that the point and the
+#'   ranking proportions (`TRUE`, currently only works if `show_cv_proportions`
+#'   is `TRUE` as well) or not (`FALSE`). The CV ranking proportions may be
+#'   cumulated (see argument `cumulate`). Note that the point and the
 #'   uncertainty bar at submodel size 0 (i.e., at the intercept-only model) are
 #'   always colored in gray because the intercept is forced to be selected
 #'   before any predictors are selected (in other words, the reason is that for
 #'   submodel size 0, the question of variability across CV folds is not
 #'   appropriate in the first place).
+#' @param show_cv_proportions A single logical value indicating whether the CV
+#'   ranking proportions (see [cv_proportions()]) should be displayed (`TRUE`)
+#'   or not (`FALSE`).
 #' @param cumulate Passed to argument `cumulate` of [cv_proportions()]. Affects
 #'   the ranking proportions given on the x-axis (below the full-data predictor
 #'   ranking).
 #' @param text_angle Passed to argument `angle` of [ggplot2::element_text()] for
 #'   the x-axis tick labels. In case of long predictor names (and/or large
-#'   `nterms_max`), `text_angle = 45` might be helpful (for example).
+#'   `nterms_max`), `text_angle = 45` might be helpful (for example). If
+#'   `text_angle > 0` (`< 0`), the x-axis text is automatically right-aligned
+#'   (left-aligned). If `-90 < text_angle && text_angle < 90 && text_angle !=
+#'   0`, the x-axis text is also top-aligned.
+#' @param size_position A single character string specifying the position of the
+#'   submodel sizes. Either `"primary_x_bottom"` for including them in the
+#'   x-axis tick labels, `"primary_x_top"` for putting them above the x-axis, or
+#'   `"secondary_x"` for putting them into a secondary x-axis. Currently, both
+#'   of the non-default options may not be combined with `ranking_nterms_max =
+#'   NA`.
 #'
 #' @inherit summary.vsel details
 #'
@@ -677,17 +670,17 @@ proj_predict_aux <- function(proj, newdata, offset, weights,
 #' As long as the reference model's performance is computable, it is always
 #' shown in the plot as a dashed red horizontal line. If `baseline = "best"`,
 #' the baseline model's performance is shown as a dotted black horizontal line.
-#' If `!is.na(thres_elpd)` and `any(stats %in% c("elpd", "mlpd"))`, the value
-#' supplied to `thres_elpd` (which is automatically adapted internally in case
-#' of the MLPD or `deltas = FALSE`) is shown as a dot-dashed gray horizontal
-#' line for the reference model and, if `baseline = "best"`, as a long-dashed
-#' green horizontal line for the baseline model.
+#' If `!is.na(thres_elpd)` and `any(stats %in% c("elpd", "mlpd", "gmpd"))`, the
+#' value supplied to `thres_elpd` (which is automatically adapted internally in
+#' case of the MLPD or the GMPD or `deltas = FALSE`) is shown as a dot-dashed
+#' gray horizontal line for the reference model and, if `baseline = "best"`, as
+#' a long-dashed green horizontal line for the baseline model.
 #'
 #' @examplesIf requireNamespace("rstanarm", quietly = TRUE)
 #' # Data:
 #' dat_gauss <- data.frame(y = df_gaussian$y, df_gaussian$x)
 #'
-#' # The "stanreg" fit which will be used as the reference model (with small
+#' # The `stanreg` fit which will be used as the reference model (with small
 #' # values for `chains` and `iter`, but only for technical reasons in this
 #' # example; this is not recommended in general):
 #' fit <- rstanarm::stan_glm(
@@ -720,10 +713,13 @@ plot.vsel <- function(
     ranking_repel = NULL,
     ranking_repel_args = list(),
     ranking_colored = FALSE,
+    show_cv_proportions = TRUE,
     cumulate = FALSE,
     text_angle = NULL,
+    size_position = "primary_x_bottom",
     ...
 ) {
+  # Parse input:
   object <- x
   validate_vsel_object_stats(object, stats, resp_oscale = resp_oscale)
   baseline <- validate_baseline(object$refmodel, baseline, deltas)
@@ -736,27 +732,31 @@ plot.vsel <- function(
     stopifnot(isTRUE(ranking_repel %in% c("text", "label")))
   }
 
-  ## compute all the statistics and fetch only those that were asked
+  # Define `nfeat_baseline` and a slightly modified variant that can be used for
+  # .tabulate_stats()'s argument `nfeat_baseline`:
   nfeat_baseline <- get_nfeat_baseline(object, baseline, stats[1],
                                        resp_oscale = resp_oscale)
-  tab <- rbind(
-    .tabulate_stats(object, stats, alpha = alpha,
-                    nfeat_baseline = nfeat_baseline, resp_oscale = resp_oscale,
-                    ...),
-    .tabulate_stats(object, stats, alpha = alpha, resp_oscale = resp_oscale,
-                    ...)
-  )
-  stats_table <- subset(tab, tab$delta == deltas)
-  stats_ref <- subset(stats_table, stats_table$size == Inf)
-  stats_sub <- subset(stats_table, stats_table$size != Inf)
-  stats_bs <- subset(stats_table, stats_table$size == nfeat_baseline)
+  if (deltas) {
+    nfeat_baseline_for_tab <- nfeat_baseline
+  } else {
+    nfeat_baseline_for_tab <- NULL
+  }
 
+  # Compute the predictive performance statistics:
+  stats_table_all <- .tabulate_stats(object, stats, alpha = alpha,
+                                     nfeat_baseline = nfeat_baseline_for_tab,
+                                     resp_oscale = resp_oscale, ...)
+  stats_ref <- subset(stats_table_all, stats_table_all$size == Inf)
+  stats_sub <- subset(stats_table_all, stats_table_all$size != Inf)
+  stats_bs <- subset(stats_table_all, stats_table_all$size == nfeat_baseline)
 
+  # Catch unexpected output from .tabulate_stats():
   if (NROW(stats_sub) == 0) {
     stop(ifelse(length(stats) > 1, "Statistics ", "Statistic "),
          paste0(unique(stats), collapse = ", "), " not available.")
   }
 
+  # Define `nterms_max`:
   max_size <- max(stats_sub$size)
   if (max_size == 0) {
     stop("plot.vsel() cannot be used if there is just the intercept-only ",
@@ -765,7 +765,7 @@ plot.vsel <- function(
   if (is.null(nterms_max)) {
     nterms_max <- max_size
   } else {
-    # don't exceed the maximum submodel size
+    # Don't exceed the maximum submodel size:
     nterms_max <- min(nterms_max, max_size)
   }
   if (nterms_max < 1) {
@@ -775,13 +775,21 @@ plot.vsel <- function(
     stop("`nterms_max` must be a whole number.")
   }
   nterms_max <- as.integer(nterms_max)
+
+  # Define some "pretty" text strings for the plot:
   if (baseline == "ref") {
     baseline_pretty <- "reference model"
   } else {
     baseline_pretty <- "best submodel"
   }
   if (deltas) {
-    ylab <- paste0("Difference vs. ", baseline_pretty)
+    if (all(stats != "gmpd")) {
+      ylab <- paste0("Difference vs. ", baseline_pretty)
+    } else if (all(stats == "gmpd")) {
+      ylab <- paste0("Ratio vs. ", baseline_pretty)
+    } else {
+      ylab <- paste0("Difference (ratio for GMPD) vs. ", baseline_pretty)
+    }
   } else {
     ylab <- "Value"
   }
@@ -793,15 +801,17 @@ plot.vsel <- function(
     }
   }
 
-  # make sure that breaks on the x-axis are integers
+  # The following block defines the x-axis breaks (in doing so, we ensure that
+  # these are integers):
   n_opts <- 4:6
   n_possible <- Filter(function(x) nterms_max %% x == 0, n_opts)
   n_alt <- n_opts[which.min(n_opts - (nterms_max %% n_opts))]
   nb <- ifelse(length(n_possible) > 0, min(n_possible), n_alt)
-  # Using as.integer() only to make it clear that this is an integer (just like
+  # Using as.integer() only to make it clear that `by` is an integer (just like
   # `breaks` and `minor_breaks`):
   by <- as.integer(ceiling(nterms_max / min(nterms_max, nb)))
   breaks <- seq(0L, by * min(nterms_max, nb), by)
+  breaks <- breaks[breaks <= nterms_max]
   minor_breaks <- if (by %% 2 == 0) {
     seq(by %/% 2L, by * min(nterms_max, nb), by)
   } else {
@@ -823,10 +833,11 @@ plot.vsel <- function(
 
   if (!is.na(thres_elpd)) {
     # Table of thresholds used in extended suggest_size() heuristics (only in
-    # case of ELPD and MLPD):
+    # case of ELPD, MLPD, and GMPD):
     thres_tab_basic <- data.frame(
-      statistic = c("elpd", "mlpd"),
-      thres = c(thres_elpd, thres_elpd / object$nobs_test)
+      statistic = c("elpd", "mlpd", "gmpd"),
+      thres = c(thres_elpd, thres_elpd / object$nobs_test,
+                exp(thres_elpd / object$nobs_test))
     )
   }
 
@@ -836,6 +847,9 @@ plot.vsel <- function(
   if (!is.na(ranking_nterms_max)) {
     # Predictor ranking(s):
     rk <- ranking(object, nterms_max = ranking_nterms_max)
+    if (!show_cv_proportions) {
+      rk["foldwise"] <- list(NULL)
+    }
     if (!is.null(rk[["foldwise"]])) {
       pr_rk <- diag(cv_proportions(rk, cumulate = cumulate))
     } else {
@@ -843,7 +857,7 @@ plot.vsel <- function(
     }
     rk_dfr <- data.frame(
       size = c(0L, seq_along(rk[["fulldata"]])),
-      rk_fulldata = c("", rk[["fulldata"]]),
+      rk_fulldata = c("(Intercept)", rk[["fulldata"]]),
       cv_props_diag = c(NA, pr_rk)
     )
     rk_dfr[["cv_props_diag_num"]] <- rk_dfr[["cv_props_diag"]]
@@ -871,9 +885,19 @@ plot.vsel <- function(
                                                rk_dfr[["cv_props_diag"]],
                                                sep = "\n")
     }
-    rk_dfr[["size_rkfulldt_cvpropdiag"]] <- paste(
-      rk_dfr[["size"]], rk_dfr[["rkfulldt_cvpropdiag"]], sep = "\n"
-    )
+    if (identical(size_position, "primary_x_bottom")) {
+      rk_dfr[["size_rkfulldt_cvpropdiag"]] <- paste(
+        rk_dfr[["size"]], rk_dfr[["rkfulldt_cvpropdiag"]], sep = "\n"
+      )
+    } else if (identical(size_position, "primary_x_top")) {
+      rk_dfr[["size_rkfulldt_cvpropdiag"]] <- rk_dfr[["rkfulldt_cvpropdiag"]]
+    } else if (identical(size_position, "secondary_x")) {
+      rk_dfr[["size_rkfulldt_cvpropdiag"]] <- rk_dfr[["rkfulldt_cvpropdiag"]]
+      xlab_sec <- xlab
+      xlab <- NULL
+    } else {
+      stop("Unexpected value for argument `size_position`.")
+    }
 
     # Continue x-axis label (title):
     xlab_rk <- "Corresponding predictor from full-data predictor ranking"
@@ -882,7 +906,11 @@ plot.vsel <- function(
     } else if (identical(ranking_repel, "label")) {
       xlab_rk <- paste("Label:", xlab_rk)
     }
-    xlab <- paste(xlab, xlab_rk, sep = "\n")
+    if (!is.null(xlab)) {
+      xlab <- paste(xlab, xlab_rk, sep = "\n")
+    } else {
+      xlab <- xlab_rk
+    }
     if (!is.null(rk[["foldwise"]])) {
       if (cumulate) {
         cumul_pretty <- " cumulated "
@@ -898,13 +926,23 @@ plot.vsel <- function(
       }
       xlab <- paste(xlab, xlab_cumul, sep = "\n")
     }
+  } else {
+    if (identical(size_position, "primary_x_top") ||
+        identical(size_position, "secondary_x")) {
+      stop("Currently, `size_position = \"primary_x_top\"` and `size_position ",
+           "= \"secondary_x\"` are not compatible with `ranking_nterms_max = ",
+           "NA`.")
+    } else if (!identical(size_position, "primary_x_bottom")) {
+      stop("Unexpected value for argument `size_position`.")
+    }
   }
 
-  # plot submodel results
+  # Define the data for the plot:
   data_gg <- subset(stats_sub, stats_sub$size <= nterms_max)
   if (!is.na(ranking_nterms_max) &&
       (!is.null(ranking_repel) ||
-       (ranking_colored && !is.null(rk[["foldwise"]])))) {
+       (ranking_colored && !is.null(rk[["foldwise"]])) ||
+       identical(size_position, "primary_x_top"))) {
     colnms_orig <- names(data_gg)
     data_gg[["row_idx"]] <- seq_len(nrow(data_gg))
     cols_add <- c("cv_props_diag_num", "rkfulldt_cvpropdiag")
@@ -914,25 +952,39 @@ plot.vsel <- function(
     data_gg <- data_gg[order(data_gg[["row_idx"]]), , drop = FALSE]
     data_gg[["row_idx"]] <- NULL
     data_gg <- data_gg[, c(colnms_orig, cols_add), drop = FALSE]
+    if (identical(size_position, "primary_x_top")) {
+      data_gg[["size_chr"]] <- as.character(data_gg[["size"]])
+      data_gg[["size_chr"]][
+        data_gg[["statistic"]] !=
+          utils::tail(levels(as.factor(data_gg[["statistic"]])), 1)
+      ] <- ""
+    }
   }
+
+  # Create the plot:
   pp <- ggplot(data = data_gg,
                mapping = aes(x = .data[["size"]], y = .data[["value"]],
                              ymin = .data[["lq"]], ymax = .data[["uq"]]))
   if (!all(is.na(stats_ref$se))) {
-    # add reference model results if they exist
-
+    # In this case, add the predictive performance of the reference model.
     pp <- pp +
       # The reference model's dashed red horizontal line:
       geom_hline(aes(yintercept = .data[["value"]]),
                  data = stats_ref,
                  color = "darkred", linetype = 2)
-
     if (!is.na(thres_elpd)) {
       # The thresholds used in extended suggest_size() heuristics:
       thres_tab_ref <- merge(thres_tab_basic,
                              stats_ref[, c("statistic", "value")],
                              by = "statistic")
-      thres_tab_ref$thres <- thres_tab_ref$value + thres_tab_ref$thres
+      is_elpd_mlpd_ref <- thres_tab_ref$statistic %in% c("elpd", "mlpd")
+      thres_tab_ref$thres[is_elpd_mlpd_ref] <-
+        thres_tab_ref$value[is_elpd_mlpd_ref] +
+        thres_tab_ref$thres[is_elpd_mlpd_ref]
+      is_gmpd_ref <- thres_tab_ref$statistic %in% c("gmpd")
+      thres_tab_ref$thres[is_gmpd_ref] <-
+        thres_tab_ref$value[is_gmpd_ref] *
+        thres_tab_ref$thres[is_gmpd_ref]
       pp <- pp +
         geom_hline(aes(yintercept = .data[["thres"]]),
                    data = thres_tab_ref,
@@ -940,20 +992,25 @@ plot.vsel <- function(
     }
   }
   if (baseline != "ref") {
-    # add baseline model results (if different from the reference model)
-
+    # In this case, add the predictive performance of the baseline model.
     pp <- pp +
       # The baseline model's dotted black horizontal line:
       geom_hline(aes(yintercept = .data[["value"]]),
                  data = stats_bs,
                  color = "black", linetype = 3)
-
     if (!is.na(thres_elpd)) {
       # The thresholds used in extended suggest_size() heuristics:
       thres_tab_bs <- merge(thres_tab_basic,
                             stats_bs[, c("statistic", "value")],
                             by = "statistic")
-      thres_tab_bs$thres <- thres_tab_bs$value + thres_tab_bs$thres
+      is_elpd_mlpd_bs <- thres_tab_bs$statistic %in% c("elpd", "mlpd")
+      thres_tab_bs$thres[is_elpd_mlpd_bs] <-
+        thres_tab_bs$value[is_elpd_mlpd_bs] +
+        thres_tab_bs$thres[is_elpd_mlpd_bs]
+      is_gmpd_bs <- thres_tab_bs$statistic %in% c("gmpd")
+      thres_tab_bs$thres[is_gmpd_bs] <-
+        thres_tab_bs$value[is_gmpd_bs] *
+        thres_tab_bs$thres[is_gmpd_bs]
       pp <- pp +
         geom_hline(aes(yintercept = .data[["thres"]]),
                    data = thres_tab_bs,
@@ -980,6 +1037,17 @@ plot.vsel <- function(
                    linewidth = bar_thickness) +
     geom_line() +
     geom_point(aes_linerg_pt, size = point_size)
+  if (identical(size_position, "primary_x_top")) {
+    x_color_txt <- calc_element("axis.text.x.bottom", theme_get())[["colour"]]
+    if (!is.character(x_color_txt) || length(x_color_txt) != 1) {
+      warning("Could not retrieve the color for the x-axis tick labels. Using ",
+              "`\"black\"` now.")
+      x_color_txt <- "black"
+    }
+    pp <- pp +
+      geom_text(aes(y = -Inf, label = .data[["size_chr"]]), vjust = -0.5,
+                color = x_color_txt)
+  }
   # Miscellaneous stuff (axes, theming, faceting, etc.):
   if (!is.na(ranking_nterms_max) && ranking_colored &&
       !is.null(rk[["foldwise"]])) {
@@ -997,13 +1065,51 @@ plot.vsel <- function(
     #                        direction = 1)
     ###
   }
+  if (all(stats %in% c("rmse", "auc"))) {
+    ci_type <- "bootstrap "
+  } else if (all(stats %in% c("gmpd"))) {
+    ci_type <- "exponentiated normal-approximation "
+  } else if (all(!stats %in% c("rmse", "auc", "gmpd"))) {
+    ci_type <- "normal-approximation "
+  } else {
+    ci_type <- ""
+  }
+  if (identical(size_position, "secondary_x")) {
+    tick_labs_x_sec <- as.character(rk_dfr[
+      order(match(rk_dfr[["size"]], breaks), na.last = NA),
+      "size"
+    ])
+    x_axis_sec <- dup_axis(name = xlab_sec, labels = tick_labs_x_sec)
+  } else {
+    x_axis_sec <- waiver()
+  }
+  hjust_val <- 0.5
+  vjust_val <- 0.5
+  if (!is.null(text_angle)) {
+    if (text_angle > 0) {
+      hjust_val <- 1
+      if (text_angle < 90) {
+        vjust_val <- 1
+      }
+    } else if (text_angle < 0) {
+      hjust_val <- 0
+      if (text_angle > -90) {
+        vjust_val <- 1
+      }
+    }
+  }
   pp <- pp +
     scale_x_continuous(breaks = breaks, minor_breaks = minor_breaks,
                        limits = c(min(breaks), max(breaks)),
-                       labels = tick_labs_x) +
-    labs(x = xlab, y = ylab) +
-    theme(axis.text.x = element_text(angle = text_angle, hjust = 0.5,
-                                     vjust = 0.5)) +
+                       labels = tick_labs_x,
+                       sec.axis = x_axis_sec) +
+    labs(x = xlab, y = ylab, title = "Predictive performance",
+         subtitle = paste0("Vertical bars indicate ",
+                           round(100 * (1 - alpha), 1), "% ", ci_type,
+                           "intervals")) +
+    theme(axis.text.x.bottom = element_text(angle = text_angle,
+                                            hjust = hjust_val,
+                                            vjust = vjust_val)) +
     facet_grid(statistic ~ ., scales = "free_y")
   if (!is.na(ranking_nterms_max) && !is.null(ranking_repel)) {
     if (identical(ranking_repel, "text")) {
@@ -1033,15 +1139,17 @@ plot.vsel <- function(
 #' information about the (CV) variability in the ranking of the predictors (if
 #' available; inferred from [cv_proportions()]), and estimates for
 #' user-specified predictive performance statistics. For a graphical
-#' representation, see [plot.vsel()].
+#' representation, see [plot.vsel()]. For extracting the predictive performance
+#' results printed at the bottom of the output created by this [summary()]
+#' method, see [performances()].
 #'
 #' @param object An object of class `vsel` (returned by [varsel()] or
 #'   [cv_varsel()]).
 #' @param nterms_max Maximum submodel size (number of predictor terms) for which
 #'   the performance statistics are calculated. Using `NULL` is effectively the
-#'   same as `length(ranking(object)[["fulldata"]])`. Note that `nterms_max`
-#'   does not count the intercept, so use `nterms_max = 0` for the
-#'   intercept-only model. For [plot.vsel()], `nterms_max` must be at least `1`.
+#'   same as `length(ranking(object)$fulldata)`. Note that `nterms_max` does not
+#'   count the intercept, so use `nterms_max = 0` for the intercept-only model.
+#'   For [plot.vsel()], `nterms_max` must be at least `1`.
 #' @param stats One or more character strings determining which performance
 #'   statistics (i.e., utilities or losses) to estimate based on the
 #'   observations in the evaluation (or "test") set (in case of
@@ -1055,13 +1163,24 @@ plot.vsel <- function(
 #'   a---possibly weighted---average across the parameter draws).
 #'   * `"mlpd"`: mean log predictive density, that is, `"elpd"` divided by the
 #'   number of observations.
+#'   * `"gmpd"`: geometric mean predictive density (GMPD), that is, [exp()] of
+#'   `"mlpd"`. The GMPD is especially helpful for discrete response families
+#'   (because there, the GMPD is bounded by zero and one). For the corresponding
+#'   standard error, the delta method is used. The corresponding confidence
+#'   interval type is "exponentiated normal approximation" because the
+#'   confidence interval bounds are the exponentiated confidence interval bounds
+#'   of the `"mlpd"`.
 #'   * `"mse"`: mean squared error (only available in the situations mentioned
 #'   in section "Details" below).
 #'   * `"rmse"`: root mean squared error (only available in the situations
 #'   mentioned in section "Details" below). For the corresponding standard error
 #'   and lower and upper confidence interval bounds, bootstrapping is used.
 #'   * `"acc"` (or its alias, `"pctcorr"`): classification accuracy (only
-#'   available in the situations mentioned in section "Details" below).
+#'   available in the situations mentioned in section "Details" below). By
+#'   "classification accuracy", we mean the proportion of correctly classified
+#'   observations. For this, the response category ("class") with highest
+#'   probability (the probabilities are model-based) is taken as the prediction
+#'   ("classification") for an observation.
 #'   * `"auc"`: area under the ROC curve (only available in the situations
 #'   mentioned in section "Details" below). For the corresponding standard error
 #'   and lower and upper confidence interval bounds, bootstrapping is used.
@@ -1069,20 +1188,25 @@ plot.vsel <- function(
 #'   `"diff"`, and `"diff.se"` indicating which of these to compute for each
 #'   item from `stats` (mean, standard error, lower and upper confidence
 #'   interval bounds, mean difference to the corresponding statistic of the
-#'   reference model, and standard error of this difference, respectively). The
-#'   confidence interval bounds belong to normal-approximation (or bootstrap;
-#'   see argument `stats`) confidence intervals with (nominal) coverage `1 -
-#'   alpha`. Items `"diff"` and `"diff.se"` are only supported if `deltas` is
-#'   `FALSE`.
-#' @param deltas If `TRUE`, the submodel statistics are estimated as differences
-#'   from the baseline model (see argument `baseline`). With a "difference
-#'   *from* the baseline model", we mean to take the submodel statistic minus
-#'   the baseline model statistic (not the other way round).
+#'   reference model, and standard error of this difference, respectively; note
+#'   that for the GMPD, `"diff"`, and `"diff.se"` actually refer to the ratio
+#'   vs. the reference model, not the difference). The confidence interval
+#'   bounds belong to normal-approximation (or bootstrap or exponentiated
+#'   normal-approximation; see argument `stats`) confidence intervals with
+#'   (nominal) coverage `1 - alpha`. Items `"diff"` and `"diff.se"` are only
+#'   supported if `deltas` is `FALSE`.
+#' @param deltas If `TRUE`, the submodel statistics are estimated relatively to
+#'   the baseline model (see argument `baseline`). For the GMPD, the term
+#'   "relatively" refers to the ratio vs. the baseline model (i.e., the submodel
+#'   statistic divided by the baseline model statistic). For all other `stats`,
+#'   "relatively" refers to the difference from the baseline model (i.e., the
+#'   submodel statistic minus the baseline model statistic).
 #' @param alpha A number determining the (nominal) coverage `1 - alpha` of the
-#'   normal-approximation (or bootstrap; see argument `stats`) confidence
-#'   intervals. For example, in case of the normal approximation, `alpha = 2 *
-#'   pnorm(-1)` corresponds to a confidence interval stretching by one standard
-#'   error on either side of the point estimate.
+#'   normal-approximation (or bootstrap or exponentiated normal-approximation;
+#'   see argument `stats`) confidence intervals. For example, in case of the
+#'   normal approximation, `alpha = 2 * pnorm(-1)` corresponds to a confidence
+#'   interval stretching by one standard error on either side of the point
+#'   estimate.
 #' @param baseline For [summary.vsel()]: Only relevant if `deltas` is `TRUE`.
 #'   For [plot.vsel()]: Always relevant. Either `"ref"` or `"best"`, indicating
 #'   whether the baseline is the reference model or the best submodel found (in
@@ -1120,15 +1244,17 @@ plot.vsel <- function(
 #'   latent projection with `resp_oscale = TRUE` in combination with
 #'   `<refmodel>$family$cats` being `NULL`.
 #'
-#' @return An object of class `vselsummary`.
+#' @return An object of class `vselsummary`. The elements of this object are not
+#'   meant to be accessed directly but instead via helper functions
+#'   ([print.vselsummary()] and [performances.vselsummary()]).
 #'
-#' @seealso [print.vselsummary()]
+#' @seealso [print.vselsummary()], [performances.vselsummary()]
 #'
 #' @examplesIf requireNamespace("rstanarm", quietly = TRUE)
 #' # Data:
 #' dat_gauss <- data.frame(y = df_gaussian$y, df_gaussian$x)
 #'
-#' # The "stanreg" fit which will be used as the reference model (with small
+#' # The `stanreg` fit which will be used as the reference model (with small
 #' # values for `chains` and `iter`, but only for technical reasons in this
 #' # example; this is not recommended in general):
 #' fit <- rstanarm::stan_glm(
@@ -1162,9 +1288,10 @@ summary.vsel <- function(
   # Initialize output:
   out <- c(
     object$refmodel[c("formula", "family")],
-    object[c("nobs_train", "type_test", "nobs_test", "method", "cv_method", "K",
-             "validate_search", "clust_used_search", "clust_used_eval",
-             "nprjdraws_search", "nprjdraws_eval")]
+    object[c("nobs_train", "type_test", "nobs_test", "method", "cv_method",
+             "nloo", "K", "validate_search", "clust_used_search",
+             "clust_used_eval", "nprjdraws_search", "nprjdraws_eval",
+             "refit_prj")]
   )
   if (isTRUE(out$validate_search)) {
     out$search_included <- "search included (i.e., fold-wise searches)"
@@ -1172,55 +1299,6 @@ summary.vsel <- function(
     out$search_included <- "search not included (i.e., a full-data search only)"
   }
   class(out) <- "vselsummary"
-
-  # The full table of the performance statistics from `stats`:
-  if (deltas) {
-    nfeat_baseline <- get_nfeat_baseline(object, baseline, stats[1],
-                                         resp_oscale = resp_oscale)
-    tab <- .tabulate_stats(object, stats, alpha = alpha,
-                           nfeat_baseline = nfeat_baseline,
-                           resp_oscale = resp_oscale, ...)
-  } else {
-    tab <- .tabulate_stats(object, stats, alpha = alpha,
-                           resp_oscale = resp_oscale, ...)
-  }
-  stats_table <- subset(tab, tab$size != Inf)
-  stats_table <- do.call(rbind,
-                         lapply(split(stats_table, stats_table$statistic),
-                                utils::head,
-                                n = length(object$solution_terms) + 1))
-  row.names(stats_table) <- NULL
-
-  # Get the names of `stats_table` corresponding to all items from `type`, and
-  # set up their suffices in the table to be returned:
-  if (deltas) {
-    type <- setdiff(type, c("diff", "diff.se"))
-  }
-  qty <- unname(sapply(type, function(t) {
-    switch(t, mean = "value", upper = "uq", lower = "lq", se = "se",
-           diff = "diff", diff.se = "diff.se")
-  }))
-  if (!is.null(object$cv_method)) {
-    cv_suffix <- unname(switch(object$cv_method,
-                               LOO = ".loo", kfold = ".kfold"))
-  } else {
-    cv_suffix <- NULL
-  }
-  if (length(stats) > 1) {
-    suffix <- lapply(stats, function(s) {
-      unname(sapply(type, function(t) {
-        paste0(s,
-               switch(t, mean = cv_suffix, upper = ".upper", lower = ".lower",
-                      se = ".se", diff = ".diff", diff.se = ".diff.se"))
-      }))
-    })
-  } else {
-    suffix <- list(unname(sapply(type, function(t) {
-      switch(t, mean = paste0(stats, cv_suffix), upper = "upper",
-             lower = "lower", se = "se",
-             diff = "diff", diff.se = "diff.se")
-    })))
-  }
 
   # Predictor ranking(s) and associated ranking proportions from fold-wise
   # predictor rankings (if existing):
@@ -1231,30 +1309,99 @@ summary.vsel <- function(
     pr_rk <- rep(NA, length(rk[["fulldata"]]))
   }
 
-  # Construct the (almost) final output table by looping over all requested
-  # statistics, reshaping the corresponding data in `stats_table`, and selecting
-  # only the requested `type`s:
-  arr <- data.frame(size = unique(stats_table$size),
-                    solution_terms = c(NA_character_, rk[["fulldata"]]),
-                    cv_proportions_diag = c(NA, pr_rk))
-  for (i in seq_along(stats)) {
-    temp <- subset(stats_table, stats_table$statistic == stats[i], qty)
-    newnames <- suffix[[i]]
-    colnames(temp) <- newnames
-    arr <- cbind(arr, temp)
+  # The full table of the performance statistics from `stats`:
+  if (deltas) {
+    nfeat_baseline_for_tab <- get_nfeat_baseline(object, baseline, stats[1],
+                                                 resp_oscale = resp_oscale)
+  } else {
+    nfeat_baseline_for_tab <- NULL
   }
-  row.names(arr) <- NULL
+  stats_table_all <- .tabulate_stats(object, stats, alpha = alpha,
+                                     nfeat_baseline = nfeat_baseline_for_tab,
+                                     resp_oscale = resp_oscale, ...)
 
-  # Output (and also cut `arr` at `nterms_max` (if provided)):
+  # Extract the reference model performance results from `stats_table_all`:
+  stats_table_ref <- subset(stats_table_all, stats_table_all$size == Inf)
+
+  # Extract the submodel performance results from `stats_table_all`:
+  stats_table_sub <- subset(stats_table_all, stats_table_all$size != Inf)
+  stats_table_sub <- do.call(
+    rbind,
+    lapply(split(stats_table_sub, stats_table_sub$statistic), utils::head,
+           n = length(object$predictor_ranking) + 1)
+  )
+  row.names(stats_table_sub) <- NULL
+
+  # Initialize the output table for the reference model performance:
+  perf_ref <- as.data.frame(matrix(nrow = 1, ncol = 0))
+
+  # Initialize the output table for the submodel performance:
+  perf_sub <- data.frame(size = unique(stats_table_sub$size),
+                         ranking_fulldata = c("(Intercept)", rk[["fulldata"]]),
+                         cv_proportions_diag = c(NA, pr_rk))
+
+  # For renaming columns of the two output tables (one for the reference model
+  # performance and for the submodel performance):
+  colnms_ref <- mk_colnms_smmry(type = type, stats = stats, deltas = NULL)
+  colnms_sub <- mk_colnms_smmry(type = type, stats = stats, deltas = deltas)
+
+  # Fill the output table for the reference model performance (essentially, we
+  # reshape `stats_table_ref`, thereby selecting only the requested `type`s and
+  # renaming the output columns):
+  for (i in seq_along(stats)) {
+    perf_ref_add <- subset(stats_table_ref,
+                           stats_table_ref$statistic == stats[i],
+                           colnms_ref[["nms_old"]])
+    colnames(perf_ref_add) <- colnms_ref[["nms_new"]][[i]]
+    perf_ref <- cbind(perf_ref, perf_ref_add)
+  }
+  row.names(perf_ref) <- NULL
+
+  # Fill the output table for the submodel performance (essentially, we reshape
+  # `stats_table_sub`, thereby selecting only the requested `type`s and renaming
+  # the output columns):
+  for (i in seq_along(stats)) {
+    perf_sub_add <- subset(stats_table_sub,
+                           stats_table_sub$statistic == stats[i],
+                           colnms_sub[["nms_old"]])
+    colnames(perf_sub_add) <- colnms_sub[["nms_new"]][[i]]
+    perf_sub <- cbind(perf_sub, perf_sub_add)
+  }
+  row.names(perf_sub) <- NULL
+
+  # Output (and also cut `perf_sub` at `nterms_max` (if provided)):
   if (is.null(nterms_max)) {
-    nterms_max <- max(stats_table$size)
+    nterms_max <- max(perf_sub$size)
   }
   out$nterms <- nterms_max
-  out$selection <- subset(arr, arr$size <= nterms_max)
+  out$perf_sub <- subset(perf_sub, perf_sub$size <= nterms_max)
+  stopifnot(nrow(perf_ref) == 1)
+  out$perf_ref <- as.matrix(perf_ref)[1, ]
   out$resp_oscale <- resp_oscale
   out$deltas <- deltas
   out$cumulate <- cumulate
   return(out)
+}
+
+# Helper function for renaming columns of the two main output tables of
+# `vselsummary` objects (these two main output tables are one table for the
+# reference model performance and one table for the submodel performance):
+mk_colnms_smmry <- function(type, stats, deltas) {
+  # Pre-process `type`:
+  if (is.null(deltas) || deltas) {
+    type <- setdiff(type, c("diff", "diff.se"))
+  }
+  type_dot <- paste0(".", type)
+  type_dot[type_dot == ".mean"] <- ""
+  # The column names of `stats_table_all`, but only those corresponding to the
+  # requested `type`s:
+  nms_old <- type
+  nms_old[nms_old == "mean"] <- "value"
+  nms_old[nms_old == "upper"] <- "uq"
+  nms_old[nms_old == "lower"] <- "lq"
+  # The clean column names that should be used in the output table:
+  nms_new <- lapply(stats, paste0, type_dot)
+  return(nlist(nms_old, nms_new))
 }
 
 #' Print summary of a [varsel()] or [cv_varsel()] run
@@ -1263,17 +1410,27 @@ summary.vsel <- function(
 #' It displays a summary of the results from a [varsel()] or [cv_varsel()] run.
 #'
 #' @param x An object of class `vselsummary`.
-#' @param ... Arguments passed to [print.data.frame()].
+#' @param digits Passed to [print.data.frame()] (for the table containing the
+#'   submodel performance evaluation results) and [print.default()] (for the
+#'   vector containing the reference model performance evaluation results).
+#' @param ... Arguments passed to [print.data.frame()] (for the table containing
+#'   the submodel performance evaluation results) and [print.default()] (for the
+#'   vector containing the reference model performance evaluation results).
 #'
-#' @details In the table printed at the bottom, column `solution_terms` contains
-#'   the full-data predictor ranking and column `cv_proportions_diag` contains
-#'   the main diagonal of the matrix returned by [cv_proportions()] (with
-#'   `cumulate` as set in the [summary.vsel()] call that created `x`).
+#' @details In the submodel predictive performance table printed at (or towards)
+#'   the bottom, column `ranking_fulldata` contains the full-data predictor
+#'   ranking and column `cv_proportions_diag` contains the main diagonal of the
+#'   matrix returned by [cv_proportions()] (with `cumulate` as set in the
+#'   [summary.vsel()] call that created `x`). To retrieve the fold-wise
+#'   predictor rankings, use the [ranking()] function, possibly followed by
+#'   [cv_proportions()] for computing the ranking proportions (which can be
+#'   visualized by [plot.cv_proportions()]).
 #'
 #' @return The output of [summary.vsel()] (invisible).
 #'
 #' @export
-print.vselsummary <- function(x, ...) {
+print.vselsummary <- function(x, digits = getOption("projpred.digits", 2),
+                              ...) {
   if (x$family$for_latent) {
     cat("------\nResponse-scale family:\n")
     print(structure(x$family[c("family_oscale", "link_oscale")],
@@ -1310,6 +1467,9 @@ print.vselsummary <- function(x, ...) {
     }
     cat("CV method: ", cv_meth_pretty, " CV with ", K_pretty, x$search_included,
         "\n", sep = "")
+    if (isTRUE(x$nloo < x$nobs_train)) {
+      cat("Subsampled observations (for PSIS-LOO CV): ", x$nloo, "\n", sep = "")
+    }
   }
   cat("Search method: ", x$method, "\n", sep = "")
   cat("Maximum submodel size for the search: ", x$nterms, "\n", sep = "")
@@ -1327,6 +1487,9 @@ print.vselsummary <- function(x, ...) {
       clust_search_pretty, "\n", sep = "")
   cat("Number of projected draws in the performance evaluation: ",
       x$nprjdraws_eval, clust_eval_pretty, "\n", sep = "")
+  # Refitted projections along the predictor ranking(s) (it is probably clearer
+  # to just refer to the argument name):
+  cat("Argument `refit_prj`: ", x$refit_prj, "\n", sep = "")
   cat("\n")
   if (x$family$for_latent) {
     if (x$resp_oscale) {
@@ -1337,20 +1500,14 @@ print.vselsummary <- function(x, ...) {
   } else {
     scale_string <- ""
   }
-  cat("Performance evaluation summary", scale_string, " with `deltas = ",
-      x$deltas, "` and `cumulate = ", x$cumulate, "`:\n", sep = "")
-  print(x$selection, row.names = FALSE, ...)
-  if (isTRUE(x$validate_search)) {
-    message(
-      "Column `solution_terms` contains the full-data predictor ranking. To ",
-      "retrieve the fold-wise predictor rankings, use the ranking() function, ",
-      "possibly followed by cv_proportions() for computing the ranking ",
-      "proportions (which can be visualized by plot.cv_proportions()). The ",
-      "main diagonal of the matrix returned by cv_proportions() (with ",
-      "`cumulate = ", x$cumulate, "`) is contained in column ",
-      "`cv_proportions_diag`."
-    )
-  }
+  cat("Submodel performance evaluation summary", scale_string, " with ",
+      "`deltas = ", x$deltas, "` and `cumulate = ", x$cumulate, "`:\n",
+      sep = "")
+  print(x$perf_sub, row.names = FALSE, digits = digits, ...)
+  cat("\n")
+  cat("Reference model performance evaluation summary", scale_string, " with ",
+      "`deltas = ", x$deltas, "`:\n", sep = "")
+  print(x$perf_ref, digits = digits, ...)
   return(invisible(x))
 }
 
@@ -1361,19 +1518,16 @@ print.vselsummary <- function(x, ...) {
 #' first calling [summary.vsel()] and then [print.vselsummary()].
 #'
 #' @param x An object of class `vsel` (returned by [varsel()] or [cv_varsel()]).
-#' @param ... Arguments passed to [summary.vsel()] (apart from argument `digits`
-#'   which is passed to [print.vselsummary()]).
+#' @param digits Passed to argument `digits` of [print.vselsummary()].
+#' @param ... Arguments passed to [summary.vsel()].
 #'
 #' @return The output of [summary.vsel()] (invisible).
 #'
 #' @export
-print.vsel <- function(x, ...) {
-  dot_args <- list(...)
-  stats <- do.call(summary.vsel, c(list(object = x),
-                                   dot_args[names(dot_args) != "digits"]))
-  do.call(print, c(list(x = stats),
-                   dot_args[names(dot_args) == "digits"]))
-  return(invisible(stats))
+print.vsel <- function(x, digits = getOption("projpred.digits", 2), ...) {
+  smmry <- summary(x, ...)
+  print(smmry, digits = digits)
+  return(invisible(smmry))
 }
 
 #' Suggest submodel size
@@ -1395,12 +1549,12 @@ print.vsel <- function(x, ...) {
 #' @param type Either `"upper"` or `"lower"` determining whether the decision is
 #'   based on the upper or lower confidence interval bound, respectively. See
 #'   section "Details" below for more information.
-#' @param thres_elpd Only relevant if `stat %in% c("elpd", "mlpd")`. The
-#'   threshold for the ELPD difference (taking the submodel's ELPD minus the
+#' @param thres_elpd Only relevant if `stat %in% c("elpd", "mlpd", "gmpd"))`.
+#'   The threshold for the ELPD difference (taking the submodel's ELPD minus the
 #'   baseline model's ELPD) above which the submodel's ELPD is considered to be
 #'   close enough to the baseline model's ELPD. An equivalent rule is applied in
-#'   case of the MLPD. See section "Details" for a formalization. Supplying `NA`
-#'   deactivates this.
+#'   case of the MLPD and the GMPD. See section "Details" for a formalization.
+#'   Supplying `NA` deactivates this.
 #' @param warnings Mainly for internal use. A single logical value indicating
 #'   whether to throw warnings if automatic suggestion fails. Usually there is
 #'   no reason to set this to `FALSE`.
@@ -1409,20 +1563,46 @@ print.vsel <- function(x, ...) {
 #'   See section "Details" below for some important arguments which may be
 #'   passed here.
 #'
-#' @details In general (beware of special extensions below), the suggested model
+#' @details In general (beware of special cases below), the suggested model
 #'   size is the smallest model size \eqn{j \in \{0, 1, ...,
 #'   \texttt{nterms\_max}\}}{{j = 0, 1, ..., nterms_max}} for which either the
 #'   lower or upper bound (depending on argument `type`) of the
-#'   normal-approximation (or bootstrap; see argument `stat`) confidence
-#'   interval (with nominal coverage `1 - alpha`; see argument `alpha` of
-#'   [summary.vsel()]) for \eqn{U_j - U_{\mathrm{base}}}{U_j - U_base} (with
-#'   \eqn{U_j} denoting the \eqn{j}-th submodel's true utility and
-#'   \eqn{U_{\mathrm{base}}}{U_base} denoting the baseline model's true utility)
+#'   normal-approximation (or bootstrap or exponentiated normal-approximation;
+#'   see argument `stat`) confidence interval (with nominal coverage `1 -
+#'   alpha`; see argument `alpha` of [summary.vsel()]) for \eqn{U_j -
+#'   U_{\mathrm{base}}}{U_j - U_base} (with \eqn{U_j} denoting the \eqn{j}-th
+#'   submodel's true utility and \eqn{U_{\mathrm{base}}}{U_base} denoting the
+#'   baseline model's true utility)
 #'   falls above (or is equal to) \deqn{\texttt{pct} \cdot (u_0 -
 #'   u_{\mathrm{base}})}{pct * (u_0 - u_base)} where \eqn{u_0} denotes the null
 #'   model's estimated utility and \eqn{u_{\mathrm{base}}}{u_base} the baseline
 #'   model's estimated utility. The baseline model is either the reference model
 #'   or the best submodel found (see argument `baseline` of [summary.vsel()]).
+#'
+#'   In doing so, loss statistics like the root mean squared error (RMSE) and
+#'   the mean squared error (MSE) are converted to utilities by multiplying them
+#'   by `-1`, so a call such as `suggest_size(object, stat = "rmse", type =
+#'   "upper")` finds the smallest model size whose upper confidence interval
+#'   bound for the *negative* RMSE or MSE exceeds (or is equal to) the cutoff
+#'   (or, equivalently, has the lower confidence interval bound for the RMSE or
+#'   MSE below---or equal to---the cutoff). This is done to make the
+#'   interpretation of argument `type` the same regardless of argument `stat`.
+#'
+#'   For the geometric mean predictive density (GMPD), the decision rule above
+#'   is applied on [log()] scale. In other words, if the true GMPD is denoted by
+#'   \eqn{U^\ast_j}{U^*_j} for the \eqn{j}-th submodel and
+#'   \eqn{U^\ast_{\mathrm{base}}}{U^*_base} for the baseline model (so that
+#'   \eqn{U_j} and \eqn{U_{\mathrm{base}}}{U_base} from above are given by
+#'   \eqn{U_j = \log(U^\ast_j)}{U_j = log(U^*_j)} and
+#'   \eqn{U_{\mathrm{base}} = \log(U^\ast_{\mathrm{base}})}{U_base =
+#'   log(U^*_base)}), then [suggest_size()] yields the smallest model size whose
+#'   lower or upper (depending on argument `type`) confidence interval bound for
+#'   \eqn{\frac{U^\ast_j}{U^\ast_{\mathrm{base}}}}{U^*_j / U^*_base} exceeds (or
+#'   is equal to)
+#'   \deqn{(\frac{u^\ast_0}{u^\ast_{\mathrm{base}}})^{\texttt{pct}}}{(u^*_0 /
+#'   u^*_base)^(pct)} where \eqn{u^\ast_0}{u^*_0} denotes the null
+#'   model's estimated GMPD and \eqn{u^\ast_{\mathrm{base}}}{u^*_base} the
+#'   baseline model's estimated GMPD.
 #'
 #'   If `!is.na(thres_elpd)` and `stat = "elpd"`, the decision rule above is
 #'   extended: The suggested model size is then the smallest model size \eqn{j}
@@ -1432,31 +1612,29 @@ print.vsel <- function(x, ...) {
 #'   the smallest model size \eqn{j} fulfilling the rule above *or* \eqn{u_j -
 #'   u_{\mathrm{base}} > \frac{\texttt{thres\_elpd}}{N}}{u_j - u_base >
 #'   thres_elpd / N} with \eqn{N} denoting the number of observations.
+#'   Correspondingly, in case of `stat = "gmpd"` (and `!is.na(thres_elpd)`), the
+#'   suggested model size is the smallest model size \eqn{j} fulfilling the rule
+#'   above *or* \eqn{\frac{u^\ast_j}{u^\ast_{\mathrm{base}}} >
+#'   \exp(\frac{\texttt{thres\_elpd}}{N})}{u^*_j / u^*_base > exp(thres_elpd /
+#'   N)}.
 #'
 #'   For example (disregarding the special extensions in case of
-#'   `!is.na(thres_elpd)` with `stat = "elpd"` or `stat = "mlpd"`),
-#'   `alpha = 2 * pnorm(-1)`, `pct = 0`, and `type = "upper"` means that we
-#'   select the smallest model size for which the upper bound of the
-#'   `1 - 2 * pnorm(-1)` (approximately 68.3%) confidence interval for
-#'   \eqn{U_j - U_{\mathrm{base}}}{U_j - U_base} exceeds (or is equal to) zero,
-#'   that is (if `stat` is a performance statistic for which the normal
-#'   approximation is used, not the bootstrap), for which the submodel's utility
-#'   estimate is at most one standard error smaller than the baseline model's
-#'   utility estimate (with that standard error referring to the utility
-#'   *difference*).
+#'   `!is.na(thres_elpd)` with `stat %in% c("elpd", "mlpd", "gmpd")`), `alpha =
+#'   2 * pnorm(-1)`, `pct = 0`, and `type = "upper"` means that we select the
+#'   smallest model size for which the upper bound of the `1 - 2 * pnorm(-1)`
+#'   (approximately 68.3%) confidence interval for \eqn{U_j -
+#'   U_{\mathrm{base}}}{U_j - U_base}
+#'   (\eqn{\frac{U^\ast_j}{U^\ast_{\mathrm{base}}}}{U^*_j / U^*_base} in case of
+#'   the GMPD) exceeds (or is equal to) zero (one in case of the GMPD), that is
+#'   (if `stat` is a performance statistic for which the normal approximation is
+#'   used, not the bootstrap and not the exponentiated normal approximation),
+#'   for which the submodel's utility estimate is at most one standard error
+#'   smaller than the baseline model's utility estimate (with that standard
+#'   error referring to the utility *difference*).
 #'
 #'   Apart from the two [summary.vsel()] arguments mentioned above (`alpha` and
 #'   `baseline`), `resp_oscale` is another important [summary.vsel()] argument
 #'   that may be passed via `...`.
-#'
-#' @note Loss statistics like the root mean squared error (RMSE) and the mean
-#'   squared error (MSE) are converted to utilities by multiplying them by `-1`,
-#'   so a call such as `suggest_size(object, stat = "rmse", type = "upper")`
-#'   finds the smallest model size whose upper confidence interval bound for the
-#'   *negative* RMSE or MSE exceeds the cutoff (or, equivalently, has the lower
-#'   confidence interval bound for the RMSE or MSE below the cutoff). This is
-#'   done to make the interpretation of argument `type` the same regardless of
-#'   argument `stat`.
 #'
 #' @return A single numeric value, giving the suggested submodel size (or `NA`
 #'   if the suggestion failed).
@@ -1468,7 +1646,7 @@ print.vsel <- function(x, ...) {
 #' # Data:
 #' dat_gauss <- data.frame(y = df_gaussian$y, df_gaussian$x)
 #'
-#' # The "stanreg" fit which will be used as the reference model (with small
+#' # The `stanreg` fit which will be used as the reference model (with small
 #' # values for `chains` and `iter`, but only for technical reasons in this
 #' # example; this is not recommended in general):
 #' fit <- rstanarm::stan_glm(
@@ -1507,7 +1685,7 @@ suggest_size.vsel <- function(
                         type = c("mean", "upper", "lower"),
                         deltas = TRUE,
                         ...)
-  stats <- stats$selection
+  stats <- stats$perf_sub
 
   if (is_util(stat)) {
     sgn <- 1
@@ -1519,26 +1697,23 @@ suggest_size.vsel <- function(
       type <- "upper"
     }
   }
-  if (!is.null(object$cv_method)) {
-    suffix <- paste0(".", tolower(object$cv_method))
-  } else {
-    suffix <- ""
-  }
-  bound <- type
+  bound <- paste0(stat, ".", type)
 
-  util_null <- sgn * unlist(unname(subset(
-    stats, stats$size == 0,
-    paste0(stat, suffix)
-  )))
-  util_cutoff <- pct * util_null
+  util_null <- sgn * unlist(unname(subset(stats, stats$size == 0, stat)))
+  if (stat != "gmpd") {
+    util_cutoff <- pct * util_null
+  } else {
+    util_cutoff <- util_null^pct
+  }
   if (is.na(thres_elpd)) {
     thres_elpd <- Inf
   }
   nobs_test <- object$nobs_test
   res <- stats[
     (sgn * stats[, bound] >= util_cutoff) |
-      (stat == "elpd" & stats[, paste0(stat, suffix)] > thres_elpd) |
-      (stat == "mlpd" & stats[, paste0(stat, suffix)] > thres_elpd / nobs_test),
+      (stat == "elpd" & stats[, stat] > thres_elpd) |
+      (stat == "mlpd" & stats[, stat] > thres_elpd / nobs_test) |
+      (stat == "gmpd" & stats[, stat] > exp(thres_elpd / nobs_test)),
     "size", drop = FALSE
   ]
 
@@ -1565,6 +1740,71 @@ suggest_size.vsel <- function(
   }
 
   return(suggested_size)
+}
+
+#' Predictive performance results
+#'
+#' Retrieves the predictive performance summaries after running [varsel()] or
+#' [cv_varsel()]. These summaries are computed by [summary.vsel()], so the main
+#' method of [performances()] is [performances.vselsummary()] (objects of class
+#' `vselsummary` are returned by [summary.vsel()]). As a shortcut method,
+#' [performances.vsel()] is provided as well (objects of class `vsel` are
+#' returned by [varsel()] and [cv_varsel()]). For a graphical representation,
+#' see [plot.vsel()].
+#'
+#' @param object The object from which to retrieve the predictive performance
+#'   results. Possible classes may be inferred from the names of the
+#'   corresponding methods (see also the description).
+#' @param ... For [performances.vsel()]: arguments passed to [summary.vsel()].
+#'   For [performances.vselsummary()]: currently ignored.
+#'
+#' @return An object of class `performances` which is a `list` with the
+#'   following elements:
+#'   * `submodels`: The predictive performance results for the submodels, as a
+#'     `data.frame`.
+#'   * `reference_model`: The predictive performance results for the reference
+#'     model, as a named vector.
+#'
+#' @examplesIf requireNamespace("rstanarm", quietly = TRUE)
+#' # Data:
+#' dat_gauss <- data.frame(y = df_gaussian$y, df_gaussian$x)
+#'
+#' # The `stanreg` fit which will be used as the reference model (with small
+#' # values for `chains` and `iter`, but only for technical reasons in this
+#' # example; this is not recommended in general):
+#' fit <- rstanarm::stan_glm(
+#'   y ~ X1 + X2 + X3 + X4 + X5, family = gaussian(), data = dat_gauss,
+#'   QR = TRUE, chains = 2, iter = 500, refresh = 0, seed = 9876
+#' )
+#'
+#' # Run varsel() (here without cross-validation, with L1 search, and with small
+#' # values for `nterms_max` and `nclusters_pred`, but only for the sake of
+#' # speed in this example; this is not recommended in general):
+#' vs <- varsel(fit, method = "L1", nterms_max = 3, nclusters_pred = 10,
+#'              seed = 5555)
+#' print(performances(vs))
+#'
+#' @export
+performances <- function(object, ...) {
+  UseMethod("performances")
+}
+
+#' @rdname performances
+#' @export
+performances.vselsummary <- function(object, ...) {
+  perf_sub <- object[["perf_sub"]]
+  perf_cols <- setdiff(names(perf_sub),
+                       c("ranking_fulldata", "cv_proportions_diag"))
+  perf_sub <- perf_sub[, perf_cols, drop = FALSE]
+  return(structure(list(submodels = perf_sub,
+                        reference_model = object[["perf_ref"]]),
+                   class = "performances"))
+}
+
+#' @rdname performances
+#' @export
+performances.vsel <- function(object, ...) {
+  return(performances(summary(object, ...)))
 }
 
 # Make the parameter name(s) for the intercept(s) adhere to the naming scheme
@@ -2032,9 +2272,9 @@ get_subparams.mmblogit <- function(x, ...) {
 #' @param x An object of class `projection` (returned by [project()], possibly
 #'   as elements of a `list`).
 #' @param nm_scheme The naming scheme for the columns of the output matrix.
-#'   Either `"auto"`, `"rstanarm"`, or `"brms"`, where `"auto"` chooses
-#'   `"rstanarm"` or `"brms"` based on the class of the reference model fit (and
-#'   uses `"rstanarm"` if the reference model fit is of an unknown class).
+#'   Either `NULL`, `"rstanarm"`, or `"brms"`, where `NULL` chooses `"rstanarm"`
+#'   or `"brms"` based on the class of the reference model fit (and uses
+#'   `"rstanarm"` if the reference model fit is of an unknown class).
 #' @param allow_nonconst_wdraws_prj A single logical value indicating whether to
 #'   allow projected draws with different (i.e., nonconstant) weights (`TRUE`)
 #'   or not (`FALSE`). **CAUTION**: Expert use only because if set to `TRUE`,
@@ -2060,7 +2300,7 @@ get_subparams.mmblogit <- function(x, ...) {
 #' # Data:
 #' dat_gauss <- data.frame(y = df_gaussian$y, df_gaussian$x)
 #'
-#' # The "stanreg" fit which will be used as the reference model (with small
+#' # The `stanreg` fit which will be used as the reference model (with small
 #' # values for `chains` and `iter`, but only for technical reasons in this
 #' # example; this is not recommended in general):
 #' fit <- rstanarm::stan_glm(
@@ -2071,7 +2311,7 @@ get_subparams.mmblogit <- function(x, ...) {
 #' # Projection onto an arbitrary combination of predictor terms (with a small
 #' # value for `ndraws`, but only for the sake of speed in this example; this
 #' # is not recommended in general):
-#' prj <- project(fit, solution_terms = c("X1", "X3", "X5"), ndraws = 21,
+#' prj <- project(fit, predictor_terms = c("X1", "X3", "X5"), ndraws = 21,
 #'                seed = 9182, verbose = FALSE)
 #'
 #' # Applying the as.matrix() generic to the output of project() dispatches to
@@ -2094,11 +2334,11 @@ get_subparams.mmblogit <- function(x, ...) {
 #'
 #' @method as.matrix projection
 #' @export
-as.matrix.projection <- function(x, nm_scheme = "auto",
+as.matrix.projection <- function(x, nm_scheme = NULL,
                                  allow_nonconst_wdraws_prj = FALSE, ...) {
   if (inherits(x$refmodel, "datafit")) {
     stop("as.matrix.projection() does not work for objects based on ",
-         "\"datafit\"s.")
+         "`datafit`s.")
   }
   if (!x[["const_wdraws_prj"]] && !allow_nonconst_wdraws_prj) {
     stop("The projected draws have different (i.e., nonconstant) weights, so ",
@@ -2108,6 +2348,11 @@ as.matrix.projection <- function(x, nm_scheme = "auto",
          "recommended.")
   }
   if (identical(nm_scheme, "auto")) {
+    warning("The possibility of `nm_scheme = \"auto\"` is deprecated and will ",
+            "be removed in the future. Please use `nm_scheme = NULL` instead.")
+    nm_scheme <- NULL
+  }
+  if (is.null(nm_scheme)) {
     if (inherits(x$refmodel$fit, "brmsfit")) {
       nm_scheme <- "brms"
     } else {
@@ -2152,7 +2397,7 @@ as.matrix.projection <- function(x, nm_scheme = "auto",
 #' # Data:
 #' dat_gauss <- data.frame(y = df_gaussian$y, df_gaussian$x)
 #'
-#' # The "stanreg" fit which will be used as the reference model (with small
+#' # The `stanreg` fit which will be used as the reference model (with small
 #' # values for `chains` and `iter`, but only for technical reasons in this
 #' # example; this is not recommended in general):
 #' fit <- rstanarm::stan_glm(
@@ -2163,7 +2408,7 @@ as.matrix.projection <- function(x, nm_scheme = "auto",
 #' # Projection onto an arbitrary combination of predictor terms (with a small
 #' # value for `nclusters`, but only for illustrative purposes; this is not
 #' # recommended in general):
-#' prj <- project(fit, solution_terms = c("X1", "X3", "X5"), nclusters = 5,
+#' prj <- project(fit, predictor_terms = c("X1", "X3", "X5"), nclusters = 5,
 #'                seed = 9182, verbose = FALSE)
 #'
 #' # Applying the posterior::as_draws_matrix() generic to the output of
@@ -2395,7 +2640,7 @@ solution_terms.projection <- function(object, ...) {
 #' # Data:
 #' dat_gauss <- data.frame(y = df_gaussian$y, df_gaussian$x)
 #'
-#' # The "stanreg" fit which will be used as the reference model (with small
+#' # The `stanreg` fit which will be used as the reference model (with small
 #' # values for `chains` and `iter`, but only for technical reasons in this
 #' # example; this is not recommended in general):
 #' fit <- rstanarm::stan_glm(
@@ -2406,7 +2651,7 @@ solution_terms.projection <- function(object, ...) {
 #' # Projection onto an arbitrary combination of predictor terms (with a small
 #' # value for `nclusters`, but only for the sake of speed in this example;
 #' # this is not recommended in general):
-#' prj <- project(fit, solution_terms = c("X1", "X3", "X5"), nclusters = 10,
+#' prj <- project(fit, predictor_terms = c("X1", "X3", "X5"), nclusters = 10,
 #'                seed = 9182, verbose = FALSE)
 #' print(predictor_terms(prj)) # gives `c("X1", "X3", "X5")`
 #'
@@ -2418,7 +2663,7 @@ predictor_terms <- function(object, ...) {
 #' @rdname predictor_terms
 #' @export
 predictor_terms.projection <- function(object, ...) {
-  return(object[["solution_terms"]])
+  return(object[["predictor_terms"]])
 }
 
 #' Predictor ranking(s)
@@ -2474,8 +2719,8 @@ ranking.vsel <- function(object, nterms_max = NULL, ...) {
       "corresponding fold-wise predictor rankings cannot be extracted."
     )
   }
-  out <- list(fulldata = object[["solution_terms"]],
-              foldwise = object[["solution_terms_cv"]])
+  out <- list(fulldata = object[["predictor_ranking"]],
+              foldwise = object[["predictor_ranking_cv"]])
   if (!is.null(nterms_max)) {
     out[["fulldata"]] <- utils::head(out[["fulldata"]], nterms_max)
     if (!is.null(out[["foldwise"]])) {
@@ -2620,7 +2865,7 @@ cv_proportions.vsel <- function(object, ...) {
 #' # Data:
 #' dat_gauss <- data.frame(y = df_gaussian$y, df_gaussian$x)
 #'
-#' # The "stanreg" fit which will be used as the reference model (with small
+#' # The `stanreg` fit which will be used as the reference model (with small
 #' # values for `chains` and `iter`, but only for technical reasons in this
 #' # example; this is not recommended in general):
 #' fit <- rstanarm::stan_glm(

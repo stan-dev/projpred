@@ -21,8 +21,10 @@
   ranking_repel = NULL,
   ranking_repel_args = list(),
   ranking_colored = FALSE,
+  show_cv_proportions = TRUE,
   cumulate = FALSE,
   text_angle = NULL,
+  size_position = "primary_x_bottom",
   ...
 )
 }
@@ -31,9 +33,9 @@
 
 \item{nterms_max}{Maximum submodel size (number of predictor terms) for which
 the performance statistics are calculated. Using \code{NULL} is effectively the
-same as \code{length(ranking(object)[["fulldata"]])}. Note that \code{nterms_max}
-does not count the intercept, so use \code{nterms_max = 0} for the
-intercept-only model. For \code{\link[=plot.vsel]{plot.vsel()}}, \code{nterms_max} must be at least \code{1}.}
+same as \code{length(ranking(object)$fulldata)}. Note that \code{nterms_max} does not
+count the intercept, so use \code{nterms_max = 0} for the intercept-only model.
+For \code{\link[=plot.vsel]{plot.vsel()}}, \code{nterms_max} must be at least \code{1}.}
 
 \item{stats}{One or more character strings determining which performance
 statistics (i.e., utilities or losses) to estimate based on the
@@ -49,39 +51,53 @@ density values (with each of these predictive density values being
 a---possibly weighted---average across the parameter draws).
 \item \code{"mlpd"}: mean log predictive density, that is, \code{"elpd"} divided by the
 number of observations.
+\item \code{"gmpd"}: geometric mean predictive density (GMPD), that is, \code{\link[=exp]{exp()}} of
+\code{"mlpd"}. The GMPD is especially helpful for discrete response families
+(because there, the GMPD is bounded by zero and one). For the corresponding
+standard error, the delta method is used. The corresponding confidence
+interval type is "exponentiated normal approximation" because the
+confidence interval bounds are the exponentiated confidence interval bounds
+of the \code{"mlpd"}.
 \item \code{"mse"}: mean squared error (only available in the situations mentioned
 in section "Details" below).
 \item \code{"rmse"}: root mean squared error (only available in the situations
 mentioned in section "Details" below). For the corresponding standard error
 and lower and upper confidence interval bounds, bootstrapping is used.
 \item \code{"acc"} (or its alias, \code{"pctcorr"}): classification accuracy (only
-available in the situations mentioned in section "Details" below).
+available in the situations mentioned in section "Details" below). By
+"classification accuracy", we mean the proportion of correctly classified
+observations. For this, the response category ("class") with highest
+probability (the probabilities are model-based) is taken as the prediction
+("classification") for an observation.
 \item \code{"auc"}: area under the ROC curve (only available in the situations
 mentioned in section "Details" below). For the corresponding standard error
 and lower and upper confidence interval bounds, bootstrapping is used.
 }}
 
-\item{deltas}{If \code{TRUE}, the submodel statistics are estimated as differences
-from the baseline model (see argument \code{baseline}). With a "difference
-\emph{from} the baseline model", we mean to take the submodel statistic minus
-the baseline model statistic (not the other way round).}
+\item{deltas}{If \code{TRUE}, the submodel statistics are estimated relatively to
+the baseline model (see argument \code{baseline}). For the GMPD, the term
+"relatively" refers to the ratio vs. the baseline model (i.e., the submodel
+statistic divided by the baseline model statistic). For all other \code{stats},
+"relatively" refers to the difference from the baseline model (i.e., the
+submodel statistic minus the baseline model statistic).}
 
 \item{alpha}{A number determining the (nominal) coverage \code{1 - alpha} of the
-normal-approximation (or bootstrap; see argument \code{stats}) confidence
-intervals. For example, in case of the normal approximation, \code{alpha = 2 * pnorm(-1)} corresponds to a confidence interval stretching by one standard
-error on either side of the point estimate.}
+normal-approximation (or bootstrap or exponentiated normal-approximation;
+see argument \code{stats}) confidence intervals. For example, in case of the
+normal approximation, \code{alpha = 2 * pnorm(-1)} corresponds to a confidence
+interval stretching by one standard error on either side of the point
+estimate.}
 
 \item{baseline}{For \code{\link[=summary.vsel]{summary.vsel()}}: Only relevant if \code{deltas} is \code{TRUE}.
 For \code{\link[=plot.vsel]{plot.vsel()}}: Always relevant. Either \code{"ref"} or \code{"best"}, indicating
 whether the baseline is the reference model or the best submodel found (in
 terms of \code{stats[1]}), respectively.}
 
-\item{thres_elpd}{Only relevant if \code{any(stats \%in\% c("elpd", "mlpd"))}. The
-threshold for the ELPD difference (taking the submodel's ELPD minus the
-baseline model's ELPD) above which the submodel's ELPD is considered to be
-close enough to the baseline model's ELPD. An equivalent rule is applied in
-case of the MLPD. See \code{\link[=suggest_size]{suggest_size()}} for a formalization. Supplying \code{NA}
-deactivates this.}
+\item{thres_elpd}{Only relevant if \code{any(stats \%in\% c("elpd", "mlpd", "gmpd"))}. The threshold for the ELPD difference (taking the submodel's
+ELPD minus the baseline model's ELPD) above which the submodel's ELPD is
+considered to be close enough to the baseline model's ELPD. An equivalent
+rule is applied in case of the MLPD and the GMPD. See \code{\link[=suggest_size]{suggest_size()}} for
+a formalization. Supplying \code{NA} deactivates this.}
 
 \item{resp_oscale}{Only relevant for the latent projection. A single logical
 value indicating whether to calculate the performance statistics on the
@@ -124,13 +140,18 @@ respectively.}
 
 \item{ranking_colored}{A single logical value indicating whether the points
 and the uncertainty bars should be gradient-colored according to the CV
-ranking proportions (\code{TRUE}) or not (\code{FALSE}). The CV ranking proportions
-may be cumulated (see argument \code{cumulate}). Note that the point and the
+ranking proportions (\code{TRUE}, currently only works if \code{show_cv_proportions}
+is \code{TRUE} as well) or not (\code{FALSE}). The CV ranking proportions may be
+cumulated (see argument \code{cumulate}). Note that the point and the
 uncertainty bar at submodel size 0 (i.e., at the intercept-only model) are
 always colored in gray because the intercept is forced to be selected
 before any predictors are selected (in other words, the reason is that for
 submodel size 0, the question of variability across CV folds is not
 appropriate in the first place).}
+
+\item{show_cv_proportions}{A single logical value indicating whether the CV
+ranking proportions (see \code{\link[=cv_proportions]{cv_proportions()}}) should be displayed (\code{TRUE})
+or not (\code{FALSE}).}
 
 \item{cumulate}{Passed to argument \code{cumulate} of \code{\link[=cv_proportions]{cv_proportions()}}. Affects
 the ranking proportions given on the x-axis (below the full-data predictor
@@ -138,7 +159,15 @@ ranking).}
 
 \item{text_angle}{Passed to argument \code{angle} of \code{\link[ggplot2:element]{ggplot2::element_text()}} for
 the x-axis tick labels. In case of long predictor names (and/or large
-\code{nterms_max}), \code{text_angle = 45} might be helpful (for example).}
+\code{nterms_max}), \code{text_angle = 45} might be helpful (for example). If
+\code{text_angle > 0} (\verb{< 0}), the x-axis text is automatically right-aligned
+(left-aligned). If \code{-90 < text_angle && text_angle < 90 && text_angle != 0}, the x-axis text is also top-aligned.}
+
+\item{size_position}{A single character string specifying the position of the
+submodel sizes. Either \code{"primary_x_bottom"} for including them in the
+x-axis tick labels, \code{"primary_x_top"} for putting them above the x-axis, or
+\code{"secondary_x"} for putting them into a secondary x-axis. Currently, both
+of the non-default options may not be combined with \code{ranking_nterms_max = NA}.}
 
 \item{...}{Arguments passed to the internal function which is used for
 bootstrapping (if applicable; see argument \code{stats}). Currently, relevant
@@ -159,7 +188,7 @@ model (possibly also that of some other "baseline" model) and that of the
 submodels along the full-data predictor ranking. Basic information about the
 (CV) variability in the ranking of the predictors is included as well (if
 available; inferred from \code{\link[=cv_proportions]{cv_proportions()}}). For a tabular representation,
-see \code{\link[=summary.vsel]{summary.vsel()}}.
+see \code{\link[=summary.vsel]{summary.vsel()}} and \code{\link[=performances]{performances()}}.
 }
 \details{
 The \code{stats} options \code{"mse"} and \code{"rmse"} are only available for:
@@ -194,11 +223,11 @@ latent projection with \code{resp_oscale = TRUE} in combination with
 As long as the reference model's performance is computable, it is always
 shown in the plot as a dashed red horizontal line. If \code{baseline = "best"},
 the baseline model's performance is shown as a dotted black horizontal line.
-If \code{!is.na(thres_elpd)} and \code{any(stats \%in\% c("elpd", "mlpd"))}, the value
-supplied to \code{thres_elpd} (which is automatically adapted internally in case
-of the MLPD or \code{deltas = FALSE}) is shown as a dot-dashed gray horizontal
-line for the reference model and, if \code{baseline = "best"}, as a long-dashed
-green horizontal line for the baseline model.
+If \code{!is.na(thres_elpd)} and \code{any(stats \%in\% c("elpd", "mlpd", "gmpd"))}, the
+value supplied to \code{thres_elpd} (which is automatically adapted internally in
+case of the MLPD or the GMPD or \code{deltas = FALSE}) is shown as a dot-dashed
+gray horizontal line for the reference model and, if \code{baseline = "best"}, as
+a long-dashed green horizontal line for the baseline model.
 }
 
 \examples{
@@ -206,7 +235,7 @@ green horizontal line for the baseline model.
 # Data:
 dat_gauss <- data.frame(y = df_gaussian$y, df_gaussian$x)
 
-# The "stanreg" fit which will be used as the reference model (with small
+# The `stanreg` fit which will be used as the reference model (with small
 # values for `chains` and `iter`, but only for technical reasons in this
 # example; this is not recommended in general):
 fit <- rstanarm::stan_glm(

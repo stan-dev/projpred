@@ -8,18 +8,20 @@
 #' @param object An object which can be used as input to [get_refmodel()] (in
 #'   particular, objects of class `refmodel`).
 #' @param nterms Only relevant if `object` is of class `vsel` (returned by
-#'   [varsel()] or [cv_varsel()]). Ignored if `!is.null(solution_terms)`. Number
-#'   of terms for the submodel (the corresponding combination of predictor terms
-#'   is taken from `object`). If a numeric vector, then the projection is
-#'   performed for each element of this vector. If `NULL` (and
-#'   `is.null(solution_terms)`), then the value suggested by [suggest_size()] is
-#'   taken (with default arguments for [suggest_size()], implying that this
+#'   [varsel()] or [cv_varsel()]). Ignored if `!is.null(predictor_terms)`.
+#'   Number of terms for the submodel (the corresponding combination of
+#'   predictor terms is taken from `object`). If a numeric vector, then the
+#'   projection is performed for each element of this vector. If `NULL` (and
+#'   `is.null(predictor_terms)`), then the value suggested by [suggest_size()]
+#'   is taken (with default arguments for [suggest_size()], implying that this
 #'   suggested size is based on the ELPD). Note that `nterms` does not count the
 #'   intercept, so use `nterms = 0` for the intercept-only model.
-#' @param solution_terms If not `NULL`, then this needs to be a character vector
-#'   of predictor terms for the submodel onto which the projection will be
-#'   performed. Argument `nterms` is ignored in that case. For an `object` which
-#'   is not of class `vsel`, `solution_terms` must not be `NULL`.
+#' @param solution_terms Deprecated. Please use argument `predictor_terms`
+#'   instead.
+#' @param predictor_terms If not `NULL`, then this needs to be a character
+#'   vector of predictor terms for the submodel onto which the projection will
+#'   be performed. Argument `nterms` is ignored in that case. For an `object`
+#'   which is not of class `vsel`, `predictor_terms` must not be `NULL`.
 #' @param refit_prj A single logical value indicating whether to fit the
 #'   submodels (again) (`TRUE`) or---if `object` is of class `vsel`---to re-use
 #'   the submodel fits from the full-data search that was run when creating
@@ -47,11 +49,10 @@
 #'   calculating output elements `dis` and `ce`.)
 #' @param verbose A single logical value indicating whether to print out
 #'   additional information during the computations. More precisely, this gets
-#'   passed as `projpred_verbose` to the divergence minimizer function of the
+#'   passed as `verbose_divmin` to the divergence minimizer function of the
 #'   `refmodel` object. For the built-in divergence minimizers, this only has an
 #'   effect in case of sequential computations (not in case of parallel
 #'   projection, which is described in [projpred-package]).
-#' @inheritParams varsel
 #' @param ... Arguments passed to [get_refmodel()] (if [get_refmodel()] is
 #'   actually used; see argument `object`) as well as to the divergence
 #'   minimizer (if `refit_prj` is `TRUE`).
@@ -72,7 +73,7 @@
 #'   or thinning.
 #'
 #' @return If the projection is performed onto a single submodel (i.e.,
-#'   `length(nterms) == 1 || !is.null(solution_terms)`), an object of class
+#'   `length(nterms) == 1 || !is.null(predictor_terms)`), an object of class
 #'   `projection` which is a `list` containing the following elements:
 #'   \describe{
 #'     \item{`dis`}{Projected draws for the dispersion parameter.}
@@ -83,7 +84,7 @@
 #'     case of the Gaussian family, that reduced cross-entropy is further
 #'     modified, yielding merely a proxy.}
 #'     \item{`wdraws_prj`}{Weights for the projected draws.}
-#'     \item{`solution_terms`}{A character vector of the submodel's predictor
+#'     \item{`predictor_terms`}{A character vector of the submodel's predictor
 #'     terms.}
 #'     \item{`outdmin`}{A `list` containing the submodel fits (one fit per
 #'     projected draw). This is the same as the return value of the
@@ -117,7 +118,7 @@
 #' # Data:
 #' dat_gauss <- data.frame(y = df_gaussian$y, df_gaussian$x)
 #'
-#' # The "stanreg" fit which will be used as the reference model (with small
+#' # The `stanreg` fit which will be used as the reference model (with small
 #' # values for `chains` and `iter`, but only for technical reasons in this
 #' # example; this is not recommended in general):
 #' fit <- rstanarm::stan_glm(
@@ -140,27 +141,40 @@
 #' # Projection onto an arbitrary combination of predictor terms (with a small
 #' # value for `nclusters`, but only for the sake of speed in this example;
 #' # this is not recommended in general):
-#' prj <- project(fit, solution_terms = c("X1", "X3", "X5"), nclusters = 10,
+#' prj <- project(fit, predictor_terms = c("X1", "X3", "X5"), nclusters = 10,
 #'                seed = 9182, verbose = FALSE)
 #'
 #' @export
-project <- function(object, nterms = NULL, solution_terms = NULL,
-                    refit_prj = TRUE, ndraws = 400, nclusters = NULL, seed = NA,
+project <- function(object, nterms = NULL, solution_terms = predictor_terms,
+                    predictor_terms = NULL, refit_prj = TRUE, ndraws = 400,
+                    nclusters = NULL, seed = NA,
                     verbose = getOption("projpred.verbose_project", TRUE),
-                    regul = 1e-4, ...) {
-  if (inherits(object, "datafit")) {
-    stop("project() does not support an `object` of class \"datafit\".")
+                    ...) {
+  # Parse input -------------------------------------------------------------
+
+  if (!missing(solution_terms)) {
+    warning("Argument `solution_terms` is deprecated. Please use argument ",
+            "`predictor_terms` instead.")
+    predictor_terms <- solution_terms
   }
-  if (!inherits(object, "vsel") && is.null(solution_terms)) {
-    stop("Please provide an `object` of class \"vsel\" or use argument ",
-         "`solution_terms`.")
+
+  ## `object` ---------------------------------------------------------------
+
+  if (inherits(object, "datafit")) {
+    stop("project() does not support an `object` of class `datafit`.")
+  }
+  if (!inherits(object, "vsel") && is.null(predictor_terms)) {
+    stop("Please provide an `object` of class `vsel` or use argument ",
+         "`predictor_terms`.")
   }
   if (!inherits(object, "vsel") && !refit_prj) {
-    stop("Please provide an `object` of class \"vsel\" or use ",
+    stop("Please provide an `object` of class `vsel` or use ",
          "`refit_prj = TRUE`.")
   }
 
   refmodel <- get_refmodel(object, ...)
+
+  ## `seed` -----------------------------------------------------------------
 
   if (exists(".Random.seed", envir = .GlobalEnv)) {
     rng_state_old <- get(".Random.seed", envir = .GlobalEnv)
@@ -173,81 +187,89 @@ project <- function(object, nterms = NULL, solution_terms = NULL,
     set.seed(seed)
   }
 
+  ## `refit_prj` ------------------------------------------------------------
+
   if (refit_prj && inherits(refmodel, "datafit")) {
     warning("Automatically setting `refit_prj` to `FALSE` since the reference ",
-            "model is of class \"datafit\".")
+            "model is of class `datafit`.")
     refit_prj <- FALSE
   }
 
-  stopifnot(is.null(solution_terms) || is.vector(solution_terms, "character"))
+  stopifnot(is.null(predictor_terms) || is.vector(predictor_terms, "character"))
   if (!refit_prj &&
-      !is.null(solution_terms) &&
-      any(object$solution_terms[seq_along(solution_terms)] != solution_terms)) {
-    warning("The given `solution_terms` are not part of the solution path ",
-            "(from `object`), so `refit_prj` is automatically set to `TRUE`.")
+      !is.null(predictor_terms) &&
+      any(
+        object$predictor_ranking[seq_along(predictor_terms)] != predictor_terms
+      )) {
+    warning("The given `predictor_terms` are not part of the predictor ",
+            "ranking (from `object`), so `refit_prj` is automatically set to ",
+            "`TRUE`.")
     refit_prj <- TRUE
   }
 
-  if (!is.null(solution_terms)) {
-    ## if solution_terms is given, nterms is ignored
-    ## (project only onto the given submodel)
-    if (!is.null(object$solution_terms)) {
-      vars <- object$solution_terms
-    } else {
-      ## project only the given model on a fit object
-      vars <- setdiff(
-        split_formula(refmodel$formula,
-                      data = refmodel$fetch_data(),
-                      add_main_effects = FALSE),
-        "1"
-      )
-    }
+  ## `predictor_terms` and `nterms` -----------------------------------------
 
-    if (!all(solution_terms %in% vars)) {
+  if (!is.null(predictor_terms)) {
+    # In this case, `predictor_terms` is given, so `nterms` is ignored.
+    # The table of possible predictor terms:
+    if (!is.null(object$predictor_ranking)) {
+      vars <- object$predictor_ranking
+    } else {
+      vars <- split_formula(refmodel$formula, data = refmodel$fetch_data(),
+                            add_main_effects = FALSE)
+      vars <- setdiff(vars, "1")
+    }
+    # Reduce `predictor_terms` to those predictor terms that can be found in the
+    # table of possible predictor terms:
+    if (!all(predictor_terms %in% vars)) {
       warning(
-        "The following element(s) of `solution_terms` could not be found in ",
-        "the table of possible solution terms: `c(\"",
-        paste(setdiff(solution_terms, vars), collapse = "\", \""), "\")`. ",
-        "These elements are ignored. (The table of solution terms is either ",
-        "`object$solution_terms` or the vector of terms in the reference ",
-        "model, depending on whether `object$solution_terms` is `NULL` or ",
-        "not. Here, the table of solution terms is: `c(\"",
+        "The following element(s) of `predictor_terms` could not be found in ",
+        "the table of possible predictor terms: `c(\"",
+        paste(setdiff(predictor_terms, vars), collapse = "\", \""), "\")`. ",
+        "These elements are ignored. (The table of predictor terms is either ",
+        "`object$predictor_ranking` or the vector of terms in the reference ",
+        "model, depending on whether `object$predictor_ranking` is `NULL` or ",
+        "not. Here, the table of predictor terms is: `c(\"",
         paste(vars, collapse = "\", \""), "\")`.)"
       )
     }
-
-    solution_terms <- intersect(solution_terms, vars)
-    nterms <- length(solution_terms)
+    predictor_terms <- intersect(predictor_terms, vars)
+    nterms <- length(predictor_terms)
   } else {
-    ## by default take the variable ordering from the selection
-    solution_terms <- object$solution_terms
+    # In this case, `predictor_terms` is not given, so it is fetched from
+    # `object$predictor_ranking` and `nterms` becomes relevant.
+    predictor_terms <- object$predictor_ranking
     if (is.null(nterms)) {
+      # In this case, `nterms` is not given, so we infer it via suggest_size().
       sgg_size <- try(suggest_size(object, warnings = FALSE), silent = TRUE)
       if (!inherits(sgg_size, "try-error") && !is.null(sgg_size) &&
           !is.na(sgg_size)) {
-        ## by default, project onto the suggested model size
-        nterms <- min(sgg_size, length(solution_terms))
+        nterms <- min(sgg_size, length(predictor_terms))
       } else {
         stop("Could not suggest a submodel size automatically; please specify ",
-             "`nterms` or `solution_terms`.")
+             "`nterms` or `predictor_terms`.")
       }
     } else {
       if (!is.numeric(nterms) || any(nterms < 0)) {
         stop("Argument `nterms` must contain non-negative values.")
       }
-      if (max(nterms) > length(solution_terms)) {
+      if (max(nterms) > length(predictor_terms)) {
         stop(paste(
           "Cannot perform the projection with", max(nterms), "variables,",
           "because variable selection was run only up to",
-          length(solution_terms), "variables."
+          length(predictor_terms), "variables."
         ))
       }
     }
   }
 
+  ## `nclusters` ------------------------------------------------------------
+
   if (inherits(refmodel, "datafit")) {
     nclusters <- 1
   }
+
+  ## Warnings ---------------------------------------------------------------
 
   nterms_max <- max(nterms)
   nterms_all <- count_terms_in_formula(refmodel$formula) - 1L
@@ -262,25 +284,58 @@ project <- function(object, nterms = NULL, solution_terms = NULL,
     )
   }
 
-  ## project onto the submodels
+  # Projection --------------------------------------------------------------
+
   submodls <- perf_eval(
-    search_path = nlist(
-      solution_terms,
-      p_sel = object$search_path$p_sel,
-      outdmins = object$search_path$outdmins
-    ),
-    nterms = nterms, refmodel = refmodel, regul = regul, refit_prj = refit_prj,
+    search_path = list(predictor_ranking = predictor_terms,
+                       p_sel = object$search_path$p_sel,
+                       outdmins = object$search_path$outdmins),
+    nterms = nterms, refmodel = refmodel, refit_prj = refit_prj,
     ndraws = ndraws, nclusters = nclusters, return_submodls = TRUE,
-    projpred_verbose = verbose, ...
+    verbose_divmin = verbose, ...
   )
 
-  # Output:
+  # Output ------------------------------------------------------------------
+
   projs <- lapply(submodls, function(submodl) {
     proj_k <- submodl
     proj_k$refmodel <- refmodel
     class(proj_k) <- "projection"
     return(proj_k)
   })
-  ## If only one model size, just return the proj instead of a list of projs
+  # If there is only a single submodel size, just return the `projection` object
+  # instead of returning it in a list of length 1:
   return(unlist_proj(projs))
+}
+
+#' Print information about [project()] output
+#'
+#' This is the [print()] method for objects of class `projection`. This method
+#' mainly exists to avoid cluttering the console when printing such objects
+#' accidentally.
+#'
+#' @param x An object of class `projection` (returned by [project()], possibly
+#'   as elements of a `list`).
+#' @param ... Currently ignored.
+#'
+#' @return The input object `x` (invisible).
+#'
+#' @export
+print.projection <- function(x, ...) {
+  cat_cls(x)
+  # Print information about `x` (only information that is unique to `x`; for the
+  # rest, print.refmodel() can be used).
+  if (x$clust_used) {
+    clust_pretty <- " (from clustered projection)"
+  } else {
+    clust_pretty <- ""
+  }
+  cat("Number of projected draws: ", x$nprjdraws, clust_pretty, "\n", sep = "")
+  cat("Predictor terms: ",
+      paste(paste0("\"", predictor_terms(x), "\""), collapse = ", "),
+      "\n", sep = "")
+  cat("\n")
+  cat("More information can be printed via `print(get_refmodel(<x>))`, where ",
+      "`<x>` denotes the object that is currently printed.", "\n", sep = "")
+  return(invisible(x))
 }

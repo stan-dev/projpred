@@ -10,7 +10,9 @@
 #' [varsel()], [cv_varsel()] performs a cross-validation (CV) by running the
 #' search part with the training data of each CV fold separately (an exception
 #' is explained in section "Note" below) and by running the evaluation part on
-#' the corresponding test set of each CV fold.
+#' the corresponding test set of each CV fold. A special method is
+#' [cv_varsel.vsel()] because it re-uses the search results from an earlier
+#' [cv_varsel()] (or [varsel()]) run, as illustrated in the main vignette.
 #'
 #' @inheritParams varsel
 #' @param cv_method The CV method, either `"LOO"` or `"kfold"`. In the `"LOO"`
@@ -19,12 +21,12 @@
 #'   contrast to a standard LOO CV). In the `"kfold"` case, a \eqn{K}-fold CV is
 #'   performed. See also section "Note" below.
 #' @param nloo **Caution:** Still experimental. Only relevant if `cv_method =
-#'   "LOO"`. Number of subsampled PSIS-LOO CV folds, i.e., number of
-#'   observations used for the approximate LOO CV (anything between 1 and the
-#'   original number of observations). Smaller values lead to faster computation
-#'   but higher uncertainty in the evaluation part. If `NULL`, all observations
-#'   are used, but for faster experimentation, one can set this to a smaller
-#'   value.
+#'   "LOO"`. If `nloo` is smaller than the number of all observations,
+#'   approximate full LOO CV using probability-proportional-to-size-sampling
+#'   (PPS) to make accurate computation only for `nloo` (anything from 1 to the
+#'   number of all observations) leave-one-out folds (Magnusson et al., 2019).
+#'   Smaller values lead to faster computation but higher uncertainty in the
+#'   evaluation part. If `NULL`, all observations are used (as by default).
 #' @param K Only relevant if `cv_method = "kfold"` and if `cvfits` is `NULL`
 #'   (which is the case for reference model objects created by
 #'   [get_refmodel.stanreg()] or [brms::get_refmodel.brmsfit()]). Number of
@@ -32,16 +34,16 @@
 #' @param cvfits Only relevant if `cv_method = "kfold"`. The same as argument
 #'   `cvfits` of [init_refmodel()], but repeated here so that output from
 #'   [run_cvfun()] can be inserted here straightforwardly.
-#' @param validate_search Only relevant if `cv_method = "LOO"`. A single logical
-#'   value indicating whether to cross-validate also the search part, i.e.,
-#'   whether to run the search separately for each CV fold (`TRUE`) or not
-#'   (`FALSE`). We strongly do not recommend setting this to `FALSE`, because
-#'   this is known to bias the predictive performance estimates of the selected
-#'   submodels. However, setting this to `FALSE` can sometimes be useful because
-#'   comparing the results to the case where this argument is `TRUE` gives an
-#'   idea of how strongly the search is (over-)fitted to the data (the
-#'   difference corresponds to the search degrees of freedom or the effective
-#'   number of parameters introduced by the search).
+#' @param validate_search A single logical value indicating whether to
+#'   cross-validate also the search part, i.e., whether to run the search
+#'   separately for each CV fold (`TRUE`) or not (`FALSE`). We strongly do not
+#'   recommend setting this to `FALSE`, because this is known to bias the
+#'   predictive performance estimates of the selected submodels. However,
+#'   setting this to `FALSE` can sometimes be useful because comparing the
+#'   results to the case where this argument is `TRUE` gives an idea of how
+#'   strongly the search is (over-)fitted to the data (the difference
+#'   corresponds to the search degrees of freedom or the effective number of
+#'   parameters introduced by the search).
 #' @param seed Pseudorandom number generation (PRNG) seed by which the same
 #'   results can be obtained again if needed. Passed to argument `seed` of
 #'   [set.seed()], but can also be `NA` to not call [set.seed()] at all. If not
@@ -55,6 +57,13 @@
 #' @param parallel A single logical value indicating whether to run costly parts
 #'   of the CV in parallel (`TRUE`) or not (`FALSE`). See also section "Note"
 #'   below.
+#' @param ... For [cv_varsel.default()]: Arguments passed to [get_refmodel()] as
+#'   well as to [cv_varsel.refmodel()]. For [cv_varsel.vsel()]: Arguments passed
+#'   to [cv_varsel.refmodel()]. For [cv_varsel.refmodel()]: Arguments passed to
+#'   the divergence minimizer (see argument `div_minimizer` of [init_refmodel()]
+#'   as well as section "Draw-wise divergence minimizers" of [projpred-package])
+#'   when refitting the submodels for the performance evaluation (if `refit_prj`
+#'   is `TRUE`).
 #'
 #' @inherit varsel details return
 #'
@@ -114,7 +123,7 @@
 #' # Data:
 #' dat_gauss <- data.frame(y = df_gaussian$y, df_gaussian$x)
 #'
-#' # The "stanreg" fit which will be used as the reference model (with small
+#' # The `stanreg` fit which will be used as the reference model (with small
 #' # values for `chains` and `iter`, but only for technical reasons in this
 #' # example; this is not recommended in general):
 #' fit <- rstanarm::stan_glm(
@@ -145,10 +154,73 @@ cv_varsel.default <- function(object, ...) {
 
 #' @rdname cv_varsel
 #' @export
-cv_varsel.vsel <- function(object, ...) {
-  stop("Purpose and content of cv_varsel.vsel() will be changed in a future ",
-       "release. Please use cv_varsel(get_refmodel(<vsel_object>), <...>) ",
-       "instead of cv_varsel(<vsel_object>, <...>).")
+cv_varsel.vsel <- function(
+    object,
+    cv_method = object$cv_method %||% "LOO",
+    nloo = object$nloo,
+    K = object$K %||% if (!inherits(object, "datafit")) 5 else 10,
+    cvfits = object$cvfits,
+    validate_search = object$validate_search %||% TRUE,
+    ...
+) {
+  arg_nms_internal <- c("method", "ndraws", "nclusters", "nterms_max",
+                        "search_control", "penalty", "search_terms")
+  arg_nms_internal_used <- intersect(arg_nms_internal, ...names())
+  n_arg_nms_internal_used <- length(arg_nms_internal_used)
+  if (n_arg_nms_internal_used > 0) {
+    stop("Argument", if (n_arg_nms_internal_used > 1) "s" else "", " ",
+         paste(paste0("`", arg_nms_internal_used, "`"), collapse = ", "), " ",
+         "cannot be specified in this case because cv_varsel.vsel() specifies ",
+         if (n_arg_nms_internal_used > 1) "them" else "it", " ", "internally.")
+  }
+  refmodel <- get_refmodel(object)
+  rk_foldwise <- ranking(object)[["foldwise"]]
+  if (validate_search && !is.null(rk_foldwise)) {
+    if (!identical(cv_method, object[["cv_method"]]) ||
+        (identical(cv_method, object[["cv_method"]]) &&
+         identical(cv_method, "kfold") &&
+         (is.null(cvfits) || !identical(cvfits, object[["cvfits"]]))) ||
+        (identical(cv_method, object[["cv_method"]]) &&
+         (identical(cv_method, "LOO") || identical(cv_method, "loo")) &&
+         !identical(nloo, refmodel[["nobs"]]))) {
+      # In these cases, previous fold-wise predictor rankings cannot be re-used
+      # for the `validate_search = TRUE` run requested here:
+      message("In this case, the previous fold-wise search results cannot be ",
+              "re-used, so the fold-wise searches are run again.")
+      rk_foldwise <- NULL
+    }
+    if (identical(cv_method, object[["cv_method"]]) &&
+        identical(cv_method, "kfold") &&
+        identical(cvfits, object[["cvfits"]]) &&
+        inherits(refmodel[["fit"]], "brmsfit") &&
+        getOption("projpred.mlvl_proj_ref_new", FALSE) &&
+        formula_contains_group_terms(refmodel[["formula"]])) {
+      # In this case, the call(s) to ref_predfun() that is/are performed when
+      # initializing the fold-wise reference model objects via init_refmodel()
+      # (within cvrefbuilder()) involve(s) using the PRNG, so in order to be
+      # able to re-use previous fold-wise predictor rankings, argument
+      # `brms_seed` of brms:::get_refmodel.brmsfit() needs to be set:
+      warning("Please make sure that you have set argument `brms_seed` of ",
+              "brms:::get_refmodel.brmsfit() to some non-`NULL` value.")
+    }
+  }
+  return(cv_varsel(
+    object = refmodel,
+    method = object[["args_search"]][["method"]],
+    ndraws = object[["args_search"]][["ndraws"]],
+    nclusters = object[["args_search"]][["nclusters"]],
+    nterms_max = object[["args_search"]][["nterms_max"]],
+    search_control = object[["args_search"]][["search_control"]],
+    penalty = object[["args_search"]][["penalty"]],
+    search_terms = object[["args_search"]][["search_terms"]],
+    cv_method = cv_method,
+    nloo = nloo,
+    K = K,
+    cvfits = cvfits,
+    validate_search = validate_search,
+    search_out = nlist(search_path = object[["search_path"]], rk_foldwise),
+    ...
+  ))
 }
 
 #' @rdname cv_varsel
@@ -165,22 +237,38 @@ cv_varsel.refmodel <- function(
     nterms_max = NULL,
     penalty = NULL,
     verbose = TRUE,
-    nloo = NULL,
+    nloo = object$nobs,
     K = if (!inherits(object, "datafit")) 5 else 10,
     cvfits = object$cvfits,
+    search_control = NULL,
     lambda_min_ratio = 1e-5,
     nlambda = 150,
     thresh = 1e-6,
-    regul = 1e-4,
     validate_search = TRUE,
     seed = NA,
     search_terms = NULL,
+    search_out = NULL,
     parallel = getOption("projpred.prll_cv", FALSE),
     ...
 ) {
-  if (missing(method) && getOption("projpred.mssg_method_changed", TRUE)) {
-    message("NOTE: In projpred 2.7.0, the default search method ",
-            "was set to \"forward\" for all kinds of models.")
+  if (!missing(lambda_min_ratio)) {
+    warning("Argument `lambda_min_ratio` is deprecated. Please specify ",
+            "control arguments for the search via argument `search_control`. ",
+            "Now using `lambda_min_ratio` as element `lambda_min_ratio` of ",
+            "`search_control`.")
+    search_control$lambda_min_ratio <- lambda_min_ratio
+  }
+  if (!missing(nlambda)) {
+    warning("Argument `nlambda` is deprecated. Please specify control ",
+            "arguments for the search via argument `search_control`. ",
+            "Now using `nlambda` as element `nlambda` of `search_control`.")
+    search_control$nlambda <- nlambda
+  }
+  if (!missing(thresh)) {
+    warning("Argument `thresh` is deprecated. Please specify control ",
+            "arguments for the search via argument `search_control`. ",
+            "Now using `thresh` as element `thresh` of `search_control`.")
+    search_control$thresh <- thresh
   }
 
   if (exists(".Random.seed", envir = .GlobalEnv)) {
@@ -196,6 +284,7 @@ cv_varsel.refmodel <- function(
 
   refmodel <- object
   nterms_all <- count_terms_in_formula(refmodel$formula) - 1L
+
   # Parse arguments which also exist in varsel():
   args <- parse_args_varsel(
     refmodel = refmodel, method = method, refit_prj = refit_prj,
@@ -210,30 +299,51 @@ cv_varsel.refmodel <- function(
   search_terms_was_null <- args$search_terms_was_null
   # Parse arguments specific to cv_varsel():
   args <- parse_args_cv_varsel(
-    refmodel = refmodel, cv_method = cv_method, K = K, cvfits = cvfits,
-    validate_search = validate_search
+    refmodel = refmodel, cv_method = cv_method, nloo = nloo, K = K,
+    cvfits = cvfits, validate_search = validate_search, refit_prj = refit_prj,
+    search_out = search_out
   )
   cv_method <- args$cv_method
+  nloo <- args$nloo
   K <- args$K
   cvfits <- args$cvfits
-  # Arguments specific to the search:
-  opt <- nlist(lambda_min_ratio, nlambda, thresh, regul)
 
-  if (validate_search) {
-    # Full-data search (already done here and not at the end to ensure
-    # consistent PRNG states between the full-data search in the
-    # `validate_search = FALSE` case and the full-data search in the
-    # `validate_search = TRUE` case we are in here):
-    verb_out("-----\nRunning the search using the full dataset ...",
-             verbose = verbose)
-    search_path_full_data <- select(
+  # Full-data search:
+  if (!is.null(search_out)) {
+    search_path_fulldata <- search_out[["search_path"]]
+  } else {
+    verb_txt_search <- "-----\nRunning the search "
+    if (validate_search) {
+      # Point out that this is the full-data search (if `validate_search` is
+      # `FALSE`, this is still a full-data search, but in that case, there are
+      # no fold-wise searches, so pointing out "full-data" could be confusing):
+      verb_txt_search <- paste0(verb_txt_search, "using the full dataset ")
+    }
+    verb_txt_search <- paste0(verb_txt_search, "...")
+    verb_out(verb_txt_search, verbose = verbose)
+    search_path_fulldata <- select(
       refmodel = refmodel, ndraws = ndraws, nclusters = nclusters,
       method = method, nterms_max = nterms_max, penalty = penalty,
-      verbose = verbose, opt = opt, search_terms = search_terms,
+      verbose = verbose, search_control = search_control,
+      search_terms = search_terms,
       search_terms_was_null = search_terms_was_null, ...
     )
     verb_out("-----", verbose = verbose)
-    ce_out <- rep(NA_real_, length(search_path_full_data$solution_terms) + 1L)
+  }
+
+  if (!is.null(search_out) && validate_search) {
+    # Extract the fold-wise predictor rankings (to avoid passing the large
+    # object `search_out` itself) and coerce them to a `list` (in a row-wise
+    # manner) which is needed for the K-fold CV parallelization:
+    search_out_rks <- search_out[["rk_foldwise"]]
+    if (!is.null(search_out_rks)) {
+      n_folds <- nrow(search_out_rks)
+      search_out_rks <- lapply(seq_len(n_folds), function(row_idx) {
+        search_out_rks[row_idx, ]
+      })
+    }
+  } else {
+    search_out_rks <- NULL
   }
 
   if (cv_method == "LOO") {
@@ -241,35 +351,52 @@ cv_varsel.refmodel <- function(
       refmodel = refmodel, method = method, nterms_max = nterms_max,
       ndraws = ndraws, nclusters = nclusters, ndraws_pred = ndraws_pred,
       nclusters_pred = nclusters_pred, refit_prj = refit_prj, penalty = penalty,
-      verbose = verbose, opt = opt, nloo = nloo,
-      validate_search = validate_search, search_terms = search_terms,
-      search_terms_was_null = search_terms_was_null, parallel = parallel, ...
+      verbose = verbose, search_control = search_control, nloo = nloo,
+      validate_search = validate_search,
+      search_path_fulldata = if (validate_search) {
+        # Not needed in this case, so for computational efficiency, avoiding
+        # passing the large object `search_path_fulldata` to loo_varsel():
+        NULL
+      } else {
+        search_path_fulldata
+      },
+      search_terms = search_terms,
+      search_terms_was_null = search_terms_was_null,
+      search_out_rks = search_out_rks, parallel = parallel, ...
     )
   } else if (cv_method == "kfold") {
     sel_cv <- kfold_varsel(
       refmodel = refmodel, method = method, nterms_max = nterms_max,
       ndraws = ndraws, nclusters = nclusters, ndraws_pred = ndraws_pred,
       nclusters_pred = nclusters_pred, refit_prj = refit_prj, penalty = penalty,
-      verbose = verbose, opt = opt, K = K, cvfits = cvfits,
-      search_terms = search_terms, parallel = parallel, ...
+      verbose = verbose, search_control = search_control, K = K,
+      cvfits = cvfits, validate_search = validate_search,
+      search_path_fulldata = if (validate_search) {
+        # Not needed in this case, so for computational efficiency, avoiding
+        # passing the large object `search_path_fulldata` to loo_varsel():
+        NULL
+      } else {
+        # For K-fold CV, `validate_search = FALSE` may not be combined with
+        # `refit_prj = FALSE`, so element `predictor_ranking` is all we need:
+        search_path_fulldata["predictor_ranking"]
+      },
+      search_terms = search_terms, search_out_rks = search_out_rks,
+      parallel = parallel, ...
     )
   }
 
-  if (!validate_search) {
-    # If `validate_search` is `FALSE`, the full-data search is run inside of
-    # loo_varsel(), so we need to retrieve the search results here:
-    search_path_full_data <- sel_cv$search_path
+  if (!validate_search && cv_method == "LOO") {
     ce_out <- sel_cv$ce
+  } else {
+    ce_out <- rep(NA_real_, length(search_path_fulldata$predictor_ranking) + 1L)
   }
 
   # Defined here for `nobs_test` later:
   y_wobs_test <- sel_cv$y_wobs_test
 
   # Information about the clustering/thinning used for the search:
-  refdist_info_search <- list(
-    clust_used = search_path_full_data$p_sel$clust_used,
-    nprjdraws = NCOL(search_path_full_data$p_sel$mu)
-  )
+  refdist_info_search <- search_path_fulldata$p_sel[c("clust_used",
+                                                      "nprjdraws")]
   # Information about the clustering/thinning used for the performance
   # evaluation:
   if (refit_prj) {
@@ -281,9 +408,9 @@ cv_varsel.refmodel <- function(
   # The object to be returned:
   vs <- nlist(refmodel,
               nobs_train = refmodel$nobs,
-              search_path = search_path_full_data,
-              solution_terms = search_path_full_data$solution_terms,
-              solution_terms_cv = sel_cv$solution_terms_cv,
+              search_path = search_path_fulldata,
+              predictor_ranking = search_path_fulldata$predictor_ranking,
+              predictor_ranking_cv = sel_cv$predictor_ranking_cv,
               ce = ce_out,
               type_test = cv_method,
               y_wobs_test,
@@ -293,12 +420,23 @@ cv_varsel.refmodel <- function(
               nterms_max,
               method,
               cv_method,
-              K = K,
+              nloo,
+              K,
               validate_search,
+              cvfits,
+              args_search = nlist(
+                method, ndraws, nclusters, nterms_max,
+                search_control = if (
+                  method == "forward" && is.null(search_control)
+                ) list(...) else search_control,
+                penalty,
+                search_terms = if (search_terms_was_null) NULL else search_terms
+              ),
               clust_used_search = refdist_info_search$clust_used,
               clust_used_eval = refdist_info_eval$clust_used,
               nprjdraws_search = refdist_info_search$nprjdraws,
               nprjdraws_eval = refdist_info_eval$nprjdraws,
+              refit_prj,
               projpred_version = utils::packageVersion("projpred"))
   class(vs) <- "vsel"
   return(vs)
@@ -311,13 +449,15 @@ cv_varsel.refmodel <- function(
 #
 # @param refmodel See argument `object` of cv_varsel().
 # @param cv_method See argument `cv_method` of cv_varsel().
+# @param nloo See argument `nloo` of cv_varsel().
 # @param K See argument `K` of cv_varsel().
 # @param cvfits See argument `cvfits` of cv_varsel().
 # @param validate_search See argument `validate_search` of cv_varsel().
 #
-# @return A list with the processed elements `cv_method`, `K`, and `cvfits`.
-parse_args_cv_varsel <- function(refmodel, cv_method, K, cvfits,
-                                 validate_search) {
+# @return A list with the processed elements `cv_method`, `nloo`, `K`, and
+#   `cvfits`.
+parse_args_cv_varsel <- function(refmodel, cv_method, nloo, K, cvfits,
+                                 validate_search, refit_prj, search_out) {
   stopifnot(!is.null(cv_method))
   if (cv_method == "loo") {
     cv_method <- toupper(cv_method)
@@ -326,8 +466,8 @@ parse_args_cv_varsel <- function(refmodel, cv_method, K, cvfits,
     stop("Unknown `cv_method`.")
   }
   if (cv_method == "LOO" && inherits(refmodel, "datafit")) {
-    warning("For an `object` of class \"datafit\", `cv_method` is ",
-            "automatically set to \"kfold\".")
+    warning("For an `object` of class `datafit`, `cv_method` is automatically ",
+            "set to \"kfold\".")
     cv_method <- "kfold"
   }
 
@@ -339,7 +479,7 @@ parse_args_cv_varsel <- function(refmodel, cv_method, K, cvfits,
           "one level up (and element `fits` removed). The old structure will ",
           "continue to work for a while, but is deprecated."
         )
-        cvfits <- cvfits$fits
+        cvfits <- structure(cvfits$fits, folds = attr(cvfits, "folds"))
       }
       K <- length(cvfits)
     }
@@ -353,16 +493,35 @@ parse_args_cv_varsel <- function(refmodel, cv_method, K, cvfits,
     if (K > NROW(refmodel$y)) {
       stop("`K` cannot exceed the number of observations.")
     }
-    if (!validate_search) {
-      stop("`cv_method = \"kfold\"` cannot be used with ",
-           "`validate_search = FALSE`.")
+    if (!validate_search && !refit_prj) {
+      # Not allowed because this would induce a dependency between training and
+      # test data:
+      stop("For K-fold CV, `validate_search = FALSE` may not be combined with ",
+           "`refit_prj = FALSE`.")
     }
   } else {
-    K <- NULL
-    cvfits <- NULL
+    stopifnot(!is.null(refmodel[["nobs"]]))
+    nloo <- min(nloo, refmodel[["nobs"]])
+    if (nloo < 1) {
+      stop("nloo must be at least 1")
+    } else if (nloo < refmodel[["nobs"]] &&
+               getOption("projpred.warn_subsampled_loo", TRUE)) {
+      warning("Subsampled PSIS-LOO CV is still experimental.")
+    }
   }
 
-  return(nlist(cv_method, K, cvfits))
+  # Restrictions in case of previous search results which should be re-used:
+  if (!is.null(search_out)) {
+    if (validate_search && !is.null(search_out[["rk_foldwise"]]) &&
+        !refit_prj) {
+      # In this case, we would need the fold-wise submodel fits (along the
+      # fold-wise predictor rankings), which are currently not available:
+      stop("If `validate_search = TRUE`, then in general, `refit_prj = FALSE` ",
+           "cannot be combined with the re-use of previous search results.")
+    }
+  }
+
+  return(nlist(cv_method, nloo, K, cvfits))
 }
 
 # PSIS-LOO CV -------------------------------------------------------------
@@ -374,8 +533,9 @@ parse_args_cv_varsel <- function(refmodel, cv_method, K, cvfits,
 # all other arguments, see the documentation of cv_varsel().
 loo_varsel <- function(refmodel, method, nterms_max, ndraws,
                        nclusters, ndraws_pred, nclusters_pred, refit_prj,
-                       penalty, verbose, opt, nloo, validate_search,
-                       search_terms, search_terms_was_null, parallel, ...) {
+                       penalty, verbose, search_control, nloo, validate_search,
+                       search_path_fulldata, search_terms,
+                       search_terms_was_null, search_out_rks, parallel, ...) {
   ## Pre-processing ---------------------------------------------------------
 
   has_grp <- formula_contains_group_terms(refmodel$formula)
@@ -386,7 +546,7 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
   }
 
   # Log-likelihood values for the reference model (necessary for the PSIS-LOO CV
-  # weights, but also for performance statistics like ELPD and MLPD):
+  # weights, but also for performance statistics like ELPD, MLPD, and GMPD):
   if (refmodel$family$for_latent) {
     mu_offs_oscale <- refmodel$family$latent_ilink(
       t(refmodel$mu_offs), cl_ref = seq_along(refmodel$wdraws_ref),
@@ -431,22 +591,19 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
     stop("Currently, more than one posterior draw from the reference model is ",
          "needed (because projpred relies on loo::psis() for PSIS-LOO CV).")
   }
-  # Call loo::psis() and while doing so, catch warnings via capture.output() to
-  # filter out some of them.
-  # Note: capture.output() should only be used to filter out warning messages
-  # (not to make downstream code dependent on catched warnings), see
-  # <https://github.com/stan-dev/loo/issues/227#issuecomment-1663499985>.
-  warn_orig <- options(warn = 1)
-  warn_capt <- utils::capture.output({
+  # Call loo::psis() and while doing so, catch messages and warnings via
+  # capt_mssgs_warns() to filter out some of them.
+  mssgs_warns_capt <- capt_mssgs_warns(
     psisloo <- loo::psis(-loglik_forPSIS, cores = 1, r_eff = NA)
-  }, type = "message")
-  options(warn_orig)
-  warn_capt <- setdiff(warn_capt, "")
+  )
+  mssgs_warns_capt <- setdiff(mssgs_warns_capt, "")
   # Filter out the Pareto k-value warning (we throw a customized one instead):
-  warn_capt <- grep("Some Pareto k diagnostic values are (too|slightly) high",
-                    warn_capt, value = TRUE, invert = TRUE)
-  if (length(warn_capt) > 0) {
-    warning(warn_capt)
+  mssgs_warns_capt <- grep(
+    "Some Pareto k diagnostic values are (too|slightly) high", mssgs_warns_capt,
+    value = TRUE, invert = TRUE
+  )
+  if (length(mssgs_warns_capt) > 0) {
+    warning(mssgs_warns_capt)
   }
   pareto_k <- loo::pareto_k_values(psisloo)
   # Within projpred, moment matching and mixture importance sampling (as well
@@ -504,13 +661,7 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
     refmodel$y <- y_lat_E$value
   }
 
-  # LOO subsampling (by default, don't subsample, but use all observations):
-  nloo <- min(nloo, n)
-  if (nloo < 1) {
-    stop("nloo must be at least 1")
-  } else if (nloo < n && getOption("projpred.warn_subsampled_loo", TRUE)) {
-    warning("Subsampled PSIS-LOO CV is still experimental.")
-  }
+  # LOO PPS subsampling (by default, don't subsample, but use all observations):
   # validset <- loo_subsample(n, nloo, pareto_k)
   loo_ref_oscale <- apply(loglik_forPSIS + lw, 2, log_sum_exp)
   validset <- loo_subsample_pps(nloo, loo_ref_oscale)
@@ -521,7 +672,7 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
   mu_sub <- replicate(
     nterms_max + 1L,
     structure(rep(NA, nrow(refmodel$mu_offs)),
-              nobs_orig = attr(refmodel$mu_offs, "nobs_orig"),
+              ndiscrete = attr(refmodel$mu_offs, "ndiscrete"),
               class = sub("augmat", "augvec", oldClass(refmodel$mu_offs),
                           fixed = TRUE)),
     simplify = FALSE
@@ -535,7 +686,7 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
       mu_sub_oscale <- replicate(
         nterms_max + 1L,
         structure(rep(NA, n * length(refmodel$family$cats)),
-                  nobs_orig = n,
+                  ndiscrete = length(refmodel$family$cats),
                   class = "augvec"),
         simplify = FALSE
       )
@@ -547,33 +698,24 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
   if (!validate_search) {
     ## Case `validate_search = FALSE` -----------------------------------------
 
-    verb_out("-----\nRunning the search using the full dataset ...",
-             verbose = verbose)
-    search_path <- select(
-      refmodel = refmodel, ndraws = ndraws, nclusters = nclusters,
-      method = method, nterms_max = nterms_max, penalty = penalty,
-      verbose = verbose, opt = opt, search_terms = search_terms,
-      search_terms_was_null = search_terms_was_null, ...
-    )
-    verb_out("-----", verbose = verbose)
-
-    verb_out("-----\nPerformance evaluation, step 1: Re-projecting (using the ",
-             "full dataset) onto the submodels along the full-data solution ",
-             "path and evaluating their predictive performance ...",
-             verbose = verbose && refit_prj)
+    # "Run" the performance evaluation for the submodels along the predictor
+    # ranking (in fact, we only prepare the performance evaluation by computing
+    # precursor quantities, but for users, this difference is not perceivable):
+    verb_out("-----\nRunning the performance evaluation with `refit_prj = ",
+             refit_prj, "` ...", verbose = verbose)
+    # Step 1: Re-project (using the full dataset) onto the submodels along the
+    # full-data predictor ranking and evaluate their predictive performance.
     perf_eval_out <- perf_eval(
-      search_path = search_path, refmodel = refmodel, regul = opt$regul,
+      search_path = search_path_fulldata, refmodel = refmodel,
       refit_prj = refit_prj, ndraws = ndraws_pred, nclusters = nclusters_pred,
       return_p_ref = TRUE, return_preds = TRUE, indices_test = inds, ...
     )
     clust_used_eval <- perf_eval_out[["clust_used"]]
     nprjdraws_eval <- perf_eval_out[["nprjdraws"]]
     refdist_eval <- perf_eval_out[["p_ref"]]
-    verb_out("-----", verbose = verbose && refit_prj)
 
-    verb_out("-----\nPerformance evaluation, step 2: Weighting the full-data ",
-             "performance evaluation results according to the PSIS-LOO CV ",
-             "weights ...", verbose = verbose)
+    # Step 2: Weight the full-data performance evaluation results according to
+    # the PSIS-LOO CV weights.
     if (refmodel$family$for_latent) {
       refdist_eval_mu_offs_oscale <- refmodel$family$latent_ilink(
         t(refdist_eval$mu_offs), cl_ref = refdist_eval$cl,
@@ -612,8 +754,7 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
     if (nrow(log_lik_ref) > 1) {
       # Use loo::sis() if the projected draws (i.e., the draws resulting
       # from the clustering or thinning) have nonconstant weights:
-      const_wdraws_prj_eval <- length(unique(refdist_eval$wdraws_prj)) == 1
-      if (const_wdraws_prj_eval) {
+      if (refdist_eval$const_wdraws_prj) {
         # Internally, loo::psis() doesn't perform the Pareto smoothing if the
         # number of draws is small (as indicated by object `no_psis_eval`, see
         # below). In projpred, this can occur, e.g., if users request a number
@@ -671,20 +812,18 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
       }
       importance_sampling_func <- get(importance_sampling_nm,
                                       asNamespace("loo"))
-      warn_orig <- options(warn = 1)
-      warn_capt <- utils::capture.output({
+      mssgs_warns_capt <- capt_mssgs_warns(
         sub_psisloo <- importance_sampling_func(-log_lik_ref, cores = 1,
                                                 r_eff = NA)
-      }, type = "message")
-      options(warn_orig)
-      warn_capt <- setdiff(warn_capt, "")
-      # Filter out Pareto k-value warnings (we throw a customized one instead):
-      warn_capt <- grep(
-        "Some Pareto k diagnostic values are (too|slightly) high", warn_capt,
-        value = TRUE, invert = TRUE
       )
-      if (length(warn_capt) > 0) {
-        warning(warn_capt)
+      mssgs_warns_capt <- setdiff(mssgs_warns_capt, "")
+      # Filter out Pareto k-value warnings (we throw a customized one instead):
+      mssgs_warns_capt <- grep(
+        "Some Pareto k diagnostic values are (too|slightly) high",
+        mssgs_warns_capt, value = TRUE, invert = TRUE
+      )
+      if (length(mssgs_warns_capt) > 0) {
+        warning(mssgs_warns_capt)
       }
       if (importance_sampling_nm == "psis") {
         pareto_k_eval <- loo::pareto_k_values(sub_psisloo)
@@ -716,7 +855,7 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
     # This re-weighting requires a re-normalization (as.array() is applied to
     # have stricter consistency checks, see `?sweep`):
     lw_sub <- sweep(lw_sub, 2, as.array(apply(lw_sub, 2, log_sum_exp)))
-    for (k in seq_len(1 + length(search_path$solution_terms))) {
+    for (k in seq_len(1 + length(search_path_fulldata$predictor_ranking))) {
       # TODO: For consistency, replace `k` in this `for` loop by `j`.
       mu_k <- perf_eval_out[["mu_by_size"]][[k]]
       log_lik_sub <- perf_eval_out[["lppd_by_size"]][[k]]
@@ -758,7 +897,7 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
               exp(lw_sub[, run_index])
           } else {
             # In principle, we could use the same code for averaging across the
-            # draws as above in the `"augmat"` case. However, that would require
+            # draws as above in the `augmat` case. However, that would require
             # `mu_k_oscale <- t(mu_k_oscale)` beforehand, so the following
             # should be more efficient:
             mu_sub_oscale[[k]][i_aug] <- exp(lw_sub[, run_index]) %*%
@@ -768,18 +907,31 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
       }
     }
     verb_out("-----", verbose = verbose)
+    # Needed for cutting off post-processed results later:
+    prv_len_rk <- length(search_path_fulldata$predictor_ranking)
   } else {
     ## Case `validate_search = TRUE` ------------------------------------------
 
-    cl_sel <- get_refdist(refmodel, ndraws = ndraws, nclusters = nclusters)$cl
+    search_out_rks_was_null <- is.null(search_out_rks)
+    if (search_out_rks_was_null) {
+      cl_sel <- get_refdist(refmodel, ndraws = ndraws, nclusters = nclusters)$cl
+    }
     if (refit_prj) {
       cl_pred <- get_refdist(refmodel, ndraws = ndraws_pred,
                              nclusters = nclusters_pred)$cl
     }
 
-    verb_out("-----\nRunning the search and the performance evaluation for ",
-             "each of the N = ", nloo, " LOO CV folds separately ...",
-             verbose = verbose)
+    if (verbose) {
+      verb_txt_start <- "-----\nRunning "
+      if (!search_out_rks_was_null) {
+        verb_txt_mid <- ""
+      } else {
+        verb_txt_mid <- "the search and "
+      }
+      verb_out(verb_txt_start, verb_txt_mid, "the performance evaluation with ",
+               "`refit_prj = ", refit_prj, "` for each of the N = ", nloo, " ",
+               "LOO CV folds separately ...")
+    }
     one_obs <- function(run_index,
                         verbose_search = verbose &&
                           getOption("projpred.extra_verbose", FALSE),
@@ -791,24 +943,28 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
       # *reweighted* fitted response values from the reference model act as
       # artifical response values in the projection (or L1-penalized
       # projection)):
-      search_path <- select(
-        refmodel = refmodel, ndraws = ndraws, nclusters = nclusters,
-        reweighting_args = list(cl_ref = cl_sel, wdraws_ref = exp(lw[, i])),
-        method = method, nterms_max = nterms_max, penalty = penalty,
-        verbose = verbose_search, opt = opt, search_terms = search_terms,
-        est_runtime = FALSE, ...
-      )
+      if (!search_out_rks_was_null) {
+        search_path <- list(predictor_ranking = search_out_rks[[run_index]])
+      } else {
+        search_path <- select(
+          refmodel = refmodel, ndraws = ndraws, nclusters = nclusters,
+          reweighting_args = list(cl_ref = cl_sel, wdraws_ref = exp(lw[, i])),
+          method = method, nterms_max = nterms_max, penalty = penalty,
+          verbose = verbose_search, search_control = search_control,
+          search_terms = search_terms, est_runtime = FALSE, ...
+        )
+      }
 
       # Run the performance evaluation for the submodels along the predictor
       # ranking:
       perf_eval_out <- perf_eval(
-        search_path = search_path, refmodel = refmodel, regul = opt$regul,
-        refit_prj = refit_prj, ndraws = ndraws_pred, nclusters = nclusters_pred,
+        search_path = search_path, refmodel = refmodel, refit_prj = refit_prj,
+        ndraws = ndraws_pred, nclusters = nclusters_pred,
         reweighting_args = list(cl_ref = cl_pred, wdraws_ref = exp(lw[, i])),
         indices_test = i, ...
       )
 
-      return(nlist(predictor_ranking = search_path[["solution_terms"]],
+      return(nlist(predictor_ranking = search_path[["predictor_ranking"]],
                    summaries_sub = perf_eval_out[["sub_summaries"]],
                    clust_used_eval = perf_eval_out[["clust_used"]],
                    nprjdraws_eval = perf_eval_out[["nprjdraws"]]))
@@ -852,11 +1008,11 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
                            dot_args))
       }
     }
-    # For storing the fold-wise solution paths:
-    solution_terms_mat <- matrix(nrow = n, ncol = nterms_max)
-    # For checking that the length of the predictor ranking is the same across
-    # all CV folds (and also for cutting off `solution_terms_mat` later):
-    prv_len_soltrms <- NULL
+    # For storing the fold-wise predictor rankings:
+    predictor_ranking_mat <- matrix(nrow = n, ncol = nterms_max)
+    # Needed for checking that the length of the predictor ranking is the same
+    # across all CV folds and for cutting off post-processed results later:
+    prv_len_rk <- NULL
     # For checking that `clust_used_eval` is the same across all CV folds (and
     # also for storing it):
     clust_used_eval <- NULL
@@ -885,12 +1041,12 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
       }
 
       rk_i <- res_cv[[run_index]][["predictor_ranking"]]
-      if (is.null(prv_len_soltrms)) {
-        prv_len_soltrms <- length(rk_i)
+      if (is.null(prv_len_rk)) {
+        prv_len_rk <- length(rk_i)
       } else if (getOption("projpred.additional_checks", FALSE)) {
-        stopifnot(identical(length(rk_i), prv_len_soltrms))
+        stopifnot(identical(length(rk_i), prv_len_rk))
       }
-      solution_terms_mat[i, seq_along(rk_i)] <- rk_i
+      predictor_ranking_mat[i, seq_along(rk_i)] <- rk_i
 
       if (is.null(clust_used_eval)) {
         clust_used_eval <- res_cv[[run_index]][["clust_used_eval"]]
@@ -911,7 +1067,7 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
   ## Post-processing --------------------------------------------------------
 
   # Submodel predictive performance:
-  summ_sub <- lapply(seq_len(nterms_max + 1L), function(k) {
+  summ_sub <- lapply(seq_len(prv_len_rk + 1L), function(k) {
     summ_k <- list(lppd = loo_sub[[k]], mu = mu_sub[[k]], wcv = validset$wcv)
     if (refmodel$family$for_latent) {
       summ_k$oscale <- list(lppd = loo_sub_oscale[[k]], mu = mu_sub_oscale[[k]],
@@ -946,7 +1102,7 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
   })))
   mu_ref <- structure(
     mu_ref,
-    nobs_orig = attr(mu_offs_mlvlRan, "nobs_orig"),
+    ndiscrete = attr(mu_offs_mlvlRan, "ndiscrete"),
     class = sub("augmat", "augvec", oldClass(mu_offs_mlvlRan), fixed = TRUE)
   )
   if (refmodel$family$for_latent) {
@@ -992,7 +1148,7 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
         return(as.vector(mu_offs_mlvlRan_oscale[i_aug, ] %*% exp(lw[, i])))
       } else {
         # In principle, we could use the same code for averaging across the
-        # draws as above in the `"augmat"` case. However, that would require
+        # draws as above in the `augmat` case. However, that would require
         # `mu_offs_mlvlRan_oscale <- t(mu_offs_mlvlRan_oscale)` beforehand, so
         # the following should be more efficient:
         return(exp(lw[, i]) %*% mu_offs_mlvlRan_oscale[, i_aug])
@@ -1000,7 +1156,7 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
     })))
     mu_ref_oscale <- structure(
       mu_ref_oscale,
-      nobs_orig = attr(mu_offs_mlvlRan_oscale, "nobs_orig"),
+      ndiscrete = attr(mu_offs_mlvlRan_oscale, "ndiscrete"),
       class = sub("augmat", "augvec", oldClass(mu_offs_mlvlRan_oscale),
                   fixed = TRUE)
     )
@@ -1023,10 +1179,10 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
   summaries <- list(sub = summ_sub, ref = summ_ref)
 
   if (!validate_search) {
-    out_list <- nlist(search_path, ce = perf_eval_out[["ce"]])
+    out_list <- nlist(ce = perf_eval_out[["ce"]])
   } else {
-    out_list <- nlist(solution_terms_cv = solution_terms_mat[
-      , seq_len(prv_len_soltrms), drop = FALSE
+    out_list <- nlist(predictor_ranking_cv = predictor_ranking_mat[
+      , seq_len(prv_len_rk), drop = FALSE
     ])
   }
   out_list <- c(out_list,
@@ -1060,16 +1216,24 @@ warn_pareto <- function(n07, n05, warn_txt_start, warn_txt_mid_common,
 # Needed to avoid a NOTE in `R CMD check`:
 if (getRversion() >= package_version("2.15.1")) {
   utils::globalVariables("list_cv_k")
+  utils::globalVariables("search_out_rks_k")
 }
 
 kfold_varsel <- function(refmodel, method, nterms_max, ndraws, nclusters,
                          ndraws_pred, nclusters_pred, refit_prj, penalty,
-                         verbose, opt, K, cvfits, search_terms, parallel, ...) {
+                         verbose, search_control, K, cvfits, validate_search,
+                         search_path_fulldata, search_terms, search_out_rks,
+                         parallel, ...) {
   # Fetch the K reference model fits (or fit them now if not already done) and
   # create objects of class `refmodel` from them (and also store the `omitted`
   # indices):
   list_cv <- get_kfold(refmodel, K = K, cvfits = cvfits, verbose = verbose)
   K <- length(list_cv)
+
+  search_out_rks_was_null <- is.null(search_out_rks)
+  if (search_out_rks_was_null) {
+    search_out_rks <- replicate(K, NULL, simplify = FALSE)
+  }
 
   if (refmodel$family$for_latent) {
     # Need to set the latent response values in `refmodel$y` to `NA`s because
@@ -1081,24 +1245,40 @@ kfold_varsel <- function(refmodel, method, nterms_max, ndraws, nclusters,
   }
   y_wobs_test <- as.data.frame(refmodel[nms_y_wobs_test()])
 
-  verb_out("-----\nRunning the search and the performance evaluation for ",
-           "each of the K = ", K, " CV folds separately ...", verbose = verbose)
+  if (verbose) {
+    verb_txt_start <- "-----\nRunning "
+    if (!search_out_rks_was_null || !validate_search) {
+      verb_txt_mid <- ""
+    } else {
+      verb_txt_mid <- "the search and "
+    }
+    verb_out(verb_txt_start, verb_txt_mid, "the performance evaluation with ",
+             "`refit_prj = ", refit_prj, "` for each of the K = ", K, " CV ",
+             "folds separately ...")
+  }
   one_fold <- function(fold,
+                       rk,
                        verbose_search = verbose &&
                          getOption("projpred.extra_verbose", FALSE),
                        ...) {
     # Run the search for the current fold:
-    search_path <- select(
-      refmodel = fold$refmodel, ndraws = ndraws, nclusters = nclusters,
-      method = method, nterms_max = nterms_max, penalty = penalty,
-      verbose = verbose_search, opt = opt, search_terms = search_terms,
-      est_runtime = FALSE, ...
-    )
+    if (!validate_search) {
+      search_path <- search_path_fulldata
+    } else if (!search_out_rks_was_null) {
+      search_path <- list(predictor_ranking = rk)
+    } else {
+      search_path <- select(
+        refmodel = fold$refmodel, ndraws = ndraws, nclusters = nclusters,
+        method = method, nterms_max = nterms_max, penalty = penalty,
+        verbose = verbose_search, search_control = search_control,
+        search_terms = search_terms, est_runtime = FALSE, ...
+      )
+    }
 
     # Run the performance evaluation for the submodels along the predictor
     # ranking:
     perf_eval_out <- perf_eval(
-      search_path = search_path, refmodel = fold$refmodel, regul = opt$regul,
+      search_path = search_path, refmodel = fold$refmodel,
       refit_prj = refit_prj, ndraws = ndraws_pred, nclusters = nclusters_pred,
       refmodel_fulldata = refmodel, indices_test = fold$omitted, ...
     )
@@ -1119,7 +1299,7 @@ kfold_varsel <- function(refmodel, method, nterms_max, ndraws, nclusters,
       cl_ref = seq_along(fold$refmodel$wdraws_ref)
     )
 
-    return(nlist(predictor_ranking = search_path[["solution_terms"]],
+    return(nlist(predictor_ranking = search_path[["predictor_ranking"]],
                  summaries_sub = perf_eval_out[["sub_summaries"]],
                  summaries_ref, clust_used_eval = perf_eval_out[["clust_used"]],
                  nprjdraws_eval = perf_eval_out[["nprjdraws"]]))
@@ -1136,7 +1316,7 @@ kfold_varsel <- function(refmodel, method, nterms_max, ndraws, nclusters,
       if (verbose) {
         on.exit(utils::setTxtProgressBar(pb, k))
       }
-      one_fold(list_cv[[k]], ...)
+      one_fold(fold = list_cv[[k]], rk = search_out_rks[[k]], ...)
     })
     if (verbose) {
       close(pb)
@@ -1153,15 +1333,18 @@ kfold_varsel <- function(refmodel, method, nterms_max, ndraws, nclusters,
     `%do_projpred%` <- doRNG::`%dorng%`
     res_cv <- foreach::foreach(
       list_cv_k = list_cv,
+      search_out_rks_k = search_out_rks,
       .export = c("one_fold", "dot_args"),
-      .noexport = c("list_cv")
+      .noexport = c("list_cv", "search_out_rks")
     ) %do_projpred% {
-      do.call(one_fold, c(list(fold = list_cv_k, verbose_search = FALSE),
+      do_call(one_fold, c(list(fold = list_cv_k, rk = search_out_rks_k,
+                               verbose_search = FALSE),
                           dot_args))
     }
   }
   verb_out("-----", verbose = verbose)
-  solution_terms_cv <- do.call(rbind, lapply(res_cv, "[[", "predictor_ranking"))
+  predictor_ranking_cv <- do.call(rbind,
+                                  lapply(res_cv, "[[", "predictor_ranking"))
   clust_used_eval <- element_unq(res_cv, nm = "clust_used_eval")
   nprjdraws_eval <- element_unq(res_cv, nm = "nprjdraws_eval")
 
@@ -1172,7 +1355,7 @@ kfold_varsel <- function(refmodel, method, nterms_max, ndraws, nclusters,
   } else {
     sub_foldwise <- simplify2array(sub_foldwise, higher = FALSE)
     if (is.null(dim(sub_foldwise))) {
-      sub_dim <- dim(solution_terms_cv)
+      sub_dim <- dim(predictor_ranking_cv)
       sub_dim[2] <- sub_dim[2] + 1L # +1 is for the empty model
       dim(sub_foldwise) <- rev(sub_dim)
     }
@@ -1218,11 +1401,18 @@ kfold_varsel <- function(refmodel, method, nterms_max, ndraws, nclusters,
     ref$oscale$lppd <- ref$oscale$lppd[order(idxs_sorted_by_fold)]
   }
 
-  return(nlist(solution_terms_cv, summaries = nlist(sub, ref), y_wobs_test,
-               clust_used_eval, nprjdraws_eval))
+  if (!validate_search) {
+    out_list <- list()
+  } else {
+    out_list <- nlist(predictor_ranking_cv)
+  }
+  out_list <- c(out_list,
+                nlist(summaries = nlist(sub, ref), y_wobs_test, clust_used_eval,
+                      nprjdraws_eval))
+  return(out_list)
 }
 
-# Re-fit the reference model K times (once for each fold; `cvfun` case) or fetch
+# Refit the reference model K times (once for each fold; `cvfun` case) or fetch
 # the K reference model fits if already computed (`cvfits` case). This function
 # will return a list of length K, where each element is a list with elements
 # `refmodel` (output of init_refmodel()) and `omitted` (vector of indices of
@@ -1251,6 +1441,7 @@ get_kfold <- function(refmodel, K, cvfits, verbose) {
   } else {
     folds <- attr(cvfits, "folds")
   }
+  stopifnot(!is.null(folds))
   return(lapply(seq_len(K), function(k) {
     cvfit <- cvfits[[k]]
     # Add the omitted observation indices for this fold (and the fold index `k`
@@ -1280,7 +1471,11 @@ get_kfold <- function(refmodel, K, cvfits, verbose) {
 #'   [init_refmodel()]) or an object that can be passed to argument `object` of
 #'   [get_refmodel()].
 #' @param K Number of folds. Must be at least 2 and not exceed the number of
-#'   observations.
+#'   observations. Ignored if `folds` is not `NULL`.
+#' @param folds Either `NULL` for determining the CV folds automatically via
+#'   [cv_folds()] (using argument `K`) or a numeric (in fact, integer) vector
+#'   giving the fold index for each observation. In the latter case, argument
+#'   `K` is ignored.
 #' @param seed Pseudorandom number generation (PRNG) seed by which the same
 #'   results can be obtained again if needed. Passed to argument `seed` of
 #'   [set.seed()], but can also be `NA` to not call [set.seed()] at all. If not
@@ -1296,7 +1491,7 @@ get_kfold <- function(refmodel, K, cvfits, verbose) {
 #' # Data:
 #' dat_gauss <- data.frame(y = df_gaussian$y, df_gaussian$x)
 #'
-#' # The "stanreg" fit which will be used as the reference model (with small
+#' # The `stanreg` fit which will be used as the reference model (with small
 #' # values for `chains` and `iter`, but only for technical reasons in this
 #' # example; this is not recommended in general):
 #' fit <- rstanarm::stan_glm(
@@ -1304,19 +1499,22 @@ get_kfold <- function(refmodel, K, cvfits, verbose) {
 #'   QR = TRUE, chains = 2, iter = 500, refresh = 0, seed = 9876
 #' )
 #'
-#' # Define the reference model object explicitly:
+#' # Define the reference model object explicitly (not really necessary here
+#' # because the get_refmodel() call is quite fast in this example, but in
+#' # general, this approach is faster than defining the reference model object
+#' # multiple times implicitly):
 #' ref <- get_refmodel(fit)
 #'
 #' # Run the reference model object's `cvfun` (with a small value for `K`, but
 #' # only for the sake of speed in this example; this is not recommended in
 #' # general):
-#' cvfits <- run_cvfun(ref, K = 2, seed = 184)
+#' cv_fits <- run_cvfun(ref, K = 2, seed = 184)
 #'
 #' # Run cv_varsel() (with L1 search and small values for `nterms_max` and
 #' # `nclusters_pred`, but only for the sake of speed in this example; this is
-#' # not recommended in general) and use `cvfits` there:
-#' cvvs_L1 <- cv_varsel(fit, method = "L1", cv_method = "kfold",
-#'                      cvfits = cvfits, nterms_max = 3, nclusters_pred = 10,
+#' # not recommended in general) and use `cv_fits` there:
+#' cvvs_L1 <- cv_varsel(ref, method = "L1", cv_method = "kfold",
+#'                      cvfits = cv_fits, nterms_max = 3, nclusters_pred = 10,
 #'                      seed = 5555, verbose = FALSE)
 #' # Now see, for example, `?print.vsel`, `?plot.vsel`, `?suggest_size.vsel`,
 #' # and `?ranking` for possible post-processing functions.
@@ -1324,9 +1522,26 @@ get_kfold <- function(refmodel, K, cvfits, verbose) {
 #' # The purpose of run_cvfun() is to create an object that can be used in
 #' # multiple cv_varsel() calls, e.g., to check the sensitivity to the search
 #' # method (L1 or forward):
-#' cvvs_fw <- cv_varsel(fit, method = "forward", cv_method = "kfold",
-#'                      cvfits = cvfits, nterms_max = 3, nclusters = 5,
+#' cvvs_fw <- cv_varsel(ref, method = "forward", cv_method = "kfold",
+#'                      cvfits = cv_fits, nterms_max = 3, nclusters = 5,
 #'                      nclusters_pred = 10, seed = 5555, verbose = FALSE)
+#'
+#' # Stratified K-fold CV is straightforward:
+#' n_strat <- 3L
+#' set.seed(692)
+#' # Some example strata:
+#' strat_fac <- sample(paste0("lvl", seq_len(n_strat)), size = nrow(dat_gauss),
+#'                     replace = TRUE,
+#'                     prob = diff(c(0, pnorm(seq_len(n_strat - 1L) - 0.5), 1)))
+#' table(strat_fac)
+#' # Use loo::kfold_split_stratified() to create the folds vector:
+#' folds_strat <- loo::kfold_split_stratified(K = 2, x = strat_fac)
+#' table(folds_strat, strat_fac)
+#' # Call run_cvfun(), but this time with argument `folds` instead of `K` (here,
+#' # specifying argument `seed` would not be necessary because of the set.seed()
+#' # call above, but we specify it nonetheless for the sake of generality):
+#' cv_fits_strat <- run_cvfun(ref, folds = folds_strat, seed = 391)
+#' # Now use `cv_fits_strat` analogously to `cv_fits` from above.
 #'
 #' @export
 run_cvfun <- function(object, ...) {
@@ -1344,7 +1559,7 @@ run_cvfun.default <- function(object, ...) {
 #' @export
 run_cvfun.refmodel <- function(object,
                                K = if (!inherits(object, "datafit")) 5 else 10,
-                               seed = NA, ...) {
+                               folds = NULL, seed = NA, ...) {
   if (exists(".Random.seed", envir = .GlobalEnv)) {
     rng_state_old <- get(".Random.seed", envir = .GlobalEnv)
   }
@@ -1359,7 +1574,9 @@ run_cvfun.refmodel <- function(object,
   refmodel <- object
   stopifnot(!is.null(refmodel$cvfun))
 
-  folds <- cv_folds(refmodel$nobs, K = K)
+  if (is.null(folds)) {
+    folds <- cv_folds(refmodel$nobs, K = K)
+  }
   if (getOption("projpred.warn_kfold_refits", TRUE)) {
     cvfits <- refmodel$cvfun(folds)
   } else {
@@ -1408,18 +1625,18 @@ run_cvfun.refmodel <- function(object,
 #   return(nlist(inds, wcv))
 # }
 
-## decide which points to go through in the validation based on
-## proportional-to-size subsampling as implemented in Magnusson, M., Riis
-## Andersen, M., Jonasson, J. and Vehtari, A. (2019). Leave-One-Out
-## Cross-Validation for Large Data. In International Conference on Machine
-## Learning.
+## Select which points to go through in the validation based on
+## proportional-to-size subsampling (PPS) as proposed by Magnusson, M.,
+## Andersen, M. R., Jonasson, J. and Vehtari, A. (2019). Leave-One-Out
+## Cross-Validation for Large Data. In *Proceedings of
+## the 36th International Conference on Machine Learning*, edited by Kamalika
+## Chaudhuri and Ruslan Salakhutdinov, 97:4244--53. Proceedings of Machine
+## Learning Research. PMLR. <https://proceedings.mlr.press/v97/magnusson19a.html>.
 loo_subsample_pps <- function(nloo, lppd) {
   # Note: A seed is not set here because this function is not exported and has a
   # calling stack at the beginning of which a seed is set.
 
-  if (nloo > length(lppd)) {
-    stop("Argument `nloo` must not be larger than the number of observations.")
-  } else if (nloo == length(lppd)) {
+  if (nloo == length(lppd)) {
     inds <- seq_len(nloo)
     wcv <- rep(1, nloo)
   } else if (nloo < length(lppd)) {

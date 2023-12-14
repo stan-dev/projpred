@@ -18,6 +18,10 @@
 #' [online](https://mc-stan.org/projpred/articles/projpred.html)) before
 #' continuing here.
 #'
+#' @details
+#'
+#' # Terminology
+#'
 #' Throughout the whole package documentation, we use the term "submodel" for
 #' all kinds of candidate models onto which the reference model is projected.
 #' For custom reference models, the candidate models don't need to be actual
@@ -33,37 +37,75 @@
 #' "mixed"---model). Note that the term "generalized" includes the Gaussian
 #' family as well.
 #'
+#' # Draw-wise divergence minimizers
+#'
 #' For the projection of the reference model onto a submodel, \pkg{projpred}
-#' currently relies on the following functions (in other words, these are the
-#' workhorse functions used by the default divergence minimizers):
+#' currently relies on the following functions as draw-wise divergence
+#' minimizers (in other words, these are the workhorse functions employed by
+#' \pkg{projpred}'s internal default `div_minimizer` functions, see
+#' [init_refmodel()]):
 #' * Submodel without multilevel or additive terms:
 #'     + For the traditional (or latent) projection (or the augmented-data
 #'     projection in case of the [binomial()] or [brms::bernoulli()] family): An
 #'     internal C++ function which basically serves the same purpose as [lm()]
-#'     for the [gaussian()] family and [glm()] for all other families.
-#'     + For the augmented-data projection: [MASS::polr()] for the
-#'     [brms::cumulative()] family or [rstanarm::stan_polr()] fits,
-#'     [nnet::multinom()] for the [brms::categorical()] family.
+#'     for the [gaussian()] family and [glm()] for all other families. The
+#'     returned object inherits from class `subfit`. Possible tuning parameters
+#'     for this internal C++ function are: `regul` (amount of ridge
+#'     regularization; default: `1e-4`), `thresh_conv` (convergence threshold;
+#'     default: `1e-7`), `qa_updates_max` (maximum number of quadratic
+#'     approximation updates; default: `100`, but fixed to `1` in case of the
+#'     Gaussian family with identity link), `ls_iter_max` (maximum number of
+#'     line search iterations; default: `30`, but fixed to `1` in case of the
+#'     Gaussian family with identity link), `normalize` (single logical value
+#'     indicating whether to scale the predictors internally with the returned
+#'     regression coefficient estimates being back-adjusted appropriately;
+#'     default: `TRUE`), `beta0_init` (single numeric value giving the starting
+#'     value for the intercept at centered predictors; default: `0`), and
+#'     `beta_init` (numeric vector giving the starting values for the regression
+#'     coefficients; default: vector of `0`s).
+#'     + For the augmented-data projection: [MASS::polr()] (the returned object
+#'     inherits from class `polr`) for the [brms::cumulative()] family or
+#'     [rstanarm::stan_polr()] fits, [nnet::multinom()] (the returned object
+#'     inherits from class `multinom`) for the [brms::categorical()] family.
 #' * Submodel with multilevel but no additive terms:
 #'     + For the traditional (or latent) projection (or the augmented-data
 #'     projection in case of the [binomial()] or [brms::bernoulli()] family):
-#'     [lme4::lmer()] for the [gaussian()] family, [lme4::glmer()] for all other
-#'     families.
-#'     + For the augmented-data projection: [ordinal::clmm()] for the
-#'     [brms::cumulative()] family, [mclogit::mblogit()] for the
-#'     [brms::categorical()] family.
-#' * Submodel without multilevel but additive terms: [mgcv::gam()].
-#' * Submodel with multilevel and additive terms: [gamm4::gamm4()].
+#'     [lme4::lmer()] (the returned object inherits from class `lmerMod`) for
+#'     the [gaussian()] family, [lme4::glmer()] (the returned object inherits
+#'     from class `glmerMod`) for all other families.
+#'     + For the augmented-data projection: [ordinal::clmm()] (the returned
+#'     object inherits from class `clmm`) for the [brms::cumulative()] family,
+#'     [mclogit::mblogit()] (the returned object inherits from class `mmblogit`)
+#'     for the [brms::categorical()] family.
+#' * Submodel without multilevel but additive terms: [mgcv::gam()] (the returned
+#' object inherits from class `gam`).
+#' * Submodel with multilevel and additive terms: [gamm4::gamm4()] (within
+#' \pkg{projpred}, the returned object inherits from class `gamm4`).
 #'
-#' Setting the global option `projpred.extra_verbose` to `TRUE` will print out
-#' which submodel \pkg{projpred} is currently projecting onto as well as (if
-#' `method = "forward"` and `verbose = TRUE` in [varsel()] or [cv_varsel()])
-#' which submodel has been selected at those steps of the forward search for
-#' which a percentage (of the maximum submodel size that the search is run up
-#' to) is printed. In general, however, we cannot recommend setting this global
-#' option to `TRUE` for [cv_varsel()] with `validate_search = TRUE` (simply due
-#' to the amount of information that will be printed, but also due to the
-#' progress bar which will not work anymore as intended).
+#' # Verbosity, messages, warnings, errors
+#'
+#' Setting global option `projpred.extra_verbose` to `TRUE` will print out which
+#' submodel \pkg{projpred} is currently projecting onto as well as (if `method =
+#' "forward"` and `verbose = TRUE` in [varsel()] or [cv_varsel()]) which
+#' submodel has been selected at those steps of the forward search for which a
+#' percentage (of the maximum submodel size that the search is run up to) is
+#' printed. In general, however, we cannot recommend setting this global option
+#' to `TRUE` for [cv_varsel()] with `validate_search = TRUE` (simply due to the
+#' amount of information that will be printed, but also due to the progress bar
+#' which will not work as intended anymore).
+#'
+#' By default, \pkg{projpred} catches messages and warnings from the draw-wise
+#' divergence minimizers and throws their unique collection after performing all
+#' draw-wise divergence minimizations (i.e., draw-wise projections). This can be
+#' deactivated by setting global option `projpred.warn_prj_drawwise` to `FALSE`.
+#'
+#' Furthermore, by default, \pkg{projpred} checks the convergence of the
+#' draw-wise divergence minimizers and throws a warning if any seem to have not
+#' converged. This warning is thrown after the warning message from global
+#' option `projpred.warn_prj_drawwise` (see above) and can be deactivated by
+#' setting global option `projpred.check_conv` to `FALSE`.
+#'
+#' # Parallelization
 #'
 #' The projection of the reference model onto a submodel can be run in parallel
 #' (across the projected draws). This is powered by the \pkg{foreach} package.
@@ -93,6 +135,8 @@
 #' (i.e., a parallelization of \pkg{projpred}'s cross-validation) which can be
 #' activated via argument `parallel`.
 #'
+#' # Multilevel models: "Integrating out" group-level effects
+#'
 #' In case of multilevel models, \pkg{projpred} offers two global options for
 #' "integrating out" group-level effects: `projpred.mlvl_pred_new` and
 #' `projpred.mlvl_proj_ref_new`. When setting `projpred.mlvl_pred_new` to `TRUE`
@@ -121,16 +165,18 @@
 #' model, and setting `projpred.mlvl_proj_ref_new` to `TRUE` would make sense if
 #' the group-level effects should be integrated out completely.
 #'
+#' # Memory usage
+#'
 #' By setting the global option `projpred.run_gc` to `TRUE`, \pkg{projpred} will
 #' call [gc()] at some places (e.g., after each size that the forward search
 #' passes through) to free up some memory. These [gc()] calls are not always
 #' necessary to reduce the peak memory usage, but they add runtime (hence the
 #' default of `FALSE` for that global option).
 #'
-#' Technical note: Most examples are not executed when called via [example()].
-#' To execute them, you have to copy and paste them manually to the console.
+#' # Other notes
 #'
-#' @details
+#' Most examples are not executed when called via [example()]. To execute them,
+#' their code has to be copied and pasted manually to the console.
 #'
 #' # Functions
 #'
@@ -144,8 +190,8 @@
 #'   with cross-validation (CV).}
 #'   \item{[summary.vsel()], [print.vsel()], [plot.vsel()],
 #'   [suggest_size.vsel()], [ranking()], [cv_proportions()],
-#'   [plot.cv_proportions()]}{For post-processing the results from [varsel()]
-#'   and [cv_varsel()].}
+#'   [plot.cv_proportions()], [performances()]}{For post-processing the results
+#'   from [varsel()] and [cv_varsel()].}
 #'   \item{[project()]}{For projecting the reference model onto submodel(s).
 #'   Typically, this follows the variable selection, but it can also be applied
 #'   directly (without a variable selection).}

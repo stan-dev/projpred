@@ -30,7 +30,7 @@ context("datafit")
 }
 
 ## Reference model --------------------------------------------------------
-## (actually "datafit"s)
+## (actually `datafit`s)
 
 # Exclude brms reference models (since `datafit`s don't make use of a reference
 # model fit, it doesn't make a difference if rstanarm or brms is used as the
@@ -83,7 +83,7 @@ if (run_vs) {
     names(args_vs_i)[names(args_vs_i) == "tstsetup_ref"] <- "tstsetup_datafit"
     return(args_vs_i)
   })
-  # For `"datafit"`s, we always have 1 cluster by default, so omit related
+  # For `datafit`s, we always have 1 cluster by default, so omit related
   # arguments:
   args_vs_datafit <- lapply(args_vs_datafit, function(args_vs_i) {
     return(args_vs_i[setdiff(names(args_vs_i),
@@ -110,17 +110,17 @@ if (run_cvvs) {
       "tstsetup_datafit"
     return(args_cvvs_i)
   })
-  # (PSIS-)LOO CV is not possible for `"datafit"`s, so only use K-fold CV:
+  # (PSIS-)LOO CV is not possible for `datafit`s, so only use K-fold CV:
   args_cvvs_datafit <- lapply(args_cvvs_datafit, function(args_cvvs_i) {
     args_cvvs_i$cv_method <- NULL
     args_cvvs_i$K <- NULL
     args_cvvs_i$validate_search <- TRUE
-    return(c(args_cvvs_i, list(cv_method = "kfold", K = K_tst)))
+    return(c(args_cvvs_i, list(cv_method = "kfold")))
   })
   names(args_cvvs_datafit) <- gsub("default_cvmeth", "kfold",
                                    names(args_cvvs_datafit))
   args_cvvs_datafit <- args_cvvs_datafit[unique(names(args_cvvs_datafit))]
-  # For `"datafit"`s, we always have 1 cluster by default, so omit related
+  # For `datafit`s, we always have 1 cluster by default, so omit related
   # arguments:
   args_cvvs_datafit <- lapply(args_cvvs_datafit, function(args_cvvs_i) {
     return(args_cvvs_i[setdiff(names(args_cvvs_i),
@@ -128,9 +128,18 @@ if (run_cvvs) {
                                  "ndraws_pred", "nclusters_pred"))])
   })
 
+  tstsetups_cvvs_datafit <- setNames(nm = unname(
+    sapply(args_cvvs_datafit, "[[", "tstsetup_datafit")
+  ))
+  cvfitss_datafit <- lapply(tstsetups_cvvs_datafit, function(tstsetup_datafit) {
+    return(run_cvfun(object = datafits[[tstsetup_datafit]], K = K_tst,
+                     seed = seed3_tst))
+  })
+
   cvvss_datafit <- lapply(args_cvvs_datafit, function(args_cvvs_i) {
     do.call(cv_varsel, c(
-      list(object = datafits[[args_cvvs_i$tstsetup_datafit]]),
+      list(object = datafits[[args_cvvs_i$tstsetup_datafit]],
+           cvfits = cvfitss_datafit[[args_cvvs_i$tstsetup_datafit]]),
       excl_nonargs(args_cvvs_i)
     ))
   })
@@ -150,7 +159,7 @@ if (run_vs) {
       "tstsetup_datafit"
     return(args_prj_vs_i)
   })
-  # For `"datafit"`s, we always have 1 cluster by default, so omit related
+  # For `datafit`s, we always have 1 cluster by default, so omit related
   # arguments:
   args_prj_vs_datafit <- lapply(args_prj_vs_datafit, function(args_prj_vs_i) {
     return(args_prj_vs_i[setdiff(names(args_prj_vs_i),
@@ -168,7 +177,7 @@ if (run_vs) {
 
 ## Prediction -------------------------------------------------------------
 
-### From "proj_list" ------------------------------------------------------
+### From `proj_list` ------------------------------------------------------
 
 if (run_vs) {
   pls_vs_datafit <- lapply(prjs_vs_datafit, proj_linpred, .seed = seed2_tst)
@@ -179,7 +188,7 @@ if (run_vs) {
 
 ## Reference model --------------------------------------------------------
 
-test_that("init_refmodel(): `object` of class \"datafit\" works", {
+test_that("init_refmodel(): `object` of class `datafit` works", {
   for (tstsetup in names(datafits)) {
     tstsetup_fit <- args_datafit[[tstsetup]]$tstsetup_fit
     with_spclformul_crr <- grepl("\\.spclformul", tstsetup)
@@ -207,11 +216,11 @@ test_that("init_refmodel(): `object` of class \"datafit\" works", {
   }
 })
 
-test_that("predict.refmodel(): `object` of class \"datafit\" fails", {
+test_that("predict.refmodel(): `object` of class `datafit` fails", {
   for (tstsetup in names(datafits)) {
     expect_error(
       predict(datafits[[tstsetup]], newdata = dat),
-      "^Cannot make predictions for an `object` of class \"datafit\"\\.$",
+      "^Cannot make predictions for an `object` of class `datafit`\\.$",
       info = tstsetup
     )
   }
@@ -220,7 +229,8 @@ test_that("predict.refmodel(): `object` of class \"datafit\" fails", {
 ## Variable selection -----------------------------------------------------
 
 test_that(paste(
-  "varsel(): `object` of class \"datafit\", `method`, and `nterms_max` work"
+  "varsel(): `object` of class `datafit` and arguments `method` and",
+  "`nterms_max` work"
 ), {
   skip_if_not(run_vs)
   for (tstsetup in names(vss_datafit)) {
@@ -239,8 +249,9 @@ test_that(paste(
       from_datafit = TRUE,
       refmod_expected =
         datafits[[args_vs_datafit[[tstsetup]]$tstsetup_datafit]],
-      solterms_len_expected = args_vs_datafit[[tstsetup]]$nterms_max,
+      prd_trms_len_expected = args_vs_datafit[[tstsetup]]$nterms_max,
       method_expected = meth_exp_crr,
+      search_terms_expected = args_vs_datafit[[tstsetup]]$search_terms,
       search_trms_empty_size =
         length(args_vs_datafit[[tstsetup]]$search_terms) &&
         all(grepl("\\+", args_vs_datafit[[tstsetup]]$search_terms)),
@@ -251,8 +262,8 @@ test_that(paste(
 })
 
 test_that(paste(
-  "cv_varsel(): `object` of class \"datafit\", `method`, `cv_method`, and",
-  "`nterms_max` work"
+  "cv_varsel(): `object` of class `datafit` and arguments `method`,",
+  "`cv_method`, and `nterms_max` work"
 ), {
   skip_if_not(run_cvvs)
   for (tstsetup in names(cvvss_datafit)) {
@@ -264,10 +275,13 @@ test_that(paste(
       from_datafit = TRUE,
       refmod_expected =
         datafits[[args_cvvs_datafit[[tstsetup]]$tstsetup_datafit]],
-      solterms_len_expected = args_cvvs_datafit[[tstsetup]]$nterms_max,
+      cvfits_expected =
+        cvfitss_datafit[[args_cvvs_datafit[[tstsetup]]$tstsetup_datafit]],
+      prd_trms_len_expected = args_cvvs_datafit[[tstsetup]]$nterms_max,
       method_expected = meth_exp_crr,
       cv_method_expected = "kfold",
       valsearch_expected = args_cvvs_datafit[[tstsetup]]$validate_search,
+      search_terms_expected = args_cvvs_datafit[[tstsetup]]$search_terms,
       search_trms_empty_size =
         length(args_cvvs_datafit[[tstsetup]]$search_terms) &&
         all(grepl("\\+", args_cvvs_datafit[[tstsetup]]$search_terms)),
@@ -279,13 +293,13 @@ test_that(paste(
 
 ## Projection -------------------------------------------------------------
 
-test_that("project(): `object` of class \"datafit\" fails", {
+test_that("project(): `object` of class `datafit` fails", {
   skip_if_not(run_prj)
   # A prerequisite for this project() test (otherwise, it would have to be
   # adapted):
   stopifnot(all(names(args_datafit) %in% names(args_ref)))
 
-  tstsetups <- grep("\\.solterms_x.*\\.clust$", names(args_prj), value = TRUE)
+  tstsetups <- grep("\\.prd_trms_x.*\\.clust$", names(args_prj), value = TRUE)
   for (tstsetup in tstsetups) {
     args_prj_i <- args_prj[[tstsetup]]
     if (!args_prj_i$tstsetup_ref %in% names(datafits)) next
@@ -296,15 +310,15 @@ test_that("project(): `object` of class \"datafit\" fails", {
         excl_nonargs(args_prj_i)
       )),
       paste("^project\\(\\) does not support an `object` of class",
-            "\"datafit\"\\.$"),
+            "`datafit`\\.$"),
       info = tstsetup
     )
   }
 })
 
 test_that(paste(
-  "project(): `object` of class \"vsel\" (created by varsel() applied to an",
-  "`object` of class \"datafit\"), `nclusters`, and `nterms` work"
+  "project(): `object` of class `vsel` (created by varsel() applied to an",
+  "`object` of class `datafit`) and arguments `nclusters` and `nterms` work"
 ), {
   skip_if_not(run_vs)
   for (tstsetup in names(prjs_vs_datafit)) {
@@ -316,17 +330,16 @@ test_that(paste(
     }
     with_L1 <- identical(args_vs_datafit[[tstsetup_vs]]$method, "L1")
     if (length(nterms_crr) == 1) {
-      solterms_expected_crr <- vss_datafit[[tstsetup_vs]]$solution_terms[
+      prd_trms_expected_crr <- vss_datafit[[tstsetup_vs]]$predictor_ranking[
         seq_len(nterms_crr)
       ]
       projection_tester(
         prjs_vs_datafit[[tstsetup]],
         refmod_expected =
           datafits[[args_prj_vs_datafit[[tstsetup]]$tstsetup_datafit]],
-        solterms_expected = solterms_expected_crr,
+        prd_trms_expected = prd_trms_expected_crr,
         nprjdraws_expected = 1L,
         with_clusters = FALSE,
-        const_wdraws_prj_expected = TRUE,
         from_vsel_L1_search = with_L1,
         info_str = tstsetup
       )
@@ -352,7 +365,6 @@ test_that(paste(
           datafits[[args_prj_vs_datafit[[tstsetup]]$tstsetup_datafit]],
         nprjdraws_expected = 1L,
         with_clusters = FALSE,
-        const_wdraws_prj_expected = TRUE,
         prjdraw_weights_expected = prjs_vs_datafit[[tstsetup]][[1]]$wdraws_prj,
         from_vsel_L1_search = with_L1
       )
@@ -364,7 +376,7 @@ test_that(paste(
       #     m <- as.matrix(prjs_vs_i)
       #     expect_snapshot({
       #       print(tstsetup)
-      #       print(prjs_vs_i$solution_terms)
+      #       print(prjs_vs_i$predictor_terms)
       #       print(rlang::hash(m)) # cat(m)
       #     })
       #     return(invisible(TRUE))
@@ -379,7 +391,7 @@ test_that(paste(
 ## Prediction -------------------------------------------------------------
 
 test_that(paste(
-  "proj_linpred(): `object` of (informal) class \"proj_list\" (based on",
+  "proj_linpred(): `object` of (informal) class `proj_list` (based on",
   "varsel()) works"
 ), {
   skip_if_not(run_vs)
@@ -425,7 +437,7 @@ test_that(paste(
 })
 
 test_that(paste(
-  "proj_predict(): `object` of (informal) class \"proj_list\" (based on",
+  "proj_predict(): `object` of (informal) class `proj_list` (based on",
   "varsel()) works"
 ), {
   skip_if_not(run_vs)
@@ -467,7 +479,7 @@ test_that(paste(
 
 ## summary.vsel() ---------------------------------------------------------
 
-test_that("summary.vsel(): `object` of class \"datafit\" fails", {
+test_that("summary.vsel(): `object` of class `datafit` fails", {
   for (tstsetup in names(datafits)) {
     expect_error(
       summary.vsel(datafits[[tstsetup]]),
@@ -491,8 +503,8 @@ test_that("summary.vsel(): `baseline = \"ref\"` and `deltas = TRUE` fails", {
 })
 
 test_that(paste(
-  "summary.vsel(): `object` of class \"vsel\" (created by varsel() applied to",
-  "an `object` of class \"datafit\"), `stats`, and `type` work"
+  "summary.vsel(): `object` of class `vsel` (created by varsel() applied to",
+  "an `object` of class `datafit`) and arguments `stats` and `type` work"
 ), {
   skip_if_not(run_vs)
   tstsetups <- unname(unlist(lapply(mod_nms, function(mod_nm) {
@@ -515,7 +527,8 @@ test_that(paste(
       info_str = tstsetup,
       stats_expected = stats_common,
       type_expected = type_tst,
-      solterms_expected = vss_datafit[[tstsetup]]$solution_terms
+      prd_trms_expected = vss_datafit[[tstsetup]]$predictor_ranking,
+      from_datafit = TRUE
     )
     if (run_snaps) {
       if (testthat_ed_max2) local_edition(3)
@@ -531,8 +544,8 @@ test_that(paste(
 })
 
 test_that(paste(
-  "summary.vsel(): `object` of class \"vsel\" (created by cv_varsel() applied",
-  "to an `object` of class \"datafit\"), `stats`, and `type` work"
+  "summary.vsel(): `object` of class `vsel` (created by cv_varsel() applied",
+  "to an `object` of class `datafit`) and arguments `stats` and `type` work"
 ), {
   skip_if_not(run_cvvs)
   tstsetups <- unname(unlist(lapply(mod_nms, function(mod_nm) {
@@ -557,7 +570,8 @@ test_that(paste(
       type_expected = type_tst,
       cv_method_expected =
         args_cvvs_datafit[[tstsetup]]$cv_method %||% "LOO",
-      solterms_expected = cvvss_datafit[[tstsetup]]$solution_terms
+      prd_trms_expected = cvvss_datafit[[tstsetup]]$predictor_ranking,
+      from_datafit = TRUE
     )
     if (run_snaps) {
       if (testthat_ed_max2) local_edition(3)
@@ -666,8 +680,9 @@ test_that(paste(
     )
     vs <- suppressWarnings(varsel(
       ref,
-      method = "L1", lambda_min_ratio = lambda_min_ratio,
-      nlambda = nlambda, thresh = 1e-12, verbose = FALSE
+      method = "L1",
+      search_control = nlist(lambda_min_ratio, nlambda, thresh = 1e-12),
+      verbose = FALSE
     ))
     pred1 <- proj_linpred(vs,
                           newdata = data.frame(x = x, weights = weights),
@@ -679,19 +694,19 @@ test_that(paste(
                             family = fam$family, weights = weights,
                             lambda.min.ratio = lambda_min_ratio,
                             nlambda = nlambda, thresh = 1e-12)
-    solution_terms <- predict(lasso, type = "nonzero", s = lasso$lambda)
-    nselected <- sapply(solution_terms, function(e) length(e))
+    predictor_ranking <- predict(lasso, type = "nonzero", s = lasso$lambda)
+    nselected <- sapply(predictor_ranking, function(e) length(e))
     lambdainds <- sapply(unique(nselected), function(nterms) {
       max(which(nselected == nterms))
     })
     lambdaval <- lasso$lambda[lambdainds]
     pred2 <- predict(lasso, newx = x, type = "link", s = lambdaval)
-    solution_terms_lasso <- integer()
+    predictor_ranking_lasso <- integer()
     lasso_coefs <- as.matrix(lasso$beta[, tail(lambdainds, -1), drop = FALSE])
     for (ii in seq_len(ncol(lasso_coefs))) {
-      solution_terms_lasso <- c(
-        solution_terms_lasso,
-        setdiff(which(lasso_coefs[, ii] > 0), solution_terms_lasso)
+      predictor_ranking_lasso <- c(
+        predictor_ranking_lasso,
+        setdiff(which(lasso_coefs[, ii] > 0), predictor_ranking_lasso)
       )
     }
 
@@ -706,7 +721,7 @@ test_that(paste(
     expect_equal(pred1, pred2, tolerance = 1e-2, info = as.character(i))
 
     # check that the coefficients are similar
-    ind <- match(vs$solution_terms, setdiff(split_formula(formula), "1"))
+    ind <- match(vs$predictor_ranking, setdiff(split_formula(formula), "1"))
     betas <- sapply(vs$search_path$outdmins, function(x) x[[1]]$beta %||% 0)
     delta <- sapply(seq_len(length(lambdainds) - 1), function(i) {
       abs(t(betas[[i + 1]]) - lasso$beta[ind[1:i], lambdainds[i + 1]])
@@ -721,10 +736,10 @@ test_that(paste(
     ) < 1.5e-1)
     # Sometimes, glmnet terminates the coefficient path computation too early
     # for some reason:
-    if (length(ind) > length(solution_terms_lasso)) {
-      ind <- ind[seq_along(solution_terms_lasso)]
+    if (length(ind) > length(predictor_ranking_lasso)) {
+      ind <- ind[seq_along(predictor_ranking_lasso)]
     }
-    expect_identical(ind, solution_terms_lasso, info = as.character(i))
+    expect_identical(ind, predictor_ranking_lasso, info = as.character(i))
   }
   RNGversion(getRversion())
   if (exists("rng_old")) assign(".Random.seed", rng_old, envir = .GlobalEnv)

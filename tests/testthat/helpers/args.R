@@ -36,20 +36,15 @@ excl_nonargs <- function(args_i, nms_excl_add = character()) {
 # of proj_predict().
 #
 # @param args_i A list of arguments supplied to project().
-# @param nresample_clusters_crr The value of proj_predict()'s argument
-#   `nresample_clusters` which should be used for calculating `nprjdraws_out`.
 #
 # @return A list with elements:
-#   * `ndr_ncl_nm`: The name of the actually used argument (`ndraws` or
-#     `nclusters`).
-#   * `nprjdraws`: The value of the actually used argument.
+#   * `nprjdraws`: The value of the actually used argument, i.e., the number of
+#     (resulting) projected draws.
 #   * `clust_used`: A single logical value indicating whether the projected
 #     draws will have nonconstant weights (`TRUE`) or not (`FALSE`).
-#   * `nprjdraws_out`: The number of projected draws in the output. In contrast
-#     to `nprjdraws`, this also takes proj_predict()'s argument
-#     `nresample_clusters` into account.
-ndr_ncl_dtls <- function(args_i,
-                         nresample_clusters_crr = nresample_clusters_default) {
+#   * `clust_used_gt1`: A single logical value indicating whether `clust_used`
+#     is `TRUE` *and* `nprjdraws` is greater than `1`.
+ndr_ncl_dtls <- function(args_i) {
   ndr_ncl_nm <- intersect(names(args_i), c("ndraws", "nclusters"))
   if (length(ndr_ncl_nm) == 0) {
     ndr_ncl_nm <- "ndraws"
@@ -58,16 +53,39 @@ ndr_ncl_dtls <- function(args_i,
     stopifnot(length(ndr_ncl_nm) == 1)
     nprjdraws <- args_i[[ndr_ncl_nm]]
   }
-  clust_used <- ndr_ncl_nm == "nclusters" && nprjdraws > 1
-  if (clust_used) {
-    nprjdraws_out <- nresample_clusters_crr
+  clust_used <- ndr_ncl_nm == "nclusters" && nprjdraws < nrefdraws
+  clust_used_gt1 <- clust_used && nprjdraws > 1
+  return(nlist(nprjdraws, clust_used, clust_used_gt1))
+}
+
+# A helper function for retrieving project()'s output element
+# `const_wdraws_prj`, but taking into account that project() output may be a
+# `proj_list`.
+#
+# @param prj_out Output from project().
+#
+# @return The same as project()'s output element `const_wdraws_prj`.
+has_const_wdr_prj <- function(prj_out) {
+  if (!is_proj_list(prj_out)) prj_out <- list(prj_out)
+  return(prj_out[[1]]$const_wdraws_prj)
+}
+
+# A helper function for creating expectations for the number of projected draws
+# in the output of proj_predict().
+#
+# @param args_i Passed to ndr_ncl_dtls().
+# @param prj_out Passed to has_const_wdr_prj().
+# @param nresample_clusters_crr The value which was used for proj_predict()'s
+#   argument `nresample_clusters`.
+#
+# @return The number of projected draws in the output of proj_predict().
+ndr_pp_out <- function(args_i, prj_out,
+                       nresample_clusters_crr = nresample_clusters_default) {
+  if (has_const_wdr_prj(prj_out)) {
+    ndr_ncl <- ndr_ncl_dtls(args_i)
+    nprjdraws_out <- ndr_ncl$nprjdraws
   } else {
-    nprjdraws_out <- nprjdraws
+    nprjdraws_out <- nresample_clusters_crr
   }
-  return(nlist(
-    ndr_ncl_nm,
-    nprjdraws,
-    clust_used,
-    nprjdraws_out
-  ))
+  return(nprjdraws_out)
 }
