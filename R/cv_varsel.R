@@ -21,7 +21,8 @@
 #'   contrast to a standard LOO CV). In the `"kfold"` case, a \eqn{K}-fold CV is
 #'   performed. See also section "Note" below.
 #' @param nloo **Caution:** Still experimental. Only relevant if `cv_method =
-#'   "LOO"`. Approximate LOO-CV using probability-proportional-to-size-sampling (PPS)
+#'   "LOO"`. If nloo is smaller than the number of all observations, approximate
+#'   full LOO-CV using probability-proportional-to-size-sampling (PPS)
 #'   to make accurate computation only for nloo (anything from 1 to the number
 #'   of all observations) leave-one-out folds (Magnusson et al., 2019).
 #'   Smaller values lead to faster computation but higher uncertainty in the 
