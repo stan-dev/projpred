@@ -21,11 +21,12 @@
 #'   contrast to a standard LOO CV). In the `"kfold"` case, a \eqn{K}-fold CV is
 #'   performed. See also section "Note" below.
 #' @param nloo **Caution:** Still experimental. Only relevant if `cv_method =
-#'   "LOO"`. Number of subsampled PSIS-LOO CV folds, i.e., number of
-#'   observations used for the approximate LOO CV (anything from 1 to the number
-#'   of all observations). Smaller values lead to faster computation but higher
-#'   uncertainty in the evaluation part. If `NULL`, all observations are used
-#'   (as by default).
+#'   "LOO"`. If nloo is smaller than the number of all observations, approximate
+#'   full LOO-CV using probability-proportional-to-size-sampling (PPS)
+#'   to make accurate computation only for nloo (anything from 1 to the number
+#'   of all observations) leave-one-out folds (Magnusson et al., 2019).
+#'   Smaller values lead to faster computation but higher uncertainty in the 
+#'   evaluation part. If `NULL`, all observations are used (as by default).
 #' @param K Only relevant if `cv_method = "kfold"` and if `cvfits` is `NULL`
 #'   (which is the case for reference model objects created by
 #'   [get_refmodel.stanreg()] or [brms::get_refmodel.brmsfit()]). Number of
@@ -659,7 +660,7 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
     refmodel$y <- y_lat_E$value
   }
 
-  # LOO subsampling (by default, don't subsample, but use all observations):
+  # LOO PPS subsampling (by default, don't subsample, but use all observations):
   # validset <- loo_subsample(n, nloo, pareto_k)
   loo_ref_oscale <- apply(loglik_forPSIS + lw, 2, log_sum_exp)
   validset <- loo_subsample_pps(nloo, loo_ref_oscale)
@@ -1623,11 +1624,13 @@ run_cvfun.refmodel <- function(object,
 #   return(nlist(inds, wcv))
 # }
 
-## decide which points to go through in the validation based on
-## proportional-to-size subsampling as implemented in Magnusson, M., Riis
-## Andersen, M., Jonasson, J. and Vehtari, A. (2019). Leave-One-Out
-## Cross-Validation for Large Data. In International Conference on Machine
-## Learning.
+## Select which points to go through in the validation based on
+## proportional-to-size subsampling (PPS) as proposed by Magnusson, M., 
+## Andersen, M. R., Jonasson, J. and Vehtari, A. (2019). Leave-One-Out
+## Cross-Validation for Large Data. In *Proceedings of
+## the 36th International Conference on Machine Learning*, edited by Kamalika
+## Chaudhuri and Ruslan Salakhutdinov, 97:4244--53. Proceedings of Machine
+## Learning Research. PMLR. <https://proceedings.mlr.press/v97/magnusson19a.html>.
 loo_subsample_pps <- function(nloo, lppd) {
   # Note: A seed is not set here because this function is not exported and has a
   # calling stack at the beginning of which a seed is set.
