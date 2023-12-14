@@ -167,17 +167,8 @@ terms.</p></dd>
 <span class="r-in"><span><span class="co"># `nterms_max`, `nclusters`, and `nclusters_pred`, but only for the sake of</span></span></span>
 <span class="r-in"><span><span class="co"># speed in this example; this is not recommended in general):</span></span></span>
 <span class="r-in"><span><span class="va">vs</span> <span class="op">&lt;-</span> <span class="fu"><a href="varsel.html">varsel</a></span><span class="op">(</span><span class="va">fit</span>, nclusters <span class="op">=</span> <span class="fl">5</span>, nclusters_pred <span class="op">=</span> <span class="fl">10</span>,</span></span>
-<span class="r-in"><span>             search_terms <span class="op">=</span> <span class="va">search_terms_forced</span>, seed <span class="op">=</span> <span class="fl">5555</span><span class="op">)</span></span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> -----</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> Running the search ...</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 40% of terms selected</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 60% of terms selected</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 80% of terms selected</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 100% of terms selected</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> -----</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> -----</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> Running the performance evaluation with `refit_prj = TRUE` ...</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> -----</span>
+<span class="r-in"><span>             search_terms <span class="op">=</span> <span class="va">search_terms_forced</span>, seed <span class="op">=</span> <span class="fl">5555</span>,</span></span>
+<span class="r-in"><span>             verbose <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="co"># Now see, for example, `?print.vsel`, `?plot.vsel`, `?suggest_size.vsel`,</span></span></span>
 <span class="r-in"><span><span class="co"># and `?ranking` for possible post-processing functions.</span></span></span>
 </code></pre></div>
