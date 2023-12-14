@@ -692,7 +692,7 @@ proj_predict_aux <- function(proj, newdata, offsetnew, weightsnew,
 #' # values for `nterms_max` and `nclusters_pred`, but only for the sake of
 #' # speed in this example; this is not recommended in general):
 #' vs <- varsel(fit, method = "L1", nterms_max = 3, nclusters_pred = 10,
-#'              seed = 5555)
+#'              seed = 5555, verbose = FALSE)
 #' print(plot(vs))
 #'
 #' @export
@@ -1266,7 +1266,7 @@ plot.vsel <- function(
 #' # values for `nterms_max` and `nclusters_pred`, but only for the sake of
 #' # speed in this example; this is not recommended in general):
 #' vs <- varsel(fit, method = "L1", nterms_max = 3, nclusters_pred = 10,
-#'              seed = 5555)
+#'              seed = 5555, verbose = FALSE)
 #' print(summary(vs), digits = 1)
 #'
 #' @export
@@ -1658,7 +1658,7 @@ print.vsel <- function(x, digits = getOption("projpred.digits", 2), ...) {
 #' # values for `nterms_max` and `nclusters_pred`, but only for the sake of
 #' # speed in this example; this is not recommended in general):
 #' vs <- varsel(fit, method = "L1", nterms_max = 3, nclusters_pred = 10,
-#'              seed = 5555)
+#'              seed = 5555, verbose = FALSE)
 #' print(suggest_size(vs))
 #'
 #' @export
@@ -1781,7 +1781,7 @@ suggest_size.vsel <- function(
 #' # values for `nterms_max` and `nclusters_pred`, but only for the sake of
 #' # speed in this example; this is not recommended in general):
 #' vs <- varsel(fit, method = "L1", nterms_max = 3, nclusters_pred = 10,
-#'              seed = 5555)
+#'              seed = 5555, verbose = FALSE)
 #' print(performances(vs))
 #'
 #' @export

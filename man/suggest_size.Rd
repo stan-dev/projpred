@@ -151,7 +151,7 @@ fit <- rstanarm::stan_glm(
 # values for `nterms_max` and `nclusters_pred`, but only for the sake of
 # speed in this example; this is not recommended in general):
 vs <- varsel(fit, method = "L1", nterms_max = 3, nclusters_pred = 10,
-             seed = 5555)
+             seed = 5555, verbose = FALSE)
 print(suggest_size(vs))
 \dontshow{\}) # examplesIf}
 }
