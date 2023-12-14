@@ -455,11 +455,25 @@ dat_indep$offs_col <- offs_indep
 
 ## Setup ------------------------------------------------------------------
 
-if (!requireNamespace("rstanarm", quietly = TRUE)) {
-  warning("Package 'rstanarm' is needed for the rstanarm tests, but could not ",
-          "be found. Deactivating the rstanarm tests now. Furthermore, in ",
-          "this case, `run_prj`, `run_vs`, and `run_cvvs` are currently set ",
-          "to `FALSE`.")
+if (!requireNamespace("rstanarm", quietly = TRUE) ||
+    packageVersion("Matrix") >= "1.6-4") {
+  if (!requireNamespace("rstanarm", quietly = TRUE)) {
+    txt_start_warn_rstanarm <- paste0(
+      "Package 'rstanarm' is needed for the rstanarm tests, but could not be ",
+      "found. "
+    )
+  } else if (packageVersion("Matrix") >= "1.6-4") {
+    txt_start_warn_rstanarm <- paste0(
+      "Currently, version < 1.6-4 of package 'Matrix' is needed for the ",
+      "rstanarm tests (see rstanarm issue stan-dev/rstanarm#610). "
+    )
+  } else {
+    txt_start_warn_rstanarm <- "THIS CASE SHOULD NOT OCCUR. "
+  }
+  warning(txt_start_warn_rstanarm, "Deactivating the rstanarm tests now. ",
+          "Furthermore, in this case, `run_prj`, `run_vs`, and `run_cvvs` are ",
+          "currently set to `FALSE`."
+  )
   pkg_nms <- character()
   # TODO: Adapt the tests to avoid the following line, at least if `run_brms` is
   # `TRUE` (better: avoid it in any case, no matter whether `run_brms` is `TRUE`
