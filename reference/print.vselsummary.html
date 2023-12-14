@@ -18,7 +18,7 @@ It displays a summary of the results from a varsel() or cv_varsel() run."><meta 
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">projpred</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">2.7.0</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">2.8.0</span>
       </span>
     </div>
 
@@ -111,7 +111,7 @@ It displays a summary of the results from a <code><a href="varsel.html">varsel()
 
     <div id="ref-usage">
     <div class="sourceCode"><pre class="sourceCode r"><code><span><span class="co"># S3 method for vselsummary</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="va">x</span>, <span class="va">...</span><span class="op">)</span></span></code></pre></div>
+<span><span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="va">x</span>, digits <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/options.html" class="external-link">getOption</a></span><span class="op">(</span><span class="st">"projpred.digits"</span>, <span class="fl">2</span><span class="op">)</span>, <span class="va">...</span><span class="op">)</span></span></code></pre></div>
     </div>
 
     <div id="arguments">
@@ -120,8 +120,16 @@ It displays a summary of the results from a <code><a href="varsel.html">varsel()
 <dd><p>An object of class <code>vselsummary</code>.</p></dd>
 
 
+<dt>digits</dt>
+<dd><p>Passed to <code><a href="https://rdrr.io/r/base/print.dataframe.html" class="external-link">print.data.frame()</a></code> (for the table containing the
+submodel performance evaluation results) and <code><a href="https://rdrr.io/r/base/print.default.html" class="external-link">print.default()</a></code> (for the
+vector containing the reference model performance evaluation results).</p></dd>
+
+
 <dt>...</dt>
-<dd><p>Arguments passed to <code><a href="https://rdrr.io/r/base/print.dataframe.html" class="external-link">print.data.frame()</a></code>.</p></dd>
+<dd><p>Arguments passed to <code><a href="https://rdrr.io/r/base/print.dataframe.html" class="external-link">print.data.frame()</a></code> (for the table containing
+the submodel performance evaluation results) and <code><a href="https://rdrr.io/r/base/print.default.html" class="external-link">print.default()</a></code> (for the
+vector containing the reference model performance evaluation results).</p></dd>
 
 </dl></div>
     <div id="value">
@@ -132,10 +140,14 @@ It displays a summary of the results from a <code><a href="varsel.html">varsel()
     </div>
     <div id="details">
     <h2>Details</h2>
-    <p>In the table printed at the bottom, column <code>solution_terms</code> contains
-the full-data predictor ranking and column <code>cv_proportions_diag</code> contains
-the main diagonal of the matrix returned by <code><a href="cv_proportions.html">cv_proportions()</a></code> (with
-<code>cumulate</code> as set in the <code><a href="summary.vsel.html">summary.vsel()</a></code> call that created <code>x</code>).</p>
+    <p>In the submodel predictive performance table printed at (or towards)
+the bottom, column <code>ranking_fulldata</code> contains the full-data predictor
+ranking and column <code>cv_proportions_diag</code> contains the main diagonal of the
+matrix returned by <code><a href="cv_proportions.html">cv_proportions()</a></code> (with <code>cumulate</code> as set in the
+<code><a href="summary.vsel.html">summary.vsel()</a></code> call that created <code>x</code>). To retrieve the fold-wise
+predictor rankings, use the <code><a href="ranking.html">ranking()</a></code> function, possibly followed by
+<code><a href="cv_proportions.html">cv_proportions()</a></code> for computing the ranking proportions (which can be
+visualized by <code><a href="plot.cv_proportions.html">plot.cv_proportions()</a></code>).</p>
     </div>
 
   </div>

@@ -82,6 +82,9 @@
     <loc>https://mc-stan.org/projpred/reference/mesquite.html</loc>
   </url>
   <url>
+    <loc>https://mc-stan.org/projpred/reference/performances.html</loc>
+  </url>
+  <url>
     <loc>https://mc-stan.org/projpred/reference/plot.cv_proportions.html</loc>
   </url>
   <url>
@@ -95,6 +98,12 @@
   </url>
   <url>
     <loc>https://mc-stan.org/projpred/reference/predictor_terms.html</loc>
+  </url>
+  <url>
+    <loc>https://mc-stan.org/projpred/reference/print.projection.html</loc>
+  </url>
+  <url>
+    <loc>https://mc-stan.org/projpred/reference/print.refmodel.html</loc>
   </url>
   <url>
     <loc>https://mc-stan.org/projpred/reference/print.vsel.html</loc>

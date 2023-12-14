@@ -21,7 +21,7 @@ subject to the variable selection, but only after the inclusion of the
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">projpred</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">2.7.0</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">2.8.0</span>
       </span>
     </div>
 
@@ -149,7 +149,7 @@ terms.</p></dd>
     <div class="sourceCode"><pre class="sourceCode r"><code><span class="r-in"><span><span class="co"># Data:</span></span></span>
 <span class="r-in"><span><span class="va">dat_gauss</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span>y <span class="op">=</span> <span class="va">df_gaussian</span><span class="op">$</span><span class="va">y</span>, <span class="va">df_gaussian</span><span class="op">$</span><span class="va">x</span><span class="op">)</span></span></span>
 <span class="r-in"><span></span></span>
-<span class="r-in"><span><span class="co"># The "stanreg" fit which will be used as the reference model (with small</span></span></span>
+<span class="r-in"><span><span class="co"># The `stanreg` fit which will be used as the reference model (with small</span></span></span>
 <span class="r-in"><span><span class="co"># values for `chains` and `iter`, but only for technical reasons in this</span></span></span>
 <span class="r-in"><span><span class="co"># example; this is not recommended in general):</span></span></span>
 <span class="r-in"><span><span class="va">fit</span> <span class="op">&lt;-</span> <span class="fu">rstanarm</span><span class="fu">::</span><span class="fu"><a href="https://mc-stan.org/rstanarm/reference/stan_glm.html" class="external-link">stan_glm</a></span><span class="op">(</span></span></span>
@@ -168,7 +168,6 @@ terms.</p></dd>
 <span class="r-in"><span><span class="co"># speed in this example; this is not recommended in general):</span></span></span>
 <span class="r-in"><span><span class="va">vs</span> <span class="op">&lt;-</span> <span class="fu"><a href="varsel.html">varsel</a></span><span class="op">(</span><span class="va">fit</span>, nclusters <span class="op">=</span> <span class="fl">5</span>, nclusters_pred <span class="op">=</span> <span class="fl">10</span>,</span></span>
 <span class="r-in"><span>             search_terms <span class="op">=</span> <span class="va">search_terms_forced</span>, seed <span class="op">=</span> <span class="fl">5555</span><span class="op">)</span></span></span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> NOTE: In projpred 2.7.0, the default search method was set to "forward" for all kinds of models.</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> -----</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Running the search ...</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> 40% of terms selected</span>
@@ -177,7 +176,7 @@ terms.</p></dd>
 <span class="r-out co"><span class="r-pr">#&gt;</span> 100% of terms selected</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> -----</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> -----</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> Running the performance evaluation ...</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Running the performance evaluation with `refit_prj = TRUE` ...</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> -----</span>
 <span class="r-in"><span><span class="co"># Now see, for example, `?print.vsel`, `?plot.vsel`, `?suggest_size.vsel`,</span></span></span>
 <span class="r-in"><span><span class="co"># and `?ranking` for possible post-processing functions.</span></span></span>

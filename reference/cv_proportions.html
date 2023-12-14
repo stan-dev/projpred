@@ -24,7 +24,7 @@ helpful when it comes to model selection."><meta property="og:image" content="ht
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">projpred</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">2.7.0</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">2.8.0</span>
       </span>
     </div>
 
@@ -174,7 +174,10 @@ matrix if <code>nterms_max</code> is equal to the full model size.</p>
 
 
 <p>The <code>cv_proportions()</code> function is only applicable if the <code>ranking</code> object
-includes fold-wise predictor rankings (i.e., if it is based on a <code>vsel</code> object created by <code><a href="cv_varsel.html">cv_varsel()</a></code> with <code>validate_search = TRUE</code>). If the
+includes fold-wise predictor rankings (i.e., if it is based on a <code>vsel</code></p>
+
+
+<p>object created by <code><a href="cv_varsel.html">cv_varsel()</a></code> with <code>validate_search = TRUE</code>). If the
 <code>ranking</code> object contains only a full-data predictor ranking (i.e., if it
 is based on a <code>vsel</code> object created by <code><a href="varsel.html">varsel()</a></code> or by <code><a href="cv_varsel.html">cv_varsel()</a></code>, but
 the latter with <code>validate_search = FALSE</code>), then an error is thrown because

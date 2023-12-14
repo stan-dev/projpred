@@ -11,15 +11,15 @@ either \(S_{\mathrm{ref}}\) or \(S_{\mathrm{prj}}\),
 whichever is appropriate in the context where it is used. Then an
 augmented-rows matrix is a matrix with \(N \cdot C\) rows in \(C\)
 blocks of \(N\) rows, i.e., with the \(N\) observations nested in the
-\(C\) (latent) response categories. For ordered response categories, the
-\(C\) (latent) response categories (i.e., the row blocks) have to be sorted
-increasingly. The columns of an augmented-rows matrix have to correspond to
-the \(S\) parameter draws, just like for the traditional projection. An
-augmented-rows matrix is of class augmat (inheriting from classes matrix
-and array) and needs to have the value of \(N\) stored in an attribute
-called nobs_orig. An augmented-length vector (class augvec) is the vector
-resulting from subsetting an augmented-rows matrix to extract a single column
-and thereby dropping dimensions."><meta property="og:image" content="https://mc-stan.org/projpred/logo.svg"><!-- mathjax --><script src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/MathJax.js" integrity="sha256-nvJJv9wWKEm88qvoQl9ekL2J+k/RWIsaSScxxlsrv8k=" crossorigin="anonymous"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/config/TeX-AMS-MML_HTMLorMML.js" integrity="sha256-84DKXVJXs0/F8OTMzX4UR909+jtl4G7SPypPavF+GfA=" crossorigin="anonymous"></script><!--[if lt IE 9]>
+\(C\) (possibly latent) response categories. For ordered response
+categories, the \(C\) (possibly latent) response categories (i.e., the row
+blocks) have to be sorted increasingly. The columns of an augmented-rows
+matrix have to correspond to the \(S\) parameter draws, just like for the
+traditional projection. An augmented-rows matrix is of class augmat
+(inheriting from classes matrix and array) and needs to have the value of
+\(C\) stored in an attribute called ndiscrete. An augmented-length vector
+(class augvec) is the vector resulting from subsetting an augmented-rows
+matrix to extract a single column and thereby dropping dimensions."><meta property="og:image" content="https://mc-stan.org/projpred/logo.svg"><!-- mathjax --><script src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/MathJax.js" integrity="sha256-nvJJv9wWKEm88qvoQl9ekL2J+k/RWIsaSScxxlsrv8k=" crossorigin="anonymous"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/config/TeX-AMS-MML_HTMLorMML.js" integrity="sha256-84DKXVJXs0/F8OTMzX4UR909+jtl4G7SPypPavF+GfA=" crossorigin="anonymous"></script><!--[if lt IE 9]>
 <script src="https://oss.maxcdn.com/html5shiv/3.7.3/html5shiv.min.js"></script>
 <script src="https://oss.maxcdn.com/respond/1.4.2/respond.min.js"></script>
 <![endif]--></head><body data-spy="scroll" data-target="#toc">
@@ -37,7 +37,7 @@ and thereby dropping dimensions."><meta property="og:image" content="https://mc-
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">projpred</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">2.7.0</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">2.8.0</span>
       </span>
     </div>
 
@@ -136,15 +136,15 @@ either \(S_{\mathrm{ref}}\) or \(S_{\mathrm{prj}}\),
 whichever is appropriate in the context where it is used. Then an
 augmented-rows matrix is a matrix with \(N \cdot C\) rows in \(C\)
 blocks of \(N\) rows, i.e., with the \(N\) observations nested in the
-\(C\) (latent) response categories. For ordered response categories, the
-\(C\) (latent) response categories (i.e., the row blocks) have to be sorted
-increasingly. The columns of an augmented-rows matrix have to correspond to
-the \(S\) parameter draws, just like for the traditional projection. An
-augmented-rows matrix is of class <code>augmat</code> (inheriting from classes <code>matrix</code>
-and <code>array</code>) and needs to have the value of \(N\) stored in an attribute
-called <code>nobs_orig</code>. An augmented-length vector (class <code>augvec</code>) is the vector
-resulting from subsetting an augmented-rows matrix to extract a single column
-and thereby dropping dimensions.</p>
+\(C\) (possibly latent) response categories. For ordered response
+categories, the \(C\) (possibly latent) response categories (i.e., the row
+blocks) have to be sorted increasingly. The columns of an augmented-rows
+matrix have to correspond to the \(S\) parameter draws, just like for the
+traditional projection. An augmented-rows matrix is of class <code>augmat</code>
+(inheriting from classes <code>matrix</code> and <code>array</code>) and needs to have the value of
+\(C\) stored in an attribute called <code>ndiscrete</code>. An augmented-length vector
+(class <code>augvec</code>) is the vector resulting from subsetting an augmented-rows
+matrix to extract a single column and thereby dropping dimensions.</p>
     </div>
 
 

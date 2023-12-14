@@ -40,7 +40,7 @@
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">projpred</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">2.7.0</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">2.8.0</span>
       </span>
     </div>
 
@@ -133,7 +133,7 @@
       <h1 data-toc-skip>Latent projection predictive feature
 selection</h1>
             
-            <h4 data-toc-skip class="date">2023-09-30</h4>
+            <h4 data-toc-skip class="date">2023-12-14</h4>
       
       <small class="dont-index">Source: <a href="https://github.com/stan-dev/projpred/blob/HEAD/vignettes/latent.Rmd" class="external-link"><code>vignettes/latent.Rmd</code></a></small>
       <div class="hidden name"><code>latent.Rmd</code></div>
@@ -401,7 +401,7 @@ projection’s later:</p>
 <div class="sourceCode" id="cb10"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="va">time_lat</span><span class="op">)</span></span></code></pre></div>
 <pre><code>   user  system elapsed 
-  0.769   0.012   0.781 </code></pre>
+  0.882   0.056   0.938 </code></pre>
 <p>The message telling that <code>&lt;refmodel&gt;$dis</code> consists
 of only <code>NA</code>s will not concern us here because we will only
 be focusing on response-scale post-processing.</p>
@@ -459,32 +459,53 @@ Search method: L1
 Maximum submodel size for the search: 14
 Number of projected draws in the search: 1 (from clustered projection)
 Number of projected draws in the performance evaluation: 20 (from clustered projection)
+Argument `refit_prj`: TRUE
 
-Performance evaluation summary (response scale) with `deltas = FALSE` and `cumulate = FALSE`:
- size solution_terms cv_proportions_diag    mlpd   lower   upper     diff
-    0           &lt;NA&gt;                  NA -6257.6 -9041.1 -3474.0 -6254.36
-    1            x.4                  NA -4185.6 -6049.0 -2322.2 -4182.39
-    2            x.6                  NA -1434.7 -1989.6  -879.8 -1431.46
-    3           x.10                  NA  -474.7  -679.9  -269.4  -471.45
-    4            x.3                  NA  -450.2  -703.2  -197.1  -446.98
-    5            x.1                  NA  -161.0  -244.8   -77.2  -157.77
-    6            x.2                  NA   -62.1   -90.6   -33.6   -58.89
-    7            x.8                  NA  -103.8  -158.4   -49.1  -100.58
-    8            x.7                  NA  -103.6  -158.5   -48.8  -100.42
-    9           xcat                  NA   -19.6   -31.9    -7.2   -16.35
-   10            x.5                  NA   -13.3   -19.7    -6.9   -10.09
-   11           xn.6                  NA   -13.4   -19.6    -7.2   -10.19
-   12            x.9                  NA    -2.9    -3.2    -2.6     0.30
-   13          xn.29                  NA    -2.9    -3.2    -2.6     0.28
-   14          xn.26                  NA    -2.9    -3.2    -2.6     0.28</code></pre>
+Submodel performance evaluation summary (response scale) with `deltas = FALSE` and `cumulate = FALSE`:
+ size ranking_fulldata cv_proportions_diag    mlpd mlpd.lower mlpd.upper
+    0      (Intercept)                  NA -6274.5    -9064.9    -3484.0
+    1              x.4                  NA -4194.7    -6062.2    -2327.3
+    2              x.6                  NA -1418.9    -1968.0     -869.9
+    3             x.10                  NA  -455.3     -652.5     -258.2
+    4              x.3                  NA  -432.9     -673.2     -192.7
+    5              x.1                  NA  -147.4     -225.2      -69.7
+    6              x.2                  NA   -56.4      -81.6      -31.2
+    7              x.8                  NA  -102.5     -156.1      -48.9
+    8              x.7                  NA  -101.1     -155.1      -47.2
+    9              x.5                  NA  -107.3     -173.0      -41.6
+   10             xcat                  NA    -7.6      -10.8       -4.4
+   11             xn.6                  NA    -7.2      -10.2       -4.3
+   12              x.9                  NA    -3.0       -3.3       -2.7
+   13            xn.26                  NA    -3.0       -3.3       -2.7
+   14            xn.29                  NA    -2.9       -3.2       -2.6
+ mlpd.diff
+  -6271.28
+  -4191.54
+  -1415.69
+   -452.10
+   -429.72
+   -144.23
+    -53.18
+    -99.31
+    -97.90
+   -104.10
+     -4.38
+     -4.02
+      0.24
+      0.26
+      0.27
+
+Reference model performance evaluation summary (response scale) with `deltas = FALSE`:
+      mlpd mlpd.lower mlpd.upper 
+      -3.2       -3.5       -2.9 </code></pre>
 <p>On absolute scale (column <code>mlpd</code>), we see that submodel
-size 11 leads to an MLPD of <code>-13.4</code>, i.e., a geometric mean
+size 11 leads to an MLPD of <code>-7.2</code>, i.e., a geometric mean
 predictive density (GMPD; due to the discrete response family, the
 “density” values are probabilities here, so we will report the GMPD as
-percentage) of <code>exp(-13.4)</code> which is ca. 2e-04 % whereas size
-12 leads to a GMPD of ca. 5.5 %. This is a considerable improvement from
-size 11 to size 12, so another justification for size 12. (Size 13 would
-have resulted in about the same GMPD as size 12.)</p>
+percentage) of <code>exp(-7.2)</code> which is ca. 0.0747 % whereas size
+12 leads to a GMPD of ca. 4.98 %. This is a considerable improvement
+from size 11 to size 12, so another justification for size 12. (Size 13
+would have resulted in about the same GMPD as size 12.)</p>
 <p>In the predictor ranking up to the selected size of 12, we can see
 that apart from the noise term <code>xn.6</code>,
 <strong>projpred</strong> has correctly selected the truly relevant
@@ -493,7 +514,7 @@ more clearly using the following code:</p>
 <div class="sourceCode" id="cb19"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">rk_lat</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/ranking.html">ranking</a></span><span class="op">(</span><span class="va">vs_lat</span><span class="op">)</span></span>
 <span><span class="op">(</span> <span class="va">predictors_final_lat</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span><span class="va">rk_lat</span><span class="op">[[</span><span class="st">"fulldata"</span><span class="op">]</span><span class="op">]</span>, <span class="va">size_decided_lat</span><span class="op">)</span> <span class="op">)</span></span></code></pre></div>
-<pre><code> [1] "x.4"  "x.6"  "x.10" "x.3"  "x.1"  "x.2"  "x.8"  "x.7"  "xcat" "x.5" 
+<pre><code> [1] "x.4"  "x.6"  "x.10" "x.3"  "x.1"  "x.2"  "x.8"  "x.7"  "x.5"  "xcat"
 [11] "xn.6" "x.9" </code></pre>
 <p>We will skip post-selection inference here (see the main vignette for
 a demonstration of post-selection inference), but note that
@@ -533,7 +554,7 @@ projection would have given:</p>
 <div class="sourceCode" id="cb22"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="va">time_trad</span><span class="op">)</span></span></code></pre></div>
 <pre><code>   user  system elapsed 
-  1.264   0.004   1.268 </code></pre>
+  1.376   0.000   1.376 </code></pre>
 <div class="sourceCode" id="cb24"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="op">(</span> <span class="va">gg_trad</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/graphics/plot.default.html" class="external-link">plot</a></span><span class="op">(</span><span class="va">vs_trad</span>, stats <span class="op">=</span> <span class="st">"mlpd"</span>, deltas <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span> <span class="op">)</span></span></code></pre></div>
 <p><img src="latent_files/figure-html/post_vs_trad-1.png" width="90%" style="display: block; margin: auto;"></p>
@@ -558,24 +579,45 @@ Search method: L1
 Maximum submodel size for the search: 14
 Number of projected draws in the search: 1 (from clustered projection)
 Number of projected draws in the performance evaluation: 20 (from clustered projection)
+Argument `refit_prj`: TRUE
 
-Performance evaluation summary with `deltas = FALSE` and `cumulate = FALSE`:
- size solution_terms cv_proportions_diag  mlpd lower upper  diff
-    0           &lt;NA&gt;                  NA -3471 -5064 -1877 -3467
-    1            x.6                  NA -2547 -3616 -1478 -2544
-    2          xn.12                  NA -3562 -5229 -1894 -3558
-    3           xcat                  NA -3776 -5555 -1998 -3773
-    4            x.4                  NA -2438 -3568 -1307 -2435
-    5           x.10                  NA  -966 -1459  -473  -963
-    6            x.3                  NA  -823 -1344  -302  -820
-    7          xn.11                  NA  -686 -1127  -246  -683
-    8           xn.2                  NA -1333 -2114  -551 -1329
-    9          xn.22                  NA -1225 -1950  -499 -1222
-   10            x.2                  NA  -742 -1136  -348  -739
-   11            x.1                  NA  -108  -145   -71  -105
-   12          xn.23                  NA   -84  -118   -51   -81
-   13          xn.16                  NA  -121  -188   -54  -118
-   14            x.8                  NA   -97  -144   -51   -94</code></pre>
+Submodel performance evaluation summary with `deltas = FALSE` and `cumulate = FALSE`:
+ size ranking_fulldata cv_proportions_diag  mlpd mlpd.lower mlpd.upper
+    0      (Intercept)                  NA -3471      -5065      -1877
+    1              x.6                  NA -2546      -3615      -1478
+    2            xn.12                  NA -3562      -5229      -1894
+    3             xcat                  NA -3777      -5557      -1998
+    4              x.4                  NA -2435      -3564      -1306
+    5             x.10                  NA  -964      -1453       -474
+    6              x.3                  NA  -812      -1327       -298
+    7            xn.11                  NA  -681      -1120       -243
+    8             xn.2                  NA -1309      -2079       -540
+    9            xn.22                  NA -1204      -1919       -488
+   10              x.2                  NA  -728      -1118       -339
+   11              x.1                  NA  -106       -142        -70
+   12            xn.23                  NA   -85       -120        -51
+   13            xn.16                  NA  -122       -190        -54
+   14              x.8                  NA   -96       -141        -52
+ mlpd.diff
+     -3468
+     -2543
+     -3558
+     -3774
+     -2432
+      -960
+      -809
+      -678
+     -1306
+     -1201
+      -725
+      -103
+       -82
+      -119
+       -93
+
+Reference model performance evaluation summary with `deltas = FALSE`:
+      mlpd mlpd.lower mlpd.upper 
+      -3.2       -3.5       -2.9 </code></pre>
 <p>As these results show, the traditional projection takes longer than
 the latent projection, although the difference is rather small on
 absolute scale (which is due to the fact that the L1 search is already
@@ -745,24 +787,45 @@ Search method: L1
 Maximum submodel size for the search: 14
 Number of projected draws in the search: 1 (from clustered projection)
 Number of projected draws in the performance evaluation: 20 (from clustered projection)
+Argument `refit_prj`: TRUE
 
-Performance evaluation summary (response scale) with `deltas = FALSE` and `cumulate = FALSE`:
- size solution_terms cv_proportions_diag   mlpd  lower  upper    diff
-    0           &lt;NA&gt;                  NA -439.3 -618.8 -259.7 -435.61
-    1            x.4                  NA -107.8 -141.1  -74.4 -104.09
-    2            x.6                  NA  -21.4  -28.2  -14.7  -17.77
-    3           x.10                  NA   -8.7  -10.0   -7.5   -5.06
-    4            x.3                  NA   -5.8   -6.5   -5.0   -2.08
-    5            x.1                  NA   -4.6   -5.2   -4.0   -0.94
-    6            x.2                  NA   -4.1   -4.5   -3.6   -0.40
-    7            x.8                  NA   -3.9   -4.3   -3.5   -0.22
-    8          xn.29                  NA   -3.9   -4.3   -3.5   -0.20
-    9            x.5                  NA   -3.8   -4.2   -3.4   -0.12
-   10            x.7                  NA   -3.7   -4.0   -3.3    0.01
-   11           xcat                  NA   -3.4   -3.8   -3.1    0.25
-   12            x.9                  NA   -3.4   -3.8   -3.1    0.26
-   13          xn.19                  NA   -3.4   -3.8   -3.1    0.26
-   14          xn.31                  NA   -3.4   -3.8   -3.1    0.26</code></pre>
+Submodel performance evaluation summary (response scale) with `deltas = FALSE` and `cumulate = FALSE`:
+ size ranking_fulldata cv_proportions_diag   mlpd mlpd.lower mlpd.upper
+    0      (Intercept)                  NA -463.7     -653.2     -274.1
+    1              x.4                  NA -113.2     -148.3      -78.0
+    2              x.6                  NA  -22.7      -30.3      -15.2
+    3             x.10                  NA   -8.9      -10.3       -7.6
+    4              x.3                  NA   -5.8       -6.6       -5.1
+    5              x.1                  NA   -4.6       -5.2       -4.0
+    6              x.2                  NA   -4.1       -4.6       -3.6
+    7              x.8                  NA   -3.9       -4.3       -3.5
+    8            xn.29                  NA   -3.9       -4.3       -3.5
+    9              x.5                  NA   -3.8       -4.2       -3.4
+   10              x.7                  NA   -3.7       -4.1       -3.3
+   11             xcat                  NA   -3.4       -3.8       -3.1
+   12            xn.19                  NA   -3.4       -3.8       -3.1
+   13              x.9                  NA   -3.4       -3.8       -3.1
+   14             xn.2                  NA   -3.4       -3.8       -3.1
+ mlpd.diff
+  -4.6e+02
+  -1.1e+02
+  -1.9e+01
+  -5.3e+00
+  -2.1e+00
+  -9.5e-01
+  -4.1e-01
+  -2.1e-01
+  -2.0e-01
+  -1.2e-01
+   6.4e-03
+   2.5e-01
+   2.5e-01
+   2.6e-01
+   2.5e-01
+
+Reference model performance evaluation summary (response scale) with `deltas = FALSE`:
+      mlpd mlpd.lower mlpd.upper 
+      -3.7       -4.0       -3.3 </code></pre>
 <p>As we can see from the predictor ranking included in the plot and in
 the summary table, our selected 11 predictor terms lack one truly
 relevant predictor (<code>x.9</code>) and include one noise term

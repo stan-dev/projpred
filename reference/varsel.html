@@ -3,7 +3,9 @@
 variable selection. The search part determines the predictor ranking (also
 known as solution path), i.e., the best submodel for each submodel size
 (number of predictor terms). The evaluation part determines the predictive
-performance of the submodels along the predictor ranking."><meta property="og:image" content="https://mc-stan.org/projpred/logo.svg"><!-- mathjax --><script src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/MathJax.js" integrity="sha256-nvJJv9wWKEm88qvoQl9ekL2J+k/RWIsaSScxxlsrv8k=" crossorigin="anonymous"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/config/TeX-AMS-MML_HTMLorMML.js" integrity="sha256-84DKXVJXs0/F8OTMzX4UR909+jtl4G7SPypPavF+GfA=" crossorigin="anonymous"></script><!--[if lt IE 9]>
+performance of the submodels along the predictor ranking. A special method is
+varsel.vsel() because it re-uses the search results from an earlier
+varsel() (or cv_varsel()) run, as illustrated in the main vignette."><meta property="og:image" content="https://mc-stan.org/projpred/logo.svg"><!-- mathjax --><script src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/MathJax.js" integrity="sha256-nvJJv9wWKEm88qvoQl9ekL2J+k/RWIsaSScxxlsrv8k=" crossorigin="anonymous"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/config/TeX-AMS-MML_HTMLorMML.js" integrity="sha256-84DKXVJXs0/F8OTMzX4UR909+jtl4G7SPypPavF+GfA=" crossorigin="anonymous"></script><!--[if lt IE 9]>
 <script src="https://oss.maxcdn.com/html5shiv/3.7.3/html5shiv.min.js"></script>
 <script src="https://oss.maxcdn.com/respond/1.4.2/respond.min.js"></script>
 <![endif]--></head><body data-spy="scroll" data-target="#toc">
@@ -21,7 +23,7 @@ performance of the submodels along the predictor ranking."><meta property="og:im
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">projpred</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">2.7.0</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">2.8.0</span>
       </span>
     </div>
 
@@ -112,7 +114,9 @@ performance of the submodels along the predictor ranking."><meta property="og:im
 variable selection. The search part determines the predictor ranking (also
 known as solution path), i.e., the best submodel for each submodel size
 (number of predictor terms). The evaluation part determines the predictive
-performance of the submodels along the predictor ranking.</p>
+performance of the submodels along the predictor ranking. A special method is
+<code>varsel.vsel()</code> because it re-uses the search results from an earlier
+<code>varsel()</code> (or <code><a href="cv_varsel.html">cv_varsel()</a></code>) run, as illustrated in the main vignette.</p>
     </div>
 
     <div id="ref-usage">
@@ -136,12 +140,13 @@ performance of the submodels along the predictor ranking.</p>
 <span>  refit_prj <span class="op">=</span> <span class="op">!</span><span class="fu"><a href="https://rdrr.io/r/base/class.html" class="external-link">inherits</a></span><span class="op">(</span><span class="va">object</span>, <span class="st">"datafit"</span><span class="op">)</span>,</span>
 <span>  nterms_max <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  verbose <span class="op">=</span> <span class="cn">TRUE</span>,</span>
+<span>  search_control <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  lambda_min_ratio <span class="op">=</span> <span class="fl">1e-05</span>,</span>
 <span>  nlambda <span class="op">=</span> <span class="fl">150</span>,</span>
 <span>  thresh <span class="op">=</span> <span class="fl">1e-06</span>,</span>
-<span>  regul <span class="op">=</span> <span class="fl">1e-04</span>,</span>
 <span>  penalty <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  search_terms <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  search_out <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  seed <span class="op">=</span> <span class="cn">NA</span>,</span>
 <span>  <span class="va">...</span></span>
 <span><span class="op">)</span></span></code></pre></div>
@@ -156,9 +161,13 @@ performance of the submodels along the predictor ranking.</p>
 
 
 <dt>...</dt>
-<dd><p>Arguments passed to <code><a href="refmodel-init-get.html">get_refmodel()</a></code> as well as to the divergence
-minimizer (during a forward search and also during the evaluation part, but
-the latter only if <code>refit_prj</code> is <code>TRUE</code>).</p></dd>
+<dd><p>For <code>varsel.default()</code>: Arguments passed to <code><a href="refmodel-init-get.html">get_refmodel()</a></code> as
+well as to <code>varsel.refmodel()</code>. For <code>varsel.vsel()</code>: Arguments passed to
+<code>varsel.refmodel()</code>. For <code>varsel.refmodel()</code>: Arguments passed to the
+divergence minimizer (see argument <code>div_minimizer</code> of <code><a href="refmodel-init-get.html">init_refmodel()</a></code> as
+well as section "Draw-wise divergence minimizers" of <a href="projpred-package.html">projpred-package</a>)
+when refitting the submodels for the performance evaluation (if <code>refit_prj</code>
+is <code>TRUE</code>).</p></dd>
 
 
 <dt>d_test</dt>
@@ -223,30 +232,45 @@ does not count the intercept.)</p></dd>
 additional information during the computations.</p></dd>
 
 
+<dt>search_control</dt>
+<dd><p>A <code>list</code> of "control" arguments (i.e., tuning
+parameters) for the search. In case of forward search, these arguments are
+passed to the divergence minimizer (see argument <code>div_minimizer</code> of
+<code><a href="refmodel-init-get.html">init_refmodel()</a></code> as well as section "Draw-wise divergence minimizers" of
+<a href="projpred-package.html">projpred-package</a>). In case of forward search, <code>NULL</code> causes <code>...</code> to be
+used not only for the performance evaluation, but also for the search. In
+case of L1 search, possible arguments are:</p><ul><li><p><code>lambda_min_ratio</code>: Ratio between the smallest and largest lambda in the
+L1-penalized search (default: <code>1e-5</code>). This parameter essentially
+determines how long the search is carried out, i.e., how large submodels
+are explored. No need to change this unless the program gives a warning
+about this.</p></li>
+<li><p><code>nlambda</code>: Number of values in the lambda grid for L1-penalized search
+(default: <code>150</code>). No need to change this unless the program gives a warning
+about this.</p></li>
+<li><p><code>thresh</code>: Convergence threshold when computing the L1 path (default:
+<code>1e-6</code>). Usually, there is no need to change this.</p></li>
+</ul></dd>
+
+
 <dt>lambda_min_ratio</dt>
-<dd><p>Only relevant for L1 search. Ratio between the
-smallest and largest lambda in the L1-penalized search. This parameter
-essentially determines how long the search is carried out, i.e., how large
-submodels are explored. No need to change this unless the program gives a
-warning about this.</p></dd>
+<dd><p>Deprecated (please use <code>search_control</code> instead).
+Only relevant for L1 search. Ratio between the smallest and largest lambda
+in the L1-penalized search. This parameter essentially determines how long
+the search is carried out, i.e., how large submodels are explored. No need
+to change this unless the program gives a warning about this.</p></dd>
 
 
 <dt>nlambda</dt>
-<dd><p>Only relevant for L1 search. Number of values in the lambda
-grid for L1-penalized search. No need to change this unless the program
-gives a warning about this.</p></dd>
+<dd><p>Deprecated (please use <code>search_control</code> instead). Only
+relevant for L1 search. Number of values in the lambda grid for
+L1-penalized search. No need to change this unless the program gives a
+warning about this.</p></dd>
 
 
 <dt>thresh</dt>
-<dd><p>Only relevant for L1 search. Convergence threshold when
-computing the L1 path. Usually, there is no need to change this.</p></dd>
-
-
-<dt>regul</dt>
-<dd><p>A number giving the amount of ridge regularization when
-projecting onto (i.e., fitting) submodels which are GLMs. Usually there is
-no need for regularization, but sometimes we need to add some
-regularization to avoid numerical problems.</p></dd>
+<dd><p>Deprecated (please use <code>search_control</code> instead). Only relevant
+for L1 search. Convergence threshold when computing the L1 path. Usually,
+there is no need to change this.</p></dd>
 
 
 <dt>penalty</dt>
@@ -265,6 +289,10 @@ The intercept (<code>"1"</code>) is always included internally via <code><a href
 there's no difference between including it explicitly or omitting it. The
 default <code>search_terms</code> considers all the terms in the reference model's
 formula.</p></dd>
+
+
+<dt>search_out</dt>
+<dd><p>Intended for internal use.</p></dd>
 
 
 <dt>seed</dt>
@@ -362,7 +390,7 @@ where this needs to be a vector or a <code>factor</code> containing the <em>orig
     <div class="sourceCode"><pre class="sourceCode r"><code><span class="r-in"><span><span class="co"># Data:</span></span></span>
 <span class="r-in"><span><span class="va">dat_gauss</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span>y <span class="op">=</span> <span class="va">df_gaussian</span><span class="op">$</span><span class="va">y</span>, <span class="va">df_gaussian</span><span class="op">$</span><span class="va">x</span><span class="op">)</span></span></span>
 <span class="r-in"><span></span></span>
-<span class="r-in"><span><span class="co"># The "stanreg" fit which will be used as the reference model (with small</span></span></span>
+<span class="r-in"><span><span class="co"># The `stanreg` fit which will be used as the reference model (with small</span></span></span>
 <span class="r-in"><span><span class="co"># values for `chains` and `iter`, but only for technical reasons in this</span></span></span>
 <span class="r-in"><span><span class="co"># example; this is not recommended in general):</span></span></span>
 <span class="r-in"><span><span class="va">fit</span> <span class="op">&lt;-</span> <span class="fu">rstanarm</span><span class="fu">::</span><span class="fu"><a href="https://mc-stan.org/rstanarm/reference/stan_glm.html" class="external-link">stan_glm</a></span><span class="op">(</span></span></span>
@@ -379,7 +407,7 @@ where this needs to be a vector or a <code>factor</code> containing the <em>orig
 <span class="r-out co"><span class="r-pr">#&gt;</span> Running the search ...</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> -----</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> -----</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> Running the performance evaluation ...</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Running the performance evaluation with `refit_prj = TRUE` ...</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> -----</span>
 <span class="r-in"><span><span class="co"># Now see, for example, `?print.vsel`, `?plot.vsel`, `?suggest_size.vsel`,</span></span></span>
 <span class="r-in"><span><span class="co"># and `?ranking` for possible post-processing functions.</span></span></span>

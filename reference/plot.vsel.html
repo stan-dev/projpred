@@ -5,7 +5,7 @@ model (possibly also that of some other "baseline" model) and that of the
 submodels along the full-data predictor ranking. Basic information about the
 (CV) variability in the ranking of the predictors is included as well (if
 available; inferred from cv_proportions()). For a tabular representation,
-see summary.vsel().'><meta property="og:image" content="https://mc-stan.org/projpred/logo.svg"><!-- mathjax --><script src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/MathJax.js" integrity="sha256-nvJJv9wWKEm88qvoQl9ekL2J+k/RWIsaSScxxlsrv8k=" crossorigin="anonymous"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/config/TeX-AMS-MML_HTMLorMML.js" integrity="sha256-84DKXVJXs0/F8OTMzX4UR909+jtl4G7SPypPavF+GfA=" crossorigin="anonymous"></script><!--[if lt IE 9]>
+see summary.vsel() and performances().'><meta property="og:image" content="https://mc-stan.org/projpred/logo.svg"><!-- mathjax --><script src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/MathJax.js" integrity="sha256-nvJJv9wWKEm88qvoQl9ekL2J+k/RWIsaSScxxlsrv8k=" crossorigin="anonymous"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/config/TeX-AMS-MML_HTMLorMML.js" integrity="sha256-84DKXVJXs0/F8OTMzX4UR909+jtl4G7SPypPavF+GfA=" crossorigin="anonymous"></script><!--[if lt IE 9]>
 <script src="https://oss.maxcdn.com/html5shiv/3.7.3/html5shiv.min.js"></script>
 <script src="https://oss.maxcdn.com/respond/1.4.2/respond.min.js"></script>
 <![endif]--></head><body data-spy="scroll" data-target="#toc">
@@ -23,7 +23,7 @@ see summary.vsel().'><meta property="og:image" content="https://mc-stan.org/proj
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">projpred</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">2.7.0</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">2.8.0</span>
       </span>
     </div>
 
@@ -116,7 +116,7 @@ model (possibly also that of some other "baseline" model) and that of the
 submodels along the full-data predictor ranking. Basic information about the
 (CV) variability in the ranking of the predictors is included as well (if
 available; inferred from <code><a href="cv_proportions.html">cv_proportions()</a></code>). For a tabular representation,
-see <code><a href="summary.vsel.html">summary.vsel()</a></code>.</p>
+see <code><a href="summary.vsel.html">summary.vsel()</a></code> and <code><a href="performances.html">performances()</a></code>.</p>
     </div>
 
     <div id="ref-usage">
@@ -138,8 +138,10 @@ see <code><a href="summary.vsel.html">summary.vsel()</a></code>.</p>
 <span>  ranking_repel <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  ranking_repel_args <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span><span class="op">)</span>,</span>
 <span>  ranking_colored <span class="op">=</span> <span class="cn">FALSE</span>,</span>
+<span>  show_cv_proportions <span class="op">=</span> <span class="cn">TRUE</span>,</span>
 <span>  cumulate <span class="op">=</span> <span class="cn">FALSE</span>,</span>
 <span>  text_angle <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  size_position <span class="op">=</span> <span class="st">"primary_x_bottom"</span>,</span>
 <span>  <span class="va">...</span></span>
 <span><span class="op">)</span></span></code></pre></div>
     </div>
@@ -153,9 +155,9 @@ see <code><a href="summary.vsel.html">summary.vsel()</a></code>.</p>
 <dt>nterms_max</dt>
 <dd><p>Maximum submodel size (number of predictor terms) for which
 the performance statistics are calculated. Using <code>NULL</code> is effectively the
-same as <code>length(ranking(object)[["fulldata"]])</code>. Note that <code>nterms_max</code>
-does not count the intercept, so use <code>nterms_max = 0</code> for the
-intercept-only model. For <code>plot.vsel()</code>, <code>nterms_max</code> must be at least <code>1</code>.</p></dd>
+same as <code>length(ranking(object)$fulldata)</code>. Note that <code>nterms_max</code> does not
+count the intercept, so use <code>nterms_max = 0</code> for the intercept-only model.
+For <code>plot.vsel()</code>, <code>nterms_max</code> must be at least <code>1</code>.</p></dd>
 
 
 <dt>stats</dt>
@@ -171,13 +173,24 @@ density values (with each of these predictive density values being
 a---possibly weighted---average across the parameter draws).</p></li>
 <li><p><code>"mlpd"</code>: mean log predictive density, that is, <code>"elpd"</code> divided by the
 number of observations.</p></li>
+<li><p><code>"gmpd"</code>: geometric mean predictive density (GMPD), that is, <code><a href="https://rdrr.io/r/base/Log.html" class="external-link">exp()</a></code> of
+<code>"mlpd"</code>. The GMPD is especially helpful for discrete response families
+(because there, the GMPD is bounded by zero and one). For the corresponding
+standard error, the delta method is used. The corresponding confidence
+interval type is "exponentiated normal approximation" because the
+confidence interval bounds are the exponentiated confidence interval bounds
+of the <code>"mlpd"</code>.</p></li>
 <li><p><code>"mse"</code>: mean squared error (only available in the situations mentioned
 in section "Details" below).</p></li>
 <li><p><code>"rmse"</code>: root mean squared error (only available in the situations
 mentioned in section "Details" below). For the corresponding standard error
 and lower and upper confidence interval bounds, bootstrapping is used.</p></li>
 <li><p><code>"acc"</code> (or its alias, <code>"pctcorr"</code>): classification accuracy (only
-available in the situations mentioned in section "Details" below).</p></li>
+available in the situations mentioned in section "Details" below). By
+"classification accuracy", we mean the proportion of correctly classified
+observations. For this, the response category ("class") with highest
+probability (the probabilities are model-based) is taken as the prediction
+("classification") for an observation.</p></li>
 <li><p><code>"auc"</code>: area under the ROC curve (only available in the situations
 mentioned in section "Details" below). For the corresponding standard error
 and lower and upper confidence interval bounds, bootstrapping is used.</p></li>
@@ -185,17 +198,21 @@ and lower and upper confidence interval bounds, bootstrapping is used.</p></li>
 
 
 <dt>deltas</dt>
-<dd><p>If <code>TRUE</code>, the submodel statistics are estimated as differences
-from the baseline model (see argument <code>baseline</code>). With a "difference
-<em>from</em> the baseline model", we mean to take the submodel statistic minus
-the baseline model statistic (not the other way round).</p></dd>
+<dd><p>If <code>TRUE</code>, the submodel statistics are estimated relatively to
+the baseline model (see argument <code>baseline</code>). For the GMPD, the term
+"relatively" refers to the ratio vs. the baseline model (i.e., the submodel
+statistic divided by the baseline model statistic). For all other <code>stats</code>,
+"relatively" refers to the difference from the baseline model (i.e., the
+submodel statistic minus the baseline model statistic).</p></dd>
 
 
 <dt>alpha</dt>
 <dd><p>A number determining the (nominal) coverage <code>1 - alpha</code> of the
-normal-approximation (or bootstrap; see argument <code>stats</code>) confidence
-intervals. For example, in case of the normal approximation, <code>alpha = 2 * pnorm(-1)</code> corresponds to a confidence interval stretching by one standard
-error on either side of the point estimate.</p></dd>
+normal-approximation (or bootstrap or exponentiated normal-approximation;
+see argument <code>stats</code>) confidence intervals. For example, in case of the
+normal approximation, <code>alpha = 2 * pnorm(-1)</code> corresponds to a confidence
+interval stretching by one standard error on either side of the point
+estimate.</p></dd>
 
 
 <dt>baseline</dt>
@@ -206,12 +223,11 @@ terms of <code>stats[1]</code>), respectively.</p></dd>
 
 
 <dt>thres_elpd</dt>
-<dd><p>Only relevant if <code>any(stats %in% c("elpd", "mlpd"))</code>. The
-threshold for the ELPD difference (taking the submodel's ELPD minus the
-baseline model's ELPD) above which the submodel's ELPD is considered to be
-close enough to the baseline model's ELPD. An equivalent rule is applied in
-case of the MLPD. See <code><a href="suggest_size.html">suggest_size()</a></code> for a formalization. Supplying <code>NA</code>
-deactivates this.</p></dd>
+<dd><p>Only relevant if <code>any(stats %in% c("elpd", "mlpd", "gmpd"))</code>. The threshold for the ELPD difference (taking the submodel's
+ELPD minus the baseline model's ELPD) above which the submodel's ELPD is
+considered to be close enough to the baseline model's ELPD. An equivalent
+rule is applied in case of the MLPD and the GMPD. See <code><a href="suggest_size.html">suggest_size()</a></code> for
+a formalization. Supplying <code>NA</code> deactivates this.</p></dd>
 
 
 <dt>resp_oscale</dt>
@@ -272,13 +288,20 @@ respectively.</p></dd>
 <dt>ranking_colored</dt>
 <dd><p>A single logical value indicating whether the points
 and the uncertainty bars should be gradient-colored according to the CV
-ranking proportions (<code>TRUE</code>) or not (<code>FALSE</code>). The CV ranking proportions
-may be cumulated (see argument <code>cumulate</code>). Note that the point and the
+ranking proportions (<code>TRUE</code>, currently only works if <code>show_cv_proportions</code>
+is <code>TRUE</code> as well) or not (<code>FALSE</code>). The CV ranking proportions may be
+cumulated (see argument <code>cumulate</code>). Note that the point and the
 uncertainty bar at submodel size 0 (i.e., at the intercept-only model) are
 always colored in gray because the intercept is forced to be selected
 before any predictors are selected (in other words, the reason is that for
 submodel size 0, the question of variability across CV folds is not
 appropriate in the first place).</p></dd>
+
+
+<dt>show_cv_proportions</dt>
+<dd><p>A single logical value indicating whether the CV
+ranking proportions (see <code><a href="cv_proportions.html">cv_proportions()</a></code>) should be displayed (<code>TRUE</code>)
+or not (<code>FALSE</code>).</p></dd>
 
 
 <dt>cumulate</dt>
@@ -290,7 +313,17 @@ ranking).</p></dd>
 <dt>text_angle</dt>
 <dd><p>Passed to argument <code>angle</code> of <code><a href="https://ggplot2.tidyverse.org/reference/element.html" class="external-link">ggplot2::element_text()</a></code> for
 the x-axis tick labels. In case of long predictor names (and/or large
-<code>nterms_max</code>), <code>text_angle = 45</code> might be helpful (for example).</p></dd>
+<code>nterms_max</code>), <code>text_angle = 45</code> might be helpful (for example). If
+<code>text_angle &gt; 0</code> (<code>&lt; 0</code>), the x-axis text is automatically right-aligned
+(left-aligned). If <code>-90 &lt; text_angle &amp;&amp; text_angle &lt; 90 &amp;&amp; text_angle != 0</code>, the x-axis text is also top-aligned.</p></dd>
+
+
+<dt>size_position</dt>
+<dd><p>A single character string specifying the position of the
+submodel sizes. Either <code>"primary_x_bottom"</code> for including them in the
+x-axis tick labels, <code>"primary_x_top"</code> for putting them above the x-axis, or
+<code>"secondary_x"</code> for putting them into a secondary x-axis. Currently, both
+of the non-default options may not be combined with <code>ranking_nterms_max = NA</code>.</p></dd>
 
 
 <dt>...</dt>
@@ -334,11 +367,11 @@ latent projection with <code>resp_oscale = TRUE</code> in combination with
     <p>As long as the reference model's performance is computable, it is always
 shown in the plot as a dashed red horizontal line. If <code>baseline = "best"</code>,
 the baseline model's performance is shown as a dotted black horizontal line.
-If <code>!is.na(thres_elpd)</code> and <code>any(stats %in% c("elpd", "mlpd"))</code>, the value
-supplied to <code>thres_elpd</code> (which is automatically adapted internally in case
-of the MLPD or <code>deltas = FALSE</code>) is shown as a dot-dashed gray horizontal
-line for the reference model and, if <code>baseline = "best"</code>, as a long-dashed
-green horizontal line for the baseline model.</p>
+If <code>!is.na(thres_elpd)</code> and <code>any(stats %in% c("elpd", "mlpd", "gmpd"))</code>, the
+value supplied to <code>thres_elpd</code> (which is automatically adapted internally in
+case of the MLPD or the GMPD or <code>deltas = FALSE</code>) is shown as a dot-dashed
+gray horizontal line for the reference model and, if <code>baseline = "best"</code>, as
+a long-dashed green horizontal line for the baseline model.</p>
     </div>
 
     <div id="ref-examples">
@@ -346,7 +379,7 @@ green horizontal line for the baseline model.</p>
     <div class="sourceCode"><pre class="sourceCode r"><code><span class="r-in"><span><span class="co"># Data:</span></span></span>
 <span class="r-in"><span><span class="va">dat_gauss</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span>y <span class="op">=</span> <span class="va">df_gaussian</span><span class="op">$</span><span class="va">y</span>, <span class="va">df_gaussian</span><span class="op">$</span><span class="va">x</span><span class="op">)</span></span></span>
 <span class="r-in"><span></span></span>
-<span class="r-in"><span><span class="co"># The "stanreg" fit which will be used as the reference model (with small</span></span></span>
+<span class="r-in"><span><span class="co"># The `stanreg` fit which will be used as the reference model (with small</span></span></span>
 <span class="r-in"><span><span class="co"># values for `chains` and `iter`, but only for technical reasons in this</span></span></span>
 <span class="r-in"><span><span class="co"># example; this is not recommended in general):</span></span></span>
 <span class="r-in"><span><span class="va">fit</span> <span class="op">&lt;-</span> <span class="fu">rstanarm</span><span class="fu">::</span><span class="fu"><a href="https://mc-stan.org/rstanarm/reference/stan_glm.html" class="external-link">stan_glm</a></span><span class="op">(</span></span></span>
@@ -363,7 +396,7 @@ green horizontal line for the baseline model.</p>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Running the search ...</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> -----</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> -----</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> Running the performance evaluation ...</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Running the performance evaluation with `refit_prj = TRUE` ...</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> -----</span>
 <span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/graphics/plot.default.html" class="external-link">plot</a></span><span class="op">(</span><span class="va">vs</span><span class="op">)</span><span class="op">)</span></span></span>
 <span class="r-plt img"><img src="plot.vsel-1.png" alt="" width="700" height="433"></span>

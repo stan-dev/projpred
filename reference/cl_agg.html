@@ -19,7 +19,7 @@ belong to the same cluster. This averaging can be done in a weighted fashion."><
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">projpred</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">2.7.0</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">2.8.0</span>
       </span>
     </div>
 
@@ -129,8 +129,10 @@ belong to the same cluster. This averaging can be done in a weighted fashion.</p
 
 <dt>cl</dt>
 <dd><p>A numeric vector of length \(S\), giving the cluster indices for
-the draws. Draws that should be dropped (e.g., by thinning) need to have an
-<code>NA</code> in <code>cl</code>.</p></dd>
+the draws. The cluster indices need to be values from the set \(\{1,
+  ..., S_{\mathrm{cl}}\}\), except for draws that should be
+dropped (e.g., by thinning), in which case <code>NA</code> needs to be provided at the
+positions of <code>cl</code> corresponding to these draws.</p></dd>
 
 
 <dt>wdraws</dt>

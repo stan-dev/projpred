@@ -19,7 +19,7 @@ the projection was performed."><meta property="og:image" content="https://mc-sta
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">projpred</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">2.7.0</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">2.8.0</span>
       </span>
     </div>
 
@@ -142,7 +142,7 @@ terms.</p></dd>
     <div class="sourceCode"><pre class="sourceCode r"><code><span class="r-in"><span><span class="co"># Data:</span></span></span>
 <span class="r-in"><span><span class="va">dat_gauss</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span>y <span class="op">=</span> <span class="va">df_gaussian</span><span class="op">$</span><span class="va">y</span>, <span class="va">df_gaussian</span><span class="op">$</span><span class="va">x</span><span class="op">)</span></span></span>
 <span class="r-in"><span></span></span>
-<span class="r-in"><span><span class="co"># The "stanreg" fit which will be used as the reference model (with small</span></span></span>
+<span class="r-in"><span><span class="co"># The `stanreg` fit which will be used as the reference model (with small</span></span></span>
 <span class="r-in"><span><span class="co"># values for `chains` and `iter`, but only for technical reasons in this</span></span></span>
 <span class="r-in"><span><span class="co"># example; this is not recommended in general):</span></span></span>
 <span class="r-in"><span><span class="va">fit</span> <span class="op">&lt;-</span> <span class="fu">rstanarm</span><span class="fu">::</span><span class="fu"><a href="https://mc-stan.org/rstanarm/reference/stan_glm.html" class="external-link">stan_glm</a></span><span class="op">(</span></span></span>
@@ -153,7 +153,7 @@ terms.</p></dd>
 <span class="r-in"><span><span class="co"># Projection onto an arbitrary combination of predictor terms (with a small</span></span></span>
 <span class="r-in"><span><span class="co"># value for `nclusters`, but only for the sake of speed in this example;</span></span></span>
 <span class="r-in"><span><span class="co"># this is not recommended in general):</span></span></span>
-<span class="r-in"><span><span class="va">prj</span> <span class="op">&lt;-</span> <span class="fu"><a href="project.html">project</a></span><span class="op">(</span><span class="va">fit</span>, solution_terms <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"X1"</span>, <span class="st">"X3"</span>, <span class="st">"X5"</span><span class="op">)</span>, nclusters <span class="op">=</span> <span class="fl">10</span>,</span></span>
+<span class="r-in"><span><span class="va">prj</span> <span class="op">&lt;-</span> <span class="fu"><a href="project.html">project</a></span><span class="op">(</span><span class="va">fit</span>, predictor_terms <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"X1"</span>, <span class="st">"X3"</span>, <span class="st">"X5"</span><span class="op">)</span>, nclusters <span class="op">=</span> <span class="fl">10</span>,</span></span>
 <span class="r-in"><span>               seed <span class="op">=</span> <span class="fl">9182</span>, verbose <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="fu">predictor_terms</span><span class="op">(</span><span class="va">prj</span><span class="op">)</span><span class="op">)</span> <span class="co"># gives `c("X1", "X3", "X5")`</span></span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> [1] "X1" "X3" "X5"</span>
