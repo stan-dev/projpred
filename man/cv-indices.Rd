@@ -5,6 +5,7 @@
 \alias{cv_folds}
 \alias{cvfolds}
 \alias{cv_ids}
+\alias{lfo_folds}
 \title{Create cross-validation folds}
 \usage{
 cv_folds(n, K, seed = NA)
@@ -12,9 +13,12 @@ cv_folds(n, K, seed = NA)
 cvfolds(n, K, seed = NA)
 
 cv_ids(n, K, out = c("foldwise", "indices"), seed = NA)
+
+lfo_folds(n, L)
 }
 \arguments{
-\item{n}{Number of observations.}
+\item{n}{Number of observations (in case of a time-series model, this is the
+number of time points).}
 
 \item{K}{Number of folds. Must be at least 2 and not exceed \code{n}.}
 
@@ -26,22 +30,30 @@ results can be obtained again if needed. Passed to argument \code{seed} of
 
 \item{out}{Format of the output, either \code{"foldwise"} or \code{"indices"}. See
 below for details.}
+
+\item{L}{Number of observations (time points) to fit the initial fold with.
+Must be at least 1 and not exceed \code{n}.}
 }
 \value{
 \code{\link[=cv_folds]{cv_folds()}} returns a vector of length \code{n} such that each element is
 an integer between 1 and \code{K} denoting which fold the corresponding data
-point belongs to. The return value of \code{\link[=cv_ids]{cv_ids()}} depends on the \code{out}
+point belongs to.
+
+The return value of \code{\link[=cv_ids]{cv_ids()}} depends on the \code{out}
 argument. If \code{out = "foldwise"}, the return value is a \code{list} with \code{K}
 elements, each being a \code{list} with elements \code{tr} and \code{ts} giving the
 training and test indices, respectively, for the corresponding fold. If
 \code{out = "indices"}, the return value is a \code{list} with elements \code{tr} and \code{ts}
 each being a \code{list} with \code{K} elements giving the training and test indices,
 respectively, for each fold.
+
+The return value of \code{\link[=lfo_folds]{lfo_folds()}} is \strong{TODO}.
 }
 \description{
 These are helper functions to create cross-validation (CV) folds, i.e., to
 split up the indices from 1 to \code{n} into \code{K} subsets ("folds") for
-\eqn{K}-fold CV. These functions are potentially useful when creating the
+\eqn{K}-fold CV (via \code{\link[=cv_folds]{cv_folds()}} or \code{\link[=cv_ids]{cv_ids()}}) or to \strong{TODO} (via
+\code{\link[=lfo_folds]{lfo_folds()}}). These functions are potentially useful when creating the
 input for arguments \code{cvfits} and \code{cvfun} of \code{\link[=init_refmodel]{init_refmodel()}} (or argument
 \code{cvfits} of \code{\link[=cv_varsel.refmodel]{cv_varsel.refmodel()}}). Function \code{\link[=cvfolds]{cvfolds()}} is deprecated;
 please use \code{\link[=cv_folds]{cv_folds()}} instead (apart from the name, they are the same). The
@@ -55,5 +67,7 @@ y <- rnorm(n)
 cv <- cv_ids(n, K = 5)
 # Mean within the test set of each fold:
 cvmeans <- sapply(cv, function(fold) mean(y[fold$ts]))
+
+# TODO: lfo_folds() example
 
 }

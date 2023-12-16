@@ -148,7 +148,8 @@ search_forward <- function(p_ref, refmodel, nterms_max, verbose = TRUE,
 #' [varsel()] or [cv_varsel()] if certain predictor terms should be forced to be
 #' selected first whereas other predictor terms are optional (i.e., they are
 #' subject to the variable selection, but only after the inclusion of the
-#' "forced" terms).
+#' "forced" terms). Function [forced_search_terms()] is simply an alias for
+#' [force_search_terms()].
 #'
 #' @param forced_terms A character vector of predictor terms that should be
 #'   selected first.
@@ -159,7 +160,7 @@ search_forward <- function(p_ref, refmodel, nterms_max, verbose = TRUE,
 #' @return A character vector that may be used as input for argument
 #'   `search_terms` of [varsel()] or [cv_varsel()].
 #'
-#' @seealso [varsel()], [cv_varsel()]
+#' @seealso [varsel()], [cv_varsel()], [ordered_search_terms()]
 #'
 #' @examplesIf requireNamespace("rstanarm", quietly = TRUE)
 #' # Data:
@@ -193,6 +194,58 @@ force_search_terms <- function(forced_terms, optional_terms) {
   stopifnot(length(optional_terms) > 0)
   forced_terms <- paste(forced_terms, collapse = " + ")
   return(c(forced_terms, paste0(forced_terms, " + ", optional_terms)))
+}
+
+#' @rdname force_search_terms
+#' @export
+forced_search_terms <- force_search_terms
+
+#' Ordered search terms
+#'
+#' A helper function to construct the input for argument `search_terms` of
+#' [varsel()] or [cv_varsel()] if the predictor terms should be selected in a
+#' given order.
+#'
+#' @param ordered_terms A character vector of predictor terms that should be
+#'   selected in their given order.
+#'
+#' @return A character vector that may be used as input for argument
+#'   `search_terms` of [varsel()] or [cv_varsel()].
+#'
+#' @seealso [varsel()], [cv_varsel()], [forced_search_terms()]
+#'
+#' @examplesIf requireNamespace("rstanarm", quietly = TRUE)
+#' # Data:
+#' dat_gauss <- data.frame(y = df_gaussian$y, df_gaussian$x)
+#'
+#' # The "stanreg" fit which will be used as the reference model (with small
+#' # values for `chains` and `iter`, but only for technical reasons in this
+#' # example; this is not recommended in general):
+#' fit <- rstanarm::stan_glm(
+#'   y ~ X1 + X2 + X3 + X4 + X5, family = gaussian(), data = dat_gauss,
+#'   QR = TRUE, chains = 2, iter = 500, refresh = 0, seed = 9876
+#' )
+#'
+#' # We will select X3, X1, and X2 in this order:
+#' search_terms_ordered <- ordered_search_terms(
+#'   ordered_terms = c("X3", "X1", "X2")
+#' )
+#'
+#' # Run varsel() (here without cross-validation and with small values for
+#' # `nterms_max`, `nclusters`, and `nclusters_pred`, but only for the sake of
+#' # speed in this example; this is not recommended in general):
+#' vs <- varsel(fit, nclusters = 5, nclusters_pred = 10,
+#'              search_terms = search_terms_ordered, seed = 5555)
+#' # Now see, for example, `?print.vsel`, `?plot.vsel`, `?suggest_size.vsel`,
+#' # and `?ranking` for possible post-processing functions.
+#'
+#' @export
+ordered_search_terms <- function(ordered_terms) {
+  for (idx in utils::tail(seq_along(ordered_terms), -1)) {
+    ordered_terms[idx] <- paste0(ordered_terms[idx - 1], " + ",
+                                 ordered_terms[idx])
+  }
+  return(ordered_terms)
 }
 
 search_L1_surrogate <- function(p_ref, d_train, family, intercept, nterms_max,
