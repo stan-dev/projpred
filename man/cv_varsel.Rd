@@ -67,11 +67,12 @@ is performed, which avoids refitting the reference model \code{nloo} times (in
 contrast to a standard LOO CV). In the \code{"kfold"} case, a \eqn{K}-fold CV is
 performed. See also section "Note" below.}
 
-\item{nloo}{\strong{Caution:} Still experimental. Only relevant if \code{cv_method = "LOO"}. Number of subsampled PSIS-LOO CV folds, i.e., number of
-observations used for the approximate LOO CV (anything from 1 to the number
-of all observations). Smaller values lead to faster computation but higher
-uncertainty in the evaluation part. If \code{NULL}, all observations are used
-(as by default).}
+\item{nloo}{\strong{Caution:} Still experimental. Only relevant if \code{cv_method = "LOO"}. If \code{nloo} is smaller than the number of all observations,
+approximate full LOO CV using probability-proportional-to-size-sampling
+(PPS) to make accurate computation only for \code{nloo} (anything from 1 to the
+number of all observations) leave-one-out folds (Magnusson et al., 2019).
+Smaller values lead to faster computation but higher uncertainty in the
+evaluation part. If \code{NULL}, all observations are used (as by default).}
 
 \item{K}{Only relevant if \code{cv_method = "kfold"} and if \code{cvfits} is \code{NULL}
 (which is the case for reference model objects created by

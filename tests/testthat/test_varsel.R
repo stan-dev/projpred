@@ -297,6 +297,8 @@ test_that(paste(
       set.seed(args_vs_i$seed)
       p_sel_dummy <- get_refdist(refmods[[tstsetup_ref]],
                                  nclusters = vs_indep$nprjdraws_search)
+      # Use suppressWarnings() because test_that() somehow redirects stderr()
+      # and so throws warnings that projpred wants to capture internally:
       pl_indep <- suppressWarnings(proj_linpred(
         vs_indep,
         newdata = dat_indep_crr,
@@ -329,17 +331,22 @@ test_that(paste(
         p_sel_dummy <- get_refdist(refmods[[tstsetup_ref]],
                                    nclusters = vs_indep$nprjdraws_search)
         dat_indep_crr[[paste0(".", y_nm_crr)]] <- d_test_crr$y
-        pl_indep_lat <- proj_linpred(
-          vs_indep,
-          newdata = dat_indep_crr,
-          offsetnew = d_test_crr$offset,
-          weightsnew = d_test_crr$weights,
-          transform = FALSE,
-          integrated = TRUE,
-          .seed = NA,
-          nterms = c(0L, seq_along(vs_indep$predictor_ranking)),
-          nclusters = args_vs_i$nclusters_pred,
-          seed = NA
+        expect_warning(
+          pl_indep_lat <- proj_linpred(
+            vs_indep,
+            newdata = dat_indep_crr,
+            offsetnew = d_test_crr$offset,
+            weightsnew = d_test_crr$weights,
+            transform = FALSE,
+            integrated = TRUE,
+            .seed = NA,
+            nterms = c(0L, seq_along(vs_indep$predictor_ranking)),
+            nclusters = args_vs_i$nclusters_pred,
+            seed = NA
+          ),
+          get_warn_wrhs_orhs(tstsetup, weightsnew = d_test_crr$weights,
+                             offsetnew = d_test_crr$offset),
+          info = tstsetup
         )
         y_lat_mat <- matrix(d_test_crr$y, nrow = args_vs_i$nclusters_pred,
                             ncol = nobsv_indep, byrow = TRUE)

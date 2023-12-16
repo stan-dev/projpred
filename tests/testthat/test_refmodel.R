@@ -259,18 +259,38 @@ test_that(paste(
     }
 
     # Without `ynew`:
-    predref_resp <- predict(refmods[[tstsetup]], dat, weightsnew = wobs_crr,
-                            offsetnew = offs_crr, type = "response")
-    predref_link <- predict(refmods[[tstsetup]], dat, weightsnew = wobs_crr,
-                            offsetnew = offs_crr, type = "link")
+    expect_warning(
+      predref_resp <- predict(refmods[[tstsetup]], dat, weightsnew = wobs_crr,
+                              offsetnew = offs_crr, type = "response"),
+      get_warn_wrhs_orhs(tstsetup, weightsnew = wobs_crr,
+                         offsetnew = offs_crr),
+      info = tstsetup
+    )
+    expect_warning(
+      predref_link <- predict(refmods[[tstsetup]], dat, weightsnew = wobs_crr,
+                              offsetnew = offs_crr, type = "link"),
+      get_warn_wrhs_orhs(tstsetup, weightsnew = wobs_crr,
+                         offsetnew = offs_crr),
+      info = tstsetup
+    )
 
     # With `ynew`:
-    predref_ynew_resp <- predict(refmods[[tstsetup]], dat,
-                                 weightsnew = wobs_crr, offsetnew = offs_crr,
-                                 ynew = y_crr, type = "response")
-    predref_ynew_link <- predict(refmods[[tstsetup]], dat,
-                                 weightsnew = wobs_crr, offsetnew = offs_crr,
-                                 ynew = y_crr_link, type = "link")
+    expect_warning(
+      predref_ynew_resp <- predict(refmods[[tstsetup]], dat,
+                                   weightsnew = wobs_crr, offsetnew = offs_crr,
+                                   ynew = y_crr, type = "response"),
+      get_warn_wrhs_orhs(tstsetup, weightsnew = wobs_crr,
+                         offsetnew = offs_crr),
+      info = tstsetup
+    )
+    expect_warning(
+      predref_ynew_link <- predict(refmods[[tstsetup]], dat,
+                                   weightsnew = wobs_crr, offsetnew = offs_crr,
+                                   ynew = y_crr_link, type = "link"),
+      get_warn_wrhs_orhs(tstsetup, weightsnew = wobs_crr,
+                         offsetnew = offs_crr),
+      info = tstsetup
+    )
 
     # Checks without `ynew`:
     if (prj_crr %in% c("latent", "augdat")) {

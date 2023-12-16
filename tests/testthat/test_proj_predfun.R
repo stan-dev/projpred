@@ -3,6 +3,9 @@ context("proj_predfun")
 test_that("repair_re() works for GLMMs", {
   # Setup -------------------------------------------------------------------
 
+  # Currently, version < 1.6-4 of package 'Matrix' is needed here:
+  skip_if(packageVersion("Matrix") >= "1.6-4")
+
   if (exists(".Random.seed", envir = .GlobalEnv)) {
     rng_old <- get(".Random.seed", envir = .GlobalEnv)
   }

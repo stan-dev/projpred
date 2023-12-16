@@ -107,3 +107,12 @@ get_fit_fun_nm <- function(args_fit_i) {
          "brms" = "brm",
          stop("Unknown `pkg_nm`."))
 }
+
+get_warn_wrhs_orhs <- function(tstsetup, weightsnew, offsetnew) {
+  if ((is.null(weightsnew) && is.null(offsetnew)) ||
+      !grepl("^brms\\.", tstsetup) || packageVersion("brms") < "2.20.6") {
+    return(NA)
+  } else {
+    return("^Argument `[wo]rhs` is currently ignored\\.")
+  }
+}

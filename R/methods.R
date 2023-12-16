@@ -191,8 +191,8 @@ NULL
 ## projections. For each projection, it evaluates the fun-function, which
 ## calculates the linear predictor if called from proj_linpred and samples from
 ## the predictive distribution if called from proj_predict.
-proj_helper <- function(object, newdata, offsetnew, weightsnew, onesub_fun,
-                        filter_nterms = NULL, ...) {
+proj_helper <- function(object, newdata, onesub_fun, filter_nterms = NULL,
+                        ...) {
   if (inherits(object, "projection") || is_proj_list(object)) {
     if (!is.null(filter_nterms)) {
       if (!is_proj_list(object)) {
@@ -259,36 +259,8 @@ proj_helper <- function(object, newdata, offsetnew, weightsnew, onesub_fun,
     count_terms_chosen(proj$predictor_terms)
   })
 
-  nobs_new <- nrow(newdata) %||% projs[[1]]$refmodel$nobs
-
-  preds <- lapply(projs, function(proj) {
-    w_o <- proj$refmodel$extract_model_data(
-      proj$refmodel$fit, newdata = newdata, wrhs = weightsnew, orhs = offsetnew,
-      extract_y = FALSE
-    )
-    weightsnew <- w_o$weights
-    offsetnew <- w_o$offset
-    if (length(weightsnew) != nobs_new) {
-      stop("The function supplied to argument `extract_model_data` of ",
-           "init_refmodel() needs to return an element `weights` with length ",
-           "equal to the number of observations.")
-    }
-    if (length(offsetnew) != nobs_new) {
-      stop("The function supplied to argument `extract_model_data` of ",
-           "init_refmodel() needs to return an element `offset` with length ",
-           "equal to the number of observations.")
-    }
-    if (proj$refmodel$family$for_augdat && !all(weightsnew == 1)) {
-      stop("Currently, the augmented-data projection may not be combined with ",
-           "observation weights (other than 1).")
-    }
-    if (proj$refmodel$family$for_latent && !all(weightsnew == 1)) {
-      stop("Currently, the latent projection may not be combined with ",
-           "observation weights (other than 1).")
-    }
-    onesub_fun(proj, newdata = newdata, offset = offsetnew,
-               weights = weightsnew, extract_y_ind = extract_y_ind, ...)
-  })
+  preds <- lapply(projs, onesub_fun, newdata = newdata,
+                  extract_y_ind = extract_y_ind, ...)
 
   return(unlist_proj(preds))
 }
@@ -327,8 +299,9 @@ proj_linpred <- function(object, newdata = NULL, offsetnew = NULL,
 }
 
 ## function applied to each projected submodel in case of proj_linpred()
-proj_linpred_aux <- function(proj, newdata, offset, weights, transform = FALSE,
-                             integrated = FALSE, extract_y_ind = TRUE,
+proj_linpred_aux <- function(proj, newdata, offsetnew, weightsnew,
+                             transform = FALSE, integrated = FALSE,
+                             extract_y_ind = TRUE,
                              allow_nonconst_wdraws_prj = return_draws_matrix,
                              return_draws_matrix = FALSE, ...) {
   if (!proj[["const_wdraws_prj"]] && !allow_nonconst_wdraws_prj &&
@@ -339,6 +312,11 @@ proj_linpred_aux <- function(proj, newdata, offset, weights, transform = FALSE,
          "into account) or `return_draws_matrix = TRUE`, the latter being ",
          "recommended.")
   }
+  mdat <- proj$refmodel$extract_model_data(proj$refmodel$fit, newdata = newdata,
+                                           wrhs = weightsnew, orhs = offsetnew,
+                                           extract_y = extract_y_ind)
+  weights <- mdat$weights
+  offset <- mdat$offset
   pred_sub <- proj$refmodel$mu_fun(proj$outdmin, newdata = newdata,
                                    offset = offset, transform = transform)
   if (proj$refmodel$family$for_latent && transform) {
@@ -355,11 +333,7 @@ proj_linpred_aux <- function(proj, newdata, offset, weights, transform = FALSE,
       )
     }
   }
-  w_o <- proj$refmodel$extract_model_data(
-    proj$refmodel$fit, newdata = newdata, wrhs = weights,
-    orhs = offset, extract_y = extract_y_ind
-  )
-  ynew <- w_o$y
+  ynew <- mdat$y
   if (!is.null(ynew) && proj$refmodel$family$for_latent && !transform) {
     if (is.null(newdata)) {
       newdata_lat <- newdata
@@ -529,13 +503,18 @@ proj_predict <- function(object, newdata = NULL, offsetnew = NULL,
 }
 
 ## function applied to each projected submodel in case of proj_predict()
-proj_predict_aux <- function(proj, newdata, offset, weights,
+proj_predict_aux <- function(proj, newdata, offsetnew, weightsnew,
                              nresample_clusters = 1000, resp_oscale = TRUE,
                              return_draws_matrix = FALSE, ...) {
   if (!proj$refmodel$family$for_latent && !resp_oscale) {
     stop("`resp_oscale = FALSE` can only be used in case of the latent ",
          "projection.")
   }
+  mdat <- proj$refmodel$extract_model_data(proj$refmodel$fit, newdata = newdata,
+                                           wrhs = weightsnew, orhs = offsetnew,
+                                           extract_y = FALSE)
+  weights <- mdat$weights
+  offset <- mdat$offset
   mu <- proj$refmodel$mu_fun(proj$outdmin, newdata = newdata, offset = offset)
   if (!proj[["const_wdraws_prj"]]) {
     # In this case, the posterior draws have nonconstant weights.
@@ -666,7 +645,16 @@ proj_predict_aux <- function(proj, newdata, offset, weights,
 #'   ranking).
 #' @param text_angle Passed to argument `angle` of [ggplot2::element_text()] for
 #'   the x-axis tick labels. In case of long predictor names (and/or large
-#'   `nterms_max`), `text_angle = 45` might be helpful (for example).
+#'   `nterms_max`), `text_angle = 45` might be helpful (for example). If
+#'   `text_angle > 0` (`< 0`), the x-axis text is automatically right-aligned
+#'   (left-aligned). If `-90 < text_angle && text_angle < 90 && text_angle !=
+#'   0`, the x-axis text is also top-aligned.
+#' @param size_position A single character string specifying the position of the
+#'   submodel sizes. Either `"primary_x_bottom"` for including them in the
+#'   x-axis tick labels, `"primary_x_top"` for putting them above the x-axis, or
+#'   `"secondary_x"` for putting them into a secondary x-axis. Currently, both
+#'   of the non-default options may not be combined with `ranking_nterms_max =
+#'   NA`.
 #'
 #' @inherit summary.vsel details
 #'
@@ -728,6 +716,7 @@ plot.vsel <- function(
     show_cv_proportions = TRUE,
     cumulate = FALSE,
     text_angle = NULL,
+    size_position = "primary_x_bottom",
     ...
 ) {
   # Parse input:
@@ -896,9 +885,19 @@ plot.vsel <- function(
                                                rk_dfr[["cv_props_diag"]],
                                                sep = "\n")
     }
-    rk_dfr[["size_rkfulldt_cvpropdiag"]] <- paste(
-      rk_dfr[["size"]], rk_dfr[["rkfulldt_cvpropdiag"]], sep = "\n"
-    )
+    if (identical(size_position, "primary_x_bottom")) {
+      rk_dfr[["size_rkfulldt_cvpropdiag"]] <- paste(
+        rk_dfr[["size"]], rk_dfr[["rkfulldt_cvpropdiag"]], sep = "\n"
+      )
+    } else if (identical(size_position, "primary_x_top")) {
+      rk_dfr[["size_rkfulldt_cvpropdiag"]] <- rk_dfr[["rkfulldt_cvpropdiag"]]
+    } else if (identical(size_position, "secondary_x")) {
+      rk_dfr[["size_rkfulldt_cvpropdiag"]] <- rk_dfr[["rkfulldt_cvpropdiag"]]
+      xlab_sec <- xlab
+      xlab <- NULL
+    } else {
+      stop("Unexpected value for argument `size_position`.")
+    }
 
     # Continue x-axis label (title):
     xlab_rk <- "Corresponding predictor from full-data predictor ranking"
@@ -907,7 +906,11 @@ plot.vsel <- function(
     } else if (identical(ranking_repel, "label")) {
       xlab_rk <- paste("Label:", xlab_rk)
     }
-    xlab <- paste(xlab, xlab_rk, sep = "\n")
+    if (!is.null(xlab)) {
+      xlab <- paste(xlab, xlab_rk, sep = "\n")
+    } else {
+      xlab <- xlab_rk
+    }
     if (!is.null(rk[["foldwise"]])) {
       if (cumulate) {
         cumul_pretty <- " cumulated "
@@ -923,13 +926,23 @@ plot.vsel <- function(
       }
       xlab <- paste(xlab, xlab_cumul, sep = "\n")
     }
+  } else {
+    if (identical(size_position, "primary_x_top") ||
+        identical(size_position, "secondary_x")) {
+      stop("Currently, `size_position = \"primary_x_top\"` and `size_position ",
+           "= \"secondary_x\"` are not compatible with `ranking_nterms_max = ",
+           "NA`.")
+    } else if (!identical(size_position, "primary_x_bottom")) {
+      stop("Unexpected value for argument `size_position`.")
+    }
   }
 
   # Define the data for the plot:
   data_gg <- subset(stats_sub, stats_sub$size <= nterms_max)
   if (!is.na(ranking_nterms_max) &&
       (!is.null(ranking_repel) ||
-       (ranking_colored && !is.null(rk[["foldwise"]])))) {
+       (ranking_colored && !is.null(rk[["foldwise"]])) ||
+       identical(size_position, "primary_x_top"))) {
     colnms_orig <- names(data_gg)
     data_gg[["row_idx"]] <- seq_len(nrow(data_gg))
     cols_add <- c("cv_props_diag_num", "rkfulldt_cvpropdiag")
@@ -939,6 +952,13 @@ plot.vsel <- function(
     data_gg <- data_gg[order(data_gg[["row_idx"]]), , drop = FALSE]
     data_gg[["row_idx"]] <- NULL
     data_gg <- data_gg[, c(colnms_orig, cols_add), drop = FALSE]
+    if (identical(size_position, "primary_x_top")) {
+      data_gg[["size_chr"]] <- as.character(data_gg[["size"]])
+      data_gg[["size_chr"]][
+        data_gg[["statistic"]] !=
+          utils::tail(levels(as.factor(data_gg[["statistic"]])), 1)
+      ] <- ""
+    }
   }
 
   # Create the plot:
@@ -1017,6 +1037,17 @@ plot.vsel <- function(
                    linewidth = bar_thickness) +
     geom_line() +
     geom_point(aes_linerg_pt, size = point_size)
+  if (identical(size_position, "primary_x_top")) {
+    x_color_txt <- calc_element("axis.text.x.bottom", theme_get())[["colour"]]
+    if (!is.character(x_color_txt) || length(x_color_txt) != 1) {
+      warning("Could not retrieve the color for the x-axis tick labels. Using ",
+              "`\"black\"` now.")
+      x_color_txt <- "black"
+    }
+    pp <- pp +
+      geom_text(aes(y = -Inf, label = .data[["size_chr"]]), vjust = -0.5,
+                color = x_color_txt)
+  }
   # Miscellaneous stuff (axes, theming, faceting, etc.):
   if (!is.na(ranking_nterms_max) && ranking_colored &&
       !is.null(rk[["foldwise"]])) {
@@ -1043,16 +1074,42 @@ plot.vsel <- function(
   } else {
     ci_type <- ""
   }
+  if (identical(size_position, "secondary_x")) {
+    tick_labs_x_sec <- as.character(rk_dfr[
+      order(match(rk_dfr[["size"]], breaks), na.last = NA),
+      "size"
+    ])
+    x_axis_sec <- dup_axis(name = xlab_sec, labels = tick_labs_x_sec)
+  } else {
+    x_axis_sec <- waiver()
+  }
+  hjust_val <- 0.5
+  vjust_val <- 0.5
+  if (!is.null(text_angle)) {
+    if (text_angle > 0) {
+      hjust_val <- 1
+      if (text_angle < 90) {
+        vjust_val <- 1
+      }
+    } else if (text_angle < 0) {
+      hjust_val <- 0
+      if (text_angle > -90) {
+        vjust_val <- 1
+      }
+    }
+  }
   pp <- pp +
     scale_x_continuous(breaks = breaks, minor_breaks = minor_breaks,
                        limits = c(min(breaks), max(breaks)),
-                       labels = tick_labs_x) +
+                       labels = tick_labs_x,
+                       sec.axis = x_axis_sec) +
     labs(x = xlab, y = ylab, title = "Predictive performance",
          subtitle = paste0("Vertical bars indicate ",
                            round(100 * (1 - alpha), 1), "% ", ci_type,
                            "intervals")) +
-    theme(axis.text.x = element_text(angle = text_angle, hjust = 0.5,
-                                     vjust = 0.5)) +
+    theme(axis.text.x.bottom = element_text(angle = text_angle,
+                                            hjust = hjust_val,
+                                            vjust = vjust_val)) +
     facet_grid(statistic ~ ., scales = "free_y")
   if (!is.na(ranking_nterms_max) && !is.null(ranking_repel)) {
     if (identical(ranking_repel, "text")) {

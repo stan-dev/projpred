@@ -244,14 +244,14 @@
 #' `data.frame`).
 #' * `wrhs` accepts at least (i) a right-hand side formula consisting only of
 #' the variable in `newdata` containing the observation weights or (ii) `NULL`
-#' (for typical \pkg{rstanarm} and \pkg{brms} reference models, `NULL` causes
-#' the original observation weights to be used if the model was fitted with
-#' weights, otherwise a vector of ones is used).
+#' for using the observation weights corresponding to `newdata` (typically, the
+#' observation weights are stored in a column of `newdata`; if the model was
+#' fitted without observation weights, a vector of ones should be used).
 #' * `orhs` accepts at least (i) a right-hand side formula consisting only of
-#' the variable in `newdata` containing the offsets or (ii) `NULL` (for typical
-#' \pkg{rstanarm} and \pkg{brms} reference models, `NULL` causes the original
-#' offsets to be used if the model was fitted with offsets, otherwise a vector
-#' of zeros is used).
+#' the variable in `newdata` containing the offsets or (ii) `NULL` for using the
+#' offsets corresponding to `newdata` (typically, the offsets are stored in a
+#' column of `newdata`; if the model was fitted without offsets, a vector of
+#' zeros should be used).
 #' * `extract_y` accepts a single logical value indicating whether output
 #' element `y` (see below) shall be `NULL` (`TRUE`) or not (`FALSE`).
 #'
@@ -263,6 +263,12 @@
 #'
 #' The weights and offsets returned by `extract_model_data` will be assumed to
 #' hold for the reference model as well as for the submodels.
+#'
+#' Above, arguments `wrhs` and `orhs` were assumed to have defaults of `NULL`.
+#' It should be possible to use defaults other than `NULL`, but we strongly
+#' recommend to use `NULL`. If defaults other than `NULL` are used, they need to
+#' imply the behaviors described at items "(ii)" (see the descriptions of `wrhs`
+#' and `orhs`).
 #'
 #' # Augmented-data projection
 #'
@@ -513,30 +519,11 @@ predict.refmodel <- function(object, newdata = NULL, ynew = NULL,
   if (!is.null(newdata)) {
     newdata <- na.fail(newdata)
   }
-  nobs_new <- nrow(newdata) %||% refmodel$nobs
   w_o <- refmodel$extract_model_data(refmodel$fit, newdata = newdata,
                                      wrhs = weightsnew, orhs = offsetnew,
                                      extract_y = FALSE)
   weightsnew <- w_o$weights
   offsetnew <- w_o$offset
-  if (length(weightsnew) != nobs_new) {
-    stop("The function supplied to argument `extract_model_data` of ",
-         "init_refmodel() needs to return an element `weights` with length ",
-         "equal to the number of observations.")
-  }
-  if (length(offsetnew) != nobs_new) {
-    stop("The function supplied to argument `extract_model_data` of ",
-         "init_refmodel() needs to return an element `offset` with length ",
-         "equal to the number of observations.")
-  }
-  if (refmodel$family$for_augdat && !all(weightsnew == 1)) {
-    stop("Currently, the augmented-data projection may not be combined with ",
-         "observation weights (other than 1).")
-  }
-  if (refmodel$family$for_latent && !all(weightsnew == 1)) {
-    stop("Currently, the latent projection may not be combined with ",
-         "observation weights (other than 1).")
-  }
   if (!is.null(newdata) && inherits(refmodel$fit, "stanreg") &&
       length(refmodel$fit$offset) > 0) {
     if ("projpred_internal_offs_stanreg" %in% names(newdata)) {
@@ -584,7 +571,7 @@ predict.refmodel <- function(object, newdata = NULL, ynew = NULL,
       pred <- colMeans(pred)
     }
     if (was_augmat) {
-      pred <- matrix(pred, nrow = nobs_new)
+      pred <- matrix(pred, nrow = nrow(newdata) %||% refmodel$nobs)
     }
     return(pred)
   } else {
@@ -1201,10 +1188,29 @@ init_refmodel <- function(object, data, formula, family, ref_predfun = NULL,
                          resp_form = if (extract_y) lhs(formula) else NULL))
     }
   }
-  # Wrap `extract_model_data_usr` in order to retrieve the correct `newdata`
-  # when `newdata` is `NULL`:
+  # Wrap `extract_model_data_usr`:
   extract_model_data <- function(object, newdata, ...) {
-    extract_model_data_usr(object = object, newdata = newdata %||% data, ...)
+    newdata <- newdata %||% data
+    mdat <- extract_model_data_usr(object = object, newdata = newdata, ...)
+    if (length(mdat$weights) != nrow(newdata)) {
+      stop("The function supplied to argument `extract_model_data` of ",
+           "init_refmodel() needs to return an element `weights` with length ",
+           "equal to the number of observations.")
+    }
+    if (length(mdat$offset) != nrow(newdata)) {
+      stop("The function supplied to argument `extract_model_data` of ",
+           "init_refmodel() needs to return an element `offset` with length ",
+           "equal to the number of observations.")
+    }
+    if (family$for_augdat && !all(mdat$weights == 1)) {
+      stop("Currently, the augmented-data projection may not be combined with ",
+           "observation weights (other than 1).")
+    }
+    if (family$for_latent && !all(mdat$weights == 1)) {
+      stop("Currently, the latent projection may not be combined with ",
+           "observation weights (other than 1).")
+    }
+    return(mdat)
   }
 
   if (proper_model) {
@@ -1329,10 +1335,10 @@ init_refmodel <- function(object, data, formula, family, ref_predfun = NULL,
       linpred_out <- unname(linpred_out)
 
       if (excl_offs) {
-        # Observation weights are not needed here, so use a vector of ones for
-        # `wrhs` to avoid potential conflicts for a non-`NULL` default `wrhs`:
+        # Observation weights are not needed here, so we can use the default of
+        # `wrhs = NULL` (using something like `wrhs = rep(1, nrow(newdata %||%
+        # data))` would cause a warning in newer brms versions):
         offs <- extract_model_data(fit, newdata = newdata,
-                                   wrhs = rep(1, nrow(newdata %||% data)),
                                    extract_y = FALSE)$offset
         stopifnot(length(offs) %in% c(1L, n_obs))
         if (family$family %in% fams_neg_linpred()) {
@@ -1450,22 +1456,6 @@ init_refmodel <- function(object, data, formula, family, ref_predfun = NULL,
   model_data <- extract_model_data(object, newdata = NULL, extract_y = TRUE)
   weights <- model_data$weights
   offset <- model_data$offset
-  if (length(weights) != nrow(data)) {
-    # Length equal to the number of observations is necessary here, for example
-    # because perf_eval() subsets the weights vector with observation indices by
-    # default.
-    stop("The function supplied to argument `extract_model_data` of ",
-         "init_refmodel() needs to return an element `weights` with length ",
-         "equal to the number of observations.")
-  }
-  if (length(offset) != nrow(data)) {
-    # Length equal to the number of observations is necessary here, for example
-    # because perf_eval() subsets the offsets vector with observation indices by
-    # default.
-    stop("The function supplied to argument `extract_model_data` of ",
-         "init_refmodel() needs to return an element `offset` with length ",
-         "equal to the number of observations.")
-  }
   if (family$for_latent) {
     y <- rowMeans(ref_predfun(
       object, excl_offs = FALSE,
@@ -1548,6 +1538,9 @@ init_refmodel <- function(object, data, formula, family, ref_predfun = NULL,
     }
   }
 
+  # Already performed by extract_model_data(), but repeated here because
+  # get_standard_y() might have altered the observation weights (in case of a
+  # 2-column `y`):
   if (family$for_augdat && !all(weights == 1)) {
     stop("Currently, the augmented-data projection may not be combined with ",
          "observation weights (other than 1).")
