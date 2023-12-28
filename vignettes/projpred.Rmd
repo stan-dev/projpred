@@ -100,7 +100,7 @@ refm_fit <- stan_glm(
   ### Only for the sake of speed (not recommended in general):
   chains = 2, iter = 1000,
   ###
-  QR = TRUE, refresh = 0
+  refresh = 0
 )
 ```
 Usually, we would now have to check the convergence diagnostics (see, e.g., `?posterior::diagnostics` and `?posterior::default_convergence_measures`; the tail-ESS warning already indicates a problem).
