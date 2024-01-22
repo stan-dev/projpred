@@ -147,7 +147,7 @@ refm_fit_poiss <- stan_glm(
   ### Only for the sake of speed (not recommended in general):
   chains = 2, iter = 1000,
   ###
-  QR = TRUE, refresh = 0
+  refresh = 0
 )
 ```
 
@@ -308,7 +308,7 @@ refm_fit_nebin <- stan_glm(
   ### Only for the sake of speed (not recommended in general):
   chains = 2, iter = 1000,
   ###
-  QR = TRUE, refresh = 0
+  refresh = 0
 )
 ```
 
