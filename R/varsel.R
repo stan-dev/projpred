@@ -18,9 +18,11 @@
 #' @param method The method for the search part. Possible options are
 #'   `"forward"` for forward search and `"L1"` for L1 search. See also section
 #'   "Details" below.
-#' @param refit_prj For the evaluation part, should the submodels along the
-#'   predictor ranking be fitted again (`TRUE`) or should their fits from the
-#'   search part be re-used (`FALSE`)?
+#' @param refit_prj For the evaluation part, should the projections onto the
+#' submodels along the predictor ranking be performed again using `ndraws_pred`
+#' draws or `nclusters_pred` clusters (`TRUE`) or should their projections from
+#' the search part, which used `ndraws` draws or `nclusters` clusters, be re-used
+#' (`FALSE`)?
 #' @param ndraws Number of posterior draws used in the search part. Ignored if
 #'   `nclusters` is not `NULL` or in case of L1 search (because L1 search always
 #'   uses a single cluster). If both (`nclusters` and `ndraws`) are `NULL`, the
