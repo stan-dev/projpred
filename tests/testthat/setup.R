@@ -456,16 +456,21 @@ dat_indep$offs_col <- offs_indep
 ## Setup ------------------------------------------------------------------
 
 if (!requireNamespace("rstanarm", quietly = TRUE) ||
-    packageVersion("Matrix") >= "1.6-4") {
+    (!identical(Sys.getenv("NOT_CRAN"), "true") &&
+     packageVersion("Matrix") >= "1.6-4")) {
   if (!requireNamespace("rstanarm", quietly = TRUE)) {
     txt_start_warn_rstanarm <- paste0(
       "Package 'rstanarm' is needed for the rstanarm tests, but could not be ",
       "found. "
     )
-  } else if (packageVersion("Matrix") >= "1.6-4") {
+  } else if (!identical(Sys.getenv("NOT_CRAN"), "true") &&
+             packageVersion("Matrix") >= "1.6-4") {
+    # For 'Matrix' version >= 1.6-4, we cannot be sure that there are no
+    # incompatibility issues with lme4 (binaries), so don't run the 'rstanarm'
+    # tests on CRAN:
     txt_start_warn_rstanarm <- paste0(
       "Currently, version < 1.6-4 of package 'Matrix' is needed for the ",
-      "rstanarm tests (see rstanarm issue stan-dev/rstanarm#610). "
+      "rstanarm tests on CRAN (see rstanarm issue stan-dev/rstanarm#610). "
     )
   } else {
     txt_start_warn_rstanarm <- "THIS CASE SHOULD NOT OCCUR. "
