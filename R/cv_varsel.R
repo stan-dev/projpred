@@ -1099,9 +1099,10 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
 
   # Submodel predictive performance:
   summ_sub <- lapply(seq_len(prv_len_rk + 1L), function(k) {
-    summ_k <- list(lppd = loo_sub[[k]], mu = mu_sub[[k]])
+    summ_k <- list(lppd = loo_sub[[k]], mu = mu_sub[[k]], wcv = validset$wcv)
     if (refmodel$family$for_latent) {
-      summ_k$oscale <- list(lppd = loo_sub_oscale[[k]], mu = mu_sub_oscale[[k]])
+      summ_k$oscale <- list(lppd = loo_sub_oscale[[k]], mu = mu_sub_oscale[[k]],
+                            wcv = validset$wcv)
     }
     return(summ_k)
   })
