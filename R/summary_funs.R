@@ -94,6 +94,9 @@ weighted_summary_means <- function(y_wobs_test, family, wdraws, mu, dis, cl_ref,
   summaries_sub <- varsel$summaries$sub
   if (!is.null(varsel$summaries_fast)) {
     summaries_fast_sub <- varsel$summaries_fast$sub
+    if (stats %in% c("auc")) {
+      warning("Subsampling LOO with AUC not implemented. Using fast LOO for submodel AUC.")
+    }
   } else {
     summaries_fast_sub <- NULL
   }
@@ -361,7 +364,7 @@ get_stat <- function(summaries, summaries_baseline = NULL,
       # full LOO estimator
       if (stat == "mse") {
         value <- mean(wcv * ((mu - y)^2 - mu_baseline))
-        value_se <- weighted.sd((mu - y)^2 - mu_baseline, wcv) / sqrt(n)
+        value_se <- .weighted_sd((mu - y)^2 - mu_baseline, wcv) / sqrt(n)
       } else if (stat == "rmse") {
         value <- sqrt(mean(wcv * ((mu - y)^2))) - sqrt(mean(mu_baseline))
         diffvalue.bootstrap <- bootstrap(
@@ -380,6 +383,8 @@ get_stat <- function(summaries, summaries_baseline = NULL,
     }
   } else if (stat %in% c("acc", "pctcorr", "auc")) {
     y <- y_wobs_test$y
+    wcv <- y_wobs_test$wobs
+    wcv <- n * wcv / sum(wcv)
     if (!is.null(y_wobs_test$y_prop)) {
       # CAUTION: The following checks also ensure that `y` does not have `NA`s
       # (see the other "CAUTION" comments below for changes that are needed if
@@ -392,57 +397,73 @@ get_stat <- function(summaries, summaries_baseline = NULL,
           rep(1L, y[i_short]))
       }))
       mu <- rep(mu, y_wobs_test$wobs)
-      if (!is.null(mu_baseline)) {
-        mu_baseline <- rep(mu_baseline, y_wobs_test$wobs)
-        # CAUTION: If `y` is allowed to have `NA`s here, then `n_notna.bs` needs
-        # to be adapted:
-        n_notna.bs <- sum(!is.na(mu_baseline))
+      if (!is.null(summaries_baseline)) {
+        mu_baseline <- rep(summaries_baseline$mu, y_wobs_test$wobs)
+      } else {
+        mu_baseline <- NULL
       }
-      # CAUTION: If `y` is allowed to have `NA`s here, then `n_notna` needs to
-      # be adapted:
-      n_notna <- sum(!is.na(mu))
-      if (!is.null(n_notna.bs) &&
-          getOption("projpred.additional_checks", FALSE)) {
-        stopifnot(n_notna == n_notna.bs)
-      }
-      wcv <- rep(wcv, y_wobs_test$wobs) # What?
-      wcv <- n_notna * wcv / sum(wcv)
+      wcv <- rep(wcv, y_wobs_test$wobs)
+      wcv <- n * wcv / sum(wcv)
     } else {
       stopifnot(all(y_wobs_test$wobs == 1))
+      if (!is.null(summaries_baseline)) {
+        mu_baseline <- summaries_baseline$mu
+      } else {
+        mu_baseline <- NULL
+      }
     }
     if (stat %in% c("acc", "pctcorr")) {
       # Find out whether each observation was classified correctly or not:
       if (!is.factor(mu)) {
         mu <- round(mu)
       }
-      crrct <- mu == y
+      correct <- mu == y
 
       if (!is.null(mu_baseline)) {
         if (!is.factor(mu_baseline)) {
           mu_baseline <- round(mu_baseline)
         }
-        crrct.bs <- mu_baseline == y
-
-        value <- mean(wcv * (crrct - crrct.bs), na.rm = TRUE)
-        value_se <- weighted.sd(crrct - crrct.bs, wcv, na.rm = TRUE) /
-          sqrt(n_notna)
+        correct_baseline <- mu_baseline == y
       } else {
-        value <- mean(wcv * crrct, na.rm = TRUE)
-        value_se <- weighted.sd(crrct, wcv, na.rm = TRUE) / sqrt(n_notna)
+        correct_baseline <- 0
+      }
+
+      if (!is.null(summaries_fast) && sum(n_loo<n)) {
+        # subsampling difference estimator (Magnusson et al., 2020)
+        mu_fast <- summaries_fast$mu
+        if (!is.factor(mu_fast)) {
+          mu_fast <- round(mu_fast)
+        }
+        correct_fast <- mu_fast == y
+        srs_diffe <- .srs_diff_est_w(y_approx = correct_fast - correct_baseline,
+                                     y = (correct-correct_baseline)[loo_inds],
+                                     y_idx = loo_inds,
+                                     w = wcv)
+        value <- srs_diffe$y_hat / n
+        # combine estimates of var(y_hat) and var(y)
+        value_se <- sqrt(srs_diffe$v_y_hat + srs_diffe$hat_v_y) / n
+      } else {
+        # full LOO estimator
+        value <- mean(wcv * (correct - correct_baseline))
+        value_se <- .weighted_sd(correct - correct_baseline, wcv) / sqrt(n)
       }
     } else if (stat == "auc") {
+      if (!is.null(summaries_fast) && sum(n_loo<n)) {
+        # subsampling LOO with AUC not implemented. Using fast LOO result.
+        mu <- summaries_fast$mu
+      }
       if (!is.null(mu_baseline)) {
-        auc.data <- cbind(y, mu, wcv)
-        auc.data.bs <- cbind(y, mu_baseline, wcv)
-        value <- auc(auc.data) - auc(auc.data.bs)
-        idxs_cols <- seq_len(ncol(auc.data))
-        idxs_cols_bs <- setdiff(seq_len(ncol(auc.data) + ncol(auc.data.bs)),
+        auc_data <- cbind(y, mu, wcv)
+        auc_data_baseline <- cbind(y, mu_baseline, wcv)
+        value <- .auc(auc_data) - .auc(auc_data_baseline)
+        idxs_cols <- seq_len(ncol(auc_data))
+        idxs_cols_bs <- setdiff(seq_len(ncol(auc_data) + ncol(auc_data_baseline)),
                                 idxs_cols)
         diffvalue.bootstrap <- bootstrap(
-          cbind(auc.data, auc.data.bs),
+          cbind(auc_data, auc_data_baseline),
           function(x) {
-            auc(x[, idxs_cols, drop = FALSE]) -
-              auc(x[, idxs_cols_bs, drop = FALSE])
+            .auc(x[, idxs_cols, drop = FALSE]) -
+              .auc(x[, idxs_cols_bs, drop = FALSE])
           },
           ...
         )
@@ -451,9 +472,9 @@ get_stat <- function(summaries, summaries_baseline = NULL,
                           probs = c(alpha_half, one_minus_alpha_half),
                           names = FALSE, na.rm = TRUE)
       } else {
-        auc.data <- cbind(y, mu, wcv)
-        value <- auc(auc.data)
-        value.bootstrap <- bootstrap(auc.data, auc, ...)
+        auc_data <- cbind(y, mu, wcv)
+        value <- .auc(auc_data)
+        value.bootstrap <- bootstrap(auc_data, .auc, ...)
         value_se <- sd(value.bootstrap, na.rm = TRUE)
         lq_uq <- quantile(value.bootstrap,
                           probs = c(alpha_half, one_minus_alpha_half),
