@@ -20,14 +20,13 @@
 #'   is performed, which avoids refitting the reference model `nloo` times (in
 #'   contrast to a standard LOO-CV). In the `"kfold"` case, a \eqn{K}-fold CV is
 #'   performed. See also section "Note" below.
-#' @param nloo **Caution:** Still experimental. Only relevant if `cv_method =
-#'   "LOO"`. If `nloo` is smaller than the number of all observations,
-#'   approximate full LOO-CV using difference estimator with simple random
-#'   sampling (SRS) without replacement (WOR) to make accurate computation only
-#'   for `nloo` (anything from 1 to the number of all observations) leave-one-out
-#'   folds (Magnusson et al., 2020). Smaller values lead to faster computation,
-#'   but higher uncertainty in the evaluation part. If `NULL`, all observations
-#'   are used (as by default).
+#' @param nloo Only relevant if `cv_method = "LOO"` and `validate_search = TRUE`.
+#'   If `nloo>0` is smaller than the number of all observations, full LOO is
+#'   approximated by combining the fast LOO result for the selected models and
+#'   `nloo` leave-one-out searches using the difference estimator with simple
+#'   random sampling (SRS) without replacement (WOR) (Magnusson et al., 2020).
+#'   Smaller values lead to faster computation, but higher uncertainty in the
+#'   evaluation part. If `NULL`, all observations are used (as by default).
 #' @param K Only relevant if `cv_method = "kfold"` and if `cvfits` is `NULL`
 #'   (which is the case for reference model objects created by
 #'   [get_refmodel.stanreg()] or [brms::get_refmodel.brmsfit()]). Number of
@@ -37,14 +36,11 @@
 #'   [run_cvfun()] can be inserted here straightforwardly.
 #' @param validate_search A single logical value indicating whether to
 #'   cross-validate also the search part, i.e., whether to run the search
-#'   separately for each CV fold (`TRUE`) or not (`FALSE`). We strongly do not
-#'   recommend setting this to `FALSE`, because this is known to bias the
-#'   predictive performance estimates of the selected submodels. However,
-#'   setting this to `FALSE` can sometimes be useful because comparing the
-#'   results to the case where this argument is `TRUE` gives an idea of how
-#'   strongly the search is (over-)fitted to the data (the difference
-#'   corresponds to the search degrees of freedom or the effective number of
-#'   parameters introduced by the search).
+#'   separately for each CV fold (`TRUE`) or not (`FALSE`). With `FALSE`
+#'   the computation is faster, but the predictive performance estimates
+#'   of the selected submodels are biased. However, these fast biased 
+#'   estimated can be useful to obtain initial information on the usefulnes
+#'   of projection predictive variable selection.
 #' @param seed Pseudorandom number generation (PRNG) seed by which the same
 #'   results can be obtained again if needed. Passed to argument `seed` of
 #'   [set.seed()], but can also be `NA` to not call [set.seed()] at all. If not
@@ -368,7 +364,6 @@ cv_varsel.refmodel <- function(
       search_out_rks = search_out_rks, parallel = parallel, ...
     )
     if (is.null(sel_cv$summaries_fast) && validate_search==TRUE && nloo<n) {
-
       # Run fast LOO-CV to be used in subsampling difference estimator
       sel_cv_fast <- loo_varsel(
         refmodel = refmodel, method = method, nterms_max = nterms_max,
@@ -689,7 +684,7 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
     refmodel$y <- y_lat_E$value
   }
 
-  if (nloo < n) {
+  if (validate_search && nloo < n) {
     # Select which LOO-folds get more accurate computation using simple
     # random sampling without resampling (Magnusson et al., 2020)
     inds <- sample(1:n, nloo, replace=FALSE)
@@ -867,7 +862,7 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
             "thinned posterior draws), "
           ),
           warn_txt_mid_common = paste0(
-            " (out of ", nloo, ") Pareto k-values are "
+            " (out of ", n, ") Pareto k-values are "
           ),
           warn_txt_end = paste0(
             ". Watch out for warnings thrown by the original-draws Pareto ",
