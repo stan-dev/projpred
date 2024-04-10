@@ -1065,7 +1065,7 @@ plot.vsel <- function(
     #                        direction = 1)
     ###
   }
-  if (all(stats %in% c("rmse", "auc"))) {
+  if (all(stats %in% c("rmse","auc"))) {
     ci_type <- "bootstrap "
   } else if (all(stats %in% c("gmpd"))) {
     ci_type <- "exponentiated normal-approximation "
@@ -1319,7 +1319,6 @@ summary.vsel <- function(
   stats_table_all <- .tabulate_stats(object, stats, alpha = alpha,
                                      nfeat_baseline = nfeat_baseline_for_tab,
                                      resp_oscale = resp_oscale, ...)
-
   # Extract the reference model performance results from `stats_table_all`:
   stats_table_ref <- subset(stats_table_all, stats_table_all$size == Inf)
 
