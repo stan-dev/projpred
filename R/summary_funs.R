@@ -483,7 +483,7 @@ get_stat <- function(summaries, summaries_baseline = NULL,
     }
   }
 
-  if (stat %in% c("mse")) {
+  if (stat %in% c("mse") && is.null(mu_baseline)) {
     # Compute mean and variance in log scale by matching the variance of a
     # log-normal approximation
     # https://en.wikipedia.org/wiki/Log-normal_distribution#Arithmetic_moments
