@@ -612,13 +612,10 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
   # recommend K-fold CV (for the reference model refits, i.e., brms's `reloo`
   # argument, another reason is that they can quickly become as costly as
   # K-fold CV).
-  warn_pareto(
-    n07 = sum(pareto_k > 0.7), n05 = sum(0.7 >= pareto_k & pareto_k > 0.5),
-    warn_txt_start = paste0("In the calculation of the reference model's ",
-                            "PSIS-LOO CV weights, "),
-    warn_txt_mid_common = paste0(" (out of ", n, ") Pareto k-values are "),
-    warn_txt_end = paste0(
-      ". Moment matching (see the loo package), mixture importance ",
+  warn_pareto(n07 = sum(pareto_k > 0.7), n = n, 
+    warn_txt = paste0("Some Pareto k's for the reference model's ",
+      "PSIS-LOO-CV are >0.7 (%d / %d).",
+      "\n\nMoment matching (see the loo package), mixture importance ",
       "sampling (see the loo package), and `reloo`-ing (see the brms package) ",
       "are not supported by projpred. If these techniques (run outside of ",
       "projpred, i.e., for the reference model only; note that `reloo`-ing ",
@@ -644,18 +641,14 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
       log_ratios = -loglik_forPSIS
     )
     # The k-values are h-specific (expectation-specific) here (see Vehtari et
-    # al., 2022, <https://doi.org/10.48550/arXiv.1507.02646>, beginning of
+    # al., 2024, <https://doi.org/10.48550/arXiv.1507.02646>, beginning of
     # section 3, section 3.2.8, appendix D, and appendix E).
-    warn_pareto(
-      n07 = sum(y_lat_E$pareto_k > 0.7),
-      n05 = sum(0.7 >= y_lat_E$pareto_k & y_lat_E$pareto_k > 0.5),
-      warn_txt_start = paste0("In the recalculation of the latent response ",
-                              "values, "),
-      warn_txt_mid_common = paste0(
-        " (out of ", n, ") expectation-specific Pareto k-values are "
-      ),
-      warn_txt_end = ". In general, we recommend K-fold CV in this case."
-    )
+    warn_pareto(n07 = sum(y_lat_E$pareto_k > 0.7), n = n,
+      warn_txt = paste0("In the recalculation of the latent response values, ",
+        "some expectation-specific Pareto k-values are >0.7 (%d / % d). ",
+       "In general, we recommend K-fold CV in this case."
+       )
+      )
     refmodel$y <- y_lat_E$value
   }
 
@@ -825,20 +818,13 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
       }
       if (importance_sampling_nm == "psis") {
         pareto_k_eval <- loo::pareto_k_values(sub_psisloo)
-        warn_pareto(
-          n07 = sum(pareto_k_eval > 0.7),
-          n05 = sum(0.7 >= pareto_k_eval & pareto_k_eval > 0.5),
-          warn_txt_start = paste0(
-            "In the recalculation of the reference model's PSIS-LOO CV ",
-            "weights for the performance evaluation (based on clustered or ",
-            "thinned posterior draws), "
-          ),
-          warn_txt_mid_common = paste0(
-            " (out of ", nloo, ") Pareto k-values are "
-          ),
-          warn_txt_end = paste0(
-            ". Watch out for warnings thrown by the original-draws Pareto ",
-            "smoothing to see whether it makes sense to increase the number ",
+        warn_pareto(n07 = sum(pareto_k_eval > 0.7), n = n,
+          warn_txt = paste0(
+            "Some Pareto k's for the reference model's ",
+            "PSIS-LOO-CV using clustered or ",
+            "thinned posterior draws are >0.7 (%d / %d), ",
+            ".\n\nCompare this to the original-draws Pareto k",
+            "diagnostics to see whether it makes sense to increase the number ",
             "of draws (resulting from the clustering or thinning for the ",
             "performance evaluation). Alternatively, K-fold CV can be used."
           )
@@ -1190,22 +1176,9 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
   return(out_list)
 }
 
-warn_pareto <- function(n07, n05, warn_txt_start, warn_txt_mid_common,
-                        warn_txt_end) {
-  if (!getOption("projpred.warn_psis", TRUE) || (n07 == 0 && n05 == 0)) return()
-  if (n07 > 0) {
-    warn_txt_mid <- paste0(n07, warn_txt_mid_common, "> 0.7")
-    if (n05 > 0) {
-      warn_txt_mid <- paste0(warn_txt_mid, " and ")
-    }
-  } else {
-    warn_txt_mid <- ""
-  }
-  if (n05 > 0) {
-    warn_txt_mid <- paste0(warn_txt_mid, n05, warn_txt_mid_common, "in the ",
-                           "interval (0.5, 0.7]")
-  }
-  warning(warn_txt_start, warn_txt_mid, warn_txt_end)
+warn_pareto <- function(n07, n, warn_txt) {
+  if (!getOption("projpred.warn_psis", TRUE) || (n07 == 0)) return()
+  warning(sprintf(warn_txt, n07, n))
   return()
 }
 
