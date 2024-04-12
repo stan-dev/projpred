@@ -159,16 +159,20 @@ cv_varsel.vsel <- function(
     validate_search = object$validate_search %||% TRUE,
     ...
     ) {
+  ## the following arguments should not change
   arg_nms_internal <- c("method", "ndraws", "nclusters", "nterms_max",
                         "search_control", "penalty", "search_terms")
   arg_nms_internal_used <- intersect(arg_nms_internal, ...names())
   n_arg_nms_internal_used <- length(arg_nms_internal_used)
-  if (n_arg_nms_internal_used > 0) {
-    stop("Argument", if (n_arg_nms_internal_used > 1) "s" else "", " ",
-         paste(paste0("`", arg_nms_internal_used, "`"), collapse = ", "), " ",
-         "cannot be specified in this case because cv_varsel.vsel() specifies ",
-         if (n_arg_nms_internal_used > 1) "them" else "it", " ", "internally.")
+  dots <- list(...)
+  for (arg in arg_nms_internal_used) {
+    if (!identical(object[[arg]], dots[[arg]])) {
+      message("Argument \"", arg, "\" ignored. Using the argument value stored in the varsel object (\"", object[[arg]], "\").")
+    }
+    ## remove duplicate arguments
+    dots[[arg]]<-NULL
   }
+
   refmodel <- get_refmodel(object)
   rk_foldwise <- ranking(object)[["foldwise"]]
   if (validate_search && !is.null(rk_foldwise)) {
@@ -201,7 +205,7 @@ cv_varsel.vsel <- function(
     }
   }
 
-  return(cv_varsel(
+  return(do.call(cv_varsel, c(list(
     object = refmodel,
     method = object[["args_search"]][["method"]],
     ndraws = object[["args_search"]][["ndraws"]],
@@ -216,8 +220,8 @@ cv_varsel.vsel <- function(
     cvfits = cvfits,
     validate_search = validate_search,
     search_out = nlist(search_path = object[["search_path"]], rk_foldwise),
-    summaries_fast = object$summaries_fast,
-    ...
+    summaries_fast = object$summaries_fast),
+    dots)
   ))
 }
 
