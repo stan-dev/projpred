@@ -102,20 +102,19 @@
 #'
 #' @references
 #'
-#' Magnusson, Måns, Michael Andersen, Johan Jonasson, and Aki Vehtari. 2019.
-#' "Bayesian Leave-One-Out Cross-Validation for Large Data." In *Proceedings of
-#' the 36th International Conference on Machine Learning*, edited by Kamalika
-#' Chaudhuri and Ruslan Salakhutdinov, 97:4244--53. Proceedings of Machine
-#' Learning Research. PMLR.
-#' <https://proceedings.mlr.press/v97/magnusson19a.html>.
+#' Måns Magnusson, Michael Riis Andersen, Johan Jonasson, Aki Vehtari
+#' (2020). Leave-one-out cross-validation for Bayesian model
+#' comparison in large data. Proceedings of the 23rd International
+#' Conference on Artificial Intelligence and Statistics (AISTATS),
+#' PMLR 108:341-351.
 #'
-#' Vehtari, Aki, Andrew Gelman, and Jonah Gabry. 2017. "Practical Bayesian Model
-#' Evaluation Using Leave-One-Out Cross-Validation and WAIC." *Statistics and
-#' Computing* 27 (5): 1413--32. \doi{10.1007/s11222-016-9696-4}.
+#' Aki Vehtari, Andrew Gelman, and Jonah Gabry (2017). Practical Bayesian Model
+#' Evaluation Using Leave-One-Out Cross-Validation and WAIC. Statistics and
+#' Computing, 27(5):1413--32. \doi{10.1007/s11222-016-9696-4}.
 #'
-#' Vehtari, Aki, Daniel Simpson, Andrew Gelman, Yuling Yao, and Jonah Gabry.
-#' 2022. "Pareto Smoothed Importance Sampling." arXiv.
-#' \doi{10.48550/arXiv.1507.02646}.
+#' Aki Vehtari, Daniel Simpson, Andrew Gelman, Yuling Yao, and Jonah
+#' Gabry (2024). Pareto smoothed importance sampling. Journal of
+#' Machine Learning Research, 25(72):1-58.
 #'
 #' @seealso [varsel()]
 #'
