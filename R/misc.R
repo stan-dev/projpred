@@ -152,8 +152,8 @@ validate_vsel_object_stats <- function(object, stats, resp_oscale = TRUE) {
   }
   resp_oscale <- object$refmodel$family$for_latent && resp_oscale
 
-  trad_stats <- c("elpd", "mlpd", "gmpd", "mse", "rmse", "acc", "pctcorr",
-                  "auc")
+  trad_stats <- c("elpd", "mlpd", "gmpd", "mse", "rmse", "R2",
+                  "acc", "pctcorr", "auc")
   trad_stats_binom_only <- c("acc", "pctcorr", "auc")
   augdat_stats <- c("elpd", "mlpd", "gmpd", "acc", "pctcorr")
   resp_oscale_stats_fac <- augdat_stats

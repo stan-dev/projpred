@@ -319,67 +319,115 @@ get_stat <- function(summaries, summaries_baseline = NULL,
         value_gmpd_se <- value_se * value_gmpd
       }
     }
-  } else if (stat %in% c("mse", "rmse")) {
+  } else if (stat %in% c("mse", "rmse", "R2")) {
     y <- y_wobs_test$y_prop %||% y_wobs_test$y
     wcv <- y_wobs_test$wobs
     wcv <- n * wcv / sum(wcv)
     if (is.null(summaries_baseline)) {
       mu_baseline = 0
     } else {
-      mu_baseline = (summaries_baseline$mu - y)^2
+      mu_baseline = summaries_baseline$mu
     }
-    if (!is.null(summaries_fast) && sum(n_loo<n)) {
-      # subsampling difference estimator (Magnusson et al., 2020)
-      if (stat == "mse") {
-        srs_diffe <- .srs_diff_est_w(y_approx = ((summaries_fast$mu - y)^2 - mu_baseline),
-                                     y = ((mu-y)^2-mu_baseline)[loo_inds],
-                                     y_idx = loo_inds,
-                                     w = wcv)
-        value <- srs_diffe$y_hat / n
-        # combine estimates of var(y_hat) and var(y)
-        value_se <- sqrt(srs_diffe$v_y_hat + srs_diffe$hat_v_y) / n
-      } else if (stat == "rmse") {
-        value <- sqrt(.srs_diff_est_w(y_approx = ((summaries_fast$mu - y)^2),
-                                     y = ((mu-y)^2)[loo_inds],
-                                     y_idx = loo_inds,
-                                     w = wcv)$y_hat/n) -
-          sqrt(mean(wcv * mu_baseline))
-        diffvalue.bootstrap <- bootstrap(
-          cbind((mu - y)^2, (summaries_fast$mu - y)^2, mu_baseline, !is.na(mu), wcv),
-          function(X) {
-            sqrt(.srs_diff_est_w(y_approx = X[, 2],
-                                y = X[which(X[, 4]==1), 1],
-                                y_idx = which(X[, 4]==1),
-                                w = X[, 5])$y_hat/n) -
-              sqrt(mean(X[, 5] * X[, 3]))
-          },
-          ...
-        )
-        value_se <- sd(diffvalue.bootstrap)
-        lq_uq <- quantile(diffvalue.bootstrap,
-                          probs = c(alpha_half, one_minus_alpha_half),
-                          names = FALSE, na.rm = TRUE)
-      }
-    } else {
+    # Use normal approximation for mse and delta method for rmse and R2
+    if (is.null(summaries_fast) || sum(n_loo==n)) {
       # full LOO estimator
-      if (stat == "mse") {
-        value <- mean(wcv * ((mu - y)^2 - mu_baseline))
-        value_se <- .weighted_sd((mu - y)^2 - mu_baseline, wcv) / sqrt(n)
-      } else if (stat == "rmse") {
-        value <- sqrt(mean(wcv * ((mu - y)^2))) - sqrt(mean(mu_baseline))
-        diffvalue.bootstrap <- bootstrap(
-          cbind((mu - y)^2, mu_baseline, wcv),
-          function(X) {
-            sqrt(mean(X[, 3] * X[, 1], na.rm = TRUE)) -
-              sqrt(mean(X[, 3] * X[, 2], na.rm = TRUE))
-          },
-          ...
-        )
-        value_se <- sd(diffvalue.bootstrap)
-        lq_uq <- quantile(diffvalue.bootstrap,
-                          probs = c(alpha_half, one_minus_alpha_half),
-                          names = FALSE, na.rm = TRUE)
+      value <- mean(wcv * (mu - y)^2)
+      value_se <- .weighted_sd((mu - y)^2, wcv) / sqrt(n)
+    } else {
+      # subsampling difference estimator (Magnusson et al., 2020)
+      srs_diffe <- .srs_diff_est_w(y_approx = (summaries_fast$mu - y)^2,
+                                   y = ((mu-y)^2)[loo_inds],
+                                   y_idx = loo_inds,
+                                   w = wcv)
+      value <- srs_diffe$y_hat / n
+      # combine estimates of var(y_hat) and var(y)
+      value_se <- sqrt(srs_diffe$v_y_hat + srs_diffe$hat_v_y) / n
+    }
+    # store for later calculations
+    mse_e <- value
+    var_mse_e <- value_se^2
+    if (!is.null(summaries_baseline)) {
+      # delta=TRUE, variance of difference of two normally distributed
+      mse_b <- mean(wcv * (mu_baseline - y)^2)
+      var_mse_b <- .weighted_sd((mu_baseline - y)^2, wcv)^2 / n
+      if (is.null(summaries_fast) || sum(n_loo==n)) {
+        cov_mse_e_b <- mean(wcv * ((mu - y)^2-mse_e) *
+                              ((mu_baseline-y)^2-mse_b)) / n
+      } else {
+        mse_e_fast <- mean(wcv * (summaries_fast$mu-y)^2)
+        srs_diffe <-
+          .srs_diff_est_w(y_approx =
+                            ((summaries_fast$mu - y)^2 -mse_e_fast) *
+                            ((mu_baseline-y)^2 - mse_b),
+                          y = (((mu - y)^2 -mse_e) *
+                                 ((mu_baseline-y)^2 -mse_b))[loo_inds],
+                          y_idx = loo_inds,
+                          w = wcv)
+        cov_mse_e_b <- srs_diffe$y_hat / n^2
       }
+      value_se <- sqrt(value_se^2 - 2*cov_mse_e_b + var_mse_b)
+      value <- mse_e - mse_b
+    }
+    if (stat == "rmse") {
+      # simple transformation of mse
+      value <- sqrt(mse_e)
+      # the first-order Taylor approximation of the variance
+      value_se <- sqrt(value_se^2 / mse_e / 4)
+      if (!is.null(summaries_baseline)) {
+        # delta=TRUE
+        value <- sqrt(mse_e) - sqrt(mse_b)
+        # delta se comes automatically via mse
+      }
+    } else if (stat == "R2") {
+      # simple transformation of mse
+      mse_y <- mean(wcv * (mean(y)-y)^2)
+      value <- 1 - mse_e / mse_y
+      # the first-order Taylor approximation of the variance
+      var_mse_y <- .weighted_sd((mean(y)-y)^2, wcv)^2 / n
+      if (is.null(summaries_fast) || sum(n_loo==n)) {
+        if (is.null(summaries_baseline)) {
+          cov_mse_e_y <- mean(wcv * ((mu - y)^2 - mse_e) *
+                                ((mean(y)-y)^2-mse_y)) / n
+        } else {
+          cov_mse_e_y <- mean(wcv * ((mu - y)^2 - mse_e -
+                                       ((mu_baseline - y)^2 - mse_b)) *
+                                ((mean(y)-y)^2-mse_y)) / n
+        }
+      } else {
+        mse_e_fast <- mean(wcv * (summaries_fast$mu-y)^2)
+        if (is.null(summaries_baseline)) {
+          srs_diffe <-
+            .srs_diff_est_w(y_approx =
+                              ((summaries_fast$mu - y)^2 - mse_e_fast) *
+                              ((mean(y)-y)^2 - mse_y),
+                            y = (((mu - y)^2 - mse_e) *
+                                   ((mean(y)-y)^2 -mse_y))[loo_inds],
+                            y_idx = loo_inds,
+                            w = wcv)
+        } else {
+          srs_diffe <-
+            .srs_diff_est_w(y_approx =
+                              ((summaries_fast$mu - y)^2 - mse_e_fast-
+                                 ((mu_baseline - y)^2 - mse_b)) *
+                              ((mean(y)-y)^2 - mse_y),
+                            y = (((mu - y)^2 - mse_e -
+                                    ((mu_baseline - y)^2 - mse_b)) *
+                                   ((mean(y)-y)^2 -mse_y))[loo_inds],
+                            y_idx = loo_inds,
+                            w = wcv)
+        }
+        cov_mse_e_y <- srs_diffe$y_hat / n^2
+      }
+      # part of delta se comes automatically via mse
+      var_mse_e <- value_se^2
+      if (!is.null(summaries_baseline)) {
+        # delta=TRUE
+        value <- (mse_e - mse_b) / mse_y
+        mse_e <- mse_e - mse_b
+      }
+      value_se <- sqrt((var_mse_e -
+                          2 * mse_e / mse_y * cov_mse_e_y +
+                          (mse_e / mse_y)^2 * var_mse_y) / mse_y^2)
     }
   } else if (stat %in% c("acc", "pctcorr", "auc")) {
     y <- y_wobs_test$y
@@ -483,7 +531,7 @@ get_stat <- function(summaries, summaries_baseline = NULL,
     }
   }
 
-  if (stat %in% c("mse") && is.null(mu_baseline)) {
+  if (stat %in% c("mse","rmse") && is.null(mu_baseline)) {
     # Compute mean and variance in log scale by matching the variance of a
     # log-normal approximation
     # https://en.wikipedia.org/wiki/Log-normal_distribution#Arithmetic_moments
@@ -494,7 +542,7 @@ get_stat <- function(summaries, summaries_baseline = NULL,
     # Go back to linear scale
     lq <- exp(lq)
     uq <- exp(uq)
-  } else if (stat %in% c("rmse","auc")) {
+  } else if (stat %in% c("auc")) {
     lq <- lq_uq[1]
     uq <- lq_uq[2]
   } else {

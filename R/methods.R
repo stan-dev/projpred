@@ -1065,11 +1065,11 @@ plot.vsel <- function(
     #                        direction = 1)
     ###
   }
-  if (all(stats %in% c("rmse","auc"))) {
+  if (all(stats %in% c("auc"))) {
     ci_type <- "bootstrap "
   } else if (all(stats %in% c("gmpd"))) {
     ci_type <- "exponentiated normal-approximation "
-  } else if (all(!stats %in% c("rmse", "auc", "gmpd"))) {
+  } else if (all(!stats %in% c("auc", "gmpd"))) {
     ci_type <- "normal-approximation "
   } else {
     ci_type <- ""
