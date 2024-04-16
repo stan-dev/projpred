@@ -531,9 +531,6 @@ parse_args_cv_varsel <- function(refmodel, cv_method, nloo, K, cvfits,
     nloo <- min(nloo, refmodel[["nobs"]])
     if (nloo < 1) {
       stop("nloo must be at least 1")
-    } else if (nloo < refmodel[["nobs"]] &&
-               getOption("projpred.warn_subsampled_loo", TRUE)) {
-      warning("Subsampled PSIS-LOO-CV is still experimental.")
     }
   }
 
