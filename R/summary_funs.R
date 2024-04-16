@@ -366,18 +366,12 @@ get_stat <- function(summaries, summaries_baseline = NULL,
         cov_mse_e_b <- srs_diffe$y_hat / n^2
       }
       value_se <- sqrt(value_se^2 - 2*cov_mse_e_b + var_mse_b)
-      value <- mse_e - mse_b
     }
     if (stat == "rmse") {
       # simple transformation of mse
       value <- sqrt(mse_e)
       # the first-order Taylor approximation of the variance
       value_se <- sqrt(value_se^2 / mse_e / 4)
-      if (!is.null(summaries_baseline)) {
-        # delta=TRUE
-        value <- sqrt(mse_e) - sqrt(mse_b)
-        # delta se comes automatically via mse
-      }
     } else if (stat == "R2") {
       # simple transformation of mse
       mse_y <- mean(wcv * (mean(y)-y)^2)
@@ -422,7 +416,6 @@ get_stat <- function(summaries, summaries_baseline = NULL,
       var_mse_e <- value_se^2
       if (!is.null(summaries_baseline)) {
         # delta=TRUE
-        value <- (mse_e - mse_b) / mse_y
         mse_e <- mse_e - mse_b
       }
       value_se <- sqrt((var_mse_e -
@@ -487,12 +480,12 @@ get_stat <- function(summaries, summaries_baseline = NULL,
                                      y = (correct-correct_baseline)[loo_inds],
                                      y_idx = loo_inds,
                                      w = wcv)
-        value <- srs_diffe$y_hat / n
+        value <- srs_diffe$y_hat / n + mean(wcv * correct_baseline)
         # combine estimates of var(y_hat) and var(y)
         value_se <- sqrt(srs_diffe$v_y_hat + srs_diffe$hat_v_y) / n
       } else {
         # full LOO estimator
-        value <- mean(wcv * (correct - correct_baseline))
+        value <- mean(wcv * correct)
         value_se <- .weighted_sd(correct - correct_baseline, wcv) / sqrt(n)
       }
     } else if (stat == "auc") {
@@ -503,7 +496,7 @@ get_stat <- function(summaries, summaries_baseline = NULL,
       if (!is.null(mu_baseline)) {
         auc_data <- cbind(y, mu, wcv)
         auc_data_baseline <- cbind(y, mu_baseline, wcv)
-        value <- .auc(auc_data) - .auc(auc_data_baseline)
+        value <- .auc(auc_data)
         idxs_cols <- seq_len(ncol(auc_data))
         idxs_cols_bs <- setdiff(seq_len(ncol(auc_data) + ncol(auc_data_baseline)),
                                 idxs_cols)
@@ -518,7 +511,8 @@ get_stat <- function(summaries, summaries_baseline = NULL,
         value_se <- sd(diffvalue.bootstrap, na.rm = TRUE)
         lq_uq <- quantile(diffvalue.bootstrap,
                           probs = c(alpha_half, one_minus_alpha_half),
-                          names = FALSE, na.rm = TRUE)
+                          names = FALSE, na.rm = TRUE) +
+          .auc(auc_data_baseline)
       } else {
         auc_data <- cbind(y, mu, wcv)
         value <- .auc(auc_data)
@@ -531,7 +525,7 @@ get_stat <- function(summaries, summaries_baseline = NULL,
     }
   }
 
-  if (stat %in% c("mse","rmse") && is.null(mu_baseline)) {
+  if (stat %in% c("mse","rmse")) {
     # Compute mean and variance in log scale by matching the variance of a
     # log-normal approximation
     # https://en.wikipedia.org/wiki/Log-normal_distribution#Arithmetic_moments

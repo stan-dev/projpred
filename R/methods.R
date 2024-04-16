@@ -782,16 +782,11 @@ plot.vsel <- function(
   } else {
     baseline_pretty <- "best submodel"
   }
+  ylab <- "Value"
   if (deltas) {
-    if (all(stats != "gmpd")) {
-      ylab <- paste0("Difference vs. ", baseline_pretty)
-    } else if (all(stats == "gmpd")) {
-      ylab <- paste0("Ratio vs. ", baseline_pretty)
-    } else {
-      ylab <- paste0("Difference (ratio for GMPD) vs. ", baseline_pretty)
-    }
+    delta_lab <- "for baseline comparison"
   } else {
-    ylab <- "Value"
+    delta_lab <- ""
   }
   if (object$refmodel$family$for_latent) {
     if (resp_oscale) {
@@ -962,6 +957,14 @@ plot.vsel <- function(
   }
 
   # Create the plot:
+  if (deltas) {
+    data_gg$statistic[data_gg$statistic=="elpd"] <- "elpd_diff"
+    stats_ref$statistic[stats_ref$statistic=="elpd"] <- "elpd_diff"
+    data_gg$statistic[data_gg$statistic=="mlpd"] <- "mlpd_diff"
+    stats_ref$statistic[stats_ref$statistic=="mlpd"] <- "mlpd_diff"
+    data_gg$statistic[data_gg$statistic=="gmpd"] <- "gmpd_ratio"
+    stats_ref$statistic[stats_ref$statistic=="gmpd"] <- "gmpd_ratio"
+  }
   pp <- ggplot(data = data_gg,
                mapping = aes(x = .data[["size"]], y = .data[["value"]],
                              ymin = .data[["lq"]], ymax = .data[["uq"]]))
@@ -981,9 +984,9 @@ plot.vsel <- function(
       thres_tab_ref$thres[is_elpd_mlpd_ref] <-
         thres_tab_ref$value[is_elpd_mlpd_ref] +
         thres_tab_ref$thres[is_elpd_mlpd_ref]
-      is_gmpd_ref <- thres_tab_ref$statistic %in% c("gmpd")
+      is_gmpd_ref <- thres_tab_ref$statistic %in% c("gmpd","gmpd ratio")
       thres_tab_ref$thres[is_gmpd_ref] <-
-        thres_tab_ref$value[is_gmpd_ref] *
+              thres_tab_ref$value[is_gmpd_ref] *
         thres_tab_ref$thres[is_gmpd_ref]
       pp <- pp +
         geom_hline(aes(yintercept = .data[["thres"]]),
@@ -1067,9 +1070,7 @@ plot.vsel <- function(
   }
   if (all(stats %in% c("auc"))) {
     ci_type <- "bootstrap "
-  } else if (all(stats %in% c("gmpd"))) {
-    ci_type <- "exponentiated normal-approximation "
-  } else if (all(!stats %in% c("auc", "gmpd"))) {
+  } else if (all(!stats %in% c("auc"))) {
     ci_type <- "normal-approximation "
   } else {
     ci_type <- ""
@@ -1104,9 +1105,11 @@ plot.vsel <- function(
                        labels = tick_labs_x,
                        sec.axis = x_axis_sec) +
     labs(x = xlab, y = ylab, title = "Predictive performance",
-         subtitle = paste0("Vertical bars indicate ",
-                           round(100 * (1 - alpha), 1), "% ", ci_type,
-                           "intervals")) +
+         subtitle = paste0("With ",
+                           round(100 * (1 - alpha), 1), "% ",
+                           ci_type,
+                           "intervals ",
+                           delta_lab)) +
     theme(axis.text.x.bottom = element_text(angle = text_angle,
                                             hjust = hjust_val,
                                             vjust = vjust_val)) +
