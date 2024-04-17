@@ -1028,8 +1028,20 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
         stop("Please install the 'foreach' package.")
       }
       if (!requireNamespace("doRNG", quietly = TRUE)) {
-        stop("Please install the 'doRNG' package.")
+              stop("Please install the 'doRNG' package.")
       }
+      if (verbose &&
+            requireNamespace("progressr", quietly = TRUE) &&
+            requireNamespace("progress", quietly = TRUE) &&
+            interactive()) {
+        progressr_installed <- TRUE
+        progressr::handlers(global = TRUE)
+        progressr::handlers("progress")
+        p <- progressr::progressor(along = seq_along(inds))
+      } else {
+        progressr_installed <- FALSE
+      }
+      .select <- .select
       dot_args <- list(...)
       `%do_projpred%` <- doRNG::`%dorng%`
       res_cv <- foreach::foreach(
@@ -1039,6 +1051,7 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
                       "loo_ref_oscale", "validset", "loo_sub", "mu_sub",
                       "loo_sub_oscale", "mu_sub_oscale")
       ) %do_projpred% {
+        if (progressr_installed) p("")
         do.call(one_obs, c(list(run_index = run_index, verbose_search = FALSE),
                            dot_args))
       }
@@ -1363,6 +1376,18 @@ kfold_varsel <- function(refmodel, method, nterms_max, ndraws, nclusters,
     if (!requireNamespace("doRNG", quietly = TRUE)) {
       stop("Please install the 'doRNG' package.")
     }
+    if (verbose &&
+          requireNamespace("progressr", quietly = TRUE) &&
+          requireNamespace("progress", quietly = TRUE) &&
+          interactive()) {
+      use_progressr <- TRUE
+      progressr::handlers(global = TRUE)
+      progressr::handlers("progress")
+      p <- progressr::progressor(along = seq_along(inds))
+    } else {
+      use_progressr <- FALSE
+    }
+    .select <- .select
     dot_args <- list(...)
     `%do_projpred%` <- doRNG::`%dorng%`
     res_cv <- foreach::foreach(
@@ -1371,6 +1396,7 @@ kfold_varsel <- function(refmodel, method, nterms_max, ndraws, nclusters,
       .export = c("one_fold", "dot_args"),
       .noexport = c("list_cv", "search_out_rks")
     ) %do_projpred% {
+      if (use_progressr) p("")
       do_call(one_fold, c(list(fold = list_cv_k, rk = search_out_rks_k,
                                verbose_search = FALSE),
                           dot_args))
