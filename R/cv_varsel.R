@@ -205,7 +205,7 @@ cv_varsel.vsel <- function(
     }
   }
 
-  return(do.call(cv_varsel, c(list(
+  return(do_call(cv_varsel, c(list(
     object = refmodel,
     method = object[["args_search"]][["method"]],
     ndraws = object[["args_search"]][["ndraws"]],
