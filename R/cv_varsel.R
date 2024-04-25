@@ -613,7 +613,7 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
   # argument, another reason is that they can quickly become as costly as
   # K-fold-CV).
   warn_pareto(n07 = sum(pareto_k > 0.7), n = n,
-              khat_threshold = loo:::ps_khat_threshold(dim(psisloo)[1]),
+              khat_threshold = .ps_khat_threshold(dim(psisloo)[1]),
     warn_txt = paste0("Some Pareto k's for the reference model's ",
       "PSIS-LOO weights are >%s (%d / %d).",
       "\n\nMoment matching (see the `loo` package), mixture importance ",
@@ -642,10 +642,10 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
       log_ratios = -loglik_forPSIS
     )
     # The k-values are h-specific (expectation-specific) here (see Vehtari et
-    # al., 2024, <https://doi.org/10.48550/arXiv.1507.02646>, beginning of
+    # al., 2024, <https://jmlr.org/papers/v25/19-556.html>, beginning of
     # section 3, section 3.2.8, appendix D, and appendix E).
     warn_pareto(n07 = sum(y_lat_E$pareto_k > 0.7), n = n,
-                khat_threshold = loo:::ps_khat_threshold(dim(psisloo)[1]),
+                khat_threshold = .ps_khat_threshold(dim(psisloo)[1]),
       warn_txt = paste0("In the recalculation of the latent response values, ",
         "some expectation-specific Pareto k-values are >%s (%d / % d). ",
        "In general, we recommend K-fold-CV in this case."
@@ -787,8 +787,8 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
           # Use loo::psis().
           # Usually, we have a small number of projected draws here (400 by
           # default), which means that the 'loo' package will automatically
-          # perform the regularization from Vehtari et al. (2022,
-          # <https://doi.org/10.48550/arXiv.1507.02646>, appendix G).
+          # perform the regularization from Vehtari et al. (2024,
+          # <https://jmlr.org/papers/v25/19-556.html>, appendix G).
           importance_sampling_nm <- "psis"
         }
       } else {
@@ -822,7 +822,7 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
       if (importance_sampling_nm == "psis") {
         pareto_k_eval <- loo::pareto_k_values(sub_psisloo)
         warn_pareto(n07 = sum(pareto_k_eval > 0.7), n = n,
-                    khat_threshold = loo:::ps_khat_threshold(dim(sub_psisloo)[1]),
+                    khat_threshold = .ps_khat_threshold(dim(sub_psisloo)[1]),
           warn_txt = paste0(
             "Some Pareto k's for the reference model's ",
             "PSIS-LOO weights for ",
@@ -1625,4 +1625,24 @@ loo_subsample_pps <- function(nloo, lppd) {
   wcv <- wcv / sum(wcv)
 
   return(nlist(inds, wcv))
+}
+
+#' Pareto-smoothing k-hat threshold
+#'
+#' Copied from loo package. Remove after loo package exposes this.
+#'
+#' Given sample size S computes khat threshold for reliable Pareto
+#' smoothed estimate (to have small probability of large error). See
+#' section 3.2.4, equation (13). Sample sizes 100, 320, 1000, 2200,
+#' 10000 correspond to thresholds 0.5, 0.6, 0.67, 0.7, 0.75. Although
+#' with bigger sample size S we can achieve estimates with small
+#' probability of large error, it is difficult to get accurate MCSE
+#' estimates as the bias starts to dominate when k > 0.7 (see Section 3.2.3).
+#' Thus the sample size dependend k-ht threshold is capped at 0.7.
+#' @param S sample size
+#' @param ... unused
+#' @return threshold
+#' @noRd
+.ps_khat_threshold <- function(S, ...) {
+  min(1 - 1 / log10(S), 0.7)
 }
