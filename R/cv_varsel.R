@@ -612,21 +612,22 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
   # recommend K-fold-CV (for the reference model refits, i.e., brms's `reloo`
   # argument, another reason is that they can quickly become as costly as
   # K-fold-CV).
-  warn_pareto(n07 = sum(pareto_k > 0.7), n = n,
-              khat_threshold = .ps_khat_threshold(dim(psisloo)[1]),
-    warn_txt = paste0("Some Pareto k's for the reference model's ",
-      "PSIS-LOO weights are >%s (%d / %d).",
-      "\n\nMoment matching (see the `loo` package), mixture importance ",
-      "sampling (see the loo package), and `reloo`-ing (see the `brms` package) ",
-      "are not supported by projpred. If these techniques (run outside of ",
-      "projpred, i.e., for the reference model only; note that `reloo`-ing ",
-      "may be computationally costly) result in a markedly different ",
-      "reference model ELPD estimate than ordinary PSIS-LOO-CV does, we ",
-      "recommend to use K-fold-CV within projpred."
+  warn_pareto(
+    n07 = sum(pareto_k > 0.7), n = n,
+    khat_threshold = .ps_khat_threshold(dim(psisloo)[1]),
+    warn_txt = paste0(
+      "Some Pareto k's for the reference model's PSIS-LOO weights are ",
+      "> %s (%d / %d).\n\nMoment matching (see the `loo` package), mixture ",
+      "importance sampling (see the loo package), and `reloo`-ing (see the ",
+      "`brms` package) are not supported by projpred. If these techniques ",
+      "(run outside of projpred, i.e., for the reference model only; note ",
+      "that `reloo`-ing may be computationally costly) result in a markedly ",
+      "different reference model ELPD estimate than ordinary PSIS-LOO-CV ",
+      "does, we recommend to use K-fold-CV within projpred."
     )
   )
   lw <- weights(psisloo)
-  
+
   if (refmodel$family$for_latent) {
     # Need to re-calculate the latent response values in `refmodel$y` by
     # incorporating the PSIS weights because `refmodel$y` resulted from applying
@@ -644,13 +645,15 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
     # The k-values are h-specific (expectation-specific) here (see Vehtari et
     # al., 2024, <https://jmlr.org/papers/v25/19-556.html>, beginning of
     # section 3, section 3.2.8, appendix D, and appendix E).
-    warn_pareto(n07 = sum(y_lat_E$pareto_k > 0.7), n = n,
-                khat_threshold = .ps_khat_threshold(dim(psisloo)[1]),
-      warn_txt = paste0("In the recalculation of the latent response values, ",
-        "some expectation-specific Pareto k-values are >%s (%d / % d). ",
-       "In general, we recommend K-fold-CV in this case."
-       )
+    warn_pareto(
+      n07 = sum(y_lat_E$pareto_k > 0.7), n = n,
+      khat_threshold = .ps_khat_threshold(dim(psisloo)[1]),
+      warn_txt = paste0(
+        "In the recalculation of the latent response values, some ",
+        "expectation-specific Pareto k-values are > %s (%d / % d). ",
+        "In general, we recommend K-fold-CV in this case."
       )
+    )
     refmodel$y <- y_lat_E$value
   }
 
@@ -821,19 +824,19 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
 
       if (importance_sampling_nm == "psis") {
         pareto_k_eval <- loo::pareto_k_values(sub_psisloo)
-        warn_pareto(n07 = sum(pareto_k_eval > 0.7), n = n,
-                    khat_threshold = .ps_khat_threshold(dim(sub_psisloo)[1]),
+        warn_pareto(
+          n07 = sum(pareto_k_eval > 0.7), n = n,
+          khat_threshold = .ps_khat_threshold(dim(sub_psisloo)[1]),
           warn_txt = paste0(
-            "Some Pareto k's for the reference model's ",
-            "PSIS-LOO weights for ",
+            "Some Pareto k's for the reference model's PSIS-LOO weights for ",
             ifelse(clust_used_eval,
                    paste0(nclusters_pred, " clustered "),
                    paste0(ndraws_pred, " posterior ")),
-            "draws are >%s (%d / %d)",
-            ".\n\nCompare this to the Pareto k -diagnostic with all draws ",
-            "to see whether it makes sense to increase the number ",
-            "of draws (resulting from the clustering or thinning for the ",
-            "performance evaluation). Alternatively, K-fold-CV can be used."
+            "draws are > %s (%d / %d).\n\nCompare this to the ",
+            "Pareto k -diagnostic with all draws to see whether it makes ",
+            "sense to increase the number of draws (resulting from the ",
+            "clustering or thinning for the performance evaluation). ",
+            "Alternatively, K-fold-CV can be used."
           )
         )
       }
@@ -1183,10 +1186,10 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
   return(out_list)
 }
 
-warn_pareto <- function(n07, n, khat_threshold=0.7, warn_txt) {
+warn_pareto <- function(n07, n, khat_threshold = 0.7, warn_txt) {
   if (!getOption("projpred.warn_psis", TRUE) || (n07 == 0)) return()
-  warning(sprintf(warn_txt, as.character(round(khat_threshold,2)), n07, n),
-          call.=FALSE)
+  warning(sprintf(warn_txt, as.character(round(khat_threshold, 2)), n07, n),
+          call. = FALSE)
   return()
 }
 
