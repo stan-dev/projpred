@@ -315,7 +315,7 @@ cv_varsel.refmodel <- function(
   if (!is.null(search_out)) {
     search_path_fulldata <- search_out[["search_path"]]
   } else {
-    verb_txt_search <- "-----\nRunning the search "
+    verb_txt_search <- paste0("-----\nRunning ", method, " search ")
     if (validate_search) {
       # Point out that this is the full-data search (if `validate_search` is
       # `FALSE`, this is still a full-data search, but in that case, there are
@@ -950,7 +950,7 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
       }
       verb_out("-----\nRunning ",
                ifelse(!search_out_rks_was_null, "",
-                      paste0("the search with ",
+                      paste0(method, " search with ",
                              ifelse(!is.null(ndraws),
                                     paste0(ndraws, " draws"),
                                     paste0(nclusters, " clusters")),
