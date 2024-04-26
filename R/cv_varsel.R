@@ -633,7 +633,7 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
   # argument, another reason is that they can quickly become as costly as
   # K-fold-CV).
   warn_pareto(
-    n07 = sum(pareto_k > 0.7), n = n,
+    n07 = sum(pareto_k > .ps_khat_threshold(dim(psisloo)[1])), n = n,
     khat_threshold = .ps_khat_threshold(dim(psisloo)[1]),
     warn_txt = "Some (%d / %d) Pareto k's for the reference model's PSIS-LOO weights are > %s."
   )
@@ -657,7 +657,7 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
     # al., 2024, <https://jmlr.org/papers/v25/19-556.html>, beginning of
     # section 3, section 3.2.8, appendix D, and appendix E).
     warn_pareto(
-      n07 = sum(y_lat_E$pareto_k > 0.7), n = n,
+      n07 = sum(y_lat_E$pareto_k > .ps_khat_threshold(dim(psisloo)[1])), n = n,
       khat_threshold = .ps_khat_threshold(dim(psisloo)[1]),
       warn_txt = paste0(
         "In the recalculation of the latent response values, some (%d / % d)",
@@ -831,7 +831,7 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
       if (importance_sampling_nm == "psis") {
         pareto_k_eval <- loo::pareto_k_values(sub_psisloo)
         warn_pareto(
-          n07 = sum(pareto_k_eval > 0.7), n = n,
+          n07 = sum(pareto_k_eval > .ps_khat_threshold(dim(psisloo)[1])), n = n,
           khat_threshold = .ps_khat_threshold(dim(sub_psisloo)[1]),
           warn_txt = paste0(
             "Some (%d / % d) Pareto k's for the reference model's PSIS-LOO weights for ",
