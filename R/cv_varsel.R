@@ -86,10 +86,10 @@
 #'   PSIS uses Pareto-\eqn{\hat{k}} diagnostic to assess the reliability of PSIS-LOO-CV.
 #'   See [loo::loo-glossary] for how to interpret the Pareto-\eqn{\hat{k}} values and
 #'   the warning thresholds. \pkg{projpred} does not support the usually recommended
-#'   moment-matching (`vignette("loo2-moment-matching", package="loo")`), mixture
-#'   importance sampling (`vignette("loo2-mixis", package="loo")`),
-#'   or `reloo`-ing ([brms::reloo()]). If the reference model
-#'   PSIS-LOO-CV Pareto-\eqn{\hat{k}} values are good, but there are high Pareto-\eqn{\hat{k}}
+#'   moment-matching (see [loo::loo_moment_match()] and [brms::loo_moment_match()]),
+#'   mixture importance sampling (`vignette("loo2-mixis", package="loo")`),
+#'   or `reloo`-ing ([brms::reloo()]). If the reference model PSIS-LOO-CV
+#'   Pareto-\eqn{\hat{k}} values are good, but there are high Pareto-\eqn{\hat{k}}
 #'   values for the projected models, you can try increasing the number of draws used
 #'   for the PSIS-LOO-CV (`ndraws_pred` with  `refit_prj=TRUE`). If increasing the
 #'   number of draws does not help and if the reference model PSIS-LOO-CV
