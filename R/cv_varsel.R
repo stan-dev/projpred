@@ -68,7 +68,13 @@
 #' @inherit varsel details return
 #'
 #' @note If `validate_search` is `FALSE`, the search is not included in the CV
-#'   so that only a single full-data search is run.
+#'   so that only a single full-data search is run. If the number of observations
+#'   is big, the fast PSIS-LOO-CV along the full-data search path is likely
+#'   to be accurate. If the number of observations is small or moderate,
+#'   the fast PSIS-LOO-CV along the full-data search path is likely to have
+#'   optimistic bias in the middle of the search path. This result can be
+#'   used to guide further actions and the optimistic bias can be greatly
+#'   reduced by using `validate_search=TRUE`.
 #'
 #'   For PSIS-LOO-CV, \pkg{projpred} calls [loo::psis()] (or, exceptionally,
 #'   [loo::sis()], see below) with `r_eff = NA`. This is only a problem if there
@@ -77,13 +83,27 @@
 #'   have been used anyway, so we don't expect \pkg{projpred}'s `r_eff = NA` to
 #'   be a problem.
 #'
-#'   PSIS cannot be used if the draws have different (i.e., nonconstant) weights
-#'   or if the number of draws is too small. In such cases, \pkg{projpred}
-#'   resorts to standard importance sampling (SIS) and throws a warning about
-#'   this. Throughout the documentation, the term "PSIS" is used even though in
-#'   fact, \pkg{projpred} resorts to SIS in these special cases.
-#'
-#'   With `parallel = TRUE`, costly parts of \pkg{projpred}'s CV are run in
+#'   PSIS uses Pareto-$\hat{k}$ diagnostic to assess the reliability of PSIS-LOO-CV.
+#'   See [loo::loo-glossary] for how to interpret the Pareto-$\hat{k}$ values and
+#'   the warning thresholds. `projpred` package does not support the usually recommended
+#'   moment-matching ([loo::loo2-moment-matching]), mixture importance sampling
+#'   ([loo::loo2-mixis]), or `reloo`-ing ([brms::reloo()]). If the reference model
+#'   PSIS-LOO-CV Pareto-$\hat{k}$ values are good, but there are high Pareto-$\hat{k}$
+#'   values for the projected models, you can try increasing the number of draws used
+#'   for the PSIS-LOO-CV (`ndraws_pred` with  `refit_prj=TRUE`). If increasing the
+#'   number of draws does not help and if the reference model PSIS-LOO-CV
+#'   Pareto-$\hat{k}$ values are high, and the PSIS-LOO-CV results change substantially
+#'   when using moment-matching, mixture importance sampling, or `reloo`-ing, we
+#'   recommend to use $K$-fold-CV within `projpred`.
+#' 
+#'   PSIS cannot be used if the number of draws or clusters is too small. In such
+#'   cases, \pkg{projpred} resorts to standard importance sampling (SIS) and
+#'   shows a message about this. Throughout the documentation, the term "PSIS" is
+#'   used even though in fact, \pkg{projpred} resorts to SIS in these special cases.
+#'   If SIS is used, check that the reference model PSIS-LOO-CV Pareto-$\hat{k}$
+#'   values are good.
+#' 
+#'   With `parallel = TRUE`, costly parts of \pkg{projpred}'s CV can be run in
 #'   parallel. Costly parts are the fold-wise searches and performance
 #'   evaluations in case of `validate_search = TRUE`. (Note that in case of
 #'   \eqn{K}-fold CV, the \eqn{K} reference model refits are not affected by
@@ -615,16 +635,7 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
   warn_pareto(
     n07 = sum(pareto_k > 0.7), n = n,
     khat_threshold = .ps_khat_threshold(dim(psisloo)[1]),
-    warn_txt = paste0(
-      "Some Pareto k's for the reference model's PSIS-LOO weights are ",
-      "> %s (%d / %d).\n\nMoment matching (see the `loo` package), mixture ",
-      "importance sampling (see the loo package), and `reloo`-ing (see the ",
-      "`brms` package) are not supported by projpred. If these techniques ",
-      "(run outside of projpred, i.e., for the reference model only; note ",
-      "that `reloo`-ing may be computationally costly) result in a markedly ",
-      "different reference model ELPD estimate than ordinary PSIS-LOO-CV ",
-      "does, we recommend to use K-fold-CV within projpred."
-    )
+    warn_txt = "Some (%d / %d) Pareto k's for the reference model's PSIS-LOO weights are > %s."
   )
   lw <- weights(psisloo)
 
@@ -649,8 +660,8 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
       n07 = sum(y_lat_E$pareto_k > 0.7), n = n,
       khat_threshold = .ps_khat_threshold(dim(psisloo)[1]),
       warn_txt = paste0(
-        "In the recalculation of the latent response values, some ",
-        "expectation-specific Pareto k-values are > %s (%d / % d). ",
+        "In the recalculation of the latent response values, some (%d / % d)",
+        "expectation-specific Pareto k-values are > %s.\n",
         "In general, we recommend K-fold-CV in this case."
       )
     )
@@ -768,14 +779,9 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
         if (no_psis_eval) {
           if (getOption("projpred.warn_psis", TRUE)) {
             warning(
-              "In the recalculation of the reference model's PSIS-LOO-CV ",
-              "weights for the performance evaluation, the number of draws ",
-              "after clustering or thinning is too small for Pareto ",
-              "smoothing. Using standard importance sampling (SIS) instead. ",
-              "Watch out for warnings thrown by the original-draws Pareto ",
-              "smoothing to see whether it makes sense to increase the number ",
-              "of draws (resulting from the clustering or thinning for the ",
-              "performance evaluation). Alternatively, K-fold-CV can be used."
+              "Using standard importance sampling (SIS), as the number of draws",
+              "or clusters is too small for PSIS. For improved accuracy reliability",
+              "increase the number of draws or clusters, or use K-fold-CV."
             )
           }
           # Use loo::sis().
@@ -828,15 +834,11 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
           n07 = sum(pareto_k_eval > 0.7), n = n,
           khat_threshold = .ps_khat_threshold(dim(sub_psisloo)[1]),
           warn_txt = paste0(
-            "Some Pareto k's for the reference model's PSIS-LOO weights for ",
+            "Some (%d / % d) Pareto k's for the reference model's PSIS-LOO weights for ",
             ifelse(clust_used_eval,
                    paste0(nclusters_pred, " clustered "),
                    paste0(ndraws_pred, " posterior ")),
-            "draws are > %s (%d / %d).\n\nCompare this to the ",
-            "Pareto k -diagnostic with all draws to see whether it makes ",
-            "sense to increase the number of draws (resulting from the ",
-            "clustering or thinning for the performance evaluation). ",
-            "Alternatively, K-fold-CV can be used."
+            "draws are > %s."
           )
         )
       }
@@ -1188,7 +1190,7 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
 
 warn_pareto <- function(n07, n, khat_threshold = 0.7, warn_txt) {
   if (!getOption("projpred.warn_psis", TRUE) || (n07 == 0)) return()
-  warning(sprintf(warn_txt, as.character(round(khat_threshold, 2)), n07, n),
+  warning(sprintf(warn_txt, n07, n, as.character(round(khat_threshold, 2))),
           call. = FALSE)
   return()
 }
