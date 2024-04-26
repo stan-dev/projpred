@@ -165,7 +165,7 @@ variable selection. The search part determines the predictor ranking (also
 known as solution path), i.e., the best submodel for each submodel size
 (number of predictor terms). The evaluation part determines the predictive
 performance of the submodels along the predictor ranking. A special method is
-\code{\link[=varsel.vsel]{varsel.vsel()}} because it re-uses the search results from an earlier
+\code{\link[=varsel.vsel]{varsel.vsel()}} which re-uses the search results from an earlier
 \code{\link[=varsel]{varsel()}} (or \code{\link[=cv_varsel]{cv_varsel()}}) run, as illustrated in the main vignette.
 }
 \details{
@@ -185,8 +185,9 @@ effect.
 
 L1 search is faster than forward search, but forward search may be more
 accurate. Furthermore, forward search may find a sparser model with
-comparable performance to that found by L1 search, but it may also start
-overfitting when more predictors are added.
+comparable performance to that found by L1 search, but it may also
+overfit when more predictors are added. This overfit can be detected
+by running search validation (see \code{\link[=cv_varsel]{cv_varsel()}}).
 
 An L1 search may select an interaction term before all involved lower-order
 interaction terms (including main-effect terms) have been selected. In

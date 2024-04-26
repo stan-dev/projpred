@@ -83,16 +83,17 @@
 #'   have been used anyway, so we don't expect \pkg{projpred}'s `r_eff = NA` to
 #'   be a problem.
 #'
-#'   PSIS uses Pareto-$\hat{k}$ diagnostic to assess the reliability of PSIS-LOO-CV.
-#'   See [loo::loo-glossary] for how to interpret the Pareto-$\hat{k}$ values and
-#'   the warning thresholds. `projpred` package does not support the usually recommended
-#'   moment-matching ([loo::loo2-moment-matching]), mixture importance sampling
-#'   ([loo::loo2-mixis]), or `reloo`-ing ([brms::reloo()]). If the reference model
-#'   PSIS-LOO-CV Pareto-$\hat{k}$ values are good, but there are high Pareto-$\hat{k}$
+#'   PSIS uses Pareto-\eqn{\hat{k}} diagnostic to assess the reliability of PSIS-LOO-CV.
+#'   See [loo::loo-glossary] for how to interpret the Pareto-\eqn{\hat{k}} values and
+#'   the warning thresholds. \pkg{projpred} does not support the usually recommended
+#'   moment-matching (`vignette("loo2-moment-matching", package="loo")`), mixture
+#'   importance sampling (`vignette("loo2-mixis", package="loo")`),
+#'   or `reloo`-ing ([brms::reloo()]). If the reference model
+#'   PSIS-LOO-CV Pareto-\eqn{\hat{k}} values are good, but there are high Pareto-\eqn{\hat{k}}
 #'   values for the projected models, you can try increasing the number of draws used
 #'   for the PSIS-LOO-CV (`ndraws_pred` with  `refit_prj=TRUE`). If increasing the
 #'   number of draws does not help and if the reference model PSIS-LOO-CV
-#'   Pareto-$\hat{k}$ values are high, and the PSIS-LOO-CV results change substantially
+#'   Pareto-\eqn{\hat{k}} values are high, and the PSIS-LOO-CV results change substantially
 #'   when using moment-matching, mixture importance sampling, or `reloo`-ing, we
 #'   recommend to use $K$-fold-CV within `projpred`.
 #' 
@@ -100,7 +101,7 @@
 #'   cases, \pkg{projpred} resorts to standard importance sampling (SIS) and
 #'   shows a message about this. Throughout the documentation, the term "PSIS" is
 #'   used even though in fact, \pkg{projpred} resorts to SIS in these special cases.
-#'   If SIS is used, check that the reference model PSIS-LOO-CV Pareto-$\hat{k}$
+#'   If SIS is used, check that the reference model PSIS-LOO-CV Pareto-\eqn{\hat{k}}
 #'   values are good.
 #' 
 #'   With `parallel = TRUE`, costly parts of \pkg{projpred}'s CV can be run in
