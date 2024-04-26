@@ -76,13 +76,6 @@
 #'   used to guide further actions and the optimistic bias can be greatly
 #'   reduced by using `validate_search=TRUE`.
 #'
-#'   For PSIS-LOO-CV, \pkg{projpred} calls [loo::psis()] (or, exceptionally,
-#'   [loo::sis()], see below) with `r_eff = NA`. This is only a problem if there
-#'   was extreme autocorrelation between the MCMC iterations when the reference
-#'   model was built. In those cases however, the reference model should not
-#'   have been used anyway, so we don't expect \pkg{projpred}'s `r_eff = NA` to
-#'   be a problem.
-#'
 #'   PSIS uses Pareto-\eqn{\hat{k}} diagnostic to assess the reliability of PSIS-LOO-CV.
 #'   See [loo::loo-glossary] for how to interpret the Pareto-\eqn{\hat{k}} values and
 #'   the warning thresholds. \pkg{projpred} does not support the usually recommended
@@ -97,6 +90,13 @@
 #'   when using moment-matching, mixture importance sampling, or `reloo`-ing, we
 #'   recommend to use $K$-fold-CV within `projpred`.
 #' 
+#'   For PSIS-LOO-CV, \pkg{projpred} calls [loo::psis()] (or, exceptionally,
+#'   [loo::sis()], see below) with `r_eff = NA`. This is only a problem if there
+#'   was extreme autocorrelation between the MCMC iterations when the reference
+#'   model was built. In those cases however, the reference model should not
+#'   have been used anyway, so we don't expect \pkg{projpred}'s `r_eff = NA` to
+#'   be a problem.
+#'
 #'   PSIS cannot be used if the number of draws or clusters is too small. In such
 #'   cases, \pkg{projpred} resorts to standard importance sampling (SIS) and
 #'   shows a message about this. Throughout the documentation, the term "PSIS" is
