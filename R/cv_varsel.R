@@ -77,6 +77,8 @@
 #'   reduced by using `validate_search=TRUE`.
 #'
 #'   PSIS uses Pareto-\eqn{\hat{k}} diagnostic to assess the reliability of PSIS-LOO-CV.
+#'   Whether the Pareto-\eqn{\hat{k}} diagnostics are shown as warnings, is controlled
+#'   with a global option `projpred.warn_psis` (default is FALSE).
 #'   See [loo::loo-glossary] for how to interpret the Pareto-\eqn{\hat{k}} values and
 #'   the warning thresholds. \pkg{projpred} does not support the usually recommended
 #'   moment-matching (see [loo::loo_moment_match()] and [brms::loo_moment_match()]),
