@@ -284,14 +284,9 @@ optimistic bias in the middle of the search path. This result can be
 used to guide further actions and the optimistic bias can be greatly
 reduced by using \code{validate_search=TRUE}.
 
-For PSIS-LOO-CV, \pkg{projpred} calls \code{\link[loo:psis]{loo::psis()}} (or, exceptionally,
-\code{\link[loo:sis]{loo::sis()}}, see below) with \code{r_eff = NA}. This is only a problem if there
-was extreme autocorrelation between the MCMC iterations when the reference
-model was built. In those cases however, the reference model should not
-have been used anyway, so we don't expect \pkg{projpred}'s \code{r_eff = NA} to
-be a problem.
-
 PSIS uses Pareto-\eqn{\hat{k}} diagnostic to assess the reliability of PSIS-LOO-CV.
+Whether the Pareto-\eqn{\hat{k}} diagnostics are shown as warnings, is controlled
+with a global option \code{projpred.warn_psis} (default is \code{TRUE}).
 See \link[loo:loo-glossary]{loo::loo-glossary} for how to interpret the Pareto-\eqn{\hat{k}} values and
 the warning thresholds. \pkg{projpred} does not support the usually recommended
 moment-matching (see \code{\link[loo:loo_moment_match]{loo::loo_moment_match()}} and \code{\link[brms:loo_moment_match.brmsfit]{brms::loo_moment_match()}}),
@@ -301,9 +296,16 @@ Pareto-\eqn{\hat{k}} values are good, but there are high Pareto-\eqn{\hat{k}}
 values for the projected models, you can try increasing the number of draws used
 for the PSIS-LOO-CV (\code{ndraws_pred} with  \code{refit_prj=TRUE}). If increasing the
 number of draws does not help and if the reference model PSIS-LOO-CV
-Pareto-\eqn{\hat{k}} values are high, and the PSIS-LOO-CV results change substantially
-when using moment-matching, mixture importance sampling, or \code{reloo}-ing, we
-recommend to use $K$-fold-CV within \code{projpred}.
+Pareto-\eqn{\hat{k}} values are high, and the reference model PSIS-LOO-CV
+results change substantially when using moment-matching, mixture importance
+sampling, or \code{reloo}-ing, we recommend to use $K$-fold-CV within \code{projpred}.
+
+For PSIS-LOO-CV, \pkg{projpred} calls \code{\link[loo:psis]{loo::psis()}} (or, exceptionally,
+\code{\link[loo:sis]{loo::sis()}}, see below) with \code{r_eff = NA}. This is only a problem if there
+was extreme autocorrelation between the MCMC iterations when the reference
+model was built. In those cases however, the reference model should not
+have been used anyway, so we don't expect \pkg{projpred}'s \code{r_eff = NA} to
+be a problem.
 
 PSIS cannot be used if the number of draws or clusters is too small. In such
 cases, \pkg{projpred} resorts to standard importance sampling (SIS) and
