@@ -78,7 +78,7 @@
 #'
 #'   PSIS uses Pareto-\eqn{\hat{k}} diagnostic to assess the reliability of PSIS-LOO-CV.
 #'   Whether the Pareto-\eqn{\hat{k}} diagnostics are shown as warnings, is controlled
-#'   with a global option `projpred.warn_psis` (default is FALSE).
+#'   with a global option `projpred.warn_psis` (default is `TRUE`).
 #'   See [loo::loo-glossary] for how to interpret the Pareto-\eqn{\hat{k}} values and
 #'   the warning thresholds. \pkg{projpred} does not support the usually recommended
 #'   moment-matching (see [loo::loo_moment_match()] and [brms::loo_moment_match()]),
@@ -105,7 +105,7 @@
 #'   used even though in fact, \pkg{projpred} resorts to SIS in these special cases.
 #'   If SIS is used, check that the reference model PSIS-LOO-CV Pareto-\eqn{\hat{k}}
 #'   values are good.
-#' 
+#'
 #'   With `parallel = TRUE`, costly parts of \pkg{projpred}'s CV can be run in
 #'   parallel. Costly parts are the fold-wise searches and performance
 #'   evaluations in case of `validate_search = TRUE`. (Note that in case of
