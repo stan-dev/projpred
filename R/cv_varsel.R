@@ -88,9 +88,9 @@
 #'   values for the projected models, you can try increasing the number of draws used
 #'   for the PSIS-LOO-CV (`ndraws_pred` with  `refit_prj=TRUE`). If increasing the
 #'   number of draws does not help and if the reference model PSIS-LOO-CV
-#'   Pareto-\eqn{\hat{k}} values are high, and the PSIS-LOO-CV results change substantially
-#'   when using moment-matching, mixture importance sampling, or `reloo`-ing, we
-#'   recommend to use $K$-fold-CV within `projpred`.
+#'   Pareto-\eqn{\hat{k}} values are high, and the there reference model PSIS-LOO-CV
+#'   results change substantially when using moment-matching, mixture importance
+#'   sampling, or `reloo`-ing, we recommend to use $K$-fold-CV within `projpred`.
 #' 
 #'   For PSIS-LOO-CV, \pkg{projpred} calls [loo::psis()] (or, exceptionally,
 #'   [loo::sis()], see below) with `r_eff = NA`. This is only a problem if there
