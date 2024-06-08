@@ -276,29 +276,31 @@ that leads to the same results, \code{search_terms = c("x2", "x3")}).
 }
 \note{
 If \code{validate_search} is \code{FALSE}, the search is not included in the CV
-so that only a single full-data search is run. If the number of observations
-is big, the fast PSIS-LOO-CV along the full-data search path is likely
-to be accurate. If the number of observations is small or moderate,
-the fast PSIS-LOO-CV along the full-data search path is likely to have
-optimistic bias in the middle of the search path. This result can be
+so that only a single full-data search is run. If the number of
+observations is big, the fast PSIS-LOO-CV along the full-data search path
+is likely to be accurate. If the number of observations is small or
+moderate, the fast PSIS-LOO-CV along the full-data search path is likely to
+have optimistic bias in the middle of the search path. This result can be
 used to guide further actions and the optimistic bias can be greatly
-reduced by using \code{validate_search=TRUE}.
+reduced by using \code{validate_search = TRUE}.
 
-PSIS uses Pareto-\eqn{\hat{k}} diagnostic to assess the reliability of PSIS-LOO-CV.
-Whether the Pareto-\eqn{\hat{k}} diagnostics are shown as warnings, is controlled
-with a global option \code{projpred.warn_psis} (default is \code{TRUE}).
-See \link[loo:loo-glossary]{loo::loo-glossary} for how to interpret the Pareto-\eqn{\hat{k}} values and
-the warning thresholds. \pkg{projpred} does not support the usually recommended
-moment-matching (see \code{\link[loo:loo_moment_match]{loo::loo_moment_match()}} and \code{\link[brms:loo_moment_match.brmsfit]{brms::loo_moment_match()}}),
-mixture importance sampling (\code{vignette("loo2-mixis", package="loo")}),
-or \code{reloo}-ing (\code{\link[brms:reloo.brmsfit]{brms::reloo()}}). If the reference model PSIS-LOO-CV
-Pareto-\eqn{\hat{k}} values are good, but there are high Pareto-\eqn{\hat{k}}
-values for the projected models, you can try increasing the number of draws used
-for the PSIS-LOO-CV (\code{ndraws_pred} with  \code{refit_prj=TRUE}). If increasing the
-number of draws does not help and if the reference model PSIS-LOO-CV
-Pareto-\eqn{\hat{k}} values are high, and the reference model PSIS-LOO-CV
-results change substantially when using moment-matching, mixture importance
-sampling, or \code{reloo}-ing, we recommend to use $K$-fold-CV within \code{projpred}.
+PSIS uses Pareto-\eqn{\hat{k}} diagnostic to assess the reliability of
+PSIS-LOO-CV. Whether the Pareto-\eqn{\hat{k}} diagnostics are shown as
+warnings, is controlled with a global option \code{projpred.warn_psis} (default
+is \code{TRUE}). See \link[loo:loo-glossary]{loo::loo-glossary} for how to interpret the
+Pareto-\eqn{\hat{k}} values and the warning thresholds. \pkg{projpred} does
+not support the usually recommended moment-matching (see
+\code{\link[loo:loo_moment_match]{loo::loo_moment_match()}} and \code{\link[brms:loo_moment_match.brmsfit]{brms::loo_moment_match()}}), mixture
+importance sampling (\code{vignette("loo2-mixis", package="loo")}), or
+\code{reloo}-ing (\code{\link[brms:reloo.brmsfit]{brms::reloo()}}). If the reference model PSIS-LOO-CV
+Pareto-\eqn{\hat{k}} values are good, but there are high
+Pareto-\eqn{\hat{k}} values for the projected models, you can try
+increasing the number of draws used for the PSIS-LOO-CV (\code{ndraws_pred} with
+\code{refit_prj = TRUE}). If increasing the number of draws does not help and if
+the reference model PSIS-LOO-CV Pareto-\eqn{\hat{k}} values are high, and
+the reference model PSIS-LOO-CV results change substantially when using
+moment-matching, mixture importance sampling, or \code{reloo}-ing, we recommend
+to use \eqn{K}-fold-CV within \code{projpred}.
 
 For PSIS-LOO-CV, \pkg{projpred} calls \code{\link[loo:psis]{loo::psis()}} (or, exceptionally,
 \code{\link[loo:sis]{loo::sis()}}, see below) with \code{r_eff = NA}. This is only a problem if there
@@ -307,12 +309,12 @@ model was built. In those cases however, the reference model should not
 have been used anyway, so we don't expect \pkg{projpred}'s \code{r_eff = NA} to
 be a problem.
 
-PSIS cannot be used if the number of draws or clusters is too small. In such
-cases, \pkg{projpred} resorts to standard importance sampling (SIS) and
-shows a message about this. Throughout the documentation, the term "PSIS" is
-used even though in fact, \pkg{projpred} resorts to SIS in these special cases.
-If SIS is used, check that the reference model PSIS-LOO-CV Pareto-\eqn{\hat{k}}
-values are good.
+PSIS cannot be used if the number of draws or clusters is too small. In
+such cases, \pkg{projpred} resorts to standard importance sampling (SIS)
+and shows a message about this. Throughout the documentation, the term
+"PSIS" is used even though in fact, \pkg{projpred} resorts to SIS in these
+special cases. If SIS is used, check that the reference model PSIS-LOO-CV
+Pareto-\eqn{\hat{k}} values are good.
 
 With \code{parallel = TRUE}, costly parts of \pkg{projpred}'s CV can be run in
 parallel. Costly parts are the fold-wise searches and performance
