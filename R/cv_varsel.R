@@ -663,7 +663,7 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
       n07 = sum(y_lat_E$pareto_k > .ps_khat_threshold(dim(psisloo)[1])), n = n,
       khat_threshold = .ps_khat_threshold(dim(psisloo)[1]),
       warn_txt = paste0(
-        "In the recalculation of the latent response values, some (%d / % d)",
+        "In the recalculation of the latent response values, some (%d / % d) ",
         "expectation-specific Pareto k-values are > %s.\n",
         "In general, we recommend K-fold-CV in this case."
       )
@@ -782,9 +782,10 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
         if (no_psis_eval) {
           if (getOption("projpred.warn_psis", TRUE)) {
             warning(
-              "Using standard importance sampling (SIS), as the number of draws",
-              "or clusters is too small for PSIS. For improved accuracy reliability",
-              "increase the number of draws or clusters, or use K-fold-CV."
+              "Using standard importance sampling (SIS), as the number of ",
+              "draws or clusters is too small for PSIS. For improved accuracy ",
+              "reliability, increase the number of draws or clusters, or use ",
+              "K-fold-CV."
             )
           }
           # Use loo::sis().
