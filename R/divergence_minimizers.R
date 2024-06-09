@@ -1176,6 +1176,8 @@ subprd_augdat_binom <- function(fits, newdata) {
 }
 
 ## FIXME: find a way that allows us to remove this
+#' @noRd
+#' @export
 predict.subfit <- function(object, newdata = NULL, ...) {
   beta <- object$beta
   alpha <- object$alpha
@@ -1213,6 +1215,8 @@ predict.subfit <- function(object, newdata = NULL, ...) {
   }
 }
 
+#' @noRd
+#' @export
 predict.gamm4 <- function(object, newdata = NULL, ...) {
   if (is.null(newdata)) {
     newdata <- model.frame(object$mer)
