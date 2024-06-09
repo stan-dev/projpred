@@ -24,7 +24,7 @@ This vignette illustrates the main functionalities of the **projpred** package, 
 What is special about the projection predictive variable selection is that it not only performs a variable selection, but also allows for (approximately) valid post-selection inference.
 
 The projection predictive variable selection is based on the ideas of @goutis_model_1998 and @dupuis_variable_2003.
-The methods implemented in **projpred** are described in detail in @piironen_projective_2020, @catalina_projection_2022, @weber_projection_2023, and @catalina_latent_2021.
+The methods implemented in **projpred** are described in detail in @piironen_projective_2020, @catalina_projection_2022, @weber_projection_2024, and @catalina_latent_2021.
 A comparison to many other methods may also be found in @piironen_comparison_2017.
 For details on how to cite **projpred**, see the [projpred citation info](https://CRAN.R-project.org/package=projpred/citation.html) on CRAN^[The citation information can be accessed offline by typing `print(citation("projpred"), bibtex = TRUE)` within R.].
 
@@ -441,7 +441,7 @@ In the following and throughout **projpred**'s documentation, the term "traditio
 
 Apart from the `gaussian()` response family used in this vignette, **projpred**'s traditional projection also supports the `binomial()`^[Via `brms::get_refmodel.brmsfit()`, the `brms::bernoulli()` family is supported as well.] and the `poisson()` family.
 
-The families supported by **projpred**'s augmented-data projection [@weber_projection_2023] are `binomial()`^[Currently, the augmented-data support for the `binomial()` family does not include binomial distributions with more than one trial.
+The families supported by **projpred**'s augmented-data projection [@weber_projection_2024] are `binomial()`^[Currently, the augmented-data support for the `binomial()` family does not include binomial distributions with more than one trial.
 In such a case, a workaround is to de-aggregate the Bernoulli trials which belong to the same (aggregated) observation, i.e., to use a "long" dataset.] ^[Like the traditional projection, the augmented-data projection also supports the `brms::bernoulli()` family via `brms::get_refmodel.brmsfit()`.], `brms::cumulative()`, `rstanarm::stan_polr()` fits, and `brms::categorical()`^[For the augmented-data projection based on a "typical" **brms** reference model object, **brms** version 2.17.0 or later is needed.] ^[More **brms** families might be supported in the future.].
 See `?extend_family` (which is called by `init_refmodel()`) for an explanation how to apply the augmented-data projection to "custom" reference model objects.
 For "typical" reference model objects (i.e., those created by `get_refmodel.stanreg()` or `brms::get_refmodel.brmsfit()`), the augmented-data projection is applied automatically if the family is supported by the augmented-data projection and neither `binomial()` nor `brms::bernoulli()`.
