@@ -666,7 +666,7 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
       n07 = sum(y_lat_E$pareto_k > .ps_khat_threshold(dim(psisloo)[1])), n = n,
       khat_threshold = .ps_khat_threshold(dim(psisloo)[1]),
       warn_txt = paste0(
-        "In the recalculation of the latent response values, some (%d / % d) ",
+        "In the recalculation of the latent response values, some (%d / %d) ",
         "expectation-specific Pareto k-values are > %s.\n",
         "In general, we recommend K-fold-CV in this case."
       )
@@ -841,7 +841,7 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
           n07 = sum(pareto_k_eval > .ps_khat_threshold(dim(psisloo)[1])), n = n,
           khat_threshold = .ps_khat_threshold(dim(sub_psisloo)[1]),
           warn_txt = paste0(
-            "Some (%d / % d) Pareto k's for the reference model's PSIS-LOO ",
+            "Some (%d / %d) Pareto k's for the reference model's PSIS-LOO ",
             "weights given ",
             ifelse(clust_used_eval,
                    paste0(nclusters_pred, " clustered "),
