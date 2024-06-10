@@ -785,9 +785,10 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
         if (no_psis_eval) {
           if (getOption("projpred.warn_psis", TRUE)) {
             warning(
-              "Using standard importance sampling (SIS), as the number of draws",
-              "or clusters is too small for PSIS. For improved accuracy",
-              "increase the number of draws or clusters, or use K-fold-CV."
+              "Using standard importance sampling (SIS), as the number of ",
+              "draws or clusters is too small for PSIS. For improved ",
+              "accuracy, increase the number of draws or clusters, or use ",
+              "K-fold-CV."
             )
           }
           # Use loo::sis().
@@ -840,7 +841,8 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
           n07 = sum(pareto_k_eval > .ps_khat_threshold(dim(psisloo)[1])), n = n,
           khat_threshold = .ps_khat_threshold(dim(sub_psisloo)[1]),
           warn_txt = paste0(
-            "Some (%d / % d) Pareto k's for the reference model's PSIS-LOO weights given ",
+            "Some (%d / % d) Pareto k's for the reference model's PSIS-LOO ",
+            "weights given ",
             ifelse(clust_used_eval,
                    paste0(nclusters_pred, " clustered "),
                    paste0(ndraws_pred, " posterior ")),
