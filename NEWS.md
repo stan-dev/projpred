@@ -4,6 +4,9 @@ If you read this from a place other than <https://mc-stan.org/projpred/news/inde
 
 # projpred 2.8.0.9000
 
+## Minor changes
+
+* Use the updated threshold for high Pareto-$\hat{k}$ values presented by Vehtari et al. (2024, "Pareto smoothed importance sampling", *Journal of Machine Learning Research*, 25(72):1-58, <https://www.jmlr.org/papers/v25/19-556.html>). This threshold depends on the Monte Carlo sample size and is often close to the former fixed threshold of 0.7 (a short introduction may also be found in the [LOO glossary](https://mc-stan.org/loo/reference/loo-glossary.html)). Correspondingly, the former "secondary" threshold of 0.5 is not used anymore either.
 
 # projpred 2.8.0
 
