@@ -62,13 +62,13 @@ when refitting the submodels for the performance evaluation (if \code{refit_prj}
 is \code{TRUE}).}
 
 \item{cv_method}{The CV method, either \code{"LOO"} or \code{"kfold"}. In the \code{"LOO"}
-case, a Pareto-smoothed importance sampling leave-one-out CV (PSIS-LOO CV)
+case, a Pareto-smoothed importance sampling leave-one-out CV (PSIS-LOO-CV)
 is performed, which avoids refitting the reference model \code{nloo} times (in
-contrast to a standard LOO CV). In the \code{"kfold"} case, a \eqn{K}-fold CV is
+contrast to a standard LOO-CV). In the \code{"kfold"} case, a \eqn{K}-fold-CV is
 performed. See also section "Note" below.}
 
 \item{nloo}{\strong{Caution:} Still experimental. Only relevant if \code{cv_method = "LOO"}. If \code{nloo} is smaller than the number of all observations,
-approximate full LOO CV using probability-proportional-to-size-sampling
+approximate full LOO-CV using probability-proportional-to-size-sampling
 (PPS) to make accurate computation only for \code{nloo} (anything from 1 to the
 number of all observations) leave-one-out folds (Magnusson et al., 2019).
 Smaller values lead to faster computation but higher uncertainty in the
@@ -77,7 +77,7 @@ evaluation part. If \code{NULL}, all observations are used (as by default).}
 \item{K}{Only relevant if \code{cv_method = "kfold"} and if \code{cvfits} is \code{NULL}
 (which is the case for reference model objects created by
 \code{\link[=get_refmodel.stanreg]{get_refmodel.stanreg()}} or \code{\link[brms:get_refmodel.brmsfit]{brms::get_refmodel.brmsfit()}}). Number of
-folds in \eqn{K}-fold CV.}
+folds in \eqn{K}-fold-CV.}
 
 \item{cvfits}{Only relevant if \code{cv_method = "kfold"}. The same as argument
 \code{cvfits} of \code{\link[=init_refmodel]{init_refmodel()}}, but repeated here so that output from
@@ -85,7 +85,7 @@ folds in \eqn{K}-fold CV.}
 
 \item{validate_search}{A single logical value indicating whether to
 cross-validate also the search part, i.e., whether to run the search
-separately for each CV fold (\code{TRUE}) or not (\code{FALSE}). We strongly do not
+separately for each CV-fold (\code{TRUE}) or not (\code{FALSE}). We strongly do not
 recommend setting this to \code{FALSE}, because this is known to bias the
 predictive performance estimates of the selected submodels. However,
 setting this to \code{FALSE} can sometimes be useful because comparing the
@@ -182,9 +182,9 @@ results can be obtained again if needed. Passed to argument \code{seed} of
 \code{NA}, then the PRNG state is reset (to the state before calling
 \code{\link[=cv_varsel]{cv_varsel()}}) upon exiting \code{\link[=cv_varsel]{cv_varsel()}}. Here, \code{seed} is used for
 clustering the reference model's posterior draws (if \code{!is.null(nclusters)}
-or \code{!is.null(nclusters_pred)}), for subsampling PSIS-LOO CV folds (if
+or \code{!is.null(nclusters_pred)}), for subsampling PSIS-LOO-CV folds (if
 \code{nloo} is smaller than the number of observations), for sampling the folds
-in \eqn{K}-fold CV, and for drawing new group-level effects when predicting
+in \eqn{K}-fold-CV, and for drawing new group-level effects when predicting
 from a multilevel submodel (however, not yet in case of a GAMM).}
 
 \item{search_terms}{Only relevant for forward search. A custom character
@@ -236,8 +236,9 @@ effect.
 
 L1 search is faster than forward search, but forward search may be more
 accurate. Furthermore, forward search may find a sparser model with
-comparable performance to that found by L1 search, but it may also start
-overfitting when more predictors are added.
+comparable performance to that found by L1 search, but it may also
+overfit when more predictors are added. This overfit can be detected
+by running search validation (see \code{\link[=cv_varsel]{cv_varsel()}}).
 
 An L1 search may select an interaction term before all involved lower-order
 interaction terms (including main-effect terms) have been selected. In
@@ -275,22 +276,48 @@ that leads to the same results, \code{search_terms = c("x2", "x3")}).
 }
 \note{
 If \code{validate_search} is \code{FALSE}, the search is not included in the CV
-so that only a single full-data search is run.
+so that only a single full-data search is run. If the number of
+observations is big, the fast PSIS-LOO-CV along the full-data search path
+is likely to be accurate. If the number of observations is small or
+moderate, the fast PSIS-LOO-CV along the full-data search path is likely to
+have optimistic bias in the middle of the search path. This result can be
+used to guide further actions and the optimistic bias can be greatly
+reduced by using \code{validate_search = TRUE}.
 
-For PSIS-LOO CV, \pkg{projpred} calls \code{\link[loo:psis]{loo::psis()}} (or, exceptionally,
+PSIS uses Pareto-\eqn{\hat{k}} diagnostic to assess the reliability of
+PSIS-LOO-CV. Whether the Pareto-\eqn{\hat{k}} diagnostics are shown as
+warnings, is controlled with a global option \code{projpred.warn_psis} (default
+is \code{TRUE}). See \link[loo:loo-glossary]{loo::loo-glossary} for how to interpret the
+Pareto-\eqn{\hat{k}} values and the warning thresholds. \pkg{projpred} does
+not support the usually recommended moment-matching (see
+\code{\link[loo:loo_moment_match]{loo::loo_moment_match()}} and \code{\link[brms:loo_moment_match.brmsfit]{brms::loo_moment_match()}}), mixture
+importance sampling (\code{vignette("loo2-mixis", package="loo")}), or
+\code{reloo}-ing (\code{\link[brms:reloo.brmsfit]{brms::reloo()}}). If the reference model PSIS-LOO-CV
+Pareto-\eqn{\hat{k}} values are good, but there are high
+Pareto-\eqn{\hat{k}} values for the projected models, you can try
+increasing the number of draws used for the PSIS-LOO-CV (\code{ndraws} in case
+of \code{refit_prj = FALSE}; \code{ndraws_pred} in case of \code{refit_prj = TRUE}). If
+increasing the number of draws does not help and if the reference model
+PSIS-LOO-CV Pareto-\eqn{\hat{k}} values are high, and the reference model
+PSIS-LOO-CV results change substantially when using moment-matching,
+mixture importance sampling, or \code{reloo}-ing, we recommend to use
+\eqn{K}-fold-CV within \code{projpred}.
+
+For PSIS-LOO-CV, \pkg{projpred} calls \code{\link[loo:psis]{loo::psis()}} (or, exceptionally,
 \code{\link[loo:sis]{loo::sis()}}, see below) with \code{r_eff = NA}. This is only a problem if there
 was extreme autocorrelation between the MCMC iterations when the reference
 model was built. In those cases however, the reference model should not
 have been used anyway, so we don't expect \pkg{projpred}'s \code{r_eff = NA} to
 be a problem.
 
-PSIS cannot be used if the draws have different (i.e., nonconstant) weights
-or if the number of draws is too small. In such cases, \pkg{projpred}
-resorts to standard importance sampling (SIS) and throws a warning about
-this. Throughout the documentation, the term "PSIS" is used even though in
-fact, \pkg{projpred} resorts to SIS in these special cases.
+PSIS cannot be used if the number of draws or clusters is too small. In
+such cases, \pkg{projpred} resorts to standard importance sampling (SIS)
+and shows a message about this. Throughout the documentation, the term
+"PSIS" is used even though in fact, \pkg{projpred} resorts to SIS in these
+special cases. If SIS is used, check that the reference model PSIS-LOO-CV
+Pareto-\eqn{\hat{k}} values are good.
 
-With \code{parallel = TRUE}, costly parts of \pkg{projpred}'s CV are run in
+With \code{parallel = TRUE}, costly parts of \pkg{projpred}'s CV can be run in
 parallel. Costly parts are the fold-wise searches and performance
 evaluations in case of \code{validate_search = TRUE}. (Note that in case of
 \eqn{K}-fold CV, the \eqn{K} reference model refits are not affected by
@@ -330,20 +357,19 @@ cvvs <- cv_varsel(fit, method = "L1", cv_method = "kfold", K = 2,
 \dontshow{\}) # examplesIf}
 }
 \references{
-Magnusson, Måns, Michael Andersen, Johan Jonasson, and Aki Vehtari. 2019.
-"Bayesian Leave-One-Out Cross-Validation for Large Data." In \emph{Proceedings of
-the 36th International Conference on Machine Learning}, edited by Kamalika
-Chaudhuri and Ruslan Salakhutdinov, 97:4244--53. Proceedings of Machine
-Learning Research. PMLR.
-\url{https://proceedings.mlr.press/v97/magnusson19a.html}.
+Måns Magnusson, Michael Riis Andersen, Johan Jonasson, Aki Vehtari
+(2020). Leave-one-out cross-validation for Bayesian model
+comparison in large data. Proceedings of the 23rd International
+Conference on Artificial Intelligence and Statistics (AISTATS),
+PMLR 108:341-351.
 
-Vehtari, Aki, Andrew Gelman, and Jonah Gabry. 2017. "Practical Bayesian Model
-Evaluation Using Leave-One-Out Cross-Validation and WAIC." \emph{Statistics and
-Computing} 27 (5): 1413--32. \doi{10.1007/s11222-016-9696-4}.
+Aki Vehtari, Andrew Gelman, and Jonah Gabry (2017). Practical Bayesian Model
+Evaluation Using Leave-One-Out Cross-Validation and WAIC. Statistics and
+Computing, 27(5):1413--32. \doi{10.1007/s11222-016-9696-4}.
 
-Vehtari, Aki, Daniel Simpson, Andrew Gelman, Yuling Yao, and Jonah Gabry.
-2022. "Pareto Smoothed Importance Sampling." arXiv.
-\doi{10.48550/arXiv.1507.02646}.
+Aki Vehtari, Daniel Simpson, Andrew Gelman, Yuling Yao, and Jonah
+Gabry (2024). Pareto smoothed importance sampling. Journal of
+Machine Learning Research, 25(72):1-58.
 }
 \seealso{
 \code{\link[=varsel]{varsel()}}

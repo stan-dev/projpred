@@ -5,7 +5,7 @@
 #' known as solution path), i.e., the best submodel for each submodel size
 #' (number of predictor terms). The evaluation part determines the predictive
 #' performance of the submodels along the predictor ranking. A special method is
-#' [varsel.vsel()] because it re-uses the search results from an earlier
+#' [varsel.vsel()] which re-uses the search results from an earlier
 #' [varsel()] (or [cv_varsel()]) run, as illustrated in the main vignette.
 #'
 #' @param object An object of class `refmodel` (returned by [get_refmodel()] or
@@ -141,8 +141,9 @@
 #'
 #'   L1 search is faster than forward search, but forward search may be more
 #'   accurate. Furthermore, forward search may find a sparser model with
-#'   comparable performance to that found by L1 search, but it may also start
-#'   overfitting when more predictors are added.
+#'   comparable performance to that found by L1 search, but it may also
+#'   overfit when more predictors are added. This overfit can be detected
+#'   by running search validation (see [cv_varsel()]).
 #'
 #'   An L1 search may select an interaction term before all involved lower-order
 #'   interaction terms (including main-effect terms) have been selected. In
