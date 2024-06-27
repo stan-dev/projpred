@@ -777,11 +777,6 @@ plot.vsel <- function(
   nterms_max <- as.integer(nterms_max)
 
   # Define some "pretty" text strings for the plot:
-  if (baseline == "ref") {
-    baseline_pretty <- "reference model"
-  } else {
-    baseline_pretty <- "best submodel"
-  }
   ylab <- "Value"
   if (deltas) {
     delta_lab <- "for baseline comparison"
