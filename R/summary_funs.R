@@ -297,7 +297,7 @@ get_stat <- function(summaries, summaries_baseline = NULL,
     } else {
       lppd_baseline = summaries_baseline$lppd
     }
-    if (!is.null(summaries_fast) && sum(n_loo<n)) {
+    if (!is.null(summaries_fast) && n_loo<n) {
       # subsampling difference estimator (Magnusson et al., 2020)
       srs_diffe <- .srs_diff_est_w(y_approx = summaries_fast$lppd-lppd_baseline,
                                    y = (lppd-lppd_baseline)[loo_inds],
@@ -324,12 +324,12 @@ get_stat <- function(summaries, summaries_baseline = NULL,
     wcv <- y_wobs_test$wobs
     wcv <- n * wcv / sum(wcv)
     if (is.null(summaries_baseline)) {
-      mu_baseline = 0
+      mu_baseline <- 0
     } else {
-      mu_baseline = summaries_baseline$mu
+      mu_baseline <- summaries_baseline$mu
     }
     # Use normal approximation for mse and delta method for rmse and R2
-    if (is.null(summaries_fast) || sum(n_loo==n)) {
+    if (is.null(summaries_fast) || n_loo==n) {
       # full LOO estimator
       value <- mean(wcv * (mu - y)^2)
       value_se <- .weighted_sd((mu - y)^2, wcv) / sqrt(n)
@@ -350,7 +350,7 @@ get_stat <- function(summaries, summaries_baseline = NULL,
       # delta=TRUE, variance of difference of two normally distributed
       mse_b <- mean(wcv * (mu_baseline - y)^2)
       var_mse_b <- .weighted_sd((mu_baseline - y)^2, wcv)^2 / n
-      if (is.null(summaries_fast) || sum(n_loo==n)) {
+      if (is.null(summaries_fast) || n_loo==n) {
         cov_mse_e_b <- mean(wcv * ((mu - y)^2-mse_e) *
                               ((mu_baseline-y)^2-mse_b)) / n
       } else {
@@ -378,7 +378,7 @@ get_stat <- function(summaries, summaries_baseline = NULL,
       value <- 1 - mse_e / mse_y
       # the first-order Taylor approximation of the variance
       var_mse_y <- .weighted_sd((mean(y)-y)^2, wcv)^2 / n
-      if (is.null(summaries_fast) || sum(n_loo==n)) {
+      if (is.null(summaries_fast) || n_loo==n) {
         if (is.null(summaries_baseline)) {
           cov_mse_e_y <- mean(wcv * ((mu - y)^2 - mse_e) *
                                 ((mean(y)-y)^2-mse_y)) / n
@@ -469,7 +469,7 @@ get_stat <- function(summaries, summaries_baseline = NULL,
         correct_baseline <- 0
       }
 
-      if (!is.null(summaries_fast) && sum(n_loo<n)) {
+      if (!is.null(summaries_fast) && n_loo<n) {
         # subsampling difference estimator (Magnusson et al., 2020)
         mu_fast <- summaries_fast$mu
         if (!is.factor(mu_fast)) {
@@ -485,11 +485,11 @@ get_stat <- function(summaries, summaries_baseline = NULL,
         value_se <- sqrt(srs_diffe$v_y_hat + srs_diffe$hat_v_y) / n
       } else {
         # full LOO estimator
-        value <- mean(wcv * correct)
+        value <- mean(wcv * correct - correct_baseline)
         value_se <- .weighted_sd(correct - correct_baseline, wcv) / sqrt(n)
       }
     } else if (stat == "auc") {
-      if (!is.null(summaries_fast) && sum(n_loo<n)) {
+      if (!is.null(summaries_fast) && n_loo<n) {
         # subsampling LOO with AUC not implemented. Using fast LOO result.
         mu <- summaries_fast$mu
       }
