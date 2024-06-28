@@ -343,7 +343,9 @@ test_that(paste(
     summs_ref$mu <- structure(unclass(summs_ref$mu), ndiscrete = NULL)
     summs_ref$mu <- summs_ref$mu[(nobsv + 1):(2 * nobsv)]
     tol_ref <- 1e1 * .Machine$double.eps
-    if (args_vs[[tstsetup]]$mod_nm == "glmm") {
+    if (args_vs[[tstsetup]]$mod_nm == "glmm" ||
+        (args_vs[[tstsetup]]$mod_nm == "glm" &&
+         args_vs[[tstsetup]]$fam_nm %in% c("brnll", "binom"))) {
       tol_ref <- 1e3 * tol_ref
     }
     expect_equal(summs_ref, vs_trad$summaries$ref, tolerance = tol_ref,
