@@ -259,32 +259,6 @@ get_stat <- function(summaries, summaries_baseline = NULL,
   loo_inds <- which(!is.na(lppd))
   n <- length(lppd)
   n_loo <- length(loo_inds)
-  ## is this needed anymore?
-  ## n_notna.bs <- NULL
-  ## if (!is.null(summaries_fast)) {
-  ##   # Compute the performance statistics using only those observations for
-  ##   # which fast summaries are not NA
-  ##   if (stat %in% c("elpd", "mlpd", "gmpd")) {
-  ##     lppd[is.na(lppd_baseline)] <- NA
-  ##     n_notna.bs <- sum(!is.na(lppd_baseline))
-  ##   }
-  ##   n_notna <- sum(!is.na(lppd))
-  ##   n <- length(lppd)
-  ## } else {
-  ##   hasNA_y <- is.na(y_wobs_test$y_prop %||% y_wobs_test$y)
-  ##   if (!is.null(mu_baseline)) {
-  ##     # Compute the performance statistics using only those observations for
-  ##     # which both `mu` and `mu_baseline` are not `NA`:
-  ##     mu[is.na(mu_baseline)] <- NA
-  ##     mu_baseline[is.na(mu)] <- NA
-  ##     n_notna.bs <- sum(!is.na(mu_baseline) & !hasNA_y)
-  ##   }
-  ##   n_notna <- sum(!is.na(mu) & !hasNA_y)
-  ##   n <- length(mu)
-  ## }
-  ## if (!is.null(n_notna.bs) && getOption("projpred.additional_checks", FALSE)) {
-  ##   stopifnot(n_notna == n_notna.bs)
-  ## }
   if (n_loo == 0) {
     return(list(value = NA, se = NA, lq = NA, uq = NA))
   }
