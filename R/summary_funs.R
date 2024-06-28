@@ -295,8 +295,8 @@ get_stat <- function(summaries, summaries_baseline = NULL,
     }
   } else if (stat %in% c("mse", "rmse", "R2")) {
     y <- y_wobs_test$y_prop %||% y_wobs_test$y
-    wcv <- y_wobs_test$wobs
-    wcv <- n * wcv / sum(wcv)
+    wobs <- y_wobs_test$wobs
+    wobs <- n * wobs / sum(wobs)
     if (is.null(summaries_baseline)) {
       mu_baseline <- 0
     } else {
@@ -305,14 +305,14 @@ get_stat <- function(summaries, summaries_baseline = NULL,
     # Use normal approximation for mse and delta method for rmse and R2
     if (is.null(summaries_fast) || n_loo==n) {
       # full LOO estimator
-      value <- mean(wcv * (mu - y)^2)
-      value_se <- .weighted_sd((mu - y)^2, wcv) / sqrt(n)
+      value <- mean(wobs * (mu - y)^2)
+      value_se <- .weighted_sd((mu - y)^2, wobs) / sqrt(n)
     } else {
       # subsampling difference estimator (Magnusson et al., 2020)
       srs_diffe <- .srs_diff_est_w(y_approx = (summaries_fast$mu - y)^2,
                                    y = ((mu-y)^2)[loo_inds],
                                    y_idx = loo_inds,
-                                   w = wcv)
+                                   w = wobs)
       value <- srs_diffe$y_hat / n
       # combine estimates of var(y_hat) and var(y)
       value_se <- sqrt(srs_diffe$v_y_hat + srs_diffe$hat_v_y) / n
@@ -322,13 +322,13 @@ get_stat <- function(summaries, summaries_baseline = NULL,
     var_mse_e <- value_se^2
     if (!is.null(summaries_baseline)) {
       # delta=TRUE, variance of difference of two normally distributed
-      mse_b <- mean(wcv * (mu_baseline - y)^2)
-      var_mse_b <- .weighted_sd((mu_baseline - y)^2, wcv)^2 / n
+      mse_b <- mean(wobs * (mu_baseline - y)^2)
+      var_mse_b <- .weighted_sd((mu_baseline - y)^2, wobs)^2 / n
       if (is.null(summaries_fast) || n_loo==n) {
-        cov_mse_e_b <- mean(wcv * ((mu - y)^2-mse_e) *
+        cov_mse_e_b <- mean(wobs * ((mu - y)^2-mse_e) *
                               ((mu_baseline-y)^2-mse_b)) / n
       } else {
-        mse_e_fast <- mean(wcv * (summaries_fast$mu-y)^2)
+        mse_e_fast <- mean(wobs * (summaries_fast$mu-y)^2)
         srs_diffe <-
           .srs_diff_est_w(y_approx =
                             ((summaries_fast$mu - y)^2 -mse_e_fast) *
@@ -336,7 +336,7 @@ get_stat <- function(summaries, summaries_baseline = NULL,
                           y = (((mu - y)^2 -mse_e) *
                                  ((mu_baseline-y)^2 -mse_b))[loo_inds],
                           y_idx = loo_inds,
-                          w = wcv)
+                          w = wobs)
         cov_mse_e_b <- srs_diffe$y_hat / n^2
       }
       value_se <- sqrt(value_se^2 - 2*cov_mse_e_b + var_mse_b)
@@ -348,21 +348,21 @@ get_stat <- function(summaries, summaries_baseline = NULL,
       value_se <- sqrt(value_se^2 / mse_e / 4)
     } else if (stat == "R2") {
       # simple transformation of mse
-      mse_y <- mean(wcv * (mean(y)-y)^2)
+      mse_y <- mean(wobs * (mean(y)-y)^2)
       value <- 1 - mse_e / mse_y
       # the first-order Taylor approximation of the variance
-      var_mse_y <- .weighted_sd((mean(y)-y)^2, wcv)^2 / n
+      var_mse_y <- .weighted_sd((mean(y)-y)^2, wobs)^2 / n
       if (is.null(summaries_fast) || n_loo==n) {
         if (is.null(summaries_baseline)) {
-          cov_mse_e_y <- mean(wcv * ((mu - y)^2 - mse_e) *
+          cov_mse_e_y <- mean(wobs * ((mu - y)^2 - mse_e) *
                                 ((mean(y)-y)^2-mse_y)) / n
         } else {
-          cov_mse_e_y <- mean(wcv * ((mu - y)^2 - mse_e -
+          cov_mse_e_y <- mean(wobs * ((mu - y)^2 - mse_e -
                                        ((mu_baseline - y)^2 - mse_b)) *
                                 ((mean(y)-y)^2-mse_y)) / n
         }
       } else {
-        mse_e_fast <- mean(wcv * (summaries_fast$mu-y)^2)
+        mse_e_fast <- mean(wobs * (summaries_fast$mu-y)^2)
         if (is.null(summaries_baseline)) {
           srs_diffe <-
             .srs_diff_est_w(y_approx =
@@ -371,7 +371,7 @@ get_stat <- function(summaries, summaries_baseline = NULL,
                             y = (((mu - y)^2 - mse_e) *
                                    ((mean(y)-y)^2 -mse_y))[loo_inds],
                             y_idx = loo_inds,
-                            w = wcv)
+                            w = wobs)
         } else {
           srs_diffe <-
             .srs_diff_est_w(y_approx =
@@ -382,7 +382,7 @@ get_stat <- function(summaries, summaries_baseline = NULL,
                                     ((mu_baseline - y)^2 - mse_b)) *
                                    ((mean(y)-y)^2 -mse_y))[loo_inds],
                             y_idx = loo_inds,
-                            w = wcv)
+                            w = wobs)
         }
         cov_mse_e_y <- srs_diffe$y_hat / n^2
       }
@@ -398,8 +398,7 @@ get_stat <- function(summaries, summaries_baseline = NULL,
     }
   } else if (stat %in% c("acc", "pctcorr", "auc")) {
     y <- y_wobs_test$y
-    wcv <- y_wobs_test$wobs
-    wcv <- n * wcv / sum(wcv)
+    wobs <- rep(1, n)
     if (!is.null(y_wobs_test$y_prop)) {
       # CAUTION: The following checks also ensure that `y` does not have `NA`s
       # (see the other "CAUTION" comments below for changes that are needed if
@@ -417,8 +416,9 @@ get_stat <- function(summaries, summaries_baseline = NULL,
       } else {
         mu_baseline <- NULL
       }
-      wcv <- rep(wcv, y_wobs_test$wobs)
-      wcv <- n * wcv / sum(wcv)
+      n <- sum(!is.na(mu))
+      wobs <- rep(wobs, y_wobs_test$wobs)
+      wobs <- n * wobs / sum(wobs)
     } else {
       stopifnot(all(y_wobs_test$wobs == 1))
       if (!is.null(summaries_baseline)) {
@@ -453,14 +453,14 @@ get_stat <- function(summaries, summaries_baseline = NULL,
         srs_diffe <- .srs_diff_est_w(y_approx = correct_fast - correct_baseline,
                                      y = (correct-correct_baseline)[loo_inds],
                                      y_idx = loo_inds,
-                                     w = wcv)
-        value <- srs_diffe$y_hat / n + mean(wcv * correct_baseline)
+                                     w = wobs)
+        value <- srs_diffe$y_hat / n + mean(wobs * correct_baseline)
         # combine estimates of var(y_hat) and var(y)
         value_se <- sqrt(srs_diffe$v_y_hat + srs_diffe$hat_v_y) / n
       } else {
         # full LOO estimator
-        value <- mean(wcv * correct)
-        value_se <- .weighted_sd(correct - correct_baseline, wcv) / sqrt(n)
+        value <- mean(wobs * correct)
+        value_se <- .weighted_sd(correct - correct_baseline, wobs) / sqrt(n)
       }
     } else if (stat == "auc") {
       if (!is.null(summaries_fast) && n_loo<n) {
@@ -468,8 +468,8 @@ get_stat <- function(summaries, summaries_baseline = NULL,
         mu <- summaries_fast$mu
       }
       if (!is.null(mu_baseline)) {
-        auc_data <- cbind(y, mu, wcv)
-        auc_data_baseline <- cbind(y, mu_baseline, wcv)
+        auc_data <- cbind(y, mu, wobs)
+        auc_data_baseline <- cbind(y, mu_baseline, wobs)
         value <- .auc(auc_data)
         idxs_cols <- seq_len(ncol(auc_data))
         idxs_cols_bs <- setdiff(seq_len(ncol(auc_data) + ncol(auc_data_baseline)),
@@ -488,7 +488,7 @@ get_stat <- function(summaries, summaries_baseline = NULL,
                           names = FALSE, na.rm = TRUE) +
           .auc(auc_data_baseline)
       } else {
-        auc_data <- cbind(y, mu, wcv)
+        auc_data <- cbind(y, mu, wobs)
         value <- .auc(auc_data)
         value.bootstrap <- bootstrap(auc_data, .auc, ...)
         value_se <- sd(value.bootstrap, na.rm = TRUE)
