@@ -485,7 +485,7 @@ get_stat <- function(summaries, summaries_baseline = NULL,
         value_se <- sqrt(srs_diffe$v_y_hat + srs_diffe$hat_v_y) / n
       } else {
         # full LOO estimator
-        value <- mean(wcv * correct - correct_baseline)
+        value <- mean(wcv * correct)
         value_se <- .weighted_sd(correct - correct_baseline, wcv) / sqrt(n)
       }
     } else if (stat == "auc") {
