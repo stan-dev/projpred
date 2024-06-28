@@ -736,6 +736,12 @@ plot.vsel <- function(
   # .tabulate_stats()'s argument `nfeat_baseline`:
   nfeat_baseline <- get_nfeat_baseline(object, baseline, stats[1],
                                        resp_oscale = resp_oscale)
+  if (getOption("projpred.extra_verbose",FALSE) &&
+        deltas &&
+        !all(stats %in% c("elpd","mlpd","gmpd"))) {
+    message(paste0("With deltas=TRUE, statistics ", paste(stats[!(stats %in% c("elpd","mlpd","gmpd"))], collapse=", "),
+                   " report the uncertainty relative to the baseline, but the value in the original scale."))
+  }
   if (deltas) {
     nfeat_baseline_for_tab <- nfeat_baseline
   } else {
@@ -1172,7 +1178,7 @@ plot.vsel <- function(
 #'   in section "Details" below).
 #'   * `"rmse"`: root mean squared error (only available in the situations
 #'   mentioned in section "Details" below). For the corresponding standard error
-#'   and lower and upper confidence interval bounds, bootstrapping is used.
+#'   and lower and upper confidence interval bounds, the delta method is used.
 #'   * `"acc"` (or its alias, `"pctcorr"`): classification accuracy (only
 #'   available in the situations mentioned in section "Details" below). By
 #'   "classification accuracy", we mean the proportion of correctly classified
@@ -1194,11 +1200,15 @@ plot.vsel <- function(
 #'   (nominal) coverage `1 - alpha`. Items `"diff"` and `"diff.se"` are only
 #'   supported if `deltas` is `FALSE`.
 #' @param deltas If `TRUE`, the submodel statistics are estimated relatively to
-#'   the baseline model (see argument `baseline`). For the GMPD, the term
+#'   the baseline model (see argument `baseline`). For the `"gmpd"`, the term
 #'   "relatively" refers to the ratio vs. the baseline model (i.e., the submodel
 #'   statistic divided by the baseline model statistic). For all other `stats`,
 #'   "relatively" refers to the difference from the baseline model (i.e., the
-#'   submodel statistic minus the baseline model statistic).
+#'   submodel statistic minus the baseline model statistic). For `"elpd"` and
+#'   `"mlpd"` the baseline performance is reported as 0. For `"gmpd"`
+#'   the baseline performance is reported as 1. For other statistics, the
+#'   baseline performance is reported in the original scale. For all
+#'   statistics the related uncertainty is reported relative to the baseline.
 #' @param alpha A number determining the (nominal) coverage `1 - alpha` of the
 #'   normal-approximation (or bootstrap or exponentiated normal-approximation;
 #'   see argument `stats`) confidence intervals. For example, in case of the
@@ -1282,7 +1292,7 @@ summary.vsel <- function(
 ) {
   validate_vsel_object_stats(object, stats, resp_oscale = resp_oscale)
   baseline <- validate_baseline(object$refmodel, baseline, deltas)
-
+  
   # Initialize output:
   out <- c(
     object$refmodel[c("formula", "family")],
