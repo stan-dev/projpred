@@ -66,7 +66,7 @@ ilinkfun_raw <- function(x, link_nm) {
 .auc <- function(x) {
   resp <- x[, 1]
   pred <- x[, 2]
-  wcv <- x[, 3]
+  wobs <- x[, 3]
 
   # Make it explicit that `x` should not be used anymore (due to the possibility
   # of `NA`s, but also due to the re-ordering):
@@ -77,9 +77,9 @@ ilinkfun_raw <- function(x, link_nm) {
 
   resp <- resp[ord]
   pred <- pred[ord]
-  wcv <- wcv[ord]
+  wobs <- wobs[ord]
 
-  w0 <- w1 <- wcv
+  w0 <- w1 <- wobs
   # CAUTION: The following check also ensures that `resp` does not have `NA`s:
   stopifnot(all(resp %in% c(0, 1)))
   w0[resp == 1] <- 0 # for calculating the false positive rate (fpr)
