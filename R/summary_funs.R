@@ -416,6 +416,8 @@ get_stat <- function(summaries, summaries_baseline = NULL,
       } else {
         mu_baseline <- NULL
       }
+      # CAUTION: If `y` is allowed to have `NA`s here, then `n` needs to be
+      # adapted:
       n <- sum(!is.na(mu))
       wobs <- rep(wobs, y_wobs_test$wobs)
       wobs <- n * wobs / sum(wobs)
