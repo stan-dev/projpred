@@ -1041,7 +1041,6 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
       }
       if (verbose &&
             requireNamespace("progressr", quietly = TRUE) &&
-            requireNamespace("progress", quietly = TRUE) &&
             interactive()) {
         use_progressr <- TRUE
         p <- progressr::progressor(along = seq_along(inds))
@@ -1373,7 +1372,6 @@ kfold_varsel <- function(refmodel, method, nterms_max, ndraws, nclusters,
     }
     if (verbose &&
           requireNamespace("progressr", quietly = TRUE) &&
-          requireNamespace("progress", quietly = TRUE) &&
           interactive()) {
       use_progressr <- TRUE
       p <- progressr::progressor(along = seq_along(inds))

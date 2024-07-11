@@ -81,7 +81,6 @@ Suggests:
     future,
     future.callr,
     doFuture,
-    progress,
     progressr
 LinkingTo: Rcpp, RcppArmadillo
 Additional_repositories:
