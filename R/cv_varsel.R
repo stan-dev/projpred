@@ -1055,7 +1055,7 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
                       "loo_ref_oscale", "validset", "loo_sub", "mu_sub",
                       "loo_sub_oscale", "mu_sub_oscale")
       ) %do_projpred% {
-        if (use_progressr) progressor_obj("")
+        if (use_progressr) progressor_obj()
         do.call(one_obs, c(list(run_index = run_index, verbose_search = FALSE),
                            dot_args))
       }
@@ -1383,7 +1383,7 @@ kfold_varsel <- function(refmodel, method, nterms_max, ndraws, nclusters,
       .export = c("one_fold", "dot_args", "use_progressr", "progressor_obj"),
       .noexport = c("list_cv", "search_out_rks")
     ) %do_projpred% {
-      if (use_progressr) progressor_obj("")
+      if (use_progressr) progressor_obj()
       do_call(one_fold, c(list(fold = list_cv_k, rk = search_out_rks_k,
                                verbose_search = FALSE),
                           dot_args))
