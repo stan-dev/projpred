@@ -1039,23 +1039,22 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
       if (!requireNamespace("doRNG", quietly = TRUE)) {
               stop("Please install the 'doRNG' package.")
       }
-      if (verbose && get_use_progressr()) {
-        use_progressr <- TRUE
+      if (verbose && use_progressr()) {
         progressor_obj <- progressr::progressor(length(inds))
       } else {
-        use_progressr <- FALSE
+        progressor_obj <- NULL
       }
       .select <- .select
       dot_args <- list(...)
       `%do_projpred%` <- doRNG::`%dorng%`
       res_cv <- foreach::foreach(
         run_index = seq_along(inds),
-        .export = c("one_obs", "dot_args", "use_progressr", "progressor_obj"),
+        .export = c("one_obs", "dot_args", "progressor_obj"),
         .noexport = c("mu_offs_oscale", "loglik_forPSIS", "psisloo", "y_lat_E",
                       "loo_ref_oscale", "validset", "loo_sub", "mu_sub",
                       "loo_sub_oscale", "mu_sub_oscale")
       ) %do_projpred% {
-        if (use_progressr) progressor_obj()
+        if (!is.null(progressor_obj)) progressor_obj()
         do.call(one_obs, c(list(run_index = run_index, verbose_search = FALSE),
                            dot_args))
       }
@@ -1368,11 +1367,10 @@ kfold_varsel <- function(refmodel, method, nterms_max, ndraws, nclusters,
     if (!requireNamespace("doRNG", quietly = TRUE)) {
       stop("Please install the 'doRNG' package.")
     }
-    if (verbose && get_use_progressr()) {
-      use_progressr <- TRUE
+    if (verbose && use_progressr()) {
       progressor_obj <- progressr::progressor(length(list_cv))
     } else {
-      use_progressr <- FALSE
+      progressor_obj <- NULL
     }
     .select <- .select
     dot_args <- list(...)
@@ -1380,10 +1378,10 @@ kfold_varsel <- function(refmodel, method, nterms_max, ndraws, nclusters,
     res_cv <- foreach::foreach(
       list_cv_k = list_cv,
       search_out_rks_k = search_out_rks,
-      .export = c("one_fold", "dot_args", "use_progressr", "progressor_obj"),
+      .export = c("one_fold", "dot_args", "progressor_obj"),
       .noexport = c("list_cv", "search_out_rks")
     ) %do_projpred% {
-      if (use_progressr) progressor_obj()
+      if (!is.null(progressor_obj)) progressor_obj()
       do_call(one_fold, c(list(fold = list_cv_k, rk = search_out_rks_k,
                                verbose_search = FALSE),
                           dot_args))

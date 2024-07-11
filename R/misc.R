@@ -706,7 +706,7 @@ element_unq <- function(list_obj, nm) {
   return(el_unq)
 }
 
-get_use_progressr <- function() {
+use_progressr <- function() {
   getOption("projpred.use_progressr",
             requireNamespace("progressr", quietly = TRUE) && interactive())
 }
