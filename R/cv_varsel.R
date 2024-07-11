@@ -1043,10 +1043,10 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
             requireNamespace("progressr", quietly = TRUE) &&
             requireNamespace("progress", quietly = TRUE) &&
             interactive()) {
-        progressr_installed <- TRUE
+        use_progressr <- TRUE
         p <- progressr::progressor(along = seq_along(inds))
       } else {
-        progressr_installed <- FALSE
+        use_progressr <- FALSE
       }
       .select <- .select
       dot_args <- list(...)
@@ -1058,7 +1058,7 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
                       "loo_ref_oscale", "validset", "loo_sub", "mu_sub",
                       "loo_sub_oscale", "mu_sub_oscale")
       ) %do_projpred% {
-        if (progressr_installed) p("")
+        if (use_progressr) p("")
         do.call(one_obs, c(list(run_index = run_index, verbose_search = FALSE),
                            dot_args))
       }
