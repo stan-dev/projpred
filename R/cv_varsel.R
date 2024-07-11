@@ -1041,7 +1041,7 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
       }
       if (verbose && get_use_progressr()) {
         use_progressr <- TRUE
-        progressor_obj <- progressr::progressor(along = seq_along(inds))
+        progressor_obj <- progressr::progressor(length(inds))
       } else {
         use_progressr <- FALSE
       }
@@ -1370,7 +1370,7 @@ kfold_varsel <- function(refmodel, method, nterms_max, ndraws, nclusters,
     }
     if (verbose && get_use_progressr()) {
       use_progressr <- TRUE
-      progressor_obj <- progressr::progressor(along = seq_along(inds))
+      progressor_obj <- progressr::progressor(length(list_cv))
     } else {
       use_progressr <- FALSE
     }
