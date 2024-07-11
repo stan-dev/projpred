@@ -951,7 +951,7 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
     }
 
     if (verbose) {
-      verb_txt_start <- 
+      verb_txt_start <-
       if (!search_out_rks_was_null) {
         verb_txt_mid <- ""
       } else {
@@ -1044,8 +1044,6 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
             requireNamespace("progress", quietly = TRUE) &&
             interactive()) {
         progressr_installed <- TRUE
-        progressr::handlers(global = TRUE)
-        progressr::handlers("progress")
         p <- progressr::progressor(along = seq_along(inds))
       } else {
         progressr_installed <- FALSE
@@ -1378,8 +1376,6 @@ kfold_varsel <- function(refmodel, method, nterms_max, ndraws, nclusters,
           requireNamespace("progress", quietly = TRUE) &&
           interactive()) {
       use_progressr <- TRUE
-      progressr::handlers(global = TRUE)
-      progressr::handlers("progress")
       p <- progressr::progressor(along = seq_along(inds))
     } else {
       use_progressr <- FALSE
