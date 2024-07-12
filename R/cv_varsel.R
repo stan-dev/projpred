@@ -1049,6 +1049,7 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
       `%do_projpred%` <- doRNG::`%dorng%`
       res_cv <- foreach::foreach(
         run_index = seq_along(inds),
+        .packages = c("projpred"),
         .export = c("one_obs", "dot_args", "progressor_obj"),
         .noexport = c("mu_offs_oscale", "loglik_forPSIS", "psisloo", "y_lat_E",
                       "loo_ref_oscale", "validset", "loo_sub", "mu_sub",
@@ -1378,6 +1379,7 @@ kfold_varsel <- function(refmodel, method, nterms_max, ndraws, nclusters,
     res_cv <- foreach::foreach(
       list_cv_k = list_cv,
       search_out_rks_k = search_out_rks,
+      .packages = c("projpred"),
       .export = c("one_fold", "dot_args", "progressor_obj"),
       .noexport = c("list_cv", "search_out_rks")
     ) %do_projpred% {

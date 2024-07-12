@@ -102,6 +102,7 @@ divmin <- function(
       formula_s = formulas,
       projpred_var_s = iterators::iter(projpred_var, by = "column"),
       projpred_formula_no_random_s = projpred_formulas_no_random,
+      .packages = c("projpred"),
       .export = c("sdivmin", "projpred_random", "dot_args", "progressor_obj"),
       .noexport = c(
         "object", "p_sel", "search_path", "p_ref", "refmodel", "formulas",
@@ -664,6 +665,7 @@ divmin_augdat <- function(
     `%do_projpred%` <- foreach::`%dopar%`
     outdmin <- foreach::foreach(
       projpred_w_aug_s = iterators::iter(projpred_ws_aug, by = "column"),
+      .packages = c("projpred"),
       .export = c(
         "sdivmin", "formula", "data", "family", "projpred_formula_no_random",
         "projpred_random", "dot_args", "progressor_obj"
