@@ -1044,7 +1044,6 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
       } else {
         progressor_obj <- NULL
       }
-      .select <- .select
       dot_args <- list(...)
       `%do_projpred%` <- doRNG::`%dorng%`
       res_cv <- foreach::foreach(
@@ -1373,7 +1372,6 @@ kfold_varsel <- function(refmodel, method, nterms_max, ndraws, nclusters,
     } else {
       progressor_obj <- NULL
     }
-    .select <- .select
     dot_args <- list(...)
     `%do_projpred%` <- doRNG::`%dorng%`
     res_cv <- foreach::foreach(
