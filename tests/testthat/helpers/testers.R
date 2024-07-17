@@ -1972,11 +1972,10 @@ vsel_tester <- function(
     search_control_expected = NULL,
     extra_tol = 1.1,
     info_str = ""
-) {
+    ) {
+
   # Preparations:
   if (with_cv) {
-    vsel_smmrs_sub_nms <- c(vsel_smmrs_sub_nms, "wcv")
-
     if (is.null(cv_method_expected)) {
       cv_method_expected <- "LOO"
     }
@@ -2256,12 +2255,6 @@ vsel_tester <- function(
   }
   if (vs$refmodel$family$for_latent) {
     vsel_smmrs_sub_nms <- c(vsel_smmrs_sub_nms, "oscale")
-    if ("wcv" %in% vsel_smmrs_sub_nms &&
-        identical(cv_method_expected, "kfold")) {
-      vsel_smmrs_sub_nms[vsel_smmrs_sub_nms %in% c("wcv", "oscale")] <- c(
-        "oscale", "wcv"
-      )
-    }
     vsel_smmrs_ref_nms <- c(vsel_smmrs_ref_nms, "oscale")
   }
   smmrs_sub_j_tester <- function(smmrs_sub_j, tests_oscale = FALSE) {
@@ -2283,7 +2276,7 @@ vsel_tester <- function(
          !is.null(vs$refmodel$family$cats))) {
       expect_s3_class(smmrs_sub_j$mu, "augvec")
     }
-    if (with_cv) {
+    if (with_cv && valsearch_expected && identical(cv_method_expected, "LOO")) {
       expect_identical(sum(!is.na(smmrs_sub_j$mu)), nloo_expected * ncats,
                        info = info_str)
     } else {
@@ -2295,26 +2288,16 @@ vsel_tester <- function(
       if (vs$refmodel$family$for_latent && !tests_oscale &&
           identical(cv_method_expected, "kfold")) {
         expect_true(all(is.na(smmrs_sub_j$lppd)), info = info_str)
-      } else {
+      } else if (valsearch_expected && identical(cv_method_expected, "LOO")) {
         expect_identical(sum(!is.na(smmrs_sub_j$lppd)), nloo_expected,
                          info = info_str)
       }
     } else {
       expect_true(all(!is.na(smmrs_sub_j$lppd)), info = info_str)
     }
-    if (with_cv) {
-      expect_type(smmrs_sub_j$wcv, "double")
-      expect_length(smmrs_sub_j$wcv, nobsv)
-      expect_true(all(!is.na(smmrs_sub_j$wcv)), info = info_str)
-      if (nloo_expected == nobsv) {
-        expect_equal(smmrs_sub_j$wcv, rep(1 / nobsv, nobsv), info = info_str)
-      } else {
-        expect_true(any(smmrs_sub_j$wcv != rep(1 / nobsv, nobsv)),
-                    info = info_str)
-      }
-    }
     return(invisible(TRUE))
   }
+
   for (j in seq_along(vs$summaries$sub)) {
     smmrs_sub_j_tester(vs$summaries$sub[[j]])
     if (vs$refmodel$family$for_latent) {

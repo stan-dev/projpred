@@ -1428,7 +1428,7 @@ test_that("setting `nloo` smaller than the number of observations works", {
   skip_if_not(run_cvvs)
   nloo_tst <- nobsv %/% 5L
   # Output elements of `vsel` objects that may be influenced by `nloo`:
-  vsel_nms_nloo <- c("summaries", "predictor_ranking_cv", "nloo", "ce")
+  vsel_nms_nloo <- c("summaries", "summaries_fast","predictor_ranking_cv", "nloo", "loo_inds", "ce")
   # In general, element `ce` is affected as well (because the PRNG state when
   # doing the clustering for the performance evaluation is different when `nloo`
   # is smaller than the number of observations compared to when `nloo` is equal

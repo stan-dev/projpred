@@ -90,8 +90,16 @@ weighted_summary_means <- function(y_wobs_test, family, wdraws, mu, dis, cl_ref,
 .tabulate_stats <- function(varsel, stats, alpha = 0.05,
                             nfeat_baseline = NULL, resp_oscale = TRUE, ...) {
   stat_tab <- data.frame()
-  summ_ref <- varsel$summaries$ref
-  summ_sub <- varsel$summaries$sub
+  summaries_ref <- varsel$summaries$ref
+  summaries_sub <- varsel$summaries$sub
+  if (!is.null(varsel$summaries_fast)) {
+    summaries_fast_sub <- varsel$summaries_fast$sub
+    if (any(stats %in% c("auc"))) {
+      warning("Subsampling LOO with AUC not implemented. Using fast LOO for submodel AUC.")
+    }
+  } else {
+    summaries_fast_sub <- NULL
+  }
 
   if (!varsel$refmodel$family$for_latent && !resp_oscale) {
     stop("`resp_oscale = FALSE` can only be used in case of the latent ",
@@ -99,12 +107,12 @@ weighted_summary_means <- function(y_wobs_test, family, wdraws, mu, dis, cl_ref,
   }
   if (varsel$refmodel$family$for_latent) {
     if (resp_oscale) {
-      summ_ref <- summ_ref$oscale
-      summ_sub <- lapply(summ_sub, "[[", "oscale")
-      ref_lppd_NA <- all(is.na(summ_ref$lppd))
-      sub_lppd_NA <- any(sapply(summ_sub, check_sub_NA, el_nm = "lppd"))
-      ref_mu_NA <- all(is.na(summ_ref$mu))
-      sub_mu_NA <- any(sapply(summ_sub, check_sub_NA, el_nm = "mu"))
+      summaries_ref <- summaries_ref$oscale
+      summaries_sub <- lapply(summaries_sub, "[[", "oscale")
+      ref_lppd_NA <- all(is.na(summaries_ref$lppd))
+      sub_lppd_NA <- any(sapply(summaries_sub, check_sub_NA, el_nm = "lppd"))
+      ref_mu_NA <- all(is.na(summaries_ref$mu))
+      sub_mu_NA <- any(sapply(summaries_sub, check_sub_NA, el_nm = "mu"))
       if (ref_mu_NA || sub_mu_NA) {
         message(
           "`latent_ilink` returned only `NA`s, so all performance statistics ",
@@ -149,11 +157,11 @@ weighted_summary_means <- function(y_wobs_test, family, wdraws, mu, dis, cl_ref,
 
   if (resp_oscale && !is.null(varsel$refmodel$family$cats) &&
       any(stats %in% c("acc", "pctcorr"))) {
-    summ_ref$mu <- catmaxprb(summ_ref$mu, lvls = varsel$refmodel$family$cats)
-    summ_sub <- lapply(summ_sub, function(summ_sub_k) {
-      summ_sub_k$mu <- catmaxprb(summ_sub_k$mu,
+    summaries_ref$mu <- catmaxprb(summaries_ref$mu, lvls = varsel$refmodel$family$cats)
+    summaries_sub <- lapply(summaries_sub, function(summaries_sub_k) {
+      summaries_sub_k$mu <- catmaxprb(summaries_sub_k$mu,
                                  lvls = varsel$refmodel$family$cats)
-      return(summ_sub_k)
+      return(summaries_sub_k)
     })
     # Since `mu` is an unordered factor, `y` needs to be unordered, too (or both
     # would need to be ordered; however, unordered is the simpler type):
@@ -173,17 +181,14 @@ weighted_summary_means <- function(y_wobs_test, family, wdraws, mu, dis, cl_ref,
   if (is.null(nfeat_baseline)) {
     ## no baseline model, i.e, compute the statistics on the actual
     ## (non-relative) scale
-    mu.bs <- NULL
-    lppd.bs <- NULL
+    summaries_baseline <- NULL
     delta <- FALSE
   } else {
     if (nfeat_baseline == Inf) {
-      summ.bs <- summ_ref
+      summaries_baseline <- summaries_ref
     } else {
-      summ.bs <- summ_sub[[nfeat_baseline + 1]]
+      summaries_baseline <- summaries_sub[[nfeat_baseline + 1]]
     }
-    mu.bs <- summ.bs$mu
-    lppd.bs <- summ.bs$lppd
     delta <- TRUE
   }
 
@@ -191,9 +196,11 @@ weighted_summary_means <- function(y_wobs_test, family, wdraws, mu, dis, cl_ref,
     stat <- stats[s]
 
     ## reference model statistics
-    summ <- summ_ref
-    res <- get_stat(summ$mu, summ$lppd, varsel$y_wobs_test, stat, mu.bs = mu.bs,
-                    lppd.bs = lppd.bs, wcv = NULL, alpha = alpha, ...)
+    summaries <- summaries_ref
+    res <- get_stat(summaries = summaries_ref,
+                    summaries_baseline = summaries_baseline,
+                    summaries_fast = NULL,
+                    varsel$y_wobs_test, stat, alpha = alpha, ...)
     row <- data.frame(
       data = varsel$type_test, size = Inf, delta = delta, statistic = stat,
       value = res$value, lq = res$lq, uq = res$uq, se = res$se, diff = NA,
@@ -202,198 +209,196 @@ weighted_summary_means <- function(y_wobs_test, family, wdraws, mu, dis, cl_ref,
     stat_tab <- rbind(stat_tab, row)
 
     ## submodel statistics
-    for (k in seq_along(summ_sub)) {
-      summ <- summ_sub[[k]]
-      if (delta == FALSE && sum(!is.na(summ_ref$mu)) > sum(!is.na(summ$mu))) {
-        ## special case (subsampling loo): reference model summaries computed
-        ## for more points than for the submodel, so utilize the reference model
-        ## results to get more accurate statistic fot the submodel on the actual
-        ## scale
-        res_ref <- get_stat(summ_ref$mu, summ_ref$lppd, varsel$y_wobs_test,
-                            stat, mu.bs = NULL, lppd.bs = NULL, wcv = NULL,
-                            alpha = alpha, ...)
-        res_diff <- get_stat(summ$mu, summ$lppd, varsel$y_wobs_test, stat,
-                             mu.bs = summ_ref$mu, lppd.bs = summ_ref$lppd,
-                             wcv = summ$wcv, alpha = alpha, ...)
-        val <- res_ref$value + res_diff$value
-        # TODO (subsampled PSIS-LOO CV): Is `val.se` really computed correctly
-        # or do we need to take into account that `res_ref$se` and `res_diff$se`
-        # might be stochastically dependent?
-        val.se <- sqrt(res_ref$se^2 + res_diff$se^2)
-        if (stat %in% c("rmse", "auc")) {
-          # TODO (subsampled PSIS-LOO CV): Use bootstrap for lower and upper
-          # confidence interval bounds as well as for the standard error.
-          warning("Lower and upper confidence interval bounds of performance ",
-                  "statistic `", stat, "` are based on a normal ",
-                  "approximation, not the bootstrap. The standard error of ",
-                  "performance statistic `", stat, "` is also not based on a ",
-                  "bootstrap.")
-        }
-        lq <- qnorm(alpha / 2, mean = val, sd = val.se)
-        uq <- qnorm(1 - alpha / 2, mean = val, sd = val.se)
-        row <- data.frame(
-          data = varsel$type_test, size = k - 1, delta = delta,
-          statistic = stat, value = val, lq = lq, uq = uq, se = val.se,
-          diff = res_diff$value, diff.se = res_diff$se
-        )
+    for (k in seq_along(summaries_sub)) {
+      diff <- get_stat(summaries = summaries_sub[[k]],
+                       summaries_baseline = summaries_baseline,
+                       summaries_fast = summaries_fast_sub[[k]],
+                       varsel$y_wobs_test, stat, alpha = alpha, ...)
+      if (!delta) {
+        res <- get_stat(summaries = summaries_sub[[k]],
+                        summaries_baseline = NULL,
+                        summaries_fast = summaries_fast_sub[[k]],
+                        varsel$y_wobs_test, stat, alpha = alpha, ...)
       } else {
-        ## normal case
-        res <- get_stat(summ$mu, summ$lppd, varsel$y_wobs_test, stat,
-                        mu.bs = mu.bs, lppd.bs = lppd.bs, wcv = summ$wcv,
-                        alpha = alpha, ...)
-        diff <- get_stat(summ$mu, summ$lppd, varsel$y_wobs_test, stat,
-                         mu.bs = summ_ref$mu, lppd.bs = summ_ref$lppd,
-                         wcv = summ$wcv, alpha = alpha, ...)
-        row <- data.frame(
-          data = varsel$type_test, size = k - 1, delta = delta,
-          statistic = stat, value = res$value, lq = res$lq, uq = res$uq,
-          se = res$se, diff = diff$value, diff.se = diff$se
-        )
+        res <- diff
       }
+      row <- data.frame(
+        data = varsel$type_test, size = k - 1, delta = delta,
+        statistic = stat, value = res$value, lq = res$lq, uq = res$uq,
+        se = res$se, diff = diff$value, diff.se = diff$se
+      )
       stat_tab <- rbind(stat_tab, row)
     }
   }
-
   return(stat_tab)
 }
 
 # Helper function checking whether all entries of a summaries vector are `NA`.
 #
-# @param summ_sub_k Typically `<vsel_object>$summaries$sub[[k]]`.
+# @param summaries_sub_k Typically `<vsel_object>$summaries$sub[[k]]`.
 # @param el_nm A single character string, giving the name of the subelement of
-#   `summ_sub_k` to check for `NA`s.
+#   `summaries_sub_k` to check for `NA`s.
 #
 # @return A single logical value, indicating whether all entries of
-#   `summ_sub_k[[el_nm]]` are `NA`.
-check_sub_NA <- function(summ_sub_k, el_nm) {
-  all(is.na(summ_sub_k[[el_nm]]))
+#   `summaries_sub_k[[el_nm]]` are `NA`.
+check_sub_NA <- function(summaries_sub_k, el_nm) {
+  all(is.na(summaries_sub_k[[el_nm]]))
 }
 
-## Calculates given statistic stat with standard error and confidence bounds.
-## mu.bs and lppd.bs are the pointwise mu and lppd for another model that is
-## used as a baseline for computing the difference (ratio in case of the GMPD)
-## in the given statistic. If these arguments are not given (NULL) then the
-## actual (non-relative) value is computed. NOTE: Element `wcv[i]` (with i = 1,
-## ..., N and N denoting the number of observations) contains the weight of the
-## CV fold that observation i is in. In case of varsel() output, this is `NULL`.
-## Currently, these `wcv` are nonconstant (and not `NULL`) only in case of
-## subsampled PSIS-LOO CV. The actual observation weights (specified by the
+## The actual observation weights (specified by the
 ## user) are contained in `y_wobs_test$wobs`. These are already taken into
 ## account by `<refmodel_object>$family$ll_fun()` (or
 ## `<refmodel_object>$family$latent_ll_oscale()`) and are thus already taken
 ## into account in `lppd`. However, `mu` does not take them into account, so
 ## some further adjustments are necessary below.
-get_stat <- function(mu, lppd, y_wobs_test, stat, mu.bs = NULL, lppd.bs = NULL,
-                     wcv = NULL, alpha = 0.1, ...) {
-  n_notna.bs <- NULL
-  if (stat %in% c("elpd", "mlpd", "gmpd")) {
-    if (!is.null(lppd.bs)) {
-      # Compute the performance statistics using only those observations for
-      # which both `lppd` and `lppd.bs` are not `NA`:
-      lppd[is.na(lppd.bs)] <- NA
-      lppd.bs[is.na(lppd)] <- NA
-      n_notna.bs <- sum(!is.na(lppd.bs))
-    }
-    n_notna <- sum(!is.na(lppd))
-    n <- length(lppd)
-  } else {
-    hasNA_y <- is.na(y_wobs_test$y_prop %||% y_wobs_test$y)
-    if (!is.null(mu.bs)) {
-      # Compute the performance statistics using only those observations for
-      # which both `mu` and `mu.bs` are not `NA`:
-      mu[is.na(mu.bs)] <- NA
-      mu.bs[is.na(mu)] <- NA
-      n_notna.bs <- sum(!is.na(mu.bs) & !hasNA_y)
-    }
-    n_notna <- sum(!is.na(mu) & !hasNA_y)
-    n <- length(mu)
-  }
-  if (!is.null(n_notna.bs) && getOption("projpred.additional_checks", FALSE)) {
-    stopifnot(n_notna == n_notna.bs)
-  }
-  if (n_notna == 0) {
+get_stat <- function(summaries, summaries_baseline = NULL,
+                     summaries_fast = NULL,
+                     y_wobs_test, stat, alpha = 0.1, ...) {
+  mu <- summaries$mu
+  lppd <- summaries$lppd
+  loo_inds <- which(!is.na(lppd))
+  n <- length(lppd)
+  n_loo <- length(loo_inds)
+  if (n_loo == 0) {
     return(list(value = NA, se = NA, lq = NA, uq = NA))
   }
-
-  if (is.null(wcv)) {
-    ## set default CV fold weights if not given
-    wcv <- rep(1, n)
-  }
-  ## ensure the CV fold weights sum to n_notna
-  wcv <- n_notna * wcv / sum(wcv)
-
   alpha_half <- alpha / 2
   one_minus_alpha_half <- 1 - alpha_half
 
   if (stat %in% c("elpd", "mlpd", "gmpd")) {
-    if (!is.null(lppd.bs)) {
-      value <- sum((lppd - lppd.bs) * wcv, na.rm = TRUE)
-      value.se <- weighted.sd(lppd - lppd.bs, wcv, na.rm = TRUE) *
-        sqrt(n_notna)
+    if (is.null(summaries_baseline)) {
+      lppd_baseline = 0
     } else {
-      value <- sum(lppd * wcv, na.rm = TRUE)
-      value.se <- weighted.sd(lppd, wcv, na.rm = TRUE) *
-        sqrt(n_notna)
+      lppd_baseline = summaries_baseline$lppd
+    }
+    if (!is.null(summaries_fast) && n_loo<n) {
+      # subsampling difference estimator (Magnusson et al., 2020)
+      srs_diffe <- .srs_diff_est_w(y_approx = summaries_fast$lppd-lppd_baseline,
+                                   y = (lppd-lppd_baseline)[loo_inds],
+                                   y_idx = loo_inds)
+      value <- srs_diffe$y_hat
+      # combine estimates of var(y_hat) and var(y)
+      value_se <- sqrt(srs_diffe$v_y_hat + srs_diffe$hat_v_y)
+    } else {
+      # full LOO estimator
+      value <- sum((lppd - lppd_baseline), na.rm = TRUE)
+      value_se <-sd(lppd - lppd_baseline, na.rm = TRUE) * sqrt(n)
     }
     if (stat %in% c("mlpd", "gmpd")) {
-      value <- value / n_notna
-      value.se <- value.se / n_notna
+      value <- value / n
+      value_se <- value_se / n
       if (stat == "gmpd") {
         value_gmpd <- exp(value)
-        # Delta method:
-        value_gmpd.se <- value.se * value_gmpd
+        # delta method
+        value_gmpd_se <- value_se * value_gmpd
       }
     }
-  } else if (stat %in% c("mse", "rmse")) {
+  } else if (stat %in% c("mse", "rmse", "R2")) {
     y <- y_wobs_test$y_prop %||% y_wobs_test$y
-    if (!all(y_wobs_test$wobs == 1)) {
-      wcv <- wcv * y_wobs_test$wobs
-      wcv <- n_notna * wcv / sum(wcv)
+    wobs <- y_wobs_test$wobs
+    wobs <- n * wobs / sum(wobs)
+    if (is.null(summaries_baseline)) {
+      mu_baseline <- 0
+    } else {
+      mu_baseline <- summaries_baseline$mu
     }
-    if (stat == "mse") {
-      if (!is.null(mu.bs)) {
-        value <- mean(wcv * ((mu - y)^2 - (mu.bs - y)^2), na.rm = TRUE)
-        value.se <- weighted.sd((mu - y)^2 - (mu.bs - y)^2, wcv,
-                                na.rm = TRUE) /
-          sqrt(n_notna)
+    # Use normal approximation for mse and delta method for rmse and R2
+    if (is.null(summaries_fast) || n_loo==n) {
+      # full LOO estimator
+      value <- mean(wobs * (mu - y)^2)
+      value_se <- .weighted_sd((mu - y)^2, wobs) / sqrt(n)
+    } else {
+      # subsampling difference estimator (Magnusson et al., 2020)
+      srs_diffe <- .srs_diff_est_w(y_approx = (summaries_fast$mu - y)^2,
+                                   y = ((mu-y)^2)[loo_inds],
+                                   y_idx = loo_inds,
+                                   w = wobs)
+      value <- srs_diffe$y_hat / n
+      # combine estimates of var(y_hat) and var(y)
+      value_se <- sqrt(srs_diffe$v_y_hat + srs_diffe$hat_v_y) / n
+    }
+    # store for later calculations
+    mse_e <- value
+    var_mse_e <- value_se^2
+    if (!is.null(summaries_baseline)) {
+      # delta=TRUE, variance of difference of two normally distributed
+      mse_b <- mean(wobs * (mu_baseline - y)^2)
+      var_mse_b <- .weighted_sd((mu_baseline - y)^2, wobs)^2 / n
+      if (is.null(summaries_fast) || n_loo==n) {
+        cov_mse_e_b <- mean(wobs * ((mu - y)^2-mse_e) *
+                              ((mu_baseline-y)^2-mse_b)) / n
       } else {
-        value <- mean(wcv * (mu - y)^2, na.rm = TRUE)
-        value.se <- weighted.sd((mu - y)^2, wcv, na.rm = TRUE) /
-          sqrt(n_notna)
+        mse_e_fast <- mean(wobs * (summaries_fast$mu-y)^2)
+        srs_diffe <-
+          .srs_diff_est_w(y_approx =
+                            ((summaries_fast$mu - y)^2 -mse_e_fast) *
+                            ((mu_baseline-y)^2 - mse_b),
+                          y = (((mu - y)^2 -mse_e) *
+                                 ((mu_baseline-y)^2 -mse_b))[loo_inds],
+                          y_idx = loo_inds,
+                          w = wobs)
+        cov_mse_e_b <- srs_diffe$y_hat / n^2
       }
-    } else if (stat == "rmse") {
-      if (!is.null(mu.bs)) {
-        value <- sqrt(mean(wcv * (mu - y)^2, na.rm = TRUE)) -
-          sqrt(mean(wcv * (mu.bs - y)^2, na.rm = TRUE))
-        diffvalue.bootstrap <- bootstrap(
-          cbind((mu - y)^2, (mu.bs - y)^2),
-          function(resid2) {
-            sqrt(mean(wcv * resid2[, 1], na.rm = TRUE)) -
-              sqrt(mean(wcv * resid2[, 2], na.rm = TRUE))
-          },
-          ...
-        )
-        value.se <- sd(diffvalue.bootstrap)
-        lq_uq <- quantile(diffvalue.bootstrap,
-                          probs = c(alpha_half, one_minus_alpha_half),
-                          names = FALSE, na.rm = TRUE)
+      value_se <- sqrt(value_se^2 - 2*cov_mse_e_b + var_mse_b)
+    }
+    if (stat == "rmse") {
+      # simple transformation of mse
+      value <- sqrt(mse_e)
+      # the first-order Taylor approximation of the variance
+      value_se <- sqrt(value_se^2 / mse_e / 4)
+    } else if (stat == "R2") {
+      # simple transformation of mse
+      mse_y <- mean(wobs * (mean(y)-y)^2)
+      value <- 1 - mse_e / mse_y
+      # the first-order Taylor approximation of the variance
+      var_mse_y <- .weighted_sd((mean(y)-y)^2, wobs)^2 / n
+      if (is.null(summaries_fast) || n_loo==n) {
+        if (is.null(summaries_baseline)) {
+          cov_mse_e_y <- mean(wobs * ((mu - y)^2 - mse_e) *
+                                ((mean(y)-y)^2-mse_y)) / n
+        } else {
+          cov_mse_e_y <- mean(wobs * ((mu - y)^2 - mse_e -
+                                       ((mu_baseline - y)^2 - mse_b)) *
+                                ((mean(y)-y)^2-mse_y)) / n
+        }
       } else {
-        value <- sqrt(mean(wcv * (mu - y)^2, na.rm = TRUE))
-        value.bootstrap <- bootstrap(
-          (mu - y)^2,
-          function(resid2) {
-            sqrt(mean(wcv * resid2, na.rm = TRUE))
-          },
-          ...
-        )
-        value.se <- sd(value.bootstrap)
-        lq_uq <- quantile(value.bootstrap,
-                          probs = c(alpha_half, one_minus_alpha_half),
-                          names = FALSE, na.rm = TRUE)
+        mse_e_fast <- mean(wobs * (summaries_fast$mu-y)^2)
+        if (is.null(summaries_baseline)) {
+          srs_diffe <-
+            .srs_diff_est_w(y_approx =
+                              ((summaries_fast$mu - y)^2 - mse_e_fast) *
+                              ((mean(y)-y)^2 - mse_y),
+                            y = (((mu - y)^2 - mse_e) *
+                                   ((mean(y)-y)^2 -mse_y))[loo_inds],
+                            y_idx = loo_inds,
+                            w = wobs)
+        } else {
+          srs_diffe <-
+            .srs_diff_est_w(y_approx =
+                              ((summaries_fast$mu - y)^2 - mse_e_fast-
+                                 ((mu_baseline - y)^2 - mse_b)) *
+                              ((mean(y)-y)^2 - mse_y),
+                            y = (((mu - y)^2 - mse_e -
+                                    ((mu_baseline - y)^2 - mse_b)) *
+                                   ((mean(y)-y)^2 -mse_y))[loo_inds],
+                            y_idx = loo_inds,
+                            w = wobs)
+        }
+        cov_mse_e_y <- srs_diffe$y_hat / n^2
       }
+      # part of delta se comes automatically via mse
+      var_mse_e <- value_se^2
+      if (!is.null(summaries_baseline)) {
+        # delta=TRUE
+        mse_e <- mse_e - mse_b
+      }
+      value_se <- sqrt((var_mse_e -
+                          2 * mse_e / mse_y * cov_mse_e_y +
+                          (mse_e / mse_y)^2 * var_mse_y) / mse_y^2)
     }
   } else if (stat %in% c("acc", "pctcorr", "auc")) {
     y <- y_wobs_test$y
+    wobs <- rep(1, n)
     if (!is.null(y_wobs_test$y_prop)) {
       # CAUTION: The following checks also ensure that `y` does not have `NA`s
       # (see the other "CAUTION" comments below for changes that are needed if
@@ -406,69 +411,89 @@ get_stat <- function(mu, lppd, y_wobs_test, stat, mu.bs = NULL, lppd.bs = NULL,
           rep(1L, y[i_short]))
       }))
       mu <- rep(mu, y_wobs_test$wobs)
-      if (!is.null(mu.bs)) {
-        mu.bs <- rep(mu.bs, y_wobs_test$wobs)
-        # CAUTION: If `y` is allowed to have `NA`s here, then `n_notna.bs` needs
-        # to be adapted:
-        n_notna.bs <- sum(!is.na(mu.bs))
+      if (!is.null(summaries_baseline)) {
+        mu_baseline <- rep(summaries_baseline$mu, y_wobs_test$wobs)
+      } else {
+        mu_baseline <- NULL
       }
-      # CAUTION: If `y` is allowed to have `NA`s here, then `n_notna` needs to
-      # be adapted:
-      n_notna <- sum(!is.na(mu))
-      if (!is.null(n_notna.bs) &&
-          getOption("projpred.additional_checks", FALSE)) {
-        stopifnot(n_notna == n_notna.bs)
-      }
-      wcv <- rep(wcv, y_wobs_test$wobs)
-      wcv <- n_notna * wcv / sum(wcv)
+      # CAUTION: If `y` is allowed to have `NA`s here, then `n` needs to be
+      # adapted:
+      n <- sum(!is.na(mu))
+      wobs <- rep(wobs, y_wobs_test$wobs)
+      wobs <- n * wobs / sum(wobs)
     } else {
       stopifnot(all(y_wobs_test$wobs == 1))
+      if (!is.null(summaries_baseline)) {
+        mu_baseline <- summaries_baseline$mu
+      } else {
+        mu_baseline <- NULL
+      }
     }
     if (stat %in% c("acc", "pctcorr")) {
       # Find out whether each observation was classified correctly or not:
       if (!is.factor(mu)) {
         mu <- round(mu)
       }
-      crrct <- mu == y
+      correct <- mu == y
 
-      if (!is.null(mu.bs)) {
-        if (!is.factor(mu.bs)) {
-          mu.bs <- round(mu.bs)
+      if (!is.null(mu_baseline)) {
+        if (!is.factor(mu_baseline)) {
+          mu_baseline <- round(mu_baseline)
         }
-        crrct.bs <- mu.bs == y
-
-        value <- mean(wcv * (crrct - crrct.bs), na.rm = TRUE)
-        value.se <- weighted.sd(crrct - crrct.bs, wcv, na.rm = TRUE) /
-          sqrt(n_notna)
+        correct_baseline <- mu_baseline == y
       } else {
-        value <- mean(wcv * crrct, na.rm = TRUE)
-        value.se <- weighted.sd(crrct, wcv, na.rm = TRUE) / sqrt(n_notna)
+        correct_baseline <- 0
+      }
+
+      if (!is.null(summaries_fast) && n_loo<n) {
+        # subsampling difference estimator (Magnusson et al., 2020)
+        mu_fast <- summaries_fast$mu
+        if (!is.factor(mu_fast)) {
+          mu_fast <- round(mu_fast)
+        }
+        correct_fast <- mu_fast == y
+        srs_diffe <- .srs_diff_est_w(y_approx = correct_fast - correct_baseline,
+                                     y = (correct-correct_baseline)[loo_inds],
+                                     y_idx = loo_inds,
+                                     w = wobs)
+        value <- srs_diffe$y_hat / n + mean(wobs * correct_baseline)
+        # combine estimates of var(y_hat) and var(y)
+        value_se <- sqrt(srs_diffe$v_y_hat + srs_diffe$hat_v_y) / n
+      } else {
+        # full LOO estimator
+        value <- mean(wobs * correct)
+        value_se <- .weighted_sd(correct - correct_baseline, wobs) / sqrt(n)
       }
     } else if (stat == "auc") {
-      if (!is.null(mu.bs)) {
-        auc.data <- cbind(y, mu, wcv)
-        auc.data.bs <- cbind(y, mu.bs, wcv)
-        value <- auc(auc.data) - auc(auc.data.bs)
-        idxs_cols <- seq_len(ncol(auc.data))
-        idxs_cols_bs <- setdiff(seq_len(ncol(auc.data) + ncol(auc.data.bs)),
+      if (!is.null(summaries_fast) && n_loo<n) {
+        # subsampling LOO with AUC not implemented. Using fast LOO result.
+        mu <- summaries_fast$mu
+      }
+      if (!is.null(mu_baseline)) {
+        auc_data <- cbind(y, mu, wobs)
+        auc_data_baseline <- cbind(y, mu_baseline, wobs)
+        value <- .auc(auc_data)
+        idxs_cols <- seq_len(ncol(auc_data))
+        idxs_cols_bs <- setdiff(seq_len(ncol(auc_data) + ncol(auc_data_baseline)),
                                 idxs_cols)
         diffvalue.bootstrap <- bootstrap(
-          cbind(auc.data, auc.data.bs),
+          cbind(auc_data, auc_data_baseline),
           function(x) {
-            auc(x[, idxs_cols, drop = FALSE]) -
-              auc(x[, idxs_cols_bs, drop = FALSE])
+            .auc(x[, idxs_cols, drop = FALSE]) -
+              .auc(x[, idxs_cols_bs, drop = FALSE])
           },
           ...
         )
-        value.se <- sd(diffvalue.bootstrap, na.rm = TRUE)
+        value_se <- sd(diffvalue.bootstrap, na.rm = TRUE)
         lq_uq <- quantile(diffvalue.bootstrap,
                           probs = c(alpha_half, one_minus_alpha_half),
-                          names = FALSE, na.rm = TRUE)
+                          names = FALSE, na.rm = TRUE) +
+          .auc(auc_data_baseline)
       } else {
-        auc.data <- cbind(y, mu, wcv)
-        value <- auc(auc.data)
-        value.bootstrap <- bootstrap(auc.data, auc, ...)
-        value.se <- sd(value.bootstrap, na.rm = TRUE)
+        auc_data <- cbind(y, mu, wobs)
+        value <- .auc(auc_data)
+        value.bootstrap <- bootstrap(auc_data, .auc, ...)
+        value_se <- sd(value.bootstrap, na.rm = TRUE)
         lq_uq <- quantile(value.bootstrap,
                           probs = c(alpha_half, one_minus_alpha_half),
                           names = FALSE, na.rm = TRUE)
@@ -476,22 +501,33 @@ get_stat <- function(mu, lppd, y_wobs_test, stat, mu.bs = NULL, lppd.bs = NULL,
     }
   }
 
-  if (!stat %in% c("rmse", "auc")) {
-    lq <- qnorm(alpha_half, mean = value, sd = value.se)
-    uq <- qnorm(one_minus_alpha_half, mean = value, sd = value.se)
-  } else {
+  if (stat %in% c("mse","rmse")) {
+    # Compute mean and variance in log scale by matching the variance of a
+    # log-normal approximation
+    # https://en.wikipedia.org/wiki/Log-normal_distribution#Arithmetic_moments
+    mul <- log(value^2 / sqrt(value_se^2 + value^2))
+    varl <- log(1 + value_se^2 / value^2)
+    lq <- qnorm(alpha_half, mean = mul, sd = sqrt(varl))
+    uq <- qnorm(one_minus_alpha_half, mean = mul, sd = sqrt(varl))
+    # Go back to linear scale
+    lq <- exp(lq)
+    uq <- exp(uq)
+  } else if (stat %in% c("auc")) {
     lq <- lq_uq[1]
     uq <- lq_uq[2]
+  } else {
+    lq <- qnorm(alpha_half, mean = value, sd = value_se)
+    uq <- qnorm(one_minus_alpha_half, mean = value, sd = value_se)
   }
 
   if (stat == "gmpd") {
     lq <- exp(lq)
     uq <- exp(uq)
     value <- value_gmpd
-    value.se <- value_gmpd.se
+    value_se <- value_gmpd_se
   }
 
-  return(list(value = value, se = value.se, lq = lq, uq = uq))
+  return(list(value = value, se = value_se, lq = lq, uq = uq))
 }
 
 is_util <- function(stat) {
@@ -520,4 +556,39 @@ get_nfeat_baseline <- function(object, baseline, stat, ...) {
     nfeat_baseline <- Inf
   }
   return(nfeat_baseline)
+}
+
+## Difference estimation using SRS-WOR sampling (Magnusson et al., 2020)
+## copied from loo:::srs_diff_est and added weights
+.srs_diff_est_w <- function(y_approx, y, y_idx, w=1) {
+
+  N <- length(y_approx)
+  m <- length(y)
+  y_approx_m <- y_approx[y_idx]
+  w_m <- 1
+  if (length(w)>1) {
+    w_m <- w[y_idx]
+    w_m <- length(w_m)*w_m/sum(w_m)
+    w <- length(w)*w/sum(w)
+  }
+
+  e_i <- y - y_approx_m
+  t_pi_tilde <- sum(w*y_approx)
+  t_pi2_tilde <- sum(w*y_approx^2)
+  t_e <- N * mean(w_m*e_i)
+  t_hat_epsilon <- N * mean(w_m*(y^2 - y_approx_m^2))
+
+  est_list <- list(m = length(y), N = N)
+  # eq (7)
+  est_list$y_hat <- t_pi_tilde + t_e
+  # eq (8)
+  var_e_i <- m/(m-1)*(mean(w_m*e_i^2)-mean(w_m*e_i)^2)
+  est_list$v_y_hat <- N^2 * (1 - m / N) * var_e_i / m
+  # eq (9) first row second `+` should be `-`
+  # Supplementary material eq (6) has this correct
+  # Here the variance is for sum, while in the paper the variance is for mean
+  # which explains the proportional difference of 1/N
+  est_list$hat_v_y <- (t_pi2_tilde + t_hat_epsilon) - # a (has been checked)
+    (1/N) * (t_e^2 - est_list$v_y_hat + 2 * t_pi_tilde * est_list$y_hat - t_pi_tilde^2) # b
+  est_list
 }
