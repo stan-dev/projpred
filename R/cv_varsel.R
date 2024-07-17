@@ -191,11 +191,13 @@ cv_varsel.vsel <- function(
   n_arg_nms_internal_used <- length(arg_nms_internal_used)
   dots <- list(...)
   for (arg in arg_nms_internal_used) {
-    if (!identical(object[[arg]], dots[[arg]])) {
-      message("Argument \"", arg, "\" ignored. Using the argument value stored in the varsel object (\"", object[[arg]], "\").")
+    if (!identical(object[["args_search"]][[arg]], dots[[arg]])) {
+      message("Argument \"", arg, "\" ignored. Using the argument value ",
+              "stored in the `vsel` object (\"", object[["args_search"]][[arg]],
+              "\").")
     }
     ## remove duplicate arguments
-    dots[[arg]]<-NULL
+    dots[[arg]] <- NULL
   }
 
   refmodel <- get_refmodel(object)
