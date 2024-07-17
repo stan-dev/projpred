@@ -192,9 +192,8 @@ cv_varsel.vsel <- function(
   dots <- list(...)
   for (arg in arg_nms_internal_used) {
     if (!identical(object[["args_search"]][[arg]], dots[[arg]])) {
-      message("Argument `", arg, "` ignored. Using the argument value ",
-              "stored in the `vsel` object (`", object[["args_search"]][[arg]],
-              "``).")
+      message("Argument `", arg, "` ignored. Using the argument value stored ",
+              "in the `vsel` object.")
     }
     ## remove duplicate arguments
     dots[[arg]] <- NULL
