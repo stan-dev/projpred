@@ -183,7 +183,7 @@ cv_varsel.vsel <- function(
     cvfits = object$cvfits,
     validate_search = object$validate_search %||% TRUE,
     ...
-    ) {
+) {
   ## the following arguments should not change
   arg_nms_internal <- c("method", "ndraws", "nclusters", "nterms_max",
                         "search_control", "penalty", "search_terms")
@@ -192,9 +192,9 @@ cv_varsel.vsel <- function(
   dots <- list(...)
   for (arg in arg_nms_internal_used) {
     if (!identical(object[["args_search"]][[arg]], dots[[arg]])) {
-      message("Argument \"", arg, "\" ignored. Using the argument value ",
-              "stored in the `vsel` object (\"", object[["args_search"]][[arg]],
-              "\").")
+      message("Argument `", arg, "` ignored. Using the argument value ",
+              "stored in the `vsel` object (`", object[["args_search"]][[arg]],
+              "``).")
     }
     ## remove duplicate arguments
     dots[[arg]] <- NULL
@@ -828,11 +828,11 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
       if (no_psis_eval) {
         if (getOption("projpred.warn_psis", TRUE)) {
           verb_out(
-                  "Using standard importance sampling (SIS) due to a small number of",
-                  ifelse(refit_prj,
-                          ifelse(!is.null(ndraws_pred), " draws", " clusters"),
-                          ifelse(!is.null(ndraws), " draws", " clusters")
-                         ),
+            "Using standard importance sampling (SIS) due to a small number of",
+            ifelse(refit_prj,
+                   ifelse(!is.null(ndraws_pred), " draws", " clusters"),
+                   ifelse(!is.null(ndraws), " draws", " clusters")
+            ),
             verbose=verbose)
         }
         # Use loo::sis().
@@ -954,11 +954,11 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
 
     if (verbose) {
       verb_txt_start <-
-      if (!search_out_rks_was_null) {
-        verb_txt_mid <- ""
-      } else {
-        verb_txt_mid <- "the search and "
-      }
+        if (!search_out_rks_was_null) {
+          verb_txt_mid <- ""
+        } else {
+          verb_txt_mid <- "the search and "
+        }
       verb_out("-----\nRunning ",
                ifelse(!search_out_rks_was_null, "",
                       paste0(method, " search with ",
@@ -1039,7 +1039,7 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
         stop("Please install the 'foreach' package.")
       }
       if (!requireNamespace("doRNG", quietly = TRUE)) {
-              stop("Please install the 'doRNG' package.")
+        stop("Please install the 'doRNG' package.")
       }
       if (verbose && use_progressr()) {
         progressor_obj <- progressr::progressor(length(inds))
