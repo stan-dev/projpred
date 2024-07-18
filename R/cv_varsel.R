@@ -334,7 +334,7 @@ cv_varsel.refmodel <- function(
   )
   cv_method <- args$cv_method
   nloo <- args$nloo
-  n <- object$nobs
+  n <- refmodel$nobs
   K <- args$K
   cvfits <- args$cvfits
 
