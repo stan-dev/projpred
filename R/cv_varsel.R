@@ -350,9 +350,9 @@ cv_varsel.refmodel <- function(
       verb_txt_search <- paste0(verb_txt_search, "using the full dataset ")
     }
     verb_txt_search <- paste0(verb_txt_search, "with ",
-                              ifelse(!is.null(ndraws),
-                                     paste0(ndraws, " draws"),
-                                     paste0(nclusters, " clusters")))
+                              ifelse(!is.null(nclusters),
+                                     paste0(nclusters, " clusters"),
+                                     paste0(ndraws, " draws")))
     verb_txt_search <- paste0(verb_txt_search, "...")
     verb_out(verb_txt_search, verbose = verbose)
     search_path_fulldata <- .select(
