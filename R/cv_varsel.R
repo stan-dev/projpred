@@ -349,10 +349,15 @@ cv_varsel.refmodel <- function(
       # no fold-wise searches, so pointing out "full-data" could be confusing):
       verb_txt_search <- paste0(verb_txt_search, "using the full dataset ")
     }
+    # Note concerning the following verbose text: If `nclusters == S`,
+    # get_refdist() will use "thinning", not "clustering" (in that case, they
+    # give the same set of draws, namely the original one; hence the quotation
+    # marks), but here for this verbose message, we do not want to make things
+    # too complicated:
     verb_txt_search <- paste0(verb_txt_search, "with ",
                               ifelse(!is.null(nclusters),
                                      paste0(nclusters, " clusters"),
-                                     paste0(ndraws, " draws")))
+                                     paste0(ndraws, " draws (from thinning)")))
     verb_txt_search <- paste0(verb_txt_search, "...")
     verb_out(verb_txt_search, verbose = verbose)
     search_path_fulldata <- .select(
