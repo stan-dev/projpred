@@ -20,13 +20,14 @@
 #'   is performed, which avoids refitting the reference model `nloo` times (in
 #'   contrast to a standard LOO-CV). In the `"kfold"` case, a \eqn{K}-fold-CV is
 #'   performed. See also section "Note" below.
-#' @param nloo Only relevant if `cv_method = "LOO"` and `validate_search = TRUE`.
-#'   If `nloo>0` is smaller than the number of all observations, full LOO-CV is
-#'   approximated by combining the fast LOO result for the selected models and
-#'   `nloo` leave-one-out searches using the difference estimator with simple
-#'   random sampling (SRS) without replacement (WOR) (Magnusson et al., 2020).
-#'   Smaller values lead to faster computation, but higher uncertainty in the
-#'   evaluation part. If `NULL`, all observations are used (as by default).
+#' @param nloo Only relevant if `cv_method = "LOO"` and `validate_search =
+#'   TRUE`. If `nloo > 0` is smaller than the number of all observations, full
+#'   LOO-CV is approximated by combining the fast LOO result for the selected
+#'   models and `nloo` leave-one-out searches using the difference estimator
+#'   with simple random sampling (SRS) without replacement (WOR) (Magnusson et
+#'   al., 2020). Smaller values lead to faster computation, but higher
+#'   uncertainty in the evaluation part. If `NULL`, all observations are used
+#'   (as by default).
 #' @param K Only relevant if `cv_method = "kfold"` and if `cvfits` is `NULL`
 #'   (which is the case for reference model objects created by
 #'   [get_refmodel.stanreg()] or [brms::get_refmodel.brmsfit()]). Number of
@@ -40,7 +41,7 @@
 #'   the computation is faster, but the predictive performance estimates
 #'   of the selected submodels are optimistically biased. However, these fast
 #'   biased estimated can be useful to obtain initial information on the
-#'   usefulnes of projection predictive variable selection.
+#'   usefulness of projection predictive variable selection.
 #' @param seed Pseudorandom number generation (PRNG) seed by which the same
 #'   results can be obtained again if needed. Passed to argument `seed` of
 #'   [set.seed()], but can also be `NA` to not call [set.seed()] at all. If not
