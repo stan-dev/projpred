@@ -668,13 +668,11 @@ proj_predict_aux <- function(proj, newdata, offsetnew, weightsnew,
 #' # Horizontal lines
 #'
 #' As long as the reference model's performance is computable, it is always
-#' shown in the plot as a dashed red horizontal line. If `baseline = "best"`,
-#' the baseline model's performance is shown as a dotted black horizontal line.
+#' shown in the plot as a dashed red horizontal line. 
 #' If `!is.na(thres_elpd)` and `any(stats %in% c("elpd", "mlpd", "gmpd"))`, the
 #' value supplied to `thres_elpd` (which is automatically adapted internally in
 #' case of the MLPD or the GMPD or `deltas = FALSE`) is shown as a dot-dashed
-#' gray horizontal line for the reference model and, if `baseline = "best"`, as
-#' a long-dashed green horizontal line for the baseline model.
+#' gray horizontal line for the reference model.
 #'
 #' @examplesIf requireNamespace("rstanarm", quietly = TRUE)
 #' # Data:
@@ -702,7 +700,7 @@ plot.vsel <- function(
     stats = "elpd",
     deltas = FALSE,
     alpha = 2 * pnorm(-1),
-    baseline = if (!inherits(x$refmodel, "datafit")) "ref" else "best",
+    baseline = "ref",
     thres_elpd = NA,
     resp_oscale = TRUE,
     point_size = 3,
@@ -1231,10 +1229,6 @@ plot.vsel <- function(
 #'   normal approximation, `alpha = 2 * pnorm(-1)` corresponds to a confidence
 #'   interval stretching by one standard error on either side of the point
 #'   estimate.
-#' @param baseline For [summary.vsel()]: Only relevant if `deltas` is `TRUE`.
-#'   For [plot.vsel()]: Always relevant. Either `"ref"` or `"best"`, indicating
-#'   whether the baseline is the reference model or the best submodel found (in
-#'   terms of `stats[1]`), respectively.
 #' @param resp_oscale Only relevant for the latent projection. A single logical
 #'   value indicating whether to calculate the performance statistics on the
 #'   original response scale (`TRUE`) or on latent scale (`FALSE`).
@@ -1301,7 +1295,7 @@ summary.vsel <- function(
     type = c("mean", "se", "diff", "diff.se"),
     deltas = FALSE,
     alpha = 2 * pnorm(-1),
-    baseline = if (!inherits(object$refmodel, "datafit")) "ref" else "best",
+    baseline = "ref",
     resp_oscale = TRUE,
     cumulate = FALSE,
     ...
@@ -1599,8 +1593,7 @@ print.vsel <- function(x, digits = getOption("projpred.digits", 2), ...) {
 #'   falls above (or is equal to) \deqn{\texttt{pct} \cdot (u_0 -
 #'   u_{\mathrm{base}})}{pct * (u_0 - u_base)} where \eqn{u_0} denotes the null
 #'   model's estimated utility and \eqn{u_{\mathrm{base}}}{u_base} the baseline
-#'   model's estimated utility. The baseline model is either the reference model
-#'   or the best submodel found (see argument `baseline` of [summary.vsel()]).
+#'   model's estimated utility.
 #'
 #'   In doing so, loss statistics like the root mean squared error (RMSE) and
 #'   the mean squared error (MSE) are converted to utilities by multiplying them
