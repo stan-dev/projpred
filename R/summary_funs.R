@@ -88,7 +88,8 @@ weighted_summary_means <- function(y_wobs_test, family, wdraws, mu, dis, cl_ref,
 # statistics relative to the baseline model of that size (`nfeat_baseline = Inf`
 # means that the baseline model is the reference model).
 .tabulate_stats <- function(varsel, stats, alpha = 0.05,
-                            nfeat_baseline = NULL, resp_oscale = TRUE, ...) {
+                            nfeat_baseline = NULL, resp_oscale = TRUE,
+                            deltas, ...) {
   stat_tab <- data.frame()
   summaries_ref <- varsel$summaries$ref
   summaries_sub <- varsel$summaries$sub
@@ -200,7 +201,8 @@ weighted_summary_means <- function(y_wobs_test, family, wdraws, mu, dis, cl_ref,
     res <- get_stat(summaries = summaries_ref,
                     summaries_baseline = summaries_baseline,
                     summaries_fast = NULL,
-                    varsel$y_wobs_test, stat, alpha = alpha, ...)
+                    varsel$y_wobs_test, stat, alpha = alpha,
+                    deltas, ...)
     row <- data.frame(
       data = varsel$type_test, size = Inf, delta = delta, statistic = stat,
       value = res$value, lq = res$lq, uq = res$uq, se = res$se, diff = NA,
@@ -213,12 +215,14 @@ weighted_summary_means <- function(y_wobs_test, family, wdraws, mu, dis, cl_ref,
       diff <- get_stat(summaries = summaries_sub[[k]],
                        summaries_baseline = summaries_baseline,
                        summaries_fast = summaries_fast_sub[[k]],
-                       varsel$y_wobs_test, stat, alpha = alpha, ...)
+                       varsel$y_wobs_test, stat, alpha = alpha,
+                       deltas, ...)
       if (!delta) {
         res <- get_stat(summaries = summaries_sub[[k]],
                         summaries_baseline = NULL,
                         summaries_fast = summaries_fast_sub[[k]],
-                        varsel$y_wobs_test, stat, alpha = alpha, ...)
+                        varsel$y_wobs_test, stat, alpha = alpha,
+                        deltas, ...)
       } else {
         res <- diff
       }
@@ -253,7 +257,8 @@ check_sub_NA <- function(summaries_sub_k, el_nm) {
 ## some further adjustments are necessary below.
 get_stat <- function(summaries, summaries_baseline = NULL,
                      summaries_fast = NULL,
-                     y_wobs_test, stat, alpha = 0.1, ...) {
+                     y_wobs_test, stat, alpha = 0.1,
+                     deltas, ...) {
   mu <- summaries$mu
   lppd <- summaries$lppd
   loo_inds <- which(!is.na(lppd))
@@ -341,15 +346,17 @@ get_stat <- function(summaries, summaries_baseline = NULL,
       }
       value_se <- sqrt(value_se^2 - 2*cov_mse_e_b + var_mse_b)
     }
-    if (stat == "rmse") {
+    if (stat == "mse") {
+      value <- mse_e - ifelse(!is.character(deltas) && deltas, mse_b, 0)#X
+    } else if (stat == "rmse") {
       # simple transformation of mse
-      value <- sqrt(mse_e)
+      value <- sqrt(mse_e) - ifelse(!is.character(deltas) && deltas, sqrt(mse_b), 0)#X
       # the first-order Taylor approximation of the variance
       value_se <- sqrt(value_se^2 / mse_e / 4)
     } else if (stat == "R2") {
       # simple transformation of mse
       mse_y <- mean(wobs * (mean(y)-y)^2)
-      value <- 1 - mse_e / mse_y
+      value <- 1 - mse_e / mse_y - ifelse(!is.character(deltas) && deltas, (1 - mse_b / mse_y), 0)#X
       # the first-order Taylor approximation of the variance
       var_mse_y <- .weighted_sd((mean(y)-y)^2, wobs)^2 / n
       if (is.null(summaries_fast) || n_loo==n) {
@@ -456,12 +463,14 @@ get_stat <- function(summaries, summaries_baseline = NULL,
                                      y = (correct-correct_baseline)[loo_inds],
                                      y_idx = loo_inds,
                                      w = wobs)
-        value <- srs_diffe$y_hat / n + mean(wobs * correct_baseline)
+        value <- srs_diffe$y_hat / n + mean(wobs * correct_baseline) -
+          ifelse(!is.character(deltas) && deltas, mean(wobs * correct_baseline), 0)
         # combine estimates of var(y_hat) and var(y)
         value_se <- sqrt(srs_diffe$v_y_hat + srs_diffe$hat_v_y) / n
       } else {
         # full LOO estimator
-        value <- mean(wobs * correct)
+        value <- mean(wobs * correct) -
+          ifelse(!is.character(deltas) && deltas, mean(wobs * correct_baseline), 0)#X
         value_se <- .weighted_sd(correct - correct_baseline, wobs) / sqrt(n)
       }
     } else if (stat == "auc") {
@@ -472,7 +481,8 @@ get_stat <- function(summaries, summaries_baseline = NULL,
       if (!is.null(mu_baseline)) {
         auc_data <- cbind(y, mu, wobs)
         auc_data_baseline <- cbind(y, mu_baseline, wobs)
-        value <- .auc(auc_data)
+        value <- .auc(auc_data) -
+          ifelse(!is.character(deltas) && deltas, .auc(auc_data_baseline), 0)#X
         idxs_cols <- seq_len(ncol(auc_data))
         idxs_cols_bs <- setdiff(seq_len(ncol(auc_data) + ncol(auc_data_baseline)),
                                 idxs_cols)

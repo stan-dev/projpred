@@ -736,13 +736,13 @@ plot.vsel <- function(
   # .tabulate_stats()'s argument `nfeat_baseline`:
   nfeat_baseline <- get_nfeat_baseline(object, baseline, stats[1],
                                        resp_oscale = resp_oscale)
-  if (getOption("projpred.extra_verbose",FALSE) &&
-        deltas &&
-        !all(stats %in% c("elpd","mlpd","gmpd"))) {
-    message(paste0("With deltas=TRUE, statistics ", paste(stats[!(stats %in% c("elpd","mlpd","gmpd"))], collapse=", "),
-                   " report the uncertainty relative to the baseline, but the value in the original scale."))
-  }
-  if (deltas) {
+  ## if (getOption("projpred.extra_verbose",FALSE) &&
+  ##       deltas &&
+  ##       !all(stats %in% c("elpd","mlpd","gmpd"))) {
+  ##   message(paste0("With deltas=TRUE, statistics ", paste(stats[!(stats %in% c("elpd","mlpd","gmpd"))], collapse=", "),
+  ##                  " report the uncertainty relative to the baseline, but the value in the original scale."))
+  ## }
+  if (is.character(deltas) || deltas) {
     nfeat_baseline_for_tab <- nfeat_baseline
   } else {
     nfeat_baseline_for_tab <- NULL
@@ -751,7 +751,7 @@ plot.vsel <- function(
   # Compute the predictive performance statistics:
   stats_table_all <- .tabulate_stats(object, stats, alpha = alpha,
                                      nfeat_baseline = nfeat_baseline_for_tab,
-                                     resp_oscale = resp_oscale, ...)
+                                     resp_oscale = resp_oscale, deltas, ...)
   stats_ref <- subset(stats_table_all, stats_table_all$size == Inf)
   stats_sub <- subset(stats_table_all, stats_table_all$size != Inf)
   stats_bs <- subset(stats_table_all, stats_table_all$size == nfeat_baseline)
@@ -784,7 +784,7 @@ plot.vsel <- function(
 
   # Define some "pretty" text strings for the plot:
   ylab <- "Value"
-  if (deltas) {
+  if (is.character(deltas) || deltas) {
     delta_lab <- "for baseline comparison"
   } else {
     delta_lab <- ""
@@ -958,13 +958,28 @@ plot.vsel <- function(
   }
 
   # Create the plot:
-  if (deltas) {
+  if (is.character(deltas) || deltas) {
     data_gg$statistic[data_gg$statistic=="elpd"] <- "elpd_diff"
     stats_ref$statistic[stats_ref$statistic=="elpd"] <- "elpd_diff"
     data_gg$statistic[data_gg$statistic=="mlpd"] <- "mlpd_diff"
     stats_ref$statistic[stats_ref$statistic=="mlpd"] <- "mlpd_diff"
     data_gg$statistic[data_gg$statistic=="gmpd"] <- "gmpd_ratio"
     stats_ref$statistic[stats_ref$statistic=="gmpd"] <- "gmpd_ratio"
+    if (!(is.character(deltas) && identical(deltas,'mixed'))) {
+      data_gg$statistic[data_gg$statistic=="mse"] <- "mse_diff"
+      stats_ref$statistic[stats_ref$statistic=="mse"] <- "mse_diff"
+      data_gg$statistic[data_gg$statistic=="rmse"] <- "rmse_diff"
+      stats_ref$statistic[stats_ref$statistic=="rmse"] <- "rmse_diff"
+      data_gg$statistic[data_gg$statistic=="rmse"] <- "rmse_diff"
+      stats_ref$statistic[stats_ref$statistic=="R2"] <- "R2_diff"
+      data_gg$statistic[data_gg$statistic=="R2"] <- "R2_diff"
+      stats_ref$statistic[stats_ref$statistic=="acc"] <- "acc_diff"
+      data_gg$statistic[data_gg$statistic=="acc"] <- "acc_diff"
+      stats_ref$statistic[stats_ref$statistic=="pctcorr"] <- "pctcorr_diff"
+      data_gg$statistic[data_gg$statistic=="pctcorr"] <- "pctcorr_diff"
+      stats_ref$statistic[stats_ref$statistic=="auc"] <- "auc_diff"
+      data_gg$statistic[data_gg$statistic=="auc"] <- "auc_diff"
+    }
   }
   pp <- ggplot(data = data_gg,
                mapping = aes(x = .data[["size"]], y = .data[["value"]],
@@ -1207,7 +1222,8 @@ plot.vsel <- function(
 #'   submodel statistic minus the baseline model statistic). For `"elpd"` and
 #'   `"mlpd"` the baseline performance is reported as 0. For `"gmpd"`
 #'   the baseline performance is reported as 1. For other statistics, the
-#'   baseline performance is reported in the original scale. For all
+#'   baseline performance is reported as 0 if `deltas=TRUE` and in the original
+#'   scale if `deltas="mixed"`. If `deltas=TRUE` or `deltas="mixed"`, for all
 #'   statistics the related uncertainty is reported relative to the baseline.
 #' @param alpha A number determining the (nominal) coverage `1 - alpha` of the
 #'   normal-approximation (or bootstrap or exponentiated normal-approximation;
@@ -1326,7 +1342,7 @@ summary.vsel <- function(
   }
   stats_table_all <- .tabulate_stats(object, stats, alpha = alpha,
                                      nfeat_baseline = nfeat_baseline_for_tab,
-                                     resp_oscale = resp_oscale, ...)
+                                     resp_oscale = resp_oscale, deltas, ...)
   # Extract the reference model performance results from `stats_table_all`:
   stats_table_ref <- subset(stats_table_all, stats_table_all$size == Inf)
 
