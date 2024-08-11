@@ -1328,7 +1328,7 @@ summary.vsel <- function(
   }
 
   # The full table of the performance statistics from `stats`:
-  if (deltas) {
+  if (is.character(deltas) || deltas) {
     nfeat_baseline_for_tab <- get_nfeat_baseline(object, baseline, stats[1],
                                                  resp_oscale = resp_oscale)
   } else {
@@ -1405,7 +1405,7 @@ summary.vsel <- function(
 # reference model performance and one table for the submodel performance):
 mk_colnms_smmry <- function(type, stats, deltas) {
   # Pre-process `type`:
-  if (is.null(deltas) || deltas) {
+  if (is.null(deltas) || (is.character(deltas) || deltas)) {
     type <- setdiff(type, c("diff", "diff.se"))
   }
   type_dot <- paste0(".", type)

@@ -88,7 +88,7 @@ weighted_summary_means <- function(y_wobs_test, family, wdraws, mu, dis, cl_ref,
 # statistics relative to the baseline model of that size (`nfeat_baseline = Inf`
 # means that the baseline model is the reference model).
 .tabulate_stats <- function(varsel, stats, alpha = 0.05,
-                            nfeat_baseline = NULL, resp_oscale = TRUE,
+                            nfeat_baseline = Inf, resp_oscale = TRUE,
                             deltas, ...) {
   stat_tab <- data.frame()
   summaries_ref <- varsel$summaries$ref
@@ -179,19 +179,8 @@ weighted_summary_means <- function(y_wobs_test, family, wdraws, mu, dis, cl_ref,
   }
 
   ## fetch the mu and lppd for the baseline model
-  if (is.null(nfeat_baseline)) {
-    ## no baseline model, i.e, compute the statistics on the actual
-    ## (non-relative) scale
-    summaries_baseline <- NULL
-    delta <- FALSE
-  } else {
-    if (nfeat_baseline == Inf) {
-      summaries_baseline <- summaries_ref
-    } else {
-      summaries_baseline <- summaries_sub[[nfeat_baseline + 1]]
-    }
-    delta <- TRUE
-  }
+  summaries_baseline <- summaries_ref
+  delta <- deltas
 
   for (s in seq_along(stats)) {
     stat <- stats[s]
@@ -216,16 +205,12 @@ weighted_summary_means <- function(y_wobs_test, family, wdraws, mu, dis, cl_ref,
                        summaries_baseline = summaries_baseline,
                        summaries_fast = summaries_fast_sub[[k]],
                        varsel$y_wobs_test, stat, alpha = alpha,
-                       deltas, ...)
-      if (!delta) {
-        res <- get_stat(summaries = summaries_sub[[k]],
-                        summaries_baseline = NULL,
-                        summaries_fast = summaries_fast_sub[[k]],
-                        varsel$y_wobs_test, stat, alpha = alpha,
-                        deltas, ...)
-      } else {
-        res <- diff
-      }
+                       TRUE, ...)
+      res <- get_stat(summaries = summaries_sub[[k]],
+                      summaries_baseline = NULL,
+                      summaries_fast = summaries_fast_sub[[k]],
+                      varsel$y_wobs_test, stat, alpha = alpha,
+                      FALSE, ...)
       row <- data.frame(
         data = varsel$type_test, size = k - 1, delta = delta,
         statistic = stat, value = res$value, lq = res$lq, uq = res$uq,
