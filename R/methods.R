@@ -745,15 +745,30 @@ plot.vsel <- function(
   } else {
     nfeat_baseline_for_tab <- NULL
   }
-
   # Compute the predictive performance statistics:
   stats_table_all <- .tabulate_stats(object, stats, alpha = alpha,
                                      nfeat_baseline = nfeat_baseline_for_tab,
-                                     resp_oscale = resp_oscale, deltas, ...)
+                                     resp_oscale = resp_oscale, ...)
   stats_ref <- subset(stats_table_all, stats_table_all$size == Inf)
   stats_sub <- subset(stats_table_all, stats_table_all$size != Inf)
   stats_bs <- subset(stats_table_all, stats_table_all$size == nfeat_baseline)
-
+  if (!is.character(deltas) && deltas) {
+    stats_ref[,'value'] <- 0
+    stats_ref[stats_ref[,'statistic']=="gmpd",'value'] <- 1
+  } else if (is.character(deltas) && identical(deltas,'mixed')) {
+    stats_ref[stats_ref[,'statistic'] %in% c("elpd","mlpd"),'value'] <- 0
+    stats_ref[stats_ref[,'statistic']=="gmpd",'value'] <- 1
+    stats_sub[!(stats_sub[,'statistic'] %in% c("elpd","mlpd","gmpd")),'diff'] <-
+      stats_sub[!(stats_sub[,'statistic'] %in% c("elpd","mlpd","gmpd")),'diff'] +
+      stats_sub[!(stats_sub[,'statistic'] %in% c("elpd","mlpd","gmpd")),'value']
+    stats_sub[!(stats_sub[,'statistic'] %in% c("elpd","mlpd","gmpd")),'diff.lq'] <-
+      stats_sub[!(stats_sub[,'statistic'] %in% c("elpd","mlpd","gmpd")),'diff.lq'] +
+      stats_sub[!(stats_sub[,'statistic'] %in% c("elpd","mlpd","gmpd")),'value']
+    stats_sub[!(stats_sub[,'statistic'] %in% c("elpd","mlpd","gmpd")),'diff.uq'] <-
+      stats_sub[!(stats_sub[,'statistic'] %in% c("elpd","mlpd","gmpd")),'diff.uq'] +
+      stats_sub[!(stats_sub[,'statistic'] %in% c("elpd","mlpd","gmpd")),'value']
+  }
+  
   # Catch unexpected output from .tabulate_stats():
   if (NROW(stats_sub) == 0) {
     stop(ifelse(length(stats) > 1, "Statistics ", "Statistic "),
@@ -979,9 +994,15 @@ plot.vsel <- function(
       data_gg$statistic[data_gg$statistic=="auc"] <- "auc_diff"
     }
   }
-  pp <- ggplot(data = data_gg,
-               mapping = aes(x = .data[["size"]], y = .data[["value"]],
-                             ymin = .data[["lq"]], ymax = .data[["uq"]]))
+  if (is.character(deltas) || deltas) {
+    pp <- ggplot(data = data_gg,
+                 mapping = aes(x = .data[["size"]], y = .data[["diff"]],
+                               ymin = .data[["diff.lq"]], ymax = .data[["diff.uq"]]))
+  } else {
+    pp <- ggplot(data = data_gg,
+                 mapping = aes(x = .data[["size"]], y = .data[["value"]],
+                               ymin = .data[["lq"]], ymax = .data[["uq"]]))
+  }
   if (!all(is.na(stats_ref$se))) {
     # In this case, add the predictive performance of the reference model.
     pp <- pp +
@@ -1328,15 +1349,15 @@ summary.vsel <- function(
   }
 
   # The full table of the performance statistics from `stats`:
-  if (is.character(deltas) || deltas) {
+  ## if (is.character(deltas) || deltas) {
     nfeat_baseline_for_tab <- get_nfeat_baseline(object, baseline, stats[1],
                                                  resp_oscale = resp_oscale)
-  } else {
-    nfeat_baseline_for_tab <- NULL
-  }
+  ## } else {
+  ##   nfeat_baseline_for_tab <- NULL
+  ## }
   stats_table_all <- .tabulate_stats(object, stats, alpha = alpha,
                                      nfeat_baseline = nfeat_baseline_for_tab,
-                                     resp_oscale = resp_oscale, deltas, ...)
+                                     resp_oscale = resp_oscale, ...)
   # Extract the reference model performance results from `stats_table_all`:
   stats_table_ref <- subset(stats_table_all, stats_table_all$size == Inf)
 
@@ -1360,7 +1381,7 @@ summary.vsel <- function(
   # For renaming columns of the two output tables (one for the reference model
   # performance and for the submodel performance):
   colnms_ref <- mk_colnms_smmry(type = type, stats = stats, deltas = NULL)
-  colnms_sub <- mk_colnms_smmry(type = type, stats = stats, deltas = deltas)
+  colnms_sub <- mk_colnms_smmry(type = type, stats = stats, deltas = FALSE)
 
   # Fill the output table for the reference model performance (essentially, we
   # reshape `stats_table_ref`, thereby selecting only the requested `type`s and

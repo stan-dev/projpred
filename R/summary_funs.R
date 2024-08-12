@@ -88,8 +88,7 @@ weighted_summary_means <- function(y_wobs_test, family, wdraws, mu, dis, cl_ref,
 # statistics relative to the baseline model of that size (`nfeat_baseline = Inf`
 # means that the baseline model is the reference model).
 .tabulate_stats <- function(varsel, stats, alpha = 0.05,
-                            nfeat_baseline = Inf, resp_oscale = TRUE,
-                            deltas, ...) {
+                            nfeat_baseline = Inf, resp_oscale = TRUE, ...) {
   stat_tab <- data.frame()
   summaries_ref <- varsel$summaries$ref
   summaries_sub <- varsel$summaries$sub
@@ -180,7 +179,7 @@ weighted_summary_means <- function(y_wobs_test, family, wdraws, mu, dis, cl_ref,
 
   ## fetch the mu and lppd for the baseline model
   summaries_baseline <- summaries_ref
-  delta <- deltas
+  delta <- !is.null(summaries_ref)
 
   for (s in seq_along(stats)) {
     stat <- stats[s]
@@ -188,14 +187,13 @@ weighted_summary_means <- function(y_wobs_test, family, wdraws, mu, dis, cl_ref,
     ## reference model statistics
     summaries <- summaries_ref
     res <- get_stat(summaries = summaries_ref,
-                    summaries_baseline = summaries_baseline,
+                    summaries_baseline = NULL,
                     summaries_fast = NULL,
-                    varsel$y_wobs_test, stat, alpha = alpha,
-                    deltas, ...)
+                    varsel$y_wobs_test, stat, alpha = alpha, ...)
     row <- data.frame(
       data = varsel$type_test, size = Inf, delta = delta, statistic = stat,
-      value = res$value, lq = res$lq, uq = res$uq, se = res$se, diff = NA,
-      diff.se = NA
+      value = res$value, lq = res$lq, uq = res$uq, se = res$se,
+      diff = NA, diff.lq = NA, diff.uq = NA, diff.se = NA
     )
     stat_tab <- rbind(stat_tab, row)
 
@@ -204,17 +202,15 @@ weighted_summary_means <- function(y_wobs_test, family, wdraws, mu, dis, cl_ref,
       diff <- get_stat(summaries = summaries_sub[[k]],
                        summaries_baseline = summaries_baseline,
                        summaries_fast = summaries_fast_sub[[k]],
-                       varsel$y_wobs_test, stat, alpha = alpha,
-                       TRUE, ...)
+                       varsel$y_wobs_test, stat, alpha = alpha, ...)
       res <- get_stat(summaries = summaries_sub[[k]],
                       summaries_baseline = NULL,
                       summaries_fast = summaries_fast_sub[[k]],
-                      varsel$y_wobs_test, stat, alpha = alpha,
-                      FALSE, ...)
+                      varsel$y_wobs_test, stat, alpha = alpha, ...)
       row <- data.frame(
         data = varsel$type_test, size = k - 1, delta = delta,
-        statistic = stat, value = res$value, lq = res$lq, uq = res$uq,
-        se = res$se, diff = diff$value, diff.se = diff$se
+        statistic = stat, value = res$value, lq = res$lq, uq = res$uq, se = res$se,
+        diff = diff$value, diff.lq = diff$lq, diff.uq = diff$uq, diff.se = diff$se
       )
       stat_tab <- rbind(stat_tab, row)
     }
@@ -242,8 +238,7 @@ check_sub_NA <- function(summaries_sub_k, el_nm) {
 ## some further adjustments are necessary below.
 get_stat <- function(summaries, summaries_baseline = NULL,
                      summaries_fast = NULL,
-                     y_wobs_test, stat, alpha = 0.1,
-                     deltas, ...) {
+                     y_wobs_test, stat, alpha = 0.1, ...) {
   mu <- summaries$mu
   lppd <- summaries$lppd
   loo_inds <- which(!is.na(lppd))
@@ -332,16 +327,16 @@ get_stat <- function(summaries, summaries_baseline = NULL,
       value_se <- sqrt(value_se^2 - 2*cov_mse_e_b + var_mse_b)
     }
     if (stat == "mse") {
-      value <- mse_e - ifelse(!is.character(deltas) && deltas, mse_b, 0)#X
+      value <- mse_e - ifelse(is.null(summaries_baseline), 0, mse_b)
     } else if (stat == "rmse") {
       # simple transformation of mse
-      value <- sqrt(mse_e) - ifelse(!is.character(deltas) && deltas, sqrt(mse_b), 0)#X
+      value <- sqrt(mse_e) - ifelse(is.null(summaries_baseline), 0, sqrt(mse_b))
       # the first-order Taylor approximation of the variance
       value_se <- sqrt(value_se^2 / mse_e / 4)
     } else if (stat == "R2") {
       # simple transformation of mse
       mse_y <- mean(wobs * (mean(y)-y)^2)
-      value <- 1 - mse_e / mse_y - ifelse(!is.character(deltas) && deltas, (1 - mse_b / mse_y), 0)#X
+      value <- 1 - mse_e / mse_y - ifelse(is.null(summaries_baseline), 0, 1 - mse_b / mse_y)
       # the first-order Taylor approximation of the variance
       var_mse_y <- .weighted_sd((mean(y)-y)^2, wobs)^2 / n
       if (is.null(summaries_fast) || n_loo==n) {
@@ -449,13 +444,12 @@ get_stat <- function(summaries, summaries_baseline = NULL,
                                      y_idx = loo_inds,
                                      w = wobs)
         value <- srs_diffe$y_hat / n + mean(wobs * correct_baseline) -
-          ifelse(!is.character(deltas) && deltas, mean(wobs * correct_baseline), 0)
+          ifelse(is.null(mu_baseline), 0, mean(wobs * correct_baseline))
         # combine estimates of var(y_hat) and var(y)
         value_se <- sqrt(srs_diffe$v_y_hat + srs_diffe$hat_v_y) / n
       } else {
         # full LOO estimator
-        value <- mean(wobs * correct) -
-          ifelse(!is.character(deltas) && deltas, mean(wobs * correct_baseline), 0)#X
+        value <- mean(wobs * correct) - mean(wobs * correct_baseline)
         value_se <- .weighted_sd(correct - correct_baseline, wobs) / sqrt(n)
       }
     } else if (stat == "auc") {
@@ -466,8 +460,7 @@ get_stat <- function(summaries, summaries_baseline = NULL,
       if (!is.null(mu_baseline)) {
         auc_data <- cbind(y, mu, wobs)
         auc_data_baseline <- cbind(y, mu_baseline, wobs)
-        value <- .auc(auc_data) -
-          ifelse(!is.character(deltas) && deltas, .auc(auc_data_baseline), 0)#X
+        value <- .auc(auc_data) - .auc(auc_data_baseline)
         idxs_cols <- seq_len(ncol(auc_data))
         idxs_cols_bs <- setdiff(seq_len(ncol(auc_data) + ncol(auc_data_baseline)),
                                 idxs_cols)
@@ -496,7 +489,7 @@ get_stat <- function(summaries, summaries_baseline = NULL,
     }
   }
 
-  if (stat %in% c("mse","rmse")) {
+  if (stat %in% c("mse","rmse") && is.null(mu_baseline)) {
     # Compute mean and variance in log scale by matching the variance of a
     # log-normal approximation
     # https://en.wikipedia.org/wiki/Log-normal_distribution#Arithmetic_moments
