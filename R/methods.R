@@ -752,6 +752,7 @@ plot.vsel <- function(
   stats_ref <- subset(stats_table_all, stats_table_all$size == Inf)
   stats_sub <- subset(stats_table_all, stats_table_all$size != Inf)
   stats_bs <- subset(stats_table_all, stats_table_all$size == nfeat_baseline)
+
   if (!is.character(deltas) && deltas) {
     stats_ref[,'value'] <- 0
     stats_ref[stats_ref[,'statistic']=="gmpd",'value'] <- 1
@@ -760,13 +761,13 @@ plot.vsel <- function(
     stats_ref[stats_ref[,'statistic']=="gmpd",'value'] <- 1
     stats_sub[!(stats_sub[,'statistic'] %in% c("elpd","mlpd","gmpd")),'diff'] <-
       stats_sub[!(stats_sub[,'statistic'] %in% c("elpd","mlpd","gmpd")),'diff'] +
-      stats_sub[!(stats_sub[,'statistic'] %in% c("elpd","mlpd","gmpd")),'value']
+      stats_ref[!(stats_ref[,'statistic'] %in% c("elpd","mlpd","gmpd")),'value']
     stats_sub[!(stats_sub[,'statistic'] %in% c("elpd","mlpd","gmpd")),'diff.lq'] <-
       stats_sub[!(stats_sub[,'statistic'] %in% c("elpd","mlpd","gmpd")),'diff.lq'] +
-      stats_sub[!(stats_sub[,'statistic'] %in% c("elpd","mlpd","gmpd")),'value']
+      stats_ref[!(stats_ref[,'statistic'] %in% c("elpd","mlpd","gmpd")),'value']
     stats_sub[!(stats_sub[,'statistic'] %in% c("elpd","mlpd","gmpd")),'diff.uq'] <-
       stats_sub[!(stats_sub[,'statistic'] %in% c("elpd","mlpd","gmpd")),'diff.uq'] +
-      stats_sub[!(stats_sub[,'statistic'] %in% c("elpd","mlpd","gmpd")),'value']
+      stats_ref[!(stats_ref[,'statistic'] %in% c("elpd","mlpd","gmpd")),'value']
   }
   
   # Catch unexpected output from .tabulate_stats():
@@ -994,6 +995,7 @@ plot.vsel <- function(
       data_gg$statistic[data_gg$statistic=="auc"] <- "auc_diff"
     }
   }
+
   if (is.character(deltas) || deltas) {
     pp <- ggplot(data = data_gg,
                  mapping = aes(x = .data[["size"]], y = .data[["diff"]],
@@ -1437,6 +1439,8 @@ mk_colnms_smmry <- function(type, stats, deltas) {
   nms_old[nms_old == "mean"] <- "value"
   nms_old[nms_old == "upper"] <- "uq"
   nms_old[nms_old == "lower"] <- "lq"
+  nms_old[nms_old == "diff.upper"] <- "diff.uq"
+  nms_old[nms_old == "diff.lower"] <- "diff.lq"
   # The clean column names that should be used in the output table:
   nms_new <- lapply(stats, paste0, type_dot)
   return(nlist(nms_old, nms_new))
@@ -1717,9 +1721,10 @@ suggest_size.vsel <- function(
   if (length(stat) > 1) {
     stop("Only one statistic can be specified to suggest_size")
   }
+
   stats <- summary.vsel(object,
                         stats = stat,
-                        type = c("mean", "upper", "lower"),
+                        type = c("diff", "diff.upper", "diff.lower"),
                         deltas = TRUE,
                         ...)
   stats <- stats$perf_sub
@@ -1734,9 +1739,9 @@ suggest_size.vsel <- function(
       type <- "upper"
     }
   }
-  bound <- paste0(stat, ".", type)
-
-  util_null <- sgn * unlist(unname(subset(stats, stats$size == 0, stat)))
+  bound <- paste0(stat, ".diff.", type)
+  stat.diff <- paste0(stat, ".", 'diff')
+  util_null <- sgn * unlist(unname(subset(stats, stats$size == 0, stat.diff)))
   if (stat != "gmpd") {
     util_cutoff <- pct * util_null
   } else {
@@ -1745,12 +1750,13 @@ suggest_size.vsel <- function(
   if (is.na(thres_elpd)) {
     thres_elpd <- Inf
   }
+
   nobs_test <- object$nobs_test
   res <- stats[
     (sgn * stats[, bound] >= util_cutoff) |
-      (stat == "elpd" & stats[, stat] > thres_elpd) |
-      (stat == "mlpd" & stats[, stat] > thres_elpd / nobs_test) |
-      (stat == "gmpd" & stats[, stat] > exp(thres_elpd / nobs_test)),
+      (stat == "elpd" & stats[, stat.diff] > thres_elpd) |
+      (stat == "mlpd" & stats[, stat.diff] > thres_elpd / nobs_test) |
+      (stat == "gmpd" & stats[, stat.diff] > exp(thres_elpd / nobs_test)),
     "size", drop = FALSE
   ]
 
