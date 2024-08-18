@@ -407,7 +407,7 @@ cv_varsel.refmodel <- function(
       # Run fast LOO-CV (or use existing results) to be used in subsampling
       # difference estimator:
       if (is.null(summaries_fast)) {
-        sel_cv$summaries_fast <- loo_varsel(
+        summaries_fast <- loo_varsel(
           refmodel = refmodel, method = method, nterms_max = nterms_max,
           ndraws = ndraws, nclusters = nclusters, ndraws_pred = ndraws_pred,
           nclusters_pred = nclusters_pred, refit_prj = refit_prj, penalty = penalty,
@@ -425,8 +425,6 @@ cv_varsel.refmodel <- function(
           search_terms_was_null = search_terms_was_null,
           search_out_rks = search_out_rks, parallel = parallel, ...
         )[["summaries"]]
-      } else {
-        sel_cv$summaries_fast <- summaries_fast
       }
     }
   } else if (cv_method == "kfold") {
@@ -481,7 +479,7 @@ cv_varsel.refmodel <- function(
               y_wobs_test,
               nobs_test = nrow(y_wobs_test),
               summaries = sel_cv$summaries,
-              summaries_fast = sel_cv$summaries_fast,
+              summaries_fast,
               nterms_all,
               nterms_max,
               method,
