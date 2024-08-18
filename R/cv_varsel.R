@@ -403,7 +403,7 @@ cv_varsel.refmodel <- function(
       search_terms_was_null = search_terms_was_null,
       search_out_rks = search_out_rks, parallel = parallel, ...
     )
-    if (is.null(sel_cv$summaries_fast) && validate_search && nloo < n) {
+    if (is.null(summaries_fast) && validate_search && nloo < n) {
       # Run fast LOO-CV to be used in subsampling difference estimator
       sel_cv$summaries_fast <- loo_varsel(
         refmodel = refmodel, method = method, nterms_max = nterms_max,
