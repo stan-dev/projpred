@@ -412,13 +412,7 @@ cv_varsel.refmodel <- function(
         verbose = verbose, search_control = search_control,
         nloo = n,                # fast LOO-CV for all n
         validate_search = FALSE, # fast LOO-CV for all n
-        search_path_fulldata = if (validate_search) {
-          # Not needed in this case, so for computational efficiency, avoiding
-          # passing the large object `search_path_fulldata` to loo_varsel():
-          NULL
-        } else {
-          search_path_fulldata
-        },
+        search_path_fulldata = search_path_fulldata,
         search_terms = search_terms,
         search_terms_was_null = search_terms_was_null,
         search_out_rks = search_out_rks, parallel = parallel, ...
