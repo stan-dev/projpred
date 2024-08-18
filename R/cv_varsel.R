@@ -403,26 +403,31 @@ cv_varsel.refmodel <- function(
       search_terms_was_null = search_terms_was_null,
       search_out_rks = search_out_rks, parallel = parallel, ...
     )
-    if (is.null(summaries_fast) && validate_search && nloo < n) {
-      # Run fast LOO-CV to be used in subsampling difference estimator
-      sel_cv$summaries_fast <- loo_varsel(
-        refmodel = refmodel, method = method, nterms_max = nterms_max,
-        ndraws = ndraws, nclusters = nclusters, ndraws_pred = ndraws_pred,
-        nclusters_pred = nclusters_pred, refit_prj = refit_prj, penalty = penalty,
-        verbose = verbose, search_control = search_control,
-        nloo = n,                # fast LOO-CV for all n
-        validate_search = FALSE, # fast LOO-CV for all n
-        search_path_fulldata = if (validate_search) {
-          # Not needed in this case, so for computational efficiency, avoiding
-          # passing the large object `search_path_fulldata` to loo_varsel():
-          NULL
-        } else {
-          search_path_fulldata
-        },
-        search_terms = search_terms,
-        search_terms_was_null = search_terms_was_null,
-        search_out_rks = search_out_rks, parallel = parallel, ...
-      )[["summaries"]]
+    if (validate_search && nloo < n) {
+      # Run fast LOO-CV (or use existing results) to be used in subsampling
+      # difference estimator:
+      if (is.null(summaries_fast)) {
+        sel_cv$summaries_fast <- loo_varsel(
+          refmodel = refmodel, method = method, nterms_max = nterms_max,
+          ndraws = ndraws, nclusters = nclusters, ndraws_pred = ndraws_pred,
+          nclusters_pred = nclusters_pred, refit_prj = refit_prj, penalty = penalty,
+          verbose = verbose, search_control = search_control,
+          nloo = n,                # fast LOO-CV for all n
+          validate_search = FALSE, # fast LOO-CV for all n
+          search_path_fulldata = if (validate_search) {
+            # Not needed in this case, so for computational efficiency, avoiding
+            # passing the large object `search_path_fulldata` to loo_varsel():
+            NULL
+          } else {
+            search_path_fulldata
+          },
+          search_terms = search_terms,
+          search_terms_was_null = search_terms_was_null,
+          search_out_rks = search_out_rks, parallel = parallel, ...
+        )[["summaries"]]
+      } else {
+        sel_cv$summaries_fast <- summaries_fast
+      }
     }
   } else if (cv_method == "kfold") {
     sel_cv <- kfold_varsel(
