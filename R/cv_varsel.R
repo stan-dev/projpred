@@ -247,7 +247,7 @@ cv_varsel.vsel <- function(
     cvfits = cvfits,
     validate_search = validate_search,
     search_out = nlist(search_path = object[["search_path"]], rk_foldwise),
-    summaries_fast = object$summaries_fast),
+    summaries_fast = object[["summaries_fast"]]),
     dots)
   ))
 }
@@ -392,7 +392,7 @@ cv_varsel.refmodel <- function(
       nclusters_pred = nclusters_pred, refit_prj = refit_prj, penalty = penalty,
       verbose = verbose, search_control = search_control, nloo = nloo,
       validate_search = validate_search,
-      search_path_fulldata = if (validate_search) { # && nloo==n) { # check this
+      search_path_fulldata = if (validate_search) {
         # Not needed in this case, so for computational efficiency, avoiding
         # passing the large object `search_path_fulldata` to loo_varsel():
         NULL
@@ -403,16 +403,16 @@ cv_varsel.refmodel <- function(
       search_terms_was_null = search_terms_was_null,
       search_out_rks = search_out_rks, parallel = parallel, ...
     )
-    if (is.null(sel_cv$summaries_fast) && validate_search==TRUE && nloo<n) {
+    if (is.null(sel_cv$summaries_fast) && validate_search && nloo < n) {
       # Run fast LOO-CV to be used in subsampling difference estimator
-      sel_cv_fast <- loo_varsel(
+      sel_cv$summaries_fast <- loo_varsel(
         refmodel = refmodel, method = method, nterms_max = nterms_max,
         ndraws = ndraws, nclusters = nclusters, ndraws_pred = ndraws_pred,
         nclusters_pred = nclusters_pred, refit_prj = refit_prj, penalty = penalty,
         verbose = verbose, search_control = search_control,
         nloo = n,                # fast LOO-CV for all n
         validate_search = FALSE, # fast LOO-CV for all n
-        search_path_fulldata = if (validate_search && nloo==n) { # check this
+        search_path_fulldata = if (validate_search) {
           # Not needed in this case, so for computational efficiency, avoiding
           # passing the large object `search_path_fulldata` to loo_varsel():
           NULL
@@ -422,8 +422,7 @@ cv_varsel.refmodel <- function(
         search_terms = search_terms,
         search_terms_was_null = search_terms_was_null,
         search_out_rks = search_out_rks, parallel = parallel, ...
-      )
-      sel_cv$summaries_fast <- sel_cv_fast$summaries
+      )[["summaries"]]
     }
   } else if (cv_method == "kfold") {
     sel_cv <- kfold_varsel(

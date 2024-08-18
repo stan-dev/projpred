@@ -895,8 +895,6 @@ options(projpred.mssg_cut_search = FALSE)
 options(projpred.mssg_time = FALSE)
 # Suppress the PSIS warnings:
 options(projpred.warn_psis = FALSE)
-# Suppress the subsampled PSIS-LOO CV warnings:
-options(projpred.warn_subsampled_loo = FALSE)
 # Suppress the warnings for the K reference model refits in case of K-fold CV:
 options(projpred.warn_kfold_refits = FALSE)
 # Suppress the warning for interaction terms being selected before all involved
