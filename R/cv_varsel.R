@@ -265,7 +265,7 @@ cv_varsel.refmodel <- function(
     refit_prj = !inherits(object, "datafit"),
     nterms_max = NULL,
     penalty = NULL,
-    verbose = TRUE,
+    verbose = getOption("projpred.verbose", interactive()),
     nloo = object$nobs,
     K = if (!inherits(object, "datafit")) 5 else 10,
     cvfits = object$cvfits,
@@ -1019,16 +1019,16 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
       # would require adding more "hard" dependencies (because packages
       # 'foreach' and 'doRNG' would have to be moved from `Suggests:` to
       # `Imports:`).
-      if (verbose && interactive()) {
+      if (verbose) {
         pb <- utils::txtProgressBar(min = 0, max = nloo, style = 3, initial = 0)
       }
       res_cv <- lapply(seq_along(inds), function(run_index) {
-        if (verbose && interactive()) {
+        if (verbose) {
           on.exit(utils::setTxtProgressBar(pb, run_index))
         }
         one_obs(run_index, ...)
       })
-      if (verbose && interactive()) {
+      if (verbose) {
         close(pb)
       }
     } else {
@@ -1347,16 +1347,16 @@ kfold_varsel <- function(refmodel, method, nterms_max, ndraws, nclusters,
     # foreach::`%do%`` here and then proceed as in the parallel case, but that
     # would require adding more "hard" dependencies (because packages 'foreach'
     # and 'doRNG' would have to be moved from `Suggests:` to `Imports:`).
-    if (verbose && interactive()) {
+    if (verbose) {
       pb <- utils::txtProgressBar(min = 0, max = K, style = 3, initial = 0)
     }
     res_cv <- lapply(seq_along(list_cv), function(k) {
-      if (verbose && interactive()) {
+      if (verbose) {
         on.exit(utils::setTxtProgressBar(pb, k))
       }
       one_fold(fold = list_cv[[k]], rk = search_out_rks[[k]], ...)
     })
-    if (verbose && interactive()) {
+    if (verbose) {
       close(pb)
     }
   } else {
