@@ -189,8 +189,8 @@ cv_varsel.vsel <- function(
   arg_nms_internal <- c("method", "ndraws", "nclusters", "nterms_max",
                         "search_control", "penalty", "search_terms",
                         "summaries_fast")
-  arg_nms_internal_used <- intersect(arg_nms_internal, ...names())
   dots <- list(...)
+  arg_nms_internal_used <- intersect(arg_nms_internal, names(dots))
   for (arg in arg_nms_internal_used) {
     if (!identical(object[["args_search"]][[arg]], dots[[arg]])) {
       message("Argument `", arg, "` ignored. Using the argument value stored ",
