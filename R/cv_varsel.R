@@ -190,7 +190,6 @@ cv_varsel.vsel <- function(
                         "search_control", "penalty", "search_terms",
                         "summaries_fast")
   arg_nms_internal_used <- intersect(arg_nms_internal, ...names())
-  n_arg_nms_internal_used <- length(arg_nms_internal_used)
   dots <- list(...)
   for (arg in arg_nms_internal_used) {
     if (!identical(object[["args_search"]][[arg]], dots[[arg]])) {
