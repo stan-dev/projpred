@@ -750,12 +750,12 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
     # precursor quantities, but for users, this difference is not perceivable):
     verb_out("-----\nRunning the performance evaluation with ",
              ifelse(refit_prj,
-                    ifelse(!is.null(ndraws_pred),
-                           paste0(ndraws_pred, " draws"),
-                           paste0(nclusters_pred, " clusters")),
-                    ifelse(!is.null(ndraws),
-                           paste0(ndraws, " draws"),
-                           paste0(nclusters, " clusters"))),
+                    ifelse(!is.null(nclusters_pred),
+                           paste0(nclusters_pred, " clusters"),
+                           paste0(ndraws_pred, " draws (from thinning)")),
+                    ifelse(!is.null(nclusters),
+                           paste0(nclusters, " clusters"),
+                           paste0(ndraws, " draws (from thinning)"))),
              " (`refit_prj = ", refit_prj, "`) ...", verbose = verbose)
     # Step 1: Re-project (using the full dataset) onto the submodels along the
     # full-data predictor ranking and evaluate their predictive performance.
