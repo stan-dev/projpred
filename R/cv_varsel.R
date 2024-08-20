@@ -358,8 +358,8 @@ cv_varsel.refmodel <- function(
     # too complicated:
     verb_txt_search <- paste0(verb_txt_search, "with ",
                               ifelse(!is.null(nclusters),
-                                     paste0(nclusters, " clusters"),
-                                     paste0(ndraws, " draws (from thinning)")))
+                                     paste0(nclusters, " clusters "),
+                                     paste0(ndraws, " draws (from thinning) ")))
     verb_txt_search <- paste0(verb_txt_search, "...")
     verb_out(verb_txt_search, verbose = verbose)
     search_path_fulldata <- .select(
@@ -708,9 +708,9 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
   if (validate_search && nloo < n) {
     # Select which LOO-folds get more accurate computation using simple
     # random sampling without resampling (Magnusson et al., 2020)
-    inds <- sample(1:n, nloo, replace=FALSE)
+    inds <- sample.int(n, size = nloo, replace = FALSE)
   } else {
-    inds <- 1:n
+    inds <- seq_len(n)
   }
 
   # Initialize objects where to store the results:
