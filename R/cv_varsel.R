@@ -187,7 +187,8 @@ cv_varsel.vsel <- function(
 ) {
   ## the following arguments should not change
   arg_nms_internal <- c("method", "ndraws", "nclusters", "nterms_max",
-                        "search_control", "penalty", "search_terms")
+                        "search_control", "penalty", "search_terms",
+                        "summaries_fast")
   arg_nms_internal_used <- intersect(arg_nms_internal, ...names())
   n_arg_nms_internal_used <- length(arg_nms_internal_used)
   dots <- list(...)
@@ -232,24 +233,26 @@ cv_varsel.vsel <- function(
     }
   }
 
-  return(do_call(cv_varsel, c(list(
-    object = refmodel,
-    method = object[["args_search"]][["method"]],
-    ndraws = object[["args_search"]][["ndraws"]],
-    nclusters = object[["args_search"]][["nclusters"]],
-    nterms_max = object[["args_search"]][["nterms_max"]],
-    search_control = object[["args_search"]][["search_control"]],
-    penalty = object[["args_search"]][["penalty"]],
-    search_terms = object[["args_search"]][["search_terms"]],
-    cv_method = cv_method,
-    nloo = nloo,
-    K = K,
-    cvfits = cvfits,
-    validate_search = validate_search,
-    search_out = nlist(search_path = object[["search_path"]], rk_foldwise),
-    summaries_fast = object[["summaries_fast"]]),
-    dots)
-  ))
+  return(do_call(cv_varsel, c(
+    list(
+      object = refmodel,
+      method = object[["args_search"]][["method"]],
+      ndraws = object[["args_search"]][["ndraws"]],
+      nclusters = object[["args_search"]][["nclusters"]],
+      nterms_max = object[["args_search"]][["nterms_max"]],
+      search_control = object[["args_search"]][["search_control"]],
+      penalty = object[["args_search"]][["penalty"]],
+      search_terms = object[["args_search"]][["search_terms"]],
+      summaries_fast = object[["summaries_fast"]],
+      cv_method = cv_method,
+      nloo = nloo,
+      K = K,
+      cvfits = cvfits,
+      validate_search = validate_search,
+      search_out = nlist(search_path = object[["search_path"]], rk_foldwise)
+    ),
+    dots
+  )))
 }
 
 #' @rdname cv_varsel
