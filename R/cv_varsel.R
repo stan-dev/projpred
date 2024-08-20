@@ -827,13 +827,16 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
                                   3 * sqrt(S_for_psis_eval))) < 5
       if (no_psis_eval) {
         if (getOption("projpred.warn_psis", TRUE)) {
-          verb_out(
+          message(
             "Using standard importance sampling (SIS) due to a small number of",
             ifelse(refit_prj,
-                   ifelse(!is.null(ndraws_pred), " draws", " clusters"),
-                   ifelse(!is.null(ndraws), " draws", " clusters")
-            ),
-            verbose=verbose)
+                   ifelse(!is.null(nclusters_pred),
+                          " clusters",
+                          " draws (from thinning)"),
+                   ifelse(!is.null(nclusters),
+                          " clusters",
+                          " draws (from thinning)"))
+          )
         }
         # Use loo::sis().
         # In principle, we could rely on loo::psis() here (because in such a
