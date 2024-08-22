@@ -956,28 +956,23 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
     }
 
     if (verbose) {
-      if (!search_out_rks_was_null) {
-        verb_txt_mid <- ""
-      } else {
-        verb_txt_mid <- "the search and "
-      }
       verb_out("-----\nRunning ",
                ifelse(!search_out_rks_was_null, "",
-                      paste0(method, " search with ",
-                             ifelse(!is.null(ndraws),
-                                    paste0(ndraws, " draws"),
-                                    paste0(nclusters, " clusters")),
+                      paste0(method, " the search with ",
+                             ifelse(!is.null(nclusters),
+                                    paste0(nclusters, " clusters"),
+                                    paste0(ndraws, " draws (from thinning)")),
                              " and ")),
                "the performance evaluation with ",
                ifelse(refit_prj,
-                      ifelse(!is.null(ndraws_pred),
-                             paste0(ndraws_pred, " draws"),
-                             paste0(nclusters_pred, " clusters")),
-                      ifelse(!is.null(ndraws),
-                             paste0(ndraws, " draws"),
-                             paste0(nclusters, " clusters"))),
+                      ifelse(!is.null(nclusters_pred),
+                             paste0(nclusters_pred, " clusters"),
+                             paste0(ndraws_pred, " draws (from thinning)")),
+                      ifelse(!is.null(nclusters),
+                             paste0(nclusters, " clusters"),
+                             paste0(ndraws, " draws (from thinning)"))),
                " (`refit_prj = ", refit_prj,
-               "`) for each of the nloo = ", nloo, " ",
+               "`) for each of the `nloo = ", nloo, "` ",
                "LOO-CV folds separately ...")
     }
     one_obs <- function(run_index,
