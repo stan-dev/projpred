@@ -956,12 +956,11 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
     }
 
     if (verbose) {
-      verb_txt_start <-
-        if (!search_out_rks_was_null) {
-          verb_txt_mid <- ""
-        } else {
-          verb_txt_mid <- "the search and "
-        }
+      if (!search_out_rks_was_null) {
+        verb_txt_mid <- ""
+      } else {
+        verb_txt_mid <- "the search and "
+      }
       verb_out("-----\nRunning ",
                ifelse(!search_out_rks_was_null, "",
                       paste0(method, " search with ",
