@@ -88,7 +88,7 @@ weighted_summary_means <- function(y_wobs_test, family, wdraws, mu, dis, cl_ref,
 # statistics relative to the baseline model of that size (`nfeat_baseline = Inf`
 # means that the baseline model is the reference model).
 .tabulate_stats <- function(varsel, stats, alpha = 0.05,
-                            nfeat_baseline = Inf, resp_oscale = TRUE, ...) {
+                            nfeat_baseline = NULL, resp_oscale = TRUE, ...) {
   stat_tab <- data.frame()
   summaries_ref <- varsel$summaries$ref
   summaries_sub <- varsel$summaries$sub
@@ -177,46 +177,57 @@ weighted_summary_means <- function(y_wobs_test, family, wdraws, mu, dis, cl_ref,
   }
 
   ## fetch the mu and lppd for the baseline model
-  summaries_baseline <- summaries_ref
-  delta <- !is.null(summaries_ref)
+  if (is.null(nfeat_baseline)) {
+    ## no baseline model, i.e, compute the statistics on the actual
+    ## (non-relative) scale
+    summaries_baseline <- NULL
+    delta <- FALSE
+  } else {
+    if (nfeat_baseline == Inf) {
+      summaries_baseline <- summaries_ref
+    } else {
+      summaries_baseline <- summaries_sub[[nfeat_baseline + 1]]
+    }
+    delta <- TRUE
+  }
 
   for (s in seq_along(stats)) {
     stat <- stats[s]
 
     ## reference model statistics
-    summaries <- summaries_ref
     res <- get_stat(summaries = summaries_ref,
-                    summaries_baseline = NULL,
+                    summaries_baseline = summaries_baseline,
                     summaries_fast = NULL,
                     loo_inds = varsel$loo_inds,
                     varsel$y_wobs_test, stat, alpha = alpha, ...)
     row <- data.frame(
       data = varsel$type_test, size = Inf, delta = delta, statistic = stat,
-      value = res$value, lq = res$lq, uq = res$uq, se = res$se,
-      diff = NA, diff.lq = NA, diff.uq = NA, diff.se = NA
+      value = res$value, lq = res$lq, uq = res$uq, se = res$se, diff = NA,
+      diff.se = NA
     )
     stat_tab <- rbind(stat_tab, row)
 
     ## submodel statistics
     for (k in seq_along(summaries_sub)) {
-      diff <- get_stat(summaries = summaries_sub[[k]],
-                       summaries_baseline = summaries_baseline,
-                       summaries_fast = summaries_fast_sub[[k]],
-                       loo_inds = varsel$loo_inds,
-                       varsel$y_wobs_test, stat, alpha = alpha, ...)
       res <- get_stat(summaries = summaries_sub[[k]],
-                      summaries_baseline = NULL,
+                      summaries_baseline = summaries_baseline,
                       summaries_fast = summaries_fast_sub[[k]],
                       loo_inds = varsel$loo_inds,
                       varsel$y_wobs_test, stat, alpha = alpha, ...)
+      diff <- get_stat(summaries = summaries_sub[[k]],
+                       summaries_baseline = summaries_ref,
+                       summaries_fast = summaries_fast_sub[[k]],
+                       loo_inds = varsel$loo_inds,
+                       varsel$y_wobs_test, stat, alpha = alpha, ...)
       row <- data.frame(
-        data = varsel$type_test, size = k - 1, delta = delta,
-        statistic = stat, value = res$value, lq = res$lq, uq = res$uq, se = res$se,
-        diff = diff$value, diff.lq = diff$lq, diff.uq = diff$uq, diff.se = diff$se
+        data = varsel$type_test, size = k - 1, delta = delta, statistic = stat,
+        value = res$value, lq = res$lq, uq = res$uq, se = res$se,
+        diff = diff$value, diff.se = diff$se
       )
       stat_tab <- rbind(stat_tab, row)
     }
   }
+
   return(stat_tab)
 }
 
@@ -232,9 +243,13 @@ check_sub_NA <- function(summaries_sub_k, el_nm) {
   all(is.na(summaries_sub_k[[el_nm]]))
 }
 
-## The actual observation weights (specified by the
-## user) are contained in `y_wobs_test$wobs`. These are already taken into
-## account by `<refmodel_object>$family$ll_fun()` (or
+## Calculates given statistic stat with standard error and confidence bounds.
+## `summaries_baseline` contains the pointwise mu and lppd for another model
+## that is used as a baseline for computing the difference (ratio in case of the
+## GMPD) in the given statistic. If these arguments are not given (NULL) then
+## the actual (non-relative) value is computed. The actual observation weights
+## (specified by the user) are contained in `y_wobs_test$wobs`. These are
+## already taken into account by `<refmodel_object>$family$ll_fun()` (or
 ## `<refmodel_object>$family$latent_ll_oscale()`) and are thus already taken
 ## into account in `lppd`. However, `mu` does not take them into account, so
 ## some further adjustments are necessary below.
@@ -474,8 +489,7 @@ get_stat <- function(summaries, summaries_baseline = NULL,
         value_se <- sd(diffvalue.bootstrap, na.rm = TRUE)
         lq_uq <- quantile(diffvalue.bootstrap,
                           probs = c(alpha_half, one_minus_alpha_half),
-                          names = FALSE, na.rm = TRUE) +
-          .auc(auc_data_baseline)
+                          names = FALSE, na.rm = TRUE)
       } else {
         auc_data <- cbind(y, mu, wobs)
         value <- .auc(auc_data)
