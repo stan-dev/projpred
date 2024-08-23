@@ -88,7 +88,7 @@ weighted_summary_means <- function(y_wobs_test, family, wdraws, mu, dis, cl_ref,
 # statistics relative to the baseline model of that size (`nfeat_baseline = Inf`
 # means that the baseline model is the reference model).
 .tabulate_stats <- function(varsel, stats, alpha = 0.05,
-                            nfeat_baseline = Inf, resp_oscale = TRUE, ...) {
+                            nfeat_baseline = NULL, resp_oscale = TRUE, ...) {
   stat_tab <- data.frame()
   summaries_ref <- varsel$summaries$ref
   summaries_sub <- varsel$summaries$sub
@@ -192,8 +192,8 @@ weighted_summary_means <- function(y_wobs_test, family, wdraws, mu, dis, cl_ref,
                     varsel$y_wobs_test, stat, alpha = alpha, ...)
     row <- data.frame(
       data = varsel$type_test, size = Inf, delta = delta, statistic = stat,
-      value = res$value, lq = res$lq, uq = res$uq, se = res$se,
-      diff = NA, diff.lq = NA, diff.uq = NA, diff.se = NA
+      value = res$value, lq = res$lq, uq = res$uq, se = res$se, diff = NA,
+      diff.se = NA
     )
     stat_tab <- rbind(stat_tab, row)
 
@@ -475,8 +475,7 @@ get_stat <- function(summaries, summaries_baseline = NULL,
         value_se <- sd(diffvalue.bootstrap, na.rm = TRUE)
         lq_uq <- quantile(diffvalue.bootstrap,
                           probs = c(alpha_half, one_minus_alpha_half),
-                          names = FALSE, na.rm = TRUE) +
-          .auc(auc_data_baseline)
+                          names = FALSE, na.rm = TRUE)
       } else {
         auc_data <- cbind(y, mu, wobs)
         value <- .auc(auc_data)

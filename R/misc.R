@@ -198,8 +198,8 @@ validate_vsel_object_stats <- function(object, stats, resp_oscale = TRUE) {
 
 validate_baseline <- function(refmodel, baseline, deltas) {
   stopifnot(!is.null(baseline))
-  if (!(baseline %in% c("ref"))) {
-    stop("Argument 'baseline' must be 'ref'.")
+  if (!(baseline %in% c("ref", "best"))) {
+    stop("Argument 'baseline' must be either 'ref' or 'best'.")
   }
   if (baseline == "ref" && deltas == TRUE && inherits(refmodel, "datafit")) {
     # no reference model (or the results missing for some other reason),

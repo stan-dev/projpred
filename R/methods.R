@@ -668,11 +668,13 @@ proj_predict_aux <- function(proj, newdata, offsetnew, weightsnew,
 #' # Horizontal lines
 #'
 #' As long as the reference model's performance is computable, it is always
-#' shown in the plot as a dashed red horizontal line. 
+#' shown in the plot as a dashed red horizontal line. If `baseline = "best"`,
+#' the baseline model's performance is shown as a dotted black horizontal line.
 #' If `!is.na(thres_elpd)` and `any(stats %in% c("elpd", "mlpd", "gmpd"))`, the
 #' value supplied to `thres_elpd` (which is automatically adapted internally in
 #' case of the MLPD or the GMPD or `deltas = FALSE`) is shown as a dot-dashed
-#' gray horizontal line for the reference model.
+#' gray horizontal line for the reference model and, if `baseline = "best"`, as
+#' a long-dashed green horizontal line for the baseline model.
 #'
 #' @examplesIf requireNamespace("rstanarm", quietly = TRUE)
 #' # Data:
@@ -700,7 +702,7 @@ plot.vsel <- function(
     stats = "elpd",
     deltas = FALSE,
     alpha = 2 * pnorm(-1),
-    baseline = "ref",
+    baseline = if (!inherits(x$refmodel, "datafit")) "ref" else "best",
     thres_elpd = NA,
     resp_oscale = TRUE,
     point_size = 3,
@@ -734,17 +736,12 @@ plot.vsel <- function(
   # .tabulate_stats()'s argument `nfeat_baseline`:
   nfeat_baseline <- get_nfeat_baseline(object, baseline, stats[1],
                                        resp_oscale = resp_oscale)
-  ## if (getOption("projpred.extra_verbose",FALSE) &&
-  ##       deltas &&
-  ##       !all(stats %in% c("elpd","mlpd","gmpd"))) {
-  ##   message(paste0("With deltas=TRUE, statistics ", paste(stats[!(stats %in% c("elpd","mlpd","gmpd"))], collapse=", "),
-  ##                  " report the uncertainty relative to the baseline, but the value in the original scale."))
-  ## }
-  if (is.character(deltas) || deltas) {
+  if (deltas) {
     nfeat_baseline_for_tab <- nfeat_baseline
   } else {
     nfeat_baseline_for_tab <- NULL
   }
+
   # Compute the predictive performance statistics:
   stats_table_all <- .tabulate_stats(object, stats, alpha = alpha,
                                      nfeat_baseline = nfeat_baseline_for_tab,
@@ -753,23 +750,6 @@ plot.vsel <- function(
   stats_sub <- subset(stats_table_all, stats_table_all$size != Inf)
   stats_bs <- subset(stats_table_all, stats_table_all$size == nfeat_baseline)
 
-  if (!is.character(deltas) && deltas) {
-    stats_ref[,'value'] <- 0
-    stats_ref[stats_ref[,'statistic']=="gmpd",'value'] <- 1
-  } else if (is.character(deltas) && identical(deltas,'mixed')) {
-    stats_ref[stats_ref[,'statistic'] %in% c("elpd","mlpd"),'value'] <- 0
-    stats_ref[stats_ref[,'statistic']=="gmpd",'value'] <- 1
-    stats_sub[!(stats_sub[,'statistic'] %in% c("elpd","mlpd","gmpd")),'diff'] <-
-      stats_sub[!(stats_sub[,'statistic'] %in% c("elpd","mlpd","gmpd")),'diff'] +
-      stats_ref[!(stats_ref[,'statistic'] %in% c("elpd","mlpd","gmpd")),'value']
-    stats_sub[!(stats_sub[,'statistic'] %in% c("elpd","mlpd","gmpd")),'diff.lq'] <-
-      stats_sub[!(stats_sub[,'statistic'] %in% c("elpd","mlpd","gmpd")),'diff.lq'] +
-      stats_ref[!(stats_ref[,'statistic'] %in% c("elpd","mlpd","gmpd")),'value']
-    stats_sub[!(stats_sub[,'statistic'] %in% c("elpd","mlpd","gmpd")),'diff.uq'] <-
-      stats_sub[!(stats_sub[,'statistic'] %in% c("elpd","mlpd","gmpd")),'diff.uq'] +
-      stats_ref[!(stats_ref[,'statistic'] %in% c("elpd","mlpd","gmpd")),'value']
-  }
-  
   # Catch unexpected output from .tabulate_stats():
   if (NROW(stats_sub) == 0) {
     stop(ifelse(length(stats) > 1, "Statistics ", "Statistic "),
@@ -797,11 +777,21 @@ plot.vsel <- function(
   nterms_max <- as.integer(nterms_max)
 
   # Define some "pretty" text strings for the plot:
-  ylab <- "Value"
-  if (is.character(deltas) || deltas) {
-    delta_lab <- "for baseline comparison"
+  if (baseline == "ref") {
+    baseline_pretty <- "reference model"
   } else {
-    delta_lab <- ""
+    baseline_pretty <- "best submodel"
+  }
+  if (deltas) {
+    if (all(stats != "gmpd")) {
+      ylab <- paste0("Difference vs. ", baseline_pretty)
+    } else if (all(stats == "gmpd")) {
+      ylab <- paste0("Ratio vs. ", baseline_pretty)
+    } else {
+      ylab <- paste0("Difference (ratio for GMPD) vs. ", baseline_pretty)
+    }
+  } else {
+    ylab <- "Value"
   }
   if (object$refmodel$family$for_latent) {
     if (resp_oscale) {
@@ -972,39 +962,9 @@ plot.vsel <- function(
   }
 
   # Create the plot:
-  if (is.character(deltas) || deltas) {
-    data_gg$statistic[data_gg$statistic=="elpd"] <- "elpd_diff"
-    stats_ref$statistic[stats_ref$statistic=="elpd"] <- "elpd_diff"
-    data_gg$statistic[data_gg$statistic=="mlpd"] <- "mlpd_diff"
-    stats_ref$statistic[stats_ref$statistic=="mlpd"] <- "mlpd_diff"
-    data_gg$statistic[data_gg$statistic=="gmpd"] <- "gmpd_ratio"
-    stats_ref$statistic[stats_ref$statistic=="gmpd"] <- "gmpd_ratio"
-    if (!(is.character(deltas) && identical(deltas,'mixed'))) {
-      data_gg$statistic[data_gg$statistic=="mse"] <- "mse_diff"
-      stats_ref$statistic[stats_ref$statistic=="mse"] <- "mse_diff"
-      data_gg$statistic[data_gg$statistic=="rmse"] <- "rmse_diff"
-      stats_ref$statistic[stats_ref$statistic=="rmse"] <- "rmse_diff"
-      data_gg$statistic[data_gg$statistic=="rmse"] <- "rmse_diff"
-      stats_ref$statistic[stats_ref$statistic=="R2"] <- "R2_diff"
-      data_gg$statistic[data_gg$statistic=="R2"] <- "R2_diff"
-      stats_ref$statistic[stats_ref$statistic=="acc"] <- "acc_diff"
-      data_gg$statistic[data_gg$statistic=="acc"] <- "acc_diff"
-      stats_ref$statistic[stats_ref$statistic=="pctcorr"] <- "pctcorr_diff"
-      data_gg$statistic[data_gg$statistic=="pctcorr"] <- "pctcorr_diff"
-      stats_ref$statistic[stats_ref$statistic=="auc"] <- "auc_diff"
-      data_gg$statistic[data_gg$statistic=="auc"] <- "auc_diff"
-    }
-  }
-
-  if (is.character(deltas) || deltas) {
-    pp <- ggplot(data = data_gg,
-                 mapping = aes(x = .data[["size"]], y = .data[["diff"]],
-                               ymin = .data[["diff.lq"]], ymax = .data[["diff.uq"]]))
-  } else {
-    pp <- ggplot(data = data_gg,
-                 mapping = aes(x = .data[["size"]], y = .data[["value"]],
-                               ymin = .data[["lq"]], ymax = .data[["uq"]]))
-  }
+  pp <- ggplot(data = data_gg,
+               mapping = aes(x = .data[["size"]], y = .data[["value"]],
+                             ymin = .data[["lq"]], ymax = .data[["uq"]]))
   if (!all(is.na(stats_ref$se))) {
     # In this case, add the predictive performance of the reference model.
     pp <- pp +
@@ -1021,9 +981,9 @@ plot.vsel <- function(
       thres_tab_ref$thres[is_elpd_mlpd_ref] <-
         thres_tab_ref$value[is_elpd_mlpd_ref] +
         thres_tab_ref$thres[is_elpd_mlpd_ref]
-      is_gmpd_ref <- thres_tab_ref$statistic %in% c("gmpd","gmpd ratio")
+      is_gmpd_ref <- thres_tab_ref$statistic %in% c("gmpd")
       thres_tab_ref$thres[is_gmpd_ref] <-
-              thres_tab_ref$value[is_gmpd_ref] *
+        thres_tab_ref$value[is_gmpd_ref] *
         thres_tab_ref$thres[is_gmpd_ref]
       pp <- pp +
         geom_hline(aes(yintercept = .data[["thres"]]),
@@ -1107,7 +1067,9 @@ plot.vsel <- function(
   }
   if (all(stats %in% c("auc"))) {
     ci_type <- "bootstrap "
-  } else if (all(!stats %in% c("auc"))) {
+  } else if (all(stats %in% c("gmpd"))) {
+    ci_type <- "exponentiated normal-approximation "
+  } else if (all(!stats %in% c("auc", "gmpd"))) {
     ci_type <- "normal-approximation "
   } else {
     ci_type <- ""
@@ -1142,11 +1104,9 @@ plot.vsel <- function(
                        labels = tick_labs_x,
                        sec.axis = x_axis_sec) +
     labs(x = xlab, y = ylab, title = "Predictive performance",
-         subtitle = paste0("With ",
-                           round(100 * (1 - alpha), 1), "% ",
-                           ci_type,
-                           "intervals ",
-                           delta_lab)) +
+         subtitle = paste0("Vertical bars indicate ",
+                           round(100 * (1 - alpha), 1), "% ", ci_type,
+                           "intervals")) +
     theme(axis.text.x.bottom = element_text(angle = text_angle,
                                             hjust = hjust_val,
                                             vjust = vjust_val)) +
@@ -1240,18 +1200,17 @@ plot.vsel <- function(
 #'   "relatively" refers to the ratio vs. the baseline model (i.e., the submodel
 #'   statistic divided by the baseline model statistic). For all other `stats`,
 #'   "relatively" refers to the difference from the baseline model (i.e., the
-#'   submodel statistic minus the baseline model statistic). For the ELPD and
-#'   the MLPD, the baseline performance is reported as 0. For the GMPD,
-#'   the baseline performance is reported as 1. For other statistics, the
-#'   baseline performance is reported as 0 if `deltas=TRUE` and in the original
-#'   scale if `deltas="mixed"`. If `deltas=TRUE` or `deltas="mixed"`, for all
-#'   statistics the related uncertainty is reported relative to the baseline.
+#'   submodel statistic minus the baseline model statistic).
 #' @param alpha A number determining the (nominal) coverage `1 - alpha` of the
 #'   normal-approximation (or bootstrap or exponentiated normal-approximation;
 #'   see argument `stats`) confidence intervals. For example, in case of the
 #'   normal approximation, `alpha = 2 * pnorm(-1)` corresponds to a confidence
 #'   interval stretching by one standard error on either side of the point
 #'   estimate.
+#' @param baseline For [summary.vsel()]: Only relevant if `deltas` is `TRUE`.
+#'   For [plot.vsel()]: Always relevant. Either `"ref"` or `"best"`, indicating
+#'   whether the baseline is the reference model or the best submodel found (in
+#'   terms of `stats[1]`), respectively.
 #' @param resp_oscale Only relevant for the latent projection. A single logical
 #'   value indicating whether to calculate the performance statistics on the
 #'   original response scale (`TRUE`) or on latent scale (`FALSE`).
@@ -1318,14 +1277,14 @@ summary.vsel <- function(
     type = c("mean", "se", "diff", "diff.se"),
     deltas = FALSE,
     alpha = 2 * pnorm(-1),
-    baseline = "ref",
+    baseline = if (!inherits(object$refmodel, "datafit")) "ref" else "best",
     resp_oscale = TRUE,
     cumulate = FALSE,
     ...
 ) {
   validate_vsel_object_stats(object, stats, resp_oscale = resp_oscale)
   baseline <- validate_baseline(object$refmodel, baseline, deltas)
-  
+
   # Initialize output:
   out <- c(
     object$refmodel[c("formula", "family")],
@@ -1351,15 +1310,16 @@ summary.vsel <- function(
   }
 
   # The full table of the performance statistics from `stats`:
-  ## if (is.character(deltas) || deltas) {
+  if (deltas) {
     nfeat_baseline_for_tab <- get_nfeat_baseline(object, baseline, stats[1],
                                                  resp_oscale = resp_oscale)
-  ## } else {
-  ##   nfeat_baseline_for_tab <- NULL
-  ## }
+  } else {
+    nfeat_baseline_for_tab <- NULL
+  }
   stats_table_all <- .tabulate_stats(object, stats, alpha = alpha,
                                      nfeat_baseline = nfeat_baseline_for_tab,
                                      resp_oscale = resp_oscale, ...)
+
   # Extract the reference model performance results from `stats_table_all`:
   stats_table_ref <- subset(stats_table_all, stats_table_all$size == Inf)
 
@@ -1383,7 +1343,7 @@ summary.vsel <- function(
   # For renaming columns of the two output tables (one for the reference model
   # performance and for the submodel performance):
   colnms_ref <- mk_colnms_smmry(type = type, stats = stats, deltas = NULL)
-  colnms_sub <- mk_colnms_smmry(type = type, stats = stats, deltas = FALSE)
+  colnms_sub <- mk_colnms_smmry(type = type, stats = stats, deltas = deltas)
 
   # Fill the output table for the reference model performance (essentially, we
   # reshape `stats_table_ref`, thereby selecting only the requested `type`s and
@@ -1428,7 +1388,7 @@ summary.vsel <- function(
 # reference model performance and one table for the submodel performance):
 mk_colnms_smmry <- function(type, stats, deltas) {
   # Pre-process `type`:
-  if (is.null(deltas) || (is.character(deltas) || deltas)) {
+  if (is.null(deltas) || deltas) {
     type <- setdiff(type, c("diff", "diff.se"))
   }
   type_dot <- paste0(".", type)
@@ -1439,8 +1399,6 @@ mk_colnms_smmry <- function(type, stats, deltas) {
   nms_old[nms_old == "mean"] <- "value"
   nms_old[nms_old == "upper"] <- "uq"
   nms_old[nms_old == "lower"] <- "lq"
-  nms_old[nms_old == "diff.upper"] <- "diff.uq"
-  nms_old[nms_old == "diff.lower"] <- "diff.lq"
   # The clean column names that should be used in the output table:
   nms_new <- lapply(stats, paste0, type_dot)
   return(nlist(nms_old, nms_new))
@@ -1618,7 +1576,8 @@ print.vsel <- function(x, digits = getOption("projpred.digits", 2), ...) {
 #'   falls above (or is equal to) \deqn{\texttt{pct} \cdot (u_0 -
 #'   u_{\mathrm{base}})}{pct * (u_0 - u_base)} where \eqn{u_0} denotes the null
 #'   model's estimated utility and \eqn{u_{\mathrm{base}}}{u_base} the baseline
-#'   model's estimated utility.
+#'   model's estimated utility. The baseline model is either the reference model
+#'   or the best submodel found (see argument `baseline` of [summary.vsel()]).
 #'
 #'   In doing so, loss statistics like the root mean squared error (RMSE) and
 #'   the mean squared error (MSE) are converted to utilities by multiplying them
@@ -1721,10 +1680,9 @@ suggest_size.vsel <- function(
   if (length(stat) > 1) {
     stop("Only one statistic can be specified to suggest_size")
   }
-
   stats <- summary.vsel(object,
                         stats = stat,
-                        type = c("diff", "diff.upper", "diff.lower"),
+                        type = c("mean", "upper", "lower"),
                         deltas = TRUE,
                         ...)
   stats <- stats$perf_sub
@@ -1739,9 +1697,9 @@ suggest_size.vsel <- function(
       type <- "upper"
     }
   }
-  bound <- paste0(stat, ".diff.", type)
-  stat.diff <- paste0(stat, ".", 'diff')
-  util_null <- sgn * unlist(unname(subset(stats, stats$size == 0, stat.diff)))
+  bound <- paste0(stat, ".", type)
+
+  util_null <- sgn * unlist(unname(subset(stats, stats$size == 0, stat)))
   if (stat != "gmpd") {
     util_cutoff <- pct * util_null
   } else {
@@ -1750,13 +1708,12 @@ suggest_size.vsel <- function(
   if (is.na(thres_elpd)) {
     thres_elpd <- Inf
   }
-
   nobs_test <- object$nobs_test
   res <- stats[
     (sgn * stats[, bound] >= util_cutoff) |
-      (stat == "elpd" & stats[, stat.diff] > thres_elpd) |
-      (stat == "mlpd" & stats[, stat.diff] > thres_elpd / nobs_test) |
-      (stat == "gmpd" & stats[, stat.diff] > exp(thres_elpd / nobs_test)),
+      (stat == "elpd" & stats[, stat] > thres_elpd) |
+      (stat == "mlpd" & stats[, stat] > thres_elpd / nobs_test) |
+      (stat == "gmpd" & stats[, stat] > exp(thres_elpd / nobs_test)),
     "size", drop = FALSE
   ]
 
