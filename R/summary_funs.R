@@ -451,8 +451,7 @@ get_stat <- function(summaries, summaries_baseline = NULL,
                                      y = (correct-correct_baseline)[loo_inds],
                                      y_idx = loo_inds,
                                      w = wobs)
-        value <- srs_diffe$y_hat / n_full + mean(wobs * correct_baseline) -
-          ifelse(is.null(mu_baseline), 0, mean(wobs * correct_baseline))
+        value <- srs_diffe$y_hat / n_full
         # combine estimates of var(y_hat) and var(y)
         value_se <- sqrt(srs_diffe$v_y_hat + srs_diffe$hat_v_y) / n_full
       } else {
