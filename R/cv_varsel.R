@@ -336,7 +336,6 @@ cv_varsel.refmodel <- function(
   )
   cv_method <- args$cv_method
   nloo <- args$nloo
-  n <- refmodel$nobs
   K <- args$K
   cvfits <- args$cvfits
 
@@ -405,15 +404,15 @@ cv_varsel.refmodel <- function(
       search_terms_was_null = search_terms_was_null,
       search_out_rks = search_out_rks, parallel = parallel, ...
     )
-    if (is.null(summaries_fast) && validate_search && nloo < n) {
+    if (is.null(summaries_fast) && validate_search && nloo < refmodel$nobs) {
       # Run fast LOO-CV to be used in subsampling difference estimator
       summaries_fast <- loo_varsel(
         refmodel = refmodel, method = method, nterms_max = nterms_max,
         ndraws = ndraws, nclusters = nclusters, ndraws_pred = ndraws_pred,
         nclusters_pred = nclusters_pred, refit_prj = refit_prj, penalty = penalty,
         verbose = verbose, search_control = search_control,
-        nloo = n,                # fast LOO-CV for all n
-        validate_search = FALSE, # fast LOO-CV for all n
+        nloo = refmodel$nobs,    # fast LOO-CV (using all observations)
+        validate_search = FALSE, # fast LOO-CV (using all observations)
         search_path_fulldata = search_path_fulldata,
         search_terms = search_terms,
         search_terms_was_null = search_terms_was_null,
