@@ -749,6 +749,15 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
   if (!validate_search) {
     ## Case `validate_search = FALSE` -----------------------------------------
 
+    # NOTE: The case where `inds` is an actual subset of the set of all
+    # observation indices should never occur here in the
+    # `validate_search = FALSE` case. Thus, in principle, the code could be
+    # simplified here, but keeping `inds` in case this might be helpful in the
+    # future.
+    if (nloo < n) {
+      stop("`nloo < n` is unexpected if `validate_search = FALSE`")
+    }
+
     # "Run" the performance evaluation for the submodels along the predictor
     # ranking (in fact, we only prepare the performance evaluation by computing
     # precursor quantities, but for users, this difference is not perceivable):
