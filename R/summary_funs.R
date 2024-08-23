@@ -92,13 +92,12 @@ weighted_summary_means <- function(y_wobs_test, family, wdraws, mu, dis, cl_ref,
   stat_tab <- data.frame()
   summaries_ref <- varsel$summaries$ref
   summaries_sub <- varsel$summaries$sub
-  if (!is.null(varsel$summaries_fast)) {
-    summaries_fast_sub <- varsel$summaries_fast$sub
+  summaries_fast_sub <- varsel$summaries_fast$sub
+  if (!is.null(summaries_fast_sub)) {
     if (any(stats %in% c("auc"))) {
-      warning("Subsampling LOO with AUC not implemented. Using fast LOO for submodel AUC.")
+      warning("Subsampling LOO with AUC not implemented. Using fast LOO for ",
+              "submodel AUC.")
     }
-  } else {
-    summaries_fast_sub <- NULL
   }
 
   if (!varsel$refmodel$family$for_latent && !resp_oscale) {
