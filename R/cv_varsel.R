@@ -704,6 +704,8 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
     refmodel$y <- y_lat_E$value
   }
 
+  loo_ref_oscale <- apply(loglik_forPSIS + lw, 2, log_sum_exp)
+
   if (validate_search && nloo < n) {
     # Select which LOO-folds get more accurate computation using simple
     # random sampling without resampling (Magnusson et al., 2020)
@@ -722,7 +724,6 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
                           fixed = TRUE)),
     simplify = FALSE
   )
-  loo_ref_oscale <- apply(loglik_forPSIS + lw, 2, log_sum_exp)
   if (refmodel$family$for_latent) {
     loo_sub_oscale <- loo_sub
     # In general, we could use `mu_sub_oscale <- mu_sub` here, but the case
