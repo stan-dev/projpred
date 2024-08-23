@@ -243,8 +243,8 @@ get_stat <- function(summaries, summaries_baseline = NULL,
                      y_wobs_test, stat, alpha = 0.1, ...) {
   mu <- summaries$mu
   lppd <- summaries$lppd
-  n <- length(lppd)
-  n_loo <- if (is.null(loo_inds)) n else length(loo_inds)
+  n_full <- length(lppd)
+  n_loo <- if (is.null(loo_inds)) n_full else length(loo_inds)
   if (n_loo == 0) {
     return(list(value = NA, se = NA, lq = NA, uq = NA))
   }
@@ -253,14 +253,14 @@ get_stat <- function(summaries, summaries_baseline = NULL,
 
   if (stat %in% c("elpd", "mlpd", "gmpd")) {
     if (is.null(summaries_baseline)) {
-      lppd_baseline = 0
+      lppd_baseline <- 0
     } else {
-      lppd_baseline = summaries_baseline$lppd
+      lppd_baseline <- summaries_baseline$lppd
     }
-    if (!is.null(summaries_fast) && n_loo<n) {
+    if (n_loo < n_full) {
       # subsampling difference estimator (Magnusson et al., 2020)
-      srs_diffe <- .srs_diff_est_w(y_approx = summaries_fast$lppd-lppd_baseline,
-                                   y = (lppd-lppd_baseline)[loo_inds],
+      srs_diffe <- .srs_diff_est_w(y_approx = summaries_fast$lppd - lppd_baseline,
+                                   y = (lppd - lppd_baseline)[loo_inds],
                                    y_idx = loo_inds)
       value <- srs_diffe$y_hat
       # combine estimates of var(y_hat) and var(y)
@@ -268,11 +268,11 @@ get_stat <- function(summaries, summaries_baseline = NULL,
     } else {
       # full LOO estimator
       value <- sum((lppd - lppd_baseline), na.rm = TRUE)
-      value_se <-sd(lppd - lppd_baseline, na.rm = TRUE) * sqrt(n)
+      value_se <-sd(lppd - lppd_baseline, na.rm = TRUE) * sqrt(n_full)
     }
     if (stat %in% c("mlpd", "gmpd")) {
-      value <- value / n
-      value_se <- value_se / n
+      value <- value / n_full
+      value_se <- value_se / n_full
       if (stat == "gmpd") {
         value_gmpd <- exp(value)
         # delta method
@@ -282,26 +282,26 @@ get_stat <- function(summaries, summaries_baseline = NULL,
   } else if (stat %in% c("mse", "rmse", "R2")) {
     y <- y_wobs_test$y_prop %||% y_wobs_test$y
     wobs <- y_wobs_test$wobs
-    wobs <- n * wobs / sum(wobs)
+    wobs <- n_full * wobs / sum(wobs)
     if (is.null(summaries_baseline)) {
       mu_baseline <- 0
     } else {
       mu_baseline <- summaries_baseline$mu
     }
     # Use normal approximation for mse and delta method for rmse and R2
-    if (is.null(summaries_fast) || n_loo==n) {
+    if (n_loo == n_full) {
       # full LOO estimator
       value <- mean(wobs * (mu - y)^2)
-      value_se <- .weighted_sd((mu - y)^2, wobs) / sqrt(n)
+      value_se <- .weighted_sd((mu - y)^2, wobs) / sqrt(n_full)
     } else {
       # subsampling difference estimator (Magnusson et al., 2020)
       srs_diffe <- .srs_diff_est_w(y_approx = (summaries_fast$mu - y)^2,
-                                   y = ((mu-y)^2)[loo_inds],
+                                   y = ((mu - y)^2)[loo_inds],
                                    y_idx = loo_inds,
                                    w = wobs)
-      value <- srs_diffe$y_hat / n
+      value <- srs_diffe$y_hat / n_full
       # combine estimates of var(y_hat) and var(y)
-      value_se <- sqrt(srs_diffe$v_y_hat + srs_diffe$hat_v_y) / n
+      value_se <- sqrt(srs_diffe$v_y_hat + srs_diffe$hat_v_y) / n_full
     }
     # store for later calculations
     mse_e <- value
@@ -309,23 +309,22 @@ get_stat <- function(summaries, summaries_baseline = NULL,
     if (!is.null(summaries_baseline)) {
       # delta=TRUE, variance of difference of two normally distributed
       mse_b <- mean(wobs * (mu_baseline - y)^2)
-      var_mse_b <- .weighted_sd((mu_baseline - y)^2, wobs)^2 / n
-      if (is.null(summaries_fast) || n_loo==n) {
-        cov_mse_e_b <- mean(wobs * ((mu - y)^2-mse_e) *
-                              ((mu_baseline-y)^2-mse_b)) / n
+      var_mse_b <- .weighted_sd((mu_baseline - y)^2, wobs)^2 / n_full
+      if (n_loo == n_full) {
+        cov_mse_e_b <- mean(wobs * ((mu - y)^2 - mse_e) *
+                              ((mu_baseline - y)^2 - mse_b)) / n_full
       } else {
-        mse_e_fast <- mean(wobs * (summaries_fast$mu-y)^2)
+        mse_e_fast <- mean(wobs * (summaries_fast$mu - y)^2)
         srs_diffe <-
-          .srs_diff_est_w(y_approx =
-                            ((summaries_fast$mu - y)^2 -mse_e_fast) *
-                            ((mu_baseline-y)^2 - mse_b),
-                          y = (((mu - y)^2 -mse_e) *
-                                 ((mu_baseline-y)^2 -mse_b))[loo_inds],
+          .srs_diff_est_w(y_approx = ((summaries_fast$mu - y)^2 - mse_e_fast) *
+                            ((mu_baseline - y)^2 - mse_b),
+                          y = (((mu - y)^2 - mse_e) *
+                                 ((mu_baseline - y)^2 - mse_b))[loo_inds],
                           y_idx = loo_inds,
                           w = wobs)
-        cov_mse_e_b <- srs_diffe$y_hat / n^2
+        cov_mse_e_b <- srs_diffe$y_hat / n_full^2
       }
-      value_se <- sqrt(value_se^2 - 2*cov_mse_e_b + var_mse_b)
+      value_se <- sqrt(value_se^2 - 2 * cov_mse_e_b + var_mse_b)
     }
     if (stat == "mse") {
       value <- mse_e - ifelse(is.null(summaries_baseline), 0, mse_b)
@@ -336,43 +335,41 @@ get_stat <- function(summaries, summaries_baseline = NULL,
       value_se <- sqrt(value_se^2 / mse_e / 4)
     } else if (stat == "R2") {
       # simple transformation of mse
-      mse_y <- mean(wobs * (mean(y)-y)^2)
+      mse_y <- mean(wobs * (mean(y) - y)^2)
       value <- 1 - mse_e / mse_y - ifelse(is.null(summaries_baseline), 0, 1 - mse_b / mse_y)
       # the first-order Taylor approximation of the variance
-      var_mse_y <- .weighted_sd((mean(y)-y)^2, wobs)^2 / n
-      if (is.null(summaries_fast) || n_loo==n) {
+      var_mse_y <- .weighted_sd((mean(y) - y)^2, wobs)^2 / n_full
+      if (n_loo == n_full) {
         if (is.null(summaries_baseline)) {
           cov_mse_e_y <- mean(wobs * ((mu - y)^2 - mse_e) *
-                                ((mean(y)-y)^2-mse_y)) / n
+                                ((mean(y) - y)^2 - mse_y)) / n_full
         } else {
           cov_mse_e_y <- mean(wobs * ((mu - y)^2 - mse_e -
                                         ((mu_baseline - y)^2 - mse_b)) *
-                                ((mean(y)-y)^2-mse_y)) / n
+                                ((mean(y) - y)^2 - mse_y)) / n_full
         }
       } else {
-        mse_e_fast <- mean(wobs * (summaries_fast$mu-y)^2)
+        mse_e_fast <- mean(wobs * (summaries_fast$mu - y)^2)
         if (is.null(summaries_baseline)) {
           srs_diffe <-
-            .srs_diff_est_w(y_approx =
-                              ((summaries_fast$mu - y)^2 - mse_e_fast) *
-                              ((mean(y)-y)^2 - mse_y),
+            .srs_diff_est_w(y_approx = ((summaries_fast$mu - y)^2 - mse_e_fast) *
+                              ((mean(y) - y)^2 - mse_y),
                             y = (((mu - y)^2 - mse_e) *
-                                   ((mean(y)-y)^2 -mse_y))[loo_inds],
+                                   ((mean(y) - y)^2 - mse_y))[loo_inds],
                             y_idx = loo_inds,
                             w = wobs)
         } else {
           srs_diffe <-
-            .srs_diff_est_w(y_approx =
-                              ((summaries_fast$mu - y)^2 - mse_e_fast-
-                                 ((mu_baseline - y)^2 - mse_b)) *
-                              ((mean(y)-y)^2 - mse_y),
+            .srs_diff_est_w(y_approx = ((summaries_fast$mu - y)^2 - mse_e_fast -
+                                          ((mu_baseline - y)^2 - mse_b)) *
+                              ((mean(y) - y)^2 - mse_y),
                             y = (((mu - y)^2 - mse_e -
                                     ((mu_baseline - y)^2 - mse_b)) *
-                                   ((mean(y)-y)^2 -mse_y))[loo_inds],
+                                   ((mean(y) - y)^2 - mse_y))[loo_inds],
                             y_idx = loo_inds,
                             w = wobs)
         }
-        cov_mse_e_y <- srs_diffe$y_hat / n^2
+        cov_mse_e_y <- srs_diffe$y_hat / n_full^2
       }
       # part of delta se comes automatically via mse
       var_mse_e <- value_se^2
@@ -396,7 +393,7 @@ get_stat <- function(summaries, summaries_baseline = NULL,
     # be removed, but we leave it here for the future (perhaps one day, we will
     # not require the user-supplied observation weights to be whole numbers
     # anymore).
-    wobs <- rep(1, n)
+    wobs <- rep(1, n_full)
     if (!is.null(y_wobs_test$y_prop)) {
       # CAUTION: The following checks also ensure that `y` does not have `NA`s
       # (see the other "CAUTION" comments below for changes that are needed if
@@ -415,10 +412,10 @@ get_stat <- function(summaries, summaries_baseline = NULL,
         mu_baseline <- NULL
       }
       # CAUTION: If `y` is allowed to have `NA`s here, then the following
-      # definition of `n` needs to be adapted:
-      n <- sum(!is.na(mu))
+      # definition of `n_full` needs to be adapted:
+      n_full <- sum(!is.na(mu))
       wobs <- rep(wobs, y_wobs_test$wobs)
-      wobs <- n * wobs / sum(wobs)
+      wobs <- n_full * wobs / sum(wobs)
     } else {
       stopifnot(all(y_wobs_test$wobs == 1))
       if (!is.null(summaries_baseline)) {
@@ -443,7 +440,7 @@ get_stat <- function(summaries, summaries_baseline = NULL,
         correct_baseline <- 0
       }
 
-      if (!is.null(summaries_fast) && n_loo<n) {
+      if (n_loo < n_full) {
         # subsampling difference estimator (Magnusson et al., 2020)
         mu_fast <- summaries_fast$mu
         if (!is.factor(mu_fast)) {
@@ -454,17 +451,17 @@ get_stat <- function(summaries, summaries_baseline = NULL,
                                      y = (correct-correct_baseline)[loo_inds],
                                      y_idx = loo_inds,
                                      w = wobs)
-        value <- srs_diffe$y_hat / n + mean(wobs * correct_baseline) -
+        value <- srs_diffe$y_hat / n_full + mean(wobs * correct_baseline) -
           ifelse(is.null(mu_baseline), 0, mean(wobs * correct_baseline))
         # combine estimates of var(y_hat) and var(y)
-        value_se <- sqrt(srs_diffe$v_y_hat + srs_diffe$hat_v_y) / n
+        value_se <- sqrt(srs_diffe$v_y_hat + srs_diffe$hat_v_y) / n_full
       } else {
         # full LOO estimator
         value <- mean(wobs * correct) - mean(wobs * correct_baseline)
-        value_se <- .weighted_sd(correct - correct_baseline, wobs) / sqrt(n)
+        value_se <- .weighted_sd(correct - correct_baseline, wobs) / sqrt(n_full)
       }
     } else if (stat == "auc") {
-      if (!is.null(summaries_fast) && n_loo<n) {
+      if (n_loo < n_full) {
         # subsampling LOO with AUC not implemented. Using fast LOO result.
         mu <- summaries_fast$mu
       }
@@ -559,35 +556,35 @@ get_nfeat_baseline <- function(object, baseline, stat, ...) {
 
 ## Difference estimation using SRS-WOR sampling (Magnusson et al., 2020)
 ## copied from loo:::srs_diff_est and added weights
-.srs_diff_est_w <- function(y_approx, y, y_idx, w=1) {
+.srs_diff_est_w <- function(y_approx, y, y_idx, wobs = 1) {
 
   N <- length(y_approx)
   m <- length(y)
   y_approx_m <- y_approx[y_idx]
-  w_m <- 1
-  if (length(w)>1) {
-    w_m <- w[y_idx]
-    w_m <- length(w_m)*w_m/sum(w_m)
-    w <- length(w)*w/sum(w)
+  wobs_m <- 1
+  if (length(wobs) > 1) {
+    wobs_m <- wobs[y_idx]
+    wobs_m <- length(wobs_m) * wobs_m / sum(wobs_m)
+    wobs <- length(wobs) * wobs / sum(wobs)
   }
 
   e_i <- y - y_approx_m
-  t_pi_tilde <- sum(w*y_approx)
-  t_pi2_tilde <- sum(w*y_approx^2)
-  t_e <- N * mean(w_m*e_i)
-  t_hat_epsilon <- N * mean(w_m*(y^2 - y_approx_m^2))
+  t_pi_tilde <- sum(wobs * y_approx)
+  t_pi2_tilde <- sum(wobs * y_approx^2)
+  t_e <- N * mean(wobs_m * e_i)
+  t_hat_epsilon <- N * mean(wobs_m * (y^2 - y_approx_m^2))
 
   est_list <- list(m = length(y), N = N)
   # eq (7)
   est_list$y_hat <- t_pi_tilde + t_e
   # eq (8)
-  var_e_i <- m/(m-1)*(mean(w_m*e_i^2)-mean(w_m*e_i)^2)
+  var_e_i <- m / (m - 1) * (mean(wobs_m * e_i^2) - mean(wobs_m * e_i)^2)
   est_list$v_y_hat <- N^2 * (1 - m / N) * var_e_i / m
   # eq (9) first row second `+` should be `-`
   # Supplementary material eq (6) has this correct
   # Here the variance is for sum, while in the paper the variance is for mean
   # which explains the proportional difference of 1/N
   est_list$hat_v_y <- (t_pi2_tilde + t_hat_epsilon) - # a (has been checked)
-    (1/N) * (t_e^2 - est_list$v_y_hat + 2 * t_pi_tilde * est_list$y_hat - t_pi_tilde^2) # b
-  est_list
+    (1 / N) * (t_e^2 - est_list$v_y_hat + 2 * t_pi_tilde * est_list$y_hat - t_pi_tilde^2) # b
+  return(est_list)
 }
