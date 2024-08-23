@@ -264,7 +264,7 @@ get_stat <- function(summaries, summaries_baseline = NULL,
                                    y_idx = loo_inds)
       value <- srs_diffe$y_hat
       # combine estimates of var(y_hat) and var(y)
-      value_se <- sqrt(srs_diffe$v_y_hat + srs_diffe$hat_v_y)
+      value_se <- srs_diffe$y_hat_se
     } else {
       # full LOO estimator
       value <- sum((lppd - lppd_baseline), na.rm = TRUE)
@@ -301,7 +301,7 @@ get_stat <- function(summaries, summaries_baseline = NULL,
                                    w = wobs)
       value <- srs_diffe$y_hat / n_full
       # combine estimates of var(y_hat) and var(y)
-      value_se <- sqrt(srs_diffe$v_y_hat + srs_diffe$hat_v_y) / n_full
+      value_se <- srs_diffe$y_hat_se / n_full
     }
     # store for later calculations
     mse_e <- value
@@ -453,7 +453,7 @@ get_stat <- function(summaries, summaries_baseline = NULL,
                                      w = wobs)
         value <- srs_diffe$y_hat / n_full
         # combine estimates of var(y_hat) and var(y)
-        value_se <- sqrt(srs_diffe$v_y_hat + srs_diffe$hat_v_y) / n_full
+        value_se <- srs_diffe$y_hat_se / n_full
       } else {
         # full LOO estimator
         value <- mean(wobs * correct) - mean(wobs * correct_baseline)
@@ -585,5 +585,6 @@ get_nfeat_baseline <- function(object, baseline, stat, ...) {
   # which explains the proportional difference of 1/N
   est_list$hat_v_y <- (t_pi2_tilde + t_hat_epsilon) - # a (has been checked)
     (1 / N) * (t_e^2 - est_list$v_y_hat + 2 * t_pi_tilde * est_list$y_hat - t_pi_tilde^2) # b
+  est_list$y_hat_se <- sqrt(est_list$v_y_hat + est_list$hat_v_y)
   return(est_list)
 }
