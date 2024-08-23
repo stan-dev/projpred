@@ -562,6 +562,10 @@ parse_args_cv_varsel <- function(refmodel, cv_method, nloo, K, cvfits,
     if (nloo < 1) {
       stop("nloo must be at least 1")
     }
+    if (!validate_search && nloo < refmodel[["nobs"]]) {
+      stop("Subsampled PSIS-LOO-CV is not supported for ",
+           "`validate_search = FALSE`.")
+    }
   }
 
   # Restrictions in case of previous search results which should be re-used:
