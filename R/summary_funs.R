@@ -159,7 +159,7 @@ weighted_summary_means <- function(y_wobs_test, family, wdraws, mu, dis, cl_ref,
     summaries_ref$mu <- catmaxprb(summaries_ref$mu, lvls = varsel$refmodel$family$cats)
     summaries_sub <- lapply(summaries_sub, function(summaries_sub_k) {
       summaries_sub_k$mu <- catmaxprb(summaries_sub_k$mu,
-                                 lvls = varsel$refmodel$family$cats)
+                                      lvls = varsel$refmodel$family$cats)
       return(summaries_sub_k)
     })
     # Since `mu` is an unordered factor, `y` needs to be unordered, too (or both
@@ -188,6 +188,7 @@ weighted_summary_means <- function(y_wobs_test, family, wdraws, mu, dis, cl_ref,
     res <- get_stat(summaries = summaries_ref,
                     summaries_baseline = NULL,
                     summaries_fast = NULL,
+                    loo_inds = varsel$loo_inds,
                     varsel$y_wobs_test, stat, alpha = alpha, ...)
     row <- data.frame(
       data = varsel$type_test, size = Inf, delta = delta, statistic = stat,
@@ -201,10 +202,12 @@ weighted_summary_means <- function(y_wobs_test, family, wdraws, mu, dis, cl_ref,
       diff <- get_stat(summaries = summaries_sub[[k]],
                        summaries_baseline = summaries_baseline,
                        summaries_fast = summaries_fast_sub[[k]],
+                       loo_inds = varsel$loo_inds,
                        varsel$y_wobs_test, stat, alpha = alpha, ...)
       res <- get_stat(summaries = summaries_sub[[k]],
                       summaries_baseline = NULL,
                       summaries_fast = summaries_fast_sub[[k]],
+                      loo_inds = varsel$loo_inds,
                       varsel$y_wobs_test, stat, alpha = alpha, ...)
       row <- data.frame(
         data = varsel$type_test, size = k - 1, delta = delta,
@@ -236,13 +239,12 @@ check_sub_NA <- function(summaries_sub_k, el_nm) {
 ## into account in `lppd`. However, `mu` does not take them into account, so
 ## some further adjustments are necessary below.
 get_stat <- function(summaries, summaries_baseline = NULL,
-                     summaries_fast = NULL,
+                     summaries_fast = NULL, loo_inds = NULL,
                      y_wobs_test, stat, alpha = 0.1, ...) {
   mu <- summaries$mu
   lppd <- summaries$lppd
-  loo_inds <- which(!is.na(lppd))
   n <- length(lppd)
-  n_loo <- length(loo_inds)
+  n_loo <- if (is.null(loo_inds)) n else length(loo_inds)
   if (n_loo == 0) {
     return(list(value = NA, se = NA, lq = NA, uq = NA))
   }
@@ -344,7 +346,7 @@ get_stat <- function(summaries, summaries_baseline = NULL,
                                 ((mean(y)-y)^2-mse_y)) / n
         } else {
           cov_mse_e_y <- mean(wobs * ((mu - y)^2 - mse_e -
-                                       ((mu_baseline - y)^2 - mse_b)) *
+                                        ((mu_baseline - y)^2 - mse_b)) *
                                 ((mean(y)-y)^2-mse_y)) / n
         }
       } else {
