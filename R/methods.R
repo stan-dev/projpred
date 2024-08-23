@@ -1198,18 +1198,18 @@ plot.vsel <- function(
 #'   are again all observations because the test set is the same as the training
 #'   set). Available statistics are:
 #'   * `"elpd"`: expected log (pointwise) predictive density (for a new
-#'   dataset). Estimated by the sum of the observation-specific log predictive
-#'   density values (with each of these predictive density values being
-#'   a---possibly weighted---average across the parameter draws).
-#'   * `"mlpd"`: mean log predictive density, that is, `"elpd"` divided by the
-#'   number of observations.
+#'   dataset) (ELPD). Estimated by the sum of the observation-specific log
+#'   predictive density values (with each of these predictive density values
+#'   being a---possibly weighted---average across the parameter draws).
+#'   * `"mlpd"`: mean log predictive density (MLPD), that is, the ELPD divided
+#'   by the number of observations.
 #'   * `"gmpd"`: geometric mean predictive density (GMPD), that is, [exp()] of
-#'   `"mlpd"`. The GMPD is especially helpful for discrete response families
+#'   the MLPD. The GMPD is especially helpful for discrete response families
 #'   (because there, the GMPD is bounded by zero and one). For the corresponding
 #'   standard error, the delta method is used. The corresponding confidence
 #'   interval type is "exponentiated normal approximation" because the
 #'   confidence interval bounds are the exponentiated confidence interval bounds
-#'   of the `"mlpd"`.
+#'   of the MLPD.
 #'   * `"mse"`: mean squared error (only available in the situations mentioned
 #'   in section "Details" below).
 #'   * `"rmse"`: root mean squared error (only available in the situations
@@ -1236,12 +1236,12 @@ plot.vsel <- function(
 #'   (nominal) coverage `1 - alpha`. Items `"diff"` and `"diff.se"` are only
 #'   supported if `deltas` is `FALSE`.
 #' @param deltas If `TRUE`, the submodel statistics are estimated relatively to
-#'   the baseline model (see argument `baseline`). For the `"gmpd"`, the term
+#'   the baseline model (see argument `baseline`). For the GMPD, the term
 #'   "relatively" refers to the ratio vs. the baseline model (i.e., the submodel
 #'   statistic divided by the baseline model statistic). For all other `stats`,
 #'   "relatively" refers to the difference from the baseline model (i.e., the
-#'   submodel statistic minus the baseline model statistic). For `"elpd"` and
-#'   `"mlpd"` the baseline performance is reported as 0. For `"gmpd"`
+#'   submodel statistic minus the baseline model statistic). For the ELPD and
+#'   the MLPD, the baseline performance is reported as 0. For the GMPD,
 #'   the baseline performance is reported as 1. For other statistics, the
 #'   baseline performance is reported as 0 if `deltas=TRUE` and in the original
 #'   scale if `deltas="mixed"`. If `deltas=TRUE` or `deltas="mixed"`, for all
