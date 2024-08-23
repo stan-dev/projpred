@@ -573,7 +573,7 @@ get_nfeat_baseline <- function(object, baseline, stat, ...) {
   t_e <- N * mean(wobs_m * e_i)
   t_hat_epsilon <- N * mean(wobs_m * (y^2 - y_approx_m^2))
 
-  est_list <- list(m = length(y), N = N)
+  est_list <- nlist(m, N)
   # eq (7)
   est_list$y_hat <- t_pi_tilde + t_e
   # eq (8)
