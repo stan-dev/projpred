@@ -385,6 +385,16 @@ get_stat <- function(summaries, summaries_baseline = NULL,
     }
   } else if (stat %in% c("acc", "pctcorr", "auc")) {
     y <- y_wobs_test$y
+    # In this case (`stat %in% c("acc", "pctcorr", "auc")`), we hard-code `wobs`
+    # to be full of ones because currently, the user-supplied observation
+    # weights are required to be (positive) whole numbers, so these observation
+    # weights are incorporated by "de-aggregating" the aggregated dataset that
+    # was supplied by the user (the term "de-aggregation" refers to the
+    # de-aggregation of the multiple Bernoulli trials belonging to one row in
+    # the aggregated dataset). Currently, `wobs` is not really useful and could
+    # be removed, but we leave it here for the future (perhaps one day, we will
+    # not require the user-supplied observation weights to be whole numbers
+    # anymore).
     wobs <- rep(1, n)
     if (!is.null(y_wobs_test$y_prop)) {
       # CAUTION: The following checks also ensure that `y` does not have `NA`s
@@ -403,8 +413,8 @@ get_stat <- function(summaries, summaries_baseline = NULL,
       } else {
         mu_baseline <- NULL
       }
-      # CAUTION: If `y` is allowed to have `NA`s here, then `n` needs to be
-      # adapted:
+      # CAUTION: If `y` is allowed to have `NA`s here, then the following
+      # definition of `n` needs to be adapted:
       n <- sum(!is.na(mu))
       wobs <- rep(wobs, y_wobs_test$wobs)
       wobs <- n * wobs / sum(wobs)
