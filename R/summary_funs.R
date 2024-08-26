@@ -245,7 +245,7 @@ get_stat <- function(summaries, summaries_baseline = NULL,
   lppd <- summaries$lppd
   n_full <- length(lppd)
   n_loo <- if (is.null(loo_inds)) n_full else length(loo_inds)
-  if (n_loo == 0) {
+  if (all(is.na(lppd)) || all(is.na(y_wobs_test$y_prop %||% y_wobs_test$y))) {
     return(list(value = NA, se = NA, lq = NA, uq = NA))
   }
   alpha_half <- alpha / 2
@@ -267,7 +267,7 @@ get_stat <- function(summaries, summaries_baseline = NULL,
       value_se <- sqrt(srs_diffe$v_y_hat + srs_diffe$hat_v_y)
     } else {
       # full LOO estimator
-      value <- sum((lppd - lppd_baseline), na.rm = TRUE)
+      value <- sum(lppd - lppd_baseline, na.rm = TRUE)
       value_se <-sd(lppd - lppd_baseline, na.rm = TRUE) * sqrt(n_full)
     }
     if (stat %in% c("mlpd", "gmpd")) {
