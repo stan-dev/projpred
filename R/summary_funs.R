@@ -406,11 +406,7 @@ get_stat <- function(summaries, summaries_baseline = NULL,
           rep(1L, y[i_short]))
       }))
       mu <- rep(mu, y_wobs_test$wobs)
-      if (!is.null(summaries_baseline)) {
-        mu_baseline <- rep(summaries_baseline$mu, y_wobs_test$wobs)
-      } else {
-        mu_baseline <- NULL
-      }
+      mu_baseline <- rep(summaries_baseline$mu, y_wobs_test$wobs)
       # CAUTION: If `y` is allowed to have `NA`s here, then the following
       # definition of `n_full` needs to be adapted:
       n_full <- sum(!is.na(mu))
@@ -418,11 +414,7 @@ get_stat <- function(summaries, summaries_baseline = NULL,
       wobs <- n_full * wobs / sum(wobs)
     } else {
       stopifnot(all(y_wobs_test$wobs == 1))
-      if (!is.null(summaries_baseline)) {
-        mu_baseline <- summaries_baseline$mu
-      } else {
-        mu_baseline <- NULL
-      }
+      mu_baseline <- summaries_baseline$mu
     }
     if (stat %in% c("acc", "pctcorr")) {
       # Find out whether each observation was classified correctly or not:
