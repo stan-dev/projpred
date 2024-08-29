@@ -386,12 +386,11 @@ get_stat <- function(summaries, summaries_baseline = NULL,
         }
       }
       # part of delta se comes automatically via mse
-      var_mse_e <- value_se^2
       if (!is.null(summaries_baseline)) {
         # delta=TRUE
         mse_e <- mse_e - mse_b
       }
-      value_se <- sqrt((var_mse_e -
+      value_se <- sqrt((value_se^2 -
                           2 * mse_e / mse_y * cov_mse_e_y +
                           (mse_e / mse_y)^2 * var_mse_y) / mse_y^2)
     }
