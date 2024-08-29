@@ -298,9 +298,7 @@ get_stat <- function(summaries, summaries_baseline = NULL,
     y <- y_wobs_test$y_prop %||% y_wobs_test$y
     wobs <- y_wobs_test$wobs
     wobs <- n_full * wobs / sum(wobs)
-    if (is.null(summaries_baseline)) {
-      mu_baseline <- 0
-    } else {
+    if (!is.null(summaries_baseline)) {
       mu_baseline <- summaries_baseline$mu
     }
     # Use normal approximation for mse and delta method for rmse and R2
