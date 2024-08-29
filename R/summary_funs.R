@@ -320,7 +320,6 @@ get_stat <- function(summaries, summaries_baseline = NULL,
     }
     # store for later calculations
     mse_e <- value
-    var_mse_e <- value_se^2
     if (!is.null(summaries_baseline)) {
       # delta=TRUE, variance of difference of two normally distributed
       mse_b <- mean(wobs * (mu_baseline - y)^2)
