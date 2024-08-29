@@ -304,11 +304,7 @@ get_stat <- function(summaries, summaries_baseline = NULL,
       mu_baseline <- summaries_baseline$mu
     }
     # Use normal approximation for mse and delta method for rmse and R2
-    if (n_loo == n_full) {
-      # full LOO estimator
-      value <- mean(wobs * (mu - y)^2)
-      value_se <- .weighted_sd((mu - y)^2, wobs) / sqrt(n_full)
-    } else {
+    if (n_loo < n_full) {
       # subsampling difference estimator (Magnusson et al., 2020)
       srs_diffe <- .srs_diff_est_w(y_approx = (summaries_fast$mu - y)^2,
                                    y = ((mu - y)^2)[loo_inds],
@@ -317,6 +313,10 @@ get_stat <- function(summaries, summaries_baseline = NULL,
       value <- srs_diffe$y_hat / n_full
       # combine estimates of var(y_hat) and var(y)
       value_se <- sqrt(srs_diffe$v_y_hat + srs_diffe$hat_v_y) / n_full
+    } else {
+      # full LOO estimator
+      value <- mean(wobs * (mu - y)^2)
+      value_se <- .weighted_sd((mu - y)^2, wobs) / sqrt(n_full)
     }
     # store for later calculations
     mse_e <- value
@@ -325,10 +325,7 @@ get_stat <- function(summaries, summaries_baseline = NULL,
       # delta=TRUE, variance of difference of two normally distributed
       mse_b <- mean(wobs * (mu_baseline - y)^2)
       var_mse_b <- .weighted_sd((mu_baseline - y)^2, wobs)^2 / n_full
-      if (n_loo == n_full) {
-        cov_mse_e_b <- mean(wobs * ((mu - y)^2 - mse_e) *
-                              ((mu_baseline - y)^2 - mse_b)) / n_full
-      } else {
+      if (n_loo < n_full) {
         mse_e_fast <- mean(wobs * (summaries_fast$mu - y)^2)
         srs_diffe <-
           .srs_diff_est_w(y_approx = ((summaries_fast$mu - y)^2 - mse_e_fast) *
@@ -338,6 +335,9 @@ get_stat <- function(summaries, summaries_baseline = NULL,
                           y_idx = loo_inds,
                           w = wobs)
         cov_mse_e_b <- srs_diffe$y_hat / n_full^2
+      } else {
+        cov_mse_e_b <- mean(wobs * ((mu - y)^2 - mse_e) *
+                              ((mu_baseline - y)^2 - mse_b)) / n_full
       }
       value_se <- sqrt(value_se^2 - 2 * cov_mse_e_b + var_mse_b)
     }
@@ -354,16 +354,7 @@ get_stat <- function(summaries, summaries_baseline = NULL,
       value <- 1 - mse_e / mse_y - ifelse(is.null(summaries_baseline), 0, 1 - mse_b / mse_y)
       # the first-order Taylor approximation of the variance
       var_mse_y <- .weighted_sd((mean(y) - y)^2, wobs)^2 / n_full
-      if (n_loo == n_full) {
-        if (is.null(summaries_baseline)) {
-          cov_mse_e_y <- mean(wobs * ((mu - y)^2 - mse_e) *
-                                ((mean(y) - y)^2 - mse_y)) / n_full
-        } else {
-          cov_mse_e_y <- mean(wobs * ((mu - y)^2 - mse_e -
-                                        ((mu_baseline - y)^2 - mse_b)) *
-                                ((mean(y) - y)^2 - mse_y)) / n_full
-        }
-      } else {
+      if (n_loo < n_full) {
         mse_e_fast <- mean(wobs * (summaries_fast$mu - y)^2)
         if (is.null(summaries_baseline)) {
           srs_diffe <-
@@ -385,6 +376,15 @@ get_stat <- function(summaries, summaries_baseline = NULL,
                             w = wobs)
         }
         cov_mse_e_y <- srs_diffe$y_hat / n_full^2
+      } else {
+        if (is.null(summaries_baseline)) {
+          cov_mse_e_y <- mean(wobs * ((mu - y)^2 - mse_e) *
+                                ((mean(y) - y)^2 - mse_y)) / n_full
+        } else {
+          cov_mse_e_y <- mean(wobs * ((mu - y)^2 - mse_e -
+                                        ((mu_baseline - y)^2 - mse_b)) *
+                                ((mean(y) - y)^2 - mse_y)) / n_full
+        }
       }
       # part of delta se comes automatically via mse
       var_mse_e <- value_se^2
