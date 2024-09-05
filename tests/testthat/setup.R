@@ -213,7 +213,7 @@ fam_nms_unsupp_regex <- paste0("\\.(", paste(fam_nms_unsupp, collapse = "|"),
 ## Setup ------------------------------------------------------------------
 
 # Number of observations:
-nobsv <- 41L
+nobsv <- 39L
 # Values for testing:
 nobsv_tst <- c(1L, nobsv %/% 3L)
 
