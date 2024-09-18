@@ -307,7 +307,7 @@ get_stat <- function(summaries, summaries_baseline = NULL,
       srs_diffe <- .srs_diff_est_w(y_approx = (summaries_fast$mu - y)^2,
                                    y = ((mu - y)^2)[loo_inds],
                                    y_idx = loo_inds,
-                                   w = wobs)
+                                   wobs = wobs)
       value <- srs_diffe$y_hat / n_full
       # combine estimates of var(y_hat) and var(y)
       value_se <- sqrt(srs_diffe$v_y_hat + srs_diffe$hat_v_y) / n_full
@@ -330,7 +330,7 @@ get_stat <- function(summaries, summaries_baseline = NULL,
                           y = (((mu - y)^2 - mse_e) *
                                  ((mu_baseline - y)^2 - mse_b))[loo_inds],
                           y_idx = loo_inds,
-                          w = wobs)
+                          wobs = wobs)
         cov_mse_e_b <- srs_diffe$y_hat / n_full^2
       } else {
         cov_mse_e_b <- mean(wobs * ((mu - y)^2 - mse_e) *
@@ -360,7 +360,7 @@ get_stat <- function(summaries, summaries_baseline = NULL,
                             y = (((mu - y)^2 - mse_e) *
                                    ((mean(y) - y)^2 - mse_y))[loo_inds],
                             y_idx = loo_inds,
-                            w = wobs)
+                            wobs = wobs)
         } else {
           srs_diffe <-
             .srs_diff_est_w(y_approx = ((summaries_fast$mu - y)^2 - mse_e_fast -
@@ -370,7 +370,7 @@ get_stat <- function(summaries, summaries_baseline = NULL,
                                     ((mu_baseline - y)^2 - mse_b)) *
                                    ((mean(y) - y)^2 - mse_y))[loo_inds],
                             y_idx = loo_inds,
-                            w = wobs)
+                            wobs = wobs)
         }
         cov_mse_e_y <- srs_diffe$y_hat / n_full^2
       } else {
@@ -453,7 +453,7 @@ get_stat <- function(summaries, summaries_baseline = NULL,
         srs_diffe <- .srs_diff_est_w(y_approx = correct_fast - correct_baseline,
                                      y = (correct-correct_baseline)[loo_inds],
                                      y_idx = loo_inds,
-                                     w = wobs)
+                                     wobs = wobs)
         value <- srs_diffe$y_hat / n_full
         # combine estimates of var(y_hat) and var(y)
         value_se <- sqrt(srs_diffe$v_y_hat + srs_diffe$hat_v_y) / n_full
