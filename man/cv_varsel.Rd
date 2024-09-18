@@ -32,7 +32,7 @@ cv_varsel(object, ...)
   refit_prj = !inherits(object, "datafit"),
   nterms_max = NULL,
   penalty = NULL,
-  verbose = TRUE,
+  verbose = getOption("projpred.verbose", interactive()),
   nloo = object$nobs,
   K = if (!inherits(object, "datafit")) 5 else 10,
   cvfits = object$cvfits,
@@ -44,6 +44,7 @@ cv_varsel(object, ...)
   seed = NA,
   search_terms = NULL,
   search_out = NULL,
+  summaries_fast = NULL,
   parallel = getOption("projpred.prll_cv", FALSE),
   ...
 )
@@ -67,12 +68,13 @@ is performed, which avoids refitting the reference model \code{nloo} times (in
 contrast to a standard LOO-CV). In the \code{"kfold"} case, a \eqn{K}-fold-CV is
 performed. See also section "Note" below.}
 
-\item{nloo}{\strong{Caution:} Still experimental. Only relevant if \code{cv_method = "LOO"}. If \code{nloo} is smaller than the number of all observations,
-approximate full LOO-CV using probability-proportional-to-size-sampling
-(PPS) to make accurate computation only for \code{nloo} (anything from 1 to the
-number of all observations) leave-one-out folds (Magnusson et al., 2019).
-Smaller values lead to faster computation but higher uncertainty in the
-evaluation part. If \code{NULL}, all observations are used (as by default).}
+\item{nloo}{Only relevant if \code{cv_method = "LOO"} and \code{validate_search = TRUE}. If \code{nloo > 0} is smaller than the number of all observations, full
+LOO-CV is approximated by combining the fast LOO result for the selected
+models and \code{nloo} leave-one-out searches using the difference estimator
+with simple random sampling (SRS) without replacement (WOR) (Magnusson et
+al., 2020). Smaller values lead to faster computation, but higher
+uncertainty in the evaluation part. If \code{NULL}, all observations are used
+(as by default).}
 
 \item{K}{Only relevant if \code{cv_method = "kfold"} and if \code{cvfits} is \code{NULL}
 (which is the case for reference model objects created by
@@ -85,14 +87,11 @@ folds in \eqn{K}-fold-CV.}
 
 \item{validate_search}{A single logical value indicating whether to
 cross-validate also the search part, i.e., whether to run the search
-separately for each CV-fold (\code{TRUE}) or not (\code{FALSE}). We strongly do not
-recommend setting this to \code{FALSE}, because this is known to bias the
-predictive performance estimates of the selected submodels. However,
-setting this to \code{FALSE} can sometimes be useful because comparing the
-results to the case where this argument is \code{TRUE} gives an idea of how
-strongly the search is (over-)fitted to the data (the difference
-corresponds to the search degrees of freedom or the effective number of
-parameters introduced by the search).}
+separately for each CV-fold (\code{TRUE}) or not (\code{FALSE}). With \code{FALSE}
+the computation is faster, but the predictive performance estimates
+of the selected submodels are optimistically biased. However, these fast
+biased estimated can be useful to obtain initial information on the
+usefulness of projection predictive variable selection.}
 
 \item{method}{The method for the search part. Possible options are
 \code{"forward"} for forward search and \code{"L1"} for L1 search. See also section
