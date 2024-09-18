@@ -42,6 +42,7 @@
 #'   of the selected submodels are optimistically biased. However, these fast
 #'   biased estimated can be useful to obtain initial information on the
 #'   usefulness of projection predictive variable selection.
+#' @param summaries_fast **TODO**
 #' @param seed Pseudorandom number generation (PRNG) seed by which the same
 #'   results can be obtained again if needed. Passed to argument `seed` of
 #'   [set.seed()], but can also be `NA` to not call [set.seed()] at all. If not
