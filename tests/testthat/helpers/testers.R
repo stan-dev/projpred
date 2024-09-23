@@ -2148,7 +2148,11 @@ vsel_tester <- function(
       rk_cv <- c(rk_cv, labels(terms(as.formula(paste(". ~", rk_cv_plus)))))
     }
     expect_true(
-      all(rk_cv %in% c(trms_universe_split, NA_character_)),
+      all(rk_cv %in%
+            c(trms_universe_split,
+              sub("^s\\((.*)\\)$", "\\1",
+                  grep("^s\\(.*\\)$", trms_universe_split, value = TRUE)),
+              NA_character_)),
       info = info_str
     )
   } else {
