@@ -209,7 +209,7 @@ validate_baseline <- function(vsel_obj, baseline, deltas) {
          "reference model.")
   }
   if (baseline == "best" && vsel_obj$cv_method == "LOO" &&
-      vsel_obj$nloo < vsel_obj$refmodel$nobs) {
+      isTRUE(vsel_obj$nloo < vsel_obj$refmodel$nobs)) {
     stop("Cannot use `baseline = \"best\"` in case of subsampled LOO-CV.")
   }
   return(baseline)
