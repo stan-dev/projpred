@@ -1192,9 +1192,11 @@ outdmin_tester_aug <- function(
         expect_true(is.vector(ranef_crr[["z.1"]][["(Intercept)"]], "numeric"),
                     info = info_str)
         expect_length(ranef_crr[["z.1"]][["(Intercept)"]], nlevels(dat$z.1))
-        expect_true(is.vector(ranef_crr[["z.1"]][["xco.1"]], "numeric"),
-                    info = info_str)
-        expect_length(ranef_crr[["z.1"]][["xco.1"]], nlevels(dat$z.1))
+        if ("xco.1" %in% coef_nms) {
+          expect_true(is.vector(ranef_crr[["z.1"]][["xco.1"]], "numeric"),
+                      info = info_str)
+          expect_length(ranef_crr[["z.1"]][["xco.1"]], nlevels(dat$z.1))
+        }
 
         # ordinal::VarCorr()
         VarCorr_crr <- ordinal::VarCorr(outdmin_totest[[j]])
@@ -1209,13 +1211,15 @@ outdmin_tester_aug <- function(
                     info = info_str)
         expect_named(attr(VarCorr_crr[["z.1"]], "stddev"), coef_nms,
                      info = info_str)
-        expect_true(is.matrix(attr(VarCorr_crr[["z.1"]], "correlation")),
-                    info = info_str)
-        expect_true(is.numeric(attr(VarCorr_crr[["z.1"]], "correlation")),
-                    info = info_str)
-        expect_identical(dimnames(attr(VarCorr_crr[["z.1"]], "correlation")),
-                         replicate(2, coef_nms, simplify = FALSE),
-                         info = info_str)
+        if ("xco.1" %in% coef_nms) {
+          expect_true(is.matrix(attr(VarCorr_crr[["z.1"]], "correlation")),
+                      info = info_str)
+          expect_true(is.numeric(attr(VarCorr_crr[["z.1"]], "correlation")),
+                      info = info_str)
+          expect_identical(dimnames(attr(VarCorr_crr[["z.1"]], "correlation")),
+                           replicate(2, coef_nms, simplify = FALSE),
+                           info = info_str)
+        }
 
         # formula()
         formula_crr <- formula(outdmin_totest[[j]])
