@@ -198,7 +198,7 @@ weighted_summary_means <- function(y_wobs_test, family, wdraws, mu, dis, cl_ref,
     res <- get_stat(summaries = summaries_ref,
                     summaries_baseline = summaries_baseline,
                     summaries_fast = NULL,
-                    loo_inds = varsel$loo_inds,
+                    loo_inds = NULL,
                     varsel$y_wobs_test, stat, alpha = alpha, ...)
     row <- data.frame(
       data = varsel$type_test, size = Inf, delta = delta, statistic = stat,
