@@ -108,17 +108,30 @@ weighted_summary_means <- function(y_wobs_test, family, wdraws, mu, dis, cl_ref,
     if (resp_oscale) {
       summaries_ref <- summaries_ref$oscale
       summaries_sub <- lapply(summaries_sub, "[[", "oscale")
+      if (!is.null(summaries_fast_sub)) {
+        summaries_fast_sub <- lapply(summaries_fast_sub, "[[", "oscale")
+      }
       ref_lppd_NA <- all(is.na(summaries_ref$lppd))
       sub_lppd_NA <- any(sapply(summaries_sub, check_sub_NA, el_nm = "lppd"))
+      if (!is.null(summaries_fast_sub)) {
+        fast_sub_lppd_NA <- any(sapply(summaries_fast_sub, check_sub_NA, el_nm = "lppd"))
+      } else {
+        fast_sub_lppd_NA <- FALSE
+      }
       ref_mu_NA <- all(is.na(summaries_ref$mu))
       sub_mu_NA <- any(sapply(summaries_sub, check_sub_NA, el_nm = "mu"))
-      if (ref_mu_NA || sub_mu_NA) {
+      if (!is.null(summaries_fast_sub)) {
+        fast_sub_mu_NA <- any(sapply(summaries_fast_sub, check_sub_NA, el_nm = "mu"))
+      } else {
+        fast_sub_mu_NA <- FALSE
+      }
+      if (ref_mu_NA || sub_mu_NA || fast_sub_mu_NA) {
         message(
           "`latent_ilink` returned only `NA`s, so all performance statistics ",
           "will also be `NA` as long as `resp_oscale = TRUE`."
         )
       } else if (any(stats %in% c("elpd", "mlpd", "gmpd")) &&
-                 (ref_lppd_NA || sub_lppd_NA)) {
+                 (ref_lppd_NA || sub_lppd_NA || fast_sub_lppd_NA)) {
         message(
           "`latent_ll_oscale` returned only `NA`s, so ELPD, MLPD, and GMPD ",
           "will also be `NA` as long as `resp_oscale = TRUE`."
