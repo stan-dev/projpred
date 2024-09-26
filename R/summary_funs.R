@@ -418,14 +418,30 @@ get_stat <- function(summaries, summaries_baseline = NULL,
       }))
       mu <- rep(mu, y_wobs_test$wobs)
       mu_baseline <- rep(summaries_baseline$mu, y_wobs_test$wobs)
+      mu_fast <- rep(summaries_fast$mu, y_wobs_test$wobs)
       # CAUTION: If `y` is allowed to have `NA`s here, then the following
       # definition of `n_full` needs to be adapted:
       n_full <- sum(!is.na(mu))
+      if (!is.null(loo_inds)) {
+        stopifnot(all(y_wobs_test$wobs > 0))
+        loo_inds <- unlist(lapply(loo_inds, function(loo_idx) {
+          cumsum_wobs <- cumsum(y_wobs_test$wobs)
+          if (loo_idx == 1) {
+            lower_idx_new <- 1L
+          } else {
+            lower_idx_new <- cumsum_wobs[loo_idx - 1L] + 1L
+          }
+          upper_idx_new <- cumsum_wobs[loo_idx]
+          return(lower_idx_new:upper_idx_new)
+        }))
+      }
+      n_loo <- if (is.null(loo_inds)) n_full else length(loo_inds)
       wobs <- rep(wobs, y_wobs_test$wobs)
       wobs <- n_full * wobs / sum(wobs)
     } else {
       stopifnot(all(y_wobs_test$wobs == 1))
       mu_baseline <- summaries_baseline$mu
+      mu_fast <- summaries_fast$mu
     }
     if (stat %in% c("acc", "pctcorr")) {
       # Find out whether each observation was classified correctly or not:
@@ -445,13 +461,12 @@ get_stat <- function(summaries, summaries_baseline = NULL,
 
       if (n_loo < n_full) {
         # subsampling difference estimator (Magnusson et al., 2020)
-        mu_fast <- summaries_fast$mu
         if (!is.factor(mu_fast)) {
           mu_fast <- round(mu_fast)
         }
         correct_fast <- mu_fast == y
         srs_diffe <- .srs_diff_est_w(y_approx = correct_fast - correct_baseline,
-                                     y = (correct-correct_baseline)[loo_inds],
+                                     y = (correct - correct_baseline)[loo_inds],
                                      y_idx = loo_inds,
                                      wobs = wobs)
         value <- srs_diffe$y_hat / n_full
@@ -465,7 +480,7 @@ get_stat <- function(summaries, summaries_baseline = NULL,
     } else if (stat == "auc") {
       if (n_loo < n_full) {
         # subsampling LOO with AUC not implemented. Using fast LOO result.
-        mu <- summaries_fast$mu
+        mu <- mu_fast
       }
       if (!is.null(mu_baseline)) {
         auc_data <- cbind(y, mu, wobs)
