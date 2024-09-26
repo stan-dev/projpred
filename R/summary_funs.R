@@ -162,6 +162,13 @@ weighted_summary_means <- function(y_wobs_test, family, wdraws, mu, dis, cl_ref,
                                       lvls = varsel$refmodel$family$cats)
       return(summaries_sub_k)
     })
+    if (!is.null(summaries_fast_sub)) {
+      summaries_fast_sub <- lapply(summaries_fast_sub, function(summaries_fast_sub_k) {
+        summaries_fast_sub_k$mu <- catmaxprb(summaries_fast_sub_k$mu,
+                                             lvls = varsel$refmodel$family$cats)
+        return(summaries_fast_sub_k)
+      })
+    }
     # Since `mu` is an unordered factor, `y` needs to be unordered, too (or both
     # would need to be ordered; however, unordered is the simpler type):
     varsel$y_wobs_test$y <- factor(varsel$y_wobs_test$y, ordered = FALSE)
