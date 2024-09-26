@@ -1,8 +1,8 @@
 .onAttach <- function(...) {
   ver <- utils::packageVersion("projpred")
   msg <- paste0("This is projpred version ", ver, ".")
-  msg <- paste0(msg, " ", "NOTE: In projpred 2.7.0, the default search method ",
-                "was set to \"forward\" (for all kinds of models).")
+  msg <- paste0(msg, "\n", "NOTE: In projpred 2.7.0, the default search ",
+                "method was set to \"forward\" (for all kinds of models).")
   packageStartupMessage(msg)
 }
 
@@ -14,7 +14,7 @@ nms_y_wobs_test <- function(wobs_nm = "wobs") {
   c("y", "y_oscale", wobs_nm)
 }
 
-weighted.sd <- function(x, w, na.rm = FALSE) {
+.weighted_sd <- function(x, w, na.rm = FALSE) {
   if (na.rm) {
     ind <- !is.na(w) & !is.na(x)
     n <- sum(ind)
@@ -63,10 +63,10 @@ ilinkfun_raw <- function(x, link_nm) {
   return(basic_ilink(x))
 }
 
-auc <- function(x) {
+.auc <- function(x) {
   resp <- x[, 1]
   pred <- x[, 2]
-  wcv <- x[, 3]
+  wobs <- x[, 3]
 
   # Make it explicit that `x` should not be used anymore (due to the possibility
   # of `NA`s, but also due to the re-ordering):
@@ -77,9 +77,9 @@ auc <- function(x) {
 
   resp <- resp[ord]
   pred <- pred[ord]
-  wcv <- wcv[ord]
+  wobs <- wobs[ord]
 
-  w0 <- w1 <- wcv
+  w0 <- w1 <- wobs
   # CAUTION: The following check also ensures that `resp` does not have `NA`s:
   stopifnot(all(resp %in% c(0, 1)))
   w0[resp == 1] <- 0 # for calculating the false positive rate (fpr)
@@ -152,8 +152,8 @@ validate_vsel_object_stats <- function(object, stats, resp_oscale = TRUE) {
   }
   resp_oscale <- object$refmodel$family$for_latent && resp_oscale
 
-  trad_stats <- c("elpd", "mlpd", "gmpd", "mse", "rmse", "acc", "pctcorr",
-                  "auc")
+  trad_stats <- c("elpd", "mlpd", "gmpd", "mse", "rmse", "R2",
+                  "acc", "pctcorr", "auc")
   trad_stats_binom_only <- c("acc", "pctcorr", "auc")
   augdat_stats <- c("elpd", "mlpd", "gmpd", "acc", "pctcorr")
   resp_oscale_stats_fac <- augdat_stats
@@ -196,16 +196,21 @@ validate_vsel_object_stats <- function(object, stats, resp_oscale = TRUE) {
   return(invisible(TRUE))
 }
 
-validate_baseline <- function(refmodel, baseline, deltas) {
+validate_baseline <- function(vsel_obj, baseline, deltas) {
   stopifnot(!is.null(baseline))
   if (!(baseline %in% c("ref", "best"))) {
     stop("Argument 'baseline' must be either 'ref' or 'best'.")
   }
-  if (baseline == "ref" && deltas == TRUE && inherits(refmodel, "datafit")) {
+  if (baseline == "ref" && deltas == TRUE &&
+      inherits(vsel_obj$refmodel, "datafit")) {
     # no reference model (or the results missing for some other reason),
     # so cannot compute differences (or ratios) vs. the reference model
     stop("Cannot use deltas = TRUE and baseline = 'ref' when there is no ",
          "reference model.")
+  }
+  if (baseline == "best" && vsel_obj$cv_method == "LOO" &&
+      isTRUE(vsel_obj$nloo < vsel_obj$refmodel$nobs)) {
+    stop("Cannot use `baseline = \"best\"` in case of subsampled LOO-CV.")
   }
   return(baseline)
 }
@@ -704,4 +709,9 @@ element_unq <- function(list_obj, nm) {
     el_unq <- list_obj[[1]][[nm]]
   }
   return(el_unq)
+}
+
+use_progressr <- function() {
+  getOption("projpred.use_progressr",
+            requireNamespace("progressr", quietly = TRUE) && interactive())
 }
