@@ -1384,6 +1384,10 @@ test_that("invalid `nloo` fails", {
   skip_if_not(run_cvvs)
   tstsetups_nonkfold <- grep("\\.kfold", names(cvvss), value = TRUE,
                              invert = TRUE)
+  valsearch_arg <- lapply(args_cvvs[tstsetups_nonkfold], "[[",
+                          "validate_search")
+  tstsetups_nonkfold <- tstsetups_nonkfold[!sapply(valsearch_arg, isFALSE)]
+  skip_if(length(tstsetups_nonkfold) == 0)
   for (tstsetup in head(tstsetups_nonkfold, 1)) {
     args_cvvs_i <- args_cvvs[[tstsetup]]
     # Use suppressWarnings() because test_that() somehow redirects stderr() and
@@ -1410,6 +1414,9 @@ test_that(paste(
     "\\.glm\\.gauss\\..*\\.default_cvmeth\\.default_search_trms",
     names(cvvss), value = TRUE
   )
+  valsearch_arg <- lapply(args_cvvs[tstsetups], "[[", "validate_search")
+  tstsetups <- tstsetups[!sapply(valsearch_arg, isFALSE)]
+  skip_if(length(tstsetups) == 0)
   for (tstsetup in tstsetups) {
     args_cvvs_i <- args_cvvs[[tstsetup]]
     # Use suppressWarnings() because test_that() somehow redirects stderr() and
@@ -1428,7 +1435,8 @@ test_that("setting `nloo` smaller than the number of observations works", {
   skip_if_not(run_cvvs)
   nloo_tst <- nobsv %/% 5L
   # Output elements of `vsel` objects that may be influenced by `nloo`:
-  vsel_nms_nloo <- c("summaries", "summaries_fast","predictor_ranking_cv", "nloo", "loo_inds", "ce")
+  vsel_nms_nloo <- c("summaries", "summaries_fast","predictor_ranking_cv",
+                     "nloo", "loo_inds", "ce")
   # In general, element `ce` is affected as well (because the PRNG state when
   # doing the clustering for the performance evaluation is different when `nloo`
   # is smaller than the number of observations compared to when `nloo` is equal
@@ -1440,6 +1448,9 @@ test_that("setting `nloo` smaller than the number of observations works", {
     "\\.glm\\.gauss\\..*\\.default_cvmeth\\.default_search_trms",
     names(cvvss), value = TRUE
   )
+  valsearch_arg <- lapply(args_cvvs[tstsetups], "[[", "validate_search")
+  tstsetups <- tstsetups[!sapply(valsearch_arg, isFALSE)]
+  skip_if(length(tstsetups) == 0)
   for (tstsetup in tstsetups) {
     args_cvvs_i <- args_cvvs[[tstsetup]]
     tstsetup_ref <- args_cvvs_i$tstsetup_ref
@@ -1461,7 +1472,7 @@ test_that("setting `nloo` smaller than the number of observations works", {
       prd_trms_len_expected = args_cvvs_i$nterms_max,
       method_expected = meth_exp_crr,
       cv_method_expected = "LOO",
-      valsearch_expected = args_cvvs_i$validate_search,
+      valsearch_expected = TRUE,
       nloo_expected = nloo_tst,
       search_terms_expected = args_cvvs_i$search_terms,
       search_trms_empty_size =
