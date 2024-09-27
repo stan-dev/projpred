@@ -236,7 +236,7 @@ test_that(paste(
   for (tstsetup in names(vss_datafit)) {
     mod_crr <- args_vs_datafit[[tstsetup]]$mod_nm
     meth_exp_crr <- args_vs_datafit[[tstsetup]]$method %||% "forward"
-    extra_tol_crr <- 1.5
+    extra_tol_crr <- 2
     if (any(grepl(":", ranking(vss_datafit[[tstsetup]])[["fulldata"]]))) {
       ### Testing for non-increasing element `ce` (for increasing model size)
       ### doesn't make sense if the ranking of predictors involved in

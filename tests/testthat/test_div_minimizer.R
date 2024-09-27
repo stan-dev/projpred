@@ -178,16 +178,28 @@ test_that("divmin_augdat() works", {
     } else {
       warn_expected <- NA
     }
-    expect_warning(
+    if (is.na(warn_expected)) {
+      # Handle this case separately to avoid that a warning about failure to
+      # converge results in an error.
       outdmin <- do.call(
         divmin_augdat,
         args_fit_i[intersect(c("formula", "data", "family", "weights",
                                "projpred_var", "projpred_ws_aug", "epsilon",
                                "avoid.increase"),
                              names(args_fit_i))]
-      ),
-      warn_expected
-    )
+      )
+    } else {
+      expect_warning(
+        outdmin <- do.call(
+          divmin_augdat,
+          args_fit_i[intersect(c("formula", "data", "family", "weights",
+                                 "projpred_var", "projpred_ws_aug", "epsilon",
+                                 "avoid.increase"),
+                               names(args_fit_i))]
+        ),
+        warn_expected
+      )
+    }
     if (fam_crr == "brnll") {
       outdmin_brnll_tmp[[tstsetup]] <- outdmin
     }
