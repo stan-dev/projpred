@@ -42,7 +42,6 @@
 #'   of the selected submodels are optimistically biased. However, these fast
 #'   biased estimated can be useful to obtain initial information on the
 #'   usefulness of projection predictive variable selection.
-#' @param summaries_fast **TODO**
 #' @param seed Pseudorandom number generation (PRNG) seed by which the same
 #'   results can be obtained again if needed. Passed to argument `seed` of
 #'   [set.seed()], but can also be `NA` to not call [set.seed()] at all. If not
@@ -188,8 +187,7 @@ cv_varsel.vsel <- function(
 ) {
   ## the following arguments should not change
   arg_nms_internal <- c("method", "ndraws", "nclusters", "nterms_max",
-                        "search_control", "penalty", "search_terms",
-                        "summaries_fast")
+                        "search_control", "penalty", "search_terms")
   dots <- list(...)
   arg_nms_internal_used <- intersect(arg_nms_internal, names(dots))
   for (arg in arg_nms_internal_used) {
@@ -243,7 +241,6 @@ cv_varsel.vsel <- function(
       search_control = object[["args_search"]][["search_control"]],
       penalty = object[["args_search"]][["penalty"]],
       search_terms = object[["args_search"]][["search_terms"]],
-      summaries_fast = object[["summaries_fast"]],
       cv_method = cv_method,
       nloo = nloo,
       K = K,
@@ -280,7 +277,6 @@ cv_varsel.refmodel <- function(
     seed = NA,
     search_terms = NULL,
     search_out = NULL,
-    summaries_fast = NULL,
     parallel = getOption("projpred.prll_cv", FALSE),
     ...) {
   if (!missing(lambda_min_ratio)) {
@@ -387,6 +383,7 @@ cv_varsel.refmodel <- function(
     search_out_rks <- NULL
   }
 
+  summaries_fast <- NULL
   if (cv_method == "LOO") {
     sel_cv <- loo_varsel(
       refmodel = refmodel, method = method, nterms_max = nterms_max,
@@ -405,7 +402,7 @@ cv_varsel.refmodel <- function(
       search_terms_was_null = search_terms_was_null,
       search_out_rks = search_out_rks, parallel = parallel, ...
     )
-    if (is.null(summaries_fast) && validate_search && nloo < refmodel$nobs) {
+    if (validate_search && nloo < refmodel$nobs) {
       # Run fast LOO-CV to be used in subsampling difference estimator
       summaries_fast <- loo_varsel(
         refmodel = refmodel, method = method, nterms_max = nterms_max,

@@ -44,7 +44,6 @@ cv_varsel(object, ...)
   seed = NA,
   search_terms = NULL,
   search_out = NULL,
-  summaries_fast = NULL,
   parallel = getOption("projpred.prll_cv", FALSE),
   ...
 )
@@ -195,8 +194,6 @@ default \code{search_terms} considers all the terms in the reference model's
 formula.}
 
 \item{search_out}{Intended for internal use.}
-
-\item{summaries_fast}{\strong{TODO}}
 
 \item{parallel}{A single logical value indicating whether to run costly parts
 of the CV in parallel (\code{TRUE}) or not (\code{FALSE}). See also section "Note"
