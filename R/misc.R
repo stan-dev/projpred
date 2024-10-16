@@ -1,8 +1,8 @@
 .onAttach <- function(...) {
   ver <- utils::packageVersion("projpred")
   msg <- paste0("This is projpred version ", ver, ".")
-  msg <- paste0(msg, "\n", "NOTE: In projpred 2.7.0, the default search ",
-                "method was set to \"forward\" (for all kinds of models).")
+  msg <- paste0(msg, " ", "NOTE: In projpred 2.7.0, the default search method ",
+                "was set to \"forward\" (for all kinds of models).")
   packageStartupMessage(msg)
 }
 
@@ -14,7 +14,7 @@ nms_y_wobs_test <- function(wobs_nm = "wobs") {
   c("y", "y_oscale", wobs_nm)
 }
 
-.weighted_sd <- function(x, w, na.rm = FALSE) {
+weighted.sd <- function(x, w, na.rm = FALSE) {
   if (na.rm) {
     ind <- !is.na(w) & !is.na(x)
     n <- sum(ind)
@@ -63,7 +63,7 @@ ilinkfun_raw <- function(x, link_nm) {
   return(basic_ilink(x))
 }
 
-.auc <- function(x) {
+auc <- function(x) {
   resp <- x[, 1]
   pred <- x[, 2]
   wobs <- x[, 3]
@@ -709,9 +709,4 @@ element_unq <- function(list_obj, nm) {
     el_unq <- list_obj[[1]][[nm]]
   }
   return(el_unq)
-}
-
-use_progressr <- function() {
-  getOption("projpred.use_progressr",
-            requireNamespace("progressr", quietly = TRUE) && interactive())
 }

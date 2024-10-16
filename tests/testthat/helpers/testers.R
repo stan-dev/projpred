@@ -1976,8 +1976,7 @@ vsel_tester <- function(
     search_control_expected = NULL,
     extra_tol = 1.1,
     info_str = ""
-    ) {
-
+) {
   # Preparations:
   if (with_cv) {
     if (is.null(cv_method_expected)) {
@@ -2305,7 +2304,6 @@ vsel_tester <- function(
     }
     return(invisible(TRUE))
   }
-
   for (j in seq_along(vs$summaries$sub)) {
     smmrs_sub_j_tester(vs$summaries$sub[[j]])
     if (vs$refmodel$family$for_latent) {

@@ -334,14 +334,14 @@ get_stat <- function(summaries, summaries_baseline = NULL,
     } else {
       # full LOO estimator
       value <- mean(wobs * (mu - y)^2)
-      value_se <- .weighted_sd((mu - y)^2, wobs) / sqrt(n_full)
+      value_se <- weighted.sd((mu - y)^2, wobs) / sqrt(n_full)
     }
     # store for later calculations
     mse_e <- value
     if (!is.null(summaries_baseline)) {
       # delta=TRUE, variance of difference of two normally distributed
       mse_b <- mean(wobs * (mu_baseline - y)^2)
-      var_mse_b <- .weighted_sd((mu_baseline - y)^2, wobs)^2 / n_full
+      var_mse_b <- weighted.sd((mu_baseline - y)^2, wobs)^2 / n_full
       if (n_loo < n_full) {
         mse_e_fast <- mean(wobs * (summaries_fast$mu - y)^2)
         srs_diffe <-
@@ -370,7 +370,7 @@ get_stat <- function(summaries, summaries_baseline = NULL,
       mse_y <- mean(wobs * (mean(y) - y)^2)
       value <- 1 - mse_e / mse_y - ifelse(is.null(summaries_baseline), 0, 1 - mse_b / mse_y)
       # the first-order Taylor approximation of the variance
-      var_mse_y <- .weighted_sd((mean(y) - y)^2, wobs)^2 / n_full
+      var_mse_y <- weighted.sd((mean(y) - y)^2, wobs)^2 / n_full
       if (n_loo < n_full) {
         mse_e_fast <- mean(wobs * (summaries_fast$mu - y)^2)
         if (is.null(summaries_baseline)) {
@@ -495,7 +495,7 @@ get_stat <- function(summaries, summaries_baseline = NULL,
       } else {
         # full LOO estimator
         value <- mean(wobs * correct) - mean(wobs * correct_baseline)
-        value_se <- .weighted_sd(correct - correct_baseline, wobs) / sqrt(n_full)
+        value_se <- weighted.sd(correct - correct_baseline, wobs) / sqrt(n_full)
       }
     } else if (stat == "auc") {
       if (n_loo < n_full) {
@@ -505,15 +505,15 @@ get_stat <- function(summaries, summaries_baseline = NULL,
       if (!is.null(mu_baseline)) {
         auc_data <- cbind(y, mu, wobs)
         auc_data_baseline <- cbind(y, mu_baseline, wobs)
-        value <- .auc(auc_data) - .auc(auc_data_baseline)
+        value <- auc(auc_data) - auc(auc_data_baseline)
         idxs_cols <- seq_len(ncol(auc_data))
         idxs_cols_bs <- setdiff(seq_len(ncol(auc_data) + ncol(auc_data_baseline)),
                                 idxs_cols)
         diffvalue.bootstrap <- bootstrap(
           cbind(auc_data, auc_data_baseline),
           function(x) {
-            .auc(x[, idxs_cols, drop = FALSE]) -
-              .auc(x[, idxs_cols_bs, drop = FALSE])
+            auc(x[, idxs_cols, drop = FALSE]) -
+              auc(x[, idxs_cols_bs, drop = FALSE])
           },
           ...
         )
@@ -523,8 +523,8 @@ get_stat <- function(summaries, summaries_baseline = NULL,
                           names = FALSE, na.rm = TRUE)
       } else {
         auc_data <- cbind(y, mu, wobs)
-        value <- .auc(auc_data)
-        value.bootstrap <- bootstrap(auc_data, .auc, ...)
+        value <- auc(auc_data)
+        value.bootstrap <- bootstrap(auc_data, auc, ...)
         value_se <- sd(value.bootstrap, na.rm = TRUE)
         lq_uq <- quantile(value.bootstrap,
                           probs = c(alpha_half, one_minus_alpha_half),

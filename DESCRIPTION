@@ -80,8 +80,7 @@ Suggests:
     doParallel,
     future,
     future.callr,
-    doFuture,
-    progressr
+    doFuture
 LinkingTo: Rcpp, RcppArmadillo
 Additional_repositories:
     https://mc-stan.org/r-packages/
