@@ -36,23 +36,23 @@ are again all observations because the test set is the same as the training
 set). Available statistics are:
 \itemize{
 \item \code{"elpd"}: expected log (pointwise) predictive density (for a new
-dataset). Estimated by the sum of the observation-specific log predictive
-density values (with each of these predictive density values being
-a---possibly weighted---average across the parameter draws).
-\item \code{"mlpd"}: mean log predictive density, that is, \code{"elpd"} divided by the
-number of observations.
+dataset) (ELPD). Estimated by the sum of the observation-specific log
+predictive density values (with each of these predictive density values
+being a---possibly weighted---average across the parameter draws).
+\item \code{"mlpd"}: mean log predictive density (MLPD), that is, the ELPD divided
+by the number of observations.
 \item \code{"gmpd"}: geometric mean predictive density (GMPD), that is, \code{\link[=exp]{exp()}} of
-\code{"mlpd"}. The GMPD is especially helpful for discrete response families
+the MLPD. The GMPD is especially helpful for discrete response families
 (because there, the GMPD is bounded by zero and one). For the corresponding
 standard error, the delta method is used. The corresponding confidence
 interval type is "exponentiated normal approximation" because the
 confidence interval bounds are the exponentiated confidence interval bounds
-of the \code{"mlpd"}.
+of the MLPD.
 \item \code{"mse"}: mean squared error (only available in the situations mentioned
 in section "Details" below).
 \item \code{"rmse"}: root mean squared error (only available in the situations
 mentioned in section "Details" below). For the corresponding standard error
-and lower and upper confidence interval bounds, bootstrapping is used.
+and lower and upper confidence interval bounds, the delta method is used.
 \item \code{"acc"} (or its alias, \code{"pctcorr"}): classification accuracy (only
 available in the situations mentioned in section "Details" below). By
 "classification accuracy", we mean the proportion of correctly classified
