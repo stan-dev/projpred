@@ -68,11 +68,10 @@ auc <- function(x) {
   pred <- x[, 2]
   wobs <- x[, 3]
 
-  # Make it explicit that `x` should not be used anymore (due to the possibility
-  # of `NA`s, but also due to the re-ordering):
+  # Make it explicit that `x` should not be used anymore:
   rm(x)
 
-  ord <- order(pred, decreasing = TRUE, na.last = NA)
+  ord <- order(pred, decreasing = TRUE, na.last = FALSE)
   n <- length(ord)
 
   resp <- resp[ord]
@@ -80,8 +79,9 @@ auc <- function(x) {
   wobs <- wobs[ord]
 
   w0 <- w1 <- wobs
-  # CAUTION: The following check also ensures that `resp` does not have `NA`s:
-  stopifnot(all(resp %in% c(0, 1)))
+  stopifnot(all(na.omit(resp) %in% c(0, 1)))
+  w0[is.na(resp)] <- NA # ensure that `NA`s in `resp` propagate to the output
+  w1[is.na(resp)] <- NA # ensure that `NA`s in `resp` propagate to the output
   w0[resp == 1] <- 0 # for calculating the false positive rate (fpr)
   w1[resp == 0] <- 0 # for calculating the true positive rate (tpr)
   cum_w0 <- cumsum(w0)

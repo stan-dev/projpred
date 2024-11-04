@@ -163,6 +163,7 @@ source(testthat::test_path("helpers", "getters.R"), local = TRUE)
 source(testthat::test_path("helpers", "formul_handlers.R"), local = TRUE)
 source(testthat::test_path("helpers", "predictor_handlers.R"), local = TRUE)
 source(testthat::test_path("helpers", "dummies.R"), local = TRUE)
+source(testthat::test_path("helpers", "creators.R"), local = TRUE)
 
 # Note: The following `mod_nms` refer to *generalized* (linear/additive,
 # multilevel) models. This is due to history (when these tests were written,

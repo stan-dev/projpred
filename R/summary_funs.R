@@ -280,9 +280,6 @@ get_stat <- function(summaries, summaries_baseline = NULL,
   lppd <- summaries$lppd
   n_full <- length(lppd)
   n_loo <- if (is.null(loo_inds)) n_full else length(loo_inds)
-  if (all(is.na(lppd)) || all(is.na(y_wobs_test$y_prop %||% y_wobs_test$y))) {
-    return(list(value = NA, se = NA, lq = NA, uq = NA))
-  }
   alpha_half <- alpha / 2
   one_minus_alpha_half <- 1 - alpha_half
 
@@ -302,8 +299,8 @@ get_stat <- function(summaries, summaries_baseline = NULL,
       value_se <- sqrt(srs_diffe$v_y_hat + srs_diffe$hat_v_y)
     } else {
       # full LOO estimator
-      value <- sum(lppd - lppd_baseline, na.rm = TRUE)
-      value_se <-sd(lppd - lppd_baseline, na.rm = TRUE) * sqrt(n_full)
+      value <- sum(lppd - lppd_baseline)
+      value_se <- sd(lppd - lppd_baseline) * sqrt(n_full)
     }
     if (stat %in% c("mlpd", "gmpd")) {
       value <- value / n_full
@@ -517,18 +514,28 @@ get_stat <- function(summaries, summaries_baseline = NULL,
           },
           ...
         )
-        value_se <- sd(diffvalue.bootstrap, na.rm = TRUE)
-        lq_uq <- quantile(diffvalue.bootstrap,
-                          probs = c(alpha_half, one_minus_alpha_half),
-                          names = FALSE, na.rm = TRUE)
+        value_se <- sd(diffvalue.bootstrap)
+        if (any(is.na(diffvalue.bootstrap))) {
+          # quantile() is not able to deal with `NA`s
+          lq_uq <- rep(NA_real_, 2)
+        } else {
+          lq_uq <- quantile(diffvalue.bootstrap,
+                            probs = c(alpha_half, one_minus_alpha_half),
+                            names = FALSE)
+        }
       } else {
         auc_data <- cbind(y, mu, wobs)
         value <- auc(auc_data)
         value.bootstrap <- bootstrap(auc_data, auc, ...)
-        value_se <- sd(value.bootstrap, na.rm = TRUE)
-        lq_uq <- quantile(value.bootstrap,
-                          probs = c(alpha_half, one_minus_alpha_half),
-                          names = FALSE, na.rm = TRUE)
+        value_se <- sd(value.bootstrap)
+        if (any(is.na(value.bootstrap))) {
+          # quantile() is not able to deal with `NA`s
+          lq_uq <- rep(NA_real_, 2)
+        } else {
+          lq_uq <- quantile(value.bootstrap,
+                            probs = c(alpha_half, one_minus_alpha_half),
+                            names = FALSE)
+        }
       }
     }
   }
