@@ -278,11 +278,28 @@ get_stat <- function(summaries, summaries_baseline = NULL,
                      y_wobs_test, stat, alpha = 0.1, ...) {
   mu <- summaries$mu
   lppd <- summaries$lppd
-  n_full <- length(lppd)
-  n_loo <- if (is.null(loo_inds)) n_full else length(loo_inds)
-  if (all(is.na(lppd)) || all(is.na(y_wobs_test$y_prop %||% y_wobs_test$y))) {
+  all_na_baseline <- NULL
+  if (stat %in% c("elpd", "mlpd", "gmpd")) {
+    if (!is.null(summaries_baseline)) {
+      all_na_baseline <- all(is.na(summaries_baseline$lppd))
+    }
+    all_na <- all(is.na(lppd))
+  } else {
+    hasNA_y <- is.na(y_wobs_test$y_prop %||% y_wobs_test$y)
+    if (!is.null(summaries_baseline)) {
+      all_na_baseline <- all(is.na(summaries_baseline$mu) | hasNA_y)
+    }
+    all_na <- all(is.na(mu) | hasNA_y)
+  }
+  if (!is.null(all_na_baseline) &&
+      getOption("projpred.additional_checks", FALSE)) {
+    stopifnot(all_na == all_na_baseline)
+  }
+  if (all_na) {
     return(list(value = NA, se = NA, lq = NA, uq = NA))
   }
+  n_full <- length(lppd)
+  n_loo <- if (is.null(loo_inds)) n_full else length(loo_inds)
   alpha_half <- alpha / 2
   one_minus_alpha_half <- 1 - alpha_half
 
