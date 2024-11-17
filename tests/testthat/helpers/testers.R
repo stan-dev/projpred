@@ -2736,11 +2736,7 @@ smmry_ref_tester <- function(
   is_lat_kfold <-  latent_expected && !resp_oscale_expected &&
     identical(cv_method_expected, "kfold")
 
-  if (is_lat_kfold) {
-    expect_true(is.vector(smmry_ref, "logical"), info = info_str)
-  } else {
-    expect_true(is.vector(smmry_ref, "numeric"), info = info_str)
-  }
+  expect_true(is.vector(smmry_ref, "numeric"), info = info_str)
   smmry_nms <- character()
   stats_mean_name <- stats_expected
   smmry_nms <- c(smmry_nms,
