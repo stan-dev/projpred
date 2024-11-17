@@ -438,7 +438,7 @@ get_stat <- function(summaries, summaries_baseline = NULL,
       mu_fast <- rep(summaries_fast$mu, y_wobs_test$wobs)
       # CAUTION: If `y` is allowed to have `NA`s here, then the following
       # definition of `n_full` needs to be adapted:
-      n_full <- sum(!is.na(mu))
+      n_full <- length(mu)
       if (!is.null(loo_inds)) {
         stopifnot(all(y_wobs_test$wobs > 0))
         loo_inds <- unlist(lapply(loo_inds, function(loo_idx) {
