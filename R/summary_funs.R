@@ -348,10 +348,10 @@ get_stat <- function(summaries, summaries_baseline = NULL,
                                  ((mu_baseline - y)^2 - mse_b))[loo_inds],
                           y_idx = loo_inds,
                           wobs = wobs)
-        cov_mse_e_b <- srs_diffe$y_hat / n_full^2
+        cov_mse_e_b <- srs_diffe$y_hat / (n_full * (n_full - 1))
       } else {
         cov_mse_e_b <- mean(wobs * ((mu - y)^2 - mse_e) *
-                              ((mu_baseline - y)^2 - mse_b)) / n_full
+                              ((mu_baseline - y)^2 - mse_b)) / (n_full - 1)
       }
       value_se <- sqrt(value_se^2 - 2 * cov_mse_e_b + var_mse_b)
     }
@@ -389,15 +389,15 @@ get_stat <- function(summaries, summaries_baseline = NULL,
                             y_idx = loo_inds,
                             wobs = wobs)
         }
-        cov_mse_e_y <- srs_diffe$y_hat / n_full^2
+        cov_mse_e_y <- srs_diffe$y_hat / (n_full * (n_full - 1))
       } else {
         if (is.null(summaries_baseline)) {
           cov_mse_e_y <- mean(wobs * ((mu - y)^2 - mse_e) *
-                                ((mean(y) - y)^2 - mse_y)) / n_full
+                                ((mean(y) - y)^2 - mse_y)) / (n_full - 1)
         } else {
           cov_mse_e_y <- mean(wobs * ((mu - y)^2 - mse_e -
                                         ((mu_baseline - y)^2 - mse_b)) *
-                                ((mean(y) - y)^2 - mse_y)) / n_full
+                                ((mean(y) - y)^2 - mse_y)) / (n_full - 1)
         }
       }
       # part of delta se comes automatically via mse
