@@ -189,6 +189,43 @@ test_that(paste(
   expect_equal(psdat$wobs, wobs_crr)
 })
 
+# Test copied from 'loo' package and changed function name, see
+# <https://github.com/stan-dev/projpred/pull/496#issuecomment-2481313265>
+test_that(".srs_diff_est_w() works as expected", {
+  set.seed(1234)
+  N <- 1000
+  y_true <- 1:N
+  sigma_hat_true <- sqrt(N * sum((y_true - mean(y_true))^2) / length(y_true))
+  y_approx <- rnorm(N, y_true, 0.1)
+  m <- 100
+  sigma_hat <- y_hat <- se_y_hat <- numeric(10000)
+  for(i in 1:10000){
+    y_idx <- sample(1:N, size = m)
+    y <- y_true[y_idx]
+    res <- .srs_diff_est_w(y_approx, y, y_idx)
+    y_hat[i] <- res$y_hat
+    se_y_hat[i] <- sqrt(res$v_y_hat)
+    sigma_hat[i] <- sqrt(res$hat_v_y)
+  }
+  expect_equal(mean(y_hat), sum(y_true), tol = 0.1)
+
+  in_ki <- y_hat + 2 * se_y_hat > sum(y_true) & y_hat - 2*se_y_hat < sum(y_true)
+  expect_equal(mean(in_ki), 0.95, tol = 0.01)
+
+  # Should be  unbiased
+  expect_equal(mean(sigma_hat), sigma_hat_true, tol = 0.1)
+
+  m <- N
+  y_idx <- sample(1:N, size = m)
+  y <- y_true[y_idx]
+  res <- .srs_diff_est_w(y_approx, y, y_idx)
+  expect_equal(res$y_hat, 500500, tol = 0.0001)
+  expect_equal(res$v_y_hat, 0, tol = 0.0001)
+  expect_equal(sqrt(res$hat_v_y), sigma_hat_true, tol = 0.1)
+})
+
+# TODO: Add test for .srs_diff_est_w() with `wobs` not full of ones.
+
 test_that(".srs_diff_est_w() propagates input `NA`s to its output", {
   nloo_tst <- nobsv %/% 5L
   loo_inds_tst <- ceiling(seq(1L, nobsv, length.out = nloo_tst))
