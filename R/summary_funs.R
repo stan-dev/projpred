@@ -105,7 +105,12 @@ weighted_summary_means <- function(y_wobs_test, family, wdraws, mu, dis, cl_ref,
       sub_lppd_NA <- any(sapply(summ_sub, check_sub_NA, el_nm = "lppd"))
       ref_mu_NA <- all(is.na(summ_ref$mu))
       sub_mu_NA <- any(sapply(summ_sub, check_sub_NA, el_nm = "mu"))
-      if (ref_mu_NA || sub_mu_NA) {
+      if (all(is.na(varsel$y_wobs_test$y_oscale))) {
+        message(
+          "Cannot calculate performance statistics if `resp_oscale = TRUE` ",
+          "and `<vsel>$y_wobs_test$y_oscale` consists of only `NA`s."
+        )
+      } else if (ref_mu_NA || sub_mu_NA) {
         message(
           "`latent_ilink` returned only `NA`s, so all performance statistics ",
           "will also be `NA` as long as `resp_oscale = TRUE`."
