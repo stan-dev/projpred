@@ -462,8 +462,8 @@ compute_lpd <- function(ynew, pred_sub, proj, weights, transformed) {
       if (proj$refmodel$family$for_latent && all(is.na(proj$refmodel$dis))) {
         message(
           "Cannot calculate LPD values if `transform = FALSE` and ",
-          "`<refmodel>$dis` consists of only `NA`s. If it's not possible to ",
-          "supply a suitable argument `dis` to init_refmodel(), consider ",
+          "`<refmodel>$dis` consists of only `NA`s. If it is not possible to ",
+          "supply values to argument `dis` of init_refmodel(), consider ",
           "switching to `transform = TRUE` (which might require the ",
           "specification of functions needed by extend_family())."
         )
@@ -564,8 +564,8 @@ proj_predict_aux <- function(proj, newdata, offsetnew, weightsnew,
       if (all(is.na(proj$refmodel$dis))) {
         message(
           "Cannot draw from the latent Gaussian distribution if ",
-          "`<refmodel>$dis` consists of only `NA`s. If it's not possible to ",
-          "supply a suitable argument `dis` to init_refmodel(), consider ",
+          "`<refmodel>$dis` consists of only `NA`s. If it is not possible to ",
+          "supply values to argument `dis` of init_refmodel(), consider ",
           "switching to `resp_oscale = TRUE` (which might require the ",
           "specification of functions needed by extend_family())."
         )

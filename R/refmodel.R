@@ -610,8 +610,8 @@ predict.refmodel <- function(object, newdata = NULL, ynew = NULL,
         if (all(is.na(refmodel$dis))) {
           message(
             "Cannot calculate LPD values if `type = \"link\"` and ",
-            "`<refmodel>$dis` consists of only `NA`s. If it's not possible to ",
-            "supply a suitable argument `dis` to init_refmodel(), consider ",
+            "`<refmodel>$dis` consists of only `NA`s. If it is not possible to ",
+            "supply values to argument `dis` of init_refmodel(), consider ",
             "switching to `type = \"response\"` (which might require the ",
             "specification of functions needed by extend_family())."
           )
