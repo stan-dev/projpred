@@ -163,6 +163,7 @@ source(testthat::test_path("helpers", "getters.R"), local = TRUE)
 source(testthat::test_path("helpers", "formul_handlers.R"), local = TRUE)
 source(testthat::test_path("helpers", "predictor_handlers.R"), local = TRUE)
 source(testthat::test_path("helpers", "dummies.R"), local = TRUE)
+source(testthat::test_path("helpers", "creators.R"), local = TRUE)
 
 # Note: The following `mod_nms` refer to *generalized* (linear/additive,
 # multilevel) models. This is due to history (when these tests were written,
@@ -895,8 +896,6 @@ options(projpred.mssg_cut_search = FALSE)
 options(projpred.mssg_time = FALSE)
 # Suppress the PSIS warnings:
 options(projpred.warn_psis = FALSE)
-# Suppress the subsampled PSIS-LOO CV warnings:
-options(projpred.warn_subsampled_loo = FALSE)
 # Suppress the warnings for the K reference model refits in case of K-fold CV:
 options(projpred.warn_kfold_refits = FALSE)
 # Suppress the warning for interaction terms being selected before all involved
@@ -2009,7 +2008,8 @@ if (run_cvvs) {
 vsel_nms <- c(
   "refmodel", "nobs_train", "search_path", "predictor_ranking",
   "predictor_ranking_cv", "ce", "type_test", "y_wobs_test", "nobs_test",
-  "summaries", "nterms_all", "nterms_max", "method", "cv_method", "nloo", "K",
+  "summaries", "summaries_fast", "nterms_all", "nterms_max", "method",
+  "cv_method", "nloo", "loo_inds", "K",
   "validate_search", "cvfits", "args_search", "clust_used_search",
   "clust_used_eval", "nprjdraws_search", "nprjdraws_eval", "refit_prj",
   "projpred_version"

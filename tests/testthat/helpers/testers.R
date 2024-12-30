@@ -1979,8 +1979,6 @@ vsel_tester <- function(
 ) {
   # Preparations:
   if (with_cv) {
-    vsel_smmrs_sub_nms <- c(vsel_smmrs_sub_nms, "wcv")
-
     if (is.null(cv_method_expected)) {
       cv_method_expected <- "LOO"
     }
@@ -2264,12 +2262,6 @@ vsel_tester <- function(
   }
   if (vs$refmodel$family$for_latent) {
     vsel_smmrs_sub_nms <- c(vsel_smmrs_sub_nms, "oscale")
-    if ("wcv" %in% vsel_smmrs_sub_nms &&
-        identical(cv_method_expected, "kfold")) {
-      vsel_smmrs_sub_nms[vsel_smmrs_sub_nms %in% c("wcv", "oscale")] <- c(
-        "oscale", "wcv"
-      )
-    }
     vsel_smmrs_ref_nms <- c(vsel_smmrs_ref_nms, "oscale")
   }
   smmrs_sub_j_tester <- function(smmrs_sub_j, tests_oscale = FALSE) {
@@ -2291,7 +2283,7 @@ vsel_tester <- function(
          !is.null(vs$refmodel$family$cats))) {
       expect_s3_class(smmrs_sub_j$mu, "augvec")
     }
-    if (with_cv) {
+    if (with_cv && valsearch_expected && identical(cv_method_expected, "LOO")) {
       expect_identical(sum(!is.na(smmrs_sub_j$mu)), nloo_expected * ncats,
                        info = info_str)
     } else {
@@ -2303,23 +2295,12 @@ vsel_tester <- function(
       if (vs$refmodel$family$for_latent && !tests_oscale &&
           identical(cv_method_expected, "kfold")) {
         expect_true(all(is.na(smmrs_sub_j$lppd)), info = info_str)
-      } else {
+      } else if (valsearch_expected && identical(cv_method_expected, "LOO")) {
         expect_identical(sum(!is.na(smmrs_sub_j$lppd)), nloo_expected,
                          info = info_str)
       }
     } else {
       expect_true(all(!is.na(smmrs_sub_j$lppd)), info = info_str)
-    }
-    if (with_cv) {
-      expect_type(smmrs_sub_j$wcv, "double")
-      expect_length(smmrs_sub_j$wcv, nobsv)
-      expect_true(all(!is.na(smmrs_sub_j$wcv)), info = info_str)
-      if (nloo_expected == nobsv) {
-        expect_equal(smmrs_sub_j$wcv, rep(1 / nobsv, nobsv), info = info_str)
-      } else {
-        expect_true(any(smmrs_sub_j$wcv != rep(1 / nobsv, nobsv)),
-                    info = info_str)
-      }
     }
     return(invisible(TRUE))
   }
@@ -2753,11 +2734,7 @@ smmry_ref_tester <- function(
   is_lat_kfold <-  latent_expected && !resp_oscale_expected &&
     identical(cv_method_expected, "kfold")
 
-  if (is_lat_kfold) {
-    expect_true(is.vector(smmry_ref, "logical"), info = info_str)
-  } else {
-    expect_true(is.vector(smmry_ref, "numeric"), info = info_str)
-  }
+  expect_true(is.vector(smmry_ref, "numeric"), info = info_str)
   smmry_nms <- character()
   stats_mean_name <- stats_expected
   smmry_nms <- c(smmry_nms,

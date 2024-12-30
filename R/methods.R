@@ -722,7 +722,7 @@ plot.vsel <- function(
   # Parse input:
   object <- x
   validate_vsel_object_stats(object, stats, resp_oscale = resp_oscale)
-  baseline <- validate_baseline(object$refmodel, baseline, deltas)
+  baseline <- validate_baseline(object, baseline, deltas)
   if (!is.null(ranking_repel) && !requireNamespace("ggrepel", quietly = TRUE)) {
     warning("Package 'ggrepel' is needed for a non-`NULL` argument ",
             "`ranking_repel`, but could not be found. Setting `ranking_repel` ",
@@ -1065,11 +1065,11 @@ plot.vsel <- function(
     #                        direction = 1)
     ###
   }
-  if (all(stats %in% c("rmse", "auc"))) {
+  if (all(stats %in% c("auc"))) {
     ci_type <- "bootstrap "
   } else if (all(stats %in% c("gmpd"))) {
     ci_type <- "exponentiated normal-approximation "
-  } else if (all(!stats %in% c("rmse", "auc", "gmpd"))) {
+  } else if (all(!stats %in% c("auc", "gmpd"))) {
     ci_type <- "normal-approximation "
   } else {
     ci_type <- ""
@@ -1158,23 +1158,23 @@ plot.vsel <- function(
 #'   are again all observations because the test set is the same as the training
 #'   set). Available statistics are:
 #'   * `"elpd"`: expected log (pointwise) predictive density (for a new
-#'   dataset). Estimated by the sum of the observation-specific log predictive
-#'   density values (with each of these predictive density values being
-#'   a---possibly weighted---average across the parameter draws).
-#'   * `"mlpd"`: mean log predictive density, that is, `"elpd"` divided by the
-#'   number of observations.
+#'   dataset) (ELPD). Estimated by the sum of the observation-specific log
+#'   predictive density values (with each of these predictive density values
+#'   being a---possibly weighted---average across the parameter draws).
+#'   * `"mlpd"`: mean log predictive density (MLPD), that is, the ELPD divided
+#'   by the number of observations.
 #'   * `"gmpd"`: geometric mean predictive density (GMPD), that is, [exp()] of
-#'   `"mlpd"`. The GMPD is especially helpful for discrete response families
+#'   the MLPD. The GMPD is especially helpful for discrete response families
 #'   (because there, the GMPD is bounded by zero and one). For the corresponding
 #'   standard error, the delta method is used. The corresponding confidence
 #'   interval type is "exponentiated normal approximation" because the
 #'   confidence interval bounds are the exponentiated confidence interval bounds
-#'   of the `"mlpd"`.
+#'   of the MLPD.
 #'   * `"mse"`: mean squared error (only available in the situations mentioned
 #'   in section "Details" below).
 #'   * `"rmse"`: root mean squared error (only available in the situations
 #'   mentioned in section "Details" below). For the corresponding standard error
-#'   and lower and upper confidence interval bounds, bootstrapping is used.
+#'   and lower and upper confidence interval bounds, the delta method is used.
 #'   * `"acc"` (or its alias, `"pctcorr"`): classification accuracy (only
 #'   available in the situations mentioned in section "Details" below). By
 #'   "classification accuracy", we mean the proportion of correctly classified
@@ -1283,7 +1283,7 @@ summary.vsel <- function(
     ...
 ) {
   validate_vsel_object_stats(object, stats, resp_oscale = resp_oscale)
-  baseline <- validate_baseline(object$refmodel, baseline, deltas)
+  baseline <- validate_baseline(object, baseline, deltas)
 
   # Initialize output:
   out <- c(
