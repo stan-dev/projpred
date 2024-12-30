@@ -125,7 +125,12 @@ weighted_summary_means <- function(y_wobs_test, family, wdraws, mu, dis, cl_ref,
       } else {
         fast_sub_mu_NA <- FALSE
       }
-      if (ref_mu_NA || sub_mu_NA || fast_sub_mu_NA) {
+      if (all(is.na(varsel$y_wobs_test$y_oscale))) {
+        message(
+          "Cannot calculate performance statistics if `resp_oscale = TRUE` ",
+          "and `<vsel>$y_wobs_test$y_oscale` consists of only `NA`s."
+        )
+      } else if (ref_mu_NA || sub_mu_NA || fast_sub_mu_NA) {
         message(
           "`latent_ilink` returned only `NA`s, so all performance statistics ",
           "will also be `NA` as long as `resp_oscale = TRUE`."
@@ -143,23 +148,28 @@ weighted_summary_means <- function(y_wobs_test, family, wdraws, mu, dis, cl_ref,
           any(stats %in% c("elpd", "mlpd", "gmpd"))) {
         message(
           "Cannot calculate ELPD, MLPD, or GMPD if `resp_oscale = FALSE` and ",
-          "`<refmodel>$dis` consists of only `NA`s. If it's not possible to ",
-          "supply a suitable argument `dis` to init_refmodel(), consider (i) ",
+          "`<refmodel>$dis` consists of only `NA`s. If it is not possible to ",
+          "supply values to argument `dis` of init_refmodel(), consider (i) ",
           "switching to `resp_oscale = TRUE` (which might require the ",
           "specification of functions needed by extend_family()) or (ii) ",
           "using a performance statistic other than ELPD, MLPD, or GMPD."
         )
       }
       if (all(is.na(varsel$y_wobs_test$y))) {
-        message(
+        mssg_y_NA <- paste0(
           "Cannot calculate performance statistics if `resp_oscale = FALSE` ",
-          "and `<vsel>$y_wobs_test$y` consists of only `NA`s. The reason for ",
-          "these `NA`s is probably that `<vsel>` was created by cv_varsel() ",
-          "with `cv_method = \"kfold\"`. (In case of K-fold cross-validation, ",
-          "the latent response values for the test datasets cannot be defined ",
-          "in a straightforward manner without inducing dependencies between ",
-          "training and test datasets.)"
+          "and `<vsel>$y_wobs_test$y` consists of only `NA`s."
         )
+        if (identical(varsel$cv_method, "kfold")) {
+          mssg_y_NA <- paste0(
+            mssg_y_NA, " The reason for these `NA`s is probably that `<vsel>` ",
+            "was created by cv_varsel() with `cv_method = \"kfold\"`. (In ",
+            "case of K-fold cross-validation, the latent response values for ",
+            "the test datasets cannot be defined in a straightforward manner ",
+            "without inducing dependencies between training and test datasets.)"
+          )
+        }
+        message(mssg_y_NA)
       }
     }
   }
