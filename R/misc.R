@@ -15,6 +15,9 @@ nms_y_wobs_test <- function(wobs_nm = "wobs") {
 }
 
 weighted.sd <- function(x, w, na.rm = FALSE) {
+  if (length(w) == 1 && length(x) > 1) {
+    w <- rep_len(w, length.out = length(x))
+  }
   if (na.rm) {
     ind <- !is.na(w) & !is.na(x)
     n <- sum(ind)

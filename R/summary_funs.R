@@ -631,7 +631,7 @@ get_nfeat_baseline <- function(object, baseline, stat, ...) {
   # eq (7)
   est_list$y_hat <- t_pi_tilde + t_e
   # eq (8)
-  var_e_i <- m / (m - 1) * (mean(wobs_m * e_i^2) - mean(wobs_m * e_i)^2)
+  var_e_i <- weighted.sd(e_i, w = wobs_m)^2
   est_list$v_y_hat <- N^2 * (1 - m / N) * var_e_i / m
   # eq (9) first row second `+` should be `-`
   # Supplementary material eq (6) has this correct
