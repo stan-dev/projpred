@@ -346,7 +346,10 @@ get_stat <- function(summaries, summaries_baseline = NULL,
     # store for later calculations
     mse_e <- value
     if (!is.null(summaries_baseline)) {
-      # delta=TRUE, variance of difference of two normally distributed
+      # delta=TRUE, variance of difference of two normally distributed random
+      # variables (log-normally in case of MSE and RMSE, although the central
+      # limit theorem would ensure convergence -- probably slower, though -- to
+      # a normal distribution even for MSE and RMSE)
       mse_b <- mean(wobs * (mu_baseline - y)^2)
       var_mse_b <- .weighted_sd((mu_baseline - y)^2, wobs)^2 / n_full
       if (n_loo < n_full) {
