@@ -559,7 +559,7 @@ get_stat <- function(summaries, summaries_baseline = NULL,
     # log-normal approximation
     # https://en.wikipedia.org/wiki/Log-normal_distribution#Arithmetic_moments
     mul <- log(value^2 / sqrt(value_se^2 + value^2))
-    varl <- log(1 + value_se^2 / value^2)
+    varl <- log1p(value_se^2 / value^2)
     lq <- qnorm(alpha_half, mean = mul, sd = sqrt(varl))
     uq <- qnorm(one_minus_alpha_half, mean = mul, sd = sqrt(varl))
     # Go back to linear scale
