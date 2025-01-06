@@ -376,29 +376,30 @@ get_stat <- function(summaries, summaries_baseline = NULL,
       # the first-order Taylor approximation of the variance
       value_se <- sqrt(value_se^2 / mse_e / 4)
     } else if (stat == "R2") {
+      y_mean_w <- mean(wobs * y)
       # simple transformation of mse
-      mse_y <- mean(wobs * (mean(wobs * y) - y)^2)
+      mse_y <- mean(wobs * (y_mean_w - y)^2)
       value <- 1 - mse_e / mse_y - ifelse(is.null(summaries_baseline), 0, 1 - mse_b / mse_y)
       # the first-order Taylor approximation of the variance
-      var_mse_y <- .weighted_sd((mean(wobs * y) - y)^2, wobs)^2 / n_full
+      var_mse_y <- .weighted_sd((y_mean_w - y)^2, wobs)^2 / n_full
       if (n_loo < n_full) {
         mse_e_fast <- mean(wobs * (summaries_fast$mu - y)^2)
         if (is.null(summaries_baseline)) {
           srs_diffe <-
             .srs_diff_est_w(y_approx = ((summaries_fast$mu - y)^2 - mse_e_fast) *
-                              ((mean(wobs * y) - y)^2 - mse_y),
+                              ((y_mean_w - y)^2 - mse_y),
                             y = (((mu - y)^2 - mse_e) *
-                                   ((mean(wobs * y) - y)^2 - mse_y))[loo_inds],
+                                   ((y_mean_w - y)^2 - mse_y))[loo_inds],
                             y_idx = loo_inds,
                             wobs = wobs)
         } else {
           srs_diffe <-
             .srs_diff_est_w(y_approx = ((summaries_fast$mu - y)^2 - mse_e_fast -
                                           ((mu_baseline - y)^2 - mse_b)) *
-                              ((mean(wobs * y) - y)^2 - mse_y),
+                              ((y_mean_w - y)^2 - mse_y),
                             y = (((mu - y)^2 - mse_e -
                                     ((mu_baseline - y)^2 - mse_b)) *
-                                   ((mean(wobs * y) - y)^2 - mse_y))[loo_inds],
+                                   ((y_mean_w - y)^2 - mse_y))[loo_inds],
                             y_idx = loo_inds,
                             wobs = wobs)
         }
@@ -406,11 +407,11 @@ get_stat <- function(summaries, summaries_baseline = NULL,
       } else {
         if (is.null(summaries_baseline)) {
           cov_mse_e_y <- mean(wobs * ((mu - y)^2 - mse_e) *
-                                ((mean(wobs * y) - y)^2 - mse_y)) / (n_full - 1)
+                                ((y_mean_w - y)^2 - mse_y)) / (n_full - 1)
         } else {
           cov_mse_e_y <- mean(wobs * ((mu - y)^2 - mse_e -
                                         ((mu_baseline - y)^2 - mse_b)) *
-                                ((mean(wobs * y) - y)^2 - mse_y)) / (n_full - 1)
+                                ((y_mean_w - y)^2 - mse_y)) / (n_full - 1)
         }
       }
       # part of delta se comes automatically via mse
