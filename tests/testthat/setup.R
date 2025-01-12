@@ -947,11 +947,10 @@ vsel_funs <- nlist("summary.vsel", "plot.vsel", "suggest_size.vsel")
 # projection (or the latent projection with `resp_oscale = FALSE` or the latent
 # projection with `resp_oscale = TRUE`, but the latter only in combination with
 # `<refmodel>$family$cats` being `NULL`):
-stats_common <- c("elpd", "mlpd", "gmpd", "mse", "rmse")
-# Performance statistics for the binomial() family only, when using the
-# traditional projection (or the latent projection with `resp_oscale = TRUE`,
-# but the latter only in combination with `<refmodel>$family$cats` being
-# `NULL`):
+stats_common <- c("elpd", "mlpd", "gmpd", "mse", "rmse", "R2")
+# Performance statistics for the binomial() family when using the traditional
+# projection (or the latent projection with `resp_oscale = TRUE` and
+# `<refmodel>$family$cats` being `NULL`):
 stats_binom <- c(stats_common, "acc", "auc")
 # For creating test setups:
 stats_tst <- list(
@@ -1700,7 +1699,7 @@ if (run_vs) {
                             identical, 0L))
 
   smmrys_vs <- lapply(args_smmry_vs, function(args_smmry_vs_i) {
-    if (any(c("rmse", "auc") %in% args_smmry_vs_i$stats)) {
+    if (any(c("auc") %in% args_smmry_vs_i$stats)) {
       smmry_seed <- list(seed = seed3_tst)
     } else {
       smmry_seed <- list()
@@ -1723,7 +1722,7 @@ if (run_cvvs) {
                               identical, 0L))
 
   smmrys_cvvs <- lapply(args_smmry_cvvs, function(args_smmry_cvvs_i) {
-    if (any(c("rmse", "auc") %in% args_smmry_cvvs_i$stats)) {
+    if (any(c("auc") %in% args_smmry_cvvs_i$stats)) {
       smmry_seed <- list(seed = seed3_tst)
     } else {
       smmry_seed <- list()

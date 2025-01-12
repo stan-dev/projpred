@@ -418,10 +418,10 @@ test_that(paste(
     # Exclude statistics which are not supported for the augmented-data
     # projection:
     smmry_vs_trad$perf_sub <- smmry_vs_trad$perf_sub[
-      , -grep("mse|auc", names(smmry_vs_trad$perf_sub)), drop = FALSE
+      , -grep("mse|R2|auc", names(smmry_vs_trad$perf_sub)), drop = FALSE
     ]
     smmry_vs_trad$perf_ref <- smmry_vs_trad$perf_ref[
-      -grep("mse|auc", names(smmry_vs_trad$perf_ref))
+      -grep("mse|R2|auc", names(smmry_vs_trad$perf_ref))
     ]
     expect_equal(smmry_vs$perf_sub, smmry_vs_trad$perf_sub,
                  tolerance = 1e-6, info = tstsetup)
@@ -592,10 +592,10 @@ test_that(paste(
     # Exclude statistics which are not supported for the augmented-data
     # projection:
     smmry_cvvs_trad$perf_sub <- smmry_cvvs_trad$perf_sub[
-      , -grep("mse|auc", names(smmry_cvvs_trad$perf_sub)), drop = FALSE
+      , -grep("mse|R2|auc", names(smmry_cvvs_trad$perf_sub)), drop = FALSE
     ]
     smmry_cvvs_trad$perf_ref <- smmry_cvvs_trad$perf_ref[
-      -grep("mse|auc", names(smmry_cvvs_trad$perf_ref))
+      -grep("mse|R2|auc", names(smmry_cvvs_trad$perf_ref))
     ]
     is_kfold <- identical(
       args_cvvs[[args_smmry_cvvs[[tstsetup]]$tstsetup_vsel]]$cv_method,
