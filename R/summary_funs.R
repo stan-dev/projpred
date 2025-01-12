@@ -366,7 +366,9 @@ get_stat <- function(summaries, summaries_baseline = NULL,
         cov_mse_e_b <- mean(wobs * ((mu - y)^2 - mse_e) *
                               ((mu_baseline - y)^2 - mse_b)) / (n_full - 1)
       }
-      value_se <- sqrt(value_se^2 - 2 * cov_mse_e_b + var_mse_b)
+      if (stat != "rmse") {
+        value_se <- sqrt(value_se^2 - 2 * cov_mse_e_b + var_mse_b)
+      }
     }
     if (stat == "mse") {
       value <- mse_e - ifelse(is.null(summaries_baseline), 0, mse_b)
@@ -374,7 +376,13 @@ get_stat <- function(summaries, summaries_baseline = NULL,
       # simple transformation of mse
       value <- sqrt(mse_e) - ifelse(is.null(summaries_baseline), 0, sqrt(mse_b))
       # the first-order Taylor approximation of the variance
-      value_se <- sqrt(value_se^2 / mse_e / 4)
+      if (is.null(summaries_baseline)) {
+        value_se <- sqrt(value_se^2 / mse_e / 4)
+      } else {
+        value_se <- sqrt((value_se^2 / mse_e -
+                            2 * cov_mse_e_b / sqrt(mse_e * mse_b) +
+                            var_mse_b / mse_b) / 4)
+      }
     } else if (stat == "R2") {
       y_mean_w <- mean(wobs * y)
       # simple transformation of mse
