@@ -2668,8 +2668,9 @@ smmry_sub_tester <- function(
   if ("lower" %in% type_expected && !is_lat_kfold) {
     lower_nm <- paste(stats_expected, "lower", sep = ".")
     for (stat_idx in seq_along(stats_expected)) {
-      if (!stats_expected[stat_idx] %in% c("rmse", "auc")) {
-        # RMSE and AUC are excluded here because of PR #347.
+      if (!stats_expected[stat_idx] %in% c("auc")) {
+        # AUC is excluded here because of PR #347 (originally, RMSE was excluded
+        # as well, but PR #496 switched to the delta method for RMSE).
         expect_true(all(smmry_sub[, stats_mean_name[stat_idx]] >=
                           smmry_sub[, lower_nm[stat_idx]]),
                     info = info_str)
@@ -2679,8 +2680,9 @@ smmry_sub_tester <- function(
   if ("upper" %in% type_expected && !is_lat_kfold) {
     upper_nm <- paste(stats_expected, "upper", sep = ".")
     for (stat_idx in seq_along(stats_expected)) {
-      if (!stats_expected[stat_idx] %in% c("rmse", "auc")) {
-        # RMSE and AUC are excluded here because of PR #347.
+      if (!stats_expected[stat_idx] %in% c("auc")) {
+        # AUC is excluded here because of PR #347 (originally, RMSE was excluded
+        # as well, but PR #496 switched to the delta method for RMSE).
         expect_true(all(smmry_sub[, stats_mean_name[stat_idx]] <=
                           smmry_sub[, upper_nm[stat_idx]]),
                     info = info_str)
@@ -2756,8 +2758,9 @@ smmry_ref_tester <- function(
   if ("lower" %in% type_expected && !is_lat_kfold && !from_datafit) {
     lower_nm <- paste(stats_expected, "lower", sep = ".")
     for (stat_idx in seq_along(stats_expected)) {
-      if (!stats_expected[stat_idx] %in% c("rmse", "auc")) {
-        # RMSE and AUC are excluded here because of PR #347.
+      if (!stats_expected[stat_idx] %in% c("auc")) {
+        # AUC is excluded here because of PR #347 (originally, RMSE was excluded
+        # as well, but PR #496 switched to the delta method for RMSE).
         expect_true(all(smmry_ref[stats_mean_name[stat_idx]] >=
                           smmry_ref[lower_nm[stat_idx]]),
                     info = info_str)
@@ -2767,8 +2770,9 @@ smmry_ref_tester <- function(
   if ("upper" %in% type_expected && !is_lat_kfold && !from_datafit) {
     upper_nm <- paste(stats_expected, "upper", sep = ".")
     for (stat_idx in seq_along(stats_expected)) {
-      if (!stats_expected[stat_idx] %in% c("rmse", "auc")) {
-        # RMSE and AUC are excluded here because of PR #347.
+      if (!stats_expected[stat_idx] %in% c("auc")) {
+        # AUC is excluded here because of PR #347 (originally, RMSE was excluded
+        # as well, but PR #496 switched to the delta method for RMSE).
         expect_true(all(smmry_ref[stats_mean_name[stat_idx]] <=
                           smmry_ref[upper_nm[stat_idx]]),
                     info = info_str)
