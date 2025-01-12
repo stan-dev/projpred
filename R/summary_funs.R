@@ -328,7 +328,7 @@ get_stat <- function(summaries, summaries_baseline = NULL,
     if (!is.null(summaries_baseline)) {
       mu_baseline <- summaries_baseline$mu
     }
-    # Use "exact" standard error for mse and delta method for rmse and R2
+    # Use exact standard error for mse and delta method for rmse and R2
     if (n_loo < n_full) {
       # subsampling difference estimator (Magnusson et al., 2020)
       srs_diffe <- .srs_diff_est_w(y_approx = (summaries_fast$mu - y)^2,
