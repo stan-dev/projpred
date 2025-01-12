@@ -1173,8 +1173,11 @@ plot.vsel <- function(
 #'   * `"mse"`: mean squared error (only available in the situations mentioned
 #'   in section "Details" below).
 #'   * `"rmse"`: root mean squared error (only available in the situations
-#'   mentioned in section "Details" below). For the corresponding standard error
-#'   and lower and upper confidence interval bounds, the delta method is used.
+#'   mentioned in section "Details" below). For the corresponding standard
+#'   error, the delta method is used.
+#'   * `"R2"`: R-squared, i.e., coefficient of determination (only available in
+#'   the situations mentioned in section "Details" below). For the corresponding
+#'   standard error, the delta method is used.
 #'   * `"acc"` (or its alias, `"pctcorr"`): classification accuracy (only
 #'   available in the situations mentioned in section "Details" below). By
 #'   "classification accuracy", we mean the proportion of correctly classified
@@ -1222,7 +1225,8 @@ plot.vsel <- function(
 #'   and `seed` (see [set.seed()], but defaulting to `NA` so that [set.seed()]
 #'   is not called within that function at all).
 #'
-#' @details The `stats` options `"mse"` and `"rmse"` are only available for:
+#' @details The `stats` options `"mse"`, `"rmse"`, and `"R2"` are only available
+#'   for:
 #'   * the traditional projection,
 #'   * the latent projection with `resp_oscale = FALSE`,
 #'   * the latent projection with `resp_oscale = TRUE` in combination with

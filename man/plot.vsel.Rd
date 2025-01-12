@@ -61,8 +61,11 @@ of the MLPD.
 \item \code{"mse"}: mean squared error (only available in the situations mentioned
 in section "Details" below).
 \item \code{"rmse"}: root mean squared error (only available in the situations
-mentioned in section "Details" below). For the corresponding standard error
-and lower and upper confidence interval bounds, the delta method is used.
+mentioned in section "Details" below). For the corresponding standard
+error, the delta method is used.
+\item \code{"R2"}: R-squared, i.e., coefficient of determination (only available in
+the situations mentioned in section "Details" below). For the corresponding
+standard error, the delta method is used.
 \item \code{"acc"} (or its alias, \code{"pctcorr"}): classification accuracy (only
 available in the situations mentioned in section "Details" below). By
 "classification accuracy", we mean the proportion of correctly classified
@@ -191,7 +194,8 @@ available; inferred from \code{\link[=cv_proportions]{cv_proportions()}}). For a
 see \code{\link[=summary.vsel]{summary.vsel()}} and \code{\link[=performances]{performances()}}.
 }
 \details{
-The \code{stats} options \code{"mse"} and \code{"rmse"} are only available for:
+The \code{stats} options \code{"mse"}, \code{"rmse"}, and \code{"R2"} are only available
+for:
 \itemize{
 \item the traditional projection,
 \item the latent projection with \code{resp_oscale = FALSE},
