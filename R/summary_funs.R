@@ -419,9 +419,17 @@ get_stat <- function(summaries, summaries_baseline = NULL,
         # delta=TRUE
         mse_e <- mse_e - mse_b
       }
-      value_se <- sqrt((value_se^2 -
-                          2 * mse_e / mse_y * cov_mse_e_y +
-                          (mse_e / mse_y)^2 * var_mse_y) / mse_y^2)
+      value_se_sq <- (value_se^2 -
+                        2 * mse_e / mse_y * cov_mse_e_y +
+                        (mse_e / mse_y)^2 * var_mse_y) / mse_y^2
+      if (!is.na(value_se_sq) && sign(value_se_sq) == -1) {
+        if (abs(value_se_sq) < sqrt(.Machine$double.eps)) {
+          value_se_sq <- 0
+        } else {
+          stop("Negative (and numerically non-zero) `value_se_sq`.")
+        }
+      }
+      value_se <- sqrt(value_se_sq)
     }
   } else if (stat %in% c("acc", "pctcorr", "auc")) {
     y <- y_wobs_test$y
