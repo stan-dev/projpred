@@ -346,8 +346,8 @@ get_stat <- function(summaries, summaries_baseline = NULL,
     # store for later calculations
     mse_e <- value
     if (!is.null(summaries_baseline)) {
-      # delta=TRUE, variance of difference of two normally distributed random
-      # variables (log-normally in case of MSE and RMSE, although the central
+      # delta=TRUE, variance of difference of two normally distributed
+      # quantities (log-normally in case of MSE and RMSE, although the central
       # limit theorem would ensure convergence -- probably slower, though -- to
       # a normal distribution even for MSE and RMSE)
       mse_b <- mean(wobs * (mu_baseline - y)^2)
