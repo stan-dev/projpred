@@ -68,13 +68,15 @@ contrast to a standard LOO-CV). In the \code{"kfold"} case, a \eqn{K}-fold-CV is
 performed. See also section "Note" below.}
 
 \item{nloo}{Only relevant if \code{cv_method = "LOO"} and \code{validate_search = TRUE}. If \code{nloo > 0} is smaller than the number of all observations, full
-LOO-CV (i.e., PSIS-LOO CV with \code{validate_search = TRUE} and with \code{nloo = n} where \code{n} denotes the number of all observations) is approximated by
-combining the fast (i.e., \code{validate_search = FALSE}) LOO result for the
-selected models and \code{nloo} leave-one-out searches using the difference
-estimator with simple random sampling (SRS) without replacement (WOR)
-(Magnusson et al., 2020). Smaller \code{nloo} values lead to faster computation,
-but higher uncertainty in the evaluation part. If \code{NULL}, all observations
-are used (as by default).}
+LOO-CV (i.e., PSIS-LOO CV with \code{validate_search = TRUE} and with \code{nloo = n}
+where \code{n} denotes the number of all observations) is approximated by
+subsampled LOO-CV, i.e., by combining the fast (i.e., \code{validate_search = FALSE}) LOO result for the selected models and \code{nloo} leave-one-out
+searches using the difference estimator with simple random sampling (SRS)
+without replacement (WOR) (Magnusson et al., 2020). Smaller \code{nloo} values
+lead to faster computation, but higher uncertainty in the evaluation part.
+If \code{NULL}, all observations are used (as by default). Note that performance
+statistic \code{"auc"} (see argument \code{stats} of \code{\link[=summary.vsel]{summary.vsel()}} and
+\code{\link[=plot.vsel]{plot.vsel()}}) is not supported in case of subsampled LOO-CV.}
 
 \item{K}{Only relevant if \code{cv_method = "kfold"} and if \code{cvfits} is \code{NULL}
 (which is the case for reference model objects created by
