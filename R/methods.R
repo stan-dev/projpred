@@ -1171,10 +1171,14 @@ plot.vsel <- function(
 #'   confidence interval bounds are the exponentiated confidence interval bounds
 #'   of the MLPD.
 #'   * `"mse"`: mean squared error (only available in the situations mentioned
-#'   in section "Details" below).
+#'   in section "Details" below). For the corresponding confidence interval, a
+#'   log-normal approximation is used if `deltas` is `FALSE` and a normal
+#'   approximation is used if `deltas` is `TRUE`.
 #'   * `"rmse"`: root mean squared error (only available in the situations
 #'   mentioned in section "Details" below). For the corresponding standard
-#'   error, the delta method is used.
+#'   error, the delta method is used. For the corresponding confidence interval,
+#'   a log-normal approximation is used if `deltas` is `FALSE` and a normal
+#'   approximation is used if `deltas` is `TRUE`.
 #'   * `"R2"`: R-squared, i.e., coefficient of determination (only available in
 #'   the situations mentioned in section "Details" below). For the corresponding
 #'   standard error, the delta method is used.
@@ -1196,10 +1200,8 @@ plot.vsel <- function(
 #'   reference model, and standard error of this difference, respectively; note
 #'   that for the GMPD, `"diff"`, and `"diff.se"` actually refer to the ratio
 #'   vs. the reference model, not the difference). The confidence interval
-#'   bounds belong to normal-approximation (or bootstrap or exponentiated
-#'   normal-approximation; see argument `stats`) confidence intervals with
-#'   (nominal) coverage `1 - alpha`. Items `"diff"` and `"diff.se"` are only
-#'   supported if `deltas` is `FALSE`.
+#'   bounds belong to confidence intervals with (nominal) coverage `1 - alpha`.
+#'   Items `"diff"` and `"diff.se"` are only supported if `deltas` is `FALSE`.
 #' @param deltas If `TRUE`, the submodel statistics are estimated relatively to
 #'   the baseline model (see argument `baseline`). For the GMPD, the term
 #'   "relatively" refers to the ratio vs. the baseline model (i.e., the submodel
@@ -1207,9 +1209,8 @@ plot.vsel <- function(
 #'   "relatively" refers to the difference from the baseline model (i.e., the
 #'   submodel statistic minus the baseline model statistic).
 #' @param alpha A number determining the (nominal) coverage `1 - alpha` of the
-#'   normal-approximation (or bootstrap or exponentiated normal-approximation;
-#'   see argument `stats`) confidence intervals. For example, in case of the
-#'   normal approximation, `alpha = 2 * pnorm(-1)` corresponds to a confidence
+#'   confidence intervals. For example, in case of a normal-approximation
+#'   confidence interval, `alpha = 2 * pnorm(-1)` corresponds to a confidence
 #'   interval stretching by one standard error on either side of the point
 #'   estimate.
 #' @param baseline For [summary.vsel()]: Only relevant if `deltas` is `TRUE`.
@@ -1551,7 +1552,8 @@ print.vsel <- function(x, digits = getOption("projpred.digits", 2), ...) {
 #' @param object An object of class `vsel` (returned by [varsel()] or
 #'   [cv_varsel()]).
 #' @param stat Performance statistic (i.e., utility or loss) used for the
-#'   decision. See argument `stats` of [summary.vsel()] for possible choices.
+#'   decision. See argument `stats` of [summary.vsel()] and [plot.vsel()] for
+#'   possible choices.
 #' @param pct A number giving the proportion (*not* percents) of the *relative*
 #'   null model utility one is willing to sacrifice. See section "Details" below
 #'   for more information.
@@ -1575,13 +1577,11 @@ print.vsel <- function(x, digits = getOption("projpred.digits", 2), ...) {
 #' @details In general (beware of special cases below), the suggested model
 #'   size is the smallest model size \eqn{j \in \{0, 1, ...,
 #'   \texttt{nterms\_max}\}}{{j = 0, 1, ..., nterms_max}} for which either the
-#'   lower or upper bound (depending on argument `type`) of the
-#'   normal-approximation (or bootstrap or exponentiated normal-approximation;
-#'   see argument `stat`) confidence interval (with nominal coverage `1 -
-#'   alpha`; see argument `alpha` of [summary.vsel()]) for \eqn{U_j -
-#'   U_{\mathrm{base}}}{U_j - U_base} (with \eqn{U_j} denoting the \eqn{j}-th
-#'   submodel's true utility and \eqn{U_{\mathrm{base}}}{U_base} denoting the
-#'   baseline model's true utility)
+#'   lower or upper bound (depending on argument `type`) of the confidence
+#'   interval (with nominal coverage `1 - alpha`; see argument `alpha` of
+#'   [summary.vsel()]) for \eqn{U_j - U_{\mathrm{base}}}{U_j - U_base} (with
+#'   \eqn{U_j} denoting the \eqn{j}-th submodel's true utility and
+#'   \eqn{U_{\mathrm{base}}}{U_base} denoting the baseline model's true utility)
 #'   falls above (or is equal to) \deqn{\texttt{pct} \cdot (u_0 -
 #'   u_{\mathrm{base}})}{pct * (u_0 - u_base)} where \eqn{u_0} denotes the null
 #'   model's estimated utility and \eqn{u_{\mathrm{base}}}{u_base} the baseline
@@ -1631,15 +1631,15 @@ print.vsel <- function(x, digits = getOption("projpred.digits", 2), ...) {
 #'   `!is.na(thres_elpd)` with `stat %in% c("elpd", "mlpd", "gmpd")`), `alpha =
 #'   2 * pnorm(-1)`, `pct = 0`, and `type = "upper"` means that we select the
 #'   smallest model size for which the upper bound of the `1 - 2 * pnorm(-1)`
-#'   (approximately 68.3%) confidence interval for \eqn{U_j -
+#'   (approximately 68.3 %) confidence interval for \eqn{U_j -
 #'   U_{\mathrm{base}}}{U_j - U_base}
 #'   (\eqn{\frac{U^\ast_j}{U^\ast_{\mathrm{base}}}}{U^*_j / U^*_base} in case of
 #'   the GMPD) exceeds (or is equal to) zero (one in case of the GMPD), that is
-#'   (if `stat` is a performance statistic for which the normal approximation is
-#'   used, not the bootstrap and not the exponentiated normal approximation),
-#'   for which the submodel's utility estimate is at most one standard error
-#'   smaller than the baseline model's utility estimate (with that standard
-#'   error referring to the utility *difference*).
+#'   (if `stat` is a performance statistic for which a normal-approximation
+#'   confidence interval is used, see argument `stats` of [summary.vsel()] and
+#'   [plot.vsel()]), for which the submodel's utility estimate is at most one
+#'   standard error smaller than the baseline model's utility estimate (with
+#'   that standard error referring to the utility *difference*).
 #'
 #'   Apart from the two [summary.vsel()] arguments mentioned above (`alpha` and
 #'   `baseline`), `resp_oscale` is another important [summary.vsel()] argument
