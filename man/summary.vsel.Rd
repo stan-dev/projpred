@@ -49,10 +49,14 @@ interval type is "exponentiated normal approximation" because the
 confidence interval bounds are the exponentiated confidence interval bounds
 of the MLPD.
 \item \code{"mse"}: mean squared error (only available in the situations mentioned
-in section "Details" below).
+in section "Details" below). For the corresponding confidence interval, a
+log-normal approximation is used if \code{deltas} is \code{FALSE} and a normal
+approximation is used if \code{deltas} is \code{TRUE}.
 \item \code{"rmse"}: root mean squared error (only available in the situations
 mentioned in section "Details" below). For the corresponding standard
-error, the delta method is used.
+error, the delta method is used. For the corresponding confidence interval,
+a log-normal approximation is used if \code{deltas} is \code{FALSE} and a normal
+approximation is used if \code{deltas} is \code{TRUE}.
 \item \code{"R2"}: R-squared, i.e., coefficient of determination (only available in
 the situations mentioned in section "Details" below). For the corresponding
 standard error, the delta method is used.
@@ -76,10 +80,8 @@ interval bounds, mean difference to the corresponding statistic of the
 reference model, and standard error of this difference, respectively; note
 that for the GMPD, \code{"diff"}, and \code{"diff.se"} actually refer to the ratio
 vs. the reference model, not the difference). The confidence interval
-bounds belong to normal-approximation (or bootstrap or exponentiated
-normal-approximation; see argument \code{stats}) confidence intervals with
-(nominal) coverage \code{1 - alpha}. Items \code{"diff"} and \code{"diff.se"} are only
-supported if \code{deltas} is \code{FALSE}.}
+bounds belong to confidence intervals with (nominal) coverage \code{1 - alpha}.
+Items \code{"diff"} and \code{"diff.se"} are only supported if \code{deltas} is \code{FALSE}.}
 
 \item{deltas}{If \code{TRUE}, the submodel statistics are estimated relatively to
 the baseline model (see argument \code{baseline}). For the GMPD, the term
@@ -89,9 +91,8 @@ statistic divided by the baseline model statistic). For all other \code{stats},
 submodel statistic minus the baseline model statistic).}
 
 \item{alpha}{A number determining the (nominal) coverage \code{1 - alpha} of the
-normal-approximation (or bootstrap or exponentiated normal-approximation;
-see argument \code{stats}) confidence intervals. For example, in case of the
-normal approximation, \code{alpha = 2 * pnorm(-1)} corresponds to a confidence
+confidence intervals. For example, in case of a normal-approximation
+confidence interval, \code{alpha = 2 * pnorm(-1)} corresponds to a confidence
 interval stretching by one standard error on either side of the point
 estimate.}
 
