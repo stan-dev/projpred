@@ -1069,7 +1069,10 @@ plot.vsel <- function(
     ci_type <- "bootstrap "
   } else if (all(stats %in% c("gmpd"))) {
     ci_type <- "exponentiated normal-approximation "
-  } else if (all(!stats %in% c("auc", "gmpd"))) {
+  } else if (all(stats %in% c("mse", "rmse")) && !deltas) {
+    ci_type <- "log-normal-approximation "
+  } else if (all(!stats %in% c("auc", "gmpd", "mse", "rmse")) ||
+             (all(!stats %in% c("auc", "gmpd")) && deltas)) {
     ci_type <- "normal-approximation "
   } else {
     ci_type <- ""
