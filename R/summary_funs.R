@@ -93,11 +93,13 @@ weighted_summary_means <- function(y_wobs_test, family, wdraws, mu, dis, cl_ref,
   summaries_ref <- varsel$summaries$ref
   summaries_sub <- varsel$summaries$sub
   summaries_fast_sub <- varsel$summaries_fast$sub
-  if (!is.null(summaries_fast_sub)) {
-    if (any(stats %in% c("auc"))) {
-      warning("Subsampling LOO with AUC not implemented. Using fast LOO for ",
-              "submodel AUC.")
-    }
+  if (!is.null(summaries_fast_sub) && any(stats %in% c("auc"))) {
+    stop("Subsampled LOO-CV with AUC not implemented. Alternatives using ",
+         "`validate_search = TRUE` are full (i.e., non-subsampled) LOO-CV and ",
+         "K-fold CV. Otherwise, results from `validate_search = FALSE` (which ",
+         "often already exist at this point of the workflow) can be used, ",
+         "with the downside that the search part is not cross-validated in ",
+         "that case.")
   }
 
   if (!varsel$refmodel$family$for_latent && !resp_oscale) {
