@@ -64,7 +64,9 @@ probability (the probabilities are model-based) is taken as the prediction
 ("classification") for an observation.
 \item \code{"auc"}: area under the ROC curve (only available in the situations
 mentioned in section "Details" below). For the corresponding standard error
-and lower and upper confidence interval bounds, bootstrapping is used.
+and lower and upper confidence interval bounds, bootstrapping is used. Not
+supported in case of subsampled LOO-CV (see argument \code{nloo} of
+\code{\link[=cv_varsel]{cv_varsel()}}).
 }}
 
 \item{type}{One or more items from \code{"mean"}, \code{"se"}, \code{"lower"}, \code{"upper"},
@@ -156,6 +158,9 @@ The \code{stats} option \code{"auc"} is only available for:
 latent projection with \code{resp_oscale = TRUE} in combination with
 \verb{<refmodel>$family$cats} being \code{NULL}.
 }
+
+Note that the \code{stats} option \code{"auc"} is not supported in case of subsampled
+LOO-CV (see argument \code{nloo} of \code{\link[=cv_varsel]{cv_varsel()}}).
 }
 \examples{
 \dontshow{if (requireNamespace("rstanarm", quietly = TRUE)) (if (getRversion() >= "3.4") withAutoprint else force)(\{ # examplesIf}

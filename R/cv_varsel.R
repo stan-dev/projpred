@@ -22,14 +22,16 @@
 #'   performed. See also section "Note" below.
 #' @param nloo Only relevant if `cv_method = "LOO"` and `validate_search =
 #'   TRUE`. If `nloo > 0` is smaller than the number of all observations, full
-#'   LOO-CV (i.e., PSIS-LOO CV with `validate_search = TRUE` and with `nloo =
-#'   n` where `n` denotes the number of all observations) is approximated by
-#'   combining the fast (i.e., `validate_search = FALSE`) LOO result for the
-#'   selected models and `nloo` leave-one-out searches using the difference
-#'   estimator with simple random sampling (SRS) without replacement (WOR)
-#'   (Magnusson et al., 2020). Smaller `nloo` values lead to faster computation,
-#'   but higher uncertainty in the evaluation part. If `NULL`, all observations
-#'   are used (as by default).
+#'   LOO-CV (i.e., PSIS-LOO CV with `validate_search = TRUE` and with `nloo = n`
+#'   where `n` denotes the number of all observations) is approximated by
+#'   subsampled LOO-CV, i.e., by combining the fast (i.e., `validate_search =
+#'   FALSE`) LOO result for the selected models and `nloo` leave-one-out
+#'   searches using the difference estimator with simple random sampling (SRS)
+#'   without replacement (WOR) (Magnusson et al., 2020). Smaller `nloo` values
+#'   lead to faster computation, but higher uncertainty in the evaluation part.
+#'   If `NULL`, all observations are used (as by default). Note that performance
+#'   statistic `"auc"` (see argument `stats` of [summary.vsel()] and
+#'   [plot.vsel()]) is not supported in case of subsampled LOO-CV.
 #' @param K Only relevant if `cv_method = "kfold"` and if `cvfits` is `NULL`
 #'   (which is the case for reference model objects created by
 #'   [get_refmodel.stanreg()] or [brms::get_refmodel.brmsfit()]). Number of

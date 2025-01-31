@@ -1186,7 +1186,9 @@ plot.vsel <- function(
 #'   ("classification") for an observation.
 #'   * `"auc"`: area under the ROC curve (only available in the situations
 #'   mentioned in section "Details" below). For the corresponding standard error
-#'   and lower and upper confidence interval bounds, bootstrapping is used.
+#'   and lower and upper confidence interval bounds, bootstrapping is used. Not
+#'   supported in case of subsampled LOO-CV (see argument `nloo` of
+#'   [cv_varsel()]).
 #' @param type One or more items from `"mean"`, `"se"`, `"lower"`, `"upper"`,
 #'   `"diff"`, and `"diff.se"` indicating which of these to compute for each
 #'   item from `stats` (mean, standard error, lower and upper confidence
@@ -1247,6 +1249,9 @@ plot.vsel <- function(
 #'   * the [binomial()] family (on the original response scale) in case of the
 #'   latent projection with `resp_oscale = TRUE` in combination with
 #'   `<refmodel>$family$cats` being `NULL`.
+#'
+#'   Note that the `stats` option `"auc"` is not supported in case of subsampled
+#'   LOO-CV (see argument `nloo` of [cv_varsel()]).
 #'
 #' @return An object of class `vselsummary`. The elements of this object are not
 #'   meant to be accessed directly but instead via helper functions
