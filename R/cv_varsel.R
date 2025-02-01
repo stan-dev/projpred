@@ -31,7 +31,9 @@
 #'   lead to faster computation, but higher uncertainty in the evaluation part.
 #'   If `NULL`, all observations are used (as by default). Note that performance
 #'   statistic `"auc"` (see argument `stats` of [summary.vsel()] and
-#'   [plot.vsel()]) is not supported in case of subsampled LOO-CV.
+#'   [plot.vsel()]) is not supported in case of subsampled LOO-CV. Furthermore,
+#'   option `"best"` for argument `baseline` of [summary.vsel()] and
+#'   [plot.vsel()] is not supported in case of subsampled LOO-CV.
 #' @param K Only relevant if `cv_method = "kfold"` and if `cvfits` is `NULL`
 #'   (which is the case for reference model objects created by
 #'   [get_refmodel.stanreg()] or [brms::get_refmodel.brmsfit()]). Number of

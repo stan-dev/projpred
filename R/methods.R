@@ -1219,7 +1219,8 @@ plot.vsel <- function(
 #' @param baseline For [summary.vsel()]: Only relevant if `deltas` is `TRUE`.
 #'   For [plot.vsel()]: Always relevant. Either `"ref"` or `"best"`, indicating
 #'   whether the baseline is the reference model or the best submodel found (in
-#'   terms of `stats[1]`), respectively.
+#'   terms of `stats[1]`), respectively. In case of subsampled LOO-CV, `baseline
+#'   = "best"` is not supported.
 #' @param resp_oscale Only relevant for the latent projection. A single logical
 #'   value indicating whether to calculate the performance statistics on the
 #'   original response scale (`TRUE`) or on latent scale (`FALSE`).

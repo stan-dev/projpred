@@ -99,7 +99,7 @@ estimate.}
 \item{baseline}{For \code{\link[=summary.vsel]{summary.vsel()}}: Only relevant if \code{deltas} is \code{TRUE}.
 For \code{\link[=plot.vsel]{plot.vsel()}}: Always relevant. Either \code{"ref"} or \code{"best"}, indicating
 whether the baseline is the reference model or the best submodel found (in
-terms of \code{stats[1]}), respectively.}
+terms of \code{stats[1]}), respectively. In case of subsampled LOO-CV, \code{baseline = "best"} is not supported.}
 
 \item{thres_elpd}{Only relevant if \code{any(stats \%in\% c("elpd", "mlpd", "gmpd"))}. The threshold for the ELPD difference (taking the submodel's
 ELPD minus the baseline model's ELPD) above which the submodel's ELPD is

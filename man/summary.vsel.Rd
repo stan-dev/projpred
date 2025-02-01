@@ -99,7 +99,7 @@ estimate.}
 \item{baseline}{For \code{\link[=summary.vsel]{summary.vsel()}}: Only relevant if \code{deltas} is \code{TRUE}.
 For \code{\link[=plot.vsel]{plot.vsel()}}: Always relevant. Either \code{"ref"} or \code{"best"}, indicating
 whether the baseline is the reference model or the best submodel found (in
-terms of \code{stats[1]}), respectively.}
+terms of \code{stats[1]}), respectively. In case of subsampled LOO-CV, \code{baseline = "best"} is not supported.}
 
 \item{resp_oscale}{Only relevant for the latent projection. A single logical
 value indicating whether to calculate the performance statistics on the
