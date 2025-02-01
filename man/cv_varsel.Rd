@@ -76,7 +76,9 @@ without replacement (WOR) (Magnusson et al., 2020). Smaller \code{nloo} values
 lead to faster computation, but higher uncertainty in the evaluation part.
 If \code{NULL}, all observations are used (as by default). Note that performance
 statistic \code{"auc"} (see argument \code{stats} of \code{\link[=summary.vsel]{summary.vsel()}} and
-\code{\link[=plot.vsel]{plot.vsel()}}) is not supported in case of subsampled LOO-CV.}
+\code{\link[=plot.vsel]{plot.vsel()}}) is not supported in case of subsampled LOO-CV. Furthermore,
+option \code{"best"} for argument \code{baseline} of \code{\link[=summary.vsel]{summary.vsel()}} and
+\code{\link[=plot.vsel]{plot.vsel()}} is not supported in case of subsampled LOO-CV.}
 
 \item{K}{Only relevant if \code{cv_method = "kfold"} and if \code{cvfits} is \code{NULL}
 (which is the case for reference model objects created by
