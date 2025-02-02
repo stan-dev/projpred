@@ -528,8 +528,9 @@ get_stat <- function(summaries, summaries_baseline = NULL,
       }
     } else if (stat == "auc") {
       if (n_loo < n_full) {
-        # subsampling LOO with AUC not implemented. Using fast LOO result.
-        mu <- mu_fast
+        # Note: Previously, subsampled LOO with AUC caused the fast LOO results
+        # to be used automatically (via `mu <- mu_fast`), see PR #496.
+        stop("Subsampled LOO-CV with AUC not implemented.")
       }
       if (!is.null(mu_baseline)) {
         auc_data <- cbind(y, mu, wobs)
