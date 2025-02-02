@@ -48,9 +48,11 @@ set). Available statistics are:
 \item \code{"elpd"}: expected log (pointwise) predictive density (for a new
 dataset) (ELPD). Estimated by the sum of the observation-specific log
 predictive density values (with each of these predictive density values
-being a---possibly weighted---average across the parameter draws).
+being a---possibly weighted---average across the parameter draws). For the
+corresponding confidence interval, a normal approximation is used.
 \item \code{"mlpd"}: mean log predictive density (MLPD), that is, the ELPD divided
-by the number of observations.
+by the number of observations. For the corresponding confidence interval, a
+normal approximation is used.
 \item \code{"gmpd"}: geometric mean predictive density (GMPD), that is, \code{\link[=exp]{exp()}} of
 the MLPD. The GMPD is especially helpful for discrete response families
 (because there, the GMPD is bounded by zero and one). For the corresponding
@@ -69,13 +71,15 @@ a log-normal approximation is used if \code{deltas} is \code{FALSE} and a normal
 approximation is used if \code{deltas} is \code{TRUE}.
 \item \code{"R2"}: R-squared, i.e., coefficient of determination (only available in
 the situations mentioned in section "Details" below). For the corresponding
-standard error, the delta method is used.
+standard error, the delta method is used. For the corresponding confidence
+interval, a normal approximation is used.
 \item \code{"acc"} (or its alias, \code{"pctcorr"}): classification accuracy (only
 available in the situations mentioned in section "Details" below). By
 "classification accuracy", we mean the proportion of correctly classified
 observations. For this, the response category ("class") with highest
 probability (the probabilities are model-based) is taken as the prediction
-("classification") for an observation.
+("classification") for an observation. For the corresponding confidence
+interval, a normal approximation is used.
 \item \code{"auc"}: area under the ROC curve (only available in the situations
 mentioned in section "Details" below). For the corresponding standard error
 and lower and upper confidence interval bounds, bootstrapping is used. Not

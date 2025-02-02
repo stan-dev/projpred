@@ -1163,9 +1163,11 @@ plot.vsel <- function(
 #'   * `"elpd"`: expected log (pointwise) predictive density (for a new
 #'   dataset) (ELPD). Estimated by the sum of the observation-specific log
 #'   predictive density values (with each of these predictive density values
-#'   being a---possibly weighted---average across the parameter draws).
+#'   being a---possibly weighted---average across the parameter draws). For the
+#'   corresponding confidence interval, a normal approximation is used.
 #'   * `"mlpd"`: mean log predictive density (MLPD), that is, the ELPD divided
-#'   by the number of observations.
+#'   by the number of observations. For the corresponding confidence interval, a
+#'   normal approximation is used.
 #'   * `"gmpd"`: geometric mean predictive density (GMPD), that is, [exp()] of
 #'   the MLPD. The GMPD is especially helpful for discrete response families
 #'   (because there, the GMPD is bounded by zero and one). For the corresponding
@@ -1184,13 +1186,15 @@ plot.vsel <- function(
 #'   approximation is used if `deltas` is `TRUE`.
 #'   * `"R2"`: R-squared, i.e., coefficient of determination (only available in
 #'   the situations mentioned in section "Details" below). For the corresponding
-#'   standard error, the delta method is used.
+#'   standard error, the delta method is used. For the corresponding confidence
+#'   interval, a normal approximation is used.
 #'   * `"acc"` (or its alias, `"pctcorr"`): classification accuracy (only
 #'   available in the situations mentioned in section "Details" below). By
 #'   "classification accuracy", we mean the proportion of correctly classified
 #'   observations. For this, the response category ("class") with highest
 #'   probability (the probabilities are model-based) is taken as the prediction
-#'   ("classification") for an observation.
+#'   ("classification") for an observation. For the corresponding confidence
+#'   interval, a normal approximation is used.
 #'   * `"auc"`: area under the ROC curve (only available in the situations
 #'   mentioned in section "Details" below). For the corresponding standard error
 #'   and lower and upper confidence interval bounds, bootstrapping is used. Not
