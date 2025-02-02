@@ -4,9 +4,16 @@ If you read this from a place other than <https://mc-stan.org/projpred/news/inde
 
 # projpred 2.8.0.9000
 
+## Major changes
+
+* Subsampled PSIS-LOO CV (usable via argument `nloo` of `cv_varsel()`) has been fixed and is not experimental anymore. There are a few restrictions: Performance statistic `"auc"` (see argument `stats` of `summary.vsel()` and `plot.vsel()`; argument `stat` of `suggest_size()` is concerned as well) is not supported in case of subsampled PSIS-LOO CV. Furthermore, `baseline = "best"` (in `summary.vsel()` and `plot.vsel()`) is not supported in case of subsampled PSIS-LOO CV either. (GitHub: #94, #496)
+* The confidence interval for performance statistic `"mse"` is now based on a log-normal approximation (instead of a normal approximation) if argument `deltas` of `summary.vsel()` or `plot.vsel()` is `FALSE`. (GitHub: #496)
+* The standard error for performance statistic `"rmse"` is now computed via the delta method (instead of bootstrapping). The confidence interval for `"rmse"` is now based on a log-normal approximation (instead of bootstrapping) if argument `deltas` of `summary.vsel()` or `plot.vsel()` is `FALSE` and based on a normal approximation (instead of bootstrapping) if `deltas` is `TRUE`. (GitHub: #496)
+* Performance statistic `"R2"` (R-squared) has been added, see argument `stats` of `summary.vsel()` and `plot.vsel()`; argument `stat` of `suggest_size()` supports it as well. (GitHub: #483, #496)
+
 ## Minor changes
 
-* Use the updated threshold for high Pareto-$\hat{k}$ values presented by Vehtari et al. (2024, "Pareto smoothed importance sampling", *Journal of Machine Learning Research*, 25(72):1-58, <https://www.jmlr.org/papers/v25/19-556.html>). This threshold depends on the Monte Carlo sample size and is often close to the former fixed threshold of 0.7 (a short introduction may also be found in the [LOO glossary](https://mc-stan.org/loo/reference/loo-glossary.html)). Correspondingly, the former "secondary" threshold of 0.5 is not used anymore either.
+* Use the updated threshold for high Pareto-$\hat{k}$ values presented by Vehtari et al. (2024, "Pareto smoothed importance sampling", *Journal of Machine Learning Research*, 25(72):1-58, <https://www.jmlr.org/papers/v25/19-556.html>). This threshold depends on the Monte Carlo sample size and is often close to the former fixed threshold of 0.7 (a short introduction may also be found in the [LOO glossary](https://mc-stan.org/loo/reference/loo-glossary.html)). Correspondingly, the former "secondary" threshold of 0.5 is not used anymore either. (GitHub: #490, #498)
 
 # projpred 2.8.0
 
