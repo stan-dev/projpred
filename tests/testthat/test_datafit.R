@@ -114,12 +114,17 @@ if (run_cvvs) {
   args_cvvs_datafit <- lapply(args_cvvs_datafit, function(args_cvvs_i) {
     args_cvvs_i$cv_method <- NULL
     args_cvvs_i$K <- NULL
+    args_cvvs_i$nloo <- NULL
     args_cvvs_i$validate_search <- TRUE
     return(c(args_cvvs_i, list(cv_method = "kfold")))
   })
+  names(args_cvvs_datafit) <- gsub("(\\.default_cvmeth\\..*)\\.default_nloo",
+                                   "\\1.subsmpl", names(args_cvvs_datafit))
   names(args_cvvs_datafit) <- gsub("default_cvmeth", "kfold",
                                    names(args_cvvs_datafit))
   args_cvvs_datafit <- args_cvvs_datafit[unique(names(args_cvvs_datafit))]
+  names(args_cvvs_datafit) <- gsub("\\.subsmpl", "\\.default_nloo",
+                                   names(args_cvvs_datafit))
   # For `datafit`s, we always have 1 cluster by default, so omit related
   # arguments:
   args_cvvs_datafit <- lapply(args_cvvs_datafit, function(args_cvvs_i) {
