@@ -937,6 +937,11 @@ cvmeth_tst <- list(
   kfold = list(cv_method = "kfold")
 )
 
+nloo_tst <- list(
+  default_nloo = list(),
+  subsmpl = list(nloo = as.integer(nobsv %/% 10))
+)
+
 resp_oscale_tst <- list(
   default_r_oscale = list(),
   r_oscale_F = list(resp_oscale = FALSE)
@@ -1233,6 +1238,14 @@ if (run_cvvs) {
               !run_valsearch_aug_lat))) {
           cvmeth_i <- c(cvmeth_i, list(validate_search = FALSE))
         }
+        if (identical(cvmeth_i$cv_method, "kfold")) {
+          nloo_tst <- nloo_tst["default_nloo"]
+        } else if (!((prj_crr == "trad" && mod_crr == "glm" &&
+                      fam_crr == "gauss") ||
+                     (prj_crr %in% c("augdat", "latent") && mod_crr == "glm" &&
+                      fam_crr == "cumul"))) {
+          nloo_tst <- nloo_tst["subsmpl"]
+        }
         if (run_more && mod_crr == "glm" && fam_crr == "gauss" &&
             grepl("\\.stdformul\\.", tstsetup_ref)) {
           # Here, we also test non-NULL `search_terms`:
@@ -1247,14 +1260,20 @@ if (run_cvvs) {
             nterms_max_tst <- count_terms_chosen(search_trms_i$search_terms) -
               1L
           }
-          return(c(
-            nlist(tstsetup_ref), only_nonargs(args_ref[[tstsetup_ref]]),
-            list(
-              nclusters = nclusters_tst, nclusters_pred = nclusters_pred_tst,
-              nterms_max = nterms_max_tst, verbose = FALSE, seed = seed_tst
-            ),
-            meth_i, cvmeth_i, search_trms_i
-          ))
+          lapply(nloo_tst, function(nloo_i) {
+            if (!is.null(nloo_i$nloo) && nloo_i$nloo < nobsv &&
+                identical(cvmeth_i$validate_search, FALSE)) {
+              cvmeth_i$validate_search <- NULL
+            }
+            return(c(
+              nlist(tstsetup_ref), only_nonargs(args_ref[[tstsetup_ref]]),
+              list(
+                nclusters = nclusters_tst, nclusters_pred = nclusters_pred_tst,
+                nterms_max = nterms_max_tst, verbose = FALSE, seed = seed_tst
+              ),
+              meth_i, cvmeth_i, nloo_i, search_trms_i
+            ))
+          })
         })
       })
     })
