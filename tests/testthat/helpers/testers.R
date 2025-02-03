@@ -1968,7 +1968,11 @@ vsel_tester <- function(
       nclusters_pred_tst
     },
     seed_expected = seed_tst,
-    nloo_expected = if (with_cv) refmod_expected$nobs else NULL,
+    nloo_expected = if (with_cv && !identical(cv_method_expected, "kfold")) {
+      refmod_expected$nobs
+    } else {
+      NULL
+    },
     K_expected = NULL,
     penalty_expected = NULL,
     search_terms_expected = NULL,
@@ -2001,7 +2005,6 @@ vsel_tester <- function(
     # size (see issue #307):
     prd_trms_len_expected <- prd_trms_len_expected - 1L
   }
-  nloo_expected_orig <- nloo_expected
 
   # Test the general structure of the object:
   expect_s3_class(vs, "vsel")
@@ -2250,7 +2253,7 @@ vsel_tester <- function(
   expect_named(vs$summaries, c("sub", "ref"), info = info_str)
   expect_type(vs$summaries$sub, "list")
   expect_length(vs$summaries$sub, prd_trms_len_expected + 1)
-  if (with_cv) {
+  if (with_cv && identical(cv_method_expected, "LOO")) {
     if (is.null(nloo_expected) || nloo_expected > nobsv) {
       nloo_expected <- nobsv
     }
@@ -2374,7 +2377,7 @@ vsel_tester <- function(
   expect_identical(vs$cv_method, cv_method_expected, info = info_str)
 
   # nloo
-  expect_identical(vs$nloo, nloo_expected_orig, info = info_str)
+  expect_identical(vs$nloo, nloo_expected, info = info_str)
 
   # K
   if (!is.null(K_expected)) {
