@@ -33,7 +33,7 @@ cv_varsel(object, ...)
   nterms_max = NULL,
   penalty = NULL,
   verbose = getOption("projpred.verbose", interactive()),
-  nloo = object$nobs,
+  nloo = if (cv_method == "LOO") object$nobs else NULL,
   K = if (!inherits(object, "datafit")) 5 else 10,
   cvfits = object$cvfits,
   search_control = NULL,

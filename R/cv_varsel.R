@@ -272,7 +272,7 @@ cv_varsel.refmodel <- function(
     nterms_max = NULL,
     penalty = NULL,
     verbose = getOption("projpred.verbose", interactive()),
-    nloo = object$nobs,
+    nloo = if (cv_method == "LOO") object$nobs else NULL,
     K = if (!inherits(object, "datafit")) 5 else 10,
     cvfits = object$cvfits,
     search_control = NULL,
@@ -560,6 +560,7 @@ parse_args_cv_varsel <- function(refmodel, cv_method, nloo, K, cvfits,
       stop("For K-fold-CV, `validate_search = FALSE` may not be combined with ",
            "`refit_prj = FALSE`.")
     }
+    nloo <- NULL
   } else {
     stopifnot(!is.null(refmodel[["nobs"]]))
     nloo <- min(nloo, refmodel[["nobs"]])
