@@ -608,6 +608,12 @@ test_that(paste(
     nterms_max_expected_crr <- args_rk_cvvs[[tstsetup_rk]][["nterms_max"]]
     if (is.null(nterms_max_expected_crr)) {
       nterms_max_expected_crr <- args_cvvs[[tstsetup_cvvs]][["nterms_max"]]
+      if (length(args_cvvs[[tstsetup_cvvs]]$search_terms) &&
+          all(grepl("\\+", args_cvvs[[tstsetup_cvvs]]$search_terms))) {
+        # This is the "empty_size" setting, so we have to subtract the skipped
+        # model size (see issue #307):
+        nterms_max_expected_crr <- nterms_max_expected_crr - 1L
+      }
     }
     cv_proportions_tester(
       prs_cvvs[[tstsetup]],
