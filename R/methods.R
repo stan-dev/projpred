@@ -722,7 +722,7 @@ plot.vsel <- function(
   # Parse input:
   object <- x
   validate_vsel_object_stats(object, stats, resp_oscale = resp_oscale)
-  baseline <- validate_baseline(object$refmodel, baseline, deltas)
+  baseline <- validate_baseline(object, baseline, deltas)
   if (!is.null(ranking_repel) && !requireNamespace("ggrepel", quietly = TRUE)) {
     warning("Package 'ggrepel' is needed for a non-`NULL` argument ",
             "`ranking_repel`, but could not be found. Setting `ranking_repel` ",
@@ -1065,11 +1065,14 @@ plot.vsel <- function(
     #                        direction = 1)
     ###
   }
-  if (all(stats %in% c("rmse", "auc"))) {
+  if (all(stats %in% c("auc"))) {
     ci_type <- "bootstrap "
   } else if (all(stats %in% c("gmpd"))) {
     ci_type <- "exponentiated normal-approximation "
-  } else if (all(!stats %in% c("rmse", "auc", "gmpd"))) {
+  } else if (all(stats %in% c("mse", "rmse")) && !deltas) {
+    ci_type <- "log-normal-approximation "
+  } else if (all(!stats %in% c("auc", "gmpd", "mse", "rmse")) ||
+             (all(!stats %in% c("auc", "gmpd")) && deltas)) {
     ci_type <- "normal-approximation "
   } else {
     ci_type <- ""
@@ -1158,32 +1161,45 @@ plot.vsel <- function(
 #'   are again all observations because the test set is the same as the training
 #'   set). Available statistics are:
 #'   * `"elpd"`: expected log (pointwise) predictive density (for a new
-#'   dataset). Estimated by the sum of the observation-specific log predictive
-#'   density values (with each of these predictive density values being
-#'   a---possibly weighted---average across the parameter draws).
-#'   * `"mlpd"`: mean log predictive density, that is, `"elpd"` divided by the
-#'   number of observations.
+#'   dataset) (ELPD). Estimated by the sum of the observation-specific log
+#'   predictive density values (with each of these predictive density values
+#'   being a---possibly weighted---average across the parameter draws). For the
+#'   corresponding confidence interval, a normal approximation is used.
+#'   * `"mlpd"`: mean log predictive density (MLPD), that is, the ELPD divided
+#'   by the number of observations. For the corresponding confidence interval, a
+#'   normal approximation is used.
 #'   * `"gmpd"`: geometric mean predictive density (GMPD), that is, [exp()] of
-#'   `"mlpd"`. The GMPD is especially helpful for discrete response families
+#'   the MLPD. The GMPD is especially helpful for discrete response families
 #'   (because there, the GMPD is bounded by zero and one). For the corresponding
 #'   standard error, the delta method is used. The corresponding confidence
 #'   interval type is "exponentiated normal approximation" because the
 #'   confidence interval bounds are the exponentiated confidence interval bounds
-#'   of the `"mlpd"`.
+#'   of the MLPD.
 #'   * `"mse"`: mean squared error (only available in the situations mentioned
-#'   in section "Details" below).
+#'   in section "Details" below). For the corresponding confidence interval, a
+#'   log-normal approximation is used if `deltas` is `FALSE` and a normal
+#'   approximation is used if `deltas` is `TRUE`.
 #'   * `"rmse"`: root mean squared error (only available in the situations
-#'   mentioned in section "Details" below). For the corresponding standard error
-#'   and lower and upper confidence interval bounds, bootstrapping is used.
+#'   mentioned in section "Details" below). For the corresponding standard
+#'   error, the delta method is used. For the corresponding confidence interval,
+#'   a log-normal approximation is used if `deltas` is `FALSE` and a normal
+#'   approximation is used if `deltas` is `TRUE`.
+#'   * `"R2"`: R-squared, i.e., coefficient of determination (only available in
+#'   the situations mentioned in section "Details" below). For the corresponding
+#'   standard error, the delta method is used. For the corresponding confidence
+#'   interval, a normal approximation is used.
 #'   * `"acc"` (or its alias, `"pctcorr"`): classification accuracy (only
 #'   available in the situations mentioned in section "Details" below). By
 #'   "classification accuracy", we mean the proportion of correctly classified
 #'   observations. For this, the response category ("class") with highest
 #'   probability (the probabilities are model-based) is taken as the prediction
-#'   ("classification") for an observation.
+#'   ("classification") for an observation. For the corresponding confidence
+#'   interval, a normal approximation is used.
 #'   * `"auc"`: area under the ROC curve (only available in the situations
 #'   mentioned in section "Details" below). For the corresponding standard error
-#'   and lower and upper confidence interval bounds, bootstrapping is used.
+#'   and lower and upper confidence interval bounds, bootstrapping is used. Not
+#'   supported in case of subsampled LOO-CV (see argument `nloo` of
+#'   [cv_varsel()]).
 #' @param type One or more items from `"mean"`, `"se"`, `"lower"`, `"upper"`,
 #'   `"diff"`, and `"diff.se"` indicating which of these to compute for each
 #'   item from `stats` (mean, standard error, lower and upper confidence
@@ -1191,10 +1207,8 @@ plot.vsel <- function(
 #'   reference model, and standard error of this difference, respectively; note
 #'   that for the GMPD, `"diff"`, and `"diff.se"` actually refer to the ratio
 #'   vs. the reference model, not the difference). The confidence interval
-#'   bounds belong to normal-approximation (or bootstrap or exponentiated
-#'   normal-approximation; see argument `stats`) confidence intervals with
-#'   (nominal) coverage `1 - alpha`. Items `"diff"` and `"diff.se"` are only
-#'   supported if `deltas` is `FALSE`.
+#'   bounds belong to confidence intervals with (nominal) coverage `1 - alpha`.
+#'   Items `"diff"` and `"diff.se"` are only supported if `deltas` is `FALSE`.
 #' @param deltas If `TRUE`, the submodel statistics are estimated relatively to
 #'   the baseline model (see argument `baseline`). For the GMPD, the term
 #'   "relatively" refers to the ratio vs. the baseline model (i.e., the submodel
@@ -1202,15 +1216,15 @@ plot.vsel <- function(
 #'   "relatively" refers to the difference from the baseline model (i.e., the
 #'   submodel statistic minus the baseline model statistic).
 #' @param alpha A number determining the (nominal) coverage `1 - alpha` of the
-#'   normal-approximation (or bootstrap or exponentiated normal-approximation;
-#'   see argument `stats`) confidence intervals. For example, in case of the
-#'   normal approximation, `alpha = 2 * pnorm(-1)` corresponds to a confidence
+#'   confidence intervals. For example, in case of a normal-approximation
+#'   confidence interval, `alpha = 2 * pnorm(-1)` corresponds to a confidence
 #'   interval stretching by one standard error on either side of the point
 #'   estimate.
 #' @param baseline For [summary.vsel()]: Only relevant if `deltas` is `TRUE`.
 #'   For [plot.vsel()]: Always relevant. Either `"ref"` or `"best"`, indicating
 #'   whether the baseline is the reference model or the best submodel found (in
-#'   terms of `stats[1]`), respectively.
+#'   terms of `stats[1]`), respectively. In case of subsampled LOO-CV, `baseline
+#'   = "best"` is not supported.
 #' @param resp_oscale Only relevant for the latent projection. A single logical
 #'   value indicating whether to calculate the performance statistics on the
 #'   original response scale (`TRUE`) or on latent scale (`FALSE`).
@@ -1222,7 +1236,8 @@ plot.vsel <- function(
 #'   and `seed` (see [set.seed()], but defaulting to `NA` so that [set.seed()]
 #'   is not called within that function at all).
 #'
-#' @details The `stats` options `"mse"` and `"rmse"` are only available for:
+#' @details The `stats` options `"mse"`, `"rmse"`, and `"R2"` are only available
+#'   for:
 #'   * the traditional projection,
 #'   * the latent projection with `resp_oscale = FALSE`,
 #'   * the latent projection with `resp_oscale = TRUE` in combination with
@@ -1243,6 +1258,9 @@ plot.vsel <- function(
 #'   * the [binomial()] family (on the original response scale) in case of the
 #'   latent projection with `resp_oscale = TRUE` in combination with
 #'   `<refmodel>$family$cats` being `NULL`.
+#'
+#'   Note that the `stats` option `"auc"` is not supported in case of subsampled
+#'   LOO-CV (see argument `nloo` of [cv_varsel()]).
 #'
 #' @return An object of class `vselsummary`. The elements of this object are not
 #'   meant to be accessed directly but instead via helper functions
@@ -1283,7 +1301,7 @@ summary.vsel <- function(
     ...
 ) {
   validate_vsel_object_stats(object, stats, resp_oscale = resp_oscale)
-  baseline <- validate_baseline(object$refmodel, baseline, deltas)
+  baseline <- validate_baseline(object, baseline, deltas)
 
   # Initialize output:
   out <- c(
@@ -1542,7 +1560,8 @@ print.vsel <- function(x, digits = getOption("projpred.digits", 2), ...) {
 #' @param object An object of class `vsel` (returned by [varsel()] or
 #'   [cv_varsel()]).
 #' @param stat Performance statistic (i.e., utility or loss) used for the
-#'   decision. See argument `stats` of [summary.vsel()] for possible choices.
+#'   decision. See argument `stats` of [summary.vsel()] and [plot.vsel()] for
+#'   possible choices.
 #' @param pct A number giving the proportion (*not* percents) of the *relative*
 #'   null model utility one is willing to sacrifice. See section "Details" below
 #'   for more information.
@@ -1566,13 +1585,11 @@ print.vsel <- function(x, digits = getOption("projpred.digits", 2), ...) {
 #' @details In general (beware of special cases below), the suggested model
 #'   size is the smallest model size \eqn{j \in \{0, 1, ...,
 #'   \texttt{nterms\_max}\}}{{j = 0, 1, ..., nterms_max}} for which either the
-#'   lower or upper bound (depending on argument `type`) of the
-#'   normal-approximation (or bootstrap or exponentiated normal-approximation;
-#'   see argument `stat`) confidence interval (with nominal coverage `1 -
-#'   alpha`; see argument `alpha` of [summary.vsel()]) for \eqn{U_j -
-#'   U_{\mathrm{base}}}{U_j - U_base} (with \eqn{U_j} denoting the \eqn{j}-th
-#'   submodel's true utility and \eqn{U_{\mathrm{base}}}{U_base} denoting the
-#'   baseline model's true utility)
+#'   lower or upper bound (depending on argument `type`) of the confidence
+#'   interval (with nominal coverage `1 - alpha`; see argument `alpha` of
+#'   [summary.vsel()]) for \eqn{U_j - U_{\mathrm{base}}}{U_j - U_base} (with
+#'   \eqn{U_j} denoting the \eqn{j}-th submodel's true utility and
+#'   \eqn{U_{\mathrm{base}}}{U_base} denoting the baseline model's true utility)
 #'   falls above (or is equal to) \deqn{\texttt{pct} \cdot (u_0 -
 #'   u_{\mathrm{base}})}{pct * (u_0 - u_base)} where \eqn{u_0} denotes the null
 #'   model's estimated utility and \eqn{u_{\mathrm{base}}}{u_base} the baseline
@@ -1622,15 +1639,15 @@ print.vsel <- function(x, digits = getOption("projpred.digits", 2), ...) {
 #'   `!is.na(thres_elpd)` with `stat %in% c("elpd", "mlpd", "gmpd")`), `alpha =
 #'   2 * pnorm(-1)`, `pct = 0`, and `type = "upper"` means that we select the
 #'   smallest model size for which the upper bound of the `1 - 2 * pnorm(-1)`
-#'   (approximately 68.3%) confidence interval for \eqn{U_j -
+#'   (approximately 68.3 %) confidence interval for \eqn{U_j -
 #'   U_{\mathrm{base}}}{U_j - U_base}
 #'   (\eqn{\frac{U^\ast_j}{U^\ast_{\mathrm{base}}}}{U^*_j / U^*_base} in case of
 #'   the GMPD) exceeds (or is equal to) zero (one in case of the GMPD), that is
-#'   (if `stat` is a performance statistic for which the normal approximation is
-#'   used, not the bootstrap and not the exponentiated normal approximation),
-#'   for which the submodel's utility estimate is at most one standard error
-#'   smaller than the baseline model's utility estimate (with that standard
-#'   error referring to the utility *difference*).
+#'   (if `stat` is a performance statistic for which a normal-approximation
+#'   confidence interval is used, see argument `stats` of [summary.vsel()] and
+#'   [plot.vsel()]), for which the submodel's utility estimate is at most one
+#'   standard error smaller than the baseline model's utility estimate (with
+#'   that standard error referring to the utility *difference*).
 #'
 #'   Apart from the two [summary.vsel()] arguments mentioned above (`alpha` and
 #'   `baseline`), `resp_oscale` is another important [summary.vsel()] argument

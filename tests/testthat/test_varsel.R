@@ -1195,6 +1195,7 @@ test_that(paste(
       prd_trms_len_expected = args_cvvs[[tstsetup]]$nterms_max,
       method_expected = meth_exp_crr,
       cv_method_expected = args_cvvs[[tstsetup]]$cv_method,
+      nloo_expected = args_cvvs[[tstsetup]]$nloo,
       valsearch_expected = args_cvvs[[tstsetup]]$validate_search,
       search_terms_expected = args_cvvs[[tstsetup]]$search_terms,
       search_trms_empty_size =
@@ -1321,6 +1322,7 @@ test_that("`refit_prj` works", {
       method_expected = meth_exp_crr,
       refit_prj_expected = FALSE,
       cv_method_expected = args_cvvs_i$cv_method,
+      nloo_expected = args_cvvs_i$nloo,
       valsearch_expected = args_cvvs_i$validate_search,
       search_terms_expected = args_cvvs_i$search_terms,
       search_trms_empty_size =
@@ -1384,6 +1386,10 @@ test_that("invalid `nloo` fails", {
   skip_if_not(run_cvvs)
   tstsetups_nonkfold <- grep("\\.kfold", names(cvvss), value = TRUE,
                              invert = TRUE)
+  valsearch_arg <- lapply(args_cvvs[tstsetups_nonkfold], "[[",
+                          "validate_search")
+  tstsetups_nonkfold <- tstsetups_nonkfold[!sapply(valsearch_arg, isFALSE)]
+  skip_if(length(tstsetups_nonkfold) == 0)
   for (tstsetup in head(tstsetups_nonkfold, 1)) {
     args_cvvs_i <- args_cvvs[[tstsetup]]
     # Use suppressWarnings() because test_that() somehow redirects stderr() and
@@ -1392,7 +1398,7 @@ test_that("invalid `nloo` fails", {
       suppressWarnings(do.call(cv_varsel, c(
         list(object = refmods[[args_cvvs_i$tstsetup_ref]],
              nloo = -1),
-        excl_nonargs(args_cvvs_i)
+        excl_nonargs(args_cvvs_i, nms_excl_add = "nloo")
       ))),
       "^nloo must be at least 1$",
       info = tstsetup
@@ -1407,9 +1413,12 @@ test_that(paste(
   skip_if_not(run_cvvs)
   nloo_tst <- nobsv + 1L
   tstsetups <- grep(
-    "\\.glm\\.gauss\\..*\\.default_cvmeth\\.default_search_trms",
+    "\\.glm\\.gauss\\..*\\.default_cvmeth\\.default_search_trms\\.default_nloo",
     names(cvvss), value = TRUE
   )
+  valsearch_arg <- lapply(args_cvvs[tstsetups], "[[", "validate_search")
+  tstsetups <- tstsetups[!sapply(valsearch_arg, isFALSE)]
+  skip_if(length(tstsetups) == 0)
   for (tstsetup in tstsetups) {
     args_cvvs_i <- args_cvvs[[tstsetup]]
     # Use suppressWarnings() because test_that() somehow redirects stderr() and
@@ -1419,57 +1428,33 @@ test_that(paste(
            nloo = nloo_tst),
       excl_nonargs(args_cvvs_i)
     )))
-    cvvs_nloo[["nloo"]] <- nobsv
     expect_equal(cvvs_nloo, cvvss[[tstsetup]], info = tstsetup)
   }
 })
 
 test_that("setting `nloo` smaller than the number of observations works", {
   skip_if_not(run_cvvs)
-  nloo_tst <- nobsv %/% 5L
   # Output elements of `vsel` objects that may be influenced by `nloo`:
-  vsel_nms_nloo <- c("summaries", "predictor_ranking_cv", "nloo", "ce")
+  vsel_nms_nloo <- c("summaries", "summaries_fast", "predictor_ranking_cv",
+                     "nloo", "loo_inds", "ce")
   # In general, element `ce` is affected as well (because the PRNG state when
   # doing the clustering for the performance evaluation is different when `nloo`
   # is smaller than the number of observations compared to when `nloo` is equal
-  # to the number of observations), but the changes in `ce` may be so small that
-  # they are not detected by all.equal():
+  # to the number of observations):
   vsel_nms_nloo_opt <- c("ce")
   # The setups that should be tested:
   tstsetups <- grep(
-    "\\.glm\\.gauss\\..*\\.default_cvmeth\\.default_search_trms",
+    "\\.default_cvmeth\\.default_search_trms\\.default_nloo",
     names(cvvss), value = TRUE
   )
+  valsearch_arg <- lapply(args_cvvs[tstsetups], "[[", "validate_search")
+  tstsetups <- tstsetups[!sapply(valsearch_arg, isFALSE)]
+  skip_if(length(tstsetups) == 0)
   for (tstsetup in tstsetups) {
     args_cvvs_i <- args_cvvs[[tstsetup]]
-    tstsetup_ref <- args_cvvs_i$tstsetup_ref
-    mod_crr <- args_cvvs_i$mod_nm
-    fam_crr <- args_cvvs_i$fam_nm
-    prj_crr <- args_cvvs_i$prj_nm
-    meth_exp_crr <- args_cvvs_i$method %||% "forward"
-    # Use suppressWarnings() because test_that() somehow redirects stderr() and
-    # so throws warnings that projpred wants to capture internally:
-    cvvs_nloo <- suppressWarnings(do.call(cv_varsel, c(
-      list(object = refmods[[args_cvvs_i$tstsetup_ref]],
-           nloo = nloo_tst),
-      excl_nonargs(args_cvvs_i)
-    )))
-    vsel_tester(
-      cvvs_nloo,
-      with_cv = TRUE,
-      refmod_expected = refmods[[tstsetup_ref]],
-      prd_trms_len_expected = args_cvvs_i$nterms_max,
-      method_expected = meth_exp_crr,
-      cv_method_expected = "LOO",
-      valsearch_expected = args_cvvs_i$validate_search,
-      nloo_expected = nloo_tst,
-      search_terms_expected = args_cvvs_i$search_terms,
-      search_trms_empty_size =
-        length(args_cvvs_i$search_terms) &&
-        all(grepl("\\+", args_cvvs_i$search_terms)),
-      search_control_expected = args_cvvs_i[c("avoid.increase")],
-      info_str = tstsetup
-    )
+    tstsetup_nloo <- sub("\\.default_nloo", "\\.subsmpl", tstsetup)
+    stopifnot(tstsetup_nloo %in% names(cvvss))
+    cvvs_nloo <- cvvss[[tstsetup_nloo]]
     # Expected equality for most elements with a few exceptions:
     vsel_nms_nloo_crr <- vsel_nms_nloo
     if (isFALSE(args_cvvs_i$validate_search)) {
@@ -1500,7 +1485,8 @@ test_that("`validate_search` works", {
   tstsetups <- names(cvvss)
   if (!run_valsearch_always) {
     has_valsearch_true <- sapply(tstsetups, function(tstsetup_cvvs) {
-      !isFALSE(args_cvvs[[tstsetup_cvvs]]$validate_search)
+      !isFALSE(args_cvvs[[tstsetup_cvvs]]$validate_search) &&
+        (args_cvvs[[tstsetup_cvvs]]$nloo %||% nobsv) == nobsv
     })
     tstsetups <- tstsetups[has_valsearch_true]
   }
@@ -1599,7 +1585,9 @@ test_that("`validate_search` works", {
       suggsize_cond[tstsetup] <- sgg_size_valsearch >= sgg_size
     }
   }
-  expect_true(mean(!suggsize_cond, na.rm = TRUE) <= 0.25)
+  if (!all(is.na(suggsize_cond))) {
+    expect_true(mean(!suggsize_cond, na.rm = TRUE) <= 0.25)
+  }
 })
 
 ## Arguments specific to K-fold CV ----------------------------------------
@@ -1902,7 +1890,7 @@ test_that(paste(
   skip_if_not(run_cvvs)
   tstsetups <- names(cvvss)
   if (!run_more) {
-    tstsetups <- head(tstsetups, 1)
+    tstsetups <- head(tstsetups, 2)
   }
   for (tstsetup in tstsetups) {
     refit_prj_crr <- !identical(args_cvvs[[tstsetup]]$validate_search, FALSE) ||
@@ -1911,8 +1899,9 @@ test_that(paste(
     # Use suppressWarnings() because test_that() somehow redirects stderr() and
     # so throws warnings that projpred wants to capture internally:
     cvvs_eval <- suppressWarnings(cv_varsel(
-      cvvss[[tstsetup]], refit_prj = refit_prj_crr,
-      nclusters_pred = nclusters_pred_crr, verbose = FALSE, seed = seed2_tst
+      cvvss[[tstsetup]],
+      refit_prj = refit_prj_crr, nclusters_pred = nclusters_pred_crr,
+      verbose = FALSE, seed = seed2_tst
     ))
     tstsetup_ref <- args_cvvs[[tstsetup]]$tstsetup_ref
     meth_exp_crr <- args_cvvs[[tstsetup]]$method %||% "forward"
@@ -1929,6 +1918,7 @@ test_that(paste(
       prd_trms_len_expected = args_cvvs[[tstsetup]]$nterms_max,
       method_expected = meth_exp_crr,
       cv_method_expected = args_cvvs[[tstsetup]]$cv_method,
+      nloo_expected = args_cvvs[[tstsetup]]$nloo,
       valsearch_expected = args_cvvs[[tstsetup]]$validate_search,
       refit_prj_expected = refit_prj_crr,
       nprjdraws_eval_expected = if (!refit_prj_crr && meth_exp_crr == "L1") {
@@ -2082,8 +2072,8 @@ test_that(paste(
       ))
     } else {
       cvvs_eval <- suppressWarnings(cv_varsel(
-        cvvss[[tstsetup]], validate_search = FALSE, refit_prj = FALSE,
-        verbose = FALSE, seed = seed2_tst
+        cvvss[[tstsetup]], nloo = nobsv, validate_search = FALSE,
+        refit_prj = FALSE, verbose = FALSE, seed = seed2_tst
       ))
     }
     tstsetup_ref <- args_cvvs[[tstsetup]]$tstsetup_ref
@@ -2135,7 +2125,7 @@ test_that(paste(
   skip_if_not(run_cvvs)
   tstsetups <- names(cvvss)
   if (!run_more) {
-    tstsetups <- head(tstsetups, 8)
+    tstsetups <- head(tstsetups, 11)
   }
   for (tstsetup in tstsetups) {
     tstsetup_ref <- args_cvvs[[tstsetup]]$tstsetup_ref
@@ -2195,7 +2185,7 @@ test_that(paste(
   skip_if_not(run_cvvs)
   tstsetups <- names(cvvss)
   if (!run_more) {
-    tstsetups <- head(tstsetups, 2)
+    tstsetups <- head(tstsetups, 3)
   }
   for (tstsetup in tstsetups) {
     tstsetup_ref <- args_cvvs[[tstsetup]]$tstsetup_ref
@@ -2258,7 +2248,7 @@ test_that(paste(
   skip_if_not(run_cvvs)
   tstsetups <- names(cvvss)
   if (!run_more) {
-    tstsetups <- head(tstsetups, 8)
+    tstsetups <- head(tstsetups, 11)
   }
   for (tstsetup in tstsetups) {
     tstsetup_ref <- args_cvvs[[tstsetup]]$tstsetup_ref
@@ -2280,12 +2270,14 @@ test_that(paste(
     # so throws warnings that projpred wants to capture internally:
     if (identical(args_cvvs[[tstsetup]]$cv_method, "kfold")) {
       cv_meth_crr <- "LOO"
+      nloo_crr <- nloo_tst[["subsmpl"]][["nloo"]]
       cvvs_eval <- suppressWarnings(cv_varsel(
-        cvvss[[tstsetup]], cv_method = cv_meth_crr,
+        cvvss[[tstsetup]], cv_method = cv_meth_crr, nloo = nloo_crr,
         nclusters_pred = nclusters_pred_crr, verbose = FALSE, seed = seed2_tst
       ))
     } else {
       cv_meth_crr <- "kfold"
+      nloo_crr <- NULL
       cvvs_eval <- suppressWarnings(cv_varsel(
         cvvss[[tstsetup]], cv_method = cv_meth_crr, K = K_tst,
         cvfits = cvfitss[[tstsetup_ref]], nclusters_pred = nclusters_pred_crr,
@@ -2301,6 +2293,7 @@ test_that(paste(
       prd_trms_len_expected = args_cvvs[[tstsetup]]$nterms_max,
       method_expected = meth_exp_crr,
       cv_method_expected = cv_meth_crr,
+      nloo_expected = nloo_crr,
       valsearch_expected = TRUE,
       K_expected = K_tst,
       nprjdraws_eval_expected = nclusters_pred_crr,
@@ -2330,12 +2323,13 @@ test_that(paste(
     } else {
       nclusters_pred_crr <- args_vs[[tstsetup]]$nclusters_pred
     }
+    nloo_crr <- nloo_tst[["subsmpl"]][["nloo"]]
     # Use suppressWarnings() because test_that() somehow redirects stderr() and
     # so throws warnings that projpred wants to capture internally:
     cvvs_eval <- try(
       suppressWarnings(cv_varsel(
-        vss[[tstsetup]], nclusters_pred = nclusters_pred_crr, verbose = FALSE,
-        seed = seed2_tst
+        vss[[tstsetup]], nloo = nloo_crr, nclusters_pred = nclusters_pred_crr,
+        verbose = FALSE, seed = seed2_tst
       )),
       silent = TRUE
     )
@@ -2364,6 +2358,7 @@ test_that(paste(
       prd_trms_len_expected = args_vs[[tstsetup]]$nterms_max,
       method_expected = meth_exp_crr,
       cv_method_expected = "LOO",
+      nloo_expected = nloo_crr,
       valsearch_expected = TRUE,
       nprjdraws_eval_expected = nclusters_pred_crr,
       search_terms_expected = args_vs[[tstsetup]]$search_terms,
@@ -2441,7 +2436,6 @@ test_that(paste(
       prd_trms_len_expected = args_vs[[tstsetup]]$nterms_max,
       method_expected = meth_exp_crr,
       cv_method_expected = "kfold",
-      nloo_expected = NULL,
       valsearch_expected = TRUE,
       nprjdraws_eval_expected = nclusters_pred_crr,
       search_terms_expected = args_vs[[tstsetup]]$search_terms,
@@ -2462,7 +2456,7 @@ test_that(paste(
   skip_if_not(run_cvvs)
   tstsetups <- names(cvvss)
   if (!run_more) {
-    tstsetups <- head(tstsetups, 2)
+    tstsetups <- head(tstsetups, 3)
   }
   for (tstsetup in tstsetups) {
     if (run_more && !args_cvvs[[tstsetup]]$mod_nm %in% c("glm", "gam")) {
@@ -2476,14 +2470,17 @@ test_that(paste(
     # Use suppressWarnings() because test_that() somehow redirects stderr() and
     # so throws warnings that projpred wants to capture internally:
     if (identical(args_cvvs[[tstsetup]]$cv_method, "kfold")) {
+      nloo_crr <- nloo_tst[["subsmpl"]][["nloo"]]
       cvvs_eval <- try(
         suppressWarnings(cv_varsel(
-          cvvss[[tstsetup]], cv_method = "LOO", validate_search = TRUE,
-          nclusters_pred = nclusters_pred_crr, verbose = FALSE, seed = seed2_tst
+          cvvss[[tstsetup]], cv_method = "LOO", nloo = nloo_crr,
+          validate_search = TRUE, nclusters_pred = nclusters_pred_crr,
+          verbose = FALSE, seed = seed2_tst
         )),
         silent = TRUE
       )
     } else {
+      nloo_crr <- cvvss[[tstsetup]][["nloo"]]
       cvvs_eval <- try(
         suppressWarnings(cv_varsel(
           cvvss[[tstsetup]], validate_search = TRUE,
@@ -2532,6 +2529,7 @@ test_that(paste(
       prd_trms_len_expected = args_cvvs[[tstsetup]]$nterms_max,
       method_expected = meth_exp_crr,
       cv_method_expected = "LOO",
+      nloo_expected = nloo_crr,
       valsearch_expected = TRUE,
       nprjdraws_eval_expected = nclusters_pred_crr,
       K_expected = if (identical(args_cvvs[[tstsetup]]$cv_method, "kfold")) {
@@ -2557,7 +2555,7 @@ test_that(paste(
   skip_if_not(run_cvvs)
   tstsetups <- names(cvvss)
   if (!run_more) {
-    tstsetups <- head(tstsetups, 2)
+    tstsetups <- head(tstsetups, 3)
   }
   for (tstsetup in tstsetups) {
     tstsetup_ref <- args_cvvs[[tstsetup]]$tstsetup_ref
@@ -2622,202 +2620,6 @@ test_that(paste(
       cv_method_expected = "kfold",
       valsearch_expected = TRUE,
       nprjdraws_eval_expected = nclusters_pred_crr,
-      search_terms_expected = args_cvvs[[tstsetup]]$search_terms,
-      search_trms_empty_size =
-        length(args_cvvs[[tstsetup]]$search_terms) &&
-        all(grepl("\\+", args_cvvs[[tstsetup]]$search_terms)),
-      search_control_expected = args_cvvs[[tstsetup]][c("avoid.increase")],
-      info_str = tstsetup
-    )
-  }
-})
-
-test_that("cv_varsel.vsel(): `nloo` works for `vsel` objects from varsel()", {
-  skip_if_not(run_vs)
-  skip_if_not(run_cvvs)
-  nloo_tst <- nobsv %/% 5L
-  tstsetup_counter <- 0L
-  for (tstsetup in names(vss)) {
-    if (!run_more && tstsetup_counter > 0L) {
-      next
-    } else if (run_more && tstsetup_counter > length(vss) %/% 6) {
-      next
-    } else if (run_more) {
-      refit_prj_crr <- TRUE
-      nclusters_pred_crr <- args_vs[[tstsetup]]$nclusters_pred - 1L
-    } else {
-      refit_prj_crr <- FALSE
-      nclusters_pred_crr <- args_vs[[tstsetup]]$nclusters_pred
-    }
-    # Use suppressWarnings() because test_that() somehow redirects stderr() and
-    # so throws warnings that projpred wants to capture internally:
-    cvvs_eval_valF <- suppressWarnings(cv_varsel(
-      vss[[tstsetup]], nloo = nloo_tst, validate_search = FALSE,
-      refit_prj = refit_prj_crr, nclusters_pred = nclusters_pred_crr,
-      verbose = FALSE, seed = seed2_tst
-    ))
-    cvvs_eval_valT <- suppressWarnings(cv_varsel(
-      vss[[tstsetup]], nloo = nloo_tst, nclusters_pred = nclusters_pred_crr,
-      verbose = FALSE, seed = seed2_tst
-    ))
-    tstsetup_ref <- args_vs[[tstsetup]]$tstsetup_ref
-    meth_exp_crr <- args_vs[[tstsetup]]$method %||% "forward"
-    vsel_tester(
-      cvvs_eval_valF,
-      with_cv = TRUE,
-      refmod_expected = refmods[[tstsetup_ref]],
-      prd_trms_len_expected = args_vs[[tstsetup]]$nterms_max,
-      method_expected = meth_exp_crr,
-      cv_method_expected = "LOO",
-      nloo_expected = nloo_tst,
-      valsearch_expected = FALSE,
-      refit_prj_expected = refit_prj_crr,
-      nprjdraws_eval_expected = if (!refit_prj_crr && meth_exp_crr == "L1") {
-        1L
-      } else if (!refit_prj_crr) {
-        nclusters_tst
-      } else {
-        nclusters_pred_crr
-      },
-      search_terms_expected = args_vs[[tstsetup]]$search_terms,
-      search_trms_empty_size =
-        length(args_vs[[tstsetup]]$search_terms) &&
-        all(grepl("\\+", args_vs[[tstsetup]]$search_terms)),
-      search_control_expected = args_vs[[tstsetup]][c("avoid.increase")],
-      info_str = tstsetup
-    )
-    vsel_tester(
-      cvvs_eval_valT,
-      with_cv = TRUE,
-      refmod_expected = refmods[[tstsetup_ref]],
-      prd_trms_len_expected = args_vs[[tstsetup]]$nterms_max,
-      method_expected = meth_exp_crr,
-      cv_method_expected = "LOO",
-      nloo_expected = nloo_tst,
-      valsearch_expected = TRUE,
-      nprjdraws_eval_expected = nclusters_pred_crr,
-      search_terms_expected = args_vs[[tstsetup]]$search_terms,
-      search_trms_empty_size =
-        length(args_vs[[tstsetup]]$search_terms) &&
-        all(grepl("\\+", args_vs[[tstsetup]]$search_terms)),
-      search_control_expected = args_vs[[tstsetup]][c("avoid.increase")],
-      info_str = tstsetup
-    )
-    tstsetup_counter <- tstsetup_counter + 1L
-  }
-})
-
-test_that(paste(
-  "cv_varsel.vsel(): `nloo` works for `vsel` objects from cv_varsel()"
-), {
-  skip_if_not(run_cvvs)
-  nloo_tst <- nobsv %/% 5L
-  tstsetups <- names(cvvss)
-  if (!run_more) {
-    tstsetups <- head(tstsetups, 1)
-  } else {
-    tstsetups <- head(grep("\\.glm\\.|\\.gam\\.", tstsetups, value = TRUE),
-                      length(tstsetups) %/% 6)
-    # Make sure that in the test setups, we have `validate_search = TRUE` as
-    # well as `validate_search = FALSE`:
-    valsearches <- !unlist(lapply(
-      lapply(args_cvvs[tstsetups], "[[", "validate_search"),
-      isFALSE
-    ))
-    stopifnot(any(valsearches), any(!valsearches))
-  }
-  for (tstsetup in tstsetups) {
-    # Use suppressWarnings() because test_that() somehow redirects stderr() and
-    # so throws warnings that projpred wants to capture internally:
-    if (identical(args_cvvs[[tstsetup]]$cv_method, "kfold")) {
-      cvvs_eval_valF <- suppressWarnings(cv_varsel(
-        cvvss[[tstsetup]], cv_method = "LOO", validate_search = FALSE,
-        nloo = nloo_tst, refit_prj = FALSE, verbose = FALSE, seed = seed2_tst
-      ))
-      cvvs_eval_valT <- suppressWarnings(cv_varsel(
-        cvvss[[tstsetup]], cv_method = "LOO", validate_search = TRUE,
-        nloo = nloo_tst, refit_prj = FALSE, verbose = FALSE, seed = seed2_tst
-      ))
-    } else {
-      cvvs_eval_valF <- suppressWarnings(cv_varsel(
-        cvvss[[tstsetup]], nloo = nloo_tst, validate_search = FALSE,
-        refit_prj = FALSE, verbose = FALSE, seed = seed2_tst
-      ))
-      cvvs_eval_valT <- suppressWarnings(cv_varsel(
-        cvvss[[tstsetup]], nloo = nloo_tst, validate_search = TRUE,
-        refit_prj = FALSE, verbose = FALSE, seed = seed2_tst
-      ))
-    }
-    meth_exp_crr <- args_cvvs[[tstsetup]]$method %||% "forward"
-    extra_tol_crr <- 1.1
-    if (meth_exp_crr == "L1" &&
-        any(grepl(":", ranking(cvvs_eval_valF)[["fulldata"]]))) {
-      ### Testing for non-increasing element `ce` (for increasing model size)
-      ### doesn't make sense if the ranking of predictors involved in
-      ### interactions has been changed, so we choose a higher `extra_tol`:
-      extra_tol_crr <- 1.2
-      ###
-    }
-    vsel_tester(
-      cvvs_eval_valF,
-      with_cv = TRUE,
-      refmod_expected = refmods[[args_cvvs[[tstsetup]]$tstsetup_ref]],
-      cvfits_expected = if (identical(args_cvvs[[tstsetup]]$cv_method,
-                                      "kfold")) {
-        cvfitss[[args_cvvs[[tstsetup]]$tstsetup_ref]]
-      } else {
-        refmods[[args_cvvs[[tstsetup]]$tstsetup_ref]]$cvfits
-      },
-      prd_trms_len_expected = args_cvvs[[tstsetup]]$nterms_max,
-      method_expected = meth_exp_crr,
-      cv_method_expected = "LOO",
-      nloo_expected = nloo_tst,
-      valsearch_expected = FALSE,
-      refit_prj_expected = FALSE,
-      nprjdraws_eval_expected = if (meth_exp_crr == "L1") {
-        1L
-      } else {
-        nclusters_tst
-      },
-      K_expected = if (identical(args_cvvs[[tstsetup]]$cv_method, "kfold")) {
-        K_tst
-      } else {
-        NULL
-      },
-      search_terms_expected = args_cvvs[[tstsetup]]$search_terms,
-      search_trms_empty_size =
-        length(args_cvvs[[tstsetup]]$search_terms) &&
-        all(grepl("\\+", args_cvvs[[tstsetup]]$search_terms)),
-      search_control_expected = args_cvvs[[tstsetup]][c("avoid.increase")],
-      extra_tol = extra_tol_crr,
-      info_str = tstsetup
-    )
-    vsel_tester(
-      cvvs_eval_valT,
-      with_cv = TRUE,
-      refmod_expected = refmods[[args_cvvs[[tstsetup]]$tstsetup_ref]],
-      cvfits_expected = if (identical(args_cvvs[[tstsetup]]$cv_method,
-                                      "kfold")) {
-        cvfitss[[args_cvvs[[tstsetup]]$tstsetup_ref]]
-      } else {
-        refmods[[args_cvvs[[tstsetup]]$tstsetup_ref]]$cvfits
-      },
-      prd_trms_len_expected = args_cvvs[[tstsetup]]$nterms_max,
-      method_expected = meth_exp_crr,
-      cv_method_expected = "LOO",
-      nloo_expected = nloo_tst,
-      valsearch_expected = TRUE,
-      refit_prj_expected = FALSE,
-      nprjdraws_eval_expected = if (meth_exp_crr == "L1") {
-        1L
-      } else {
-        nclusters_tst
-      },
-      K_expected = if (identical(args_cvvs[[tstsetup]]$cv_method, "kfold")) {
-        K_tst
-      } else {
-        NULL
-      },
       search_terms_expected = args_cvvs[[tstsetup]]$search_terms,
       search_trms_empty_size =
         length(args_cvvs[[tstsetup]]$search_terms) &&

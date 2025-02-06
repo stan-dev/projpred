@@ -1968,7 +1968,11 @@ vsel_tester <- function(
       nclusters_pred_tst
     },
     seed_expected = seed_tst,
-    nloo_expected = if (with_cv) refmod_expected$nobs else NULL,
+    nloo_expected = if (with_cv && !identical(cv_method_expected, "kfold")) {
+      refmod_expected$nobs
+    } else {
+      NULL
+    },
     K_expected = NULL,
     penalty_expected = NULL,
     search_terms_expected = NULL,
@@ -1979,8 +1983,6 @@ vsel_tester <- function(
 ) {
   # Preparations:
   if (with_cv) {
-    vsel_smmrs_sub_nms <- c(vsel_smmrs_sub_nms, "wcv")
-
     if (is.null(cv_method_expected)) {
       cv_method_expected <- "LOO"
     }
@@ -2002,7 +2004,6 @@ vsel_tester <- function(
     # size (see issue #307):
     prd_trms_len_expected <- prd_trms_len_expected - 1L
   }
-  nloo_expected_orig <- nloo_expected
 
   # Test the general structure of the object:
   expect_s3_class(vs, "vsel")
@@ -2251,7 +2252,7 @@ vsel_tester <- function(
   expect_named(vs$summaries, c("sub", "ref"), info = info_str)
   expect_type(vs$summaries$sub, "list")
   expect_length(vs$summaries$sub, prd_trms_len_expected + 1)
-  if (with_cv) {
+  if (with_cv && identical(cv_method_expected, "LOO")) {
     if (is.null(nloo_expected) || nloo_expected > nobsv) {
       nloo_expected <- nobsv
     }
@@ -2264,12 +2265,6 @@ vsel_tester <- function(
   }
   if (vs$refmodel$family$for_latent) {
     vsel_smmrs_sub_nms <- c(vsel_smmrs_sub_nms, "oscale")
-    if ("wcv" %in% vsel_smmrs_sub_nms &&
-        identical(cv_method_expected, "kfold")) {
-      vsel_smmrs_sub_nms[vsel_smmrs_sub_nms %in% c("wcv", "oscale")] <- c(
-        "oscale", "wcv"
-      )
-    }
     vsel_smmrs_ref_nms <- c(vsel_smmrs_ref_nms, "oscale")
   }
   smmrs_sub_j_tester <- function(smmrs_sub_j, tests_oscale = FALSE) {
@@ -2291,7 +2286,7 @@ vsel_tester <- function(
          !is.null(vs$refmodel$family$cats))) {
       expect_s3_class(smmrs_sub_j$mu, "augvec")
     }
-    if (with_cv) {
+    if (with_cv && valsearch_expected && identical(cv_method_expected, "LOO")) {
       expect_identical(sum(!is.na(smmrs_sub_j$mu)), nloo_expected * ncats,
                        info = info_str)
     } else {
@@ -2303,23 +2298,12 @@ vsel_tester <- function(
       if (vs$refmodel$family$for_latent && !tests_oscale &&
           identical(cv_method_expected, "kfold")) {
         expect_true(all(is.na(smmrs_sub_j$lppd)), info = info_str)
-      } else {
+      } else if (valsearch_expected && identical(cv_method_expected, "LOO")) {
         expect_identical(sum(!is.na(smmrs_sub_j$lppd)), nloo_expected,
                          info = info_str)
       }
     } else {
       expect_true(all(!is.na(smmrs_sub_j$lppd)), info = info_str)
-    }
-    if (with_cv) {
-      expect_type(smmrs_sub_j$wcv, "double")
-      expect_length(smmrs_sub_j$wcv, nobsv)
-      expect_true(all(!is.na(smmrs_sub_j$wcv)), info = info_str)
-      if (nloo_expected == nobsv) {
-        expect_equal(smmrs_sub_j$wcv, rep(1 / nobsv, nobsv), info = info_str)
-      } else {
-        expect_true(any(smmrs_sub_j$wcv != rep(1 / nobsv, nobsv)),
-                    info = info_str)
-      }
     }
     return(invisible(TRUE))
   }
@@ -2391,7 +2375,7 @@ vsel_tester <- function(
   expect_identical(vs$cv_method, cv_method_expected, info = info_str)
 
   # nloo
-  expect_identical(vs$nloo, nloo_expected_orig, info = info_str)
+  expect_identical(vs$nloo, nloo_expected, info = info_str)
 
   # K
   if (!is.null(K_expected)) {
@@ -2687,8 +2671,9 @@ smmry_sub_tester <- function(
   if ("lower" %in% type_expected && !is_lat_kfold) {
     lower_nm <- paste(stats_expected, "lower", sep = ".")
     for (stat_idx in seq_along(stats_expected)) {
-      if (!stats_expected[stat_idx] %in% c("rmse", "auc")) {
-        # RMSE and AUC are excluded here because of PR #347.
+      if (!stats_expected[stat_idx] %in% c("auc")) {
+        # AUC is excluded here because of PR #347 (originally, RMSE was excluded
+        # as well, but PR #496 switched to the delta method for RMSE).
         expect_true(all(smmry_sub[, stats_mean_name[stat_idx]] >=
                           smmry_sub[, lower_nm[stat_idx]]),
                     info = info_str)
@@ -2698,8 +2683,9 @@ smmry_sub_tester <- function(
   if ("upper" %in% type_expected && !is_lat_kfold) {
     upper_nm <- paste(stats_expected, "upper", sep = ".")
     for (stat_idx in seq_along(stats_expected)) {
-      if (!stats_expected[stat_idx] %in% c("rmse", "auc")) {
-        # RMSE and AUC are excluded here because of PR #347.
+      if (!stats_expected[stat_idx] %in% c("auc")) {
+        # AUC is excluded here because of PR #347 (originally, RMSE was excluded
+        # as well, but PR #496 switched to the delta method for RMSE).
         expect_true(all(smmry_sub[, stats_mean_name[stat_idx]] <=
                           smmry_sub[, upper_nm[stat_idx]]),
                     info = info_str)
@@ -2753,11 +2739,7 @@ smmry_ref_tester <- function(
   is_lat_kfold <-  latent_expected && !resp_oscale_expected &&
     identical(cv_method_expected, "kfold")
 
-  if (is_lat_kfold) {
-    expect_true(is.vector(smmry_ref, "logical"), info = info_str)
-  } else {
-    expect_true(is.vector(smmry_ref, "numeric"), info = info_str)
-  }
+  expect_true(is.vector(smmry_ref, "numeric"), info = info_str)
   smmry_nms <- character()
   stats_mean_name <- stats_expected
   smmry_nms <- c(smmry_nms,
@@ -2779,8 +2761,9 @@ smmry_ref_tester <- function(
   if ("lower" %in% type_expected && !is_lat_kfold && !from_datafit) {
     lower_nm <- paste(stats_expected, "lower", sep = ".")
     for (stat_idx in seq_along(stats_expected)) {
-      if (!stats_expected[stat_idx] %in% c("rmse", "auc")) {
-        # RMSE and AUC are excluded here because of PR #347.
+      if (!stats_expected[stat_idx] %in% c("auc")) {
+        # AUC is excluded here because of PR #347 (originally, RMSE was excluded
+        # as well, but PR #496 switched to the delta method for RMSE).
         expect_true(all(smmry_ref[stats_mean_name[stat_idx]] >=
                           smmry_ref[lower_nm[stat_idx]]),
                     info = info_str)
@@ -2790,8 +2773,9 @@ smmry_ref_tester <- function(
   if ("upper" %in% type_expected && !is_lat_kfold && !from_datafit) {
     upper_nm <- paste(stats_expected, "upper", sep = ".")
     for (stat_idx in seq_along(stats_expected)) {
-      if (!stats_expected[stat_idx] %in% c("rmse", "auc")) {
-        # RMSE and AUC are excluded here because of PR #347.
+      if (!stats_expected[stat_idx] %in% c("auc")) {
+        # AUC is excluded here because of PR #347 (originally, RMSE was excluded
+        # as well, but PR #496 switched to the delta method for RMSE).
         expect_true(all(smmry_ref[stats_mean_name[stat_idx]] <=
                           smmry_ref[upper_nm[stat_idx]]),
                     info = info_str)

@@ -20,13 +20,20 @@
 #'   is performed, which avoids refitting the reference model `nloo` times (in
 #'   contrast to a standard LOO-CV). In the `"kfold"` case, a \eqn{K}-fold-CV is
 #'   performed. See also section "Note" below.
-#' @param nloo **Caution:** Still experimental. Only relevant if `cv_method =
-#'   "LOO"`. If `nloo` is smaller than the number of all observations,
-#'   approximate full LOO-CV using probability-proportional-to-size-sampling
-#'   (PPS) to make accurate computation only for `nloo` (anything from 1 to the
-#'   number of all observations) leave-one-out folds (Magnusson et al., 2019).
-#'   Smaller values lead to faster computation but higher uncertainty in the
-#'   evaluation part. If `NULL`, all observations are used (as by default).
+#' @param nloo Only relevant if `cv_method = "LOO"` and `validate_search =
+#'   TRUE`. If `nloo > 0` is smaller than the number of all observations, full
+#'   LOO-CV (i.e., PSIS-LOO CV with `validate_search = TRUE` and with `nloo = n`
+#'   where `n` denotes the number of all observations) is approximated by
+#'   subsampled LOO-CV, i.e., by combining the fast (i.e., `validate_search =
+#'   FALSE`) LOO result for the selected models and `nloo` leave-one-out
+#'   searches using the difference estimator with simple random sampling (SRS)
+#'   without replacement (WOR) (Magnusson et al., 2020). Smaller `nloo` values
+#'   lead to faster computation, but higher uncertainty in the evaluation part.
+#'   If `NULL`, all observations are used (as by default). Note that performance
+#'   statistic `"auc"` (see argument `stats` of [summary.vsel()] and
+#'   [plot.vsel()]) is not supported in case of subsampled LOO-CV. Furthermore,
+#'   option `"best"` for argument `baseline` of [summary.vsel()] and
+#'   [plot.vsel()] is not supported in case of subsampled LOO-CV.
 #' @param K Only relevant if `cv_method = "kfold"` and if `cvfits` is `NULL`
 #'   (which is the case for reference model objects created by
 #'   [get_refmodel.stanreg()] or [brms::get_refmodel.brmsfit()]). Number of
@@ -36,14 +43,11 @@
 #'   [run_cvfun()] can be inserted here straightforwardly.
 #' @param validate_search A single logical value indicating whether to
 #'   cross-validate also the search part, i.e., whether to run the search
-#'   separately for each CV-fold (`TRUE`) or not (`FALSE`). We strongly do not
-#'   recommend setting this to `FALSE`, because this is known to bias the
-#'   predictive performance estimates of the selected submodels. However,
-#'   setting this to `FALSE` can sometimes be useful because comparing the
-#'   results to the case where this argument is `TRUE` gives an idea of how
-#'   strongly the search is (over-)fitted to the data (the difference
-#'   corresponds to the search degrees of freedom or the effective number of
-#'   parameters introduced by the search).
+#'   separately for each CV-fold (`TRUE`) or not (`FALSE`). With `FALSE`
+#'   the computation is faster, but the predictive performance estimates
+#'   of the selected submodels are optimistically biased. However, these fast
+#'   biased estimated can be useful to obtain initial information on the
+#'   usefulness of projection predictive variable selection.
 #' @param seed Pseudorandom number generation (PRNG) seed by which the same
 #'   results can be obtained again if needed. Passed to argument `seed` of
 #'   [set.seed()], but can also be `NA` to not call [set.seed()] at all. If not
@@ -261,7 +265,7 @@ cv_varsel.refmodel <- function(
     nterms_max = NULL,
     penalty = NULL,
     verbose = TRUE,
-    nloo = object$nobs,
+    nloo = if (cv_method == "LOO") object$nobs else NULL,
     K = if (!inherits(object, "datafit")) 5 else 10,
     cvfits = object$cvfits,
     search_control = NULL,
@@ -370,6 +374,7 @@ cv_varsel.refmodel <- function(
     search_out_rks <- NULL
   }
 
+  summaries_fast <- NULL
   if (cv_method == "LOO") {
     sel_cv <- loo_varsel(
       refmodel = refmodel, method = method, nterms_max = nterms_max,
@@ -388,6 +393,21 @@ cv_varsel.refmodel <- function(
       search_terms_was_null = search_terms_was_null,
       search_out_rks = search_out_rks, parallel = parallel, ...
     )
+    if (validate_search && nloo < refmodel$nobs) {
+      # Run fast LOO-CV to be used in subsampling difference estimator
+      summaries_fast <- loo_varsel(
+        refmodel = refmodel, method = method, nterms_max = nterms_max,
+        ndraws = ndraws, nclusters = nclusters, ndraws_pred = ndraws_pred,
+        nclusters_pred = nclusters_pred, refit_prj = refit_prj, penalty = penalty,
+        verbose = verbose, search_control = search_control,
+        nloo = refmodel$nobs,    # fast LOO-CV (using all observations)
+        validate_search = FALSE, # fast LOO-CV (using all observations)
+        search_path_fulldata = search_path_fulldata,
+        search_terms = search_terms,
+        search_terms_was_null = search_terms_was_null,
+        search_out_rks = search_out_rks, parallel = parallel, ...
+      )[["summaries"]]
+    }
   } else if (cv_method == "kfold") {
     sel_cv <- kfold_varsel(
       refmodel = refmodel, method = method, nterms_max = nterms_max,
@@ -440,11 +460,13 @@ cv_varsel.refmodel <- function(
               y_wobs_test,
               nobs_test = nrow(y_wobs_test),
               summaries = sel_cv$summaries,
+              summaries_fast,
               nterms_all,
               nterms_max,
               method,
               cv_method,
               nloo,
+              loo_inds = sel_cv$inds,
               K,
               validate_search,
               cvfits,
@@ -523,14 +545,16 @@ parse_args_cv_varsel <- function(refmodel, cv_method, nloo, K, cvfits,
       stop("For K-fold-CV, `validate_search = FALSE` may not be combined with ",
            "`refit_prj = FALSE`.")
     }
+    nloo <- NULL
   } else {
     stopifnot(!is.null(refmodel[["nobs"]]))
     nloo <- min(nloo, refmodel[["nobs"]])
     if (nloo < 1) {
       stop("nloo must be at least 1")
-    } else if (nloo < refmodel[["nobs"]] &&
-               getOption("projpred.warn_subsampled_loo", TRUE)) {
-      warning("Subsampled PSIS-LOO-CV is still experimental.")
+    }
+    if (!validate_search && nloo < refmodel[["nobs"]]) {
+      stop("Subsampled PSIS-LOO-CV is not supported for ",
+           "`validate_search = FALSE`.")
     }
   }
 
@@ -674,11 +698,15 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
     refmodel$y <- y_lat_E$value
   }
 
-  # LOO PPS subsampling (by default, don't subsample, but use all observations):
-  # validset <- loo_subsample(n, nloo, pareto_k)
   loo_ref_oscale <- apply(loglik_forPSIS + lw, 2, log_sum_exp)
-  validset <- loo_subsample_pps(nloo, loo_ref_oscale)
-  inds <- validset$inds
+
+  if (validate_search && nloo < n) {
+    # Select which LOO-folds get more accurate computation using simple
+    # random sampling without resampling (Magnusson et al., 2020)
+    inds <- sample.int(n, size = nloo, replace = FALSE)
+  } else {
+    inds <- seq_len(n)
+  }
 
   # Initialize objects where to store the results:
   loo_sub <- replicate(nterms_max + 1L, rep(NA, n), simplify = FALSE)
@@ -710,6 +738,15 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
 
   if (!validate_search) {
     ## Case `validate_search = FALSE` -----------------------------------------
+
+    # NOTE: The case where `inds` is an actual subset of the set of all
+    # observation indices should never occur here in the
+    # `validate_search = FALSE` case. Thus, in principle, the code could be
+    # simplified here, but keeping `inds` in case this might be helpful in the
+    # future.
+    if (nloo < n) {
+      stop("`nloo < n` is unexpected if `validate_search = FALSE`")
+    }
 
     # "Run" the performance evaluation for the submodels along the predictor
     # ranking (in fact, we only prepare the performance evaluation by computing
@@ -1072,10 +1109,9 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
 
   # Submodel predictive performance:
   summ_sub <- lapply(seq_len(prv_len_rk + 1L), function(k) {
-    summ_k <- list(lppd = loo_sub[[k]], mu = mu_sub[[k]], wcv = validset$wcv)
+    summ_k <- list(lppd = loo_sub[[k]], mu = mu_sub[[k]])
     if (refmodel$family$for_latent) {
-      summ_k$oscale <- list(lppd = loo_sub_oscale[[k]], mu = mu_sub_oscale[[k]],
-                            wcv = validset$wcv)
+      summ_k$oscale <- list(lppd = loo_sub_oscale[[k]], mu = mu_sub_oscale[[k]])
     }
     return(summ_k)
   })
@@ -1192,7 +1228,7 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
   out_list <- c(out_list,
                 nlist(summaries,
                       y_wobs_test = as.data.frame(refmodel[nms_y_wobs_test()]),
-                      clust_used_eval, nprjdraws_eval))
+                      clust_used_eval, nprjdraws_eval, inds))
   return(out_list)
 }
 
@@ -1371,15 +1407,9 @@ kfold_varsel <- function(refmodel, method, nterms_max, ndraws, nclusters,
     summ$mu <- summ$mu[order(idxs_sorted_by_fold_flx)]
     summ$lppd <- summ$lppd[order(idxs_sorted_by_fold)]
 
-    # Add fold-specific weights (see the discussion at GitHub issue #94 for why
-    # this might have to be changed):
-    summ$wcv <- rep(1, length(summ$lppd))
-    summ$wcv <- summ$wcv / sum(summ$wcv)
-
     if (!is.null(summ$oscale)) {
       summ$oscale$mu <- summ$oscale$mu[order(idxs_sorted_by_fold_aug)]
       summ$oscale$lppd <- summ$oscale$lppd[order(idxs_sorted_by_fold)]
-      summ$oscale$wcv <- summ$wcv
     }
     return(summ)
   })
@@ -1575,69 +1605,6 @@ run_cvfun.refmodel <- function(object,
     cvfits <- suppressWarnings(refmodel$cvfun(folds))
   }
   return(structure(cvfits, folds = folds))
-}
-
-# PSIS-LOO-CV helpers -----------------------------------------------------
-
-# ## decide which points to go through in the validation (i.e., which points
-# ## belong to the semi random subsample of validation points)
-# loo_subsample <- function(n, nloo, pareto_k) {
-#   # Note: A seed is not set here because this function is not exported and has
-#   # a calling stack at the beginning of which a seed is set.
-#
-#   resample <- function(x, ...) x[sample.int(length(x), ...)]
-#
-#   if (nloo < n) {
-#     bad <- which(pareto_k > 0.7)
-#     ok <- which(pareto_k <= 0.7 & pareto_k > 0.5)
-#     good <- which(pareto_k <= 0.5)
-#     inds <- resample(bad, min(length(bad), floor(nloo / 3)))
-#     inds <- c(inds, resample(ok, min(length(ok), floor(nloo / 3))))
-#     inds <- c(inds, resample(good, min(length(good), floor(nloo / 3))))
-#     if (length(inds) < nloo) {
-#       ## not enough points selected, so choose randomly among the rest
-#       inds <- c(inds, resample(setdiff(seq_len(n), inds), nloo - length(inds)))
-#     }
-#
-#     ## assign the weights corresponding to this stratification (for example,
-#     ## the 'bad' values are likely to be overpresented in the sample)
-#     wcv <- rep(0, n)
-#     wcv[inds[inds %in% bad]] <- length(bad) / sum(inds %in% bad)
-#     wcv[inds[inds %in% ok]] <- length(ok) / sum(inds %in% ok)
-#     wcv[inds[inds %in% good]] <- length(good) / sum(inds %in% good)
-#   } else {
-#     ## all points used
-#     inds <- seq_len(n)
-#     wcv <- rep(1, n)
-#   }
-#
-#   ## ensure weights are normalized
-#   wcv <- wcv / sum(wcv)
-#
-#   return(nlist(inds, wcv))
-# }
-
-## Select which points to go through in the validation based on
-## proportional-to-size subsampling (PPS) as proposed by Magnusson, M.,
-## Andersen, M. R., Jonasson, J. and Vehtari, A. (2019). Leave-One-Out
-## Cross-Validation for Large Data. In *Proceedings of
-## the 36th International Conference on Machine Learning*, edited by Kamalika
-## Chaudhuri and Ruslan Salakhutdinov, 97:4244--53. Proceedings of Machine
-## Learning Research. PMLR. <https://proceedings.mlr.press/v97/magnusson19a.html>.
-loo_subsample_pps <- function(nloo, lppd) {
-  # Note: A seed is not set here because this function is not exported and has a
-  # calling stack at the beginning of which a seed is set.
-
-  if (nloo == length(lppd)) {
-    inds <- seq_len(nloo)
-    wcv <- rep(1, nloo)
-  } else if (nloo < length(lppd)) {
-    wcv <- exp(lppd - max(lppd))
-    inds <- sample(seq_along(lppd), size = nloo, prob = wcv)
-  }
-  wcv <- wcv / sum(wcv)
-
-  return(nlist(inds, wcv))
 }
 
 #' Pareto-smoothing k-hat threshold

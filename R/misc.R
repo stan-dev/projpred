@@ -15,6 +15,9 @@ nms_y_wobs_test <- function(wobs_nm = "wobs") {
 }
 
 weighted.sd <- function(x, w, na.rm = FALSE) {
+  if (length(w) == 1 && length(x) > 1) {
+    w <- rep_len(w, length.out = length(x))
+  }
   if (na.rm) {
     ind <- !is.na(w) & !is.na(x)
     n <- sum(ind)
@@ -66,22 +69,22 @@ ilinkfun_raw <- function(x, link_nm) {
 auc <- function(x) {
   resp <- x[, 1]
   pred <- x[, 2]
-  wcv <- x[, 3]
+  wobs <- x[, 3]
 
-  # Make it explicit that `x` should not be used anymore (due to the possibility
-  # of `NA`s, but also due to the re-ordering):
+  # Make it explicit that `x` should not be used anymore:
   rm(x)
 
-  ord <- order(pred, decreasing = TRUE, na.last = NA)
+  ord <- order(pred, decreasing = TRUE, na.last = FALSE)
   n <- length(ord)
 
   resp <- resp[ord]
   pred <- pred[ord]
-  wcv <- wcv[ord]
+  wobs <- wobs[ord]
 
-  w0 <- w1 <- wcv
-  # CAUTION: The following check also ensures that `resp` does not have `NA`s:
-  stopifnot(all(resp %in% c(0, 1)))
+  w0 <- w1 <- wobs
+  stopifnot(all(na.omit(resp) %in% c(0, 1)))
+  w0[is.na(resp)] <- NA # ensure that `NA`s in `resp` propagate to the output
+  w1[is.na(resp)] <- NA # ensure that `NA`s in `resp` propagate to the output
   w0[resp == 1] <- 0 # for calculating the false positive rate (fpr)
   w1[resp == 0] <- 0 # for calculating the true positive rate (tpr)
   cum_w0 <- cumsum(w0)
@@ -152,8 +155,8 @@ validate_vsel_object_stats <- function(object, stats, resp_oscale = TRUE) {
   }
   resp_oscale <- object$refmodel$family$for_latent && resp_oscale
 
-  trad_stats <- c("elpd", "mlpd", "gmpd", "mse", "rmse", "acc", "pctcorr",
-                  "auc")
+  trad_stats <- c("elpd", "mlpd", "gmpd", "mse", "rmse", "R2",
+                  "acc", "pctcorr", "auc")
   trad_stats_binom_only <- c("acc", "pctcorr", "auc")
   augdat_stats <- c("elpd", "mlpd", "gmpd", "acc", "pctcorr")
   resp_oscale_stats_fac <- augdat_stats
@@ -196,16 +199,21 @@ validate_vsel_object_stats <- function(object, stats, resp_oscale = TRUE) {
   return(invisible(TRUE))
 }
 
-validate_baseline <- function(refmodel, baseline, deltas) {
+validate_baseline <- function(vsel_obj, baseline, deltas) {
   stopifnot(!is.null(baseline))
   if (!(baseline %in% c("ref", "best"))) {
     stop("Argument 'baseline' must be either 'ref' or 'best'.")
   }
-  if (baseline == "ref" && deltas == TRUE && inherits(refmodel, "datafit")) {
+  if (baseline == "ref" && deltas == TRUE &&
+      inherits(vsel_obj$refmodel, "datafit")) {
     # no reference model (or the results missing for some other reason),
     # so cannot compute differences (or ratios) vs. the reference model
     stop("Cannot use deltas = TRUE and baseline = 'ref' when there is no ",
          "reference model.")
+  }
+  if (baseline == "best" && vsel_obj$cv_method == "LOO" &&
+      isTRUE(vsel_obj$nloo < vsel_obj$refmodel$nobs)) {
+    stop("Cannot use `baseline = \"best\"` in case of subsampled LOO-CV.")
   }
   return(baseline)
 }

@@ -155,7 +155,7 @@ test_that("performances.vsel() is a shortcut", {
   skip_if_not(run_cvvs)
   for (tstsetup in names(smmrys_vs)) {
     args_smmry_i <- args_smmry_vs[[tstsetup]]
-    if (any(c("rmse", "auc") %in% args_smmry_i$stats)) {
+    if (any(c("auc") %in% args_smmry_i$stats)) {
       smmry_seed <- list(seed = seed3_tst)
     } else {
       smmry_seed <- list()
@@ -169,7 +169,7 @@ test_that("performances.vsel() is a shortcut", {
   }
   for (tstsetup in names(smmrys_cvvs)) {
     args_smmry_i <- args_smmry_cvvs[[tstsetup]]
-    if (any(c("rmse", "auc") %in% args_smmry_i$stats)) {
+    if (any(c("auc") %in% args_smmry_i$stats)) {
       smmry_seed <- list(seed = seed3_tst)
     } else {
       smmry_seed <- list()
@@ -239,7 +239,7 @@ test_that(paste(
   skip_if_not(run_vs)
   for (tstsetup in head(names(smmrys_vs), 1)) {
     args_smmry_vs_i <- args_smmry_vs[[tstsetup]]
-    if (any(c("rmse", "auc") %in% args_smmry_vs_i$stats)) {
+    if (any(c("auc") %in% args_smmry_vs_i$stats)) {
       smmry_seed <- list(seed = seed3_tst)
     } else {
       smmry_seed <- list()
@@ -264,7 +264,7 @@ test_that(paste(
   skip_if_not(run_cvvs)
   for (tstsetup in head(names(smmrys_cvvs), 1)) {
     args_smmry_cvvs_i <- args_smmry_cvvs[[tstsetup]]
-    if (any(c("rmse", "auc") %in% args_smmry_cvvs_i$stats)) {
+    if (any(c("auc") %in% args_smmry_cvvs_i$stats)) {
       smmry_seed <- list(seed = seed3_tst)
     } else {
       smmry_seed <- list()
@@ -527,7 +527,7 @@ test_that("`stat` works", {
                                  "common_stats"))
     stat_vec <- stats_tst[[stat_crr_nm]]$stats
     for (stat_crr in stat_vec) {
-      if (stat_crr %in% c("rmse", "auc")) {
+      if (stat_crr %in% c("auc")) {
         suggsize_seed <- seed3_tst
       } else {
         suggsize_seed <- NULL
@@ -608,6 +608,12 @@ test_that(paste(
     nterms_max_expected_crr <- args_rk_cvvs[[tstsetup_rk]][["nterms_max"]]
     if (is.null(nterms_max_expected_crr)) {
       nterms_max_expected_crr <- args_cvvs[[tstsetup_cvvs]][["nterms_max"]]
+      if (length(args_cvvs[[tstsetup_cvvs]]$search_terms) &&
+          all(grepl("\\+", args_cvvs[[tstsetup_cvvs]]$search_terms))) {
+        # This is the "empty_size" setting, so we have to subtract the skipped
+        # model size (see issue #307):
+        nterms_max_expected_crr <- nterms_max_expected_crr - 1L
+      }
     }
     cv_proportions_tester(
       prs_cvvs[[tstsetup]],

@@ -46,32 +46,45 @@ are again all observations because the test set is the same as the training
 set). Available statistics are:
 \itemize{
 \item \code{"elpd"}: expected log (pointwise) predictive density (for a new
-dataset). Estimated by the sum of the observation-specific log predictive
-density values (with each of these predictive density values being
-a---possibly weighted---average across the parameter draws).
-\item \code{"mlpd"}: mean log predictive density, that is, \code{"elpd"} divided by the
-number of observations.
+dataset) (ELPD). Estimated by the sum of the observation-specific log
+predictive density values (with each of these predictive density values
+being a---possibly weighted---average across the parameter draws). For the
+corresponding confidence interval, a normal approximation is used.
+\item \code{"mlpd"}: mean log predictive density (MLPD), that is, the ELPD divided
+by the number of observations. For the corresponding confidence interval, a
+normal approximation is used.
 \item \code{"gmpd"}: geometric mean predictive density (GMPD), that is, \code{\link[=exp]{exp()}} of
-\code{"mlpd"}. The GMPD is especially helpful for discrete response families
+the MLPD. The GMPD is especially helpful for discrete response families
 (because there, the GMPD is bounded by zero and one). For the corresponding
 standard error, the delta method is used. The corresponding confidence
 interval type is "exponentiated normal approximation" because the
 confidence interval bounds are the exponentiated confidence interval bounds
-of the \code{"mlpd"}.
+of the MLPD.
 \item \code{"mse"}: mean squared error (only available in the situations mentioned
-in section "Details" below).
+in section "Details" below). For the corresponding confidence interval, a
+log-normal approximation is used if \code{deltas} is \code{FALSE} and a normal
+approximation is used if \code{deltas} is \code{TRUE}.
 \item \code{"rmse"}: root mean squared error (only available in the situations
-mentioned in section "Details" below). For the corresponding standard error
-and lower and upper confidence interval bounds, bootstrapping is used.
+mentioned in section "Details" below). For the corresponding standard
+error, the delta method is used. For the corresponding confidence interval,
+a log-normal approximation is used if \code{deltas} is \code{FALSE} and a normal
+approximation is used if \code{deltas} is \code{TRUE}.
+\item \code{"R2"}: R-squared, i.e., coefficient of determination (only available in
+the situations mentioned in section "Details" below). For the corresponding
+standard error, the delta method is used. For the corresponding confidence
+interval, a normal approximation is used.
 \item \code{"acc"} (or its alias, \code{"pctcorr"}): classification accuracy (only
 available in the situations mentioned in section "Details" below). By
 "classification accuracy", we mean the proportion of correctly classified
 observations. For this, the response category ("class") with highest
 probability (the probabilities are model-based) is taken as the prediction
-("classification") for an observation.
+("classification") for an observation. For the corresponding confidence
+interval, a normal approximation is used.
 \item \code{"auc"}: area under the ROC curve (only available in the situations
 mentioned in section "Details" below). For the corresponding standard error
-and lower and upper confidence interval bounds, bootstrapping is used.
+and lower and upper confidence interval bounds, bootstrapping is used. Not
+supported in case of subsampled LOO-CV (see argument \code{nloo} of
+\code{\link[=cv_varsel]{cv_varsel()}}).
 }}
 
 \item{deltas}{If \code{TRUE}, the submodel statistics are estimated relatively to
@@ -82,16 +95,15 @@ statistic divided by the baseline model statistic). For all other \code{stats},
 submodel statistic minus the baseline model statistic).}
 
 \item{alpha}{A number determining the (nominal) coverage \code{1 - alpha} of the
-normal-approximation (or bootstrap or exponentiated normal-approximation;
-see argument \code{stats}) confidence intervals. For example, in case of the
-normal approximation, \code{alpha = 2 * pnorm(-1)} corresponds to a confidence
+confidence intervals. For example, in case of a normal-approximation
+confidence interval, \code{alpha = 2 * pnorm(-1)} corresponds to a confidence
 interval stretching by one standard error on either side of the point
 estimate.}
 
 \item{baseline}{For \code{\link[=summary.vsel]{summary.vsel()}}: Only relevant if \code{deltas} is \code{TRUE}.
 For \code{\link[=plot.vsel]{plot.vsel()}}: Always relevant. Either \code{"ref"} or \code{"best"}, indicating
 whether the baseline is the reference model or the best submodel found (in
-terms of \code{stats[1]}), respectively.}
+terms of \code{stats[1]}), respectively. In case of subsampled LOO-CV, \code{baseline = "best"} is not supported.}
 
 \item{thres_elpd}{Only relevant if \code{any(stats \%in\% c("elpd", "mlpd", "gmpd"))}. The threshold for the ELPD difference (taking the submodel's
 ELPD minus the baseline model's ELPD) above which the submodel's ELPD is
@@ -191,7 +203,8 @@ available; inferred from \code{\link[=cv_proportions]{cv_proportions()}}). For a
 see \code{\link[=summary.vsel]{summary.vsel()}} and \code{\link[=performances]{performances()}}.
 }
 \details{
-The \code{stats} options \code{"mse"} and \code{"rmse"} are only available for:
+The \code{stats} options \code{"mse"}, \code{"rmse"}, and \code{"R2"} are only available
+for:
 \itemize{
 \item the traditional projection,
 \item the latent projection with \code{resp_oscale = FALSE},
@@ -218,6 +231,9 @@ The \code{stats} option \code{"auc"} is only available for:
 latent projection with \code{resp_oscale = TRUE} in combination with
 \verb{<refmodel>$family$cats} being \code{NULL}.
 }
+
+Note that the \code{stats} option \code{"auc"} is not supported in case of subsampled
+LOO-CV (see argument \code{nloo} of \code{\link[=cv_varsel]{cv_varsel()}}).
 }
 \section{Horizontal lines}{
 As long as the reference model's performance is computable, it is always
