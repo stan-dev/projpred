@@ -248,27 +248,15 @@ varsel.vsel <- function(object, ...) {
 
 #' @rdname varsel
 #' @export
-varsel.refmodel <- function(
-    object,
-    d_test = NULL,
-    method = "forward",
-    ndraws = NULL,
-    nclusters = 20,
-    ndraws_pred = 400,
-    nclusters_pred = NULL,
-    refit_prj = !inherits(object, "datafit"),
-    nterms_max = NULL,
-    verbose = getOption("projpred.verbose", interactive()),
-    search_control = NULL,
-    lambda_min_ratio = 1e-5,
-    nlambda = 150,
-    thresh = 1e-6,
-    penalty = NULL,
-    search_terms = NULL,
-    search_out = NULL,
-    seed = NA,
-    ...
-) {
+varsel.refmodel <- function(object, d_test = NULL, method = "forward",
+                            ndraws = NULL, nclusters = 20, ndraws_pred = 400,
+                            nclusters_pred = NULL,
+                            refit_prj = !inherits(object, "datafit"),
+                            nterms_max = NULL, verbose = TRUE,
+                            search_control = NULL, lambda_min_ratio = 1e-5,
+                            nlambda = 150, thresh = 1e-6, penalty = NULL,
+                            search_terms = NULL, search_out = NULL, seed = NA,
+                            ...) {
   if (!missing(lambda_min_ratio)) {
     warning("Argument `lambda_min_ratio` is deprecated. Please specify ",
             "control arguments for the search via argument `search_control`. ",
@@ -388,7 +376,7 @@ varsel.refmodel <- function(
     search_path <- search_out[["search_path"]]
   } else {
     verb_out("-----\nRunning the search ...", verbose = verbose)
-    search_path <- .select(
+    search_path <- select(
       refmodel = refmodel, ndraws = ndraws, nclusters = nclusters,
       method = method, nterms_max = nterms_max, penalty = penalty,
       verbose = verbose, search_control = search_control,
@@ -523,8 +511,8 @@ varsel.refmodel <- function(
 #   `outdmins` (the submodel fits along the predictor ranking, with the number
 #   of fits per model size being equal to the number of projected draws), and
 #   `p_sel` (the output from get_refdist() for the search).
-.select <- function(refmodel, ndraws, nclusters, reweighting_args = NULL,
-                    method, nterms_max, penalty, verbose, search_control, ...) {
+select <- function(refmodel, ndraws, nclusters, reweighting_args = NULL, method,
+                   nterms_max, penalty, verbose, search_control, ...) {
   if (is.null(reweighting_args)) {
     p_sel <- get_refdist(refmodel, ndraws = ndraws, nclusters = nclusters)
   } else {

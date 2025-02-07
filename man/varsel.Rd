@@ -23,7 +23,7 @@ varsel(object, ...)
   nclusters_pred = NULL,
   refit_prj = !inherits(object, "datafit"),
   nterms_max = NULL,
-  verbose = getOption("projpred.verbose", interactive()),
+  verbose = TRUE,
   search_control = NULL,
   lambda_min_ratio = 1e-05,
   nlambda = 150,

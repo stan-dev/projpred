@@ -16,7 +16,7 @@ standardization <- function(x, center = TRUE, scale = TRUE, weights = NULL) {
     mx <- rep(0, ncol(x))
   }
   if (scale) {
-    sx <- apply(x, 2, .weighted_sd, w)
+    sx <- apply(x, 2, weighted.sd, w)
   } else {
     sx <- rep(1, ncol(x))
   }

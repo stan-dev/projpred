@@ -191,20 +191,16 @@ cv_varsel.vsel <- function(
     validate_search = object$validate_search %||% TRUE,
     ...
 ) {
-  ## the following arguments should not change
   arg_nms_internal <- c("method", "ndraws", "nclusters", "nterms_max",
                         "search_control", "penalty", "search_terms")
-  dots <- list(...)
-  arg_nms_internal_used <- intersect(arg_nms_internal, names(dots))
-  for (arg in arg_nms_internal_used) {
-    if (!identical(object[["args_search"]][[arg]], dots[[arg]])) {
-      message("Argument `", arg, "` ignored. Using the argument value stored ",
-              "in the `vsel` object.")
-    }
-    ## remove duplicate arguments
-    dots[[arg]] <- NULL
+  arg_nms_internal_used <- intersect(arg_nms_internal, ...names())
+  n_arg_nms_internal_used <- length(arg_nms_internal_used)
+  if (n_arg_nms_internal_used > 0) {
+    stop("Argument", if (n_arg_nms_internal_used > 1) "s" else "", " ",
+         paste(paste0("`", arg_nms_internal_used, "`"), collapse = ", "), " ",
+         "cannot be specified in this case because cv_varsel.vsel() specifies ",
+         if (n_arg_nms_internal_used > 1) "them" else "it", " ", "internally.")
   }
-
   refmodel <- get_refmodel(object)
   rk_foldwise <- ranking(object)[["foldwise"]]
   if (validate_search && !is.null(rk_foldwise)) {
@@ -236,26 +232,23 @@ cv_varsel.vsel <- function(
               "brms:::get_refmodel.brmsfit() to some non-`NULL` value.")
     }
   }
-
-  return(do_call(cv_varsel, c(
-    list(
-      object = refmodel,
-      method = object[["args_search"]][["method"]],
-      ndraws = object[["args_search"]][["ndraws"]],
-      nclusters = object[["args_search"]][["nclusters"]],
-      nterms_max = object[["args_search"]][["nterms_max"]],
-      search_control = object[["args_search"]][["search_control"]],
-      penalty = object[["args_search"]][["penalty"]],
-      search_terms = object[["args_search"]][["search_terms"]],
-      cv_method = cv_method,
-      nloo = nloo,
-      K = K,
-      cvfits = cvfits,
-      validate_search = validate_search,
-      search_out = nlist(search_path = object[["search_path"]], rk_foldwise)
-    ),
-    dots
-  )))
+  return(cv_varsel(
+    object = refmodel,
+    method = object[["args_search"]][["method"]],
+    ndraws = object[["args_search"]][["ndraws"]],
+    nclusters = object[["args_search"]][["nclusters"]],
+    nterms_max = object[["args_search"]][["nterms_max"]],
+    search_control = object[["args_search"]][["search_control"]],
+    penalty = object[["args_search"]][["penalty"]],
+    search_terms = object[["args_search"]][["search_terms"]],
+    cv_method = cv_method,
+    nloo = nloo,
+    K = K,
+    cvfits = cvfits,
+    validate_search = validate_search,
+    search_out = nlist(search_path = object[["search_path"]], rk_foldwise),
+    ...
+  ))
 }
 
 #' @rdname cv_varsel
@@ -271,7 +264,7 @@ cv_varsel.refmodel <- function(
     refit_prj = !inherits(object, "datafit"),
     nterms_max = NULL,
     penalty = NULL,
-    verbose = getOption("projpred.verbose", interactive()),
+    verbose = TRUE,
     nloo = if (cv_method == "LOO") object$nobs else NULL,
     K = if (!inherits(object, "datafit")) 5 else 10,
     cvfits = object$cvfits,
@@ -284,7 +277,8 @@ cv_varsel.refmodel <- function(
     search_terms = NULL,
     search_out = NULL,
     parallel = getOption("projpred.prll_cv", FALSE),
-    ...) {
+    ...
+) {
   if (!missing(lambda_min_ratio)) {
     warning("Argument `lambda_min_ratio` is deprecated. Please specify ",
             "control arguments for the search via argument `search_control`. ",
@@ -346,25 +340,16 @@ cv_varsel.refmodel <- function(
   if (!is.null(search_out)) {
     search_path_fulldata <- search_out[["search_path"]]
   } else {
-    verb_txt_search <- paste0("-----\nRunning ", method, " search ")
+    verb_txt_search <- "-----\nRunning the search "
     if (validate_search) {
       # Point out that this is the full-data search (if `validate_search` is
       # `FALSE`, this is still a full-data search, but in that case, there are
       # no fold-wise searches, so pointing out "full-data" could be confusing):
       verb_txt_search <- paste0(verb_txt_search, "using the full dataset ")
     }
-    # Note concerning the following verbose text: If `nclusters == S`,
-    # get_refdist() will use "thinning", not "clustering" (in that case, they
-    # give the same set of draws, namely the original one; hence the quotation
-    # marks), but here for this verbose message, we do not want to make things
-    # too complicated:
-    verb_txt_search <- paste0(verb_txt_search, "with ",
-                              ifelse(!is.null(nclusters),
-                                     paste0(nclusters, " clusters "),
-                                     paste0(ndraws, " draws (from thinning) ")))
     verb_txt_search <- paste0(verb_txt_search, "...")
     verb_out(verb_txt_search, verbose = verbose)
-    search_path_fulldata <- .select(
+    search_path_fulldata <- select(
       refmodel = refmodel, ndraws = ndraws, nclusters = nclusters,
       method = method, nterms_max = nterms_max, penalty = penalty,
       verbose = verbose, search_control = search_control,
@@ -766,15 +751,8 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
     # "Run" the performance evaluation for the submodels along the predictor
     # ranking (in fact, we only prepare the performance evaluation by computing
     # precursor quantities, but for users, this difference is not perceivable):
-    verb_out("-----\nRunning the performance evaluation with ",
-             ifelse(refit_prj,
-                    ifelse(!is.null(nclusters_pred),
-                           paste0(nclusters_pred, " clusters"),
-                           paste0(ndraws_pred, " draws (from thinning)")),
-                    ifelse(!is.null(nclusters),
-                           paste0(nclusters, " clusters"),
-                           paste0(ndraws, " draws (from thinning)"))),
-             " (`refit_prj = ", refit_prj, "`) ...", verbose = verbose)
+    verb_out("-----\nRunning the performance evaluation with `refit_prj = ",
+             refit_prj, "` ...", verbose = verbose)
     # Step 1: Re-project (using the full dataset) onto the submodels along the
     # full-data predictor ranking and evaluate their predictive performance.
     perf_eval_out <- perf_eval(
@@ -824,53 +802,59 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
       ))
     }
     if (nrow(log_lik_ref) > 1) {
-      # Take into account that clustered draws usually have different weights:
-      lw_sub <- log_lik_ref + log(refdist_eval$wdraws_prj)
-      # This re-weighting requires a re-normalization (as.array() is applied to
-      # have stricter consistency checks, see `?sweep`):
-      lw_sub <- sweep(lw_sub, 2, as.array(apply(lw_sub, 2, log_sum_exp)))
-      # Internally, loo::psis() doesn't perform the Pareto smoothing if the
-      # number of draws is small (as indicated by object `no_psis_eval`, see
-      # below). In projpred, this can occur, e.g., if users request a number
-      # of projected draws (for performance evaluation, either after
-      # clustering or thinning the reference model's posterior draws) that is
-      # much smaller than the default of 400. In order to throw a customized
-      # warning message (and to avoid the calculation of Pareto k-values, see
-      # loo issue stan-dev/loo#227), object `no_psis_eval` indicates whether
-      # loo::psis() would perform the Pareto smoothing or not (for the
-      # decision rule, see loo:::n_pareto() and loo:::enough_tail_samples(),
-      # keeping in mind that we have `r_eff = 1` for all observations here).
-      S_for_psis_eval <- nrow(log_lik_ref)
-      no_psis_eval <- ceiling(min(0.2 * S_for_psis_eval,
-                                  3 * sqrt(S_for_psis_eval))) < 5
-      if (no_psis_eval) {
+      # Use loo::sis() if the projected draws (i.e., the draws resulting
+      # from the clustering or thinning) have nonconstant weights:
+      if (refdist_eval$const_wdraws_prj) {
+        # Internally, loo::psis() doesn't perform the Pareto smoothing if the
+        # number of draws is small (as indicated by object `no_psis_eval`, see
+        # below). In projpred, this can occur, e.g., if users request a number
+        # of projected draws (for performance evaluation, either after
+        # clustering or thinning the reference model's posterior draws) that is
+        # much smaller than the default of 400. In order to throw a customized
+        # warning message (and to avoid the calculation of Pareto k-values, see
+        # loo issue stan-dev/loo#227), object `no_psis_eval` indicates whether
+        # loo::psis() would perform the Pareto smoothing or not (for the
+        # decision rule, see loo:::n_pareto() and loo:::enough_tail_samples(),
+        # keeping in mind that we have `r_eff = 1` for all observations here).
+        S_for_psis_eval <- nrow(log_lik_ref)
+        no_psis_eval <- ceiling(min(0.2 * S_for_psis_eval,
+                                    3 * sqrt(S_for_psis_eval))) < 5
+        if (no_psis_eval) {
+          if (getOption("projpred.warn_psis", TRUE)) {
+            warning(
+              "Using standard importance sampling (SIS), as the number of ",
+              "draws or clusters is too small for PSIS. For improved ",
+              "accuracy, increase the number of draws or clusters, or use ",
+              "K-fold-CV."
+            )
+          }
+          # Use loo::sis().
+          # In principle, we could rely on loo::psis() here (because in such a
+          # case, it would internally switch to SIS automatically), but using
+          # loo::sis() explicitly is safer because if the loo package changes
+          # its decision rule, we would get a mismatch between our customized
+          # warning here and the IS method used by loo. See also loo issue
+          # stan-dev/loo#227.
+          importance_sampling_nm <- "sis"
+        } else {
+          # Use loo::psis().
+          # Usually, we have a small number of projected draws here (400 by
+          # default), which means that the 'loo' package will automatically
+          # perform the regularization from Vehtari et al. (2024,
+          # <https://jmlr.org/papers/v25/19-556.html>, appendix G).
+          importance_sampling_nm <- "psis"
+        }
+      } else {
         if (getOption("projpred.warn_psis", TRUE)) {
-          message(
-            "Using standard importance sampling (SIS) due to a small number of",
-            ifelse(refit_prj,
-                   ifelse(!is.null(nclusters_pred),
-                          " clusters",
-                          " draws (from thinning)"),
-                   ifelse(!is.null(nclusters),
-                          " clusters",
-                          " draws (from thinning)"))
+          warning(
+            "The projected draws used for the performance evaluation have ",
+            "different (i.e., nonconstant) weights, so using standard ",
+            "importance sampling (SIS) instead of Pareto-smoothed importance ",
+            "sampling (PSIS). In general, PSIS is recommended over SIS."
           )
         }
         # Use loo::sis().
-        # In principle, we could rely on loo::psis() here (because in such a
-        # case, it would internally switch to SIS automatically), but using
-        # loo::sis() explicitly is safer because if the loo package changes
-        # its decision rule, we would get a mismatch between our customized
-        # warning here and the IS method used by loo. See also loo issue
-        # stan-dev/loo#227.
         importance_sampling_nm <- "sis"
-      } else {
-        # Use loo::psis().
-        # Usually, we have a small number of projected draws here (400 by
-        # default), which means that the 'loo' package will automatically
-        # perform the regularization from Vehtari et al. (2022,
-        # <https://doi.org/10.48550/arXiv.1507.02646>, appendix G).
-        importance_sampling_nm <- "psis"
       }
       importance_sampling_func <- get(importance_sampling_nm,
                                       asNamespace("loo"))
@@ -907,6 +891,11 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
     } else {
       lw_sub <- matrix(0, nrow = nrow(log_lik_ref), ncol = ncol(log_lik_ref))
     }
+    # Take into account that clustered draws usually have different weights:
+    lw_sub <- lw_sub + log(refdist_eval$wdraws_prj)
+    # This re-weighting requires a re-normalization (as.array() is applied to
+    # have stricter consistency checks, see `?sweep`):
+    lw_sub <- sweep(lw_sub, 2, as.array(apply(lw_sub, 2, log_sum_exp)))
     for (k in seq_len(1 + length(search_path_fulldata$predictor_ranking))) {
       # TODO: For consistency, replace `k` in this `for` loop by `j`.
       mu_k <- perf_eval_out[["mu_by_size"]][[k]]
@@ -974,23 +963,14 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
     }
 
     if (verbose) {
-      verb_out("-----\nRunning ",
-               ifelse(!search_out_rks_was_null, "",
-                      paste0(method, " the search with ",
-                             ifelse(!is.null(nclusters),
-                                    paste0(nclusters, " clusters"),
-                                    paste0(ndraws, " draws (from thinning)")),
-                             " and ")),
-               "the performance evaluation with ",
-               ifelse(refit_prj,
-                      ifelse(!is.null(nclusters_pred),
-                             paste0(nclusters_pred, " clusters"),
-                             paste0(ndraws_pred, " draws (from thinning)")),
-                      ifelse(!is.null(nclusters),
-                             paste0(nclusters, " clusters"),
-                             paste0(ndraws, " draws (from thinning)"))),
-               " (`refit_prj = ", refit_prj,
-               "`) for each of the `nloo = ", nloo, "` ",
+      verb_txt_start <- "-----\nRunning "
+      if (!search_out_rks_was_null) {
+        verb_txt_mid <- ""
+      } else {
+        verb_txt_mid <- "the search and "
+      }
+      verb_out(verb_txt_start, verb_txt_mid, "the performance evaluation with ",
+               "`refit_prj = ", refit_prj, "` for each of the N = ", nloo, " ",
                "LOO-CV folds separately ...")
     }
     one_obs <- function(run_index,
@@ -1007,7 +987,7 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
       if (!search_out_rks_was_null) {
         search_path <- list(predictor_ranking = search_out_rks[[run_index]])
       } else {
-        search_path <- .select(
+        search_path <- select(
           refmodel = refmodel, ndraws = ndraws, nclusters = nclusters,
           reweighting_args = list(cl_ref = cl_sel, wdraws_ref = exp(lw[, i])),
           method = method, nterms_max = nterms_max, penalty = penalty,
@@ -1322,7 +1302,7 @@ kfold_varsel <- function(refmodel, method, nterms_max, ndraws, nclusters,
     } else if (!search_out_rks_was_null) {
       search_path <- list(predictor_ranking = rk)
     } else {
-      search_path <- .select(
+      search_path <- select(
         refmodel = fold$refmodel, ndraws = ndraws, nclusters = nclusters,
         method = method, nterms_max = nterms_max, penalty = penalty,
         verbose = verbose_search, search_control = search_control,
