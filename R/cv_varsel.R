@@ -1051,9 +1051,11 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
                       "loo_ref_oscale", "validset", "loo_sub", "mu_sub",
                       "loo_sub_oscale", "mu_sub_oscale")
       ) %do_projpred% {
+        out_one_obs <- do.call(one_obs, c(list(run_index = run_index,
+                                               verbose_search = FALSE),
+                                          dot_args))
         if (!is.null(progressor_obj)) progressor_obj()
-        do.call(one_obs, c(list(run_index = run_index, verbose_search = FALSE),
-                           dot_args))
+        return(out_one_obs)
       }
     }
     # For storing the fold-wise predictor rankings:
@@ -1378,10 +1380,12 @@ kfold_varsel <- function(refmodel, method, nterms_max, ndraws, nclusters,
       .export = c("one_fold", "dot_args", "progressor_obj"),
       .noexport = c("list_cv", "search_out_rks")
     ) %do_projpred% {
+      out_one_fold <- do_call(one_fold, c(list(fold = list_cv_k,
+                                               rk = search_out_rks_k,
+                                               verbose_search = FALSE),
+                                          dot_args))
       if (!is.null(progressor_obj)) progressor_obj()
-      do_call(one_fold, c(list(fold = list_cv_k, rk = search_out_rks_k,
-                               verbose_search = FALSE),
-                          dot_args))
+      return(out_one_fold)
     }
   }
   verb_out("-----", verbose = verbose)
