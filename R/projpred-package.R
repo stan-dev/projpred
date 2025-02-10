@@ -144,8 +144,9 @@
 #' or the CV in parallel. The \pkg{projpred} package also offers the global
 #' option `projpred.use_progressr` for controlling whether to use the
 #' \pkg{progressr} package (`TRUE` or `FALSE`), but since that global option
-#' defaults to `requireNamespace("progressr", quietly = TRUE) && interactive()`,
-#' it usually does not need to be set by the user.
+#' defaults to `requireNamespace("progressr", quietly = TRUE) && interactive()
+#' && identical(foreach::getDoParName(), "doFuture")`, it usually does not need
+#' to be set by the user.
 #'
 #' # Multilevel models: "Integrating out" group-level effects
 #'
