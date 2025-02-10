@@ -131,6 +131,17 @@ without additive terms may be regarded as a projection onto a submodel which
 is a GLM). However, for \code{\link[=cv_varsel]{cv_varsel()}}, there is also a \emph{CV} parallelization
 (i.e., a parallelization of \pkg{projpred}'s cross-validation) which can be
 activated via argument \code{parallel}.
+
+During parallelization (either of the projection or the CV), progression
+updates can be received via the \pkg{progressr} package. This only works if
+the \pkg{doFuture} backend is used for parallelization, e.g., via
+\code{doFuture::registerDoFuture()} and \code{future::plan(future::multisession, workers = 4)}. In that case, the \pkg{progressr} package can be used, e.g.,
+by calling \code{progressr::handlers(global = TRUE)} before running the projection
+or the CV in parallel. The \pkg{projpred} package also offers the global
+option \code{projpred.use_progressr} for controlling whether to use the
+\pkg{progressr} package (\code{TRUE} or \code{FALSE}), but since that global option
+defaults to \code{requireNamespace("progressr", quietly = TRUE) && interactive()},
+it usually does not need to be set by the user.
 }
 
 \section{Multilevel models: "Integrating out" group-level effects}{
