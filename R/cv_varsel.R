@@ -349,7 +349,7 @@ cv_varsel.refmodel <- function(
     }
     verb_txt_search <- paste0(verb_txt_search, "...")
     verb_out(verb_txt_search, verbose = verbose)
-    search_path_fulldata <- select(
+    search_path_fulldata <- .select(
       refmodel = refmodel, ndraws = ndraws, nclusters = nclusters,
       method = method, nterms_max = nterms_max, penalty = penalty,
       verbose = verbose, search_control = search_control,
@@ -987,7 +987,7 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
       if (!search_out_rks_was_null) {
         search_path <- list(predictor_ranking = search_out_rks[[run_index]])
       } else {
-        search_path <- select(
+        search_path <- .select(
           refmodel = refmodel, ndraws = ndraws, nclusters = nclusters,
           reweighting_args = list(cl_ref = cl_sel, wdraws_ref = exp(lw[, i])),
           method = method, nterms_max = nterms_max, penalty = penalty,
@@ -1304,7 +1304,7 @@ kfold_varsel <- function(refmodel, method, nterms_max, ndraws, nclusters,
     } else if (!search_out_rks_was_null) {
       search_path <- list(predictor_ranking = rk)
     } else {
-      search_path <- select(
+      search_path <- .select(
         refmodel = fold$refmodel, ndraws = ndraws, nclusters = nclusters,
         method = method, nterms_max = nterms_max, penalty = penalty,
         verbose = verbose_search, search_control = search_control,
