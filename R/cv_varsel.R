@@ -796,59 +796,53 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
       ))
     }
     if (nrow(log_lik_ref) > 1) {
-      # Use loo::sis() if the projected draws (i.e., the draws resulting
-      # from the clustering or thinning) have nonconstant weights:
-      if (refdist_eval$const_wdraws_prj) {
-        # Internally, loo::psis() doesn't perform the Pareto smoothing if the
-        # number of draws is small (as indicated by object `no_psis_eval`, see
-        # below). In projpred, this can occur, e.g., if users request a number
-        # of projected draws (for performance evaluation, either after
-        # clustering or thinning the reference model's posterior draws) that is
-        # much smaller than the default of 400. In order to throw a customized
-        # warning message (and to avoid the calculation of Pareto k-values, see
-        # loo issue stan-dev/loo#227), object `no_psis_eval` indicates whether
-        # loo::psis() would perform the Pareto smoothing or not (for the
-        # decision rule, see loo:::n_pareto() and loo:::enough_tail_samples(),
-        # keeping in mind that we have `r_eff = 1` for all observations here).
-        S_for_psis_eval <- nrow(log_lik_ref)
-        no_psis_eval <- ceiling(min(0.2 * S_for_psis_eval,
-                                    3 * sqrt(S_for_psis_eval))) < 5
-        if (no_psis_eval) {
-          if (getOption("projpred.warn_psis", TRUE)) {
-            warning(
-              "Using standard importance sampling (SIS), as the number of ",
-              "draws or clusters is too small for PSIS. For improved ",
-              "accuracy, increase the number of draws or clusters, or use ",
-              "K-fold-CV."
-            )
-          }
-          # Use loo::sis().
-          # In principle, we could rely on loo::psis() here (because in such a
-          # case, it would internally switch to SIS automatically), but using
-          # loo::sis() explicitly is safer because if the loo package changes
-          # its decision rule, we would get a mismatch between our customized
-          # warning here and the IS method used by loo. See also loo issue
-          # stan-dev/loo#227.
-          importance_sampling_nm <- "sis"
-        } else {
-          # Use loo::psis().
-          # Usually, we have a small number of projected draws here (400 by
-          # default), which means that the 'loo' package will automatically
-          # perform the regularization from Vehtari et al. (2024,
-          # <https://jmlr.org/papers/v25/19-556.html>, appendix G).
-          importance_sampling_nm <- "psis"
-        }
-      } else {
+      # Take into account that clustered draws usually have different weights:
+      lw_sub <- log_lik_ref + log(refdist_eval$wdraws_prj)
+      # This re-weighting requires a re-normalization (as.array() is applied to
+      # have stricter consistency checks, see `?sweep`):
+      lw_sub <- sweep(lw_sub, 2, as.array(apply(lw_sub, 2, log_sum_exp)))
+      # Internally, loo::psis() doesn't perform the Pareto smoothing if the
+      # number of draws is small (as indicated by object `no_psis_eval`, see
+      # below). In projpred, this can occur, e.g., if users request a number
+      # of projected draws (for performance evaluation, either after
+      # clustering or thinning the reference model's posterior draws) that is
+      # much smaller than the default of 400. In order to throw a customized
+      # warning message (and to avoid the calculation of Pareto k-values, see
+      # loo issue stan-dev/loo#227), object `no_psis_eval` indicates whether
+      # loo::psis() would perform the Pareto smoothing or not (for the
+      # decision rule, see loo:::n_pareto() and loo:::enough_tail_samples(),
+      # keeping in mind that we have `r_eff = 1` for all observations here).
+      S_for_psis_eval <- nrow(log_lik_ref)
+      no_psis_eval <- ceiling(min(0.2 * S_for_psis_eval,
+                                  3 * sqrt(S_for_psis_eval))) < 5
+      if (no_psis_eval) {
         if (getOption("projpred.warn_psis", TRUE)) {
-          warning(
-            "The projected draws used for the performance evaluation have ",
-            "different (i.e., nonconstant) weights, so using standard ",
-            "importance sampling (SIS) instead of Pareto-smoothed importance ",
-            "sampling (PSIS). In general, PSIS is recommended over SIS."
+          message(
+            "Using standard importance sampling (SIS) due to a small number of",
+            ifelse(refit_prj,
+                   ifelse(!is.null(nclusters_pred),
+                          " clusters",
+                          " draws (from thinning)"),
+                   ifelse(!is.null(nclusters),
+                          " clusters",
+                          " draws (from thinning)"))
           )
         }
         # Use loo::sis().
+        # In principle, we could rely on loo::psis() here (because in such a
+        # case, it would internally switch to SIS automatically), but using
+        # loo::sis() explicitly is safer because if the loo package changes
+        # its decision rule, we would get a mismatch between our customized
+        # warning here and the IS method used by loo. See also loo issue
+        # stan-dev/loo#227.
         importance_sampling_nm <- "sis"
+      } else {
+        # Use loo::psis().
+        # Usually, we have a small number of projected draws here (400 by
+        # default), which means that the 'loo' package will automatically
+        # perform the regularization from Vehtari et al. (2022,
+        # <https://doi.org/10.48550/arXiv.1507.02646>, appendix G).
+        importance_sampling_nm <- "psis"
       }
       importance_sampling_func <- get(importance_sampling_nm,
                                       asNamespace("loo"))
@@ -885,11 +879,6 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
     } else {
       lw_sub <- matrix(0, nrow = nrow(log_lik_ref), ncol = ncol(log_lik_ref))
     }
-    # Take into account that clustered draws usually have different weights:
-    lw_sub <- lw_sub + log(refdist_eval$wdraws_prj)
-    # This re-weighting requires a re-normalization (as.array() is applied to
-    # have stricter consistency checks, see `?sweep`):
-    lw_sub <- sweep(lw_sub, 2, as.array(apply(lw_sub, 2, log_sum_exp)))
     for (k in seq_len(1 + length(search_path_fulldata$predictor_ranking))) {
       # TODO: For consistency, replace `k` in this `for` loop by `j`.
       mu_k <- perf_eval_out[["mu_by_size"]][[k]]
