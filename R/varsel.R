@@ -248,15 +248,27 @@ varsel.vsel <- function(object, ...) {
 
 #' @rdname varsel
 #' @export
-varsel.refmodel <- function(object, d_test = NULL, method = "forward",
-                            ndraws = NULL, nclusters = 20, ndraws_pred = 400,
-                            nclusters_pred = NULL,
-                            refit_prj = !inherits(object, "datafit"),
-                            nterms_max = NULL, verbose = TRUE,
-                            search_control = NULL, lambda_min_ratio = 1e-5,
-                            nlambda = 150, thresh = 1e-6, penalty = NULL,
-                            search_terms = NULL, search_out = NULL, seed = NA,
-                            ...) {
+varsel.refmodel <- function(
+    object,
+    d_test = NULL,
+    method = "forward",
+    ndraws = NULL,
+    nclusters = 20,
+    ndraws_pred = 400,
+    nclusters_pred = NULL,
+    refit_prj = !inherits(object, "datafit"),
+    nterms_max = NULL,
+    verbose = getOption("projpred.verbose", interactive()),
+    search_control = NULL,
+    lambda_min_ratio = 1e-5,
+    nlambda = 150,
+    thresh = 1e-6,
+    penalty = NULL,
+    search_terms = NULL,
+    search_out = NULL,
+    seed = NA,
+    ...
+) {
   if (!missing(lambda_min_ratio)) {
     warning("Argument `lambda_min_ratio` is deprecated. Please specify ",
             "control arguments for the search via argument `search_control`. ",

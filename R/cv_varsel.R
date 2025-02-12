@@ -264,7 +264,7 @@ cv_varsel.refmodel <- function(
     refit_prj = !inherits(object, "datafit"),
     nterms_max = NULL,
     penalty = NULL,
-    verbose = TRUE,
+    verbose = getOption("projpred.verbose", interactive()),
     nloo = if (cv_method == "LOO") object$nobs else NULL,
     K = if (!inherits(object, "datafit")) 5 else 10,
     cvfits = object$cvfits,
@@ -340,13 +340,22 @@ cv_varsel.refmodel <- function(
   if (!is.null(search_out)) {
     search_path_fulldata <- search_out[["search_path"]]
   } else {
-    verb_txt_search <- "-----\nRunning the search "
+    verb_txt_search <- paste0("-----\nRunning ", method, " search ")
     if (validate_search) {
       # Point out that this is the full-data search (if `validate_search` is
       # `FALSE`, this is still a full-data search, but in that case, there are
       # no fold-wise searches, so pointing out "full-data" could be confusing):
       verb_txt_search <- paste0(verb_txt_search, "using the full dataset ")
     }
+    # Note concerning the following verbose text: If `nclusters == S`,
+    # get_refdist() will use "thinning", not "clustering" (in that case, they
+    # give the same set of draws, namely the original one; hence the quotation
+    # marks), but here for this verbose message, we do not want to make things
+    # too complicated:
+    verb_txt_search <- paste0(verb_txt_search, "with ",
+                              ifelse(!is.null(nclusters),
+                                     paste0(nclusters, " clusters "),
+                                     paste0(ndraws, " draws (from thinning) ")))
     verb_txt_search <- paste0(verb_txt_search, "...")
     verb_out(verb_txt_search, verbose = verbose)
     search_path_fulldata <- .select(
@@ -751,8 +760,15 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
     # "Run" the performance evaluation for the submodels along the predictor
     # ranking (in fact, we only prepare the performance evaluation by computing
     # precursor quantities, but for users, this difference is not perceivable):
-    verb_out("-----\nRunning the performance evaluation with `refit_prj = ",
-             refit_prj, "` ...", verbose = verbose)
+    verb_out("-----\nRunning the performance evaluation with ",
+             ifelse(refit_prj,
+                    ifelse(!is.null(nclusters_pred),
+                           paste0(nclusters_pred, " clusters"),
+                           paste0(ndraws_pred, " draws (from thinning)")),
+                    ifelse(!is.null(nclusters),
+                           paste0(nclusters, " clusters"),
+                           paste0(ndraws, " draws (from thinning)"))),
+             " (`refit_prj = ", refit_prj, "`) ...", verbose = verbose)
     # Step 1: Re-project (using the full dataset) onto the submodels along the
     # full-data predictor ranking and evaluate their predictive performance.
     perf_eval_out <- perf_eval(
@@ -963,14 +979,23 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
     }
 
     if (verbose) {
-      verb_txt_start <- "-----\nRunning "
-      if (!search_out_rks_was_null) {
-        verb_txt_mid <- ""
-      } else {
-        verb_txt_mid <- "the search and "
-      }
-      verb_out(verb_txt_start, verb_txt_mid, "the performance evaluation with ",
-               "`refit_prj = ", refit_prj, "` for each of the N = ", nloo, " ",
+      verb_out("-----\nRunning ",
+               ifelse(!search_out_rks_was_null, "",
+                      paste0(method, " the search with ",
+                             ifelse(!is.null(nclusters),
+                                    paste0(nclusters, " clusters"),
+                                    paste0(ndraws, " draws (from thinning)")),
+                             " and ")),
+               "the performance evaluation with ",
+               ifelse(refit_prj,
+                      ifelse(!is.null(nclusters_pred),
+                             paste0(nclusters_pred, " clusters"),
+                             paste0(ndraws_pred, " draws (from thinning)")),
+                      ifelse(!is.null(nclusters),
+                             paste0(nclusters, " clusters"),
+                             paste0(ndraws, " draws (from thinning)"))),
+               " (`refit_prj = ", refit_prj,
+               "`) for each of the `nloo = ", nloo, "` ",
                "LOO-CV folds separately ...")
     }
     one_obs <- function(run_index,

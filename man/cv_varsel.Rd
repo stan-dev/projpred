@@ -32,7 +32,7 @@ cv_varsel(object, ...)
   refit_prj = !inherits(object, "datafit"),
   nterms_max = NULL,
   penalty = NULL,
-  verbose = TRUE,
+  verbose = getOption("projpred.verbose", interactive()),
   nloo = if (cv_method == "LOO") object$nobs else NULL,
   K = if (!inherits(object, "datafit")) 5 else 10,
   cvfits = object$cvfits,
