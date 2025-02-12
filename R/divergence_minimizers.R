@@ -109,7 +109,6 @@ divmin <- function(
         "projpred_var", "projpred_ws_aug", "projpred_formulas_no_random"
       )
     ) %do_projpred% {
-      if (!is.null(progressor_obj)) progressor_obj()
       mssgs_warns_capt <- capt_mssgs_warns(
         soutdmin <- do.call(
           sdivmin,
@@ -120,6 +119,7 @@ divmin <- function(
             dot_args)
         )
       )
+      if (!is.null(progressor_obj)) progressor_obj()
       return(nlist(soutdmin, mssgs_warns_capt))
     }
   }
@@ -675,7 +675,6 @@ divmin_augdat <- function(
         "projpred_ws_aug", "linkobjs"
       )
     ) %do_projpred% {
-      if (!is.null(progressor_obj)) progressor_obj()
       mssgs_warns_capt <- capt_mssgs_warns(
         soutdmin <- do.call(
           sdivmin,
@@ -688,6 +687,7 @@ divmin_augdat <- function(
             dot_args)
         )
       )
+      if (!is.null(progressor_obj)) progressor_obj()
       return(nlist(soutdmin, mssgs_warns_capt))
     }
   }
