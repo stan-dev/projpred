@@ -273,142 +273,142 @@ test_that(".srs_diff_est_w() propagates input `NA`s to its output", {
   )
 })
 
-test_that("weighted.sd() with `na.rm = FALSE` propagates input `NA`s to its output", {
+test_that(".weighted_sd() with `na.rm = FALSE` propagates input `NA`s to its output", {
   expect_identical(
-    weighted.sd(x = rep(NA, nobsv),
-                w = rep(NA, nobsv)),
+    .weighted_sd(x = rep(NA, nobsv),
+                 w = rep(NA, nobsv)),
     NA_real_,
     info = "all inputs are all-`NA`s"
   )
   expect_identical(
-    weighted.sd(x = rep(-0.8, nobsv),
-                w = c(rep_len(c(2, 3), length.out = nobsv - 1L), NA)),
+    .weighted_sd(x = rep(-0.8, nobsv),
+                 w = c(rep_len(c(2, 3), length.out = nobsv - 1L), NA)),
     NA_real_,
     info = "`x` without `NA`s, `w` with a single `NA`"
   )
   expect_identical(
-    weighted.sd(x = c(rep(-0.8, nobsv - 1L), NA),
-                w = rep_len(c(2, 3), length.out = nobsv)),
+    .weighted_sd(x = c(rep(-0.8, nobsv - 1L), NA),
+                 w = rep_len(c(2, 3), length.out = nobsv)),
     NA_real_,
     info = "`x` with a single `NA`, `w` without `NA`s"
   )
   expect_identical(
-    weighted.sd(x = rep(-0.8, nobsv),
-                w = rep(NA, nobsv)),
+    .weighted_sd(x = rep(-0.8, nobsv),
+                 w = rep(NA, nobsv)),
     NA_real_,
     info = "`x` without `NA`s, `w` all-`NA`s"
   )
   expect_identical(
-    weighted.sd(x = rep(NA, nobsv),
-                w = rep_len(c(2, 3), length.out = nobsv)),
+    .weighted_sd(x = rep(NA, nobsv),
+                 w = rep_len(c(2, 3), length.out = nobsv)),
     NA_real_,
     info = "`x` all-`NA`s, `w` without `NA`s"
   )
 })
 
-test_that("auc() works", {
+test_that(".auc() works", {
   nobsv_auc <- 19L
   expect_equal(
-    auc(cbind(rep_len(c(0, 1), length.out = nobsv_auc),
-              imperfect_alternation(c(0.3, 0.8), length.out = nobsv_auc),
-              rep(1, nobsv_auc))),
+    .auc(cbind(rep_len(c(0, 1), length.out = nobsv_auc),
+               imperfect_alternation(c(0.3, 0.8), length.out = nobsv_auc),
+               rep(1, nobsv_auc))),
     0.6833333333333333333333,
     info = "`wobs` column only `1`s"
   )
   expect_equal(
-    auc(cbind(rep_len(c(0, 1), length.out = nobsv_auc),
-              imperfect_alternation(c(0.3, 0.8), length.out = nobsv_auc),
-              imperfect_alternation(c(1, 2), n_tail = 11L, length.out = nobsv_auc))),
+    .auc(cbind(rep_len(c(0, 1), length.out = nobsv_auc),
+               imperfect_alternation(c(0.3, 0.8), length.out = nobsv_auc),
+               imperfect_alternation(c(1, 2), n_tail = 11L, length.out = nobsv_auc))),
     0.717948717948718062587,
     info = "`wobs` column with imperfect alternation of `1`s and `2`s"
   )
 })
 
-test_that("auc() propagates input `NA`s to its output", {
+test_that(".auc() propagates input `NA`s to its output", {
   nobsv_auc <- 19L
   expect_identical(
-    auc(cbind(rep(NA, nobsv_auc),
-              rep(NA, nobsv_auc),
-              rep(NA, nobsv_auc))),
+    .auc(cbind(rep(NA, nobsv_auc),
+               rep(NA, nobsv_auc),
+               rep(NA, nobsv_auc))),
     NA_real_,
     info = "all inputs are all-`NA`s"
   )
   expect_identical(
-    auc(cbind(rep(1, nobsv_auc),
-              rep(NA, nobsv_auc),
-              rep(1, nobsv_auc))),
+    .auc(cbind(rep(1, nobsv_auc),
+               rep(NA, nobsv_auc),
+               rep(1, nobsv_auc))),
     NA_real_,
     info = paste0("`resp` column without `NA`s, ",
                   "`pred` column only `NA`s, ",
                   "`wobs` column without `NA`s")
   )
   expect_identical(
-    auc(cbind(rep(1, nobsv_auc),
-              rep(NA, nobsv_auc),
-              c(rep(1, nobsv_auc - 1L), NA))),
+    .auc(cbind(rep(1, nobsv_auc),
+               rep(NA, nobsv_auc),
+               c(rep(1, nobsv_auc - 1L), NA))),
     NA_real_,
     info = paste0("`resp` column without `NA`s, ",
                   "`pred` column only `NA`s, ",
                   "`wobs` column with a single `NA`")
   )
   expect_identical(
-    auc(cbind(c(rep_len(c(0, 1), length.out = nobsv_auc - 1L), NA),
-              rep(0.7, nobsv_auc),
-              rep(1, nobsv_auc))),
+    .auc(cbind(c(rep_len(c(0, 1), length.out = nobsv_auc - 1L), NA),
+               rep(0.7, nobsv_auc),
+               rep(1, nobsv_auc))),
     NA_real_,
     info = paste0("`resp` column with a single `NA`, ",
                   "`pred` column without `NA`s, ",
                   "`wobs` column without `NA`s")
   )
   expect_identical(
-    auc(cbind(rep(NA, nobsv_auc),
-              rep(0.7, nobsv_auc),
-              rep(1, nobsv_auc))),
+    .auc(cbind(rep(NA, nobsv_auc),
+               rep(0.7, nobsv_auc),
+               rep(1, nobsv_auc))),
     NA_real_,
     info = paste0("`resp` column only `NA`s, ",
                   "`pred` column without `NA`s, ",
                   "`wobs` column without `NA`s")
   )
   expect_identical(
-    auc(cbind(c(rep_len(c(0, 1), length.out = nobsv_auc - 1L), NA),
-              c(rep(0.7, nobsv_auc - 1L), NA),
-              rep(1, nobsv_auc))),
+    .auc(cbind(c(rep_len(c(0, 1), length.out = nobsv_auc - 1L), NA),
+               c(rep(0.7, nobsv_auc - 1L), NA),
+               rep(1, nobsv_auc))),
     NA_real_,
     info = paste0("`resp` column with a single `NA`, ",
                   "`pred` column with a single `NA`, ",
                   "`wobs` column without `NA`s")
   )
   expect_identical(
-    auc(cbind(c(rep_len(c(0, 1), length.out = nobsv_auc - 1L), NA),
-              c(NA, rep(0.7, nobsv_auc - 1L)),
-              rep(1, nobsv_auc))),
+    .auc(cbind(c(rep_len(c(0, 1), length.out = nobsv_auc - 1L), NA),
+               c(NA, rep(0.7, nobsv_auc - 1L)),
+               rep(1, nobsv_auc))),
     NA_real_,
     info = paste0("`resp` column with a single `NA`, ",
                   "`pred` column with a single `NA` (at different position), ",
                   "`wobs` column without `NA`s")
   )
   expect_identical(
-    auc(cbind(c(rep_len(c(0, 1), length.out = nobsv_auc - 1L), NA),
-              rep(NA, nobsv_auc),
-              rep(1, nobsv_auc))),
+    .auc(cbind(c(rep_len(c(0, 1), length.out = nobsv_auc - 1L), NA),
+               rep(NA, nobsv_auc),
+               rep(1, nobsv_auc))),
     NA_real_,
     info = paste0("`resp` column with a single `NA`, ",
                   "`pred` column only `NA`s, ",
                   "`wobs` column without `NA`s")
   )
   expect_identical(
-    auc(cbind(rep(NA, nobsv_auc),
-              rep(0.7, nobsv_auc),
-              c(rep(1, nobsv_auc - 1L), NA))),
+    .auc(cbind(rep(NA, nobsv_auc),
+               rep(0.7, nobsv_auc),
+               c(rep(1, nobsv_auc - 1L), NA))),
     NA_real_,
     info = paste0("`resp` column only `NA`s, ",
                   "`pred` column without `NA`s, ",
                   "`wobs` column with a single `NA`")
   )
   expect_identical(
-    auc(cbind(rep_len(c(0, 1), length.out = nobsv_auc),
-              imperfect_alternation(c(0.3, 0.8), length.out = nobsv_auc),
-              rep(NA, nobsv_auc))),
+    .auc(cbind(rep_len(c(0, 1), length.out = nobsv_auc),
+               imperfect_alternation(c(0.3, 0.8), length.out = nobsv_auc),
+               rep(NA, nobsv_auc))),
     NA_real_,
     info = paste0("`resp` column without `NA`s, ",
                   "`pred` column without `NA`s, ",
