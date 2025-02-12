@@ -1036,17 +1036,26 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
       if (!requireNamespace("doRNG", quietly = TRUE)) {
         stop("Please install the 'doRNG' package.")
       }
+      if (verbose && use_progressr()) {
+        progressor_obj <- progressr::progressor(length(inds))
+      } else {
+        progressor_obj <- NULL
+      }
       dot_args <- list(...)
       `%do_projpred%` <- doRNG::`%dorng%`
       res_cv <- foreach::foreach(
         run_index = seq_along(inds),
-        .export = c("one_obs", "dot_args"),
+        .packages = c("projpred"),
+        .export = c("one_obs", "dot_args", "progressor_obj"),
         .noexport = c("mu_offs_oscale", "loglik_forPSIS", "psisloo", "y_lat_E",
                       "loo_ref_oscale", "validset", "loo_sub", "mu_sub",
                       "loo_sub_oscale", "mu_sub_oscale")
       ) %do_projpred% {
-        do.call(one_obs, c(list(run_index = run_index, verbose_search = FALSE),
-                           dot_args))
+        out_one_obs <- do.call(one_obs, c(list(run_index = run_index,
+                                               verbose_search = FALSE),
+                                          dot_args))
+        if (!is.null(progressor_obj)) progressor_obj()
+        return(out_one_obs)
       }
     }
     # For storing the fold-wise predictor rankings:
@@ -1357,17 +1366,26 @@ kfold_varsel <- function(refmodel, method, nterms_max, ndraws, nclusters,
     if (!requireNamespace("doRNG", quietly = TRUE)) {
       stop("Please install the 'doRNG' package.")
     }
+    if (verbose && use_progressr()) {
+      progressor_obj <- progressr::progressor(length(list_cv))
+    } else {
+      progressor_obj <- NULL
+    }
     dot_args <- list(...)
     `%do_projpred%` <- doRNG::`%dorng%`
     res_cv <- foreach::foreach(
       list_cv_k = list_cv,
       search_out_rks_k = search_out_rks,
-      .export = c("one_fold", "dot_args"),
+      .packages = c("projpred"),
+      .export = c("one_fold", "dot_args", "progressor_obj"),
       .noexport = c("list_cv", "search_out_rks")
     ) %do_projpred% {
-      do_call(one_fold, c(list(fold = list_cv_k, rk = search_out_rks_k,
-                               verbose_search = FALSE),
-                          dot_args))
+      out_one_fold <- do_call(one_fold, c(list(fold = list_cv_k,
+                                               rk = search_out_rks_k,
+                                               verbose_search = FALSE),
+                                          dot_args))
+      if (!is.null(progressor_obj)) progressor_obj()
+      return(out_one_fold)
     }
   }
   verb_out("-----", verbose = verbose)

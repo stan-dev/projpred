@@ -91,13 +91,19 @@ divmin <- function(
     if (!requireNamespace("iterators", quietly = TRUE)) {
       stop("Please install the 'iterators' package.")
     }
+    if (verbose_divmin && use_progressr()) {
+      progressor_obj <- progressr::progressor(length(formulas))
+    } else {
+      progressor_obj <- NULL
+    }
     dot_args <- list(...)
     `%do_projpred%` <- foreach::`%dopar%`
     outdmin <- foreach::foreach(
       formula_s = formulas,
       projpred_var_s = iterators::iter(projpred_var, by = "column"),
       projpred_formula_no_random_s = projpred_formulas_no_random,
-      .export = c("sdivmin", "projpred_random", "dot_args"),
+      .packages = c("projpred"),
+      .export = c("sdivmin", "projpred_random", "dot_args", "progressor_obj"),
       .noexport = c(
         "object", "p_sel", "search_path", "p_ref", "refmodel", "formulas",
         "projpred_var", "projpred_ws_aug", "projpred_formulas_no_random"
@@ -113,6 +119,7 @@ divmin <- function(
             dot_args)
         )
       )
+      if (!is.null(progressor_obj)) progressor_obj()
       return(nlist(soutdmin, mssgs_warns_capt))
     }
   }
@@ -649,13 +656,19 @@ divmin_augdat <- function(
     if (!requireNamespace("iterators", quietly = TRUE)) {
       stop("Please install the 'iterators' package.")
     }
+    if (verbose_divmin && use_progressr()) {
+      progressor_obj <- progressr::progressor(ncol(projpred_ws_aug))
+    } else {
+      progressor_obj <- NULL
+    }
     dot_args <- list(...)
     `%do_projpred%` <- foreach::`%dopar%`
     outdmin <- foreach::foreach(
       projpred_w_aug_s = iterators::iter(projpred_ws_aug, by = "column"),
+      .packages = c("projpred"),
       .export = c(
         "sdivmin", "formula", "data", "family", "projpred_formula_no_random",
-        "projpred_random", "dot_args"
+        "projpred_random", "dot_args", "progressor_obj"
       ),
       .noexport = c(
         "object", "p_sel", "search_path", "p_ref", "refmodel", "projpred_var",
@@ -674,6 +687,7 @@ divmin_augdat <- function(
             dot_args)
         )
       )
+      if (!is.null(progressor_obj)) progressor_obj()
       return(nlist(soutdmin, mssgs_warns_capt))
     }
   }
