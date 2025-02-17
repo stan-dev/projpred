@@ -387,7 +387,6 @@ varsel.refmodel <- function(
   if (!is.null(search_out)) {
     search_path <- search_out[["search_path"]]
   } else {
-    verb_out("-----\nRunning the search ...", verbose = verbose)
     search_path <- .select(
       refmodel = refmodel, ndraws = ndraws, nclusters = nclusters,
       method = method, nterms_max = nterms_max, penalty = penalty,
@@ -395,22 +394,18 @@ varsel.refmodel <- function(
       search_terms = search_terms,
       search_terms_was_null = search_terms_was_null, ...
     )
-    verb_out("-----", verbose = verbose)
   }
 
   # "Run" the performance evaluation for the submodels along the predictor
   # ranking (in fact, we only prepare the performance evaluation by computing
   # precursor quantities, but for users, this difference is not perceivable):
-  verb_out("-----\nRunning the performance evaluation with `refit_prj = ",
-           refit_prj, "` ...", verbose = verbose)
   perf_eval_out <- perf_eval(
     search_path = search_path, refmodel = refmodel, refit_prj = refit_prj,
     ndraws = ndraws_pred, nclusters = nclusters_pred, indices_test = NULL,
     newdata_test = d_test$data, offset_test = d_test$offset,
     wobs_test = d_test$weights, y_test = d_test$y,
-    y_oscale_test = d_test$y_oscale, ...
+    y_oscale_test = d_test$y_oscale, verbose = verbose, ...
   )
-  verb_out("-----", verbose = verbose)
 
   # Predictive performance of the reference model:
   if (inherits(refmodel, "datafit")) {
@@ -516,6 +511,9 @@ varsel.refmodel <- function(
 #   weights), then this needs to be a `list` with elements `wdraws_ref` and
 #   `cl_ref`. For these two elements, see the (internal) documentation of
 #   weighted_summary_means().
+# @param verbose_txt_obs Passed to `...` of verb_out(), so character string(s)
+#   to be included in the verbose message indicating the start of the search.
+#   May also be `NULL` to omit that verbose message completely.
 # For all other arguments, see the documentation of varsel().
 #
 # @return A list with elements `predictor_ranking` (the predictor ranking
@@ -524,7 +522,8 @@ varsel.refmodel <- function(
 #   of fits per model size being equal to the number of projected draws), and
 #   `p_sel` (the output from get_refdist() for the search).
 .select <- function(refmodel, ndraws, nclusters, reweighting_args = NULL,
-                    method, nterms_max, penalty, verbose, search_control, ...) {
+                    method, nterms_max, penalty, verbose, verbose_txt_obs = "",
+                    search_control, ...) {
   if (is.null(reweighting_args)) {
     p_sel <- get_refdist(refmodel, ndraws = ndraws, nclusters = nclusters)
   } else {
@@ -534,6 +533,12 @@ varsel.refmodel <- function(
       mu_offs = refmodel$mu_offs, dis = refmodel$dis,
       wdraws = reweighting_args$wdraws_ref, cl = reweighting_args$cl_ref
     )
+  }
+
+  if (!is.null(verbose_txt_obs)) {
+    verb_out("-----\nRunning ", method, " search ", verbose_txt_obs, "with ",
+             txt_clust_draws(p_sel[["clust_used"]], p_sel[["nprjdraws"]]),
+             " ...", verbose = verbose)
   }
   if (method == "L1") {
     search_path <- search_L1(
@@ -546,6 +551,10 @@ varsel.refmodel <- function(
       verbose = verbose, search_control = search_control, ...
     )
   }
+  if (!is.null(verbose_txt_obs)) {
+    verb_out("-----", verbose = verbose)
+  }
+
   search_path$p_sel <- p_sel
   return(search_path)
 }
