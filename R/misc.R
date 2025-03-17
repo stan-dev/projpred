@@ -14,7 +14,7 @@ nms_y_wobs_test <- function(wobs_nm = "wobs") {
   c("y", "y_oscale", wobs_nm)
 }
 
-weighted.sd <- function(x, w, na.rm = FALSE) {
+.weighted_sd <- function(x, w, na.rm = FALSE) {
   if (length(w) == 1 && length(x) > 1) {
     w <- rep_len(w, length.out = length(x))
   }
@@ -66,7 +66,7 @@ ilinkfun_raw <- function(x, link_nm) {
   return(basic_ilink(x))
 }
 
-auc <- function(x) {
+.auc <- function(x) {
   resp <- x[, 1]
   pred <- x[, 2]
   wobs <- x[, 3]

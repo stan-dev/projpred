@@ -376,7 +376,7 @@ varsel.refmodel <- function(object, d_test = NULL, method = "forward",
     search_path <- search_out[["search_path"]]
   } else {
     verb_out("-----\nRunning the search ...", verbose = verbose)
-    search_path <- select(
+    search_path <- .select(
       refmodel = refmodel, ndraws = ndraws, nclusters = nclusters,
       method = method, nterms_max = nterms_max, penalty = penalty,
       verbose = verbose, search_control = search_control,
@@ -511,8 +511,8 @@ varsel.refmodel <- function(object, d_test = NULL, method = "forward",
 #   `outdmins` (the submodel fits along the predictor ranking, with the number
 #   of fits per model size being equal to the number of projected draws), and
 #   `p_sel` (the output from get_refdist() for the search).
-select <- function(refmodel, ndraws, nclusters, reweighting_args = NULL, method,
-                   nterms_max, penalty, verbose, search_control, ...) {
+.select <- function(refmodel, ndraws, nclusters, reweighting_args = NULL,
+                    method, nterms_max, penalty, verbose, search_control, ...) {
   if (is.null(reweighting_args)) {
     p_sel <- get_refdist(refmodel, ndraws = ndraws, nclusters = nclusters)
   } else {
