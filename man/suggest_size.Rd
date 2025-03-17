@@ -76,8 +76,7 @@ interval (with nominal coverage \code{1 - alpha}; see argument \code{alpha} of
 falls above (or is equal to) \deqn{\texttt{pct} \cdot (u_0 -
   u_{\mathrm{base}})}{pct * (u_0 - u_base)} where \eqn{u_0} denotes the null
 model's estimated utility and \eqn{u_{\mathrm{base}}}{u_base} the baseline
-model's estimated utility. The baseline model is either the reference model
-or the best submodel found (see argument \code{baseline} of \code{\link[=summary.vsel]{summary.vsel()}}).
+model's estimated utility.
 
 In doing so, loss statistics like the root mean squared error (RMSE) and
 the mean squared error (MSE) are converted to utilities by multiplying them

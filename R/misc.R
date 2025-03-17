@@ -199,21 +199,16 @@ validate_vsel_object_stats <- function(object, stats, resp_oscale = TRUE) {
   return(invisible(TRUE))
 }
 
-validate_baseline <- function(vsel_obj, baseline, deltas) {
+validate_baseline <- function(refmodel, baseline, deltas) {
   stopifnot(!is.null(baseline))
-  if (!(baseline %in% c("ref", "best"))) {
-    stop("Argument 'baseline' must be either 'ref' or 'best'.")
+  if (!(baseline %in% c("ref"))) {
+    stop("Argument 'baseline' must be 'ref'.")
   }
-  if (baseline == "ref" && deltas == TRUE &&
-      inherits(vsel_obj$refmodel, "datafit")) {
+  if (baseline == "ref" && deltas == TRUE && inherits(refmodel, "datafit")) {
     # no reference model (or the results missing for some other reason),
     # so cannot compute differences (or ratios) vs. the reference model
     stop("Cannot use deltas = TRUE and baseline = 'ref' when there is no ",
          "reference model.")
-  }
-  if (baseline == "best" && vsel_obj$cv_method == "LOO" &&
-      isTRUE(vsel_obj$nloo < vsel_obj$refmodel$nobs)) {
-    stop("Cannot use `baseline = \"best\"` in case of subsampled LOO-CV.")
   }
   return(baseline)
 }
