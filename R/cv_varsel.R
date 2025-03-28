@@ -797,10 +797,11 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
     }
     if (nrow(log_lik_ref) > 1) {
       # Take into account that clustered draws usually have different weights:
-      lw_sub <- log_lik_ref + log(refdist_eval$wdraws_prj)
+      lwref_lwdraws <- -log_lik_ref + log(refdist_eval$wdraws_prj)
       # This re-weighting requires a re-normalization (as.array() is applied to
       # have stricter consistency checks, see `?sweep`):
-      lw_sub <- sweep(lw_sub, 2, as.array(apply(lw_sub, 2, log_sum_exp)))
+      lwref_lwdraws <- sweep(lwref_lwdraws, 2, as.array(apply(lwref_lwdraws, 2,
+                                                              log_sum_exp)))
       # Internally, loo::psis() doesn't perform the Pareto smoothing if the
       # number of draws is small (as indicated by object `no_psis_eval`, see
       # below). In projpred, this can occur, e.g., if users request a number
@@ -818,14 +819,8 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
       if (no_psis_eval) {
         if (getOption("projpred.warn_psis", TRUE)) {
           message(
-            "Using standard importance sampling (SIS) due to a small number of",
-            ifelse(refit_prj,
-                   ifelse(!is.null(nclusters_pred),
-                          " clusters",
-                          " draws (from thinning)"),
-                   ifelse(!is.null(nclusters),
-                          " clusters",
-                          " draws (from thinning)"))
+            "Using standard importance sampling (SIS) due to a small number of ",
+            ifelse(clust_used_eval, "clusters", "draws (from thinning)"), "."
           )
         }
         # Use loo::sis().
@@ -840,14 +835,14 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
         # Use loo::psis().
         # Usually, we have a small number of projected draws here (400 by
         # default), which means that the 'loo' package will automatically
-        # perform the regularization from Vehtari et al. (2022,
-        # <https://doi.org/10.48550/arXiv.1507.02646>, appendix G).
+        # perform the regularization from Vehtari et al. (2024,
+        # <https://jmlr.org/papers/v25/19-556.html>, appendix G).
         importance_sampling_nm <- "psis"
       }
       importance_sampling_func <- get(importance_sampling_nm,
                                       asNamespace("loo"))
       mssgs_warns_capt <- capt_mssgs_warns(
-        sub_psisloo <- importance_sampling_func(-log_lik_ref, cores = 1,
+        sub_psisloo <- importance_sampling_func(lwref_lwdraws, cores = 1,
                                                 r_eff = NA)
       )
       mssgs_warns_capt <- setdiff(mssgs_warns_capt, "")
@@ -869,8 +864,8 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
             "Some (%d / %d) Pareto k's for the reference model's PSIS-LOO ",
             "weights given ",
             ifelse(clust_used_eval,
-                   paste0(nclusters_pred, " clustered "),
-                   paste0(ndraws_pred, " posterior ")),
+                   paste0(nclusters_pred, " clustered "), # TODO: Use `nprjdraws_eval` here?
+                   paste0(ndraws_pred, " posterior ")), # TODO: Use `nprjdraws_eval` here?
             "draws are > %s."
           )
         )
