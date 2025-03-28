@@ -1,8 +1,8 @@
 .onAttach <- function(...) {
   ver <- utils::packageVersion("projpred")
   msg <- paste0("This is projpred version ", ver, ".")
-  msg <- paste0(msg, " ", "NOTE: In projpred 2.7.0, the default search method ",
-                "was set to \"forward\" (for all kinds of models).")
+  msg <- paste0(msg, "\n", "NOTE: In projpred 2.7.0, the default search ",
+                "method was set to \"forward\" (for all kinds of models).")
   packageStartupMessage(msg)
 }
 
@@ -273,6 +273,7 @@ get_standard_y <- function(y, weights, fam) {
 #   * `mu`: An \eqn{N \times S_{\mathrm{prj}}}{N x S_prj} matrix of expected
 #   values for \eqn{y} (probabilities for the response categories in case of the
 #   augmented-data projection) for each draw/cluster.
+#   * `mu_offs`: Same as `mu`, but taking offsets into account.
 #   * `var`: An \eqn{N \times S_{\mathrm{prj}}}{N x S_prj} matrix of predictive
 #   variances for \eqn{y} for each draw/cluster which are needed for projecting
 #   the dispersion parameter (the predictive variances are NA for those families
@@ -282,6 +283,9 @@ get_standard_y <- function(y, weights, fam) {
 #   those families that do not have a dispersion parameter).
 #   * `wdraws_prj`: A vector of length \eqn{S_{\mathrm{prj}}}{S_prj} containing
 #   the weights for the projected draws/clusters.
+#   * `const_wdraws_prj`: A single logical value indicating whether all
+#   projected draws have the same weight.
+#   * `nprjdraws`: A single value: \eqn{S_{\mathrm{prj}}}{S_prj}.
 #   * `cl`: Cluster assignment for each posterior draw, that is, a vector that
 #   has length equal to the number of posterior draws and each value is an
 #   integer between 1 and \eqn{S_{\mathrm{prj}}}{S_prj}.
@@ -295,6 +299,8 @@ get_standard_y <- function(y, weights, fam) {
 #   `refmodel` object anyway). However, get_p_clust() intentionally seems to
 #   have been kept as general as possible and `wdraws_orig` is more general than
 #   `wdraws_ref`.
+#   * `clust_used`: A single logical value indicating whether clustering (i.e.,
+#   get_p_clust()) has been used.
 get_refdist <- function(refmodel, ndraws = NULL, nclusters = NULL,
                         thinning = TRUE,
                         throw_mssg_ndraws = getOption("projpred.mssg_ndraws",
@@ -612,6 +618,23 @@ verb_out <- function(..., verbose = TRUE) {
   if (verbose) {
     cat(..., "\n", sep = "")
   }
+}
+
+# Helper function intended for use in verbose messages:
+txt_clust_draws <- function(clust_used, nprjdraws) {
+  out <- paste0(nprjdraws, " ")
+  if (clust_used) {
+    out <- paste0(out, "cluster")
+  } else {
+    out <- paste0(out, "draw")
+  }
+  if (nprjdraws > 1) {
+    out <- paste0(out, "s")
+  }
+  if (!clust_used) {
+    out <- paste0(out, " (from thinning)")
+  }
+  return(out)
 }
 
 # Ensure that stderr() is used for throwing an error, even while sink()-ing or
