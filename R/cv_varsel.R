@@ -264,7 +264,7 @@ cv_varsel.refmodel <- function(
     refit_prj = !inherits(object, "datafit"),
     nterms_max = NULL,
     penalty = NULL,
-    verbose = TRUE,
+    verbose = getOption("projpred.verbose", interactive()),
     nloo = if (cv_method == "LOO") object$nobs else NULL,
     K = if (!inherits(object, "datafit")) 5 else 10,
     cvfits = object$cvfits,
@@ -340,23 +340,17 @@ cv_varsel.refmodel <- function(
   if (!is.null(search_out)) {
     search_path_fulldata <- search_out[["search_path"]]
   } else {
-    verb_txt_search <- "-----\nRunning the search "
-    if (validate_search) {
-      # Point out that this is the full-data search (if `validate_search` is
-      # `FALSE`, this is still a full-data search, but in that case, there are
-      # no fold-wise searches, so pointing out "full-data" could be confusing):
-      verb_txt_search <- paste0(verb_txt_search, "using the full dataset ")
-    }
-    verb_txt_search <- paste0(verb_txt_search, "...")
-    verb_out(verb_txt_search, verbose = verbose)
     search_path_fulldata <- .select(
       refmodel = refmodel, ndraws = ndraws, nclusters = nclusters,
       method = method, nterms_max = nterms_max, penalty = penalty,
-      verbose = verbose, search_control = search_control,
-      search_terms = search_terms,
+      verbose = verbose,
+      # NOTE: If `!validate_search`, this is still a full-data search, but in
+      # that case, there are no fold-wise searches, so declaring this as a
+      # full-data search could be confusing:
+      verbose_txt_obs = if (validate_search) "using the full dataset " else "",
+      search_control = search_control, search_terms = search_terms,
       search_terms_was_null = search_terms_was_null, ...
     )
-    verb_out("-----", verbose = verbose)
   }
 
   if (!is.null(search_out) && validate_search) {
@@ -751,21 +745,21 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
     # "Run" the performance evaluation for the submodels along the predictor
     # ranking (in fact, we only prepare the performance evaluation by computing
     # precursor quantities, but for users, this difference is not perceivable):
-    verb_out("-----\nRunning the performance evaluation with `refit_prj = ",
-             refit_prj, "` ...", verbose = verbose)
-    # Step 1: Re-project (using the full dataset) onto the submodels along the
-    # full-data predictor ranking and evaluate their predictive performance.
+    # * Step 1: Re-project (using the full dataset) onto the submodels along the
+    #   full-data predictor ranking and evaluate their predictive performance.
     perf_eval_out <- perf_eval(
       search_path = search_path_fulldata, refmodel = refmodel,
       refit_prj = refit_prj, ndraws = ndraws_pred, nclusters = nclusters_pred,
-      return_p_ref = TRUE, return_preds = TRUE, indices_test = inds, ...
+      return_p_ref = TRUE, return_preds = TRUE, indices_test = inds,
+      verbose = verbose, ...
     )
     clust_used_eval <- perf_eval_out[["clust_used"]]
     nprjdraws_eval <- perf_eval_out[["nprjdraws"]]
     refdist_eval <- perf_eval_out[["p_ref"]]
-
-    # Step 2: Weight the full-data performance evaluation results according to
-    # the PSIS-LOO-CV weights.
+    # * Step 2: Weight the full-data performance evaluation results according to
+    #   the PSIS-LOO-CV weights.
+    verb_out("-----\nWeighting the full-data performance evaluation results ",
+             "using the PSIS-LOO-CV weights ...", verbose = verbose)
     if (refmodel$family$for_latent) {
       refdist_eval_mu_offs_oscale <- refmodel$family$latent_ilink(
         t(refdist_eval$mu_offs), cl_ref = refdist_eval$cl,
@@ -955,23 +949,44 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
 
     search_out_rks_was_null <- is.null(search_out_rks)
     if (search_out_rks_was_null) {
-      cl_sel <- get_refdist(refmodel, ndraws = ndraws, nclusters = nclusters)$cl
+      refdist_sel <- get_refdist(refmodel, ndraws = ndraws,
+                                 nclusters = nclusters)
+    } else {
+      refdist_sel <- NULL
     }
+    cl_sel <- refdist_sel$cl
     if (refit_prj) {
-      cl_pred <- get_refdist(refmodel, ndraws = ndraws_pred,
-                             nclusters = nclusters_pred)$cl
+      refdist_pred <- get_refdist(refmodel, ndraws = ndraws_pred,
+                                  nclusters = nclusters_pred)
+    } else {
+      refdist_pred <- NULL
     }
+    cl_pred <- refdist_pred$cl
 
     if (verbose) {
-      verb_txt_start <- "-----\nRunning "
-      if (!search_out_rks_was_null) {
-        verb_txt_mid <- ""
+      if (refit_prj) {
+        verb_clust_used_eval <- refdist_pred[["clust_used"]]
+        verb_nprjdraws_eval <- refdist_pred[["nprjdraws"]]
       } else {
-        verb_txt_mid <- "the search and "
+        # NOTE: `!refit_prj` cannot occur in combination with
+        # `!search_out_rks_was_null`, so it is correct and safe to use
+        # `refdist_sel` here.
+        verb_clust_used_eval <- refdist_sel[["clust_used"]]
+        verb_nprjdraws_eval <- refdist_sel[["nprjdraws"]]
       }
-      verb_out(verb_txt_start, verb_txt_mid, "the performance evaluation with ",
-               "`refit_prj = ", refit_prj, "` for each of the N = ", nloo, " ",
-               "LOO-CV folds separately ...")
+      verb_out("-----\nRunning ",
+               if (!search_out_rks_was_null) {
+                 ""
+               } else {
+                 paste0(method, " search with ",
+                        txt_clust_draws(refdist_sel[["clust_used"]],
+                                        refdist_sel[["nprjdraws"]]),
+                        " and ")
+               },
+               "the performance evaluation with ",
+               txt_clust_draws(verb_clust_used_eval, verb_nprjdraws_eval),
+               " (`refit_prj = ", refit_prj, "`) for each of the `nloo = ",
+               nloo, "` LOO-CV folds separately ...")
     }
     one_obs <- function(run_index,
                         verbose_search = verbose &&
@@ -991,7 +1006,24 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
           refmodel = refmodel, ndraws = ndraws, nclusters = nclusters,
           reweighting_args = list(cl_ref = cl_sel, wdraws_ref = exp(lw[, i])),
           method = method, nterms_max = nterms_max, penalty = penalty,
-          verbose = verbose_search, search_control = search_control,
+          verbose = verbose_search,
+          verbose_txt_obs = NULL,
+          # TODO: get_p_clust() is always used here, but only for reweighting
+          # the draws according to the PSIS weights. This is a general problem,
+          # though (not only affecting verbose mode). Hence, it would be better
+          # to modify get_p_clust() in order to add an argument there which is
+          # passed as an element of `reweighting_args` and which overwrites
+          # get_p_clust()'s output element `clust_used`. Afterwards, we can use
+          # a non-`NULL` text for `verbose_txt_obs` mentioning that this is for
+          # a single fold, namely fold `i`, and also remove the possibility of
+          # `verbose_txt_obs = NULL` in .select() (and then also remove
+          # `May also be `NULL` to omit that verbose message completely.` in the
+          # corresponding internal documentation). Then also set `verbose =
+          # verbose_search` in the perf_eval() call below and rename
+          # `verbose_search` to something like `verbose_folds` (and don't forget
+          # to update the general package documentation for global option
+          # `projpred.extra_verbose`).
+          search_control = search_control,
           search_terms = search_terms, est_runtime = FALSE, ...
         )
       }
@@ -1283,15 +1315,43 @@ kfold_varsel <- function(refmodel, method, nterms_max, ndraws, nclusters,
   y_wobs_test <- as.data.frame(refmodel[nms_y_wobs_test()])
 
   if (verbose) {
-    verb_txt_start <- "-----\nRunning "
-    if (!search_out_rks_was_null || !validate_search) {
-      verb_txt_mid <- ""
+    # Here in kfold_varsel(), we have no get_refdist() (or get_p_clust()) output
+    # object whose elements `clust_used` and `nprjdraws` we could use, so we
+    # have to rely on a workaround:
+    verb_clust_used_sel <- !is.null(nclusters) &&
+      nclusters < length(refmodel$wdraws_ref)
+    if (verb_clust_used_sel) {
+      verb_nprjdraws_sel <- nclusters
     } else {
-      verb_txt_mid <- "the search and "
+      verb_nprjdraws_sel <- ndraws
     }
-    verb_out(verb_txt_start, verb_txt_mid, "the performance evaluation with ",
-             "`refit_prj = ", refit_prj, "` for each of the K = ", K, " CV ",
-             "folds separately ...")
+    if (refit_prj) {
+      verb_clust_used_eval <- !is.null(nclusters_pred) &&
+        nclusters_pred < length(refmodel$wdraws_ref)
+      if (verb_clust_used_eval) {
+        verb_nprjdraws_eval <- nclusters_pred
+      } else {
+        verb_nprjdraws_eval <- ndraws_pred
+      }
+    } else {
+      # NOTE: `!refit_prj` cannot occur in combination with
+      # `!search_out_rks_was_null || !validate_search`, so it is correct and
+      # safe to use `verb_clust_used_sel` and `verb_nprjdraws_sel` here.
+      verb_clust_used_eval <- verb_clust_used_sel
+      verb_nprjdraws_eval <- verb_nprjdraws_sel
+    }
+    verb_out("-----\nRunning ",
+             if (!search_out_rks_was_null || !validate_search) {
+               ""
+             } else {
+               paste0(method, " search with ",
+                      txt_clust_draws(verb_clust_used_sel, verb_nprjdraws_sel),
+                      " and ")
+             },
+             "the performance evaluation with ",
+             txt_clust_draws(verb_clust_used_eval, verb_nprjdraws_eval),
+             " (`refit_prj = ", refit_prj, "`) for each of the K = ", K,
+             " CV folds separately ...")
   }
   one_fold <- function(fold,
                        rk,
@@ -1307,7 +1367,15 @@ kfold_varsel <- function(refmodel, method, nterms_max, ndraws, nclusters,
       search_path <- .select(
         refmodel = fold$refmodel, ndraws = ndraws, nclusters = nclusters,
         method = method, nterms_max = nterms_max, penalty = penalty,
-        verbose = verbose_search, search_control = search_control,
+        verbose = verbose_search,
+        verbose_txt_obs = NULL,
+        # TODO: When using a non-`NULL` text for `verbose_txt_obs` in one_obs(),
+        # also do this here in one_fold(). Then also set `verbose =
+        # verbose_search` in the perf_eval() call below and rename
+        # `verbose_search` to something like `verbose_folds` (and don't forget
+        # to update the general package documentation for global option
+        # `projpred.extra_verbose`).
+        search_control = search_control,
         search_terms = search_terms, est_runtime = FALSE, ...
       )
     }
