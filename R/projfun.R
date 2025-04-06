@@ -60,6 +60,7 @@ perf_eval <- function(search_path,
                       wobs_test = refmodel_fulldata$wobs[indices_test],
                       y_test = refmodel_fulldata$y[indices_test],
                       y_oscale_test = refmodel_fulldata$y_oscale[indices_test],
+                      verbose = FALSE,
                       ...) {
   if (!refit_prj) {
     p_ref <- search_path$p_sel
@@ -94,16 +95,27 @@ perf_eval <- function(search_path,
       ))
     }
   }
+  if (return_submodls) {
+    # Deactivate the verbose message mentioning "performance evaluation" because
+    # there is no performance evaluation taking place if `return_submodls` is
+    # `TRUE` (this is currently only the case if perf_eval() is called from
+    # project()).
+    verbose <- FALSE
+  }
+  verb_out("-----\nRunning the performance evaluation with ",
+           txt_clust_draws(p_ref[["clust_used"]], p_ref[["nprjdraws"]]),
+           " (`refit_prj = ", refit_prj, "`) ...", verbose = verbose)
   out_by_size <- lapply(nterms, function(size_j) {
     # Fetch the init_submodl() output (of class `submodl`) for the submodel at
     # position `size_j + 1` of the predictor ranking:
     submodl <- fetch_submodl(size_j, ...)
     if (return_submodls) {
-      # Currently only called in project().
+      # Currently only the case if called from project().
       return(submodl)
     }
     if (return_preds) {
-      # Currently only called in loo_varsel()'s `validate_search = FALSE` case.
+      # Currently only the case if called in loo_varsel()'s `validate_search =
+      # FALSE` case.
       mu_j <- refmodel$mu_fun(submodl$outdmin, obs = indices_test,
                               offset = refmodel$offset[indices_test])
       lppd_j <- t(refmodel$family$ll_fun(
@@ -130,6 +142,7 @@ perf_eval <- function(search_path,
     }
     return(c(out_j, list(ce = submodl[["ce"]])))
   })
+  verb_out("-----", verbose = verbose)
   if (return_submodls) {
     return(out_by_size)
   }

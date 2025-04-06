@@ -10,11 +10,13 @@ If you read this from a place other than <https://mc-stan.org/projpred/news/inde
 * The confidence interval for performance statistic `"mse"` is now based on a log-normal approximation (instead of a normal approximation) if argument `deltas` of `summary.vsel()` or `plot.vsel()` is `FALSE`. (GitHub: #496)
 * The standard error for performance statistic `"rmse"` is now computed via the delta method (instead of bootstrapping). The confidence interval for `"rmse"` is now based on a log-normal approximation (instead of bootstrapping) if argument `deltas` of `summary.vsel()` or `plot.vsel()` is `FALSE` and based on a normal approximation (instead of bootstrapping) if `deltas` is `TRUE`. (GitHub: #496)
 * Performance statistic `"R2"` (R-squared) has been added, see argument `stats` of `summary.vsel()` and `plot.vsel()`; argument `stat` of `suggest_size()` supports it as well. (GitHub: #483, #496)
+* The performance evaluation part of `cv_varsel()` with `cv_method = "LOO"` and `validate_search = FALSE` now always applies Pareto smoothing when computing the importance sampling weights (as long as the number of importance ratios in the tail is large enough; otherwise, no Pareto smoothing is applied). Previously, in case of projected draws with nonconstant weights (i.e., in case of clustering), no Pareto smoothing had been applied. (GitHub: #496, #507)
 
 ## Minor changes
 
 * Use the updated threshold for high Pareto-$\hat{k}$ values presented by Vehtari et al. (2024, "Pareto smoothed importance sampling", *Journal of Machine Learning Research*, 25(72):1-58, <https://www.jmlr.org/papers/v25/19-556.html>). This threshold depends on the Monte Carlo sample size and is often close to the former fixed threshold of 0.7 (a short introduction may also be found in the [LOO glossary](https://mc-stan.org/loo/reference/loo-glossary.html)). Correspondingly, the former "secondary" threshold of 0.5 is not used anymore either. (GitHub: #490, #498)
 * When using the **doFuture** backend for parallelization, progression updates can now be received via the **progressr** package, see `` ?`projpred-package` `` (section "Parallelization"). (GitHub: #504)
+* Minor enhancements concerning verbosity (e.g., the number of projected draws---resulting from clustering or thinning---is now printed out during the different steps of the computations). Also introduced global option `projpred.verbose` which may be used to set argument `verbose` of `varsel()` and `cv_varsel()` globally. (GitHub: #506)
 
 # projpred 2.8.0
 

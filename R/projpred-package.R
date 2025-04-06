@@ -84,6 +84,9 @@
 #'
 #' # Verbosity, messages, warnings, errors
 #'
+#' Global option `projpred.verbose` may be used for specifying the value (`TRUE`
+#' or `FALSE`) passed to argument `verbose` of [varsel()] and [cv_varsel()].
+#'
 #' Setting global option `projpred.extra_verbose` to `TRUE` will print out which
 #' submodel \pkg{projpred} is currently projecting onto as well as (if `method =
 #' "forward"` and `verbose = TRUE` in [varsel()] or [cv_varsel()]) which

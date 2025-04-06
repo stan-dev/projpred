@@ -82,6 +82,9 @@ object inherits from class \code{gam}).
 }
 
 \section{Verbosity, messages, warnings, errors}{
+Global option \code{projpred.verbose} may be used for specifying the value (\code{TRUE}
+or \code{FALSE}) passed to argument \code{verbose} of \code{\link[=varsel]{varsel()}} and \code{\link[=cv_varsel]{cv_varsel()}}.
+
 Setting global option \code{projpred.extra_verbose} to \code{TRUE} will print out which
 submodel \pkg{projpred} is currently projecting onto as well as (if \code{method = "forward"} and \code{verbose = TRUE} in \code{\link[=varsel]{varsel()}} or \code{\link[=cv_varsel]{cv_varsel()}}) which
 submodel has been selected at those steps of the forward search for which a
