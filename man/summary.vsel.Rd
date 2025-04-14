@@ -78,21 +78,25 @@ supported in case of subsampled LOO-CV (see argument \code{nloo} of
 }}
 
 \item{type}{One or more items from \code{"mean"}, \code{"se"}, \code{"lower"}, \code{"upper"},
-\code{"diff"}, and \code{"diff.se"} indicating which of these to compute for each
-item from \code{stats} (mean, standard error, lower and upper confidence
-interval bounds, mean difference to the corresponding statistic of the
-reference model, and standard error of this difference, respectively; note
-that for the GMPD, \code{"diff"}, and \code{"diff.se"} actually refer to the ratio
-vs. the reference model, not the difference). The confidence interval
-bounds belong to confidence intervals with (nominal) coverage \code{1 - alpha}.
-Items \code{"diff"} and \code{"diff.se"} are only supported if \code{deltas} is \code{FALSE}.}
+\code{"diff"}, \code{"diff.lower"}, \code{"diff.upper"}, and \code{"diff.se"} indicating which
+of these to compute for each item from \code{stats} (mean, standard error, lower
+and upper confidence interval bounds, mean difference to the corresponding
+statistic of the reference model, lower and upper confidence interval bound
+for this difference, and standard error of this difference, respectively;
+note that for the GMPD, \code{"diff"}, \code{"diff.lower"}, \code{"diff.upper"}, and
+\code{"diff.se"} actually refer to the ratio vs. the reference model, not the
+difference). The confidence interval bounds belong to confidence intervals
+with (nominal) coverage \code{1 - alpha}. Items \code{"diff"}, \code{"diff.lower"},
+\code{"diff.upper"}, and \code{"diff.se"} are only supported if \code{deltas} is \code{FALSE}.}
 
-\item{deltas}{If \code{TRUE}, the submodel statistics are estimated relatively to
-the baseline model (see argument \code{baseline}). For the GMPD, the term
-"relatively" refers to the ratio vs. the baseline model (i.e., the submodel
-statistic divided by the baseline model statistic). For all other \code{stats},
-"relatively" refers to the difference from the baseline model (i.e., the
-submodel statistic minus the baseline model statistic).}
+\item{deltas}{May be set to \code{FALSE} or \code{TRUE}. If \code{FALSE}, the submodel
+performance statistics are estimated on their actual scale. If \code{TRUE}, the
+submodel statistics are estimated relatively to the baseline model (see
+argument \code{baseline}). For the GMPD, the term "relatively" refers to the
+\emph{ratio} vs. the baseline model (i.e., the submodel statistic divided by the
+baseline model statistic). For all other \code{stats}, "relatively" refers to
+the \emph{difference} from the baseline model (i.e., the submodel statistic
+minus the baseline model statistic).}
 
 \item{alpha}{A number determining the (nominal) coverage \code{1 - alpha} of the
 confidence intervals. For example, in case of a normal-approximation
