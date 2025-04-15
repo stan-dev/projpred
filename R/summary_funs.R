@@ -116,14 +116,16 @@ weighted_summary_means <- function(y_wobs_test, family, wdraws, mu, dis, cl_ref,
       ref_lppd_NA <- all(is.na(summaries_ref$lppd))
       sub_lppd_NA <- any(sapply(summaries_sub, check_sub_NA, el_nm = "lppd"))
       if (!is.null(summaries_fast_sub)) {
-        fast_sub_lppd_NA <- any(sapply(summaries_fast_sub, check_sub_NA, el_nm = "lppd"))
+        fast_sub_lppd_NA <- any(sapply(summaries_fast_sub, check_sub_NA,
+                                       el_nm = "lppd"))
       } else {
         fast_sub_lppd_NA <- FALSE
       }
       ref_mu_NA <- all(is.na(summaries_ref$mu))
       sub_mu_NA <- any(sapply(summaries_sub, check_sub_NA, el_nm = "mu"))
       if (!is.null(summaries_fast_sub)) {
-        fast_sub_mu_NA <- any(sapply(summaries_fast_sub, check_sub_NA, el_nm = "mu"))
+        fast_sub_mu_NA <- any(sapply(summaries_fast_sub, check_sub_NA,
+                                     el_nm = "mu"))
       } else {
         fast_sub_mu_NA <- FALSE
       }
@@ -181,18 +183,24 @@ weighted_summary_means <- function(y_wobs_test, family, wdraws, mu, dis, cl_ref,
 
   if (resp_oscale && !is.null(varsel$refmodel$family$cats) &&
       any(stats %in% c("acc", "pctcorr"))) {
-    summaries_ref$mu <- catmaxprb(summaries_ref$mu, lvls = varsel$refmodel$family$cats)
+    summaries_ref$mu <- catmaxprb(summaries_ref$mu,
+                                  lvls = varsel$refmodel$family$cats)
     summaries_sub <- lapply(summaries_sub, function(summaries_sub_k) {
       summaries_sub_k$mu <- catmaxprb(summaries_sub_k$mu,
                                       lvls = varsel$refmodel$family$cats)
       return(summaries_sub_k)
     })
     if (!is.null(summaries_fast_sub)) {
-      summaries_fast_sub <- lapply(summaries_fast_sub, function(summaries_fast_sub_k) {
-        summaries_fast_sub_k$mu <- catmaxprb(summaries_fast_sub_k$mu,
-                                             lvls = varsel$refmodel$family$cats)
-        return(summaries_fast_sub_k)
-      })
+      summaries_fast_sub <- lapply(
+        summaries_fast_sub,
+        function(summaries_fast_sub_k) {
+          summaries_fast_sub_k$mu <- catmaxprb(
+            summaries_fast_sub_k$mu,
+            lvls = varsel$refmodel$family$cats
+          )
+          return(summaries_fast_sub_k)
+        }
+      )
     }
     # Since `mu` is an unordered factor, `y` needs to be unordered, too (or both
     # would need to be ordered; however, unordered is the simpler type):
@@ -389,7 +397,8 @@ get_stat <- function(summaries, summaries_baseline = NULL,
       y_mean_w <- mean(wobs * y)
       # simple transformation of mse
       mse_y <- mean(wobs * (y_mean_w - y)^2)
-      value <- 1 - mse_e / mse_y - ifelse(is.null(summaries_baseline), 0, 1 - mse_b / mse_y)
+      value <- 1 - mse_e / mse_y - ifelse(is.null(summaries_baseline),
+                                          0, 1 - mse_b / mse_y)
       # the first-order Taylor approximation of the variance
       var_mse_y <- .weighted_sd((y_mean_w - y)^2, wobs)^2 / n_full
       if (n_loo < n_full) {
