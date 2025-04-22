@@ -135,6 +135,10 @@ is a GLM). However, for \code{\link[=cv_varsel]{cv_varsel()}}, there is also a \
 (i.e., a parallelization of \pkg{projpred}'s cross-validation) which can be
 activated via argument \code{parallel}.
 
+For the CV parallelization, global option \code{projpred.export_to_workers} may be
+set to a character vector of names of objects to export from the global
+environment to the parallel workers.
+
 During parallelization (either of the projection or the CV), progression
 updates can be received via the \pkg{progressr} package. This only works if
 the \pkg{doFuture} backend is used for parallelization, e.g., via
