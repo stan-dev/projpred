@@ -202,7 +202,7 @@ formula.}
 
 \item{parallel}{A single logical value indicating whether to run costly parts
 of the CV in parallel (\code{TRUE}) or not (\code{FALSE}). See also section "Note"
-below.}
+below as well as section "Parallelization" in \link{projpred-package}.}
 }
 \value{
 An object of class \code{vsel}. The elements of this object are not meant

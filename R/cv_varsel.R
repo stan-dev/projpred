@@ -60,7 +60,7 @@
 #'   from a multilevel submodel (however, not yet in case of a GAMM).
 #' @param parallel A single logical value indicating whether to run costly parts
 #'   of the CV in parallel (`TRUE`) or not (`FALSE`). See also section "Note"
-#'   below.
+#'   below as well as section "Parallelization" in [projpred-package].
 #' @param ... For [cv_varsel.default()]: Arguments passed to [get_refmodel()] as
 #'   well as to [cv_varsel.refmodel()]. For [cv_varsel.vsel()]: Arguments passed
 #'   to [cv_varsel.refmodel()]. For [cv_varsel.refmodel()]: Arguments passed to
@@ -1069,7 +1069,8 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
       res_cv <- foreach::foreach(
         run_index = seq_along(inds),
         .packages = c("projpred"),
-        .export = c("one_obs", "dot_args", "progressor_obj"),
+        .export = c("one_obs", "dot_args", "progressor_obj",
+                    getOption("projpred.export_to_workers", character())),
         .noexport = c("mu_offs_oscale", "loglik_forPSIS", "psisloo", "y_lat_E",
                       "loo_ref_oscale", "validset", "loo_sub", "mu_sub",
                       "loo_sub_oscale", "mu_sub_oscale")
@@ -1436,7 +1437,8 @@ kfold_varsel <- function(refmodel, method, nterms_max, ndraws, nclusters,
       list_cv_k = list_cv,
       search_out_rks_k = search_out_rks,
       .packages = c("projpred"),
-      .export = c("one_fold", "dot_args", "progressor_obj"),
+      .export = c("one_fold", "dot_args", "progressor_obj",
+                  getOption("projpred.export_to_workers", character())),
       .noexport = c("list_cv", "search_out_rks")
     ) %do_projpred% {
       out_one_fold <- do_call(one_fold, c(list(fold = list_cv_k,
