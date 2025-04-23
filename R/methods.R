@@ -1117,7 +1117,7 @@ plot.vsel <- function(
     } else if (all(stats == "gmpd")) {
       diff_pretty <- "ratio"
     } else {
-      diff_pretty <- "difference [ratio for GMPD]"
+      diff_pretty <- "difference (ratio for GMPD)"
     }
     interval_description <- paste0(interval_description, diff_pretty, " vs. ",
                                    baseline_pretty)
