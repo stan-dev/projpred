@@ -445,8 +445,8 @@ compute_lpd <- function(ynew, pred_sub, proj, weights, transformed) {
     }
     if (proj$refmodel$family$for_latent && transformed) {
       ll_oscale_out <- proj$refmodel$family$latent_ll_oscale(
-        pred_sub, y_oscale = ynew, wobs = weights, cl_ref = proj$cl_ref,
-        wdraws_ref = proj$wdraws_ref
+        pred_sub, dis = proj$dis, y_oscale = ynew, wobs = weights,
+        cl_ref = proj$cl_ref, wdraws_ref = proj$wdraws_ref
       )
       if (!is.matrix(ll_oscale_out)) {
         stop("Unexpected structure for the output of `latent_ll_oscale`.")

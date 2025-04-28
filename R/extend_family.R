@@ -156,11 +156,13 @@
 #' The function supplied to argument `latent_ll_oscale` needs to have the
 #' prototype
 #' ```{r, eval = FALSE}
-#' latent_ll_oscale(ilpreds, y_oscale, wobs = rep(1, length(y_oscale)), cl_ref,
-#'                  wdraws_ref = rep(1, length(cl_ref)))
+#' latent_ll_oscale(ilpreds, dis, y_oscale, wobs = rep(1, length(y_oscale)),
+#'                  cl_ref, wdraws_ref = rep(1, length(cl_ref)))
 #' ```
 #' where:
 #' * `ilpreds` accepts the return value from `latent_ilink`.
+#' * `dis` accepts a vector of length \eqn{S} containing dispersion parameter
+#' draws.
 #' * `y_oscale` accepts a vector of length \eqn{N} containing response values on
 #' the original response scale.
 #' * `wobs` accepts a numeric vector of length \eqn{N} containing observation

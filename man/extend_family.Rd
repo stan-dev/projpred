@@ -193,13 +193,15 @@ given in \code{family$cats}, after taking \code{latent_y_unqs} into account).
 The function supplied to argument \code{latent_ll_oscale} needs to have the
 prototype
 
-\if{html}{\out{<div class="sourceCode r">}}\preformatted{latent_ll_oscale(ilpreds, y_oscale, wobs = rep(1, length(y_oscale)), cl_ref,
-                 wdraws_ref = rep(1, length(cl_ref)))
+\if{html}{\out{<div class="sourceCode r">}}\preformatted{latent_ll_oscale(ilpreds, dis, y_oscale, wobs = rep(1, length(y_oscale)),
+                 cl_ref, wdraws_ref = rep(1, length(cl_ref)))
 }\if{html}{\out{</div>}}
 
 where:
 \itemize{
 \item \code{ilpreds} accepts the return value from \code{latent_ilink}.
+\item \code{dis} accepts a vector of length \eqn{S} containing dispersion parameter
+draws.
 \item \code{y_oscale} accepts a vector of length \eqn{N} containing response values on
 the original response scale.
 \item \code{wobs} accepts a numeric vector of length \eqn{N} containing observation
