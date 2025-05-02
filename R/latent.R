@@ -18,7 +18,10 @@ latent_ll_oscale_cats <- function(ilpreds,
                                   wdraws_ref = rep(1, length(cl_ref))) {
   return(ll_cats(ilpreds, margin_draws = 1, y = y_oscale, wobs = wobs))
 }
-latent_ppd_oscale_cats <- function(ilpreds_resamp, wobs, cl_ref,
+latent_ppd_oscale_cats <- function(ilpreds_resamp,
+                                   dis_resamp = rep(NA, nrow(ilpreds_resamp)),
+                                   wobs,
+                                   cl_ref,
                                    wdraws_ref = rep(1, length(cl_ref)),
                                    idxs_prjdraws) {
   return(ppd_cats(ilpreds_resamp, margin_draws = 1, wobs = wobs))
@@ -40,7 +43,10 @@ latent_ll_oscale_binom_nocats <- function(ilpreds,
   ll_unw <- y_oscale * log(ilpreds) + (1 - y_oscale) * log(1 - ilpreds)
   return(t(wobs * ll_unw))
 }
-latent_ppd_oscale_binom_nocats <- function(ilpreds_resamp, wobs, cl_ref,
+latent_ppd_oscale_binom_nocats <- function(ilpreds_resamp,
+                                           dis_resamp = rep(NA, nrow(ilpreds_resamp)),
+                                           wobs,
+                                           cl_ref,
                                            wdraws_ref = rep(1, length(cl_ref)),
                                            idxs_prjdraws) {
   ilpreds_resamp <- t(ilpreds_resamp)
@@ -59,7 +65,10 @@ latent_ll_oscale_poiss <- function(ilpreds,
   ll_unw <- dpois(y_oscale, lambda = t(ilpreds), log = TRUE)
   return(t(wobs * ll_unw))
 }
-latent_ppd_oscale_poiss <- function(ilpreds_resamp, wobs, cl_ref,
+latent_ppd_oscale_poiss <- function(ilpreds_resamp,
+                                    dis_resamp = rep(NA, nrow(ilpreds_resamp)),
+                                    wobs,
+                                    cl_ref,
                                     wdraws_ref = rep(1, length(cl_ref)),
                                     idxs_prjdraws) {
   wobs <- parse_wobs_ppd(wobs, n_obs = ncol(ilpreds_resamp))
@@ -78,7 +87,10 @@ latent_ll_oscale_NA <- function(ilpreds,
                                 wdraws_ref = rep(1, length(cl_ref))) {
   return(array(dim = dim(ilpreds)[1:2]))
 }
-latent_ppd_oscale_NA <- function(ilpreds_resamp, wobs, cl_ref,
+latent_ppd_oscale_NA <- function(ilpreds_resamp,
+                                 dis_resamp = rep(NA, nrow(ilpreds_resamp)),
+                                 wobs,
+                                 cl_ref,
                                  wdraws_ref = rep(1, length(cl_ref)),
                                  idxs_prjdraws) {
   return(array(dim = dim(ilpreds_resamp)[1:2]))

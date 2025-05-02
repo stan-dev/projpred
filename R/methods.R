@@ -537,8 +537,9 @@ proj_predict_aux <- function(proj, newdata, offsetnew, weightsnew,
       mu_oscale_resamp <- mu_oscale[draw_inds, , drop = FALSE]
     }
     pppd_out <- proj$refmodel$family$latent_ppd_oscale(
-      mu_oscale_resamp, wobs = weights, cl_ref = proj$cl_ref,
-      wdraws_ref = proj$wdraws_ref, idxs_prjdraws = draw_inds
+      mu_oscale_resamp, dis_resamp = proj$dis[draw_inds], wobs = weights,
+      cl_ref = proj$cl_ref, wdraws_ref = proj$wdraws_ref,
+      idxs_prjdraws = draw_inds
     )
     if (!is.matrix(pppd_out)) {
       stop("Unexpected structure for the output of `latent_ppd_oscale`.")

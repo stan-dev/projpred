@@ -218,7 +218,7 @@ for the \eqn{N} observations from its inputs.
 The function supplied to argument \code{latent_ppd_oscale} needs to have the
 prototype
 
-\if{html}{\out{<div class="sourceCode r">}}\preformatted{latent_ppd_oscale(ilpreds_resamp, wobs, cl_ref,
+\if{html}{\out{<div class="sourceCode r">}}\preformatted{latent_ppd_oscale(ilpreds_resamp, dis_resamp, wobs, cl_ref,
                   wdraws_ref = rep(1, length(cl_ref)), idxs_prjdraws)
 }\if{html}{\out{</div>}}
 
@@ -227,6 +227,9 @@ where:
 \item \code{ilpreds_resamp} accepts the return value from \code{latent_ilink}, but possibly
 with resampled (clustered) draws (see argument \code{nresample_clusters} of
 \code{\link[=proj_predict]{proj_predict()}}).
+\item \code{dis_resamp} accepts a vector of length \eqn{\texttt{dim(ilpreds)[1]}}
+containing dispersion parameter draws, possibly resampled (in the same way as
+the draws in \code{ilpreds_resamp}, see also argument \code{idxs_prjdraws}).
 \item \code{wobs} accepts a numeric vector of length \eqn{N} containing observation
 weights.
 \item \code{cl_ref} accepts the same input as argument \code{cl_ref} of \code{latent_ilink}.

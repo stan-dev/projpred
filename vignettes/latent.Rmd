@@ -331,7 +331,10 @@ latent_ll_oscale_nebin <- function(ilpreds,
   ll_unw <- dnbinom(y_oscale_mat, size = refm_prec_agg, mu = ilpreds, log = TRUE)
   return(wobs_mat * ll_unw)
 }
-latent_ppd_oscale_nebin <- function(ilpreds_resamp, wobs, cl_ref,
+latent_ppd_oscale_nebin <- function(ilpreds_resamp,
+                                    dis_resamp = rep(NA, nrow(ilpreds_resamp)),
+                                    wobs,
+                                    cl_ref,
                                     wdraws_ref = rep(1, length(cl_ref)),
                                     idxs_prjdraws) {
   refm_prec_agg <- cl_agg(refm_prec, cl = cl_ref, wdraws = wdraws_ref)
