@@ -2206,8 +2206,9 @@ vsel_tester <- function(
           wdraws_ref = vs$refmodel$wdraws_ref
         )
         ll_forPSIS <- vs$refmodel$family$latent_ll_oscale(
-          mu_offs_oscale_tst, y_oscale = vs$refmodel$y_oscale,
-          wobs = vs$refmodel$wobs, cl_ref = seq_along(vs$refmodel$wdraws_ref),
+          mu_offs_oscale_tst, dis = vs$refmodel$dis,
+          y_oscale = vs$refmodel$y_oscale, wobs = vs$refmodel$wobs,
+          cl_ref = seq_along(vs$refmodel$wdraws_ref),
           wdraws_ref = vs$refmodel$wdraws_ref
         )
         psisloo_tst <- suppressWarnings(

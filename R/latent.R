@@ -10,12 +10,18 @@
 
 # Situation: If `family$cats` (*after* applying extend_family(); see
 # extend_family()'s argument `latent_y_unqs`) is not `NULL`.
-latent_ll_oscale_cats <- function(ilpreds, y_oscale,
-                                  wobs = rep(1, length(y_oscale)), cl_ref,
+latent_ll_oscale_cats <- function(ilpreds,
+                                  dis = rep(NA, nrow(ilpreds)),
+                                  y_oscale,
+                                  wobs = rep(1, length(y_oscale)),
+                                  cl_ref,
                                   wdraws_ref = rep(1, length(cl_ref))) {
   return(ll_cats(ilpreds, margin_draws = 1, y = y_oscale, wobs = wobs))
 }
-latent_ppd_oscale_cats <- function(ilpreds_resamp, wobs, cl_ref,
+latent_ppd_oscale_cats <- function(ilpreds_resamp,
+                                   dis_resamp = rep(NA, nrow(ilpreds_resamp)),
+                                   wobs,
+                                   cl_ref,
                                    wdraws_ref = rep(1, length(cl_ref)),
                                    idxs_prjdraws) {
   return(ppd_cats(ilpreds_resamp, margin_draws = 1, wobs = wobs))
@@ -23,7 +29,9 @@ latent_ppd_oscale_cats <- function(ilpreds_resamp, wobs, cl_ref,
 
 # Situation: For the binomial family if `family$cats` (*after* applying
 # extend_family(); see extend_family()'s argument `latent_y_unqs`) is `NULL`.
-latent_ll_oscale_binom_nocats <- function(ilpreds, y_oscale,
+latent_ll_oscale_binom_nocats <- function(ilpreds,
+                                          dis = rep(NA, nrow(ilpreds)),
+                                          y_oscale,
                                           wobs = rep(1, length(y_oscale)),
                                           cl_ref,
                                           wdraws_ref = rep(1, length(cl_ref))) {
@@ -35,7 +43,10 @@ latent_ll_oscale_binom_nocats <- function(ilpreds, y_oscale,
   ll_unw <- y_oscale * log(ilpreds) + (1 - y_oscale) * log(1 - ilpreds)
   return(t(wobs * ll_unw))
 }
-latent_ppd_oscale_binom_nocats <- function(ilpreds_resamp, wobs, cl_ref,
+latent_ppd_oscale_binom_nocats <- function(ilpreds_resamp,
+                                           dis_resamp = rep(NA, nrow(ilpreds_resamp)),
+                                           wobs,
+                                           cl_ref,
                                            wdraws_ref = rep(1, length(cl_ref)),
                                            idxs_prjdraws) {
   ilpreds_resamp <- t(ilpreds_resamp)
@@ -45,13 +56,19 @@ latent_ppd_oscale_binom_nocats <- function(ilpreds_resamp, wobs, cl_ref,
 }
 
 # Situation: For the Poisson family.
-latent_ll_oscale_poiss <- function(ilpreds, y_oscale,
-                                   wobs = rep(1, length(y_oscale)), cl_ref,
+latent_ll_oscale_poiss <- function(ilpreds,
+                                   dis = rep(NA, nrow(ilpreds)),
+                                   y_oscale,
+                                   wobs = rep(1, length(y_oscale)),
+                                   cl_ref,
                                    wdraws_ref = rep(1, length(cl_ref))) {
   ll_unw <- dpois(y_oscale, lambda = t(ilpreds), log = TRUE)
   return(t(wobs * ll_unw))
 }
-latent_ppd_oscale_poiss <- function(ilpreds_resamp, wobs, cl_ref,
+latent_ppd_oscale_poiss <- function(ilpreds_resamp,
+                                    dis_resamp = rep(NA, nrow(ilpreds_resamp)),
+                                    wobs,
+                                    cl_ref,
                                     wdraws_ref = rep(1, length(cl_ref)),
                                     idxs_prjdraws) {
   wobs <- parse_wobs_ppd(wobs, n_obs = ncol(ilpreds_resamp))
@@ -62,12 +79,18 @@ latent_ppd_oscale_poiss <- function(ilpreds_resamp, wobs, cl_ref,
 
 # Situation: For a family for which response-scale log likelihood values cannot
 # or should not be calculated.
-latent_ll_oscale_NA <- function(ilpreds, y_oscale,
-                                wobs = rep(1, length(y_oscale)), cl_ref,
+latent_ll_oscale_NA <- function(ilpreds,
+                                dis = rep(NA, nrow(ilpreds)),
+                                y_oscale,
+                                wobs = rep(1, length(y_oscale)),
+                                cl_ref,
                                 wdraws_ref = rep(1, length(cl_ref))) {
   return(array(dim = dim(ilpreds)[1:2]))
 }
-latent_ppd_oscale_NA <- function(ilpreds_resamp, wobs, cl_ref,
+latent_ppd_oscale_NA <- function(ilpreds_resamp,
+                                 dis_resamp = rep(NA, nrow(ilpreds_resamp)),
+                                 wobs,
+                                 cl_ref,
                                  wdraws_ref = rep(1, length(cl_ref)),
                                  idxs_prjdraws) {
   return(array(dim = dim(ilpreds_resamp)[1:2]))

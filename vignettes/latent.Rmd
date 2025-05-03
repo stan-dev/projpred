@@ -317,8 +317,11 @@ refm_fit_nebin <- stan_glm(
 To request the latent projection with `latent = TRUE`, we now need to specify more arguments (`latent_ll_oscale` and `latent_ppd_oscale`) which will be passed to `extend_family()`^[The suffix `_prec` in `refm_prec` stands for "precision" because here, we follow the Stan convention (see the Stan documentation for the `neg_binomial_2` distribution, the `brms::negbinomial()` documentation, and the [**brms**](https://paul-buerkner.github.io/brms/) vignette "Parameterization of Response Distributions in brms") and prefer the term *precision* parameter for what is denoted by $\phi$ there (confusingly, argument `size` in `?stats::NegBinomial`---which is the same as $\phi$ from the Stan notation---is called the *dispersion* parameter there, although the variance is increased by its reciprocal).]:
 ```{r vs_nebin}
 refm_prec <- as.matrix(refm_fit_nebin)[, "reciprocal_dispersion", drop = FALSE]
-latent_ll_oscale_nebin <- function(ilpreds, y_oscale,
-                                   wobs = rep(1, length(y_oscale)), cl_ref,
+latent_ll_oscale_nebin <- function(ilpreds,
+                                   dis = rep(NA, nrow(ilpreds)),
+                                   y_oscale,
+                                   wobs = rep(1, length(y_oscale)),
+                                   cl_ref,
                                    wdraws_ref = rep(1, length(cl_ref))) {
   y_oscale_mat <- matrix(y_oscale, nrow = nrow(ilpreds), ncol = ncol(ilpreds),
                          byrow = TRUE)
@@ -328,7 +331,10 @@ latent_ll_oscale_nebin <- function(ilpreds, y_oscale,
   ll_unw <- dnbinom(y_oscale_mat, size = refm_prec_agg, mu = ilpreds, log = TRUE)
   return(wobs_mat * ll_unw)
 }
-latent_ppd_oscale_nebin <- function(ilpreds_resamp, wobs, cl_ref,
+latent_ppd_oscale_nebin <- function(ilpreds_resamp,
+                                    dis_resamp = rep(NA, nrow(ilpreds_resamp)),
+                                    wobs,
+                                    cl_ref,
                                     wdraws_ref = rep(1, length(cl_ref)),
                                     idxs_prjdraws) {
   refm_prec_agg <- cl_agg(refm_prec, cl = cl_ref, wdraws = wdraws_ref)
