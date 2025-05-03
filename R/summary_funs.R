@@ -53,8 +53,8 @@ weighted_summary_means <- function(y_wobs_test, family, wdraws, mu, dis, cl_ref,
       stop("Unexpected structure for the output of `latent_ilink`.")
     }
     loglik_oscale <- family$latent_ll_oscale(
-      mu_oscale, y_oscale = y_wobs_test$y_oscale, wobs = y_wobs_test$wobs,
-      cl_ref = cl_ref, wdraws_ref = wdraws_ref
+      mu_oscale, dis = dis, y_oscale = y_wobs_test$y_oscale,
+      wobs = y_wobs_test$wobs, cl_ref = cl_ref, wdraws_ref = wdraws_ref
     )
     if (!is.matrix(loglik_oscale)) {
       stop("Unexpected structure for the output of `latent_ll_oscale`.")

@@ -585,7 +585,7 @@ predict.refmodel <- function(object, newdata = NULL, ynew = NULL,
         stop("Unexpected structure for the output of `latent_ilink`.")
       }
       loglik <- refmodel$family$latent_ll_oscale(
-        mu_oscale, y_oscale = ynew, wobs = weightsnew,
+        mu_oscale, dis = refmodel$dis, y_oscale = ynew, wobs = weightsnew,
         cl_ref = seq_along(refmodel$wdraws_ref),
         wdraws_ref = rep(1, length(refmodel$wdraws_ref))
       )

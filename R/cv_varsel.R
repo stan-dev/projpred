@@ -605,8 +605,9 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
       stop("Unexpected structure for the output of `latent_ilink`.")
     }
     loglik_forPSIS <- refmodel$family$latent_ll_oscale(
-      mu_offs_oscale, y_oscale = refmodel$y_oscale, wobs = refmodel$wobs,
-      cl_ref = seq_along(refmodel$wdraws_ref), wdraws_ref = refmodel$wdraws_ref
+      mu_offs_oscale, dis = refmodel$dis, y_oscale = refmodel$y_oscale,
+      wobs = refmodel$wobs, cl_ref = seq_along(refmodel$wdraws_ref),
+      wdraws_ref = refmodel$wdraws_ref
     )
     if (!is.matrix(loglik_forPSIS)) {
       stop("Unexpected structure for the output of `latent_ll_oscale`.")
@@ -757,8 +758,8 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
     perf_eval_out <- perf_eval(
       search_path = search_path_fulldata, refmodel = refmodel,
       refit_prj = refit_prj, ndraws = ndraws_pred, nclusters = nclusters_pred,
-      return_p_ref = TRUE, return_preds = TRUE, indices_test = inds,
-      verbose = verbose, ...
+      return_preds = TRUE, return_p_ref = TRUE, return_dis_sub = TRUE,
+      indices_test = inds, verbose = verbose, ...
     )
     clust_used_eval <- perf_eval_out[["clust_used"]]
     nprjdraws_eval <- perf_eval_out[["nprjdraws"]]
@@ -780,9 +781,9 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
                                                                    drop = FALSE]
       }
       log_lik_ref <- refmodel$family$latent_ll_oscale(
-        refdist_eval_mu_offs_oscale, y_oscale = refmodel$y_oscale[inds],
-        wobs = refmodel$wobs[inds], cl_ref = refdist_eval$cl,
-        wdraws_ref = refdist_eval$wdraws_orig
+        refdist_eval_mu_offs_oscale, dis = refdist_eval$dis,
+        y_oscale = refmodel$y_oscale[inds], wobs = refmodel$wobs[inds],
+        cl_ref = refdist_eval$cl, wdraws_ref = refdist_eval$wdraws_orig
       )
       if (all(is.na(log_lik_ref))) {
         stop("In case of the latent projection, `validate_search = FALSE` ",
@@ -892,9 +893,9 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
           wdraws_ref = refdist_eval$wdraws_orig
         )
         log_lik_sub_oscale <- refmodel$family$latent_ll_oscale(
-          mu_k_oscale, y_oscale = refmodel$y_oscale[inds],
-          wobs = refmodel$wobs[inds], cl_ref = refdist_eval$cl,
-          wdraws_ref = refdist_eval$wdraws_orig
+          mu_k_oscale, dis = perf_eval_out[["dis_sub"]][[k]],
+          y_oscale = refmodel$y_oscale[inds], wobs = refmodel$wobs[inds],
+          cl_ref = refdist_eval$cl, wdraws_ref = refdist_eval$wdraws_orig
         )
         loo_sub_oscale[[k]][inds] <- apply(log_lik_sub_oscale + lw_sub, 2,
                                            log_sum_exp)
@@ -1239,8 +1240,9 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
       # Need to use `mlvl_allrandom = TRUE` (`loo_ref_oscale` is based on
       # `mlvl_allrandom = getOption("projpred.mlvl_proj_ref_new", FALSE)`):
       loglik_mlvlRan <- refmodel$family$latent_ll_oscale(
-        mu_offs_mlvlRan_oscale_odim, y_oscale = refmodel$y_oscale,
-        wobs = refmodel$wobs, cl_ref = seq_along(refmodel$wdraws_ref),
+        mu_offs_mlvlRan_oscale_odim, dis = refmodel$dis,
+        y_oscale = refmodel$y_oscale, wobs = refmodel$wobs,
+        cl_ref = seq_along(refmodel$wdraws_ref),
         wdraws_ref = refmodel$wdraws_ref
       )
       lppd_ref_oscale <- apply(loglik_mlvlRan + lw, 2, log_sum_exp)
