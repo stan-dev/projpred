@@ -54,7 +54,7 @@ perf_eval <- function(search_path,
                       refmodel, refit_prj = FALSE, ndraws, nclusters,
                       reweighting_args = NULL, return_submodls = FALSE,
                       return_preds = FALSE, return_p_ref = FALSE,
-                      refmodel_fulldata = refmodel,
+                      return_dis_sub = FALSE, refmodel_fulldata = refmodel,
                       indices_test, newdata_test = NULL,
                       offset_test = refmodel_fulldata$offset[indices_test],
                       wobs_test = refmodel_fulldata$wobs[indices_test],
@@ -140,13 +140,20 @@ perf_eval <- function(search_path,
       )
       out_j <- nlist(sub_summary)
     }
-    return(c(out_j, list(ce = submodl[["ce"]])))
+    out_j <- c(out_j, list(ce = submodl[["ce"]]))
+    if (return_dis_sub) {
+      # Currently only called in loo_varsel()'s `validate_search = FALSE` case.
+      out_j <- c(out_j, list(dis_sub = submodl[["dis"]]))
+    }
+    return(out_j)
   })
   verb_out("-----", verbose = verbose)
   if (return_submodls) {
+    # Currently only called in project().
     return(out_by_size)
   }
   if (return_preds) {
+    # Currently only called in loo_varsel()'s `validate_search = FALSE` case.
     out <- list(mu_by_size = lapply(out_by_size, "[[", "mu_j"),
                 lppd_by_size = lapply(out_by_size, "[[", "lppd_j"))
   } else {
@@ -157,6 +164,10 @@ perf_eval <- function(search_path,
   if (return_p_ref) {
     # Currently only called in loo_varsel()'s `validate_search = FALSE` case.
     out <- c(out, nlist(p_ref))
+  }
+  if (return_dis_sub) {
+    # Currently only called in loo_varsel()'s `validate_search = FALSE` case.
+    out <- c(out, list(dis_sub = lapply(out_by_size, "[[", "dis_sub")))
   }
   return(out)
 }
