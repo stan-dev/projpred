@@ -916,10 +916,11 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
           i_flx <- inds[run_index]
           run_index_flx <- run_index
         }
-        mu_sub[[k]][i_flx] <- mu_k[run_index_flx, ] %*% exp(lw_sub[, run_index])
+        mu_sub[[k]][i_flx] <- mu_k[run_index_flx, , drop = FALSE] %*%
+          exp(lw_sub[, run_index])
         if (refmodel$family$for_latent) {
           if (inherits(mu_k_oscale, "augmat")) {
-            mu_sub_oscale[[k]][i_aug] <- mu_k_oscale[run_index_aug, ] %*%
+            mu_sub_oscale[[k]][i_aug] <- mu_k_oscale[run_index_aug, , drop = FALSE] %*%
               exp(lw_sub[, run_index])
           } else {
             # In principle, we could use the same code for averaging across the
@@ -927,7 +928,7 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
             # `mu_k_oscale <- t(mu_k_oscale)` beforehand, so the following
             # should be more efficient:
             mu_sub_oscale[[k]][i_aug] <- exp(lw_sub[, run_index]) %*%
-              mu_k_oscale[, run_index_aug]
+              mu_k_oscale[, run_index_aug, drop = FALSE]
           }
         }
       }
@@ -1171,7 +1172,7 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
     if (refmodel$family$for_latent && !is.null(refmodel$family$cats)) {
       i_flx <- i
     }
-    return(as.vector(mu_offs_mlvlRan[i_flx, ] %*% exp(lw[, i])))
+    return(as.vector(mu_offs_mlvlRan[i_flx, , drop = FALSE] %*% exp(lw[, i])))
   })))
   mu_ref <- structure(
     mu_ref,
@@ -1218,13 +1219,14 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
         i_aug <- i_aug + (seq_along(refmodel$family$cats) - 1L) * n
       }
       if (inherits(mu_offs_mlvlRan_oscale, "augmat")) {
-        return(as.vector(mu_offs_mlvlRan_oscale[i_aug, ] %*% exp(lw[, i])))
+        return(as.vector(mu_offs_mlvlRan_oscale[i_aug, , drop = FALSE] %*%
+                           exp(lw[, i])))
       } else {
         # In principle, we could use the same code for averaging across the
         # draws as above in the `augmat` case. However, that would require
         # `mu_offs_mlvlRan_oscale <- t(mu_offs_mlvlRan_oscale)` beforehand, so
         # the following should be more efficient:
-        return(exp(lw[, i]) %*% mu_offs_mlvlRan_oscale[, i_aug])
+        return(exp(lw[, i]) %*% mu_offs_mlvlRan_oscale[, i_aug, drop = FALSE])
       }
     })))
     mu_ref_oscale <- structure(
