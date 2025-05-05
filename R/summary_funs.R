@@ -377,7 +377,15 @@ get_stat <- function(summaries, summaries_baseline = NULL,
                               ((mu_baseline - y)^2 - mse_b)) / (n_full - 1)
       }
       if (stat != "rmse") {
-        value_se <- sqrt(value_se^2 - 2 * cov_mse_e_b + var_mse_b)
+        value_se_sq <- value_se^2 - 2 * cov_mse_e_b + var_mse_b
+        if (!is.na(value_se_sq) && sign(value_se_sq) == -1) {
+          if (abs(value_se_sq) < sqrt(.Machine$double.eps)) {
+            value_se_sq <- 0
+          } else {
+            stop("Negative (and numerically non-zero) `value_se_sq`.")
+          }
+        }
+        value_se <- sqrt(value_se_sq)
       }
     }
     if (stat == "mse") {
