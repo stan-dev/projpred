@@ -738,3 +738,15 @@ use_progressr <- function() {
               interactive() &&
               identical(foreach::getDoParName(), "doFuture"))
 }
+
+sqrt_cut0 <- function(x) {
+  if (!is.na(x) && sign(x) == -1) {
+    if (abs(x) < sqrt(.Machine$double.eps)) {
+      x <- 0
+    } else {
+      stop("Negative (and numerically non-zero) value used as input to ",
+           "sqrt_cut0().")
+    }
+  }
+  return(sqrt(x))
+}
