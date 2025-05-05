@@ -377,7 +377,7 @@ get_stat <- function(summaries, summaries_baseline = NULL,
                               ((mu_baseline - y)^2 - mse_b)) / (n_full - 1)
       }
       if (stat != "rmse") {
-        value_se <- sqrt(value_se^2 - 2 * cov_mse_e_b + var_mse_b)
+        value_se <- sqrt_cut0(value_se^2 - 2 * cov_mse_e_b + var_mse_b)
       }
     }
     if (stat == "mse") {
@@ -389,9 +389,9 @@ get_stat <- function(summaries, summaries_baseline = NULL,
       if (is.null(summaries_baseline)) {
         value_se <- sqrt(value_se^2 / mse_e / 4)
       } else {
-        value_se <- sqrt((value_se^2 / mse_e -
-                            2 * cov_mse_e_b / sqrt(mse_e * mse_b) +
-                            var_mse_b / mse_b) / 4)
+        value_se <- sqrt_cut0((value_se^2 / mse_e -
+                                 2 * cov_mse_e_b / sqrt(mse_e * mse_b) +
+                                 var_mse_b / mse_b) / 4)
       }
     } else if (stat == "R2") {
       y_mean_w <- mean(wobs * y)
@@ -438,17 +438,9 @@ get_stat <- function(summaries, summaries_baseline = NULL,
         # delta=TRUE
         mse_e <- mse_e - mse_b
       }
-      value_se_sq <- (value_se^2 -
-                        2 * mse_e / mse_y * cov_mse_e_y +
-                        (mse_e / mse_y)^2 * var_mse_y) / mse_y^2
-      if (!is.na(value_se_sq) && sign(value_se_sq) == -1) {
-        if (abs(value_se_sq) < sqrt(.Machine$double.eps)) {
-          value_se_sq <- 0
-        } else {
-          stop("Negative (and numerically non-zero) `value_se_sq`.")
-        }
-      }
-      value_se <- sqrt(value_se_sq)
+      value_se <- sqrt_cut0((value_se^2 -
+                               2 * mse_e / mse_y * cov_mse_e_y +
+                               (mse_e / mse_y)^2 * var_mse_y) / mse_y^2)
     }
   } else if (stat %in% c("acc", "pctcorr", "auc")) {
     y <- y_wobs_test$y
