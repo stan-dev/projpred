@@ -387,7 +387,7 @@ get_stat <- function(summaries, summaries_baseline = NULL,
       value <- sqrt(mse_e) - ifelse(is.null(summaries_baseline), 0, sqrt(mse_b))
       # the first-order Taylor approximation of the variance
       if (is.null(summaries_baseline)) {
-        value_se <- sqrt_cut0(value_se^2 / mse_e / 4)
+        value_se <- sqrt(value_se^2 / mse_e / 4)
       } else {
         value_se <- sqrt_cut0((value_se^2 / mse_e -
                                  2 * cov_mse_e_b / sqrt(mse_e * mse_b) +
