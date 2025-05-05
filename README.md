@@ -59,6 +59,15 @@ devtools::install_github("stan-dev/projpred", build_vignettes = TRUE)
 
 To save time, you may omit `build_vignettes = TRUE`.
 
+## Contributing to projpred
+
+We welcome contributions! The **projpred** package is under active
+development. If you find bugs or have ideas for new features (for us or
+yourself to implement) please [open an
+issue](https://github.com/stan-dev/projpred/issues) on GitHub. See
+[CONTRIBUTING.md](https://github.com/stan-dev/projpred/blob/master/.github/CONTRIBUTING.md)
+for more details.
+
 [^1]: The main vignette can be accessed offline by typing
     `vignette(topic = "projpred", package = "projpred")` or—more
     conveniently—`browseVignettes("projpred")` within R.
