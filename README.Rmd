@@ -71,3 +71,12 @@ if (!requireNamespace("devtools", quietly = TRUE)) {
 devtools::install_github("stan-dev/projpred", build_vignettes = TRUE)
 ```
 To save time, you may omit `build_vignettes = TRUE`.
+
+## Contributing to projpred
+
+We welcome contributions!
+The **projpred** package is under active development.
+If you find bugs or have ideas for new features (for us or yourself to
+implement) please [open an issue](https://github.com/stan-dev/projpred/issues) on GitHub.
+See [CONTRIBUTING.md](https://github.com/stan-dev/projpred/blob/master/.github/CONTRIBUTING.md)
+for more details.
