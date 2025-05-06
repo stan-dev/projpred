@@ -1276,6 +1276,26 @@ warn_pareto <- function(n07, n, khat_threshold = 0.7, warn_txt) {
   return()
 }
 
+#' Pareto-smoothing k-hat threshold
+#'
+#' Copied from loo package. Remove after loo package exposes this.
+#'
+#' Given sample size S computes khat threshold for reliable Pareto
+#' smoothed estimate (to have small probability of large error). See
+#' section 3.2.4, equation (13). Sample sizes 100, 320, 1000, 2200,
+#' 10000 correspond to thresholds 0.5, 0.6, 0.67, 0.7, 0.75. Although
+#' with bigger sample size S we can achieve estimates with small
+#' probability of large error, it is difficult to get accurate MCSE
+#' estimates as the bias starts to dominate when k > 0.7 (see Section 3.2.3).
+#' Thus the sample size dependend k-ht threshold is capped at 0.7.
+#' @param S sample size
+#' @param ... unused
+#' @return threshold
+#' @noRd
+.ps_khat_threshold <- function(S, ...) {
+  min(1 - 1 / log10(S), 0.7)
+}
+
 # K-fold-CV ---------------------------------------------------------------
 
 # Needed to avoid a NOTE in `R CMD check`:
@@ -1688,24 +1708,4 @@ run_cvfun.refmodel <- function(object,
     cvfits <- suppressWarnings(refmodel$cvfun(folds))
   }
   return(structure(cvfits, folds = folds))
-}
-
-#' Pareto-smoothing k-hat threshold
-#'
-#' Copied from loo package. Remove after loo package exposes this.
-#'
-#' Given sample size S computes khat threshold for reliable Pareto
-#' smoothed estimate (to have small probability of large error). See
-#' section 3.2.4, equation (13). Sample sizes 100, 320, 1000, 2200,
-#' 10000 correspond to thresholds 0.5, 0.6, 0.67, 0.7, 0.75. Although
-#' with bigger sample size S we can achieve estimates with small
-#' probability of large error, it is difficult to get accurate MCSE
-#' estimates as the bias starts to dominate when k > 0.7 (see Section 3.2.3).
-#' Thus the sample size dependend k-ht threshold is capped at 0.7.
-#' @param S sample size
-#' @param ... unused
-#' @return threshold
-#' @noRd
-.ps_khat_threshold <- function(S, ...) {
-  min(1 - 1 / log10(S), 0.7)
 }
