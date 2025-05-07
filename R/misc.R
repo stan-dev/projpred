@@ -305,7 +305,8 @@ get_standard_y <- function(y, weights, fam) {
 #   have been kept as general as possible and `wdraws_orig` is more general than
 #   `wdraws_ref`.
 #   * `clust_used`: A single logical value indicating whether clustering (i.e.,
-#   get_p_clust()) has been used.
+#   get_p_clust(), with the possibility that its output element `clust_used` is
+#   overwritten by its argument `clust_used_forced`) has been used.
 get_refdist <- function(refmodel, ndraws = NULL, nclusters = NULL,
                         thinning = TRUE,
                         throw_mssg_ndraws = getOption("projpred.mssg_ndraws",
@@ -454,6 +455,22 @@ draws_subsample <- function(S, ndraws) {
   # calling stack at the beginning of which a seed is set.
 
   return(sample.int(S, size = ndraws))
+}
+
+# If no get_refdist() (or get_p_clust()) output is available to infer elements
+# `clust_used` (a single logical value indicating whether the given combination
+# of `ndraws` and `nclusters` will lead to clustered projected draws or not) and
+# `nprjdraws` (a single numeric value giving the number of (possibly clustered)
+# projected draws resulting from the given combination of `ndraws` and
+# `nclusters`), the following function can be used as a workaround (argument `S`
+# denotes the number of posterior draws in the reference model object):
+clust_info <- function(ndraws, nclusters, S) {
+  clust_used_out <- !is.null(nclusters) && nclusters < S
+  nprjdraws_out <- if (clust_used_out) nclusters else ndraws
+  return(list(
+    clust_used = clust_used_out,
+    nprjdraws = nprjdraws_out
+  ))
 }
 
 is_proj_list <- function(proj) {
