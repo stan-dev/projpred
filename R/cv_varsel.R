@@ -828,7 +828,7 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
         if (getOption("projpred.warn_psis", TRUE)) {
           message(
             "Using standard importance sampling (SIS) due to a small number of ",
-            ifelse(clust_used_eval, "clusters", "draws (from thinning)"), "."
+            if (clust_used_eval) "clusters" else "draws (from thinning)", "."
           )
         }
         # Use loo::sis().
@@ -870,11 +870,8 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
           khat_threshold = .ps_khat_threshold(dim(sub_psisloo)[1]),
           warn_txt = paste0(
             "Some (%d / %d) Pareto k's for the reference model's PSIS-LOO ",
-            "weights given ",
-            ifelse(clust_used_eval,
-                   paste0(nclusters_pred, " clustered "), # TODO: Use `nprjdraws_eval` here?
-                   paste0(ndraws_pred, " posterior ")), # TODO: Use `nprjdraws_eval` here?
-            "draws are > %s."
+            "weights given ", txt_clust_draws(clust_used_eval, nprjdraws_eval),
+            " are > %s."
           )
         )
       }
@@ -1274,6 +1271,26 @@ warn_pareto <- function(n07, n, khat_threshold = 0.7, warn_txt) {
   warning(sprintf(warn_txt, n07, n, as.character(round(khat_threshold, 2))),
           call. = FALSE)
   return()
+}
+
+#' Pareto-smoothing k-hat threshold
+#'
+#' Copied from loo package. Remove after loo package exposes this.
+#'
+#' Given sample size S computes khat threshold for reliable Pareto
+#' smoothed estimate (to have small probability of large error). See
+#' section 3.2.4, equation (13). Sample sizes 100, 320, 1000, 2200,
+#' 10000 correspond to thresholds 0.5, 0.6, 0.67, 0.7, 0.75. Although
+#' with bigger sample size S we can achieve estimates with small
+#' probability of large error, it is difficult to get accurate MCSE
+#' estimates as the bias starts to dominate when k > 0.7 (see Section 3.2.3).
+#' Thus the sample size dependend k-ht threshold is capped at 0.7.
+#' @param S sample size
+#' @param ... unused
+#' @return threshold
+#' @noRd
+.ps_khat_threshold <- function(S, ...) {
+  min(1 - 1 / log10(S), 0.7)
 }
 
 # K-fold-CV ---------------------------------------------------------------
@@ -1688,24 +1705,4 @@ run_cvfun.refmodel <- function(object,
     cvfits <- suppressWarnings(refmodel$cvfun(folds))
   }
   return(structure(cvfits, folds = folds))
-}
-
-#' Pareto-smoothing k-hat threshold
-#'
-#' Copied from loo package. Remove after loo package exposes this.
-#'
-#' Given sample size S computes khat threshold for reliable Pareto
-#' smoothed estimate (to have small probability of large error). See
-#' section 3.2.4, equation (13). Sample sizes 100, 320, 1000, 2200,
-#' 10000 correspond to thresholds 0.5, 0.6, 0.67, 0.7, 0.75. Although
-#' with bigger sample size S we can achieve estimates with small
-#' probability of large error, it is difficult to get accurate MCSE
-#' estimates as the bias starts to dominate when k > 0.7 (see Section 3.2.3).
-#' Thus the sample size dependend k-ht threshold is capped at 0.7.
-#' @param S sample size
-#' @param ... unused
-#' @return threshold
-#' @noRd
-.ps_khat_threshold <- function(S, ...) {
-  min(1 - 1 / log10(S), 0.7)
 }

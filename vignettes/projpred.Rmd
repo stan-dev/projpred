@@ -551,7 +551,7 @@ There are many ways to speed up **projpred**, but in general, such speed-ups lea
 Some speed-up possibilities are:
 
 1.  Using `cv_varsel()` with `validate_search = FALSE` instead of `validate_search = TRUE`.
-    In case of `cv_method = "LOO"`^[In case of `cv_method = "kfold"`, the runtime advantage of `validate_search = FALSE` compared to `validate_search = TRUE` is not as large as in case of `cv_method = "LOO"`, but even for `cv_method = "kfold"`, such a runtime advantage still exists.], `cv_varsel()` with `validate_search = FALSE` has comparable runtime to `varsel()`, but accounts for some overfitting, namely that induced by `varsel()`'s in-sample predictions during the predictive performance evaluation.
+    In case of `cv_method = "LOO"`^[In case of `cv_method = "kfold"`, the runtime advantage of `validate_search = FALSE` compared to `validate_search = TRUE` is by far not as large as in case of `cv_method = "LOO"`.], `cv_varsel()` with `validate_search = FALSE` has comparable runtime to `varsel()`, but accounts for some overfitting, namely that induced by `varsel()`'s in-sample predictions during the predictive performance evaluation.
     However, as explained in section ["Variable selection"](#variableselection) (see also section ["Overfitting"](#overfitting)), `cv_varsel()` with `validate_search = FALSE` is more prone to overfitting than `cv_varsel()` with `validate_search = TRUE`.
 
 1.  Using `cv_varsel()` with subsampled PSIS-LOO CV, see argument `nloo` of `cv_varsel()`.
