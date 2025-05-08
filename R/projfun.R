@@ -85,7 +85,12 @@ perf_eval <- function(search_path,
       p_ref <- get_p_clust(
         family = refmodel$family, eta = refmodel$eta, mu = refmodel$mu,
         mu_offs = refmodel$mu_offs, dis = refmodel$dis,
-        wdraws = reweighting_args$wdraws_ref, cl = reweighting_args$cl_ref
+        wdraws = reweighting_args$wdraws_ref, cl = reweighting_args$cl_ref,
+        clust_used_forced = clust_info(
+          ndraws = ndraws,
+          nclusters = nclusters,
+          S = length(refmodel$wdraws_ref)
+        )[["clust_used"]]
       )
     }
     fetch_submodl <- function(size_j, ...) {

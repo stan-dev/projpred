@@ -998,18 +998,12 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
           method = method, nterms_max = nterms_max, penalty = penalty,
           verbose = verbose_search,
           verbose_txt_obs = NULL,
-          # TODO: get_p_clust() is always used here, but only for reweighting
-          # the draws according to the PSIS weights. This is a general problem,
-          # though (not only affecting verbose mode). Hence, it would be better
-          # to modify get_p_clust() in order to add an argument there which is
-          # passed as an element of `reweighting_args` and which overwrites
-          # get_p_clust()'s output element `clust_used`. Afterwards, we can use
-          # a non-`NULL` text for `verbose_txt_obs` mentioning that this is for
-          # a single fold, namely fold `i`, and also remove the possibility of
-          # `verbose_txt_obs = NULL` in .select() (and then also remove
-          # `May also be `NULL` to omit that verbose message completely.` in the
-          # corresponding internal documentation). Then also set `verbose =
-          # verbose_search` in the perf_eval() call below and rename
+          # TODO: Use a non-`NULL` text for `verbose_txt_obs` mentioning that
+          # this is for a single fold, namely fold `i`, and also remove the
+          # possibility of `verbose_txt_obs = NULL` in .select() (and then also
+          # remove `May also be `NULL` to omit that verbose message completely.`
+          # in the corresponding internal documentation). Then also set `verbose
+          # = verbose_search` in the perf_eval() call below and rename
           # `verbose_search` to something like `verbose_folds` (and don't forget
           # to update the general package documentation for global option
           # `projpred.extra_verbose`).
@@ -1329,23 +1323,22 @@ kfold_varsel <- function(refmodel, method, nterms_max, ndraws, nclusters,
 
   if (verbose) {
     # Here in kfold_varsel(), we have no get_refdist() (or get_p_clust()) output
-    # object whose elements `clust_used` and `nprjdraws` we could use, so we
-    # have to rely on a workaround:
-    verb_clust_used_sel <- !is.null(nclusters) &&
-      nclusters < length(refmodel$wdraws_ref)
-    if (verb_clust_used_sel) {
-      verb_nprjdraws_sel <- nclusters
-    } else {
-      verb_nprjdraws_sel <- ndraws
-    }
+    # available, so use clust_info() as a workaround:
+    clust_info_sel <- clust_info(
+      ndraws = ndraws,
+      nclusters = nclusters,
+      S = length(refmodel$wdraws_ref)
+    )
+    verb_clust_used_sel <- clust_info_sel[["clust_used"]]
+    verb_nprjdraws_sel <- clust_info_sel[["nprjdraws"]]
     if (refit_prj) {
-      verb_clust_used_eval <- !is.null(nclusters_pred) &&
-        nclusters_pred < length(refmodel$wdraws_ref)
-      if (verb_clust_used_eval) {
-        verb_nprjdraws_eval <- nclusters_pred
-      } else {
-        verb_nprjdraws_eval <- ndraws_pred
-      }
+      clust_info_eval <- clust_info(
+        ndraws = ndraws_pred,
+        nclusters = nclusters_pred,
+        S = length(refmodel$wdraws_ref)
+      )
+      verb_clust_used_eval <- clust_info_eval[["clust_used"]]
+      verb_nprjdraws_eval <- clust_info_eval[["nprjdraws"]]
     } else {
       # NOTE: `!refit_prj` cannot occur in combination with
       # `!search_out_rks_was_null || !validate_search`, so it is correct and
