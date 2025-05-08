@@ -204,12 +204,12 @@ validate_baseline <- function(vsel_obj, baseline, deltas) {
   if (!(baseline %in% c("ref", "best"))) {
     stop("Argument 'baseline' must be either 'ref' or 'best'.")
   }
-  if (baseline == "ref" && deltas == TRUE &&
+  if (baseline == "ref" && (identical(deltas, "mixed") || isTRUE(deltas)) &&
       inherits(vsel_obj$refmodel, "datafit")) {
     # no reference model (or the results missing for some other reason),
     # so cannot compute differences (or ratios) vs. the reference model
-    stop("Cannot use deltas = TRUE and baseline = 'ref' when there is no ",
-         "reference model.")
+    stop("Cannot use `deltas = TRUE` (or `deltas = \"mixed\"`) and ",
+         "`baseline = \"ref\"` when there is no reference model.")
   }
   if (baseline == "best" && vsel_obj$cv_method == "LOO" &&
       isTRUE(vsel_obj$nloo < vsel_obj$refmodel$nobs)) {

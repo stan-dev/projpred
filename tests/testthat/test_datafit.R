@@ -500,8 +500,8 @@ test_that("summary.vsel(): `baseline = \"ref\"` and `deltas = TRUE` fails", {
   for (tstsetup in head(names(vss_datafit), 1)) {
     expect_error(
       summary(vss_datafit[[tstsetup]], baseline = "ref", deltas = TRUE),
-      paste("^Cannot use deltas = TRUE and baseline = 'ref' when there is no",
-            "reference model\\.$"),
+      paste0("^Cannot use `deltas = TRUE` .+or `deltas = .+mixed.+`.+ and ",
+             "`baseline = .+ref.+ when there is no reference model\\.$"),
       info = tstsetup
     )
   }
