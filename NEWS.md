@@ -19,6 +19,10 @@ If you read this from a place other than <https://mc-stan.org/projpred/news/inde
 * Minor enhancements concerning verbosity (e.g., the number of projected draws---resulting from clustering or thinning---is now printed out during the different steps of the computations). Also introduced global option `projpred.verbose` which may be used to set argument `verbose` of `varsel()` and `cv_varsel()` globally. (GitHub: #506)
 * For the CV parallelization (see argument `parallel` of `cv_varsel()`), a new global option `projpred.export_to_workers` may be set to a character vector of names of objects to export from the global environment to the parallel workers. (GitHub: #497, #510)
 
+## Bug fixes
+
+* Previously, in case of PSIS-LOO CV with `validate_search = TRUE` and thinned posterior draws for projection (i.e., argument(s) `ndraws` or `ndraws_pred` being used, not `nclusters` or `nclusters_pred`), `print.vselsummary()` incorrectly reported that the posterior draws had been clustered. This has now been fixed, so thinning is reported in such cases. (GitHub: #516)
+
 # projpred 2.8.0
 
 ## Major changes
