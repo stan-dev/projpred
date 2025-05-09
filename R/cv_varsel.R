@@ -955,14 +955,14 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
 
     if (verbose) {
       if (refit_prj) {
-        verb_clust_used_eval <- refdist_pred[["clust_used"]]
-        verb_nprjdraws_eval <- refdist_pred[["nprjdraws"]]
+        vtxt_clust_used_eval <- refdist_pred[["clust_used"]]
+        vtxt_nprjdraws_eval <- refdist_pred[["nprjdraws"]]
       } else {
         # NOTE: `!refit_prj` cannot occur in combination with
         # `!search_out_rks_was_null`, so it is correct and safe to use
         # `refdist_sel` here.
-        verb_clust_used_eval <- refdist_sel[["clust_used"]]
-        verb_nprjdraws_eval <- refdist_sel[["nprjdraws"]]
+        vtxt_clust_used_eval <- refdist_sel[["clust_used"]]
+        vtxt_nprjdraws_eval <- refdist_sel[["nprjdraws"]]
       }
       verb_out("-----\nRunning ",
                if (!search_out_rks_was_null) {
@@ -974,16 +974,27 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
                         " and ")
                },
                "the performance evaluation with ",
-               txt_clust_draws(verb_clust_used_eval, verb_nprjdraws_eval),
+               txt_clust_draws(vtxt_clust_used_eval, vtxt_nprjdraws_eval),
                " (`refit_prj = ", refit_prj, "`) for each of the `nloo = ",
                nloo, "` LOO-CV folds separately ...")
     }
     one_obs <- function(run_index,
-                        verbose_search = verbose &&
+                        verbose_obs = verbose &&
                           getOption("projpred.extra_verbose", FALSE),
                         ...) {
       # Observation index:
       i <- inds[run_index]
+
+      # For (extra-)verbose mode:
+      vtxt_obs_i <- paste0(
+        "for LOO-CV fold ", run_index, " out of `nloo = ", nloo, "` ",
+        "(", round(100 * run_index / nloo), " %) ",
+        if (nloo < n) {
+          paste0("(this is observation ", i, ") ")
+        } else {
+          ""
+        }
+      )
 
       # Run the search with the reweighted clusters (or thinned draws) (so the
       # *reweighted* fitted response values from the reference model act as
@@ -996,19 +1007,9 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
           refmodel = refmodel, ndraws = ndraws, nclusters = nclusters,
           reweighting_args = list(cl_ref = cl_sel, wdraws_ref = exp(lw[, i])),
           method = method, nterms_max = nterms_max, penalty = penalty,
-          verbose = verbose_search,
-          verbose_txt_obs = NULL,
-          # TODO: Use a non-`NULL` text for `verbose_txt_obs` mentioning that
-          # this is for a single fold, namely fold `i`, and also remove the
-          # possibility of `verbose_txt_obs = NULL` in .select() (and then also
-          # remove `May also be `NULL` to omit that verbose message completely.`
-          # in the corresponding internal documentation). Then also set `verbose
-          # = verbose_search` in the perf_eval() call below and rename
-          # `verbose_search` to something like `verbose_folds` (and don't forget
-          # to update the general package documentation for global option
-          # `projpred.extra_verbose`).
-          search_control = search_control,
-          search_terms = search_terms, est_runtime = FALSE, ...
+          verbose = verbose_obs, verbose_txt_obs = vtxt_obs_i,
+          search_control = search_control, search_terms = search_terms,
+          est_runtime = FALSE, ...
         )
       }
 
@@ -1018,7 +1019,8 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
         search_path = search_path, refmodel = refmodel, refit_prj = refit_prj,
         ndraws = ndraws_pred, nclusters = nclusters_pred,
         reweighting_args = list(cl_ref = cl_pred, wdraws_ref = exp(lw[, i])),
-        indices_test = i, ...
+        indices_test = i, verbose = verbose_obs, verbose_txt_obs = vtxt_obs_i,
+        ...
       )
 
       return(nlist(predictor_ranking = search_path[["predictor_ranking"]],
@@ -1069,7 +1071,7 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
                       "loo_sub_oscale", "mu_sub_oscale")
       ) %do_projpred% {
         out_one_obs <- do.call(one_obs, c(list(run_index = run_index,
-                                               verbose_search = FALSE),
+                                               verbose_obs = FALSE),
                                           dot_args))
         if (!is.null(progressor_obj)) progressor_obj()
         return(out_one_obs)
@@ -1293,6 +1295,7 @@ warn_pareto <- function(n07, n, khat_threshold = 0.7, warn_txt) {
 if (getRversion() >= package_version("2.15.1")) {
   utils::globalVariables("list_cv_k")
   utils::globalVariables("search_out_rks_k")
+  utils::globalVariables("ks_k")
 }
 
 kfold_varsel <- function(refmodel, method, nterms_max, ndraws, nclusters,
@@ -1329,41 +1332,46 @@ kfold_varsel <- function(refmodel, method, nterms_max, ndraws, nclusters,
       nclusters = nclusters,
       S = length(refmodel$wdraws_ref)
     )
-    verb_clust_used_sel <- clust_info_sel[["clust_used"]]
-    verb_nprjdraws_sel <- clust_info_sel[["nprjdraws"]]
+    vtxt_clust_used_sel <- clust_info_sel[["clust_used"]]
+    vtxt_nprjdraws_sel <- clust_info_sel[["nprjdraws"]]
     if (refit_prj) {
       clust_info_eval <- clust_info(
         ndraws = ndraws_pred,
         nclusters = nclusters_pred,
         S = length(refmodel$wdraws_ref)
       )
-      verb_clust_used_eval <- clust_info_eval[["clust_used"]]
-      verb_nprjdraws_eval <- clust_info_eval[["nprjdraws"]]
+      vtxt_clust_used_eval <- clust_info_eval[["clust_used"]]
+      vtxt_nprjdraws_eval <- clust_info_eval[["nprjdraws"]]
     } else {
       # NOTE: `!refit_prj` cannot occur in combination with
       # `!search_out_rks_was_null || !validate_search`, so it is correct and
-      # safe to use `verb_clust_used_sel` and `verb_nprjdraws_sel` here.
-      verb_clust_used_eval <- verb_clust_used_sel
-      verb_nprjdraws_eval <- verb_nprjdraws_sel
+      # safe to use `vtxt_clust_used_sel` and `vtxt_nprjdraws_sel` here.
+      vtxt_clust_used_eval <- vtxt_clust_used_sel
+      vtxt_nprjdraws_eval <- vtxt_nprjdraws_sel
     }
     verb_out("-----\nRunning ",
              if (!search_out_rks_was_null || !validate_search) {
                ""
              } else {
                paste0(method, " search with ",
-                      txt_clust_draws(verb_clust_used_sel, verb_nprjdraws_sel),
+                      txt_clust_draws(vtxt_clust_used_sel, vtxt_nprjdraws_sel),
                       " and ")
              },
              "the performance evaluation with ",
-             txt_clust_draws(verb_clust_used_eval, verb_nprjdraws_eval),
+             txt_clust_draws(vtxt_clust_used_eval, vtxt_nprjdraws_eval),
              " (`refit_prj = ", refit_prj, "`) for each of the K = ", K,
              " CV folds separately ...")
   }
   one_fold <- function(fold,
                        rk,
-                       verbose_search = verbose &&
+                       k,
+                       verbose_fold = verbose &&
                          getOption("projpred.extra_verbose", FALSE),
                        ...) {
+    # For (extra-)verbose mode:
+    vtxt_fold_k <- paste0("for CV fold ", k, " out of K = ", K, " (",
+                          round(100 * k / K), " %) ")
+
     # Run the search for the current fold:
     if (!validate_search) {
       search_path <- search_path_fulldata
@@ -1373,16 +1381,9 @@ kfold_varsel <- function(refmodel, method, nterms_max, ndraws, nclusters,
       search_path <- .select(
         refmodel = fold$refmodel, ndraws = ndraws, nclusters = nclusters,
         method = method, nterms_max = nterms_max, penalty = penalty,
-        verbose = verbose_search,
-        verbose_txt_obs = NULL,
-        # TODO: When using a non-`NULL` text for `verbose_txt_obs` in one_obs(),
-        # also do this here in one_fold(). Then also set `verbose =
-        # verbose_search` in the perf_eval() call below and rename
-        # `verbose_search` to something like `verbose_folds` (and don't forget
-        # to update the general package documentation for global option
-        # `projpred.extra_verbose`).
-        search_control = search_control,
-        search_terms = search_terms, est_runtime = FALSE, ...
+        verbose = verbose_fold, verbose_txt_obs = vtxt_fold_k,
+        search_control = search_control, search_terms = search_terms,
+        est_runtime = FALSE, ...
       )
     }
 
@@ -1391,7 +1392,8 @@ kfold_varsel <- function(refmodel, method, nterms_max, ndraws, nclusters,
     perf_eval_out <- perf_eval(
       search_path = search_path, refmodel = fold$refmodel,
       refit_prj = refit_prj, ndraws = ndraws_pred, nclusters = nclusters_pred,
-      refmodel_fulldata = refmodel, indices_test = fold$omitted, ...
+      refmodel_fulldata = refmodel, indices_test = fold$omitted,
+      verbose = verbose_fold, verbose_txt_obs = vtxt_fold_k, ...
     )
 
     # Performance evaluation for the reference model of the current fold:
@@ -1423,11 +1425,11 @@ kfold_varsel <- function(refmodel, method, nterms_max, ndraws, nclusters,
     if (verbose) {
       pb <- utils::txtProgressBar(min = 0, max = K, style = 3, initial = 0)
     }
-    res_cv <- lapply(seq_along(list_cv), function(k) {
+    res_cv <- lapply(seq_len(K), function(k) {
       if (verbose) {
         on.exit(utils::setTxtProgressBar(pb, k))
       }
-      one_fold(fold = list_cv[[k]], rk = search_out_rks[[k]], ...)
+      one_fold(fold = list_cv[[k]], rk = search_out_rks[[k]], k = k, ...)
     })
     if (verbose) {
       close(pb)
@@ -1441,7 +1443,7 @@ kfold_varsel <- function(refmodel, method, nterms_max, ndraws, nclusters,
       stop("Please install the 'doRNG' package.")
     }
     if (verbose && use_progressr()) {
-      progressor_obj <- progressr::progressor(length(list_cv))
+      progressor_obj <- progressr::progressor(K)
     } else {
       progressor_obj <- NULL
     }
@@ -1450,6 +1452,7 @@ kfold_varsel <- function(refmodel, method, nterms_max, ndraws, nclusters,
     res_cv <- foreach::foreach(
       list_cv_k = list_cv,
       search_out_rks_k = search_out_rks,
+      ks_k = seq_len(K),
       .packages = c("projpred"),
       .export = c("one_fold", "dot_args", "progressor_obj",
                   getOption("projpred.export_to_workers", character())),
@@ -1457,7 +1460,8 @@ kfold_varsel <- function(refmodel, method, nterms_max, ndraws, nclusters,
     ) %do_projpred% {
       out_one_fold <- do_call(one_fold, c(list(fold = list_cv_k,
                                                rk = search_out_rks_k,
-                                               verbose_search = FALSE),
+                                               k = ks_k,
+                                               verbose_fold = FALSE),
                                           dot_args))
       if (!is.null(progressor_obj)) progressor_obj()
       return(out_one_fold)

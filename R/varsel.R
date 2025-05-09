@@ -513,7 +513,6 @@ varsel.refmodel <- function(
 #   weighted_summary_means().
 # @param verbose_txt_obs Passed to `...` of verb_out(), so character string(s)
 #   to be included in the verbose message indicating the start of the search.
-#   May also be `NULL` to omit that verbose message completely.
 # For all other arguments, see the documentation of varsel().
 #
 # @return A list with elements `predictor_ranking` (the predictor ranking
@@ -540,11 +539,9 @@ varsel.refmodel <- function(
     )
   }
 
-  if (!is.null(verbose_txt_obs)) {
-    verb_out("-----\nRunning ", method, " search ", verbose_txt_obs, "with ",
-             txt_clust_draws(p_sel[["clust_used"]], p_sel[["nprjdraws"]]),
-             " ...", verbose = verbose)
-  }
+  verb_out("-----\nRunning ", method, " search ", verbose_txt_obs, "with ",
+           txt_clust_draws(p_sel[["clust_used"]], p_sel[["nprjdraws"]]),
+           " ...", verbose = verbose)
   if (method == "L1") {
     search_path <- search_L1(
       p_ref = p_sel, refmodel = refmodel, nterms_max = nterms_max,
@@ -556,9 +553,7 @@ varsel.refmodel <- function(
       verbose = verbose, search_control = search_control, ...
     )
   }
-  if (!is.null(verbose_txt_obs)) {
-    verb_out("-----", verbose = verbose)
-  }
+  verb_out("-----", verbose = verbose)
 
   search_path$p_sel <- p_sel
   return(search_path)

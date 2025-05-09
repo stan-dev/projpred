@@ -60,7 +60,7 @@ perf_eval <- function(search_path,
                       wobs_test = refmodel_fulldata$wobs[indices_test],
                       y_test = refmodel_fulldata$y[indices_test],
                       y_oscale_test = refmodel_fulldata$y_oscale[indices_test],
-                      verbose = FALSE,
+                      verbose = FALSE, verbose_txt_obs = "",
                       ...) {
   if (!refit_prj) {
     p_ref <- search_path$p_sel
@@ -107,7 +107,7 @@ perf_eval <- function(search_path,
     # project()).
     verbose <- FALSE
   }
-  verb_out("-----\nRunning the performance evaluation with ",
+  verb_out("-----\nRunning the performance evaluation ", verbose_txt_obs, "with ",
            txt_clust_draws(p_ref[["clust_used"]], p_ref[["nprjdraws"]]),
            " (`refit_prj = ", refit_prj, "`) ...", verbose = verbose)
   out_by_size <- lapply(nterms, function(size_j) {
