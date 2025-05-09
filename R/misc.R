@@ -654,9 +654,6 @@ txt_clust_draws <- function(clust_used, nprjdraws) {
   if (nprjdraws > 1) {
     out <- paste0(out, "s")
   }
-  if (!clust_used) {
-    out <- paste0(out, " (from thinning)")
-  }
   return(out)
 }
 

@@ -828,7 +828,7 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
         if (getOption("projpred.warn_psis", TRUE)) {
           message(
             "Using standard importance sampling (SIS) due to a small number of ",
-            if (clust_used_eval) "clusters" else "draws (from thinning)", "."
+            if (clust_used_eval) "clusters" else "draws", "."
           )
         }
         # Use loo::sis().
