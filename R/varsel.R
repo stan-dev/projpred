@@ -511,7 +511,7 @@ varsel.refmodel <- function(
 #   weights), then this needs to be a `list` with elements `wdraws_ref` and
 #   `cl_ref`. For these two elements, see the (internal) documentation of
 #   weighted_summary_means().
-# @param verbose_txt_obs Passed to `...` of verb_out(), so character string(s)
+# @param verbose_txt_add Passed to `...` of verb_out(), so character string(s)
 #   to be included in the verbose message indicating the start of the search.
 # For all other arguments, see the documentation of varsel().
 #
@@ -522,7 +522,7 @@ varsel.refmodel <- function(
 #   `p_sel` (the output from get_refdist() for the search).
 .select <- function(refmodel, ndraws, nclusters, reweighting_args = NULL,
                     method, nterms_max, penalty, verbose,
-                    verbose_line_length = 5, verbose_txt_obs = "",
+                    verbose_line_length = 5, verbose_txt_add = "",
                     search_control, ...) {
   if (is.null(reweighting_args)) {
     p_sel <- get_refdist(refmodel, ndraws = ndraws, nclusters = nclusters)
@@ -541,7 +541,7 @@ varsel.refmodel <- function(
   }
 
   verb_out(rep("-", verbose_line_length), "\nRunning ", method, " search ",
-           verbose_txt_obs, "with ",
+           verbose_txt_add, "with ",
            txt_clust_draws(p_sel[["clust_used"]], p_sel[["nprjdraws"]]),
            " ...", verbose = verbose)
   if (method == "L1") {
