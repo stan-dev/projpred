@@ -1036,7 +1036,8 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
       # 'foreach' and 'doRNG' would have to be moved from `Suggests:` to
       # `Imports:`).
       if (verbose) {
-        pb <- utils::txtProgressBar(min = 0, max = nloo, style = 3, initial = 0)
+        pb <- utils::txtProgressBar(min = 0, max = nloo, style = 3, initial = 0,
+                                    file = stderr())
       }
       res_cv <- lapply(seq_along(inds), function(run_index) {
         if (verbose) {
@@ -1425,7 +1426,8 @@ kfold_varsel <- function(refmodel, method, nterms_max, ndraws, nclusters,
     # would require adding more "hard" dependencies (because packages 'foreach'
     # and 'doRNG' would have to be moved from `Suggests:` to `Imports:`).
     if (verbose) {
-      pb <- utils::txtProgressBar(min = 0, max = K, style = 3, initial = 0)
+      pb <- utils::txtProgressBar(min = 0, max = K, style = 3, initial = 0,
+                                  file = stderr())
     }
     res_cv <- lapply(seq_len(K), function(k) {
       if (verbose) {

@@ -1659,9 +1659,9 @@ test_that(paste(
                                             cores = 1)),
                      silent = TRUE)
     if (inherits(kfold_obj, "try-error")) {
-      cat("Could not test `tstsetup = \"", tstsetup, "\"` in the rstanarm ",
-          "`cvfits` test. Error message: \"",
-          attr(kfold_obj, "condition")$message, "\"\n", sep = "")
+      message("Could not test `tstsetup = \"", tstsetup, "\"` in the rstanarm ",
+              "`cvfits` test. Error message: \"",
+              attr(kfold_obj, "condition")$message, "\"")
       next
     }
     kfold_obj <- structure(kfold_obj$fits[, "fit"], folds = folds_vec)
@@ -1786,9 +1786,9 @@ test_that(paste(
       silent = TRUE
     )
     if (inherits(cvvs_cvfits, "try-error")) {
-      cat("Failure for `tstsetup = \"", tstsetup, "\"` in the brms ",
-          "`cvfits` test. Error message: \"",
-          attr(cvvs_cvfits, "condition")$message, "\"\n", sep = "")
+      message("Failure for `tstsetup = \"", tstsetup, "\"` in the brms ",
+              "`cvfits` test. Error message: \"",
+              attr(cvvs_cvfits, "condition")$message, "\"")
       # Check that this is a "pwrssUpdate" failure in lme4, so for solving this,
       # we would either need to tweak the lme4 tuning parameters manually (via
       # `...`) or change the data-generating mechanism here in the tests (to
@@ -2334,9 +2334,9 @@ test_that(paste(
       silent = TRUE
     )
     if (inherits(cvvs_eval, "try-error")) {
-      cat("Failure for `tstsetup = \"", tstsetup, "\"` in a cv_varsel.vsel() ",
-          "test. Error message: \"",
-          attr(cvvs_eval, "condition")$message, "\"\n", sep = "")
+      message("Failure for `tstsetup = \"", tstsetup, "\"` in a cv_varsel.vsel() ",
+              "test. Error message: \"",
+              attr(cvvs_eval, "condition")$message, "\"")
       # Check that this is a "pwrssUpdate" failure in lme4, so for solving this,
       # we would either need to tweak the lme4 tuning parameters manually (via
       # `...`) or change the data-generating mechanism here in the tests (to
@@ -2412,9 +2412,9 @@ test_that(paste(
       silent = TRUE
     )
     if (inherits(cvvs_eval, "try-error")) {
-      cat("Failure for `tstsetup = \"", tstsetup, "\"` in a cv_varsel.vsel() ",
-          "test. Error message: \"",
-          attr(cvvs_eval, "condition")$message, "\"\n", sep = "")
+      message("Failure for `tstsetup = \"", tstsetup, "\"` in a cv_varsel.vsel() ",
+              "test. Error message: \"",
+              attr(cvvs_eval, "condition")$message, "\"")
       # Check that this is a "pwrssUpdate" failure in lme4, so for solving this,
       # we would either need to tweak the lme4 tuning parameters manually (via
       # `...`) or change the data-generating mechanism here in the tests (to
@@ -2490,9 +2490,9 @@ test_that(paste(
       )
     }
     if (inherits(cvvs_eval, "try-error")) {
-      cat("Failure for `tstsetup = \"", tstsetup, "\"` in a cv_varsel.vsel() ",
-          "test. Error message: \"",
-          attr(cvvs_eval, "condition")$message, "\"\n", sep = "")
+      message("Failure for `tstsetup = \"", tstsetup, "\"` in a cv_varsel.vsel() ",
+              "test. Error message: \"",
+              attr(cvvs_eval, "condition")$message, "\"")
       # Check that this is a "pwrssUpdate" failure in lme4, so for solving this,
       # we would either need to tweak the lme4 tuning parameters manually (via
       # `...`) or change the data-generating mechanism here in the tests (to
@@ -2594,9 +2594,9 @@ test_that(paste(
       )
     }
     if (inherits(cvvs_eval, "try-error")) {
-      cat("Failure for `tstsetup = \"", tstsetup, "\"` in a cv_varsel.vsel() ",
-          "test. Error message: \"",
-          attr(cvvs_eval, "condition")$message, "\"\n", sep = "")
+      message("Failure for `tstsetup = \"", tstsetup, "\"` in a cv_varsel.vsel() ",
+              "test. Error message: \"",
+              attr(cvvs_eval, "condition")$message, "\"")
       # Check that this is a "pwrssUpdate" failure in lme4, so for solving this,
       # we would either need to tweak the lme4 tuning parameters manually (via
       # `...`) or change the data-generating mechanism here in the tests (to

@@ -636,10 +636,10 @@ cat_cls <- function(x) {
       paste(cls, collapse = ", "), "\n\n", sep = "")
 }
 
-# Print out text via cat() if `verbose = TRUE`:
+# Print out text via message() if `verbose = TRUE`:
 verb_out <- function(..., verbose = TRUE) {
   if (verbose) {
-    cat(..., "\n", sep = "")
+    message(...)
   }
 }
 
