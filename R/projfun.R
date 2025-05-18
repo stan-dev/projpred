@@ -23,7 +23,7 @@ proj_to_submodl <- function(predictor_terms, p_ref, refmodel,
       rhs_chr <- paste("<EXCEPTION: Unexpected length of the character-coerced",
                        "formula passed to the divergence minimizer.>")
     }
-    verb_out("  Projecting onto ", utils::tail(rhs_chr, 1))
+    verb_out("  Projecting onto `~ ", utils::tail(rhs_chr, 1), "`")
   }
 
   args_divmin <- list(formula = fml_divmin,

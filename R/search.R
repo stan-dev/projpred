@@ -121,7 +121,7 @@ search_forward <- function(p_ref, refmodel, nterms_max, verbose = TRUE,
     if (verbose && ct_chosen %in% iq) {
       vtxt <- paste(names(iq)[max(which(ct_chosen == iq))], "of terms selected")
       if (getOption("projpred.extra_verbose", FALSE)) {
-        vtxt <- paste0(vtxt, ": ", paste(chosen, collapse = " + "))
+        vtxt <- paste0(vtxt, ": `~ ", paste(chosen, collapse = " + "), "`")
       }
       verb_out(vtxt)
     }
