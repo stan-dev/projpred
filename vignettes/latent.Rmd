@@ -183,7 +183,7 @@ time_lat <- system.time(vs_lat <- varsel(
   ###
   nterms_max = 14,
   ### In interactive use, we recommend not to deactivate the verbose mode:
-  verbose = FALSE,
+  verbose = 0,
   ###
   ### For comparability with varsel() based on the traditional projection:
   seed = 95930
@@ -256,7 +256,7 @@ time_trad <- system.time(vs_trad <- varsel(
   ###
   nterms_max = 14,
   ### In interactive use, we recommend not to deactivate the verbose mode:
-  verbose = FALSE,
+  verbose = 0,
   ###
   ### For comparability with varsel() based on the latent projection:
   seed = 95930
@@ -356,7 +356,7 @@ vs_nebin <- varsel(
   ###
   nterms_max = 14,
   ### In interactive use, we recommend not to deactivate the verbose mode:
-  verbose = FALSE
+  verbose = 0
   ###
 )
 ```

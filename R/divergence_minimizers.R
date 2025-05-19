@@ -13,7 +13,7 @@ divmin <- function(
     formula,
     projpred_var,
     projpred_ws_aug,
-    verbose_divmin = getOption("projpred.verbose_project", FALSE),
+    verbose_divmin,
     throw_warn_sdivmin = getOption("projpred.warn_prj_drawwise", TRUE),
     do_check_conv = getOption("projpred.check_conv", TRUE),
     ...
@@ -65,7 +65,7 @@ divmin <- function(
     # and 'iterators' would have to be moved from `Suggests:` to `Imports:`).
     if (verbose_divmin) {
       pb <- utils::txtProgressBar(min = 0, max = length(formulas), style = 3,
-                                  initial = 0)
+                                  initial = 0, file = stderr())
       on.exit(close(pb))
     }
     outdmin <- lapply(seq_along(formulas), function(s) {
@@ -564,7 +564,7 @@ divmin_augdat <- function(
     weights,
     projpred_var,
     projpred_ws_aug,
-    verbose_divmin = getOption("projpred.verbose_project", FALSE),
+    verbose_divmin,
     throw_warn_sdivmin = getOption("projpred.warn_prj_drawwise", TRUE),
     do_check_conv = getOption("projpred.check_conv", TRUE),
     ...
@@ -628,7 +628,7 @@ divmin_augdat <- function(
     # and 'iterators' would have to be moved from `Suggests:` to `Imports:`).
     if (verbose_divmin) {
       pb <- utils::txtProgressBar(min = 0, max = ncol(projpred_ws_aug),
-                                  style = 3, initial = 0)
+                                  style = 3, initial = 0, file = stderr())
       on.exit(close(pb))
     }
     outdmin <- lapply(seq_len(ncol(projpred_ws_aug)), function(s) {

@@ -88,8 +88,13 @@
 #'   default `search_terms` considers all the terms in the reference model's
 #'   formula.
 #' @param search_out Intended for internal use.
-#' @param verbose A single logical value indicating whether to print out
-#'   additional information during the computations.
+#' @param verbose A single integer value from the set \eqn{\{0, 1, 2, 3,
+#'   4\}}{{0, 1, 2, 3, 4}} (for [varsel()], \eqn{3} and \eqn{4} have the same
+#'   effect), indicating how much information (if any) to print out during the
+#'   computations. Higher values indicate that more information should be
+#'   printed, `0` deactivates the verbose mode. Internally, argument `verbose`
+#'   is coerced to integer via `as.integer()`, so technically, a single logical
+#'   value or a single numeric value work as well.
 #' @param seed Pseudorandom number generation (PRNG) seed by which the same
 #'   results can be obtained again if needed. Passed to argument `seed` of
 #'   [set.seed()], but can also be `NA` to not call [set.seed()] at all. If not
@@ -258,7 +263,7 @@ varsel.refmodel <- function(
     nclusters_pred = NULL,
     refit_prj = !inherits(object, "datafit"),
     nterms_max = NULL,
-    verbose = getOption("projpred.verbose", interactive()),
+    verbose = getOption("projpred.verbose", as.integer(interactive())),
     search_control = NULL,
     lambda_min_ratio = 1e-5,
     nlambda = 150,
@@ -288,6 +293,7 @@ varsel.refmodel <- function(
             "Now using `thresh` as element `thresh` of `search_control`.")
     search_control$thresh <- thresh
   }
+  verbose <- verbose_from_deprecated_options(verbose, with_cv = FALSE)
 
   if (exists(".Random.seed", envir = .GlobalEnv)) {
     rng_state_old <- get(".Random.seed", envir = .GlobalEnv)
@@ -307,7 +313,7 @@ varsel.refmodel <- function(
   args <- parse_args_varsel(
     refmodel = refmodel, method = method, refit_prj = refit_prj,
     nterms_max = nterms_max, nclusters = nclusters, search_terms = search_terms,
-    nterms_all = nterms_all
+    nterms_all = nterms_all, verbose = verbose
   )
   method <- args$method
   refit_prj <- args$refit_prj
@@ -315,6 +321,7 @@ varsel.refmodel <- function(
   nclusters <- args$nclusters
   search_terms <- args$search_terms
   search_terms_was_null <- args$search_terms_was_null
+  verbose <- args$verbose
 
   # Pre-process `d_test`:
   if (is.null(d_test)) {
@@ -511,9 +518,8 @@ varsel.refmodel <- function(
 #   weights), then this needs to be a `list` with elements `wdraws_ref` and
 #   `cl_ref`. For these two elements, see the (internal) documentation of
 #   weighted_summary_means().
-# @param verbose_txt_obs Passed to `...` of verb_out(), so character string(s)
+# @param verbose_txt_add Passed to `...` of verb_out(), so character string(s)
 #   to be included in the verbose message indicating the start of the search.
-#   May also be `NULL` to omit that verbose message completely.
 # For all other arguments, see the documentation of varsel().
 #
 # @return A list with elements `predictor_ranking` (the predictor ranking
@@ -522,7 +528,8 @@ varsel.refmodel <- function(
 #   of fits per model size being equal to the number of projected draws), and
 #   `p_sel` (the output from get_refdist() for the search).
 .select <- function(refmodel, ndraws, nclusters, reweighting_args = NULL,
-                    method, nterms_max, penalty, verbose, verbose_txt_obs = "",
+                    method, nterms_max, penalty, verbose,
+                    verbose_line_length = 5, verbose_txt_add = "",
                     search_control, ...) {
   if (is.null(reweighting_args)) {
     p_sel <- get_refdist(refmodel, ndraws = ndraws, nclusters = nclusters)
@@ -540,11 +547,10 @@ varsel.refmodel <- function(
     )
   }
 
-  if (!is.null(verbose_txt_obs)) {
-    verb_out("-----\nRunning ", method, " search ", verbose_txt_obs, "with ",
-             txt_clust_draws(p_sel[["clust_used"]], p_sel[["nprjdraws"]]),
-             " ...", verbose = verbose)
-  }
+  verb_out(rep("-", verbose_line_length), "\nRunning ", method, " search ",
+           verbose_txt_add, "with ",
+           txt_clust_draws(p_sel[["clust_used"]], p_sel[["nprjdraws"]]),
+           " ...", verbose = verbose)
   if (method == "L1") {
     search_path <- search_L1(
       p_ref = p_sel, refmodel = refmodel, nterms_max = nterms_max,
@@ -556,9 +562,7 @@ varsel.refmodel <- function(
       verbose = verbose, search_control = search_control, ...
     )
   }
-  if (!is.null(verbose_txt_obs)) {
-    verb_out("-----", verbose = verbose)
-  }
+  verb_out(rep("-", verbose_line_length), verbose = verbose)
 
   search_path$p_sel <- p_sel
   return(search_path)
@@ -571,7 +575,7 @@ varsel.refmodel <- function(
 # them in with the default values. The purpose of this function is to avoid
 # repeating the same code both in varsel() and cv_varsel().
 parse_args_varsel <- function(refmodel, method, refit_prj, nterms_max,
-                              nclusters, search_terms, nterms_all) {
+                              nclusters, search_terms, nterms_all, verbose) {
   search_terms_was_null <- is.null(search_terms)
   if (search_terms_was_null) {
     search_terms <- split_formula(refmodel$formula,
@@ -653,6 +657,8 @@ parse_args_varsel <- function(refmodel, method, refit_prj, nterms_max,
     )
   }
 
+  verbose <- as.integer(verbose)
+
   return(nlist(method, refit_prj, nterms_max, nclusters, search_terms,
-               search_terms_was_null))
+               search_terms_was_null, verbose))
 }

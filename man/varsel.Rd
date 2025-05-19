@@ -23,7 +23,7 @@ varsel(object, ...)
   nclusters_pred = NULL,
   refit_prj = !inherits(object, "datafit"),
   nterms_max = NULL,
-  verbose = getOption("projpred.verbose", interactive()),
+  verbose = getOption("projpred.verbose", as.integer(interactive())),
   search_control = NULL,
   lambda_min_ratio = 1e-05,
   nlambda = 150,
@@ -91,8 +91,13 @@ supplied). Note that \code{nterms_max} does not count the intercept, so use
 \code{nterms_max = 0} for the intercept-only model. (Correspondingly, \code{D} above
 does not count the intercept.)}
 
-\item{verbose}{A single logical value indicating whether to print out
-additional information during the computations.}
+\item{verbose}{A single integer value from the set \eqn{\{0, 1, 2, 3,
+  4\}}{{0, 1, 2, 3, 4}} (for \code{\link[=varsel]{varsel()}}, \eqn{3} and \eqn{4} have the same
+effect), indicating how much information (if any) to print out during the
+computations. Higher values indicate that more information should be
+printed, \code{0} deactivates the verbose mode. Internally, argument \code{verbose}
+is coerced to integer via \code{as.integer()}, so technically, a single logical
+value or a single numeric value work as well.}
 
 \item{search_control}{A \code{list} of "control" arguments (i.e., tuning
 parameters) for the search. In case of forward search, these arguments are

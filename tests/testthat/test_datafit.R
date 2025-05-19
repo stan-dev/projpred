@@ -355,7 +355,7 @@ test_that(paste(
       #   m <- as.matrix(prjs_vs_datafit[[tstsetup]])
       #   expect_snapshot({
       #     print(tstsetup)
-      #     print(rlang::hash(m)) # cat(m)
+      #     print(rlang::hash(m)) # message(m)
       #   })
       #   if (testthat_ed_max2) local_edition(2)
       # }
@@ -382,7 +382,7 @@ test_that(paste(
       #     expect_snapshot({
       #       print(tstsetup)
       #       print(prjs_vs_i$predictor_terms)
-      #       print(rlang::hash(m)) # cat(m)
+      #       print(rlang::hash(m)) # message(m)
       #     })
       #     return(invisible(TRUE))
       #   })

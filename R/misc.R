@@ -636,10 +636,10 @@ cat_cls <- function(x) {
       paste(cls, collapse = ", "), "\n\n", sep = "")
 }
 
-# Print out text via cat() if `verbose = TRUE`:
+# Print out text via message() if `verbose = TRUE`:
 verb_out <- function(..., verbose = TRUE) {
   if (verbose) {
-    cat(..., "\n", sep = "")
+    message(...)
   }
 }
 
@@ -653,9 +653,6 @@ txt_clust_draws <- function(clust_used, nprjdraws) {
   }
   if (nprjdraws > 1) {
     out <- paste0(out, "s")
-  }
-  if (!clust_used) {
-    out <- paste0(out, " (from thinning)")
   }
   return(out)
 }
@@ -772,4 +769,65 @@ sqrt_cut0 <- function(x) {
     }
   }
   return(sqrt(x))
+}
+
+verbose_from_deprecated_options <- function(verbose, with_cv = FALSE,
+                                            proj_only = FALSE) {
+  if (!is.logical(verbose)) {
+    return(verbose)
+  }
+  if (!is.null(getOption("projpred.extra_verbose")) &&
+      !is.null(getOption("projpred.verbose_project"))) {
+    warning(
+      "Global options `projpred.extra_verbose` and `projpred.verbose_project` ",
+      "are deprecated. Please use argument ",
+      "`verbose` instead. This argument can also be controlled via a ",
+      "corresponding global option. Now trying to find an appropriate value ",
+      "for argument `verbose`."
+    )
+    verbose <- as.logical(verbose) * (
+      proj_only * 2L +
+        (!proj_only) * (
+          (getOption("projpred.extra_verbose") ||
+             getOption("projpred.verbose_project")) *
+            (1L + with_cv + getOption("projpred.verbose_project")) +
+            1L
+        )
+    )
+  } else {
+    verbose <- verbose_from_deprecated_option(
+      verbose,
+      with_cv = with_cv,
+      proj_only = proj_only,
+      nm_option = "projpred.extra_verbose"
+    )
+    verbose <- verbose_from_deprecated_option(
+      verbose,
+      with_cv = with_cv,
+      proj_only = proj_only,
+      nm_option = "projpred.verbose_project"
+    )
+  }
+  return(verbose)
+}
+
+verbose_from_deprecated_option <- function(verbose, with_cv = FALSE,
+                                           proj_only = FALSE, nm_option) {
+  if (!is.null(getOption(nm_option))) {
+    warning(
+      "Global option `", nm_option, "` is deprecated. Please use argument ",
+      "`verbose` instead. This argument can also be controlled via a ",
+      "corresponding global option. Now trying to find an appropriate value ",
+      "for argument `verbose`."
+    )
+    verbose <- as.logical(verbose) * (
+      proj_only * 2L +
+        (!proj_only) * (
+          getOption(nm_option) *
+            (1L + with_cv + identical(nm_option, "projpred.verbose_project")) +
+            1L
+        )
+    )
+  }
+  return(verbose)
 }
