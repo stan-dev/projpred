@@ -511,9 +511,8 @@ varsel.refmodel <- function(
 #   weights), then this needs to be a `list` with elements `wdraws_ref` and
 #   `cl_ref`. For these two elements, see the (internal) documentation of
 #   weighted_summary_means().
-# @param verbose_txt_obs Passed to `...` of verb_out(), so character string(s)
+# @param verbose_txt_add Passed to `...` of verb_out(), so character string(s)
 #   to be included in the verbose message indicating the start of the search.
-#   May also be `NULL` to omit that verbose message completely.
 # For all other arguments, see the documentation of varsel().
 #
 # @return A list with elements `predictor_ranking` (the predictor ranking
@@ -522,7 +521,8 @@ varsel.refmodel <- function(
 #   of fits per model size being equal to the number of projected draws), and
 #   `p_sel` (the output from get_refdist() for the search).
 .select <- function(refmodel, ndraws, nclusters, reweighting_args = NULL,
-                    method, nterms_max, penalty, verbose, verbose_txt_obs = "",
+                    method, nterms_max, penalty, verbose,
+                    verbose_line_length = 5, verbose_txt_add = "",
                     search_control, ...) {
   if (is.null(reweighting_args)) {
     p_sel <- get_refdist(refmodel, ndraws = ndraws, nclusters = nclusters)
@@ -540,11 +540,10 @@ varsel.refmodel <- function(
     )
   }
 
-  if (!is.null(verbose_txt_obs)) {
-    verb_out("-----\nRunning ", method, " search ", verbose_txt_obs, "with ",
-             txt_clust_draws(p_sel[["clust_used"]], p_sel[["nprjdraws"]]),
-             " ...", verbose = verbose)
-  }
+  verb_out(rep("-", verbose_line_length), "\nRunning ", method, " search ",
+           verbose_txt_add, "with ",
+           txt_clust_draws(p_sel[["clust_used"]], p_sel[["nprjdraws"]]),
+           " ...", verbose = verbose)
   if (method == "L1") {
     search_path <- search_L1(
       p_ref = p_sel, refmodel = refmodel, nterms_max = nterms_max,
@@ -556,9 +555,7 @@ varsel.refmodel <- function(
       verbose = verbose, search_control = search_control, ...
     )
   }
-  if (!is.null(verbose_txt_obs)) {
-    verb_out("-----", verbose = verbose)
-  }
+  verb_out(rep("-", verbose_line_length), verbose = verbose)
 
   search_path$p_sel <- p_sel
   return(search_path)

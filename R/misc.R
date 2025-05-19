@@ -636,10 +636,10 @@ cat_cls <- function(x) {
       paste(cls, collapse = ", "), "\n\n", sep = "")
 }
 
-# Print out text via cat() if `verbose = TRUE`:
+# Print out text via message() if `verbose = TRUE`:
 verb_out <- function(..., verbose = TRUE) {
   if (verbose) {
-    cat(..., "\n", sep = "")
+    message(...)
   }
 }
 
@@ -653,9 +653,6 @@ txt_clust_draws <- function(clust_used, nprjdraws) {
   }
   if (nprjdraws > 1) {
     out <- paste0(out, "s")
-  }
-  if (!clust_used) {
-    out <- paste0(out, " (from thinning)")
   }
   return(out)
 }

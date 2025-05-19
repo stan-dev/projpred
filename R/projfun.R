@@ -23,7 +23,7 @@ proj_to_submodl <- function(predictor_terms, p_ref, refmodel,
       rhs_chr <- paste("<EXCEPTION: Unexpected length of the character-coerced",
                        "formula passed to the divergence minimizer.>")
     }
-    verb_out("  Projecting onto ", utils::tail(rhs_chr, 1))
+    verb_out("  Projecting onto `~ ", utils::tail(rhs_chr, 1), "`")
   }
 
   args_divmin <- list(formula = fml_divmin,
@@ -60,8 +60,8 @@ perf_eval <- function(search_path,
                       wobs_test = refmodel_fulldata$wobs[indices_test],
                       y_test = refmodel_fulldata$y[indices_test],
                       y_oscale_test = refmodel_fulldata$y_oscale[indices_test],
-                      verbose = FALSE,
-                      ...) {
+                      verbose = FALSE, verbose_line_length = 5,
+                      verbose_txt_add = "", ...) {
   if (!refit_prj) {
     p_ref <- search_path$p_sel
     # In this case, simply fetch the already computed projections, so don't
@@ -107,7 +107,8 @@ perf_eval <- function(search_path,
     # project()).
     verbose <- FALSE
   }
-  verb_out("-----\nRunning the performance evaluation with ",
+  verb_out(rep("-", verbose_line_length), "\nRunning the performance evaluation ",
+           verbose_txt_add, "with ",
            txt_clust_draws(p_ref[["clust_used"]], p_ref[["nprjdraws"]]),
            " (`refit_prj = ", refit_prj, "`) ...", verbose = verbose)
   out_by_size <- lapply(nterms, function(size_j) {
@@ -152,7 +153,7 @@ perf_eval <- function(search_path,
     }
     return(out_j)
   })
-  verb_out("-----", verbose = verbose)
+  verb_out(rep("-", verbose_line_length), verbose = verbose)
   if (return_submodls) {
     # Currently only called in project().
     return(out_by_size)
