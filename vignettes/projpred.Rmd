@@ -145,7 +145,7 @@ cvvs_fast <- cv_varsel(
   ###
   nterms_max = 20,
   ### In interactive use, we recommend not to deactivate the verbose mode:
-  verbose = FALSE
+  verbose = 0
   ### 
 )
 ```
@@ -170,7 +170,7 @@ cvvs_fast_refit <- cv_varsel(
   nclusters_pred = 20,
   ###
   ### In interactive use, we recommend not to deactivate the verbose mode:
-  verbose = FALSE
+  verbose = 0
   ### 
 )
 ```
@@ -218,7 +218,7 @@ cvvs <- cv_varsel(
   nterms_max = 9,
   parallel = TRUE,
   ### In interactive use, we recommend not to deactivate the verbose mode:
-  verbose = FALSE
+  verbose = 0
   ### 
 )
 # Tear down the CV parallelization setup:
@@ -337,7 +337,7 @@ prj <- project(
   refm_obj,
   predictor_terms = predictors_final,
   ### In interactive use, we recommend not to deactivate the verbose mode:
-  verbose = FALSE
+  verbose = 0
   ###
 )
 ```

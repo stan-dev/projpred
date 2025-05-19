@@ -47,12 +47,13 @@
 #'   (however, not yet in case of a GAMM) and having global option
 #'   `projpred.mlvl_pred_new` set to `TRUE`. (Such a prediction takes place when
 #'   calculating output elements `dis` and `ce`.)
-#' @param verbose A single logical value indicating whether to print out
-#'   additional information during the computations. More precisely, this gets
-#'   passed as `verbose_divmin` to the divergence minimizer function of the
-#'   `refmodel` object. For the built-in divergence minimizers, this only has an
-#'   effect in case of sequential computations (not in case of parallel
-#'   projection, which is described in [projpred-package]).
+#' @param verbose A single integer value from the set \eqn{\{0, 1, 2\}}{{0, 1,
+#'   2}} (if `!is.null(predictor_terms)`, \eqn{1} and \eqn{2} have the same
+#'   effect), indicating how much information (if any) to print out during the
+#'   computations. Higher values indicate that more information should be
+#'   printed, `0` deactivates the verbose mode. Internally, argument `verbose`
+#'   is coerced to integer via `as.integer()`, so technically, a single logical
+#'   value or a single numeric value work as well.
 #' @param ... Arguments passed to [get_refmodel()] (if [get_refmodel()] is
 #'   actually used; see argument `object`) as well as to the divergence
 #'   minimizer (if `refit_prj` is `TRUE`).
@@ -144,11 +145,18 @@
 #'                seed = 9182)
 #'
 #' @export
-project <- function(object, nterms = NULL, solution_terms = predictor_terms,
-                    predictor_terms = NULL, refit_prj = TRUE, ndraws = 400,
-                    nclusters = NULL, seed = NA,
-                    verbose = getOption("projpred.verbose_project", TRUE),
-                    ...) {
+project <- function(
+    object,
+    nterms = NULL,
+    solution_terms = predictor_terms,
+    predictor_terms = NULL,
+    refit_prj = TRUE,
+    ndraws = 400,
+    nclusters = NULL,
+    seed = NA,
+    verbose = getOption("projpred.verbose", as.integer(interactive())),
+    ...
+) {
   # Parse input -------------------------------------------------------------
 
   if (!missing(solution_terms)) {
@@ -156,6 +164,10 @@ project <- function(object, nterms = NULL, solution_terms = predictor_terms,
             "`predictor_terms` instead.")
     predictor_terms <- solution_terms
   }
+
+  verbose <- verbose_from_deprecated_options(verbose, with_cv = FALSE,
+                                             proj_only = TRUE)
+  verbose <- as.integer(verbose)
 
   ## `object` ---------------------------------------------------------------
 
@@ -210,6 +222,11 @@ project <- function(object, nterms = NULL, solution_terms = predictor_terms,
 
   if (!is.null(predictor_terms)) {
     # In this case, `predictor_terms` is given, so `nterms` is ignored.
+
+    if (verbose == 1L) {
+      verbose <- verbose + 1L
+    }
+
     # The table of possible predictor terms:
     if (!is.null(object$predictor_ranking)) {
       vars <- object$predictor_ranking
@@ -218,6 +235,7 @@ project <- function(object, nterms = NULL, solution_terms = predictor_terms,
                             add_main_effects = FALSE)
       vars <- setdiff(vars, "1")
     }
+
     # Reduce `predictor_terms` to those predictor terms that can be found in the
     # table of possible predictor terms:
     if (!all(predictor_terms %in% vars)) {
@@ -233,11 +251,14 @@ project <- function(object, nterms = NULL, solution_terms = predictor_terms,
       )
     }
     predictor_terms <- intersect(predictor_terms, vars)
+
     nterms <- length(predictor_terms)
   } else {
     # In this case, `predictor_terms` is not given, so it is fetched from
     # `object$predictor_ranking` and `nterms` becomes relevant.
+
     predictor_terms <- object$predictor_ranking
+
     if (is.null(nterms)) {
       # In this case, `nterms` is not given, so we infer it via suggest_size().
       sgg_size <- try(suggest_size(object, warnings = FALSE), silent = TRUE)
@@ -291,7 +312,7 @@ project <- function(object, nterms = NULL, solution_terms = predictor_terms,
                        outdmins = object$search_path$outdmins),
     nterms = nterms, refmodel = refmodel, refit_prj = refit_prj,
     ndraws = ndraws, nclusters = nclusters, return_submodls = TRUE,
-    verbose_divmin = verbose, ...
+    verbose = verbose + (1L * as.logical(verbose)), ...
   )
 
   # Output ------------------------------------------------------------------

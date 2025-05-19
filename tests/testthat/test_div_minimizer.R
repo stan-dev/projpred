@@ -65,10 +65,12 @@ test_that("divmin() works", {
       )
     }
 
+    args_fit_i$verbose_divmin <- FALSE
+
     outdmin <- do.call(
       divmin,
       args_fit_i[intersect(c("formula", "data", "family", "weights",
-                             "projpred_var"),
+                             "projpred_var", "verbose_divmin"),
                            names(args_fit_i))]
     )
     if (fam_crr == "brnll") {
@@ -162,6 +164,8 @@ test_that("divmin_augdat() works", {
       args_fit_i <- c(args_fit_i, list(avoid.increase = TRUE))
     }
 
+    args_fit_i$verbose_divmin <- FALSE
+
     if (fam_crr == "cumul" && mod_crr %in% c("glmm", "gamm") &&
         packageVersion("ordinal") < "2022.11-16") {
       warn_expected <- paste(
@@ -185,7 +189,7 @@ test_that("divmin_augdat() works", {
         divmin_augdat,
         args_fit_i[intersect(c("formula", "data", "family", "weights",
                                "projpred_var", "projpred_ws_aug", "epsilon",
-                               "avoid.increase"),
+                               "avoid.increase", "verbose_divmin"),
                              names(args_fit_i))]
       )
     } else {
@@ -194,7 +198,7 @@ test_that("divmin_augdat() works", {
           divmin_augdat,
           args_fit_i[intersect(c("formula", "data", "family", "weights",
                                  "projpred_var", "projpred_ws_aug", "epsilon",
-                                 "avoid.increase"),
+                                 "avoid.increase", "verbose_divmin"),
                                names(args_fit_i))]
         ),
         warn_expected
