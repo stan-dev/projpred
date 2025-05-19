@@ -84,27 +84,8 @@
 #'
 #' # Verbosity, messages, warnings, errors
 #'
-#' Global option `projpred.verbose` may be used for specifying the value (`TRUE`
-#' or `FALSE`) passed to argument `verbose` of [varsel()] and [cv_varsel()].
-#'
-#' Setting global option `projpred.extra_verbose` to `TRUE` will print out the
-#' current fold (for [cv_varsel()] with `validate_search = TRUE`), the submodel
-#' that \pkg{projpred} is currently projecting onto, and (if `method =
-#' "forward"` and `verbose = TRUE` in [varsel()] or [cv_varsel()]) which
-#' submodel has been selected at those steps of the forward search for which a
-#' percentage (of the maximum submodel size that the search is run up to) is
-#' printed. In general, however, we cannot recommend setting this global option
-#' to `TRUE` for [cv_varsel()] with `validate_search = TRUE` (simply due to the
-#' amount of information that will be printed, but also due to the progress bar
-#' which will not work as intended anymore).
-#'
-#' Global option `projpred.verbose_project` controls argument `verbose` of
-#' [project()], but also affects the verbosity of all other projections
-#' performed by the built-in divergence minimizers (except for L1 projections),
-#' in particular during a [varsel()] or [cv_varsel()] call. Usually, setting
-#' `projpred.verbose_project` to `TRUE` only makes sense when setting global
-#' option `projpred.extra_verbose` and argument `verbose` (of [varsel()] or
-#' [cv_varsel()]) to `TRUE` as well.
+#' Global option `projpred.verbose` may be used for specifying the value passed
+#' to argument `verbose` of [project()], [varsel()], and [cv_varsel()].
 #'
 #' By default, \pkg{projpred} catches messages and warnings from the draw-wise
 #' divergence minimizers and throws their unique collection after performing all

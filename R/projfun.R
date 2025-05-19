@@ -6,7 +6,7 @@
 # arguments and (ii) when called from perf_eval(). At the end, init_submodl() is
 # called, so the output is of class `submodl`.
 proj_to_submodl <- function(predictor_terms, p_ref, refmodel,
-                            search_control = NULL, ...) {
+                            search_control = NULL, verbose, ...) {
   y_unqs_aug <- refmodel$family$cats
   if (refmodel$family$for_latent && !is.null(y_unqs_aug)) {
     y_unqs_aug <- NULL
@@ -17,7 +17,7 @@ proj_to_submodl <- function(predictor_terms, p_ref, refmodel,
   )
   fml_divmin <- flatten_formula(subset$formula)
 
-  if (getOption("projpred.extra_verbose", FALSE)) {
+  if (verbose >= 2L) {
     rhs_chr <- as.character(fml_divmin)
     if (length(rhs_chr) != 3) {
       rhs_chr <- paste("<EXCEPTION: Unexpected length of the character-coerced",
@@ -31,7 +31,8 @@ proj_to_submodl <- function(predictor_terms, p_ref, refmodel,
                       family = refmodel$family,
                       weights = refmodel$wobs,
                       projpred_var = p_ref$var,
-                      projpred_ws_aug = p_ref$mu)
+                      projpred_ws_aug = p_ref$mu,
+                      verbose_divmin = verbose >= 3L)
   if (!is.null(search_control)) {
     args_divmin <- c(args_divmin, search_control)
   } else {
@@ -96,21 +97,15 @@ perf_eval <- function(search_path,
     fetch_submodl <- function(size_j, ...) {
       return(proj_to_submodl(
         predictor_terms = utils::head(search_path$predictor_ranking, size_j),
-        p_ref = p_ref, refmodel = refmodel, ...
+        p_ref = p_ref, refmodel = refmodel, verbose = verbose, ...
       ))
     }
-  }
-  if (return_submodls) {
-    # Deactivate the verbose message mentioning "performance evaluation" because
-    # there is no performance evaluation taking place if `return_submodls` is
-    # `TRUE` (this is currently only the case if perf_eval() is called from
-    # project()).
-    verbose <- FALSE
   }
   verb_out(rep("-", verbose_line_length), "\nRunning the performance evaluation ",
            verbose_txt_add, "with ",
            txt_clust_draws(p_ref[["clust_used"]], p_ref[["nprjdraws"]]),
-           " (`refit_prj = ", refit_prj, "`) ...", verbose = verbose)
+           " (`refit_prj = ", refit_prj, "`) ...",
+           verbose = verbose && !return_submodls)
   out_by_size <- lapply(nterms, function(size_j) {
     # Fetch the init_submodl() output (of class `submodl`) for the submodel at
     # position `size_j + 1` of the predictor ranking:
@@ -153,7 +148,7 @@ perf_eval <- function(search_path,
     }
     return(out_j)
   })
-  verb_out(rep("-", verbose_line_length), verbose = verbose)
+  verb_out(rep("-", verbose_line_length), verbose = verbose && !return_submodls)
   if (return_submodls) {
     # Currently only called in project().
     return(out_by_size)

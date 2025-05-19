@@ -904,8 +904,8 @@ options(projpred.warn_L1_interactions = FALSE)
 # Suppress the warning thrown by proj_predict() in case of observation weights
 # that are not all equal to `1`:
 options(projpred.warn_wobs_ppd = FALSE)
-# Suppress the verbose-mode progress bar in project():
-options(projpred.verbose_project = FALSE)
+# Suppress verbose-mode output:
+options(projpred.verbose = 0L)
 # Suppress instability warnings:
 options(projpred.warn_instable_projections = FALSE)
 # Run additional checks:

@@ -271,7 +271,7 @@ cv_varsel.refmodel <- function(
     refit_prj = !inherits(object, "datafit"),
     nterms_max = NULL,
     penalty = NULL,
-    verbose = getOption("projpred.verbose", interactive()),
+    verbose = getOption("projpred.verbose", as.integer(interactive())),
     nloo = if (cv_method == "LOO") object$nobs else NULL,
     K = if (!inherits(object, "datafit")) 5 else 10,
     cvfits = object$cvfits,
@@ -305,6 +305,7 @@ cv_varsel.refmodel <- function(
             "Now using `thresh` as element `thresh` of `search_control`.")
     search_control$thresh <- thresh
   }
+  verbose <- verbose_from_deprecated_options(verbose, with_cv = TRUE)
 
   if (exists(".Random.seed", envir = .GlobalEnv)) {
     rng_state_old <- get(".Random.seed", envir = .GlobalEnv)
@@ -324,7 +325,7 @@ cv_varsel.refmodel <- function(
   args <- parse_args_varsel(
     refmodel = refmodel, method = method, refit_prj = refit_prj,
     nterms_max = nterms_max, nclusters = nclusters, search_terms = search_terms,
-    nterms_all = nterms_all
+    nterms_all = nterms_all, verbose = verbose
   )
   method <- args$method
   refit_prj <- args$refit_prj
@@ -332,6 +333,7 @@ cv_varsel.refmodel <- function(
   nclusters <- args$nclusters
   search_terms <- args$search_terms
   search_terms_was_null <- args$search_terms_was_null
+  verbose <- args$verbose
   # Parse arguments specific to cv_varsel():
   args <- parse_args_cv_varsel(
     refmodel = refmodel, cv_method = cv_method, nloo = nloo, K = K,
@@ -350,7 +352,11 @@ cv_varsel.refmodel <- function(
     search_path_fulldata <- .select(
       refmodel = refmodel, ndraws = ndraws, nclusters = nclusters,
       method = method, nterms_max = nterms_max, penalty = penalty,
-      verbose = verbose,
+      verbose = if ((validate_search || cv_method == "kfold") && verbose >= 2L) {
+        verbose - 1L
+      } else {
+        verbose
+      },
       # NOTE: If `!validate_search`, this is still a full-data search, but in
       # that case, there are no fold-wise searches, so declaring this as a
       # full-data search could be confusing:
@@ -400,7 +406,8 @@ cv_varsel.refmodel <- function(
         refmodel = refmodel, method = method, nterms_max = nterms_max,
         ndraws = ndraws, nclusters = nclusters, ndraws_pred = ndraws_pred,
         nclusters_pred = nclusters_pred, refit_prj = refit_prj, penalty = penalty,
-        verbose = verbose, verbose_txt_add = "using the full dataset ",
+        verbose = if (verbose >= 2L) verbose - 1L else verbose,
+        verbose_txt_add = "using the full dataset ",
         search_control = search_control,
         nloo = refmodel$nobs,    # fast LOO-CV (using all observations)
         validate_search = FALSE, # fast LOO-CV (using all observations)
@@ -980,8 +987,7 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
                nloo, "` LOO-CV folds separately ...")
     }
     one_obs <- function(run_index,
-                        verbose_obs = verbose &&
-                          getOption("projpred.extra_verbose", FALSE),
+                        verbose_obs = max(verbose - 1L, 0L),
                         ...) {
       # Observation index:
       i <- inds[run_index]
@@ -1035,17 +1041,17 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
       # would require adding more "hard" dependencies (because packages
       # 'foreach' and 'doRNG' would have to be moved from `Suggests:` to
       # `Imports:`).
-      if (verbose) {
+      if (verbose == 1L) {
         pb <- utils::txtProgressBar(min = 0, max = nloo, style = 3, initial = 0,
                                     file = stderr())
       }
       res_cv <- lapply(seq_along(inds), function(run_index) {
-        if (verbose) {
+        if (verbose == 1L) {
           on.exit(utils::setTxtProgressBar(pb, run_index))
         }
         one_obs(run_index, ...)
       })
-      if (verbose) {
+      if (verbose == 1L) {
         close(pb)
       }
     } else {
@@ -1367,8 +1373,7 @@ kfold_varsel <- function(refmodel, method, nterms_max, ndraws, nclusters,
   one_fold <- function(fold,
                        rk,
                        k,
-                       verbose_fold = verbose &&
-                         getOption("projpred.extra_verbose", FALSE),
+                       verbose_fold = max(verbose - 1L, 0L),
                        ...) {
     # For (extra-)verbose mode:
     vtxt_fold_k <- paste0("for CV fold ", k, " out of K = ", K, " (",
@@ -1425,17 +1430,17 @@ kfold_varsel <- function(refmodel, method, nterms_max, ndraws, nclusters,
     # foreach::`%do%`` here and then proceed as in the parallel case, but that
     # would require adding more "hard" dependencies (because packages 'foreach'
     # and 'doRNG' would have to be moved from `Suggests:` to `Imports:`).
-    if (verbose) {
+    if (verbose == 1L) {
       pb <- utils::txtProgressBar(min = 0, max = K, style = 3, initial = 0,
                                   file = stderr())
     }
     res_cv <- lapply(seq_len(K), function(k) {
-      if (verbose) {
+      if (verbose == 1L) {
         on.exit(utils::setTxtProgressBar(pb, k))
       }
       one_fold(fold = list_cv[[k]], rk = search_out_rks[[k]], k = k, ...)
     })
-    if (verbose) {
+    if (verbose == 1L) {
       close(pb)
     }
   } else {

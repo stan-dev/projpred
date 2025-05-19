@@ -13,7 +13,7 @@ divmin <- function(
     formula,
     projpred_var,
     projpred_ws_aug,
-    verbose_divmin = getOption("projpred.verbose_project", FALSE),
+    verbose_divmin,
     throw_warn_sdivmin = getOption("projpred.warn_prj_drawwise", TRUE),
     do_check_conv = getOption("projpred.check_conv", TRUE),
     ...
@@ -564,7 +564,7 @@ divmin_augdat <- function(
     weights,
     projpred_var,
     projpred_ws_aug,
-    verbose_divmin = getOption("projpred.verbose_project", FALSE),
+    verbose_divmin,
     throw_warn_sdivmin = getOption("projpred.warn_prj_drawwise", TRUE),
     do_check_conv = getOption("projpred.check_conv", TRUE),
     ...
