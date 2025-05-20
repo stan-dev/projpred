@@ -767,9 +767,6 @@ plot.vsel <- function(
   if (identical(deltas, "mixed")) {
     stats_bs_init <- subset(stats_table_all,
                             stats_table_all$size == nfeat_baseline)
-    if (length(stats_bs_init[["value"]]) > 1) {
-      stop("Unexpected length of `stats_bs_init$value`. Please report this.")
-    }
     stats_table_all[["lq"]] <- stats_table_all[["diff.lq"]] +
       stats_bs_init[["value"]]
     stats_table_all[["uq"]] <- stats_table_all[["diff.uq"]] +
