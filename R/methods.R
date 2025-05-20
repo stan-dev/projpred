@@ -767,10 +767,15 @@ plot.vsel <- function(
   if (identical(deltas, "mixed")) {
     stats_bs_init <- subset(stats_table_all,
                             stats_table_all$size == nfeat_baseline)
+    names(stats_bs_init)[names(stats_bs_init) == "value"] <- "value_bs"
+    stats_table_all <- merge(stats_table_all,
+                             stats_bs_init[, c("statistic", "value_bs")],
+                             by = "statistic", all.x = TRUE, all.y = FALSE,
+                             sort = FALSE)
     stats_table_all[["lq"]] <- stats_table_all[["diff.lq"]] +
-      stats_bs_init[["value"]]
+      stats_table_all[["value_bs"]]
     stats_table_all[["uq"]] <- stats_table_all[["diff.uq"]] +
-      stats_bs_init[["value"]]
+      stats_table_all[["value_bs"]]
   }
   stats_ref <- subset(stats_table_all, stats_table_all$size == Inf)
   stats_sub <- subset(stats_table_all, stats_table_all$size != Inf)
