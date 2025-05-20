@@ -1112,7 +1112,7 @@ plot.vsel <- function(
                                  "intervals")
   if (identical(deltas, "mixed")) {
     interval_description <- paste0(interval_description,
-                                   ", showing uncertainty for ")
+                                   ", \nshowing uncertainty for ")
     if (all(stats != "gmpd")) {
       diff_pretty <- "difference"
     } else if (all(stats == "gmpd")) {
