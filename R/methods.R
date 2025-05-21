@@ -772,10 +772,27 @@ plot.vsel <- function(
                              stats_bs_init[, c("statistic", "value_bs")],
                              by = "statistic", all.x = TRUE, all.y = FALSE,
                              sort = FALSE)
+    is_gmpd_entry <- stats_table_all[["statistic"]] == "gmpd"
+    stats_table_all[["diff.lq"]][is_gmpd_entry] <-
+      log(stats_table_all[["diff.lq"]][is_gmpd_entry])
+    stats_table_all[["diff.uq"]][is_gmpd_entry] <-
+      log(stats_table_all[["diff.uq"]][is_gmpd_entry])
+    stats_table_all[["value_bs"]][is_gmpd_entry] <-
+      log(stats_table_all[["value_bs"]][is_gmpd_entry])
     stats_table_all[["lq"]] <- stats_table_all[["diff.lq"]] +
       stats_table_all[["value_bs"]]
     stats_table_all[["uq"]] <- stats_table_all[["diff.uq"]] +
       stats_table_all[["value_bs"]]
+    stats_table_all[["diff.lq"]][is_gmpd_entry] <-
+      exp(stats_table_all[["diff.lq"]][is_gmpd_entry])
+    stats_table_all[["diff.uq"]][is_gmpd_entry] <-
+      exp(stats_table_all[["diff.uq"]][is_gmpd_entry])
+    stats_table_all[["value_bs"]][is_gmpd_entry] <-
+      exp(stats_table_all[["value_bs"]][is_gmpd_entry])
+    stats_table_all[["lq"]][is_gmpd_entry] <-
+      exp(stats_table_all[["lq"]][is_gmpd_entry])
+    stats_table_all[["uq"]][is_gmpd_entry] <-
+      exp(stats_table_all[["uq"]][is_gmpd_entry])
   }
   stats_ref <- subset(stats_table_all, stats_table_all$size == Inf)
   stats_sub <- subset(stats_table_all, stats_table_all$size != Inf)
