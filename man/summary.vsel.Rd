@@ -11,7 +11,7 @@
   type = c("mean", "se", "diff", "diff.se"),
   deltas = FALSE,
   alpha = 2 * pnorm(-1),
-  baseline = if (!inherits(object$refmodel, "datafit")) "ref" else "best",
+  baseline = "ref",
   resp_oscale = TRUE,
   cumulate = FALSE,
   ...
@@ -92,18 +92,18 @@ the baseline model (see argument \code{baseline}). For the GMPD, the term
 "relatively" refers to the ratio vs. the baseline model (i.e., the submodel
 statistic divided by the baseline model statistic). For all other \code{stats},
 "relatively" refers to the difference from the baseline model (i.e., the
-submodel statistic minus the baseline model statistic).}
+submodel statistic minus the baseline model statistic). For the ELPD and
+the MLPD, the baseline performance is reported as 0. For the GMPD,
+the baseline performance is reported as 1. For other statistics, the
+baseline performance is reported as 0 if \code{deltas=TRUE} and in the original
+scale if \code{deltas="mixed"}. If \code{deltas=TRUE} or \code{deltas="mixed"}, for all
+statistics the related uncertainty is reported relative to the baseline.}
 
 \item{alpha}{A number determining the (nominal) coverage \code{1 - alpha} of the
 confidence intervals. For example, in case of a normal-approximation
 confidence interval, \code{alpha = 2 * pnorm(-1)} corresponds to a confidence
 interval stretching by one standard error on either side of the point
 estimate.}
-
-\item{baseline}{For \code{\link[=summary.vsel]{summary.vsel()}}: Only relevant if \code{deltas} is \code{TRUE}.
-For \code{\link[=plot.vsel]{plot.vsel()}}: Always relevant. Either \code{"ref"} or \code{"best"}, indicating
-whether the baseline is the reference model or the best submodel found (in
-terms of \code{stats[1]}), respectively. In case of subsampled LOO-CV, \code{baseline = "best"} is not supported.}
 
 \item{resp_oscale}{Only relevant for the latent projection. A single logical
 value indicating whether to calculate the performance statistics on the
