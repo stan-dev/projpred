@@ -756,7 +756,7 @@ use_progressr <- function() {
 
 sqrt_cut0 <- function(x) {
   if (!is.na(x) && sign(x) == -1) {
-    if (abs(x) < sqrt(.Machine$double.eps)) {
+    if (abs(x) < 1e3 * sqrt(.Machine$double.eps)) {
       x <- 0
     } else {
       stop("Negative (and numerically non-zero) value used as input to ",
