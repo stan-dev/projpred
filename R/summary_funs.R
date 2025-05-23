@@ -86,9 +86,14 @@ weighted_summary_means <- function(y_wobs_test, family, wdraws, mu, dis, cl_ref,
 # errors, and confidence intervals with coverage `1 - alpha` based on the
 # variable selection output. If `nfeat_baseline` is given, then compute the
 # statistics relative to the baseline model of that size (`nfeat_baseline = Inf`
-# means that the baseline model is the reference model).
+# means that the baseline model is the reference model). Argument
+# `nfeat_baseline_diff` is currently only used (i.e., non-`NULL`) in
+# plot.vsel()'s `deltas = "mixed"` case. In that case, `nfeat_baseline_diff`
+# gives the size of the baseline model analogously to `nfeat_baseline` (in
+# particular, `nfeat_baseline_diff = Inf` designates the reference model).
 .tabulate_stats <- function(varsel, stats, alpha = 0.05,
-                            nfeat_baseline = NULL, resp_oscale = TRUE, ...) {
+                            nfeat_baseline = NULL, nfeat_baseline_diff = NULL,
+                            resp_oscale = TRUE, ...) {
   stat_tab <- data.frame()
   summaries_ref <- varsel$summaries$ref
   summaries_sub <- varsel$summaries$sub
@@ -230,6 +235,15 @@ weighted_summary_means <- function(y_wobs_test, family, wdraws, mu, dis, cl_ref,
     }
     delta <- TRUE
   }
+  if (is.null(nfeat_baseline_diff)) {
+    summaries_baseline_diff <- summaries_ref
+  } else {
+    if (nfeat_baseline_diff == Inf) {
+      summaries_baseline_diff <- summaries_ref
+    } else {
+      summaries_baseline_diff <- summaries_sub[[nfeat_baseline_diff + 1]]
+    }
+  }
 
   for (s in seq_along(stats)) {
     stat <- stats[s]
@@ -242,8 +256,8 @@ weighted_summary_means <- function(y_wobs_test, family, wdraws, mu, dis, cl_ref,
                     varsel$y_wobs_test, stat, alpha = alpha, ...)
     row <- data.frame(
       data = varsel$type_test, size = Inf, delta = delta, statistic = stat,
-      value = res$value, lq = res$lq, uq = res$uq, se = res$se, diff = NA,
-      diff.se = NA
+      value = res$value, lq = res$lq, uq = res$uq, se = res$se,
+      diff = NA, diff.lq = NA, diff.uq = NA, diff.se = NA
     )
     stat_tab <- rbind(stat_tab, row)
 
@@ -254,15 +268,18 @@ weighted_summary_means <- function(y_wobs_test, family, wdraws, mu, dis, cl_ref,
                       summaries_fast = summaries_fast_sub[[k]],
                       loo_inds = varsel$loo_inds,
                       varsel$y_wobs_test, stat, alpha = alpha, ...)
+      # TODO: If `!is.null(nfeat_baseline) && nfeat_baseline == Inf` and
+      # `is.null(nfeat_baseline_diff)`, we should be able to set `diff <- res`
+      # and hence avoid a second call to get_stat().
       diff <- get_stat(summaries = summaries_sub[[k]],
-                       summaries_baseline = summaries_ref,
+                       summaries_baseline = summaries_baseline_diff,
                        summaries_fast = summaries_fast_sub[[k]],
                        loo_inds = varsel$loo_inds,
                        varsel$y_wobs_test, stat, alpha = alpha, ...)
       row <- data.frame(
         data = varsel$type_test, size = k - 1, delta = delta, statistic = stat,
         value = res$value, lq = res$lq, uq = res$uq, se = res$se,
-        diff = diff$value, diff.se = diff$se
+        diff = diff$value, diff.lq = diff$lq, diff.uq = diff$uq, diff.se = diff$se
       )
       stat_tab <- rbind(stat_tab, row)
     }
