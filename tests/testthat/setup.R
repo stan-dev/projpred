@@ -457,21 +457,21 @@ dat_indep$offs_col <- offs_indep
 ## Setup ------------------------------------------------------------------
 
 if (!requireNamespace("rstanarm", quietly = TRUE) ||
-    (!identical(Sys.getenv("NOT_CRAN"), "true") &&
-     packageVersion("Matrix") >= "1.6-4")) {
+    !identical(Sys.getenv("NOT_CRAN"), "true")) {
   if (!requireNamespace("rstanarm", quietly = TRUE)) {
     txt_start_warn_rstanarm <- paste0(
       "Package 'rstanarm' is needed for the rstanarm tests, but could not be ",
       "found. "
     )
-  } else if (!identical(Sys.getenv("NOT_CRAN"), "true") &&
-             packageVersion("Matrix") >= "1.6-4") {
-    # For 'Matrix' version >= 1.6-4, we cannot be sure that there are no
-    # incompatibility issues with lme4 (binaries), so don't run the 'rstanarm'
-    # tests on CRAN:
+  } else if (!identical(Sys.getenv("NOT_CRAN"), "true")) {
+    # In the past, there have been incompatibility issues between packages
+    # 'Matrix' and 'lme4', see commits 2c6cbc5bc22a1779e9e5168a9459248fab1962c6
+    # and ba4ef23c4de6e13a9160e73e22aa4e01bf1b07ac and rstanarm issue
+    # stan-dev/rstanarm#610, so don't run the 'rstanarm' tests on CRAN:
     txt_start_warn_rstanarm <- paste0(
-      "Currently, version < 1.6-4 of package 'Matrix' is needed for the ",
-      "rstanarm tests on CRAN (see rstanarm issue stan-dev/rstanarm#610). "
+      "On CRAN, projpred's tests based on rstanarm fits are avoided due to ",
+      "possible incompatibility issues between packages 'Matrix' and 'lme4' ",
+      "(see inline comment for this warning message). "
     )
   } else {
     txt_start_warn_rstanarm <- "THIS CASE SHOULD NOT OCCUR. "

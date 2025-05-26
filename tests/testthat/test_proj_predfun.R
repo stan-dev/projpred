@@ -3,9 +3,11 @@ context("proj_predfun")
 test_that("repair_re() works for GLMMs", {
   # Setup -------------------------------------------------------------------
 
-  # Currently, version < 1.6-4 of package 'Matrix' is needed here:
-  skip_if(!identical(Sys.getenv("NOT_CRAN"), "true") &&
-            packageVersion("Matrix") >= "1.6-4")
+  # In the past, there have been incompatibility issues between packages
+  # 'Matrix' and 'lme4', see commits 2c6cbc5bc22a1779e9e5168a9459248fab1962c6
+  # and ba4ef23c4de6e13a9160e73e22aa4e01bf1b07ac and rstanarm issue
+  # stan-dev/rstanarm#610, so don't run this test on CRAN:
+  skip_on_cran()
 
   if (exists(".Random.seed", envir = .GlobalEnv)) {
     rng_old <- get(".Random.seed", envir = .GlobalEnv)
