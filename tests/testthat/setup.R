@@ -1083,7 +1083,7 @@ args_ref <- lapply(setNames(nm = names(fits)), function(tstsetup_fit) {
 args_ref <- unlist_cust(args_ref)
 
 refmods <- lapply(args_ref, function(args_ref_i) {
-  do.call(get_refmodel, c(
+  do_call(get_refmodel, c(
     list(object = fits[[args_ref_i$tstsetup_fit]]),
     excl_nonargs(args_ref_i)
   ))
@@ -1158,7 +1158,7 @@ if (run_vs) {
   })) >= 1)
 
   vss <- lapply(args_vs, function(args_vs_i) {
-    do.call(varsel, c(
+    do_call(varsel, c(
       list(object = refmods[[args_vs_i$tstsetup_ref]]),
       excl_nonargs(args_vs_i)
     ))
@@ -1311,7 +1311,7 @@ if (run_cvvs) {
                                  `%in%`, names(cvfitss)[!success_cvfits])]
 
   cvvss <- lapply(args_cvvs, function(args_cvvs_i) {
-    cvvs_expr <- expression(do.call(cv_varsel, c(
+    cvvs_expr <- expression(do_call(cv_varsel, c(
       list(object = refmods[[args_cvvs_i$tstsetup_ref]],
            cvfits = if (identical(args_cvvs_i$cv_method, "kfold")) {
              cvfitss[[args_cvvs_i$tstsetup_ref]]
@@ -1438,7 +1438,7 @@ if (run_prj) {
   args_prj <- unlist_cust(args_prj)
 
   prjs <- lapply(args_prj, function(args_prj_i) {
-    do.call(project, c(
+    do_call(project, c(
       list(object = refmods[[args_prj_i$tstsetup_ref]]),
       excl_nonargs(args_prj_i)
     ))
@@ -1519,7 +1519,7 @@ if (run_vs) {
   args_prj_vs <- unlist_cust(args_prj_vs)
 
   prjs_vs <- lapply(args_prj_vs, function(args_prj_vs_i) {
-    do.call(project, c(
+    do_call(project, c(
       list(object = vss[[args_prj_vs_i$tstsetup_vsel]]),
       excl_nonargs(args_prj_vs_i)
     ))
@@ -1560,7 +1560,7 @@ if (run_cvvs) {
   args_prj_cvvs <- unlist_cust(args_prj_cvvs)
 
   prjs_cvvs <- lapply(args_prj_cvvs, function(args_prj_cvvs_i) {
-    do.call(project, c(
+    do_call(project, c(
       list(object = cvvss[[args_prj_cvvs_i$tstsetup_vsel]]),
       excl_nonargs(args_prj_cvvs_i)
     ))
@@ -1723,7 +1723,7 @@ if (run_vs) {
     } else {
       smmry_seed <- list()
     }
-    do.call(summary, c(
+    do_call(summary, c(
       list(object = vss[[args_smmry_vs_i$tstsetup_vsel]]),
       excl_nonargs(args_smmry_vs_i),
       smmry_seed
@@ -1746,7 +1746,7 @@ if (run_cvvs) {
     } else {
       smmry_seed <- list()
     }
-    do.call(summary, c(
+    do_call(summary, c(
       list(object = cvvss[[args_smmry_cvvs_i$tstsetup_vsel]]),
       excl_nonargs(args_smmry_cvvs_i),
       smmry_seed
@@ -1784,7 +1784,7 @@ if (run_vs) {
   args_perf_vs <- unlist_cust(args_perf_vs)
 
   perfs_vs <- lapply(args_perf_vs, function(args_perf_vs_i) {
-    do.call(performances, c(
+    do_call(performances, c(
       list(object = smmrys_vs[[args_perf_vs_i$tstsetup_smmry_vsel]]),
       excl_nonargs(args_perf_vs_i)
     ))
@@ -1806,7 +1806,7 @@ if (run_cvvs) {
   args_perf_cvvs <- unlist_cust(args_perf_cvvs)
 
   perfs_cvvs <- lapply(args_perf_cvvs, function(args_perf_cvvs_i) {
-    do.call(performances, c(
+    do_call(performances, c(
       list(object = smmrys_cvvs[[args_perf_cvvs_i$tstsetup_smmry_vsel]]),
       excl_nonargs(args_perf_cvvs_i)
     ))
@@ -1864,7 +1864,7 @@ if (run_vs) {
   args_plot_vs <- unlist_cust(args_plot_vs)
 
   plots_vs <- lapply(args_plot_vs, function(args_plot_vs_i) {
-    do.call(plot, c(
+    do_call(plot, c(
       list(x = vss[[args_plot_vs_i$tstsetup_vsel]]),
       excl_nonargs(args_plot_vs_i)
     ))
@@ -1878,7 +1878,7 @@ if (run_cvvs) {
   args_plot_cvvs <- unlist_cust(args_plot_cvvs)
 
   plots_cvvs <- lapply(args_plot_cvvs, function(args_plot_cvvs_i) {
-    do.call(plot, c(
+    do_call(plot, c(
       list(x = cvvss[[args_plot_cvvs_i$tstsetup_vsel]]),
       excl_nonargs(args_plot_cvvs_i)
     ))
@@ -1901,7 +1901,7 @@ if (run_vs) {
   args_rk_vs <- unlist_cust(args_rk_vs)
 
   rks_vs <- lapply(args_rk_vs, function(args_rk_vs_i) {
-    do.call(ranking, c(
+    do_call(ranking, c(
       list(object = vss[[args_rk_vs_i$tstsetup_vsel]]),
       excl_nonargs(args_rk_vs_i)
     ))
@@ -1922,7 +1922,7 @@ if (run_cvvs) {
   args_rk_cvvs <- unlist_cust(args_rk_cvvs)
 
   rks_cvvs <- lapply(args_rk_cvvs, function(args_rk_cvvs_i) {
-    do.call(ranking, c(
+    do_call(ranking, c(
       list(object = cvvss[[args_rk_cvvs_i$tstsetup_vsel]]),
       excl_nonargs(args_rk_cvvs_i)
     ))

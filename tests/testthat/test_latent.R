@@ -198,20 +198,20 @@ test_that(paste(
     }
     fit_crr <- fits_no_wobs[[args_prj_i$tstsetup_fit]]
     dis_crr <- as.matrix(fit_crr)[, "sigma"]
-    refmod_crr_trad <- suppressMessages(do.call(get_refmodel, c(
+    refmod_crr_trad <- suppressMessages(do_call(get_refmodel, c(
       list(object = fit_crr),
       excl_nonargs(args_ref[[args_prj_i$tstsetup_ref]])
     )))
-    prj_crr_trad <- do.call(project, c(
+    prj_crr_trad <- do_call(project, c(
       list(object = refmod_crr_trad),
       excl_nonargs(args_prj_i)
     ))
-    refmod_crr_lat <- suppressMessages(do.call(get_refmodel, c(
+    refmod_crr_lat <- suppressMessages(do_call(get_refmodel, c(
       list(object = fit_crr),
       excl_nonargs(args_ref[[args_prj_i$tstsetup_ref]]),
       list(latent = TRUE, dis = dis_crr)
     )))
-    prj_crr_lat <- do.call(project, c(
+    prj_crr_lat <- do_call(project, c(
       list(object = refmod_crr_lat),
       excl_nonargs(args_prj_i)
     ))

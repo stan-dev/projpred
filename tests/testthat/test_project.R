@@ -28,7 +28,7 @@ test_that("invalid `predictor_terms` warns or fails", {
 
     # Non-`vsel` object combined with `predictor_terms = NULL`:
     expect_error(
-      do.call(project, c(
+      do_call(project, c(
         list(object = refmods[[args_prj_i$tstsetup_ref]],
              predictor_terms = NULL),
         excl_nonargs(args_prj_i, nms_excl_add = "predictor_terms")
@@ -39,7 +39,7 @@ test_that("invalid `predictor_terms` warns or fails", {
     )
 
     # Repeating `predictor_terms`:
-    p_long <- do.call(project, c(
+    p_long <- do_call(project, c(
       list(object = refmods[[args_prj_i$tstsetup_ref]],
            predictor_terms = rep_len(args_prj_i$predictor_terms,
                                      length.out = 1e4)),
@@ -52,7 +52,7 @@ test_that("invalid `predictor_terms` warns or fails", {
       tstsetup_crr <- paste(tstsetup, paste(prd_trms_crr, collapse = ","),
                             sep = "__")
       expect_error(
-        do.call(project, c(
+        do_call(project, c(
           list(object = refmods[[args_prj_i$tstsetup_ref]],
                predictor_terms = prd_trms_crr),
           excl_nonargs(args_prj_i, nms_excl_add = "predictor_terms")
@@ -72,7 +72,7 @@ test_that("invalid `predictor_terms` warns or fails", {
       tstsetup_crr <- paste(tstsetup, paste(prd_trms_crr, collapse = ","),
                             sep = "__")
       expect_warning(
-        p <- do.call(project, c(
+        p <- do_call(project, c(
           list(object = refmods[[args_prj_i$tstsetup_ref]],
                predictor_terms = prd_trms_crr),
           excl_nonargs(args_prj_i, nms_excl_add = "predictor_terms")
@@ -97,7 +97,7 @@ test_that("`object` of class `stanreg` or `brmsfit` works", {
                     value = TRUE)
   for (tstsetup in tstsetups) {
     args_prj_i <- args_prj[[tstsetup]]
-    p_fit <- do.call(project, c(
+    p_fit <- do_call(project, c(
       list(object = fits[[args_prj_i$tstsetup_fit]]),
       excl_nonargs(args_prj_i),
       excl_nonargs(args_ref[[args_prj_i$tstsetup_ref]])
@@ -343,7 +343,7 @@ test_that("non-clustered projection does not require a seed", {
     rand_new1 <- runif(1) # Just to advance `.Random.seed[2]`.
     # Use suppressWarnings() because test_that() somehow redirects stderr() and
     # so throws warnings that projpred wants to capture internally:
-    p_new <- suppressWarnings(do.call(project, c(
+    p_new <- suppressWarnings(do_call(project, c(
       list(object = refmods[[args_prj_i$tstsetup_ref]]),
       excl_nonargs(args_prj_i, nms_excl_add = "seed")
     )))
@@ -399,7 +399,7 @@ test_that("`seed` works (and restores the RNG state afterwards)", {
     p_orig <- prjs[[tstsetup]]
     rand_orig <- runif(1) # Just to advance `.Random.seed[2]`.
     .Random.seed_new1 <- .Random.seed
-    p_new <- do.call(project, c(
+    p_new <- do_call(project, c(
       list(object = refmods[[args_prj_i$tstsetup_ref]],
            seed = args_prj_i$seed + 10L),
       excl_nonargs(args_prj_i, nms_excl_add = "seed")
@@ -407,7 +407,7 @@ test_that("`seed` works (and restores the RNG state afterwards)", {
     .Random.seed_new2 <- .Random.seed
     rand_new <- runif(1) # Just to advance `.Random.seed[2]`.
     .Random.seed_repr1 <- .Random.seed
-    p_repr <- do.call(project, c(
+    p_repr <- do_call(project, c(
       list(object = refmods[[args_prj_i$tstsetup_ref]]),
       excl_nonargs(args_prj_i)
     ))
@@ -445,7 +445,7 @@ test_that("for GLMs, `regul` has an expected effect", {
       if (regul_tst[j] == regul_default) {
         prj_regul <- prjs[[tstsetup]]
       } else {
-        prj_regul <- do.call(project, c(
+        prj_regul <- do_call(project, c(
           list(object = refmods[[args_prj_i$tstsetup_ref]],
                regul = regul_tst[j]),
           excl_nonargs(args_prj_i)
