@@ -674,7 +674,15 @@ capt_mssgs_warns <- function(expr) {
     warn_orig <- options(warn = 1)
     on.exit(options(warn_orig))
   }
-  utils::capture.output(tryCatch(expr, error = throw_err), type = "message")
+  mssgs_warns_capt <- utils::capture.output(tryCatch(expr, error = throw_err),
+                                            type = "message")
+  if (identical(Sys.getenv("RSTUDIO"), "1")) {
+    # Some RStudio versions (observed in RStudio 2025.05.0+496) add special
+    # characters/symbols, so remove them:
+    mssgs_warns_capt <- gsub("\033[GHgh]{1}2?;?", "", mssgs_warns_capt)
+  }
+  mssgs_warns_capt <- setdiff(mssgs_warns_capt, "")
+  return(mssgs_warns_capt)
 }
 
 # Parse the argument containing the observation weights (`wobs` or `weights`)

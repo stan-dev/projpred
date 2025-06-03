@@ -654,7 +654,6 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
   mssgs_warns_capt <- capt_mssgs_warns(
     psisloo <- loo::psis(-loglik_forPSIS, cores = 1, r_eff = NA)
   )
-  mssgs_warns_capt <- setdiff(mssgs_warns_capt, "")
   # Filter out the Pareto k-value warning (we throw a customized one instead):
   mssgs_warns_capt <- grep(
     "Some Pareto k diagnostic values are (too|slightly) high", mssgs_warns_capt,
@@ -861,7 +860,6 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
         sub_psisloo <- importance_sampling_func(lwref_lwdraws, cores = 1,
                                                 r_eff = NA)
       )
-      mssgs_warns_capt <- setdiff(mssgs_warns_capt, "")
       # Filter out Pareto k-value warnings (we throw a customized one instead):
       mssgs_warns_capt <- grep(
         "Some Pareto k diagnostic values are (too|slightly) high",
