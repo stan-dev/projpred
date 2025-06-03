@@ -64,7 +64,7 @@ test_that("`seed` works (and restores the RNG state afterwards)", {
     vs_orig <- vss[[tstsetup]]
     rand_orig <- runif(1) # Just to advance `.Random.seed[2]`.
     .Random.seed_repr1 <- .Random.seed
-    vs_repr <- do_call(varsel, c(
+    vs_repr <- do.call(varsel, c(
       list(object = refmods[[args_vs_i$tstsetup_ref]]),
       excl_nonargs(args_vs_i)
     ))
@@ -137,7 +137,7 @@ test_that(paste(
     d_test_crr$y_oscale <- y_oscale_crr
     # Use suppressWarnings() because test_that() somehow redirects stderr() and
     # so throws warnings that projpred wants to capture internally:
-    vs_repr <- suppressWarnings(do_call(varsel, c(
+    vs_repr <- suppressWarnings(do.call(varsel, c(
       list(object = refmods[[tstsetup_ref]], d_test = d_test_crr),
       excl_nonargs(args_vs_i)
     )))
@@ -257,7 +257,7 @@ test_that(paste(
     d_test_crr$y_oscale <- y_oscale_crr
     # Use suppressWarnings() because test_that() somehow redirects stderr() and
     # so throws warnings that projpred wants to capture internally:
-    vs_indep <- suppressWarnings(do_call(varsel, c(
+    vs_indep <- suppressWarnings(do.call(varsel, c(
       list(object = refmods[[tstsetup_ref]], d_test = d_test_crr),
       excl_nonargs(args_vs_i)
     )))
@@ -512,7 +512,7 @@ test_that("`refit_prj` works", {
     args_vs_i$refit_prj <- FALSE
     # Use suppressWarnings() because test_that() somehow redirects stderr() and
     # so throws warnings that projpred wants to capture internally:
-    vs_reuse <- suppressWarnings(do_call(varsel, c(
+    vs_reuse <- suppressWarnings(do.call(varsel, c(
       list(object = refmods[[args_vs_i$tstsetup_ref]]),
       excl_nonargs(args_vs_i)
     )))
@@ -576,7 +576,7 @@ if (run_more) {
       }
       args_vs_i$refit_prj <- FALSE
       expect_warning(
-        vs_tmp <- do_call(varsel, c(
+        vs_tmp <- do.call(varsel, c(
           list(object = refmods[[args_vs_i$tstsetup_ref]]),
           excl_nonargs(args_vs_i)
         )),
@@ -661,7 +661,7 @@ test_that(paste(
       if (regul_tst[j] == regul_default) {
         vs_regul <- vss[[tstsetup]]
       } else {
-        vs_regul <- do_call(varsel, c(
+        vs_regul <- do.call(varsel, c(
           list(object = refmods[[args_vs_i$tstsetup_ref]],
                regul = regul_tst[j]),
           excl_nonargs(args_vs_i)
@@ -745,7 +745,7 @@ test_that(paste(
       if (regul_tst[j] == regul_default) {
         vs_regul <- vss[[tstsetup]]
       } else {
-        vs_regul <- do_call(varsel, c(
+        vs_regul <- do.call(varsel, c(
           list(object = refmods[[args_vs_i$tstsetup_ref]],
                regul = regul_tst[j]),
           excl_nonargs(args_vs_i)
@@ -857,7 +857,7 @@ test_that("`penalty` of invalid length fails", {
     penal_tst <- list(rep(1, len_penal + 1), rep(1, len_penal - 1))
     for (penal_crr in penal_tst) {
       expect_error(
-        do_call(varsel, c(
+        do.call(varsel, c(
           list(object = refmods[[args_vs_i$tstsetup_ref]],
                penalty = penal_crr),
           excl_nonargs(args_vs_i)
@@ -883,7 +883,7 @@ test_that("for forward search, `penalty` has no effect", {
     args_vs_i <- args_vs[[tstsetup]]
     # Use suppressWarnings() because test_that() somehow redirects stderr() and
     # so throws warnings that projpred wants to capture internally:
-    vs_penal <- suppressWarnings(do_call(varsel, c(
+    vs_penal <- suppressWarnings(do.call(varsel, c(
       list(object = refmods[[args_vs_i$tstsetup_ref]],
            penalty = penal_tst),
       excl_nonargs(args_vs_i)
@@ -926,7 +926,7 @@ test_that("for L1 search, `penalty` has an expected effect", {
     penal_crr[idx_penal_0] <- 0
     penal_crr[idx_penal_Inf] <- Inf
 
-    vs_penal <- do_call(varsel, c(
+    vs_penal <- do.call(varsel, c(
       list(object = refmods[[args_vs_i$tstsetup_ref]],
            penalty = penal_crr),
       excl_nonargs(args_vs_i, nms_excl_add = "nterms_max")
@@ -979,7 +979,7 @@ test_that("L1 search handles three-way (second-order) interactions correctly", {
     excl_nonargs(args_fit_i)
   ))
   args_ref_i <- args_ref[[paste0(tstsetup, ".trad")]]
-  refmod <- do_call(get_refmodel, c(
+  refmod <- do.call(get_refmodel, c(
     list(object = fit),
     excl_nonargs(args_ref_i)
   ))
@@ -987,7 +987,7 @@ test_that("L1 search handles three-way (second-order) interactions correctly", {
   args_vs_i$refit_prj <- FALSE
   args_vs_i$nterms_max <- NULL
   expect_warning(
-    vs <- do_call(varsel, c(
+    vs <- do.call(varsel, c(
       list(object = refmod),
       excl_nonargs(args_vs_i)
     )),
@@ -1259,7 +1259,7 @@ test_that("`seed` works (and restores the RNG state afterwards)", {
     .Random.seed_repr1 <- .Random.seed
     # Use suppressWarnings() because test_that() somehow redirects stderr() and
     # so throws warnings that projpred wants to capture internally:
-    cvvs_repr <- suppressWarnings(do_call(cv_varsel, c(
+    cvvs_repr <- suppressWarnings(do.call(cv_varsel, c(
       list(object = refmods[[args_cvvs_i$tstsetup_ref]],
            cvfits = if (identical(args_cvvs_i$cv_method, "kfold")) {
              cvfitss[[args_cvvs_i$tstsetup_ref]]
@@ -1296,7 +1296,7 @@ test_that("`refit_prj` works", {
       next
     }
     args_cvvs_i$refit_prj <- FALSE
-    cvvs_reuse <- suppressWarnings(do_call(cv_varsel, c(
+    cvvs_reuse <- suppressWarnings(do.call(cv_varsel, c(
       list(object = refmods[[args_cvvs_i$tstsetup_ref]],
            cvfits = if (identical(args_cvvs_i$cv_method, "kfold")) {
              cvfitss[[args_cvvs_i$tstsetup_ref]]
@@ -1395,7 +1395,7 @@ test_that("invalid `nloo` fails", {
     # Use suppressWarnings() because test_that() somehow redirects stderr() and
     # so throws warnings that projpred wants to capture internally:
     expect_error(
-      suppressWarnings(do_call(cv_varsel, c(
+      suppressWarnings(do.call(cv_varsel, c(
         list(object = refmods[[args_cvvs_i$tstsetup_ref]],
              nloo = -1),
         excl_nonargs(args_cvvs_i, nms_excl_add = "nloo")
@@ -1423,7 +1423,7 @@ test_that(paste(
     args_cvvs_i <- args_cvvs[[tstsetup]]
     # Use suppressWarnings() because test_that() somehow redirects stderr() and
     # so throws warnings that projpred wants to capture internally:
-    cvvs_nloo <- suppressWarnings(do_call(cv_varsel, c(
+    cvvs_nloo <- suppressWarnings(do.call(cv_varsel, c(
       list(object = refmods[[args_cvvs_i$tstsetup_ref]],
            nloo = nloo_tst),
       excl_nonargs(args_cvvs_i)
@@ -1502,7 +1502,7 @@ test_that("`validate_search` works", {
     meth_exp_crr <- args_cvvs_i$method %||% "forward"
     # Use suppressWarnings() because test_that() somehow redirects stderr() and
     # so throws warnings that projpred wants to capture internally:
-    cvvs_valsearch <- suppressWarnings(do_call(cv_varsel, c(
+    cvvs_valsearch <- suppressWarnings(do.call(cv_varsel, c(
       list(object = refmods[[args_cvvs_i$tstsetup_ref]],
            validate_search = FALSE,
            cvfits = if (identical(args_cvvs_i$cv_method, "kfold")) {
@@ -1667,7 +1667,7 @@ test_that(paste(
     kfold_obj <- structure(kfold_obj$fits[, "fit"], folds = folds_vec)
 
     # Create `refmodel` object with `cvfits`:
-    refmod_crr <- do_call(get_refmodel, c(
+    refmod_crr <- do.call(get_refmodel, c(
       list(object = fit_crr, cvfits = kfold_obj),
       excl_nonargs(args_ref[[args_cvvs_i$tstsetup_ref]])
     ))
@@ -1675,7 +1675,7 @@ test_that(paste(
     # Run cv_varsel():
     # Use suppressWarnings() because test_that() somehow redirects stderr() and
     # so throws warnings that projpred wants to capture internally:
-    cvvs_cvfits <- suppressWarnings(do_call(cv_varsel, c(
+    cvvs_cvfits <- suppressWarnings(do.call(cv_varsel, c(
       list(object = refmod_crr),
       excl_nonargs(args_cvvs_i, nms_excl_add = "K")
     )))
@@ -1772,14 +1772,14 @@ test_that(paste(
     kfold_obj <- structure(kfold_obj$fits[, "fit"], folds = folds_vec)
 
     # Create `refmodel` object with `cvfits`:
-    refmod_crr <- do_call(get_refmodel, c(
+    refmod_crr <- do.call(get_refmodel, c(
       list(object = fit_crr, cvfits = kfold_obj),
       excl_nonargs(args_ref[[args_cvvs_i$tstsetup_ref]])
     ))
 
     # Run cv_varsel():
     cvvs_cvfits <- try(
-      do_call(cv_varsel, c(
+      do.call(cv_varsel, c(
         list(object = refmod_crr),
         excl_nonargs(args_cvvs_i, nms_excl_add = "K")
       )),
@@ -1804,7 +1804,7 @@ test_that(paste(
     # Test the reproducibility of ref_predfun() when applied to new observations
     # (should be ensured by get_refmodel.brmsfit()'s internal `refprd_seed`):
     runif(1)
-    cvvs_cvfits_repr <- do_call(cv_varsel, c(
+    cvvs_cvfits_repr <- do.call(cv_varsel, c(
       list(object = refmod_crr),
       excl_nonargs(args_cvvs_i, nms_excl_add = "K")
     ))
@@ -1858,7 +1858,7 @@ test_that("`cvfun` included in the `refmodel` object works", {
     head(grep("^brms\\..*\\.kfold", names(cvvss), value = TRUE), 1)
   )
   for (tstsetup in tstsetups) {
-    cvvs_cvfun <- do_call(cv_varsel, c(
+    cvvs_cvfun <- do.call(cv_varsel, c(
       list(object = refmods[[args_cvvs[[tstsetup]]$tstsetup_ref]], K = K_tst),
       excl_nonargs(args_cvvs[[tstsetup]])
     ))

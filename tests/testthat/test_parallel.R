@@ -33,7 +33,7 @@ test_that("project() in parallel gives the same results as sequentially", {
   tstsetups <- grep("\\.glm\\.", names(prjs), value = TRUE)
   for (tstsetup in tstsetups) {
     args_prj_i <- args_prj[[tstsetup]]
-    p_repr <- do_call(project, c(
+    p_repr <- do.call(project, c(
       list(object = refmods[[args_prj_i$tstsetup_ref]]),
       excl_nonargs(args_prj_i)
     ))
@@ -49,7 +49,7 @@ test_that("varsel() in parallel gives the same results as sequentially", {
   tstsetups <- grep("\\.glm\\.", names(vss), value = TRUE)
   for (tstsetup in tstsetups) {
     args_vs_i <- args_vs[[tstsetup]]
-    vs_repr <- do_call(varsel, c(
+    vs_repr <- do.call(varsel, c(
       list(object = refmods[[args_vs_i$tstsetup_ref]]),
       excl_nonargs(args_vs_i)
     ))
@@ -67,7 +67,7 @@ test_that("cv_varsel() in parallel gives the same results as sequentially", {
     args_cvvs_i <- args_cvvs[[tstsetup]]
     # Use suppressWarnings() because test_that() somehow redirects stderr() and
     # so throws warnings that projpred wants to capture internally:
-    cvvs_repr <- suppressWarnings(do_call(cv_varsel, c(
+    cvvs_repr <- suppressWarnings(do.call(cv_varsel, c(
       list(object = refmods[[args_cvvs_i$tstsetup_ref]],
            cvfits = if (identical(args_cvvs_i$cv_method, "kfold")) {
              cvfitss[[args_cvvs_i$tstsetup_ref]]

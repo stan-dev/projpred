@@ -160,7 +160,7 @@ test_that("performances.vsel() is a shortcut", {
     } else {
       smmry_seed <- list()
     }
-    perf_from_vsel <- do_call(performances, c(
+    perf_from_vsel <- do.call(performances, c(
       list(object = vss[[args_smmry_i$tstsetup_vsel]]),
       excl_nonargs(args_smmry_i),
       smmry_seed
@@ -174,7 +174,7 @@ test_that("performances.vsel() is a shortcut", {
     } else {
       smmry_seed <- list()
     }
-    perf_from_vsel <- do_call(performances, c(
+    perf_from_vsel <- do.call(performances, c(
       list(object = cvvss[[args_smmry_i$tstsetup_vsel]]),
       excl_nonargs(args_smmry_i),
       smmry_seed
@@ -245,7 +245,7 @@ test_that(paste(
       smmry_seed <- list()
     }
     expect_output(
-      print_obj <- do_call(print, c(
+      print_obj <- do.call(print, c(
         list(x = vss[[args_smmry_vs_i$tstsetup_vsel]]),
         excl_nonargs(args_smmry_vs_i),
         smmry_seed
@@ -270,7 +270,7 @@ test_that(paste(
       smmry_seed <- list()
     }
     expect_output(
-      print_obj <- do_call(print, c(
+      print_obj <- do.call(print, c(
         list(x = cvvss[[args_smmry_cvvs_i$tstsetup_vsel]]),
         excl_nonargs(args_smmry_cvvs_i),
         smmry_seed
@@ -630,7 +630,7 @@ test_that("cv_proportions.vsel() is a shortcut", {
   for (tstsetup in names(prs_cvvs)) {
     args_pr_cvvs_i <- args_pr_cvvs[[tstsetup]]
     args_rk_cvvs_i <- args_rk_cvvs[[args_pr_cvvs_i$tstsetup_rk]]
-    pr_from_vsel <- do_call(cv_proportions, c(
+    pr_from_vsel <- do.call(cv_proportions, c(
       list(object = cvvss[[args_pr_cvvs_i$tstsetup_vsel]]),
       excl_nonargs(args_pr_cvvs_i), excl_nonargs(args_rk_cvvs_i)
     ))

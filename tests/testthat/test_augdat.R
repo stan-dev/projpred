@@ -259,11 +259,11 @@ test_that(paste(
 
     args_prj_i <- args_prj[[tstsetup]]
     args_prj_i_trad <- args_prj[[tstsetup_trad]]
-    prj <- do_call(project, c(
+    prj <- do.call(project, c(
       list(object = refmods[[args_prj_i$tstsetup_ref]], regul = 0),
       excl_nonargs(args_prj_i)
     ))
-    prj_trad <- do_call(project, c(
+    prj_trad <- do.call(project, c(
       list(object = refmods[[args_prj_i_trad$tstsetup_ref]], regul = 0),
       excl_nonargs(args_prj_i_trad)
     ))

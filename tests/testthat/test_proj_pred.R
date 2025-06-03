@@ -172,7 +172,7 @@ test_that(paste(
                     value = TRUE)
   for (tstsetup in tstsetups) {
     args_prj_i <- args_prj[[tstsetup]]
-    pl_from_refmod <- do_call(proj_linpred, c(
+    pl_from_refmod <- do.call(proj_linpred, c(
       list(object = refmods[[args_prj_i$tstsetup_ref]],
            allow_nonconst_wdraws_prj = TRUE, .seed = seed2_tst),
       excl_nonargs(args_prj_i)
@@ -191,7 +191,7 @@ test_that(paste(
                     value = TRUE)
   for (tstsetup in tstsetups) {
     args_prj_i <- args_prj[[tstsetup]]
-    pl_from_fit <- do_call(proj_linpred, c(
+    pl_from_fit <- do.call(proj_linpred, c(
       list(object = fits[[args_prj_i$tstsetup_fit]],
            allow_nonconst_wdraws_prj = TRUE, .seed = seed2_tst),
       excl_nonargs(args_prj_i),
@@ -214,7 +214,7 @@ test_that(paste(
   stopifnot(length(tstsetups) > 0)
   for (tstsetup in tstsetups) {
     args_prj_vs_i <- args_prj_vs[[tstsetup]]
-    pl_from_vsel <- do_call(proj_linpred, c(
+    pl_from_vsel <- do.call(proj_linpred, c(
       list(object = vss[[args_prj_vs_i$tstsetup_vsel]],
            allow_nonconst_wdraws_prj = TRUE, .seed = seed2_tst),
       excl_nonargs(args_prj_vs_i)
@@ -245,7 +245,7 @@ test_that(paste(
   stopifnot(length(tstsetups) > 0)
   for (tstsetup in tstsetups) {
     args_prj_cvvs_i <- args_prj_cvvs[[tstsetup]]
-    pl_from_vsel <- do_call(proj_linpred, c(
+    pl_from_vsel <- do.call(proj_linpred, c(
       list(object = cvvss[[args_prj_cvvs_i$tstsetup_vsel]],
            allow_nonconst_wdraws_prj = TRUE, .seed = seed2_tst),
       excl_nonargs(args_prj_cvvs_i)
@@ -835,7 +835,7 @@ test_that("`regul` works", {
       ncats_nlats_expected_crr <- integer()
     }
     norms <- sapply(regul_tst, function(regul_crr) {
-      pl <- do_call(proj_linpred, c(
+      pl <- do.call(proj_linpred, c(
         list(object = refmods[[args_prj_i$tstsetup_ref]],
              integrated = TRUE,
              .seed = seed2_tst,
@@ -989,7 +989,7 @@ test_that(paste(
     }
     # Use suppressWarnings() because test_that() somehow redirects stderr() and
     # so throws warnings that projpred wants to capture internally:
-    pl1 <- suppressWarnings(do_call(proj_linpred, pl_args))
+    pl1 <- suppressWarnings(do.call(proj_linpred, pl_args))
     pl_tester(pl1,
               nprjdraws_expected = 1L,
               nobsv_expected = 1L,
@@ -1220,7 +1220,7 @@ test_that(paste(
                     value = TRUE)
   for (tstsetup in tstsetups) {
     args_prj_i <- args_prj[[tstsetup]]
-    pp_from_refmod <- do_call(proj_predict, c(
+    pp_from_refmod <- do.call(proj_predict, c(
       list(object = refmods[[args_prj_i$tstsetup_ref]],
            .seed = seed2_tst),
       excl_nonargs(args_prj_i)
@@ -1239,7 +1239,7 @@ test_that(paste(
                     value = TRUE)
   for (tstsetup in tstsetups) {
     args_prj_i <- args_prj[[tstsetup]]
-    pp_from_fit <- do_call(proj_predict, c(
+    pp_from_fit <- do.call(proj_predict, c(
       list(object = fits[[args_prj_i$tstsetup_fit]],
            .seed = seed2_tst),
       excl_nonargs(args_ref[[args_prj_i$tstsetup_ref]]),
@@ -1262,7 +1262,7 @@ test_that(paste(
   stopifnot(length(tstsetups) > 0)
   for (tstsetup in tstsetups) {
     args_prj_vs_i <- args_prj_vs[[tstsetup]]
-    pp_from_vsel <- do_call(proj_predict, c(
+    pp_from_vsel <- do.call(proj_predict, c(
       list(object = vss[[args_prj_vs_i$tstsetup_vsel]],
            .seed = seed2_tst),
       excl_nonargs(args_prj_vs_i)
@@ -1293,7 +1293,7 @@ test_that(paste(
   stopifnot(length(tstsetups) > 0)
   for (tstsetup in tstsetups) {
     args_prj_cvvs_i <- args_prj_cvvs[[tstsetup]]
-    pp_from_vsel <- do_call(proj_predict, c(
+    pp_from_vsel <- do.call(proj_predict, c(
       list(object = cvvss[[args_prj_cvvs_i$tstsetup_vsel]],
            .seed = seed2_tst),
       excl_nonargs(args_prj_cvvs_i)
@@ -1772,7 +1772,7 @@ test_that(paste(
     }
     # Use suppressWarnings() because test_that() somehow redirects stderr() and
     # so throws warnings that projpred wants to capture internally:
-    pp1 <- suppressWarnings(do_call(proj_predict, pp_args))
+    pp1 <- suppressWarnings(do.call(proj_predict, pp_args))
     pp_tester(pp1,
               nprjdraws_out_expected = 1L,
               nobsv_expected = 1L,

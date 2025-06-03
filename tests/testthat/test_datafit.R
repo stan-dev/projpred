@@ -92,7 +92,7 @@ if (run_vs) {
   })
 
   vss_datafit <- lapply(args_vs_datafit, function(args_vs_i) {
-    do_call(varsel, c(
+    do.call(varsel, c(
       list(object = datafits[[args_vs_i$tstsetup_datafit]]),
       excl_nonargs(args_vs_i)
     ))
@@ -142,7 +142,7 @@ if (run_cvvs) {
   })
 
   cvvss_datafit <- lapply(args_cvvs_datafit, function(args_cvvs_i) {
-    do_call(cv_varsel, c(
+    do.call(cv_varsel, c(
       list(object = datafits[[args_cvvs_i$tstsetup_datafit]],
            cvfits = cvfitss_datafit[[args_cvvs_i$tstsetup_datafit]]),
       excl_nonargs(args_cvvs_i)
@@ -173,7 +173,7 @@ if (run_vs) {
 
   prjs_vs_datafit <- lapply(args_prj_vs_datafit, function(args_prj_vs_i) {
     args_prj_vs_i$refit_prj <- FALSE
-    do_call(project, c(
+    do.call(project, c(
       list(object = vss_datafit[[args_prj_vs_i$tstsetup_vsel]]),
       excl_nonargs(args_prj_vs_i)
     ))
@@ -310,7 +310,7 @@ test_that("project(): `object` of class `datafit` fails", {
     if (!args_prj_i$tstsetup_ref %in% names(datafits)) next
     args_prj_i$refit_prj <- FALSE
     expect_error(
-      do_call(project, c(
+      do.call(project, c(
         list(object = datafits[[args_prj_i$tstsetup_ref]]),
         excl_nonargs(args_prj_i)
       )),
