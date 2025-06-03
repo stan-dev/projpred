@@ -228,10 +228,14 @@ foreach::registerDoSEQ()
 <!-- Again, we ignore the tail-ESS warnings due to the reduced values for `chains` and `iter` in the reference model fit. -->
 
 We can now select a final submodel size by looking at a predictive performance plot similar to the one created for the preliminary `cv_varsel()` run above.
-By default, the performance statistics are plotted on their original scale, but with `deltas = TRUE`, they are plotted as differences^[For the geometric mean predictive density (GMPD, see argument `stats` of `summary.vsel()`), `deltas = TRUE` means to calculate the GMPD *ratio* (not difference) vs. the baseline model.] from a baseline model (which is the reference model by default, at least in the most common cases).
-Since the differences^[For the GMPD, this is again a ratio.] and the (frequentist) uncertainty in their estimation are usually of more interest than the original-scale performance statistics (at least with regard to the decision for a final submodel size), we directly plot with `deltas = TRUE` here:
+By default, the performance statistics are plotted on their original scale and the uncertainty bars match this scale, but argument `deltas` offers two more options:
+
+*   With `deltas = TRUE`, the performance statistics are plotted as differences^[For the geometric mean predictive density (GMPD, see argument `stats` of `summary.vsel()` and `plot.vsel()`), `deltas = TRUE` plots the GMPD *ratio* (not difference) vs. the baseline model. Despite this special case, we will call `deltas = TRUE` the "difference scale" for simplicity.] from the baseline model^[For the definition of the baseline model, see argument `baseline` of `summary.vsel()` and `plot.vsel()`; in the most common cases, the default baseline model is the reference model.] and the uncertainty bars match this scale,
+*   With `deltas = "mixed"`, the performance statistics (i.e., their point estimates) are plotted on the original scale, but the uncertainty bars visualize the difference-scale uncertainty.
+
+Since the difference-scale uncertainty is usually of more interest than the original-scale uncertainty (at least with regard to the decision for a final submodel size) and the original-scale point estimates are often of more interest than the difference-scale point estimates, we plot with `deltas = "mixed"` here:
 ```{r plot_vsel}
-plot(cvvs, stats = "mlpd", deltas = TRUE)
+plot(cvvs, stats = "mlpd", deltas = "mixed")
 ```
 
 ### Decision for final submodel size
@@ -260,8 +264,10 @@ A tabular representation of the plot created by `plot.vsel()` can be achieved vi
 For the output of `summary.vsel()`, there is a sophisticated `print()` method (`print.vselsummary()`) which is also called by the shortcut method `print.vsel()`^[`print.vsel()` is the method that is called when simply printing an object resulting from `varsel()` or `cv_varsel()`.].
 Specifically, to create the summary table matching the predictive performance plot above as closely as possible (and to also adjust the minimum number of printed significant digits), we may call `summary.vsel()` and `print.vselsummary()` as follows:
 ```{r smmry_vsel}
-smmry <- summary(cvvs, stats = "mlpd", type = c("mean", "lower", "upper"),
-                 deltas = TRUE)
+smmry <- summary(cvvs,
+                 stats = "mlpd",
+                 type = c("mean", "diff.lower", "diff.upper"),
+                 deltas = FALSE)
 print(smmry, digits = 1)
 ```
 
