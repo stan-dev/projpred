@@ -127,7 +127,6 @@ divmin <- function(
   outdmin <- lapply(outdmin, "[[", "soutdmin")
   mssgs_warns_capts <- lapply(mssgs_warns_capts, function(mssgs_warns_capt) {
     # Filter out some warnings.
-    mssgs_warns_capt <- setdiff(mssgs_warns_capt, "")
     mssgs_warns_capt <- grep("Warning in [^:]*:$",
                              mssgs_warns_capt, value = TRUE, invert = TRUE)
     return(mssgs_warns_capt)
@@ -695,7 +694,6 @@ divmin_augdat <- function(
   outdmin <- lapply(outdmin, "[[", "soutdmin")
   mssgs_warns_capts <- lapply(mssgs_warns_capts, function(mssgs_warns_capt) {
     # Filter out some warnings.
-    mssgs_warns_capt <- setdiff(mssgs_warns_capt, "")
     mssgs_warns_capt <- grep("Warning in [^:]*:$",
                              mssgs_warns_capt, value = TRUE, invert = TRUE)
     # For MASS::polr():
