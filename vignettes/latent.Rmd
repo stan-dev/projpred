@@ -197,7 +197,7 @@ The message telling that `<refmodel>$dis` consists of only `NA`s will not concer
 
 In order to decide for a submodel size, we first inspect the `plot()` results:
 ```{r plot_vsel_lat}
-( gg_lat <- plot(vs_lat, stats = "mlpd", deltas = TRUE) )
+( gg_lat <- plot(vs_lat, stats = "mlpd", deltas = "mixed") )
 ```
 
 Although the submodels' MLPDs seem to be very close to the reference model's MLPD from a submodel size of 6 on, a zoomed plot reveals that there is still some discrepancy at sizes 6 to 11 and that size 12 would be a better choice (further down below in the `summary()` output, we will also see that on absolute scale, the discrepancy at sizes 6 to 11 is not negligible):
@@ -269,7 +269,7 @@ rm(warn_instable_orig)
 ```
 ```{r post_vs_trad}
 print(time_trad)
-( gg_trad <- plot(vs_trad, stats = "mlpd", deltas = TRUE) )
+( gg_trad <- plot(vs_trad, stats = "mlpd", deltas = "mixed") )
 smmry_trad <- summary(vs_trad, stats = "mlpd",
                       type = c("mean", "lower", "upper", "diff"))
 print(smmry_trad, digits = 2)
@@ -365,7 +365,7 @@ The message concerning `latent_ilink` can be safely ignored here (the internal d
 
 Again, we first inspect the `plot()` results to decide for a submodel size:
 ```{r plot_vsel_nebin}
-( gg_nebin <- plot(vs_nebin, stats = "mlpd", deltas = TRUE) )
+( gg_nebin <- plot(vs_nebin, stats = "mlpd", deltas = "mixed") )
 ```
 
 Again, a zoomed plot is more helpful:
