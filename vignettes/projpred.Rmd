@@ -228,12 +228,12 @@ foreach::registerDoSEQ()
 <!-- Again, we ignore the tail-ESS warnings due to the reduced values for `chains` and `iter` in the reference model fit. -->
 
 We can now select a final submodel size by looking at a predictive performance plot similar to the one created for the preliminary `cv_varsel()` run above.
-By default, the performance statistics are plotted on their original scale and the uncertainty bars match this scale, but argument `deltas` offers two more options:
+By default, the performance statistics are plotted on their actual scale and the uncertainty bars match this scale, but argument `deltas` offers two more options:
 
 *   With `deltas = TRUE`, the performance statistics are plotted as differences^[For the geometric mean predictive density (GMPD, see argument `stats` of `summary.vsel()` and `plot.vsel()`), `deltas = TRUE` plots the GMPD *ratio* (not difference) vs. the baseline model. Despite this special case, we will call `deltas = TRUE` the "difference scale" for simplicity.] from the baseline model^[For the definition of the baseline model, see argument `baseline` of `summary.vsel()` and `plot.vsel()`; in the most common cases, the default baseline model is the reference model.] and the uncertainty bars match this scale,
-*   With `deltas = "mixed"`, the performance statistics (i.e., their point estimates) are plotted on the original scale, but the uncertainty bars visualize the difference-scale uncertainty.
+*   With `deltas = "mixed"`, the performance statistics (i.e., their point estimates) are plotted on the actual scale, but the uncertainty bars visualize the difference-scale uncertainty.
 
-Since the difference-scale uncertainty is usually of more interest than the original-scale uncertainty (at least with regard to the decision for a final submodel size) and the original-scale point estimates are often of more interest than the difference-scale point estimates, we plot with `deltas = "mixed"` here:
+Since the difference-scale uncertainty is usually of more interest than the actual-scale uncertainty (at least with regard to the decision for a final submodel size) and the actual-scale point estimates are often of more interest than the difference-scale point estimates, we plot with `deltas = "mixed"` here:
 ```{r plot_vsel}
 plot(cvvs, stats = "mlpd", deltas = "mixed")
 ```
