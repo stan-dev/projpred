@@ -63,12 +63,14 @@ of the MLPD.
 \item \code{"mse"}: mean squared error (only available in the situations mentioned
 in section "Details" below). For the corresponding confidence interval, a
 log-normal approximation is used if \code{deltas} is \code{FALSE} and a normal
-approximation is used if \code{deltas} is \code{TRUE}.
+approximation is used if \code{deltas} is \code{TRUE} (or \code{"mixed"}, in case of
+\code{\link[=plot.vsel]{plot.vsel()}}).
 \item \code{"rmse"}: root mean squared error (only available in the situations
 mentioned in section "Details" below). For the corresponding standard
 error, the delta method is used. For the corresponding confidence interval,
 a log-normal approximation is used if \code{deltas} is \code{FALSE} and a normal
-approximation is used if \code{deltas} is \code{TRUE}.
+approximation is used if \code{deltas} is \code{TRUE} (or \code{"mixed"}, in case of
+\code{\link[=plot.vsel]{plot.vsel()}}).
 \item \code{"R2"}: R-squared, i.e., coefficient of determination (only available in
 the situations mentioned in section "Details" below). For the corresponding
 standard error, the delta method is used. For the corresponding confidence
@@ -88,15 +90,16 @@ supported in case of subsampled LOO-CV (see argument \code{nloo} of
 }}
 
 \item{deltas}{May be set to \code{FALSE}, \code{TRUE}, or \code{"mixed"}. If \code{FALSE}, the
-submodel performance statistics are estimated on their actual scale. If
-\code{TRUE}, the submodel statistics are estimated relatively to the baseline
-model (see argument \code{baseline}). For the GMPD, the term "relatively" refers
-to the \emph{ratio} vs. the baseline model (i.e., the submodel statistic divided
-by the baseline model statistic). For all other \code{stats}, "relatively"
-refers to the \emph{difference} from the baseline model (i.e., the submodel
-statistic minus the baseline model statistic). If set to \code{"mixed"}, then
-the \code{deltas = FALSE} plot is combined with the uncertainty intervals from
-the \code{deltas = TRUE} plot.}
+submodel performance statistics are plotted on their actual scale and the
+uncertainty bars match this scale. If \code{TRUE}, the submodel statistics are
+plotted relatively to the baseline model (see argument \code{baseline}) and the
+uncertainty bars match this scale. For the GMPD, the term "relatively"
+refers to the \emph{ratio} vs. the baseline model (i.e., the submodel statistic
+divided by the baseline model statistic). For all other \code{stats},
+"relatively" refers to the \emph{difference} from the baseline model (i.e., the
+submodel statistic minus the baseline model statistic). If set to
+\code{"mixed"}, the \code{deltas = FALSE} point estimates are combined with the
+uncertainty bars from the \code{deltas = TRUE} plot.}
 
 \item{alpha}{A number determining the (nominal) coverage \code{1 - alpha} of the
 confidence intervals. For example, in case of a normal-approximation

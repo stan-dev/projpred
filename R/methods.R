@@ -595,15 +595,16 @@ proj_predict_aux <- function(proj, newdata, offsetnew, weightsnew,
 #' @inheritParams summary.vsel
 #' @param x An object of class `vsel` (returned by [varsel()] or [cv_varsel()]).
 #' @param deltas May be set to `FALSE`, `TRUE`, or `"mixed"`. If `FALSE`, the
-#'   submodel performance statistics are estimated on their actual scale. If
-#'   `TRUE`, the submodel statistics are estimated relatively to the baseline
-#'   model (see argument `baseline`). For the GMPD, the term "relatively" refers
-#'   to the *ratio* vs. the baseline model (i.e., the submodel statistic divided
-#'   by the baseline model statistic). For all other `stats`, "relatively"
-#'   refers to the *difference* from the baseline model (i.e., the submodel
-#'   statistic minus the baseline model statistic). If set to `"mixed"`, then
-#'   the `deltas = FALSE` plot is combined with the uncertainty intervals from
-#'   the `deltas = TRUE` plot.
+#'   submodel performance statistics are plotted on their actual scale and the
+#'   uncertainty bars match this scale. If `TRUE`, the submodel statistics are
+#'   plotted relatively to the baseline model (see argument `baseline`) and the
+#'   uncertainty bars match this scale. For the GMPD, the term "relatively"
+#'   refers to the *ratio* vs. the baseline model (i.e., the submodel statistic
+#'   divided by the baseline model statistic). For all other `stats`,
+#'   "relatively" refers to the *difference* from the baseline model (i.e., the
+#'   submodel statistic minus the baseline model statistic). If set to
+#'   `"mixed"`, the `deltas = FALSE` point estimates are combined with the
+#'   uncertainty bars from the `deltas = TRUE` plot.
 #' @param thres_elpd Only relevant if `any(stats %in% c("elpd", "mlpd",
 #'   "gmpd"))`. The threshold for the ELPD difference (taking the submodel's
 #'   ELPD minus the baseline model's ELPD) above which the submodel's ELPD is
@@ -1241,12 +1242,14 @@ plot.vsel <- function(
 #'   * `"mse"`: mean squared error (only available in the situations mentioned
 #'   in section "Details" below). For the corresponding confidence interval, a
 #'   log-normal approximation is used if `deltas` is `FALSE` and a normal
-#'   approximation is used if `deltas` is `TRUE`.
+#'   approximation is used if `deltas` is `TRUE` (or `"mixed"`, in case of
+#'   [plot.vsel()]).
 #'   * `"rmse"`: root mean squared error (only available in the situations
 #'   mentioned in section "Details" below). For the corresponding standard
 #'   error, the delta method is used. For the corresponding confidence interval,
 #'   a log-normal approximation is used if `deltas` is `FALSE` and a normal
-#'   approximation is used if `deltas` is `TRUE`.
+#'   approximation is used if `deltas` is `TRUE` (or `"mixed"`, in case of
+#'   [plot.vsel()]).
 #'   * `"R2"`: R-squared, i.e., coefficient of determination (only available in
 #'   the situations mentioned in section "Details" below). For the corresponding
 #'   standard error, the delta method is used. For the corresponding confidence

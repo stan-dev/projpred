@@ -53,12 +53,14 @@ of the MLPD.
 \item \code{"mse"}: mean squared error (only available in the situations mentioned
 in section "Details" below). For the corresponding confidence interval, a
 log-normal approximation is used if \code{deltas} is \code{FALSE} and a normal
-approximation is used if \code{deltas} is \code{TRUE}.
+approximation is used if \code{deltas} is \code{TRUE} (or \code{"mixed"}, in case of
+\code{\link[=plot.vsel]{plot.vsel()}}).
 \item \code{"rmse"}: root mean squared error (only available in the situations
 mentioned in section "Details" below). For the corresponding standard
 error, the delta method is used. For the corresponding confidence interval,
 a log-normal approximation is used if \code{deltas} is \code{FALSE} and a normal
-approximation is used if \code{deltas} is \code{TRUE}.
+approximation is used if \code{deltas} is \code{TRUE} (or \code{"mixed"}, in case of
+\code{\link[=plot.vsel]{plot.vsel()}}).
 \item \code{"R2"}: R-squared, i.e., coefficient of determination (only available in
 the situations mentioned in section "Details" below). For the corresponding
 standard error, the delta method is used. For the corresponding confidence
