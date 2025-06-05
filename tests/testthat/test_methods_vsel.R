@@ -288,9 +288,9 @@ context("plot()")
 
 test_that("`x` of class `vsel` (created by varsel()) works", {
   skip_if_not(run_vs)
-  common_for_rk_NA <- c("tstsetup_vsel", "text_angle", "nterms_max",
+  common_for_rk_NA <- c("tstsetup_vsel", "deltas", "text_angle", "nterms_max",
                         "ranking_nterms_max")
-  common_for_rk_max <- c("tstsetup_vsel", "text_angle", "nterms_max",
+  common_for_rk_max <- c("tstsetup_vsel", "deltas", "text_angle", "nterms_max",
                          "ranking_abbreviate", "ranking_repel")
   for (tstsetup in names(plots_vs)) {
     args_plot_i <- args_plot_vs[[tstsetup]]
@@ -360,9 +360,9 @@ test_that("`x` of class `vsel` (created by varsel()) works", {
 
 test_that("`x` of class `vsel` (created by cv_varsel()) works", {
   skip_if_not(run_cvvs)
-  common_for_rk_NA <- c("tstsetup_vsel", "text_angle", "nterms_max",
+  common_for_rk_NA <- c("tstsetup_vsel", "deltas", "text_angle", "nterms_max",
                         "ranking_nterms_max")
-  common_for_rk_max <- c("tstsetup_vsel", "text_angle", "nterms_max",
+  common_for_rk_max <- c("tstsetup_vsel", "deltas", "text_angle", "nterms_max",
                          "ranking_abbreviate", "ranking_repel",
                          "ranking_colored", "cumulate")
   for (tstsetup in names(plots_cvvs)) {
@@ -449,7 +449,9 @@ test_that(paste(
   for (tstsetup in tstsetups) {
     args_plot_i <- args_plot_vs[[tstsetup]]
     nterms_max_crr <- args_vs[[args_plot_i$tstsetup_vsel]]$nterms_max + 1L
+    deltas_crr <- args_plot_i$deltas %||% FALSE
     plot_capped <- plot(vss[[args_plot_i$tstsetup_vsel]],
+                        deltas = deltas_crr,
                         nterms_max = nterms_max_crr)
     plot_vsel_tester(
       plot_capped,
@@ -474,7 +476,9 @@ test_that(paste(
   for (tstsetup in tstsetups) {
     args_plot_i <- args_plot_cvvs[[tstsetup]]
     nterms_max_crr <- args_cvvs[[args_plot_i$tstsetup_vsel]]$nterms_max + 1L
+    deltas_crr <- args_plot_i$deltas %||% FALSE
     plot_capped <- plot(cvvss[[args_plot_i$tstsetup_vsel]],
+                        deltas = deltas_crr,
                         nterms_max = nterms_max_crr)
     plot_vsel_tester(
       plot_capped,

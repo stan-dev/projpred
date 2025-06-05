@@ -990,7 +990,8 @@ angle_tst <- list(
 )
 
 deltas_tst_plot <- list(
-  default_deltas = list()
+  default_deltas = list(),
+  deltas_TRUE = list(deltas = TRUE)
 )
 
 ### nterms ----------------------------------------------------------------
