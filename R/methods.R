@@ -594,6 +594,17 @@ proj_predict_aux <- function(proj, newdata, offsetnew, weightsnew,
 #'
 #' @inheritParams summary.vsel
 #' @param x An object of class `vsel` (returned by [varsel()] or [cv_varsel()]).
+#' @param deltas May be set to `FALSE`, `TRUE`, or `"mixed"`. If `FALSE`, the
+#'   submodel performance statistics are plotted on their actual scale and the
+#'   uncertainty bars match this scale. If `TRUE`, the submodel statistics are
+#'   plotted relatively to the baseline model (see argument `baseline`) and the
+#'   uncertainty bars match this scale. For the GMPD, the term "relatively"
+#'   refers to the *ratio* vs. the baseline model (i.e., the submodel statistic
+#'   divided by the baseline model statistic). For all other `stats`,
+#'   "relatively" refers to the *difference* from the baseline model (i.e., the
+#'   submodel statistic minus the baseline model statistic). If set to
+#'   `"mixed"`, the `deltas = FALSE` point estimates are combined with the
+#'   uncertainty bars from the `deltas = TRUE` plot.
 #' @param thres_elpd Only relevant if `any(stats %in% c("elpd", "mlpd",
 #'   "gmpd"))`. The threshold for the ELPD difference (taking the submodel's
 #'   ELPD minus the baseline model's ELPD) above which the submodel's ELPD is
@@ -673,9 +684,10 @@ proj_predict_aux <- function(proj, newdata, offsetnew, weightsnew,
 #' the baseline model's performance is shown as a dotted black horizontal line.
 #' If `!is.na(thres_elpd)` and `any(stats %in% c("elpd", "mlpd", "gmpd"))`, the
 #' value supplied to `thres_elpd` (which is automatically adapted internally in
-#' case of the MLPD or the GMPD or `deltas = FALSE`) is shown as a dot-dashed
-#' gray horizontal line for the reference model and, if `baseline = "best"`, as
-#' a long-dashed green horizontal line for the baseline model.
+#' case of the MLPD or the GMPD or `deltas = FALSE` or `deltas = "mixed"`) is
+#' shown as a dot-dashed gray horizontal line for the reference model and, if
+#' `baseline = "best"`, as a long-dashed green horizontal line for the baseline
+#' model.
 #'
 #' @examplesIf requireNamespace("rstanarm", quietly = TRUE)
 #' # Data:
@@ -732,21 +744,57 @@ plot.vsel <- function(
   } else if (!is.null(ranking_repel)) {
     stopifnot(isTRUE(ranking_repel %in% c("text", "label")))
   }
+  stopifnot(isTRUE(deltas) || isFALSE(deltas) || identical(deltas, "mixed"))
 
   # Define `nfeat_baseline` and a slightly modified variant that can be used for
   # .tabulate_stats()'s argument `nfeat_baseline`:
   nfeat_baseline <- get_nfeat_baseline(object, baseline, stats[1],
                                        resp_oscale = resp_oscale)
-  if (deltas) {
+  nfeat_baseline_mixed <- NULL
+  if (isTRUE(deltas)) {
     nfeat_baseline_for_tab <- nfeat_baseline
   } else {
     nfeat_baseline_for_tab <- NULL
+    if (identical(deltas, "mixed")) {
+      nfeat_baseline_mixed <- nfeat_baseline
+    }
   }
 
   # Compute the predictive performance statistics:
   stats_table_all <- .tabulate_stats(object, stats, alpha = alpha,
                                      nfeat_baseline = nfeat_baseline_for_tab,
+                                     nfeat_baseline_diff = nfeat_baseline_mixed,
                                      resp_oscale = resp_oscale, ...)
+  if (identical(deltas, "mixed")) {
+    stats_bs_init <- subset(stats_table_all,
+                            stats_table_all$size == nfeat_baseline)
+    names(stats_bs_init)[names(stats_bs_init) == "value"] <- "value_bs"
+    stats_table_all <- merge(stats_table_all,
+                             stats_bs_init[, c("statistic", "value_bs")],
+                             by = "statistic", all.x = TRUE, all.y = FALSE,
+                             sort = FALSE)
+    is_gmpd_entry <- stats_table_all[["statistic"]] == "gmpd"
+    stats_table_all[["diff.lq"]][is_gmpd_entry] <-
+      log(stats_table_all[["diff.lq"]][is_gmpd_entry])
+    stats_table_all[["diff.uq"]][is_gmpd_entry] <-
+      log(stats_table_all[["diff.uq"]][is_gmpd_entry])
+    stats_table_all[["value_bs"]][is_gmpd_entry] <-
+      log(stats_table_all[["value_bs"]][is_gmpd_entry])
+    stats_table_all[["lq"]] <- stats_table_all[["diff.lq"]] +
+      stats_table_all[["value_bs"]]
+    stats_table_all[["uq"]] <- stats_table_all[["diff.uq"]] +
+      stats_table_all[["value_bs"]]
+    stats_table_all[["diff.lq"]][is_gmpd_entry] <-
+      exp(stats_table_all[["diff.lq"]][is_gmpd_entry])
+    stats_table_all[["diff.uq"]][is_gmpd_entry] <-
+      exp(stats_table_all[["diff.uq"]][is_gmpd_entry])
+    stats_table_all[["value_bs"]][is_gmpd_entry] <-
+      exp(stats_table_all[["value_bs"]][is_gmpd_entry])
+    stats_table_all[["lq"]][is_gmpd_entry] <-
+      exp(stats_table_all[["lq"]][is_gmpd_entry])
+    stats_table_all[["uq"]][is_gmpd_entry] <-
+      exp(stats_table_all[["uq"]][is_gmpd_entry])
+  }
   stats_ref <- subset(stats_table_all, stats_table_all$size == Inf)
   stats_sub <- subset(stats_table_all, stats_table_all$size != Inf)
   stats_bs <- subset(stats_table_all, stats_table_all$size == nfeat_baseline)
@@ -783,7 +831,7 @@ plot.vsel <- function(
   } else {
     baseline_pretty <- "best submodel"
   }
-  if (deltas) {
+  if (isTRUE(deltas)) {
     if (all(stats != "gmpd")) {
       ylab <- paste0("Difference vs. ", baseline_pretty)
     } else if (all(stats == "gmpd")) {
@@ -1070,13 +1118,30 @@ plot.vsel <- function(
     ci_type <- "bootstrap "
   } else if (all(stats %in% c("gmpd"))) {
     ci_type <- "exponentiated normal-approximation "
-  } else if (all(stats %in% c("mse", "rmse")) && !deltas) {
+  } else if (all(stats %in% c("mse", "rmse")) && isFALSE(deltas)) {
     ci_type <- "log-normal-approximation "
   } else if (all(!stats %in% c("auc", "gmpd", "mse", "rmse")) ||
-             (all(!stats %in% c("auc", "gmpd")) && deltas)) {
+             (all(!stats %in% c("auc", "gmpd")) &&
+              (identical(deltas, "mixed") || isTRUE(deltas)))) {
     ci_type <- "normal-approximation "
   } else {
     ci_type <- ""
+  }
+  interval_description <- paste0("Vertical bars indicate ",
+                                 round(100 * (1 - alpha), 1), "% ", ci_type,
+                                 "intervals")
+  if (identical(deltas, "mixed")) {
+    interval_description <- paste0(interval_description,
+                                   ", \nshowing uncertainty for ")
+    if (all(stats != "gmpd")) {
+      diff_pretty <- "difference"
+    } else if (all(stats == "gmpd")) {
+      diff_pretty <- "ratio"
+    } else {
+      diff_pretty <- "difference (ratio for GMPD)"
+    }
+    interval_description <- paste0(interval_description, diff_pretty, " vs. ",
+                                   baseline_pretty)
   }
   if (identical(size_position, "secondary_x")) {
     tick_labs_x_sec <- as.character(rk_dfr[
@@ -1108,9 +1173,7 @@ plot.vsel <- function(
                        labels = tick_labs_x,
                        sec.axis = x_axis_sec) +
     labs(x = xlab, y = ylab, title = "Predictive performance",
-         subtitle = paste0("Vertical bars indicate ",
-                           round(100 * (1 - alpha), 1), "% ", ci_type,
-                           "intervals")) +
+         subtitle = interval_description) +
     theme(axis.text.x.bottom = element_text(angle = text_angle,
                                             hjust = hjust_val,
                                             vjust = vjust_val)) +
@@ -1179,12 +1242,14 @@ plot.vsel <- function(
 #'   * `"mse"`: mean squared error (only available in the situations mentioned
 #'   in section "Details" below). For the corresponding confidence interval, a
 #'   log-normal approximation is used if `deltas` is `FALSE` and a normal
-#'   approximation is used if `deltas` is `TRUE`.
+#'   approximation is used if `deltas` is `TRUE` (or `"mixed"`, in case of
+#'   [plot.vsel()]).
 #'   * `"rmse"`: root mean squared error (only available in the situations
 #'   mentioned in section "Details" below). For the corresponding standard
 #'   error, the delta method is used. For the corresponding confidence interval,
 #'   a log-normal approximation is used if `deltas` is `FALSE` and a normal
-#'   approximation is used if `deltas` is `TRUE`.
+#'   approximation is used if `deltas` is `TRUE` (or `"mixed"`, in case of
+#'   [plot.vsel()]).
 #'   * `"R2"`: R-squared, i.e., coefficient of determination (only available in
 #'   the situations mentioned in section "Details" below). For the corresponding
 #'   standard error, the delta method is used. For the corresponding confidence
@@ -1202,20 +1267,24 @@ plot.vsel <- function(
 #'   supported in case of subsampled LOO-CV (see argument `nloo` of
 #'   [cv_varsel()]).
 #' @param type One or more items from `"mean"`, `"se"`, `"lower"`, `"upper"`,
-#'   `"diff"`, and `"diff.se"` indicating which of these to compute for each
-#'   item from `stats` (mean, standard error, lower and upper confidence
-#'   interval bounds, mean difference to the corresponding statistic of the
-#'   reference model, and standard error of this difference, respectively; note
-#'   that for the GMPD, `"diff"`, and `"diff.se"` actually refer to the ratio
-#'   vs. the reference model, not the difference). The confidence interval
-#'   bounds belong to confidence intervals with (nominal) coverage `1 - alpha`.
-#'   Items `"diff"` and `"diff.se"` are only supported if `deltas` is `FALSE`.
-#' @param deltas If `TRUE`, the submodel statistics are estimated relatively to
-#'   the baseline model (see argument `baseline`). For the GMPD, the term
-#'   "relatively" refers to the ratio vs. the baseline model (i.e., the submodel
-#'   statistic divided by the baseline model statistic). For all other `stats`,
-#'   "relatively" refers to the difference from the baseline model (i.e., the
-#'   submodel statistic minus the baseline model statistic).
+#'   `"diff"`, `"diff.lower"`, `"diff.upper"`, and `"diff.se"` indicating which
+#'   of these to compute for each item from `stats` (mean, standard error, lower
+#'   and upper confidence interval bounds, mean difference to the corresponding
+#'   statistic of the reference model, lower and upper confidence interval bound
+#'   for this difference, and standard error of this difference, respectively;
+#'   note that for the GMPD, `"diff"`, `"diff.lower"`, `"diff.upper"`, and
+#'   `"diff.se"` actually refer to the ratio vs. the reference model, not the
+#'   difference). The confidence interval bounds belong to confidence intervals
+#'   with (nominal) coverage `1 - alpha`. Items `"diff"`, `"diff.lower"`,
+#'   `"diff.upper"`, and `"diff.se"` are only supported if `deltas` is `FALSE`.
+#' @param deltas May be set to `FALSE` or `TRUE`. If `FALSE`, the submodel
+#'   performance statistics are estimated on their actual scale. If `TRUE`, the
+#'   submodel statistics are estimated relatively to the baseline model (see
+#'   argument `baseline`). For the GMPD, the term "relatively" refers to the
+#'   *ratio* vs. the baseline model (i.e., the submodel statistic divided by the
+#'   baseline model statistic). For all other `stats`, "relatively" refers to
+#'   the *difference* from the baseline model (i.e., the submodel statistic
+#'   minus the baseline model statistic).
 #' @param alpha A number determining the (nominal) coverage `1 - alpha` of the
 #'   confidence intervals. For example, in case of a normal-approximation
 #'   confidence interval, `alpha = 2 * pnorm(-1)` corresponds to a confidence
@@ -1407,8 +1476,8 @@ summary.vsel <- function(
 # reference model performance and one table for the submodel performance):
 mk_colnms_smmry <- function(type, stats, deltas) {
   # Pre-process `type`:
-  if (is.null(deltas) || deltas) {
-    type <- setdiff(type, c("diff", "diff.se"))
+  if (is.null(deltas) || isTRUE(deltas)) {
+    type <- setdiff(type, c("diff", "diff.lower", "diff.upper", "diff.se"))
   }
   type_dot <- paste0(".", type)
   type_dot[type_dot == ".mean"] <- ""
@@ -1418,6 +1487,8 @@ mk_colnms_smmry <- function(type, stats, deltas) {
   nms_old[nms_old == "mean"] <- "value"
   nms_old[nms_old == "upper"] <- "uq"
   nms_old[nms_old == "lower"] <- "lq"
+  nms_old[nms_old == "diff.upper"] <- "diff.uq"
+  nms_old[nms_old == "diff.lower"] <- "diff.lq"
   # The clean column names that should be used in the output table:
   nms_new <- lapply(stats, paste0, type_dot)
   return(nlist(nms_old, nms_new))

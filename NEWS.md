@@ -11,6 +11,7 @@ If you read this from a place other than <https://mc-stan.org/projpred/news/inde
 * The standard error for performance statistic `"rmse"` is now computed via the delta method (instead of bootstrapping). The confidence interval for `"rmse"` is now based on a log-normal approximation (instead of bootstrapping) if argument `deltas` of `summary.vsel()` or `plot.vsel()` is `FALSE` and based on a normal approximation (instead of bootstrapping) if `deltas` is `TRUE`. (GitHub: #496)
 * Performance statistic `"R2"` (R-squared) has been added, see argument `stats` of `summary.vsel()` and `plot.vsel()`; argument `stat` of `suggest_size()` supports it as well. (GitHub: #483, #496)
 * The performance evaluation part of `cv_varsel()` with `cv_method = "LOO"` and `validate_search = FALSE` now always applies Pareto smoothing when computing the importance sampling weights (as long as the number of importance ratios in the tail is large enough; otherwise, no Pareto smoothing is applied). Previously, in case of projected draws with nonconstant weights (i.e., in case of clustering), no Pareto smoothing had been applied. (GitHub: #496, #507)
+* Argument `deltas` of `plot.vsel()` has gained the option `"mixed"` which combines the point estimates from `deltas = FALSE` with the uncertainty bars from `deltas = TRUE`. (GitHub: #511)
 
 ## Minor changes
 
