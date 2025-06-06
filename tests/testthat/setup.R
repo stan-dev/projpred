@@ -989,6 +989,11 @@ angle_tst <- list(
   angle45 = list(text_angle = 45)
 )
 
+deltas_tst_plot <- list(
+  default_deltas = list(),
+  deltas_TRUE = list(deltas = TRUE)
+)
+
 ### nterms ----------------------------------------------------------------
 
 ntermss <- sapply(mod_nms, function(mod_nm) {
@@ -1838,15 +1843,18 @@ cre_args_plot_vsel <- function(args_obj) {
               lapply(rk_col_tst, function(rk_col_crr) {
                 lapply(cumulate_tst, function(cumulate_crr) {
                   lapply(angle_tst, function(angle_crr) {
-                    return(c(
-                      nlist(tstsetup_vsel),
-                      only_nonargs(args_obj[[tstsetup_vsel]]),
-                      list(nterms_max = nterms_crr),
-                      rk_max_crr, rk_abbv_crr, rk_repel_crr,
-                      list(ranking_colored = rk_col_crr,
-                           cumulate = cumulate_crr),
-                      angle_crr
-                    ))
+                    lapply(deltas_tst_plot, function(deltas_crr) {
+                      return(c(
+                        nlist(tstsetup_vsel),
+                        only_nonargs(args_obj[[tstsetup_vsel]]),
+                        list(nterms_max = nterms_crr),
+                        rk_max_crr, rk_abbv_crr, rk_repel_crr,
+                        list(ranking_colored = rk_col_crr,
+                             cumulate = cumulate_crr),
+                        angle_crr,
+                        deltas_crr
+                      ))
+                    })
                   })
                 })
               })
