@@ -1228,55 +1228,56 @@ plot.vsel <- function(
 #'   dataset) (ELPD). Estimated by the sum of the observation-specific log
 #'   predictive density values (with each of these predictive density values
 #'   being a---possibly weighted---average across the parameter draws). For the
-#'   corresponding confidence interval, a normal approximation is used.
+#'   corresponding uncertainty interval, a normal approximation is used.
 #'   * `"mlpd"`: mean log predictive density (MLPD), that is, the ELPD divided
-#'   by the number of observations. For the corresponding confidence interval, a
-#'   normal approximation is used.
+#'   by the number of observations. For the corresponding uncertainty interval,
+#'   a normal approximation is used.
 #'   * `"gmpd"`: geometric mean predictive density (GMPD), that is, [exp()] of
 #'   the MLPD. The GMPD is especially helpful for discrete response families
 #'   (because there, the GMPD is bounded by zero and one). For the corresponding
-#'   standard error, the delta method is used. The corresponding confidence
+#'   standard error, the delta method is used. The corresponding uncertainty
 #'   interval type is "exponentiated normal approximation" because the
-#'   confidence interval bounds are the exponentiated confidence interval bounds
-#'   of the MLPD.
+#'   uncertainty interval bounds are the exponentiated uncertainty interval
+#'   bounds of the MLPD.
 #'   * `"mse"`: mean squared error (only available in the situations mentioned
-#'   in section "Details" below). For the corresponding confidence interval, a
+#'   in section "Details" below). For the corresponding uncertainty interval, a
 #'   log-normal approximation is used if `deltas` is `FALSE` and a normal
 #'   approximation is used if `deltas` is `TRUE` (or `"mixed"`, in case of
 #'   [plot.vsel()]).
 #'   * `"rmse"`: root mean squared error (only available in the situations
 #'   mentioned in section "Details" below). For the corresponding standard
-#'   error, the delta method is used. For the corresponding confidence interval,
-#'   a log-normal approximation is used if `deltas` is `FALSE` and a normal
-#'   approximation is used if `deltas` is `TRUE` (or `"mixed"`, in case of
-#'   [plot.vsel()]).
+#'   error, the delta method is used. For the corresponding uncertainty
+#'   interval, a log-normal approximation is used if `deltas` is `FALSE` and a
+#'   normal approximation is used if `deltas` is `TRUE` (or `"mixed"`, in case
+#'   of [plot.vsel()]).
 #'   * `"R2"`: R-squared, i.e., coefficient of determination (only available in
 #'   the situations mentioned in section "Details" below). For the corresponding
-#'   standard error, the delta method is used. For the corresponding confidence
+#'   standard error, the delta method is used. For the corresponding uncertainty
 #'   interval, a normal approximation is used.
 #'   * `"acc"` (or its alias, `"pctcorr"`): classification accuracy (only
 #'   available in the situations mentioned in section "Details" below). By
 #'   "classification accuracy", we mean the proportion of correctly classified
 #'   observations. For this, the response category ("class") with highest
 #'   probability (the probabilities are model-based) is taken as the prediction
-#'   ("classification") for an observation. For the corresponding confidence
+#'   ("classification") for an observation. For the corresponding uncertainty
 #'   interval, a normal approximation is used.
 #'   * `"auc"`: area under the ROC curve (only available in the situations
 #'   mentioned in section "Details" below). For the corresponding standard error
-#'   and lower and upper confidence interval bounds, bootstrapping is used. Not
+#'   and lower and upper uncertainty interval bounds, bootstrapping is used. Not
 #'   supported in case of subsampled LOO-CV (see argument `nloo` of
 #'   [cv_varsel()]).
 #' @param type One or more items from `"mean"`, `"se"`, `"lower"`, `"upper"`,
 #'   `"diff"`, `"diff.lower"`, `"diff.upper"`, and `"diff.se"` indicating which
 #'   of these to compute for each item from `stats` (mean, standard error, lower
-#'   and upper confidence interval bounds, mean difference to the corresponding
-#'   statistic of the reference model, lower and upper confidence interval bound
-#'   for this difference, and standard error of this difference, respectively;
-#'   note that for the GMPD, `"diff"`, `"diff.lower"`, `"diff.upper"`, and
-#'   `"diff.se"` actually refer to the ratio vs. the reference model, not the
-#'   difference). The confidence interval bounds belong to confidence intervals
-#'   with (nominal) coverage `1 - alpha`. Items `"diff"`, `"diff.lower"`,
-#'   `"diff.upper"`, and `"diff.se"` are only supported if `deltas` is `FALSE`.
+#'   and upper uncertainty interval bounds, mean difference to the corresponding
+#'   statistic of the reference model, lower and upper uncertainty interval
+#'   bound for this difference, and standard error of this difference,
+#'   respectively; note that for the GMPD, `"diff"`, `"diff.lower"`,
+#'   `"diff.upper"`, and `"diff.se"` actually refer to the ratio vs. the
+#'   reference model, not the difference). The uncertainty interval bounds
+#'   belong to uncertainty intervals with (nominal) coverage `1 - alpha`. Items
+#'   `"diff"`, `"diff.lower"`, `"diff.upper"`, and `"diff.se"` are only
+#'   supported if `deltas` is `FALSE`.
 #' @param deltas May be set to `FALSE` or `TRUE`. If `FALSE`, the submodel
 #'   performance statistics are estimated on their actual scale. If `TRUE`, the
 #'   submodel statistics are estimated relatively to the baseline model (see
@@ -1286,8 +1287,8 @@ plot.vsel <- function(
 #'   the *difference* from the baseline model (i.e., the submodel statistic
 #'   minus the baseline model statistic).
 #' @param alpha A number determining the (nominal) coverage `1 - alpha` of the
-#'   confidence intervals. For example, in case of a normal-approximation
-#'   confidence interval, `alpha = 2 * pnorm(-1)` corresponds to a confidence
+#'   uncertainty intervals. For example, in case of a normal-approximation
+#'   uncertainty interval, `alpha = 2 * pnorm(-1)` corresponds to a uncertainty
 #'   interval stretching by one standard error on either side of the point
 #'   estimate.
 #' @param baseline For [summary.vsel()]: Only relevant if `deltas` is `TRUE`.
@@ -1638,7 +1639,7 @@ print.vsel <- function(x, digits = getOption("projpred.digits", 2), ...) {
 #'   null model utility one is willing to sacrifice. See section "Details" below
 #'   for more information.
 #' @param type Either `"upper"` or `"lower"` determining whether the decision is
-#'   based on the upper or lower confidence interval bound, respectively. See
+#'   based on the upper or lower uncertainty interval bound, respectively. See
 #'   section "Details" below for more information.
 #' @param thres_elpd Only relevant if `stat %in% c("elpd", "mlpd", "gmpd"))`.
 #'   The threshold for the ELPD difference (taking the submodel's ELPD minus the
@@ -1657,7 +1658,7 @@ print.vsel <- function(x, digits = getOption("projpred.digits", 2), ...) {
 #' @details In general (beware of special cases below), the suggested model
 #'   size is the smallest model size \eqn{j \in \{0, 1, ...,
 #'   \texttt{nterms\_max}\}}{{j = 0, 1, ..., nterms_max}} for which either the
-#'   lower or upper bound (depending on argument `type`) of the confidence
+#'   lower or upper bound (depending on argument `type`) of the uncertainty
 #'   interval (with nominal coverage `1 - alpha`; see argument `alpha` of
 #'   [summary.vsel()]) for \eqn{U_j - U_{\mathrm{base}}}{U_j - U_base} (with
 #'   \eqn{U_j} denoting the \eqn{j}-th submodel's true utility and
@@ -1671,9 +1672,9 @@ print.vsel <- function(x, digits = getOption("projpred.digits", 2), ...) {
 #'   In doing so, loss statistics like the root mean squared error (RMSE) and
 #'   the mean squared error (MSE) are converted to utilities by multiplying them
 #'   by `-1`, so a call such as `suggest_size(object, stat = "rmse", type =
-#'   "upper")` finds the smallest model size whose upper confidence interval
+#'   "upper")` finds the smallest model size whose upper uncertainty interval
 #'   bound for the *negative* RMSE or MSE exceeds (or is equal to) the cutoff
-#'   (or, equivalently, has the lower confidence interval bound for the RMSE or
+#'   (or, equivalently, has the lower uncertainty interval bound for the RMSE or
 #'   MSE below---or equal to---the cutoff). This is done to make the
 #'   interpretation of argument `type` the same regardless of argument `stat`.
 #'
@@ -1685,9 +1686,9 @@ print.vsel <- function(x, digits = getOption("projpred.digits", 2), ...) {
 #'   \eqn{U_j = \log(U^\ast_j)}{U_j = log(U^*_j)} and
 #'   \eqn{U_{\mathrm{base}} = \log(U^\ast_{\mathrm{base}})}{U_base =
 #'   log(U^*_base)}), then [suggest_size()] yields the smallest model size whose
-#'   lower or upper (depending on argument `type`) confidence interval bound for
-#'   \eqn{\frac{U^\ast_j}{U^\ast_{\mathrm{base}}}}{U^*_j / U^*_base} exceeds (or
-#'   is equal to)
+#'   lower or upper (depending on argument `type`) uncertainty interval bound
+#'   for \eqn{\frac{U^\ast_j}{U^\ast_{\mathrm{base}}}}{U^*_j / U^*_base} exceeds
+#'   (or is equal to)
 #'   \deqn{(\frac{u^\ast_0}{u^\ast_{\mathrm{base}}})^{\texttt{pct}}}{(u^*_0 /
 #'   u^*_base)^(pct)} where \eqn{u^\ast_0}{u^*_0} denotes the null
 #'   model's estimated GMPD and \eqn{u^\ast_{\mathrm{base}}}{u^*_base} the
@@ -1711,12 +1712,12 @@ print.vsel <- function(x, digits = getOption("projpred.digits", 2), ...) {
 #'   `!is.na(thres_elpd)` with `stat %in% c("elpd", "mlpd", "gmpd")`), `alpha =
 #'   2 * pnorm(-1)`, `pct = 0`, and `type = "upper"` means that we select the
 #'   smallest model size for which the upper bound of the `1 - 2 * pnorm(-1)`
-#'   (approximately 68.3 %) confidence interval for \eqn{U_j -
+#'   (approximately 68.3 %) uncertainty interval for \eqn{U_j -
 #'   U_{\mathrm{base}}}{U_j - U_base}
 #'   (\eqn{\frac{U^\ast_j}{U^\ast_{\mathrm{base}}}}{U^*_j / U^*_base} in case of
 #'   the GMPD) exceeds (or is equal to) zero (one in case of the GMPD), that is
 #'   (if `stat` is a performance statistic for which a normal-approximation
-#'   confidence interval is used, see argument `stats` of [summary.vsel()] and
+#'   uncertainty interval is used, see argument `stats` of [summary.vsel()] and
 #'   [plot.vsel()]), for which the submodel's utility estimate is at most one
 #'   standard error smaller than the baseline model's utility estimate (with
 #'   that standard error referring to the utility *difference*).

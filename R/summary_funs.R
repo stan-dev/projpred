@@ -83,7 +83,7 @@ weighted_summary_means <- function(y_wobs_test, family, wdraws, mu, dis, cl_ref,
 }
 
 # A function to calculate the desired performance statistics, their standard
-# errors, and confidence intervals with coverage `1 - alpha` based on the
+# errors, and uncertainty intervals with coverage `1 - alpha` based on the
 # variable selection output. If `nfeat_baseline` is given, then compute the
 # statistics relative to the baseline model of that size (`nfeat_baseline = Inf`
 # means that the baseline model is the reference model). Argument
@@ -300,7 +300,7 @@ check_sub_NA <- function(summaries_sub_k, el_nm) {
   all(is.na(summaries_sub_k[[el_nm]]))
 }
 
-## Calculates given statistic stat with standard error and confidence bounds.
+## Calculates given statistic stat with standard error and uncertainty bounds.
 ## `summaries_baseline` contains the pointwise mu and lppd for another model
 ## that is used as a baseline for computing the difference (ratio in case of the
 ## GMPD) in the given statistic. If these arguments are not given (NULL) then

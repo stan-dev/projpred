@@ -49,42 +49,42 @@ set). Available statistics are:
 dataset) (ELPD). Estimated by the sum of the observation-specific log
 predictive density values (with each of these predictive density values
 being a---possibly weighted---average across the parameter draws). For the
-corresponding confidence interval, a normal approximation is used.
+corresponding uncertainty interval, a normal approximation is used.
 \item \code{"mlpd"}: mean log predictive density (MLPD), that is, the ELPD divided
-by the number of observations. For the corresponding confidence interval, a
-normal approximation is used.
+by the number of observations. For the corresponding uncertainty interval,
+a normal approximation is used.
 \item \code{"gmpd"}: geometric mean predictive density (GMPD), that is, \code{\link[=exp]{exp()}} of
 the MLPD. The GMPD is especially helpful for discrete response families
 (because there, the GMPD is bounded by zero and one). For the corresponding
-standard error, the delta method is used. The corresponding confidence
+standard error, the delta method is used. The corresponding uncertainty
 interval type is "exponentiated normal approximation" because the
-confidence interval bounds are the exponentiated confidence interval bounds
-of the MLPD.
+uncertainty interval bounds are the exponentiated uncertainty interval
+bounds of the MLPD.
 \item \code{"mse"}: mean squared error (only available in the situations mentioned
-in section "Details" below). For the corresponding confidence interval, a
+in section "Details" below). For the corresponding uncertainty interval, a
 log-normal approximation is used if \code{deltas} is \code{FALSE} and a normal
 approximation is used if \code{deltas} is \code{TRUE} (or \code{"mixed"}, in case of
 \code{\link[=plot.vsel]{plot.vsel()}}).
 \item \code{"rmse"}: root mean squared error (only available in the situations
 mentioned in section "Details" below). For the corresponding standard
-error, the delta method is used. For the corresponding confidence interval,
-a log-normal approximation is used if \code{deltas} is \code{FALSE} and a normal
-approximation is used if \code{deltas} is \code{TRUE} (or \code{"mixed"}, in case of
-\code{\link[=plot.vsel]{plot.vsel()}}).
+error, the delta method is used. For the corresponding uncertainty
+interval, a log-normal approximation is used if \code{deltas} is \code{FALSE} and a
+normal approximation is used if \code{deltas} is \code{TRUE} (or \code{"mixed"}, in case
+of \code{\link[=plot.vsel]{plot.vsel()}}).
 \item \code{"R2"}: R-squared, i.e., coefficient of determination (only available in
 the situations mentioned in section "Details" below). For the corresponding
-standard error, the delta method is used. For the corresponding confidence
+standard error, the delta method is used. For the corresponding uncertainty
 interval, a normal approximation is used.
 \item \code{"acc"} (or its alias, \code{"pctcorr"}): classification accuracy (only
 available in the situations mentioned in section "Details" below). By
 "classification accuracy", we mean the proportion of correctly classified
 observations. For this, the response category ("class") with highest
 probability (the probabilities are model-based) is taken as the prediction
-("classification") for an observation. For the corresponding confidence
+("classification") for an observation. For the corresponding uncertainty
 interval, a normal approximation is used.
 \item \code{"auc"}: area under the ROC curve (only available in the situations
 mentioned in section "Details" below). For the corresponding standard error
-and lower and upper confidence interval bounds, bootstrapping is used. Not
+and lower and upper uncertainty interval bounds, bootstrapping is used. Not
 supported in case of subsampled LOO-CV (see argument \code{nloo} of
 \code{\link[=cv_varsel]{cv_varsel()}}).
 }}
@@ -102,8 +102,8 @@ submodel statistic minus the baseline model statistic). If set to
 uncertainty bars from the \code{deltas = TRUE} plot.}
 
 \item{alpha}{A number determining the (nominal) coverage \code{1 - alpha} of the
-confidence intervals. For example, in case of a normal-approximation
-confidence interval, \code{alpha = 2 * pnorm(-1)} corresponds to a confidence
+uncertainty intervals. For example, in case of a normal-approximation
+uncertainty interval, \code{alpha = 2 * pnorm(-1)} corresponds to a uncertainty
 interval stretching by one standard error on either side of the point
 estimate.}
 
