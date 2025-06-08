@@ -88,12 +88,13 @@ to argument \code{verbose} of \code{\link[=project]{project()}}, \code{\link[=va
 By default, \pkg{projpred} catches messages and warnings from the draw-wise
 divergence minimizers and throws their unique collection after performing all
 draw-wise divergence minimizations (i.e., draw-wise projections). This can be
-deactivated by setting global option \code{projpred.warn_prj_drawwise} to \code{FALSE}.
+deactivated by setting global option \code{projpred.warn_proj_drawwise} to
+\code{FALSE}.
 
 Furthermore, by default, \pkg{projpred} checks the convergence of the
 draw-wise divergence minimizers and throws a warning if any seem to have not
 converged. This warning is thrown after the warning message from global
-option \code{projpred.warn_prj_drawwise} (see above) and can be deactivated by
+option \code{projpred.warn_proj_drawwise} (see above) and can be deactivated by
 setting global option \code{projpred.check_conv} to \code{FALSE}.
 }
 

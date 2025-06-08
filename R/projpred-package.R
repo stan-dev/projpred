@@ -90,12 +90,13 @@
 #' By default, \pkg{projpred} catches messages and warnings from the draw-wise
 #' divergence minimizers and throws their unique collection after performing all
 #' draw-wise divergence minimizations (i.e., draw-wise projections). This can be
-#' deactivated by setting global option `projpred.warn_prj_drawwise` to `FALSE`.
+#' deactivated by setting global option `projpred.warn_proj_drawwise` to
+#' `FALSE`.
 #'
 #' Furthermore, by default, \pkg{projpred} checks the convergence of the
 #' draw-wise divergence minimizers and throws a warning if any seem to have not
 #' converged. This warning is thrown after the warning message from global
-#' option `projpred.warn_prj_drawwise` (see above) and can be deactivated by
+#' option `projpred.warn_proj_drawwise` (see above) and can be deactivated by
 #' setting global option `projpred.check_conv` to `FALSE`.
 #'
 #' # Parallelization

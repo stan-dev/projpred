@@ -14,10 +14,20 @@ divmin <- function(
     projpred_var,
     projpred_ws_aug,
     verbose_divmin,
-    throw_warn_sdivmin = getOption("projpred.warn_prj_drawwise", TRUE),
+    throw_warn_sdivmin = getOption("projpred.warn_proj_drawwise", TRUE),
     do_check_conv = getOption("projpred.check_conv", TRUE),
     ...
 ) {
+  if (missing(throw_warn_sdivmin) &&
+      is.null(getOption("projpred.warn_proj_drawwise")) &&
+      !is.null(getOption("projpred.warn_prj_drawwise"))) {
+    warning(
+      "Global option `projpred.warn_prj_drawwise` is deprecated. Please use ",
+      "global option `projpred.warn_proj_drawwise` instead. Now using the ",
+      "value from global option `projpred.warn_prj_drawwise`."
+    )
+    throw_warn_sdivmin <- getOption("projpred.warn_prj_drawwise")
+  }
   trms_all <- extract_terms_response(formula)
   has_grp <- length(trms_all$group_terms) > 0
   has_add <- length(trms_all$additive_terms) > 0
@@ -564,10 +574,20 @@ divmin_augdat <- function(
     projpred_var,
     projpred_ws_aug,
     verbose_divmin,
-    throw_warn_sdivmin = getOption("projpred.warn_prj_drawwise", TRUE),
+    throw_warn_sdivmin = getOption("projpred.warn_proj_drawwise", TRUE),
     do_check_conv = getOption("projpred.check_conv", TRUE),
     ...
 ) {
+  if (missing(throw_warn_sdivmin) &&
+      is.null(getOption("projpred.warn_proj_drawwise")) &&
+      !is.null(getOption("projpred.warn_prj_drawwise"))) {
+    warning(
+      "Global option `projpred.warn_prj_drawwise` is deprecated. Please use ",
+      "global option `projpred.warn_proj_drawwise` instead. Now using the ",
+      "value from global option `projpred.warn_prj_drawwise`."
+    )
+    throw_warn_sdivmin <- getOption("projpred.warn_prj_drawwise")
+  }
   trms_all <- extract_terms_response(formula)
   has_grp <- length(trms_all$group_terms) > 0
   projpred_formula_no_random <- NA
