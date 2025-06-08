@@ -17,6 +17,7 @@ If you read this from a place other than <https://mc-stan.org/projpred/news/inde
 * Argument `verbose` of `project()`, `varsel()`, and `cv_varsel()` has been changed from logical to integer. However, logical values continue to work (since `as.integer()` is applied internally). Global options `projpred.extra_verbose` and `projpred.verbose_project` are now deprecated because additional verbosity can be achieved via higher integer values for argument `verbose`. The new global option `projpred.verbose` may be used to set argument `verbose` of `project()`, `varsel()`, and `cv_varsel()` globally. (GitHub: #519)
 * Global option `projpred.prll_cv` has been deprecated. Please use global option `projpred.parallel_cv` instead (or directly use `cv_varsel()`'s argument `parallel`). (GitHub: #500, #521)
 * Global option `projpred.warn_prj_drawwise` has been deprecated. Please use global option `projpred.warn_proj_drawwise` instead. (GitHub: #500, #521)
+* Global option `projpred.check_conv` has been deprecated. Please use global option `projpred.check_convergence` instead. (GitHub: #500, #521)
 
 ## Minor changes
 

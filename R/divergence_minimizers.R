@@ -15,7 +15,7 @@ divmin <- function(
     projpred_ws_aug,
     verbose_divmin,
     throw_warn_sdivmin = getOption("projpred.warn_proj_drawwise", TRUE),
-    do_check_conv = getOption("projpred.check_conv", TRUE),
+    do_check_conv = getOption("projpred.check_convergence", TRUE),
     ...
 ) {
   if (missing(throw_warn_sdivmin) &&
@@ -27,6 +27,16 @@ divmin <- function(
       "value from global option `projpred.warn_prj_drawwise`."
     )
     throw_warn_sdivmin <- getOption("projpred.warn_prj_drawwise")
+  }
+  if (missing(do_check_conv) &&
+      is.null(getOption("projpred.check_convergence")) &&
+      !is.null(getOption("projpred.check_conv"))) {
+    warning(
+      "Global option `projpred.check_conv` is deprecated. Please use ",
+      "global option `projpred.check_convergence` instead. Now using the ",
+      "value from global option `projpred.check_conv`."
+    )
+    do_check_conv <- getOption("projpred.check_conv")
   }
   trms_all <- extract_terms_response(formula)
   has_grp <- length(trms_all$group_terms) > 0
@@ -575,7 +585,7 @@ divmin_augdat <- function(
     projpred_ws_aug,
     verbose_divmin,
     throw_warn_sdivmin = getOption("projpred.warn_proj_drawwise", TRUE),
-    do_check_conv = getOption("projpred.check_conv", TRUE),
+    do_check_conv = getOption("projpred.check_convergence", TRUE),
     ...
 ) {
   if (missing(throw_warn_sdivmin) &&
@@ -587,6 +597,16 @@ divmin_augdat <- function(
       "value from global option `projpred.warn_prj_drawwise`."
     )
     throw_warn_sdivmin <- getOption("projpred.warn_prj_drawwise")
+  }
+  if (missing(do_check_conv) &&
+      is.null(getOption("projpred.check_convergence")) &&
+      !is.null(getOption("projpred.check_conv"))) {
+    warning(
+      "Global option `projpred.check_conv` is deprecated. Please use ",
+      "global option `projpred.check_convergence` instead. Now using the ",
+      "value from global option `projpred.check_conv`."
+    )
+    do_check_conv <- getOption("projpred.check_conv")
   }
   trms_all <- extract_terms_response(formula)
   has_grp <- length(trms_all$group_terms) > 0

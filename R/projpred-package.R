@@ -97,7 +97,7 @@
 #' draw-wise divergence minimizers and throws a warning if any seem to have not
 #' converged. This warning is thrown after the warning message from global
 #' option `projpred.warn_proj_drawwise` (see above) and can be deactivated by
-#' setting global option `projpred.check_conv` to `FALSE`.
+#' setting global option `projpred.check_convergence` to `FALSE`.
 #'
 #' # Parallelization
 #'

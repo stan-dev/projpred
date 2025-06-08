@@ -95,7 +95,7 @@ Furthermore, by default, \pkg{projpred} checks the convergence of the
 draw-wise divergence minimizers and throws a warning if any seem to have not
 converged. This warning is thrown after the warning message from global
 option \code{projpred.warn_proj_drawwise} (see above) and can be deactivated by
-setting global option \code{projpred.check_conv} to \code{FALSE}.
+setting global option \code{projpred.check_convergence} to \code{FALSE}.
 }
 
 \section{Parallelization}{
