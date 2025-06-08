@@ -781,7 +781,7 @@ sqrt_cut0 <- function(x) {
 
 verbose_from_deprecated_options <- function(verbose, with_cv = FALSE,
                                             proj_only = FALSE) {
-  if (!is.logical(verbose)) {
+  if (!is.logical(verbose) || !is.null(getOption("projpred.verbose"))) {
     return(verbose)
   }
   if (!is.null(getOption("projpred.extra_verbose")) &&
