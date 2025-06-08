@@ -18,6 +18,7 @@ If you read this from a place other than <https://mc-stan.org/projpred/news/inde
 * Global option `projpred.prll_cv` has been deprecated. Please use global option `projpred.parallel_cv` instead (or directly use `cv_varsel()`'s argument `parallel`). (GitHub: #500, #521)
 * Global option `projpred.warn_prj_drawwise` has been deprecated. Please use global option `projpred.warn_proj_drawwise` instead. (GitHub: #500, #521)
 * Global option `projpred.check_conv` has been deprecated. Please use global option `projpred.check_convergence` instead. (GitHub: #500, #521)
+* Global option `projpred.prll_prj_trigger` has been deprecated. Please use global option `projpred.parallel_proj_trigger` instead. (GitHub: #500, #521)
 
 ## Minor changes
 

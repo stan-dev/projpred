@@ -3,7 +3,7 @@ context("parallel")
 # Setup -------------------------------------------------------------------
 
 if (run_prll) {
-  trigger_default <- options(projpred.prll_prj_trigger = 0L)
+  trigger_default <- options(projpred.parallel_proj_trigger = 0L)
 
   if (dopar_backend == "doParallel") {
     doParallel::registerDoParallel(ncores)

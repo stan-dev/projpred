@@ -103,30 +103,30 @@ The projection of the reference model onto a submodel can be run in parallel
 (across the projected draws). This is powered by the \pkg{foreach} package.
 Thus, any parallel (or sequential) backend compatible with \pkg{foreach} can
 be used, e.g., the backends from packages \pkg{doParallel}, \pkg{doMPI}, or
-\pkg{doFuture}. Using the global option \code{projpred.prll_prj_trigger}, the
+\pkg{doFuture}. Using the global option \code{projpred.parallel_proj_trigger}, the
 number of projected draws below which no parallelization is applied (even if
 a parallel backend is registered) can be modified. Such a "trigger" threshold
 exists because of the computational overhead of a parallelization which makes
 the projection parallelization only useful for a sufficiently large number of
 projected draws. By default, the projection parallelization is turned off,
 which can also be achieved by supplying \code{Inf} (or \code{NULL}) to option
-\code{projpred.prll_prj_trigger}. Note that we cannot recommend the projection
-parallelization on Windows because in our experience, the parallelization
-overhead is larger there, causing a parallel run to take longer than a
-sequential run. Also note that the projection parallelization works well for
-submodels which are GLMs (and hence also for the latent projection if the
-submodel has no multilevel or additive predictor terms), but for all other
-types of submodels, the fitted submodel objects are quite big, which---when
-running in parallel---may lead to excessive memory usage which in turn may
-crash the R session (on Unix systems, setting an appropriate memory limit via
-\code{\link[unix:rlimit]{unix::rlimit_as()}} may avoid crashing the whole machine). Thus, we currently
-cannot recommend parallelizing projections onto submodels which are GLMs (in
-this context, the latent projection onto a submodel without multilevel and
-without additive terms may be regarded as a projection onto a submodel which
-is a GLM). However, for \code{\link[=cv_varsel]{cv_varsel()}}, there is also a \emph{CV} parallelization
-(i.e., a parallelization of \pkg{projpred}'s cross-validation) which can be
-activated via argument \code{parallel} (which in turn can be controlled via global
-option \code{projpred.parallel_cv}).
+\code{projpred.parallel_proj_trigger}. Note that we cannot recommend the
+projection parallelization on Windows because in our experience, the
+parallelization overhead is larger there, causing a parallel run to take
+longer than a sequential run. Also note that the projection parallelization
+works well for submodels which are GLMs (and hence also for the latent
+projection if the submodel has no multilevel or additive predictor terms),
+but for all other types of submodels, the fitted submodel objects are quite
+big, which---when running in parallel---may lead to excessive memory usage
+which in turn may crash the R session (on Unix systems, setting an
+appropriate memory limit via \code{\link[unix:rlimit]{unix::rlimit_as()}} may avoid crashing the whole
+machine). Thus, we currently cannot recommend parallelizing projections onto
+submodels which are GLMs (in this context, the latent projection onto a
+submodel without multilevel and without additive terms may be regarded as a
+projection onto a submodel which is a GLM). However, for \code{\link[=cv_varsel]{cv_varsel()}}, there
+is also a \emph{CV} parallelization (i.e., a parallelization of \pkg{projpred}'s
+cross-validation) which can be activated via argument \code{parallel} (which in
+turn can be controlled via global option \code{projpred.parallel_cv}).
 
 For the CV parallelization, global option \code{projpred.export_to_workers} may be
 set to a character vector of names of objects to export from the global

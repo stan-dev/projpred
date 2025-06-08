@@ -335,7 +335,7 @@ By the following `project()` call, we project the reference model onto the final
 <!-- ```{r prll_prj_prep} -->
 <!-- if (!identical(.Platform$OS.type, "windows")) { -->
 <!--   doParallel::registerDoParallel(ncores) -->
-<!--   trigger_default <- options(projpred.prll_prj_trigger = 200) -->
+<!--   trigger_default <- options(projpred.parallel_proj_trigger = 200) -->
 <!-- } -->
 <!-- ``` -->
 ```{r project}
