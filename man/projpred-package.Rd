@@ -124,7 +124,8 @@ this context, the latent projection onto a submodel without multilevel and
 without additive terms may be regarded as a projection onto a submodel which
 is a GLM). However, for \code{\link[=cv_varsel]{cv_varsel()}}, there is also a \emph{CV} parallelization
 (i.e., a parallelization of \pkg{projpred}'s cross-validation) which can be
-activated via argument \code{parallel}.
+activated via argument \code{parallel} (which in turn can be controlled via global
+option \code{projpred.parallel_cv}).
 
 For the CV parallelization, global option \code{projpred.export_to_workers} may be
 set to a character vector of names of objects to export from the global

@@ -44,7 +44,7 @@ cv_varsel(object, ...)
   seed = NA,
   search_terms = NULL,
   search_out = NULL,
-  parallel = getOption("projpred.prll_cv", FALSE),
+  parallel = getOption("projpred.parallel_cv", FALSE),
   ...
 )
 }

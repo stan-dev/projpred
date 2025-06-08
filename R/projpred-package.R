@@ -126,7 +126,8 @@
 #' without additive terms may be regarded as a projection onto a submodel which
 #' is a GLM). However, for [cv_varsel()], there is also a *CV* parallelization
 #' (i.e., a parallelization of \pkg{projpred}'s cross-validation) which can be
-#' activated via argument `parallel`.
+#' activated via argument `parallel` (which in turn can be controlled via global
+#' option `projpred.parallel_cv`).
 #'
 #' For the CV parallelization, global option `projpred.export_to_workers` may be
 #' set to a character vector of names of objects to export from the global

@@ -283,7 +283,7 @@ cv_varsel.refmodel <- function(
     seed = NA,
     search_terms = NULL,
     search_out = NULL,
-    parallel = getOption("projpred.prll_cv", FALSE),
+    parallel = getOption("projpred.parallel_cv", FALSE),
     ...
 ) {
   if (!missing(lambda_min_ratio)) {
@@ -304,6 +304,16 @@ cv_varsel.refmodel <- function(
             "arguments for the search via argument `search_control`. ",
             "Now using `thresh` as element `thresh` of `search_control`.")
     search_control$thresh <- thresh
+  }
+  if (missing(parallel) && is.null(getOption("projpred.parallel_cv")) &&
+      !is.null(getOption("projpred.prll_cv"))) {
+    warning(
+      "Global option `projpred.prll_cv` is deprecated. Please use global ",
+      "option `projpred.parallel_cv` instead (or use argument `parallel` ",
+      "directly). Now using the value from global option `projpred.prll_cv` ",
+      "for argument `parallel`."
+    )
+    parallel <- getOption("projpred.prll_cv")
   }
   verbose <- verbose_from_deprecated_options(verbose, with_cv = TRUE)
 
