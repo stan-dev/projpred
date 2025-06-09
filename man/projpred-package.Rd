@@ -183,6 +183,16 @@ default of \code{FALSE} for that global option).
 }
 
 \section{Other notes}{
+Global option \code{projpred.digits} controls arguments \code{digits} of
+\code{\link[=print.vselsummary]{print.vselsummary()}} and \code{\link[=print.vsel]{print.vsel()}}.
+
+Global option \code{projpred.warn_L1_interactions} may be set to \code{FALSE} to
+deactivate a warning that an L1 search selected an interaction term before
+all involved lower-order interaction terms (including main-effect terms) were
+selected (in which case the predictor ranking is automatically modified by
+\pkg{projpred} so that the lower-order interaction terms come before this
+interaction term).
+
 Most examples are not executed when called via \code{\link[=example]{example()}}. To execute them,
 their code has to be copied and pasted manually to the console.
 }

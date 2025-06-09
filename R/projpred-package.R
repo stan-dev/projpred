@@ -187,6 +187,16 @@
 #'
 #' # Other notes
 #'
+#' Global option `projpred.digits` controls arguments `digits` of
+#' [print.vselsummary()] and [print.vsel()].
+#'
+#' Global option `projpred.warn_L1_interactions` may be set to `FALSE` to
+#' deactivate a warning that an L1 search selected an interaction term before
+#' all involved lower-order interaction terms (including main-effect terms) were
+#' selected (in which case the predictor ranking is automatically modified by
+#' \pkg{projpred} so that the lower-order interaction terms come before this
+#' interaction term).
+#'
 #' Most examples are not executed when called via [example()]. To execute them,
 #' their code has to be copied and pasted manually to the console.
 #'
@@ -214,3 +224,45 @@
 #' }
 #'
 "_PACKAGE"
+
+#' Internal global options
+#'
+#' The following global options are for internal use:
+#' * `projpred.mssg_ndraws`, `projpred.mssg_cut_search`, `projpred.mssg_time`,
+#' `projpred.warn_wobs_ppd`, `projpred.warn_additive_experimental`,
+#' `projpred.warn_allrandom_dis`, `projpred.warn_instable_projections`,
+#' `projpred.warn_cvrefbuilder_NULL`, `projpred.warn_kfold_refits`: A single
+#' logical value indicating whether to throw certain messages or warnings
+#' (depending on the midfix `mssg` or `warn`, respectively). For the exact
+#' meaning of these global options, see their occurrences in the codebase. With
+#' the exception of `projpred.warn_allrandom_dis`, these global options are
+#' currently used in the unit tests to deactivate these messages and warnings.
+#' Global option `projpred.warn_instable_projections` is also used (invisibly)
+#' in the latent vignette to suppress the corresponding warnings while
+#' illustrating the underlying issue (instable projections).
+#' * `projpred.additional_checks`: A single logical value indicating whether to
+#' run some additional checks that are not necessary to be run when users call
+#' the corresponding \pkg{projpred} functions. Currently, these checks are
+#' activated during the unit tests.
+#' * `projpred.glm_fitter`: A character string naming the function to be used as
+#' the submodel fitter for non-multilevel, non-additive projections. Currently,
+#' this is an experimental feature and allowed values are
+#' `"fit_glm_ridge_callback"` (the default) and `"fit_glm_callback"`.
+#' * `projpred.gaussian_not_as_generalized`: A single logical value indicating
+#' whether to treat the [gaussian()] family not as a family for a *generalized
+#' linear* model (i.e., for which [glm()] would typically be used as a model
+#' fitting function outside of \pkg{projpred}), but as the family for an
+#' explicit *linear* model (i.e., for which [lm()] would typically be used as a
+#' model fitting function outside of \pkg{projpred}). This also holds for models
+#' with multilevel terms (because \pkg{lme4} offers both [lme4::glmer()] and
+#' [lme4::lmer()]). Currently, this is an experimental feature.
+#' * `projpred.PQL`: A single logical value indicating whether to use
+#' [MASS::glmmPQL()] as the submodel fitter for multilevel (non-additive)
+#' projections (see GitHub issue
+#' [#207](https://github.com/stan-dev/projpred/issues/207) and GitHub pull
+#' request [#353](https://github.com/stan-dev/projpred/pull/353)). Currently,
+#' this is an experimental feature.
+#'
+#' @name internal-global-options
+#' @keywords internal
+NULL

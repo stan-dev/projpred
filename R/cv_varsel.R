@@ -81,23 +81,22 @@
 #'   reduced by using `validate_search = TRUE`.
 #'
 #'   PSIS uses Pareto-\eqn{\hat{k}} diagnostic to assess the reliability of
-#'   PSIS-LOO-CV. Whether the Pareto-\eqn{\hat{k}} diagnostics are shown as
-#'   warnings, is controlled with a global option `projpred.warn_psis` (default
-#'   is `TRUE`). See [loo::loo-glossary] for how to interpret the
-#'   Pareto-\eqn{\hat{k}} values and the warning thresholds. \pkg{projpred} does
-#'   not support the usually recommended moment-matching (see
-#'   [loo::loo_moment_match()] and [brms::loo_moment_match()]), mixture
-#'   importance sampling (`vignette("loo2-mixis", package="loo")`), or
-#'   `reloo`-ing ([brms::reloo()]). If the reference model PSIS-LOO-CV
-#'   Pareto-\eqn{\hat{k}} values are good, but there are high
-#'   Pareto-\eqn{\hat{k}} values for the projected models, you can try
-#'   increasing the number of draws used for the PSIS-LOO-CV (`ndraws` in case
-#'   of `refit_prj = FALSE`; `ndraws_pred` in case of `refit_prj = TRUE`). If
-#'   increasing the number of draws does not help and if the reference model
-#'   PSIS-LOO-CV Pareto-\eqn{\hat{k}} values are high, and the reference model
-#'   PSIS-LOO-CV results change substantially when using moment-matching,
-#'   mixture importance sampling, or `reloo`-ing, we recommend to use
-#'   \eqn{K}-fold-CV within `projpred`.
+#'   PSIS-LOO-CV. Global option `projpred.warn_psis` (default `TRUE`) controls
+#'   whether the Pareto-\eqn{\hat{k}} diagnostics may result in warnings. See
+#'   [loo::loo-glossary] for how to interpret the Pareto-\eqn{\hat{k}} values
+#'   and the warning thresholds. \pkg{projpred} does not support the usually
+#'   recommended moment-matching (see [loo::loo_moment_match()] and
+#'   [brms::loo_moment_match()]), mixture importance sampling
+#'   (`vignette("loo2-mixis", package="loo")`), or `reloo`-ing
+#'   ([brms::reloo()]). If the reference model PSIS-LOO-CV Pareto-\eqn{\hat{k}}
+#'   values are good, but there are high Pareto-\eqn{\hat{k}} values for the
+#'   projected models, you can try increasing the number of draws used for the
+#'   PSIS-LOO-CV (`ndraws` in case of `refit_prj = FALSE`; `ndraws_pred` in case
+#'   of `refit_prj = TRUE`). If increasing the number of draws does not help and
+#'   if the reference model PSIS-LOO-CV Pareto-\eqn{\hat{k}} values are high,
+#'   and the reference model PSIS-LOO-CV results change substantially when using
+#'   moment-matching, mixture importance sampling, or `reloo`-ing, we recommend
+#'   to use \eqn{K}-fold-CV within `projpred`.
 #'
 #'   For PSIS-LOO-CV, \pkg{projpred} calls [loo::psis()] (or, exceptionally,
 #'   [loo::sis()], see below) with `r_eff = NA`. This is only a problem if there
