@@ -90,13 +90,14 @@
 #' By default, \pkg{projpred} catches messages and warnings from the draw-wise
 #' divergence minimizers and throws their unique collection after performing all
 #' draw-wise divergence minimizations (i.e., draw-wise projections). This can be
-#' deactivated by setting global option `projpred.warn_prj_drawwise` to `FALSE`.
+#' deactivated by setting global option `projpred.warn_proj_drawwise` to
+#' `FALSE`.
 #'
 #' Furthermore, by default, \pkg{projpred} checks the convergence of the
 #' draw-wise divergence minimizers and throws a warning if any seem to have not
 #' converged. This warning is thrown after the warning message from global
-#' option `projpred.warn_prj_drawwise` (see above) and can be deactivated by
-#' setting global option `projpred.check_conv` to `FALSE`.
+#' option `projpred.warn_proj_drawwise` (see above) and can be deactivated by
+#' setting global option `projpred.check_convergence` to `FALSE`.
 #'
 #' # Parallelization
 #'
@@ -104,29 +105,30 @@
 #' (across the projected draws). This is powered by the \pkg{foreach} package.
 #' Thus, any parallel (or sequential) backend compatible with \pkg{foreach} can
 #' be used, e.g., the backends from packages \pkg{doParallel}, \pkg{doMPI}, or
-#' \pkg{doFuture}. Using the global option `projpred.prll_prj_trigger`, the
+#' \pkg{doFuture}. Using the global option `projpred.parallel_proj_trigger`, the
 #' number of projected draws below which no parallelization is applied (even if
 #' a parallel backend is registered) can be modified. Such a "trigger" threshold
 #' exists because of the computational overhead of a parallelization which makes
 #' the projection parallelization only useful for a sufficiently large number of
 #' projected draws. By default, the projection parallelization is turned off,
 #' which can also be achieved by supplying `Inf` (or `NULL`) to option
-#' `projpred.prll_prj_trigger`. Note that we cannot recommend the projection
-#' parallelization on Windows because in our experience, the parallelization
-#' overhead is larger there, causing a parallel run to take longer than a
-#' sequential run. Also note that the projection parallelization works well for
-#' submodels which are GLMs (and hence also for the latent projection if the
-#' submodel has no multilevel or additive predictor terms), but for all other
-#' types of submodels, the fitted submodel objects are quite big, which---when
-#' running in parallel---may lead to excessive memory usage which in turn may
-#' crash the R session (on Unix systems, setting an appropriate memory limit via
-#' [unix::rlimit_as()] may avoid crashing the whole machine). Thus, we currently
-#' cannot recommend parallelizing projections onto submodels which are GLMs (in
-#' this context, the latent projection onto a submodel without multilevel and
-#' without additive terms may be regarded as a projection onto a submodel which
-#' is a GLM). However, for [cv_varsel()], there is also a *CV* parallelization
-#' (i.e., a parallelization of \pkg{projpred}'s cross-validation) which can be
-#' activated via argument `parallel`.
+#' `projpred.parallel_proj_trigger`. Note that we cannot recommend the
+#' projection parallelization on Windows because in our experience, the
+#' parallelization overhead is larger there, causing a parallel run to take
+#' longer than a sequential run. Also note that the projection parallelization
+#' works well for submodels which are GLMs (and hence also for the latent
+#' projection if the submodel has no multilevel or additive predictor terms),
+#' but for all other types of submodels, the fitted submodel objects are quite
+#' big, which---when running in parallel---may lead to excessive memory usage
+#' which in turn may crash the R session (on Unix systems, setting an
+#' appropriate memory limit via [unix::rlimit_as()] may avoid crashing the whole
+#' machine). Thus, we currently cannot recommend parallelizing projections onto
+#' submodels which are GLMs (in this context, the latent projection onto a
+#' submodel without multilevel and without additive terms may be regarded as a
+#' projection onto a submodel which is a GLM). However, for [cv_varsel()], there
+#' is also a *CV* parallelization (i.e., a parallelization of \pkg{projpred}'s
+#' cross-validation) which can be activated via argument `parallel` (which in
+#' turn can be controlled via global option `projpred.parallel_cv`).
 #'
 #' For the CV parallelization, global option `projpred.export_to_workers` may be
 #' set to a character vector of names of objects to export from the global
@@ -185,6 +187,16 @@
 #'
 #' # Other notes
 #'
+#' Global option `projpred.digits` controls arguments `digits` of
+#' [print.vselsummary()] and [print.vsel()].
+#'
+#' Global option `projpred.warn_L1_interactions` may be set to `FALSE` to
+#' deactivate a warning that an L1 search selected an interaction term before
+#' all involved lower-order interaction terms (including main-effect terms) were
+#' selected (in which case the predictor ranking is automatically modified by
+#' \pkg{projpred} so that the lower-order interaction terms come before this
+#' interaction term).
+#'
 #' Most examples are not executed when called via [example()]. To execute them,
 #' their code has to be copied and pasted manually to the console.
 #'
@@ -212,3 +224,45 @@
 #' }
 #'
 "_PACKAGE"
+
+#' Internal global options
+#'
+#' The following global options are for internal use:
+#' * `projpred.mssg_ndraws`, `projpred.mssg_cut_search`, `projpred.mssg_time`,
+#' `projpred.warn_wobs_ppd`, `projpred.warn_additive_experimental`,
+#' `projpred.warn_allrandom_dis`, `projpred.warn_instable_projections`,
+#' `projpred.warn_cvrefbuilder_NULL`, `projpred.warn_kfold_refits`: A single
+#' logical value indicating whether to throw certain messages or warnings
+#' (depending on the midfix `mssg` or `warn`, respectively). For the exact
+#' meaning of these global options, see their occurrences in the codebase. With
+#' the exception of `projpred.warn_allrandom_dis`, these global options are
+#' currently used in the unit tests to deactivate these messages and warnings.
+#' Global option `projpred.warn_instable_projections` is also used (invisibly)
+#' in the latent vignette to suppress the corresponding warnings while
+#' illustrating the underlying issue (instable projections).
+#' * `projpred.additional_checks`: A single logical value indicating whether to
+#' run some additional checks that are not necessary to be run when users call
+#' the corresponding \pkg{projpred} functions. Currently, these checks are
+#' activated during the unit tests.
+#' * `projpred.glm_fitter`: A character string naming the function to be used as
+#' the submodel fitter for non-multilevel, non-additive projections. Currently,
+#' this is an experimental feature and allowed values are
+#' `"fit_glm_ridge_callback"` (the default) and `"fit_glm_callback"`.
+#' * `projpred.gaussian_not_as_generalized`: A single logical value indicating
+#' whether to treat the [gaussian()] family not as a family for a *generalized
+#' linear* model (i.e., for which [glm()] would typically be used as a model
+#' fitting function outside of \pkg{projpred}), but as the family for an
+#' explicit *linear* model (i.e., for which [lm()] would typically be used as a
+#' model fitting function outside of \pkg{projpred}). This also holds for models
+#' with multilevel terms (because \pkg{lme4} offers both [lme4::glmer()] and
+#' [lme4::lmer()]). Currently, this is an experimental feature.
+#' * `projpred.PQL`: A single logical value indicating whether to use
+#' [MASS::glmmPQL()] as the submodel fitter for multilevel (non-additive)
+#' projections (see GitHub issue
+#' [#207](https://github.com/stan-dev/projpred/issues/207) and GitHub pull
+#' request [#353](https://github.com/stan-dev/projpred/pull/353)). Currently,
+#' this is an experimental feature.
+#'
+#' @name internal-global-options
+#' @keywords internal
+NULL

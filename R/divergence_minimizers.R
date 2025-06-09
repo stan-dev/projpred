@@ -14,10 +14,30 @@ divmin <- function(
     projpred_var,
     projpred_ws_aug,
     verbose_divmin,
-    throw_warn_sdivmin = getOption("projpred.warn_prj_drawwise", TRUE),
-    do_check_conv = getOption("projpred.check_conv", TRUE),
+    throw_warn_sdivmin = getOption("projpred.warn_proj_drawwise", TRUE),
+    do_check_conv = getOption("projpred.check_convergence", TRUE),
     ...
 ) {
+  if (missing(throw_warn_sdivmin) &&
+      is.null(getOption("projpred.warn_proj_drawwise")) &&
+      !is.null(getOption("projpred.warn_prj_drawwise"))) {
+    warning(
+      "Global option `projpred.warn_prj_drawwise` is deprecated. Please use ",
+      "global option `projpred.warn_proj_drawwise` instead. Now using the ",
+      "value from global option `projpred.warn_prj_drawwise`."
+    )
+    throw_warn_sdivmin <- getOption("projpred.warn_prj_drawwise")
+  }
+  if (missing(do_check_conv) &&
+      is.null(getOption("projpred.check_convergence")) &&
+      !is.null(getOption("projpred.check_conv"))) {
+    warning(
+      "Global option `projpred.check_conv` is deprecated. Please use ",
+      "global option `projpred.check_convergence` instead. Now using the ",
+      "value from global option `projpred.check_conv`."
+    )
+    do_check_conv <- getOption("projpred.check_conv")
+  }
   trms_all <- extract_terms_response(formula)
   has_grp <- length(trms_all$group_terms) > 0
   has_add <- length(trms_all$additive_terms) > 0
@@ -58,7 +78,18 @@ divmin <- function(
     )
   }
 
-  if (length(formulas) < getOption("projpred.prll_prj_trigger", Inf)) {
+  if (is.null(getOption("projpred.parallel_proj_trigger")) &&
+      !is.null(getOption("projpred.prll_prj_trigger"))) {
+    warning(
+      "Global option `projpred.prll_prj_trigger` is deprecated. Please use ",
+      "global option `projpred.parallel_proj_trigger` instead. Now using the ",
+      "value from global option `projpred.prll_prj_trigger`."
+    )
+    prll_prj_trigger <- getOption("projpred.prll_prj_trigger")
+  } else {
+    prll_prj_trigger <- getOption("projpred.parallel_proj_trigger", Inf)
+  }
+  if (length(formulas) < prll_prj_trigger) {
     # Sequential case. Actually, we could simply use ``%do_projpred%` <-
     # foreach::`%do%`` here and then proceed as in the parallel case, but that
     # would require adding more "hard" dependencies (because packages 'foreach'
@@ -564,10 +595,30 @@ divmin_augdat <- function(
     projpred_var,
     projpred_ws_aug,
     verbose_divmin,
-    throw_warn_sdivmin = getOption("projpred.warn_prj_drawwise", TRUE),
-    do_check_conv = getOption("projpred.check_conv", TRUE),
+    throw_warn_sdivmin = getOption("projpred.warn_proj_drawwise", TRUE),
+    do_check_conv = getOption("projpred.check_convergence", TRUE),
     ...
 ) {
+  if (missing(throw_warn_sdivmin) &&
+      is.null(getOption("projpred.warn_proj_drawwise")) &&
+      !is.null(getOption("projpred.warn_prj_drawwise"))) {
+    warning(
+      "Global option `projpred.warn_prj_drawwise` is deprecated. Please use ",
+      "global option `projpred.warn_proj_drawwise` instead. Now using the ",
+      "value from global option `projpred.warn_prj_drawwise`."
+    )
+    throw_warn_sdivmin <- getOption("projpred.warn_prj_drawwise")
+  }
+  if (missing(do_check_conv) &&
+      is.null(getOption("projpred.check_convergence")) &&
+      !is.null(getOption("projpred.check_conv"))) {
+    warning(
+      "Global option `projpred.check_conv` is deprecated. Please use ",
+      "global option `projpred.check_convergence` instead. Now using the ",
+      "value from global option `projpred.check_conv`."
+    )
+    do_check_conv <- getOption("projpred.check_conv")
+  }
   trms_all <- extract_terms_response(formula)
   has_grp <- length(trms_all$group_terms) > 0
   projpred_formula_no_random <- NA
@@ -620,7 +671,18 @@ divmin_augdat <- function(
   projpred_ws_aug <- unclass(projpred_ws_aug)
   attr(projpred_ws_aug, "ndiscrete") <- NULL
 
-  if (ncol(projpred_ws_aug) < getOption("projpred.prll_prj_trigger", Inf)) {
+  if (is.null(getOption("projpred.parallel_proj_trigger")) &&
+      !is.null(getOption("projpred.prll_prj_trigger"))) {
+    warning(
+      "Global option `projpred.prll_prj_trigger` is deprecated. Please use ",
+      "global option `projpred.parallel_proj_trigger` instead. Now using the ",
+      "value from global option `projpred.prll_prj_trigger`."
+    )
+    prll_prj_trigger <- getOption("projpred.prll_prj_trigger")
+  } else {
+    prll_prj_trigger <- getOption("projpred.parallel_proj_trigger", Inf)
+  }
+  if (ncol(projpred_ws_aug) < prll_prj_trigger) {
     # Sequential case. Actually, we could simply use ``%do_projpred%` <-
     # foreach::`%do%`` here and then proceed as in the parallel case, but that
     # would require adding more "hard" dependencies (because packages 'foreach'

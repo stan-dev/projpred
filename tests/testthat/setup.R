@@ -914,9 +914,9 @@ options(projpred.additional_checks = TRUE)
 # this should only be relevant for `datafit`s):
 options(projpred.warn_cvrefbuilder_NULL = FALSE)
 # Suppress warnings thrown while fitting the submodels:
-options(projpred.warn_prj_drawwise = FALSE)
+options(projpred.warn_proj_drawwise = FALSE)
 # Don't use the convergence checker:
-options(projpred.check_conv = FALSE)
+options(projpred.check_convergence = FALSE)
 # Set default number of significant digits to be printed:
 options(projpred.digits = getOption("digits"))
 

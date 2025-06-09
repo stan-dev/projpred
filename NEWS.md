@@ -15,6 +15,11 @@ If you read this from a place other than <https://mc-stan.org/projpred/news/inde
 * Argument `deltas` of `plot.vsel()` has gained the option `"mixed"` which combines the point estimates from `deltas = FALSE` with the uncertainty bars from `deltas = TRUE`. (GitHub: #511)
 * For the latent projection, the function passed to argument `latent_ll_oscale` of `extend_family()` now needs to have an argument `dis` (at the second position). Similarly, the function passed to argument `latent_ppd_oscale` of `extend_family()` now needs to have an argument `dis_resamp` (again at the second position). This makes it possible, e.g., to use the latent projection for a log-normal response family. (GitHub: #513)
 * Argument `verbose` of `project()`, `varsel()`, and `cv_varsel()` has been changed from logical to integer. However, logical values continue to work (since `as.integer()` is applied internally). Global options `projpred.extra_verbose` and `projpred.verbose_project` are now deprecated because additional verbosity can be achieved via higher integer values for argument `verbose`. The new global option `projpred.verbose` may be used to set argument `verbose` of `project()`, `varsel()`, and `cv_varsel()` globally. (GitHub: #519)
+* Some global options have been renamed, so please use their new names from now on (although the old names will continue to work for a while) (GitHub: #500, #521):
+    + Global option `projpred.prll_cv` has been renamed to `projpred.parallel_cv`.
+    + Global option `projpred.warn_prj_drawwise` has been renamed to `projpred.warn_proj_drawwise`.
+    + Global option `projpred.check_conv` has been renamed to `projpred.check_convergence`.
+    + Global option `projpred.prll_prj_trigger` has been renamed to `projpred.parallel_proj_trigger`.
 
 ## Minor changes
 
