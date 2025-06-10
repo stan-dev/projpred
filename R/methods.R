@@ -656,11 +656,12 @@ proj_predict_aux <- function(proj, newdata, offsetnew, weightsnew,
 #'   the ranking proportions given on the x-axis (below the full-data predictor
 #'   ranking).
 #' @param text_angle Passed to argument `angle` of [ggplot2::element_text()] for
-#'   the x-axis tick labels. In case of long predictor names (and/or large
-#'   `nterms_max`), `text_angle = 45` might be helpful (for example). If
-#'   `text_angle > 0` (`< 0`), the x-axis text is automatically right-aligned
-#'   (left-aligned). If `-90 < text_angle && text_angle < 90 && text_angle !=
-#'   0`, the x-axis text is also top-aligned.
+#'   the x-axis tick labels. Note that the default of argument `angle` in
+#'   [ggplot2::element_text()] is `NULL` (which implies no rotation) whereas we
+#'   use a default of `text_angle = 45` here. If `text_angle > 0` (`< 0`), the
+#'   x-axis text is automatically right-aligned (left-aligned). If `-90 <
+#'   text_angle && text_angle < 90 && text_angle != 0`, the x-axis text is also
+#'   top-aligned.
 #' @param size_position A single character string specifying the position of the
 #'   submodel sizes. Either `"primary_x_bottom"` for including them in the
 #'   x-axis tick labels, `"primary_x_top"` for putting them above the x-axis, or

@@ -177,10 +177,11 @@ the ranking proportions given on the x-axis (below the full-data predictor
 ranking).}
 
 \item{text_angle}{Passed to argument \code{angle} of \code{\link[ggplot2:element]{ggplot2::element_text()}} for
-the x-axis tick labels. In case of long predictor names (and/or large
-\code{nterms_max}), \code{text_angle = 45} might be helpful (for example). If
-\code{text_angle > 0} (\verb{< 0}), the x-axis text is automatically right-aligned
-(left-aligned). If \code{-90 < text_angle && text_angle < 90 && text_angle != 0}, the x-axis text is also top-aligned.}
+the x-axis tick labels. Note that the default of argument \code{angle} in
+\code{\link[ggplot2:element]{ggplot2::element_text()}} is \code{NULL} (which implies no rotation) whereas we
+use a default of \code{text_angle = 45} here. If \code{text_angle > 0} (\verb{< 0}), the
+x-axis text is automatically right-aligned (left-aligned). If \code{-90 < text_angle && text_angle < 90 && text_angle != 0}, the x-axis text is also
+top-aligned.}
 
 \item{size_position}{A single character string specifying the position of the
 submodel sizes. Either \code{"primary_x_bottom"} for including them in the
