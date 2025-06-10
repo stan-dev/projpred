@@ -976,7 +976,8 @@ plot.vsel <- function(
         identical(size_position, "secondary_x")) {
       stop("Currently, `size_position = \"primary_x_top\"` and `size_position ",
            "= \"secondary_x\"` are not compatible with `ranking_nterms_max = ",
-           "NA`.")
+           "NA`. Please switch to `size_position = \"primary_x_bottom\"` if ",
+           "`ranking_nterms_max = NA` is desired.")
     } else if (!identical(size_position, "primary_x_bottom")) {
       stop("Unexpected value for argument `size_position`.")
     }
