@@ -287,15 +287,17 @@ test_that(paste(
 context("plot()")
 
 args_common_for_rk_NA <- c(
-  "tstsetup_vsel", "deltas", "text_angle", "nterms_max", "ranking_nterms_max"
+  "tstsetup_vsel", "deltas", "text_angle", "nterms_max", "ranking_nterms_max",
+  "size_position", "show_cv_proportions"
 )
 args_common_for_rk_max_vs <- c(
   "tstsetup_vsel", "deltas", "text_angle", "nterms_max", "ranking_abbreviate",
-  "ranking_repel"
+  "ranking_repel", "size_position", "show_cv_proportions"
 )
 args_common_for_rk_max_cvvs <- c(
   "tstsetup_vsel", "deltas", "text_angle", "nterms_max", "ranking_abbreviate",
-  "ranking_repel", "ranking_colored", "cumulate"
+  "ranking_repel", "ranking_colored", "cumulate", "size_position",
+  "show_cv_proportions"
 )
 
 test_that("`x` of class `vsel` (created by varsel()) works", {
@@ -470,6 +472,9 @@ test_that(paste(
                         stats = args_plot_i$stats,
                         deltas = deltas_crr,
                         nterms_max = nterms_max_crr,
+                        text_angle = NULL,
+                        show_cv_proportions = TRUE, # show_cv_proportions = rk_col_crr
+                        size_position = "primary_x_bottom",
                         seed = seed_crr)
     plot_vsel_tester(
       plot_capped,
@@ -504,6 +509,9 @@ test_that(paste(
                         stats = args_plot_i$stats,
                         deltas = deltas_crr,
                         nterms_max = nterms_max_crr,
+                        text_angle = NULL,
+                        show_cv_proportions = TRUE, # show_cv_proportions = rk_col_crr
+                        size_position = "primary_x_bottom",
                         seed = seed_crr)
     plot_vsel_tester(
       plot_capped,

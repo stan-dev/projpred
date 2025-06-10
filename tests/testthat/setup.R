@@ -985,8 +985,9 @@ cumulate_tst <- as.list(setNames(nm = c(FALSE, TRUE)))
 names(cumulate_tst) <- paste0("cu", names(cumulate_tst))
 
 angle_tst <- list(
-  default_angle = list(),
-  angle45 = list(text_angle = 45)
+  default_angle = list(text_angle = NULL),
+  angle45 = list()
+  # , angleNULL = list(text_angle = NULL)
 )
 
 deltas_tst_plot <- list(
@@ -1037,7 +1038,7 @@ nterms_max_rk <- list(
 
 rk_max_tst <- list(
   default_rk_max = list(),
-  rk_max_NA = list(ranking_nterms_max = NA),
+  rk_max_NA = list(ranking_nterms_max = NA), # , size_position = "primary_x_bottom"
   rk_max_1 = list(ranking_nterms_max = 1L)
 )
 
@@ -1888,6 +1889,8 @@ cre_args_plot_vsel <- function(args_obj) {
                         list(nterms_max = nterms_crr),
                         rk_max_crr, rk_abbv_crr, rk_repel_crr,
                         list(ranking_colored = rk_col_crr,
+                             show_cv_proportions = TRUE, # show_cv_proportions = rk_col_crr
+                             size_position = "primary_x_bottom",
                              cumulate = cumulate_crr),
                         angle_crr,
                         deltas_crr
