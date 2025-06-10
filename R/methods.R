@@ -727,7 +727,7 @@ plot.vsel <- function(
     ranking_repel = NULL,
     ranking_repel_args = list(),
     ranking_colored = FALSE,
-    show_cv_proportions = TRUE,
+    show_cv_proportions = FALSE,
     cumulate = FALSE,
     text_angle = 45,
     size_position = "primary_x_bottom",
