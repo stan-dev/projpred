@@ -620,9 +620,10 @@ proj_predict_aux <- function(proj, newdata, offsetnew, weightsnew,
 #'   for which the predictor names and the corresponding ranking proportions are
 #'   added on the x-axis. Using `NULL` is effectively the same as using
 #'   `nterms_max`. Using `NA` causes the predictor names and the corresponding
-#'   ranking proportions to be omitted. Note that `ranking_nterms_max` does not
-#'   count the intercept, so `ranking_nterms_max = 1` corresponds to the
-#'   submodel consisting of the first (non-intercept) predictor term.
+#'   ranking proportions to be omitted, which requires `size_position =
+#'   "primary_x_bottom"`. Note that `ranking_nterms_max` does not count the
+#'   intercept, so `ranking_nterms_max = 1` corresponds to the submodel
+#'   consisting of the first (non-intercept) predictor term.
 #' @param ranking_abbreviate A single logical value indicating whether the
 #'   predictor names in the full-data predictor ranking should be abbreviated by
 #'   [abbreviate()] (`TRUE`) or not (`FALSE`). See also argument
@@ -664,10 +665,11 @@ proj_predict_aux <- function(proj, newdata, offsetnew, weightsnew,
 #'   top-aligned.
 #' @param size_position A single character string specifying the position of the
 #'   submodel sizes. Either `"primary_x_bottom"` for including them in the
-#'   x-axis tick labels, `"primary_x_top"` for putting them above the x-axis, or
-#'   `"secondary_x"` for putting them into a secondary x-axis. Currently, both
-#'   of the non-default options may not be combined with `ranking_nterms_max =
-#'   NA`.
+#'   x-axis tick labels, `"primary_x_top"` for putting them above the x-axis
+#'   (the current default), or `"secondary_x"` for putting them into a secondary
+#'   x-axis. Currently, `"primary_x_top"` and `"secondary_x"` may not be
+#'   combined with `ranking_nterms_max = NA` (i.e., only `"primary_x_bottom"`
+#'   works with `ranking_nterms_max = NA`).
 #'
 #' @inherit summary.vsel details
 #'
