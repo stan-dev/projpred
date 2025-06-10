@@ -23,7 +23,7 @@
   ranking_colored = FALSE,
   show_cv_proportions = TRUE,
   cumulate = FALSE,
-  text_angle = NULL,
+  text_angle = 45,
   size_position = "primary_x_bottom",
   ...
 )
