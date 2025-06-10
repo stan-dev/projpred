@@ -24,7 +24,7 @@
   show_cv_proportions = FALSE,
   cumulate = FALSE,
   text_angle = 45,
-  size_position = "primary_x_bottom",
+  size_position = "primary_x_top",
   ...
 )
 }
