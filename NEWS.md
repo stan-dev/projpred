@@ -20,6 +20,8 @@ If you read this from a place other than <https://mc-stan.org/projpred/news/inde
     + Global option `projpred.warn_prj_drawwise` has been renamed to `projpred.warn_proj_drawwise`.
     + Global option `projpred.check_conv` has been renamed to `projpred.check_convergence`.
     + Global option `projpred.prll_prj_trigger` has been renamed to `projpred.parallel_proj_trigger`.
+* In `plot.vsel()`, several defaults have been changed (GitHub: #517, #522):
+    + Argument `text_angle` now defaults to `45` (previously, the default was `NULL`).
 
 ## Minor changes
 
