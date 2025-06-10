@@ -22,6 +22,7 @@ If you read this from a place other than <https://mc-stan.org/projpred/news/inde
     + Global option `projpred.prll_prj_trigger` has been renamed to `projpred.parallel_proj_trigger`.
 * In `plot.vsel()`, several defaults have been changed (GitHub: #517, #522):
     + Argument `text_angle` now defaults to `45` (previously, the default was `NULL`).
+    + Argument `size_position` now defaults to `"primary_x_top"` (previously, the default was `"primary_x_bottom"`).
     + Argument `show_cv_proportions` now defaults to `FALSE` (previously, the default was `TRUE`).
 
 ## Minor changes
