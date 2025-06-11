@@ -450,9 +450,16 @@ test_that(paste(
     args_plot_i <- args_plot_vs[[tstsetup]]
     nterms_max_crr <- args_vs[[args_plot_i$tstsetup_vsel]]$nterms_max + 1L
     deltas_crr <- args_plot_i$deltas %||% FALSE
+    if (any(c("auc") %in% args_plot_i$stats)) {
+      seed_crr <- seed3_tst
+    } else {
+      seed_crr <- NA
+    }
     plot_capped <- plot(vss[[args_plot_i$tstsetup_vsel]],
+                        stats = args_plot_i$stats,
                         deltas = deltas_crr,
-                        nterms_max = nterms_max_crr)
+                        nterms_max = nterms_max_crr,
+                        seed = seed_crr)
     plot_vsel_tester(
       plot_capped,
       nterms_max_expected = nterms_max_crr,
@@ -477,9 +484,16 @@ test_that(paste(
     args_plot_i <- args_plot_cvvs[[tstsetup]]
     nterms_max_crr <- args_cvvs[[args_plot_i$tstsetup_vsel]]$nterms_max + 1L
     deltas_crr <- args_plot_i$deltas %||% FALSE
+    if (any(c("auc") %in% args_plot_i$stats)) {
+      seed_crr <- seed3_tst
+    } else {
+      seed_crr <- NA
+    }
     plot_capped <- plot(cvvss[[args_plot_i$tstsetup_vsel]],
+                        stats = args_plot_i$stats,
                         deltas = deltas_crr,
-                        nterms_max = nterms_max_crr)
+                        nterms_max = nterms_max_crr,
+                        seed = seed_crr)
     plot_vsel_tester(
       plot_capped,
       nterms_max_expected = nterms_max_crr,

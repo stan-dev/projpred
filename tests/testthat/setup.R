@@ -1835,6 +1835,26 @@ cre_args_plot_vsel <- function(args_obj) {
   lapply(
     setNames(nm = tstsetups),
     function(tstsetup_vsel) {
+      mod_crr <- args_obj[[tstsetup_vsel]]$mod_nm
+      fam_crr <- args_obj[[tstsetup_vsel]]$fam_nm
+      prj_crr <- args_obj[[tstsetup_vsel]]$prj_nm
+      stats_crr <- stats_tst[[switch(prj_crr,
+                                     "augdat" = "augdat_stats",
+                                     "latent" = "augdat_stats",
+                                     switch(fam_crr,
+                                            "brnll" = "binom_stats",
+                                            "binom" = "binom_stats",
+                                            "common_stats"))]]
+      # Note: We do not need to check for the case
+      # `fam_crr %in% c("brnll", "binom") && resp_oscale = FALSE` (where
+      # `setdiff(stats_binom, stats_common)` would need to be excluded from
+      # `stats_crr$stats`) because we currently only test `resp_oscale = TRUE`
+      # here.
+      if (any(c("auc") %in% stats_crr$stats)) {
+        plot_seed <- list(seed = seed3_tst)
+      } else {
+        plot_seed <- list()
+      }
       nterms_max_plot <- nterms_max_smmry[c("default_nterms_max_smmry",
                                             "halfway")]
       lapply(nterms_max_plot, function(nterms_crr) {
@@ -1848,6 +1868,7 @@ cre_args_plot_vsel <- function(args_obj) {
                       return(c(
                         nlist(tstsetup_vsel),
                         only_nonargs(args_obj[[tstsetup_vsel]]),
+                        stats_crr, plot_seed,
                         list(nterms_max = nterms_crr),
                         rk_max_crr, rk_abbv_crr, rk_repel_crr,
                         list(ranking_colored = rk_col_crr,
