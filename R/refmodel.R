@@ -708,9 +708,6 @@ refprd <- function(fit, newdata = NULL) {
 #'
 #' @seealso [init_refmodel()]
 #'
-#' @examples
-#' # For an example, see `?init_refmodel`.
-#'
 #' @export
 y_wobs_offs <- function(newdata, wrhs = NULL, orhs = NULL, resp_form) {
   if (inherits(wrhs, "formula")) {

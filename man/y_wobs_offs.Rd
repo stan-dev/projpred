@@ -40,10 +40,6 @@ A helper function for extracting response values, observation weights, and
 offsets from a dataset. It is designed for use in the \code{extract_model_data}
 function of custom reference model objects (see \code{\link[=init_refmodel]{init_refmodel()}}).
 }
-\examples{
-# For an example, see `?init_refmodel`.
-
-}
 \seealso{
 \code{\link[=init_refmodel]{init_refmodel()}}
 }
