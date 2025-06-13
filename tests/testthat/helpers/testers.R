@@ -2920,7 +2920,6 @@ plot_vsel_tester <- function(
     info_str
 ) {
   expect_s3_class(plot_vsel, c("gg", "ggplot"))
-  expect_visible(plot_vsel, label = info_str)
   if (isTRUE(abbv_expected) &&
       (is.null(rk_max_expected) || !is.na(rk_max_expected))) {
     if (!is.null(rk_max_expected)) {

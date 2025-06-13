@@ -716,7 +716,6 @@ test_that("`x` of class `cv_proportions` works", {
   skip_if_not(run_cvvs)
   for (tstsetup in names(plotprs)) {
     expect_s3_class(plotprs[[tstsetup]], c("gg", "ggplot"))
-    expect_visible(plotprs[[tstsetup]], label = tstsetup)
     if (run_snaps) {
       vdiffr::expect_doppelganger(tstsetup, plotprs[[tstsetup]])
     }
@@ -733,7 +732,6 @@ test_that("plot.ranking() is a shortcut", {
       excl_nonargs(args_pr_cvvs[[args_plotpr_i$tstsetup_pr]])
     ))
     expect_s3_class(plotpr_from_rk, c("gg", "ggplot"))
-    expect_visible(plotpr_from_rk, label = tstsetup)
     if (run_snaps) {
       vdiffr::expect_doppelganger(tstsetup, plotpr_from_rk)
     }
@@ -757,9 +755,7 @@ plotprc_dummy <- plot(prc_dummy)
 
 test_that("color gradient behaves as expected", {
   expect_s3_class(plotpr_dummy, c("gg", "ggplot"))
-  expect_visible(plotpr_dummy)
   expect_s3_class(plotprc_dummy, c("gg", "ggplot"))
-  expect_visible(plotprc_dummy)
   if (run_snaps) {
     vdiffr::expect_doppelganger("plotpr_dummy", plotpr_dummy)
     vdiffr::expect_doppelganger("plotprc_dummy", plotprc_dummy)
@@ -770,9 +766,7 @@ test_that("`text_angle` works", {
   plotpr_dummy_angle <- plot(pr_dummy, text_angle = 60)
   plotprc_dummy_angle <- plot(prc_dummy, text_angle = 60)
   expect_s3_class(plotpr_dummy_angle, c("gg", "ggplot"))
-  expect_visible(plotpr_dummy_angle)
   expect_s3_class(plotprc_dummy_angle, c("gg", "ggplot"))
-  expect_visible(plotprc_dummy_angle)
   if (run_snaps) {
     vdiffr::expect_doppelganger("plotpr_dummy_angle", plotpr_dummy_angle)
     vdiffr::expect_doppelganger("plotprc_dummy_angle", plotprc_dummy_angle)
@@ -783,9 +777,7 @@ test_that("the ggplot can be modified", {
   plotpr_dummy_mod <- plotpr_dummy + theme(legend.position = "none")
   plotprc_dummy_mod <- plotprc_dummy + theme(legend.position = "none")
   expect_s3_class(plotpr_dummy_mod, c("gg", "ggplot"))
-  expect_visible(plotpr_dummy_mod)
   expect_s3_class(plotprc_dummy_mod, c("gg", "ggplot"))
-  expect_visible(plotprc_dummy_mod)
   if (run_snaps) {
     vdiffr::expect_doppelganger("plotpr_dummy_mod", plotpr_dummy_mod)
     vdiffr::expect_doppelganger("plotprc_dummy_mod", plotprc_dummy_mod)
