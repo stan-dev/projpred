@@ -138,7 +138,9 @@ divmin <- function(
       .noexport = c(
         "object", "p_sel", "search_path", "p_ref", "refmodel", "formulas",
         "projpred_var", "projpred_ws_aug", "projpred_formulas_no_random"
-      )
+      ),
+      .errorhandling = getOption("projpred.foreach_errorhandling", "stop"),
+      .verbose = getOption("projpred.foreach_verbose", FALSE)
     ) %do_projpred% {
       mssgs_warns_capt <- capt_mssgs_warns(
         soutdmin <- do.call(
@@ -734,7 +736,9 @@ divmin_augdat <- function(
       .noexport = c(
         "object", "p_sel", "search_path", "p_ref", "refmodel", "projpred_var",
         "projpred_ws_aug", "linkobjs"
-      )
+      ),
+      .errorhandling = getOption("projpred.foreach_errorhandling", "stop"),
+      .verbose = getOption("projpred.foreach_verbose", FALSE)
     ) %do_projpred% {
       mssgs_warns_capt <- capt_mssgs_warns(
         soutdmin <- do.call(

@@ -1083,7 +1083,9 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
                     getOption("projpred.export_to_workers", character())),
         .noexport = c("mu_offs_oscale", "loglik_forPSIS", "psisloo", "y_lat_E",
                       "loo_ref_oscale", "validset", "loo_sub", "mu_sub",
-                      "loo_sub_oscale", "mu_sub_oscale")
+                      "loo_sub_oscale", "mu_sub_oscale"),
+        .errorhandling = getOption("projpred.foreach_errorhandling", "stop"),
+        .verbose = getOption("projpred.foreach_verbose", FALSE)
       ) %do_projpred% {
         out_one_obs <- do.call(one_obs, c(list(run_index = run_index,
                                                verbose_obs = FALSE),
@@ -1472,7 +1474,9 @@ kfold_varsel <- function(refmodel, method, nterms_max, ndraws, nclusters,
       .packages = c("projpred"),
       .export = c("one_fold", "dot_args", "progressor_obj",
                   getOption("projpred.export_to_workers", character())),
-      .noexport = c("list_cv", "search_out_rks")
+      .noexport = c("list_cv", "search_out_rks"),
+      .errorhandling = getOption("projpred.foreach_errorhandling", "stop"),
+      .verbose = getOption("projpred.foreach_verbose", FALSE)
     ) %do_projpred% {
       out_one_fold <- do_call(one_fold, c(list(fold = list_cv_k,
                                                rk = search_out_rks_k,
