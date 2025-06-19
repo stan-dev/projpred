@@ -286,19 +286,29 @@ test_that(paste(
 
 context("plot()")
 
+args_common_for_rk_NA <- c(
+  "tstsetup_vsel", "deltas", "text_angle", "nterms_max", "ranking_nterms_max"
+)
+args_common_for_rk_max_vs <- c(
+  "tstsetup_vsel", "deltas", "text_angle", "nterms_max", "ranking_abbreviate",
+  "ranking_repel"
+)
+args_common_for_rk_max_cvvs <- c(
+  "tstsetup_vsel", "deltas", "text_angle", "nterms_max", "ranking_abbreviate",
+  "ranking_repel", "ranking_colored", "cumulate"
+)
+
 test_that("`x` of class `vsel` (created by varsel()) works", {
   skip_if_not(run_vs)
-  common_for_rk_NA <- c("tstsetup_vsel", "deltas", "text_angle", "nterms_max",
-                        "ranking_nterms_max")
-  common_for_rk_max <- c("tstsetup_vsel", "deltas", "text_angle", "nterms_max",
-                         "ranking_abbreviate", "ranking_repel")
   for (tstsetup in names(plots_vs)) {
     args_plot_i <- args_plot_vs[[tstsetup]]
     if (identical(args_plot_i$ranking_nterms_max, NA)) {
       matches_tstsetup <- sapply(names(plots_vs), function(tstsetup2) {
-        common_for_rk_NA <- intersect(common_for_rk_NA, names(args_plot_i))
+        common_for_rk_NA <- intersect(args_common_for_rk_NA,
+                                      names(args_plot_i))
         args_plot_i2 <- args_plot_vs[[tstsetup2]]
-        common_for_rk_NA2 <- intersect(common_for_rk_NA, names(args_plot_i2))
+        common_for_rk_NA2 <- intersect(args_common_for_rk_NA,
+                                       names(args_plot_i2))
         if (!setequal(common_for_rk_NA, common_for_rk_NA2)) {
           return(FALSE)
         }
@@ -313,9 +323,11 @@ test_that("`x` of class `vsel` (created by varsel()) works", {
                identical(args_plot_i$ranking_nterms_max,
                          args_plot_i$nterms_max)) {
       matches_tstsetup <- sapply(names(plots_vs), function(tstsetup2) {
-        common_for_rk_max <- intersect(common_for_rk_max, names(args_plot_i))
+        common_for_rk_max <- intersect(args_common_for_rk_max_vs,
+                                       names(args_plot_i))
         args_plot_i2 <- args_plot_vs[[tstsetup2]]
-        common_for_rk_max2 <- intersect(common_for_rk_max, names(args_plot_i2))
+        common_for_rk_max2 <- intersect(args_common_for_rk_max_vs,
+                                        names(args_plot_i2))
         if (!setequal(common_for_rk_max, common_for_rk_max2)) {
           return(FALSE)
         }
@@ -360,18 +372,15 @@ test_that("`x` of class `vsel` (created by varsel()) works", {
 
 test_that("`x` of class `vsel` (created by cv_varsel()) works", {
   skip_if_not(run_cvvs)
-  common_for_rk_NA <- c("tstsetup_vsel", "deltas", "text_angle", "nterms_max",
-                        "ranking_nterms_max")
-  common_for_rk_max <- c("tstsetup_vsel", "deltas", "text_angle", "nterms_max",
-                         "ranking_abbreviate", "ranking_repel",
-                         "ranking_colored", "cumulate")
   for (tstsetup in names(plots_cvvs)) {
     args_plot_i <- args_plot_cvvs[[tstsetup]]
     if (identical(args_plot_i$ranking_nterms_max, NA)) {
       matches_tstsetup <- sapply(names(plots_cvvs), function(tstsetup2) {
-        common_for_rk_NA <- intersect(common_for_rk_NA, names(args_plot_i))
+        common_for_rk_NA <- intersect(args_common_for_rk_NA,
+                                      names(args_plot_i))
         args_plot_i2 <- args_plot_cvvs[[tstsetup2]]
-        common_for_rk_NA2 <- intersect(common_for_rk_NA, names(args_plot_i2))
+        common_for_rk_NA2 <- intersect(args_common_for_rk_NA,
+                                       names(args_plot_i2))
         if (!setequal(common_for_rk_NA, common_for_rk_NA2)) {
           return(FALSE)
         }
@@ -386,9 +395,11 @@ test_that("`x` of class `vsel` (created by cv_varsel()) works", {
                identical(args_plot_i$ranking_nterms_max,
                          args_plot_i$nterms_max)) {
       matches_tstsetup <- sapply(names(plots_cvvs), function(tstsetup2) {
-        common_for_rk_max <- intersect(common_for_rk_max, names(args_plot_i))
+        common_for_rk_max <- intersect(args_common_for_rk_max_cvvs,
+                                       names(args_plot_i))
         args_plot_i2 <- args_plot_cvvs[[tstsetup2]]
-        common_for_rk_max2 <- intersect(common_for_rk_max, names(args_plot_i2))
+        common_for_rk_max2 <- intersect(args_common_for_rk_max_cvvs,
+                                        names(args_plot_i2))
         if (!setequal(common_for_rk_max, common_for_rk_max2)) {
           return(FALSE)
         }
