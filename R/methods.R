@@ -620,9 +620,10 @@ proj_predict_aux <- function(proj, newdata, offsetnew, weightsnew,
 #'   for which the predictor names and the corresponding ranking proportions are
 #'   added on the x-axis. Using `NULL` is effectively the same as using
 #'   `nterms_max`. Using `NA` causes the predictor names and the corresponding
-#'   ranking proportions to be omitted. Note that `ranking_nterms_max` does not
-#'   count the intercept, so `ranking_nterms_max = 1` corresponds to the
-#'   submodel consisting of the first (non-intercept) predictor term.
+#'   ranking proportions to be omitted, which requires `size_position =
+#'   "primary_x_bottom"`. Note that `ranking_nterms_max` does not count the
+#'   intercept, so `ranking_nterms_max = 1` corresponds to the submodel
+#'   consisting of the first (non-intercept) predictor term.
 #' @param ranking_abbreviate A single logical value indicating whether the
 #'   predictor names in the full-data predictor ranking should be abbreviated by
 #'   [abbreviate()] (`TRUE`) or not (`FALSE`). See also argument
@@ -656,17 +657,19 @@ proj_predict_aux <- function(proj, newdata, offsetnew, weightsnew,
 #'   the ranking proportions given on the x-axis (below the full-data predictor
 #'   ranking).
 #' @param text_angle Passed to argument `angle` of [ggplot2::element_text()] for
-#'   the x-axis tick labels. In case of long predictor names (and/or large
-#'   `nterms_max`), `text_angle = 45` might be helpful (for example). If
-#'   `text_angle > 0` (`< 0`), the x-axis text is automatically right-aligned
-#'   (left-aligned). If `-90 < text_angle && text_angle < 90 && text_angle !=
-#'   0`, the x-axis text is also top-aligned.
+#'   the x-axis tick labels. Note that the default of argument `angle` in
+#'   [ggplot2::element_text()] is `NULL` (which implies no rotation) whereas we
+#'   use a default of `text_angle = 45` here. If `text_angle > 0` (`< 0`), the
+#'   x-axis text is automatically right-aligned (left-aligned). If `-90 <
+#'   text_angle && text_angle < 90 && text_angle != 0`, the x-axis text is also
+#'   top-aligned.
 #' @param size_position A single character string specifying the position of the
 #'   submodel sizes. Either `"primary_x_bottom"` for including them in the
-#'   x-axis tick labels, `"primary_x_top"` for putting them above the x-axis, or
-#'   `"secondary_x"` for putting them into a secondary x-axis. Currently, both
-#'   of the non-default options may not be combined with `ranking_nterms_max =
-#'   NA`.
+#'   x-axis tick labels, `"primary_x_top"` for putting them above the x-axis
+#'   (the current default), or `"secondary_x"` for putting them into a secondary
+#'   x-axis. Currently, `"primary_x_top"` and `"secondary_x"` may not be
+#'   combined with `ranking_nterms_max = NA` (i.e., only `"primary_x_bottom"`
+#'   works with `ranking_nterms_max = NA`).
 #'
 #' @inherit summary.vsel details
 #'
@@ -726,10 +729,10 @@ plot.vsel <- function(
     ranking_repel = NULL,
     ranking_repel_args = list(),
     ranking_colored = FALSE,
-    show_cv_proportions = TRUE,
+    show_cv_proportions = FALSE,
     cumulate = FALSE,
-    text_angle = NULL,
-    size_position = "primary_x_bottom",
+    text_angle = 45,
+    size_position = "primary_x_top",
     ...
 ) {
   # Parse input:
@@ -973,7 +976,8 @@ plot.vsel <- function(
         identical(size_position, "secondary_x")) {
       stop("Currently, `size_position = \"primary_x_top\"` and `size_position ",
            "= \"secondary_x\"` are not compatible with `ranking_nterms_max = ",
-           "NA`.")
+           "NA`. Please switch to `size_position = \"primary_x_bottom\"` if ",
+           "`ranking_nterms_max = NA` is desired.")
     } else if (!identical(size_position, "primary_x_bottom")) {
       stop("Unexpected value for argument `size_position`.")
     }

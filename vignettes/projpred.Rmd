@@ -154,9 +154,12 @@ In this case, we ignore the Pareto $\hat{k}$ warnings due to the reduced values 
 
 To find a suitable value for `nterms_max` in subsequent `cv_varsel()` runs, we take a look at a plot of at least one predictive performance statistic in dependence of the submodel size.
 Here, we choose the mean log predictive density (MLPD; see the documentation for argument `stats` of `summary.vsel()` for details) as the only performance statistic.
-Since we will be using the following plot only to determine `nterms_max` for subsequent `cv_varsel()` runs, we can omit the predictor ranking from the plot by setting `ranking_nterms_max` to `NA`:
+Since we will be using the following plot only to determine `nterms_max` for subsequent `cv_varsel()` runs, we can omit the predictor ranking from the plot by setting `ranking_nterms_max` to `NA` (which requires `size_position = "primary_x_bottom"`):
 ```{r plot_vsel_fast}
-plot(cvvs_fast, stats = "mlpd", ranking_nterms_max = NA)
+plot(cvvs_fast,
+     stats = "mlpd",
+     ranking_nterms_max = NA,
+     size_position = "primary_x_bottom")
 ```
 This plot suggests that the submodel MLPD levels off for the first time from submodel size 9 to 10 and that it increases only slightly afterwards.
 However, we used L1 search with `refit_prj = FALSE`, which means that the projections employed for the predictive performance evaluation are L1-penalized, which is usually undesired [@piironen_projective_2020, section 4].
@@ -181,7 +184,10 @@ We also ignore the warning that SIS is used instead of PSIS (this is due to `ncl
 
 With the `refit_prj = TRUE` results, the predictive performance plot from above now looks as follows:
 ```{r plot_vsel_fast_refit}
-plot(cvvs_fast_refit, stats = "mlpd", ranking_nterms_max = NA)
+plot(cvvs_fast_refit,
+     stats = "mlpd",
+     ranking_nterms_max = NA,
+     size_position = "primary_x_bottom")
 ```
 This refined plot shows that the submodel MLPD does not change much after submodel size 8, so in our final `cv_varsel()` run, we set `nterms_max` to a value slightly higher than 8 (here: 9) to ensure that we see the MLPD leveling off.
 The search results from the initial `cvvs_fast` object could now be re-used again (via `cv_varsel.vsel()`) for investigating the sensitivity of the results to changes in `nclusters_pred` (or `ndraws_pred`).

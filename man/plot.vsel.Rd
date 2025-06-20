@@ -21,10 +21,10 @@
   ranking_repel = NULL,
   ranking_repel_args = list(),
   ranking_colored = FALSE,
-  show_cv_proportions = TRUE,
+  show_cv_proportions = FALSE,
   cumulate = FALSE,
-  text_angle = NULL,
-  size_position = "primary_x_bottom",
+  text_angle = 45,
+  size_position = "primary_x_top",
   ...
 )
 }
@@ -133,9 +133,9 @@ bars.}
 for which the predictor names and the corresponding ranking proportions are
 added on the x-axis. Using \code{NULL} is effectively the same as using
 \code{nterms_max}. Using \code{NA} causes the predictor names and the corresponding
-ranking proportions to be omitted. Note that \code{ranking_nterms_max} does not
-count the intercept, so \code{ranking_nterms_max = 1} corresponds to the
-submodel consisting of the first (non-intercept) predictor term.}
+ranking proportions to be omitted, which requires \code{size_position = "primary_x_bottom"}. Note that \code{ranking_nterms_max} does not count the
+intercept, so \code{ranking_nterms_max = 1} corresponds to the submodel
+consisting of the first (non-intercept) predictor term.}
 
 \item{ranking_abbreviate}{A single logical value indicating whether the
 predictor names in the full-data predictor ranking should be abbreviated by
@@ -177,16 +177,19 @@ the ranking proportions given on the x-axis (below the full-data predictor
 ranking).}
 
 \item{text_angle}{Passed to argument \code{angle} of \code{\link[ggplot2:element]{ggplot2::element_text()}} for
-the x-axis tick labels. In case of long predictor names (and/or large
-\code{nterms_max}), \code{text_angle = 45} might be helpful (for example). If
-\code{text_angle > 0} (\verb{< 0}), the x-axis text is automatically right-aligned
-(left-aligned). If \code{-90 < text_angle && text_angle < 90 && text_angle != 0}, the x-axis text is also top-aligned.}
+the x-axis tick labels. Note that the default of argument \code{angle} in
+\code{\link[ggplot2:element]{ggplot2::element_text()}} is \code{NULL} (which implies no rotation) whereas we
+use a default of \code{text_angle = 45} here. If \code{text_angle > 0} (\verb{< 0}), the
+x-axis text is automatically right-aligned (left-aligned). If \code{-90 < text_angle && text_angle < 90 && text_angle != 0}, the x-axis text is also
+top-aligned.}
 
 \item{size_position}{A single character string specifying the position of the
 submodel sizes. Either \code{"primary_x_bottom"} for including them in the
-x-axis tick labels, \code{"primary_x_top"} for putting them above the x-axis, or
-\code{"secondary_x"} for putting them into a secondary x-axis. Currently, both
-of the non-default options may not be combined with \code{ranking_nterms_max = NA}.}
+x-axis tick labels, \code{"primary_x_top"} for putting them above the x-axis
+(the current default), or \code{"secondary_x"} for putting them into a secondary
+x-axis. Currently, \code{"primary_x_top"} and \code{"secondary_x"} may not be
+combined with \code{ranking_nterms_max = NA} (i.e., only \code{"primary_x_bottom"}
+works with \code{ranking_nterms_max = NA}).}
 
 \item{...}{Arguments passed to the internal function which is used for
 bootstrapping (if applicable; see argument \code{stats}). Currently, relevant
