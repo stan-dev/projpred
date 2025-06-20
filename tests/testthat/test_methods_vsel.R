@@ -472,9 +472,6 @@ test_that(paste(
                         stats = args_plot_i$stats,
                         deltas = deltas_crr,
                         nterms_max = nterms_max_crr,
-                        text_angle = NULL,
-                        show_cv_proportions = TRUE, # show_cv_proportions = rk_col_crr
-                        size_position = "primary_x_bottom",
                         seed = seed_crr)
     plot_vsel_tester(
       plot_capped,
@@ -509,9 +506,6 @@ test_that(paste(
                         stats = args_plot_i$stats,
                         deltas = deltas_crr,
                         nterms_max = nterms_max_crr,
-                        text_angle = NULL,
-                        show_cv_proportions = TRUE, # show_cv_proportions = rk_col_crr
-                        size_position = "primary_x_bottom",
                         seed = seed_crr)
     plot_vsel_tester(
       plot_capped,
