@@ -662,7 +662,11 @@ proj_predict_aux <- function(proj, newdata, offsetnew, weightsnew,
 #'   use a default of `text_angle = 45` here. If `text_angle > 0` (`< 0`), the
 #'   x-axis text is automatically right-aligned (left-aligned). If `-90 <
 #'   text_angle && text_angle < 90 && text_angle != 0`, the x-axis text is also
-#'   top-aligned.
+#'   top-aligned. When controlling `text_angle` via global option
+#'   `projpred.plot_vsel_text_angle`, keep in mind that a global option set to
+#'   `NULL` is treated like an unset global option, so
+#'   `options(projpred.plot_vsel_text_angle = NULL)` would result in `text_angle
+#'   = 45`, not `text_angle = 0`.
 #' @param size_position A single character string specifying the position of the
 #'   submodel sizes. Either `"primary_x_bottom"` for including them in the
 #'   x-axis tick labels, `"primary_x_top"` for putting them above the x-axis
@@ -729,10 +733,10 @@ plot.vsel <- function(
     ranking_repel = NULL,
     ranking_repel_args = list(),
     ranking_colored = FALSE,
-    show_cv_proportions = FALSE,
+    show_cv_proportions = getOption("projpred.plot_vsel_show_cv_proportions", FALSE),
     cumulate = FALSE,
-    text_angle = 45,
-    size_position = "primary_x_top",
+    text_angle = getOption("projpred.plot_vsel_text_angle", 45),
+    size_position = getOption("projpred.plot_vsel_size_position", "primary_x_top"),
     ...
 ) {
   # Parse input:

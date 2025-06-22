@@ -186,6 +186,9 @@ default of \code{FALSE} for that global option).
 Global option \code{projpred.digits} controls arguments \code{digits} of
 \code{\link[=print.vselsummary]{print.vselsummary()}} and \code{\link[=print.vsel]{print.vsel()}}.
 
+There are several global options to control arguments of \code{\link[=plot.vsel]{plot.vsel()}}
+globally, see section "Usage" of \code{?plot.vsel}.
+
 Global option \code{projpred.warn_L1_interactions} may be set to \code{FALSE} to
 deactivate a warning that an L1 search selected an interaction term before
 all involved lower-order interaction terms (including main-effect terms) were

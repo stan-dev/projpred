@@ -21,10 +21,10 @@
   ranking_repel = NULL,
   ranking_repel_args = list(),
   ranking_colored = FALSE,
-  show_cv_proportions = FALSE,
+  show_cv_proportions = getOption("projpred.plot_vsel_show_cv_proportions", FALSE),
   cumulate = FALSE,
-  text_angle = 45,
-  size_position = "primary_x_top",
+  text_angle = getOption("projpred.plot_vsel_text_angle", 45),
+  size_position = getOption("projpred.plot_vsel_size_position", "primary_x_top"),
   ...
 )
 }
@@ -181,7 +181,10 @@ the x-axis tick labels. Note that the default of argument \code{angle} in
 \code{\link[ggplot2:element]{ggplot2::element_text()}} is \code{NULL} (which implies no rotation) whereas we
 use a default of \code{text_angle = 45} here. If \code{text_angle > 0} (\verb{< 0}), the
 x-axis text is automatically right-aligned (left-aligned). If \code{-90 < text_angle && text_angle < 90 && text_angle != 0}, the x-axis text is also
-top-aligned.}
+top-aligned. When controlling \code{text_angle} via global option
+\code{projpred.plot_vsel_text_angle}, keep in mind that a global option set to
+\code{NULL} is treated like an unset global option, so
+\code{options(projpred.plot_vsel_text_angle = NULL)} would result in \code{text_angle = 45}, not \code{text_angle = 0}.}
 
 \item{size_position}{A single character string specifying the position of the
 submodel sizes. Either \code{"primary_x_bottom"} for including them in the
