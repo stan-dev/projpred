@@ -2729,6 +2729,9 @@ smmry_sub_tester <- function(
             info = info_str
           )
         }
+        if ("oscale" %in% names(summaries_ref) && resp_oscale_expected) {
+          summaries_ref <- summaries_ref[["oscale"]]
+        }
         if (stats_expected[stat_idx] == "elpd") {
           stat_ref <- sum(summaries_ref$lppd)
         } else if (stats_expected[stat_idx] %in% c("mlpd", "gmpd")) {
