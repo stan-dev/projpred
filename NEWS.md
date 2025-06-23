@@ -35,6 +35,7 @@ If you read this from a place other than <https://mc-stan.org/projpred/news/inde
 * Several enhancements concerning verbosity, e.g., the number of projected draws (resulting from clustering or thinning) is now printed out during the different steps of the computations and verbose-mode output is redirected to `stderr()` instead of `stdout()`. (GitHub: #506, #518)
 * For the CV parallelization (see argument `parallel` of `cv_varsel()`), a new global option `projpred.export_to_workers` may be set to a character vector of names of objects to export from the global environment to the parallel workers. (GitHub: #497, #510)
 * Added global options `projpred.foreach_errorhandling` and `projpred.foreach_verbose` whose values are passed to `foreach::foreach()`'s arguments `.errorhandling` and `.verbose`, respectively. The defaults for these new global options are the same as those for the respective `foreach::foreach()` arguments: `"stop"` for global option `projpred.foreach_errorhandling` and `FALSE` for global option `projpred.foreach_verbose`. (GitHub: commit 3231d13)
+* Added global options to control several arguments of `plot.vsel()` and `plot.cv_proportions()` (see section "Usage" of the help pages of these two functions). (GitHub: commit 3333043)
 
 ## Bug fixes
 
