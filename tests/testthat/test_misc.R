@@ -189,9 +189,13 @@ test_that(paste(
   expect_equal(psdat$wobs, wobs_crr)
 })
 
-# Test copied from 'loo' package and changed function name, see
-# <https://github.com/stan-dev/projpred/pull/496#issuecomment-2481313265>
+# Test copied from 'loo' package (see
+# <https://github.com/stan-dev/projpred/pull/496#issuecomment-2481313265>), then
+# changed function name and added seed reset:
 test_that(".srs_diff_est_w() works as expected", {
+  if (exists(".Random.seed", envir = .GlobalEnv)) {
+    rng_old <- get(".Random.seed", envir = .GlobalEnv)
+  }
   set.seed(1234)
   N <- 1000
   y_true <- 1:N
@@ -222,9 +226,59 @@ test_that(".srs_diff_est_w() works as expected", {
   expect_equal(res$y_hat, 500500, tol = 0.0001)
   expect_equal(res$v_y_hat, 0, tol = 0.0001)
   expect_equal(sqrt(res$hat_v_y), sigma_hat_true, tol = 0.1)
+  if (exists("rng_old")) assign(".Random.seed", rng_old, envir = .GlobalEnv)
 })
 
-# TODO: Add test for .srs_diff_est_w() with `wobs` not full of ones.
+# Adapted from the test above:
+test_that(".srs_diff_est_w() works as expected with `wobs` not full of ones", {
+  if (exists(".Random.seed", envir = .GlobalEnv)) {
+    rng_old <- get(".Random.seed", envir = .GlobalEnv)
+  }
+  set.seed(seed3_tst)
+  N <- 1e3
+  y_true <- seq_len(N)
+  wobs <- sample(2:7, size = N, replace = TRUE)
+  sigma_hat_true <- sqrt(N * weighted.mean((y_true - mean(y_true))^2,
+                                           w = wobs))
+  y_approx <- rnorm(N, y_true, 0.1)
+  m <- 1e2
+  S <- 1e4
+  sigma_hat <- y_hat <- se_y_hat <- numeric(S)
+  for (i in seq_len(S)){
+    y_idx <- sample.int(N, size = m)
+    y <- y_true[y_idx]
+    res <- .srs_diff_est_w(y_approx = y_approx,
+                           y = y,
+                           y_idx = y_idx,
+                           wobs = wobs)
+    y_hat[i] <- res$y_hat
+    se_y_hat[i] <- sqrt(res$v_y_hat)
+    sigma_hat[i] <- sqrt(res$hat_v_y)
+  }
+  sum_y_true <- N * weighted.mean(y_true, w = wobs)
+  expect_equal(mean(y_hat), sum_y_true, tol = 1e-1)
+
+  alpha_ci <- 0.05
+  q_ci <- qnorm(1 - alpha_ci / 2)
+  in_ci <- y_hat - q_ci * se_y_hat < sum_y_true &
+    sum_y_true < y_hat + q_ci * se_y_hat
+  expect_equal(mean(in_ci), 1 - alpha_ci, tol = 1e-1)
+
+  # Should be unbiased:
+  expect_equal(mean(sigma_hat), sigma_hat_true, tol = 1e-1)
+
+  m <- N
+  y_idx <- sample.int(N, size = m)
+  y <- y_true[y_idx]
+  res <- .srs_diff_est_w(y_approx = y_approx,
+                         y = y,
+                         y_idx = y_idx,
+                         wobs = wobs)
+  expect_equal(res$y_hat, 500845, tol = 1e-4)
+  expect_equal(res$v_y_hat, 0, tol = 1e-4)
+  expect_equal(sqrt(res$hat_v_y), sigma_hat_true, tol = 1e-1)
+  if (exists("rng_old")) assign(".Random.seed", rng_old, envir = .GlobalEnv)
+})
 
 test_that(".srs_diff_est_w() propagates input `NA`s to its output", {
   nloo_tst <- nobsv %/% 5L
