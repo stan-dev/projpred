@@ -2714,27 +2714,43 @@ smmry_sub_tester <- function(
     diff_nm <- paste(stats_expected, "diff", sep = ".")
     for (stat_idx in seq_along(stats_expected)) {
       if (!from_datafit && !is_lat_kfold) {
-        expect_equal(
-          diff(smmry_sub[, stats_mean_name[stat_idx]]),
-          diff(smmry_sub[, diff_nm[stat_idx]]),
-          info = info_str
-        )
+        if (stats_expected[stat_idx] != "gmpd") {
+          # A very basic test:
+          expect_equal(
+            diff(smmry_sub[, stats_mean_name[stat_idx]]),
+            diff(smmry_sub[, diff_nm[stat_idx]]),
+            info = info_str
+          )
+        } else {
+          # A very basic test:
+          expect_equal(
+            exp(diff(log(smmry_sub[, stats_mean_name[stat_idx]]))),
+            exp(diff(log(smmry_sub[, diff_nm[stat_idx]]))),
+            info = info_str
+          )
+        }
         if (stats_expected[stat_idx] == "elpd") {
           stat_ref <- sum(summaries_ref$lppd)
-        } else if (stats_expected[stat_idx] == "mlpd") {
+        } else if (stats_expected[stat_idx] %in% c("mlpd", "gmpd")) {
           stat_ref <- mean(summaries_ref$lppd)
-        } else if (stats_expected[stat_idx] == "gmpd") {
-          stat_ref <- exp(mean(summaries_ref$lppd))
         } else {
           # TODO: Implement `stat_ref` for the remaining `stats`.
           stat_ref <- NULL
         }
         if (!is.null(stat_ref)) {
-          expect_equal(
-            smmry_sub[, stats_mean_name[stat_idx]] - stat_ref,
-            smmry_sub[, diff_nm[stat_idx]],
-            tolerance = 1e-12, info = info_str
-          )
+          if (stats_expected[stat_idx] != "gmpd") {
+            expect_equal(
+              smmry_sub[, stats_mean_name[stat_idx]] - stat_ref,
+              smmry_sub[, diff_nm[stat_idx]],
+              tolerance = 1e-12, info = info_str
+            )
+          } else {
+            expect_equal(
+              exp(log(smmry_sub[, stats_mean_name[stat_idx]]) - stat_ref),
+              smmry_sub[, diff_nm[stat_idx]],
+              tolerance = 1e-12, info = info_str
+            )
+          }
         }
       } else {
         expect_true(all(is.na(smmry_sub[, diff_nm[stat_idx]])), info = info_str)
@@ -2809,6 +2825,7 @@ smmry_ref_tester <- function(
   if (is.null(type_expected)) {
     type_expected <- c("mean", "se", "diff", "diff.se")
   }
+  type_expected <- setdiff(type_expected, c("diff", "diff.se"))
   is_lat_kfold <-  latent_expected && !resp_oscale_expected &&
     identical(cv_method_expected, "kfold")
 
