@@ -725,18 +725,24 @@ plot.vsel <- function(
     baseline = if (!inherits(x$refmodel, "datafit")) "ref" else "best",
     thres_elpd = NA,
     resp_oscale = TRUE,
-    point_size = 3,
-    bar_thickness = 1,
-    ranking_nterms_max = NULL,
-    ranking_abbreviate = FALSE,
-    ranking_abbreviate_args = list(),
-    ranking_repel = NULL,
-    ranking_repel_args = list(),
-    ranking_colored = FALSE,
-    show_cv_proportions = getOption("projpred.plot_vsel_show_cv_proportions", FALSE),
+    point_size = getOption("projpred.plot_vsel_point_size", 3),
+    bar_thickness = getOption("projpred.plot_vsel_bar_thickness", 1),
+    ranking_nterms_max = getOption("projpred.plot_vsel_ranking_nterms_max",
+                                   NULL),
+    ranking_abbreviate = getOption("projpred.plot_vsel_ranking_abbreviate",
+                                   FALSE),
+    ranking_abbreviate_args = getOption("projpred.plot_vsel_ranking_abbreviate_args",
+                                        list()),
+    ranking_repel = getOption("projpred.plot_vsel_ranking_repel", NULL),
+    ranking_repel_args = getOption("projpred.plot_vsel_ranking_repel_args",
+                                   list()),
+    ranking_colored = getOption("projpred.plot_vsel_ranking_colored", FALSE),
+    show_cv_proportions = getOption("projpred.plot_vsel_show_cv_proportions",
+                                    FALSE),
     cumulate = FALSE,
     text_angle = getOption("projpred.plot_vsel_text_angle", 45),
-    size_position = getOption("projpred.plot_vsel_size_position", "primary_x_top"),
+    size_position = getOption("projpred.plot_vsel_size_position",
+                              "primary_x_top"),
     ...
 ) {
   # Parse input:
@@ -2986,7 +2992,11 @@ cv_proportions.vsel <- function(object, ...) {
 #' print(gg_pr_rk + ggplot2::theme(legend.position = "none"))
 #'
 #' @export
-plot.cv_proportions <- function(x, text_angle = NULL, ...) {
+plot.cv_proportions <- function(
+    x,
+    text_angle = getOption("projpred.plot_cv_proportions_text_angle", NULL),
+    ...
+) {
   cv_props_long <- data.frame(
     msize = factor(rep(rownames(x), times = ncol(x)), levels = rownames(x)),
     pterm = factor(rep(colnames(x), each = nrow(x)), levels = colnames(x)),

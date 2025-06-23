@@ -190,8 +190,9 @@
 #' Global option `projpred.digits` controls arguments `digits` of
 #' [print.vselsummary()] and [print.vsel()].
 #'
-#' There are several global options to control arguments of [plot.vsel()]
-#' globally, see section "Usage" of `?plot.vsel`.
+#' There are several global options to control arguments of [plot.vsel()] and
+#' [plot.cv_proportions()] globally, see section "Usage" of the help pages of
+#' these two functions.
 #'
 #' Global option `projpred.warn_L1_interactions` may be set to `FALSE` to
 #' deactivate a warning that an L1 search selected an interaction term before
