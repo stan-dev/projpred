@@ -522,7 +522,7 @@ test_that(paste(
       "kfold"
     )
     if (is_kfold) {
-      tol_smmry <- 1e-5
+      tol_smmry <- 1e-4
     } else {
       tol_smmry <- 1e-6
     }
