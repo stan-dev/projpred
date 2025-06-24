@@ -1183,6 +1183,11 @@ init_refmodel <- function(object, data, formula, family, ref_predfun = NULL,
                                        orhs = NULL, extract_y = TRUE) {
       if (extract_y) {
         resp_fml <- lhs(formula)
+        if (family$for_latent) {
+          resp_fml <- update(resp_fml,
+                             paste(sub("^\\.", "", as.character(resp_fml[[2]])),
+                                   "~ ."))
+        }
       } else {
         resp_fml <- NULL
       }
