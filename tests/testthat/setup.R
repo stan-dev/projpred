@@ -964,9 +964,7 @@ stats_tst <- list(
   binom_stats = list(stats = stats_binom),
   augdat_stats = list(stats = c("elpd", "mlpd", "gmpd", "acc"))
 )
-### TODO: Test more `type` settings (e.g., also `"diff"` and `"diff.se"`):
-type_tst <- c("mean", "lower", "upper", "se")
-###
+type_tst <- c("mean", "lower", "upper", "se", "diff", "diff.se")
 
 rk_abbv_tst <- list(
   default_abbv = list(),
