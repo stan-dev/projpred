@@ -236,7 +236,7 @@ plot(cvvs, stats = "mlpd", deltas = "mixed")
 
 Based on that final predictive performance plot, we decide for a submodel size.
 Usually, the aim is to find the smallest submodel size where the predictive performance of the submodels levels off and is close enough to the reference model's predictive performance (the dashed red horizontal line).
-Sometimes (as here), the plot may be ambiguous because after reaching the reference model's performance, the submodels' performance may keep increasing (and hence become even better than the reference model's performance^[In general, only `cv_varsel()` with `validate_search = TRUE` (which we have here) allows to judge whether the submodels perform better than the reference model or not. Such a judgment is not possible with `varsel()` or `cv_varsel()` with `validate_search = FALSE` (in general).]).
+Sometimes, the plot may be ambiguous because after reaching the reference model's performance, the submodels' performance may keep increasing (and hence become even better than the reference model's performance^[In general, only `cv_varsel()` with `validate_search = TRUE` (which we have here) allows to judge whether the submodels perform better than the reference model or not. Such a judgment is not possible with `varsel()` or `cv_varsel()` with `validate_search = FALSE` (in general).]).
 In that case, one has to find a suitable trade-off between predictive performance (accuracy) and model size (sparsity) in the context of subject-matter knowledge.
 Here, we assume that the focus of our predictive model is sparsity (not accuracy).
 Hence, based on the plot, we decide for a submodel size of 6 because this is the smallest size where the submodel MLPD is close enough to the reference model MLPD:
