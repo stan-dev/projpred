@@ -1181,8 +1181,18 @@ init_refmodel <- function(object, data, formula, family, ref_predfun = NULL,
     # The internal default for `extract_model_data`:
     extract_model_data_usr <- function(object, newdata, wrhs = NULL,
                                        orhs = NULL, extract_y = TRUE) {
+      if (extract_y) {
+        resp_fml <- lhs(formula)
+        if (family$for_latent) {
+          resp_fml <- update(resp_fml,
+                             paste(sub("^\\.", "", as.character(resp_fml[[2]])),
+                                   "~ ."))
+        }
+      } else {
+        resp_fml <- NULL
+      }
       return(y_wobs_offs(newdata = newdata, wrhs = wrhs, orhs = orhs,
-                         resp_form = if (extract_y) lhs(formula) else NULL))
+                         resp_form = resp_fml))
     }
   }
   # Wrap `extract_model_data_usr`:
