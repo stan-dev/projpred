@@ -16,7 +16,7 @@
 #'
 #' @inheritParams varsel
 #' @param cv_method The CV method, either `"LOO"` or `"kfold"`. In the `"LOO"`
-#'   case, a Pareto-smoothed importance sampling leave-one-out CV (PSIS-LOO-CV)
+#'   case, a Pareto-smoothed importance sampling leave-one-out CV (PSIS-LOO CV)
 #'   is performed, which avoids refitting the reference model `nloo` times (in
 #'   contrast to a standard LOO-CV). In the `"kfold"` case, a \eqn{K}-fold CV is
 #'   performed. See also section "Note" below.
@@ -54,7 +54,7 @@
 #'   `NA`, then the PRNG state is reset (to the state before calling
 #'   [cv_varsel()]) upon exiting [cv_varsel()]. Here, `seed` is used for
 #'   clustering the reference model's posterior draws (if `!is.null(nclusters)`
-#'   or `!is.null(nclusters_pred)`), for subsampling PSIS-LOO-CV folds (if
+#'   or `!is.null(nclusters_pred)`), for subsampling PSIS-LOO CV folds (if
 #'   `nloo` is smaller than the number of observations), for sampling the folds
 #'   in \eqn{K}-fold CV, and for drawing new group-level effects when predicting
 #'   from a multilevel submodel (however, not yet in case of a GAMM).
@@ -73,32 +73,32 @@
 #'
 #' @note If `validate_search` is `FALSE`, the search is not included in the CV
 #'   so that only a single full-data search is run. If the number of
-#'   observations is large, the fast PSIS-LOO-CV along the full-data search path
+#'   observations is large, the fast PSIS-LOO CV along the full-data search path
 #'   is likely to be accurate. If the number of observations is small or
-#'   moderate, the fast PSIS-LOO-CV along the full-data search path is likely to
+#'   moderate, the fast PSIS-LOO CV along the full-data search path is likely to
 #'   have optimistic bias in the middle of the search path. This result can be
 #'   used to guide further actions and the optimistic bias can be greatly
 #'   reduced by using `validate_search = TRUE`.
 #'
 #'   PSIS uses the Pareto-\eqn{\hat{k}} diagnostic to assess the reliability of
-#'   PSIS-LOO-CV. Global option `projpred.warn_psis` (default `TRUE`) controls
+#'   PSIS-LOO CV. Global option `projpred.warn_psis` (default `TRUE`) controls
 #'   whether the Pareto-\eqn{\hat{k}} diagnostics may result in warnings. See
 #'   [loo::loo-glossary] for how to interpret the Pareto-\eqn{\hat{k}} values
 #'   and the warning thresholds. \pkg{projpred} does not support the usually
 #'   recommended moment-matching (see [loo::loo_moment_match()] and
 #'   [brms::loo_moment_match()]), mixture importance sampling
 #'   (`vignette("loo2-mixis", package="loo")`), or `reloo`-ing
-#'   ([brms::reloo()]). If the reference model PSIS-LOO-CV Pareto-\eqn{\hat{k}}
+#'   ([brms::reloo()]). If the reference model PSIS-LOO CV Pareto-\eqn{\hat{k}}
 #'   values are good, but there are high Pareto-\eqn{\hat{k}} values for the
 #'   projected models, you can try increasing the number of draws used for the
-#'   PSIS-LOO-CV (`ndraws` in case of `refit_prj = FALSE`; `ndraws_pred` in case
+#'   PSIS-LOO CV (`ndraws` in case of `refit_prj = FALSE`; `ndraws_pred` in case
 #'   of `refit_prj = TRUE`). If increasing the number of draws does not help and
-#'   if the reference model PSIS-LOO-CV Pareto-\eqn{\hat{k}} values are high,
-#'   and the reference model PSIS-LOO-CV results change substantially when using
+#'   if the reference model PSIS-LOO CV Pareto-\eqn{\hat{k}} values are high,
+#'   and the reference model PSIS-LOO CV results change substantially when using
 #'   moment-matching, mixture importance sampling, or `reloo`-ing, we recommend
 #'   to use \eqn{K}-fold CV within `projpred`.
 #'
-#'   For PSIS-LOO-CV, \pkg{projpred} calls [loo::psis()] (or, exceptionally,
+#'   For PSIS-LOO CV, \pkg{projpred} calls [loo::psis()] (or, exceptionally,
 #'   [loo::sis()], see below) with `r_eff = NA`. This is only a problem if there
 #'   was extreme autocorrelation between the MCMC iterations when the reference
 #'   model was built. In those cases however, the reference model should not
@@ -109,7 +109,7 @@
 #'   such cases, \pkg{projpred} resorts to standard importance sampling (SIS)
 #'   and shows a message about this. Throughout the documentation, the term
 #'   "PSIS" is used even though in fact, \pkg{projpred} resorts to SIS in these
-#'   special cases. If SIS is used, check that the reference model PSIS-LOO-CV
+#'   special cases. If SIS is used, check that the reference model PSIS-LOO CV
 #'   Pareto-\eqn{\hat{k}} values are good.
 #'
 #'   With `parallel = TRUE`, costly parts of \pkg{projpred}'s CV can be run in
@@ -571,7 +571,7 @@ parse_args_cv_varsel <- function(refmodel, cv_method, nloo, K, cvfits,
       stop("nloo must be at least 1")
     }
     if (!validate_search && nloo < refmodel[["nobs"]]) {
-      stop("Subsampled PSIS-LOO-CV is not supported for ",
+      stop("Subsampled PSIS-LOO CV is not supported for ",
            "`validate_search = FALSE`.")
     }
   }
@@ -590,9 +590,9 @@ parse_args_cv_varsel <- function(refmodel, cv_method, nloo, K, cvfits,
   return(nlist(cv_method, nloo, K, cvfits))
 }
 
-# PSIS-LOO-CV -------------------------------------------------------------
+# PSIS-LOO CV -------------------------------------------------------------
 
-# Workhorse function for a variable selection with PSIS-LOO-CV
+# Workhorse function for a variable selection with PSIS-LOO CV
 #
 # Argument `validate_search` indicates whether the search is performed
 # separately for each LOO-CV fold (i.e., separately for each observation). For
@@ -611,7 +611,7 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
          "probabilistic model for which the log-likelihood can be evaluated.")
   }
 
-  # Log-likelihood values for the reference model (necessary for the PSIS-LOO-CV
+  # Log-likelihood values for the reference model (necessary for the PSIS-LOO CV
   # weights, but also for performance statistics like ELPD, MLPD, and GMPD):
   if (refmodel$family$for_latent) {
     mu_offs_oscale <- refmodel$family$latent_ilink(
@@ -649,14 +649,14 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
   }
   n <- ncol(loglik_forPSIS)
 
-  # PSIS-LOO-CV weights:
+  # PSIS-LOO CV weights:
   if (length(unique(refmodel$wdraws_ref)) != 1) {
     stop("Currently, projpred requires the reference model's posterior draws ",
          "to have constant weights.")
   }
   if (nrow(loglik_forPSIS) <= 1) {
     stop("Currently, more than one posterior draw from the reference model is ",
-         "needed (because projpred relies on loo::psis() for PSIS-LOO-CV).")
+         "needed (because projpred relies on loo::psis() for PSIS-LOO CV).")
   }
   # Call loo::psis() and while doing so, catch messages and warnings via
   # capt_mssgs_warns() to filter out some of them.
@@ -782,9 +782,9 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
     nprjdraws_eval <- perf_eval_out[["nprjdraws"]]
     refdist_eval <- perf_eval_out[["p_ref"]]
     # * Step 2: Weight the full-data performance evaluation results according to
-    #   the PSIS-LOO-CV weights.
+    #   the PSIS-LOO CV weights.
     verb_out("-----\nWeighting the full-data performance evaluation results ",
-             "using the PSIS-LOO-CV weights ...", verbose = verbose)
+             "using the PSIS-LOO CV weights ...", verbose = verbose)
     if (refmodel$family$for_latent) {
       refdist_eval_mu_offs_oscale <- refmodel$family$latent_ilink(
         t(refdist_eval$mu_offs), cl_ref = refdist_eval$cl,
