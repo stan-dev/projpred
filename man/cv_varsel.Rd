@@ -91,10 +91,10 @@ folds in \eqn{K}-fold-CV.}
 
 \item{validate_search}{A single logical value indicating whether to
 cross-validate also the search part, i.e., whether to run the search
-separately for each CV-fold (\code{TRUE}) or not (\code{FALSE}). With \code{FALSE}
+separately for each CV fold (\code{TRUE}) or not (\code{FALSE}). With \code{FALSE},
 the computation is faster, but the predictive performance estimates
 of the selected submodels are optimistically biased. However, these fast
-biased estimated can be useful to obtain initial information on the
+biased estimates can be useful to obtain initial information on the
 usefulness of projection predictive variable selection.}
 
 \item{method}{The method for the search part. Possible options are

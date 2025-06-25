@@ -43,10 +43,10 @@
 #'   [run_cvfun()] can be inserted here straightforwardly.
 #' @param validate_search A single logical value indicating whether to
 #'   cross-validate also the search part, i.e., whether to run the search
-#'   separately for each CV-fold (`TRUE`) or not (`FALSE`). With `FALSE`
+#'   separately for each CV fold (`TRUE`) or not (`FALSE`). With `FALSE`,
 #'   the computation is faster, but the predictive performance estimates
 #'   of the selected submodels are optimistically biased. However, these fast
-#'   biased estimated can be useful to obtain initial information on the
+#'   biased estimates can be useful to obtain initial information on the
 #'   usefulness of projection predictive variable selection.
 #' @param seed Pseudorandom number generation (PRNG) seed by which the same
 #'   results can be obtained again if needed. Passed to argument `seed` of
