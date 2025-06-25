@@ -20,14 +20,14 @@ group).}
 }
 }
 \source{
-\url{http://www.stat.columbia.edu/~gelman/arm/examples/mesquite/mesquite.dat}
+\url{https://www.stat.columbia.edu/~gelman/arm/examples/mesquite/mesquite.dat}
 }
 \usage{
 mesquite
 }
 \description{
 The mesquite bushes yields dataset from Gelman and Hill (2006)
-(\url{http://www.stat.columbia.edu/~gelman/arm/}).
+(\url{https://www.stat.columbia.edu/~gelman/arm/}).
 }
 \references{
 Gelman, Andrew, and Jennifer Hill. 2006. \emph{Data Analysis Using

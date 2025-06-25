@@ -481,7 +481,7 @@ This version contains only a few patches, no new features to the user.
 
 ## New features 
 
-* Added support for [**brms**](https://paul-buerkner.github.io/brms/) models. 
+* Added support for [**brms**](https://paulbuerkner.com/brms/) models. 
 
 ## Bug fixes
 

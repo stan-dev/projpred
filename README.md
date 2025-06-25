@@ -13,9 +13,9 @@
 The R package **projpred** performs the projection predictive variable
 selection for various regression models. Usually, the reference model is
 an [**rstanarm**](https://mc-stan.org/rstanarm/) or
-[**brms**](https://paul-buerkner.github.io/brms/) fit, but custom
-reference models can also be used. Details on supported model types are
-given in section [“Supported types of
+[**brms**](https://paulbuerkner.com/brms/) fit, but custom reference
+models can also be used. Details on supported model types are given in
+section [“Supported types of
 models”](https://mc-stan.org/projpred/articles/projpred.html#modtypes)
 of the main vignette[^1].
 

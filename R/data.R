@@ -22,7 +22,7 @@
 #' Mesquite data set
 #'
 #' The mesquite bushes yields dataset from Gelman and Hill (2006)
-#' (<http://www.stat.columbia.edu/~gelman/arm/>).
+#' (<https://www.stat.columbia.edu/~gelman/arm/>).
 #'
 #' @format The response variable is the total weight (in grams) of
 #'   photosynthetic material as derived from actual harvesting of the bush. The
@@ -40,5 +40,5 @@
 #' @references Gelman, Andrew, and Jennifer Hill. 2006. *Data Analysis Using
 #'   Regression and Multilevel/Hierarchical Models*. Cambridge, UK: Cambridge
 #'   University Press. \doi{10.1017/CBO9780511790942}.
-#' @source <http://www.stat.columbia.edu/~gelman/arm/examples/mesquite/mesquite.dat>
+#' @source <https://www.stat.columbia.edu/~gelman/arm/examples/mesquite/mesquite.dat>
 "mesquite"
