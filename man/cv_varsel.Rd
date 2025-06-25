@@ -285,14 +285,14 @@ that leads to the same results, \code{search_terms = c("x2", "x3")}).
 \note{
 If \code{validate_search} is \code{FALSE}, the search is not included in the CV
 so that only a single full-data search is run. If the number of
-observations is big, the fast PSIS-LOO-CV along the full-data search path
+observations is large, the fast PSIS-LOO-CV along the full-data search path
 is likely to be accurate. If the number of observations is small or
 moderate, the fast PSIS-LOO-CV along the full-data search path is likely to
 have optimistic bias in the middle of the search path. This result can be
 used to guide further actions and the optimistic bias can be greatly
 reduced by using \code{validate_search = TRUE}.
 
-PSIS uses Pareto-\eqn{\hat{k}} diagnostic to assess the reliability of
+PSIS uses the Pareto-\eqn{\hat{k}} diagnostic to assess the reliability of
 PSIS-LOO-CV. Global option \code{projpred.warn_psis} (default \code{TRUE}) controls
 whether the Pareto-\eqn{\hat{k}} diagnostics may result in warnings. See
 \link[loo:loo-glossary]{loo::loo-glossary} for how to interpret the Pareto-\eqn{\hat{k}} values
