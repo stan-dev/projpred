@@ -64,7 +64,7 @@ is \code{TRUE}).}
 \item{cv_method}{The CV method, either \code{"LOO"} or \code{"kfold"}. In the \code{"LOO"}
 case, a Pareto-smoothed importance sampling leave-one-out CV (PSIS-LOO-CV)
 is performed, which avoids refitting the reference model \code{nloo} times (in
-contrast to a standard LOO-CV). In the \code{"kfold"} case, a \eqn{K}-fold-CV is
+contrast to a standard LOO-CV). In the \code{"kfold"} case, a \eqn{K}-fold CV is
 performed. See also section "Note" below.}
 
 \item{nloo}{Only relevant if \code{cv_method = "LOO"} and \code{validate_search = TRUE}. If \code{nloo > 0} is smaller than the number of all observations, full
@@ -83,7 +83,7 @@ option \code{"best"} for argument \code{baseline} of \code{\link[=summary.vsel]{
 \item{K}{Only relevant if \code{cv_method = "kfold"} and if \code{cvfits} is \code{NULL}
 (which is the case for reference model objects created by
 \code{\link[=get_refmodel.stanreg]{get_refmodel.stanreg()}} or \code{\link[brms:get_refmodel.brmsfit]{brms::get_refmodel.brmsfit()}}). Number of
-folds in \eqn{K}-fold-CV.}
+folds in \eqn{K}-fold CV.}
 
 \item{cvfits}{Only relevant if \code{cv_method = "kfold"}. The same as argument
 \code{cvfits} of \code{\link[=init_refmodel]{init_refmodel()}}, but repeated here so that output from
@@ -192,7 +192,7 @@ results can be obtained again if needed. Passed to argument \code{seed} of
 clustering the reference model's posterior draws (if \code{!is.null(nclusters)}
 or \code{!is.null(nclusters_pred)}), for subsampling PSIS-LOO-CV folds (if
 \code{nloo} is smaller than the number of observations), for sampling the folds
-in \eqn{K}-fold-CV, and for drawing new group-level effects when predicting
+in \eqn{K}-fold CV, and for drawing new group-level effects when predicting
 from a multilevel submodel (however, not yet in case of a GAMM).}
 
 \item{search_terms}{Only relevant for forward search. A custom character
@@ -308,7 +308,7 @@ of \code{refit_prj = TRUE}). If increasing the number of draws does not help and
 if the reference model PSIS-LOO-CV Pareto-\eqn{\hat{k}} values are high,
 and the reference model PSIS-LOO-CV results change substantially when using
 moment-matching, mixture importance sampling, or \code{reloo}-ing, we recommend
-to use \eqn{K}-fold-CV within \code{projpred}.
+to use \eqn{K}-fold CV within \code{projpred}.
 
 For PSIS-LOO-CV, \pkg{projpred} calls \code{\link[loo:psis]{loo::psis()}} (or, exceptionally,
 \code{\link[loo:sis]{loo::sis()}}, see below) with \code{r_eff = NA}. This is only a problem if there

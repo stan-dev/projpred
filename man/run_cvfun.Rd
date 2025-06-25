@@ -91,7 +91,7 @@ cvvs_fw <- cv_varsel(ref, method = "forward", cv_method = "kfold",
                      cvfits = cv_fits, nterms_max = 3, nclusters = 5,
                      nclusters_pred = 10, seed = 5555)
 
-# Stratified K-fold-CV is straightforward:
+# Stratified K-fold CV is straightforward:
 n_strat <- 3L
 set.seed(692)
 # Some example strata:

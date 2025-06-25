@@ -18,7 +18,7 @@
 #' @param cv_method The CV method, either `"LOO"` or `"kfold"`. In the `"LOO"`
 #'   case, a Pareto-smoothed importance sampling leave-one-out CV (PSIS-LOO-CV)
 #'   is performed, which avoids refitting the reference model `nloo` times (in
-#'   contrast to a standard LOO-CV). In the `"kfold"` case, a \eqn{K}-fold-CV is
+#'   contrast to a standard LOO-CV). In the `"kfold"` case, a \eqn{K}-fold CV is
 #'   performed. See also section "Note" below.
 #' @param nloo Only relevant if `cv_method = "LOO"` and `validate_search =
 #'   TRUE`. If `nloo > 0` is smaller than the number of all observations, full
@@ -37,7 +37,7 @@
 #' @param K Only relevant if `cv_method = "kfold"` and if `cvfits` is `NULL`
 #'   (which is the case for reference model objects created by
 #'   [get_refmodel.stanreg()] or [brms::get_refmodel.brmsfit()]). Number of
-#'   folds in \eqn{K}-fold-CV.
+#'   folds in \eqn{K}-fold CV.
 #' @param cvfits Only relevant if `cv_method = "kfold"`. The same as argument
 #'   `cvfits` of [init_refmodel()], but repeated here so that output from
 #'   [run_cvfun()] can be inserted here straightforwardly.
@@ -56,7 +56,7 @@
 #'   clustering the reference model's posterior draws (if `!is.null(nclusters)`
 #'   or `!is.null(nclusters_pred)`), for subsampling PSIS-LOO-CV folds (if
 #'   `nloo` is smaller than the number of observations), for sampling the folds
-#'   in \eqn{K}-fold-CV, and for drawing new group-level effects when predicting
+#'   in \eqn{K}-fold CV, and for drawing new group-level effects when predicting
 #'   from a multilevel submodel (however, not yet in case of a GAMM).
 #' @param parallel A single logical value indicating whether to run costly parts
 #'   of the CV in parallel (`TRUE`) or not (`FALSE`). See also section "Note"
@@ -96,7 +96,7 @@
 #'   if the reference model PSIS-LOO-CV Pareto-\eqn{\hat{k}} values are high,
 #'   and the reference model PSIS-LOO-CV results change substantially when using
 #'   moment-matching, mixture importance sampling, or `reloo`-ing, we recommend
-#'   to use \eqn{K}-fold-CV within `projpred`.
+#'   to use \eqn{K}-fold CV within `projpred`.
 #'
 #'   For PSIS-LOO-CV, \pkg{projpred} calls [loo::psis()] (or, exceptionally,
 #'   [loo::sis()], see below) with `r_eff = NA`. This is only a problem if there
@@ -378,7 +378,7 @@ cv_varsel.refmodel <- function(
   if (!is.null(search_out) && validate_search) {
     # Extract the fold-wise predictor rankings (to avoid passing the large
     # object `search_out` itself) and coerce them to a `list` (in a row-wise
-    # manner) which is needed for the K-fold-CV parallelization:
+    # manner) which is needed for the K-fold CV parallelization:
     search_out_rks <- search_out[["rk_foldwise"]]
     if (!is.null(search_out_rks)) {
       n_folds <- nrow(search_out_rks)
@@ -438,7 +438,7 @@ cv_varsel.refmodel <- function(
         # passing the large object `search_path_fulldata` to loo_varsel():
         NULL
       } else {
-        # For K-fold-CV, `validate_search = FALSE` may not be combined with
+        # For K-fold CV, `validate_search = FALSE` may not be combined with
         # `refit_prj = FALSE`, so element `predictor_ranking` is all we need:
         search_path_fulldata["predictor_ranking"]
       },
@@ -560,7 +560,7 @@ parse_args_cv_varsel <- function(refmodel, cv_method, nloo, K, cvfits,
     if (!validate_search && !refit_prj) {
       # Not allowed because this would induce a dependency between training and
       # test data:
-      stop("For K-fold-CV, `validate_search = FALSE` may not be combined with ",
+      stop("For K-fold CV, `validate_search = FALSE` may not be combined with ",
            "`refit_prj = FALSE`.")
     }
     nloo <- NULL
@@ -677,9 +677,9 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
   # turn, i.e., brms's `reloo` argument) currently cannot be used because all
   # these techniques result in new MCMC draws for the reference model, meaning
   # that the projection would have to be adapted. Therefore, it is easier to
-  # recommend K-fold-CV (for the reference model refits, i.e., brms's `reloo`
+  # recommend K-fold CV (for the reference model refits, i.e., brms's `reloo`
   # argument, another reason is that they can quickly become as costly as
-  # K-fold-CV).
+  # K-fold CV).
   warn_pareto(
     n07 = sum(pareto_k > .ps_khat_threshold(dim(psisloo)[1])), n = n,
     khat_threshold = .ps_khat_threshold(dim(psisloo)[1]),
@@ -711,7 +711,7 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
       warn_txt = paste0(
         "In the recalculation of the latent response values, some (%d / %d) ",
         "expectation-specific Pareto k-values are > %s.\n",
-        "In general, we recommend K-fold-CV in this case."
+        "In general, we recommend K-fold CV in this case."
       )
     )
     refmodel$y <- y_lat_E$value
@@ -1308,7 +1308,7 @@ warn_pareto <- function(n07, n, khat_threshold = 0.7, warn_txt) {
   min(1 - 1 / log10(S), 0.7)
 }
 
-# K-fold-CV ---------------------------------------------------------------
+# K-fold CV ---------------------------------------------------------------
 
 # Needed to avoid a NOTE in `R CMD check`:
 if (getRversion() >= package_version("2.15.1")) {
@@ -1576,7 +1576,7 @@ get_kfold <- function(refmodel, K, cvfits, verbose) {
       verb_out("-----", verbose = verbose)
     } else {
       stop("For a reference model which is not of class `datafit`, either ",
-           "`cvfits` or `cvfun` needs to be provided for K-fold-CV (see ",
+           "`cvfits` or `cvfun` needs to be provided for K-fold CV (see ",
            "`?init_refmodel`).")
     }
   } else {
@@ -1667,7 +1667,7 @@ get_kfold <- function(refmodel, K, cvfits, verbose) {
 #'                      cvfits = cv_fits, nterms_max = 3, nclusters = 5,
 #'                      nclusters_pred = 10, seed = 5555)
 #'
-#' # Stratified K-fold-CV is straightforward:
+#' # Stratified K-fold CV is straightforward:
 #' n_strat <- 3L
 #' set.seed(692)
 #' # Some example strata:
