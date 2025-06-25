@@ -152,11 +152,10 @@ cvvs_fast <- cv_varsel(
 
 To find a suitable value for `nterms_max` in subsequent `cv_varsel()` runs, we take a look at a plot of at least one predictive performance statistic in dependence of the submodel size.
 Here, we choose the mean log predictive density (MLPD; see the documentation for argument `stats` of `summary.vsel()` for details) as the only performance statistic.
-Since we will be using the following plot only to determine `nterms_max` for subsequent `cv_varsel()` runs, we can omit the predictor ranking from the plot by setting `ranking_nterms_max` to `NA` (which requires `size_position = "primary_x_bottom"`, which we set here via its global option, just like arguments `text_angle` and `show_cv_proportions` of `plot.vsel()`):
+Since we will be using the following plot only to determine `nterms_max` for subsequent `cv_varsel()` runs, we can omit the predictor ranking from the plot by setting `ranking_nterms_max` to `NA` (which requires `size_position = "primary_x_bottom"`, which we set here via its global option, just like argument `text_angle`):
 ```{r plot_vsel_fast}
-options(projpred.plot_vsel_text_angle = 0)
-options(projpred.plot_vsel_show_cv_proportions = TRUE)
 options(projpred.plot_vsel_size_position = "primary_x_bottom")
+options(projpred.plot_vsel_text_angle = 0)
 plot(cvvs_fast, stats = "mlpd", ranking_nterms_max = NA)
 ```
 This plot suggests that the submodel MLPD levels off for the first time from submodel size 9 to 10 and that it increases only slightly afterwards.
@@ -230,8 +229,9 @@ By default, the performance statistics are plotted on their actual scale and the
 *   With `deltas = TRUE`, the performance statistics are plotted as differences^[For the geometric mean predictive density (GMPD, see argument `stats` of `summary.vsel()` and `plot.vsel()`), `deltas = TRUE` plots the GMPD *ratio* (not difference) vs. the baseline model. Despite this special case, we will call `deltas = TRUE` the "difference scale" for simplicity.] from the baseline model^[For the definition of the baseline model, see argument `baseline` of `summary.vsel()` and `plot.vsel()`; in the most common cases, the default baseline model is the reference model.] and the uncertainty bars match this scale,
 *   With `deltas = "mixed"`, the performance statistics (i.e., their point estimates) are plotted on the actual scale, but the uncertainty bars visualize the difference-scale uncertainty.
 
-Since the difference-scale uncertainty is usually of more interest than the actual-scale uncertainty (at least with regard to the decision for a final submodel size) and the actual-scale point estimates are often of more interest than the difference-scale point estimates, we plot with `deltas = "mixed"` here:
+Since the difference-scale uncertainty is usually of more interest than the actual-scale uncertainty (at least with regard to the decision for a final submodel size) and the actual-scale point estimates are often of more interest than the difference-scale point estimates, we plot with `deltas = "mixed"` here (we also set `show_cv_proportions = TRUE` via its global option for illustrative purposes):
 ```{r plot_vsel}
+options(projpred.plot_vsel_show_cv_proportions = TRUE)
 plot(cvvs, stats = "mlpd", deltas = "mixed")
 ```
 
