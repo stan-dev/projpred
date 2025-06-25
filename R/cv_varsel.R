@@ -683,7 +683,8 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
   warn_pareto(
     n07 = sum(pareto_k > .ps_khat_threshold(dim(psisloo)[1])), n = n,
     khat_threshold = .ps_khat_threshold(dim(psisloo)[1]),
-    warn_txt = "Some (%d / %d) Pareto k's for the reference model's PSIS-LOO weights are > %s."
+    warn_txt = paste0("Some (%d / %d) Pareto k's for the reference model's ",
+                      "PSIS-LOO weights are > %s.")
   )
   lw <- weights(psisloo)
 
@@ -843,8 +844,8 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
       if (no_psis_eval) {
         if (getOption("projpred.warn_psis", TRUE)) {
           message(
-            "Using standard importance sampling (SIS) due to a small number of ",
-            if (clust_used_eval) "clusters" else "draws", "."
+            "Using standard importance sampling (SIS) due to a small number ",
+            "of ", if (clust_used_eval) "clusters" else "draws", "."
           )
         }
         # Use loo::sis().
@@ -933,7 +934,8 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
           exp(lw_sub[, run_index])
         if (refmodel$family$for_latent) {
           if (inherits(mu_k_oscale, "augmat")) {
-            mu_sub_oscale[[k]][i_aug] <- mu_k_oscale[run_index_aug, , drop = FALSE] %*%
+            mu_sub_oscale[[k]][i_aug] <- mu_k_oscale[run_index_aug, ,
+                                                     drop = FALSE] %*%
               exp(lw_sub[, run_index])
           } else {
             # In principle, we could use the same code for averaging across the
