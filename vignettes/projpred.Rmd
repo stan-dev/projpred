@@ -103,8 +103,8 @@ refm_fit <- stan_glm(
   refresh = 0
 )
 ```
-Usually, we would now have to check the convergence diagnostics (see, e.g., `?posterior::diagnostics` and `?posterior::default_convergence_measures`; the tail-ESS warning already indicates a problem).
-However, due to the technical reasons for which we reduced `chains` and `iter`, we skip this step here (and hence ignore the tail-ESS warning).
+Usually, we would now have to check the convergence diagnostics (see, e.g., `?posterior::diagnostics` and `?posterior::default_convergence_measures`).
+However, due to the technical reasons for which we reduced `chains` and `iter`, we skip this step here.
 
 ## Variable selection {#variableselection}
 
@@ -228,7 +228,6 @@ cvvs <- cv_varsel(
 doParallel::stopImplicitCluster()
 foreach::registerDoSEQ()
 ```
-<!-- Again, we ignore the tail-ESS warnings due to the reduced values for `chains` and `iter` in the reference model fit. -->
 
 We can now select a final submodel size by looking at a predictive performance plot similar to the one created for the preliminary `cv_varsel()` run above.
 By default, the performance statistics are plotted on their actual scale and the uncertainty bars match this scale, but argument `deltas` offers two more options:
