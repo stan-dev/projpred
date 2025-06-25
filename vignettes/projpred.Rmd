@@ -236,21 +236,21 @@ plot(cvvs, stats = "mlpd", deltas = "mixed")
 
 Based on that final predictive performance plot, we decide for a submodel size.
 Usually, the aim is to find the smallest submodel size where the predictive performance of the submodels levels off and is close enough to the reference model's predictive performance (the dashed red horizontal line).
+
 Sometimes, the plot may be ambiguous because after reaching the reference model's performance, the submodels' performance may keep increasing (and hence become even better than the reference model's performance^[In general, only `cv_varsel()` with `validate_search = TRUE` allows to judge whether the submodels perform better than the reference model or not. Such a judgment is generally not possible with `varsel()` or `cv_varsel()` with `validate_search = FALSE`.]).
 In that case, one has to find a suitable trade-off between predictive performance (accuracy) and model size (sparsity) in the context of subject-matter knowledge.
-Here, we assume that the focus of our predictive model is sparsity (not accuracy).
-Hence, based on the plot, we decide for a submodel size of 6 because this is the smallest size where the submodel MLPD is close enough to the reference model MLPD:
+
+Here, we decide for a submodel size of 7 because it seems to provide the best trade-off between sparsity and accuracy (size 7 is the smallest size where the submodel MLPD is close enough to the reference model MLPD).
 ```{r size_man}
-size_decided <- 6
+size_decided <- 7
 ```
-If the focus of our predictive model had been accuracy (not sparsity), size 7 (or even 8) would have been a natural choice because at size 7 (at the latest at size 8), the submodel MLPD can be considered to "level off".
 Further down, the predictor ranking and the (CV) ranking proportions that are shown in the plot (below the submodel sizes on the x-axis) are explained in detail---and also how they could have been incorporated into our decision for a submodel size.
 
 The `suggest_size()` function offered by **projpred** may help in the decision for a submodel size, but this is a rather heuristic method and needs to be interpreted with caution (see `?suggest_size`):
 ```{r size_sgg}
 suggest_size(cvvs, stat = "mlpd")
 ```
-With this heuristic, we would get the same final submodel size (`6`) as by our manual (sparsity-based) decision.
+With this heuristic, we would get the same final submodel size (`7`) as with our manual decision.
 
 ### `summary()` method for `vsel` objects
 
@@ -298,7 +298,7 @@ plot(pr_rk)
 ```
 Apart from visualizing the variability in the ranking of the predictors (here, this is of little use because of `K = 2`), this plot will be helpful later.
 
-To retrieve the predictor terms of the final submodel (except for the intercept which is always included in the submodels), we combine the chosen submodel size of 6 with the full-data predictor ranking:
+To retrieve the predictor terms of the final submodel (except for the intercept which is always included in the submodels), we combine the chosen submodel size of 7 with the full-data predictor ranking:
 ```{r predictors_final}
 ( predictors_final <- head(rk[["fulldata"]], size_decided) )
 ```
