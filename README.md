@@ -1,6 +1,8 @@
 
 <!-- README.md is generated from README.Rmd. Please edit that file -->
+
 <!-- badges: start -->
+
 <!-- [![codecov](https://codecov.io/gh/stan-dev/projpred/branch/master/graph/badge.svg)](https://app.codecov.io/gh/stan-dev/projpred) -->
 
 [![CRAN_Status_Badge](https://www.r-pkg.org/badges/version/projpred?color=blue)](https://CRAN.R-project.org/package=projpred)
@@ -9,8 +11,8 @@
 # projpred [<img src="man/figures/logo.svg" align="right" height="139" alt="Stan Logo"/>](https://mc-stan.org)
 
 The R package **projpred** performs the projection predictive variable
-selection for various regression models. Usually, the reference model
-will be an [**rstanarm**](https://mc-stan.org/rstanarm/) or
+selection for various regression models. Usually, the reference model is
+an [**rstanarm**](https://mc-stan.org/rstanarm/) or
 [**brms**](https://paul-buerkner.github.io/brms/) fit, but custom
 reference models can also be used. Details on supported model types are
 given in section [“Supported types of
@@ -21,7 +23,7 @@ For details on how to cite **projpred**, see the [projpred citation
 info](https://CRAN.R-project.org/package=projpred/citation.html) on
 CRAN[^2]. Further references (including earlier work that **projpred**
 is based on) are given in section
-[“Introduction”](https://mc-stan.org/projpred/articles/projpred.html#introduction)
+[“Introduction”](https://mc-stan.org/projpred/articles/projpred.html#intro)
 of the main vignette.
 
 The [vignettes](https://mc-stan.org/projpred/articles/)[^3] illustrate
