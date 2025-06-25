@@ -42,6 +42,7 @@ If you read this from a place other than <https://mc-stan.org/projpred/news/inde
 
 * Fixed a bug that caused an error when using the augmented-data or latent projection in combination with a single projected draw for performance evaluation in `cv_varsel()` with `cv_method = "LOO"` and `validate_search = FALSE`. (GitHub: #512)
 * Previously, in case of PSIS-LOO CV with `validate_search = TRUE` and thinned posterior draws for projection (i.e., argument(s) `ndraws` or `ndraws_pred` being used, not `nclusters` or `nclusters_pred`), `print.vselsummary()` incorrectly reported that the posterior draws had been clustered. This has now been fixed, so thinning is reported in such cases. (GitHub: #516)
+* Fixed the internal default `extract_model_data` function when using the latent projection for a custom reference model object. (GitHub: #523)
 
 # projpred 2.8.0
 
