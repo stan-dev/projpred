@@ -428,7 +428,7 @@ Depending on argument `integrated`, these linear predictors can be averaged acro
 For instance, the following computes the expected values of the new observations' predictive distributions (beware that the following code refers to the Gaussian family with the identity link function; for other families---which usually come in combination with a different link function---one would typically have to use `transform = TRUE` in order to achieve such expected values):
 ```{r proj_linpred}
 prj_linpred <- proj_linpred(prj, newdata = dat_gauss_new, integrated = TRUE)
-cbind(dat_gauss_new, linpred = as.vector(prj_linpred$pred))
+cbind(dat_gauss_new, linpred = as.vector(prj_linpred[["pred"]]))
 ```
 If `dat_gauss_new` also contained response values (i.e., `y` values in this example), then `proj_linpred()` would also evaluate the log predictive density at these (conditional on each of the projected parameter draws if `integrated = FALSE` and integrated over the projected parameter draws---before taking the logarithm---if `integrated = TRUE`).
 
