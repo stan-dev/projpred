@@ -256,15 +256,22 @@ With this heuristic, we would get the same final submodel size (`7`) as with our
 
 #### Predictive performance table from final `cv_varsel()` run
 
-A tabular representation of the plot created by `plot.vsel()` can be achieved via `summary.vsel()`.
-For the output of `summary.vsel()`, there is a sophisticated `print()` method (`print.vselsummary()`) which is also called by the shortcut method `print.vsel()`^[`print.vsel()` is the method that is called when simply printing an object resulting from `varsel()` or `cv_varsel()`.].
-Specifically, to create the summary table matching the predictive performance plot above as closely as possible (and to also adjust the minimum number of printed significant digits), we may call `summary.vsel()` and `print.vselsummary()` as follows:
+A tabular representation of the plot created by `plot.vsel()` can be achieved via `summary.vsel()` or `performances()`.
+In contrast to `performances()`, the output of `summary.vsel()` contains more information than just the predictive performance results, which is also why there is a sophisticated `print()` method for objects of class `vselsummary` (the output of `summary.vsel()`). This method `print.vselsummary()` is also called by the shortcut method `print.vsel()` which can be applied to an object resulting from `varsel()` or `cv_varsel()`.
+
+Specifically, to create the table matching the predictive performance plot above as closely as possible (and to also adjust the minimum number of printed significant digits), we may call `summary.vsel()` and `print.vselsummary()` as follows:
 ```{r smmry_vsel}
 smmry <- summary(cvvs,
                  stats = "mlpd",
                  type = c("mean", "lower", "upper"),
                  deltas = TRUE)
 print(smmry, digits = 1)
+```
+
+The generic function `performances()` (with main method `performances.vselsummary()` and the shortcut method `performances.vsel()`) essentially extracts the predictive performance results from the output of `summary.vsel()`:
+```{r perf_smmry}
+perf <- performances(smmry)
+str(perf)
 ```
 
 #### Predictor ranking(s) from final `cv_varsel()` run and identification of the selected submodel {#rksel}
