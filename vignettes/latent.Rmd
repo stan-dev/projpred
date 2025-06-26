@@ -61,7 +61,7 @@ The families supported by **projpred**'s augmented-data projection are also list
 
 ## Example: Poisson distribution
 
-In this example, we will illustrate that in case of a family supported by **projpred**'s traditional projection (here the Poisson distribution), the latent projection can improve runtime and results of the variable selection compared to **projpred**'s traditional projection, at least if the L1 search is used (see argument `method` of `varsel()` and `cv_varsel()`).
+In this example, we will illustrate that in case of a family supported by **projpred**'s traditional projection (here the `poisson()` family), the latent projection can improve runtime and results of the variable selection compared to **projpred**'s traditional projection, at least if the L1 search is used (see argument `method` of `varsel()` and `cv_varsel()`).
 
 ### Data
 
