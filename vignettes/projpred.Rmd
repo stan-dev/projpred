@@ -318,11 +318,11 @@ At this place, it is again helpful to take the ranking proportions into account,
 ```{r plot_cv_proportions_cumul}
 plot(cv_proportions(rk, cumulate = TRUE))
 ```
-This plot shows that the two fold-wise searches (as well as the full-data search, whose predictor ranking determines the order of the predictors on the y-axis) agree on the *set* of the 6 most relevant predictors: When looking at `<=6` on the x-axis, all tiles above and including the 6^th^ main diagonal element are at 100&nbsp;%.
-Similarly, the two CV folds agree on the *set* of the 7 most relevant predictors (and also on the set of the most relevant predictor, which is a singleton).
+This plot shows that the two fold-wise searches (as well as the full-data search, whose predictor ranking determines the order of the predictors on the y-axis) agree on the *set* of the 7 most relevant predictors: When looking at `<=7` on the x-axis, all tiles above and including the 7^th^ main diagonal element are at 100&nbsp;%.
+(Similarly, the two CV folds also agree on the set of the most relevant predictor---which is a singleton---and the set of the two most relevant predictors, but we already observed this above.)
 
-Although not demonstrated here, the cumulated ranking proportions could also have guided the decision for a submodel size (if we had not been willing to follow a strict rule based on accuracy or sparsity):
-From their plot, we can see that size 9 might have been an unfortunate choice because `X10` (which---by cutting off the full-data predictor ranking at size 9---would then have been selected as the 9^th^ predictor in the final submodel) is not included among the first 9 terms by any CV fold.
+Although not demonstrated here, the cumulated ranking proportions also could have guided the decision for a submodel size:
+From the plot of the cumulated ranking proportions, we can see that size 8 might have been an unfortunate choice because `X11` (which---by cutting off the full-data predictor ranking at size 8---would then have been selected as the 8^th^ predictor in the final submodel) is not included among the first 8 terms by any CV fold.
 However, since `K = 2` is too small for reliable statements regarding the variability of the predictor ranking, we did not take the cumulated ranking proportions into account when we made our decision for a submodel size above.
 
 In a real-world application, we might also be able to incorporate the full-data predictor ranking into our decision for a submodel size (usually, this requires to also take into account the variability of the predictor ranking, as reflected by the---possibly cumulated---ranking proportions).
