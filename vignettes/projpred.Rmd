@@ -569,18 +569,19 @@ Some speed-up possibilities are:
 1.  Using `cv_varsel()` with subsampled PSIS-LOO CV, see argument `nloo` of `cv_varsel()`.
 
 1.  Using `cv_varsel()` with $K$-fold CV instead of PSIS-LOO CV.
-    Whether this provides a speed improvement mainly depends on the number of observations, argument `nloo` of `cv_varsel()`, and the complexity of the reference model.
+    Whether this provides a speed improvement mainly depends on the number of observations, whether PSIS-LOO CV could be subsampled (and---if yes---how small argument `nloo` of `cv_varsel()` could be set while still obtaining reliable results), and the complexity of the reference model.
     Note that PSIS-LOO CV is often more accurate than $K$-fold CV if argument `K` is (much) smaller than argument `nloo` of `cv_varsel()`.
 
 1.  Using a "custom" reference model object with a dimension reduction technique for the predictor data (e.g., by computing principal components from the original predictors, using these principal components as predictors when fitting the reference model, and then performing the variable selection in terms of the *original* predictor terms).
     Examples are given in @piironen_projective_2020 and @pavone_using_2022.
+    A short example for a custom reference model object is also given in section "Examples" of the `?init_refmodel` help.
     This approach makes sense if there is a large number of predictor variables, in which case this aims at improving the runtime required for fitting the reference model and hence improving the runtime of $K$-fold CV.
 
 1.  Using `varsel()` with its argument `d_test` for evaluating predictive performance on a hold-out dataset instead of doing this with `cv_varsel()`'s CV approach.
     Typically, the hold-out approach requires a large amount of data.
 
 1.  Reducing `nterms_max` in `varsel()` or `cv_varsel()`.
-    The resulting predictive performance plot(s) should be inspected to check that the search is not terminated too early (i.e., before the submodel performance levels off), which would indicate that `nterms_max` has been reduced too much.
+    The resulting predictive performance plot(s) should be inspected to ensure that the search is not terminated too early (i.e., before the submodel performance levels off), which would indicate that `nterms_max` has been reduced too much.
 
 1.  Reducing argument `nclusters` (of `varsel()` or `cv_varsel()`) below `20` and/or setting `nclusters_pred` to some non-`NULL` (and smaller than `400`, the default for `ndraws_pred`) value.
     If setting `nclusters_pred` as low as `nclusters` (and using forward search), `refit_prj` can instead be set to `FALSE`, see below.
@@ -601,7 +602,7 @@ Some speed-up possibilities are:
     This is helpful if the performance evaluation part is run multiple times based on the same search results (e.g., when only arguments `ndraws_pred` or `nclusters_pred` of `varsel()` or `cv_varsel()` are changed).
     In the example above, this was illustrated when `cv_varsel()` was applied to `cvvs_fast` instead of `refm_obj` to yield `cvvs_fast_refit`.
     In that example, search and performance evaluation were effectively run *separately* by the `cv_varsel()` calls yielding `cvvs_fast` and `cvvs_fast_refit`, respectively.
-    This is because `cv_varsel()` with `refit_prj = FALSE` (used for `cvvs_fast`) has almost only the computational cost of the search (the performance evaluation with `refit_prj = FALSE` has almost no computational cost) and `cv_varsel.vsel()` (used for `cvvs_fast_refit`) has almost only the computational cost of the performance evaluation (the search in `cv_varsel.vsel()` has no computational cost at all).
+    This is because `cv_varsel()` with `refit_prj = FALSE` (used for `cvvs_fast`) has almost only the computational cost of the search (the performance evaluation with `refit_prj = FALSE` has almost no computational cost) and `cv_varsel.vsel()` (used for `cvvs_fast_refit`) has almost only the computational cost of the performance evaluation (the search in `cv_varsel.vsel()` has no computational cost at all because the previous search results from the `vsel` object are re-used).
 
 1.  Using `run_cvfun()` in case of repeated $K$-fold CV with the same $K$ reference model refits.
     The output of `run_cvfun()` is typically used as input for argument `cvfits` of `cv_varsel.refmodel()` (so in order to have a speed improvement, the output of `run_cvfun()` needs to be assigned to an object which is then re-used in multiple `cv_varsel()` calls).
