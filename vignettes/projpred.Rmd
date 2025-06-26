@@ -382,7 +382,7 @@ prj_smmry <- summarize_draws(
   prj_drws,
   "median", "mad", function(x) quantile(x, probs = c(0.025, 0.975))
 )
-# Coerce to a `data.frame` because pkgdown versions > 1.6.1 don't print the
+# Coerce to a `data.frame` because some pkgdown versions don't print the
 # tibble correctly:
 prj_smmry <- as.data.frame(prj_smmry)
 print(prj_smmry, digits = 1)
