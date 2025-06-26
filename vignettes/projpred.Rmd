@@ -220,7 +220,7 @@ doParallel::stopImplicitCluster()
 foreach::registerDoSEQ()
 ```
 
-#### Predictive performance plot from final `cv_varsel()` run
+#### Predictive performance plot from final `cv_varsel()` run {#plotfinal}
 
 We can now select a final submodel size by looking at a predictive performance plot similar to the one created for the preliminary `cv_varsel()` run above.
 By default, the performance statistics are plotted on their actual scale and the uncertainty bars match this scale, but argument `deltas` of `plot.vsel()` offers two more options:
@@ -277,21 +277,23 @@ str(perf)
 #### Predictor ranking(s) from final `cv_varsel()` run and identification of the selected submodel {#rksel}
 
 As indicated by its column name, the predictor ranking from column `ranking_fulldata` of the `summary.vsel()` output is based on the full-data search.
+This full-data predictor ranking is also what is shown in the second line of the x-axis tick labels of the predictive performance plot from section ["Predictive performance plot from final `cv_varsel()` run"](#plotfinal).
+
 In case of `cv_varsel()` with `validate_search = TRUE`, there is not only the full-data search, but also fold-wise searches, implying that there are also fold-wise predictor rankings.
 All of these predictor rankings (the full-data one and---if available---the fold-wise ones) can be retrieved via `ranking()`:
 ```{r ranking}
 rk <- ranking(cvvs)
 ```
 
-In addition to inspecting the full-data predictor ranking, it usually makes sense to investigate the ranking proportions derived from the fold-wise predictor rankings (only available in case of `cv_varsel()` with `validate_search = TRUE`, which we have here) in order to get a sense for the variability in the ranking of the predictors.
+In addition to inspecting the full-data predictor ranking, it often makes sense to investigate the ranking proportions derived from the fold-wise predictor rankings (only available in case of `cv_varsel()` with `validate_search = TRUE`, which we have here) in order to get a sense for the variability in the ranking of the predictors.
 For a given predictor $x$ and a given submodel size $j$, the ranking proportion is the proportion of CV folds which have predictor $x$ at position $j$ of their predictor ranking.
 To compute these ranking proportions, we use `cv_proportions()`:
 ```{r cv_proportions}
 ( pr_rk <- cv_proportions(rk) )
 ```
 Here, the ranking proportions are of little use as we have used `K = 2` (in the final `cv_varsel()` call above) for the sake of speed.
-Nevertheless, we can see that the two CV folds agree on the most relevant predictor term (`X1`).
-Since the column names of the matrix returned by `cv_proportions()` follow the full-data predictor ranking, we can infer that `X1` is also the most relevant predictor term in the full-data predictor ranking.
+Nevertheless, we can see that the two CV folds agree on the most relevant predictor term (`X1`) and the second most relevant predictor term (`X14`).
+Since the column names of the matrix returned by `cv_proportions()` follow the full-data predictor ranking, we can infer that `X1` and `X14` are also the most relevant predictor terms (in this order) in the full-data predictor ranking.
 To see this more explicitly, we can access element `fulldata` of the `ranking()` output:
 ```{r ranking_fulldata}
 rk[["fulldata"]]
