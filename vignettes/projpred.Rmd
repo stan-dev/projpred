@@ -226,10 +226,10 @@ By default, the performance statistics are plotted on their actual scale and the
 *   With `deltas = TRUE`, the performance statistics are plotted on *difference scale*, i.e., as differences^[For the geometric mean predictive density (GMPD; see argument `stats` of `summary.vsel()` and `plot.vsel()`), `deltas = TRUE` plots the GMPD *ratio* (not difference) vs. the baseline model.] from the baseline model^[For the definition of the baseline model, see argument `baseline` of `summary.vsel()` and `plot.vsel()`; in the most common cases, the default baseline model is the reference model.] and the uncertainty bars match this scale,
 *   With `deltas = "mixed"`, the performance statistics (i.e., their point estimates) are plotted on the actual scale, but the uncertainty bars visualize the difference-scale uncertainty.
 
-Since the difference-scale uncertainty is usually more helpful than the actual-scale uncertainty (at least with regard to the decision for a final submodel size) and the actual-scale point estimates are often more helpful than the difference-scale point estimates, we plot with `deltas = "mixed"` here (and we also set `show_cv_proportions = TRUE`---via its global option---for illustrative purposes, which becomes clearer down below):
+Since the difference-scale uncertainty is usually more helpful than the actual-scale uncertainty (at least with regard to the decision for a final submodel size), we plot with `deltas = TRUE` here (`deltas = "mixed"` would be another good choice). We also set `show_cv_proportions = TRUE` (via its global option) for illustrative purposes, which becomes clearer in section ["Predictor ranking(s) and identification of the selected submodel"](#rksel):
 ```{r plot_vsel}
 options(projpred.plot_vsel_show_cv_proportions = TRUE)
-plot(cvvs, stats = "mlpd", deltas = "mixed")
+plot(cvvs, stats = "mlpd", deltas = TRUE)
 ```
 
 ### Decision for final submodel size
@@ -244,7 +244,7 @@ Here, we decide for a submodel size of 7 because it seems to provide the best tr
 ```{r size_man}
 size_decided <- 7
 ```
-Further down, the predictor ranking and the (CV) ranking proportions that are shown in the plot (below the submodel sizes on the x-axis) are explained in detail---and also how they could have been incorporated into our decision for a submodel size.
+In section ["Predictor ranking(s) and identification of the selected submodel"](#rksel), the predictor ranking and the (CV) ranking proportions that are shown in the plot (below the submodel sizes on the x-axis) are explained in detail---and also how they could have been incorporated into our decision for a submodel size.
 
 The `suggest_size()` function offered by **projpred** may help in the decision for a submodel size, but this is a rather heuristic method and needs to be interpreted with caution (see `?suggest_size`):
 ```{r size_sgg}
@@ -260,12 +260,12 @@ Specifically, to create the summary table matching the predictive performance pl
 ```{r smmry_vsel}
 smmry <- summary(cvvs,
                  stats = "mlpd",
-                 type = c("mean", "diff.lower", "diff.upper"),
-                 deltas = FALSE)
+                 type = c("mean", "lower", "upper"),
+                 deltas = TRUE)
 print(smmry, digits = 1)
 ```
 
-### Predictor ranking(s) and identification of the selected submodel
+### Predictor ranking(s) and identification of the selected submodel {#rksel}
 
 As indicated by its column name, the predictor ranking from column `ranking_fulldata` of the `summary.vsel()` output is based on the full-data search.
 In case of `cv_varsel()` with `validate_search = TRUE`, there is not only the full-data search, but also fold-wise searches, implying that there are also fold-wise predictor rankings.
