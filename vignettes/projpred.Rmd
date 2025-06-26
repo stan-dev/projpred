@@ -299,7 +299,7 @@ To see this more explicitly, we can access element `fulldata` of the `ranking()`
 rk[["fulldata"]]
 ```
 This is the same as column `ranking_fulldata` in the `summary.vsel()` output above (apart from the intercept).
-(As also stated by the message thrown by `print.vselsummary()`, column `cv_proportions_diag` of the `summary.vsel()` output contains the main diagonal of the matrix that we stored manually as `pr_rk`.)
+(Column `cv_proportions_diag` of the `summary.vsel()` output contains the main diagonal of the matrix that we stored manually as `pr_rk`.)
 
 Note that we have cut off the search at `nterms_max = 9` (which is smaller than the number of predictor terms in the full model, 20 here), so the ranking proportions in the `pr_rk` matrix do not need to sum to 100&nbsp;% (neither column-wise nor row-wise).
 
