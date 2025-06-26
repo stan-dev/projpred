@@ -26,8 +26,8 @@ Description:
     models (Piironen, Paasiniemi, and Vehtari, 2020, <doi:10.1214/20-EJS1711>)
     with or without multilevel or additive terms (Catalina, Bürkner, and
     Vehtari, 2022, <https://proceedings.mlr.press/v151/catalina22a.html>), for
-    some ordinal and nominal regression models (Weber, Glass, and Vehtari, 2023,
-    <doi:10.48550/arXiv.2301.01660>), and for many other regression models
+    some ordinal and nominal regression models (Weber, Glass, and Vehtari, 2025,
+    <doi:10.1007/s00180-024-01506-0>), and for many other regression models
     (using the latent projection by Catalina, Bürkner, and Vehtari, 2021,
     <doi:10.48550/arXiv.2109.04702>, which can also be applied to most of the
     former models). The package is compatible with the 'rstanarm' and 'brms'
