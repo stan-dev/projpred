@@ -21,7 +21,7 @@ vignette: >
 ## Introduction
 
 This vignette shows how to use the latent projection predictive feature selection from @catalina_latent_2021 in **projpred**.
-We recommend to read the main vignette first, as the latent-projection vignette presented here will skip some of the details explained in the main vignette.
+We recommend to read the [main vignette](https://mc-stan.org/projpred/articles/projpred.html) first, as the latent-projection vignette presented here will skip some of the details explained in the main vignette.
 
 ### General idea
 
