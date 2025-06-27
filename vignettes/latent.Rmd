@@ -268,6 +268,53 @@ More importantly however, the predictor ranking contains several noise terms bef
 
 This example showed that the latent projection can be advantageous also for families supported by **projpred**'s traditional projection by improving the runtime as well as the results of the variable selection.
 
+<!-- **Forward search START:** -->
+<!-- ```{r} -->
+<!-- time_lat_fw <- system.time(vs_lat_fw <- varsel( -->
+<!--   refm_poiss, -->
+<!--   d_test = d_test_lat_poiss, -->
+<!--   ### Only for demonstrating an issue with the traditional projection in the -->
+<!--   ### next step (not recommended in general): -->
+<!--   # method = "L1", -->
+<!--   ### -->
+<!--   ### Only for the sake of speed (not recommended in general): -->
+<!--   nclusters_pred = 20, -->
+<!--   ### -->
+<!--   nterms_max = 14, -->
+<!--   ### In interactive use, we recommend not to deactivate the verbose mode: -->
+<!--   verbose = 0, -->
+<!--   ### -->
+<!--   ### For comparability with varsel() based on the traditional projection: -->
+<!--   seed = 95930 -->
+<!--   ### -->
+<!-- )) -->
+<!-- print(time_lat_fw) -->
+<!-- ( gg_lat_fw <- plot(vs_lat_fw, stats = "gmpd", deltas = TRUE) ) -->
+<!-- ``` -->
+<!-- ```{r} -->
+<!-- time_trad_fw <- system.time(vs_trad_fw <- varsel( -->
+<!--     refm_fit_poiss, -->
+<!--     d_test = d_test_trad_poiss, -->
+<!--     ### Only for demonstrating an issue with the traditional projection (not -->
+<!--     ### recommended in general): -->
+<!--     # method = "L1", -->
+<!--     ### -->
+<!--     ### Only for the sake of speed (not recommended in general): -->
+<!--     nclusters_pred = 20, -->
+<!--     ### -->
+<!--     nterms_max = 30, -->
+<!--     ### In interactive use, we recommend not to deactivate the verbose mode: -->
+<!--     verbose = 0, -->
+<!--     ### -->
+<!--     ### For comparability with varsel() based on the latent projection: -->
+<!--     seed = 95930 -->
+<!--     ### -->
+<!-- )) -->
+<!-- print(time_trad_fw) -->
+<!-- ( gg_trad_fw <- plot(vs_trad_fw, stats = "gmpd", deltas = TRUE) ) -->
+<!-- ``` -->
+<!-- **Forward search END** -->
+
 An important point is that we have used the L1 search here.
 In case of the latent projection, a forward search would have given only slightly different results (in particular, a slightly smoother predictive performance plot).
 However, in case of the traditional projection, a forward search would have given markedly better results (in particular, the predictive performance plot would have been much smoother and all of the noise terms would have been selected after the truly relevant ones).
