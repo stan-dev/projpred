@@ -316,8 +316,8 @@ This example showed that the latent projection can be advantageous also for fami
 <!-- **Forward search END** -->
 
 An important point is that we have used the L1 search here.
-In case of the latent projection, a forward search would have given only slightly different results (in particular, a slightly smoother predictive performance plot).
-However, in case of the traditional projection, a forward search would have given markedly better results (in particular, the predictive performance plot would have been much smoother and all of the noise terms would have been selected after the truly relevant ones).
+In case of the latent projection, a forward search would have given only slightly different results.
+However, in case of the traditional projection, a forward search would have given markedly better results (in particular, all of the noise terms would have been selected after the truly relevant ones).
 Thus, the conclusions made for the L1 search here cannot be transmitted easily to the forward search.
 
 ## Example: Negative binomial distribution {#negbinex}
