@@ -266,7 +266,7 @@ More importantly however, the predictor ranking contains several noise terms bef
 
 ### Conclusion
 
-In conclusion, this example showed that the latent projection can be advantageous also for families supported by **projpred**'s traditional projection by improving the runtime and the stability of the variable selection, eventually also leading to better variable selection results.
+This example showed that the latent projection can be advantageous also for families supported by **projpred**'s traditional projection by improving the runtime and the stability of the variable selection, eventually also leading to better variable selection results.
 
 An important point is that we have used the L1 search here.
 In case of the latent projection, a forward search would have given only slightly different results (in particular, a slightly smoother predictive performance plot).
