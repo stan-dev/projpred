@@ -150,6 +150,7 @@ refm_fit_poiss <- stan_glm(
   refresh = 0
 )
 ```
+Due to the technical reasons for which we reduced `chains` and `iter` in this vignette, we ignore the bulk-ESS warning here.
 
 ### Variable selection using the latent projection
 
