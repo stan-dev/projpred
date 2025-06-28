@@ -403,7 +403,7 @@ Again, we first inspect the `plot()` results to decide for a submodel size:
 ( gg_nebin <- plot(vs_nebin, stats = "gmpd", deltas = TRUE) )
 ```
 
-As the curve levels off only from a submodel size of 11 on, we will decide for a submodel size of 11 (in other words, we act as if we preferred accuracy over sparsity in their trade-off mentioned in the [main vignette](https://mc-stan.org/projpred/articles/projpred.html)):
+As the curve levels off only from a submodel size of 11 on, we will decide for a submodel size of 11 (in other words, we act as if we preferred accuracy over sparsity in their trade-off mentioned in the [main vignette](https://mc-stan.org/projpred/articles/projpred.html#decision-size)):
 ```{r size_man_nebin}
 size_decided_nebin <- 11
 ```
