@@ -345,6 +345,7 @@ refm_fit_nebin <- stan_glm(
   refresh = 0
 )
 ```
+Again, we ignore the bulk-ESS warning due to the technical reasons for which we reduced `chains` and `iter` in this vignette.
 
 ### Variable selection using the latent projection
 
