@@ -234,7 +234,7 @@ options(projpred.plot_vsel_show_cv_proportions = TRUE)
 plot(cvvs, stats = "mlpd", deltas = TRUE)
 ```
 
-#### Decision for final submodel size
+#### Decision for final submodel size {#decision-size}
 
 Based on that final predictive performance plot, we decide for a submodel size.
 Usually, the aim is to find the smallest submodel size where the predictive performance of the submodels levels off and is close enough to the reference model's predictive performance (the dashed red horizontal line).
