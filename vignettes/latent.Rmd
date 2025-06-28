@@ -425,7 +425,6 @@ Again, we will skip post-selection inference here (see the main vignette for a d
 
 ### Conclusion
 
-This example demonstrated how the latent projection can be used for those families which are neither supported by **projpred**'s traditional nor by **projpred**'s augmented-data projection.
-(In the future, this vignette will be extended to demonstrate how both, latent and augmented-data projection, can be applied to those non-ED families which are supported by both.)
+This example demonstrated how the latent projection can be used for those families which are neither supported by **projpred**'s traditional nor by **projpred**'s augmented-data projection, which reflects the flexibility of the latent approach.
 
 ## References
