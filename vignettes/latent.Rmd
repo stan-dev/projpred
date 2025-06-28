@@ -322,7 +322,7 @@ Thus, the conclusions made for the L1 search here cannot be transmitted easily t
 
 ## Example: Negative binomial distribution {#negbinex}
 
-In this example, we will illustrate the latent projection in case of the negative binomial family (more precisely, we are using `rstanarm::neg_binomial_2()` here) which is a family that is not supported by **projpred**'s traditional projection^[The negative binomial distribution belongs to the class of *discrete exponential dispersion* families [@jorgensen_exponential_1987] (here abbreviated by "DED families"). DED families are closely related to ED families [@jorgensen_exponential_1987], but strictly speaking, the class of DED families is not a subset of the class of ED families. GitHub issue [#361](https://github.com/stan-dev/projpred/issues/361) explains why the "traditional" projection onto a DED-family submodel is currently not implemented in **projpred**.].
+In this example, we will illustrate the latent projection in case of the negative binomial family (more precisely, we will use the `rstanarm::neg_binomial_2()` family here) which is a family that is not supported by **projpred**'s traditional projection^[The negative binomial distribution belongs to the class of *discrete exponential dispersion* families [@jorgensen_exponential_1987] (here abbreviated by "DED families"). DED families are closely related to ED families [@jorgensen_exponential_1987], but strictly speaking, the class of DED families is not a subset of the class of ED families. GitHub issue [#361](https://github.com/stan-dev/projpred/issues/361) explains why the "traditional" projection onto a DED-family submodel is currently not implemented in **projpred**.].
 
 ### Data
 
@@ -332,7 +332,7 @@ We will re-use the data generated above in the Poisson example.
 
 We now fit a reference model with the negative binomial distribution as response family.
 For the sake of simplicity, we won't adjust `tau0` to this new family, but in a real-world example, such an adjustment would be necessary.
-However, since Table 1 of @piironen_sparsity_2017 doesn't list the negative binomial distribution, this would first require a manual derivation of the pseudo-variance $\tilde{\sigma}^2$.
+However, since Table 1 of @piironen_sparsity_2017 does not list the negative binomial distribution, this would first require a manual derivation of the pseudo-variance $\tilde{\sigma}^2$.
 ```{r ref_fit_nebin}
 refm_fit_nebin <- stan_glm(
   formula = refm_fml,
