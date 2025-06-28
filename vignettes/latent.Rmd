@@ -395,7 +395,7 @@ vs_nebin <- varsel(
   ###
 )
 ```
-Again, the message telling that `<refmodel>$dis` consists of only `NA`s will not concern us here because we will only be focusing on response-scale post-processing.
+Again, the message telling that `<refmodel>$dis` consists of only `NA`s will not concern us here because we will only focus on response-scale post-processing.
 The message concerning `latent_ilink` can be safely ignored here (the internal default based on `family$linkinv` works correctly in this case).
 
 Again, we first inspect the `plot()` results to decide for a submodel size:
@@ -403,8 +403,7 @@ Again, we first inspect the `plot()` results to decide for a submodel size:
 ( gg_nebin <- plot(vs_nebin, stats = "gmpd", deltas = TRUE) )
 ```
 
-Although the submodels' GMPDs approach the reference model's already from a submodel size of 9 on (taking into account the uncertainty bars), the curve levels off only from a submodel size of 11 on.
-For a more informed decision, the GMPD could be taken into account again, but for the sake of brevity, we will simply decide for a submodel size of 11 here:
+As the curve levels off only from a submodel size of 11 on, we will decide for a submodel size of 11 (in other words, we act as if we preferred accuracy over sparsity in their trade-off mentioned in the [main vignette](https://mc-stan.org/projpred/articles/projpred.html)):
 ```{r size_man_nebin}
 size_decided_nebin <- 11
 ```
@@ -414,14 +413,7 @@ This is not the size that `suggest_size()` would suggest, but as mentioned in th
 suggest_size(vs_nebin, stat = "gmpd")
 ```
 
-Again, we call `summary.vsel()` to obtain the results from the `varsel()` run in tabular form:
-```{r smmry_vsel_nebin}
-smmry_nebin <- summary(vs_nebin, stats = "gmpd",
-                       type = c("mean", "lower", "upper", "diff"))
-print(smmry_nebin, digits = 2)
-```
-
-As we can see from the predictor ranking included in the plot and in the summary table, our selected `r if (!params$EVAL) character() else size_decided_nebin` predictor terms lack one truly relevant predictor (`x.9`) and include one noise term (`xn.29`).
+As we can see from the predictor ranking included in the plot, our selected `r if (!params$EVAL) character() else size_decided_nebin` predictor terms lack one truly relevant predictor (`x.9`) and include one noise term (`xn.29`).
 More explicitly, our selected predictor terms are:
 ```{r predictors_final_nebin}
 rk_nebin <- ranking(vs_nebin)
