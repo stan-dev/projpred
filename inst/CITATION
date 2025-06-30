@@ -81,7 +81,10 @@ bibentry(
     person("Änne", "Glass"),
     person("Aki", "Vehtari")
   ),
-  year = "2024",
+  year = "2025",
+  volume = 40,
+  number = 2,
+  pages = "701--721",
   journal = "Computational Statistics",
   volume = 40,
   pages = "701--712",

@@ -24,7 +24,7 @@ This vignette illustrates the main functionalities of the **projpred** package, 
 What is special about the projection predictive variable selection is that it not only performs a variable selection, but also allows for (approximately) valid post-selection inference.
 
 The projection predictive variable selection is based on the ideas of @goutis_model_1998 and @dupuis_variable_2003.
-The methods implemented in **projpred** are described in detail in @piironen_projective_2020, @catalina_projection_2022, @weber_projection_2024, and @catalina_latent_2021.
+The methods implemented in **projpred** are described in detail in @piironen_projective_2020, @catalina_projection_2022, @weber_projection_2025, and @catalina_latent_2021.
 A comparison to many other methods may also be found in @piironen_comparison_2017.
 For details on how to cite **projpred**, see the [projpred citation info](https://CRAN.R-project.org/package=projpred/citation.html) on CRAN^[The citation information can be accessed offline by typing `print(citation("projpred"), bibtex = TRUE)` within R.].
 
@@ -90,7 +90,7 @@ ncores <- parallel::detectCores(logical = FALSE)
 ncores <- min(ncores, 2L)
 ###
 options(mc.cores = ncores)
-set.seed(5078022)
+set.seed(50780)
 refm_fit <- stan_glm(
   y ~ X1 + X2 + X3 + X4 + X5 + X6 + X7 + X8 + X9 + X10 + X11 + X12 + X13 + X14 +
     X15 + X16 + X17 + X18 + X19 + X20,
@@ -103,8 +103,8 @@ refm_fit <- stan_glm(
   refresh = 0
 )
 ```
-Usually, we would now have to check the convergence diagnostics (see, e.g., `?posterior::diagnostics` and `?posterior::default_convergence_measures`; the tail-ESS warning already indicates a problem).
-However, due to the technical reasons for which we reduced `chains` and `iter`, we skip this step here (and hence ignore the tail-ESS warning).
+Usually, we would now have to check the convergence diagnostics (see, e.g., `?posterior::diagnostics` and `?posterior::default_convergence_measures`).
+However, due to the technical reasons for which we reduced `chains` and `iter`, we skip this step here.
 
 ## Variable selection {#variableselection}
 
@@ -131,9 +131,7 @@ Nonetheless, a preliminary and comparatively fast run of `varsel()` or `cv_varse
 ### Preliminary `cv_varsel()` run
 
 To illustrate a preliminary `cv_varsel()` run with `validate_search = FALSE`, we set `nterms_max` to the number of predictor terms in the full model, i.e., `nterms_max = 20`.
-To speed up the building of the vignette (this is not recommended in general), we choose the `"L1"` search `method`
-<!-- (in general, the default of forward search is more desirable, see `?varsel` or `?cv_varsel` for details) -->
-and set `refit_prj` to `FALSE`.
+To speed up the building of the vignette (this is not recommended in general), we choose the `"L1"` search `method` and set `refit_prj` to `FALSE`.
 ```{r cv_varsel_fast}
 # Preliminary cv_varsel() run:
 cvvs_fast <- cv_varsel(
@@ -149,19 +147,16 @@ cvvs_fast <- cv_varsel(
   ### 
 )
 ```
-In this case, we ignore the Pareto $\hat{k}$ warnings due to the reduced values for `chains` and `iter` in the reference model fit.
-<!-- We also ignore the warning that SIS is used instead of PSIS (this is due to `nclusters_pred = 20` which we used only to speed up the building of the vignette). -->
 
 To find a suitable value for `nterms_max` in subsequent `cv_varsel()` runs, we take a look at a plot of at least one predictive performance statistic in dependence of the submodel size.
 Here, we choose the mean log predictive density (MLPD; see the documentation for argument `stats` of `summary.vsel()` for details) as the only performance statistic.
-Since we will be using the following plot only to determine `nterms_max` for subsequent `cv_varsel()` runs, we can omit the predictor ranking from the plot by setting `ranking_nterms_max` to `NA` (which requires `size_position = "primary_x_bottom"`, which we set here via its global option, just like arguments `text_angle` and `show_cv_proportions` of `plot.vsel()`):
+Since we will be using the following plot only to determine `nterms_max` for subsequent `cv_varsel()` runs, we can omit the predictor ranking from the plot by setting `ranking_nterms_max` to `NA` (which requires `size_position = "primary_x_bottom"`, which we set here via its global option, just like argument `text_angle`):
 ```{r plot_vsel_fast}
-options(projpred.plot_vsel_text_angle = 0)
-options(projpred.plot_vsel_show_cv_proportions = TRUE)
 options(projpred.plot_vsel_size_position = "primary_x_bottom")
+options(projpred.plot_vsel_text_angle = 0)
 plot(cvvs_fast, stats = "mlpd", ranking_nterms_max = NA)
 ```
-This plot suggests that the submodel MLPD levels off for the first time from submodel size 9 to 10 and that it increases only slightly afterwards.
+This plot suggests that the submodel MLPD levels off for the first time from submodel size 8 to 9 and that it increases only slightly afterwards.
 However, we used L1 search with `refit_prj = FALSE`, which means that the projections employed for the predictive performance evaluation are L1-penalized, which is usually undesired [@piironen_projective_2020, section 4].
 Thus, to investigate the impact of `refit_prj = FALSE`, we re-run `cv_varsel()`, but this time with the default of `refit_prj = TRUE` and re-using the search results (as well as the CV-related arguments such as `validate_search`; see section "Usage" in `?cv_varsel.vsel`) from the former `cv_varsel()` call (this is done by applying `cv_varsel()` to `cvvs_fast` instead of `refm_obj` so that the `cv_varsel()` generic dispatches to the `cv_varsel.vsel()` method that was introduced in **projpred** 2.8.0^[Analogous functionality has been implemented for `varsel()`, namely in `varsel.vsel()`.]).
 To save time, we also set `nclusters_pred` to a comparatively low value of `20`:
@@ -177,10 +172,7 @@ cvvs_fast_refit <- cv_varsel(
   ### 
 )
 ```
-As explained above, we ignore the Pareto $\hat{k}$ warnings
-<!-- and also the warning that SIS is used instead of PSIS -->
-here.
-We also ignore the warning that SIS is used instead of PSIS (this is due to `nclusters_pred = 20` which we used only to speed up the building of the vignette).
+Here, we ignore the warning that SIS is used instead of PSIS (this is due to `nclusters_pred = 20` which we used only to speed up the building of the vignette).
 
 With the `refit_prj = TRUE` results, the predictive performance plot from above now looks as follows:
 ```{r plot_vsel_fast_refit}
@@ -194,7 +186,6 @@ Here, we skip this for the sake of brevity and instead head over to the final `c
 
 For this final `cv_varsel()` run (with `validate_search = TRUE`, as recommended), we use a $K$-fold CV with a small number of folds (`K = 2`) to make this vignette build faster.
 In practice, we recommend using either the default of `cv_method = "LOO"` (possibly subsampled, see argument `nloo` of `cv_varsel()`) or a larger value for `K` if this is possible in terms of computation time.
-<!-- For the sake of speed, we also set `nclusters_pred` to a comparatively low value of `20`. Furthermore, we illustrate -->
 Here, we also perform the $K$ reference model refits outside of `cv_varsel()`.
 Although not strictly necessary here, this is helpful in practice because often, `cv_varsel()` needs to be re-run multiple times in order to try out different argument settings.
 We also illustrate how **projpred**'s CV (i.e., the CV comprising search and performance evaluation, after refitting the reference model $K$ times) can be parallelized, even though this is of little use here (we have only `K = 2` folds and the fold-wise searches and performance evaluations are quite fast, so the parallelization overhead eats up any runtime improvements).
@@ -228,76 +219,88 @@ cvvs <- cv_varsel(
 doParallel::stopImplicitCluster()
 foreach::registerDoSEQ()
 ```
-<!-- Again, we ignore the tail-ESS warnings due to the reduced values for `chains` and `iter` in the reference model fit. -->
+
+#### Predictive performance plot from final `cv_varsel()` run {#plotfinal}
 
 We can now select a final submodel size by looking at a predictive performance plot similar to the one created for the preliminary `cv_varsel()` run above.
-By default, the performance statistics are plotted on their actual scale and the uncertainty bars match this scale, but argument `deltas` offers two more options:
+By default, the performance statistics are plotted on their actual scale and the uncertainty bars match this scale, but argument `deltas` of `plot.vsel()` offers two more options:
 
-*   With `deltas = TRUE`, the performance statistics are plotted as differences^[For the geometric mean predictive density (GMPD, see argument `stats` of `summary.vsel()` and `plot.vsel()`), `deltas = TRUE` plots the GMPD *ratio* (not difference) vs. the baseline model. Despite this special case, we will call `deltas = TRUE` the "difference scale" for simplicity.] from the baseline model^[For the definition of the baseline model, see argument `baseline` of `summary.vsel()` and `plot.vsel()`; in the most common cases, the default baseline model is the reference model.] and the uncertainty bars match this scale,
+*   With `deltas = TRUE`, the performance statistics are plotted on *difference scale*, i.e., as differences^[For the geometric mean predictive density (GMPD; see argument `stats` of `summary.vsel()` and `plot.vsel()`), `deltas = TRUE` plots the GMPD *ratio* (not difference) vs. the baseline model.] from the baseline model^[For the definition of the baseline model, see argument `baseline` of `summary.vsel()` and `plot.vsel()`; in the most common cases, the default baseline model is the reference model.] and the uncertainty bars match this scale,
 *   With `deltas = "mixed"`, the performance statistics (i.e., their point estimates) are plotted on the actual scale, but the uncertainty bars visualize the difference-scale uncertainty.
 
-Since the difference-scale uncertainty is usually of more interest than the actual-scale uncertainty (at least with regard to the decision for a final submodel size) and the actual-scale point estimates are often of more interest than the difference-scale point estimates, we plot with `deltas = "mixed"` here:
+Since the difference-scale uncertainty is usually more helpful than the actual-scale uncertainty (at least with regard to the decision for a final submodel size), we plot with `deltas = TRUE` here (`deltas = "mixed"` would be another good choice). We also set `show_cv_proportions = TRUE` (via its global option) for illustrative purposes, which becomes clearer in section ["Predictor ranking(s) from final `cv_varsel()` run and identification of the selected submodel"](#rksel):
 ```{r plot_vsel}
-plot(cvvs, stats = "mlpd", deltas = "mixed")
+options(projpred.plot_vsel_show_cv_proportions = TRUE)
+plot(cvvs, stats = "mlpd", deltas = TRUE)
 ```
 
-### Decision for final submodel size
+#### Decision for final submodel size {#decision-size}
 
 Based on that final predictive performance plot, we decide for a submodel size.
 Usually, the aim is to find the smallest submodel size where the predictive performance of the submodels levels off and is close enough to the reference model's predictive performance (the dashed red horizontal line).
-Sometimes (as here), the plot may be ambiguous because after reaching the reference model's performance, the submodels' performance may keep increasing (and hence become even better than the reference model's performance^[In general, only `cv_varsel()` with `validate_search = TRUE` (which we have here) allows to judge whether the submodels perform better than the reference model or not. Such a judgment is not possible with `varsel()` or `cv_varsel()` with `validate_search = FALSE` (in general).]).
+
+Sometimes, the plot may be ambiguous because after reaching the reference model's performance, the submodels' performance may keep increasing (and hence become even better than the reference model's performance^[In general, only `cv_varsel()` with `validate_search = TRUE` allows to judge whether the submodels perform better than the reference model or not. Such a judgment is generally not possible with `varsel()` or `cv_varsel()` with `validate_search = FALSE`.]).
 In that case, one has to find a suitable trade-off between predictive performance (accuracy) and model size (sparsity) in the context of subject-matter knowledge.
-Here, we assume that the focus of our predictive model is sparsity (not accuracy).
-Hence, based on the plot, we decide for a submodel size of 6 because this is the smallest size where the submodel MLPD is close enough to the reference model MLPD:
+
+Here, we decide for a submodel size of 7 because it seems to provide the best trade-off between sparsity and accuracy (size 7 is the smallest size where the submodel MLPD is close enough to the reference model MLPD).
 ```{r size_man}
-size_decided <- 6
+size_decided <- 7
 ```
-If the focus of our predictive model had been accuracy (not sparsity), size 7 (or even 8) would have been a natural choice because at size 7 (at the latest at size 8), the submodel MLPD can be considered to "level off".
-Further down, the predictor ranking and the (CV) ranking proportions that are shown in the plot (below the submodel sizes on the x-axis) are explained in detail---and also how they could have been incorporated into our decision for a submodel size.
+In section ["Predictor ranking(s) from final `cv_varsel()` run and identification of the selected submodel"](#rksel), the predictor ranking and the (CV) ranking proportions that are shown in the plot (below the submodel sizes on the x-axis) are explained in detail---and also how they could have been incorporated into our decision for a submodel size.
 
 The `suggest_size()` function offered by **projpred** may help in the decision for a submodel size, but this is a rather heuristic method and needs to be interpreted with caution (see `?suggest_size`):
 ```{r size_sgg}
 suggest_size(cvvs, stat = "mlpd")
 ```
-With this heuristic, we would get the same final submodel size (`6`) as by our manual (sparsity-based) decision.
+With this heuristic, we would get the same final submodel size (`7`) as with our manual decision.
 
-### `summary()` method for `vsel` objects
+#### Predictive performance table from final `cv_varsel()` run
 
-A tabular representation of the plot created by `plot.vsel()` can be achieved via `summary.vsel()`.
-For the output of `summary.vsel()`, there is a sophisticated `print()` method (`print.vselsummary()`) which is also called by the shortcut method `print.vsel()`^[`print.vsel()` is the method that is called when simply printing an object resulting from `varsel()` or `cv_varsel()`.].
-Specifically, to create the summary table matching the predictive performance plot above as closely as possible (and to also adjust the minimum number of printed significant digits), we may call `summary.vsel()` and `print.vselsummary()` as follows:
+A tabular representation of the plot created by `plot.vsel()` can be achieved via `summary.vsel()` or `performances()`.
+In contrast to `performances()`, the output of `summary.vsel()` contains more information than just the predictive performance results, which is also why there is a sophisticated `print()` method for objects of class `vselsummary` (the output of `summary.vsel()`). This method `print.vselsummary()` is also called by the shortcut method `print.vsel()` which can be applied to an object resulting from `varsel()` or `cv_varsel()`.
+
+Specifically, to create the table matching the predictive performance plot above as closely as possible (and to also adjust the minimum number of printed significant digits), we may call `summary.vsel()` and `print.vselsummary()` as follows:
 ```{r smmry_vsel}
 smmry <- summary(cvvs,
                  stats = "mlpd",
-                 type = c("mean", "diff.lower", "diff.upper"),
-                 deltas = FALSE)
+                 type = c("mean", "lower", "upper"),
+                 deltas = TRUE)
 print(smmry, digits = 1)
 ```
 
-### Predictor ranking(s) and identification of the selected submodel
+The generic function `performances()` (with main method `performances.vselsummary()` and the shortcut method `performances.vsel()`) essentially extracts the predictive performance results from the output of `summary.vsel()`:
+```{r perf_smmry}
+perf <- performances(smmry)
+str(perf)
+```
+
+#### Predictor ranking(s) from final `cv_varsel()` run and identification of the selected submodel {#rksel}
 
 As indicated by its column name, the predictor ranking from column `ranking_fulldata` of the `summary.vsel()` output is based on the full-data search.
+This full-data predictor ranking is also what is shown in the second line of the x-axis tick labels of the predictive performance plot from section ["Predictive performance plot from final `cv_varsel()` run"](#plotfinal).
+
 In case of `cv_varsel()` with `validate_search = TRUE`, there is not only the full-data search, but also fold-wise searches, implying that there are also fold-wise predictor rankings.
 All of these predictor rankings (the full-data one and---if available---the fold-wise ones) can be retrieved via `ranking()`:
 ```{r ranking}
 rk <- ranking(cvvs)
 ```
 
-In addition to inspecting the full-data predictor ranking, it usually makes sense to investigate the ranking proportions derived from the fold-wise predictor rankings (only available in case of `cv_varsel()` with `validate_search = TRUE`, which we have here) in order to get a sense for the variability in the ranking of the predictors.
+In addition to inspecting the full-data predictor ranking, it often makes sense to investigate the ranking proportions derived from the fold-wise predictor rankings (only available in case of `cv_varsel()` with `validate_search = TRUE`, which we have here) in order to get a sense for the variability in the ranking of the predictors.
 For a given predictor $x$ and a given submodel size $j$, the ranking proportion is the proportion of CV folds which have predictor $x$ at position $j$ of their predictor ranking.
 To compute these ranking proportions, we use `cv_proportions()`:
 ```{r cv_proportions}
 ( pr_rk <- cv_proportions(rk) )
 ```
+The main diagonal of this matrix is contained in column `cv_proportions_diag` of the `summary.vsel()` output and is also shown in the third line of the x-axis tick labels of the predictive performance plot from section ["Predictive performance plot from final `cv_varsel()` run"](#plotfinal) (due to `show_cv_proportions = TRUE` set via its global option).
+
 Here, the ranking proportions are of little use as we have used `K = 2` (in the final `cv_varsel()` call above) for the sake of speed.
-Nevertheless, we can see that the two CV folds agree on the most relevant predictor term (`X1`).
-Since the column names of the matrix returned by `cv_proportions()` follow the full-data predictor ranking, we can infer that `X1` is also the most relevant predictor term in the full-data predictor ranking.
+Nevertheless, we can see that the two CV folds agree on the most relevant predictor term (`X1`) and the second most relevant predictor term (`X14`).
+Since the column names of the matrix returned by `cv_proportions()` follow the full-data predictor ranking, we can infer that `X1` and `X14` are also the most relevant predictor terms (in this order) in the full-data predictor ranking.
 To see this more explicitly, we can access element `fulldata` of the `ranking()` output:
 ```{r ranking_fulldata}
 rk[["fulldata"]]
 ```
 This is the same as column `ranking_fulldata` in the `summary.vsel()` output above (apart from the intercept).
-(As also stated by the message thrown by `print.vselsummary()`, column `cv_proportions_diag` of the `summary.vsel()` output contains the main diagonal of the matrix that we stored manually as `pr_rk`.)
 
 Note that we have cut off the search at `nterms_max = 9` (which is smaller than the number of predictor terms in the full model, 20 here), so the ranking proportions in the `pr_rk` matrix do not need to sum to 100&nbsp;% (neither column-wise nor row-wise).
 
@@ -307,7 +310,7 @@ plot(pr_rk)
 ```
 Apart from visualizing the variability in the ranking of the predictors (here, this is of little use because of `K = 2`), this plot will be helpful later.
 
-To retrieve the predictor terms of the final submodel (except for the intercept which is always included in the submodels), we combine the chosen submodel size of 6 with the full-data predictor ranking:
+To retrieve the predictor terms of the final submodel (except for the intercept which is always included in the submodels), we combine the chosen submodel size of 7 with the full-data predictor ranking:
 ```{r predictors_final}
 ( predictors_final <- head(rk[["fulldata"]], size_decided) )
 ```
@@ -315,11 +318,11 @@ At this place, it is again helpful to take the ranking proportions into account,
 ```{r plot_cv_proportions_cumul}
 plot(cv_proportions(rk, cumulate = TRUE))
 ```
-This plot shows that the two fold-wise searches (as well as the full-data search, whose predictor ranking determines the order of the predictors on the y-axis) agree on the *set* of the 6 most relevant predictors: When looking at `<=6` on the x-axis, all tiles above and including the 6^th^ main diagonal element are at 100&nbsp;%.
-Similarly, the two CV folds agree on the *set* of the 7 most relevant predictors (and also on the set of the most relevant predictor, which is a singleton).
+This plot shows that the two fold-wise searches (as well as the full-data search, whose predictor ranking determines the order of the predictors on the y-axis) agree on the *set* of the 7 most relevant predictors: When looking at `<=7` on the x-axis, all tiles above and including the 7^th^ main diagonal element are at 100&nbsp;%.
+(Similarly, the two CV folds also agree on the set of the most relevant predictor---which is a singleton---and the set of the two most relevant predictors, but we already observed this above.)
 
-Although not demonstrated here, the cumulated ranking proportions could also have guided the decision for a submodel size (if we had not been willing to follow a strict rule based on accuracy or sparsity):
-From their plot, we can see that size 9 might have been an unfortunate choice because `X10` (which---by cutting off the full-data predictor ranking at size 9---would then have been selected as the 9^th^ predictor in the final submodel) is not included among the first 9 terms by any CV fold.
+Although not demonstrated here, the cumulated ranking proportions also could have guided the decision for a submodel size:
+From the plot of the cumulated ranking proportions, we can see that size 8 might have been an unfortunate choice because `X11` (which---by cutting off the full-data predictor ranking at size 8---would then have been selected as the 8^th^ predictor in the final submodel) is not included among the first 8 terms by any CV fold.
 However, since `K = 2` is too small for reliable statements regarding the variability of the predictor ranking, we did not take the cumulated ranking proportions into account when we made our decision for a submodel size above.
 
 In a real-world application, we might also be able to incorporate the full-data predictor ranking into our decision for a submodel size (usually, this requires to also take into account the variability of the predictor ranking, as reflected by the---possibly cumulated---ranking proportions).
@@ -379,7 +382,7 @@ prj_smmry <- summarize_draws(
   prj_drws,
   "median", "mad", function(x) quantile(x, probs = c(0.025, 0.975))
 )
-# Coerce to a `data.frame` because pkgdown versions > 1.6.1 don't print the
+# Coerce to a `data.frame` because some pkgdown versions don't print the
 # tibble correctly:
 prj_smmry <- as.data.frame(prj_smmry)
 print(prj_smmry, digits = 1)
@@ -425,7 +428,7 @@ Depending on argument `integrated`, these linear predictors can be averaged acro
 For instance, the following computes the expected values of the new observations' predictive distributions (beware that the following code refers to the Gaussian family with the identity link function; for other families---which usually come in combination with a different link function---one would typically have to use `transform = TRUE` in order to achieve such expected values):
 ```{r proj_linpred}
 prj_linpred <- proj_linpred(prj, newdata = dat_gauss_new, integrated = TRUE)
-cbind(dat_gauss_new, linpred = as.vector(prj_linpred$pred))
+cbind(dat_gauss_new, linpred = as.vector(prj_linpred[["pred"]]))
 ```
 If `dat_gauss_new` also contained response values (i.e., `y` values in this example), then `proj_linpred()` would also evaluate the log predictive density at these (conditional on each of the projected parameter draws if `integrated = FALSE` and integrated over the projected parameter draws---before taking the logarithm---if `integrated = TRUE`).
 
@@ -450,7 +453,7 @@ In the following and throughout **projpred**'s documentation, the term "traditio
 
 Apart from the `gaussian()` response family used in this vignette, **projpred**'s traditional projection also supports the `binomial()`^[Via `brms::get_refmodel.brmsfit()`, the `brms::bernoulli()` family is supported as well.] and the `poisson()` family.
 
-The families supported by **projpred**'s augmented-data projection [@weber_projection_2024] are `binomial()`^[Currently, the augmented-data support for the `binomial()` family does not include binomial distributions with more than one trial.
+The families supported by **projpred**'s augmented-data projection [@weber_projection_2025] are `binomial()`^[Currently, the augmented-data support for the `binomial()` family does not include binomial distributions with more than one trial.
 In such a case, a workaround is to de-aggregate the Bernoulli trials which belong to the same (aggregated) observation, i.e., to use a "long" dataset.] ^[Like the traditional projection, the augmented-data projection also supports the `brms::bernoulli()` family via `brms::get_refmodel.brmsfit()`.], `brms::cumulative()`, `rstanarm::stan_polr()` fits, and `brms::categorical()`^[For the augmented-data projection based on a "typical" **brms** reference model object, **brms** version 2.17.0 or later is needed.] ^[More **brms** families might be supported in the future.].
 See `?extend_family` (which is called by `init_refmodel()`) for an explanation how to apply the augmented-data projection to "custom" reference model objects.
 For "typical" reference model objects (i.e., those created by `get_refmodel.stanreg()` or `brms::get_refmodel.brmsfit()`), the augmented-data projection is applied automatically if the family is supported by the augmented-data projection and neither `binomial()` nor `brms::bernoulli()`.
@@ -566,25 +569,25 @@ Some speed-up possibilities are:
 1.  Using `cv_varsel()` with subsampled PSIS-LOO CV, see argument `nloo` of `cv_varsel()`.
 
 1.  Using `cv_varsel()` with $K$-fold CV instead of PSIS-LOO CV.
-    Whether this provides a speed improvement mainly depends on the number of observations, argument `nloo` of `cv_varsel()`, and the complexity of the reference model.
+    Whether this provides a speed improvement mainly depends on the number of observations, whether PSIS-LOO CV could be subsampled (and---if yes---how small argument `nloo` of `cv_varsel()` could be set while still obtaining reliable results), and the complexity of the reference model.
     Note that PSIS-LOO CV is often more accurate than $K$-fold CV if argument `K` is (much) smaller than argument `nloo` of `cv_varsel()`.
 
 1.  Using a "custom" reference model object with a dimension reduction technique for the predictor data (e.g., by computing principal components from the original predictors, using these principal components as predictors when fitting the reference model, and then performing the variable selection in terms of the *original* predictor terms).
     Examples are given in @piironen_projective_2020 and @pavone_using_2022.
+    A short example for a custom reference model object is also given in section "Examples" of the `?init_refmodel` help.
     This approach makes sense if there is a large number of predictor variables, in which case this aims at improving the runtime required for fitting the reference model and hence improving the runtime of $K$-fold CV.
 
 1.  Using `varsel()` with its argument `d_test` for evaluating predictive performance on a hold-out dataset instead of doing this with `cv_varsel()`'s CV approach.
     Typically, the hold-out approach requires a large amount of data.
 
 1.  Reducing `nterms_max` in `varsel()` or `cv_varsel()`.
-    The resulting predictive performance plot(s) should be inspected to check that the search is not terminated too early (i.e., before the submodel performance levels off), which would indicate that `nterms_max` has been reduced too much.
+    The resulting predictive performance plot(s) should be inspected to ensure that the search is not terminated too early (i.e., before the submodel performance levels off), which would indicate that `nterms_max` has been reduced too much.
 
 1.  Reducing argument `nclusters` (of `varsel()` or `cv_varsel()`) below `20` and/or setting `nclusters_pred` to some non-`NULL` (and smaller than `400`, the default for `ndraws_pred`) value.
     If setting `nclusters_pred` as low as `nclusters` (and using forward search), `refit_prj` can instead be set to `FALSE`, see below.
 
 1.  Using L1 search (see argument `method` of `varsel()` or `cv_varsel()`) instead of forward search.
     Note that L1 search implies `nclusters = 1` and is not always supported.
-    <!-- Caution is also required when using L1 search in combination with `refit_prj = FALSE` because in that case, the projections used for the predictive performance evaluation are L1-penalized, which is usually undesired [@piironen_projective_2020, section 4]. -->
     In general, forward search is more accurate than L1 search and hence more desirable (see section "Details" in `?varsel` or `?cv_varsel` for a more detailed comparison of the two).
     The issue demonstrated in the Poisson example from the latent-projection vignette is related to this.
 
@@ -599,7 +602,7 @@ Some speed-up possibilities are:
     This is helpful if the performance evaluation part is run multiple times based on the same search results (e.g., when only arguments `ndraws_pred` or `nclusters_pred` of `varsel()` or `cv_varsel()` are changed).
     In the example above, this was illustrated when `cv_varsel()` was applied to `cvvs_fast` instead of `refm_obj` to yield `cvvs_fast_refit`.
     In that example, search and performance evaluation were effectively run *separately* by the `cv_varsel()` calls yielding `cvvs_fast` and `cvvs_fast_refit`, respectively.
-    This is because `cv_varsel()` with `refit_prj = FALSE` (used for `cvvs_fast`) has almost only the computational cost of the search (the performance evaluation with `refit_prj = FALSE` has almost no computational cost) and `cv_varsel.vsel()` (used for `cvvs_fast_refit`) has almost only the computational cost of the performance evaluation (the search in `cv_varsel.vsel()` has no computational cost at all).
+    This is because `cv_varsel()` with `refit_prj = FALSE` (used for `cvvs_fast`) has almost only the computational cost of the search (the performance evaluation with `refit_prj = FALSE` has almost no computational cost) and `cv_varsel.vsel()` (used for `cvvs_fast_refit`) has almost only the computational cost of the performance evaluation (the search in `cv_varsel.vsel()` has no computational cost at all because the previous search results from the `vsel` object are re-used).
 
 1.  Using `run_cvfun()` in case of repeated $K$-fold CV with the same $K$ reference model refits.
     The output of `run_cvfun()` is typically used as input for argument `cvfits` of `cv_varsel.refmodel()` (so in order to have a speed improvement, the output of `run_cvfun()` needs to be assigned to an object which is then re-used in multiple `cv_varsel()` calls).
