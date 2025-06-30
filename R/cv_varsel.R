@@ -131,6 +131,11 @@
 #'
 #' @references
 #'
+#' Juho Piironen, Markus Paasiniemi, and Aki Vehtari
+#' (2020). Projective inference in high-dimensional problems:
+#' prediction and feature selection. Electronic Journal of Statistics,
+#' 14(1):2155-2197.
+#'
 #' Måns Magnusson, Michael Riis Andersen, Johan Jonasson, Aki Vehtari
 #' (2020). Leave-one-out cross-validation for Bayesian model
 #' comparison in large data. Proceedings of the 23rd International
@@ -144,6 +149,10 @@
 #' Aki Vehtari, Daniel Simpson, Andrew Gelman, Yuling Yao, and Jonah
 #' Gabry (2024). Pareto smoothed importance sampling. Journal of
 #' Machine Learning Research, 25(72):1-58.
+#'
+#' Yann McLatchie, Sölvi Rögnvaldsson, Frank Weber, and Aki Vehtari
+#' (2025). Advances in projection predictive inference. Statistical
+#' Science, 40(1):128–147.
 #'
 #' @seealso [varsel()]
 #'
