@@ -86,8 +86,6 @@ bibentry(
   number = 2,
   pages = "701--721",
   journal = "Computational Statistics",
-  volume = 40,
-  pages = "701--712",
   doi = "10.1007/s00180-024-01506-0",
   header = "To cite the 'projpred' augmented-data projection paper:",
   encoding = "UTF-8"
@@ -110,7 +108,7 @@ bibentry(
 
 bibentry(
   bibtype = "Article",
-  title = "Advances in projection predictive inference",
+  title = "Advances in Projection Predictive Inference",
   author = c(
     person("Yann", "McLatchie"),
     person("Sölvi", "Rögnvaldsson"),
@@ -122,27 +120,32 @@ bibentry(
   volume = 40,
   number = 1,
   pages = "128--147",
-  doi = "doi:10.1214/24-STS949",
+  doi = "10.1214/24-STS949",
   header = "To cite the 'projpred' workflow paper:",
   encoding = "UTF-8"
 )
 
 bibentry(
   bibtype = "InProceedings",
-  title = "Leave-one-out cross-validation for {Bayesian} model comparison in large data",
+  title = "Leave-One-Out Cross-Validation for {{Bayesian}} Model Comparison in Large Data",
   author = c(
     person("Måns", "Magnusson"),
     person("Michael Riis", "Andersen"),
     person("Johan", "Jonasson"),
     person("Aki", "Vehtari")
   ),
+  editor = c(
+    person("Silvia", "Chiappa"),
+    person("Roberto", "Calandra")
+  ),
   year = "2020",
+  month = "26--28 Aug",
   booktitle = "Proceedings of {{The}} 23rd {{International Conference}} on {{Artificial Intelligence}} and {{Statistics}}",
   series = "Proceedings of {{Machine Learning Research}}",
   volume = "108",
   pages = "341--351",
   publisher = "{PMLR}",
-  url = "http://proceedings.mlr.press/v108/magnusson20a.html"
+  url = "https://proceedings.mlr.press/v108/magnusson20a.html"
   header = "To cite the subsampling LOO paper:",
   encoding = "UTF-8"
 )
