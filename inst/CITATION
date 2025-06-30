@@ -105,3 +105,47 @@ bibentry(
   header = "To cite the 'projpred' latent projection paper:",
   encoding = "UTF-8"
 )
+
+bibentry(
+  bibtype = "Article",
+  title = "Advances in Projection Predictive Inference",
+  author = c(
+    person("Yann", "McLatchie"),
+    person("Sölvi", "Rögnvaldsson"),
+    person("Frank", "Weber"),
+    person("Aki", "Vehtari")
+  ),
+  year = "2025",
+  journal = "Statistical Science",
+  volume = 40,
+  number = 1,
+  pages = "128--147",
+  doi = "10.1214/24-STS949",
+  header = "To cite the 'projpred' workflow paper:",
+  encoding = "UTF-8"
+)
+
+bibentry(
+  bibtype = "InProceedings",
+  title = "Leave-One-Out Cross-Validation for {{Bayesian}} Model Comparison in Large Data",
+  booktitle = "Proceedings of {{The}} 23rd {{International Conference}} on {{Artificial Intelligence}} and {{Statistics}}",
+  author = c(
+    person("Måns", "Magnusson"),
+    person("Michael Riis", "Andersen"),
+    person("Johan", "Jonasson"),
+    person("Aki", "Vehtari")
+  ),
+  editor = c(
+    person("Silvia", "Chiappa"),
+    person("Roberto", "Calandra")
+  ),
+  year = "2020",
+  month = "26--28 Aug",
+  series = "Proceedings of {{Machine Learning Research}}",
+  volume = "108",
+  pages = "341--351",
+  publisher = "{PMLR}",
+  url = "https://proceedings.mlr.press/v108/magnusson20a.html"
+  header = "To cite the subsampling LOO paper:",
+  encoding = "UTF-8"
+)
