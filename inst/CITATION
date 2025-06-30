@@ -128,6 +128,7 @@ bibentry(
 bibentry(
   bibtype = "InProceedings",
   title = "Leave-One-Out Cross-Validation for {{Bayesian}} Model Comparison in Large Data",
+  booktitle = "Proceedings of {{The}} 23rd {{International Conference}} on {{Artificial Intelligence}} and {{Statistics}}",
   author = c(
     person("Måns", "Magnusson"),
     person("Michael Riis", "Andersen"),
@@ -140,7 +141,6 @@ bibentry(
   ),
   year = "2020",
   month = "26--28 Aug",
-  booktitle = "Proceedings of {{The}} 23rd {{International Conference}} on {{Artificial Intelligence}} and {{Statistics}}",
   series = "Proceedings of {{Machine Learning Research}}",
   volume = "108",
   pages = "341--351",
