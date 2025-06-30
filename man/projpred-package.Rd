@@ -234,13 +234,14 @@ Useful links:
 
 }
 \author{
-\strong{Maintainer}: Frank Weber \email{fweber144@protonmail.com}
+\strong{Maintainer}: Osvaldo Martin \email{aloctavodia@gmail.com}
 
 Authors:
 \itemize{
   \item Juho Piironen \email{juho.t.piironen@gmail.com}
   \item Markus Paasiniemi
   \item Alejandro Catalina \email{alecatfel@gmail.com}
+  \item Frank Weber
   \item Aki Vehtari
 }
 
