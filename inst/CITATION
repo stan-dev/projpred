@@ -145,7 +145,7 @@ bibentry(
   volume = "108",
   pages = "341--351",
   publisher = "{PMLR}",
-  url = "https://proceedings.mlr.press/v108/magnusson20a.html"
+  url = "https://proceedings.mlr.press/v108/magnusson20a.html",
   header = "To cite the subsampling LOO paper:",
   encoding = "UTF-8"
 )
