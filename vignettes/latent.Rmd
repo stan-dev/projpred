@@ -21,12 +21,12 @@ vignette: >
 ## Introduction
 
 This vignette shows how to use the latent projection predictive feature selection from @catalina_latent_2021 in **projpred**.
-We recommend to read the main vignette first, as the latent-projection vignette presented here will skip some of the details explained in the main vignette.
+We recommend to read the [main vignette](https://mc-stan.org/projpred/articles/projpred.html) first, as the latent-projection vignette presented here will skip some of the details explained in the main vignette.
 
 ### General idea
 
-The response families used in GLMs [@mccullagh_generalized_1989, chapter 2] (and in GLMMs, GAMs, and GAMMs) may be termed *exponential dispersion (ED)* families [@jorgensen_exponential_1987]^[@jorgensen_exponential_1987 himself only uses the term "exponential dispersion model", but the discussion for that article mentions the term "ED [i.e., exponential dispersion] family". @jorgensen_exponential_1987 also introduces the class of *discrete exponential dispersion* families (here abbreviated by "DED families"), see section ["Example: Negative binomial distribution"](#negbinex).].
-For a response family that is not an ED family, the Kullback-Leibler (KL) divergence minimization problem [see @piironen_projective_2020] is often not easy to solve analytically^[The set of families supported by **projpred**'s traditional---i.e., neither augmented-data nor latent---projection is only a subset of the set of all ED families (**projpred**'s traditional projection supports the `gaussian()` family, the `binomial()` family, the `brms::bernoulli()` family via `brms::get_refmodel.brmsfit()`, and the `poisson()` family). Thus, we cannot use the term "ED families" equivalently to the term "families supported by **projpred**'s traditional projection", but the concept of ED families is important here nonetheless.].
+The response families used in GLMs [@mccullagh_generalized_1989, chapter 2], GLMMs, GAMs, and GAMMs (in particular, the `gaussian()`, the `binomial()`, and the `poisson()` family which are supported by **projpred**'s traditional projection) may be termed *exponential dispersion (ED)* families [@jorgensen_exponential_1987]^[@jorgensen_exponential_1987 himself only uses the term "exponential dispersion model", but the discussion for that article mentions the term "ED [i.e., exponential dispersion] family". @jorgensen_exponential_1987 also introduces the class of *discrete exponential dispersion* families (here abbreviated by "DED families"), see section ["Example: Negative binomial distribution"](#negbinex).].
+For a response family that is not an ED family, the Kullback-Leibler (KL) divergence minimization problem [see @piironen_projective_2020] is often not easy to solve analytically.
 In order to bypass this issue, the latent projection [@catalina_latent_2021] solves the KL minimization problem in the predictive space of the latent predictors^[The latent predictors are also known as the linear predictors, but "latent" is a more general term than "linear".] instead of in the predictive space of the original response values.
 
 To this end, the latent predictor is assumed to have a Gaussian distribution, since it (i) constitutes a combination of predictor data and regression parameters which is often linear (in the parameters, but---less---often also in the predictor data) or at least additive (across the predictor terms) and (ii) has the complete real line as support.
@@ -40,20 +40,20 @@ As illustrated by the Poisson example below, the latent projection can not only 
 
 ### Implementation {#impl}
 
-To use the latent projection in **projpred**, the new argument `latent` of `extend_family()` needs to be set to `TRUE`.
+To use the latent projection in **projpred**, argument `latent` of `extend_family()` needs to be set to `TRUE`.
 Since `extend_family()` is called by `init_refmodel()` which in turn is called by `get_refmodel()` (more precisely, by the `get_refmodel()` methods) which in turn is called at the beginning of the top-level functions `project()`, `varsel()`, and `cv_varsel()`, it is possible to pass `latent = TRUE` from such a top-level function down to `extend_family()` via the ellipsis (`...`).
-However, for the latent projection, we recommend to define the reference model object of class `refmodel` explicitly (as illustrated in the examples below) to avoid repetitions^[If the `refmodel`-class object is not defined explicitly but implicitly by a call to a top-level function such as `project()`, `varsel()`, or `cv_varsel()`, then `latent = TRUE` and all other arguments related to the latent projection need to be set in *each* call to a top-level function.].
+However, for the latent projection, we recommend to define the reference model object of class `refmodel` explicitly (as illustrated in the examples below) to avoid repetitive and inefficient code^[If the `refmodel`-class object is not defined explicitly but implicitly by a call to a top-level function such as `project()`, `varsel()`, or `cv_varsel()`, then `latent = TRUE` and all other arguments related to the latent projection need to be set in *each* call to a top-level function.].
 
 After performing the projection (either as a stand-alone feature via `project()` or embedded in a variable selection via `varsel()` or `cv_varsel()`), the post-processing (e.g., the calculation of the performance statistics in `summary.vsel()`) can be performed on the original response scale.
-For this, `extend_family()` has gained several new arguments accepting R functions responsible for the inverse-link transformation from latent scale to response scale (`latent_ilink`), for the calculation of log-likelihood values on response scale (`latent_ll_oscale`), and for drawing from the (posterior-projection) predictive distribution on response scale (`latent_ppd_oscale`).
-For some families, these arguments have internal defaults implemented natively in **projpred**.
+For this, there are three arguments of `extend_family()` which accept R functions responsible for the inverse-link transformation from latent scale to response scale (`latent_ilink`), for the calculation of log-likelihood values on response scale (`latent_ll_oscale`), and for drawing from the (posterior-projection) predictive distribution on response scale (`latent_ppd_oscale`).
+For some families, these three arguments have internal defaults implemented natively in **projpred**.
 These families are listed in the main vignette (section ["Supported types of models"](https://mc-stan.org/projpred/articles/projpred.html#modtypes)).
-For all other families, **projpred** either tries to infer a reasonable function internally (in case of `latent_ilink`) or uses a dummy function returning only `NA`s (in case of `latent_ll_oscale` and `latent_ppd_oscale`), unless the user supplies custom functions to these arguments.
+For all other families, **projpred** either tries to infer a reasonable function internally (in case of `latent_ilink`) or uses a dummy function returning only `NA`s (in case of `latent_ll_oscale` and `latent_ppd_oscale`), unless the user supplies custom functions.
 When creating a reference model object for a family of the latter category (i.e., lacking full response-scale support by default), **projpred** will throw messages stating whether (and which) features will be unavailable unless at least some of these arguments are provided by the user.
 Again, the ellipsis (`...`) can be used to pass these arguments from a top-level function such as `cv_varsel()` down to `extend_family()`.
-In the post-processing functions, response-scale analyses can usually be deactivated by setting the new argument `resp_oscale` to `FALSE`, with the exception of `predict.refmodel()` and `proj_linpred()` where the existing arguments `type` and `transform` serve this purpose (see the documentation).
+In the post-processing functions, response-scale analyses can usually be deactivated by setting argument `resp_oscale` to `FALSE`, with the exception of `predict.refmodel()` and `proj_linpred()` where arguments `type` and `transform` serve this purpose (see the documentation).
 
-Apart from the arguments mentioned above, `extend_family()` has also gained a new argument `latent_y_unqs` whose purpose is described in the documentation.
+Apart from the arguments mentioned above, `extend_family()` also features the latent-projection argument `latent_y_unqs` whose purpose is described in the documentation.
 
 While the latent projection is an approximate solution to the KL divergence minimization problem in the original response space^[More precisely, the latent projection *replaces* the KL divergence minimization problem in the original response space by a KL divergence minimization problem in the latent space and solves the latter.], the augmented-data projection [@weber_projection_2025] gives the exact^[Here, "exact" means apart from approximations and simplifications which are also undertaken for the traditional projection.] solution for some non-ED families, namely those where the response distribution has finite support.
 However, the augmented-data projection comes with a higher runtime than the latent projection.
@@ -61,7 +61,7 @@ The families supported by **projpred**'s augmented-data projection are also list
 
 ## Example: Poisson distribution
 
-In this example, we will illustrate that in case of a family supported by **projpred**'s traditional projection (here the Poisson distribution), the latent projection can improve runtime and results of the variable selection compared to **projpred**'s traditional projection, at least if the L1 search is used (see argument `method` of `varsel()` and `cv_varsel()`).
+In this example, we will illustrate that in case of a family supported by **projpred**'s traditional projection (here the `poisson()` family), the latent projection can improve runtime and results of the variable selection compared to **projpred**'s traditional projection, at least if the L1 search is used (see argument `method` of `varsel()` and `cv_varsel()`).
 
 ### Data
 
@@ -150,6 +150,7 @@ refm_fit_poiss <- stan_glm(
   refresh = 0
 )
 ```
+Due to the technical reasons for which we reduced `chains` and `iter` in this vignette, we ignore the bulk-ESS warning here.
 
 ### Variable selection using the latent projection
 
@@ -195,48 +196,37 @@ print(time_lat)
 ```
 The message telling that `<refmodel>$dis` consists of only `NA`s will not concern us here because we will only be focusing on response-scale post-processing.
 
-In order to decide for a submodel size, we first inspect the `plot()` results:
+In order to decide for a submodel size, we first inspect the `plot()` results.
+In contrast to the main vignette where we used the mean log predictive density (MLPD) as predictive performance statistic for a `gaussian()` family reference model (and `gaussian()` submodels), we have a discrete family (`poisson()`) here, so it makes sense to exponentiate the MLPD to obtain the geometric mean predictive density (GMPD; in case of a discrete response, the predictive density values are actually predictive *probabilities* and hence the GMPD is bounded by 0 and 1).
+As in the main vignette, we plot with `deltas = TRUE` (in case of the GMPD, this means that the *ratio* of the submodel GMPD vs. the reference model GMPD is shown).
+Via global option `projpred.plot_vsel_size_position`, we set argument `size_position` of `plot.vsel()` to `"secondary_x"` to make the submodel sizes readable in all of the plots in this vignette.
 ```{r plot_vsel_lat}
-( gg_lat <- plot(vs_lat, stats = "mlpd", deltas = "mixed") )
+options(projpred.plot_vsel_size_position = "secondary_x")
+( gg_lat <- plot(vs_lat, stats = "gmpd", deltas = TRUE) )
 ```
 
-Although the submodels' MLPDs seem to be very close to the reference model's MLPD from a submodel size of 6 on, a zoomed plot reveals that there is still some discrepancy at sizes 6 to 11 and that size 12 would be a better choice (further down below in the `summary()` output, we will also see that on absolute scale, the discrepancy at sizes 6 to 11 is not negligible):
-```{r plot_vsel_lat_zoom}
-gg_lat + ggplot2::coord_cartesian(ylim = c(-10, 0.05))
-```
-
-Thus, we decide for a submodel size of 12:
+Based on this plot, we decide for a submodel size of 11:
 ```{r size_man_lat}
-size_decided_lat <- 12
+size_decided_lat <- 11
 ```
 
 This is also the size that `suggest_size()` would suggest:
 ```{r size_sgg_lat}
-suggest_size(vs_lat, stat = "mlpd")
+suggest_size(vs_lat, stat = "gmpd")
 ```
 
-To obtain the results from the `varsel()` run in tabular form, we call `summary.vsel()`:
-```{r smmry_vsel_lat}
-smmry_lat <- summary(vs_lat, stats = "mlpd",
-                     type = c("mean", "lower", "upper", "diff"))
-print(smmry_lat, digits = 2)
-```
-On absolute scale (column `mlpd`), we see that submodel size `r if (!params$EVAL) character() else size_decided_lat - 1` leads to an MLPD of ``r if (!params$EVAL) character() else round(smmry_lat$perf_sub[["mlpd"]][smmry_lat$perf_sub$size == size_decided_lat - 1], 1)``, i.e., a geometric mean predictive density (GMPD; due to the discrete response family, the "density" values are probabilities here, so we will report the GMPD as percentage) of ``r if (!params$EVAL) character() else paste0("exp(", round(smmry_lat$perf_sub[["mlpd"]][smmry_lat$perf_sub$size == size_decided_lat - 1], 1), ")")`` which is ca. `r if (!params$EVAL) character() else paste(100 * round(exp(round(smmry_lat$perf_sub[["mlpd"]][smmry_lat$perf_sub$size == size_decided_lat - 1], 1)), 6), "%")` whereas size `r if (!params$EVAL) character() else size_decided_lat` leads to a GMPD of ca. `r if (!params$EVAL) character() else paste(100 * round(exp(round(smmry_lat$perf_sub[["mlpd"]][smmry_lat$perf_sub$size == size_decided_lat], 1)), 4), "%")`.
-This is a considerable improvement from size `r if (!params$EVAL) character() else size_decided_lat - 1` to size `r if (!params$EVAL) character() else size_decided_lat`, so another justification for size `r if (!params$EVAL) character() else size_decided_lat`.
-(Size `r if (!params$EVAL) character() else size_decided_lat + 1` would have resulted in about the same GMPD as size `r if (!params$EVAL) character() else size_decided_lat`.)
-
-In the predictor ranking up to the selected size of `r if (!params$EVAL) character() else size_decided_lat`, we can see that apart from the noise term `xn.6`, **projpred** has correctly selected the truly relevant predictors first and only then the noise predictors.
-We can see this more clearly using the following code:
+In the predictor ranking up to the selected size of `r if (!params$EVAL) character() else size_decided_lat`, we can see that **projpred** has correctly selected the truly relevant predictors first and only then the noise predictors:
 ```{r predictors_final_lat}
 rk_lat <- ranking(vs_lat)
 ( predictors_final_lat <- head(rk_lat[["fulldata"]], size_decided_lat) )
 ```
 
-We will skip post-selection inference here (see the main vignette for a demonstration of post-selection inference), but note that `proj_predict()` has gained a new argument `resp_oscale` and that analogous response-scale functionality is available in `proj_linpred()` (argument `transform`) and `predict.refmodel()` (argument `type`).
+We will skip post-selection inference here (see the main vignette for a demonstration of post-selection inference), but note that `proj_predict()` has argument `resp_oscale` for controlling whether to draw from the posterior-projection predictive distributions on the original response scale (`TRUE`, the default) or on latent scale (`FALSE`) and that analogous functionality is available in `proj_linpred()` (argument `transform`) and `predict.refmodel()` (argument `type`).
 
 ### Variable selection using the traditional projection
 
-We will now look at what **projpred**'s traditional projection would have given:
+We will now look at what **projpred**'s traditional projection would have given.
+For this, we increase `nterms_max` because this will reveal an issue with this approach:
 ```{r suppress_warn_poiss, include=FALSE}
 warn_instable_orig <- options(projpred.warn_instable_projections = FALSE)
 ```
@@ -254,7 +244,7 @@ time_trad <- system.time(vs_trad <- varsel(
   ### Only for the sake of speed (not recommended in general):
   nclusters_pred = 20,
   ###
-  nterms_max = 14,
+  nterms_max = 30,
   ### In interactive use, we recommend not to deactivate the verbose mode:
   verbose = 0,
   ###
@@ -269,26 +259,70 @@ rm(warn_instable_orig)
 ```
 ```{r post_vs_trad}
 print(time_trad)
-( gg_trad <- plot(vs_trad, stats = "mlpd", deltas = "mixed") )
-smmry_trad <- summary(vs_trad, stats = "mlpd",
-                      type = c("mean", "lower", "upper", "diff"))
-print(smmry_trad, digits = 2)
+( gg_trad <- plot(vs_trad, stats = "gmpd", deltas = TRUE) )
 ```
 As these results show, the traditional projection takes longer than the latent projection, although the difference is rather small on absolute scale (which is due to the fact that the L1 search is already quite fast).
-More importantly however, the predictive performance plot is much more unstable and the predictor ranking contains several noise terms before truly relevant ones.
+More importantly however, the predictor ranking contains several noise terms before truly relevant ones.
 
 ### Conclusion
 
-In conclusion, this example showed that the latent projection can be advantageous also for families supported by **projpred**'s traditional projection by improving the runtime and the stability of the variable selection, eventually also leading to better variable selection results.
+This example showed that the latent projection can be advantageous also for families supported by **projpred**'s traditional projection by improving the runtime as well as the results of the variable selection.
+
+<!-- **Forward search START:** -->
+<!-- ```{r} -->
+<!-- time_lat_fw <- system.time(vs_lat_fw <- varsel( -->
+<!--   refm_poiss, -->
+<!--   d_test = d_test_lat_poiss, -->
+<!--   ### Only for demonstrating an issue with the traditional projection in the -->
+<!--   ### next step (not recommended in general): -->
+<!--   # method = "L1", -->
+<!--   ### -->
+<!--   ### Only for the sake of speed (not recommended in general): -->
+<!--   nclusters_pred = 20, -->
+<!--   ### -->
+<!--   nterms_max = 14, -->
+<!--   ### In interactive use, we recommend not to deactivate the verbose mode: -->
+<!--   verbose = 0, -->
+<!--   ### -->
+<!--   ### For comparability with varsel() based on the traditional projection: -->
+<!--   seed = 95930 -->
+<!--   ### -->
+<!-- )) -->
+<!-- print(time_lat_fw) -->
+<!-- ( gg_lat_fw <- plot(vs_lat_fw, stats = "gmpd", deltas = TRUE) ) -->
+<!-- ``` -->
+<!-- ```{r} -->
+<!-- time_trad_fw <- system.time(vs_trad_fw <- varsel( -->
+<!--     refm_fit_poiss, -->
+<!--     d_test = d_test_trad_poiss, -->
+<!--     ### Only for demonstrating an issue with the traditional projection (not -->
+<!--     ### recommended in general): -->
+<!--     # method = "L1", -->
+<!--     ### -->
+<!--     ### Only for the sake of speed (not recommended in general): -->
+<!--     nclusters_pred = 20, -->
+<!--     ### -->
+<!--     nterms_max = 30, -->
+<!--     ### In interactive use, we recommend not to deactivate the verbose mode: -->
+<!--     verbose = 0, -->
+<!--     ### -->
+<!--     ### For comparability with varsel() based on the latent projection: -->
+<!--     seed = 95930 -->
+<!--     ### -->
+<!-- )) -->
+<!-- print(time_trad_fw) -->
+<!-- ( gg_trad_fw <- plot(vs_trad_fw, stats = "gmpd", deltas = TRUE) ) -->
+<!-- ``` -->
+<!-- **Forward search END** -->
 
 An important point is that we have used the L1 search here.
-In case of the latent projection, a forward search would have given only slightly different results (in particular, a slightly smoother predictive performance plot).
-However, in case of the traditional projection, a forward search would have given markedly better results (in particular, the predictive performance plot would have been much smoother and all of the noise terms would have been selected after the truly relevant ones).
+In case of the latent projection, a forward search would have given only slightly different results.
+However, in case of the traditional projection, a forward search would have given markedly better results (in particular, all of the noise terms would have been selected after the truly relevant ones).
 Thus, the conclusions made for the L1 search here cannot be transmitted easily to the forward search.
 
 ## Example: Negative binomial distribution {#negbinex}
 
-In this example, we will illustrate the latent projection in case of the negative binomial family (more precisely, we are using `rstanarm::neg_binomial_2()` here) which is a family that is not supported by **projpred**'s traditional projection^[The negative binomial distribution belongs to the class of *discrete exponential dispersion* families [@jorgensen_exponential_1987] (here abbreviated by "DED families"). DED families are closely related to ED families [@jorgensen_exponential_1987], but strictly speaking, the class of DED families is not a subset of the class of ED families. GitHub issue [#361](https://github.com/stan-dev/projpred/issues/361) explains why the "traditional" projection onto a DED-family submodel is currently not implemented in **projpred**.].
+In this example, we will illustrate the latent projection in case of the negative binomial family (more precisely, we will use the `rstanarm::neg_binomial_2()` family here) which is a family that is not supported by **projpred**'s traditional projection^[The negative binomial distribution belongs to the class of *discrete exponential dispersion* families [@jorgensen_exponential_1987] (here abbreviated by "DED families"). DED families are closely related to ED families [@jorgensen_exponential_1987], but strictly speaking, the class of DED families is not a subset of the class of ED families. GitHub issue [#361](https://github.com/stan-dev/projpred/issues/361) explains why the "traditional" projection onto a DED-family submodel is currently not implemented in **projpred**.].
 
 ### Data
 
@@ -298,7 +332,7 @@ We will re-use the data generated above in the Poisson example.
 
 We now fit a reference model with the negative binomial distribution as response family.
 For the sake of simplicity, we won't adjust `tau0` to this new family, but in a real-world example, such an adjustment would be necessary.
-However, since Table 1 of @piironen_sparsity_2017 doesn't list the negative binomial distribution, this would first require a manual derivation of the pseudo-variance $\tilde{\sigma}^2$.
+However, since Table 1 of @piironen_sparsity_2017 does not list the negative binomial distribution, this would first require a manual derivation of the pseudo-variance $\tilde{\sigma}^2$.
 ```{r ref_fit_nebin}
 refm_fit_nebin <- stan_glm(
   formula = refm_fml,
@@ -311,6 +345,7 @@ refm_fit_nebin <- stan_glm(
   refresh = 0
 )
 ```
+Again, we ignore the bulk-ESS warning due to the technical reasons for which we reduced `chains` and `iter` in this vignette.
 
 ### Variable selection using the latent projection
 
@@ -360,38 +395,25 @@ vs_nebin <- varsel(
   ###
 )
 ```
-Again, the message telling that `<refmodel>$dis` consists of only `NA`s will not concern us here because we will only be focusing on response-scale post-processing.
+Again, the message telling that `<refmodel>$dis` consists of only `NA`s will not concern us here because we will only focus on response-scale post-processing.
 The message concerning `latent_ilink` can be safely ignored here (the internal default based on `family$linkinv` works correctly in this case).
 
 Again, we first inspect the `plot()` results to decide for a submodel size:
 ```{r plot_vsel_nebin}
-( gg_nebin <- plot(vs_nebin, stats = "mlpd", deltas = "mixed") )
+( gg_nebin <- plot(vs_nebin, stats = "gmpd", deltas = TRUE) )
 ```
 
-Again, a zoomed plot is more helpful:
-```{r plot_vsel_nebin_zoom}
-gg_nebin + ggplot2::coord_cartesian(ylim = c(-2.5, 0.25))
-```
-
-Although the submodels' MLPDs approach the reference model's already from a submodel size of 9 on (taking into account the uncertainty bars), the curve levels off only from a submodel size of 11 on.
-For a more informed decision, the GMPD could be taken into account again, but for the sake of brevity, we will simply decide for a submodel size of 11 here:
+For the decision of the final submodel size, we act as if we preferred accuracy over sparsity in their trade-off mentioned in the [main vignette](https://mc-stan.org/projpred/articles/projpred.html#decision-size), so we decide for a submodel size of 11:
 ```{r size_man_nebin}
 size_decided_nebin <- 11
 ```
 
 This is not the size that `suggest_size()` would suggest, but as mentioned in the main vignette and in the documentation, `suggest_size()` provides only a quite heuristic decision (so we stick with our manual decision here):
 ```{r size_sgg_nebin}
-suggest_size(vs_nebin, stat = "mlpd")
+suggest_size(vs_nebin, stat = "gmpd")
 ```
 
-Again, we call `summary.vsel()` to obtain the results from the `varsel()` run in tabular form:
-```{r smmry_vsel_nebin}
-smmry_nebin <- summary(vs_nebin, stats = "mlpd",
-                       type = c("mean", "lower", "upper", "diff"))
-print(smmry_nebin, digits = 2)
-```
-
-As we can see from the predictor ranking included in the plot and in the summary table, our selected `r if (!params$EVAL) character() else size_decided_nebin` predictor terms lack one truly relevant predictor (`x.9`) and include one noise term (`xn.29`).
+As we can see from the predictor ranking included in the plot, our selected `r if (!params$EVAL) character() else size_decided_nebin` predictor terms lack one truly relevant predictor (`x.9`) and include one noise term (`xn.29`).
 More explicitly, our selected predictor terms are:
 ```{r predictors_final_nebin}
 rk_nebin <- ranking(vs_nebin)
@@ -403,7 +425,6 @@ Again, we will skip post-selection inference here (see the main vignette for a d
 
 ### Conclusion
 
-This example demonstrated how the latent projection can be used for those families which are neither supported by **projpred**'s traditional nor by **projpred**'s augmented-data projection.
-(In the future, this vignette will be extended to demonstrate how both, latent and augmented-data projection, can be applied to those non-ED families which are supported by both.)
+This example demonstrated how the latent projection can be used for those families which are neither supported by **projpred**'s traditional nor by **projpred**'s augmented-data projection, which reflects the flexibility of the latent approach.
 
 ## References
