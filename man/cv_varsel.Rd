@@ -364,27 +364,27 @@ cvvs <- cv_varsel(fit, method = "L1", cv_method = "kfold", K = 2,
 \dontshow{\}) # examplesIf}
 }
 \references{
-Juho Piironen, Markus Paasiniemi, and Aki Vehtari (2020). "Projective
+Piironen, Juho, Markus Paasiniemi, and Aki Vehtari. 2020. "Projective
 Inference in High-Dimensional Problems: Prediction and Feature Selection."
 \emph{Electronic Journal of Statistics}, 14 (1):2155--2197.
 \doi{10.1214/20-EJS1711}.
 
-Måns Magnusson, Michael Riis Andersen, Johan Jonasson, Aki Vehtari (2020).
+Magnusson, Måns, Michael Riis Andersen, Johan Jonasson, Aki Vehtari. 2020.
 "Leave-One-Out Cross-Validation for Bayesian Model Comparison in Large Data."
 In \emph{Proceedings of the 23rd International Conference on Artificial
-Intelligence and Statistics (AISTATS)}, 108:341--351. Proceedings of Machine
-Learning Research. PMLR.
-\url{https://proceedings.mlr.press/v108/magnusson20a.html}
+Intelligence and Statistics}, edited by Silvia Chiappa and Roberto Calandra,
+108:341--351. Proceedings of Machine Learning Research. PMLR.
+\url{https://proceedings.mlr.press/v108/magnusson20a.html}.
 
-Aki Vehtari, Andrew Gelman, and Jonah Gabry (2017). "Practical Bayesian Model
+Vehtari, Aki, Andrew Gelman, and Jonah Gabry. 2017. "Practical Bayesian Model
 Evaluation Using Leave-One-Out Cross-Validation and WAIC." \emph{Statistics and
 Computing}, 27 (5):1413--32. \doi{10.1007/s11222-016-9696-4}.
 
-Aki Vehtari, Daniel Simpson, Andrew Gelman, Yuling Yao, and Jonah Gabry
-(2024). "Pareto Smoothed Importance Sampling." \emph{Journal of Machine Learning
+Vehtari, Aki, Daniel Simpson, Andrew Gelman, Yuling Yao, and Jonah Gabry.
+2024. "Pareto Smoothed Importance Sampling." \emph{Journal of Machine Learning
 Research}, 25 (72):1--58. \url{https://jmlr.org/papers/v25/19-556.html}.
 
-Yann McLatchie, Sölvi Rögnvaldsson, Frank Weber, and Aki Vehtari (2025).
+McLatchie, Yann, Sölvi Rögnvaldsson, Frank Weber, and Aki Vehtari. 2025.
 "Advances in Projection Predictive Inference." \emph{Statistical Science}, 40
 (1):128--147. \doi{10.1214/24-STS949}.
 }

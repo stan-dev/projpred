@@ -30,7 +30,7 @@ The mesquite bushes yields dataset from Gelman and Hill (2006)
 (\url{https://www.stat.columbia.edu/~gelman/arm/}).
 }
 \references{
-Andrew Gelman and Jennifer Hill (2006). \emph{Data Analysis Using Regression and
+Gelman, Andrew, and Jennifer Hill. 2006. \emph{Data Analysis Using Regression and
 Multilevel/Hierarchical Models}. Cambridge, UK: Cambridge University Press.
 \doi{10.1017/CBO9780511790942}.
 }
