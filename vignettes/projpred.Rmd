@@ -26,6 +26,7 @@ What is special about the projection predictive variable selection is that it no
 The projection predictive variable selection is based on the ideas of @goutis_model_1998 and @dupuis_variable_2003.
 The methods implemented in **projpred** are described in detail in @piironen_projective_2020, @catalina_projection_2022, @weber_projection_2025, and @catalina_latent_2021.
 A comparison to many other methods may also be found in @piironen_comparison_2017.
+An introduction to the theory behind **projpred**, a workflow for practitioners, and further insights into the theory (and practice) of projection predictive inference are presented by @mclatchie_advances_2025.
 For details on how to cite **projpred**, see the [projpred citation info](https://CRAN.R-project.org/package=projpred/citation.html) on CRAN^[The citation information can be accessed offline by typing `print(citation("projpred"), bibtex = TRUE)` within R.].
 
 ## Data
@@ -566,7 +567,7 @@ Some speed-up possibilities are:
     In case of `cv_method = "LOO"`^[In case of `cv_method = "kfold"`, the runtime advantage of `validate_search = FALSE` compared to `validate_search = TRUE` is by far not as large as in case of `cv_method = "LOO"`.], `cv_varsel()` with `validate_search = FALSE` has comparable runtime to `varsel()`, but accounts for some overfitting, namely that induced by `varsel()`'s in-sample predictions during the predictive performance evaluation.
     However, as explained in section ["Variable selection"](#variableselection) (see also section ["Overfitting"](#overfitting)), `cv_varsel()` with `validate_search = FALSE` is more prone to overfitting than `cv_varsel()` with `validate_search = TRUE`.
 
-1.  Using `cv_varsel()` with subsampled PSIS-LOO CV, see argument `nloo` of `cv_varsel()`.
+1.  Using `cv_varsel()` with subsampled PSIS-LOO CV [@magnusson_leave-one-out_2020], see argument `nloo` of `cv_varsel()`.
 
 1.  Using `cv_varsel()` with $K$-fold CV instead of PSIS-LOO CV.
     Whether this provides a speed improvement mainly depends on the number of observations, whether PSIS-LOO CV could be subsampled (and---if yes---how small argument `nloo` of `cv_varsel()` could be set while still obtaining reliable results), and the complexity of the reference model.
