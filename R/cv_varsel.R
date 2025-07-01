@@ -131,17 +131,21 @@
 #'
 #' @references
 #'
-#' Piironen, Juho, Markus Paasiniemi, and Aki Vehtari. 2020. "Projective
-#' Inference in High-Dimensional Problems: Prediction and Feature Selection."
-#' *Electronic Journal of Statistics*, 14 (1):2155--2197.
-#' \doi{10.1214/20-EJS1711}.
-#'
 #' Magnusson, Måns, Michael Riis Andersen, Johan Jonasson, Aki Vehtari. 2020.
 #' "Leave-One-Out Cross-Validation for Bayesian Model Comparison in Large Data."
 #' In *Proceedings of the 23rd International Conference on Artificial
 #' Intelligence and Statistics*, edited by Silvia Chiappa and Roberto Calandra,
 #' 108:341--351. Proceedings of Machine Learning Research. PMLR.
 #' <https://proceedings.mlr.press/v108/magnusson20a.html>.
+#'
+#' McLatchie, Yann, Sölvi Rögnvaldsson, Frank Weber, and Aki Vehtari. 2025.
+#' "Advances in Projection Predictive Inference." *Statistical Science*, 40
+#' (1):128--147. \doi{10.1214/24-STS949}.
+#'
+#' Piironen, Juho, Markus Paasiniemi, and Aki Vehtari. 2020. "Projective
+#' Inference in High-Dimensional Problems: Prediction and Feature Selection."
+#' *Electronic Journal of Statistics*, 14 (1):2155--2197.
+#' \doi{10.1214/20-EJS1711}.
 #'
 #' Vehtari, Aki, Andrew Gelman, and Jonah Gabry. 2017. "Practical Bayesian Model
 #' Evaluation Using Leave-One-Out Cross-Validation and WAIC." *Statistics and
@@ -150,10 +154,6 @@
 #' Vehtari, Aki, Daniel Simpson, Andrew Gelman, Yuling Yao, and Jonah Gabry.
 #' 2024. "Pareto Smoothed Importance Sampling." *Journal of Machine Learning
 #' Research*, 25 (72):1--58. <https://jmlr.org/papers/v25/19-556.html>.
-#'
-#' McLatchie, Yann, Sölvi Rögnvaldsson, Frank Weber, and Aki Vehtari. 2025.
-#' "Advances in Projection Predictive Inference." *Statistical Science*, 40
-#' (1):128--147. \doi{10.1214/24-STS949}.
 #'
 #' @seealso [varsel()]
 #'
