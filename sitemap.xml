@@ -1,147 +1,53 @@
-<?xml version="1.0" encoding="UTF-8"?>
-<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
-  <url>
-    <loc>https://mc-stan.org/projpred/404.html</loc>
-  </url>
-  <url>
-    <loc>https://mc-stan.org/projpred/LICENSE-text.html</loc>
-  </url>
-  <url>
-    <loc>https://mc-stan.org/projpred/LICENSE.html</loc>
-  </url>
-  <url>
-    <loc>https://mc-stan.org/projpred/articles/index.html</loc>
-  </url>
-  <url>
-    <loc>https://mc-stan.org/projpred/articles/latent.html</loc>
-  </url>
-  <url>
-    <loc>https://mc-stan.org/projpred/articles/projpred.html</loc>
-  </url>
-  <url>
-    <loc>https://mc-stan.org/projpred/authors.html</loc>
-  </url>
-  <url>
-    <loc>https://mc-stan.org/projpred/index.html</loc>
-  </url>
-  <url>
-    <loc>https://mc-stan.org/projpred/news/index.html</loc>
-  </url>
-  <url>
-    <loc>https://mc-stan.org/projpred/reference/as.matrix.projection.html</loc>
-  </url>
-  <url>
-    <loc>https://mc-stan.org/projpred/reference/as_draws_matrix.projection.html</loc>
-  </url>
-  <url>
-    <loc>https://mc-stan.org/projpred/reference/augdat-internals.html</loc>
-  </url>
-  <url>
-    <loc>https://mc-stan.org/projpred/reference/augdat_ilink_binom.html</loc>
-  </url>
-  <url>
-    <loc>https://mc-stan.org/projpred/reference/augdat_link_binom.html</loc>
-  </url>
-  <url>
-    <loc>https://mc-stan.org/projpred/reference/break_up_matrix_term.html</loc>
-  </url>
-  <url>
-    <loc>https://mc-stan.org/projpred/reference/cl_agg.html</loc>
-  </url>
-  <url>
-    <loc>https://mc-stan.org/projpred/reference/cv-indices.html</loc>
-  </url>
-  <url>
-    <loc>https://mc-stan.org/projpred/reference/cv_proportions.html</loc>
-  </url>
-  <url>
-    <loc>https://mc-stan.org/projpred/reference/cv_varsel.html</loc>
-  </url>
-  <url>
-    <loc>https://mc-stan.org/projpred/reference/df_binom.html</loc>
-  </url>
-  <url>
-    <loc>https://mc-stan.org/projpred/reference/df_gaussian.html</loc>
-  </url>
-  <url>
-    <loc>https://mc-stan.org/projpred/reference/do_call.html</loc>
-  </url>
-  <url>
-    <loc>https://mc-stan.org/projpred/reference/extend_family.html</loc>
-  </url>
-  <url>
-    <loc>https://mc-stan.org/projpred/reference/extra-families.html</loc>
-  </url>
-  <url>
-    <loc>https://mc-stan.org/projpred/reference/force_search_terms.html</loc>
-  </url>
-  <url>
-    <loc>https://mc-stan.org/projpred/reference/index.html</loc>
-  </url>
-  <url>
-    <loc>https://mc-stan.org/projpred/reference/mesquite.html</loc>
-  </url>
-  <url>
-    <loc>https://mc-stan.org/projpred/reference/performances.html</loc>
-  </url>
-  <url>
-    <loc>https://mc-stan.org/projpred/reference/plot.cv_proportions.html</loc>
-  </url>
-  <url>
-    <loc>https://mc-stan.org/projpred/reference/plot.vsel.html</loc>
-  </url>
-  <url>
-    <loc>https://mc-stan.org/projpred/reference/pred-projection.html</loc>
-  </url>
-  <url>
-    <loc>https://mc-stan.org/projpred/reference/predict.refmodel.html</loc>
-  </url>
-  <url>
-    <loc>https://mc-stan.org/projpred/reference/predictor_terms.html</loc>
-  </url>
-  <url>
-    <loc>https://mc-stan.org/projpred/reference/print.projection.html</loc>
-  </url>
-  <url>
-    <loc>https://mc-stan.org/projpred/reference/print.refmodel.html</loc>
-  </url>
-  <url>
-    <loc>https://mc-stan.org/projpred/reference/print.vsel.html</loc>
-  </url>
-  <url>
-    <loc>https://mc-stan.org/projpred/reference/print.vselsummary.html</loc>
-  </url>
-  <url>
-    <loc>https://mc-stan.org/projpred/reference/project.html</loc>
-  </url>
-  <url>
-    <loc>https://mc-stan.org/projpred/reference/projpred-package.html</loc>
-  </url>
-  <url>
-    <loc>https://mc-stan.org/projpred/reference/ranking.html</loc>
-  </url>
-  <url>
-    <loc>https://mc-stan.org/projpred/reference/reexports.html</loc>
-  </url>
-  <url>
-    <loc>https://mc-stan.org/projpred/reference/refmodel-init-get.html</loc>
-  </url>
-  <url>
-    <loc>https://mc-stan.org/projpred/reference/run_cvfun.html</loc>
-  </url>
-  <url>
-    <loc>https://mc-stan.org/projpred/reference/solution_terms.html</loc>
-  </url>
-  <url>
-    <loc>https://mc-stan.org/projpred/reference/suggest_size.html</loc>
-  </url>
-  <url>
-    <loc>https://mc-stan.org/projpred/reference/summary.vsel.html</loc>
-  </url>
-  <url>
-    <loc>https://mc-stan.org/projpred/reference/varsel.html</loc>
-  </url>
-  <url>
-    <loc>https://mc-stan.org/projpred/reference/y_wobs_offs.html</loc>
-  </url>
+<urlset xmlns = 'http://www.sitemaps.org/schemas/sitemap/0.9'>
+<url><loc>https://mc-stan.org/projpred/404.html</loc></url>
+<url><loc>https://mc-stan.org/projpred/CONTRIBUTING.html</loc></url>
+<url><loc>https://mc-stan.org/projpred/LICENSE-text.html</loc></url>
+<url><loc>https://mc-stan.org/projpred/LICENSE.html</loc></url>
+<url><loc>https://mc-stan.org/projpred/articles/index.html</loc></url>
+<url><loc>https://mc-stan.org/projpred/articles/latent.html</loc></url>
+<url><loc>https://mc-stan.org/projpred/articles/projpred.html</loc></url>
+<url><loc>https://mc-stan.org/projpred/authors.html</loc></url>
+<url><loc>https://mc-stan.org/projpred/index.html</loc></url>
+<url><loc>https://mc-stan.org/projpred/news/index.html</loc></url>
+<url><loc>https://mc-stan.org/projpred/reference/as.matrix.projection.html</loc></url>
+<url><loc>https://mc-stan.org/projpred/reference/as_draws_matrix.projection.html</loc></url>
+<url><loc>https://mc-stan.org/projpred/reference/augdat-internals.html</loc></url>
+<url><loc>https://mc-stan.org/projpred/reference/augdat_ilink_binom.html</loc></url>
+<url><loc>https://mc-stan.org/projpred/reference/augdat_link_binom.html</loc></url>
+<url><loc>https://mc-stan.org/projpred/reference/break_up_matrix_term.html</loc></url>
+<url><loc>https://mc-stan.org/projpred/reference/cl_agg.html</loc></url>
+<url><loc>https://mc-stan.org/projpred/reference/cv-indices.html</loc></url>
+<url><loc>https://mc-stan.org/projpred/reference/cv_proportions.html</loc></url>
+<url><loc>https://mc-stan.org/projpred/reference/cv_varsel.html</loc></url>
+<url><loc>https://mc-stan.org/projpred/reference/df_binom.html</loc></url>
+<url><loc>https://mc-stan.org/projpred/reference/df_gaussian.html</loc></url>
+<url><loc>https://mc-stan.org/projpred/reference/do_call.html</loc></url>
+<url><loc>https://mc-stan.org/projpred/reference/extend_family.html</loc></url>
+<url><loc>https://mc-stan.org/projpred/reference/extra-families.html</loc></url>
+<url><loc>https://mc-stan.org/projpred/reference/force_search_terms.html</loc></url>
+<url><loc>https://mc-stan.org/projpred/reference/index.html</loc></url>
+<url><loc>https://mc-stan.org/projpred/reference/internal-global-options.html</loc></url>
+<url><loc>https://mc-stan.org/projpred/reference/mesquite.html</loc></url>
+<url><loc>https://mc-stan.org/projpred/reference/performances.html</loc></url>
+<url><loc>https://mc-stan.org/projpred/reference/plot.cv_proportions.html</loc></url>
+<url><loc>https://mc-stan.org/projpred/reference/plot.vsel.html</loc></url>
+<url><loc>https://mc-stan.org/projpred/reference/pred-projection.html</loc></url>
+<url><loc>https://mc-stan.org/projpred/reference/predict.refmodel.html</loc></url>
+<url><loc>https://mc-stan.org/projpred/reference/predictor_terms.html</loc></url>
+<url><loc>https://mc-stan.org/projpred/reference/print.projection.html</loc></url>
+<url><loc>https://mc-stan.org/projpred/reference/print.refmodel.html</loc></url>
+<url><loc>https://mc-stan.org/projpred/reference/print.vsel.html</loc></url>
+<url><loc>https://mc-stan.org/projpred/reference/print.vselsummary.html</loc></url>
+<url><loc>https://mc-stan.org/projpred/reference/project.html</loc></url>
+<url><loc>https://mc-stan.org/projpred/reference/projpred-package.html</loc></url>
+<url><loc>https://mc-stan.org/projpred/reference/ranking.html</loc></url>
+<url><loc>https://mc-stan.org/projpred/reference/reexports.html</loc></url>
+<url><loc>https://mc-stan.org/projpred/reference/refmodel-init-get.html</loc></url>
+<url><loc>https://mc-stan.org/projpred/reference/run_cvfun.html</loc></url>
+<url><loc>https://mc-stan.org/projpred/reference/solution_terms.html</loc></url>
+<url><loc>https://mc-stan.org/projpred/reference/suggest_size.html</loc></url>
+<url><loc>https://mc-stan.org/projpred/reference/summary.vsel.html</loc></url>
+<url><loc>https://mc-stan.org/projpred/reference/varsel.html</loc></url>
+<url><loc>https://mc-stan.org/projpred/reference/y_wobs_offs.html</loc></url>
 </urlset>
+
