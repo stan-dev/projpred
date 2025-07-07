@@ -36,64 +36,81 @@ are again all observations because the test set is the same as the training
 set). Available statistics are:
 \itemize{
 \item \code{"elpd"}: expected log (pointwise) predictive density (for a new
-dataset). Estimated by the sum of the observation-specific log predictive
-density values (with each of these predictive density values being
-a---possibly weighted---average across the parameter draws).
-\item \code{"mlpd"}: mean log predictive density, that is, \code{"elpd"} divided by the
-number of observations.
+dataset) (ELPD). Estimated by the sum of the observation-specific log
+predictive density values (with each of these predictive density values
+being a---possibly weighted---average across the parameter draws). For the
+corresponding uncertainty interval, a normal approximation is used.
+\item \code{"mlpd"}: mean log predictive density (MLPD), that is, the ELPD divided
+by the number of observations. For the corresponding uncertainty interval,
+a normal approximation is used.
 \item \code{"gmpd"}: geometric mean predictive density (GMPD), that is, \code{\link[=exp]{exp()}} of
-\code{"mlpd"}. The GMPD is especially helpful for discrete response families
+the MLPD. The GMPD is especially helpful for discrete response families
 (because there, the GMPD is bounded by zero and one). For the corresponding
-standard error, the delta method is used. The corresponding confidence
+standard error, the delta method is used. The corresponding uncertainty
 interval type is "exponentiated normal approximation" because the
-confidence interval bounds are the exponentiated confidence interval bounds
-of the \code{"mlpd"}.
+uncertainty interval bounds are the exponentiated uncertainty interval
+bounds of the MLPD.
 \item \code{"mse"}: mean squared error (only available in the situations mentioned
-in section "Details" below).
+in section "Details" below). For the corresponding uncertainty interval, a
+log-normal approximation is used if \code{deltas} is \code{FALSE} and a normal
+approximation is used if \code{deltas} is \code{TRUE} (or \code{"mixed"}, in case of
+\code{\link[=plot.vsel]{plot.vsel()}}).
 \item \code{"rmse"}: root mean squared error (only available in the situations
-mentioned in section "Details" below). For the corresponding standard error
-and lower and upper confidence interval bounds, bootstrapping is used.
+mentioned in section "Details" below). For the corresponding standard
+error, the delta method is used. For the corresponding uncertainty
+interval, a log-normal approximation is used if \code{deltas} is \code{FALSE} and a
+normal approximation is used if \code{deltas} is \code{TRUE} (or \code{"mixed"}, in case
+of \code{\link[=plot.vsel]{plot.vsel()}}).
+\item \code{"R2"}: R-squared, i.e., coefficient of determination (only available in
+the situations mentioned in section "Details" below). For the corresponding
+standard error, the delta method is used. For the corresponding uncertainty
+interval, a normal approximation is used.
 \item \code{"acc"} (or its alias, \code{"pctcorr"}): classification accuracy (only
 available in the situations mentioned in section "Details" below). By
 "classification accuracy", we mean the proportion of correctly classified
 observations. For this, the response category ("class") with highest
 probability (the probabilities are model-based) is taken as the prediction
-("classification") for an observation.
+("classification") for an observation. For the corresponding uncertainty
+interval, a normal approximation is used.
 \item \code{"auc"}: area under the ROC curve (only available in the situations
 mentioned in section "Details" below). For the corresponding standard error
-and lower and upper confidence interval bounds, bootstrapping is used.
+and lower and upper uncertainty interval bounds, bootstrapping is used. Not
+supported in case of subsampled LOO-CV (see argument \code{nloo} of
+\code{\link[=cv_varsel]{cv_varsel()}}).
 }}
 
 \item{type}{One or more items from \code{"mean"}, \code{"se"}, \code{"lower"}, \code{"upper"},
-\code{"diff"}, and \code{"diff.se"} indicating which of these to compute for each
-item from \code{stats} (mean, standard error, lower and upper confidence
-interval bounds, mean difference to the corresponding statistic of the
-reference model, and standard error of this difference, respectively; note
-that for the GMPD, \code{"diff"}, and \code{"diff.se"} actually refer to the ratio
-vs. the reference model, not the difference). The confidence interval
-bounds belong to normal-approximation (or bootstrap or exponentiated
-normal-approximation; see argument \code{stats}) confidence intervals with
-(nominal) coverage \code{1 - alpha}. Items \code{"diff"} and \code{"diff.se"} are only
+\code{"diff"}, \code{"diff.lower"}, \code{"diff.upper"}, and \code{"diff.se"} indicating which
+of these to compute for each item from \code{stats} (mean, standard error, lower
+and upper uncertainty interval bounds, mean difference to the corresponding
+statistic of the reference model, lower and upper uncertainty interval
+bound for this difference, and standard error of this difference,
+respectively; note that for the GMPD, \code{"diff"}, \code{"diff.lower"},
+\code{"diff.upper"}, and \code{"diff.se"} actually refer to the ratio vs. the
+reference model, not the difference). The uncertainty interval bounds
+belong to uncertainty intervals with (nominal) coverage \code{1 - alpha}. Items
+\code{"diff"}, \code{"diff.lower"}, \code{"diff.upper"}, and \code{"diff.se"} are only
 supported if \code{deltas} is \code{FALSE}.}
 
-\item{deltas}{If \code{TRUE}, the submodel statistics are estimated relatively to
-the baseline model (see argument \code{baseline}). For the GMPD, the term
-"relatively" refers to the ratio vs. the baseline model (i.e., the submodel
-statistic divided by the baseline model statistic). For all other \code{stats},
-"relatively" refers to the difference from the baseline model (i.e., the
-submodel statistic minus the baseline model statistic).}
+\item{deltas}{May be set to \code{FALSE} or \code{TRUE}. If \code{FALSE}, the submodel
+performance statistics are estimated on their actual scale. If \code{TRUE}, the
+submodel statistics are estimated relatively to the baseline model (see
+argument \code{baseline}). For the GMPD, the term "relatively" refers to the
+\emph{ratio} vs. the baseline model (i.e., the submodel statistic divided by the
+baseline model statistic). For all other \code{stats}, "relatively" refers to
+the \emph{difference} from the baseline model (i.e., the submodel statistic
+minus the baseline model statistic).}
 
 \item{alpha}{A number determining the (nominal) coverage \code{1 - alpha} of the
-normal-approximation (or bootstrap or exponentiated normal-approximation;
-see argument \code{stats}) confidence intervals. For example, in case of the
-normal approximation, \code{alpha = 2 * pnorm(-1)} corresponds to a confidence
+uncertainty intervals. For example, in case of a normal-approximation
+uncertainty interval, \code{alpha = 2 * pnorm(-1)} corresponds to a uncertainty
 interval stretching by one standard error on either side of the point
 estimate.}
 
 \item{baseline}{For \code{\link[=summary.vsel]{summary.vsel()}}: Only relevant if \code{deltas} is \code{TRUE}.
 For \code{\link[=plot.vsel]{plot.vsel()}}: Always relevant. Either \code{"ref"} or \code{"best"}, indicating
 whether the baseline is the reference model or the best submodel found (in
-terms of \code{stats[1]}), respectively.}
+terms of \code{stats[1]}), respectively. In case of subsampled LOO-CV, \code{baseline = "best"} is not supported.}
 
 \item{resp_oscale}{Only relevant for the latent projection. A single logical
 value indicating whether to calculate the performance statistics on the
@@ -125,7 +142,8 @@ results printed at the bottom of the output created by this \code{\link[=summary
 method, see \code{\link[=performances]{performances()}}.
 }
 \details{
-The \code{stats} options \code{"mse"} and \code{"rmse"} are only available for:
+The \code{stats} options \code{"mse"}, \code{"rmse"}, and \code{"R2"} are only available
+for:
 \itemize{
 \item the traditional projection,
 \item the latent projection with \code{resp_oscale = FALSE},
@@ -152,6 +170,9 @@ The \code{stats} option \code{"auc"} is only available for:
 latent projection with \code{resp_oscale = TRUE} in combination with
 \verb{<refmodel>$family$cats} being \code{NULL}.
 }
+
+Note that the \code{stats} option \code{"auc"} is not supported in case of subsampled
+LOO-CV (see argument \code{nloo} of \code{\link[=cv_varsel]{cv_varsel()}}).
 }
 \examples{
 \dontshow{if (requireNamespace("rstanarm", quietly = TRUE)) (if (getRversion() >= "3.4") withAutoprint else force)(\{ # examplesIf}

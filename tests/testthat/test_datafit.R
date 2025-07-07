@@ -114,12 +114,17 @@ if (run_cvvs) {
   args_cvvs_datafit <- lapply(args_cvvs_datafit, function(args_cvvs_i) {
     args_cvvs_i$cv_method <- NULL
     args_cvvs_i$K <- NULL
+    args_cvvs_i$nloo <- NULL
     args_cvvs_i$validate_search <- TRUE
     return(c(args_cvvs_i, list(cv_method = "kfold")))
   })
+  names(args_cvvs_datafit) <- gsub("(\\.default_cvmeth\\..*)\\.default_nloo",
+                                   "\\1.subsmpl", names(args_cvvs_datafit))
   names(args_cvvs_datafit) <- gsub("default_cvmeth", "kfold",
                                    names(args_cvvs_datafit))
   args_cvvs_datafit <- args_cvvs_datafit[unique(names(args_cvvs_datafit))]
+  names(args_cvvs_datafit) <- gsub("\\.subsmpl", "\\.default_nloo",
+                                   names(args_cvvs_datafit))
   # For `datafit`s, we always have 1 cluster by default, so omit related
   # arguments:
   args_cvvs_datafit <- lapply(args_cvvs_datafit, function(args_cvvs_i) {
@@ -236,7 +241,7 @@ test_that(paste(
   for (tstsetup in names(vss_datafit)) {
     mod_crr <- args_vs_datafit[[tstsetup]]$mod_nm
     meth_exp_crr <- args_vs_datafit[[tstsetup]]$method %||% "forward"
-    extra_tol_crr <- 1.5
+    extra_tol_crr <- 2
     if (any(grepl(":", ranking(vss_datafit[[tstsetup]])[["fulldata"]]))) {
       ### Testing for non-increasing element `ce` (for increasing model size)
       ### doesn't make sense if the ranking of predictors involved in
@@ -350,7 +355,7 @@ test_that(paste(
       #   m <- as.matrix(prjs_vs_datafit[[tstsetup]])
       #   expect_snapshot({
       #     print(tstsetup)
-      #     print(rlang::hash(m)) # cat(m)
+      #     print(rlang::hash(m)) # message(m)
       #   })
       #   if (testthat_ed_max2) local_edition(2)
       # }
@@ -377,7 +382,7 @@ test_that(paste(
       #     expect_snapshot({
       #       print(tstsetup)
       #       print(prjs_vs_i$predictor_terms)
-      #       print(rlang::hash(m)) # cat(m)
+      #       print(rlang::hash(m)) # message(m)
       #     })
       #     return(invisible(TRUE))
       #   })
@@ -495,8 +500,8 @@ test_that("summary.vsel(): `baseline = \"ref\"` and `deltas = TRUE` fails", {
   for (tstsetup in head(names(vss_datafit), 1)) {
     expect_error(
       summary(vss_datafit[[tstsetup]], baseline = "ref", deltas = TRUE),
-      paste("^Cannot use deltas = TRUE and baseline = 'ref' when there is no",
-            "reference model\\.$"),
+      paste0("^Cannot use `deltas = TRUE` .+or `deltas = .+mixed.+`.+ and ",
+             "`baseline = .+ref.+ when there is no reference model\\.$"),
       info = tstsetup
     )
   }

@@ -23,7 +23,7 @@ search_forward <- function(p_ref, refmodel, nterms_max, verbose = TRUE,
       time_bef <- Sys.time()
     }
     submodls <- lapply(full_cands, proj_to_submodl, p_ref = p_ref,
-                       refmodel = refmodel, ...)
+                       refmodel = refmodel, verbose = verbose, ...)
     if (size == 1 && est_runtime && getOption("projpred.mssg_time", TRUE)) {
       time_aft <- Sys.time()
       dtime <- difftime(time_aft, time_bef, units = "secs")
@@ -120,8 +120,8 @@ search_forward <- function(p_ref, refmodel, nterms_max, verbose = TRUE,
     ct_chosen <- count_terms_chosen(chosen)
     if (verbose && ct_chosen %in% iq) {
       vtxt <- paste(names(iq)[max(which(ct_chosen == iq))], "of terms selected")
-      if (getOption("projpred.extra_verbose", FALSE)) {
-        vtxt <- paste0(vtxt, ": ", paste(chosen, collapse = " + "))
+      if (verbose >= 2L) {
+        vtxt <- paste0(vtxt, ": `~ ", paste(chosen, collapse = " + "), "`")
       }
       verb_out(vtxt)
     }

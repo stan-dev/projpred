@@ -1,8 +1,6 @@
 .onAttach <- function(...) {
   ver <- utils::packageVersion("projpred")
   msg <- paste0("This is projpred version ", ver, ".")
-  msg <- paste0(msg, " ", "NOTE: In projpred 2.7.0, the default search method ",
-                "was set to \"forward\" (for all kinds of models).")
   packageStartupMessage(msg)
 }
 
@@ -14,7 +12,10 @@ nms_y_wobs_test <- function(wobs_nm = "wobs") {
   c("y", "y_oscale", wobs_nm)
 }
 
-weighted.sd <- function(x, w, na.rm = FALSE) {
+.weighted_sd <- function(x, w, na.rm = FALSE) {
+  if (length(w) == 1 && length(x) > 1) {
+    w <- rep_len(w, length.out = length(x))
+  }
   if (na.rm) {
     ind <- !is.na(w) & !is.na(x)
     n <- sum(ind)
@@ -63,25 +64,25 @@ ilinkfun_raw <- function(x, link_nm) {
   return(basic_ilink(x))
 }
 
-auc <- function(x) {
+.auc <- function(x) {
   resp <- x[, 1]
   pred <- x[, 2]
-  wcv <- x[, 3]
+  wobs <- x[, 3]
 
-  # Make it explicit that `x` should not be used anymore (due to the possibility
-  # of `NA`s, but also due to the re-ordering):
+  # Make it explicit that `x` should not be used anymore:
   rm(x)
 
-  ord <- order(pred, decreasing = TRUE, na.last = NA)
+  ord <- order(pred, decreasing = TRUE, na.last = FALSE)
   n <- length(ord)
 
   resp <- resp[ord]
   pred <- pred[ord]
-  wcv <- wcv[ord]
+  wobs <- wobs[ord]
 
-  w0 <- w1 <- wcv
-  # CAUTION: The following check also ensures that `resp` does not have `NA`s:
-  stopifnot(all(resp %in% c(0, 1)))
+  w0 <- w1 <- wobs
+  stopifnot(all(na.omit(resp) %in% c(0, 1)))
+  w0[is.na(resp)] <- NA # ensure that `NA`s in `resp` propagate to the output
+  w1[is.na(resp)] <- NA # ensure that `NA`s in `resp` propagate to the output
   w0[resp == 1] <- 0 # for calculating the false positive rate (fpr)
   w1[resp == 0] <- 0 # for calculating the true positive rate (tpr)
   cum_w0 <- cumsum(w0)
@@ -152,8 +153,8 @@ validate_vsel_object_stats <- function(object, stats, resp_oscale = TRUE) {
   }
   resp_oscale <- object$refmodel$family$for_latent && resp_oscale
 
-  trad_stats <- c("elpd", "mlpd", "gmpd", "mse", "rmse", "acc", "pctcorr",
-                  "auc")
+  trad_stats <- c("elpd", "mlpd", "gmpd", "mse", "rmse", "R2",
+                  "acc", "pctcorr", "auc")
   trad_stats_binom_only <- c("acc", "pctcorr", "auc")
   augdat_stats <- c("elpd", "mlpd", "gmpd", "acc", "pctcorr")
   resp_oscale_stats_fac <- augdat_stats
@@ -196,16 +197,21 @@ validate_vsel_object_stats <- function(object, stats, resp_oscale = TRUE) {
   return(invisible(TRUE))
 }
 
-validate_baseline <- function(refmodel, baseline, deltas) {
+validate_baseline <- function(vsel_obj, baseline, deltas) {
   stopifnot(!is.null(baseline))
   if (!(baseline %in% c("ref", "best"))) {
     stop("Argument 'baseline' must be either 'ref' or 'best'.")
   }
-  if (baseline == "ref" && deltas == TRUE && inherits(refmodel, "datafit")) {
+  if (baseline == "ref" && (identical(deltas, "mixed") || isTRUE(deltas)) &&
+      inherits(vsel_obj$refmodel, "datafit")) {
     # no reference model (or the results missing for some other reason),
     # so cannot compute differences (or ratios) vs. the reference model
-    stop("Cannot use deltas = TRUE and baseline = 'ref' when there is no ",
-         "reference model.")
+    stop("Cannot use `deltas = TRUE` (or `deltas = \"mixed\"`) and ",
+         "`baseline = \"ref\"` when there is no reference model.")
+  }
+  if (baseline == "best" && vsel_obj$cv_method == "LOO" &&
+      isTRUE(vsel_obj$nloo < vsel_obj$refmodel$nobs)) {
+    stop("Cannot use `baseline = \"best\"` in case of subsampled LOO-CV.")
   }
   return(baseline)
 }
@@ -270,6 +276,7 @@ get_standard_y <- function(y, weights, fam) {
 #   * `mu`: An \eqn{N \times S_{\mathrm{prj}}}{N x S_prj} matrix of expected
 #   values for \eqn{y} (probabilities for the response categories in case of the
 #   augmented-data projection) for each draw/cluster.
+#   * `mu_offs`: Same as `mu`, but taking offsets into account.
 #   * `var`: An \eqn{N \times S_{\mathrm{prj}}}{N x S_prj} matrix of predictive
 #   variances for \eqn{y} for each draw/cluster which are needed for projecting
 #   the dispersion parameter (the predictive variances are NA for those families
@@ -279,6 +286,9 @@ get_standard_y <- function(y, weights, fam) {
 #   those families that do not have a dispersion parameter).
 #   * `wdraws_prj`: A vector of length \eqn{S_{\mathrm{prj}}}{S_prj} containing
 #   the weights for the projected draws/clusters.
+#   * `const_wdraws_prj`: A single logical value indicating whether all
+#   projected draws have the same weight.
+#   * `nprjdraws`: A single value: \eqn{S_{\mathrm{prj}}}{S_prj}.
 #   * `cl`: Cluster assignment for each posterior draw, that is, a vector that
 #   has length equal to the number of posterior draws and each value is an
 #   integer between 1 and \eqn{S_{\mathrm{prj}}}{S_prj}.
@@ -292,6 +302,9 @@ get_standard_y <- function(y, weights, fam) {
 #   `refmodel` object anyway). However, get_p_clust() intentionally seems to
 #   have been kept as general as possible and `wdraws_orig` is more general than
 #   `wdraws_ref`.
+#   * `clust_used`: A single logical value indicating whether clustering (i.e.,
+#   get_p_clust(), with the possibility that its output element `clust_used` is
+#   overwritten by its argument `clust_used_forced`) has been used.
 get_refdist <- function(refmodel, ndraws = NULL, nclusters = NULL,
                         thinning = TRUE,
                         throw_mssg_ndraws = getOption("projpred.mssg_ndraws",
@@ -362,7 +375,8 @@ get_refdist <- function(refmodel, ndraws = NULL, nclusters = NULL,
 # Function for clustering the parameter draws:
 get_p_clust <- function(family, eta, mu, mu_offs, dis, nclusters = 10,
                         wobs = rep(1, dim(mu)[1]),
-                        wdraws = rep(1, dim(mu)[2]), cl = NULL) {
+                        wdraws = rep(1, dim(mu)[2]), cl = NULL,
+                        clust_used_forced = NULL) {
   # cluster the draws in the latent space if no clustering provided
   if (is.null(cl)) {
     # Note: A seed is not set here because this function is not exported and has
@@ -430,7 +444,7 @@ get_p_clust <- function(family, eta, mu, mu_offs, dis, nclusters = 10,
     nprjdraws = nclusters,
     cl = cl,
     wdraws_orig = wdraws,
-    clust_used = TRUE
+    clust_used = clust_used_forced %||% TRUE
   ))
 }
 
@@ -439,6 +453,22 @@ draws_subsample <- function(S, ndraws) {
   # calling stack at the beginning of which a seed is set.
 
   return(sample.int(S, size = ndraws))
+}
+
+# If no get_refdist() (or get_p_clust()) output is available to infer elements
+# `clust_used` (a single logical value indicating whether the given combination
+# of `ndraws` and `nclusters` will lead to clustered projected draws or not) and
+# `nprjdraws` (a single numeric value giving the number of (possibly clustered)
+# projected draws resulting from the given combination of `ndraws` and
+# `nclusters`), the following function can be used as a workaround (argument `S`
+# denotes the number of posterior draws in the reference model object):
+clust_info <- function(ndraws, nclusters, S) {
+  clust_used_out <- !is.null(nclusters) && nclusters < S
+  nprjdraws_out <- if (clust_used_out) nclusters else ndraws
+  return(list(
+    clust_used = clust_used_out,
+    nprjdraws = nprjdraws_out
+  ))
 }
 
 is_proj_list <- function(proj) {
@@ -604,11 +634,25 @@ cat_cls <- function(x) {
       paste(cls, collapse = ", "), "\n\n", sep = "")
 }
 
-# Print out text via cat() if `verbose = TRUE`:
+# Print out text via message() if `verbose = TRUE`:
 verb_out <- function(..., verbose = TRUE) {
   if (verbose) {
-    cat(..., "\n", sep = "")
+    message(...)
   }
+}
+
+# Helper function intended for use in verbose messages:
+txt_clust_draws <- function(clust_used, nprjdraws) {
+  out <- paste0(nprjdraws, " ")
+  if (clust_used) {
+    out <- paste0(out, "cluster")
+  } else {
+    out <- paste0(out, "draw")
+  }
+  if (nprjdraws > 1) {
+    out <- paste0(out, "s")
+  }
+  return(out)
 }
 
 # Ensure that stderr() is used for throwing an error, even while sink()-ing or
@@ -628,7 +672,15 @@ capt_mssgs_warns <- function(expr) {
     warn_orig <- options(warn = 1)
     on.exit(options(warn_orig))
   }
-  utils::capture.output(tryCatch(expr, error = throw_err), type = "message")
+  mssgs_warns_capt <- utils::capture.output(tryCatch(expr, error = throw_err),
+                                            type = "message")
+  if (identical(Sys.getenv("RSTUDIO"), "1")) {
+    # Some RStudio versions (observed in RStudio 2025.05.0+496) add special
+    # characters/symbols, so remove them:
+    mssgs_warns_capt <- gsub("\033[GHgh]{1}2?;?", "", mssgs_warns_capt)
+  }
+  mssgs_warns_capt <- setdiff(mssgs_warns_capt, "")
+  return(mssgs_warns_capt)
 }
 
 # Parse the argument containing the observation weights (`wobs` or `weights`)
@@ -704,4 +756,84 @@ element_unq <- function(list_obj, nm) {
     el_unq <- list_obj[[1]][[nm]]
   }
   return(el_unq)
+}
+
+use_progressr <- function() {
+  getOption("projpred.use_progressr",
+            requireNamespace("progressr", quietly = TRUE) &&
+              interactive() &&
+              identical(foreach::getDoParName(), "doFuture"))
+}
+
+sqrt_cut0 <- function(x) {
+  if (!is.na(x) && sign(x) == -1) {
+    if (abs(x) < 1e3 * sqrt(.Machine$double.eps)) {
+      x <- 0
+    } else {
+      stop("Negative (and numerically non-zero) value used as input to ",
+           "sqrt_cut0().")
+    }
+  }
+  return(sqrt(x))
+}
+
+verbose_from_deprecated_options <- function(verbose, with_cv = FALSE,
+                                            proj_only = FALSE) {
+  if (!is.logical(verbose) || !is.null(getOption("projpred.verbose"))) {
+    return(verbose)
+  }
+  if (!is.null(getOption("projpred.extra_verbose")) &&
+      !is.null(getOption("projpred.verbose_project"))) {
+    warning(
+      "Global options `projpred.extra_verbose` and `projpred.verbose_project` ",
+      "are deprecated. Please use argument ",
+      "`verbose` instead. This argument can also be controlled via a ",
+      "corresponding global option. Now trying to find an appropriate value ",
+      "for argument `verbose`."
+    )
+    verbose <- as.logical(verbose) * (
+      proj_only * 2L +
+        (!proj_only) * (
+          (getOption("projpred.extra_verbose") ||
+             getOption("projpred.verbose_project")) *
+            (1L + with_cv + getOption("projpred.verbose_project")) +
+            1L
+        )
+    )
+  } else {
+    verbose <- verbose_from_deprecated_option(
+      verbose,
+      with_cv = with_cv,
+      proj_only = proj_only,
+      nm_option = "projpred.extra_verbose"
+    )
+    verbose <- verbose_from_deprecated_option(
+      verbose,
+      with_cv = with_cv,
+      proj_only = proj_only,
+      nm_option = "projpred.verbose_project"
+    )
+  }
+  return(verbose)
+}
+
+verbose_from_deprecated_option <- function(verbose, with_cv = FALSE,
+                                           proj_only = FALSE, nm_option) {
+  if (!is.null(getOption(nm_option))) {
+    warning(
+      "Global option `", nm_option, "` is deprecated. Please use argument ",
+      "`verbose` instead. This argument can also be controlled via a ",
+      "corresponding global option. Now trying to find an appropriate value ",
+      "for argument `verbose`."
+    )
+    verbose <- as.logical(verbose) * (
+      proj_only * 2L +
+        (!proj_only) * (
+          getOption(nm_option) *
+            (1L + with_cv + identical(nm_option, "projpred.verbose_project")) +
+            1L
+        )
+    )
+  }
+  return(verbose)
 }

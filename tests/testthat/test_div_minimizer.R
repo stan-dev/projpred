@@ -9,8 +9,6 @@ ls_bu <- ls()
 
 test_that("divmin() works", {
   skip_on_cran()
-  # Currently, version < 1.6-4 of package 'Matrix' is needed here:
-  skip_if(packageVersion("Matrix") >= "1.6-4")
   # For comparison with the divmin_augdat() test:
   outdmin_brnll_tmp <- list()
 
@@ -64,10 +62,12 @@ test_that("divmin() works", {
       )
     }
 
+    args_fit_i$verbose_divmin <- FALSE
+
     outdmin <- do.call(
       divmin,
       args_fit_i[intersect(c("formula", "data", "family", "weights",
-                             "projpred_var"),
+                             "projpred_var", "verbose_divmin"),
                            names(args_fit_i))]
     )
     if (fam_crr == "brnll") {
@@ -95,8 +95,6 @@ test_that("divmin() works", {
 
 test_that("divmin_augdat() works", {
   skip_on_cran()
-  # Currently, version < 1.6-4 of package 'Matrix' is needed here:
-  skip_if(packageVersion("Matrix") >= "1.6-4")
   # For comparison with the divmin() test:
   outdmin_brnll_tmp <- list()
 
@@ -160,6 +158,8 @@ test_that("divmin_augdat() works", {
       args_fit_i <- c(args_fit_i, list(avoid.increase = TRUE))
     }
 
+    args_fit_i$verbose_divmin <- FALSE
+
     if (fam_crr == "cumul" && mod_crr %in% c("glmm", "gamm") &&
         packageVersion("ordinal") < "2022.11-16") {
       warn_expected <- paste(
@@ -176,16 +176,28 @@ test_that("divmin_augdat() works", {
     } else {
       warn_expected <- NA
     }
-    expect_warning(
+    if (is.na(warn_expected)) {
+      # Handle this case separately to avoid that a warning about failure to
+      # converge results in an error.
       outdmin <- do.call(
         divmin_augdat,
         args_fit_i[intersect(c("formula", "data", "family", "weights",
                                "projpred_var", "projpred_ws_aug", "epsilon",
-                               "avoid.increase"),
+                               "avoid.increase", "verbose_divmin"),
                              names(args_fit_i))]
-      ),
-      warn_expected
-    )
+      )
+    } else {
+      expect_warning(
+        outdmin <- do.call(
+          divmin_augdat,
+          args_fit_i[intersect(c("formula", "data", "family", "weights",
+                                 "projpred_var", "projpred_ws_aug", "epsilon",
+                                 "avoid.increase", "verbose_divmin"),
+                               names(args_fit_i))]
+        ),
+        warn_expected
+      )
+    }
     if (fam_crr == "brnll") {
       outdmin_brnll_tmp[[tstsetup]] <- outdmin
     }
@@ -212,8 +224,6 @@ test_that(paste(
   "`brnll` family)"
 ), {
   skip_on_cran()
-  # Currently, version < 1.6-4 of package 'Matrix' is needed here:
-  skip_if(packageVersion("Matrix") >= "1.6-4")
   for (tstsetup in names(outdmin_brnll_augdat)) {
     args_ref_i <- args_ref[[tstsetup]]
     outdmin_augdat <- outdmin_brnll_augdat[[tstsetup]]

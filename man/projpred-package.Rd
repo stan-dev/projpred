@@ -82,25 +82,20 @@ object inherits from class \code{gam}).
 }
 
 \section{Verbosity, messages, warnings, errors}{
-Setting global option \code{projpred.extra_verbose} to \code{TRUE} will print out which
-submodel \pkg{projpred} is currently projecting onto as well as (if \code{method = "forward"} and \code{verbose = TRUE} in \code{\link[=varsel]{varsel()}} or \code{\link[=cv_varsel]{cv_varsel()}}) which
-submodel has been selected at those steps of the forward search for which a
-percentage (of the maximum submodel size that the search is run up to) is
-printed. In general, however, we cannot recommend setting this global option
-to \code{TRUE} for \code{\link[=cv_varsel]{cv_varsel()}} with \code{validate_search = TRUE} (simply due to the
-amount of information that will be printed, but also due to the progress bar
-which will not work as intended anymore).
+Global option \code{projpred.verbose} may be used for specifying the value passed
+to argument \code{verbose} of \code{\link[=project]{project()}}, \code{\link[=varsel]{varsel()}}, and \code{\link[=cv_varsel]{cv_varsel()}}.
 
 By default, \pkg{projpred} catches messages and warnings from the draw-wise
 divergence minimizers and throws their unique collection after performing all
 draw-wise divergence minimizations (i.e., draw-wise projections). This can be
-deactivated by setting global option \code{projpred.warn_prj_drawwise} to \code{FALSE}.
+deactivated by setting global option \code{projpred.warn_proj_drawwise} to
+\code{FALSE}.
 
 Furthermore, by default, \pkg{projpred} checks the convergence of the
 draw-wise divergence minimizers and throws a warning if any seem to have not
 converged. This warning is thrown after the warning message from global
-option \code{projpred.warn_prj_drawwise} (see above) and can be deactivated by
-setting global option \code{projpred.check_conv} to \code{FALSE}.
+option \code{projpred.warn_proj_drawwise} (see above) and can be deactivated by
+setting global option \code{projpred.check_convergence} to \code{FALSE}.
 }
 
 \section{Parallelization}{
@@ -108,29 +103,45 @@ The projection of the reference model onto a submodel can be run in parallel
 (across the projected draws). This is powered by the \pkg{foreach} package.
 Thus, any parallel (or sequential) backend compatible with \pkg{foreach} can
 be used, e.g., the backends from packages \pkg{doParallel}, \pkg{doMPI}, or
-\pkg{doFuture}. Using the global option \code{projpred.prll_prj_trigger}, the
+\pkg{doFuture}. Using the global option \code{projpred.parallel_proj_trigger}, the
 number of projected draws below which no parallelization is applied (even if
 a parallel backend is registered) can be modified. Such a "trigger" threshold
 exists because of the computational overhead of a parallelization which makes
 the projection parallelization only useful for a sufficiently large number of
 projected draws. By default, the projection parallelization is turned off,
 which can also be achieved by supplying \code{Inf} (or \code{NULL}) to option
-\code{projpred.prll_prj_trigger}. Note that we cannot recommend the projection
-parallelization on Windows because in our experience, the parallelization
-overhead is larger there, causing a parallel run to take longer than a
-sequential run. Also note that the projection parallelization works well for
-submodels which are GLMs (and hence also for the latent projection if the
-submodel has no multilevel or additive predictor terms), but for all other
-types of submodels, the fitted submodel objects are quite big, which---when
-running in parallel---may lead to excessive memory usage which in turn may
-crash the R session (on Unix systems, setting an appropriate memory limit via
-\code{\link[unix:rlimit]{unix::rlimit_as()}} may avoid crashing the whole machine). Thus, we currently
-cannot recommend parallelizing projections onto submodels which are GLMs (in
-this context, the latent projection onto a submodel without multilevel and
-without additive terms may be regarded as a projection onto a submodel which
-is a GLM). However, for \code{\link[=cv_varsel]{cv_varsel()}}, there is also a \emph{CV} parallelization
-(i.e., a parallelization of \pkg{projpred}'s cross-validation) which can be
-activated via argument \code{parallel}.
+\code{projpred.parallel_proj_trigger}. Note that we cannot recommend the
+projection parallelization on Windows because in our experience, the
+parallelization overhead is larger there, causing a parallel run to take
+longer than a sequential run. Also note that the projection parallelization
+works well for submodels which are GLMs (and hence also for the latent
+projection if the submodel has no multilevel or additive predictor terms),
+but for all other types of submodels, the fitted submodel objects are quite
+big, which---when running in parallel---may lead to excessive memory usage
+which in turn may crash the R session (on Unix systems, setting an
+appropriate memory limit via \code{\link[unix:rlimit]{unix::rlimit_as()}} may avoid crashing the whole
+machine). Thus, we currently cannot recommend parallelizing projections onto
+submodels which are GLMs (in this context, the latent projection onto a
+submodel without multilevel and without additive terms may be regarded as a
+projection onto a submodel which is a GLM). However, for \code{\link[=cv_varsel]{cv_varsel()}}, there
+is also a \emph{CV} parallelization (i.e., a parallelization of \pkg{projpred}'s
+cross-validation) which can be activated via argument \code{parallel} (which in
+turn can be controlled via global option \code{projpred.parallel_cv}).
+
+For the CV parallelization, global option \code{projpred.export_to_workers} may be
+set to a character vector of names of objects to export from the global
+environment to the parallel workers.
+
+During parallelization (either of the projection or the CV), progression
+updates can be received via the \pkg{progressr} package. This only works if
+the \pkg{doFuture} backend is used for parallelization, e.g., via
+\code{doFuture::registerDoFuture()} and \code{future::plan(future::multisession, workers = 4)}. In that case, the \pkg{progressr} package can be used, e.g.,
+by calling \code{progressr::handlers(global = TRUE)} before running the projection
+or the CV in parallel. The \pkg{projpred} package also offers the global
+option \code{projpred.use_progressr} for controlling whether to use the
+\pkg{progressr} package (\code{TRUE} or \code{FALSE}), but since that global option
+defaults to \code{requireNamespace("progressr", quietly = TRUE) && interactive() && identical(foreach::getDoParName(), "doFuture")}, it usually does not need
+to be set by the user.
 }
 
 \section{Multilevel models: "Integrating out" group-level effects}{
@@ -172,6 +183,20 @@ default of \code{FALSE} for that global option).
 }
 
 \section{Other notes}{
+Global option \code{projpred.digits} controls arguments \code{digits} of
+\code{\link[=print.vselsummary]{print.vselsummary()}} and \code{\link[=print.vsel]{print.vsel()}}.
+
+There are several global options to control arguments of \code{\link[=plot.vsel]{plot.vsel()}} and
+\code{\link[=plot.cv_proportions]{plot.cv_proportions()}} globally, see section "Usage" of the help pages of
+these two functions.
+
+Global option \code{projpred.warn_L1_interactions} may be set to \code{FALSE} to
+deactivate a warning that an L1 search selected an interaction term before
+all involved lower-order interaction terms (including main-effect terms) were
+selected (in which case the predictor ranking is automatically modified by
+\pkg{projpred} so that the lower-order interaction terms come before this
+interaction term).
+
 Most examples are not executed when called via \code{\link[=example]{example()}}. To execute them,
 their code has to be copied and pasted manually to the console.
 }
@@ -209,13 +234,14 @@ Useful links:
 
 }
 \author{
-\strong{Maintainer}: Frank Weber \email{fweber144@protonmail.com}
+\strong{Maintainer}: Osvaldo Martin \email{aloctavodia@gmail.com}
 
 Authors:
 \itemize{
   \item Juho Piironen \email{juho.t.piironen@gmail.com}
   \item Markus Paasiniemi
   \item Alejandro Catalina \email{alecatfel@gmail.com}
+  \item Frank Weber
   \item Aki Vehtari
 }
 

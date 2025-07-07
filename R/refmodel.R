@@ -585,7 +585,7 @@ predict.refmodel <- function(object, newdata = NULL, ynew = NULL,
         stop("Unexpected structure for the output of `latent_ilink`.")
       }
       loglik <- refmodel$family$latent_ll_oscale(
-        mu_oscale, y_oscale = ynew, wobs = weightsnew,
+        mu_oscale, dis = refmodel$dis, y_oscale = ynew, wobs = weightsnew,
         cl_ref = seq_along(refmodel$wdraws_ref),
         wdraws_ref = rep(1, length(refmodel$wdraws_ref))
       )
@@ -610,8 +610,8 @@ predict.refmodel <- function(object, newdata = NULL, ynew = NULL,
         if (all(is.na(refmodel$dis))) {
           message(
             "Cannot calculate LPD values if `type = \"link\"` and ",
-            "`<refmodel>$dis` consists of only `NA`s. If it's not possible to ",
-            "supply a suitable argument `dis` to init_refmodel(), consider ",
+            "`<refmodel>$dis` consists of only `NA`s. If it is not possible to ",
+            "supply values to argument `dis` of init_refmodel(), consider ",
             "switching to `type = \"response\"` (which might require the ",
             "specification of functions needed by extend_family())."
           )
@@ -707,9 +707,6 @@ refprd <- function(fit, newdata = NULL) {
 #'   `factor`.
 #'
 #' @seealso [init_refmodel()]
-#'
-#' @examples
-#' # For an example, see `?init_refmodel`.
 #'
 #' @export
 y_wobs_offs <- function(newdata, wrhs = NULL, orhs = NULL, resp_form) {
@@ -1184,8 +1181,18 @@ init_refmodel <- function(object, data, formula, family, ref_predfun = NULL,
     # The internal default for `extract_model_data`:
     extract_model_data_usr <- function(object, newdata, wrhs = NULL,
                                        orhs = NULL, extract_y = TRUE) {
+      if (extract_y) {
+        resp_fml <- lhs(formula)
+        if (family$for_latent) {
+          resp_fml <- update(resp_fml,
+                             paste(sub("^\\.", "", as.character(resp_fml[[2]])),
+                                   "~ ."))
+        }
+      } else {
+        resp_fml <- NULL
+      }
       return(y_wobs_offs(newdata = newdata, wrhs = wrhs, orhs = orhs,
-                         resp_form = if (extract_y) lhs(formula) else NULL))
+                         resp_form = resp_fml))
     }
   }
   # Wrap `extract_model_data_usr`:

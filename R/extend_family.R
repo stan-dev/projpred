@@ -156,11 +156,13 @@
 #' The function supplied to argument `latent_ll_oscale` needs to have the
 #' prototype
 #' ```{r, eval = FALSE}
-#' latent_ll_oscale(ilpreds, y_oscale, wobs = rep(1, length(y_oscale)), cl_ref,
-#'                  wdraws_ref = rep(1, length(cl_ref)))
+#' latent_ll_oscale(ilpreds, dis, y_oscale, wobs = rep(1, length(y_oscale)),
+#'                  cl_ref, wdraws_ref = rep(1, length(cl_ref)))
 #' ```
 #' where:
 #' * `ilpreds` accepts the return value from `latent_ilink`.
+#' * `dis` accepts a vector of length \eqn{S} containing dispersion parameter
+#' draws.
 #' * `y_oscale` accepts a vector of length \eqn{N} containing response values on
 #' the original response scale.
 #' * `wobs` accepts a numeric vector of length \eqn{N} containing observation
@@ -176,13 +178,16 @@
 #' The function supplied to argument `latent_ppd_oscale` needs to have the
 #' prototype
 #' ```{r, eval = FALSE}
-#' latent_ppd_oscale(ilpreds_resamp, wobs, cl_ref,
+#' latent_ppd_oscale(ilpreds_resamp, dis_resamp, wobs, cl_ref,
 #'                   wdraws_ref = rep(1, length(cl_ref)), idxs_prjdraws)
 #' ```
 #' where:
 #' * `ilpreds_resamp` accepts the return value from `latent_ilink`, but possibly
 #' with resampled (clustered) draws (see argument `nresample_clusters` of
 #' [proj_predict()]).
+#' * `dis_resamp` accepts a vector of length \eqn{\texttt{dim(ilpreds)[1]}}
+#' containing dispersion parameter draws, possibly resampled (in the same way as
+#' the draws in `ilpreds_resamp`, see also argument `idxs_prjdraws`).
 #' * `wobs` accepts a numeric vector of length \eqn{N} containing observation
 #' weights.
 #' * `cl_ref` accepts the same input as argument `cl_ref` of `latent_ilink`.

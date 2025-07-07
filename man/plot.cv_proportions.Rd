@@ -5,7 +5,11 @@
 \alias{plot.ranking}
 \title{Plot ranking proportions from fold-wise predictor rankings}
 \usage{
-\method{plot}{cv_proportions}(x, text_angle = NULL, ...)
+\method{plot}{cv_proportions}(
+  x,
+  text_angle = getOption("projpred.plot_cv_proportions_text_angle", NULL),
+  ...
+)
 
 \method{plot}{ranking}(x, ...)
 }

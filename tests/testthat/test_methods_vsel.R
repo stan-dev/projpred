@@ -155,7 +155,7 @@ test_that("performances.vsel() is a shortcut", {
   skip_if_not(run_cvvs)
   for (tstsetup in names(smmrys_vs)) {
     args_smmry_i <- args_smmry_vs[[tstsetup]]
-    if (any(c("rmse", "auc") %in% args_smmry_i$stats)) {
+    if (any(c("auc") %in% args_smmry_i$stats)) {
       smmry_seed <- list(seed = seed3_tst)
     } else {
       smmry_seed <- list()
@@ -169,7 +169,7 @@ test_that("performances.vsel() is a shortcut", {
   }
   for (tstsetup in names(smmrys_cvvs)) {
     args_smmry_i <- args_smmry_cvvs[[tstsetup]]
-    if (any(c("rmse", "auc") %in% args_smmry_i$stats)) {
+    if (any(c("auc") %in% args_smmry_i$stats)) {
       smmry_seed <- list(seed = seed3_tst)
     } else {
       smmry_seed <- list()
@@ -239,7 +239,7 @@ test_that(paste(
   skip_if_not(run_vs)
   for (tstsetup in head(names(smmrys_vs), 1)) {
     args_smmry_vs_i <- args_smmry_vs[[tstsetup]]
-    if (any(c("rmse", "auc") %in% args_smmry_vs_i$stats)) {
+    if (any(c("auc") %in% args_smmry_vs_i$stats)) {
       smmry_seed <- list(seed = seed3_tst)
     } else {
       smmry_seed <- list()
@@ -264,7 +264,7 @@ test_that(paste(
   skip_if_not(run_cvvs)
   for (tstsetup in head(names(smmrys_cvvs), 1)) {
     args_smmry_cvvs_i <- args_smmry_cvvs[[tstsetup]]
-    if (any(c("rmse", "auc") %in% args_smmry_cvvs_i$stats)) {
+    if (any(c("auc") %in% args_smmry_cvvs_i$stats)) {
       smmry_seed <- list(seed = seed3_tst)
     } else {
       smmry_seed <- list()
@@ -286,24 +286,40 @@ test_that(paste(
 
 context("plot()")
 
+args_common_for_rk_NA <- c(
+  "tstsetup_vsel", "deltas", "text_angle", "nterms_max", "ranking_nterms_max",
+  "size_position", "show_cv_proportions"
+)
+args_common_for_rk_max_vs <- c(
+  "tstsetup_vsel", "deltas", "text_angle", "nterms_max", "ranking_abbreviate",
+  "ranking_repel", "size_position", "show_cv_proportions"
+)
+args_common_for_rk_max_cvvs <- c(
+  "tstsetup_vsel", "deltas", "text_angle", "nterms_max", "ranking_abbreviate",
+  "ranking_repel", "ranking_colored", "cumulate", "size_position",
+  "show_cv_proportions"
+)
+
 test_that("`x` of class `vsel` (created by varsel()) works", {
   skip_if_not(run_vs)
-  common_for_rk_NA <- c("tstsetup_vsel", "text_angle", "nterms_max",
-                        "ranking_nterms_max")
-  common_for_rk_max <- c("tstsetup_vsel", "text_angle", "nterms_max",
-                         "ranking_abbreviate", "ranking_repel")
   for (tstsetup in names(plots_vs)) {
     args_plot_i <- args_plot_vs[[tstsetup]]
     if (identical(args_plot_i$ranking_nterms_max, NA)) {
-      matches_tstsetup <- sapply(names(plots_vs), function(tstsetup2) {
-        common_for_rk_NA <- intersect(common_for_rk_NA, names(args_plot_i))
-        args_plot_i2 <- args_plot_vs[[tstsetup2]]
-        common_for_rk_NA2 <- intersect(common_for_rk_NA, names(args_plot_i2))
-        if (!setequal(common_for_rk_NA, common_for_rk_NA2)) {
-          return(FALSE)
+      matches_tstsetup <- sapply(
+        setdiff(names(plots_vs), tstsetup),
+        function(tstsetup2) {
+          common_for_rk_NA <- intersect(args_common_for_rk_NA,
+                                        names(args_plot_i))
+          args_plot_i2 <- args_plot_vs[[tstsetup2]]
+          common_for_rk_NA2 <- intersect(args_common_for_rk_NA,
+                                         names(args_plot_i2))
+          if (!setequal(common_for_rk_NA, common_for_rk_NA2)) {
+            return(FALSE)
+          }
+          identical(args_plot_i[common_for_rk_NA],
+                    args_plot_i2[common_for_rk_NA])
         }
-        identical(args_plot_i[common_for_rk_NA], args_plot_i2[common_for_rk_NA])
-      })
+      )
       if (any(matches_tstsetup)) {
         tstsetup_target <- names(which.max(matches_tstsetup))
       } else {
@@ -312,16 +328,21 @@ test_that("`x` of class `vsel` (created by varsel()) works", {
     } else if (length(args_plot_i$ranking_nterms_max) &&
                identical(args_plot_i$ranking_nterms_max,
                          args_plot_i$nterms_max)) {
-      matches_tstsetup <- sapply(names(plots_vs), function(tstsetup2) {
-        common_for_rk_max <- intersect(common_for_rk_max, names(args_plot_i))
-        args_plot_i2 <- args_plot_vs[[tstsetup2]]
-        common_for_rk_max2 <- intersect(common_for_rk_max, names(args_plot_i2))
-        if (!setequal(common_for_rk_max, common_for_rk_max2)) {
-          return(FALSE)
+      matches_tstsetup <- sapply(
+        setdiff(names(plots_vs), tstsetup),
+        function(tstsetup2) {
+          common_for_rk_max <- intersect(args_common_for_rk_max_vs,
+                                         names(args_plot_i))
+          args_plot_i2 <- args_plot_vs[[tstsetup2]]
+          common_for_rk_max2 <- intersect(args_common_for_rk_max_vs,
+                                          names(args_plot_i2))
+          if (!setequal(common_for_rk_max, common_for_rk_max2)) {
+            return(FALSE)
+          }
+          identical(args_plot_i[common_for_rk_max],
+                    args_plot_i2[common_for_rk_max])
         }
-        identical(args_plot_i[common_for_rk_max],
-                  args_plot_i2[common_for_rk_max])
-      })
+      )
       if (any(matches_tstsetup)) {
         tstsetup_target <- names(which.max(matches_tstsetup))
       } else {
@@ -329,14 +350,17 @@ test_that("`x` of class `vsel` (created by varsel()) works", {
       }
     } else if (args_plot_i$ranking_colored || args_plot_i$cumulate) {
       not_common_here <- c("ranking_colored", "cumulate")
-      matches_tstsetup <- sapply(names(plots_vs), function(tstsetup2) {
-        args_plot_i2 <- args_plot_vs[[tstsetup2]]
-        if (!setequal(names(args_plot_i), names(args_plot_i2))) {
-          return(FALSE)
+      matches_tstsetup <- sapply(
+        setdiff(names(plots_vs), tstsetup),
+        function(tstsetup2) {
+          args_plot_i2 <- args_plot_vs[[tstsetup2]]
+          if (!setequal(names(args_plot_i), names(args_plot_i2))) {
+            return(FALSE)
+          }
+          identical(args_plot_i[setdiff(names(args_plot_i), not_common_here)],
+                    args_plot_i2[setdiff(names(args_plot_i2), not_common_here)])
         }
-        identical(args_plot_i[setdiff(names(args_plot_i), not_common_here)],
-                  args_plot_i2[setdiff(names(args_plot_i2), not_common_here)])
-      })
+      )
       if (any(matches_tstsetup)) {
         tstsetup_target <- names(which.max(matches_tstsetup))
       } else {
@@ -360,23 +384,24 @@ test_that("`x` of class `vsel` (created by varsel()) works", {
 
 test_that("`x` of class `vsel` (created by cv_varsel()) works", {
   skip_if_not(run_cvvs)
-  common_for_rk_NA <- c("tstsetup_vsel", "text_angle", "nterms_max",
-                        "ranking_nterms_max")
-  common_for_rk_max <- c("tstsetup_vsel", "text_angle", "nterms_max",
-                         "ranking_abbreviate", "ranking_repel",
-                         "ranking_colored", "cumulate")
   for (tstsetup in names(plots_cvvs)) {
     args_plot_i <- args_plot_cvvs[[tstsetup]]
     if (identical(args_plot_i$ranking_nterms_max, NA)) {
-      matches_tstsetup <- sapply(names(plots_cvvs), function(tstsetup2) {
-        common_for_rk_NA <- intersect(common_for_rk_NA, names(args_plot_i))
-        args_plot_i2 <- args_plot_cvvs[[tstsetup2]]
-        common_for_rk_NA2 <- intersect(common_for_rk_NA, names(args_plot_i2))
-        if (!setequal(common_for_rk_NA, common_for_rk_NA2)) {
-          return(FALSE)
+      matches_tstsetup <- sapply(
+        setdiff(names(plots_cvvs), tstsetup),
+        function(tstsetup2) {
+          common_for_rk_NA <- intersect(args_common_for_rk_NA,
+                                        names(args_plot_i))
+          args_plot_i2 <- args_plot_cvvs[[tstsetup2]]
+          common_for_rk_NA2 <- intersect(args_common_for_rk_NA,
+                                         names(args_plot_i2))
+          if (!setequal(common_for_rk_NA, common_for_rk_NA2)) {
+            return(FALSE)
+          }
+          identical(args_plot_i[common_for_rk_NA],
+                    args_plot_i2[common_for_rk_NA])
         }
-        identical(args_plot_i[common_for_rk_NA], args_plot_i2[common_for_rk_NA])
-      })
+      )
       if (any(matches_tstsetup)) {
         tstsetup_target <- names(which.max(matches_tstsetup))
       } else {
@@ -385,16 +410,21 @@ test_that("`x` of class `vsel` (created by cv_varsel()) works", {
     } else if (length(args_plot_i$ranking_nterms_max) &&
                identical(args_plot_i$ranking_nterms_max,
                          args_plot_i$nterms_max)) {
-      matches_tstsetup <- sapply(names(plots_cvvs), function(tstsetup2) {
-        common_for_rk_max <- intersect(common_for_rk_max, names(args_plot_i))
-        args_plot_i2 <- args_plot_cvvs[[tstsetup2]]
-        common_for_rk_max2 <- intersect(common_for_rk_max, names(args_plot_i2))
-        if (!setequal(common_for_rk_max, common_for_rk_max2)) {
-          return(FALSE)
+      matches_tstsetup <- sapply(
+        setdiff(names(plots_cvvs), tstsetup),
+        function(tstsetup2) {
+          common_for_rk_max <- intersect(args_common_for_rk_max_cvvs,
+                                         names(args_plot_i))
+          args_plot_i2 <- args_plot_cvvs[[tstsetup2]]
+          common_for_rk_max2 <- intersect(args_common_for_rk_max_cvvs,
+                                          names(args_plot_i2))
+          if (!setequal(common_for_rk_max, common_for_rk_max2)) {
+            return(FALSE)
+          }
+          identical(args_plot_i[common_for_rk_max],
+                    args_plot_i2[common_for_rk_max])
         }
-        identical(args_plot_i[common_for_rk_max],
-                  args_plot_i2[common_for_rk_max])
-      })
+      )
       if (any(matches_tstsetup)) {
         tstsetup_target <- names(which.max(matches_tstsetup))
       } else {
@@ -449,8 +479,17 @@ test_that(paste(
   for (tstsetup in tstsetups) {
     args_plot_i <- args_plot_vs[[tstsetup]]
     nterms_max_crr <- args_vs[[args_plot_i$tstsetup_vsel]]$nterms_max + 1L
+    deltas_crr <- args_plot_i$deltas %||% FALSE
+    if (any(c("auc") %in% args_plot_i$stats)) {
+      seed_crr <- seed3_tst
+    } else {
+      seed_crr <- NA
+    }
     plot_capped <- plot(vss[[args_plot_i$tstsetup_vsel]],
-                        nterms_max = nterms_max_crr)
+                        stats = args_plot_i$stats,
+                        deltas = deltas_crr,
+                        nterms_max = nterms_max_crr,
+                        seed = seed_crr)
     plot_vsel_tester(
       plot_capped,
       nterms_max_expected = nterms_max_crr,
@@ -474,8 +513,17 @@ test_that(paste(
   for (tstsetup in tstsetups) {
     args_plot_i <- args_plot_cvvs[[tstsetup]]
     nterms_max_crr <- args_cvvs[[args_plot_i$tstsetup_vsel]]$nterms_max + 1L
+    deltas_crr <- args_plot_i$deltas %||% FALSE
+    if (any(c("auc") %in% args_plot_i$stats)) {
+      seed_crr <- seed3_tst
+    } else {
+      seed_crr <- NA
+    }
     plot_capped <- plot(cvvss[[args_plot_i$tstsetup_vsel]],
-                        nterms_max = nterms_max_crr)
+                        stats = args_plot_i$stats,
+                        deltas = deltas_crr,
+                        nterms_max = nterms_max_crr,
+                        seed = seed_crr)
     plot_vsel_tester(
       plot_capped,
       nterms_max_expected = nterms_max_crr,
@@ -527,7 +575,7 @@ test_that("`stat` works", {
                                  "common_stats"))
     stat_vec <- stats_tst[[stat_crr_nm]]$stats
     for (stat_crr in stat_vec) {
-      if (stat_crr %in% c("rmse", "auc")) {
+      if (stat_crr %in% c("auc")) {
         suggsize_seed <- seed3_tst
       } else {
         suggsize_seed <- NULL
@@ -608,6 +656,12 @@ test_that(paste(
     nterms_max_expected_crr <- args_rk_cvvs[[tstsetup_rk]][["nterms_max"]]
     if (is.null(nterms_max_expected_crr)) {
       nterms_max_expected_crr <- args_cvvs[[tstsetup_cvvs]][["nterms_max"]]
+      if (length(args_cvvs[[tstsetup_cvvs]]$search_terms) &&
+          all(grepl("\\+", args_cvvs[[tstsetup_cvvs]]$search_terms))) {
+        # This is the "empty_size" setting, so we have to subtract the skipped
+        # model size (see issue #307):
+        nterms_max_expected_crr <- nterms_max_expected_crr - 1L
+      }
     }
     cv_proportions_tester(
       prs_cvvs[[tstsetup]],
@@ -692,7 +746,6 @@ test_that("`x` of class `cv_proportions` works", {
   skip_if_not(run_cvvs)
   for (tstsetup in names(plotprs)) {
     expect_s3_class(plotprs[[tstsetup]], c("gg", "ggplot"))
-    expect_visible(plotprs[[tstsetup]], label = tstsetup)
     if (run_snaps) {
       vdiffr::expect_doppelganger(tstsetup, plotprs[[tstsetup]])
     }
@@ -709,7 +762,6 @@ test_that("plot.ranking() is a shortcut", {
       excl_nonargs(args_pr_cvvs[[args_plotpr_i$tstsetup_pr]])
     ))
     expect_s3_class(plotpr_from_rk, c("gg", "ggplot"))
-    expect_visible(plotpr_from_rk, label = tstsetup)
     if (run_snaps) {
       vdiffr::expect_doppelganger(tstsetup, plotpr_from_rk)
     }
@@ -733,9 +785,7 @@ plotprc_dummy <- plot(prc_dummy)
 
 test_that("color gradient behaves as expected", {
   expect_s3_class(plotpr_dummy, c("gg", "ggplot"))
-  expect_visible(plotpr_dummy)
   expect_s3_class(plotprc_dummy, c("gg", "ggplot"))
-  expect_visible(plotprc_dummy)
   if (run_snaps) {
     vdiffr::expect_doppelganger("plotpr_dummy", plotpr_dummy)
     vdiffr::expect_doppelganger("plotprc_dummy", plotprc_dummy)
@@ -746,9 +796,7 @@ test_that("`text_angle` works", {
   plotpr_dummy_angle <- plot(pr_dummy, text_angle = 60)
   plotprc_dummy_angle <- plot(prc_dummy, text_angle = 60)
   expect_s3_class(plotpr_dummy_angle, c("gg", "ggplot"))
-  expect_visible(plotpr_dummy_angle)
   expect_s3_class(plotprc_dummy_angle, c("gg", "ggplot"))
-  expect_visible(plotprc_dummy_angle)
   if (run_snaps) {
     vdiffr::expect_doppelganger("plotpr_dummy_angle", plotpr_dummy_angle)
     vdiffr::expect_doppelganger("plotprc_dummy_angle", plotprc_dummy_angle)
@@ -759,9 +807,7 @@ test_that("the ggplot can be modified", {
   plotpr_dummy_mod <- plotpr_dummy + theme(legend.position = "none")
   plotprc_dummy_mod <- plotprc_dummy + theme(legend.position = "none")
   expect_s3_class(plotpr_dummy_mod, c("gg", "ggplot"))
-  expect_visible(plotpr_dummy_mod)
   expect_s3_class(plotprc_dummy_mod, c("gg", "ggplot"))
-  expect_visible(plotprc_dummy_mod)
   if (run_snaps) {
     vdiffr::expect_doppelganger("plotpr_dummy_mod", plotpr_dummy_mod)
     vdiffr::expect_doppelganger("plotprc_dummy_mod", plotprc_dummy_mod)

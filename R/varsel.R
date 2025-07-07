@@ -5,7 +5,7 @@
 #' known as solution path), i.e., the best submodel for each submodel size
 #' (number of predictor terms). The evaluation part determines the predictive
 #' performance of the submodels along the predictor ranking. A special method is
-#' [varsel.vsel()] because it re-uses the search results from an earlier
+#' [varsel.vsel()] which re-uses the search results from an earlier
 #' [varsel()] (or [cv_varsel()]) run, as illustrated in the main vignette.
 #'
 #' @param object An object of class `refmodel` (returned by [get_refmodel()] or
@@ -18,9 +18,11 @@
 #' @param method The method for the search part. Possible options are
 #'   `"forward"` for forward search and `"L1"` for L1 search. See also section
 #'   "Details" below.
-#' @param refit_prj For the evaluation part, should the submodels along the
-#'   predictor ranking be fitted again (`TRUE`) or should their fits from the
-#'   search part be re-used (`FALSE`)?
+#' @param refit_prj For the evaluation part, should the projections onto the
+#' submodels along the predictor ranking be performed again using `ndraws_pred`
+#' draws or `nclusters_pred` clusters (`TRUE`) or should their projections from
+#' the search part, which used `ndraws` draws or `nclusters` clusters, be re-used
+#' (`FALSE`)?
 #' @param ndraws Number of posterior draws used in the search part. Ignored if
 #'   `nclusters` is not `NULL` or in case of L1 search (because L1 search always
 #'   uses a single cluster). If both (`nclusters` and `ndraws`) are `NULL`, the
@@ -86,8 +88,13 @@
 #'   default `search_terms` considers all the terms in the reference model's
 #'   formula.
 #' @param search_out Intended for internal use.
-#' @param verbose A single logical value indicating whether to print out
-#'   additional information during the computations.
+#' @param verbose A single integer value from the set \eqn{\{0, 1, 2, 3,
+#'   4\}}{{0, 1, 2, 3, 4}} (for [varsel()], \eqn{3} and \eqn{4} have the same
+#'   effect), indicating how much information (if any) to print out during the
+#'   computations. Higher values indicate that more information should be
+#'   printed, `0` deactivates the verbose mode. Internally, argument `verbose`
+#'   is coerced to integer via `as.integer()`, so technically, a single logical
+#'   value or a single numeric value work as well.
 #' @param seed Pseudorandom number generation (PRNG) seed by which the same
 #'   results can be obtained again if needed. Passed to argument `seed` of
 #'   [set.seed()], but can also be `NA` to not call [set.seed()] at all. If not
@@ -139,8 +146,9 @@
 #'
 #'   L1 search is faster than forward search, but forward search may be more
 #'   accurate. Furthermore, forward search may find a sparser model with
-#'   comparable performance to that found by L1 search, but it may also start
-#'   overfitting when more predictors are added.
+#'   comparable performance to that found by L1 search, but it may also
+#'   overfit when more predictors are added. This overfit can be detected
+#'   by running search validation (see [cv_varsel()]).
 #'
 #'   An L1 search may select an interaction term before all involved lower-order
 #'   interaction terms (including main-effect terms) have been selected. In
@@ -245,15 +253,27 @@ varsel.vsel <- function(object, ...) {
 
 #' @rdname varsel
 #' @export
-varsel.refmodel <- function(object, d_test = NULL, method = "forward",
-                            ndraws = NULL, nclusters = 20, ndraws_pred = 400,
-                            nclusters_pred = NULL,
-                            refit_prj = !inherits(object, "datafit"),
-                            nterms_max = NULL, verbose = TRUE,
-                            search_control = NULL, lambda_min_ratio = 1e-5,
-                            nlambda = 150, thresh = 1e-6, penalty = NULL,
-                            search_terms = NULL, search_out = NULL, seed = NA,
-                            ...) {
+varsel.refmodel <- function(
+    object,
+    d_test = NULL,
+    method = "forward",
+    ndraws = NULL,
+    nclusters = 20,
+    ndraws_pred = 400,
+    nclusters_pred = NULL,
+    refit_prj = !inherits(object, "datafit"),
+    nterms_max = NULL,
+    verbose = getOption("projpred.verbose", as.integer(interactive())),
+    search_control = NULL,
+    lambda_min_ratio = 1e-5,
+    nlambda = 150,
+    thresh = 1e-6,
+    penalty = NULL,
+    search_terms = NULL,
+    search_out = NULL,
+    seed = NA,
+    ...
+) {
   if (!missing(lambda_min_ratio)) {
     warning("Argument `lambda_min_ratio` is deprecated. Please specify ",
             "control arguments for the search via argument `search_control`. ",
@@ -273,6 +293,7 @@ varsel.refmodel <- function(object, d_test = NULL, method = "forward",
             "Now using `thresh` as element `thresh` of `search_control`.")
     search_control$thresh <- thresh
   }
+  verbose <- verbose_from_deprecated_options(verbose, with_cv = FALSE)
 
   if (exists(".Random.seed", envir = .GlobalEnv)) {
     rng_state_old <- get(".Random.seed", envir = .GlobalEnv)
@@ -292,7 +313,7 @@ varsel.refmodel <- function(object, d_test = NULL, method = "forward",
   args <- parse_args_varsel(
     refmodel = refmodel, method = method, refit_prj = refit_prj,
     nterms_max = nterms_max, nclusters = nclusters, search_terms = search_terms,
-    nterms_all = nterms_all
+    nterms_all = nterms_all, verbose = verbose
   )
   method <- args$method
   refit_prj <- args$refit_prj
@@ -300,6 +321,7 @@ varsel.refmodel <- function(object, d_test = NULL, method = "forward",
   nclusters <- args$nclusters
   search_terms <- args$search_terms
   search_terms_was_null <- args$search_terms_was_null
+  verbose <- args$verbose
 
   # Pre-process `d_test`:
   if (is.null(d_test)) {
@@ -372,30 +394,25 @@ varsel.refmodel <- function(object, d_test = NULL, method = "forward",
   if (!is.null(search_out)) {
     search_path <- search_out[["search_path"]]
   } else {
-    verb_out("-----\nRunning the search ...", verbose = verbose)
-    search_path <- select(
+    search_path <- .select(
       refmodel = refmodel, ndraws = ndraws, nclusters = nclusters,
       method = method, nterms_max = nterms_max, penalty = penalty,
       verbose = verbose, search_control = search_control,
       search_terms = search_terms,
       search_terms_was_null = search_terms_was_null, ...
     )
-    verb_out("-----", verbose = verbose)
   }
 
   # "Run" the performance evaluation for the submodels along the predictor
   # ranking (in fact, we only prepare the performance evaluation by computing
   # precursor quantities, but for users, this difference is not perceivable):
-  verb_out("-----\nRunning the performance evaluation with `refit_prj = ",
-           refit_prj, "` ...", verbose = verbose)
   perf_eval_out <- perf_eval(
     search_path = search_path, refmodel = refmodel, refit_prj = refit_prj,
     ndraws = ndraws_pred, nclusters = nclusters_pred, indices_test = NULL,
     newdata_test = d_test$data, offset_test = d_test$offset,
     wobs_test = d_test$weights, y_test = d_test$y,
-    y_oscale_test = d_test$y_oscale, ...
+    y_oscale_test = d_test$y_oscale, verbose = verbose, ...
   )
-  verb_out("-----", verbose = verbose)
 
   # Predictive performance of the reference model:
   if (inherits(refmodel, "datafit")) {
@@ -460,11 +477,13 @@ varsel.refmodel <- function(object, d_test = NULL, method = "forward",
               y_wobs_test,
               nobs_test,
               summaries = nlist(sub = perf_eval_out[["sub_summaries"]], ref),
+              summaries_fast = NULL,
               nterms_all,
               nterms_max,
               method,
               cv_method = NULL,
               nloo = NULL,
+              loo_inds = NULL,
               K = NULL,
               validate_search = NULL,
               ### Not set to `NULL` because in K-fold CV (relevant when using
@@ -499,6 +518,8 @@ varsel.refmodel <- function(object, d_test = NULL, method = "forward",
 #   weights), then this needs to be a `list` with elements `wdraws_ref` and
 #   `cl_ref`. For these two elements, see the (internal) documentation of
 #   weighted_summary_means().
+# @param verbose_txt_add Passed to `...` of verb_out(), so character string(s)
+#   to be included in the verbose message indicating the start of the search.
 # For all other arguments, see the documentation of varsel().
 #
 # @return A list with elements `predictor_ranking` (the predictor ranking
@@ -506,8 +527,10 @@ varsel.refmodel <- function(object, d_test = NULL, method = "forward",
 #   `outdmins` (the submodel fits along the predictor ranking, with the number
 #   of fits per model size being equal to the number of projected draws), and
 #   `p_sel` (the output from get_refdist() for the search).
-select <- function(refmodel, ndraws, nclusters, reweighting_args = NULL, method,
-                   nterms_max, penalty, verbose, search_control, ...) {
+.select <- function(refmodel, ndraws, nclusters, reweighting_args = NULL,
+                    method, nterms_max, penalty, verbose,
+                    verbose_line_length = 5, verbose_txt_add = "",
+                    search_control, ...) {
   if (is.null(reweighting_args)) {
     p_sel <- get_refdist(refmodel, ndraws = ndraws, nclusters = nclusters)
   } else {
@@ -515,9 +538,19 @@ select <- function(refmodel, ndraws, nclusters, reweighting_args = NULL, method,
     p_sel <- get_p_clust(
       family = refmodel$family, eta = refmodel$eta, mu = refmodel$mu,
       mu_offs = refmodel$mu_offs, dis = refmodel$dis,
-      wdraws = reweighting_args$wdraws_ref, cl = reweighting_args$cl_ref
+      wdraws = reweighting_args$wdraws_ref, cl = reweighting_args$cl_ref,
+      clust_used_forced = clust_info(
+        ndraws = ndraws,
+        nclusters = nclusters,
+        S = length(refmodel$wdraws_ref)
+      )[["clust_used"]]
     )
   }
+
+  verb_out(rep("-", verbose_line_length), "\nRunning ", method, " search ",
+           verbose_txt_add, "with ",
+           txt_clust_draws(p_sel[["clust_used"]], p_sel[["nprjdraws"]]),
+           " ...", verbose = verbose)
   if (method == "L1") {
     search_path <- search_L1(
       p_ref = p_sel, refmodel = refmodel, nterms_max = nterms_max,
@@ -529,6 +562,8 @@ select <- function(refmodel, ndraws, nclusters, reweighting_args = NULL, method,
       verbose = verbose, search_control = search_control, ...
     )
   }
+  verb_out(rep("-", verbose_line_length), verbose = verbose)
+
   search_path$p_sel <- p_sel
   return(search_path)
 }
@@ -540,7 +575,7 @@ select <- function(refmodel, ndraws, nclusters, reweighting_args = NULL, method,
 # them in with the default values. The purpose of this function is to avoid
 # repeating the same code both in varsel() and cv_varsel().
 parse_args_varsel <- function(refmodel, method, refit_prj, nterms_max,
-                              nclusters, search_terms, nterms_all) {
+                              nclusters, search_terms, nterms_all, verbose) {
   search_terms_was_null <- is.null(search_terms)
   if (search_terms_was_null) {
     search_terms <- split_formula(refmodel$formula,
@@ -622,6 +657,8 @@ parse_args_varsel <- function(refmodel, method, refit_prj, nterms_max,
     )
   }
 
+  verbose <- as.integer(verbose)
+
   return(nlist(method, refit_prj, nterms_max, nclusters, search_terms,
-               search_terms_was_null))
+               search_terms_was_null, verbose))
 }

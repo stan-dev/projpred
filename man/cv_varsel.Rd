@@ -32,8 +32,8 @@ cv_varsel(object, ...)
   refit_prj = !inherits(object, "datafit"),
   nterms_max = NULL,
   penalty = NULL,
-  verbose = TRUE,
-  nloo = object$nobs,
+  verbose = getOption("projpred.verbose", as.integer(interactive())),
+  nloo = if (cv_method == "LOO") object$nobs else NULL,
   K = if (!inherits(object, "datafit")) 5 else 10,
   cvfits = object$cvfits,
   search_control = NULL,
@@ -44,7 +44,7 @@ cv_varsel(object, ...)
   seed = NA,
   search_terms = NULL,
   search_out = NULL,
-  parallel = getOption("projpred.prll_cv", FALSE),
+  parallel = getOption("projpred.parallel_cv", FALSE),
   ...
 )
 }
@@ -64,15 +64,21 @@ is \code{TRUE}).}
 \item{cv_method}{The CV method, either \code{"LOO"} or \code{"kfold"}. In the \code{"LOO"}
 case, a Pareto-smoothed importance sampling leave-one-out CV (PSIS-LOO CV)
 is performed, which avoids refitting the reference model \code{nloo} times (in
-contrast to a standard LOO CV). In the \code{"kfold"} case, a \eqn{K}-fold CV is
+contrast to a standard LOO-CV). In the \code{"kfold"} case, a \eqn{K}-fold CV is
 performed. See also section "Note" below.}
 
-\item{nloo}{\strong{Caution:} Still experimental. Only relevant if \code{cv_method = "LOO"}. If \code{nloo} is smaller than the number of all observations,
-approximate full LOO CV using probability-proportional-to-size-sampling
-(PPS) to make accurate computation only for \code{nloo} (anything from 1 to the
-number of all observations) leave-one-out folds (Magnusson et al., 2019).
-Smaller values lead to faster computation but higher uncertainty in the
-evaluation part. If \code{NULL}, all observations are used (as by default).}
+\item{nloo}{Only relevant if \code{cv_method = "LOO"} and \code{validate_search = TRUE}. If \code{nloo > 0} is smaller than the number of all observations, full
+LOO-CV (i.e., PSIS-LOO CV with \code{validate_search = TRUE} and with \code{nloo = n}
+where \code{n} denotes the number of all observations) is approximated by
+subsampled LOO-CV, i.e., by combining the fast (i.e., \code{validate_search = FALSE}) LOO result for the selected models and \code{nloo} leave-one-out
+searches using the difference estimator with simple random sampling (SRS)
+without replacement (WOR) (Magnusson et al., 2020). Smaller \code{nloo} values
+lead to faster computation, but higher uncertainty in the evaluation part.
+If \code{NULL}, all observations are used (as by default). Note that performance
+statistic \code{"auc"} (see argument \code{stats} of \code{\link[=summary.vsel]{summary.vsel()}} and
+\code{\link[=plot.vsel]{plot.vsel()}}) is not supported in case of subsampled LOO-CV. Furthermore,
+option \code{"best"} for argument \code{baseline} of \code{\link[=summary.vsel]{summary.vsel()}} and
+\code{\link[=plot.vsel]{plot.vsel()}} is not supported in case of subsampled LOO-CV.}
 
 \item{K}{Only relevant if \code{cv_method = "kfold"} and if \code{cvfits} is \code{NULL}
 (which is the case for reference model objects created by
@@ -85,14 +91,11 @@ folds in \eqn{K}-fold CV.}
 
 \item{validate_search}{A single logical value indicating whether to
 cross-validate also the search part, i.e., whether to run the search
-separately for each CV fold (\code{TRUE}) or not (\code{FALSE}). We strongly do not
-recommend setting this to \code{FALSE}, because this is known to bias the
-predictive performance estimates of the selected submodels. However,
-setting this to \code{FALSE} can sometimes be useful because comparing the
-results to the case where this argument is \code{TRUE} gives an idea of how
-strongly the search is (over-)fitted to the data (the difference
-corresponds to the search degrees of freedom or the effective number of
-parameters introduced by the search).}
+separately for each CV fold (\code{TRUE}) or not (\code{FALSE}). With \code{FALSE},
+the computation is faster, but the predictive performance estimates
+of the selected submodels are optimistically biased. However, these fast
+biased estimates can be useful to obtain initial information on the
+usefulness of projection predictive variable selection.}
 
 \item{method}{The method for the search part. Possible options are
 \code{"forward"} for forward search and \code{"L1"} for L1 search. See also section
@@ -119,9 +122,11 @@ number of posterior draws from the reference model is used for
 clusters of posterior draws used in the evaluation part. For the meaning of
 \code{NULL}, see argument \code{ndraws_pred}. See also section "Details" below.}
 
-\item{refit_prj}{For the evaluation part, should the submodels along the
-predictor ranking be fitted again (\code{TRUE}) or should their fits from the
-search part be re-used (\code{FALSE})?}
+\item{refit_prj}{For the evaluation part, should the projections onto the
+submodels along the predictor ranking be performed again using \code{ndraws_pred}
+draws or \code{nclusters_pred} clusters (\code{TRUE}) or should their projections from
+the search part, which used \code{ndraws} draws or \code{nclusters} clusters, be re-used
+(\code{FALSE})?}
 
 \item{nterms_max}{Maximum submodel size (number of predictor terms) up to
 which the search is continued. If \code{NULL}, then \code{min(19, D)} is used where
@@ -136,8 +141,13 @@ those predictors have no cost and will therefore be selected first, whereas
 \code{Inf} means those predictors will never be selected. If \code{NULL}, then \code{1} is
 used for each predictor.}
 
-\item{verbose}{A single logical value indicating whether to print out
-additional information during the computations.}
+\item{verbose}{A single integer value from the set \eqn{\{0, 1, 2, 3,
+  4\}}{{0, 1, 2, 3, 4}} (for \code{\link[=varsel]{varsel()}}, \eqn{3} and \eqn{4} have the same
+effect), indicating how much information (if any) to print out during the
+computations. Higher values indicate that more information should be
+printed, \code{0} deactivates the verbose mode. Internally, argument \code{verbose}
+is coerced to integer via \code{as.integer()}, so technically, a single logical
+value or a single numeric value work as well.}
 
 \item{search_control}{A \code{list} of "control" arguments (i.e., tuning
 parameters) for the search. In case of forward search, these arguments are
@@ -197,7 +207,7 @@ formula.}
 
 \item{parallel}{A single logical value indicating whether to run costly parts
 of the CV in parallel (\code{TRUE}) or not (\code{FALSE}). See also section "Note"
-below.}
+below as well as section "Parallelization" in \link{projpred-package}.}
 }
 \value{
 An object of class \code{vsel}. The elements of this object are not meant
@@ -234,8 +244,9 @@ effect.
 
 L1 search is faster than forward search, but forward search may be more
 accurate. Furthermore, forward search may find a sparser model with
-comparable performance to that found by L1 search, but it may also start
-overfitting when more predictors are added.
+comparable performance to that found by L1 search, but it may also
+overfit when more predictors are added. This overfit can be detected
+by running search validation (see \code{\link[=cv_varsel]{cv_varsel()}}).
 
 An L1 search may select an interaction term before all involved lower-order
 interaction terms (including main-effect terms) have been selected. In
@@ -273,7 +284,31 @@ that leads to the same results, \code{search_terms = c("x2", "x3")}).
 }
 \note{
 If \code{validate_search} is \code{FALSE}, the search is not included in the CV
-so that only a single full-data search is run.
+so that only a single full-data search is run. If the number of
+observations is large, the fast PSIS-LOO CV along the full-data search path
+is likely to be accurate. If the number of observations is small or
+moderate, the fast PSIS-LOO CV along the full-data search path is likely to
+have optimistic bias in the middle of the search path. This result can be
+used to guide further actions and the optimistic bias can be greatly
+reduced by using \code{validate_search = TRUE}.
+
+PSIS uses the Pareto-\eqn{\hat{k}} diagnostic to assess the reliability of
+PSIS-LOO CV. Global option \code{projpred.warn_psis} (default \code{TRUE}) controls
+whether the Pareto-\eqn{\hat{k}} diagnostics may result in warnings. See
+\link[loo:loo-glossary]{loo::loo-glossary} for how to interpret the Pareto-\eqn{\hat{k}} values
+and the warning thresholds. \pkg{projpred} does not support the usually
+recommended moment-matching (see \code{\link[loo:loo_moment_match]{loo::loo_moment_match()}} and
+\code{\link[brms:loo_moment_match.brmsfit]{brms::loo_moment_match()}}), mixture importance sampling
+(\code{vignette("loo2-mixis", package="loo")}), or \code{reloo}-ing
+(\code{\link[brms:reloo.brmsfit]{brms::reloo()}}). If the reference model PSIS-LOO CV Pareto-\eqn{\hat{k}}
+values are good, but there are high Pareto-\eqn{\hat{k}} values for the
+projected models, you can try increasing the number of draws used for the
+PSIS-LOO CV (\code{ndraws} in case of \code{refit_prj = FALSE}; \code{ndraws_pred} in case
+of \code{refit_prj = TRUE}). If increasing the number of draws does not help and
+if the reference model PSIS-LOO CV Pareto-\eqn{\hat{k}} values are high,
+and the reference model PSIS-LOO CV results change substantially when using
+moment-matching, mixture importance sampling, or \code{reloo}-ing, we recommend
+to use \eqn{K}-fold CV within \code{projpred}.
 
 For PSIS-LOO CV, \pkg{projpred} calls \code{\link[loo:psis]{loo::psis()}} (or, exceptionally,
 \code{\link[loo:sis]{loo::sis()}}, see below) with \code{r_eff = NA}. This is only a problem if there
@@ -282,13 +317,14 @@ model was built. In those cases however, the reference model should not
 have been used anyway, so we don't expect \pkg{projpred}'s \code{r_eff = NA} to
 be a problem.
 
-PSIS cannot be used if the draws have different (i.e., nonconstant) weights
-or if the number of draws is too small. In such cases, \pkg{projpred}
-resorts to standard importance sampling (SIS) and throws a warning about
-this. Throughout the documentation, the term "PSIS" is used even though in
-fact, \pkg{projpred} resorts to SIS in these special cases.
+PSIS cannot be used if the number of draws or clusters is too small. In
+such cases, \pkg{projpred} resorts to standard importance sampling (SIS)
+and shows a message about this. Throughout the documentation, the term
+"PSIS" is used even though in fact, \pkg{projpred} resorts to SIS in these
+special cases. If SIS is used, check that the reference model PSIS-LOO CV
+Pareto-\eqn{\hat{k}} values are good.
 
-With \code{parallel = TRUE}, costly parts of \pkg{projpred}'s CV are run in
+With \code{parallel = TRUE}, costly parts of \pkg{projpred}'s CV can be run in
 parallel. Costly parts are the fold-wise searches and performance
 evaluations in case of \code{validate_search = TRUE}. (Note that in case of
 \eqn{K}-fold CV, the \eqn{K} reference model refits are not affected by
@@ -329,20 +365,29 @@ cvvs <- cv_varsel(fit, method = "L1", cv_method = "kfold", K = 2,
 \dontshow{\}) # examplesIf}
 }
 \references{
-Magnusson, Måns, Michael Andersen, Johan Jonasson, and Aki Vehtari. 2019.
-"Bayesian Leave-One-Out Cross-Validation for Large Data." In \emph{Proceedings of
-the 36th International Conference on Machine Learning}, edited by Kamalika
-Chaudhuri and Ruslan Salakhutdinov, 97:4244--53. Proceedings of Machine
-Learning Research. PMLR.
-\url{https://proceedings.mlr.press/v97/magnusson19a.html}.
+Magnusson, Måns, Michael Riis Andersen, Johan Jonasson, Aki Vehtari. 2020.
+"Leave-One-Out Cross-Validation for Bayesian Model Comparison in Large Data."
+In \emph{Proceedings of the 23rd International Conference on Artificial
+Intelligence and Statistics}, edited by Silvia Chiappa and Roberto Calandra,
+108:341--351. Proceedings of Machine Learning Research. PMLR.
+\url{https://proceedings.mlr.press/v108/magnusson20a.html}.
+
+McLatchie, Yann, Sölvi Rögnvaldsson, Frank Weber, and Aki Vehtari. 2025.
+"Advances in Projection Predictive Inference." \emph{Statistical Science}, 40
+(1):128--147. \doi{10.1214/24-STS949}.
+
+Piironen, Juho, Markus Paasiniemi, and Aki Vehtari. 2020. "Projective
+Inference in High-Dimensional Problems: Prediction and Feature Selection."
+\emph{Electronic Journal of Statistics}, 14 (1):2155--2197.
+\doi{10.1214/20-EJS1711}.
 
 Vehtari, Aki, Andrew Gelman, and Jonah Gabry. 2017. "Practical Bayesian Model
 Evaluation Using Leave-One-Out Cross-Validation and WAIC." \emph{Statistics and
-Computing} 27 (5): 1413--32. \doi{10.1007/s11222-016-9696-4}.
+Computing}, 27 (5):1413--32. \doi{10.1007/s11222-016-9696-4}.
 
 Vehtari, Aki, Daniel Simpson, Andrew Gelman, Yuling Yao, and Jonah Gabry.
-2022. "Pareto Smoothed Importance Sampling." arXiv.
-\doi{10.48550/arXiv.1507.02646}.
+2024. "Pareto Smoothed Importance Sampling." \emph{Journal of Machine Learning
+Research}, 25 (72):1--58. \url{https://jmlr.org/papers/v25/19-556.html}.
 }
 \seealso{
 \code{\link[=varsel]{varsel()}}

@@ -18,15 +18,22 @@
 #' @param cv_method The CV method, either `"LOO"` or `"kfold"`. In the `"LOO"`
 #'   case, a Pareto-smoothed importance sampling leave-one-out CV (PSIS-LOO CV)
 #'   is performed, which avoids refitting the reference model `nloo` times (in
-#'   contrast to a standard LOO CV). In the `"kfold"` case, a \eqn{K}-fold CV is
+#'   contrast to a standard LOO-CV). In the `"kfold"` case, a \eqn{K}-fold CV is
 #'   performed. See also section "Note" below.
-#' @param nloo **Caution:** Still experimental. Only relevant if `cv_method =
-#'   "LOO"`. If `nloo` is smaller than the number of all observations,
-#'   approximate full LOO CV using probability-proportional-to-size-sampling
-#'   (PPS) to make accurate computation only for `nloo` (anything from 1 to the
-#'   number of all observations) leave-one-out folds (Magnusson et al., 2019).
-#'   Smaller values lead to faster computation but higher uncertainty in the
-#'   evaluation part. If `NULL`, all observations are used (as by default).
+#' @param nloo Only relevant if `cv_method = "LOO"` and `validate_search =
+#'   TRUE`. If `nloo > 0` is smaller than the number of all observations, full
+#'   LOO-CV (i.e., PSIS-LOO CV with `validate_search = TRUE` and with `nloo = n`
+#'   where `n` denotes the number of all observations) is approximated by
+#'   subsampled LOO-CV, i.e., by combining the fast (i.e., `validate_search =
+#'   FALSE`) LOO result for the selected models and `nloo` leave-one-out
+#'   searches using the difference estimator with simple random sampling (SRS)
+#'   without replacement (WOR) (Magnusson et al., 2020). Smaller `nloo` values
+#'   lead to faster computation, but higher uncertainty in the evaluation part.
+#'   If `NULL`, all observations are used (as by default). Note that performance
+#'   statistic `"auc"` (see argument `stats` of [summary.vsel()] and
+#'   [plot.vsel()]) is not supported in case of subsampled LOO-CV. Furthermore,
+#'   option `"best"` for argument `baseline` of [summary.vsel()] and
+#'   [plot.vsel()] is not supported in case of subsampled LOO-CV.
 #' @param K Only relevant if `cv_method = "kfold"` and if `cvfits` is `NULL`
 #'   (which is the case for reference model objects created by
 #'   [get_refmodel.stanreg()] or [brms::get_refmodel.brmsfit()]). Number of
@@ -36,14 +43,11 @@
 #'   [run_cvfun()] can be inserted here straightforwardly.
 #' @param validate_search A single logical value indicating whether to
 #'   cross-validate also the search part, i.e., whether to run the search
-#'   separately for each CV fold (`TRUE`) or not (`FALSE`). We strongly do not
-#'   recommend setting this to `FALSE`, because this is known to bias the
-#'   predictive performance estimates of the selected submodels. However,
-#'   setting this to `FALSE` can sometimes be useful because comparing the
-#'   results to the case where this argument is `TRUE` gives an idea of how
-#'   strongly the search is (over-)fitted to the data (the difference
-#'   corresponds to the search degrees of freedom or the effective number of
-#'   parameters introduced by the search).
+#'   separately for each CV fold (`TRUE`) or not (`FALSE`). With `FALSE`,
+#'   the computation is faster, but the predictive performance estimates
+#'   of the selected submodels are optimistically biased. However, these fast
+#'   biased estimates can be useful to obtain initial information on the
+#'   usefulness of projection predictive variable selection.
 #' @param seed Pseudorandom number generation (PRNG) seed by which the same
 #'   results can be obtained again if needed. Passed to argument `seed` of
 #'   [set.seed()], but can also be `NA` to not call [set.seed()] at all. If not
@@ -56,7 +60,7 @@
 #'   from a multilevel submodel (however, not yet in case of a GAMM).
 #' @param parallel A single logical value indicating whether to run costly parts
 #'   of the CV in parallel (`TRUE`) or not (`FALSE`). See also section "Note"
-#'   below.
+#'   below as well as section "Parallelization" in [projpred-package].
 #' @param ... For [cv_varsel.default()]: Arguments passed to [get_refmodel()] as
 #'   well as to [cv_varsel.refmodel()]. For [cv_varsel.vsel()]: Arguments passed
 #'   to [cv_varsel.refmodel()]. For [cv_varsel.refmodel()]: Arguments passed to
@@ -68,7 +72,31 @@
 #' @inherit varsel details return
 #'
 #' @note If `validate_search` is `FALSE`, the search is not included in the CV
-#'   so that only a single full-data search is run.
+#'   so that only a single full-data search is run. If the number of
+#'   observations is large, the fast PSIS-LOO CV along the full-data search path
+#'   is likely to be accurate. If the number of observations is small or
+#'   moderate, the fast PSIS-LOO CV along the full-data search path is likely to
+#'   have optimistic bias in the middle of the search path. This result can be
+#'   used to guide further actions and the optimistic bias can be greatly
+#'   reduced by using `validate_search = TRUE`.
+#'
+#'   PSIS uses the Pareto-\eqn{\hat{k}} diagnostic to assess the reliability of
+#'   PSIS-LOO CV. Global option `projpred.warn_psis` (default `TRUE`) controls
+#'   whether the Pareto-\eqn{\hat{k}} diagnostics may result in warnings. See
+#'   [loo::loo-glossary] for how to interpret the Pareto-\eqn{\hat{k}} values
+#'   and the warning thresholds. \pkg{projpred} does not support the usually
+#'   recommended moment-matching (see [loo::loo_moment_match()] and
+#'   [brms::loo_moment_match()]), mixture importance sampling
+#'   (`vignette("loo2-mixis", package="loo")`), or `reloo`-ing
+#'   ([brms::reloo()]). If the reference model PSIS-LOO CV Pareto-\eqn{\hat{k}}
+#'   values are good, but there are high Pareto-\eqn{\hat{k}} values for the
+#'   projected models, you can try increasing the number of draws used for the
+#'   PSIS-LOO CV (`ndraws` in case of `refit_prj = FALSE`; `ndraws_pred` in case
+#'   of `refit_prj = TRUE`). If increasing the number of draws does not help and
+#'   if the reference model PSIS-LOO CV Pareto-\eqn{\hat{k}} values are high,
+#'   and the reference model PSIS-LOO CV results change substantially when using
+#'   moment-matching, mixture importance sampling, or `reloo`-ing, we recommend
+#'   to use \eqn{K}-fold CV within `projpred`.
 #'
 #'   For PSIS-LOO CV, \pkg{projpred} calls [loo::psis()] (or, exceptionally,
 #'   [loo::sis()], see below) with `r_eff = NA`. This is only a problem if there
@@ -77,13 +105,14 @@
 #'   have been used anyway, so we don't expect \pkg{projpred}'s `r_eff = NA` to
 #'   be a problem.
 #'
-#'   PSIS cannot be used if the draws have different (i.e., nonconstant) weights
-#'   or if the number of draws is too small. In such cases, \pkg{projpred}
-#'   resorts to standard importance sampling (SIS) and throws a warning about
-#'   this. Throughout the documentation, the term "PSIS" is used even though in
-#'   fact, \pkg{projpred} resorts to SIS in these special cases.
+#'   PSIS cannot be used if the number of draws or clusters is too small. In
+#'   such cases, \pkg{projpred} resorts to standard importance sampling (SIS)
+#'   and shows a message about this. Throughout the documentation, the term
+#'   "PSIS" is used even though in fact, \pkg{projpred} resorts to SIS in these
+#'   special cases. If SIS is used, check that the reference model PSIS-LOO CV
+#'   Pareto-\eqn{\hat{k}} values are good.
 #'
-#'   With `parallel = TRUE`, costly parts of \pkg{projpred}'s CV are run in
+#'   With `parallel = TRUE`, costly parts of \pkg{projpred}'s CV can be run in
 #'   parallel. Costly parts are the fold-wise searches and performance
 #'   evaluations in case of `validate_search = TRUE`. (Note that in case of
 #'   \eqn{K}-fold CV, the \eqn{K} reference model refits are not affected by
@@ -102,20 +131,29 @@
 #'
 #' @references
 #'
-#' Magnusson, Måns, Michael Andersen, Johan Jonasson, and Aki Vehtari. 2019.
-#' "Bayesian Leave-One-Out Cross-Validation for Large Data." In *Proceedings of
-#' the 36th International Conference on Machine Learning*, edited by Kamalika
-#' Chaudhuri and Ruslan Salakhutdinov, 97:4244--53. Proceedings of Machine
-#' Learning Research. PMLR.
-#' <https://proceedings.mlr.press/v97/magnusson19a.html>.
+#' Magnusson, Måns, Michael Riis Andersen, Johan Jonasson, Aki Vehtari. 2020.
+#' "Leave-One-Out Cross-Validation for Bayesian Model Comparison in Large Data."
+#' In *Proceedings of the 23rd International Conference on Artificial
+#' Intelligence and Statistics*, edited by Silvia Chiappa and Roberto Calandra,
+#' 108:341--351. Proceedings of Machine Learning Research. PMLR.
+#' <https://proceedings.mlr.press/v108/magnusson20a.html>.
+#'
+#' McLatchie, Yann, Sölvi Rögnvaldsson, Frank Weber, and Aki Vehtari. 2025.
+#' "Advances in Projection Predictive Inference." *Statistical Science*, 40
+#' (1):128--147. \doi{10.1214/24-STS949}.
+#'
+#' Piironen, Juho, Markus Paasiniemi, and Aki Vehtari. 2020. "Projective
+#' Inference in High-Dimensional Problems: Prediction and Feature Selection."
+#' *Electronic Journal of Statistics*, 14 (1):2155--2197.
+#' \doi{10.1214/20-EJS1711}.
 #'
 #' Vehtari, Aki, Andrew Gelman, and Jonah Gabry. 2017. "Practical Bayesian Model
 #' Evaluation Using Leave-One-Out Cross-Validation and WAIC." *Statistics and
-#' Computing* 27 (5): 1413--32. \doi{10.1007/s11222-016-9696-4}.
+#' Computing*, 27 (5):1413--32. \doi{10.1007/s11222-016-9696-4}.
 #'
 #' Vehtari, Aki, Daniel Simpson, Andrew Gelman, Yuling Yao, and Jonah Gabry.
-#' 2022. "Pareto Smoothed Importance Sampling." arXiv.
-#' \doi{10.48550/arXiv.1507.02646}.
+#' 2024. "Pareto Smoothed Importance Sampling." *Journal of Machine Learning
+#' Research*, 25 (72):1--58. <https://jmlr.org/papers/v25/19-556.html>.
 #'
 #' @seealso [varsel()]
 #'
@@ -163,16 +201,20 @@ cv_varsel.vsel <- function(
     validate_search = object$validate_search %||% TRUE,
     ...
 ) {
+  ## the following arguments should not change
   arg_nms_internal <- c("method", "ndraws", "nclusters", "nterms_max",
                         "search_control", "penalty", "search_terms")
-  arg_nms_internal_used <- intersect(arg_nms_internal, ...names())
-  n_arg_nms_internal_used <- length(arg_nms_internal_used)
-  if (n_arg_nms_internal_used > 0) {
-    stop("Argument", if (n_arg_nms_internal_used > 1) "s" else "", " ",
-         paste(paste0("`", arg_nms_internal_used, "`"), collapse = ", "), " ",
-         "cannot be specified in this case because cv_varsel.vsel() specifies ",
-         if (n_arg_nms_internal_used > 1) "them" else "it", " ", "internally.")
+  dots <- list(...)
+  arg_nms_internal_used <- intersect(arg_nms_internal, names(dots))
+  for (arg in arg_nms_internal_used) {
+    if (!identical(object[["args_search"]][[arg]], dots[[arg]])) {
+      message("Argument `", arg, "` ignored. Using the argument value stored ",
+              "in the `vsel` object.")
+    }
+    ## remove duplicate arguments
+    dots[[arg]] <- NULL
   }
+
   refmodel <- get_refmodel(object)
   rk_foldwise <- ranking(object)[["foldwise"]]
   if (validate_search && !is.null(rk_foldwise)) {
@@ -204,23 +246,26 @@ cv_varsel.vsel <- function(
               "brms:::get_refmodel.brmsfit() to some non-`NULL` value.")
     }
   }
-  return(cv_varsel(
-    object = refmodel,
-    method = object[["args_search"]][["method"]],
-    ndraws = object[["args_search"]][["ndraws"]],
-    nclusters = object[["args_search"]][["nclusters"]],
-    nterms_max = object[["args_search"]][["nterms_max"]],
-    search_control = object[["args_search"]][["search_control"]],
-    penalty = object[["args_search"]][["penalty"]],
-    search_terms = object[["args_search"]][["search_terms"]],
-    cv_method = cv_method,
-    nloo = nloo,
-    K = K,
-    cvfits = cvfits,
-    validate_search = validate_search,
-    search_out = nlist(search_path = object[["search_path"]], rk_foldwise),
-    ...
-  ))
+
+  return(do_call(cv_varsel, c(
+    list(
+      object = refmodel,
+      method = object[["args_search"]][["method"]],
+      ndraws = object[["args_search"]][["ndraws"]],
+      nclusters = object[["args_search"]][["nclusters"]],
+      nterms_max = object[["args_search"]][["nterms_max"]],
+      search_control = object[["args_search"]][["search_control"]],
+      penalty = object[["args_search"]][["penalty"]],
+      search_terms = object[["args_search"]][["search_terms"]],
+      cv_method = cv_method,
+      nloo = nloo,
+      K = K,
+      cvfits = cvfits,
+      validate_search = validate_search,
+      search_out = nlist(search_path = object[["search_path"]], rk_foldwise)
+    ),
+    dots
+  )))
 }
 
 #' @rdname cv_varsel
@@ -236,8 +281,8 @@ cv_varsel.refmodel <- function(
     refit_prj = !inherits(object, "datafit"),
     nterms_max = NULL,
     penalty = NULL,
-    verbose = TRUE,
-    nloo = object$nobs,
+    verbose = getOption("projpred.verbose", as.integer(interactive())),
+    nloo = if (cv_method == "LOO") object$nobs else NULL,
     K = if (!inherits(object, "datafit")) 5 else 10,
     cvfits = object$cvfits,
     search_control = NULL,
@@ -248,7 +293,7 @@ cv_varsel.refmodel <- function(
     seed = NA,
     search_terms = NULL,
     search_out = NULL,
-    parallel = getOption("projpred.prll_cv", FALSE),
+    parallel = getOption("projpred.parallel_cv", FALSE),
     ...
 ) {
   if (!missing(lambda_min_ratio)) {
@@ -270,6 +315,17 @@ cv_varsel.refmodel <- function(
             "Now using `thresh` as element `thresh` of `search_control`.")
     search_control$thresh <- thresh
   }
+  if (missing(parallel) && is.null(getOption("projpred.parallel_cv")) &&
+      !is.null(getOption("projpred.prll_cv"))) {
+    warning(
+      "Global option `projpred.prll_cv` is deprecated. Please use global ",
+      "option `projpred.parallel_cv` instead (or use argument `parallel` ",
+      "directly). Now using the value from global option `projpred.prll_cv` ",
+      "for argument `parallel`."
+    )
+    parallel <- getOption("projpred.prll_cv")
+  }
+  verbose <- verbose_from_deprecated_options(verbose, with_cv = TRUE)
 
   if (exists(".Random.seed", envir = .GlobalEnv)) {
     rng_state_old <- get(".Random.seed", envir = .GlobalEnv)
@@ -289,7 +345,7 @@ cv_varsel.refmodel <- function(
   args <- parse_args_varsel(
     refmodel = refmodel, method = method, refit_prj = refit_prj,
     nterms_max = nterms_max, nclusters = nclusters, search_terms = search_terms,
-    nterms_all = nterms_all
+    nterms_all = nterms_all, verbose = verbose
   )
   method <- args$method
   refit_prj <- args$refit_prj
@@ -297,6 +353,7 @@ cv_varsel.refmodel <- function(
   nclusters <- args$nclusters
   search_terms <- args$search_terms
   search_terms_was_null <- args$search_terms_was_null
+  verbose <- args$verbose
   # Parse arguments specific to cv_varsel():
   args <- parse_args_cv_varsel(
     refmodel = refmodel, cv_method = cv_method, nloo = nloo, K = K,
@@ -312,23 +369,21 @@ cv_varsel.refmodel <- function(
   if (!is.null(search_out)) {
     search_path_fulldata <- search_out[["search_path"]]
   } else {
-    verb_txt_search <- "-----\nRunning the search "
-    if (validate_search) {
-      # Point out that this is the full-data search (if `validate_search` is
-      # `FALSE`, this is still a full-data search, but in that case, there are
-      # no fold-wise searches, so pointing out "full-data" could be confusing):
-      verb_txt_search <- paste0(verb_txt_search, "using the full dataset ")
-    }
-    verb_txt_search <- paste0(verb_txt_search, "...")
-    verb_out(verb_txt_search, verbose = verbose)
-    search_path_fulldata <- select(
+    search_path_fulldata <- .select(
       refmodel = refmodel, ndraws = ndraws, nclusters = nclusters,
       method = method, nterms_max = nterms_max, penalty = penalty,
-      verbose = verbose, search_control = search_control,
-      search_terms = search_terms,
+      verbose = if ((validate_search || cv_method == "kfold") && verbose >= 2L) {
+        verbose - 1L
+      } else {
+        verbose
+      },
+      # NOTE: If `!validate_search`, this is still a full-data search, but in
+      # that case, there are no fold-wise searches, so declaring this as a
+      # full-data search could be confusing:
+      verbose_txt_add = if (validate_search) "using the full dataset " else "",
+      search_control = search_control, search_terms = search_terms,
       search_terms_was_null = search_terms_was_null, ...
     )
-    verb_out("-----", verbose = verbose)
   }
 
   if (!is.null(search_out) && validate_search) {
@@ -346,6 +401,7 @@ cv_varsel.refmodel <- function(
     search_out_rks <- NULL
   }
 
+  summaries_fast <- NULL
   if (cv_method == "LOO") {
     sel_cv <- loo_varsel(
       refmodel = refmodel, method = method, nterms_max = nterms_max,
@@ -364,6 +420,23 @@ cv_varsel.refmodel <- function(
       search_terms_was_null = search_terms_was_null,
       search_out_rks = search_out_rks, parallel = parallel, ...
     )
+    if (validate_search && nloo < refmodel$nobs) {
+      # Run fast LOO-CV to be used in subsampling difference estimator
+      summaries_fast <- loo_varsel(
+        refmodel = refmodel, method = method, nterms_max = nterms_max,
+        ndraws = ndraws, nclusters = nclusters, ndraws_pred = ndraws_pred,
+        nclusters_pred = nclusters_pred, refit_prj = refit_prj, penalty = penalty,
+        verbose = if (verbose >= 2L) verbose - 1L else verbose,
+        verbose_txt_add = "using the full dataset ",
+        search_control = search_control,
+        nloo = refmodel$nobs,    # fast LOO-CV (using all observations)
+        validate_search = FALSE, # fast LOO-CV (using all observations)
+        search_path_fulldata = search_path_fulldata,
+        search_terms = search_terms,
+        search_terms_was_null = search_terms_was_null,
+        search_out_rks = search_out_rks, parallel = parallel, ...
+      )[["summaries"]]
+    }
   } else if (cv_method == "kfold") {
     sel_cv <- kfold_varsel(
       refmodel = refmodel, method = method, nterms_max = nterms_max,
@@ -416,11 +489,13 @@ cv_varsel.refmodel <- function(
               y_wobs_test,
               nobs_test = nrow(y_wobs_test),
               summaries = sel_cv$summaries,
+              summaries_fast,
               nterms_all,
               nterms_max,
               method,
               cv_method,
               nloo,
+              loo_inds = sel_cv$inds,
               K,
               validate_search,
               cvfits,
@@ -499,14 +574,16 @@ parse_args_cv_varsel <- function(refmodel, cv_method, nloo, K, cvfits,
       stop("For K-fold CV, `validate_search = FALSE` may not be combined with ",
            "`refit_prj = FALSE`.")
     }
+    nloo <- NULL
   } else {
     stopifnot(!is.null(refmodel[["nobs"]]))
     nloo <- min(nloo, refmodel[["nobs"]])
     if (nloo < 1) {
       stop("nloo must be at least 1")
-    } else if (nloo < refmodel[["nobs"]] &&
-               getOption("projpred.warn_subsampled_loo", TRUE)) {
-      warning("Subsampled PSIS-LOO CV is still experimental.")
+    }
+    if (!validate_search && nloo < refmodel[["nobs"]]) {
+      stop("Subsampled PSIS-LOO CV is not supported for ",
+           "`validate_search = FALSE`.")
     }
   }
 
@@ -529,7 +606,7 @@ parse_args_cv_varsel <- function(refmodel, cv_method, nloo, K, cvfits,
 # Workhorse function for a variable selection with PSIS-LOO CV
 #
 # Argument `validate_search` indicates whether the search is performed
-# separately for each LOO CV fold (i.e., separately for each observation). For
+# separately for each LOO-CV fold (i.e., separately for each observation). For
 # all other arguments, see the documentation of cv_varsel().
 loo_varsel <- function(refmodel, method, nterms_max, ndraws,
                        nclusters, ndraws_pred, nclusters_pred, refit_prj,
@@ -556,8 +633,9 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
       stop("Unexpected structure for the output of `latent_ilink`.")
     }
     loglik_forPSIS <- refmodel$family$latent_ll_oscale(
-      mu_offs_oscale, y_oscale = refmodel$y_oscale, wobs = refmodel$wobs,
-      cl_ref = seq_along(refmodel$wdraws_ref), wdraws_ref = refmodel$wdraws_ref
+      mu_offs_oscale, dis = refmodel$dis, y_oscale = refmodel$y_oscale,
+      wobs = refmodel$wobs, cl_ref = seq_along(refmodel$wdraws_ref),
+      wdraws_ref = refmodel$wdraws_ref
     )
     if (!is.matrix(loglik_forPSIS)) {
       stop("Unexpected structure for the output of `latent_ll_oscale`.")
@@ -596,7 +674,6 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
   mssgs_warns_capt <- capt_mssgs_warns(
     psisloo <- loo::psis(-loglik_forPSIS, cores = 1, r_eff = NA)
   )
-  mssgs_warns_capt <- setdiff(mssgs_warns_capt, "")
   # Filter out the Pareto k-value warning (we throw a customized one instead):
   mssgs_warns_capt <- grep(
     "Some Pareto k diagnostic values are (too|slightly) high", mssgs_warns_capt,
@@ -615,19 +692,10 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
   # argument, another reason is that they can quickly become as costly as
   # K-fold CV).
   warn_pareto(
-    n07 = sum(pareto_k > 0.7), n05 = sum(0.7 >= pareto_k & pareto_k > 0.5),
-    warn_txt_start = paste0("In the calculation of the reference model's ",
-                            "PSIS-LOO CV weights, "),
-    warn_txt_mid_common = paste0(" (out of ", n, ") Pareto k-values are "),
-    warn_txt_end = paste0(
-      ". Moment matching (see the loo package), mixture importance ",
-      "sampling (see the loo package), and `reloo`-ing (see the brms package) ",
-      "are not supported by projpred. If these techniques (run outside of ",
-      "projpred, i.e., for the reference model only; note that `reloo`-ing ",
-      "may be computationally costly) result in a markedly different ",
-      "reference model ELPD estimate than ordinary PSIS-LOO CV does, we ",
-      "recommend to use K-fold CV within projpred."
-    )
+    n07 = sum(pareto_k > .ps_khat_threshold(dim(psisloo)[1])), n = n,
+    khat_threshold = .ps_khat_threshold(dim(psisloo)[1]),
+    warn_txt = paste0("Some (%d / %d) Pareto k's for the reference model's ",
+                      "PSIS-LOO weights are > %s.")
   )
   lw <- weights(psisloo)
 
@@ -646,26 +714,29 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
       log_ratios = -loglik_forPSIS
     )
     # The k-values are h-specific (expectation-specific) here (see Vehtari et
-    # al., 2022, <https://doi.org/10.48550/arXiv.1507.02646>, beginning of
+    # al., 2024, <https://jmlr.org/papers/v25/19-556.html>, beginning of
     # section 3, section 3.2.8, appendix D, and appendix E).
     warn_pareto(
-      n07 = sum(y_lat_E$pareto_k > 0.7),
-      n05 = sum(0.7 >= y_lat_E$pareto_k & y_lat_E$pareto_k > 0.5),
-      warn_txt_start = paste0("In the recalculation of the latent response ",
-                              "values, "),
-      warn_txt_mid_common = paste0(
-        " (out of ", n, ") expectation-specific Pareto k-values are "
-      ),
-      warn_txt_end = ". In general, we recommend K-fold CV in this case."
+      n07 = sum(y_lat_E$pareto_k > .ps_khat_threshold(dim(psisloo)[1])), n = n,
+      khat_threshold = .ps_khat_threshold(dim(psisloo)[1]),
+      warn_txt = paste0(
+        "In the recalculation of the latent response values, some (%d / %d) ",
+        "expectation-specific Pareto k-values are > %s.\n",
+        "In general, we recommend K-fold CV in this case."
+      )
     )
     refmodel$y <- y_lat_E$value
   }
 
-  # LOO PPS subsampling (by default, don't subsample, but use all observations):
-  # validset <- loo_subsample(n, nloo, pareto_k)
   loo_ref_oscale <- apply(loglik_forPSIS + lw, 2, log_sum_exp)
-  validset <- loo_subsample_pps(nloo, loo_ref_oscale)
-  inds <- validset$inds
+
+  if (validate_search && nloo < n) {
+    # Select which LOO-folds get more accurate computation using simple
+    # random sampling without resampling (Magnusson et al., 2020)
+    inds <- sample.int(n, size = nloo, replace = FALSE)
+  } else {
+    inds <- seq_len(n)
+  }
 
   # Initialize objects where to store the results:
   loo_sub <- replicate(nterms_max + 1L, rep(NA, n), simplify = FALSE)
@@ -698,24 +769,33 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
   if (!validate_search) {
     ## Case `validate_search = FALSE` -----------------------------------------
 
+    # NOTE: The case where `inds` is an actual subset of the set of all
+    # observation indices should never occur here in the
+    # `validate_search = FALSE` case. Thus, in principle, the code could be
+    # simplified here, but keeping `inds` in case this might be helpful in the
+    # future.
+    if (nloo < n) {
+      stop("`nloo < n` is unexpected if `validate_search = FALSE`")
+    }
+
     # "Run" the performance evaluation for the submodels along the predictor
     # ranking (in fact, we only prepare the performance evaluation by computing
     # precursor quantities, but for users, this difference is not perceivable):
-    verb_out("-----\nRunning the performance evaluation with `refit_prj = ",
-             refit_prj, "` ...", verbose = verbose)
-    # Step 1: Re-project (using the full dataset) onto the submodels along the
-    # full-data predictor ranking and evaluate their predictive performance.
+    # * Step 1: Re-project (using the full dataset) onto the submodels along the
+    #   full-data predictor ranking and evaluate their predictive performance.
     perf_eval_out <- perf_eval(
       search_path = search_path_fulldata, refmodel = refmodel,
       refit_prj = refit_prj, ndraws = ndraws_pred, nclusters = nclusters_pred,
-      return_p_ref = TRUE, return_preds = TRUE, indices_test = inds, ...
+      return_preds = TRUE, return_p_ref = TRUE, return_dis_sub = TRUE,
+      indices_test = inds, verbose = verbose, ...
     )
     clust_used_eval <- perf_eval_out[["clust_used"]]
     nprjdraws_eval <- perf_eval_out[["nprjdraws"]]
     refdist_eval <- perf_eval_out[["p_ref"]]
-
-    # Step 2: Weight the full-data performance evaluation results according to
-    # the PSIS-LOO CV weights.
+    # * Step 2: Weight the full-data performance evaluation results according to
+    #   the PSIS-LOO CV weights.
+    verb_out("-----\nWeighting the full-data performance evaluation results ",
+             "using the PSIS-LOO CV weights ...", verbose = verbose)
     if (refmodel$family$for_latent) {
       refdist_eval_mu_offs_oscale <- refmodel$family$latent_ilink(
         t(refdist_eval$mu_offs), cl_ref = refdist_eval$cl,
@@ -729,9 +809,9 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
                                                                    drop = FALSE]
       }
       log_lik_ref <- refmodel$family$latent_ll_oscale(
-        refdist_eval_mu_offs_oscale, y_oscale = refmodel$y_oscale[inds],
-        wobs = refmodel$wobs[inds], cl_ref = refdist_eval$cl,
-        wdraws_ref = refdist_eval$wdraws_orig
+        refdist_eval_mu_offs_oscale, dis = refdist_eval$dis,
+        y_oscale = refmodel$y_oscale[inds], wobs = refmodel$wobs[inds],
+        cl_ref = refdist_eval$cl, wdraws_ref = refdist_eval$wdraws_orig
       )
       if (all(is.na(log_lik_ref))) {
         stop("In case of the latent projection, `validate_search = FALSE` ",
@@ -752,71 +832,55 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
       ))
     }
     if (nrow(log_lik_ref) > 1) {
-      # Use loo::sis() if the projected draws (i.e., the draws resulting
-      # from the clustering or thinning) have nonconstant weights:
-      if (refdist_eval$const_wdraws_prj) {
-        # Internally, loo::psis() doesn't perform the Pareto smoothing if the
-        # number of draws is small (as indicated by object `no_psis_eval`, see
-        # below). In projpred, this can occur, e.g., if users request a number
-        # of projected draws (for performance evaluation, either after
-        # clustering or thinning the reference model's posterior draws) that is
-        # much smaller than the default of 400. In order to throw a customized
-        # warning message (and to avoid the calculation of Pareto k-values, see
-        # loo issue stan-dev/loo#227), object `no_psis_eval` indicates whether
-        # loo::psis() would perform the Pareto smoothing or not (for the
-        # decision rule, see loo:::n_pareto() and loo:::enough_tail_samples(),
-        # keeping in mind that we have `r_eff = 1` for all observations here).
-        S_for_psis_eval <- nrow(log_lik_ref)
-        no_psis_eval <- ceiling(min(0.2 * S_for_psis_eval,
-                                    3 * sqrt(S_for_psis_eval))) < 5
-        if (no_psis_eval) {
-          if (getOption("projpred.warn_psis", TRUE)) {
-            warning(
-              "In the recalculation of the reference model's PSIS-LOO CV ",
-              "weights for the performance evaluation, the number of draws ",
-              "after clustering or thinning is too small for Pareto ",
-              "smoothing. Using standard importance sampling (SIS) instead. ",
-              "Watch out for warnings thrown by the original-draws Pareto ",
-              "smoothing to see whether it makes sense to increase the number ",
-              "of draws (resulting from the clustering or thinning for the ",
-              "performance evaluation). Alternatively, K-fold CV can be used."
-            )
-          }
-          # Use loo::sis().
-          # In principle, we could rely on loo::psis() here (because in such a
-          # case, it would internally switch to SIS automatically), but using
-          # loo::sis() explicitly is safer because if the loo package changes
-          # its decision rule, we would get a mismatch between our customized
-          # warning here and the IS method used by loo. See also loo issue
-          # stan-dev/loo#227.
-          importance_sampling_nm <- "sis"
-        } else {
-          # Use loo::psis().
-          # Usually, we have a small number of projected draws here (400 by
-          # default), which means that the 'loo' package will automatically
-          # perform the regularization from Vehtari et al. (2022,
-          # <https://doi.org/10.48550/arXiv.1507.02646>, appendix G).
-          importance_sampling_nm <- "psis"
-        }
-      } else {
+      # Take into account that clustered draws usually have different weights:
+      lwref_lwdraws <- -log_lik_ref + log(refdist_eval$wdraws_prj)
+      # This re-weighting requires a re-normalization (as.array() is applied to
+      # have stricter consistency checks, see `?sweep`):
+      lwref_lwdraws <- sweep(lwref_lwdraws, 2, as.array(apply(lwref_lwdraws, 2,
+                                                              log_sum_exp)))
+      # Internally, loo::psis() doesn't perform the Pareto smoothing if the
+      # number of draws is small (as indicated by object `no_psis_eval`, see
+      # below). In projpred, this can occur, e.g., if users request a number
+      # of projected draws (for performance evaluation, either after
+      # clustering or thinning the reference model's posterior draws) that is
+      # much smaller than the default of 400. In order to throw a customized
+      # warning message (and to avoid the calculation of Pareto k-values, see
+      # loo issue stan-dev/loo#227), object `no_psis_eval` indicates whether
+      # loo::psis() would perform the Pareto smoothing or not (for the
+      # decision rule, see loo:::n_pareto() and loo:::enough_tail_samples(),
+      # keeping in mind that we have `r_eff = 1` for all observations here).
+      S_for_psis_eval <- nrow(log_lik_ref)
+      no_psis_eval <- ceiling(min(0.2 * S_for_psis_eval,
+                                  3 * sqrt(S_for_psis_eval))) < 5
+      if (no_psis_eval) {
         if (getOption("projpred.warn_psis", TRUE)) {
-          warning(
-            "The projected draws used for the performance evaluation have ",
-            "different (i.e., nonconstant) weights, so using standard ",
-            "importance sampling (SIS) instead of Pareto-smoothed importance ",
-            "sampling (PSIS). In general, PSIS is recommended over SIS."
+          message(
+            "Using standard importance sampling (SIS) due to a small number ",
+            "of ", if (clust_used_eval) "clusters" else "draws", "."
           )
         }
         # Use loo::sis().
+        # In principle, we could rely on loo::psis() here (because in such a
+        # case, it would internally switch to SIS automatically), but using
+        # loo::sis() explicitly is safer because if the loo package changes
+        # its decision rule, we would get a mismatch between our customized
+        # warning here and the IS method used by loo. See also loo issue
+        # stan-dev/loo#227.
         importance_sampling_nm <- "sis"
+      } else {
+        # Use loo::psis().
+        # Usually, we have a small number of projected draws here (400 by
+        # default), which means that the 'loo' package will automatically
+        # perform the regularization from Vehtari et al. (2024,
+        # <https://jmlr.org/papers/v25/19-556.html>, appendix G).
+        importance_sampling_nm <- "psis"
       }
       importance_sampling_func <- get(importance_sampling_nm,
                                       asNamespace("loo"))
       mssgs_warns_capt <- capt_mssgs_warns(
-        sub_psisloo <- importance_sampling_func(-log_lik_ref, cores = 1,
+        sub_psisloo <- importance_sampling_func(lwref_lwdraws, cores = 1,
                                                 r_eff = NA)
       )
-      mssgs_warns_capt <- setdiff(mssgs_warns_capt, "")
       # Filter out Pareto k-value warnings (we throw a customized one instead):
       mssgs_warns_capt <- grep(
         "Some Pareto k diagnostic values are (too|slightly) high",
@@ -825,24 +889,16 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
       if (length(mssgs_warns_capt) > 0) {
         warning(mssgs_warns_capt)
       }
+
       if (importance_sampling_nm == "psis") {
         pareto_k_eval <- loo::pareto_k_values(sub_psisloo)
         warn_pareto(
-          n07 = sum(pareto_k_eval > 0.7),
-          n05 = sum(0.7 >= pareto_k_eval & pareto_k_eval > 0.5),
-          warn_txt_start = paste0(
-            "In the recalculation of the reference model's PSIS-LOO CV ",
-            "weights for the performance evaluation (based on clustered or ",
-            "thinned posterior draws), "
-          ),
-          warn_txt_mid_common = paste0(
-            " (out of ", nloo, ") Pareto k-values are "
-          ),
-          warn_txt_end = paste0(
-            ". Watch out for warnings thrown by the original-draws Pareto ",
-            "smoothing to see whether it makes sense to increase the number ",
-            "of draws (resulting from the clustering or thinning for the ",
-            "performance evaluation). Alternatively, K-fold CV can be used."
+          n07 = sum(pareto_k_eval > .ps_khat_threshold(dim(psisloo)[1])), n = n,
+          khat_threshold = .ps_khat_threshold(dim(sub_psisloo)[1]),
+          warn_txt = paste0(
+            "Some (%d / %d) Pareto k's for the reference model's PSIS-LOO ",
+            "weights given ", txt_clust_draws(clust_used_eval, nprjdraws_eval),
+            " are > %s."
           )
         )
       }
@@ -850,11 +906,6 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
     } else {
       lw_sub <- matrix(0, nrow = nrow(log_lik_ref), ncol = ncol(log_lik_ref))
     }
-    # Take into account that clustered draws usually have different weights:
-    lw_sub <- lw_sub + log(refdist_eval$wdraws_prj)
-    # This re-weighting requires a re-normalization (as.array() is applied to
-    # have stricter consistency checks, see `?sweep`):
-    lw_sub <- sweep(lw_sub, 2, as.array(apply(lw_sub, 2, log_sum_exp)))
     for (k in seq_len(1 + length(search_path_fulldata$predictor_ranking))) {
       # TODO: For consistency, replace `k` in this `for` loop by `j`.
       mu_k <- perf_eval_out[["mu_by_size"]][[k]]
@@ -866,9 +917,9 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
           wdraws_ref = refdist_eval$wdraws_orig
         )
         log_lik_sub_oscale <- refmodel$family$latent_ll_oscale(
-          mu_k_oscale, y_oscale = refmodel$y_oscale[inds],
-          wobs = refmodel$wobs[inds], cl_ref = refdist_eval$cl,
-          wdraws_ref = refdist_eval$wdraws_orig
+          mu_k_oscale, dis = perf_eval_out[["dis_sub"]][[k]],
+          y_oscale = refmodel$y_oscale[inds], wobs = refmodel$wobs[inds],
+          cl_ref = refdist_eval$cl, wdraws_ref = refdist_eval$wdraws_orig
         )
         loo_sub_oscale[[k]][inds] <- apply(log_lik_sub_oscale + lw_sub, 2,
                                            log_sum_exp)
@@ -890,10 +941,12 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
           i_flx <- inds[run_index]
           run_index_flx <- run_index
         }
-        mu_sub[[k]][i_flx] <- mu_k[run_index_flx, ] %*% exp(lw_sub[, run_index])
+        mu_sub[[k]][i_flx] <- mu_k[run_index_flx, , drop = FALSE] %*%
+          exp(lw_sub[, run_index])
         if (refmodel$family$for_latent) {
           if (inherits(mu_k_oscale, "augmat")) {
-            mu_sub_oscale[[k]][i_aug] <- mu_k_oscale[run_index_aug, ] %*%
+            mu_sub_oscale[[k]][i_aug] <- mu_k_oscale[run_index_aug, ,
+                                                     drop = FALSE] %*%
               exp(lw_sub[, run_index])
           } else {
             # In principle, we could use the same code for averaging across the
@@ -901,7 +954,7 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
             # `mu_k_oscale <- t(mu_k_oscale)` beforehand, so the following
             # should be more efficient:
             mu_sub_oscale[[k]][i_aug] <- exp(lw_sub[, run_index]) %*%
-              mu_k_oscale[, run_index_aug]
+              mu_k_oscale[, run_index_aug, drop = FALSE]
           }
         }
       }
@@ -914,30 +967,61 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
 
     search_out_rks_was_null <- is.null(search_out_rks)
     if (search_out_rks_was_null) {
-      cl_sel <- get_refdist(refmodel, ndraws = ndraws, nclusters = nclusters)$cl
+      refdist_sel <- get_refdist(refmodel, ndraws = ndraws,
+                                 nclusters = nclusters)
+    } else {
+      refdist_sel <- NULL
     }
+    cl_sel <- refdist_sel$cl
     if (refit_prj) {
-      cl_pred <- get_refdist(refmodel, ndraws = ndraws_pred,
-                             nclusters = nclusters_pred)$cl
+      refdist_pred <- get_refdist(refmodel, ndraws = ndraws_pred,
+                                  nclusters = nclusters_pred)
+    } else {
+      refdist_pred <- NULL
     }
+    cl_pred <- refdist_pred$cl
 
     if (verbose) {
-      verb_txt_start <- "-----\nRunning "
-      if (!search_out_rks_was_null) {
-        verb_txt_mid <- ""
+      if (refit_prj) {
+        vtxt_clust_used_eval <- refdist_pred[["clust_used"]]
+        vtxt_nprjdraws_eval <- refdist_pred[["nprjdraws"]]
       } else {
-        verb_txt_mid <- "the search and "
+        # NOTE: `!refit_prj` cannot occur in combination with
+        # `!search_out_rks_was_null`, so it is correct and safe to use
+        # `refdist_sel` here.
+        vtxt_clust_used_eval <- refdist_sel[["clust_used"]]
+        vtxt_nprjdraws_eval <- refdist_sel[["nprjdraws"]]
       }
-      verb_out(verb_txt_start, verb_txt_mid, "the performance evaluation with ",
-               "`refit_prj = ", refit_prj, "` for each of the N = ", nloo, " ",
-               "LOO CV folds separately ...")
+      verb_out("-----\nRunning ",
+               if (!search_out_rks_was_null) {
+                 ""
+               } else {
+                 paste0(method, " search with ",
+                        txt_clust_draws(refdist_sel[["clust_used"]],
+                                        refdist_sel[["nprjdraws"]]),
+                        " and ")
+               },
+               "the performance evaluation with ",
+               txt_clust_draws(vtxt_clust_used_eval, vtxt_nprjdraws_eval),
+               " (`refit_prj = ", refit_prj, "`) for each of the `nloo = ",
+               nloo, "` LOO-CV folds separately ...")
     }
     one_obs <- function(run_index,
-                        verbose_search = verbose &&
-                          getOption("projpred.extra_verbose", FALSE),
+                        verbose_obs = max(verbose - 1L, 0L),
                         ...) {
       # Observation index:
       i <- inds[run_index]
+
+      # For (extra-)verbose mode:
+      vtxt_obs_i <- paste0(
+        "for LOO-CV fold ", run_index, " out of `nloo = ", nloo, "` ",
+        "(", round(100 * run_index / nloo), " %) ",
+        if (nloo < n) {
+          paste0("(this is observation ", i, ") ")
+        } else {
+          ""
+        }
+      )
 
       # Run the search with the reweighted clusters (or thinned draws) (so the
       # *reweighted* fitted response values from the reference model act as
@@ -946,11 +1030,12 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
       if (!search_out_rks_was_null) {
         search_path <- list(predictor_ranking = search_out_rks[[run_index]])
       } else {
-        search_path <- select(
+        search_path <- .select(
           refmodel = refmodel, ndraws = ndraws, nclusters = nclusters,
           reweighting_args = list(cl_ref = cl_sel, wdraws_ref = exp(lw[, i])),
           method = method, nterms_max = nterms_max, penalty = penalty,
-          verbose = verbose_search, search_control = search_control,
+          verbose = verbose_obs, verbose_line_length = 3,
+          verbose_txt_add = vtxt_obs_i, search_control = search_control,
           search_terms = search_terms, est_runtime = FALSE, ...
         )
       }
@@ -961,7 +1046,8 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
         search_path = search_path, refmodel = refmodel, refit_prj = refit_prj,
         ndraws = ndraws_pred, nclusters = nclusters_pred,
         reweighting_args = list(cl_ref = cl_pred, wdraws_ref = exp(lw[, i])),
-        indices_test = i, ...
+        indices_test = i, verbose = verbose_obs, verbose_line_length = 3,
+        verbose_txt_add = vtxt_obs_i, ...
       )
 
       return(nlist(predictor_ranking = search_path[["predictor_ranking"]],
@@ -975,16 +1061,17 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
       # would require adding more "hard" dependencies (because packages
       # 'foreach' and 'doRNG' would have to be moved from `Suggests:` to
       # `Imports:`).
-      if (verbose) {
-        pb <- utils::txtProgressBar(min = 0, max = nloo, style = 3, initial = 0)
+      if (verbose == 1L) {
+        pb <- utils::txtProgressBar(min = 0, max = nloo, style = 3, initial = 0,
+                                    file = stderr())
       }
       res_cv <- lapply(seq_along(inds), function(run_index) {
-        if (verbose) {
+        if (verbose == 1L) {
           on.exit(utils::setTxtProgressBar(pb, run_index))
         }
         one_obs(run_index, ...)
       })
-      if (verbose) {
+      if (verbose == 1L) {
         close(pb)
       }
     } else {
@@ -995,17 +1082,29 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
       if (!requireNamespace("doRNG", quietly = TRUE)) {
         stop("Please install the 'doRNG' package.")
       }
+      if (verbose && use_progressr()) {
+        progressor_obj <- progressr::progressor(length(inds))
+      } else {
+        progressor_obj <- NULL
+      }
       dot_args <- list(...)
       `%do_projpred%` <- doRNG::`%dorng%`
       res_cv <- foreach::foreach(
         run_index = seq_along(inds),
-        .export = c("one_obs", "dot_args"),
+        .packages = c("projpred"),
+        .export = c("one_obs", "dot_args", "progressor_obj",
+                    getOption("projpred.export_to_workers", character())),
         .noexport = c("mu_offs_oscale", "loglik_forPSIS", "psisloo", "y_lat_E",
                       "loo_ref_oscale", "validset", "loo_sub", "mu_sub",
-                      "loo_sub_oscale", "mu_sub_oscale")
+                      "loo_sub_oscale", "mu_sub_oscale"),
+        .errorhandling = getOption("projpred.foreach_errorhandling", "stop"),
+        .verbose = getOption("projpred.foreach_verbose", FALSE)
       ) %do_projpred% {
-        do.call(one_obs, c(list(run_index = run_index, verbose_search = FALSE),
-                           dot_args))
+        out_one_obs <- do.call(one_obs, c(list(run_index = run_index,
+                                               verbose_obs = FALSE),
+                                          dot_args))
+        if (!is.null(progressor_obj)) progressor_obj()
+        return(out_one_obs)
       }
     }
     # For storing the fold-wise predictor rankings:
@@ -1068,10 +1167,9 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
 
   # Submodel predictive performance:
   summ_sub <- lapply(seq_len(prv_len_rk + 1L), function(k) {
-    summ_k <- list(lppd = loo_sub[[k]], mu = mu_sub[[k]], wcv = validset$wcv)
+    summ_k <- list(lppd = loo_sub[[k]], mu = mu_sub[[k]])
     if (refmodel$family$for_latent) {
-      summ_k$oscale <- list(lppd = loo_sub_oscale[[k]], mu = mu_sub_oscale[[k]],
-                            wcv = validset$wcv)
+      summ_k$oscale <- list(lppd = loo_sub_oscale[[k]], mu = mu_sub_oscale[[k]])
     }
     return(summ_k)
   })
@@ -1098,7 +1196,7 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
     if (refmodel$family$for_latent && !is.null(refmodel$family$cats)) {
       i_flx <- i
     }
-    return(as.vector(mu_offs_mlvlRan[i_flx, ] %*% exp(lw[, i])))
+    return(as.vector(mu_offs_mlvlRan[i_flx, , drop = FALSE] %*% exp(lw[, i])))
   })))
   mu_ref <- structure(
     mu_ref,
@@ -1145,13 +1243,14 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
         i_aug <- i_aug + (seq_along(refmodel$family$cats) - 1L) * n
       }
       if (inherits(mu_offs_mlvlRan_oscale, "augmat")) {
-        return(as.vector(mu_offs_mlvlRan_oscale[i_aug, ] %*% exp(lw[, i])))
+        return(as.vector(mu_offs_mlvlRan_oscale[i_aug, , drop = FALSE] %*%
+                           exp(lw[, i])))
       } else {
         # In principle, we could use the same code for averaging across the
         # draws as above in the `augmat` case. However, that would require
         # `mu_offs_mlvlRan_oscale <- t(mu_offs_mlvlRan_oscale)` beforehand, so
         # the following should be more efficient:
-        return(exp(lw[, i]) %*% mu_offs_mlvlRan_oscale[, i_aug])
+        return(exp(lw[, i]) %*% mu_offs_mlvlRan_oscale[, i_aug, drop = FALSE])
       }
     })))
     mu_ref_oscale <- structure(
@@ -1164,8 +1263,9 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
       # Need to use `mlvl_allrandom = TRUE` (`loo_ref_oscale` is based on
       # `mlvl_allrandom = getOption("projpred.mlvl_proj_ref_new", FALSE)`):
       loglik_mlvlRan <- refmodel$family$latent_ll_oscale(
-        mu_offs_mlvlRan_oscale_odim, y_oscale = refmodel$y_oscale,
-        wobs = refmodel$wobs, cl_ref = seq_along(refmodel$wdraws_ref),
+        mu_offs_mlvlRan_oscale_odim, dis = refmodel$dis,
+        y_oscale = refmodel$y_oscale, wobs = refmodel$wobs,
+        cl_ref = seq_along(refmodel$wdraws_ref),
         wdraws_ref = refmodel$wdraws_ref
       )
       lppd_ref_oscale <- apply(loglik_mlvlRan + lw, 2, log_sum_exp)
@@ -1188,27 +1288,35 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
   out_list <- c(out_list,
                 nlist(summaries,
                       y_wobs_test = as.data.frame(refmodel[nms_y_wobs_test()]),
-                      clust_used_eval, nprjdraws_eval))
+                      clust_used_eval, nprjdraws_eval, inds))
   return(out_list)
 }
 
-warn_pareto <- function(n07, n05, warn_txt_start, warn_txt_mid_common,
-                        warn_txt_end) {
-  if (!getOption("projpred.warn_psis", TRUE) || (n07 == 0 && n05 == 0)) return()
-  if (n07 > 0) {
-    warn_txt_mid <- paste0(n07, warn_txt_mid_common, "> 0.7")
-    if (n05 > 0) {
-      warn_txt_mid <- paste0(warn_txt_mid, " and ")
-    }
-  } else {
-    warn_txt_mid <- ""
-  }
-  if (n05 > 0) {
-    warn_txt_mid <- paste0(warn_txt_mid, n05, warn_txt_mid_common, "in the ",
-                           "interval (0.5, 0.7]")
-  }
-  warning(warn_txt_start, warn_txt_mid, warn_txt_end)
+warn_pareto <- function(n07, n, khat_threshold = 0.7, warn_txt) {
+  if (!getOption("projpred.warn_psis", TRUE) || (n07 == 0)) return()
+  warning(sprintf(warn_txt, n07, n, as.character(round(khat_threshold, 2))),
+          call. = FALSE)
   return()
+}
+
+#' Pareto-smoothing k-hat threshold
+#'
+#' Copied from loo package. Remove after loo package exposes this.
+#'
+#' Given sample size S computes khat threshold for reliable Pareto
+#' smoothed estimate (to have small probability of large error). See
+#' section 3.2.4, equation (13). Sample sizes 100, 320, 1000, 2200,
+#' 10000 correspond to thresholds 0.5, 0.6, 0.67, 0.7, 0.75. Although
+#' with bigger sample size S we can achieve estimates with small
+#' probability of large error, it is difficult to get accurate MCSE
+#' estimates as the bias starts to dominate when k > 0.7 (see Section 3.2.3).
+#' Thus the sample size dependend k-ht threshold is capped at 0.7.
+#' @param S sample size
+#' @param ... unused
+#' @return threshold
+#' @noRd
+.ps_khat_threshold <- function(S, ...) {
+  min(1 - 1 / log10(S), 0.7)
 }
 
 # K-fold CV ---------------------------------------------------------------
@@ -1217,6 +1325,7 @@ warn_pareto <- function(n07, n05, warn_txt_start, warn_txt_mid_common,
 if (getRversion() >= package_version("2.15.1")) {
   utils::globalVariables("list_cv_k")
   utils::globalVariables("search_out_rks_k")
+  utils::globalVariables("ks_k")
 }
 
 kfold_varsel <- function(refmodel, method, nterms_max, ndraws, nclusters,
@@ -1246,31 +1355,63 @@ kfold_varsel <- function(refmodel, method, nterms_max, ndraws, nclusters,
   y_wobs_test <- as.data.frame(refmodel[nms_y_wobs_test()])
 
   if (verbose) {
-    verb_txt_start <- "-----\nRunning "
-    if (!search_out_rks_was_null || !validate_search) {
-      verb_txt_mid <- ""
+    # Here in kfold_varsel(), we have no get_refdist() (or get_p_clust()) output
+    # available, so use clust_info() as a workaround:
+    clust_info_sel <- clust_info(
+      ndraws = ndraws,
+      nclusters = nclusters,
+      S = length(refmodel$wdraws_ref)
+    )
+    vtxt_clust_used_sel <- clust_info_sel[["clust_used"]]
+    vtxt_nprjdraws_sel <- clust_info_sel[["nprjdraws"]]
+    if (refit_prj) {
+      clust_info_eval <- clust_info(
+        ndraws = ndraws_pred,
+        nclusters = nclusters_pred,
+        S = length(refmodel$wdraws_ref)
+      )
+      vtxt_clust_used_eval <- clust_info_eval[["clust_used"]]
+      vtxt_nprjdraws_eval <- clust_info_eval[["nprjdraws"]]
     } else {
-      verb_txt_mid <- "the search and "
+      # NOTE: `!refit_prj` cannot occur in combination with
+      # `!search_out_rks_was_null || !validate_search`, so it is correct and
+      # safe to use `vtxt_clust_used_sel` and `vtxt_nprjdraws_sel` here.
+      vtxt_clust_used_eval <- vtxt_clust_used_sel
+      vtxt_nprjdraws_eval <- vtxt_nprjdraws_sel
     }
-    verb_out(verb_txt_start, verb_txt_mid, "the performance evaluation with ",
-             "`refit_prj = ", refit_prj, "` for each of the K = ", K, " CV ",
-             "folds separately ...")
+    verb_out("-----\nRunning ",
+             if (!search_out_rks_was_null || !validate_search) {
+               ""
+             } else {
+               paste0(method, " search with ",
+                      txt_clust_draws(vtxt_clust_used_sel, vtxt_nprjdraws_sel),
+                      " and ")
+             },
+             "the performance evaluation with ",
+             txt_clust_draws(vtxt_clust_used_eval, vtxt_nprjdraws_eval),
+             " (`refit_prj = ", refit_prj, "`) for each of the K = ", K,
+             " CV folds separately ...")
   }
   one_fold <- function(fold,
                        rk,
-                       verbose_search = verbose &&
-                         getOption("projpred.extra_verbose", FALSE),
+                       k,
+                       verbose_fold = max(verbose - 1L, 0L),
                        ...) {
+    # For (extra-)verbose mode:
+    vtxt_fold_k <- paste0("for CV fold ", k, " out of K = ", K, " (",
+                          round(100 * k / K), " %) ")
+
     # Run the search for the current fold:
     if (!validate_search) {
       search_path <- search_path_fulldata
     } else if (!search_out_rks_was_null) {
       search_path <- list(predictor_ranking = rk)
     } else {
-      search_path <- select(
+      search_path <- .select(
         refmodel = fold$refmodel, ndraws = ndraws, nclusters = nclusters,
         method = method, nterms_max = nterms_max, penalty = penalty,
-        verbose = verbose_search, search_control = search_control,
+        verbose = verbose_fold, verbose_line_length = 3,
+        verbose_txt_add = vtxt_fold_k, search_control = search_control,
         search_terms = search_terms, est_runtime = FALSE, ...
       )
     }
@@ -1280,7 +1421,9 @@ kfold_varsel <- function(refmodel, method, nterms_max, ndraws, nclusters,
     perf_eval_out <- perf_eval(
       search_path = search_path, refmodel = fold$refmodel,
       refit_prj = refit_prj, ndraws = ndraws_pred, nclusters = nclusters_pred,
-      refmodel_fulldata = refmodel, indices_test = fold$omitted, ...
+      refmodel_fulldata = refmodel, indices_test = fold$omitted,
+      verbose = verbose_fold, verbose_line_length = 3,
+      verbose_txt_add = vtxt_fold_k, ...
     )
 
     # Performance evaluation for the reference model of the current fold:
@@ -1309,16 +1452,17 @@ kfold_varsel <- function(refmodel, method, nterms_max, ndraws, nclusters,
     # foreach::`%do%`` here and then proceed as in the parallel case, but that
     # would require adding more "hard" dependencies (because packages 'foreach'
     # and 'doRNG' would have to be moved from `Suggests:` to `Imports:`).
-    if (verbose) {
-      pb <- utils::txtProgressBar(min = 0, max = K, style = 3, initial = 0)
+    if (verbose == 1L) {
+      pb <- utils::txtProgressBar(min = 0, max = K, style = 3, initial = 0,
+                                  file = stderr())
     }
-    res_cv <- lapply(seq_along(list_cv), function(k) {
-      if (verbose) {
+    res_cv <- lapply(seq_len(K), function(k) {
+      if (verbose == 1L) {
         on.exit(utils::setTxtProgressBar(pb, k))
       }
-      one_fold(fold = list_cv[[k]], rk = search_out_rks[[k]], ...)
+      one_fold(fold = list_cv[[k]], rk = search_out_rks[[k]], k = k, ...)
     })
-    if (verbose) {
+    if (verbose == 1L) {
       close(pb)
     }
   } else {
@@ -1329,17 +1473,31 @@ kfold_varsel <- function(refmodel, method, nterms_max, ndraws, nclusters,
     if (!requireNamespace("doRNG", quietly = TRUE)) {
       stop("Please install the 'doRNG' package.")
     }
+    if (verbose && use_progressr()) {
+      progressor_obj <- progressr::progressor(K)
+    } else {
+      progressor_obj <- NULL
+    }
     dot_args <- list(...)
     `%do_projpred%` <- doRNG::`%dorng%`
     res_cv <- foreach::foreach(
       list_cv_k = list_cv,
       search_out_rks_k = search_out_rks,
-      .export = c("one_fold", "dot_args"),
-      .noexport = c("list_cv", "search_out_rks")
+      ks_k = seq_len(K),
+      .packages = c("projpred"),
+      .export = c("one_fold", "dot_args", "progressor_obj",
+                  getOption("projpred.export_to_workers", character())),
+      .noexport = c("list_cv", "search_out_rks"),
+      .errorhandling = getOption("projpred.foreach_errorhandling", "stop"),
+      .verbose = getOption("projpred.foreach_verbose", FALSE)
     ) %do_projpred% {
-      do_call(one_fold, c(list(fold = list_cv_k, rk = search_out_rks_k,
-                               verbose_search = FALSE),
-                          dot_args))
+      out_one_fold <- do_call(one_fold, c(list(fold = list_cv_k,
+                                               rk = search_out_rks_k,
+                                               k = ks_k,
+                                               verbose_fold = FALSE),
+                                          dot_args))
+      if (!is.null(progressor_obj)) progressor_obj()
+      return(out_one_fold)
     }
   }
   verb_out("-----", verbose = verbose)
@@ -1379,15 +1537,9 @@ kfold_varsel <- function(refmodel, method, nterms_max, ndraws, nclusters,
     summ$mu <- summ$mu[order(idxs_sorted_by_fold_flx)]
     summ$lppd <- summ$lppd[order(idxs_sorted_by_fold)]
 
-    # Add fold-specific weights (see the discussion at GitHub issue #94 for why
-    # this might have to be changed):
-    summ$wcv <- rep(1, length(summ$lppd))
-    summ$wcv <- summ$wcv / sum(summ$wcv)
-
     if (!is.null(summ$oscale)) {
       summ$oscale$mu <- summ$oscale$mu[order(idxs_sorted_by_fold_aug)]
       summ$oscale$lppd <- summ$oscale$lppd[order(idxs_sorted_by_fold)]
-      summ$oscale$wcv <- summ$wcv
     }
     return(summ)
   })
@@ -1583,67 +1735,4 @@ run_cvfun.refmodel <- function(object,
     cvfits <- suppressWarnings(refmodel$cvfun(folds))
   }
   return(structure(cvfits, folds = folds))
-}
-
-# PSIS-LOO CV helpers -----------------------------------------------------
-
-# ## decide which points to go through in the validation (i.e., which points
-# ## belong to the semi random subsample of validation points)
-# loo_subsample <- function(n, nloo, pareto_k) {
-#   # Note: A seed is not set here because this function is not exported and has
-#   # a calling stack at the beginning of which a seed is set.
-#
-#   resample <- function(x, ...) x[sample.int(length(x), ...)]
-#
-#   if (nloo < n) {
-#     bad <- which(pareto_k > 0.7)
-#     ok <- which(pareto_k <= 0.7 & pareto_k > 0.5)
-#     good <- which(pareto_k <= 0.5)
-#     inds <- resample(bad, min(length(bad), floor(nloo / 3)))
-#     inds <- c(inds, resample(ok, min(length(ok), floor(nloo / 3))))
-#     inds <- c(inds, resample(good, min(length(good), floor(nloo / 3))))
-#     if (length(inds) < nloo) {
-#       ## not enough points selected, so choose randomly among the rest
-#       inds <- c(inds, resample(setdiff(seq_len(n), inds), nloo - length(inds)))
-#     }
-#
-#     ## assign the weights corresponding to this stratification (for example,
-#     ## the 'bad' values are likely to be overpresented in the sample)
-#     wcv <- rep(0, n)
-#     wcv[inds[inds %in% bad]] <- length(bad) / sum(inds %in% bad)
-#     wcv[inds[inds %in% ok]] <- length(ok) / sum(inds %in% ok)
-#     wcv[inds[inds %in% good]] <- length(good) / sum(inds %in% good)
-#   } else {
-#     ## all points used
-#     inds <- seq_len(n)
-#     wcv <- rep(1, n)
-#   }
-#
-#   ## ensure weights are normalized
-#   wcv <- wcv / sum(wcv)
-#
-#   return(nlist(inds, wcv))
-# }
-
-## Select which points to go through in the validation based on
-## proportional-to-size subsampling (PPS) as proposed by Magnusson, M.,
-## Andersen, M. R., Jonasson, J. and Vehtari, A. (2019). Leave-One-Out
-## Cross-Validation for Large Data. In *Proceedings of
-## the 36th International Conference on Machine Learning*, edited by Kamalika
-## Chaudhuri and Ruslan Salakhutdinov, 97:4244--53. Proceedings of Machine
-## Learning Research. PMLR. <https://proceedings.mlr.press/v97/magnusson19a.html>.
-loo_subsample_pps <- function(nloo, lppd) {
-  # Note: A seed is not set here because this function is not exported and has a
-  # calling stack at the beginning of which a seed is set.
-
-  if (nloo == length(lppd)) {
-    inds <- seq_len(nloo)
-    wcv <- rep(1, nloo)
-  } else if (nloo < length(lppd)) {
-    wcv <- exp(lppd - max(lppd))
-    inds <- sample(seq_along(lppd), size = nloo, prob = wcv)
-  }
-  wcv <- wcv / sum(wcv)
-
-  return(nlist(inds, wcv))
 }

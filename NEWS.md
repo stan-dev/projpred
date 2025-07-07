@@ -2,6 +2,49 @@
 
 If you read this from a place other than <https://mc-stan.org/projpred/news/index.html>, please consider switching to that website since it features better formatting and cross-linking.
 
+# projpred 2.8.0.9000
+
+## Major changes
+
+* Subsampled PSIS-LOO CV (usable via argument `nloo` of `cv_varsel()`) has been fixed and is not experimental anymore. There are a few restrictions: Performance statistic `"auc"` (see argument `stats` of `summary.vsel()` and `plot.vsel()`; argument `stat` of `suggest_size()` is concerned as well) is not supported in case of subsampled PSIS-LOO CV. Furthermore, `baseline = "best"` (in `summary.vsel()` and `plot.vsel()`) is not supported in case of subsampled PSIS-LOO CV either. (GitHub: #94, #496)
+* The uncertainty interval for performance statistic `"mse"` is now based on a log-normal approximation (instead of a normal approximation) if argument `deltas` of `summary.vsel()` or `plot.vsel()` is `FALSE`. (GitHub: #496)
+* The standard error for performance statistic `"rmse"` is now computed via the delta method (instead of bootstrapping). The uncertainty interval for `"rmse"` is now based on a log-normal approximation (instead of bootstrapping) if argument `deltas` of `summary.vsel()` or `plot.vsel()` is `FALSE` and based on a normal approximation (instead of bootstrapping) if `deltas` is `TRUE`. (GitHub: #496)
+* Performance statistic `"R2"` (R-squared) has been added, see argument `stats` of `summary.vsel()` and `plot.vsel()`; argument `stat` of `suggest_size()` supports it as well. (GitHub: #483, #496)
+* The performance evaluation part of `cv_varsel()` with `cv_method = "LOO"` and `validate_search = FALSE` now always applies Pareto smoothing when computing the importance sampling weights (as long as the number of importance ratios in the tail is large enough; otherwise, no Pareto smoothing is applied). Previously, in case of projected draws with nonconstant weights (i.e., in case of clustering), no Pareto smoothing had been applied. (GitHub: #496, #507)
+* The threshold for high Pareto-$\hat{k}$ values was updated to the one presented by Vehtari et al. (2024, "Pareto smoothed importance sampling", *Journal of Machine Learning Research*, 25(72):1-58, <https://www.jmlr.org/papers/v25/19-556.html>). This threshold depends on the Monte Carlo sample size and is often close to the former fixed threshold of 0.7 (a short introduction may also be found in the [LOO glossary](https://mc-stan.org/loo/reference/loo-glossary.html)). Correspondingly, the former "secondary" threshold of 0.5 is not used anymore either. (GitHub: #490, #498)
+* Argument `type` of `summary.vsel()` has gained options `"diff.lower"` and `"diff.upper"` (see the documentation for details). (GitHub: #511)
+* Argument `deltas` of `plot.vsel()` has gained option `"mixed"` which combines the point estimates from `deltas = FALSE` with the uncertainty bars from `deltas = TRUE`. (GitHub: #511)
+* For the latent projection, the function passed to argument `latent_ll_oscale` of `extend_family()` now needs to have an argument `dis` (at the second position). Similarly, the function passed to argument `latent_ppd_oscale` of `extend_family()` now needs to have an argument `dis_resamp` (again at the second position). This makes it possible, e.g., to use the latent projection for a log-normal response family. (GitHub: #513)
+* Argument `verbose` of `project()`, `varsel()`, and `cv_varsel()` has been changed from logical to integer. However, logical values continue to work (since `as.integer()` is applied internally). Global options `projpred.extra_verbose` and `projpred.verbose_project` are now deprecated because additional verbosity can be achieved via higher integer values for argument `verbose`. The new global option `projpred.verbose` may be used to set argument `verbose` of `project()`, `varsel()`, and `cv_varsel()` globally. (GitHub: #519)
+* Some global options have been renamed, so please use their new names from now on (although the old names will continue to work for a while) (GitHub: #500, #521):
+    + Global option `projpred.prll_cv` has been renamed to `projpred.parallel_cv`.
+    + Global option `projpred.warn_prj_drawwise` has been renamed to `projpred.warn_proj_drawwise`.
+    + Global option `projpred.check_conv` has been renamed to `projpred.check_convergence`.
+    + Global option `projpred.prll_prj_trigger` has been renamed to `projpred.parallel_proj_trigger`.
+* In `plot.vsel()`, several defaults have been changed (GitHub: #517, #522):
+    
+    + Argument `text_angle` now defaults to `45` (previously, the default was `NULL`).
+    + Argument `size_position` now defaults to `"primary_x_top"` (previously, the default was `"primary_x_bottom"`).
+    + Argument `show_cv_proportions` now defaults to `FALSE` (previously, the default was `TRUE`).
+    
+    These arguments can now also be controlled via global options, see section "Usage" of `?plot.vsel` for their names and the main vignette for an illustration.
+* The changelog for version 2.6.0 did not contain a notification that `cvfolds()` had been deprecated and that the new name `cv_folds()` should be used instead. This changelog entry has been added now (see below), but is also mentioned here to make users aware of it (although a deprecation warning was already added in version 2.6.0 and will be kept until `cvfolds()` is eventually removed in a future release). (GitHub: #411)
+
+## Minor changes
+
+* When using the **doFuture** backend for parallelization, progression updates can now be received via the **progressr** package, see `` ?`projpred-package` `` (section "Parallelization"). (GitHub: #504)
+* Several enhancements concerning verbosity, e.g., the number of projected draws (resulting from clustering or thinning) is now printed out during the different steps of the computations and verbose-mode output is redirected to `stderr()` instead of `stdout()`. (GitHub: #506, #518)
+* For the CV parallelization (see argument `parallel` of `cv_varsel()`), a new global option `projpred.export_to_workers` may be set to a character vector of names of objects to export from the global environment to the parallel workers. (GitHub: #497, #510)
+* Added global options `projpred.foreach_errorhandling` and `projpred.foreach_verbose` whose values are passed to `foreach::foreach()`'s arguments `.errorhandling` and `.verbose`, respectively. The defaults for these new global options are the same as those for the respective `foreach::foreach()` arguments: `"stop"` for global option `projpred.foreach_errorhandling` and `FALSE` for global option `projpred.foreach_verbose`. (GitHub: commit 3231d13)
+* Added global options to control several arguments of `plot.vsel()` and `plot.cv_proportions()` (see section "Usage" of the help pages of these two functions). (GitHub: commit 3333043)
+* Changed the maintainer to Osvaldo Martin.
+
+## Bug fixes
+
+* Fixed a bug that caused an error when using the augmented-data or latent projection in combination with a single projected draw for performance evaluation in `cv_varsel()` with `cv_method = "LOO"` and `validate_search = FALSE`. (GitHub: #512)
+* Previously, in case of PSIS-LOO CV with `validate_search = TRUE` and thinned posterior draws for projection (i.e., argument(s) `ndraws` or `ndraws_pred` being used, not `nclusters` or `nclusters_pred`), `print.vselsummary()` incorrectly reported that the posterior draws had been clustered. This has now been fixed, so thinning is reported in such cases. (GitHub: #516)
+* Fixed the internal default `extract_model_data` function when using the latent projection for a custom reference model object. (GitHub: #523)
+
 # projpred 2.8.0
 
 ## Major changes
@@ -104,6 +147,7 @@ If you read this from a place other than <https://mc-stan.org/projpred/news/inde
     
     Because of these new functions, a message has been added to `print.vselsummary()`, mentioning how to access and investigate the fold-wise predictor rankings (if they exist). Furthermore, due to these changes, element `pct_solution_terms_cv` of `vsel` objects has been replaced with element `solution_terms_cv` which contains the fold-wise predictor rankings instead of the corresponding ranking proportions. However, elements of `vsel` objects are not meant to be accessed directly, so this replacement should not be a breaking change for most users. Finally, method `solution_terms.vsel()` (which---until now---was the only possibility to extract the full-data predictor ranking) has now been deprecated and will be removed in a future release. Please use the new function `ranking()` instead (more precisely, `ranking()`'s output element `fulldata` contains the full-data predictor ranking that is also extracted by `solution_terms.vsel()`; `ranking()`'s output element `foldwise` contains the fold-wise predictor rankings---if available---which were previously not accessible via a built-in function). (GitHub: #289, #406, #411)
 * Added function `predictor_terms()` which retrieves the predictor terms used in a `project()` run. Correspondingly, method `solution_terms.projection()` has now been deprecated and will be removed in a future release. Please use `predictor_terms()` instead. (GitHub: #411)
+* Renamed function `cvfolds()` to `cv_folds()` (more precisely, the former variant still exists, but is deprecated and will be removed in a future release). (GitHub: #411)
 * `seed` (and `.seed`) arguments now have a default of `NA` instead of `sample.int(.Machine$integer.max, 1)` and the pseudorandom number generator (PRNG) state is reset only if the user-supplied seed is not `NA`. This allows setting a seed once at the beginning of any **projpred**-related code and then leaving all `seed` (and `.seed`) arguments at their default. Previously, such practice could lead to results which were "less random" than they should have been because the former default of `sample.int(.Machine$integer.max, 1)` caused **projpred** functions with a `seed` (or `.seed`) argument to reset the PRNG state upon exit, meaning that two repeated calls to `cv_varsel()` (for example) with no PRNG-using code between them would use the same seed internally. (GitHub: #412)
 * Added the main diagonal of the matrix returned by `cv_proportions()` to a new column called `cv_proportions_diag` of the summary table computed by `summary.vsel()`. The purpose of this new column is to give a basic sense for the (CV) variability in the ranking of the predictors. Argument `cumulate` of `cv_proportions()` has been added to `summary.vsel()` as well (to allow the ranking proportions in the newly added column to be *cumulated* ranking proportions, if desired). (GitHub: #289, #413)
 * Added the full-data predictor ranking and the main diagonal of the matrix returned by `cv_proportions()` to the plot created by `plot.vsel()`. These new elements can be omitted by setting `plot.vsel()`'s new argument `ranking_nterms_max` to `NA` (setting it to some specific submodel size causes the full-data predictor ranking and the corresponding ranking proportions to be omitted after that size). Argument `cumulate` of `cv_proportions()` has been added to `plot.vsel()` as well (to allow the ranking proportions to be *cumulated* ranking proportions, if desired). Other new arguments are `ranking_abbreviate` (together with `ranking_abbreviate_args`), `ranking_repel` (together with `ranking_repel_args`), and `text_angle` (see the `plot.vsel()` documentation for details). (GitHub: #289, #414, #416, #417)
@@ -438,7 +482,7 @@ This version contains only a few patches, no new features to the user.
 
 ## New features 
 
-* Added support for [**brms**](https://paul-buerkner.github.io/brms/) models. 
+* Added support for [**brms**](https://paulbuerkner.com/brms/) models. 
 
 ## Bug fixes
 

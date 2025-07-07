@@ -27,14 +27,15 @@ See section "Details" below for some important arguments which may be
 passed here.}
 
 \item{stat}{Performance statistic (i.e., utility or loss) used for the
-decision. See argument \code{stats} of \code{\link[=summary.vsel]{summary.vsel()}} for possible choices.}
+decision. See argument \code{stats} of \code{\link[=summary.vsel]{summary.vsel()}} and \code{\link[=plot.vsel]{plot.vsel()}} for
+possible choices.}
 
 \item{pct}{A number giving the proportion (\emph{not} percents) of the \emph{relative}
 null model utility one is willing to sacrifice. See section "Details" below
 for more information.}
 
 \item{type}{Either \code{"upper"} or \code{"lower"} determining whether the decision is
-based on the upper or lower confidence interval bound, respectively. See
+based on the upper or lower uncertainty interval bound, respectively. See
 section "Details" below for more information.}
 
 \item{thres_elpd}{Only relevant if \verb{stat \%in\% c("elpd", "mlpd", "gmpd"))}.
@@ -67,12 +68,11 @@ decision based on what is most appropriate for the problem at hand.
 In general (beware of special cases below), the suggested model
 size is the smallest model size \eqn{j \in \{0, 1, ...,
   \texttt{nterms\_max}\}}{{j = 0, 1, ..., nterms_max}} for which either the
-lower or upper bound (depending on argument \code{type}) of the
-normal-approximation (or bootstrap or exponentiated normal-approximation;
-see argument \code{stat}) confidence interval (with nominal coverage \code{1 - alpha}; see argument \code{alpha} of \code{\link[=summary.vsel]{summary.vsel()}}) for \eqn{U_j -
-  U_{\mathrm{base}}}{U_j - U_base} (with \eqn{U_j} denoting the \eqn{j}-th
-submodel's true utility and \eqn{U_{\mathrm{base}}}{U_base} denoting the
-baseline model's true utility)
+lower or upper bound (depending on argument \code{type}) of the uncertainty
+interval (with nominal coverage \code{1 - alpha}; see argument \code{alpha} of
+\code{\link[=summary.vsel]{summary.vsel()}}) for \eqn{U_j - U_{\mathrm{base}}}{U_j - U_base} (with
+\eqn{U_j} denoting the \eqn{j}-th submodel's true utility and
+\eqn{U_{\mathrm{base}}}{U_base} denoting the baseline model's true utility)
 falls above (or is equal to) \deqn{\texttt{pct} \cdot (u_0 -
   u_{\mathrm{base}})}{pct * (u_0 - u_base)} where \eqn{u_0} denotes the null
 model's estimated utility and \eqn{u_{\mathrm{base}}}{u_base} the baseline
@@ -81,9 +81,9 @@ or the best submodel found (see argument \code{baseline} of \code{\link[=summary
 
 In doing so, loss statistics like the root mean squared error (RMSE) and
 the mean squared error (MSE) are converted to utilities by multiplying them
-by \code{-1}, so a call such as \code{suggest_size(object, stat = "rmse", type = "upper")} finds the smallest model size whose upper confidence interval
+by \code{-1}, so a call such as \code{suggest_size(object, stat = "rmse", type = "upper")} finds the smallest model size whose upper uncertainty interval
 bound for the \emph{negative} RMSE or MSE exceeds (or is equal to) the cutoff
-(or, equivalently, has the lower confidence interval bound for the RMSE or
+(or, equivalently, has the lower uncertainty interval bound for the RMSE or
 MSE below---or equal to---the cutoff). This is done to make the
 interpretation of argument \code{type} the same regardless of argument \code{stat}.
 
@@ -95,9 +95,9 @@ is applied on \code{\link[=log]{log()}} scale. In other words, if the true GMPD 
 \eqn{U_j = \log(U^\ast_j)}{U_j = log(U^*_j)} and
 \eqn{U_{\mathrm{base}} = \log(U^\ast_{\mathrm{base}})}{U_base =
   log(U^*_base)}), then \code{\link[=suggest_size]{suggest_size()}} yields the smallest model size whose
-lower or upper (depending on argument \code{type}) confidence interval bound for
-\eqn{\frac{U^\ast_j}{U^\ast_{\mathrm{base}}}}{U^*_j / U^*_base} exceeds (or
-is equal to)
+lower or upper (depending on argument \code{type}) uncertainty interval bound
+for \eqn{\frac{U^\ast_j}{U^\ast_{\mathrm{base}}}}{U^*_j / U^*_base} exceeds
+(or is equal to)
 \deqn{(\frac{u^\ast_0}{u^\ast_{\mathrm{base}}})^{\texttt{pct}}}{(u^*_0 /
   u^*_base)^(pct)} where \eqn{u^\ast_0}{u^*_0} denotes the null
 model's estimated GMPD and \eqn{u^\ast_{\mathrm{base}}}{u^*_base} the
@@ -120,15 +120,15 @@ above \emph{or} \eqn{\frac{u^\ast_j}{u^\ast_{\mathrm{base}}} >
 For example (disregarding the special extensions in case of
 \code{!is.na(thres_elpd)} with \code{stat \%in\% c("elpd", "mlpd", "gmpd")}), \code{alpha = 2 * pnorm(-1)}, \code{pct = 0}, and \code{type = "upper"} means that we select the
 smallest model size for which the upper bound of the \code{1 - 2 * pnorm(-1)}
-(approximately 68.3\%) confidence interval for \eqn{U_j -
+(approximately 68.3 \%) uncertainty interval for \eqn{U_j -
   U_{\mathrm{base}}}{U_j - U_base}
 (\eqn{\frac{U^\ast_j}{U^\ast_{\mathrm{base}}}}{U^*_j / U^*_base} in case of
 the GMPD) exceeds (or is equal to) zero (one in case of the GMPD), that is
-(if \code{stat} is a performance statistic for which the normal approximation is
-used, not the bootstrap and not the exponentiated normal approximation),
-for which the submodel's utility estimate is at most one standard error
-smaller than the baseline model's utility estimate (with that standard
-error referring to the utility \emph{difference}).
+(if \code{stat} is a performance statistic for which a normal-approximation
+uncertainty interval is used, see argument \code{stats} of \code{\link[=summary.vsel]{summary.vsel()}} and
+\code{\link[=plot.vsel]{plot.vsel()}}), for which the submodel's utility estimate is at most one
+standard error smaller than the baseline model's utility estimate (with
+that standard error referring to the utility \emph{difference}).
 
 Apart from the two \code{\link[=summary.vsel]{summary.vsel()}} arguments mentioned above (\code{alpha} and
 \code{baseline}), \code{resp_oscale} is another important \code{\link[=summary.vsel]{summary.vsel()}} argument

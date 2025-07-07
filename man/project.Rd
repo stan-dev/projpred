@@ -13,7 +13,7 @@ project(
   ndraws = 400,
   nclusters = NULL,
   seed = NA,
-  verbose = getOption("projpred.verbose_project", TRUE),
+  verbose = getOption("projpred.verbose", as.integer(interactive())),
   ...
 )
 }
@@ -68,12 +68,13 @@ drawing new group-level effects when predicting from a multilevel submodel
 \code{projpred.mlvl_pred_new} set to \code{TRUE}. (Such a prediction takes place when
 calculating output elements \code{dis} and \code{ce}.)}
 
-\item{verbose}{A single logical value indicating whether to print out
-additional information during the computations. More precisely, this gets
-passed as \code{verbose_divmin} to the divergence minimizer function of the
-\code{refmodel} object. For the built-in divergence minimizers, this only has an
-effect in case of sequential computations (not in case of parallel
-projection, which is described in \link{projpred-package}).}
+\item{verbose}{A single integer value from the set \eqn{\{0, 1, 2\}}{{0, 1,
+  2}} (if \code{!is.null(predictor_terms)}, \eqn{1} and \eqn{2} have the same
+effect), indicating how much information (if any) to print out during the
+computations. Higher values indicate that more information should be
+printed, \code{0} deactivates the verbose mode. Internally, argument \code{verbose}
+is coerced to integer via \code{as.integer()}, so technically, a single logical
+value or a single numeric value work as well.}
 
 \item{...}{Arguments passed to \code{\link[=get_refmodel]{get_refmodel()}} (if \code{\link[=get_refmodel]{get_refmodel()}} is
 actually used; see argument \code{object}) as well as to the divergence

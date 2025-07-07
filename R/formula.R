@@ -805,6 +805,8 @@ split_formula_random_gamm4 <- function(formula) {
 }
 
 # utility to recover the full gam + random formula from a stan_gamm4 model
+#' @noRd
+#' @export
 formula.gamm4 <- function(x, ...) {
   formula <- x$formula
   if (is.null(x$glmod)) {

@@ -1192,9 +1192,11 @@ outdmin_tester_aug <- function(
         expect_true(is.vector(ranef_crr[["z.1"]][["(Intercept)"]], "numeric"),
                     info = info_str)
         expect_length(ranef_crr[["z.1"]][["(Intercept)"]], nlevels(dat$z.1))
-        expect_true(is.vector(ranef_crr[["z.1"]][["xco.1"]], "numeric"),
-                    info = info_str)
-        expect_length(ranef_crr[["z.1"]][["xco.1"]], nlevels(dat$z.1))
+        if ("xco.1" %in% coef_nms) {
+          expect_true(is.vector(ranef_crr[["z.1"]][["xco.1"]], "numeric"),
+                      info = info_str)
+          expect_length(ranef_crr[["z.1"]][["xco.1"]], nlevels(dat$z.1))
+        }
 
         # ordinal::VarCorr()
         VarCorr_crr <- ordinal::VarCorr(outdmin_totest[[j]])
@@ -1209,13 +1211,15 @@ outdmin_tester_aug <- function(
                     info = info_str)
         expect_named(attr(VarCorr_crr[["z.1"]], "stddev"), coef_nms,
                      info = info_str)
-        expect_true(is.matrix(attr(VarCorr_crr[["z.1"]], "correlation")),
-                    info = info_str)
-        expect_true(is.numeric(attr(VarCorr_crr[["z.1"]], "correlation")),
-                    info = info_str)
-        expect_identical(dimnames(attr(VarCorr_crr[["z.1"]], "correlation")),
-                         replicate(2, coef_nms, simplify = FALSE),
-                         info = info_str)
+        if ("xco.1" %in% coef_nms) {
+          expect_true(is.matrix(attr(VarCorr_crr[["z.1"]], "correlation")),
+                      info = info_str)
+          expect_true(is.numeric(attr(VarCorr_crr[["z.1"]], "correlation")),
+                      info = info_str)
+          expect_identical(dimnames(attr(VarCorr_crr[["z.1"]], "correlation")),
+                           replicate(2, coef_nms, simplify = FALSE),
+                           info = info_str)
+        }
 
         # formula()
         formula_crr <- formula(outdmin_totest[[j]])
@@ -1964,7 +1968,11 @@ vsel_tester <- function(
       nclusters_pred_tst
     },
     seed_expected = seed_tst,
-    nloo_expected = if (with_cv) refmod_expected$nobs else NULL,
+    nloo_expected = if (with_cv && !identical(cv_method_expected, "kfold")) {
+      refmod_expected$nobs
+    } else {
+      NULL
+    },
     K_expected = NULL,
     penalty_expected = NULL,
     search_terms_expected = NULL,
@@ -1975,30 +1983,26 @@ vsel_tester <- function(
 ) {
   # Preparations:
   if (with_cv) {
-    vsel_smmrs_sub_nms <- c(vsel_smmrs_sub_nms, "wcv")
-
     if (is.null(cv_method_expected)) {
       cv_method_expected <- "LOO"
     }
     if (is.null(valsearch_expected)) {
       valsearch_expected <- TRUE
     }
-
-    if (cv_method_expected == "LOO") {
-      # Re-order:
-      vsel_smmrs_sub_nms[1:2] <- vsel_smmrs_sub_nms[2:1]
-      vsel_smmrs_ref_nms[1:2] <- vsel_smmrs_ref_nms[2:1]
-    }
   }
   if (method_expected == "L1") {
     cl_search_expected <- !from_datafit
+  }
+  if (with_cv && identical(cv_method_expected, "LOO")) {
+    if (is.null(nloo_expected) || nloo_expected > nobsv) {
+      nloo_expected <- nobsv
+    }
   }
   if (search_trms_empty_size) {
     # This is the "empty_size" setting, so we have to subtract the skipped model
     # size (see issue #307):
     prd_trms_len_expected <- prd_trms_len_expected - 1L
   }
-  nloo_expected_orig <- nloo_expected
 
   # Test the general structure of the object:
   expect_s3_class(vs, "vsel")
@@ -2148,7 +2152,11 @@ vsel_tester <- function(
       rk_cv <- c(rk_cv, labels(terms(as.formula(paste(". ~", rk_cv_plus)))))
     }
     expect_true(
-      all(rk_cv %in% c(trms_universe_split, NA_character_)),
+      all(rk_cv %in%
+            c(trms_universe_split,
+              sub("^s\\((.*)\\)$", "\\1",
+                  grep("^s\\(.*\\)$", trms_universe_split, value = TRUE)),
+              NA_character_)),
       info = info_str
     )
   } else {
@@ -2197,8 +2205,9 @@ vsel_tester <- function(
           wdraws_ref = vs$refmodel$wdraws_ref
         )
         ll_forPSIS <- vs$refmodel$family$latent_ll_oscale(
-          mu_offs_oscale_tst, y_oscale = vs$refmodel$y_oscale,
-          wobs = vs$refmodel$wobs, cl_ref = seq_along(vs$refmodel$wdraws_ref),
+          mu_offs_oscale_tst, dis = vs$refmodel$dis,
+          y_oscale = vs$refmodel$y_oscale, wobs = vs$refmodel$wobs,
+          cl_ref = seq_along(vs$refmodel$wdraws_ref),
           wdraws_ref = vs$refmodel$wdraws_ref
         )
         psisloo_tst <- suppressWarnings(
@@ -2239,129 +2248,36 @@ vsel_tester <- function(
   expect_identical(vs$nobs_test, nrow(vs$y_wobs_test), info = info_str)
 
   # summaries
-  expect_type(vs$summaries, "list")
-  expect_named(vs$summaries, c("sub", "ref"), info = info_str)
-  expect_type(vs$summaries$sub, "list")
-  expect_length(vs$summaries$sub, prd_trms_len_expected + 1)
-  if (with_cv) {
-    if (is.null(nloo_expected) || nloo_expected > nobsv) {
-      nloo_expected <- nobsv
-    }
-  }
-  nobsv_summ <- nobsv
-  nobsv_summ_aug <- nobsv_aug
-  if (!is.null(ywtest_expected)) {
-    nobsv_summ <- nrow(ywtest_expected)
-    nobsv_summ_aug <- nobsv_summ * ncats
-  }
-  if (vs$refmodel$family$for_latent) {
-    vsel_smmrs_sub_nms <- c(vsel_smmrs_sub_nms, "oscale")
-    if ("wcv" %in% vsel_smmrs_sub_nms &&
-        identical(cv_method_expected, "kfold")) {
-      vsel_smmrs_sub_nms[vsel_smmrs_sub_nms %in% c("wcv", "oscale")] <- c(
-        "oscale", "wcv"
-      )
-    }
-    vsel_smmrs_ref_nms <- c(vsel_smmrs_ref_nms, "oscale")
-  }
-  smmrs_sub_j_tester <- function(smmrs_sub_j, tests_oscale = FALSE) {
-    if (tests_oscale) {
-      vsel_smmrs_sub_nms <- setdiff(vsel_smmrs_sub_nms, "oscale")
-      if (!is.null(vs$refmodel$family$cats)) {
-        ncats <- length(vs$refmodel$family$cats)
-      } else {
-        ncats <- 1L
-      }
-      nobsv_summ_aug <- nobsv_summ * ncats
-    }
-    expect_type(smmrs_sub_j, "list")
-    expect_named(smmrs_sub_j, vsel_smmrs_sub_nms, info = info_str)
-    expect_type(smmrs_sub_j$mu, "double")
-    expect_length(smmrs_sub_j$mu, nobsv_summ_aug)
-    if (vs$refmodel$family$for_augdat ||
-        (vs$refmodel$family$for_latent && tests_oscale &&
-         !is.null(vs$refmodel$family$cats))) {
-      expect_s3_class(smmrs_sub_j$mu, "augvec")
-    }
-    if (with_cv) {
-      expect_identical(sum(!is.na(smmrs_sub_j$mu)), nloo_expected * ncats,
-                       info = info_str)
-    } else {
-      expect_true(all(!is.na(smmrs_sub_j$mu)), info = info_str)
-    }
-    expect_type(smmrs_sub_j$lppd, "double")
-    expect_length(smmrs_sub_j$lppd, nobsv_summ)
-    if (with_cv) {
-      if (vs$refmodel$family$for_latent && !tests_oscale &&
-          identical(cv_method_expected, "kfold")) {
-        expect_true(all(is.na(smmrs_sub_j$lppd)), info = info_str)
-      } else {
-        expect_identical(sum(!is.na(smmrs_sub_j$lppd)), nloo_expected,
-                         info = info_str)
-      }
-    } else {
-      expect_true(all(!is.na(smmrs_sub_j$lppd)), info = info_str)
-    }
-    if (with_cv) {
-      expect_type(smmrs_sub_j$wcv, "double")
-      expect_length(smmrs_sub_j$wcv, nobsv)
-      expect_true(all(!is.na(smmrs_sub_j$wcv)), info = info_str)
-      if (nloo_expected == nobsv) {
-        expect_equal(smmrs_sub_j$wcv, rep(1 / nobsv, nobsv), info = info_str)
-      } else {
-        expect_true(any(smmrs_sub_j$wcv != rep(1 / nobsv, nobsv)),
-                    info = info_str)
-      }
-    }
-    return(invisible(TRUE))
-  }
-  for (j in seq_along(vs$summaries$sub)) {
-    smmrs_sub_j_tester(vs$summaries$sub[[j]])
-    if (vs$refmodel$family$for_latent) {
-      smmrs_sub_j_tester(vs$summaries$sub[[j]]$oscale, tests_oscale = TRUE)
-    }
-  }
-  smmrs_ref_tester <- function(smmrs_ref, tests_oscale = FALSE) {
-    if (tests_oscale) {
-      vsel_smmrs_ref_nms <- setdiff(vsel_smmrs_ref_nms, "oscale")
-      if (!is.null(vs$refmodel$family$cats)) {
-        ncats <- length(vs$refmodel$family$cats)
-      } else {
-        ncats <- 1L
-      }
-      nobsv_summ_aug <- nobsv_summ * ncats
-    }
-    expect_type(smmrs_ref, "list")
-    expect_named(smmrs_ref, vsel_smmrs_ref_nms, info = info_str)
-    if (!from_datafit) {
-      expect_type(smmrs_ref$mu, "double")
-    }
-    expect_length(smmrs_ref$mu, nobsv_summ_aug)
-    if (vs$refmodel$family$for_augdat ||
-        (vs$refmodel$family$for_latent && tests_oscale &&
-         !is.null(vs$refmodel$family$cats))) {
-      expect_s3_class(smmrs_ref$mu, "augvec")
-    }
-    if (!from_datafit) {
-      expect_true(all(!is.na(smmrs_ref$mu)), info = info_str)
-    } else {
-      expect_true(all(is.na(smmrs_ref$mu)), info = info_str)
-    }
-    if (!from_datafit) {
-      expect_type(smmrs_ref$lppd, "double")
-    }
-    expect_length(smmrs_ref$lppd, nobsv_summ)
-    if (!from_datafit && !(vs$refmodel$family$for_latent && !tests_oscale &&
-                           identical(cv_method_expected, "kfold"))) {
-      expect_true(all(!is.na(smmrs_ref$lppd)), info = info_str)
-    } else {
-      expect_true(all(is.na(smmrs_ref$lppd)), info = info_str)
-    }
-    return(invisible(TRUE))
-  }
-  smmrs_ref_tester(vs$summaries$ref)
-  if (vs$refmodel$family$for_latent) {
-    smmrs_ref_tester(vs$summaries$ref$oscale, tests_oscale = TRUE)
+  smmrs_tester(vs$summaries,
+               from_datafit = from_datafit,
+               with_cv = with_cv,
+               valsearch_expected = valsearch_expected,
+               cv_method_expected = cv_method_expected,
+               nloo_expected = nloo_expected,
+               ncats = ncats,
+               ywtest_expected = ywtest_expected,
+               ref_fam = vs$refmodel$family,
+               prd_trms_len_expected = prd_trms_len_expected,
+               info_str = info_str)
+
+  # summaries_fast
+  if (isTRUE(vs$nloo < vs$refmodel$nobs)) {
+    smmrs_tester(vs$summaries_fast,
+                 from_datafit = from_datafit,
+                 with_cv = with_cv,
+                 valsearch_expected = valsearch_expected,
+                 cv_method_expected = cv_method_expected,
+                 nloo_expected = nobsv,
+                 ncats = ncats,
+                 ywtest_expected = ywtest_expected,
+                 ref_fam = vs$refmodel$family,
+                 prd_trms_len_expected = prd_trms_len_expected,
+                 info_str = info_str)
+    expect_identical(vs$summaries_fast$ref,
+                     vs$summaries$ref,
+                     info = info_str)
+  } else {
+    expect_null(vs$summaries_fast, info = info_str)
   }
 
   # nterms_all
@@ -2383,7 +2299,7 @@ vsel_tester <- function(
   expect_identical(vs$cv_method, cv_method_expected, info = info_str)
 
   # nloo
-  expect_identical(vs$nloo, nloo_expected_orig, info = info_str)
+  expect_identical(vs$nloo, nloo_expected, info = info_str)
 
   # K
   if (!is.null(K_expected)) {
@@ -2449,6 +2365,155 @@ vsel_tester <- function(
   # projpred_version
   expect_true(is.package_version(vs$projpred_version), info = info_str)
 
+  return(invisible(TRUE))
+}
+
+# A helper function for testing the structure of element `summaries` or
+# `summaries_fast` of a `vsel` object.
+#
+# @param smmrs Element `summaries` or `summaries_fast` of a `vsel` object.
+# @param from_datafit A single logical value indicating whether an object of
+#   class `datafit` was used for creating the `vsel` object (`TRUE`) or not
+#   (`FALSE`).
+# @param with_cv A single logical value indicating whether the `vsel` object was
+#   created by cv_varsel() (`TRUE`) or not (`FALSE`).
+# @param valsearch_expected The expected element `validate_search` of the `vsel`
+#   object.
+# @param cv_method_expected Either `character()` for the no-CV case or a single
+#   character string giving the CV method (see argument `cv_method` of
+#   cv_varsel()).
+# @param nloo_expected Only relevant if `with_cv` is `TRUE`. The value which was
+#   used for argument `nloo` of cv_varsel().
+# @param ncats The expected number of categories (for augmented-data and
+#   possibly latent projection).
+# @param ywtest_expected If `vs` was created with a non-`NULL` argument `d_test`
+#   (which is only possible for varsel()), then this needs to be the expected
+#   `vs$y_wobs_test` object. Otherwise, this needs to be `NULL`.
+# @param ref_fam Element `family` of element `refmodel` of the `vsel` object.
+# @param prd_trms_len_expected A single numeric value giving the expected length
+#   of the predictor ranking (not counting the intercept, even for the
+#   intercept-only model).
+# @param info_str A single character string giving information to be printed in
+#   case of failure.
+#
+# @return `TRUE` (invisible).
+smmrs_tester <- function(smmrs,
+                         from_datafit,
+                         with_cv,
+                         valsearch_expected,
+                         cv_method_expected,
+                         nloo_expected,
+                         ncats,
+                         ywtest_expected,
+                         ref_fam,
+                         prd_trms_len_expected,
+                         info_str) {
+  expect_type(smmrs, "list")
+  expect_named(smmrs, c("sub", "ref"), info = info_str)
+  expect_type(smmrs$sub, "list")
+  expect_length(smmrs$sub, prd_trms_len_expected + 1)
+  nobsv_summ <- nobsv
+  nobsv_aug <- nobsv * ncats
+  nobsv_summ_aug <- nobsv_aug
+  if (!is.null(ywtest_expected)) {
+    nobsv_summ <- nrow(ywtest_expected)
+    nobsv_summ_aug <- nobsv_summ * ncats
+  }
+  if (identical(cv_method_expected, "LOO")) {
+    # Re-order:
+    vsel_smmrs_sub_nms[1:2] <- vsel_smmrs_sub_nms[2:1]
+    vsel_smmrs_ref_nms[1:2] <- vsel_smmrs_ref_nms[2:1]
+  }
+  if (ref_fam$for_latent) {
+    vsel_smmrs_sub_nms <- c(vsel_smmrs_sub_nms, "oscale")
+    vsel_smmrs_ref_nms <- c(vsel_smmrs_ref_nms, "oscale")
+  }
+  smmrs_sub_j_tester <- function(smmrs_sub_j, tests_oscale = FALSE) {
+    if (tests_oscale) {
+      vsel_smmrs_sub_nms <- setdiff(vsel_smmrs_sub_nms, "oscale")
+      if (!is.null(ref_fam$cats)) {
+        ncats <- length(ref_fam$cats)
+      } else {
+        ncats <- 1L
+      }
+      nobsv_summ_aug <- nobsv_summ * ncats
+    }
+    expect_type(smmrs_sub_j, "list")
+    expect_named(smmrs_sub_j, vsel_smmrs_sub_nms, info = info_str)
+    expect_type(smmrs_sub_j$mu, "double")
+    expect_length(smmrs_sub_j$mu, nobsv_summ_aug)
+    if (ref_fam$for_augdat ||
+        (ref_fam$for_latent && tests_oscale && !is.null(ref_fam$cats))) {
+      expect_s3_class(smmrs_sub_j$mu, "augvec")
+    }
+    if (with_cv && valsearch_expected && identical(cv_method_expected, "LOO")) {
+      expect_identical(sum(!is.na(smmrs_sub_j$mu)), nloo_expected * ncats,
+                       info = info_str)
+    } else {
+      expect_true(all(!is.na(smmrs_sub_j$mu)), info = info_str)
+    }
+    expect_type(smmrs_sub_j$lppd, "double")
+    expect_length(smmrs_sub_j$lppd, nobsv_summ)
+    if (with_cv) {
+      if (ref_fam$for_latent && !tests_oscale &&
+          identical(cv_method_expected, "kfold")) {
+        expect_true(all(is.na(smmrs_sub_j$lppd)), info = info_str)
+      } else if (valsearch_expected && identical(cv_method_expected, "LOO")) {
+        expect_identical(sum(!is.na(smmrs_sub_j$lppd)), nloo_expected,
+                         info = info_str)
+      }
+    } else {
+      expect_true(all(!is.na(smmrs_sub_j$lppd)), info = info_str)
+    }
+    return(invisible(TRUE))
+  }
+  for (j in seq_along(smmrs$sub)) {
+    smmrs_sub_j_tester(smmrs$sub[[j]])
+    if (ref_fam$for_latent) {
+      smmrs_sub_j_tester(smmrs$sub[[j]]$oscale, tests_oscale = TRUE)
+    }
+  }
+  smmrs_ref_tester <- function(smmrs_ref, tests_oscale = FALSE) {
+    if (tests_oscale) {
+      vsel_smmrs_ref_nms <- setdiff(vsel_smmrs_ref_nms, "oscale")
+      if (!is.null(ref_fam$cats)) {
+        ncats <- length(ref_fam$cats)
+      } else {
+        ncats <- 1L
+      }
+      nobsv_summ_aug <- nobsv_summ * ncats
+    }
+    expect_type(smmrs_ref, "list")
+    expect_named(smmrs_ref, vsel_smmrs_ref_nms, info = info_str)
+    if (!from_datafit) {
+      expect_type(smmrs_ref$mu, "double")
+    }
+    expect_length(smmrs_ref$mu, nobsv_summ_aug)
+    if (ref_fam$for_augdat ||
+        (ref_fam$for_latent && tests_oscale && !is.null(ref_fam$cats))) {
+      expect_s3_class(smmrs_ref$mu, "augvec")
+    }
+    if (!from_datafit) {
+      expect_true(all(!is.na(smmrs_ref$mu)), info = info_str)
+    } else {
+      expect_true(all(is.na(smmrs_ref$mu)), info = info_str)
+    }
+    if (!from_datafit) {
+      expect_type(smmrs_ref$lppd, "double")
+    }
+    expect_length(smmrs_ref$lppd, nobsv_summ)
+    if (!from_datafit && !(ref_fam$for_latent && !tests_oscale &&
+                           identical(cv_method_expected, "kfold"))) {
+      expect_true(all(!is.na(smmrs_ref$lppd)), info = info_str)
+    } else {
+      expect_true(all(is.na(smmrs_ref$lppd)), info = info_str)
+    }
+    return(invisible(TRUE))
+  }
+  smmrs_ref_tester(smmrs$ref)
+  if (ref_fam$for_latent) {
+    smmrs_ref_tester(smmrs$ref$oscale, tests_oscale = TRUE)
+  }
   return(invisible(TRUE))
 }
 
@@ -2649,27 +2714,46 @@ smmry_sub_tester <- function(
     diff_nm <- paste(stats_expected, "diff", sep = ".")
     for (stat_idx in seq_along(stats_expected)) {
       if (!from_datafit && !is_lat_kfold) {
-        expect_equal(
-          diff(smmry_sub[, stats_mean_name[stat_idx]]),
-          diff(smmry_sub[, diff_nm[stat_idx]]),
-          info = info_str
-        )
+        if (stats_expected[stat_idx] != "gmpd") {
+          # A very basic test:
+          expect_equal(
+            diff(smmry_sub[, stats_mean_name[stat_idx]]),
+            diff(smmry_sub[, diff_nm[stat_idx]]),
+            info = info_str
+          )
+        } else {
+          # A very basic test:
+          expect_equal(
+            exp(diff(log(smmry_sub[, stats_mean_name[stat_idx]]))),
+            exp(diff(log(smmry_sub[, diff_nm[stat_idx]]))),
+            info = info_str
+          )
+        }
+        if ("oscale" %in% names(summaries_ref) && resp_oscale_expected) {
+          summaries_ref <- summaries_ref[["oscale"]]
+        }
         if (stats_expected[stat_idx] == "elpd") {
           stat_ref <- sum(summaries_ref$lppd)
-        } else if (stats_expected[stat_idx] == "mlpd") {
+        } else if (stats_expected[stat_idx] %in% c("mlpd", "gmpd")) {
           stat_ref <- mean(summaries_ref$lppd)
-        } else if (stats_expected[stat_idx] == "gmpd") {
-          stat_ref <- exp(mean(summaries_ref$lppd))
         } else {
           # TODO: Implement `stat_ref` for the remaining `stats`.
           stat_ref <- NULL
         }
         if (!is.null(stat_ref)) {
-          expect_equal(
-            smmry_sub[, stats_mean_name[stat_idx]] - stat_ref,
-            smmry_sub[, diff_nm[stat_idx]],
-            tolerance = 1e-12, info = info_str
-          )
+          if (stats_expected[stat_idx] != "gmpd") {
+            expect_equal(
+              smmry_sub[, stats_mean_name[stat_idx]] - stat_ref,
+              smmry_sub[, diff_nm[stat_idx]],
+              tolerance = 1e-12, info = info_str
+            )
+          } else {
+            expect_equal(
+              exp(log(smmry_sub[, stats_mean_name[stat_idx]]) - stat_ref),
+              smmry_sub[, diff_nm[stat_idx]],
+              tolerance = 1e-12, info = info_str
+            )
+          }
         }
       } else {
         expect_true(all(is.na(smmry_sub[, diff_nm[stat_idx]])), info = info_str)
@@ -2679,8 +2763,9 @@ smmry_sub_tester <- function(
   if ("lower" %in% type_expected && !is_lat_kfold) {
     lower_nm <- paste(stats_expected, "lower", sep = ".")
     for (stat_idx in seq_along(stats_expected)) {
-      if (!stats_expected[stat_idx] %in% c("rmse", "auc")) {
-        # RMSE and AUC are excluded here because of PR #347.
+      if (!stats_expected[stat_idx] %in% c("auc")) {
+        # AUC is excluded here because of PR #347 (originally, RMSE was excluded
+        # as well, but PR #496 switched to the delta method for RMSE).
         expect_true(all(smmry_sub[, stats_mean_name[stat_idx]] >=
                           smmry_sub[, lower_nm[stat_idx]]),
                     info = info_str)
@@ -2690,8 +2775,9 @@ smmry_sub_tester <- function(
   if ("upper" %in% type_expected && !is_lat_kfold) {
     upper_nm <- paste(stats_expected, "upper", sep = ".")
     for (stat_idx in seq_along(stats_expected)) {
-      if (!stats_expected[stat_idx] %in% c("rmse", "auc")) {
-        # RMSE and AUC are excluded here because of PR #347.
+      if (!stats_expected[stat_idx] %in% c("auc")) {
+        # AUC is excluded here because of PR #347 (originally, RMSE was excluded
+        # as well, but PR #496 switched to the delta method for RMSE).
         expect_true(all(smmry_sub[, stats_mean_name[stat_idx]] <=
                           smmry_sub[, upper_nm[stat_idx]]),
                     info = info_str)
@@ -2742,14 +2828,11 @@ smmry_ref_tester <- function(
   if (is.null(type_expected)) {
     type_expected <- c("mean", "se", "diff", "diff.se")
   }
+  type_expected <- setdiff(type_expected, c("diff", "diff.se"))
   is_lat_kfold <-  latent_expected && !resp_oscale_expected &&
     identical(cv_method_expected, "kfold")
 
-  if (is_lat_kfold) {
-    expect_true(is.vector(smmry_ref, "logical"), info = info_str)
-  } else {
-    expect_true(is.vector(smmry_ref, "numeric"), info = info_str)
-  }
+  expect_true(is.vector(smmry_ref, "numeric"), info = info_str)
   smmry_nms <- character()
   stats_mean_name <- stats_expected
   smmry_nms <- c(smmry_nms,
@@ -2771,8 +2854,9 @@ smmry_ref_tester <- function(
   if ("lower" %in% type_expected && !is_lat_kfold && !from_datafit) {
     lower_nm <- paste(stats_expected, "lower", sep = ".")
     for (stat_idx in seq_along(stats_expected)) {
-      if (!stats_expected[stat_idx] %in% c("rmse", "auc")) {
-        # RMSE and AUC are excluded here because of PR #347.
+      if (!stats_expected[stat_idx] %in% c("auc")) {
+        # AUC is excluded here because of PR #347 (originally, RMSE was excluded
+        # as well, but PR #496 switched to the delta method for RMSE).
         expect_true(all(smmry_ref[stats_mean_name[stat_idx]] >=
                           smmry_ref[lower_nm[stat_idx]]),
                     info = info_str)
@@ -2782,8 +2866,9 @@ smmry_ref_tester <- function(
   if ("upper" %in% type_expected && !is_lat_kfold && !from_datafit) {
     upper_nm <- paste(stats_expected, "upper", sep = ".")
     for (stat_idx in seq_along(stats_expected)) {
-      if (!stats_expected[stat_idx] %in% c("rmse", "auc")) {
-        # RMSE and AUC are excluded here because of PR #347.
+      if (!stats_expected[stat_idx] %in% c("auc")) {
+        # AUC is excluded here because of PR #347 (originally, RMSE was excluded
+        # as well, but PR #496 switched to the delta method for RMSE).
         expect_true(all(smmry_ref[stats_mean_name[stat_idx]] <=
                           smmry_ref[upper_nm[stat_idx]]),
                     info = info_str)
@@ -2855,7 +2940,6 @@ plot_vsel_tester <- function(
     info_str
 ) {
   expect_s3_class(plot_vsel, c("gg", "ggplot"))
-  expect_visible(plot_vsel, label = info_str)
   if (isTRUE(abbv_expected) &&
       (is.null(rk_max_expected) || !is.na(rk_max_expected))) {
     if (!is.null(rk_max_expected)) {

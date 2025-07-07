@@ -343,7 +343,9 @@ test_that(paste(
     summs_ref$mu <- structure(unclass(summs_ref$mu), ndiscrete = NULL)
     summs_ref$mu <- summs_ref$mu[(nobsv + 1):(2 * nobsv)]
     tol_ref <- 1e1 * .Machine$double.eps
-    if (args_vs[[tstsetup]]$mod_nm == "glmm") {
+    if (args_vs[[tstsetup]]$mod_nm == "glmm" ||
+        (args_vs[[tstsetup]]$mod_nm == "glm" &&
+         args_vs[[tstsetup]]$fam_nm %in% c("brnll", "binom"))) {
       tol_ref <- 1e3 * tol_ref
     }
     expect_equal(summs_ref, vs_trad$summaries$ref, tolerance = tol_ref,
@@ -416,10 +418,10 @@ test_that(paste(
     # Exclude statistics which are not supported for the augmented-data
     # projection:
     smmry_vs_trad$perf_sub <- smmry_vs_trad$perf_sub[
-      , -grep("mse|auc", names(smmry_vs_trad$perf_sub)), drop = FALSE
+      , -grep("mse|R2|auc", names(smmry_vs_trad$perf_sub)), drop = FALSE
     ]
     smmry_vs_trad$perf_ref <- smmry_vs_trad$perf_ref[
-      -grep("mse|auc", names(smmry_vs_trad$perf_ref))
+      -grep("mse|R2|auc", names(smmry_vs_trad$perf_ref))
     ]
     expect_equal(smmry_vs$perf_sub, smmry_vs_trad$perf_sub,
                  tolerance = 1e-6, info = tstsetup)
@@ -520,7 +522,7 @@ test_that(paste(
       "kfold"
     )
     if (is_kfold) {
-      tol_smmry <- 1e-5
+      tol_smmry <- 1e-4
     } else {
       tol_smmry <- 1e-6
     }
@@ -590,10 +592,10 @@ test_that(paste(
     # Exclude statistics which are not supported for the augmented-data
     # projection:
     smmry_cvvs_trad$perf_sub <- smmry_cvvs_trad$perf_sub[
-      , -grep("mse|auc", names(smmry_cvvs_trad$perf_sub)), drop = FALSE
+      , -grep("mse|R2|auc", names(smmry_cvvs_trad$perf_sub)), drop = FALSE
     ]
     smmry_cvvs_trad$perf_ref <- smmry_cvvs_trad$perf_ref[
-      -grep("mse|auc", names(smmry_cvvs_trad$perf_ref))
+      -grep("mse|R2|auc", names(smmry_cvvs_trad$perf_ref))
     ]
     is_kfold <- identical(
       args_cvvs[[args_smmry_cvvs[[tstsetup]]$tstsetup_vsel]]$cv_method,

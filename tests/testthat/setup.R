@@ -163,6 +163,7 @@ source(testthat::test_path("helpers", "getters.R"), local = TRUE)
 source(testthat::test_path("helpers", "formul_handlers.R"), local = TRUE)
 source(testthat::test_path("helpers", "predictor_handlers.R"), local = TRUE)
 source(testthat::test_path("helpers", "dummies.R"), local = TRUE)
+source(testthat::test_path("helpers", "creators.R"), local = TRUE)
 
 # Note: The following `mod_nms` refer to *generalized* (linear/additive,
 # multilevel) models. This is due to history (when these tests were written,
@@ -213,7 +214,7 @@ fam_nms_unsupp_regex <- paste0("\\.(", paste(fam_nms_unsupp, collapse = "|"),
 ## Setup ------------------------------------------------------------------
 
 # Number of observations:
-nobsv <- 41L
+nobsv <- 39L
 # Values for testing:
 nobsv_tst <- c(1L, nobsv %/% 3L)
 
@@ -456,16 +457,21 @@ dat_indep$offs_col <- offs_indep
 ## Setup ------------------------------------------------------------------
 
 if (!requireNamespace("rstanarm", quietly = TRUE) ||
-    packageVersion("Matrix") >= "1.6-4") {
+    !identical(Sys.getenv("NOT_CRAN"), "true")) {
   if (!requireNamespace("rstanarm", quietly = TRUE)) {
     txt_start_warn_rstanarm <- paste0(
       "Package 'rstanarm' is needed for the rstanarm tests, but could not be ",
       "found. "
     )
-  } else if (packageVersion("Matrix") >= "1.6-4") {
+  } else if (!identical(Sys.getenv("NOT_CRAN"), "true")) {
+    # In the past, there have been incompatibility issues between packages
+    # 'Matrix' and 'lme4', see commits 2c6cbc5bc22a1779e9e5168a9459248fab1962c6
+    # and ba4ef23c4de6e13a9160e73e22aa4e01bf1b07ac and rstanarm issue
+    # stan-dev/rstanarm#610, so don't run the 'rstanarm' tests on CRAN:
     txt_start_warn_rstanarm <- paste0(
-      "Currently, version < 1.6-4 of package 'Matrix' is needed for the ",
-      "rstanarm tests (see rstanarm issue stan-dev/rstanarm#610). "
+      "On CRAN, projpred's tests based on rstanarm fits are avoided due to ",
+      "possible incompatibility issues between packages 'Matrix' and 'lme4' ",
+      "(see inline comment for this warning message). "
     )
   } else {
     txt_start_warn_rstanarm <- "THIS CASE SHOULD NOT OCCUR. "
@@ -890,8 +896,6 @@ options(projpred.mssg_cut_search = FALSE)
 options(projpred.mssg_time = FALSE)
 # Suppress the PSIS warnings:
 options(projpred.warn_psis = FALSE)
-# Suppress the subsampled PSIS-LOO CV warnings:
-options(projpred.warn_subsampled_loo = FALSE)
 # Suppress the warnings for the K reference model refits in case of K-fold CV:
 options(projpred.warn_kfold_refits = FALSE)
 # Suppress the warning for interaction terms being selected before all involved
@@ -900,8 +904,8 @@ options(projpred.warn_L1_interactions = FALSE)
 # Suppress the warning thrown by proj_predict() in case of observation weights
 # that are not all equal to `1`:
 options(projpred.warn_wobs_ppd = FALSE)
-# Suppress the verbose-mode progress bar in project():
-options(projpred.verbose_project = FALSE)
+# Suppress verbose-mode output:
+options(projpred.verbose = 0L)
 # Suppress instability warnings:
 options(projpred.warn_instable_projections = FALSE)
 # Run additional checks:
@@ -910,9 +914,9 @@ options(projpred.additional_checks = TRUE)
 # this should only be relevant for `datafit`s):
 options(projpred.warn_cvrefbuilder_NULL = FALSE)
 # Suppress warnings thrown while fitting the submodels:
-options(projpred.warn_prj_drawwise = FALSE)
+options(projpred.warn_proj_drawwise = FALSE)
 # Don't use the convergence checker:
-options(projpred.check_conv = FALSE)
+options(projpred.check_convergence = FALSE)
 # Set default number of significant digits to be printed:
 options(projpred.digits = getOption("digits"))
 
@@ -933,6 +937,11 @@ cvmeth_tst <- list(
   kfold = list(cv_method = "kfold")
 )
 
+nloo_tst <- list(
+  default_nloo = list(),
+  subsmpl = list(nloo = as.integer(nobsv %/% 10))
+)
+
 resp_oscale_tst <- list(
   default_r_oscale = list(),
   r_oscale_F = list(resp_oscale = FALSE)
@@ -943,11 +952,10 @@ vsel_funs <- nlist("summary.vsel", "plot.vsel", "suggest_size.vsel")
 # projection (or the latent projection with `resp_oscale = FALSE` or the latent
 # projection with `resp_oscale = TRUE`, but the latter only in combination with
 # `<refmodel>$family$cats` being `NULL`):
-stats_common <- c("elpd", "mlpd", "gmpd", "mse", "rmse")
-# Performance statistics for the binomial() family only, when using the
-# traditional projection (or the latent projection with `resp_oscale = TRUE`,
-# but the latter only in combination with `<refmodel>$family$cats` being
-# `NULL`):
+stats_common <- c("elpd", "mlpd", "gmpd", "mse", "rmse", "R2")
+# Performance statistics for the binomial() family when using the traditional
+# projection (or the latent projection with `resp_oscale = TRUE` and
+# `<refmodel>$family$cats` being `NULL`):
 stats_binom <- c(stats_common, "acc", "auc")
 # For creating test setups:
 stats_tst <- list(
@@ -956,7 +964,7 @@ stats_tst <- list(
   binom_stats = list(stats = stats_binom),
   augdat_stats = list(stats = c("elpd", "mlpd", "gmpd", "acc"))
 )
-type_tst <- c("mean", "lower", "upper", "se")
+type_tst <- c("mean", "lower", "upper", "se", "diff", "diff.se")
 
 rk_abbv_tst <- list(
   default_abbv = list(),
@@ -978,7 +986,13 @@ names(cumulate_tst) <- paste0("cu", names(cumulate_tst))
 
 angle_tst <- list(
   default_angle = list(),
-  angle45 = list(text_angle = 45)
+  angleNULL = list(text_angle = NULL)
+)
+
+deltas_tst_plot <- list(
+  default_deltas = list(),
+  deltas_TRUE = list(deltas = TRUE),
+  deltas_mixed = list(deltas = "mixed")
 )
 
 ### nterms ----------------------------------------------------------------
@@ -1023,7 +1037,8 @@ nterms_max_rk <- list(
 
 rk_max_tst <- list(
   default_rk_max = list(),
-  rk_max_NA = list(ranking_nterms_max = NA),
+  rk_max_NA = list(ranking_nterms_max = NA,
+                   size_position = "primary_x_bottom"),
   rk_max_1 = list(ranking_nterms_max = 1L)
 )
 
@@ -1230,6 +1245,14 @@ if (run_cvvs) {
               !run_valsearch_aug_lat))) {
           cvmeth_i <- c(cvmeth_i, list(validate_search = FALSE))
         }
+        if (identical(cvmeth_i$cv_method, "kfold")) {
+          nloo_tst <- nloo_tst["default_nloo"]
+        } else if (!((prj_crr == "trad" && mod_crr == "glm" &&
+                      fam_crr == "gauss") ||
+                     (prj_crr %in% c("augdat", "latent") && mod_crr == "glm" &&
+                      fam_crr == "cumul"))) {
+          nloo_tst <- nloo_tst["subsmpl"]
+        }
         if (run_more && mod_crr == "glm" && fam_crr == "gauss" &&
             grepl("\\.stdformul\\.", tstsetup_ref)) {
           # Here, we also test non-NULL `search_terms`:
@@ -1244,14 +1267,20 @@ if (run_cvvs) {
             nterms_max_tst <- count_terms_chosen(search_trms_i$search_terms) -
               1L
           }
-          return(c(
-            nlist(tstsetup_ref), only_nonargs(args_ref[[tstsetup_ref]]),
-            list(
-              nclusters = nclusters_tst, nclusters_pred = nclusters_pred_tst,
-              nterms_max = nterms_max_tst, verbose = FALSE, seed = seed_tst
-            ),
-            meth_i, cvmeth_i, search_trms_i
-          ))
+          lapply(nloo_tst, function(nloo_i) {
+            if (!is.null(nloo_i$nloo) && nloo_i$nloo < nobsv &&
+                identical(cvmeth_i$validate_search, FALSE)) {
+              cvmeth_i$validate_search <- NULL
+            }
+            return(c(
+              nlist(tstsetup_ref), only_nonargs(args_ref[[tstsetup_ref]]),
+              list(
+                nclusters = nclusters_tst, nclusters_pred = nclusters_pred_tst,
+                nterms_max = nterms_max_tst, verbose = FALSE, seed = seed_tst
+              ),
+              meth_i, cvmeth_i, nloo_i, search_trms_i
+            ))
+          })
         })
       })
     })
@@ -1696,7 +1725,7 @@ if (run_vs) {
                             identical, 0L))
 
   smmrys_vs <- lapply(args_smmry_vs, function(args_smmry_vs_i) {
-    if (any(c("rmse", "auc") %in% args_smmry_vs_i$stats)) {
+    if (any(c("auc") %in% args_smmry_vs_i$stats)) {
       smmry_seed <- list(seed = seed3_tst)
     } else {
       smmry_seed <- list()
@@ -1719,7 +1748,7 @@ if (run_cvvs) {
                               identical, 0L))
 
   smmrys_cvvs <- lapply(args_smmry_cvvs, function(args_smmry_cvvs_i) {
-    if (any(c("rmse", "auc") %in% args_smmry_cvvs_i$stats)) {
+    if (any(c("auc") %in% args_smmry_cvvs_i$stats)) {
       smmry_seed <- list(seed = seed3_tst)
     } else {
       smmry_seed <- list()
@@ -1804,11 +1833,47 @@ cre_args_plot_vsel <- function(args_obj) {
     tstsetups,
     head(grep("\\.spclformul", names(args_obj), value = TRUE), 1)
   )
-  lapply(
+  tstsetups <- union(
+    tstsetups,
+    grep("\\.cumul", names(args_obj), value = TRUE)
+  )
+  args_out <- lapply(
     setNames(nm = tstsetups),
     function(tstsetup_vsel) {
-      nterms_max_plot <- nterms_max_smmry[c("default_nterms_max_smmry",
-                                            "halfway")]
+      mod_crr <- args_obj[[tstsetup_vsel]]$mod_nm
+      fam_crr <- args_obj[[tstsetup_vsel]]$fam_nm
+      prj_crr <- args_obj[[tstsetup_vsel]]$prj_nm
+      stats_crr <- stats_tst[[switch(prj_crr,
+                                     "augdat" = "augdat_stats",
+                                     "latent" = "augdat_stats",
+                                     switch(fam_crr,
+                                            "brnll" = "binom_stats",
+                                            "binom" = "binom_stats",
+                                            "common_stats"))]]
+      # Note: We do not need to check for the case
+      # `fam_crr %in% c("brnll", "binom") && resp_oscale = FALSE` (where
+      # `setdiff(stats_binom, stats_common)` would need to be excluded from
+      # `stats_crr$stats`) because we currently only test `resp_oscale = TRUE`
+      # here.
+      if (any(c("auc") %in% stats_crr$stats)) {
+        plot_seed <- list(seed = seed3_tst)
+      } else {
+        plot_seed <- list()
+      }
+      if (!grepl("\\.empty_size", tstsetup_vsel)) {
+        nterms_max_plot <- nterms_max_smmry[c("default_nterms_max_smmry")]
+        ### For now, test all settings from `rk_max_tst` in this case:
+        # rk_max_tst <- rk_max_tst[c("default_rk_max", "rk_max_NA")]
+        ###
+        rk_abbv_tst <- rk_abbv_tst[c("default_abbv")]
+        rk_repel_tst <- rk_repel_tst[c("default_repel")]
+        rk_col_tst <- rk_col_tst[c("colFALSE")]
+        cumulate_tst <- cumulate_tst[c("cuFALSE")]
+        angle_tst <- angle_tst[c("default_angle")]
+      } else {
+        nterms_max_plot <- nterms_max_smmry[c("default_nterms_max_smmry",
+                                              "halfway")]
+      }
       lapply(nterms_max_plot, function(nterms_crr) {
         lapply(rk_max_tst, function(rk_max_crr) {
           lapply(rk_abbv_tst, function(rk_abbv_crr) {
@@ -1816,15 +1881,20 @@ cre_args_plot_vsel <- function(args_obj) {
               lapply(rk_col_tst, function(rk_col_crr) {
                 lapply(cumulate_tst, function(cumulate_crr) {
                   lapply(angle_tst, function(angle_crr) {
-                    return(c(
-                      nlist(tstsetup_vsel),
-                      only_nonargs(args_obj[[tstsetup_vsel]]),
-                      list(nterms_max = nterms_crr),
-                      rk_max_crr, rk_abbv_crr, rk_repel_crr,
-                      list(ranking_colored = rk_col_crr,
-                           cumulate = cumulate_crr),
-                      angle_crr
-                    ))
+                    lapply(deltas_tst_plot, function(deltas_crr) {
+                      return(c(
+                        nlist(tstsetup_vsel),
+                        only_nonargs(args_obj[[tstsetup_vsel]]),
+                        stats_crr, plot_seed,
+                        list(nterms_max = nterms_crr),
+                        rk_max_crr, rk_abbv_crr, rk_repel_crr,
+                        list(ranking_colored = rk_col_crr,
+                             show_cv_proportions = rk_col_crr,
+                             cumulate = cumulate_crr),
+                        angle_crr,
+                        deltas_crr
+                      ))
+                    })
                   })
                 })
               })
@@ -1832,14 +1902,27 @@ cre_args_plot_vsel <- function(args_obj) {
           })
         })
       })
-    })
+    }
+  )
+  args_out <- unlist_cust(args_out)
+  args_out <- args_out[c(
+    grep("\\.cumul|\\.empty_size", names(args_out), value = TRUE),
+    do.call(c, lapply(
+      grep("\\.cumul|\\.empty_size", tstsetups, value = TRUE, invert = TRUE),
+      function(tstsetup) {
+        head(
+          grep(gsub("\\.", "\\\\.", tstsetup), names(args_out), value = TRUE),
+          1
+        )
+      }
+    ))
+  )]
 }
 
 ### varsel() --------------------------------------------------------------
 
 if (run_vs) {
   args_plot_vs <- cre_args_plot_vsel(args_vs)
-  args_plot_vs <- unlist_cust(args_plot_vs)
 
   plots_vs <- lapply(args_plot_vs, function(args_plot_vs_i) {
     do.call(plot, c(
@@ -1853,7 +1936,6 @@ if (run_vs) {
 
 if (run_cvvs) {
   args_plot_cvvs <- cre_args_plot_vsel(args_cvvs)
-  args_plot_cvvs <- unlist_cust(args_plot_cvvs)
 
   plots_cvvs <- lapply(args_plot_cvvs, function(args_plot_cvvs_i) {
     do.call(plot, c(
@@ -2004,7 +2086,8 @@ if (run_cvvs) {
 vsel_nms <- c(
   "refmodel", "nobs_train", "search_path", "predictor_ranking",
   "predictor_ranking_cv", "ce", "type_test", "y_wobs_test", "nobs_test",
-  "summaries", "nterms_all", "nterms_max", "method", "cv_method", "nloo", "K",
+  "summaries", "summaries_fast", "nterms_all", "nterms_max", "method",
+  "cv_method", "nloo", "loo_inds", "K",
   "validate_search", "cvfits", "args_search", "clust_used_search",
   "clust_used_eval", "nprjdraws_search", "nprjdraws_eval", "refit_prj",
   "projpred_version"

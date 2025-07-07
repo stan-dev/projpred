@@ -13,11 +13,31 @@ divmin <- function(
     formula,
     projpred_var,
     projpred_ws_aug,
-    verbose_divmin = getOption("projpred.verbose_project", FALSE),
-    throw_warn_sdivmin = getOption("projpred.warn_prj_drawwise", TRUE),
-    do_check_conv = getOption("projpred.check_conv", TRUE),
+    verbose_divmin,
+    throw_warn_sdivmin = getOption("projpred.warn_proj_drawwise", TRUE),
+    do_check_conv = getOption("projpred.check_convergence", TRUE),
     ...
 ) {
+  if (missing(throw_warn_sdivmin) &&
+      is.null(getOption("projpred.warn_proj_drawwise")) &&
+      !is.null(getOption("projpred.warn_prj_drawwise"))) {
+    warning(
+      "Global option `projpred.warn_prj_drawwise` is deprecated. Please use ",
+      "global option `projpred.warn_proj_drawwise` instead. Now using the ",
+      "value from global option `projpred.warn_prj_drawwise`."
+    )
+    throw_warn_sdivmin <- getOption("projpred.warn_prj_drawwise")
+  }
+  if (missing(do_check_conv) &&
+      is.null(getOption("projpred.check_convergence")) &&
+      !is.null(getOption("projpred.check_conv"))) {
+    warning(
+      "Global option `projpred.check_conv` is deprecated. Please use ",
+      "global option `projpred.check_convergence` instead. Now using the ",
+      "value from global option `projpred.check_conv`."
+    )
+    do_check_conv <- getOption("projpred.check_conv")
+  }
   trms_all <- extract_terms_response(formula)
   has_grp <- length(trms_all$group_terms) > 0
   has_add <- length(trms_all$additive_terms) > 0
@@ -58,14 +78,25 @@ divmin <- function(
     )
   }
 
-  if (length(formulas) < getOption("projpred.prll_prj_trigger", Inf)) {
+  if (is.null(getOption("projpred.parallel_proj_trigger")) &&
+      !is.null(getOption("projpred.prll_prj_trigger"))) {
+    warning(
+      "Global option `projpred.prll_prj_trigger` is deprecated. Please use ",
+      "global option `projpred.parallel_proj_trigger` instead. Now using the ",
+      "value from global option `projpred.prll_prj_trigger`."
+    )
+    prll_prj_trigger <- getOption("projpred.prll_prj_trigger")
+  } else {
+    prll_prj_trigger <- getOption("projpred.parallel_proj_trigger", Inf)
+  }
+  if (length(formulas) < prll_prj_trigger) {
     # Sequential case. Actually, we could simply use ``%do_projpred%` <-
     # foreach::`%do%`` here and then proceed as in the parallel case, but that
     # would require adding more "hard" dependencies (because packages 'foreach'
     # and 'iterators' would have to be moved from `Suggests:` to `Imports:`).
     if (verbose_divmin) {
       pb <- utils::txtProgressBar(min = 0, max = length(formulas), style = 3,
-                                  initial = 0)
+                                  initial = 0, file = stderr())
       on.exit(close(pb))
     }
     outdmin <- lapply(seq_along(formulas), function(s) {
@@ -91,17 +122,25 @@ divmin <- function(
     if (!requireNamespace("iterators", quietly = TRUE)) {
       stop("Please install the 'iterators' package.")
     }
+    if (verbose_divmin && use_progressr()) {
+      progressor_obj <- progressr::progressor(length(formulas))
+    } else {
+      progressor_obj <- NULL
+    }
     dot_args <- list(...)
     `%do_projpred%` <- foreach::`%dopar%`
     outdmin <- foreach::foreach(
       formula_s = formulas,
       projpred_var_s = iterators::iter(projpred_var, by = "column"),
       projpred_formula_no_random_s = projpred_formulas_no_random,
-      .export = c("sdivmin", "projpred_random", "dot_args"),
+      .packages = c("projpred"),
+      .export = c("sdivmin", "projpred_random", "dot_args", "progressor_obj"),
       .noexport = c(
         "object", "p_sel", "search_path", "p_ref", "refmodel", "formulas",
         "projpred_var", "projpred_ws_aug", "projpred_formulas_no_random"
-      )
+      ),
+      .errorhandling = getOption("projpred.foreach_errorhandling", "stop"),
+      .verbose = getOption("projpred.foreach_verbose", FALSE)
     ) %do_projpred% {
       mssgs_warns_capt <- capt_mssgs_warns(
         soutdmin <- do.call(
@@ -113,6 +152,7 @@ divmin <- function(
             dot_args)
         )
       )
+      if (!is.null(progressor_obj)) progressor_obj()
       return(nlist(soutdmin, mssgs_warns_capt))
     }
   }
@@ -120,7 +160,6 @@ divmin <- function(
   outdmin <- lapply(outdmin, "[[", "soutdmin")
   mssgs_warns_capts <- lapply(mssgs_warns_capts, function(mssgs_warns_capt) {
     # Filter out some warnings.
-    mssgs_warns_capt <- setdiff(mssgs_warns_capt, "")
     mssgs_warns_capt <- grep("Warning in [^:]*:$",
                              mssgs_warns_capt, value = TRUE, invert = TRUE)
     return(mssgs_warns_capt)
@@ -557,11 +596,31 @@ divmin_augdat <- function(
     weights,
     projpred_var,
     projpred_ws_aug,
-    verbose_divmin = getOption("projpred.verbose_project", FALSE),
-    throw_warn_sdivmin = getOption("projpred.warn_prj_drawwise", TRUE),
-    do_check_conv = getOption("projpred.check_conv", TRUE),
+    verbose_divmin,
+    throw_warn_sdivmin = getOption("projpred.warn_proj_drawwise", TRUE),
+    do_check_conv = getOption("projpred.check_convergence", TRUE),
     ...
 ) {
+  if (missing(throw_warn_sdivmin) &&
+      is.null(getOption("projpred.warn_proj_drawwise")) &&
+      !is.null(getOption("projpred.warn_prj_drawwise"))) {
+    warning(
+      "Global option `projpred.warn_prj_drawwise` is deprecated. Please use ",
+      "global option `projpred.warn_proj_drawwise` instead. Now using the ",
+      "value from global option `projpred.warn_prj_drawwise`."
+    )
+    throw_warn_sdivmin <- getOption("projpred.warn_prj_drawwise")
+  }
+  if (missing(do_check_conv) &&
+      is.null(getOption("projpred.check_convergence")) &&
+      !is.null(getOption("projpred.check_conv"))) {
+    warning(
+      "Global option `projpred.check_conv` is deprecated. Please use ",
+      "global option `projpred.check_convergence` instead. Now using the ",
+      "value from global option `projpred.check_conv`."
+    )
+    do_check_conv <- getOption("projpred.check_conv")
+  }
   trms_all <- extract_terms_response(formula)
   has_grp <- length(trms_all$group_terms) > 0
   projpred_formula_no_random <- NA
@@ -614,14 +673,25 @@ divmin_augdat <- function(
   projpred_ws_aug <- unclass(projpred_ws_aug)
   attr(projpred_ws_aug, "ndiscrete") <- NULL
 
-  if (ncol(projpred_ws_aug) < getOption("projpred.prll_prj_trigger", Inf)) {
+  if (is.null(getOption("projpred.parallel_proj_trigger")) &&
+      !is.null(getOption("projpred.prll_prj_trigger"))) {
+    warning(
+      "Global option `projpred.prll_prj_trigger` is deprecated. Please use ",
+      "global option `projpred.parallel_proj_trigger` instead. Now using the ",
+      "value from global option `projpred.prll_prj_trigger`."
+    )
+    prll_prj_trigger <- getOption("projpred.prll_prj_trigger")
+  } else {
+    prll_prj_trigger <- getOption("projpred.parallel_proj_trigger", Inf)
+  }
+  if (ncol(projpred_ws_aug) < prll_prj_trigger) {
     # Sequential case. Actually, we could simply use ``%do_projpred%` <-
     # foreach::`%do%`` here and then proceed as in the parallel case, but that
     # would require adding more "hard" dependencies (because packages 'foreach'
     # and 'iterators' would have to be moved from `Suggests:` to `Imports:`).
     if (verbose_divmin) {
       pb <- utils::txtProgressBar(min = 0, max = ncol(projpred_ws_aug),
-                                  style = 3, initial = 0)
+                                  style = 3, initial = 0, file = stderr())
       on.exit(close(pb))
     }
     outdmin <- lapply(seq_len(ncol(projpred_ws_aug)), function(s) {
@@ -649,18 +719,26 @@ divmin_augdat <- function(
     if (!requireNamespace("iterators", quietly = TRUE)) {
       stop("Please install the 'iterators' package.")
     }
+    if (verbose_divmin && use_progressr()) {
+      progressor_obj <- progressr::progressor(ncol(projpred_ws_aug))
+    } else {
+      progressor_obj <- NULL
+    }
     dot_args <- list(...)
     `%do_projpred%` <- foreach::`%dopar%`
     outdmin <- foreach::foreach(
       projpred_w_aug_s = iterators::iter(projpred_ws_aug, by = "column"),
+      .packages = c("projpred"),
       .export = c(
         "sdivmin", "formula", "data", "family", "projpred_formula_no_random",
-        "projpred_random", "dot_args"
+        "projpred_random", "dot_args", "progressor_obj"
       ),
       .noexport = c(
         "object", "p_sel", "search_path", "p_ref", "refmodel", "projpred_var",
         "projpred_ws_aug", "linkobjs"
-      )
+      ),
+      .errorhandling = getOption("projpred.foreach_errorhandling", "stop"),
+      .verbose = getOption("projpred.foreach_verbose", FALSE)
     ) %do_projpred% {
       mssgs_warns_capt <- capt_mssgs_warns(
         soutdmin <- do.call(
@@ -674,6 +752,7 @@ divmin_augdat <- function(
             dot_args)
         )
       )
+      if (!is.null(progressor_obj)) progressor_obj()
       return(nlist(soutdmin, mssgs_warns_capt))
     }
   }
@@ -681,7 +760,6 @@ divmin_augdat <- function(
   outdmin <- lapply(outdmin, "[[", "soutdmin")
   mssgs_warns_capts <- lapply(mssgs_warns_capts, function(mssgs_warns_capt) {
     # Filter out some warnings.
-    mssgs_warns_capt <- setdiff(mssgs_warns_capt, "")
     mssgs_warns_capt <- grep("Warning in [^:]*:$",
                              mssgs_warns_capt, value = TRUE, invert = TRUE)
     # For MASS::polr():
@@ -1176,6 +1254,8 @@ subprd_augdat_binom <- function(fits, newdata) {
 }
 
 ## FIXME: find a way that allows us to remove this
+#' @noRd
+#' @export
 predict.subfit <- function(object, newdata = NULL, ...) {
   beta <- object$beta
   alpha <- object$alpha
@@ -1213,6 +1293,8 @@ predict.subfit <- function(object, newdata = NULL, ...) {
   }
 }
 
+#' @noRd
+#' @export
 predict.gamm4 <- function(object, newdata = NULL, ...) {
   if (is.null(newdata)) {
     newdata <- model.frame(object$mer)

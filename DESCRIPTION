@@ -1,15 +1,16 @@
 Package: projpred
 Encoding: UTF-8
 Title: Projection Predictive Feature Selection
-Version: 2.8.0
-Date: 2023-12-14
+Version: 2.8.0.9000
+Date: 2023-12-15
 Authors@R: c(person("Juho", "Piironen", role = c("aut"),
                     email = "juho.t.piironen@gmail.com"),
              person("Markus", "Paasiniemi", role = "aut"),
              person("Alejandro", "Catalina", role = "aut",
                     email = "alecatfel@gmail.com"),
-             person("Frank", "Weber", role = c("cre", "aut"),
-                    email = "fweber144@protonmail.com"),
+             person("Frank", "Weber", role = "aut"),
+             person("Osvaldo", "Martin", role = c("cre", "aut"),
+                    email = "aloctavodia@gmail.com"),
              person("Aki", "Vehtari", role = "aut"),
              person("Jonah", "Gabry", role = "ctb"),
              person("Marco", "Colombo", role = "ctb"),
@@ -26,13 +27,13 @@ Description:
     models (Piironen, Paasiniemi, and Vehtari, 2020, <doi:10.1214/20-EJS1711>)
     with or without multilevel or additive terms (Catalina, Bürkner, and
     Vehtari, 2022, <https://proceedings.mlr.press/v151/catalina22a.html>), for
-    some ordinal and nominal regression models (Weber, Glass, and Vehtari, 2023,
-    <arXiv:2301.01660>), and for many other regression models (using the latent
-    projection by Catalina, Bürkner, and Vehtari, 2021, <arXiv:2109.04702>,
-    which can also be applied to most of the former models). The package is
-    compatible with the 'rstanarm' and 'brms' packages, but other reference
-    models can also be used. See the vignettes and the documentation for more
-    information and examples.
+    some ordinal and nominal regression models (Weber, Glass, and Vehtari, 2025,
+    <doi:10.1007/s00180-024-01506-0>), and for many other regression models
+    (using the latent projection by Catalina, Bürkner, and Vehtari, 2021,
+    <doi:10.48550/arXiv.2109.04702>, which can also be applied to most of the
+    former models). The package is compatible with the 'rstanarm' and 'brms'
+    packages, but other reference models can also be used. See the vignettes and
+    the documentation for more information and examples.
 License: GPL-3 | file LICENSE
 URL: https://mc-stan.org/projpred/, https://discourse.mc-stan.org
 BugReports: https://github.com/stan-dev/projpred/issues/
@@ -80,11 +81,12 @@ Suggests:
     doParallel,
     future,
     future.callr,
-    doFuture
+    doFuture,
+    progressr
 LinkingTo: Rcpp, RcppArmadillo
 Additional_repositories:
-    https://mc-stan.org/r-packages/
+    https://stan-dev.r-universe.dev/
 LazyData: TRUE
 Roxygen: list(markdown = TRUE)
-RoxygenNote: 7.2.3
+RoxygenNote: 7.3.2
 VignetteBuilder: knitr, rmarkdown

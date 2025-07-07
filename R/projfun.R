@@ -6,7 +6,7 @@
 # arguments and (ii) when called from perf_eval(). At the end, init_submodl() is
 # called, so the output is of class `submodl`.
 proj_to_submodl <- function(predictor_terms, p_ref, refmodel,
-                            search_control = NULL, ...) {
+                            search_control = NULL, verbose, ...) {
   y_unqs_aug <- refmodel$family$cats
   if (refmodel$family$for_latent && !is.null(y_unqs_aug)) {
     y_unqs_aug <- NULL
@@ -17,13 +17,13 @@ proj_to_submodl <- function(predictor_terms, p_ref, refmodel,
   )
   fml_divmin <- flatten_formula(subset$formula)
 
-  if (getOption("projpred.extra_verbose", FALSE)) {
+  if (verbose >= 2L) {
     rhs_chr <- as.character(fml_divmin)
     if (length(rhs_chr) != 3) {
       rhs_chr <- paste("<EXCEPTION: Unexpected length of the character-coerced",
                        "formula passed to the divergence minimizer.>")
     }
-    verb_out("  Projecting onto ", utils::tail(rhs_chr, 1))
+    verb_out("  Projecting onto `~ ", utils::tail(rhs_chr, 1), "`")
   }
 
   args_divmin <- list(formula = fml_divmin,
@@ -31,7 +31,8 @@ proj_to_submodl <- function(predictor_terms, p_ref, refmodel,
                       family = refmodel$family,
                       weights = refmodel$wobs,
                       projpred_var = p_ref$var,
-                      projpred_ws_aug = p_ref$mu)
+                      projpred_ws_aug = p_ref$mu,
+                      verbose_divmin = verbose >= 3L)
   if (!is.null(search_control)) {
     args_divmin <- c(args_divmin, search_control)
   } else {
@@ -54,13 +55,14 @@ perf_eval <- function(search_path,
                       refmodel, refit_prj = FALSE, ndraws, nclusters,
                       reweighting_args = NULL, return_submodls = FALSE,
                       return_preds = FALSE, return_p_ref = FALSE,
-                      refmodel_fulldata = refmodel,
+                      return_dis_sub = FALSE, refmodel_fulldata = refmodel,
                       indices_test, newdata_test = NULL,
                       offset_test = refmodel_fulldata$offset[indices_test],
                       wobs_test = refmodel_fulldata$wobs[indices_test],
                       y_test = refmodel_fulldata$y[indices_test],
                       y_oscale_test = refmodel_fulldata$y_oscale[indices_test],
-                      ...) {
+                      verbose = FALSE, verbose_line_length = 5,
+                      verbose_txt_add = "", ...) {
   if (!refit_prj) {
     p_ref <- search_path$p_sel
     # In this case, simply fetch the already computed projections, so don't
@@ -84,26 +86,37 @@ perf_eval <- function(search_path,
       p_ref <- get_p_clust(
         family = refmodel$family, eta = refmodel$eta, mu = refmodel$mu,
         mu_offs = refmodel$mu_offs, dis = refmodel$dis,
-        wdraws = reweighting_args$wdraws_ref, cl = reweighting_args$cl_ref
+        wdraws = reweighting_args$wdraws_ref, cl = reweighting_args$cl_ref,
+        clust_used_forced = clust_info(
+          ndraws = ndraws,
+          nclusters = nclusters,
+          S = length(refmodel$wdraws_ref)
+        )[["clust_used"]]
       )
     }
     fetch_submodl <- function(size_j, ...) {
       return(proj_to_submodl(
         predictor_terms = utils::head(search_path$predictor_ranking, size_j),
-        p_ref = p_ref, refmodel = refmodel, ...
+        p_ref = p_ref, refmodel = refmodel, verbose = verbose, ...
       ))
     }
   }
+  verb_out(rep("-", verbose_line_length), "\nRunning the performance evaluation ",
+           verbose_txt_add, "with ",
+           txt_clust_draws(p_ref[["clust_used"]], p_ref[["nprjdraws"]]),
+           " (`refit_prj = ", refit_prj, "`) ...",
+           verbose = verbose && !return_submodls)
   out_by_size <- lapply(nterms, function(size_j) {
     # Fetch the init_submodl() output (of class `submodl`) for the submodel at
     # position `size_j + 1` of the predictor ranking:
     submodl <- fetch_submodl(size_j, ...)
     if (return_submodls) {
-      # Currently only called in project().
+      # Currently only the case if called from project().
       return(submodl)
     }
     if (return_preds) {
-      # Currently only called in loo_varsel()'s `validate_search = FALSE` case.
+      # Currently only the case if called in loo_varsel()'s `validate_search =
+      # FALSE` case.
       mu_j <- refmodel$mu_fun(submodl$outdmin, obs = indices_test,
                               offset = refmodel$offset[indices_test])
       lppd_j <- t(refmodel$family$ll_fun(
@@ -128,12 +141,20 @@ perf_eval <- function(search_path,
       )
       out_j <- nlist(sub_summary)
     }
-    return(c(out_j, list(ce = submodl[["ce"]])))
+    out_j <- c(out_j, list(ce = submodl[["ce"]]))
+    if (return_dis_sub) {
+      # Currently only called in loo_varsel()'s `validate_search = FALSE` case.
+      out_j <- c(out_j, list(dis_sub = submodl[["dis"]]))
+    }
+    return(out_j)
   })
+  verb_out(rep("-", verbose_line_length), verbose = verbose && !return_submodls)
   if (return_submodls) {
+    # Currently only called in project().
     return(out_by_size)
   }
   if (return_preds) {
+    # Currently only called in loo_varsel()'s `validate_search = FALSE` case.
     out <- list(mu_by_size = lapply(out_by_size, "[[", "mu_j"),
                 lppd_by_size = lapply(out_by_size, "[[", "lppd_j"))
   } else {
@@ -144,6 +165,10 @@ perf_eval <- function(search_path,
   if (return_p_ref) {
     # Currently only called in loo_varsel()'s `validate_search = FALSE` case.
     out <- c(out, nlist(p_ref))
+  }
+  if (return_dis_sub) {
+    # Currently only called in loo_varsel()'s `validate_search = FALSE` case.
+    out <- c(out, list(dis_sub = lapply(out_by_size, "[[", "dis_sub")))
   }
   return(out)
 }

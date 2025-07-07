@@ -445,8 +445,8 @@ compute_lpd <- function(ynew, pred_sub, proj, weights, transformed) {
     }
     if (proj$refmodel$family$for_latent && transformed) {
       ll_oscale_out <- proj$refmodel$family$latent_ll_oscale(
-        pred_sub, y_oscale = ynew, wobs = weights, cl_ref = proj$cl_ref,
-        wdraws_ref = proj$wdraws_ref
+        pred_sub, dis = proj$dis, y_oscale = ynew, wobs = weights,
+        cl_ref = proj$cl_ref, wdraws_ref = proj$wdraws_ref
       )
       if (!is.matrix(ll_oscale_out)) {
         stop("Unexpected structure for the output of `latent_ll_oscale`.")
@@ -462,8 +462,8 @@ compute_lpd <- function(ynew, pred_sub, proj, weights, transformed) {
       if (proj$refmodel$family$for_latent && all(is.na(proj$refmodel$dis))) {
         message(
           "Cannot calculate LPD values if `transform = FALSE` and ",
-          "`<refmodel>$dis` consists of only `NA`s. If it's not possible to ",
-          "supply a suitable argument `dis` to init_refmodel(), consider ",
+          "`<refmodel>$dis` consists of only `NA`s. If it is not possible to ",
+          "supply values to argument `dis` of init_refmodel(), consider ",
           "switching to `transform = TRUE` (which might require the ",
           "specification of functions needed by extend_family())."
         )
@@ -537,8 +537,9 @@ proj_predict_aux <- function(proj, newdata, offsetnew, weightsnew,
       mu_oscale_resamp <- mu_oscale[draw_inds, , drop = FALSE]
     }
     pppd_out <- proj$refmodel$family$latent_ppd_oscale(
-      mu_oscale_resamp, wobs = weights, cl_ref = proj$cl_ref,
-      wdraws_ref = proj$wdraws_ref, idxs_prjdraws = draw_inds
+      mu_oscale_resamp, dis_resamp = proj$dis[draw_inds], wobs = weights,
+      cl_ref = proj$cl_ref, wdraws_ref = proj$wdraws_ref,
+      idxs_prjdraws = draw_inds
     )
     if (!is.matrix(pppd_out)) {
       stop("Unexpected structure for the output of `latent_ppd_oscale`.")
@@ -564,8 +565,8 @@ proj_predict_aux <- function(proj, newdata, offsetnew, weightsnew,
       if (all(is.na(proj$refmodel$dis))) {
         message(
           "Cannot draw from the latent Gaussian distribution if ",
-          "`<refmodel>$dis` consists of only `NA`s. If it's not possible to ",
-          "supply a suitable argument `dis` to init_refmodel(), consider ",
+          "`<refmodel>$dis` consists of only `NA`s. If it is not possible to ",
+          "supply values to argument `dis` of init_refmodel(), consider ",
           "switching to `resp_oscale = TRUE` (which might require the ",
           "specification of functions needed by extend_family())."
         )
@@ -593,6 +594,17 @@ proj_predict_aux <- function(proj, newdata, offsetnew, weightsnew,
 #'
 #' @inheritParams summary.vsel
 #' @param x An object of class `vsel` (returned by [varsel()] or [cv_varsel()]).
+#' @param deltas May be set to `FALSE`, `TRUE`, or `"mixed"`. If `FALSE`, the
+#'   submodel performance statistics are plotted on their actual scale and the
+#'   uncertainty bars match this scale. If `TRUE`, the submodel statistics are
+#'   plotted relatively to the baseline model (see argument `baseline`) and the
+#'   uncertainty bars match this scale. For the GMPD, the term "relatively"
+#'   refers to the *ratio* vs. the baseline model (i.e., the submodel statistic
+#'   divided by the baseline model statistic). For all other `stats`,
+#'   "relatively" refers to the *difference* from the baseline model (i.e., the
+#'   submodel statistic minus the baseline model statistic). If set to
+#'   `"mixed"`, the `deltas = FALSE` point estimates are combined with the
+#'   uncertainty bars from the `deltas = TRUE` plot.
 #' @param thres_elpd Only relevant if `any(stats %in% c("elpd", "mlpd",
 #'   "gmpd"))`. The threshold for the ELPD difference (taking the submodel's
 #'   ELPD minus the baseline model's ELPD) above which the submodel's ELPD is
@@ -608,9 +620,10 @@ proj_predict_aux <- function(proj, newdata, offsetnew, weightsnew,
 #'   for which the predictor names and the corresponding ranking proportions are
 #'   added on the x-axis. Using `NULL` is effectively the same as using
 #'   `nterms_max`. Using `NA` causes the predictor names and the corresponding
-#'   ranking proportions to be omitted. Note that `ranking_nterms_max` does not
-#'   count the intercept, so `ranking_nterms_max = 1` corresponds to the
-#'   submodel consisting of the first (non-intercept) predictor term.
+#'   ranking proportions to be omitted, which requires `size_position =
+#'   "primary_x_bottom"`. Note that `ranking_nterms_max` does not count the
+#'   intercept, so `ranking_nterms_max = 1` corresponds to the submodel
+#'   consisting of the first (non-intercept) predictor term.
 #' @param ranking_abbreviate A single logical value indicating whether the
 #'   predictor names in the full-data predictor ranking should be abbreviated by
 #'   [abbreviate()] (`TRUE`) or not (`FALSE`). See also argument
@@ -644,17 +657,23 @@ proj_predict_aux <- function(proj, newdata, offsetnew, weightsnew,
 #'   the ranking proportions given on the x-axis (below the full-data predictor
 #'   ranking).
 #' @param text_angle Passed to argument `angle` of [ggplot2::element_text()] for
-#'   the x-axis tick labels. In case of long predictor names (and/or large
-#'   `nterms_max`), `text_angle = 45` might be helpful (for example). If
-#'   `text_angle > 0` (`< 0`), the x-axis text is automatically right-aligned
-#'   (left-aligned). If `-90 < text_angle && text_angle < 90 && text_angle !=
-#'   0`, the x-axis text is also top-aligned.
+#'   the x-axis tick labels. Note that the default of argument `angle` in
+#'   [ggplot2::element_text()] is `NULL` (which implies no rotation) whereas we
+#'   use a default of `text_angle = 45` here. If `text_angle > 0` (`< 0`), the
+#'   x-axis text is automatically right-aligned (left-aligned). If `-90 <
+#'   text_angle && text_angle < 90 && text_angle != 0`, the x-axis text is also
+#'   top-aligned. When controlling `text_angle` via global option
+#'   `projpred.plot_vsel_text_angle`, keep in mind that a global option set to
+#'   `NULL` is treated like an unset global option, so
+#'   `options(projpred.plot_vsel_text_angle = NULL)` would result in `text_angle
+#'   = 45`, not `text_angle = 0`.
 #' @param size_position A single character string specifying the position of the
 #'   submodel sizes. Either `"primary_x_bottom"` for including them in the
-#'   x-axis tick labels, `"primary_x_top"` for putting them above the x-axis, or
-#'   `"secondary_x"` for putting them into a secondary x-axis. Currently, both
-#'   of the non-default options may not be combined with `ranking_nterms_max =
-#'   NA`.
+#'   x-axis tick labels, `"primary_x_top"` for putting them above the x-axis
+#'   (the current default), or `"secondary_x"` for putting them into a secondary
+#'   x-axis. Currently, `"primary_x_top"` and `"secondary_x"` may not be
+#'   combined with `ranking_nterms_max = NA` (i.e., only `"primary_x_bottom"`
+#'   works with `ranking_nterms_max = NA`).
 #'
 #' @inherit summary.vsel details
 #'
@@ -672,9 +691,10 @@ proj_predict_aux <- function(proj, newdata, offsetnew, weightsnew,
 #' the baseline model's performance is shown as a dotted black horizontal line.
 #' If `!is.na(thres_elpd)` and `any(stats %in% c("elpd", "mlpd", "gmpd"))`, the
 #' value supplied to `thres_elpd` (which is automatically adapted internally in
-#' case of the MLPD or the GMPD or `deltas = FALSE`) is shown as a dot-dashed
-#' gray horizontal line for the reference model and, if `baseline = "best"`, as
-#' a long-dashed green horizontal line for the baseline model.
+#' case of the MLPD or the GMPD or `deltas = FALSE` or `deltas = "mixed"`) is
+#' shown as a dot-dashed gray horizontal line for the reference model and, if
+#' `baseline = "best"`, as a long-dashed green horizontal line for the baseline
+#' model.
 #'
 #' @examplesIf requireNamespace("rstanarm", quietly = TRUE)
 #' # Data:
@@ -705,24 +725,30 @@ plot.vsel <- function(
     baseline = if (!inherits(x$refmodel, "datafit")) "ref" else "best",
     thres_elpd = NA,
     resp_oscale = TRUE,
-    point_size = 3,
-    bar_thickness = 1,
-    ranking_nterms_max = NULL,
-    ranking_abbreviate = FALSE,
-    ranking_abbreviate_args = list(),
-    ranking_repel = NULL,
-    ranking_repel_args = list(),
-    ranking_colored = FALSE,
-    show_cv_proportions = TRUE,
+    point_size = getOption("projpred.plot_vsel_point_size", 3),
+    bar_thickness = getOption("projpred.plot_vsel_bar_thickness", 1),
+    ranking_nterms_max = getOption("projpred.plot_vsel_ranking_nterms_max",
+                                   NULL),
+    ranking_abbreviate = getOption("projpred.plot_vsel_ranking_abbreviate",
+                                   FALSE),
+    ranking_abbreviate_args = getOption("projpred.plot_vsel_ranking_abbreviate_args",
+                                        list()),
+    ranking_repel = getOption("projpred.plot_vsel_ranking_repel", NULL),
+    ranking_repel_args = getOption("projpred.plot_vsel_ranking_repel_args",
+                                   list()),
+    ranking_colored = getOption("projpred.plot_vsel_ranking_colored", FALSE),
+    show_cv_proportions = getOption("projpred.plot_vsel_show_cv_proportions",
+                                    FALSE),
     cumulate = FALSE,
-    text_angle = NULL,
-    size_position = "primary_x_bottom",
+    text_angle = getOption("projpred.plot_vsel_text_angle", 45),
+    size_position = getOption("projpred.plot_vsel_size_position",
+                              "primary_x_top"),
     ...
 ) {
   # Parse input:
   object <- x
   validate_vsel_object_stats(object, stats, resp_oscale = resp_oscale)
-  baseline <- validate_baseline(object$refmodel, baseline, deltas)
+  baseline <- validate_baseline(object, baseline, deltas)
   if (!is.null(ranking_repel) && !requireNamespace("ggrepel", quietly = TRUE)) {
     warning("Package 'ggrepel' is needed for a non-`NULL` argument ",
             "`ranking_repel`, but could not be found. Setting `ranking_repel` ",
@@ -731,21 +757,50 @@ plot.vsel <- function(
   } else if (!is.null(ranking_repel)) {
     stopifnot(isTRUE(ranking_repel %in% c("text", "label")))
   }
+  stopifnot(isTRUE(deltas) || isFALSE(deltas) || identical(deltas, "mixed"))
 
   # Define `nfeat_baseline` and a slightly modified variant that can be used for
   # .tabulate_stats()'s argument `nfeat_baseline`:
   nfeat_baseline <- get_nfeat_baseline(object, baseline, stats[1],
                                        resp_oscale = resp_oscale)
-  if (deltas) {
+  nfeat_baseline_mixed <- NULL
+  if (isTRUE(deltas)) {
     nfeat_baseline_for_tab <- nfeat_baseline
   } else {
     nfeat_baseline_for_tab <- NULL
+    if (identical(deltas, "mixed")) {
+      nfeat_baseline_mixed <- nfeat_baseline
+    }
   }
 
   # Compute the predictive performance statistics:
   stats_table_all <- .tabulate_stats(object, stats, alpha = alpha,
                                      nfeat_baseline = nfeat_baseline_for_tab,
+                                     nfeat_baseline_diff = nfeat_baseline_mixed,
                                      resp_oscale = resp_oscale, ...)
+  if (identical(deltas, "mixed")) {
+    stats_bs_init <- subset(stats_table_all,
+                            stats_table_all$size == nfeat_baseline)
+    names(stats_bs_init)[names(stats_bs_init) == "value"] <- "value_bs"
+    stats_table_all <- merge(stats_table_all,
+                             stats_bs_init[, c("statistic", "value_bs")],
+                             by = "statistic", all.x = TRUE, all.y = FALSE,
+                             sort = FALSE)
+    is_gmpd_entry <- stats_table_all[["statistic"]] == "gmpd"
+    cols_for_log_exp <- c("diff.lq", "diff.uq", "value_bs")
+    for (col_for_log in cols_for_log_exp) {
+      stats_table_all[[col_for_log]][is_gmpd_entry] <-
+        log(stats_table_all[[col_for_log]][is_gmpd_entry])
+    }
+    stats_table_all[["lq"]] <- stats_table_all[["diff.lq"]] +
+      stats_table_all[["value_bs"]]
+    stats_table_all[["uq"]] <- stats_table_all[["diff.uq"]] +
+      stats_table_all[["value_bs"]]
+    for (col_for_exp in c(cols_for_log_exp, "lq", "uq")) {
+      stats_table_all[[col_for_exp]][is_gmpd_entry] <-
+        exp(stats_table_all[[col_for_exp]][is_gmpd_entry])
+    }
+  }
   stats_ref <- subset(stats_table_all, stats_table_all$size == Inf)
   stats_sub <- subset(stats_table_all, stats_table_all$size != Inf)
   stats_bs <- subset(stats_table_all, stats_table_all$size == nfeat_baseline)
@@ -782,7 +837,7 @@ plot.vsel <- function(
   } else {
     baseline_pretty <- "best submodel"
   }
-  if (deltas) {
+  if (isTRUE(deltas)) {
     if (all(stats != "gmpd")) {
       ylab <- paste0("Difference vs. ", baseline_pretty)
     } else if (all(stats == "gmpd")) {
@@ -931,7 +986,8 @@ plot.vsel <- function(
         identical(size_position, "secondary_x")) {
       stop("Currently, `size_position = \"primary_x_top\"` and `size_position ",
            "= \"secondary_x\"` are not compatible with `ranking_nterms_max = ",
-           "NA`.")
+           "NA`. Please switch to `size_position = \"primary_x_bottom\"` if ",
+           "`ranking_nterms_max = NA` is desired.")
     } else if (!identical(size_position, "primary_x_bottom")) {
       stop("Unexpected value for argument `size_position`.")
     }
@@ -1065,14 +1121,34 @@ plot.vsel <- function(
     #                        direction = 1)
     ###
   }
-  if (all(stats %in% c("rmse", "auc"))) {
+  if (all(stats %in% c("auc"))) {
     ci_type <- "bootstrap "
   } else if (all(stats %in% c("gmpd"))) {
     ci_type <- "exponentiated normal-approximation "
-  } else if (all(!stats %in% c("rmse", "auc", "gmpd"))) {
+  } else if (all(stats %in% c("mse", "rmse")) && isFALSE(deltas)) {
+    ci_type <- "log-normal-approximation "
+  } else if (all(!stats %in% c("auc", "gmpd", "mse", "rmse")) ||
+             (all(!stats %in% c("auc", "gmpd")) &&
+              (identical(deltas, "mixed") || isTRUE(deltas)))) {
     ci_type <- "normal-approximation "
   } else {
     ci_type <- ""
+  }
+  interval_description <- paste0("Vertical bars indicate ",
+                                 round(100 * (1 - alpha), 1), "% ", ci_type,
+                                 "intervals")
+  if (identical(deltas, "mixed")) {
+    interval_description <- paste0(interval_description,
+                                   ", \nshowing uncertainty for ")
+    if (all(stats != "gmpd")) {
+      diff_pretty <- "difference"
+    } else if (all(stats == "gmpd")) {
+      diff_pretty <- "ratio"
+    } else {
+      diff_pretty <- "difference (ratio for GMPD)"
+    }
+    interval_description <- paste0(interval_description, diff_pretty, " vs. ",
+                                   baseline_pretty)
   }
   if (identical(size_position, "secondary_x")) {
     tick_labs_x_sec <- as.character(rk_dfr[
@@ -1104,9 +1180,7 @@ plot.vsel <- function(
                        labels = tick_labs_x,
                        sec.axis = x_axis_sec) +
     labs(x = xlab, y = ylab, title = "Predictive performance",
-         subtitle = paste0("Vertical bars indicate ",
-                           round(100 * (1 - alpha), 1), "% ", ci_type,
-                           "intervals")) +
+         subtitle = interval_description) +
     theme(axis.text.x.bottom = element_text(angle = text_angle,
                                             hjust = hjust_val,
                                             vjust = vjust_val)) +
@@ -1158,59 +1232,77 @@ plot.vsel <- function(
 #'   are again all observations because the test set is the same as the training
 #'   set). Available statistics are:
 #'   * `"elpd"`: expected log (pointwise) predictive density (for a new
-#'   dataset). Estimated by the sum of the observation-specific log predictive
-#'   density values (with each of these predictive density values being
-#'   a---possibly weighted---average across the parameter draws).
-#'   * `"mlpd"`: mean log predictive density, that is, `"elpd"` divided by the
-#'   number of observations.
+#'   dataset) (ELPD). Estimated by the sum of the observation-specific log
+#'   predictive density values (with each of these predictive density values
+#'   being a---possibly weighted---average across the parameter draws). For the
+#'   corresponding uncertainty interval, a normal approximation is used.
+#'   * `"mlpd"`: mean log predictive density (MLPD), that is, the ELPD divided
+#'   by the number of observations. For the corresponding uncertainty interval,
+#'   a normal approximation is used.
 #'   * `"gmpd"`: geometric mean predictive density (GMPD), that is, [exp()] of
-#'   `"mlpd"`. The GMPD is especially helpful for discrete response families
+#'   the MLPD. The GMPD is especially helpful for discrete response families
 #'   (because there, the GMPD is bounded by zero and one). For the corresponding
-#'   standard error, the delta method is used. The corresponding confidence
+#'   standard error, the delta method is used. The corresponding uncertainty
 #'   interval type is "exponentiated normal approximation" because the
-#'   confidence interval bounds are the exponentiated confidence interval bounds
-#'   of the `"mlpd"`.
+#'   uncertainty interval bounds are the exponentiated uncertainty interval
+#'   bounds of the MLPD.
 #'   * `"mse"`: mean squared error (only available in the situations mentioned
-#'   in section "Details" below).
+#'   in section "Details" below). For the corresponding uncertainty interval, a
+#'   log-normal approximation is used if `deltas` is `FALSE` and a normal
+#'   approximation is used if `deltas` is `TRUE` (or `"mixed"`, in case of
+#'   [plot.vsel()]).
 #'   * `"rmse"`: root mean squared error (only available in the situations
-#'   mentioned in section "Details" below). For the corresponding standard error
-#'   and lower and upper confidence interval bounds, bootstrapping is used.
+#'   mentioned in section "Details" below). For the corresponding standard
+#'   error, the delta method is used. For the corresponding uncertainty
+#'   interval, a log-normal approximation is used if `deltas` is `FALSE` and a
+#'   normal approximation is used if `deltas` is `TRUE` (or `"mixed"`, in case
+#'   of [plot.vsel()]).
+#'   * `"R2"`: R-squared, i.e., coefficient of determination (only available in
+#'   the situations mentioned in section "Details" below). For the corresponding
+#'   standard error, the delta method is used. For the corresponding uncertainty
+#'   interval, a normal approximation is used.
 #'   * `"acc"` (or its alias, `"pctcorr"`): classification accuracy (only
 #'   available in the situations mentioned in section "Details" below). By
 #'   "classification accuracy", we mean the proportion of correctly classified
 #'   observations. For this, the response category ("class") with highest
 #'   probability (the probabilities are model-based) is taken as the prediction
-#'   ("classification") for an observation.
+#'   ("classification") for an observation. For the corresponding uncertainty
+#'   interval, a normal approximation is used.
 #'   * `"auc"`: area under the ROC curve (only available in the situations
 #'   mentioned in section "Details" below). For the corresponding standard error
-#'   and lower and upper confidence interval bounds, bootstrapping is used.
+#'   and lower and upper uncertainty interval bounds, bootstrapping is used. Not
+#'   supported in case of subsampled LOO-CV (see argument `nloo` of
+#'   [cv_varsel()]).
 #' @param type One or more items from `"mean"`, `"se"`, `"lower"`, `"upper"`,
-#'   `"diff"`, and `"diff.se"` indicating which of these to compute for each
-#'   item from `stats` (mean, standard error, lower and upper confidence
-#'   interval bounds, mean difference to the corresponding statistic of the
-#'   reference model, and standard error of this difference, respectively; note
-#'   that for the GMPD, `"diff"`, and `"diff.se"` actually refer to the ratio
-#'   vs. the reference model, not the difference). The confidence interval
-#'   bounds belong to normal-approximation (or bootstrap or exponentiated
-#'   normal-approximation; see argument `stats`) confidence intervals with
-#'   (nominal) coverage `1 - alpha`. Items `"diff"` and `"diff.se"` are only
+#'   `"diff"`, `"diff.lower"`, `"diff.upper"`, and `"diff.se"` indicating which
+#'   of these to compute for each item from `stats` (mean, standard error, lower
+#'   and upper uncertainty interval bounds, mean difference to the corresponding
+#'   statistic of the reference model, lower and upper uncertainty interval
+#'   bound for this difference, and standard error of this difference,
+#'   respectively; note that for the GMPD, `"diff"`, `"diff.lower"`,
+#'   `"diff.upper"`, and `"diff.se"` actually refer to the ratio vs. the
+#'   reference model, not the difference). The uncertainty interval bounds
+#'   belong to uncertainty intervals with (nominal) coverage `1 - alpha`. Items
+#'   `"diff"`, `"diff.lower"`, `"diff.upper"`, and `"diff.se"` are only
 #'   supported if `deltas` is `FALSE`.
-#' @param deltas If `TRUE`, the submodel statistics are estimated relatively to
-#'   the baseline model (see argument `baseline`). For the GMPD, the term
-#'   "relatively" refers to the ratio vs. the baseline model (i.e., the submodel
-#'   statistic divided by the baseline model statistic). For all other `stats`,
-#'   "relatively" refers to the difference from the baseline model (i.e., the
-#'   submodel statistic minus the baseline model statistic).
+#' @param deltas May be set to `FALSE` or `TRUE`. If `FALSE`, the submodel
+#'   performance statistics are estimated on their actual scale. If `TRUE`, the
+#'   submodel statistics are estimated relatively to the baseline model (see
+#'   argument `baseline`). For the GMPD, the term "relatively" refers to the
+#'   *ratio* vs. the baseline model (i.e., the submodel statistic divided by the
+#'   baseline model statistic). For all other `stats`, "relatively" refers to
+#'   the *difference* from the baseline model (i.e., the submodel statistic
+#'   minus the baseline model statistic).
 #' @param alpha A number determining the (nominal) coverage `1 - alpha` of the
-#'   normal-approximation (or bootstrap or exponentiated normal-approximation;
-#'   see argument `stats`) confidence intervals. For example, in case of the
-#'   normal approximation, `alpha = 2 * pnorm(-1)` corresponds to a confidence
+#'   uncertainty intervals. For example, in case of a normal-approximation
+#'   uncertainty interval, `alpha = 2 * pnorm(-1)` corresponds to a uncertainty
 #'   interval stretching by one standard error on either side of the point
 #'   estimate.
 #' @param baseline For [summary.vsel()]: Only relevant if `deltas` is `TRUE`.
 #'   For [plot.vsel()]: Always relevant. Either `"ref"` or `"best"`, indicating
 #'   whether the baseline is the reference model or the best submodel found (in
-#'   terms of `stats[1]`), respectively.
+#'   terms of `stats[1]`), respectively. In case of subsampled LOO-CV, `baseline
+#'   = "best"` is not supported.
 #' @param resp_oscale Only relevant for the latent projection. A single logical
 #'   value indicating whether to calculate the performance statistics on the
 #'   original response scale (`TRUE`) or on latent scale (`FALSE`).
@@ -1222,7 +1314,8 @@ plot.vsel <- function(
 #'   and `seed` (see [set.seed()], but defaulting to `NA` so that [set.seed()]
 #'   is not called within that function at all).
 #'
-#' @details The `stats` options `"mse"` and `"rmse"` are only available for:
+#' @details The `stats` options `"mse"`, `"rmse"`, and `"R2"` are only available
+#'   for:
 #'   * the traditional projection,
 #'   * the latent projection with `resp_oscale = FALSE`,
 #'   * the latent projection with `resp_oscale = TRUE` in combination with
@@ -1243,6 +1336,9 @@ plot.vsel <- function(
 #'   * the [binomial()] family (on the original response scale) in case of the
 #'   latent projection with `resp_oscale = TRUE` in combination with
 #'   `<refmodel>$family$cats` being `NULL`.
+#'
+#'   Note that the `stats` option `"auc"` is not supported in case of subsampled
+#'   LOO-CV (see argument `nloo` of [cv_varsel()]).
 #'
 #' @return An object of class `vselsummary`. The elements of this object are not
 #'   meant to be accessed directly but instead via helper functions
@@ -1283,7 +1379,7 @@ summary.vsel <- function(
     ...
 ) {
   validate_vsel_object_stats(object, stats, resp_oscale = resp_oscale)
-  baseline <- validate_baseline(object$refmodel, baseline, deltas)
+  baseline <- validate_baseline(object, baseline, deltas)
 
   # Initialize output:
   out <- c(
@@ -1388,8 +1484,8 @@ summary.vsel <- function(
 # reference model performance and one table for the submodel performance):
 mk_colnms_smmry <- function(type, stats, deltas) {
   # Pre-process `type`:
-  if (is.null(deltas) || deltas) {
-    type <- setdiff(type, c("diff", "diff.se"))
+  if (is.null(deltas) || isTRUE(deltas)) {
+    type <- setdiff(type, c("diff", "diff.lower", "diff.upper", "diff.se"))
   }
   type_dot <- paste0(".", type)
   type_dot[type_dot == ".mean"] <- ""
@@ -1399,6 +1495,8 @@ mk_colnms_smmry <- function(type, stats, deltas) {
   nms_old[nms_old == "mean"] <- "value"
   nms_old[nms_old == "upper"] <- "uq"
   nms_old[nms_old == "lower"] <- "lq"
+  nms_old[nms_old == "diff.upper"] <- "diff.uq"
+  nms_old[nms_old == "diff.lower"] <- "diff.lq"
   # The clean column names that should be used in the output table:
   nms_new <- lapply(stats, paste0, type_dot)
   return(nlist(nms_old, nms_new))
@@ -1542,12 +1640,13 @@ print.vsel <- function(x, digits = getOption("projpred.digits", 2), ...) {
 #' @param object An object of class `vsel` (returned by [varsel()] or
 #'   [cv_varsel()]).
 #' @param stat Performance statistic (i.e., utility or loss) used for the
-#'   decision. See argument `stats` of [summary.vsel()] for possible choices.
+#'   decision. See argument `stats` of [summary.vsel()] and [plot.vsel()] for
+#'   possible choices.
 #' @param pct A number giving the proportion (*not* percents) of the *relative*
 #'   null model utility one is willing to sacrifice. See section "Details" below
 #'   for more information.
 #' @param type Either `"upper"` or `"lower"` determining whether the decision is
-#'   based on the upper or lower confidence interval bound, respectively. See
+#'   based on the upper or lower uncertainty interval bound, respectively. See
 #'   section "Details" below for more information.
 #' @param thres_elpd Only relevant if `stat %in% c("elpd", "mlpd", "gmpd"))`.
 #'   The threshold for the ELPD difference (taking the submodel's ELPD minus the
@@ -1566,13 +1665,11 @@ print.vsel <- function(x, digits = getOption("projpred.digits", 2), ...) {
 #' @details In general (beware of special cases below), the suggested model
 #'   size is the smallest model size \eqn{j \in \{0, 1, ...,
 #'   \texttt{nterms\_max}\}}{{j = 0, 1, ..., nterms_max}} for which either the
-#'   lower or upper bound (depending on argument `type`) of the
-#'   normal-approximation (or bootstrap or exponentiated normal-approximation;
-#'   see argument `stat`) confidence interval (with nominal coverage `1 -
-#'   alpha`; see argument `alpha` of [summary.vsel()]) for \eqn{U_j -
-#'   U_{\mathrm{base}}}{U_j - U_base} (with \eqn{U_j} denoting the \eqn{j}-th
-#'   submodel's true utility and \eqn{U_{\mathrm{base}}}{U_base} denoting the
-#'   baseline model's true utility)
+#'   lower or upper bound (depending on argument `type`) of the uncertainty
+#'   interval (with nominal coverage `1 - alpha`; see argument `alpha` of
+#'   [summary.vsel()]) for \eqn{U_j - U_{\mathrm{base}}}{U_j - U_base} (with
+#'   \eqn{U_j} denoting the \eqn{j}-th submodel's true utility and
+#'   \eqn{U_{\mathrm{base}}}{U_base} denoting the baseline model's true utility)
 #'   falls above (or is equal to) \deqn{\texttt{pct} \cdot (u_0 -
 #'   u_{\mathrm{base}})}{pct * (u_0 - u_base)} where \eqn{u_0} denotes the null
 #'   model's estimated utility and \eqn{u_{\mathrm{base}}}{u_base} the baseline
@@ -1582,9 +1679,9 @@ print.vsel <- function(x, digits = getOption("projpred.digits", 2), ...) {
 #'   In doing so, loss statistics like the root mean squared error (RMSE) and
 #'   the mean squared error (MSE) are converted to utilities by multiplying them
 #'   by `-1`, so a call such as `suggest_size(object, stat = "rmse", type =
-#'   "upper")` finds the smallest model size whose upper confidence interval
+#'   "upper")` finds the smallest model size whose upper uncertainty interval
 #'   bound for the *negative* RMSE or MSE exceeds (or is equal to) the cutoff
-#'   (or, equivalently, has the lower confidence interval bound for the RMSE or
+#'   (or, equivalently, has the lower uncertainty interval bound for the RMSE or
 #'   MSE below---or equal to---the cutoff). This is done to make the
 #'   interpretation of argument `type` the same regardless of argument `stat`.
 #'
@@ -1596,9 +1693,9 @@ print.vsel <- function(x, digits = getOption("projpred.digits", 2), ...) {
 #'   \eqn{U_j = \log(U^\ast_j)}{U_j = log(U^*_j)} and
 #'   \eqn{U_{\mathrm{base}} = \log(U^\ast_{\mathrm{base}})}{U_base =
 #'   log(U^*_base)}), then [suggest_size()] yields the smallest model size whose
-#'   lower or upper (depending on argument `type`) confidence interval bound for
-#'   \eqn{\frac{U^\ast_j}{U^\ast_{\mathrm{base}}}}{U^*_j / U^*_base} exceeds (or
-#'   is equal to)
+#'   lower or upper (depending on argument `type`) uncertainty interval bound
+#'   for \eqn{\frac{U^\ast_j}{U^\ast_{\mathrm{base}}}}{U^*_j / U^*_base} exceeds
+#'   (or is equal to)
 #'   \deqn{(\frac{u^\ast_0}{u^\ast_{\mathrm{base}}})^{\texttt{pct}}}{(u^*_0 /
 #'   u^*_base)^(pct)} where \eqn{u^\ast_0}{u^*_0} denotes the null
 #'   model's estimated GMPD and \eqn{u^\ast_{\mathrm{base}}}{u^*_base} the
@@ -1622,15 +1719,15 @@ print.vsel <- function(x, digits = getOption("projpred.digits", 2), ...) {
 #'   `!is.na(thres_elpd)` with `stat %in% c("elpd", "mlpd", "gmpd")`), `alpha =
 #'   2 * pnorm(-1)`, `pct = 0`, and `type = "upper"` means that we select the
 #'   smallest model size for which the upper bound of the `1 - 2 * pnorm(-1)`
-#'   (approximately 68.3%) confidence interval for \eqn{U_j -
+#'   (approximately 68.3 %) uncertainty interval for \eqn{U_j -
 #'   U_{\mathrm{base}}}{U_j - U_base}
 #'   (\eqn{\frac{U^\ast_j}{U^\ast_{\mathrm{base}}}}{U^*_j / U^*_base} in case of
 #'   the GMPD) exceeds (or is equal to) zero (one in case of the GMPD), that is
-#'   (if `stat` is a performance statistic for which the normal approximation is
-#'   used, not the bootstrap and not the exponentiated normal approximation),
-#'   for which the submodel's utility estimate is at most one standard error
-#'   smaller than the baseline model's utility estimate (with that standard
-#'   error referring to the utility *difference*).
+#'   (if `stat` is a performance statistic for which a normal-approximation
+#'   uncertainty interval is used, see argument `stats` of [summary.vsel()] and
+#'   [plot.vsel()]), for which the submodel's utility estimate is at most one
+#'   standard error smaller than the baseline model's utility estimate (with
+#'   that standard error referring to the utility *difference*).
 #'
 #'   Apart from the two [summary.vsel()] arguments mentioned above (`alpha` and
 #'   `baseline`), `resp_oscale` is another important [summary.vsel()] argument
@@ -2896,7 +2993,11 @@ cv_proportions.vsel <- function(object, ...) {
 #' print(gg_pr_rk + ggplot2::theme(legend.position = "none"))
 #'
 #' @export
-plot.cv_proportions <- function(x, text_angle = NULL, ...) {
+plot.cv_proportions <- function(
+    x,
+    text_angle = getOption("projpred.plot_cv_proportions_text_angle", NULL),
+    ...
+) {
   cv_props_long <- data.frame(
     msize = factor(rep(rownames(x), times = ncol(x)), levels = rownames(x)),
     pterm = factor(rep(colnames(x), each = nrow(x)), levels = colnames(x)),
