@@ -103,7 +103,7 @@
     </div>
 
     <div class="section level2">
-<h2 class="page-header" data-toc-text="2.9.0" id="projpred-290">projpred 2.9.0<a class="anchor" aria-label="anchor" href="#projpred-290"></a></h2>
+<h2 class="page-header" data-toc-text="2.9.0" id="projpred-290">projpred 2.9.0<small>2025-07-08</small><a class="anchor" aria-label="anchor" href="#projpred-290"></a></h2>
 <div class="section level3">
 <h3 id="major-changes-2-9-0">Major changes<a class="anchor" aria-label="anchor" href="#major-changes-2-9-0"></a></h3>
 <ul><li><p>Subsampled PSIS-LOO CV (usable via argument <code>nloo</code> of <code><a href="../reference/cv_varsel.html">cv_varsel()</a></code>) has been fixed and is not experimental anymore. There are a few restrictions: Performance statistic <code>"auc"</code> (see argument <code>stats</code> of <code><a href="../reference/summary.vsel.html">summary.vsel()</a></code> and <code><a href="../reference/plot.vsel.html">plot.vsel()</a></code>; argument <code>stat</code> of <code><a href="../reference/suggest_size.html">suggest_size()</a></code> is concerned as well) is not supported in case of subsampled PSIS-LOO CV. Furthermore, <code>baseline = "best"</code> (in <code><a href="../reference/summary.vsel.html">summary.vsel()</a></code> and <code><a href="../reference/plot.vsel.html">plot.vsel()</a></code>) is not supported in case of subsampled PSIS-LOO CV either. (GitHub: <a href="https://github.com/stan-dev/projpred/issues/94" class="external-link">#94</a>, <a href="https://github.com/stan-dev/projpred/issues/496" class="external-link">#496</a>)</p></li>
