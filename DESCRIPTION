@@ -2,7 +2,7 @@ Package: projpred
 Encoding: UTF-8
 Title: Projection Predictive Feature Selection
 Version: 2.9.0
-Date: 2025-07-07
+Date: 2025-07-08
 Authors@R: c(person("Juho", "Piironen", role = c("aut"),
                     email = "juho.t.piironen@gmail.com"),
              person("Markus", "Paasiniemi", role = "aut"),
