@@ -742,6 +742,16 @@ eval_el2 <- function(formula, data) {
   eval(formula[[2]], data, environment(formula))
 }
 
+# Same as eval_el2(), but avoids evaluation of argument `data` if `formula` is
+# `NULL`:
+eval_el2_not_null <- function(formula, data) {
+  if (!is.null(formula)) {
+    return(eval_el2(formula = formula, data = data))
+  } else {
+    return(NULL)
+  }
+}
+
 ## Extract left hand side of a formula as a formula itself by removing the right
 ## hand side.
 ## @param x Formula

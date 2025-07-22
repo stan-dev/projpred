@@ -193,8 +193,8 @@ given in \code{family$cats}, after taking \code{latent_y_unqs} into account).
 The function supplied to argument \code{latent_ll_oscale} needs to have the
 prototype
 
-\if{html}{\out{<div class="sourceCode r">}}\preformatted{latent_ll_oscale(ilpreds, dis, y_oscale, wobs = rep(1, length(y_oscale)),
-                 cl_ref, wdraws_ref = rep(1, length(cl_ref)))
+\if{html}{\out{<div class="sourceCode r">}}\preformatted{latent_ll_oscale(ilpreds, dis, y_oscale, wobs = rep(1, ncol(ilpreds)),
+                 cens, cl_ref, wdraws_ref = rep(1, length(cl_ref)))
 }\if{html}{\out{</div>}}
 
 where:
@@ -206,10 +206,27 @@ draws.
 the original response scale.
 \item \code{wobs} accepts a numeric vector of length \eqn{N} containing observation
 weights.
+\item \code{cens} accepts a vector containing censoring indicators for the
+observations for which to calculate the response-scale log-likelihood values
+(i.e., for the observations from the second dimension of \code{ilpreds}). This is
+only relevant if attribute \code{cens_var} of \code{latent_ll_oscale} is not \code{NULL}
+(see below).
 \item \code{cl_ref} accepts the same input as argument \code{cl_ref} of \code{latent_ilink}.
 \item \code{wdraws_ref} accepts the same input as argument \code{wdraws_ref} of
 \code{latent_ilink}.
 }
+
+In case of censoring (in the response values, i.e., survival or time-to-event
+analysis), the latent projection can be used by setting an attribute
+\code{cens_var} of the \code{latent_ll_oscale} function to a right-hand side formula
+with the name of the variable containing the censoring indicators (e.g., \code{0}
+= uncensored, \code{1} = censored) on its right-hand side. This variable named in
+the \code{cens_var} attribute is then retrieved (internally, whenever calling the
+\code{latent_ll_oscale} function) from the original dataset (possibly subsetted to
+the observations corresponding to the second dimension of \code{ilpreds}),
+\code{newdata}, or element \code{data} from \code{\link[=varsel]{varsel()}}'s argument \code{d_test}, whichever
+is applicable. The content of the retrieved variable is passed to argument
+\code{cens} of the \code{latent_ll_oscale} function.
 
 The return value of \code{latent_ll_oscale} needs to be an \eqn{S \times N}{S x N}
 matrix containing the response-scale (not latent-scale) log-likelihood values
@@ -218,7 +235,8 @@ for the \eqn{N} observations from its inputs.
 The function supplied to argument \code{latent_ppd_oscale} needs to have the
 prototype
 
-\if{html}{\out{<div class="sourceCode r">}}\preformatted{latent_ppd_oscale(ilpreds_resamp, dis_resamp, wobs, cl_ref,
+\if{html}{\out{<div class="sourceCode r">}}\preformatted{latent_ppd_oscale(ilpreds_resamp, dis_resamp,
+                  wobs = rep(1, ncol(ilpreds_resamp)), cl_ref,
                   wdraws_ref = rep(1, length(cl_ref)), idxs_prjdraws)
 }\if{html}{\out{</div>}}
 

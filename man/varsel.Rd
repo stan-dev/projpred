@@ -233,6 +233,10 @@ If not \code{NULL}, then \code{d_test} needs to be a \code{list} with the follow
 elements:
 \itemize{
 \item \code{data}: a \code{data.frame} containing the predictor variables for the test set.
+In case of the latent projection, this \code{data.frame} is also used for
+evaluating attribute \code{cens_var} of the \code{latent_ll_oscale} function, so if
+\code{cens_var} is not \code{NULL}, \code{data} also needs to contain the data for the
+variable from \code{cens_var}.
 \item \code{offset}: a numeric vector containing the offset values for the test set
 (if there is no offset, use a vector of zeros).
 \item \code{weights}: a numeric vector containing the observation weights for the test

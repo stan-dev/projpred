@@ -633,8 +633,11 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
     }
     loglik_forPSIS <- refmodel$family$latent_ll_oscale(
       mu_offs_oscale, dis = refmodel$dis, y_oscale = refmodel$y_oscale,
-      wobs = refmodel$wobs, cl_ref = seq_along(refmodel$wdraws_ref),
-      wdraws_ref = refmodel$wdraws_ref
+      wobs = refmodel$wobs,
+      cens = eval_el2_not_null(attr(refmodel$family$latent_ll_oscale,
+                                    "cens_var"),
+                               refmodel$fetch_data()),
+      cl_ref = seq_along(refmodel$wdraws_ref), wdraws_ref = refmodel$wdraws_ref
     )
     if (!is.matrix(loglik_forPSIS)) {
       stop("Unexpected structure for the output of `latent_ll_oscale`.")
@@ -810,6 +813,9 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
       log_lik_ref <- refmodel$family$latent_ll_oscale(
         refdist_eval_mu_offs_oscale, dis = refdist_eval$dis,
         y_oscale = refmodel$y_oscale[inds], wobs = refmodel$wobs[inds],
+        cens = eval_el2_not_null(attr(refmodel$family$latent_ll_oscale,
+                                      "cens_var"),
+                                 refmodel$fetch_data(obs = inds)),
         cl_ref = refdist_eval$cl, wdraws_ref = refdist_eval$wdraws_orig
       )
       if (all(is.na(log_lik_ref))) {
@@ -918,6 +924,9 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
         log_lik_sub_oscale <- refmodel$family$latent_ll_oscale(
           mu_k_oscale, dis = perf_eval_out[["dis_sub"]][[k]],
           y_oscale = refmodel$y_oscale[inds], wobs = refmodel$wobs[inds],
+          cens = eval_el2_not_null(attr(refmodel$family$latent_ll_oscale,
+                                        "cens_var"),
+                                   refmodel$fetch_data(obs = inds)),
           cl_ref = refdist_eval$cl, wdraws_ref = refdist_eval$wdraws_orig
         )
         loo_sub_oscale[[k]][inds] <- apply(log_lik_sub_oscale + lw_sub, 2,
@@ -1264,6 +1273,9 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
       loglik_mlvlRan <- refmodel$family$latent_ll_oscale(
         mu_offs_mlvlRan_oscale_odim, dis = refmodel$dis,
         y_oscale = refmodel$y_oscale, wobs = refmodel$wobs,
+        cens = eval_el2_not_null(attr(refmodel$family$latent_ll_oscale,
+                                      "cens_var"),
+                                 refmodel$fetch_data()),
         cl_ref = seq_along(refmodel$wdraws_ref),
         wdraws_ref = refmodel$wdraws_ref
       )
@@ -1434,6 +1446,7 @@ kfold_varsel <- function(refmodel, method, nterms_max, ndraws, nclusters,
     mu_test <- fold$refmodel$family$linkinv(eta_test)
     summaries_ref <- weighted_summary_means(
       y_wobs_test = y_wobs_test[fold$omitted, , drop = FALSE],
+      data_aux_test = refmodel$fetch_data(obs = fold$omitted),
       family = fold$refmodel$family,
       wdraws = fold$refmodel$wdraws_ref,
       mu = mu_test,
