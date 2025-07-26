@@ -2207,6 +2207,9 @@ vsel_tester <- function(
         ll_forPSIS <- vs$refmodel$family$latent_ll_oscale(
           mu_offs_oscale_tst, dis = vs$refmodel$dis,
           y_oscale = vs$refmodel$y_oscale, wobs = vs$refmodel$wobs,
+          cens = eval_el2_not_null(attr(vs$refmodel$family$latent_ll_oscale,
+                                        "cens_var"),
+                                   vs$refmodel$fetch_data()),
           cl_ref = seq_along(vs$refmodel$wdraws_ref),
           wdraws_ref = vs$refmodel$wdraws_ref
         )
