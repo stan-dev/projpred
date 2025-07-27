@@ -586,6 +586,9 @@ predict.refmodel <- function(object, newdata = NULL, ynew = NULL,
       }
       loglik <- refmodel$family$latent_ll_oscale(
         mu_oscale, dis = refmodel$dis, y_oscale = ynew, wobs = weightsnew,
+        cens = eval_el2_not_null(attr(refmodel$family$latent_ll_oscale,
+                                      "cens_var"),
+                                 newdata %||% refmodel$fetch_data()),
         cl_ref = seq_along(refmodel$wdraws_ref),
         wdraws_ref = rep(1, length(refmodel$wdraws_ref))
       )
