@@ -356,6 +356,7 @@ latent_ll_oscale_nebin <- function(ilpreds,
                                    dis = rep(NA, nrow(ilpreds)),
                                    y_oscale,
                                    wobs = rep(1, ncol(ilpreds)),
+                                   cens,
                                    cl_ref,
                                    wdraws_ref = rep(1, length(cl_ref))) {
   y_oscale_mat <- matrix(y_oscale, nrow = nrow(ilpreds), ncol = ncol(ilpreds),
