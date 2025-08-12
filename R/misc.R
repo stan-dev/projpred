@@ -193,6 +193,13 @@ validate_vsel_object_stats <- function(object, stats, resp_oscale = TRUE) {
              "latent Gaussian distribution is used there).")
       }
     }
+    if (object$refmodel$family$for_latent &&
+        !is.null(attr(object$refmodel$family$latent_ll_oscale, "cens_var")) &&
+        resp_oscale &&
+        !stat %in% c("elpd", "mlpd", "gmpd")) {
+      warning("Performance statistic `\"", stat, "\"` does not take ",
+              "censoring into account.")
+    }
   }
   return(invisible(TRUE))
 }

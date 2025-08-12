@@ -118,6 +118,10 @@
 #' If not `NULL`, then `d_test` needs to be a `list` with the following
 #' elements:
 #' * `data`: a `data.frame` containing the predictor variables for the test set.
+#' In case of the latent projection, this `data.frame` is also used for
+#' evaluating attribute `cens_var` of the `latent_ll_oscale` function, so if
+#' `cens_var` is not `NULL`, `data` also needs to contain the data for the
+#' variable from `cens_var`.
 #' * `offset`: a numeric vector containing the offset values for the test set
 #' (if there is no offset, use a vector of zeros).
 #' * `weights`: a numeric vector containing the observation weights for the test
@@ -460,9 +464,10 @@ varsel.refmodel <- function(
       mu_test <- refmodel$family$linkinv(eta_test)
     }
     ref <- weighted_summary_means(
-      y_wobs_test = y_wobs_test, family = refmodel$family,
-      wdraws = refmodel$wdraws_ref, mu = mu_test, dis = refmodel$dis,
-      cl_ref = seq_along(refmodel$wdraws_ref)
+      y_wobs_test = y_wobs_test,
+      data_aux_test = d_test$data %||% refmodel$fetch_data(),
+      family = refmodel$family, wdraws = refmodel$wdraws_ref, mu = mu_test,
+      dis = refmodel$dis, cl_ref = seq_along(refmodel$wdraws_ref)
     )
   }
 
