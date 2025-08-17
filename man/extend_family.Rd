@@ -245,9 +245,9 @@ where:
 \item \code{ilpreds_resamp} accepts the return value from \code{latent_ilink}, but possibly
 with resampled (clustered) draws (see argument \code{nresample_clusters} of
 \code{\link[=proj_predict]{proj_predict()}}).
-\item \code{dis_resamp} accepts a vector of length \eqn{\texttt{dim(ilpreds)[1]}}
-containing dispersion parameter draws, possibly resampled (in the same way as
-the draws in \code{ilpreds_resamp}, see also argument \code{idxs_prjdraws}).
+\item \code{dis_resamp} accepts a vector of length \code{dim(ilpreds_resamp)[1]} containing
+dispersion parameter draws, possibly resampled (in the same way as the draws
+in \code{ilpreds_resamp}, see also argument \code{idxs_prjdraws}).
 \item \code{wobs} accepts a numeric vector of length \eqn{N} containing observation
 weights.
 \item \code{cl_ref} accepts the same input as argument \code{cl_ref} of \code{latent_ilink}.

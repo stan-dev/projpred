@@ -203,9 +203,9 @@
 #' * `ilpreds_resamp` accepts the return value from `latent_ilink`, but possibly
 #' with resampled (clustered) draws (see argument `nresample_clusters` of
 #' [proj_predict()]).
-#' * `dis_resamp` accepts a vector of length \eqn{\texttt{dim(ilpreds)[1]}}
-#' containing dispersion parameter draws, possibly resampled (in the same way as
-#' the draws in `ilpreds_resamp`, see also argument `idxs_prjdraws`).
+#' * `dis_resamp` accepts a vector of length `dim(ilpreds_resamp)[1]` containing
+#' dispersion parameter draws, possibly resampled (in the same way as the draws
+#' in `ilpreds_resamp`, see also argument `idxs_prjdraws`).
 #' * `wobs` accepts a numeric vector of length \eqn{N} containing observation
 #' weights.
 #' * `cl_ref` accepts the same input as argument `cl_ref` of `latent_ilink`.
