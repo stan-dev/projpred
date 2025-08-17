@@ -286,9 +286,11 @@ flatten_group_terms <- function(terms_) {
 ## @param formula A formula for a valid model.
 ## @param return_group_terms If TRUE, return group terms as well. Default TRUE.
 ## @param data The reference model data.
+## @param add_lower_terms Passed to argument `add_lower_terms` of
+##   split_group_term() and split_interaction_term().
 ## @return a vector of all the minimal valid terms that make up for submodels.
 split_formula <- function(formula, return_group_terms = TRUE, data = NULL,
-                          add_main_effects = TRUE) {
+                          add_lower_terms = TRUE) {
   terms_ <- extract_terms_response(formula)
   group_terms <- terms_$group_terms
   interaction_terms <- terms_$interaction_terms
@@ -308,11 +310,11 @@ split_formula <- function(formula, return_group_terms = TRUE, data = NULL,
   if (return_group_terms) {
     ## if there are group levels we should split that into basic components
     group_split <- unlist(lapply(group_terms, split_group_term,
-                                 add_main_effects = add_main_effects))
+                                 add_lower_terms = add_lower_terms))
     allterms_ <- c(
       unlist(lapply(additive_terms, split_additive_term, data)),
       unlist(lapply(interaction_terms, split_interaction_term,
-                    add_main_effects = add_main_effects))
+                    add_lower_terms = add_lower_terms))
     )
     group_replace <- regmatches(
       group_split,
@@ -352,21 +354,29 @@ split_formula <- function(formula, return_group_terms = TRUE, data = NULL,
   }
 }
 
-## Plugs the main effects to the interaction terms to consider jointly for
-## projection.
+## Starting from an interaction term `term`, all lower-order interaction
+## (including main-effect) terms are added to `term` via `+` (if
+## `add_lower_terms` is `TRUE`; otherwise, this is function is a no-op to
+## `term`).
 ## @param term An interaction term as a string.
-## @return a minimally valid submodel for the interaction term including
-## the overall effects.
-split_interaction_term <- function(term, add_main_effects = TRUE) {
-  ## strong heredity by default
-  terms_ <- unlist(strsplit(term, ":"))
-  individual_joint <- paste(terms_, collapse = " + ")
-  if (add_main_effects) {
-    joint_term <- paste(c(individual_joint, term), collapse = " + ")
-  } else {
+## @param add_lower_terms A single logical value indicating whether all
+##   lower-order interaction (including main-effect) terms of `term` should be
+##   added via `+`. In other words, if `add_lower_terms` is `FALSE`, `term` is
+##   returned as-is.
+## @return The right-hand side of a formula as a single character string.
+split_interaction_term <- function(term, add_lower_terms = TRUE) {
+  if (!add_lower_terms) {
     return(term)
   }
-  return(joint_term)
+  ## strong heredity by default
+  main_terms <- unlist(strsplit(term, ":"))
+  return(paste(
+    unlist(lapply(seq_along(main_terms), function(n_main_terms) {
+      lapply(utils::combn(main_terms, m = n_main_terms, simplify = FALSE),
+             paste, collapse = ":")
+    })),
+    collapse = " + "
+  ))
 }
 
 ## Plugs the main effects to the smooth additive term if `by` argument is
@@ -391,9 +401,13 @@ split_additive_term <- function(term, data) {
 ## Simplify a single group term by breaking it down in as many terms_
 ## as varying effects. It also explicitly adds or removes the varying intercept.
 ## @param term A group term as a string.
+## @param add_lower_terms A single logical value indicating whether all
+##   group-level slopes should also be added (via `+`, but also as separate
+##   elements) as population-level slopes. Also passed to argument
+##   `add_lower_terms` of split_interaction_term().
 ## @return a vector of all the minimally valid submodels for the group term
 ## including a single varying effect with and without varying intercept.
-split_group_term <- function(term, add_main_effects = TRUE) {
+split_group_term <- function(term, add_lower_terms = TRUE) {
   ## this expands whatever terms() did not expand
   term <- gsub(
     "\\)$", "",
@@ -426,7 +440,7 @@ split_group_term <- function(term, add_main_effects = TRUE) {
 
   if (group_intercept) {
     group_terms <- list(paste0("(1 | ", group, ")"))
-    if (add_main_effects) {
+    if (add_lower_terms) {
       group_terms <- c(
         group_terms,
         lapply(lin_v, function(v) {
@@ -437,10 +451,10 @@ split_group_term <- function(term, add_main_effects = TRUE) {
         group_terms,
         lapply(int_v, function(v) {
           paste0(
-            split_interaction_term(v, add_main_effects = add_main_effects),
+            split_interaction_term(v, add_lower_terms = add_lower_terms),
             " + ",
             "(",
-            split_interaction_term(v, add_main_effects = add_main_effects),
+            split_interaction_term(v, add_lower_terms = add_lower_terms),
             " | ",
             group,
             ")"
@@ -459,7 +473,7 @@ split_group_term <- function(term, add_main_effects = TRUE) {
         group_terms,
         lapply(int_v, function(v) {
           paste0(
-            split_interaction_term(v, add_main_effects = add_main_effects),
+            split_interaction_term(v, add_lower_terms = add_lower_terms),
             " + ",
             "(1 | ",
             group,
@@ -479,7 +493,7 @@ split_group_term <- function(term, add_main_effects = TRUE) {
         lapply(int_v, function(v) {
           paste0(
             "(",
-            split_interaction_term(v, add_main_effects = add_main_effects),
+            split_interaction_term(v, add_lower_terms = add_lower_terms),
             " | ",
             group,
             ")"
@@ -493,10 +507,10 @@ split_group_term <- function(term, add_main_effects = TRUE) {
     })
     group_terms <- c(group_terms, lapply(int_v, function(v) {
       paste0(
-        split_interaction_term(v, add_main_effects = add_main_effects),
+        split_interaction_term(v, add_lower_terms = add_lower_terms),
         " + ",
         "(0 + ",
-        split_interaction_term(v, add_main_effects = add_main_effects),
+        split_interaction_term(v, add_lower_terms = add_lower_terms),
         " | ",
         group,
         ")"
