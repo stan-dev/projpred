@@ -156,8 +156,8 @@
 #' The function supplied to argument `latent_ll_oscale` needs to have the
 #' prototype
 #' ```{r, eval = FALSE}
-#' latent_ll_oscale(ilpreds, dis, y_oscale, wobs = rep(1, length(y_oscale)),
-#'                  cl_ref, wdraws_ref = rep(1, length(cl_ref)))
+#' latent_ll_oscale(ilpreds, dis, y_oscale, wobs = rep(1, ncol(ilpreds)),
+#'                  cens, cl_ref, wdraws_ref = rep(1, length(cl_ref)))
 #' ```
 #' where:
 #' * `ilpreds` accepts the return value from `latent_ilink`.
@@ -167,9 +167,26 @@
 #' the original response scale.
 #' * `wobs` accepts a numeric vector of length \eqn{N} containing observation
 #' weights.
+#' * `cens` accepts a vector containing censoring indicators for the
+#' observations for which to calculate the response-scale log-likelihood values
+#' (i.e., for the observations from the second dimension of `ilpreds`). This is
+#' only relevant if attribute `cens_var` of `latent_ll_oscale` is not `NULL`
+#' (see below).
 #' * `cl_ref` accepts the same input as argument `cl_ref` of `latent_ilink`.
 #' * `wdraws_ref` accepts the same input as argument `wdraws_ref` of
 #' `latent_ilink`.
+#'
+#' In case of censoring (in the response values, i.e., survival or time-to-event
+#' analysis), the latent projection can be used by setting an attribute
+#' `cens_var` of the `latent_ll_oscale` function to a right-hand side formula
+#' with the name of the variable containing the censoring indicators (e.g., `0`
+#' = uncensored, `1` = censored) on its right-hand side. This variable named in
+#' the `cens_var` attribute is then retrieved (internally, whenever calling the
+#' `latent_ll_oscale` function) from the original dataset (possibly subsetted to
+#' the observations corresponding to the second dimension of `ilpreds`),
+#' `newdata`, or element `data` from [varsel()]'s argument `d_test`, whichever
+#' is applicable. The content of the retrieved variable is passed to argument
+#' `cens` of the `latent_ll_oscale` function.
 #'
 #' The return value of `latent_ll_oscale` needs to be an \eqn{S \times N}{S x N}
 #' matrix containing the response-scale (not latent-scale) log-likelihood values
@@ -178,7 +195,8 @@
 #' The function supplied to argument `latent_ppd_oscale` needs to have the
 #' prototype
 #' ```{r, eval = FALSE}
-#' latent_ppd_oscale(ilpreds_resamp, dis_resamp, wobs, cl_ref,
+#' latent_ppd_oscale(ilpreds_resamp, dis_resamp,
+#'                   wobs = rep(1, ncol(ilpreds_resamp)), cl_ref,
 #'                   wdraws_ref = rep(1, length(cl_ref)), idxs_prjdraws)
 #' ```
 #' where:
