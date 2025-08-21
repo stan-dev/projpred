@@ -284,13 +284,11 @@ flatten_group_terms <- function(terms_) {
 
 ## Simplify and split a formula by breaking it into all possible submodels.
 ## @param formula A formula for a valid model.
-## @param return_group_terms If TRUE, return group terms as well. Default TRUE.
 ## @param data The reference model data.
 ## @param add_lower_terms Passed to argument `add_lower_terms` of
 ##   split_group_term() and split_interaction_term().
 ## @return a vector of all the minimal valid terms that make up for submodels.
-split_formula <- function(formula, return_group_terms = TRUE, data = NULL,
-                          add_lower_terms = TRUE) {
+split_formula <- function(formula, data = NULL, add_lower_terms = TRUE) {
   terms_ <- extract_terms_response(formula)
   group_terms <- terms_$group_terms
   interaction_terms <- terms_$interaction_terms
@@ -307,41 +305,32 @@ split_formula <- function(formula, return_group_terms = TRUE, data = NULL,
   additive <- trimws(unique(unlist(
     strsplit(paste0(additive, collapse = ","), ",")
   )))
-  if (return_group_terms) {
-    ## if there are group levels we should split that into basic components
-    group_split <- unlist(lapply(group_terms, split_group_term,
-                                 add_lower_terms = add_lower_terms))
-    allterms_ <- c(
-      unlist(lapply(additive_terms, split_additive_term, data)),
-      unlist(lapply(interaction_terms, split_interaction_term,
-                    add_lower_terms = add_lower_terms))
-    )
-    group_replace <- regmatches(
-      group_split,
-      gregexpr("\\w+(?![^(]*\\))", group_split, perl = TRUE)
-    )
-    groups_to_replace <- group_split[unlist(lapply(
-      group_replace,
-      function(x) length(x) > 0
-    ))]
-    to_replace <- group_split[!is.na(match(group_replace, additive))]
-    not_replace <- setdiff(group_split, to_replace)
 
-    replacement <- gsub(
-      pattern = "(\\w+)(?![^(]*\\))", replacement = "s(\\1)",
-      to_replace, perl = TRUE
-    )
-    group_split <- c(not_replace, replacement)
-    nodups <- unique(c(individual_terms, additive))
-    allterms_ <- c(allterms_, group_split, nodups)
-  } else {
-    nodups <- unique(c(individual_terms, additive))
-    allterms_ <- c(
-      nodups,
-      unlist(lapply(additive_terms, split_additive_term, data)),
-      unlist(lapply(interaction_terms, split_interaction_term))
-    )
-  }
+  ## if there are group levels we should split that into basic components
+  group_split <- unlist(lapply(group_terms, split_group_term,
+                               add_lower_terms = add_lower_terms))
+  allterms_ <- c(
+    unlist(lapply(additive_terms, split_additive_term, data)),
+    unlist(lapply(interaction_terms, split_interaction_term,
+                  add_lower_terms = add_lower_terms))
+  )
+  group_replace <- regmatches(
+    group_split,
+    gregexpr("\\w+(?![^(]*\\))", group_split, perl = TRUE)
+  )
+  groups_to_replace <- group_split[unlist(lapply(
+    group_replace,
+    function(x) length(x) > 0
+  ))]
+  to_replace <- group_split[!is.na(match(group_replace, additive))]
+  not_replace <- setdiff(group_split, to_replace)
+  replacement <- gsub(
+    pattern = "(\\w+)(?![^(]*\\))", replacement = "s(\\1)",
+    to_replace, perl = TRUE
+  )
+  group_split <- c(not_replace, replacement)
+  nodups <- unique(c(individual_terms, additive))
+  allterms_ <- c(allterms_, group_split, nodups)
 
   ## exclude the intercept if there is no intercept in `formula`
   if (!global_intercept) {
