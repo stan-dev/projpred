@@ -491,20 +491,35 @@ split_group_term <- function(term, add_lower_terms = TRUE) {
       )
     }
   } else {
-    group_terms <- lapply(lin_v, function(v) {
-      paste0(v, " + ", "(0 + ", v, " | ", group, ")")
-    })
-    group_terms <- c(group_terms, lapply(int_v, function(v) {
-      paste0(
-        split_interaction_term(v, add_lower_terms = add_lower_terms),
-        " + ",
-        "(0 + ",
-        split_interaction_term(v, add_lower_terms = add_lower_terms),
-        " | ",
-        group,
-        ")"
-      )
-    }))
+    if (add_lower_terms) {
+      group_terms <- lapply(lin_v, function(v) {
+        paste0(v, " + ", "(0 + ", v, " | ", group, ")")
+      })
+      group_terms <- c(group_terms, lapply(int_v, function(v) {
+        paste0(
+          split_interaction_term(v, add_lower_terms = add_lower_terms),
+          " + ",
+          "(0 + ",
+          split_interaction_term(v, add_lower_terms = add_lower_terms),
+          " | ",
+          group,
+          ")"
+        )
+      }))
+    } else {
+      group_terms <- lapply(lin_v, function(v) {
+        paste0("(0 + ", v, " | ", group, ")")
+      })
+      group_terms <- c(group_terms, lapply(int_v, function(v) {
+        paste0(
+          "(0 + ",
+          split_interaction_term(v, add_lower_terms = add_lower_terms),
+          " | ",
+          group,
+          ")"
+        )
+      }))
+    }
   }
 
   return(group_terms)
