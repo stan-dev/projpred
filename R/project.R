@@ -232,7 +232,7 @@ project <- function(
       vars <- object$predictor_ranking
     } else {
       vars <- split_formula(refmodel$formula, data = refmodel$fetch_data(),
-                            add_main_effects = FALSE)
+                            add_lower_terms = FALSE)
       vars <- setdiff(vars, "1")
     }
 

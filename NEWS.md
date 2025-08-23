@@ -4,6 +4,14 @@ If you read this from a place other than <https://mc-stan.org/projpred/news/inde
 
 # projpred 2.9.0.9000
 
+## Major changes
+
+* Fixed a major bug in forward search with 3-way or higher-order interactions. See "Bug fixes" below for details.
+
+## Bug fixes
+
+* Fixed a bug that caused forward search not to place lower-order terms of a 3-way or higher-order interaction term before that interaction term. (GitHub: #531, #532)
+* Fixed a bug that caused `project()` to construct an incorrect internal table of predictor terms (from which argument `predictor_terms` can select one or several terms from) in case of a group-level term that does not contain a group-level intercept. (GitHub: #533, #534)
 
 # projpred 2.9.0
 
