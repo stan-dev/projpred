@@ -345,8 +345,8 @@ split_formula <- function(formula, data = NULL, add_lower_terms = TRUE) {
 
 ## Starting from an interaction term `term`, all lower-order interaction
 ## (including main-effect) terms are added to `term` via `+` (if
-## `add_lower_terms` is `TRUE`; otherwise, this is function is a no-op to
-## `term`).
+## `add_lower_terms` is `TRUE`; otherwise, the function is a no-op and 
+## returns `term`).
 ## @param term An interaction term as a string.
 ## @param add_lower_terms A single logical value indicating whether all
 ##   lower-order interaction (including main-effect) terms of `term` should be
