@@ -87,6 +87,32 @@ test_that("check that we properly flatten a formula with duplicated terms", {
   expect_true(all(terms %in% c("x", "z", "x + z + x:z | g", "x:z")))
 })
 
+test_that("split_interaction_term() works for 2-way interaction terms", {
+  ia_split <- split_interaction_term("X1:X2")
+  expect_identical(ia_split, "X1 + X2 + X1:X2")
+  ia_noop <- split_interaction_term("X1:X2", add_lower_terms = FALSE)
+  expect_identical(ia_noop, "X1:X2")
+})
+
+test_that("split_interaction_term() works for 3-way interaction terms", {
+  ia_split <- split_interaction_term("X1:X2:X3")
+  expect_identical(ia_split, "X1 + X2 + X3 + X1:X2 + X1:X3 + X2:X3 + X1:X2:X3")
+  ia_noop <- split_interaction_term("X1:X2:X3", add_lower_terms = FALSE)
+  expect_identical(ia_noop, "X1:X2:X3")
+})
+
+test_that("split_interaction_term() works for 4-way interaction terms", {
+  ia_split <- split_interaction_term("X1:X2:X3:X4")
+  expect_identical(ia_split, paste0(
+    "X1 + X2 + X3 + X4 + ",
+    "X1:X2 + X1:X3 + X1:X4 + X2:X3 + X2:X4 + X3:X4 + ",
+    "X1:X2:X3 + X1:X2:X4 + X1:X3:X4 + X2:X3:X4 + ",
+    "X1:X2:X3:X4"
+  ))
+  ia_noop <- split_interaction_term("X1:X2:X3:X4", add_lower_terms = FALSE)
+  expect_identical(ia_noop, "X1:X2:X3:X4")
+})
+
 test_that("check that we properly split a formula", {
   formula <- y ~ x + z + x:z + (x + z + x:z | g)
   sp <- split_formula(formula)
