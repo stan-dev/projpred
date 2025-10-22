@@ -16,6 +16,7 @@ knitr::opts_chunk$set(
 <!-- badges: start -->
 <!-- [![codecov](https://codecov.io/gh/stan-dev/projpred/branch/master/graph/badge.svg)](https://app.codecov.io/gh/stan-dev/projpred) -->
 [![CRAN_Status_Badge](https://www.r-pkg.org/badges/version/projpred?color=blue)](https://CRAN.R-project.org/package=projpred)
+[![R-CMD-check](https://github.com/stan-dev/projpred/actions/workflows/R-CMD-check.yaml/badge.svg)](https://github.com/stan-dev/projpred/actions/workflows/R-CMD-check.yaml)
 <!-- badges: end -->
 
 # projpred [<img src="man/figures/logo.svg" align="right" height="139" alt="Stan Logo"/>](https://mc-stan.org)
