@@ -23,6 +23,8 @@ navbar:
           href: https://mc-stan.org/bayesplot
         - text: cmdstanr
           href: https://mc-stan.org/cmdstanr
+        - text: loo
+          href: https://mc-stan.org/loo
         - text: posterior
           href: https://mc-stan.org/posterior
         - text: rstan
