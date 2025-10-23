@@ -46,6 +46,10 @@ jobs:
           extra-packages: |
               any::rcmdcheck
               any::BH
+              any::Rcpp
+              any::RcppEigen
+              any::RcppParallel
+              any::StanHeaders
           needs: check
 
       - uses: r-lib/actions/check-r-package@v2
