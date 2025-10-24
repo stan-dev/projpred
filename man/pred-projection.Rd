@@ -233,7 +233,7 @@ fit <- rstanarm::stan_glm(
 # value for `ndraws`, but only for the sake of speed in this example; this
 # is not recommended in general):
 prj <- project(fit, predictor_terms = c("X1", "X3", "X5"), ndraws = 21,
-               seed = 9182, verbose = FALSE)
+               seed = 9182)
 
 # Predictions (at the training points) from the submodel onto which the
 # reference model was projected:

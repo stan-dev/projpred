@@ -48,8 +48,7 @@ search_terms_forced <- force_search_terms(
 # `nterms_max`, `nclusters`, and `nclusters_pred`, but only for the sake of
 # speed in this example; this is not recommended in general):
 vs <- varsel(fit, nclusters = 5, nclusters_pred = 10,
-             search_terms = search_terms_forced, seed = 5555,
-             verbose = FALSE)
+             search_terms = search_terms_forced, seed = 5555)
 # Now see, for example, `?print.vsel`, `?plot.vsel`, `?suggest_size.vsel`,
 # and `?ranking` for possible post-processing functions.
 \dontshow{\}) # examplesIf}

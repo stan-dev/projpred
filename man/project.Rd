@@ -162,18 +162,17 @@ fit <- rstanarm::stan_glm(
 # values for `nterms_max` and `nclusters_pred`, but only for the sake of
 # speed in this example; this is not recommended in general):
 vs <- varsel(fit, method = "L1", nterms_max = 3, nclusters_pred = 10,
-             seed = 5555, verbose = FALSE)
+             seed = 5555)
 
 # Projection onto the best submodel with 2 predictor terms (with a small
 # value for `nclusters`, but only for the sake of speed in this example;
 # this is not recommended in general):
-prj_from_vs <- project(vs, nterms = 2, nclusters = 10, seed = 9182,
-                       verbose = FALSE)
+prj_from_vs <- project(vs, nterms = 2, nclusters = 10, seed = 9182)
 
 # Projection onto an arbitrary combination of predictor terms (with a small
 # value for `nclusters`, but only for the sake of speed in this example;
 # this is not recommended in general):
 prj <- project(fit, predictor_terms = c("X1", "X3", "X5"), nclusters = 10,
-               seed = 9182, verbose = FALSE)
+               seed = 9182)
 \dontshow{\}) # examplesIf}
 }

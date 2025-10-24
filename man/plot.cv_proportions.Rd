@@ -55,8 +55,7 @@ fit <- rstanarm::stan_glm(
 # `nclusters_pred`, but only for the sake of speed in this example; this is
 # not recommended in general):
 cvvs <- cv_varsel(fit, method = "L1", cv_method = "kfold", K = 2,
-                  nterms_max = 3, nclusters_pred = 10, seed = 5555,
-                  verbose = FALSE)
+                  nterms_max = 3, nclusters_pred = 10, seed = 5555)
 
 # Extract predictor rankings:
 rk <- ranking(cvvs)

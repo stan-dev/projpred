@@ -208,7 +208,7 @@
 #' # values for `nterms_max` and `nclusters_pred`, but only for the sake of
 #' # speed in this example; this is not recommended in general):
 #' vs <- varsel(fit, method = "L1", nterms_max = 3, nclusters_pred = 10,
-#'              seed = 5555, verbose = FALSE)
+#'              seed = 5555)
 #' # Now see, for example, `?print.vsel`, `?plot.vsel`, `?suggest_size.vsel`,
 #' # and `?ranking` for possible post-processing functions.
 #'

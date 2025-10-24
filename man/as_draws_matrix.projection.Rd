@@ -58,7 +58,7 @@ fit <- rstanarm::stan_glm(
 # value for `nclusters`, but only for illustrative purposes; this is not
 # recommended in general):
 prj <- project(fit, predictor_terms = c("X1", "X3", "X5"), nclusters = 5,
-               seed = 9182, verbose = FALSE)
+               seed = 9182)
 
 # Applying the posterior::as_draws_matrix() generic to the output of
 # project() dispatches to the projpred::as_draws_matrix.projection()

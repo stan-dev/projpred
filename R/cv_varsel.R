@@ -173,8 +173,7 @@
 #' # `nclusters_pred`, but only for the sake of speed in this example; this is
 #' # not recommended in general):
 #' cvvs <- cv_varsel(fit, method = "L1", cv_method = "kfold", K = 2,
-#'                   nterms_max = 3, nclusters_pred = 10, seed = 5555,
-#'                   verbose = FALSE)
+#'                   nterms_max = 3, nclusters_pred = 10, seed = 5555)
 #' # Now see, for example, `?print.vsel`, `?plot.vsel`, `?suggest_size.vsel`,
 #' # and `?ranking` for possible post-processing functions.
 #'
@@ -1667,7 +1666,7 @@ get_kfold <- function(refmodel, K, cvfits, verbose) {
 #' # not recommended in general) and use `cv_fits` there:
 #' cvvs_L1 <- cv_varsel(ref, method = "L1", cv_method = "kfold",
 #'                      cvfits = cv_fits, nterms_max = 3, nclusters_pred = 10,
-#'                      seed = 5555, verbose = FALSE)
+#'                      seed = 5555)
 #' # Now see, for example, `?print.vsel`, `?plot.vsel`, `?suggest_size.vsel`,
 #' # and `?ranking` for possible post-processing functions.
 #'
@@ -1676,7 +1675,7 @@ get_kfold <- function(refmodel, K, cvfits, verbose) {
 #' # method (L1 or forward):
 #' cvvs_fw <- cv_varsel(ref, method = "forward", cv_method = "kfold",
 #'                      cvfits = cv_fits, nterms_max = 3, nclusters = 5,
-#'                      nclusters_pred = 10, seed = 5555, verbose = FALSE)
+#'                      nclusters_pred = 10, seed = 5555)
 #'
 #' # Stratified K-fold CV is straightforward:
 #' n_strat <- 3L

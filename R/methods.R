@@ -174,7 +174,7 @@
 #' # value for `ndraws`, but only for the sake of speed in this example; this
 #' # is not recommended in general):
 #' prj <- project(fit, predictor_terms = c("X1", "X3", "X5"), ndraws = 21,
-#'                seed = 9182, verbose = FALSE)
+#'                seed = 9182)
 #'
 #' # Predictions (at the training points) from the submodel onto which the
 #' # reference model was projected:
@@ -712,7 +712,7 @@ proj_predict_aux <- function(proj, newdata, offsetnew, weightsnew,
 #' # values for `nterms_max` and `nclusters_pred`, but only for the sake of
 #' # speed in this example; this is not recommended in general):
 #' vs <- varsel(fit, method = "L1", nterms_max = 3, nclusters_pred = 10,
-#'              seed = 5555, verbose = FALSE)
+#'              seed = 5555)
 #' print(plot(vs))
 #'
 #' @export
@@ -1362,7 +1362,7 @@ plot.vsel <- function(
 #' # values for `nterms_max` and `nclusters_pred`, but only for the sake of
 #' # speed in this example; this is not recommended in general):
 #' vs <- varsel(fit, method = "L1", nterms_max = 3, nclusters_pred = 10,
-#'              seed = 5555, verbose = FALSE)
+#'              seed = 5555)
 #' print(summary(vs), digits = 1)
 #'
 #' @export
@@ -1755,7 +1755,7 @@ print.vsel <- function(x, digits = getOption("projpred.digits", 2), ...) {
 #' # values for `nterms_max` and `nclusters_pred`, but only for the sake of
 #' # speed in this example; this is not recommended in general):
 #' vs <- varsel(fit, method = "L1", nterms_max = 3, nclusters_pred = 10,
-#'              seed = 5555, verbose = FALSE)
+#'              seed = 5555)
 #' print(suggest_size(vs))
 #'
 #' @export
@@ -1878,7 +1878,7 @@ suggest_size.vsel <- function(
 #' # values for `nterms_max` and `nclusters_pred`, but only for the sake of
 #' # speed in this example; this is not recommended in general):
 #' vs <- varsel(fit, method = "L1", nterms_max = 3, nclusters_pred = 10,
-#'              seed = 5555, verbose = FALSE)
+#'              seed = 5555)
 #' print(performances(vs))
 #'
 #' @export
@@ -2409,7 +2409,7 @@ get_subparams.mmblogit <- function(x, ...) {
 #' # value for `ndraws`, but only for the sake of speed in this example; this
 #' # is not recommended in general):
 #' prj <- project(fit, predictor_terms = c("X1", "X3", "X5"), ndraws = 21,
-#'                seed = 9182, verbose = FALSE)
+#'                seed = 9182)
 #'
 #' # Applying the as.matrix() generic to the output of project() dispatches to
 #' # the projpred::as.matrix.projection() method:
@@ -2506,7 +2506,7 @@ as.matrix.projection <- function(x, nm_scheme = NULL,
 #' # value for `nclusters`, but only for illustrative purposes; this is not
 #' # recommended in general):
 #' prj <- project(fit, predictor_terms = c("X1", "X3", "X5"), nclusters = 5,
-#'                seed = 9182, verbose = FALSE)
+#'                seed = 9182)
 #'
 #' # Applying the posterior::as_draws_matrix() generic to the output of
 #' # project() dispatches to the projpred::as_draws_matrix.projection()
@@ -2749,7 +2749,7 @@ solution_terms.projection <- function(object, ...) {
 #' # value for `nclusters`, but only for the sake of speed in this example;
 #' # this is not recommended in general):
 #' prj <- project(fit, predictor_terms = c("X1", "X3", "X5"), nclusters = 10,
-#'                seed = 9182, verbose = FALSE)
+#'                seed = 9182)
 #' print(predictor_terms(prj)) # gives `c("X1", "X3", "X5")`
 #'
 #' @export
@@ -2974,8 +2974,7 @@ cv_proportions.vsel <- function(object, ...) {
 #' # `nclusters_pred`, but only for the sake of speed in this example; this is
 #' # not recommended in general):
 #' cvvs <- cv_varsel(fit, method = "L1", cv_method = "kfold", K = 2,
-#'                   nterms_max = 3, nclusters_pred = 10, seed = 5555,
-#'                   verbose = FALSE)
+#'                   nterms_max = 3, nclusters_pred = 10, seed = 5555)
 #'
 #' # Extract predictor rankings:
 #' rk <- ranking(cvvs)

@@ -80,7 +80,7 @@ cv_fits <- run_cvfun(ref, K = 2, seed = 184)
 # not recommended in general) and use `cv_fits` there:
 cvvs_L1 <- cv_varsel(ref, method = "L1", cv_method = "kfold",
                      cvfits = cv_fits, nterms_max = 3, nclusters_pred = 10,
-                     seed = 5555, verbose = FALSE)
+                     seed = 5555)
 # Now see, for example, `?print.vsel`, `?plot.vsel`, `?suggest_size.vsel`,
 # and `?ranking` for possible post-processing functions.
 
@@ -89,7 +89,7 @@ cvvs_L1 <- cv_varsel(ref, method = "L1", cv_method = "kfold",
 # method (L1 or forward):
 cvvs_fw <- cv_varsel(ref, method = "forward", cv_method = "kfold",
                      cvfits = cv_fits, nterms_max = 3, nclusters = 5,
-                     nclusters_pred = 10, seed = 5555, verbose = FALSE)
+                     nclusters_pred = 10, seed = 5555)
 
 # Stratified K-fold CV is straightforward:
 n_strat <- 3L
