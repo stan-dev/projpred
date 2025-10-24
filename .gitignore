@@ -1,0 +1,15 @@
+*~
+*.o
+*.so
+.Rhistory
+.DS_Store
+.Rproj.user
+.Rapp.history
+.RData
+/src/projpred.dll
+
+tests/testthat/bfits
+tests/testthat/_snaps
+
+docs/dev
+dev
