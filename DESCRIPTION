@@ -88,5 +88,5 @@ Additional_repositories:
     https://stan-dev.r-universe.dev/
 LazyData: TRUE
 Roxygen: list(markdown = TRUE)
-RoxygenNote: 7.3.2
+RoxygenNote: 7.3.3
 VignetteBuilder: knitr, rmarkdown

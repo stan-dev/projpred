@@ -131,14 +131,14 @@ meant to be accessed directly but instead via helper functions
 (\code{\link[=print.vselsummary]{print.vselsummary()}} and \code{\link[=performances.vselsummary]{performances.vselsummary()}}).
 }
 \description{
-This is the \code{\link[=summary]{summary()}} method for \code{vsel} objects (returned by \code{\link[=varsel]{varsel()}} or
+This is the \code{\link[cmdstanr:fit-method-summary]{cmdstanr::summary()}} method for \code{vsel} objects (returned by \code{\link[=varsel]{varsel()}} or
 \code{\link[=cv_varsel]{cv_varsel()}}). Apart from some general information about the \code{\link[=varsel]{varsel()}} or
 \code{\link[=cv_varsel]{cv_varsel()}} run, it shows the full-data predictor ranking, basic
 information about the (CV) variability in the ranking of the predictors (if
 available; inferred from \code{\link[=cv_proportions]{cv_proportions()}}), and estimates for
 user-specified predictive performance statistics. For a graphical
 representation, see \code{\link[=plot.vsel]{plot.vsel()}}. For extracting the predictive performance
-results printed at the bottom of the output created by this \code{\link[=summary]{summary()}}
+results printed at the bottom of the output created by this \code{\link[cmdstanr:fit-method-summary]{cmdstanr::summary()}}
 method, see \code{\link[=performances]{performances()}}.
 }
 \details{
@@ -175,7 +175,7 @@ Note that the \code{stats} option \code{"auc"} is not supported in case of subsa
 LOO-CV (see argument \code{nloo} of \code{\link[=cv_varsel]{cv_varsel()}}).
 }
 \examples{
-\dontshow{if (requireNamespace("rstanarm", quietly = TRUE)) (if (getRversion() >= "3.4") withAutoprint else force)(\{ # examplesIf}
+\dontshow{if (requireNamespace("rstanarm", quietly = TRUE)) withAutoprint(\{ # examplesIf}
 # Data:
 dat_gauss <- data.frame(y = df_gaussian$y, df_gaussian$x)
 

@@ -40,7 +40,7 @@ returned by \code{\link[=varsel]{varsel()}} and \code{\link[=cv_varsel]{cv_varse
 see \code{\link[=plot.vsel]{plot.vsel()}}.
 }
 \examples{
-\dontshow{if (requireNamespace("rstanarm", quietly = TRUE)) (if (getRversion() >= "3.4") withAutoprint else force)(\{ # examplesIf}
+\dontshow{if (requireNamespace("rstanarm", quietly = TRUE)) withAutoprint(\{ # examplesIf}
 # Data:
 dat_gauss <- data.frame(y = df_gaussian$y, df_gaussian$x)
 
