@@ -217,16 +217,18 @@ only relevant if attribute \code{cens_var} of \code{latent_ll_oscale} is not \co
 }
 
 In case of censoring (in the response values, i.e., survival or time-to-event
-analysis), the latent projection can be used by setting an attribute
-\code{cens_var} of the \code{latent_ll_oscale} function to a right-hand side formula
-with the name of the variable containing the censoring indicators (e.g., \code{0}
-= uncensored, \code{1} = censored) on its right-hand side. This variable named in
-the \code{cens_var} attribute is then retrieved (internally, whenever calling the
-\code{latent_ll_oscale} function) from the original dataset (possibly subsetted to
-the observations corresponding to the second dimension of \code{ilpreds}),
-\code{newdata}, or element \code{data} from \code{\link[=varsel]{varsel()}}'s argument \code{d_test}, whichever
-is applicable. The content of the retrieved variable is passed to argument
-\code{cens} of the \code{latent_ll_oscale} function.
+analysis), the latent projection (with response-scale analyses) can be used
+by setting an attribute \code{cens_var} of the \code{latent_ll_oscale} function to a
+right-hand side formula with the name of the variable containing the
+censoring indicators (e.g., \code{0} = uncensored, \code{1} = censored) on its
+right-hand side. This variable named in the \code{cens_var} attribute is then
+retrieved (internally, whenever calling the \code{latent_ll_oscale} function) from
+the original dataset (possibly subsetted to the observations corresponding to
+the second dimension of \code{ilpreds}), \code{newdata}, or element \code{data} from
+\code{\link[=varsel]{varsel()}}'s argument \code{d_test}, whichever is applicable. The content of the
+retrieved variable is passed to argument \code{cens} of the \code{latent_ll_oscale}
+function. Note that only the performance statistics \code{"elpd"}, \code{"mlpd"}, and
+\code{"gmpd"} take censoring into account (on response scale).
 
 The return value of \code{latent_ll_oscale} needs to be an \eqn{S \times N}{S x N}
 matrix containing the response-scale (not latent-scale) log-likelihood values
