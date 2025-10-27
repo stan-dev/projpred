@@ -3,7 +3,7 @@
 # values).
 #
 # @param y_wobs_test A `list` (but we encourage to use a `data.frame`), at least
-#   with elements (columns) `y` (response values), and `wobs` (observation
+#   with elements (columns) `y` (response values) and `wobs` (observation
 #   weights). In case of the latent projection, this `list` (or `data.frame`)
 #   also needs to contain `y_oscale` (response values on the original response
 #   scale, i.e., the non-latent response values).
