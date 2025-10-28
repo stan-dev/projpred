@@ -551,11 +551,10 @@ Run `cv_varsel()`:
 doFuture::registerDoFuture()
 future::plan(future::multisession, workers = ncores)
 options(projpred.export_to_workers = c("refm_shape"))
-### Needed to make use of the 'progressr' package because this vignette is
-### built non-interactively:
-options(projpred.use_progressr = TRUE)
-### 
-progressr::handlers(global = TRUE)
+### In interactive use, the 'progressr' package could be used to get
+### progress updates when running the CV in parallel:
+# progressr::handlers(global = TRUE)
+###
 cvvs_weib <- cv_varsel(
   refm_weib,
   ### Only for the sake of speed (not recommended in general):
@@ -684,7 +683,10 @@ Run `cv_varsel()`:
 ```{r lognormal_cvvs}
 doFuture::registerDoFuture()
 future::plan(future::multisession, workers = ncores)
-progressr::handlers(global = TRUE)
+### In interactive use, the 'progressr' package could be used to get
+### progress updates when running the CV in parallel:
+# progressr::handlers(global = TRUE)
+###
 cvvs_lnorm <- cv_varsel(
   refm_lnorm,
   ### Only for the sake of speed (not recommended in general):
