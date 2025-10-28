@@ -439,7 +439,6 @@ N_surv <- 500
 n_pred <- 50
 n_pred_truth <- 10
 n_pred_noise <- n_pred - n_pred_truth
-set.seed(4009212)
 dat_sim_surv <- matrix(rnorm(N_surv * n_pred), ncol = n_pred)
 colnames(dat_sim_surv) <- paste0("x", c(paste0(".", seq_len(n_pred_truth)),
                                         paste0("n.", seq_len(n_pred_noise))))
@@ -449,7 +448,7 @@ linpreds_surv <- -0.1 +
 epreds_surv <- exp(linpreds_surv)
 dat_sim_surv <- as.data.frame(dat_sim_surv)
 cens_surv <- runif(N_surv,
-                   min = min(epreds_surv),
+                   min = quantile(epreds_surv, probs = 0.4),
                    max = quantile(epreds_surv, probs = 0.9))
 ```
 
@@ -595,7 +594,7 @@ As expected, this PPPC indicates that this submodel is a reasonable one (keeping
 
 For the log-normal model, we complete our data generation as follows:
 ```{r lognormal_data}
-sdlog_lnorm <- 1.2
+sdlog_lnorm <- 0.3
 y_lnorm <- rlnorm(N_surv, meanlog = linpreds_surv, sdlog = sdlog_lnorm)
 is_event_lnorm <- y_lnorm < cens_surv
 yobs_lnorm <- y_lnorm
