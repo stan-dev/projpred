@@ -580,7 +580,7 @@ plot(cvvs_weib, stats = "mlpd", deltas = TRUE)
 Hence, the truly relevant predictors are identified correctly.
 
 Project onto the submodel consisting of the first `n_pred_truth` predictors and perform a "posterior-projection predictive check" (PPPC):
-```{r weibull_cvvs}
+```{r weibull_pppc}
 predictors_final_weib <- head(ranking(cvvs_weib)[["fulldata"]], n_pred_truth)
 prj_weib <- project(refm_weib, predictor_terms = predictors_final_weib)
 prj_predict_weib <- proj_predict(prj_weib)
@@ -712,7 +712,7 @@ plot(cvvs_lnorm, stats = "mlpd", deltas = TRUE)
 Hence, the truly relevant predictors are identified correctly.
 
 Project onto the submodel consisting of the first `n_pred_truth` predictors and perform a "posterior-projection predictive check" (PPPC):
-```{r lognormal_cvvs}
+```{r lognormal_pppc}
 predictors_final_lnorm <- head(ranking(cvvs_lnorm)[["fulldata"]], n_pred_truth)
 prj_lnorm <- project(refm_lnorm, predictor_terms = predictors_final_lnorm)
 prj_predict_lnorm <- proj_predict(prj_lnorm)
