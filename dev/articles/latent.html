@@ -42,7 +42,7 @@
       projpred
     </a>
 
-    <small class="nav-text text-danger me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="In-development version">2.9.0.9000</small>
+    <small class="nav-text text-danger me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="In-development version">2.9.1.9000</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -99,9 +99,9 @@
   <main id="main" class="col-md-9"><div class="page-header">
       <img src="../logo.svg" class="logo" alt=""><h1>Latent projection predictive feature selection</h1>
             
-            <h4 data-toc-skip class="date">2025-10-24</h4>
+            <h4 data-toc-skip class="date">2025-10-29</h4>
       
-      <small class="dont-index">Source: <a href="https://github.com/stan-dev/projpred/blob/new-pkgdown-theme/vignettes/latent.Rmd" class="external-link"><code>vignettes/latent.Rmd</code></a></small>
+      <small class="dont-index">Source: <a href="https://github.com/stan-dev/projpred/blob/master/vignettes/latent.Rmd" class="external-link"><code>vignettes/latent.Rmd</code></a></small>
       <div class="d-none name"><code>latent.Rmd</code></div>
     </div>
 
@@ -393,7 +393,7 @@ projection’s later:</p>
 <div class="sourceCode" id="cb11"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="va">time_lat</span><span class="op">)</span></span></code></pre></div>
 <pre><code>   user  system elapsed 
-  1.061   0.359   1.026 </code></pre>
+  1.117   0.319   1.053 </code></pre>
 <p>The message telling that <code>&lt;refmodel&gt;$dis</code> consists
 of only <code>NA</code>s will not concern us here because we will only
 focus on response-scale post-processing.</p>
@@ -475,7 +475,7 @@ approach:</p>
 <div class="sourceCode" id="cb20"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="va">time_trad</span><span class="op">)</span></span></code></pre></div>
 <pre><code>   user  system elapsed 
-  4.256   0.331   4.189 </code></pre>
+  4.366   0.351   4.314 </code></pre>
 <div class="sourceCode" id="cb22"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="op">(</span> <span class="va">gg_trad</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/graphics/plot.default.html" class="external-link">plot</a></span><span class="op">(</span><span class="va">vs_trad</span>, stats <span class="op">=</span> <span class="st">"gmpd"</span>, deltas <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span> <span class="op">)</span></span></code></pre></div>
 <p><img src="latent_files/figure-html/post_vs_trad-1.png" width="90%" style="display: block; margin: auto;">

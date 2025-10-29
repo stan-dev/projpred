@@ -20,7 +20,7 @@
       projpred
     </a>
 
-    <small class="nav-text text-danger me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="In-development version">2.9.0.9000</small>
+    <small class="nav-text text-danger me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="In-development version">2.9.1.9000</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -63,19 +63,32 @@
 <div class="row">
   <main id="main" class="col-md-9"><div class="page-header">
       <img src="../logo.svg" class="logo" alt=""><h1>Changelog</h1>
-      <small>Source: <a href="https://github.com/stan-dev/projpred/blob/new-pkgdown-theme/NEWS.md" class="external-link"><code>NEWS.md</code></a></small>
+      <small>Source: <a href="https://github.com/stan-dev/projpred/blob/master/NEWS.md" class="external-link"><code>NEWS.md</code></a></small>
     </div>
 
     <div class="section level2">
-<h2 class="pkg-version" data-toc-text="2.9.0.9000" id="projpred-2909000">projpred 2.9.0.9000<a class="anchor" aria-label="anchor" href="#projpred-2909000"></a></h2>
+<h2 class="pkg-version" data-toc-text="2.9.1.9000" id="projpred-2919000-development">projpred 2.9.1.9000 (development)<a class="anchor" aria-label="anchor" href="#projpred-2919000-development"></a></h2>
 <div class="section level3">
-<h3 id="major-changes-2-9-0-9000">Major changes<a class="anchor" aria-label="anchor" href="#major-changes-2-9-0-9000"></a></h3>
+<h3 id="major-changes-2-9-1-9000">Major changes<a class="anchor" aria-label="anchor" href="#major-changes-2-9-1-9000"></a></h3>
+</div>
+<div class="section level3">
+<h3 id="minor-changes-2-9-1-9000">Minor changes<a class="anchor" aria-label="anchor" href="#minor-changes-2-9-1-9000"></a></h3>
+</div>
+<div class="section level3">
+<h3 id="bug-fixes-2-9-1-9000">Bug fixes<a class="anchor" aria-label="anchor" href="#bug-fixes-2-9-1-9000"></a></h3>
+</div>
+</div>
+    <div class="section level2">
+<h2 class="pkg-version" data-toc-text="2.9.1" id="projpred-291">projpred 2.9.1<a class="anchor" aria-label="anchor" href="#projpred-291"></a></h2><p class="text-muted">CRAN release: 2025-10-28</p>
+<div class="section level3">
+<h3 id="major-changes-2-9-1">Major changes<a class="anchor" aria-label="anchor" href="#major-changes-2-9-1"></a></h3>
 <ul><li>Fixed a major bug in forward search with 3-way or higher-order interactions. See “Bug fixes” below for details.</li>
 </ul></div>
 <div class="section level3">
-<h3 id="bug-fixes-2-9-0-9000">Bug fixes<a class="anchor" aria-label="anchor" href="#bug-fixes-2-9-0-9000"></a></h3>
+<h3 id="bug-fixes-2-9-1">Bug fixes<a class="anchor" aria-label="anchor" href="#bug-fixes-2-9-1"></a></h3>
 <ul><li>Fixed a bug that caused forward search not to place lower-order terms of a 3-way or higher-order interaction term before that interaction term. (GitHub: <a href="https://github.com/stan-dev/projpred/issues/531" class="external-link">#531</a>, <a href="https://github.com/stan-dev/projpred/issues/532" class="external-link">#532</a>)</li>
 <li>Fixed a bug that caused <code><a href="../reference/project.html">project()</a></code> to construct an incorrect internal table of predictor terms (from which argument <code>predictor_terms</code> can select one or several terms from) in case of a group-level term that does not contain a group-level intercept. (GitHub: <a href="https://github.com/stan-dev/projpred/issues/533" class="external-link">#533</a>, <a href="https://github.com/stan-dev/projpred/issues/534" class="external-link">#534</a>)</li>
+<li>Relaxed test to prevent spurious failures and unblock reverse dependencies. No functional changes.</li>
 </ul></div>
 </div>
     <div class="section level2">
