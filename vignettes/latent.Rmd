@@ -37,6 +37,7 @@ In case of the logit link, the Gaussian distribution with a standard deviation o
 The assumption of a Gaussian distribution for the latent predictors makes things a lot easier because it allows us to make use of **projpred**'s traditional projection.
 
 As illustrated by the Poisson example below, the latent projection can not only be used for families not supported by **projpred**'s traditional projection, but it can also be beneficial for families supported by it.
+The remaining examples show that the latent projection offers support for models (and censored observations) that the traditional (or augmented-data) projection do not support.
 
 ### Implementation {#impl}
 
