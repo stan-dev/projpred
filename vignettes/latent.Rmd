@@ -434,7 +434,8 @@ This example demonstrated how the latent projection can be used for those famili
 Response-scale analyses for models with censored responses (e.g., for time-to-event models as occurring in survival analysis) are possible when using the latent projection in combination with a custom `latent_ll_oscale` function (see `?extend_family`) that has an attribute called `cens_var` and makes use of its argument `cens`^[Briefly, the variable mentioned in the `cens_var` right-hand side formula needs to contain the censoring indicators (e.g., `0` = uncensored, `1` = censored) which can then be used within the custom `latent_ll_oscale` function via its argument `cens`.].
 
 We will illustrate this here using simulated data and right censoring, first with a Weibull response and then with a log-normal response.
-For both cases, we use the following common simulation part:
+Both examples are adapted from a [thread](https://discourse.mc-stan.org/t/using-projpred-latent-projection-with-brms-weibull-family-models/39275) on The Stan Forums.
+Here, we use the following common simulation part:
 ```{r data_surv}
 N_surv <- 500
 n_pred <- 50
