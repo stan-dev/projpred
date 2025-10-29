@@ -1,0 +1,50 @@
+url: https://mc-stan.org/projpred
+
+development:
+  mode: auto
+
+destination: "."
+
+template:
+  package: pkgdownconfig
+
+navbar:
+  title: "projpred"
+
+  structure:
+    left: [home, vignettes, functions, news, pkgs, stan]
+    right: [search, bluesky, forum, github, lightswitch]
+
+  components:
+    pkgs:
+      text: Other Packages
+      menu:
+        - text: bayesplot
+          href: https://mc-stan.org/bayesplot
+        - text: cmdstanr
+          href: https://mc-stan.org/cmdstanr
+        - text: loo
+          href: https://mc-stan.org/loo
+        - text: posterior
+          href: https://mc-stan.org/posterior
+        - text: rstan
+          href: https://mc-stan.org/rstan
+        - text: rstanarm
+          href: https://mc-stan.org/rstanarm
+        - text: rstantools
+          href: https://mc-stan.org/rstantools
+        - text: shinystan
+          href: https://mc-stan.org/shinystan
+
+articles:
+  - title: "Getting Started"
+    desc: >
+      This vignette provides a quick-start guide to using the **projpred** package for projection predictive feature selection.
+    contents:
+      - projpred
+  - title: "Latent Projection"
+    desc: >
+      This vignette illustrates the latent projection implemented in **projpred**.
+    contents:
+      - latent
+
