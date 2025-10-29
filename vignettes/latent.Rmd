@@ -474,7 +474,11 @@ refm_fit_weib <- brms::brm(
   family = brms::weibull(),
   data = dat_sim_weib,
   prior = brms::prior(R2D2(mean_R2 = 0.4, prec_R2 = 2.5, cons_D2 = 1)),
-  chains = ncores
+  ### Only for the sake of speed (not recommended in general):
+  chains = 2,
+  ###
+  silent = 2,
+  refresh = 0
 )
 ```
 
@@ -611,7 +615,11 @@ refm_fit_lnorm <- brms::brm(
   family = brms::lognormal(),
   data = dat_sim_lnorm,
   prior = brms::prior(R2D2(mean_R2 = 0.4, prec_R2 = 2.5, cons_D2 = 1)),
-  chains = ncores
+  ### Only for the sake of speed (not recommended in general):
+  chains = 2,
+  ###
+  silent = 2,
+  refresh = 0
 )
 ```
 
