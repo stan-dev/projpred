@@ -550,6 +550,8 @@ refm_weib <- get_refmodel(
   latent_ppd_oscale = latent_ppd_oscale_weib
 )
 ```
+Again, the message telling that `<refmodel>$dis` consists of only `NA`s will not concern us here because we will only focus on response-scale post-processing.
+The message concerning `latent_ilink` can be safely ignored here (the internal default based on `family$linkinv` works correctly in this case).
 
 Run `cv_varsel()`:
 ```{r weibull_cvvs}
@@ -576,12 +578,13 @@ cvvs_weib <- cv_varsel(
 future::plan(future::sequential)
 foreach::registerDoSEQ()
 ```
+In this case, we will ignore the warnings about high Pareto-$\hat{k}$ values because we chose quite rough settings (e.g., only 2 MCMC chains) in this vignette (for technical reasons).
+We will also ignore the warning that SIS is used (instead of PSIS) because this is due to `nclusters_pred = 20` which we used only to speed up the building of the vignette.
 
 Plot the results:
 ```{r weibull_plot_cvvs}
 plot(cvvs_weib, stats = "mlpd", deltas = TRUE)
 ```
-
 Hence, the truly relevant predictors are identified correctly.
 
 Project onto the submodel consisting of the first `n_pred_truth` predictors and perform a "posterior-projection predictive check" (PPPC):
@@ -687,6 +690,7 @@ refm_lnorm <- get_refmodel(
   dis = as.matrix(refm_fit_lnorm)[, "sigma", drop = FALSE]
 )
 ```
+The message concerning `latent_ilink` can be safely ignored here (the internal default based on `family$linkinv` works correctly in this case).
 
 Run `cv_varsel()`:
 ```{r lognormal_cvvs}
@@ -712,12 +716,13 @@ cvvs_lnorm <- cv_varsel(
 future::plan(future::sequential)
 foreach::registerDoSEQ()
 ```
+In this case, we will ignore the warnings about high Pareto-$\hat{k}$ values because we chose quite rough settings (e.g., only 2 MCMC chains) in this vignette (for technical reasons).
+We will also ignore the warning that SIS is used (instead of PSIS) because this is due to `nclusters_pred = 20` which we used only to speed up the building of the vignette.
 
 Plot the results:
 ```{r lognormal_plot_cvvs}
 plot(cvvs_lnorm, stats = "mlpd", deltas = TRUE)
 ```
-
 Hence, the truly relevant predictors are identified correctly.
 
 Project onto the submodel consisting of the first `n_pred_truth` predictors and perform a "posterior-projection predictive check" (PPPC):
