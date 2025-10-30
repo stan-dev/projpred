@@ -237,3 +237,38 @@ test_that(paste(
 if (exists("rng_old")) assign(".Random.seed", rng_old, envir = .GlobalEnv)
 # Clean up the workspace:
 rm(list = setdiff(ls(), ls_bu))
+
+# Censored observations ---------------------------------------------------
+
+test_that(paste0(
+  "it is possible to handle censored observations in `latent_ll_oscale`"
+), {
+  tstsetups <- names(refmods[sapply(refmods, function(refmod_i) {
+    refmod_i$family$for_latent
+  })])
+  tstsetups <- head(tstsetups, 1)
+  for (tstsetup in tstsetups) {
+    refmod_i <- refmods[[tstsetup]]
+    refmod_i$family$latent_ll_oscale <- structure(
+      function(ilpreds,
+               dis = rep(NA, nrow(ilpreds)),
+               y_oscale,
+               wobs = rep(1, ncol(ilpreds)),
+               cens,
+               cl_ref,
+               wdraws_ref = rep(1, length(cl_ref))) {
+        return(matrix(cens,
+                      nrow = nrow(as.matrix(refmod_i$fit)),
+                      ncol = length(cens),
+                      byrow = TRUE))
+      },
+      cens_var = ~ dummy_cens_var
+    )
+    dat_cens_dummy <- head(refmod_i$fetch_data(), 3)
+    dat_cens_dummy$dummy_cens_var <- rep(log(0.5), nrow(dat_cens_dummy))
+    refpred_cens_dummy <- predict(refmod_i,
+                                  newdata = dat_cens_dummy,
+                                  ynew = rep(1, nrow(dat_cens_dummy)))
+    expect_equal(refpred_cens_dummy, rep(log(0.5), nrow(dat_cens_dummy)))
+  }
+})
