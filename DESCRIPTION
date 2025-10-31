@@ -59,6 +59,7 @@ Imports:
     mclogit
 Suggests:
     ggrepel,
+    ggfortify,
     rstanarm,
     brms,
     nlme,
