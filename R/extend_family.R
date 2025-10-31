@@ -342,6 +342,16 @@ extend_family <- function(family,
                   "work on response scale (only on latent scale).")
         }
       }
+      # Check for argument `dis` because it was added in v2.9.0 and hence after
+      # the introduction of the latent projection from v2.4.0:
+      if (!any(c("dis", "...") %in% methods::formalArgs(latent_ll_oscale))) {
+        stop("Please add argument `dis` to the `latent_ll_oscale` function.")
+      }
+      # Check for argument `cens` because it was added after v2.9.1 and hence
+      # after the introduction of the latent projection from v2.4.0:
+      if (!any(c("cens", "...") %in% methods::formalArgs(latent_ll_oscale))) {
+        stop("Please add argument `cens` to the `latent_ll_oscale` function.")
+      }
       if (is.null(latent_ppd_oscale)) {
         if (!is.null(family$cats)) {
           latent_ppd_oscale <- latent_ppd_oscale_cats
@@ -356,6 +366,13 @@ extend_family <- function(family,
                   "returning only `NA`s). Thus, proj_predict() won't work on ",
                   "response scale (only on latent scale).")
         }
+      }
+      # Check for argument `dis_resamp` because it was added in v2.9.0 and hence
+      # after the introduction of the latent projection from v2.4.0:
+      if (!any(c("dis_resamp", "...") %in%
+               methods::formalArgs(latent_ppd_oscale))) {
+        stop("Please add argument `dis_resamp` to the `latent_ppd_oscale` ",
+             "function.")
       }
       family$latent_ilink <- latent_ilink
       family$latent_ll_oscale <- latent_ll_oscale
