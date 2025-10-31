@@ -555,13 +555,7 @@ The message concerning `latent_ilink` can be safely ignored here (the internal d
 
 Run `cv_varsel()`:
 ```{r weibull_cvvs}
-doFuture::registerDoFuture()
-future::plan(future::multisession, workers = ncores)
-options(projpred.export_to_workers = c("refm_shape"))
-### In interactive use, the 'progressr' package could be used to get
-### progress updates when running the CV in parallel:
-# progressr::handlers(global = TRUE)
-###
+doParallel::registerDoParallel(ncores)
 cvvs_weib <- cv_varsel(
   refm_weib,
   ### Only for the sake of speed (not recommended in general):
@@ -575,7 +569,7 @@ cvvs_weib <- cv_varsel(
   verbose = 0
   ###
 )
-future::plan(future::sequential)
+doParallel::stopImplicitCluster()
 foreach::registerDoSEQ()
 ```
 In this case, we will ignore the warnings about high Pareto-$\hat{k}$ values because we chose quite rough settings (e.g., only 2 MCMC chains) in this vignette (for technical reasons).
@@ -694,12 +688,7 @@ The message concerning `latent_ilink` can be safely ignored here (the internal d
 
 Run `cv_varsel()`:
 ```{r lognormal_cvvs}
-doFuture::registerDoFuture()
-future::plan(future::multisession, workers = ncores)
-### In interactive use, the 'progressr' package could be used to get
-### progress updates when running the CV in parallel:
-# progressr::handlers(global = TRUE)
-###
+doParallel::registerDoParallel(ncores)
 cvvs_lnorm <- cv_varsel(
   refm_lnorm,
   ### Only for the sake of speed (not recommended in general):
@@ -713,7 +702,7 @@ cvvs_lnorm <- cv_varsel(
   verbose = 0
   ###
 )
-future::plan(future::sequential)
+doParallel::stopImplicitCluster()
 foreach::registerDoSEQ()
 ```
 In this case, we will ignore the warnings about high Pareto-$\hat{k}$ values because we chose quite rough settings (e.g., only 2 MCMC chains) in this vignette (for technical reasons).
