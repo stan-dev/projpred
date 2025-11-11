@@ -1,0 +1,247 @@
+# projpred
+
+The R package **projpred** performs the projection predictive variable
+selection for various regression models. Usually, the reference model is
+an [**rstanarm**](https://mc-stan.org/rstanarm/) or
+[**brms**](https://paulbuerkner.com/brms/) fit, but custom reference
+models can also be used. Details on supported model types are given in
+section [“Supported types of
+models”](https://mc-stan.org/projpred/articles/projpred.html#modtypes)
+of the main vignette[¹](#fn1).
+
+For details on how to cite **projpred**, see the [projpred citation
+info](https://CRAN.R-project.org/package=projpred/citation.html) on
+CRAN[²](#fn2). Further references (including earlier work that
+**projpred** is based on) are given in section
+[“Introduction”](https://mc-stan.org/projpred/articles/projpred.html#intro)
+of the main vignette.
+
+The [vignettes](https://mc-stan.org/projpred/articles/)[³](#fn3)
+illustrate how to use the **projpred** functions in conjunction. Details
+on the **projpred** functions as well as some shorter examples may be
+found in the
+[documentation](https://mc-stan.org/projpred/reference/index.html)[⁴](#fn4).
+
+## Installation
+
+There are two ways for installing **projpred**: from
+[CRAN](https://CRAN.R-project.org/package=projpred) or from
+[GitHub](https://github.com/stan-dev/projpred). The GitHub version might
+be more recent than the CRAN version, but the CRAN version might be more
+stable.
+
+### From CRAN
+
+``` r
+install.packages("projpred")
+```
+
+### From GitHub
+
+This requires the [**devtools**](https://devtools.r-lib.org/) package,
+so if necessary, the following code will also install **devtools** (from
+[CRAN](https://CRAN.R-project.org/package=devtools)):
+
+``` r
+if (!requireNamespace("devtools", quietly = TRUE)) {
+  install.packages("devtools")
+}
+devtools::install_github("stan-dev/projpred", build_vignettes = TRUE)
+```
+
+To save time, you may omit `build_vignettes = TRUE`.
+
+## Contributing to projpred
+
+We welcome contributions! The **projpred** package is under active
+development. If you find bugs or have ideas for new features (for us or
+yourself to implement) please [open an
+issue](https://github.com/stan-dev/projpred/issues) on GitHub. See
+[CONTRIBUTING.md](https://github.com/stan-dev/projpred/blob/master/.github/CONTRIBUTING.md)
+for more details.
+
+------------------------------------------------------------------------
+
+1.  The main vignette can be accessed offline by typing
+    [`vignette(topic = "projpred", package = "projpred")`](https://mc-stan.org/projpred/dev/articles/projpred.md)
+    or—more conveniently—`browseVignettes("projpred")` within R.
+
+2.  The citation information can be accessed offline by typing
+    `print(citation("projpred"), bibtex = TRUE)` within R.
+
+3.  The overview of all vignettes can be accessed offline by typing
+    `browseVignettes("projpred")` within R.
+
+4.  The documentation can be accessed offline using `?` or
+    [`help()`](https://rdrr.io/r/utils/help.html) within R.
+
+# Package index
+
+## All functions
+
+- [`as.matrix(`*`<projection>`*`)`](https://mc-stan.org/projpred/dev/reference/as.matrix.projection.md)
+  : Extract projected parameter draws and coerce to matrix
+
+- [`as_draws_matrix(`*`<projection>`*`)`](https://mc-stan.org/projpred/dev/reference/as_draws_matrix.projection.md)
+  [`as_draws(`*`<projection>`*`)`](https://mc-stan.org/projpred/dev/reference/as_draws_matrix.projection.md)
+  :
+
+  Extract projected parameter draws and coerce to `draws_matrix` (see
+  package posterior)
+
+- [`augdat_ilink_binom()`](https://mc-stan.org/projpred/dev/reference/augdat_ilink_binom.md)
+  : Inverse-link function for augmented-data projection with binomial
+  family
+
+- [`augdat_link_binom()`](https://mc-stan.org/projpred/dev/reference/augdat_link_binom.md)
+  : Link function for augmented-data projection with binomial family
+
+- [`break_up_matrix_term()`](https://mc-stan.org/projpred/dev/reference/break_up_matrix_term.md)
+  : Break up matrix terms
+
+- [`cl_agg()`](https://mc-stan.org/projpred/dev/reference/cl_agg.md) :
+  Weighted averaging within clusters of parameter draws
+
+- [`cv_folds()`](https://mc-stan.org/projpred/dev/reference/cv-indices.md)
+  [`cvfolds()`](https://mc-stan.org/projpred/dev/reference/cv-indices.md)
+  [`cv_ids()`](https://mc-stan.org/projpred/dev/reference/cv-indices.md)
+  : Create cross-validation folds
+
+- [`cv_proportions()`](https://mc-stan.org/projpred/dev/reference/cv_proportions.md)
+  : Ranking proportions from fold-wise predictor rankings
+
+- [`cv_varsel()`](https://mc-stan.org/projpred/dev/reference/cv_varsel.md)
+  : Run search and performance evaluation with cross-validation
+
+- [`df_binom`](https://mc-stan.org/projpred/dev/reference/df_binom.md) :
+  Binomial toy example
+
+- [`df_gaussian`](https://mc-stan.org/projpred/dev/reference/df_gaussian.md)
+  : Gaussian toy example
+
+- [`extend_family()`](https://mc-stan.org/projpred/dev/reference/extend_family.md)
+  : Extend a family
+
+- [`Student_t()`](https://mc-stan.org/projpred/dev/reference/extra-families.md)
+  : Extra family objects
+
+- [`force_search_terms()`](https://mc-stan.org/projpred/dev/reference/force_search_terms.md)
+  : Force search terms
+
+- [`mesquite`](https://mc-stan.org/projpred/dev/reference/mesquite.md) :
+  Mesquite data set
+
+- [`performances()`](https://mc-stan.org/projpred/dev/reference/performances.md)
+  : Predictive performance results
+
+- [`plot(`*`<cv_proportions>`*`)`](https://mc-stan.org/projpred/dev/reference/plot.cv_proportions.md)
+  [`plot(`*`<ranking>`*`)`](https://mc-stan.org/projpred/dev/reference/plot.cv_proportions.md)
+  : Plot ranking proportions from fold-wise predictor rankings
+
+- [`plot(`*`<vsel>`*`)`](https://mc-stan.org/projpred/dev/reference/plot.vsel.md)
+  : Plot predictive performance
+
+- [`proj_linpred()`](https://mc-stan.org/projpred/dev/reference/pred-projection.md)
+  [`proj_predict()`](https://mc-stan.org/projpred/dev/reference/pred-projection.md)
+  : Predictions from a submodel (after projection)
+
+- [`predict(`*`<refmodel>`*`)`](https://mc-stan.org/projpred/dev/reference/predict.refmodel.md)
+  : Predictions or log posterior predictive densities from a reference
+  model
+
+- [`predictor_terms()`](https://mc-stan.org/projpred/dev/reference/predictor_terms.md)
+  :
+
+  Predictor terms used in a
+  [`project()`](https://mc-stan.org/projpred/dev/reference/project.md)
+  run
+
+- [`print(`*`<projection>`*`)`](https://mc-stan.org/projpred/dev/reference/print.projection.md)
+  :
+
+  Print information about
+  [`project()`](https://mc-stan.org/projpred/dev/reference/project.md)
+  output
+
+- [`print(`*`<refmodel>`*`)`](https://mc-stan.org/projpred/dev/reference/print.refmodel.md)
+  : Print information about a reference model object
+
+- [`print(`*`<vsel>`*`)`](https://mc-stan.org/projpred/dev/reference/print.vsel.md)
+  :
+
+  Print results (summary) of a
+  [`varsel()`](https://mc-stan.org/projpred/dev/reference/varsel.md) or
+  [`cv_varsel()`](https://mc-stan.org/projpred/dev/reference/cv_varsel.md)
+  run
+
+- [`print(`*`<vselsummary>`*`)`](https://mc-stan.org/projpred/dev/reference/print.vselsummary.md)
+  :
+
+  Print summary of a
+  [`varsel()`](https://mc-stan.org/projpred/dev/reference/varsel.md) or
+  [`cv_varsel()`](https://mc-stan.org/projpred/dev/reference/cv_varsel.md)
+  run
+
+- [`project()`](https://mc-stan.org/projpred/dev/reference/project.md) :
+  Projection onto submodel(s)
+
+- [`projpred`](https://mc-stan.org/projpred/dev/reference/projpred-package.md)
+  [`projpred-package`](https://mc-stan.org/projpred/dev/reference/projpred-package.md)
+  : Projection predictive feature selection
+
+- [`ranking()`](https://mc-stan.org/projpred/dev/reference/ranking.md) :
+  Predictor ranking(s)
+
+- [`get_refmodel()`](https://mc-stan.org/projpred/dev/reference/refmodel-init-get.md)
+  [`init_refmodel()`](https://mc-stan.org/projpred/dev/reference/refmodel-init-get.md)
+  : Reference model and more general information
+
+- [`run_cvfun()`](https://mc-stan.org/projpred/dev/reference/run_cvfun.md)
+  :
+
+  Create `cvfits` from `cvfun`
+
+- [`solution_terms()`](https://mc-stan.org/projpred/dev/reference/solution_terms.md)
+  :
+
+  Retrieve the full-data solution path from a
+  [`varsel()`](https://mc-stan.org/projpred/dev/reference/varsel.md) or
+  [`cv_varsel()`](https://mc-stan.org/projpred/dev/reference/cv_varsel.md)
+  run or the predictor combination from a
+  [`project()`](https://mc-stan.org/projpred/dev/reference/project.md)
+  run
+
+- [`suggest_size()`](https://mc-stan.org/projpred/dev/reference/suggest_size.md)
+  : Suggest submodel size
+
+- [`summary(`*`<vsel>`*`)`](https://mc-stan.org/projpred/dev/reference/summary.vsel.md)
+  :
+
+  Summary of a
+  [`varsel()`](https://mc-stan.org/projpred/dev/reference/varsel.md) or
+  [`cv_varsel()`](https://mc-stan.org/projpred/dev/reference/cv_varsel.md)
+  run
+
+- [`varsel()`](https://mc-stan.org/projpred/dev/reference/varsel.md) :
+  Run search and performance evaluation without cross-validation
+
+- [`y_wobs_offs()`](https://mc-stan.org/projpred/dev/reference/y_wobs_offs.md)
+  : Extract response values, observation weights, and offsets
+
+# Articles
+
+### Getting Started
+
+This vignette provides a quick-start guide to using the **projpred**
+package for projection predictive feature selection.
+
+- [projpred: Projection predictive feature
+  selection](https://mc-stan.org/projpred/dev/articles/projpred.md):
+
+### Latent Projection
+
+This vignette illustrates the latent projection implemented in
+**projpred**.
+
+- [Latent projection predictive feature
+  selection](https://mc-stan.org/projpred/dev/articles/latent.md):

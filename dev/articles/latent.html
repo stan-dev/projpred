@@ -99,7 +99,7 @@
   <main id="main" class="col-md-9"><div class="page-header">
       <img src="../logo.svg" class="logo" alt=""><h1>Latent projection predictive feature selection</h1>
             
-            <h4 data-toc-skip class="date">2025-10-29</h4>
+            <h4 data-toc-skip class="date">2025-11-11</h4>
       
       <small class="dont-index">Source: <a href="https://github.com/stan-dev/projpred/blob/master/vignettes/latent.Rmd" class="external-link"><code>vignettes/latent.Rmd</code></a></small>
       <div class="d-none name"><code>latent.Rmd</code></div>
@@ -393,7 +393,7 @@ projection’s later:</p>
 <div class="sourceCode" id="cb11"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="va">time_lat</span><span class="op">)</span></span></code></pre></div>
 <pre><code>   user  system elapsed 
-  1.117   0.319   1.053 </code></pre>
+  1.062   0.336   1.006 </code></pre>
 <p>The message telling that <code>&lt;refmodel&gt;$dis</code> consists
 of only <code>NA</code>s will not concern us here because we will only
 focus on response-scale post-processing.</p>
@@ -416,7 +416,7 @@ the plots in this vignette.</p>
 <div class="sourceCode" id="cb13"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/options.html" class="external-link">options</a></span><span class="op">(</span>projpred.plot_vsel_size_position <span class="op">=</span> <span class="st">"secondary_x"</span><span class="op">)</span></span>
 <span><span class="op">(</span> <span class="va">gg_lat</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/graphics/plot.default.html" class="external-link">plot</a></span><span class="op">(</span><span class="va">vs_lat</span>, stats <span class="op">=</span> <span class="st">"gmpd"</span>, deltas <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span> <span class="op">)</span></span></code></pre></div>
-<p><img src="latent_files/figure-html/plot_vsel_lat-1.png" width="90%" style="display: block; margin: auto;"></p>
+<p><img src="latent_files/figure-html/plot_vsel_lat-1.png" class="r-plt" width="90%" style="display: block; margin: auto;"></p>
 <p>Based on this plot, we decide for a submodel size of 11:</p>
 <div class="sourceCode" id="cb14"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">size_decided_lat</span> <span class="op">&lt;-</span> <span class="fl">11</span></span></code></pre></div>
@@ -475,10 +475,10 @@ approach:</p>
 <div class="sourceCode" id="cb20"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="va">time_trad</span><span class="op">)</span></span></code></pre></div>
 <pre><code>   user  system elapsed 
-  4.366   0.351   4.314 </code></pre>
+  4.107   0.348   4.056 </code></pre>
 <div class="sourceCode" id="cb22"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="op">(</span> <span class="va">gg_trad</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/graphics/plot.default.html" class="external-link">plot</a></span><span class="op">(</span><span class="va">vs_trad</span>, stats <span class="op">=</span> <span class="st">"gmpd"</span>, deltas <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span> <span class="op">)</span></span></code></pre></div>
-<p><img src="latent_files/figure-html/post_vs_trad-1.png" width="90%" style="display: block; margin: auto;">
+<p><img src="latent_files/figure-html/post_vs_trad-1.png" class="r-plt" width="90%" style="display: block; margin: auto;">
 As these results show, the traditional projection takes longer than the
 latent projection, although the difference is rather small on absolute
 scale (which is due to the fact that the L1 search is already quite
@@ -671,7 +671,7 @@ this case).</p>
 a submodel size:</p>
 <div class="sourceCode" id="cb29"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="op">(</span> <span class="va">gg_nebin</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/graphics/plot.default.html" class="external-link">plot</a></span><span class="op">(</span><span class="va">vs_nebin</span>, stats <span class="op">=</span> <span class="st">"gmpd"</span>, deltas <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span> <span class="op">)</span></span></code></pre></div>
-<p><img src="latent_files/figure-html/plot_vsel_nebin-1.png" width="90%" style="display: block; margin: auto;"></p>
+<p><img src="latent_files/figure-html/plot_vsel_nebin-1.png" class="r-plt" width="90%" style="display: block; margin: auto;"></p>
 <p>For the decision of the final submodel size, we act as if we
 preferred accuracy over sparsity in their trade-off mentioned in the <a href="https://mc-stan.org/projpred/articles/projpred.html#decision-size">main
 vignette</a>, so we decide for a submodel size of 11:</p>
@@ -760,7 +760,7 @@ Support.”</span> <em>Computational Statistics</em> 40 (2): 701–21. <a href="
 </div>
 
 <div class="pkgdown-footer-right">
-  <p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.1.3.</p>
+  <p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.2.0.</p>
 </div>
 
     </footer>
