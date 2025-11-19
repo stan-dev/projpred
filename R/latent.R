@@ -13,14 +13,15 @@
 latent_ll_oscale_cats <- function(ilpreds,
                                   dis = rep(NA, nrow(ilpreds)),
                                   y_oscale,
-                                  wobs = rep(1, length(y_oscale)),
+                                  wobs = rep(1, ncol(ilpreds)),
+                                  cens,
                                   cl_ref,
                                   wdraws_ref = rep(1, length(cl_ref))) {
   return(ll_cats(ilpreds, margin_draws = 1, y = y_oscale, wobs = wobs))
 }
 latent_ppd_oscale_cats <- function(ilpreds_resamp,
                                    dis_resamp = rep(NA, nrow(ilpreds_resamp)),
-                                   wobs,
+                                   wobs = rep(1, ncol(ilpreds_resamp)),
                                    cl_ref,
                                    wdraws_ref = rep(1, length(cl_ref)),
                                    idxs_prjdraws) {
@@ -32,7 +33,8 @@ latent_ppd_oscale_cats <- function(ilpreds_resamp,
 latent_ll_oscale_binom_nocats <- function(ilpreds,
                                           dis = rep(NA, nrow(ilpreds)),
                                           y_oscale,
-                                          wobs = rep(1, length(y_oscale)),
+                                          wobs = rep(1, ncol(ilpreds)),
+                                          cens,
                                           cl_ref,
                                           wdraws_ref = rep(1, length(cl_ref))) {
   # Ensure finite log() values:
@@ -45,7 +47,7 @@ latent_ll_oscale_binom_nocats <- function(ilpreds,
 }
 latent_ppd_oscale_binom_nocats <- function(ilpreds_resamp,
                                            dis_resamp = rep(NA, nrow(ilpreds_resamp)),
-                                           wobs,
+                                           wobs = rep(1, ncol(ilpreds_resamp)),
                                            cl_ref,
                                            wdraws_ref = rep(1, length(cl_ref)),
                                            idxs_prjdraws) {
@@ -59,7 +61,8 @@ latent_ppd_oscale_binom_nocats <- function(ilpreds_resamp,
 latent_ll_oscale_poiss <- function(ilpreds,
                                    dis = rep(NA, nrow(ilpreds)),
                                    y_oscale,
-                                   wobs = rep(1, length(y_oscale)),
+                                   wobs = rep(1, ncol(ilpreds)),
+                                   cens,
                                    cl_ref,
                                    wdraws_ref = rep(1, length(cl_ref))) {
   ll_unw <- dpois(y_oscale, lambda = t(ilpreds), log = TRUE)
@@ -67,7 +70,7 @@ latent_ll_oscale_poiss <- function(ilpreds,
 }
 latent_ppd_oscale_poiss <- function(ilpreds_resamp,
                                     dis_resamp = rep(NA, nrow(ilpreds_resamp)),
-                                    wobs,
+                                    wobs = rep(1, ncol(ilpreds_resamp)),
                                     cl_ref,
                                     wdraws_ref = rep(1, length(cl_ref)),
                                     idxs_prjdraws) {
@@ -82,14 +85,15 @@ latent_ppd_oscale_poiss <- function(ilpreds_resamp,
 latent_ll_oscale_NA <- function(ilpreds,
                                 dis = rep(NA, nrow(ilpreds)),
                                 y_oscale,
-                                wobs = rep(1, length(y_oscale)),
+                                wobs = rep(1, ncol(ilpreds)),
+                                cens,
                                 cl_ref,
                                 wdraws_ref = rep(1, length(cl_ref))) {
   return(array(dim = dim(ilpreds)[1:2]))
 }
 latent_ppd_oscale_NA <- function(ilpreds_resamp,
                                  dis_resamp = rep(NA, nrow(ilpreds_resamp)),
-                                 wobs,
+                                 wobs = rep(1, ncol(ilpreds_resamp)),
                                  cl_ref,
                                  wdraws_ref = rep(1, length(cl_ref)),
                                  idxs_prjdraws) {

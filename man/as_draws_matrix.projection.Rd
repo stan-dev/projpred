@@ -42,7 +42,7 @@ reference model fit (see section "Augmented-data projection" in
 \code{\link[=extend_family]{extend_family()}}'s documentation).
 }
 \examples{
-\dontshow{if (requireNamespace("rstanarm", quietly = TRUE) && requireNamespace("posterior", quietly = TRUE)) (if (getRversion() >= "3.4") withAutoprint else force)(\{ # examplesIf}
+\dontshow{if (requireNamespace("rstanarm", quietly = TRUE) && requireNamespace("posterior", quietly = TRUE)) withAutoprint(\{ # examplesIf}
 # Data:
 dat_gauss <- data.frame(y = df_gaussian$y, df_gaussian$x)
 
