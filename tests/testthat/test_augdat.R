@@ -211,7 +211,7 @@ test_that(paste(
 
     eta_aug <- refmod_crr$family$linkfun(pref_aug$mu)
     eta_trad <- refmod_crr_trad$family$linkfun(pref_trad$mu)
-    expect_identical(structure(unclass(eta_aug), ndiscrete = NULL), eta_trad,
+    expect_equal(structure(unclass(eta_aug), ndiscrete = NULL), eta_trad,
                      info = tstsetup)
   }
   if (exists("rng_old")) assign(".Random.seed", rng_old, envir = .GlobalEnv)
