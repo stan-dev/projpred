@@ -99,7 +99,7 @@
   <main id="main" class="col-md-9"><div class="page-header">
       <img src="../logo.svg" class="logo" alt=""><h1>projpred: Projection predictive feature selection</h1>
             
-            <h4 data-toc-skip class="date">2025-11-11</h4>
+            <h4 data-toc-skip class="date">2025-11-19</h4>
       
       <small class="dont-index">Source: <a href="https://github.com/stan-dev/projpred/blob/master/vignettes/projpred.Rmd" class="external-link"><code>vignettes/projpred.Rmd</code></a></small>
       <div class="d-none name"><code>projpred.Rmd</code></div>
@@ -405,13 +405,13 @@ is possible in terms of computation time. Here, we also perform the
 <code><a href="../reference/cv_varsel.html">cv_varsel()</a></code>. Although not strictly necessary here, this is
 helpful in practice because often, <code><a href="../reference/cv_varsel.html">cv_varsel()</a></code> needs to be
 re-run multiple times in order to try out different argument settings.
-We also illustrate how <strong>projpred</strong>’s CV (i.e., the CV
-comprising search and performance evaluation, after refitting the
-reference model <span class="math inline">\(K\)</span> times) can be
-parallelized, even though this is of little use here (we have only
-<code>K = 2</code> folds and the fold-wise searches and performance
-evaluations are quite fast, so the parallelization overhead eats up any
-runtime improvements). Note that for this final <code><a href="../reference/cv_varsel.html">cv_varsel()</a></code>
+We also show how <strong>projpred</strong>’s CV (i.e., the CV comprising
+search and performance evaluation, after refitting the reference model
+<span class="math inline">\(K\)</span> times) can be parallelized
+(though we disable it here for vignette building). In practice,
+parallelization is of little use with only <code>K = 2</code> folds and
+fast fold-wise operations, as the parallelization overhead eats up any
+runtime improvements. Note that for this final <code><a href="../reference/cv_varsel.html">cv_varsel()</a></code>
 run, we cannot make use of <code><a href="../reference/cv_varsel.html">cv_varsel.vsel()</a></code> (by applying
 <code><a href="../reference/cv_varsel.html">cv_varsel()</a></code> to <code>cvvs_fast</code> or
 <code>cvvs_fast_refit</code> instead of <code>refm_obj</code>) because
@@ -426,7 +426,11 @@ of the change in <code>nterms_max</code> (here: 9, for
 <span>  <span class="co">###</span></span>
 <span><span class="op">)</span></span>
 <span><span class="co"># For running projpred's CV in parallel (see cv_varsel()'s argument `parallel`):</span></span>
-<span><span class="fu">doParallel</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/doParallel/man/registerDoParallel.html" class="external-link">registerDoParallel</a></span><span class="op">(</span><span class="va">ncores</span><span class="op">)</span></span>
+<span><span class="co"># Note: Parallel processing is disabled during package building to avoid issues</span></span>
+<span><span class="va">use_parallel</span> <span class="op">&lt;-</span> <span class="cn">FALSE</span>  <span class="co"># Set to TRUE for actual parallel processing</span></span>
+<span><span class="kw">if</span> <span class="op">(</span><span class="va">use_parallel</span><span class="op">)</span> <span class="op">{</span></span>
+<span>  <span class="fu">doParallel</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/doParallel/man/registerDoParallel.html" class="external-link">registerDoParallel</a></span><span class="op">(</span><span class="va">ncores</span><span class="op">)</span></span>
+<span><span class="op">}</span></span>
 <span><span class="co"># Final cv_varsel() run:</span></span>
 <span><span class="va">cvvs</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/cv_varsel.html">cv_varsel</a></span><span class="op">(</span></span>
 <span>  <span class="va">refm_obj</span>,</span>
@@ -437,14 +441,16 @@ of the change in <code>nterms_max</code> (here: 9, for
 <span>  nclusters_pred <span class="op">=</span> <span class="fl">20</span>,</span>
 <span>  <span class="co">###</span></span>
 <span>  nterms_max <span class="op">=</span> <span class="fl">9</span>,</span>
-<span>  parallel <span class="op">=</span> <span class="cn">TRUE</span>,</span>
+<span>  parallel <span class="op">=</span> <span class="va">use_parallel</span>,</span>
 <span>  <span class="co">### In interactive use, we recommend not to deactivate the verbose mode:</span></span>
 <span>  verbose <span class="op">=</span> <span class="fl">0</span></span>
 <span>  <span class="co">### </span></span>
 <span><span class="op">)</span></span>
 <span><span class="co"># Tear down the CV parallelization setup:</span></span>
-<span><span class="fu">doParallel</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/doParallel/man/registerDoParallel.html" class="external-link">stopImplicitCluster</a></span><span class="op">(</span><span class="op">)</span></span>
-<span><span class="fu">foreach</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/foreach/man/registerDoSEQ.html" class="external-link">registerDoSEQ</a></span><span class="op">(</span><span class="op">)</span></span></code></pre></div>
+<span><span class="kw">if</span> <span class="op">(</span><span class="va">use_parallel</span><span class="op">)</span> <span class="op">{</span></span>
+<span>  <span class="fu">doParallel</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/doParallel/man/registerDoParallel.html" class="external-link">stopImplicitCluster</a></span><span class="op">(</span><span class="op">)</span></span>
+<span>  <span class="fu">foreach</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/foreach/man/registerDoSEQ.html" class="external-link">registerDoSEQ</a></span><span class="op">(</span><span class="op">)</span></span>
+<span><span class="op">}</span></span></code></pre></div>
 <div class="section level4">
 <h4 id="plotfinal">Predictive performance plot from final <code>cv_varsel()</code>
 run<a class="anchor" aria-label="anchor" href="#plotfinal"></a>
@@ -572,8 +578,8 @@ Submodel performance evaluation summary with `deltas = TRUE` and `cumulate = FAL
     5               X6                 0.0 -0.208      -0.27     -0.151
     6               X3                 0.0 -0.214      -0.26     -0.169
     7               X8                 0.5 -0.003      -0.02      0.016
-    8              X11                 0.0 -0.010      -0.03      0.009
-    9               X7                 0.0  0.003      -0.01      0.021
+    8              X11                 0.0 -0.010      -0.03      0.008
+    9               X7                 0.0  0.003      -0.01      0.020
 
 Reference model performance evaluation summary with `deltas = TRUE`:
       mlpd mlpd.lower mlpd.upper 
@@ -589,7 +595,7 @@ performance results from the output of <code><a href="../reference/summary.vsel.
  $ submodels      :'data.frame':    10 obs. of  4 variables:
   ..$ size      : num [1:10] 0 1 2 3 4 5 6 7 8 9
   ..$ mlpd      : num [1:10] -0.976 -0.786 -0.555 -0.553 -0.519 ...
-  ..$ mlpd.lower: num [1:10] -1.049 -0.867 -0.623 -0.637 -0.609 ...
+  ..$ mlpd.lower: num [1:10] -1.049 -0.868 -0.623 -0.637 -0.609 ...
   ..$ mlpd.upper: num [1:10] -0.903 -0.704 -0.487 -0.469 -0.429 ...
  $ reference_model: Named num [1:3] 0 0 0
   ..- attr(*, "names")= chr [1:3] "mlpd" "mlpd.lower" "mlpd.upper"

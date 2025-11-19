@@ -354,12 +354,12 @@ Although not strictly necessary here, this is helpful in practice
 because often,
 [`cv_varsel()`](https://mc-stan.org/projpred/dev/reference/cv_varsel.md)
 needs to be re-run multiple times in order to try out different argument
-settings. We also illustrate how **projpred**’s CV (i.e., the CV
-comprising search and performance evaluation, after refitting the
-reference model \\K\\ times) can be parallelized, even though this is of
-little use here (we have only `K = 2` folds and the fold-wise searches
-and performance evaluations are quite fast, so the parallelization
-overhead eats up any runtime improvements). Note that for this final
+settings. We also show how **projpred**’s CV (i.e., the CV comprising
+search and performance evaluation, after refitting the reference model
+\\K\\ times) can be parallelized (though we disable it here for vignette
+building). In practice, parallelization is of little use with only
+`K = 2` folds and fast fold-wise operations, as the parallelization
+overhead eats up any runtime improvements. Note that for this final
 [`cv_varsel()`](https://mc-stan.org/projpred/dev/reference/cv_varsel.md)
 run, we cannot make use of
 [`cv_varsel.vsel()`](https://mc-stan.org/projpred/dev/reference/cv_varsel.md)
@@ -378,7 +378,11 @@ cv_fits <- run_cvfun(
   ###
 )
 # For running projpred's CV in parallel (see cv_varsel()'s argument `parallel`):
-doParallel::registerDoParallel(ncores)
+# Note: Parallel processing is disabled during package building to avoid issues
+use_parallel <- FALSE  # Set to TRUE for actual parallel processing
+if (use_parallel) {
+  doParallel::registerDoParallel(ncores)
+}
 # Final cv_varsel() run:
 cvvs <- cv_varsel(
   refm_obj,
@@ -389,14 +393,16 @@ cvvs <- cv_varsel(
   nclusters_pred = 20,
   ###
   nterms_max = 9,
-  parallel = TRUE,
+  parallel = use_parallel,
   ### In interactive use, we recommend not to deactivate the verbose mode:
   verbose = 0
   ### 
 )
 # Tear down the CV parallelization setup:
-doParallel::stopImplicitCluster()
-foreach::registerDoSEQ()
+if (use_parallel) {
+  doParallel::stopImplicitCluster()
+  foreach::registerDoSEQ()
+}
 ```
 
 #### Predictive performance plot from final `cv_varsel()` run
@@ -544,8 +550,8 @@ print(smmry, digits = 1)
         5               X6                 0.0 -0.208      -0.27     -0.151
         6               X3                 0.0 -0.214      -0.26     -0.169
         7               X8                 0.5 -0.003      -0.02      0.016
-        8              X11                 0.0 -0.010      -0.03      0.009
-        9               X7                 0.0  0.003      -0.01      0.021
+        8              X11                 0.0 -0.010      -0.03      0.008
+        9               X7                 0.0  0.003      -0.01      0.020
 
     Reference model performance evaluation summary with `deltas = TRUE`:
           mlpd mlpd.lower mlpd.upper 
@@ -570,7 +576,7 @@ str(perf)
      $ submodels      :'data.frame':    10 obs. of  4 variables:
       ..$ size      : num [1:10] 0 1 2 3 4 5 6 7 8 9
       ..$ mlpd      : num [1:10] -0.976 -0.786 -0.555 -0.553 -0.519 ...
-      ..$ mlpd.lower: num [1:10] -1.049 -0.867 -0.623 -0.637 -0.609 ...
+      ..$ mlpd.lower: num [1:10] -1.049 -0.868 -0.623 -0.637 -0.609 ...
       ..$ mlpd.upper: num [1:10] -0.903 -0.704 -0.487 -0.469 -0.429 ...
      $ reference_model: Named num [1:3] 0 0 0
       ..- attr(*, "names")= chr [1:3] "mlpd" "mlpd.lower" "mlpd.upper"
