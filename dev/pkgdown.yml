@@ -4,7 +4,7 @@ pkgdown_sha: ~
 articles:
   latent: latent.html
   projpred: projpred.html
-last_built: 2025-11-19T13:48Z
+last_built: 2025-11-25T08:07Z
 urls:
   reference: https://mc-stan.org/projpred/reference
   article: https://mc-stan.org/projpred/articles
