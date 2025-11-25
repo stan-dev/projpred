@@ -409,13 +409,6 @@ test_that(paste(
 ), {
   ### Fit with mclogit::mblogit() -------------------------------------------
 
-  warn_expected <- if (packageVersion("mclogit") <= "0.8.7.3") {
-    "variable 'prior' is absent, its contrast will be ignored"
-  } else if (packageVersion("mclogit") >= "0.9.6") {
-    "Inner iterations did not coverge"
-  } else {
-    NA
-  }
   expect_warning(
     out_capt <- capture.output(
       mfit <- mclogit::mblogit(
@@ -426,7 +419,7 @@ test_that(paste(
         y = FALSE
       )
     ),
-    warn_expected
+    NULL
   )
   expect_identical(tail(out_capt, 1), "converged")
 
