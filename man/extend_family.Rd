@@ -208,9 +208,11 @@ the original response scale.
 weights.
 \item \code{cens} accepts a vector containing censoring indicators for the
 observations for which to calculate the response-scale log-likelihood values
-(i.e., for the observations from the second dimension of \code{ilpreds}). This is
-only relevant if attribute \code{cens_var} of \code{latent_ll_oscale} is not \code{NULL}
-(see below).
+(i.e., for the observations from the second dimension of \code{ilpreds}). When
+calling \code{latent_ll_oscale}, \pkg{projpred} always specifies argument \code{cens}
+(with value \code{NULL} if attribute \code{cens_var} of \code{latent_ll_oscale} does not
+exist or is \code{NULL}), so a default value of \code{cens} can be defined, but will
+not be used.
 \item \code{cl_ref} accepts the same input as argument \code{cl_ref} of \code{latent_ilink}.
 \item \code{wdraws_ref} accepts the same input as argument \code{wdraws_ref} of
 \code{latent_ilink}.

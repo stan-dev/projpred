@@ -169,9 +169,11 @@
 #' weights.
 #' * `cens` accepts a vector containing censoring indicators for the
 #' observations for which to calculate the response-scale log-likelihood values
-#' (i.e., for the observations from the second dimension of `ilpreds`). This is
-#' only relevant if attribute `cens_var` of `latent_ll_oscale` is not `NULL`
-#' (see below).
+#' (i.e., for the observations from the second dimension of `ilpreds`). When
+#' calling `latent_ll_oscale`, \pkg{projpred} always specifies argument `cens`
+#' (with value `NULL` if attribute `cens_var` of `latent_ll_oscale` does not
+#' exist or is `NULL`), so a default value of `cens` can be defined, but will
+#' not be used.
 #' * `cl_ref` accepts the same input as argument `cl_ref` of `latent_ilink`.
 #' * `wdraws_ref` accepts the same input as argument `wdraws_ref` of
 #' `latent_ilink`.
