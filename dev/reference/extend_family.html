@@ -262,8 +262,8 @@ transformed to the original response space, with the following structure:</p><ul
 given in <code>family$cats</code>, after taking <code>latent_y_unqs</code> into account).</p></li>
 </ul><p>The function supplied to argument <code>latent_ll_oscale</code> needs to have the
 prototype</p>
-<p></p><div class="sourceCode r"><pre><code><span><span class="fu">latent_ll_oscale</span><span class="op">(</span><span class="va">ilpreds</span>, <span class="va">dis</span>, <span class="va">y_oscale</span>, wobs <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/rep.html" class="external-link">rep</a></span><span class="op">(</span><span class="fl">1</span>, <span class="fu"><a href="https://rdrr.io/r/base/length.html" class="external-link">length</a></span><span class="op">(</span><span class="va">y_oscale</span><span class="op">)</span><span class="op">)</span>,</span>
-<span>                 <span class="va">cl_ref</span>, wdraws_ref <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/rep.html" class="external-link">rep</a></span><span class="op">(</span><span class="fl">1</span>, <span class="fu"><a href="https://rdrr.io/r/base/length.html" class="external-link">length</a></span><span class="op">(</span><span class="va">cl_ref</span><span class="op">)</span><span class="op">)</span><span class="op">)</span></span></code></pre><p></p></div>
+<p></p><div class="sourceCode r"><pre><code><span><span class="fu">latent_ll_oscale</span><span class="op">(</span><span class="va">ilpreds</span>, <span class="va">dis</span>, <span class="va">y_oscale</span>, wobs <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/rep.html" class="external-link">rep</a></span><span class="op">(</span><span class="fl">1</span>, <span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">ncol</a></span><span class="op">(</span><span class="va">ilpreds</span><span class="op">)</span><span class="op">)</span>,</span>
+<span>                 <span class="va">cens</span>, <span class="va">cl_ref</span>, wdraws_ref <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/rep.html" class="external-link">rep</a></span><span class="op">(</span><span class="fl">1</span>, <span class="fu"><a href="https://rdrr.io/r/base/length.html" class="external-link">length</a></span><span class="op">(</span><span class="va">cl_ref</span><span class="op">)</span><span class="op">)</span><span class="op">)</span></span></code></pre><p></p></div>
 <p>where:</p><ul><li><p><code>ilpreds</code> accepts the return value from <code>latent_ilink</code>.</p></li>
 <li><p><code>dis</code> accepts a vector of length \(S\) containing dispersion parameter
 draws.</p></li>
@@ -271,15 +271,36 @@ draws.</p></li>
 the original response scale.</p></li>
 <li><p><code>wobs</code> accepts a numeric vector of length \(N\) containing observation
 weights.</p></li>
+<li><p><code>cens</code> accepts a vector containing censoring indicators for the
+observations for which to calculate the response-scale log-likelihood values
+(i.e., for the observations from the second dimension of <code>ilpreds</code>). When
+calling <code>latent_ll_oscale</code>, <span class="pkg">projpred</span> always specifies argument <code>cens</code>
+(with value <code>NULL</code> if attribute <code>cens_var</code> of <code>latent_ll_oscale</code> does not
+exist or is <code>NULL</code>), so a default value of <code>cens</code> can be defined, but will
+not be used.</p></li>
 <li><p><code>cl_ref</code> accepts the same input as argument <code>cl_ref</code> of <code>latent_ilink</code>.</p></li>
 <li><p><code>wdraws_ref</code> accepts the same input as argument <code>wdraws_ref</code> of
 <code>latent_ilink</code>.</p></li>
-</ul><p>The return value of <code>latent_ll_oscale</code> needs to be an \(S \times N\)
+</ul><p>In case of censoring (in the response values, i.e., survival or time-to-event
+analysis), the latent projection (with response-scale analyses) can be used
+by setting an attribute <code>cens_var</code> of the <code>latent_ll_oscale</code> function to a
+right-hand side formula with the name of the variable containing the
+censoring indicators (e.g., <code>0</code> = uncensored, <code>1</code> = censored) on its
+right-hand side. This variable named in the <code>cens_var</code> attribute is then
+retrieved (internally, whenever calling the <code>latent_ll_oscale</code> function) from
+the original dataset (possibly subsetted to the observations corresponding to
+the second dimension of <code>ilpreds</code>), <code>newdata</code>, or element <code>data</code> from
+<code><a href="varsel.html">varsel()</a></code>'s argument <code>d_test</code>, whichever is applicable. The content of the
+retrieved variable is passed to argument <code>cens</code> of the <code>latent_ll_oscale</code>
+function. Note that only the performance statistics <code>"elpd"</code>, <code>"mlpd"</code>, and
+<code>"gmpd"</code> take censoring into account (on response scale).</p>
+<p>The return value of <code>latent_ll_oscale</code> needs to be an \(S \times N\)
 matrix containing the response-scale (not latent-scale) log-likelihood values
 for the \(N\) observations from its inputs.</p>
 <p>The function supplied to argument <code>latent_ppd_oscale</code> needs to have the
 prototype</p>
-<p></p><div class="sourceCode r"><pre><code><span><span class="fu">latent_ppd_oscale</span><span class="op">(</span><span class="va">ilpreds_resamp</span>, <span class="va">dis_resamp</span>, <span class="va">wobs</span>, <span class="va">cl_ref</span>,</span>
+<p></p><div class="sourceCode r"><pre><code><span><span class="fu">latent_ppd_oscale</span><span class="op">(</span><span class="va">ilpreds_resamp</span>, <span class="va">dis_resamp</span>,</span>
+<span>                  wobs <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/rep.html" class="external-link">rep</a></span><span class="op">(</span><span class="fl">1</span>, <span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">ncol</a></span><span class="op">(</span><span class="va">ilpreds_resamp</span><span class="op">)</span><span class="op">)</span>, <span class="va">cl_ref</span>,</span>
 <span>                  wdraws_ref <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/rep.html" class="external-link">rep</a></span><span class="op">(</span><span class="fl">1</span>, <span class="fu"><a href="https://rdrr.io/r/base/length.html" class="external-link">length</a></span><span class="op">(</span><span class="va">cl_ref</span><span class="op">)</span><span class="op">)</span>, <span class="va">idxs_prjdraws</span><span class="op">)</span></span></code></pre><p></p></div>
 <p>where:</p><ul><li><p><code>ilpreds_resamp</code> accepts the return value from <code>latent_ilink</code>, but possibly
 with resampled (clustered) draws (see argument <code>nresample_clusters</code> of

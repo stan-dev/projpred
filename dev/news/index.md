@@ -4,6 +4,22 @@
 
 ### Major changes
 
+- Added support for censored observations when using the latent
+  projection (with response-scale analyses). This makes it possible,
+  e.g., to use the latent projection for time-to-event models (also
+  known as models for survival analysis). Due to this new feature, the
+  function passed to argument `latent_ll_oscale` of
+  [`extend_family()`](https://mc-stan.org/projpred/dev/reference/extend_family.md)
+  now needs to have an argument `cens`. See
+  [`?extend_family`](https://mc-stan.org/projpred/dev/reference/extend_family.md)
+  (section “Latent projection”) as well as the latent-projection
+  vignette (section [“Censored observations (survival
+  analysis)”](https://mc-stan.org/projpred/articles/latent.html#cens))
+  for more information and examples. Note that only the performance
+  statistics `"elpd"`, `"mlpd"`, and `"gmpd"` take censoring into
+  account (on response scale). (GitHub:
+  [\#528](https://github.com/stan-dev/projpred/issues/528))
+
 ### Minor changes
 
 ### Bug fixes

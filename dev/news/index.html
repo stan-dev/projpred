@@ -70,7 +70,8 @@
 <h2 class="pkg-version" data-toc-text="2.9.1.9000" id="projpred-2919000-development">projpred 2.9.1.9000 (development)<a class="anchor" aria-label="anchor" href="#projpred-2919000-development"></a></h2>
 <div class="section level3">
 <h3 id="major-changes-2-9-1-9000">Major changes<a class="anchor" aria-label="anchor" href="#major-changes-2-9-1-9000"></a></h3>
-</div>
+<ul><li>Added support for censored observations when using the latent projection (with response-scale analyses). This makes it possible, e.g., to use the latent projection for time-to-event models (also known as models for survival analysis). Due to this new feature, the function passed to argument <code>latent_ll_oscale</code> of <code><a href="../reference/extend_family.html">extend_family()</a></code> now needs to have an argument <code>cens</code>. See <code><a href="../reference/extend_family.html">?extend_family</a></code> (section “Latent projection”) as well as the latent-projection vignette (section <a href="https://mc-stan.org/projpred/articles/latent.html#cens">“Censored observations (survival analysis)”</a>) for more information and examples. Note that only the performance statistics <code>"elpd"</code>, <code>"mlpd"</code>, and <code>"gmpd"</code> take censoring into account (on response scale). (GitHub: <a href="https://github.com/stan-dev/projpred/issues/528" class="external-link">#528</a>)</li>
+</ul></div>
 <div class="section level3">
 <h3 id="minor-changes-2-9-1-9000">Minor changes<a class="anchor" aria-label="anchor" href="#minor-changes-2-9-1-9000"></a></h3>
 </div>

@@ -346,7 +346,11 @@ that leads to the same results, <code>search_terms = c("x2", "x3")</code>).</p>
     <div class="section level2">
     <h2 id="argument-d-test">Argument <code>d_test</code><a class="anchor" aria-label="anchor" href="#argument-d-test"></a></h2>
     <p>If not <code>NULL</code>, then <code>d_test</code> needs to be a <code>list</code> with the following
-elements:</p><ul><li><p><code>data</code>: a <code>data.frame</code> containing the predictor variables for the test set.</p></li>
+elements:</p><ul><li><p><code>data</code>: a <code>data.frame</code> containing the predictor variables for the test set.
+In case of the latent projection, this <code>data.frame</code> is also used for
+evaluating attribute <code>cens_var</code> of the <code>latent_ll_oscale</code> function, so if
+<code>cens_var</code> is not <code>NULL</code>, <code>data</code> also needs to contain the data for the
+variable from <code>cens_var</code>.</p></li>
 <li><p><code>offset</code>: a numeric vector containing the offset values for the test set
 (if there is no offset, use a vector of zeros).</p></li>
 <li><p><code>weights</code>: a numeric vector containing the observation weights for the test

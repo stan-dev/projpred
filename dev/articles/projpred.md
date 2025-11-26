@@ -313,9 +313,9 @@ cvvs_fast_refit <- cv_varsel(
 
     Using standard importance sampling (SIS) due to a small number of clusters.
 
-Here, we ignore the warning that SIS is used instead of PSIS (this is
-due to `nclusters_pred = 20` which we used only to speed up the building
-of the vignette).
+Here, we ignore the warning that SIS is used (instead of PSIS) because
+this is due to `nclusters_pred = 20` which we used only to speed up the
+building of the vignette.
 
 With the `refit_prj = TRUE` results, the predictive performance plot
 from above now looks as follows:
@@ -1000,15 +1000,26 @@ original response scale) is currently available are
 [`brms::cumulative()`](https://paulbuerkner.com/brms/reference/brmsfamily.html),
 and
 [`rstanarm::stan_polr()`](https://mc-stan.org/rstanarm/reference/stan_polr.html)
-fits[²⁰](#fn20). For all other families, you can try to use the latent
-projection (by setting `latent = TRUE`) and **projpred** should tell you
-if any features are not available and how to make them available. More
-details concerning the latent projection are given in the corresponding
+fits[²⁰](#fn20). For all other families, it is worth trying the latent
+projection (by setting `latent = TRUE`); **projpred** will state if any
+features are not available and how to make them available. More details
+concerning the latent projection are given in the corresponding
 [latent-projection
-vignette](https://mc-stan.org/projpred/articles/latent.html). Note that
-there are some restrictions with respect to the latent projection;
-**projpred** will throw an informative error if a requested feature is
-currently not supported for the latent projection.
+vignette](https://mc-stan.org/projpred/articles/latent.html). For
+example, section [“Example: Negative binomial
+distribution”](https://mc-stan.org/projpred/articles/latent.html#negbinex)
+of that vignette illustrates the use of the latent projection for a
+negative binomial model, section [“Example: Weibull distribution with
+right-censored
+observations”](https://mc-stan.org/projpred/articles/latent.html#weibullcensex)
+for a Weibull model with right-censored observations, and section
+[“Example: Log-normal distribution with right-censored
+observations”](https://mc-stan.org/projpred/articles/latent.html#lognormalcensex)
+for a log-normal model with right-censored observations. The latter two
+situations are known as parametric survival (or time-to-event) analyses.
+Note that there are some restrictions with respect to the latent
+projection; **projpred** will throw an informative error if a requested
+feature is currently not supported for the latent projection.
 
 On the side of the predictors, **projpred** not only supports linear
 main effects as shown in this vignette, but also interactions,

@@ -99,7 +99,7 @@
   <main id="main" class="col-md-9"><div class="page-header">
       <img src="../logo.svg" class="logo" alt=""><h1>projpred: Projection predictive feature selection</h1>
             
-            <h4 data-toc-skip class="date">2025-11-25</h4>
+            <h4 data-toc-skip class="date">2025-11-26</h4>
       
       <small class="dont-index">Source: <a href="https://github.com/stan-dev/projpred/blob/master/vignettes/projpred.Rmd" class="external-link"><code>vignettes/projpred.Rmd</code></a></small>
       <div class="d-none name"><code>projpred.Rmd</code></div>
@@ -373,9 +373,9 @@ also set <code>nclusters_pred</code> to a comparatively low value of
 <span>  <span class="co">### </span></span>
 <span><span class="op">)</span></span></code></pre></div>
 <pre><code>Using standard importance sampling (SIS) due to a small number of clusters.</code></pre>
-<p>Here, we ignore the warning that SIS is used instead of PSIS (this is
-due to <code>nclusters_pred = 20</code> which we used only to speed up
-the building of the vignette).</p>
+<p>Here, we ignore the warning that SIS is used (instead of PSIS)
+because this is due to <code>nclusters_pred = 20</code> which we used
+only to speed up the building of the vignette.</p>
 <p>With the <code>refit_prj = TRUE</code> results, the predictive
 performance plot from above now looks as follows:</p>
 <div class="sourceCode" id="cb13"><pre class="downlit sourceCode r">
@@ -994,14 +994,21 @@ also supports the &lt;code&gt;&lt;a href="https://paulbuerkner.com/brms/referenc
 <code><a href="https://mc-stan.org/rstanarm/reference/stan_polr.html" class="external-link">rstanarm::stan_polr()</a></code> fits<a class="footnote-ref" tabindex="0" data-bs-toggle="popover" data-bs-content="&lt;p&gt;For the latent projection based on a “typical”
 &lt;strong&gt;brms&lt;/strong&gt; reference model object, &lt;strong&gt;brms&lt;/strong&gt;
 version 2.19.0 or later is needed.&lt;/p&gt;"><sup>20</sup></a>. For all other
-families, you can try to use the latent projection (by setting
-<code>latent = TRUE</code>) and <strong>projpred</strong> should tell
-you if any features are not available and how to make them available.
-More details concerning the latent projection are given in the
-corresponding <a href="https://mc-stan.org/projpred/articles/latent.html">latent-projection
-vignette</a>. Note that there are some restrictions with respect to the
-latent projection; <strong>projpred</strong> will throw an informative
-error if a requested feature is currently not supported for the latent
+families, it is worth trying the latent projection (by setting
+<code>latent = TRUE</code>); <strong>projpred</strong> will state if any
+features are not available and how to make them available. More details
+concerning the latent projection are given in the corresponding <a href="https://mc-stan.org/projpred/articles/latent.html">latent-projection
+vignette</a>. For example, section <a href="https://mc-stan.org/projpred/articles/latent.html#negbinex">“Example:
+Negative binomial distribution”</a> of that vignette illustrates the use
+of the latent projection for a negative binomial model, section <a href="https://mc-stan.org/projpred/articles/latent.html#weibullcensex">“Example:
+Weibull distribution with right-censored observations”</a> for a Weibull
+model with right-censored observations, and section <a href="https://mc-stan.org/projpred/articles/latent.html#lognormalcensex">“Example:
+Log-normal distribution with right-censored observations”</a> for a
+log-normal model with right-censored observations. The latter two
+situations are known as parametric survival (or time-to-event) analyses.
+Note that there are some restrictions with respect to the latent
+projection; <strong>projpred</strong> will throw an informative error if
+a requested feature is currently not supported for the latent
 projection.</p>
 <p>On the side of the predictors, <strong>projpred</strong> not only
 supports linear main effects as shown in this vignette, but also

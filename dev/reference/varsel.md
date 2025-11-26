@@ -295,7 +295,10 @@ If not `NULL`, then `d_test` needs to be a `list` with the following
 elements:
 
 - `data`: a `data.frame` containing the predictor variables for the test
-  set.
+  set. In case of the latent projection, this `data.frame` is also used
+  for evaluating attribute `cens_var` of the `latent_ll_oscale`
+  function, so if `cens_var` is not `NULL`, `data` also needs to contain
+  the data for the variable from `cens_var`.
 
 - `offset`: a numeric vector containing the offset values for the test
   set (if there is no offset, use a vector of zeros).

@@ -52,7 +52,9 @@ makes things a lot easier because it allows us to make use of
 As illustrated by the Poisson example below, the latent projection can
 not only be used for families not supported by **projpred**’s
 traditional projection, but it can also be beneficial for families
-supported by it.
+supported by it. The remaining examples show that the latent projection
+offers support for models (and censored observations) that the
+traditional (or augmented-data) projection do not support.
 
 ### Implementation
 
@@ -314,7 +316,7 @@ print(time_lat)
 ```
 
        user  system elapsed 
-      1.053   0.349   1.010 
+      1.072   0.330   1.012 
 
 The message telling that `<refmodel>$dis` consists of only `NA`s will
 not concern us here because we will only focus on response-scale
@@ -421,7 +423,7 @@ print(time_trad)
 ```
 
        user  system elapsed 
-      4.136   0.358   4.096 
+      4.117   0.359   4.077 
 
 ``` r
 ( gg_trad <- plot(vs_trad, stats = "gmpd", deltas = TRUE) )
@@ -504,7 +506,8 @@ refm_prec <- as.matrix(refm_fit_nebin)[, "reciprocal_dispersion", drop = FALSE]
 latent_ll_oscale_nebin <- function(ilpreds,
                                    dis = rep(NA, nrow(ilpreds)),
                                    y_oscale,
-                                   wobs = rep(1, length(y_oscale)),
+                                   wobs = rep(1, ncol(ilpreds)),
+                                   cens,
                                    cl_ref,
                                    wdraws_ref = rep(1, length(cl_ref))) {
   y_oscale_mat <- matrix(y_oscale, nrow = nrow(ilpreds), ncol = ncol(ilpreds),
@@ -517,7 +520,7 @@ latent_ll_oscale_nebin <- function(ilpreds,
 }
 latent_ppd_oscale_nebin <- function(ilpreds_resamp,
                                     dis_resamp = rep(NA, nrow(ilpreds_resamp)),
-                                    wobs,
+                                    wobs = rep(1, ncol(ilpreds_resamp)),
                                     cl_ref,
                                     wdraws_ref = rep(1, length(cl_ref)),
                                     idxs_prjdraws) {
@@ -615,6 +618,447 @@ those families which are neither supported by **projpred**’s traditional
 nor by **projpred**’s augmented-data projection, which reflects the
 flexibility of the latent approach.
 
+## Censored observations (survival analysis)
+
+Response-scale analyses for models with censored responses (e.g., for
+time-to-event models as occurring in survival analysis) are possible
+when using the latent projection in combination with a custom
+`latent_ll_oscale` function (see
+[`?extend_family`](https://mc-stan.org/projpred/dev/reference/extend_family.md))
+that has an attribute called `cens_var` and makes use of its argument
+`cens`[⁸](#fn8).
+
+We will illustrate this here using simulated data and right censoring,
+first with a Weibull response and then with a log-normal response. Both
+examples are adapted from a
+[thread](https://discourse.mc-stan.org/t/using-projpred-latent-projection-with-brms-weibull-family-models/39275)
+on The Stan Forums. Here, we use the following common simulation part:
+
+``` r
+N_surv <- 500
+n_pred <- 50
+n_pred_truth <- 10
+n_pred_noise <- n_pred - n_pred_truth
+dat_sim_surv <- matrix(rnorm(N_surv * n_pred), ncol = n_pred)
+colnames(dat_sim_surv) <- paste0("x", c(paste0(".", seq_len(n_pred_truth)),
+                                        paste0("n.", seq_len(n_pred_noise))))
+linpreds_surv <- -0.1 +
+    dat_sim_surv[, seq_len(n_pred_truth), drop = FALSE] %*%
+    rep_len(c(0.3, -0.2), length.out = n_pred_truth)
+epreds_surv <- exp(linpreds_surv)
+dat_sim_surv <- as.data.frame(dat_sim_surv)
+cens_surv <- runif(N_surv,
+                   min = quantile(epreds_surv, probs = 0.4),
+                   max = quantile(epreds_surv, probs = 0.9))
+```
+
+### Example: Weibull distribution with right-censored observations
+
+For the Weibull model, we complete our data generation as follows:
+
+``` r
+shape_weib <- 1.2
+scales_weib <- epreds_surv / (gamma(1 + (1 / shape_weib)))
+y_weib <- rweibull(N_surv, shape = shape_weib, scale = scales_weib)
+is_event_weib <- y_weib < cens_surv
+yobs_weib <- y_weib
+yobs_weib[!is_event_weib] <- cens_surv[!is_event_weib]
+dat_sim_weib <- data.frame(yobs = yobs_weib,
+                           is_censored = 1 - is_event_weib,
+                           dat_sim_surv)
+```
+
+We now fit a reference model in
+[**brms**](https://paulbuerkner.com/brms/):
+
+``` r
+refm_fit_weib <- brms::brm(
+  formula = yobs | cens(is_censored) ~ .,
+  family = brms::weibull(),
+  data = dat_sim_weib,
+  prior = brms::prior(R2D2(mean_R2 = 0.4, prec_R2 = 2.5, cons_D2 = 1)),
+  ### Only for the sake of speed (not recommended in general):
+  chains = 2,
+  ###
+  silent = 2,
+  refresh = 0
+)
+```
+
+The following code prepares the
+[`cv_varsel()`](https://mc-stan.org/projpred/dev/reference/cv_varsel.md)
+run and the downstream **projpred** steps:
+
+``` r
+refm_shape <- as.matrix(refm_fit_weib)[, "shape", drop = FALSE]
+
+latent_ll_oscale_weib <- structure(function(
+    ilpreds,
+    dis = rep(NA, nrow(ilpreds)),
+    y_oscale,
+    wobs = rep(1, ncol(ilpreds)),
+    cens,
+    cl_ref,
+    wdraws_ref = rep(1, length(cl_ref))
+) {
+  idxs_cens <- which(cens == 1)
+  idxs_event <- setdiff(seq_along(cens), idxs_cens)
+  wobs_mat <- matrix(wobs, nrow = nrow(ilpreds), ncol = ncol(ilpreds),
+                     byrow = TRUE)
+  refm_shape_agg <- cl_agg(refm_shape, cl = cl_ref, wdraws = wdraws_ref)
+  ll_unw <- matrix(nrow = nrow(ilpreds), ncol = ncol(ilpreds))
+  for (idx_cens in idxs_cens) {
+    ll_unw[, idx_cens] <- pweibull(
+      y_oscale[idx_cens],
+      shape = refm_shape_agg,
+      scale = ilpreds[, idx_cens] / gamma(1 + 1 / as.vector(refm_shape_agg)),
+      lower.tail = FALSE,
+      log.p = TRUE
+    )
+  }
+  for (idx_event in idxs_event) {
+    ll_unw[, idx_event] <- dweibull(
+      y_oscale[idx_event],
+      shape = refm_shape_agg,
+      scale = ilpreds[, idx_event] / gamma(1 + 1 / as.vector(refm_shape_agg)),
+      log = TRUE
+    )
+  }
+  return(wobs_mat * ll_unw)
+}, cens_var = ~ is_censored)
+
+latent_ppd_oscale_weib <- function(
+    ilpreds_resamp,
+    dis_resamp = rep(NA, nrow(ilpreds_resamp)),
+    wobs = rep(1, ncol(ilpreds_resamp)),
+    cl_ref,
+    wdraws_ref = rep(1, length(cl_ref)),
+    idxs_prjdraws
+) {
+  warning("The draws from this `latent_ppd_oscale` function are uncensored.")
+  refm_shape_agg <- cl_agg(refm_shape, cl = cl_ref, wdraws = wdraws_ref)
+  refm_shape_agg_resamp <- refm_shape_agg[idxs_prjdraws, , drop = FALSE]
+  ppd <- rweibull(
+    prod(dim(ilpreds_resamp)),
+    shape = refm_shape_agg_resamp,
+    scale = ilpreds_resamp / gamma(1 + 1 / as.vector(refm_shape_agg_resamp))
+  )
+  ppd <- matrix(ppd, nrow = nrow(ilpreds_resamp), ncol = ncol(ilpreds_resamp))
+  return(ppd)
+}
+
+refm_weib <- get_refmodel(
+  refm_fit_weib,
+  latent = TRUE,
+  latent_ll_oscale = latent_ll_oscale_weib,
+  latent_ppd_oscale = latent_ppd_oscale_weib
+)
+```
+
+    Defining `latent_ilink` as a function which calls `family$linkinv`, but there is no guarantee that this will work for all families. If relying on `family$linkinv` is not appropriate or if this raises an error in downstream functions, supply a custom `latent_ilink` function (which is also allowed to return only `NA`s if response-scale post-processing is not needed).
+
+    Since `<refmodel>$dis` will consist of only `NA`s, downstream analyses based on this reference model object won't be able to use log predictive density (LPD) values on latent scale. Furthermore, proj_predict() won't be able to draw from the latent Gaussian distribution.
+
+Again, the message telling that `<refmodel>$dis` consists of only `NA`s
+will not concern us here because we will only focus on response-scale
+post-processing. The message concerning `latent_ilink` can be safely
+ignored here (the internal default based on `family$linkinv` works
+correctly in this case).
+
+Run
+[`cv_varsel()`](https://mc-stan.org/projpred/dev/reference/cv_varsel.md):
+
+``` r
+doParallel::registerDoParallel(ncores)
+cvvs_weib <- cv_varsel(
+  refm_weib,
+  ### Only for the sake of speed (not recommended in general):
+  method = "L1",
+  nloo = min(N_surv, 10),
+  nterms_max = 11,
+  nclusters_pred = 20,
+  ###
+  parallel = TRUE,
+  ### In interactive use, we recommend not to deactivate the verbose mode:
+  verbose = 0
+  ###
+)
+```
+
+    Warning: Some Pareto k diagnostic values are too high. See help('pareto-k-diagnostic') for details.
+
+    Warning: Some (2 / 500) Pareto k's for the reference model's PSIS-LOO weights
+    are > 0.7.
+
+    Warning: In the recalculation of the latent response values, some (6 / 500) expectation-specific Pareto k-values are > 0.7.
+    In general, we recommend K-fold CV in this case.
+
+    Loading required package: foreach
+
+    Loading required package: rngtools
+
+    Warning: Some Pareto k diagnostic values are too high. See help('pareto-k-diagnostic') for details.
+
+    Warning: Some (2 / 500) Pareto k's for the reference model's PSIS-LOO weights
+    are > 0.7.
+
+    Warning: In the recalculation of the latent response values, some (6 / 500) expectation-specific Pareto k-values are > 0.7.
+    In general, we recommend K-fold CV in this case.
+
+    Using standard importance sampling (SIS) due to a small number of clusters.
+
+``` r
+doParallel::stopImplicitCluster()
+foreach::registerDoSEQ()
+```
+
+In this case, we will ignore the warnings about high Pareto-\\\hat{k}\\
+values because we chose quite rough settings (e.g., only 2 MCMC chains)
+in this vignette (for technical reasons). We will also ignore the
+warning that SIS is used (instead of PSIS) because this is due to
+`nclusters_pred = 20` which we used only to speed up the building of the
+vignette.
+
+Plot the results:
+
+``` r
+plot(cvvs_weib, stats = "mlpd", deltas = TRUE)
+```
+
+![](latent_files/figure-html/weibull_plot_cvvs-1.png) Hence, the truly
+relevant predictors are identified correctly.
+
+Project onto the submodel consisting of the first `n_pred_truth`
+predictors and perform a “posterior-projection predictive check” (PPPC):
+
+``` r
+predictors_final_weib <- head(ranking(cvvs_weib)[["fulldata"]], n_pred_truth)
+prj_weib <- project(refm_weib, predictor_terms = predictors_final_weib)
+prj_predict_weib <- proj_predict(prj_weib)
+```
+
+    Warning in proj$refmodel$family$latent_ppd_oscale(mu_oscale_resamp, dis_resamp
+    = proj$dis[draw_inds], : The draws from this `latent_ppd_oscale` function are
+    uncensored.
+
+``` r
+bayesplot::bayesplot_theme_set(ggplot2::theme_bw())
+bayesplot::ppc_km_overlay(y = dat_sim_weib$yobs, yrep = prj_predict_weib,
+                          status_y = 1 - dat_sim_weib$is_censored)
+```
+
+    Note: `extrapolation_factor` now defaults to 1.2 (20%).
+    To display all posterior predictive draws, set `extrapolation_factor = Inf`.
+
+    Warning:  [1m [22mUsing `size` aesthetic for lines was deprecated in ggplot2 3.4.0.
+     [36mℹ [39m Please use `linewidth` instead.
+     [36mℹ [39m The deprecated feature was likely used in the  [34mbayesplot [39m package.
+      Please report the issue at  [3m [34m<https://github.com/stan-dev/bayesplot/issues/> [39m [23m.
+     [90mThis warning is displayed once every 8 hours. [39m
+     [90mCall `lifecycle::last_lifecycle_warnings()` to see where this warning was [39m
+     [90mgenerated. [39m
+
+![](latent_files/figure-html/weibull_pppc-1.png)
+
+As expected, this PPPC indicates that this submodel is a reasonable one
+(keeping in mind that such a PPPC is just a single model-diagnostic
+tool).
+
+### Example: Log-normal distribution with right-censored observations
+
+For the log-normal model, we complete our data generation as follows:
+
+``` r
+sdlog_lnorm <- 0.3
+y_lnorm <- rlnorm(N_surv, meanlog = linpreds_surv, sdlog = sdlog_lnorm)
+is_event_lnorm <- y_lnorm < cens_surv
+yobs_lnorm <- y_lnorm
+yobs_lnorm[!is_event_lnorm] <- cens_surv[!is_event_lnorm]
+dat_sim_lnorm <- data.frame(yobs = yobs_lnorm,
+                            is_censored = 1 - is_event_lnorm,
+                            dat_sim_surv)
+```
+
+Again, we fit a reference model in **brms**:
+
+``` r
+refm_fit_lnorm <- brms::brm(
+  formula = yobs | cens(is_censored) ~ .,
+  family = brms::lognormal(),
+  data = dat_sim_lnorm,
+  prior = brms::prior(R2D2(mean_R2 = 0.4, prec_R2 = 2.5, cons_D2 = 1)),
+  ### Only for the sake of speed (not recommended in general):
+  chains = 2,
+  ###
+  silent = 2,
+  refresh = 0
+)
+```
+
+The following code prepares the
+[`cv_varsel()`](https://mc-stan.org/projpred/dev/reference/cv_varsel.md)
+run and the downstream **projpred** steps:
+
+``` r
+latent_ll_oscale_lnorm <- structure(function(
+    ilpreds,
+    dis = rep(NA, nrow(ilpreds)),
+    y_oscale,
+    wobs = rep(1, ncol(ilpreds)),
+    cens,
+    cl_ref,
+    wdraws_ref = rep(1, length(cl_ref))
+) {
+  idxs_cens <- which(cens == 1)
+  idxs_event <- setdiff(seq_along(cens), idxs_cens)
+  wobs_mat <- matrix(wobs, nrow = nrow(ilpreds), ncol = ncol(ilpreds),
+                     byrow = TRUE)
+  ll_unw <- matrix(nrow = nrow(ilpreds), ncol = ncol(ilpreds))
+  for (idx_cens in idxs_cens) {
+    ll_unw[, idx_cens] <- plnorm(
+      y_oscale[idx_cens],
+      meanlog = ilpreds[, idx_cens],
+      sdlog = dis,
+      lower.tail = FALSE,
+      log.p = TRUE
+    )
+  }
+  for (idx_event in idxs_event) {
+    ll_unw[, idx_event] <- dlnorm(
+      y_oscale[idx_event],
+      meanlog = ilpreds[, idx_event],
+      sdlog = dis,
+      log = TRUE
+    )
+  }
+  return(wobs_mat * ll_unw)
+}, cens_var = ~ is_censored)
+
+latent_ppd_oscale_lnorm <- function(
+    ilpreds_resamp,
+    dis_resamp = rep(NA, nrow(ilpreds_resamp)),
+    wobs = rep(1, ncol(ilpreds_resamp)),
+    cl_ref,
+    wdraws_ref = rep(1, length(cl_ref)),
+    idxs_prjdraws
+) {
+  warning("The draws from this `latent_ppd_oscale` function are uncensored.")
+  ppd <- rlnorm(
+    prod(dim(ilpreds_resamp)),
+    meanlog = ilpreds_resamp,
+    sdlog = dis_resamp
+  )
+  ppd <- matrix(ppd, nrow = nrow(ilpreds_resamp), ncol = ncol(ilpreds_resamp))
+  return(ppd)
+}
+
+refm_lnorm <- get_refmodel(
+  refm_fit_lnorm,
+  latent = TRUE,
+  latent_ll_oscale = latent_ll_oscale_lnorm,
+  latent_ppd_oscale = latent_ppd_oscale_lnorm,
+  dis = as.matrix(refm_fit_lnorm)[, "sigma", drop = FALSE]
+)
+```
+
+    Defining `latent_ilink` as a function which calls `family$linkinv`, but there is no guarantee that this will work for all families. If relying on `family$linkinv` is not appropriate or if this raises an error in downstream functions, supply a custom `latent_ilink` function (which is also allowed to return only `NA`s if response-scale post-processing is not needed).
+
+The message concerning `latent_ilink` can be safely ignored here (the
+internal default based on `family$linkinv` works correctly in this
+case).
+
+Run
+[`cv_varsel()`](https://mc-stan.org/projpred/dev/reference/cv_varsel.md):
+
+``` r
+doParallel::registerDoParallel(ncores)
+cvvs_lnorm <- cv_varsel(
+  refm_lnorm,
+  ### Only for the sake of speed (not recommended in general):
+  method = "L1",
+  nloo = min(N_surv, 10),
+  nterms_max = 11,
+  nclusters_pred = 20,
+  ###
+  parallel = TRUE,
+  ### In interactive use, we recommend not to deactivate the verbose mode:
+  verbose = 0
+  ###
+)
+```
+
+    Warning: Some Pareto k diagnostic values are too high. See help('pareto-k-diagnostic') for details.
+
+    Warning: Some (6 / 500) Pareto k's for the reference model's PSIS-LOO weights
+    are > 0.7.
+
+    Warning: Input contains infinite or NA values, is constant or has constant
+    tail. Fitting of generalized Pareto distribution not performed.
+
+    Warning: In the recalculation of the latent response values, some (8 / 500) expectation-specific Pareto k-values are > 0.7.
+    In general, we recommend K-fold CV in this case.
+
+    Warning: Some Pareto k diagnostic values are too high. See help('pareto-k-diagnostic') for details.
+
+    Warning: Some (6 / 500) Pareto k's for the reference model's PSIS-LOO weights
+    are > 0.7.
+
+    Warning: Input contains infinite or NA values, is constant or has constant
+    tail. Fitting of generalized Pareto distribution not performed.
+
+    Warning: In the recalculation of the latent response values, some (8 / 500) expectation-specific Pareto k-values are > 0.7.
+    In general, we recommend K-fold CV in this case.
+
+    Using standard importance sampling (SIS) due to a small number of clusters.
+
+``` r
+doParallel::stopImplicitCluster()
+foreach::registerDoSEQ()
+```
+
+In this case, we will ignore the warnings about high Pareto-\\\hat{k}\\
+values because we chose quite rough settings (e.g., only 2 MCMC chains)
+in this vignette (for technical reasons). We will also ignore the
+warning that SIS is used (instead of PSIS) because this is due to
+`nclusters_pred = 20` which we used only to speed up the building of the
+vignette.
+
+Plot the results:
+
+``` r
+plot(cvvs_lnorm, stats = "mlpd", deltas = TRUE)
+```
+
+![](latent_files/figure-html/lognormal_plot_cvvs-1.png) Hence, the truly
+relevant predictors are identified correctly.
+
+Project onto the submodel consisting of the first `n_pred_truth`
+predictors and perform a “posterior-projection predictive check” (PPPC):
+
+``` r
+predictors_final_lnorm <- head(ranking(cvvs_lnorm)[["fulldata"]], n_pred_truth)
+prj_lnorm <- project(refm_lnorm, predictor_terms = predictors_final_lnorm)
+prj_predict_lnorm <- proj_predict(prj_lnorm)
+```
+
+    Warning in proj$refmodel$family$latent_ppd_oscale(mu_oscale_resamp, dis_resamp
+    = proj$dis[draw_inds], : The draws from this `latent_ppd_oscale` function are
+    uncensored.
+
+``` r
+bayesplot::ppc_km_overlay(y = dat_sim_lnorm$yobs, yrep = prj_predict_lnorm,
+                          status_y = 1 - dat_sim_lnorm$is_censored)
+```
+
+    Note: `extrapolation_factor` now defaults to 1.2 (20%).
+    To display all posterior predictive draws, set `extrapolation_factor = Inf`.
+
+![](latent_files/figure-html/lognormal_pppc-1.png)
+
+As expected, this PPPC indicates that this submodel is a reasonable one
+(keeping in mind that such a PPPC is just a single model-diagnostic
+tool).
+
 ## References
 
 Catalina, Alejandro, Paul Bürkner, and Aki Vehtari. 2021. “Latent Space
@@ -700,3 +1144,8 @@ Variable Selection for Discrete Response Families with Finite Support.”
     is the same as \\\phi\\ from the Stan notation—is called the
     *dispersion* parameter there, although the variance is increased by
     its reciprocal).
+
+8.  Briefly, the variable mentioned in the `cens_var` right-hand side
+    formula needs to contain the censoring indicators (e.g., `0` =
+    uncensored, `1` = censored) which can then be used within the custom
+    `latent_ll_oscale` function via its argument `cens`.
