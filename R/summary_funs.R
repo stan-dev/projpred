@@ -7,6 +7,9 @@
 #   weights). In case of the latent projection, this `list` (or `data.frame`)
 #   also needs to contain `y_oscale` (response values on the original response
 #   scale, i.e., the non-latent response values).
+# @param data_aux_test Used for evaluating `attr(family$latent_ll_oscale,
+#   "cens_var")` when constructing the input for argument `cens` of the
+#   `family$latent_ll_oscale` function.
 # @param family A `family` object.
 # @param wdraws A vector of weights for the parameter draws.
 # @param mu A matrix of expected values for `y`.
@@ -28,7 +31,8 @@
 #
 # @return A `list` with elements `mu` and `lppd` which are both vectors
 #   containing the values for the quantities from the description above.
-weighted_summary_means <- function(y_wobs_test, family, wdraws, mu, dis, cl_ref,
+weighted_summary_means <- function(y_wobs_test, data_aux_test, family, wdraws,
+                                   mu, dis, cl_ref,
                                    wdraws_ref = rep(1, length(cl_ref))) {
   if (!is.matrix(mu) || any(dim(mu) == 0)) {
     stop("Unexpected structure for `mu`. Do the return values of ",
@@ -54,7 +58,10 @@ weighted_summary_means <- function(y_wobs_test, family, wdraws, mu, dis, cl_ref,
     }
     loglik_oscale <- family$latent_ll_oscale(
       mu_oscale, dis = dis, y_oscale = y_wobs_test$y_oscale,
-      wobs = y_wobs_test$wobs, cl_ref = cl_ref, wdraws_ref = wdraws_ref
+      wobs = y_wobs_test$wobs,
+      cens = eval_el2_not_null(attr(family$latent_ll_oscale, "cens_var"),
+                               data_aux_test),
+      cl_ref = cl_ref, wdraws_ref = wdraws_ref
     )
     if (!is.matrix(loglik_oscale)) {
       stop("Unexpected structure for the output of `latent_ll_oscale`.")

@@ -156,8 +156,8 @@
 #' The function supplied to argument `latent_ll_oscale` needs to have the
 #' prototype
 #' ```{r, eval = FALSE}
-#' latent_ll_oscale(ilpreds, dis, y_oscale, wobs = rep(1, length(y_oscale)),
-#'                  cl_ref, wdraws_ref = rep(1, length(cl_ref)))
+#' latent_ll_oscale(ilpreds, dis, y_oscale, wobs = rep(1, ncol(ilpreds)),
+#'                  cens, cl_ref, wdraws_ref = rep(1, length(cl_ref)))
 #' ```
 #' where:
 #' * `ilpreds` accepts the return value from `latent_ilink`.
@@ -167,9 +167,30 @@
 #' the original response scale.
 #' * `wobs` accepts a numeric vector of length \eqn{N} containing observation
 #' weights.
+#' * `cens` accepts a vector containing censoring indicators for the
+#' observations for which to calculate the response-scale log-likelihood values
+#' (i.e., for the observations from the second dimension of `ilpreds`). When
+#' calling `latent_ll_oscale`, \pkg{projpred} always specifies argument `cens`
+#' (with value `NULL` if attribute `cens_var` of `latent_ll_oscale` does not
+#' exist or is `NULL`), so a default value of `cens` can be defined, but will
+#' not be used.
 #' * `cl_ref` accepts the same input as argument `cl_ref` of `latent_ilink`.
 #' * `wdraws_ref` accepts the same input as argument `wdraws_ref` of
 #' `latent_ilink`.
+#'
+#' In case of censoring (in the response values, i.e., survival or time-to-event
+#' analysis), the latent projection (with response-scale analyses) can be used
+#' by setting an attribute `cens_var` of the `latent_ll_oscale` function to a
+#' right-hand side formula with the name of the variable containing the
+#' censoring indicators (e.g., `0` = uncensored, `1` = censored) on its
+#' right-hand side. This variable named in the `cens_var` attribute is then
+#' retrieved (internally, whenever calling the `latent_ll_oscale` function) from
+#' the original dataset (possibly subsetted to the observations corresponding to
+#' the second dimension of `ilpreds`), `newdata`, or element `data` from
+#' [varsel()]'s argument `d_test`, whichever is applicable. The content of the
+#' retrieved variable is passed to argument `cens` of the `latent_ll_oscale`
+#' function. Note that only the performance statistics `"elpd"`, `"mlpd"`, and
+#' `"gmpd"` take censoring into account (on response scale).
 #'
 #' The return value of `latent_ll_oscale` needs to be an \eqn{S \times N}{S x N}
 #' matrix containing the response-scale (not latent-scale) log-likelihood values
@@ -178,7 +199,8 @@
 #' The function supplied to argument `latent_ppd_oscale` needs to have the
 #' prototype
 #' ```{r, eval = FALSE}
-#' latent_ppd_oscale(ilpreds_resamp, dis_resamp, wobs, cl_ref,
+#' latent_ppd_oscale(ilpreds_resamp, dis_resamp,
+#'                   wobs = rep(1, ncol(ilpreds_resamp)), cl_ref,
 #'                   wdraws_ref = rep(1, length(cl_ref)), idxs_prjdraws)
 #' ```
 #' where:
@@ -322,6 +344,16 @@ extend_family <- function(family,
                   "work on response scale (only on latent scale).")
         }
       }
+      # Check for argument `dis` because it was added in v2.9.0 and hence after
+      # the introduction of the latent projection from v2.4.0:
+      if (!any(c("dis", "...") %in% methods::formalArgs(latent_ll_oscale))) {
+        stop("Please add argument `dis` to the `latent_ll_oscale` function.")
+      }
+      # Check for argument `cens` because it was added after v2.9.1 and hence
+      # after the introduction of the latent projection from v2.4.0:
+      if (!any(c("cens", "...") %in% methods::formalArgs(latent_ll_oscale))) {
+        stop("Please add argument `cens` to the `latent_ll_oscale` function.")
+      }
       if (is.null(latent_ppd_oscale)) {
         if (!is.null(family$cats)) {
           latent_ppd_oscale <- latent_ppd_oscale_cats
@@ -336,6 +368,13 @@ extend_family <- function(family,
                   "returning only `NA`s). Thus, proj_predict() won't work on ",
                   "response scale (only on latent scale).")
         }
+      }
+      # Check for argument `dis_resamp` because it was added in v2.9.0 and hence
+      # after the introduction of the latent projection from v2.4.0:
+      if (!any(c("dis_resamp", "...") %in%
+               methods::formalArgs(latent_ppd_oscale))) {
+        stop("Please add argument `dis_resamp` to the `latent_ppd_oscale` ",
+             "function.")
       }
       family$latent_ilink <- latent_ilink
       family$latent_ll_oscale <- latent_ll_oscale
