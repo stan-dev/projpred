@@ -1820,8 +1820,9 @@ suggest_size.vsel <- function(
     if (object$nterms_max != object$nterms_all && warnings) {
       warning("Could not suggest submodel size within the searched range. ",
               "Investigate plot.vsel() to identify if the search was ",
-              "terminated too early. If this is the case, run variable ",
-              "selection with larger value for `nterms_max`.")
+              "terminated too early or the criterion is too strict."
+              "If this is the case, run variable selection with ",
+              "larger value for `nterms_max` or use less strict criterion.")
     }
   } else {
     suggested_size <- min(res)
