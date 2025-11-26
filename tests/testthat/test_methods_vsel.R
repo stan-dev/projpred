@@ -580,26 +580,31 @@ test_that("`stat` works", {
       } else {
         suggsize_seed <- NULL
       }
-      # Warnings are suppressed, but a suggested size of `NA` (because of a
-      # search which was terminated too early) is tested below:
+      # Warnings are suppressed, but a suggested size of nterms_max (because of
+      # a search which was terminated too early) is tested below:
       suggsize <- suppressWarnings(
         suggest_size(vss[[tstsetup_vs]], stat = stat_crr, seed = suggsize_seed)
       )
       expect_length(suggsize, 1)
-      if (!is.na(suggsize)) {
-        expect_true(is.vector(suggsize, "numeric"),
-                    info = paste(tstsetup, stat_crr, sep = "__"))
-        expect_true(suggsize >= 0, info = paste(tstsetup, stat_crr, sep = "__"))
-      } else {
-        expect_identical(suggsize, NA,
-                         info = paste(tstsetup, stat_crr, sep = "__"))
-        expect_true(
-          vss[[tstsetup_vs]]$nterms_max < vss[[tstsetup_vs]]$nterms_all,
-          info = paste(tstsetup, stat_crr, sep = "__")
-        )
-      }
+      expect_true(is.vector(suggsize, "numeric"),
+                  info = paste(tstsetup, stat_crr, sep = "__"))
+      expect_true(suggsize >= 0, info = paste(tstsetup, stat_crr, sep = "__"))
+      # If the search was terminated early and no submodel satisfies the
+      # criterion, suggest_size() should return nterms_max:
+      expect_true(suggsize <= vss[[tstsetup_vs]]$nterms_max,
+                  info = paste(tstsetup, stat_crr, sep = "__"))
     }
   }
+})
+
+test_that("returns nterms_max when no criterion is met", {
+  skip_if_not(run_vs)
+  tstsetup <- head(names(vss), 1)
+  suggsize <- suppressWarnings(
+    suggest_size(vss[[tstsetup]], stat = "elpd", pct = -1.0)
+  )
+  expect_identical(suggsize, vss[[tstsetup]]$nterms_max,
+                   info = tstsetup)
 })
 
 # ranking() ---------------------------------------------------------------

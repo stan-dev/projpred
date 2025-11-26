@@ -1816,16 +1816,12 @@ suggest_size.vsel <- function(
 
   if (nrow(res) == 0) {
     ## no submodel satisfying the criterion found
-    if (object$nterms_max == object$nterms_all) {
-      suggested_size <- object$nterms_max
-    } else {
-      suggested_size <- NA
-      if (warnings) {
-        warning("Could not suggest submodel size. Investigate plot.vsel() to ",
-                "identify if the search was terminated too early. If this is ",
-                "the case, run variable selection with larger value for ",
-                "`nterms_max`.")
-      }
+    suggested_size <- object$nterms_max
+    if (object$nterms_max != object$nterms_all && warnings) {
+      warning("Could not suggest submodel size within the searched range. ",
+              "Investigate plot.vsel() to identify if the search was ",
+              "terminated too early. If this is the case, run variable ",
+              "selection with larger value for `nterms_max`.")
     }
   } else {
     suggested_size <- min(res)
