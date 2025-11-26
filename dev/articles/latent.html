@@ -396,7 +396,7 @@ projection’s later:</p>
 <div class="sourceCode" id="cb11"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="va">time_lat</span><span class="op">)</span></span></code></pre></div>
 <pre><code>   user  system elapsed 
-  1.072   0.330   1.012 </code></pre>
+  1.069   0.325   1.011 </code></pre>
 <p>The message telling that <code>&lt;refmodel&gt;$dis</code> consists
 of only <code>NA</code>s will not concern us here because we will only
 focus on response-scale post-processing.</p>
@@ -478,7 +478,7 @@ approach:</p>
 <div class="sourceCode" id="cb20"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="va">time_trad</span><span class="op">)</span></span></code></pre></div>
 <pre><code>   user  system elapsed 
-  4.117   0.359   4.077 </code></pre>
+  4.141   0.355   4.097 </code></pre>
 <div class="sourceCode" id="cb22"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="op">(</span> <span class="va">gg_trad</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/graphics/plot.default.html" class="external-link">plot</a></span><span class="op">(</span><span class="va">vs_trad</span>, stats <span class="op">=</span> <span class="st">"gmpd"</span>, deltas <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span> <span class="op">)</span></span></code></pre></div>
 <p><img src="latent_files/figure-html/post_vs_trad-1.png" class="r-plt" width="90%" style="display: block; margin: auto;">
@@ -865,16 +865,16 @@ this case).</p>
 <span>  <span class="co">###</span></span>
 <span><span class="op">)</span></span></code></pre></div>
 <pre><code>Warning: Some Pareto k diagnostic values are too high. See help('pareto-k-diagnostic') for details.</code></pre>
-<pre><code>Warning: Some (2 / 500) Pareto k's for the reference model's PSIS-LOO weights
+<pre><code>Warning: Some (1 / 500) Pareto k's for the reference model's PSIS-LOO weights
 are &gt; 0.7.</code></pre>
-<pre><code>Warning: In the recalculation of the latent response values, some (6 / 500) expectation-specific Pareto k-values are &gt; 0.7.
+<pre><code>Warning: In the recalculation of the latent response values, some (8 / 500) expectation-specific Pareto k-values are &gt; 0.7.
 In general, we recommend K-fold CV in this case.</code></pre>
 <pre><code>Loading required package: foreach</code></pre>
 <pre><code>Loading required package: rngtools</code></pre>
 <pre><code>Warning: Some Pareto k diagnostic values are too high. See help('pareto-k-diagnostic') for details.</code></pre>
-<pre><code>Warning: Some (2 / 500) Pareto k's for the reference model's PSIS-LOO weights
+<pre><code>Warning: Some (1 / 500) Pareto k's for the reference model's PSIS-LOO weights
 are &gt; 0.7.</code></pre>
-<pre><code>Warning: In the recalculation of the latent response values, some (6 / 500) expectation-specific Pareto k-values are &gt; 0.7.
+<pre><code>Warning: In the recalculation of the latent response values, some (8 / 500) expectation-specific Pareto k-values are &gt; 0.7.
 In general, we recommend K-fold CV in this case.</code></pre>
 <pre><code>Using standard importance sampling (SIS) due to a small number of clusters.</code></pre>
 <div class="sourceCode" id="cb51"><pre class="downlit sourceCode r">
@@ -1030,21 +1030,17 @@ works correctly in this case).</p>
 <span>  <span class="co">###</span></span>
 <span><span class="op">)</span></span></code></pre></div>
 <pre><code>Warning: Some Pareto k diagnostic values are too high. See help('pareto-k-diagnostic') for details.</code></pre>
-<pre><code>Warning: Some (6 / 500) Pareto k's for the reference model's PSIS-LOO weights
+<pre><code>Warning: Some (8 / 500) Pareto k's for the reference model's PSIS-LOO weights
 are &gt; 0.7.</code></pre>
-<pre><code>Warning: Input contains infinite or NA values, is constant or has constant
-tail. Fitting of generalized Pareto distribution not performed.</code></pre>
-<pre><code>Warning: In the recalculation of the latent response values, some (8 / 500) expectation-specific Pareto k-values are &gt; 0.7.
+<pre><code>Warning: In the recalculation of the latent response values, some (11 / 500) expectation-specific Pareto k-values are &gt; 0.7.
 In general, we recommend K-fold CV in this case.</code></pre>
 <pre><code>Warning: Some Pareto k diagnostic values are too high. See help('pareto-k-diagnostic') for details.</code></pre>
-<pre><code>Warning: Some (6 / 500) Pareto k's for the reference model's PSIS-LOO weights
+<pre><code>Warning: Some (8 / 500) Pareto k's for the reference model's PSIS-LOO weights
 are &gt; 0.7.</code></pre>
-<pre><code>Warning: Input contains infinite or NA values, is constant or has constant
-tail. Fitting of generalized Pareto distribution not performed.</code></pre>
-<pre><code>Warning: In the recalculation of the latent response values, some (8 / 500) expectation-specific Pareto k-values are &gt; 0.7.
+<pre><code>Warning: In the recalculation of the latent response values, some (11 / 500) expectation-specific Pareto k-values are &gt; 0.7.
 In general, we recommend K-fold CV in this case.</code></pre>
 <pre><code>Using standard importance sampling (SIS) due to a small number of clusters.</code></pre>
-<div class="sourceCode" id="cb72"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb70"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu">doParallel</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/doParallel/man/registerDoParallel.html" class="external-link">stopImplicitCluster</a></span><span class="op">(</span><span class="op">)</span></span>
 <span><span class="fu">foreach</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/foreach/man/registerDoSEQ.html" class="external-link">registerDoSEQ</a></span><span class="op">(</span><span class="op">)</span></span></code></pre></div>
 <p>In this case, we will ignore the warnings about high Pareto-<span class="math inline">\(\hat{k}\)</span> values because we chose quite
@@ -1054,21 +1050,21 @@ technical reasons). We will also ignore the warning that SIS is used
 <code>nclusters_pred = 20</code> which we used only to speed up the
 building of the vignette.</p>
 <p>Plot the results:</p>
-<div class="sourceCode" id="cb73"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb71"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/graphics/plot.default.html" class="external-link">plot</a></span><span class="op">(</span><span class="va">cvvs_lnorm</span>, stats <span class="op">=</span> <span class="st">"mlpd"</span>, deltas <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span></code></pre></div>
 <p><img src="latent_files/figure-html/lognormal_plot_cvvs-1.png" class="r-plt" width="90%" style="display: block; margin: auto;">
 Hence, the truly relevant predictors are identified correctly.</p>
 <p>Project onto the submodel consisting of the first
 <code>n_pred_truth</code> predictors and perform a “posterior-projection
 predictive check” (PPPC):</p>
-<div class="sourceCode" id="cb74"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb72"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">predictors_final_lnorm</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span><span class="fu"><a href="../reference/ranking.html">ranking</a></span><span class="op">(</span><span class="va">cvvs_lnorm</span><span class="op">)</span><span class="op">[[</span><span class="st">"fulldata"</span><span class="op">]</span><span class="op">]</span>, <span class="va">n_pred_truth</span><span class="op">)</span></span>
 <span><span class="va">prj_lnorm</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/project.html">project</a></span><span class="op">(</span><span class="va">refm_lnorm</span>, predictor_terms <span class="op">=</span> <span class="va">predictors_final_lnorm</span><span class="op">)</span></span>
 <span><span class="va">prj_predict_lnorm</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/pred-projection.html">proj_predict</a></span><span class="op">(</span><span class="va">prj_lnorm</span><span class="op">)</span></span></code></pre></div>
 <pre><code>Warning in proj$refmodel$family$latent_ppd_oscale(mu_oscale_resamp, dis_resamp
 = proj$dis[draw_inds], : The draws from this `latent_ppd_oscale` function are
 uncensored.</code></pre>
-<div class="sourceCode" id="cb76"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb74"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu">bayesplot</span><span class="fu">::</span><span class="fu"><a href="https://mc-stan.org/bayesplot/reference/PPC-censoring.html" class="external-link">ppc_km_overlay</a></span><span class="op">(</span>y <span class="op">=</span> <span class="va">dat_sim_lnorm</span><span class="op">$</span><span class="va">yobs</span>, yrep <span class="op">=</span> <span class="va">prj_predict_lnorm</span>,</span>
 <span>                          status_y <span class="op">=</span> <span class="fl">1</span> <span class="op">-</span> <span class="va">dat_sim_lnorm</span><span class="op">$</span><span class="va">is_censored</span><span class="op">)</span></span></code></pre></div>
 <pre><code>Note: `extrapolation_factor` now defaults to 1.2 (20%).
