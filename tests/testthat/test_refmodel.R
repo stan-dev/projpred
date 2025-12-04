@@ -259,12 +259,19 @@ test_that(paste(
     }
 
     # Without `ynew`:
-    expect_warning(
-      predref_resp <- predict(refmods[[tstsetup]], dat, weightsnew = wobs_crr,
-                              offsetnew = offs_crr, type = "response"),
-      get_warn_wrhs_orhs(tstsetup, weightsnew = wobs_crr,
-                         offsetnew = offs_crr),
-      info = tstsetup
+    withCallingHandlers(
+      expect_warning(
+        predref_resp <- predict(refmods[[tstsetup]], dat, weightsnew = wobs_crr,
+                                offsetnew = offs_crr, type = "response"),
+        get_warn_wrhs_orhs(tstsetup, weightsnew = wobs_crr,
+                           offsetnew = offs_crr),
+        info = tstsetup
+      ),
+      warning = function(w) {
+        if (grepl("nobars.*reformulas", conditionMessage(w))) {
+          invokeRestart("muffleWarning")
+        }
+      }
     )
     expect_warning(
       predref_link <- predict(refmods[[tstsetup]], dat, weightsnew = wobs_crr,

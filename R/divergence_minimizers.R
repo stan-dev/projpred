@@ -1342,11 +1342,11 @@ empty_intersection <- function(x, el_nm = "new") {
 # "GPL (>=2)" (see <https://CRAN.R-project.org/package=lme4>).
 mkNewReTrms_man <- function(re.form, newdata, xlevels, re, D = NULL) {
   stopifnot(!is.null(newdata))
-  tt <- terms(suppressWarnings(lme4::subbars(re.form)))
+  tt <- terms(lme4::subbars(re.form))
   rfd <- suppressWarnings(
     model.frame(tt, newdata, na.action = na.pass, xlev = xlevels)
   )
-  ReTrms <- lme4::mkReTrms(suppressWarnings(lme4::findbars(re.form[[2]])), rfd)
+  ReTrms <- lme4::mkReTrms(lme4::findbars(re.form[[2]]), rfd)
   ns.re <- names(re)
   nRnms <- names(Rcnms <- ReTrms$cnms)
   if (!all(nRnms %in% ns.re)) {
