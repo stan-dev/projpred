@@ -260,7 +260,7 @@ test_that(paste(
 
     # Without `ynew`:
     expect_warning(
-      withCallingHandlers(
+      predref_resp <- withCallingHandlers(
         predict(refmods[[tstsetup]], dat,
                 weightsnew = wobs_crr,
                 offsetnew = offs_crr,
