@@ -56,7 +56,8 @@ Imports:
     MASS,
     ordinal,
     nnet,
-    mclogit
+    mclogit,
+    reformulas,
 Suggests:
     ggrepel,
     ggfortify,

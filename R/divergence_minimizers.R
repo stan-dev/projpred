@@ -52,7 +52,7 @@ divmin <- function(
     sdivmin <- fit_glmer_callback
     if (getOption("projpred.PQL", FALSE)) {
       # Split up the formula into a fixed and a random part (note: we could also
-      # use lme4::nobars() and lme4::findbars() here):
+      # use reformulas::nobars() and reformulas::findbars() here):
       formula_random <- split_formula_random_gamm4(formula)
       projpred_formulas_no_random <- validate_response_formula(
         formula_random$formula
@@ -1342,11 +1342,11 @@ empty_intersection <- function(x, el_nm = "new") {
 # "GPL (>=2)" (see <https://CRAN.R-project.org/package=lme4>).
 mkNewReTrms_man <- function(re.form, newdata, xlevels, re, D = NULL) {
   stopifnot(!is.null(newdata))
-  tt <- terms(lme4::subbars(re.form))
+  tt <- terms(reformulas::subbars(re.form))
   rfd <- suppressWarnings(
     model.frame(tt, newdata, na.action = na.pass, xlev = xlevels)
   )
-  ReTrms <- lme4::mkReTrms(lme4::findbars(re.form[[2]]), rfd)
+  ReTrms <- reformulas::mkReTrms(reformulas::findbars(re.form[[2]]), rfd)
   ns.re <- names(re)
   nRnms <- names(Rcnms <- ReTrms$cnms)
   if (!all(nRnms %in% ns.re)) {
