@@ -22,6 +22,9 @@
 
 ### Minor changes
 
+- Use `reformulas` package directly for formula processing functions.
+  This package is already a dependency of `lme4` \>= v1.1-38.
+
 ### Bug fixes
 
 ## projpred 2.9.1
