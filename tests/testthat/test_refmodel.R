@@ -260,8 +260,15 @@ test_that(paste(
 
     # Without `ynew`:
     expect_warning(
-      predref_resp <- predict(refmods[[tstsetup]], dat, weightsnew = wobs_crr,
-                              offsetnew = offs_crr, type = "response"),
+      withCallingHandlers(
+        predref_resp <- predict(refmods[[tstsetup]], dat, weightsnew = wobs_crr,
+                                offsetnew = offs_crr, type = "response"),
+        warning = function(w) {
+          if (grepl("(nobars|subbars|findbars|mkReTrms).*reformulas", conditionMessage(w))) {
+            invokeRestart("muffleWarning")
+          }
+        }
+      ),
       get_warn_wrhs_orhs(tstsetup, weightsnew = wobs_crr,
                          offsetnew = offs_crr),
       info = tstsetup
