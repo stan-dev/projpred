@@ -20,7 +20,7 @@
       projpred
     </a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Released version">2.9.1</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Released version">2.10.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -63,9 +63,25 @@
 <div class="row">
   <main id="main" class="col-md-9"><div class="page-header">
       <img src="../logo.svg" class="logo" alt=""><h1>Changelog</h1>
-      <small>Source: <a href="https://github.com/stan-dev/projpred/blob/v2.9.1/NEWS.md" class="external-link"><code>NEWS.md</code></a></small>
+      <small>Source: <a href="https://github.com/stan-dev/projpred/blob/master/NEWS.md" class="external-link"><code>NEWS.md</code></a></small>
     </div>
 
+    <div class="section level2">
+<h2 class="pkg-version" data-toc-text="2.10.0" id="projpred-2100">projpred 2.10.0<a class="anchor" aria-label="anchor" href="#projpred-2100"></a></h2>
+<div class="section level3">
+<h3 id="major-changes-2-10-0">Major changes<a class="anchor" aria-label="anchor" href="#major-changes-2-10-0"></a></h3>
+<ul><li>Added support for censored observations when using the latent projection (with response-scale analyses). This makes it possible, e.g., to use the latent projection for time-to-event models (also known as models for survival analysis). Due to this new feature, the function passed to argument <code>latent_ll_oscale</code> of <code><a href="../reference/extend_family.html">extend_family()</a></code> now needs to have an argument <code>cens</code>. See <code><a href="../reference/extend_family.html">?extend_family</a></code> (section “Latent projection”) as well as the latent-projection vignette (section <a href="https://mc-stan.org/projpred/articles/latent.html#cens">“Censored observations (survival analysis)”</a>) for more information and examples. Note that only the performance statistics <code>"elpd"</code>, <code>"mlpd"</code>, and <code>"gmpd"</code> take censoring into account (on response scale). (GitHub: <a href="https://github.com/stan-dev/projpred/issues/528" class="external-link">#528</a>)</li>
+</ul></div>
+<div class="section level3">
+<h3 id="minor-changes-2-10-0">Minor changes<a class="anchor" aria-label="anchor" href="#minor-changes-2-10-0"></a></h3>
+<ul><li>
+<code><a href="../reference/suggest_size.html">suggest_size()</a></code> returns <code>nterms_max</code> instead of NA when no model satisfies the criterion</li>
+<li>Use <code>reformulas</code> package directly for formula processing functions. This package is already a dependency of <code>lme4</code> &gt;= v1.1-38.</li>
+</ul></div>
+<div class="section level3">
+<h3 id="bug-fixes-2-10-0">Bug fixes<a class="anchor" aria-label="anchor" href="#bug-fixes-2-10-0"></a></h3>
+</div>
+</div>
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="2.9.1" id="projpred-291">projpred 2.9.1<a class="anchor" aria-label="anchor" href="#projpred-291"></a></h2><p class="text-muted">CRAN release: 2025-10-28</p>
 <div class="section level3">
@@ -642,7 +658,7 @@
 </div>
 
 <div class="pkgdown-footer-right">
-  <p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.1.3.</p>
+  <p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.2.0.</p>
 </div>
 
     </footer></div>
