@@ -4,9 +4,9 @@
     + R version 4.5.1 (2025-06-13) on Ubuntu 24.04.3 LTS system (platform:
       x86_64-pc-linux-gnu (64-bit))
 * win-builder:
-    + R-devel (R Under development (unstable) (2025-07-02 r88374 ucrt))
+    + R-devel R Under development (unstable) (2025-12-04 r89100 ucrt)
     + R-release (R version 4.5.2 (2025-10-31 ucrt))
-    + R-oldrelease (R version 4.4.3 (2025-02-28 ucrt))
+    + R-oldrelease (version 4.4.3 (2025-02-28 ucrt))
 
 
 ## R CMD check results
@@ -61,10 +61,13 @@ The R-oldrelease check on win-builder gave the following NOTEs:
       cmdstanr
     Availability using Additional_repositories specification:
       cmdstanr   yes   https://stan-dev.r-universe.dev/
-    
+
+    * checking package dependencies ... NOTE
+    Packages suggested but not available for checking: 'unix', 'cmdstanr'
 
 For an explanation of the first NOTE, see the explanations for the local check
-above.
+above. The unavailability of some "suggested" dependencies mentioned in the
+second NOTE is not due to 'projpred'.
 
 ## Downstream dependencies
 
