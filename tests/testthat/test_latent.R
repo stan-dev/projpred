@@ -243,9 +243,9 @@ rm(list = setdiff(ls(), ls_bu))
 test_that(paste0(
   "it is possible to handle censored observations in `latent_ll_oscale`"
 ), {
-  tstsetups <- names(refmods[sapply(refmods, function(refmod_i) {
+  tstsetups <- names(refmods[vapply(refmods, function(refmod_i) {
     refmod_i$family$for_latent
-  })])
+  }, FUN.VALUE = logical(1))])
   tstsetups <- head(tstsetups, 1)
   for (tstsetup in tstsetups) {
     refmod_i <- refmods[[tstsetup]]
