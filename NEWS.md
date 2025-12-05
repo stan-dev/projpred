@@ -2,13 +2,15 @@
 
 If you read this from a place other than <https://mc-stan.org/projpred/news/index.html>, please consider switching to that website since it features better formatting and cross-linking.
 
-# projpred 2.9.1.9000 (development)
+# projpred 2.10.0
 
 ## Major changes
 
 * Added support for censored observations when using the latent projection (with response-scale analyses). This makes it possible, e.g., to use the latent projection for time-to-event models (also known as models for survival analysis). Due to this new feature, the function passed to argument `latent_ll_oscale` of `extend_family()` now needs to have an argument `cens`. See `?extend_family` (section "Latent projection") as well as the latent-projection vignette (section ["Censored observations (survival analysis)"](https://mc-stan.org/projpred/articles/latent.html#cens)) for more information and examples. Note that only the performance statistics `"elpd"`, `"mlpd"`, and `"gmpd"` take censoring into account (on response scale). (GitHub: #528)
 
 ## Minor changes
+
+* `suggest_size()` returns `nterms_max` instead of NA when no model satisfies the criterion
 * Use `reformulas` package directly for formula processing functions. This package is already a dependency of `lme4` >= v1.1-38.
 
 ## Bug fixes
