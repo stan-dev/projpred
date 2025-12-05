@@ -265,11 +265,6 @@ test_that(paste(
                 weightsnew = wobs_crr,
                 offsetnew = offs_crr,
                 type = "response"),
-        warning = function(w) {
-          if (grepl("nobars.*reformulas", conditionMessage(w))) {
-            invokeRestart("muffleWarning")
-          }
-        }
       ),
       get_warn_wrhs_orhs(tstsetup,
                         weightsnew = wobs_crr,
