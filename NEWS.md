@@ -2,6 +2,15 @@
 
 If you read this from a place other than <https://mc-stan.org/projpred/news/index.html>, please consider switching to that website since it features better formatting and cross-linking.
 
+# profpred 2.10.1.9000
+
+## Major changes
+
+## Minor changes
+
+## Bug fixes
+
+
 # projpred 2.10.0
 
 ## Major changes
