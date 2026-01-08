@@ -91,7 +91,7 @@ by projpred's internal default `div_minimizer` functions, see
     returned object inherits from class `clmm`) for the
     [`brms::cumulative()`](https://paulbuerkner.com/brms/reference/brmsfamily.html)
     family,
-    [`mclogit::mblogit()`](https://rdrr.io/pkg/mclogit/man/mblogit.html)
+    [`mclogit::mblogit()`](https://melff.github.io/mclogit/reference/mblogit.html)
     (the returned object inherits from class `mmblogit`) for the
     [`brms::categorical()`](https://paulbuerkner.com/brms/reference/brmsfamily.html)
     family.

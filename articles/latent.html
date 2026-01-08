@@ -11,13 +11,8 @@
 <link rel="apple-touch-icon" sizes="180x180" href="../apple-touch-icon.png">
 <link rel="icon" sizes="any" href="../favicon.ico">
 <link rel="manifest" href="../site.webmanifest">
-<!-- mathjax math --><script src="https://cdn.jsdelivr.net/npm/mathjax@3.2.2/es5/tex-mml-chtml.js" integrity="sha256-MASABpB4tYktI2Oitl4t+78w/lyA+D7b/s9GEP0JOGI=" crossorigin="anonymous"></script><script>
-  window.MathJax = {
-    chtml: {
-      fontURL: "https://cdn.jsdelivr.net/npm/mathjax@3.2.2/es5/output/chtml/fonts/woff-v2"
-    }
-  };
-</script><script src="../lightswitch.js"></script><script src="../deps/jquery-3.6.0/jquery-3.6.0.min.js"></script><meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+<!-- mathjax math --><script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@4.0.0/tex-mml-chtml.js" integrity="sha256-qoRlVrS5NAnXSSSiMfFXwK8C9obG11Iybe4h2+bQYR4=" crossorigin="anonymous">
+  </script><script src="../lightswitch.js"></script><script src="../deps/jquery-3.6.0/jquery-3.6.0.min.js"></script><meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
 <link href="../deps/bootstrap-5.3.1/bootstrap.min.css" rel="stylesheet">
 <script src="../deps/bootstrap-5.3.1/bootstrap.bundle.min.js"></script><link href="../deps/Source_Sans_3-0.4.10/font.css" rel="stylesheet">
 <link href="../deps/Source_Code_Pro-0.4.10/font.css" rel="stylesheet">
@@ -98,9 +93,9 @@
   <main id="main" class="col-md-9"><div class="page-header">
       <img src="../logo.svg" class="logo" alt=""><h1>Latent projection predictive feature selection</h1>
             
-            <h4 data-toc-skip class="date">2025-12-05</h4>
+            <h4 data-toc-skip class="date">2026-01-08</h4>
       
-      <small class="dont-index">Source: <a href="https://github.com/stan-dev/projpred/blob/master/vignettes/latent.Rmd" class="external-link"><code>vignettes/latent.Rmd</code></a></small>
+      <small class="dont-index">Source: <a href="https://github.com/stan-dev/projpred/blob/v2.10.0/vignettes/latent.Rmd" class="external-link"><code>vignettes/latent.Rmd</code></a></small>
       <div class="d-none name"><code>latent.Rmd</code></div>
     </div>
 
@@ -395,7 +390,7 @@ projection’s later:</p>
 <div class="sourceCode" id="cb11"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="va">time_lat</span><span class="op">)</span></span></code></pre></div>
 <pre><code>   user  system elapsed 
-  1.059   0.344   1.014 </code></pre>
+  1.077   0.348   1.034 </code></pre>
 <p>The message telling that <code>&lt;refmodel&gt;$dis</code> consists
 of only <code>NA</code>s will not concern us here because we will only
 focus on response-scale post-processing.</p>
@@ -418,7 +413,7 @@ the plots in this vignette.</p>
 <div class="sourceCode" id="cb13"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/options.html" class="external-link">options</a></span><span class="op">(</span>projpred.plot_vsel_size_position <span class="op">=</span> <span class="st">"secondary_x"</span><span class="op">)</span></span>
 <span><span class="op">(</span> <span class="va">gg_lat</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/graphics/plot.default.html" class="external-link">plot</a></span><span class="op">(</span><span class="va">vs_lat</span>, stats <span class="op">=</span> <span class="st">"gmpd"</span>, deltas <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span> <span class="op">)</span></span></code></pre></div>
-<p><img src="latent_files/figure-html/plot_vsel_lat-1.png" class="r-plt" width="90%" style="display: block; margin: auto;"></p>
+<p><img src="latent_files/figure-html/plot_vsel_lat-1.png" class="r-plt" alt="" width="90%" style="display: block; margin: auto;"></p>
 <p>Based on this plot, we decide for a submodel size of 11:</p>
 <div class="sourceCode" id="cb14"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">size_decided_lat</span> <span class="op">&lt;-</span> <span class="fl">11</span></span></code></pre></div>
@@ -477,10 +472,10 @@ approach:</p>
 <div class="sourceCode" id="cb20"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="va">time_trad</span><span class="op">)</span></span></code></pre></div>
 <pre><code>   user  system elapsed 
-  4.161   0.353   4.114 </code></pre>
+  4.225   0.360   4.185 </code></pre>
 <div class="sourceCode" id="cb22"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="op">(</span> <span class="va">gg_trad</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/graphics/plot.default.html" class="external-link">plot</a></span><span class="op">(</span><span class="va">vs_trad</span>, stats <span class="op">=</span> <span class="st">"gmpd"</span>, deltas <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span> <span class="op">)</span></span></code></pre></div>
-<p><img src="latent_files/figure-html/post_vs_trad-1.png" class="r-plt" width="90%" style="display: block; margin: auto;">
+<p><img src="latent_files/figure-html/post_vs_trad-1.png" class="r-plt" alt="" width="90%" style="display: block; margin: auto;">
 As these results show, the traditional projection takes longer than the
 latent projection, although the difference is rather small on absolute
 scale (which is due to the fact that the L1 search is already quite
@@ -674,7 +669,7 @@ this case).</p>
 a submodel size:</p>
 <div class="sourceCode" id="cb29"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="op">(</span> <span class="va">gg_nebin</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/graphics/plot.default.html" class="external-link">plot</a></span><span class="op">(</span><span class="va">vs_nebin</span>, stats <span class="op">=</span> <span class="st">"gmpd"</span>, deltas <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span> <span class="op">)</span></span></code></pre></div>
-<p><img src="latent_files/figure-html/plot_vsel_nebin-1.png" class="r-plt" width="90%" style="display: block; margin: auto;"></p>
+<p><img src="latent_files/figure-html/plot_vsel_nebin-1.png" class="r-plt" alt="" width="90%" style="display: block; margin: auto;"></p>
 <p>For the decision of the final submodel size, we act as if we
 preferred accuracy over sparsity in their trade-off mentioned in the <a href="https://mc-stan.org/projpred/articles/projpred.html#decision-size">main
 vignette</a>, so we decide for a submodel size of 11:</p>
@@ -869,14 +864,14 @@ this case).</p>
 <span>  <span class="co">###</span></span>
 <span><span class="op">)</span></span></code></pre></div>
 <pre><code>Warning: Some Pareto k diagnostic values are too high. See help('pareto-k-diagnostic') for details.</code></pre>
-<pre><code>Warning: Some (3 / 500) Pareto k's for the reference model's PSIS-LOO weights
+<pre><code>Warning: Some (1 / 500) Pareto k's for the reference model's PSIS-LOO weights
 are &gt; 0.7.</code></pre>
-<pre><code>Warning: In the recalculation of the latent response values, some (6 / 500) expectation-specific Pareto k-values are &gt; 0.7.
+<pre><code>Warning: In the recalculation of the latent response values, some (5 / 500) expectation-specific Pareto k-values are &gt; 0.7.
 In general, we recommend K-fold CV in this case.</code></pre>
 <pre><code>Warning: Some Pareto k diagnostic values are too high. See help('pareto-k-diagnostic') for details.</code></pre>
-<pre><code>Warning: Some (3 / 500) Pareto k's for the reference model's PSIS-LOO weights
+<pre><code>Warning: Some (1 / 500) Pareto k's for the reference model's PSIS-LOO weights
 are &gt; 0.7.</code></pre>
-<pre><code>Warning: In the recalculation of the latent response values, some (6 / 500) expectation-specific Pareto k-values are &gt; 0.7.
+<pre><code>Warning: In the recalculation of the latent response values, some (5 / 500) expectation-specific Pareto k-values are &gt; 0.7.
 In general, we recommend K-fold CV in this case.</code></pre>
 <pre><code>Using standard importance sampling (SIS) due to a small number of clusters.</code></pre>
 <div class="sourceCode" id="cb49"><pre class="downlit sourceCode r">
@@ -894,7 +889,7 @@ building of the vignette.</p>
 <p>Plot the results:</p>
 <div class="sourceCode" id="cb50"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/graphics/plot.default.html" class="external-link">plot</a></span><span class="op">(</span><span class="va">cvvs_weib</span>, stats <span class="op">=</span> <span class="st">"mlpd"</span>, deltas <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span></code></pre></div>
-<p><img src="latent_files/figure-html/weibull_plot_cvvs-1.png" class="r-plt" width="90%" style="display: block; margin: auto;">
+<p><img src="latent_files/figure-html/weibull_plot_cvvs-1.png" class="r-plt" alt="" width="90%" style="display: block; margin: auto;">
 Hence, the truly relevant predictors are identified correctly.</p>
 <p>Project onto the submodel consisting of the first
 <code>n_pred_truth</code> predictors and perform a “posterior-projection
@@ -919,7 +914,7 @@ To display all posterior predictive draws, set `extrapolation_factor = Inf`.</co
  [90mThis warning is displayed once every 8 hours. [39m
  [90mCall `lifecycle::last_lifecycle_warnings()` to see where this warning was [39m
  [90mgenerated. [39m</code></pre>
-<p><img src="latent_files/figure-html/weibull_pppc-1.png" class="r-plt" width="90%" style="display: block; margin: auto;"></p>
+<p><img src="latent_files/figure-html/weibull_pppc-1.png" class="r-plt" alt="" width="90%" style="display: block; margin: auto;"></p>
 <p>As expected, this PPPC indicates that this submodel is a reasonable
 one (keeping in mind that such a PPPC is just a single model-diagnostic
 tool).</p>
@@ -1040,14 +1035,14 @@ works correctly in this case).</p>
 <span>  <span class="co">###</span></span>
 <span><span class="op">)</span></span></code></pre></div>
 <pre><code>Warning: Some Pareto k diagnostic values are too high. See help('pareto-k-diagnostic') for details.</code></pre>
-<pre><code>Warning: Some (3 / 500) Pareto k's for the reference model's PSIS-LOO weights
+<pre><code>Warning: Some (4 / 500) Pareto k's for the reference model's PSIS-LOO weights
 are &gt; 0.7.</code></pre>
-<pre><code>Warning: In the recalculation of the latent response values, some (6 / 500) expectation-specific Pareto k-values are &gt; 0.7.
+<pre><code>Warning: In the recalculation of the latent response values, some (8 / 500) expectation-specific Pareto k-values are &gt; 0.7.
 In general, we recommend K-fold CV in this case.</code></pre>
 <pre><code>Warning: Some Pareto k diagnostic values are too high. See help('pareto-k-diagnostic') for details.</code></pre>
-<pre><code>Warning: Some (3 / 500) Pareto k's for the reference model's PSIS-LOO weights
+<pre><code>Warning: Some (4 / 500) Pareto k's for the reference model's PSIS-LOO weights
 are &gt; 0.7.</code></pre>
-<pre><code>Warning: In the recalculation of the latent response values, some (6 / 500) expectation-specific Pareto k-values are &gt; 0.7.
+<pre><code>Warning: In the recalculation of the latent response values, some (8 / 500) expectation-specific Pareto k-values are &gt; 0.7.
 In general, we recommend K-fold CV in this case.</code></pre>
 <pre><code>Using standard importance sampling (SIS) due to a small number of clusters.</code></pre>
 <div class="sourceCode" id="cb68"><pre class="downlit sourceCode r">
@@ -1065,7 +1060,7 @@ building of the vignette.</p>
 <p>Plot the results:</p>
 <div class="sourceCode" id="cb69"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/graphics/plot.default.html" class="external-link">plot</a></span><span class="op">(</span><span class="va">cvvs_lnorm</span>, stats <span class="op">=</span> <span class="st">"mlpd"</span>, deltas <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span></code></pre></div>
-<p><img src="latent_files/figure-html/lognormal_plot_cvvs-1.png" class="r-plt" width="90%" style="display: block; margin: auto;">
+<p><img src="latent_files/figure-html/lognormal_plot_cvvs-1.png" class="r-plt" alt="" width="90%" style="display: block; margin: auto;">
 Hence, the truly relevant predictors are identified correctly.</p>
 <p>Project onto the submodel consisting of the first
 <code>n_pred_truth</code> predictors and perform a “posterior-projection
@@ -1082,7 +1077,7 @@ uncensored.</code></pre>
 <span>                          status_y <span class="op">=</span> <span class="fl">1</span> <span class="op">-</span> <span class="va">dat_sim_lnorm</span><span class="op">$</span><span class="va">is_censored</span><span class="op">)</span></span></code></pre></div>
 <pre><code>Note: `extrapolation_factor` now defaults to 1.2 (20%).
 To display all posterior predictive draws, set `extrapolation_factor = Inf`.</code></pre>
-<p><img src="latent_files/figure-html/lognormal_pppc-1.png" class="r-plt" width="90%" style="display: block; margin: auto;"></p>
+<p><img src="latent_files/figure-html/lognormal_pppc-1.png" class="r-plt" alt="" width="90%" style="display: block; margin: auto;"></p>
 <p>As expected, this PPPC indicates that this submodel is a reasonable
 one (keeping in mind that such a PPPC is just a single model-diagnostic
 tool).</p>

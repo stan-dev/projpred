@@ -2,6 +2,8 @@
 
 ## projpred 2.10.0
 
+CRAN release: 2025-12-06
+
 ### Major changes
 
 - Added support for censored observations when using the latent
