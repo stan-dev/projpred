@@ -1,6 +1,8 @@
 # Changelog
 
-## projpred 2.9.1.9000 (development)
+## projpred 2.10.0
+
+CRAN release: 2025-12-06
 
 ### Major changes
 
@@ -22,6 +24,9 @@
 
 ### Minor changes
 
+- [`suggest_size()`](https://mc-stan.org/projpred/dev/reference/suggest_size.md)
+  returns `nterms_max` instead of NA when no model satisfies the
+  criterion
 - Use `reformulas` package directly for formula processing functions.
   This package is already a dependency of `lme4` \>= v1.1-38.
 

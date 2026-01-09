@@ -40,13 +40,13 @@ Source:
 
 Piironen J, Paasiniemi M, Catalina A, Weber F, Martin O, Vehtari A
 (2025). “projpred: Projection Predictive Feature Selection.” R package
-version 2.9.1.9001, <https://mc-stan.org/projpred/>.
+version 2.10.0.9000, <https://mc-stan.org/projpred/>.
 
     @Misc{,
       title = {{{projpred}}: {{Projection}} Predictive Feature Selection},
       author = {Juho Piironen and Markus Paasiniemi and Alejandro Catalina and Frank Weber and Osvaldo Martin and Aki Vehtari},
       year = {2025},
-      note = {R package version 2.9.1.9001},
+      note = {R package version 2.10.0.9000},
       url = {https://mc-stan.org/projpred/},
       encoding = {UTF-8},
     }

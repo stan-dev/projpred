@@ -130,8 +130,8 @@ We now fit the reference model to the data. To make this vignette build
 faster, we use only 2 MCMC chains and 1000 iterations per chain (with
 half of them being discarded as warmup draws). In practice, 4 chains and
 2000 iterations per chain are reasonable defaults. Furthermore, we make
-use of [**rstan**](https://mc-stan.org/rstan/)’s parallelization, which
-means to run each chain on a separate CPU core[²](#fn2). If you run the
+use of [**rstan**](https://mc-stan.org/)’s parallelization, which means
+to run each chain on a separate CPU core[²](#fn2). If you run the
 following code yourself, you can either rely on an automatic mechanism
 to detect the number of CPU cores (like the
 [`parallel::detectCores()`](https://rdrr.io/r/parallel/detectCores.html)

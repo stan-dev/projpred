@@ -316,7 +316,7 @@ print(time_lat)
 ```
 
        user  system elapsed 
-      1.055   0.347   1.017 
+      1.074   0.343   1.026 
 
 The message telling that `<refmodel>$dis` consists of only `NA`s will
 not concern us here because we will only focus on response-scale
@@ -423,7 +423,7 @@ print(time_trad)
 ```
 
        user  system elapsed 
-      4.124   0.361   4.087 
+      4.203   0.338   4.140 
 
 ``` r
 ( gg_trad <- plot(vs_trad, stats = "gmpd", deltas = TRUE) )
@@ -795,7 +795,7 @@ cvvs_weib <- cv_varsel(
     Warning: Some (1 / 500) Pareto k's for the reference model's PSIS-LOO weights
     are > 0.7.
 
-    Warning: In the recalculation of the latent response values, some (4 / 500) expectation-specific Pareto k-values are > 0.7.
+    Warning: In the recalculation of the latent response values, some (6 / 500) expectation-specific Pareto k-values are > 0.7.
     In general, we recommend K-fold CV in this case.
 
     Warning: Some Pareto k diagnostic values are too high. See help('pareto-k-diagnostic') for details.
@@ -803,7 +803,7 @@ cvvs_weib <- cv_varsel(
     Warning: Some (1 / 500) Pareto k's for the reference model's PSIS-LOO weights
     are > 0.7.
 
-    Warning: In the recalculation of the latent response values, some (4 / 500) expectation-specific Pareto k-values are > 0.7.
+    Warning: In the recalculation of the latent response values, some (6 / 500) expectation-specific Pareto k-values are > 0.7.
     In general, we recommend K-fold CV in this case.
 
     Using standard importance sampling (SIS) due to a small number of clusters.
@@ -858,7 +858,7 @@ bayesplot::ppc_km_overlay(y = dat_sim_weib$yobs, yrep = prj_predict_weib,
      [36mℹ [39m Please use `linewidth` instead.
      [36mℹ [39m The deprecated feature was likely used in the  [34mbayesplot [39m package.
       Please report the issue at  [3m [34m<https://github.com/stan-dev/bayesplot/issues/> [39m [23m.
-     [90mThis warning is displayed once every 8 hours. [39m
+     [90mThis warning is displayed once per session. [39m
      [90mCall `lifecycle::last_lifecycle_warnings()` to see where this warning was [39m
      [90mgenerated. [39m
 
@@ -998,18 +998,18 @@ cvvs_lnorm <- cv_varsel(
 
     Warning: Some Pareto k diagnostic values are too high. See help('pareto-k-diagnostic') for details.
 
-    Warning: Some (4 / 500) Pareto k's for the reference model's PSIS-LOO weights
+    Warning: Some (5 / 500) Pareto k's for the reference model's PSIS-LOO weights
     are > 0.7.
 
-    Warning: In the recalculation of the latent response values, some (8 / 500) expectation-specific Pareto k-values are > 0.7.
+    Warning: In the recalculation of the latent response values, some (9 / 500) expectation-specific Pareto k-values are > 0.7.
     In general, we recommend K-fold CV in this case.
 
     Warning: Some Pareto k diagnostic values are too high. See help('pareto-k-diagnostic') for details.
 
-    Warning: Some (4 / 500) Pareto k's for the reference model's PSIS-LOO weights
+    Warning: Some (5 / 500) Pareto k's for the reference model's PSIS-LOO weights
     are > 0.7.
 
-    Warning: In the recalculation of the latent response values, some (8 / 500) expectation-specific Pareto k-values are > 0.7.
+    Warning: In the recalculation of the latent response values, some (9 / 500) expectation-specific Pareto k-values are > 0.7.
     In general, we recommend K-fold CV in this case.
 
     Using standard importance sampling (SIS) due to a small number of clusters.
