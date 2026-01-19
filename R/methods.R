@@ -1105,8 +1105,9 @@ plot.vsel <- function(
       x_color_txt <- "black"
     }
     pp <- pp +
-      geom_text(aes(y = -Inf, label = .data[["size_chr"]]), vjust = -0.5,
-                color = x_color_txt)
+      geom_text(aes(y = -Inf, label = .data[["size_chr"]],
+                    size = from_theme(fontsize * 0.7)),
+                vjust = -0.5, color = x_color_txt)
   }
   # Miscellaneous stuff (axes, theming, faceting, etc.):
   if (!is.na(ranking_nterms_max) && ranking_colored &&
