@@ -1459,7 +1459,6 @@ repair_re.merMod <- function(object, newdata) {
          "to have disjoint level sets.")
   }
   re_fml <- ("lme4" %:::% "reOnly")(formula(object))
-  # Note: Calling lme4::mkNewReTrms() with `re.form = NULL` fails.
   ranefs_prep <- lme4::mkNewReTrms(object,
                                    newdata = newdata,
                                    re.form = re_fml,
