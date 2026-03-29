@@ -1582,6 +1582,8 @@ if (run_cvvs) {
 if (run_prj) {
   pls <- lapply(prjs, proj_linpred, allow_nonconst_wdraws_prj = TRUE,
                 .seed = seed2_tst)
+  pes <- lapply(prjs, proj_epred, allow_nonconst_wdraws_prj = TRUE,
+                .seed = seed2_tst)
   pps <- lapply(prjs, proj_predict, .seed = seed2_tst)
 }
 
@@ -1592,6 +1594,8 @@ if (run_prj) {
 if (run_vs) {
   pls_vs <- lapply(prjs_vs, proj_linpred, allow_nonconst_wdraws_prj = TRUE,
                    .seed = seed2_tst)
+  pes_vs <- lapply(prjs_vs, proj_epred, allow_nonconst_wdraws_prj = TRUE,
+                   .seed = seed2_tst)
   pps_vs <- lapply(prjs_vs, proj_predict, .seed = seed2_tst)
 }
 
@@ -1599,6 +1603,8 @@ if (run_vs) {
 
 if (run_cvvs) {
   pls_cvvs <- lapply(prjs_cvvs, proj_linpred, allow_nonconst_wdraws_prj = TRUE,
+                     .seed = seed2_tst)
+  pes_cvvs <- lapply(prjs_cvvs, proj_epred, allow_nonconst_wdraws_prj = TRUE,
                      .seed = seed2_tst)
   pps_cvvs <- lapply(prjs_cvvs, proj_predict, .seed = seed2_tst)
 }
