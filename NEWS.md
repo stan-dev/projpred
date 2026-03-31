@@ -8,6 +8,8 @@ If you read this from a place other than <https://mc-stan.org/projpred/news/inde
 
 ## Minor changes
 
+* Added `proj_epred()`, which is essentially a wrapper around `proj_linpred()` with `transform = TRUE`. (GitHub: #559, #560)
+
 ## Bug fixes
 
 
