@@ -4,6 +4,7 @@
 \alias{pred-projection}
 \alias{proj_linpred}
 \alias{proj_predict}
+\alias{proj_epred}
 \title{Predictions from a submodel (after projection)}
 \usage{
 proj_linpred(
@@ -32,6 +33,19 @@ proj_predict(
   resp_oscale = TRUE,
   ...
 )
+
+proj_epred(
+  object,
+  newdata = NULL,
+  offsetnew = NULL,
+  weightsnew = NULL,
+  filter_nterms = NULL,
+  integrated = FALSE,
+  allow_nonconst_wdraws_prj = return_draws_matrix,
+  return_draws_matrix = FALSE,
+  .seed = NA,
+  ...
+)
 }
 \arguments{
 \item{object}{An object returned by \code{\link[=project]{project()}} or an object that can be
@@ -57,19 +71,20 @@ for only those elements (submodels) with a number of predictor terms in
 \code{filter_nterms}. Therefore, needs to be a numeric vector or \code{NULL}. If
 \code{NULL}, use all submodels.}
 
-\item{transform}{For \code{\link[=proj_linpred]{proj_linpred()}} only. A single logical value indicating
+\item{transform}{For \code{\link[=proj_linpred]{proj_linpred()}} only (not applicable for \code{\link[=proj_epred]{proj_epred()}}
+which always uses \code{transform = TRUE} internally). A single logical value indicating
 whether the linear predictor should be transformed to response scale using
 the inverse-link function (\code{TRUE}) or not (\code{FALSE}). In case of the latent
 projection, argument \code{transform} is similar in spirit to argument
 \code{resp_oscale} from other functions and affects the scale of both output
 elements \code{pred} and \code{lpd} (see sections "Details" and "Value" below).}
 
-\item{integrated}{For \code{\link[=proj_linpred]{proj_linpred()}} only. A single logical value
+\item{integrated}{For \code{\link[=proj_linpred]{proj_linpred()}} and \code{\link[=proj_epred]{proj_epred()}} only. A single logical value
 indicating whether the output should be averaged across the projected
 posterior draws (\code{TRUE}) or not (\code{FALSE}).}
 
-\item{allow_nonconst_wdraws_prj}{Only relevant for \code{\link[=proj_linpred]{proj_linpred()}} and only
-if \code{integrated} is \code{FALSE}. A single logical value indicating whether to
+\item{allow_nonconst_wdraws_prj}{Only relevant for \code{\link[=proj_linpred]{proj_linpred()}} and
+\code{\link[=proj_epred]{proj_epred()}} and only if \code{integrated} is \code{FALSE}. A single logical value indicating whether to
 allow projected draws with different (i.e., nonconstant) weights (\code{TRUE})
 or not (\code{FALSE}). If \code{return_draws_matrix} is \code{TRUE},
 \code{allow_nonconst_wdraws_prj} is internally set to \code{TRUE} as well.
@@ -80,8 +95,9 @@ matrices).}
 
 \item{return_draws_matrix}{A single logical value indicating whether to
 return an object (in case of \code{\link[=proj_predict]{proj_predict()}}) or objects (in case of
-\code{\link[=proj_linpred]{proj_linpred()}}) of class \code{draws_matrix} (see
-\code{\link[posterior:draws_matrix]{posterior::draws_matrix()}}). In case of \code{\link[=proj_linpred]{proj_linpred()}} and projected
+\code{\link[=proj_linpred]{proj_linpred()}} and \code{\link[=proj_epred]{proj_epred()}}) of class \code{draws_matrix} (see
+\code{\link[posterior:draws_matrix]{posterior::draws_matrix()}}). In case of \code{\link[=proj_linpred]{proj_linpred()}} or
+\code{\link[=proj_epred]{proj_epred()}} and projected
 draws with nonconstant weights (as well as \code{integrated} being \code{FALSE}),
 \code{\link[posterior:weight_draws]{posterior::weight_draws()}} is applied internally.}
 
@@ -89,8 +105,9 @@ draws with nonconstant weights (as well as \code{integrated} being \code{FALSE})
 results can be obtained again if needed. Passed to argument \code{seed} of
 \code{\link[=set.seed]{set.seed()}}, but can also be \code{NA} to not call \code{\link[=set.seed]{set.seed()}} at all. If not
 \code{NA}, then the PRNG state is reset (to the state before calling
-\code{\link[=proj_linpred]{proj_linpred()}} or \code{\link[=proj_predict]{proj_predict()}}) upon exiting \code{\link[=proj_linpred]{proj_linpred()}} or
-\code{\link[=proj_predict]{proj_predict()}}. Here, \code{.seed} is used for drawing new group-level effects
+\code{\link[=proj_linpred]{proj_linpred()}}, \code{\link[=proj_epred]{proj_epred()}}, or \code{\link[=proj_predict]{proj_predict()}}) upon exiting
+\code{\link[=proj_linpred]{proj_linpred()}}, \code{\link[=proj_epred]{proj_epred()}}, or \code{\link[=proj_predict]{proj_predict()}}. Here, \code{.seed} is
+used for drawing new group-level effects
 in case of a multilevel submodel (however, not yet in case of a GAMM) and
 for drawing from the predictive distributions of the submodel(s) in case of
 \code{\link[=proj_predict]{proj_predict()}}. If a clustered projection was performed, then in
@@ -162,6 +179,11 @@ these draws stored in an attribute \code{wdraws_prj}. (If
 \code{return_draws_matrix}, \code{allow_nonconst_wdraws_prj}, and \code{integrated}
 are all \code{FALSE}, then projected draws with nonconstant weights cause an
 error.)
+\item \code{\link[=proj_epred]{proj_epred()}} is a wrapper around \code{\link[=proj_linpred]{proj_linpred()}} with \code{transform =   TRUE} and returns only the draws of the expected value of the projected
+posterior predictive distribution on the response scale (i.e., the \code{pred}
+element of the \code{list} returned by \code{\link[=proj_linpred]{proj_linpred()}}, without the \code{lpd}
+element). The structure of the returned object is the same as that of the
+\code{pred} element described for \code{\link[=proj_linpred]{proj_linpred()}} above.
 \item \code{\link[=proj_predict]{proj_predict()}} returns an \eqn{S_{\mathrm{prj}} \times N}{S_prj x N}
 matrix of predictions where \eqn{S_{\mathrm{prj}}}{S_prj} denotes
 \code{nresample_clusters} in case of clustered projection (or, more generally,
@@ -181,21 +203,41 @@ each submodel (the names of this \code{list} being the numbers of predictor
 terms of the submodels when counting the intercept, too).
 }
 \description{
-After the projection of the reference model onto a submodel, the linear
-predictors (for the original or a new dataset) based on that submodel can be
-calculated by \code{\link[=proj_linpred]{proj_linpred()}}. These linear predictors can also be
-transformed to response scale and averaged across the projected parameter
-draws. Furthermore, \code{\link[=proj_linpred]{proj_linpred()}} returns the corresponding log predictive
-density values if the (original or new) dataset contains response values. The
-\code{\link[=proj_predict]{proj_predict()}} function draws from the predictive distributions (there is
-one such distribution for each observation from the original or new dataset)
-of the submodel that the reference model has been projected onto. If the
-projection has not been performed yet, both functions call \code{\link[=project]{project()}}
-internally to perform the projection. Both functions can also handle multiple
-submodels at once (for \code{object}s of class \code{vsel} or \code{object}s returned by a
-\code{\link[=project]{project()}} call to an object of class \code{vsel}; see \code{\link[=project]{project()}}).
+The \code{\link[=proj_predict]{proj_predict()}} function draws from the projected posterior
+predictive distribution of the submodel that the reference model
+has been projected onto. By definition, these draws have higher
+variability than draws of the expected value of the posterior
+predictive distribution computed by \code{\link[=proj_epred]{proj_epred()}}. This is because
+the aleatoric uncertainty from the data model is incorporated in
+\code{\link[=proj_predict]{proj_predict()}}.
 }
 \details{
+The \code{\link[=proj_epred]{proj_epred()}} function draws from the distribution of the
+expected value of the projected posterior predictive distribution.
+By definition, these predictions have smaller variability than the
+projected posterior predictions performed by \code{\link[=proj_predict]{proj_predict()}}. This
+is because only the epistemic uncertainty in the expected value of
+the projected posterior predictive distribution is incorporated in
+the draws, while the aleatoric uncertainty from the data model is
+not included. However, the estimated means of both methods averaged
+across draws should be very similar.
+
+The \code{\link[=proj_linpred]{proj_linpred()}} function draws from the projected posterior of the
+linear predictors, that is, draws before applying any link functions
+or other transformations. These linear predictors can also be
+transformed to response scale with argument \code{transform = TRUE}, which
+produces draws equivalent to draws produced by \code{\link[=proj_epred]{proj_epred()}}.
+Furthermore, \code{\link[=proj_linpred]{proj_linpred()}} returns the corresponding log predictive
+density values if the (original or new) dataset contains response values.
+
+All these predictions can be performed for the data used to fit the
+reference model or for new data. If the projection has not been
+performed yet, all three functions call \code{\link[=project]{project()}} internally to
+perform the projection. All three functions can also handle
+multiple submodels at once (for \code{object}s of class \code{vsel} or
+\code{object}s returned by a \code{\link[=project]{project()}} call to an object of class
+\code{vsel}; see \code{\link[=project]{project()}}).
+
 Currently, \code{\link[=proj_predict]{proj_predict()}} ignores observation weights that are not
 equal to \code{1}. A corresponding warning is thrown if this is the case.
 
@@ -238,6 +280,7 @@ prj <- project(fit, predictor_terms = c("X1", "X3", "X5"), ndraws = 21,
 # Predictions (at the training points) from the submodel onto which the
 # reference model was projected:
 prjl <- proj_linpred(prj)
+prje <- proj_epred(prj)
 prjp <- proj_predict(prj, .seed = 7364)
 \dontshow{\}) # examplesIf}
 }
