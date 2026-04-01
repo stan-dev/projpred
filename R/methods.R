@@ -2,19 +2,39 @@
 
 #' Predictions from a submodel (after projection)
 #'
-#' After the projection of the reference model onto a submodel, the linear
-#' predictors (for the original or a new dataset) based on that submodel can be
-#' calculated by [proj_linpred()]. These linear predictors can also be
-#' transformed to response scale and averaged across the projected parameter
-#' draws. Furthermore, [proj_linpred()] returns the corresponding log predictive
-#' density values if the (original or new) dataset contains response values. The
-#' [proj_predict()] function draws from the predictive distributions (there is
-#' one such distribution for each observation from the original or new dataset)
-#' of the submodel that the reference model has been projected onto. If the
-#' projection has not been performed yet, both functions call [project()]
-#' internally to perform the projection. Both functions can also handle multiple
-#' submodels at once (for `object`s of class `vsel` or `object`s returned by a
-#' [project()] call to an object of class `vsel`; see [project()]).
+#' The [proj_predict()] function draws from the projected posterior
+#' predictive distribution of the submodel that the reference model
+#' has been projected onto. By definition, these draws have higher
+#' variability than draws of the expected value of the posterior
+#' predictive distribution computed by [proj_epred()]. This is because
+#' the aleatoric uncertainty from the data model is incorporated in
+#' [proj_predict()].
+#'
+#' The [proj_epred()] function draws from the distribution of the
+#' expected value of the projected posterior predictive distribution.
+#' By definition, these predictions have smaller variability than the
+#' projected posterior predictions performed by [proj_predict()]. This
+#' is because only the epistemic uncertainty in the expected value of
+#' the projected posterior predictive distribution is incorporated in
+#' the draws, while the aleatoric uncertainty from the data model is
+#' not included. However, the estimated means of both methods averaged
+#' across draws should be very similar.
+#' 
+#' The [proj_linpred()] function draws from the projected posterior of the
+#' linear predictors, that is, draws before applying any link functions
+#' or other transformations. These linear predictors can also be
+#' transformed to response scale with argument `transform = TRUE`, which
+#' produces draws equivalent to draws produced by [proj_epred()].
+#' Furthermore, [proj_linpred()] returns the corresponding log predictive
+#' density values if the (original or new) dataset contains response values.
+#'
+#' All these predictions can be performed for the data used to fit the
+#' reference model or for new data. If the projection has not been
+#' performed yet, all three functions call [project()] internally to
+#' perform the projection. All three functions can also handle
+#' multiple submodels at once (for `object`s of class `vsel` or
+#' `object`s returned by a [project()] call to an object of class
+#' `vsel`; see [project()]).
 #'
 #' @name pred-projection
 #'
@@ -26,13 +46,14 @@
 #'   for only those elements (submodels) with a number of predictor terms in
 #'   `filter_nterms`. Therefore, needs to be a numeric vector or `NULL`. If
 #'   `NULL`, use all submodels.
-#' @param transform For [proj_linpred()] only. A single logical value indicating
+#' @param transform For [proj_linpred()] only (not applicable for [proj_epred()]
+#'   which always uses `transform = TRUE` internally). A single logical value indicating
 #'   whether the linear predictor should be transformed to response scale using
 #'   the inverse-link function (`TRUE`) or not (`FALSE`). In case of the latent
 #'   projection, argument `transform` is similar in spirit to argument
 #'   `resp_oscale` from other functions and affects the scale of both output
 #'   elements `pred` and `lpd` (see sections "Details" and "Value" below).
-#' @param integrated For [proj_linpred()] only. A single logical value
+#' @param integrated For [proj_linpred()] and [proj_epred()] only. A single logical value
 #'   indicating whether the output should be averaged across the projected
 #'   posterior draws (`TRUE`) or not (`FALSE`).
 #' @param nresample_clusters For [proj_predict()] with clustered projection (and
@@ -42,8 +63,8 @@
 #'   gives the number of draws (*with* replacement) from the set of clustered
 #'   posterior draws after projection (with this set being determined by
 #'   argument `nclusters` of [project()]).
-#' @param allow_nonconst_wdraws_prj Only relevant for [proj_linpred()] and only
-#'   if `integrated` is `FALSE`. A single logical value indicating whether to
+#' @param allow_nonconst_wdraws_prj Only relevant for [proj_linpred()] and
+#'   [proj_epred()] and only if `integrated` is `FALSE`. A single logical value indicating whether to
 #'   allow projected draws with different (i.e., nonconstant) weights (`TRUE`)
 #'   or not (`FALSE`). If `return_draws_matrix` is `TRUE`,
 #'   `allow_nonconst_wdraws_prj` is internally set to `TRUE` as well.
@@ -53,16 +74,18 @@
 #'   matrices).
 #' @param return_draws_matrix A single logical value indicating whether to
 #'   return an object (in case of [proj_predict()]) or objects (in case of
-#'   [proj_linpred()]) of class `draws_matrix` (see
-#'   [posterior::draws_matrix()]). In case of [proj_linpred()] and projected
+#'   [proj_linpred()] and [proj_epred()]) of class `draws_matrix` (see
+#'   [posterior::draws_matrix()]). In case of [proj_linpred()] or
+#'   [proj_epred()] and projected
 #'   draws with nonconstant weights (as well as `integrated` being `FALSE`),
 #'   [posterior::weight_draws()] is applied internally.
 #' @param .seed Pseudorandom number generation (PRNG) seed by which the same
 #'   results can be obtained again if needed. Passed to argument `seed` of
 #'   [set.seed()], but can also be `NA` to not call [set.seed()] at all. If not
 #'   `NA`, then the PRNG state is reset (to the state before calling
-#'   [proj_linpred()] or [proj_predict()]) upon exiting [proj_linpred()] or
-#'   [proj_predict()]. Here, `.seed` is used for drawing new group-level effects
+#'   [proj_linpred()], [proj_epred()], or [proj_predict()]) upon exiting
+#'   [proj_linpred()], [proj_epred()], or [proj_predict()]. Here, `.seed` is
+#'   used for drawing new group-level effects
 #'   in case of a multilevel submodel (however, not yet in case of a GAMM) and
 #'   for drawing from the predictive distributions of the submodel(s) in case of
 #'   [proj_predict()]. If a clustered projection was performed, then in
@@ -140,6 +163,12 @@
 #'       `return_draws_matrix`, `allow_nonconst_wdraws_prj`, and `integrated`
 #'       are all `FALSE`, then projected draws with nonconstant weights cause an
 #'       error.)
+#'   * [proj_epred()] is a wrapper around [proj_linpred()] with `transform =
+#'   TRUE` and returns only the draws of the expected value of the projected
+#'   posterior predictive distribution on the response scale (i.e., the `pred`
+#'   element of the `list` returned by [proj_linpred()], without the `lpd`
+#'   element). The structure of the returned object is the same as that of the
+#'   `pred` element described for [proj_linpred()] above.
 #'   * [proj_predict()] returns an \eqn{S_{\mathrm{prj}} \times N}{S_prj x N}
 #'   matrix of predictions where \eqn{S_{\mathrm{prj}}}{S_prj} denotes
 #'   `nresample_clusters` in case of clustered projection (or, more generally,
@@ -179,14 +208,15 @@
 #' # Predictions (at the training points) from the submodel onto which the
 #' # reference model was projected:
 #' prjl <- proj_linpred(prj)
+#' prje <- proj_epred(prj)
 #' prjp <- proj_predict(prj, .seed = 7364)
 #'
 NULL
 
 # Function definitions ----------------------------------------------------
 
-## The 'helper' for proj_linpred and proj_predict, ie. does all the
-## functionality that is common to them. It essentially checks all the arguments
+## The 'helper' for proj_linpred, proj_epred, and proj_predict, ie. does all
+## the functionality that is common to them. It essentially checks all the arguments
 ## and sets them to their respective defaults and then loops over the
 ## projections. For each projection, it evaluates the fun-function, which
 ## calculates the linear predictor if called from proj_linpred and samples from
@@ -504,6 +534,29 @@ proj_predict <- function(object, newdata = NULL, offsetnew = NULL,
     nresample_clusters = nresample_clusters, resp_oscale = resp_oscale,
     return_draws_matrix = return_draws_matrix, ...
   )
+}
+
+#' @rdname pred-projection
+#' @export
+proj_epred <- function(object, newdata = NULL, offsetnew = NULL,
+                       weightsnew = NULL, filter_nterms = NULL,
+                       integrated = FALSE,
+                       allow_nonconst_wdraws_prj = return_draws_matrix,
+                       return_draws_matrix = FALSE, .seed = NA, ...) {
+  out <- proj_linpred(
+    object = object, newdata = newdata,
+    offsetnew = offsetnew, weightsnew = weightsnew,
+    filter_nterms = filter_nterms, transform = TRUE,
+    integrated = integrated,
+    allow_nonconst_wdraws_prj = allow_nonconst_wdraws_prj,
+    return_draws_matrix = return_draws_matrix,
+    .seed = .seed, ...
+  )
+  if (is.list(out) && "pred" %in% names(out)) {
+    return(out$pred)
+  }
+  ## Multiple submodels: each element is a list with `pred` and `lpd`.
+  return(lapply(out, "[[", "pred"))
 }
 
 ## function applied to each projected submodel in case of proj_predict()

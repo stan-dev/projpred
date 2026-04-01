@@ -1882,6 +1882,50 @@ pl_tester <- function(pl,
 }
 
 # A helper function for testing the structure of an object returned by
+# proj_epred().
+#
+# @param pe An object resulting from a call to proj_epred().
+# @param len_expected The number of `projection` objects used for `pe`.
+# @param nprjdraws_expected The expected number of projected draws in `pe`.
+# @param wdraws_prj_expected The expected value for the `wdraws_prj` attribute
+#   of `pe`.
+# @param nobsv_expected The expected number of observations in `pe`.
+# @param ncats_nlats_expected A list of length `len_expected`. Each element is
+#   either an empty integer (for the traditional or latent projection without
+#   categories) or a single integer giving the expected number of response
+#   categories (or latent terms).
+# @param info_str A single character string giving information to be printed in
+#   case of failure.
+#
+# @return `TRUE` (invisible).
+pe_tester <- function(pe,
+                      len_expected = 1,
+                      nprjdraws_expected = nclusters_pred_tst,
+                      wdraws_prj_expected = NULL,
+                      nobsv_expected = nobsv,
+                      ncats_nlats_expected = replicate(len_expected,
+                                                       integer(),
+                                                       simplify = FALSE),
+                      info_str) {
+  if (len_expected == 1) {
+    pe <- list(pe)
+  } else {
+    expect_type(pe, "list")
+    expect_length(pe, len_expected)
+  }
+  for (j in seq_along(pe)) {
+    expect_identical(
+      dim(pe[[!!j]]),
+      c(nprjdraws_expected, nobsv_expected, ncats_nlats_expected[[!!j]]),
+      info = info_str
+    )
+    expect_identical(attr(pe[[!!j]], "wdraws_prj"), wdraws_prj_expected,
+                     info = info_str)
+  }
+  return(invisible(TRUE))
+}
+
+# A helper function for testing the structure of an object returned by
 # proj_predict().
 #
 # @param pp An object resulting from a call to proj_predict().
