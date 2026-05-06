@@ -142,7 +142,7 @@ those predictors have no cost and will therefore be selected first, whereas
 used for each predictor.}
 
 \item{verbose}{A single integer value from the set \eqn{\{0, 1, 2, 3,
-  4\}}{{0, 1, 2, 3, 4}} (for \code{\link[=varsel]{varsel()}}, \eqn{3} and \eqn{4} have the same
+4\}}{{0, 1, 2, 3, 4}} (for \code{\link[=varsel]{varsel()}}, \eqn{3} and \eqn{4} have the same
 effect), indicating how much information (if any) to print out during the
 computations. Higher values indicate that more information should be
 printed, \code{0} deactivates the verbose mode. Internally, argument \code{verbose}
@@ -298,9 +298,9 @@ whether the Pareto-\eqn{\hat{k}} diagnostics may result in warnings. See
 \link[loo:loo-glossary]{loo::loo-glossary} for how to interpret the Pareto-\eqn{\hat{k}} values
 and the warning thresholds. \pkg{projpred} does not support the usually
 recommended moment-matching (see \code{\link[loo:loo_moment_match]{loo::loo_moment_match()}} and
-\code{\link[brms:loo_moment_match.brmsfit]{brms::loo_moment_match()}}), mixture importance sampling
+\code{\link[brms:loo_moment_match]{brms::loo_moment_match()}}), mixture importance sampling
 (\code{vignette("loo2-mixis", package="loo")}), or \code{reloo}-ing
-(\code{\link[brms:reloo.brmsfit]{brms::reloo()}}). If the reference model PSIS-LOO CV Pareto-\eqn{\hat{k}}
+(\code{\link[brms:reloo]{brms::reloo()}}). If the reference model PSIS-LOO CV Pareto-\eqn{\hat{k}}
 values are good, but there are high Pareto-\eqn{\hat{k}} values for the
 projected models, you can try increasing the number of draws used for the
 PSIS-LOO CV (\code{ndraws} in case of \code{refit_prj = FALSE}; \code{ndraws_pred} in case
@@ -335,7 +335,7 @@ the backends from packages \pkg{doParallel}, \pkg{doMPI}, or
 \pkg{doFuture}. For GLMs, this CV parallelization should work reliably, but
 for other models (such as GLMMs), it may lead to excessive memory usage
 which in turn may crash the R session (on Unix systems, setting an
-appropriate memory limit via \code{\link[unix:rlimit]{unix::rlimit_as()}} may avoid crashing the
+appropriate memory limit via \code{\link[unix:rlimit_as]{unix::rlimit_as()}} may avoid crashing the
 whole machine). However, the problem of excessive memory usage is less
 pronounced for the CV parallelization than for the projection
 parallelization described in \link{projpred-package}. In that regard, the CV

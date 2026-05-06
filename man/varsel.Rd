@@ -92,7 +92,7 @@ supplied). Note that \code{nterms_max} does not count the intercept, so use
 does not count the intercept.)}
 
 \item{verbose}{A single integer value from the set \eqn{\{0, 1, 2, 3,
-  4\}}{{0, 1, 2, 3, 4}} (for \code{\link[=varsel]{varsel()}}, \eqn{3} and \eqn{4} have the same
+4\}}{{0, 1, 2, 3, 4}} (for \code{\link[=varsel]{varsel()}}, \eqn{3} and \eqn{4} have the same
 effect), indicating how much information (if any) to print out during the
 computations. Higher values indicate that more information should be
 printed, \code{0} deactivates the verbose mode. Internally, argument \code{verbose}

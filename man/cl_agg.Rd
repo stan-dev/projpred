@@ -17,7 +17,7 @@ cl_agg(
 
 \item{cl}{A numeric vector of length \eqn{S}, giving the cluster indices for
 the draws. The cluster indices need to be values from the set \eqn{\{1,
-  ..., S_{\mathrm{cl}}\}}{{1, ..., S_cl}}, except for draws that should be
+..., S_{\mathrm{cl}}\}}{{1, ..., S_cl}}, except for draws that should be
 dropped (e.g., by thinning), in which case \code{NA} needs to be provided at the
 positions of \code{cl} corresponding to these draws.}
 

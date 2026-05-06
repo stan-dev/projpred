@@ -50,7 +50,7 @@ spirit to argument \code{resp_oscale} from other functions: If (i)
 \code{is.null(ynew)}, then argument \code{type} affects the predictions as described
 above. In that case, note that \code{type = "link"} yields the linear predictors
 without any modifications that may be due to the original response
-distribution (e.g., for a \code{\link[brms:brmsfamily]{brms::cumulative()}} model, the ordered
+distribution (e.g., for a \code{\link[brms:cumulative]{brms::cumulative()}} model, the ordered
 thresholds are not taken into account). If (ii) \code{!is.null(ynew)}, then
 argument \code{type} also affects the scale of the log posterior predictive
 densities (\code{type = "response"} for the original response scale, \code{type = "link"} for the latent Gaussian scale).}

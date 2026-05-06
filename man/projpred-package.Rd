@@ -40,7 +40,7 @@ minimizers (in other words, these are the workhorse functions employed by
 \item Submodel without multilevel or additive terms:
 \itemize{
 \item For the traditional (or latent) projection (or the augmented-data
-projection in case of the \code{\link[=binomial]{binomial()}} or \code{\link[brms:brmsfamily]{brms::bernoulli()}} family): An
+projection in case of the \code{\link[=binomial]{binomial()}} or \code{\link[brms:bernoulli]{brms::bernoulli()}} family): An
 internal C++ function which basically serves the same purpose as \code{\link[=lm]{lm()}}
 for the \code{\link[=gaussian]{gaussian()}} family and \code{\link[=glm]{glm()}} for all other families. The
 returned object inherits from class \code{subfit}. Possible tuning parameters
@@ -58,21 +58,21 @@ value for the intercept at centered predictors; default: \code{0}), and
 \code{beta_init} (numeric vector giving the starting values for the regression
 coefficients; default: vector of \code{0}s).
 \item For the augmented-data projection: \code{\link[MASS:polr]{MASS::polr()}} (the returned object
-inherits from class \code{polr}) for the \code{\link[brms:brmsfamily]{brms::cumulative()}} family or
+inherits from class \code{polr}) for the \code{\link[brms:cumulative]{brms::cumulative()}} family or
 \code{\link[rstanarm:stan_polr]{rstanarm::stan_polr()}} fits, \code{\link[nnet:multinom]{nnet::multinom()}} (the returned object
-inherits from class \code{multinom}) for the \code{\link[brms:brmsfamily]{brms::categorical()}} family.
+inherits from class \code{multinom}) for the \code{\link[brms:categorical]{brms::categorical()}} family.
 }
 \item Submodel with multilevel but no additive terms:
 \itemize{
 \item For the traditional (or latent) projection (or the augmented-data
-projection in case of the \code{\link[=binomial]{binomial()}} or \code{\link[brms:brmsfamily]{brms::bernoulli()}} family):
+projection in case of the \code{\link[=binomial]{binomial()}} or \code{\link[brms:bernoulli]{brms::bernoulli()}} family):
 \code{\link[lme4:lmer]{lme4::lmer()}} (the returned object inherits from class \code{lmerMod}) for
 the \code{\link[=gaussian]{gaussian()}} family, \code{\link[lme4:glmer]{lme4::glmer()}} (the returned object inherits
 from class \code{glmerMod}) for all other families.
 \item For the augmented-data projection: \code{\link[ordinal:clmm]{ordinal::clmm()}} (the returned
-object inherits from class \code{clmm}) for the \code{\link[brms:brmsfamily]{brms::cumulative()}} family,
+object inherits from class \code{clmm}) for the \code{\link[brms:cumulative]{brms::cumulative()}} family,
 \code{\link[mclogit:mblogit]{mclogit::mblogit()}} (the returned object inherits from class \code{mmblogit})
-for the \code{\link[brms:brmsfamily]{brms::categorical()}} family.
+for the \code{\link[brms:categorical]{brms::categorical()}} family.
 }
 \item Submodel without multilevel but additive terms: \code{\link[mgcv:gam]{mgcv::gam()}} (the returned
 object inherits from class \code{gam}).
@@ -119,7 +119,7 @@ projection if the submodel has no multilevel or additive predictor terms),
 but for all other types of submodels, the fitted submodel objects are quite
 big, which---when running in parallel---may lead to excessive memory usage
 which in turn may crash the R session (on Unix systems, setting an
-appropriate memory limit via \code{\link[unix:rlimit]{unix::rlimit_as()}} may avoid crashing the whole
+appropriate memory limit via \code{\link[unix:rlimit_as]{unix::rlimit_as()}} may avoid crashing the whole
 machine). Thus, we currently cannot recommend parallelizing projections onto
 submodels which are GLMs (in this context, the latent projection onto a
 submodel without multilevel and without additive terms may be regarded as a
@@ -238,6 +238,7 @@ Useful links:
 
 Authors:
 \itemize{
+  \item Osvaldo Martin \email{aloctavodia@gmail.com}
   \item Juho Piironen \email{juho.t.piironen@gmail.com}
   \item Markus Paasiniemi
   \item Alejandro Catalina \email{alecatfel@gmail.com}

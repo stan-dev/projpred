@@ -245,7 +245,7 @@ In case of the latent projection and \code{transform = FALSE}:
 \itemize{
 \item Output element \code{pred} contains the linear predictors without any
 modifications that may be due to the original response distribution (e.g.,
-for a \code{\link[brms:brmsfamily]{brms::cumulative()}} model, the ordered thresholds are not taken into
+for a \code{\link[brms:cumulative]{brms::cumulative()}} model, the ordered thresholds are not taken into
 account).
 \item Output element \code{lpd} contains the \emph{latent} log predictive density values,
 i.e., those corresponding to the latent Gaussian distribution. If \code{newdata}
