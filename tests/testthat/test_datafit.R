@@ -695,10 +695,17 @@ test_that(paste(
                           nterms = 0:nterms, refit_prj = FALSE)
 
     # compute the results for the Lasso
-    lasso <- glmnet::glmnet(x, y_glmnet,
-                            family = fam$family, weights = weights,
-                            lambda.min.ratio = lambda_min_ratio,
-                            nlambda = nlambda, thresh = 1e-12)
+    if (packageVersion("glmnet") < "5.0") {
+      lasso <- glmnet::glmnet(x, y_glmnet,
+                              family = fam$family, weights = weights,
+                              lambda.min.ratio = lambda_min_ratio,
+                              nlambda = nlambda, thresh = 1e-12)
+    } else {
+      lasso <- glmnet::glmnet(x, y_glmnet,
+                              family = fam$family, weights = weights,
+                              lambda.min.ratio = lambda_min_ratio,
+                              nlambda = nlambda, control = list(thresh = 1e-12))
+    }
     predictor_ranking <- predict(lasso, type = "nonzero", s = lasso$lambda)
     nselected <- sapply(predictor_ranking, function(e) length(e))
     lambdainds <- sapply(unique(nselected), function(nterms) {

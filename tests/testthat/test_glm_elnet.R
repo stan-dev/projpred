@@ -87,14 +87,26 @@ test_that(paste(
                                 normalize = normalize, thresh = 1e-12,
                                 intercept = intercept
               )
-              fit2 <- glmnet::glmnet(x, y_glmnet,
-                                     family = fam$family, alpha = alpha,
-                                     lambda.min.ratio = lambda_min_ratio,
-                                     nlambda = nlam,
-                                     weights = w, offset = os,
-                                     standardize = normalize,
-                                     thresh = 1e-12, intercept = intercept
-              )
+              if (packageVersion("glmnet") < "5.0") {
+                fit2 <- glmnet::glmnet(x, y_glmnet,
+                                       family = fam$family, alpha = alpha,
+                                       lambda.min.ratio = lambda_min_ratio,
+                                       nlambda = nlam,
+                                       weights = w, offset = os,
+                                       standardize = normalize,
+                                       thresh = 1e-12, intercept = intercept
+                )
+              } else {
+                fit2 <- glmnet::glmnet(x, y_glmnet,
+                                       family = fam$family, alpha = alpha,
+                                       lambda.min.ratio = lambda_min_ratio,
+                                       nlambda = nlam,
+                                       weights = w, offset = os,
+                                       standardize = normalize,
+                                       control = list(thresh = 1e-12),
+                                       intercept = intercept
+                )
+              }
               ## check that with a given L1-norm, the coefficient values are the
               ## same (need to check it this way since the lambda values are not
               ## comparable between glm_elnet and glmnet)
