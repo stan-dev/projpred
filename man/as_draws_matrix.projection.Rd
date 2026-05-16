@@ -25,7 +25,7 @@ An \eqn{S_{\mathrm{prj}} \times Q}{S_prj x Q} \code{draws_matrix} (see
 weights, \code{\link[posterior:weight_draws]{posterior::weight_draws()}} is applied internally.
 }
 \description{
-These are the \code{\link[posterior:draws]{posterior::as_draws()}} and \code{\link[posterior:draws_matrix]{posterior::as_draws_matrix()}}
+These are the \code{\link[posterior:as_draws]{posterior::as_draws()}} and \code{\link[posterior:as_draws_matrix]{posterior::as_draws_matrix()}}
 methods for \code{projection} objects (returned by \code{\link[=project]{project()}}, possibly as
 elements of a \code{list}). They extract the projected parameter draws and return
 them as a \code{draws_matrix}. In case of different (i.e., nonconstant) weights
@@ -36,7 +36,7 @@ these weights (safer in contrast to the matrix returned by
 }
 \details{
 In case of the augmented-data projection for a multilevel submodel
-of a \code{\link[brms:brmsfamily]{brms::categorical()}} reference model, the multilevel parameters (and
+of a \code{\link[brms:categorical]{brms::categorical()}} reference model, the multilevel parameters (and
 therefore also their names) slightly differ from those in the \pkg{brms}
 reference model fit (see section "Augmented-data projection" in
 \code{\link[=extend_family]{extend_family()}}'s documentation).

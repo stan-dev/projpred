@@ -15,7 +15,7 @@ A simulated classification dataset containing 100 observations.
 \url{https://web.stanford.edu/~hastie/glmnet/glmnetData/BNExample.RData}
 }
 \usage{
-df_binom
+data(df_binom)
 }
 \description{
 Binomial toy example

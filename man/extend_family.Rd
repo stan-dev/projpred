@@ -147,11 +147,11 @@ reference model is projected) currently have the following restrictions:
 constant with value 1).
 \item The thresholds are \code{"flexible"} (see \code{\link[brms:brmsfamily]{brms::brmsfamily()}}).
 \item The thresholds do not vary across the levels of a \code{factor}-like variable
-(see argument \code{gr} of \code{\link[brms:addition-terms]{brms::resp_thres()}}).
+(see argument \code{gr} of \code{\link[brms:resp_thres]{brms::resp_thres()}}).
 \item The \code{"probit_approx"} link is replaced by \code{"probit"}.
 }
 
-For the \code{\link[brms:brmsfamily]{brms::categorical()}} family, be aware that:
+For the \code{\link[brms:categorical]{brms::categorical()}} family, be aware that:
 \itemize{
 \item For multilevel submodels, the group-level effects are allowed to be
 correlated between different response categories.

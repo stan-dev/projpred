@@ -19,7 +19,7 @@
 #' the draws, while the aleatoric uncertainty from the data model is
 #' not included. However, the estimated means of both methods averaged
 #' across draws should be very similar.
-#' 
+#'
 #' The [proj_linpred()] function draws from the projected posterior of the
 #' linear predictors, that is, draws before applying any link functions
 #' or other transformations. These linear predictors can also be
@@ -639,6 +639,11 @@ proj_predict_aux <- function(proj, newdata, offsetnew, weightsnew,
   return(structure(pppd_out, cats = cats_aug))
 }
 
+# Needed to avoid a NOTE in `R CMD check`:
+if (getRversion() >= package_version("2.15.1")) {
+  utils::globalVariables("fontsize")
+}
+
 #' Plot predictive performance
 #'
 #' This is the [plot()] method for `vsel` objects (returned by [varsel()] or
@@ -1158,9 +1163,9 @@ plot.vsel <- function(
       x_color_txt <- "black"
     }
     pp <- pp +
-      if (packageVersion("ggplot2") < "4.0.0") {
+      if (utils::packageVersion("ggplot2") < "4.0.0") {
         geom_text(aes(y = -Inf, label = .data[["size_chr"]]), vjust = -0.5,
-                        color = x_color_txt)
+                  color = x_color_txt)
       } else {
         geom_text(aes(y = -Inf, label = .data[["size_chr"]],
                       size = from_theme(fontsize * 0.7)),

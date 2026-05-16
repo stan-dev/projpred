@@ -150,11 +150,11 @@ to be passed to \code{\link[=abbreviate]{abbreviate()}} in case of \code{ranking
 full-data predictor ranking and the corresponding ranking proportions are
 placed below the x-axis. By \code{"text"} or \code{"label"}, they are placed within
 the plotting area, using \code{\link[ggrepel:geom_text_repel]{ggrepel::geom_text_repel()}} or
-\code{\link[ggrepel:geom_text_repel]{ggrepel::geom_label_repel()}}, respectively. See also argument
+\code{\link[ggrepel:geom_label_repel]{ggrepel::geom_label_repel()}}, respectively. See also argument
 \code{ranking_repel_args}.}
 
 \item{ranking_repel_args}{A \code{list} of arguments (except for \code{mapping}) to be
-passed to \code{\link[ggrepel:geom_text_repel]{ggrepel::geom_text_repel()}} or \code{\link[ggrepel:geom_text_repel]{ggrepel::geom_label_repel()}} in
+passed to \code{\link[ggrepel:geom_text_repel]{ggrepel::geom_text_repel()}} or \code{\link[ggrepel:geom_label_repel]{ggrepel::geom_label_repel()}} in
 case of \code{ranking_repel = "text"} or \code{ranking_repel = "label"},
 respectively.}
 
@@ -177,9 +177,9 @@ or not (\code{FALSE}).}
 the ranking proportions given on the x-axis (below the full-data predictor
 ranking).}
 
-\item{text_angle}{Passed to argument \code{angle} of \code{\link[ggplot2:element]{ggplot2::element_text()}} for
+\item{text_angle}{Passed to argument \code{angle} of \code{\link[ggplot2:element_text]{ggplot2::element_text()}} for
 the x-axis tick labels. Note that the default of argument \code{angle} in
-\code{\link[ggplot2:element]{ggplot2::element_text()}} is \code{NULL} (which implies no rotation) whereas we
+\code{\link[ggplot2:element_text]{ggplot2::element_text()}} is \code{NULL} (which implies no rotation) whereas we
 use a default of \code{text_angle = 45} here. If \code{text_angle > 0} (\verb{< 0}), the
 x-axis text is automatically right-aligned (left-aligned). If \code{-90 < text_angle && text_angle < 90 && text_angle != 0}, the x-axis text is also
 top-aligned. When controlling \code{text_angle} via global option

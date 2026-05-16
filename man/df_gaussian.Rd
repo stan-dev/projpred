@@ -16,7 +16,7 @@ respectively.}
 \url{https://web.stanford.edu/~hastie/glmnet/glmnetData/QSExample.RData}
 }
 \usage{
-df_gaussian
+data(df_gaussian)
 }
 \description{
 Gaussian toy example
