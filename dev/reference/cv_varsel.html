@@ -271,7 +271,7 @@ used for each predictor.</p></dd>
 
 <dt id="arg-verbose">verbose<a class="anchor" aria-label="anchor" href="#arg-verbose"></a></dt>
 <dd><p>A single integer value from the set \(\{0, 1, 2, 3,
-  4\}\) (for <code><a href="varsel.html">varsel()</a></code>, \(3\) and \(4\) have the same
+4\}\) (for <code><a href="varsel.html">varsel()</a></code>, \(3\) and \(4\) have the same
 effect), indicating how much information (if any) to print out during the
 computations. Higher values indicate that more information should be
 printed, <code>0</code> deactivates the verbose mode. Internally, argument <code>verbose</code>
@@ -426,7 +426,7 @@ whether the Pareto-\(\hat{k}\) diagnostics may result in warnings. See
 <a href="https://mc-stan.org/loo/reference/loo-glossary.html" class="external-link">loo::loo-glossary</a> for how to interpret the Pareto-\(\hat{k}\) values
 and the warning thresholds. <span class="pkg">projpred</span> does not support the usually
 recommended moment-matching (see <code><a href="https://mc-stan.org/loo/reference/loo_moment_match.html" class="external-link">loo::loo_moment_match()</a></code> and
-<code><a href="https://paulbuerkner.com/brms/reference/loo_moment_match.brmsfit.html" class="external-link">brms::loo_moment_match()</a></code>), mixture importance sampling
+<code><a href="https://mc-stan.org/loo/reference/loo_moment_match.html" class="external-link">brms::loo_moment_match()</a></code>), mixture importance sampling
 (<code><a href="https://mc-stan.org/loo/articles/loo2-mixis.html" class="external-link">vignette("loo2-mixis", package="loo")</a></code>), or <code>reloo</code>-ing
 (<code><a href="https://paulbuerkner.com/brms/reference/reloo.brmsfit.html" class="external-link">brms::reloo()</a></code>). If the reference model PSIS-LOO CV Pareto-\(\hat{k}\)
 values are good, but there are high Pareto-\(\hat{k}\) values for the

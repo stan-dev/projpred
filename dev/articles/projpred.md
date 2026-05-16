@@ -13,19 +13,19 @@ that it not only performs a variable selection, but also allows for
 The projection predictive variable selection is based on the ideas of
 Goutis and Robert ([1998](#ref-goutis_model_1998)) and Dupuis and Robert
 ([2003](#ref-dupuis_variable_2003)). The methods implemented in
-**projpred** are described in detail in Piironen, Paasiniemi, and
-Vehtari ([2020](#ref-piironen_projective_2020)), Catalina, Bürkner, and
-Vehtari ([2022](#ref-catalina_projection_2022)), Weber, Glass, and
-Vehtari ([2025](#ref-weber_projection_2025)), and Catalina, Bürkner, and
-Vehtari ([2021](#ref-catalina_latent_2021)). A comparison to many other
-methods may also be found in Piironen and Vehtari
+**projpred** are described in detail in Piironen et al.
+([2020](#ref-piironen_projective_2020)), Catalina et al.
+([2022](#ref-catalina_projection_2022)), Weber et al.
+([2025](#ref-weber_projection_2025)), and Catalina et al.
+([2021](#ref-catalina_latent_2021)). A comparison to many other methods
+may also be found in Piironen and Vehtari
 ([2017a](#ref-piironen_comparison_2017)). An introduction to the theory
 behind **projpred**, a workflow for practitioners, and further insights
 into the theory (and practice) of projection predictive inference are
 presented by McLatchie et al. ([2025](#ref-mclatchie_advances_2025)).
 For details on how to cite **projpred**, see the [projpred citation
 info](https://CRAN.R-project.org/package=projpred/citation.html) on
-CRAN[¹](#fn1).
+CRAN[^1].
 
 ## Data
 
@@ -35,6 +35,7 @@ For this vignette, we use **projpred**’s `df_gaussian` data. It contains
 below) and one continuous response variable `y`.
 
 ``` r
+
 data("df_gaussian", package = "projpred")
 dat_gauss <- data.frame(y = df_gaussian$y, df_gaussian$x)
 ```
@@ -67,7 +68,7 @@ as done below, or explicitly by a call to
 leads to a “typical” reference model object. In that case, all candidate
 models are actual *sub*models of the reference model. In general,
 however, this assumption is not necessary for a projection predictive
-variable selection (see, e.g., [Piironen, Paasiniemi, and Vehtari
+variable selection (see, e.g., [Piironen et al.
 2020](#ref-piironen_projective_2020)). This is why “custom” (i.e.,
 non-“typical”) reference model objects allow to avoid this assumption
 (although the candidate models of a “custom” reference model object will
@@ -88,6 +89,7 @@ want to use the **brms** package, simply replace the **rstanarm** fit
 class `brmsfit`).
 
 ``` r
+
 library(rstanarm)
 ```
 
@@ -108,6 +110,7 @@ Vehtari ([2017c](#ref-piironen_sparsity_2017)). In R code, these are the
 preparation steps for the regularized horseshoe prior:
 
 ``` r
+
 # Number of regression coefficients:
 ( D <- sum(grepl("^X", names(dat_gauss))) )
 ```
@@ -115,6 +118,7 @@ preparation steps for the regularized horseshoe prior:
     [1] 20
 
 ``` r
+
 # Prior guess for the number of relevant (i.e., non-zero) regression
 # coefficients:
 p0 <- 5
@@ -131,13 +135,14 @@ faster, we use only 2 MCMC chains and 1000 iterations per chain (with
 half of them being discarded as warmup draws). In practice, 4 chains and
 2000 iterations per chain are reasonable defaults. Furthermore, we make
 use of [**rstan**](https://mc-stan.org/)’s parallelization, which means
-to run each chain on a separate CPU core[²](#fn2). If you run the
-following code yourself, you can either rely on an automatic mechanism
-to detect the number of CPU cores (like the
+to run each chain on a separate CPU core[^2]. If you run the following
+code yourself, you can either rely on an automatic mechanism to detect
+the number of CPU cores (like the
 [`parallel::detectCores()`](https://rdrr.io/r/parallel/detectCores.html)
 function shown below) or adapt `ncores` manually to your system.
 
 ``` r
+
 # Set this manually if desired:
 ncores <- parallel::detectCores(logical = FALSE)
 ### Only for technical reasons in this vignette (you can omit this when running
@@ -172,15 +177,16 @@ However, due to the technical reasons for which we reduced `chains` and
 Now, **projpred** comes into play.
 
 ``` r
+
 library(projpred)
 ```
 
 From the reference model fit (called `refm_fit` here), we create a
 reference model object (i.e., an object of class `refmodel`) since this
-avoids redundant calculations in the remainder of this
-vignette[³](#fn3):
+avoids redundant calculations in the remainder of this vignette[^3]:
 
 ``` r
+
 refm_obj <- get_refmodel(refm_fit)
 ```
 
@@ -203,9 +209,8 @@ performs a cross-validation (CV). With `cv_method = "LOO"` (the
 default),
 [`cv_varsel()`](https://mc-stan.org/projpred/dev/reference/cv_varsel.md)
 runs a Pareto-smoothed importance sampling leave-one-out CV (PSIS-LOO
-CV, see [Vehtari, Gelman, and Gabry 2017](#ref-vehtari_practical_2017);
-[Vehtari et al. 2022](#ref-vehtari_pareto_2022)). With
-`cv_method = "kfold"`,
+CV, see [Vehtari et al. 2017](#ref-vehtari_practical_2017),
+[2022](#ref-vehtari_pareto_2022)). With `cv_method = "kfold"`,
 [`cv_varsel()`](https://mc-stan.org/projpred/dev/reference/cv_varsel.md)
 runs a \\K\\-fold CV. The extent of the CV mainly depends on
 [`cv_varsel()`](https://mc-stan.org/projpred/dev/reference/cv_varsel.md)’s
@@ -214,7 +219,7 @@ the search part is run with the training data of each CV fold separately
 and the evaluation part is run with the corresponding test data of each
 CV fold. If `validate_search = FALSE`, the search is excluded from the
 CV so that only a single full-data search is run. Because of its more
-thorough protection against overfitting[⁴](#fn4),
+thorough protection against overfitting[^4],
 [`cv_varsel()`](https://mc-stan.org/projpred/dev/reference/cv_varsel.md)
 with `validate_search = TRUE` is recommended over
 [`varsel()`](https://mc-stan.org/projpred/dev/reference/varsel.md) and
@@ -239,6 +244,7 @@ the building of the vignette (this is not recommended in general), we
 choose the `"L1"` search `method` and set `refit_prj` to `FALSE`.
 
 ``` r
+
 # Preliminary cv_varsel() run:
 cvvs_fast <- cv_varsel(
   refm_obj,
@@ -270,6 +276,7 @@ runs, we can omit the predictor ranking from the plot by setting
 option, just like argument `text_angle`):
 
 ``` r
+
 options(projpred.plot_vsel_size_position = "primary_x_bottom")
 options(projpred.plot_vsel_text_angle = 0)
 plot(cvvs_fast, stats = "mlpd", ranking_nterms_max = NA)
@@ -279,9 +286,9 @@ plot(cvvs_fast, stats = "mlpd", ranking_nterms_max = NA)
 that the submodel MLPD levels off from submodel size 8 on. However, we
 used L1 search with `refit_prj = FALSE`, which means that the
 projections employed for the predictive performance evaluation are
-L1-penalized, which is usually undesired ([Piironen, Paasiniemi, and
-Vehtari 2020, sec. 4](#ref-piironen_projective_2020)). Thus, to
-investigate the impact of `refit_prj = FALSE`, we re-run
+L1-penalized, which is usually undesired ([Piironen et al. 2020, sec.
+4](#ref-piironen_projective_2020)). Thus, to investigate the impact of
+`refit_prj = FALSE`, we re-run
 [`cv_varsel()`](https://mc-stan.org/projpred/dev/reference/cv_varsel.md),
 but this time with the default of `refit_prj = TRUE` and re-using the
 search results (as well as the CV-related arguments such as
@@ -295,10 +302,11 @@ to `cvvs_fast` instead of `refm_obj` so that the
 [`cv_varsel()`](https://mc-stan.org/projpred/dev/reference/cv_varsel.md)
 generic dispatches to the
 [`cv_varsel.vsel()`](https://mc-stan.org/projpred/dev/reference/cv_varsel.md)
-method that was introduced in **projpred** 2.8.0[⁵](#fn5)). To save
-time, we also set `nclusters_pred` to a comparatively low value of `20`:
+method that was introduced in **projpred** 2.8.0[^5]). To save time, we
+also set `nclusters_pred` to a comparatively low value of `20`:
 
 ``` r
+
 # Preliminary cv_varsel() run with `refit_prj = TRUE`:
 cvvs_fast_refit <- cv_varsel(
   cvvs_fast,
@@ -321,6 +329,7 @@ With the `refit_prj = TRUE` results, the predictive performance plot
 from above now looks as follows:
 
 ``` r
+
 plot(cvvs_fast_refit, stats = "mlpd", ranking_nterms_max = NA)
 ```
 
@@ -370,6 +379,7 @@ the change in `nterms_max` (here: 9, for `cvvs_fast` and
 `cvvs_fast_refit`: 20).
 
 ``` r
+
 # Refit the reference model K times:
 cv_fits <- run_cvfun(
   refm_obj,
@@ -417,8 +427,8 @@ actual scale and the uncertainty bars match this scale, but argument
 offers two more options:
 
 - With `deltas = TRUE`, the performance statistics are plotted on
-  *difference scale*, i.e., as differences[⁶](#fn6) from the baseline
-  model[⁷](#fn7) and the uncertainty bars match this scale,
+  *difference scale*, i.e., as differences[^6] from the baseline
+  model[^7] and the uncertainty bars match this scale,
 - With `deltas = "mixed"`, the performance statistics (i.e., their point
   estimates) are plotted on the actual scale, but the uncertainty bars
   visualize the difference-scale uncertainty.
@@ -433,6 +443,7 @@ final `cv_varsel()` run and identification of the selected
 submodel”](#rksel):
 
 ``` r
+
 options(projpred.plot_vsel_show_cv_proportions = TRUE)
 plot(cvvs, stats = "mlpd", deltas = TRUE)
 ```
@@ -450,9 +461,9 @@ red horizontal line).
 Sometimes, the plot may be ambiguous because after reaching the
 reference model’s performance, the submodels’ performance may keep
 increasing (and hence become even better than the reference model’s
-performance[⁸](#fn8)). In that case, one has to find a suitable
-trade-off between predictive performance (accuracy) and model size
-(sparsity) in the context of subject-matter knowledge.
+performance[^8]). In that case, one has to find a suitable trade-off
+between predictive performance (accuracy) and model size (sparsity) in
+the context of subject-matter knowledge.
 
 Here, we decide for a submodel size of 7 because it seems to provide the
 best trade-off between sparsity and accuracy (size 7 is the smallest
@@ -460,6 +471,7 @@ size where the submodel MLPD is close enough to the reference model MLPD
 and from size 7 on, the submodel MLPD levels off).
 
 ``` r
+
 size_decided <- 7
 ```
 
@@ -477,6 +489,7 @@ with caution (see
 [`?suggest_size`](https://mc-stan.org/projpred/dev/reference/suggest_size.md)):
 
 ``` r
+
 suggest_size(cvvs, stat = "mlpd")
 ```
 
@@ -519,12 +532,14 @@ and
 as follows:
 
 ``` r
+
 smmry <- summary(cvvs,
                  stats = "mlpd",
                  type = c("mean", "lower", "upper"),
                  deltas = TRUE)
 print(smmry, digits = 1)
 ```
+
 
     Family: gaussian 
     Link function: identity 
@@ -568,6 +583,7 @@ of
 [`summary.vsel()`](https://mc-stan.org/projpred/dev/reference/summary.vsel.md):
 
 ``` r
+
 perf <- performances(smmry)
 str(perf)
 ```
@@ -601,6 +617,7 @@ and—if available—the fold-wise ones) can be retrieved via
 [`ranking()`](https://mc-stan.org/projpred/dev/reference/ranking.md):
 
 ``` r
+
 rk <- ranking(cvvs)
 ```
 
@@ -617,6 +634,7 @@ we use
 [`cv_proportions()`](https://mc-stan.org/projpred/dev/reference/cv_proportions.md):
 
 ``` r
+
 ( pr_rk <- cv_proportions(rk) )
 ```
 
@@ -658,6 +676,7 @@ element `fulldata` of the
 output:
 
 ``` r
+
 rk[["fulldata"]]
 ```
 
@@ -676,6 +695,7 @@ The *transposed* matrix of ranking proportions can be visualized via
 [`plot.cv_proportions()`](https://mc-stan.org/projpred/dev/reference/plot.cv_proportions.md):
 
 ``` r
+
 plot(pr_rk)
 ```
 
@@ -688,6 +708,7 @@ intercept which is always included in the submodels), we combine the
 chosen submodel size of 7 with the full-data predictor ranking:
 
 ``` r
+
 ( predictors_final <- head(rk[["fulldata"]], size_decided) )
 ```
 
@@ -697,6 +718,7 @@ At this place, it is again helpful to take the ranking proportions into
 account, but now in a cumulated fashion:
 
 ``` r
+
 plot(cv_proportions(rk, cumulate = TRUE))
 ```
 
@@ -739,9 +761,10 @@ function returns an object of class `projection` which forms the basis
 for convenient post-selection inference. By the following
 [`project()`](https://mc-stan.org/projpred/dev/reference/project.md)
 call, we project the reference model onto the final submodel once
-again[⁹](#fn9):
+again[^9]:
 
 ``` r
+
 prj <- project(
   refm_obj,
   predictor_terms = predictors_final,
@@ -757,6 +780,7 @@ in the depths of
 output:
 
 ``` r
+
 prj_mat <- as.matrix(prj)
 ```
 
@@ -765,9 +789,8 @@ like any matrix of draws from MCMC procedures, except that it doesn’t
 reflect a typical posterior distribution, but rather a projected
 posterior distribution, i.e., the distribution arising from the
 deterministic projection of the reference model’s posterior distribution
-onto the parameter space of the final submodel[¹⁰](#fn10). Beware that
-in case of clustered projection (i.e., a non-`NULL` argument `nclusters`
-in the
+onto the parameter space of the final submodel[^10]. Beware that in case
+of clustered projection (i.e., a non-`NULL` argument `nclusters` in the
 [`project()`](https://mc-stan.org/projpred/dev/reference/project.md)
 call), the projected draws have different (i.e., nonconstant) weights,
 which needs to be taken into account when performing post-selection (or,
@@ -777,7 +800,7 @@ more generally, post-projection) inference, see
 and
 [`proj_predict()`](https://mc-stan.org/projpred/dev/reference/pred-projection.md)
 offer similar functionality via arguments `return_draws_matrix` and
-`nresample_clusters`, respectively[¹¹](#fn11)).
+`nresample_clusters`, respectively[^11]).
 
 ### Marginals of the projected posterior
 
@@ -787,10 +810,12 @@ applied to our projected posterior. For example, to calculate summary
 statistics for the marginals of the projected posterior:
 
 ``` r
+
 library(posterior)
 ```
 
 ``` r
+
 prj_drws <- as_draws_matrix(prj_mat)
 prj_smmry <- summarize_draws(
   prj_drws,
@@ -820,10 +845,12 @@ using its
 function:
 
 ``` r
+
 library(bayesplot)
 ```
 
 ``` r
+
 bayesplot_theme_set(ggplot2::theme_bw())
 mcmc_intervals(prj_mat) +
   ggplot2::coord_cartesian(xlim = c(-1.5, 1.6))
@@ -840,6 +867,7 @@ For comparison, consider the marginal posteriors of the corresponding
 parameters in the reference model:
 
 ``` r
+
 refm_mat <- as.matrix(refm_fit)
 mcmc_intervals(refm_mat, pars = colnames(prj_mat)) +
   ggplot2::coord_cartesian(xlim = c(-1.5, 1.6))
@@ -863,6 +891,7 @@ We start with
 For example, suppose we have the following new observations:
 
 ``` r
+
 ( dat_gauss_new <- setNames(
   as.data.frame(replicate(length(predictors_final), c(-1, 0, 1))),
   predictors_final
@@ -876,8 +905,8 @@ For example, suppose we have the following new observations:
 
 Then
 [`proj_linpred()`](https://mc-stan.org/projpred/dev/reference/pred-projection.md)
-can calculate the linear predictors[¹²](#fn12) for all new observations
-from `dat_gauss_new`. Depending on argument `integrated`, these linear
+can calculate the linear predictors[^12] for all new observations from
+`dat_gauss_new`. Depending on argument `integrated`, these linear
 predictors can be averaged across the projected draws (within each new
 observation). For instance, the following computes the expected values
 of the new observations’ predictive distributions (beware that the
@@ -887,6 +916,7 @@ different link function—one would typically have to use
 `transform = TRUE` in order to achieve such expected values):
 
 ``` r
+
 prj_linpred <- proj_linpred(prj, newdata = dat_gauss_new, integrated = TRUE)
 cbind(dat_gauss_new, linpred = as.vector(prj_linpred[["pred"]]))
 ```
@@ -910,11 +940,12 @@ we can obtain draws from predictive distributions based on the final
 submodel. In contrast to `proj_linpred(<...>, integrated = FALSE)`, this
 encompasses not only the uncertainty arising from parameter estimation,
 but also the uncertainty arising from the observation (or “sampling”)
-model for the response[¹³](#fn13). This is useful for what is usually
-termed a posterior predictive check (PPC), but would have to be termed
-something like a posterior-projection predictive check (PPPC) here:
+model for the response[^13]. This is useful for what is usually termed a
+posterior predictive check (PPC), but would have to be termed something
+like a posterior-projection predictive check (PPPC) here:
 
 ``` r
+
 prj_predict <- proj_predict(prj)
 # Using the 'bayesplot' package:
 ppc_dens_overlay(y = dat_gauss$y, yrep = prj_predict)
@@ -944,18 +975,16 @@ In the following and throughout **projpred**’s documentation, the term
 Apart from the [`gaussian()`](https://rdrr.io/r/stats/family.html)
 response family used in this vignette, **projpred**’s traditional
 projection also supports the
-[`binomial()`](https://rdrr.io/r/stats/family.html)[¹⁴](#fn14) and the
+[`binomial()`](https://rdrr.io/r/stats/family.html)[^14] and the
 [`poisson()`](https://rdrr.io/r/stats/family.html) family.
 
 The families currently supported by **projpred**’s augmented-data
-projection ([Weber, Glass, and Vehtari
-2025](#ref-weber_projection_2025)) are
-[`binomial()`](https://rdrr.io/r/stats/family.html)[¹⁵](#fn15)
-[¹⁶](#fn16),
+projection ([Weber et al. 2025](#ref-weber_projection_2025)) are
+[`binomial()`](https://rdrr.io/r/stats/family.html)[^15] [^16],
 [`brms::cumulative()`](https://paulbuerkner.com/brms/reference/brmsfamily.html),
 [`rstanarm::stan_polr()`](https://mc-stan.org/rstanarm/reference/stan_polr.html)
 fits, and
-[`brms::categorical()`](https://paulbuerkner.com/brms/reference/brmsfamily.html)[¹⁷](#fn17).
+[`brms::categorical()`](https://paulbuerkner.com/brms/reference/brmsfamily.html)[^17].
 See
 [`?extend_family`](https://mc-stan.org/projpred/dev/reference/extend_family.md)
 (which is called by
@@ -984,7 +1013,7 @@ augmented-data projection; **projpred** will throw an informative error
 if a requested feature is currently not supported for the augmented-data
 projection.
 
-The latent projection ([Catalina, Bürkner, and Vehtari
+The latent projection ([Catalina et al.
 2021](#ref-catalina_latent_2021)) is a quite general principle for
 extending **projpred**’s traditional projection to more response
 families. The latent projection is applied when setting argument
@@ -995,12 +1024,12 @@ families. The latent projection is applied when setting argument
 to `TRUE`. The families for which full latent-projection functionality
 (in particular, `resp_oscale = TRUE`, i.e., post-processing on the
 original response scale) is currently available are
-[`binomial()`](https://rdrr.io/r/stats/family.html)[¹⁸](#fn18)
-[¹⁹](#fn19), [`poisson()`](https://rdrr.io/r/stats/family.html),
+[`binomial()`](https://rdrr.io/r/stats/family.html)[^18] [^19],
+[`poisson()`](https://rdrr.io/r/stats/family.html),
 [`brms::cumulative()`](https://paulbuerkner.com/brms/reference/brmsfamily.html),
 and
 [`rstanarm::stan_polr()`](https://mc-stan.org/rstanarm/reference/stan_polr.html)
-fits[²⁰](#fn20). For all other families, it is worth trying the latent
+fits[^20]. For all other families, it is worth trying the latent
 projection (by setting `latent = TRUE`); **projpred** will state if any
 features are not available and how to make them available. More details
 concerning the latent projection are given in the corresponding
@@ -1023,8 +1052,7 @@ feature is currently not supported for the latent projection.
 
 On the side of the predictors, **projpred** not only supports linear
 main effects as shown in this vignette, but also interactions,
-multilevel[²¹](#fn21), and—as an experimental
-feature—additive[²²](#fn22) terms.
+multilevel[^21], and—as an experimental feature—additive[^22] terms.
 
 Transferring this vignette to such more complex problems is
 straightforward (also because this vignette employs a “typical”
@@ -1041,6 +1069,7 @@ corresponding multilevel reference model for the binary response `r2`
 could be created by the following code:
 
 ``` r
+
 data("VerbAgg", package = "lme4")
 refm_fit <- stan_glmer(
   r2 ~ btype + situ + mode + (btype + situ + mode | id),
@@ -1058,6 +1087,7 @@ be created by the following code (note that `pp_check(refm_fit)` gives a
 bad PPC in this case, so there’s still room for improvement):
 
 ``` r
+
 data("lasrosas.corn", package = "agridat")
 # Convert `year` to a `factor` (this could also be solved by using
 # `factor(year)` in the formula, but we avoid that here to put more emphasis on
@@ -1077,6 +1107,7 @@ reference model for the binary response `disease` could be created by
 the following code:
 
 ``` r
+
 data("gumpertz.pepper", package = "agridat")
 refm_fit <- stan_gamm4(
   disease ~ field + leaf + s(water),
@@ -1115,11 +1146,10 @@ behavior (the following list might not be exhaustive, though):
     sparsifying prior) should have a similar effect.
 2.  For non-Gaussian models, the discrepancy may be due to the fact that
     the penalized iteratively reweighted least squares (PIRLS) algorithm
-    might have convergence issues ([Catalina, Bürkner, and Vehtari
+    might have convergence issues ([Catalina et al.
     2021](#ref-catalina_latent_2021)). In this case, the latent-space
-    approach by Catalina, Bürkner, and Vehtari
-    ([2021](#ref-catalina_latent_2021)) might help, see also the
-    [latent-projection
+    approach by Catalina et al. ([2021](#ref-catalina_latent_2021))
+    might help, see also the [latent-projection
     vignette](https://mc-stan.org/projpred/articles/latent.html).
 
 ### Overfitting
@@ -1187,7 +1217,7 @@ possibilities are:
 1.  Using
     [`cv_varsel()`](https://mc-stan.org/projpred/dev/reference/cv_varsel.md)
     with `validate_search = FALSE` instead of `validate_search = TRUE`.
-    In case of `cv_method = "LOO"`[²³](#fn23),
+    In case of `cv_method = "LOO"`[^23],
     [`cv_varsel()`](https://mc-stan.org/projpred/dev/reference/cv_varsel.md)
     with `validate_search = FALSE` has comparable runtime to
     [`varsel()`](https://mc-stan.org/projpred/dev/reference/varsel.md),
@@ -1226,8 +1256,8 @@ possibilities are:
     components from the original predictors, using these principal
     components as predictors when fitting the reference model, and then
     performing the variable selection in terms of the *original*
-    predictor terms). Examples are given in Piironen, Paasiniemi, and
-    Vehtari ([2020](#ref-piironen_projective_2020)) and Pavone et al.
+    predictor terms). Examples are given in Piironen et al.
+    ([2020](#ref-piironen_projective_2020)) and Pavone et al.
     ([2022](#ref-pavone_using_2022)). A short example for a custom
     reference model object is also given in section “Examples” of the
     [`?init_refmodel`](https://mc-stan.org/projpred/dev/reference/refmodel-init-get.md)
@@ -1286,9 +1316,8 @@ possibilities are:
     way. In case of L1 search, this means that the L1-penalized
     projections of the regression coefficients are used for the
     predictive performance evaluation, which is usually undesired
-    ([Piironen, Paasiniemi, and Vehtari 2020, sec.
-    4](#ref-piironen_projective_2020)). In case of forward search, this
-    issue does not exist.
+    ([Piironen et al. 2020, sec. 4](#ref-piironen_projective_2020)). In
+    case of forward search, this issue does not exist.
 
 10. Parallelizing costly parts of the CV implied by
     [`cv_varsel()`](https://mc-stan.org/projpred/dev/reference/cv_varsel.md)
@@ -1352,12 +1381,12 @@ Catalina, Alejandro, Paul-Christian Bürkner, and Aki Vehtari. 2022.
 “Projection Predictive Inference for Generalized Linear and Additive
 Multilevel Models.” In *Proceedings of The 25th International Conference
 on Artificial Intelligence and Statistics*, edited by Gustau
-Camps-Valls, Francisco J. R. Ruiz, and Isabel Valera, 151:4446–61.
+Camps-Valls, Francisco J. R. Ruiz, and Isabel Valera, vol. 151.
 Proceedings of Machine Learning Research. PMLR.
 <https://proceedings.mlr.press/v151/catalina22a.html>.
 
-Catalina, Alejandro, Paul Bürkner, and Aki Vehtari. 2021. “Latent Space
-Projection Predictive Inference.” arXiv.
+Catalina, Alejandro, Paul Bürkner, and Aki Vehtari. 2021. *Latent Space
+Projection Predictive Inference*. arXiv.
 <https://doi.org/10.48550/arXiv.2109.04702>.
 
 Dupuis, Jérome A., and Christian P. Robert. 2003. “Variable Selection in
@@ -1373,7 +1402,7 @@ Magnusson, Måns, Michael Riis Andersen, Johan Jonasson, and Aki Vehtari.
 2020. “Leave-One-Out Cross-Validation for Bayesian Model Comparison in
 Large Data.” In *Proceedings of The 23rd International Conference on
 Artificial Intelligence and Statistics*, edited by Silvia Chiappa and
-Roberto Calandra, 108:341–51. Proceedings of Machine Learning Research.
+Roberto Calandra, vol. 108. Proceedings of Machine Learning Research.
 PMLR. <https://proceedings.mlr.press/v108/magnusson20a.html>.
 
 McLatchie, Yann, Sölvi Rögnvaldsson, Frank Weber, and Aki Vehtari. 2025.
@@ -1382,7 +1411,7 @@ McLatchie, Yann, Sölvi Rögnvaldsson, Frank Weber, and Aki Vehtari. 2025.
 
 Pavone, Federico, Juho Piironen, Paul-Christian Bürkner, and Aki
 Vehtari. 2022. “Using Reference Models in Variable Selection.”
-*Computational Statistics*.
+*Computational Statistics*, ahead of print.
 <https://doi.org/10.1007/s00180-022-01231-6>.
 
 Piironen, Juho, Markus Paasiniemi, and Aki Vehtari. 2020. “Projective
@@ -1394,15 +1423,17 @@ Piironen, Juho, and Aki Vehtari. 2017a. “Comparison of Bayesian
 Predictive Methods for Model Selection.” *Statistics and Computing* 27
 (3): 711–35. <https://doi.org/10.1007/s11222-016-9649-y>.
 
-———. 2017b. “On the Hyperprior Choice for the Global Shrinkage Parameter
-in the Horseshoe Prior.” In *Proceedings of the 20th International
-Conference on Artificial Intelligence and Statistics*, edited by Aarti
-Singh and Jerry Zhu, 54:905–13. Proceedings of Machine Learning
-Research. PMLR. <https://proceedings.mlr.press/v54/piironen17a.html>.
+Piironen, Juho, and Aki Vehtari. 2017b. “On the Hyperprior Choice for
+the Global Shrinkage Parameter in the Horseshoe Prior.” In *Proceedings
+of the 20th International Conference on Artificial Intelligence and
+Statistics*, edited by Aarti Singh and Jerry Zhu, vol. 54. Proceedings
+of Machine Learning Research. PMLR.
+<https://proceedings.mlr.press/v54/piironen17a.html>.
 
-———. 2017c. “Sparsity Information and Regularization in the Horseshoe
-and Other Shrinkage Priors.” *Electronic Journal of Statistics* 11 (2):
-5018–51. <https://doi.org/10.1214/17-EJS1337SI>.
+Piironen, Juho, and Aki Vehtari. 2017c. “Sparsity Information and
+Regularization in the Horseshoe and Other Shrinkage Priors.” *Electronic
+Journal of Statistics* 11 (2): 5018–51.
+<https://doi.org/10.1214/17-EJS1337SI>.
 
 Vehtari, Aki, Andrew Gelman, and Jonah Gabry. 2017. “Practical Bayesian
 Model Evaluation Using Leave-One-Out Cross-Validation and WAIC.”
@@ -1410,7 +1441,7 @@ Model Evaluation Using Leave-One-Out Cross-Validation and WAIC.”
 <https://doi.org/10.1007/s11222-016-9696-4>.
 
 Vehtari, Aki, Daniel Simpson, Andrew Gelman, Yuling Yao, and Jonah
-Gabry. 2022. “Pareto Smoothed Importance Sampling.” arXiv.
+Gabry. 2022. *Pareto Smoothed Importance Sampling*. arXiv.
 <https://doi.org/10.48550/arXiv.1507.02646>.
 
 Weber, Frank, Änne Glass, and Aki Vehtari. 2025. “Projection Predictive
@@ -1418,21 +1449,19 @@ Variable Selection for Discrete Response Families with Finite Support.”
 *Computational Statistics* 40 (2): 701–21.
 <https://doi.org/10.1007/s00180-024-01506-0>.
 
-------------------------------------------------------------------------
-
-1.  The citation information can be accessed offline by typing
+[^1]: The citation information can be accessed offline by typing
     `print(citation("projpred"), bibtex = TRUE)` within R.
 
-2.  More generally, the number of chains is split up as evenly as
+[^2]: More generally, the number of chains is split up as evenly as
     possible among the number of CPU cores.
 
-3.  Here, the
+[^3]: Here, the
     [`get_refmodel()`](https://mc-stan.org/projpred/dev/reference/refmodel-init-get.md)
     call is quite fast, but in other situations, it may take a while, so
     in general, it is better to create the `refmodel` object once
     explicitly and then to re-use it.
 
-4.  Currently, neither
+[^4]: Currently, neither
     [`varsel()`](https://mc-stan.org/projpred/dev/reference/varsel.md)
     nor
     [`cv_varsel()`](https://mc-stan.org/projpred/dev/reference/cv_varsel.md)
@@ -1445,12 +1474,12 @@ Variable Selection for Discrete Response Families with Finite Support.”
     induced by the size selection should be comparatively small
     ([Piironen and Vehtari 2017a](#ref-piironen_comparison_2017)).
 
-5.  Analogous functionality has been implemented for
+[^5]: Analogous functionality has been implemented for
     [`varsel()`](https://mc-stan.org/projpred/dev/reference/varsel.md),
     namely in
     [`varsel.vsel()`](https://mc-stan.org/projpred/dev/reference/varsel.md).
 
-6.  For the geometric mean predictive density (GMPD; see argument
+[^6]: For the geometric mean predictive density (GMPD; see argument
     `stats` of
     [`summary.vsel()`](https://mc-stan.org/projpred/dev/reference/summary.vsel.md)
     and
@@ -1458,14 +1487,15 @@ Variable Selection for Discrete Response Families with Finite Support.”
     `deltas = TRUE` estimates the GMPD *ratio* (not difference) vs. the
     baseline model.
 
-7.  For the definition of the baseline model, see argument `baseline` of
+[^7]: For the definition of the baseline model, see argument `baseline`
+    of
     [`summary.vsel()`](https://mc-stan.org/projpred/dev/reference/summary.vsel.md)
     and
     [`plot.vsel()`](https://mc-stan.org/projpred/dev/reference/plot.vsel.md);
     in the most common cases, the default baseline model is the
     reference model.
 
-8.  In general, only
+[^8]: In general, only
     [`cv_varsel()`](https://mc-stan.org/projpred/dev/reference/cv_varsel.md)
     with `validate_search = TRUE` allows to judge whether the submodels
     perform better than the reference model or not. Such a judgment is
@@ -1475,7 +1505,7 @@ Variable Selection for Discrete Response Families with Finite Support.”
     [`cv_varsel()`](https://mc-stan.org/projpred/dev/reference/cv_varsel.md)
     with `validate_search = FALSE`.
 
-9.  During the search, the reference model is projected onto all
+[^9]: During the search, the reference model is projected onto all
     candidate models (this is where arguments `ndraws` and `nclusters`
     of
     [`varsel()`](https://mc-stan.org/projpred/dev/reference/varsel.md)
@@ -1516,72 +1546,72 @@ Variable Selection for Discrete Response Families with Finite Support.”
     However, this would increase the runtime, which we don’t want in
     this vignette.
 
-10. In general, this implies that projected regression coefficients do
-    not reflect isolated effects of the predictors. For example,
+[^10]: In general, this implies that projected regression coefficients
+    do not reflect isolated effects of the predictors. For example,
     especially in case of highly correlated predictors, it is possible
     that projected regression coefficients “absorb” effects from
     predictors that have been excluded in the projection.
 
-11. [`proj_predict()`](https://mc-stan.org/projpred/dev/reference/pred-projection.md)
+[^11]: [`proj_predict()`](https://mc-stan.org/projpred/dev/reference/pred-projection.md)
     also has an argument `return_draws_matrix`, but it simply converts
     the return value type. In
     [`proj_predict()`](https://mc-stan.org/projpred/dev/reference/pred-projection.md),
     different weights of the projected draws are taken into account via
     argument `nresample_clusters`.
 
-12. [`proj_linpred()`](https://mc-stan.org/projpred/dev/reference/pred-projection.md)
+[^12]: [`proj_linpred()`](https://mc-stan.org/projpred/dev/reference/pred-projection.md)
     can also transform the linear predictor to response scale, but here,
     this is the same as the linear predictor scale (because of the
     identity link function).
 
-13. In case of the Gaussian family we are using here, the uncertainty
+[^13]: In case of the Gaussian family we are using here, the uncertainty
     arising from the observation model is the uncertainty due to the
     residual standard deviation.
 
-14. Via
+[^14]: Via
     [`brms::get_refmodel.brmsfit()`](https://paulbuerkner.com/brms/reference/get_refmodel.brmsfit.html),
     the
     [`brms::bernoulli()`](https://paulbuerkner.com/brms/reference/brmsfamily.html)
     family is supported as well.
 
-15. Currently, the augmented-data support for the
+[^15]: Currently, the augmented-data support for the
     [`binomial()`](https://rdrr.io/r/stats/family.html) family does not
     include binomial distributions with more than one trial. In such a
     case, a workaround is to de-aggregate the Bernoulli trials which
     belong to the same (aggregated) observation, i.e., to use a “long”
     dataset.
 
-16. Like the traditional projection, the augmented-data projection also
+[^16]: Like the traditional projection, the augmented-data projection
+    also supports the
+    [`brms::bernoulli()`](https://paulbuerkner.com/brms/reference/brmsfamily.html)
+    family via
+    [`brms::get_refmodel.brmsfit()`](https://paulbuerkner.com/brms/reference/get_refmodel.brmsfit.html).
+
+[^17]: For the augmented-data projection based on a “typical” **brms**
+    reference model object, **brms** version 2.17.0 or later is needed.
+
+[^18]: Currently, the latent-projection support for the
+    [`binomial()`](https://rdrr.io/r/stats/family.html) family does not
+    include binomial distributions with more than one trial. In such a
+    case, a workaround is to de-aggregate the Bernoulli trials which
+    belong to the same (aggregated) observation, i.e., to use a “long”
+    dataset.
+
+[^19]: Like the traditional projection, the latent projection also
     supports the
     [`brms::bernoulli()`](https://paulbuerkner.com/brms/reference/brmsfamily.html)
     family via
     [`brms::get_refmodel.brmsfit()`](https://paulbuerkner.com/brms/reference/get_refmodel.brmsfit.html).
 
-17. For the augmented-data projection based on a “typical” **brms**
-    reference model object, **brms** version 2.17.0 or later is needed.
-
-18. Currently, the latent-projection support for the
-    [`binomial()`](https://rdrr.io/r/stats/family.html) family does not
-    include binomial distributions with more than one trial. In such a
-    case, a workaround is to de-aggregate the Bernoulli trials which
-    belong to the same (aggregated) observation, i.e., to use a “long”
-    dataset.
-
-19. Like the traditional projection, the latent projection also supports
-    the
-    [`brms::bernoulli()`](https://paulbuerkner.com/brms/reference/brmsfamily.html)
-    family via
-    [`brms::get_refmodel.brmsfit()`](https://paulbuerkner.com/brms/reference/get_refmodel.brmsfit.html).
-
-20. For the latent projection based on a “typical” **brms** reference
+[^20]: For the latent projection based on a “typical” **brms** reference
     model object, **brms** version 2.19.0 or later is needed.
 
-21. Multilevel models are also known as *hierarchical* models or models
-    with *partially pooled*, *group-level*, or—in frequentist
+[^21]: Multilevel models are also known as *hierarchical* models or
+    models with *partially pooled*, *group-level*, or—in frequentist
     terms—*random* effects.
 
-22. Additive terms are also known as *smooth* terms.
+[^22]: Additive terms are also known as *smooth* terms.
 
-23. In case of `cv_method = "kfold"`, the runtime advantage of
+[^23]: In case of `cv_method = "kfold"`, the runtime advantage of
     `validate_search = FALSE` compared to `validate_search = TRUE` is by
     far not as large as in case of `cv_method = "LOO"`.

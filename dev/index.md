@@ -7,20 +7,20 @@ an [**rstanarm**](https://mc-stan.org/rstanarm/) or
 models can also be used. Details on supported model types are given in
 section [“Supported types of
 models”](https://mc-stan.org/projpred/articles/projpred.html#modtypes)
-of the main vignette[¹](#fn1).
+of the main vignette[^1].
 
 For details on how to cite **projpred**, see the [projpred citation
 info](https://CRAN.R-project.org/package=projpred/citation.html) on
-CRAN[²](#fn2). Further references (including earlier work that
-**projpred** is based on) are given in section
+CRAN[^2]. Further references (including earlier work that **projpred**
+is based on) are given in section
 [“Introduction”](https://mc-stan.org/projpred/articles/projpred.html#intro)
 of the main vignette.
 
-The [vignettes](https://mc-stan.org/projpred/articles/)[³](#fn3)
-illustrate how to use the **projpred** functions in conjunction. Details
-on the **projpred** functions as well as some shorter examples may be
-found in the
-[documentation](https://mc-stan.org/projpred/reference/index.html)[⁴](#fn4).
+The [vignettes](https://mc-stan.org/projpred/articles/)[^3] illustrate
+how to use the **projpred** functions in conjunction. Details on the
+**projpred** functions as well as some shorter examples may be found in
+the
+[documentation](https://mc-stan.org/projpred/reference/index.html)[^4].
 
 ## Installation
 
@@ -33,6 +33,7 @@ stable.
 ### From CRAN
 
 ``` r
+
 install.packages("projpred")
 ```
 
@@ -43,6 +44,7 @@ so if necessary, the following code will also install **devtools** (from
 [CRAN](https://CRAN.R-project.org/package=devtools)):
 
 ``` r
+
 if (!requireNamespace("devtools", quietly = TRUE)) {
   install.packages("devtools")
 }
@@ -60,17 +62,15 @@ issue](https://github.com/stan-dev/projpred/issues) on GitHub. See
 [CONTRIBUTING.md](https://github.com/stan-dev/projpred/blob/master/.github/CONTRIBUTING.md)
 for more details.
 
-------------------------------------------------------------------------
-
-1.  The main vignette can be accessed offline by typing
+[^1]: The main vignette can be accessed offline by typing
     [`vignette(topic = "projpred", package = "projpred")`](https://mc-stan.org/projpred/dev/articles/projpred.md)
     or—more conveniently—`browseVignettes("projpred")` within R.
 
-2.  The citation information can be accessed offline by typing
+[^2]: The citation information can be accessed offline by typing
     `print(citation("projpred"), bibtex = TRUE)` within R.
 
-3.  The overview of all vignettes can be accessed offline by typing
+[^3]: The overview of all vignettes can be accessed offline by typing
     `browseVignettes("projpred")` within R.
 
-4.  The documentation can be accessed offline using `?` or
+[^4]: The documentation can be accessed offline using `?` or
     [`help()`](https://rdrr.io/r/utils/help.html) within R.

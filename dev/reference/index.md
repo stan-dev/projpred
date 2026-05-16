@@ -66,6 +66,7 @@
 
 - [`proj_linpred()`](https://mc-stan.org/projpred/dev/reference/pred-projection.md)
   [`proj_predict()`](https://mc-stan.org/projpred/dev/reference/pred-projection.md)
+  [`proj_epred()`](https://mc-stan.org/projpred/dev/reference/pred-projection.md)
   : Predictions from a submodel (after projection)
 
 - [`predict(`*`<refmodel>`*`)`](https://mc-stan.org/projpred/dev/reference/predict.refmodel.md)

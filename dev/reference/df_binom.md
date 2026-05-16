@@ -5,7 +5,7 @@ Binomial toy example
 ## Usage
 
 ``` r
-df_binom
+data(df_binom)
 ```
 
 ## Format
