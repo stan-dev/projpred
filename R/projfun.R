@@ -131,7 +131,7 @@ perf_eval <- function(search_path,
                                  wobs = wobs_test),
         data_aux_test = newdata_test %||%
           refmodel_fulldata$fetch_data(obs = indices_test),
-        family = refmodel_fulldata$family,
+        family = refmodel$family,
         wdraws = submodl$wdraws_prj,
         mu = refmodel_fulldata$mu_fun(submodl$outdmin,
                                       obs = indices_test,

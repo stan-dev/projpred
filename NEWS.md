@@ -12,6 +12,8 @@ If you read this from a place other than <https://mc-stan.org/projpred/news/inde
 
 ## Bug fixes
 
+* Fixed bug in `cv_varsel()` with `cv_method = "kfold"`: Submodels were incorrectly scored with the full data from the reference model family instead of the correct fold's one, which matters for the latent projection. (GitHub: #567)
+
 
 # projpred 2.10.0
 
