@@ -308,6 +308,27 @@ fit_gamm_callback <- function(formula, projpred_formula_no_random,
                                    optCtrl = list(method = "nlminb")),
         ...
       ))
+    } else if (grepl("pwrssUpdate", as.character(e))) {
+      # lme4's PIRLS could not reduce the deviance any further, so relax the
+      # convergence tolerance for the PIRLS step by a factor of 10 and retry
+      # (analogous to the automatic fix in fit_glmer_callback()):
+      tolPwrss_new <- 10 * (control$tolPwrss %||%
+                            control_callback(family)$tolPwrss)
+      if (tolPwrss_new > 1e-4) {
+        stop("Encountering a pwrssUpdate error while running the gamm4 ",
+             "fitting procedure, but cannot fix this automatically anymore. ",
+             "You will probably have to tweak lme4 tuning parameters manually ",
+             "(via `...`).")
+      }
+      return(fit_gamm_callback(
+        formula = formula,
+        projpred_formula_no_random = projpred_formula_no_random,
+        projpred_random = projpred_random,
+        data = data,
+        family = family,
+        control = control_callback(family, tolPwrss = tolPwrss_new),
+        ...
+      ))
     } else {
       stop(e)
     }
