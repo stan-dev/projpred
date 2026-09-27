@@ -322,7 +322,7 @@ print(time_lat)
 ```
 
        user  system elapsed 
-      0.969   0.329   0.924 
+      1.090   0.341   1.038 
 
 The message telling that `<refmodel>$dis` consists of only `NA`s will
 not concern us here because we will only focus on response-scale
@@ -435,7 +435,7 @@ print(time_trad)
 ```
 
        user  system elapsed 
-      3.957   0.346   3.922 
+      4.351   0.354   4.303 
 
 ``` r
 
@@ -815,9 +815,20 @@ cvvs_weib <- cv_varsel(
 )
 ```
 
-    Warning: In the recalculation of the latent response values, some (5 / 500) expectation-specific Pareto k-values are > 0.7.
+    Warning: Some Pareto k diagnostic values are too high. See help('pareto-k-diagnostic') for details.
+
+    Warning: Some (2 / 500) Pareto k's for the reference model's PSIS-LOO weights
+    are > 0.7.
+
+    Warning: In the recalculation of the latent response values, some (10 / 500) expectation-specific Pareto k-values are > 0.7.
     In general, we recommend K-fold CV in this case.
-    Warning: In the recalculation of the latent response values, some (5 / 500) expectation-specific Pareto k-values are > 0.7.
+
+    Warning: Some Pareto k diagnostic values are too high. See help('pareto-k-diagnostic') for details.
+
+    Warning: Some (2 / 500) Pareto k's for the reference model's PSIS-LOO weights
+    are > 0.7.
+
+    Warning: In the recalculation of the latent response values, some (10 / 500) expectation-specific Pareto k-values are > 0.7.
     In general, we recommend K-fold CV in this case.
 
     Using standard importance sampling (SIS) due to a small number of clusters.
@@ -871,14 +882,6 @@ bayesplot::ppc_km_overlay(y = dat_sim_weib$yobs, yrep = prj_predict_weib,
 
     Note: `extrapolation_factor` now defaults to 1.2 (20%).
     To display all posterior predictive draws, set `extrapolation_factor = Inf`.
-
-    Warning:  [1m [22mUsing `size` aesthetic for lines was deprecated in ggplot2 3.4.0.
-     [36mℹ [39m Please use `linewidth` instead.
-     [36mℹ [39m The deprecated feature was likely used in the  [34mbayesplot [39m package.
-      Please report the issue at  [3m [34m<https://github.com/stan-dev/bayesplot/issues/> [39m [23m.
-     [90mThis warning is displayed once per session. [39m
-     [90mCall `lifecycle::last_lifecycle_warnings()` to see where this warning was [39m
-     [90mgenerated. [39m
 
 ![](latent_files/figure-html/weibull_pppc-1.png)
 
@@ -1020,18 +1023,18 @@ cvvs_lnorm <- cv_varsel(
 
     Warning: Some Pareto k diagnostic values are too high. See help('pareto-k-diagnostic') for details.
 
-    Warning: Some (4 / 500) Pareto k's for the reference model's PSIS-LOO weights
+    Warning: Some (6 / 500) Pareto k's for the reference model's PSIS-LOO weights
     are > 0.7.
 
-    Warning: In the recalculation of the latent response values, some (7 / 500) expectation-specific Pareto k-values are > 0.7.
+    Warning: In the recalculation of the latent response values, some (8 / 500) expectation-specific Pareto k-values are > 0.7.
     In general, we recommend K-fold CV in this case.
 
     Warning: Some Pareto k diagnostic values are too high. See help('pareto-k-diagnostic') for details.
 
-    Warning: Some (4 / 500) Pareto k's for the reference model's PSIS-LOO weights
+    Warning: Some (6 / 500) Pareto k's for the reference model's PSIS-LOO weights
     are > 0.7.
 
-    Warning: In the recalculation of the latent response values, some (7 / 500) expectation-specific Pareto k-values are > 0.7.
+    Warning: In the recalculation of the latent response values, some (8 / 500) expectation-specific Pareto k-values are > 0.7.
     In general, we recommend K-fold CV in this case.
 
     Using standard importance sampling (SIS) due to a small number of clusters.
