@@ -34,7 +34,13 @@ jobs:
 
       - uses: r-lib/actions/setup-r-dependencies@v2
         with:
-          extra-packages: any::pkgdown, local::., any::withr, any::BH, stan-dev/pkgdown-config
+          extra-packages: |
+            any::pkgdown
+            local::.
+            any::withr
+            any::BH
+            any::RcppEigen
+            stan-dev/pkgdown-config
 
       - name: Build site
         run: |
@@ -53,4 +59,4 @@ jobs:
         with:
           clean: false
           branch: gh-pages
-          folder: "docs"
+          folder: docs
