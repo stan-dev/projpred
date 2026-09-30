@@ -2,6 +2,8 @@
 
 ## projpred 2.11.0
 
+CRAN release: 2026-09-30
+
 ### Major changes
 
 ### Minor changes

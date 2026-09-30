@@ -97,7 +97,7 @@
             
             <h4 data-toc-skip class="date">2026-09-30</h4>
       
-      <small class="dont-index">Source: <a href="https://github.com/stan-dev/projpred/blob/master/vignettes/latent.Rmd" class="external-link"><code>vignettes/latent.Rmd</code></a></small>
+      <small class="dont-index">Source: <a href="https://github.com/stan-dev/projpred/blob/V2.11.0/vignettes/latent.Rmd" class="external-link"><code>vignettes/latent.Rmd</code></a></small>
       <div class="d-none name"><code>latent.Rmd</code></div>
     </div>
 
@@ -391,7 +391,7 @@ projection’s later:</p>
 <div class="sourceCode" id="cb11"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="va">time_lat</span><span class="op">)</span></span></code></pre></div>
 <pre><code>   user  system elapsed 
-  0.561   0.299   0.514 </code></pre>
+  1.073   0.341   1.020 </code></pre>
 <p>The message telling that <code>&lt;refmodel&gt;$dis</code> consists
 of only <code>NA</code>s will not concern us here because we will only
 focus on response-scale post-processing.</p>
@@ -473,7 +473,7 @@ approach:</p>
 <div class="sourceCode" id="cb20"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="va">time_trad</span><span class="op">)</span></span></code></pre></div>
 <pre><code>   user  system elapsed 
-  2.285   0.320   2.252 </code></pre>
+  4.270   0.338   4.204 </code></pre>
 <div class="sourceCode" id="cb22"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="op">(</span> <span class="va">gg_trad</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/graphics/plot.default.html" class="external-link">plot</a></span><span class="op">(</span><span class="va">vs_trad</span>, stats <span class="op">=</span> <span class="st">"gmpd"</span>, deltas <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span> <span class="op">)</span></span></code></pre></div>
 <p><img src="latent_files/figure-html/post_vs_trad-1.png" class="r-plt" alt="" width="90%" style="display: block; margin: auto;">
@@ -865,12 +865,12 @@ this case).</p>
 <span>  <span class="co">###</span></span>
 <span><span class="op">)</span></span></code></pre></div>
 <pre><code>Warning: Some Pareto k diagnostic values are too high. See help('pareto-k-diagnostic') for details.</code></pre>
-<pre><code>Warning: Some (1 / 500) Pareto k's for the reference model's PSIS-LOO weights
+<pre><code>Warning: Some (2 / 500) Pareto k's for the reference model's PSIS-LOO weights
 are &gt; 0.7.</code></pre>
 <pre><code>Warning: In the recalculation of the latent response values, some (5 / 500) expectation-specific Pareto k-values are &gt; 0.7.
 In general, we recommend K-fold CV in this case.</code></pre>
 <pre><code>Warning: Some Pareto k diagnostic values are too high. See help('pareto-k-diagnostic') for details.</code></pre>
-<pre><code>Warning: Some (1 / 500) Pareto k's for the reference model's PSIS-LOO weights
+<pre><code>Warning: Some (2 / 500) Pareto k's for the reference model's PSIS-LOO weights
 are &gt; 0.7.</code></pre>
 <pre><code>Warning: In the recalculation of the latent response values, some (5 / 500) expectation-specific Pareto k-values are &gt; 0.7.
 In general, we recommend K-fold CV in this case.</code></pre>
@@ -1029,12 +1029,12 @@ works correctly in this case).</p>
 <span>  <span class="co">###</span></span>
 <span><span class="op">)</span></span></code></pre></div>
 <pre><code>Warning: Some Pareto k diagnostic values are too high. See help('pareto-k-diagnostic') for details.</code></pre>
-<pre><code>Warning: Some (6 / 500) Pareto k's for the reference model's PSIS-LOO weights
+<pre><code>Warning: Some (5 / 500) Pareto k's for the reference model's PSIS-LOO weights
 are &gt; 0.7.</code></pre>
 <pre><code>Warning: In the recalculation of the latent response values, some (9 / 500) expectation-specific Pareto k-values are &gt; 0.7.
 In general, we recommend K-fold CV in this case.</code></pre>
 <pre><code>Warning: Some Pareto k diagnostic values are too high. See help('pareto-k-diagnostic') for details.</code></pre>
-<pre><code>Warning: Some (6 / 500) Pareto k's for the reference model's PSIS-LOO weights
+<pre><code>Warning: Some (5 / 500) Pareto k's for the reference model's PSIS-LOO weights
 are &gt; 0.7.</code></pre>
 <pre><code>Warning: In the recalculation of the latent response values, some (9 / 500) expectation-specific Pareto k-values are &gt; 0.7.
 In general, we recommend K-fold CV in this case.</code></pre>

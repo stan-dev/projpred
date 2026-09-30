@@ -36,7 +36,7 @@
 ## Citation
 
 Source:
-[`inst/CITATION`](https://github.com/stan-dev/projpred/blob/master/inst/CITATION)
+[`inst/CITATION`](https://github.com/stan-dev/projpred/blob/V2.11.0/inst/CITATION)
 
 Piironen J, Paasiniemi M, Catalina A, Weber F, Martin O, Vehtari A
 (2026). “projpred: Projection Predictive Feature Selection.” R package
