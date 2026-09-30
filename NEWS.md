@@ -2,7 +2,7 @@
 
 If you read this from a place other than <https://mc-stan.org/projpred/news/index.html>, please consider switching to that website since it features better formatting and cross-linking.
 
-# profpred 2.10.1.9000
+# projpred 2.11.0
 
 ## Major changes
 
@@ -10,10 +10,18 @@ If you read this from a place other than <https://mc-stan.org/projpred/news/inde
 
 * Added `proj_epred()`, which is essentially a wrapper around `proj_linpred()` with `transform = TRUE`. (GitHub: #559, #560)
 
-## Bug fixes
+## Bug fixes and maintenance
 
-* Fixed bug in `cv_varsel()` with `cv_method = "kfold"`: Submodels were incorrectly scored with the full data from the reference model family instead of the correct fold's one, which matters for the latent projection. (GitHub: #567)
-
+* Fixed bug in `cv_varsel()` with `cv_method = "kfold"`: Submodels were incorrectly scored with the full data from the reference model family instead of the correct fold's one, which matters for the latent projection. (GitHub: #567, #568)
+* Tests: Adapt to version 0.9.15 of package mclogit (GitHub: #552)
+* Docs: Fix links to `summary()` generic (GitHub: #553)
+* Tests: Adapt tests to testthat v3.3.0 (GitHub: #554)
+* Use relative fontsize for model size numbers (GitHub: #555,#556)
+* Remove seemingly outdated lme4 note (GitHub: #558)
+* Add AI contribution policy (GitHub: #561)
+* Minor maintenance updates (GitHub: #562)
+* Tests: Resolve CI failures (GitHub: #569)
+* Docs:Inherit navbar from template (GitHub: #570)
 
 # projpred 2.10.0
 
