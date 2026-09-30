@@ -391,7 +391,7 @@ thresholds. projpred does not support the usually recommended
 moment-matching (see
 [`loo::loo_moment_match()`](https://mc-stan.org/loo/reference/loo_moment_match.html)
 and
-[`brms::loo_moment_match()`](https://paulbuerkner.com/brms/reference/loo_moment_match.brmsfit.html)),
+[`brms::loo_moment_match()`](https://mc-stan.org/loo/reference/loo_moment_match.html)),
 mixture importance sampling
 ([`vignette("loo2-mixis", package="loo")`](https://mc-stan.org/loo/articles/loo2-mixis.html)),
 or `reloo`-ing

@@ -310,6 +310,8 @@ Useful links:
 
 Authors:
 
+- Osvaldo Martin <aloctavodia@gmail.com>
+
 - Juho Piironen <juho.t.piironen@gmail.com>
 
 - Markus Paasiniemi

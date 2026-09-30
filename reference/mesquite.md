@@ -6,7 +6,7 @@ The mesquite bushes yields dataset from Gelman and Hill (2006)
 ## Usage
 
 ``` r
-mesquite
+data(mesquite)
 ```
 
 ## Format

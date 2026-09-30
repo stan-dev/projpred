@@ -5,7 +5,7 @@ Gaussian toy example
 ## Usage
 
 ``` r
-df_gaussian
+data(df_gaussian)
 ```
 
 ## Format
