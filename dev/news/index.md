@@ -1,5 +1,56 @@
 # Changelog
 
+## projpred 2.11.0.9000
+
+### Major changes
+
+### Minor changes
+
+### Bug fixes and maintenance
+
+## projpred 2.11.0
+
+CRAN release: 2026-09-30
+
+### Minor changes
+
+- Added
+  [`proj_epred()`](https://mc-stan.org/projpred/dev/reference/pred-projection.md),
+  which is essentially a wrapper around
+  [`proj_linpred()`](https://mc-stan.org/projpred/dev/reference/pred-projection.md)
+  with `transform = TRUE`. (GitHub:
+  [\#559](https://github.com/stan-dev/projpred/issues/559),
+  [\#560](https://github.com/stan-dev/projpred/issues/560))
+
+### Bug fixes and maintenance
+
+- Fixed bug in
+  [`cv_varsel()`](https://mc-stan.org/projpred/dev/reference/cv_varsel.md)
+  with `cv_method = "kfold"`: Submodels were incorrectly scored with the
+  full data from the reference model family instead of the correct
+  fold’s one, which matters for the latent projection. (GitHub:
+  [\#567](https://github.com/stan-dev/projpred/issues/567),
+  [\#568](https://github.com/stan-dev/projpred/issues/568))
+- Tests: Adapt to version 0.9.15 of package mclogit (GitHub:
+  [\#552](https://github.com/stan-dev/projpred/issues/552))
+- Docs: Fix links to [`summary()`](https://rdrr.io/r/base/summary.html)
+  generic (GitHub:
+  [\#553](https://github.com/stan-dev/projpred/issues/553))
+- Tests: Adapt tests to testthat v3.3.0 (GitHub:
+  [\#554](https://github.com/stan-dev/projpred/issues/554))
+- Use relative fontsize for model size numbers (GitHub:
+  [\#555](https://github.com/stan-dev/projpred/issues/555),#556)
+- Remove seemingly outdated lme4 note (GitHub:
+  [\#558](https://github.com/stan-dev/projpred/issues/558))
+- Add AI contribution policy (GitHub:
+  [\#561](https://github.com/stan-dev/projpred/issues/561))
+- Minor maintenance updates (GitHub:
+  [\#562](https://github.com/stan-dev/projpred/issues/562))
+- Tests: Resolve CI failures (GitHub:
+  [\#569](https://github.com/stan-dev/projpred/issues/569))
+- Docs:Inherit navbar from template (GitHub:
+  [\#570](https://github.com/stan-dev/projpred/issues/570))
+
 ## projpred 2.10.0
 
 CRAN release: 2025-12-06
