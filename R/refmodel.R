@@ -1379,6 +1379,10 @@ init_refmodel <- function(object, data, formula, family, ref_predfun = NULL,
     }
   }
 
+  # With the default `proj_predfun` (and no augmented-data projection), the
+  # predictions for the training data can use the stored submodel model
+  # matrices (see mu_fun() below):
+  proj_predfun_is_subprd <- is.null(proj_predfun) && !family$for_augdat
   if (is.null(proj_predfun)) {
     if (!family$for_augdat) {
       proj_predfun <- subprd
@@ -1398,13 +1402,21 @@ init_refmodel <- function(object, data, formula, family, ref_predfun = NULL,
 
   mu_fun <- function(fits, obs = NULL, newdata = NULL, offset = NULL,
                      transform = TRUE) {
+    pred_sub <- NULL
+    if (proj_predfun_is_subprd && is.null(obs) && is.null(newdata)) {
+      # Training data: use the model matrices stored in the submodel fits
+      # instead of building them again for every projection:
+      pred_sub <- subprd_fitted(fits, nobs = nrow(data))
+    }
     newdata <- fetch_data(data, obs = obs, newdata = newdata)
     if (is.null(offset)) {
       offset <- rep(0, nrow(newdata))
     } else {
       stopifnot(length(offset) %in% c(1L, nrow(newdata)))
     }
-    pred_sub <- proj_predfun(fits, newdata = newdata)
+    if (is.null(pred_sub)) {
+      pred_sub <- proj_predfun(fits, newdata = newdata)
+    }
     if (family$family %in% fams_neg_linpred()) {
       pred_sub <- pred_sub - offset
     } else {
