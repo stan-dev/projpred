@@ -1,6 +1,11 @@
+# `return_outdmins = FALSE` tells the search that the caller does not use the
+# submodel fits along the ranking (element `outdmins`), so
+# search_forward_gauss() does not compute them. The draw-wise search computes
+# them anyway.
 search_forward <- function(p_ref, refmodel, nterms_max, verbose = TRUE,
                            search_terms, est_runtime = TRUE,
-                           search_terms_was_null, ...) {
+                           search_terms_was_null, return_outdmins = TRUE,
+                           ...) {
   nterms_max_with_icpt <- nterms_max + 1L
   iq <- ceiling(quantile(seq_len(nterms_max_with_icpt), 1:10 / 10))
   if (is.null(search_terms)) {
@@ -12,7 +17,8 @@ search_forward <- function(p_ref, refmodel, nterms_max, verbose = TRUE,
   if (getOption("projpred.search_gauss_crossprod", TRUE)) {
     out_gauss <- search_forward_gauss(
       p_ref = p_ref, refmodel = refmodel, nterms_max = nterms_max,
-      verbose = verbose, search_terms = search_terms, ...
+      verbose = verbose, search_terms = search_terms,
+      return_outdmins = return_outdmins, ...
     )
     if (!is.null(out_gauss)) {
       return(out_gauss)
@@ -172,7 +178,7 @@ search_forward <- function(p_ref, refmodel, nterms_max, verbose = TRUE,
 # if one of its conditions does not hold; then search_forward() continues with
 # its own search.
 search_forward_gauss <- function(p_ref, refmodel, nterms_max, verbose,
-                                 search_terms, ...) {
+                                 search_terms, return_outdmins = TRUE, ...) {
   # The arguments for the divergence minimizer, as in proj_to_submodl():
   dot_args <- list(...)
   divmin_args <- dot_args$search_control %||%
@@ -329,11 +335,15 @@ search_forward_gauss <- function(p_ref, refmodel, nterms_max, verbose,
     }
   }
 
-  # The submodel fits along the ranking (as stored by search_forward()):
-  outdmins <- lapply(seq_along(chosen), function(j) {
-    proj_to_submodl(predictor_terms = chosen[seq_len(j)], p_ref = p_ref,
-                    refmodel = refmodel, verbose = verbose, ...)$outdmin
-  })
+  # The submodel fits along the ranking (as stored by search_forward()), if the
+  # caller uses them:
+  outdmins <- NULL
+  if (return_outdmins) {
+    outdmins <- lapply(seq_along(chosen), function(j) {
+      proj_to_submodl(predictor_terms = chosen[seq_len(j)], p_ref = p_ref,
+                      refmodel = refmodel, verbose = verbose, ...)$outdmin
+    })
+  }
   return(nlist(predictor_ranking = setdiff(chosen, "1"), outdmins))
 }
 

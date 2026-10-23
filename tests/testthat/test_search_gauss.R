@@ -101,6 +101,50 @@ test_that("search_forward_gauss() applies to Gaussian GLM-type submodels", {
 })
 
 test_that(paste(
+  "search_forward_gauss() with `return_outdmins = FALSE` gives the same",
+  "ranking and no submodel fits"
+), {
+  refm <- refm_search_gauss(fml_search_gauss)
+  p_ref <- get_refdist(refm, nclusters = 3)
+  search_terms <- union("1", split_formula(refm$formula,
+                                           data = refm$fetch_data()))
+  out <- search_forward_gauss(p_ref = p_ref, refmodel = refm, nterms_max = 4,
+                              verbose = FALSE, search_terms = search_terms)
+  out_nofits <- search_forward_gauss(p_ref = p_ref, refmodel = refm,
+                                     nterms_max = 4, verbose = FALSE,
+                                     search_terms = search_terms,
+                                     return_outdmins = FALSE)
+  expect_identical(out_nofits$predictor_ranking, out$predictor_ranking)
+  expect_null(out_nofits$outdmins)
+})
+
+test_that(paste(
+  "the search of each left-out observation in the LOO CV with validated",
+  "search does not compute the submodel fits along the ranking"
+), {
+  refm <- refm_search_gauss(y ~ x1 + x2 + x3 + x4 + f + x1:x2, n = 40)
+  calls <- new.env()
+  calls$n_nofits <- 0L
+  ns <- asNamespace("projpred")
+  suppressMessages(trace(
+    "search_forward_gauss", where = ns, print = FALSE,
+    tracer = bquote(if (!return_outdmins) {
+      assign("n_nofits", get("n_nofits", envir = .(calls)) + 1L,
+             envir = .(calls))
+    })
+  ))
+  on.exit(suppressMessages(untrace("search_forward_gauss", where = ns)),
+          add = TRUE)
+  cv <- suppressWarnings(cv_varsel(
+    refm, cv_method = "LOO", validate_search = TRUE, nloo = 5, nclusters = 3,
+    ndraws_pred = 20, nterms_max = 3, seed = 5821, verbose = FALSE
+  ))
+  # One search per left-out observation; the search on the full data keeps
+  # its submodel fits:
+  expect_identical(calls$n_nofits, 5L)
+})
+
+test_that(paste(
   "search_forward_gauss() returns `NULL` for a factor in an interaction term"
 ), {
   refm <- refm_search_gauss(y ~ x1 + x2 + f + x1:f)
