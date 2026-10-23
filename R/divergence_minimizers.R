@@ -215,8 +215,10 @@ fit_glm_ridge_callback <- function(formula, data,
   }
   # Post-processing:
   rownames(fit$beta) <- colnames(x)
+  # `terms` keeps the data-dependent bases of the training data (attribute
+  # "predvars"), for predictions for new data:
   sub <- nlist(alpha = fit$beta0, beta = fit$beta, w = fit$w, formula, x, y,
-               xlvls)
+               xlvls, terms = attr(fr, "terms"))
   class(sub) <- "subfit"
   return(sub)
 }
@@ -1274,6 +1276,29 @@ subprd_augdat_binom <- function(fits, newdata) {
   return(array(augprd, dim = c(nrow(augprd), 1L, ncol(augprd))))
 }
 
+# The terms of `object$formula` (without the response) for new data, with the
+# data-dependent bases of the training data (attribute "predvars" of
+# `object$terms`, for example the coefficients of poly()). Without them,
+# model.matrix() would compute such bases again from the new data. Returns the
+# plain terms if `object$terms` is missing or does not contain all variables.
+subfit_terms_newdata <- function(object) {
+  tt <- delete.response(terms(object$formula))
+  tt_train <- object$terms
+  if (is.null(tt_train) || is.null(attr(tt_train, "predvars"))) {
+    return(tt)
+  }
+  vars <- as.list(attr(tt, "variables"))[-1]
+  vars_train <- as.list(attr(tt_train, "variables"))[-1]
+  predvars_train <- as.list(attr(tt_train, "predvars"))[-1]
+  idx <- match(vapply(vars, deparse_combine, character(1)),
+               vapply(vars_train, deparse_combine, character(1)))
+  if (anyNA(idx)) {
+    return(tt)
+  }
+  attr(tt, "predvars") <- as.call(c(quote(list), predvars_train[idx]))
+  return(tt)
+}
+
 ## FIXME: find a way that allows us to remove this
 #' @noRd
 #' @export
@@ -1296,7 +1321,7 @@ predict.subfit <- function(object, newdata = NULL, ...) {
       # more convenient to let users specify contrasts directly. At that
       # occasion, contrasts should also be tested thoroughly (not done until
       # now).
-      x <- model.matrix(delete.response(terms(object$formula)), data = newdata,
+      x <- model.matrix(subfit_terms_newdata(object), data = newdata,
                         xlev = object$xlvls)
       # Need to ensure that the columns of `x` match the coefficients (note that
       # `rownames(beta)` is the same as `colnames(object$x)`, see the tests):
