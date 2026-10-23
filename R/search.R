@@ -173,85 +173,26 @@ search_forward <- function(p_ref, refmodel, nterms_max, verbose = TRUE,
 # its own search.
 search_forward_gauss <- function(p_ref, refmodel, nterms_max, verbose,
                                  search_terms, ...) {
-  fam <- refmodel$family
-  glm_fitter <- getOption("projpred.glm_fitter", "fit_glm_ridge_callback")
-  # Custom search terms are possible, because the candidates come from
-  # select_possible_terms_size(), as in search_forward().
-  if (fam$family != "gaussian" ||
-      fam$link != "identity" || isTRUE(fam$for_latent) ||
-      isTRUE(fam$for_augdat) || !identical(refmodel$div_minimizer, divmin) ||
-      !identical(glm_fitter, "fit_glm_ridge_callback") ||
-      any(refmodel$offset != 0)) {
-    return(NULL)
-  }
   # The arguments for the divergence minimizer, as in proj_to_submodl():
   dot_args <- list(...)
   divmin_args <- dot_args$search_control %||%
     dot_args[setdiff(names(dot_args), "search_control")]
-  # fit_glm_ridge_callback() uses `regul` and passes only the formal arguments
-  # of glm_ridge() on. Of these, only `thresh` (not used for this family) is
-  # allowed here:
-  args_glm_ridge <- intersect(names(divmin_args), methods::formalArgs(glm_ridge))
-  if (!all(args_glm_ridge %in% "thresh")) {
+  regul <- gauss_crossprod_regul(refmodel, divmin_args)
+  if (is.null(regul)) {
     return(NULL)
   }
-  regul <- divmin_args$regul %||% 1e-4
-
-  # Model matrix of all search terms (a search term can consist of several
-  # terms, for example "x1 + x2 + x1:x2"):
-  terms_all <- setdiff(unique(trimws(unlist(
-    strsplit(search_terms, "+", fixed = TRUE)
-  ))), "1")
-  if (length(terms_all) == 0) {
+  # Custom search terms are possible, because the candidates come from
+  # select_possible_terms_size(), as in search_forward():
+  des <- gauss_crossprod_design(refmodel, search_terms, regul)
+  if (is.null(des)) {
     return(NULL)
   }
-  trms <- extract_terms_response(make_formula(terms_all))
-  if (length(trms$group_terms) > 0 || length(trms$additive_terms) > 0) {
-    return(NULL)
-  }
-  tt <- terms(as.formula(paste("~", paste(terms_all, collapse = " + "))))
-  data <- refmodel$fetch_data()
-  mf <- model.frame(tt, data = data, drop.unused.levels = TRUE)
-  if (nrow(mf) != nrow(data)) {
-    return(NULL)
-  }
-  # The dummy coding of a factor in an interaction depends on the other terms
-  # of the submodel, so these cases are not covered:
-  fac <- attr(tt, "factors")
-  is_categ <- vapply(rownames(fac), function(v) {
-    is.factor(mf[[v]]) || is.character(mf[[v]]) || is.logical(mf[[v]])
-  }, logical(1))
-  if (any(attr(tt, "order") > 1 &
-          colSums(fac[is_categ, , drop = FALSE]) > 0)) {
-    return(NULL)
-  }
-  x <- model.matrix(tt, data = mf)
-  assign_x <- attr(x, "assign")
-  x <- x[, assign_x > 0, drop = FALSE]
-  assign_x <- assign_x[assign_x > 0]
-  norm_label <- function(lbl) {
-    vapply(strsplit(lbl, ":", fixed = TRUE), function(parts) {
-      paste(sort(trimws(parts)), collapse = ":")
-    }, character(1))
-  }
-  cols_by_term <- split(seq_along(assign_x),
-                        norm_label(attr(tt, "term.labels"))[assign_x])
-
-  # Cross-products:
-  wobs <- refmodel$wobs
-  sum_w <- sum(wobs)
-  n <- nrow(x)
-  x_c <- sweep(x, 2, colSums(x * wobs) / sum_w)
-  g_mat <- crossprod(x_c, x_c * wobs)
-  c_mat <- crossprod(x_c, p_ref$mu * wobs)
-  sd_x <- sqrt(n / (n - 1) * diag(g_mat) / sum_w)
-  if (n < 2 || any(!is.finite(sd_x)) || any(sd_x == 0)) {
-    return(NULL)
-  }
+  cols_by_term <- des$cols_by_term
+  c_mat <- crossprod(des$x_c, p_ref$mu * des$wobs)
+  lambda_x <- des$lambda_x
+  a_full <- des$a_full
   wdraws <- p_ref$wdraws_prj
-  lambda_x <- regul * sd_x^2
-  a_full <- g_mat
-  diag(a_full) <- diag(a_full) + lambda_x
+  norm_label <- norm_label_gauss
 
   # The term labels of a candidate string. The same strings come back in every
   # step, so the labels are computed once:

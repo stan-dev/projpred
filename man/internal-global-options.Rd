@@ -41,9 +41,10 @@ projections (see GitHub issue
 request \href{https://github.com/stan-dev/projpred/pull/353}{#353}). Currently,
 this is an experimental feature.
 \item \code{projpred.search_gauss_crossprod}: A single logical value indicating
-whether to compute the forward search for Gaussian submodels with the
-identity link from cross-products of the model matrix (default \code{TRUE}). With
-\code{FALSE}, \pkg{projpred} projects onto each candidate submodel draw by draw.
+whether to compute the forward search and the evaluation in the LOO CV with
+validated search for Gaussian submodels with the identity link from
+cross-products of the model matrix (default \code{TRUE}). With \code{FALSE},
+\pkg{projpred} projects onto each candidate submodel draw by draw.
 }
 }
 \keyword{internal}

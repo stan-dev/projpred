@@ -51,6 +51,43 @@ test_that(paste(
   }
 })
 
+test_that(paste(
+  "the LOO CV with validated search gives the same results with and without",
+  "the cross-product computations"
+), {
+  # Without poly(): the draw-wise path cannot predict a poly() term for one
+  # left-out observation.
+  refm <- refm_search_gauss(y ~ x1 + x2 + x3 + x4 + f + x1:x2, n = 40)
+  args_cv <- list(refm, cv_method = "LOO", validate_search = TRUE, nloo = 10,
+                  nclusters = 3, ndraws_pred = 20, nterms_max = 4, seed = 5821,
+                  verbose = FALSE)
+  cv_crossprod <- suppressWarnings(do.call(cv_varsel, args_cv))
+  opts_old <- options(projpred.search_gauss_crossprod = FALSE)
+  cv_drawwise <- suppressWarnings(do.call(cv_varsel, args_cv))
+  options(opts_old)
+  expect_identical(ranking(cv_crossprod), ranking(cv_drawwise))
+  expect_equal(cv_crossprod$summaries$sub, cv_drawwise$summaries$sub,
+               tolerance = 1e-10)
+  expect_equal(performances(cv_crossprod, deltas = FALSE),
+               performances(cv_drawwise, deltas = FALSE), tolerance = 1e-10)
+})
+
+test_that("perf_eval_gauss() applies in the LOO CV with validated search", {
+  # Without poly(): the draw-wise path cannot predict a poly() term for one
+  # left-out observation.
+  refm <- refm_search_gauss(y ~ x1 + x2 + x3 + x4 + f + x1:x2, n = 40)
+  n_used <- 0L
+  trace("perf_eval_gauss", exit = function() {
+    if (!is.null(returnValue())) n_used <<- n_used + 1L
+  }, print = FALSE, where = asNamespace("projpred"))
+  on.exit(untrace("perf_eval_gauss", where = asNamespace("projpred")))
+  cv <- suppressWarnings(cv_varsel(
+    refm, cv_method = "LOO", validate_search = TRUE, nloo = 5, nclusters = 3,
+    ndraws_pred = 20, nterms_max = 3, seed = 5821, verbose = FALSE
+  ))
+  expect_identical(n_used, 5L)
+})
+
 test_that("search_forward_gauss() applies to Gaussian GLM-type submodels", {
   refm <- refm_search_gauss(fml_search_gauss)
   p_ref <- get_refdist(refm, nclusters = 3)
