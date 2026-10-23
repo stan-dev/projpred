@@ -651,17 +651,98 @@ count_terms_in_group_term <- function(term) {
   return(length(terms_))
 }
 
+# Term labels with the variables of an interaction in sorted order, so that, for
+# example, "x2:x1" and "x1:x2" are equal (as for terms()).
+norm_term_labels <- function(labels) {
+  vapply(strsplit(labels, ":", fixed = TRUE), function(parts) {
+    paste(sort(trimws(parts)), collapse = ":")
+  }, character(1))
+}
+
+# For each search term: its term labels (see norm_term_labels()) and, for a
+# search term with one label, the string that select_possible_terms_size()
+# returns for it. Computed once per search, so that
+# select_possible_terms_size() does not parse the same formulas again for each
+# candidate and step. Returns `NULL` if a search term has a smooth, group-level
+# or offset term or no intercept (the fast path does not cover these cases).
+search_term_info <- function(search_terms) {
+  info <- lapply(search_terms, function(x) {
+    if (identical(x, "1")) {
+      return(list(labels = character(0), label_out = "1"))
+    }
+    tt <- extract_terms_response(make_formula(x))
+    if (length(tt$additive_terms) > 0 || length(tt$group_terms) > 0 ||
+        length(tt$offset_terms) > 0 || !isTRUE(tt$global_intercept)) {
+      return(NULL)
+    }
+    lbls <- c(tt$individual_terms, tt$interaction_terms)
+    label_out <- NA_character_
+    if (length(lbls) == 1) {
+      label_out <- to_character_rhs(flatten_formula(make_formula(x)))
+    }
+    return(list(labels = norm_term_labels(lbls), label_out = label_out))
+  })
+  if (any(vapply(info, is.null, logical(1)))) {
+    return(NULL)
+  }
+  return(setNames(info, search_terms))
+}
+
+# select_possible_terms_size() for search terms without smooth, group-level
+# and offset terms (see search_term_info()). Without these terms, the size of a
+# candidate submodel is the number of its distinct term labels plus one for the
+# intercept, and a candidate with one new label is returned as that label.
+# Other candidates go through the formula code of select_possible_terms_size().
+select_possible_terms_size_simple <- function(chosen, terms, size, term_info,
+                                              terms_chosen) {
+  labels_chosen <- norm_term_labels(c(terms_chosen$individual_terms,
+                                      terms_chosen$interaction_terms))
+  is_valid <- vapply(terms, function(x) {
+    length(union(labels_chosen, term_info[[x]]$labels)) + 1L == size
+  }, logical(1))
+  valid <- terms[is_valid]
+  if (length(valid) == 0) {
+    return(NULL)
+  }
+  if (length(chosen) > 0) {
+    add_chosen <- paste0(" + ", paste(chosen, collapse = "+"))
+    remove_chosen <- paste0(" - ",
+                            paste(gsub("\\+", "-", chosen), collapse = "-"))
+  } else {
+    add_chosen <- ""
+    remove_chosen <- ""
+  }
+  out <- vapply(valid, function(x) {
+    info_x <- term_info[[x]]
+    if (!is.na(info_x$label_out) && !any(info_x$labels %in% labels_chosen)) {
+      return(info_x$label_out)
+    }
+    return(to_character_rhs(flatten_formula(make_formula(
+      paste(x, add_chosen, remove_chosen)
+    ))))
+  }, character(1))
+  return(unique(unname(out)))
+}
+
 ## Select next possible terms without surpassing a specific size
 ## @param chosen A list of currently chosen terms
 ## @param terms A list of all possible terms
 ## @param size Maximum allowed size
-select_possible_terms_size <- function(chosen, terms, size) {
+## @param term_info Optional output of search_term_info() for `terms`
+select_possible_terms_size <- function(chosen, terms, size, term_info = NULL) {
   if (size < 1) {
     stop("size must be at least 1")
   }
 
   # The terms of the already chosen submodel (the same for all candidates):
   terms_chosen <- extract_terms_response(make_formula(c(chosen)))
+  if (!is.null(term_info) && all(terms %in% names(term_info)) &&
+      length(terms_chosen$additive_terms) == 0 &&
+      length(terms_chosen$group_terms) == 0 &&
+      isTRUE(terms_chosen$global_intercept)) {
+    return(select_possible_terms_size_simple(chosen, terms, size, term_info,
+                                             terms_chosen))
+  }
   additive <- unlist(regmatches(
     terms_chosen$additive_terms,
     gregexpr("(?<=\\().*?(?=\\))",
