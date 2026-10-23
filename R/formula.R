@@ -158,9 +158,15 @@ validate_response_formula <- function(formula) {
   response <- terms_$response
 
   if (length(response) > 1) {
-    return(lapply(response, function(r) {
-      update(formula, paste0(r, " ~ ."))
-    }))
+    # update() rewrites the right-hand side in the same way for each response,
+    # so call it only once and then replace the response (for many draws, the
+    # update() calls are costly):
+    formula_1 <- update(formula, paste0(response[1], " ~ ."))
+    return(c(list(formula_1), lapply(response[-1], function(r) {
+      formula_r <- formula_1
+      formula_r[[2]] <- str2lang(r)
+      formula_r
+    })))
   } else {
     return(list(formula))
   }
@@ -654,17 +660,18 @@ select_possible_terms_size <- function(chosen, terms, size) {
     stop("size must be at least 1")
   }
 
+  # The terms of the already chosen submodel (the same for all candidates):
+  terms_chosen <- extract_terms_response(make_formula(c(chosen)))
+  additive <- unlist(regmatches(
+    terms_chosen$additive_terms,
+    gregexpr("(?<=\\().*?(?=\\))",
+             terms_chosen$additive_terms,
+             perl = TRUE)
+  ))
   valid_sub_trm_combs <- lapply(terms, function(x) {
     ## if we are adding a linear term whose smooth is already
     ## included, we reject it
-    terms <- extract_terms_response(make_formula(c(chosen)))
     terms_new <- extract_terms_response(make_formula(x))
-    additive <- unlist(regmatches(
-      terms$additive_terms,
-      gregexpr("(?<=\\().*?(?=\\))",
-               terms$additive_terms,
-               perl = TRUE)
-    ))
     linear <- terms_new$individual_terms
     dups <- setdiff(linear[!is.na(match(linear, additive))], chosen)
 
