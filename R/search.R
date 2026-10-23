@@ -248,6 +248,37 @@ search_forward_gauss <- function(p_ref, refmodel, nterms_max, verbose,
     return(list(crit = -sum(wdraws * quad), r_cn = r_cn, r_n = r_n, y_n = y_n))
   }
 
+  # crit_cand() for many candidates that each add one column (`cols_single`)
+  # at once, with matrix operations instead of one call per candidate. For
+  # candidate j, beta_c = b0 - u_j beta_n[j, ]' with b0 = R^-1 y_chosen and
+  # u_j = R^-1 r_cj, so the penalty term of the chosen columns is
+  # sum(lambda b0^2) - 2 beta_n[j, ] p[j, ] + beta_n[j, ]^2 l[j], with
+  # p = (u * lambda)' b0 and l = colSums(lambda u^2).
+  crit_single <- function(cols_single, cols_chosen, r_chosen, y_chosen) {
+    a_jj <- a_full[cbind(cols_single, cols_single)]
+    rhs <- c_mat[cols_single, , drop = FALSE]
+    if (length(cols_chosen) > 0) {
+      r_cj <- forwardsolve(t(r_chosen),
+                           a_full[cols_chosen, cols_single, drop = FALSE])
+      a_jj <- a_jj - colSums(r_cj^2)
+      rhs <- rhs - crossprod(r_cj, y_chosen)
+    }
+    y_n <- rhs / sqrt(a_jj)
+    beta_n <- y_n / sqrt(a_jj)
+    quad <- y_n^2 + lambda_x[cols_single] * beta_n^2
+    if (length(cols_chosen) > 0) {
+      lambda_c <- lambda_x[cols_chosen]
+      b0 <- backsolve(r_chosen, y_chosen)
+      u <- backsolve(r_chosen, r_cj)
+      q0 <- colSums(y_chosen^2) + colSums(lambda_c * b0^2)
+      quad <- quad +
+        matrix(q0, nrow = length(cols_single), ncol = length(q0), byrow = TRUE) -
+        2 * beta_n * crossprod(u * lambda_c, b0) +
+        colSums(lambda_c * u^2) * beta_n^2
+    }
+    return(-drop(quad %*% wdraws))
+  }
+
   chosen <- character()
   labels_chosen <- character()
   cols_chosen <- integer(0)
@@ -264,15 +295,25 @@ search_forward_gauss <- function(p_ref, refmodel, nterms_max, verbose,
     if (!all(unlist(labels_new) %in% names(cols_by_term))) {
       return(NULL)
     }
-    res_cands <- lapply(labels_new, function(lbls) {
-      crit_cand(unlist(cols_by_term[lbls], use.names = FALSE), cols_chosen,
-                r_chosen, y_chosen)
+    cols_cands <- lapply(labels_new, function(lbls) {
+      unlist(cols_by_term[lbls], use.names = FALSE)
     })
-    imin <- which.min(vapply(res_cands, `[[`, numeric(1), "crit"))
+    crits <- rep(NA_real_, length(cands))
+    is_single <- lengths(cols_cands) == 1L
+    if (any(is_single)) {
+      crits[is_single] <- crit_single(unlist(cols_cands[is_single]),
+                                      cols_chosen, r_chosen, y_chosen)
+    }
+    for (k in which(!is_single)) {
+      crits[k] <- crit_cand(cols_cands[[k]], cols_chosen, r_chosen,
+                            y_chosen)$crit
+    }
+    imin <- which.min(crits)
     chosen <- c(chosen, cands[imin])
-    cols_new <- unlist(cols_by_term[labels_new[[imin]]], use.names = FALSE)
+    cols_new <- cols_cands[[imin]]
     if (length(cols_new) > 0) {
-      best <- res_cands[[imin]]
+      # The factors of the chosen candidate, for the next step:
+      best <- crit_cand(cols_new, cols_chosen, r_chosen, y_chosen)
       if (length(cols_chosen) == 0) {
         r_chosen <- best$r_n
         y_chosen <- best$y_n
