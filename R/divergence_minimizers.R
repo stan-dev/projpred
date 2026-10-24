@@ -79,10 +79,18 @@ divmin <- function(
   }
   # The draw-wise formulas of a non-multilevel non-additive submodel differ only
   # in the response, so fit_glm_ridge_callback() can use one model matrix for
-  # all draws:
-  if (identical(sdivmin, fit_glm_ridge_callback) && length(formulas) > 1) {
+  # all draws (and the joint Gaussian solve can fit them, also for a single
+  # draw):
+  if (identical(sdivmin, fit_glm_ridge_callback) && length(formulas) >= 1) {
     shared_x <- shared_model_matrix(formulas, data = list(...)$data)
     if (!is.null(shared_x)) {
+      # Gaussian submodels with the identity link: one solve for all draws
+      # (this fitter cannot throw messages or warnings in this case):
+      outdmin <- glm_ridge_gauss_multi(formulas, shared_x = shared_x,
+                                       dot_args = list(...))
+      if (!is.null(outdmin)) {
+        return(outdmin)
+      }
       sdivmin <- glm_ridge_callback_shared(shared_x)
     }
   }
@@ -288,6 +296,65 @@ glm_ridge_callback_shared <- function(shared_x) {
   function(...) {
     fit_glm_ridge_callback(..., projpred_shared_x = shared_x)
   }
+}
+
+# Fits all draw-wise submodels of fit_glm_ridge_callback() at once, for a
+# Gaussian submodel with the identity link. For this family, glm_ridge() solves
+# one weighted ridge least-squares problem in one exact step. The draws share
+# the model matrix, the observation weights, the standardization and the
+# penalty. Thus, one factorization with one right-hand side per draw gives the
+# same solutions. Returns `NULL` if one of the checks below fails; then divmin()
+# uses the draw-wise path.
+glm_ridge_gauss_multi <- function(formulas, shared_x, dot_args) {
+  family <- dot_args$family
+  if (is.null(family) || family$family != "gaussian" ||
+      family$link != "identity") {
+    return(NULL)
+  }
+  # fit_glm_ridge_callback() passes only the formal arguments of glm_ridge() on
+  # and ignores the others. Of these, this function uses only `family`,
+  # `weights` and `thresh` (not used for this family):
+  args_glm_ridge <- intersect(names(dot_args), methods::formalArgs(glm_ridge))
+  if (!all(args_glm_ridge %in% c("family", "weights", "thresh"))) {
+    return(NULL)
+  }
+  x <- shared_x$x
+  if (ncol(x) == 0) {
+    return(NULL)
+  }
+  data <- dot_args$data
+  weights <- dot_args$weights %||% rep(1.0, nrow(x))
+  regul <- dot_args$regul %||% 1e-4
+  if (length(weights) != nrow(x) || anyNA(weights)) {
+    return(NULL)
+  }
+  resp_nms <- vapply(formulas, function(fml) as.character(fml[[2]]),
+                     character(1))
+  y <- as.matrix(data[resp_nms])
+  # As in glm_ridge():
+  transf <- standardization(x, center = TRUE, scale = TRUE, weights = weights)
+  if (any(transf$scale == 0)) {
+    return(NULL)
+  }
+  x_std <- cbind(1, t((t(x) - transf$shift) / transf$scale))
+  sqrt_w <- sqrt(weights)
+  x_w <- x_std * sqrt_w
+  regmat <- diag(c(0, rep(regul, ncol(x))), nrow = ncol(x_std))
+  coefs <- solve(crossprod(x_w) + regmat, crossprod(x_w, y * sqrt_w))
+  beta <- coefs[-1, , drop = FALSE] / transf$scale
+  beta0 <- coefs[1, ] - colSums(transf$shift * beta)
+  # As from glm_ridge_c() (double, also for integer observation weights):
+  w <- matrix(as.numeric(weights), ncol = 1)
+  return(lapply(seq_along(formulas), function(s) {
+    beta_s <- beta[, s, drop = FALSE]
+    dimnames(beta_s) <- list(colnames(x), NULL)
+    y_s <- y[, s]
+    names(y_s) <- shared_x$y_names
+    structure(list(alpha = unname(beta0[s]), beta = beta_s, w = w,
+                   formula = formulas[[s]], x = x, y = y_s,
+                   xlvls = shared_x$xlvls),
+              class = "subfit")
+  }))
 }
 
 # Alternative to fit_glm_ridge_callback() (may be used via global option
