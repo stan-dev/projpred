@@ -266,6 +266,10 @@
 #' [#207](https://github.com/stan-dev/projpred/issues/207) and GitHub pull
 #' request [#353](https://github.com/stan-dev/projpred/pull/353)). Currently,
 #' this is an experimental feature.
+#' * `projpred.search_gauss_crossprod`: A single logical value indicating
+#' whether to compute the forward search for Gaussian submodels with the
+#' identity link from cross-products of the model matrix (default `TRUE`). With
+#' `FALSE`, \pkg{projpred} projects onto each candidate submodel draw by draw.
 #'
 #' @name internal-global-options
 #' @keywords internal
