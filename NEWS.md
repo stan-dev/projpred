@@ -7,6 +7,8 @@ If you read this from a place other than <https://mc-stan.org/projpred/news/inde
 
 ## Major changes
 
+* Faster augmented-data projection for `brms::cumulative()` and `rstanarm::stan_polr()` reference models (submodels without group-level terms): the cumulative-link submodels of all projected draws are fitted in one C++ call by Newton iterations, with the objective of `MASS::polr()`, instead of one `MASS::polr()` call per draw, and the predictions of `MASS::polr()` and `nnet::multinom()` submodel fits are computed from their coefficients for all draws at once. The cross-entropy of the augmented-data families is vectorized. The fits agree with those of `MASS::polr()` up to its convergence tolerance. For example, `cv_varsel()` with `validate_search = TRUE` for an ordinal model with 6 categories is about 23 times faster. (GitHub: #XXX)
+
 ## Minor changes
 
 ## Bug fixes and maintenance
