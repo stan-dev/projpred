@@ -11,11 +11,42 @@ proj_to_submodl <- function(predictor_terms, p_ref, refmodel,
   if (refmodel$family$for_latent && !is.null(y_unqs_aug)) {
     y_unqs_aug <- NULL
   }
-  subset <- subset_formula_and_data(
-    formula = refmodel$formula, terms_ = unique(unlist(predictor_terms)),
-    data = refmodel$fetch_data(), y = p_ref$mu, y_unqs = y_unqs_aug
-  )
-  fml_divmin <- flatten_formula(subset$formula)
+  terms_ <- unique(unlist(predictor_terms))
+  if (!is.null(search_control)) {
+    dot_args_divmin <- search_control
+  } else {
+    dot_args_divmin <- list(...)
+  }
+  # Fast path for the multi-draw fitters of divmin() (see divmin_multi()): the
+  # submodel formula, the draw-wise formulas and the shared model matrix depend
+  # only on the reference model and the predictor terms, so they are cached
+  # (see proj_cache_store()). The submodel fits are the same as from divmin().
+  use_fast <- is.null(y_unqs_aug) &&
+    identical(refmodel$div_minimizer, divmin) &&
+    proj_fast_ok(dot_args_divmin) &&
+    !anyNA(p_ref$mu)
+  store <- if (use_fast) proj_cache_store(refmodel) else NULL
+  ent <- NULL
+  if (!is.null(store)) {
+    cache_key <- paste(c(terms_, NCOL(p_ref$mu)), collapse = "\r")
+    ent <- store[[cache_key]]
+  }
+  subset <- NULL
+  if (is.null(ent)) {
+    subset <- subset_formula_and_data(
+      formula = refmodel$formula, terms_ = terms_,
+      data = refmodel$fetch_data(), y = p_ref$mu, y_unqs = y_unqs_aug
+    )
+    fml_divmin <- flatten_formula(subset$formula)
+    prep <- if (use_fast) divmin_prepare(fml_divmin, subset$data) else NULL
+    if (!is.null(store)) {
+      assign(cache_key, list(fml_divmin = fml_divmin, prep = prep),
+             envir = store)
+    }
+  } else {
+    fml_divmin <- ent$fml_divmin
+    prep <- ent$prep
+  }
 
   if (verbose >= 2L) {
     rhs_chr <- as.character(fml_divmin)
@@ -26,24 +57,61 @@ proj_to_submodl <- function(predictor_terms, p_ref, refmodel,
     verb_out("  Projecting onto `~ ", utils::tail(rhs_chr, 1), "`")
   }
 
-  args_divmin <- list(formula = fml_divmin,
-                      data = subset$data,
-                      family = refmodel$family,
-                      weights = refmodel$wobs,
-                      projpred_var = p_ref$var,
-                      projpred_ws_aug = p_ref$mu,
-                      verbose_divmin = verbose >= 3L)
-  if (!is.null(search_control)) {
-    args_divmin <- c(args_divmin, search_control)
-  } else {
-    args_divmin <- c(args_divmin, list(...))
+  outdmin <- NULL
+  if (use_fast && !is.null(prep)) {
+    outdmin <- divmin_multi(
+      prep$formulas, shared_x = prep$shared_x,
+      dot_args = c(list(family = refmodel$family, weights = refmodel$wobs),
+                   dot_args_divmin),
+      throw_warn_sdivmin = getOption("projpred.warn_proj_drawwise", TRUE),
+      do_check_conv = getOption("projpred.check_convergence", TRUE),
+      y = unclass(p_ref$mu)
+    )
   }
-  outdmin <- do.call(refmodel$div_minimizer, args_divmin)
+  if (is.null(outdmin)) {
+    if (is.null(subset)) {
+      subset <- subset_formula_and_data(
+        formula = refmodel$formula, terms_ = terms_,
+        data = refmodel$fetch_data(), y = p_ref$mu, y_unqs = y_unqs_aug
+      )
+    }
+    args_divmin <- c(list(formula = fml_divmin,
+                          data = subset$data,
+                          family = refmodel$family,
+                          weights = refmodel$wobs,
+                          projpred_var = p_ref$var,
+                          projpred_ws_aug = p_ref$mu,
+                          verbose_divmin = verbose >= 3L),
+                     dot_args_divmin)
+    outdmin <- do.call(refmodel$div_minimizer, args_divmin)
+  }
 
   return(init_submodl(
     outdmin = outdmin, p_ref = p_ref, refmodel = refmodel,
     predictor_terms = predictor_terms, wobs = refmodel$wobs
   ))
+}
+
+# Whether proj_to_submodl() may call divmin_multi() directly instead of divmin()
+# (with the arguments `dot_args` for the divergence minimizer): divmin() has to
+# use fit_glm_ridge_callback() and to take its warning and convergence settings
+# from the current global options, and `dot_args` must not contain arguments of
+# divmin() itself.
+proj_fast_ok <- function(dot_args) {
+  if (!identical(getOption("projpred.glm_fitter", "fit_glm_ridge_callback"),
+                 "fit_glm_ridge_callback")) {
+    return(FALSE)
+  }
+  if ((is.null(getOption("projpred.warn_proj_drawwise")) &&
+       !is.null(getOption("projpred.warn_prj_drawwise"))) ||
+      (is.null(getOption("projpred.check_convergence")) &&
+       !is.null(getOption("projpred.check_conv")))) {
+    return(FALSE)
+  }
+  return(!any(names(dot_args) %in% c("throw_warn_sdivmin", "do_check_conv",
+                                     "formula", "data", "family", "weights",
+                                     "projpred_var", "projpred_ws_aug",
+                                     "verbose_divmin")))
 }
 
 # Function to prepare the performance evaluation. For each submodel size along

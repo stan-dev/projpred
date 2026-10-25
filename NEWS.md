@@ -11,6 +11,8 @@ If you read this from a place other than <https://mc-stan.org/projpred/news/inde
 
 * Faster projections onto GLM submodels of the binomial and poisson families (and of the gaussian family with a non-identity link): the IRLS fits compute their pseudo-observations in C++ (for the identity, log, logit, probit, cloglog and cauchit links) instead of calling R functions, one C++ call fits all projected draws (or clusters) with one standardization of the shared model matrix, and the messages of the fitter are collected without output capture. For example, `cv_varsel()` with `validate_search = TRUE` for binomial and Poisson models is about 4 to 6 times faster than in projpred 2.11.0. (GitHub: #XXX)
 
+* During a call of `varsel()`, `cv_varsel()` or `project()`, the submodel formulas and model matrices are cached per set of predictor terms, so that the projections in the folds of `cv_varsel()` with `validate_search = TRUE` do not build them again. For binomial and Poisson models, this makes `cv_varsel()` with `validate_search = TRUE` about 1.3 to 1.7 times faster. Global option `projpred.proj_cache = FALSE` switches the cache off. (GitHub: #XXX)
+
 ## Minor changes
 
 ## Bug fixes and maintenance
