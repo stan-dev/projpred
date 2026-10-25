@@ -11,6 +11,22 @@ Rcpp::Rostream<true>&  Rcpp::Rcout = Rcpp::Rcpp_cout_get();
 Rcpp::Rostream<false>& Rcpp::Rcerr = Rcpp::Rcpp_cerr_get();
 #endif
 
+// categ_fit_multi_c
+List categ_fit_multi_c(arma::mat x, arma::mat w_all, int ncat, int icpt, double thresh, int maxit);
+RcppExport SEXP _projpred_categ_fit_multi_c(SEXP xSEXP, SEXP w_allSEXP, SEXP ncatSEXP, SEXP icptSEXP, SEXP threshSEXP, SEXP maxitSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< arma::mat >::type x(xSEXP);
+    Rcpp::traits::input_parameter< arma::mat >::type w_all(w_allSEXP);
+    Rcpp::traits::input_parameter< int >::type ncat(ncatSEXP);
+    Rcpp::traits::input_parameter< int >::type icpt(icptSEXP);
+    Rcpp::traits::input_parameter< double >::type thresh(threshSEXP);
+    Rcpp::traits::input_parameter< int >::type maxit(maxitSEXP);
+    rcpp_result_gen = Rcpp::wrap(categ_fit_multi_c(x, w_all, ncat, icpt, thresh, maxit));
+    return rcpp_result_gen;
+END_RCPP
+}
 // cumul_fit_multi_c
 List cumul_fit_multi_c(arma::mat x, arma::mat w_all, int ncat, arma::vec offset, int link, double thresh, int maxit);
 RcppExport SEXP _projpred_cumul_fit_multi_c(SEXP xSEXP, SEXP w_allSEXP, SEXP ncatSEXP, SEXP offsetSEXP, SEXP linkSEXP, SEXP threshSEXP, SEXP maxitSEXP) {
@@ -75,6 +91,7 @@ END_RCPP
 }
 
 static const R_CallMethodDef CallEntries[] = {
+    {"_projpred_categ_fit_multi_c", (DL_FUNC) &_projpred_categ_fit_multi_c, 6},
     {"_projpred_cumul_fit_multi_c", (DL_FUNC) &_projpred_cumul_fit_multi_c, 7},
     {"_projpred_glm_elnet_c", (DL_FUNC) &_projpred_glm_elnet_c, 14},
     {"_projpred_glm_ridge_c", (DL_FUNC) &_projpred_glm_ridge_c, 11},
