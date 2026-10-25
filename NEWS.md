@@ -7,7 +7,7 @@ If you read this from a place other than <https://mc-stan.org/projpred/news/inde
 
 ## Major changes
 
-* Faster forward search and LOO CV with validated search for Gaussian submodels with the identity link, computed from cross-products of the model matrix. For example, `varsel()` with forward search for a Gaussian model with 50 observations and 200 predictor terms is about 6 times faster. (GitHub: #<PR>)
+* Faster forward search and LOO CV with validated search for Gaussian submodels with the identity link, computed from cross-products of the model matrix. For example, `varsel()` with forward search for a Gaussian model with 50 observations and 200 predictor terms is about 6 times faster. (GitHub: #579)
 
 ## Minor changes
 
