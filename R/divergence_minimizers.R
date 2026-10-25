@@ -706,6 +706,18 @@ divmin_augdat <- function(
     }
   }
 
+  # Multinomial-logit submodels without group-level terms: all draws in one C++
+  # call (see categ_native_multi()):
+  if (identical(sdivmin, fit_categ)) {
+    outdmin <- categ_native_multi(formula, data = data, family = family,
+                                  ws_aug = projpred_ws_aug,
+                                  dot_args = list(...))
+    if (!is.null(outdmin)) {
+      check_conv(outdmin, rep(0L, length(outdmin)), do_check = do_check_conv)
+      return(outdmin)
+    }
+  }
+
   if (is.null(getOption("projpred.parallel_proj_trigger")) &&
       !is.null(getOption("projpred.prll_prj_trigger"))) {
     warning(
@@ -1073,6 +1085,102 @@ fit_categ <- function(formula, data, family, weights, ...) {
     )
   }
   return(fitobj)
+}
+
+# Fits the multinomial-logit submodels of all draws in one C++ call
+# (categ_fit_multi_c()) with the objective of nnet::multinom(), instead of one
+# fit_categ() call per draw. Like cumul_native_multi(), it builds the model
+# matrix once and uses the augmented weights as an n x C matrix. Newton
+# iterations replace the BFGS iterations of nnet::multinom() (by default at
+# most 100), so the estimates agree with those of nnet::multinom() up to its
+# convergence tolerance. The returned objects are copies of one `multinom`
+# object (from nnet::multinom() with `maxit = 0`) with the weights, the
+# objective and the fitted values of each draw. Returns `NULL` for other cases;
+# divmin_augdat() then calls fit_categ() per draw. Global option
+# `projpred.augdat_native = FALSE` switches this off.
+categ_native_multi <- function(formula, data, family, ws_aug, dot_args) {
+  if (!getOption("projpred.augdat_native", TRUE) || family$link != "logit") {
+    return(NULL)
+  }
+  # fit_categ() passes these arguments on to nnet::multinom(); they are not
+  # reproduced here:
+  if (length(intersect(names(dot_args),
+                       c(methods::formalArgs(nnet::multinom),
+                         methods::formalArgs(nnet::nnet))))) {
+    return(NULL)
+  }
+  mfr <- model.frame(formula, data = data)
+  if (nrow(mfr) != nrow(data) || !is.null(model.offset(mfr))) {
+    return(NULL)
+  }
+  trms <- attr(mfr, "terms")
+  x <- model.matrix(trms, mfr)
+  y <- model.response(mfr)
+  if (!is.factor(y)) {
+    return(NULL)
+  }
+  lev <- levels(y)
+  ncat <- length(lev)
+  n <- nrow(x) %/% ncat
+  ws_aug <- as.matrix(ws_aug)
+  # The augmented data have to be C copies of the n observations, in the order
+  # of the response categories:
+  if (ncat < 3L || n * ncat != nrow(x) || nrow(ws_aug) != nrow(x) ||
+      !identical(as.integer(y), rep(seq_len(ncat), each = n)) ||
+      anyNA(ws_aug) || any(ws_aug < 0)) {
+    return(NULL)
+  }
+  x1 <- x[seq_len(n), , drop = FALSE]
+  if (!all(x == x1[rep(seq_len(n), ncat), , drop = FALSE])) {
+    return(NULL)
+  }
+  # The template object (no iterations, so its weights are the zero start
+  # values):
+  tmpl <- do.call(nnet::multinom, list(formula = formula, data = data,
+                                       weights = ws_aug[, 1], maxit = 0,
+                                       trace = FALSE))
+  if (!identical(tmpl$vcoefnames, colnames(x1)) || tmpl$n[3L] != ncat ||
+      length(tmpl$wts) != ncat * (ncol(x1) + 1L)) {
+    return(NULL)
+  }
+  icpt <- match("(Intercept)", colnames(x1), nomatch = 0L) - 1L
+  nprj <- ncol(ws_aug)
+  out <- categ_fit_multi_c(unname(x1), matrix(ws_aug, nrow = n), ncat, icpt,
+                           thresh = 1e-12, maxit = 100L)
+  y_ind <- diag(ncat)[as.integer(y), , drop = FALSE]
+  dimnames(y_ind) <- dimnames(tmpl$fitted.values)
+  idx_aug <- rep(seq_len(n), ncat)
+  idx_rows <- seq_len(n)
+  # A loop instead of lapply() with an anonymous function, which the byte
+  # compiler would compile again for each projection:
+  outdmin <- vector("list", nprj)
+  for (s in seq_len(nprj)) {
+    coef_s <- out$coef[, , s]
+    dim(coef_s) <- dim(out$coef)[1:2]
+    # Weights as nnet::multinom() stores them (see nnet:::coef.multinom()):
+    # one row per category, the first column and the first row (reference
+    # category) zero:
+    wts_mat <- matrix(0, ncat, ncol(x1) + 1L)
+    wts_mat[-1L, -1L] <- t(coef_s)
+    eta <- cbind(0, x1 %*% coef_s)
+    eta_max <- eta[cbind(idx_rows, max.col(eta, ties.method = "first"))]
+    prbs <- exp(eta - eta_max)
+    prbs <- prbs / rowSums(prbs)
+    fitted_s <- prbs[idx_aug, , drop = FALSE]
+    dimnames(fitted_s) <- dimnames(tmpl$fitted.values)
+    fit_s <- tmpl
+    fit_s$wts <- as.vector(t(wts_mat))
+    fit_s$value <- out$loss[s]
+    fit_s$deviance <- 2 * out$loss[s]
+    fit_s$AIC <- fit_s$deviance + 2 * fit_s$edf
+    fit_s$convergence <- out$convergence[s]
+    fit_s$weights <- ws_aug[, s]
+    fit_s$fitted.values <- fitted_s
+    fit_s$residuals <- y_ind - fitted_s
+    fit_s$call <- quote(projpred_categ_fit())
+    outdmin[[s]] <- fit_s
+  }
+  return(outdmin)
 }
 
 # Use mclogit::mblogit() to fit multilevel submodels for the brms::categorical()
