@@ -694,6 +694,18 @@ divmin_augdat <- function(
   projpred_ws_aug <- unclass(projpred_ws_aug)
   attr(projpred_ws_aug, "ndiscrete") <- NULL
 
+  # Cumulative-link submodels without group-level terms: all draws in one C++
+  # call (see cumul_native_multi()):
+  if (identical(sdivmin, fit_cumul)) {
+    outdmin <- cumul_native_multi(formula, data = data, family = family,
+                                  ws_aug = projpred_ws_aug,
+                                  dot_args = list(...))
+    if (!is.null(outdmin)) {
+      check_conv(outdmin, rep(0L, length(outdmin)), do_check = do_check_conv)
+      return(outdmin)
+    }
+  }
+
   if (is.null(getOption("projpred.parallel_proj_trigger")) &&
       !is.null(getOption("projpred.prll_prj_trigger"))) {
     warning(
@@ -866,6 +878,98 @@ fit_cumul <- function(formula, data, family, weights, ...) {
     stop(attr(fitobj, "condition")$message)
   }
   return(fitobj)
+}
+
+# Fits the cumulative-link submodels of all draws in one C++ call
+# (cumul_fit_multi_c()) with the objective of MASS::polr(), instead of one
+# fit_cumul() call per draw. The augmented data hold C copies of the n
+# observations (one per response category), so this builds the model matrix
+# once, and the augmented weights of each draw form an n x C matrix. Newton
+# iterations replace the BFGS iterations of polr(), so the estimates agree with
+# those of polr() up to its convergence tolerance. The returned `polr` objects
+# hold the elements that predict.polr() (with `newdata`), coef() and
+# check_conv_s() use, without `fitted.values` and `lp`. Returns `NULL` for other
+# cases; divmin_augdat() then calls fit_cumul() per draw. Global option
+# `projpred.augdat_native = FALSE` switches this off.
+cumul_native_multi <- function(formula, data, family, ws_aug, dot_args) {
+  if (!getOption("projpred.augdat_native", TRUE)) {
+    return(NULL)
+  }
+  # fit_cumul() passes these arguments on to MASS::polr(); they are not
+  # reproduced here:
+  if (length(intersect(names(dot_args),
+                       c(methods::formalArgs(MASS::polr),
+                         methods::formalArgs(stats::optim))))) {
+    return(NULL)
+  }
+  method <- family$link
+  if (method == "logit") {
+    method <- "logistic"
+  } else if (method == "probit_approx") {
+    method <- "probit"
+  }
+  link_code <- match(method, c("logistic", "probit", "loglog", "cloglog",
+                               "cauchit"))
+  if (is.na(link_code)) {
+    return(NULL)
+  }
+  # As in MASS::polr():
+  mfr <- model.frame(formula, data = data)
+  if (nrow(mfr) != nrow(data) || !is.null(model.offset(mfr))) {
+    return(NULL)
+  }
+  trms <- attr(mfr, "terms")
+  x <- model.matrix(trms, mfr)
+  cons <- attr(x, "contrasts")
+  xint <- match("(Intercept)", colnames(x), nomatch = 0L)
+  if (xint == 0L) {
+    return(NULL)
+  }
+  x <- x[, -xint, drop = FALSE]
+  y <- model.response(mfr)
+  if (!is.factor(y)) {
+    return(NULL)
+  }
+  lev <- levels(y)
+  ncat <- length(lev)
+  n <- nrow(x) %/% ncat
+  ws_aug <- as.matrix(ws_aug)
+  # The augmented data have to be C copies of the n observations, in the order
+  # of the response categories:
+  if (ncat < 3L || n * ncat != nrow(x) || nrow(ws_aug) != nrow(x) ||
+      !identical(as.integer(y), rep(seq_len(ncat), each = n)) ||
+      anyNA(ws_aug) || any(ws_aug < 0)) {
+    return(NULL)
+  }
+  x1 <- x[seq_len(n), , drop = FALSE]
+  if (ncol(x1) > 0 && !all(x == x1[rep(seq_len(n), ncat), , drop = FALSE])) {
+    return(NULL)
+  }
+  nprj <- ncol(ws_aug)
+  out <- cumul_fit_multi_c(
+    unname(x1), matrix(ws_aug, nrow = n), ncat, rep(0, n), link_code,
+    thresh = 1e-12, maxit = 100L
+  )
+  xlvls <- .getXlevels(trms, mfr)
+  zeta_nms <- paste(lev[-ncat], lev[-1L], sep = "|")
+  pc <- ncol(x1)
+  # As in polr(), also for a submodel without predictors:
+  beta_nms <- colnames(x1) %||% character()
+  return(lapply(seq_len(nprj), function(s) {
+    beta <- setNames(out$beta[, s], beta_nms)
+    zeta <- setNames(out$zeta[, s], zeta_nms)
+    wsum <- sum(ws_aug[, s])
+    structure(
+      list(coefficients = beta, zeta = zeta, deviance = 2 * out$loss[s],
+           lev = lev, terms = trms, df.residual = wsum - pc - (ncat - 1L),
+           edf = pc + ncat - 1L, n = wsum, nobs = wsum,
+           call = quote(projpred_cumul_fit()), method = method,
+           convergence = out$convergence[s],
+           niter = c(f.evals = out$niter[s], g.evals = out$niter[s]),
+           contrasts = cons, xlevels = xlvls),
+      class = "polr"
+    )
+  }))
 }
 
 # Use ordinal::clmm() to fit multilevel submodels for the brms::cumulative()
@@ -1214,6 +1318,12 @@ subprd <- function(fits, newdata) {
 }
 
 subprd_augdat <- function(fits, newdata) {
+  # `polr` and `multinom` fits of the same submodel: linear predictors from the
+  # coefficients, for all draws at once (see subprd_augdat_direct()):
+  prd_direct <- subprd_augdat_direct(fits, newdata)
+  if (!is.null(prd_direct)) {
+    return(prd_direct)
+  }
   if (inherits(fits[[1]], "clmm")) {
     y_nm <- extract_terms_response(formula(fits[[1]]))$response
   }
@@ -1267,6 +1377,89 @@ subprd_augdat <- function(fits, newdata) {
     return(lpreds)
   })
   return(do.call(abind::abind, list(prd_list, rev.along = 0)))
+}
+
+# Linear predictors (on the link scale used by subprd_augdat()) of `polr` or
+# `multinom` fits that share the terms, the factor levels and the contrasts (as
+# the draw-wise fits of one submodel do). The model matrix for `newdata` is
+# built once, as in predict.polr() and predict.multinom(). For `polr`, the
+# linear predictors of the cumulative probabilities are zeta_j - eta, which
+# subprd_augdat() computes from the predicted category probabilities; for
+# `multinom`, they are the log odds against the first category. This function
+# computes both directly, so they differ from those of subprd_augdat() only by
+# rounding. Returns `NULL` for other cases.
+subprd_augdat_direct <- function(fits, newdata) {
+  fit_1 <- fits[[1]]
+  if (inherits(fit_1, "polr")) {
+    is_polr <- TRUE
+  } else if (inherits(fit_1, "multinom") && is.matrix(coef(fit_1))) {
+    is_polr <- FALSE
+  } else {
+    return(NULL)
+  }
+  same_cls <- function(fit) {
+    if (is_polr) {
+      inherits(fit, "polr") && !inherits(fit, "clmm")
+    } else {
+      inherits(fit, "multinom") && is.matrix(coef(fit))
+    }
+  }
+  # The terms are compared without the environment of their formula:
+  terms_noenv <- function(trms) {
+    attr(trms, ".Environment") <- NULL
+    trms
+  }
+  trms_1 <- terms_noenv(fit_1$terms)
+  if (!all(vapply(fits, function(fit) {
+    same_cls(fit) && identical(terms_noenv(fit$terms), trms_1) &&
+      identical(fit$xlevels, fit_1$xlevels) &&
+      identical(fit$contrasts, fit_1$contrasts)
+  }, logical(1)))) {
+    return(NULL)
+  }
+  trms <- delete.response(fit_1$terms)
+  mfr <- model.frame(trms, newdata, na.action = function(x) x,
+                     xlev = fit_1$xlevels)
+  if (!is.null(model.offset(mfr))) {
+    return(NULL)
+  }
+  x <- model.matrix(trms, mfr, contrasts.arg = fit_1$contrasts)
+  n <- nrow(x)
+  nprj <- length(fits)
+  if (is_polr) {
+    xint <- match("(Intercept)", colnames(x), nomatch = 0L)
+    if (xint > 0L) {
+      x <- x[, -xint, drop = FALSE]
+    }
+    if (!identical(colnames(x) %||% character(),
+                   names(coef(fit_1)) %||% character())) {
+      return(NULL)
+    }
+    zetas <- do.call(cbind, lapply(fits, "[[", "zeta"))
+    if (ncol(x) > 0) {
+      etas <- x %*% do.call(cbind, lapply(fits, coef))
+    } else {
+      etas <- matrix(0, n, nprj)
+    }
+    ncat_m1 <- nrow(zetas)
+    out <- array(NA_real_, dim = c(n, ncat_m1, nprj))
+    for (s in seq_len(nprj)) {
+      out[, , s] <- outer(-etas[, s], zetas[, s], "+")
+    }
+    cat_nms <- utils::head(fit_1$lev, -1)
+  } else {
+    coef_1 <- coef(fit_1)
+    if (!identical(colnames(x), colnames(coef_1))) {
+      return(NULL)
+    }
+    out <- array(NA_real_, dim = c(n, nrow(coef_1), nprj))
+    for (s in seq_len(nprj)) {
+      out[, , s] <- x %*% t(coef(fits[[s]]))
+    }
+    cat_nms <- rownames(coef_1)
+  }
+  dimnames(out) <- list(rownames(newdata), cat_nms, NULL)
+  return(out)
 }
 
 subprd_augdat_binom <- function(fits, newdata) {

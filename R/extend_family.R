@@ -420,24 +420,22 @@ extend_family <- function(family,
       } else if (length(w_obs) != n_obs) {
         stop("Argument `w_obs` needs to be of length 0, 1, or `n_obs`.")
       }
-      return(do.call(rbind, lapply(seq_len(n_obs), function(i_obs) {
-        do.call(c, lapply(seq_len(n_prjdraws), function(i_prjdraws) {
-          prbs_ref <- mu_ref_arr[i_obs, , i_prjdraws]
-          prbs_sub <- mu_sub_arr[i_obs, , i_prjdraws]
-          # Assign some nonzero value to have a finite log() value (the specific
-          # value doesn't matter for `prbs_ref` because of the multiplication
-          # with zero):
-          prbs_ref[prbs_ref == 0] <- .Machine$double.eps
-          # Assign some nonzero value to have a finite log() value (for
-          # `prbs_sub`, the specific value matters, in contrast to `prbs_ref`):
-          prbs_sub[prbs_sub == 0] <- .Machine$double.eps
-          # In analogy to `extend_family(binomial())$ce()`,
-          # `extend_family(poisson())$ce()`, and
-          # `extend_family(gaussian())$ce()`, multiply by the observation
-          # weight:
-          return(w_obs[i_obs] * (-sum(prbs_ref * log(prbs_sub))))
-        }))
-      })))
+      # Assign some nonzero value to have a finite log() value (the specific
+      # value doesn't matter for `mu_ref_arr` because of the multiplication with
+      # zero):
+      mu_ref_arr[mu_ref_arr == 0] <- .Machine$double.eps
+      # Assign some nonzero value to have a finite log() value (for
+      # `mu_sub_arr`, the specific value matters, in contrast to `mu_ref_arr`):
+      mu_sub_arr[mu_sub_arr == 0] <- .Machine$double.eps
+      # Sum over the response categories (the second dimension) for each
+      # observation and draw: rowSums() of the observations x draws x
+      # categories array:
+      ce_unw <- -rowSums(aperm(mu_ref_arr * log(mu_sub_arr), c(1, 3, 2)),
+                         dims = 2)
+      # In analogy to `extend_family(binomial())$ce()`,
+      # `extend_family(poisson())$ce()`, and `extend_family(gaussian())$ce()`,
+      # multiply by the observation weight:
+      return(matrix(w_obs * ce_unw, nrow = n_obs, ncol = n_prjdraws))
     }
     family$ce <- function(pref, data, psub) {
       ce_sums <- colSums(
