@@ -78,6 +78,23 @@ divmin <- function(
     )
   }
 
+  dot_args <- list(...)
+  # Observations with weight 0 (in the LOO CV with validated search, the
+  # left-out observation of a fold): remove them from the data for the
+  # multilevel and additive submodel fitters. Some of these fitters (for example
+  # lme4::lmer()) do not ignore the response of an observation with weight 0,
+  # and others (mgcv::gam()) use its predictor values for the smooth bases. The
+  # GLM fitters handle weight 0 exactly:
+  if ((has_grp || has_add) &&
+      is.data.frame(dot_args$data) && length(dot_args$weights) > 0 &&
+      any(dot_args$weights == 0) &&
+      length(dot_args$weights) == nrow(dot_args$data)) {
+    keep <- dot_args$weights != 0
+    dot_args$data <- dot_args$data[keep, , drop = FALSE]
+    dot_args$weights <- dot_args$weights[keep]
+    projpred_var <- projpred_var[keep, , drop = FALSE]
+  }
+
   if (is.null(getOption("projpred.parallel_proj_trigger")) &&
       !is.null(getOption("projpred.prll_prj_trigger"))) {
     warning(
@@ -104,13 +121,13 @@ divmin <- function(
         on.exit(utils::setTxtProgressBar(pb, s))
       }
       mssgs_warns_capt <- capt_mssgs_warns(
-        soutdmin <- sdivmin(
-          formula = formulas[[s]],
-          projpred_var = projpred_var[, s, drop = FALSE],
-          projpred_formula_no_random = projpred_formulas_no_random[[s]],
-          projpred_random = projpred_random,
-          ...
-        )
+        soutdmin <- do.call(sdivmin, c(
+          list(formula = formulas[[s]],
+               projpred_var = projpred_var[, s, drop = FALSE],
+               projpred_formula_no_random = projpred_formulas_no_random[[s]],
+               projpred_random = projpred_random),
+          dot_args
+        ))
       )
       return(nlist(soutdmin, mssgs_warns_capt))
     })
@@ -127,7 +144,6 @@ divmin <- function(
     } else {
       progressor_obj <- NULL
     }
-    dot_args <- list(...)
     `%do_projpred%` <- foreach::`%dopar%`
     outdmin <- foreach::foreach(
       formula_s = formulas,

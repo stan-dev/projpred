@@ -85,8 +85,15 @@ test_that(paste(
     paste(mod_nm, refm$family$family, refm$family$for_latent,
           refm$family$for_augdat, any(refm$wobs != 1))
   }
+  # The augmented-data projection supports only these families:
+  is_projectable <- function(tstsetup) {
+    fam <- refmods[[tstsetup]]$family
+    !fam$for_augdat ||
+      fam$family %in% c("cumulative", "cumulative_rstanarm", "categorical")
+  }
   keys <- vapply(names(refmods), case_key, character(1))
   tstsetups <- names(refmods)[!duplicated(keys)]
+  tstsetups <- Filter(is_projectable, tstsetups)
   expect_gt(length(tstsetups), 5)
   for (tstsetup in tstsetups) {
     refm <- refmods[[tstsetup]]
@@ -102,11 +109,19 @@ test_that(paste(
       )$outdmin))
       unclass(refm$mu_fun(outdmin, offset = refm$offset))
     }
+    # An error in one setup is a failure for that setup only:
+    res <- tryCatch(
+      list(w0_chg = prd(p_ref_chg, refm_w0), w0 = prd(p_ref, refm_w0),
+           w1_chg = prd(p_ref_chg, refm), w1 = prd(p_ref, refm)),
+      error = function(e) conditionMessage(e)
+    )
+    if (is.character(res)) {
+      expect_true(FALSE, label = paste(tstsetup, "error:", res))
+      next
+    }
     # With weight 0, the changed target of observation 1 does not matter:
-    expect_equal(prd(p_ref_chg, refm_w0), prd(p_ref, refm_w0),
-                 tolerance = 1e-5, info = tstsetup)
+    expect_equal(res$w0_chg, res$w0, tolerance = 1e-5, info = tstsetup)
     # With its original weight, it does:
-    expect_gt(max(abs(prd(p_ref_chg, refm) - prd(p_ref, refm))), 1e-4,
-              label = tstsetup)
+    expect_gt(max(abs(res$w1_chg - res$w1)), 1e-4, label = tstsetup)
   }
 })
