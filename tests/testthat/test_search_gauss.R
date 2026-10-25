@@ -145,6 +145,63 @@ test_that(paste(
 })
 
 test_that(paste(
+  "the cross-product search and evaluation apply to the latent projection",
+  "and give the same results as the draw-wise projections"
+), {
+  set.seed(7391)
+  n <- 50
+  dat <- data.frame(x1 = rnorm(n), x2 = rnorm(n), x3 = rnorm(n),
+                    x4 = rnorm(n))
+  eta <- 0.9 * dat$x1 - 0.6 * dat$x2
+  dat$y <- rbinom(n, 1, plogis(eta))
+  ndraws <- 100
+  mm <- model.matrix(~ x1 + x2 + x3 + x4, dat)
+  beta <- c(0, 0.9, -0.6, 0, 0) +
+    matrix(rnorm(ncol(mm) * ndraws, sd = 0.1), ncol(mm))
+  fit <- list(beta = beta, data = dat)
+  ref_predfun <- function(fit, newdata = NULL) {
+    nd <- if (is.null(newdata)) fit$data else newdata
+    model.matrix(~ x1 + x2 + x3 + x4, nd) %*% fit$beta
+  }
+  refm <- suppressWarnings(init_refmodel(
+    fit, data = dat, formula = y ~ x1 + x2 + x3 + x4, family = binomial(),
+    ref_predfun = ref_predfun, dis = rep(1, ndraws), latent = TRUE
+  ))
+  expect_true(refm$family$for_latent)
+  calls <- new.env()
+  calls$n <- 0L
+  suppressMessages(trace(
+    "search_forward_gauss", where = asNamespace("projpred"), print = FALSE,
+    exit = bquote(if (!is.null(returnValue(NULL))) {
+      assign("n", get("n", envir = .(calls)) + 1L, envir = .(calls))
+    })
+  ))
+  on.exit(suppressMessages(untrace("search_forward_gauss",
+                                   where = asNamespace("projpred"))),
+          add = TRUE)
+  args_vs <- list(refm, nclusters = 3, nclusters_pred = 5, nterms_max = 3,
+                  seed = 4410, verbose = FALSE)
+  args_cv <- c(args_vs, list(cv_method = "LOO", validate_search = TRUE,
+                             nloo = 5))
+  vs_crossprod <- suppressWarnings(do.call(varsel, args_vs))
+  cv_crossprod <- suppressWarnings(do.call(cv_varsel, args_cv))
+  opts_old <- options(projpred.search_gauss_crossprod = FALSE)
+  vs_drawwise <- suppressWarnings(do.call(varsel, args_vs))
+  cv_drawwise <- suppressWarnings(do.call(cv_varsel, args_cv))
+  options(opts_old)
+  expect_identical(ranking(vs_crossprod)$fulldata,
+                   ranking(vs_drawwise)$fulldata)
+  expect_equal(performances(vs_crossprod, deltas = FALSE),
+               performances(vs_drawwise, deltas = FALSE))
+  expect_identical(ranking(cv_crossprod), ranking(cv_drawwise))
+  expect_equal(performances(cv_crossprod, deltas = FALSE),
+               performances(cv_drawwise, deltas = FALSE), tolerance = 1e-10)
+  # The cross-product search ran: once in varsel(), once for the full data in
+  # cv_varsel() and once per left-out observation:
+  expect_identical(calls$n, 7L)
+})
+
+test_that(paste(
   "search_forward_gauss() returns `NULL` for a factor in an interaction term"
 ), {
   refm <- refm_search_gauss(y ~ x1 + x2 + f + x1:f)

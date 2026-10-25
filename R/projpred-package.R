@@ -268,9 +268,10 @@
 #' this is an experimental feature.
 #' * `projpred.search_gauss_crossprod`: A single logical value indicating
 #' whether to compute the forward search and the evaluation in the LOO CV with
-#' validated search for Gaussian submodels with the identity link from
-#' cross-products of the model matrix (default `TRUE`). With `FALSE`,
-#' \pkg{projpred} projects onto each candidate submodel draw by draw.
+#' validated search for Gaussian submodels with the identity link (including
+#' the latent projection) from cross-products of the model matrix (default
+#' `TRUE`). With `FALSE`, \pkg{projpred} projects onto each candidate submodel
+#' draw by draw.
 #'
 #' @name internal-global-options
 #' @keywords internal

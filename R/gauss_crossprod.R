@@ -18,15 +18,15 @@
 # (ce_gauss()) without the n-dimensional fitted values.
 
 # The condition for the cross-product computations: Gaussian family with the
-# identity link (traditional projection), the default divergence minimizer and
-# submodel fitter, zero offsets, and no argument for glm_ridge() other than
-# `thresh` (not used for this family) in `divmin_args`. Returns `regul` or
-# `NULL`.
+# identity link (traditional or latent projection), the default divergence
+# minimizer and submodel fitter, zero offsets, and no argument for glm_ridge()
+# other than `thresh` (not used for this family) in `divmin_args`. Returns
+# `regul` or `NULL`.
 gauss_crossprod_regul <- function(refmodel, divmin_args) {
   fam <- refmodel$family
   glm_fitter <- getOption("projpred.glm_fitter", "fit_glm_ridge_callback")
   if (fam$family != "gaussian" || fam$link != "identity" ||
-      isTRUE(fam$for_latent) || isTRUE(fam$for_augdat) ||
+      isTRUE(fam$for_augdat) ||
       !identical(refmodel$div_minimizer, divmin) ||
       !identical(glm_fitter, "fit_glm_ridge_callback") ||
       any(refmodel$offset != 0)) {
