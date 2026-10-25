@@ -55,6 +55,62 @@ test_that("invalid `method` fails", {
   }
 })
 
+test_that("the projection cache does not change the results", {
+  skip_if_not(run_vs)
+  # GLMs (traditional projection) of the families covered by the multi-draw
+  # fitters:
+  is_glm_multi <- function(args_i) {
+    identical(args_i$mod_nm, "glm") && identical(args_i$prj_nm, "trad") &&
+      args_i$fam_nm %in% c("gauss", "brnll", "binom", "poiss")
+  }
+  tstsetups <- names(vss)[vapply(args_vs[names(vss)], is_glm_multi,
+                                 logical(1))]
+  expect_gt(length(tstsetups), 0)
+  for (tstsetup in tstsetups) {
+    args_vs_i <- args_vs[[tstsetup]]
+    opts_old <- options(projpred.proj_cache = FALSE)
+    vs_nocache <- do.call(varsel, c(
+      list(object = refmods[[args_vs_i$tstsetup_ref]]),
+      excl_nonargs(args_vs_i)
+    ))
+    options(opts_old)
+    expect_equal(vs_nocache, vss[[tstsetup]], info = tstsetup)
+  }
+  expect_identical(proj_cache$depth, 0L)
+  expect_length(proj_cache$stores, 0)
+
+  # cv_varsel() with LOO CV and a validated search (the folds reuse the cache
+  # entries of the full-data search):
+  skip_if_not(run_cvvs)
+  # (The setup uses L1 search for these models, so the forward search is set
+  # here.)
+  is_cv_case <- function(args_i) {
+    is_glm_multi(args_i) && args_i$fam_nm != "gauss" &&
+      !identical(args_i$cv_method, "kfold")
+  }
+  tstsetups_cv <- names(cvvss)[vapply(args_cvvs[names(cvvss)], is_cv_case,
+                                      logical(1))]
+  expect_gt(length(tstsetups_cv), 0)
+  for (tstsetup in head(tstsetups_cv, 2)) {
+    args_cvvs_i <- args_cvvs[[tstsetup]]
+    args_cvvs_i$method <- "forward"
+    args_cvvs_i$validate_search <- TRUE
+    args_cvvs_i$nloo <- 5L
+    cvvs_call <- function() {
+      suppressWarnings(do.call(cv_varsel, c(
+        list(object = refmods[[args_cvvs_i$tstsetup_ref]]),
+        excl_nonargs(args_cvvs_i)
+      )))
+    }
+    cvvs_cache <- cvvs_call()
+    opts_old <- options(projpred.proj_cache = FALSE)
+    cvvs_nocache <- cvvs_call()
+    options(opts_old)
+    expect_equal(cvvs_nocache, cvvs_cache, info = tstsetup)
+  }
+  expect_identical(proj_cache$depth, 0L)
+})
+
 test_that("`seed` works (and restores the RNG state afterwards)", {
   skip_if_not(run_vs)
   # To save time:

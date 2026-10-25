@@ -92,22 +92,11 @@ divmin <- function(
   if (identical(sdivmin, fit_glm_ridge_callback) && length(formulas) >= 1) {
     shared_x <- shared_model_matrix(formulas, data = list(...)$data)
     if (!is.null(shared_x)) {
-      # Gaussian submodels with the identity link: one solve for all draws
-      # (this fitter cannot throw messages or warnings in this case):
-      outdmin <- glm_ridge_gauss_multi(formulas, shared_x = shared_x,
-                                       dot_args = list(...))
+      outdmin <- divmin_multi(formulas, shared_x = shared_x,
+                              dot_args = list(...),
+                              throw_warn_sdivmin = throw_warn_sdivmin,
+                              do_check_conv = do_check_conv)
       if (!is.null(outdmin)) {
-        return(outdmin)
-      }
-      # Families with native pseudo-observations: all draws in one C++ call:
-      outdmin <- glm_ridge_native_multi(formulas, shared_x = shared_x,
-                                        dot_args = list(...))
-      if (!is.null(outdmin)) {
-        mssgs_warns_capts <- attr(outdmin, "mssgs_warns_capts")
-        attr(outdmin, "mssgs_warns_capts") <- NULL
-        warn_prj_drawwise(mssgs_warns_capts, throw_warn = throw_warn_sdivmin)
-        check_conv(outdmin, lengths(mssgs_warns_capts),
-                   do_check = do_check_conv)
         return(outdmin)
       }
       sdivmin <- glm_ridge_callback_shared(shared_x)
@@ -317,6 +306,59 @@ glm_ridge_callback_shared <- function(shared_x) {
   }
 }
 
+# The multi-draw fitters of divmin() for draw-wise formulas `formulas` with the
+# shared model matrix `shared_x`: glm_ridge_gauss_multi() and
+# glm_ridge_native_multi(). `y` (optional) is the matrix of the draw-wise
+# responses (otherwise taken from `dot_args$data`). Returns `NULL` if neither
+# fitter covers the case.
+divmin_multi <- function(formulas, shared_x, dot_args, throw_warn_sdivmin,
+                         do_check_conv, y = NULL) {
+  # Gaussian submodels with the identity link: one solve for all draws (this
+  # fitter cannot throw messages or warnings in this case):
+  outdmin <- glm_ridge_gauss_multi(formulas, shared_x = shared_x,
+                                   dot_args = dot_args, y = y)
+  if (!is.null(outdmin)) {
+    return(outdmin)
+  }
+  # Families with native pseudo-observations: all draws in one C++ call:
+  outdmin <- glm_ridge_native_multi(formulas, shared_x = shared_x,
+                                    dot_args = dot_args, y = y)
+  if (!is.null(outdmin)) {
+    mssgs_warns_capts <- attr(outdmin, "mssgs_warns_capts")
+    attr(outdmin, "mssgs_warns_capts") <- NULL
+    warn_prj_drawwise(mssgs_warns_capts, throw_warn = throw_warn_sdivmin)
+    # check_conv_s() is `TRUE` for `subfit` objects, so check_conv() has an
+    # effect only if a draw has messages:
+    if (any(lengths(mssgs_warns_capts) > 0)) {
+      check_conv(outdmin, lengths(mssgs_warns_capts), do_check = do_check_conv)
+    }
+    return(outdmin)
+  }
+  return(NULL)
+}
+
+# The parts of divmin() that depend only on the submodel formula `formula` and
+# on the predictor data (not on the values of the draw-wise responses in
+# `data`): the draw-wise formulas and the shared model matrix. Returns `NULL`
+# if divmin() would not use the multi-draw fitters (see divmin_multi()) for
+# this formula.
+divmin_prepare <- function(formula, data) {
+  trms_all <- extract_terms_response(formula)
+  if (length(trms_all$group_terms) > 0 ||
+      length(trms_all$additive_terms) > 0) {
+    return(NULL)
+  }
+  formulas <- validate_response_formula(formula)
+  if (length(formulas) < 1) {
+    return(NULL)
+  }
+  shared_x <- shared_model_matrix(formulas, data = data)
+  if (is.null(shared_x)) {
+    return(NULL)
+  }
+  return(nlist(formulas, shared_x))
+}
+
 # Fits all draw-wise submodels of fit_glm_ridge_callback() at once, for a
 # Gaussian submodel with the identity link. For this family, glm_ridge() solves
 # one weighted ridge least-squares problem in one exact step. The draws share
@@ -324,7 +366,7 @@ glm_ridge_callback_shared <- function(shared_x) {
 # penalty. Thus, one factorization with one right-hand side per draw gives the
 # same solutions. Returns `NULL` if one of the checks below fails; then divmin()
 # uses the draw-wise path.
-glm_ridge_gauss_multi <- function(formulas, shared_x, dot_args) {
+glm_ridge_gauss_multi <- function(formulas, shared_x, dot_args, y = NULL) {
   family <- dot_args$family
   if (is.null(family) || family$family != "gaussian" ||
       family$link != "identity") {
@@ -347,9 +389,11 @@ glm_ridge_gauss_multi <- function(formulas, shared_x, dot_args) {
   if (length(weights) != nrow(x) || anyNA(weights)) {
     return(NULL)
   }
-  resp_nms <- vapply(formulas, function(fml) as.character(fml[[2]]),
-                     character(1))
-  y <- as.matrix(data[resp_nms])
+  if (is.null(y)) {
+    resp_nms <- vapply(formulas, function(fml) as.character(fml[[2]]),
+                       character(1))
+    y <- as.matrix(data[resp_nms])
+  }
   # As in glm_ridge():
   transf <- standardization(x, center = TRUE, scale = TRUE, weights = weights)
   if (any(transf$scale == 0)) {
@@ -384,7 +428,7 @@ glm_ridge_gauss_multi <- function(formulas, shared_x, dot_args) {
 # Attribute `mssgs_warns_capts` holds the messages of each draw, as divmin()
 # collects them from fit_glm_ridge_callback(). Returns `NULL` for other cases;
 # divmin() then fits the draws one by one.
-glm_ridge_native_multi <- function(formulas, shared_x, dot_args) {
+glm_ridge_native_multi <- function(formulas, shared_x, dot_args, y = NULL) {
   family <- dot_args$family
   if (is.null(family)) {
     return(NULL)
@@ -420,9 +464,11 @@ glm_ridge_native_multi <- function(formulas, shared_x, dot_args) {
     qa_updates_max <- dot_args$qa_updates_max %||% 100
     ls_iter_max <- dot_args$ls_iter_max %||% 30
   }
-  resp_nms <- vapply(formulas, function(fml) as.character(fml[[2]]),
-                     character(1))
-  y <- as.matrix(data[resp_nms])
+  if (is.null(y)) {
+    resp_nms <- vapply(formulas, function(fml) as.character(fml[[2]]),
+                       character(1))
+    y <- as.matrix(data[resp_nms])
+  }
   transf <- standardization(x, center = TRUE, scale = TRUE, weights = weights)
   penalty <- rep(1.0, ncol(x))
   penalty[transf$scale == 0] <- Inf
@@ -447,10 +493,15 @@ glm_ridge_native_multi <- function(formulas, shared_x, dot_args) {
   })
   # As fit_glm_ridge_callback() turns the messages into one warning and
   # capt_conds() splits it into lines:
-  attr(outdmin, "mssgs_warns_capts") <- lapply(out$msgs, function(msgs_s) {
-    msgs_s <- unique(grep("[Ww]arning|bug", msgs_s, value = TRUE))
-    setdiff(as.character(unlist(strsplit(msgs_s, "\n", fixed = TRUE))), "")
-  })
+  if (all(lengths(out$msgs) == 0)) {
+    mssgs_warns_capts <- rep(list(character()), length(formulas))
+  } else {
+    mssgs_warns_capts <- lapply(out$msgs, function(msgs_s) {
+      msgs_s <- unique(grep("[Ww]arning|bug", msgs_s, value = TRUE))
+      setdiff(as.character(unlist(strsplit(msgs_s, "\n", fixed = TRUE))), "")
+    })
+  }
+  attr(outdmin, "mssgs_warns_capts") <- mssgs_warns_capts
   return(outdmin)
 }
 
