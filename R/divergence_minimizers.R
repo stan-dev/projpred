@@ -1474,6 +1474,7 @@ divmin_augdat <- function(
                                   dot_args = list(...))
     if (!is.null(outdmin)) {
       check_conv(outdmin, rep(0L, length(outdmin)), do_check = do_check_conv)
+      attr(outdmin, "projpred_lost_lvls") <- lost_lvls
       return(outdmin)
     }
   }
@@ -1486,6 +1487,7 @@ divmin_augdat <- function(
                                   dot_args = list(...))
     if (!is.null(outdmin)) {
       check_conv(outdmin, rep(0L, length(outdmin)), do_check = do_check_conv)
+      attr(outdmin, "projpred_lost_lvls") <- lost_lvls
       return(outdmin)
     }
   }
