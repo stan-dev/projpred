@@ -11,6 +11,7 @@ If you read this from a place other than <https://mc-stan.org/projpred/news/inde
 * Faster computation of the predictive variance of the reference model for the Gaussian and Student-t families. This matters for a large number of observations and many projected draws. For example, `project()` with 10 000 observations and 4 000 projected draws is about 7 times faster. (GitHub: #575)
 * Faster clustering of the reference model draws for a large number of observations: `kmeans()` runs on the coordinates of the draws in their low-dimensional span, which gives the same clusters. For example, `varsel()` with 50 000 observations, 4 000 draws and 20 clusters is about 4.5 times faster. (GitHub: #576)
 * Less formula and model-matrix work in the forward search and in the projections: the candidate submodels are selected from precomputed term labels, and the predictions for the training data use the stored submodel model matrices. For example, `varsel()` with forward search for a Gaussian model with 50 observations and 200 predictor terms is about 1.5 times faster. (GitHub: #578)
+* Faster forward search and LOO CV with validated search for Gaussian submodels with the identity link and for the latent projection, computed from cross-products of the model matrix. For example, `varsel()` with forward search for a Gaussian model with 50 observations and 200 predictor terms is about 6 times faster, and `cv_varsel()` with `validate_search = TRUE` for a Gaussian model with 40 observations and 15 predictor terms is about 11 times faster. (GitHub: #579)
 
 ## Minor changes
 
