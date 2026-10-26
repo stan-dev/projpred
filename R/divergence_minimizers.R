@@ -1159,6 +1159,12 @@ check_conv_s <- function(fit_s) {
 # Prediction functions for submodels --------------------------------------
 
 subprd <- function(fits, newdata) {
+  # lme4 fits of one submodel and `newdata` without new group levels: all draws
+  # at once (see subprd_mer_direct()):
+  prd_direct <- subprd_mer_direct(fits, newdata)
+  if (!is.null(prd_direct)) {
+    return(prd_direct)
+  }
   prd_list <- lapply(fits, function(fit) {
     is_glmmPQL <- inherits(fit, "glmmPQL")
     is_glmm <- inherits(fit, c("lmerMod", "glmerMod"))
@@ -1211,6 +1217,97 @@ subprd <- function(fits, newdata) {
     }
   })
   return(do.call(cbind, prd_list))
+}
+
+# Linear predictors of lme4 fits (`lmerMod` or `glmerMod`) of the same submodel
+# for `newdata` whose group levels all occur in the fits. In this case,
+# repair_re() adds zero and draws no random numbers, and predict.merMod() with
+# `re.form = NULL` computes X beta_s + Z b_s. This function builds the
+# fixed-effects model matrix X and the random-effects design Z for `newdata`
+# once, with the steps of predict.merMod() (R package lme4, GPL-2 | GPL-3). It
+# maps the conditional modes b_s of each draw (in the row order of the fitted
+# Zt) onto the rows of Z by the names of the group levels. These names are
+# unique across the grouping variables (see repair_re.merMod()), and within a
+# grouping variable they have the same order of terms and coefficients in both.
+# The results differ from those of subprd() only by rounding. Returns `NULL`
+# for other cases.
+subprd_mer_direct <- function(fits, newdata) {
+  if (is.null(newdata) || length(fits) == 0 ||
+      getOption("projpred.mlvl_pred_new", FALSE) ||
+      !all(vapply(fits, inherits, logical(1), c("lmerMod", "glmerMod")))) {
+    return(NULL)
+  }
+  fit_1 <- fits[[1]]
+  flist_1 <- lapply(fit_1@flist, levels)
+  cnms_1 <- lme4::getME(fit_1, "cnms")
+  trms_fix <- delete.response(terms(fit_1, fixed.only = TRUE))
+  # The terms are compared without their environment:
+  terms_noenv <- function(trms) {
+    attr(trms, ".Environment") <- NULL
+    trms
+  }
+  trms_fix_noenv <- terms_noenv(trms_fix)
+  same_structure <- vapply(fits, function(fit) {
+    trms_s <- delete.response(terms(fit, fixed.only = TRUE))
+    identical(lapply(fit@flist, levels), flist_1) &&
+      identical(lme4::getME(fit, "cnms"), cnms_1) &&
+      identical(terms_noenv(trms_s), trms_fix_noenv) &&
+      identical(names(lme4::fixef(fit)), names(lme4::fixef(fit_1)))
+  }, logical(1))
+  if (!all(same_structure) || !is.null(attr(trms_fix, "offset"))) {
+    return(NULL)
+  }
+  # Group levels: all have to occur in the fits, and the level sets have to be
+  # disjoint (otherwise repair_re.merMod() handles the case):
+  vnms <- names(flist_1)
+  if (!all(vnms %in% names(newdata))) {
+    return(NULL)
+  }
+  for (vnm in vnms) {
+    if (!all(as.character(unique(newdata[[vnm]])) %in% flist_1[[vnm]])) {
+      return(NULL)
+    }
+  }
+  lvls_all <- unlist(flist_1, use.names = FALSE)
+  if (anyDuplicated(lvls_all)) {
+    return(NULL)
+  }
+  # Fixed effects, as in predict.merMod():
+  x_contr <- attr(lme4::getME(fit_1, "X"), "contrasts")
+  mfr <- model.frame(trms_fix, newdata, na.action = na.pass,
+                     xlev = .getXlevels(trms_fix, fit_1@frame))
+  x_new <- model.matrix(trms_fix, mfr, contrasts.arg = x_contr)
+  fix_nms <- names(lme4::fixef(fit_1))
+  if (!all(fix_nms %in% colnames(x_new)) || anyNA(x_new) ||
+      nrow(x_new) != nrow(newdata)) {
+    return(NULL)
+  }
+  x_new <- x_new[, fix_nms, drop = FALSE]
+  # Random effects:
+  re_new <- lme4::mkNewReTrms(fit_1, newdata = newdata,
+                              re.form = ("lme4" %:::% "reOnly")(formula(fit_1)),
+                              allow.new.levels = TRUE)
+  zt_new <- re_new$Zt
+  occ_key <- function(nms) paste(nms, stats::ave(seq_along(nms), nms,
+                                                 FUN = seq_along), sep = "\r")
+  idx_b <- match(occ_key(rownames(zt_new)),
+                 occ_key(rownames(lme4::getME(fit_1, "Zt"))))
+  if (anyNA(idx_b)) {
+    return(NULL)
+  }
+  b_1 <- as.vector(lme4::getME(fit_1, "b"))
+  if (!isTRUE(all.equal(unname(b_1[idx_b]), unname(as.vector(re_new$b)),
+                        tolerance = 1e-12))) {
+    return(NULL)
+  }
+  betas <- do.call(cbind, lapply(fits, lme4::fixef))
+  bs <- do.call(cbind, lapply(fits, function(fit) {
+    as.vector(lme4::getME(fit, "b"))[idx_b]
+  }))
+  prd <- x_new %*% betas + t(as(t(bs) %*% zt_new, "matrix"))
+  # As cbind() of the named vectors from predict.merMod():
+  dimnames(prd) <- list(rownames(newdata), NULL)
+  return(prd)
 }
 
 subprd_augdat <- function(fits, newdata) {

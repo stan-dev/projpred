@@ -7,6 +7,8 @@ If you read this from a place other than <https://mc-stan.org/projpred/news/inde
 
 ## Major changes
 
+* Faster predictions of multilevel submodels (`lme4::lmer()`, `lme4::glmer()`) for data without new group levels, for example the training data: one model matrix and one random-effects design serve all projected draws. The predictions are unchanged. (GitHub: #XXX)
+
 ## Minor changes
 
 ## Bug fixes and maintenance
