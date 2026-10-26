@@ -1404,6 +1404,9 @@ init_refmodel <- function(object, data, formula, family, ref_predfun = NULL,
     } else {
       stopifnot(length(offset) %in% c(1L, nrow(newdata)))
     }
+    # Predict factor levels that only the removed rows with weight 0 had as the
+    # reference level (see lost_levels()):
+    newdata <- recode_lost_levels(newdata, attr(fits, "projpred_lost_lvls"))
     pred_sub <- proj_predfun(fits, newdata = newdata)
     if (family$family %in% fams_neg_linpred()) {
       pred_sub <- pred_sub - offset

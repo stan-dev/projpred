@@ -84,13 +84,17 @@ divmin <- function(
   # multilevel and additive submodel fitters. Some of these fitters (for example
   # lme4::lmer()) do not ignore the response of an observation with weight 0,
   # and others (mgcv::gam()) use its predictor values for the smooth bases. The
-  # GLM fitters handle weight 0 exactly:
+  # GLM fitters handle weight 0 exactly. If `weights` and `data` differ in
+  # length (not in projpred's own calls), nothing is removed.
+  lost_lvls <- NULL
   if ((has_grp || has_add) &&
       is.data.frame(dot_args$data) && length(dot_args$weights) > 0 &&
       any(dot_args$weights == 0) &&
       length(dot_args$weights) == nrow(dot_args$data)) {
     keep <- dot_args$weights != 0
-    dot_args$data <- dot_args$data[keep, , drop = FALSE]
+    lost_lvls <- lost_levels(dot_args$data, keep = keep, formula = formula)
+    dot_args$data <- drop_lost_levels(dot_args$data[keep, , drop = FALSE],
+                                      lost_lvls)
     dot_args$weights <- dot_args$weights[keep]
     projpred_var <- projpred_var[keep, , drop = FALSE]
   }
@@ -182,7 +186,118 @@ divmin <- function(
   })
   warn_prj_drawwise(mssgs_warns_capts, throw_warn = throw_warn_sdivmin)
   check_conv(outdmin, lengths(mssgs_warns_capts), do_check = do_check_conv)
+  attr(outdmin, "projpred_lost_lvls") <- lost_lvls
   return(outdmin)
+}
+
+# Levels of factor-like fixed-effect predictors that occur only in the removed
+# rows (`!keep`), with the reference level that the fitter uses after it drops
+# these unused levels. Factor-like: factor, character and logical variables,
+# and numeric variables that the fixed-effects part of `formula` uses only
+# inside factor(), as.factor(), ordered() or as.ordered(). recode_lost_levels()
+# predicts these levels as the reference level. With treatment contrasts, this
+# is the prediction for a level without a coefficient. The GLM fitter keeps the
+# rows with weight 0 and gives the same prediction, because its ridge penalty
+# sets such a coefficient to almost zero. With other contrasts, it is the
+# prediction for the first remaining level. Grouping factors are excluded:
+# repair_re() treats a lost group as a new group. Returns `NULL` if no level is
+# lost.
+lost_levels <- function(data, keep, formula) {
+  fml_fixed <- reformulas::nobars(formula)
+  rhs_fixed <- fml_fixed[[length(fml_fixed)]]
+  grp_nms <- unlist(lapply(reformulas::findbars(formula), function(bar) {
+    all.vars(bar[[3]])
+  }))
+  # Variables inside factor() and similar calls, and variables elsewhere:
+  fac_fns <- c("factor", "as.factor", "ordered", "as.ordered")
+  find_vars <- function(e) {
+    if (is.call(e)) {
+      fn <- sub("^.*::", "", paste(deparse(e[[1]]), collapse = ""))
+      if (fn %in% fac_fns) {
+        return(list(inside = all.vars(e), outside = character()))
+      }
+      res <- lapply(as.list(e)[-1], find_vars)
+      return(list(inside = unlist(lapply(res, "[[", "inside")),
+                  outside = unlist(lapply(res, "[[", "outside"))))
+    }
+    if (is.name(e)) {
+      return(list(inside = character(), outside = as.character(e)))
+    }
+    return(list(inside = character(), outside = character()))
+  }
+  vars_rhs <- find_vars(rhs_fixed)
+  fac_only <- setdiff(vars_rhs$inside, vars_rhs$outside)
+  x_nms <- setdiff(intersect(all.vars(rhs_fixed), names(data)), grp_nms)
+  out <- lapply(setNames(nm = x_nms), function(x_nm) {
+    x <- data[[x_nm]]
+    if (!(is.factor(x) || is.character(x) || is.logical(x) ||
+          (is.numeric(x) && x_nm %in% fac_only))) {
+      return(NULL)
+    }
+    x_keep <- x[keep]
+    vals_keep <- unique(x_keep[!is.na(x_keep)])
+    vals_rm <- unique(x[!keep & !is.na(x)])
+    if (is.factor(x)) {
+      vals_keep <- as.character(vals_keep)
+      vals_rm <- as.character(vals_rm)
+    }
+    lost <- setdiff(vals_rm, vals_keep)
+    if (!length(lost) || !length(vals_keep)) {
+      return(NULL)
+    }
+    if (is.factor(x)) {
+      ref <- levels(droplevels(x_keep))[1]
+    } else {
+      ref <- sort(vals_keep)[1]
+    }
+    list(lost = lost, ref = ref)
+  })
+  out <- out[!vapply(out, is.null, logical(1))]
+  if (!length(out)) {
+    return(NULL)
+  }
+  return(out)
+}
+
+# Sets the levels that lost_levels() recorded (attribute `projpred_lost_lvls` of
+# the fits) to the reference level in `newdata`.
+recode_lost_levels <- function(newdata, lost_lvls) {
+  if (is.null(lost_lvls) || !is.data.frame(newdata)) {
+    return(newdata)
+  }
+  for (x_nm in intersect(names(lost_lvls), names(newdata))) {
+    x <- newdata[[x_nm]]
+    lost <- lost_lvls[[x_nm]]$lost
+    ref <- lost_lvls[[x_nm]]$ref
+    if (is.factor(x)) {
+      # Drop the lost levels, because the predict() method of
+      # mclogit::mblogit() uses all levels of `newdata`:
+      lvls <- union(setdiff(levels(x), lost), ref)
+      x_chr <- as.character(x)
+      x_chr[x_chr %in% lost] <- ref
+      x <- factor(x_chr, levels = lvls, ordered = is.ordered(x))
+    } else if (typeof(x) == typeof(ref) ||
+               (is.numeric(x) && is.numeric(ref))) {
+      x[x %in% lost] <- ref
+    }
+    newdata[[x_nm]] <- x
+  }
+  return(newdata)
+}
+
+# Drops the levels that lost_levels() recorded from the factors in `data` (the
+# data without the removed rows), so that fitters which keep unused levels in
+# the model matrix do not get a column of zeros.
+drop_lost_levels <- function(data, lost_lvls) {
+  for (x_nm in intersect(names(lost_lvls), names(data))) {
+    x <- data[[x_nm]]
+    if (is.factor(x)) {
+      data[[x_nm]] <- factor(x, levels = setdiff(levels(x),
+                                                 lost_lvls[[x_nm]]$lost),
+                             ordered = is.ordered(x))
+    }
+  }
+  return(data)
 }
 
 # Use projpred's own implementation to fit non-multilevel non-additive
@@ -710,6 +825,23 @@ divmin_augdat <- function(
   projpred_ws_aug <- unclass(projpred_ws_aug)
   attr(projpred_ws_aug, "ndiscrete") <- NULL
 
+  # Remove the rows of the observations with weight 0 (in validated LOO CV, the
+  # left-out observation) in all response categories before the submodel
+  # fitters. mclogit::mblogit() uses the predictor values of rows with weight
+  # 0, and MASS::polr() gives no coefficient for a factor level that only these
+  # rows have. The augmented data hold all observations for the first category,
+  # then all for the second, and so on. If the sizes do not match (not in
+  # projpred's own calls), nothing is removed.
+  lost_lvls <- NULL
+  if (is.data.frame(data) && length(weights) > 0 &&
+      any(weights == 0) && nrow(data) %% length(weights) == 0 &&
+      nrow(data) == nrow(projpred_ws_aug)) {
+    keep <- rep(weights != 0, times = nrow(data) / length(weights))
+    lost_lvls <- lost_levels(data, keep = keep, formula = formula)
+    data <- drop_lost_levels(data[keep, , drop = FALSE], lost_lvls)
+    projpred_ws_aug <- projpred_ws_aug[keep, , drop = FALSE]
+  }
+
   if (is.null(getOption("projpred.parallel_proj_trigger")) &&
       !is.null(getOption("projpred.prll_prj_trigger"))) {
     warning(
@@ -815,6 +947,7 @@ divmin_augdat <- function(
   })
   warn_prj_drawwise(mssgs_warns_capts, throw_warn = throw_warn_sdivmin)
   check_conv(outdmin, lengths(mssgs_warns_capts), do_check = do_check_conv)
+  attr(outdmin, "projpred_lost_lvls") <- lost_lvls
   return(outdmin)
 }
 
