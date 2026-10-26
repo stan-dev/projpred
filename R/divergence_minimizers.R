@@ -71,9 +71,8 @@ divmin <- function(
   }
   formulas <- validate_response_formula(formula)
   # Gaussian multilevel submodels: one lFormula() for all draws (see
-  # lmer_shared_callback()):
-  # (The options and the lme4 check are evaluated here, so not in the
-  # draw-wise calls, which may run in parallel workers.)
+  # lmer_shared_callback()). The options and the lme4 check run here, because
+  # the draw-wise calls may run in parallel workers:
   if (identical(sdivmin, fit_glmer_callback) && length(formulas) > 1 &&
       !getOption("projpred.PQL", FALSE) &&
       getOption("projpred.gaussian_not_as_generalized", TRUE) &&
@@ -234,14 +233,15 @@ divmin <- function(
 }
 
 # Draw-wise divergence minimizer for divmin() that builds the shared setup
-# (`make_shared`: lmer_shared_callback() or gam_shared_callback()) at its first
-# call, from the arguments of that call. So the setup uses the same data as the
-# draw-wise fits, also if divmin() changes the data before these fits. A draw
+# (`make_shared`: lmer_shared_callback() or gam_shared_callback())
+# from the arguments of its first call. The setup then uses the data of the
+# draw-wise fits, also if divmin() changes the data before these fits. A call
 # with other data, or a setup that does not apply, uses `sdivmin_plain`. The
-# setup is built once (also if it does not apply), and once per parallel task.
+# setup is built once, or once per task in parallel runs.
 shared_setup_callback <- function(make_shared, formulas, sdivmin_plain) {
-  # Evaluate now: divmin() assigns the result to `sdivmin`, so a promise for
-  # `sdivmin_plain` would give this function itself (infinite recursion):
+  # Force the arguments: divmin() assigns the result to `sdivmin`, so a
+  # promise for `sdivmin_plain` would return this function (infinite
+  # recursion):
   force(sdivmin_plain)
   force(make_shared)
   force(formulas)
@@ -255,7 +255,7 @@ shared_setup_callback <- function(make_shared, formulas, sdivmin_plain) {
       sdivmin_shared <<- make_shared(formulas, dot_args = dot_args)
       data_shared <<- dot_args[["data"]]
     }
-    # identical() is fast if the data are the same object (the normal case):
+    # identical() returns fast if both are the same object (the usual case):
     if (is.null(sdivmin_shared) ||
         !identical(list(...)[["data"]], data_shared)) {
       return(sdivmin_plain(formula = formula, ...))
