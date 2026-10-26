@@ -198,17 +198,22 @@ test_that(paste(
     dat_aug$y <- factor(rep(lv, each = n), levels = lv,
                         ordered = fam_nm == "cumulative")
     fam <- structure(list(family = fam_nm, link = "logit"), class = "family")
-    fits <- suppressWarnings(divmin_augdat(
-      formula = y ~ x + xc + (1 | g), data = dat_aug, family = fam,
-      weights = wobs, projpred_var = matrix(NA, n * ncat, 2),
-      projpred_ws_aug = ws_aug, verbose_divmin = FALSE
-    ))
-    expect_identical(attr(fits, "projpred_lost_lvls"),
-                     list(xc = list(lost = "r", ref = "a")), info = fam_nm)
-    prd <- subprd_augdat(fits, recode_lost_levels(
-      dat, attr(fits, "projpred_lost_lvls")
-    ))
-    expect_identical(prd, subprd_augdat(fits, dat_ref), info = fam_nm)
+    # With and without group-level terms (clmm() or polr(), mblogit() or
+    # multinom()):
+    for (fml in list(y ~ x + xc + (1 | g), y ~ x + xc)) {
+      info_txt <- paste(fam_nm, deparse(fml))
+      fits <- suppressWarnings(divmin_augdat(
+        formula = fml, data = dat_aug, family = fam,
+        weights = wobs, projpred_var = matrix(NA, n * ncat, 2),
+        projpred_ws_aug = ws_aug, verbose_divmin = FALSE
+      ))
+      expect_identical(attr(fits, "projpred_lost_lvls"),
+                       list(xc = list(lost = "r", ref = "a")), info = info_txt)
+      prd <- subprd_augdat(fits, recode_lost_levels(
+        dat, attr(fits, "projpred_lost_lvls")
+      ))
+      expect_identical(prd, subprd_augdat(fits, dat_ref), info = info_txt)
+    }
   }
   # Other factor-like predictors: a lost first level, a character variable and
   # a numeric variable inside factor():
