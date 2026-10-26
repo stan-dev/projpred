@@ -9,7 +9,7 @@ If you read this from a place other than <https://mc-stan.org/projpred/news/inde
 
 * Faster projections onto submodels without group-level or additive terms: the projected draws (or clusters) share one model matrix, and for the Gaussian family with the identity link, one linear solve gives the submodel fits for all draws. For example, `varsel()` with forward search for a Gaussian model with 50 observations and 200 predictor terms is about 7 times faster. (GitHub: #574)
 
-* Faster projections onto binomial and Poisson GLM submodels (and Gaussian GLM submodels with a non-identity link): the IRLS fits compute their pseudo-observations in C++, and one C++ call fits all projected draws (or clusters). For example, `cv_varsel()` with `validate_search = TRUE` for binomial and Poisson models is about 4 to 6 times faster. (GitHub: #XXX)
+* Faster projections onto binomial and Poisson GLM submodels (and Gaussian GLM submodels with a non-identity link): the IRLS fits compute their pseudo-observations in C++, and one C++ call fits all projected draws (or clusters). For example, `cv_varsel()` with `validate_search = TRUE` for binomial and Poisson models is about 4 to 6 times faster. (GitHub: #581)
 
 ## Minor changes
 
