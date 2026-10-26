@@ -690,6 +690,73 @@ capt_mssgs_warns <- function(expr) {
   return(mssgs_warns_capt)
 }
 
+# Cache of the parts of a projection that depend only on the reference model and
+# on the predictor terms of the submodel (see proj_to_submodl()). varsel(),
+# cv_varsel() and project() activate it for the duration of their call; nested
+# calls share it (counted by `depth`), and the outermost call empties it at its
+# exit. Each reference model gets its own store, identified by the environment
+# of its `fetch_data()` function. Global option `projpred.proj_cache` (default
+# `TRUE`) switches the cache off.
+proj_cache <- new.env(parent = emptyenv())
+proj_cache$depth <- 0L
+proj_cache$anchors <- list()
+proj_cache$stores <- list()
+
+proj_cache_enter <- function() {
+  proj_cache$depth <- proj_cache$depth + 1L
+  return(invisible())
+}
+
+proj_cache_exit <- function() {
+  proj_cache$depth <- max(proj_cache$depth - 1L, 0L)
+  if (proj_cache$depth == 0L) {
+    proj_cache$anchors <- list()
+    proj_cache$stores <- list()
+  }
+  return(invisible())
+}
+
+# The store (an environment) of reference model `refmodel`, or `NULL` if the
+# cache is not active:
+proj_cache_store <- function(refmodel) {
+  if (proj_cache$depth == 0L || !getOption("projpred.proj_cache", TRUE)) {
+    return(NULL)
+  }
+  anchor <- environment(refmodel$fetch_data)
+  if (!is.environment(anchor)) {
+    return(NULL)
+  }
+  for (i in seq_along(proj_cache$anchors)) {
+    if (identical(proj_cache$anchors[[i]], anchor)) {
+      return(proj_cache$stores[[i]])
+    }
+  }
+  store <- new.env(parent = emptyenv())
+  proj_cache$anchors <- c(proj_cache$anchors, list(anchor))
+  proj_cache$stores <- c(proj_cache$stores, list(store))
+  return(store)
+}
+
+# Like capt_mssgs_warns(), but collects the messages and warnings by condition
+# handlers. Faster, but does not capture text that is written directly to the
+# message stream, so use it only for fitters that throw R conditions.
+capt_conds <- function(expr) {
+  capt <- character()
+  withCallingHandlers(
+    expr,
+    warning = function(w) {
+      capt <<- c(capt, conditionMessage(w))
+      invokeRestart("muffleWarning")
+    },
+    message = function(m) {
+      capt <<- c(capt, sub("\n$", "", conditionMessage(m)))
+      invokeRestart("muffleMessage")
+    }
+  )
+  capt <- as.character(unlist(strsplit(capt, "\n", fixed = TRUE)))
+  return(setdiff(capt, ""))
+}
+
 # Parse the argument containing the observation weights (`wobs` or `weights`)
 # for the <family_object>$ppd() functions used by proj_predict():
 parse_wobs_ppd <- function(wobs, n_obs) {
