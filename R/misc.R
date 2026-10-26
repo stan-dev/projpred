@@ -734,12 +734,12 @@ capt_mssgs_warns <- function(expr) {
 }
 
 # Cache of the parts of a projection that depend only on the reference model and
-# on the predictor terms of the submodel (see proj_to_submodl()). It is active
-# only during a call of varsel(), cv_varsel() or project() (counted by `depth`,
-# so nested calls share it) and emptied when the outermost call exits. Each
-# reference model gets its own store, identified by the environment of its
-# `fetch_data()` function. Global option `projpred.proj_cache` (default `TRUE`)
-# switches the cache off.
+# on the predictor terms of the submodel (see proj_to_submodl()). varsel(),
+# cv_varsel() and project() activate it for the duration of their call; nested
+# calls share it (counted by `depth`), and the outermost call empties it at its
+# exit. Each reference model gets its own store, identified by the environment
+# of its `fetch_data()` function. Global option `projpred.proj_cache` (default
+# `TRUE`) switches the cache off.
 proj_cache <- new.env(parent = emptyenv())
 proj_cache$depth <- 0L
 proj_cache$anchors <- list()

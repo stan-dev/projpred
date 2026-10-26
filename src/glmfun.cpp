@@ -332,9 +332,11 @@ static inline double r_pmin(double x, double bound) {
   return (std::isnan(x) || x <= bound) ? x : bound;
 }
 
-// Pseudo-observations computed in C++, with the same operations as the
-// family objects of the stats package and the deviance functions of
-// extend_family():
+// Pseudo-observations computed in C++. linkinv() and mu.eta() transcribe the
+// link functions of R's stats package (make.link(), and for the logit link
+// logit_linkinv() and logit_mu_eta() in src/library/stats/src/family.c of R,
+// GPL-2 | GPL-3). The variances and deviances are those of the stats families
+// and of extend_family():
 struct PseudoObsNative : public PseudoObs {
   vec y, weights, offset;
   int fam, link;
@@ -355,7 +357,7 @@ struct PseudoObsNative : public PseudoObs {
       dmu = mu;
       break;
     case LINK_LOGIT: {
-      // As C_logit_linkinv() and C_logit_mu_eta() in the stats package:
+      // As logit_linkinv() and logit_mu_eta() in R's stats/src/family.c:
       const double thr = 30.0;
       double tmp = (eta < -thr) ? eps : ((eta > thr) ? 1.0 / eps : std::exp(eta));
       mu = tmp / (1.0 + tmp);

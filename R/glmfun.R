@@ -365,7 +365,8 @@ native_pseudo_codes <- function(family) {
 }
 native_pseudo_cache <- new.env(parent = emptyenv())
 
-# Prints the warning messages of glm_ridge_c() as its former `Rcout` output:
+# Prints the warning messages of glm_ridge_c() to the standard output, one line
+# per message:
 print_ridge_msgs <- function(msgs, print_msgs) {
   if (print_msgs && length(msgs) > 0) {
     cat(paste0(msgs, "\n"), sep = "")

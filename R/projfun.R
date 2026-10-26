@@ -19,8 +19,8 @@ proj_to_submodl <- function(predictor_terms, p_ref, refmodel,
   }
   # Fast path for the multi-draw fitters of divmin() (see divmin_multi()): the
   # submodel formula, the draw-wise formulas and the shared model matrix depend
-  # only on the reference model and the predictor terms, so they are cached
-  # (see proj_cache_store()). The submodel fits are the same as from divmin().
+  # only on the reference model and the predictor terms, so proj_cache_store()
+  # caches them. The submodel fits are the same as from divmin().
   use_fast <- is.null(y_unqs_aug) &&
     identical(refmodel$div_minimizer, divmin) &&
     proj_fast_ok(dot_args_divmin) &&
@@ -103,10 +103,10 @@ proj_to_submodl <- function(predictor_terms, p_ref, refmodel,
   ))
 }
 
-# Whether proj_to_submodl() may call divmin_multi() directly instead of divmin()
-# (with the arguments `dot_args` for the divergence minimizer): divmin() has to
-# use fit_glm_ridge_callback() and to take its warning and convergence settings
-# from the current global options, and `dot_args` must not contain arguments of
+# Whether proj_to_submodl() may call divmin_multi() instead of divmin(), with
+# the arguments `dot_args` for the divergence minimizer. This requires that
+# divmin() uses fit_glm_ridge_callback() and the current global options for
+# warnings and convergence checks, and that `dot_args` holds no argument of
 # divmin() itself.
 proj_fast_ok <- function(dot_args) {
   if (!identical(getOption("projpred.glm_fitter", "fit_glm_ridge_callback"),

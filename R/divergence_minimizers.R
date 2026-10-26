@@ -892,12 +892,11 @@ glm_ridge_gauss_multi <- function(formulas, shared_x, dot_args, y = NULL) {
 # Fits all draw-wise submodels of fit_glm_ridge_callback() in one C++ call, for
 # the families and links with native pseudo-observations (see
 # native_pseudo_codes()). The draws share the model matrix, the observation
-# weights, the standardization and the penalty, so glm_ridge() needs to be set
-# up only once. Each draw is fitted by the same IRLS iterations as in
-# glm_ridge(), so the results are the same. The messages of each draw are
-# returned in attribute `mssgs_warns_capts`, in the form in which divmin()
-# collects them from fit_glm_ridge_callback(). Returns `NULL` if the case is
-# not covered; then divmin() uses the draw-wise path.
+# weights, the standardization and the penalty, so this sets up glm_ridge()
+# once. Each draw gets the IRLS iterations of glm_ridge() and the same result.
+# Attribute `mssgs_warns_capts` holds the messages of each draw, as divmin()
+# collects them from fit_glm_ridge_callback(). Returns `NULL` for other cases;
+# divmin() then fits the draws one by one.
 glm_ridge_native_multi <- function(formulas, shared_x, dot_args, y = NULL) {
   family <- dot_args$family
   if (is.null(family)) {
