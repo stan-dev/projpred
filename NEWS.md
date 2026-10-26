@@ -9,6 +9,8 @@ If you read this from a place other than <https://mc-stan.org/projpred/news/inde
 
 * Faster predictions of multilevel submodels fitted by `lme4::lmer()` or `lme4::glmer()` when the new data contain no new group levels (for example, the training data): the predictions of all projected draws are computed from one fixed-effects model matrix and one random-effects design, and the step that draws random effects for new group levels is skipped (it adds zero and draws no random numbers in this case). The predictions are unchanged. (GitHub: #XXX)
 
+* Faster projections onto Gaussian multilevel submodels (`lme4::lmer()`): the model frame, the fixed-effects model matrix and the random-effects structure (`lme4::lFormula()`) are built once per projection instead of once per projected draw. The submodel fits are unchanged; a check at the first use in an R session falls back to one `lme4::lmer()` call per draw if the installed lme4 version would give other fits. (GitHub: #XXX)
+
 ## Minor changes
 
 ## Bug fixes and maintenance
