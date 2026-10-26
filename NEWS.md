@@ -7,9 +7,9 @@ If you read this from a place other than <https://mc-stan.org/projpred/news/inde
 
 ## Major changes
 
-* Faster projections onto ordinal submodels without group-level terms (`brms::cumulative()`, `rstanarm::stan_polr()`): one C++ call fits all projected draws, with results equal to those of `MASS::polr()` up to its convergence tolerance. For example, `cv_varsel()` with `validate_search = TRUE` is about 23 times faster for a model with 6 categories. (GitHub: #XXX)
+* Faster projections onto ordinal submodels without group-level terms (`brms::cumulative()`, `rstanarm::stan_polr()`): one C++ call fits all projected draws, with results equal to those of `MASS::polr()` up to its convergence tolerance. For example, `cv_varsel()` with `validate_search = TRUE` is about 23 times faster for a model with 6 categories. (GitHub: #583)
 
-* Faster projections onto categorical submodels without group-level terms (`brms::categorical()`): one C++ call fits all projected draws, with results equal to those of `nnet::multinom()` up to its convergence tolerance. For example, `cv_varsel()` with `validate_search = TRUE` is about 8 times faster for a model with 4 categories. (GitHub: #XXX)
+* Faster projections onto categorical submodels without group-level terms (`brms::categorical()`): one C++ call fits all projected draws, with results equal to those of `nnet::multinom()` up to its convergence tolerance. For example, `cv_varsel()` with `validate_search = TRUE` is about 8 times faster for a model with 4 categories. (GitHub: #583)
 
 ## Minor changes
 
