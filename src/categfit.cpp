@@ -12,8 +12,9 @@ using namespace arma;
 // weights w_ic, c = 0, ..., C - 1, and linear predictors eta_i0 = 0 and
 // eta_ik = x_i' b_k (k = 1, ..., C - 1),
 //   L(b) = -sum_i sum_c w_ic log(pi_ic),  pi_ic = exp(eta_ic) / sum_c exp(eta_ic).
-// The objective is convex. The fit uses Newton steps with the analytic gradient
-// and Hessian and a backtracking line search.
+// The objective is convex. nnet::multinom() minimizes it with the BFGS method
+// of nnet::nnet(); this code uses Newton steps with the analytic gradient and
+// Hessian and a backtracking line search.
 
 // Objective (and optionally gradient and Hessian) at the coefficients `b`
 // (p x K, K = C - 1; stored column-wise in the parameter vector).

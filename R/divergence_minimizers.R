@@ -1667,16 +1667,15 @@ fit_cumul <- function(formula, data, family, weights, ...) {
 }
 
 # Fits the cumulative-link submodels of all draws in one C++ call
-# (cumul_fit_multi_c()), with the objective of MASS::polr(), which fit_cumul()
-# would call once per draw. The augmented data consist of C copies of the
-# original n observations (one per response category), so the model matrix is
-# built once and the augmented weights of each draw become an n x C matrix.
-# Newton iterations with the analytic gradient and Hessian replace the BFGS
-# iterations of polr(), so the estimates agree with those of polr() up to the
-# convergence tolerance of polr(). The returned objects have class `polr` with
-# the elements that predict.polr() (with `newdata`), coef() and check_conv_s()
-# use; `fitted.values` and `lp` are omitted. Returns `NULL` if the case is not
-# covered (then divmin_augdat() calls fit_cumul() per draw). Global option
+# (cumul_fit_multi_c()) with the objective of MASS::polr(), instead of one
+# fit_cumul() call per draw. The augmented data hold C copies of the n
+# observations (one per response category), so this builds the model matrix
+# once, and the augmented weights of each draw form an n x C matrix. Newton
+# iterations replace the BFGS iterations of polr(), so the estimates agree with
+# those of polr() up to its convergence tolerance. The returned `polr` objects
+# hold the elements that predict.polr() (with `newdata`), coef() and
+# check_conv_s() use, without `fitted.values` and `lp`. Returns `NULL` for other
+# cases; divmin_augdat() then calls fit_cumul() per draw. Global option
 # `projpred.augdat_native = FALSE` switches this off.
 cumul_native_multi <- function(formula, data, family, ws_aug, dot_args) {
   if (!getOption("projpred.augdat_native", TRUE)) {
@@ -1863,18 +1862,16 @@ fit_categ <- function(formula, data, family, weights, ...) {
 }
 
 # Fits the multinomial-logit submodels of all draws in one C++ call
-# (categ_fit_multi_c()), with the objective of nnet::multinom(), which
-# fit_categ() would call once per draw. The augmented data consist of C copies
-# of the original n observations (one per response category), so the model
-# matrix is built once and the augmented weights of each draw become an n x C
-# matrix. Newton iterations with the analytic gradient and Hessian replace the
-# BFGS iterations of nnet::multinom() (which stop after `maxit = 100`
-# iterations by default), so the estimates agree with those of
-# nnet::multinom() up to its convergence tolerance. The returned objects are
-# copies of one `multinom` object (from nnet::multinom() with `maxit = 0`)
-# with the weights, the objective and the fitted values of each draw. Returns
-# `NULL` if the case is not covered (then divmin_augdat() calls fit_categ() per
-# draw). Global option `projpred.augdat_native = FALSE` switches this off.
+# (categ_fit_multi_c()) with the objective of nnet::multinom(), instead of one
+# fit_categ() call per draw. Like cumul_native_multi(), it builds the model
+# matrix once and uses the augmented weights as an n x C matrix. Newton
+# iterations replace the BFGS iterations of nnet::multinom() (by default at
+# most 100), so the estimates agree with those of nnet::multinom() up to its
+# convergence tolerance. The returned objects are copies of one `multinom`
+# object (from nnet::multinom() with `maxit = 0`) with the weights, the
+# objective and the fitted values of each draw. Returns `NULL` for other cases;
+# divmin_augdat() then calls fit_categ() per draw. Global option
+# `projpred.augdat_native = FALSE` switches this off.
 categ_native_multi <- function(formula, data, family, ws_aug, dot_args) {
   if (!getOption("projpred.augdat_native", TRUE) || family$link != "logit") {
     return(NULL)
@@ -2402,9 +2399,9 @@ subprd_augdat <- function(fits, newdata) {
 # built once, as in predict.polr() and predict.multinom(). For `polr`, the
 # linear predictors of the cumulative probabilities are zeta_j - eta, which
 # subprd_augdat() computes from the predicted category probabilities; for
-# `multinom`, they are the log odds against the first category. Both are
-# computed directly here, so they differ from those of subprd_augdat() only by
-# rounding. Returns `NULL` if the case is not covered.
+# `multinom`, they are the log odds against the first category. This function
+# computes both directly, so they differ from those of subprd_augdat() only by
+# rounding. Returns `NULL` for other cases.
 subprd_augdat_direct <- function(fits, newdata) {
   fit_1 <- fits[[1]]
   if (inherits(fit_1, "polr")) {

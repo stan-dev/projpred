@@ -12,9 +12,12 @@ using namespace arma;
 // category weights w_ic,
 //   L(beta, zeta) = -sum_i sum_c w_ic log(F(z1_ic) - F(z2_ic)),
 //   z1_ic = min(100, zeta_c - eta_i), z2_ic = max(-100, zeta_{c-1} - eta_i),
-// with zeta_0 = -Inf and zeta_C = Inf. The fit uses Newton steps with the
-// analytic gradient and Hessian, and a backtracking line search that keeps the
-// thresholds increasing.
+// with zeta_0 = -Inf and zeta_C = Inf. The objective, with its bounds of +-100,
+// and the latent distributions transcribe the negative log-likelihood and the
+// `pfun` / `dfun` of MASS::polr() (R package MASS, GPL-2 | GPL-3). The fit is
+// new: polr() minimizes with optim() (BFGS), and this code uses Newton steps
+// with the analytic gradient and Hessian, and a backtracking line search that
+// keeps the thresholds increasing.
 
 // Link codes (as polr()'s `method`):
 enum { CL_LOGISTIC = 1, CL_PROBIT = 2, CL_LOGLOG = 3, CL_CLOGLOG = 4,
