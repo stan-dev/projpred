@@ -81,6 +81,12 @@ divmin <- function(
       getOption("projpred.lmer_shared", TRUE) && lmer_shared_ok()) {
     sdivmin <- shared_setup_callback(lmer_shared_callback, formulas, sdivmin)
   }
+  # Additive submodels without group-level terms: one mgcv setup for all draws
+  # (see gam_shared_callback()):
+  if (identical(sdivmin, fit_gam_callback) && length(formulas) > 1 &&
+      getOption("projpred.gam_shared", TRUE)) {
+    sdivmin <- shared_setup_callback(gam_shared_callback, formulas, sdivmin)
+  }
   if (is.list(projpred_formulas_no_random)) {
     stopifnot(length(projpred_formulas_no_random) == length(formulas))
   } else {
@@ -181,7 +187,7 @@ divmin <- function(
 }
 
 # Draw-wise divergence minimizer for divmin() that builds the shared setup
-# (`make_shared`: lmer_shared_callback())
+# (`make_shared`: lmer_shared_callback() or gam_shared_callback())
 # from the arguments of its first call. The setup then uses the data of the
 # draw-wise fits, also if divmin() changes the data before these fits. A call
 # with other data, or a setup that does not apply, uses `sdivmin_plain`. The
@@ -210,6 +216,107 @@ shared_setup_callback <- function(make_shared, formulas, sdivmin_plain) {
     }
     return(sdivmin_shared(formula = formula, ...))
   })
+}
+
+# Additive submodels (mgcv::gam()) of all draws of one projection
+# ---------------------------------------------------------------
+#
+# The draw-wise formulas differ only in the response, so all draws can share the
+# setup of mgcv::gam() (model frame, smooth bases and penalties;
+# mgcv::gam(fit = FALSE)). gam_shared_callback() fits each draw with
+# mgcv::gam(G = ), the public interface for a prepared setup, with the response
+# of the draw. It sets the elements of the fit that contain the response name
+# (`formula`, `terms`, `pterms`, `model`, `pred.formula`) and `call` as in a fit
+# by fit_gam_callback(), so the fits are equal (all.equal()) to those of
+# fit_gam_callback().
+
+# Draw-wise divergence minimizer for divmin() that uses one mgcv::gam() setup
+# for all draws, or `NULL` if this does not apply.
+gam_shared_callback <- function(formulas, dot_args) {
+  if (!getOption("projpred.gam_shared", TRUE)) {
+    return(NULL)
+  }
+  data <- dot_args$data
+  resp_nms <- vapply(formulas, function(fml) {
+    if (is.name(fml[[2]])) as.character(fml[[2]]) else NA_character_
+  }, character(1))
+  if (!is.data.frame(data) || anyNA(resp_nms) ||
+      !all(resp_nms %in% names(data)) || anyNA(data[resp_nms])) {
+    return(NULL)
+  }
+  # As in fit_gam_callback():
+  gam_dot_args <- dot_args[intersect(
+    names(dot_args),
+    c(methods::formalArgs(mgcv::gam), methods::formalArgs(mgcv::gam.fit))
+  )]
+  if (any(c("G", "fit") %in% names(gam_dot_args))) {
+    return(NULL)
+  }
+  g_setup <- tryCatch(
+    do.call(mgcv::gam, c(list(formula = formulas[[1]]), gam_dot_args,
+                         list(fit = FALSE))),
+    error = function(e) NULL
+  )
+  if (is.null(g_setup) || length(g_setup$y) != nrow(data)) {
+    return(NULL)
+  }
+  resp_old <- resp_nms[1]
+  return(function(formula, ...) {
+    resp_new <- as.character(formula[[2]])
+    tryCatch({
+      g_s <- g_setup
+      g_s$y <- data[[resp_new]]
+      g_s$mf[[resp_old]] <- data[[resp_new]]
+      fit <- mgcv::gam(G = g_s)
+      if (resp_new != resp_old) {
+        for (el in c("formula", "terms", "pterms", "model", "pred.formula")) {
+          if (!is.null(fit[[el]])) {
+            fit[[el]] <- rename_sym(fit[[el]], resp_old, resp_new)
+          }
+        }
+      }
+      fit$call <- match.call(mgcv::gam, as.call(c(
+        list(mgcv::gam), list(formula = formula), gam_dot_args
+      )))
+      fit
+    }, error = function(e) fit_gam_callback(formula = formula, ...))
+  })
+}
+
+# Linear predictors of `gam` fits (without group-level terms) of the same
+# submodel for `newdata`, from one linear-predictor matrix (predict.gam() with
+# `type = "lpmatrix"`) for all draws, instead of one predict.gam() call per
+# draw. Returns `NULL` for other cases.
+subprd_gam_direct <- function(fits, newdata) {
+  if (is.null(newdata) || length(fits) < 2 ||
+      !all(vapply(fits, function(fit) {
+        inherits(fit, "gam") && !inherits(fit, "gamm4")
+      }, logical(1)))) {
+    return(NULL)
+  }
+  fit_1 <- fits[[1]]
+  terms_noenv <- function(trms) {
+    trms <- delete.response(trms)
+    attr(trms, ".Environment") <- NULL
+    trms
+  }
+  trms_1 <- terms_noenv(fit_1$pterms)
+  smooth_1 <- fit_1$smooth
+  if (!all(vapply(fits, function(fit) {
+    identical(terms_noenv(fit$pterms), trms_1) &&
+      identical(fit$smooth, smooth_1) &&
+      identical(names(stats::coef(fit)), names(stats::coef(fit_1)))
+  }, logical(1)))) {
+    return(NULL)
+  }
+  if (length(attr(fit_1$terms, "offset")) ||
+      length(attr(fit_1$pterms, "offset"))) {
+    return(NULL)
+  }
+  x_lp <- stats::predict(fit_1, newdata = newdata, type = "lpmatrix")
+  prd <- x_lp %*% do.call(cbind, lapply(fits, stats::coef))
+  dimnames(prd) <- list(rownames(x_lp), NULL)
+  return(prd)
 }
 
 # Gaussian multilevel submodels (lme4::lmer()) of all draws of one projection
@@ -1392,6 +1499,15 @@ subprd <- function(fits, newdata) {
   prd_direct <- subprd_mer_direct(fits, newdata)
   if (!is.null(prd_direct)) {
     return(prd_direct)
+  }
+  # mgcv fits of one submodel: all draws at once (see subprd_gam_direct()):
+  if (!is.null(newdata) && length(fits) > 1 && inherits(fits[[1]], "gam")) {
+    prd_direct <- subprd_gam_direct(
+      fits, cbind(`(Intercept)` = rep(1, NROW(newdata)), newdata)
+    )
+    if (!is.null(prd_direct)) {
+      return(prd_direct)
+    }
   }
   prd_list <- lapply(fits, function(fit) {
     is_glmmPQL <- inherits(fit, "glmmPQL")
