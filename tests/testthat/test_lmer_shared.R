@@ -4,9 +4,6 @@ context("lmer_shared")
 # lme4::lmer() after a shared lme4::lFormula(), so a change in lme4 has to make
 # them fail (also in the reverse-dependency checks of lme4).
 
-# Needed to clean up the workspace afterwards (i.e, after this test file):
-ls_bu <- ls()
-
 test_that("lmer_shared_fit() gives the fits of lme4::lmer()", {
   expect_true(lmer_shared_check())
   lmer_shared_state$ok <- NULL
@@ -86,6 +83,3 @@ test_that("lmer_shared_callback() returns `NULL` for other cases", {
   expect_null(lmer_shared_callback(fmls, c(list(data = dat_na),
                                            dot_args[-1])))
 })
-
-# Clean up the workspace:
-rm(list = setdiff(ls(), ls_bu))

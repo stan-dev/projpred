@@ -1,8 +1,5 @@
 context("gam_shared")
 
-# Needed to clean up the workspace afterwards (i.e, after this test file):
-ls_bu <- ls()
-
 n_gs <- 120L
 idx_gs <- seq_len(n_gs)
 dat_gs <- data.frame(x1 = sin(idx_gs), x2 = cos(1.3 * idx_gs),
@@ -119,6 +116,3 @@ test_that(paste(
                  info = s)
   }
 })
-
-# Clean up the workspace:
-rm(list = setdiff(ls(), ls_bu))

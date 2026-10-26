@@ -268,13 +268,14 @@ shared_setup_callback <- function(make_shared, formulas, sdivmin_plain) {
 # Additive submodels (mgcv::gam()) of all draws of one projection
 # ---------------------------------------------------------------
 #
-# The draw-wise formulas differ only in the response, so the setup of
-# mgcv::gam() (model frame, smooth bases and penalties; mgcv::gam(fit = FALSE))
-# can be shared. Each draw is then fitted by mgcv::gam(G = ), the public
-# interface for a prepared setup, with the draw's response. The elements of the
-# fit that contain the response name (`formula`, `terms`, `pterms`, `model`,
-# `pred.formula`) and `call` are set as in a fit by fit_gam_callback(), so the
-# fits are equal (all.equal()) to those of fit_gam_callback().
+# The draw-wise formulas differ only in the response, so all draws can share the
+# setup of mgcv::gam() (model frame, smooth bases and penalties;
+# mgcv::gam(fit = FALSE)). gam_shared_callback() fits each draw with
+# mgcv::gam(G = ), the public interface for a prepared setup, with the response
+# of the draw. It sets the elements of the fit that contain the response name
+# (`formula`, `terms`, `pterms`, `model`, `pred.formula`) and `call` as in a fit
+# by fit_gam_callback(), so the fits are equal (all.equal()) to those of
+# fit_gam_callback().
 
 # Draw-wise divergence minimizer for divmin() that uses one mgcv::gam() setup
 # for all draws, or `NULL` if this does not apply.
@@ -332,7 +333,7 @@ gam_shared_callback <- function(formulas, dot_args) {
 # Linear predictors of `gam` fits (without group-level terms) of the same
 # submodel for `newdata`, from one linear-predictor matrix (predict.gam() with
 # `type = "lpmatrix"`) for all draws, instead of one predict.gam() call per
-# draw. Returns `NULL` if the case is not covered.
+# draw. Returns `NULL` for other cases.
 subprd_gam_direct <- function(fits, newdata) {
   if (is.null(newdata) || length(fits) < 2 ||
       !all(vapply(fits, function(fit) {
@@ -371,13 +372,15 @@ subprd_gam_direct <- function(fits, newdata) {
 # lme4::lmer() is lme4::lFormula() (model frame, fixed-effects model matrix,
 # random-effects structure), followed by mkLmerDevfun(), optimizeLmer(),
 # checkConv() and mkMerMod(). The draw-wise formulas of one submodel differ only
-# in the response, so the lFormula() result can be shared. lmer_shared_fit()
-# repeats the other steps of lmer() (lme4 2.0-6 to 2.1-1) for one draw. lme4's
-# C++ objects change some vectors of the lFormula() result in place, so each
-# draw gets fresh copies of them. The fits are equal (all.equal()) to those of
-# lmer(). lmer_shared_ok() checks this once per R session on a small fixed
-# problem (and the test suite checks it on CRAN); if the check fails (for
-# example after a change in lme4), the draw-wise lmer() fits are used.
+# in the response, so all draws can share one lFormula() result.
+# lmer_shared_fit() repeats the other steps of lmer() for one draw: it
+# transcribes the body of lmer() in lme4 2.0-6 to 2.1-1 (R package lme4,
+# GPL-2 | GPL-3). lme4's C++ objects change some vectors of the lFormula()
+# result in place, so each draw gets fresh copies of them. The fits are equal
+# (all.equal()) to those of lmer(). lmer_shared_ok() checks this once per R
+# session on a small fixed problem, and the test suite checks it on CRAN. If
+# the check fails (for example after a change in lme4), divmin() fits each draw
+# with lmer().
 
 # Replaces the name `old` by `new` in all language objects of `x`, including
 # its attributes and names (used for the response of a shared model frame).
@@ -2242,16 +2245,17 @@ subprd <- function(fits, newdata) {
 }
 
 # Linear predictors of lme4 fits (`lmerMod` or `glmerMod`) of the same submodel
-# for `newdata` whose group levels all occur in the fits. Then repair_re()
-# adds zero and draws no random numbers, and predict.merMod() with
-# `re.form = NULL` computes X beta_s + Z b_s. Here, the fixed-effects model
-# matrix X and the random-effects design Z for `newdata` are built once, and
-# each draw's conditional modes b_s (in the order of the rows of the fitted
-# Zt) are mapped onto the rows of Z by the names of the group levels (which
-# are unique across the grouping variables, see repair_re.merMod(); within a
-# grouping variable, they repeat in the same order of the terms and
-# coefficients in both). The results differ from those of subprd() only by
-# rounding. Returns `NULL` if the case is not covered.
+# for `newdata` whose group levels all occur in the fits. In this case,
+# repair_re() adds zero and draws no random numbers, and predict.merMod() with
+# `re.form = NULL` computes X beta_s + Z b_s. This function builds the
+# fixed-effects model matrix X and the random-effects design Z for `newdata`
+# once, with the steps of predict.merMod() (R package lme4, GPL-2 | GPL-3). It
+# maps the conditional modes b_s of each draw (in the row order of the fitted
+# Zt) onto the rows of Z by the names of the group levels. These names are
+# unique across the grouping variables (see repair_re.merMod()), and within a
+# grouping variable they have the same order of terms and coefficients in both.
+# The results differ from those of subprd() only by rounding. Returns `NULL`
+# for other cases.
 subprd_mer_direct <- function(fits, newdata) {
   if (is.null(newdata) || length(fits) == 0 ||
       getOption("projpred.mlvl_pred_new", FALSE) ||
