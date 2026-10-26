@@ -11,6 +11,8 @@ If you read this from a place other than <https://mc-stan.org/projpred/news/inde
 
 * Faster projections onto Gaussian multilevel submodels (`lme4::lmer()`): the model frame, the fixed-effects model matrix and the random-effects structure (`lme4::lFormula()`) are built once per projection instead of once per projected draw. The submodel fits are unchanged; a check at the first use in an R session falls back to one `lme4::lmer()` call per draw if the installed lme4 version would give other fits. (GitHub: #XXX)
 
+* Faster projections onto additive submodels without group-level terms (`mgcv::gam()`): the setup of `mgcv::gam()` (model frame, smooth bases and penalties) is built once per projection instead of once per projected draw, and the predictions of all draws are computed from one linear-predictor matrix. The submodel fits and predictions are unchanged. (GitHub: #XXX)
+
 ## Minor changes
 
 ## Bug fixes and maintenance
