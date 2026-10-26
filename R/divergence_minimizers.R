@@ -70,6 +70,17 @@ divmin <- function(
     projpred_random <- formula_random$random
   }
   formulas <- validate_response_formula(formula)
+  # Gaussian multilevel submodels: one lFormula() for all draws (see
+  # lmer_shared_callback()). The options and the lme4 check run here, because
+  # the draw-wise calls may run in parallel workers:
+  if (identical(sdivmin, fit_glmer_callback) && length(formulas) > 1 &&
+      !getOption("projpred.PQL", FALSE) &&
+      getOption("projpred.gaussian_not_as_generalized", TRUE) &&
+      identical(list(...)$family$family, "gaussian") &&
+      identical(list(...)$family$link, "identity") &&
+      getOption("projpred.lmer_shared", TRUE) && lmer_shared_ok()) {
+    sdivmin <- shared_setup_callback(lmer_shared_callback, formulas, sdivmin)
+  }
   if (is.list(projpred_formulas_no_random)) {
     stopifnot(length(projpred_formulas_no_random) == length(formulas))
   } else {
@@ -167,6 +178,223 @@ divmin <- function(
   warn_prj_drawwise(mssgs_warns_capts, throw_warn = throw_warn_sdivmin)
   check_conv(outdmin, lengths(mssgs_warns_capts), do_check = do_check_conv)
   return(outdmin)
+}
+
+# Draw-wise divergence minimizer for divmin() that builds the shared setup
+# (`make_shared`: lmer_shared_callback())
+# from the arguments of its first call. The setup then uses the data of the
+# draw-wise fits, also if divmin() changes the data before these fits. A call
+# with other data, or a setup that does not apply, uses `sdivmin_plain`. The
+# setup is built once, or once per task in parallel runs.
+shared_setup_callback <- function(make_shared, formulas, sdivmin_plain) {
+  # Force the arguments: divmin() assigns the result to `sdivmin`, so a
+  # promise for `sdivmin_plain` would return this function (infinite
+  # recursion):
+  force(sdivmin_plain)
+  force(make_shared)
+  force(formulas)
+  sdivmin_shared <- NULL
+  data_shared <- NULL
+  done <- FALSE
+  return(function(formula, ...) {
+    if (!done) {
+      done <<- TRUE
+      dot_args <- list(...)
+      sdivmin_shared <<- make_shared(formulas, dot_args = dot_args)
+      data_shared <<- dot_args[["data"]]
+    }
+    # identical() returns fast if both are the same object (the usual case):
+    if (is.null(sdivmin_shared) ||
+        !identical(list(...)[["data"]], data_shared)) {
+      return(sdivmin_plain(formula = formula, ...))
+    }
+    return(sdivmin_shared(formula = formula, ...))
+  })
+}
+
+# Gaussian multilevel submodels (lme4::lmer()) of all draws of one projection
+# --------------------------------------------------------------------------
+#
+# lme4::lmer() is lme4::lFormula() (model frame, fixed-effects model matrix,
+# random-effects structure), followed by mkLmerDevfun(), optimizeLmer(),
+# checkConv() and mkMerMod(). The draw-wise formulas of one submodel differ only
+# in the response, so all draws can share one lFormula() result.
+# lmer_shared_fit() repeats the other steps of lmer() for one draw: it
+# transcribes the body of lmer() in lme4 2.0-6 to 2.1-1 (R package lme4,
+# GPL-2 | GPL-3). lme4's C++ objects change some vectors of the lFormula()
+# result in place, so each draw gets fresh copies of them. The fits are equal
+# (all.equal()) to those of lmer(). lmer_shared_ok() checks this once per R
+# session on a small fixed problem, and the test suite checks it on CRAN. If
+# the check fails (for example after a change in lme4), divmin() fits each draw
+# with lmer().
+
+# Replaces the name `old` by `new` in all language objects of `x`, including
+# its attributes and names (used for the response of a shared model frame).
+rename_sym <- function(x, old, new) {
+  if (is.name(x)) {
+    if (identical(x, as.name(old))) {
+      return(as.name(new))
+    }
+    return(x)
+  }
+  if (is.call(x) || is.pairlist(x) || (is.list(x) && !is.data.frame(x))) {
+    at <- attributes(x)
+    for (i in seq_along(x)) {
+      if (!is.null(x[[i]])) {
+        x[[i]] <- rename_sym(x[[i]], old, new)
+      }
+    }
+    attributes(x) <- at
+  }
+  at <- attributes(x)
+  if (!is.null(at)) {
+    for (nm in setdiff(names(at), c("names", "dim", "dimnames", "row.names",
+                                    "class"))) {
+      attr(x, nm) <- rename_sym(at[[nm]], old, new)
+    }
+    if (!is.null(at$names)) {
+      names(x)[names(x) == old] <- new
+    }
+    if (!is.null(at$dimnames)) {
+      attr(x, "dimnames") <- lapply(at$dimnames, function(dnms) {
+        if (!is.null(dnms)) {
+          dnms[dnms == old] <- new
+        }
+        dnms
+      })
+    }
+  }
+  return(x)
+}
+
+# Fits the lmer() submodel `formula` (response: a column of `data`) from the
+# shared lFormula() result `lmod0` (of the same submodel for another draw).
+# `lmer_args` are the arguments of the lmer() call that this fit replaces.
+lmer_shared_fit <- function(lmod0, formula, data, control, lmer_args) {
+  resp_old <- as.character(lmod0$formula[[2]])
+  resp_new <- as.character(formula[[2]])
+  lmod <- lmod0
+  # Fresh copies of the vectors that lme4's C++ objects change in place:
+  lmod$reTrms$Lambdat@x <- lmod0$reTrms$Lambdat@x + 0
+  lmod$reTrms$theta <- lmod0$reTrms$theta + 0
+  lmod$reTrms$Zt@x <- lmod0$reTrms$Zt@x + 0
+  lmod$X <- lmod0$X + 0
+  fr <- lmod$fr
+  fr[[resp_old]] <- data[[resp_new]]
+  if (resp_new != resp_old) {
+    fr <- rename_sym(fr, resp_old, resp_new)
+  }
+  lmod$fr <- fr
+  # The following steps are those of lme4::lmer():
+  mcout <- match.call(lme4::lmer, as.call(c(list(lme4::lmer), lmer_args)))
+  mcout$formula <- formula
+  lmod$formula <- NULL
+  devfun <- do.call(lme4::mkLmerDevfun,
+                    c(lmod, list(start = NULL, verbose = 0L, control = control)))
+  rho <- environment(devfun)
+  nobs <- nrow(lmod$fr)
+  npar <- length(rho$lower)
+  calc.derivs <- control$calc.derivs %||%
+    (nobs < control$checkConv$check.conv.nobsmax &&
+       npar < control$checkConv$check.conv.nparmax)
+  opt <- lme4::optimizeLmer(
+    devfun, optimizer = control$optimizer,
+    restart_edge = control$restart_edge, boundary.tol = control$boundary.tol,
+    control = control$optCtrl, verbose = 0L, start = NULL,
+    calc.derivs = calc.derivs,
+    force.calc.derivs = control$calc.derivs %||% FALSE,
+    use.last.params = control$use.last.params
+  )
+  # Same name as in lmer(), so that its warnings are the same:
+  checkConv <- "lme4" %:::% "checkConv"
+  cc <- checkConv(attr(opt, "derivs"), opt$par, ctrl = control$checkConv,
+                  lbound = rho$lower, ubound = rho$upper, nobs = nobs,
+                  ndim = npar)
+  return(lme4::mkMerMod(rho, opt, lmod$reTrms, fr = lmod$fr, mc = mcout,
+                        lme4conv = cc))
+}
+
+# Draw-wise divergence minimizer for divmin() that uses lmer_shared_fit() with
+# the lFormula() result of the first draw, or `NULL` if this does not apply.
+lmer_shared_callback <- function(formulas, dot_args) {
+  if (!getOption("projpred.lmer_shared", TRUE) || !lmer_shared_ok()) {
+    return(NULL)
+  }
+  data <- dot_args$data
+  resp_nms <- vapply(formulas, function(fml) {
+    if (is.name(fml[[2]])) as.character(fml[[2]]) else NA_character_
+  }, character(1))
+  if (!is.data.frame(data) || anyNA(resp_nms) ||
+      !all(resp_nms %in% names(data)) || anyNA(data[resp_nms])) {
+    return(NULL)
+  }
+  control <- dot_args$control %||% control_callback(dot_args$family)
+  lmer_dot_args <- dot_args[intersect(names(dot_args),
+                                      methods::formalArgs(lme4::lmer))]
+  lmer_dot_args$control <- NULL
+  lmod0 <- tryCatch(
+    do.call(lme4::lFormula, c(list(formula = formulas[[1]], control = control),
+                              lmer_dot_args)),
+    error = function(e) NULL
+  )
+  if (is.null(lmod0) || nrow(lmod0$fr) != nrow(data)) {
+    return(NULL)
+  }
+  force(lmod0)
+  return(function(formula, ...) {
+    lmer_args <- c(list(formula = formula, control = control), lmer_dot_args)
+    tryCatch(
+      lmer_shared_fit(lmod0, formula = formula, data = data, control = control,
+                      lmer_args = lmer_args),
+      error = function(e) fit_glmer_callback(formula = formula, ...)
+    )
+  })
+}
+
+# Whether lmer_shared_fit() gives the fits of lme4::lmer() with the installed
+# lme4 (checked once per R session on a small fixed problem, without random
+# numbers).
+lmer_shared_state <- new.env(parent = emptyenv())
+lmer_shared_ok <- function() {
+  if (is.null(lmer_shared_state$ok)) {
+    lmer_shared_state$ok <- isTRUE(tryCatch(lmer_shared_check(),
+                                            error = function(e) FALSE))
+  }
+  return(lmer_shared_state$ok)
+}
+lmer_shared_check <- function() {
+  n <- 60L
+  idx <- seq_len(n)
+  dat <- data.frame(x1 = sin(idx), x2 = cos(1.7 * idx),
+                    g = factor(paste0("g", idx %% 6L)),
+                    h = factor(paste0("h", idx %% 4L)))
+  u <- c(0.8, -0.5, 0.3, -0.9, 0.6, -0.2)
+  for (s in 1:3) {
+    dat[[paste0(".y.", s)]] <- dat$x1 + 0.5 * dat$x2 +
+      u[as.integer(dat$g)] * (1 + 0.3 * s) + 0.4 * sin(s * idx) +
+      0.2 * dat$x1 * u[as.integer(dat$g)]
+  }
+  wts <- 1 + 0.5 * cos(idx)
+  control <- lme4::lmerControl()
+  fmls <- lapply(1:3, function(s) {
+    as.formula(paste0(".y.", s, " ~ x1 + x2 + (1 + x1 | g) + (1 | h)"))
+  })
+  lmod0 <- lme4::lFormula(fmls[[1]], data = dat, weights = wts,
+                          control = control)
+  same <- logical(3)
+  for (s in 1:3) {
+    lmer_args <- list(formula = fmls[[s]], control = control, data = dat,
+                      weights = wts)
+    suppressMessages(suppressWarnings({
+      fit_ref <- do.call(lme4::lmer, lmer_args)
+      fit_shared <- lmer_shared_fit(lmod0, formula = fmls[[s]], data = dat,
+                                    control = control, lmer_args = lmer_args)
+    }))
+    same[s] <- isTRUE(all.equal(fit_ref, fit_shared, tolerance = 0)) &&
+      identical(lme4::getME(fit_ref, "theta"),
+                lme4::getME(fit_shared, "theta"))
+  }
+  return(all(same))
 }
 
 # Use projpred's own implementation to fit non-multilevel non-additive
