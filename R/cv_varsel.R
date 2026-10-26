@@ -1034,12 +1034,16 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
       # Run the search with the reweighted clusters (or thinned draws) (so the
       # *reweighted* fitted response values from the reference model act as
       # artifical response values in the projection (or L1-penalized
-      # projection)):
+      # projection)).  As in K-fold CV, the left-out observation is not used
+      # in the projections of its fold; it is used only for the evaluation
+      # (via `refmodel_fulldata`):
+      refmodel_fold <- refmodel
+      refmodel_fold$wobs[i] <- 0
       if (!search_out_rks_was_null) {
         search_path <- list(predictor_ranking = search_out_rks[[run_index]])
       } else {
         search_path <- .select(
-          refmodel = refmodel, ndraws = ndraws, nclusters = nclusters,
+          refmodel = refmodel_fold, ndraws = ndraws, nclusters = nclusters,
           reweighting_args = list(cl_ref = cl_sel, wdraws_ref = exp(lw[, i])),
           method = method, nterms_max = nterms_max, penalty = penalty,
           verbose = verbose_obs, verbose_line_length = 3,
@@ -1053,9 +1057,10 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
       # Run the performance evaluation for the submodels along the predictor
       # ranking:
       perf_eval_out <- perf_eval(
-        search_path = search_path, refmodel = refmodel, refit_prj = refit_prj,
-        ndraws = ndraws_pred, nclusters = nclusters_pred,
+        search_path = search_path, refmodel = refmodel_fold,
+        refit_prj = refit_prj, ndraws = ndraws_pred, nclusters = nclusters_pred,
         reweighting_args = list(cl_ref = cl_pred, wdraws_ref = exp(lw[, i])),
+        refmodel_fulldata = refmodel,
         indices_test = i, verbose = verbose_obs, verbose_line_length = 3,
         verbose_txt_add = vtxt_obs_i, ...
       )
