@@ -207,10 +207,12 @@ glm_ridge <- function(x, y, family = gaussian(), lambda = 0, thresh = 1e-7,
                       qa_updates_max = NULL, weights = NULL, offset = NULL,
                       obsvar = 0, intercept = TRUE, penalty = NULL,
                       normalize = TRUE, beta_init = NULL, beta0_init = NULL,
-                      ls_iter_max = 30) {
+                      ls_iter_max = 30, print_msgs = TRUE) {
   #
   # Fits GLM with ridge penalty on the regression coefficients.
   # Does not handle any dispersion parameters.
+  # The warning messages of the C++ fitter are returned in element `msgs`. With
+  # `print_msgs = TRUE`, they are also printed to the standard output.
   #
   if (is.null(x)) {
     x <- matrix(ncol = 0, nrow = length(y))
@@ -251,14 +253,13 @@ glm_ridge <- function(x, y, family = gaussian(), lambda = 0, thresh = 1e-7,
       # constant predictor)
       x <- matrix(rep(1, length(y)), ncol = 1)
       w0 <- weights
-      pseudo_obs <- function(f, wprev)
-        pseudo_data(f, y, family, offset = offset, weights = weights,
-                    obsvar = obsvar, wprev = wprev)
-      out <- glm_ridge_c(x, pseudo_obs, lambda, FALSE, 0, beta_start, w0,
-                         thresh, qa_updates_max, ls_iter_max)
+      out <- glm_ridge_fit_c(x, y, family, weights, offset, obsvar, lambda,
+                             FALSE, 0, beta_start, w0, thresh, qa_updates_max,
+                             ls_iter_max)
+      print_ridge_msgs(out[[6]], print_msgs)
       return(list(beta = matrix(integer(length = 0)),
                   beta0 = as.vector(out[[1]]), w = out[[3]], loss = out[[4]],
-                  qa_updates = out[[5]]))
+                  qa_updates = out[[5]], msgs = out[[6]]))
     } else {
       # null model with no predictors and no intercept
       pseudo_obs <- function(f, wprev)
@@ -266,7 +267,7 @@ glm_ridge <- function(x, y, family = gaussian(), lambda = 0, thresh = 1e-7,
                     obsvar = obsvar, wprev = wprev)
       pobs <- pseudo_obs(rep(0, length(y)), weights)
       return(list(beta = matrix(integer(length = 0)), beta0 = 0, w = pobs$wobs,
-                  qa_updates = 0))
+                  qa_updates = 0, msgs = character()))
     }
   }
 
@@ -284,21 +285,91 @@ glm_ridge <- function(x, y, family = gaussian(), lambda = 0, thresh = 1e-7,
 
   # compute the solution
   w0 <- weights
-  pseudo_obs <- function(f, wprev)
-    pseudo_data(f, y, family, offset = offset, weights = weights,
-                obsvar = obsvar, wprev = wprev)
-  out <- glm_ridge_c(x, pseudo_obs, lambda, intercept, penalty, beta_start, w0,
-                     thresh, qa_updates_max, ls_iter_max)
+  out <- glm_ridge_fit_c(x, y, family, weights, offset, obsvar, lambda,
+                         intercept, penalty, beta_start, w0, thresh,
+                         qa_updates_max, ls_iter_max)
   beta <- out[[1]]
   beta0 <- as.vector(out[[2]])
   w <- out[[3]]
   loss <- out[[4]]
+  print_ridge_msgs(out[[6]], print_msgs)
 
   # return the intercept and the coefficients on the original scale
   beta_orig <- beta / transf$scale
   beta0_orig <- beta0 - sum(transf$shift * beta_orig)
 
   out <- nlist(beta = beta_orig, beta0 = beta0_orig, w,
-               qa_updates = out[[5]])
+               qa_updates = out[[5]], msgs = out[[6]])
   return(out)
+}
+
+# Calls the C++ fitter: glm_ridge_native_c() if it supports the family and the
+# link (see native_pseudo_codes()), otherwise glm_ridge_c() with pseudo_data()
+# as the R callback. Both give the same results.
+glm_ridge_fit_c <- function(x, y, family, weights, offset, obsvar, lambda,
+                            intercept, penalty, beta_start, w0, thresh,
+                            qa_updates_max, ls_iter_max) {
+  codes <- native_pseudo_codes(family)
+  if (!is.null(codes)) {
+    return(glm_ridge_native_c(
+      x, as.numeric(y), as.numeric(weights), as.numeric(offset), codes[1],
+      codes[2], lambda, intercept, penalty, beta_start, w0, thresh,
+      qa_updates_max, ls_iter_max
+    ))
+  }
+  pseudo_obs <- function(f, wprev) {
+    pseudo_data(f, y, family, offset = offset, weights = weights,
+                obsvar = obsvar, wprev = wprev)
+  }
+  return(glm_ridge_c(x, pseudo_obs, lambda, intercept, penalty, beta_start,
+                     w0, thresh, qa_updates_max, ls_iter_max))
+}
+
+# Family and link codes for glm_ridge_native_c(), or `NULL` if the
+# pseudo-observations have to be computed by pseudo_data() in R. The native
+# code reproduces the family objects of the stats package, so other family
+# objects with the same names are not covered. Global option
+# `projpred.glm_native` (default `TRUE`) switches the native code off.
+native_pseudo_codes <- function(family) {
+  if (!getOption("projpred.glm_native", TRUE)) {
+    return(NULL)
+  }
+  fam_code <- match(family$family, c("gaussian", "binomial", "poisson"))
+  link_code <- match(family$link, c("identity", "log", "logit", "probit",
+                                    "cloglog", "cauchit"))
+  if (is.na(fam_code) || is.na(link_code)) {
+    return(NULL)
+  }
+  # The function bodies of the stats family, cached per family and link:
+  key <- paste(family$family, family$link)
+  ref_bodies <- native_pseudo_cache[[key]]
+  if (is.null(ref_bodies)) {
+    stats_fam <- get(family$family, envir = asNamespace("stats"),
+                     mode = "function")
+    stats_fam <- tryCatch(stats_fam(link = family$link),
+                          error = function(e) NULL)
+    if (is.null(stats_fam)) {
+      ref_bodies <- FALSE
+    } else {
+      ref_bodies <- lapply(stats_fam[c("linkinv", "mu.eta", "variance")], body)
+    }
+    assign(key, ref_bodies, envir = native_pseudo_cache)
+  }
+  if (isFALSE(ref_bodies) ||
+      !identical(body(family$linkinv), ref_bodies$linkinv) ||
+      !identical(body(family$mu.eta), ref_bodies$mu.eta) ||
+      !identical(body(family$variance), ref_bodies$variance)) {
+    return(NULL)
+  }
+  return(c(fam_code, link_code))
+}
+native_pseudo_cache <- new.env(parent = emptyenv())
+
+# Prints the warning messages of glm_ridge_c() to the standard output, one line
+# per message:
+print_ridge_msgs <- function(msgs, print_msgs) {
+  if (print_msgs && length(msgs) > 0) {
+    cat(paste0(msgs, "\n"), sep = "")
+  }
+  return(invisible())
 }

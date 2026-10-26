@@ -9,3 +9,11 @@ glm_ridge_c <- function(x, pseudo_obs, lambda, intercept, penalty, beta_init, w_
     .Call('_projpred_glm_ridge_c', PACKAGE = 'projpred', x, pseudo_obs, lambda, intercept, penalty, beta_init, w_init, thresh, qa_updates_max, ls_iter_max, debug)
 }
 
+glm_ridge_native_c <- function(x, y, weights, offset, family_code, link_code, lambda, intercept, penalty, beta_init, w_init, thresh, qa_updates_max, ls_iter_max = 100L, debug = FALSE) {
+    .Call('_projpred_glm_ridge_native_c', PACKAGE = 'projpred', x, y, weights, offset, family_code, link_code, lambda, intercept, penalty, beta_init, w_init, thresh, qa_updates_max, ls_iter_max, debug)
+}
+
+glm_ridge_native_multi_c <- function(x, y, weights, offset, family_code, link_code, lambda, intercept, penalty, beta_init, w_init, thresh, qa_updates_max, ls_iter_max = 100L, debug = FALSE) {
+    .Call('_projpred_glm_ridge_native_multi_c', PACKAGE = 'projpred', x, y, weights, offset, family_code, link_code, lambda, intercept, penalty, beta_init, w_init, thresh, qa_updates_max, ls_iter_max, debug)
+}
+

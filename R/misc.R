@@ -690,6 +690,26 @@ capt_mssgs_warns <- function(expr) {
   return(mssgs_warns_capt)
 }
 
+# Like capt_mssgs_warns(), but collects the messages and warnings by condition
+# handlers. Faster, but does not capture text that is written directly to the
+# message stream, so use it only for fitters that throw R conditions.
+capt_conds <- function(expr) {
+  capt <- character()
+  withCallingHandlers(
+    expr,
+    warning = function(w) {
+      capt <<- c(capt, conditionMessage(w))
+      invokeRestart("muffleWarning")
+    },
+    message = function(m) {
+      capt <<- c(capt, sub("\n$", "", conditionMessage(m)))
+      invokeRestart("muffleMessage")
+    }
+  )
+  capt <- as.character(unlist(strsplit(capt, "\n", fixed = TRUE)))
+  return(setdiff(capt, ""))
+}
+
 # Parse the argument containing the observation weights (`wobs` or `weights`)
 # for the <family_object>$ppd() functions used by proj_predict():
 parse_wobs_ppd <- function(wobs, n_obs) {

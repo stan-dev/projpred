@@ -3,6 +3,8 @@
 #include <cmath>
 #include <limits>
 #include <string>
+#include <sstream>
+#include <vector>
 
 //[[Rcpp::depends(RcppArmadillo)]]
 
@@ -291,6 +293,141 @@ List glm_elnet_c(arma::mat x, // input matrix
 
 
 
+/**
+ * Pseudo-observations of the quadratic approximation to the loss function at
+ * the latent values f (see pseudo_data() in R): locations z, weights w, the
+ * pointwise gradient of the loss w.r.t. f, and the loss.
+ */
+struct PseudoObs {
+  virtual ~PseudoObs() {}
+  virtual void eval(const vec& f, const vec& wprev, vec& z, vec& w, vec& grad,
+                    double& loss) = 0;
+};
+
+// Pseudo-observations from an R function (any family supported by
+// pseudo_data()).
+struct PseudoObsR : public PseudoObs {
+  Function fn;
+  PseudoObsR(Function fn_) : fn(fn_) {}
+  void eval(const vec& f, const vec& wprev, vec& z, vec& w, vec& grad,
+            double& loss) {
+    List obs = fn(f, wprev);
+    z = as<vec>(obs["z"]);
+    w = as<vec>(obs["wobs"]);
+    grad = as<vec>(obs["grad"]);
+    loss = (double) obs["loss"];
+  }
+};
+
+// Family and link codes of PseudoObsNative (see native_pseudo_codes() in R).
+enum { FAM_GAUSSIAN = 1, FAM_BINOMIAL = 2, FAM_POISSON = 3 };
+enum { LINK_IDENTITY = 1, LINK_LOG = 2, LINK_LOGIT = 3, LINK_PROBIT = 4,
+       LINK_CLOGLOG = 5, LINK_CAUCHIT = 6 };
+
+// pmax() and pmin() of R for a scalar bound (NaN propagates):
+static inline double r_pmax(double x, double bound) {
+  return (std::isnan(x) || x >= bound) ? x : bound;
+}
+static inline double r_pmin(double x, double bound) {
+  return (std::isnan(x) || x <= bound) ? x : bound;
+}
+
+// Pseudo-observations computed in C++. linkinv() and mu.eta() transcribe the
+// link functions of R's stats package (make.link(), and for the logit link
+// logit_linkinv() and logit_mu_eta() in src/library/stats/src/family.c of R,
+// GPL-2 | GPL-3). The variances and deviances are those of the stats families
+// and of extend_family():
+struct PseudoObsNative : public PseudoObs {
+  vec y, weights, offset;
+  int fam, link;
+  PseudoObsNative(const vec& y_, const vec& weights_, const vec& offset_,
+                  int fam_, int link_) :
+    y(y_), weights(weights_), offset(offset_), fam(fam_), link(link_) {}
+
+  // linkinv() and mu.eta() of the link:
+  void link_funs(double eta, double& mu, double& dmu) const {
+    const double eps = std::numeric_limits<double>::epsilon();
+    switch (link) {
+    case LINK_IDENTITY:
+      mu = eta;
+      dmu = 1.0;
+      break;
+    case LINK_LOG:
+      mu = r_pmax(std::exp(eta), eps);
+      dmu = mu;
+      break;
+    case LINK_LOGIT: {
+      // As logit_linkinv() and logit_mu_eta() in R's stats/src/family.c:
+      const double thr = 30.0;
+      double tmp = (eta < -thr) ? eps : ((eta > thr) ? 1.0 / eps : std::exp(eta));
+      mu = tmp / (1.0 + tmp);
+      double opexp = 1.0 + std::exp(eta);
+      dmu = (eta > thr || eta < -thr) ? eps : std::exp(eta) / (opexp * opexp);
+      break;
+    }
+    case LINK_PROBIT: {
+      const double thr = -R::qnorm(eps, 0.0, 1.0, 1, 0);
+      double eta_c = r_pmin(r_pmax(eta, -thr), thr);
+      mu = R::pnorm(eta_c, 0.0, 1.0, 1, 0);
+      dmu = r_pmax(R::dnorm(eta, 0.0, 1.0, 0), eps);
+      break;
+    }
+    case LINK_CLOGLOG: {
+      mu = r_pmax(r_pmin(-std::expm1(-std::exp(eta)), 1.0 - eps), eps);
+      double eta_c = r_pmin(eta, 700.0);
+      dmu = r_pmax(std::exp(eta_c) * std::exp(-std::exp(eta_c)), eps);
+      break;
+    }
+    case LINK_CAUCHIT: {
+      const double thr = -R::qcauchy(eps, 0.0, 1.0, 1, 0);
+      double eta_c = r_pmin(r_pmax(eta, -thr), thr);
+      mu = R::pcauchy(eta_c, 0.0, 1.0, 1, 0);
+      dmu = r_pmax(R::dcauchy(eta, 0.0, 1.0, 0), eps);
+      break;
+    }
+    default:
+      Rcpp::stop("Unknown link code.");
+    }
+  }
+
+  void eval(const vec& f, const vec& wprev, vec& z, vec& w, vec& grad,
+            double& loss) {
+    size_t n = f.n_elem;
+    z.set_size(n);
+    w.set_size(n);
+    grad.set_size(n);
+    // R's sum() accumulates in long double:
+    long double dev_sum = 0.0;
+    double mu, dmu, var, dev;
+    for (size_t i = 0; i < n; ++i) {
+      link_funs(f(i) + offset(i), mu, dmu);
+      z(i) = f(i) + (y(i) - mu) / dmu;
+      switch (fam) {
+      case FAM_GAUSSIAN:
+        var = 1.0;
+        dev = -2.0 * weights(i) * (-0.5 * ((y(i) - mu) * (y(i) - mu)) - 0.0);
+        break;
+      case FAM_BINOMIAL:
+        var = mu * (1.0 - mu);
+        dev = -2.0 * (weights(i) * (y(i) * std::log(mu) +
+                                    (1.0 - y(i)) * std::log(1.0 - mu)));
+        break;
+      case FAM_POISSON:
+        var = mu;
+        dev = -2.0 * (weights(i) * (y(i) * std::log(mu) - mu));
+        break;
+      default:
+        Rcpp::stop("Unknown family code.");
+      }
+      w(i) = (weights(i) * (dmu * dmu)) / var;
+      grad(i) = (-w(i)) * (z(i) - f(i));
+      dev_sum += dev;
+    }
+    loss = 0.5 * (double) dev_sum;
+  }
+};
+
+
 /** Internal function that gives the output in c++ way (writes into allocated memory).
  * See glm_ridge_c for a wrapper that is being called from R.
  */
@@ -298,8 +435,9 @@ void glm_ridge( vec& beta,      // output: regression coefficients (contains int
                 double& loss,   // output: value of the loss function
                 vec& w, 				// output: weights of the pseudo-gaussian observations at the optimum (needed for Student-t model)
                 int& qau,       // output: number of quadratic approximation updates 
+                std::vector<std::string>& msgs, // output: warning messages
                 arma::mat x,
-                Function pseudo_obs,
+                PseudoObs& pseudo_obs,
                 double lambda,
                 bool intercept,
                 arma::vec penalty, // relative penalties for the variables
@@ -334,11 +472,11 @@ void glm_ridge( vec& beta,      // output: regression coefficients (contains int
   mat regmat = lambda*diagmat(penalty);//eye(D,D); // regularization matrix
   
   // initial quadratic approximation
-  List obs = pseudo_obs(f,w);
-  vec z = as<vec>(obs["z"]);
-  w = as<vec>(obs["wobs"]);
-  grad_f = as<vec>(obs["grad"]);
-  double loss_initial = ((double) obs["loss"]) + elnet_penalty(beta, lambda, 0, penalty);
+  vec z(n);
+  double loss_obs;
+  pseudo_obs.eval(f, w, z, w, grad_f, loss_obs);
+  vec z_ls(n), w_ls(n), grad_ls(n); // pseudo-observations in the line search
+  double loss_initial = loss_obs + elnet_penalty(beta, lambda, 0, penalty);
   double loss_old = loss_initial; // will be updated iteratively
   loss = loss_initial; // will be updated iteratively
   double tol = thresh*fabs(loss_initial); // threshold for convergence
@@ -370,8 +508,8 @@ void glm_ridge( vec& beta,      // output: regression coefficients (contains int
       
       t = b*t;
       f = x*(beta+t*dbeta);
-      obs = pseudo_obs(f,w);
-      loss = ((double) obs["loss"]) + elnet_penalty(beta+t*dbeta, lambda, 0, penalty);
+      pseudo_obs.eval(f, w, z_ls, w_ls, grad_ls, loss_obs);
+      loss = loss_obs + elnet_penalty(beta+t*dbeta, lambda, 0, penalty);
       ++ls_iter;
       
       if (std::isnan(loss))
@@ -381,9 +519,11 @@ void glm_ridge( vec& beta,      // output: regression coefficients (contains int
       	if (loss < loss_old - a*t*decrement )
       		break;
       } else {
-      	Rcpp::Rcout << "The search direction is not a descent direction ";
-      	Rcpp::Rcout << "(newton decrement = " << decrement << ", should be positive), ";
-      	Rcpp::Rcout << ", this is likely a bug. Please report to the developers." << '\n';
+      	std::ostringstream msg;
+      	msg << "The search direction is not a descent direction ";
+      	msg << "(newton decrement = " << decrement << ", should be positive), ";
+      	msg << ", this is likely a bug. Please report to the developers.";
+      	msgs.push_back(msg.str());
       }
     }
     
@@ -396,15 +536,15 @@ void glm_ridge( vec& beta,      // output: regression coefficients (contains int
       // Rcpp::Rcout << "tol = " << tol << "\n";
       // Rcpp::Rcout << "decrement = " << decrement << "\n";
       // Rcpp::Rcout << "\n\n";
-      Rcpp::Rcout << "glm_ridge warning: maximum number of line search iterations reached. The optimization can be ill-behaved.\n";
+      msgs.push_back("glm_ridge warning: maximum number of line search iterations reached. The optimization can be ill-behaved.");
       break;
     }
     
     // update the solution
     beta = beta + t*dbeta;
-    z = as<vec>(obs["z"]);
-    w = as<vec>(obs["wobs"]);
-    grad_f = as<vec>(obs["grad"]);
+    z = z_ls;
+    w = w_ls;
+    grad_f = grad_ls;
     loss_old = loss;
     ++qau;
   }
@@ -413,8 +553,10 @@ void glm_ridge( vec& beta,      // output: regression coefficients (contains int
   	if (decrement/fabs(loss_initial) > 100*tol) {
 			// warn the user if the max number of iterations is reached and we are relatively far
 			// (two orders of magnitude) from the given convergence threshold 
-  		Rcpp::Rcout << "glm_ridge warning: maximum number of quadratic approximation updates reached, within ";
-  		Rcpp::Rcout << decrement << " from optimum (tolerance = " << thresh << ").\n";
+  		std::ostringstream msg;
+  		msg << "glm_ridge warning: maximum number of quadratic approximation updates reached, within ";
+  		msg << decrement << " from optimum (tolerance = " << thresh << ").";
+  		msgs.push_back(msg.str());
   	}
   }
 }
@@ -445,14 +587,115 @@ List glm_ridge_c( arma::mat x,
   vec w = w_init;
   int qau;
   double loss;
-  glm_ridge(beta, loss, w, qau, x, pseudo_obs, lambda, intercept, penalty, thresh, qa_updates_max, ls_iter_max, debug);
+  std::vector<std::string> msgs;
+  PseudoObsR po(pseudo_obs);
+  glm_ridge(beta, loss, w, qau, msgs, x, po, lambda, intercept, penalty, thresh, qa_updates_max, ls_iter_max, debug);
     
   if (intercept) 
-    return List::create(vec(beta.tail(D-1)), beta(0), w, loss, qau);
+    return List::create(vec(beta.tail(D-1)), beta(0), w, loss, qau, wrap(msgs));
     // return List::create(vec(beta.tail(D-1)), beta(0), w, qau);
   else 
-    return List::create(beta, 0.0, w, loss, qau);
+    return List::create(beta, 0.0, w, loss, qau, wrap(msgs));
     // return List::create(beta, 0.0, w, qau);
 }
 
 
+/**
+ * As glm_ridge_c, but with the pseudo-observations computed in C++ for the
+ * family and link given by their codes (see native_pseudo_codes() in R).
+ */
+// [[Rcpp::export]]
+List glm_ridge_native_c( arma::mat x,
+                         arma::vec y,
+                         arma::vec weights,
+                         arma::vec offset,
+                         int family_code,
+                         int link_code,
+                         double lambda,
+                         bool intercept,
+                         arma::vec penalty,
+                         arma::vec beta_init,
+                         arma::vec w_init,
+                         double thresh,
+                         int qa_updates_max,
+                         int ls_iter_max=100,
+                         bool debug=false)
+{
+  int D = x.n_cols;
+  if (intercept)
+    D++;
+  
+  vec beta = beta_init;
+  vec w = w_init;
+  int qau;
+  double loss;
+  std::vector<std::string> msgs;
+  PseudoObsNative po(y, weights, offset, family_code, link_code);
+  glm_ridge(beta, loss, w, qau, msgs, x, po, lambda, intercept, penalty, thresh, qa_updates_max, ls_iter_max, debug);
+  
+  if (intercept) 
+    return List::create(vec(beta.tail(D-1)), beta(0), w, loss, qau, wrap(msgs));
+  else 
+    return List::create(beta, 0.0, w, loss, qau, wrap(msgs));
+}
+
+
+/**
+ * glm_ridge_native_c for several responses (the columns of y) with the same
+ * model matrix, observation weights, offsets and penalty, as for the draw-wise
+ * submodels of one projection. Each column is fitted separately, from the same
+ * initial values.
+ */
+// [[Rcpp::export]]
+List glm_ridge_native_multi_c( arma::mat x,
+                               arma::mat y,
+                               arma::vec weights,
+                               arma::vec offset,
+                               int family_code,
+                               int link_code,
+                               double lambda,
+                               bool intercept,
+                               arma::vec penalty,
+                               arma::vec beta_init,
+                               arma::vec w_init,
+                               double thresh,
+                               int qa_updates_max,
+                               int ls_iter_max=100,
+                               bool debug=false)
+{
+  int D = x.n_cols;
+  if (intercept)
+    D++;
+  int S = y.n_cols;
+  int n = y.n_rows;
+  
+  mat beta_out(intercept ? D-1 : D, S);
+  vec beta0_out(S);
+  mat w_out(n, S);
+  vec loss_out(S);
+  IntegerVector qau_out(S);
+  List msgs_out(S);
+  for (int s = 0; s < S; ++s) {
+    vec beta = beta_init;
+    vec w = w_init;
+    int qau;
+    double loss;
+    std::vector<std::string> msgs;
+    PseudoObsNative po(y.col(s), weights, offset, family_code, link_code);
+    glm_ridge(beta, loss, w, qau, msgs, x, po, lambda, intercept, penalty, thresh, qa_updates_max, ls_iter_max, debug);
+    if (intercept) {
+      beta_out.col(s) = beta.tail(D-1);
+      beta0_out(s) = beta(0);
+    } else {
+      beta_out.col(s) = beta;
+      beta0_out(s) = 0.0;
+    }
+    w_out.col(s) = w;
+    loss_out(s) = loss;
+    qau_out[s] = qau;
+    msgs_out[s] = wrap(msgs);
+  }
+  return List::create(Named("beta") = beta_out, Named("beta0") = beta0_out,
+                      Named("w") = w_out, Named("loss") = loss_out,
+                      Named("qa_updates") = qau_out, Named("msgs") = msgs_out);
+}
