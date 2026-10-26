@@ -135,7 +135,8 @@ divmin <- function(
       length(dot_args$weights) == nrow(dot_args$data)) {
     keep <- dot_args$weights != 0
     lost_lvls <- lost_levels(dot_args$data, keep = keep, formula = formula)
-    dot_args$data <- dot_args$data[keep, , drop = FALSE]
+    dot_args$data <- drop_lost_levels(dot_args$data[keep, , drop = FALSE],
+                                      lost_lvls)
     dot_args$weights <- dot_args$weights[keep]
     projpred_var <- projpred_var[keep, , drop = FALSE]
   }
@@ -640,6 +641,21 @@ recode_lost_levels <- function(newdata, lost_lvls) {
     newdata[[x_nm]] <- x
   }
   return(newdata)
+}
+
+# Drops the levels that lost_levels() recorded from the factors in `data` (the
+# data without the removed rows), so that fitters which keep unused levels in
+# the model matrix do not get a column of zeros.
+drop_lost_levels <- function(data, lost_lvls) {
+  for (x_nm in intersect(names(lost_lvls), names(data))) {
+    x <- data[[x_nm]]
+    if (is.factor(x)) {
+      data[[x_nm]] <- factor(x, levels = setdiff(levels(x),
+                                                 lost_lvls[[x_nm]]$lost),
+                             ordered = is.ordered(x))
+    }
+  }
+  return(data)
 }
 
 # Use projpred's own implementation to fit non-multilevel non-additive
@@ -1434,18 +1450,19 @@ divmin_augdat <- function(
   attr(projpred_ws_aug, "ndiscrete") <- NULL
 
   # Remove the rows of the observations with weight 0 (in validated LOO CV, the
-  # left-out observation) in all response categories before the multilevel
-  # fitters, as divmin() does. mclogit::mblogit() uses the predictor values of
-  # rows with weight 0. The augmented data hold all observations for the first
-  # category, then all for the second, and so on. If the sizes do not match
-  # (not in projpred's own calls), nothing is removed.
+  # left-out observation) in all response categories before the submodel
+  # fitters. mclogit::mblogit() uses the predictor values of rows with weight
+  # 0, and MASS::polr() gives no coefficient for a factor level that only these
+  # rows have. The augmented data hold all observations for the first category,
+  # then all for the second, and so on. If the sizes do not match (not in
+  # projpred's own calls), nothing is removed.
   lost_lvls <- NULL
-  if (has_grp && is.data.frame(data) && length(weights) > 0 &&
+  if (is.data.frame(data) && length(weights) > 0 &&
       any(weights == 0) && nrow(data) %% length(weights) == 0 &&
       nrow(data) == nrow(projpred_ws_aug)) {
     keep <- rep(weights != 0, times = nrow(data) / length(weights))
     lost_lvls <- lost_levels(data, keep = keep, formula = formula)
-    data <- data[keep, , drop = FALSE]
+    data <- drop_lost_levels(data[keep, , drop = FALSE], lost_lvls)
     projpred_ws_aug <- projpred_ws_aug[keep, , drop = FALSE]
   }
 
