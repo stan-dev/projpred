@@ -197,6 +197,10 @@ project <- function(
     }
     set.seed(seed)
   }
+  # Cache of the projection inputs (see proj_cache_store()), after the
+  # `on.exit()` call above:
+  proj_cache_enter()
+  on.exit(proj_cache_exit(), add = TRUE)
 
   ## `refit_prj` ------------------------------------------------------------
 

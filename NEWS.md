@@ -13,6 +13,10 @@ If you read this from a place other than <https://mc-stan.org/projpred/news/inde
 * Less formula and model-matrix work in the forward search and in the projections: the candidate submodels are selected from precomputed term labels, and the predictions for the training data use the stored submodel model matrices. For example, `varsel()` with forward search for a Gaussian model with 50 observations and 200 predictor terms is about 1.5 times faster. (GitHub: #578)
 * Faster forward search and LOO CV with validated search for Gaussian submodels with the identity link and for the latent projection, computed from cross-products of the model matrix. For example, `varsel()` with forward search for a Gaussian model with 50 observations and 200 predictor terms is about 6 times faster, and `cv_varsel()` with `validate_search = TRUE` for a Gaussian model with 40 observations and 15 predictor terms is about 11 times faster. (GitHub: #579)
 
+* Faster projections onto GLM submodels of the binomial and poisson families (and of the gaussian family with a non-identity link): the IRLS fits compute their pseudo-observations in C++ (for the identity, log, logit, probit, cloglog and cauchit links) instead of calling R functions, one C++ call fits all projected draws (or clusters) with one standardization of the shared model matrix, and the messages of the fitter are collected without output capture. For example, `cv_varsel()` with `validate_search = TRUE` for binomial and Poisson models is about 4 to 6 times faster than in projpred 2.11.0. (GitHub: #XXX)
+
+* During a call of `varsel()`, `cv_varsel()` or `project()`, the submodel formulas and model matrices are cached per set of predictor terms, so that the projections in the folds of `cv_varsel()` with `validate_search = TRUE` do not build them again. For binomial and Poisson models, this makes `cv_varsel()` with `validate_search = TRUE` about 1.3 to 1.7 times faster. Global option `projpred.proj_cache = FALSE` switches the cache off. (GitHub: #XXX)
+
 ## Minor changes
 
 ## Bug fixes and maintenance
