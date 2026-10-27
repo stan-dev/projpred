@@ -2189,13 +2189,20 @@ vsel_tester <- function(
   # predictor_ranking
   expect_type(vs$predictor_ranking, "character")
   expect_length(vs$predictor_ranking, prd_trms_len_expected)
+  # The search terms include the linear term of each smooth term (e.g., `s.1`
+  # for `s(s.1)`):
+  trms_universe_split_lin <- c(
+    trms_universe_split,
+    sub("^s\\((.*)\\)$", "\\1",
+        grep("^s\\(.*\\)$", trms_universe_split, value = TRUE))
+  )
   rk_fulldata <- vs$predictor_ranking
   for (rk_fulldata_plus in grep("\\+", rk_fulldata, value = TRUE)) {
     rk_fulldata <- setdiff(rk_fulldata, rk_fulldata_plus)
     rk_fulldata <- c(rk_fulldata,
                      labels(terms(as.formula(paste(". ~", rk_fulldata_plus)))))
   }
-  expect_true(all(rk_fulldata %in% trms_universe_split), info = info_str)
+  expect_true(all(rk_fulldata %in% trms_universe_split_lin), info = info_str)
 
   # predictor_ranking_cv
   if (with_cv && isTRUE(vs$validate_search)) {
@@ -2215,14 +2222,8 @@ vsel_tester <- function(
       rk_cv <- setdiff(rk_cv, rk_cv_plus)
       rk_cv <- c(rk_cv, labels(terms(as.formula(paste(". ~", rk_cv_plus)))))
     }
-    expect_true(
-      all(rk_cv %in%
-            c(trms_universe_split,
-              sub("^s\\((.*)\\)$", "\\1",
-                  grep("^s\\(.*\\)$", trms_universe_split, value = TRUE)),
-              NA_character_)),
-      info = info_str
-    )
+    expect_true(all(rk_cv %in% c(trms_universe_split_lin, NA_character_)),
+                info = info_str)
   } else {
     expect_null(vs$predictor_ranking_cv, info = info_str)
   }
