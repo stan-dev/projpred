@@ -158,15 +158,27 @@ divmin <- function(
   }
   mssgs_warns_capts <- lapply(outdmin, "[[", "mssgs_warns_capt")
   outdmin <- lapply(outdmin, "[[", "soutdmin")
-  mssgs_warns_capts <- lapply(mssgs_warns_capts, function(mssgs_warns_capt) {
-    # Filter out some warnings.
-    mssgs_warns_capt <- grep("Warning in [^:]*:$",
-                             mssgs_warns_capt, value = TRUE, invert = TRUE)
-    return(mssgs_warns_capt)
-  })
+  mssgs_warns_capts <- lapply(mssgs_warns_capts, filter_mssgs_warns)
   warn_prj_drawwise(mssgs_warns_capts, throw_warn = throw_warn_sdivmin)
   check_conv(outdmin, lengths(mssgs_warns_capts), do_check = do_check_conv)
   return(outdmin)
+}
+
+# Removes the lines of the captured messages and warnings of a submodel fit
+# (see capt_mssgs_warns()) that do not indicate a problem of the projection.
+filter_mssgs_warns <- function(mssgs_warns_capt) {
+  # Header lines of warnings:
+  mssgs_warns_capt <- grep("Warning in [^:]*:$",
+                           mssgs_warns_capt, value = TRUE, invert = TRUE)
+  # lme4 (>= 2.1-1) warns about non-integer Poisson responses, but the
+  # projection always has such responses:
+  mssgs_warns_capt <- grep("non-integer response values in a poisson model$",
+                           mssgs_warns_capt, value = TRUE, invert = TRUE)
+  # For the same reason, stats::dpois() warns about each non-integer Poisson
+  # response (for example, in the stats::glm() start fit of MASS::glmmPQL()):
+  mssgs_warns_capt <- grep("^Warning in dpois\\(.*\\) : non-integer x = ",
+                           mssgs_warns_capt, value = TRUE, invert = TRUE)
+  return(mssgs_warns_capt)
 }
 
 # Use projpred's own implementation to fit non-multilevel non-additive
@@ -352,6 +364,11 @@ fit_glmer_callback <- function(formula, projpred_formula_no_random,
         names(dot_args),
         methods::formalArgs(MASS::glmmPQL)
       )]
+      # Without this, the "iteration" messages of MASS::glmmPQL() would be
+      # captured as messages of the submodel fitter:
+      if (is.null(dot_args[["verbose"]])) {
+        dot_args$verbose <- FALSE
+      }
       # Strip parentheses from group-level terms:
       random_trms <- labels(terms(projpred_random))
       random_fmls <- lapply(random_trms, function(random_trm) {
@@ -1127,6 +1144,12 @@ check_conv_s <- function(fit_s) {
     # convergence. For now, all we can check is the GLMM part from element
     # `fit_s$mer`:
     return(check_conv_s(fit_s$mer))
+  } else if (inherits(fit_s, "glmmPQL")) {
+    # MASS::glmmPQL() stores no convergence information: nlme::lme() throws an
+    # error if it does not converge (with the default `returnObject = FALSE`),
+    # but the end of the PQL iterations at `niter` is not recorded. So we need
+    # to return `TRUE` here:
+    return(TRUE)
   } else if (inherits(fit_s, c("lmerMod", "glmerMod"))) {
     # The following was inferred from the source code of lme4::checkConv() and
     # lme4::.prt.warn() (see also `?lme4::mkMerMod`).
