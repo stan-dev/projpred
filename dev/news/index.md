@@ -8,6 +8,9 @@
 
 ### Bug fixes and maintenance
 
+- Tests: Adapt to version 2.1-0 of package lme4. (GitHub:
+  [\#577](https://github.com/stan-dev/projpred/issues/577))
+
 ## projpred 2.11.0
 
 CRAN release: 2026-09-30
