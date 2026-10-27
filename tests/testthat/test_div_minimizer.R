@@ -1,5 +1,3 @@
-context("div_minimizer")
-
 # The divmin() and the divmin_augdat() test store their `brnll` results here for
 # the comparison test at the end of this file:
 outdmin_brnll <- new.env()

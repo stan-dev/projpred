@@ -1,5 +1,3 @@
-context("elnet")
-
 # tests for glm_elnet
 
 withr::local_seed(1235)

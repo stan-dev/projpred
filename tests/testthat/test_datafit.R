@@ -1,5 +1,3 @@
-context("datafit")
-
 # Setup -------------------------------------------------------------------
 
 # Note: Since PR #351, offsets are not supported anymore for `datafit`s. Here,

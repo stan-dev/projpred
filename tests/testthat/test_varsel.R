@@ -1,7 +1,5 @@
 # varsel() ----------------------------------------------------------------
 
-context("varsel()")
-
 test_that(paste(
   "`object` of class `refmodel` and arguments `method`, `nterms_max`,",
   "`nclusters`, and `nclusters_pred` work"
@@ -1164,8 +1162,6 @@ test_that("varsel.vsel() works for `vsel` objects from cv_varsel()", {
 })
 
 # cv_varsel() -------------------------------------------------------------
-
-context("cv_varsel()")
 
 test_that(paste(
   "`object` of class `refmodel` and arguments `method`, `cv_method`,",

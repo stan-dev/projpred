@@ -1,5 +1,3 @@
-context("ridge")
-
 # tests for ridge regression, currently untested combinations
 # - gaussian with inverse-link
 # - binomial with log or cloglog-link

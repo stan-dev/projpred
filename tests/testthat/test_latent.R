@@ -1,5 +1,3 @@
-context("latent projection")
-
 # Setup -------------------------------------------------------------------
 
 withr::local_preserve_seed()

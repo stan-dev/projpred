@@ -1,5 +1,3 @@
-context("proj_predfun")
-
 test_that("repair_re() works for GLMMs", {
   # Setup -------------------------------------------------------------------
 

@@ -1,7 +1,5 @@
 # Common tests ------------------------------------------------------------
 
-context("summary(), plot(), suggest_size()")
-
 test_that("invalid `object` fails", {
   objs_invalid <- nlist(
     NULL,
@@ -60,8 +58,6 @@ test_that("invalid `stats` fails", {
 })
 
 # summary() ---------------------------------------------------------------
-
-context("summary()")
 
 test_that("invalid `baseline` fails", {
   skip_if_not(run_vs)
@@ -124,8 +120,6 @@ test_that(paste(
 
 # performances() ----------------------------------------------------------
 
-context("performances()")
-
 test_that("`object` of class `vsel` (created by varsel()) works", {
   skip_if_not(run_vs)
   for (tstsetup in names(perfs_vs)) {
@@ -184,8 +178,6 @@ test_that("performances.vsel() is a shortcut", {
 })
 
 # print() -----------------------------------------------------------------
-
-context("print()")
 
 test_that("`x` of class `vselsummary` (based on varsel()) works", {
   skip_if_not(run_vs)
@@ -283,8 +275,6 @@ test_that(paste(
 })
 
 # plot() ------------------------------------------------------------------
-
-context("plot()")
 
 args_common_for_rk_NA <- c(
   "tstsetup_vsel", "deltas", "text_angle", "nterms_max", "ranking_nterms_max",
@@ -538,8 +528,6 @@ test_that(paste(
 
 # suggest_size() ----------------------------------------------------------
 
-context("suggest_size()")
-
 test_that("`stat` of invalid length fails", {
   stopifnot(length(stats_common) > 1)
   skip_if_not(run_vs)
@@ -609,8 +597,6 @@ test_that("returns nterms_max when no criterion is met", {
 
 # ranking() ---------------------------------------------------------------
 
-context("ranking()")
-
 test_that("`object` of class `vsel` (created by varsel()) works", {
   skip_if_not(run_vs)
   for (tstsetup in names(rks_vs)) {
@@ -642,8 +628,6 @@ test_that("`object` of class `vsel` (created by cv_varsel()) works", {
 })
 
 # cv_proportions() --------------------------------------------------------
-
-context("cv_proportions()")
 
 test_that("`object` of class `ranking` (based on varsel() output) fails", {
   skip_if_not(run_vs)
@@ -738,8 +722,6 @@ test_that("ranking proportions are computed correctly", {
 })
 
 # plot.cv_proportions() ---------------------------------------------------
-
-context("plot.cv_proportions()")
 
 test_that("`x` of class `cv_proportions` works", {
   skip_if_not(run_cvvs)

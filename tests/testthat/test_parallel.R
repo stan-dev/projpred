@@ -1,5 +1,3 @@
-context("parallel")
-
 # Setup -------------------------------------------------------------------
 
 # withr resets the options and the parallel backend at the end of this file,

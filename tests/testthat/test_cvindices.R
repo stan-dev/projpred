@@ -1,5 +1,3 @@
-context("cv-indices")
-
 # tests for cv_folds and cv_ids
 
 test_that("k is valid", {

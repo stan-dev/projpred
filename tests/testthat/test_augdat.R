@@ -1,5 +1,3 @@
-context("augmented-data projection")
-
 # augdat.R ----------------------------------------------------------------
 
 nobs_orig_tst <- 4L

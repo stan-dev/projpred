@@ -1,5 +1,3 @@
-context("as.matrix.projection()")
-
 test_that("as.matrix.projection() works", {
   skip_if_not(run_prj)
   for (tstsetup in names(prjs)) {

@@ -1,7 +1,5 @@
 # get_refmodel() ----------------------------------------------------------
 
-context("get_refmodel()")
-
 test_that("`object` of class `stanreg` or `brmsfit` works", {
   skip_if_no_setups(refmods)
   for (tstsetup in names(refmods)) {
@@ -209,8 +207,6 @@ test_that("get_refmodel() is idempotent", {
 })
 
 # predict.refmodel() ------------------------------------------------------
-
-context("predict.refmodel()")
 
 test_that("invalid `type` fails", {
   skip_if_not(length(fits) > 0)
