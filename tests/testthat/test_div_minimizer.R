@@ -1,10 +1,5 @@
 context("div_minimizer")
 
-# Setup -------------------------------------------------------------------
-
-# Needed to clean up the workspace afterwards (i.e, after this test file):
-ls_bu <- ls()
-
 # divmin() ----------------------------------------------------------------
 
 test_that("divmin() works", {
@@ -245,8 +240,3 @@ test_that(paste(
                  info = tstsetup)
   }
 })
-
-# Teardown ----------------------------------------------------------------
-
-# Clean up the workspace:
-rm(list = setdiff(ls(), ls_bu))

@@ -691,9 +691,6 @@ test_that("cv_proportions.vsel() is a shortcut", {
   }
 })
 
-# Needed to clean up the workspace afterwards:
-ls_bu <- ls()
-
 ntrms <- 9L
 rk_fdata <- rev(head(letters, ntrms))
 rk_fwise <- do.call(rbind, lapply(seq_len(ntrms), function(idx_trm) {
@@ -740,9 +737,6 @@ test_that("ranking proportions are computed correctly", {
   expect_true(has_1_colwise, info = "cumulate = TRUE")
 })
 
-# Clean up the workspace:
-rm(list = setdiff(ls(), ls_bu))
-
 # plot.cv_proportions() ---------------------------------------------------
 
 context("plot.cv_proportions()")
@@ -772,9 +766,6 @@ test_that("plot.ranking() is a shortcut", {
     }
   }
 })
-
-# Needed to clean up the workspace afterwards:
-ls_bu <- ls()
 
 ntrms <- 20L
 pr_dummy <- matrix(seq(0, 1, length.out = ntrms^2), nrow = ntrms, ncol = ntrms,
@@ -818,6 +809,3 @@ test_that("the ggplot can be modified", {
     vdiffr::expect_doppelganger("plotprc_dummy_mod", plotprc_dummy_mod)
   }
 })
-
-# Clean up the workspace:
-rm(list = setdiff(ls(), ls_bu))

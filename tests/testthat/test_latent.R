@@ -2,9 +2,6 @@ context("latent projection")
 
 # Setup -------------------------------------------------------------------
 
-# Needed to clean up the workspace afterwards (i.e, after this test file):
-ls_bu <- ls()
-
 if (exists(".Random.seed", envir = .GlobalEnv)) {
   rng_old <- get(".Random.seed", envir = .GlobalEnv)
 }
@@ -235,8 +232,6 @@ test_that(paste(
 # Teardown ----------------------------------------------------------------
 
 if (exists("rng_old")) assign(".Random.seed", rng_old, envir = .GlobalEnv)
-# Clean up the workspace:
-rm(list = setdiff(ls(), ls_bu))
 
 # Censored observations ---------------------------------------------------
 

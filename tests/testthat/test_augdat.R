@@ -1,10 +1,5 @@
 context("augmented-data projection")
 
-# Setup -------------------------------------------------------------------
-
-# Needed to clean up the workspace afterwards (i.e, after this test file):
-ls_bu <- ls()
-
 # augdat.R ----------------------------------------------------------------
 
 nobs_orig_tst <- 4L
@@ -645,8 +640,3 @@ test_that(paste(
                  tolerance = tol_smmry, info = tstsetup)
   }
 })
-
-# Teardown ----------------------------------------------------------------
-
-# Clean up the workspace:
-rm(list = setdiff(ls(), ls_bu))
