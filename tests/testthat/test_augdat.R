@@ -444,15 +444,16 @@ test_that(paste(
     # Sometimes, there are seemingly large differences on logit scale which are
     # probably due to numerical overflow of probabilities (i.e., on probability
     # scale) towards 1 or underflow towards zero. Thus, compare on probability
-    # scale if the comparison on logit scale fails:
-    tryCatch(expect_equal(summs_sub_mu, summs_sub_mu_trad,
-                          tolerance = 1e-6, info = tstsetup),
-             error = function(e) {
-               stopifnot(is_kfold)
-               expect_equal(ilinkfun_raw(summs_sub_mu, link_nm = "logit"),
-                            ilinkfun_raw(summs_sub_mu_trad, link_nm = "logit"),
-                            tolerance = 1e-5, info = tstsetup)
-             })
+    # scale if the comparison on logit scale fails (only for K-fold CV):
+    if (is_kfold &&
+        !isTRUE(all.equal(summs_sub_mu, summs_sub_mu_trad, tolerance = 1e-6))) {
+      expect_equal(ilinkfun_raw(summs_sub_mu, link_nm = "logit"),
+                   ilinkfun_raw(summs_sub_mu_trad, link_nm = "logit"),
+                   tolerance = 1e-5, info = tstsetup)
+    } else {
+      expect_equal(summs_sub_mu, summs_sub_mu_trad, tolerance = 1e-6,
+                   info = tstsetup)
+    }
     summs_sub_lppd <- do.call(cbind, lapply(summs_sub, "[[", "lppd"))
     summs_sub_lppd_trad <- unname(
       do.call(cbind, lapply(summs_sub_trad, "[[", "lppd"))
@@ -460,14 +461,16 @@ test_that(paste(
     # Sometimes, there are seemingly large differences on log scale which are
     # probably due to numerical overflow of probabilities (i.e., on exp scale)
     # towards 1 or underflow towards zero. Thus, compare on exp scale if the
-    # comparison on log scale fails:
-    tryCatch(expect_equal(summs_sub_lppd, summs_sub_lppd_trad,
-                          tolerance = 1e-6, info = tstsetup),
-             error = function(e) {
-               stopifnot(is_kfold)
-               expect_equal(exp(summs_sub_lppd), exp(summs_sub_lppd_trad),
-                            tolerance = 1e-5, info = tstsetup)
-             })
+    # comparison on log scale fails (only for K-fold CV):
+    if (is_kfold &&
+        !isTRUE(all.equal(summs_sub_lppd, summs_sub_lppd_trad,
+                          tolerance = 1e-6))) {
+      expect_equal(exp(summs_sub_lppd), exp(summs_sub_lppd_trad),
+                   tolerance = 1e-5, info = tstsetup)
+    } else {
+      expect_equal(summs_sub_lppd, summs_sub_lppd_trad, tolerance = 1e-6,
+                   info = tstsetup)
+    }
     summs_ref <- cvvs$summaries$ref
     summs_ref$mu <- structure(unclass(summs_ref$mu), ndiscrete = NULL)
     summs_ref$mu <- summs_ref$mu[(nobsv + 1):(2 * nobsv)]
@@ -516,7 +519,7 @@ test_that(paste(
     } else {
       tol_smmry <- 1e-6
     }
-    compare_exp <- function(e) {
+    compare_exp <- function() {
       stopifnot(is_kfold)
       # Check that we have the default `stats` in this case, meaning only the
       # ELPD:
@@ -538,9 +541,16 @@ test_that(paste(
       expect_equal(smmry_pd$elpd.se, smmry_pd_trad$elpd.se, tolerance = 1e-3,
                    info = tstsetup)
     }
-    tryCatch(expect_equal(smmry_cvvs$perf_sub, smmry_cvvs_trad$perf_sub,
-                          tolerance = tol_smmry, info = tstsetup),
-             error = compare_exp)
+    # For K-fold CV, compare on exp scale if the comparison on log scale fails
+    # (see compare_exp()):
+    if (is_kfold &&
+        !isTRUE(all.equal(smmry_cvvs$perf_sub, smmry_cvvs_trad$perf_sub,
+                          tolerance = tol_smmry))) {
+      compare_exp()
+    } else {
+      expect_equal(smmry_cvvs$perf_sub, smmry_cvvs_trad$perf_sub,
+                   tolerance = tol_smmry, info = tstsetup)
+    }
   }
 })
 
@@ -596,7 +606,7 @@ test_that(paste(
     } else {
       tol_smmry <- 1e-6
     }
-    compare_exp <- function(e) {
+    compare_exp <- function() {
       stopifnot(is_kfold)
 
       smmry_pd <- smmry_cvvs$perf_sub
@@ -628,9 +638,16 @@ test_that(paste(
                    smmry_pd_trad[se_cols_trad],
                    tolerance = 1e-3, info = tstsetup)
     }
-    tryCatch(expect_equal(smmry_cvvs$perf_sub, smmry_cvvs_trad$perf_sub,
-                          tolerance = tol_smmry, info = tstsetup),
-             error = compare_exp)
+    # For K-fold CV, compare on exp scale if the comparison on log scale fails
+    # (see compare_exp()):
+    if (is_kfold &&
+        !isTRUE(all.equal(smmry_cvvs$perf_sub, smmry_cvvs_trad$perf_sub,
+                          tolerance = tol_smmry))) {
+      compare_exp()
+    } else {
+      expect_equal(smmry_cvvs$perf_sub, smmry_cvvs_trad$perf_sub,
+                   tolerance = tol_smmry, info = tstsetup)
+    }
     expect_equal(smmry_cvvs$perf_ref, smmry_cvvs_trad$perf_ref,
                  tolerance = tol_smmry, info = tstsetup)
   }
