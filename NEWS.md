@@ -11,7 +11,7 @@ If you read this from a place other than <https://mc-stan.org/projpred/news/inde
 
 ## Bug fixes and maintenance
 
-* Tests: Leave the options, the random seed and the global environment of the R session unchanged after the tests, also when a test fails, and remove the manual cleanup of the test workspace. (GitHub: #<PR>)
+* Tests: Leave the options, the random seed and the global environment of the R session unchanged after the tests, also when a test fails, and remove the manual cleanup of the test workspace. (GitHub: #586)
 
 
 # projpred 2.11.0
