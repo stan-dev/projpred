@@ -3,6 +3,7 @@
 context("get_refmodel()")
 
 test_that("`object` of class `stanreg` or `brmsfit` works", {
+  skip_if_no_setups(refmods)
   for (tstsetup in names(refmods)) {
     tstsetup_fit <- args_ref[[tstsetup]]$tstsetup_fit
     with_spclformul_crr <- grepl("\\.spclformul", tstsetup)
@@ -199,6 +200,7 @@ test_that("extra arguments in s() or t2() terms fail", {
 })
 
 test_that("get_refmodel() is idempotent", {
+  skip_if_no_setups(refmods)
   for (tstsetup in names(refmods)) {
     expect_identical(get_refmodel(refmods[[tstsetup]]),
                      refmods[[tstsetup]],
@@ -226,6 +228,7 @@ test_that(paste(
   "`object` of class `refmodel` and arguments `newdata`, `ynew`, and `type`",
   "work"
 ), {
+  skip_if_no_setups(refmods)
   for (tstsetup in names(refmods)) {
     pkg_crr <- args_ref[[tstsetup]]$pkg_nm
     mod_crr <- args_ref[[tstsetup]]$mod_nm

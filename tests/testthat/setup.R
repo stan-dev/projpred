@@ -167,6 +167,7 @@ use_fac <- TRUE
 # Use polym() instead of poly()?:
 use_polym <- FALSE
 
+source(testthat::test_path("helpers", "skips.R"), local = TRUE)
 # When the tests end, restore the state of the random number generator:
 withr::local_preserve_seed(.local_envir = testthat::teardown_env())
 source(testthat::test_path("helpers", "unlist_cust.R"), local = TRUE)

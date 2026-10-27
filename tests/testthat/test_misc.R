@@ -8,6 +8,7 @@ test_that(paste(
   "get_refdist(): `ndraws = NULL` and `nclusters = NULL` leads to",
   "`ndraws = S` (and `nclusters = NULL`)"
 ), {
+  skip_if_no_setups(refmods)
   withr::local_seed(seed2_tst)
   for (tstsetup in names(refmods)) {
     refdist <- get_refdist(refmods[[tstsetup]])
@@ -34,6 +35,7 @@ test_that(paste(
   "`ndraws` and/or `nclusters` too big causes them to be cut off at the number",
   "of posterior draws in the reference model"
 ), {
+  skip_if_no_setups(refmods)
   withr::local_seed(seed2_tst)
   for (tstsetup in names(refmods)) {
     for (ndraws_crr in list(nrefdraws + 1L)) {
@@ -267,7 +269,7 @@ test_that(".srs_diff_est_w() works as expected with `wobs` not full of ones", {
 test_that(".srs_diff_est_w() propagates input `NA`s to its output", {
   nloo_tst <- nobsv %/% 5L
   loo_inds_tst <- ceiling(seq(1L, nobsv, length.out = nloo_tst))
-  skip_if_not(length(unique(loo_inds_tst)) == nloo_tst)
+  stopifnot(length(unique(loo_inds_tst)) == nloo_tst)
   srs_diff_res_NAs <- list(
     m = nloo_tst,
     N = nobsv,

@@ -194,6 +194,7 @@ if (run_vs) {
 ## Reference model --------------------------------------------------------
 
 test_that("init_refmodel(): `object` of class `datafit` works", {
+  skip_if_no_setups(datafits)
   for (tstsetup in names(datafits)) {
     tstsetup_fit <- args_datafit[[tstsetup]]$tstsetup_fit
     with_spclformul_crr <- grepl("\\.spclformul", tstsetup)
@@ -222,6 +223,7 @@ test_that("init_refmodel(): `object` of class `datafit` works", {
 })
 
 test_that("predict.refmodel(): `object` of class `datafit` fails", {
+  skip_if_no_setups(datafits)
   for (tstsetup in names(datafits)) {
     expect_error(
       predict(datafits[[tstsetup]], newdata = dat),
@@ -485,6 +487,7 @@ test_that(paste(
 ## summary.vsel() ---------------------------------------------------------
 
 test_that("summary.vsel(): `object` of class `datafit` fails", {
+  skip_if_no_setups(datafits)
   for (tstsetup in names(datafits)) {
     expect_error(
       summary.vsel(datafits[[tstsetup]]),

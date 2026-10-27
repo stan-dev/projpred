@@ -34,6 +34,7 @@ test_that("invalid `object` fails", {
 })
 
 test_that("invalid `method` fails", {
+  skip_if_no_setups(refmods)
   for (tstsetup in names(refmods)) {
     expect_error(varsel(refmods[[tstsetup]], method = "k-fold"),
                  "^Unexpected value for argument `method`\\.$",
@@ -962,6 +963,7 @@ test_that("L1 search handles three-way (second-order) interactions correctly", {
     lapply(ia_split, all_ia_perms, is_split = TRUE)
   }))
   trms_universe_split_bu <- trms_universe_split
+  withr::defer(trms_universe_split <<- trms_universe_split_bu)
   trms_universe_split <<- union(trms_universe_split, all_ias)
   tstsetup <- head(grep("^rstanarm\\.glm\\.", names(fits), value = TRUE), 1)
   args_fit_i <- args_fit[[tstsetup]]
@@ -1015,7 +1017,6 @@ test_that("L1 search handles three-way (second-order) interactions correctly", {
     })),
     info = tstsetup
   )
-  trms_universe_split <<- trms_universe_split_bu
 })
 
 ## search_terms -----------------------------------------------------------
@@ -1207,6 +1208,7 @@ test_that("invalid `object` fails", {
 })
 
 test_that("invalid `method` fails", {
+  skip_if_no_setups(refmods)
   for (tstsetup in names(refmods)) {
     expect_error(cv_varsel(refmods[[tstsetup]], method = "k-fold"),
                  "^Unexpected value for argument `method`\\.$",
@@ -1229,6 +1231,7 @@ test_that("invalid `method` fails", {
 })
 
 test_that("invalid `cv_method` fails", {
+  skip_if_no_setups(refmods)
   for (tstsetup in names(refmods)) {
     expect_error(cv_varsel(refmods[[tstsetup]], cv_method = "k-fold"),
                  "^Unknown `cv_method`\\.$",

@@ -1,5 +1,9 @@
 context("div_minimizer")
 
+# The divmin() and the divmin_augdat() test store their `brnll` results here for
+# the comparison test at the end of this file:
+outdmin_brnll <- new.env()
+
 # divmin() ----------------------------------------------------------------
 
 test_that("divmin() works", {
@@ -83,7 +87,7 @@ test_that("divmin() works", {
                    with_offs = grepl("\\.with_offs", tstsetup),
                    info_str = tstsetup)
   }
-  assign("outdmin_brnll_trad", outdmin_brnll_tmp, envir = .GlobalEnv)
+  outdmin_brnll$trad <- outdmin_brnll_tmp
 })
 
 # divmin_augdat() ---------------------------------------------------------
@@ -209,7 +213,7 @@ test_that("divmin_augdat() works", {
                    check_y_from_resp = FALSE,
                    info_str = tstsetup)
   }
-  assign("outdmin_brnll_augdat", outdmin_brnll_tmp, envir = .GlobalEnv)
+  outdmin_brnll$augdat <- outdmin_brnll_tmp
 })
 
 # Comparison of divmin() and divmin_augdat() ------------------------------
@@ -219,10 +223,13 @@ test_that(paste(
   "`brnll` family)"
 ), {
   skip_on_cran()
-  for (tstsetup in names(outdmin_brnll_augdat)) {
+  skip_if(is.null(outdmin_brnll$trad) || is.null(outdmin_brnll$augdat),
+          "the divmin() or the divmin_augdat() test did not finish")
+  skip_if_no_setups(outdmin_brnll$augdat)
+  for (tstsetup in names(outdmin_brnll$augdat)) {
     args_ref_i <- args_ref[[tstsetup]]
-    outdmin_augdat <- outdmin_brnll_augdat[[tstsetup]]
-    outdmin_trad <- outdmin_brnll_trad[[args_ref_i$tstsetup_fit]]
+    outdmin_augdat <- outdmin_brnll$augdat[[tstsetup]]
+    outdmin_trad <- outdmin_brnll$trad[[args_ref_i$tstsetup_fit]]
     expect_length(outdmin_augdat, 1)
     expect_length(outdmin_trad, 1)
     tol_coefs <- ifelse(args_ref_i$mod_nm == "glmm", 1e-4, 1e-5)
