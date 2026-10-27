@@ -221,12 +221,12 @@ test_that("as.matrix.projection() works", {
     ###
     if (run_snaps) {
       if (testthat_ed_max2) local_edition(3)
-      width_orig <- options(width = 145)
-      expect_snapshot({
-        print(tstsetup)
-        print(rlang::hash(m)) # message(m)
+      withr::with_options(list(width = 145), {
+        expect_snapshot({
+          print(tstsetup)
+          print(rlang::hash(m)) # message(m)
+        })
       })
-      options(width_orig)
       if (testthat_ed_max2) local_edition(2)
     }
   }
@@ -306,11 +306,11 @@ test_that(paste(
 
 if (run_snaps) {
   if (testthat_ed_max2) local_edition(3)
-  width_orig <- options(width = 145)
 
   test_that(paste(
     "as.matrix.projection() works for projections based on varsel() output"
   ), {
+    withr::local_options(list(width = 145))
     skip_if_not(run_vs)
     for (tstsetup in names(prjs_vs)) {
       if (args_prj_vs[[tstsetup]]$mod_nm == "gam") {
@@ -350,6 +350,7 @@ if (run_snaps) {
   test_that(paste(
     "as.matrix.projection() works for projections based on cv_varsel() output"
   ), {
+    withr::local_options(list(width = 145))
     skip_if_not(run_cvvs)
     for (tstsetup in names(prjs_cvvs)) {
       if (args_prj_cvvs[[tstsetup]]$mod_nm == "gam") {
@@ -386,6 +387,5 @@ if (run_snaps) {
     }
   })
 
-  options(width_orig)
   if (testthat_ed_max2) local_edition(2)
 }

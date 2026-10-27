@@ -183,9 +183,7 @@ test_that(paste(
   "the traditional projection"
 ), {
   skip_if_not(run_prj)
-  if (exists(".Random.seed", envir = .GlobalEnv)) {
-    rng_old <- get(".Random.seed", envir = .GlobalEnv)
-  }
+  withr::local_preserve_seed()
   tstsetups <- grep("\\.brnll\\..*\\.augdat\\.", names(prjs), value = TRUE)
   for (tstsetup in tstsetups) {
     tstsetup_trad <- sub("\\.augdat\\.", ".trad_compare.", tstsetup)
@@ -209,7 +207,6 @@ test_that(paste(
     expect_equal(structure(unclass(eta_aug), ndiscrete = NULL), eta_trad,
                      info = tstsetup)
   }
-  if (exists("rng_old")) assign(".Random.seed", rng_old, envir = .GlobalEnv)
 })
 
 ## Projection -------------------------------------------------------------

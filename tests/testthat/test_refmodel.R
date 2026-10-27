@@ -355,15 +355,15 @@ test_that(paste(
     # Snapshots:
     if (run_snaps) {
       if (testthat_ed_max2) local_edition(3)
-      width_orig <- options(width = 145)
-      expect_snapshot({
-        print(tstsetup)
-        print(rlang::hash(predref_resp))
-        print(rlang::hash(predref_link))
-        print(rlang::hash(predref_ynew_resp))
-        print(rlang::hash(predref_ynew_link))
+      withr::with_options(list(width = 145), {
+        expect_snapshot({
+          print(tstsetup)
+          print(rlang::hash(predref_resp))
+          print(rlang::hash(predref_link))
+          print(rlang::hash(predref_ynew_resp))
+          print(rlang::hash(predref_ynew_link))
+        })
       })
-      options(width_orig)
       if (testthat_ed_max2) local_edition(2)
     }
   }

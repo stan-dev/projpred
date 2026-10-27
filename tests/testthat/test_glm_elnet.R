@@ -2,10 +2,7 @@ context("elnet")
 
 # tests for glm_elnet
 
-if (exists(".Random.seed", envir = .GlobalEnv)) {
-  rng_old <- get(".Random.seed", envir = .GlobalEnv)
-}
-set.seed(1235)
+withr::local_seed(1235)
 n <- 40
 nterms <- 10
 nterms_fit <- nterms - 5
@@ -218,5 +215,3 @@ test_that("glm_elnet with alpha=0 and glm_ridge give the same result.", {
     }
   }
 })
-
-if (exists("rng_old")) assign(".Random.seed", rng_old, envir = .GlobalEnv)

@@ -430,12 +430,12 @@ test_that(paste(
               info_str = paste(tstsetup, "with_args", sep = "__"))
     if (run_snaps) {
       if (testthat_ed_max2) local_edition(3)
-      width_orig <- options(width = 145)
-      expect_snapshot({
-        print(tstsetup)
-        print(rlang::hash(pl_with_args))
+      withr::with_options(list(width = 145), {
+        expect_snapshot({
+          print(tstsetup)
+          print(rlang::hash(pl_with_args))
+        })
       })
-      options(width_orig)
       if (testthat_ed_max2) local_edition(2)
     }
   }
@@ -471,12 +471,12 @@ test_that(paste(
               info_str = paste(tstsetup, "with_args", sep = "__"))
     if (run_snaps) {
       if (testthat_ed_max2) local_edition(3)
-      width_orig <- options(width = 145)
-      expect_snapshot({
-        print(tstsetup)
-        print(rlang::hash(pp_with_args))
+      withr::with_options(list(width = 145), {
+        expect_snapshot({
+          print(tstsetup)
+          print(rlang::hash(pp_with_args))
+        })
       })
-      options(width_orig)
       if (testthat_ed_max2) local_edition(2)
     }
   }
@@ -537,12 +537,12 @@ test_that(paste(
     )
     if (run_snaps) {
       if (testthat_ed_max2) local_edition(3)
-      width_orig <- options(width = 145)
-      expect_snapshot({
-        print(tstsetup)
-        print(smmry, digits = 6)
+      withr::with_options(list(width = 145), {
+        expect_snapshot({
+          print(tstsetup)
+          print(smmry, digits = 6)
+        })
       })
-      options(width_orig)
       if (testthat_ed_max2) local_edition(2)
     }
   }
@@ -580,12 +580,12 @@ test_that(paste(
     )
     if (run_snaps) {
       if (testthat_ed_max2) local_edition(3)
-      width_orig <- options(width = 145)
-      expect_snapshot({
-        print(tstsetup)
-        print(smmry, digits = 6)
+      withr::with_options(list(width = 145), {
+        expect_snapshot({
+          print(tstsetup)
+          print(smmry, digits = 6)
+        })
       })
-      options(width_orig)
       if (testthat_ed_max2) local_edition(2)
     }
   }
@@ -606,9 +606,7 @@ test_that(paste(
   # This test sometimes behaves inpredictably when run in `R CMD check`, so skip
   # it on CRAN:
   skip_on_cran()
-  if (exists(".Random.seed", envir = .GlobalEnv)) {
-    rng_old <- get(".Random.seed", envir = .GlobalEnv)
-  }
+  withr::local_preserve_seed()
   suppressWarnings(RNGversion("3.5.0"))
   set.seed(1235)
   n <- 100
@@ -754,5 +752,4 @@ test_that(paste(
     expect_identical(ind, predictor_ranking_lasso, info = as.character(i))
   }
   RNGversion(getRversion())
-  if (exists("rng_old")) assign(".Random.seed", rng_old, envir = .GlobalEnv)
 })

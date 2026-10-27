@@ -7,10 +7,7 @@ context("ridge")
 # - Gamma with inverse or id-link
 # - everything except gaussian with id-link for ridge penalty
 
-if (exists(".Random.seed", envir = .GlobalEnv)) {
-  rng_old <- get(".Random.seed", envir = .GlobalEnv)
-}
-set.seed(1235)
+withr::local_seed(1235)
 n <- 40
 nterms <- 10
 nterms_fit <- nterms - 5
@@ -267,5 +264,3 @@ test_that("glm_ridge: poisson, log-link, no intercept, lambda = 0", {
 #   expect_equal(unname(coef(glmfit)), c(ridgefit$beta0, ridgefit$beta),
 #                tolerance = tol)
 # })
-
-if (exists("rng_old")) assign(".Random.seed", rng_old, envir = .GlobalEnv)

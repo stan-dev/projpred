@@ -72,6 +72,7 @@ Suggests:
     doRNG,
     unix,
     testthat,
+    withr (>= 3.0.3),
     vdiffr,
     knitr,
     rmarkdown,

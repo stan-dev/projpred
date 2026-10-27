@@ -8,10 +8,7 @@ test_that(paste(
   "get_refdist(): `ndraws = NULL` and `nclusters = NULL` leads to",
   "`ndraws = S` (and `nclusters = NULL`)"
 ), {
-  if (exists(".Random.seed", envir = .GlobalEnv)) {
-    rng_old <- get(".Random.seed", envir = .GlobalEnv)
-  }
-  set.seed(seed2_tst)
+  withr::local_seed(seed2_tst)
   for (tstsetup in names(refmods)) {
     refdist <- get_refdist(refmods[[tstsetup]])
     if (args_ref[[tstsetup]]$prj_nm == "augdat") {
@@ -31,17 +28,13 @@ test_that(paste(
       info_str = tstsetup
     )
   }
-  if (exists("rng_old")) assign(".Random.seed", rng_old, envir = .GlobalEnv)
 })
 
 test_that(paste(
   "`ndraws` and/or `nclusters` too big causes them to be cut off at the number",
   "of posterior draws in the reference model"
 ), {
-  if (exists(".Random.seed", envir = .GlobalEnv)) {
-    rng_old <- get(".Random.seed", envir = .GlobalEnv)
-  }
-  set.seed(seed2_tst)
+  withr::local_seed(seed2_tst)
   for (tstsetup in names(refmods)) {
     for (ndraws_crr in list(nrefdraws + 1L)) {
       for (nclusters_crr in list(NULL, nrefdraws + 1L)) {
@@ -64,7 +57,6 @@ test_that(paste(
       }
     }
   }
-  if (exists("rng_old")) assign(".Random.seed", rng_old, envir = .GlobalEnv)
 })
 
 # force_search_terms() ----------------------------------------------------
@@ -193,10 +185,7 @@ test_that(paste(
 # <https://github.com/stan-dev/projpred/pull/496#issuecomment-2481313265>), then
 # changed function name and added seed reset:
 test_that(".srs_diff_est_w() works as expected", {
-  if (exists(".Random.seed", envir = .GlobalEnv)) {
-    rng_old <- get(".Random.seed", envir = .GlobalEnv)
-  }
-  set.seed(1234)
+  withr::local_seed(1234)
   N <- 1000
   y_true <- 1:N
   sigma_hat_true <- sqrt(N * sum((y_true - mean(y_true))^2) / length(y_true))
@@ -226,15 +215,11 @@ test_that(".srs_diff_est_w() works as expected", {
   expect_equal(res$y_hat, 500500, tol = 0.0001)
   expect_equal(res$v_y_hat, 0, tol = 0.0001)
   expect_equal(sqrt(res$hat_v_y), sigma_hat_true, tol = 0.1)
-  if (exists("rng_old")) assign(".Random.seed", rng_old, envir = .GlobalEnv)
 })
 
 # Adapted from the test above:
 test_that(".srs_diff_est_w() works as expected with `wobs` not full of ones", {
-  if (exists(".Random.seed", envir = .GlobalEnv)) {
-    rng_old <- get(".Random.seed", envir = .GlobalEnv)
-  }
-  set.seed(seed3_tst)
+  withr::local_seed(seed3_tst)
   N <- 1e3
   y_true <- seq_len(N)
   wobs <- sample(2:7, size = N, replace = TRUE)
@@ -277,7 +262,6 @@ test_that(".srs_diff_est_w() works as expected with `wobs` not full of ones", {
   expect_equal(res$y_hat, 500845, tol = 1e-4)
   expect_equal(res$v_y_hat, 0, tol = 1e-4)
   expect_equal(sqrt(res$hat_v_y), sigma_hat_true, tol = 1e-1)
-  if (exists("rng_old")) assign(".Random.seed", rng_old, envir = .GlobalEnv)
 })
 
 test_that(".srs_diff_est_w() propagates input `NA`s to its output", {

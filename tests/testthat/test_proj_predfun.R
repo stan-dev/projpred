@@ -9,10 +9,7 @@ test_that("repair_re() works for GLMMs", {
   # stan-dev/rstanarm#610, so don't run this test on CRAN:
   skip_on_cran()
 
-  if (exists(".Random.seed", envir = .GlobalEnv)) {
-    rng_old <- get(".Random.seed", envir = .GlobalEnv)
-  }
-  set.seed(seed2_tst)
+  withr::local_seed(seed2_tst)
 
   # Data --------------------------------------------------------------------
 
@@ -169,9 +166,6 @@ test_that("repair_re() works for GLMMs", {
     })
   expect_equal(lpreds, lpreds_man, tolerance = 1e-15)
 
-  # Teardown ----------------------------------------------------------------
-
-  if (exists("rng_old")) assign(".Random.seed", rng_old, envir = .GlobalEnv)
 })
 
 test_that("repair_re() works for multilevel cumulative() models", {
@@ -179,10 +173,7 @@ test_that("repair_re() works for multilevel cumulative() models", {
 
   # Setup -------------------------------------------------------------------
 
-  if (exists(".Random.seed", envir = .GlobalEnv)) {
-    rng_old <- get(".Random.seed", envir = .GlobalEnv)
-  }
-  set.seed(seed2_tst)
+  withr::local_seed(seed2_tst)
 
   # Data --------------------------------------------------------------------
 
@@ -331,9 +322,6 @@ test_that("repair_re() works for multilevel cumulative() models", {
        }))
   expect_equal(unname(lpreds), lpreds_man, tolerance = 1e-14)
 
-  # Teardown ----------------------------------------------------------------
-
-  if (exists("rng_old")) assign(".Random.seed", rng_old, envir = .GlobalEnv)
 })
 
 # Multilevel categorical models -------------------------------------------
@@ -341,10 +329,7 @@ test_that("repair_re() works for multilevel cumulative() models", {
 ## Setup ------------------------------------------------------------------
 
 # Set seed:
-if (exists(".Random.seed", envir = .GlobalEnv)) {
-  rng_old <- get(".Random.seed", envir = .GlobalEnv)
-}
-set.seed(seed2_tst)
+withr::local_seed(seed2_tst)
 
 ## Data -------------------------------------------------------------------
 
@@ -907,7 +892,3 @@ test_that(paste(
   expect_equal(as.numeric(lpreds), as.numeric(lpreds_man),
                tolerance = 1e-14)
 })
-
-# Teardown ----------------------------------------------------------------
-
-if (exists("rng_old")) assign(".Random.seed", rng_old, envir = .GlobalEnv)

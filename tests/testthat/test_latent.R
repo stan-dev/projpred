@@ -2,9 +2,7 @@ context("latent projection")
 
 # Setup -------------------------------------------------------------------
 
-if (exists(".Random.seed", envir = .GlobalEnv)) {
-  rng_old <- get(".Random.seed", envir = .GlobalEnv)
-}
+withr::local_preserve_seed()
 
 # latent.R ----------------------------------------------------------------
 
@@ -98,9 +96,7 @@ test_that(paste(
   "traditional projection"
 ), {
   skip_if_not(run_prj)
-  if (exists(".Random.seed", envir = .GlobalEnv)) {
-    rng_old <- get(".Random.seed", envir = .GlobalEnv)
-  }
+  withr::local_preserve_seed()
   tstsetups <- grep("\\.brnll\\..*\\.latent\\.", names(prjs), value = TRUE)
   for (tstsetup in tstsetups) {
     tstsetup_trad <- sub("\\.latent\\.", ".trad_compare.", tstsetup)
@@ -151,7 +147,6 @@ test_that(paste(
     expect_equal(mu_offs_lat_oscale_cl, pref_trad$mu_offs, tolerance = 1e-10,
                  info = tstsetup)
   }
-  if (exists("rng_old")) assign(".Random.seed", rng_old, envir = .GlobalEnv)
 })
 
 ## Gaussian family --------------------------------------------------------
@@ -228,10 +223,6 @@ test_that(paste(
                      info = tstsetup_mod)
   }
 })
-
-# Teardown ----------------------------------------------------------------
-
-if (exists("rng_old")) assign(".Random.seed", rng_old, envir = .GlobalEnv)
 
 # Censored observations ---------------------------------------------------
 
