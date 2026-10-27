@@ -4,6 +4,17 @@
 
 # General setup -----------------------------------------------------------
 
+# When the tests end, restore the global options (and remove the ones that the
+# tests added). testthat restores its own options:
+opts_orig <- options()
+opts_orig <- opts_orig[!startsWith(names(opts_orig), "testthat")]
+withr::defer({
+  opts_new <- setdiff(names(options()), names(opts_orig))
+  opts_new <- opts_new[!startsWith(opts_new, "testthat")]
+  options(stats::setNames(vector("list", length(opts_new)), opts_new))
+  options(opts_orig)
+}, envir = testthat::teardown_env())
+
 options(warn = 1)
 
 # These switches may be set to `FALSE` to save time (e.g., when debugging
@@ -156,6 +167,8 @@ use_fac <- TRUE
 # Use polym() instead of poly()?:
 use_polym <- FALSE
 
+# When the tests end, restore the state of the random number generator:
+withr::local_preserve_seed(.local_envir = testthat::teardown_env())
 source(testthat::test_path("helpers", "unlist_cust.R"), local = TRUE)
 source(testthat::test_path("helpers", "testers.R"), local = TRUE)
 source(testthat::test_path("helpers", "args.R"), local = TRUE)
@@ -617,12 +630,17 @@ offss_tst <- list(with_offs = list(), # with_offs = list(offset = offs_tst),
 # rstanarm:::kfold.stanreg() seems to assume these objects to lie in the
 # global environment. Since `testthat` uses a new environment for running
 # the tests (see `?testthat::test_env`), we need the following code to be
-# able to run devtools::test():
+# able to run devtools::test(). The withr::defer() below removes them again
+# when the tests end:
+f_objs_global <- character()
 for (obj_symb_chr in c(paste0("f_", fam_nms_trad))) {
   if (!exists(obj_symb_chr, envir = .GlobalEnv)) {
     assign(obj_symb_chr, get(obj_symb_chr), envir = .GlobalEnv)
+    f_objs_global <- c(f_objs_global, obj_symb_chr)
   }
 }
+withr::defer(rm(list = f_objs_global, envir = .GlobalEnv),
+             envir = testthat::teardown_env())
 
 args_fit <- lapply(pkg_nms, function(pkg_nm) {
   # Depending on the package used for fitting the reference model, `mod_nms`

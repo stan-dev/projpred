@@ -2,14 +2,18 @@ context("parallel")
 
 # Setup -------------------------------------------------------------------
 
+# withr resets the options and the parallel backend at the end of this file,
+# also if the file stops with an error.
 if (run_prll) {
-  trigger_default <- options(projpred.parallel_proj_trigger = 0L)
+  withr::local_options(list(projpred.parallel_proj_trigger = 0L))
 
   if (dopar_backend == "doParallel") {
     doParallel::registerDoParallel(ncores)
+    withr::defer(doParallel::stopImplicitCluster())
   } else if (dopar_backend == "doFuture") {
     doFuture::registerDoFuture()
-    export_default <- options(doFuture.foreach.export = ".export")
+    withr::local_options(list(doFuture.foreach.export = ".export"))
+    withr::defer(future::plan(future::sequential))
     if (future_plan == "multicore") {
       future::plan(future::multicore, workers = ncores)
     } else if (future_plan == "multisession") {
@@ -79,20 +83,3 @@ test_that("cv_varsel() in parallel gives the same results as sequentially", {
     expect_equal(cvvs_repr, cvvss[[tstsetup]], info = tstsetup)
   }
 })
-
-# Teardown ----------------------------------------------------------------
-
-if (run_prll) {
-  if (dopar_backend == "doParallel") {
-    doParallel::stopImplicitCluster()
-  } else if (dopar_backend == "doFuture") {
-    future::plan(future::sequential)
-    options(export_default)
-    rm(export_default)
-  } else {
-    stop("Unrecognized `dopar_backend`.")
-  }
-
-  options(trigger_default)
-  rm(trigger_default)
-}
