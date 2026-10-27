@@ -1611,6 +1611,9 @@ test_that(paste(
     }
     tstsetups <- tstsetups_tmp
   }
+  # Test setups for which rstanarm::kfold() fails (the skip at the end of this
+  # test lists them):
+  kfold_failed <- character()
   for (tstsetup in tstsetups) {
     args_cvvs_i <- args_cvvs[[tstsetup]]
     tstsetup_fit <- args_cvvs_i$tstsetup_fit
@@ -1648,9 +1651,9 @@ test_that(paste(
                                             cores = 1)),
                      silent = TRUE)
     if (inherits(kfold_obj, "try-error")) {
-      message("Could not test `tstsetup = \"", tstsetup, "\"` in the rstanarm ",
-              "`cvfits` test. Error message: \"",
-              attr(kfold_obj, "condition")$message, "\"")
+      kfold_failed <- c(kfold_failed, paste0(
+        tstsetup, " (", attr(kfold_obj, "condition")$message, ")"
+      ))
       next
     }
     kfold_obj <- structure(kfold_obj$fits[, "fit"], folds = folds_vec)
@@ -1707,6 +1710,9 @@ test_that(paste(
       )
     }
   }
+  skip_if(length(kfold_failed) > 0,
+          paste("rstanarm::kfold() failed for:",
+                paste(kfold_failed, collapse = "; ")))
 })
 
 test_that(paste(
