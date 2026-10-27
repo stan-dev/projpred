@@ -996,8 +996,12 @@ get_refmodel.stanreg <- function(object, latent = FALSE, dis = NULL, ...) {
     )$fits[, "fit"]
   }
 
+  # Keep the user's `dis` (possibly `NULL`) for the folds. The default set below
+  # uses the full-data `sigma`; with `NULL`, each fold takes `sigma` from its
+  # own refit.
+  dis_user <- dis
   cvrefbuilder <- function(cvfit) {
-    get_refmodel(cvfit, latent = latent, dis = dis,
+    get_refmodel(cvfit, latent = latent, dis = dis_user,
                  called_from_cvrefbuilder = TRUE, ...)
   }
 
