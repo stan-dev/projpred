@@ -13,6 +13,7 @@ If you read this from a place other than <https://mc-stan.org/projpred/news/inde
 
 * Filter the warning "non-integer response values in a poisson model" of lme4 (>= 2.1-1), which every projection onto a Poisson submodel with group-level terms would give. (GitHub: #<PR>)
 * With `options(projpred.PQL = TRUE)`, remove the warnings that every projection gave: the "iteration" messages of `MASS::glmmPQL()`, the warnings about non-integer Poisson responses, and "Unrecognized submodel fit" in the convergence check. (GitHub: #<PR>)
+* Tests: Add tests that run on CRAN for the submodel fitters from lme4, MASS, gamm4, ordinal and mclogit. (GitHub: #<PR>)
 
 
 # projpred 2.11.0
