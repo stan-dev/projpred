@@ -12,6 +12,7 @@ If you read this from a place other than <https://mc-stan.org/projpred/news/inde
 ## Bug fixes and maintenance
 
 * Tests: Adapt to version 2.1-0 of package lme4. (GitHub: #577)
+* Docs: Explain how custom latent-projection functions can use fold-wise draws in K-fold CV (`?extend_family`, latent-projection vignette).
 
 
 # projpred 2.11.0

@@ -552,6 +552,9 @@ refm_weib <- get_refmodel(
 ```
 Again, the message telling that `<refmodel>$dis` consists of only `NA`s will not concern us here because we will only focus on response-scale post-processing.
 The message concerning `latent_ilink` can be safely ignored here (the internal default based on `family$linkinv` works correctly in this case).
+The functions above use the shape draws of the full-data fit (`refm_shape`).
+This is correct for `varsel()` and for the LOO CV that we use below.
+For K-fold CV, see section ["K-fold CV with custom response-scale functions"](#kfold-custom).
 
 Run `cv_varsel()`:
 ```{r weibull_cvvs}
@@ -693,6 +696,8 @@ refm_lnorm <- get_refmodel(
 )
 ```
 The message concerning `latent_ilink` can be safely ignored here (the internal default based on `family$linkinv` works correctly in this case).
+Argument `dis` contains the `sigma` draws of the full-data fit.
+For K-fold CV, see section ["K-fold CV with custom response-scale functions"](#kfold-custom).
 
 Run `cv_varsel()`:
 ```{r lognormal_cvvs}
@@ -740,5 +745,69 @@ bayesplot::ppc_km_overlay(y = dat_sim_lnorm$yobs, yrep = prj_predict_lnorm,
 ```
 
 As expected, this PPPC indicates that this submodel is a reasonable one (keeping in mind that such a PPPC is just a single model-diagnostic tool).
+
+## K-fold CV with custom response-scale functions {#kfold-custom}
+
+In the negative binomial and Weibull examples above, the custom response-scale functions use posterior draws from the full-data reference model fit (`refm_prec`, `refm_shape`).
+In the log-normal example, argument `dis` contains the `sigma` draws of the full-data fit.
+This is correct for `varsel()` and for `cv_varsel()` with `cv_method = "LOO"`, because these use only the full-data fit.
+With `cv_method = "kfold"`, the reference model is refitted in each fold, and **projpred** creates the fold-wise reference model objects with the function in element `cvrefbuilder` of the reference model object.
+The `cvrefbuilder` functions of `get_refmodel.stanreg()` and `brms::get_refmodel.brmsfit()` pass the same custom functions and the same `dis` to the fold-wise reference model objects, so the folds use the draws from the full-data fit.
+
+To use the draws from the fold-wise refits, define the custom functions inside a function that takes the fitted model object as its argument and calls `get_refmodel()`.
+Then set element `cvrefbuilder` of the reference model object to a function that calls this outer function with the fold-wise refit.
+(Methods `get_refmodel.stanreg()` and `brms::get_refmodel.brmsfit()` do not accept a `cvrefbuilder` argument, so we replace the element after we have created the reference model object.)
+For the negative binomial example, this can look as follows:
+```{r kfold_custom_nebin}
+get_refmodel_nebin <- function(fit, ...) {
+  refm_prec <- as.matrix(fit)[, "reciprocal_dispersion", drop = FALSE]
+  latent_ll_oscale_nebin <- function(ilpreds,
+                                     dis = rep(NA, nrow(ilpreds)),
+                                     y_oscale,
+                                     wobs = rep(1, ncol(ilpreds)),
+                                     cens,
+                                     cl_ref,
+                                     wdraws_ref = rep(1, length(cl_ref))) {
+    y_oscale_mat <- matrix(y_oscale, nrow = nrow(ilpreds),
+                           ncol = ncol(ilpreds), byrow = TRUE)
+    wobs_mat <- matrix(wobs, nrow = nrow(ilpreds), ncol = ncol(ilpreds),
+                       byrow = TRUE)
+    refm_prec_agg <- cl_agg(refm_prec, cl = cl_ref, wdraws = wdraws_ref)
+    ll_unw <- dnbinom(y_oscale_mat, size = refm_prec_agg, mu = ilpreds,
+                      log = TRUE)
+    return(wobs_mat * ll_unw)
+  }
+  latent_ppd_oscale_nebin <- function(
+      ilpreds_resamp,
+      dis_resamp = rep(NA, nrow(ilpreds_resamp)),
+      wobs = rep(1, ncol(ilpreds_resamp)),
+      cl_ref,
+      wdraws_ref = rep(1, length(cl_ref)),
+      idxs_prjdraws
+  ) {
+    refm_prec_agg <- cl_agg(refm_prec, cl = cl_ref, wdraws = wdraws_ref)
+    refm_prec_agg_resamp <- refm_prec_agg[idxs_prjdraws, , drop = FALSE]
+    ppd <- rnbinom(prod(dim(ilpreds_resamp)), size = refm_prec_agg_resamp,
+                   mu = ilpreds_resamp)
+    ppd <- matrix(ppd, nrow = nrow(ilpreds_resamp), ncol = ncol(ilpreds_resamp))
+    return(ppd)
+  }
+  get_refmodel(fit, latent = TRUE,
+               latent_ll_oscale = latent_ll_oscale_nebin,
+               latent_ppd_oscale = latent_ppd_oscale_nebin, ...)
+}
+refm_nebin_kfold <- get_refmodel_nebin(refm_fit_nebin)
+refm_nebin_kfold$cvrefbuilder <- function(cvfit) {
+  get_refmodel_nebin(cvfit, called_from_cvrefbuilder = TRUE)
+}
+```
+As before, the messages concerning `<refmodel>$dis` and `latent_ilink` can be ignored here.
+Then `cv_varsel(refm_nebin_kfold, cv_method = "kfold")` uses the `reciprocal_dispersion` draws of the fold-wise refit in each fold.
+Argument `called_from_cvrefbuilder = TRUE` suppresses some warnings that are already shown for the full-data reference model object (see `?init_refmodel`).
+We do not run K-fold CV here, because it refits the reference model $K$ times.
+For the Weibull example, define `refm_shape` inside such a function in the same way.
+For the log-normal example, pass `dis = as.matrix(fit)[, "sigma", drop = FALSE]` to `get_refmodel()` inside such a function.
+For a **brms** reference model, the default `cvrefbuilder` also passes arguments `resp` and `brms_seed` of `brms::get_refmodel.brmsfit()`.
+If you use these arguments, pass them in the custom `cvrefbuilder` too.
 
 ## References
