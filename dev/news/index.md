@@ -4,6 +4,14 @@
 
 ### Major changes
 
+- Faster computation of the predictive variance of the reference model
+  for the Gaussian and Student-t families. This matters for a large
+  number of observations and many projected draws. For example,
+  [`project()`](https://mc-stan.org/projpred/dev/reference/project.md)
+  with 10 000 observations and 4 000 projected draws is about 7 times
+  faster. (GitHub:
+  [\#575](https://github.com/stan-dev/projpred/issues/575))
+
 ### Minor changes
 
 ### Bug fixes and maintenance

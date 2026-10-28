@@ -67,7 +67,8 @@
 <h2 class="pkg-version" data-toc-text="2.11.0.9000" id="projpred-21109000">projpred 2.11.0.9000<a class="anchor" aria-label="anchor" href="#projpred-21109000"></a></h2>
 <div class="section level3">
 <h3 id="major-changes-2-11-0-9000">Major changes<a class="anchor" aria-label="anchor" href="#major-changes-2-11-0-9000"></a></h3>
-</div>
+<ul><li>Faster computation of the predictive variance of the reference model for the Gaussian and Student-t families. This matters for a large number of observations and many projected draws. For example, <code><a href="../reference/project.html">project()</a></code> with 10 000 observations and 4 000 projected draws is about 7 times faster. (GitHub: <a href="https://github.com/stan-dev/projpred/issues/575" class="external-link">#575</a>)</li>
+</ul></div>
 <div class="section level3">
 <h3 id="minor-changes-2-11-0-9000">Minor changes<a class="anchor" aria-label="anchor" href="#minor-changes-2-11-0-9000"></a></h3>
 </div>
