@@ -73,7 +73,8 @@
 </div>
 <div class="section level3">
 <h3 id="bug-fixes-and-maintenance-2-11-0-9000">Bug fixes and maintenance<a class="anchor" aria-label="anchor" href="#bug-fixes-and-maintenance-2-11-0-9000"></a></h3>
-<ul><li>Tests: Adapt to version 2.1-0 of package lme4. (GitHub: <a href="https://github.com/stan-dev/projpred/issues/577" class="external-link">#577</a>)</li>
+<ul><li>Fixed bug in the predictions of submodels for new data: Terms with a data-dependent basis, such as <code><a href="https://rdrr.io/r/stats/poly.html" class="external-link">poly()</a></code> or <code><a href="https://rdrr.io/r/splines/ns.html" class="external-link">splines::ns()</a></code>, used a basis computed from the new data instead of the basis of the training data. This affected <code><a href="../reference/pred-projection.html">proj_linpred()</a></code> and <code><a href="../reference/pred-projection.html">proj_predict()</a></code> with <code>newdata</code>, <code><a href="../reference/varsel.html">varsel()</a></code> with <code>d_test</code>, and K-fold CV, and caused <code><a href="../reference/cv_varsel.html">cv_varsel()</a></code> with <code>validate_search = TRUE</code> and LOO CV to fail with <code><a href="https://rdrr.io/r/stats/poly.html" class="external-link">poly()</a></code> terms. (GitHub: <a href="https://github.com/stan-dev/projpred/issues/573" class="external-link">#573</a>)</li>
+<li>Tests: Adapt to version 2.1-0 of package lme4. (GitHub: <a href="https://github.com/stan-dev/projpred/issues/577" class="external-link">#577</a>)</li>
 </ul></div>
 </div>
     <div class="section level2">

@@ -8,6 +8,22 @@
 
 ### Bug fixes and maintenance
 
+- Fixed bug in the predictions of submodels for new data: Terms with a
+  data-dependent basis, such as
+  [`poly()`](https://rdrr.io/r/stats/poly.html) or
+  [`splines::ns()`](https://rdrr.io/r/splines/ns.html), used a basis
+  computed from the new data instead of the basis of the training data.
+  This affected
+  [`proj_linpred()`](https://mc-stan.org/projpred/dev/reference/pred-projection.md)
+  and
+  [`proj_predict()`](https://mc-stan.org/projpred/dev/reference/pred-projection.md)
+  with `newdata`,
+  [`varsel()`](https://mc-stan.org/projpred/dev/reference/varsel.md)
+  with `d_test`, and K-fold CV, and caused
+  [`cv_varsel()`](https://mc-stan.org/projpred/dev/reference/cv_varsel.md)
+  with `validate_search = TRUE` and LOO CV to fail with
+  [`poly()`](https://rdrr.io/r/stats/poly.html) terms. (GitHub:
+  [\#573](https://github.com/stan-dev/projpred/issues/573))
 - Tests: Adapt to version 2.1-0 of package lme4. (GitHub:
   [\#577](https://github.com/stan-dev/projpred/issues/577))
 
