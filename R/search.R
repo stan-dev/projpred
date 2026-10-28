@@ -415,7 +415,8 @@ search_L1 <- function(p_ref, refmodel, nterms_max, penalty, search_control) {
     }
 
     sub <- nlist(alpha = search_path$alpha[nterms + 1], beta,
-                 w = search_path$w[, nterms + 1], formula, x, xlvls)
+                 w = search_path$w[, nterms + 1], formula, x, xlvls,
+                 terms = attr(fr, "terms"))
     class(sub) <- "subfit"
     return(list(sub))
   })
