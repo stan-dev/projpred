@@ -222,6 +222,24 @@ test_that("glm_elnet with alpha=0 and glm_ridge give the same result.", {
   }
 })
 
+test_that(paste(
+  "glm_elnet: a column that is constant over the observations with positive",
+  "weight does not enter the path"
+), {
+  # Column 2 is 1 except at the observation with weight 0. For n = 238, the
+  # weighted standard deviation of column 2 is about 2e-16, not 0.
+  n_c <- 238
+  x_c <- cbind(sin(1:n_c), c(0, rep(1, n_c - 1)), cos(3 * (1:n_c)))
+  w_c <- c(0, rep(1, n_c - 1))
+  y_c <- x_c[, 1] - 0.5 * x_c[, 3] + sin(7 * (1:n_c))
+  fit0 <- glm_elnet(x_c, y_c, weights = w_c, nlambda = 20)
+  fit <- glm_elnet(x_c[, -2], y_c, weights = w_c, nlambda = 20)
+  expect_true(all(fit0$beta[2, ] == 0))
+  expect_equal(fit0$lambda, fit$lambda, tolerance = 1e-12)
+  expect_equal(fit0$beta[-2, ], fit$beta, tolerance = 1e-10)
+  expect_equal(fit0$beta0, fit$beta0, tolerance = 1e-10)
+})
+
 if (exists("rng_old")) assign(".Random.seed", rng_old, envir = .GlobalEnv)
 # Clean up the workspace:
 rm(list = setdiff(ls(), ls_bu))
