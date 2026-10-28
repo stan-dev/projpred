@@ -198,6 +198,8 @@ fit_glm_ridge_callback <- function(formula, data,
     # differs between the draws:
     x <- projpred_shared_x$x
     xlvls <- projpred_shared_x$xlvls
+    # These terms come from the first draw-wise formula. The predictions for
+    # new data use only their predictor variables:
     terms_train <- projpred_shared_x$terms
     y <- data[[all.vars(formula[[2]])]]
     names(y) <- projpred_shared_x$y_names
@@ -366,7 +368,8 @@ glm_ridge_gauss_multi <- function(formulas, shared_x, dot_args) {
     y_s <- y[, s]
     names(y_s) <- shared_x$y_names
     # `shared_x$terms` comes from the first formula. Its response differs from
-    # draw s, but subfit_terms_newdata() uses only its predictor variables.
+    # draw s, but the predictions for new data use only its predictor
+    # variables.
     structure(list(alpha = unname(beta0[s]), beta = beta_s, w = w,
                    formula = formulas[[s]], x = x, y = y_s,
                    xlvls = shared_x$xlvls, terms = shared_x$terms),

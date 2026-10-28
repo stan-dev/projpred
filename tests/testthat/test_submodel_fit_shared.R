@@ -151,12 +151,19 @@ test_that(paste(
                          predvars_predictors(fits_rows[[2]]$terms)))
   nd <- d$data[c(2, 5, 7, 11), ]
   expect_null(subprd_subfit_shared(fits_rows, nd))
-  # Draw-wise fits to the same rows differ only in the response, so they share
-  # the bases:
-  expect_false(is.null(subprd_subfit_shared(fits_loop, nd)))
-  prd_loop <- do.call(cbind, lapply(fits_rows, predict, newdata = nd))
-  expect_equal(unname(subprd(fits_rows, nd)), unname(prd_loop),
+  # For these fits, subprd() uses the draw-wise predictions:
+  prd_rows <- do.call(cbind, lapply(fits_rows, predict, newdata = nd))
+  expect_equal(unname(subprd(fits_rows, nd)), unname(prd_rows),
                tolerance = 1e-12)
+  # The fits from the shared model matrix and the draw-wise fits to the same
+  # rows (which differ only in the response) share the bases, so the joint
+  # predictions apply:
+  for (fits in list(fits_multi, fits_loop)) {
+    prd_shared <- subprd_subfit_shared(fits, nd)
+    expect_false(is.null(prd_shared))
+    prd_loop <- do.call(cbind, lapply(fits, predict, newdata = nd))
+    expect_equal(unname(prd_shared), unname(prd_loop), tolerance = 1e-12)
+  }
 })
 
 test_that("project() uses the joint Gaussian solve for a Gaussian submodel", {
