@@ -198,12 +198,14 @@ fit_glm_ridge_callback <- function(formula, data,
     # differs between the draws:
     x <- projpred_shared_x$x
     xlvls <- projpred_shared_x$xlvls
+    terms_train <- projpred_shared_x$terms
     y <- data[[all.vars(formula[[2]])]]
     names(y) <- projpred_shared_x$y_names
   } else {
     xy <- glm_model_matrix(formula, data = data)
     x <- xy$x
     xlvls <- xy$xlvls
+    terms_train <- xy$terms
     y <- xy$y
   }
   # Exclude arguments from `...` which cannot be passed to glm_ridge():
@@ -226,8 +228,10 @@ fit_glm_ridge_callback <- function(formula, data,
   }
   # Post-processing:
   rownames(fit$beta) <- colnames(x)
+  # `terms` keeps the data-dependent bases of the training data (attribute
+  # "predvars"), for predictions for new data:
   sub <- nlist(alpha = fit$beta0, beta = fit$beta, w = fit$w, formula, x, y,
-               xlvls)
+               xlvls, terms = terms_train)
   class(sub) <- "subfit"
   return(sub)
 }
@@ -255,7 +259,8 @@ glm_model_matrix <- function(formula, data) {
   # contrasts should also be tested thoroughly (not done until now).
   x <- model.matrix(formula, data = fr)
   x <- x[, colnames(x) != "(Intercept)", drop = FALSE]
-  return(list(x = x, xlvls = xlvls, y = model.response(fr), n_fr = nrow(fr)))
+  return(list(x = x, xlvls = xlvls, y = model.response(fr), n_fr = nrow(fr),
+              terms = attr(fr, "terms")))
 }
 
 # Model matrix shared by the draw-wise formulas `formulas` (which have to differ
@@ -285,7 +290,8 @@ shared_model_matrix <- function(formulas, data) {
   }
   # The response names (as from model.response()) are also shared, so the
   # draw-wise responses do not each get their own copy:
-  return(list(x = xy$x, xlvls = xy$xlvls, y_names = names(xy$y)))
+  return(list(x = xy$x, xlvls = xy$xlvls, y_names = names(xy$y),
+              terms = xy$terms))
 }
 
 # fit_glm_ridge_callback() with a fixed shared model matrix. The enclosing
@@ -352,7 +358,7 @@ glm_ridge_gauss_multi <- function(formulas, shared_x, dot_args) {
     names(y_s) <- shared_x$y_names
     structure(list(alpha = unname(beta0[s]), beta = beta_s, w = w,
                    formula = formulas[[s]], x = x, y = y_s,
-                   xlvls = shared_x$xlvls),
+                   xlvls = shared_x$xlvls, terms = shared_x$terms),
               class = "subfit")
   }))
 }
@@ -1416,6 +1422,29 @@ subprd_augdat_binom <- function(fits, newdata) {
   return(array(augprd, dim = c(nrow(augprd), 1L, ncol(augprd))))
 }
 
+# The terms of `object$formula` (without the response) for new data, with the
+# data-dependent bases of the training data (attribute "predvars" of
+# `object$terms`, for example the coefficients of poly()). Without them,
+# model.matrix() would compute such bases again from the new data. Returns the
+# plain terms if `object$terms` is missing or does not contain all variables.
+subfit_terms_newdata <- function(object) {
+  tt <- delete.response(terms(object$formula))
+  tt_train <- object$terms
+  if (is.null(tt_train) || is.null(attr(tt_train, "predvars"))) {
+    return(tt)
+  }
+  vars <- as.list(attr(tt, "variables"))[-1]
+  vars_train <- as.list(attr(tt_train, "variables"))[-1]
+  predvars_train <- as.list(attr(tt_train, "predvars"))[-1]
+  idx <- match(vapply(vars, deparse_combine, character(1)),
+               vapply(vars_train, deparse_combine, character(1)))
+  if (anyNA(idx)) {
+    return(tt)
+  }
+  attr(tt, "predvars") <- as.call(c(quote(list), predvars_train[idx]))
+  return(tt)
+}
+
 ## FIXME: find a way that allows us to remove this
 #' @noRd
 #' @export
@@ -1446,7 +1475,7 @@ subfit_newdata_x <- function(object, newdata) {
   # more convenient to let users specify contrasts directly. At that
   # occasion, contrasts should also be tested thoroughly (not done until
   # now).
-  x <- model.matrix(delete.response(terms(object$formula)), data = newdata,
+  x <- model.matrix(subfit_terms_newdata(object), data = newdata,
                     xlev = object$xlvls)
   # Need to ensure that the columns of `x` match the coefficients (note that
   # `rownames(beta)` is the same as `colnames(object$x)`, see the tests):

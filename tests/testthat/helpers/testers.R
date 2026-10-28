@@ -796,7 +796,8 @@ outdmin_tester_trad <- function(
         ]
       }
     }
-    subfit_nms <- c("alpha", "beta", "w", "formula", "x", "y", "xlvls")
+    subfit_nms <- c("alpha", "beta", "w", "formula", "x", "y", "xlvls",
+                    "terms")
     if (from_vsel_L1_search) {
       subfit_nms <- setdiff(subfit_nms, "y")
     }
