@@ -56,6 +56,38 @@ test_that("the joint Gaussian solve falls back for other families", {
   ))
 })
 
+test_that(paste(
+  "the joint Gaussian solve falls back for a singular system or non-finite",
+  "coefficients"
+), {
+  d <- shared_fit_data()
+  # Without penalty, a duplicated column makes the system singular:
+  dat_dup <- d$data
+  dat_dup$x3 <- dat_dup$x1
+  fmls_dup <- lapply(d$formulas, update, . ~ . + x3)
+  shared_x_dup <- shared_model_matrix(fmls_dup, data = dat_dup)
+  expect_false(is.null(shared_x_dup))
+  expect_null(glm_ridge_gauss_multi(
+    fmls_dup, shared_x = shared_x_dup,
+    dot_args = list(data = dat_dup, family = gaussian(), weights = d$w,
+                    regul = 0)
+  ))
+  # With the default penalty, the same system has a solution:
+  expect_false(is.null(glm_ridge_gauss_multi(
+    fmls_dup, shared_x = shared_x_dup,
+    dot_args = list(data = dat_dup, family = gaussian(), weights = d$w)
+  )))
+  # An infinite response gives non-finite coefficients:
+  dat_inf <- d$data
+  dat_inf$y2[4] <- Inf
+  shared_x_inf <- shared_model_matrix(d$formulas, data = dat_inf)
+  expect_false(is.null(shared_x_inf))
+  expect_null(glm_ridge_gauss_multi(
+    d$formulas, shared_x = shared_x_inf,
+    dot_args = list(data = dat_inf, family = gaussian(), weights = d$w)
+  ))
+})
+
 test_that("shared_model_matrix() returns NULL if the model matrix differs", {
   d <- shared_fit_data()
   # Different right-hand sides:

@@ -346,7 +346,16 @@ glm_ridge_gauss_multi <- function(formulas, shared_x, dot_args) {
   sqrt_w <- sqrt(weights)
   x_w <- x_std * sqrt_w
   regmat <- diag(c(0, rep(regul, ncol(x))), nrow = ncol(x_std))
-  coefs <- solve(crossprod(x_w) + regmat, crossprod(x_w, y * sqrt_w))
+  # A singular system (for example, `regul = 0` with collinear columns) or
+  # non-finite coefficients (for example, from infinite responses) go to the
+  # draw-wise path:
+  coefs <- tryCatch(
+    solve(crossprod(x_w) + regmat, crossprod(x_w, y * sqrt_w)),
+    error = function(e) NULL
+  )
+  if (is.null(coefs) || !all(is.finite(coefs))) {
+    return(NULL)
+  }
   beta <- coefs[-1, , drop = FALSE] / transf$scale
   beta0 <- coefs[1, ] - colSums(transf$shift * beta)
   # As from glm_ridge_c() (double, also for integer observation weights):
