@@ -36,6 +36,7 @@ test_that(paste(
       seed = 3317, verbose = FALSE
     ))
     opts_old <- options(projpred.search_gauss_crossprod = FALSE)
+    on.exit(options(opts_old), add = TRUE)
     vs_drawwise <- suppressWarnings(varsel(
       refm, nclusters = nclusters_crr, nclusters_pred = 7, nterms_max = 6,
       seed = 3317, verbose = FALSE
@@ -61,6 +62,7 @@ test_that(paste(
                   verbose = FALSE)
   cv_crossprod <- suppressWarnings(do.call(cv_varsel, args_cv))
   opts_old <- options(projpred.search_gauss_crossprod = FALSE)
+  on.exit(options(opts_old), add = TRUE)
   cv_drawwise <- suppressWarnings(do.call(cv_varsel, args_cv))
   options(opts_old)
   expect_identical(ranking(cv_crossprod), ranking(cv_drawwise))
@@ -182,6 +184,7 @@ test_that(paste(
   vs_crossprod <- suppressWarnings(do.call(varsel, args_vs))
   cv_crossprod <- suppressWarnings(do.call(cv_varsel, args_cv))
   opts_old <- options(projpred.search_gauss_crossprod = FALSE)
+  on.exit(options(opts_old), add = TRUE)
   vs_drawwise <- suppressWarnings(do.call(varsel, args_vs))
   cv_drawwise <- suppressWarnings(do.call(cv_varsel, args_cv))
   options(opts_old)
