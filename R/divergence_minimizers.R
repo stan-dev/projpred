@@ -84,8 +84,10 @@ divmin <- function(
   # multilevel and additive submodel fitters. Some of these fitters (for example
   # lme4::lmer()) do not ignore the response of an observation with weight 0,
   # and others (mgcv::gam()) use its predictor values for the smooth bases. The
-  # GLM fitters handle weight 0 exactly. If `weights` and `data` differ in
-  # length (not in projpred's own calls), nothing is removed.
+  # GLM fitters handle weight 0 exactly, except that the data-dependent bases
+  # (for example, the knots of splines::ns()) still use its predictor values.
+  # If `weights` and `data` differ in length (not in projpred's own calls),
+  # nothing is removed.
   lost_lvls <- NULL
   if ((has_grp || has_add) &&
       is.data.frame(dot_args$data) && length(dot_args$weights) > 0 &&
