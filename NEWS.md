@@ -13,6 +13,8 @@ If you read this from a place other than <https://mc-stan.org/projpred/news/inde
 
 ## Bug fixes and maintenance
 
+* Tests: Adapt to version 2.1-0 of package lme4. (GitHub: #577)
+
 
 # projpred 2.11.0
 
