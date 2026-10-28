@@ -365,6 +365,8 @@ glm_ridge_gauss_multi <- function(formulas, shared_x, dot_args) {
     dimnames(beta_s) <- list(colnames(x), NULL)
     y_s <- y[, s]
     names(y_s) <- shared_x$y_names
+    # `shared_x$terms` comes from the first formula. Its response differs from
+    # draw s, but subfit_terms_newdata() uses only its predictor variables.
     structure(list(alpha = unname(beta0[s]), beta = beta_s, w = w,
                    formula = formulas[[s]], x = x, y = y_s,
                    xlvls = shared_x$xlvls, terms = shared_x$terms),
@@ -1500,16 +1502,32 @@ subfit_newdata_x <- function(object, newdata) {
   return(x)
 }
 
+# The "predvars" attribute of `trms` without the response (the draw-wise fits
+# differ in the response). `NULL` if `trms` has no "predvars".
+predvars_predictors <- function(trms) {
+  pv <- attr(trms, "predvars")
+  resp <- attr(trms, "response")
+  if (is.null(pv) || is.null(resp) || resp == 0) {
+    return(pv)
+  }
+  # The first element of the call is `list`:
+  return(pv[-(resp + 1)])
+}
+
 # Predictions of several `subfit` objects with the same predictor terms (the
 # draw-wise fits of one submodel) for new data: one model matrix, one matrix
-# product. Returns `NULL` if the fits do not share their predictor terms.
+# product. Returns `NULL` if the fits do not share their predictor terms and
+# the data-dependent bases of their training data.
 subprd_subfit_shared <- function(fits, newdata) {
   fit_1 <- fits[[1]]
   rhs_1 <- fit_1$formula[[3]]
   nms_1 <- rownames(fit_1$beta)
+  pv_1 <- predvars_predictors(fit_1$terms)
   is_shared <- all(vapply(fits, function(fit) {
     inherits(fit, "subfit") && identical(fit$formula[[3]], rhs_1) &&
-      identical(rownames(fit$beta), nms_1) && identical(fit$xlvls, fit_1$xlvls)
+      identical(rownames(fit$beta), nms_1) &&
+      identical(fit$xlvls, fit_1$xlvls) &&
+      identical(predvars_predictors(fit$terms), pv_1)
   }, logical(1)))
   if (!is_shared) {
     return(NULL)

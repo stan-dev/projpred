@@ -121,6 +121,44 @@ test_that(paste(
   expect_equal(unname(subprd(fits, nd)), unname(prd_loop), tolerance = 1e-12)
 })
 
+test_that(paste(
+  "the shared fits keep the data-dependent bases, and the joint predictions",
+  "require the same bases in all fits"
+), {
+  d <- shared_fit_data()
+  fmls <- lapply(d$formulas, update, . ~ x1 + poly(x2, 2) + f)
+  shared_x <- shared_model_matrix(fmls, data = d$data)
+  fits_multi <- glm_ridge_gauss_multi(
+    fmls, shared_x = shared_x,
+    dot_args = list(data = d$data, family = gaussian(), weights = d$w)
+  )
+  fits_loop <- lapply(fmls, fit_glm_ridge_callback, data = d$data,
+                      family = gaussian(), weights = d$w)
+  for (s in seq_along(fmls)) {
+    expect_identical(predvars_predictors(fits_multi[[s]]$terms),
+                     predvars_predictors(fits_loop[[s]]$terms))
+  }
+  # Fits to different rows have different poly() bases (no factor, so that only
+  # the bases differ):
+  fmls_rows <- lapply(fmls[1:2], update, . ~ x1 + poly(x2, 2))
+  fits_rows <- list(
+    fit_glm_ridge_callback(fmls_rows[[1]], data = d$data[1:30, ],
+                           family = gaussian()),
+    fit_glm_ridge_callback(fmls_rows[[2]], data = d$data[11:40, ],
+                           family = gaussian())
+  )
+  expect_false(identical(predvars_predictors(fits_rows[[1]]$terms),
+                         predvars_predictors(fits_rows[[2]]$terms)))
+  nd <- d$data[c(2, 5, 7, 11), ]
+  expect_null(subprd_subfit_shared(fits_rows, nd))
+  # Draw-wise fits to the same rows differ only in the response, so they share
+  # the bases:
+  expect_false(is.null(subprd_subfit_shared(fits_loop, nd)))
+  prd_loop <- do.call(cbind, lapply(fits_rows, predict, newdata = nd))
+  expect_equal(unname(subprd(fits_rows, nd)), unname(prd_loop),
+               tolerance = 1e-12)
+})
+
 test_that("project() uses the joint Gaussian solve for a Gaussian submodel", {
   d <- shared_fit_data(n = 60)
   dat <- d$data[, c("x1", "x2", "f")]
