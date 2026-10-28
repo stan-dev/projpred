@@ -7,6 +7,12 @@ If you read this from a place other than <https://mc-stan.org/projpred/news/inde
 
 ## Major changes
 
+* Faster predictions of multilevel submodels (`lme4::lmer()`, `lme4::glmer()`) for data without new group levels, for example the training data: one model matrix and one random-effects design serve all projected draws. The predictions are unchanged. (GitHub: #584)
+
+* Faster projections onto Gaussian multilevel submodels (`lme4::lmer()`): all projected draws share one `lme4::lFormula()` result. The fits are unchanged. If a check at the first use finds that the installed lme4 version gives other fits, projpred calls `lme4::lmer()` for each draw. Together with the faster predictions above, `cv_varsel()` with `validate_search = TRUE` for a Gaussian multilevel model is about 3 times faster. (GitHub: #584)
+
+* Faster projections onto additive submodels without group-level terms (`mgcv::gam()`): all projected draws share one setup of `mgcv::gam()`, and one linear-predictor matrix gives the predictions of all draws. The fits and predictions are unchanged. For example, `varsel()` for an additive model is about 1.5 times faster. (GitHub: #584)
+
 ## Minor changes
 
 ## Bug fixes and maintenance
