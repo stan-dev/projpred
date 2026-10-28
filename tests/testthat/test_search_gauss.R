@@ -55,9 +55,7 @@ test_that(paste(
   "the LOO CV with validated search gives the same results with and without",
   "the cross-product computations"
 ), {
-  # Without poly(): the draw-wise path cannot predict a poly() term for one
-  # left-out observation.
-  refm <- refm_search_gauss(y ~ x1 + x2 + x3 + x4 + f + x1:x2, n = 40)
+  refm <- refm_search_gauss(fml_search_gauss, n = 40)
   args_cv <- list(refm, cv_method = "LOO", validate_search = TRUE, nloo = 10,
                   nclusters = 3, ndraws_pred = 20, nterms_max = 4, seed = 5821,
                   verbose = FALSE)
@@ -73,9 +71,7 @@ test_that(paste(
 })
 
 test_that("perf_eval_gauss() applies in the LOO CV with validated search", {
-  # Without poly(): the draw-wise path cannot predict a poly() term for one
-  # left-out observation.
-  refm <- refm_search_gauss(y ~ x1 + x2 + x3 + x4 + f + x1:x2, n = 40)
+  refm <- refm_search_gauss(fml_search_gauss, n = 40)
   n_used <- 0L
   trace("perf_eval_gauss", exit = function() {
     if (!is.null(returnValue())) n_used <<- n_used + 1L
