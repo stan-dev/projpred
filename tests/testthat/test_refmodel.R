@@ -206,6 +206,28 @@ test_that("get_refmodel() is idempotent", {
   }
 })
 
+test_that(paste(
+  "the `cvrefbuilder` of get_refmodel.stanreg() takes the default `dis` from",
+  "the fold-wise fit and passes a user-supplied `dis` unchanged"
+), {
+  tstsetups <- grep("^rstanarm\\..*\\.gauss\\.", names(fits), value = TRUE)
+  skip_if_not(length(tstsetups) >= 2)
+  # The second fit stands in for a fold refit:
+  fit_full <- fits[[tstsetups[1]]]
+  fit_fold <- fits[[tstsetups[2]]]
+  sigma_full <- data.frame(fit_full)[, "sigma"]
+  sigma_fold <- data.frame(fit_fold)[, "sigma"]
+  skip_if(isTRUE(all.equal(sigma_full, sigma_fold)))
+
+  refmod <- get_refmodel(fit_full)
+  expect_identical(refmod$dis, sigma_full)
+  expect_identical(refmod$cvrefbuilder(fit_fold)$dis, sigma_fold)
+
+  dis_user <- rep(0.7, length(sigma_full))
+  refmod_user <- get_refmodel(fit_full, dis = dis_user)
+  expect_identical(refmod_user$cvrefbuilder(fit_fold)$dis, dis_user)
+})
+
 # predict.refmodel() ------------------------------------------------------
 
 context("predict.refmodel()")
