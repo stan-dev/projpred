@@ -192,8 +192,9 @@ results can be obtained again if needed. Passed to argument \code{seed} of
 clustering the reference model's posterior draws (if \code{!is.null(nclusters)}
 or \code{!is.null(nclusters_pred)}), for subsampling PSIS-LOO CV folds (if
 \code{nloo} is smaller than the number of observations), for sampling the folds
-in \eqn{K}-fold CV, and for drawing new group-level effects when predicting
-from a multilevel submodel (however, not yet in case of a GAMM).}
+in \eqn{K}-fold CV, for the weights of the weight perturbation (see section
+"Note"), and for drawing new group-level effects when predicting from a
+multilevel submodel (however, not yet in case of a GAMM).}
 
 \item{search_terms}{Only relevant for forward search. A custom character
 vector of predictor term blocks to consider for the search. Section
@@ -291,6 +292,20 @@ moderate, the fast PSIS-LOO CV along the full-data search path is likely to
 have optimistic bias in the middle of the search path. This result can be
 used to guide further actions and the optimistic bias can be greatly
 reduced by using \code{validate_search = TRUE}.
+
+With \code{cv_method = "LOO"}, \code{validate_search = TRUE}, and \code{refit_prj = TRUE}, the search of each LOO fold uses random observation weights
+(weight perturbation). For fold \eqn{i}, the weights are \eqn{n} times a
+Dirichlet(\eqn{\alpha}, ..., \eqn{\alpha}) draw, and then the weight of
+observation \eqn{i} is set to 0. The reference model's draws are shifted
+to first order toward the posterior under these weights. Without the weights, the
+search paths of most folds are the same as the full-data search path, so
+the fold-wise errors do not cancel, and the LOO estimates jump between
+neighboring submodel sizes. With the weights, the search paths vary
+between the folds as in \eqn{K}-fold CV. The performance evaluation of
+each fold does not use the weights. Fold-wise searches that are reused
+from a previous run (see \code{\link[=cv_varsel.vsel]{cv_varsel.vsel()}}) are not run again, so they
+are not perturbed again. Global option \code{projpred.loo_perturb_alpha} sets
+\eqn{\alpha} (default 10); \code{Inf} turns the weight perturbation off.
 
 PSIS uses the Pareto-\eqn{\hat{k}} diagnostic to assess the reliability of
 PSIS-LOO CV. Global option \code{projpred.warn_psis} (default \code{TRUE}) controls

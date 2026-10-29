@@ -56,8 +56,9 @@
 #'   clustering the reference model's posterior draws (if `!is.null(nclusters)`
 #'   or `!is.null(nclusters_pred)`), for subsampling PSIS-LOO CV folds (if
 #'   `nloo` is smaller than the number of observations), for sampling the folds
-#'   in \eqn{K}-fold CV, and for drawing new group-level effects when predicting
-#'   from a multilevel submodel (however, not yet in case of a GAMM).
+#'   in \eqn{K}-fold CV, for the weights of the weight perturbation (see section
+#'   "Note"), and for drawing new group-level effects when predicting from a
+#'   multilevel submodel (however, not yet in case of a GAMM).
 #' @param parallel A single logical value indicating whether to run costly parts
 #'   of the CV in parallel (`TRUE`) or not (`FALSE`). See also section "Note"
 #'   below as well as section "Parallelization" in [projpred-package].
@@ -79,6 +80,21 @@
 #'   have optimistic bias in the middle of the search path. This result can be
 #'   used to guide further actions and the optimistic bias can be greatly
 #'   reduced by using `validate_search = TRUE`.
+#'
+#'   With `cv_method = "LOO"`, `validate_search = TRUE`, and `refit_prj =
+#'   TRUE`, the search of each LOO fold uses random observation weights
+#'   (weight perturbation). For fold \eqn{i}, the weights are \eqn{n} times a
+#'   Dirichlet(\eqn{\alpha}, ..., \eqn{\alpha}) draw, and then the weight of
+#'   observation \eqn{i} is set to 0. The reference model's draws are shifted
+#'   to first order toward the posterior under these weights. Without the weights, the
+#'   search paths of most folds are the same as the full-data search path, so
+#'   the fold-wise errors do not cancel, and the LOO estimates jump between
+#'   neighboring submodel sizes. With the weights, the search paths vary
+#'   between the folds as in \eqn{K}-fold CV. The performance evaluation of
+#'   each fold does not use the weights. Fold-wise searches that are reused
+#'   from a previous run (see [cv_varsel.vsel()]) are not run again, so they
+#'   are not perturbed again. Global option `projpred.loo_perturb_alpha` sets
+#'   \eqn{\alpha} (default 10); `Inf` turns the weight perturbation off.
 #'
 #'   PSIS uses the Pareto-\eqn{\hat{k}} diagnostic to assess the reliability of
 #'   PSIS-LOO CV. Global option `projpred.warn_psis` (default `TRUE`) controls
@@ -705,6 +721,25 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
   )
   lw <- weights(psisloo)
 
+  # Weight perturbation of the fold-wise searches (see cv_varsel()). It needs
+  # fold-wise searches and a performance evaluation that does not reuse the
+  # search fits (`refit_prj = TRUE`).
+  perturb_alpha <- getOption("projpred.loo_perturb_alpha", 10)
+  if (!is.numeric(perturb_alpha) || length(perturb_alpha) != 1 ||
+      is.na(perturb_alpha) || !(perturb_alpha > 0)) {
+    stop("Global option `projpred.loo_perturb_alpha` must be a single ",
+         "positive number (or `Inf`).")
+  }
+  if (!validate_search || !refit_prj || !is.null(search_out_rks)) {
+    perturb_alpha <- Inf
+  }
+  if (is.finite(perturb_alpha)) {
+    perturb_seed <- perturb_base_seed()
+    # The parallel loop below has `loglik_forPSIS` in `.noexport`, so workers
+    # that do not fork the session do not get it. They get this copy.
+    perturb_ll <- loglik_forPSIS
+  }
+
   if (refmodel$family$for_latent) {
     # Need to re-calculate the latent response values in `refmodel$y` by
     # incorporating the PSIS weights because `refmodel$y` resulted from applying
@@ -1043,11 +1078,30 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
       # (via `refmodel_fulldata`):
       refmodel_fold <- refmodel
       refmodel_fold$wobs[i] <- 0
+      perturb_failed <- FALSE
       if (!search_out_rks_was_null) {
         search_path <- list(predictor_ranking = search_out_rks[[run_index]])
       } else {
+        # Weight perturbation: the search of fold i uses random observation
+        # weights and the reference draws shifted to these weights, so that
+        # the fold-wise search paths vary between folds as in K-fold CV. The
+        # performance evaluation below uses `refmodel_fold`.
+        refmodel_search <- refmodel_fold
+        if (is.finite(perturb_alpha)) {
+          refmodel_search <- perturb_refmodel(
+            refmodel_fold, i = i, ll = perturb_ll, lw_i = lw[, i],
+            alpha = perturb_alpha,
+            seed = as.integer((as.numeric(perturb_seed) + i) %%
+                                .Machine$integer.max)
+          )
+          perturb_failed <- is.null(refmodel_search)
+          if (perturb_failed) {
+            # The shifted draws are not finite: search without perturbation.
+            refmodel_search <- refmodel_fold
+          }
+        }
         search_path <- .select(
-          refmodel = refmodel_fold, ndraws = ndraws, nclusters = nclusters,
+          refmodel = refmodel_search, ndraws = ndraws, nclusters = nclusters,
           reweighting_args = list(cl_ref = cl_sel, wdraws_ref = exp(lw[, i])),
           method = method, nterms_max = nterms_max, penalty = penalty,
           verbose = verbose_obs, verbose_line_length = 3,
@@ -1072,7 +1126,8 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
       return(nlist(predictor_ranking = search_path[["predictor_ranking"]],
                    summaries_sub = perf_eval_out[["sub_summaries"]],
                    clust_used_eval = perf_eval_out[["clust_used"]],
-                   nprjdraws_eval = perf_eval_out[["nprjdraws"]]))
+                   nprjdraws_eval = perf_eval_out[["nprjdraws"]],
+                   perturb_failed))
     }
     if (!parallel) {
       # Sequential case. Actually, we could simply use ``%do_projpred%` <-
@@ -1125,6 +1180,13 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
         if (!is.null(progressor_obj)) progressor_obj()
         return(out_one_obs)
       }
+    }
+    n_perturb_failed <- sum(vapply(res_cv, "[[", logical(1), "perturb_failed"))
+    if (n_perturb_failed > 0) {
+      warning("In ", n_perturb_failed, " LOO fold(s), the weight perturbation ",
+              "gave non-finite reference draws, so these folds searched ",
+              "without it. A larger global option ",
+              "`projpred.loo_perturb_alpha` may avoid this.")
     }
     # For storing the fold-wise predictor rankings:
     predictor_ranking_mat <- matrix(nrow = n, ncol = nterms_max)
