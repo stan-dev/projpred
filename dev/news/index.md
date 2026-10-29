@@ -4,6 +4,14 @@
 
 ### Major changes
 
+- Faster projections onto submodels without group-level or additive
+  terms: the projected draws (or clusters) share one model matrix, and
+  for the Gaussian family with the identity link, one linear solve gives
+  the submodel fits for all draws. For example,
+  [`varsel()`](https://mc-stan.org/projpred/dev/reference/varsel.md)
+  with forward search for a Gaussian model with 50 observations and 200
+  predictor terms is about 7 times faster. (GitHub:
+  [\#574](https://github.com/stan-dev/projpred/issues/574))
 - Faster computation of the predictive variance of the reference model
   for the Gaussian and Student-t families. This matters for a large
   number of observations and many projected draws. For example,
