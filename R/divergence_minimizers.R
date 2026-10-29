@@ -77,6 +77,23 @@ divmin <- function(
       rep(projpred_formulas_no_random, length(formulas))
     )
   }
+  # The draw-wise formulas of a non-multilevel non-additive submodel differ only
+  # in the response, so fit_glm_ridge_callback() can use one model matrix for
+  # all draws (and the joint Gaussian solve can fit them, also for a single
+  # draw):
+  if (identical(sdivmin, fit_glm_ridge_callback) && length(formulas) >= 1) {
+    shared_x <- shared_model_matrix(formulas, data = list(...)$data)
+    if (!is.null(shared_x)) {
+      # Gaussian submodels with the identity link: one solve for all draws
+      # (this fitter cannot throw messages or warnings in this case):
+      outdmin <- glm_ridge_gauss_multi(formulas, shared_x = shared_x,
+                                       dot_args = list(...))
+      if (!is.null(outdmin)) {
+        return(outdmin)
+      }
+      sdivmin <- glm_ridge_callback_shared(shared_x)
+    }
+  }
 
   if (is.null(getOption("projpred.parallel_proj_trigger")) &&
       !is.null(getOption("projpred.prll_prj_trigger"))) {
@@ -173,28 +190,26 @@ divmin <- function(
 # submodels:
 fit_glm_ridge_callback <- function(formula, data,
                                    projpred_var = matrix(nrow = nrow(data)),
-                                   regul = 1e-4, thresh_conv = 1e-7, ...) {
+                                   regul = 1e-4, thresh_conv = 1e-7,
+                                   projpred_shared_x = NULL, ...) {
   # Preparations:
-  fr <- model.frame(formula, data = data, drop.unused.levels = TRUE)
-  da_classes <- attr(attr(fr, "terms"), "dataClasses")
-  nms_chr_fac <- names(da_classes)[da_classes %in% c("character", "factor")]
-  resp_nm <- all.vars(attr(fr, "terms"))[attr(attr(fr, "terms"), "response")]
-  nms_chr_fac <- setdiff(nms_chr_fac, resp_nm)
-  if (length(nms_chr_fac) > 0) {
-    xlvls <- lapply(setNames(nm = nms_chr_fac), function(nm_chr_fac) {
-      levels(as.factor(fr[[nm_chr_fac]]))
-    })
+  if (!is.null(projpred_shared_x)) {
+    # Model matrix built once by shared_model_matrix(); only the response
+    # differs between the draws:
+    x <- projpred_shared_x$x
+    xlvls <- projpred_shared_x$xlvls
+    # These terms come from the first draw-wise formula. The predictions for
+    # new data use only their predictor variables:
+    terms_train <- projpred_shared_x$terms
+    y <- data[[all.vars(formula[[2]])]]
+    names(y) <- projpred_shared_x$y_names
   } else {
-    xlvls <- NULL
+    xy <- glm_model_matrix(formula, data = data)
+    x <- xy$x
+    xlvls <- xy$xlvls
+    terms_train <- xy$terms
+    y <- xy$y
   }
-  # TODO: In the following model.matrix() call, allow user-specified contrasts
-  # to be passed to argument `contrasts.arg`. The `contrasts.arg` default
-  # (`NULL`) uses `options("contrasts")` internally, but it might be more
-  # convenient to let users specify contrasts directly. At that occasion,
-  # contrasts should also be tested thoroughly (not done until now).
-  x <- model.matrix(formula, data = fr)
-  x <- x[, colnames(x) != "(Intercept)", drop = FALSE]
-  y <- model.response(fr)
   # Exclude arguments from `...` which cannot be passed to glm_ridge():
   dot_args <- list(...)
   dot_args <- dot_args[intersect(
@@ -218,9 +233,148 @@ fit_glm_ridge_callback <- function(formula, data,
   # `terms` keeps the data-dependent bases of the training data (attribute
   # "predvars"), for predictions for new data:
   sub <- nlist(alpha = fit$beta0, beta = fit$beta, w = fit$w, formula, x, y,
-               xlvls, terms = attr(fr, "terms"))
+               xlvls, terms = terms_train)
   class(sub) <- "subfit"
   return(sub)
+}
+
+# Model frame preparations for fit_glm_ridge_callback(): predictor model matrix
+# (without intercept column), levels of character and factor predictors, and
+# response.
+glm_model_matrix <- function(formula, data) {
+  fr <- model.frame(formula, data = data, drop.unused.levels = TRUE)
+  da_classes <- attr(attr(fr, "terms"), "dataClasses")
+  nms_chr_fac <- names(da_classes)[da_classes %in% c("character", "factor")]
+  resp_nm <- all.vars(attr(fr, "terms"))[attr(attr(fr, "terms"), "response")]
+  nms_chr_fac <- setdiff(nms_chr_fac, resp_nm)
+  if (length(nms_chr_fac) > 0) {
+    xlvls <- lapply(setNames(nm = nms_chr_fac), function(nm_chr_fac) {
+      levels(as.factor(fr[[nm_chr_fac]]))
+    })
+  } else {
+    xlvls <- NULL
+  }
+  # TODO: In the following model.matrix() call, allow user-specified contrasts
+  # to be passed to argument `contrasts.arg`. The `contrasts.arg` default
+  # (`NULL`) uses `options("contrasts")` internally, but it might be more
+  # convenient to let users specify contrasts directly. At that occasion,
+  # contrasts should also be tested thoroughly (not done until now).
+  x <- model.matrix(formula, data = fr)
+  x <- x[, colnames(x) != "(Intercept)", drop = FALSE]
+  return(list(x = x, xlvls = xlvls, y = model.response(fr), n_fr = nrow(fr),
+              terms = attr(fr, "terms")))
+}
+
+# Model matrix shared by the draw-wise formulas `formulas` (which have to differ
+# only in the response). Returns `NULL` if sharing is not possible: different
+# right-hand sides, a response that is not a plain column of `data`, or missing
+# values (which would make the model frames differ between the draws).
+shared_model_matrix <- function(formulas, data) {
+  if (!is.data.frame(data)) {
+    return(NULL)
+  }
+  rhs_1 <- formulas[[1]][[3]]
+  if (!all(vapply(formulas, function(fml) {
+    length(fml) == 3 && identical(fml[[3]], rhs_1)
+  }, logical(1)))) {
+    return(NULL)
+  }
+  resp_nms <- vapply(formulas, function(fml) {
+    if (is.name(fml[[2]])) as.character(fml[[2]]) else NA_character_
+  }, character(1))
+  if (anyNA(resp_nms) || !all(resp_nms %in% names(data)) ||
+      anyNA(data[resp_nms])) {
+    return(NULL)
+  }
+  xy <- glm_model_matrix(formulas[[1]], data = data)
+  if (xy$n_fr != nrow(data)) {
+    return(NULL)
+  }
+  # The response names (as from model.response()) are also shared, so the
+  # draw-wise responses do not each get their own copy:
+  return(list(x = xy$x, xlvls = xy$xlvls, y_names = names(xy$y),
+              terms = xy$terms))
+}
+
+# fit_glm_ridge_callback() with a fixed shared model matrix. The enclosing
+# environment holds only `shared_x` (relevant for the parallel case in divmin(),
+# where the function is exported).
+glm_ridge_callback_shared <- function(shared_x) {
+  force(shared_x)
+  function(...) {
+    fit_glm_ridge_callback(..., projpred_shared_x = shared_x)
+  }
+}
+
+# Fits all draw-wise submodels of fit_glm_ridge_callback() at once, for a
+# Gaussian submodel with the identity link. For this family, glm_ridge() solves
+# one weighted ridge least-squares problem in one exact step. The draws share
+# the model matrix, the observation weights, the standardization and the
+# penalty. Thus, one factorization with one right-hand side per draw gives the
+# same solutions. Returns `NULL` if one of the checks below fails; then divmin()
+# uses the draw-wise path.
+glm_ridge_gauss_multi <- function(formulas, shared_x, dot_args) {
+  family <- dot_args$family
+  if (is.null(family) || family$family != "gaussian" ||
+      family$link != "identity") {
+    return(NULL)
+  }
+  # fit_glm_ridge_callback() passes only the formal arguments of glm_ridge() on
+  # and ignores the others. Of these, this function uses only `family`,
+  # `weights` and `thresh` (not used for this family):
+  args_glm_ridge <- intersect(names(dot_args), methods::formalArgs(glm_ridge))
+  if (!all(args_glm_ridge %in% c("family", "weights", "thresh"))) {
+    return(NULL)
+  }
+  x <- shared_x$x
+  if (ncol(x) == 0) {
+    return(NULL)
+  }
+  data <- dot_args$data
+  weights <- dot_args$weights %||% rep(1.0, nrow(x))
+  regul <- dot_args$regul %||% 1e-4
+  if (length(weights) != nrow(x) || anyNA(weights)) {
+    return(NULL)
+  }
+  resp_nms <- vapply(formulas, function(fml) as.character(fml[[2]]),
+                     character(1))
+  y <- as.matrix(data[resp_nms])
+  # As in glm_ridge():
+  transf <- standardization(x, center = TRUE, scale = TRUE, weights = weights)
+  if (any(transf$scale == 0)) {
+    return(NULL)
+  }
+  x_std <- cbind(1, t((t(x) - transf$shift) / transf$scale))
+  sqrt_w <- sqrt(weights)
+  x_w <- x_std * sqrt_w
+  regmat <- diag(c(0, rep(regul, ncol(x))), nrow = ncol(x_std))
+  # A singular system (for example, `regul = 0` with collinear columns) or
+  # non-finite coefficients (for example, from infinite responses) go to the
+  # draw-wise path:
+  coefs <- tryCatch(
+    solve(crossprod(x_w) + regmat, crossprod(x_w, y * sqrt_w)),
+    error = function(e) NULL
+  )
+  if (is.null(coefs) || !all(is.finite(coefs))) {
+    return(NULL)
+  }
+  beta <- coefs[-1, , drop = FALSE] / transf$scale
+  beta0 <- coefs[1, ] - colSums(transf$shift * beta)
+  # As from glm_ridge_c() (double, also for integer observation weights):
+  w <- matrix(as.numeric(weights), ncol = 1)
+  return(lapply(seq_along(formulas), function(s) {
+    beta_s <- beta[, s, drop = FALSE]
+    dimnames(beta_s) <- list(colnames(x), NULL)
+    y_s <- y[, s]
+    names(y_s) <- shared_x$y_names
+    # `shared_x$terms` comes from the first formula. Its response differs from
+    # draw s, but the predictions for new data use only its predictor
+    # variables.
+    structure(list(alpha = unname(beta0[s]), beta = beta_s, w = w,
+                   formula = formulas[[s]], x = x, y = y_s,
+                   xlvls = shared_x$xlvls, terms = shared_x$terms),
+              class = "subfit")
+  }))
 }
 
 # Alternative to fit_glm_ridge_callback() (may be used via global option
@@ -1182,6 +1336,12 @@ subprd_fitted <- function(fits, nobs) {
 }
 
 subprd <- function(fits, newdata) {
+  if (!is.null(newdata) && length(fits) > 1 && inherits(fits[[1]], "subfit")) {
+    prd <- subprd_subfit_shared(fits, newdata)
+    if (!is.null(prd)) {
+      return(prd)
+    }
+  }
   prd_list <- lapply(fits, function(fit) {
     is_glmmPQL <- inherits(fit, "glmmPQL")
     is_glmm <- inherits(fit, c("lmerMod", "glmerMod"))
@@ -1336,28 +1496,81 @@ predict.subfit <- function(object, newdata = NULL, ...) {
     if (is.null(beta)) {
       return(as.matrix(rep(alpha, nrow(newdata))))
     } else {
-      # TODO: In the following model.matrix() call, allow user-specified
-      # contrasts to be passed to argument `contrasts.arg`. The `contrasts.arg`
-      # default (`NULL`) uses `options("contrasts")` internally, but it might be
-      # more convenient to let users specify contrasts directly. At that
-      # occasion, contrasts should also be tested thoroughly (not done until
-      # now).
-      x <- model.matrix(subfit_terms_newdata(object), data = newdata,
-                        xlev = object$xlvls)
-      # Need to ensure that the columns of `x` match the coefficients (note that
-      # `rownames(beta)` is the same as `colnames(object$x)`, see the tests):
-      nms_to_use <- c("(Intercept)", colnames(object$x))
-      nms_to_use <- reorder_ias(nms_to_use, colnames(x))
-      if (all(!is.na(nms_to_use)) && all(nms_to_use %in% colnames(x))) {
-        x <- x[, nms_to_use, drop = FALSE]
-      } else {
-        stop("The column names of the new model matrix don't match the ",
-             "column names of the original model matrix. Please notify the ",
-             "package maintainer.")
-      }
-      return(x %*% rbind(alpha, beta))
+      return(subfit_newdata_x(object, newdata) %*% rbind(alpha, beta))
     }
   }
+}
+
+# Model matrix (with intercept column) of a `subfit` object for new data, with
+# the columns in the order of the coefficients.
+subfit_newdata_x <- function(object, newdata) {
+  # TODO: In the following model.matrix() call, allow user-specified
+  # contrasts to be passed to argument `contrasts.arg`. The `contrasts.arg`
+  # default (`NULL`) uses `options("contrasts")` internally, but it might be
+  # more convenient to let users specify contrasts directly. At that
+  # occasion, contrasts should also be tested thoroughly (not done until
+  # now).
+  x <- model.matrix(subfit_terms_newdata(object), data = newdata,
+                    xlev = object$xlvls)
+  # Need to ensure that the columns of `x` match the coefficients (note that
+  # `rownames(beta)` is the same as `colnames(object$x)`, see the tests):
+  nms_to_use <- c("(Intercept)", colnames(object$x))
+  nms_to_use <- reorder_ias(nms_to_use, colnames(x))
+  if (all(!is.na(nms_to_use)) && all(nms_to_use %in% colnames(x))) {
+    x <- x[, nms_to_use, drop = FALSE]
+  } else {
+    stop("The column names of the new model matrix don't match the ",
+         "column names of the original model matrix. Please notify the ",
+         "package maintainer.")
+  }
+  return(x)
+}
+
+# The "predvars" attribute of `trms` without the response (the draw-wise fits
+# differ in the response). `NULL` if `trms` has no "predvars".
+predvars_predictors <- function(trms) {
+  pv <- attr(trms, "predvars")
+  resp <- attr(trms, "response")
+  if (is.null(pv) || is.null(resp) || resp == 0) {
+    return(pv)
+  }
+  # The first element of the call is `list`:
+  return(pv[-(resp + 1)])
+}
+
+# Predictions of several `subfit` objects with the same predictor terms (the
+# draw-wise fits of one submodel) for new data: one model matrix, one matrix
+# product. Returns `NULL` if the fits do not share their predictor terms and
+# the data-dependent bases of their training data.
+subprd_subfit_shared <- function(fits, newdata) {
+  fit_1 <- fits[[1]]
+  rhs_1 <- fit_1$formula[[3]]
+  nms_1 <- rownames(fit_1$beta)
+  pv_1 <- predvars_predictors(fit_1$terms)
+  is_shared <- all(vapply(fits, function(fit) {
+    inherits(fit, "subfit") && identical(fit$formula[[3]], rhs_1) &&
+      identical(rownames(fit$beta), nms_1) &&
+      identical(fit$xlvls, fit_1$xlvls) &&
+      identical(predvars_predictors(fit$terms), pv_1)
+  }, logical(1)))
+  if (!is_shared) {
+    return(NULL)
+  }
+  alphas <- vapply(fits, function(fit) as.numeric(fit$alpha), numeric(1))
+  if (is.null(fit_1$beta) || NROW(fit_1$beta) == 0) {
+    if (is.null(fit_1$beta)) {
+      # As predict.subfit() for `beta = NULL`:
+      return(matrix(alphas, nrow = nrow(newdata), ncol = length(fits),
+                    byrow = TRUE))
+    }
+    return(NULL)
+  }
+  betas <- vapply(fits, function(fit) as.numeric(fit$beta),
+                  numeric(length(nms_1)))
+  if (!is.matrix(betas)) {
+    betas <- matrix(betas, nrow = 1)
+  }
+  return(subfit_newdata_x(fit_1, newdata) %*% rbind(alphas, betas))
 }
 
 #' @noRd
