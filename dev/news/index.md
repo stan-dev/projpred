@@ -4,6 +4,14 @@
 
 ### Major changes
 
+- Faster clustering of the reference model draws for a large number of
+  observations: [`kmeans()`](https://rdrr.io/r/stats/kmeans.html) runs
+  on the coordinates of the draws in their low-dimensional span, which
+  gives the same clusters. For example,
+  [`varsel()`](https://mc-stan.org/projpred/dev/reference/varsel.md)
+  with 50 000 observations, 4 000 draws and 20 clusters is about 4.5
+  times faster. (GitHub:
+  [\#576](https://github.com/stan-dev/projpred/issues/576))
 - Faster projections onto submodels without group-level or additive
   terms: the projected draws (or clusters) share one model matrix, and
   for the Gaussian family with the identity link, one linear solve gives
