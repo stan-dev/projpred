@@ -150,4 +150,14 @@ test_that(paste(
   cvvs2 <- suppressWarnings(cv_varsel(cvvs, validate_search = FALSE,
                                       verbose = FALSE))
   expect_identical(cvvs2$loo_perturb_alpha, 4)
+  # Another `loo_perturb_alpha` runs the fold-wise searches again:
+  expect_message(
+    cvvs3 <- suppressWarnings(cv_varsel(
+      cvvs, loo_perturb_alpha = 10, ndraws_pred = 40, seed = 11, verbose = FALSE
+    )),
+    "cannot be re-used"
+  )
+  expect_identical(cvvs3$loo_perturb_alpha, 10)
+  expect_identical(ranking(cvvs3)[["foldwise"]],
+                   ranking(run_cv_wp(r$ref, alpha = 10))[["foldwise"]])
 })

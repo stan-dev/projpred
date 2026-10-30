@@ -49,11 +49,12 @@
 #'   biased estimates can be useful to obtain initial information on the
 #'   usefulness of projection predictive variable selection.
 #' @param loo_perturb_alpha Only relevant if `cv_method = "LOO"`,
-#'   `validate_search = TRUE`, and `refit_prj = TRUE`. A single positive
-#'   number: the concentration \eqn{\alpha} of the random observation weights
-#'   in the fold-wise searches (weight perturbation, see section "Note").
-#'   Smaller values give larger random variation of the weights. `Inf` turns
-#'   the weight perturbation off.
+#'   `validate_search = TRUE`, `refit_prj = TRUE`, and the fold-wise searches
+#'   are not reused from a previous run (see [cv_varsel.vsel()]). A single
+#'   positive number: the concentration \eqn{\alpha} of the random observation
+#'   weights in the fold-wise searches (weight perturbation, see section
+#'   "Note"). Smaller values give larger random variation of the weights.
+#'   `Inf` turns the weight perturbation off.
 #' @param seed Pseudorandom number generation (PRNG) seed by which the same
 #'   results can be obtained again if needed. Passed to argument `seed` of
 #'   [set.seed()], but can also be `NA` to not call [set.seed()] at all. If not
@@ -94,20 +95,20 @@
 #'   cancel, the LOO estimates jump between neighboring submodel sizes, and
 #'   their standard errors are too small. Therefore, with `refit_prj = TRUE`
 #'   (the default), the search of each LOO fold uses random observation weights
-#'   (weight perturbation): for fold \eqn{i}, the weights are \eqn{n} times a
-#'   Dirichlet(\eqn{\alpha}, ..., \eqn{\alpha}) draw, then the weight of
-#'   observation \eqn{i} is set to 0, and the reference model's draws are
+#'   (weight perturbation). For fold \eqn{i}, the weights are \eqn{n} times a
+#'   Dirichlet(\eqn{\alpha}, ..., \eqn{\alpha}) draw. The weight of
+#'   observation \eqn{i} is then set to 0. The reference model's draws are
 #'   shifted to first order toward the posterior under these weights. The
 #'   search paths then vary between the folds as in \eqn{K}-fold CV. The
 #'   performance evaluation of each fold refits the submodels along the
-#'   fold-wise search path without the weights, so the weights change which
+#'   fold-wise search path without the weights. So the weights change which
 #'   submodels are evaluated, but not how. With `refit_prj = FALSE`, the
-#'   performance evaluation would reuse the submodel fits of the perturbed
-#'   search, so there is no weight perturbation in that case. Fold-wise
-#'   searches that are reused from a previous run (see [cv_varsel.vsel()]) are
-#'   not run again, so they are not perturbed again. Argument
-#'   `loo_perturb_alpha` sets \eqn{\alpha} (default 10); `Inf` turns the
-#'   weight perturbation off.
+#'   performance evaluation uses the submodel fits of the search. These fits
+#'   must not use the weights, so the search does not use them either.
+#'   Fold-wise searches that are reused from a previous run (see
+#'   [cv_varsel.vsel()]) keep the weights of that run; [cv_varsel.vsel()] runs
+#'   them again if `loo_perturb_alpha` changes. Argument `loo_perturb_alpha`
+#'   sets \eqn{\alpha} (default 10); `Inf` turns the weight perturbation off.
 #'
 #'   PSIS uses the Pareto-\eqn{\hat{k}} diagnostic to assess the reliability of
 #'   PSIS-LOO CV. Global option `projpred.warn_psis` (default `TRUE`) controls
@@ -253,7 +254,8 @@ cv_varsel.vsel <- function(
          (is.null(cvfits) || !identical(cvfits, object[["cvfits"]]))) ||
         (identical(cv_method, object[["cv_method"]]) &&
          (identical(cv_method, "LOO") || identical(cv_method, "loo")) &&
-         !identical(nloo, refmodel[["nobs"]]))) {
+         (!identical(nloo, refmodel[["nobs"]]) ||
+          !identical(loo_perturb_alpha, object$loo_perturb_alpha %||% 10)))) {
       # In these cases, previous fold-wise predictor rankings cannot be re-used
       # for the `validate_search = TRUE` run requested here:
       message("In this case, the previous fold-wise search results cannot be ",
@@ -471,6 +473,7 @@ cv_varsel.refmodel <- function(
         search_control = search_control,
         nloo = refmodel$nobs,    # fast LOO-CV (using all observations)
         validate_search = FALSE, # fast LOO-CV (using all observations)
+        loo_perturb_alpha = Inf,
         search_path_fulldata = search_path_fulldata,
         search_terms = search_terms,
         search_terms_was_null = search_terms_was_null,
@@ -538,6 +541,8 @@ cv_varsel.refmodel <- function(
               loo_inds = sel_cv$inds,
               K,
               validate_search,
+              # The requested value; loo_varsel() applies it only with
+              # fold-wise searches and `refit_prj = TRUE`.
               loo_perturb_alpha,
               cvfits,
               args_search = nlist(
@@ -654,7 +659,7 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
                        penalty, verbose, search_control, nloo, validate_search,
                        search_path_fulldata, search_terms,
                        search_terms_was_null, search_out_rks, parallel,
-                       loo_perturb_alpha = Inf, ...) {
+                       loo_perturb_alpha, ...) {
   ## Pre-processing ---------------------------------------------------------
 
   has_grp <- formula_contains_group_terms(refmodel$formula)

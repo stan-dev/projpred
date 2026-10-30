@@ -100,11 +100,12 @@ biased estimates can be useful to obtain initial information on the
 usefulness of projection predictive variable selection.}
 
 \item{loo_perturb_alpha}{Only relevant if \code{cv_method = "LOO"},
-\code{validate_search = TRUE}, and \code{refit_prj = TRUE}. A single positive
-number: the concentration \eqn{\alpha} of the random observation weights
-in the fold-wise searches (weight perturbation, see section "Note").
-Smaller values give larger random variation of the weights. \code{Inf} turns
-the weight perturbation off.}
+\code{validate_search = TRUE}, \code{refit_prj = TRUE}, and the fold-wise searches
+are not reused from a previous run (see \code{\link[=cv_varsel.vsel]{cv_varsel.vsel()}}). A single
+positive number: the concentration \eqn{\alpha} of the random observation
+weights in the fold-wise searches (weight perturbation, see section
+"Note"). Smaller values give larger random variation of the weights.
+\code{Inf} turns the weight perturbation off.}
 
 \item{method}{The method for the search part. Possible options are
 \code{"forward"} for forward search and \code{"L1"} for L1 search. See also section
@@ -309,20 +310,20 @@ same as the full-data search path. Then the fold-wise errors do not
 cancel, the LOO estimates jump between neighboring submodel sizes, and
 their standard errors are too small. Therefore, with \code{refit_prj = TRUE}
 (the default), the search of each LOO fold uses random observation weights
-(weight perturbation): for fold \eqn{i}, the weights are \eqn{n} times a
-Dirichlet(\eqn{\alpha}, ..., \eqn{\alpha}) draw, then the weight of
-observation \eqn{i} is set to 0, and the reference model's draws are
+(weight perturbation). For fold \eqn{i}, the weights are \eqn{n} times a
+Dirichlet(\eqn{\alpha}, ..., \eqn{\alpha}) draw. The weight of
+observation \eqn{i} is then set to 0. The reference model's draws are
 shifted to first order toward the posterior under these weights. The
 search paths then vary between the folds as in \eqn{K}-fold CV. The
 performance evaluation of each fold refits the submodels along the
-fold-wise search path without the weights, so the weights change which
+fold-wise search path without the weights. So the weights change which
 submodels are evaluated, but not how. With \code{refit_prj = FALSE}, the
-performance evaluation would reuse the submodel fits of the perturbed
-search, so there is no weight perturbation in that case. Fold-wise
-searches that are reused from a previous run (see \code{\link[=cv_varsel.vsel]{cv_varsel.vsel()}}) are
-not run again, so they are not perturbed again. Argument
-\code{loo_perturb_alpha} sets \eqn{\alpha} (default 10); \code{Inf} turns the
-weight perturbation off.
+performance evaluation uses the submodel fits of the search. These fits
+must not use the weights, so the search does not use them either.
+Fold-wise searches that are reused from a previous run (see
+\code{\link[=cv_varsel.vsel]{cv_varsel.vsel()}}) keep the weights of that run; \code{\link[=cv_varsel.vsel]{cv_varsel.vsel()}} runs
+them again if \code{loo_perturb_alpha} changes. Argument \code{loo_perturb_alpha}
+sets \eqn{\alpha} (default 10); \code{Inf} turns the weight perturbation off.
 
 PSIS uses the Pareto-\eqn{\hat{k}} diagnostic to assess the reliability of
 PSIS-LOO CV. Global option \code{projpred.warn_psis} (default \code{TRUE}) controls
