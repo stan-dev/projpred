@@ -207,12 +207,7 @@ search_forward_gauss <- function(p_ref, refmodel, nterms_max, verbose,
   labels_of <- function(cand) {
     lbls <- label_cache[[cand]]
     if (is.null(lbls)) {
-      lbls <- character(0)
-      if (!identical(cand, "1")) {
-        lbls <- unique(norm_term_labels(trimws(
-          strsplit(cand, "+", fixed = TRUE)[[1]]
-        )))
-      }
+      lbls <- labels_gauss(cand)
       assign(cand, lbls, envir = label_cache)
     }
     return(lbls)

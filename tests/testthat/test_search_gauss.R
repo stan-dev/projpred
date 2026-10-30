@@ -37,6 +37,24 @@ refm_search_gauss <- function(fml, n = 80, ndraws = 200, seed = 6283,
 
 fml_search_gauss <- y ~ x1 + x2 + x3 + x4 + f + x1:x2 + poly(x3, 2)
 
+# Evaluates `expr` and counts the calls of search_forward_gauss() that returned
+# a search result (not `NULL`). Returns the value of `expr` and the count.
+with_gauss_search_count <- function(expr) {
+  calls <- new.env()
+  calls$n <- 0L
+  ns <- asNamespace("projpred")
+  suppressMessages(trace(
+    "search_forward_gauss", where = ns, print = FALSE,
+    exit = bquote(if (!is.null(returnValue(NULL))) {
+      assign("n", get("n", envir = .(calls)) + 1L, envir = .(calls))
+    })
+  ))
+  on.exit(suppressMessages(untrace("search_forward_gauss", where = ns)),
+          add = TRUE)
+  value <- expr
+  return(list(value = value, n = calls$n))
+}
+
 test_that(paste(
   "the cross-product search gives the same results as the search with",
   "draw-wise projections"
@@ -46,10 +64,12 @@ test_that(paste(
     expect_identical(all(refm$wobs == 1), !weighted)
     for (nclusters_crr in c(1, 5)) {
       info_crr <- paste("weighted:", weighted, "nclusters:", nclusters_crr)
-      vs_crossprod <- suppressWarnings(varsel(
+      res_crossprod <- with_gauss_search_count(suppressWarnings(varsel(
         refm, nclusters = nclusters_crr, nclusters_pred = 7, nterms_max = 6,
         seed = 3317, verbose = FALSE
-      ))
+      )))
+      expect_identical(res_crossprod$n, 1L, info = info_crr)
+      vs_crossprod <- res_crossprod$value
       opts_old <- options(projpred.search_gauss_crossprod = FALSE)
       on.exit(options(opts_old), add = TRUE)
       # The draw-wise reference fits each draw with glm_ridge(), not with the
@@ -83,19 +103,11 @@ test_that(paste(
   args_vs <- list(refm, search_terms = search_terms, nclusters = 5,
                   nclusters_pred = 7, nterms_max = 4, seed = 3317,
                   verbose = FALSE)
-  calls <- new.env()
-  calls$n <- 0L
-  ns <- asNamespace("projpred")
-  suppressMessages(trace(
-    "search_forward_gauss", where = ns, print = FALSE,
-    exit = bquote(if (!is.null(returnValue(NULL))) {
-      assign("n", get("n", envir = .(calls)) + 1L, envir = .(calls))
-    })
-  ))
-  on.exit(suppressMessages(untrace("search_forward_gauss", where = ns)),
-          add = TRUE)
-  vs_crossprod <- suppressWarnings(do.call(varsel, args_vs))
-  expect_identical(calls$n, 1L)
+  res_crossprod <- with_gauss_search_count(
+    suppressWarnings(do.call(varsel, args_vs))
+  )
+  expect_identical(res_crossprod$n, 1L)
+  vs_crossprod <- res_crossprod$value
   opts_old <- options(projpred.search_gauss_crossprod = FALSE)
   on.exit(options(opts_old), add = TRUE)
   vs_drawwise <- with_mocked_bindings(
@@ -107,6 +119,8 @@ test_that(paste(
                    ranking(vs_drawwise)$fulldata)
   expect_equal(performances(vs_crossprod, deltas = FALSE),
                performances(vs_drawwise, deltas = FALSE))
+  expect_equal(vs_crossprod$search_path$outdmins,
+               vs_drawwise$search_path$outdmins)
 })
 
 test_that(paste(
