@@ -200,7 +200,6 @@ search_forward_gauss <- function(p_ref, refmodel, nterms_max, verbose,
   lambda_x <- des$lambda_x
   a_full <- des$a_full
   wdraws <- p_ref$wdraws_prj
-  norm_label <- norm_label_gauss
 
   # The term labels of a candidate string. The same strings come back in every
   # step, so the labels are computed once:
@@ -210,7 +209,9 @@ search_forward_gauss <- function(p_ref, refmodel, nterms_max, verbose,
     if (is.null(lbls)) {
       lbls <- character(0)
       if (!identical(cand, "1")) {
-        lbls <- unique(norm_label(trimws(strsplit(cand, "+", fixed = TRUE)[[1]])))
+        lbls <- unique(norm_term_labels(trimws(
+          strsplit(cand, "+", fixed = TRUE)[[1]]
+        )))
       }
       assign(cand, lbls, envir = label_cache)
     }

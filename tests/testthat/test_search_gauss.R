@@ -2,13 +2,24 @@ context("forward search from cross-products for Gaussian submodels")
 
 # A Gaussian reference model with simulated draws of the coefficients (no model
 # fit is necessary). `fml` gives the predictor terms.
-refm_search_gauss <- function(fml, n = 80, ndraws = 200, seed = 6283) {
+refm_search_gauss <- function(fml, n = 80, ndraws = 200, seed = 6283,
+                              weighted = FALSE) {
   set.seed(seed)
   dat <- data.frame(x1 = rnorm(n), x2 = rnorm(n), x3 = rnorm(n),
                     x4 = rnorm(n),
                     f = factor(sample(c("a", "b", "c"), n, replace = TRUE)))
   dat$y <- 0.8 * dat$x1 - 0.4 * dat$x2 + 0.3 * dat$x1 * dat$x2 +
     c(a = 0, b = 0.5, c = -0.5)[as.character(dat$f)] + rnorm(n)
+  extract_model_data <- NULL
+  if (weighted) {
+    # Observation weights from the column `w`:
+    dat$w <- runif(n, 0.5, 2)
+    extract_model_data <- function(object, newdata, wrhs = NULL, orhs = NULL,
+                                   extract_y = TRUE) {
+      y_wobs_offs(newdata = newdata, wrhs = wrhs %||% ~ w, orhs = orhs,
+                  resp_form = if (extract_y) ~ y else NULL)
+    }
+  }
   mm <- model.matrix(fml, dat)
   beta_hat <- drop(solve(crossprod(mm) + diag(1e-6, ncol(mm)),
                          crossprod(mm, dat$y)))
@@ -20,6 +31,7 @@ refm_search_gauss <- function(fml, n = 80, ndraws = 200, seed = 6283) {
   }
   suppressWarnings(init_refmodel(fit, data = dat, formula = fml,
                                  family = gaussian(), ref_predfun = ref_predfun,
+                                 extract_model_data = extract_model_data,
                                  dis = rep(1, ndraws)))
 }
 
@@ -29,27 +41,72 @@ test_that(paste(
   "the cross-product search gives the same results as the search with",
   "draw-wise projections"
 ), {
-  refm <- refm_search_gauss(fml_search_gauss)
-  for (nclusters_crr in c(1, 5)) {
-    vs_crossprod <- suppressWarnings(varsel(
-      refm, nclusters = nclusters_crr, nclusters_pred = 7, nterms_max = 6,
-      seed = 3317, verbose = FALSE
-    ))
-    opts_old <- options(projpred.search_gauss_crossprod = FALSE)
-    on.exit(options(opts_old), add = TRUE)
-    vs_drawwise <- suppressWarnings(varsel(
-      refm, nclusters = nclusters_crr, nclusters_pred = 7, nterms_max = 6,
-      seed = 3317, verbose = FALSE
-    ))
-    options(opts_old)
-    expect_identical(ranking(vs_crossprod)$fulldata,
-                     ranking(vs_drawwise)$fulldata, info = nclusters_crr)
-    expect_equal(performances(vs_crossprod, deltas = FALSE),
-                 performances(vs_drawwise, deltas = FALSE),
-                 info = nclusters_crr)
-    expect_equal(vs_crossprod$search_path$outdmins,
-                 vs_drawwise$search_path$outdmins, info = nclusters_crr)
+  for (weighted in c(FALSE, TRUE)) {
+    refm <- refm_search_gauss(fml_search_gauss, weighted = weighted)
+    expect_identical(all(refm$wobs == 1), !weighted)
+    for (nclusters_crr in c(1, 5)) {
+      info_crr <- paste("weighted:", weighted, "nclusters:", nclusters_crr)
+      vs_crossprod <- suppressWarnings(varsel(
+        refm, nclusters = nclusters_crr, nclusters_pred = 7, nterms_max = 6,
+        seed = 3317, verbose = FALSE
+      ))
+      opts_old <- options(projpred.search_gauss_crossprod = FALSE)
+      on.exit(options(opts_old), add = TRUE)
+      # The draw-wise reference fits each draw with glm_ridge(), not with the
+      # joint Gaussian solve:
+      vs_drawwise <- with_mocked_bindings(
+        suppressWarnings(varsel(
+          refm, nclusters = nclusters_crr, nclusters_pred = 7, nterms_max = 6,
+          seed = 3317, verbose = FALSE
+        )),
+        glm_ridge_gauss_multi = function(...) NULL
+      )
+      options(opts_old)
+      expect_identical(ranking(vs_crossprod)$fulldata,
+                       ranking(vs_drawwise)$fulldata, info = info_crr)
+      expect_equal(performances(vs_crossprod, deltas = FALSE),
+                   performances(vs_drawwise, deltas = FALSE),
+                   info = info_crr)
+      expect_equal(vs_crossprod$search_path$outdmins,
+                   vs_drawwise$search_path$outdmins, info = info_crr)
+    }
   }
+})
+
+test_that(paste(
+  "the cross-product search gives the same results as the search with",
+  "draw-wise projections for custom search terms"
+), {
+  refm <- refm_search_gauss(fml_search_gauss)
+  search_terms <- force_search_terms(forced_terms = c("x1", "x2"),
+                                     optional_terms = c("x3", "x4", "f"))
+  args_vs <- list(refm, search_terms = search_terms, nclusters = 5,
+                  nclusters_pred = 7, nterms_max = 4, seed = 3317,
+                  verbose = FALSE)
+  calls <- new.env()
+  calls$n <- 0L
+  ns <- asNamespace("projpred")
+  suppressMessages(trace(
+    "search_forward_gauss", where = ns, print = FALSE,
+    exit = bquote(if (!is.null(returnValue(NULL))) {
+      assign("n", get("n", envir = .(calls)) + 1L, envir = .(calls))
+    })
+  ))
+  on.exit(suppressMessages(untrace("search_forward_gauss", where = ns)),
+          add = TRUE)
+  vs_crossprod <- suppressWarnings(do.call(varsel, args_vs))
+  expect_identical(calls$n, 1L)
+  opts_old <- options(projpred.search_gauss_crossprod = FALSE)
+  on.exit(options(opts_old), add = TRUE)
+  vs_drawwise <- with_mocked_bindings(
+    suppressWarnings(do.call(varsel, args_vs)),
+    glm_ridge_gauss_multi = function(...) NULL
+  )
+  options(opts_old)
+  expect_identical(ranking(vs_crossprod)$fulldata,
+                   ranking(vs_drawwise)$fulldata)
+  expect_equal(performances(vs_crossprod, deltas = FALSE),
+               performances(vs_drawwise, deltas = FALSE))
 })
 
 test_that(paste(
@@ -63,7 +120,10 @@ test_that(paste(
   cv_crossprod <- suppressWarnings(do.call(cv_varsel, args_cv))
   opts_old <- options(projpred.search_gauss_crossprod = FALSE)
   on.exit(options(opts_old), add = TRUE)
-  cv_drawwise <- suppressWarnings(do.call(cv_varsel, args_cv))
+  cv_drawwise <- with_mocked_bindings(
+    suppressWarnings(do.call(cv_varsel, args_cv)),
+    glm_ridge_gauss_multi = function(...) NULL
+  )
   options(opts_old)
   expect_identical(ranking(cv_crossprod), ranking(cv_drawwise))
   expect_equal(cv_crossprod$summaries$sub, cv_drawwise$summaries$sub,

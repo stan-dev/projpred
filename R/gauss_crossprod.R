@@ -41,14 +41,6 @@ gauss_crossprod_regul <- function(refmodel, divmin_args) {
   return(divmin_args$regul %||% 1e-4)
 }
 
-# Term labels with the variables of an interaction in sorted order (as terms()
-# treats them).
-norm_label_gauss <- function(lbl) {
-  vapply(strsplit(lbl, ":", fixed = TRUE), function(parts) {
-    paste(sort(trimws(parts)), collapse = ":")
-  }, character(1))
-}
-
 # The model matrix of the terms in `term_strings` (a string can consist of
 # several terms, for example "x1 + x2 + x1:x2") for the training data of
 # `refmodel`, and its cross-products. Returns `NULL` for group-level or smooth
@@ -85,7 +77,7 @@ gauss_crossprod_design <- function(refmodel, term_strings, regul) {
   x <- x[, keep, drop = FALSE]
   assign_x <- assign_x[keep]
   cols_by_term <- split(seq_along(assign_x),
-                        norm_label_gauss(attr(tt, "term.labels"))[assign_x])
+                        norm_term_labels(attr(tt, "term.labels"))[assign_x])
   wobs <- refmodel$wobs
   sum_w <- sum(wobs)
   n <- nrow(x)
@@ -106,12 +98,12 @@ gauss_crossprod_design <- function(refmodel, term_strings, regul) {
                sum_w))
 }
 
-# The term labels of a term string (see norm_label_gauss()).
+# The term labels of a term string (see norm_term_labels()).
 labels_gauss <- function(term_string) {
   if (identical(term_string, "1")) {
     return(character(0))
   }
-  return(unique(norm_label_gauss(trimws(
+  return(unique(norm_term_labels(trimws(
     strsplit(term_string, "+", fixed = TRUE)[[1]]
   ))))
 }
