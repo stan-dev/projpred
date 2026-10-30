@@ -1314,6 +1314,27 @@ check_conv_s <- function(fit_s) {
 
 # Prediction functions for submodels --------------------------------------
 
+# Predictions of `subfit` objects for the data they were fitted to, computed
+# from the stored model matrices `x` (so no new model matrix is built). `nobs`
+# is the number of observations in the training data. Returns `NULL` if a fit
+# is not of class `subfit` or its `x` does not have `nobs` rows (for example,
+# after model.frame() removed rows with missing values).
+subprd_fitted <- function(fits, nobs) {
+  if (!all(vapply(fits, function(fit) {
+    inherits(fit, "subfit") && NROW(fit$x) == nobs
+  }, logical(1)))) {
+    return(NULL)
+  }
+  prd_list <- lapply(fits, function(fit) {
+    # As in predict.subfit():
+    if (is.null(fit$beta)) {
+      return(as.matrix(rep(fit$alpha, nobs)))
+    }
+    return(cbind(1, fit$x) %*% rbind(fit$alpha, fit$beta))
+  })
+  return(do.call(cbind, prd_list))
+}
+
 subprd <- function(fits, newdata) {
   if (!is.null(newdata) && length(fits) > 1 && inherits(fits[[1]], "subfit")) {
     prd <- subprd_subfit_shared(fits, newdata)
