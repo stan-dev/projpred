@@ -48,6 +48,12 @@
 #'   of the selected submodels are optimistically biased. However, these fast
 #'   biased estimates can be useful to obtain initial information on the
 #'   usefulness of projection predictive variable selection.
+#' @param loo_perturb_alpha Only relevant if `cv_method = "LOO"`,
+#'   `validate_search = TRUE`, and `refit_prj = TRUE`. A single positive
+#'   number: the concentration \eqn{\alpha} of the random observation weights
+#'   in the fold-wise searches (weight perturbation, see section "Note").
+#'   Smaller values give larger random variation of the weights. `Inf` turns
+#'   the weight perturbation off.
 #' @param seed Pseudorandom number generation (PRNG) seed by which the same
 #'   results can be obtained again if needed. Passed to argument `seed` of
 #'   [set.seed()], but can also be `NA` to not call [set.seed()] at all. If not
@@ -81,20 +87,27 @@
 #'   used to guide further actions and the optimistic bias can be greatly
 #'   reduced by using `validate_search = TRUE`.
 #'
-#'   With `cv_method = "LOO"`, `validate_search = TRUE`, and `refit_prj =
-#'   TRUE`, the search of each LOO fold uses random observation weights
-#'   (weight perturbation). For fold \eqn{i}, the weights are \eqn{n} times a
-#'   Dirichlet(\eqn{\alpha}, ..., \eqn{\alpha}) draw, and then the weight of
-#'   observation \eqn{i} is set to 0. The reference model's draws are shifted
-#'   to first order toward the posterior under these weights. Without the weights, the
-#'   search paths of most folds are the same as the full-data search path, so
-#'   the fold-wise errors do not cancel, and the LOO estimates jump between
-#'   neighboring submodel sizes. With the weights, the search paths vary
-#'   between the folds as in \eqn{K}-fold CV. The performance evaluation of
-#'   each fold does not use the weights. Fold-wise searches that are reused
-#'   from a previous run (see [cv_varsel.vsel()]) are not run again, so they
-#'   are not perturbed again. Global option `projpred.loo_perturb_alpha` sets
-#'   \eqn{\alpha} (default 10); `Inf` turns the weight perturbation off.
+#'   With `cv_method = "LOO"` and `validate_search = TRUE`, the search runs
+#'   again in each LOO fold. Removing one observation seldom changes the search
+#'   path, so without further measures, the search paths of most folds are the
+#'   same as the full-data search path. Then the fold-wise errors do not
+#'   cancel, the LOO estimates jump between neighboring submodel sizes, and
+#'   their standard errors are too small. Therefore, with `refit_prj = TRUE`
+#'   (the default), the search of each LOO fold uses random observation weights
+#'   (weight perturbation): for fold \eqn{i}, the weights are \eqn{n} times a
+#'   Dirichlet(\eqn{\alpha}, ..., \eqn{\alpha}) draw, then the weight of
+#'   observation \eqn{i} is set to 0, and the reference model's draws are
+#'   shifted to first order toward the posterior under these weights. The
+#'   search paths then vary between the folds as in \eqn{K}-fold CV. The
+#'   performance evaluation of each fold refits the submodels along the
+#'   fold-wise search path without the weights, so the weights change which
+#'   submodels are evaluated, but not how. With `refit_prj = FALSE`, the
+#'   performance evaluation would reuse the submodel fits of the perturbed
+#'   search, so there is no weight perturbation in that case. Fold-wise
+#'   searches that are reused from a previous run (see [cv_varsel.vsel()]) are
+#'   not run again, so they are not perturbed again. Argument
+#'   `loo_perturb_alpha` sets \eqn{\alpha} (default 10); `Inf` turns the
+#'   weight perturbation off.
 #'
 #'   PSIS uses the Pareto-\eqn{\hat{k}} diagnostic to assess the reliability of
 #'   PSIS-LOO CV. Global option `projpred.warn_psis` (default `TRUE`) controls
@@ -214,6 +227,7 @@ cv_varsel.vsel <- function(
     K = object$K %||% if (!inherits(object, "datafit")) 5 else 10,
     cvfits = object$cvfits,
     validate_search = object$validate_search %||% TRUE,
+    loo_perturb_alpha = object$loo_perturb_alpha %||% 10,
     ...
 ) {
   ## the following arguments should not change
@@ -277,6 +291,7 @@ cv_varsel.vsel <- function(
       K = K,
       cvfits = cvfits,
       validate_search = validate_search,
+      loo_perturb_alpha = loo_perturb_alpha,
       search_out = nlist(search_path = object[["search_path"]], rk_foldwise)
     ),
     dots
@@ -305,6 +320,7 @@ cv_varsel.refmodel <- function(
     nlambda = 150,
     thresh = 1e-6,
     validate_search = TRUE,
+    loo_perturb_alpha = 10,
     seed = NA,
     search_terms = NULL,
     search_out = NULL,
@@ -383,6 +399,11 @@ cv_varsel.refmodel <- function(
   nloo <- args$nloo
   K <- args$K
   cvfits <- args$cvfits
+  if (!is.numeric(loo_perturb_alpha) || length(loo_perturb_alpha) != 1 ||
+      is.na(loo_perturb_alpha) || !(loo_perturb_alpha > 0)) {
+    stop("Argument `loo_perturb_alpha` must be a single positive number ",
+         "(or `Inf`).")
+  }
 
   # Full-data search:
   if (!is.null(search_out)) {
@@ -427,7 +448,7 @@ cv_varsel.refmodel <- function(
       ndraws = ndraws, nclusters = nclusters, ndraws_pred = ndraws_pred,
       nclusters_pred = nclusters_pred, refit_prj = refit_prj, penalty = penalty,
       verbose = verbose, search_control = search_control, nloo = nloo,
-      validate_search = validate_search,
+      validate_search = validate_search, loo_perturb_alpha = loo_perturb_alpha,
       search_path_fulldata = if (validate_search) {
         # Not needed in this case, so for computational efficiency, avoiding
         # passing the large object `search_path_fulldata` to loo_varsel():
@@ -517,6 +538,7 @@ cv_varsel.refmodel <- function(
               loo_inds = sel_cv$inds,
               K,
               validate_search,
+              loo_perturb_alpha,
               cvfits,
               args_search = nlist(
                 method, ndraws, nclusters, nterms_max,
@@ -631,7 +653,8 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
                        nclusters, ndraws_pred, nclusters_pred, refit_prj,
                        penalty, verbose, search_control, nloo, validate_search,
                        search_path_fulldata, search_terms,
-                       search_terms_was_null, search_out_rks, parallel, ...) {
+                       search_terms_was_null, search_out_rks, parallel,
+                       loo_perturb_alpha = Inf, ...) {
   ## Pre-processing ---------------------------------------------------------
 
   has_grp <- formula_contains_group_terms(refmodel$formula)
@@ -724,12 +747,7 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
   # Weight perturbation of the fold-wise searches (see cv_varsel()). It needs
   # fold-wise searches and a performance evaluation that does not reuse the
   # search fits (`refit_prj = TRUE`).
-  perturb_alpha <- getOption("projpred.loo_perturb_alpha", 10)
-  if (!is.numeric(perturb_alpha) || length(perturb_alpha) != 1 ||
-      is.na(perturb_alpha) || !(perturb_alpha > 0)) {
-    stop("Global option `projpred.loo_perturb_alpha` must be a single ",
-         "positive number (or `Inf`).")
-  }
+  perturb_alpha <- loo_perturb_alpha
   if (!validate_search || !refit_prj || !is.null(search_out_rks)) {
     perturb_alpha <- Inf
   }
@@ -1185,8 +1203,7 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
     if (n_perturb_failed > 0) {
       warning("In ", n_perturb_failed, " LOO fold(s), the weight perturbation ",
               "gave non-finite reference draws, so these folds searched ",
-              "without it. A larger global option ",
-              "`projpred.loo_perturb_alpha` may avoid this.")
+              "without it. A larger `loo_perturb_alpha` may avoid this.")
     }
     # For storing the fold-wise predictor rankings:
     predictor_ranking_mat <- matrix(nrow = n, ncol = nterms_max)

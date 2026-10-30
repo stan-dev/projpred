@@ -18,6 +18,7 @@ cv_varsel(object, ...)
   K = object$K \%||\% if (!inherits(object, "datafit")) 5 else 10,
   cvfits = object$cvfits,
   validate_search = object$validate_search \%||\% TRUE,
+  loo_perturb_alpha = object$loo_perturb_alpha \%||\% 10,
   ...
 )
 
@@ -41,6 +42,7 @@ cv_varsel(object, ...)
   nlambda = 150,
   thresh = 1e-06,
   validate_search = TRUE,
+  loo_perturb_alpha = 10,
   seed = NA,
   search_terms = NULL,
   search_out = NULL,
@@ -96,6 +98,13 @@ the computation is faster, but the predictive performance estimates
 of the selected submodels are optimistically biased. However, these fast
 biased estimates can be useful to obtain initial information on the
 usefulness of projection predictive variable selection.}
+
+\item{loo_perturb_alpha}{Only relevant if \code{cv_method = "LOO"},
+\code{validate_search = TRUE}, and \code{refit_prj = TRUE}. A single positive
+number: the concentration \eqn{\alpha} of the random observation weights
+in the fold-wise searches (weight perturbation, see section "Note").
+Smaller values give larger random variation of the weights. \code{Inf} turns
+the weight perturbation off.}
 
 \item{method}{The method for the search part. Possible options are
 \code{"forward"} for forward search and \code{"L1"} for L1 search. See also section
@@ -293,19 +302,27 @@ have optimistic bias in the middle of the search path. This result can be
 used to guide further actions and the optimistic bias can be greatly
 reduced by using \code{validate_search = TRUE}.
 
-With \code{cv_method = "LOO"}, \code{validate_search = TRUE}, and \code{refit_prj = TRUE}, the search of each LOO fold uses random observation weights
-(weight perturbation). For fold \eqn{i}, the weights are \eqn{n} times a
-Dirichlet(\eqn{\alpha}, ..., \eqn{\alpha}) draw, and then the weight of
-observation \eqn{i} is set to 0. The reference model's draws are shifted
-to first order toward the posterior under these weights. Without the weights, the
-search paths of most folds are the same as the full-data search path, so
-the fold-wise errors do not cancel, and the LOO estimates jump between
-neighboring submodel sizes. With the weights, the search paths vary
-between the folds as in \eqn{K}-fold CV. The performance evaluation of
-each fold does not use the weights. Fold-wise searches that are reused
-from a previous run (see \code{\link[=cv_varsel.vsel]{cv_varsel.vsel()}}) are not run again, so they
-are not perturbed again. Global option \code{projpred.loo_perturb_alpha} sets
-\eqn{\alpha} (default 10); \code{Inf} turns the weight perturbation off.
+With \code{cv_method = "LOO"} and \code{validate_search = TRUE}, the search runs
+again in each LOO fold. Removing one observation seldom changes the search
+path, so without further measures, the search paths of most folds are the
+same as the full-data search path. Then the fold-wise errors do not
+cancel, the LOO estimates jump between neighboring submodel sizes, and
+their standard errors are too small. Therefore, with \code{refit_prj = TRUE}
+(the default), the search of each LOO fold uses random observation weights
+(weight perturbation): for fold \eqn{i}, the weights are \eqn{n} times a
+Dirichlet(\eqn{\alpha}, ..., \eqn{\alpha}) draw, then the weight of
+observation \eqn{i} is set to 0, and the reference model's draws are
+shifted to first order toward the posterior under these weights. The
+search paths then vary between the folds as in \eqn{K}-fold CV. The
+performance evaluation of each fold refits the submodels along the
+fold-wise search path without the weights, so the weights change which
+submodels are evaluated, but not how. With \code{refit_prj = FALSE}, the
+performance evaluation would reuse the submodel fits of the perturbed
+search, so there is no weight perturbation in that case. Fold-wise
+searches that are reused from a previous run (see \code{\link[=cv_varsel.vsel]{cv_varsel.vsel()}}) are
+not run again, so they are not perturbed again. Argument
+\code{loo_perturb_alpha} sets \eqn{\alpha} (default 10); \code{Inf} turns the
+weight perturbation off.
 
 PSIS uses the Pareto-\eqn{\hat{k}} diagnostic to assess the reliability of
 PSIS-LOO CV. Global option \code{projpred.warn_psis} (default \code{TRUE}) controls

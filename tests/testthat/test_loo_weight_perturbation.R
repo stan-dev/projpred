@@ -20,13 +20,11 @@ cre_ref_wp <- function(n = 30, p = 6, S = 40) {
   list(ref = ref, n = n, p = p, S = S)
 }
 
-run_cv_wp <- function(ref, alpha = NULL, refit_prj = TRUE, ...) {
-  old <- options(projpred.loo_perturb_alpha = alpha)
-  on.exit(options(old))
+run_cv_wp <- function(ref, alpha = 10, refit_prj = TRUE, ...) {
   suppressWarnings(cv_varsel(
     ref, cv_method = "LOO", validate_search = TRUE, method = "forward",
     nclusters = NULL, ndraws = 10, ndraws_pred = 40, refit_prj = refit_prj,
-    seed = 11, verbose = FALSE, ...
+    loo_perturb_alpha = alpha, seed = 11, verbose = FALSE, ...
   ))
 }
 
@@ -139,9 +137,17 @@ test_that("weight perturbation gives the same result in parallel", {
   expect_equal(cvvs_prll$summaries$sub, cvvs$summaries$sub)
 })
 
-test_that("global option `projpred.loo_perturb_alpha` is checked", {
+test_that(paste(
+  "argument `loo_perturb_alpha` is checked, stored, and reused by",
+  "cv_varsel.vsel()"
+), {
   skip_on_cran()
   r <- cre_ref_wp()
   expect_error(run_cv_wp(r$ref, alpha = -1), "must be a single positive")
   expect_error(run_cv_wp(r$ref, alpha = "a"), "must be a single positive")
+  cvvs <- run_cv_wp(r$ref, alpha = 4)
+  expect_identical(cvvs$loo_perturb_alpha, 4)
+  cvvs2 <- suppressWarnings(cv_varsel(cvvs, validate_search = FALSE,
+                                      verbose = FALSE))
+  expect_identical(cvvs2$loo_perturb_alpha, 4)
 })

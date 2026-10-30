@@ -77,8 +77,8 @@ perturb_weights <- function(n, alpha, seed) {
   })
   w <- n * g / sum(g)
   if (!all(is.finite(w))) {
-    stop("Global option `projpred.loo_perturb_alpha` is too small: the ",
-         "perturbation weights are not finite.")
+    stop("Argument `loo_perturb_alpha` is too small: the perturbation ",
+         "weights are not finite.")
   }
   w
 }
