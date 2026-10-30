@@ -1,10 +1,28 @@
+# `return_outdmins = FALSE` tells the search that the caller does not use the
+# submodel fits along the ranking (element `outdmins`), so
+# search_forward_gauss() does not compute them. The draw-wise search computes
+# them anyway.
 search_forward <- function(p_ref, refmodel, nterms_max, verbose = TRUE,
                            search_terms, est_runtime = TRUE,
-                           search_terms_was_null, ...) {
+                           search_terms_was_null, return_outdmins = TRUE,
+                           ...) {
   nterms_max_with_icpt <- nterms_max + 1L
   iq <- ceiling(quantile(seq_len(nterms_max_with_icpt), 1:10 / 10))
   if (is.null(search_terms)) {
     stop("Did not expect `search_terms` to be `NULL`. Please report this.")
+  }
+
+  # Gaussian submodels: rank the terms from cross-products (see
+  # search_forward_gauss()); `NULL` if this case does not apply:
+  if (getOption("projpred.search_gauss_crossprod", TRUE)) {
+    out_gauss <- search_forward_gauss(
+      p_ref = p_ref, refmodel = refmodel, nterms_max = nterms_max,
+      verbose = verbose, search_terms = search_terms,
+      return_outdmins = return_outdmins, ...
+    )
+    if (!is.null(out_gauss)) {
+      return(out_gauss)
+    }
   }
 
   chosen <- character()
@@ -141,6 +159,191 @@ search_forward <- function(p_ref, refmodel, nterms_max, verbose = TRUE,
   # models. Thus, use `chosen` here because it matches `outdmins` (this
   # matching is necessary because later in perf_eval()'s `!refit_prj` case,
   # `outdmins` is indexed with integers which are based on `predictor_ranking`):
+  return(nlist(predictor_ranking = setdiff(chosen, "1"), outdmins))
+}
+
+# Forward search for Gaussian submodels with the identity link, from the
+# cross-products of the model matrix of all search terms. Let J be the
+# model-matrix columns of a candidate. For draw s, the projection solves the
+# weighted ridge problem of glm_ridge():
+#   (G[J, J] + regul * diag(sd[J]^2)) beta_s = C[J, s].
+# Here, G = Xc' W Xc and C = Xc' W M. Xc is the model matrix, centered at the
+# weighted column means. W holds the observation weights, M the fitted values
+# of the projected reference draws, and sd the weighted column standard
+# deviations from .weighted_sd(). glm_ridge() centers and scales the columns
+# in the same way and does not penalize the intercept. The part of ce_gauss()
+# that differs between the candidates is
+#   -beta_s' (G[J, J] + 2 * regul * diag(sd[J]^2)) beta_s / sum(W).
+# Thus, the cost per candidate does not depend on the number of observations.
+# This function gives only the ranking. The submodel fits along the ranking come
+# from proj_to_submodl(), as in search_forward(). The function returns `NULL`
+# if one of its conditions does not hold; then search_forward() continues with
+# its own search.
+search_forward_gauss <- function(p_ref, refmodel, nterms_max, verbose,
+                                 search_terms, return_outdmins = TRUE, ...) {
+  # The arguments for the divergence minimizer, as in proj_to_submodl():
+  dot_args <- list(...)
+  divmin_args <- dot_args$search_control %||%
+    dot_args[setdiff(names(dot_args), "search_control")]
+  regul <- gauss_crossprod_regul(refmodel, divmin_args)
+  if (is.null(regul)) {
+    return(NULL)
+  }
+  # Custom search terms are possible, because the candidates come from
+  # select_possible_terms_size(), as in search_forward():
+  des <- gauss_crossprod_design(refmodel, search_terms, regul)
+  if (is.null(des)) {
+    return(NULL)
+  }
+  cols_by_term <- des$cols_by_term
+  c_mat <- crossprod(des$x_c, p_ref$mu * des$wobs)
+  lambda_x <- des$lambda_x
+  a_full <- des$a_full
+  wdraws <- p_ref$wdraws_prj
+
+  # The term labels of a candidate string. The same strings come back in every
+  # step, so the labels are computed once:
+  label_cache <- new.env(hash = TRUE, parent = emptyenv())
+  labels_of <- function(cand) {
+    lbls <- label_cache[[cand]]
+    if (is.null(lbls)) {
+      lbls <- labels_gauss(cand)
+      assign(cand, lbls, envir = label_cache)
+    }
+    return(lbls)
+  }
+
+  # The criterion is -sum_s wdraws_s * beta_s' (G[J, J] + 2 * Lambda) beta_s
+  # (smaller is better, as for the cross-entropy). With
+  # G[J, J] + Lambda = R' R and y_s = R^-T C[J, s], it equals
+  # -sum_s wdraws_s * (||y_s||^2 + beta_s' Lambda beta_s). In one step, all
+  # candidates share the columns of the chosen terms, so the Cholesky factor
+  # `r_chosen` and `y_chosen` of these columns are computed once per step. Each
+  # candidate extends them by its new columns `cols_new` (block Cholesky).
+  crit_cand <- function(cols_new, cols_chosen, r_chosen, y_chosen) {
+    quad <- 0
+    r_cn <- NULL
+    r_n <- NULL
+    y_n <- NULL
+    beta_n <- NULL
+    if (length(cols_new) > 0) {
+      a_nn <- a_full[cols_new, cols_new, drop = FALSE]
+      rhs_n <- c_mat[cols_new, , drop = FALSE]
+      if (length(cols_chosen) > 0) {
+        r_cn <- forwardsolve(t(r_chosen),
+                             a_full[cols_chosen, cols_new, drop = FALSE])
+        a_nn <- a_nn - crossprod(r_cn)
+        rhs_n <- rhs_n - crossprod(r_cn, y_chosen)
+      }
+      r_n <- chol(a_nn)
+      y_n <- forwardsolve(t(r_n), rhs_n)
+      beta_n <- backsolve(r_n, y_n)
+      quad <- colSums(y_n^2) + colSums(lambda_x[cols_new] * beta_n^2)
+    }
+    if (length(cols_chosen) > 0) {
+      y_c <- y_chosen
+      if (!is.null(beta_n)) {
+        y_c <- y_c - r_cn %*% beta_n
+      }
+      beta_c <- backsolve(r_chosen, y_c)
+      quad <- quad + colSums(y_chosen^2) +
+        colSums(lambda_x[cols_chosen] * beta_c^2)
+    }
+    return(list(crit = -sum(wdraws * quad), r_cn = r_cn, r_n = r_n, y_n = y_n))
+  }
+
+  # crit_cand() for many candidates that each add one column (`cols_single`)
+  # at once, with matrix operations instead of one call per candidate. For
+  # candidate j, beta_c = b0 - u_j beta_n[j, ]' with b0 = R^-1 y_chosen and
+  # u_j = R^-1 r_cj, so the penalty term of the chosen columns is
+  # sum(lambda b0^2) - 2 beta_n[j, ] p[j, ] + beta_n[j, ]^2 l[j], with
+  # p = (u * lambda)' b0 and l = colSums(lambda u^2).
+  crit_single <- function(cols_single, cols_chosen, r_chosen, y_chosen) {
+    a_jj <- a_full[cbind(cols_single, cols_single)]
+    rhs <- c_mat[cols_single, , drop = FALSE]
+    if (length(cols_chosen) > 0) {
+      r_cj <- forwardsolve(t(r_chosen),
+                           a_full[cols_chosen, cols_single, drop = FALSE])
+      a_jj <- a_jj - colSums(r_cj^2)
+      rhs <- rhs - crossprod(r_cj, y_chosen)
+    }
+    y_n <- rhs / sqrt(a_jj)
+    beta_n <- y_n / sqrt(a_jj)
+    quad <- y_n^2 + lambda_x[cols_single] * beta_n^2
+    if (length(cols_chosen) > 0) {
+      lambda_c <- lambda_x[cols_chosen]
+      b0 <- backsolve(r_chosen, y_chosen)
+      u <- backsolve(r_chosen, r_cj)
+      q0 <- colSums(y_chosen^2) + colSums(lambda_c * b0^2)
+      quad <- quad +
+        matrix(q0, nrow = length(cols_single), ncol = length(q0), byrow = TRUE) -
+        2 * beta_n * crossprod(u * lambda_c, b0) +
+        colSums(lambda_c * u^2) * beta_n^2
+    }
+    return(-drop(quad %*% wdraws))
+  }
+
+  chosen <- character()
+  labels_chosen <- character()
+  cols_chosen <- integer(0)
+  r_chosen <- NULL
+  y_chosen <- NULL
+  term_info <- search_term_info(search_terms)
+  for (size in seq_len(nterms_max + 1L)) {
+    cands <- select_possible_terms_size(chosen, search_terms, size = size,
+                                        term_info = term_info)
+    if (is.null(cands)) {
+      next
+    }
+    labels_new <- lapply(cands, function(cand) {
+      setdiff(labels_of(cand), labels_chosen)
+    })
+    if (!all(unlist(labels_new) %in% names(cols_by_term))) {
+      return(NULL)
+    }
+    cols_cands <- lapply(labels_new, function(lbls) {
+      unlist(cols_by_term[lbls], use.names = FALSE)
+    })
+    crits <- rep(NA_real_, length(cands))
+    is_single <- lengths(cols_cands) == 1L
+    if (any(is_single)) {
+      crits[is_single] <- crit_single(unlist(cols_cands[is_single]),
+                                      cols_chosen, r_chosen, y_chosen)
+    }
+    for (k in which(!is_single)) {
+      crits[k] <- crit_cand(cols_cands[[k]], cols_chosen, r_chosen,
+                            y_chosen)$crit
+    }
+    imin <- which.min(crits)
+    chosen <- c(chosen, cands[imin])
+    cols_new <- cols_cands[[imin]]
+    if (length(cols_new) > 0) {
+      # The factors of the chosen candidate, for the next step:
+      best <- crit_cand(cols_new, cols_chosen, r_chosen, y_chosen)
+      if (length(cols_chosen) == 0) {
+        r_chosen <- best$r_n
+        y_chosen <- best$y_n
+      } else {
+        r_chosen <- rbind(
+          cbind(r_chosen, best$r_cn),
+          cbind(matrix(0, length(cols_new), length(cols_chosen)), best$r_n)
+        )
+        y_chosen <- rbind(y_chosen, best$y_n)
+      }
+      cols_chosen <- c(cols_chosen, cols_new)
+      labels_chosen <- c(labels_chosen, labels_new[[imin]])
+    }
+  }
+
+  # The submodel fits along the ranking (as stored by search_forward()), if the
+  # caller uses them:
+  outdmins <- NULL
+  if (return_outdmins) {
+    outdmins <- lapply(seq_along(chosen), function(j) {
+      proj_to_submodl(predictor_terms = chosen[seq_len(j)], p_ref = p_ref,
+                      refmodel = refmodel, verbose = verbose, ...)$outdmin
+    })
+  }
   return(nlist(predictor_ranking = setdiff(chosen, "1"), outdmins))
 }
 

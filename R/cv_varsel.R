@@ -1044,7 +1044,9 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
           method = method, nterms_max = nterms_max, penalty = penalty,
           verbose = verbose_obs, verbose_line_length = 3,
           verbose_txt_add = vtxt_obs_i, search_control = search_control,
-          search_terms = search_terms, est_runtime = FALSE, ...
+          search_terms = search_terms, est_runtime = FALSE,
+          # The evaluation uses the search fits only with `refit_prj = FALSE`:
+          return_outdmins = !refit_prj, ...
         )
       }
 
@@ -1423,7 +1425,9 @@ kfold_varsel <- function(refmodel, method, nterms_max, ndraws, nclusters,
         method = method, nterms_max = nterms_max, penalty = penalty,
         verbose = verbose_fold, verbose_line_length = 3,
         verbose_txt_add = vtxt_fold_k, search_control = search_control,
-        search_terms = search_terms, est_runtime = FALSE, ...
+        search_terms = search_terms, est_runtime = FALSE,
+        # The evaluation uses the search fits only with `refit_prj = FALSE`:
+        return_outdmins = !refit_prj, ...
       )
     }
 

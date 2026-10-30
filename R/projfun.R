@@ -106,7 +106,20 @@ perf_eval <- function(search_path,
            txt_clust_draws(p_ref[["clust_used"]], p_ref[["nprjdraws"]]),
            " (`refit_prj = ", refit_prj, "`) ...",
            verbose = verbose && !return_submodls)
-  out_by_size <- lapply(nterms, function(size_j) {
+  out_by_size <- NULL
+  if (refit_prj && !is.null(reweighting_args) && !return_submodls &&
+      !return_preds && getOption("projpred.search_gauss_crossprod", TRUE)) {
+    # In the LOO CV with validated search, compute the evaluation of Gaussian
+    # submodels from cross-products (`NULL` if this case does not apply):
+    out_by_size <- perf_eval_gauss(
+      search_path = search_path, nterms = nterms, refmodel = refmodel,
+      p_ref = p_ref, refmodel_fulldata = refmodel_fulldata,
+      indices_test = indices_test, newdata_test = newdata_test,
+      offset_test = offset_test, wobs_test = wobs_test, y_test = y_test,
+      y_oscale_test = y_oscale_test, divmin_args = list(...)
+    )
+  }
+  if (is.null(out_by_size)) out_by_size <- lapply(nterms, function(size_j) {
     # Fetch the init_submodl() output (of class `submodl`) for the submodel at
     # position `size_j + 1` of the predictor ranking:
     submodl <- fetch_submodl(size_j, ...)
