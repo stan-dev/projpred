@@ -164,6 +164,44 @@ test_that("perf_eval_gauss() applies in the LOO CV with validated search", {
   expect_identical(n_used, 5L)
 })
 
+test_that(paste(
+  "the LOO CV with validated search uses the reweighted reference",
+  "distribution without draw matrices and falls back to the full one"
+), {
+  ns <- asNamespace("projpred")
+  n_light <- 0L
+  count_light <- function() {
+    trace("get_p_clust", exit = function() {
+      if (isTRUE(returnValue()$moments_only)) n_light <<- n_light + 1L
+    }, print = FALSE, where = ns)
+  }
+  on.exit(untrace("get_p_clust", where = ns))
+  # `x1:f` (a factor in an interaction): perf_eval_gauss() gives `NULL`, so
+  # perf_eval() falls back to the full reference distribution.
+  fmls <- list(y ~ x1 + x2 + x3 + x4 + f + x1:x2, y ~ x1 + x2 + f + x1:f)
+  for (fml in fmls) {
+    refm <- refm_search_gauss(fml, n = 40)
+    # Thinned draws and all draws:
+    for (ndraws_pred_crr in c(20, 200)) {
+      info_crr <- paste(deparse(fml), ndraws_pred_crr)
+      args_cv <- list(refm, cv_method = "LOO", validate_search = TRUE,
+                      nloo = 4, nclusters = 3, ndraws_pred = ndraws_pred_crr,
+                      nterms_max = 3, seed = 5821, verbose = FALSE)
+      count_light()
+      n_light <- 0L
+      cv_light <- suppressWarnings(do.call(cv_varsel, args_cv))
+      expect_identical(n_light, 4L, info = info_crr)
+      # The same computations with the full reference distribution:
+      trace("get_p_clust", tracer = quote(as_moments <- FALSE), print = FALSE,
+            where = ns)
+      cv_full <- suppressWarnings(do.call(cv_varsel, args_cv))
+      expect_identical(ranking(cv_light), ranking(cv_full), info = info_crr)
+      expect_equal(cv_light$summaries$sub, cv_full$summaries$sub,
+                   tolerance = 1e-12, info = info_crr)
+    }
+  }
+})
+
 test_that("search_forward_gauss() applies to Gaussian GLM-type submodels", {
   refm <- refm_search_gauss(fml_search_gauss)
   p_ref <- get_refdist(refm, nclusters = 3)
@@ -457,3 +495,95 @@ test_that(paste(
   expect_equal(performances(cv_crossprod, deltas = FALSE),
                performances(cv_drawwise, deltas = FALSE), tolerance = 1e-10)
 })
+
+test_that(paste(
+  "cands_single_label() gives the candidates and new labels of",
+  "select_possible_terms_size()"
+), {
+  search_terms <- c("1", "x1", "x2", "x3", "f", "poly(x3, 2)", "x2:x1")
+  term_info <- search_term_info(search_terms)
+  single <- single_label_info(term_info)
+  expect_false(is.null(single))
+  expect_identical(single$lab, c(NA, "x1", "x2", "x3", "f", "poly(x3, 2)",
+                                 "x1:x2"))
+  chosen_list <- list(character(0), "1", c("1", "x2"), c("1", "f", "x1"),
+                      c("1", "x2:x1", "poly(x3, 2)", "x3"))
+  for (chosen in chosen_list) {
+    labels_chosen <- unique(unlist(lapply(chosen, labels_gauss)))
+    for (size in 1:5) {
+      ref <- select_possible_terms_size(chosen, search_terms, size = size,
+                                        use_term_info = TRUE)
+      step <- cands_single_label(single, labels_chosen, size)
+      info <- paste(c(chosen, size), collapse = ",")
+      if (is.null(step)) {
+        # Only for sizes that the search does not use (a term with a chosen
+        # label is a candidate):
+        expect_identical(size, length(labels_chosen) + 1L, info = info)
+        next
+      }
+      expect_identical(step$cands, ref, info = info)
+      if (is.null(ref)) {
+        expect_null(step$labels_new, info = info)
+        next
+      }
+      expect_identical(step$labels_new, lapply(ref, function(cand) {
+        setdiff(labels_gauss(cand), labels_chosen)
+      }), info = info)
+    }
+  }
+  # A term with a chosen label as a candidate: select_possible_terms_size()
+  # builds a formula for it, so cands_single_label() gives `NULL`.
+  expect_null(cands_single_label(single, "x1", size = 2))
+  # Terms with several labels, no term information:
+  expect_null(single_label_info(search_term_info(c("1", "x1 + x2", "x3"))))
+  # A `+` inside a call does not split the label:
+  expect_identical(
+    single_label_info(search_term_info(c("1", "I(x1 + x2)")))$lab,
+    c(NA, "I(x1 + x2)")
+  )
+  expect_null(single_label_info(NULL))
+})
+
+test_that(paste(
+  "search_forward_gauss() gives the same results with and without the",
+  "candidates from cands_single_label()"
+), {
+  refm <- refm_search_gauss(y ~ x1 + x2 + x3 + x4 + f + x1:x2)
+  p_ref <- get_refdist(refm, nclusters = 3)
+  ns <- asNamespace("projpred")
+  calls <- new.env()
+  suppressMessages(trace(
+    "cands_single_label", where = ns, print = FALSE,
+    exit = bquote(if (!is.null(returnValue(NULL))) {
+      assign("n", get("n", envir = .(calls)) + 1L, envir = .(calls))
+    })
+  ))
+  on.exit(suppressMessages(untrace("cands_single_label", where = ns)),
+          add = TRUE)
+  # The search terms: with "1"; without "1"; with a duplicated term; with the
+  # same interaction in two orders.
+  terms_list <- list(
+    c("1", "x1", "x2", "x3", "x4", "f", "x1:x2"),
+    c("x1", "x2", "x3", "x4", "f"),
+    c("1", "x1", "x1", "x2", "x3", "f"),
+    c("1", "x1", "x2", "x3", "x1:x2", "x2:x1")
+  )
+  for (search_terms in terms_list) {
+    info <- paste(search_terms, collapse = ",")
+    calls$n <- 0L
+    out <- search_forward_gauss(p_ref = p_ref, refmodel = refm,
+                                nterms_max = 4, verbose = FALSE,
+                                search_terms = search_terms)
+    expect_false(is.null(out), info = info)
+    expect_identical(calls$n, 5L, info = info)
+    out_formula <- with_mocked_bindings(
+      search_forward_gauss(p_ref = p_ref, refmodel = refm, nterms_max = 4,
+                           verbose = FALSE, search_terms = search_terms),
+      single_label_info = function(term_info) NULL
+    )
+    expect_identical(out$predictor_ranking, out_formula$predictor_ranking,
+                     info = info)
+    expect_identical(out$outdmins, out_formula$outdmins, info = info)
+  }
+})
+

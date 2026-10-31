@@ -161,6 +161,61 @@ search_forward <- function(p_ref, refmodel, nterms_max, verbose = TRUE,
   return(nlist(predictor_ranking = setdiff(chosen, "1"), outdmins))
 }
 
+# For search terms that are each "1" or have one term label (see
+# search_term_info()): the label of each term (`NA` for "1") and the string
+# that select_possible_terms_size() returns for it. Returns `NULL` in other
+# cases, or if the label of a returned string is not the label of its term.
+single_label_info <- function(term_info) {
+  if (is.null(term_info)) {
+    return(NULL)
+  }
+  is_single <- vapply(term_info, function(info) {
+    length(info$labels) <= 1L && !is.na(info$label_out)
+  }, logical(1))
+  if (!all(is_single)) {
+    return(NULL)
+  }
+  lab <- vapply(term_info, function(info) {
+    if (length(info$labels) == 1L) info$labels else NA_character_
+  }, character(1), USE.NAMES = FALSE)
+  out <- vapply(term_info, `[[`, character(1), "label_out",
+                USE.NAMES = FALSE)
+  lab_out <- lapply(out, labels_gauss)
+  if (!identical(lengths(lab_out), as.integer(!is.na(lab))) ||
+      !identical(as.character(unlist(lab_out)), lab[!is.na(lab)])) {
+    return(NULL)
+  }
+  return(list(lab = lab, out = out))
+}
+
+# The candidates of one search step for the output `single` of
+# single_label_info(): the result `cands` of select_possible_terms_size() and
+# the new term labels `labels_new` of each candidate, without formula code.
+# With one label per term, the size of a candidate is the number of chosen
+# labels, plus one for a new label, plus one for the intercept. `cands` is
+# `NULL` if no candidate has the size. Returns `NULL` if a candidate is a term
+# with a chosen label (select_possible_terms_size() builds a formula for it).
+# In a search, this does not occur: after the intercept step, the number of
+# chosen labels is `size - 2`.
+cands_single_label <- function(single, labels_chosen, size) {
+  in_chosen <- single$lab %in% labels_chosen
+  n_new <- as.integer(!is.na(single$lab) & !in_chosen)
+  is_valid <- n_new + length(labels_chosen) + 1L == size
+  if (any(is_valid & in_chosen)) {
+    return(NULL)
+  }
+  if (!any(is_valid)) {
+    return(list(cands = NULL, labels_new = NULL))
+  }
+  cands <- single$out[is_valid]
+  lab <- single$lab[is_valid]
+  keep <- !duplicated(cands)
+  labels_new <- lapply(lab[keep], function(l) {
+    if (is.na(l)) character(0) else l
+  })
+  return(list(cands = cands[keep], labels_new = labels_new))
+}
+
 # Forward search for Gaussian submodels with the identity link, from the
 # cross-products of the model matrix of all search terms. Let J be the
 # model-matrix columns of a candidate. For draw s, the projection solves the
@@ -189,13 +244,15 @@ search_forward_gauss <- function(p_ref, refmodel, nterms_max, verbose,
     return(NULL)
   }
   # Custom search terms are possible, because the candidates come from
-  # select_possible_terms_size(), as in search_forward():
+  # select_possible_terms_size() (or cands_single_label(), which gives the same
+  # result), as in search_forward():
   des <- gauss_crossprod_design(refmodel, search_terms, regul)
   if (is.null(des)) {
     return(NULL)
   }
   cols_by_term <- des$cols_by_term
-  c_mat <- crossprod(des$x_c, p_ref$mu * des$wobs)
+  # The weights scale the (small) model matrix, not the draws:
+  c_mat <- crossprod(des$x_cw, p_ref$mu)
   lambda_x <- des$lambda_x
   a_full <- des$a_full
   wdraws <- p_ref$wdraws_prj
@@ -293,15 +350,26 @@ search_forward_gauss <- function(p_ref, refmodel, nterms_max, verbose,
   cols_chosen <- integer(0)
   r_chosen <- NULL
   y_chosen <- NULL
+  term_info <- search_term_info(search_terms)
+  single <- single_label_info(term_info)
   for (size in seq_len(nterms_max + 1L)) {
-    cands <- select_possible_terms_size(chosen, search_terms, size = size,
-                                        use_term_info = TRUE)
+    step <- NULL
+    if (!is.null(single)) {
+      step <- cands_single_label(single, labels_chosen, size)
+    }
+    if (!is.null(step)) {
+      cands <- step$cands
+      labels_new <- step$labels_new
+    } else {
+      cands <- select_possible_terms_size(chosen, search_terms, size = size,
+                                          use_term_info = TRUE)
+      labels_new <- lapply(cands, function(cand) {
+        setdiff(labels_of(cand), labels_chosen)
+      })
+    }
     if (is.null(cands)) {
       next
     }
-    labels_new <- lapply(cands, function(cand) {
-      setdiff(labels_of(cand), labels_chosen)
-    })
     if (!all(unlist(labels_new) %in% names(cols_by_term))) {
       return(NULL)
     }

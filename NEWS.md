@@ -7,6 +7,7 @@ If you read this from a place other than <https://mc-stan.org/projpred/news/inde
 
 ## Major changes
 
+* Faster LOO CV with validated search for Gaussian submodels: the evaluation uses weighted sums in C++ instead of observations x draws matrices, and the search takes the candidates from the term labels. For example, a case with 200 predictor terms is about 6 times faster.
 * Faster forward search and LOO CV with validated search for Gaussian submodels with the identity link and for the latent projection, computed from cross-products of the model matrix. For example, `cv_varsel()` with `validate_search = TRUE` for a Gaussian model with 40 observations and 15 predictor terms is about 8 times faster. (GitHub: #579)
 * Faster repeated forward searches, as in `cv_varsel()` with `validate_search = TRUE`: the results of the term-label and formula code are cached within the R session (R >= 4.2.0). For example, LOO CV with validated search is about 12-18 % faster. (GitHub: #599)
 * Less formula and model-matrix work in the forward search and in the projections: the candidate submodels are selected from precomputed term labels, and the predictions for the training data use the stored submodel model matrices. For example, `varsel()` with forward search for a Gaussian model with 50 observations and 200 predictor terms is about 1.5 times faster. (GitHub: #578)
