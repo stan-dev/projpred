@@ -11,6 +11,22 @@ Rcpp::Rostream<true>&  Rcpp::Rcout = Rcpp::Rcpp_cout_get();
 Rcpp::Rostream<false>& Rcpp::Rcerr = Rcpp::Rcpp_cerr_get();
 #endif
 
+// clust_moments_c
+List clust_moments_c(const arma::mat& mu, const arma::mat& mu_offs, const arma::vec& dis, const arma::vec& wn, const IntegerVector& cl, int nclusters);
+RcppExport SEXP _projpred_clust_moments_c(SEXP muSEXP, SEXP mu_offsSEXP, SEXP disSEXP, SEXP wnSEXP, SEXP clSEXP, SEXP nclustersSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< const arma::mat& >::type mu(muSEXP);
+    Rcpp::traits::input_parameter< const arma::mat& >::type mu_offs(mu_offsSEXP);
+    Rcpp::traits::input_parameter< const arma::vec& >::type dis(disSEXP);
+    Rcpp::traits::input_parameter< const arma::vec& >::type wn(wnSEXP);
+    Rcpp::traits::input_parameter< const IntegerVector& >::type cl(clSEXP);
+    Rcpp::traits::input_parameter< int >::type nclusters(nclustersSEXP);
+    rcpp_result_gen = Rcpp::wrap(clust_moments_c(mu, mu_offs, dis, wn, cl, nclusters));
+    return rcpp_result_gen;
+END_RCPP
+}
 // glm_elnet_c
 List glm_elnet_c(arma::mat x, Function pseudo_obs, arma::vec lambda, double alpha, bool intercept, arma::vec penalty, double thresh, int qa_updates_max, int pmax, bool pmax_strict, arma::vec beta, double beta0, arma::vec w0, int as_updates_max);
 RcppExport SEXP _projpred_glm_elnet_c(SEXP xSEXP, SEXP pseudo_obsSEXP, SEXP lambdaSEXP, SEXP alphaSEXP, SEXP interceptSEXP, SEXP penaltySEXP, SEXP threshSEXP, SEXP qa_updates_maxSEXP, SEXP pmaxSEXP, SEXP pmax_strictSEXP, SEXP betaSEXP, SEXP beta0SEXP, SEXP w0SEXP, SEXP as_updates_maxSEXP) {
@@ -58,6 +74,7 @@ END_RCPP
 }
 
 static const R_CallMethodDef CallEntries[] = {
+    {"_projpred_clust_moments_c", (DL_FUNC) &_projpred_clust_moments_c, 6},
     {"_projpred_glm_elnet_c", (DL_FUNC) &_projpred_glm_elnet_c, 14},
     {"_projpred_glm_ridge_c", (DL_FUNC) &_projpred_glm_ridge_c, 11},
     {NULL, NULL, 0}
