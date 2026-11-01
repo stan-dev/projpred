@@ -83,6 +83,12 @@ perturb_weights <- function(n, alpha, seed) {
   w
 }
 
+# `TRUE` if all values of the numeric array `x` are finite. min() and max() do
+# not copy `x`. They return NA, NaN or +-Inf if a value of `x` is not finite:
+all_finite <- function(x) {
+  length(x) == 0 || (is.finite(min(x)) && is.finite(max(x)))
+}
+
 # Reference model for the search of LOO fold i with weight perturbation. The
 # observation weights w ~ n * Dirichlet(alpha), then w_i set to 0, multiply
 # `wobs`. The reference draws move by the first-order change of the posterior
@@ -92,7 +98,8 @@ perturb_weights <- function(n, alpha, seed) {
 # where omega are the LOO weights of fold i (`lw_i`, log scale). The shift
 # applies to the linear predictor and to the log of the dispersion. `ll` is the
 # S x n log-likelihood matrix of the reference draws. Returns `NULL` if the
-# shifted draws are not finite.
+# shifted linear predictors, means (with and without offsets) or dispersions are
+# not finite.
 perturb_refmodel <- function(refmodel, i, ll, lw_i, alpha, seed) {
   n <- ncol(ll)
   w <- perturb_weights(n, alpha, seed)
@@ -106,7 +113,15 @@ perturb_refmodel <- function(refmodel, i, ll, lw_i, alpha, seed) {
     return(NULL)
   }
   refmodel$eta <- refmodel$eta + drop(refmodel$eta %*% cd)
+  # With a bounded inverse link (logit, probit), an infinite `eta` gives a
+  # finite `mu`, so check `eta` itself:
+  if (!all_finite(refmodel$eta)) {
+    return(NULL)
+  }
   refmodel$mu <- refmodel$family$linkinv(refmodel$eta)
+  if (!all_finite(refmodel$mu)) {
+    return(NULL)
+  }
   if (!all(refmodel$offset == 0)) {
     if (refmodel$family$family %in% fams_neg_linpred()) {
       eta_offs <- refmodel$eta - refmodel$offset
@@ -114,13 +129,11 @@ perturb_refmodel <- function(refmodel, i, ll, lw_i, alpha, seed) {
       eta_offs <- refmodel$eta + refmodel$offset
     }
     refmodel$mu_offs <- refmodel$family$linkinv(eta_offs)
+    if (!all_finite(refmodel$mu_offs)) {
+      return(NULL)
+    }
   } else {
     refmodel$mu_offs <- refmodel$mu
-  }
-  # min() and max() do not copy `mu`; they are NA or not finite if any value is:
-  if (length(refmodel$mu) > 0 &&
-      !(is.finite(min(refmodel$mu)) && is.finite(max(refmodel$mu)))) {
-    return(NULL)
   }
   if (!any(is.na(refmodel$dis)) && all(refmodel$dis > 0)) {
     ldis <- log(refmodel$dis)

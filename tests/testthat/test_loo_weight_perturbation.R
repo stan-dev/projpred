@@ -64,6 +64,70 @@ test_that("perturb_refmodel() returns NULL for non-finite shifted draws", {
 })
 
 test_that(paste(
+  "perturb_refmodel() returns NULL for an infinite linear predictor with a",
+  "bounded inverse link and for infinite means with offsets"
+), {
+  set.seed(4712)
+  n <- 30
+  S <- 40
+  x <- matrix(rnorm(n * 2), n, 2, dimnames = list(NULL, c("x1", "x2")))
+  beta <- matrix(rnorm(3 * S, sd = 0.2), 3, S)
+  cre_ref <- function(dat, family) {
+    ref_predfun <- function(fit, newdata = NULL) {
+      if (is.null(newdata)) newdata <- dat
+      cbind(1, as.matrix(newdata[, colnames(x), drop = FALSE])) %*% fit$beta
+    }
+    suppressWarnings(init_refmodel(
+      object = list(beta = beta), data = dat, formula = y ~ x1 + x2,
+      family = family, ref_predfun = ref_predfun
+    ))
+  }
+  i <- 5
+  perturb <- function(refm) {
+    ll <- t(refm$family$ll_fun(refm$mu_offs, refm$dis, refm$y, refm$wobs))
+    lw <- weights(suppressWarnings(loo::psis(-ll, r_eff = NA)))
+    list(ll = ll, lw_i = lw[, i])
+  }
+  # Logit link: an infinite value in `eta` (set here, not from an overflow of
+  # the shift) gives `mu` 0 or 1. The shift of draw s is eta %*% cd, so the
+  # value goes into a draw with cd_s > 0; then the shifted row is +Inf and not
+  # NaN (a NaN would also make `mu` non-finite).
+  refm <- cre_ref(data.frame(y = rbinom(n, 1, 0.5), x), binomial())
+  pp <- perturb(refm)
+  expect_false(is.null(perturb_refmodel(refm, i = i, ll = pp$ll,
+                                        lw_i = pp$lw_i, alpha = 10,
+                                        seed = 99L)))
+  # `cd` as in perturb_refmodel():
+  w <- perturb_weights(n, 10, 99L)
+  w[i] <- 0
+  dw <- w - 1
+  dw[i] <- 0
+  om <- exp(pp$lw_i) / sum(exp(pp$lw_i))
+  cc <- drop(pp$ll %*% dw)
+  cd <- om * (cc - sum(om * cc))
+  s <- which.max(cd)
+  expect_gt(cd[s], 0)
+  refm_v <- refm
+  refm_v$eta[3, s] <- Inf
+  eta_shift <- refm_v$eta + drop(refm_v$eta %*% cd)
+  expect_true(all(eta_shift[3, ] == Inf))
+  expect_true(all(is.finite(refm_v$family$linkinv(eta_shift))))
+  expect_null(perturb_refmodel(refm_v, i = i, ll = pp$ll, lw_i = pp$lw_i,
+                               alpha = 10, seed = 99L))
+  # Log link with an offset: `mu` is finite, but `mu_offs` is not.
+  refm <- cre_ref(data.frame(y = rpois(n, 2), x), poisson())
+  pp <- perturb(refm)
+  refm_v <- refm
+  refm_v$offset <- rep(0.1, n)
+  expect_false(is.null(perturb_refmodel(refm_v, i = i, ll = pp$ll,
+                                        lw_i = pp$lw_i, alpha = 10,
+                                        seed = 99L)))
+  refm_v$offset[3] <- 1000
+  expect_null(perturb_refmodel(refm_v, i = i, ll = pp$ll, lw_i = pp$lw_i,
+                               alpha = 10, seed = 99L))
+})
+
+test_that(paste(
   "perturb_refmodel() moves the posterior mean of the linear predictor to the",
   "posterior mean under the weights (first order)"
 ), {
