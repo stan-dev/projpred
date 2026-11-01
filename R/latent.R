@@ -163,8 +163,28 @@ cl_agg <- function(draws,
                    wdraws = rep(1, nrow(draws)),
                    eps_wdraws = 0) {
   n_cl <- max(cl, na.rm = TRUE)
-  return(do.call(rbind, lapply(seq_len(n_cl), function(i_cl) {
-    idxs_draws_i <- which(cl == i_cl)
+  # Draw indices of all clusters in one pass, as `which(cl == i_cl)` gives them.
+  # match() compares numbers as `==` does. The factor is built from the integer
+  # codes, so the indices are not converted to strings.
+  cl_ind <- structure(match(cl, seq_len(n_cl)),
+                      levels = as.character(seq_len(n_cl)), class = "factor")
+  idxs_cl <- unname(split(seq_along(cl), cl_ind))
+  if (isTRUE(eps_wdraws == 0) && length(idxs_cl) > 0 && is.matrix(draws) &&
+      !is.object(draws) && (is.double(draws) || is.integer(draws) ||
+                            is.logical(draws)) &&
+      all(lengths(idxs_cl) == 1L)) {
+    # One draw per cluster: its normalized weight is exactly 1 (if the weight is
+    # finite and not zero), so each row of the result is the draw itself.
+    idxs <- unlist(idxs_cl, use.names = FALSE)
+    w <- wdraws[idxs]
+    if (all(is.finite(w) & w != 0)) {
+      cnms <- colnames(draws)
+      return(matrix(as.double(draws[idxs, , drop = FALSE]),
+                    nrow = length(idxs), ncol = ncol(draws),
+                    dimnames = if (!is.null(cnms)) list(NULL, cnms)))
+    }
+  }
+  return(do.call(rbind, lapply(idxs_cl, function(idxs_draws_i) {
     wdraws_i <- wdraws[idxs_draws_i] / sum(wdraws[idxs_draws_i]) *
       (1 - eps_wdraws)
     return(wdraws_i %*% draws[idxs_draws_i, , drop = FALSE])

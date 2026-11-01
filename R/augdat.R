@@ -48,8 +48,13 @@ arr2augmat <- function(arr, margin_draws = 3) {
   } else if (margin_draws == 3) {
     margin_obs <- 1
   }
-  augmat <- apply(arr, margin_draws, as.vector, simplify = FALSE)
-  augmat <- do.call(cbind, augmat)
+  # Column s of the result is `as.vector()` of the N x C slice of draw s:
+  nms_draws <- dimnames(arr)[[margin_draws]]
+  augmat <- if (margin_draws == 1) aperm(arr, perm = c(2, 3, 1)) else arr
+  dim_nc <- dim(augmat)
+  attributes(augmat) <- NULL
+  dim(augmat) <- c(dim_nc[1] * dim_nc[2], dim_nc[3])
+  if (any(nzchar(nms_draws))) colnames(augmat) <- nms_draws
   attr(augmat, "ndiscrete") <- dim(arr)[-c(margin_draws, margin_obs)]
   class(augmat) <- "augmat"
   return(augmat)
