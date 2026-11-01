@@ -14,6 +14,8 @@ If you read this from a place other than <https://mc-stan.org/projpred/news/inde
 
 ## Minor changes
 
+* New function `custom_stat()` defines a user-defined performance statistic for argument `stats` of `summary.vsel()`, `plot.vsel()` and `performances()`, and argument `stat` of `suggest_size()`. (GitHub: #566)
+
 ## Bug fixes and maintenance
 
 * Fixed bug in the predictions of submodels for new data: Terms with a data-dependent basis, such as `poly()` or `splines::ns()`, used a basis computed from the new data instead of the basis of the training data. This affected `proj_linpred()` and `proj_predict()` with `newdata`, `varsel()` with `d_test`, and K-fold CV, and caused `cv_varsel()` with `validate_search = TRUE` and LOO CV to fail with `poly()` terms. (GitHub: #573)
