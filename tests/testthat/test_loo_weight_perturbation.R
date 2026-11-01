@@ -46,6 +46,23 @@ test_that("perturb_weights() sums to n and does not change the RNG state", {
   expect_identical(RNGkind()[1], "L'Ecuyer-CMRG")
 })
 
+test_that("perturb_refmodel() returns NULL for non-finite shifted draws", {
+  r <- cre_ref_wp()
+  refm <- r$ref
+  ll <- t(refm$family$ll_fun(refm$mu_offs, refm$dis, refm$y, refm$wobs))
+  lw <- weights(suppressWarnings(loo::psis(-ll, r_eff = NA)))
+  i <- 5
+  expect_false(is.null(perturb_refmodel(refm, i = i, ll = ll, lw_i = lw[, i],
+                                        alpha = 10, seed = 99L)))
+  for (val in c(NA, NaN, Inf, -Inf)) {
+    refm_v <- refm
+    refm_v$eta[3, 2] <- val
+    expect_null(perturb_refmodel(refm_v, i = i, ll = ll, lw_i = lw[, i],
+                                 alpha = 10, seed = 99L),
+                info = format(val))
+  }
+})
+
 test_that(paste(
   "perturb_refmodel() moves the posterior mean of the linear predictor to the",
   "posterior mean under the weights (first order)"

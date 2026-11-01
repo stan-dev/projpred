@@ -117,12 +117,16 @@ perturb_refmodel <- function(refmodel, i, ll, lw_i, alpha, seed) {
   } else {
     refmodel$mu_offs <- refmodel$mu
   }
+  # min() and max() do not copy `mu`; they are NA or not finite if any value is:
+  if (length(refmodel$mu) > 0 &&
+      !(is.finite(min(refmodel$mu)) && is.finite(max(refmodel$mu)))) {
+    return(NULL)
+  }
   if (!any(is.na(refmodel$dis)) && all(refmodel$dis > 0)) {
     ldis <- log(refmodel$dis)
     refmodel$dis <- exp(ldis + sum(ldis * cd))
   }
-  if (!all(is.finite(refmodel$mu)) ||
-      (!any(is.na(refmodel$dis)) && !all(is.finite(refmodel$dis)))) {
+  if (!any(is.na(refmodel$dis)) && !all(is.finite(refmodel$dis))) {
     return(NULL)
   }
   refmodel$wobs <- refmodel$wobs * w
