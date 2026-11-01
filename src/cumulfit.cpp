@@ -2,6 +2,7 @@
 #include <algorithm>
 #include <cmath>
 #include <limits>
+#include <vector>
 
 //[[Rcpp::depends(RcppArmadillo)]]
 
@@ -111,7 +112,28 @@ static double cl_eval(const mat& x, const mat& w, const vec& offset,
     h_zetazeta.zeros(q, q);
   }
   double loss = 0.0;
+  // The functions at zeta_j - eta_i are computed once per threshold and
+  // observation (the cache key is z, so values clamped at +-100 are computed
+  // again).
+  double F_hi, S_hi, f_hi, fd_hi, F_lo, S_lo, f_lo, fd_lo;
+  cl_funs(link, 100.0, F_hi, S_hi, f_hi, fd_hi);
+  cl_funs(link, -100.0, F_lo, S_lo, f_lo, fd_lo);
+  std::vector<double> t_z(q), t_F(q), t_S(q), t_f(q), t_fd(q);
+  std::vector<char> t_done(q);
+  auto thr_funs = [&](uword j, double z, double& F, double& S, double& f,
+                      double& fd) {
+    if (!(t_done[j] && t_z[j] == z)) {
+      cl_funs(link, z, t_F[j], t_S[j], t_f[j], t_fd[j]);
+      t_z[j] = z;
+      t_done[j] = 1;
+    }
+    F = t_F[j];
+    S = t_S[j];
+    f = t_f[j];
+    fd = t_fd[j];
+  };
   for (uword i = 0; i < n; ++i) {
+    std::fill(t_done.begin(), t_done.end(), 0);
     for (uword c = 0; c < ncat; ++c) {
       double wic = w(i, c);
       if (wic == 0.0) continue;
@@ -120,8 +142,22 @@ static double cl_eval(const mat& x, const mat& w, const vec& offset,
       double z1 = (c < q) ? std::min(100.0, zeta(c) - eta(i)) : 100.0;
       double z2 = (c > 0) ? std::max(-100.0, zeta(c - 1) - eta(i)) : -100.0;
       double F1, S1, f1, fd1, F2, S2, f2, fd2;
-      cl_funs(link, z1, F1, S1, f1, fd1);
-      cl_funs(link, z2, F2, S2, f2, fd2);
+      if (c < q) {
+        thr_funs(c, z1, F1, S1, f1, fd1);
+      } else {
+        F1 = F_hi;
+        S1 = S_hi;
+        f1 = f_hi;
+        fd1 = fd_hi;
+      }
+      if (c > 0) {
+        thr_funs(c - 1, z2, F2, S2, f2, fd2);
+      } else {
+        F2 = F_lo;
+        S2 = S_lo;
+        f2 = f_lo;
+        fd2 = fd_lo;
+      }
       if (c == q) {
         f1 = 0.0;
         fd1 = 0.0;
