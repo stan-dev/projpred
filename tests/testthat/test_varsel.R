@@ -102,13 +102,71 @@ test_that("the projection cache does not change the results", {
         excl_nonargs(args_cvvs_i)
       )))
     }
+    # cvvs_call() with the global options `opts` (restored also after an
+    # error):
+    cvvs_call_opts <- function(opts) {
+      opts_old <- options(opts)
+      on.exit(options(opts_old))
+      cvvs_call()
+    }
     cvvs_cache <- cvvs_call()
-    opts_old <- options(projpred.proj_cache = FALSE)
-    cvvs_nocache <- cvvs_call()
-    options(opts_old)
+    cvvs_nocache <- cvvs_call_opts(list(projpred.proj_cache = FALSE))
     expect_equal(cvvs_nocache, cvvs_cache, info = tstsetup)
+    # Size limit 0: each new entry changes the generations of the cache, and
+    # each hit in the `old` generation does so again:
+    cvvs_small <- cvvs_call_opts(list(projpred.proj_cache_mb = 0))
+    expect_equal(cvvs_small, cvvs_cache, info = tstsetup)
   }
   expect_identical(proj_cache$depth, 0L)
+})
+
+test_that("the projection cache keeps its size limit", {
+  val <- numeric(100)
+  val_bytes <- as.numeric(utils::object.size(val))
+  # Room for one entry:
+  opts_old <- options(projpred.proj_cache_mb = 1.5 * val_bytes / 2^20)
+  on.exit(options(opts_old), add = TRUE)
+  proj_cache_enter()
+  on.exit(proj_cache_exit(), add = TRUE)
+  store <- proj_cache_store(list(fetch_data = local(function() NULL)))
+  store2 <- proj_cache_store(list(fetch_data = local(function() NULL)))
+  expect_length(proj_cache$stores, 2)
+  proj_cache_put(store2, "z", val)
+  # Change of generations in both stores: `z` moves to `old`:
+  proj_cache_put(store, "a", val)
+  expect_true(exists("z", envir = store2$old, inherits = FALSE))
+  expect_identical(proj_cache_get(store, "a"), val)
+  # Change of generations: `a` moves to `old`, `z` is dropped:
+  proj_cache_put(store, "b", val)
+  expect_true(exists("a", envir = store$old, inherits = FALSE))
+  expect_false(exists("a", envir = store$cur, inherits = FALSE))
+  expect_null(proj_cache_get(store2, "z"))
+  # A hit in `old` moves `a` back to `cur` (and `b` to `old`):
+  expect_identical(proj_cache_get(store, "a"), val)
+  expect_true(exists("a", envir = store$cur, inherits = FALSE))
+  expect_true(exists("b", envir = store$old, inherits = FALSE))
+  # The next change of generations drops `b`:
+  proj_cache_put(store, "c", val)
+  expect_null(proj_cache_get(store, "b"))
+  expect_identical(proj_cache_get(store, "a"), val)
+  expect_lte(proj_cache$bytes, 1.5 * val_bytes)
+  # A nested call keeps the cache and its limit:
+  options(projpred.proj_cache_mb = 0)
+  proj_cache_enter()
+  proj_cache_exit()
+  expect_identical(proj_cache_get(store, "a"), val)
+  expect_identical(proj_cache$limit, 1.5 * val_bytes)
+  expect_length(proj_cache$stores, 2)
+  # The outermost exit empties the cache:
+  proj_cache_exit()
+  expect_identical(proj_cache$depth, 0L)
+  expect_length(proj_cache$stores, 0)
+  expect_identical(proj_cache$bytes, 0)
+  # An invalid limit:
+  options(projpred.proj_cache_mb = NA)
+  expect_error(proj_cache_enter(), "projpred.proj_cache_mb")
+  expect_identical(proj_cache$depth, 0L)
+  # (proj_cache_exit() of the on.exit() call above keeps `depth` at 0.)
 })
 
 test_that("`seed` works (and restores the RNG state afterwards)", {

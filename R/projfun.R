@@ -29,7 +29,7 @@ proj_to_submodl <- function(predictor_terms, p_ref, refmodel,
   ent <- NULL
   if (!is.null(store)) {
     cache_key <- paste(c(terms_, NCOL(p_ref$mu)), collapse = "\r")
-    ent <- store[[cache_key]]
+    ent <- proj_cache_get(store, cache_key)
   }
   subset <- NULL
   if (is.null(ent)) {
@@ -40,8 +40,8 @@ proj_to_submodl <- function(predictor_terms, p_ref, refmodel,
     fml_divmin <- flatten_formula(subset$formula)
     prep <- if (use_fast) divmin_prepare(fml_divmin, subset$data) else NULL
     if (!is.null(store)) {
-      assign(cache_key, list(fml_divmin = fml_divmin, prep = prep),
-             envir = store)
+      proj_cache_put(store, cache_key,
+                     list(fml_divmin = fml_divmin, prep = prep))
     }
   } else {
     fml_divmin <- ent$fml_divmin

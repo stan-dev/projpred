@@ -697,12 +697,36 @@ capt_mssgs_warns <- function(expr) {
 # exit. Each reference model gets its own store, identified by the environment
 # of its `fetch_data()` function. Global option `projpred.proj_cache` (default
 # `TRUE`) switches the cache off.
+#
+# The size of the cache is limited: a forward search with a validated search
+# adds an entry for each candidate submodel of each fold, and most of these
+# entries are not used again. Each store has two generations of entries
+# (`cur` and `old`). When the entries added to all `cur` generations exceed
+# global option `projpred.proj_cache_mb` (default 512, in units of 2^20 bytes
+# as estimated by utils::object.size(); read at the outermost call), every
+# `cur` generation becomes the `old` one and the previous `old` one is dropped.
+# A hit in `old` moves the entry to `cur`, so the entries that each fold uses
+# (the small submodels, for example) stay in the cache. Thus, the cache holds
+# at most about twice the larger of this limit and the largest entry. The limit
+# applies to each R process; forked parallel workers have their own copy of the
+# cache.
 proj_cache <- new.env(parent = emptyenv())
 proj_cache$depth <- 0L
 proj_cache$anchors <- list()
 proj_cache$stores <- list()
+proj_cache$bytes <- 0
+proj_cache$limit <- 512 * 2^20
 
 proj_cache_enter <- function() {
+  if (proj_cache$depth == 0L && getOption("projpred.proj_cache", TRUE)) {
+    limit_mb <- getOption("projpred.proj_cache_mb", 512)
+    if (!is.numeric(limit_mb) || length(limit_mb) != 1 || is.na(limit_mb) ||
+        limit_mb < 0) {
+      stop("Global option `projpred.proj_cache_mb` has to be a single ",
+           "non-negative number.")
+    }
+    proj_cache$limit <- limit_mb * 2^20
+  }
   proj_cache$depth <- proj_cache$depth + 1L
   return(invisible())
 }
@@ -712,12 +736,51 @@ proj_cache_exit <- function() {
   if (proj_cache$depth == 0L) {
     proj_cache$anchors <- list()
     proj_cache$stores <- list()
+    proj_cache$bytes <- 0
   }
   return(invisible())
 }
 
-# The store (an environment) of reference model `refmodel`, or `NULL` if the
-# cache is not active:
+# The entry `key` of store `store`, or `NULL` if there is none:
+proj_cache_get <- function(store, key) {
+  ent <- store$cur[[key]]
+  if (!is.null(ent)) {
+    return(ent$value)
+  }
+  ent <- store$old[[key]]
+  if (is.null(ent)) {
+    return(NULL)
+  }
+  rm(list = key, envir = store$old)
+  proj_cache_add(store, key, ent)
+  return(ent$value)
+}
+
+# Stores `value` as entry `key` of store `store`:
+proj_cache_put <- function(store, key, value) {
+  proj_cache_add(store, key, list(value = value,
+                                  bytes = as.numeric(utils::object.size(value))))
+  return(invisible())
+}
+
+# Adds the entry `ent` (with elements `value` and `bytes`) to the `cur`
+# generation of store `store`, after the change of generations if the limit
+# would be exceeded:
+proj_cache_add <- function(store, key, ent) {
+  if (proj_cache$bytes + ent$bytes > proj_cache$limit) {
+    for (st in proj_cache$stores) {
+      st$old <- st$cur
+      st$cur <- new.env(parent = emptyenv())
+    }
+    proj_cache$bytes <- 0
+  }
+  assign(key, ent, envir = store$cur)
+  proj_cache$bytes <- proj_cache$bytes + ent$bytes
+  return(invisible())
+}
+
+# The store of reference model `refmodel`, or `NULL` if the cache is not active.
+# A store is an environment with the generations `cur` and `old` (see above):
 proj_cache_store <- function(refmodel) {
   if (proj_cache$depth == 0L || !getOption("projpred.proj_cache", TRUE)) {
     return(NULL)
@@ -732,6 +795,8 @@ proj_cache_store <- function(refmodel) {
     }
   }
   store <- new.env(parent = emptyenv())
+  store$cur <- new.env(parent = emptyenv())
+  store$old <- new.env(parent = emptyenv())
   proj_cache$anchors <- c(proj_cache$anchors, list(anchor))
   proj_cache$stores <- c(proj_cache$stores, list(store))
   return(store)
