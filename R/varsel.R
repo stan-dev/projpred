@@ -550,6 +550,7 @@ varsel.refmodel <- function(
         S = length(refmodel$wdraws_ref)
       )[["clust_used"]]
     )
+    p_sel <- mo_add_cache(p_sel, refmodel)
   }
 
   verb_out(rep("-", verbose_line_length), "\nRunning ", method, " search ",

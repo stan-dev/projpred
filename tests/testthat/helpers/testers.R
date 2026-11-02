@@ -1513,6 +1513,11 @@ refdist_tester <- function(refd,
   expect_type(refd, "list")
   refd_nms <- c("mu", "mu_offs", "var", "dis", "wdraws_prj", "const_wdraws_prj",
                 "nprjdraws", "cl", "wdraws_orig", "clust_used")
+  # (Reference models with mo() terms add a cache, see mo_add_cache().)
+  if ("mo_cache" %in% names(refd)) {
+    expect_true(is.environment(refd$mo_cache), info = info_str)
+    refd_nms <- c(refd_nms, "mo_cache")
+  }
   expect_named(refd, refd_nms, info = info_str)
 
   # mu

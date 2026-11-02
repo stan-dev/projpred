@@ -376,7 +376,7 @@ get_refdist <- function(refmodel, ndraws = NULL, nclusters = NULL,
     )
   }
 
-  return(p_ref)
+  return(mo_add_cache(p_ref, refmodel))
 }
 
 # Returns the draws (columns) of `eta` as an S x r matrix of coordinates in an

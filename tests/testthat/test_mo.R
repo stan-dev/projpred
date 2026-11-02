@@ -304,7 +304,24 @@ test_that("mo_sign_groups() gives one group per mo() column set", {
   fml <- mo_formula_env(y ~ z + mo(x))
   fr <- model.frame(fml, data = dat)
   mm <- model.matrix(fml, data = fr)
-  expect_identical(mo_sign_groups(fr, mm), list("mo(x)" = 3:5))
+  grps <- mo_sign_groups(fr, mm)
+  expect_identical(attr(grps, "keys"), "mo(x)#")
+  attr(grps, "keys") <- NULL
+  expect_identical(grps, list("mo(x)" = 3:5))
+  # The keys distinguish the codings of a factor in an interaction (the
+  # difference to the first level, or the effect within a level), but not of
+  # numeric variables:
+  keys_of <- function(fml) {
+    fml <- mo_formula_env(fml)
+    fr <- model.frame(fml, data = dat)
+    attr(mo_sign_groups(fr, model.matrix(fml, data = fr)), "keys")
+  }
+  expect_identical(keys_of(y ~ f * mo(x)),
+                   c("mo(x)#", "fb:mo(x)#1", "fc:mo(x)#1"))
+  expect_identical(keys_of(y ~ f + f:mo(x)),
+                   c("fa:mo(x)#2", "fb:mo(x)#2", "fc:mo(x)#2"))
+  expect_identical(keys_of(y ~ mo(x) * z), c("mo(x)#", "mo(x):z#"))
+  expect_identical(keys_of(y ~ z + mo(x):z), "z:mo(x)#")
   # No mo() terms:
   expect_identical(sign_groups_of(y ~ z + f, dat), list())
 })
@@ -559,11 +576,14 @@ test_that("multilevel and additive submodels with mo() terms work", {
   sim <- mo_sim()
   nd <- mo_newdata(sim)
   # The binomial multilevel fits to non-integer pseudo-data throw lme4
-  # convergence warnings; this test only compares the predictions:
+  # convergence warnings; this test only compares the predictions (of
+  # unconstrained projections, because monotonic projections do not support
+  # these submodels):
   opts_old <- options(projpred.warn_additive_experimental = FALSE,
                       projpred.warn_instable_projections = FALSE,
                       projpred.warn_proj_drawwise = FALSE,
-                      projpred.check_convergence = FALSE)
+                      projpred.check_convergence = FALSE,
+                      projpred.mo_monotone = FALSE)
   on.exit(options(opts_old), add = TRUE)
   cases <- list(
     glmm = list(fml = y_gauss ~ mo(x) + z + (1 | g),
@@ -585,6 +605,298 @@ test_that("multilevel and additive submodels with mo() terms work", {
     expect_equal(unname(pred_new), unname(pred_train[, rows_of(nd)]),
                  tolerance = 1e-8, info = nm)
   }
+})
+
+# Monotonic projections ---------------------------------------------------
+
+# A reference model with an effect `eff_x` of the integer `x` (levels 0, ...,
+# 4; by default non-monotonic), an effect of `z`, an effect `c_w` of `w` (which
+# decreases with `x`), and no effect of the integer `x2` (levels 1, 2, 3), of
+# the factor `f` and of the grouping variable `g`. Each draw adds `dip`
+# (normal with mean `dip_mean` and SD `dip_sd`) to the effect of the levels 2,
+# 3 and 4 of `x`.
+mo_nonmono_refm <- function(family = gaussian(), fml = y ~ mo(x) + z + mo(x2),
+                            S = 20, n = 100, seed = 5129,
+                            eff_x = c(0, 0.8, -0.4, 0.6, 0.2), c_w = 0,
+                            dip_mean = 0, dip_sd = 0, ...) {
+  set.seed(seed)
+  dat <- data.frame(x = sample(rep_len(0:4, n)), z = rnorm(n),
+                    x2 = sample(rep_len(1:3, n)),
+                    f = factor(sample(rep_len(c("a", "b"), n))),
+                    g = factor(sample(rep_len(paste0("gr", 1:5), n))))
+  dat$w <- -0.5 * dat$x + rnorm(n, sd = 0.5)
+  b <- cbind(alpha = rnorm(S, 0.1, 0.05), bx = rnorm(S, 1, 0.1),
+             bz = rnorm(S, 0.4, 0.05), dip = rnorm(S, dip_mean, dip_sd))
+  # Linear predictor (N x S) for data `nd`:
+  eta_fun <- function(nd) {
+    outer(eff_x[nd$x + 1], b[, "bx"]) + outer(nd$z, b[, "bz"]) +
+      outer(nd$x >= 2, b[, "dip"]) + c_w * nd$w +
+      matrix(b[, "alpha"], nrow(nd), S, byrow = TRUE)
+  }
+  eta_mean <- rowMeans(eta_fun(dat))
+  dat$y <- switch(family$family,
+                  gaussian = eta_mean + rnorm(n, sd = 0.5),
+                  binomial = rbinom(n, 1, plogis(eta_mean)))
+  environment(fml) <- list2env(list(mo = mo_brms_like),
+                               parent = environment(fml))
+  init_refmodel(
+    list(data = dat), data = dat, formula = fml, family = family,
+    ref_predfun = function(fit, newdata = NULL) {
+      eta_fun(if (is.null(newdata)) fit$data else newdata)
+    },
+    dis = if (family$family == "gaussian") rep(0.5, S) else NULL,
+    cvfun = function(folds) NULL, cvrefbuilder = function(cvfit) NULL, ...
+  )
+}
+
+# The coefficients (S x columns, without intercept) of the projected draws:
+prj_coefs <- function(prj) {
+  out <- t(vapply(prj$outdmin, function(o) as.vector(o$beta),
+                  numeric(nrow(prj$outdmin[[1]]$beta))))
+  colnames(out) <- rownames(prj$outdmin[[1]]$beta)
+  out
+}
+
+# Are the rows of `b` monotonic (all elements >= 0 or all <= 0, with the
+# tolerance of the constraint check)?
+is_mono <- function(b, tol = 1e-8) {
+  apply(b, 1, function(v) all(v >= -tol) || all(v <= tol))
+}
+
+# The number of calls of the function `fun` of projpred while `expr` runs
+# (with `non_null = TRUE`: of the calls that return a value other than
+# `NULL`).
+count_calls <- function(expr, fun, non_null = FALSE) {
+  n <- 0
+  fun_orig <- get(fun, envir = asNamespace("projpred"))
+  wrapper <- function(...) {
+    out <- fun_orig(...)
+    if (!non_null || !is.null(out)) {
+      n <<- n + 1
+    }
+    out
+  }
+  out <- do.call(with_mocked_bindings,
+                 c(list(code = substitute(expr)), stats::setNames(list(wrapper),
+                                                                  fun)),
+                 envir = parent.frame())
+  list(value = out, n = n)
+}
+
+test_that(paste(
+  "monotonic projections give monotonic mo() effects with the signs from",
+  "the projection onto the full model"
+), {
+  cols_x <- paste0("mo(x)", 1:4)
+  opts_old <- options(projpred.mo_monotone = TRUE)
+  on.exit(options(opts_old), add = TRUE)
+  for (fam in list(gaussian(), binomial())) {
+    # `w` decreases with `x`, so the effect of `x` in the submodel without `w`
+    # has the opposite sign of its effect in the full model:
+    refm <- mo_nonmono_refm(fam, fml = y ~ mo(x) + z + w, c_w = 1)
+    S <- ncol(refm$mu)
+    # (With a small convergence threshold for the comparison with glm_ridge()
+    # below.)
+    options(projpred.mo_monotone = TRUE)
+    prj <- project(refm, predictor_terms = c("mo(x)", "z"), ndraws = S,
+                   thresh_conv = 1e-12, verbose = FALSE)
+    b_x <- prj_coefs(prj)[, cols_x]
+    expect_true(all(is_mono(b_x)), info = fam$family)
+    # Unconstrained projections (onto the submodel and onto the full model):
+    options(projpred.mo_monotone = FALSE)
+    prj_unc <- project(refm, predictor_terms = c("mo(x)", "z"), ndraws = S,
+                       thresh_conv = 1e-12, verbose = FALSE)
+    prj_full <- project(refm, predictor_terms = c("mo(x)", "z", "w"),
+                        ndraws = S, verbose = FALSE)
+    b_unc <- prj_coefs(prj_unc)
+    binding <- !is_mono(b_unc[, cols_x])
+    expect_gt(sum(binding), S / 2)
+    s_full <- ifelse(rowSums(prj_coefs(prj_full)[, cols_x]) >= 0, 1, -1)
+    s_sum <- ifelse(rowSums(b_unc[, cols_x]) >= 0, 1, -1)
+    # The signs of the full model differ from those of the submodel:
+    expect_true(all(s_full[binding] != s_sum[binding]), info = fam$family)
+    expect_true(all(b_x[binding, ] * s_full[binding] >= 0), info = fam$family)
+    # Draws without a binding constraint keep the unconstrained fit:
+    expect_equal(prj_coefs(prj)[!binding, , drop = FALSE],
+                 b_unc[!binding, , drop = FALSE], tolerance = 1e-12,
+                 info = fam$family)
+    # The constrained draws equal sign-constrained glm_ridge() fits to the
+    # reference model's draws (`ndraws = S` projects all draws). This checks
+    # the signs, columns and arguments that the projection passes, not the
+    # bounded solver (see the KKT tests above):
+    dat <- refm$fetch_data()
+    x <- cbind(strip_attr(mo(dat$x)), z = dat$z)
+    for (s in which(binding)[1:3]) {
+      fit_s <- glm_ridge(x, refm$mu[, s], family = refm$family,
+                         weights = refm$wobs, lambda = 1e-4, thresh = 1e-12,
+                         cons_cols = 1:4, cons_signs = rep(s_full[s], 4))
+      expect_equal(unname(c(prj$outdmin[[s]]$alpha, prj_coefs(prj)[s, ])),
+                   unname(c(fit_s$beta0, drop(fit_s$beta))),
+                   tolerance = 1e-6, info = fam$family)
+    }
+  }
+})
+
+test_that(paste(
+  "mo_cons_signs() takes the signs of the full model and otherwise the sign",
+  "of the sum of the coefficients"
+), {
+  groups <- structure(list(1:2, 3:4, 5:6), keys = c("a#", "b#", "c#1"))
+  beta <- c(1, -2, 3, -1, -0.5, 0.2)
+  expect_identical(mo_cons_signs(beta, groups, NULL), c(-1, 1, -1))
+  expect_identical(mo_cons_signs(beta, groups, c("a#" = 1, "c#" = 1)),
+                   c(1, 1, -1))
+})
+
+test_that(paste(
+  "monotonic projections equal the unconstrained ones if no constraint binds"
+), {
+  sim <- mo_sim()
+  refm <- mo_refm(sim, y_gauss ~ mo(x) + mo(f) + z + w)
+  prj <- project(refm, predictor_terms = c("mo(x)", "mo(f)", "z"),
+                 ndraws = 10, verbose = FALSE)
+  opts_old <- options(projpred.mo_monotone = FALSE)
+  on.exit(options(opts_old), add = TRUE)
+  prj_unc <- project(refm, predictor_terms = c("mo(x)", "mo(f)", "z"),
+                     ndraws = 10, verbose = FALSE)
+  expect_identical(prj_coefs(prj), prj_coefs(prj_unc))
+})
+
+test_that(paste(
+  "the joint Gaussian solve with refits of the binding draws gives the",
+  "draw-wise monotonic projections"
+), {
+  # About half of the draws have a non-monotonic effect of `x`:
+  refm <- mo_nonmono_refm(eff_x = c(0, 0.4, 0.8, 1.2, 1.6), dip_mean = -0.4,
+                          dip_sd = 0.4)
+  prj_trms <- c("mo(x)", "z")
+  cnt_joint <- count_calls(
+    project(refm, predictor_terms = prj_trms, ndraws = 20, verbose = FALSE),
+    "glm_ridge_gauss_multi", non_null = TRUE
+  )
+  # The joint solve ran (for the submodel and for the full model):
+  expect_identical(cnt_joint$n, 2)
+  cnt_refit <- count_calls(
+    project(refm, predictor_terms = prj_trms, ndraws = 20, verbose = FALSE),
+    "mo_cons_args"
+  )
+  # Only the binding draws were fitted again:
+  expect_gt(cnt_refit$n, 0)
+  expect_lt(cnt_refit$n, 20)
+  prj_dw <- with_mocked_bindings(
+    project(refm, predictor_terms = prj_trms, ndraws = 20, verbose = FALSE),
+    glm_ridge_gauss_multi = function(...) NULL
+  )
+  expect_equal(prj_coefs(cnt_joint$value), prj_coefs(prj_dw),
+               tolerance = 1e-10)
+})
+
+test_that("the parallel case of divmin() gives the same monotonic projections", {
+  skip_if_not_installed("foreach")
+  skip_if_not_installed("iterators")
+  # Use a registered backend, otherwise the sequential one:
+  if (!foreach::getDoParRegistered()) {
+    foreach::registerDoSEQ()
+  }
+  opts_old <- options(projpred.parallel_proj_trigger = Inf)
+  on.exit(options(opts_old), add = TRUE)
+  for (fam in list(gaussian(), binomial())) {
+    refm <- mo_nonmono_refm(fam, eff_x = c(0, 0.4, 0.8, 1.2, 1.6),
+                            dip_mean = -0.4, dip_sd = 0.4)
+    options(projpred.parallel_proj_trigger = Inf)
+    prj_seq <- project(refm, predictor_terms = c("mo(x)", "z"), ndraws = 20,
+                       verbose = FALSE)
+    options(projpred.parallel_proj_trigger = 1)
+    cnt <- new.env()
+    cnt$n <- 0
+    trace(foreach::foreach,
+          bquote(assign("n", get("n", envir = .(cnt)) + 1, envir = .(cnt))),
+          print = FALSE, where = asNamespace("foreach"))
+    prj_par <- tryCatch(
+      project(refm, predictor_terms = c("mo(x)", "z"), ndraws = 20,
+              verbose = FALSE),
+      finally = untrace(foreach::foreach, where = asNamespace("foreach"))
+    )
+    expect_gt(cnt$n, 0)
+    expect_equal(prj_coefs(prj_par), prj_coefs(prj_seq), tolerance = 1e-12,
+                 info = fam$family)
+  }
+})
+
+test_that(paste(
+  "the signs from the full model are computed once per set of projected",
+  "draws"
+), {
+  refm <- mo_nonmono_refm()
+  cnt <- count_calls(
+    varsel(refm, nclusters = 4, nclusters_pred = 6, seed = 3906,
+           verbose = FALSE),
+    "mo_fit_coefs"
+  )
+  # One full-model projection for the search (4 clusters) and one for the
+  # performance evaluation (6 clusters):
+  expect_identical(cnt$n, 4 + 6)
+  expect_setequal(ranking(cnt$value)$fulldata, c("mo(x)", "z", "mo(x2)"))
+})
+
+test_that(paste(
+  "monotonic projections work in LOO CV with validated search, in the",
+  "latent projection and with a multilevel reference model"
+), {
+  opts_old <- options(projpred.warn_psis = FALSE)
+  on.exit(options(opts_old), add = TRUE)
+  cols_x <- paste0("mo(x)", 1:4)
+  refm <- mo_nonmono_refm()
+  cv_loo <- muffle_warning(muffle_warning(cv_varsel(
+    refm, cv_method = "LOO", validate_search = TRUE, nloo = 3, nclusters = 3,
+    nclusters_pred = 6, seed = 3906, verbose = FALSE
+  ), "Some Pareto k diagnostic values are too high"), "Not enough tail samples")
+  expect_true(all(is.finite(summary(cv_loo)$perf_sub$elpd)))
+  prj <- project(cv_loo, nterms = 3, ndraws = 20, verbose = FALSE)
+  expect_true(all(is_mono(prj_coefs(prj)[, cols_x])))
+  # Latent projection:
+  refm_lat <- suppressMessages(mo_nonmono_refm(binomial(), latent = TRUE))
+  prj_lat <- project(refm_lat, predictor_terms = c("mo(x)", "z"), ndraws = 20,
+                     verbose = FALSE)
+  b_lat <- prj_coefs(prj_lat)[, cols_x]
+  expect_true(all(is_mono(b_lat)))
+  expect_gt(sum(rowSums(abs(b_lat)) > 0), 0)
+  # Multilevel reference model (the full model is projected with lme4), GLM
+  # submodel. `g` has no effect, so lme4 warns about the full-model fits:
+  skip_if_not_installed("lme4")
+  refm_ml <- mo_nonmono_refm(fml = y ~ mo(x) + z + (1 | g))
+  prj_ml <- muffle_warning(muffle_warning(muffle_warning(
+    project(refm_ml, predictor_terms = c("mo(x)", "z"), ndraws = 20,
+            verbose = FALSE),
+    "Model failed to converge"
+  ), "Model is nearly unidentifiable"), "might not have converged")
+  expect_true(all(is_mono(prj_coefs(prj_ml)[, cols_x])))
+  expect_error(
+    muffle_warning(
+      project(refm_ml, predictor_terms = c("mo(x)", "z", "(1 | g)"),
+              ndraws = 4, verbose = FALSE),
+      "the projection onto the full model can be instable"
+    ),
+    "only supported for non-multilevel non-additive submodels"
+  )
+})
+
+test_that(paste(
+  "monotonic projections throw an error for terms with two mo() calls, but",
+  "not for submodels without such terms"
+), {
+  refm <- mo_nonmono_refm(fml = y ~ mo(x) + mo(x2) + mo(x):mo(x2))
+  trms_ia <- c("mo(x)", "mo(x2)", "mo(x):mo(x2)")
+  expect_error(project(refm, predictor_terms = trms_ia, ndraws = 4,
+                       verbose = FALSE),
+               "more than one mo\\(\\) call")
+  prj <- project(refm, predictor_terms = c("mo(x)", "mo(x2)"), ndraws = 4,
+                 verbose = FALSE)
+  expect_true(all(is_mono(prj_coefs(prj)[, paste0("mo(x)", 1:4)])))
+  opts_old <- options(projpred.mo_monotone = FALSE)
+  on.exit(options(opts_old), add = TRUE)
+  expect_s3_class(project(refm, predictor_terms = trms_ia, ndraws = 4,
+                          verbose = FALSE), "projection")
 })
 
 # Latent and augmented-data projection ------------------------------------
@@ -629,6 +941,14 @@ test_that(paste(
     augdat_args_link = list(link = "logit"),
     augdat_args_ilink = list(link = "logit")
   )
+  # Monotonic projections do not support the augmented-data projection:
+  expect_error(
+    project(refm, predictor_terms = c("mo(x)", "mo(f)", "z"), ndraws = 4,
+            verbose = FALSE),
+    "not supported for the augmented-data projection"
+  )
+  opts_old <- options(projpred.mo_monotone = FALSE)
+  on.exit(options(opts_old), add = TRUE)
   prj <- muffle_polr_warning(project(
     refm, predictor_terms = c("mo(x)", "mo(f)", "z"), ndraws = sim$S,
     verbose = FALSE

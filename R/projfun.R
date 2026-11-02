@@ -38,6 +38,30 @@ proj_to_submodl <- function(predictor_terms, p_ref, refmodel,
   } else {
     args_divmin <- c(args_divmin, list(...))
   }
+  if (mo_monotone() && has_mo_term(unique(unlist(predictor_terms)))) {
+    if (refmodel$family$for_augdat ||
+        !identical(refmodel$div_minimizer, divmin)) {
+      stop("Monotonic projections of mo() terms are not supported for the ",
+           "augmented-data projection and for custom divergence minimizers. ",
+           "Use the latent projection or ",
+           "`options(projpred.mo_monotone = FALSE)` for unconstrained ",
+           "projections.")
+    }
+    trms_sub <- extract_terms_response(fml_divmin)
+    if (length(trms_sub$group_terms) > 0 ||
+        length(trms_sub$additive_terms) > 0 ||
+        !identical(getOption("projpred.glm_fitter", "fit_glm_ridge_callback"),
+                   "fit_glm_ridge_callback")) {
+      stop("Monotonic projections of mo() terms are currently only supported ",
+           "for non-multilevel non-additive submodels with the default ",
+           "submodel fitter. Use `options(projpred.mo_monotone = FALSE)` for ",
+           "unconstrained projections.")
+    }
+    # The signs of the mo() terms in the projection onto the full model, for
+    # the monotonicity constraint:
+    args_divmin$projpred_mo_signs <- mo_full_signs(p_ref, refmodel,
+                                                   args_divmin)
+  }
   outdmin <- do.call(refmodel$div_minimizer, args_divmin)
 
   return(init_submodl(
@@ -93,6 +117,7 @@ perf_eval <- function(search_path,
           S = length(refmodel$wdraws_ref)
         )[["clust_used"]]
       )
+      p_ref <- mo_add_cache(p_ref, refmodel)
     }
     fetch_submodl <- function(size_j, ...) {
       return(proj_to_submodl(
