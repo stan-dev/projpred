@@ -123,6 +123,24 @@ test_that("cumul_native_multi() returns usable `polr` objects", {
                                  ws_aug = ws, dot_args = list()))
 })
 
+test_that("cumul_fit_multi_c() starts within the bounds for cauchit", {
+  # One observation in the lowest category, with weight 0.4: its weight share
+  # of 0.2 % gives a cauchit quantile below -100. No random numbers here.
+  u <- eta_cn + 2 * sin(seq_len(n_cn) * 2.7)
+  y <- 2L + as.integer(u > 0) + as.integer(u > 1.5)
+  y[1] <- 1L
+  wt <- replace(rep(1, n_cn), 1, 0.4)
+  w <- matrix(0, n_cn, ncat_cn)
+  w[cbind(seq_len(n_cn), y)] <- wt
+  fit_nat <- cumul_fit_multi_c(x_cn, w, ncat_cn, rep(0, n_cn), 5L, 1e-12,
+                               100L)
+  expect_identical(fit_nat$convergence, 0L)
+  expect_true(is.finite(drop(fit_nat$loss)))
+  fit_polr <- suppressWarnings(MASS::polr(factor(y) ~ x_cn, weights = wt,
+                                          method = "cauchit"))
+  expect_lt(2 * drop(fit_nat$loss), fit_polr$deviance + 1e-6)
+})
+
 test_that("the native cumulative-link fits handle non-finite input", {
   # No random numbers here (later tests use the random number state):
   cp <- cbind(0, plogis(outer(-eta_cn, c(-1, 0, 1), "+")), 1)

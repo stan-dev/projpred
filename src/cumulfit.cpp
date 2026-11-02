@@ -188,7 +188,10 @@ static double cl_fit_one(const mat& x, const mat& w, const vec& offset,
   for (uword c = 0; c < q; ++c) {
     cum += wc(c);
     double pc = std::min(std::max(cum / wtot, 1e-8), 1.0 - 1e-8);
-    zeta(c) = cl_quantile(link, pc);
+    // Within +-50, so that each category has a positive probability at the
+    // start (heavy-tailed links such as cauchit have quantiles beyond the
+    // bounds +-100 for small weight shares):
+    zeta(c) = std::min(50.0, std::max(-50.0, cl_quantile(link, pc)));
     if (c > 0 && zeta(c) <= zeta(c - 1)) zeta(c) = zeta(c - 1) + 1e-6;
   }
   vec grad;
