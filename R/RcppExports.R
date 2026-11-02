@@ -5,7 +5,7 @@ glm_elnet_c <- function(x, pseudo_obs, lambda, alpha, intercept, penalty, thresh
     .Call('_projpred_glm_elnet_c', PACKAGE = 'projpred', x, pseudo_obs, lambda, alpha, intercept, penalty, thresh, qa_updates_max, pmax, pmax_strict, beta, beta0, w0, as_updates_max)
 }
 
-glm_ridge_c <- function(x, pseudo_obs, lambda, intercept, penalty, beta_init, w_init, thresh, qa_updates_max, ls_iter_max = 100L, debug = FALSE) {
-    .Call('_projpred_glm_ridge_c', PACKAGE = 'projpred', x, pseudo_obs, lambda, intercept, penalty, beta_init, w_init, thresh, qa_updates_max, ls_iter_max, debug)
+glm_ridge_c <- function(x, pseudo_obs, lambda, intercept, penalty, beta_init, w_init, thresh, qa_updates_max, ls_iter_max = 100L, debug = FALSE, cons_cols = as.integer( c()), cons_signs = as.numeric( c())) {
+    .Call('_projpred_glm_ridge_c', PACKAGE = 'projpred', x, pseudo_obs, lambda, intercept, penalty, beta_init, w_init, thresh, qa_updates_max, ls_iter_max, debug, cons_cols, cons_signs)
 }
 

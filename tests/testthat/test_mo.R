@@ -243,7 +243,7 @@ sign_groups_of <- function(fml, dat) {
   fml <- mo_formula_env(fml)
   fr <- model.frame(fml, data = dat)
   mm <- model.matrix(fml, data = fr)
-  lapply(mo_sign_groups(attr(fr, "terms"), mm), function(g) colnames(mm)[g])
+  lapply(mo_sign_groups(fr, mm), function(g) colnames(mm)[g])
 }
 
 test_that("mo_sign_groups() gives one group per mo() column set", {
@@ -277,18 +277,34 @@ test_that("mo_sign_groups() gives one group per mo() column set", {
          "fb:mo(x):z" = c("fb:mo(x)2:z", "fb:mo(x)3:z", "fb:mo(x)4:z"),
          "fc:mo(x):z" = c("fc:mo(x)2:z", "fc:mo(x)3:z", "fc:mo(x)4:z"))
   )
-  # An ordered factor with `:` in a level:
+  # Without the main effect of the factor (indicators of all levels), and with
+  # a term whose variables are not in the order of the formula:
+  expect_identical(
+    sign_groups_of(y ~ z + f:mo(x) + z:mo(x2), dat),
+    list("fa:mo(x)" = c("fa:mo(x)2", "fa:mo(x)3", "fa:mo(x)4"),
+         "fb:mo(x)" = c("fb:mo(x)2", "fb:mo(x)3", "fb:mo(x)4"),
+         "fc:mo(x)" = c("fc:mo(x)2", "fc:mo(x)3", "fc:mo(x)4"),
+         "z:mo(x2)" = c("z:mo(x2)6", "z:mo(x2)7"))
+  )
+  # A binary predictor in an interaction with a factor has no group:
+  expect_identical(sign_groups_of(y ~ mo(bin) * f, dat), list())
+  # An ordered factor with `:` in a level (also with a variable `x`, so that
+  # `mid:x` is both a level and a level-variable pair):
   expect_identical(
     sign_groups_of(y ~ mo(o) + z + mo(o):z, dat),
     list("mo(o)" = c("mo(o)mid", "mo(o)mid:x", "mo(o)hi"),
          "mo(o):z" = c("mo(o)mid:z", "mo(o)mid:x:z", "mo(o)hi:z"))
   )
+  expect_identical(
+    sign_groups_of(y ~ mo(o) + mo(o):x, dat),
+    list("mo(o)" = c("mo(o)mid", "mo(o)mid:x", "mo(o)hi"),
+         "mo(o):x" = c("mo(o)mid:x", "mo(o)mid:x:x", "mo(o)hi:x"))
+  )
   # The indices refer to the model matrix (here with the intercept column):
   fml <- mo_formula_env(y ~ z + mo(x))
   fr <- model.frame(fml, data = dat)
   mm <- model.matrix(fml, data = fr)
-  expect_identical(mo_sign_groups(attr(fr, "terms"), mm),
-                   list("mo(x)" = 3:5))
+  expect_identical(mo_sign_groups(fr, mm), list("mo(x)" = 3:5))
   # No mo() terms:
   expect_identical(sign_groups_of(y ~ z + f, dat), list())
 })
@@ -299,6 +315,152 @@ test_that("mo_sign_groups() throws an error for unsupported mo() terms", {
                "more than one mo\\(\\) call")
   expect_error(sign_groups_of(y ~ I(2 * mo(x)), dat),
                "inside other calls")
+})
+
+# Sign-constrained glm_ridge() --------------------------------------------
+
+# Data with non-monotonic effects of two mo() predictors (columns 1-4 and 5-7
+# of `x`), so that the constraints bind:
+cons_data <- function(family, n = 150, seed = 3611) {
+  set.seed(seed)
+  x1 <- sample(rep_len(0:4, n))
+  x2 <- sample(rep_len(1:4, n))
+  z <- rnorm(n)
+  eta <- 0.3 + c(0, 0.8, -0.4, 0.6, 0.2)[x1 + 1] +
+    c(0, -0.5, -0.2, -0.9)[x2] + 0.4 * z
+  y <- switch(family$family,
+              gaussian = eta + rnorm(n, sd = 0.7),
+              binomial = rbinom(n, 1, family$linkinv(eta)),
+              poisson = rpois(n, family$linkinv(eta)))
+  x <- cbind(strip_attr(mo(x1)), strip_attr(mo(x2)), z, rnorm(n))
+  list(x = x, y = y, weights = sample(1:3, n, replace = TRUE),
+       offset = rnorm(n, sd = 0.2))
+}
+
+# Gradient of the penalized loss of glm_ridge() on the scale of the
+# standardized `x` (with the intercept first, if any):
+ridge_grad <- function(fit, x, y, family, weights, offset, lambda,
+                       intercept = TRUE, normalize = TRUE) {
+  transf <- standardization(x, center = intercept, scale = normalize,
+                            weights = weights)
+  x_std <- t((t(x) - transf$shift) / transf$scale)
+  b_std <- drop(fit$beta) * transf$scale
+  pen <- rep(1, ncol(x))
+  if (intercept) {
+    x_std <- cbind(1, x_std)
+    b_std <- c(fit$beta0 + sum(transf$shift * fit$beta), b_std)
+    pen <- c(0, pen)
+  }
+  pd <- pseudo_data(drop(x_std %*% b_std), y, family, offset = offset,
+                    weights = weights)
+  drop(crossprod(x_std, pd$grad)) + lambda * pen * b_std
+}
+
+test_that(paste(
+  "glm_ridge() with sign constraints gives the constrained optimum (KKT",
+  "conditions, equality with the fit without the bound columns)"
+), {
+  lambda <- 1e-4
+  fams <- list(extend_family(gaussian()), extend_family(binomial()),
+               extend_family(poisson()))
+  # Constrained columns and their signs (the first four settings: both mo()
+  # predictors with all sign patterns; the last: columns not in order):
+  cons_sets <- list(
+    list(cols = 1:7, s = rep(c(1, 1), c(4, 3))),
+    list(cols = 1:7, s = rep(c(-1, 1), c(4, 3))),
+    list(cols = 1:7, s = rep(c(1, -1), c(4, 3))),
+    list(cols = 1:7, s = rep(c(-1, -1), c(4, 3))),
+    list(cols = c(5L, 2L, 3L, 7L), s = c(-1, 1, 1, -1))
+  )
+  settings <- list(c(intercept = TRUE, normalize = TRUE),
+                   c(intercept = FALSE, normalize = TRUE),
+                   c(intercept = TRUE, normalize = FALSE))
+  n_bound_total <- 0
+  for (fam in fams) {
+    d <- cons_data(fam)
+    for (cs in cons_sets) {
+      for (st in settings) {
+        cons <- cs$cols
+        s <- cs$s
+        fit <- glm_ridge(d$x, d$y, family = fam, lambda = lambda,
+                         weights = d$weights, offset = d$offset,
+                         intercept = st[["intercept"]],
+                         normalize = st[["normalize"]], thresh = 1e-12,
+                         cons_cols = cons, cons_signs = s)
+        b <- drop(fit$beta)
+        expect_true(all(s * b[cons] >= 0))
+        bound <- cons[b[cons] == 0]
+        n_bound_total <- n_bound_total + length(bound)
+        # The KKT conditions:
+        grad <- ridge_grad(fit, d$x, d$y, fam, d$weights, d$offset, lambda,
+                           intercept = st[["intercept"]],
+                           normalize = st[["normalize"]])
+        i0 <- as.integer(st[["intercept"]])
+        scale_g <- max(abs(grad), 1)
+        free <- setdiff(seq_len(ncol(d$x)), bound)
+        expect_lt(max(abs(grad[c(seq_len(i0), free + i0)])), 1e-6 * scale_g)
+        if (length(bound) > 0) {
+          expect_true(all(s[match(bound, cons)] * grad[bound + i0] >
+                            -1e-6 * scale_g))
+        }
+        # The fit without the bound columns (without constraints) has the
+        # same coefficients:
+        fit_free <- glm_ridge(d$x[, free, drop = FALSE], d$y, family = fam,
+                              lambda = lambda, weights = d$weights,
+                              offset = d$offset,
+                              intercept = st[["intercept"]],
+                              normalize = st[["normalize"]], thresh = 1e-12)
+        expect_equal(c(fit$beta0, b[free]),
+                     c(fit_free$beta0, drop(fit_free$beta)),
+                     tolerance = 1e-6)
+      }
+    }
+  }
+  # The constraints bind in most of these fits:
+  expect_gt(n_bound_total, 60)
+})
+
+test_that(paste(
+  "glm_ridge() with sign constraints that do not bind gives the",
+  "unconstrained fit, also from an infeasible start"
+), {
+  lambda <- 1e-4
+  for (fam in list(extend_family(gaussian()), extend_family(binomial()))) {
+    d <- cons_data(fam)
+    fit_unc <- glm_ridge(d$x, d$y, family = fam, lambda = lambda,
+                         weights = d$weights, offset = d$offset,
+                         thresh = 1e-12)
+    b_unc <- drop(fit_unc$beta)
+    # One constraint per column, with the sign of the unconstrained solution:
+    cons <- seq_len(ncol(d$x))
+    s <- ifelse(b_unc >= 0, 1, -1)
+    fit <- glm_ridge(d$x, d$y, family = fam, lambda = lambda,
+                     weights = d$weights, offset = d$offset, thresh = 1e-12,
+                     cons_cols = cons, cons_signs = s)
+    expect_equal(c(fit$beta0, drop(fit$beta)), c(fit_unc$beta0, b_unc),
+                 tolerance = 1e-6)
+    # An infeasible start (on the standardized scale) is moved to the bounds:
+    fit_start <- glm_ridge(d$x, d$y, family = fam, lambda = lambda,
+                           weights = d$weights, offset = d$offset,
+                           thresh = 1e-12, cons_cols = cons, cons_signs = s,
+                           beta_init = -s)
+    expect_equal(c(fit_start$beta0, drop(fit_start$beta)),
+                 c(fit_unc$beta0, b_unc), tolerance = 1e-6)
+  }
+})
+
+test_that("glm_ridge() checks the sign constraints", {
+  d <- cons_data(extend_family(gaussian()), n = 20)
+  expect_error(glm_ridge(d$x, d$y, cons_cols = 1:2, cons_signs = 1),
+               "invalid sign constraints")
+  expect_error(glm_ridge(d$x, d$y, cons_cols = 10L, cons_signs = 1),
+               "invalid sign constraints")
+  expect_error(glm_ridge(d$x, d$y, cons_cols = 1L, cons_signs = 0),
+               "invalid sign constraints")
+  expect_error(glm_ridge(d$x, d$y, cons_cols = c(2L, 2L), cons_signs = c(1, 1)),
+               "invalid sign constraints")
+  expect_error(glm_ridge(NULL, d$y, cons_cols = 1L, cons_signs = 1),
+               "invalid sign constraints")
 })
 
 # Traditional projection --------------------------------------------------

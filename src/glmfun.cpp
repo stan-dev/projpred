@@ -291,8 +291,100 @@ List glm_elnet_c(arma::mat x, // input matrix
 
 
 
+/** Bounded least squares: minimizes 0.5*b'Qb - q'b subject to b(cons) >= 0,
+ * with a primal active-set method (Lawson and Hanson, 1974). On input, `b` is
+ * the start (its constrained elements are set to max(b, 0)); on output, the
+ * solution. Returns false if the maximum number of iterations is reached.
+ */
+bool bls_active_set(vec& b,
+                    const mat& Q,
+                    const vec& q,
+                    const uvec& cons,
+                    double tol = 1e-10,
+                    double tol_grad_rel = 1e-8,
+                    int iter_max = 500)
+{
+  int D = q.n_elem;
+  int n_cons = cons.n_elem;
+  int j, k;
+  // act(j) = 1: element j is held at its bound 0
+  uvec act(D); act.zeros();
+  for (k=0; k<n_cons; ++k) {
+    j = cons(k);
+    if (b(j) <= 0) {
+      b(j) = 0;
+      act(j) = 1;
+    }
+  }
+  double tol_grad = tol_grad_rel*std::max(1.0, max(abs(q)));
+  iter_max = std::max(iter_max, 3*n_cons);
+  int j_rel = -1; // the bound released in the previous iteration, if any
+  vec b_new(D);
+  vec grad(D);
+  for (int iter=0; iter<iter_max; ++iter) {
+    uvec free_idx = find(act == 0);
+    b_new.zeros();
+    if (free_idx.n_elem > 0)
+      b_new.elem(free_idx) = solve(Q.submat(free_idx, free_idx), q.elem(free_idx));
+    // if the released element does not become positive (possible only by
+    // rounding errors), the current `b` is the solution (this avoids cycling)
+    if (j_rel >= 0 && b_new(j_rel) <= tol) {
+      act(j_rel) = 1;
+      return true;
+    }
+    j_rel = -1;
+    // the step size to the first constrained element that becomes negative
+    double alpha = 1.0;
+    bool blocked = false;
+    for (k=0; k<n_cons; ++k) {
+      j = cons(k);
+      if (act(j) == 0 && b_new(j) < -tol) {
+        alpha = std::min(alpha, b(j)/(b(j) - b_new(j)));
+        blocked = true;
+      }
+    }
+    if (!blocked) {
+      // values in [-tol, 0) are rounding errors; set them to the bound so that
+      // `b` is feasible
+      b = b_new;
+      for (k=0; k<n_cons; ++k) {
+        j = cons(k);
+        if (b(j) < 0)
+          b(j) = 0;
+      }
+      // release the bound with the most negative gradient, if any
+      grad = Q*b - q;
+      double grad_min = -tol_grad;
+      for (k=0; k<n_cons; ++k) {
+        j = cons(k);
+        if (act(j) == 1 && grad(j) < grad_min) {
+          grad_min = grad(j);
+          j_rel = j;
+        }
+      }
+      if (j_rel < 0)
+        return true;
+      act(j_rel) = 0;
+    } else {
+      b = b + alpha*(b_new - b);
+      for (k=0; k<n_cons; ++k) {
+        j = cons(k);
+        if (b(j) <= tol) {
+          b(j) = 0;
+          act(j) = 1;
+        }
+      }
+    }
+  }
+  return false;
+}
+
+
+
 /** Internal function that gives the output in c++ way (writes into allocated memory).
  * See glm_ridge_c for a wrapper that is being called from R.
+ * The optional constraints sign(k)*beta(cons(k)) >= 0 (indices including the
+ * intercept, if any) make each least-squares step a bounded least-squares step.
  */
 void glm_ridge( vec& beta,      // output: regression coefficients (contains intercept)
                 double& loss,   // output: value of the loss function
@@ -306,7 +398,9 @@ void glm_ridge( vec& beta,      // output: regression coefficients (contains int
                 double thresh,
                 int qa_updates_max,
                 int ls_iter_max=50,
-                bool debug=false)
+                bool debug=false,
+                uvec cons=uvec(),
+                vec signs=vec())
 {
   
   if (intercept) {
@@ -317,6 +411,15 @@ void glm_ridge( vec& beta,      // output: regression coefficients (contains int
   
   int n = x.n_rows;
   int D = x.n_cols;
+  int n_cons = cons.n_elem;
+  bool bls_ok = true;
+  // with constraints, flip the signs of the constrained columns (and
+  // coefficients) so that all bounds are beta(cons(k)) >= 0, and start from a
+  // feasible point (the penalty does not depend on the signs)
+  for (int k=0; k<n_cons; ++k) {
+    x.col(cons(k)) *= signs(k);
+    beta(cons(k)) = std::max(0.0, signs(k)*beta(cons(k)));
+  }
   int ls_iter; // counts linesearch iterations
   int j;
   double t; // step size in line search 
@@ -352,7 +455,14 @@ void glm_ridge( vec& beta,      // output: regression coefficients (contains int
       xw.col(j) = x.col(j) % sqrt(w);
     
     // weighted least squares solution
-    beta_new = solve( xw.t()*xw + regmat, xw.t()*(sqrt(w)%z) ); 
+    if (n_cons == 0) {
+      beta_new = solve( xw.t()*xw + regmat, xw.t()*(sqrt(w)%z) ); 
+    } else {
+      // bounded weighted least squares solution, starting from the current
+      // (feasible) solution; the line search below then stays feasible
+      beta_new = beta;
+      bls_ok = bls_active_set(beta_new, xw.t()*xw + regmat, xw.t()*(sqrt(w)%z), cons) && bls_ok;
+    }
     dbeta = beta_new - beta;
     grad = x.t()*grad_f + lambda*penalty%beta; // gradient of negative log likelihood + gradient of penalty
     decrement = -sum(grad%dbeta); // newton decrement
@@ -417,6 +527,13 @@ void glm_ridge( vec& beta,      // output: regression coefficients (contains int
   		Rcpp::Rcout << decrement << " from optimum (tolerance = " << thresh << ").\n";
   	}
   }
+  
+  if (!bls_ok)
+    Rcpp::Rcout << "glm_ridge warning: maximum number of iterations of the bounded least-squares step reached. Results can be inaccurate.\n";
+  
+  // undo the sign flips of the constrained coefficients
+  for (int k=0; k<n_cons; ++k)
+    beta(cons(k)) *= signs(k);
 }
 
 
@@ -435,9 +552,27 @@ List glm_ridge_c( arma::mat x,
                   double thresh,
                   int qa_updates_max,
                   int ls_iter_max=100,
-                  bool debug=false)
+                  bool debug=false,
+                  Rcpp::IntegerVector cons_cols=Rcpp::IntegerVector::create(), // 1-based columns of x with a sign constraint
+                  Rcpp::NumericVector cons_signs=Rcpp::NumericVector::create()) // their signs (1 or -1)
 {
   int D = x.n_cols;
+  if (cons_cols.size() != cons_signs.size())
+    Rcpp::stop("cons_cols and cons_signs must have the same length.");
+  int n_cons = cons_cols.size();
+  uvec cons(n_cons);
+  vec signs(n_cons);
+  uvec seen(D); seen.zeros();
+  for (int k=0; k<n_cons; ++k) {
+    if (cons_cols[k] < 1 || cons_cols[k] > D || seen(cons_cols[k] - 1) == 1)
+      Rcpp::stop("cons_cols must contain unique column indices of x.");
+    seen(cons_cols[k] - 1) = 1;
+    if (cons_signs[k] != 1.0 && cons_signs[k] != -1.0)
+      Rcpp::stop("cons_signs must be 1 or -1.");
+    // indices into the coefficient vector (which starts with the intercept, if any)
+    cons(k) = cons_cols[k] - 1 + (intercept ? 1 : 0);
+    signs(k) = cons_signs[k];
+  }
   if (intercept)
     D++;
   
@@ -445,7 +580,7 @@ List glm_ridge_c( arma::mat x,
   vec w = w_init;
   int qau;
   double loss;
-  glm_ridge(beta, loss, w, qau, x, pseudo_obs, lambda, intercept, penalty, thresh, qa_updates_max, ls_iter_max, debug);
+  glm_ridge(beta, loss, w, qau, x, pseudo_obs, lambda, intercept, penalty, thresh, qa_updates_max, ls_iter_max, debug, cons, signs);
     
   if (intercept) 
     return List::create(vec(beta.tail(D-1)), beta(0), w, loss, qau);

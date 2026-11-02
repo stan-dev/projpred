@@ -117,19 +117,22 @@ is_mo_call <- function(expr) {
            identical(fun[[3L]], quote(mo)))
 }
 
-# Column groups of the model matrix `mm` for the monotonicity constraint. `mm`
-# must have the attribute "assign" (as from model.matrix()), and `trms` must be
-# the terms of its model frame (with the attribute "predvars", see
-# makepredictcall.mo_basis()). In a term with a mo() call, the columns with the
-# same values of the other variables of the term form one group, for example
-# all columns of `mo(x)` or of `mo(x):z`, or the columns of `mo(x):f` for one
-# column of the factor `f`. (brms also gives each such column of a mo() term
-# its own monotonic effect.) Groups with one column (a predictor with two
-# levels) are left out because one coefficient is always monotonic. Returns a
-# named list of the column indices in `mm`, ordered by the level of the mo()
-# predictor. The names are the column names in which the mo() part is
-# replaced by the mo() call, for example `mo(x)` or `mo(x):fb`.
-mo_sign_groups <- function(trms, mm) {
+# Column groups of the model matrix `mm` for the monotonicity constraint. `fr`
+# is the model frame of `mm` (its terms with the attribute "predvars", see
+# makepredictcall.mo_basis()), and `mm` must have the attributes "assign" and
+# "contrasts" (as from model.matrix()). In a term with a mo() call, the
+# columns with the same values of the other variables of the term form one
+# group, for example all columns of `mo(x)` or of `mo(x):z`, or the columns of
+# `mo(x):f` for one column of the factor `f`. As in brms, which gives each such
+# column its own monotonic effect, the sum of two groups (for example the
+# effect of `x` within one level of `f` in `mo(x) * f`) is not constrained.
+# Groups with one column (a predictor with two levels) are left out because
+# one coefficient is always monotonic. Returns a named list of the column
+# indices in `mm`, ordered by the level of the mo() predictor. The names are
+# the column names in which the mo() part is replaced by the mo() call, for
+# example `mo(x)` or `mo(x):fb`.
+mo_sign_groups <- function(fr, mm) {
+  trms <- attr(fr, "terms")
   fcts <- attr(trms, "factors")
   if (length(fcts) == 0) {
     return(list())
@@ -151,9 +154,10 @@ mo_sign_groups <- function(trms, mm) {
   }
   predvars <- attr(trms, "predvars")
   asgn <- attr(mm, "assign")
-  if (is.null(predvars) || is.null(asgn)) {
-    stop("Internal error: the attributes \"predvars\" or \"assign\" are ",
-         "missing. Please notify the package maintainer.")
+  if (is.null(predvars) || is.null(asgn) ||
+      !all(var_nms[in_term] %in% names(fr))) {
+    stop("Internal error: the model frame or the model matrix does not have ",
+         "the expected attributes. Please notify the package maintainer.")
   }
   cnms <- colnames(mm)
   out <- list()
@@ -172,61 +176,78 @@ mo_sign_groups <- function(trms, mm) {
     # The elements of the "predvars" call are the response and the variables,
     # in the order of the rows of the "factors" attribute:
     mo_levels <- eval(predvars[[mo_vars + 1L]]$mo_levels, baseenv())
+    if (is.null(mo_levels)) {
+      stop("Internal error: the levels of `", var_nm, "` are missing in the ",
+           "terms. Please notify the package maintainer.")
+    }
     n_cols <- length(mo_levels) - 1L
+    if (n_cols < 2) {
+      next
+    }
+    # model.matrix() builds the columns of a term as the product of the column
+    # sets of its variables (in the order of the rows of the "factors"
+    # attribute), with the first variable changing fastest. Thus the position
+    # of a column gives its mo() level and the column of the other variables:
+    vars_before <- which(fcts[, t_idx] > 0 & seq_along(var_nms) < mo_vars)
+    n_before <- prod(vapply(vars_before, function(i) {
+      n_cols_in_term(fr[[var_nms[i]]], coding = fcts[i, t_idx],
+                     contr = attr(mm, "contrasts")[[var_nms[i]]])
+    }, integer(1)))
     cols <- which(asgn == t_idx)
-    if (is.null(mo_levels) || length(cols) %% n_cols != 0) {
+    if (length(cols) %% (n_before * n_cols) != 0) {
       stop("Internal error: the columns of term `", colnames(fcts)[t_idx],
            "` do not match its mo() levels. Please notify the package ",
            "maintainer.")
     }
-    if (n_cols < 2) {
-      next
-    }
-    # The column name of an interaction is the `:`-separated list of the
-    # column names of its variables. Find the part of the mo() variable (the
-    # longest match, because the levels of an ordered factor may contain `:`)
-    # and replace it by the mo() call:
-    mo_parts <- paste0(var_nm, as.character(mo_levels[-1L]))
-    lvl_lbl <- lapply(cnms[cols], function(cnm) {
-      lbls <- vapply(mo_parts, function(part) {
-        if (cnm == part) {
-          return(var_nm)
-        }
-        part_c <- paste0(part, ":")
-        if (startsWith(cnm, part_c)) {
-          return(paste0(var_nm, ":", substring(cnm, nchar(part_c) + 1L)))
-        }
-        c_part <- paste0(":", part)
-        if (endsWith(cnm, c_part)) {
-          return(paste0(substr(cnm, 1L, nchar(cnm) - nchar(c_part)), ":",
-                        var_nm))
-        }
-        pos <- regexpr(paste0(":", part, ":"), cnm, fixed = TRUE)
-        if (pos > 0) {
-          return(paste0(substr(cnm, 1L, pos), var_nm,
-                        substring(cnm, pos + nchar(part) + 1L)))
-        }
-        return(NA_character_)
-      }, character(1), USE.NAMES = FALSE)
-      if (all(is.na(lbls))) {
-        return(list(lvl = NA_integer_, lbl = NA_character_))
-      }
-      lvl <- which.max(ifelse(is.na(lbls), -1L, nchar(mo_parts)))
-      return(list(lvl = lvl, lbl = lbls[lvl]))
+    pos <- seq_along(cols) - 1L
+    lvls <- (pos %/% n_before) %% n_cols + 1L
+    rest <- pos %% n_before + n_before * (pos %/% (n_before * n_cols))
+    grps <- lapply(split(seq_along(cols), rest), function(g) {
+      cols[g][order(lvls[g])]
     })
-    lvls <- vapply(lvl_lbl, "[[", integer(1), "lvl")
-    lbls <- vapply(lvl_lbl, "[[", character(1), "lbl")
-    grps <- split(seq_along(cols), factor(lbls, levels = unique(lbls)))
-    if (anyNA(lvls) || !all(vapply(grps, function(g) {
-      identical(sort(lvls[g]), seq_len(n_cols))
-    }, logical(1)))) {
-      stop("Internal error: the columns of term `", colnames(fcts)[t_idx],
-           "` could not be assigned to its mo() levels. Please notify the ",
-           "package maintainer.")
-    }
-    out <- c(out, lapply(grps, function(g) cols[g][order(lvls[g])]))
+    # The column name of an interaction is the `:`-separated list of the
+    # column names of its variables. In the column of the first level, replace
+    # the part of the mo() variable by the mo() call:
+    mo_part <- paste0(var_nm, as.character(mo_levels[2L]))
+    names(grps) <- vapply(grps, function(g) {
+      mo_label(cnms[g[1L]], mo_part, var_nm)
+    }, character(1), USE.NAMES = FALSE)
+    out <- c(out, grps)
+  }
+  if (length(out) > 0) {
+    names(out) <- make.unique(names(out))
   }
   return(out)
+}
+
+# The number of columns of the model frame variable `v` in a term of
+# model.matrix(), with the coding `coding` from the "factors" attribute of the
+# terms (1: contrasts, 2: indicators of all levels) and the contrasts `contr`
+# (an element of the "contrasts" attribute of the model matrix, or `NULL`).
+n_cols_in_term <- function(v, coding, contr) {
+  dat <- list(.v = v)
+  if (coding == 2) {
+    return(ncol(model.matrix(~ 0 + .v, data = dat)))
+  }
+  contr_arg <- if (is.null(contr)) NULL else list(.v = contr)
+  return(ncol(model.matrix(~ .v, data = dat, contrasts.arg = contr_arg)) - 1L)
+}
+
+# The column name `cnm` with the part `mo_part` (bounded by `:` or by the ends
+# of `cnm`) replaced by `var_nm`.
+mo_label <- function(cnm, mo_part, var_nm) {
+  starts <- gregexpr(mo_part, cnm, fixed = TRUE)[[1L]]
+  ends <- starts + nchar(mo_part) - 1L
+  ok <- starts > 0 &
+    (starts == 1L | substr(cnm, starts - 1L, starts - 1L) == ":") &
+    (ends == nchar(cnm) | substr(cnm, ends + 1L, ends + 1L) == ":")
+  if (!any(ok)) {
+    stop("Internal error: the column name `", cnm, "` does not contain `",
+         mo_part, "`. Please notify the package maintainer.")
+  }
+  s <- starts[ok][1L]
+  return(paste0(substr(cnm, 1L, s - 1L), var_nm,
+                substring(cnm, s + nchar(mo_part))))
 }
 
 # If `formula` contains mo() terms, give it an environment in which `mo` is
