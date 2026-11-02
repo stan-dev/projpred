@@ -123,6 +123,36 @@ test_that("cumul_native_multi() returns usable `polr` objects", {
                                  ws_aug = ws, dot_args = list()))
 })
 
+test_that("the native cumulative-link fits handle non-finite input", {
+  # No random numbers here (later tests use the random number state):
+  cp <- cbind(0, plogis(outer(-eta_cn, c(-1, 0, 1), "+")), 1)
+  w <- t(apply(cp, 1, diff))
+  # An observation with weight in a middle category and both thresholds
+  # beyond the bound: the objective is infinite at the start values.
+  offs <- replace(rep(0, n_cn), 1, 150)
+  fit_inf <- cumul_fit_multi_c(x_cn, w, ncat_cn, offs, 1L, 1e-12, 100L)
+  expect_identical(fit_inf$convergence, 1L)
+  expect_identical(drop(fit_inf$loss), Inf)
+  # A non-finite predictor value (a NaN linear predictor at the start values):
+  x_inf <- x_cn
+  x_inf[1, 1] <- Inf
+  fit_nan <- cumul_fit_multi_c(x_inf, w, ncat_cn, rep(0, n_cn), 1L, 1e-12,
+                               100L)
+  expect_identical(fit_nan$convergence, 1L)
+  expect_identical(drop(fit_nan$loss), Inf)
+  # cumul_native_multi() leaves such data to polr():
+  daug <- augdat_cn(w)[c("a", "b", "c", "y")]
+  daug$a[1 + (seq_len(ncat_cn) - 1) * n_cn] <- Inf
+  fam <- structure(list(family = "cumulative", link = "logit"),
+                   class = "family")
+  expect_null(cumul_native_multi(y ~ a + b, data = daug, family = fam,
+                                 ws_aug = as.vector(w), dot_args = list()))
+  daug$a <- augdat_cn(w)$a
+  expect_null(cumul_native_multi(y ~ a + b, data = daug, family = fam,
+                                 ws_aug = replace(as.vector(w), 3, Inf),
+                                 dot_args = list()))
+})
+
 if (exists("rng_old")) assign(".Random.seed", rng_old, envir = .GlobalEnv)
 # Clean up the workspace:
 rm(list = setdiff(ls(), ls_bu))

@@ -96,6 +96,8 @@ static double cl_eval(const mat& x, const mat& w, const vec& offset,
   const uword p = x.n_cols;
   vec eta = offset;
   if (p > 0) eta += x * beta;
+  // std::min() and std::max() would turn NaN arguments into the bounds +-100:
+  if (!eta.is_finite()) return std::numeric_limits<double>::infinity();
   vec g_eta, h_etaeta;
   mat h_etazeta;
   vec g_zeta;
@@ -194,6 +196,8 @@ static double cl_fit_one(const mat& x, const mat& w, const vec& offset,
   double loss = cl_eval(x, w, offset, beta, zeta, link, true, grad, hess);
   conv = 1;
   niter = 0;
+  // Infinite objective at the start values (no derivatives): not converged.
+  if (!std::isfinite(loss)) return loss;
   vec theta(p + q), dir, theta_new;
   for (int it = 0; it < maxit; ++it) {
     niter = it + 1;
