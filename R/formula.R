@@ -881,7 +881,21 @@ lhs <- function(x) {
 collapse_ranked_predictors <- function(path, formula, data) {
   tt <- terms(formula)
   terms_ <- attr(tt, "term.labels")
-  for (term in terms_) {
+  # Columns of terms with mo() calls are matched exactly (a substring
+  # replacement would change, for example, column `mo(x)10` by the replacement
+  # of column `mo(x)1`), and the substring replacements for the other terms do
+  # not change them:
+  is_mo <- vapply(terms_, function(term) {
+    has_mo_call(str2lang(term))
+  }, logical(1), USE.NAMES = FALSE)
+  path_mo <- rep(NA_character_, length(path))
+  for (term in terms_[is_mo]) {
+    x <- model.matrix(as.formula(paste("~ 1 +", term)), data = data)
+    path_mo[path %in% setdiff(colnames(x), "(Intercept)")] <- term
+  }
+  is_path_mo <- !is.na(path_mo)
+  path_other <- path[!is_path_mo]
+  for (term in terms_[!is_mo]) {
     # TODO: In the following model.matrix() call, allow user-specified contrasts
     # to be passed to argument `contrasts.arg`. The `contrasts.arg` default
     # (`NULL`) uses `options("contrasts")` internally, but it might be more
@@ -894,11 +908,12 @@ collapse_ranked_predictors <- function(path, formula, data) {
     }
     x <- x[, colnames(x) != "(Intercept)", drop = FALSE]
     for (col_nm in colnames(x)) {
-      path <- gsub(esc_chars(col_nm), term, path)
+      path_other <- gsub(esc_chars(col_nm), term, path_other)
     }
-    path <- unique(path)
   }
-  return(path)
+  path[!is_path_mo] <- path_other
+  path[is_path_mo] <- path_mo[is_path_mo]
+  return(unique(path))
 }
 
 split_formula_random_gamm4 <- function(formula) {

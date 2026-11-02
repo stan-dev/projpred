@@ -213,6 +213,22 @@ two predictors \code{x} and \code{z}, only \code{s(x, z)} or \code{t2(x, z)} are
 analogously for higher-order joint effects, e.g., of three predictors). Note
 that all smooth terms need to be included in \code{formula} (there is no \code{random}
 argument as in \code{\link[rstanarm:stan_gamm4]{rstanarm::stan_gamm4()}}, for example).
+
+Monotonic terms \code{mo(x)} (see \code{\link[brms:mo]{brms::mo()}}) are supported for an ordered
+factor \code{x} or an integer \code{x}. In the submodels, \pkg{projpred} codes \code{mo(x)}
+by the indicators of \eqn{x \geq l_k}{x >= l_k} for the levels \eqn{l_1,
+\ldots, l_D}{l_1, ..., l_D} of \code{x} above the lowest level \eqn{l_0}{l_0}. As
+in \pkg{brms}, the levels of an integer \code{x} are all integers from
+\eqn{\min(x)}{min(x)} to \eqn{\max(x)}{max(x)} in the training data, also
+those that do not occur in the data (the indicators of such values are equal
+to those of the next value). The coefficients of the indicators are not
+constrained to have the same sign, so the projected effect of \code{x} is not
+necessarily monotonic. Argument \code{id} of \code{\link[brms:mo]{brms::mo()}} has no effect in
+\pkg{projpred}. New data must not have values of \code{x} outside the levels of
+the training data (in \eqn{K}-fold CV, the training data of a fold). An
+ordered factor \code{x} must be a factor or a character vector in new data, and an
+integer \code{x} must be an integer. Monotonic terms are not supported in
+group-level terms and in additive multilevel models.
 }
 
 \section{Arguments \code{ref_predfun}, \code{proj_predfun}, and \code{div_minimizer}}{

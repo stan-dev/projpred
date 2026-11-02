@@ -152,6 +152,22 @@
 #' that all smooth terms need to be included in `formula` (there is no `random`
 #' argument as in [rstanarm::stan_gamm4()], for example).
 #'
+#' Monotonic terms `mo(x)` (see [brms::mo()]) are supported for an ordered
+#' factor `x` or an integer `x`. In the submodels, \pkg{projpred} codes `mo(x)`
+#' by the indicators of \eqn{x \geq l_k}{x >= l_k} for the levels \eqn{l_1,
+#' \ldots, l_D}{l_1, ..., l_D} of `x` above the lowest level \eqn{l_0}{l_0}. As
+#' in \pkg{brms}, the levels of an integer `x` are all integers from
+#' \eqn{\min(x)}{min(x)} to \eqn{\max(x)}{max(x)} in the training data, also
+#' those that do not occur in the data (the indicators of such values are equal
+#' to those of the next value). The coefficients of the indicators are not
+#' constrained to have the same sign, so the projected effect of `x` is not
+#' necessarily monotonic. Argument `id` of [brms::mo()] has no effect in
+#' \pkg{projpred}. New data must not have values of `x` outside the levels of
+#' the training data (in \eqn{K}-fold CV, the training data of a fold). An
+#' ordered factor `x` must be a factor or a character vector in new data, and an
+#' integer `x` must be an integer. Monotonic terms are not supported in
+#' group-level terms and in additive multilevel models.
+#'
 #' # Arguments `ref_predfun`, `proj_predfun`, and `div_minimizer`
 #'
 #' Arguments `ref_predfun`, `proj_predfun`, and `div_minimizer` may be `NULL`
@@ -1110,6 +1126,7 @@ init_refmodel <- function(object, data, formula, family, ref_predfun = NULL,
   stopifnot(inherits(formula, "formula"))
   data <- na.fail(data)
   stopifnot(is.data.frame(data))
+  formula <- mo_formula_env(formula)
   formula <- expand_formula(formula, data)
   if (!as.logical(attr(terms(formula), "intercept"))) {
     # Add an intercept to `formula` so that we always project onto submodels
@@ -1120,6 +1137,7 @@ init_refmodel <- function(object, data, formula, family, ref_predfun = NULL,
     formula <- update(formula, . ~ . + 1)
   }
   fml_extractions <- extract_terms_response(formula)
+  check_mo_terms(fml_extractions)
   response_name <- fml_extractions$response
   if (length(response_name) == 2) {
     if (family$family != "binomial") {
