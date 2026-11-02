@@ -32,9 +32,13 @@ static inline void cl_funs(int link, double z, double& F, double& S,
                            double& f, double& fd) {
   switch (link) {
   case CL_LOGISTIC: {
-    F = R::plogis(z, 0.0, 1.0, 1, 0);
-    S = R::plogis(z, 0.0, 1.0, 0, 0);
-    f = R::dlogis(z, 0.0, 1.0, 0);
+    // One exp() for all four values (e <= 1, so nothing overflows):
+    double e = std::exp(-std::abs(z));
+    double d = 1.0 / (1.0 + e);
+    double tail = e * d;
+    F = (z >= 0.0) ? d : tail;
+    S = (z >= 0.0) ? tail : d;
+    f = tail * d;
     fd = f * (S - F);
     break;
   }
