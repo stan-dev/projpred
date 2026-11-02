@@ -236,6 +236,71 @@ test_that("mo_formula_env() makes `mo` refer to projpred's mo()", {
   expect_identical(environment(mo_formula_env(fml_no)), env_user)
 })
 
+# Sign groups of the monotonicity constraint ------------------------------
+
+# The groups of mo_sign_groups() as column names:
+sign_groups_of <- function(fml, dat) {
+  fml <- mo_formula_env(fml)
+  fr <- model.frame(fml, data = dat)
+  mm <- model.matrix(fml, data = fr)
+  lapply(mo_sign_groups(attr(fr, "terms"), mm), function(g) colnames(mm)[g])
+}
+
+test_that("mo_sign_groups() gives one group per mo() column set", {
+  dat <- data.frame(
+    y = rnorm(12), x = rep(1:4, 3), x2 = rep(c(5, 6, 7), 4),
+    bin = rep(0:1, 6), z = seq(-1, 1, length.out = 12),
+    f = factor(rep(c("a", "b", "c"), each = 4)),
+    o = factor(rep(c("lo", "mid", "mid:x", "hi"), 3),
+               levels = c("lo", "mid", "mid:x", "hi"), ordered = TRUE)
+  )
+  # Main effects; a binary predictor has no group:
+  expect_identical(
+    sign_groups_of(y ~ mo(x) + mo(bin) + z, dat),
+    list("mo(x)" = c("mo(x)2", "mo(x)3", "mo(x)4"))
+  )
+  # Interaction with a numeric variable:
+  expect_identical(
+    sign_groups_of(y ~ z + mo(x2):z, dat),
+    list("z:mo(x2)" = c("z:mo(x2)6", "z:mo(x2)7"))
+  )
+  # Interaction with a factor: one group per column of the factor:
+  expect_identical(
+    sign_groups_of(y ~ mo(x) * f, dat),
+    list("mo(x)" = c("mo(x)2", "mo(x)3", "mo(x)4"),
+         "mo(x):fb" = c("mo(x)2:fb", "mo(x)3:fb", "mo(x)4:fb"),
+         "mo(x):fc" = c("mo(x)2:fc", "mo(x)3:fc", "mo(x)4:fc"))
+  )
+  expect_identical(
+    sign_groups_of(y ~ f + mo(x):f:z, dat),
+    list("fa:mo(x):z" = c("fa:mo(x)2:z", "fa:mo(x)3:z", "fa:mo(x)4:z"),
+         "fb:mo(x):z" = c("fb:mo(x)2:z", "fb:mo(x)3:z", "fb:mo(x)4:z"),
+         "fc:mo(x):z" = c("fc:mo(x)2:z", "fc:mo(x)3:z", "fc:mo(x)4:z"))
+  )
+  # An ordered factor with `:` in a level:
+  expect_identical(
+    sign_groups_of(y ~ mo(o) + z + mo(o):z, dat),
+    list("mo(o)" = c("mo(o)mid", "mo(o)mid:x", "mo(o)hi"),
+         "mo(o):z" = c("mo(o)mid:z", "mo(o)mid:x:z", "mo(o)hi:z"))
+  )
+  # The indices refer to the model matrix (here with the intercept column):
+  fml <- mo_formula_env(y ~ z + mo(x))
+  fr <- model.frame(fml, data = dat)
+  mm <- model.matrix(fml, data = fr)
+  expect_identical(mo_sign_groups(attr(fr, "terms"), mm),
+                   list("mo(x)" = 3:5))
+  # No mo() terms:
+  expect_identical(sign_groups_of(y ~ z + f, dat), list())
+})
+
+test_that("mo_sign_groups() throws an error for unsupported mo() terms", {
+  dat <- data.frame(y = rnorm(12), x = rep(1:4, 3), x2 = rep(c(5, 6, 7), 4))
+  expect_error(sign_groups_of(y ~ mo(x):mo(x2), dat),
+               "more than one mo\\(\\) call")
+  expect_error(sign_groups_of(y ~ I(2 * mo(x)), dat),
+               "inside other calls")
+})
+
 # Traditional projection --------------------------------------------------
 
 test_that(paste(
