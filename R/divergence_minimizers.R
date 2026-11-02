@@ -954,10 +954,11 @@ cumul_native_multi <- function(formula, data, family, ws_aug, dot_args) {
     return(NULL)
   }
   x1 <- x[seq_len(n), , drop = FALSE]
-  # Non-finite predictor values go to polr() (the C++ fitter would compare NaN
-  # linear predictors with the bounds +-100):
+  # Non-finite predictor values go to polr() (the C++ fitter returns a
+  # non-converged fit for them):
   if (!all(is.finite(x1)) ||
-      (ncol(x1) > 0 && !all(x == x1[rep(seq_len(n), ncat), , drop = FALSE]))) {
+      (ncol(x1) > 0 &&
+       !isTRUE(all(x == x1[rep(seq_len(n), ncat), , drop = FALSE])))) {
     return(NULL)
   }
   nprj <- ncol(ws_aug)

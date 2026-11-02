@@ -1,4 +1,5 @@
 #include <RcppArmadillo.h>
+#include <algorithm>
 #include <cmath>
 #include <limits>
 
@@ -285,6 +286,17 @@ List cumul_fit_multi_c(arma::mat x, arma::mat w_all, int ncat,
   mat zeta_out(q, S);
   vec loss_out(S);
   IntegerVector conv_out(S), niter_out(S);
+  if (!x.is_finite() || !offset.is_finite()) {
+    // Not fitted (the linear predictor would not be finite):
+    beta_out.zeros();
+    zeta_out.fill(NA_REAL);
+    loss_out.fill(std::numeric_limits<double>::infinity());
+    std::fill(conv_out.begin(), conv_out.end(), 1);
+    return List::create(Named("beta") = beta_out, Named("zeta") = zeta_out,
+                        Named("loss") = loss_out,
+                        Named("convergence") = conv_out,
+                        Named("niter") = niter_out);
+  }
   for (uword s = 0; s < S; ++s) {
     mat w = w_all.cols(s * ncat, (s + 1) * ncat - 1);
     vec beta, zeta;

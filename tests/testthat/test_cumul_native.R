@@ -142,7 +142,7 @@ test_that("cumul_fit_multi_c() starts within the bounds for cauchit", {
 })
 
 test_that("the native cumulative-link fits handle non-finite input", {
-  # No random numbers here (later tests use the random number state):
+  # No random numbers here.
   cp <- cbind(0, plogis(outer(-eta_cn, c(-1, 0, 1), "+")), 1)
   w <- t(apply(cp, 1, diff))
   # An observation with weight in a middle category and both thresholds
@@ -158,6 +158,11 @@ test_that("the native cumulative-link fits handle non-finite input", {
                                100L)
   expect_identical(fit_nan$convergence, 1L)
   expect_identical(drop(fit_nan$loss), Inf)
+  fit_nan_offs <- cumul_fit_multi_c(x_cn, w, ncat_cn,
+                                    replace(rep(0, n_cn), 2, NaN), 1L, 1e-12,
+                                    100L)
+  expect_identical(fit_nan_offs$convergence, 1L)
+  expect_identical(drop(fit_nan_offs$loss), Inf)
   # cumul_native_multi() leaves such data to polr():
   daug <- augdat_cn(w)[c("a", "b", "c", "y")]
   daug$a[1 + (seq_len(ncat_cn) - 1) * n_cn] <- Inf
