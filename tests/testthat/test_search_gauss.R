@@ -8,6 +8,8 @@ refm_search_gauss <- function(fml, n = 80, ndraws = 200, seed = 6283,
   dat <- data.frame(x1 = rnorm(n), x2 = rnorm(n), x3 = rnorm(n),
                     x4 = rnorm(n),
                     f = factor(sample(c("a", "b", "c"), n, replace = TRUE)))
+  # A column that is collinear with `x1` and `x2`:
+  dat$x5 <- dat$x1 + dat$x2
   dat$y <- 0.8 * dat$x1 - 0.4 * dat$x2 + 0.3 * dat$x1 * dat$x2 +
     c(a = 0, b = 0.5, c = -0.5)[as.character(dat$f)] + rnorm(n)
   extract_model_data <- NULL
@@ -284,4 +286,97 @@ test_that(paste(
   out <- search_forward_gauss(p_ref = p_ref, refmodel = refm, nterms_max = 3,
                               verbose = FALSE, search_terms = search_terms)
   expect_null(out)
+})
+
+test_that("gauss_crossprod_regul() requires a positive `regul`", {
+  refm <- refm_search_gauss(y ~ x1 + x2)
+  expect_identical(gauss_crossprod_regul(refm, list()), 1e-4)
+  expect_identical(gauss_crossprod_regul(refm, list(regul = 0.5)), 0.5)
+  for (regul_crr in list(0, -1e-3, NA_real_)) {
+    expect_null(gauss_crossprod_regul(refm, list(regul = regul_crr)),
+                info = paste("regul:", regul_crr))
+  }
+})
+
+test_that(paste(
+  "a `regul` of zero or below zero uses the draw-wise path for collinear",
+  "columns"
+), {
+  # With a `regul` of zero or below zero, both arms below use the same
+  # draw-wise code. The test checks that the cross-product search does not run
+  # and that no error occurs.
+  refm <- refm_search_gauss(y ~ x1 + x2 + x3 + x5, n = 40)
+  for (regul_crr in c(0, -1e-3)) {
+    info_crr <- paste("regul:", regul_crr)
+    args_vs <- list(refm, regul = regul_crr, nclusters = 3, nclusters_pred = 5,
+                    nterms_max = 4, seed = 3317, verbose = FALSE)
+    args_cv <- c(args_vs, list(cv_method = "LOO", validate_search = TRUE,
+                               nloo = 5))
+    res_vs <- with_gauss_search_count(
+      suppressWarnings(do.call(varsel, args_vs))
+    )
+    expect_identical(res_vs$n, 0L, info = info_crr)
+    vs_crossprod <- res_vs$value
+    cv_crossprod <- suppressWarnings(do.call(cv_varsel, args_cv))
+    opts_old <- options(projpred.search_gauss_crossprod = FALSE)
+    on.exit(options(opts_old), add = TRUE)
+    vs_drawwise <- suppressWarnings(do.call(varsel, args_vs))
+    cv_drawwise <- suppressWarnings(do.call(cv_varsel, args_cv))
+    options(opts_old)
+    expect_identical(ranking(vs_crossprod)$fulldata,
+                     ranking(vs_drawwise)$fulldata, info = info_crr)
+    expect_equal(performances(vs_crossprod, deltas = FALSE),
+                 performances(vs_drawwise, deltas = FALSE), info = info_crr)
+    expect_identical(ranking(cv_crossprod), ranking(cv_drawwise),
+                     info = info_crr)
+    expect_equal(performances(cv_crossprod, deltas = FALSE),
+                 performances(cv_drawwise, deltas = FALSE), info = info_crr)
+  }
+})
+
+test_that(paste(
+  "the cross-product search and evaluation return `NULL` for a matrix that",
+  "is not positive definite"
+), {
+  # With `x5 = x1 + x2` and a negative `regul`, the matrix of the columns x1,
+  # x2 and x5 is not positive definite:
+  refm <- refm_search_gauss(y ~ x1 + x2 + x3 + x5, n = 40)
+  p_ref <- get_refdist(refm, nclusters = 3)
+  calls <- new.env()
+  calls$n_all <- 0L
+  calls$n_used <- 0L
+  ns <- asNamespace("projpred")
+  suppressMessages(trace(
+    "perf_eval_gauss", where = ns, print = FALSE,
+    exit = bquote({
+      assign("n_all", get("n_all", envir = .(calls)) + 1L, envir = .(calls))
+      if (!is.null(returnValue(NULL))) {
+        assign("n_used", get("n_used", envir = .(calls)) + 1L,
+               envir = .(calls))
+      }
+    })
+  ))
+  on.exit(suppressMessages(untrace("perf_eval_gauss", where = ns)),
+          add = TRUE)
+  local_mocked_bindings(gauss_crossprod_regul = function(...) -1)
+  # Candidates with one column (crit_single()):
+  search_terms <- union("1", split_formula(refm$formula,
+                                           data = refm$fetch_data()))
+  expect_null(search_forward_gauss(
+    p_ref = p_ref, refmodel = refm, nterms_max = 4, verbose = FALSE,
+    search_terms = search_terms
+  ))
+  # A candidate with several columns (crit_cand()):
+  expect_null(search_forward_gauss(
+    p_ref = p_ref, refmodel = refm, nterms_max = 4, verbose = FALSE,
+    search_terms = c("1", "x3", "x1 + x2 + x5")
+  ))
+  cv <- suppressWarnings(cv_varsel(
+    refm, cv_method = "LOO", validate_search = TRUE, nloo = 3, nclusters = 3,
+    ndraws_pred = 20, nterms_max = 4, seed = 5821, verbose = FALSE
+  ))
+  expect_s3_class(cv, "vsel")
+  # One evaluation per left-out observation, each on the draw-wise path:
+  expect_identical(calls$n_all, 3L)
+  expect_identical(calls$n_used, 0L)
 })

@@ -19,9 +19,9 @@
 
 # The condition for the cross-product computations: Gaussian family with the
 # identity link (traditional or latent projection), the default divergence
-# minimizer and submodel fitter, zero offsets, and no argument for glm_ridge()
-# other than `thresh` (not used for this family) in `divmin_args`. Returns
-# `regul` or `NULL`.
+# minimizer and submodel fitter, zero offsets, no argument for glm_ridge() other
+# than `thresh` (not used for this family) in `divmin_args`, and a positive
+# `regul`. Returns `regul` or `NULL`.
 gauss_crossprod_regul <- function(refmodel, divmin_args) {
   fam <- refmodel$family
   glm_fitter <- getOption("projpred.glm_fitter", "fit_glm_ridge_callback")
@@ -38,7 +38,13 @@ gauss_crossprod_regul <- function(refmodel, divmin_args) {
   if (!all(args_glm_ridge %in% "thresh")) {
     return(NULL)
   }
-  return(divmin_args$regul %||% 1e-4)
+  # A `regul` of zero or below zero can make the system singular. The draw-wise
+  # path then gives an approximate solution:
+  regul <- divmin_args$regul %||% 1e-4
+  if (!isTRUE(regul > 0)) {
+    return(NULL)
+  }
+  return(regul)
 }
 
 # The model matrix of the terms in `term_strings` (a string can consist of
@@ -203,7 +209,11 @@ perf_eval_gauss <- function(search_path, nterms, refmodel, p_ref,
           a_nn <- a_nn - crossprod(r_cn)
           rhs_n <- rhs_n - crossprod(r_cn, y_mat)
         }
-        r_n <- chol(a_nn)
+        # A numerically singular system goes to the draw-wise path:
+        r_n <- tryCatch(chol(a_nn), error = function(e) NULL)
+        if (is.null(r_n)) {
+          return(NULL)
+        }
         y_n <- forwardsolve(t(r_n), rhs_n)
         if (length(cols) == 0) {
           r_chol <- r_n

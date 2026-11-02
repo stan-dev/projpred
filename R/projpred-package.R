@@ -271,7 +271,7 @@
 #' validated search for Gaussian submodels with the identity link (including
 #' the latent projection) from cross-products of the model matrix (default
 #' `TRUE`). With `FALSE`, \pkg{projpred} projects onto each candidate submodel
-#' draw by draw.
+#' draw by draw. The cross-products are used only with a positive `regul`.
 #'
 #' @name internal-global-options
 #' @keywords internal

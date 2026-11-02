@@ -235,7 +235,10 @@ search_forward_gauss <- function(p_ref, refmodel, nterms_max, verbose,
         a_nn <- a_nn - crossprod(r_cn)
         rhs_n <- rhs_n - crossprod(r_cn, y_chosen)
       }
-      r_n <- chol(a_nn)
+      r_n <- tryCatch(chol(a_nn), error = function(e) NULL)
+      if (is.null(r_n)) {
+        return(list(crit = NA_real_))
+      }
       y_n <- forwardsolve(t(r_n), rhs_n)
       beta_n <- backsolve(r_n, y_n)
       quad <- colSums(y_n^2) + colSums(lambda_x[cols_new] * beta_n^2)
@@ -266,6 +269,9 @@ search_forward_gauss <- function(p_ref, refmodel, nterms_max, verbose,
                            a_full[cols_chosen, cols_single, drop = FALSE])
       a_jj <- a_jj - colSums(r_cj^2)
       rhs <- rhs - crossprod(r_cj, y_chosen)
+    }
+    if (!isTRUE(all(a_jj > 0))) {
+      return(rep(NA_real_, length(cols_single)))
     }
     y_n <- rhs / sqrt(a_jj)
     beta_n <- y_n / sqrt(a_jj)
@@ -314,12 +320,20 @@ search_forward_gauss <- function(p_ref, refmodel, nterms_max, verbose,
       crits[k] <- crit_cand(cols_cands[[k]], cols_chosen, r_chosen,
                             y_chosen)$crit
     }
+    # A numerically singular system (for example, collinear columns with a
+    # small `regul`) goes to the search of search_forward():
+    if (anyNA(crits)) {
+      return(NULL)
+    }
     imin <- which.min(crits)
     chosen <- c(chosen, cands[imin])
     cols_new <- cols_cands[[imin]]
     if (length(cols_new) > 0) {
       # The factors of the chosen candidate, for the next step:
       best <- crit_cand(cols_new, cols_chosen, r_chosen, y_chosen)
+      if (is.na(best$crit)) {
+        return(NULL)
+      }
       if (length(cols_chosen) == 0) {
         r_chosen <- best$r_n
         y_chosen <- best$y_n
