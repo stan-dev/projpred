@@ -268,10 +268,10 @@ static double cl_fit_one(const mat& x, const mat& w, const vec& offset,
     }
     if (p > 0) theta.head(p) = beta;
     theta.tail(q) = zeta;
-    // Backtracking line search (Armijo), keeping the thresholds increasing:
-    // The first trial (full step, accepted in most iterations) also computes
-    // the gradient and the Hessian, so that an accepted full step needs no
-    // second evaluation at the same point:
+    // Backtracking line search (Armijo), keeping the thresholds increasing.
+    // The full-step trial (t = 1, usually accepted) also computes the
+    // gradient and the Hessian, so that an accepted full step needs no second
+    // evaluation at the same point.
     double t = 1.0;
     bool accepted = false;
     bool accepted_deriv = false;
@@ -313,8 +313,8 @@ static double cl_fit_one(const mat& x, const mat& w, const vec& offset,
     zeta = theta_new.tail(q);
     if (accepted_deriv) {
       loss = loss_accepted;
-      grad = grad_new;
-      hess = hess_new;
+      grad.swap(grad_new);
+      hess.swap(hess_new);
     } else {
       loss = cl_eval(x, w, offset, beta, zeta, link, true, grad, hess);
     }
