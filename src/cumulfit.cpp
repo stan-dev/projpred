@@ -269,8 +269,13 @@ static double cl_fit_one(const mat& x, const mat& w, const vec& offset,
     if (p > 0) theta.head(p) = beta;
     theta.tail(q) = zeta;
     // Backtracking line search (Armijo), keeping the thresholds increasing:
+    // The first trial (full step, accepted in most iterations) also computes
+    // the gradient and the Hessian, so that an accepted full step needs no
+    // second evaluation at the same point:
     double t = 1.0;
     bool accepted = false;
+    bool accepted_deriv = false;
+    double loss_accepted = 0.0;
     vec grad_new;
     mat hess_new;
     for (int ls = 0; ls < 60; ++ls) {
@@ -285,11 +290,14 @@ static double cl_fit_one(const mat& x, const mat& w, const vec& offset,
       }
       if (ordered) {
         vec beta_new = (p > 0) ? vec(theta_new.head(p)) : vec();
+        bool with_deriv = (ls == 0);
         double loss_new = cl_eval(x, w, offset, beta_new, zeta_new, link,
-                                  false, grad_new, hess_new);
+                                  with_deriv, grad_new, hess_new);
         if (std::isfinite(loss_new) &&
             loss_new <= loss - 1e-4 * t * decrement) {
           accepted = true;
+          accepted_deriv = with_deriv;
+          loss_accepted = loss_new;
           break;
         }
       }
@@ -303,7 +311,13 @@ static double cl_fit_one(const mat& x, const mat& w, const vec& offset,
     }
     if (p > 0) beta = theta_new.head(p);
     zeta = theta_new.tail(q);
-    loss = cl_eval(x, w, offset, beta, zeta, link, true, grad, hess);
+    if (accepted_deriv) {
+      loss = loss_accepted;
+      grad = grad_new;
+      hess = hess_new;
+    } else {
+      loss = cl_eval(x, w, offset, beta, zeta, link, true, grad, hess);
+    }
   }
   return loss;
 }
