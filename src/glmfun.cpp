@@ -456,7 +456,8 @@ void glm_ridge( vec& beta,      // output: regression coefficients (contains int
   penalty_grad.elem(inact).zeros();
   beta.elem(inact).zeros();
   // positions of the constrained variables among the active ones (an inactive
-  // variable keeps 0, which satisfies its sign constraint)
+  // variable keeps 0, which satisfies its sign constraint); used only if some
+  // variables are inactive
   uvec cons_act;
   if (n_cons > 0 && inact.n_elem > 0) {
     ivec pos_act(D); pos_act.fill(-1);
@@ -506,7 +507,8 @@ void glm_ridge( vec& beta,      // output: regression coefficients (contains int
         beta_new = solve( xw.t()*xw + regmat, xw.t()*(sqrt(w)%z) );
       } else {
         beta_new = beta;
-        bls_ok = bls_active_set(beta_new, xw.t()*xw + regmat, xw.t()*(sqrt(w)%z), cons) && bls_ok;
+        bls_ok = bls_active_set(beta_new, xw.t()*xw + regmat,
+                                xw.t()*(sqrt(w)%z), cons) && bls_ok;
       }
     } else {
       beta_new.zeros();

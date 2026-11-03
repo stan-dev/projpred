@@ -471,25 +471,50 @@ test_that(paste(
   "observations with positive weight gives the fit without that column"
 ), {
   lambda <- 1e-4
+  # Columns 1:4 are mo(x1), 5:7 mo(x2). Each case gives zero weight to some
+  # observations, so that the columns `const` are constant over the
+  # observations with positive weight. The effect of x1 is not monotonic, so
+  # the constraint on columns 1:4 binds.
+  cases <- list(
+    # The last constrained column of a group:
+    last = list(zero_w = function(x) x[, 4] == 1, const = 4),
+    # The first one (the other constrained columns move in the active set):
+    first = list(zero_w = function(x) x[, 1] == 0, const = 1),
+    # All columns of the group mo(x2) (x2 = 1 only):
+    group = list(zero_w = function(x) x[, 5] == 1, const = 5:7)
+  )
   for (fam in list(extend_family(gaussian()), extend_family(binomial()))) {
-    d <- cons_data(fam)
-    # Column 4 is I(x1 >= 4); without the observations with x1 = 4, it is 0
-    # for all observations with positive weight:
-    d$weights[d$x[, 4] == 1] <- 0
-    # The effect of x1 is not monotonic, so the constraint binds:
-    fit <- glm_ridge(d$x, d$y, family = fam, lambda = lambda,
-                     weights = d$weights, offset = d$offset, thresh = 1e-12,
-                     cons_cols = 1:4, cons_signs = rep(1, 4))
-    fit_drop <- glm_ridge(d$x[, -4], d$y, family = fam, lambda = lambda,
-                          weights = d$weights, offset = d$offset,
-                          thresh = 1e-12, cons_cols = 1:3,
-                          cons_signs = rep(1, 3))
-    b <- drop(fit$beta)
-    expect_identical(unname(b[4]), 0, info = fam$family)
-    expect_true(all(b[1:3] >= 0), info = fam$family)
-    expect_true(any(b[1:3] == 0), info = fam$family)
-    expect_equal(c(fit$beta0, b[-4]), c(fit_drop$beta0, drop(fit_drop$beta)),
-                 tolerance = 1e-8, info = fam$family)
+    for (nm in names(cases)) {
+      for (icpt in c(TRUE, FALSE)) {
+        # Without intercept, the column of ones in case `first` is a regular
+        # predictor:
+        if (!icpt && nm == "first") next
+        info_crr <- paste(fam$family, nm, "intercept:", icpt)
+        d <- cons_data(fam)
+        d$weights[cases[[nm]]$zero_w(d$x)] <- 0
+        const <- cases[[nm]]$const
+        fit <- glm_ridge(d$x, d$y, family = fam, lambda = lambda,
+                         weights = d$weights, offset = d$offset,
+                         intercept = icpt, thresh = 1e-12,
+                         cons_cols = 1:7, cons_signs = rep(1, 7))
+        # The same fit without the constant columns:
+        keep <- setdiff(seq_len(ncol(d$x)), const)
+        cons_keep <- which(keep %in% 1:7)
+        fit_drop <- glm_ridge(d$x[, keep], d$y, family = fam, lambda = lambda,
+                              weights = d$weights, offset = d$offset,
+                              intercept = icpt, thresh = 1e-12,
+                              cons_cols = cons_keep,
+                              cons_signs = rep(1, length(cons_keep)))
+        b <- drop(fit$beta)
+        expect_identical(unname(b[const]), rep(0, length(const)),
+                         info = info_crr)
+        expect_true(all(b[1:7] >= 0), info = info_crr)
+        expect_true(any(b[setdiff(1:4, const)] == 0), info = info_crr)
+        expect_equal(c(fit$beta0, b[keep]),
+                     c(fit_drop$beta0, drop(fit_drop$beta)),
+                     tolerance = 1e-8, info = info_crr)
+      }
+    }
   }
 })
 
