@@ -232,25 +232,30 @@ group-level terms and in additive multilevel models.
 
 By default (global option \code{projpred.mo_monotone = TRUE}), the projected
 effect of each \code{mo()} term is monotonic: the coefficients of its indicators
-have the same sign. This sign is the sign of the sum of these coefficients
-in the unconstrained projection of the same projected draw (or cluster)
-onto the full model (all predictor terms of \code{formula}), so the projected
-effect has the direction of the effect in the reference model. If the full
-model does not have the term (possible with custom \code{search_terms}) or if
-the projection onto the full model fails, the sign is the sign of the sum
-of the unconstrained coefficients in the submodel. A projected draw whose
-unconstrained projection is monotonic keeps it. In an interaction of a
-\code{mo()} term with a factor (for example \code{mo(x):f}), each column of the
-factor has its own monotonic effect, as in \pkg{brms}. \code{\link[=mo_effects]{mo_effects()}} gives
-the projected effects in the parametrization of \pkg{brms}.
+have the same sign. A projected draw (or cluster) whose unconstrained
+projection is monotonic keeps it. Otherwise, the sign comes from the
+unconstrained projection of the same draw onto the full model (all
+predictor terms of \code{formula}): it is the sign of the sum of the
+coefficients of the same term (same name and the same coding of its
+factors) there. In \code{mo(x) * z}, for example, the full-model term \code{mo(x)} is
+the effect of \code{x} at \code{z = 0}. If the full model does not have the term
+(possible with custom \code{search_terms}) or if the projection onto the full
+model fails, the sign is the sign of the sum of the unconstrained
+coefficients in the submodel. In an interaction of a \code{mo()} term with a
+factor (for example \code{mo(x):f}), each column of the factor has its own
+monotonic effect, as in \pkg{brms}. So in \code{mo(x) * f}, the effect of \code{x}
+within a level of \code{f} other than the first is the sum of two monotonic
+effects, which is not necessarily monotonic. \code{\link[=mo_effects]{mo_effects()}} gives the
+projected effects in the parametrization of \pkg{brms}.
 
-Monotonic projections are supported for forward search and for submodels
-without group-level and smooth terms (with the default submodel fitter) and
-for multilevel submodels with the \code{\link[=gaussian]{gaussian()}} family (also in the latent
-projection). \pkg{projpred} throws an error before the search or the
-projection starts for L1 search, the augmented-data projection, custom
-divergence minimizers, reference models with smooth terms, multilevel
-submodels with another family, and terms with more than one \code{mo()} call.
+Monotonic projections are supported for forward search. They are supported
+for submodels without group-level and smooth terms (with the default
+submodel fitter) and for multilevel submodels with the \code{\link[=gaussian]{gaussian()}} family
+(also in the latent projection). \pkg{projpred} throws an error before the
+search or the projection starts for L1 search, the augmented-data
+projection, custom divergence minimizers, reference models with smooth
+terms, multilevel submodels with another family, terms with more than one
+\code{mo()} call, and \code{mo()} calls inside other calls.
 With \code{options(projpred.mo_monotone = FALSE)}, the coefficients of the
 indicators are not constrained (so the projected effect of \code{x} is not
 necessarily monotonic), and these cases are supported. The option applies

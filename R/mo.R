@@ -575,6 +575,8 @@ check_mo_monotone <- function(refmodel, terms_, method = NULL) {
   if (!any(is_mo)) {
     return(invisible(TRUE))
   }
+  fml_ref <- refmodel$formula
+  exprs_ref <- split_term_exprs(labels(terms(reformulas::nobars(fml_ref))))
   has_grp <- any(vapply(exprs, function(e) {
     grepl("|", paste(deparse(e), collapse = ""), fixed = TRUE)
   }, logical(1)))
@@ -593,11 +595,13 @@ check_mo_monotone <- function(refmodel, terms_, method = NULL) {
   } else if (identical(method, "L1")) {
     "L1 search (forward search is supported)"
   } else if (has_grp && !mo_lmm_supported(refmodel$family)) {
-    paste("multilevel submodels with a non-Gaussian family (the latent",
-          "projection is supported)")
+    mo_lmm_unsupported_why()
   } else if (any(vapply(exprs[is_mo], n_mo_calls, integer(1)) > 1L)) {
     "terms with more than one mo() call"
-  } else if (any(vapply(exprs[is_mo], has_nested_mo, logical(1)))) {
+  } else if (any(vapply(c(exprs[is_mo], exprs_ref), has_nested_mo,
+                        logical(1)))) {
+    # (The terms of the reference model formula count here because the
+    # signs come from the projection onto the full model.)
     "mo() calls inside other calls"
   } else {
     NULL
@@ -634,7 +638,9 @@ check_mo_monotone <- function(refmodel, terms_, method = NULL) {
 #'   monotonic effect per column of the factor (for example `mo(x):fb`), and
 #'   an interaction with a numeric variable has one monotonic effect (for
 #'   example `mo(x):z`). Terms with only two levels have no simplex and are
-#'   left out.
+#'   left out, and so are terms with more than one `mo()` call. The
+#'   augmented-data projection is not supported. The function needs the
+#'   \pkg{posterior} package.
 #'
 #' @return For a `projection` object, a [posterior::draws_matrix()] with one
 #'   row per projected draw (weighted by the weights of the projected draws)
@@ -653,6 +659,9 @@ mo_effects <- function(object, ...) {
     stop("`object` must be of class `projection` (or a list of such objects).")
   }
   refm <- object$refmodel
+  if (refm$family$for_augdat) {
+    stop("mo_effects() does not support the augmented-data projection.")
+  }
   fml <- make_formula(object$predictor_terms, formula = refm$formula)
   fml_fixed <- reformulas::nobars(fml)
   fml_rhs <- stats::as.formula(call("~", fml_fixed[[length(fml_fixed)]]),
@@ -700,6 +709,13 @@ brms_rename <- function(x) {
     x <- gsub(pattern[i], replacement[i], x, fixed = TRUE)
   }
   return(x)
+}
+
+# The reason for the error if mo_lmm_supported() is `FALSE`.
+mo_lmm_unsupported_why <- function() {
+  paste("multilevel submodels with a non-Gaussian family (the latent",
+        "projection is supported) or with global option `projpred.PQL` or",
+        "`projpred.gaussian_not_as_generalized` changed from its default")
 }
 
 # Can the submodel fitters with family `family` apply the monotonicity

@@ -1035,11 +1035,13 @@ test_that(paste(
 })
 
 test_that(paste(
-  "without signs from the full model, monotonic projections use the signs",
-  "of the sums of the unconstrained coefficients (GLM and LMM submodels)"
+  "monotonic projections use the signs from the full model, and without them",
+  "the signs of the sums of the unconstrained coefficients (GLM and LMM",
+  "submodels)"
 ), {
   skip_if_not_installed("lme4")
-  opts_old <- options(projpred.warn_instable_projections = FALSE)
+  opts_old <- options(projpred.warn_instable_projections = FALSE,
+                      projpred.mo_monotone = TRUE)
   on.exit(options(opts_old), add = TRUE)
   cols_x <- paste0("mo(x)", 1:4)
   # `w` decreases with `x`, so the signs from the full model and the signs of
@@ -1052,27 +1054,37 @@ test_that(paste(
   for (nm in names(cases)) {
     refm <- mo_nonmono_refm(fml = cases[[nm]]$fml, c_w = 1, sd_g = 0.7,
                             c_h = 0.5)
-    prj <- with_mocked_bindings(
+    trms_full <- c(cases[[nm]]$trms, "w")
+    prj <- project(refm, predictor_terms = cases[[nm]]$trms, ndraws = 10,
+                   verbose = FALSE)
+    prj_sum <- with_mocked_bindings(
       project(refm, predictor_terms = cases[[nm]]$trms, ndraws = 10,
               verbose = FALSE),
       mo_full_signs = function(p_ref, ...) {
         matrix(numeric(), nrow = NCOL(p_ref$mu), ncol = 0)
       }
     )
-    opts_old2 <- options(projpred.mo_monotone = FALSE)
+    options(projpred.mo_monotone = FALSE)
     prj_unc <- project(refm, predictor_terms = cases[[nm]]$trms, ndraws = 10,
                        verbose = FALSE)
-    options(opts_old2)
+    prj_full <- project(refm, predictor_terms = trms_full, ndraws = 10,
+                        verbose = FALSE)
+    options(projpred.mo_monotone = TRUE)
     coefs_of <- function(p) {
       t(vapply(p$outdmin, function(f) mo_fit_coefs(f)[cols_x], numeric(4)))
     }
-    b_x <- coefs_of(prj)
     b_unc <- coefs_of(prj_unc)
     binding <- !is_mono(b_unc)
     expect_gt(sum(binding), 0)
     s_sum <- ifelse(rowSums(b_unc) >= 0, 1, -1)
-    expect_true(all(b_x[binding, ] * s_sum[binding] >= 0), info = nm)
+    s_full <- ifelse(rowSums(coefs_of(prj_full)) >= 0, 1, -1)
+    expect_true(all(s_full[binding] != s_sum[binding]), info = nm)
+    b_x <- coefs_of(prj)
     expect_true(all(is_mono(b_x)), info = nm)
+    expect_true(all(b_x[binding, ] * s_full[binding] >= 0), info = nm)
+    b_sum <- coefs_of(prj_sum)
+    expect_true(all(is_mono(b_sum)), info = nm)
+    expect_true(all(b_sum[binding, ] * s_sum[binding] >= 0), info = nm)
   }
 })
 
@@ -1082,7 +1094,8 @@ test_that(paste(
 ), {
   skip_if_not_installed("lme4")
   # (The submodels include the full model, for which projpred warns.)
-  opts_old <- options(projpred.warn_instable_projections = FALSE)
+  opts_old <- options(projpred.warn_instable_projections = FALSE,
+                      projpred.mo_monotone = TRUE)
   on.exit(options(opts_old), add = TRUE)
   cols_x <- paste0("mo(x)", 1:4)
   trms <- c("mo(x)", "z", "(1 | g)")
@@ -1094,10 +1107,10 @@ test_that(paste(
                      verbose = FALSE)
   fixefs <- t(vapply(prj_lat$outdmin, lme4::fixef, numeric(6)))
   expect_true(all(is_mono(fixefs[, cols_x])))
-  opts_old2 <- options(projpred.mo_monotone = FALSE)
+  options(projpred.mo_monotone = FALSE)
   prj_lat_unc <- project(refm_lat, predictor_terms = trms, ndraws = 10,
                          verbose = FALSE)
-  options(opts_old2)
+  options(projpred.mo_monotone = TRUE)
   fixefs_unc <- t(vapply(prj_lat_unc$outdmin, lme4::fixef, numeric(6)))
   expect_gt(sum(!is_mono(fixefs_unc[, cols_x])), 0)
   refm_bin <- mo_nonmono_refm(binomial(), fml = y ~ mo(x) + z + (1 | g),
@@ -1147,6 +1160,11 @@ test_that(paste(
                "do not support other submodel fitters")
   options(opts_old2)
   expect_error(check_mo_monotone(refm, c("z", "I(2 * mo(x))")),
+               "do not support mo\\(\\) calls inside other calls")
+  # A nested mo() call in the reference model formula (used for the signs
+  # from the full model), also if the search terms leave it out:
+  refm_n <- mo_nonmono_refm(fml = y ~ mo(x2) + I(2 * mo(x)))
+  expect_error(check_mo_monotone(refm_n, "mo(x2)"),
                "do not support mo\\(\\) calls inside other calls")
   # Terms that contain `+` (also without mo() terms):
   expect_silent(check_mo_monotone(refm, c("(1 + z | g)", "I(x2 + z)")))
@@ -1275,9 +1293,20 @@ test_that(paste(
   expect_equal(unname(stats::weights(eff)), prj$wdraws_prj)
   # Each simplex sums to 1 and has nonnegative elements:
   eff_m <- unclass(posterior::merge_chains(eff))
-  zeta_fa <- eff_m[, paste0("simo_fa:mox1[", 1:4, "]")]
-  expect_equal(unname(rowSums(zeta_fa)), rep(1, 3), tolerance = 1e-12)
-  expect_true(all(zeta_fa >= 0))
+  for (grp in c("fa:mox", "fb:mox", "z:mox2")) {
+    zeta <- eff_m[, grep(paste0("^simo_", grp, "1\\["), colnames(eff_m)),
+                  drop = FALSE]
+    expect_equal(unname(rowSums(zeta)), rep(1, 3), tolerance = 1e-12,
+                 info = grp)
+    expect_true(all(zeta >= 0), info = grp)
+  }
+  # With the main effects (contrast coding of `f`), each group is monotonic:
+  refm_c <- mo_nonmono_refm(fml = y ~ mo(x) * f)
+  prj_c <- project(refm_c, predictor_terms = c("mo(x)", "f", "mo(x):f"),
+                   ndraws = 10, verbose = FALSE)
+  b_c <- prj_coefs(prj_c)
+  expect_true(all(is_mono(b_c[, paste0("mo(x)", 1:4)])))
+  expect_true(all(is_mono(b_c[, paste0("mo(x)", 1:4, ":fb")])))
   # Draws whose monotonic effect is 0 (the sign from the full model is the
   # opposite of the sign of the effect in the submodel):
   refm_w <- mo_nonmono_refm(fml = y ~ mo(x) + z + w, c_w = 1)
@@ -1351,6 +1380,8 @@ test_that(paste(
   ))
   pred_train <- strip_attr(proj_linpred(prj, transform = FALSE)$pred)
   expect_equal(pred_train, thres_arr(sim$eta_fun(dat)), tolerance = 1e-3)
+  expect_error(mo_effects(prj),
+               "does not support the augmented-data projection")
   nd <- mo_newdata(sim)
   pred_new <- proj_linpred(prj, newdata = dat[rows_of(nd), ],
                            transform = FALSE)$pred

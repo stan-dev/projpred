@@ -53,10 +53,9 @@ proj_to_submodl <- function(predictor_terms, p_ref, refmodel,
         (!has_grp && !identical(getOption("projpred.glm_fitter",
                                           "fit_glm_ridge_callback"),
                                 "fit_glm_ridge_callback"))) {
-      stop_mo_unsupported(paste(
-        "additive submodels, other submodel fitters than the default one,",
-        "and multilevel submodels with a non-Gaussian family (the latent",
-        "projection is supported)"
+      stop_mo_unsupported(paste0(
+        "additive submodels, other submodel fitters than the default one, ",
+        "and ", mo_lmm_unsupported_why()
       ))
     }
     # The signs of the mo() terms in the projection onto the full model, for

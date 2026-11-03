@@ -75,10 +75,9 @@ divmin <- function(
       !identical(sdivmin, fit_glm_ridge_callback) &&
       !(identical(sdivmin, fit_glmer_callback) &&
         mo_lmm_supported(list(...)$family))) {
-    stop_mo_unsupported(paste(
-      "additive submodels, other submodel fitters than the default one,",
-      "and multilevel submodels with a non-Gaussian family (the latent",
-      "projection is supported)"
+    stop_mo_unsupported(paste0(
+      "additive submodels, other submodel fitters than the default one, ",
+      "and ", mo_lmm_unsupported_why()
     ))
   }
   formulas <- validate_response_formula(formula)
@@ -284,6 +283,10 @@ fit_glm_ridge_callback <- function(formula, data,
     terms_train <- xy$terms
     y <- xy$y
     mo_groups <- xy$mo_groups
+  }
+  if (!is.null(projpred_mo_signs) && is.null(mo_groups)) {
+    stop("Internal error: the sign groups of the mo() terms are missing. ",
+         "Please notify the package maintainer.")
   }
   # Exclude arguments from `...` which cannot be passed to glm_ridge():
   dot_args <- list(...)

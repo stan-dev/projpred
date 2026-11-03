@@ -41,5 +41,7 @@ As in \pkg{brms}, an interaction of a \code{mo()} term with a factor has one
 monotonic effect per column of the factor (for example \code{mo(x):fb}), and
 an interaction with a numeric variable has one monotonic effect (for
 example \code{mo(x):z}). Terms with only two levels have no simplex and are
-left out.
+left out, and so are terms with more than one \code{mo()} call. The
+augmented-data projection is not supported. The function needs the
+\pkg{posterior} package.
 }
