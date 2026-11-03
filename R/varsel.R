@@ -612,6 +612,9 @@ parse_args_varsel <- function(refmodel, method, refit_prj, nterms_max,
   if (!method %in% c("L1", "forward")) {
     stop("Unexpected value for argument `method`.")
   }
+  # Unsupported cases of monotonic projections of mo() terms, before the
+  # search starts:
+  check_mo_monotone(refmodel, terms_ = search_terms, method = method)
 
   stopifnot(!is.null(refit_prj))
   if (refit_prj && inherits(refmodel, "datafit")) {

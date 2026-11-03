@@ -153,8 +153,10 @@ mo_sign_groups <- function(fr, mm, skip_multi = FALSE) {
     is_mo_call(str2lang(nm))
   }, logical(1))
   if (any(has_mo & !is_mo)) {
-    stop("mo() calls inside other calls are not supported (variable ",
-         paste0("`", var_nms[has_mo & !is_mo], "`", collapse = ", "), ").")
+    stop_mo_unsupported(paste0(
+      "mo() calls inside other calls (variable ",
+      paste0("`", var_nms[has_mo & !is_mo], "`", collapse = ", "), ")"
+    ))
   }
   predvars <- attr(trms, "predvars")
   asgn <- attr(mm, "assign")
@@ -175,10 +177,10 @@ mo_sign_groups <- function(fr, mm, skip_multi = FALSE) {
       if (skip_multi) {
         next
       }
-      stop("Terms with more than one mo() call are not supported with ",
-           "monotonic projections (term `", colnames(fcts)[t_idx], "`). Use ",
-           "`options(projpred.mo_monotone = FALSE)` for unconstrained ",
-           "projections.")
+      stop_mo_unsupported(paste0(
+        "terms with more than one mo() call (term `", colnames(fcts)[t_idx],
+        "`)"
+      ))
     }
     var_nm <- var_nms[mo_vars]
     # The elements of the "predvars" call are the response and the variables,
@@ -357,10 +359,7 @@ mo_full_signs <- function(p_ref, refmodel, args_divmin) {
                                     y = p_ref$mu)
   fml_full <- flatten_formula(subset$formula)
   if (formula_contains_additive_terms(fml_full)) {
-    stop("Monotonic projections of mo() terms are not supported for ",
-         "reference models with smooth terms. Use ",
-         "`options(projpred.mo_monotone = FALSE)` for unconstrained ",
-         "projections.")
+    stop_mo_unsupported("reference models with smooth terms")
   }
   args_divmin$formula <- fml_full
   args_divmin$data <- subset$data
@@ -512,6 +511,100 @@ mo_cons_args <- function(fit, x, groups, signs_full, dot_args) {
     out$beta0_init <- fit$beta0 + sum(transf$shift * beta)
   }
   return(out)
+}
+
+# The number of mo() calls in the expression `expr`.
+n_mo_calls <- function(expr) {
+  if (!is.call(expr)) {
+    return(0L)
+  }
+  if (is_mo_call(expr)) {
+    return(1L)
+  }
+  return(sum(vapply(as.list(expr)[-1L], n_mo_calls, integer(1))))
+}
+
+# Throws an error that monotonic projections of mo() terms do not support
+# `why`.
+stop_mo_unsupported <- function(why) {
+  stop("Monotonic projections of mo() terms do not support ", why, ". Use ",
+       "`options(projpred.mo_monotone = FALSE)` for unconstrained projections.",
+       call. = FALSE)
+}
+
+# The terms (language objects) of the predictor terms `terms_` (character;
+# elements can be sums of terms, as in `search_terms`), without the
+# intercept.
+split_term_exprs <- function(terms_) {
+  split_plus <- function(e) {
+    if (is.call(e) && identical(e[[1L]], as.name("+")) && length(e) == 3L) {
+      return(c(split_plus(e[[2L]]), split_plus(e[[3L]])))
+    }
+    return(list(e))
+  }
+  exprs <- unlist(lapply(terms_, function(trm) split_plus(str2lang(trm))))
+  return(Filter(function(e) !(is.numeric(e) && e %in% c(0, 1)), exprs))
+}
+
+# Does the term `expr` contain a mo() call inside another call (other than an
+# interaction)?
+has_nested_mo <- function(expr) {
+  if (!is.call(expr) || is_mo_call(expr)) {
+    return(FALSE)
+  }
+  if (identical(expr[[1L]], as.name(":"))) {
+    return(any(vapply(as.list(expr)[-1L], has_nested_mo, logical(1))))
+  }
+  return(has_mo_call(expr))
+}
+
+# Throws an error at the start of a search or a projection for the cases that
+# monotonic projections of mo() terms do not support. `terms_` are the
+# predictor terms of the possible submodels (elements can be sums of terms, as
+# in `search_terms`), and `method` is the search method (`NULL` for
+# project()). For a search, the check is conservative: for example, it stops
+# for a group term with a non-Gaussian family also if no submodel combines it
+# with a mo() term.
+check_mo_monotone <- function(refmodel, terms_, method = NULL) {
+  if (!mo_monotone()) {
+    return(invisible(TRUE))
+  }
+  exprs <- split_term_exprs(terms_)
+  is_mo <- vapply(exprs, has_mo_call, logical(1))
+  if (!any(is_mo)) {
+    return(invisible(TRUE))
+  }
+  has_grp <- any(vapply(exprs, function(e) {
+    grepl("|", paste(deparse(e), collapse = ""), fixed = TRUE)
+  }, logical(1)))
+  why <- if (refmodel$family$for_augdat) {
+    "the augmented-data projection (the latent projection is supported)"
+  } else if (!identical(refmodel$div_minimizer, divmin)) {
+    "custom divergence minimizers"
+  } else if (formula_contains_additive_terms(refmodel$formula)) {
+    "reference models with smooth terms"
+  } else if ((!is.null(method) || !has_grp) &&
+             !identical(getOption("projpred.glm_fitter",
+                                  "fit_glm_ridge_callback"),
+                        "fit_glm_ridge_callback")) {
+    paste("other submodel fitters than the default one (global option",
+          "`projpred.glm_fitter`)")
+  } else if (identical(method, "L1")) {
+    "L1 search (forward search is supported)"
+  } else if (has_grp && !mo_lmm_supported(refmodel$family)) {
+    paste("multilevel submodels with a non-Gaussian family (the latent",
+          "projection is supported)")
+  } else if (any(vapply(exprs[is_mo], n_mo_calls, integer(1)) > 1L)) {
+    "terms with more than one mo() call"
+  } else if (any(vapply(exprs[is_mo], has_nested_mo, logical(1)))) {
+    "mo() calls inside other calls"
+  } else {
+    NULL
+  }
+  if (!is.null(why)) {
+    stop_mo_unsupported(why)
+  }
+  return(invisible(TRUE))
 }
 
 # Can the submodel fitters with family `family` apply the monotonicity

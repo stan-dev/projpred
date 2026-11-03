@@ -75,11 +75,11 @@ divmin <- function(
       !identical(sdivmin, fit_glm_ridge_callback) &&
       !(identical(sdivmin, fit_glmer_callback) &&
         mo_lmm_supported(list(...)$family))) {
-    stop("Monotonic projections of mo() terms are currently only supported ",
-         "for non-additive submodels with the default submodel fitter, and ",
-         "for multilevel submodels only with the Gaussian family (also in ",
-         "the latent projection). Use `options(projpred.mo_monotone = ",
-         "FALSE)` for unconstrained projections.")
+    stop_mo_unsupported(paste(
+      "additive submodels, other submodel fitters than the default one,",
+      "and multilevel submodels with a non-Gaussian family (the latent",
+      "projection is supported)"
+    ))
   }
   formulas <- validate_response_formula(formula)
   if (!is.null(projpred_mo_signs) &&

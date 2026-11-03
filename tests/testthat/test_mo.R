@@ -547,6 +547,11 @@ test_that(paste(
   sim <- mo_sim(D = 11)
   nd <- sim$dat[sim$dat$x <= 5, , drop = FALSE][1:8, ]
   refm <- mo_refm(sim, y_gauss ~ mo(x) + z + w)
+  # Monotonic projections do not support L1 search:
+  expect_error(varsel(refm, method = "L1", verbose = FALSE),
+               "do not support L1 search")
+  opts_old <- options(projpred.mo_monotone = FALSE)
+  on.exit(options(opts_old), add = TRUE)
   vs <- varsel(refm, method = "L1", refit_prj = FALSE, seed = 3906,
                verbose = FALSE)
   rk <- ranking(vs)$fulldata
@@ -566,6 +571,9 @@ test_that("interactions of mo() terms work in forward and L1 search", {
   rk_fw <- ranking(vs_fw)$fulldata
   expect_setequal(rk_fw, c("mo(x)", "z", "mo(x):z"))
   expect_identical(rk_fw[3], "mo(x):z")
+  # (L1 search only with unconstrained projections.)
+  opts_old <- options(projpred.mo_monotone = FALSE)
+  on.exit(options(opts_old), add = TRUE)
   vs_l1 <- varsel(refm, method = "L1", seed = 3906, verbose = FALSE)
   expect_setequal(ranking(vs_l1)$fulldata, c("mo(x)", "z", "mo(x):z"))
 })
@@ -1096,7 +1104,103 @@ test_that(paste(
                               sd_g = 0.7, c_h = 0.5)
   expect_error(
     project(refm_bin, predictor_terms = trms, ndraws = 4, verbose = FALSE),
-    "for multilevel submodels only with the Gaussian family"
+    "do not support multilevel submodels with a non-Gaussian family"
+  )
+})
+
+test_that(paste(
+  "monotonic projections throw errors for unsupported cases before the",
+  "search or the projection starts"
+), {
+  opts_old <- options(projpred.warn_additive_experimental = FALSE,
+                      projpred.warn_instable_projections = FALSE,
+                      projpred.mo_monotone = TRUE)
+  on.exit(options(opts_old), add = TRUE)
+  # get_refdist() runs at the start of each search and projection:
+  expect_error_early <- function(expr, msg) {
+    with_mocked_bindings(
+      expect_error(expr, msg),
+      get_refdist = function(...) stop("The search started.")
+    )
+  }
+  refm_s <- mo_nonmono_refm(fml = y ~ mo(x) + s(z))
+  expect_error_early(varsel(refm_s, verbose = FALSE),
+                     "do not support reference models with smooth terms")
+  expect_error_early(project(refm_s, predictor_terms = "mo(x)",
+                             verbose = FALSE),
+                     "do not support reference models with smooth terms")
+  refm <- mo_nonmono_refm()
+  expect_error_early(varsel(refm, method = "L1", verbose = FALSE),
+                     "do not support L1 search")
+  refm_c <- refm
+  refm_c$div_minimizer <- function(...) divmin(...)
+  expect_error_early(varsel(refm_c, verbose = FALSE),
+                     "do not support custom divergence minimizers")
+  opts_old2 <- options(projpred.glm_fitter = "fit_glm_callback")
+  on.exit(options(opts_old2), add = TRUE)
+  expect_error_early(varsel(refm, verbose = FALSE),
+                     "do not support other submodel fitters")
+  # Multilevel submodels in project() do not use this fitter:
+  expect_silent(check_mo_monotone(refm, c("mo(x)", "(1 | g)")))
+  expect_error(check_mo_monotone(refm, c("mo(x)", "(1 | g)"),
+                                 method = "forward"),
+               "do not support other submodel fitters")
+  options(opts_old2)
+  expect_error(check_mo_monotone(refm, c("z", "I(2 * mo(x))")),
+               "do not support mo\\(\\) calls inside other calls")
+  # Terms that contain `+` (also without mo() terms):
+  expect_silent(check_mo_monotone(refm, c("(1 + z | g)", "I(x2 + z)")))
+  expect_silent(check_mo_monotone(refm, c("mo(x) + I(x2 + z)", "1")))
+  refm_ia <- mo_nonmono_refm(fml = y ~ mo(x) + mo(x2) + mo(x):mo(x2))
+  expect_error_early(varsel(refm_ia, verbose = FALSE),
+                     "do not support terms with more than one mo\\(\\) call")
+  refm_bin <- mo_nonmono_refm(binomial(), fml = y ~ mo(x) + z + (1 | g),
+                              sd_g = 0.7, c_h = 0.5)
+  expect_error_early(
+    varsel(refm_bin, verbose = FALSE),
+    "do not support multilevel submodels with a non-Gaussian family"
+  )
+  # Without such terms in `search_terms`, the search runs:
+  vs_ia <- varsel(refm_ia, search_terms = c("mo(x)", "mo(x2)"),
+                  nclusters = 2, nclusters_pred = 3, seed = 3906,
+                  verbose = FALSE)
+  expect_setequal(ranking(vs_ia)$fulldata, c("mo(x)", "mo(x2)"))
+  # A reference model without mo() terms, with a term that contains `+`:
+  refm_i <- mo_nonmono_refm(fml = y ~ I(x2 + z) + z)
+  vs_i <- varsel(refm_i, nclusters = 2, nclusters_pred = 3, seed = 3906,
+                 verbose = FALSE)
+  expect_setequal(ranking(vs_i)$fulldata, c("I(x2 + z)", "z"))
+  # With unconstrained projections, the checks do not apply:
+  options(projpred.mo_monotone = FALSE)
+  expect_s3_class(project(refm_s, predictor_terms = "mo(x)", ndraws = 4,
+                          verbose = FALSE), "projection")
+})
+
+test_that(paste(
+  "the checks in proj_to_submodl() stop unsupported monotonic projections",
+  "also without the early checks"
+), {
+  opts_old <- options(projpred.warn_instable_projections = FALSE)
+  on.exit(options(opts_old), add = TRUE)
+  refm_bin <- mo_nonmono_refm(binomial(), fml = y ~ mo(x) + z + (1 | g),
+                              sd_g = 0.7, c_h = 0.5)
+  expect_error(
+    with_mocked_bindings(
+      project(refm_bin, predictor_terms = c("mo(x)", "z", "(1 | g)"),
+              ndraws = 4, verbose = FALSE),
+      check_mo_monotone = function(...) invisible(TRUE)
+    ),
+    "multilevel submodels with a non-Gaussian family"
+  )
+  refm_c <- mo_nonmono_refm()
+  refm_c$div_minimizer <- function(...) divmin(...)
+  expect_error(
+    with_mocked_bindings(
+      project(refm_c, predictor_terms = c("mo(x)", "z"), ndraws = 4,
+              verbose = FALSE),
+      check_mo_monotone = function(...) invisible(TRUE)
+    ),
+    "custom divergence minimizers"
   )
 })
 
@@ -1160,11 +1264,15 @@ test_that(paste(
     augdat_args_link = list(link = "logit"),
     augdat_args_ilink = list(link = "logit")
   )
-  # Monotonic projections do not support the augmented-data projection:
-  expect_error(
-    project(refm, predictor_terms = c("mo(x)", "mo(f)", "z"), ndraws = 4,
-            verbose = FALSE),
-    "not supported for the augmented-data projection"
+  # Monotonic projections do not support the augmented-data projection (the
+  # error comes before the projection starts, that is, before get_refdist()):
+  with_mocked_bindings(
+    expect_error(
+      project(refm, predictor_terms = c("mo(x)", "mo(f)", "z"), ndraws = 4,
+              verbose = FALSE),
+      "do not support the augmented-data projection"
+    ),
+    get_refdist = function(...) stop("The projection started.")
   )
   opts_old <- options(projpred.mo_monotone = FALSE)
   on.exit(options(opts_old), add = TRUE)

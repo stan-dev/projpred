@@ -41,11 +41,10 @@ proj_to_submodl <- function(predictor_terms, p_ref, refmodel,
   if (mo_monotone() && has_mo_term(unique(unlist(predictor_terms)))) {
     if (refmodel$family$for_augdat ||
         !identical(refmodel$div_minimizer, divmin)) {
-      stop("Monotonic projections of mo() terms are not supported for the ",
-           "augmented-data projection and for custom divergence minimizers. ",
-           "Use the latent projection or ",
-           "`options(projpred.mo_monotone = FALSE)` for unconstrained ",
-           "projections.")
+      stop_mo_unsupported(paste(
+        "the augmented-data projection (the latent projection is supported)",
+        "and custom divergence minimizers"
+      ))
     }
     trms_sub <- extract_terms_response(fml_divmin)
     has_grp <- length(trms_sub$group_terms) > 0
@@ -54,11 +53,11 @@ proj_to_submodl <- function(predictor_terms, p_ref, refmodel,
         (!has_grp && !identical(getOption("projpred.glm_fitter",
                                           "fit_glm_ridge_callback"),
                                 "fit_glm_ridge_callback"))) {
-      stop("Monotonic projections of mo() terms are currently only supported ",
-           "for non-additive submodels with the default submodel fitter, and ",
-           "for multilevel submodels only with the Gaussian family (also in ",
-           "the latent projection). Use `options(projpred.mo_monotone = ",
-           "FALSE)` for unconstrained projections.")
+      stop_mo_unsupported(paste(
+        "additive submodels, other submodel fitters than the default one,",
+        "and multilevel submodels with a non-Gaussian family (the latent",
+        "projection is supported)"
+      ))
     }
     # The signs of the mo() terms in the projection onto the full model, for
     # the monotonicity constraint:
