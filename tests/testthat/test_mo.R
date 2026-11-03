@@ -680,12 +680,14 @@ is_mono <- function(b, tol = 1e-8) {
 
 # The number of calls of the function `fun` of projpred while `expr` runs
 # (with `non_null = TRUE`: of the calls that return a value other than
-# `NULL`).
+# `NULL`). Element `n_all` is the number of all calls.
 count_calls <- function(expr, fun, non_null = FALSE) {
   n <- 0
+  n_all <- 0
   fun_orig <- get(fun, envir = asNamespace("projpred"))
   wrapper <- function(...) {
     out <- fun_orig(...)
+    n_all <<- n_all + 1
     if (!non_null || !is.null(out)) {
       n <<- n + 1
     }
@@ -695,7 +697,7 @@ count_calls <- function(expr, fun, non_null = FALSE) {
                  c(list(code = substitute(expr)), stats::setNames(list(wrapper),
                                                                   fun)),
                  envir = parent.frame())
-  list(value = out, n = n)
+  list(value = out, n = n, n_all = n_all)
 }
 
 test_that(paste(
@@ -1425,4 +1427,51 @@ test_that(paste(
               nclusters_pred = 6, seed = 3906, verbose = FALSE),
     "outside the range of the training data"
   )
+})
+
+test_that(paste(
+  "the Gaussian cross-product computations are not used for monotonic",
+  "projections of mo() terms"
+), {
+  opts_old <- options(projpred.mo_monotone = TRUE,
+                      projpred.search_gauss_crossprod = TRUE,
+                      projpred.warn_psis = FALSE)
+  on.exit(options(opts_old), add = TRUE)
+  # The effect of `x` in the submodels without `w` is not monotonic:
+  refm <- mo_nonmono_refm(fml = y ~ mo(x) + z + w, c_w = 1)
+  args_vs <- list(refm, nclusters = 5, nclusters_pred = 10, seed = 3317,
+                  verbose = FALSE)
+  # The PSIS warnings come from the small number of draws:
+  cv_quiet <- function() {
+    muffle_warning(muffle_warning(cv_varsel(
+      refm, cv_method = "LOO", validate_search = TRUE, nloo = 5,
+      nclusters = 3, ndraws_pred = 20, seed = 5821, verbose = FALSE
+    ), "Some Pareto k diagnostic values are too high"),
+    "Not enough tail samples to fit the generalized Pareto distribution")
+  }
+  # The search and the LOO CV evaluation call the cross-product functions,
+  # which return `NULL` (`n_used`) only for monotonic projections. The results
+  # must equal those without the cross-product computations.
+  for (mono in c(TRUE, FALSE)) {
+    info_crr <- paste("mo_monotone:", mono)
+    options(projpred.mo_monotone = mono,
+            projpred.search_gauss_crossprod = TRUE)
+    cnt_vs <- count_calls(do.call(varsel, args_vs), "search_forward_gauss",
+                          non_null = TRUE)
+    cnt_cv <- count_calls(cv_quiet(), "perf_eval_gauss", non_null = TRUE)
+    expect_identical(cnt_vs$n_all, 1, info = info_crr)
+    expect_identical(cnt_cv$n_all, 5, info = info_crr)
+    n_used <- if (mono) 0 else 1
+    expect_identical(cnt_vs$n, n_used, info = info_crr)
+    expect_identical(cnt_cv$n, 5 * n_used, info = info_crr)
+    options(projpred.search_gauss_crossprod = FALSE)
+    vs_dw <- do.call(varsel, args_vs)
+    cv_dw <- cv_quiet()
+    expect_identical(ranking(cnt_vs$value), ranking(vs_dw), info = info_crr)
+    expect_equal(performances(cnt_vs$value, deltas = FALSE),
+                 performances(vs_dw, deltas = FALSE), info = info_crr)
+    expect_identical(ranking(cnt_cv$value), ranking(cv_dw), info = info_crr)
+    expect_equal(performances(cnt_cv$value, deltas = FALSE),
+                 performances(cv_dw, deltas = FALSE), info = info_crr)
+  }
 })

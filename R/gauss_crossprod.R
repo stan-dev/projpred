@@ -51,12 +51,15 @@ gauss_crossprod_regul <- function(refmodel, divmin_args) {
 # several terms, for example "x1 + x2 + x1:x2") for the training data of
 # `refmodel`, and its cross-products. Returns `NULL` for group-level or smooth
 # terms, a factor in an interaction term (its dummy coding depends on the other
-# terms of a submodel), missing values, or a zero-variance column.
+# terms of a submodel), missing values, or a zero-variance column. Also returns
+# `NULL` for mo() terms with monotonic projections (these need the sign
+# constraints of the submodel fitters). has_mo_term() gets the unsplit strings
+# because str2lang() can fail for a part of a term (for example "I(x").
 gauss_crossprod_design <- function(refmodel, term_strings, regul) {
   terms_all <- setdiff(unique(trimws(unlist(
     strsplit(term_strings, "+", fixed = TRUE)
   ))), "1")
-  if (length(terms_all) == 0) {
+  if (length(terms_all) == 0 || (mo_monotone() && has_mo_term(term_strings))) {
     return(NULL)
   }
   trms <- extract_terms_response(make_formula(terms_all))
