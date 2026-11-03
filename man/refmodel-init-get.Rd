@@ -236,7 +236,8 @@ have the same sign. If the unconstrained projection of a projected draw (or
 cluster) is monotonic, \pkg{projpred} keeps it. Otherwise, the sign is the
 sign of the sum of the coefficients of the same term (same name and same
 coding of its factors) in the unconstrained projection of the same draw
-onto the full model (all predictor terms of \code{formula}). In \code{mo(x) * z}, for example, the full-model term \code{mo(x)} is
+onto the full model (all predictor terms of \code{formula}). In \code{mo(x) * z},
+for example, the full-model term \code{mo(x)} is
 the effect of \code{x} at \code{z = 0}. If the full model does not have the term
 (possible with custom \code{search_terms}) or if the projection onto the full
 model fails, the sign is the sign of the sum of the unconstrained
