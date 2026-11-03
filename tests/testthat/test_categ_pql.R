@@ -57,7 +57,8 @@ expect_pql_like_mblogit <- function(fit, fit_ref, tol = 1e-4, tol_vc = tol) {
   expect_equal(fit$deviance, fit_ref$deviance, tolerance = tol)
   expect_identical(fit$random, fit_ref$random)
   expect_identical(fit$D, fit_ref$D)
-  nd <- fit_ref$data[1:7, ]
+  # predict.mmblogit() fails for factor levels that the fit does not know:
+  nd <- droplevels(fit_ref$data[1:7, ])
   expect_equal(predict(fit, newdata = nd, conditional = FALSE),
                predict(fit_ref, newdata = nd, conditional = FALSE),
                tolerance = tol)
@@ -126,13 +127,109 @@ test_that("categ_pql_fit() handles zero weights, factors and character groups", 
   dat$f <- factor(rep(c("u", "v"), length.out = nrow(dat)),
                   levels = c("u", "v", "unused"))
   dat$g_chr <- as.character(dat$g)
-  fit <- suppressWarnings(
+  fit <- with_inner_warnings_only(
     categ_pql_fit(P ~ x1 + f, random = list(~ 1 | g_chr), data = dat)
   )
-  expect_s3_class(fit, "mmblogit")
   expect_identical(fit$xlevels, list(f = c("u", "v")))
   expect_identical(levels(fit$groups$g_chr), sort(unique(dat$g_chr)))
-  expect_true(all(is.finite(fit$coefficients)))
+  fit_ref <- mblogit_fixed(P ~ x1 + f, random = ~ 1 | g_chr, data = dat)
+  expect_pql_like_mblogit(fit, fit_ref)
+})
+
+test_that("categ_pql_fit() agrees with mblogit() for two categories", {
+  # One logit, so the group-level covariance blocks are 1 x 1:
+  dat <- categ_pql_test_data()
+  dat$P <- cbind(a = dat$P[, "a"], b = dat$P[, "b"] + dat$P[, "c"])
+  fit_ref <- mblogit_fixed(P ~ x1 + x2, random = ~ 1 | g, data = dat)
+  fit <- with_inner_warnings_only(
+    categ_pql_fit(P ~ x1 + x2, random = list(~ 1 | g), data = dat)
+  )
+  expect_identical(rownames(fit$random.effects[[1]]), levels(dat$g))
+  expect_pql_like_mblogit(fit, fit_ref)
+})
+
+# categ_pql_inner() or categ_pql_eval() fails at call `k`.
+fail_at <- function(fun, k, fail) {
+  # Evaluate `fun` now, before the mock replaces the binding:
+  force(fun)
+  n_calls <- 0L
+  function(...) {
+    n_calls <<- n_calls + 1L
+    if (n_calls == k) return(fail(...))
+    fun(...)
+  }
+}
+
+test_that("categ_pql_fit() steps back after numeric problems", {
+  dat <- categ_pql_test_data()
+  args <- list(formula = P ~ x1 + x2, random = list(~ 1 | g), data = dat)
+  fit_1 <- suppressWarnings(do.call(categ_pql_fit, c(args, list(maxit = 1))))
+  inner_fail <- function(...) {
+    categ_pql_numeric(stop("singular test matrix"))
+  }
+  # In the first iteration, the caller falls back to mblogit():
+  local({
+    local_mocked_bindings(categ_pql_inner = fail_at(categ_pql_inner, 1,
+                                                    inner_fail))
+    expect_null(do.call(categ_pql_fit, args))
+  })
+  # Later, the fit steps back to the parameters of the previous iteration:
+  local({
+    local_mocked_bindings(categ_pql_inner = fail_at(categ_pql_inner, 2,
+                                                    inner_fail))
+    msgs <- character()
+    fit <- withCallingHandlers(do.call(categ_pql_fit, args),
+                               warning = function(w) {
+                                 msgs <<- c(msgs, conditionMessage(w))
+                                 invokeRestart("muffleWarning")
+                               })
+    expect_true(any(grepl(paste0("^Numeric problems in inner iteration ",
+                                 "\\(singular test matrix\\), stepping back"),
+                          msgs)))
+    expect_true(any(msgs == "Algorithm stopped without convergence"))
+    expect_false(fit$converged)
+    expect_equal(fit$coefficients, fit_1$coefficients)
+    expect_equal(fit$linear.predictors, fit_1$linear.predictors)
+  })
+  # Other errors are not caught:
+  local({
+    local_mocked_bindings(categ_pql_inner = fail_at(
+      categ_pql_inner, 2, function(...) stop("programming error")
+    ))
+    expect_error(suppressWarnings(do.call(categ_pql_fit, args)),
+                 "programming error")
+  })
+})
+
+test_that("categ_pql_fit() backs up after a non-finite deviance", {
+  dat <- categ_pql_test_data()
+  args <- list(formula = P ~ x1 + x2, random = list(~ 1 | g), data = dat)
+  fit_1 <- suppressWarnings(do.call(categ_pql_fit, c(args, list(maxit = 1))))
+  eval_orig <- categ_pql_eval
+  eval_inf <- function(...) {
+    res <- eval_orig(...)
+    res$deviance <- Inf
+    res
+  }
+  local({
+    local_mocked_bindings(categ_pql_eval = fail_at(categ_pql_eval, 1,
+                                                   eval_inf))
+    expect_null(with_inner_warnings_only(do.call(categ_pql_fit, args)))
+  })
+  local({
+    local_mocked_bindings(categ_pql_eval = fail_at(categ_pql_eval, 2,
+                                                   eval_inf))
+    msgs <- character()
+    fit <- withCallingHandlers(do.call(categ_pql_fit, args),
+                               warning = function(w) {
+                                 msgs <<- c(msgs, conditionMessage(w))
+                                 invokeRestart("muffleWarning")
+                               })
+    expect_true(any(msgs == "Non-finite deviance, backing up"))
+    expect_false(fit$converged)
+    expect_equal(fit$coefficients, fit_1$coefficients)
+    expect_equal(fit$linear.predictors, fit_1$linear.predictors)
+  })
 })
 
 test_that("categ_pql_fit() returns NULL for cases left to mblogit()", {
@@ -178,6 +275,16 @@ test_that("fit_categ_mlvl() uses categ_pql_fit() for augmented data", {
     do.call(fit_categ_mlvl, c(args, list(inner.optimizer = "BFGS")))
   )
   expect_identical(fit_mb$response.type, "factor")
+  local({
+    local_mocked_bindings(mblogit = function(...) {
+      cat("converged\n")
+      "mblogit() called"
+    }, .package = "mclogit")
+    expect_identical(
+      do.call(fit_categ_mlvl, c(args, list(break.on.increase = TRUE))),
+      "mblogit() called"
+    )
+  })
   # The parts of the fit that projpred uses have the same structure:
   expect_identical(names(get_subparams(fit, nm_scheme = "brms")),
                    names(get_subparams(fit_mb, nm_scheme = "brms")))

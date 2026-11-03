@@ -10,8 +10,8 @@
 #   group-level slopes), which stops nlminb() early.
 # * The data have one row per observation and a response matrix of the
 #   augmented-data weights (see categ_mat_resp()).  The approximate deviance
-#   then differs from the one of the augmented data by the constant
-#   -2 sum(W * log(W / rowSums(W))).
+#   of the augmented data is this deviance plus the constant
+#   -2 sum(W * log(W / rowSums(W))) >= 0.
 # The returned object has the elements of an `mmblogit` object that projpred
 # and mclogit:::predict.mmblogit() use.
 
@@ -71,11 +71,13 @@ categ_pql_random <- function(formula) {
 # iteration); the caller then uses mclogit::mblogit().
 categ_pql_fit <- function(formula, random, data, epsilon = 1e-8, maxit = 25,
                           maxit.inner = 100, max_cells = 1e7) {
-  if (!is.numeric(epsilon) || epsilon <= 0) {
-    stop("`epsilon` must be > 0.")
+  if (!is.numeric(epsilon) || length(epsilon) != 1 || !is.finite(epsilon) ||
+      epsilon <= 0) {
+    stop("`epsilon` must be a single number > 0.")
   }
-  if (!is.numeric(maxit) || maxit <= 0) {
-    stop("`maxit` must be > 0.")
+  if (!is.numeric(maxit) || length(maxit) != 1 || !is.finite(maxit) ||
+      maxit < 1) {
+    stop("`maxit` must be a single number >= 1.")
   }
   # predict.mmblogit() is registered when the namespace is loaded:
   loadNamespace("mclogit")
@@ -130,7 +132,10 @@ categ_pql_fit <- function(formula, random, data, epsilon = 1e-8, maxit = 25,
     g <- rep(as.factor(mf[[grp_nms[k]]]), each = ncat)
     d[k] <- ncol(ZDk)
     m[k] <- nlevels(g)
-    if (as.numeric(nlong) * sum(d * m) > max_cells) return(NULL)
+    q_k <- sum(d[seq_len(k)] * m[seq_len(k)])
+    if (as.numeric(nlong) * q_k > max_cells || as.numeric(q_k)^2 > max_cells) {
+      return(NULL)
+    }
     Zfull <- matrix(0, nrow = nlong, ncol = m[k] * d[k])
     jk <- rep((as.integer(g) - 1L) * d[k], d[k]) +
       rep(seq_len(d[k]), each = nlong)
@@ -167,21 +172,23 @@ categ_pql_fit <- function(formula, random, data, epsilon = 1e-8, maxit = 25,
     y_star <- eta + (y - prb) / prb
     prev_last_parms <- last_parms
     last_parms <- parms
-    parms <- try(categ_pql_inner(
+    parms <- tryCatch(categ_pql_inner(
       parms, y_star = y_star, X = XD, Z = Z, z_idx = z_idx, d = d, m = m,
       w = w, prb = prb, s = s, maxit_inner = maxit.inner
-    ), silent = TRUE)
+    ), categ_pql_numeric_error = function(e) e)
     step_back <- FALSE
-    if (inherits(parms, "try-error")) {
+    if (inherits(parms, "categ_pql_numeric_error")) {
       if (is.null(fit)) return(NULL)
+      msg <- conditionMessage(parms)
       if (length(prev_last_deviance) && last_deviance > prev_last_deviance &&
           length(prev_last_parms$alpha)) {
-        warning("Numeric problems in inner iteration and previous step ",
-                "increased deviance, stepping back twice", call. = FALSE)
+        warning("Numeric problems in inner iteration (", msg, ") and ",
+                "previous step increased deviance, stepping back twice",
+                call. = FALSE)
         parms <- prev_last_parms
       } else {
-        warning("Numeric problems in inner iteration, stepping back",
-                call. = FALSE)
+        warning("Numeric problems in inner iteration (", msg, "), stepping ",
+                "back", call. = FALSE)
         parms <- last_parms
       }
       step_back <- TRUE
@@ -218,7 +225,9 @@ categ_pql_fit <- function(formula, random, data, epsilon = 1e-8, maxit = 25,
   if (any(prb < eps) || any(1 - prb < eps)) {
     warning("Fitted probabilities numerically 0 or 1 occurred", call. = FALSE)
   }
-  if (fit$deviance < 0) {
+  # The check of mclogit, on the deviance scale of the augmented rows:
+  dev_const <- -2 * sum(Y[Y > 0] * log(y_rel[Y > 0]))
+  if (fit$deviance + dev_const < 0) {
     warning("Approximate deviance is negative.\nYou might be overfitting ",
             "your data or the group size is too small.", call. = FALSE)
   }
@@ -292,40 +301,56 @@ categ_pql_inner <- function(parms, y_star, X, Z, z_idx, d, m, w, prb, s,
   yWy <- G[iy, iy]
 
   alpha_start <- parms$alpha
-  if (!length(alpha_start)) alpha_start <- solve(XWX, XWy)
+  if (!length(alpha_start)) {
+    alpha_start <- categ_pql_numeric(solve(XWX, XWy))
+  }
   Phi_start <- parms$Phi
   if (!length(Phi_start)) {
     r <- drop(y_star - X %*% alpha_start)
-    Phi_start <- lapply(seq_along(d), function(k) {
+    Phi_start <- categ_pql_numeric(lapply(seq_along(d), function(k) {
       Zk <- Z[, z_idx[[k]], drop = FALSE]
       b_k <- solve(crossprod(Zk) + diag(ncol(Zk)), crossprod(Zk, r))
       S_k <- tcrossprod(matrix(b_k, nrow = d[k]))
       if (qr(S_k)$rank < d[k]) S_k <- diag(diag(S_k), nrow = d[k])
       S_k / (m[k] - 1)
-    })
+    }))
   }
-  lambda_start <- unlist(lapply(Phi_start, function(Phi_k) {
+  lambda_start <- categ_pql_numeric(unlist(lapply(Phi_start, function(Phi_k) {
     L <- chol(solve(Phi_k))
     L[upper.tri(L, diag = TRUE)]
-  }))
+  })))
   pll <- categ_pql_objective(XWX = XWX, XWy = XWy, ZWX = ZWX, ZWZ = ZWZ,
                              ZWy = ZWy, yWy = yWy, z_idx = z_idx, d = d, m = m)
   devfunc <- function(lambda) -2 * pll(lambda)$logLik
   gradfunc <- function(lambda) -2 * pll(lambda, gradient = TRUE)$gradient
-  opt <- stats::nlminb(lambda_start, objective = devfunc, gradient = gradfunc,
-                       control = list(iter.max = maxit_inner))
+  opt <- categ_pql_numeric(stats::nlminb(
+    lambda_start, objective = devfunc, gradient = gradfunc,
+    control = list(iter.max = maxit_inner)
+  ))
   if (opt$convergence != 0) {
     warning(sprintf("Inner iterations did not converge - nlminb message: %s",
                     opt$message), call. = FALSE)
   }
-  res <- pll(opt$par)
+  res <- categ_pql_numeric(pll(opt$par))
   if (!is.finite(res$logLik)) {
-    stop("The inner PQL objective is not finite.")
+    categ_pql_numeric(stop("the inner PQL objective is not finite"))
   }
   return(list(alpha = res$alpha, b = res$b, Psi = res$Psi,
-              Phi = lapply(res$Psi, solve), lambda = opt$par,
-              log_det_iSigma = res$log_det_iSigma,
+              Phi = categ_pql_numeric(lapply(res$Psi, solve)),
+              lambda = opt$par, log_det_iSigma = res$log_det_iSigma,
               log_det_H = res$log_det_H))
+}
+
+# Evaluate `expr` and turn an error into an error of class
+# `categ_pql_numeric_error`, which the outer PQL loop handles (numerical
+# failures such as a singular matrix).
+categ_pql_numeric <- function(expr) {
+  tryCatch(expr, error = function(e) {
+    stop(structure(
+      class = c("categ_pql_numeric_error", "error", "condition"),
+      list(message = conditionMessage(e), call = NULL)
+    ))
+  })
 }
 
 # The pseudo log-likelihood of the inner fit as a function of `lambda` (the

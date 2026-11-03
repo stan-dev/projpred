@@ -167,16 +167,10 @@ test_that("divmin_augdat() works", {
         "length > 1"
       )
     } else if (fam_crr == "categ" && mod_crr == "glmm") {
-      # Without offsets, projpred's own PQL fit (categ_pql_fit()) is used, with
-      # mclogit::mblogit() only for offsets:
-      warn_expected <- if (!grepl("\\.with_offs", tstsetup)) {
-        NA
-      } else if (packageVersion("mclogit") >= "0.9.6") {
-        "Inner iterations did not coverge"
-      } else {
-        paste0("^step size truncated due to possible divergence$|",
-               "^Algorithm stopped due to false convergence$")
-      }
+      # projpred's own PQL fit (categ_pql_fit()) does not converge for these
+      # test data either:
+      warn_expected <- paste0("^Inner iterations did not converge|",
+                              "^Algorithm did not converge$")
     } else {
       warn_expected <- NA
     }

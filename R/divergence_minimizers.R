@@ -1177,14 +1177,16 @@ fit_categ_mlvl <- function(formula, projpred_formula_no_random,
   # mclogit::mblogit() (see categ_pql_fit()), unless global option
   # `projpred.categ_mlvl_mblogit` is `TRUE` or `...` has other mblogit()
   # settings than the ones that categ_pql_fit() supports.  `avoid.increase`
-  # has no effect in mclogit's PQL algorithm:
+  # and `break.on.infinite` have no effect in mclogit's PQL algorithm, and
+  # `trace` and `trace.inner` only print the iterations:
   pql_args <- c("epsilon", "maxit", "maxit.inner")
-  no_effect_args <- c("trace", "trace.inner", "avoid.increase")
-  break_args <- c("break.on.increase", "break.on.infinite",
-                  "break.on.negative")
+  no_effect_args <- c("trace", "trace.inner", "avoid.increase",
+                      "break.on.infinite")
+  break_args <- c("break.on.increase", "break.on.negative")
   if (!getOption("projpred.categ_mlvl_mblogit", FALSE) && !length(offs_attr) &&
       all(names(dot_args) %in% c(pql_args, no_effect_args, break_args)) &&
-      !any(unlist(dot_args[intersect(names(dot_args), break_args)]))) {
+      !any(vapply(dot_args[intersect(names(dot_args), break_args)],
+                  isTRUE, logical(1)))) {
     mat_resp <- categ_mat_resp(projpred_formula_no_random, data, weights)
     if (!is.null(mat_resp)) {
       fitobj <- do.call(categ_pql_fit, c(
