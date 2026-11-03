@@ -36,6 +36,16 @@ test_that("fit_cumul_mlvl() uses ucminf() with forward differences", {
   expect_equal(fit$coefficients, fit_nlminb$coefficients, tolerance = 1e-3)
 })
 
+test_that("fit_cumul_mlvl() refits with nlminb() if ucminf() does not converge", {
+  skip_if_not_installed("ordinal")
+  skip_if_not_installed("ucminf")
+  local_mocked_bindings(check_conv_s = function(fit_s) {
+    !identical(fit_s$control$method, "ucminf")
+  })
+  fit <- fit_clmm_test(clmm_test_data())
+  expect_identical(fit$control$method, "nlminb")
+})
+
 test_that("check_conv_s() accepts ucminf() fits by code and gradient", {
   skip_if_not_installed("ordinal")
   skip_if_not_installed("ucminf")

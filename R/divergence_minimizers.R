@@ -1053,10 +1053,7 @@ fit_cumul_mlvl <- function(formula, data, family, weights, ...) {
   # most objective evaluations on central-difference gradients.  ucminf() with
   # forward differences needs fewer evaluations and gives the same fits within
   # the optimizer tolerance.  Use it unless the caller chose an optimizer:
-  if (is.null(dot_args$method) && is.null(dot_args$control)) {
-    dot_args$method <- "ucminf"
-    dot_args$grad <- "forward"
-  }
+  use_ucminf <- is.null(dot_args$method) && is.null(dot_args$control)
   # Since ordinal::clmm() sometimes seems to have issues with formulas lacking
   # an intercept, add it here (note that this is a quite "hacky" solution;
   # perhaps reformulate() could be used instead):
@@ -1068,20 +1065,39 @@ fit_cumul_mlvl <- function(formula, data, family, weights, ...) {
     link_nm <- "probit"
   }
   # Call the submodel fitter:
-  fitobj <- do.call(ordinal::clmm, c(
-    list(formula = formula,
-         data = data,
-         weights = quote(projpred_internal_w_aug),
-         contrasts = NULL,
-         Hess = FALSE,
-         model = FALSE,
-         link = link_nm),
-    dot_args
-  ))
-  # Needed for the ordinal:::predict.clm() workaround (the value `"negative"` is
-  # the default, see `?ordinal::clm.control`):
-  fitobj$control$sign.location <- "negative"
-  return(fitobj)
+  fit_clmm <- function(dot_args) {
+    fitobj <- do.call(ordinal::clmm, c(
+      list(formula = formula,
+           data = data,
+           weights = quote(projpred_internal_w_aug),
+           contrasts = NULL,
+           Hess = FALSE,
+           model = FALSE,
+           link = link_nm),
+      dot_args
+    ))
+    # Needed for the ordinal:::predict.clm() workaround (the value `"negative"`
+    # is the default, see `?ordinal::clm.control`):
+    fitobj$control$sign.location <- "negative"
+    return(fitobj)
+  }
+  if (use_ucminf) {
+    warns <- list()
+    fitobj <- try(withCallingHandlers(
+      fit_clmm(c(dot_args, list(method = "ucminf", grad = "forward"))),
+      warning = function(w) {
+        warns[[length(warns) + 1L]] <<- w
+        invokeRestart("muffleWarning")
+      }
+    ), silent = TRUE)
+    # If ucminf() fails or does not converge, refit with the nlminb() default
+    # and drop the warnings of the ucminf() fit:
+    if (!inherits(fitobj, "try-error") && check_conv_s(fitobj)) {
+      for (w in warns) warning(w)
+      return(fitobj)
+    }
+  }
+  return(fit_clmm(dot_args))
 }
 
 # Use nnet::multinom() to fit submodels for the brms::categorical() family:
