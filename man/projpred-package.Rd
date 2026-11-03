@@ -60,7 +60,10 @@ coefficients; default: vector of \code{0}s).
 \item For the augmented-data projection: \code{\link[MASS:polr]{MASS::polr()}} (the returned object
 inherits from class \code{polr}) for the \code{\link[brms:cumulative]{brms::cumulative()}} family or
 \code{\link[rstanarm:stan_polr]{rstanarm::stan_polr()}} fits, \code{\link[nnet:multinom]{nnet::multinom()}} (the returned object
-inherits from class \code{multinom}) for the \code{\link[brms:categorical]{brms::categorical()}} family.
+inherits from class \code{multinom}) for the \code{\link[brms:categorical]{brms::categorical()}} family. For \code{\link[ordinal:clmm]{ordinal::clmm()}},
+\pkg{projpred} uses \code{method = "ucminf"} and \code{grad = "forward"} (see
+\code{\link[ordinal:clmm.control]{ordinal::clmm.control()}}). An argument \code{method} or \code{control} in \code{...}
+replaces this default.
 }
 \item Submodel with multilevel but no additive terms:
 \itemize{

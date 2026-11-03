@@ -1049,6 +1049,14 @@ fit_cumul_mlvl <- function(formula, data, family, weights, ...) {
       methods::formalArgs(stats::nlminb),
       methods::formalArgs(stats::optim))
   )]
+  # clmm() has no analytic gradient, so its default optimizer nlminb() spends
+  # most objective evaluations on central-difference gradients.  ucminf() with
+  # forward differences needs fewer evaluations and gives the same fits within
+  # the optimizer tolerance.  Use it unless the caller chose an optimizer:
+  if (is.null(dot_args$method) && is.null(dot_args$control)) {
+    dot_args$method <- "ucminf"
+    dot_args$grad <- "forward"
+  }
   # Since ordinal::clmm() sometimes seems to have issues with formulas lacking
   # an intercept, add it here (note that this is a quite "hacky" solution;
   # perhaps reformulate() could be used instead):
@@ -1271,6 +1279,14 @@ check_conv_s <- function(fit_s) {
   } else if (inherits(fit_s, "multinom")) {
     return(fit_s$convergence == 0)
   } else if (inherits(fit_s, "clmm")) {
+    if (identical(fit_s$control$method, "ucminf")) {
+      # ucminf() codes: 1 (small gradient), 2 (small step) and 4 (zero step in
+      # the line search, which forward differences can cause near the
+      # optimum).  `gradient` is the central-difference gradient after the fit.
+      return(fit_s$optRes$convergence %in% c(1, 2, 4) &&
+               all(is.finite(fit_s$gradient)) &&
+               max(abs(fit_s$gradient)) < 1e-3)
+    }
     return(fit_s$optRes$convergence == 0)
   } else if (inherits(fit_s, "polr")) {
     return(fit_s$convergence == 0)

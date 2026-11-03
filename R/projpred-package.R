@@ -76,7 +76,10 @@
 #'     + For the augmented-data projection: [ordinal::clmm()] (the returned
 #'     object inherits from class `clmm`) for the [brms::cumulative()] family,
 #'     [mclogit::mblogit()] (the returned object inherits from class `mmblogit`)
-#'     for the [brms::categorical()] family.
+#'     for the [brms::categorical()] family. For [ordinal::clmm()],
+#'     \pkg{projpred} uses `method = "ucminf"` and `grad = "forward"` (see
+#'     [ordinal::clmm.control()]). An argument `method` or `control` in `...`
+#'     replaces this default.
 #' * Submodel without multilevel but additive terms: [mgcv::gam()] (the returned
 #' object inherits from class `gam`).
 #' * Submodel with multilevel and additive terms: [gamm4::gamm4()] (within
