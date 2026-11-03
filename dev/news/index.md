@@ -65,6 +65,11 @@
   [\#573](https://github.com/stan-dev/projpred/issues/573))
 - Tests: Adapt to version 2.1-0 of package lme4. (GitHub:
   [\#577](https://github.com/stan-dev/projpred/issues/577))
+- Fixed the error `solve(): solution not found` (and possible wrong
+  fits) when a predictor of a GLM submodel is constant over the
+  observations with nonzero weight, e.g., a rare binary predictor in a
+  CV fold. Such a predictor now gets the coefficient 0. (GitHub:
+  [\#589](https://github.com/stan-dev/projpred/issues/589))
 
 ## projpred 2.11.0
 
