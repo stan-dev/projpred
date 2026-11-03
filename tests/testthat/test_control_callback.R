@@ -16,7 +16,7 @@ test_that("control_callback() uses BOBYQA in both stages of glmer()", {
   expect_s3_class(control_callback(gaussian()), "lmerControl")
 })
 
-test_that("control_callback() is unchanged for the PQL fitter", {
+test_that("control_callback() returns nlme::lmeControl() for the PQL fitter", {
   skip_if_not_installed("nlme")
   opts_old <- options(projpred.PQL = TRUE)
   on.exit(options(opts_old), add = TRUE)

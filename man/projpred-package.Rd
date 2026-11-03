@@ -72,7 +72,7 @@ from class \code{glmerMod}) for all other families. For \code{\link[lme4:glmer]{
 \pkg{projpred} uses \code{control = lme4::glmerControl(optimizer = "bobyqa")},
 so both optimization stages use BOBYQA. A \code{control} argument in \code{...}
 replaces this default in the first fit. After some \pkg{lme4} errors,
-\pkg{projpred} refits with its own settings.
+\pkg{projpred} refits with its own settings and ignores this \code{control}.
 \item For the augmented-data projection: \code{\link[ordinal:clmm]{ordinal::clmm()}} (the returned
 object inherits from class \code{clmm}) for the \code{\link[brms:cumulative]{brms::cumulative()}} family,
 \code{\link[mclogit:mblogit]{mclogit::mblogit()}} (the returned object inherits from class \code{mmblogit})
