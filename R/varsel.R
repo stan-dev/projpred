@@ -535,7 +535,7 @@ varsel.refmodel <- function(
 .select <- function(refmodel, ndraws, nclusters, reweighting_args = NULL,
                     method, nterms_max, penalty, verbose,
                     verbose_line_length = 5, verbose_txt_add = "",
-                    search_control, ...) {
+                    search_control, return_outdmins = TRUE, ...) {
   if (is.null(reweighting_args)) {
     p_sel <- get_refdist(refmodel, ndraws = ndraws, nclusters = nclusters)
   } else {
@@ -564,7 +564,8 @@ varsel.refmodel <- function(
   } else if (method == "forward") {
     search_path <- search_forward(
       p_ref = p_sel, refmodel = refmodel, nterms_max = nterms_max,
-      verbose = verbose, search_control = search_control, ...
+      verbose = verbose, search_control = search_control,
+      return_outdmins = return_outdmins, ...
     )
   }
   verb_out(rep("-", verbose_line_length), verbose = verbose)
