@@ -380,3 +380,39 @@ test_that(paste(
   expect_identical(calls$n_all, 3L)
   expect_identical(calls$n_used, 0L)
 })
+
+test_that(paste(
+  "terms with `+` inside a call work in the search and the evaluation, with",
+  "and without the cross-product computations"
+), {
+  # A split of the term strings at each `+` gives the part "x3)" twice:
+  refm <- refm_search_gauss(y ~ I(x1 + x3) + I(x2 + x3) + x4, n = 40)
+  args_vs <- list(refm, nclusters = 3, nclusters_pred = 5, seed = 3317,
+                  verbose = FALSE)
+  args_cv <- c(args_vs, list(cv_method = "LOO", validate_search = TRUE,
+                             nloo = 5))
+  n_used <- 0L
+  trace("perf_eval_gauss", exit = function() {
+    if (!is.null(returnValue())) n_used <<- n_used + 1L
+  }, print = FALSE, where = asNamespace("projpred"))
+  on.exit(untrace("perf_eval_gauss", where = asNamespace("projpred")),
+          add = TRUE)
+  res_vs <- with_gauss_search_count(suppressWarnings(do.call(varsel, args_vs)))
+  expect_identical(res_vs$n, 1L)
+  expect_setequal(ranking(res_vs$value)$fulldata,
+                  c("I(x1 + x3)", "I(x2 + x3)", "x4"))
+  cv_crossprod <- suppressWarnings(do.call(cv_varsel, args_cv))
+  expect_identical(n_used, 5L)
+  opts_old <- options(projpred.search_gauss_crossprod = FALSE)
+  on.exit(options(opts_old), add = TRUE)
+  vs_drawwise <- suppressWarnings(do.call(varsel, args_vs))
+  cv_drawwise <- suppressWarnings(do.call(cv_varsel, args_cv))
+  options(opts_old)
+  expect_identical(ranking(res_vs$value)$fulldata,
+                   ranking(vs_drawwise)$fulldata)
+  expect_equal(performances(res_vs$value, deltas = FALSE),
+               performances(vs_drawwise, deltas = FALSE))
+  expect_identical(ranking(cv_crossprod), ranking(cv_drawwise))
+  expect_equal(performances(cv_crossprod, deltas = FALSE),
+               performances(cv_drawwise, deltas = FALSE), tolerance = 1e-10)
+})
