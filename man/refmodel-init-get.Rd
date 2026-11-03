@@ -268,8 +268,8 @@ In case of the augmented-data projection, this dataset has
 \item \code{family} accepts an object of class \code{family}.
 \item \code{weights} accepts either observation weights (at least in the form of a
 numeric vector) or \code{NULL} (for using a vector of ones as weights). In
-LOO CV with \code{validate_search = TRUE}, the left-out observation has
-weight 0, and \code{div_minimizer} must treat weight 0 as removal of the
+LOO CV with \code{validate_search = TRUE}, the left-out observation gets
+weight 0. \code{div_minimizer} must then give the fit without this
 observation.
 \item \code{projpred_var} accepts an \eqn{N \times S_{\mathrm{prj}}}{N x S_prj}
 matrix of predictive variances (necessary for \pkg{projpred}'s internal

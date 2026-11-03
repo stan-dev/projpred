@@ -316,17 +316,17 @@ test_that(paste(
   # A lost level other than the reference level gets the coefficient 0, so its
   # prediction is the one for the reference level:
   expect_equal(prd_n(fits$A, dats$A), prd_n(fits$A, dats$A, "a"))
-  # A lost reference level: with two remaining levels, the prediction is their
-  # midpoint; with one remaining level, it is the one for that level:
+  # A lost reference level gets the midpoint of the two other levels, or the
+  # prediction for the only other level:
   expect_equal(prd_n(fits$B, dats$B),
                (prd_n(fits$B, dats$B, "b") + prd_n(fits$B, dats$B, "c")) / 2,
                tolerance = 1e-6)
   expect_equal(prd_n(fits$B2, dats$B2), prd_n(fits$B2, dats$B2, "b"))
-  # The LOO CV with validated search runs, with the same results with and
-  # without the cross-product computations. In the fold of observation n, a
-  # dummy column has the weighted standard deviation 0 in cases A and B2, so
-  # the cross-product evaluation does not apply there. In case B, it applies.
-  # Count the cross-product evaluations of this fold:
+  # cv_varsel() with validated LOO must give the same results with and without
+  # the cross-product computations. In the fold of observation n, the
+  # cross-product evaluation applies only in case B. In cases A and B2, a dummy
+  # column is constant over the rows with positive weight. Count the
+  # cross-product evaluations of this fold:
   calls <- new.env()
   calls$n <- 0L
   ns <- asNamespace("projpred")

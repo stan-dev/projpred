@@ -200,8 +200,8 @@
 #'     + `family` accepts an object of class `family`.
 #'     + `weights` accepts either observation weights (at least in the form of a
 #'     numeric vector) or `NULL` (for using a vector of ones as weights). In
-#'     LOO CV with `validate_search = TRUE`, the left-out observation has
-#'     weight 0, and `div_minimizer` must treat weight 0 as removal of the
+#'     LOO CV with `validate_search = TRUE`, the left-out observation gets
+#'     weight 0. `div_minimizer` must then give the fit without this
 #'     observation.
 #'     + `projpred_var` accepts an \eqn{N \times S_{\mathrm{prj}}}{N x S_prj}
 #'     matrix of predictive variances (necessary for \pkg{projpred}'s internal

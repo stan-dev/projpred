@@ -209,22 +209,24 @@ divmin <- function(
   return(outdmin)
 }
 
-# Levels of factor-like fixed-effect predictors that occur only in the removed
-# rows (`!keep`), with the reference level that the fitter uses after it drops
-# these unused levels. Factor-like: factor, character and logical variables,
-# and numeric variables that the fixed-effects part of `formula` uses only
-# inside factor(), as.factor(), ordered() or as.ordered(). recode_lost_levels()
-# predicts these levels as the reference level (the first remaining level).
-# In divmin(), the GLM fitter keeps the rows with weight 0 and does not use
-# this function. With treatment contrasts, the dummy column of a lost level
-# other than the reference level is then constant over the rows with positive
-# weight, so glm_ridge() sets its coefficient to 0 and the prediction is the
-# same as here. If the reference level is lost, the GLM prediction for it is
-# the mean of the predictions for the remaining levels, weighted by p (1 - p)
-# with p the weighted share of a level (for two levels, the midpoint). Both
-# predict a level that the fit did not see. Grouping factors are excluded:
-# repair_re() treats a lost group as a new group. Returns `NULL` if no level is
-# lost.
+# Finds the levels of factor-like fixed-effect predictors that occur only in
+# the removed rows (`!keep`). Factor-like means a factor, character or logical
+# variable, or a numeric variable that the fixed-effects part of `formula` uses
+# only inside factor(), as.factor(), ordered() or as.ordered(). Grouping
+# factors are left out, because repair_re() treats a lost group as a new group.
+# For each variable, returns the lost levels and the reference level (the first
+# level that remains). Returns `NULL` if no level is lost.
+#
+# recode_lost_levels() sets a lost level to the reference level before the
+# prediction. The GLM fitter of divmin() keeps the rows with weight 0 and does
+# not use these functions. With treatment contrasts, it predicts a lost level
+# as follows:
+# * A level other than the reference level: its dummy column is 0 in all rows
+#   with positive weight, so glm_ridge() sets its coefficient to 0. The
+#   prediction is the one for the reference level, as above.
+# * The reference level: the prediction is the mean of the predictions for the
+#   other levels, with weights p (1 - p), where p is the weighted share of a
+#   level. For two other levels, this is their midpoint.
 lost_levels <- function(data, keep, formula) {
   fml_fixed <- reformulas::nobars(formula)
   rhs_fixed <- fml_fixed[[length(fml_fixed)]]
