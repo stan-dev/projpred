@@ -365,7 +365,27 @@ mo_full_signs <- function(p_ref, refmodel, args_divmin) {
   args_divmin$formula <- fml_full
   args_divmin$data <- subset$data
   args_divmin$projpred_mo_signs <- NULL
-  outdmin <- do.call(refmodel$div_minimizer, args_divmin)
+  outdmin <- tryCatch(
+    do.call(refmodel$div_minimizer, args_divmin),
+    error = function(e) {
+      if (grepl("^Internal error", conditionMessage(e))) {
+        stop(e)
+      }
+      warning("The projection onto the full model (for the signs of the ",
+              "monotonicity constraint of mo() terms) failed with the error ",
+              "\"", conditionMessage(e), "\". The signs come from the sums ",
+              "of the unconstrained coefficients of the submodels instead.",
+              call. = FALSE)
+      return(NULL)
+    }
+  )
+  if (is.null(outdmin)) {
+    signs <- matrix(numeric(), nrow = NCOL(p_ref$mu), ncol = 0)
+    if (!is.null(cache)) {
+      cache$signs <- signs
+    }
+    return(signs)
+  }
   # The sign groups of the population-level part of the full model:
   fml_fixed <- reformulas::nobars(fml_full)
   fml_rhs <- stats::as.formula(call("~", fml_fixed[[length(fml_fixed)]]),
@@ -492,4 +512,181 @@ mo_cons_args <- function(fit, x, groups, signs_full, dot_args) {
     out$beta0_init <- fit$beta0 + sum(transf$shift * beta)
   }
   return(out)
+}
+
+# Can the submodel fitters with family `family` apply the monotonicity
+# constraint to multilevel submodels? (Only the Gaussian lmer() path.)
+mo_lmm_supported <- function(family) {
+  return(family$family == "gaussian" && family$link == "identity" &&
+           !getOption("projpred.PQL", FALSE) &&
+           getOption("projpred.gaussian_not_as_generalized", TRUE))
+}
+
+# The sign groups (see mo_sign_groups()) of the population-level part of the
+# multilevel formula `formula`, as column indices of `X` (the population-level
+# model matrix of lme4, which can lack columns because of rank deficiency).
+mo_lmm_groups <- function(formula, data, X) {
+  fml_fixed <- reformulas::nobars(formula)
+  fr <- model.frame(fml_fixed, data = data, drop.unused.levels = TRUE)
+  mm <- model.matrix(fml_fixed, data = fr)
+  groups <- mo_sign_groups(fr, mm)
+  if (length(groups) == 0) {
+    return(groups)
+  }
+  keys <- attr(groups, "keys")
+  groups <- lapply(groups, function(g) {
+    idx <- match(colnames(mm)[g], colnames(X))
+    idx[!is.na(idx)]
+  })
+  keep <- lengths(groups) >= 2
+  groups <- groups[keep]
+  attr(groups, "keys") <- keys[keep]
+  return(groups)
+}
+
+# Gaussian linear multilevel submodel with the monotonicity constraint. `fit`
+# is the unconstrained lmer() fit of `formula`, `lmer_args` are the other
+# arguments of that lmer() call, and `signs_full` the signs from the full model
+# (see mo_cons_signs()). If a sign group of the unconstrained fit has
+# coefficients of both signs, the REML (or ML) criterion of lmer() is profiled
+# over the variance parameters `theta`; for given `theta`, the
+# population-level coefficients come from a generalized least-squares step
+# with the sign bounds. (The REML criterion keeps the terms of the full
+# population-level model matrix also for coefficients at a bound.) The
+# solution is returned as an lmerMod object (lmer() with fixed `theta`, then
+# the constrained coefficients and the matching conditional modes in its
+# slots). Otherwise, `fit` is returned.
+mo_lmer_cons <- function(fit, formula, lmer_args, signs_full) {
+  args_lf <- lmer_args[intersect(names(lmer_args),
+                                 methods::formalArgs(lme4::lFormula))]
+  lf <- do.call(lme4::lFormula, c(list(formula = formula), args_lf))
+  X <- lf$X
+  beta_unc <- lme4::fixef(fit)
+  if (!identical(names(beta_unc), colnames(X))) {
+    stop("Internal error: the coefficients of the multilevel submodel do not ",
+         "match its model matrix. Please notify the package maintainer.")
+  }
+  groups <- mo_lmm_groups(formula, lmer_args$data, X)
+  w <- as.vector(stats::model.weights(lf$fr) %||% rep(1, nrow(X)))
+  if (!mo_binding(beta_unc, X, groups, weights = w)) {
+    return(fit)
+  }
+  s_g <- mo_cons_signs(beta_unc, groups, signs_full)
+  cons <- as.integer(unlist(groups, use.names = FALSE))
+  REML <- lme4::isREML(fit)
+  n <- nrow(X)
+  p <- ncol(X)
+  y <- stats::model.response(lf$fr) -
+    as.vector(stats::model.offset(lf$fr) %||% 0)
+  sw <- sqrt(w)
+  rt <- lf$reTrms
+  Zt <- rt$Zt %*% Matrix::Diagonal(x = sw)
+  # Flip the signs of the constrained columns so that all bounds are >= 0:
+  sgn <- rep(1, p)
+  sgn[cons] <- rep(s_g, lengths(groups))
+  Xf <- sweep(X * sw, 2, sgn, "*")
+  yw <- y * sw
+  Lambdat <- rt$Lambdat
+  # The constrained solution for given `theta`:
+  gls <- function(theta) {
+    Lambdat@x <- theta[rt$Lind]
+    LtZt <- Lambdat %*% Zt
+    L <- Matrix::Cholesky(Matrix::tcrossprod(LtZt), LDL = FALSE, Imult = 1)
+    # V^{-1} a with V = I + Z Lambda Lambda' Z' (weighted):
+    vinv <- function(a) {
+      a <- as.matrix(a)
+      a - as.matrix(Matrix::crossprod(
+        LtZt, Matrix::solve(L, LtZt %*% a, system = "A")
+      ))
+    }
+    qmat <- crossprod(Xf, vinv(Xf))
+    qvec <- drop(crossprod(Xf, vinv(yw)))
+    b0 <- tryCatch(solve(qmat, qvec), error = function(e) NULL)
+    if (is.null(b0)) {
+      # (A singular system, for example for very large `theta`.)
+      return(list(crit = Inf))
+    }
+    bls <- bls_c(qmat, qvec, cons, b0)
+    beta <- as.vector(bls$b)
+    resid <- yw - drop(Xf %*% beta)
+    r2 <- sum(resid * drop(vinv(resid)))
+    ld_l <- as.numeric(Matrix::determinant(L, sqrt = FALSE)$modulus)
+    ld_x <- as.numeric(determinant(qmat, logarithm = TRUE)$modulus)
+    crit <- if (REML) {
+      ld_l + ld_x + (n - p) * (1 + log(2 * pi * r2 / (n - p)))
+    } else {
+      ld_l + n * (1 + log(2 * pi * r2 / n))
+    }
+    if (!is.finite(crit)) {
+      crit <- Inf
+    }
+    nlist(crit, beta = beta * sgn, r2, ld_l, ld_x, LtZt, L,
+          bls_converged = bls$converged)
+  }
+  theta_unc <- lme4::getME(fit, "theta")
+  opt <- lme4::nloptwrap(theta_unc, function(th) gls(th)$crit,
+                         lower = rt$lower, upper = rep(Inf, length(rt$lower)),
+                         control = list(xtol_abs = 1e-8, ftol_abs = 1e-10))
+  sol <- gls(opt$par)
+  if (!is.finite(sol$crit)) {
+    stop("The monotonic projection onto a multilevel submodel failed (the ",
+         "criterion is not finite at the optimum).")
+  }
+  beta <- unname(sol$beta)
+  # The lmerMod object with fixed theta:
+  ctrl <- lmer_args$control %||% lme4::lmerControl()
+  ctrl["optimizer"] <- list(NULL)
+  # (Singular fits are possible at the constrained optimum as in lmer(); the
+  # internal call should not add a message.)
+  ctrl$checkConv$check.conv.singular$action <- "ignore"
+  args_lmer <- lmer_args[setdiff(names(lmer_args), c("control", "start"))]
+  fit_c <- do.call(lme4::lmer, c(
+    list(formula = formula, control = ctrl, start = list(theta = opt$par)),
+    args_lmer
+  ))
+  # The conditional modes for the constrained coefficients:
+  Lambdat@x <- opt$par[rt$Lind]
+  u <- drop(as.matrix(Matrix::solve(
+    sol$L, sol$LtZt %*% ((y - drop(X %*% beta)) * sw), system = "A"
+  )))
+  b <- drop(as.matrix(Matrix::crossprod(Lambdat, u)))
+  gamma <- drop(X %*% beta) + drop(as.matrix(Matrix::crossprod(rt$Zt, b)))
+  fit_c@beta <- beta
+  fit_c@u <- u
+  # The predictor and response modules are reference objects (shared with
+  # the deviance function of `fit_c`), so update copies:
+  pp <- fit_c@pp$copy()
+  pp$setDelu(u - pp$u0)
+  pp$setDelb(beta - pp$beta0)
+  resp <- fit_c@resp$copy()
+  resp$updateMu(gamma)
+  fit_c@pp <- pp
+  fit_c@resp <- resp
+  wrss <- sum(w * (y - gamma)^2)
+  cmp <- fit_c@devcomp$cmp
+  cmp[["wrss"]] <- wrss
+  cmp[["ussq"]] <- sum(u^2)
+  cmp[["pwrss"]] <- wrss + sum(u^2)
+  cmp[["ldL2"]] <- sol$ld_l
+  cmp[["ldRX2"]] <- sol$ld_x
+  cmp[["sigmaML"]] <- sqrt(cmp[["pwrss"]] / n)
+  cmp[["sigmaREML"]] <- sqrt(cmp[["pwrss"]] / (n - p))
+  cmp[[if (REML) "REML" else "dev"]] <- sol$crit - sum(log(w))
+  fit_c@devcomp$cmp <- cmp
+  optinfo <- fit@optinfo
+  optinfo$optimizer <- "nloptwrap"
+  optinfo$val <- opt$par
+  optinfo$feval <- opt$feval
+  optinfo$message <- opt$message
+  optinfo$warnings <- list()
+  optinfo$derivs <- NULL
+  optinfo$conv <- list(opt = opt$conv, lme4 = list())
+  if (!sol$bls_converged) {
+    optinfo$warnings <- list(paste(
+      "maximum number of iterations of the bounded least-squares step",
+      "reached"
+    ))
+  }
+  fit_c@optinfo <- optinfo
+  return(fit_c)
 }

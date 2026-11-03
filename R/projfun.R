@@ -48,14 +48,17 @@ proj_to_submodl <- function(predictor_terms, p_ref, refmodel,
            "projections.")
     }
     trms_sub <- extract_terms_response(fml_divmin)
-    if (length(trms_sub$group_terms) > 0 ||
-        length(trms_sub$additive_terms) > 0 ||
-        !identical(getOption("projpred.glm_fitter", "fit_glm_ridge_callback"),
-                   "fit_glm_ridge_callback")) {
+    has_grp <- length(trms_sub$group_terms) > 0
+    if (length(trms_sub$additive_terms) > 0 ||
+        (has_grp && !mo_lmm_supported(refmodel$family)) ||
+        (!has_grp && !identical(getOption("projpred.glm_fitter",
+                                          "fit_glm_ridge_callback"),
+                                "fit_glm_ridge_callback"))) {
       stop("Monotonic projections of mo() terms are currently only supported ",
-           "for non-multilevel non-additive submodels with the default ",
-           "submodel fitter. Use `options(projpred.mo_monotone = FALSE)` for ",
-           "unconstrained projections.")
+           "for non-additive submodels with the default submodel fitter, and ",
+           "for multilevel submodels only with the Gaussian family (also in ",
+           "the latent projection). Use `options(projpred.mo_monotone = ",
+           "FALSE)` for unconstrained projections.")
     }
     # The signs of the mo() terms in the projection onto the full model, for
     # the monotonicity constraint:

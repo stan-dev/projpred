@@ -379,6 +379,28 @@ bool bls_active_set(vec& b,
   return false;
 }
 
+/**
+ * Wrapper for bls_active_set that can be called from R: minimizes
+ * 0.5*b'Qb - q'b subject to b(cons) >= 0 (`cons`: 1-based indices), starting
+ * from `b_init`.
+ */
+// [[Rcpp::export]]
+List bls_c(arma::mat Q, arma::vec q, Rcpp::IntegerVector cons, arma::vec b_init)
+{
+  int D = q.n_elem;
+  if ((int) Q.n_rows != D || (int) Q.n_cols != D || (int) b_init.n_elem != D)
+    Rcpp::stop("Q, q and b_init must have matching dimensions.");
+  uvec cons0(cons.size());
+  for (int k=0; k<cons.size(); ++k) {
+    if (cons[k] < 1 || cons[k] > D)
+      Rcpp::stop("cons must contain indices of q.");
+    cons0(k) = cons[k] - 1;
+  }
+  vec b = b_init;
+  bool ok = bls_active_set(b, Q, q, cons0);
+  return List::create(Named("b") = b, Named("converged") = ok);
+}
+
 
 
 /** Internal function that gives the output in c++ way (writes into allocated memory).

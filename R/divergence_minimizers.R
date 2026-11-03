@@ -72,11 +72,14 @@ divmin <- function(
     projpred_random <- formula_random$random
   }
   if (!is.null(projpred_mo_signs) &&
-      !identical(sdivmin, fit_glm_ridge_callback)) {
+      !identical(sdivmin, fit_glm_ridge_callback) &&
+      !(identical(sdivmin, fit_glmer_callback) &&
+        mo_lmm_supported(list(...)$family))) {
     stop("Monotonic projections of mo() terms are currently only supported ",
-         "for non-multilevel non-additive submodels with the default ",
-         "submodel fitter. Use `options(projpred.mo_monotone = FALSE)` for ",
-         "unconstrained projections.")
+         "for non-additive submodels with the default submodel fitter, and ",
+         "for multilevel submodels only with the Gaussian family (also in ",
+         "the latent projection). Use `options(projpred.mo_monotone = ",
+         "FALSE)` for unconstrained projections.")
   }
   formulas <- validate_response_formula(formula)
   if (!is.null(projpred_mo_signs) &&
@@ -655,13 +658,21 @@ fit_glmer_callback <- function(formula, projpred_formula_no_random,
                getOption("projpred.gaussian_not_as_generalized", TRUE)) {
       # Exclude arguments from `...` which cannot be passed to lme4::lmer():
       dot_args <- list(...)
+      mo_signs <- dot_args$projpred_mo_signs
       dot_args <- dot_args[intersect(
         names(dot_args),
         methods::formalArgs(lme4::lmer)
       )]
       # Call the submodel fitter:
-      return(do.call(lme4::lmer, c(list(formula = formula, control = control),
-                                   dot_args)))
+      fit <- do.call(lme4::lmer, c(list(formula = formula, control = control),
+                                   dot_args))
+      if (!is.null(mo_signs)) {
+        # Monotonic projection of mo() terms:
+        fit <- mo_lmer_cons(fit, formula = formula,
+                            lmer_args = c(list(control = control), dot_args),
+                            signs_full = mo_signs)
+      }
+      return(fit)
     } else {
       # Exclude arguments from `...` which cannot be passed to lme4::glmer():
       dot_args <- list(...)

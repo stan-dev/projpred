@@ -49,6 +49,7 @@ Imports:
     rstantools (>= 2.0.0),
     loo (>= 2.0.0),
     lme4 (>= 1.1-28),
+    Matrix (>= 1.6-0),
     mvtnorm,
     mgcv,
     gamm4,

@@ -618,7 +618,8 @@ test_that("multilevel and additive submodels with mo() terms work", {
 mo_nonmono_refm <- function(family = gaussian(), fml = y ~ mo(x) + z + mo(x2),
                             S = 20, n = 100, seed = 5129,
                             eff_x = c(0, 0.8, -0.4, 0.6, 0.2), c_w = 0,
-                            dip_mean = 0, dip_sd = 0, ...) {
+                            dip_mean = 0, dip_sd = 0, sd_g = 0, c_h = 0,
+                            ...) {
   set.seed(seed)
   dat <- data.frame(x = sample(rep_len(0:4, n)), z = rnorm(n),
                     x2 = sample(rep_len(1:3, n)),
@@ -627,11 +628,17 @@ mo_nonmono_refm <- function(family = gaussian(), fml = y ~ mo(x) + z + mo(x2),
   dat$w <- -0.5 * dat$x + rnorm(n, sd = 0.5)
   b <- cbind(alpha = rnorm(S, 0.1, 0.05), bx = rnorm(S, 1, 0.1),
              bz = rnorm(S, 0.4, 0.05), dip = rnorm(S, dip_mean, dip_sd))
+  # Group effects (the same in all draws), only if `sd_g > 0`:
+  eff_g <- if (sd_g > 0) rnorm(nlevels(dat$g), sd = sd_g) else 0
+  # A covariate `h` which is not in the formulas, so that no submodel fits the
+  # draws exactly (only if `c_h > 0`):
+  dat$h <- if (c_h > 0) rnorm(n) else 0
   # Linear predictor (N x S) for data `nd`:
   eta_fun <- function(nd) {
     outer(eff_x[nd$x + 1], b[, "bx"]) + outer(nd$z, b[, "bz"]) +
-      outer(nd$x >= 2, b[, "dip"]) + c_w * nd$w +
-      matrix(b[, "alpha"], nrow(nd), S, byrow = TRUE)
+      outer(nd$x >= 2, b[, "dip"]) + c_w * nd$w + c_h * nd$h +
+      matrix(b[, "alpha"], nrow(nd), S, byrow = TRUE) +
+      if (sd_g > 0) eff_g[as.integer(nd$g)] else 0
   }
   eta_mean <- rowMeans(eta_fun(dat))
   dat$y <- switch(family$family,
@@ -749,6 +756,23 @@ test_that(paste(
 })
 
 test_that(paste(
+  "a failure of the projection onto the full model gives a warning and no",
+  "full-model signs (once per set of projected draws)"
+), {
+  refm <- mo_nonmono_refm()
+  refm$div_minimizer <- function(...) stop("full fit failed")
+  p_ref <- get_refdist(refm, ndraws = 4)
+  expect_warning(
+    signs <- mo_full_signs(p_ref, refm, args_divmin = list()),
+    "failed with the error \"full fit failed\""
+  )
+  expect_identical(dim(signs), c(4L, 0L))
+  # The second call uses the cache:
+  expect_silent(signs2 <- mo_full_signs(p_ref, refm, args_divmin = list()))
+  expect_identical(signs2, signs)
+})
+
+test_that(paste(
   "monotonic projections equal the unconstrained ones if no constraint binds"
 ), {
   sim <- mo_sim()
@@ -791,7 +815,9 @@ test_that(paste(
                tolerance = 1e-10)
 })
 
-test_that("the parallel case of divmin() gives the same monotonic projections", {
+test_that(paste(
+  "the parallel case of divmin() gives the same monotonic projections"
+), {
   skip_if_not_installed("foreach")
   skip_if_not_installed("iterators")
   # Use a registered backend, otherwise the sequential one:
@@ -864,20 +890,213 @@ test_that(paste(
   # Multilevel reference model (the full model is projected with lme4), GLM
   # submodel. `g` has no effect, so lme4 warns about the full-model fits:
   skip_if_not_installed("lme4")
-  refm_ml <- mo_nonmono_refm(fml = y ~ mo(x) + z + (1 | g))
+  refm_ml <- mo_nonmono_refm(fml = y ~ mo(x) + z + (1 | g), sd_g = 0.7,
+                            c_h = 0.5)
   prj_ml <- muffle_warning(muffle_warning(muffle_warning(
     project(refm_ml, predictor_terms = c("mo(x)", "z"), ndraws = 20,
             verbose = FALSE),
     "Model failed to converge"
   ), "Model is nearly unidentifiable"), "might not have converged")
   expect_true(all(is_mono(prj_coefs(prj_ml)[, cols_x])))
+})
+
+# KKT conditions of the generalized least-squares step of the constrained
+# multilevel fit `fit` (an lmerMod object) with the constraints
+# signs[k] * beta[cols[k]] >= 0: the largest gradient of the free coefficients
+# (relative to the largest gradient) and the smallest signed gradient of the
+# coefficients at the bound 0 (must be nonnegative).
+lmm_kkt <- function(fit, cols, signs) {
+  X <- lme4::getME(fit, "X")
+  sw <- sqrt(stats::weights(fit))
+  LtZt <- lme4::getME(fit, "Lambdat") %*% lme4::getME(fit, "Zt") %*%
+    Matrix::Diagonal(x = sw)
+  L <- Matrix::Cholesky(Matrix::tcrossprod(LtZt), LDL = FALSE, Imult = 1)
+  vinv <- function(a) {
+    as.matrix(a) - as.matrix(Matrix::crossprod(
+      LtZt, Matrix::solve(L, LtZt %*% as.matrix(a), system = "A")
+    ))
+  }
+  Xw <- X * sw
+  beta <- lme4::fixef(fit)
+  g <- drop(crossprod(Xw, vinv(Xw)) %*% beta -
+              crossprod(Xw, vinv(lme4::getME(fit, "y") * sw)))
+  bound <- seq_along(beta) %in% cols & beta == 0
+  list(free = max(abs(g[!bound])) / max(abs(g)),
+       bound = min(c(Inf, (g * signs[match(seq_along(beta), cols)])[bound])))
+}
+
+test_that(paste(
+  "monotonic projections onto Gaussian multilevel submodels satisfy the KKT",
+  "conditions and predict new data"
+), {
+  skip_if_not_installed("lme4")
+  # (The submodels include the full model, for which projpred warns.)
+  opts_old <- options(projpred.warn_instable_projections = FALSE)
+  on.exit(options(opts_old), add = TRUE)
+  cols_x <- paste0("mo(x)", 1:4)
+  trms <- c("mo(x)", "z", "(1 | g)")
+  refm <- mo_nonmono_refm(fml = y ~ mo(x) + z + (1 | g), sd_g = 0.7,
+                          c_h = 0.5, eff_x = c(0, 0.4, 0.8, 1.2, 1.6),
+                          dip_mean = -0.4,
+                          dip_sd = 0.4)
+  prj <- project(refm, predictor_terms = trms, ndraws = 10, verbose = FALSE)
+  fixefs <- t(vapply(prj$outdmin, lme4::fixef, numeric(6)))
+  expect_true(all(is_mono(fixefs[, cols_x])))
+  opts_old2 <- options(projpred.mo_monotone = FALSE)
+  on.exit(options(opts_old2), add = TRUE)
+  prj_unc <- project(refm, predictor_terms = trms, ndraws = 10,
+                     verbose = FALSE)
+  fixefs_unc <- t(vapply(prj_unc$outdmin, lme4::fixef, numeric(6)))
+  binding <- !is_mono(fixefs_unc[, cols_x])
+  expect_gt(sum(binding), 0)
+  expect_lt(sum(binding), 10)
+  # Draws without a binding constraint keep the lmer() fit:
+  expect_equal(fixefs[!binding, ], fixefs_unc[!binding, ], tolerance = 1e-12)
+  # The submodel is the full model, so the signs are those of the
+  # unconstrained fits:
+  s_full <- ifelse(rowSums(fixefs_unc[, cols_x]) >= 0, 1, -1)
+  for (s in which(binding)) {
+    fit <- prj$outdmin[[s]]
+    kkt <- lmm_kkt(fit, cols = 2:5, signs = rep(s_full[s], 4))
+    expect_lt(kkt$free, 1e-8)
+    expect_gt(kkt$bound, -1e-8)
+    # The lmerMod object: fitted values, conditional modes and sigma for the
+    # constrained coefficients:
+    X <- lme4::getME(fit, "X")
+    Zt <- as.matrix(lme4::getME(fit, "Zt"))
+    Lt <- as.matrix(lme4::getME(fit, "Lambdat"))
+    w <- stats::weights(fit)
+    y <- lme4::getME(fit, "y")
+    beta <- lme4::fixef(fit)
+    u <- lme4::getME(fit, "u")
+    expect_equal(unname(fitted(fit)),
+                 unname(drop(X %*% beta +
+                               t(Zt) %*% as.matrix(lme4::getME(fit, "b")))),
+                 tolerance = 1e-10)
+    lhs <- Lt %*% Zt %*% (w * t(Zt)) %*% t(Lt) + diag(nrow(Lt))
+    rhs <- Lt %*% Zt %*% (w * (y - drop(X %*% beta)))
+    expect_equal(drop(lhs %*% u), drop(rhs), tolerance = 1e-8)
+    pwrss <- sum(w * (y - fitted(fit))^2) + sum(u^2)
+    expect_equal(sigma(fit)^2, pwrss / (nrow(X) - ncol(X)), tolerance = 1e-10)
+  }
+  # Predictions for new data equal the predictions for the same training
+  # observations:
+  nd <- refm$fetch_data()[c(3, 8, 20, 41), ]
+  pred_train <- proj_linpred(prj)$pred
+  pred_new <- proj_linpred(prj, newdata = nd)$pred
+  expect_equal(unname(pred_new), unname(pred_train[, rows_of(nd)]),
+               tolerance = 1e-10)
+})
+
+test_that(paste(
+  "the constrained ML fit of a multilevel submodel equals the lmer() ML fit",
+  "without the columns at the bound (with observation weights)"
+), {
+  skip_if_not_installed("lme4")
+  refm <- mo_nonmono_refm(fml = y ~ mo(x) + z + (z | g), sd_g = 0.7,
+                          c_h = 0.5)
+  dat <- refm$fetch_data()
+  dat$y1 <- refm$mu[, 1]
+  set.seed(4117)
+  wts <- runif(nrow(dat), 0.5, 2)
+  for (re in c("(1 | g)", "(z | g)")) {
+    fml <- mo_formula_env(as.formula(paste("y1 ~ mo(x) + z +", re)))
+    args <- list(data = dat, weights = wts, REML = FALSE,
+                 control = lme4::lmerControl())
+    fit_u <- do.call(lme4::lmer, c(list(formula = fml), args))
+    b_u <- lme4::fixef(fit_u)[2:5]
+    expect_false(all(b_u >= 0) || all(b_u <= 0), info = re)
+    # Positive signs (the reference model's effect of `x`):
+    fit_c <- mo_lmer_cons(fit_u, fml, args, c("mo(x)#" = 1))
+    beta <- lme4::fixef(fit_c)
+    bound <- which(seq_along(beta) %in% 2:5 & beta == 0)
+    expect_gt(length(bound), 0)
+    expect_true(all(beta[2:5] >= 0))
+    # The ML fit without the columns at the bound:
+    dat$xr <- I(lme4::getME(fit_u, "X")[, -bound, drop = FALSE])
+    fit_r <- lme4::lmer(as.formula(paste("y1 ~ 0 + xr +", re)), data = dat,
+                        weights = wts, REML = FALSE)
+    expect_equal(unname(beta[-bound]), unname(lme4::fixef(fit_r)),
+                 tolerance = 1e-5, info = re)
+    expect_equal(unname(lme4::getME(fit_c, "theta")),
+                 unname(lme4::getME(fit_r, "theta")), tolerance = 1e-4,
+                 info = re)
+    expect_equal(deviance(fit_c), deviance(fit_r), tolerance = 1e-8,
+                 info = re)
+  }
+})
+
+test_that(paste(
+  "without signs from the full model, monotonic projections use the signs",
+  "of the sums of the unconstrained coefficients (GLM and LMM submodels)"
+), {
+  skip_if_not_installed("lme4")
+  opts_old <- options(projpred.warn_instable_projections = FALSE)
+  on.exit(options(opts_old), add = TRUE)
+  cols_x <- paste0("mo(x)", 1:4)
+  # `w` decreases with `x`, so the signs from the full model and the signs of
+  # the sums differ:
+  cases <- list(
+    glm = list(fml = y ~ mo(x) + z + w, trms = c("mo(x)", "z")),
+    lmm = list(fml = y ~ mo(x) + z + w + (1 | g),
+               trms = c("mo(x)", "z", "(1 | g)"))
+  )
+  for (nm in names(cases)) {
+    refm <- mo_nonmono_refm(fml = cases[[nm]]$fml, c_w = 1, sd_g = 0.7,
+                            c_h = 0.5)
+    prj <- with_mocked_bindings(
+      project(refm, predictor_terms = cases[[nm]]$trms, ndraws = 10,
+              verbose = FALSE),
+      mo_full_signs = function(p_ref, ...) {
+        matrix(numeric(), nrow = NCOL(p_ref$mu), ncol = 0)
+      }
+    )
+    opts_old2 <- options(projpred.mo_monotone = FALSE)
+    prj_unc <- project(refm, predictor_terms = cases[[nm]]$trms, ndraws = 10,
+                       verbose = FALSE)
+    options(opts_old2)
+    coefs_of <- function(p) {
+      t(vapply(p$outdmin, function(f) mo_fit_coefs(f)[cols_x], numeric(4)))
+    }
+    b_x <- coefs_of(prj)
+    b_unc <- coefs_of(prj_unc)
+    binding <- !is_mono(b_unc)
+    expect_gt(sum(binding), 0)
+    s_sum <- ifelse(rowSums(b_unc) >= 0, 1, -1)
+    expect_true(all(b_x[binding, ] * s_sum[binding] >= 0), info = nm)
+    expect_true(all(is_mono(b_x)), info = nm)
+  }
+})
+
+test_that(paste(
+  "monotonic projections onto multilevel submodels work in the latent",
+  "projection and throw an error for non-Gaussian families"
+), {
+  skip_if_not_installed("lme4")
+  # (The submodels include the full model, for which projpred warns.)
+  opts_old <- options(projpred.warn_instable_projections = FALSE)
+  on.exit(options(opts_old), add = TRUE)
+  cols_x <- paste0("mo(x)", 1:4)
+  trms <- c("mo(x)", "z", "(1 | g)")
+  refm_lat <- suppressMessages(mo_nonmono_refm(
+    binomial(), fml = y ~ mo(x) + z + (1 | g), sd_g = 0.7, c_h = 0.5,
+    latent = TRUE
+  ))
+  prj_lat <- project(refm_lat, predictor_terms = trms, ndraws = 10,
+                     verbose = FALSE)
+  fixefs <- t(vapply(prj_lat$outdmin, lme4::fixef, numeric(6)))
+  expect_true(all(is_mono(fixefs[, cols_x])))
+  opts_old2 <- options(projpred.mo_monotone = FALSE)
+  prj_lat_unc <- project(refm_lat, predictor_terms = trms, ndraws = 10,
+                         verbose = FALSE)
+  options(opts_old2)
+  fixefs_unc <- t(vapply(prj_lat_unc$outdmin, lme4::fixef, numeric(6)))
+  expect_gt(sum(!is_mono(fixefs_unc[, cols_x])), 0)
+  refm_bin <- mo_nonmono_refm(binomial(), fml = y ~ mo(x) + z + (1 | g),
+                              sd_g = 0.7, c_h = 0.5)
   expect_error(
-    muffle_warning(
-      project(refm_ml, predictor_terms = c("mo(x)", "z", "(1 | g)"),
-              ndraws = 4, verbose = FALSE),
-      "the projection onto the full model can be instable"
-    ),
-    "only supported for non-multilevel non-additive submodels"
+    project(refm_bin, predictor_terms = trms, ndraws = 4, verbose = FALSE),
+    "for multilevel submodels only with the Gaussian family"
   )
 })
 
