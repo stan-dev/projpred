@@ -14,7 +14,7 @@ If you read this from a place other than <https://mc-stan.org/projpred/news/inde
 
 ## Minor changes
 
-* Support for monotonic terms `mo()` (as in **brms**). In the submodels, these terms are coded by cumulative indicators with unconstrained coefficients. For **brms** reference models, this also needs a version of **brms** that allows `mo()` terms in `get_refmodel()`. (GitHub: #557)
+* Support for monotonic terms `mo()` (as in **brms**). By default, the projected effect of each `mo()` term is monotonic (global option `projpred.mo_monotone`). New function `mo_effects()` gives these effects in the **brms** parametrization. (GitHub: #557)
 
 ## Bug fixes and maintenance
 

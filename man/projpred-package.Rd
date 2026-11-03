@@ -144,6 +144,12 @@ defaults to \code{requireNamespace("progressr", quietly = TRUE) && interactive()
 to be set by the user.
 }
 
+\section{Monotonic terms}{
+Global option \code{projpred.mo_monotone} (default \code{TRUE}) controls whether the
+projected effects of monotonic terms \code{mo()} are monotonic. See section
+"Monotonic terms" in \code{\link[=init_refmodel]{init_refmodel()}} and \code{\link[=mo_effects]{mo_effects()}}.
+}
+
 \section{Multilevel models: "Integrating out" group-level effects}{
 In case of multilevel models, \pkg{projpred} offers two global options for
 "integrating out" group-level effects: \code{projpred.mlvl_pred_new} and

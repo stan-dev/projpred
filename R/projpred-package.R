@@ -147,6 +147,12 @@
 #' && identical(foreach::getDoParName(), "doFuture")`, it usually does not need
 #' to be set by the user.
 #'
+#' # Monotonic terms
+#'
+#' Global option `projpred.mo_monotone` (default `TRUE`) controls whether the
+#' projected effects of monotonic terms `mo()` are monotonic. See section
+#' "Monotonic terms" in [init_refmodel()] and [mo_effects()].
+#'
 #' # Multilevel models: "Integrating out" group-level effects
 #'
 #' In case of multilevel models, \pkg{projpred} offers two global options for

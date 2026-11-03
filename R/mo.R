@@ -6,9 +6,10 @@
 # `x >= l_k`. With `j` the position of `x` in the levels (0 for `l_0`), brms
 # models the effect of `mo(x)` as b * D * sum(zeta[seq_len(j)]) with `zeta` on
 # the simplex. This is a linear combination of these columns, so the
-# projection onto the unconstrained coefficients of the columns reproduces the
-# reference model's effect. The submodels do not constrain the coefficients
-# to a common sign. Argument `id` (brms: a shared simplex) has no effect here.
+# projection onto the coefficients of the columns reproduces the reference
+# model's effect. The submodel fitters constrain the coefficients to a common
+# sign (see mo_sign_groups() and option `projpred.mo_monotone`). Argument `id`
+# (brms: a shared simplex) has no effect here.
 # Argument `mo_levels` gives the levels of the training data, for predictions
 # for new data (see makepredictcall.mo_basis()).
 mo <- function(x, id = NA, mo_levels = NULL) {

@@ -152,6 +152,8 @@
 #' that all smooth terms need to be included in `formula` (there is no `random`
 #' argument as in [rstanarm::stan_gamm4()], for example).
 #'
+#' # Monotonic terms
+#'
 #' Monotonic terms `mo(x)` (see [brms::mo()]) are supported for an ordered
 #' factor `x` or an integer `x`. In the submodels, \pkg{projpred} codes `mo(x)`
 #' by the indicators of \eqn{x \geq l_k}{x >= l_k} for the levels \eqn{l_1,
@@ -159,14 +161,40 @@
 #' in \pkg{brms}, the levels of an integer `x` are all integers from
 #' \eqn{\min(x)}{min(x)} to \eqn{\max(x)}{max(x)} in the training data, also
 #' those that do not occur in the data (the indicators of such values are equal
-#' to those of the next value). The coefficients of the indicators are not
-#' constrained to have the same sign, so the projected effect of `x` is not
-#' necessarily monotonic. Argument `id` of [brms::mo()] has no effect in
+#' to those of the next value). Argument `id` of [brms::mo()] has no effect in
 #' \pkg{projpred}. New data must not have values of `x` outside the levels of
 #' the training data (in \eqn{K}-fold CV, the training data of a fold). An
 #' ordered factor `x` must be a factor or a character vector in new data, and an
 #' integer `x` must be an integer. Monotonic terms are not supported in
 #' group-level terms and in additive multilevel models.
+#'
+#' By default (global option `projpred.mo_monotone = TRUE`), the projected
+#' effect of each `mo()` term is monotonic: the coefficients of its indicators
+#' have the same sign. This sign is the sign of the sum of these coefficients
+#' in the unconstrained projection of the same projected draw (or cluster)
+#' onto the full model (all predictor terms of `formula`), so the projected
+#' effect has the direction of the effect in the reference model. If the full
+#' model does not have the term (possible with custom `search_terms`) or if
+#' the projection onto the full model fails, the sign is the sign of the sum
+#' of the unconstrained coefficients in the submodel. A projected draw whose
+#' unconstrained projection is monotonic keeps it. In an interaction of a
+#' `mo()` term with a factor (for example `mo(x):f`), each column of the
+#' factor has its own monotonic effect, as in \pkg{brms}. [mo_effects()] gives
+#' the projected effects in the parametrization of \pkg{brms}.
+#'
+#' Monotonic projections are supported for forward search and for submodels
+#' without group-level and smooth terms (with the default submodel fitter) and
+#' for multilevel submodels with the [gaussian()] family (also in the latent
+#' projection). \pkg{projpred} throws an error before the search or the
+#' projection starts for L1 search, the augmented-data projection, custom
+#' divergence minimizers, reference models with smooth terms, multilevel
+#' submodels with another family, and terms with more than one `mo()` call.
+#' With `options(projpred.mo_monotone = FALSE)`, the coefficients of the
+#' indicators are not constrained (so the projected effect of `x` is not
+#' necessarily monotonic), and these cases are supported. The option applies
+#' when the projections run: in a parallel \eqn{K}-fold CV, the parallel
+#' workers use their own value of the option, and `refit_prj = FALSE` uses the
+#' submodel fits of the search as they are.
 #'
 #' # Arguments `ref_predfun`, `proj_predfun`, and `div_minimizer`
 #'
