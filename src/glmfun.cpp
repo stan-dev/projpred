@@ -448,6 +448,27 @@ void glm_ridge( vec& beta,      // output: regression coefficients (contains int
   double a = 0.1; // backtracking line search parameters a and b (see Boyd and Vandenberghe, 2004)
   double b = 0.5; 
   
+  // Variables with an infinite penalty (zero variance) keep the coefficient 0
+  // and stay out of the linear system, which would otherwise contain Inf.
+  uvec act = find_finite(penalty);
+  uvec inact = find_nonfinite(penalty);
+  vec penalty_grad = penalty;
+  penalty_grad.elem(inact).zeros();
+  beta.elem(inact).zeros();
+  // positions of the constrained variables among the active ones (an inactive
+  // variable keeps 0, which satisfies its sign constraint)
+  uvec cons_act;
+  if (n_cons > 0 && inact.n_elem > 0) {
+    ivec pos_act(D); pos_act.fill(-1);
+    for (uword i=0; i<act.n_elem; ++i)
+      pos_act(act(i)) = i;
+    std::vector<uword> cons_tmp;
+    for (int k=0; k<n_cons; ++k)
+      if (pos_act(cons(k)) >= 0)
+        cons_tmp.push_back(pos_act(cons(k)));
+    cons_act = conv_to<uvec>::from(cons_tmp);
+  }
+  
   // initialization
   vec beta_new(D); beta_new.zeros();
   vec dbeta(D); dbeta.zeros();
@@ -456,7 +477,7 @@ void glm_ridge( vec& beta,      // output: regression coefficients (contains int
   vec f = x*beta;
   
   mat xw(n,D); // this will be the weighted x
-  mat regmat = lambda*diagmat(penalty);//eye(D,D); // regularization matrix
+  mat regmat = lambda*diagmat(penalty.elem(act)); // regularization matrix (active variables)
   
   // initial quadratic approximation
   List obs = pseudo_obs(f,w);
@@ -477,16 +498,33 @@ void glm_ridge( vec& beta,      // output: regression coefficients (contains int
       xw.col(j) = x.col(j) % sqrt(w);
     
     // weighted least squares solution
-    if (n_cons == 0) {
-      beta_new = solve( xw.t()*xw + regmat, xw.t()*(sqrt(w)%z) ); 
+    // (with constraints: a bounded weighted least squares solution, starting
+    // from the current (feasible) solution; the line search below then stays
+    // feasible)
+    if (inact.n_elem == 0) {
+      if (n_cons == 0) {
+        beta_new = solve( xw.t()*xw + regmat, xw.t()*(sqrt(w)%z) );
+      } else {
+        beta_new = beta;
+        bls_ok = bls_active_set(beta_new, xw.t()*xw + regmat, xw.t()*(sqrt(w)%z), cons) && bls_ok;
+      }
     } else {
-      // bounded weighted least squares solution, starting from the current
-      // (feasible) solution; the line search below then stays feasible
-      beta_new = beta;
-      bls_ok = bls_active_set(beta_new, xw.t()*xw + regmat, xw.t()*(sqrt(w)%z), cons) && bls_ok;
+      beta_new.zeros();
+      if (act.n_elem > 0) {
+        mat xw_act = xw.cols(act);
+        if (cons_act.n_elem == 0) {
+          beta_new.elem(act) = solve( xw_act.t()*xw_act + regmat,
+                                      xw_act.t()*(sqrt(w)%z) );
+        } else {
+          vec beta_act = beta.elem(act);
+          bls_ok = bls_active_set(beta_act, xw_act.t()*xw_act + regmat,
+                                  xw_act.t()*(sqrt(w)%z), cons_act) && bls_ok;
+          beta_new.elem(act) = beta_act;
+        }
+      }
     }
     dbeta = beta_new - beta;
-    grad = x.t()*grad_f + lambda*penalty%beta; // gradient of negative log likelihood + gradient of penalty
+    grad = x.t()*grad_f + lambda*penalty_grad%beta; // gradient of negative log likelihood + gradient of penalty
     decrement = -sum(grad%dbeta); // newton decrement
     
     // check for convergence

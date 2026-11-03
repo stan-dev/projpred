@@ -17,6 +17,19 @@ standardization <- function(x, center = TRUE, scale = TRUE, weights = NULL) {
   }
   if (scale) {
     sx <- apply(x, 2, .weighted_sd, w)
+    # A column that is constant over the observations with positive weight has
+    # scale 0 (rounding in .weighted_sd() can give a tiny positive value):
+    x_pos <- x[w > 0, , drop = FALSE]
+    if (nrow(x_pos) > 0) {
+      is_const <- colSums(x_pos != rep(x_pos[1, ], each = nrow(x_pos))) == 0
+      sx[which(is_const)] <- 0
+      if (!center) {
+        # Without centering, a nonzero constant column is a regular predictor
+        # (it acts as an intercept):
+        nz_const <- which(is_const & x_pos[1, ] != 0)
+        sx[nz_const] <- abs(x_pos[1, nz_const])
+      }
+    }
   } else {
     sx <- rep(1, ncol(x))
   }
