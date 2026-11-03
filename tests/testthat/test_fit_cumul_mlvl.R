@@ -43,12 +43,12 @@ test_that("check_conv_s() accepts ucminf() fits by code and gradient", {
   fit$gradient[] <- 1e-5
   for (code in c(1, 2, 4)) {
     fit$optRes$convergence <- code
-    expect_true(check_conv_s(fit), info = code)
+    expect_true(check_conv_s(fit), info = paste("code", code))
   }
   # Evaluation limit or no start:
   for (code in c(3, -2)) {
     fit$optRes$convergence <- code
-    expect_false(check_conv_s(fit), info = code)
+    expect_false(check_conv_s(fit), info = paste("code", code))
   }
   # A zero step far from the optimum:
   fit$optRes$convergence <- 4
