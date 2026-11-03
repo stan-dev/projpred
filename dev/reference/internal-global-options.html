@@ -35,6 +35,12 @@ projections (see GitHub issue
 #207 and GitHub pull
 request #353). Currently,
 this is an experimental feature.
+projpred.search_gauss_crossprod: A single logical value indicating
+whether to compute the forward search and the evaluation in the LOO CV with
+validated search for Gaussian submodels with the identity link (including
+the latent projection) from cross-products of the model matrix (default
+TRUE). With FALSE, projpred projects onto each candidate submodel
+draw by draw. The cross-products are used only with a positive regul.
 
 '><meta property="og:description" content='The following global options are for internal use:
 projpred.mssg_ndraws, projpred.mssg_cut_search, projpred.mssg_time,
@@ -71,6 +77,12 @@ projections (see GitHub issue
 #207 and GitHub pull
 request #353). Currently,
 this is an experimental feature.
+projpred.search_gauss_crossprod: A single logical value indicating
+whether to compute the forward search and the evaluation in the LOO CV with
+validated search for Gaussian submodels with the identity link (including
+the latent projection) from cross-products of the model matrix (default
+TRUE). With FALSE, projpred projects onto each candidate submodel
+draw by draw. The cross-products are used only with a positive regul.
 
 '><meta property="og:image" content="https://mc-stan.org/projpred/logo.svg"><meta name="robots" content="noindex"></head><body>
     <a href="#main" class="visually-hidden-focusable">Skip to contents</a>
@@ -171,6 +183,12 @@ projections (see GitHub issue
 <a href="https://github.com/stan-dev/projpred/issues/207" class="external-link">#207</a> and GitHub pull
 request <a href="https://github.com/stan-dev/projpred/pull/353" class="external-link">#353</a>). Currently,
 this is an experimental feature.</p></li>
+<li><p><code>projpred.search_gauss_crossprod</code>: A single logical value indicating
+whether to compute the forward search and the evaluation in the LOO CV with
+validated search for Gaussian submodels with the identity link (including
+the latent projection) from cross-products of the model matrix (default
+<code>TRUE</code>). With <code>FALSE</code>, <span class="pkg">projpred</span> projects onto each candidate submodel
+draw by draw. The cross-products are used only with a positive <code>regul</code>.</p></li>
 </ul></div>
 
 

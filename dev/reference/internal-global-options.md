@@ -49,3 +49,11 @@ The following global options are for internal use:
   GitHub pull request
   [\#353](https://github.com/stan-dev/projpred/pull/353)). Currently,
   this is an experimental feature.
+
+- `projpred.search_gauss_crossprod`: A single logical value indicating
+  whether to compute the forward search and the evaluation in the LOO CV
+  with validated search for Gaussian submodels with the identity link
+  (including the latent projection) from cross-products of the model
+  matrix (default `TRUE`). With `FALSE`, projpred projects onto each
+  candidate submodel draw by draw. The cross-products are used only with
+  a positive `regul`.

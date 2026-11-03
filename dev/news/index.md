@@ -4,6 +4,13 @@
 
 ### Major changes
 
+- Faster forward search and LOO CV with validated search for Gaussian
+  submodels with the identity link and for the latent projection,
+  computed from cross-products of the model matrix. For example,
+  [`cv_varsel()`](https://mc-stan.org/projpred/dev/reference/cv_varsel.md)
+  with `validate_search = TRUE` for a Gaussian model with 40
+  observations and 15 predictor terms is about 8 times faster. (GitHub:
+  [\#579](https://github.com/stan-dev/projpred/issues/579))
 - Less formula and model-matrix work in the forward search and in the
   projections: the candidate submodels are selected from precomputed
   term labels, and the predictions for the training data use the stored
