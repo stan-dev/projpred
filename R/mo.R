@@ -607,6 +607,100 @@ check_mo_monotone <- function(refmodel, terms_, method = NULL) {
   return(invisible(TRUE))
 }
 
+#' Monotonic effects of `mo()` terms in the parametrization of \pkg{brms}
+#'
+#' For a projection with `mo()` terms (see section "Monotonic terms" in
+#' [init_refmodel()]), `mo_effects()` converts the projected coefficients of
+#' each `mo()` term into the parametrization of \pkg{brms}: a coefficient `b`
+#' and a simplex `zeta`, so that the effect of level \eqn{j} (counted from 0)
+#' is \eqn{b D \sum_{k \le j} \zeta_k}{b * D * sum(zeta[1:j])} with \eqn{D}
+#' the number of levels minus 1.
+#'
+#' @param object An object of class `projection` (returned by [project()],
+#'   possibly as elements of a `list`).
+#' @param ... Currently ignored.
+#'
+#' @details For the projected coefficients \eqn{\beta_1, \ldots, \beta_D}{beta_1,
+#'   ..., beta_D} of the levels of a `mo()` term, \eqn{b = \sum_k \beta_k / D}{b
+#'   = sum(beta) / D} and \eqn{\zeta_k = \beta_k / \sum_l \beta_l}{zeta_k =
+#'   beta_k / sum(beta)}. If all coefficients are 0, `zeta` is `NA`. In the
+#'   default monotonic projection (global option `projpred.mo_monotone`), all
+#'   coefficients of a term have the same sign, so `zeta` is on the simplex.
+#'   In an unconstrained projection, elements of `zeta` can be negative or
+#'   larger than 1.
+#'
+#'   As in \pkg{brms}, an interaction of a `mo()` term with a factor has one
+#'   monotonic effect per column of the factor (for example `mo(x):fb`), and
+#'   an interaction with a numeric variable has one monotonic effect (for
+#'   example `mo(x):z`). Terms with only two levels have no simplex and are
+#'   left out.
+#'
+#' @return For a `projection` object, a [posterior::draws_matrix()] with one
+#'   row per projected draw (weighted by the weights of the projected draws)
+#'   and the columns `bsp_<term>` and `simo_<term>1[k]` (names as in
+#'   \pkg{brms}, for example `bsp_mox` and `simo_mox1[1]` for `mo(x)`). For a
+#'   `list` of `projection` objects, a `list` of such matrices.
+#'
+#' @export
+mo_effects <- function(object, ...) {
+  if (is.list(object) && !inherits(object, "projection") &&
+      length(object) > 0 &&
+      all(vapply(object, inherits, logical(1), what = "projection"))) {
+    return(lapply(object, mo_effects, ...))
+  }
+  if (!inherits(object, "projection")) {
+    stop("`object` must be of class `projection` (or a list of such objects).")
+  }
+  refm <- object$refmodel
+  fml <- make_formula(object$predictor_terms, formula = refm$formula)
+  fml_fixed <- reformulas::nobars(fml)
+  fml_rhs <- stats::as.formula(call("~", fml_fixed[[length(fml_fixed)]]),
+                               env = environment(fml))
+  fr <- model.frame(fml_rhs, data = refm$fetch_data(),
+                    drop.unused.levels = TRUE)
+  mm <- model.matrix(fml_rhs, data = fr)
+  groups <- mo_sign_groups(fr, mm, skip_multi = TRUE)
+  if (length(groups) == 0) {
+    stop("The submodel has no mo() terms with more than two levels.")
+  }
+  cnms <- colnames(mm)
+  coefs <- do.call(rbind, lapply(object$outdmin, function(fit) {
+    b <- mo_fit_coefs(fit)
+    b[match(cnms, names(b))]
+  }))
+  out <- do.call(cbind, lapply(seq_along(groups), function(i) {
+    g <- groups[[i]]
+    beta <- coefs[, g, drop = FALSE]
+    if (anyNA(beta)) {
+      stop("Internal error: the coefficients of the submodel do not match ",
+           "its model matrix. Please notify the package maintainer.")
+    }
+    beta_sum <- rowSums(beta)
+    zeta <- beta / beta_sum
+    zeta[beta_sum == 0, ] <- NA
+    coef_nm <- brms_rename(names(groups)[i])
+    out_i <- cbind(beta_sum / length(g), zeta)
+    colnames(out_i) <- c(paste0("bsp_", coef_nm),
+                         paste0("simo_", coef_nm, "1[", seq_along(g), "]"))
+    out_i
+  }))
+  rownames(out) <- NULL
+  attr(out, "wdraws_prj") <- object$wdraws_prj
+  return(mat2drmat(out))
+}
+
+# The renaming of brms for parameter names (brms:::rename() with its default
+# patterns).
+brms_rename <- function(x) {
+  pattern <- c(" ", "(", ")", "[", "]", ",", "\"", "'", "?", "+", "-", "*",
+               "/", "^", "=", "$")
+  replacement <- c(rep("", 9), "P", "M", "MU", "D", "E", "EQ", "USD")
+  for (i in seq_along(pattern)) {
+    x <- gsub(pattern[i], replacement[i], x, fixed = TRUE)
+  }
+  return(x)
+}
+
 # Can the submodel fitters with family `family` apply the monotonicity
 # constraint to multilevel submodels? (Only the Gaussian lmer() path.)
 mo_lmm_supported <- function(family) {

@@ -50,7 +50,7 @@ mo_sim <- function(n = 120, S = 40, D = 4, x_min = 0L, seed = 5602) {
                            dimnames = list(NULL, c("mo(f)mid", "mo(f)hi"))),
     z = b[, "bz"]
   )
-  return(nlist(dat, eta_fun, coef_true, S, D))
+  return(nlist(dat, eta_fun, coef_true, S, D, b, zeta_x, zeta_f))
 }
 
 # A reference model for `sim` (see mo_sim()). `ref_predfun_arr` turns the N x S
@@ -1220,6 +1220,75 @@ test_that(paste(
   on.exit(options(opts_old), add = TRUE)
   expect_s3_class(project(refm, predictor_terms = trms_ia, ndraws = 4,
                           verbose = FALSE), "projection")
+})
+
+# Monotonic effects in the parametrization of brms ------------------------
+
+test_that("mo_effects() gives the b and zeta of the brms parametrization", {
+  skip_if_not_installed("posterior")
+  sim <- mo_sim(x_min = -2L)
+  refm <- mo_refm(sim, y_gauss ~ mo(x) + mo(f) + z + w)
+  prj <- project(refm, predictor_terms = c("mo(x)", "mo(f)", "z", "w"),
+                 ndraws = sim$S, verbose = FALSE)
+  eff <- mo_effects(prj)
+  expect_s3_class(eff, "draws_matrix")
+  nms_x <- c("bsp_mox", paste0("simo_mox1[", 1:4, "]"))
+  nms_f <- c("bsp_mof", "simo_mof1[1]", "simo_mof1[2]")
+  expect_identical(posterior::variables(eff), c(nms_x, nms_f))
+  eff <- unclass(posterior::merge_chains(eff))
+  # The projection onto the full model reproduces the reference model draw by
+  # draw (up to the ridge penalty of the submodel fitter):
+  expect_equal(unname(eff[, "bsp_mox"]), unname(sim$b[, "bx"]),
+               tolerance = 1e-4)
+  expect_equal(unname(eff[, "bsp_mof"]), unname(sim$b[, "bf"]),
+               tolerance = 1e-4)
+  expect_equal(unname(eff[, nms_x[-1]]),
+               matrix(sim$zeta_x, sim$S, 4, byrow = TRUE), tolerance = 1e-4)
+  expect_equal(unname(eff[, nms_f[-1]]),
+               matrix(sim$zeta_f, sim$S, 2, byrow = TRUE), tolerance = 1e-4)
+  # A list of projections gives a list:
+  prjs <- project(refm, predictor_terms = c("mo(x)", "z"), ndraws = 4,
+                  verbose = FALSE)
+  expect_identical(posterior::variables(mo_effects(list(prjs, prj))[[1]]),
+                   nms_x)
+  expect_error(mo_effects(refm), "must be of class `projection`")
+  prj_z <- project(refm, predictor_terms = "z", ndraws = 4, verbose = FALSE)
+  expect_error(mo_effects(prj_z), "no mo\\(\\) terms")
+})
+
+test_that(paste(
+  "mo_effects() names interactions as brms, keeps the weights and gives `NA`",
+  "for a simplex of zero coefficients"
+), {
+  skip_if_not_installed("posterior")
+  refm <- mo_nonmono_refm(fml = y ~ f + f:mo(x) + z + z:mo(x2))
+  prj <- project(refm, predictor_terms = c("f", "f:mo(x)", "z", "z:mo(x2)"),
+                 nclusters = 3, verbose = FALSE)
+  eff <- mo_effects(prj)
+  # The names of brms (see brms::default_prior() for the same formula):
+  expect_identical(
+    posterior::variables(eff),
+    c(unlist(lapply(c("fa", "fb"), function(lv) {
+      c(paste0("bsp_", lv, ":mox"), paste0("simo_", lv, ":mox1[", 1:4, "]"))
+    })), "bsp_z:mox2", "simo_z:mox21[1]", "simo_z:mox21[2]")
+  )
+  expect_equal(unname(stats::weights(eff)), prj$wdraws_prj)
+  # Each simplex sums to 1 and has nonnegative elements:
+  eff_m <- unclass(posterior::merge_chains(eff))
+  zeta_fa <- eff_m[, paste0("simo_fa:mox1[", 1:4, "]")]
+  expect_equal(unname(rowSums(zeta_fa)), rep(1, 3), tolerance = 1e-12)
+  expect_true(all(zeta_fa >= 0))
+  # Draws whose monotonic effect is 0 (the sign from the full model is the
+  # opposite of the sign of the effect in the submodel):
+  refm_w <- mo_nonmono_refm(fml = y ~ mo(x) + z + w, c_w = 1)
+  prj_w <- project(refm_w, predictor_terms = c("mo(x)", "z"), ndraws = 20,
+                   verbose = FALSE)
+  eff_w <- unclass(posterior::merge_chains(mo_effects(prj_w)))
+  is_zero <- eff_w[, "bsp_mox"] == 0
+  expect_gt(sum(is_zero), 0)
+  cols_simo <- grep("^simo_", colnames(eff_w), value = TRUE)
+  expect_true(all(is.na(eff_w[is_zero, cols_simo])))
+  expect_false(anyNA(eff_w[!is_zero, cols_simo]))
 })
 
 # Latent and augmented-data projection ------------------------------------
