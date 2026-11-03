@@ -1050,10 +1050,14 @@ fit_cumul_mlvl <- function(formula, data, family, weights, ...) {
       methods::formalArgs(stats::optim))
   )]
   # clmm() has no analytic gradient, so its default optimizer nlminb() spends
-  # most objective evaluations on central-difference gradients.  ucminf() with
+  # most objective evaluations on finite-difference gradients.  ucminf() with
   # forward differences needs fewer evaluations and gives the same fits within
-  # the optimizer tolerance.  Use it unless the caller chose an optimizer:
-  use_ucminf <- is.null(dot_args$method) && is.null(dot_args$control)
+  # the optimizer tolerance.  clmm() can use ucminf() only for a single
+  # `(1 | <group>)` term.  Use it then, unless the caller chose an optimizer:
+  bars <- reformulas::findbars(formula)
+  use_ucminf <- is.null(dot_args[["method"]]) &&
+    is.null(dot_args[["control"]]) && length(bars) == 1 &&
+    identical(bars[[1]][[2]], 1)
   # Since ordinal::clmm() sometimes seems to have issues with formulas lacking
   # an intercept, add it here (note that this is a quite "hacky" solution;
   # perhaps reformulate() could be used instead):
@@ -1082,22 +1086,38 @@ fit_cumul_mlvl <- function(formula, data, family, weights, ...) {
     return(fitobj)
   }
   if (use_ucminf) {
-    warns <- list()
-    fitobj <- try(withCallingHandlers(
-      fit_clmm(c(dot_args, list(method = "ucminf", grad = "forward"))),
-      warning = function(w) {
-        warns[[length(warns) + 1L]] <<- w
-        invokeRestart("muffleWarning")
-      }
-    ), silent = TRUE)
-    # If ucminf() fails or does not converge, refit with the nlminb() default
-    # and drop the warnings of the ucminf() fit:
-    if (!inherits(fitobj, "try-error") && check_conv_s(fitobj)) {
-      for (w in warns) warning(w)
-      return(fitobj)
-    }
+    # If ucminf() fails or does not converge, refit with the nlminb() default:
+    return(fit_with_fallback(
+      function() fit_clmm(c(dot_args, list(method = "ucminf",
+                                           grad = "forward"))),
+      function() fit_clmm(dot_args),
+      accept = check_conv_s
+    ))
   }
   return(fit_clmm(dot_args))
+}
+
+# Return `fit_first()` if it gives no error and `accept()` returns `TRUE` for
+# its result; then signal its warnings and messages again.  Otherwise return
+# `fit_second()`, without the warnings and messages of `fit_first()`.
+fit_with_fallback <- function(fit_first, fit_second, accept) {
+  conds <- list()
+  keep_cond <- function(cnd, restart) {
+    conds[[length(conds) + 1L]] <<- cnd
+    invokeRestart(restart)
+  }
+  res <- try(withCallingHandlers(
+    fit_first(),
+    warning = function(w) keep_cond(w, "muffleWarning"),
+    message = function(m) keep_cond(m, "muffleMessage")
+  ), silent = TRUE)
+  if (!inherits(res, "try-error") && isTRUE(accept(res))) {
+    for (cnd in conds) {
+      if (inherits(cnd, "warning")) warning(cnd) else message(cnd)
+    }
+    return(res)
+  }
+  return(fit_second())
 }
 
 # Use nnet::multinom() to fit submodels for the brms::categorical() family:
@@ -1295,10 +1315,12 @@ check_conv_s <- function(fit_s) {
   } else if (inherits(fit_s, "multinom")) {
     return(fit_s$convergence == 0)
   } else if (inherits(fit_s, "clmm")) {
-    if (identical(fit_s$control$method, "ucminf")) {
-      # ucminf() codes: 1 (small gradient), 2 (small step) and 4 (zero step in
-      # the line search, which forward differences can cause near the
-      # optimum).  `gradient` is the central-difference gradient after the fit.
+    if (is.null(fit_s$optRes$objective)) {
+      # No `objective` (which nlminb() returns), so ucminf() ran.  Its codes:
+      # 1 (small gradient), 2 (small step) and 4 (zero step in the line
+      # search, which forward differences can cause near the optimum).
+      # `gradient` is the central-difference gradient after the fit; the
+      # limit is absolute, as `grtol` of ucminf():
       return(fit_s$optRes$convergence %in% c(1, 2, 4) &&
                all(is.finite(fit_s$gradient)) &&
                max(abs(fit_s$gradient)) < 1e-3)
