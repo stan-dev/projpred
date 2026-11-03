@@ -75,7 +75,9 @@
 #'     from class `glmerMod`) for all other families. For [lme4::glmer()],
 #'     \pkg{projpred}'s default `control` is
 #'     `lme4::glmerControl(optimizer = "bobyqa")` (BOBYQA in both optimization
-#'     stages); a `control` argument passed via `...` replaces it.
+#'     stages). A `control` argument passed via `...` replaces it in the first
+#'     fit; the automatic refits after some \pkg{lme4} errors use
+#'     \pkg{projpred}'s own settings.
 #'     + For the augmented-data projection: [ordinal::clmm()] (the returned
 #'     object inherits from class `clmm`) for the [brms::cumulative()] family,
 #'     [mclogit::mblogit()] (the returned object inherits from class `mmblogit`)

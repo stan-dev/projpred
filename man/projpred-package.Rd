@@ -71,7 +71,9 @@ the \code{\link[=gaussian]{gaussian()}} family, \code{\link[lme4:glmer]{lme4::gl
 from class \code{glmerMod}) for all other families. For \code{\link[lme4:glmer]{lme4::glmer()}},
 \pkg{projpred}'s default \code{control} is
 \code{lme4::glmerControl(optimizer = "bobyqa")} (BOBYQA in both optimization
-stages); a \code{control} argument passed via \code{...} replaces it.
+stages). A \code{control} argument passed via \code{...} replaces it in the first
+fit; the automatic refits after some \pkg{lme4} errors use
+\pkg{projpred}'s own settings.
 \item For the augmented-data projection: \code{\link[ordinal:clmm]{ordinal::clmm()}} (the returned
 object inherits from class \code{clmm}) for the \code{\link[brms:cumulative]{brms::cumulative()}} family,
 \code{\link[mclogit:mblogit]{mclogit::mblogit()}} (the returned object inherits from class \code{mmblogit})
