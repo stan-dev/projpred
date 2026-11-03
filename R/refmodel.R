@@ -170,12 +170,12 @@
 #'
 #' By default (global option `projpred.mo_monotone = TRUE`), the projected
 #' effect of each `mo()` term is monotonic: the coefficients of its indicators
-#' have the same sign. A projected draw (or cluster) whose unconstrained
-#' projection is monotonic keeps it. Otherwise, the sign comes from the
-#' unconstrained projection of the same draw onto the full model (all
-#' predictor terms of `formula`): it is the sign of the sum of the
-#' coefficients of the same term (same name and the same coding of its
-#' factors) there. In `mo(x) * z`, for example, the full-model term `mo(x)` is
+#' have the same sign. If the unconstrained projection of a projected draw (or
+#' cluster) is monotonic, \pkg{projpred} keeps it. Otherwise, the sign is the
+#' sign of the sum of the coefficients of the same term (same name and same
+#' coding of its factors) in the unconstrained projection of the same draw
+#' onto the full model (all predictor terms of `formula`). In `mo(x) * z`,
+#' for example, the full-model term `mo(x)` is
 #' the effect of `x` at `z = 0`. If the full model does not have the term
 #' (possible with custom `search_terms`) or if the projection onto the full
 #' model fails, the sign is the sign of the sum of the unconstrained
@@ -196,10 +196,10 @@
 #' `mo()` call, and `mo()` calls inside other calls.
 #' With `options(projpred.mo_monotone = FALSE)`, the coefficients of the
 #' indicators are not constrained (so the projected effect of `x` is not
-#' necessarily monotonic), and these cases are supported. The option applies
-#' when the projections run: in a parallel \eqn{K}-fold CV, the parallel
-#' workers use their own value of the option, and `refit_prj = FALSE` uses the
-#' submodel fits of the search as they are.
+#' necessarily monotonic), and these cases are supported. \pkg{projpred} reads
+#' the option when it projects: in a parallel \eqn{K}-fold CV, the workers use
+#' their own value of the option, and `refit_prj = FALSE` reuses the submodel
+#' fits of the search.
 #'
 #' # Arguments `ref_predfun`, `proj_predfun`, and `div_minimizer`
 #'

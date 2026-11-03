@@ -232,12 +232,11 @@ group-level terms and in additive multilevel models.
 
 By default (global option \code{projpred.mo_monotone = TRUE}), the projected
 effect of each \code{mo()} term is monotonic: the coefficients of its indicators
-have the same sign. A projected draw (or cluster) whose unconstrained
-projection is monotonic keeps it. Otherwise, the sign comes from the
-unconstrained projection of the same draw onto the full model (all
-predictor terms of \code{formula}): it is the sign of the sum of the
-coefficients of the same term (same name and the same coding of its
-factors) there. In \code{mo(x) * z}, for example, the full-model term \code{mo(x)} is
+have the same sign. If the unconstrained projection of a projected draw (or
+cluster) is monotonic, \pkg{projpred} keeps it. Otherwise, the sign is the
+sign of the sum of the coefficients of the same term (same name and same
+coding of its factors) in the unconstrained projection of the same draw
+onto the full model (all predictor terms of \code{formula}). In \code{mo(x) * z}, for example, the full-model term \code{mo(x)} is
 the effect of \code{x} at \code{z = 0}. If the full model does not have the term
 (possible with custom \code{search_terms}) or if the projection onto the full
 model fails, the sign is the sign of the sum of the unconstrained
@@ -258,10 +257,10 @@ terms, multilevel submodels with another family, terms with more than one
 \code{mo()} call, and \code{mo()} calls inside other calls.
 With \code{options(projpred.mo_monotone = FALSE)}, the coefficients of the
 indicators are not constrained (so the projected effect of \code{x} is not
-necessarily monotonic), and these cases are supported. The option applies
-when the projections run: in a parallel \eqn{K}-fold CV, the parallel
-workers use their own value of the option, and \code{refit_prj = FALSE} uses the
-submodel fits of the search as they are.
+necessarily monotonic), and these cases are supported. \pkg{projpred} reads
+the option when it projects: in a parallel \eqn{K}-fold CV, the workers use
+their own value of the option, and \code{refit_prj = FALSE} reuses the submodel
+fits of the search.
 }
 
 \section{Arguments \code{ref_predfun}, \code{proj_predfun}, and \code{div_minimizer}}{

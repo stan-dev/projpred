@@ -118,24 +118,15 @@ is_mo_call <- function(expr) {
            identical(fun[[3L]], quote(mo)))
 }
 
-# Column groups of the model matrix `mm` for the monotonicity constraint. `fr`
-# is the model frame of `mm` (its terms with the attribute "predvars", see
-# makepredictcall.mo_basis()), and `mm` must have the attributes "assign" and
-# "contrasts" (as from model.matrix()). In a term with a mo() call, the
-# columns with the same values of the other variables of the term form one
-# group, for example all columns of `mo(x)` or of `mo(x):z`, or the columns of
-# `mo(x):f` for one column of the factor `f`. As in brms, which gives each such
-# column its own monotonic effect, the sum of two groups (for example the
-# effect of `x` within one level of `f` in `mo(x) * f`) is not constrained.
-# Groups with one column (a predictor with two levels) are left out because
-# one coefficient is always monotonic. Returns a named list of the column
-# indices in `mm`, ordered by the level of the mo() predictor. The names are
-# the column names in which the mo() part is replaced by the mo() call, for
-# example `mo(x)` or `mo(x):fb`. Attribute "keys" holds the names with the
-# coding of the term appended; groups with the same key have the same meaning
-# in different models (used for the signs from the full model). Terms with
-# more than one mo() call give an error, or are left out if `skip_multi` is
-# `TRUE`.
+# Column groups of the model matrix `mm` (with the attributes "assign" and
+# "contrasts") for the monotonicity constraint; `fr` is its model frame. A
+# group holds the columns of a mo() term that share the values of the other
+# variables of the term: all columns of `mo(x)` or `mo(x):z`, or the columns
+# of `mo(x):f` for one column of `f` (as in brms). Groups with one column are
+# left out. Returns a named list of column indices of `mm`, ordered by level,
+# named like `mo(x)` or `mo(x):fb`. Attribute "keys" adds the coding of the
+# factors of the term, for matching groups between models. Terms with more
+# than one mo() call give an error, or are left out with `skip_multi = TRUE`.
 mo_sign_groups <- function(fr, mm, skip_multi = FALSE) {
   trms <- attr(fr, "terms")
   fcts <- attr(trms, "factors")
@@ -559,13 +550,12 @@ has_nested_mo <- function(expr) {
   return(has_mo_call(expr))
 }
 
-# Throws an error at the start of a search or a projection for the cases that
-# monotonic projections of mo() terms do not support. `terms_` are the
-# predictor terms of the possible submodels (elements can be sums of terms, as
-# in `search_terms`), and `method` is the search method (`NULL` for
-# project()). For a search, the check is conservative: for example, it stops
-# for a group term with a non-Gaussian family also if no submodel combines it
-# with a mo() term.
+# Stops before a search or a projection starts if monotonic projections do
+# not support the case. `terms_` are the predictor terms of the possible
+# submodels (elements can be sums, as in `search_terms`); `method` is the
+# search method (`NULL` for project()). For a search, the check is
+# conservative: a group term with a non-Gaussian family stops it also if no
+# submodel combines the group term with a mo() term.
 check_mo_monotone <- function(refmodel, terms_, method = NULL) {
   if (!mo_monotone()) {
     return(invisible(TRUE))
