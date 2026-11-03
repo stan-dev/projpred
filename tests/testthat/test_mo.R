@@ -466,6 +466,33 @@ test_that(paste(
   }
 })
 
+test_that(paste(
+  "glm_ridge() with sign constraints and a column that is constant over the",
+  "observations with positive weight gives the fit without that column"
+), {
+  lambda <- 1e-4
+  for (fam in list(extend_family(gaussian()), extend_family(binomial()))) {
+    d <- cons_data(fam)
+    # Column 4 is I(x1 >= 4); without the observations with x1 = 4, it is 0
+    # for all observations with positive weight:
+    d$weights[d$x[, 4] == 1] <- 0
+    # The effect of x1 is not monotonic, so the constraint binds:
+    fit <- glm_ridge(d$x, d$y, family = fam, lambda = lambda,
+                     weights = d$weights, offset = d$offset, thresh = 1e-12,
+                     cons_cols = 1:4, cons_signs = rep(1, 4))
+    fit_drop <- glm_ridge(d$x[, -4], d$y, family = fam, lambda = lambda,
+                          weights = d$weights, offset = d$offset,
+                          thresh = 1e-12, cons_cols = 1:3,
+                          cons_signs = rep(1, 3))
+    b <- drop(fit$beta)
+    expect_identical(unname(b[4]), 0, info = fam$family)
+    expect_true(all(b[1:3] >= 0), info = fam$family)
+    expect_true(any(b[1:3] == 0), info = fam$family)
+    expect_equal(c(fit$beta0, b[-4]), c(fit_drop$beta0, drop(fit_drop$beta)),
+                 tolerance = 1e-8, info = fam$family)
+  }
+})
+
 test_that("glm_ridge() checks the sign constraints", {
   d <- cons_data(extend_family(gaussian()), n = 20)
   expect_error(glm_ridge(d$x, d$y, cons_cols = 1:2, cons_signs = 1),
