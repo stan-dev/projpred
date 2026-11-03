@@ -69,11 +69,10 @@ projection in case of the \code{\link[=binomial]{binomial()}} or \code{\link[brm
 \code{\link[lme4:lmer]{lme4::lmer()}} (the returned object inherits from class \code{lmerMod}) for
 the \code{\link[=gaussian]{gaussian()}} family, \code{\link[lme4:glmer]{lme4::glmer()}} (the returned object inherits
 from class \code{glmerMod}) for all other families. For \code{\link[lme4:glmer]{lme4::glmer()}},
-\pkg{projpred}'s default \code{control} is
-\code{lme4::glmerControl(optimizer = "bobyqa")} (BOBYQA in both optimization
-stages). A \code{control} argument passed via \code{...} replaces it in the first
-fit; the automatic refits after some \pkg{lme4} errors use
-\pkg{projpred}'s own settings.
+\pkg{projpred} uses \code{control = lme4::glmerControl(optimizer = "bobyqa")},
+so both optimization stages use BOBYQA. A \code{control} argument in \code{...}
+replaces this default in the first fit. After some \pkg{lme4} errors,
+\pkg{projpred} refits with its own settings.
 \item For the augmented-data projection: \code{\link[ordinal:clmm]{ordinal::clmm()}} (the returned
 object inherits from class \code{clmm}) for the \code{\link[brms:cumulative]{brms::cumulative()}} family,
 \code{\link[mclogit:mblogit]{mclogit::mblogit()}} (the returned object inherits from class \code{mmblogit})

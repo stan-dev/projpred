@@ -4,7 +4,7 @@
 test_that("control_callback() uses BOBYQA in both stages of glmer()", {
   skip_if_not_installed("lme4")
   expect_identical(control_callback(binomial())$optimizer, c("bobyqa", "bobyqa"))
-  # The arguments of the refits after lme4 errors:
+  # Arguments of the refits after lme4 errors:
   ctrl_tol <- control_callback(poisson(), tolPwrss = 1e-6,
                                optCtrl = list(maxfun = 1e4))
   expect_identical(ctrl_tol$optimizer, c("bobyqa", "bobyqa"))
@@ -39,7 +39,7 @@ test_that("fit_glmer_callback() fits with BOBYQA by default", {
   )
   expect_s4_class(fit, "glmerMod")
   expect_identical(fit@optinfo$optimizer, "bobyqa")
-  # A `control` argument of the caller replaces the default:
+  # A `control` from the caller replaces the default:
   fit_nm <- fit_glmer_callback(
     formula = y ~ x + (1 | g),
     projpred_formula_no_random = y ~ x,
