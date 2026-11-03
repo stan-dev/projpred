@@ -68,7 +68,10 @@ inherits from class \code{multinom}) for the \code{\link[brms:categorical]{brms:
 projection in case of the \code{\link[=binomial]{binomial()}} or \code{\link[brms:bernoulli]{brms::bernoulli()}} family):
 \code{\link[lme4:lmer]{lme4::lmer()}} (the returned object inherits from class \code{lmerMod}) for
 the \code{\link[=gaussian]{gaussian()}} family, \code{\link[lme4:glmer]{lme4::glmer()}} (the returned object inherits
-from class \code{glmerMod}) for all other families.
+from class \code{glmerMod}) for all other families. For \code{\link[lme4:glmer]{lme4::glmer()}},
+\pkg{projpred}'s default \code{control} is
+\code{lme4::glmerControl(optimizer = "bobyqa")} (BOBYQA in both optimization
+stages); a \code{control} argument passed via \code{...} replaces it.
 \item For the augmented-data projection: \code{\link[ordinal:clmm]{ordinal::clmm()}} (the returned
 object inherits from class \code{clmm}) for the \code{\link[brms:cumulative]{brms::cumulative()}} family,
 \code{\link[mclogit:mblogit]{mclogit::mblogit()}} (the returned object inherits from class \code{mmblogit})

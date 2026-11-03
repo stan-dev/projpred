@@ -72,7 +72,10 @@
 #'     projection in case of the [binomial()] or [brms::bernoulli()] family):
 #'     [lme4::lmer()] (the returned object inherits from class `lmerMod`) for
 #'     the [gaussian()] family, [lme4::glmer()] (the returned object inherits
-#'     from class `glmerMod`) for all other families.
+#'     from class `glmerMod`) for all other families. For [lme4::glmer()],
+#'     \pkg{projpred}'s default `control` is
+#'     `lme4::glmerControl(optimizer = "bobyqa")` (BOBYQA in both optimization
+#'     stages); a `control` argument passed via `...` replaces it.
 #'     + For the augmented-data projection: [ordinal::clmm()] (the returned
 #'     object inherits from class `clmm`) for the [brms::cumulative()] family,
 #'     [mclogit::mblogit()] (the returned object inherits from class `mmblogit`)

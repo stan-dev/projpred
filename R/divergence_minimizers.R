@@ -754,7 +754,12 @@ control_callback <- function(family, ...) {
              getOption("projpred.gaussian_not_as_generalized", TRUE)) {
     return(lme4::lmerControl(...))
   } else {
-    return(lme4::glmerControl(...))
+    # BOBYQA also in the second stage of lme4::glmer() (lme4's default there is
+    # Nelder-Mead, which needs about 2-4 times more deviance evaluations for
+    # the submodel fits). A user-given `optimizer` is kept.
+    ctrl_args <- list(...)
+    if (is.null(ctrl_args[["optimizer"]])) ctrl_args[["optimizer"]] <- "bobyqa"
+    return(do.call(lme4::glmerControl, ctrl_args))
   }
 }
 
