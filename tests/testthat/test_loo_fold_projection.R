@@ -275,3 +275,99 @@ test_that(paste(
   wobs[n] <- 1
   expect_null(attr(divmin_w0(fmls$glmm), "projpred_lost_lvls"))
 })
+
+test_that(paste(
+  "GLM submodels and the LOO CV with validated search handle a factor level",
+  "that only the observation with weight 0 has"
+), {
+  skip_on_cran()
+  set.seed(4)
+  n <- 30
+  wobs <- c(rep(1, n - 1), 0)
+  # Factor `xc` with levels `lv`; only observation n has level `lv_n`:
+  make_dat <- function(lv, lv_n) {
+    xc <- factor(c(rep(setdiff(lv, lv_n), length.out = n - 1), lv_n),
+                 levels = lv)
+    dat <- data.frame(x = rnorm(n), xc = xc)
+    eff <- c(a = 0, b = 1, c = -1)[as.character(xc)]
+    for (s in 1:2) dat[[paste0(".y.", s)]] <- dat$x + eff + rnorm(n, sd = 0.3)
+    dat
+  }
+  fit_w0 <- function(dat) {
+    suppressWarnings(divmin(
+      formula = cbind(.y.1, .y.2) ~ x + xc, data = dat,
+      family = extend_family(gaussian()), weights = wobs,
+      projpred_var = matrix(NA, n, 2), projpred_ws_aug = matrix(NA, n, 2),
+      verbose_divmin = FALSE
+    ))
+  }
+  prd_n <- function(fits, dat, lvl = NULL) {
+    if (!is.null(lvl)) dat$xc[n] <- lvl
+    subprd(fits, dat)[n, ]
+  }
+  dats <- list(A = make_dat(c("a", "b", "c"), "c"),
+               B = make_dat(c("a", "b", "c"), "a"),
+               B2 = make_dat(c("a", "b"), "a"))
+  fits <- lapply(dats, fit_w0)
+  # The GLM fitter keeps the rows with weight 0:
+  for (nm in names(fits)) {
+    expect_null(attr(fits[[nm]], "projpred_lost_lvls"), info = nm)
+  }
+  # A lost level other than the reference level gets the coefficient 0, so its
+  # prediction is the one for the reference level:
+  expect_equal(prd_n(fits$A, dats$A), prd_n(fits$A, dats$A, "a"))
+  # A lost reference level: with two remaining levels, the prediction is their
+  # midpoint; with one remaining level, it is the one for that level:
+  expect_equal(prd_n(fits$B, dats$B),
+               (prd_n(fits$B, dats$B, "b") + prd_n(fits$B, dats$B, "c")) / 2,
+               tolerance = 1e-6)
+  expect_equal(prd_n(fits$B2, dats$B2), prd_n(fits$B2, dats$B2, "b"))
+  # The LOO CV with validated search runs, with the same results with and
+  # without the cross-product computations. In the fold of observation n, a
+  # dummy column has the weighted standard deviation 0 in cases A and B2, so
+  # the cross-product evaluation does not apply there. In case B, it applies.
+  # Count the cross-product evaluations of this fold:
+  calls <- new.env()
+  calls$n <- 0L
+  ns <- asNamespace("projpred")
+  suppressMessages(trace(
+    "perf_eval_gauss", where = ns, print = FALSE,
+    exit = bquote(if (!is.null(returnValue(NULL)) &&
+                      isTRUE(all(indices_test == .(n)))) {
+      assign("n", get("n", envir = .(calls)) + 1L, envir = .(calls))
+    })
+  ))
+  on.exit(suppressMessages(untrace("perf_eval_gauss", where = ns)),
+          add = TRUE)
+  n_crossprod_exp <- c(A = 0L, B = 1L, B2 = 0L)
+  S <- 20
+  for (nm in names(dats)) {
+    dat_r <- data.frame(y = dats[[nm]]$.y.1, x = dats[[nm]]$x,
+                        xc = dats[[nm]]$xc)
+    mm <- model.matrix(~ x + xc, dat_r)
+    beta <- qr.solve(mm, dat_r$y) +
+      matrix(rnorm(ncol(mm) * S, sd = 0.05), ncol(mm))
+    refm <- suppressWarnings(init_refmodel(
+      object = list(beta = beta), data = dat_r, formula = y ~ x + xc,
+      family = gaussian(),
+      ref_predfun = function(fit, newdata = NULL) {
+        model.matrix(~ x + xc, newdata %||% dat_r) %*% fit$beta
+      },
+      dis = rep(0.3, S)
+    ))
+    args_cv <- list(refm, cv_method = "LOO", validate_search = TRUE,
+                    method = "forward", nclusters = 3, ndraws_pred = S,
+                    seed = 5, verbose = FALSE)
+    calls$n <- 0L
+    cv_cp <- suppressWarnings(do.call(cv_varsel, args_cv))
+    expect_identical(calls$n, n_crossprod_exp[[nm]], info = nm)
+    opts_old <- options(projpred.search_gauss_crossprod = FALSE)
+    on.exit(options(opts_old), add = TRUE)
+    cv_dw <- suppressWarnings(do.call(cv_varsel, args_cv))
+    options(opts_old)
+    expect_identical(ranking(cv_cp), ranking(cv_dw), info = nm)
+    expect_equal(performances(cv_cp, deltas = FALSE),
+                 performances(cv_dw, deltas = FALSE), tolerance = 1e-6,
+                 info = nm)
+  }
+})

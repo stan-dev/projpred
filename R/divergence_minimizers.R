@@ -214,11 +214,15 @@ divmin <- function(
 # these unused levels. Factor-like: factor, character and logical variables,
 # and numeric variables that the fixed-effects part of `formula` uses only
 # inside factor(), as.factor(), ordered() or as.ordered(). recode_lost_levels()
-# predicts these levels as the reference level. With treatment contrasts, this
-# is the prediction for a level without a coefficient. The GLM fitter keeps the
-# rows with weight 0 and gives the same prediction, because its ridge penalty
-# sets such a coefficient to almost zero. With other contrasts, it is the
-# prediction for the first remaining level. Grouping factors are excluded:
+# predicts these levels as the reference level (the first remaining level).
+# In divmin(), the GLM fitter keeps the rows with weight 0 and does not use
+# this function. With treatment contrasts, the dummy column of a lost level
+# other than the reference level is then constant over the rows with positive
+# weight, so glm_ridge() sets its coefficient to 0 and the prediction is the
+# same as here. If the reference level is lost, the GLM prediction for it is
+# the mean of the predictions for the remaining levels, weighted by p (1 - p)
+# with p the weighted share of a level (for two levels, the midpoint). Both
+# predict a level that the fit did not see. Grouping factors are excluded:
 # repair_re() treats a lost group as a new group. Returns `NULL` if no level is
 # lost.
 lost_levels <- function(data, keep, formula) {
