@@ -167,7 +167,11 @@ test_that("divmin_augdat() works", {
         "length > 1"
       )
     } else if (fam_crr == "categ" && mod_crr == "glmm") {
-      warn_expected <- if (packageVersion("mclogit") >= "0.9.6") {
+      # Without offsets, projpred's own PQL fit (categ_pql_fit()) is used, with
+      # mclogit::mblogit() only for offsets:
+      warn_expected <- if (!grepl("\\.with_offs", tstsetup)) {
+        NA
+      } else if (packageVersion("mclogit") >= "0.9.6") {
         "Inner iterations did not coverge"
       } else {
         paste0("^step size truncated due to possible divergence$|",

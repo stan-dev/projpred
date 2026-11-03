@@ -26,6 +26,8 @@ categ_pql_test_data <- function(seed = 5, n = 200, n_g = 20, sd_g = 0.6) {
 # mblogit() with the corrected sum of the diagonal blocks (see the header of
 # R/categ_pql.R), so that both fits use the same gradient:
 mblogit_fixed <- function(...) {
+  skip_if_not(exists("sum_blockDiag", envir = asNamespace("mclogit"),
+                     inherits = FALSE))
   fixed_sum_blockDiag <- function(x, n) {
     nblks <- nrow(x) %/% n
     offs <- rep((seq_len(nblks) - 1L) * n, each = n * n)
@@ -35,7 +37,7 @@ mblogit_fixed <- function(...) {
   }
   local_mocked_bindings(sum_blockDiag = fixed_sum_blockDiag,
                         .package = "mclogit")
-  out <- utils::capture.output(fit <- suppressWarnings(mclogit::mblogit(...)))
+  utils::capture.output(fit <- suppressWarnings(mclogit::mblogit(...)))
   fit
 }
 
@@ -45,40 +47,50 @@ expect_pql_like_mblogit <- function(fit, fit_ref, tol = 1e-4, tol_vc = tol) {
   expect_s3_class(fit, "mmblogit")
   expect_equal(fit$coefficients, fit_ref$coefficients, tolerance = tol)
   expect_equal(fit$coefmat, fit_ref$coefmat, tolerance = tol)
-  expect_equal(unname(fit$VarCov), unname(fit_ref$VarCov), tolerance = tol_vc)
-  expect_identical(lapply(fit$VarCov, dimnames),
-                   lapply(fit_ref$VarCov, dimnames))
+  expect_equal(fit$VarCov, fit_ref$VarCov, tolerance = tol_vc)
   expect_identical(names(fit$groups), names(fit_ref$groups))
   expect_identical(lapply(fit$groups, levels), lapply(fit_ref$groups, levels))
-  expect_equal(lapply(fit$random.effects, as.vector),
-               lapply(fit_ref$random.effects, as.vector), tolerance = tol_vc)
+  ranef_ref <- lapply(seq_along(fit_ref$random.effects), function(k) {
+    fit_ref$random.effects[[k]]
+  })
+  expect_equal(fit$random.effects, ranef_ref, tolerance = tol_vc)
   expect_equal(fit$deviance, fit_ref$deviance, tolerance = tol)
+  expect_identical(fit$random, fit_ref$random)
+  expect_identical(fit$D, fit_ref$D)
   nd <- fit_ref$data[1:7, ]
   expect_equal(predict(fit, newdata = nd, conditional = FALSE),
                predict(fit_ref, newdata = nd, conditional = FALSE),
                tolerance = tol)
 }
 
+# Where a group-level covariance matrix is nearly singular, the criterion is
+# flat and nlminb() can report a singular convergence.  Allow only this warning:
+with_inner_warnings_only <- function(expr) {
+  withCallingHandlers(expr, warning = function(w) {
+    expect_match(conditionMessage(w), "^Inner iterations did not converge")
+    invokeRestart("muffleWarning")
+  })
+}
+
 test_that("categ_pql_fit() agrees with mblogit() for a group-level intercept", {
-  skip_if_not_installed("mclogit")
   dat <- categ_pql_test_data()
   fit_ref <- mblogit_fixed(P ~ x1 + x2, random = ~ 1 | g, data = dat)
-  fit <- suppressWarnings(
+  fit <- with_inner_warnings_only(
     categ_pql_fit(P ~ x1 + x2, random = list(~ 1 | g), data = dat)
   )
+  expect_true(fit$converged)
   expect_pql_like_mblogit(fit, fit_ref)
 })
 
 test_that("categ_pql_fit() agrees with mblogit() for a slope and two groups", {
-  skip_if_not_installed("mclogit")
   dat <- categ_pql_test_data(seed = 13)
   fit_ref <- mblogit_fixed(P ~ x1 + x2, random = list(~ 1 + x1 | g, ~ 1 | h),
                            data = dat)
-  fit <- suppressWarnings(
+  fit <- with_inner_warnings_only(
     categ_pql_fit(P ~ x1 + x2, random = list(~ 1 + x1 | g, ~ 1 | h),
                   data = dat)
   )
-  # The 4 x 4 covariance matrix of `g` is nearly singular:
+  expect_true(fit$converged)
   expect_pql_like_mblogit(fit, fit_ref, tol = 1e-3, tol_vc = 0.1)
 })
 
@@ -108,36 +120,84 @@ test_that("the gradient of the inner PQL objective is correct", {
   expect_equal(grad, grad_num, tolerance = 1e-6)
 })
 
-test_that("fit_categ_mlvl() uses categ_pql_fit() for augmented data", {
-  skip_if_not_installed("mclogit")
+test_that("categ_pql_fit() handles zero weights, factors and character groups", {
   dat <- categ_pql_test_data()
+  dat$P[1:3, ] <- 0
+  dat$f <- factor(rep(c("u", "v"), length.out = nrow(dat)),
+                  levels = c("u", "v", "unused"))
+  dat$g_chr <- as.character(dat$g)
+  fit <- suppressWarnings(
+    categ_pql_fit(P ~ x1 + f, random = list(~ 1 | g_chr), data = dat)
+  )
+  expect_s3_class(fit, "mmblogit")
+  expect_identical(fit$xlevels, list(f = c("u", "v")))
+  expect_identical(levels(fit$groups$g_chr), sort(unique(dat$g_chr)))
+  expect_true(all(is.finite(fit$coefficients)))
+})
+
+test_that("categ_pql_fit() returns NULL for cases left to mblogit()", {
+  dat <- categ_pql_test_data()
+  dat$x1_copy <- dat$x1
+  # Rank-deficient model matrix:
+  expect_null(categ_pql_fit(P ~ x1 + x1_copy, random = list(~ 1 | g),
+                            data = dat))
+  # A group variable in two terms:
+  expect_null(categ_pql_fit(P ~ x1, random = list(~ 1 | g, ~ 0 + x1 | g),
+                            data = dat))
+  # A nested group term:
+  expect_null(categ_pql_fit(P ~ x1, random = list(~ 1 | h / g), data = dat))
+  # Too many cells in the group-level design matrix:
+  expect_null(categ_pql_fit(P ~ x1, random = list(~ 1 | g), data = dat,
+                            max_cells = 100))
+})
+
+# Augmented data: the observations in one block per response category.
+categ_pql_aug_args <- function(dat) {
   P <- dat$P
   dat$P <- NULL
-  # Augmented data: the observations in one block per response category.
-  dat_aug <- dat[rep(seq_len(nrow(dat)), 3), ]
+  dat_aug <- dat[rep(seq_len(nrow(dat)), ncol(P)), ]
   dat_aug$y <- factor(rep(colnames(P), each = nrow(dat)))
-  args <- list(formula = y ~ x1 + x2 + (1 | g),
-               projpred_formula_no_random = y ~ x1 + x2,
-               projpred_random = ~ (1 | g), data = dat_aug,
-               family = list(link = "logit"), weights = as.vector(P))
+  list(formula = y ~ x1 + x2 + (1 | g),
+       projpred_formula_no_random = y ~ x1 + x2,
+       projpred_random = ~ (1 | g), data = dat_aug,
+       family = list(link = "logit"), weights = as.vector(P))
+}
+
+test_that("fit_categ_mlvl() uses categ_pql_fit() for augmented data", {
+  dat <- categ_pql_test_data()
+  args <- categ_pql_aug_args(dat)
   fit <- suppressWarnings(do.call(fit_categ_mlvl, args))
-  expect_s3_class(fit, "mmblogit")
   expect_identical(fit$response.type, "matrix")
-  # The global option selects mblogit():
-  opts_old <- options(projpred.categ_mlvl_mblogit = TRUE)
-  on.exit(options(opts_old), add = TRUE)
-  fit_mb <- suppressWarnings(do.call(fit_categ_mlvl, args))
+  # `avoid.increase` has no effect in the PQL algorithm of mclogit:
+  fit_ai <- suppressWarnings(
+    do.call(fit_categ_mlvl, c(args, list(avoid.increase = TRUE)))
+  )
+  expect_identical(fit_ai$response.type, "matrix")
+  # Other mblogit() settings select mblogit():
+  fit_mb <- suppressWarnings(
+    do.call(fit_categ_mlvl, c(args, list(inner.optimizer = "BFGS")))
+  )
   expect_identical(fit_mb$response.type, "factor")
   # The parts of the fit that projpred uses have the same structure:
   expect_identical(names(get_subparams(fit, nm_scheme = "brms")),
                    names(get_subparams(fit_mb, nm_scheme = "brms")))
   expect_identical(dim(repair_re(fit, newdata = dat[1:4, ])),
                    dim(repair_re(fit_mb, newdata = dat[1:4, ])))
-  # Other settings for mblogit() also select mblogit():
-  options(opts_old)
-  fit_mb2 <- suppressWarnings(do.call(fit_categ_mlvl,
-                                      c(args, list(inner.optimizer = "BFGS"))))
-  expect_identical(fit_mb2$response.type, "factor")
+  # Data in another layout:
+  args_shuffled <- args
+  args_shuffled$data <- args$data[rev(seq_len(nrow(args$data))), ]
+  args_shuffled$weights <- rev(args$weights)
+  fit_shuffled <- suppressWarnings(do.call(fit_categ_mlvl, args_shuffled))
+  expect_identical(fit_shuffled$response.type, "factor")
+})
+
+test_that("global option `projpred.categ_mlvl_mblogit` selects mblogit()", {
+  opts_old <- options(projpred.categ_mlvl_mblogit = TRUE)
+  on.exit(options(opts_old), add = TRUE)
+  fit <- suppressWarnings(
+    do.call(fit_categ_mlvl, categ_pql_aug_args(categ_pql_test_data()))
+  )
+  expect_identical(fit$response.type, "factor")
 })
 
 test_that("categ_mat_resp() needs the augmented-data layout", {

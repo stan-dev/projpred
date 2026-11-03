@@ -2,14 +2,16 @@
 #
 # The algorithm of mclogit::mblogit() with `method = "PQL"`, `estimator = "ML"`,
 # `catCov = "free"` and the default inner optimizer nlminb() with an analytic
-# gradient, but with base-R dense matrices.  Two differences from mclogit
-# 0.9.15:
+# gradient, but with base-R dense matrices.  Two differences from mclogit (up
+# to at least version 0.9.17.1):
 # * The gradient of the inner objective sums the diagonal blocks of the inverse
 #   of `Z'WZ + Sigma^-1` correctly.  mclogit:::sum_blockDiag() uses a wrong
 #   offset for blocks larger than 1 x 1 (more than two response categories or
 #   group-level slopes), which stops nlminb() early.
 # * The data have one row per observation and a response matrix of the
-#   augmented-data weights (see categ_mat_resp()).
+#   augmented-data weights (see categ_mat_resp()).  The approximate deviance
+#   then differs from the one of the augmented data by the constant
+#   -2 sum(W * log(W / rowSums(W))).
 # The returned object has the elements of an `mmblogit` object that projpred
 # and mclogit:::predict.mmblogit() use.
 
@@ -63,18 +65,25 @@ categ_pql_random <- function(formula) {
 
 # The PQL fit.  `formula` has the response matrix on the left-hand side;
 # `random` is a list of formulas `~ <terms> | <group>`.  Returns `NULL` for
-# models that this function does not handle (nested group terms, or more than
-# `max_cells` cells in the group-level design matrix); the caller then uses
-# mclogit::mblogit().
+# cases that this function does not handle (nested group terms, a group
+# variable in more than one term, a rank-deficient model matrix, more than
+# `max_cells` cells in the group-level design matrix, a failure in the first
+# iteration); the caller then uses mclogit::mblogit().
 categ_pql_fit <- function(formula, random, data, epsilon = 1e-8, maxit = 25,
-                          maxit.inner = 100, max_cells = 5e7) {
-  if (!requireNamespace("mclogit", quietly = TRUE)) {
-    stop("Please install the 'mclogit' package.")
+                          maxit.inner = 100, max_cells = 1e7) {
+  if (!is.numeric(epsilon) || epsilon <= 0) {
+    stop("`epsilon` must be > 0.")
   }
+  if (!is.numeric(maxit) || maxit <= 0) {
+    stop("`maxit` must be > 0.")
+  }
+  # predict.mmblogit() is registered when the namespace is loaded:
+  loadNamespace("mclogit")
   random_raw <- random
   random <- lapply(random, categ_pql_random)
   if (any(lengths(lapply(random, "[[", "groups")) != 1)) return(NULL)
   grp_nms <- vapply(random, "[[", character(1), "groups")
+  if (anyDuplicated(grp_nms)) return(NULL)
 
   # Model frame and design matrices, as in mclogit::mblogit():
   mt <- attr(model.frame(formula, data = data, drop.unused.levels = TRUE),
@@ -86,6 +95,7 @@ categ_pql_fit <- function(formula, random, data, epsilon = 1e-8, maxit = 25,
                     drop.unused.levels = TRUE)
   Y <- model.response(mf, "any")
   X <- model.matrix(mt, mf)
+  if (qr(X)$rank < ncol(X)) return(NULL)
   contrasts <- attr(X, "contrasts")
   xlevels <- .getXlevels(mt, mf)
   ncat <- ncol(Y)
@@ -104,7 +114,7 @@ categ_pql_fit <- function(formula, random, data, epsilon = 1e-8, maxit = 25,
   nlong <- nrow(XD)
 
   # Group-level design matrices (columns: group levels, and within a level the
-  # d coefficients), as mclogit:::mkZ():
+  # d coefficients) with the column names of mclogit:::mkZ():
   d <- integer(length(random))
   m <- integer(length(random))
   groups <- list()
@@ -125,49 +135,45 @@ categ_pql_fit <- function(formula, random, data, epsilon = 1e-8, maxit = 25,
     jk <- rep((as.integer(g) - 1L) * d[k], d[k]) +
       rep(seq_len(d[k]), each = nlong)
     Zfull[cbind(rep(seq_len(nlong), d[k]), jk)] <- ZDk
-    if (nlong < ncol(Zfull)) {
-      warning(sprintf(paste(
-        "Random effects design matrix at index %d has fewer rows than",
-        "columns (%d < %d)."
-      ), k, nlong, ncol(Zfull)))
+    colnames(Zfull) <- if (d[k] > 1) {
+      as.vector(outer(colnames(ZDk), levels(g), paste, sep = "|"))
+    } else {
+      levels(g)
     }
     Z_list[[k]] <- Zfull
     groups[[grp_nms[k]]] <- g
     vc_nms[[k]] <- colnames(ZDk)
   }
   Z <- do.call(cbind, Z_list)
-  q <- ncol(Z)
-  z_idx <- split(seq_len(q), rep(seq_along(d), d * m))
-  p <- ncol(XD)
+  z_idx <- split(seq_len(ncol(Z)), rep(seq_along(d), d * m))
 
   # Start values as in mclogit:
-  eta <- {
+  eta <- local({
     n_ <- w * y + 0.5
     f <- n_ / rowsum(n_, s, reorder = FALSE)[s]
     log(f) - stats::ave(log(f), s)
-  }
-  pi <- categ_pql_probs(eta, s)
-  dev_resids <- ifelse(y > 0, 2 * w * y * (log(y) - log(pi)), 0)
-  deviance <- sum(dev_resids)
+  })
+  prb <- categ_pql_probs(eta, s)
 
   parms <- list(alpha = NULL, Phi = NULL)
   converged <- FALSE
   step_back <- FALSE
   fit <- NULL
   last_parms <- NULL
-  last_deviance <- deviance
+  last_deviance <- NULL
   prev_last_deviance <- NULL
   last_eta <- eta
   for (iter in seq_len(maxit)) {
-    y_star <- eta + (y - pi) / pi
+    y_star <- eta + (y - prb) / prb
     prev_last_parms <- last_parms
     last_parms <- parms
     parms <- try(categ_pql_inner(
       parms, y_star = y_star, X = XD, Z = Z, z_idx = z_idx, d = d, m = m,
-      w = w, pi = pi, s = s, maxit_inner = maxit.inner
+      w = w, prb = prb, s = s, maxit_inner = maxit.inner
     ), silent = TRUE)
     step_back <- FALSE
     if (inherits(parms, "try-error")) {
+      if (is.null(fit)) return(NULL)
       if (length(prev_last_deviance) && last_deviance > prev_last_deviance &&
           length(prev_last_parms$alpha)) {
         warning("Numeric problems in inner iteration and previous step ",
@@ -179,28 +185,23 @@ categ_pql_fit <- function(formula, random, data, epsilon = 1e-8, maxit = 25,
         parms <- last_parms
       }
       step_back <- TRUE
-      if (!length(parms$alpha)) {
-        stop("The PQL fit of the categorical multilevel submodel failed in ",
-             "its first iteration.")
+      fit <- categ_pql_eval(parms, XD, Z, z_idx, d, y, w, s)
+    } else {
+      last_fit <- fit
+      fit <- categ_pql_eval(parms, XD, Z, z_idx, d, y, w, s)
+      if (!is.finite(fit$deviance)) {
+        if (is.null(last_fit)) return(NULL)
+        warning("Non-finite deviance, backing up", call. = FALSE)
+        step_back <- TRUE
+        parms <- last_parms
+        fit <- last_fit
       }
     }
-    last_fit <- fit
-    fit <- categ_pql_eval(parms, XD, Z, z_idx, d, y, w, s)
-    prev_last_deviance <- last_deviance
-    if (!is.finite(fit$deviance)) {
-      warning("Non-finite deviance, backing up", call. = FALSE)
-      step_back <- TRUE
-      parms <- last_parms
-      fit <- last_fit
-    }
-    if (is.null(fit)) {
-      stop("The PQL fit of the categorical multilevel submodel failed in ",
-           "its first iteration.")
-    }
     eta <- fit$eta
-    pi <- fit$pi
+    prb <- fit$prb
     if (step_back) break
-    if (length(last_fit)) last_eta <- last_fit$eta
+    if (iter > 1) last_eta <- last_fit$eta
+    prev_last_deviance <- last_deviance
     last_deviance <- fit$deviance
     if (sum((eta - last_eta)^2) / sum(eta^2) <= epsilon) {
       converged <- TRUE
@@ -214,17 +215,21 @@ categ_pql_fit <- function(formula, random, data, epsilon = 1e-8, maxit = 25,
     warning("Algorithm stopped without convergence", call. = FALSE)
   }
   eps <- 10 * .Machine$double.eps
-  if (any(pi < eps) || any(1 - pi < eps)) {
+  if (any(prb < eps) || any(1 - prb < eps)) {
     warning("Fitted probabilities numerically 0 or 1 occurred", call. = FALSE)
+  }
+  if (fit$deviance < 0) {
+    warning("Approximate deviance is negative.\nYou might be overfitting ",
+            "your data or the group size is too small.", call. = FALSE)
   }
 
   coefs <- setNames(drop(parms$alpha), colnames(XD))
   VarCov <- setNames(lapply(seq_along(d), function(k) {
-    matrix(parms$Phi[[k]], d[k], d[k], dimnames = list(vc_nms[[k]],
-                                                      vc_nms[[k]]))
+    matrix(parms$Phi[[k]], d[k], d[k],
+           dimnames = list(vc_nms[[k]], vc_nms[[k]]))
   }), grp_nms)
   random_effects <- lapply(z_idx, function(idx) {
-    as.matrix(parms$b[idx])
+    matrix(parms$b[idx], ncol = 1, dimnames = list(colnames(Z)[idx], NULL))
   })
   names(random_effects) <- NULL
   out <- list(
@@ -256,22 +261,25 @@ categ_pql_fit <- function(formula, random, data, epsilon = 1e-8, maxit = 25,
   return(out)
 }
 
+# Category probabilities from the linear predictors (`s`: the observation of
+# each element).
 categ_pql_probs <- function(eta, s) {
-  expeta <- exp(eta)
+  expeta <- exp(eta - stats::ave(eta, s, FUN = max))
   expeta / rowsum(expeta, s, reorder = FALSE)[s]
 }
 
 # One inner fit: the variance parameters by nlminb() for the working response
-# `y_star` with the working weights of `pi`, then the coefficients.
-categ_pql_inner <- function(parms, y_star, X, Z, z_idx, d, m, w, pi, s,
+# `y_star` with the working weights of `prb`, then the coefficients.
+categ_pql_inner <- function(parms, y_star, X, Z, z_idx, d, m, w, prb, s,
                             maxit_inner) {
   p <- ncol(X)
   q <- ncol(Z)
   A <- cbind(X, Z, y_star)
-  # W A, with W = diag(w pi) - (sqrt(w) pi)(sqrt(w) pi)' within each
+  # W A, with W = diag(w prb) - (sqrt(w) prb)(sqrt(w) prb)' within each
   # observation:
-  swp <- sqrt(w) * pi
-  WA <- w * pi * A - swp * rowsum(swp * A, s, reorder = FALSE)[s, , drop = FALSE]
+  swp <- sqrt(w) * prb
+  WA <- w * prb * A -
+    swp * rowsum(swp * A, s, reorder = FALSE)[s, , drop = FALSE]
   G <- crossprod(A, WA)
   ix <- seq_len(p)
   iz <- p + seq_len(q)
@@ -333,9 +341,8 @@ categ_pql_objective <- function(XWX, XWy, ZWX, ZWZ, ZWy, yWy, z_idx, d, m) {
       L
     })
   }
-
-  # The pseudo log-likelihood and its gradient, with a cache because
-  # nlminb() asks for the objective and the gradient at the same point:
+  # nlminb() asks for the objective and the gradient at the same point, so
+  # keep the last result:
   cache <- new.env(parent = emptyenv())
   pll <- function(lambda, gradient = FALSE) {
     if (identical(lambda, cache$lambda) &&
@@ -344,57 +351,51 @@ categ_pql_objective <- function(XWX, XWy, ZWX, ZWZ, ZWy, yWy, z_idx, d, m) {
     }
     Lambda <- lambda_to_mats(lambda)
     Psi <- lapply(Lambda, crossprod)
-    iSigma_diag <- unlist(lapply(seq_along(d), function(k) {
-      rep(list(Psi[[k]]), m[k])
-    }), recursive = FALSE)
+    # H = Z'WZ + Sigma^-1, with Sigma^-1 block diagonal (Psi_k for each level
+    # of group k):
     H <- ZWZ
-    offs <- 0L
-    for (P in iSigma_diag) {
-      ii <- offs + seq_len(nrow(P))
-      H[ii, ii] <- H[ii, ii] + P
-      offs <- offs + nrow(P)
+    for (k in seq_along(d)) {
+      for (j in seq_len(m[k])) {
+        ii <- z_idx[[k]][(j - 1L) * d[k] + seq_len(d[k])]
+        H[ii, ii] <- H[ii, ii] + Psi[[k]]
+      }
     }
     R <- tryCatch(chol(H), error = function(e) NULL)
     if (is.null(R)) {
       res <- list(logLik = -Inf, gradient = rep(NA_real_, length(lambda)))
-      assign("lambda", lambda, envir = cache)
-      assign("res", res, envir = cache)
-      return(res)
-    }
-    RA <- backsolve(R, ZWX, transpose = TRUE)
-    Ry <- backsolve(R, ZWy, transpose = TRUE)
-    XiVX <- XWX - crossprod(RA)
-    XiVX <- (XiVX + t(XiVX)) / 2
-    XiVy <- XWy - drop(crossprod(RA, Ry))
-    alpha <- solve(XiVX, XiVy)
-    b <- backsolve(R, Ry - RA %*% alpha)
-    quad <- yWy - sum(XWy * alpha) - sum(ZWy * b)
-    log_det_iSigma <- sum(vapply(seq_along(d), function(k) {
-      2 * m[k] * sum(log(abs(diag(Lambda[[k]]))))
-    }, numeric(1)))
-    log_det_H <- 2 * sum(log(diag(R)))
-    res <- list(logLik = (log_det_iSigma - log_det_H - quad) / 2,
-                alpha = alpha, b = drop(b), Psi = Psi, Lambda = Lambda,
-                log_det_iSigma = log_det_iSigma, log_det_H = log_det_H)
-    if (gradient) {
-      K <- chol2inv(R)
-      res$gradient <- unlist(lapply(seq_along(d), function(k) {
-        idx <- z_idx[[k]]
-        dk <- d[k]
-        mk <- m[k]
-        # Sum of the mk diagonal dk x dk blocks of the inverse of H:
-        i0 <- rep(seq_len(dk), dk)
-        j0 <- rep(seq_len(dk), each = dk)
-        offs <- rep((seq_len(mk) - 1L) * dk, each = dk * dk)
-        K_kk <- K[idx, idx, drop = FALSE]
-        SumK <- matrix(rowSums(matrix(
-          K_kk[cbind(rep(i0, mk) + offs, rep(j0, mk) + offs)],
-          nrow = dk * dk
-        )), dk, dk)
-        S <- tcrossprod(matrix(res$b[idx], nrow = dk))
-        Gr <- Lambda[[k]] %*% (mk * solve(Psi[[k]]) - SumK - S)
-        Gr[upper.tri(Gr, diag = TRUE)]
-      }))
+    } else {
+      RA <- backsolve(R, ZWX, transpose = TRUE)
+      Ry <- backsolve(R, ZWy, transpose = TRUE)
+      XiVX <- XWX - crossprod(RA)
+      XiVX <- (XiVX + t(XiVX)) / 2
+      XiVy <- XWy - drop(crossprod(RA, Ry))
+      alpha <- solve(XiVX, XiVy)
+      b <- drop(backsolve(R, Ry - RA %*% alpha))
+      quad <- yWy - sum(XWy * alpha) - sum(ZWy * b)
+      log_det_iSigma <- sum(vapply(seq_along(d), function(k) {
+        2 * m[k] * sum(log(abs(diag(Lambda[[k]]))))
+      }, numeric(1)))
+      log_det_H <- 2 * sum(log(diag(R)))
+      res <- list(logLik = (log_det_iSigma - log_det_H - quad) / 2,
+                  alpha = alpha, b = b, Psi = Psi,
+                  log_det_iSigma = log_det_iSigma, log_det_H = log_det_H)
+      if (gradient) {
+        K <- chol2inv(R)
+        res$gradient <- unlist(lapply(seq_along(d), function(k) {
+          dk <- d[k]
+          mk <- m[k]
+          # Sum of the mk diagonal dk x dk blocks of K = H^-1:
+          K_kk <- K[z_idx[[k]], z_idx[[k]], drop = FALSE]
+          offs <- rep((seq_len(mk) - 1L) * dk, each = dk * dk)
+          i <- rep(rep(seq_len(dk), dk), mk) + offs
+          j <- rep(rep(seq_len(dk), each = dk), mk) + offs
+          SumK <- matrix(rowSums(matrix(K_kk[cbind(i, j)], nrow = dk * dk)),
+                         dk, dk)
+          S <- tcrossprod(matrix(b[z_idx[[k]]], nrow = dk))
+          Gr <- Lambda[[k]] %*% (mk * solve(Psi[[k]]) - SumK - S)
+          Gr[upper.tri(Gr, diag = TRUE)]
+        }))
+      }
     }
     assign("lambda", lambda, envir = cache)
     assign("res", res, envir = cache)
@@ -410,9 +411,9 @@ categ_pql_eval <- function(parms, X, Z, z_idx, d, y, w, s) {
     B <- matrix(parms$b[z_idx[[k]]], nrow = d[k])
     sum(B * (parms$Psi[[k]] %*% B))
   }, numeric(1)))
-  pi <- categ_pql_probs(eta, s)
-  dev_resids <- ifelse(y > 0, 2 * w * y * (log(y) - log(pi)), 0)
+  prb <- categ_pql_probs(eta, s)
+  dev_resids <- ifelse(y > 0, 2 * w * y * (log(y) - log(prb)), 0)
   deviance <- -parms$log_det_iSigma + parms$log_det_H + sum(dev_resids) +
     rand_ssq
-  return(list(eta = eta, pi = pi, deviance = deviance))
+  return(list(eta = eta, prb = prb, deviance = deviance))
 }
