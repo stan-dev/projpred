@@ -257,6 +257,72 @@ test_that("glm_ridge: poisson, log-link, no intercept, lambda = 0", {
   expect_equal(unname(coef(glmfit)), c(ridgefit$beta), tolerance = tol)
 })
 
+test_that("glm_ridge: a column with zero variance gets the coefficient 0", {
+  # Column 2 is constant over the observations with positive weight: zero for
+  # all observations, or different only where the weight is 0 (as for the
+  # left-out observation of a fold).
+  # Restore the random numbers afterwards, so that tests after this one get the
+  # same data as without it:
+  rng_state <- get(".Random.seed", envir = .GlobalEnv)
+  w0 <- weights
+  w0[1] <- 0
+  x_one <- rep(0, n)
+  x_one[1] <- 1
+  cases <- list(list(x0 = rep(0, n), w = weights),
+                list(x0 = x_one, w = w0),
+                list(x0 = 1 - x_one, w = w0))
+  fams <- list(extend_family(gaussian()), extend_family(binomial()))
+  for (fam in fams) {
+    if (fam$family == "gaussian") {
+      y <- rnorm(n, x %*% b, dis)
+    } else {
+      y <- rbinom(n, 1, fam$linkinv(x %*% b))
+    }
+    for (cs in cases) {
+      x0 <- cbind(x_tr[, 1], cs$x0, x_tr[, 2:3])
+      for (lambda in c(0, 0.5)) {
+        fit0 <- glm_ridge(x0, y, family = fam, lambda = lambda,
+                          weights = cs$w, offset = offset)
+        fit <- glm_ridge(x0[, -2], y, family = fam, lambda = lambda,
+                         weights = cs$w, offset = offset)
+        expect_identical(fit0$beta[2], 0)
+        expect_equal(c(fit0$beta0, fit0$beta[-2]), c(fit$beta0, fit$beta),
+                     tolerance = 1e-10)
+        # A nonzero initial value of the coefficient is set to 0, too:
+        fit_init <- glm_ridge(x0, y, family = fam, lambda = lambda,
+                              weights = cs$w, offset = offset,
+                              beta_init = c(0, 5, 0, 0))
+        expect_identical(fit_init$beta[2], 0)
+      }
+    }
+  }
+  # Without an intercept, a nonzero constant column is a regular predictor:
+  y <- rnorm(n, x %*% b, dis)
+  fit <- glm_ridge(cbind(2, x_tr[, 1]), y, intercept = FALSE)
+  glmfit <- glm(y ~ x_tr[, 1])
+  expect_equal(c(2 * fit$beta[1], fit$beta[2]), unname(coef(glmfit)),
+               tolerance = 1e-8)
+  assign(".Random.seed", rng_state, envir = .GlobalEnv)
+})
+
+test_that(paste(
+  "glm_ridge: a constant column is found also when rounding gives a nonzero",
+  "weighted standard deviation"
+), {
+  # Column 2 is 1 except at the observation with weight 0. For n = 238, the
+  # weighted standard deviation of column 2 is about 2e-16, not 0.
+  n_c <- 238
+  x_c <- cbind(sin(1:n_c), c(0, rep(1, n_c - 1)), cos(3 * (1:n_c)))
+  w_c <- c(0, rep(1, n_c - 1))
+  y_c <- x_c[, 1] - 0.5 * x_c[, 3] + sin(7 * (1:n_c))
+  expect_identical(standardization(x_c, weights = w_c)$scale[2], 0)
+  fit0 <- glm_ridge(x_c, y_c, lambda = 1e-4, weights = w_c)
+  fit <- glm_ridge(x_c[, -2], y_c, lambda = 1e-4, weights = w_c)
+  expect_identical(fit0$beta[2], 0)
+  expect_equal(c(fit0$beta0, fit0$beta[-2]), c(fit$beta0, fit$beta),
+               tolerance = 1e-10)
+})
+
 # test_that("glm_ridge: Gamma, log-link, intercept, lambda = 0", {
 #   fam <- extend_family(Gamma(link = 'log'))
 #   y <- rgamma(n, fam$linkinv(x%*%b + 1))
