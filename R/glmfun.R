@@ -225,9 +225,9 @@ glm_ridge <- function(x, y, family = gaussian(), lambda = 0, thresh = 1e-7,
   # Fits GLM with ridge penalty on the regression coefficients.
   # Does not handle any dispersion parameters.
   # Optional sign constraints: cons_signs[k] * beta[cons_cols[k]] >= 0, with
-  # `cons_cols` the column indices of `x` and `cons_signs` 1 or -1. A start
-  # `beta_init` (on the scale of the standardized `x`) that violates them is
-  # moved to the bound 0.
+  # `cons_cols` the column indices of `x` and `cons_signs` 1 or -1. The C++
+  # code moves the elements of a start `beta_init` (on the scale of the
+  # standardized `x`) that violate them to the bound 0.
   #
   if (is.null(x)) {
     x <- matrix(ncol = 0, nrow = length(y))

@@ -740,17 +740,16 @@ mo_lmm_groups <- function(formula, data, X) {
 
 # Gaussian linear multilevel submodel with the monotonicity constraint. `fit`
 # is the unconstrained lmer() fit of `formula`, `lmer_args` are the other
-# arguments of that lmer() call, and `signs_full` the signs from the full model
-# (see mo_cons_signs()). If a sign group of the unconstrained fit has
-# coefficients of both signs, the REML (or ML) criterion of lmer() (Bates,
-# Maechler, Bolker, and Walker, 2015, Journal of Statistical Software 67(1))
-# is profiled over the variance parameters `theta`; for given `theta`, the
-# population-level coefficients come from a generalized least-squares step
-# with the sign bounds. (The REML criterion keeps the terms of the full
-# population-level model matrix also for coefficients at a bound.) The
-# solution is returned as an lmerMod object (lmer() with fixed `theta`, then
-# the constrained coefficients and the matching conditional modes in its
-# slots). Otherwise, `fit` is returned.
+# arguments of that lmer() call, and `signs_full` are the signs from the full
+# model (see mo_cons_signs()). If no sign group of `fit` has coefficients of
+# both signs, the function returns `fit`. Otherwise, it optimizes the REML (or
+# ML) criterion of lmer() (Bates, Maechler, Bolker, and Walker, 2015, Journal
+# of Statistical Software 67(1)) over the variance parameters `theta`. For
+# each `theta`, a generalized least-squares step with the sign bounds gives
+# the population-level coefficients. (The REML criterion keeps the terms of
+# the full population-level model matrix also for coefficients at a bound.)
+# The result is an lmerMod object: lmer() with fixed `theta`, with the
+# constrained coefficients and the matching conditional modes in its slots.
 mo_lmer_cons <- function(fit, formula, lmer_args, signs_full) {
   args_lf <- lmer_args[intersect(names(lmer_args),
                                  methods::formalArgs(lme4::lFormula))]

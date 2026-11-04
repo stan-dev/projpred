@@ -88,9 +88,10 @@ gauss_crossprod_design <- function(refmodel, term_strings, regul) {
   x <- model.matrix(tt, data = mf)
   mo_groups <- list()
   if (with_mo) {
-    # (Positions among the columns without the intercept, as `x_c` below.) The
-    # cases that mo_sign_groups() does not support (for example, two mo()
-    # calls in one term) go to the draw-wise path, which throws the error:
+    # mo_groups_x() gives positions among the columns without the intercept,
+    # as in `x_c` below. Cases that mo_sign_groups() does not support (for
+    # example, two mo() calls in one term) go to the draw-wise path, which
+    # throws the error:
     mo_groups <- tryCatch(mo_groups_x(mf, x), error = function(e) {
       if (grepl("^Internal error", conditionMessage(e))) {
         stop(e)
@@ -148,17 +149,16 @@ gauss_mo_groups_in <- function(des, cols) {
 
 # The monotonicity constraint of mo() terms in the cross-product computations.
 # `beta` holds the unconstrained coefficients of the columns `cols` of
-# `des$x_c` (one column per projected draw), `c_mat` the cross-products C of
-# the projected draws (see the top of this file). As in the submodel fitters,
-# a draw keeps its unconstrained solution unless a sign group has coefficients
-# of both signs (mo_binding()). For such a draw, the signs come from
-# `signs_fun()` (the signs from the projection onto the full model, see
-# mo_full_signs(), as an S x G matrix) or from mo_cons_signs(), and bls_c()
-# solves the weighted ridge problem with these signs (on the scale of the
-# standardized columns, as glm_ridge()). Returns `beta` with the constrained
-# solutions and the indices `fixed` of the changed draws, or `NULL` if bls_c()
-# does not converge. For a changed draw, gauss_quad_cols() gives q_s (see the
-# top of this file). `grps` are the sign groups in `cols`.
+# `des$x_c` (one column per projected draw), and `c_mat` the cross-products C
+# (see the top of this file). `grps` are the sign groups in `cols`. As in the
+# submodel fitters, only a draw with a sign group that has coefficients of
+# both signs (mo_binding()) gets the constraint. Its signs come from
+# `signs_fun()` (an S x G matrix, see mo_full_signs()) or from
+# mo_cons_signs(). bls_c() solves the weighted ridge problem with these signs
+# on the scale of the standardized columns, as glm_ridge() does. Returns
+# `beta` with the constrained solutions and the indices `fixed` of the changed
+# draws, or `NULL` if bls_c() does not converge. gauss_quad_cols() gives q_s
+# for the changed draws.
 gauss_mo_fix <- function(beta, cols, des, c_mat, signs_fun,
                          grps = gauss_mo_groups_in(des, cols)) {
   if (length(grps) == 0) {
@@ -194,9 +194,8 @@ gauss_mo_fix <- function(beta, cols, des, c_mat, signs_fun,
   return(list(beta = beta, fixed = fixed))
 }
 
-# The quantity q_s of the top of this file for the coefficients `beta` (not
-# necessarily the unconstrained solution) of the columns `cols`, for the draws
-# `draws` (columns of `beta` and `c_mat`).
+# q_s (see the top of this file) for any coefficients `beta` of the columns
+# `cols`, for the draws `draws` (columns of `beta` and `c_mat`).
 gauss_quad_cols <- function(beta, cols, des, c_mat, draws) {
   b <- beta[, draws, drop = FALSE]
   return(2 * colSums(b * c_mat[cols, draws, drop = FALSE]) -
@@ -204,9 +203,10 @@ gauss_quad_cols <- function(beta, cols, des, c_mat, draws) {
 }
 
 # A function that gives the signs of mo_full_signs() for `p_ref` (computed
-# at the first call). `divmin_args` as in gauss_crossprod_regul(). Unlike the
-# draw-wise path, the projection onto the full model runs only if a draw needs
-# the constraint (so its warning, if it fails, comes only then).
+# at the first call). `divmin_args` as in gauss_crossprod_regul(). The
+# projection onto the full model runs only if a draw needs the constraint, so
+# its warning for a failed projection also appears only then (the draw-wise
+# path runs it for each submodel with mo() terms).
 gauss_mo_signs_fun <- function(p_ref, refmodel, divmin_args) {
   signs <- NULL
   return(function() {

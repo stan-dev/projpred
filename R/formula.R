@@ -901,10 +901,9 @@ lhs <- function(x) {
 collapse_ranked_predictors <- function(path, formula, data) {
   tt <- terms(formula)
   terms_ <- attr(tt, "term.labels")
-  # Columns of terms with mo() calls are matched exactly (a substring
-  # replacement would change, for example, column `mo(x)10` by the replacement
-  # of column `mo(x)1`), and the substring replacements for the other terms do
-  # not change them:
+  # Match the columns of terms with mo() calls exactly: a substring replacement
+  # for column `mo(x)1` would also change column `mo(x)10`. The substring
+  # replacements for the other terms do not change these columns:
   is_mo <- vapply(terms_, function(term) {
     has_mo_call(str2lang(term))
   }, logical(1), USE.NAMES = FALSE)

@@ -233,20 +233,20 @@ group-level terms and in additive multilevel models.
 By default (global option \code{projpred.mo_monotone = TRUE}), the projected
 effect of each \code{mo()} term is monotonic: the coefficients of its indicators
 have the same sign. If the unconstrained projection of a projected draw (or
-cluster) is monotonic, \pkg{projpred} keeps it. Otherwise, the sign is the
-sign of the sum of the coefficients of the same term (same name and same
-coding of its factors) in the unconstrained projection of the same draw
-onto the full model (all predictor terms of \code{formula}). In \code{mo(x) * z},
-for example, the full-model term \code{mo(x)} is
-the effect of \code{x} at \code{z = 0}. If the full model does not have the term
-(possible with custom \code{search_terms}) or if the projection onto the full
-model fails, the sign is the sign of the sum of the unconstrained
-coefficients in the submodel. In an interaction of a \code{mo()} term with a
-factor (for example \code{mo(x):f}), each column of the factor has its own
-monotonic effect, as in \pkg{brms}. So in \code{mo(x) * f}, the effect of \code{x}
-within a level of \code{f} other than the first is the sum of two monotonic
-effects, which is not necessarily monotonic. \code{\link[=mo_effects]{mo_effects()}} gives the
-projected effects in the parametrization of \pkg{brms}.
+cluster) is monotonic, \pkg{projpred} keeps it. Otherwise, \pkg{projpred}
+takes the sign from the unconstrained projection of the same draw onto the
+full model (all predictor terms of \code{formula}): the sign of the sum of the
+coefficients of the same term (same name and same coding of its factors).
+In \code{mo(x) * z}, for example, the full-model term \code{mo(x)} is the effect of
+\code{x} at \code{z = 0}. If the full model does not have the term (possible with
+custom \code{search_terms}) or if the projection onto the full model fails,
+\pkg{projpred} takes the sign of the sum of the unconstrained coefficients
+in the submodel. In an interaction of a \code{mo()} term with a factor (for
+example \code{mo(x):f}), each column of the factor has its own monotonic effect,
+as in \pkg{brms}. So in \code{mo(x) * f}, the effect of \code{x} within a level of \code{f}
+other than the first is the sum of two monotonic effects, and this sum is
+not necessarily monotonic. \code{\link[=mo_effects]{mo_effects()}} gives the projected effects in the
+parametrization of \pkg{brms}.
 
 Monotonic projections are supported for forward search. They are supported
 for submodels without group-level and smooth terms (with the default
