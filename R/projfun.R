@@ -26,12 +26,21 @@ proj_to_submodl <- function(predictor_terms, p_ref, refmodel,
     verb_out("  Projecting onto `~ ", utils::tail(rhs_chr, 1), "`")
   }
 
+  projpred_ws_aug <- p_ref$mu
+  if (refmodel$family$for_augdat && any(refmodel$wobs != 1)) {
+    # The augmented-data submodel fitters use the probabilities of the response
+    # categories as weights and ignore `weights`, so apply the observation
+    # weights to these probabilities. The rows of the augmented-rows matrix are
+    # the observations within the response categories:
+    projpred_ws_aug <- projpred_ws_aug *
+      rep(refmodel$wobs, times = nrow(projpred_ws_aug) / length(refmodel$wobs))
+  }
   args_divmin <- list(formula = fml_divmin,
                       data = subset$data,
                       family = refmodel$family,
                       weights = refmodel$wobs,
                       projpred_var = p_ref$var,
-                      projpred_ws_aug = p_ref$mu,
+                      projpred_ws_aug = projpred_ws_aug,
                       verbose_divmin = verbose >= 3L)
   if (!is.null(search_control)) {
     args_divmin <- c(args_divmin, search_control)
@@ -106,7 +115,20 @@ perf_eval <- function(search_path,
            txt_clust_draws(p_ref[["clust_used"]], p_ref[["nprjdraws"]]),
            " (`refit_prj = ", refit_prj, "`) ...",
            verbose = verbose && !return_submodls)
-  out_by_size <- lapply(nterms, function(size_j) {
+  out_by_size <- NULL
+  if (refit_prj && !is.null(reweighting_args) && !return_submodls &&
+      !return_preds && getOption("projpred.search_gauss_crossprod", TRUE)) {
+    # In the LOO CV with validated search, compute the evaluation of Gaussian
+    # submodels from cross-products (`NULL` if this case does not apply):
+    out_by_size <- perf_eval_gauss(
+      search_path = search_path, nterms = nterms, refmodel = refmodel,
+      p_ref = p_ref, refmodel_fulldata = refmodel_fulldata,
+      indices_test = indices_test, newdata_test = newdata_test,
+      offset_test = offset_test, wobs_test = wobs_test, y_test = y_test,
+      y_oscale_test = y_oscale_test, divmin_args = list(...)
+    )
+  }
+  if (is.null(out_by_size)) out_by_size <- lapply(nterms, function(size_j) {
     # Fetch the init_submodl() output (of class `submodl`) for the submodel at
     # position `size_j + 1` of the predictor ranking:
     submodl <- fetch_submodl(size_j, ...)
