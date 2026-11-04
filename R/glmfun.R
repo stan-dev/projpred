@@ -247,8 +247,10 @@ glm_ridge <- function(x, y, family = gaussian(), lambda = 0, thresh = 1e-7,
   }
   family <- extend_family(family)
   if (family$family == "gaussian" && family$link == "identity") {
+    # One Newton step gives the exact solution; always take it:
     qa_updates_max <- 1
     ls_iter_max <- 1
+    thresh <- 0
   } else if (is.null(qa_updates_max)) {
     qa_updates_max <- 100
   }

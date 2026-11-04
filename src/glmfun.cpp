@@ -529,8 +529,9 @@ void glm_ridge( vec& beta,      // output: regression coefficients (contains int
     grad = x.t()*grad_f + lambda*penalty_grad%beta; // gradient of negative log likelihood + gradient of penalty
     decrement = -sum(grad%dbeta); // newton decrement
     
-    // check for convergence
-    if (decrement < tol)
+    // check for convergence (with tol = 0: stop only at the solution, up to
+    // rounding)
+    if (decrement <= tol)
     	break;
     
     // backtracking line search
