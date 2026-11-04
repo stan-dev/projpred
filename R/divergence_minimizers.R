@@ -147,14 +147,14 @@ divmin <- function(
   # If `weights` and `data` differ in length (not in projpred's own calls),
   # nothing is removed.
   lost_lvls <- NULL
-  if ((has_grp || has_add) &&
-      is.data.frame(dot_args$data) && length(dot_args$weights) > 0 &&
-      any(dot_args$weights == 0) &&
-      length(dot_args$weights) == nrow(dot_args$data)) {
-    keep <- dot_args$weights != 0
-    lost_lvls <- lost_levels(dot_args$data, keep = keep, formula = formula)
-    dot_args$data <- drop_lost_levels(dot_args$data[keep, , drop = FALSE],
-                                      lost_lvls)
+  rm_w0 <- NULL
+  if (has_grp || has_add) {
+    rm_w0 <- data_without_weight0(dot_args$data, dot_args$weights, formula)
+  }
+  if (!is.null(rm_w0)) {
+    keep <- rm_w0$keep
+    lost_lvls <- rm_w0$lost_lvls
+    dot_args$data <- rm_w0$data
     dot_args$weights <- dot_args$weights[keep]
     projpred_var <- projpred_var[keep, , drop = FALSE]
   }
@@ -271,6 +271,22 @@ divmin <- function(
   return(outdmin)
 }
 
+# The data for the multilevel and additive submodel fitters of divmin(): `data`
+# without the rows with weight 0, and without the levels that only these rows
+# have. Returns `NULL` if no row is removed (also if `weights` and `data`
+# differ in length), otherwise a list with the logical vector `keep`, the
+# output `lost_lvls` of lost_levels() and the reduced `data`.
+data_without_weight0 <- function(data, weights, formula) {
+  if (!is.data.frame(data) || length(weights) == 0 || !any(weights == 0) ||
+      length(weights) != nrow(data)) {
+    return(NULL)
+  }
+  keep <- weights != 0
+  lost_lvls <- lost_levels(data, keep = keep, formula = formula)
+  return(list(keep = keep, lost_lvls = lost_lvls,
+              data = drop_lost_levels(data[keep, , drop = FALSE], lost_lvls)))
+}
+
 # Finds the levels of factor-like fixed-effect predictors that occur only in
 # the removed rows (`!keep`). Factor-like means a factor, character or logical
 # variable, or a numeric variable that the fixed-effects part of `formula` uses
@@ -310,7 +326,8 @@ lost_levels <- function(data, keep, formula) {
         return(list(inside = all.vars(e), outside = character()))
       }
       if (is_mo_call(e)) {
-        # (see `mo_vars` below)
+        # lost_levels_mo() handles the variables of mo() calls, so `vars_rhs`
+        # holds only their occurrences outside mo():
         return(list(inside = character(), outside = character()))
       }
       res <- lapply(as.list(e)[-1], find_vars)
@@ -324,12 +341,19 @@ lost_levels <- function(data, keep, formula) {
   }
   vars_rhs <- find_vars(rhs_fixed)
   fac_only <- setdiff(vars_rhs$inside, vars_rhs$outside)
-  mo_vars <- unlist(lapply(mo_calls(rhs_fixed), all.vars))
+  mo_vars <- unlist(lapply(mo_calls(rhs_fixed), function(mo_call) {
+    all.vars(mo_call[[2L]])
+  }))
+  # Variables outside mo(), also in the group-level terms:
+  vars_no_mo <- c(vars_rhs$inside, vars_rhs$outside,
+                  unlist(lapply(reformulas::findbars(formula), function(bar) {
+                    all.vars(bar[[2]])
+                  })))
   x_nms <- setdiff(intersect(all.vars(rhs_fixed), names(data)), grp_nms)
   out <- lapply(setNames(nm = x_nms), function(x_nm) {
     x <- data[[x_nm]]
     if (x_nm %in% mo_vars) {
-      if (is.numeric(x) && x_nm %in% c(vars_rhs$inside, vars_rhs$outside)) {
+      if (is.numeric(x) && x_nm %in% vars_no_mo) {
         # A recoded value would change the terms outside mo(); mo() throws an
         # error at the prediction instead:
         return(NULL)

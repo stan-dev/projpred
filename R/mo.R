@@ -426,7 +426,16 @@ mo_full_signs <- function(p_ref, refmodel, args_divmin) {
   fml_fixed <- reformulas::nobars(fml_full)
   fml_rhs <- stats::as.formula(call("~", fml_fixed[[length(fml_fixed)]]),
                                env = environment(fml_full))
-  fr <- model.frame(fml_rhs, data = subset$data, drop.unused.levels = TRUE)
+  # (from the data that the multilevel fitter of divmin() gets, so that the
+  # column names match the fits)
+  data_groups <- subset$data
+  if (length(extract_terms_response(fml_full)$group_terms) > 0) {
+    rm_w0 <- data_without_weight0(data_groups, args_divmin$weights, fml_full)
+    if (!is.null(rm_w0)) {
+      data_groups <- rm_w0$data
+    }
+  }
+  fr <- model.frame(fml_rhs, data = data_groups, drop.unused.levels = TRUE)
   mm <- model.matrix(fml_rhs, data = fr)
   groups <- mo_sign_groups(fr, mm, skip_multi = TRUE)
   cnms <- colnames(mm)
@@ -434,14 +443,11 @@ mo_full_signs <- function(p_ref, refmodel, args_divmin) {
     b <- mo_fit_coefs(fit)
     vapply(groups, function(g) {
       idx <- match(cnms[g], names(b))
-      if (all(is.na(idx))) {
+      if (anyNA(idx)) {
         stop("Internal error: the coefficients of the full model do not ",
              "match its model matrix. Please notify the package maintainer.")
       }
-      # A column can be missing if the fitter got the data without the rows
-      # with weight 0 and a mo() level occurs only in these rows (see
-      # lost_levels_mo()). Its coefficient is 0 then:
-      mo_sign_of_sum(b[idx[!is.na(idx)]])
+      mo_sign_of_sum(b[idx])
     }, numeric(1))
   }, numeric(length(groups)))
   # S x G (vapply() gives a G x S array, or a vector for G = 1):

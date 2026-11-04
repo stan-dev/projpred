@@ -1552,8 +1552,12 @@ test_that(paste(
   expect_pred_nb(fits, "xo", info = "mo(xo) + xo:z")
   # A numeric variable that occurs also outside mo() is not recoded (this would
   # change the terms outside mo()):
-  fits <- divmin_w0("cbind(.y.1, .y.2) ~ mo(x) + x:z + (1 | g)", gaussian())
-  expect_null(attr(fits, "projpred_lost_lvls"))
+  for (fml in c("cbind(.y.1, .y.2) ~ mo(x) + x:z + (1 | g)",
+                "cbind(.y.1, .y.2) ~ mo(x) + (x | g)",
+                "cbind(.y.1, .y.2) ~ mo(x) + factor(x) + (1 | g)")) {
+    fits <- suppressWarnings(divmin_w0(fml, gaussian()))
+    expect_null(attr(fits, "projpred_lost_lvls"), info = fml)
+  }
   # Binomial multilevel and Gaussian additive submodels (unconstrained):
   for (x_nm in c("x", "xl")) {
     fits <- suppressWarnings(divmin_w0(
@@ -1596,28 +1600,58 @@ test_that(paste(
   set.seed(8)
   n <- 25
   S <- 10
-  # Observation 1 has the only case of the largest value of `x`:
+  # Observation 1 has the only case of the largest value of `x` and of level
+  # "c" of `f`:
   dat <- data.frame(x = c(4L, rep_len(0:3, n - 1)), z = rnorm(n),
+                    f = factor(c("c", rep_len(c("a", "b"), n - 1))),
                     g = factor(rep_len(paste0("gr", 1:5), n)))
+  alpha <- rnorm(S, sd = 0.05)
   eta_fun <- function(nd) {
     outer(c(0, 0.8, -0.4, 0.6, 0.2)[nd$x + 1] + 0.4 * nd$z +
+            0.3 * (nd$f == "b") * nd$x +
             c(-1, -0.5, 0, 0.5, 1)[as.integer(nd$g)], rep(1, S)) +
-      matrix(rnorm(S, sd = 0.05), nrow(nd), S, byrow = TRUE)
+      matrix(alpha, nrow(nd), S, byrow = TRUE)
   }
   dat$y <- rowMeans(eta_fun(dat)) + rnorm(n, sd = 0.5)
-  refm <- init_refmodel(
-    list(data = dat), data = dat, formula = y ~ mo(x) + z + (1 | g),
-    family = gaussian(),
-    ref_predfun = function(fit, newdata = NULL) {
-      eta_fun(if (is.null(newdata)) fit$data else newdata)
-    },
-    dis = rep(0.5, S), cvfun = function(folds) NULL,
-    cvrefbuilder = function(cvfit) NULL
-  )
-  cv_loo <- suppressWarnings(cv_varsel(
-    refm, cv_method = "LOO", validate_search = TRUE, nclusters = 2,
-    nclusters_pred = 3, seed = 3906, verbose = FALSE
-  ))
+  refm_fun <- function(fml, dat) {
+    init_refmodel(
+      list(data = dat), data = dat, formula = fml, family = gaussian(),
+      ref_predfun = function(fit, newdata = NULL) {
+        eta_fun(if (is.null(newdata)) fit$data else newdata)
+      },
+      dis = rep(0.5, S), cvfun = function(folds) NULL,
+      cvrefbuilder = function(cvfit) NULL
+    )
+  }
+  # The full-model signs with weight 0 for observation 1 equal those for the
+  # data without observation 1 (also for the interaction with the factor `f`
+  # whose level "c" is lost):
+  fml_f <- y ~ mo(x) * f + z + (1 | g)
+  signs_w0 <- function(refm) {
+    p_ref <- mo_add_cache(get_refdist(refm, ndraws = S), refm)
+    args_divmin <- list(family = refm$family, weights = refm$wobs,
+                        projpred_var = p_ref$var, projpred_ws_aug = p_ref$mu,
+                        verbose_divmin = FALSE)
+    suppressWarnings(mo_full_signs(p_ref, refm, args_divmin))
+  }
+  refm_f <- refm_fun(fml_f, dat)
+  refm_f$wobs[1] <- 0
+  signs_f <- signs_w0(refm_f)
+  # (groups `mo(x)` and `mo(x):fb`; a fallback would give no columns)
+  expect_equal(dim(signs_f), c(S, 2))
+  expect_identical(signs_f, signs_w0(refm_fun(fml_f, dat[-1, ])))
+  # LOO CV (a failed projection onto the full model would give a warning):
+  cv_loo <- withCallingHandlers(cv_varsel(
+    refm_fun(y ~ mo(x) + z + (1 | g), dat), cv_method = "LOO",
+    validate_search = TRUE, nclusters = 2, nclusters_pred = 3, seed = 3906,
+    verbose = FALSE
+  ), warning = function(w) {
+    if (grepl("projection onto the full model \\(for the signs",
+              conditionMessage(w))) {
+      stop(w)
+    }
+    invokeRestart("muffleWarning")
+  })
   expect_true(all(is.finite(summary(cv_loo)$perf_sub$elpd)))
 })
 
