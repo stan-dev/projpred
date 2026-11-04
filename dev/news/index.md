@@ -11,6 +11,7 @@
   with `validate_search = TRUE` for a Gaussian model with 40
   observations and 15 predictor terms is about 8 times faster. (GitHub:
   [\#579](https://github.com/stan-dev/projpred/issues/579))
+
 - Less formula and model-matrix work in the forward search and in the
   projections: the candidate submodels are selected from precomputed
   term labels, and the predictions for the training data use the stored
@@ -19,6 +20,7 @@
   with forward search for a Gaussian model with 50 observations and 200
   predictor terms is about 1.5 times faster. (GitHub:
   [\#578](https://github.com/stan-dev/projpred/issues/578))
+
 - Faster clustering of the reference model draws for a large number of
   observations: [`kmeans()`](https://rdrr.io/r/stats/kmeans.html) runs
   on the coordinates of the draws in their low-dimensional span, which
@@ -27,6 +29,7 @@
   with 50 000 observations, 4 000 draws and 20 clusters is about 4.5
   times faster. (GitHub:
   [\#576](https://github.com/stan-dev/projpred/issues/576))
+
 - Faster projections onto submodels without group-level or additive
   terms: the projected draws (or clusters) share one model matrix, and
   for the Gaussian family with the identity link, one linear solve gives
@@ -35,6 +38,7 @@
   with forward search for a Gaussian model with 50 observations and 200
   predictor terms is about 7 times faster. (GitHub:
   [\#574](https://github.com/stan-dev/projpred/issues/574))
+
 - Faster computation of the predictive variance of the reference model
   for the Gaussian and Student-t families. This matters for a large
   number of observations and many projected draws. For example,
@@ -42,6 +46,7 @@
   with 10 000 observations and 4 000 projected draws is about 7 times
   faster. (GitHub:
   [\#575](https://github.com/stan-dev/projpred/issues/575))
+
 - Faster [`lme4::glmer()`](https://rdrr.io/pkg/lme4/man/glmer.html)
   submodel fits: projpred now uses BOBYQA in both optimization stages,
   which changes the fits only within the optimizer tolerance. For
@@ -50,6 +55,15 @@
   a Bernoulli model with 300 observations and two grouping factors is
   about 2 times faster. (GitHub:
   [\#592](https://github.com/stan-dev/projpred/issues/592))
+
+- Faster projections onto binomial and Poisson GLM submodels (and
+  Gaussian GLM submodels with a non-identity link): the IRLS fits
+  compute their pseudo-observations in C++, and one C++ call fits all
+  projected draws (or clusters). For example,
+  [`cv_varsel()`](https://mc-stan.org/projpred/dev/reference/cv_varsel.md)
+  with `validate_search = TRUE` for binomial and Poisson models is about
+  4 to 6 times faster. (GitHub:
+  [\#581](https://github.com/stan-dev/projpred/issues/581))
 
 ### Minor changes
 
