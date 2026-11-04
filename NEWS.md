@@ -16,7 +16,7 @@ If you read this from a place other than <https://mc-stan.org/projpred/news/inde
 
 ## Minor changes
 
-* Faster `cl_agg()` and conversion of arrays to augmented-rows matrices. This makes validated LOO with the latent projection and many draws faster.
+* Faster `cl_agg()` and conversion of arrays to augmented-rows matrices. For example, LOO CV with validated search for the latent projection with 4000 projected draws is about 3-4 times faster.
 
 ## Bug fixes and maintenance
 
