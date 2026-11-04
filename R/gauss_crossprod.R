@@ -61,7 +61,10 @@ gauss_crossprod_design <- function(refmodel, term_strings, regul) {
   if (length(trms$group_terms) > 0 || length(trms$additive_terms) > 0) {
     return(NULL)
   }
-  tt <- terms(as.formula(paste("~", paste(terms_all, collapse = " + "))))
+  # The environment of the reference model formula, as in the draw-wise
+  # projections (for functions that the formula calls):
+  tt <- terms(as.formula(paste("~", paste(terms_all, collapse = " + ")),
+                         env = environment(refmodel$formula)))
   data <- refmodel$fetch_data()
   mf <- model.frame(tt, data = data, drop.unused.levels = TRUE)
   if (nrow(mf) != nrow(data)) {
