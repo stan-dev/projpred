@@ -1,6 +1,6 @@
-# projpred's PQL fit of multilevel submodels for the brms::categorical() family
-# (categ_pql_fit()) against mclogit::mblogit(). These tests need no reference
-# model fits, so they also run on CRAN.
+# Tests of categ_pql_fit(), projpred's PQL fit of multilevel submodels for the
+# brms::categorical() family, against mclogit::mblogit(). These tests need no
+# reference model fits, so they also run on CRAN.
 
 # Data with one row per observation and a response matrix of category
 # probabilities (the data form of the augmented-data projection).
@@ -290,7 +290,7 @@ test_that("fit_categ_mlvl() uses categ_pql_fit() for augmented data", {
                    names(get_subparams(fit_mb, nm_scheme = "brms")))
   expect_identical(dim(repair_re(fit, newdata = dat[1:4, ])),
                    dim(repair_re(fit_mb, newdata = dat[1:4, ])))
-  # Data in another layout:
+  # Data in another layout go to mblogit():
   args_shuffled <- args
   args_shuffled$data <- args$data[rev(seq_len(nrow(args$data))), ]
   args_shuffled$weights <- rev(args$weights)

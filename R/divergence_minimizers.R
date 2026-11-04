@@ -1173,12 +1173,11 @@ fit_categ_mlvl <- function(formula, projpred_formula_no_random,
   random_fmls <- lapply(random_trms, function(random_trm) {
     as.formula(paste("~", random_trm))
   })
-  # Without offsets, use projpred's implementation of the PQL algorithm of
-  # mclogit::mblogit() (see categ_pql_fit()), unless global option
-  # `projpred.categ_mlvl_mblogit` is `TRUE` or `...` has other mblogit()
-  # settings than the ones that categ_pql_fit() supports.  `avoid.increase`
-  # and `break.on.infinite` have no effect in mclogit's PQL algorithm, and
-  # `trace` and `trace.inner` only print the iterations:
+  # Use categ_pql_fit() unless there are offsets, global option
+  # `projpred.categ_mlvl_mblogit` is `TRUE`, or `...` has mblogit() settings
+  # that categ_pql_fit() does not support.  In mclogit's PQL algorithm,
+  # `avoid.increase` and `break.on.infinite` have no effect, and `trace` and
+  # `trace.inner` only print the iterations:
   pql_args <- c("epsilon", "maxit", "maxit.inner")
   no_effect_args <- c("trace", "trace.inner", "avoid.increase",
                       "break.on.infinite")

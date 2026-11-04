@@ -1,17 +1,17 @@
 # PQL fit of multilevel submodels for the brms::categorical() family
 #
-# The algorithm of mclogit::mblogit() with `method = "PQL"`, `estimator = "ML"`,
-# `catCov = "free"` and the default inner optimizer nlminb() with an analytic
-# gradient, but with base-R dense matrices.  Two differences from mclogit (up
-# to at least version 0.9.17.1):
-# * The gradient of the inner objective sums the diagonal blocks of the inverse
-#   of `Z'WZ + Sigma^-1` correctly.  mclogit:::sum_blockDiag() uses a wrong
-#   offset for blocks larger than 1 x 1 (more than two response categories or
-#   group-level slopes), which stops nlminb() early.
-# * The data have one row per observation and a response matrix of the
-#   augmented-data weights (see categ_mat_resp()).  The approximate deviance
-#   of the augmented data is this deviance plus the constant
-#   -2 sum(W * log(W / rowSums(W))) >= 0.
+# categ_pql_fit() runs the PQL algorithm of mclogit::mblogit() (`method =
+# "PQL"`, `estimator = "ML"`, `catCov = "free"`, inner nlminb() with the
+# analytic gradient) with dense base-R matrices.  It differs from mclogit
+# (checked up to version 0.9.17.1) in two places:
+# * The gradient of the inner objective sums the diagonal blocks of
+#   `(Z'WZ + Sigma^-1)^-1`.  mclogit:::sum_blockDiag() adds the wrong blocks
+#   if they are larger than 1 x 1 (more than two response categories, or
+#   group-level slopes), and nlminb() then stops early.
+# * The data have one row per observation, with the augmented-data weights as
+#   the response matrix (see categ_mat_resp()).  The approximate deviance of
+#   the augmented rows is this deviance plus -2 sum(W * log(W / rowSums(W))),
+#   a constant >= 0.
 # The returned object has the elements of an `mmblogit` object that projpred
 # and mclogit:::predict.mmblogit() use.
 
@@ -225,7 +225,7 @@ categ_pql_fit <- function(formula, random, data, epsilon = 1e-8, maxit = 25,
   if (any(prb < eps) || any(1 - prb < eps)) {
     warning("Fitted probabilities numerically 0 or 1 occurred", call. = FALSE)
   }
-  # The check of mclogit, on the deviance scale of the augmented rows:
+  # mclogit's check, on the deviance scale of the augmented rows:
   dev_const <- -2 * sum(Y[Y > 0] * log(y_rel[Y > 0]))
   if (fit$deviance + dev_const < 0) {
     warning("Approximate deviance is negative.\nYou might be overfitting ",
@@ -341,9 +341,8 @@ categ_pql_inner <- function(parms, y_star, X, Z, z_idx, d, m, w, prb, s,
               log_det_H = res$log_det_H))
 }
 
-# Evaluate `expr` and turn an error into an error of class
-# `categ_pql_numeric_error`, which the outer PQL loop handles (numerical
-# failures such as a singular matrix).
+# Evaluate `expr` and signal its errors (for example a singular matrix) with
+# class `categ_pql_numeric_error`, which the outer PQL loop catches.
 categ_pql_numeric <- function(expr) {
   tryCatch(expr, error = function(e) {
     stop(structure(
@@ -429,7 +428,7 @@ categ_pql_objective <- function(XWX, XWy, ZWX, ZWZ, ZWy, yWy, z_idx, d, m) {
   return(pll)
 }
 
-# Linear predictors, probabilities and the approximate deviance of mclogit.
+# Linear predictors, probabilities and mclogit's approximate deviance.
 categ_pql_eval <- function(parms, X, Z, z_idx, d, y, w, s) {
   eta <- drop(X %*% parms$alpha + Z %*% parms$b)
   rand_ssq <- sum(vapply(seq_along(d), function(k) {

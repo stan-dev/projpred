@@ -48,8 +48,9 @@ the latent projection) from cross-products of the model matrix (default
 draw by draw. The cross-products are used only with a positive \code{regul}.
 \item \code{projpred.categ_mlvl_mblogit}: A single logical value indicating whether to
 fit the multilevel submodels of the augmented-data projection for the
-\code{\link[brms:categorical]{brms::categorical()}} family with \code{\link[mclogit:mblogit]{mclogit::mblogit()}} (\code{TRUE}) instead of
-\pkg{projpred}'s own implementation of its PQL algorithm (default \code{FALSE}).
+\code{\link[brms:categorical]{brms::categorical()}} family with \code{\link[mclogit:mblogit]{mclogit::mblogit()}} (\code{TRUE}) or with
+\pkg{projpred}'s own implementation of the PQL algorithm of
+\code{\link[mclogit:mblogit]{mclogit::mblogit()}} (\code{FALSE}, the default).
 }
 }
 \keyword{internal}

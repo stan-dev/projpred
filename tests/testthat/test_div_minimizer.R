@@ -167,8 +167,7 @@ test_that("divmin_augdat() works", {
         "length > 1"
       )
     } else if (fam_crr == "categ" && mod_crr == "glmm") {
-      # projpred's own PQL fit (categ_pql_fit()) does not converge for these
-      # test data either:
+      # categ_pql_fit() does not converge for these test data:
       warn_expected <- paste0("^Inner iterations did not converge|",
                               "^Algorithm did not converge$")
     } else {
