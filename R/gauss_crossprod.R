@@ -15,7 +15,10 @@
 #   sum(W * (M[, s] - fit_s)^2) = sum(W * (M[, s] - ybar_s)^2) - q_s,
 #   sum(W * (-2 * M[, s] * fit_s + fit_s^2)) = -ybar_s^2 * sum(W) - q_s.
 # These give the projected dispersion (dis_gauss()) and the cross-entropy
-# (ce_gauss()) without the n-dimensional fitted values.
+# (ce_gauss()) without the n-dimensional fitted values. For other coefficients
+# beta_s (with the intercept ybar_s - m[J]' beta_s), for example under the
+# constraint of mo() terms, the same equations hold with
+# q_s = 2 * beta_s' C[J, s] - beta_s' G[J, J] beta_s.
 
 # The condition for the cross-product computations: Gaussian family with the
 # identity link (traditional or latent projection), the default divergence
@@ -51,14 +54,16 @@ gauss_crossprod_regul <- function(refmodel, divmin_args) {
 # several terms, for example "x1 + x2 + x1:x2") for the training data of
 # `refmodel`, and its cross-products. Returns `NULL` for group-level or smooth
 # terms, a factor in an interaction term (its dummy coding depends on the other
-# terms of a submodel), missing values, or a zero-variance column. Also returns
-# `NULL` for mo() terms with monotonic projections (these need the sign
-# constraints of the submodel fitters).
+# terms of a submodel), missing values, or a zero-variance column. For mo()
+# terms with monotonic projections, element `mo_groups` holds the sign groups
+# (see mo_groups_x()) as columns of `x_c`, and `mo_scale` the column scales of
+# mo_binding(); gauss_mo_fix() applies the constraint.
 gauss_crossprod_design <- function(refmodel, term_strings, regul) {
   terms_all <- setdiff(unique(split_plus(term_strings)), "1")
-  if (length(terms_all) == 0 || (mo_monotone() && has_mo_term(terms_all))) {
+  if (length(terms_all) == 0) {
     return(NULL)
   }
+  with_mo <- mo_monotone() && has_mo_term(terms_all)
   trms <- extract_terms_response(make_formula(terms_all))
   if (length(trms$group_terms) > 0 || length(trms$additive_terms) > 0) {
     return(NULL)
@@ -81,6 +86,21 @@ gauss_crossprod_design <- function(refmodel, term_strings, regul) {
     return(NULL)
   }
   x <- model.matrix(tt, data = mf)
+  mo_groups <- list()
+  if (with_mo) {
+    # (Positions among the columns without the intercept, as `x_c` below.) The
+    # cases that mo_sign_groups() does not support (for example, two mo()
+    # calls in one term) go to the draw-wise path, which throws the error:
+    mo_groups <- tryCatch(mo_groups_x(mf, x), error = function(e) {
+      if (grepl("^Internal error", conditionMessage(e))) {
+        stop(e)
+      }
+      NULL
+    })
+    if (is.null(mo_groups)) {
+      return(NULL)
+    }
+  }
   assign_x <- attr(x, "assign")
   keep <- assign_x > 0
   x <- x[, keep, drop = FALSE]
@@ -102,9 +122,105 @@ gauss_crossprod_design <- function(refmodel, term_strings, regul) {
   diag(a_full) <- diag(a_full) + lambda_x
   # For new data, the terms of the model frame keep the data-dependent bases
   # of the training data (attribute "predvars", for example of poly()):
+  mo_scale <- if (length(mo_groups) > 0) mo_col_scale(x, weights = wobs)
   return(nlist(tt_pred = attr(mf, "terms"), xlev = .getXlevels(tt, mf), keep,
-               x_c, x_means, cols_by_term, g_mat, a_full, lambda_x, wobs,
-               sum_w))
+               x_c, x_means, cols_by_term, g_mat, a_full, lambda_x, sd_x, wobs,
+               sum_w, mo_groups, mo_scale))
+}
+
+# The sign groups of `des$mo_groups` (output of gauss_crossprod_design()) whose
+# columns are all among `cols`, as positions in `cols` (with attribute "keys").
+gauss_mo_groups_in <- function(des, cols) {
+  grps <- des$mo_groups
+  if (length(grps) == 0 || length(cols) == 0) {
+    return(list())
+  }
+  inside <- vapply(grps, function(g) all(g %in% cols), logical(1))
+  partly <- vapply(grps, function(g) any(g %in% cols), logical(1))
+  if (any(partly & !inside)) {
+    stop("Internal error: a sign group of a mo() term is only partly in the ",
+         "submodel. Please notify the package maintainer.")
+  }
+  out <- lapply(grps[inside], match, table = cols)
+  attr(out, "keys") <- attr(grps, "keys")[inside]
+  return(out)
+}
+
+# The monotonicity constraint of mo() terms in the cross-product computations.
+# `beta` holds the unconstrained coefficients of the columns `cols` of
+# `des$x_c` (one column per projected draw), `c_mat` the cross-products C of
+# the projected draws (see the top of this file). As in the submodel fitters,
+# a draw keeps its unconstrained solution unless a sign group has coefficients
+# of both signs (mo_binding()). For such a draw, the signs come from
+# `signs_fun()` (the signs from the projection onto the full model, see
+# mo_full_signs(), as an S x G matrix) or from mo_cons_signs(), and bls_c()
+# solves the weighted ridge problem with these signs (on the scale of the
+# standardized columns, as glm_ridge()). Returns `beta` with the constrained
+# solutions and the indices `fixed` of the changed draws, or `NULL` if bls_c()
+# does not converge. For a changed draw, gauss_quad_cols() gives q_s (see the
+# top of this file). `grps` are the sign groups in `cols`.
+gauss_mo_fix <- function(beta, cols, des, c_mat, signs_fun,
+                         grps = gauss_mo_groups_in(des, cols)) {
+  if (length(grps) == 0) {
+    return(list(beta = beta, fixed = integer(0)))
+  }
+  scale_cols <- des$mo_scale[cols]
+  fixed <- which(vapply(seq_len(ncol(beta)), function(s) {
+    mo_binding(beta[, s], x = NULL, groups = grps, scale = scale_cols)
+  }, logical(1)))
+  if (length(fixed) == 0) {
+    return(list(beta = beta, fixed = fixed))
+  }
+  signs_full <- signs_fun()
+  # With the standardized coefficients b = sd * beta, the problem is
+  # min 0.5 * b' (A / (sd sd')) b - (C / sd)' b:
+  sd_cols <- des$sd_x[cols]
+  q_std <- des$a_full[cols, cols, drop = FALSE] / tcrossprod(sd_cols)
+  cons <- unlist(grps, use.names = FALSE)
+  for (s in fixed) {
+    s_g <- mo_cons_signs(beta[, s], grps,
+                         if (ncol(signs_full) > 0) signs_full[s, ])
+    flip <- rep(1, length(cols))
+    flip[cons] <- rep(s_g, lengths(grps))
+    b_init <- flip * sd_cols * beta[, s]
+    b_init[cons] <- pmax(b_init[cons], 0)
+    res <- bls_c(q_std * tcrossprod(flip), flip * c_mat[cols, s] / sd_cols,
+                 cons, b_init)
+    if (!isTRUE(res$converged)) {
+      return(NULL)
+    }
+    beta[, s] <- flip * as.vector(res$b) / sd_cols
+  }
+  return(list(beta = beta, fixed = fixed))
+}
+
+# The quantity q_s of the top of this file for the coefficients `beta` (not
+# necessarily the unconstrained solution) of the columns `cols`, for the draws
+# `draws` (columns of `beta` and `c_mat`).
+gauss_quad_cols <- function(beta, cols, des, c_mat, draws) {
+  b <- beta[, draws, drop = FALSE]
+  return(2 * colSums(b * c_mat[cols, draws, drop = FALSE]) -
+           colSums(b * (des$g_mat[cols, cols, drop = FALSE] %*% b)))
+}
+
+# A function that gives the signs of mo_full_signs() for `p_ref` (computed
+# at the first call). `divmin_args` as in gauss_crossprod_regul(). Unlike the
+# draw-wise path, the projection onto the full model runs only if a draw needs
+# the constraint (so its warning, if it fails, comes only then).
+gauss_mo_signs_fun <- function(p_ref, refmodel, divmin_args) {
+  signs <- NULL
+  return(function() {
+    if (is.null(signs)) {
+      args_divmin <- c(
+        list(family = refmodel$family, weights = refmodel$wobs,
+             projpred_var = p_ref$var, projpred_ws_aug = p_ref$mu,
+             verbose_divmin = FALSE),
+        divmin_args
+      )
+      signs <<- mo_full_signs(p_ref, refmodel, args_divmin)
+    }
+    return(signs)
+  })
 }
 
 # The term labels of a term string (see norm_term_labels()).
@@ -155,6 +271,7 @@ perf_eval_gauss <- function(search_path, nterms, refmodel, p_ref,
   sum_wvar <- colSums(p_ref$var * wobs)
   c_mat <- crossprod(des$x_c, mu_ref * wobs)
   nprj <- ncol(mu_ref)
+  signs_fun <- gauss_mo_signs_fun(p_ref, refmodel, divmin_args)
 
   # Columns of the submodel of each size (the submodels are nested):
   labels_size <- lapply(seq_along(ranking), function(j) {
@@ -171,6 +288,15 @@ perf_eval_gauss <- function(search_path, nterms, refmodel, p_ref,
     } else {
       beta <- backsolve(r_chol, y_mat)
       quad <- colSums(y_mat^2) + colSums(des$lambda_x[cols] * beta^2)
+      mo_out <- gauss_mo_fix(beta, cols, des, c_mat, signs_fun)
+      if (is.null(mo_out)) {
+        return(NULL)
+      }
+      if (length(mo_out$fixed) > 0) {
+        beta <- mo_out$beta
+        quad[mo_out$fixed] <- gauss_quad_cols(beta, cols, des, c_mat,
+                                              mo_out$fixed)
+      }
       mu_test <- sweep(x_test_c[, cols, drop = FALSE] %*% beta, 2, ybar, "+")
     }
     rownames(mu_test) <- rownames(x_test)
@@ -230,7 +356,11 @@ perf_eval_gauss <- function(search_path, nterms, refmodel, p_ref,
       }
     }
     for (k in which(nterms == size_j)) {
-      out_by_size[[k]] <- out_size(cols, r_chol, y_mat)
+      out_k <- out_size(cols, r_chol, y_mat)
+      if (is.null(out_k)) {
+        return(NULL)
+      }
+      out_by_size[[k]] <- out_k
     }
   }
   return(out_by_size)

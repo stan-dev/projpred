@@ -1482,17 +1482,27 @@ test_that(paste(
 })
 
 test_that(paste(
-  "the Gaussian cross-product computations are not used for monotonic",
-  "projections of mo() terms"
+  "the Gaussian cross-product computations give the results of the draw-wise",
+  "fits, with and without monotonic projections of mo() terms"
 ), {
   opts_old <- options(projpred.mo_monotone = TRUE,
                       projpred.search_gauss_crossprod = TRUE,
                       projpred.warn_psis = FALSE)
   on.exit(options(opts_old), add = TRUE)
-  # The effect of `x` in the submodels without `w` is not monotonic:
-  refm <- mo_nonmono_refm(fml = y ~ mo(x) + z + w, c_w = 1)
-  args_vs <- list(refm, nclusters = 5, nclusters_pred = 10, seed = 3317,
-                  verbose = FALSE)
+  # The effect of `x` in the submodels without `w` is not monotonic. The second
+  # reference model adds a second mo() term and an interaction with `z`:
+  # In the third one, the one-column candidate `f` comes after `mo(x)` in the
+  # search (this step does not use crit_single()):
+  refms <- list(
+    one = mo_nonmono_refm(fml = y ~ mo(x) + z + w, c_w = 1),
+    two = mo_nonmono_refm(fml = y ~ mo(x) + mo(x2) + z + mo(x):z + w, c_w = 1),
+    three = mo_nonmono_refm(fml = y ~ mo(x) + z + w + f, c_w = 1),
+    # (More draws, for the PSIS-LOO of the reference model on the original
+    # scale.)
+    latent = suppressMessages(mo_nonmono_refm(
+      binomial(), fml = y ~ mo(x) + z + w, c_w = 1, S = 100, latent = TRUE
+    ))
+  )
   # The PSIS warnings come from the small number of draws:
   cv_quiet <- function() {
     muffle_warning(muffle_warning(cv_varsel(
@@ -1501,21 +1511,51 @@ test_that(paste(
     ), "Some Pareto k diagnostic values are too high"),
     "Not enough tail samples to fit the generalized Pareto distribution")
   }
-  # The search and the LOO CV evaluation call the cross-product functions,
-  # which return `NULL` (`n_used`) only for monotonic projections. The results
-  # must equal those without the cross-product computations.
-  for (mono in c(TRUE, FALSE)) {
-    info_crr <- paste("mo_monotone:", mono)
+  # The number of draws (or clusters) that gauss_mo_fix() changes, and the
+  # number of columns of the calls that change draws:
+  n_fixed <- 0
+  ncols_fixed <- integer()
+  record_fix <- function(out, n_cols) {
+    n_fixed <<- n_fixed + length(out$fixed)
+    if (length(out$fixed) > 0) ncols_fixed <<- c(ncols_fixed, n_cols)
+  }
+  # (The exit expression runs in the frame of gauss_mo_fix(), so it can read
+  # `cols`; `record_fix` is inserted as a function object.)
+  trace("gauss_mo_fix",
+        exit = substitute(rec(returnValue(), length(cols)),
+                          list(rec = record_fix)),
+        print = FALSE, where = asNamespace("projpred"))
+  on.exit(untrace("gauss_mo_fix", where = asNamespace("projpred")),
+          add = TRUE)
+  # The search and the LOO CV evaluation use the cross-product computations
+  # (they do not return `NULL`). The results must equal those without them.
+  for (case in names(refms)) for (mono in c(TRUE, FALSE)) {
+    info_crr <- paste0("refm: ", case, ", mo_monotone: ", mono)
+    refm <- refms[[case]]
+    args_vs <- list(refm, nclusters = 5, nclusters_pred = 10, seed = 3317,
+                    verbose = FALSE)
     options(projpred.mo_monotone = mono,
             projpred.search_gauss_crossprod = TRUE)
+    n_fixed <- 0
+    ncols_fixed <- integer()
     cnt_vs <- count_calls(do.call(varsel, args_vs), "search_forward_gauss",
                           non_null = TRUE)
+    n_fixed_vs <- n_fixed
+    if (case == "three" && mono) {
+      # The step after `mo(x)` (4 columns), `w` and `z` with the candidate `f`:
+      expect_identical(head(ranking(cnt_vs$value)$fulldata, 3),
+                       c("w", "z", "mo(x)"))
+      expect_true(7L %in% ncols_fixed)
+    }
     cnt_cv <- count_calls(cv_quiet(), "perf_eval_gauss", non_null = TRUE)
+    n_fixed_cv <- n_fixed - n_fixed_vs
     expect_identical(cnt_vs$n_all, 1, info = info_crr)
     expect_identical(cnt_cv$n_all, 5, info = info_crr)
-    n_used <- if (mono) 0 else 1
-    expect_identical(cnt_vs$n, n_used, info = info_crr)
-    expect_identical(cnt_cv$n, 5 * n_used, info = info_crr)
+    expect_identical(cnt_vs$n, 1, info = info_crr)
+    expect_identical(cnt_cv$n, 5, info = info_crr)
+    # The constraint binds in the search and in the evaluation:
+    expect_identical(n_fixed_vs > 0, mono, info = info_crr)
+    expect_identical(n_fixed_cv > 0, mono, info = info_crr)
     options(projpred.search_gauss_crossprod = FALSE)
     vs_dw <- do.call(varsel, args_vs)
     cv_dw <- cv_quiet()
@@ -1526,4 +1566,45 @@ test_that(paste(
     expect_equal(performances(cnt_cv$value, deltas = FALSE),
                  performances(cv_dw, deltas = FALSE), info = info_crr)
   }
+})
+
+test_that(paste(
+  "gauss_mo_fix() gives the constrained draw-wise fits, with the signs from",
+  "the full model and with observation weights"
+), {
+  opts_old <- options(projpred.mo_monotone = TRUE)
+  on.exit(options(opts_old), add = TRUE)
+  refm <- mo_nonmono_refm(fml = y ~ mo(x) + z + w, c_w = 1)
+  set.seed(4417)
+  refm$wobs <- runif(length(refm$wobs), 0.5, 1.5)
+  p_ref <- mo_add_cache(get_refdist(refm, nclusters = 8), refm)
+  args_divmin <- list(family = refm$family, weights = refm$wobs,
+                      projpred_var = p_ref$var, projpred_ws_aug = p_ref$mu,
+                      verbose_divmin = FALSE)
+  signs_full <- mo_full_signs(p_ref, refm, args_divmin)
+  # Signs opposite to those of the full model (in the cache, so that the
+  # draw-wise fits use them too), so that the source of the signs matters:
+  p_ref$mo_cache$signs <- -signs_full
+  terms_sub <- c("mo(x)", "z")
+  b_dw <- prj_coefs(proj_to_submodl(terms_sub, p_ref = p_ref, refmodel = refm,
+                                    verbose = FALSE))
+  des <- gauss_crossprod_design(refm, terms_sub, regul = 1e-4)
+  c_mat <- crossprod(des$x_c, p_ref$mu * des$wobs)
+  cols <- seq_len(ncol(des$x_c))
+  beta_unc <- solve(des$a_full, c_mat)
+  out <- gauss_mo_fix(beta_unc, cols, des, c_mat, function() -signs_full)
+  expect_gt(length(out$fixed), 0)
+  expect_equal(t(out$beta), b_dw[, colnames(des$x_c)], tolerance = 1e-8,
+               ignore_attr = TRUE)
+  # The signs of the full model give other fits:
+  out_full <- gauss_mo_fix(beta_unc, cols, des, c_mat, function() signs_full)
+  expect_false(isTRUE(all.equal(out$beta, out_full$beta)))
+  # q_s of the changed draws (see the top of R/gauss_crossprod.R):
+  wobs <- des$wobs
+  mu <- p_ref$mu
+  ybar <- colSums(mu * wobs) / sum(wobs)
+  fit <- sweep(des$x_c %*% out$beta, 2, ybar, "+")
+  q_direct <- colSums(wobs * sweep(mu, 2, ybar)^2) - colSums(wobs * (mu - fit)^2)
+  expect_equal(gauss_quad_cols(out$beta, cols, des, c_mat, out$fixed),
+               q_direct[out$fixed], tolerance = 1e-10)
 })

@@ -45,8 +45,7 @@ whether to compute the forward search and the evaluation in the LOO CV with
 validated search for Gaussian submodels with the identity link (including
 the latent projection) from cross-products of the model matrix (default
 \code{TRUE}). With \code{FALSE}, \pkg{projpred} projects onto each candidate submodel
-draw by draw. The cross-products are used only with a positive \code{regul}, and
-not for \code{mo()} terms if \code{projpred.mo_monotone} is \code{TRUE}.
+draw by draw. The cross-products are used only with a positive \code{regul}.
 }
 }
 \keyword{internal}
