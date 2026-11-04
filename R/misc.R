@@ -379,6 +379,49 @@ get_refdist <- function(refmodel, ndraws = NULL, nclusters = NULL,
   return(p_ref)
 }
 
+# Returns the draws (columns) of `eta` as an S x r matrix of coordinates in an
+# orthonormal basis of their centered span. These coordinates give the same
+# Euclidean distances as `t(eta)`, so kmeans() finds the same clustering (up to
+# rounding). The cost of kmeans() then does not grow with the number of
+# observations. The draws of a GLM-type reference model span at most as many
+# dimensions as the model has coefficients. The basis comes from a
+# deterministic subset of the draws, so the state of the random number
+# generator does not change. The function uses the basis only if it reproduces
+# all draws (relative tolerance `100 * tol`; `tol` is the rank tolerance of
+# qr()).
+# Otherwise, the function returns `t(eta)`.
+eta_for_kmeans <- function(eta, rank_max = floor(min(dim(eta)) / 4),
+                           tol = 1e-10) {
+  S <- ncol(eta)
+  if (rank_max < 2 || anyNA(eta)) {
+    return(t(eta))
+  }
+  eta_c <- eta - rowMeans(eta)
+  scale_c <- max(abs(eta_c))
+  if (scale_c == 0) {
+    return(t(eta))
+  }
+  k <- min(64L, rank_max)
+  repeat {
+    idx <- unique(round(seq(1, S, length.out = k)))
+    qr_sub <- qr(eta_c[, idx, drop = FALSE], tol = tol)
+    if (qr_sub$rank < length(idx)) {
+      # The subset has a lower rank than its number of draws, so its span can
+      # be the span of all draws (checked next):
+      q <- qr.Q(qr_sub)[, seq_len(qr_sub$rank), drop = FALSE]
+      coords <- crossprod(q, eta_c)
+      if (max(abs(eta_c - q %*% coords)) <= tol * scale_c * 1e2) {
+        return(t(coords))
+      }
+      return(t(eta))
+    }
+    if (k >= rank_max) {
+      return(t(eta))
+    }
+    k <- min(2L * k, rank_max)
+  }
+}
+
 # Function for clustering the parameter draws:
 get_p_clust <- function(family, eta, mu, mu_offs, dis, nclusters = 10,
                         wobs = rep(1, dim(mu)[1]),
@@ -389,7 +432,7 @@ get_p_clust <- function(family, eta, mu, mu_offs, dis, nclusters = 10,
     # Note: A seed is not set here because this function is not exported and has
     # a calling stack at the beginning of which a seed is set.
 
-    out <- kmeans(t(eta), nclusters, iter.max = 50)
+    out <- kmeans(eta_for_kmeans(eta), nclusters, iter.max = 50)
     cl <- out$cluster # cluster indices for each draw
   } else if (typeof(cl) == "list") {
     # old clustering solution provided, so fetch the cluster indices

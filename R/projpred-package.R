@@ -52,7 +52,8 @@
 #'     returned object inherits from class `subfit`. Possible tuning parameters
 #'     for this internal C++ function are: `regul` (amount of ridge
 #'     regularization; default: `1e-4`), `thresh_conv` (convergence threshold;
-#'     default: `1e-7`), `qa_updates_max` (maximum number of quadratic
+#'     default: `1e-7`, but not used in case of the Gaussian family with
+#'     identity link), `qa_updates_max` (maximum number of quadratic
 #'     approximation updates; default: `100`, but fixed to `1` in case of the
 #'     Gaussian family with identity link), `ls_iter_max` (maximum number of
 #'     line search iterations; default: `30`, but fixed to `1` in case of the
@@ -72,7 +73,11 @@
 #'     projection in case of the [binomial()] or [brms::bernoulli()] family):
 #'     [lme4::lmer()] (the returned object inherits from class `lmerMod`) for
 #'     the [gaussian()] family, [lme4::glmer()] (the returned object inherits
-#'     from class `glmerMod`) for all other families.
+#'     from class `glmerMod`) for all other families. For [lme4::glmer()],
+#'     \pkg{projpred} uses `control = lme4::glmerControl(optimizer = "bobyqa")`,
+#'     so both optimization stages use BOBYQA. A `control` argument in `...`
+#'     replaces this default in the first fit. After some \pkg{lme4} errors,
+#'     \pkg{projpred} refits with its own settings and ignores this `control`.
 #'     + For the augmented-data projection: [ordinal::clmm()] (the returned
 #'     object inherits from class `clmm`) for the [brms::cumulative()] family,
 #'     [mclogit::mblogit()] (the returned object inherits from class `mmblogit`)
@@ -276,6 +281,12 @@
 #' [#207](https://github.com/stan-dev/projpred/issues/207) and GitHub pull
 #' request [#353](https://github.com/stan-dev/projpred/pull/353)). Currently,
 #' this is an experimental feature.
+#' * `projpred.search_gauss_crossprod`: A single logical value indicating
+#' whether to compute the forward search and the evaluation in the LOO CV with
+#' validated search for Gaussian submodels with the identity link (including
+#' the latent projection) from cross-products of the model matrix (default
+#' `TRUE`). With `FALSE`, \pkg{projpred} projects onto each candidate submodel
+#' draw by draw. The cross-products are used only with a positive `regul`.
 #'
 #' @name internal-global-options
 #' @keywords internal

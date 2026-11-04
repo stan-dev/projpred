@@ -600,6 +600,15 @@ extend_family_poisson <- function(family) {
   return(family)
 }
 
+# For each observation (row of `mu`), the weighted variance of `mu` across the
+# draws (columns of `mu`), with weights `wdraws` (the caller normalizes them to
+# sum to 1). Vectorized form of
+# `sum(wdraws * (mu[i, ] - weighted.mean(mu[i, ], wdraws))^2)`.
+rowvar_wdraws <- function(mu, wdraws) {
+  mu_mean <- drop(mu %*% wdraws) / sum(wdraws)
+  return(drop(((mu - mu_mean)^2) %*% wdraws))
+}
+
 extend_family_gaussian <- function(family) {
   # ce_gauss() does not give the actual cross-entropy (not even the one which
   # would result from dropping terms which would cancel out when calculating the
@@ -615,9 +624,7 @@ extend_family_gaussian <- function(family) {
   }
   predvar_gauss <- function(mu, dis, wdraws = 1) {
     wdraws <- wdraws / sum(wdraws)
-    mu_var <- do.call(rbind, lapply(seq_len(nrow(mu)), function(i) {
-      sum(wdraws * (mu[i, ] - weighted.mean(mu[i, ], wdraws))^2)
-    }))
+    mu_var <- rowvar_wdraws(mu, wdraws)
     as.vector(sum(wdraws * dis^2) + mu_var)
   }
   ll_gauss <- function(mu, dis, y, weights = 1) {
@@ -718,9 +725,7 @@ extend_family_student_t <- function(family) {
   }
   predvar_student_t <- function(mu, dis, wdraws = 1) {
     wdraws <- wdraws / sum(wdraws)
-    mu_var <- do.call(rbind, lapply(seq_len(nrow(mu)), function(i) {
-      sum(wdraws * (mu[i, ] - weighted.mean(mu[i, ], wdraws))^2)
-    }))
+    mu_var <- rowvar_wdraws(mu, wdraws)
     as.vector(family$nu / (family$nu - 2) * sum(wdraws * dis^2) + mu_var)
   }
   ll_student_t <- function(mu, dis, y, weights = 1) {

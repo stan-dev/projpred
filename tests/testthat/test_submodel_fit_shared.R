@@ -56,6 +56,38 @@ test_that("the joint Gaussian solve falls back for other families", {
   ))
 })
 
+test_that(paste(
+  "the joint Gaussian solve falls back for a singular system or non-finite",
+  "coefficients"
+), {
+  d <- shared_fit_data()
+  # Without penalty, a duplicated column makes the system singular:
+  dat_dup <- d$data
+  dat_dup$x3 <- dat_dup$x1
+  fmls_dup <- lapply(d$formulas, update, . ~ . + x3)
+  shared_x_dup <- shared_model_matrix(fmls_dup, data = dat_dup)
+  expect_false(is.null(shared_x_dup))
+  expect_null(glm_ridge_gauss_multi(
+    fmls_dup, shared_x = shared_x_dup,
+    dot_args = list(data = dat_dup, family = gaussian(), weights = d$w,
+                    regul = 0)
+  ))
+  # With the default penalty, the same system has a solution:
+  expect_false(is.null(glm_ridge_gauss_multi(
+    fmls_dup, shared_x = shared_x_dup,
+    dot_args = list(data = dat_dup, family = gaussian(), weights = d$w)
+  )))
+  # An infinite response gives non-finite coefficients:
+  dat_inf <- d$data
+  dat_inf$y2[4] <- Inf
+  shared_x_inf <- shared_model_matrix(d$formulas, data = dat_inf)
+  expect_false(is.null(shared_x_inf))
+  expect_null(glm_ridge_gauss_multi(
+    d$formulas, shared_x = shared_x_inf,
+    dot_args = list(data = dat_inf, family = gaussian(), weights = d$w)
+  ))
+})
+
 test_that("shared_model_matrix() returns NULL if the model matrix differs", {
   d <- shared_fit_data()
   # Different right-hand sides:
@@ -87,6 +119,51 @@ test_that(paste(
   prd_shared <- subprd_subfit_shared(fits, nd)
   expect_equal(unname(prd_shared), unname(prd_loop), tolerance = 1e-12)
   expect_equal(unname(subprd(fits, nd)), unname(prd_loop), tolerance = 1e-12)
+})
+
+test_that(paste(
+  "the shared fits keep the data-dependent bases, and the joint predictions",
+  "require the same bases in all fits"
+), {
+  d <- shared_fit_data()
+  fmls <- lapply(d$formulas, update, . ~ x1 + poly(x2, 2) + f)
+  shared_x <- shared_model_matrix(fmls, data = d$data)
+  fits_multi <- glm_ridge_gauss_multi(
+    fmls, shared_x = shared_x,
+    dot_args = list(data = d$data, family = gaussian(), weights = d$w)
+  )
+  fits_loop <- lapply(fmls, fit_glm_ridge_callback, data = d$data,
+                      family = gaussian(), weights = d$w)
+  for (s in seq_along(fmls)) {
+    expect_identical(predvars_predictors(fits_multi[[s]]$terms),
+                     predvars_predictors(fits_loop[[s]]$terms))
+  }
+  # Fits to different rows have different poly() bases (no factor, so that only
+  # the bases differ):
+  fmls_rows <- lapply(fmls[1:2], update, . ~ x1 + poly(x2, 2))
+  fits_rows <- list(
+    fit_glm_ridge_callback(fmls_rows[[1]], data = d$data[1:30, ],
+                           family = gaussian()),
+    fit_glm_ridge_callback(fmls_rows[[2]], data = d$data[11:40, ],
+                           family = gaussian())
+  )
+  expect_false(identical(predvars_predictors(fits_rows[[1]]$terms),
+                         predvars_predictors(fits_rows[[2]]$terms)))
+  nd <- d$data[c(2, 5, 7, 11), ]
+  expect_null(subprd_subfit_shared(fits_rows, nd))
+  # For these fits, subprd() uses the draw-wise predictions:
+  prd_rows <- do.call(cbind, lapply(fits_rows, predict, newdata = nd))
+  expect_equal(unname(subprd(fits_rows, nd)), unname(prd_rows),
+               tolerance = 1e-12)
+  # The fits from the shared model matrix and the draw-wise fits to the same
+  # rows (which differ only in the response) share the bases, so the joint
+  # predictions apply:
+  for (fits in list(fits_multi, fits_loop)) {
+    prd_shared <- subprd_subfit_shared(fits, nd)
+    expect_false(is.null(prd_shared))
+    prd_loop <- do.call(cbind, lapply(fits, predict, newdata = nd))
+    expect_equal(unname(prd_shared), unname(prd_loop), tolerance = 1e-12)
+  }
 })
 
 test_that("project() uses the joint Gaussian solve for a Gaussian submodel", {
