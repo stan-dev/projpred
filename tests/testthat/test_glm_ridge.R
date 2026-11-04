@@ -497,6 +497,51 @@ test_that(paste(
   expect_null(glm_ridge_native_multi(fmls, shared_x, dot_args))
 })
 
+test_that(paste(
+  "glm_ridge_native_multi(): gaussian, id-link: the fits are exact if",
+  "glm_ridge_gauss_multi() does not apply"
+), {
+  # Column `xc` is constant over the observations with positive weight (the
+  # left-out observation of a fold has weight 0), so glm_ridge_gauss_multi()
+  # returns `NULL` and the native fitter fits the draws. The residual is
+  # orthogonal to the intercept and `x1` (with the weights), so the solution
+  # is `c(cc, cc)` and the start values are close to it.
+  n_g <- 40
+  w_g <- c(0, 1 + 0.5 * cos(2:n_g))
+  dat_g <- data.frame(x1 = sin(1:n_g), xc = c(0, rep(1, n_g - 1)))
+  e_g <- lm.wfit(cbind(1, dat_g$x1), sin(7 * (1:n_g)), w_g)$residuals
+  ccs <- c(1, 1e-4, 1e-5)
+  resp_nms <- paste0(".y", seq_along(ccs))
+  for (s in seq_along(ccs)) {
+    dat_g[[resp_nms[s]]] <- e_g + ccs[s] * (1 + dat_g$x1)
+  }
+  fmls <- lapply(resp_nms, function(resp_nm) {
+    as.formula(paste(resp_nm, "~ x1 + xc"))
+  })
+  shared_x <- shared_model_matrix(fmls, data = dat_g)
+  dot_args <- list(data = dat_g, family = extend_family(gaussian()),
+                   weights = w_g, regul = 0)
+  expect_null(glm_ridge_gauss_multi(fmls, shared_x = shared_x,
+                                    dot_args = dot_args))
+  out_multi <- glm_ridge_native_multi(fmls, shared_x = shared_x,
+                                      dot_args = dot_args)
+  expect_false(is.null(out_multi))
+  expect_identical(attr(out_multi, "mssgs_warns_capts"),
+                   rep(list(character()), length(ccs)))
+  attr(out_multi, "mssgs_warns_capts") <- NULL
+  for (s in seq_along(ccs)) {
+    expect_equal(c(out_multi[[s]]$alpha, out_multi[[s]]$beta[1]),
+                 c(ccs[s], ccs[s]), tolerance = 1e-8,
+                 info = paste("cc:", ccs[s]))
+    expect_identical(out_multi[[s]]$beta[2], 0)
+  }
+  sdivmin_shared <- glm_ridge_callback_shared(shared_x)
+  out_drawwise <- lapply(fmls, function(fml) {
+    do.call(sdivmin_shared, c(list(formula = fml), dot_args))
+  })
+  expect_equal(out_multi, out_drawwise, tolerance = 1e-12)
+})
+
 test_that("capt_conds() collects messages and warnings", {
   expect_silent(capt <- capt_conds({
     message("a message")
