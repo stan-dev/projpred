@@ -46,7 +46,8 @@ for the \code{\link[=gaussian]{gaussian()}} family and \code{\link[=glm]{glm()}}
 returned object inherits from class \code{subfit}. Possible tuning parameters
 for this internal C++ function are: \code{regul} (amount of ridge
 regularization; default: \code{1e-4}), \code{thresh_conv} (convergence threshold;
-default: \code{1e-7}), \code{qa_updates_max} (maximum number of quadratic
+default: \code{1e-7}, but not used in case of the Gaussian family with
+identity link), \code{qa_updates_max} (maximum number of quadratic
 approximation updates; default: \code{100}, but fixed to \code{1} in case of the
 Gaussian family with identity link), \code{ls_iter_max} (maximum number of
 line search iterations; default: \code{30}, but fixed to \code{1} in case of the
@@ -68,7 +69,11 @@ inherits from class \code{multinom}) for the \code{\link[brms:categorical]{brms:
 projection in case of the \code{\link[=binomial]{binomial()}} or \code{\link[brms:bernoulli]{brms::bernoulli()}} family):
 \code{\link[lme4:lmer]{lme4::lmer()}} (the returned object inherits from class \code{lmerMod}) for
 the \code{\link[=gaussian]{gaussian()}} family, \code{\link[lme4:glmer]{lme4::glmer()}} (the returned object inherits
-from class \code{glmerMod}) for all other families.
+from class \code{glmerMod}) for all other families. For \code{\link[lme4:glmer]{lme4::glmer()}},
+\pkg{projpred} uses \code{control = lme4::glmerControl(optimizer = "bobyqa")},
+so both optimization stages use BOBYQA. A \code{control} argument in \code{...}
+replaces this default in the first fit. After some \pkg{lme4} errors,
+\pkg{projpred} refits with its own settings and ignores this \code{control}.
 \item For the augmented-data projection: \code{\link[ordinal:clmm]{ordinal::clmm()}} (the returned
 object inherits from class \code{clmm}) for the \code{\link[brms:cumulative]{brms::cumulative()}} family,
 \code{\link[mclogit:mblogit]{mclogit::mblogit()}} (the returned object inherits from class \code{mmblogit})

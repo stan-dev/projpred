@@ -323,6 +323,42 @@ test_that(paste(
                tolerance = 1e-10)
 })
 
+test_that(paste(
+  "glm_ridge: gaussian, id-link: the fit is exact also if the start values",
+  "are close to the solution"
+), {
+  n_e <- 40
+  x_e <- cbind(sin(1:n_e))
+  w_e <- 1 + 0.5 * cos(1:n_e)
+  # A residual that is orthogonal to the intercept and `x_e` (with the
+  # weights), so that the solution below is `c(cc, cc)`:
+  e_e <- lm.wfit(cbind(1, x_e), sin(7 * (1:n_e)), w_e)$residuals
+  for (cc in c(1, 1e-4)) {
+    y_e <- e_e + cc * (1 + x_e[, 1])
+    fit <- glm_ridge(x_e, y_e, lambda = 0, weights = w_e)
+    expect_equal(c(fit$beta0, fit$beta), c(cc, cc), tolerance = 1e-8,
+                 info = paste("cc:", cc))
+    fit_icpt <- glm_ridge(NULL, y_e, weights = w_e)
+    expect_equal(fit_icpt$beta0, weighted.mean(y_e, w_e), tolerance = 1e-8,
+                 info = paste("cc:", cc))
+  }
+  # Start values at the solution: no message.
+  out <- utils::capture.output(fit_icpt <- glm_ridge(
+    NULL, y_e, weights = w_e, beta0_init = weighted.mean(y_e, w_e)
+  ))
+  expect_identical(out, character(0))
+  expect_equal(fit_icpt$beta0, weighted.mean(y_e, w_e), tolerance = 1e-12)
+  # A response that the start values fit exactly (the Newton decrement is 0):
+  # no message and no warning.
+  out <- utils::capture.output(fit_0 <- glm_ridge(x_e, rep(0, n_e),
+                                                  weights = w_e))
+  expect_identical(out, character(0))
+  expect_identical(c(fit_0$beta0, fit_0$beta), c(0, 0))
+  expect_no_warning(fit_glm_ridge_callback(
+    y ~ x, data = data.frame(y = 0, x = x_e[, 1]), weights = w_e
+  ))
+})
+
 # test_that("glm_ridge: Gamma, log-link, intercept, lambda = 0", {
 #   fam <- extend_family(Gamma(link = 'log'))
 #   y <- rgamma(n, fam$linkinv(x%*%b + 1))
