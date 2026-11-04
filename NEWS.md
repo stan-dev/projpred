@@ -7,10 +7,23 @@ If you read this from a place other than <https://mc-stan.org/projpred/news/inde
 
 ## Major changes
 
+* Faster forward search and LOO CV with validated search for Gaussian submodels with the identity link and for the latent projection, computed from cross-products of the model matrix. For example, `cv_varsel()` with `validate_search = TRUE` for a Gaussian model with 40 observations and 15 predictor terms is about 8 times faster. (GitHub: #579)
+* Less formula and model-matrix work in the forward search and in the projections: the candidate submodels are selected from precomputed term labels, and the predictions for the training data use the stored submodel model matrices. For example, `varsel()` with forward search for a Gaussian model with 50 observations and 200 predictor terms is about 1.5 times faster. (GitHub: #578)
+* Faster clustering of the reference model draws for a large number of observations: `kmeans()` runs on the coordinates of the draws in their low-dimensional span, which gives the same clusters. For example, `varsel()` with 50 000 observations, 4 000 draws and 20 clusters is about 4.5 times faster. (GitHub: #576)
+* Faster projections onto submodels without group-level or additive terms: the projected draws (or clusters) share one model matrix, and for the Gaussian family with the identity link, one linear solve gives the submodel fits for all draws. For example, `varsel()` with forward search for a Gaussian model with 50 observations and 200 predictor terms is about 7 times faster. (GitHub: #574)
+* Faster computation of the predictive variance of the reference model for the Gaussian and Student-t families. This matters for a large number of observations and many projected draws. For example, `project()` with 10 000 observations and 4 000 projected draws is about 7 times faster. (GitHub: #575)
+* Faster `lme4::glmer()` submodel fits: projpred now uses BOBYQA in both optimization stages, which changes the fits only within the optimizer tolerance. For example, `varsel()` for a Bernoulli model with 300 observations and two grouping factors is about 2 times faster. (GitHub: #592)
+
 ## Minor changes
 
 ## Bug fixes and maintenance
 
+* Fixed bug in the predictions of submodels for new data: Terms with a data-dependent basis, such as `poly()` or `splines::ns()`, used a basis computed from the new data instead of the basis of the training data. This affected `proj_linpred()` and `proj_predict()` with `newdata`, `varsel()` with `d_test`, and K-fold CV, and caused `cv_varsel()` with `validate_search = TRUE` and LOO CV to fail with `poly()` terms. (GitHub: #573)
+* Tests: Adapt to version 2.1-0 of package lme4. (GitHub: #577)
+* Fixed bias in `cv_varsel()` with `cv_method = "LOO"` and `validate_search = TRUE`: the projections of each fold used the left-out observation, so the submodels, mostly the larger ones, looked too good. The elpd estimates change, and `suggest_size()` can select larger submodels if many Pareto k values are high. (GitHub: #580)
+* Fixed the error `solve(): solution not found` (and possible wrong fits) when a predictor of a GLM submodel is constant over the observations with nonzero weight, e.g., a rare binary predictor in a CV fold. Such a predictor now gets the coefficient 0. (GitHub: #589)
+* Fixed inexact Gaussian submodel fits (identity link, also in the latent projection). (GitHub: #593)
+* Fixed a parse error in `varsel()` and `cv_varsel()` if two predictor terms have the same text before or after a `+` inside a call, such as `log(p + 1)` and `log(q + 1)`. (GitHub: #595)
 * Tests: Leave the options, the random seed and the global environment of the R session unchanged after the tests, also when a test fails, and remove the manual cleanup of the test workspace. (GitHub: #586)
 
 

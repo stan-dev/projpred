@@ -310,3 +310,21 @@ test_that("select_possible_terms_size() works for non-redundant models", {
     "s(x1)"
   )
 })
+
+test_that("split_plus() splits term strings only at the `+` between terms", {
+  expect_identical(split_plus("x1"), "x1")
+  expect_identical(split_plus(c("x1 + x2", "x3")), c("x1", "x2", "x3"))
+  expect_identical(
+    split_plus(c("log(p + 1)", "log(q + 1) + d")),
+    c("log(p + 1)", "log(q + 1)", "d")
+  )
+  expect_identical(
+    split_plus("I(a+b) + x1:x2 + (1 | g) + s(x, k = 3) + offset(o)"),
+    c("I(a + b)", "x1:x2", "(1 | g)", "s(x, k = 3)", "offset(o)")
+  )
+  expect_identical(split_plus("1 + x"), c("1", "x"))
+  expect_identical(split_plus("poly(x3,2)"), "poly(x3, 2)")
+  expect_identical(split_plus("`a b` + x2 + I(`a b`^2)"),
+                   c("`a b`", "x2", "I(`a b`^2)"))
+  expect_identical(split_plus(character(0)), character(0))
+})

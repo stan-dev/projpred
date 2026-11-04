@@ -77,6 +77,46 @@ divmin <- function(
       rep(projpred_formulas_no_random, length(formulas))
     )
   }
+  # The draw-wise formulas of a non-multilevel non-additive submodel differ only
+  # in the response, so fit_glm_ridge_callback() can use one model matrix for
+  # all draws (and the joint Gaussian solve can fit them, also for a single
+  # draw):
+  if (identical(sdivmin, fit_glm_ridge_callback) && length(formulas) >= 1) {
+    shared_x <- shared_model_matrix(formulas, data = list(...)$data)
+    if (!is.null(shared_x)) {
+      # Gaussian submodels with the identity link: one solve for all draws
+      # (this fitter cannot throw messages or warnings in this case):
+      outdmin <- glm_ridge_gauss_multi(formulas, shared_x = shared_x,
+                                       dot_args = list(...))
+      if (!is.null(outdmin)) {
+        return(outdmin)
+      }
+      sdivmin <- glm_ridge_callback_shared(shared_x)
+    }
+  }
+
+  dot_args <- list(...)
+  # Observations with weight 0 (in the LOO CV with validated search, the
+  # left-out observation of a fold): remove them from the data for the
+  # multilevel and additive submodel fitters. Some of these fitters (for example
+  # lme4::lmer()) do not ignore the response of an observation with weight 0,
+  # and others (mgcv::gam()) use its predictor values for the smooth bases. The
+  # GLM fitters handle weight 0 exactly, except that the data-dependent bases
+  # (for example, the knots of splines::ns()) still use its predictor values.
+  # If `weights` and `data` differ in length (not in projpred's own calls),
+  # nothing is removed.
+  lost_lvls <- NULL
+  if ((has_grp || has_add) &&
+      is.data.frame(dot_args$data) && length(dot_args$weights) > 0 &&
+      any(dot_args$weights == 0) &&
+      length(dot_args$weights) == nrow(dot_args$data)) {
+    keep <- dot_args$weights != 0
+    lost_lvls <- lost_levels(dot_args$data, keep = keep, formula = formula)
+    dot_args$data <- drop_lost_levels(dot_args$data[keep, , drop = FALSE],
+                                      lost_lvls)
+    dot_args$weights <- dot_args$weights[keep]
+    projpred_var <- projpred_var[keep, , drop = FALSE]
+  }
 
   if (is.null(getOption("projpred.parallel_proj_trigger")) &&
       !is.null(getOption("projpred.prll_prj_trigger"))) {
@@ -104,13 +144,13 @@ divmin <- function(
         on.exit(utils::setTxtProgressBar(pb, s))
       }
       mssgs_warns_capt <- capt_mssgs_warns(
-        soutdmin <- sdivmin(
-          formula = formulas[[s]],
-          projpred_var = projpred_var[, s, drop = FALSE],
-          projpred_formula_no_random = projpred_formulas_no_random[[s]],
-          projpred_random = projpred_random,
-          ...
-        )
+        soutdmin <- do.call(sdivmin, c(
+          list(formula = formulas[[s]],
+               projpred_var = projpred_var[, s, drop = FALSE],
+               projpred_formula_no_random = projpred_formulas_no_random[[s]],
+               projpred_random = projpred_random),
+          dot_args
+        ))
       )
       return(nlist(soutdmin, mssgs_warns_capt))
     })
@@ -127,7 +167,6 @@ divmin <- function(
     } else {
       progressor_obj <- NULL
     }
-    dot_args <- list(...)
     `%do_projpred%` <- foreach::`%dopar%`
     outdmin <- foreach::foreach(
       formula_s = formulas,
@@ -166,35 +205,150 @@ divmin <- function(
   })
   warn_prj_drawwise(mssgs_warns_capts, throw_warn = throw_warn_sdivmin)
   check_conv(outdmin, lengths(mssgs_warns_capts), do_check = do_check_conv)
+  attr(outdmin, "projpred_lost_lvls") <- lost_lvls
   return(outdmin)
+}
+
+# Finds the levels of factor-like fixed-effect predictors that occur only in
+# the removed rows (`!keep`). Factor-like means a factor, character or logical
+# variable, or a numeric variable that the fixed-effects part of `formula` uses
+# only inside factor(), as.factor(), ordered() or as.ordered(). Grouping
+# factors are left out, because repair_re() treats a lost group as a new group.
+# For each variable, returns the lost levels and the reference level (the first
+# level that remains). Returns `NULL` if no level is lost.
+#
+# recode_lost_levels() sets a lost level to the reference level before the
+# prediction. The GLM fitter of divmin() keeps the rows with weight 0 and does
+# not use these functions. With treatment contrasts, it predicts a lost level
+# as follows:
+# * A level other than the reference level: its dummy column is 0 in all rows
+#   with positive weight, so glm_ridge() sets its coefficient to 0. The
+#   prediction is the one for the reference level, as above.
+# * The reference level: the prediction is the mean of the predictions for the
+#   other levels, with weights p (1 - p), where p is the weighted share of a
+#   level. For two other levels, this is their midpoint.
+lost_levels <- function(data, keep, formula) {
+  fml_fixed <- reformulas::nobars(formula)
+  rhs_fixed <- fml_fixed[[length(fml_fixed)]]
+  grp_nms <- unlist(lapply(reformulas::findbars(formula), function(bar) {
+    all.vars(bar[[3]])
+  }))
+  # Variables inside factor() and similar calls, and variables elsewhere:
+  fac_fns <- c("factor", "as.factor", "ordered", "as.ordered")
+  find_vars <- function(e) {
+    if (is.call(e)) {
+      fn <- sub("^.*::", "", paste(deparse(e[[1]]), collapse = ""))
+      if (fn %in% fac_fns) {
+        return(list(inside = all.vars(e), outside = character()))
+      }
+      res <- lapply(as.list(e)[-1], find_vars)
+      return(list(inside = unlist(lapply(res, "[[", "inside")),
+                  outside = unlist(lapply(res, "[[", "outside"))))
+    }
+    if (is.name(e)) {
+      return(list(inside = character(), outside = as.character(e)))
+    }
+    return(list(inside = character(), outside = character()))
+  }
+  vars_rhs <- find_vars(rhs_fixed)
+  fac_only <- setdiff(vars_rhs$inside, vars_rhs$outside)
+  x_nms <- setdiff(intersect(all.vars(rhs_fixed), names(data)), grp_nms)
+  out <- lapply(setNames(nm = x_nms), function(x_nm) {
+    x <- data[[x_nm]]
+    if (!(is.factor(x) || is.character(x) || is.logical(x) ||
+          (is.numeric(x) && x_nm %in% fac_only))) {
+      return(NULL)
+    }
+    x_keep <- x[keep]
+    vals_keep <- unique(x_keep[!is.na(x_keep)])
+    vals_rm <- unique(x[!keep & !is.na(x)])
+    if (is.factor(x)) {
+      vals_keep <- as.character(vals_keep)
+      vals_rm <- as.character(vals_rm)
+    }
+    lost <- setdiff(vals_rm, vals_keep)
+    if (!length(lost) || !length(vals_keep)) {
+      return(NULL)
+    }
+    if (is.factor(x)) {
+      ref <- levels(droplevels(x_keep))[1]
+    } else {
+      ref <- sort(vals_keep)[1]
+    }
+    list(lost = lost, ref = ref)
+  })
+  out <- out[!vapply(out, is.null, logical(1))]
+  if (!length(out)) {
+    return(NULL)
+  }
+  return(out)
+}
+
+# Sets the levels that lost_levels() recorded (attribute `projpred_lost_lvls` of
+# the fits) to the reference level in `newdata`.
+recode_lost_levels <- function(newdata, lost_lvls) {
+  if (is.null(lost_lvls) || !is.data.frame(newdata)) {
+    return(newdata)
+  }
+  for (x_nm in intersect(names(lost_lvls), names(newdata))) {
+    x <- newdata[[x_nm]]
+    lost <- lost_lvls[[x_nm]]$lost
+    ref <- lost_lvls[[x_nm]]$ref
+    if (is.factor(x)) {
+      # Drop the lost levels, because the predict() method of
+      # mclogit::mblogit() uses all levels of `newdata`:
+      lvls <- union(setdiff(levels(x), lost), ref)
+      x_chr <- as.character(x)
+      x_chr[x_chr %in% lost] <- ref
+      x <- factor(x_chr, levels = lvls, ordered = is.ordered(x))
+    } else if (typeof(x) == typeof(ref) ||
+               (is.numeric(x) && is.numeric(ref))) {
+      x[x %in% lost] <- ref
+    }
+    newdata[[x_nm]] <- x
+  }
+  return(newdata)
+}
+
+# Drops the levels that lost_levels() recorded from the factors in `data` (the
+# data without the removed rows), so that fitters which keep unused levels in
+# the model matrix do not get a column of zeros.
+drop_lost_levels <- function(data, lost_lvls) {
+  for (x_nm in intersect(names(lost_lvls), names(data))) {
+    x <- data[[x_nm]]
+    if (is.factor(x)) {
+      data[[x_nm]] <- factor(x, levels = setdiff(levels(x),
+                                                 lost_lvls[[x_nm]]$lost),
+                             ordered = is.ordered(x))
+    }
+  }
+  return(data)
 }
 
 # Use projpred's own implementation to fit non-multilevel non-additive
 # submodels:
 fit_glm_ridge_callback <- function(formula, data,
                                    projpred_var = matrix(nrow = nrow(data)),
-                                   regul = 1e-4, thresh_conv = 1e-7, ...) {
+                                   regul = 1e-4, thresh_conv = 1e-7,
+                                   projpred_shared_x = NULL, ...) {
   # Preparations:
-  fr <- model.frame(formula, data = data, drop.unused.levels = TRUE)
-  da_classes <- attr(attr(fr, "terms"), "dataClasses")
-  nms_chr_fac <- names(da_classes)[da_classes %in% c("character", "factor")]
-  resp_nm <- all.vars(attr(fr, "terms"))[attr(attr(fr, "terms"), "response")]
-  nms_chr_fac <- setdiff(nms_chr_fac, resp_nm)
-  if (length(nms_chr_fac) > 0) {
-    xlvls <- lapply(setNames(nm = nms_chr_fac), function(nm_chr_fac) {
-      levels(as.factor(fr[[nm_chr_fac]]))
-    })
+  if (!is.null(projpred_shared_x)) {
+    # Model matrix built once by shared_model_matrix(); only the response
+    # differs between the draws:
+    x <- projpred_shared_x$x
+    xlvls <- projpred_shared_x$xlvls
+    # These terms come from the first draw-wise formula. The predictions for
+    # new data use only their predictor variables:
+    terms_train <- projpred_shared_x$terms
+    y <- data[[all.vars(formula[[2]])]]
+    names(y) <- projpred_shared_x$y_names
   } else {
-    xlvls <- NULL
+    xy <- glm_model_matrix(formula, data = data)
+    x <- xy$x
+    xlvls <- xy$xlvls
+    terms_train <- xy$terms
+    y <- xy$y
   }
-  # TODO: In the following model.matrix() call, allow user-specified contrasts
-  # to be passed to argument `contrasts.arg`. The `contrasts.arg` default
-  # (`NULL`) uses `options("contrasts")` internally, but it might be more
-  # convenient to let users specify contrasts directly. At that occasion,
-  # contrasts should also be tested thoroughly (not done until now).
-  x <- model.matrix(formula, data = fr)
-  x <- x[, colnames(x) != "(Intercept)", drop = FALSE]
-  y <- model.response(fr)
   # Exclude arguments from `...` which cannot be passed to glm_ridge():
   dot_args <- list(...)
   dot_args <- dot_args[intersect(
@@ -215,10 +369,151 @@ fit_glm_ridge_callback <- function(formula, data,
   }
   # Post-processing:
   rownames(fit$beta) <- colnames(x)
+  # `terms` keeps the data-dependent bases of the training data (attribute
+  # "predvars"), for predictions for new data:
   sub <- nlist(alpha = fit$beta0, beta = fit$beta, w = fit$w, formula, x, y,
-               xlvls)
+               xlvls, terms = terms_train)
   class(sub) <- "subfit"
   return(sub)
+}
+
+# Model frame preparations for fit_glm_ridge_callback(): predictor model matrix
+# (without intercept column), levels of character and factor predictors, and
+# response.
+glm_model_matrix <- function(formula, data) {
+  fr <- model.frame(formula, data = data, drop.unused.levels = TRUE)
+  da_classes <- attr(attr(fr, "terms"), "dataClasses")
+  nms_chr_fac <- names(da_classes)[da_classes %in% c("character", "factor")]
+  resp_nm <- all.vars(attr(fr, "terms"))[attr(attr(fr, "terms"), "response")]
+  nms_chr_fac <- setdiff(nms_chr_fac, resp_nm)
+  if (length(nms_chr_fac) > 0) {
+    xlvls <- lapply(setNames(nm = nms_chr_fac), function(nm_chr_fac) {
+      levels(as.factor(fr[[nm_chr_fac]]))
+    })
+  } else {
+    xlvls <- NULL
+  }
+  # TODO: In the following model.matrix() call, allow user-specified contrasts
+  # to be passed to argument `contrasts.arg`. The `contrasts.arg` default
+  # (`NULL`) uses `options("contrasts")` internally, but it might be more
+  # convenient to let users specify contrasts directly. At that occasion,
+  # contrasts should also be tested thoroughly (not done until now).
+  x <- model.matrix(formula, data = fr)
+  x <- x[, colnames(x) != "(Intercept)", drop = FALSE]
+  return(list(x = x, xlvls = xlvls, y = model.response(fr), n_fr = nrow(fr),
+              terms = attr(fr, "terms")))
+}
+
+# Model matrix shared by the draw-wise formulas `formulas` (which have to differ
+# only in the response). Returns `NULL` if sharing is not possible: different
+# right-hand sides, a response that is not a plain column of `data`, or missing
+# values (which would make the model frames differ between the draws).
+shared_model_matrix <- function(formulas, data) {
+  if (!is.data.frame(data)) {
+    return(NULL)
+  }
+  rhs_1 <- formulas[[1]][[3]]
+  if (!all(vapply(formulas, function(fml) {
+    length(fml) == 3 && identical(fml[[3]], rhs_1)
+  }, logical(1)))) {
+    return(NULL)
+  }
+  resp_nms <- vapply(formulas, function(fml) {
+    if (is.name(fml[[2]])) as.character(fml[[2]]) else NA_character_
+  }, character(1))
+  if (anyNA(resp_nms) || !all(resp_nms %in% names(data)) ||
+      anyNA(data[resp_nms])) {
+    return(NULL)
+  }
+  xy <- glm_model_matrix(formulas[[1]], data = data)
+  if (xy$n_fr != nrow(data)) {
+    return(NULL)
+  }
+  # The response names (as from model.response()) are also shared, so the
+  # draw-wise responses do not each get their own copy:
+  return(list(x = xy$x, xlvls = xy$xlvls, y_names = names(xy$y),
+              terms = xy$terms))
+}
+
+# fit_glm_ridge_callback() with a fixed shared model matrix. The enclosing
+# environment holds only `shared_x` (relevant for the parallel case in divmin(),
+# where the function is exported).
+glm_ridge_callback_shared <- function(shared_x) {
+  force(shared_x)
+  function(...) {
+    fit_glm_ridge_callback(..., projpred_shared_x = shared_x)
+  }
+}
+
+# Fits all draw-wise submodels of fit_glm_ridge_callback() at once, for a
+# Gaussian submodel with the identity link. For this family, glm_ridge() solves
+# one weighted ridge least-squares problem in one exact step. The draws share
+# the model matrix, the observation weights, the standardization and the
+# penalty. Thus, one factorization with one right-hand side per draw gives the
+# same solutions. Returns `NULL` if one of the checks below fails; then divmin()
+# uses the draw-wise path.
+glm_ridge_gauss_multi <- function(formulas, shared_x, dot_args) {
+  family <- dot_args$family
+  if (is.null(family) || family$family != "gaussian" ||
+      family$link != "identity") {
+    return(NULL)
+  }
+  # fit_glm_ridge_callback() passes only the formal arguments of glm_ridge() on
+  # and ignores the others. Of these, this function uses only `family`,
+  # `weights` and `thresh` (not used for this family):
+  args_glm_ridge <- intersect(names(dot_args), methods::formalArgs(glm_ridge))
+  if (!all(args_glm_ridge %in% c("family", "weights", "thresh"))) {
+    return(NULL)
+  }
+  x <- shared_x$x
+  if (ncol(x) == 0) {
+    return(NULL)
+  }
+  data <- dot_args$data
+  weights <- dot_args$weights %||% rep(1.0, nrow(x))
+  regul <- dot_args$regul %||% 1e-4
+  if (length(weights) != nrow(x) || anyNA(weights)) {
+    return(NULL)
+  }
+  resp_nms <- vapply(formulas, function(fml) as.character(fml[[2]]),
+                     character(1))
+  y <- as.matrix(data[resp_nms])
+  # As in glm_ridge():
+  transf <- standardization(x, center = TRUE, scale = TRUE, weights = weights)
+  if (any(transf$scale == 0)) {
+    return(NULL)
+  }
+  x_std <- cbind(1, t((t(x) - transf$shift) / transf$scale))
+  sqrt_w <- sqrt(weights)
+  x_w <- x_std * sqrt_w
+  regmat <- diag(c(0, rep(regul, ncol(x))), nrow = ncol(x_std))
+  # A singular system (for example, `regul = 0` with collinear columns) or
+  # non-finite coefficients (for example, from infinite responses) go to the
+  # draw-wise path:
+  coefs <- tryCatch(
+    solve(crossprod(x_w) + regmat, crossprod(x_w, y * sqrt_w)),
+    error = function(e) NULL
+  )
+  if (is.null(coefs) || !all(is.finite(coefs))) {
+    return(NULL)
+  }
+  beta <- coefs[-1, , drop = FALSE] / transf$scale
+  beta0 <- coefs[1, ] - colSums(transf$shift * beta)
+  # As from glm_ridge_c() (double, also for integer observation weights):
+  w <- matrix(as.numeric(weights), ncol = 1)
+  return(lapply(seq_along(formulas), function(s) {
+    beta_s <- beta[, s, drop = FALSE]
+    dimnames(beta_s) <- list(colnames(x), NULL)
+    y_s <- y[, s]
+    names(y_s) <- shared_x$y_names
+    # `shared_x$terms` comes from the first formula. Its response differs from
+    # draw s, but the predictions for new data use only its predictor
+    # variables.
+    structure(list(alpha = unname(beta0[s]), beta = beta_s, w = w,
+                   formula = formulas[[s]], x = x, y = y_s,
+                   xlvls = shared_x$xlvls, terms = shared_x$terms),
+              class = "subfit")
+  }))
 }
 
 # Alternative to fit_glm_ridge_callback() (may be used via global option
@@ -598,7 +893,12 @@ control_callback <- function(family, ...) {
              getOption("projpred.gaussian_not_as_generalized", TRUE)) {
     return(lme4::lmerControl(...))
   } else {
-    return(lme4::glmerControl(...))
+    # Use BOBYQA in both stages of lme4::glmer() unless the caller sets an
+    # optimizer. lme4's default for stage 2, Nelder-Mead, needs more deviance
+    # evaluations.
+    ctrl_args <- list(...)
+    if (is.null(ctrl_args[["optimizer"]])) ctrl_args[["optimizer"]] <- "bobyqa"
+    return(do.call(lme4::glmerControl, ctrl_args))
   }
 }
 
@@ -693,6 +993,23 @@ divmin_augdat <- function(
   # vectors to ordinary vectors so that external packages may subset as usual:
   projpred_ws_aug <- unclass(projpred_ws_aug)
   attr(projpred_ws_aug, "ndiscrete") <- NULL
+
+  # Remove the rows of the observations with weight 0 (in validated LOO CV, the
+  # left-out observation) in all response categories before the submodel
+  # fitters. mclogit::mblogit() uses the predictor values of rows with weight
+  # 0, and MASS::polr() gives no coefficient for a factor level that only these
+  # rows have. The augmented data hold all observations for the first category,
+  # then all for the second, and so on. If the sizes do not match (not in
+  # projpred's own calls), nothing is removed.
+  lost_lvls <- NULL
+  if (is.data.frame(data) && length(weights) > 0 &&
+      any(weights == 0) && nrow(data) %% length(weights) == 0 &&
+      nrow(data) == nrow(projpred_ws_aug)) {
+    keep <- rep(weights != 0, times = nrow(data) / length(weights))
+    lost_lvls <- lost_levels(data, keep = keep, formula = formula)
+    data <- drop_lost_levels(data[keep, , drop = FALSE], lost_lvls)
+    projpred_ws_aug <- projpred_ws_aug[keep, , drop = FALSE]
+  }
 
   if (is.null(getOption("projpred.parallel_proj_trigger")) &&
       !is.null(getOption("projpred.prll_prj_trigger"))) {
@@ -799,6 +1116,7 @@ divmin_augdat <- function(
   })
   warn_prj_drawwise(mssgs_warns_capts, throw_warn = throw_warn_sdivmin)
   check_conv(outdmin, lengths(mssgs_warns_capts), do_check = do_check_conv)
+  attr(outdmin, "projpred_lost_lvls") <- lost_lvls
   return(outdmin)
 }
 
@@ -1158,7 +1476,34 @@ check_conv_s <- function(fit_s) {
 
 # Prediction functions for submodels --------------------------------------
 
+# Predictions of `subfit` objects for the data they were fitted to, computed
+# from the stored model matrices `x` (so no new model matrix is built). `nobs`
+# is the number of observations in the training data. Returns `NULL` if a fit
+# is not of class `subfit` or its `x` does not have `nobs` rows (for example,
+# after model.frame() removed rows with missing values).
+subprd_fitted <- function(fits, nobs) {
+  if (!all(vapply(fits, function(fit) {
+    inherits(fit, "subfit") && NROW(fit$x) == nobs
+  }, logical(1)))) {
+    return(NULL)
+  }
+  prd_list <- lapply(fits, function(fit) {
+    # As in predict.subfit():
+    if (is.null(fit$beta)) {
+      return(as.matrix(rep(fit$alpha, nobs)))
+    }
+    return(cbind(1, fit$x) %*% rbind(fit$alpha, fit$beta))
+  })
+  return(do.call(cbind, prd_list))
+}
+
 subprd <- function(fits, newdata) {
+  if (!is.null(newdata) && length(fits) > 1 && inherits(fits[[1]], "subfit")) {
+    prd <- subprd_subfit_shared(fits, newdata)
+    if (!is.null(prd)) {
+      return(prd)
+    }
+  }
   prd_list <- lapply(fits, function(fit) {
     is_glmmPQL <- inherits(fit, "glmmPQL")
     is_glmm <- inherits(fit, c("lmerMod", "glmerMod"))
@@ -1274,6 +1619,29 @@ subprd_augdat_binom <- function(fits, newdata) {
   return(array(augprd, dim = c(nrow(augprd), 1L, ncol(augprd))))
 }
 
+# The terms of `object$formula` (without the response) for new data, with the
+# data-dependent bases of the training data (attribute "predvars" of
+# `object$terms`, for example the coefficients of poly()). Without them,
+# model.matrix() would compute such bases again from the new data. Returns the
+# plain terms if `object$terms` is missing or does not contain all variables.
+subfit_terms_newdata <- function(object) {
+  tt <- delete.response(terms(object$formula))
+  tt_train <- object$terms
+  if (is.null(tt_train) || is.null(attr(tt_train, "predvars"))) {
+    return(tt)
+  }
+  vars <- as.list(attr(tt, "variables"))[-1]
+  vars_train <- as.list(attr(tt_train, "variables"))[-1]
+  predvars_train <- as.list(attr(tt_train, "predvars"))[-1]
+  idx <- match(vapply(vars, deparse_combine, character(1)),
+               vapply(vars_train, deparse_combine, character(1)))
+  if (anyNA(idx)) {
+    return(tt)
+  }
+  attr(tt, "predvars") <- as.call(c(quote(list), predvars_train[idx]))
+  return(tt)
+}
+
 ## FIXME: find a way that allows us to remove this
 #' @noRd
 #' @export
@@ -1290,28 +1658,81 @@ predict.subfit <- function(object, newdata = NULL, ...) {
     if (is.null(beta)) {
       return(as.matrix(rep(alpha, nrow(newdata))))
     } else {
-      # TODO: In the following model.matrix() call, allow user-specified
-      # contrasts to be passed to argument `contrasts.arg`. The `contrasts.arg`
-      # default (`NULL`) uses `options("contrasts")` internally, but it might be
-      # more convenient to let users specify contrasts directly. At that
-      # occasion, contrasts should also be tested thoroughly (not done until
-      # now).
-      x <- model.matrix(delete.response(terms(object$formula)), data = newdata,
-                        xlev = object$xlvls)
-      # Need to ensure that the columns of `x` match the coefficients (note that
-      # `rownames(beta)` is the same as `colnames(object$x)`, see the tests):
-      nms_to_use <- c("(Intercept)", colnames(object$x))
-      nms_to_use <- reorder_ias(nms_to_use, colnames(x))
-      if (all(!is.na(nms_to_use)) && all(nms_to_use %in% colnames(x))) {
-        x <- x[, nms_to_use, drop = FALSE]
-      } else {
-        stop("The column names of the new model matrix don't match the ",
-             "column names of the original model matrix. Please notify the ",
-             "package maintainer.")
-      }
-      return(x %*% rbind(alpha, beta))
+      return(subfit_newdata_x(object, newdata) %*% rbind(alpha, beta))
     }
   }
+}
+
+# Model matrix (with intercept column) of a `subfit` object for new data, with
+# the columns in the order of the coefficients.
+subfit_newdata_x <- function(object, newdata) {
+  # TODO: In the following model.matrix() call, allow user-specified
+  # contrasts to be passed to argument `contrasts.arg`. The `contrasts.arg`
+  # default (`NULL`) uses `options("contrasts")` internally, but it might be
+  # more convenient to let users specify contrasts directly. At that
+  # occasion, contrasts should also be tested thoroughly (not done until
+  # now).
+  x <- model.matrix(subfit_terms_newdata(object), data = newdata,
+                    xlev = object$xlvls)
+  # Need to ensure that the columns of `x` match the coefficients (note that
+  # `rownames(beta)` is the same as `colnames(object$x)`, see the tests):
+  nms_to_use <- c("(Intercept)", colnames(object$x))
+  nms_to_use <- reorder_ias(nms_to_use, colnames(x))
+  if (all(!is.na(nms_to_use)) && all(nms_to_use %in% colnames(x))) {
+    x <- x[, nms_to_use, drop = FALSE]
+  } else {
+    stop("The column names of the new model matrix don't match the ",
+         "column names of the original model matrix. Please notify the ",
+         "package maintainer.")
+  }
+  return(x)
+}
+
+# The "predvars" attribute of `trms` without the response (the draw-wise fits
+# differ in the response). `NULL` if `trms` has no "predvars".
+predvars_predictors <- function(trms) {
+  pv <- attr(trms, "predvars")
+  resp <- attr(trms, "response")
+  if (is.null(pv) || is.null(resp) || resp == 0) {
+    return(pv)
+  }
+  # The first element of the call is `list`:
+  return(pv[-(resp + 1)])
+}
+
+# Predictions of several `subfit` objects with the same predictor terms (the
+# draw-wise fits of one submodel) for new data: one model matrix, one matrix
+# product. Returns `NULL` if the fits do not share their predictor terms and
+# the data-dependent bases of their training data.
+subprd_subfit_shared <- function(fits, newdata) {
+  fit_1 <- fits[[1]]
+  rhs_1 <- fit_1$formula[[3]]
+  nms_1 <- rownames(fit_1$beta)
+  pv_1 <- predvars_predictors(fit_1$terms)
+  is_shared <- all(vapply(fits, function(fit) {
+    inherits(fit, "subfit") && identical(fit$formula[[3]], rhs_1) &&
+      identical(rownames(fit$beta), nms_1) &&
+      identical(fit$xlvls, fit_1$xlvls) &&
+      identical(predvars_predictors(fit$terms), pv_1)
+  }, logical(1)))
+  if (!is_shared) {
+    return(NULL)
+  }
+  alphas <- vapply(fits, function(fit) as.numeric(fit$alpha), numeric(1))
+  if (is.null(fit_1$beta) || NROW(fit_1$beta) == 0) {
+    if (is.null(fit_1$beta)) {
+      # As predict.subfit() for `beta = NULL`:
+      return(matrix(alphas, nrow = nrow(newdata), ncol = length(fits),
+                    byrow = TRUE))
+    }
+    return(NULL)
+  }
+  betas <- vapply(fits, function(fit) as.numeric(fit$beta),
+                  numeric(length(nms_1)))
+  if (!is.matrix(betas)) {
+    betas <- matrix(betas, nrow = 1)
+  }
+  return(subfit_newdata_x(fit_1, newdata) %*% rbind(alphas, betas))
 }
 
 #' @noRd
