@@ -70,6 +70,12 @@
   observations with nonzero weight, e.g., a rare binary predictor in a
   CV fold. Such a predictor now gets the coefficient 0. (GitHub:
   [\#589](https://github.com/stan-dev/projpred/issues/589))
+- Fixed a parse error in
+  [`varsel()`](https://mc-stan.org/projpred/dev/reference/varsel.md) and
+  [`cv_varsel()`](https://mc-stan.org/projpred/dev/reference/cv_varsel.md)
+  if two predictor terms have the same text before or after a `+` inside
+  a call, such as `log(p + 1)` and `log(q + 1)`. (GitHub:
+  [\#595](https://github.com/stan-dev/projpred/issues/595))
 
 ## projpred 2.11.0
 
