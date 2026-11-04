@@ -71,7 +71,7 @@ Suggests:
     iterators,
     doRNG,
     unix,
-    testthat,
+    testthat (>= 3.1.7),
     vdiffr,
     knitr,
     rmarkdown,
