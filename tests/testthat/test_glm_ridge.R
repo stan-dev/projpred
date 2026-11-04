@@ -255,7 +255,7 @@ test_that("glm_ridge: a column with zero variance gets the coefficient 0", {
   # left-out observation of a fold).
   # Restore the random numbers afterwards, so that tests after this one get the
   # same data as without it:
-  rng_state <- get(".Random.seed", envir = .GlobalEnv)
+  withr::local_preserve_seed()
   w0 <- weights
   w0[1] <- 0
   x_one <- rep(0, n)
@@ -294,7 +294,6 @@ test_that("glm_ridge: a column with zero variance gets the coefficient 0", {
   glmfit <- glm(y ~ x_tr[, 1])
   expect_equal(c(2 * fit$beta[1], fit$beta[2]), unname(coef(glmfit)),
                tolerance = 1e-8)
-  assign(".Random.seed", rng_state, envir = .GlobalEnv)
 })
 
 test_that(paste(
