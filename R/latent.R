@@ -177,7 +177,7 @@ cl_agg <- function(draws,
     # finite and not zero), so each row of the result is the draw itself.
     idxs <- unlist(idxs_cl, use.names = FALSE)
     w <- wdraws[idxs]
-    if (all(is.finite(w) & w != 0)) {
+    if (length(w) == length(idxs) && all(is.finite(w) & w != 0)) {
       cnms <- colnames(draws)
       return(matrix(as.double(draws[idxs, , drop = FALSE]),
                     nrow = length(idxs), ncol = ncol(draws),

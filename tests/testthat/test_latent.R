@@ -111,6 +111,9 @@ test_that("cl_agg() gives the results of a loop over the clusters", {
                    cl_agg_loop(draws_3, eps_wdraws = NA))
   expect_error(cl_agg(matrix(as.character(draws_3), nrow = 3)),
                "requires numeric/complex matrix/vector arguments")
+  # Without weights (the old loop gives a matrix with zero rows):
+  expect_identical(cl_agg(draws_3, wdraws = NULL),
+                   cl_agg_loop(draws_3, wdraws = NULL))
 })
 
 # Linear predictors -------------------------------------------------------
