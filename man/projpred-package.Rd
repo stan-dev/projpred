@@ -46,7 +46,8 @@ for the \code{\link[=gaussian]{gaussian()}} family and \code{\link[=glm]{glm()}}
 returned object inherits from class \code{subfit}. Possible tuning parameters
 for this internal C++ function are: \code{regul} (amount of ridge
 regularization; default: \code{1e-4}), \code{thresh_conv} (convergence threshold;
-default: \code{1e-7}), \code{qa_updates_max} (maximum number of quadratic
+default: \code{1e-7}, but not used in case of the Gaussian family with
+identity link), \code{qa_updates_max} (maximum number of quadratic
 approximation updates; default: \code{100}, but fixed to \code{1} in case of the
 Gaussian family with identity link), \code{ls_iter_max} (maximum number of
 line search iterations; default: \code{30}, but fixed to \code{1} in case of the
