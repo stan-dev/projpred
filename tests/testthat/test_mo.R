@@ -1465,6 +1465,162 @@ test_that("cv_varsel() works with mo() terms (LOO and K-fold CV)", {
 })
 
 test_that(paste(
+  "multilevel submodels keep the mo() levels of an observation with weight 0",
+  "that has the only case of a level"
+), {
+  skip_on_cran()
+  set.seed(5)
+  n <- 40
+  # Observation n has the only case of a level: the largest value of `x`, the
+  # smallest value of `xl`, the top level of `xo`, a middle level of `xm`:
+  dat <- data.frame(g = factor(rep(1:5, length.out = n)),
+                    x = c(rep(1:4, length.out = n - 1), 5L),
+                    xl = c(rep(1:4, length.out = n - 1), 0L),
+                    z = rnorm(n))
+  dat$xo <- factor(dat$x, levels = 1:5, ordered = TRUE)
+  dat$xm <- factor(c(rep(c(1, 2, 4), length.out = n - 1), 3), levels = 1:4,
+                   ordered = TRUE)
+  # Non-monotonic effects, so that the constraints bind:
+  eta <- c(0, 1, 0.2, 1.2, 2)[dat$x] + c(0, 1, 0.5, 0.3)[dat$xm] +
+    rnorm(5)[dat$g]
+  for (s in 1:2) dat[[paste0(".y.", s)]] <- eta + rnorm(n, sd = 0.3)
+  for (s in 1:2) dat[[paste0(".p.", s)]] <- plogis(eta - 1 + rnorm(n))
+  wobs <- c(rep(1, n - 1), 0)
+  # The lost level of each variable and its neighboring level:
+  lost_nb <- list(x = list(lost = 5L, ref = 4L),
+                  xl = list(lost = 0L, ref = 1L),
+                  xo = list(lost = "5", ref = "4"),
+                  xm = list(lost = "3", ref = "2"))
+  # Observation n (row 1) and observation n with the neighboring level (row 2):
+  nd_nb <- function(x_nm) {
+    nd <- dat[rep(n, 2), ]
+    nd[[x_nm]][2] <- lost_nb[[x_nm]]$ref
+    return(nd)
+  }
+  # The predictions as in the `mu_fun()` of a reference model:
+  expect_pred_nb <- function(fits, x_nm, info, prd_fun = subprd) {
+    expect_identical(attr(fits, "projpred_lost_lvls"),
+                     setNames(list(lost_nb[[x_nm]]), x_nm), info = info)
+    nd <- recode_lost_levels(nd_nb(x_nm), attr(fits, "projpred_lost_lvls"))
+    prd <- lapply(1:2, function(i) {
+      prd_i <- prd_fun(fits, nd[i, ])
+      dimnames(prd_i) <- NULL
+      return(prd_i)
+    })
+    expect_true(all(is.finite(unlist(prd))), info = info)
+    expect_equal(prd[[1]], prd[[2]], info = info)
+  }
+  divmin_w0 <- function(fml, fam, signs = NULL) {
+    divmin(formula = mo_formula_env(as.formula(fml)), data = dat,
+           family = extend_family(fam), weights = wobs,
+           projpred_var = matrix(NA, n, 2),
+           projpred_ws_aug = matrix(NA, n, 2), verbose_divmin = FALSE,
+           projpred_mo_signs = signs)
+  }
+  # Gaussian multilevel submodels, unconstrained and monotonic:
+  for (x_nm in names(lost_nb)) {
+    fml <- paste0("cbind(.y.1, .y.2) ~ mo(", x_nm, ") + (1 | g)")
+    for (mono in c(FALSE, TRUE)) {
+      info_txt <- paste(x_nm, if (mono) "mono" else "unconstrained")
+      signs <- if (mono) {
+        matrix(1, 2, 1, dimnames = list(NULL, paste0("mo(", x_nm, ")#")))
+      }
+      expect_no_warning(fits <- divmin_w0(fml, gaussian(), signs = signs))
+      for (fit in fits) {
+        b_mo <- lme4::fixef(fit)[-1]
+        if (mono) {
+          expect_true(all(b_mo >= -1e-8), info = info_txt)
+        } else {
+          expect_true(any(b_mo < 0), info = info_txt)
+        }
+      }
+      if (!mono) {
+        # The fit for the data without observation n:
+        fit_rm <- lme4::lmer(
+          mo_formula_env(as.formula(paste0(".y.1 ~ mo(", x_nm, ") + (1 | g)"))),
+          data = droplevels(dat[-n, ])
+        )
+        expect_equal(lme4::fixef(fits[[1]]), lme4::fixef(fit_rm),
+                     tolerance = 1e-4, info = info_txt)
+      }
+      expect_pred_nb(fits, x_nm, info = info_txt)
+    }
+  }
+  # A variable that occurs also outside mo():
+  fits <- divmin_w0("cbind(.y.1, .y.2) ~ mo(xo) + xo:z + (1 | g)", gaussian())
+  expect_pred_nb(fits, "xo", info = "mo(xo) + xo:z")
+  # A numeric variable that occurs also outside mo() is not recoded (this would
+  # change the terms outside mo()):
+  fits <- divmin_w0("cbind(.y.1, .y.2) ~ mo(x) + x:z + (1 | g)", gaussian())
+  expect_null(attr(fits, "projpred_lost_lvls"))
+  # Binomial multilevel and Gaussian additive submodels (unconstrained):
+  for (x_nm in c("x", "xl")) {
+    fits <- suppressWarnings(divmin_w0(
+      paste0("cbind(.p.1, .p.2) ~ mo(", x_nm, ") + (1 | g)"), binomial()
+    ))
+    expect_pred_nb(fits, x_nm, info = paste("glmer", x_nm))
+    fits <- divmin_w0(paste0("cbind(.y.1, .y.2) ~ mo(", x_nm, ") + s(z)"),
+                      gaussian())
+    expect_pred_nb(fits, x_nm, info = paste("gam", x_nm))
+  }
+  # Augmented-data projection (MASS::polr()), unconstrained:
+  skip_if_not_installed("MASS")
+  ncat <- 3
+  lv <- paste0("c", seq_len(ncat))
+  dat_aug <- dat[rep(seq_len(n), ncat), ]
+  dat_aug$y <- factor(rep(lv, each = n), levels = lv, ordered = TRUE)
+  fam <- structure(list(family = "cumulative", link = "logit"),
+                   class = "family")
+  for (x_nm in c("x", "xl")) {
+    fits <- suppressWarnings(divmin_augdat(
+      formula = mo_formula_env(as.formula(paste0("y ~ mo(", x_nm, ") + z"))),
+      data = dat_aug, family = fam, weights = wobs,
+      projpred_var = matrix(NA, n * ncat, 2),
+      projpred_ws_aug = matrix(runif(n * ncat * 2), ncol = 2),
+      verbose_divmin = FALSE
+    ))
+    expect_pred_nb(fits, x_nm, info = paste("polr", x_nm),
+                   prd_fun = subprd_augdat)
+  }
+})
+
+test_that(paste(
+  "LOO CV with validated search works with a multilevel reference model if",
+  "an observation has the only case of a mo() level"
+), {
+  skip_on_cran()
+  skip_if_not_installed("lme4")
+  opts_old <- options(projpred.warn_psis = FALSE)
+  on.exit(options(opts_old), add = TRUE)
+  set.seed(8)
+  n <- 25
+  S <- 10
+  # Observation 1 has the only case of the largest value of `x`:
+  dat <- data.frame(x = c(4L, rep_len(0:3, n - 1)), z = rnorm(n),
+                    g = factor(rep_len(paste0("gr", 1:5), n)))
+  eta_fun <- function(nd) {
+    outer(c(0, 0.8, -0.4, 0.6, 0.2)[nd$x + 1] + 0.4 * nd$z +
+            c(-1, -0.5, 0, 0.5, 1)[as.integer(nd$g)], rep(1, S)) +
+      matrix(rnorm(S, sd = 0.05), nrow(nd), S, byrow = TRUE)
+  }
+  dat$y <- rowMeans(eta_fun(dat)) + rnorm(n, sd = 0.5)
+  refm <- init_refmodel(
+    list(data = dat), data = dat, formula = y ~ mo(x) + z + (1 | g),
+    family = gaussian(),
+    ref_predfun = function(fit, newdata = NULL) {
+      eta_fun(if (is.null(newdata)) fit$data else newdata)
+    },
+    dis = rep(0.5, S), cvfun = function(folds) NULL,
+    cvrefbuilder = function(cvfit) NULL
+  )
+  cv_loo <- suppressWarnings(cv_varsel(
+    refm, cv_method = "LOO", validate_search = TRUE, nclusters = 2,
+    nclusters_pred = 3, seed = 3906, verbose = FALSE
+  ))
+  expect_true(all(is.finite(summary(cv_loo)$perf_sub$elpd)))
+})
+
+test_that(paste(
   "K-fold CV throws an error if the training data of a fold lack the largest",
   "value of an integer mo() predictor"
 ), {

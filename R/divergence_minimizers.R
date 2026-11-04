@@ -277,7 +277,10 @@ divmin <- function(
 # only inside factor(), as.factor(), ordered() or as.ordered(). Grouping
 # factors are left out, because repair_re() treats a lost group as a new group.
 # For each variable, returns the lost levels and the reference level (the first
-# level that remains). Returns `NULL` if no level is lost.
+# level that remains). For a variable in mo() calls, lost_levels_mo() gives
+# the lost levels and a neighboring level as the reference level of each (for
+# a factor, also where it occurs outside mo(); a numeric variable that occurs
+# also outside mo() is left out). Returns `NULL` if no level is lost.
 #
 # recode_lost_levels() sets a lost level to the reference level before the
 # prediction. The GLM fitter of divmin() keeps the rows with weight 0 and does
@@ -289,6 +292,9 @@ divmin <- function(
 # * The reference level: the prediction is the mean of the predictions for the
 #   other levels, with weights p (1 - p), where p is the weighted share of a
 #   level. For two other levels, this is their midpoint.
+# For a mo() term, the GLM fitter predicts a lost top or lowest level as the
+# neighboring level (as recode_lost_levels() does), and a lost middle level
+# about as the midpoint of its neighbors (two equal columns).
 lost_levels <- function(data, keep, formula) {
   fml_fixed <- reformulas::nobars(formula)
   rhs_fixed <- fml_fixed[[length(fml_fixed)]]
@@ -303,6 +309,10 @@ lost_levels <- function(data, keep, formula) {
       if (fn %in% fac_fns) {
         return(list(inside = all.vars(e), outside = character()))
       }
+      if (is_mo_call(e)) {
+        # (see `mo_vars` below)
+        return(list(inside = character(), outside = character()))
+      }
       res <- lapply(as.list(e)[-1], find_vars)
       return(list(inside = unlist(lapply(res, "[[", "inside")),
                   outside = unlist(lapply(res, "[[", "outside"))))
@@ -314,9 +324,18 @@ lost_levels <- function(data, keep, formula) {
   }
   vars_rhs <- find_vars(rhs_fixed)
   fac_only <- setdiff(vars_rhs$inside, vars_rhs$outside)
+  mo_vars <- unlist(lapply(mo_calls(rhs_fixed), all.vars))
   x_nms <- setdiff(intersect(all.vars(rhs_fixed), names(data)), grp_nms)
   out <- lapply(setNames(nm = x_nms), function(x_nm) {
     x <- data[[x_nm]]
+    if (x_nm %in% mo_vars) {
+      if (is.numeric(x) && x_nm %in% c(vars_rhs$inside, vars_rhs$outside)) {
+        # A recoded value would change the terms outside mo(); mo() throws an
+        # error at the prediction instead:
+        return(NULL)
+      }
+      return(lost_levels_mo(x, keep))
+    }
     if (!(is.factor(x) || is.character(x) || is.logical(x) ||
           (is.numeric(x) && x_nm %in% fac_only))) {
       return(NULL)
@@ -355,17 +374,20 @@ recode_lost_levels <- function(newdata, lost_lvls) {
   for (x_nm in intersect(names(lost_lvls), names(newdata))) {
     x <- newdata[[x_nm]]
     lost <- lost_lvls[[x_nm]]$lost
-    ref <- lost_lvls[[x_nm]]$ref
+    # (one reference level for all lost levels, or one for each)
+    ref <- rep_len(lost_lvls[[x_nm]]$ref, length(lost))
     if (is.factor(x)) {
       # Drop the lost levels, because the predict() method of
       # mclogit::mblogit() uses all levels of `newdata`:
       lvls <- union(setdiff(levels(x), lost), ref)
       x_chr <- as.character(x)
-      x_chr[x_chr %in% lost] <- ref
+      is_lost <- x_chr %in% lost
+      x_chr[is_lost] <- ref[match(x_chr[is_lost], lost)]
       x <- factor(x_chr, levels = lvls, ordered = is.ordered(x))
     } else if (typeof(x) == typeof(ref) ||
                (is.numeric(x) && is.numeric(ref))) {
-      x[x %in% lost] <- ref
+      is_lost <- x %in% lost
+      x[is_lost] <- ref[match(x[is_lost], lost)]
     }
     newdata[[x_nm]] <- x
   }

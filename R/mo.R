@@ -282,6 +282,51 @@ mo_formula_env <- function(formula) {
   return(formula)
 }
 
+# The mo() calls in the expression `expr` (as a list).
+mo_calls <- function(expr) {
+  if (!is.call(expr)) {
+    return(list())
+  }
+  if (is_mo_call(expr)) {
+    return(list(expr))
+  }
+  out <- lapply(as.list(expr)[-1L], mo_calls)
+  return(do.call(c, unname(out)))
+}
+
+# The lost levels (see lost_levels()) of a variable `x` of a mo() term, with
+# a neighboring remaining level as the reference level of each: the next lower
+# one, or the next higher one for a lost lowest level. So the prediction for a
+# lost level is the one for a neighboring level. For an integer `x`, only the
+# values outside the range of the remaining rows are lost (mo() uses all
+# integers in this range as levels). Returns `NULL` if no level is lost.
+lost_levels_mo <- function(x, keep) {
+  x_keep <- x[keep & !is.na(x)]
+  x_rm <- unique(x[!keep & !is.na(x)])
+  if (length(x_keep) == 0 || length(x_rm) == 0) {
+    return(NULL)
+  }
+  if (is.factor(x)) {
+    lvls <- levels(x)
+    pos_keep <- unique(match(as.character(x_keep), lvls))
+    pos_lost <- sort(setdiff(match(as.character(x_rm), lvls), pos_keep))
+    if (length(pos_lost) == 0) {
+      return(NULL)
+    }
+    pos_ref <- vapply(pos_lost, function(p) {
+      pos_lower <- pos_keep[pos_keep < p]
+      if (length(pos_lower) > 0) max(pos_lower) else min(pos_keep)
+    }, integer(1))
+    return(list(lost = lvls[pos_lost], ref = lvls[pos_ref]))
+  }
+  rng <- range(x_keep)
+  lost <- sort(x_rm[x_rm < rng[1] | x_rm > rng[2]])
+  if (length(lost) == 0) {
+    return(NULL)
+  }
+  return(list(lost = lost, ref = ifelse(lost < rng[1], rng[1], rng[2])))
+}
+
 # Throw an error for mo() terms in the cases that projpred does not support:
 # in group-level terms and in additive multilevel models (the predictions of
 # such submodels for new data would not use the levels of the training data).
@@ -389,11 +434,14 @@ mo_full_signs <- function(p_ref, refmodel, args_divmin) {
     b <- mo_fit_coefs(fit)
     vapply(groups, function(g) {
       idx <- match(cnms[g], names(b))
-      if (anyNA(idx)) {
+      if (all(is.na(idx))) {
         stop("Internal error: the coefficients of the full model do not ",
              "match its model matrix. Please notify the package maintainer.")
       }
-      mo_sign_of_sum(b[idx])
+      # A column can be missing if the fitter got the data without the rows
+      # with weight 0 and a mo() level occurs only in these rows (see
+      # lost_levels_mo()). Its coefficient is 0 then:
+      mo_sign_of_sum(b[idx[!is.na(idx)]])
     }, numeric(1))
   }, numeric(length(groups)))
   # S x G (vapply() gives a G x S array, or a vector for G = 1):
