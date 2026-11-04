@@ -379,7 +379,10 @@ In case of the augmented-data projection, this dataset has
 \(N_{\mathrm{augcat}}\) rows.</p></li>
 <li><p><code>family</code> accepts an object of class <code>family</code>.</p></li>
 <li><p><code>weights</code> accepts either observation weights (at least in the form of a
-numeric vector) or <code>NULL</code> (for using a vector of ones as weights).</p></li>
+numeric vector) or <code>NULL</code> (for using a vector of ones as weights). In
+LOO CV with <code>validate_search = TRUE</code>, the left-out observation gets
+weight 0. <code>div_minimizer</code> must then give the fit without this
+observation.</p></li>
 <li><p><code>projpred_var</code> accepts an \(N \times S_{\mathrm{prj}}\)
 matrix of predictive variances (necessary for <span class="pkg">projpred</span>'s internal
 GLM fitter) in case of the traditional or the latent projection and an

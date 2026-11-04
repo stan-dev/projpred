@@ -73,6 +73,14 @@
   [\#573](https://github.com/stan-dev/projpred/issues/573))
 - Tests: Adapt to version 2.1-0 of package lme4. (GitHub:
   [\#577](https://github.com/stan-dev/projpred/issues/577))
+- Fixed bias in
+  [`cv_varsel()`](https://mc-stan.org/projpred/dev/reference/cv_varsel.md)
+  with `cv_method = "LOO"` and `validate_search = TRUE`: the projections
+  of each fold used the left-out observation, so the submodels, mostly
+  the larger ones, looked too good. The elpd estimates change, and
+  [`suggest_size()`](https://mc-stan.org/projpred/dev/reference/suggest_size.md)
+  can select larger submodels if many Pareto k values are high. (GitHub:
+  [\#580](https://github.com/stan-dev/projpred/issues/580))
 - Fixed the error `solve(): solution not found` (and possible wrong
   fits) when a predictor of a GLM submodel is constant over the
   observations with nonzero weight, e.g., a rare binary predictor in a

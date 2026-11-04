@@ -339,7 +339,9 @@ prototypes:
 
   - `weights` accepts either observation weights (at least in the form
     of a numeric vector) or `NULL` (for using a vector of ones as
-    weights).
+    weights). In LOO CV with `validate_search = TRUE`, the left-out
+    observation gets weight 0. `div_minimizer` must then give the fit
+    without this observation.
 
   - `projpred_var` accepts an \\N \times S\_{\mathrm{prj}}\\ matrix of
     predictive variances (necessary for projpred's internal GLM fitter)
