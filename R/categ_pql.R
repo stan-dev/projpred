@@ -10,8 +10,8 @@
 #   group-level slopes), and nlminb() then stops early.
 # * The data have one row per observation, with the augmented-data weights as
 #   the response matrix (see categ_mat_resp()).  The approximate deviance of
-#   the augmented rows is this deviance plus -2 sum(W * log(W / rowSums(W))),
-#   a constant >= 0.
+#   the augmented rows is the deviance of this fit plus
+#   -2 sum(W * log(W / rowSums(W))), a constant >= 0.
 # The returned object has the elements of an `mmblogit` object that projpred
 # and mclogit:::predict.mmblogit() use.
 
