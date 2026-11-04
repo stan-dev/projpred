@@ -294,10 +294,10 @@ data_without_weight0 <- function(data, weights, formula) {
 # factors are left out, because repair_re() treats a lost group as a new group.
 # For each variable, returns the lost levels and the reference level (the first
 # level that remains). For a variable in mo() calls, lost_levels_mo() gives
-# the lost levels, each with a neighboring level as its reference level. This
-# applies to a factor also where it occurs outside mo(). A numeric variable
-# that also occurs outside mo() is left out. Returns `NULL` if no level is
-# lost.
+# the lost levels, each with a neighboring level as its reference level. For a
+# factor, this also applies where the factor occurs outside mo(). A numeric
+# variable that also occurs outside mo() gets no lost levels. Returns `NULL`
+# if no level is lost.
 #
 # recode_lost_levels() sets a lost level to the reference level before the
 # prediction. The GLM fitter of divmin() keeps the rows with weight 0 and does
@@ -311,8 +311,8 @@ data_without_weight0 <- function(data, weights, formula) {
 #   level. For two other levels, this is their midpoint.
 # For a mo() term, the GLM fitter predicts a lost top or lowest level as its
 # neighboring level, as recode_lost_levels() does. For a lost middle level,
-# two columns are equal, and the prediction is near the midpoint of the two
-# neighboring levels.
+# two indicator columns are equal, and the prediction is near the midpoint of
+# the predictions for the two neighboring levels.
 lost_levels <- function(data, keep, formula) {
   fml_fixed <- reformulas::nobars(formula)
   rhs_fixed <- fml_fixed[[length(fml_fixed)]]
@@ -356,8 +356,8 @@ lost_levels <- function(data, keep, formula) {
     x <- data[[x_nm]]
     if (x_nm %in% mo_vars) {
       if (is.numeric(x) && x_nm %in% vars_no_mo) {
-        # A recoded value would change the terms outside mo(). So mo() throws
-        # an error at the prediction:
+        # Do not recode, because a recoded value would change the terms
+        # outside mo(). Then mo() throws an error at the prediction:
         return(NULL)
       }
       return(lost_levels_mo(x, keep))

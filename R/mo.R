@@ -297,7 +297,7 @@ mo_calls <- function(expr) {
 # The lost levels (see lost_levels()) of a variable `x` of a mo() term. The
 # reference level of each is the next lower remaining level, or the next
 # higher one for a lost lowest level. For an integer `x`, only the values
-# outside the range of the remaining rows are lost, because mo() uses all
+# outside the range of the remaining values are lost, because mo() uses all
 # integers in this range as levels. Returns `NULL` if no level is lost.
 lost_levels_mo <- function(x, keep) {
   x_keep <- x[keep & !is.na(x)]

@@ -169,12 +169,12 @@
 #' group-level terms and in additive multilevel models.
 #'
 #' If no observation has a value inside the range of an integer `x`, the
-#' indicator of this value equals the indicator of the next value. In the LOO
-#' CV with validated search, this also occurs if only the left-out observation
+#' indicator of this value equals the indicator of the next value. In LOO CV
+#' with validated search, this also occurs if only the left-out observation
 #' has the value. The GLM submodel fitter handles equal indicators.
 #' [lme4::lmer()] and [lme4::glmer()] drop one of them with a warning, and the
-#' predictions of [MASS::polr()] fail. An ordered factor without unused levels
-#' avoids this.
+#' predictions of [MASS::polr()] fail. To avoid this, use an ordered factor
+#' without unused levels.
 #'
 #' By default (global option `projpred.mo_monotone = TRUE`), the projected
 #' effect of each `mo()` term is monotonic: the coefficients of its indicators
