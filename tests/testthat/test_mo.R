@@ -655,11 +655,12 @@ test_that("multilevel and additive submodels with mo() terms work", {
   )
   for (nm in names(cases)) {
     refm <- mo_refm(sim, cases[[nm]]$fml, family = cases[[nm]]$family)
-    prj <- muffle_warning(muffle_warning(
+    prj <- muffle_warning(muffle_warning(muffle_warning(
       project(refm, predictor_terms = cases[[nm]]$trms, ndraws = 25,
               seed = 3906, verbose = FALSE),
       "Model failed to converge"
-    ), "Model is nearly unidentifiable")
+    ), "Model is nearly unidentifiable"),
+    "maximum number of function evaluations exceeded")
     pred_train <- proj_linpred(prj)$pred
     pred_new <- proj_linpred(prj, newdata = nd)$pred
     expect_equal(unname(pred_new), unname(pred_train[, rows_of(nd)]),
