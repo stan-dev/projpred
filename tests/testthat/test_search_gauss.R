@@ -130,9 +130,13 @@ test_that(paste(
   "the cross-product computations"
 ), {
   refm <- refm_search_gauss(fml_search_gauss, n = 40)
+  # glm_ridge() stops before its first step if the start values are already
+  # close to the solution (relative to `thresh_conv`), for example for an
+  # intercept close to 0. With a small `thresh_conv`, its fits are exact and
+  # match the cross-product computations:
   args_cv <- list(refm, cv_method = "LOO", validate_search = TRUE, nloo = 10,
                   nclusters = 3, ndraws_pred = 20, nterms_max = 4, seed = 5821,
-                  verbose = FALSE)
+                  thresh_conv = 1e-15, verbose = FALSE)
   cv_crossprod <- suppressWarnings(do.call(cv_varsel, args_cv))
   opts_old <- options(projpred.search_gauss_crossprod = FALSE)
   on.exit(options(opts_old), add = TRUE)
