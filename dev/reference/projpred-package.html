@@ -113,7 +113,8 @@ for the <code><a href="https://rdrr.io/r/stats/family.html" class="external-link
 returned object inherits from class <code>subfit</code>. Possible tuning parameters
 for this internal C++ function are: <code>regul</code> (amount of ridge
 regularization; default: <code>1e-4</code>), <code>thresh_conv</code> (convergence threshold;
-default: <code>1e-7</code>), <code>qa_updates_max</code> (maximum number of quadratic
+default: <code>1e-7</code>, but not used in case of the Gaussian family with
+identity link), <code>qa_updates_max</code> (maximum number of quadratic
 approximation updates; default: <code>100</code>, but fixed to <code>1</code> in case of the
 Gaussian family with identity link), <code>ls_iter_max</code> (maximum number of
 line search iterations; default: <code>30</code>, but fixed to <code>1</code> in case of the

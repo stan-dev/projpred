@@ -78,6 +78,9 @@
   observations with nonzero weight, e.g., a rare binary predictor in a
   CV fold. Such a predictor now gets the coefficient 0. (GitHub:
   [\#589](https://github.com/stan-dev/projpred/issues/589))
+- Fixed inexact Gaussian submodel fits (identity link, also in the
+  latent projection). (GitHub:
+  [\#593](https://github.com/stan-dev/projpred/issues/593))
 - Fixed a parse error in
   [`varsel()`](https://mc-stan.org/projpred/dev/reference/varsel.md) and
   [`cv_varsel()`](https://mc-stan.org/projpred/dev/reference/cv_varsel.md)

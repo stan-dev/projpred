@@ -48,7 +48,8 @@ by projpred's internal default `div_minimizer` functions, see
     The returned object inherits from class `subfit`. Possible tuning
     parameters for this internal C++ function are: `regul` (amount of
     ridge regularization; default: `1e-4`), `thresh_conv` (convergence
-    threshold; default: `1e-7`), `qa_updates_max` (maximum number of
+    threshold; default: `1e-7`, but not used in case of the Gaussian
+    family with identity link), `qa_updates_max` (maximum number of
     quadratic approximation updates; default: `100`, but fixed to `1` in
     case of the Gaussian family with identity link), `ls_iter_max`
     (maximum number of line search iterations; default: `30`, but fixed

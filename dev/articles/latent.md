@@ -322,7 +322,7 @@ print(time_lat)
 ```
 
        user  system elapsed 
-      0.295   0.347   0.246 
+      0.172   0.326   0.148 
 
 The message telling that `<refmodel>$dis` consists of only `NA`s will
 not concern us here because we will only focus on response-scale
@@ -435,7 +435,7 @@ print(time_trad)
 ```
 
        user  system elapsed 
-      1.925   0.361   1.873 
+      1.063   0.339   1.040 
 
 ``` r
 
@@ -817,18 +817,18 @@ cvvs_weib <- cv_varsel(
 
     Warning: Some Pareto k diagnostic values are too high. See help('pareto-k-diagnostic') for details.
 
-    Warning: Some (2 / 500) Pareto k's for the reference model's PSIS-LOO weights
+    Warning: Some (1 / 500) Pareto k's for the reference model's PSIS-LOO weights
     are > 0.7.
 
-    Warning: In the recalculation of the latent response values, some (4 / 500) expectation-specific Pareto k-values are > 0.7.
+    Warning: In the recalculation of the latent response values, some (5 / 500) expectation-specific Pareto k-values are > 0.7.
     In general, we recommend K-fold CV in this case.
 
     Warning: Some Pareto k diagnostic values are too high. See help('pareto-k-diagnostic') for details.
 
-    Warning: Some (2 / 500) Pareto k's for the reference model's PSIS-LOO weights
+    Warning: Some (1 / 500) Pareto k's for the reference model's PSIS-LOO weights
     are > 0.7.
 
-    Warning: In the recalculation of the latent response values, some (4 / 500) expectation-specific Pareto k-values are > 0.7.
+    Warning: In the recalculation of the latent response values, some (5 / 500) expectation-specific Pareto k-values are > 0.7.
     In general, we recommend K-fold CV in this case.
 
     Using standard importance sampling (SIS) due to a small number of clusters.
@@ -1023,7 +1023,7 @@ cvvs_lnorm <- cv_varsel(
 
     Warning: Some Pareto k diagnostic values are too high. See help('pareto-k-diagnostic') for details.
 
-    Warning: Some (6 / 500) Pareto k's for the reference model's PSIS-LOO weights
+    Warning: Some (4 / 500) Pareto k's for the reference model's PSIS-LOO weights
     are > 0.7.
 
     Warning: In the recalculation of the latent response values, some (8 / 500) expectation-specific Pareto k-values are > 0.7.
@@ -1031,7 +1031,7 @@ cvvs_lnorm <- cv_varsel(
 
     Warning: Some Pareto k diagnostic values are too high. See help('pareto-k-diagnostic') for details.
 
-    Warning: Some (6 / 500) Pareto k's for the reference model's PSIS-LOO weights
+    Warning: Some (4 / 500) Pareto k's for the reference model's PSIS-LOO weights
     are > 0.7.
 
     Warning: In the recalculation of the latent response values, some (8 / 500) expectation-specific Pareto k-values are > 0.7.
