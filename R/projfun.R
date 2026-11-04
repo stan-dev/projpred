@@ -26,12 +26,21 @@ proj_to_submodl <- function(predictor_terms, p_ref, refmodel,
     verb_out("  Projecting onto `~ ", utils::tail(rhs_chr, 1), "`")
   }
 
+  projpred_ws_aug <- p_ref$mu
+  if (refmodel$family$for_augdat && any(refmodel$wobs != 1)) {
+    # The augmented-data submodel fitters use the probabilities of the response
+    # categories as weights and ignore `weights`, so apply the observation
+    # weights to these probabilities. The rows of the augmented-rows matrix are
+    # the observations within the response categories:
+    projpred_ws_aug <- projpred_ws_aug *
+      rep(refmodel$wobs, times = nrow(projpred_ws_aug) / length(refmodel$wobs))
+  }
   args_divmin <- list(formula = fml_divmin,
                       data = subset$data,
                       family = refmodel$family,
                       weights = refmodel$wobs,
                       projpred_var = p_ref$var,
-                      projpred_ws_aug = p_ref$mu,
+                      projpred_ws_aug = projpred_ws_aug,
                       verbose_divmin = verbose >= 3L)
   if (!is.null(search_control)) {
     args_divmin <- c(args_divmin, search_control)
