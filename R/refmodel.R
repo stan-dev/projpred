@@ -168,6 +168,14 @@
 #' integer `x` must be an integer. Monotonic terms are not supported in
 #' group-level terms and in additive multilevel models.
 #'
+#' If no observation has a value of an integer `x` inside its range (or, in
+#' the LOO CV with validated search, if only the left-out observation has it),
+#' the indicators of this value and of the next value are equal in the data of
+#' the submodel fit. The GLM submodel fitter handles this, but [lme4::lmer()]
+#' and [lme4::glmer()] drop one of these columns (with a warning), and the
+#' predictions of [MASS::polr()] fail. An ordered factor without unused levels
+#' avoids this.
+#'
 #' By default (global option `projpred.mo_monotone = TRUE`), the projected
 #' effect of each `mo()` term is monotonic: the coefficients of its indicators
 #' have the same sign. If the unconstrained projection of a projected draw (or

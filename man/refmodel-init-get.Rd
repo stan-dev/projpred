@@ -230,6 +230,14 @@ ordered factor \code{x} must be a factor or a character vector in new data, and 
 integer \code{x} must be an integer. Monotonic terms are not supported in
 group-level terms and in additive multilevel models.
 
+If no observation has a value of an integer \code{x} inside its range (or, in
+the LOO CV with validated search, if only the left-out observation has it),
+the indicators of this value and of the next value are equal in the data of
+the submodel fit. The GLM submodel fitter handles this, but \code{\link[lme4:lmer]{lme4::lmer()}}
+and \code{\link[lme4:glmer]{lme4::glmer()}} drop one of these columns (with a warning), and the
+predictions of \code{\link[MASS:polr]{MASS::polr()}} fail. An ordered factor without unused levels
+avoids this.
+
 By default (global option \code{projpred.mo_monotone = TRUE}), the projected
 effect of each \code{mo()} term is monotonic: the coefficients of its indicators
 have the same sign. If the unconstrained projection of a projected draw (or
