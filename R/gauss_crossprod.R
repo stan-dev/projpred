@@ -53,13 +53,10 @@ gauss_crossprod_regul <- function(refmodel, divmin_args) {
 # terms, a factor in an interaction term (its dummy coding depends on the other
 # terms of a submodel), missing values, or a zero-variance column. Also returns
 # `NULL` for mo() terms with monotonic projections (these need the sign
-# constraints of the submodel fitters). has_mo_term() gets the unsplit strings
-# because str2lang() can fail for a part of a term (for example "I(x").
+# constraints of the submodel fitters).
 gauss_crossprod_design <- function(refmodel, term_strings, regul) {
-  terms_all <- setdiff(unique(trimws(unlist(
-    strsplit(term_strings, "+", fixed = TRUE)
-  ))), "1")
-  if (length(terms_all) == 0 || (mo_monotone() && has_mo_term(term_strings))) {
+  terms_all <- setdiff(unique(split_plus(term_strings)), "1")
+  if (length(terms_all) == 0 || (mo_monotone() && has_mo_term(terms_all))) {
     return(NULL)
   }
   trms <- extract_terms_response(make_formula(terms_all))
@@ -115,9 +112,7 @@ labels_gauss <- function(term_string) {
   if (identical(term_string, "1")) {
     return(character(0))
   }
-  return(unique(norm_term_labels(trimws(
-    strsplit(term_string, "+", fixed = TRUE)[[1]]
-  ))))
+  return(unique(norm_term_labels(split_plus(term_string))))
 }
 
 # The performance evaluation of perf_eval() along the predictor ranking for
