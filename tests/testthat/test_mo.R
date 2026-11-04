@@ -1637,10 +1637,11 @@ test_that(paste(
   refm_f <- refm_fun(fml_f, dat)
   refm_f$wobs[1] <- 0
   signs_f <- signs_w0(refm_f)
-  # (groups `mo(x)` and `mo(x):fb`; a fallback would give no columns)
+  # Groups `mo(x)` and `mo(x):fb`. The fallback signs would have no columns:
   expect_equal(dim(signs_f), c(S, 2))
   expect_identical(signs_f, signs_w0(refm_fun(fml_f, dat[-1, ])))
-  # LOO CV (a failed projection onto the full model would give a warning):
+  # LOO CV. The handler turns the warning of a failed projection onto the full
+  # model into an error:
   cv_loo <- withCallingHandlers(cv_varsel(
     refm_fun(y ~ mo(x) + z + (1 | g), dat), cv_method = "LOO",
     validate_search = TRUE, nclusters = 2, nclusters_pred = 3, seed = 3906,

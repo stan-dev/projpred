@@ -294,12 +294,11 @@ mo_calls <- function(expr) {
   return(do.call(c, unname(out)))
 }
 
-# The lost levels (see lost_levels()) of a variable `x` of a mo() term, with
-# a neighboring remaining level as the reference level of each: the next lower
-# one, or the next higher one for a lost lowest level. So the prediction for a
-# lost level is the one for a neighboring level. For an integer `x`, only the
-# values outside the range of the remaining rows are lost (mo() uses all
-# integers in this range as levels). Returns `NULL` if no level is lost.
+# The lost levels (see lost_levels()) of a variable `x` of a mo() term. The
+# reference level of each is the next lower remaining level, or the next
+# higher one for a lost lowest level. For an integer `x`, only the values
+# outside the range of the remaining rows are lost, because mo() uses all
+# integers in this range as levels. Returns `NULL` if no level is lost.
 lost_levels_mo <- function(x, keep) {
   x_keep <- x[keep & !is.na(x)]
   x_rm <- unique(x[!keep & !is.na(x)])
@@ -426,8 +425,8 @@ mo_full_signs <- function(p_ref, refmodel, args_divmin) {
   fml_fixed <- reformulas::nobars(fml_full)
   fml_rhs <- stats::as.formula(call("~", fml_fixed[[length(fml_fixed)]]),
                                env = environment(fml_full))
-  # (from the data that the multilevel fitter of divmin() gets, so that the
-  # column names match the fits)
+  # Use the data that the multilevel fitter of divmin() gets, so that the
+  # column names match the fits:
   data_groups <- subset$data
   if (length(extract_terms_response(fml_full)$group_terms) > 0) {
     rm_w0 <- data_without_weight0(data_groups, args_divmin$weights, fml_full)
