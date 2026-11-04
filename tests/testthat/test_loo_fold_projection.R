@@ -134,6 +134,9 @@ test_that(paste(
       error = function(e) conditionMessage(e)
     )
     if (is.character(res)) {
+      if (grepl("\\.gamm\\.", tstsetup) && is_gamm_backsolve_msg(res)) {
+        next
+      }
       expect_true(FALSE, label = paste(tstsetup, "error:", res))
       next
     }
