@@ -219,6 +219,18 @@ test_that(paste(
 
 ## Projection -------------------------------------------------------------
 
+# Whether the submodel of a projection setup has group-level terms. The
+# comparisons of traditional and augmented-data projection below skip such
+# submodels: lme4::glmer() computes the objective for the group-level parameters
+# with binomial()$aic, which rounds non-integer responses (traditional
+# projection) and non-integer weights (augmented-data projection), so the two
+# projections fit different objectives. glmer() rounds with `nAGQ = 1` in all
+# lme4 versions, and since lme4 2.1-0 also with `nAGQ > 1` (the `nAGQ = 30` of
+# these projections in setup.R).
+has_group_terms_prj <- function(args_prj_i) {
+  any(grepl("\\|", args_prj_i$predictor_terms))
+}
+
 test_that(paste(
   "augmented-data and traditional projection give similar results (in case of",
   "the `brnll` family and the default `regul` for submodels fitted by",
@@ -229,6 +241,7 @@ test_that(paste(
   for (tstsetup in tstsetups) {
     tstsetup_trad <- sub("\\.augdat\\.", ".trad_compare.", tstsetup)
     if (!tstsetup_trad %in% names(prjs)) next
+    if (has_group_terms_prj(args_prj[[tstsetup]])) next
 
     cl_used_gt1 <- ndr_ncl_dtls(args_prj[[tstsetup]])$clust_used_gt1
     prjmat <- as.matrix(prjs[[tstsetup]],
@@ -236,12 +249,7 @@ test_that(paste(
     prjmat_trad <- as.matrix(prjs[[tstsetup_trad]],
                              allow_nonconst_wdraws_prj = cl_used_gt1)
 
-    tol_coefs <- ifelse(
-      args_prj[[tstsetup]]$mod_nm == "glmm" &&
-        any(grepl("^\\(.*\\)$", args_prj[[tstsetup]]$predictor_terms)),
-      1e-3, 1e-5
-    )
-    expect_equal(prjmat, prjmat_trad, tolerance = tol_coefs, info = tstsetup)
+    expect_equal(prjmat, prjmat_trad, tolerance = 1e-5, info = tstsetup)
   }
 })
 
@@ -288,6 +296,7 @@ test_that(paste(
   for (tstsetup in tstsetups) {
     tstsetup_trad <- sub("\\.augdat\\.", ".trad_compare.", tstsetup)
     if (!tstsetup_trad %in% names(pls)) next
+    if (has_group_terms_prj(args_prj[[tstsetup]])) next
 
     pl <- pls[[tstsetup]]
     expect_length(dim(pl$pred), 3)
@@ -300,12 +309,7 @@ test_that(paste(
     dimnames(pl$lpd) <- list(NULL, as.character(seq_len(ncol(pl$lpd))))
     pl_trad <- pls[[tstsetup_trad]]
 
-    tol_lpreds <- ifelse(
-      args_prj[[tstsetup]]$mod_nm == "glmm" &&
-        any(grepl("^\\(.*\\)$", args_prj[[tstsetup]]$predictor_terms)),
-      1e-4, 1e-5
-    )
-    expect_equal(pl, pl_trad, tolerance = tol_lpreds, info = tstsetup)
+    expect_equal(pl, pl_trad, tolerance = 1e-5, info = tstsetup)
   }
 })
 
