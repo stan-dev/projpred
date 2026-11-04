@@ -12,6 +12,7 @@ If you read this from a place other than <https://mc-stan.org/projpred/news/inde
 * Faster clustering of the reference model draws for a large number of observations: `kmeans()` runs on the coordinates of the draws in their low-dimensional span, which gives the same clusters. For example, `varsel()` with 50 000 observations, 4 000 draws and 20 clusters is about 4.5 times faster. (GitHub: #576)
 * Faster projections onto submodels without group-level or additive terms: the projected draws (or clusters) share one model matrix, and for the Gaussian family with the identity link, one linear solve gives the submodel fits for all draws. For example, `varsel()` with forward search for a Gaussian model with 50 observations and 200 predictor terms is about 7 times faster. (GitHub: #574)
 * Faster computation of the predictive variance of the reference model for the Gaussian and Student-t families. This matters for a large number of observations and many projected draws. For example, `project()` with 10 000 observations and 4 000 projected draws is about 7 times faster. (GitHub: #575)
+* Faster `lme4::glmer()` submodel fits: projpred now uses BOBYQA in both optimization stages, which changes the fits only within the optimizer tolerance. For example, `varsel()` for a Bernoulli model with 300 observations and two grouping factors is about 2 times faster. (GitHub: #592)
 
 ## Minor changes
 
@@ -21,6 +22,7 @@ If you read this from a place other than <https://mc-stan.org/projpred/news/inde
 * Tests: Adapt to version 2.1-0 of package lme4. (GitHub: #577)
 * Fixed the error `solve(): solution not found` (and possible wrong fits) when a predictor of a GLM submodel is constant over the observations with nonzero weight, e.g., a rare binary predictor in a CV fold. Such a predictor now gets the coefficient 0. (GitHub: #589)
 * Fixed inexact Gaussian submodel fits (identity link, also in the latent projection). (GitHub: #593)
+* Fixed a parse error in `varsel()` and `cv_varsel()` if two predictor terms have the same text before or after a `+` inside a call, such as `log(p + 1)` and `log(q + 1)`. (GitHub: #595)
 
 
 # projpred 2.11.0
