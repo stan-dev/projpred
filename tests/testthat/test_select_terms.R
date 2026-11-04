@@ -1,5 +1,3 @@
-context("select_possible_terms_size() with precomputed term information")
-
 test_that(paste(
   "select_possible_terms_size() gives the same candidates with and without",
   "`term_info`"
