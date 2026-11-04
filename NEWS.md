@@ -14,6 +14,8 @@ If you read this from a place other than <https://mc-stan.org/projpred/news/inde
 * Faster computation of the predictive variance of the reference model for the Gaussian and Student-t families. This matters for a large number of observations and many projected draws. For example, `project()` with 10 000 observations and 4 000 projected draws is about 7 times faster. (GitHub: #575)
 * Faster `lme4::glmer()` submodel fits: projpred now uses BOBYQA in both optimization stages, which changes the fits only within the optimizer tolerance. For example, `varsel()` for a Bernoulli model with 300 observations and two grouping factors is about 2 times faster. (GitHub: #592)
 
+* Faster projections onto binomial and Poisson GLM submodels (and Gaussian GLM submodels with a non-identity link): the IRLS fits compute their pseudo-observations in C++, and one C++ call fits all projected draws (or clusters). For example, `cv_varsel()` with `validate_search = TRUE` for binomial and Poisson models is about 4 to 6 times faster. (GitHub: #581)
+
 ## Minor changes
 
 ## Bug fixes and maintenance
