@@ -699,6 +699,26 @@ cached_by_strings <- function(type, key, compute, max_n = 10000L) {
   return(value)
 }
 
+# The parts of the term strings `term_strings` (for example "x1 + x2" or
+# "I(a + b) + (1 | g)") at the `+` signs that join terms. A `+` inside a call
+# (as in I(a + b) or log(x + 1)) does not split. The parts are deparsed again,
+# so their spacing is that of terms() labels (for example "poly(x3, 2)" for
+# "poly(x3,2)"), and non-syntactic names keep their backticks.
+split_plus <- function(term_strings) {
+  parts_of <- function(expr) {
+    if (is.call(expr) && identical(expr[[1L]], as.name("+")) &&
+        length(expr) == 3L) {
+      return(c(parts_of(expr[[2L]]), parts_of(expr[[3L]])))
+    }
+    return(paste(deparse(expr, width.cutoff = 500L, backtick = TRUE),
+                 collapse = " "))
+  }
+  return(as.character(unlist(
+    lapply(term_strings, function(x) parts_of(str2lang(x))),
+    use.names = FALSE
+  )))
+}
+
 # Term labels with the variables of an interaction in sorted order, so that, for
 # example, "x2:x1" and "x1:x2" are equal (as for terms()).
 norm_term_labels <- function(labels) {

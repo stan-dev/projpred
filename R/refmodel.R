@@ -199,7 +199,10 @@
 #'     \eqn{N_{\mathrm{augcat}}}{N_augcat} rows.
 #'     + `family` accepts an object of class `family`.
 #'     + `weights` accepts either observation weights (at least in the form of a
-#'     numeric vector) or `NULL` (for using a vector of ones as weights).
+#'     numeric vector) or `NULL` (for using a vector of ones as weights). In
+#'     LOO CV with `validate_search = TRUE`, the left-out observation gets
+#'     weight 0. `div_minimizer` must then give the fit without this
+#'     observation.
 #'     + `projpred_var` accepts an \eqn{N \times S_{\mathrm{prj}}}{N x S_prj}
 #'     matrix of predictive variances (necessary for \pkg{projpred}'s internal
 #'     GLM fitter) in case of the traditional or the latent projection and an
@@ -1415,6 +1418,9 @@ init_refmodel <- function(object, data, formula, family, ref_predfun = NULL,
       stopifnot(length(offset) %in% c(1L, nrow(newdata)))
     }
     if (is.null(pred_sub)) {
+      # Predict factor levels that only the removed rows with weight 0 had as
+      # the reference level (see lost_levels()):
+      newdata <- recode_lost_levels(newdata, attr(fits, "projpred_lost_lvls"))
       pred_sub <- proj_predfun(fits, newdata = newdata)
     }
     if (family$family %in% fams_neg_linpred()) {
