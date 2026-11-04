@@ -84,7 +84,12 @@ by projpred's internal default `div_minimizer` functions, see
     [`gaussian()`](https://rdrr.io/r/stats/family.html) family,
     [`lme4::glmer()`](https://rdrr.io/pkg/lme4/man/glmer.html) (the
     returned object inherits from class `glmerMod`) for all other
-    families.
+    families. For
+    [`lme4::glmer()`](https://rdrr.io/pkg/lme4/man/glmer.html), projpred
+    uses `control = lme4::glmerControl(optimizer = "bobyqa")`, so both
+    optimization stages use BOBYQA. A `control` argument in `...`
+    replaces this default in the first fit. After some lme4 errors,
+    projpred refits with its own settings and ignores this `control`.
 
   - For the augmented-data projection:
     [`ordinal::clmm()`](https://rdrr.io/pkg/ordinal/man/clmm.html) (the

@@ -133,7 +133,11 @@ inherits from class <code>multinom</code>) for the <code><a href="https://paulbu
 projection in case of the <code><a href="https://rdrr.io/r/stats/family.html" class="external-link">binomial()</a></code> or <code><a href="https://paulbuerkner.com/brms/reference/brmsfamily.html" class="external-link">brms::bernoulli()</a></code> family):
 <code><a href="https://rdrr.io/pkg/lme4/man/lmer.html" class="external-link">lme4::lmer()</a></code> (the returned object inherits from class <code>lmerMod</code>) for
 the <code><a href="https://rdrr.io/r/stats/family.html" class="external-link">gaussian()</a></code> family, <code><a href="https://rdrr.io/pkg/lme4/man/glmer.html" class="external-link">lme4::glmer()</a></code> (the returned object inherits
-from class <code>glmerMod</code>) for all other families.</p></li>
+from class <code>glmerMod</code>) for all other families. For <code><a href="https://rdrr.io/pkg/lme4/man/glmer.html" class="external-link">lme4::glmer()</a></code>,
+<span class="pkg">projpred</span> uses <code>control = lme4::glmerControl(optimizer = "bobyqa")</code>,
+so both optimization stages use BOBYQA. A <code>control</code> argument in <code>...</code>
+replaces this default in the first fit. After some <span class="pkg">lme4</span> errors,
+<span class="pkg">projpred</span> refits with its own settings and ignores this <code>control</code>.</p></li>
 <li><p>For the augmented-data projection: <code><a href="https://rdrr.io/pkg/ordinal/man/clmm.html" class="external-link">ordinal::clmm()</a></code> (the returned
 object inherits from class <code>clmm</code>) for the <code><a href="https://paulbuerkner.com/brms/reference/brmsfamily.html" class="external-link">brms::cumulative()</a></code> family,
 <code><a href="https://melff.github.io/mclogit/reference/mblogit.html" class="external-link">mclogit::mblogit()</a></code> (the returned object inherits from class <code>mmblogit</code>)

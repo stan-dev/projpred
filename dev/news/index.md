@@ -42,6 +42,14 @@
   with 10 000 observations and 4 000 projected draws is about 7 times
   faster. (GitHub:
   [\#575](https://github.com/stan-dev/projpred/issues/575))
+- Faster [`lme4::glmer()`](https://rdrr.io/pkg/lme4/man/glmer.html)
+  submodel fits: projpred now uses BOBYQA in both optimization stages,
+  which changes the fits only within the optimizer tolerance. For
+  example,
+  [`varsel()`](https://mc-stan.org/projpred/dev/reference/varsel.md) for
+  a Bernoulli model with 300 observations and two grouping factors is
+  about 2 times faster. (GitHub:
+  [\#592](https://github.com/stan-dev/projpred/issues/592))
 
 ### Minor changes
 
