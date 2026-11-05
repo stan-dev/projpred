@@ -84,6 +84,7 @@ static double ml_fit_one(const mat& x, const mat& w, int icpt, double thresh,
   double loss = ml_eval(x, w, nw, b, true, grad, hess);
   conv = 1;
   niter = 0;
+  if (!std::isfinite(loss)) return loss;
   const uword np = p * K;
   for (int it = 0; it < maxit; ++it) {
     niter = it + 1;
