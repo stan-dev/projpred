@@ -322,7 +322,7 @@ print(time_lat)
 ```
 
        user  system elapsed 
-      0.263   0.349   0.234 
+      0.263   0.344   0.230 
 
 The message telling that `<refmodel>$dis` consists of only `NA`s will
 not concern us here because we will only focus on response-scale
@@ -435,7 +435,7 @@ print(time_trad)
 ```
 
        user  system elapsed 
-      0.621   0.351   0.586 
+      0.579   0.339   0.535 
 
 ``` r
 
@@ -787,7 +787,11 @@ Again, the message telling that `<refmodel>$dis` consists of only `NA`s
 will not concern us here because we will only focus on response-scale
 post-processing. The message concerning `latent_ilink` can be safely
 ignored here (the internal default based on `family$linkinv` works
-correctly in this case).
+correctly in this case). The functions above use the shape draws of the
+full-data fit (`refm_shape`). This is correct for
+[`varsel()`](https://mc-stan.org/projpred/dev/reference/varsel.md) and
+for the LOO CV that we use below. For K-fold CV, see section [“K-fold CV
+with custom response-scale functions”](#kfold-custom).
 
 Run
 [`cv_varsel()`](https://mc-stan.org/projpred/dev/reference/cv_varsel.md):
@@ -820,7 +824,7 @@ cvvs_weib <- cv_varsel(
     Warning: Some (2 / 500) Pareto k's for the reference model's PSIS-LOO weights
     are > 0.7.
 
-    Warning: In the recalculation of the latent response values, some (5 / 500) expectation-specific Pareto k-values are > 0.7.
+    Warning: In the recalculation of the latent response values, some (6 / 500) expectation-specific Pareto k-values are > 0.7.
     In general, we recommend K-fold CV in this case.
 
     Warning: Some Pareto k diagnostic values are too high. See help('pareto-k-diagnostic') for details.
@@ -828,7 +832,7 @@ cvvs_weib <- cv_varsel(
     Warning: Some (2 / 500) Pareto k's for the reference model's PSIS-LOO weights
     are > 0.7.
 
-    Warning: In the recalculation of the latent response values, some (5 / 500) expectation-specific Pareto k-values are > 0.7.
+    Warning: In the recalculation of the latent response values, some (6 / 500) expectation-specific Pareto k-values are > 0.7.
     In general, we recommend K-fold CV in this case.
 
     Using standard importance sampling (SIS) due to a small number of clusters.
@@ -993,7 +997,9 @@ refm_lnorm <- get_refmodel(
 
 The message concerning `latent_ilink` can be safely ignored here (the
 internal default based on `family$linkinv` works correctly in this
-case).
+case). Argument `dis` contains the `sigma` draws of the full-data fit.
+For K-fold CV, see section [“K-fold CV with custom response-scale
+functions”](#kfold-custom).
 
 Run
 [`cv_varsel()`](https://mc-stan.org/projpred/dev/reference/cv_varsel.md):
@@ -1026,7 +1032,7 @@ cvvs_lnorm <- cv_varsel(
     Warning: Some (4 / 500) Pareto k's for the reference model's PSIS-LOO weights
     are > 0.7.
 
-    Warning: In the recalculation of the latent response values, some (9 / 500) expectation-specific Pareto k-values are > 0.7.
+    Warning: In the recalculation of the latent response values, some (7 / 500) expectation-specific Pareto k-values are > 0.7.
     In general, we recommend K-fold CV in this case.
 
     Warning: Some Pareto k diagnostic values are too high. See help('pareto-k-diagnostic') for details.
@@ -1034,7 +1040,7 @@ cvvs_lnorm <- cv_varsel(
     Warning: Some (4 / 500) Pareto k's for the reference model's PSIS-LOO weights
     are > 0.7.
 
-    Warning: In the recalculation of the latent response values, some (9 / 500) expectation-specific Pareto k-values are > 0.7.
+    Warning: In the recalculation of the latent response values, some (7 / 500) expectation-specific Pareto k-values are > 0.7.
     In general, we recommend K-fold CV in this case.
 
     Using standard importance sampling (SIS) due to a small number of clusters.
@@ -1093,6 +1099,115 @@ bayesplot::ppc_km_overlay(y = dat_sim_lnorm$yobs, yrep = prj_predict_lnorm,
 As expected, this PPPC indicates that this submodel is a reasonable one
 (keeping in mind that such a PPPC is just a single model-diagnostic
 tool).
+
+## K-fold CV with custom response-scale functions
+
+In the negative binomial and Weibull examples above, the custom
+response-scale functions use posterior draws from the full-data
+reference model fit (`refm_prec`, `refm_shape`). In the log-normal
+example, argument `dis` contains the `sigma` draws of the full-data fit.
+This is correct for
+[`varsel()`](https://mc-stan.org/projpred/dev/reference/varsel.md) and
+for
+[`cv_varsel()`](https://mc-stan.org/projpred/dev/reference/cv_varsel.md)
+with `cv_method = "LOO"`, because these use only the full-data fit. With
+`cv_method = "kfold"`, the reference model is refitted in each fold, and
+**projpred** creates the fold-wise reference model objects with the
+function in element `cvrefbuilder` of the reference model object. The
+`cvrefbuilder` functions of
+[`get_refmodel.stanreg()`](https://mc-stan.org/projpred/dev/reference/refmodel-init-get.md)
+and
+[`brms::get_refmodel.brmsfit()`](https://paulbuerkner.com/brms/reference/get_refmodel.brmsfit.html)
+pass the same custom functions and the same `dis` to the fold-wise
+reference model objects, so the folds use the draws from the full-data
+fit, meaning that information from the held-out observations can enter
+the fold-wise predictive evaluation.
+
+To use the draws from the fold-wise refits, define the custom functions
+inside a function that takes the fitted model object as its argument and
+calls
+[`get_refmodel()`](https://mc-stan.org/projpred/dev/reference/refmodel-init-get.md).
+Then set element `cvrefbuilder` of the reference model object to a
+function that calls this outer function with the fold-wise refit. In
+this call, argument `called_from_cvrefbuilder = TRUE` suppresses some
+warnings that are already shown for the full-data reference model object
+(see
+[`?init_refmodel`](https://mc-stan.org/projpred/dev/reference/refmodel-init-get.md)).
+This is a workaround: currently, methods
+[`get_refmodel.stanreg()`](https://mc-stan.org/projpred/dev/reference/refmodel-init-get.md)
+and
+[`brms::get_refmodel.brmsfit()`](https://paulbuerkner.com/brms/reference/get_refmodel.brmsfit.html)
+do not accept a `cvrefbuilder` argument, so we replace the element after
+we have created the reference model object. For a **brms** reference
+model, the default `cvrefbuilder` also passes arguments `resp` and
+`brms_seed` of
+[`brms::get_refmodel.brmsfit()`](https://paulbuerkner.com/brms/reference/get_refmodel.brmsfit.html).
+If you use these arguments, pass them in the custom `cvrefbuilder` too.
+For the negative binomial example, this can look as follows:
+
+``` r
+
+get_refmodel_nebin <- function(fit, ...) {
+  refm_prec <- as.matrix(fit)[, "reciprocal_dispersion", drop = FALSE]
+  latent_ll_oscale_nebin <- function(ilpreds,
+                                     dis = rep(NA, nrow(ilpreds)),
+                                     y_oscale,
+                                     wobs = rep(1, ncol(ilpreds)),
+                                     cens,
+                                     cl_ref,
+                                     wdraws_ref = rep(1, length(cl_ref))) {
+    y_oscale_mat <- matrix(y_oscale, nrow = nrow(ilpreds),
+                           ncol = ncol(ilpreds), byrow = TRUE)
+    wobs_mat <- matrix(wobs, nrow = nrow(ilpreds), ncol = ncol(ilpreds),
+                       byrow = TRUE)
+    refm_prec_agg <- cl_agg(refm_prec, cl = cl_ref, wdraws = wdraws_ref)
+    ll_unw <- dnbinom(y_oscale_mat, size = refm_prec_agg, mu = ilpreds,
+                      log = TRUE)
+    return(wobs_mat * ll_unw)
+  }
+  latent_ppd_oscale_nebin <- function(
+      ilpreds_resamp,
+      dis_resamp = rep(NA, nrow(ilpreds_resamp)),
+      wobs = rep(1, ncol(ilpreds_resamp)),
+      cl_ref,
+      wdraws_ref = rep(1, length(cl_ref)),
+      idxs_prjdraws
+  ) {
+    refm_prec_agg <- cl_agg(refm_prec, cl = cl_ref, wdraws = wdraws_ref)
+    refm_prec_agg_resamp <- refm_prec_agg[idxs_prjdraws, , drop = FALSE]
+    ppd <- rnbinom(prod(dim(ilpreds_resamp)), size = refm_prec_agg_resamp,
+                   mu = ilpreds_resamp)
+    ppd <- matrix(ppd, nrow = nrow(ilpreds_resamp), ncol = ncol(ilpreds_resamp))
+    return(ppd)
+  }
+  get_refmodel(fit, latent = TRUE,
+               latent_ll_oscale = latent_ll_oscale_nebin,
+               latent_ppd_oscale = latent_ppd_oscale_nebin, ...)
+}
+refm_nebin_kfold <- get_refmodel_nebin(refm_fit_nebin)
+```
+
+    Defining `latent_ilink` as a function which calls `family$linkinv`, but there is no guarantee that this will work for all families. If relying on `family$linkinv` is not appropriate or if this raises an error in downstream functions, supply a custom `latent_ilink` function (which is also allowed to return only `NA`s if response-scale post-processing is not needed).
+
+    Since `<refmodel>$dis` will consist of only `NA`s, downstream analyses based on this reference model object won't be able to use log predictive density (LPD) values on latent scale. Furthermore, proj_predict() won't be able to draw from the latent Gaussian distribution.
+
+``` r
+
+refm_nebin_kfold$cvrefbuilder <- function(cvfit) {
+  get_refmodel_nebin(cvfit, called_from_cvrefbuilder = TRUE)
+}
+```
+
+As before, the messages concerning `<refmodel>$dis` and `latent_ilink`
+can be ignored here. Then
+`cv_varsel(refm_nebin_kfold, cv_method = "kfold")` uses the
+`reciprocal_dispersion` draws of the fold-wise refit in each fold. We do
+not run K-fold CV here, because it refits the reference model \\K\\
+times. For the Weibull example, define `refm_shape` inside such a
+function in the same way. For the log-normal example, pass
+`dis = as.matrix(fit)[, "sigma", drop = FALSE]` to
+[`get_refmodel()`](https://mc-stan.org/projpred/dev/reference/refmodel-init-get.md)
+inside such a function.
 
 ## References
 

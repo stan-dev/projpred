@@ -392,7 +392,7 @@ projection’s later:</p>
 <div class="sourceCode" id="cb11"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="va">time_lat</span><span class="op">)</span></span></code></pre></div>
 <pre><code>   user  system elapsed 
-  0.263   0.349   0.234 </code></pre>
+  0.263   0.344   0.230 </code></pre>
 <p>The message telling that <code>&lt;refmodel&gt;$dis</code> consists
 of only <code>NA</code>s will not concern us here because we will only
 focus on response-scale post-processing.</p>
@@ -474,7 +474,7 @@ approach:</p>
 <div class="sourceCode" id="cb20"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/print.html" class="external-link">print</a></span><span class="op">(</span><span class="va">time_trad</span><span class="op">)</span></span></code></pre></div>
 <pre><code>   user  system elapsed 
-  0.621   0.351   0.586 </code></pre>
+  0.579   0.339   0.535 </code></pre>
 <div class="sourceCode" id="cb22"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="op">(</span> <span class="va">gg_trad</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/graphics/plot.default.html" class="external-link">plot</a></span><span class="op">(</span><span class="va">vs_trad</span>, stats <span class="op">=</span> <span class="st">"gmpd"</span>, deltas <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span> <span class="op">)</span></span></code></pre></div>
 <p><img src="latent_files/figure-html/post_vs_trad-1.png" class="r-plt" alt="" width="90%" style="display: block; margin: auto;">
@@ -843,7 +843,10 @@ consists of only <code>NA</code>s will not concern us here because we
 will only focus on response-scale post-processing. The message
 concerning <code>latent_ilink</code> can be safely ignored here (the
 internal default based on <code>family$linkinv</code> works correctly in
-this case).</p>
+this case). The functions above use the shape draws of the full-data fit
+(<code>refm_shape</code>). This is correct for <code><a href="../reference/varsel.html">varsel()</a></code> and
+for the LOO CV that we use below. For K-fold CV, see section <a href="#kfold-custom">“K-fold CV with custom response-scale
+functions”</a>.</p>
 <p>Run <code><a href="../reference/cv_varsel.html">cv_varsel()</a></code>:</p>
 <div class="sourceCode" id="cb41"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># For running projpred's CV in parallel (see cv_varsel()'s argument `parallel`):</span></span>
@@ -868,12 +871,12 @@ this case).</p>
 <pre><code>Warning: Some Pareto k diagnostic values are too high. See help('pareto-k-diagnostic') for details.</code></pre>
 <pre><code>Warning: Some (2 / 500) Pareto k's for the reference model's PSIS-LOO weights
 are &gt; 0.7.</code></pre>
-<pre><code>Warning: In the recalculation of the latent response values, some (5 / 500) expectation-specific Pareto k-values are &gt; 0.7.
+<pre><code>Warning: In the recalculation of the latent response values, some (6 / 500) expectation-specific Pareto k-values are &gt; 0.7.
 In general, we recommend K-fold CV in this case.</code></pre>
 <pre><code>Warning: Some Pareto k diagnostic values are too high. See help('pareto-k-diagnostic') for details.</code></pre>
 <pre><code>Warning: Some (2 / 500) Pareto k's for the reference model's PSIS-LOO weights
 are &gt; 0.7.</code></pre>
-<pre><code>Warning: In the recalculation of the latent response values, some (5 / 500) expectation-specific Pareto k-values are &gt; 0.7.
+<pre><code>Warning: In the recalculation of the latent response values, some (6 / 500) expectation-specific Pareto k-values are &gt; 0.7.
 In general, we recommend K-fold CV in this case.</code></pre>
 <pre><code>Using standard importance sampling (SIS) due to a small number of clusters.</code></pre>
 <div class="sourceCode" id="cb49"><pre class="downlit sourceCode r">
@@ -1007,7 +1010,10 @@ downstream <strong>projpred</strong> steps:</p>
 <pre><code>Defining `latent_ilink` as a function which calls `family$linkinv`, but there is no guarantee that this will work for all families. If relying on `family$linkinv` is not appropriate or if this raises an error in downstream functions, supply a custom `latent_ilink` function (which is also allowed to return only `NA`s if response-scale post-processing is not needed).</code></pre>
 <p>The message concerning <code>latent_ilink</code> can be safely
 ignored here (the internal default based on <code>family$linkinv</code>
-works correctly in this case).</p>
+works correctly in this case). Argument <code>dis</code> contains the
+<code>sigma</code> draws of the full-data fit. For K-fold CV, see
+section <a href="#kfold-custom">“K-fold CV with custom response-scale
+functions”</a>.</p>
 <p>Run <code><a href="../reference/cv_varsel.html">cv_varsel()</a></code>:</p>
 <div class="sourceCode" id="cb59"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># For running projpred's CV in parallel (see cv_varsel()'s argument `parallel`):</span></span>
@@ -1032,12 +1038,12 @@ works correctly in this case).</p>
 <pre><code>Warning: Some Pareto k diagnostic values are too high. See help('pareto-k-diagnostic') for details.</code></pre>
 <pre><code>Warning: Some (4 / 500) Pareto k's for the reference model's PSIS-LOO weights
 are &gt; 0.7.</code></pre>
-<pre><code>Warning: In the recalculation of the latent response values, some (9 / 500) expectation-specific Pareto k-values are &gt; 0.7.
+<pre><code>Warning: In the recalculation of the latent response values, some (7 / 500) expectation-specific Pareto k-values are &gt; 0.7.
 In general, we recommend K-fold CV in this case.</code></pre>
 <pre><code>Warning: Some Pareto k diagnostic values are too high. See help('pareto-k-diagnostic') for details.</code></pre>
 <pre><code>Warning: Some (4 / 500) Pareto k's for the reference model's PSIS-LOO weights
 are &gt; 0.7.</code></pre>
-<pre><code>Warning: In the recalculation of the latent response values, some (9 / 500) expectation-specific Pareto k-values are &gt; 0.7.
+<pre><code>Warning: In the recalculation of the latent response values, some (7 / 500) expectation-specific Pareto k-values are &gt; 0.7.
 In general, we recommend K-fold CV in this case.</code></pre>
 <pre><code>Using standard importance sampling (SIS) due to a small number of clusters.</code></pre>
 <div class="sourceCode" id="cb67"><pre class="downlit sourceCode r">
@@ -1077,6 +1083,100 @@ To display all posterior predictive draws, set `extrapolation_factor = Inf`.</co
 one (keeping in mind that such a PPPC is just a single model-diagnostic
 tool).</p>
 </div>
+</div>
+<div class="section level2">
+<h2 id="kfold-custom">K-fold CV with custom response-scale functions<a class="anchor" aria-label="anchor" href="#kfold-custom"></a>
+</h2>
+<p>In the negative binomial and Weibull examples above, the custom
+response-scale functions use posterior draws from the full-data
+reference model fit (<code>refm_prec</code>, <code>refm_shape</code>).
+In the log-normal example, argument <code>dis</code> contains the
+<code>sigma</code> draws of the full-data fit. This is correct for
+<code><a href="../reference/varsel.html">varsel()</a></code> and for <code><a href="../reference/cv_varsel.html">cv_varsel()</a></code> with
+<code>cv_method = "LOO"</code>, because these use only the full-data
+fit. With <code>cv_method = "kfold"</code>, the reference model is
+refitted in each fold, and <strong>projpred</strong> creates the
+fold-wise reference model objects with the function in element
+<code>cvrefbuilder</code> of the reference model object. The
+<code>cvrefbuilder</code> functions of
+<code><a href="../reference/refmodel-init-get.html">get_refmodel.stanreg()</a></code> and
+<code><a href="https://paulbuerkner.com/brms/reference/get_refmodel.brmsfit.html" class="external-link">brms::get_refmodel.brmsfit()</a></code> pass the same custom functions
+and the same <code>dis</code> to the fold-wise reference model objects,
+so the folds use the draws from the full-data fit, meaning that
+information from the held-out observations can enter the fold-wise
+predictive evaluation.</p>
+<p>To use the draws from the fold-wise refits, define the custom
+functions inside a function that takes the fitted model object as its
+argument and calls <code><a href="../reference/refmodel-init-get.html">get_refmodel()</a></code>. Then set element
+<code>cvrefbuilder</code> of the reference model object to a function
+that calls this outer function with the fold-wise refit. In this call,
+argument <code>called_from_cvrefbuilder = TRUE</code> suppresses some
+warnings that are already shown for the full-data reference model object
+(see <code><a href="../reference/refmodel-init-get.html">?init_refmodel</a></code>). This is a workaround: currently,
+methods <code><a href="../reference/refmodel-init-get.html">get_refmodel.stanreg()</a></code> and
+<code><a href="https://paulbuerkner.com/brms/reference/get_refmodel.brmsfit.html" class="external-link">brms::get_refmodel.brmsfit()</a></code> do not accept a
+<code>cvrefbuilder</code> argument, so we replace the element after we
+have created the reference model object. For a <strong>brms</strong>
+reference model, the default <code>cvrefbuilder</code> also passes
+arguments <code>resp</code> and <code>brms_seed</code> of
+<code><a href="https://paulbuerkner.com/brms/reference/get_refmodel.brmsfit.html" class="external-link">brms::get_refmodel.brmsfit()</a></code>. If you use these arguments,
+pass them in the custom <code>cvrefbuilder</code> too. For the negative
+binomial example, this can look as follows:</p>
+<div class="sourceCode" id="cb73"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">get_refmodel_nebin</span> <span class="op">&lt;-</span> <span class="kw">function</span><span class="op">(</span><span class="va">fit</span>, <span class="va">...</span><span class="op">)</span> <span class="op">{</span></span>
+<span>  <span class="va">refm_prec</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/matrix.html" class="external-link">as.matrix</a></span><span class="op">(</span><span class="va">fit</span><span class="op">)</span><span class="op">[</span>, <span class="st">"reciprocal_dispersion"</span>, drop <span class="op">=</span> <span class="cn">FALSE</span><span class="op">]</span></span>
+<span>  <span class="va">latent_ll_oscale_nebin</span> <span class="op">&lt;-</span> <span class="kw">function</span><span class="op">(</span><span class="va">ilpreds</span>,</span>
+<span>                                     <span class="va">dis</span> <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/rep.html" class="external-link">rep</a></span><span class="op">(</span><span class="cn">NA</span>, <span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">nrow</a></span><span class="op">(</span><span class="va">ilpreds</span><span class="op">)</span><span class="op">)</span>,</span>
+<span>                                     <span class="va">y_oscale</span>,</span>
+<span>                                     <span class="va">wobs</span> <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/rep.html" class="external-link">rep</a></span><span class="op">(</span><span class="fl">1</span>, <span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">ncol</a></span><span class="op">(</span><span class="va">ilpreds</span><span class="op">)</span><span class="op">)</span>,</span>
+<span>                                     <span class="va">cens</span>,</span>
+<span>                                     <span class="va">cl_ref</span>,</span>
+<span>                                     <span class="va">wdraws_ref</span> <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/rep.html" class="external-link">rep</a></span><span class="op">(</span><span class="fl">1</span>, <span class="fu"><a href="https://rdrr.io/r/base/length.html" class="external-link">length</a></span><span class="op">(</span><span class="va">cl_ref</span><span class="op">)</span><span class="op">)</span><span class="op">)</span> <span class="op">{</span></span>
+<span>    <span class="va">y_oscale_mat</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/matrix.html" class="external-link">matrix</a></span><span class="op">(</span><span class="va">y_oscale</span>, nrow <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">nrow</a></span><span class="op">(</span><span class="va">ilpreds</span><span class="op">)</span>,</span>
+<span>                           ncol <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">ncol</a></span><span class="op">(</span><span class="va">ilpreds</span><span class="op">)</span>, byrow <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
+<span>    <span class="va">wobs_mat</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/matrix.html" class="external-link">matrix</a></span><span class="op">(</span><span class="va">wobs</span>, nrow <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">nrow</a></span><span class="op">(</span><span class="va">ilpreds</span><span class="op">)</span>, ncol <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">ncol</a></span><span class="op">(</span><span class="va">ilpreds</span><span class="op">)</span>,</span>
+<span>                       byrow <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
+<span>    <span class="va">refm_prec_agg</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/cl_agg.html">cl_agg</a></span><span class="op">(</span><span class="va">refm_prec</span>, cl <span class="op">=</span> <span class="va">cl_ref</span>, wdraws <span class="op">=</span> <span class="va">wdraws_ref</span><span class="op">)</span></span>
+<span>    <span class="va">ll_unw</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/stats/NegBinomial.html" class="external-link">dnbinom</a></span><span class="op">(</span><span class="va">y_oscale_mat</span>, size <span class="op">=</span> <span class="va">refm_prec_agg</span>, mu <span class="op">=</span> <span class="va">ilpreds</span>,</span>
+<span>                      log <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
+<span>    <span class="kw"><a href="https://rdrr.io/r/base/function.html" class="external-link">return</a></span><span class="op">(</span><span class="va">wobs_mat</span> <span class="op">*</span> <span class="va">ll_unw</span><span class="op">)</span></span>
+<span>  <span class="op">}</span></span>
+<span>  <span class="va">latent_ppd_oscale_nebin</span> <span class="op">&lt;-</span> <span class="kw">function</span><span class="op">(</span></span>
+<span>      <span class="va">ilpreds_resamp</span>,</span>
+<span>      <span class="va">dis_resamp</span> <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/rep.html" class="external-link">rep</a></span><span class="op">(</span><span class="cn">NA</span>, <span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">nrow</a></span><span class="op">(</span><span class="va">ilpreds_resamp</span><span class="op">)</span><span class="op">)</span>,</span>
+<span>      <span class="va">wobs</span> <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/rep.html" class="external-link">rep</a></span><span class="op">(</span><span class="fl">1</span>, <span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">ncol</a></span><span class="op">(</span><span class="va">ilpreds_resamp</span><span class="op">)</span><span class="op">)</span>,</span>
+<span>      <span class="va">cl_ref</span>,</span>
+<span>      <span class="va">wdraws_ref</span> <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/rep.html" class="external-link">rep</a></span><span class="op">(</span><span class="fl">1</span>, <span class="fu"><a href="https://rdrr.io/r/base/length.html" class="external-link">length</a></span><span class="op">(</span><span class="va">cl_ref</span><span class="op">)</span><span class="op">)</span>,</span>
+<span>      <span class="va">idxs_prjdraws</span></span>
+<span>  <span class="op">)</span> <span class="op">{</span></span>
+<span>    <span class="va">refm_prec_agg</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/cl_agg.html">cl_agg</a></span><span class="op">(</span><span class="va">refm_prec</span>, cl <span class="op">=</span> <span class="va">cl_ref</span>, wdraws <span class="op">=</span> <span class="va">wdraws_ref</span><span class="op">)</span></span>
+<span>    <span class="va">refm_prec_agg_resamp</span> <span class="op">&lt;-</span> <span class="va">refm_prec_agg</span><span class="op">[</span><span class="va">idxs_prjdraws</span>, , drop <span class="op">=</span> <span class="cn">FALSE</span><span class="op">]</span></span>
+<span>    <span class="va">ppd</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/stats/NegBinomial.html" class="external-link">rnbinom</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/prod.html" class="external-link">prod</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/dim.html" class="external-link">dim</a></span><span class="op">(</span><span class="va">ilpreds_resamp</span><span class="op">)</span><span class="op">)</span>, size <span class="op">=</span> <span class="va">refm_prec_agg_resamp</span>,</span>
+<span>                   mu <span class="op">=</span> <span class="va">ilpreds_resamp</span><span class="op">)</span></span>
+<span>    <span class="va">ppd</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/matrix.html" class="external-link">matrix</a></span><span class="op">(</span><span class="va">ppd</span>, nrow <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">nrow</a></span><span class="op">(</span><span class="va">ilpreds_resamp</span><span class="op">)</span>, ncol <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">ncol</a></span><span class="op">(</span><span class="va">ilpreds_resamp</span><span class="op">)</span><span class="op">)</span></span>
+<span>    <span class="kw"><a href="https://rdrr.io/r/base/function.html" class="external-link">return</a></span><span class="op">(</span><span class="va">ppd</span><span class="op">)</span></span>
+<span>  <span class="op">}</span></span>
+<span>  <span class="fu"><a href="../reference/refmodel-init-get.html">get_refmodel</a></span><span class="op">(</span><span class="va">fit</span>, latent <span class="op">=</span> <span class="cn">TRUE</span>,</span>
+<span>               latent_ll_oscale <span class="op">=</span> <span class="va">latent_ll_oscale_nebin</span>,</span>
+<span>               latent_ppd_oscale <span class="op">=</span> <span class="va">latent_ppd_oscale_nebin</span>, <span class="va">...</span><span class="op">)</span></span>
+<span><span class="op">}</span></span>
+<span><span class="va">refm_nebin_kfold</span> <span class="op">&lt;-</span> <span class="fu">get_refmodel_nebin</span><span class="op">(</span><span class="va">refm_fit_nebin</span><span class="op">)</span></span></code></pre></div>
+<pre><code>Defining `latent_ilink` as a function which calls `family$linkinv`, but there is no guarantee that this will work for all families. If relying on `family$linkinv` is not appropriate or if this raises an error in downstream functions, supply a custom `latent_ilink` function (which is also allowed to return only `NA`s if response-scale post-processing is not needed).</code></pre>
+<pre><code>Since `&lt;refmodel&gt;$dis` will consist of only `NA`s, downstream analyses based on this reference model object won't be able to use log predictive density (LPD) values on latent scale. Furthermore, proj_predict() won't be able to draw from the latent Gaussian distribution.</code></pre>
+<div class="sourceCode" id="cb76"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">refm_nebin_kfold</span><span class="op">$</span><span class="va">cvrefbuilder</span> <span class="op">&lt;-</span> <span class="kw">function</span><span class="op">(</span><span class="va">cvfit</span><span class="op">)</span> <span class="op">{</span></span>
+<span>  <span class="fu">get_refmodel_nebin</span><span class="op">(</span><span class="va">cvfit</span>, called_from_cvrefbuilder <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
+<span><span class="op">}</span></span></code></pre></div>
+<p>As before, the messages concerning <code>&lt;refmodel&gt;$dis</code>
+and <code>latent_ilink</code> can be ignored here. Then
+<code>cv_varsel(refm_nebin_kfold, cv_method = "kfold")</code> uses the
+<code>reciprocal_dispersion</code> draws of the fold-wise refit in each
+fold. We do not run K-fold CV here, because it refits the reference
+model <span class="math inline">\(K\)</span> times. For the Weibull
+example, define <code>refm_shape</code> inside such a function in the
+same way. For the log-normal example, pass
+<code>dis = as.matrix(fit)[, "sigma", drop = FALSE]</code> to
+<code><a href="../reference/refmodel-init-get.html">get_refmodel()</a></code> inside such a function.</p>
 </div>
 <div class="section level2 unnumbered">
 <h2 class="unnumbered" id="references">References<a class="anchor" aria-label="anchor" href="#references"></a>

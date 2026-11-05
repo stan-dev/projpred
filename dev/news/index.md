@@ -138,6 +138,11 @@
   [\#573](https://github.com/stan-dev/projpred/issues/573))
 - Tests: Adapt to version 2.1-0 of package lme4. (GitHub:
   [\#577](https://github.com/stan-dev/projpred/issues/577))
+- Docs: Explain how custom latent-projection functions can use fold-wise
+  draws in K-fold CV
+  ([`?extend_family`](https://mc-stan.org/projpred/dev/reference/extend_family.md),
+  latent-projection vignette). (GitHub:
+  [\#588](https://github.com/stan-dev/projpred/issues/588))
 - Fixed bias in
   [`cv_varsel()`](https://mc-stan.org/projpred/dev/reference/cv_varsel.md)
   with `cv_method = "LOO"` and `validate_search = TRUE`: the projections

@@ -332,6 +332,22 @@ for one observation. Note that although argument <code>wdraws_ref</code> has the
 <code>_ref</code>, <code>wdraws_ref</code> does not necessarily obtain weights for the <em>initial</em>
 reference model's posterior draws: In case of <code><a href="cv_varsel.html">cv_varsel()</a></code> with <code>cv_method = "kfold"</code>, these weights may refer to one of the \(K\) reference model
 refits (but in that case, they are constant anyway).</p>
+<p>In <code><a href="cv_varsel.html">cv_varsel()</a></code> with <code>cv_method = "kfold"</code>, the reference model objects of
+the \(K\) folds are created by the <code>cvrefbuilder</code> function (see
+<code><a href="refmodel-init-get.html">init_refmodel()</a></code>). The <code>cvrefbuilder</code> functions of <code><a href="refmodel-init-get.html">get_refmodel.stanreg()</a></code>
+and <code><a href="https://paulbuerkner.com/brms/reference/get_refmodel.brmsfit.html" class="external-link">brms::get_refmodel.brmsfit()</a></code> pass user-supplied functions
+<code>latent_ilink</code>, <code>latent_ll_oscale</code>, and <code>latent_ppd_oscale</code> (and a
+user-supplied argument <code>dis</code>, see <code><a href="refmodel-init-get.html">init_refmodel()</a></code>) unchanged to the
+fold-wise reference model objects. If these functions take reference model
+draws from their enclosing environment (e.g., draws of a shape parameter),
+or if <code>dis</code> contains such draws, then the folds use the draws from the
+full-data fit. To use the draws from the fold-wise refits, define the
+functions (and compute <code>dis</code>) inside a function that takes the fitted model
+object as its argument and calls <code><a href="refmodel-init-get.html">get_refmodel()</a></code>. Then set element
+<code>cvrefbuilder</code> of the reference model object to a function that calls this
+outer function with the fold-wise refit. (Methods <code><a href="refmodel-init-get.html">get_refmodel.stanreg()</a></code>
+and <code><a href="https://paulbuerkner.com/brms/reference/get_refmodel.brmsfit.html" class="external-link">brms::get_refmodel.brmsfit()</a></code> do not accept a <code>cvrefbuilder</code> argument.)
+The latent-projection vignette shows an example.</p>
 <p>If <code>family$cats</code> is not <code>NULL</code> (after taking <code>latent_y_unqs</code> into account),
 then the response vector resulting from <code>extract_model_data</code> (see
 <code><a href="refmodel-init-get.html">init_refmodel()</a></code>) is coerced to a <code>factor</code> (using <code><a href="https://rdrr.io/r/base/factor.html" class="external-link">as.factor()</a></code>) at multiple

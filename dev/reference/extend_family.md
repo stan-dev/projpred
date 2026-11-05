@@ -354,6 +354,34 @@ observation. Note that although argument `wdraws_ref` has the suffix
 with `cv_method = "kfold"`, these weights may refer to one of the \\K\\
 reference model refits (but in that case, they are constant anyway).
 
+In
+[`cv_varsel()`](https://mc-stan.org/projpred/dev/reference/cv_varsel.md)
+with `cv_method = "kfold"`, the reference model objects of the \\K\\
+folds are created by the `cvrefbuilder` function (see
+[`init_refmodel()`](https://mc-stan.org/projpred/dev/reference/refmodel-init-get.md)).
+The `cvrefbuilder` functions of
+[`get_refmodel.stanreg()`](https://mc-stan.org/projpred/dev/reference/refmodel-init-get.md)
+and
+[`brms::get_refmodel.brmsfit()`](https://paulbuerkner.com/brms/reference/get_refmodel.brmsfit.html)
+pass user-supplied functions `latent_ilink`, `latent_ll_oscale`, and
+`latent_ppd_oscale` (and a user-supplied argument `dis`, see
+[`init_refmodel()`](https://mc-stan.org/projpred/dev/reference/refmodel-init-get.md))
+unchanged to the fold-wise reference model objects. If these functions
+take reference model draws from their enclosing environment (e.g., draws
+of a shape parameter), or if `dis` contains such draws, then the folds
+use the draws from the full-data fit. To use the draws from the
+fold-wise refits, define the functions (and compute `dis`) inside a
+function that takes the fitted model object as its argument and calls
+[`get_refmodel()`](https://mc-stan.org/projpred/dev/reference/refmodel-init-get.md).
+Then set element `cvrefbuilder` of the reference model object to a
+function that calls this outer function with the fold-wise refit.
+(Methods
+[`get_refmodel.stanreg()`](https://mc-stan.org/projpred/dev/reference/refmodel-init-get.md)
+and
+[`brms::get_refmodel.brmsfit()`](https://paulbuerkner.com/brms/reference/get_refmodel.brmsfit.html)
+do not accept a `cvrefbuilder` argument.) The latent-projection vignette
+shows an example.
+
 If `family$cats` is not `NULL` (after taking `latent_y_unqs` into
 account), then the response vector resulting from `extract_model_data`
 (see
