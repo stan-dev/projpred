@@ -243,6 +243,23 @@
 #' "kfold"`, these weights may refer to one of the \eqn{K} reference model
 #' refits (but in that case, they are constant anyway).
 #'
+#' In [cv_varsel()] with `cv_method = "kfold"`, the reference model objects of
+#' the \eqn{K} folds are created by the `cvrefbuilder` function (see
+#' [init_refmodel()]). The `cvrefbuilder` functions of [get_refmodel.stanreg()]
+#' and [brms::get_refmodel.brmsfit()] pass user-supplied functions
+#' `latent_ilink`, `latent_ll_oscale`, and `latent_ppd_oscale` (and a
+#' user-supplied argument `dis`, see [init_refmodel()]) unchanged to the
+#' fold-wise reference model objects. If these functions take reference model
+#' draws from their enclosing environment (e.g., draws of a shape parameter),
+#' or if `dis` contains such draws, then the folds use the draws from the
+#' full-data fit. To use the draws from the fold-wise refits, define the
+#' functions (and compute `dis`) inside a function that takes the fitted model
+#' object as its argument and calls [get_refmodel()]. Then set element
+#' `cvrefbuilder` of the reference model object to a function that calls this
+#' outer function with the fold-wise refit. (Methods [get_refmodel.stanreg()]
+#' and [brms::get_refmodel.brmsfit()] do not accept a `cvrefbuilder` argument.)
+#' The latent-projection vignette shows an example.
+#'
 #' If `family$cats` is not `NULL` (after taking `latent_y_unqs` into account),
 #' then the response vector resulting from `extract_model_data` (see
 #' [init_refmodel()]) is coerced to a `factor` (using [as.factor()]) at multiple
