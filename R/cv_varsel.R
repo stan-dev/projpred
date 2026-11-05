@@ -336,6 +336,10 @@ cv_varsel.refmodel <- function(
     }
     set.seed(seed)
   }
+  # Activate the cache of the projection inputs (see proj_cache_store()). This
+  # follows the `on.exit()` call above, which has no `add = TRUE`:
+  proj_cache_enter()
+  on.exit(proj_cache_exit(), add = TRUE)
 
   refmodel <- object
   nterms_all <- count_terms_in_formula(refmodel$formula) - 1L
@@ -1034,26 +1038,33 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
       # Run the search with the reweighted clusters (or thinned draws) (so the
       # *reweighted* fitted response values from the reference model act as
       # artifical response values in the projection (or L1-penalized
-      # projection)):
+      # projection)).  As in K-fold CV, the left-out observation is not used
+      # in the projections of its fold; it is used only for the evaluation
+      # (via `refmodel_fulldata`):
+      refmodel_fold <- refmodel
+      refmodel_fold$wobs[i] <- 0
       if (!search_out_rks_was_null) {
         search_path <- list(predictor_ranking = search_out_rks[[run_index]])
       } else {
         search_path <- .select(
-          refmodel = refmodel, ndraws = ndraws, nclusters = nclusters,
+          refmodel = refmodel_fold, ndraws = ndraws, nclusters = nclusters,
           reweighting_args = list(cl_ref = cl_sel, wdraws_ref = exp(lw[, i])),
           method = method, nterms_max = nterms_max, penalty = penalty,
           verbose = verbose_obs, verbose_line_length = 3,
           verbose_txt_add = vtxt_obs_i, search_control = search_control,
-          search_terms = search_terms, est_runtime = FALSE, ...
+          search_terms = search_terms, est_runtime = FALSE,
+          # The evaluation uses the search fits only with `refit_prj = FALSE`:
+          return_outdmins = !refit_prj, ...
         )
       }
 
       # Run the performance evaluation for the submodels along the predictor
       # ranking:
       perf_eval_out <- perf_eval(
-        search_path = search_path, refmodel = refmodel, refit_prj = refit_prj,
-        ndraws = ndraws_pred, nclusters = nclusters_pred,
+        search_path = search_path, refmodel = refmodel_fold,
+        refit_prj = refit_prj, ndraws = ndraws_pred, nclusters = nclusters_pred,
         reweighting_args = list(cl_ref = cl_pred, wdraws_ref = exp(lw[, i])),
+        refmodel_fulldata = refmodel,
         indices_test = i, verbose = verbose_obs, verbose_line_length = 3,
         verbose_txt_add = vtxt_obs_i, ...
       )
@@ -1423,7 +1434,9 @@ kfold_varsel <- function(refmodel, method, nterms_max, ndraws, nclusters,
         method = method, nterms_max = nterms_max, penalty = penalty,
         verbose = verbose_fold, verbose_line_length = 3,
         verbose_txt_add = vtxt_fold_k, search_control = search_control,
-        search_terms = search_terms, est_runtime = FALSE, ...
+        search_terms = search_terms, est_runtime = FALSE,
+        # The evaluation uses the search fits only with `refit_prj = FALSE`:
+        return_outdmins = !refit_prj, ...
       )
     }
 

@@ -11,6 +11,22 @@ Rcpp::Rostream<true>&  Rcpp::Rcout = Rcpp::Rcpp_cout_get();
 Rcpp::Rostream<false>& Rcpp::Rcerr = Rcpp::Rcpp_cerr_get();
 #endif
 
+// categ_fit_multi_c
+List categ_fit_multi_c(arma::mat x, arma::mat w_all, int ncat, int icpt, double thresh, int maxit);
+RcppExport SEXP _projpred_categ_fit_multi_c(SEXP xSEXP, SEXP w_allSEXP, SEXP ncatSEXP, SEXP icptSEXP, SEXP threshSEXP, SEXP maxitSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< arma::mat >::type x(xSEXP);
+    Rcpp::traits::input_parameter< arma::mat >::type w_all(w_allSEXP);
+    Rcpp::traits::input_parameter< int >::type ncat(ncatSEXP);
+    Rcpp::traits::input_parameter< int >::type icpt(icptSEXP);
+    Rcpp::traits::input_parameter< double >::type thresh(threshSEXP);
+    Rcpp::traits::input_parameter< int >::type maxit(maxitSEXP);
+    rcpp_result_gen = Rcpp::wrap(categ_fit_multi_c(x, w_all, ncat, icpt, thresh, maxit));
+    return rcpp_result_gen;
+END_RCPP
+}
 // clust_moments_c
 List clust_moments_c(const arma::mat& mu, const arma::mat& mu_offs, const arma::vec& dis, const arma::vec& wn, const IntegerVector& cl, int nclusters);
 RcppExport SEXP _projpred_clust_moments_c(SEXP muSEXP, SEXP mu_offsSEXP, SEXP disSEXP, SEXP wnSEXP, SEXP clSEXP, SEXP nclustersSEXP) {
@@ -24,6 +40,23 @@ BEGIN_RCPP
     Rcpp::traits::input_parameter< const IntegerVector& >::type cl(clSEXP);
     Rcpp::traits::input_parameter< int >::type nclusters(nclustersSEXP);
     rcpp_result_gen = Rcpp::wrap(clust_moments_c(mu, mu_offs, dis, wn, cl, nclusters));
+    return rcpp_result_gen;
+END_RCPP
+}
+// cumul_fit_multi_c
+List cumul_fit_multi_c(arma::mat x, arma::mat w_all, int ncat, arma::vec offset, int link, double thresh, int maxit);
+RcppExport SEXP _projpred_cumul_fit_multi_c(SEXP xSEXP, SEXP w_allSEXP, SEXP ncatSEXP, SEXP offsetSEXP, SEXP linkSEXP, SEXP threshSEXP, SEXP maxitSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< arma::mat >::type x(xSEXP);
+    Rcpp::traits::input_parameter< arma::mat >::type w_all(w_allSEXP);
+    Rcpp::traits::input_parameter< int >::type ncat(ncatSEXP);
+    Rcpp::traits::input_parameter< arma::vec >::type offset(offsetSEXP);
+    Rcpp::traits::input_parameter< int >::type link(linkSEXP);
+    Rcpp::traits::input_parameter< double >::type thresh(threshSEXP);
+    Rcpp::traits::input_parameter< int >::type maxit(maxitSEXP);
+    rcpp_result_gen = Rcpp::wrap(cumul_fit_multi_c(x, w_all, ncat, offset, link, thresh, maxit));
     return rcpp_result_gen;
 END_RCPP
 }
@@ -72,11 +105,65 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
+// glm_ridge_native_c
+List glm_ridge_native_c(arma::mat x, arma::vec y, arma::vec weights, arma::vec offset, int family_code, int link_code, double lambda, bool intercept, arma::vec penalty, arma::vec beta_init, arma::vec w_init, double thresh, int qa_updates_max, int ls_iter_max, bool debug);
+RcppExport SEXP _projpred_glm_ridge_native_c(SEXP xSEXP, SEXP ySEXP, SEXP weightsSEXP, SEXP offsetSEXP, SEXP family_codeSEXP, SEXP link_codeSEXP, SEXP lambdaSEXP, SEXP interceptSEXP, SEXP penaltySEXP, SEXP beta_initSEXP, SEXP w_initSEXP, SEXP threshSEXP, SEXP qa_updates_maxSEXP, SEXP ls_iter_maxSEXP, SEXP debugSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< arma::mat >::type x(xSEXP);
+    Rcpp::traits::input_parameter< arma::vec >::type y(ySEXP);
+    Rcpp::traits::input_parameter< arma::vec >::type weights(weightsSEXP);
+    Rcpp::traits::input_parameter< arma::vec >::type offset(offsetSEXP);
+    Rcpp::traits::input_parameter< int >::type family_code(family_codeSEXP);
+    Rcpp::traits::input_parameter< int >::type link_code(link_codeSEXP);
+    Rcpp::traits::input_parameter< double >::type lambda(lambdaSEXP);
+    Rcpp::traits::input_parameter< bool >::type intercept(interceptSEXP);
+    Rcpp::traits::input_parameter< arma::vec >::type penalty(penaltySEXP);
+    Rcpp::traits::input_parameter< arma::vec >::type beta_init(beta_initSEXP);
+    Rcpp::traits::input_parameter< arma::vec >::type w_init(w_initSEXP);
+    Rcpp::traits::input_parameter< double >::type thresh(threshSEXP);
+    Rcpp::traits::input_parameter< int >::type qa_updates_max(qa_updates_maxSEXP);
+    Rcpp::traits::input_parameter< int >::type ls_iter_max(ls_iter_maxSEXP);
+    Rcpp::traits::input_parameter< bool >::type debug(debugSEXP);
+    rcpp_result_gen = Rcpp::wrap(glm_ridge_native_c(x, y, weights, offset, family_code, link_code, lambda, intercept, penalty, beta_init, w_init, thresh, qa_updates_max, ls_iter_max, debug));
+    return rcpp_result_gen;
+END_RCPP
+}
+// glm_ridge_native_multi_c
+List glm_ridge_native_multi_c(arma::mat x, arma::mat y, arma::vec weights, arma::vec offset, int family_code, int link_code, double lambda, bool intercept, arma::vec penalty, arma::vec beta_init, arma::vec w_init, double thresh, int qa_updates_max, int ls_iter_max, bool debug);
+RcppExport SEXP _projpred_glm_ridge_native_multi_c(SEXP xSEXP, SEXP ySEXP, SEXP weightsSEXP, SEXP offsetSEXP, SEXP family_codeSEXP, SEXP link_codeSEXP, SEXP lambdaSEXP, SEXP interceptSEXP, SEXP penaltySEXP, SEXP beta_initSEXP, SEXP w_initSEXP, SEXP threshSEXP, SEXP qa_updates_maxSEXP, SEXP ls_iter_maxSEXP, SEXP debugSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< arma::mat >::type x(xSEXP);
+    Rcpp::traits::input_parameter< arma::mat >::type y(ySEXP);
+    Rcpp::traits::input_parameter< arma::vec >::type weights(weightsSEXP);
+    Rcpp::traits::input_parameter< arma::vec >::type offset(offsetSEXP);
+    Rcpp::traits::input_parameter< int >::type family_code(family_codeSEXP);
+    Rcpp::traits::input_parameter< int >::type link_code(link_codeSEXP);
+    Rcpp::traits::input_parameter< double >::type lambda(lambdaSEXP);
+    Rcpp::traits::input_parameter< bool >::type intercept(interceptSEXP);
+    Rcpp::traits::input_parameter< arma::vec >::type penalty(penaltySEXP);
+    Rcpp::traits::input_parameter< arma::vec >::type beta_init(beta_initSEXP);
+    Rcpp::traits::input_parameter< arma::vec >::type w_init(w_initSEXP);
+    Rcpp::traits::input_parameter< double >::type thresh(threshSEXP);
+    Rcpp::traits::input_parameter< int >::type qa_updates_max(qa_updates_maxSEXP);
+    Rcpp::traits::input_parameter< int >::type ls_iter_max(ls_iter_maxSEXP);
+    Rcpp::traits::input_parameter< bool >::type debug(debugSEXP);
+    rcpp_result_gen = Rcpp::wrap(glm_ridge_native_multi_c(x, y, weights, offset, family_code, link_code, lambda, intercept, penalty, beta_init, w_init, thresh, qa_updates_max, ls_iter_max, debug));
+    return rcpp_result_gen;
+END_RCPP
+}
 
 static const R_CallMethodDef CallEntries[] = {
+    {"_projpred_categ_fit_multi_c", (DL_FUNC) &_projpred_categ_fit_multi_c, 6},
     {"_projpred_clust_moments_c", (DL_FUNC) &_projpred_clust_moments_c, 6},
+    {"_projpred_cumul_fit_multi_c", (DL_FUNC) &_projpred_cumul_fit_multi_c, 7},
     {"_projpred_glm_elnet_c", (DL_FUNC) &_projpred_glm_elnet_c, 14},
     {"_projpred_glm_ridge_c", (DL_FUNC) &_projpred_glm_ridge_c, 11},
+    {"_projpred_glm_ridge_native_c", (DL_FUNC) &_projpred_glm_ridge_native_c, 15},
+    {"_projpred_glm_ridge_native_multi_c", (DL_FUNC) &_projpred_glm_ridge_native_multi_c, 15},
     {NULL, NULL, 0}
 };
 

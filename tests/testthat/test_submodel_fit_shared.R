@@ -1,5 +1,3 @@
-context("shared model matrix and joint Gaussian solve for submodel fits")
-
 # Data with one response column per projected draw, as divmin() gets them, and
 # the draw-wise formulas. The formulas include a factor and an interaction.
 shared_fit_data <- function(n = 40, S = 5, seed = 4721) {
