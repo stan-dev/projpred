@@ -67,12 +67,13 @@ test_that("the projection cache does not change the results", {
   expect_gt(length(tstsetups), 0)
   for (tstsetup in tstsetups) {
     args_vs_i <- args_vs[[tstsetup]]
-    opts_old <- options(projpred.proj_cache = FALSE)
-    vs_nocache <- do.call(varsel, c(
-      list(object = refmods[[args_vs_i$tstsetup_ref]]),
-      excl_nonargs(args_vs_i)
-    ))
-    options(opts_old)
+    vs_nocache <- withr::with_options(
+      list(projpred.proj_cache = FALSE),
+      do.call(varsel, c(
+        list(object = refmods[[args_vs_i$tstsetup_ref]]),
+        excl_nonargs(args_vs_i)
+      ))
+    )
     expect_equal(vs_nocache, vss[[tstsetup]], info = tstsetup)
   }
   expect_identical(proj_cache$depth, 0L)
@@ -101,19 +102,14 @@ test_that("the projection cache does not change the results", {
         excl_nonargs(args_cvvs_i)
       )))
     }
-    # cvvs_call() with the global options `opts` (restored also after an
-    # error):
-    cvvs_call_opts <- function(opts) {
-      opts_old <- options(opts)
-      on.exit(options(opts_old))
-      cvvs_call()
-    }
     cvvs_cache <- cvvs_call()
-    cvvs_nocache <- cvvs_call_opts(list(projpred.proj_cache = FALSE))
+    cvvs_nocache <- withr::with_options(list(projpred.proj_cache = FALSE),
+                                        cvvs_call())
     expect_equal(cvvs_nocache, cvvs_cache, info = tstsetup)
     # Size limit 0: each new entry changes the generations of the cache, and
     # each hit in the `old` generation does so again:
-    cvvs_small <- cvvs_call_opts(list(projpred.proj_cache_mb = 0))
+    cvvs_small <- withr::with_options(list(projpred.proj_cache_mb = 0),
+                                      cvvs_call())
     expect_equal(cvvs_small, cvvs_cache, info = tstsetup)
   }
   expect_identical(proj_cache$depth, 0L)

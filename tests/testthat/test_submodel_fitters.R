@@ -1,5 +1,3 @@
-context("submodel fitters from other packages")
-
 # These tests run on CRAN on purpose, so that the reverse dependency checks of
 # lme4, MASS, nlme, mgcv, gamm4, ordinal and mclogit see changes in the
 # submodel fits that projpred needs. They call divmin() and divmin_augdat()
@@ -16,13 +14,9 @@ skip_if_lme4_rounds <- function() {
 
 # Data with `n_grp` groups of `n_per` observations. The linear predictor `eta`
 # has the group-level effects with standard deviation `sd_grp`.
-# An existing state of the random number generator is restored at the end.
+# The state of the random number generator is restored at the end.
 dat_fitters <- function(n_grp = 6, n_per = 8, sd_grp = 0.8, seed = 1) {
-  if (exists(".Random.seed", envir = globalenv())) {
-    seed_old <- get(".Random.seed", envir = globalenv())
-    on.exit(assign(".Random.seed", seed_old, envir = globalenv()))
-  }
-  set.seed(seed)
+  withr::local_seed(seed)
   n <- n_grp * n_per
   g <- factor(paste0("g", rep(seq_len(n_grp), each = n_per)))
   x <- rnorm(n)
@@ -175,7 +169,7 @@ test_that(paste(
 ), {
   skip_if_lme4_rounds()
   # A singular fit and a fit with theta > 0 (10 groups of 30 observations):
-  set.seed(11)
+  withr::local_seed(11)
   g <- factor(rep(1:10, each = 30))
   x <- rnorm(300)
   d_theta <- data.frame(y = plogis(-0.3 + 0.8 * x + rnorm(10, sd = 1.5)[g]),
@@ -211,7 +205,7 @@ test_that(paste(
   "group-level standard deviation"
 ), {
   skip_if_lme4_rounds()
-  set.seed(4)
+  withr::local_seed(4)
   g <- factor(rep(seq_len(8), each = 6))
   x <- rnorm(48)
   b <- rnorm(8, sd = 0.8)
@@ -331,10 +325,9 @@ test_that(paste(
   d <- dat_fitters()
   d$y_gauss <- d$eta
   fit_lmer <- lme4::lmer(y_gauss ~ x + (1 | g), data = d, REML = FALSE)
-  opts_old <- options(projpred.PQL = TRUE)
-  fit_pql <- tryCatch(
-    divmin_tst("x + (1 | g)", d, extend_family(gaussian()), d$eta)[[1]],
-    finally = options(opts_old)
+  fit_pql <- withr::with_options(
+    list(projpred.PQL = TRUE),
+    divmin_tst("x + (1 | g)", d, extend_family(gaussian()), d$eta)[[1]]
   )
   expect_s3_class(fit_pql, "glmmPQL")
   # The differences are about 1e-11:
@@ -347,19 +340,17 @@ test_that(paste(
 ), {
   skip_if_not_installed("nlme")
   d <- dat_fitters()
-  opts_old <- options(projpred.PQL = TRUE)
-  tryCatch({
-    for (fam in list(gaussian(), binomial(), poisson())) {
-      mu <- fam$linkinv(cbind(d$eta, d$eta + 0.3 * d$z))
-      expect_no_warning(
-        fits <- with_r_printing(
-          divmin_tst("x + (1 | g)", d, extend_family(fam), mu,
-                     throw_warn = TRUE, check_conv = TRUE)
-        )
+  withr::local_options(projpred.PQL = TRUE)
+  for (fam in list(gaussian(), binomial(), poisson())) {
+    mu <- fam$linkinv(cbind(d$eta, d$eta + 0.3 * d$z))
+    expect_no_warning(
+      fits <- with_r_printing(
+        divmin_tst("x + (1 | g)", d, extend_family(fam), mu,
+                   throw_warn = TRUE, check_conv = TRUE)
       )
-      expect_length(fits, 2)
-    }
-  }, finally = options(opts_old))
+    )
+    expect_length(fits, 2)
+  }
 })
 
 # gamm4::gamm4() ----------------------------------------------------------
