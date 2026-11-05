@@ -130,11 +130,14 @@ divmin <- function(
   }
   # The draw-wise formulas of a non-multilevel non-additive submodel differ only
   # in the response, so fit_glm_ridge_callback() can use one model matrix for
-  # all draws (and the joint Gaussian solve can fit them, also for a single
-  # draw):
+  # all draws (and divmin_multi() can fit them, also for a single draw). For
+  # the monotonic projection of mo() terms, divmin_multi() gives the
+  # unconstrained fits, and the draws whose fit is not monotonic are fitted
+  # again below. The messages of each draw come from the fit that is kept.
   # The draws to fit below (all, except after divmin_multi()):
   draws_todo <- seq_along(formulas)
   outdmin_pre <- NULL
+  mssgs_warns_capts_pre <- NULL
   if (identical(sdivmin, fit_glm_ridge_callback) && length(formulas) >= 1) {
     shared_x <- shared_model_matrix(formulas, data = list(...)$data,
                                     mo_groups = !is.null(projpred_mo_signs))
@@ -142,11 +145,15 @@ divmin <- function(
       outdmin <- divmin_multi(formulas, shared_x = shared_x,
                               dot_args = list(...),
                               throw_warn_sdivmin = throw_warn_sdivmin,
-                              do_check_conv = do_check_conv)
+                              do_check_conv = do_check_conv,
+                              report = is.null(projpred_mo_signs))
       if (!is.null(outdmin)) {
         if (is.null(projpred_mo_signs)) {
           return(outdmin)
         }
+        mssgs_warns_capts_pre <- attr(outdmin, "mssgs_warns_capts") %||%
+          rep(list(character()), length(outdmin))
+        attr(outdmin, "mssgs_warns_capts") <- NULL
         # Monotonic projection of mo() terms: fit those draws again (below)
         # whose unconstrained solution is not monotonic:
         scale_x <- mo_col_scale(shared_x$x, weights = list(...)$weights)
@@ -155,6 +162,13 @@ divmin <- function(
                      scale = scale_x)
         }, logical(1)))
         if (length(draws_todo) == 0) {
+          # As in divmin_multi():
+          warn_prj_drawwise(mssgs_warns_capts_pre,
+                            throw_warn = throw_warn_sdivmin)
+          if (any(lengths(mssgs_warns_capts_pre) > 0)) {
+            check_conv(outdmin, lengths(mssgs_warns_capts_pre),
+                       do_check = do_check_conv)
+          }
           return(outdmin)
         }
         outdmin_pre <- outdmin
@@ -284,7 +298,6 @@ divmin <- function(
     # Insert the constrained fits into the fits of divmin_multi():
     outdmin_pre[draws_todo] <- outdmin
     outdmin <- outdmin_pre
-    mssgs_warns_capts_pre <- rep(list(character()), length(outdmin))
     mssgs_warns_capts_pre[draws_todo] <- mssgs_warns_capts
     mssgs_warns_capts <- mssgs_warns_capts_pre
   }
@@ -939,9 +952,10 @@ glm_ridge_callback_shared <- function(shared_x) {
 # shared model matrix `shared_x`: glm_ridge_gauss_multi() and
 # glm_ridge_native_multi(). `y` (optional) is the matrix of the draw-wise
 # responses (otherwise taken from `dot_args$data`). Returns `NULL` if neither
-# fitter covers the case.
+# fitter covers the case. With `report = FALSE`, the messages of the draws are
+# not reported but kept in attribute `mssgs_warns_capts` (if any).
 divmin_multi <- function(formulas, shared_x, dot_args, throw_warn_sdivmin,
-                         do_check_conv, y = NULL) {
+                         do_check_conv, y = NULL, report = TRUE) {
   # Gaussian submodels with the identity link: one solve for all draws (this
   # fitter cannot throw messages or warnings in this case):
   outdmin <- glm_ridge_gauss_multi(formulas, shared_x = shared_x,
@@ -953,6 +967,9 @@ divmin_multi <- function(formulas, shared_x, dot_args, throw_warn_sdivmin,
   outdmin <- glm_ridge_native_multi(formulas, shared_x = shared_x,
                                     dot_args = dot_args, y = y)
   if (!is.null(outdmin)) {
+    if (!report) {
+      return(outdmin)
+    }
     mssgs_warns_capts <- attr(outdmin, "mssgs_warns_capts")
     attr(outdmin, "mssgs_warns_capts") <- NULL
     warn_prj_drawwise(mssgs_warns_capts, throw_warn = throw_warn_sdivmin)

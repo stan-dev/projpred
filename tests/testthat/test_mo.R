@@ -808,6 +808,71 @@ test_that(paste(
 })
 
 test_that(paste(
+  "divmin() with sign constraints uses the native fits of all draws, fits the",
+  "binding draws again and reports the messages of each draw once"
+), {
+  cols_x <- paste0("mo(x)", 1:4)
+  refm <- mo_nonmono_refm(binomial(), fml = y ~ mo(x) + z + w, c_w = 1)
+  S <- ncol(refm$mu)
+  dat <- refm$fetch_data()
+  n <- nrow(dat)
+  y_nms <- paste0(".y.", seq_len(S))
+  dat[y_nms] <- as.data.frame(refm$mu)
+  fml <- mo_formula_env(as.formula(paste0(
+    "cbind(", paste(y_nms, collapse = ", "), ") ~ mo(x) + z"
+  )))
+  signs <- matrix(1, S, 1, dimnames = list(NULL, "mo(x)#"))
+  # The calls of divmin_multi() (argument `report`, and whether it gave fits)
+  # and of warn_prj_drawwise() (the draws with messages):
+  calls_multi <- list()
+  calls_warn <- list()
+  divmin_multi_orig <- divmin_multi
+  warn_prj_drawwise_orig <- warn_prj_drawwise
+  divmin_rec <- function(...) {
+    calls_multi <<- list()
+    calls_warn <<- list()
+    with_mocked_bindings(
+      divmin(formula = fml, data = dat, family = refm$family,
+             weights = refm$wobs, projpred_var = matrix(NA, n, S),
+             projpred_ws_aug = matrix(NA, n, S), verbose_divmin = FALSE,
+             projpred_mo_signs = signs, ...),
+      divmin_multi = function(..., report = TRUE) {
+        out <- divmin_multi_orig(..., report = report)
+        calls_multi[[length(calls_multi) + 1]] <<-
+          list(report = report, fits = !is.null(out))
+        return(out)
+      },
+      warn_prj_drawwise = function(mssgs_warns_capts, throw_warn = TRUE) {
+        calls_warn[[length(calls_warn) + 1]] <<-
+          lengths(mssgs_warns_capts) > 0
+        warn_prj_drawwise_orig(mssgs_warns_capts, throw_warn = throw_warn)
+      }
+    )
+  }
+  fits <- divmin_rec(thresh_conv = 1e-12)
+  expect_identical(calls_multi, list(list(report = FALSE, fits = TRUE)))
+  b <- do.call(rbind, lapply(fits, function(f) drop(f$beta)))
+  expect_true(all(is_mono(b[, cols_x])))
+  # Without the native fitters:
+  opts_old <- options(projpred.glm_native = FALSE)
+  on.exit(options(opts_old), add = TRUE)
+  fits_r <- divmin_rec(thresh_conv = 1e-12)
+  options(opts_old)
+  expect_identical(calls_multi, list(list(report = FALSE, fits = FALSE)))
+  b_r <- do.call(rbind, lapply(fits_r, function(f) drop(f$beta)))
+  expect_equal(b, b_r, tolerance = 1e-10)
+  expect_equal(vapply(fits, "[[", numeric(1), "alpha"),
+               vapply(fits_r, "[[", numeric(1), "alpha"), tolerance = 1e-10)
+  # With too few iterations, all draws have messages. The binding draws must
+  # not report the messages of the native fit in addition to those of the
+  # constrained fit:
+  expect_warning(divmin_rec(qa_updates_max = 2),
+                 "maximum number of quadratic approximation updates")
+  expect_length(calls_warn, 1)
+  expect_true(all(calls_warn[[1]]))
+})
+
+test_that(paste(
   "mo_cons_signs() takes the signs of the full model and otherwise the sign",
   "of the sum of the coefficients"
 ), {
