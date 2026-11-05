@@ -123,6 +123,19 @@
   if two predictor terms have the same text before or after a `+` inside
   a call, such as `log(p + 1)` and `log(q + 1)`. (GitHub:
   [\#595](https://github.com/stan-dev/projpred/issues/595))
+- Filter the warning “non-integer response values in a poisson model” of
+  lme4 (\>= 2.1-1), which every projection onto a Poisson submodel with
+  group-level terms would give. (GitHub:
+  [\#585](https://github.com/stan-dev/projpred/issues/585))
+- With `options(projpred.PQL = TRUE)`, remove the warnings that every
+  projection gave: the “iteration” messages of
+  [`MASS::glmmPQL()`](https://rdrr.io/pkg/MASS/man/glmmPQL.html), the
+  warnings about non-integer Poisson responses, and “Unrecognized
+  submodel fit” in the convergence check. (GitHub:
+  [\#585](https://github.com/stan-dev/projpred/issues/585))
+- Tests: Add tests that run on CRAN for the submodel fitters from lme4,
+  MASS, gamm4, ordinal and mclogit. (GitHub:
+  [\#585](https://github.com/stan-dev/projpred/issues/585))
 
 ## projpred 2.11.0
 

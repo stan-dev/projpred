@@ -87,6 +87,9 @@
 <li>Fixed the error <code>solve(): solution not found</code> (and possible wrong fits) when a predictor of a GLM submodel is constant over the observations with nonzero weight, e.g., a rare binary predictor in a CV fold. Such a predictor now gets the coefficient 0. (GitHub: <a href="https://github.com/stan-dev/projpred/issues/589" class="external-link">#589</a>)</li>
 <li>Fixed inexact Gaussian submodel fits (identity link, also in the latent projection). (GitHub: <a href="https://github.com/stan-dev/projpred/issues/593" class="external-link">#593</a>)</li>
 <li>Fixed a parse error in <code><a href="../reference/varsel.html">varsel()</a></code> and <code><a href="../reference/cv_varsel.html">cv_varsel()</a></code> if two predictor terms have the same text before or after a <code>+</code> inside a call, such as <code>log(p + 1)</code> and <code>log(q + 1)</code>. (GitHub: <a href="https://github.com/stan-dev/projpred/issues/595" class="external-link">#595</a>)</li>
+<li>Filter the warning “non-integer response values in a poisson model” of lme4 (&gt;= 2.1-1), which every projection onto a Poisson submodel with group-level terms would give. (GitHub: <a href="https://github.com/stan-dev/projpred/issues/585" class="external-link">#585</a>)</li>
+<li>With <code>options(projpred.PQL = TRUE)</code>, remove the warnings that every projection gave: the “iteration” messages of <code><a href="https://rdrr.io/pkg/MASS/man/glmmPQL.html" class="external-link">MASS::glmmPQL()</a></code>, the warnings about non-integer Poisson responses, and “Unrecognized submodel fit” in the convergence check. (GitHub: <a href="https://github.com/stan-dev/projpred/issues/585" class="external-link">#585</a>)</li>
+<li>Tests: Add tests that run on CRAN for the submodel fitters from lme4, MASS, gamm4, ordinal and mclogit. (GitHub: <a href="https://github.com/stan-dev/projpred/issues/585" class="external-link">#585</a>)</li>
 </ul></div>
 </div>
     <div class="section level2">
