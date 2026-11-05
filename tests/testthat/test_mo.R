@@ -832,10 +832,12 @@ test_that(paste(
     calls_multi <<- list()
     calls_warn <<- list()
     with_mocked_bindings(
+      # (`throw_warn_sdivmin = TRUE`, because setup.R turns these warnings
+      # off with a global option.)
       divmin(formula = fml, data = dat, family = refm$family,
              weights = refm$wobs, projpred_var = matrix(NA, n, S),
              projpred_ws_aug = matrix(NA, n, S), verbose_divmin = FALSE,
-             projpred_mo_signs = signs, ...),
+             projpred_mo_signs = signs, throw_warn_sdivmin = TRUE, ...),
       divmin_multi = function(..., report = TRUE) {
         out <- divmin_multi_orig(..., report = report)
         calls_multi[[length(calls_multi) + 1]] <<-
