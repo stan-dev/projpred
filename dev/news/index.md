@@ -56,6 +56,28 @@
   about 2 times faster. (GitHub:
   [\#592](https://github.com/stan-dev/projpred/issues/592))
 
+- Faster projections onto ordinal submodels without group-level terms
+  ([`brms::cumulative()`](https://paulbuerkner.com/brms/reference/brmsfamily.html),
+  [`rstanarm::stan_polr()`](https://mc-stan.org/rstanarm/reference/stan_polr.html)):
+  one C++ call fits all projected draws, with results equal to those of
+  [`MASS::polr()`](https://rdrr.io/pkg/MASS/man/polr.html) up to its
+  convergence tolerance. For example,
+  [`cv_varsel()`](https://mc-stan.org/projpred/dev/reference/cv_varsel.md)
+  with `validate_search = TRUE` is about 23 times faster for a model
+  with 6 categories. (GitHub:
+  [\#583](https://github.com/stan-dev/projpred/issues/583))
+
+- Faster projections onto categorical submodels without group-level
+  terms
+  ([`brms::categorical()`](https://paulbuerkner.com/brms/reference/brmsfamily.html)):
+  one C++ call fits all projected draws, with results equal to those of
+  [`nnet::multinom()`](https://rdrr.io/pkg/nnet/man/multinom.html) up to
+  its convergence tolerance. For example,
+  [`cv_varsel()`](https://mc-stan.org/projpred/dev/reference/cv_varsel.md)
+  with `validate_search = TRUE` is about 8 times faster for a model with
+  4 categories. (GitHub:
+  [\#583](https://github.com/stan-dev/projpred/issues/583))
+
 - Faster projections onto binomial and Poisson GLM submodels (and
   Gaussian GLM submodels with a non-identity link): the IRLS fits
   compute their pseudo-observations in C++, and one C++ call fits all
