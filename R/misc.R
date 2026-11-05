@@ -444,7 +444,8 @@ get_p_clust <- function(family, eta, mu, mu_offs, dis, nclusters = 10,
   }
 
   # (Re)compute the cluster centers, because they may be different from the ones
-  # returned by kmeans() if the draws have differing weights.
+  # returned by kmeans() if the draws have differing weights. `cl` has one
+  # element per draw (column of `mu`).
   # Number of clusters (assumes labeling "1, ..., nclusters"):
   nclusters <- max(cl, na.rm = TRUE)
   # Draw indices of each cluster (one pass over `cl`; draws with `cl` `NA` are

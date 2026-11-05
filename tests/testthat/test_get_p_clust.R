@@ -1,4 +1,4 @@
-context("get_p_clust() with given clusters")
+withr::local_seed(6130)
 
 # The cluster loop of get_p_clust() for given cluster indices `cl` (the
 # reference for the computation of all clusters at once):
@@ -24,7 +24,7 @@ p_clust_loop <- function(family, mu, mu_offs, dis, wdraws, cl) {
 }
 
 p_clust_inputs <- function(family, n = 23, S = 40, seed = 6129) {
-  set.seed(seed)
+  withr::local_seed(seed)
   eta <- matrix(rnorm(n * S), n, S)
   mu <- family$linkinv(eta)
   dis <- if (family$family %in% c("gaussian", "Student_t")) {
@@ -51,8 +51,13 @@ expect_p_clust_loop <- function(family, inp, cl, wdraws = inp$wdraws,
     if (one_draw) {
       expect_identical(unclass(out[[el]]), ref[[el]], info = paste(info, el))
     } else {
-      expect_equal(unclass(out[[el]]), ref[[el]], tolerance = 1e-12,
-                   info = paste(info, el))
+      # Arithmetic on NA can give NaN on some platforms, so compare the
+      # positions of NA and NaN first:
+      out_el <- unclass(out[[el]])
+      ref_el <- ref[[el]]
+      expect_equal(is.na(out_el), is.na(ref_el), info = paste(info, el, "NA"))
+      expect_equal(out_el[!is.na(out_el)], ref_el[!is.na(ref_el)],
+                   tolerance = 1e-12, info = paste(info, el))
     }
   }
 }
@@ -130,6 +135,18 @@ test_that(paste(
       expect_p_clust_loop(fam_none, inp, cl = cl, wdraws = w, info = "none")
     }
   }
+})
+
+test_that("the built-in families give get_p_clust() its predvar_mix() path", {
+  fams <- list(extend_family(gaussian()), extend_family(Student_t(nu = 4)),
+               extend_family(binomial()), extend_family(poisson()),
+               extend_family(binomial(), latent = TRUE))
+  for (fam in fams) {
+    expect_true(is.function(fam$predvar_mix), info = fam$family)
+    expect_identical(fam$predvar, attr(fam$predvar_mix, "predvar"),
+                     info = fam$family)
+  }
+  expect_null(extend_family(Gamma())$predvar_mix)
 })
 
 test_that("clust_moments_c() checks its inputs", {
