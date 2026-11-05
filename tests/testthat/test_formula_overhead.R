@@ -1,5 +1,3 @@
-context("formula and model-matrix shortcuts of the projections")
-
 test_that(paste(
   "validate_response_formula() gives the same formulas as one update() per",
   "response"

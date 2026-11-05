@@ -285,6 +285,23 @@ for one observation. Note that although argument \code{wdraws_ref} has the suffi
 reference model's posterior draws: In case of \code{\link[=cv_varsel]{cv_varsel()}} with \code{cv_method = "kfold"}, these weights may refer to one of the \eqn{K} reference model
 refits (but in that case, they are constant anyway).
 
+In \code{\link[=cv_varsel]{cv_varsel()}} with \code{cv_method = "kfold"}, the reference model objects of
+the \eqn{K} folds are created by the \code{cvrefbuilder} function (see
+\code{\link[=init_refmodel]{init_refmodel()}}). The \code{cvrefbuilder} functions of \code{\link[=get_refmodel.stanreg]{get_refmodel.stanreg()}}
+and \code{\link[brms:get_refmodel.brmsfit]{brms::get_refmodel.brmsfit()}} pass user-supplied functions
+\code{latent_ilink}, \code{latent_ll_oscale}, and \code{latent_ppd_oscale} (and a
+user-supplied argument \code{dis}, see \code{\link[=init_refmodel]{init_refmodel()}}) unchanged to the
+fold-wise reference model objects. If these functions take reference model
+draws from their enclosing environment (e.g., draws of a shape parameter),
+or if \code{dis} contains such draws, then the folds use the draws from the
+full-data fit. To use the draws from the fold-wise refits, define the
+functions (and compute \code{dis}) inside a function that takes the fitted model
+object as its argument and calls \code{\link[=get_refmodel]{get_refmodel()}}. Then set element
+\code{cvrefbuilder} of the reference model object to a function that calls this
+outer function with the fold-wise refit. (Methods \code{\link[=get_refmodel.stanreg]{get_refmodel.stanreg()}}
+and \code{\link[brms:get_refmodel.brmsfit]{brms::get_refmodel.brmsfit()}} do not accept a \code{cvrefbuilder} argument.)
+The latent-projection vignette shows an example.
+
 If \code{family$cats} is not \code{NULL} (after taking \code{latent_y_unqs} into account),
 then the response vector resulting from \code{extract_model_data} (see
 \code{\link[=init_refmodel]{init_refmodel()}}) is coerced to a \code{factor} (using \code{\link[=as.factor]{as.factor()}}) at multiple

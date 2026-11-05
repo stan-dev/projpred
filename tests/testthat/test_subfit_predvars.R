@@ -1,5 +1,3 @@
-context("submodel predictions for new data with data-dependent bases")
-
 # A Gaussian reference model with a term that has a data-dependent basis (default
 # poly()) and simulated draws of the coefficients. Its predictions for new data
 # use the terms of the training model frame (with "predvars"), so the reference

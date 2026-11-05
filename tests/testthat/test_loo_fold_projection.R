@@ -1,5 +1,3 @@
-context("validated LOO: fold projections")
-
 # A Gaussian reference model with fixed draws and more predictors than
 # observations, so that submodels with at least n - 1 terms can interpolate
 # the reference predictions at the observations used in the projection.
