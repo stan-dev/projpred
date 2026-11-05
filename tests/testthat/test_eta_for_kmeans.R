@@ -1,5 +1,3 @@
-context("eta_for_kmeans()")
-
 test_that(paste(
   "eta_for_kmeans() reduces low-rank draws and keeps their distances and the",
   "k-means clustering"

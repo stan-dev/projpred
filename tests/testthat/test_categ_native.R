@@ -1,12 +1,4 @@
-context("categ_native")
-
-# Needed to clean up the workspace afterwards (i.e, after this test file):
-ls_bu <- ls()
-
-if (exists(".Random.seed", envir = .GlobalEnv)) {
-  rng_old <- get(".Random.seed", envir = .GlobalEnv)
-}
-set.seed(24680)
+withr::local_seed(24680)
 n_ca <- 150
 ncat_ca <- 4
 dat_ca <- data.frame(a = rnorm(n_ca), b = rnorm(n_ca),
@@ -81,10 +73,11 @@ test_that("categ_native_multi() returns usable `multinom` objects", {
   # Cases that use fit_categ() per draw:
   expect_null(categ_native_multi(y ~ a, data = daug, family = fam,
                                  ws_aug = ws, dot_args = list(Hess = TRUE)))
-  opts_old <- options(projpred.augdat_native = FALSE)
-  expect_null(categ_native_multi(y ~ a, data = daug, family = fam,
-                                 ws_aug = ws, dot_args = list()))
-  options(opts_old)
+  expect_null(withr::with_options(
+    list(projpred.augdat_native = FALSE),
+    categ_native_multi(y ~ a, data = daug, family = fam, ws_aug = ws,
+                       dot_args = list())
+  ))
   expect_null(categ_native_multi(y ~ a, data = daug[c(2:nrow(daug), 1), ],
                                  family = fam, ws_aug = ws, dot_args = list()))
 })
@@ -120,7 +113,3 @@ test_that("the native multinomial-logit fits handle non-finite input", {
   expect_null(categ_native_multi(y ~ a + b, data = daug, family = fam,
                                  ws_aug = as.vector(w), dot_args = list()))
 })
-
-if (exists("rng_old")) assign(".Random.seed", rng_old, envir = .GlobalEnv)
-# Clean up the workspace:
-rm(list = setdiff(ls(), ls_bu))

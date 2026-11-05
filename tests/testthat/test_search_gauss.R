@@ -1,5 +1,3 @@
-context("forward search from cross-products for Gaussian submodels")
-
 # A Gaussian reference model with simulated draws of the coefficients (no model
 # fit is necessary). `fml` gives the predictor terms.
 refm_search_gauss <- function(fml, n = 80, ndraws = 200, seed = 6283,

@@ -1,12 +1,4 @@
-context("augdat_predict")
-
-# Needed to clean up the workspace afterwards (i.e, after this test file):
-ls_bu <- ls()
-
-if (exists(".Random.seed", envir = .GlobalEnv)) {
-  rng_old <- get(".Random.seed", envir = .GlobalEnv)
-}
-set.seed(97531)
+withr::local_seed(97531)
 n_ap <- 120
 dat_ap <- data.frame(a = rnorm(n_ap), b = rnorm(n_ap),
                      f = factor(sample(c("u", "v", "w"), n_ap, replace = TRUE)))
@@ -109,7 +101,3 @@ test_that("`ce_ptwise` of the augmented-data families sums over the categories",
     ce_expected
   )
 })
-
-if (exists("rng_old")) assign(".Random.seed", rng_old, envir = .GlobalEnv)
-# Clean up the workspace:
-rm(list = setdiff(ls(), ls_bu))

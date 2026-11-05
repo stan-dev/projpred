@@ -1,12 +1,4 @@
-context("cumul_native")
-
-# Needed to clean up the workspace afterwards (i.e, after this test file):
-ls_bu <- ls()
-
-if (exists(".Random.seed", envir = .GlobalEnv)) {
-  rng_old <- get(".Random.seed", envir = .GlobalEnv)
-}
-set.seed(8642)
+withr::local_seed(8642)
 n_cn <- 200
 ncat_cn <- 4
 x_cn <- matrix(rnorm(n_cn * 3), n_cn, 3, dimnames = list(NULL, c("a", "b", "c")))
@@ -114,10 +106,11 @@ test_that("cumul_native_multi() returns usable `polr` objects", {
   # Cases that use fit_cumul() per draw:
   expect_null(cumul_native_multi(y ~ a + b, data = daug, family = fam,
                                  ws_aug = ws, dot_args = list(Hess = TRUE)))
-  opts_old <- options(projpred.augdat_native = FALSE)
-  expect_null(cumul_native_multi(y ~ a + b, data = daug, family = fam,
-                                 ws_aug = ws, dot_args = list()))
-  options(opts_old)
+  expect_null(withr::with_options(
+    list(projpred.augdat_native = FALSE),
+    cumul_native_multi(y ~ a + b, data = daug, family = fam,
+                       ws_aug = ws, dot_args = list())
+  ))
   daug_perm <- daug[c(2:nrow(daug), 1), ]
   expect_null(cumul_native_multi(y ~ a + b, data = daug_perm, family = fam,
                                  ws_aug = ws, dot_args = list()))
@@ -175,7 +168,3 @@ test_that("the native cumulative-link fits handle non-finite input", {
                                  ws_aug = replace(as.vector(w), 3, Inf),
                                  dot_args = list()))
 })
-
-if (exists("rng_old")) assign(".Random.seed", rng_old, envir = .GlobalEnv)
-# Clean up the workspace:
-rm(list = setdiff(ls(), ls_bu))
