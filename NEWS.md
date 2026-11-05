@@ -14,12 +14,12 @@ If you read this from a place other than <https://mc-stan.org/projpred/news/inde
 * Faster computation of the predictive variance of the reference model for the Gaussian and Student-t families. This matters for a large number of observations and many projected draws. For example, `project()` with 10 000 observations and 4 000 projected draws is about 7 times faster. (GitHub: #575)
 * Faster `lme4::glmer()` submodel fits: projpred now uses BOBYQA in both optimization stages, which changes the fits only within the optimizer tolerance. For example, `varsel()` for a Bernoulli model with 300 observations and two grouping factors is about 2 times faster. (GitHub: #592)
 * Faster projections onto ordinal submodels without group-level terms (`brms::cumulative()`, `rstanarm::stan_polr()`): one C++ call fits all projected draws, with results equal to those of `MASS::polr()` up to its convergence tolerance. For example, `cv_varsel()` with `validate_search = TRUE` is about 23 times faster for a model with 6 categories. (GitHub: #583)
-
 * Faster projections onto categorical submodels without group-level terms (`brms::categorical()`): one C++ call fits all projected draws, with results equal to those of `nnet::multinom()` up to its convergence tolerance. For example, `cv_varsel()` with `validate_search = TRUE` is about 8 times faster for a model with 4 categories. (GitHub: #583)
-
 * Faster projections onto binomial and Poisson GLM submodels (and Gaussian GLM submodels with a non-identity link): the IRLS fits compute their pseudo-observations in C++, and one C++ call fits all projected draws (or clusters). For example, `cv_varsel()` with `validate_search = TRUE` for binomial and Poisson models is about 4 to 6 times faster. (GitHub: #581)
-
 * `varsel()`, `cv_varsel()` and `project()` cache the submodel formulas and model matrices per set of predictor terms, so the folds of `cv_varsel()` with `validate_search = TRUE` do not build them again. For example, `cv_varsel()` with `validate_search = TRUE` for binomial and Poisson models is about 1.3 to 1.7 times faster. Global option `projpred.proj_cache_mb` (default 512) limits the size of the cache. (GitHub: #582)
+* Faster predictions of multilevel submodels (`lme4::lmer()`, `lme4::glmer()`) for data without new group levels, for example the training data: one model matrix and one random-effects design serve all projected draws. (GitHub: #584)
+* Faster projections onto Gaussian multilevel submodels (`lme4::lmer()`): all projected draws share one `lme4::lFormula()` result. Together with the faster predictions above, `cv_varsel()` with `validate_search = TRUE` for a Gaussian multilevel model is about 3 times faster. (GitHub: #584)
+* Faster projections onto additive submodels without group-level terms (`mgcv::gam()`): all projected draws share one setup of `mgcv::gam()`, and one linear-predictor matrix gives the predictions of all draws. For example, `varsel()` for an additive model is about 1.5 times faster. (GitHub: #584)
 
 ## Minor changes
 
