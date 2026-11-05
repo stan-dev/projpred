@@ -17,6 +17,10 @@ If you read this from a place other than <https://mc-stan.org/projpred/news/inde
 * Faster projections onto Gaussian multilevel submodels (`lme4::lmer()`): all projected draws share one `lme4::lFormula()` result. Together with the faster predictions above, `cv_varsel()` with `validate_search = TRUE` for a Gaussian multilevel model is about 3 times faster. (GitHub: #584)
 * Faster projections onto additive submodels without group-level terms (`mgcv::gam()`): all projected draws share one setup of `mgcv::gam()`, and one linear-predictor matrix gives the predictions of all draws. For example, `varsel()` for an additive model is about 1.5 times faster. (GitHub: #584)
 
+* Faster projections onto binomial and Poisson GLM submodels (and Gaussian GLM submodels with a non-identity link): the IRLS fits compute their pseudo-observations in C++, and one C++ call fits all projected draws (or clusters). For example, `cv_varsel()` with `validate_search = TRUE` for binomial and Poisson models is about 4 to 6 times faster. (GitHub: #581)
+
+* `varsel()`, `cv_varsel()` and `project()` cache the submodel formulas and model matrices per set of predictor terms, so the folds of `cv_varsel()` with `validate_search = TRUE` do not build them again. For example, `cv_varsel()` with `validate_search = TRUE` for binomial and Poisson models is about 1.3 to 1.7 times faster. Global option `projpred.proj_cache_mb` (default 512) limits the size of the cache. (GitHub: #582)
+
 ## Minor changes
 
 ## Bug fixes and maintenance
@@ -27,6 +31,9 @@ If you read this from a place other than <https://mc-stan.org/projpred/news/inde
 * Fixed the error `solve(): solution not found` (and possible wrong fits) when a predictor of a GLM submodel is constant over the observations with nonzero weight, e.g., a rare binary predictor in a CV fold. Such a predictor now gets the coefficient 0. (GitHub: #589)
 * Fixed inexact Gaussian submodel fits (identity link, also in the latent projection). (GitHub: #593)
 * Fixed a parse error in `varsel()` and `cv_varsel()` if two predictor terms have the same text before or after a `+` inside a call, such as `log(p + 1)` and `log(q + 1)`. (GitHub: #595)
+* Filter the warning "non-integer response values in a poisson model" of lme4 (>= 2.1-1), which every projection onto a Poisson submodel with group-level terms would give. (GitHub: #585)
+* With `options(projpred.PQL = TRUE)`, remove the warnings that every projection gave: the "iteration" messages of `MASS::glmmPQL()`, the warnings about non-integer Poisson responses, and "Unrecognized submodel fit" in the convergence check. (GitHub: #585)
+* Tests: Add tests that run on CRAN for the submodel fitters from lme4, MASS, gamm4, ordinal and mclogit. (GitHub: #585)
 
 
 # projpred 2.11.0

@@ -94,6 +94,14 @@ divmin <- function(
       rep(projpred_formulas_no_random, length(formulas))
     )
   }
+  # projpred's own GLM fitter throws only R conditions, so its messages and
+  # warnings can be collected by condition handlers, which is faster than
+  # diverting the message stream. Other fitters keep capt_mssgs_warns():
+  if (identical(sdivmin, fit_glm_ridge_callback)) {
+    capt_fun <- capt_conds
+  } else {
+    capt_fun <- capt_mssgs_warns
+  }
   # The draw-wise formulas of a non-multilevel non-additive submodel differ only
   # in the response, so fit_glm_ridge_callback() can use one model matrix for
   # all draws (and the joint Gaussian solve can fit them, also for a single
@@ -101,10 +109,10 @@ divmin <- function(
   if (identical(sdivmin, fit_glm_ridge_callback) && length(formulas) >= 1) {
     shared_x <- shared_model_matrix(formulas, data = list(...)$data)
     if (!is.null(shared_x)) {
-      # Gaussian submodels with the identity link: one solve for all draws
-      # (this fitter cannot throw messages or warnings in this case):
-      outdmin <- glm_ridge_gauss_multi(formulas, shared_x = shared_x,
-                                       dot_args = list(...))
+      outdmin <- divmin_multi(formulas, shared_x = shared_x,
+                              dot_args = list(...),
+                              throw_warn_sdivmin = throw_warn_sdivmin,
+                              do_check_conv = do_check_conv)
       if (!is.null(outdmin)) {
         return(outdmin)
       }
@@ -160,7 +168,7 @@ divmin <- function(
       if (verbose_divmin) {
         on.exit(utils::setTxtProgressBar(pb, s))
       }
-      mssgs_warns_capt <- capt_mssgs_warns(
+      mssgs_warns_capt <- capt_fun(
         soutdmin <- do.call(sdivmin, c(
           list(formula = formulas[[s]],
                projpred_var = projpred_var[, s, drop = FALSE],
@@ -190,7 +198,8 @@ divmin <- function(
       projpred_var_s = iterators::iter(projpred_var, by = "column"),
       projpred_formula_no_random_s = projpred_formulas_no_random,
       .packages = c("projpred"),
-      .export = c("sdivmin", "projpred_random", "dot_args", "progressor_obj"),
+      .export = c("sdivmin", "projpred_random", "dot_args", "progressor_obj",
+                  "capt_fun"),
       .noexport = c(
         "object", "p_sel", "search_path", "p_ref", "refmodel", "formulas",
         "projpred_var", "projpred_ws_aug", "projpred_formulas_no_random"
@@ -198,7 +207,7 @@ divmin <- function(
       .errorhandling = getOption("projpred.foreach_errorhandling", "stop"),
       .verbose = getOption("projpred.foreach_verbose", FALSE)
     ) %do_projpred% {
-      mssgs_warns_capt <- capt_mssgs_warns(
+      mssgs_warns_capt <- capt_fun(
         soutdmin <- do.call(
           sdivmin,
           c(list(formula = formula_s,
@@ -214,12 +223,7 @@ divmin <- function(
   }
   mssgs_warns_capts <- lapply(outdmin, "[[", "mssgs_warns_capt")
   outdmin <- lapply(outdmin, "[[", "soutdmin")
-  mssgs_warns_capts <- lapply(mssgs_warns_capts, function(mssgs_warns_capt) {
-    # Filter out some warnings.
-    mssgs_warns_capt <- grep("Warning in [^:]*:$",
-                             mssgs_warns_capt, value = TRUE, invert = TRUE)
-    return(mssgs_warns_capt)
-  })
+  mssgs_warns_capts <- lapply(mssgs_warns_capts, filter_mssgs_warns)
   warn_prj_drawwise(mssgs_warns_capts, throw_warn = throw_warn_sdivmin)
   check_conv(outdmin, lengths(mssgs_warns_capts), do_check = do_check_conv)
   attr(outdmin, "projpred_lost_lvls") <- lost_lvls
@@ -547,6 +551,23 @@ lmer_shared_check <- function() {
   return(all(same))
 }
 
+# Removes the lines of the captured messages and warnings of a submodel fit
+# (see capt_mssgs_warns()) that do not indicate a problem of the projection.
+filter_mssgs_warns <- function(mssgs_warns_capt) {
+  # Header lines of warnings:
+  mssgs_warns_capt <- grep("Warning in [^:]*:$",
+                           mssgs_warns_capt, value = TRUE, invert = TRUE)
+  # lme4 (>= 2.1-1) warns about non-integer Poisson responses, but the
+  # projection always has such responses:
+  mssgs_warns_capt <- grep("non-integer response values in a poisson model$",
+                           mssgs_warns_capt, value = TRUE, invert = TRUE)
+  # For the same reason, stats::dpois() warns about each non-integer Poisson
+  # response (for example, in the stats::glm() start fit of MASS::glmmPQL()):
+  mssgs_warns_capt <- grep("^Warning in dpois\\(.*\\) : non-integer x = ",
+                           mssgs_warns_capt, value = TRUE, invert = TRUE)
+  return(mssgs_warns_capt)
+}
+
 # Finds the levels of factor-like fixed-effect predictors that occur only in
 # the removed rows (`!keep`). Factor-like means a factor, character or logical
 # variable, or a numeric variable that the fixed-effects part of `formula` uses
@@ -689,19 +710,18 @@ fit_glm_ridge_callback <- function(formula, data,
   }
   # Exclude arguments from `...` which cannot be passed to glm_ridge():
   dot_args <- list(...)
-  dot_args <- dot_args[intersect(
-    names(dot_args),
-    methods::formalArgs(glm_ridge)
+  dot_args <- dot_args[setdiff(
+    intersect(names(dot_args), methods::formalArgs(glm_ridge)),
+    "print_msgs"
   )]
-  # Call the submodel fitter:
-  out_capt <- utils::capture.output(
-    fit <- do.call(glm_ridge, c(
-      list(x = x, y = y, obsvar = projpred_var, lambda = regul,
-           thresh = thresh_conv),
-      dot_args
-    ))
-  )
-  out_capt <- unique(grep("[Ww]arning|bug", out_capt, value = TRUE))
+  # Call the submodel fitter (it returns its warning messages instead of
+  # printing them):
+  fit <- do.call(glm_ridge, c(
+    list(x = x, y = y, obsvar = projpred_var, lambda = regul,
+         thresh = thresh_conv, print_msgs = FALSE),
+    dot_args
+  ))
+  out_capt <- unique(grep("[Ww]arning|bug", fit$msgs, value = TRUE))
   if (length(out_capt) > 0) {
     warning(paste(out_capt, collapse = "\n"))
   }
@@ -783,6 +803,59 @@ glm_ridge_callback_shared <- function(shared_x) {
   }
 }
 
+# The multi-draw fitters of divmin() for draw-wise formulas `formulas` with the
+# shared model matrix `shared_x`: glm_ridge_gauss_multi() and
+# glm_ridge_native_multi(). `y` (optional) is the matrix of the draw-wise
+# responses (otherwise taken from `dot_args$data`). Returns `NULL` if neither
+# fitter covers the case.
+divmin_multi <- function(formulas, shared_x, dot_args, throw_warn_sdivmin,
+                         do_check_conv, y = NULL) {
+  # Gaussian submodels with the identity link: one solve for all draws (this
+  # fitter cannot throw messages or warnings in this case):
+  outdmin <- glm_ridge_gauss_multi(formulas, shared_x = shared_x,
+                                   dot_args = dot_args, y = y)
+  if (!is.null(outdmin)) {
+    return(outdmin)
+  }
+  # Families with native pseudo-observations: all draws in one C++ call:
+  outdmin <- glm_ridge_native_multi(formulas, shared_x = shared_x,
+                                    dot_args = dot_args, y = y)
+  if (!is.null(outdmin)) {
+    mssgs_warns_capts <- attr(outdmin, "mssgs_warns_capts")
+    attr(outdmin, "mssgs_warns_capts") <- NULL
+    warn_prj_drawwise(mssgs_warns_capts, throw_warn = throw_warn_sdivmin)
+    # check_conv_s() is `TRUE` for `subfit` objects, so check_conv() has an
+    # effect only if a draw has messages:
+    if (any(lengths(mssgs_warns_capts) > 0)) {
+      check_conv(outdmin, lengths(mssgs_warns_capts), do_check = do_check_conv)
+    }
+    return(outdmin)
+  }
+  return(NULL)
+}
+
+# The parts of divmin() that depend only on the submodel formula `formula` and
+# on the predictor data (not on the values of the draw-wise responses in
+# `data`): the draw-wise formulas and the shared model matrix. Returns `NULL`
+# if divmin() would not use the multi-draw fitters (see divmin_multi()) for
+# this formula.
+divmin_prepare <- function(formula, data) {
+  trms_all <- extract_terms_response(formula)
+  if (length(trms_all$group_terms) > 0 ||
+      length(trms_all$additive_terms) > 0) {
+    return(NULL)
+  }
+  formulas <- validate_response_formula(formula)
+  if (length(formulas) < 1) {
+    return(NULL)
+  }
+  shared_x <- shared_model_matrix(formulas, data = data)
+  if (is.null(shared_x)) {
+    return(NULL)
+  }
+  return(nlist(formulas, shared_x))
+}
+
 # Fits all draw-wise submodels of fit_glm_ridge_callback() at once, for a
 # Gaussian submodel with the identity link. For this family, glm_ridge() solves
 # one weighted ridge least-squares problem in one exact step. The draws share
@@ -790,7 +863,7 @@ glm_ridge_callback_shared <- function(shared_x) {
 # penalty. Thus, one factorization with one right-hand side per draw gives the
 # same solutions. Returns `NULL` if one of the checks below fails; then divmin()
 # uses the draw-wise path.
-glm_ridge_gauss_multi <- function(formulas, shared_x, dot_args) {
+glm_ridge_gauss_multi <- function(formulas, shared_x, dot_args, y = NULL) {
   family <- dot_args$family
   if (is.null(family) || family$family != "gaussian" ||
       family$link != "identity") {
@@ -813,9 +886,11 @@ glm_ridge_gauss_multi <- function(formulas, shared_x, dot_args) {
   if (length(weights) != nrow(x) || anyNA(weights)) {
     return(NULL)
   }
-  resp_nms <- vapply(formulas, function(fml) as.character(fml[[2]]),
-                     character(1))
-  y <- as.matrix(data[resp_nms])
+  if (is.null(y)) {
+    resp_nms <- vapply(formulas, function(fml) as.character(fml[[2]]),
+                       character(1))
+    y <- as.matrix(data[resp_nms])
+  }
   # As in glm_ridge():
   transf <- standardization(x, center = TRUE, scale = TRUE, weights = weights)
   if (any(transf$scale == 0)) {
@@ -852,6 +927,94 @@ glm_ridge_gauss_multi <- function(formulas, shared_x, dot_args) {
                    xlvls = shared_x$xlvls, terms = shared_x$terms),
               class = "subfit")
   }))
+}
+
+# Fits all draw-wise submodels of fit_glm_ridge_callback() in one C++ call, for
+# the families and links with native pseudo-observations (see
+# native_pseudo_codes()). The draws share the model matrix, the observation
+# weights, the standardization and the penalty, so this sets up glm_ridge()
+# once. Each draw gets the IRLS iterations of glm_ridge() and the same result.
+# Attribute `mssgs_warns_capts` holds the messages of each draw, as divmin()
+# collects them from fit_glm_ridge_callback(). Returns `NULL` for other cases;
+# divmin() then fits the draws one by one.
+glm_ridge_native_multi <- function(formulas, shared_x, dot_args, y = NULL) {
+  family <- dot_args$family
+  if (is.null(family)) {
+    return(NULL)
+  }
+  family <- extend_family(family)
+  codes <- native_pseudo_codes(family)
+  if (is.null(codes)) {
+    return(NULL)
+  }
+  # fit_glm_ridge_callback() passes only the formal arguments of glm_ridge() on.
+  # Of these, the following are reproduced here:
+  args_glm_ridge <- intersect(names(dot_args), methods::formalArgs(glm_ridge))
+  if (!all(args_glm_ridge %in% c("family", "weights", "qa_updates_max",
+                                 "ls_iter_max"))) {
+    return(NULL)
+  }
+  x <- shared_x$x
+  if (ncol(x) == 0) {
+    return(NULL)
+  }
+  data <- dot_args$data
+  weights <- dot_args$weights %||% rep(1.0, nrow(x))
+  if (length(weights) != nrow(x) || anyNA(weights)) {
+    return(NULL)
+  }
+  regul <- dot_args$regul %||% 1e-4
+  thresh <- dot_args$thresh_conv %||% 1e-7
+  # As in glm_ridge():
+  if (family$family == "gaussian" && family$link == "identity") {
+    qa_updates_max <- 1
+    ls_iter_max <- 1
+    thresh <- 0
+  } else {
+    qa_updates_max <- dot_args$qa_updates_max %||% 100
+    ls_iter_max <- dot_args$ls_iter_max %||% 30
+  }
+  if (is.null(y)) {
+    resp_nms <- vapply(formulas, function(fml) as.character(fml[[2]]),
+                       character(1))
+    y <- as.matrix(data[resp_nms])
+  }
+  transf <- standardization(x, center = TRUE, scale = TRUE, weights = weights)
+  penalty <- rep(1.0, ncol(x))
+  penalty[transf$scale == 0] <- Inf
+  transf$scale[transf$scale == 0] <- 1
+  x_std <- t((t(x) - transf$shift) / transf$scale)
+  out <- glm_ridge_native_multi_c(
+    x_std, y, as.numeric(weights), rep(0.0, nrow(x)), codes[1], codes[2],
+    regul, TRUE, penalty, rep(0, ncol(x) + 1), weights, thresh,
+    qa_updates_max, ls_iter_max
+  )
+  beta <- out$beta / transf$scale
+  beta0 <- as.vector(out$beta0) - colSums(transf$shift * beta)
+  outdmin <- lapply(seq_along(formulas), function(s) {
+    beta_s <- beta[, s, drop = FALSE]
+    dimnames(beta_s) <- list(colnames(x), NULL)
+    y_s <- y[, s]
+    names(y_s) <- shared_x$y_names
+    # As in glm_ridge_gauss_multi():
+    structure(list(alpha = beta0[s], beta = beta_s,
+                   w = out$w[, s, drop = FALSE], formula = formulas[[s]],
+                   x = x, y = y_s, xlvls = shared_x$xlvls,
+                   terms = shared_x$terms),
+              class = "subfit")
+  })
+  # As fit_glm_ridge_callback() turns the messages into one warning and
+  # capt_conds() splits it into lines:
+  if (all(lengths(out$msgs) == 0)) {
+    mssgs_warns_capts <- rep(list(character()), length(formulas))
+  } else {
+    mssgs_warns_capts <- lapply(out$msgs, function(msgs_s) {
+      msgs_s <- unique(grep("[Ww]arning|bug", msgs_s, value = TRUE))
+      setdiff(as.character(unlist(strsplit(msgs_s, "\n", fixed = TRUE))), "")
+    })
+  }
+  attr(outdmin, "mssgs_warns_capts") <- mssgs_warns_capts
+  return(outdmin)
 }
 
 # Alternative to fit_glm_ridge_callback() (may be used via global option
@@ -985,6 +1148,11 @@ fit_glmer_callback <- function(formula, projpred_formula_no_random,
         names(dot_args),
         methods::formalArgs(MASS::glmmPQL)
       )]
+      # Without this, the "iteration" messages of MASS::glmmPQL() would be
+      # captured as messages of the submodel fitter:
+      if (is.null(dot_args[["verbose"]])) {
+        dot_args$verbose <- FALSE
+      }
       # Strip parentheses from group-level terms:
       random_trms <- labels(terms(projpred_random))
       random_fmls <- lapply(random_trms, function(random_trm) {
@@ -1783,6 +1951,12 @@ check_conv_s <- function(fit_s) {
     # convergence. For now, all we can check is the GLMM part from element
     # `fit_s$mer`:
     return(check_conv_s(fit_s$mer))
+  } else if (inherits(fit_s, "glmmPQL")) {
+    # MASS::glmmPQL() stores no convergence information: nlme::lme() throws an
+    # error if it does not converge (with the default `returnObject = FALSE`),
+    # but the end of the PQL iterations at `niter` is not recorded. So we need
+    # to return `TRUE` here:
+    return(TRUE)
   } else if (inherits(fit_s, c("lmerMod", "glmerMod"))) {
     # The following was inferred from the source code of lme4::checkConv() and
     # lme4::.prt.warn() (see also `?lme4::mkMerMod`).
