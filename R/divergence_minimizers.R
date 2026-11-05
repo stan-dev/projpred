@@ -1451,11 +1451,12 @@ categ_native_multi <- function(formula, data, family, ws_aug, dot_args) {
   # of the response categories:
   if (ncat < 3L || n * ncat != nrow(x) || nrow(ws_aug) != nrow(x) ||
       !identical(as.integer(y), rep(seq_len(ncat), each = n)) ||
-      anyNA(ws_aug) || any(ws_aug < 0)) {
+      !all(is.finite(ws_aug)) || any(ws_aug < 0)) {
     return(NULL)
   }
   x1 <- x[seq_len(n), , drop = FALSE]
-  if (!all(x == x1[rep(seq_len(n), ncat), , drop = FALSE])) {
+  if (!all(is.finite(x1)) ||
+      !isTRUE(all(x == x1[rep(seq_len(n), ncat), , drop = FALSE]))) {
     return(NULL)
   }
   # The template object (no iterations, so its weights are the zero start
