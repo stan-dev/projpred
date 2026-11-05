@@ -1,10 +1,14 @@
 context("lmer_shared")
 
-# These tests run on CRAN on purpose: lmer_shared_fit() repeats the steps of
-# lme4::lmer() after a shared lme4::lFormula(), so a change in lme4 has to make
-# them fail (also in the reverse-dependency checks of lme4).
+# These tests run on CRAN on purpose: with lme4 >= 2.0-1, lmer_shared_fit()
+# repeats the steps of lme4::lmer() after a shared lme4::lFormula(), so a change
+# in lme4 has to make them fail (also in the reverse-dependency checks of lme4).
+# With older lme4, divmin() fits each draw with lmer().
+
+lme4_new_ls <- utils::packageVersion("lme4") >= lmer_shared_lme4_min
 
 test_that("lmer_shared_fit() gives the fits of lme4::lmer()", {
+  skip_if_not(lme4_new_ls, paste("lme4 is older than", lmer_shared_lme4_min))
   expect_true(lmer_shared_check())
   lmer_shared_state$ok <- NULL
   expect_true(lmer_shared_ok())
@@ -74,7 +78,13 @@ test_that("lmer_shared_callback() returns `NULL` for other cases", {
   fmls <- validate_response_formula(fml_ls)
   dot_args <- list(data = dat_ls, family = extend_family(gaussian()),
                    weights = wts_ls)
-  expect_true(is.function(lmer_shared_callback(fmls, dot_args)))
+  if (lme4_new_ls) {
+    expect_true(is.function(lmer_shared_callback(fmls, dot_args)))
+  } else {
+    lmer_shared_state$ok <- NULL
+    expect_false(lmer_shared_ok())
+    expect_null(lmer_shared_callback(fmls, dot_args))
+  }
   opts_old <- options(projpred.lmer_shared = FALSE)
   expect_null(lmer_shared_callback(fmls, dot_args))
   options(opts_old)

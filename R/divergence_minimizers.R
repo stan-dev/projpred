@@ -367,13 +367,13 @@ subprd_gam_direct <- function(fits, newdata) {
 # checkConv() and mkMerMod(). The draw-wise formulas of one submodel differ only
 # in the response, so all draws can share one lFormula() result.
 # lmer_shared_fit() repeats the other steps of lmer() for one draw: it
-# transcribes the body of lmer() in lme4 2.0-6 to 2.1-1 (R package lme4,
-# GPL-2 | GPL-3). lme4's C++ objects change some vectors of the lFormula()
-# result in place, so each draw gets fresh copies of them. The fits are equal
-# (all.equal()) to those of lmer(). lmer_shared_ok() checks this once per R
-# session on a small fixed problem, and the test suite checks it on CRAN. If
-# the check fails (for example after a change in lme4), divmin() fits each draw
-# with lmer().
+# transcribes these steps of lmer() in lme4 2.0-1 to 2.1-0 (R package lme4,
+# GPL (>= 2); see the file LICENSE). lme4's C++ objects change some vectors of
+# the lFormula() result in place, so each draw gets fresh copies of them. The
+# fits are equal (all.equal()) to those of lmer(). lmer_shared_ok() checks this
+# once per R session on a small fixed problem, and the test suite checks it on
+# CRAN. If the check fails (for example after a change in lme4) or lme4 is
+# older than 2.0-1, divmin() fits each draw with lmer().
 
 # Replaces the name `old` by `new` in all language objects of `x`, including
 # its attributes and names (used for the response of a shared model frame).
@@ -500,12 +500,15 @@ lmer_shared_callback <- function(formulas, dot_args) {
 
 # Whether lmer_shared_fit() gives the fits of lme4::lmer() with the installed
 # lme4 (checked once per R session on a small fixed problem, without random
-# numbers).
+# numbers). lme4 before 2.0-1 has another body of lmer() and other arguments
+# of lme4:::checkConv() and lme4:::optwrap().
 lmer_shared_state <- new.env(parent = emptyenv())
+lmer_shared_lme4_min <- "2.0.1"
 lmer_shared_ok <- function() {
   if (is.null(lmer_shared_state$ok)) {
-    lmer_shared_state$ok <- isTRUE(tryCatch(lmer_shared_check(),
-                                            error = function(e) FALSE))
+    lmer_shared_state$ok <-
+      utils::packageVersion("lme4") >= lmer_shared_lme4_min &&
+      isTRUE(tryCatch(lmer_shared_check(), error = function(e) FALSE))
   }
   return(lmer_shared_state$ok)
 }
@@ -1913,13 +1916,13 @@ subprd <- function(fits, newdata) {
 # repair_re() adds zero and draws no random numbers, and predict.merMod() with
 # `re.form = NULL` computes X beta_s + Z b_s. This function builds the
 # fixed-effects model matrix X and the random-effects design Z for `newdata`
-# once, with the steps of predict.merMod() (R package lme4, GPL-2 | GPL-3). It
-# maps the conditional modes b_s of each draw (in the row order of the fitted
-# Zt) onto the rows of Z by the names of the group levels. These names are
-# unique across the grouping variables (see repair_re.merMod()), and within a
-# grouping variable they have the same order of terms and coefficients in both.
-# The results differ from those of subprd() only by rounding. Returns `NULL`
-# for other cases.
+# once; it follows the steps of predict.merMod() (R package lme4, GPL (>= 2);
+# see the file LICENSE). It maps the conditional modes b_s of each draw (in the
+# row order of the fitted Zt) onto the rows of Z by the names of the group
+# levels. These names are unique across the grouping variables (see
+# repair_re.merMod()), and within a grouping variable they have the same order
+# of terms and coefficients in both. The results differ from those of subprd()
+# only by rounding. Returns `NULL` for other cases.
 subprd_mer_direct <- function(fits, newdata) {
   if (is.null(newdata) || length(fits) == 0 ||
       getOption("projpred.mlvl_pred_new", FALSE) ||
