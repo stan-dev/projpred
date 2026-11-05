@@ -226,6 +226,20 @@ memory. These [`gc()`](https://rdrr.io/r/base/gc.html) calls are not
 always necessary to reduce the peak memory usage, but they add runtime
 (hence the default of `FALSE` for that global option).
 
+During a call of
+[`varsel()`](https://mc-stan.org/projpred/dev/reference/varsel.md),
+[`cv_varsel()`](https://mc-stan.org/projpred/dev/reference/cv_varsel.md)
+or [`project()`](https://mc-stan.org/projpred/dev/reference/project.md),
+projpred caches the submodel formulas and model matrices per set of
+predictor terms (for submodels without multilevel or additive terms).
+Global option `projpred.proj_cache_mb` (default `512`) limits the size
+of this cache, in units of 2^20 bytes as estimated by
+[`utils::object.size()`](https://rdrr.io/r/utils/object.size.html). The
+cache holds at most about twice this limit. The limit applies to each R
+process, so forked parallel workers can each have a cache of this size.
+Setting global option `projpred.proj_cache` to `FALSE` switches the
+cache off. The cache changes only the runtime, not the results.
+
 ## Other notes
 
 Global option `projpred.digits` controls arguments `digits` of

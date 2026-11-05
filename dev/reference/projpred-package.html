@@ -245,6 +245,15 @@ call <code><a href="https://rdrr.io/r/base/gc.html" class="external-link">gc()</
 passes through) to free up some memory. These <code><a href="https://rdrr.io/r/base/gc.html" class="external-link">gc()</a></code> calls are not always
 necessary to reduce the peak memory usage, but they add runtime (hence the
 default of <code>FALSE</code> for that global option).</p>
+<p>During a call of <code><a href="varsel.html">varsel()</a></code>, <code><a href="cv_varsel.html">cv_varsel()</a></code> or <code><a href="project.html">project()</a></code>, <span class="pkg">projpred</span>
+caches the submodel formulas and model matrices per set of predictor terms
+(for submodels without multilevel or additive terms). Global option
+<code>projpred.proj_cache_mb</code> (default <code>512</code>) limits the size of this cache, in
+units of 2^20 bytes as estimated by <code><a href="https://rdrr.io/r/utils/object.size.html" class="external-link">utils::object.size()</a></code>. The cache holds
+at most about twice this limit. The limit applies to each <span style="R">R</span> process, so
+forked parallel workers can each have a cache of this size. Setting global
+option <code>projpred.proj_cache</code> to <code>FALSE</code> switches the cache off. The cache
+changes only the runtime, not the results.</p>
     </div>
     <div class="section level2">
     <h2 id="other-notes">Other notes<a class="anchor" aria-label="anchor" href="#other-notes"></a></h2>

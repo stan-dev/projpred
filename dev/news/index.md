@@ -65,6 +65,20 @@
   4 to 6 times faster. (GitHub:
   [\#581](https://github.com/stan-dev/projpred/issues/581))
 
+- [`varsel()`](https://mc-stan.org/projpred/dev/reference/varsel.md),
+  [`cv_varsel()`](https://mc-stan.org/projpred/dev/reference/cv_varsel.md)
+  and
+  [`project()`](https://mc-stan.org/projpred/dev/reference/project.md)
+  cache the submodel formulas and model matrices per set of predictor
+  terms, so the folds of
+  [`cv_varsel()`](https://mc-stan.org/projpred/dev/reference/cv_varsel.md)
+  with `validate_search = TRUE` do not build them again. For example,
+  [`cv_varsel()`](https://mc-stan.org/projpred/dev/reference/cv_varsel.md)
+  with `validate_search = TRUE` for binomial and Poisson models is about
+  1.3 to 1.7 times faster. Global option `projpred.proj_cache_mb`
+  (default 512) limits the size of the cache. (GitHub:
+  [\#582](https://github.com/stan-dev/projpred/issues/582))
+
 ### Minor changes
 
 ### Bug fixes and maintenance
