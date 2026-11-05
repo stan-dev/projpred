@@ -1,7 +1,5 @@
 # Common tests ------------------------------------------------------------
 
-context("summary(), plot(), suggest_size()")
-
 test_that("invalid `object` fails", {
   objs_invalid <- nlist(
     NULL,
@@ -60,8 +58,6 @@ test_that("invalid `stats` fails", {
 })
 
 # summary() ---------------------------------------------------------------
-
-context("summary()")
 
 test_that("invalid `baseline` fails", {
   skip_if_not(run_vs)
@@ -124,8 +120,6 @@ test_that(paste(
 
 # performances() ----------------------------------------------------------
 
-context("performances()")
-
 test_that("`object` of class `vsel` (created by varsel()) works", {
   skip_if_not(run_vs)
   for (tstsetup in names(perfs_vs)) {
@@ -185,8 +179,6 @@ test_that("performances.vsel() is a shortcut", {
 
 # print() -----------------------------------------------------------------
 
-context("print()")
-
 test_that("`x` of class `vselsummary` (based on varsel()) works", {
   skip_if_not(run_vs)
   for (tstsetup in names(smmrys_vs)) {
@@ -198,12 +190,12 @@ test_that("`x` of class `vselsummary` (based on varsel()) works", {
     expect_identical(print_obj, smmrys_vs[[tstsetup]], info = tstsetup)
     if (run_snaps) {
       if (testthat_ed_max2) local_edition(3)
-      width_orig <- options(width = 145)
-      expect_snapshot({
-        print(tstsetup)
-        print(smmrys_vs[[tstsetup]], digits = 6)
+      withr::with_options(list(width = 145), {
+        expect_snapshot({
+          print(tstsetup)
+          print(smmrys_vs[[tstsetup]], digits = 6)
+        })
       })
-      options(width_orig)
       if (testthat_ed_max2) local_edition(2)
     }
   }
@@ -221,12 +213,12 @@ test_that("`x` of class `vselsummary` (based on cv_varsel())  works", {
     expect_identical(print_obj, smmrys_cvvs[[tstsetup]], info = tstsetup)
     if (run_snaps) {
       if (testthat_ed_max2) local_edition(3)
-      width_orig <- options(width = 145)
-      expect_snapshot({
-        print(tstsetup)
-        print(smmrys_cvvs[[tstsetup]], digits = 6)
+      withr::with_options(list(width = 145), {
+        expect_snapshot({
+          print(tstsetup)
+          print(smmrys_cvvs[[tstsetup]], digits = 6)
+        })
       })
-      options(width_orig)
       if (testthat_ed_max2) local_edition(2)
     }
   }
@@ -283,8 +275,6 @@ test_that(paste(
 })
 
 # plot() ------------------------------------------------------------------
-
-context("plot()")
 
 args_common_for_rk_NA <- c(
   "tstsetup_vsel", "deltas", "text_angle", "nterms_max", "ranking_nterms_max",
@@ -538,8 +528,6 @@ test_that(paste(
 
 # suggest_size() ----------------------------------------------------------
 
-context("suggest_size()")
-
 test_that("`stat` of invalid length fails", {
   stopifnot(length(stats_common) > 1)
   skip_if_not(run_vs)
@@ -609,8 +597,6 @@ test_that("returns nterms_max when no criterion is met", {
 
 # ranking() ---------------------------------------------------------------
 
-context("ranking()")
-
 test_that("`object` of class `vsel` (created by varsel()) works", {
   skip_if_not(run_vs)
   for (tstsetup in names(rks_vs)) {
@@ -642,8 +628,6 @@ test_that("`object` of class `vsel` (created by cv_varsel()) works", {
 })
 
 # cv_proportions() --------------------------------------------------------
-
-context("cv_proportions()")
 
 test_that("`object` of class `ranking` (based on varsel() output) fails", {
   skip_if_not(run_vs)
@@ -691,9 +675,6 @@ test_that("cv_proportions.vsel() is a shortcut", {
   }
 })
 
-# Needed to clean up the workspace afterwards:
-ls_bu <- ls()
-
 ntrms <- 9L
 rk_fdata <- rev(head(letters, ntrms))
 rk_fwise <- do.call(rbind, lapply(seq_len(ntrms), function(idx_trm) {
@@ -740,12 +721,7 @@ test_that("ranking proportions are computed correctly", {
   expect_true(has_1_colwise, info = "cumulate = TRUE")
 })
 
-# Clean up the workspace:
-rm(list = setdiff(ls(), ls_bu))
-
 # plot.cv_proportions() ---------------------------------------------------
-
-context("plot.cv_proportions()")
 
 test_that("`x` of class `cv_proportions` works", {
   skip_if_not(run_cvvs)
@@ -772,9 +748,6 @@ test_that("plot.ranking() is a shortcut", {
     }
   }
 })
-
-# Needed to clean up the workspace afterwards:
-ls_bu <- ls()
 
 ntrms <- 20L
 pr_dummy <- matrix(seq(0, 1, length.out = ntrms^2), nrow = ntrms, ncol = ntrms,
@@ -818,6 +791,3 @@ test_that("the ggplot can be modified", {
     vdiffr::expect_doppelganger("plotprc_dummy_mod", plotprc_dummy_mod)
   }
 })
-
-# Clean up the workspace:
-rm(list = setdiff(ls(), ls_bu))
