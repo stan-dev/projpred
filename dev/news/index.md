@@ -11,7 +11,6 @@
   with `validate_search = TRUE` for a Gaussian model with 40
   observations and 15 predictor terms is about 8 times faster. (GitHub:
   [\#579](https://github.com/stan-dev/projpred/issues/579))
-
 - Less formula and model-matrix work in the forward search and in the
   projections: the candidate submodels are selected from precomputed
   term labels, and the predictions for the training data use the stored
@@ -20,7 +19,6 @@
   with forward search for a Gaussian model with 50 observations and 200
   predictor terms is about 1.5 times faster. (GitHub:
   [\#578](https://github.com/stan-dev/projpred/issues/578))
-
 - Faster clustering of the reference model draws for a large number of
   observations: [`kmeans()`](https://rdrr.io/r/stats/kmeans.html) runs
   on the coordinates of the draws in their low-dimensional span, which
@@ -29,7 +27,6 @@
   with 50 000 observations, 4 000 draws and 20 clusters is about 4.5
   times faster. (GitHub:
   [\#576](https://github.com/stan-dev/projpred/issues/576))
-
 - Faster projections onto submodels without group-level or additive
   terms: the projected draws (or clusters) share one model matrix, and
   for the Gaussian family with the identity link, one linear solve gives
@@ -38,7 +35,6 @@
   with forward search for a Gaussian model with 50 observations and 200
   predictor terms is about 7 times faster. (GitHub:
   [\#574](https://github.com/stan-dev/projpred/issues/574))
-
 - Faster computation of the predictive variance of the reference model
   for the Gaussian and Student-t families. This matters for a large
   number of observations and many projected draws. For example,
@@ -46,7 +42,6 @@
   with 10 000 observations and 4 000 projected draws is about 7 times
   faster. (GitHub:
   [\#575](https://github.com/stan-dev/projpred/issues/575))
-
 - Faster [`lme4::glmer()`](https://rdrr.io/pkg/lme4/man/glmer.html)
   submodel fits: projpred now uses BOBYQA in both optimization stages,
   which changes the fits only within the optimizer tolerance. For
@@ -55,7 +50,6 @@
   a Bernoulli model with 300 observations and two grouping factors is
   about 2 times faster. (GitHub:
   [\#592](https://github.com/stan-dev/projpred/issues/592))
-
 - Faster projections onto ordinal submodels without group-level terms
   ([`brms::cumulative()`](https://paulbuerkner.com/brms/reference/brmsfamily.html),
   [`rstanarm::stan_polr()`](https://mc-stan.org/rstanarm/reference/stan_polr.html)):
@@ -66,7 +60,6 @@
   with `validate_search = TRUE` is about 23 times faster for a model
   with 6 categories. (GitHub:
   [\#583](https://github.com/stan-dev/projpred/issues/583))
-
 - Faster projections onto categorical submodels without group-level
   terms
   ([`brms::categorical()`](https://paulbuerkner.com/brms/reference/brmsfamily.html)):
@@ -77,7 +70,6 @@
   with `validate_search = TRUE` is about 8 times faster for a model with
   4 categories. (GitHub:
   [\#583](https://github.com/stan-dev/projpred/issues/583))
-
 - Faster projections onto binomial and Poisson GLM submodels (and
   Gaussian GLM submodels with a non-identity link): the IRLS fits
   compute their pseudo-observations in C++, and one C++ call fits all
@@ -86,7 +78,6 @@
   with `validate_search = TRUE` for binomial and Poisson models is about
   4 to 6 times faster. (GitHub:
   [\#581](https://github.com/stan-dev/projpred/issues/581))
-
 - [`varsel()`](https://mc-stan.org/projpred/dev/reference/varsel.md),
   [`cv_varsel()`](https://mc-stan.org/projpred/dev/reference/cv_varsel.md)
   and
@@ -100,6 +91,30 @@
   1.3 to 1.7 times faster. Global option `projpred.proj_cache_mb`
   (default 512) limits the size of the cache. (GitHub:
   [\#582](https://github.com/stan-dev/projpred/issues/582))
+- Faster predictions of multilevel submodels
+  ([`lme4::lmer()`](https://rdrr.io/pkg/lme4/man/lmer.html),
+  [`lme4::glmer()`](https://rdrr.io/pkg/lme4/man/glmer.html)) for data
+  without new group levels, for example the training data: one model
+  matrix and one random-effects design serve all projected draws.
+  (GitHub: [\#584](https://github.com/stan-dev/projpred/issues/584))
+- Faster projections onto Gaussian multilevel submodels
+  ([`lme4::lmer()`](https://rdrr.io/pkg/lme4/man/lmer.html)): all
+  projected draws share one
+  [`lme4::lFormula()`](https://rdrr.io/pkg/lme4/man/modular.html)
+  result. Together with the faster predictions above,
+  [`cv_varsel()`](https://mc-stan.org/projpred/dev/reference/cv_varsel.md)
+  with `validate_search = TRUE` for a Gaussian multilevel model is about
+  3 times faster. (GitHub:
+  [\#584](https://github.com/stan-dev/projpred/issues/584))
+- Faster projections onto additive submodels without group-level terms
+  ([`mgcv::gam()`](https://rdrr.io/pkg/mgcv/man/gam.html)): all
+  projected draws share one setup of
+  [`mgcv::gam()`](https://rdrr.io/pkg/mgcv/man/gam.html), and one
+  linear-predictor matrix gives the predictions of all draws. For
+  example,
+  [`varsel()`](https://mc-stan.org/projpred/dev/reference/varsel.md) for
+  an additive model is about 1.5 times faster. (GitHub:
+  [\#584](https://github.com/stan-dev/projpred/issues/584))
 
 ### Minor changes
 
