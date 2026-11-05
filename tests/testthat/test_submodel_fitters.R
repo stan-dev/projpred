@@ -502,3 +502,73 @@ test_that(paste(
     unname(coef_multinom), tolerance = 1e-3
   )
 })
+
+# Shared setups of divmin() -----------------------------------------------
+
+# Runs divmin_tst() with two Gaussian draws, with the warnings of divmin() and
+# the convergence check, with the global option `opt_nm` set to `shared`.
+# `count_fun` is the name of a function of the shared path; its calls with a
+# non-`NULL` result are counted. Returns the fits, the warnings and the count.
+divmin_shared_tst <- function(opt_nm, shared, count_fun, rhs, d) {
+  opts_old <- options(stats::setNames(list(shared), opt_nm))
+  on.exit(options(opts_old))
+  mu <- cbind(d$eta, d$eta + 0.3 * d$z)
+  n_calls <- 0
+  fun_orig <- get(count_fun, envir = asNamespace("projpred"))
+  fun_count <- function(...) {
+    out <- fun_orig(...)
+    if (!is.null(out)) n_calls <<- n_calls + 1
+    out
+  }
+  warns <- character()
+  fits <- withCallingHandlers(
+    with_mocked_bindings(
+      with_r_printing(
+        divmin_tst(rhs, d, extend_family(gaussian()), mu, throw_warn = TRUE,
+                   check_conv = TRUE)
+      ),
+      !!count_fun := fun_count
+    ),
+    warning = function(w) {
+      warns <<- c(warns, conditionMessage(w))
+      invokeRestart("muffleWarning")
+    }
+  )
+  list(fits = fits, warns = warns, n_calls = n_calls)
+}
+
+test_that(paste(
+  "the shared lmer() and gam() setups give the warnings and fits of the",
+  "draw-wise fits"
+), {
+  cases <- list(
+    lmer = list(opt_nm = "projpred.lmer_shared", count_fun = "lmer_shared_fit",
+                rhs = "x + (1 | g)"),
+    gam = list(opt_nm = "projpred.gam_shared",
+               count_fun = "gam_shared_callback", rhs = "s(z) + x")
+  )
+  # Without group-level variation, the lmer() fits are singular and lme4 gives
+  # a message for each draw:
+  for (sd_grp in c(0.8, 0)) {
+    d <- dat_fitters(sd_grp = sd_grp)
+    for (nm in names(cases)) {
+      if (nm == "lmer" &&
+          utils::packageVersion("lme4") < lmer_shared_lme4_min) {
+        next
+      }
+      info <- paste(nm, "sd_grp:", sd_grp)
+      args <- cases[[nm]]
+      res_shared <- divmin_shared_tst(args$opt_nm, TRUE, args$count_fun,
+                                      args$rhs, d)
+      res_drawwise <- divmin_shared_tst(args$opt_nm, FALSE, args$count_fun,
+                                        args$rhs, d)
+      expect_gt(res_shared$n_calls, 0)
+      expect_identical(res_drawwise$n_calls, 0)
+      if (nm == "lmer" && sd_grp == 0) {
+        expect_gt(length(res_drawwise$warns), 0)
+      }
+      expect_identical(res_shared$warns, res_drawwise$warns, info = info)
+      expect_equal(res_shared$fits, res_drawwise$fits, info = info)
+    }
+  }
+})
