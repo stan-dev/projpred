@@ -4,6 +4,11 @@
 
 # General setup -----------------------------------------------------------
 
+# withr::local_seed() restores the seed only since withr 3.0.3:
+if (utils::packageVersion("withr") < "3.0.3") {
+  stop("The tests need withr (>= 3.0.3), see DESCRIPTION.")
+}
+
 # When the tests end, restore the global options (and remove the ones that the
 # tests added). testthat restores its own options:
 opts_orig <- options()
