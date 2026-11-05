@@ -173,6 +173,10 @@
 - Tests: Add tests that run on CRAN for the submodel fitters from lme4,
   MASS, gamm4, ordinal and mclogit. (GitHub:
   [\#585](https://github.com/stan-dev/projpred/issues/585))
+- Tests: Leave the options, the random seed and the global environment
+  of the R session unchanged after the tests, also when a test fails,
+  and remove the manual cleanup of the test workspace. (GitHub:
+  [\#586](https://github.com/stan-dev/projpred/issues/586))
 
 ## projpred 2.11.0
 
