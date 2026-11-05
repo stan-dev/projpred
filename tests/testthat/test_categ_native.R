@@ -89,6 +89,38 @@ test_that("categ_native_multi() returns usable `multinom` objects", {
                                  family = fam, ws_aug = ws, dot_args = list()))
 })
 
+test_that("the native multinomial-logit fits handle non-finite input", {
+  # No random numbers here.
+  w <- exp(eta_ca) / rowSums(exp(eta_ca))
+  x <- model.matrix(~ a + b, data = dat_ca)
+  # A non-finite predictor value:
+  x_inf <- x
+  x_inf[1, 2] <- Inf
+  fit_xinf <- categ_fit_multi_c(x_inf, w, ncat_ca, 0L, 1e-12, 100L)
+  expect_identical(fit_xinf$convergence, 1L)
+  expect_identical(fit_xinf$niter, 0L)
+  expect_identical(drop(fit_xinf$loss), Inf)
+  # A non-finite weight in the first of two weight matrices (the second one
+  # is fitted):
+  fit_winf <- categ_fit_multi_c(x, cbind(replace(w, 3, Inf), w), ncat_ca, 0L,
+                                1e-12, 100L)
+  expect_identical(fit_winf$convergence, c(1L, 0L))
+  expect_identical(fit_winf$niter[1], 0L)
+  expect_identical(fit_winf$loss[1], Inf)
+  fit_w <- categ_fit_multi_c(x, w, ncat_ca, 0L, 1e-12, 100L)
+  expect_identical(fit_winf$coef[, , 2], fit_w$coef[, , 1])
+  # categ_native_multi() leaves such data to nnet::multinom():
+  daug <- augdat_ca(w)[c("a", "b", "f", "y")]
+  fam <- structure(list(family = "categorical", link = "logit"),
+                   class = "family")
+  expect_null(categ_native_multi(y ~ a + b, data = daug, family = fam,
+                                 ws_aug = replace(as.vector(w), 3, Inf),
+                                 dot_args = list()))
+  daug$a[1 + (seq_len(ncat_ca) - 1) * n_ca] <- Inf
+  expect_null(categ_native_multi(y ~ a + b, data = daug, family = fam,
+                                 ws_aug = as.vector(w), dot_args = list()))
+})
+
 if (exists("rng_old")) assign(".Random.seed", rng_old, envir = .GlobalEnv)
 # Clean up the workspace:
 rm(list = setdiff(ls(), ls_bu))

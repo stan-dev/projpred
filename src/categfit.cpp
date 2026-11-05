@@ -84,6 +84,7 @@ static double ml_fit_one(const mat& x, const mat& w, int icpt, double thresh,
   double loss = ml_eval(x, w, nw, b, true, grad, hess);
   conv = 1;
   niter = 0;
+  // Non-finite objective at the start values: not converged.
   if (!std::isfinite(loss)) return loss;
   const uword np = p * K;
   for (int it = 0; it < maxit; ++it) {
@@ -151,8 +152,18 @@ List categ_fit_multi_c(arma::mat x, arma::mat w_all, int ncat, int icpt,
   cube b_out(p, K, S);
   vec loss_out(S);
   IntegerVector conv_out(S), niter_out(S);
+  const bool x_finite = x.is_finite();
   for (uword s = 0; s < S; ++s) {
     mat w = w_all.cols(s * ncat, (s + 1) * ncat - 1);
+    if (!x_finite || !w.is_finite()) {
+      // Not fitted (a product with non-finite values need not give NaN in
+      // every BLAS, so ml_fit_one() could not detect this case):
+      b_out.slice(s).zeros();
+      loss_out(s) = std::numeric_limits<double>::infinity();
+      conv_out[s] = 1;
+      niter_out[s] = 0;
+      continue;
+    }
     mat b;
     int conv, niter;
     loss_out(s) = ml_fit_one(x, w, icpt, thresh, maxit, b, conv, niter);
