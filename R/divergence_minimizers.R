@@ -92,22 +92,11 @@ divmin <- function(
   if (identical(sdivmin, fit_glm_ridge_callback) && length(formulas) >= 1) {
     shared_x <- shared_model_matrix(formulas, data = list(...)$data)
     if (!is.null(shared_x)) {
-      # Gaussian submodels with the identity link: one solve for all draws
-      # (this fitter cannot throw messages or warnings in this case):
-      outdmin <- glm_ridge_gauss_multi(formulas, shared_x = shared_x,
-                                       dot_args = list(...))
+      outdmin <- divmin_multi(formulas, shared_x = shared_x,
+                              dot_args = list(...),
+                              throw_warn_sdivmin = throw_warn_sdivmin,
+                              do_check_conv = do_check_conv)
       if (!is.null(outdmin)) {
-        return(outdmin)
-      }
-      # Families with native pseudo-observations: all draws in one C++ call:
-      outdmin <- glm_ridge_native_multi(formulas, shared_x = shared_x,
-                                        dot_args = list(...))
-      if (!is.null(outdmin)) {
-        mssgs_warns_capts <- attr(outdmin, "mssgs_warns_capts")
-        attr(outdmin, "mssgs_warns_capts") <- NULL
-        warn_prj_drawwise(mssgs_warns_capts, throw_warn = throw_warn_sdivmin)
-        check_conv(outdmin, lengths(mssgs_warns_capts),
-                   do_check = do_check_conv)
         return(outdmin)
       }
       sdivmin <- glm_ridge_callback_shared(shared_x)
@@ -217,16 +206,28 @@ divmin <- function(
   }
   mssgs_warns_capts <- lapply(outdmin, "[[", "mssgs_warns_capt")
   outdmin <- lapply(outdmin, "[[", "soutdmin")
-  mssgs_warns_capts <- lapply(mssgs_warns_capts, function(mssgs_warns_capt) {
-    # Filter out some warnings.
-    mssgs_warns_capt <- grep("Warning in [^:]*:$",
-                             mssgs_warns_capt, value = TRUE, invert = TRUE)
-    return(mssgs_warns_capt)
-  })
+  mssgs_warns_capts <- lapply(mssgs_warns_capts, filter_mssgs_warns)
   warn_prj_drawwise(mssgs_warns_capts, throw_warn = throw_warn_sdivmin)
   check_conv(outdmin, lengths(mssgs_warns_capts), do_check = do_check_conv)
   attr(outdmin, "projpred_lost_lvls") <- lost_lvls
   return(outdmin)
+}
+
+# Removes the lines of the captured messages and warnings of a submodel fit
+# (see capt_mssgs_warns()) that do not indicate a problem of the projection.
+filter_mssgs_warns <- function(mssgs_warns_capt) {
+  # Header lines of warnings:
+  mssgs_warns_capt <- grep("Warning in [^:]*:$",
+                           mssgs_warns_capt, value = TRUE, invert = TRUE)
+  # lme4 (>= 2.1-1) warns about non-integer Poisson responses, but the
+  # projection always has such responses:
+  mssgs_warns_capt <- grep("non-integer response values in a poisson model$",
+                           mssgs_warns_capt, value = TRUE, invert = TRUE)
+  # For the same reason, stats::dpois() warns about each non-integer Poisson
+  # response (for example, in the stats::glm() start fit of MASS::glmmPQL()):
+  mssgs_warns_capt <- grep("^Warning in dpois\\(.*\\) : non-integer x = ",
+                           mssgs_warns_capt, value = TRUE, invert = TRUE)
+  return(mssgs_warns_capt)
 }
 
 # Finds the levels of factor-like fixed-effect predictors that occur only in
@@ -464,6 +465,59 @@ glm_ridge_callback_shared <- function(shared_x) {
   }
 }
 
+# The multi-draw fitters of divmin() for draw-wise formulas `formulas` with the
+# shared model matrix `shared_x`: glm_ridge_gauss_multi() and
+# glm_ridge_native_multi(). `y` (optional) is the matrix of the draw-wise
+# responses (otherwise taken from `dot_args$data`). Returns `NULL` if neither
+# fitter covers the case.
+divmin_multi <- function(formulas, shared_x, dot_args, throw_warn_sdivmin,
+                         do_check_conv, y = NULL) {
+  # Gaussian submodels with the identity link: one solve for all draws (this
+  # fitter cannot throw messages or warnings in this case):
+  outdmin <- glm_ridge_gauss_multi(formulas, shared_x = shared_x,
+                                   dot_args = dot_args, y = y)
+  if (!is.null(outdmin)) {
+    return(outdmin)
+  }
+  # Families with native pseudo-observations: all draws in one C++ call:
+  outdmin <- glm_ridge_native_multi(formulas, shared_x = shared_x,
+                                    dot_args = dot_args, y = y)
+  if (!is.null(outdmin)) {
+    mssgs_warns_capts <- attr(outdmin, "mssgs_warns_capts")
+    attr(outdmin, "mssgs_warns_capts") <- NULL
+    warn_prj_drawwise(mssgs_warns_capts, throw_warn = throw_warn_sdivmin)
+    # check_conv_s() is `TRUE` for `subfit` objects, so check_conv() has an
+    # effect only if a draw has messages:
+    if (any(lengths(mssgs_warns_capts) > 0)) {
+      check_conv(outdmin, lengths(mssgs_warns_capts), do_check = do_check_conv)
+    }
+    return(outdmin)
+  }
+  return(NULL)
+}
+
+# The parts of divmin() that depend only on the submodel formula `formula` and
+# on the predictor data (not on the values of the draw-wise responses in
+# `data`): the draw-wise formulas and the shared model matrix. Returns `NULL`
+# if divmin() would not use the multi-draw fitters (see divmin_multi()) for
+# this formula.
+divmin_prepare <- function(formula, data) {
+  trms_all <- extract_terms_response(formula)
+  if (length(trms_all$group_terms) > 0 ||
+      length(trms_all$additive_terms) > 0) {
+    return(NULL)
+  }
+  formulas <- validate_response_formula(formula)
+  if (length(formulas) < 1) {
+    return(NULL)
+  }
+  shared_x <- shared_model_matrix(formulas, data = data)
+  if (is.null(shared_x)) {
+    return(NULL)
+  }
+  return(nlist(formulas, shared_x))
+}
+
 # Fits all draw-wise submodels of fit_glm_ridge_callback() at once, for a
 # Gaussian submodel with the identity link. For this family, glm_ridge() solves
 # one weighted ridge least-squares problem in one exact step. The draws share
@@ -471,7 +525,7 @@ glm_ridge_callback_shared <- function(shared_x) {
 # penalty. Thus, one factorization with one right-hand side per draw gives the
 # same solutions. Returns `NULL` if one of the checks below fails; then divmin()
 # uses the draw-wise path.
-glm_ridge_gauss_multi <- function(formulas, shared_x, dot_args) {
+glm_ridge_gauss_multi <- function(formulas, shared_x, dot_args, y = NULL) {
   family <- dot_args$family
   if (is.null(family) || family$family != "gaussian" ||
       family$link != "identity") {
@@ -494,9 +548,11 @@ glm_ridge_gauss_multi <- function(formulas, shared_x, dot_args) {
   if (length(weights) != nrow(x) || anyNA(weights)) {
     return(NULL)
   }
-  resp_nms <- vapply(formulas, function(fml) as.character(fml[[2]]),
-                     character(1))
-  y <- as.matrix(data[resp_nms])
+  if (is.null(y)) {
+    resp_nms <- vapply(formulas, function(fml) as.character(fml[[2]]),
+                       character(1))
+    y <- as.matrix(data[resp_nms])
+  }
   # As in glm_ridge():
   transf <- standardization(x, center = TRUE, scale = TRUE, weights = weights)
   if (any(transf$scale == 0)) {
@@ -543,7 +599,7 @@ glm_ridge_gauss_multi <- function(formulas, shared_x, dot_args) {
 # Attribute `mssgs_warns_capts` holds the messages of each draw, as divmin()
 # collects them from fit_glm_ridge_callback(). Returns `NULL` for other cases;
 # divmin() then fits the draws one by one.
-glm_ridge_native_multi <- function(formulas, shared_x, dot_args) {
+glm_ridge_native_multi <- function(formulas, shared_x, dot_args, y = NULL) {
   family <- dot_args$family
   if (is.null(family)) {
     return(NULL)
@@ -580,9 +636,11 @@ glm_ridge_native_multi <- function(formulas, shared_x, dot_args) {
     qa_updates_max <- dot_args$qa_updates_max %||% 100
     ls_iter_max <- dot_args$ls_iter_max %||% 30
   }
-  resp_nms <- vapply(formulas, function(fml) as.character(fml[[2]]),
-                     character(1))
-  y <- as.matrix(data[resp_nms])
+  if (is.null(y)) {
+    resp_nms <- vapply(formulas, function(fml) as.character(fml[[2]]),
+                       character(1))
+    y <- as.matrix(data[resp_nms])
+  }
   transf <- standardization(x, center = TRUE, scale = TRUE, weights = weights)
   penalty <- rep(1.0, ncol(x))
   penalty[transf$scale == 0] <- Inf
@@ -609,10 +667,15 @@ glm_ridge_native_multi <- function(formulas, shared_x, dot_args) {
   })
   # As fit_glm_ridge_callback() turns the messages into one warning and
   # capt_conds() splits it into lines:
-  attr(outdmin, "mssgs_warns_capts") <- lapply(out$msgs, function(msgs_s) {
-    msgs_s <- unique(grep("[Ww]arning|bug", msgs_s, value = TRUE))
-    setdiff(as.character(unlist(strsplit(msgs_s, "\n", fixed = TRUE))), "")
-  })
+  if (all(lengths(out$msgs) == 0)) {
+    mssgs_warns_capts <- rep(list(character()), length(formulas))
+  } else {
+    mssgs_warns_capts <- lapply(out$msgs, function(msgs_s) {
+      msgs_s <- unique(grep("[Ww]arning|bug", msgs_s, value = TRUE))
+      setdiff(as.character(unlist(strsplit(msgs_s, "\n", fixed = TRUE))), "")
+    })
+  }
+  attr(outdmin, "mssgs_warns_capts") <- mssgs_warns_capts
   return(outdmin)
 }
 
@@ -747,6 +810,11 @@ fit_glmer_callback <- function(formula, projpred_formula_no_random,
         names(dot_args),
         methods::formalArgs(MASS::glmmPQL)
       )]
+      # Without this, the "iteration" messages of MASS::glmmPQL() would be
+      # captured as messages of the submodel fitter:
+      if (is.null(dot_args[["verbose"]])) {
+        dot_args$verbose <- FALSE
+      }
       # Strip parentheses from group-level terms:
       random_trms <- labels(terms(projpred_random))
       random_fmls <- lapply(random_trms, function(random_trm) {
@@ -1111,6 +1179,32 @@ divmin_augdat <- function(
     projpred_ws_aug <- projpred_ws_aug[keep, , drop = FALSE]
   }
 
+  # Cumulative-link submodels without group-level terms: all draws in one C++
+  # call (see cumul_native_multi()):
+  if (identical(sdivmin, fit_cumul)) {
+    outdmin <- cumul_native_multi(formula, data = data, family = family,
+                                  ws_aug = projpred_ws_aug,
+                                  dot_args = list(...))
+    if (!is.null(outdmin)) {
+      check_conv(outdmin, rep(0L, length(outdmin)), do_check = do_check_conv)
+      attr(outdmin, "projpred_lost_lvls") <- lost_lvls
+      return(outdmin)
+    }
+  }
+
+  # Multinomial-logit submodels without group-level terms: all draws in one C++
+  # call (see categ_native_multi()):
+  if (identical(sdivmin, fit_categ)) {
+    outdmin <- categ_native_multi(formula, data = data, family = family,
+                                  ws_aug = projpred_ws_aug,
+                                  dot_args = list(...))
+    if (!is.null(outdmin)) {
+      check_conv(outdmin, rep(0L, length(outdmin)), do_check = do_check_conv)
+      attr(outdmin, "projpred_lost_lvls") <- lost_lvls
+      return(outdmin)
+    }
+  }
+
   if (is.null(getOption("projpred.parallel_proj_trigger")) &&
       !is.null(getOption("projpred.prll_prj_trigger"))) {
     warning(
@@ -1286,6 +1380,102 @@ fit_cumul <- function(formula, data, family, weights, ...) {
   return(fitobj)
 }
 
+# Fits the cumulative-link submodels of all draws in one C++ call
+# (cumul_fit_multi_c()) with the objective of MASS::polr(), instead of one
+# fit_cumul() call per draw. The augmented data hold C copies of the n
+# observations (one per response category), so this builds the model matrix
+# once, and the augmented weights of each draw form an n x C matrix. Newton
+# iterations replace the BFGS iterations of polr(), so the estimates agree with
+# those of polr() up to its convergence tolerance. The returned `polr` objects
+# hold the elements that predict.polr() (with `newdata`), coef() and
+# check_conv_s() use, without `fitted.values` and `lp`. Returns `NULL` for other
+# cases; divmin_augdat() then calls fit_cumul() per draw. Global option
+# `projpred.augdat_native = FALSE` switches this off.
+cumul_native_multi <- function(formula, data, family, ws_aug, dot_args) {
+  if (!getOption("projpred.augdat_native", TRUE)) {
+    return(NULL)
+  }
+  # fit_cumul() passes these arguments on to MASS::polr(); they are not
+  # reproduced here:
+  if (length(intersect(names(dot_args),
+                       c(methods::formalArgs(MASS::polr),
+                         methods::formalArgs(stats::optim))))) {
+    return(NULL)
+  }
+  method <- family$link
+  if (method == "logit") {
+    method <- "logistic"
+  } else if (method == "probit_approx") {
+    method <- "probit"
+  }
+  link_code <- match(method, c("logistic", "probit", "loglog", "cloglog",
+                               "cauchit"))
+  if (is.na(link_code)) {
+    return(NULL)
+  }
+  # As in MASS::polr():
+  mfr <- model.frame(formula, data = data)
+  if (nrow(mfr) != nrow(data) || !is.null(model.offset(mfr))) {
+    return(NULL)
+  }
+  trms <- attr(mfr, "terms")
+  x <- model.matrix(trms, mfr)
+  cons <- attr(x, "contrasts")
+  xint <- match("(Intercept)", colnames(x), nomatch = 0L)
+  if (xint == 0L) {
+    return(NULL)
+  }
+  x <- x[, -xint, drop = FALSE]
+  y <- model.response(mfr)
+  if (!is.factor(y)) {
+    return(NULL)
+  }
+  lev <- levels(y)
+  ncat <- length(lev)
+  n <- nrow(x) %/% ncat
+  ws_aug <- as.matrix(ws_aug)
+  # The augmented data have to be C copies of the n observations, in the order
+  # of the response categories:
+  if (ncat < 3L || n * ncat != nrow(x) || nrow(ws_aug) != nrow(x) ||
+      !identical(as.integer(y), rep(seq_len(ncat), each = n)) ||
+      !all(is.finite(ws_aug)) || any(ws_aug < 0)) {
+    return(NULL)
+  }
+  x1 <- x[seq_len(n), , drop = FALSE]
+  # Non-finite predictor values go to polr() (the C++ fitter returns a
+  # non-converged fit for them):
+  if (!all(is.finite(x1)) ||
+      (ncol(x1) > 0 &&
+       !isTRUE(all(x == x1[rep(seq_len(n), ncat), , drop = FALSE])))) {
+    return(NULL)
+  }
+  nprj <- ncol(ws_aug)
+  out <- cumul_fit_multi_c(
+    unname(x1), matrix(ws_aug, nrow = n), ncat, rep(0, n), link_code,
+    thresh = 1e-12, maxit = 100L
+  )
+  xlvls <- .getXlevels(trms, mfr)
+  zeta_nms <- paste(lev[-ncat], lev[-1L], sep = "|")
+  pc <- ncol(x1)
+  # As in polr(), also for a submodel without predictors:
+  beta_nms <- colnames(x1) %||% character()
+  return(lapply(seq_len(nprj), function(s) {
+    beta <- setNames(out$beta[, s], beta_nms)
+    zeta <- setNames(out$zeta[, s], zeta_nms)
+    wsum <- sum(ws_aug[, s])
+    structure(
+      list(coefficients = beta, zeta = zeta, deviance = 2 * out$loss[s],
+           lev = lev, terms = trms, df.residual = wsum - pc - (ncat - 1L),
+           edf = pc + ncat - 1L, n = wsum, nobs = wsum,
+           call = quote(projpred_cumul_fit()), method = method,
+           convergence = out$convergence[s],
+           niter = c(f.evals = out$niter[s], g.evals = out$niter[s]),
+           contrasts = cons, xlevels = xlvls),
+      class = "polr"
+    )
+  }))
+}
+
 # Use ordinal::clmm() to fit multilevel submodels for the brms::cumulative()
 # family:
 fit_cumul_mlvl <- function(formula, data, family, weights, ...) {
@@ -1387,6 +1577,104 @@ fit_categ <- function(formula, data, family, weights, ...) {
     )
   }
   return(fitobj)
+}
+
+# Fits the multinomial-logit submodels of all draws in one C++ call
+# (categ_fit_multi_c()) with the objective of nnet::multinom(), instead of one
+# fit_categ() call per draw. Like cumul_native_multi(), it builds the model
+# matrix once and uses the augmented weights as an n x C matrix. Newton
+# iterations replace the BFGS iterations of nnet::multinom() (by default at
+# most 100), so the estimates agree with those of nnet::multinom() up to its
+# convergence tolerance. The returned objects are copies of one `multinom`
+# object (from nnet::multinom() with `maxit = 0`) with the weights, the
+# objective and the fitted values of each draw. Returns `NULL` for other cases;
+# divmin_augdat() then calls fit_categ() per draw. Global option
+# `projpred.augdat_native = FALSE` switches this off.
+categ_native_multi <- function(formula, data, family, ws_aug, dot_args) {
+  if (!getOption("projpred.augdat_native", TRUE) || family$link != "logit") {
+    return(NULL)
+  }
+  # fit_categ() passes these arguments on to nnet::multinom(); they are not
+  # reproduced here:
+  if (length(intersect(names(dot_args),
+                       c(methods::formalArgs(nnet::multinom),
+                         methods::formalArgs(nnet::nnet))))) {
+    return(NULL)
+  }
+  mfr <- model.frame(formula, data = data)
+  if (nrow(mfr) != nrow(data) || !is.null(model.offset(mfr))) {
+    return(NULL)
+  }
+  trms <- attr(mfr, "terms")
+  x <- model.matrix(trms, mfr)
+  y <- model.response(mfr)
+  if (!is.factor(y)) {
+    return(NULL)
+  }
+  lev <- levels(y)
+  ncat <- length(lev)
+  n <- nrow(x) %/% ncat
+  ws_aug <- as.matrix(ws_aug)
+  # The augmented data have to be C copies of the n observations, in the order
+  # of the response categories:
+  if (ncat < 3L || n * ncat != nrow(x) || nrow(ws_aug) != nrow(x) ||
+      !identical(as.integer(y), rep(seq_len(ncat), each = n)) ||
+      !all(is.finite(ws_aug)) || any(ws_aug < 0)) {
+    return(NULL)
+  }
+  x1 <- x[seq_len(n), , drop = FALSE]
+  # Non-finite predictor values go to nnet::multinom():
+  if (!all(is.finite(x1)) ||
+      !isTRUE(all(x == x1[rep(seq_len(n), ncat), , drop = FALSE]))) {
+    return(NULL)
+  }
+  # The template object (no iterations, so its weights are the zero start
+  # values):
+  tmpl <- do.call(nnet::multinom, list(formula = formula, data = data,
+                                       weights = ws_aug[, 1], maxit = 0,
+                                       trace = FALSE))
+  if (!identical(tmpl$vcoefnames, colnames(x1)) || tmpl$n[3L] != ncat ||
+      length(tmpl$wts) != ncat * (ncol(x1) + 1L)) {
+    return(NULL)
+  }
+  icpt <- match("(Intercept)", colnames(x1), nomatch = 0L) - 1L
+  nprj <- ncol(ws_aug)
+  out <- categ_fit_multi_c(unname(x1), matrix(ws_aug, nrow = n), ncat, icpt,
+                           thresh = 1e-12, maxit = 100L)
+  y_ind <- diag(ncat)[as.integer(y), , drop = FALSE]
+  dimnames(y_ind) <- dimnames(tmpl$fitted.values)
+  idx_aug <- rep(seq_len(n), ncat)
+  idx_rows <- seq_len(n)
+  # A loop instead of lapply() with an anonymous function, which the byte
+  # compiler would compile again for each projection:
+  outdmin <- vector("list", nprj)
+  for (s in seq_len(nprj)) {
+    coef_s <- out$coef[, , s]
+    dim(coef_s) <- dim(out$coef)[1:2]
+    # Weights as nnet::multinom() stores them (see nnet:::coef.multinom()):
+    # one row per category, the first column and the first row (reference
+    # category) zero:
+    wts_mat <- matrix(0, ncat, ncol(x1) + 1L)
+    wts_mat[-1L, -1L] <- t(coef_s)
+    eta <- cbind(0, x1 %*% coef_s)
+    eta_max <- eta[cbind(idx_rows, max.col(eta, ties.method = "first"))]
+    prbs <- exp(eta - eta_max)
+    prbs <- prbs / rowSums(prbs)
+    fitted_s <- prbs[idx_aug, , drop = FALSE]
+    dimnames(fitted_s) <- dimnames(tmpl$fitted.values)
+    fit_s <- tmpl
+    fit_s$wts <- as.vector(t(wts_mat))
+    fit_s$value <- out$loss[s]
+    fit_s$deviance <- 2 * out$loss[s]
+    fit_s$AIC <- fit_s$deviance + 2 * fit_s$edf
+    fit_s$convergence <- out$convergence[s]
+    fit_s$weights <- ws_aug[, s]
+    fit_s$fitted.values <- fitted_s
+    fit_s$residuals <- y_ind - fitted_s
+    fit_s$call <- quote(projpred_categ_fit())
+    outdmin[[s]] <- fit_s
+  }
+  return(outdmin)
 }
 
 # Use mclogit::mblogit() to fit multilevel submodels for the brms::categorical()
@@ -1545,6 +1833,12 @@ check_conv_s <- function(fit_s) {
     # convergence. For now, all we can check is the GLMM part from element
     # `fit_s$mer`:
     return(check_conv_s(fit_s$mer))
+  } else if (inherits(fit_s, "glmmPQL")) {
+    # MASS::glmmPQL() stores no convergence information: nlme::lme() throws an
+    # error if it does not converge (with the default `returnObject = FALSE`),
+    # but the end of the PQL iterations at `niter` is not recorded. So we need
+    # to return `TRUE` here:
+    return(TRUE)
   } else if (inherits(fit_s, c("lmerMod", "glmerMod"))) {
     # The following was inferred from the source code of lme4::checkConv() and
     # lme4::.prt.warn() (see also `?lme4::mkMerMod`).
@@ -1659,6 +1953,12 @@ subprd <- function(fits, newdata) {
 }
 
 subprd_augdat <- function(fits, newdata) {
+  # `polr` and `multinom` fits of the same submodel: linear predictors from the
+  # coefficients, for all draws at once (see subprd_augdat_direct()):
+  prd_direct <- subprd_augdat_direct(fits, newdata)
+  if (!is.null(prd_direct)) {
+    return(prd_direct)
+  }
   if (inherits(fits[[1]], "clmm")) {
     y_nm <- extract_terms_response(formula(fits[[1]]))$response
   }
@@ -1712,6 +2012,89 @@ subprd_augdat <- function(fits, newdata) {
     return(lpreds)
   })
   return(do.call(abind::abind, list(prd_list, rev.along = 0)))
+}
+
+# Linear predictors (on the link scale used by subprd_augdat()) of `polr` or
+# `multinom` fits that share the terms, the factor levels and the contrasts (as
+# the draw-wise fits of one submodel do). The model matrix for `newdata` is
+# built once, as in predict.polr() and predict.multinom(). For `polr`, the
+# linear predictors of the cumulative probabilities are zeta_j - eta, which
+# subprd_augdat() computes from the predicted category probabilities; for
+# `multinom`, they are the log odds against the first category. This function
+# computes both directly, so they differ from those of subprd_augdat() only by
+# rounding. Returns `NULL` for other cases.
+subprd_augdat_direct <- function(fits, newdata) {
+  fit_1 <- fits[[1]]
+  if (inherits(fit_1, "polr")) {
+    is_polr <- TRUE
+  } else if (inherits(fit_1, "multinom") && is.matrix(coef(fit_1))) {
+    is_polr <- FALSE
+  } else {
+    return(NULL)
+  }
+  same_cls <- function(fit) {
+    if (is_polr) {
+      inherits(fit, "polr") && !inherits(fit, "clmm")
+    } else {
+      inherits(fit, "multinom") && is.matrix(coef(fit))
+    }
+  }
+  # The terms are compared without the environment of their formula:
+  terms_noenv <- function(trms) {
+    attr(trms, ".Environment") <- NULL
+    trms
+  }
+  trms_1 <- terms_noenv(fit_1$terms)
+  if (!all(vapply(fits, function(fit) {
+    same_cls(fit) && identical(terms_noenv(fit$terms), trms_1) &&
+      identical(fit$xlevels, fit_1$xlevels) &&
+      identical(fit$contrasts, fit_1$contrasts)
+  }, logical(1)))) {
+    return(NULL)
+  }
+  trms <- delete.response(fit_1$terms)
+  mfr <- model.frame(trms, newdata, na.action = function(x) x,
+                     xlev = fit_1$xlevels)
+  if (!is.null(model.offset(mfr))) {
+    return(NULL)
+  }
+  x <- model.matrix(trms, mfr, contrasts.arg = fit_1$contrasts)
+  n <- nrow(x)
+  nprj <- length(fits)
+  if (is_polr) {
+    xint <- match("(Intercept)", colnames(x), nomatch = 0L)
+    if (xint > 0L) {
+      x <- x[, -xint, drop = FALSE]
+    }
+    if (!identical(colnames(x) %||% character(),
+                   names(coef(fit_1)) %||% character())) {
+      return(NULL)
+    }
+    zetas <- do.call(cbind, lapply(fits, "[[", "zeta"))
+    if (ncol(x) > 0) {
+      etas <- x %*% do.call(cbind, lapply(fits, coef))
+    } else {
+      etas <- matrix(0, n, nprj)
+    }
+    ncat_m1 <- nrow(zetas)
+    out <- array(NA_real_, dim = c(n, ncat_m1, nprj))
+    for (s in seq_len(nprj)) {
+      out[, , s] <- outer(-etas[, s], zetas[, s], "+")
+    }
+    cat_nms <- utils::head(fit_1$lev, -1)
+  } else {
+    coef_1 <- coef(fit_1)
+    if (!identical(colnames(x), colnames(coef_1))) {
+      return(NULL)
+    }
+    out <- array(NA_real_, dim = c(n, nrow(coef_1), nprj))
+    for (s in seq_len(nprj)) {
+      out[, , s] <- x %*% t(coef(fits[[s]]))
+    }
+    cat_nms <- rownames(coef_1)
+  }
+  dimnames(out) <- list(rownames(newdata), cat_nms, NULL)
+  return(out)
 }
 
 subprd_augdat_binom <- function(fits, newdata) {

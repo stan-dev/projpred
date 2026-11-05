@@ -13,8 +13,13 @@ If you read this from a place other than <https://mc-stan.org/projpred/news/inde
 * Faster projections onto submodels without group-level or additive terms: the projected draws (or clusters) share one model matrix, and for the Gaussian family with the identity link, one linear solve gives the submodel fits for all draws. For example, `varsel()` with forward search for a Gaussian model with 50 observations and 200 predictor terms is about 7 times faster. (GitHub: #574)
 * Faster computation of the predictive variance of the reference model for the Gaussian and Student-t families. This matters for a large number of observations and many projected draws. For example, `project()` with 10 000 observations and 4 000 projected draws is about 7 times faster. (GitHub: #575)
 * Faster `lme4::glmer()` submodel fits: projpred now uses BOBYQA in both optimization stages, which changes the fits only within the optimizer tolerance. For example, `varsel()` for a Bernoulli model with 300 observations and two grouping factors is about 2 times faster. (GitHub: #592)
+* Faster projections onto ordinal submodels without group-level terms (`brms::cumulative()`, `rstanarm::stan_polr()`): one C++ call fits all projected draws, with results equal to those of `MASS::polr()` up to its convergence tolerance. For example, `cv_varsel()` with `validate_search = TRUE` is about 23 times faster for a model with 6 categories. (GitHub: #583)
+
+* Faster projections onto categorical submodels without group-level terms (`brms::categorical()`): one C++ call fits all projected draws, with results equal to those of `nnet::multinom()` up to its convergence tolerance. For example, `cv_varsel()` with `validate_search = TRUE` is about 8 times faster for a model with 4 categories. (GitHub: #583)
 
 * Faster projections onto binomial and Poisson GLM submodels (and Gaussian GLM submodels with a non-identity link): the IRLS fits compute their pseudo-observations in C++, and one C++ call fits all projected draws (or clusters). For example, `cv_varsel()` with `validate_search = TRUE` for binomial and Poisson models is about 4 to 6 times faster. (GitHub: #581)
+
+* `varsel()`, `cv_varsel()` and `project()` cache the submodel formulas and model matrices per set of predictor terms, so the folds of `cv_varsel()` with `validate_search = TRUE` do not build them again. For example, `cv_varsel()` with `validate_search = TRUE` for binomial and Poisson models is about 1.3 to 1.7 times faster. Global option `projpred.proj_cache_mb` (default 512) limits the size of the cache. (GitHub: #582)
 
 ## Minor changes
 
@@ -26,6 +31,9 @@ If you read this from a place other than <https://mc-stan.org/projpred/news/inde
 * Fixed the error `solve(): solution not found` (and possible wrong fits) when a predictor of a GLM submodel is constant over the observations with nonzero weight, e.g., a rare binary predictor in a CV fold. Such a predictor now gets the coefficient 0. (GitHub: #589)
 * Fixed inexact Gaussian submodel fits (identity link, also in the latent projection). (GitHub: #593)
 * Fixed a parse error in `varsel()` and `cv_varsel()` if two predictor terms have the same text before or after a `+` inside a call, such as `log(p + 1)` and `log(q + 1)`. (GitHub: #595)
+* Filter the warning "non-integer response values in a poisson model" of lme4 (>= 2.1-1), which every projection onto a Poisson submodel with group-level terms would give. (GitHub: #585)
+* With `options(projpred.PQL = TRUE)`, remove the warnings that every projection gave: the "iteration" messages of `MASS::glmmPQL()`, the warnings about non-integer Poisson responses, and "Unrecognized submodel fit" in the convergence check. (GitHub: #585)
+* Tests: Add tests that run on CRAN for the submodel fitters from lme4, MASS, gamm4, ordinal and mclogit. (GitHub: #585)
 * Tests: Leave the options, the random seed and the global environment of the R session unchanged after the tests, also when a test fails, and remove the manual cleanup of the test workspace. (GitHub: #586)
 
 
