@@ -1,5 +1,3 @@
-context("project()")
-
 # object, predictor_terms, ndraws / nclusters, nterms ---------------------
 
 test_that(paste(

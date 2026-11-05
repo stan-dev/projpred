@@ -1,8 +1,7 @@
 # get_refmodel() ----------------------------------------------------------
 
-context("get_refmodel()")
-
 test_that("`object` of class `stanreg` or `brmsfit` works", {
+  skip_if_no_setups(refmods)
   for (tstsetup in names(refmods)) {
     tstsetup_fit <- args_ref[[tstsetup]]$tstsetup_fit
     with_spclformul_crr <- grepl("\\.spclformul", tstsetup)
@@ -199,6 +198,7 @@ test_that("extra arguments in s() or t2() terms fail", {
 })
 
 test_that("get_refmodel() is idempotent", {
+  skip_if_no_setups(refmods)
   for (tstsetup in names(refmods)) {
     expect_identical(get_refmodel(refmods[[tstsetup]]),
                      refmods[[tstsetup]],
@@ -207,8 +207,6 @@ test_that("get_refmodel() is idempotent", {
 })
 
 # predict.refmodel() ------------------------------------------------------
-
-context("predict.refmodel()")
 
 test_that("invalid `type` fails", {
   skip_if_not(length(fits) > 0)
@@ -226,6 +224,7 @@ test_that(paste(
   "`object` of class `refmodel` and arguments `newdata`, `ynew`, and `type`",
   "work"
 ), {
+  skip_if_no_setups(refmods)
   for (tstsetup in names(refmods)) {
     pkg_crr <- args_ref[[tstsetup]]$pkg_nm
     mod_crr <- args_ref[[tstsetup]]$mod_nm
@@ -355,15 +354,15 @@ test_that(paste(
     # Snapshots:
     if (run_snaps) {
       if (testthat_ed_max2) local_edition(3)
-      width_orig <- options(width = 145)
-      expect_snapshot({
-        print(tstsetup)
-        print(rlang::hash(predref_resp))
-        print(rlang::hash(predref_link))
-        print(rlang::hash(predref_ynew_resp))
-        print(rlang::hash(predref_ynew_link))
+      withr::with_options(list(width = 145), {
+        expect_snapshot({
+          print(tstsetup)
+          print(rlang::hash(predref_resp))
+          print(rlang::hash(predref_link))
+          print(rlang::hash(predref_ynew_resp))
+          print(rlang::hash(predref_ynew_link))
+        })
       })
-      options(width_orig)
       if (testthat_ed_max2) local_edition(2)
     }
   }

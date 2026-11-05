@@ -11,11 +11,45 @@ proj_to_submodl <- function(predictor_terms, p_ref, refmodel,
   if (refmodel$family$for_latent && !is.null(y_unqs_aug)) {
     y_unqs_aug <- NULL
   }
-  subset <- subset_formula_and_data(
-    formula = refmodel$formula, terms_ = unique(unlist(predictor_terms)),
-    data = refmodel$fetch_data(), y = p_ref$mu, y_unqs = y_unqs_aug
-  )
-  fml_divmin <- flatten_formula(subset$formula)
+  terms_ <- unique(unlist(predictor_terms))
+  if (!is.null(search_control)) {
+    dot_args_divmin <- search_control
+  } else {
+    dot_args_divmin <- list(...)
+  }
+  # Fast path for the multi-draw fitters of divmin() (see divmin_multi()): the
+  # submodel formula, the draw-wise formulas and the shared model matrix depend
+  # only on the reference model and the predictor terms, so proj_cache_store()
+  # caches them. The submodel fits are the same as from divmin().
+  # divmin_multi() has no sign constraints, so the monotonic projection of mo()
+  # terms uses divmin():
+  mo_cons <- mo_monotone() && has_mo_term(terms_)
+  use_fast <- !mo_cons && is.null(y_unqs_aug) &&
+    identical(refmodel$div_minimizer, divmin) &&
+    proj_fast_ok(dot_args_divmin) &&
+    !anyNA(p_ref$mu)
+  store <- if (use_fast) proj_cache_store(refmodel) else NULL
+  ent <- NULL
+  if (!is.null(store)) {
+    cache_key <- paste(c(terms_, NCOL(p_ref$mu)), collapse = "\r")
+    ent <- proj_cache_get(store, cache_key)
+  }
+  subset <- NULL
+  if (is.null(ent)) {
+    subset <- subset_formula_and_data(
+      formula = refmodel$formula, terms_ = terms_,
+      data = refmodel$fetch_data(), y = p_ref$mu, y_unqs = y_unqs_aug
+    )
+    fml_divmin <- flatten_formula(subset$formula)
+    prep <- if (use_fast) divmin_prepare(fml_divmin, subset$data) else NULL
+    if (!is.null(store)) {
+      proj_cache_put(store, cache_key,
+                     list(fml_divmin = fml_divmin, prep = prep))
+    }
+  } else {
+    fml_divmin <- ent$fml_divmin
+    prep <- ent$prep
+  }
 
   if (verbose >= 2L) {
     rhs_chr <- as.character(fml_divmin)
@@ -26,58 +60,97 @@ proj_to_submodl <- function(predictor_terms, p_ref, refmodel,
     verb_out("  Projecting onto `~ ", utils::tail(rhs_chr, 1), "`")
   }
 
-  projpred_ws_aug <- p_ref$mu
-  if (refmodel$family$for_augdat && any(refmodel$wobs != 1)) {
-    # The augmented-data submodel fitters use the probabilities of the response
-    # categories as weights and ignore `weights`, so apply the observation
-    # weights to these probabilities. The rows of the augmented-rows matrix are
-    # the observations within the response categories:
-    projpred_ws_aug <- projpred_ws_aug *
-      rep(refmodel$wobs, times = nrow(projpred_ws_aug) / length(refmodel$wobs))
+  outdmin <- NULL
+  if (use_fast && !is.null(prep)) {
+    outdmin <- divmin_multi(
+      prep$formulas, shared_x = prep$shared_x,
+      dot_args = c(list(family = refmodel$family, weights = refmodel$wobs),
+                   dot_args_divmin),
+      throw_warn_sdivmin = getOption("projpred.warn_proj_drawwise", TRUE),
+      do_check_conv = getOption("projpred.check_convergence", TRUE),
+      y = unclass(p_ref$mu)
+    )
   }
-  args_divmin <- list(formula = fml_divmin,
-                      data = subset$data,
-                      family = refmodel$family,
-                      weights = refmodel$wobs,
-                      projpred_var = p_ref$var,
-                      projpred_ws_aug = projpred_ws_aug,
-                      verbose_divmin = verbose >= 3L)
-  if (!is.null(search_control)) {
-    args_divmin <- c(args_divmin, search_control)
-  } else {
-    args_divmin <- c(args_divmin, list(...))
-  }
-  if (mo_monotone() && has_mo_term(unique(unlist(predictor_terms)))) {
-    if (refmodel$family$for_augdat ||
-        !identical(refmodel$div_minimizer, divmin)) {
-      stop_mo_unsupported(paste(
-        "the augmented-data projection (the latent projection is supported)",
-        "and custom divergence minimizers"
-      ))
+  if (is.null(outdmin)) {
+    if (is.null(subset)) {
+      subset <- subset_formula_and_data(
+        formula = refmodel$formula, terms_ = terms_,
+        data = refmodel$fetch_data(), y = p_ref$mu, y_unqs = y_unqs_aug
+      )
     }
-    trms_sub <- extract_terms_response(fml_divmin)
-    has_grp <- length(trms_sub$group_terms) > 0
-    if (length(trms_sub$additive_terms) > 0 ||
-        (has_grp && !mo_lmm_supported(refmodel$family)) ||
-        (!has_grp && !identical(getOption("projpred.glm_fitter",
-                                          "fit_glm_ridge_callback"),
-                                "fit_glm_ridge_callback"))) {
-      stop_mo_unsupported(paste0(
-        "additive submodels, other submodel fitters than the default one, ",
-        "and ", mo_lmm_unsupported_why()
-      ))
+    projpred_ws_aug <- p_ref$mu
+    if (refmodel$family$for_augdat && any(refmodel$wobs != 1)) {
+      # The augmented-data submodel fitters use the probabilities of the
+      # response categories as weights and ignore `weights`, so apply the
+      # observation weights to these probabilities. The rows of the
+      # augmented-rows matrix are the observations within the response
+      # categories:
+      projpred_ws_aug <- projpred_ws_aug *
+        rep(refmodel$wobs,
+            times = nrow(projpred_ws_aug) / length(refmodel$wobs))
     }
-    # The signs of the mo() terms in the projection onto the full model, for
-    # the monotonicity constraint:
-    args_divmin$projpred_mo_signs <- mo_full_signs(p_ref, refmodel,
-                                                   args_divmin)
+    args_divmin <- c(list(formula = fml_divmin,
+                          data = subset$data,
+                          family = refmodel$family,
+                          weights = refmodel$wobs,
+                          projpred_var = p_ref$var,
+                          projpred_ws_aug = projpred_ws_aug,
+                          verbose_divmin = verbose >= 3L),
+                     dot_args_divmin)
+    if (mo_cons) {
+      if (refmodel$family$for_augdat ||
+          !identical(refmodel$div_minimizer, divmin)) {
+        stop_mo_unsupported(paste(
+          "the augmented-data projection (the latent projection is supported)",
+          "and custom divergence minimizers"
+        ))
+      }
+      trms_sub <- extract_terms_response(fml_divmin)
+      has_grp <- length(trms_sub$group_terms) > 0
+      if (length(trms_sub$additive_terms) > 0 ||
+          (has_grp && !mo_lmm_supported(refmodel$family)) ||
+          (!has_grp && !identical(getOption("projpred.glm_fitter",
+                                            "fit_glm_ridge_callback"),
+                                  "fit_glm_ridge_callback"))) {
+        stop_mo_unsupported(paste0(
+          "additive submodels, other submodel fitters than the default one, ",
+          "and ", mo_lmm_unsupported_why()
+        ))
+      }
+      # The signs of the mo() terms in the projection onto the full model, for
+      # the monotonicity constraint:
+      args_divmin$projpred_mo_signs <- mo_full_signs(p_ref, refmodel,
+                                                     args_divmin)
+    }
+    outdmin <- do.call(refmodel$div_minimizer, args_divmin)
   }
-  outdmin <- do.call(refmodel$div_minimizer, args_divmin)
 
   return(init_submodl(
     outdmin = outdmin, p_ref = p_ref, refmodel = refmodel,
     predictor_terms = predictor_terms, wobs = refmodel$wobs
   ))
+}
+
+# Whether proj_to_submodl() may call divmin_multi() instead of divmin(), with
+# the arguments `dot_args` for the divergence minimizer. This requires that
+# divmin() uses fit_glm_ridge_callback() and the current global options for
+# warnings and convergence checks, and that `dot_args` holds no argument of
+# divmin() itself.
+proj_fast_ok <- function(dot_args) {
+  if (!identical(getOption("projpred.glm_fitter", "fit_glm_ridge_callback"),
+                 "fit_glm_ridge_callback")) {
+    return(FALSE)
+  }
+  if ((is.null(getOption("projpred.warn_proj_drawwise")) &&
+       !is.null(getOption("projpred.warn_prj_drawwise"))) ||
+      (is.null(getOption("projpred.check_convergence")) &&
+       !is.null(getOption("projpred.check_conv")))) {
+    return(FALSE)
+  }
+  return(!any(names(dot_args) %in% c("throw_warn_sdivmin", "do_check_conv",
+                                     "formula", "data", "family", "weights",
+                                     "projpred_var", "projpred_ws_aug",
+                                     "verbose_divmin")))
 }
 
 # Function to prepare the performance evaluation. For each submodel size along

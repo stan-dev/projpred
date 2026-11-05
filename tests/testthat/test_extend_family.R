@@ -1,5 +1,3 @@
-context("extend_family()")
-
 test_that("extend_family() works for the traditional projection", {
   fam_nms_tst <- c("gauss", "binom", "poiss")
   ### TODO: Also test other families extensible by projpred:

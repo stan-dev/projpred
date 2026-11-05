@@ -1,14 +1,6 @@
-context("elnet")
-
 # tests for glm_elnet
 
-# Needed to clean up the workspace afterwards (i.e, after this test file):
-ls_bu <- ls()
-
-if (exists(".Random.seed", envir = .GlobalEnv)) {
-  rng_old <- get(".Random.seed", envir = .GlobalEnv)
-}
-set.seed(1235)
+withr::local_seed(1235)
 n <- 40
 nterms <- 10
 nterms_fit <- nterms - 5
@@ -239,7 +231,3 @@ test_that(paste(
   expect_equal(fit0$beta[-2, ], fit$beta, tolerance = 1e-10)
   expect_equal(fit0$beta0, fit$beta0, tolerance = 1e-10)
 })
-
-if (exists("rng_old")) assign(".Random.seed", rng_old, envir = .GlobalEnv)
-# Clean up the workspace:
-rm(list = setdiff(ls(), ls_bu))

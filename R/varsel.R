@@ -309,6 +309,10 @@ varsel.refmodel <- function(
     }
     set.seed(seed)
   }
+  # Activate the cache of the projection inputs (see proj_cache_store()). This
+  # follows the `on.exit()` call above, which has no `add = TRUE`:
+  proj_cache_enter()
+  on.exit(proj_cache_exit(), add = TRUE)
 
   refmodel <- object
   nterms_all <- count_terms_in_formula(refmodel$formula) - 1L
