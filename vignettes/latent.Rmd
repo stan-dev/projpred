@@ -756,7 +756,8 @@ The `cvrefbuilder` functions of `get_refmodel.stanreg()` and `brms::get_refmodel
 
 To use the draws from the fold-wise refits, define the custom functions inside a function that takes the fitted model object as its argument and calls `get_refmodel()`.
 Then set element `cvrefbuilder` of the reference model object to a function that calls this outer function with the fold-wise refit.
-(Methods `get_refmodel.stanreg()` and `brms::get_refmodel.brmsfit()` do not accept a `cvrefbuilder` argument, so we replace the element after we have created the reference model object.)
+In this call, argument `called_from_cvrefbuilder = TRUE` suppresses some warnings that are already shown for the full-data reference model object (see `?init_refmodel`).
+This is a workaround: currently, methods `get_refmodel.stanreg()` and `brms::get_refmodel.brmsfit()` do not accept a `cvrefbuilder` argument, so we replace the element after we have created the reference model object.
 For the negative binomial example, this can look as follows:
 ```{r kfold_custom_nebin}
 get_refmodel_nebin <- function(fit, ...) {
@@ -803,7 +804,6 @@ refm_nebin_kfold$cvrefbuilder <- function(cvfit) {
 ```
 As before, the messages concerning `<refmodel>$dis` and `latent_ilink` can be ignored here.
 Then `cv_varsel(refm_nebin_kfold, cv_method = "kfold")` uses the `reciprocal_dispersion` draws of the fold-wise refit in each fold.
-Argument `called_from_cvrefbuilder = TRUE` suppresses some warnings that are already shown for the full-data reference model object (see `?init_refmodel`).
 We do not run K-fold CV here, because it refits the reference model $K$ times.
 For the Weibull example, define `refm_shape` inside such a function in the same way.
 For the log-normal example, pass `dis = as.matrix(fit)[, "sigma", drop = FALSE]` to `get_refmodel()` inside such a function.
