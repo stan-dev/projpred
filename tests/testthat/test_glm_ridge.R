@@ -1,5 +1,3 @@
-context("ridge")
-
 # tests for ridge regression, currently untested combinations
 # - gaussian with inverse-link
 # - binomial with log or cloglog-link
@@ -7,13 +5,7 @@ context("ridge")
 # - Gamma with inverse or id-link
 # - everything except gaussian with id-link for ridge penalty
 
-# Needed to clean up the workspace afterwards (i.e, after this test file):
-ls_bu <- ls()
-
-if (exists(".Random.seed", envir = .GlobalEnv)) {
-  rng_old <- get(".Random.seed", envir = .GlobalEnv)
-}
-set.seed(1235)
+withr::local_seed(1235)
 n <- 40
 nterms <- 10
 nterms_fit <- nterms - 5
@@ -263,7 +255,7 @@ test_that("glm_ridge: a column with zero variance gets the coefficient 0", {
   # left-out observation of a fold).
   # Restore the random numbers afterwards, so that tests after this one get the
   # same data as without it:
-  rng_state <- get(".Random.seed", envir = .GlobalEnv)
+  withr::local_preserve_seed()
   w0 <- weights
   w0[1] <- 0
   x_one <- rep(0, n)
@@ -302,7 +294,6 @@ test_that("glm_ridge: a column with zero variance gets the coefficient 0", {
   glmfit <- glm(y ~ x_tr[, 1])
   expect_equal(c(2 * fit$beta[1], fit$beta[2]), unname(coef(glmfit)),
                tolerance = 1e-8)
-  assign(".Random.seed", rng_state, envir = .GlobalEnv)
 })
 
 test_that(paste(
@@ -404,11 +395,6 @@ test_that("glm_ridge: warning messages are returned and printed", {
 })
 
 test_that("glm_ridge: native pseudo-observations equal the R callback", {
-  with_native <- function(native, expr) {
-    opts_old <- options(projpred.glm_native = native)
-    on.exit(options(opts_old))
-    expr
-  }
   eta_n <- drop(x[, 1:4] %*% c(0.8, -0.6, 0.4, 0.2))
   fams <- list(
     list(binomial("logit"), rbinom(n, weights, plogis(eta_n)) / weights),
@@ -430,8 +416,12 @@ test_that("glm_ridge: native pseudo-observations equal the R callback", {
         fit_args <- list(x = x_n, y = y_n, family = fam, lambda = 1e-4,
                          weights = weights, offset = offset,
                          intercept = intcpt)
-        fit_native <- with_native(TRUE, do.call(glm_ridge, fit_args))
-        fit_r <- with_native(FALSE, do.call(glm_ridge, fit_args))
+        fit_native <- withr::with_options(
+          list(projpred.glm_native = TRUE), do.call(glm_ridge, fit_args)
+        )
+        fit_r <- withr::with_options(
+          list(projpred.glm_native = FALSE), do.call(glm_ridge, fit_args)
+        )
         info_str <- paste(fam$family, fam$link, intcpt, is.null(x_n))
         expect_equal(fit_native, fit_r, tolerance = 1e-12, info = info_str)
       }
@@ -443,8 +433,10 @@ test_that("glm_ridge: native pseudo-observations equal the R callback", {
   fam_mod <- extend_family(binomial())
   fam_mod$linkinv <- function(eta) 1 / (1 + exp(-eta))
   expect_null(native_pseudo_codes(fam_mod))
-  expect_null(with_native(FALSE,
-                          native_pseudo_codes(extend_family(binomial()))))
+  expect_null(withr::with_options(
+    list(projpred.glm_native = FALSE),
+    native_pseudo_codes(extend_family(binomial()))
+  ))
 })
 
 test_that(paste(
@@ -553,7 +545,3 @@ test_that("capt_conds() collects messages and warnings", {
   expect_identical(capt_conds(invisible(1)), character())
   expect_error(capt_conds(stop("an error")), "an error")
 })
-
-if (exists("rng_old")) assign(".Random.seed", rng_old, envir = .GlobalEnv)
-# Clean up the workspace:
-rm(list = setdiff(ls(), ls_bu))

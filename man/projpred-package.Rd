@@ -190,6 +190,16 @@ call \code{\link[=gc]{gc()}} at some places (e.g., after each size that the forw
 passes through) to free up some memory. These \code{\link[=gc]{gc()}} calls are not always
 necessary to reduce the peak memory usage, but they add runtime (hence the
 default of \code{FALSE} for that global option).
+
+During a call of \code{\link[=varsel]{varsel()}}, \code{\link[=cv_varsel]{cv_varsel()}} or \code{\link[=project]{project()}}, \pkg{projpred}
+caches the submodel formulas and model matrices per set of predictor terms
+(for submodels without multilevel or additive terms). Global option
+\code{projpred.proj_cache_mb} (default \code{512}) limits the size of this cache, in
+units of 2^20 bytes as estimated by \code{\link[utils:object.size]{utils::object.size()}}. The cache holds
+at most about twice this limit. The limit applies to each \R process, so
+forked parallel workers can each have a cache of this size. Setting global
+option \code{projpred.proj_cache} to \code{FALSE} switches the cache off. The cache
+changes only the runtime, not the results.
 }
 
 \section{Other notes}{
