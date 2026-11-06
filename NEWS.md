@@ -24,6 +24,7 @@ If you read this from a place other than <https://mc-stan.org/projpred/news/inde
 
 ## Minor changes
 
+* `get_refmodel.stanreg()` has new arguments `cvfun` and `cvrefbuilder` for K-fold CV. For example, a custom `cvrefbuilder` lets custom latent-projection functions use the draws of the fold-wise refits. (GitHub: #N)
 * Faster `cl_agg()` and conversion of arrays to augmented-rows matrices. For example, LOO CV with validated search for the latent projection with 4000 projected draws is about 3-4 times faster. (GitHub: #600)
 
 ## Bug fixes and maintenance
