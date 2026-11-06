@@ -387,3 +387,20 @@ if (run_snaps) {
 
   if (testthat_ed_max2) local_edition(2)
 }
+
+test_that("replace_population_names() works for zero and more effects", {
+  coefs <- c("(Intercept)" = 0.5, x1 = 1.2, "x2:x3" = -0.3)
+  expect_identical(
+    replace_population_names(coefs, nm_scheme = "brms"),
+    c(b_Intercept = 0.5, b_x1 = 1.2, "b_x2:x3" = -0.3)
+  )
+  expect_identical(replace_population_names(coefs, nm_scheme = "rstanarm"),
+                   coefs)
+  # No population-level effects (for example, the `beta` of an ordinal
+  # submodel without predictors):
+  for (coefs_empty in list(numeric(0), setNames(numeric(0), character(0)))) {
+    res <- replace_population_names(coefs_empty, nm_scheme = "brms")
+    expect_length(res, 0)
+    expect_identical(names(res), character(0))
+  }
+})
