@@ -1,5 +1,3 @@
-context("select_possible_terms_size() with search_term_info()")
-
 test_that(paste(
   "select_possible_terms_size() gives the same candidates with and without",
   "search_term_info()"

@@ -81,7 +81,12 @@
 #'     + For the augmented-data projection: [ordinal::clmm()] (the returned
 #'     object inherits from class `clmm`) for the [brms::cumulative()] family,
 #'     [mclogit::mblogit()] (the returned object inherits from class `mmblogit`)
-#'     for the [brms::categorical()] family.
+#'     for the [brms::categorical()] family. For [ordinal::clmm()] with a single
+#'     group-level term `(1 | <group>)`, \pkg{projpred} uses
+#'     `method = "ucminf"` and `grad = "forward"` (see
+#'     [ordinal::clmm.control()]). If this fit fails or does not converge,
+#'     \pkg{projpred} refits with the default settings of [ordinal::clmm()]. An
+#'     argument `method` or `control` in `...` replaces this default.
 #' * Submodel without multilevel but additive terms: [mgcv::gam()] (the returned
 #' object inherits from class `gam`).
 #' * Submodel with multilevel and additive terms: [gamm4::gamm4()] (within
@@ -189,6 +194,16 @@
 #' passes through) to free up some memory. These [gc()] calls are not always
 #' necessary to reduce the peak memory usage, but they add runtime (hence the
 #' default of `FALSE` for that global option).
+#'
+#' During a call of [varsel()], [cv_varsel()] or [project()], \pkg{projpred}
+#' caches the submodel formulas and model matrices per set of predictor terms
+#' (for submodels without multilevel or additive terms). Global option
+#' `projpred.proj_cache_mb` (default `512`) limits the size of this cache, in
+#' units of 2^20 bytes as estimated by [utils::object.size()]. The cache holds
+#' at most about twice this limit. The limit applies to each \R process, so
+#' forked parallel workers can each have a cache of this size. Setting global
+#' option `projpred.proj_cache` to `FALSE` switches the cache off. The cache
+#' changes only the runtime, not the results.
 #'
 #' # Other notes
 #'

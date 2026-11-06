@@ -1,5 +1,3 @@
-context("predictive variance of the Gaussian and Student-t families")
-
 # Per-observation weighted variance across the draws, computed row by row (the
 # reference for rowvar_wdraws()):
 rowvar_loop <- function(mu, wdraws) {

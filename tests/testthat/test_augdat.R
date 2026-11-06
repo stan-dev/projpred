@@ -1,10 +1,3 @@
-context("augmented-data projection")
-
-# Setup -------------------------------------------------------------------
-
-# Needed to clean up the workspace afterwards (i.e, after this test file):
-ls_bu <- ls()
-
 # augdat.R ----------------------------------------------------------------
 
 nobs_orig_tst <- 4L
@@ -40,6 +33,38 @@ test_that("arr2augmat(), augmat2arr()", {
   expect_identical(augmat_m1, augmat_m1_ch)
   arr_m1_ch <- augmat2arr(augmat_m1, margin_draws = 1)
   expect_identical(arr_m1_ch, arr_m1)
+})
+
+test_that("arr2augmat() gives the results of apply() over the draws", {
+  # The computation with apply() (the reference for the computation with
+  # aperm()):
+  arr2augmat_apply <- function(arr, margin_draws = 3) {
+    margin_obs <- if (margin_draws == 1) 2 else 1
+    augmat <- do.call(cbind, apply(arr, margin_draws, as.vector,
+                                   simplify = FALSE))
+    attr(augmat, "ndiscrete") <- dim(arr)[-c(margin_draws, margin_obs)]
+    class(augmat) <- "augmat"
+    augmat
+  }
+  dims <- c(5L, 3L, 7L)
+  x_dbl <- sin(seq_len(prod(dims)))
+  arr_list <- list(
+    dbl = array(x_dbl, dims),
+    int = array(seq_len(prod(dims)), dims),
+    named = array(x_dbl, dims,
+                  dimnames = list(NULL, c("a", "b", "c"), paste0("s", 1:7))),
+    empty_nms = array(x_dbl, dims, dimnames = list(NULL, NULL, rep("", 7))),
+    attr = structure(array(x_dbl, dims), foo = "bar"),
+    one_draw = array(x_dbl[1:15], c(5L, 3L, 1L)),
+    one_cat = array(x_dbl[1:35], c(5L, 1L, 7L))
+  )
+  for (nm in names(arr_list)) {
+    arr <- arr_list[[nm]]
+    expect_identical(arr2augmat(arr), arr2augmat_apply(arr), info = nm)
+    arr1 <- aperm(arr, c(3, 1, 2))
+    expect_identical(arr2augmat(arr1, margin_draws = 1),
+                     arr2augmat_apply(arr1, margin_draws = 1), info = nm)
+  }
 })
 
 ## t.augmat() -------------------------------------------------------------
@@ -188,9 +213,7 @@ test_that(paste(
   "the traditional projection"
 ), {
   skip_if_not(run_prj)
-  if (exists(".Random.seed", envir = .GlobalEnv)) {
-    rng_old <- get(".Random.seed", envir = .GlobalEnv)
-  }
+  withr::local_preserve_seed()
   tstsetups <- grep("\\.brnll\\..*\\.augdat\\.", names(prjs), value = TRUE)
   for (tstsetup in tstsetups) {
     tstsetup_trad <- sub("\\.augdat\\.", ".trad_compare.", tstsetup)
@@ -214,7 +237,6 @@ test_that(paste(
     expect_equal(structure(unclass(eta_aug), ndiscrete = NULL), eta_trad,
                      info = tstsetup)
   }
-  if (exists("rng_old")) assign(".Random.seed", rng_old, envir = .GlobalEnv)
 })
 
 ## Projection -------------------------------------------------------------
@@ -458,15 +480,16 @@ test_that(paste(
     # Sometimes, there are seemingly large differences on logit scale which are
     # probably due to numerical overflow of probabilities (i.e., on probability
     # scale) towards 1 or underflow towards zero. Thus, compare on probability
-    # scale if the comparison on logit scale fails:
-    tryCatch(expect_equal(summs_sub_mu, summs_sub_mu_trad,
-                          tolerance = 1e-6, info = tstsetup),
-             error = function(e) {
-               stopifnot(is_kfold)
-               expect_equal(ilinkfun_raw(summs_sub_mu, link_nm = "logit"),
-                            ilinkfun_raw(summs_sub_mu_trad, link_nm = "logit"),
-                            tolerance = 1e-5, info = tstsetup)
-             })
+    # scale if the comparison on logit scale fails (only for K-fold CV):
+    if (is_kfold &&
+        !isTRUE(all.equal(summs_sub_mu, summs_sub_mu_trad, tolerance = 1e-6))) {
+      expect_equal(ilinkfun_raw(summs_sub_mu, link_nm = "logit"),
+                   ilinkfun_raw(summs_sub_mu_trad, link_nm = "logit"),
+                   tolerance = 1e-5, info = tstsetup)
+    } else {
+      expect_equal(summs_sub_mu, summs_sub_mu_trad, tolerance = 1e-6,
+                   info = tstsetup)
+    }
     summs_sub_lppd <- do.call(cbind, lapply(summs_sub, "[[", "lppd"))
     summs_sub_lppd_trad <- unname(
       do.call(cbind, lapply(summs_sub_trad, "[[", "lppd"))
@@ -474,14 +497,16 @@ test_that(paste(
     # Sometimes, there are seemingly large differences on log scale which are
     # probably due to numerical overflow of probabilities (i.e., on exp scale)
     # towards 1 or underflow towards zero. Thus, compare on exp scale if the
-    # comparison on log scale fails:
-    tryCatch(expect_equal(summs_sub_lppd, summs_sub_lppd_trad,
-                          tolerance = 1e-6, info = tstsetup),
-             error = function(e) {
-               stopifnot(is_kfold)
-               expect_equal(exp(summs_sub_lppd), exp(summs_sub_lppd_trad),
-                            tolerance = 1e-5, info = tstsetup)
-             })
+    # comparison on log scale fails (only for K-fold CV):
+    if (is_kfold &&
+        !isTRUE(all.equal(summs_sub_lppd, summs_sub_lppd_trad,
+                          tolerance = 1e-6))) {
+      expect_equal(exp(summs_sub_lppd), exp(summs_sub_lppd_trad),
+                   tolerance = 1e-5, info = tstsetup)
+    } else {
+      expect_equal(summs_sub_lppd, summs_sub_lppd_trad, tolerance = 1e-6,
+                   info = tstsetup)
+    }
     summs_ref <- cvvs$summaries$ref
     summs_ref$mu <- structure(unclass(summs_ref$mu), ndiscrete = NULL)
     summs_ref$mu <- summs_ref$mu[(nobsv + 1):(2 * nobsv)]
@@ -530,7 +555,7 @@ test_that(paste(
     } else {
       tol_smmry <- 1e-6
     }
-    compare_exp <- function(e) {
+    compare_exp <- function() {
       stopifnot(is_kfold)
       # Check that we have the default `stats` in this case, meaning only the
       # ELPD:
@@ -552,9 +577,16 @@ test_that(paste(
       expect_equal(smmry_pd$elpd.se, smmry_pd_trad$elpd.se, tolerance = 1e-3,
                    info = tstsetup)
     }
-    tryCatch(expect_equal(smmry_cvvs$perf_sub, smmry_cvvs_trad$perf_sub,
-                          tolerance = tol_smmry, info = tstsetup),
-             error = compare_exp)
+    # For K-fold CV, compare on exp scale if the comparison on log scale fails
+    # (see compare_exp()):
+    if (is_kfold &&
+        !isTRUE(all.equal(smmry_cvvs$perf_sub, smmry_cvvs_trad$perf_sub,
+                          tolerance = tol_smmry))) {
+      compare_exp()
+    } else {
+      expect_equal(smmry_cvvs$perf_sub, smmry_cvvs_trad$perf_sub,
+                   tolerance = tol_smmry, info = tstsetup)
+    }
   }
 })
 
@@ -610,7 +642,7 @@ test_that(paste(
     } else {
       tol_smmry <- 1e-6
     }
-    compare_exp <- function(e) {
+    compare_exp <- function() {
       stopifnot(is_kfold)
 
       smmry_pd <- smmry_cvvs$perf_sub
@@ -642,15 +674,17 @@ test_that(paste(
                    smmry_pd_trad[se_cols_trad],
                    tolerance = 1e-3, info = tstsetup)
     }
-    tryCatch(expect_equal(smmry_cvvs$perf_sub, smmry_cvvs_trad$perf_sub,
-                          tolerance = tol_smmry, info = tstsetup),
-             error = compare_exp)
+    # For K-fold CV, compare on exp scale if the comparison on log scale fails
+    # (see compare_exp()):
+    if (is_kfold &&
+        !isTRUE(all.equal(smmry_cvvs$perf_sub, smmry_cvvs_trad$perf_sub,
+                          tolerance = tol_smmry))) {
+      compare_exp()
+    } else {
+      expect_equal(smmry_cvvs$perf_sub, smmry_cvvs_trad$perf_sub,
+                   tolerance = tol_smmry, info = tstsetup)
+    }
     expect_equal(smmry_cvvs$perf_ref, smmry_cvvs_trad$perf_ref,
                  tolerance = tol_smmry, info = tstsetup)
   }
 })
-
-# Teardown ----------------------------------------------------------------
-
-# Clean up the workspace:
-rm(list = setdiff(ls(), ls_bu))

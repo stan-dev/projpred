@@ -70,12 +70,37 @@ divmin <- function(
     projpred_random <- formula_random$random
   }
   formulas <- validate_response_formula(formula)
+  # Gaussian multilevel submodels: one lFormula() for all draws (see
+  # lmer_shared_callback()). The options and the lme4 check run here, because
+  # the draw-wise calls may run in parallel workers:
+  if (identical(sdivmin, fit_glmer_callback) && length(formulas) > 1 &&
+      !getOption("projpred.PQL", FALSE) &&
+      getOption("projpred.gaussian_not_as_generalized", TRUE) &&
+      identical(list(...)$family$family, "gaussian") &&
+      identical(list(...)$family$link, "identity") &&
+      getOption("projpred.lmer_shared", TRUE) && lmer_shared_ok()) {
+    sdivmin <- shared_setup_callback(lmer_shared_callback, formulas, sdivmin)
+  }
+  # Additive submodels without group-level terms: one mgcv setup for all draws
+  # (see gam_shared_callback()):
+  if (identical(sdivmin, fit_gam_callback) && length(formulas) > 1 &&
+      getOption("projpred.gam_shared", TRUE)) {
+    sdivmin <- shared_setup_callback(gam_shared_callback, formulas, sdivmin)
+  }
   if (is.list(projpred_formulas_no_random)) {
     stopifnot(length(projpred_formulas_no_random) == length(formulas))
   } else {
     projpred_formulas_no_random <- as.list(
       rep(projpred_formulas_no_random, length(formulas))
     )
+  }
+  # projpred's own GLM fitter throws only R conditions, so its messages and
+  # warnings can be collected by condition handlers, which is faster than
+  # diverting the message stream. Other fitters keep capt_mssgs_warns():
+  if (identical(sdivmin, fit_glm_ridge_callback)) {
+    capt_fun <- capt_conds
+  } else {
+    capt_fun <- capt_mssgs_warns
   }
   # The draw-wise formulas of a non-multilevel non-additive submodel differ only
   # in the response, so fit_glm_ridge_callback() can use one model matrix for
@@ -84,10 +109,10 @@ divmin <- function(
   if (identical(sdivmin, fit_glm_ridge_callback) && length(formulas) >= 1) {
     shared_x <- shared_model_matrix(formulas, data = list(...)$data)
     if (!is.null(shared_x)) {
-      # Gaussian submodels with the identity link: one solve for all draws
-      # (this fitter cannot throw messages or warnings in this case):
-      outdmin <- glm_ridge_gauss_multi(formulas, shared_x = shared_x,
-                                       dot_args = list(...))
+      outdmin <- divmin_multi(formulas, shared_x = shared_x,
+                              dot_args = list(...),
+                              throw_warn_sdivmin = throw_warn_sdivmin,
+                              do_check_conv = do_check_conv)
       if (!is.null(outdmin)) {
         return(outdmin)
       }
@@ -143,7 +168,7 @@ divmin <- function(
       if (verbose_divmin) {
         on.exit(utils::setTxtProgressBar(pb, s))
       }
-      mssgs_warns_capt <- capt_mssgs_warns(
+      mssgs_warns_capt <- capt_fun(
         soutdmin <- do.call(sdivmin, c(
           list(formula = formulas[[s]],
                projpred_var = projpred_var[, s, drop = FALSE],
@@ -173,7 +198,8 @@ divmin <- function(
       projpred_var_s = iterators::iter(projpred_var, by = "column"),
       projpred_formula_no_random_s = projpred_formulas_no_random,
       .packages = c("projpred"),
-      .export = c("sdivmin", "projpred_random", "dot_args", "progressor_obj"),
+      .export = c("sdivmin", "projpred_random", "dot_args", "progressor_obj",
+                  "capt_fun"),
       .noexport = c(
         "object", "p_sel", "search_path", "p_ref", "refmodel", "formulas",
         "projpred_var", "projpred_ws_aug", "projpred_formulas_no_random"
@@ -181,7 +207,7 @@ divmin <- function(
       .errorhandling = getOption("projpred.foreach_errorhandling", "stop"),
       .verbose = getOption("projpred.foreach_verbose", FALSE)
     ) %do_projpred% {
-      mssgs_warns_capt <- capt_mssgs_warns(
+      mssgs_warns_capt <- capt_fun(
         soutdmin <- do.call(
           sdivmin,
           c(list(formula = formula_s,
@@ -197,16 +223,349 @@ divmin <- function(
   }
   mssgs_warns_capts <- lapply(outdmin, "[[", "mssgs_warns_capt")
   outdmin <- lapply(outdmin, "[[", "soutdmin")
-  mssgs_warns_capts <- lapply(mssgs_warns_capts, function(mssgs_warns_capt) {
-    # Filter out some warnings.
-    mssgs_warns_capt <- grep("Warning in [^:]*:$",
-                             mssgs_warns_capt, value = TRUE, invert = TRUE)
-    return(mssgs_warns_capt)
-  })
+  mssgs_warns_capts <- lapply(mssgs_warns_capts, filter_mssgs_warns)
   warn_prj_drawwise(mssgs_warns_capts, throw_warn = throw_warn_sdivmin)
   check_conv(outdmin, lengths(mssgs_warns_capts), do_check = do_check_conv)
   attr(outdmin, "projpred_lost_lvls") <- lost_lvls
   return(outdmin)
+}
+
+# Draw-wise divergence minimizer for divmin() that builds the shared setup
+# (`make_shared`: lmer_shared_callback() or gam_shared_callback())
+# from the arguments of its first call. The setup then uses the data of the
+# draw-wise fits, also if divmin() changes the data before these fits. A call
+# with other data, or a setup that does not apply, uses `sdivmin_plain`. The
+# setup is built once, or once per task in parallel runs.
+shared_setup_callback <- function(make_shared, formulas, sdivmin_plain) {
+  # Force the arguments: divmin() assigns the result to `sdivmin`, so a
+  # promise for `sdivmin_plain` would return this function (infinite
+  # recursion):
+  force(sdivmin_plain)
+  force(make_shared)
+  force(formulas)
+  sdivmin_shared <- NULL
+  data_shared <- NULL
+  done <- FALSE
+  return(function(formula, ...) {
+    if (!done) {
+      done <<- TRUE
+      dot_args <- list(...)
+      sdivmin_shared <<- make_shared(formulas, dot_args = dot_args)
+      data_shared <<- dot_args[["data"]]
+    }
+    # identical() returns fast if both are the same object (the usual case):
+    if (is.null(sdivmin_shared) ||
+        !identical(list(...)[["data"]], data_shared)) {
+      return(sdivmin_plain(formula = formula, ...))
+    }
+    return(sdivmin_shared(formula = formula, ...))
+  })
+}
+
+# Additive submodels (mgcv::gam()) of all draws of one projection
+# ---------------------------------------------------------------
+#
+# The draw-wise formulas differ only in the response, so all draws can share the
+# setup of mgcv::gam() (model frame, smooth bases and penalties;
+# mgcv::gam(fit = FALSE)). gam_shared_callback() fits each draw with
+# mgcv::gam(G = ), the public interface for a prepared setup, with the response
+# of the draw. It sets the elements of the fit that contain the response name
+# (`formula`, `terms`, `pterms`, `model`, `pred.formula`) and `call` as in a fit
+# by fit_gam_callback(), so the fits are equal (all.equal()) to those of
+# fit_gam_callback().
+
+# Draw-wise divergence minimizer for divmin() that uses one mgcv::gam() setup
+# for all draws, or `NULL` if this does not apply.
+gam_shared_callback <- function(formulas, dot_args) {
+  if (!getOption("projpred.gam_shared", TRUE)) {
+    return(NULL)
+  }
+  data <- dot_args$data
+  resp_nms <- vapply(formulas, function(fml) {
+    if (is.name(fml[[2]])) as.character(fml[[2]]) else NA_character_
+  }, character(1))
+  if (!is.data.frame(data) || anyNA(resp_nms) ||
+      !all(resp_nms %in% names(data)) || anyNA(data[resp_nms])) {
+    return(NULL)
+  }
+  # As in fit_gam_callback():
+  gam_dot_args <- dot_args[intersect(
+    names(dot_args),
+    c(methods::formalArgs(mgcv::gam), methods::formalArgs(mgcv::gam.fit))
+  )]
+  if (any(c("G", "fit") %in% names(gam_dot_args))) {
+    return(NULL)
+  }
+  g_setup <- tryCatch(
+    do.call(mgcv::gam, c(list(formula = formulas[[1]]), gam_dot_args,
+                         list(fit = FALSE))),
+    error = function(e) NULL
+  )
+  if (is.null(g_setup) || length(g_setup$y) != nrow(data)) {
+    return(NULL)
+  }
+  resp_old <- resp_nms[1]
+  return(function(formula, ...) {
+    resp_new <- as.character(formula[[2]])
+    tryCatch({
+      g_s <- g_setup
+      g_s$y <- data[[resp_new]]
+      g_s$mf[[resp_old]] <- data[[resp_new]]
+      fit <- mgcv::gam(G = g_s)
+      if (resp_new != resp_old) {
+        for (el in c("formula", "terms", "pterms", "model", "pred.formula")) {
+          if (!is.null(fit[[el]])) {
+            fit[[el]] <- rename_sym(fit[[el]], resp_old, resp_new)
+          }
+        }
+      }
+      fit$call <- match.call(mgcv::gam, as.call(c(
+        list(mgcv::gam), list(formula = formula), gam_dot_args
+      )))
+      fit
+    }, error = function(e) fit_gam_callback(formula = formula, ...))
+  })
+}
+
+# Linear predictors of `gam` fits (without group-level terms) of the same
+# submodel for `newdata`, from one linear-predictor matrix (predict.gam() with
+# `type = "lpmatrix"`) for all draws, instead of one predict.gam() call per
+# draw. Returns `NULL` for other cases.
+subprd_gam_direct <- function(fits, newdata) {
+  if (is.null(newdata) || length(fits) < 2 ||
+      !all(vapply(fits, function(fit) {
+        inherits(fit, "gam") && !inherits(fit, "gamm4")
+      }, logical(1)))) {
+    return(NULL)
+  }
+  fit_1 <- fits[[1]]
+  terms_noenv <- function(trms) {
+    trms <- delete.response(trms)
+    attr(trms, ".Environment") <- NULL
+    trms
+  }
+  trms_1 <- terms_noenv(fit_1$pterms)
+  smooth_1 <- fit_1$smooth
+  if (!all(vapply(fits, function(fit) {
+    identical(terms_noenv(fit$pterms), trms_1) &&
+      identical(fit$smooth, smooth_1) &&
+      identical(names(stats::coef(fit)), names(stats::coef(fit_1)))
+  }, logical(1)))) {
+    return(NULL)
+  }
+  if (length(attr(fit_1$terms, "offset")) ||
+      length(attr(fit_1$pterms, "offset"))) {
+    return(NULL)
+  }
+  x_lp <- stats::predict(fit_1, newdata = newdata, type = "lpmatrix")
+  prd <- x_lp %*% do.call(cbind, lapply(fits, stats::coef))
+  dimnames(prd) <- list(rownames(x_lp), NULL)
+  return(prd)
+}
+
+# Gaussian multilevel submodels (lme4::lmer()) of all draws of one projection
+# --------------------------------------------------------------------------
+#
+# lme4::lmer() is lme4::lFormula() (model frame, fixed-effects model matrix,
+# random-effects structure), followed by mkLmerDevfun(), optimizeLmer(),
+# checkConv() and mkMerMod(). The draw-wise formulas of one submodel differ only
+# in the response, so all draws can share one lFormula() result.
+# lmer_shared_fit() repeats the other steps of lmer() for one draw: it
+# transcribes these steps of lmer() in lme4 2.0-1 to 2.1-0 (R package lme4,
+# GPL (>= 2); see the file LICENSE). lme4's C++ objects change some vectors of
+# the lFormula() result in place, so each draw gets fresh copies of them. The
+# fits are equal (all.equal()) to those of lmer(). lmer_shared_ok() checks this
+# once per R session on a small fixed problem, and the test suite checks it on
+# CRAN. If the check fails (for example after a change in lme4) or lme4 is
+# older than 2.0-1, divmin() fits each draw with lmer().
+
+# Replaces the name `old` by `new` in all language objects of `x`, including
+# its attributes and names (used for the response of a shared model frame).
+rename_sym <- function(x, old, new) {
+  if (is.name(x)) {
+    if (identical(x, as.name(old))) {
+      return(as.name(new))
+    }
+    return(x)
+  }
+  if (is.call(x) || is.pairlist(x) || (is.list(x) && !is.data.frame(x))) {
+    at <- attributes(x)
+    for (i in seq_along(x)) {
+      if (!is.null(x[[i]])) {
+        x[[i]] <- rename_sym(x[[i]], old, new)
+      }
+    }
+    attributes(x) <- at
+  }
+  at <- attributes(x)
+  if (!is.null(at)) {
+    for (nm in setdiff(names(at), c("names", "dim", "dimnames", "row.names",
+                                    "class"))) {
+      attr(x, nm) <- rename_sym(at[[nm]], old, new)
+    }
+    if (!is.null(at$names)) {
+      names(x)[names(x) == old] <- new
+    }
+    if (!is.null(at$dimnames)) {
+      attr(x, "dimnames") <- lapply(at$dimnames, function(dnms) {
+        if (!is.null(dnms)) {
+          dnms[dnms == old] <- new
+        }
+        dnms
+      })
+    }
+  }
+  return(x)
+}
+
+# Fits the lmer() submodel `formula` (response: a column of `data`) from the
+# shared lFormula() result `lmod0` (of the same submodel for another draw).
+# `lmer_args` are the arguments of the lmer() call that this fit replaces.
+lmer_shared_fit <- function(lmod0, formula, data, control, lmer_args) {
+  resp_old <- as.character(lmod0$formula[[2]])
+  resp_new <- as.character(formula[[2]])
+  lmod <- lmod0
+  # Fresh copies of the vectors that lme4's C++ objects change in place:
+  lmod$reTrms$Lambdat@x <- lmod0$reTrms$Lambdat@x + 0
+  lmod$reTrms$theta <- lmod0$reTrms$theta + 0
+  lmod$reTrms$Zt@x <- lmod0$reTrms$Zt@x + 0
+  lmod$X <- lmod0$X + 0
+  fr <- lmod$fr
+  fr[[resp_old]] <- data[[resp_new]]
+  if (resp_new != resp_old) {
+    fr <- rename_sym(fr, resp_old, resp_new)
+  }
+  lmod$fr <- fr
+  # The following steps are those of lme4::lmer():
+  mcout <- match.call(lme4::lmer, as.call(c(list(lme4::lmer), lmer_args)))
+  mcout$formula <- formula
+  lmod$formula <- NULL
+  devfun <- do.call(lme4::mkLmerDevfun,
+                    c(lmod, list(start = NULL, verbose = 0L, control = control)))
+  rho <- environment(devfun)
+  nobs <- nrow(lmod$fr)
+  npar <- length(rho$lower)
+  calc.derivs <- control$calc.derivs %||%
+    (nobs < control$checkConv$check.conv.nobsmax &&
+       npar < control$checkConv$check.conv.nparmax)
+  opt <- lme4::optimizeLmer(
+    devfun, optimizer = control$optimizer,
+    restart_edge = control$restart_edge, boundary.tol = control$boundary.tol,
+    control = control$optCtrl, verbose = 0L, start = NULL,
+    calc.derivs = calc.derivs,
+    force.calc.derivs = control$calc.derivs %||% FALSE,
+    use.last.params = control$use.last.params
+  )
+  # Same name as in lmer(), so that its warnings are the same:
+  checkConv <- "lme4" %:::% "checkConv"
+  cc <- checkConv(attr(opt, "derivs"), opt$par, ctrl = control$checkConv,
+                  lbound = rho$lower, ubound = rho$upper, nobs = nobs,
+                  ndim = npar)
+  return(lme4::mkMerMod(rho, opt, lmod$reTrms, fr = lmod$fr, mc = mcout,
+                        lme4conv = cc))
+}
+
+# Draw-wise divergence minimizer for divmin() that uses lmer_shared_fit() with
+# the lFormula() result of the first draw, or `NULL` if this does not apply.
+lmer_shared_callback <- function(formulas, dot_args) {
+  if (!getOption("projpred.lmer_shared", TRUE) || !lmer_shared_ok()) {
+    return(NULL)
+  }
+  data <- dot_args$data
+  resp_nms <- vapply(formulas, function(fml) {
+    if (is.name(fml[[2]])) as.character(fml[[2]]) else NA_character_
+  }, character(1))
+  if (!is.data.frame(data) || anyNA(resp_nms) ||
+      !all(resp_nms %in% names(data)) || anyNA(data[resp_nms])) {
+    return(NULL)
+  }
+  control <- dot_args$control %||% control_callback(dot_args$family)
+  lmer_dot_args <- dot_args[intersect(names(dot_args),
+                                      methods::formalArgs(lme4::lmer))]
+  lmer_dot_args$control <- NULL
+  lmod0 <- tryCatch(
+    do.call(lme4::lFormula, c(list(formula = formulas[[1]], control = control),
+                              lmer_dot_args)),
+    error = function(e) NULL
+  )
+  if (is.null(lmod0) || nrow(lmod0$fr) != nrow(data)) {
+    return(NULL)
+  }
+  force(lmod0)
+  return(function(formula, ...) {
+    lmer_args <- c(list(formula = formula, control = control), lmer_dot_args)
+    tryCatch(
+      lmer_shared_fit(lmod0, formula = formula, data = data, control = control,
+                      lmer_args = lmer_args),
+      error = function(e) fit_glmer_callback(formula = formula, ...)
+    )
+  })
+}
+
+# Whether lmer_shared_fit() gives the fits of lme4::lmer() with the installed
+# lme4 (checked once per R session on a small fixed problem, without random
+# numbers). lme4 before 2.0-1 has another body of lmer() and other arguments
+# of lme4:::checkConv() and lme4:::optwrap().
+lmer_shared_state <- new.env(parent = emptyenv())
+lmer_shared_lme4_min <- "2.0.1"
+lmer_shared_ok <- function() {
+  if (is.null(lmer_shared_state$ok)) {
+    lmer_shared_state$ok <-
+      utils::packageVersion("lme4") >= lmer_shared_lme4_min &&
+      isTRUE(tryCatch(lmer_shared_check(), error = function(e) FALSE))
+  }
+  return(lmer_shared_state$ok)
+}
+lmer_shared_check <- function() {
+  n <- 60L
+  idx <- seq_len(n)
+  dat <- data.frame(x1 = sin(idx), x2 = cos(1.7 * idx),
+                    g = factor(paste0("g", idx %% 6L)),
+                    h = factor(paste0("h", idx %% 4L)))
+  u <- c(0.8, -0.5, 0.3, -0.9, 0.6, -0.2)
+  for (s in 1:3) {
+    dat[[paste0(".y.", s)]] <- dat$x1 + 0.5 * dat$x2 +
+      u[as.integer(dat$g)] * (1 + 0.3 * s) + 0.4 * sin(s * idx) +
+      0.2 * dat$x1 * u[as.integer(dat$g)]
+  }
+  wts <- 1 + 0.5 * cos(idx)
+  control <- lme4::lmerControl()
+  fmls <- lapply(1:3, function(s) {
+    as.formula(paste0(".y.", s, " ~ x1 + x2 + (1 + x1 | g) + (1 | h)"))
+  })
+  lmod0 <- lme4::lFormula(fmls[[1]], data = dat, weights = wts,
+                          control = control)
+  same <- logical(3)
+  for (s in 1:3) {
+    lmer_args <- list(formula = fmls[[s]], control = control, data = dat,
+                      weights = wts)
+    suppressMessages(suppressWarnings({
+      fit_ref <- do.call(lme4::lmer, lmer_args)
+      fit_shared <- lmer_shared_fit(lmod0, formula = fmls[[s]], data = dat,
+                                    control = control, lmer_args = lmer_args)
+    }))
+    same[s] <- isTRUE(all.equal(fit_ref, fit_shared, tolerance = 0)) &&
+      identical(lme4::getME(fit_ref, "theta"),
+                lme4::getME(fit_shared, "theta"))
+  }
+  return(all(same))
+}
+
+# Removes the lines of the captured messages and warnings of a submodel fit
+# (see capt_mssgs_warns()) that do not indicate a problem of the projection.
+filter_mssgs_warns <- function(mssgs_warns_capt) {
+  # Header lines of warnings:
+  mssgs_warns_capt <- grep("Warning in [^:]*:$",
+                           mssgs_warns_capt, value = TRUE, invert = TRUE)
+  # lme4 (>= 2.1-1) warns about non-integer Poisson responses, but the
+  # projection always has such responses:
+  mssgs_warns_capt <- grep("non-integer response values in a poisson model$",
+                           mssgs_warns_capt, value = TRUE, invert = TRUE)
+  # For the same reason, stats::dpois() warns about each non-integer Poisson
+  # response (for example, in the stats::glm() start fit of MASS::glmmPQL()):
+  mssgs_warns_capt <- grep("^Warning in dpois\\(.*\\) : non-integer x = ",
+                           mssgs_warns_capt, value = TRUE, invert = TRUE)
+  return(mssgs_warns_capt)
 }
 
 # Finds the levels of factor-like fixed-effect predictors that occur only in
@@ -351,19 +710,18 @@ fit_glm_ridge_callback <- function(formula, data,
   }
   # Exclude arguments from `...` which cannot be passed to glm_ridge():
   dot_args <- list(...)
-  dot_args <- dot_args[intersect(
-    names(dot_args),
-    methods::formalArgs(glm_ridge)
+  dot_args <- dot_args[setdiff(
+    intersect(names(dot_args), methods::formalArgs(glm_ridge)),
+    "print_msgs"
   )]
-  # Call the submodel fitter:
-  out_capt <- utils::capture.output(
-    fit <- do.call(glm_ridge, c(
-      list(x = x, y = y, obsvar = projpred_var, lambda = regul,
-           thresh = thresh_conv),
-      dot_args
-    ))
-  )
-  out_capt <- unique(grep("[Ww]arning|bug", out_capt, value = TRUE))
+  # Call the submodel fitter (it returns its warning messages instead of
+  # printing them):
+  fit <- do.call(glm_ridge, c(
+    list(x = x, y = y, obsvar = projpred_var, lambda = regul,
+         thresh = thresh_conv, print_msgs = FALSE),
+    dot_args
+  ))
+  out_capt <- unique(grep("[Ww]arning|bug", fit$msgs, value = TRUE))
   if (length(out_capt) > 0) {
     warning(paste(out_capt, collapse = "\n"))
   }
@@ -445,6 +803,59 @@ glm_ridge_callback_shared <- function(shared_x) {
   }
 }
 
+# The multi-draw fitters of divmin() for draw-wise formulas `formulas` with the
+# shared model matrix `shared_x`: glm_ridge_gauss_multi() and
+# glm_ridge_native_multi(). `y` (optional) is the matrix of the draw-wise
+# responses (otherwise taken from `dot_args$data`). Returns `NULL` if neither
+# fitter covers the case.
+divmin_multi <- function(formulas, shared_x, dot_args, throw_warn_sdivmin,
+                         do_check_conv, y = NULL) {
+  # Gaussian submodels with the identity link: one solve for all draws (this
+  # fitter cannot throw messages or warnings in this case):
+  outdmin <- glm_ridge_gauss_multi(formulas, shared_x = shared_x,
+                                   dot_args = dot_args, y = y)
+  if (!is.null(outdmin)) {
+    return(outdmin)
+  }
+  # Families with native pseudo-observations: all draws in one C++ call:
+  outdmin <- glm_ridge_native_multi(formulas, shared_x = shared_x,
+                                    dot_args = dot_args, y = y)
+  if (!is.null(outdmin)) {
+    mssgs_warns_capts <- attr(outdmin, "mssgs_warns_capts")
+    attr(outdmin, "mssgs_warns_capts") <- NULL
+    warn_prj_drawwise(mssgs_warns_capts, throw_warn = throw_warn_sdivmin)
+    # check_conv_s() is `TRUE` for `subfit` objects, so check_conv() has an
+    # effect only if a draw has messages:
+    if (any(lengths(mssgs_warns_capts) > 0)) {
+      check_conv(outdmin, lengths(mssgs_warns_capts), do_check = do_check_conv)
+    }
+    return(outdmin)
+  }
+  return(NULL)
+}
+
+# The parts of divmin() that depend only on the submodel formula `formula` and
+# on the predictor data (not on the values of the draw-wise responses in
+# `data`): the draw-wise formulas and the shared model matrix. Returns `NULL`
+# if divmin() would not use the multi-draw fitters (see divmin_multi()) for
+# this formula.
+divmin_prepare <- function(formula, data) {
+  trms_all <- extract_terms_response(formula)
+  if (length(trms_all$group_terms) > 0 ||
+      length(trms_all$additive_terms) > 0) {
+    return(NULL)
+  }
+  formulas <- validate_response_formula(formula)
+  if (length(formulas) < 1) {
+    return(NULL)
+  }
+  shared_x <- shared_model_matrix(formulas, data = data)
+  if (is.null(shared_x)) {
+    return(NULL)
+  }
+  return(nlist(formulas, shared_x))
+}
+
 # Fits all draw-wise submodels of fit_glm_ridge_callback() at once, for a
 # Gaussian submodel with the identity link. For this family, glm_ridge() solves
 # one weighted ridge least-squares problem in one exact step. The draws share
@@ -452,7 +863,7 @@ glm_ridge_callback_shared <- function(shared_x) {
 # penalty. Thus, one factorization with one right-hand side per draw gives the
 # same solutions. Returns `NULL` if one of the checks below fails; then divmin()
 # uses the draw-wise path.
-glm_ridge_gauss_multi <- function(formulas, shared_x, dot_args) {
+glm_ridge_gauss_multi <- function(formulas, shared_x, dot_args, y = NULL) {
   family <- dot_args$family
   if (is.null(family) || family$family != "gaussian" ||
       family$link != "identity") {
@@ -475,9 +886,11 @@ glm_ridge_gauss_multi <- function(formulas, shared_x, dot_args) {
   if (length(weights) != nrow(x) || anyNA(weights)) {
     return(NULL)
   }
-  resp_nms <- vapply(formulas, function(fml) as.character(fml[[2]]),
-                     character(1))
-  y <- as.matrix(data[resp_nms])
+  if (is.null(y)) {
+    resp_nms <- vapply(formulas, function(fml) as.character(fml[[2]]),
+                       character(1))
+    y <- as.matrix(data[resp_nms])
+  }
   # As in glm_ridge():
   transf <- standardization(x, center = TRUE, scale = TRUE, weights = weights)
   if (any(transf$scale == 0)) {
@@ -514,6 +927,94 @@ glm_ridge_gauss_multi <- function(formulas, shared_x, dot_args) {
                    xlvls = shared_x$xlvls, terms = shared_x$terms),
               class = "subfit")
   }))
+}
+
+# Fits all draw-wise submodels of fit_glm_ridge_callback() in one C++ call, for
+# the families and links with native pseudo-observations (see
+# native_pseudo_codes()). The draws share the model matrix, the observation
+# weights, the standardization and the penalty, so this sets up glm_ridge()
+# once. Each draw gets the IRLS iterations of glm_ridge() and the same result.
+# Attribute `mssgs_warns_capts` holds the messages of each draw, as divmin()
+# collects them from fit_glm_ridge_callback(). Returns `NULL` for other cases;
+# divmin() then fits the draws one by one.
+glm_ridge_native_multi <- function(formulas, shared_x, dot_args, y = NULL) {
+  family <- dot_args$family
+  if (is.null(family)) {
+    return(NULL)
+  }
+  family <- extend_family(family)
+  codes <- native_pseudo_codes(family)
+  if (is.null(codes)) {
+    return(NULL)
+  }
+  # fit_glm_ridge_callback() passes only the formal arguments of glm_ridge() on.
+  # Of these, the following are reproduced here:
+  args_glm_ridge <- intersect(names(dot_args), methods::formalArgs(glm_ridge))
+  if (!all(args_glm_ridge %in% c("family", "weights", "qa_updates_max",
+                                 "ls_iter_max"))) {
+    return(NULL)
+  }
+  x <- shared_x$x
+  if (ncol(x) == 0) {
+    return(NULL)
+  }
+  data <- dot_args$data
+  weights <- dot_args$weights %||% rep(1.0, nrow(x))
+  if (length(weights) != nrow(x) || anyNA(weights)) {
+    return(NULL)
+  }
+  regul <- dot_args$regul %||% 1e-4
+  thresh <- dot_args$thresh_conv %||% 1e-7
+  # As in glm_ridge():
+  if (family$family == "gaussian" && family$link == "identity") {
+    qa_updates_max <- 1
+    ls_iter_max <- 1
+    thresh <- 0
+  } else {
+    qa_updates_max <- dot_args$qa_updates_max %||% 100
+    ls_iter_max <- dot_args$ls_iter_max %||% 30
+  }
+  if (is.null(y)) {
+    resp_nms <- vapply(formulas, function(fml) as.character(fml[[2]]),
+                       character(1))
+    y <- as.matrix(data[resp_nms])
+  }
+  transf <- standardization(x, center = TRUE, scale = TRUE, weights = weights)
+  penalty <- rep(1.0, ncol(x))
+  penalty[transf$scale == 0] <- Inf
+  transf$scale[transf$scale == 0] <- 1
+  x_std <- t((t(x) - transf$shift) / transf$scale)
+  out <- glm_ridge_native_multi_c(
+    x_std, y, as.numeric(weights), rep(0.0, nrow(x)), codes[1], codes[2],
+    regul, TRUE, penalty, rep(0, ncol(x) + 1), weights, thresh,
+    qa_updates_max, ls_iter_max
+  )
+  beta <- out$beta / transf$scale
+  beta0 <- as.vector(out$beta0) - colSums(transf$shift * beta)
+  outdmin <- lapply(seq_along(formulas), function(s) {
+    beta_s <- beta[, s, drop = FALSE]
+    dimnames(beta_s) <- list(colnames(x), NULL)
+    y_s <- y[, s]
+    names(y_s) <- shared_x$y_names
+    # As in glm_ridge_gauss_multi():
+    structure(list(alpha = beta0[s], beta = beta_s,
+                   w = out$w[, s, drop = FALSE], formula = formulas[[s]],
+                   x = x, y = y_s, xlvls = shared_x$xlvls,
+                   terms = shared_x$terms),
+              class = "subfit")
+  })
+  # As fit_glm_ridge_callback() turns the messages into one warning and
+  # capt_conds() splits it into lines:
+  if (all(lengths(out$msgs) == 0)) {
+    mssgs_warns_capts <- rep(list(character()), length(formulas))
+  } else {
+    mssgs_warns_capts <- lapply(out$msgs, function(msgs_s) {
+      msgs_s <- unique(grep("[Ww]arning|bug", msgs_s, value = TRUE))
+      setdiff(as.character(unlist(strsplit(msgs_s, "\n", fixed = TRUE))), "")
+    })
+  }
+  attr(outdmin, "mssgs_warns_capts") <- mssgs_warns_capts
+  return(outdmin)
 }
 
 # Alternative to fit_glm_ridge_callback() (may be used via global option
@@ -647,6 +1148,11 @@ fit_glmer_callback <- function(formula, projpred_formula_no_random,
         names(dot_args),
         methods::formalArgs(MASS::glmmPQL)
       )]
+      # Without this, the "iteration" messages of MASS::glmmPQL() would be
+      # captured as messages of the submodel fitter:
+      if (is.null(dot_args[["verbose"]])) {
+        dot_args$verbose <- FALSE
+      }
       # Strip parentheses from group-level terms:
       random_trms <- labels(terms(projpred_random))
       random_fmls <- lapply(random_trms, function(random_trm) {
@@ -1011,6 +1517,32 @@ divmin_augdat <- function(
     projpred_ws_aug <- projpred_ws_aug[keep, , drop = FALSE]
   }
 
+  # Cumulative-link submodels without group-level terms: all draws in one C++
+  # call (see cumul_native_multi()):
+  if (identical(sdivmin, fit_cumul)) {
+    outdmin <- cumul_native_multi(formula, data = data, family = family,
+                                  ws_aug = projpred_ws_aug,
+                                  dot_args = list(...))
+    if (!is.null(outdmin)) {
+      check_conv(outdmin, rep(0L, length(outdmin)), do_check = do_check_conv)
+      attr(outdmin, "projpred_lost_lvls") <- lost_lvls
+      return(outdmin)
+    }
+  }
+
+  # Multinomial-logit submodels without group-level terms: all draws in one C++
+  # call (see categ_native_multi()):
+  if (identical(sdivmin, fit_categ)) {
+    outdmin <- categ_native_multi(formula, data = data, family = family,
+                                  ws_aug = projpred_ws_aug,
+                                  dot_args = list(...))
+    if (!is.null(outdmin)) {
+      check_conv(outdmin, rep(0L, length(outdmin)), do_check = do_check_conv)
+      attr(outdmin, "projpred_lost_lvls") <- lost_lvls
+      return(outdmin)
+    }
+  }
+
   if (is.null(getOption("projpred.parallel_proj_trigger")) &&
       !is.null(getOption("projpred.prll_prj_trigger"))) {
     warning(
@@ -1186,6 +1718,102 @@ fit_cumul <- function(formula, data, family, weights, ...) {
   return(fitobj)
 }
 
+# Fits the cumulative-link submodels of all draws in one C++ call
+# (cumul_fit_multi_c()) with the objective of MASS::polr(), instead of one
+# fit_cumul() call per draw. The augmented data hold C copies of the n
+# observations (one per response category), so this builds the model matrix
+# once, and the augmented weights of each draw form an n x C matrix. Newton
+# iterations replace the BFGS iterations of polr(), so the estimates agree with
+# those of polr() up to its convergence tolerance. The returned `polr` objects
+# hold the elements that predict.polr() (with `newdata`), coef() and
+# check_conv_s() use, without `fitted.values` and `lp`. Returns `NULL` for other
+# cases; divmin_augdat() then calls fit_cumul() per draw. Global option
+# `projpred.augdat_native = FALSE` switches this off.
+cumul_native_multi <- function(formula, data, family, ws_aug, dot_args) {
+  if (!getOption("projpred.augdat_native", TRUE)) {
+    return(NULL)
+  }
+  # fit_cumul() passes these arguments on to MASS::polr(); they are not
+  # reproduced here:
+  if (length(intersect(names(dot_args),
+                       c(methods::formalArgs(MASS::polr),
+                         methods::formalArgs(stats::optim))))) {
+    return(NULL)
+  }
+  method <- family$link
+  if (method == "logit") {
+    method <- "logistic"
+  } else if (method == "probit_approx") {
+    method <- "probit"
+  }
+  link_code <- match(method, c("logistic", "probit", "loglog", "cloglog",
+                               "cauchit"))
+  if (is.na(link_code)) {
+    return(NULL)
+  }
+  # As in MASS::polr():
+  mfr <- model.frame(formula, data = data)
+  if (nrow(mfr) != nrow(data) || !is.null(model.offset(mfr))) {
+    return(NULL)
+  }
+  trms <- attr(mfr, "terms")
+  x <- model.matrix(trms, mfr)
+  cons <- attr(x, "contrasts")
+  xint <- match("(Intercept)", colnames(x), nomatch = 0L)
+  if (xint == 0L) {
+    return(NULL)
+  }
+  x <- x[, -xint, drop = FALSE]
+  y <- model.response(mfr)
+  if (!is.factor(y)) {
+    return(NULL)
+  }
+  lev <- levels(y)
+  ncat <- length(lev)
+  n <- nrow(x) %/% ncat
+  ws_aug <- as.matrix(ws_aug)
+  # The augmented data have to be C copies of the n observations, in the order
+  # of the response categories:
+  if (ncat < 3L || n * ncat != nrow(x) || nrow(ws_aug) != nrow(x) ||
+      !identical(as.integer(y), rep(seq_len(ncat), each = n)) ||
+      !all(is.finite(ws_aug)) || any(ws_aug < 0)) {
+    return(NULL)
+  }
+  x1 <- x[seq_len(n), , drop = FALSE]
+  # Non-finite predictor values go to polr() (the C++ fitter returns a
+  # non-converged fit for them):
+  if (!all(is.finite(x1)) ||
+      (ncol(x1) > 0 &&
+       !isTRUE(all(x == x1[rep(seq_len(n), ncat), , drop = FALSE])))) {
+    return(NULL)
+  }
+  nprj <- ncol(ws_aug)
+  out <- cumul_fit_multi_c(
+    unname(x1), matrix(ws_aug, nrow = n), ncat, rep(0, n), link_code,
+    thresh = 1e-12, maxit = 100L
+  )
+  xlvls <- .getXlevels(trms, mfr)
+  zeta_nms <- paste(lev[-ncat], lev[-1L], sep = "|")
+  pc <- ncol(x1)
+  # As in polr(), also for a submodel without predictors:
+  beta_nms <- colnames(x1) %||% character()
+  return(lapply(seq_len(nprj), function(s) {
+    beta <- setNames(out$beta[, s], beta_nms)
+    zeta <- setNames(out$zeta[, s], zeta_nms)
+    wsum <- sum(ws_aug[, s])
+    structure(
+      list(coefficients = beta, zeta = zeta, deviance = 2 * out$loss[s],
+           lev = lev, terms = trms, df.residual = wsum - pc - (ncat - 1L),
+           edf = pc + ncat - 1L, n = wsum, nobs = wsum,
+           call = quote(projpred_cumul_fit()), method = method,
+           convergence = out$convergence[s],
+           niter = c(f.evals = out$niter[s], g.evals = out$niter[s]),
+           contrasts = cons, xlevels = xlvls),
+      class = "polr"
+    )
+  }))
+}
+
 # Use ordinal::clmm() to fit multilevel submodels for the brms::cumulative()
 # family:
 fit_cumul_mlvl <- function(formula, data, family, weights, ...) {
@@ -1211,6 +1839,15 @@ fit_cumul_mlvl <- function(formula, data, family, weights, ...) {
       methods::formalArgs(stats::nlminb),
       methods::formalArgs(stats::optim))
   )]
+  # clmm() has no analytic gradient, so its default optimizer nlminb() spends
+  # most objective evaluations on finite-difference gradients.  ucminf() with
+  # forward differences needs fewer evaluations and gives the same fits within
+  # the optimizer tolerance.  clmm() can use ucminf() only for a single
+  # `(1 | <group>)` term.  Use it then, unless the caller chose an optimizer:
+  bars <- reformulas::findbars(formula)
+  use_ucminf <- is.null(dot_args[["method"]]) &&
+    is.null(dot_args[["control"]]) && length(bars) == 1 &&
+    identical(bars[[1]][[2]], 1)
   # Since ordinal::clmm() sometimes seems to have issues with formulas lacking
   # an intercept, add it here (note that this is a quite "hacky" solution;
   # perhaps reformulate() could be used instead):
@@ -1222,20 +1859,55 @@ fit_cumul_mlvl <- function(formula, data, family, weights, ...) {
     link_nm <- "probit"
   }
   # Call the submodel fitter:
-  fitobj <- do.call(ordinal::clmm, c(
-    list(formula = formula,
-         data = data,
-         weights = quote(projpred_internal_w_aug),
-         contrasts = NULL,
-         Hess = FALSE,
-         model = FALSE,
-         link = link_nm),
-    dot_args
-  ))
-  # Needed for the ordinal:::predict.clm() workaround (the value `"negative"` is
-  # the default, see `?ordinal::clm.control`):
-  fitobj$control$sign.location <- "negative"
-  return(fitobj)
+  fit_clmm <- function(dot_args) {
+    fitobj <- do.call(ordinal::clmm, c(
+      list(formula = formula,
+           data = data,
+           weights = quote(projpred_internal_w_aug),
+           contrasts = NULL,
+           Hess = FALSE,
+           model = FALSE,
+           link = link_nm),
+      dot_args
+    ))
+    # Needed for the ordinal:::predict.clm() workaround (the value `"negative"`
+    # is the default, see `?ordinal::clm.control`):
+    fitobj$control$sign.location <- "negative"
+    return(fitobj)
+  }
+  if (use_ucminf) {
+    # If ucminf() fails or does not converge, refit with the nlminb() default:
+    return(fit_with_fallback(
+      function() fit_clmm(c(dot_args, list(method = "ucminf",
+                                           grad = "forward"))),
+      function() fit_clmm(dot_args),
+      accept = check_conv_s
+    ))
+  }
+  return(fit_clmm(dot_args))
+}
+
+# Return `fit_first()` if it gives no error and `accept()` returns `TRUE` for
+# its result; then signal its warnings and messages again.  Otherwise return
+# `fit_second()`, without the warnings and messages of `fit_first()`.
+fit_with_fallback <- function(fit_first, fit_second, accept) {
+  conds <- list()
+  keep_cond <- function(cnd, restart) {
+    conds[[length(conds) + 1L]] <<- cnd
+    invokeRestart(restart)
+  }
+  res <- try(withCallingHandlers(
+    fit_first(),
+    warning = function(w) keep_cond(w, "muffleWarning"),
+    message = function(m) keep_cond(m, "muffleMessage")
+  ), silent = TRUE)
+  if (!inherits(res, "try-error") && isTRUE(accept(res))) {
+    for (cnd in conds) {
+      if (inherits(cnd, "warning")) warning(cnd) else message(cnd)
+    }
+    return(res)
+  }
+  return(fit_second())
 }
 
 # Use nnet::multinom() to fit submodels for the brms::categorical() family:
@@ -1287,6 +1959,104 @@ fit_categ <- function(formula, data, family, weights, ...) {
     )
   }
   return(fitobj)
+}
+
+# Fits the multinomial-logit submodels of all draws in one C++ call
+# (categ_fit_multi_c()) with the objective of nnet::multinom(), instead of one
+# fit_categ() call per draw. Like cumul_native_multi(), it builds the model
+# matrix once and uses the augmented weights as an n x C matrix. Newton
+# iterations replace the BFGS iterations of nnet::multinom() (by default at
+# most 100), so the estimates agree with those of nnet::multinom() up to its
+# convergence tolerance. The returned objects are copies of one `multinom`
+# object (from nnet::multinom() with `maxit = 0`) with the weights, the
+# objective and the fitted values of each draw. Returns `NULL` for other cases;
+# divmin_augdat() then calls fit_categ() per draw. Global option
+# `projpred.augdat_native = FALSE` switches this off.
+categ_native_multi <- function(formula, data, family, ws_aug, dot_args) {
+  if (!getOption("projpred.augdat_native", TRUE) || family$link != "logit") {
+    return(NULL)
+  }
+  # fit_categ() passes these arguments on to nnet::multinom(); they are not
+  # reproduced here:
+  if (length(intersect(names(dot_args),
+                       c(methods::formalArgs(nnet::multinom),
+                         methods::formalArgs(nnet::nnet))))) {
+    return(NULL)
+  }
+  mfr <- model.frame(formula, data = data)
+  if (nrow(mfr) != nrow(data) || !is.null(model.offset(mfr))) {
+    return(NULL)
+  }
+  trms <- attr(mfr, "terms")
+  x <- model.matrix(trms, mfr)
+  y <- model.response(mfr)
+  if (!is.factor(y)) {
+    return(NULL)
+  }
+  lev <- levels(y)
+  ncat <- length(lev)
+  n <- nrow(x) %/% ncat
+  ws_aug <- as.matrix(ws_aug)
+  # The augmented data have to be C copies of the n observations, in the order
+  # of the response categories:
+  if (ncat < 3L || n * ncat != nrow(x) || nrow(ws_aug) != nrow(x) ||
+      !identical(as.integer(y), rep(seq_len(ncat), each = n)) ||
+      !all(is.finite(ws_aug)) || any(ws_aug < 0)) {
+    return(NULL)
+  }
+  x1 <- x[seq_len(n), , drop = FALSE]
+  # Non-finite predictor values go to nnet::multinom():
+  if (!all(is.finite(x1)) ||
+      !isTRUE(all(x == x1[rep(seq_len(n), ncat), , drop = FALSE]))) {
+    return(NULL)
+  }
+  # The template object (no iterations, so its weights are the zero start
+  # values):
+  tmpl <- do.call(nnet::multinom, list(formula = formula, data = data,
+                                       weights = ws_aug[, 1], maxit = 0,
+                                       trace = FALSE))
+  if (!identical(tmpl$vcoefnames, colnames(x1)) || tmpl$n[3L] != ncat ||
+      length(tmpl$wts) != ncat * (ncol(x1) + 1L)) {
+    return(NULL)
+  }
+  icpt <- match("(Intercept)", colnames(x1), nomatch = 0L) - 1L
+  nprj <- ncol(ws_aug)
+  out <- categ_fit_multi_c(unname(x1), matrix(ws_aug, nrow = n), ncat, icpt,
+                           thresh = 1e-12, maxit = 100L)
+  y_ind <- diag(ncat)[as.integer(y), , drop = FALSE]
+  dimnames(y_ind) <- dimnames(tmpl$fitted.values)
+  idx_aug <- rep(seq_len(n), ncat)
+  idx_rows <- seq_len(n)
+  # A loop instead of lapply() with an anonymous function, which the byte
+  # compiler would compile again for each projection:
+  outdmin <- vector("list", nprj)
+  for (s in seq_len(nprj)) {
+    coef_s <- out$coef[, , s]
+    dim(coef_s) <- dim(out$coef)[1:2]
+    # Weights as nnet::multinom() stores them (see nnet:::coef.multinom()):
+    # one row per category, the first column and the first row (reference
+    # category) zero:
+    wts_mat <- matrix(0, ncat, ncol(x1) + 1L)
+    wts_mat[-1L, -1L] <- t(coef_s)
+    eta <- cbind(0, x1 %*% coef_s)
+    eta_max <- eta[cbind(idx_rows, max.col(eta, ties.method = "first"))]
+    prbs <- exp(eta - eta_max)
+    prbs <- prbs / rowSums(prbs)
+    fitted_s <- prbs[idx_aug, , drop = FALSE]
+    dimnames(fitted_s) <- dimnames(tmpl$fitted.values)
+    fit_s <- tmpl
+    fit_s$wts <- as.vector(t(wts_mat))
+    fit_s$value <- out$loss[s]
+    fit_s$deviance <- 2 * out$loss[s]
+    fit_s$AIC <- fit_s$deviance + 2 * fit_s$edf
+    fit_s$convergence <- out$convergence[s]
+    fit_s$weights <- ws_aug[, s]
+    fit_s$fitted.values <- fitted_s
+    fit_s$residuals <- y_ind - fitted_s
+    fit_s$call <- quote(projpred_categ_fit())
+    outdmin[[s]] <- fit_s
+  }
+  return(outdmin)
 }
 
 # Use mclogit::mblogit() to fit multilevel submodels for the brms::categorical()
@@ -1433,6 +2203,16 @@ check_conv_s <- function(fit_s) {
   } else if (inherits(fit_s, "multinom")) {
     return(fit_s$convergence == 0)
   } else if (inherits(fit_s, "clmm")) {
+    if (is.null(fit_s$optRes$objective)) {
+      # No `objective` (which nlminb() returns), so ucminf() ran.  Its codes:
+      # 1 (small gradient), 2 (small step) and 4 (zero step in the line
+      # search, which forward differences can cause near the optimum).
+      # `gradient` is the central-difference gradient after the fit; the
+      # limit is absolute, as `grtol` of ucminf():
+      return(fit_s$optRes$convergence %in% c(1, 2, 4) &&
+               all(is.finite(fit_s$gradient)) &&
+               max(abs(fit_s$gradient)) < 1e-3)
+    }
     return(fit_s$optRes$convergence == 0)
   } else if (inherits(fit_s, "polr")) {
     return(fit_s$convergence == 0)
@@ -1445,6 +2225,12 @@ check_conv_s <- function(fit_s) {
     # convergence. For now, all we can check is the GLMM part from element
     # `fit_s$mer`:
     return(check_conv_s(fit_s$mer))
+  } else if (inherits(fit_s, "glmmPQL")) {
+    # MASS::glmmPQL() stores no convergence information: nlme::lme() throws an
+    # error if it does not converge (with the default `returnObject = FALSE`),
+    # but the end of the PQL iterations at `niter` is not recorded. So we need
+    # to return `TRUE` here:
+    return(TRUE)
   } else if (inherits(fit_s, c("lmerMod", "glmerMod"))) {
     # The following was inferred from the source code of lme4::checkConv() and
     # lme4::.prt.warn() (see also `?lme4::mkMerMod`).
@@ -1498,6 +2284,21 @@ subprd_fitted <- function(fits, nobs) {
 }
 
 subprd <- function(fits, newdata) {
+  # lme4 fits of one submodel and `newdata` without new group levels: all draws
+  # at once (see subprd_mer_direct()):
+  prd_direct <- subprd_mer_direct(fits, newdata)
+  if (!is.null(prd_direct)) {
+    return(prd_direct)
+  }
+  # mgcv fits of one submodel: all draws at once (see subprd_gam_direct()):
+  if (!is.null(newdata) && length(fits) > 1 && inherits(fits[[1]], "gam")) {
+    prd_direct <- subprd_gam_direct(
+      fits, cbind(`(Intercept)` = rep(1, NROW(newdata)), newdata)
+    )
+    if (!is.null(prd_direct)) {
+      return(prd_direct)
+    }
+  }
   if (!is.null(newdata) && length(fits) > 1 && inherits(fits[[1]], "subfit")) {
     prd <- subprd_subfit_shared(fits, newdata)
     if (!is.null(prd)) {
@@ -1558,7 +2359,104 @@ subprd <- function(fits, newdata) {
   return(do.call(cbind, prd_list))
 }
 
+# Linear predictors of lme4 fits (`lmerMod` or `glmerMod`) of the same submodel
+# for `newdata` whose group levels all occur in the fits. In this case,
+# repair_re() adds zero and draws no random numbers, and predict.merMod() with
+# `re.form = NULL` computes X beta_s + Z b_s. This function builds the
+# fixed-effects model matrix X and the random-effects design Z for `newdata`
+# once; it follows the steps of predict.merMod() (R package lme4, GPL (>= 2);
+# see the file LICENSE). It maps the conditional modes b_s of each draw (in the
+# row order of the fitted Zt) onto the rows of Z by the names of the group
+# levels. These names are unique across the grouping variables (see
+# repair_re.merMod()), and within a grouping variable they have the same order
+# of terms and coefficients in both. The results differ from those of subprd()
+# only by rounding. Returns `NULL` for other cases.
+subprd_mer_direct <- function(fits, newdata) {
+  if (is.null(newdata) || length(fits) == 0 ||
+      getOption("projpred.mlvl_pred_new", FALSE) ||
+      !all(vapply(fits, inherits, logical(1), c("lmerMod", "glmerMod")))) {
+    return(NULL)
+  }
+  fit_1 <- fits[[1]]
+  flist_1 <- lapply(fit_1@flist, levels)
+  cnms_1 <- lme4::getME(fit_1, "cnms")
+  trms_fix <- delete.response(terms(fit_1, fixed.only = TRUE))
+  # The terms are compared without their environment:
+  terms_noenv <- function(trms) {
+    attr(trms, ".Environment") <- NULL
+    trms
+  }
+  trms_fix_noenv <- terms_noenv(trms_fix)
+  same_structure <- vapply(fits, function(fit) {
+    trms_s <- delete.response(terms(fit, fixed.only = TRUE))
+    identical(lapply(fit@flist, levels), flist_1) &&
+      identical(lme4::getME(fit, "cnms"), cnms_1) &&
+      identical(terms_noenv(trms_s), trms_fix_noenv) &&
+      identical(names(lme4::fixef(fit)), names(lme4::fixef(fit_1)))
+  }, logical(1))
+  if (!all(same_structure) || !is.null(attr(trms_fix, "offset"))) {
+    return(NULL)
+  }
+  # Group levels: all have to occur in the fits, and the level sets have to be
+  # disjoint (otherwise repair_re.merMod() handles the case):
+  vnms <- names(flist_1)
+  if (!all(vnms %in% names(newdata))) {
+    return(NULL)
+  }
+  for (vnm in vnms) {
+    if (!all(as.character(unique(newdata[[vnm]])) %in% flist_1[[vnm]])) {
+      return(NULL)
+    }
+  }
+  lvls_all <- unlist(flist_1, use.names = FALSE)
+  if (anyDuplicated(lvls_all)) {
+    return(NULL)
+  }
+  # Fixed effects, as in predict.merMod():
+  x_contr <- attr(lme4::getME(fit_1, "X"), "contrasts")
+  mfr <- model.frame(trms_fix, newdata, na.action = na.pass,
+                     xlev = .getXlevels(trms_fix, fit_1@frame))
+  x_new <- model.matrix(trms_fix, mfr, contrasts.arg = x_contr)
+  fix_nms <- names(lme4::fixef(fit_1))
+  if (!all(fix_nms %in% colnames(x_new)) || anyNA(x_new) ||
+      nrow(x_new) != nrow(newdata)) {
+    return(NULL)
+  }
+  x_new <- x_new[, fix_nms, drop = FALSE]
+  # Random effects:
+  re_new <- lme4::mkNewReTrms(fit_1, newdata = newdata,
+                              re.form = ("lme4" %:::% "reOnly")(formula(fit_1)),
+                              allow.new.levels = TRUE)
+  zt_new <- re_new$Zt
+  occ_key <- function(nms) paste(nms, stats::ave(seq_along(nms), nms,
+                                                 FUN = seq_along), sep = "\r")
+  idx_b <- match(occ_key(rownames(zt_new)),
+                 occ_key(rownames(lme4::getME(fit_1, "Zt"))))
+  if (anyNA(idx_b)) {
+    return(NULL)
+  }
+  b_1 <- as.vector(lme4::getME(fit_1, "b"))
+  if (!isTRUE(all.equal(unname(b_1[idx_b]), unname(as.vector(re_new$b)),
+                        tolerance = 1e-12))) {
+    return(NULL)
+  }
+  betas <- do.call(cbind, lapply(fits, lme4::fixef))
+  bs <- do.call(cbind, lapply(fits, function(fit) {
+    as.vector(lme4::getME(fit, "b"))[idx_b]
+  }))
+  prd <- x_new %*% betas + t(as(t(bs) %*% zt_new, "matrix"))
+  # As cbind() of the named vectors from predict.merMod():
+  dimnames(prd) <- list(rownames(newdata), NULL)
+  return(prd)
+}
+
 subprd_augdat <- function(fits, newdata) {
+  # `polr` and `multinom` fits of the same submodel: linear predictors from the
+  # coefficients, for all draws at once (see subprd_augdat_direct()):
+  prd_direct <- subprd_augdat_direct(fits, newdata)
+  if (!is.null(prd_direct)) {
+    return(prd_direct)
+  }
   if (inherits(fits[[1]], "clmm")) {
     y_nm <- extract_terms_response(formula(fits[[1]]))$response
   }
@@ -1612,6 +2510,89 @@ subprd_augdat <- function(fits, newdata) {
     return(lpreds)
   })
   return(do.call(abind::abind, list(prd_list, rev.along = 0)))
+}
+
+# Linear predictors (on the link scale used by subprd_augdat()) of `polr` or
+# `multinom` fits that share the terms, the factor levels and the contrasts (as
+# the draw-wise fits of one submodel do). The model matrix for `newdata` is
+# built once, as in predict.polr() and predict.multinom(). For `polr`, the
+# linear predictors of the cumulative probabilities are zeta_j - eta, which
+# subprd_augdat() computes from the predicted category probabilities; for
+# `multinom`, they are the log odds against the first category. This function
+# computes both directly, so they differ from those of subprd_augdat() only by
+# rounding. Returns `NULL` for other cases.
+subprd_augdat_direct <- function(fits, newdata) {
+  fit_1 <- fits[[1]]
+  if (inherits(fit_1, "polr")) {
+    is_polr <- TRUE
+  } else if (inherits(fit_1, "multinom") && is.matrix(coef(fit_1))) {
+    is_polr <- FALSE
+  } else {
+    return(NULL)
+  }
+  same_cls <- function(fit) {
+    if (is_polr) {
+      inherits(fit, "polr") && !inherits(fit, "clmm")
+    } else {
+      inherits(fit, "multinom") && is.matrix(coef(fit))
+    }
+  }
+  # The terms are compared without the environment of their formula:
+  terms_noenv <- function(trms) {
+    attr(trms, ".Environment") <- NULL
+    trms
+  }
+  trms_1 <- terms_noenv(fit_1$terms)
+  if (!all(vapply(fits, function(fit) {
+    same_cls(fit) && identical(terms_noenv(fit$terms), trms_1) &&
+      identical(fit$xlevels, fit_1$xlevels) &&
+      identical(fit$contrasts, fit_1$contrasts)
+  }, logical(1)))) {
+    return(NULL)
+  }
+  trms <- delete.response(fit_1$terms)
+  mfr <- model.frame(trms, newdata, na.action = function(x) x,
+                     xlev = fit_1$xlevels)
+  if (!is.null(model.offset(mfr))) {
+    return(NULL)
+  }
+  x <- model.matrix(trms, mfr, contrasts.arg = fit_1$contrasts)
+  n <- nrow(x)
+  nprj <- length(fits)
+  if (is_polr) {
+    xint <- match("(Intercept)", colnames(x), nomatch = 0L)
+    if (xint > 0L) {
+      x <- x[, -xint, drop = FALSE]
+    }
+    if (!identical(colnames(x) %||% character(),
+                   names(coef(fit_1)) %||% character())) {
+      return(NULL)
+    }
+    zetas <- do.call(cbind, lapply(fits, "[[", "zeta"))
+    if (ncol(x) > 0) {
+      etas <- x %*% do.call(cbind, lapply(fits, coef))
+    } else {
+      etas <- matrix(0, n, nprj)
+    }
+    ncat_m1 <- nrow(zetas)
+    out <- array(NA_real_, dim = c(n, ncat_m1, nprj))
+    for (s in seq_len(nprj)) {
+      out[, , s] <- outer(-etas[, s], zetas[, s], "+")
+    }
+    cat_nms <- utils::head(fit_1$lev, -1)
+  } else {
+    coef_1 <- coef(fit_1)
+    if (!identical(colnames(x), colnames(coef_1))) {
+      return(NULL)
+    }
+    out <- array(NA_real_, dim = c(n, nrow(coef_1), nprj))
+    for (s in seq_len(nprj)) {
+      out[, , s] <- x %*% t(coef(fits[[s]]))
+    }
+    cat_nms <- rownames(coef_1)
+  }
+  dimnames(out) <- list(rownames(newdata), cat_nms, NULL)
+  return(out)
 }
 
 subprd_augdat_binom <- function(fits, newdata) {

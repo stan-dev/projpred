@@ -1,8 +1,7 @@
 # get_refmodel() ----------------------------------------------------------
 
-context("get_refmodel()")
-
 test_that("`object` of class `stanreg` or `brmsfit` works", {
+  skip_if_no_setups(refmods)
   for (tstsetup in names(refmods)) {
     tstsetup_fit <- args_ref[[tstsetup]]$tstsetup_fit
     with_spclformul_crr <- grepl("\\.spclformul", tstsetup)
@@ -199,6 +198,7 @@ test_that("extra arguments in s() or t2() terms fail", {
 })
 
 test_that("get_refmodel() is idempotent", {
+  skip_if_no_setups(refmods)
   for (tstsetup in names(refmods)) {
     expect_identical(get_refmodel(refmods[[tstsetup]]),
                      refmods[[tstsetup]],
@@ -206,9 +206,29 @@ test_that("get_refmodel() is idempotent", {
   }
 })
 
-# predict.refmodel() ------------------------------------------------------
+test_that(paste(
+  "the `cvrefbuilder` of get_refmodel.stanreg() takes the default `dis` from",
+  "the fold-wise fit and passes a user-supplied `dis` unchanged"
+), {
+  tstsetups <- grep("^rstanarm\\..*\\.gauss\\.", names(fits), value = TRUE)
+  skip_if_not(length(tstsetups) >= 2)
+  # The second fit stands in for a fold refit:
+  fit_full <- fits[[tstsetups[1]]]
+  fit_fold <- fits[[tstsetups[2]]]
+  sigma_full <- data.frame(fit_full)[, "sigma"]
+  sigma_fold <- data.frame(fit_fold)[, "sigma"]
+  skip_if(isTRUE(all.equal(sigma_full, sigma_fold)))
 
-context("predict.refmodel()")
+  refmod <- get_refmodel(fit_full)
+  expect_identical(refmod$dis, sigma_full)
+  expect_identical(refmod$cvrefbuilder(fit_fold)$dis, sigma_fold)
+
+  dis_user <- rep(0.7, length(sigma_full))
+  refmod_user <- get_refmodel(fit_full, dis = dis_user)
+  expect_identical(refmod_user$cvrefbuilder(fit_fold)$dis, dis_user)
+})
+
+# predict.refmodel() ------------------------------------------------------
 
 test_that("invalid `type` fails", {
   skip_if_not(length(fits) > 0)
@@ -226,6 +246,7 @@ test_that(paste(
   "`object` of class `refmodel` and arguments `newdata`, `ynew`, and `type`",
   "work"
 ), {
+  skip_if_no_setups(refmods)
   for (tstsetup in names(refmods)) {
     pkg_crr <- args_ref[[tstsetup]]$pkg_nm
     mod_crr <- args_ref[[tstsetup]]$mod_nm
@@ -355,15 +376,15 @@ test_that(paste(
     # Snapshots:
     if (run_snaps) {
       if (testthat_ed_max2) local_edition(3)
-      width_orig <- options(width = 145)
-      expect_snapshot({
-        print(tstsetup)
-        print(rlang::hash(predref_resp))
-        print(rlang::hash(predref_link))
-        print(rlang::hash(predref_ynew_resp))
-        print(rlang::hash(predref_ynew_link))
+      withr::with_options(list(width = 145), {
+        expect_snapshot({
+          print(tstsetup)
+          print(rlang::hash(predref_resp))
+          print(rlang::hash(predref_link))
+          print(rlang::hash(predref_ynew_resp))
+          print(rlang::hash(predref_ynew_link))
+        })
       })
-      options(width_orig)
       if (testthat_ed_max2) local_edition(2)
     }
   }

@@ -61,7 +61,12 @@ coefficients; default: vector of \code{0}s).
 \item For the augmented-data projection: \code{\link[MASS:polr]{MASS::polr()}} (the returned object
 inherits from class \code{polr}) for the \code{\link[brms:cumulative]{brms::cumulative()}} family or
 \code{\link[rstanarm:stan_polr]{rstanarm::stan_polr()}} fits, \code{\link[nnet:multinom]{nnet::multinom()}} (the returned object
-inherits from class \code{multinom}) for the \code{\link[brms:categorical]{brms::categorical()}} family.
+inherits from class \code{multinom}) for the \code{\link[brms:categorical]{brms::categorical()}} family. For \code{\link[ordinal:clmm]{ordinal::clmm()}} with a single
+group-level term \code{(1 | <group>)}, \pkg{projpred} uses
+\code{method = "ucminf"} and \code{grad = "forward"} (see
+\code{\link[ordinal:clmm.control]{ordinal::clmm.control()}}). If this fit fails or does not converge,
+\pkg{projpred} refits with the default settings of \code{\link[ordinal:clmm]{ordinal::clmm()}}. An
+argument \code{method} or \code{control} in \code{...} replaces this default.
 }
 \item Submodel with multilevel but no additive terms:
 \itemize{
@@ -185,6 +190,16 @@ call \code{\link[=gc]{gc()}} at some places (e.g., after each size that the forw
 passes through) to free up some memory. These \code{\link[=gc]{gc()}} calls are not always
 necessary to reduce the peak memory usage, but they add runtime (hence the
 default of \code{FALSE} for that global option).
+
+During a call of \code{\link[=varsel]{varsel()}}, \code{\link[=cv_varsel]{cv_varsel()}} or \code{\link[=project]{project()}}, \pkg{projpred}
+caches the submodel formulas and model matrices per set of predictor terms
+(for submodels without multilevel or additive terms). Global option
+\code{projpred.proj_cache_mb} (default \code{512}) limits the size of this cache, in
+units of 2^20 bytes as estimated by \code{\link[utils:object.size]{utils::object.size()}}. The cache holds
+at most about twice this limit. The limit applies to each \R process, so
+forked parallel workers can each have a cache of this size. Setting global
+option \code{projpred.proj_cache} to \code{FALSE} switches the cache off. The cache
+changes only the runtime, not the results.
 }
 
 \section{Other notes}{
