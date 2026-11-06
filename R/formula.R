@@ -731,7 +731,7 @@ norm_term_labels <- function(labels) {
 
 # For each search term: its term labels (see norm_term_labels()) and, for a
 # search term with one label, the string that select_possible_terms_size()
-# returns for it. Computed once per search, so that
+# returns for it. Cached (R >= 4.2.0) for each set of search terms, so that
 # select_possible_terms_size() does not parse the same formulas again for each
 # candidate and step. Returns `NULL` if a search term has a smooth, group-level
 # or offset term or no intercept (the fast path does not cover these cases).
@@ -804,25 +804,26 @@ select_possible_terms_size_simple <- function(chosen, terms, size, term_info,
 ## @param chosen A list of currently chosen terms
 ## @param terms A list of all possible terms
 ## @param size Maximum allowed size
-## @param term_info Optional output of search_term_info() for `terms`
-select_possible_terms_size <- function(chosen, terms, size, term_info = NULL) {
+## @param use_term_info A single logical value indicating whether to use
+##   search_term_info() for `terms` (faster; the result is the same)
+select_possible_terms_size <- function(chosen, terms, size,
+                                       use_term_info = FALSE) {
   if (size < 1) {
     stop("size must be at least 1")
   }
-  # `term_info` is search_term_info(terms), so the result depends only on the
-  # strings in the key:
-  key <- list(size, is.null(term_info), chosen, terms)
+  key <- list(size, use_term_info, chosen, terms)
   cached_by_strings("select_possible_terms_size", key, function() {
-    select_possible_terms_size_uncached(chosen, terms, size, term_info)
+    select_possible_terms_size_uncached(chosen, terms, size, use_term_info)
   })
 }
 
 select_possible_terms_size_uncached <- function(chosen, terms, size,
-                                                term_info = NULL) {
+                                                use_term_info = FALSE) {
+  term_info <- if (use_term_info) search_term_info(terms) else NULL
 
   # The terms of the already chosen submodel (the same for all candidates):
   terms_chosen <- extract_terms_response(make_formula(c(chosen)))
-  if (!is.null(term_info) && all(terms %in% names(term_info)) &&
+  if (!is.null(term_info) &&
       length(terms_chosen$additive_terms) == 0 &&
       length(terms_chosen$group_terms) == 0 &&
       isTRUE(terms_chosen$global_intercept)) {

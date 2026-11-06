@@ -61,12 +61,13 @@ test_that("the cached functions give the results of the uncached ones", {
   expect_identical(info, search_term_info_uncached(terms))
   for (size in 1:4) {
     for (chosen in list(character(0), "x1", c("x1", "x2"))) {
-      for (ti in list(NULL, info)) {
+      for (uti in c(FALSE, TRUE)) {
         for (k in 1:2) {
           expect_identical(
-            select_possible_terms_size(chosen, terms, size, term_info = ti),
+            select_possible_terms_size(chosen, terms, size,
+                                       use_term_info = uti),
             select_possible_terms_size_uncached(chosen, terms, size,
-                                                term_info = ti)
+                                                use_term_info = uti)
           )
         }
       }
@@ -92,17 +93,21 @@ test_that("the cached functions store their results under their keys", {
          key = list("search_term_info", terms)),
     list(fun = function() select_possible_terms_size(character(0), terms, 2),
          key = list("select_possible_terms_size",
+                    list(2, FALSE, character(0), terms))),
+    list(fun = function() select_possible_terms_size(character(0), terms, 2,
+                                                     use_term_info = TRUE),
+         key = list("select_possible_terms_size",
                     list(2, TRUE, character(0), terms)))
   )
   for (k in seq_along(calls)) {
     value <- calls[[k]]$fun()
     hit <- utils::gethash(tab, calls[[k]]$key)
-    expect_false(is.null(hit), info = k)
-    expect_identical(hit[[1]], value, info = k)
+    expect_false(is.null(hit), info = as.character(k))
+    expect_identical(hit[[1]], value, info = as.character(k))
     # The second call adds no entry:
     n_entries <- utils::numhash(tab)
-    expect_identical(calls[[k]]$fun(), value, info = k)
-    expect_identical(utils::numhash(tab), n_entries, info = k)
+    expect_identical(calls[[k]]$fun(), value, info = as.character(k))
+    expect_identical(utils::numhash(tab), n_entries, info = as.character(k))
   }
 })
 
