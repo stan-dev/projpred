@@ -42,6 +42,15 @@
   with 10 000 observations and 4 000 projected draws is about 7 times
   faster. (GitHub:
   [\#575](https://github.com/stan-dev/projpred/issues/575))
+- Faster [`ordinal::clmm()`](https://rdrr.io/pkg/ordinal/man/clmm.html)
+  submodel fits with a single group-level intercept: projpred now uses
+  `ucminf()` with forward differences, and refits with
+  [`nlminb()`](https://rdrr.io/r/stats/nlminb.html) if needed. For
+  example,
+  [`varsel()`](https://mc-stan.org/projpred/dev/reference/varsel.md) for
+  a cumulative model with 300 observations is about 1.5 to 2 times
+  faster. (GitHub:
+  [\#596](https://github.com/stan-dev/projpred/issues/596))
 - Faster [`lme4::glmer()`](https://rdrr.io/pkg/lme4/man/glmer.html)
   submodel fits: projpred now uses BOBYQA in both optimization stages,
   which changes the fits only within the optimizer tolerance. For

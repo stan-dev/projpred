@@ -72,7 +72,15 @@ by projpred's internal default `div_minimizer` functions, see
     [`nnet::multinom()`](https://rdrr.io/pkg/nnet/man/multinom.html)
     (the returned object inherits from class `multinom`) for the
     [`brms::categorical()`](https://paulbuerkner.com/brms/reference/brmsfamily.html)
-    family.
+    family. For
+    [`ordinal::clmm()`](https://rdrr.io/pkg/ordinal/man/clmm.html) with
+    a single group-level term `(1 | <group>)`, projpred uses
+    `method = "ucminf"` and `grad = "forward"` (see
+    [`ordinal::clmm.control()`](https://rdrr.io/pkg/ordinal/man/clmm.control.html)).
+    If this fit fails or does not converge, projpred refits with the
+    default settings of
+    [`ordinal::clmm()`](https://rdrr.io/pkg/ordinal/man/clmm.html). An
+    argument `method` or `control` in `...` replaces this default.
 
 - Submodel with multilevel but no additive terms:
 

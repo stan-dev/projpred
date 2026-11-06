@@ -128,7 +128,12 @@ coefficients; default: vector of <code>0</code>s).</p></li>
 <li><p>For the augmented-data projection: <code><a href="https://rdrr.io/pkg/MASS/man/polr.html" class="external-link">MASS::polr()</a></code> (the returned object
 inherits from class <code>polr</code>) for the <code><a href="https://paulbuerkner.com/brms/reference/brmsfamily.html" class="external-link">brms::cumulative()</a></code> family or
 <code><a href="https://mc-stan.org/rstanarm/reference/stan_polr.html" class="external-link">rstanarm::stan_polr()</a></code> fits, <code><a href="https://rdrr.io/pkg/nnet/man/multinom.html" class="external-link">nnet::multinom()</a></code> (the returned object
-inherits from class <code>multinom</code>) for the <code><a href="https://paulbuerkner.com/brms/reference/brmsfamily.html" class="external-link">brms::categorical()</a></code> family.</p></li>
+inherits from class <code>multinom</code>) for the <code><a href="https://paulbuerkner.com/brms/reference/brmsfamily.html" class="external-link">brms::categorical()</a></code> family. For <code><a href="https://rdrr.io/pkg/ordinal/man/clmm.html" class="external-link">ordinal::clmm()</a></code> with a single
+group-level term <code>(1 | &lt;group&gt;)</code>, <span class="pkg">projpred</span> uses
+<code>method = "ucminf"</code> and <code>grad = "forward"</code> (see
+<code><a href="https://rdrr.io/pkg/ordinal/man/clmm.control.html" class="external-link">ordinal::clmm.control()</a></code>). If this fit fails or does not converge,
+<span class="pkg">projpred</span> refits with the default settings of <code><a href="https://rdrr.io/pkg/ordinal/man/clmm.html" class="external-link">ordinal::clmm()</a></code>. An
+argument <code>method</code> or <code>control</code> in <code>...</code> replaces this default.</p></li>
 </ul></li>
 <li><p>Submodel with multilevel but no additive terms:</p><ul><li><p>For the traditional (or latent) projection (or the augmented-data
 projection in case of the <code><a href="https://rdrr.io/r/stats/family.html" class="external-link">binomial()</a></code> or <code><a href="https://paulbuerkner.com/brms/reference/brmsfamily.html" class="external-link">brms::bernoulli()</a></code> family):
