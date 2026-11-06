@@ -35,6 +35,38 @@ test_that("arr2augmat(), augmat2arr()", {
   expect_identical(arr_m1_ch, arr_m1)
 })
 
+test_that("arr2augmat() gives the results of apply() over the draws", {
+  # The computation with apply() (the reference for the computation with
+  # aperm()):
+  arr2augmat_apply <- function(arr, margin_draws = 3) {
+    margin_obs <- if (margin_draws == 1) 2 else 1
+    augmat <- do.call(cbind, apply(arr, margin_draws, as.vector,
+                                   simplify = FALSE))
+    attr(augmat, "ndiscrete") <- dim(arr)[-c(margin_draws, margin_obs)]
+    class(augmat) <- "augmat"
+    augmat
+  }
+  dims <- c(5L, 3L, 7L)
+  x_dbl <- sin(seq_len(prod(dims)))
+  arr_list <- list(
+    dbl = array(x_dbl, dims),
+    int = array(seq_len(prod(dims)), dims),
+    named = array(x_dbl, dims,
+                  dimnames = list(NULL, c("a", "b", "c"), paste0("s", 1:7))),
+    empty_nms = array(x_dbl, dims, dimnames = list(NULL, NULL, rep("", 7))),
+    attr = structure(array(x_dbl, dims), foo = "bar"),
+    one_draw = array(x_dbl[1:15], c(5L, 3L, 1L)),
+    one_cat = array(x_dbl[1:35], c(5L, 1L, 7L))
+  )
+  for (nm in names(arr_list)) {
+    arr <- arr_list[[nm]]
+    expect_identical(arr2augmat(arr), arr2augmat_apply(arr), info = nm)
+    arr1 <- aperm(arr, c(3, 1, 2))
+    expect_identical(arr2augmat(arr1, margin_draws = 1),
+                     arr2augmat_apply(arr1, margin_draws = 1), info = nm)
+  }
+})
+
 ## t.augmat() -------------------------------------------------------------
 
 test_that("t.augmat()", {
