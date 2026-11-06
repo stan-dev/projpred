@@ -138,14 +138,22 @@ test_that(paste(
 })
 
 test_that("the built-in families give get_p_clust() its predvar_mix() path", {
-  fams <- list(extend_family(gaussian()), extend_family(Student_t(nu = 4)),
-               extend_family(binomial()), extend_family(poisson()),
-               extend_family(binomial(), latent = TRUE))
+  fams <- list(gaussian = extend_family(gaussian()),
+               Student_t = extend_family(Student_t(nu = 4)),
+               binomial = extend_family(binomial()),
+               poisson = extend_family(poisson()),
+               latent = extend_family(binomial(), latent = TRUE))
   for (fam in fams) {
     expect_true(is.function(fam$predvar_mix), info = fam$family)
     expect_identical(fam$predvar, attr(fam$predvar_mix, "predvar"),
                      info = fam$family)
   }
+  uses_moments <- vapply(fams, function(fam) {
+    attr(fam$predvar_mix, "uses_moments")
+  }, logical(1))
+  expect_identical(uses_moments, c(gaussian = TRUE, Student_t = TRUE,
+                                   binomial = FALSE, poisson = FALSE,
+                                   latent = TRUE))
   expect_null(extend_family(Gamma())$predvar_mix)
 })
 
@@ -153,12 +161,85 @@ test_that("clust_moments_c() checks its inputs", {
   mu <- matrix(rnorm(12), 3, 4)
   w <- rep(0.5, 4)
   cl <- c(0L, 0L, 1L, 1L)
-  expect_error(clust_moments_c(mu, mu[, -1], rep(1, 4), w, cl, 2L),
+  expect_error(clust_moments_c(mu, mu[, -1], rep(1, 4), w, cl, 2L, TRUE),
                "dimensions")
-  expect_error(clust_moments_c(mu, mu, rep(1, 4), w, cl[-1], 2L),
+  expect_error(clust_moments_c(mu, mu, rep(1, 4), w, cl[-1], 2L, TRUE),
                "dimensions")
-  expect_error(clust_moments_c(mu, mu, rep(1, 4), w, c(0L, 0L, 1L, 2L), 2L),
+  expect_error(clust_moments_c(mu, mu, rep(1, 4), w, c(0L, 0L, 1L, 2L), 2L,
+                               TRUE),
                "out of range")
-  expect_error(clust_moments_c(mu, mu, rep(1, 4), w, c(0L, NA, 1L, 1L), 2L),
+  expect_error(clust_moments_c(mu, mu, rep(1, 4), w, c(0L, NA, 1L, 1L), 2L,
+                               TRUE),
                "out of range")
+})
+
+test_that(paste(
+  "clust_moments_c() without the variances gives the same means and NA",
+  "variances"
+), {
+  mu <- matrix(rnorm(15), 3, 5)
+  mu_offs <- mu + 0.5
+  dis <- runif(5, 0.5, 1.5)
+  w <- c(0.2, 0.8, 0.5, 0.5, 0)
+  cl <- c(0L, 0L, 1L, 1L, -1L)
+  with_var <- clust_moments_c(mu, mu_offs, dis, w, cl, 2L, TRUE)
+  without_var <- clust_moments_c(mu, mu_offs, dis, w, cl, 2L, FALSE)
+  for (el in c("mu", "mu_offs", "dis")) {
+    expect_identical(without_var[[el]], with_var[[el]], info = el)
+  }
+  expect_true(all(is.na(without_var$var_offs)))
+  expect_identical(dim(without_var$var_offs), dim(with_var$var_offs))
+  expect_true(all(is.na(without_var$dis2)))
+  expect_length(without_var$dis2, 2L)
+  expect_false(anyNA(with_var$var_offs))
+  expect_false(anyNA(with_var$dis2))
+})
+
+test_that(paste(
+  "get_p_clust() computes the variances in clust_moments_c() only if",
+  "predvar_mix() uses them"
+), {
+  need_var_args <- logical()
+  clust_moments_orig <- clust_moments_c
+  fams <- list(gaussian = extend_family(gaussian()),
+               Student_t = extend_family(Student_t(nu = 4)),
+               latent = extend_family(binomial(), latent = TRUE),
+               binomial = extend_family(binomial()),
+               poisson = extend_family(poisson()))
+  # A `predvar_mix()` without attribute "uses_moments" gets the variances:
+  fam_noattr <- extend_family(gaussian())
+  attr(fam_noattr$predvar_mix, "uses_moments") <- NULL
+  fams$noattr <- fam_noattr
+  # Without the predvar_mix() path (a replaced predvar(), or no predvar_mix()),
+  # the cluster loop computes the predictive variances:
+  fam_repl <- extend_family(gaussian())
+  fam_repl$predvar <- function(mu, dis, wdraws = 1) {
+    rep(sum(wdraws * dis), NROW(mu))
+  }
+  fams$replaced <- fam_repl
+  fam_none <- extend_family(gaussian())
+  fam_none$predvar_mix <- NULL
+  fams$none <- fam_none
+  need_var_exp <- c(gaussian = TRUE, Student_t = TRUE, latent = TRUE,
+                    binomial = FALSE, poisson = FALSE, noattr = TRUE,
+                    replaced = FALSE, none = FALSE)
+  with_mocked_bindings(
+    clust_moments_c = function(mu, mu_offs, dis, wn, cl, nclusters,
+                               need_var) {
+      need_var_args <<- c(need_var_args, need_var)
+      clust_moments_orig(mu, mu_offs, dis, wn, cl, nclusters, need_var)
+    },
+    {
+      for (fam_name in names(fams)) {
+        fam <- fams[[fam_name]]
+        inp <- p_clust_inputs(fam)
+        S <- ncol(inp$mu)
+        need_var_args <- logical()
+        expect_p_clust_loop(fam, inp, cl = rep(1:8, length.out = S),
+                            info = fam_name)
+        expect_identical(need_var_args, unname(need_var_exp[fam_name]),
+                         info = fam_name)
+      }
+    }
+  )
 })

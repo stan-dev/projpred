@@ -28,8 +28,8 @@ BEGIN_RCPP
 END_RCPP
 }
 // clust_moments_c
-List clust_moments_c(const arma::mat& mu, const arma::mat& mu_offs, const arma::vec& dis, const arma::vec& wn, const IntegerVector& cl, int nclusters);
-RcppExport SEXP _projpred_clust_moments_c(SEXP muSEXP, SEXP mu_offsSEXP, SEXP disSEXP, SEXP wnSEXP, SEXP clSEXP, SEXP nclustersSEXP) {
+List clust_moments_c(const arma::mat& mu, const arma::mat& mu_offs, const arma::vec& dis, const arma::vec& wn, const IntegerVector& cl, int nclusters, bool need_var);
+RcppExport SEXP _projpred_clust_moments_c(SEXP muSEXP, SEXP mu_offsSEXP, SEXP disSEXP, SEXP wnSEXP, SEXP clSEXP, SEXP nclustersSEXP, SEXP need_varSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
@@ -39,7 +39,8 @@ BEGIN_RCPP
     Rcpp::traits::input_parameter< const arma::vec& >::type wn(wnSEXP);
     Rcpp::traits::input_parameter< const IntegerVector& >::type cl(clSEXP);
     Rcpp::traits::input_parameter< int >::type nclusters(nclustersSEXP);
-    rcpp_result_gen = Rcpp::wrap(clust_moments_c(mu, mu_offs, dis, wn, cl, nclusters));
+    Rcpp::traits::input_parameter< bool >::type need_var(need_varSEXP);
+    rcpp_result_gen = Rcpp::wrap(clust_moments_c(mu, mu_offs, dis, wn, cl, nclusters, need_var));
     return rcpp_result_gen;
 END_RCPP
 }
@@ -158,7 +159,7 @@ END_RCPP
 
 static const R_CallMethodDef CallEntries[] = {
     {"_projpred_categ_fit_multi_c", (DL_FUNC) &_projpred_categ_fit_multi_c, 6},
-    {"_projpred_clust_moments_c", (DL_FUNC) &_projpred_clust_moments_c, 6},
+    {"_projpred_clust_moments_c", (DL_FUNC) &_projpred_clust_moments_c, 7},
     {"_projpred_cumul_fit_multi_c", (DL_FUNC) &_projpred_cumul_fit_multi_c, 7},
     {"_projpred_glm_elnet_c", (DL_FUNC) &_projpred_glm_elnet_c, 14},
     {"_projpred_glm_ridge_c", (DL_FUNC) &_projpred_glm_ridge_c, 11},

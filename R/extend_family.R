@@ -562,7 +562,7 @@ extend_family_binomial <- function(family) {
   family$ce <- ce_binom
   family$dis_fun <- dis_na
   family$predvar <- predvar_na
-  family <- add_predvar_mix(family, predvar_mix_na)
+  family <- add_predvar_mix(family, predvar_mix_na, uses_moments = FALSE)
   family$ll_fun <- ll_binom
   family$deviance <- dev_binom
   family$ppd <- ppd_binom
@@ -609,7 +609,7 @@ extend_family_poisson <- function(family) {
   family$ce <- ce_poiss
   family$dis_fun <- dis_na
   family$predvar <- predvar_na
-  family <- add_predvar_mix(family, predvar_mix_na)
+  family <- add_predvar_mix(family, predvar_mix_na, uses_moments = FALSE)
   family$ll_fun <- ll_poiss
   family$deviance <- dev_poiss
   family$ppd <- ppd_poiss
@@ -634,11 +634,15 @@ rowvar_wdraws <- function(mu, wdraws) {
 # x clusters matrix, or `0` if each cluster has one draw and all values of `mu`
 # are finite).
 # Attribute "predvar" of `family$predvar_mix` is the `family$predvar` that it
-# belongs to (see add_predvar_mix()).
+# belongs to (see add_predvar_mix()). Attribute "uses_moments" is `FALSE` if
+# `family$predvar_mix` uses only `length(dis2)`, not the values of `dis2` and
+# `mu_var`. Then get_p_clust() does not compute these values and can give `NA`
+# in them.
 
 # Adds `predvar_mix` to `family`, for the current `family$predvar`.
-add_predvar_mix <- function(family, predvar_mix) {
-  family$predvar_mix <- structure(predvar_mix, predvar = family$predvar)
+add_predvar_mix <- function(family, predvar_mix, uses_moments = TRUE) {
+  family$predvar_mix <- structure(predvar_mix, predvar = family$predvar,
+                                  uses_moments = uses_moments)
   return(family)
 }
 

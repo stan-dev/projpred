@@ -459,6 +459,9 @@ get_p_clust <- function(family, eta, mu, mu_offs, dis, nclusters = 10,
   # belongs to (a user can replace `family$predvar`):
   use_mix <- !is.null(family$predvar_mix) &&
     identical(family$predvar, attr(family$predvar_mix, "predvar"))
+  # The weighted mean of `dis^2` and the weighted variance of `mu_offs` within
+  # the clusters are needed only if `family$predvar_mix` uses them:
+  need_var <- use_mix && !isFALSE(attr(family$predvar_mix, "uses_moments"))
   if (all(lengths(ind_by_cl) == 1L)) {
     # One draw per cluster (thinned draws, or as many clusters as draws). This
     # gives the same results as the cluster loop at the end, for all clusters
@@ -485,14 +488,16 @@ get_p_clust <- function(family, eta, mu, mu_offs, dis, nclusters = 10,
     if (use_mix) {
       # The variance across one draw is 0 (NaN for a non-finite `mu_offs`, as
       # in rowvar_wdraws()):
-      mu_offs_idx <- unclass(mu_offs)
-      if (!all_draws) {
-        mu_offs_idx <- mu_offs_idx[, idx, drop = FALSE]
-      }
       mu_var <- 0
-      if (length(mu_offs_idx) > 0 && !all(is.finite(range(mu_offs_idx)))) {
-        mu_var <- (mu_offs_idx - mu_offs_idx)^2
-        attributes(mu_var) <- list(dim = dim(mu_var))
+      if (need_var) {
+        mu_offs_idx <- unclass(mu_offs)
+        if (!all_draws) {
+          mu_offs_idx <- mu_offs_idx[, idx, drop = FALSE]
+        }
+        if (length(mu_offs_idx) > 0 && !all(is.finite(range(mu_offs_idx)))) {
+          mu_var <- (mu_offs_idx - mu_offs_idx)^2
+          attributes(mu_var) <- list(dim = dim(mu_var))
+        }
       }
       predvar <- family$predvar_mix(as.numeric(dis[idx])^2, mu_var, nobs)
     }
@@ -505,7 +510,7 @@ get_p_clust <- function(family, eta, mu, mu_offs, dis, nclusters = 10,
     wn[is.na(cl_ind)] <- 0
     mom <- clust_moments_c(
       mu, mu_offs, as.numeric(dis)[seq_along(cl)], wn,
-      ifelse(is.na(cl_ind), -1L, cl_ind - 1L), nclusters
+      ifelse(is.na(cl_ind), -1L, cl_ind - 1L), nclusters, need_var
     )
     centers <- mom$mu * (1 - eps)
     centers_offs <- mom$mu_offs * (1 - eps)
