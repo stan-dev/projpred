@@ -1533,16 +1533,7 @@ kfold_varsel <- function(refmodel, method, nterms_max, ndraws, nclusters,
 
   # Handle the submodels' performance evaluation results:
   sub_foldwise <- lapply(res_cv, "[[", "summaries_sub")
-  if (getRversion() >= package_version("4.2.0")) {
-    sub_foldwise <- simplify2array(sub_foldwise, higher = FALSE, except = NULL)
-  } else {
-    sub_foldwise <- simplify2array(sub_foldwise, higher = FALSE)
-    if (is.null(dim(sub_foldwise))) {
-      sub_dim <- dim(predictor_ranking_cv)
-      sub_dim[2] <- sub_dim[2] + 1L # +1 is for the empty model
-      dim(sub_foldwise) <- rev(sub_dim)
-    }
-  }
+  sub_foldwise <- simplify2array(sub_foldwise, higher = FALSE, except = NULL)
   sub <- apply(sub_foldwise, 1, rbind2list)
   idxs_sorted_by_fold <- unlist(lapply(list_cv, function(fold) {
     fold$omitted

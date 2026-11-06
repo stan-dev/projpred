@@ -38,7 +38,7 @@ License: GPL-3 | file LICENSE
 URL: https://mc-stan.org/projpred/, https://discourse.mc-stan.org
 BugReports: https://github.com/stan-dev/projpred/issues/
 Depends:
-    R (>= 3.6.0)
+    R (>= 4.2.0)
 Imports:
     methods,
     utils,
