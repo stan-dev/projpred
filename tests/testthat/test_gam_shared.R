@@ -41,19 +41,30 @@ test_that("divmin() gives the same gam() fits with and without sharing", {
 test_that("divmin() passes the arguments of gam() and drops the others", {
   opts_old <- options(projpred.gam_shared = TRUE)
   on.exit(options(opts_old))
-  for (shared in c(TRUE, FALSE)) {
+  divmin_args <- function(shared, ...) {
     options(projpred.gam_shared = shared)
-    fits <- suppressWarnings(divmin(
+    suppressWarnings(divmin(
       formula = fml_gs, data = dat_gs, family = extend_family(gaussian()),
       weights = wts_gs, projpred_var = matrix(NA, n_gs, n_draws_gs),
       projpred_ws_aug = matrix(NA, n_gs, n_draws_gs), verbose_divmin = FALSE,
-      method = "REML", not_a_gam_arg = 1
+      ...
     ))
-    for (s in seq_len(n_draws_gs)) {
-      expect_identical(fits[[s]]$method, "REML", info = shared)
-      expect_false(any(c("not_a_gam_arg", "projpred_var") %in%
-                         names(fits[[s]]$call)), info = shared)
-    }
+  }
+  fits_drawwise <- divmin_args(FALSE, method = "REML", not_a_gam_arg = 1)
+  fits_shared <- divmin_args(TRUE, method = "REML", not_a_gam_arg = 1)
+  for (s in seq_len(n_draws_gs)) {
+    expect_identical(fits_drawwise[[s]]$method, "REML", info = paste("draw", s))
+    expect_false(any(c("not_a_gam_arg", "projpred_var") %in%
+                       names(fits_drawwise[[s]]$call)), info = paste("draw", s))
+    expect_equal(fits_shared[[s]], fits_drawwise[[s]], tolerance = 0,
+                 info = paste("draw", s))
+  }
+  # An argument of the estimation that does not change `method`:
+  fits_drawwise <- divmin_args(FALSE, gamma = 1.4)
+  fits_shared <- divmin_args(TRUE, gamma = 1.4)
+  for (s in seq_len(n_draws_gs)) {
+    expect_equal(fits_shared[[s]], fits_drawwise[[s]], tolerance = 0,
+                 info = paste("draw", s))
   }
 })
 

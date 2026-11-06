@@ -302,6 +302,12 @@ gam_shared_callback <- function(formulas, dot_args) {
   if (is.null(g_setup) || length(g_setup$y) != nrow(data)) {
     return(NULL)
   }
+  # With `G`, mgcv::gam() takes the arguments of the estimation from its call,
+  # not from `G`:
+  est_args <- gam_dot_args[intersect(
+    names(gam_dot_args),
+    c("method", "optimizer", "control", "scale", "gamma", "in.out", "nei")
+  )]
   resp_old <- resp_nms[1]
   return(function(formula, ...) {
     resp_new <- as.character(formula[[2]])
@@ -309,7 +315,7 @@ gam_shared_callback <- function(formulas, dot_args) {
       g_s <- g_setup
       g_s$y <- data[[resp_new]]
       g_s$mf[[resp_old]] <- data[[resp_new]]
-      fit <- mgcv::gam(G = g_s)
+      fit <- do.call(mgcv::gam, c(list(G = g_s), est_args))
       if (resp_new != resp_old) {
         for (el in c("formula", "terms", "pterms", "model", "pred.formula")) {
           if (!is.null(fit[[el]])) {
