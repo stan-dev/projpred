@@ -269,10 +269,10 @@ shared_setup_callback <- function(make_shared, formulas, sdivmin_plain) {
 # setup of mgcv::gam() (model frame, smooth bases and penalties;
 # mgcv::gam(fit = FALSE)). gam_shared_callback() fits each draw with
 # mgcv::gam(G = ), the public interface for a prepared setup, with the response
-# of the draw. It sets the elements of the fit that contain the response name
-# (`formula`, `terms`, `pterms`, `model`, `pred.formula`) and `call` as in a fit
-# by fit_gam_callback(), so the fits are equal (all.equal()) to those of
-# fit_gam_callback().
+# of the draw and the estimation arguments of the call. It sets the elements of
+# the fit that contain the response name (`formula`, `terms`, `pterms`, `model`,
+# `pred.formula`) and `call` as in a fit by fit_gam_callback(), so the fits are
+# equal (all.equal()) to those of fit_gam_callback().
 
 # Draw-wise divergence minimizer for divmin() that uses one mgcv::gam() setup
 # for all draws, or `NULL` if this does not apply.
@@ -303,10 +303,12 @@ gam_shared_callback <- function(formulas, dot_args) {
     return(NULL)
   }
   # With `G`, mgcv::gam() takes the arguments of the estimation from its call,
-  # not from `G`:
+  # not from `G` (`data` only for `control$keepData`). The setup already
+  # contains `sp`; a second `sp` stops with an error.
   est_args <- gam_dot_args[intersect(
     names(gam_dot_args),
-    c("method", "optimizer", "control", "scale", "gamma", "in.out", "nei")
+    c("method", "optimizer", "control", "scale", "gamma", "in.out", "nei",
+      "data")
   )]
   resp_old <- resp_nms[1]
   return(function(formula, ...) {
