@@ -127,6 +127,13 @@
 
 ### Minor changes
 
+- Faster
+  [`cl_agg()`](https://mc-stan.org/projpred/dev/reference/cl_agg.md) and
+  conversion of arrays to augmented-rows matrices. For example, LOO CV
+  with validated search for the latent projection with 4000 projected
+  draws is about 3-4 times faster. (GitHub:
+  [\#600](https://github.com/stan-dev/projpred/issues/600))
+
 ### Bug fixes and maintenance
 
 - Fixed bug in the predictions of submodels for new data: Terms with a
