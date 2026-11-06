@@ -1,8 +1,8 @@
-context("validated LOO: weight perturbation")
+withr::local_seed(4710)
 
 # A Gaussian reference model with fixed draws (fast, no MCMC).
 cre_ref_wp <- function(n = 30, p = 6, S = 40) {
-  set.seed(4711)
+  withr::local_seed(4711)
   x <- matrix(rnorm(n * p), n, p, dimnames = list(NULL, paste0("x", seq_len(p))))
   dat <- data.frame(y = x[, 1] - 0.5 * x[, 2] + rnorm(n), x)
   beta <- matrix(rnorm((p + 1) * S, sd = 0.2), p + 1, S)
@@ -29,8 +29,8 @@ run_cv_wp <- function(ref, alpha = 10, refit_prj = TRUE, ...) {
 }
 
 test_that("perturb_weights() sums to n and does not change the RNG state", {
-  old_kind <- RNGkind()
-  on.exit(RNGkind(old_kind[1], old_kind[2], old_kind[3]))
+  # The test sets the seed and the RNG kind; restore both at the end:
+  withr::local_preserve_seed()
   set.seed(1)
   rng_before <- .Random.seed
   w <- perturb_weights(50, 10, 123L)
@@ -67,7 +67,7 @@ test_that(paste(
   "perturb_refmodel() returns NULL for an infinite linear predictor with a",
   "bounded inverse link and for infinite means with offsets"
 ), {
-  set.seed(4712)
+  withr::local_seed(4712)
   n <- 30
   S <- 40
   x <- matrix(rnorm(n * 2), n, 2, dimnames = list(NULL, c("x1", "x2")))
@@ -89,9 +89,9 @@ test_that(paste(
     list(ll = ll, lw_i = lw[, i])
   }
   # Logit link: an infinite value in `eta` (set here, not from an overflow of
-  # the shift) gives `mu` 0 or 1. The shift of draw s is eta %*% cd, so the
-  # value goes into a draw with cd_s > 0; then the shifted row is +Inf and not
-  # NaN (a NaN would also make `mu` non-finite).
+  # the shift) gives `mu` 0 or 1. The shift of row k is eta[k, ] %*% cd. The
+  # test puts the value into a draw s with cd_s > 0, so the shifted row is +Inf
+  # and not NaN (a NaN would also make `mu` non-finite).
   refm <- cre_ref(data.frame(y = rbinom(n, 1, 0.5), x), binomial())
   pp <- perturb(refm)
   expect_false(is.null(perturb_refmodel(refm, i = i, ll = pp$ll,
@@ -137,8 +137,8 @@ test_that(paste(
   lw <- weights(suppressWarnings(loo::psis(-ll, r_eff = NA)))
   i <- 5
   om <- exp(lw[, i]) / sum(exp(lw[, i]))
-  # With a large alpha the weights are close to 1 and the first-order shift
-  # gives the exact weighted posterior mean up to O(1 / alpha).
+  # With a large alpha the weights are close to 1, and the first-order shift
+  # gives the weighted posterior mean with an error of O(1 / alpha).
   alpha <- 1e4
   rp <- perturb_refmodel(refm, i = i, ll = ll, lw_i = lw[, i], alpha = alpha,
                          seed = 99L)
@@ -173,8 +173,8 @@ test_that(paste(
   rk <- ranking(cvvs)[["foldwise"]]
   rk_off <- ranking(cvvs_off)[["foldwise"]]
   expect_false(identical(rk, rk_off))
-  # Reusing the fold-wise rankings runs only the performance evaluation. With
-  # the weight perturbation turned off there, it gives the same results.
+  # Re-using the fold-wise rankings runs only the performance evaluation. With
+  # `alpha = Inf`, it gives the same summaries as `cvvs`.
   cvvs_eval <- run_cv_wp(r$ref, alpha = Inf, search_out = list(
     search_path = cvvs$search_path, rk_foldwise = rk
   ))
@@ -211,7 +211,7 @@ test_that("weight perturbation gives the same result in parallel", {
   r <- cre_ref_wp()
   cvvs <- run_cv_wp(r$ref)
   doParallel::registerDoParallel(2)
-  on.exit(doParallel::stopImplicitCluster())
+  withr::defer(doParallel::stopImplicitCluster())
   cvvs_prll <- run_cv_wp(r$ref, parallel = TRUE)
   expect_identical(ranking(cvvs_prll)[["foldwise"]],
                    ranking(cvvs)[["foldwise"]])
@@ -228,9 +228,19 @@ test_that(paste(
   expect_error(run_cv_wp(r$ref, alpha = "a"), "must be a single positive")
   cvvs <- run_cv_wp(r$ref, alpha = 4)
   expect_identical(cvvs$loo_perturb_alpha, 4)
+  # Without fold-wise searches, no search uses the weights:
   cvvs2 <- suppressWarnings(cv_varsel(cvvs, validate_search = FALSE,
                                       verbose = FALSE))
-  expect_identical(cvvs2$loo_perturb_alpha, 4)
+  expect_identical(cvvs2$loo_perturb_alpha, Inf)
+  # The same value as an integer reuses the fold-wise searches:
+  expect_no_message(
+    cvvs4 <- suppressWarnings(cv_varsel(
+      cvvs, loo_perturb_alpha = 4L, ndraws_pred = 40, seed = 11, verbose = FALSE
+    )),
+    message = "cannot be re-used"
+  )
+  expect_identical(cvvs4$loo_perturb_alpha, 4)
+  expect_identical(ranking(cvvs4)[["foldwise"]], ranking(cvvs)[["foldwise"]])
   # Another `loo_perturb_alpha` runs the fold-wise searches again:
   expect_message(
     cvvs3 <- suppressWarnings(cv_varsel(
@@ -241,4 +251,98 @@ test_that(paste(
   expect_identical(cvvs3$loo_perturb_alpha, 10)
   expect_identical(ranking(cvvs3)[["foldwise"]],
                    ranking(run_cv_wp(r$ref, alpha = 10))[["foldwise"]])
+})
+
+test_that(paste(
+  "the `vsel` object stores the `loo_perturb_alpha` that the fold-wise",
+  "searches used"
+), {
+  skip_on_cran()
+  r <- cre_ref_wp()
+  rk_off <- ranking(run_cv_wp(r$ref, alpha = Inf))[["foldwise"]]
+  # With `refit_prj = FALSE`, the searches do not use the weights:
+  cvvs_f <- run_cv_wp(r$ref, refit_prj = FALSE)
+  expect_identical(cvvs_f$loo_perturb_alpha, Inf)
+  # cv_varsel.vsel() with `refit_prj = TRUE` reuses these searches and keeps
+  # `Inf`:
+  expect_no_message(
+    cvvs_t <- suppressWarnings(cv_varsel(
+      cvvs_f, refit_prj = TRUE, ndraws_pred = 40, seed = 11, verbose = FALSE
+    )),
+    message = "cannot be re-used"
+  )
+  expect_identical(cvvs_t$loo_perturb_alpha, Inf)
+  expect_identical(ranking(cvvs_t)[["foldwise"]], rk_off)
+  # An object without the element (older projpred versions) has searches
+  # without the weights:
+  cvvs_old <- cvvs_t
+  cvvs_old$loo_perturb_alpha <- NULL
+  expect_no_message(
+    cvvs_o <- suppressWarnings(cv_varsel(
+      cvvs_old, ndraws_pred = 40, seed = 11, verbose = FALSE
+    )),
+    message = "cannot be re-used"
+  )
+  expect_identical(cvvs_o$loo_perturb_alpha, Inf)
+  # Without fold-wise searches to reuse, new searches use the default 10:
+  cvvs_v <- suppressWarnings(cv_varsel(cvvs_f, validate_search = FALSE,
+                                       verbose = FALSE))
+  cvvs_n <- suppressWarnings(cv_varsel(
+    cvvs_v, validate_search = TRUE, ndraws_pred = 40, seed = 11,
+    verbose = FALSE
+  ))
+  expect_identical(cvvs_n$loo_perturb_alpha, 10)
+  expect_identical(ranking(cvvs_n)[["foldwise"]],
+                   ranking(run_cv_wp(r$ref))[["foldwise"]])
+  # With `nloo < n`, cv_varsel.vsel() runs the fold-wise searches again and
+  # keeps a finite value:
+  cvvs_s <- run_cv_wp(r$ref, alpha = 4, nloo = 10)
+  cvvs_s2 <- suppressMessages(suppressWarnings(cv_varsel(
+    cvvs_s, ndraws_pred = 40, seed = 11, verbose = FALSE
+  )))
+  expect_identical(cvvs_s2$loo_perturb_alpha, 4)
+})
+
+# Evaluates `expr` and counts the calls of search_forward_gauss() and
+# perf_eval_gauss() that returned a result (not `NULL`).
+with_gauss_counts <- function(expr) {
+  calls <- new.env()
+  calls$search <- 0L
+  calls$eval <- 0L
+  ns <- asNamespace("projpred")
+  fns <- c(search = "search_forward_gauss", eval = "perf_eval_gauss")
+  withr::defer(suppressMessages(for (fn in fns) untrace(fn, where = ns)))
+  for (nm in names(fns)) {
+    suppressMessages(trace(
+      fns[[nm]], where = ns, print = FALSE,
+      exit = bquote(if (!is.null(returnValue(NULL))) {
+        assign(.(nm), get(.(nm), envir = .(calls)) + 1L, envir = .(calls))
+      })
+    ))
+  }
+  value <- expr
+  return(list(value = value, search = calls$search, eval = calls$eval))
+}
+
+test_that(paste(
+  "weight perturbation gives the same results with and without the Gaussian",
+  "cross-product search and evaluation"
+), {
+  skip_on_cran()
+  r <- cre_ref_wp()
+  res <- with_gauss_counts(run_cv_wp(r$ref))
+  res_drawwise <- with_gauss_counts(withr::with_options(
+    list(projpred.search_gauss_crossprod = FALSE),
+    run_cv_wp(r$ref)
+  ))
+  # The default run uses the cross-product search in the full-data search and
+  # in each fold, and the cross-product evaluation in each fold:
+  expect_equal(res$search, r$n + 1)
+  expect_equal(res$eval, r$n)
+  expect_identical(res_drawwise$search, 0L)
+  expect_identical(res_drawwise$eval, 0L)
+  expect_identical(ranking(res$value)[["foldwise"]],
+                   ranking(res_drawwise$value)[["foldwise"]])
+  expect_equal(res$value$summaries$sub, res_drawwise$value$summaries$sub,
+               tolerance = 1e-6)
 })

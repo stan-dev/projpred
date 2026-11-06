@@ -18,7 +18,7 @@ cv_varsel(object, ...)
   K = object$K \%||\% if (!inherits(object, "datafit")) 5 else 10,
   cvfits = object$cvfits,
   validate_search = object$validate_search \%||\% TRUE,
-  loo_perturb_alpha = object$loo_perturb_alpha \%||\% 10,
+  loo_perturb_alpha = NULL,
   ...
 )
 
@@ -99,13 +99,15 @@ of the selected submodels are optimistically biased. However, these fast
 biased estimates can be useful to obtain initial information on the
 usefulness of projection predictive variable selection.}
 
-\item{loo_perturb_alpha}{Only relevant if \code{cv_method = "LOO"},
-\code{validate_search = TRUE}, \code{refit_prj = TRUE}, and the fold-wise searches
-are not reused from a previous run (see \code{\link[=cv_varsel.vsel]{cv_varsel.vsel()}}). A single
-positive number: the concentration \eqn{\alpha} of the random observation
-weights in the fold-wise searches (weight perturbation, see section
-"Note"). Smaller values give larger random variation of the weights.
-\code{Inf} turns the weight perturbation off.}
+\item{loo_perturb_alpha}{A single positive number. It sets the concentration
+\eqn{\alpha} of the weight perturbation in the fold-wise searches of LOO CV
+(see section "Note"). With a smaller value, the weights have a larger
+variation. \code{Inf} turns the weight perturbation off. The weights apply only
+with \code{cv_method = "LOO"}, \code{validate_search = TRUE} and \code{refit_prj = TRUE},
+and not to fold-wise predictor rankings that \code{\link[=cv_varsel.vsel]{cv_varsel.vsel()}} re-uses.
+For \code{\link[=cv_varsel.vsel]{cv_varsel.vsel()}}, \code{NULL} (the default) uses the value stored in
+\code{object} if this value is finite or if \code{\link[=cv_varsel.vsel]{cv_varsel.vsel()}} re-uses the
+fold-wise predictor rankings, and 10 otherwise.}
 
 \item{method}{The method for the search part. Possible options are
 \code{"forward"} for forward search and \code{"L1"} for L1 search. See also section
@@ -304,26 +306,23 @@ used to guide further actions and the optimistic bias can be greatly
 reduced by using \code{validate_search = TRUE}.
 
 With \code{cv_method = "LOO"} and \code{validate_search = TRUE}, the search runs
-again in each LOO fold. Removing one observation seldom changes the search
-path, so without further measures, the search paths of most folds are the
-same as the full-data search path. Then the fold-wise errors do not
-cancel, the LOO estimates jump between neighboring submodel sizes, and
-their standard errors are too small. Therefore, with \code{refit_prj = TRUE}
-(the default), the search of each LOO fold uses random observation weights
-(weight perturbation). For fold \eqn{i}, the weights are \eqn{n} times a
-Dirichlet(\eqn{\alpha}, ..., \eqn{\alpha}) draw. The weight of
-observation \eqn{i} is then set to 0. The reference model's draws are
-shifted to first order toward the posterior under these weights. The
-search paths then vary between the folds as in \eqn{K}-fold CV. The
-performance evaluation of each fold refits the submodels along the
-fold-wise search path without the weights. So the weights change which
-submodels are evaluated, but not how. With \code{refit_prj = FALSE}, the
-performance evaluation uses the submodel fits of the search. These fits
-must not use the weights, so the search does not use them either.
-Fold-wise searches that are reused from a previous run (see
-\code{\link[=cv_varsel.vsel]{cv_varsel.vsel()}}) keep the weights of that run; \code{\link[=cv_varsel.vsel]{cv_varsel.vsel()}} runs
-them again if \code{loo_perturb_alpha} changes. Argument \code{loo_perturb_alpha}
-sets \eqn{\alpha} (default 10); \code{Inf} turns the weight perturbation off.
+again in each LOO fold. With \code{refit_prj = TRUE} (the default), the search
+of each LOO fold uses weight perturbation with Bayesian bootstrap
+observation weights. This reduces the variance of the estimates and
+improves the standard error estimates. For fold \eqn{i}, the weights are
+\eqn{n} times a Dirichlet(\eqn{\alpha}, ..., \eqn{\alpha}) draw, with the
+weight of observation \eqn{i} set to 0. A first-order approximation shifts
+the draws of the reference model toward the posterior under these weights.
+The search paths then vary more between the folds, which makes the
+performance estimates of the submodel sizes more stable. The actual
+performance evaluation of each fold does not use the weights. It projects
+onto the submodels of the fold-wise search path, so the weights change only
+which submodels it evaluates. With \code{refit_prj = FALSE}, the performance
+evaluation re-uses the submodel fits of the search, so the search does not
+use the weights either. Argument \code{loo_perturb_alpha} sets \eqn{\alpha}
+(default 10). The \code{vsel} object stores the value that the fold-wise
+searches used (\code{Inf} if they did not use weights). \code{\link[=cv_varsel.vsel]{cv_varsel.vsel()}}
+re-uses the fold-wise predictor rankings only for the same value.
 
 PSIS uses the Pareto-\eqn{\hat{k}} diagnostic to assess the reliability of
 PSIS-LOO CV. Global option \code{projpred.warn_psis} (default \code{TRUE}) controls

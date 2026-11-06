@@ -61,14 +61,14 @@ with_preserved_seed <- function(expr) {
   expr
 }
 
-# Base seed for the weights of the weight perturbation. It comes from the
-# current RNG stream, which it does not advance.
+# Base seed for the weights of the weight perturbation, drawn from the current
+# RNG stream without advancing it.
 perturb_base_seed <- function() {
   with_preserved_seed(sample.int(.Machine$integer.max, 1))
 }
 
 # Observation weights n * Dirichlet(alpha, ..., alpha). They use their own seed
-# and generator, so they are the same for all parallel backends.
+# and generator, so sequential and parallel runs give the same weights.
 perturb_weights <- function(n, alpha, seed) {
   g <- with_preserved_seed({
     set.seed(seed, kind = "Mersenne-Twister", normal.kind = "Inversion",
@@ -89,17 +89,17 @@ all_finite <- function(x) {
   length(x) == 0 || (is.finite(min(x)) && is.finite(max(x)))
 }
 
-# Reference model for the search of LOO fold i with weight perturbation. The
-# observation weights w ~ n * Dirichlet(alpha), then w_i set to 0, multiply
-# `wobs`. The reference draws move by the first-order change of the posterior
-# mean under these weights:
+# Reference model for the search of LOO fold i with weight perturbation. It
+# multiplies `wobs` by w = n * Dirichlet(alpha, ..., alpha), with w_i set to 0.
+# Each draw of the linear predictor of observation k moves by the first-order
+# change of its posterior mean under these weights:
 #   c_s = sum_{j != i} (w_j - 1) log p(y_j | theta_s),
-#   delta_n = sum_s omega_s (c_s - cbar) eta_ns,
-# where omega are the LOO weights of fold i (`lw_i`, log scale). The shift
-# applies to the linear predictor and to the log of the dispersion. `ll` is the
-# S x n log-likelihood matrix of the reference draws. Returns `NULL` if the
-# shifted linear predictors, means (with and without offsets) or dispersions are
-# not finite.
+#   cbar = sum_s omega_s c_s,
+#   delta_k = sum_s omega_s (c_s - cbar) eta_ks,
+# where omega are the PSIS-LOO weights of fold i (`lw_i`, log scale). The log
+# of the dispersion moves in the same way. `ll` is the S x n log-likelihood
+# matrix of the reference draws. Returns `NULL` if the shifted linear
+# predictors, means (with and without offsets) or dispersions are not finite.
 perturb_refmodel <- function(refmodel, i, ll, lw_i, alpha, seed) {
   n <- ncol(ll)
   w <- perturb_weights(n, alpha, seed)
