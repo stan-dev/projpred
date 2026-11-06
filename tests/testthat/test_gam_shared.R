@@ -93,7 +93,9 @@ test_that("subprd() gives the predictions of predict.gam() for gam fits", {
     prd_expected <- do.call(cbind, lapply(fits, function(fit) {
       predict(fit, newdata = nd_icpt)
     }))
-    expect_identical(subprd(fits, nd), prd_expected)
+    # subprd() multiplies one matrix for all draws, predict.gam() one vector
+    # per draw; the BLAS can round the two differently:
+    expect_equal(subprd(fits, nd), prd_expected, tolerance = 1e-12)
   }
   # Fits of different submodels:
   fit_other <- mgcv::gam(.y.1 ~ s(x3) + x1, data = dat_gs)
