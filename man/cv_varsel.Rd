@@ -308,16 +308,18 @@ reduced by using \code{validate_search = TRUE}.
 With \code{cv_method = "LOO"} and \code{validate_search = TRUE}, the search runs
 again in each LOO fold. With \code{refit_prj = TRUE} (the default), the search
 of each LOO fold uses weight perturbation with Bayesian bootstrap
-observation weights. This reduces the variance of the estimates and
-improves the standard error estimates. For fold \eqn{i}, the weights are
-\eqn{n} times a Dirichlet(\eqn{\alpha}, ..., \eqn{\alpha}) draw, with the
-weight of observation \eqn{i} set to 0. A first-order approximation shifts
-the draws of the reference model toward the posterior under these weights.
-The search paths then vary more between the folds, which makes the
-performance estimates of the submodel sizes more stable. The actual
-performance evaluation of each fold does not use the weights. It projects
-onto the submodels of the fold-wise search path, so the weights change only
-which submodels it evaluates. With \code{refit_prj = FALSE}, the performance
+observation weights. This makes the LOO estimates jump less between
+neighboring submodel sizes, which reduces their variance. Furthermore, the
+standard errors then include more of the variation that comes from the
+selection. For fold \eqn{i}, the weights are \eqn{n} times a
+Dirichlet(\eqn{\alpha}, ..., \eqn{\alpha}) draw, with the weight of
+observation \eqn{i} set to 0. A first-order approximation shifts the draws
+of the reference model toward the posterior under these weights. The search
+paths then vary more between the folds, which makes the performance
+estimates of the submodel sizes more stable. The actual performance
+evaluation of each fold does not use the weights. It projects onto the
+submodels of the fold-wise search path, so the weights change only which
+submodels it evaluates. With \code{refit_prj = FALSE}, the performance
 evaluation re-uses the submodel fits of the search, so the search does not
 use the weights either. Argument \code{loo_perturb_alpha} sets \eqn{\alpha}
 (default 10). The \code{vsel} object stores the value that the fold-wise
