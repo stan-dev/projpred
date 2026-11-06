@@ -557,16 +557,16 @@ print(smmry, digits = 1)
 
     Submodel performance evaluation summary with `deltas = TRUE` and `cumulate = FALSE`:
      size ranking_fulldata cv_proportions_diag   mlpd mlpd.lower mlpd.upper
-        0      (Intercept)                  NA -0.976      -1.05     -0.903
-        1               X1                 1.0 -0.786      -0.87     -0.704
-        2              X14                 1.0 -0.555      -0.62     -0.487
-        3               X5                 0.5 -0.553      -0.64     -0.469
-        4              X20                 0.0 -0.519      -0.61     -0.429
-        5               X6                 0.0 -0.208      -0.27     -0.151
-        6               X3                 0.0 -0.214      -0.26     -0.169
-        7               X8                 0.5 -0.003      -0.02      0.016
-        8              X11                 0.0 -0.010      -0.03      0.008
-        9               X7                 0.0  0.003      -0.01      0.020
+        0      (Intercept)                  NA -0.967      -1.04     -0.895
+        1               X1                 1.0 -0.778      -0.86     -0.697
+        2              X14                 1.0 -0.549      -0.61     -0.483
+        3               X5                 0.5 -0.548      -0.63     -0.466
+        4              X20                 0.0 -0.513      -0.60     -0.425
+        5               X6                 0.0 -0.207      -0.26     -0.153
+        6               X3                 0.0 -0.196      -0.24     -0.156
+        7               X8                 0.5 -0.003      -0.02      0.015
+        8              X11                 0.0 -0.009      -0.03      0.009
+        9               X7                 0.0  0.002      -0.02      0.019
 
     Reference model performance evaluation summary with `deltas = TRUE`:
           mlpd mlpd.lower mlpd.upper 
@@ -591,9 +591,9 @@ str(perf)
     List of 2
      $ submodels      :'data.frame':    10 obs. of  4 variables:
       ..$ size      : num [1:10] 0 1 2 3 4 5 6 7 8 9
-      ..$ mlpd      : num [1:10] -0.976 -0.786 -0.555 -0.553 -0.519 ...
-      ..$ mlpd.lower: num [1:10] -1.049 -0.868 -0.623 -0.637 -0.609 ...
-      ..$ mlpd.upper: num [1:10] -0.903 -0.704 -0.487 -0.469 -0.429 ...
+      ..$ mlpd      : num [1:10] -0.967 -0.778 -0.549 -0.548 -0.513 ...
+      ..$ mlpd.lower: num [1:10] -1.039 -0.859 -0.614 -0.63 -0.6 ...
+      ..$ mlpd.upper: num [1:10] -0.895 -0.697 -0.483 -0.466 -0.425 ...
      $ reference_model: Named num [1:3] 0 0 0
       ..- attr(*, "names")= chr [1:3] "mlpd" "mlpd.lower" "mlpd.upper"
      - attr(*, "class")= chr "performances"
