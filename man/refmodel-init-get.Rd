@@ -215,6 +215,63 @@ that all smooth terms need to be included in \code{formula} (there is no \code{r
 argument as in \code{\link[rstanarm:stan_gamm4]{rstanarm::stan_gamm4()}}, for example).
 }
 
+\section{Monotonic terms}{
+Monotonic terms \code{mo(x)} (see \code{\link[brms:mo]{brms::mo()}}) are supported for an ordered
+factor \code{x} or an integer \code{x}. In the submodels, \pkg{projpred} codes \code{mo(x)}
+by the indicators of \eqn{x \geq l_k}{x >= l_k} for the levels \eqn{l_1,
+\ldots, l_D}{l_1, ..., l_D} of \code{x} above the lowest level \eqn{l_0}{l_0}. As
+in \pkg{brms}, the levels of an integer \code{x} are all integers from
+\eqn{\min(x)}{min(x)} to \eqn{\max(x)}{max(x)} in the training data, also
+those that do not occur in the data (the indicators of such values are equal
+to those of the next value). Argument \code{id} of \code{\link[brms:mo]{brms::mo()}} has no effect in
+\pkg{projpred}. New data must not have values of \code{x} outside the levels of
+the training data (in \eqn{K}-fold CV, the training data of a fold). An
+ordered factor \code{x} must be a factor or a character vector in new data, and an
+integer \code{x} must be an integer. Monotonic terms are not supported in
+group-level terms and in additive multilevel models.
+
+If no observation has a value inside the range of an integer \code{x}, the
+indicator of this value equals the indicator of the next value. In LOO CV
+with validated search, this also occurs if only the left-out observation
+has the value. The GLM submodel fitter handles equal indicators.
+\code{\link[lme4:lmer]{lme4::lmer()}} and \code{\link[lme4:glmer]{lme4::glmer()}} drop one of them with a warning, and the
+predictions of \code{\link[MASS:polr]{MASS::polr()}} fail. To avoid this, use an ordered factor
+without unused levels.
+
+By default (global option \code{projpred.mo_monotone = TRUE}), the projected
+effect of each \code{mo()} term is monotonic: the coefficients of its indicators
+have the same sign. If the unconstrained projection of a projected draw (or
+cluster) is monotonic, \pkg{projpred} keeps it. Otherwise, \pkg{projpred}
+takes the sign from the unconstrained projection of the same draw onto the
+full model (all predictor terms of \code{formula}): the sign of the sum of the
+coefficients of the same term (same name and same coding of its factors).
+In \code{mo(x) * z}, for example, the full-model term \code{mo(x)} is the effect of
+\code{x} at \code{z = 0}. If the full model does not have the term (possible with
+custom \code{search_terms}) or if the projection onto the full model fails,
+\pkg{projpred} takes the sign of the sum of the unconstrained coefficients
+in the submodel. In an interaction of a \code{mo()} term with a factor (for
+example \code{mo(x):f}), each column of the factor has its own monotonic effect,
+as in \pkg{brms}. So in \code{mo(x) * f}, the effect of \code{x} within a level of \code{f}
+other than the first is the sum of two monotonic effects, and this sum is
+not necessarily monotonic. \code{\link[=mo_effects]{mo_effects()}} gives the projected effects in the
+parametrization of \pkg{brms}.
+
+Monotonic projections are supported for forward search. They are supported
+for submodels without group-level and smooth terms (with the default
+submodel fitter) and for multilevel submodels with the \code{\link[=gaussian]{gaussian()}} family
+(also in the latent projection). \pkg{projpred} throws an error before the
+search or the projection starts for L1 search, the augmented-data
+projection, custom divergence minimizers, reference models with smooth
+terms, multilevel submodels with another family, terms with more than one
+\code{mo()} call, and \code{mo()} calls inside other calls.
+With \code{options(projpred.mo_monotone = FALSE)}, the coefficients of the
+indicators are not constrained (so the projected effect of \code{x} is not
+necessarily monotonic), and these cases are supported. \pkg{projpred} reads
+the option when it projects: in a parallel \eqn{K}-fold CV, the workers use
+their own value of the option, and \code{refit_prj = FALSE} reuses the submodel
+fits of the search.
+}
+
 \section{Arguments \code{ref_predfun}, \code{proj_predfun}, and \code{div_minimizer}}{
 Arguments \code{ref_predfun}, \code{proj_predfun}, and \code{div_minimizer} may be \code{NULL}
 for using an internal default (see \link{projpred-package} for the functions used

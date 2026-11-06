@@ -6,6 +6,7 @@
 if (getRversion() >= package_version("2.15.1")) {
   utils::globalVariables("formula_s")
   utils::globalVariables("projpred_var_s")
+  utils::globalVariables("mo_signs_s")
   utils::globalVariables("projpred_formula_no_random_s")
 }
 
@@ -16,6 +17,7 @@ divmin <- function(
     verbose_divmin,
     throw_warn_sdivmin = getOption("projpred.warn_proj_drawwise", TRUE),
     do_check_conv = getOption("projpred.check_convergence", TRUE),
+    projpred_mo_signs = NULL,
     ...
 ) {
   if (missing(throw_warn_sdivmin) &&
@@ -69,11 +71,35 @@ divmin <- function(
     )
     projpred_random <- formula_random$random
   }
+  if (!is.null(projpred_mo_signs) &&
+      !identical(sdivmin, fit_glm_ridge_callback) &&
+      !(identical(sdivmin, fit_glmer_callback) &&
+        mo_lmm_supported(list(...)$family))) {
+    stop_mo_unsupported(paste0(
+      "additive submodels, other submodel fitters than the default one, ",
+      "and ", mo_lmm_unsupported_why()
+    ))
+  }
   formulas <- validate_response_formula(formula)
+  if (!is.null(projpred_mo_signs) &&
+      NROW(projpred_mo_signs) != length(formulas)) {
+    stop("Internal error: the number of rows of `projpred_mo_signs` differs ",
+         "from the number of projected draws. Please notify the package ",
+         "maintainer.")
+  }
+  # The signs of the sign groups of mo() terms in the full model, per draw:
+  mo_signs <- lapply(seq_along(formulas), function(s) {
+    if (is.null(projpred_mo_signs)) {
+      return(NULL)
+    }
+    stats::setNames(projpred_mo_signs[s, ], colnames(projpred_mo_signs))
+  })
   # Gaussian multilevel submodels: one lFormula() for all draws (see
   # lmer_shared_callback()). The options and the lme4 check run here, because
-  # the draw-wise calls may run in parallel workers:
+  # the draw-wise calls may run in parallel workers. The setup does not apply
+  # the sign constraints of mo() terms (see fit_glmer_callback()):
   if (identical(sdivmin, fit_glmer_callback) && length(formulas) > 1 &&
+      is.null(projpred_mo_signs) &&
       !getOption("projpred.PQL", FALSE) &&
       getOption("projpred.gaussian_not_as_generalized", TRUE) &&
       identical(list(...)$family$family, "gaussian") &&
@@ -104,17 +130,48 @@ divmin <- function(
   }
   # The draw-wise formulas of a non-multilevel non-additive submodel differ only
   # in the response, so fit_glm_ridge_callback() can use one model matrix for
-  # all draws (and the joint Gaussian solve can fit them, also for a single
-  # draw):
+  # all draws (and divmin_multi() can fit them, also for a single draw). For
+  # the monotonic projection of mo() terms, divmin_multi() gives the
+  # unconstrained fits, and the draws whose fit is not monotonic are fitted
+  # again below. The messages of each draw come from the fit that is kept.
+  # The draws to fit below (all, except after divmin_multi()):
+  draws_todo <- seq_along(formulas)
+  outdmin_pre <- NULL
+  mssgs_warns_capts_pre <- NULL
   if (identical(sdivmin, fit_glm_ridge_callback) && length(formulas) >= 1) {
-    shared_x <- shared_model_matrix(formulas, data = list(...)$data)
+    shared_x <- shared_model_matrix(formulas, data = list(...)$data,
+                                    mo_groups = !is.null(projpred_mo_signs))
     if (!is.null(shared_x)) {
       outdmin <- divmin_multi(formulas, shared_x = shared_x,
                               dot_args = list(...),
                               throw_warn_sdivmin = throw_warn_sdivmin,
-                              do_check_conv = do_check_conv)
+                              do_check_conv = do_check_conv,
+                              report = is.null(projpred_mo_signs))
       if (!is.null(outdmin)) {
-        return(outdmin)
+        if (is.null(projpred_mo_signs)) {
+          return(outdmin)
+        }
+        mssgs_warns_capts_pre <- attr(outdmin, "mssgs_warns_capts") %||%
+          rep(list(character()), length(outdmin))
+        attr(outdmin, "mssgs_warns_capts") <- NULL
+        # Monotonic projection of mo() terms: fit those draws again (below)
+        # whose unconstrained solution is not monotonic:
+        scale_x <- mo_col_scale(shared_x$x, weights = list(...)$weights)
+        draws_todo <- which(vapply(outdmin, function(sub) {
+          mo_binding(sub$beta, shared_x$x, shared_x$mo_groups,
+                     scale = scale_x)
+        }, logical(1)))
+        if (length(draws_todo) == 0) {
+          # As in divmin_multi():
+          warn_prj_drawwise(mssgs_warns_capts_pre,
+                            throw_warn = throw_warn_sdivmin)
+          if (any(lengths(mssgs_warns_capts_pre) > 0)) {
+            check_conv(outdmin, lengths(mssgs_warns_capts_pre),
+                       do_check = do_check_conv)
+          }
+          return(outdmin)
+        }
+        outdmin_pre <- outdmin
       }
       sdivmin <- glm_ridge_callback_shared(shared_x)
     }
@@ -131,14 +188,14 @@ divmin <- function(
   # If `weights` and `data` differ in length (not in projpred's own calls),
   # nothing is removed.
   lost_lvls <- NULL
-  if ((has_grp || has_add) &&
-      is.data.frame(dot_args$data) && length(dot_args$weights) > 0 &&
-      any(dot_args$weights == 0) &&
-      length(dot_args$weights) == nrow(dot_args$data)) {
-    keep <- dot_args$weights != 0
-    lost_lvls <- lost_levels(dot_args$data, keep = keep, formula = formula)
-    dot_args$data <- drop_lost_levels(dot_args$data[keep, , drop = FALSE],
-                                      lost_lvls)
+  rm_w0 <- NULL
+  if (has_grp || has_add) {
+    rm_w0 <- data_without_weight0(dot_args$data, dot_args$weights, formula)
+  }
+  if (!is.null(rm_w0)) {
+    keep <- rm_w0$keep
+    lost_lvls <- rm_w0$lost_lvls
+    dot_args$data <- rm_w0$data
     dot_args$weights <- dot_args$weights[keep]
     projpred_var <- projpred_var[keep, , drop = FALSE]
   }
@@ -154,26 +211,32 @@ divmin <- function(
   } else {
     prll_prj_trigger <- getOption("projpred.parallel_proj_trigger", Inf)
   }
-  if (length(formulas) < prll_prj_trigger) {
+  if (length(draws_todo) < prll_prj_trigger) {
     # Sequential case. Actually, we could simply use ``%do_projpred%` <-
     # foreach::`%do%`` here and then proceed as in the parallel case, but that
     # would require adding more "hard" dependencies (because packages 'foreach'
     # and 'iterators' would have to be moved from `Suggests:` to `Imports:`).
     if (verbose_divmin) {
-      pb <- utils::txtProgressBar(min = 0, max = length(formulas), style = 3,
+      pb <- utils::txtProgressBar(min = 0, max = length(draws_todo), style = 3,
                                   initial = 0, file = stderr())
       on.exit(close(pb))
     }
-    outdmin <- lapply(seq_along(formulas), function(s) {
+    outdmin <- lapply(seq_along(draws_todo), function(i) {
+      s <- draws_todo[i]
       if (verbose_divmin) {
-        on.exit(utils::setTxtProgressBar(pb, s))
+        on.exit(utils::setTxtProgressBar(pb, i))
       }
+      # (`projpred_mo_signs` only if needed, because custom fitters from
+      # global option `projpred.glm_fitter` might not accept it)
       mssgs_warns_capt <- capt_fun(
         soutdmin <- do.call(sdivmin, c(
           list(formula = formulas[[s]],
                projpred_var = projpred_var[, s, drop = FALSE],
                projpred_formula_no_random = projpred_formulas_no_random[[s]],
                projpred_random = projpred_random),
+          if (!is.null(mo_signs[[s]])) {
+            list(projpred_mo_signs = mo_signs[[s]])
+          },
           dot_args
         ))
       )
@@ -188,21 +251,25 @@ divmin <- function(
       stop("Please install the 'iterators' package.")
     }
     if (verbose_divmin && use_progressr()) {
-      progressor_obj <- progressr::progressor(length(formulas))
+      progressor_obj <- progressr::progressor(length(draws_todo))
     } else {
       progressor_obj <- NULL
     }
     `%do_projpred%` <- foreach::`%dopar%`
     outdmin <- foreach::foreach(
-      formula_s = formulas,
-      projpred_var_s = iterators::iter(projpred_var, by = "column"),
-      projpred_formula_no_random_s = projpred_formulas_no_random,
+      formula_s = formulas[draws_todo],
+      projpred_var_s = iterators::iter(projpred_var[, draws_todo, drop = FALSE],
+                                       by = "column"),
+      projpred_formula_no_random_s = projpred_formulas_no_random[draws_todo],
+      # (wrapped in a list because the elements may be `NULL`)
+      mo_signs_s = lapply(mo_signs[draws_todo], list),
       .packages = c("projpred"),
       .export = c("sdivmin", "projpred_random", "dot_args", "progressor_obj",
                   "capt_fun"),
       .noexport = c(
         "object", "p_sel", "search_path", "p_ref", "refmodel", "formulas",
-        "projpred_var", "projpred_ws_aug", "projpred_formulas_no_random"
+        "projpred_var", "projpred_ws_aug", "projpred_formulas_no_random",
+        "projpred_mo_signs", "mo_signs", "outdmin_pre"
       ),
       .errorhandling = getOption("projpred.foreach_errorhandling", "stop"),
       .verbose = getOption("projpred.foreach_verbose", FALSE)
@@ -214,6 +281,9 @@ divmin <- function(
                  projpred_var = projpred_var_s,
                  projpred_formula_no_random = projpred_formula_no_random_s,
                  projpred_random = projpred_random),
+            if (!is.null(mo_signs_s[[1]])) {
+              list(projpred_mo_signs = mo_signs_s[[1]])
+            },
             dot_args)
         )
       )
@@ -224,10 +294,33 @@ divmin <- function(
   mssgs_warns_capts <- lapply(outdmin, "[[", "mssgs_warns_capt")
   outdmin <- lapply(outdmin, "[[", "soutdmin")
   mssgs_warns_capts <- lapply(mssgs_warns_capts, filter_mssgs_warns)
+  if (!is.null(outdmin_pre)) {
+    # Insert the constrained fits into the fits of divmin_multi():
+    outdmin_pre[draws_todo] <- outdmin
+    outdmin <- outdmin_pre
+    mssgs_warns_capts_pre[draws_todo] <- mssgs_warns_capts
+    mssgs_warns_capts <- mssgs_warns_capts_pre
+  }
   warn_prj_drawwise(mssgs_warns_capts, throw_warn = throw_warn_sdivmin)
   check_conv(outdmin, lengths(mssgs_warns_capts), do_check = do_check_conv)
   attr(outdmin, "projpred_lost_lvls") <- lost_lvls
   return(outdmin)
+}
+
+# The data for the multilevel and additive submodel fitters of divmin(): `data`
+# without the rows with weight 0, and without the levels that only these rows
+# have. Returns `NULL` if no row is removed (also if `weights` and `data`
+# differ in length), otherwise a list with the logical vector `keep`, the
+# output `lost_lvls` of lost_levels() and the reduced `data`.
+data_without_weight0 <- function(data, weights, formula) {
+  if (!is.data.frame(data) || length(weights) == 0 || !any(weights == 0) ||
+      length(weights) != nrow(data)) {
+    return(NULL)
+  }
+  keep <- weights != 0
+  lost_lvls <- lost_levels(data, keep = keep, formula = formula)
+  return(list(keep = keep, lost_lvls = lost_lvls,
+              data = drop_lost_levels(data[keep, , drop = FALSE], lost_lvls)))
 }
 
 # Draw-wise divergence minimizer for divmin() that builds the shared setup
@@ -574,7 +667,11 @@ filter_mssgs_warns <- function(mssgs_warns_capt) {
 # only inside factor(), as.factor(), ordered() or as.ordered(). Grouping
 # factors are left out, because repair_re() treats a lost group as a new group.
 # For each variable, returns the lost levels and the reference level (the first
-# level that remains). Returns `NULL` if no level is lost.
+# level that remains). For a variable in mo() calls, lost_levels_mo() gives
+# the lost levels, each with a neighboring level as its reference level. For a
+# factor, this also applies where the factor occurs outside mo(). A numeric
+# variable that also occurs outside mo() gets no lost levels. Returns `NULL`
+# if no level is lost.
 #
 # recode_lost_levels() sets a lost level to the reference level before the
 # prediction. The GLM fitter of divmin() keeps the rows with weight 0 and does
@@ -586,6 +683,10 @@ filter_mssgs_warns <- function(mssgs_warns_capt) {
 # * The reference level: the prediction is the mean of the predictions for the
 #   other levels, with weights p (1 - p), where p is the weighted share of a
 #   level. For two other levels, this is their midpoint.
+# For a mo() term, the GLM fitter predicts a lost top or lowest level as its
+# neighboring level, as recode_lost_levels() does. For a lost middle level,
+# two indicator columns are equal, and the prediction is near the midpoint of
+# the predictions for the two neighboring levels.
 lost_levels <- function(data, keep, formula) {
   fml_fixed <- reformulas::nobars(formula)
   rhs_fixed <- fml_fixed[[length(fml_fixed)]]
@@ -600,6 +701,11 @@ lost_levels <- function(data, keep, formula) {
       if (fn %in% fac_fns) {
         return(list(inside = all.vars(e), outside = character()))
       }
+      if (is_mo_call(e)) {
+        # lost_levels_mo() handles the variables of mo() calls, so `vars_rhs`
+        # holds only their occurrences outside mo():
+        return(list(inside = character(), outside = character()))
+      }
       res <- lapply(as.list(e)[-1], find_vars)
       return(list(inside = unlist(lapply(res, "[[", "inside")),
                   outside = unlist(lapply(res, "[[", "outside"))))
@@ -611,9 +717,25 @@ lost_levels <- function(data, keep, formula) {
   }
   vars_rhs <- find_vars(rhs_fixed)
   fac_only <- setdiff(vars_rhs$inside, vars_rhs$outside)
+  mo_vars <- unlist(lapply(mo_calls(rhs_fixed), function(mo_call) {
+    all.vars(mo_call[[2L]])
+  }))
+  # Variables outside mo(), also in the group-level terms:
+  vars_no_mo <- c(vars_rhs$inside, vars_rhs$outside,
+                  unlist(lapply(reformulas::findbars(formula), function(bar) {
+                    all.vars(bar[[2]])
+                  })))
   x_nms <- setdiff(intersect(all.vars(rhs_fixed), names(data)), grp_nms)
   out <- lapply(setNames(nm = x_nms), function(x_nm) {
     x <- data[[x_nm]]
+    if (x_nm %in% mo_vars) {
+      if (is.numeric(x) && x_nm %in% vars_no_mo) {
+        # Do not recode, because a recoded value would change the terms
+        # outside mo(). Then mo() throws an error at the prediction:
+        return(NULL)
+      }
+      return(lost_levels_mo(x, keep))
+    }
     if (!(is.factor(x) || is.character(x) || is.logical(x) ||
           (is.numeric(x) && x_nm %in% fac_only))) {
       return(NULL)
@@ -652,17 +774,20 @@ recode_lost_levels <- function(newdata, lost_lvls) {
   for (x_nm in intersect(names(lost_lvls), names(newdata))) {
     x <- newdata[[x_nm]]
     lost <- lost_lvls[[x_nm]]$lost
-    ref <- lost_lvls[[x_nm]]$ref
+    # (one reference level for all lost levels, or one for each)
+    ref <- rep_len(lost_lvls[[x_nm]]$ref, length(lost))
     if (is.factor(x)) {
       # Drop the lost levels, because the predict() method of
       # mclogit::mblogit() uses all levels of `newdata`:
       lvls <- union(setdiff(levels(x), lost), ref)
       x_chr <- as.character(x)
-      x_chr[x_chr %in% lost] <- ref
+      is_lost <- x_chr %in% lost
+      x_chr[is_lost] <- ref[match(x_chr[is_lost], lost)]
       x <- factor(x_chr, levels = lvls, ordered = is.ordered(x))
     } else if (typeof(x) == typeof(ref) ||
                (is.numeric(x) && is.numeric(ref))) {
-      x[x %in% lost] <- ref
+      is_lost <- x %in% lost
+      x[is_lost] <- ref[match(x[is_lost], lost)]
     }
     newdata[[x_nm]] <- x
   }
@@ -689,7 +814,8 @@ drop_lost_levels <- function(data, lost_lvls) {
 fit_glm_ridge_callback <- function(formula, data,
                                    projpred_var = matrix(nrow = nrow(data)),
                                    regul = 1e-4, thresh_conv = 1e-7,
-                                   projpred_shared_x = NULL, ...) {
+                                   projpred_shared_x = NULL,
+                                   projpred_mo_signs = NULL, ...) {
   # Preparations:
   if (!is.null(projpred_shared_x)) {
     # Model matrix built once by shared_model_matrix(); only the response
@@ -701,12 +827,19 @@ fit_glm_ridge_callback <- function(formula, data,
     terms_train <- projpred_shared_x$terms
     y <- data[[all.vars(formula[[2]])]]
     names(y) <- projpred_shared_x$y_names
+    mo_groups <- projpred_shared_x$mo_groups
   } else {
-    xy <- glm_model_matrix(formula, data = data)
+    xy <- glm_model_matrix(formula, data = data,
+                           mo_groups = !is.null(projpred_mo_signs))
     x <- xy$x
     xlvls <- xy$xlvls
     terms_train <- xy$terms
     y <- xy$y
+    mo_groups <- xy$mo_groups
+  }
+  if (!is.null(projpred_mo_signs) && is.null(mo_groups)) {
+    stop("Internal error: the sign groups of the mo() terms are missing. ",
+         "Please notify the package maintainer.")
   }
   # Exclude arguments from `...` which cannot be passed to glm_ridge():
   dot_args <- list(...)
@@ -716,12 +849,22 @@ fit_glm_ridge_callback <- function(formula, data,
   )]
   # Call the submodel fitter (it returns its warning messages instead of
   # printing them):
-  fit <- do.call(glm_ridge, c(
-    list(x = x, y = y, obsvar = projpred_var, lambda = regul,
-         thresh = thresh_conv, print_msgs = FALSE),
-    dot_args
-  ))
-  out_capt <- unique(grep("[Ww]arning|bug", fit$msgs, value = TRUE))
+  args_fit <- c(list(x = x, y = y, obsvar = projpred_var, lambda = regul,
+                     thresh = thresh_conv, print_msgs = FALSE),
+                dot_args)
+  fit <- do.call(glm_ridge, args_fit)
+  msgs <- fit$msgs
+  # Monotonic projection of mo() terms: if a sign group of the unconstrained
+  # solution has coefficients of both signs, fit again with the signs of the
+  # groups fixed (see mo_cons_signs()):
+  if (!is.null(projpred_mo_signs) &&
+      mo_binding(fit$beta, x, mo_groups, weights = dot_args$weights)) {
+    fit <- do.call(glm_ridge, c(
+      args_fit, mo_cons_args(fit, x, mo_groups, projpred_mo_signs, dot_args)
+    ))
+    msgs <- c(msgs, fit$msgs)
+  }
+  out_capt <- unique(grep("[Ww]arning|bug", msgs, value = TRUE))
   if (length(out_capt) > 0) {
     warning(paste(out_capt, collapse = "\n"))
   }
@@ -737,8 +880,9 @@ fit_glm_ridge_callback <- function(formula, data,
 
 # Model frame preparations for fit_glm_ridge_callback(): predictor model matrix
 # (without intercept column), levels of character and factor predictors, and
-# response.
-glm_model_matrix <- function(formula, data) {
+# response. With `mo_groups = TRUE`, also the sign groups of mo() terms (see
+# mo_groups_x()).
+glm_model_matrix <- function(formula, data, mo_groups = FALSE) {
   fr <- model.frame(formula, data = data, drop.unused.levels = TRUE)
   da_classes <- attr(attr(fr, "terms"), "dataClasses")
   nms_chr_fac <- names(da_classes)[da_classes %in% c("character", "factor")]
@@ -757,16 +901,17 @@ glm_model_matrix <- function(formula, data) {
   # convenient to let users specify contrasts directly. At that occasion,
   # contrasts should also be tested thoroughly (not done until now).
   x <- model.matrix(formula, data = fr)
+  groups <- if (mo_groups) mo_groups_x(fr, x) else NULL
   x <- x[, colnames(x) != "(Intercept)", drop = FALSE]
   return(list(x = x, xlvls = xlvls, y = model.response(fr), n_fr = nrow(fr),
-              terms = attr(fr, "terms")))
+              terms = attr(fr, "terms"), mo_groups = groups))
 }
 
 # Model matrix shared by the draw-wise formulas `formulas` (which have to differ
 # only in the response). Returns `NULL` if sharing is not possible: different
 # right-hand sides, a response that is not a plain column of `data`, or missing
 # values (which would make the model frames differ between the draws).
-shared_model_matrix <- function(formulas, data) {
+shared_model_matrix <- function(formulas, data, mo_groups = FALSE) {
   if (!is.data.frame(data)) {
     return(NULL)
   }
@@ -783,14 +928,14 @@ shared_model_matrix <- function(formulas, data) {
       anyNA(data[resp_nms])) {
     return(NULL)
   }
-  xy <- glm_model_matrix(formulas[[1]], data = data)
+  xy <- glm_model_matrix(formulas[[1]], data = data, mo_groups = mo_groups)
   if (xy$n_fr != nrow(data)) {
     return(NULL)
   }
   # The response names (as from model.response()) are also shared, so the
   # draw-wise responses do not each get their own copy:
   return(list(x = xy$x, xlvls = xy$xlvls, y_names = names(xy$y),
-              terms = xy$terms))
+              terms = xy$terms, mo_groups = xy$mo_groups))
 }
 
 # fit_glm_ridge_callback() with a fixed shared model matrix. The enclosing
@@ -807,9 +952,10 @@ glm_ridge_callback_shared <- function(shared_x) {
 # shared model matrix `shared_x`: glm_ridge_gauss_multi() and
 # glm_ridge_native_multi(). `y` (optional) is the matrix of the draw-wise
 # responses (otherwise taken from `dot_args$data`). Returns `NULL` if neither
-# fitter covers the case.
+# fitter covers the case. With `report = FALSE`, the messages of the draws are
+# not reported but kept in attribute `mssgs_warns_capts` (if any).
 divmin_multi <- function(formulas, shared_x, dot_args, throw_warn_sdivmin,
-                         do_check_conv, y = NULL) {
+                         do_check_conv, y = NULL, report = TRUE) {
   # Gaussian submodels with the identity link: one solve for all draws (this
   # fitter cannot throw messages or warnings in this case):
   outdmin <- glm_ridge_gauss_multi(formulas, shared_x = shared_x,
@@ -821,6 +967,9 @@ divmin_multi <- function(formulas, shared_x, dot_args, throw_warn_sdivmin,
   outdmin <- glm_ridge_native_multi(formulas, shared_x = shared_x,
                                     dot_args = dot_args, y = y)
   if (!is.null(outdmin)) {
+    if (!report) {
+      return(outdmin)
+    }
     mssgs_warns_capts <- attr(outdmin, "mssgs_warns_capts")
     attr(outdmin, "mssgs_warns_capts") <- NULL
     warn_prj_drawwise(mssgs_warns_capts, throw_warn = throw_warn_sdivmin)
@@ -1217,13 +1366,21 @@ fit_glmer_callback <- function(formula, projpred_formula_no_random,
                getOption("projpred.gaussian_not_as_generalized", TRUE)) {
       # Exclude arguments from `...` which cannot be passed to lme4::lmer():
       dot_args <- list(...)
+      mo_signs <- dot_args$projpred_mo_signs
       dot_args <- dot_args[intersect(
         names(dot_args),
         methods::formalArgs(lme4::lmer)
       )]
       # Call the submodel fitter:
-      return(do.call(lme4::lmer, c(list(formula = formula, control = control),
-                                   dot_args)))
+      fit <- do.call(lme4::lmer, c(list(formula = formula, control = control),
+                                   dot_args))
+      if (!is.null(mo_signs)) {
+        # Monotonic projection of mo() terms:
+        fit <- mo_lmer_cons(fit, formula = formula,
+                            lmer_args = c(list(control = control), dot_args),
+                            signs_full = mo_signs)
+      }
+      return(fit)
     } else {
       # Exclude arguments from `...` which cannot be passed to lme4::glmer():
       dot_args <- list(...)

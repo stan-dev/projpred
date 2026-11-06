@@ -310,6 +310,11 @@ project <- function(
 
   # Projection --------------------------------------------------------------
 
+  if (refit_prj) {
+    # Unsupported cases of monotonic projections of mo() terms:
+    check_mo_monotone(refmodel,
+                      terms_ = utils::head(predictor_terms, nterms_max))
+  }
   submodls <- perf_eval(
     search_path = list(predictor_ranking = predictor_terms,
                        p_sel = object$search_path$p_sel,

@@ -152,6 +152,63 @@
 #' that all smooth terms need to be included in `formula` (there is no `random`
 #' argument as in [rstanarm::stan_gamm4()], for example).
 #'
+#' # Monotonic terms
+#'
+#' Monotonic terms `mo(x)` (see [brms::mo()]) are supported for an ordered
+#' factor `x` or an integer `x`. In the submodels, \pkg{projpred} codes `mo(x)`
+#' by the indicators of \eqn{x \geq l_k}{x >= l_k} for the levels \eqn{l_1,
+#' \ldots, l_D}{l_1, ..., l_D} of `x` above the lowest level \eqn{l_0}{l_0}. As
+#' in \pkg{brms}, the levels of an integer `x` are all integers from
+#' \eqn{\min(x)}{min(x)} to \eqn{\max(x)}{max(x)} in the training data, also
+#' those that do not occur in the data (the indicators of such values are equal
+#' to those of the next value). Argument `id` of [brms::mo()] has no effect in
+#' \pkg{projpred}. New data must not have values of `x` outside the levels of
+#' the training data (in \eqn{K}-fold CV, the training data of a fold). An
+#' ordered factor `x` must be a factor or a character vector in new data, and an
+#' integer `x` must be an integer. Monotonic terms are not supported in
+#' group-level terms and in additive multilevel models.
+#'
+#' If no observation has a value inside the range of an integer `x`, the
+#' indicator of this value equals the indicator of the next value. In LOO CV
+#' with validated search, this also occurs if only the left-out observation
+#' has the value. The GLM submodel fitter handles equal indicators.
+#' [lme4::lmer()] and [lme4::glmer()] drop one of them with a warning, and the
+#' predictions of [MASS::polr()] fail. To avoid this, use an ordered factor
+#' without unused levels.
+#'
+#' By default (global option `projpred.mo_monotone = TRUE`), the projected
+#' effect of each `mo()` term is monotonic: the coefficients of its indicators
+#' have the same sign. If the unconstrained projection of a projected draw (or
+#' cluster) is monotonic, \pkg{projpred} keeps it. Otherwise, \pkg{projpred}
+#' takes the sign from the unconstrained projection of the same draw onto the
+#' full model (all predictor terms of `formula`): the sign of the sum of the
+#' coefficients of the same term (same name and same coding of its factors).
+#' In `mo(x) * z`, for example, the full-model term `mo(x)` is the effect of
+#' `x` at `z = 0`. If the full model does not have the term (possible with
+#' custom `search_terms`) or if the projection onto the full model fails,
+#' \pkg{projpred} takes the sign of the sum of the unconstrained coefficients
+#' in the submodel. In an interaction of a `mo()` term with a factor (for
+#' example `mo(x):f`), each column of the factor has its own monotonic effect,
+#' as in \pkg{brms}. So in `mo(x) * f`, the effect of `x` within a level of `f`
+#' other than the first is the sum of two monotonic effects, and this sum is
+#' not necessarily monotonic. [mo_effects()] gives the projected effects in the
+#' parametrization of \pkg{brms}.
+#'
+#' Monotonic projections are supported for forward search. They are supported
+#' for submodels without group-level and smooth terms (with the default
+#' submodel fitter) and for multilevel submodels with the [gaussian()] family
+#' (also in the latent projection). \pkg{projpred} throws an error before the
+#' search or the projection starts for L1 search, the augmented-data
+#' projection, custom divergence minimizers, reference models with smooth
+#' terms, multilevel submodels with another family, terms with more than one
+#' `mo()` call, and `mo()` calls inside other calls.
+#' With `options(projpred.mo_monotone = FALSE)`, the coefficients of the
+#' indicators are not constrained (so the projected effect of `x` is not
+#' necessarily monotonic), and these cases are supported. \pkg{projpred} reads
+#' the option when it projects: in a parallel \eqn{K}-fold CV, the workers use
+#' their own value of the option, and `refit_prj = FALSE` reuses the submodel
+#' fits of the search.
+#'
 #' # Arguments `ref_predfun`, `proj_predfun`, and `div_minimizer`
 #'
 #' Arguments `ref_predfun`, `proj_predfun`, and `div_minimizer` may be `NULL`
@@ -1117,6 +1174,7 @@ init_refmodel <- function(object, data, formula, family, ref_predfun = NULL,
   stopifnot(inherits(formula, "formula"))
   data <- na.fail(data)
   stopifnot(is.data.frame(data))
+  formula <- mo_formula_env(formula)
   formula <- expand_formula(formula, data)
   if (!as.logical(attr(terms(formula), "intercept"))) {
     # Add an intercept to `formula` so that we always project onto submodels
@@ -1127,6 +1185,7 @@ init_refmodel <- function(object, data, formula, family, ref_predfun = NULL,
     formula <- update(formula, . ~ . + 1)
   }
   fml_extractions <- extract_terms_response(formula)
+  check_mo_terms(fml_extractions)
   response_name <- fml_extractions$response
   if (length(response_name) == 2) {
     if (family$family != "binomial") {
