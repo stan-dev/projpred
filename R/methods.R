@@ -1988,9 +1988,8 @@ replace_population_names <- function(population_effects, nm_scheme) {
       names(population_effects),
       nm_scheme = nm_scheme
     )
-    if (length(population_effects) > 0) {
-      names(population_effects) <- paste0("b_", names(population_effects))
-    }
+    names(population_effects) <- paste0("b_", names(population_effects),
+                                        recycle0 = TRUE)
   }
   return(population_effects)
 }
