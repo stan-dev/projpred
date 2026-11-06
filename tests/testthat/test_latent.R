@@ -49,6 +49,66 @@ test_that(paste(
   expect_identical(dim(draws_th), c(S_th, P))
 })
 
+test_that("cl_agg() gives the results of a loop over the clusters", {
+  # The loop over the clusters (the reference for the computation in one pass):
+  cl_agg_loop <- function(draws, cl = seq_len(nrow(draws)),
+                          wdraws = rep(1, nrow(draws)), eps_wdraws = 0) {
+    n_cl <- max(cl, na.rm = TRUE)
+    do.call(rbind, lapply(seq_len(n_cl), function(i_cl) {
+      idxs_draws_i <- which(cl == i_cl)
+      wdraws_i <- wdraws[idxs_draws_i] / sum(wdraws[idxs_draws_i]) *
+        (1 - eps_wdraws)
+      wdraws_i %*% draws[idxs_draws_i, , drop = FALSE]
+    }))
+  }
+  draws_nm <- draws
+  dimnames(draws_nm) <- list(paste0("d", seq_len(S)), paste0("p", seq_len(P)))
+  # No random numbers here (later tests use the random number state):
+  draws_int <- matrix(rep_len(c(3L, 7L, 1L, 9L, 4L), S * P), nrow = S)
+  draws_lgl <- draws_int > 4L
+  draws_onecol <- draws[, 1, drop = FALSE]
+  colnames(draws_onecol) <- "prec"
+  perm <- order(sin(seq_len(S)))
+  cl_list <- list(singleton = seq_len(S), perm = perm,
+                  perm_dbl = as.numeric(perm), cl = cl_draws,
+                  thin = th_draws,
+                  empty = replace(cl_draws, cl_draws == 3L, 4L),
+                  near_int = replace(as.numeric(seq_len(S)), 2, 2 + 1e-14))
+  w_list <- list(const = rep(1, S), gamma = w_draws,
+                 zero = replace(w_draws, 5, 0),
+                 inf = replace(w_draws, 5, Inf), na = replace(w_draws, 5, NA))
+  draws_list <- list(dbl = draws, named = draws_nm, int = draws_int,
+                     lgl = draws_lgl, onecol = draws_onecol,
+                     draws_matrix = posterior::as_draws_matrix(draws))
+  for (cl_nm in names(cl_list)) {
+    for (w_nm in names(w_list)) {
+      for (d_nm in names(draws_list)) {
+        for (eps in c(0, 0.1)) {
+          args <- list(draws_list[[d_nm]], cl = cl_list[[cl_nm]],
+                       wdraws = w_list[[w_nm]], eps_wdraws = eps)
+          expect_identical(do.call(cl_agg, args), do.call(cl_agg_loop, args),
+                           info = paste(cl_nm, w_nm, d_nm, eps))
+        }
+      }
+    }
+  }
+  # Large cluster indices as doubles (match() compares numbers):
+  draws_3 <- draws[1:3, ]
+  expect_identical(cl_agg(draws_3, cl = c(1, 2, 1e5)),
+                   cl_agg_loop(draws_3, cl = c(1, 2, 1e5)))
+  expect_identical(cl_agg(draws_3, cl = c(0, 0, 0)),
+                   cl_agg_loop(draws_3, cl = c(0, 0, 0)))
+  expect_identical(cl_agg(draws_3, cl = c(0.5, 0.5, 0.2)),
+                   cl_agg_loop(draws_3, cl = c(0.5, 0.5, 0.2)))
+  expect_identical(cl_agg(draws_3, eps_wdraws = NA),
+                   cl_agg_loop(draws_3, eps_wdraws = NA))
+  expect_error(cl_agg(matrix(as.character(draws_3), nrow = 3)),
+               "requires numeric/complex matrix/vector arguments")
+  # Without weights (the old loop gives a matrix with zero rows):
+  expect_identical(cl_agg(draws_3, wdraws = NULL),
+                   cl_agg_loop(draws_3, wdraws = NULL))
+})
+
 # Linear predictors -------------------------------------------------------
 
 test_that(paste(
