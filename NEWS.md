@@ -24,7 +24,7 @@ If you read this from a place other than <https://mc-stan.org/projpred/news/inde
 
 ## Minor changes
 
-* projpred now requires R >= 4.2.0 (previously R >= 3.6.0).
+* projpred now requires R >= 4.2.0 (previously R >= 3.6.0). (GitHub: #605)
 * Faster `cl_agg()` and conversion of arrays to augmented-rows matrices. For example, LOO CV with validated search for the latent projection with 4000 projected draws is about 3-4 times faster. (GitHub: #600)
 
 ## Bug fixes and maintenance
