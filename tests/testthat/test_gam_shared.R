@@ -38,6 +38,25 @@ test_that("divmin() gives the same gam() fits with and without sharing", {
   }
 })
 
+test_that("divmin() passes the arguments of gam() and drops the others", {
+  opts_old <- options(projpred.gam_shared = TRUE)
+  on.exit(options(opts_old))
+  for (shared in c(TRUE, FALSE)) {
+    options(projpred.gam_shared = shared)
+    fits <- suppressWarnings(divmin(
+      formula = fml_gs, data = dat_gs, family = extend_family(gaussian()),
+      weights = wts_gs, projpred_var = matrix(NA, n_gs, n_draws_gs),
+      projpred_ws_aug = matrix(NA, n_gs, n_draws_gs), verbose_divmin = FALSE,
+      method = "REML", not_a_gam_arg = 1
+    ))
+    for (s in seq_len(n_draws_gs)) {
+      expect_identical(fits[[s]]$method, "REML", info = shared)
+      expect_false(any(c("not_a_gam_arg", "projpred_var") %in%
+                         names(fits[[s]]$call)), info = shared)
+    }
+  }
+})
+
 test_that("subprd() gives the predictions of predict.gam() for gam fits", {
   fits <- divmin_gs(FALSE)
   for (nd in list(dat_gs, dat_gs[c(7, 3, 50), ])) {

@@ -289,10 +289,8 @@ gam_shared_callback <- function(formulas, dot_args) {
     return(NULL)
   }
   # As in fit_gam_callback():
-  gam_dot_args <- dot_args[intersect(
-    names(dot_args),
-    c(methods::formalArgs(mgcv::gam), methods::formalArgs(mgcv::gam.fit))
-  )]
+  gam_dot_args <- dot_args[intersect(names(dot_args),
+                                     methods::formalArgs(mgcv::gam))]
   if (any(c("G", "fit") %in% names(gam_dot_args))) {
     return(NULL)
   }
@@ -1050,11 +1048,8 @@ fit_glm_callback <- function(formula, family, ...) {
 fit_gam_callback <- function(formula, ...) {
   # Exclude arguments from `...` which cannot be passed to mgcv::gam():
   dot_args <- list(...)
-  dot_args <- dot_args[intersect(
-    names(dot_args),
-    c(methods::formalArgs(mgcv::gam),
-      methods::formalArgs(mgcv::gam.fit))
-  )]
+  dot_args <- dot_args[intersect(names(dot_args),
+                                 methods::formalArgs(mgcv::gam))]
   # Call the submodel fitter:
   return(do.call(mgcv::gam, c(list(formula = formula), dot_args)))
 }
