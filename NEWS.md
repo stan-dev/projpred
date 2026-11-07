@@ -26,6 +26,7 @@ If you read this from a place other than <https://mc-stan.org/projpred/news/inde
 ## Minor changes
 
 * Faster `cl_agg()` and conversion of arrays to augmented-rows matrices. For example, LOO CV with validated search for the latent projection with 4000 projected draws is about 3-4 times faster. (GitHub: #600)
+* Faster submodel fits in the augmented-data projection of cumulative-link models (`brms::cumulative()`, `rstanarm::stan_polr()`): the C++ fitter computes the latent distribution functions once per threshold, computes the logistic distribution functions with one `exp()`, and reuses the gradient and the Hessian of an accepted full Newton step. The results can differ in the last digits.
 
 ## Bug fixes and maintenance
 
