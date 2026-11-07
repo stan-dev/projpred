@@ -72,7 +72,7 @@ test_that("cumul_fit_multi_c() finds the optimum of the polr() objective", {
   expect_identical(fit_both$zeta[, 2], drop(fit_2$zeta))
 })
 
-test_that("cumul_fit_multi_c() returns the polr() objective, also at the bounds", {
+test_that("cumul_fit_multi_c() returns the polr() objective at the bounds", {
   # Survival functions of the latent variables (1 - pfun, without
   # cancellation):
   sfun_cn <- list(logistic = function(q) plogis(q, lower.tail = FALSE),
@@ -84,7 +84,7 @@ test_that("cumul_fit_multi_c() returns the polr() objective, also at the bounds"
   # These observations have weight only in the highest or lowest category
   # (else the objective is infinite). No random numbers: later tests use the
   # random number state.
-  offs <- rep_len(c(0, 0, 150, -150, 0.5), n_cn)
+  offs <- rep_len(c(0, 0, 150, -150, 0), n_cn)
   for (method in links_cn) {
     cp <- cbind(0, pfun_cn[[method]](outer(-eta_cn, c(-1, 0, 1), "+")), 1)
     w <- pmax(t(apply(cp, 1, diff)), 1e-10)
@@ -92,7 +92,13 @@ test_that("cumul_fit_multi_c() returns the polr() objective, also at the bounds"
     w[offs == -150, ] <- rep(c(1, 0, 0, 0), each = sum(offs == -150))
     fit_nat <- cumul_fit_multi_c(x_cn, w, ncat_cn, offs,
                                  match(method, links_cn), 1e-12, 100L)
+    expect_identical(fit_nat$convergence, 0L, info = method)
     eta <- offs + drop(x_cn %*% fit_nat$beta)
+    # The bounds apply to these observations:
+    expect_true(all(fit_nat$zeta[ncat_cn - 1] - eta[offs == 150] < -100),
+                info = method)
+    expect_true(all(fit_nat$zeta[1] - eta[offs == -150] > 100),
+                info = method)
     g <- c(-Inf, fit_nat$zeta, Inf)
     loss <- -sum(vapply(seq_len(ncat_cn), function(k) {
       z1 <- pmin(100, g[k + 1] - eta)
