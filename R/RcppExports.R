@@ -5,6 +5,10 @@ categ_fit_multi_c <- function(x, w_all, ncat, icpt, thresh, maxit) {
     .Call('_projpred_categ_fit_multi_c', PACKAGE = 'projpred', x, w_all, ncat, icpt, thresh, maxit)
 }
 
+clust_moments_c <- function(mu, mu_offs, dis, wn, cl, nclusters, need_var) {
+    .Call('_projpred_clust_moments_c', PACKAGE = 'projpred', mu, mu_offs, dis, wn, cl, nclusters, need_var)
+}
+
 cumul_fit_multi_c <- function(x, w_all, ncat, offset, link, thresh, maxit) {
     .Call('_projpred_cumul_fit_multi_c', PACKAGE = 'projpred', x, w_all, ncat, offset, link, thresh, maxit)
 }
