@@ -663,9 +663,9 @@ count_terms_in_group_term <- function(term) {
 # Cache for results that depend only on strings (term labels, formula text).
 # The fold-wise searches of cv_varsel() and the steps of a search use the same
 # strings again, so these results are computed once. The cache is a
-# utils::hashtab(), so the keys can be any character vectors (with names and
-# `NA`). The cache is emptied when it has `max_n` entries; otherwise it stays
-# for the R session.
+# utils::hashtab(), so a key can be any character vector (with names and `NA`)
+# or a list of atomic vectors. The cache is emptied when it has `max_n`
+# entries; otherwise it stays for the R session.
 string_cache <- new.env(parent = emptyenv())
 
 # The value of `compute()` for `key` (a character vector or a list of atomic
