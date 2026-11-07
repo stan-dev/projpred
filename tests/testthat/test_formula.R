@@ -327,4 +327,7 @@ test_that("split_plus() splits term strings only at the `+` between terms", {
   expect_identical(split_plus("`a b` + x2 + I(`a b`^2)"),
                    c("`a b`", "x2", "I(`a b`^2)"))
   expect_identical(split_plus(character(0)), character(0))
+  # A long chain of `+` (the parser nests it 4999 levels deep):
+  long_terms <- paste0("x", seq_len(5000))
+  expect_identical(split_plus(paste(long_terms, collapse = " + ")), long_terms)
 })
