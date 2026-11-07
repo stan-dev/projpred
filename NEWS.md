@@ -26,6 +26,7 @@ If you read this from a place other than <https://mc-stan.org/projpred/news/inde
 ## Minor changes
 
 * Faster `cl_agg()` and conversion of arrays to augmented-rows matrices. For example, LOO CV with validated search for the latent projection with 4000 projected draws is about 3-4 times faster. (GitHub: #600)
+* Faster submodel fits in the augmented-data projection of categorical models (`brms::categorical()`): the line search of the C++ fitter computes only the objective, and the fitter computes the gradient and the Hessian at the accepted step from the probabilities of the line search. The results do not change.
 
 ## Bug fixes and maintenance
 
