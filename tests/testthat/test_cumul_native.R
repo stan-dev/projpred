@@ -72,7 +72,7 @@ test_that("cumul_fit_multi_c() finds the optimum of the polr() objective", {
   expect_identical(fit_both$zeta[, 2], drop(fit_2$zeta))
 })
 
-test_that("cumul_fit_multi_c() returns the polr() objective at the bounds", {
+test_that("cumul_fit_multi_c() gives the polr() objective at bounds +-100", {
   # Survival functions of the latent variables (1 - pfun, without
   # cancellation):
   sfun_cn <- list(logistic = function(q) plogis(q, lower.tail = FALSE),

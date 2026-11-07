@@ -117,8 +117,8 @@ static double cl_eval(const mat& x, const mat& w, const vec& offset,
   }
   double loss = 0.0;
   // The functions at zeta_j - eta_i are computed once per threshold and
-  // observation (the cache key is z, so values clamped at +-100 are computed
-  // again).
+  // observation.  The cache key is z, so values clamped at +-100 are computed
+  // again; this occurs only on paths with an infinite objective.
   double F_hi, S_hi, f_hi, fd_hi, F_lo, S_lo, f_lo, fd_lo;
   cl_funs(link, 100.0, F_hi, S_hi, f_hi, fd_hi);
   cl_funs(link, -100.0, F_lo, S_lo, f_lo, fd_lo);
