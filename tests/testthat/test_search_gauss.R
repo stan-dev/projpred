@@ -420,12 +420,14 @@ test_that(paste(
 })
 
 test_that(paste(
-  "search_forward_gauss() works with a candidate string of more than 10000",
-  "bytes (the limit of an environment key)"
+  "search_forward_gauss() and varsel() work with a candidate string of more",
+  "than 10000 bytes (the limit of an environment key)"
 ), {
   set.seed(5307)
   n <- 30
-  p <- 1300
+  # The smallest `p` with more than 10000 bytes in `block` (8 bytes per term).
+  # With n < p, the search needs the default `regul`:
+  p <- 1251
   dat <- as.data.frame(matrix(rnorm(n * p), n, p,
                               dimnames = list(NULL, sprintf("v%04d", seq_len(p)))))
   dat$y <- dat$v0001 + rnorm(n)
@@ -448,6 +450,12 @@ test_that(paste(
                               return_outdmins = FALSE)
   expect_false(is.null(out))
   expect_length(out$predictor_ranking, 1)
+  expect_identical(split_plus(out$predictor_ranking), split_plus(block))
+  # The whole path, with the projections and their cache:
+  vs <- varsel(refm, search_terms = c("1", block), nterms_max = p,
+               verbose = FALSE)
+  expect_identical(split_plus(ranking(vs)$fulldata), split_plus(block))
+  expect_s3_class(summary(vs), "vselsummary")
 })
 
 test_that(paste(

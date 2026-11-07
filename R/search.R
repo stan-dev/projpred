@@ -201,8 +201,9 @@ search_forward_gauss <- function(p_ref, refmodel, nterms_max, verbose,
   wdraws <- p_ref$wdraws_prj
 
   # The term labels of a candidate string. The same strings come back in every
-  # step, so the labels are computed once. An environment key is a symbol,
-  # which has a limit of 10000 bytes, so longer strings are not cached:
+  # step, so the labels are computed once. `[[` and assign() make a symbol from
+  # the string, and a symbol has a limit of 10000 bytes, so long strings are
+  # not cached:
   label_cache <- new.env(hash = TRUE, parent = emptyenv())
   labels_of <- function(cand) {
     if (nchar(cand, type = "bytes") >= 10000L) {

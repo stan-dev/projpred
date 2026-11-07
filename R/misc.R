@@ -784,8 +784,9 @@ proj_cache_exit <- function() {
   return(invisible())
 }
 
-# Whether `key` can be the name of an entry. A name is a symbol, which has a
-# limit of 10000 bytes, so longer keys are not cached:
+# Whether `key` can be the name of an entry. `[[` and assign() make a symbol
+# from the key, and a symbol has a limit of 10000 bytes, so long keys are not
+# cached:
 proj_cache_key_ok <- function(key) {
   nchar(key, type = "bytes") < 10000L
 }
