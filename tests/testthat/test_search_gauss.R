@@ -176,21 +176,33 @@ test_that(paste(
     }, print = FALSE, where = ns)
   }
   on.exit(untrace("get_p_clust", where = ns))
-  # `x1:f` (a factor in an interaction): perf_eval_gauss() gives `NULL`, so
-  # perf_eval() falls back to the full reference distribution.
+  n_gauss <- 0L
+  trace("perf_eval_gauss", exit = function() {
+    if (!is.null(returnValue())) n_gauss <<- n_gauss + 1L
+  }, print = FALSE, where = ns)
+  on.exit(untrace("perf_eval_gauss", where = ns), add = TRUE)
+  # `x1:f` (a factor in an interaction): perf_eval_gauss() gives `NULL` if the
+  # ranking contains `x1:f` (all 4 terms), so perf_eval() falls back to the
+  # full reference distribution.
   fmls <- list(y ~ x1 + x2 + x3 + x4 + f + x1:x2, y ~ x1 + x2 + f + x1:f)
-  for (fml in fmls) {
+  nterms_max_fml <- c(3L, 4L)
+  n_gauss_exp <- c(4L, 0L)
+  for (k in seq_along(fmls)) {
+    fml <- fmls[[k]]
     refm <- refm_search_gauss(fml, n = 40)
     # Thinned draws and all draws:
     for (ndraws_pred_crr in c(20, 200)) {
       info_crr <- paste(deparse(fml), ndraws_pred_crr)
       args_cv <- list(refm, cv_method = "LOO", validate_search = TRUE,
                       nloo = 4, nclusters = 3, ndraws_pred = ndraws_pred_crr,
-                      nterms_max = 3, seed = 5821, verbose = FALSE)
+                      nterms_max = nterms_max_fml[k], seed = 5821,
+                      verbose = FALSE)
       count_light()
       n_light <- 0L
+      n_gauss <- 0L
       cv_light <- suppressWarnings(do.call(cv_varsel, args_cv))
       expect_identical(n_light, 4L, info = info_crr)
+      expect_identical(n_gauss, n_gauss_exp[k], info = info_crr)
       # The same computations with the full reference distribution:
       trace("get_p_clust", tracer = quote(as_moments <- FALSE), print = FALSE,
             where = ns)
@@ -314,6 +326,28 @@ test_that(paste(
   # The cross-product search ran: once in varsel(), once for the full data in
   # cv_varsel() and once per left-out observation:
   expect_identical(calls$n, 7L)
+  # Thinned draws (one draw per cluster): the evaluation uses the reference
+  # distribution without draw matrices:
+  args_thin <- list(refm, nclusters = 3, ndraws_pred = 20, nterms_max = 3,
+                    seed = 4410, verbose = FALSE, cv_method = "LOO",
+                    validate_search = TRUE, nloo = 5)
+  n_light <- 0L
+  suppressMessages(trace(
+    "get_p_clust", where = asNamespace("projpred"), print = FALSE,
+    exit = function() {
+      if (isTRUE(returnValue()$moments_only)) n_light <<- n_light + 1L
+    }
+  ))
+  cv_thin_crossprod <- suppressWarnings(do.call(cv_varsel, args_thin))
+  suppressMessages(untrace("get_p_clust", where = asNamespace("projpred")))
+  expect_identical(n_light, 5L)
+  options(projpred.search_gauss_crossprod = FALSE)
+  cv_thin_drawwise <- suppressWarnings(do.call(cv_varsel, args_thin))
+  options(opts_old)
+  expect_identical(ranking(cv_thin_crossprod), ranking(cv_thin_drawwise))
+  expect_equal(performances(cv_thin_crossprod, deltas = FALSE),
+               performances(cv_thin_drawwise, deltas = FALSE),
+               tolerance = 1e-10)
 })
 
 test_that(paste(

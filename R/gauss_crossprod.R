@@ -164,8 +164,9 @@ perf_eval_gauss <- function(search_path, nterms, refmodel, p_ref,
     ws <- p_ref$ws
     mom <- wcol_moments_c(draws, idx - 1L, ws, wobs, sum_w)
     if (!all(is.finite(mom$ss))) {
-      # A non-finite value in a projected draw: the full `p_ref` (with
-      # predictive variances that depend on the observation) is necessary.
+      # get_p_clust() returns finite draws here, so only an overflow of the
+      # sums of squares gives this case. Then perf_eval() uses the draw-wise
+      # projections.
       return(NULL)
     }
     sum_wvar <- p_ref$draws_predvar * sum_w

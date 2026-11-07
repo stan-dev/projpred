@@ -61,9 +61,9 @@ test_that(paste(
       full <- do.call(get_p_clust, args)
       mom <- do.call(get_p_clust, c(args, as_moments = TRUE))
       expect_true(isTRUE(mom$moments_only))
-      ws <- rep_len(mom$ws, length(mom$idx))
       expect_equal(unclass(full$mu_offs),
-                   (mu + 1)[, mom$idx] * rep(ws, each = n), tolerance = 1e-15)
+                   (mu + 1)[, mom$idx] * rep(mom$ws, each = n),
+                   tolerance = 1e-15)
       expect_equal(unclass(full$var),
                    matrix(mom$draws_predvar, n, length(mom$idx), byrow = TRUE),
                    tolerance = 1e-15)
@@ -82,8 +82,22 @@ test_that(paste(
   w_0[3] <- 0
   expect_null(do.call(get_p_clust,
                       modifyList(args, list(cl = seq_len(S), wdraws = w_0))))
-  # A non-finite `mu_offs` is checked in perf_eval_gauss() (through the sums of
-  # squares), not here:
-  args$mu_offs[2, 2] <- Inf
-  expect_false(is.null(do.call(get_p_clust, c(args, list(cl = seq_len(S))))))
+  # A non-finite value in a projected draw, but not in a draw that is not used:
+  args_inf <- args
+  args_inf$mu_offs[2, 2] <- Inf
+  expect_null(do.call(get_p_clust, c(args_inf, list(cl = seq_len(S)))))
+  args_inf$mu_offs[2, 2] <- NaN
+  expect_null(do.call(get_p_clust, c(args_inf, list(cl = seq_len(S)))))
+  expect_null(do.call(get_p_clust, c(args_inf, list(cl = thin))))
+  args_inf <- args
+  args_inf$mu_offs[2, 3] <- Inf
+  expect_false(is.null(do.call(get_p_clust, c(args_inf, list(cl = thin)))))
+  # A user-defined `family$predvar` (no `predvar_mix` for it):
+  fam_user <- extend_family(gaussian())
+  fam_user$predvar <- function(mu, dis, wdraws = 1) {
+    matrix(1, nrow(as.matrix(mu)), 1)
+  }
+  expect_null(do.call(get_p_clust,
+                      modifyList(args, list(family = fam_user,
+                                            cl = seq_len(S)))))
 })
