@@ -784,8 +784,17 @@ proj_cache_exit <- function() {
   return(invisible())
 }
 
+# Whether `key` can be the name of an entry. A name is a symbol, which has a
+# limit of 10000 bytes, so longer keys are not cached:
+proj_cache_key_ok <- function(key) {
+  nchar(key, type = "bytes") < 10000L
+}
+
 # The entry `key` of store `store`, or `NULL` if there is none:
 proj_cache_get <- function(store, key) {
+  if (!proj_cache_key_ok(key)) {
+    return(NULL)
+  }
   ent <- store$cur[[key]]
   if (!is.null(ent)) {
     return(ent$value)
@@ -801,6 +810,9 @@ proj_cache_get <- function(store, key) {
 
 # Stores `value` as entry `key` of store `store`:
 proj_cache_put <- function(store, key, value) {
+  if (!proj_cache_key_ok(key)) {
+    return(invisible())
+  }
   proj_cache_add(store, key, list(value = value,
                                   bytes = as.numeric(utils::object.size(value))))
   return(invisible())

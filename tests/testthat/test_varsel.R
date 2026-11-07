@@ -145,6 +145,13 @@ test_that("the projection cache keeps its size limit", {
   expect_null(proj_cache_get(store, "b"))
   expect_identical(proj_cache_get(store, "a"), val)
   expect_lte(proj_cache$bytes, 1.5 * val_bytes)
+  # A key of more than 10000 bytes (too long for a name) is not cached:
+  long_key <- strrep("x", 10001)
+  bytes_old <- proj_cache$bytes
+  proj_cache_put(store, long_key, val)
+  expect_null(proj_cache_get(store, long_key))
+  expect_identical(proj_cache$bytes, bytes_old)
+  expect_identical(proj_cache_get(store, "a"), val)
   # A nested call keeps the cache and its limit:
   options(projpred.proj_cache_mb = 0)
   proj_cache_enter()
