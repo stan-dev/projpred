@@ -5,6 +5,15 @@
 ##   terms, response and a boolean global intercept indicating whether the
 ##   intercept is included or not.
 extract_terms_response <- function(formula) {
+  # The result depends only on the expression of `formula` (not on its
+  # environment):
+  key <- c(class(formula), deparse(formula, width.cutoff = 500L))
+  cached_by_strings("extract_terms_response", key, function() {
+    extract_terms_response_uncached(formula)
+  })
+}
+
+extract_terms_response_uncached <- function(formula) {
   tt <- terms(formula)
   terms_ <- attr(tt, "term.labels")
   ## when converting the terms_ to a list the first element is
@@ -651,6 +660,45 @@ count_terms_in_group_term <- function(term) {
   return(length(terms_))
 }
 
+# Cache for results that depend only on strings (term labels, formula text).
+# The fold-wise searches of cv_varsel() and the steps of a search use the same
+# strings again, so these results are computed once. The cache is a
+# utils::hashtab() (R >= 4.2.0; older R versions compute without the cache),
+# so the keys can be any character vectors (with names and `NA`). The cache is
+# emptied when it has `max_n` entries; otherwise it stays for the R session.
+string_cache <- new.env(parent = emptyenv())
+
+# The value of `compute()` for `key` (a character vector or a list of atomic
+# vectors), from the cache if possible. `type` separates the functions that
+# use the cache.
+cached_by_strings <- function(type, key, compute, max_n = 10000L) {
+  tab <- string_cache$tab
+  if (is.null(tab)) {
+    # The version check once per session (getRversion() takes long compared
+    # to a cache lookup):
+    if (isFALSE(string_cache$available)) {
+      return(compute())
+    }
+    string_cache$available <- getRversion() >= "4.2.0"
+    if (!string_cache$available) {
+      return(compute())
+    }
+    tab <- utils::hashtab("identical")
+    string_cache$tab <- tab
+  }
+  k <- list(type, key)
+  hit <- utils::gethash(tab, k)
+  if (!is.null(hit)) {
+    return(hit[[1]])
+  }
+  value <- compute()
+  if (utils::numhash(tab) >= max_n) {
+    utils::clrhash(tab)
+  }
+  utils::sethash(tab, k, list(value))
+  return(value)
+}
+
 # The parts of the term strings `term_strings` (for example "x1 + x2" or
 # "I(a + b) + (1 | g)") at the `+` signs that join terms. A `+` inside a call
 # (as in I(a + b) or log(x + 1)) does not split. The parts are deparsed again,
@@ -674,18 +722,26 @@ split_plus <- function(term_strings) {
 # Term labels with the variables of an interaction in sorted order, so that, for
 # example, "x2:x1" and "x1:x2" are equal (as for terms()).
 norm_term_labels <- function(labels) {
-  vapply(strsplit(labels, ":", fixed = TRUE), function(parts) {
-    paste(sort(trimws(parts)), collapse = ":")
-  }, character(1))
+  cached_by_strings("norm_term_labels", labels, function() {
+    vapply(strsplit(labels, ":", fixed = TRUE), function(parts) {
+      paste(sort(trimws(parts)), collapse = ":")
+    }, character(1))
+  })
 }
 
 # For each search term: its term labels (see norm_term_labels()) and, for a
 # search term with one label, the string that select_possible_terms_size()
-# returns for it. Computed once per search, so that
+# returns for it. Cached (R >= 4.2.0) for each set of search terms, so that
 # select_possible_terms_size() does not parse the same formulas again for each
 # candidate and step. Returns `NULL` if a search term has a smooth, group-level
 # or offset term or no intercept (the fast path does not cover these cases).
 search_term_info <- function(search_terms) {
+  cached_by_strings("search_term_info", search_terms, function() {
+    search_term_info_uncached(search_terms)
+  })
+}
+
+search_term_info_uncached <- function(search_terms) {
   info <- lapply(search_terms, function(x) {
     if (identical(x, "1")) {
       return(list(labels = character(0), label_out = "1"))
@@ -748,15 +804,26 @@ select_possible_terms_size_simple <- function(chosen, terms, size, term_info,
 ## @param chosen A list of currently chosen terms
 ## @param terms A list of all possible terms
 ## @param size Maximum allowed size
-## @param term_info Optional output of search_term_info() for `terms`
-select_possible_terms_size <- function(chosen, terms, size, term_info = NULL) {
+## @param use_term_info A single logical value indicating whether to use
+##   search_term_info() for `terms` (faster; the result is the same)
+select_possible_terms_size <- function(chosen, terms, size,
+                                       use_term_info = FALSE) {
   if (size < 1) {
     stop("size must be at least 1")
   }
+  key <- list(size, use_term_info, chosen, terms)
+  cached_by_strings("select_possible_terms_size", key, function() {
+    select_possible_terms_size_uncached(chosen, terms, size, use_term_info)
+  })
+}
+
+select_possible_terms_size_uncached <- function(chosen, terms, size,
+                                                use_term_info = FALSE) {
+  term_info <- if (use_term_info) search_term_info(terms) else NULL
 
   # The terms of the already chosen submodel (the same for all candidates):
   terms_chosen <- extract_terms_response(make_formula(c(chosen)))
-  if (!is.null(term_info) && all(terms %in% names(term_info)) &&
+  if (!is.null(term_info) &&
       length(terms_chosen$additive_terms) == 0 &&
       length(terms_chosen$group_terms) == 0 &&
       isTRUE(terms_chosen$global_intercept)) {
