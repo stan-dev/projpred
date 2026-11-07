@@ -210,6 +210,11 @@
   of the R session unchanged after the tests, also when a test fails,
   and remove the manual cleanup of the test workspace. (GitHub:
   [\#586](https://github.com/stan-dev/projpred/issues/586))
+- Fixed the error “‘gam.fit’ is not an exported object from
+  ‘namespace:mgcv’” in projections onto additive submodels with mgcv
+  1.9-5. (GitHub:
+  [\#598](https://github.com/stan-dev/projpred/issues/598),
+  [\#602](https://github.com/stan-dev/projpred/issues/602))
 
 ## projpred 2.11.0
 
