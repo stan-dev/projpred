@@ -11,6 +11,12 @@
   with `validate_search = TRUE` for a Gaussian model with 40
   observations and 15 predictor terms is about 8 times faster. (GitHub:
   [\#579](https://github.com/stan-dev/projpred/issues/579))
+- Faster repeated forward searches, as in
+  [`cv_varsel()`](https://mc-stan.org/projpred/dev/reference/cv_varsel.md)
+  with `validate_search = TRUE`: the results of the term-label and
+  formula code are cached within the R session (R \>= 4.2.0). For
+  example, LOO CV with validated search is about 12-18 % faster.
+  (GitHub: [\#599](https://github.com/stan-dev/projpred/issues/599))
 - Less formula and model-matrix work in the forward search and in the
   projections: the candidate submodels are selected from precomputed
   term labels, and the predictions for the training data use the stored
