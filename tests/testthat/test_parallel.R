@@ -93,17 +93,25 @@ test_that(paste(
   skip_if_not_installed("foreach")
   skip_if_not_installed("doRNG")
   skip_if_not_installed("iterators")
+  # A GLM with K-fold fits (in the setup, these are the reference models
+  # without observation weights), preferably with the traditional projection:
   tstsetups_ref <- names(cvfitss)[!sapply(cvfitss, inherits, "try-error")]
-  tstsetup_ref <- grep("\\.glm\\.gauss\\.", tstsetups_ref, value = TRUE)[1]
+  tstsetup_ref <- c(grep("\\.glm\\..*\\.trad", tstsetups_ref, value = TRUE),
+                    grep("\\.glm\\.", tstsetups_ref, value = TRUE))[1]
   skip_if(is.na(tstsetup_ref))
 
   # A foreach backend that records the objects in the environment of the fold
   # function (these objects go to the workers with backends that keep the
   # environment, e.g., doFuture) and then runs the iterations sequentially.
+  # It also runs the foreach loops of the projection parallelization (option
+  # `projpred.parallel_proj_trigger`), which have no fold function.
   env_nms <- list()
   do_record <- function(obj, expr, envir, data) {
     fun_nm <- intersect(c("one_obs", "one_fold"), obj$export)
-    env_nms[[fun_nm]] <<- ls(environment(get(fun_nm, envir)), all.names = TRUE)
+    if (length(fun_nm) == 1L) {
+      env_nms[[fun_nm]] <<- ls(environment(get(fun_nm, envir)),
+                               all.names = TRUE)
+    }
     it <- iterators::iter(obj)
     accumulator <- foreach::makeAccum(it)
     results <- lapply(as.list(it), function(args_i) {
