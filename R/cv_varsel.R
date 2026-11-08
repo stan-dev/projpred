@@ -120,7 +120,11 @@
 #'   parallelization is powered by the \pkg{foreach} package. Thus, any parallel
 #'   (or sequential) backend compatible with \pkg{foreach} can be used, e.g.,
 #'   the backends from packages \pkg{doParallel}, \pkg{doMPI}, or
-#'   \pkg{doFuture}. For GLMs, this CV parallelization should work reliably, but
+#'   \pkg{doFuture}. With \pkg{doFuture}, we recommend the global option
+#'   `doFuture.foreach.export = ".export"`: the exported fold functions carry
+#'   all objects that the CV folds need, and the automatic search for further
+#'   objects can take several seconds for a large reference model. For GLMs,
+#'   this CV parallelization should work reliably, but
 #'   for other models (such as GLMMs), it may lead to excessive memory usage
 #'   which in turn may crash the R session (on Unix systems, setting an
 #'   appropriate memory limit via [unix::rlimit_as()] may avoid crashing the
@@ -1074,6 +1078,14 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
                    clust_used_eval = perf_eval_out[["clust_used"]],
                    nprjdraws_eval = perf_eval_out[["nprjdraws"]]))
     }
+    # Some parallel backends (e.g., doFuture) send the enclosing environment of
+    # one_obs() to the workers, so keep only the objects that one_obs() uses:
+    one_obs <- fun_with_objs(one_obs, c(
+      "cl_pred", "cl_sel", "inds", "lw", "method", "n", "nclusters",
+      "nclusters_pred", "ndraws", "ndraws_pred", "nloo", "nterms_max",
+      "penalty", "refit_prj", "refmodel", "search_control", "search_out_rks",
+      "search_out_rks_was_null", "search_terms", "verbose"
+    ))
     if (!parallel) {
       # Sequential case. Actually, we could simply use ``%do_projpred%` <-
       # foreach::`%do%`` here and then proceed as in the parallel case, but that
@@ -1472,6 +1484,15 @@ kfold_varsel <- function(refmodel, method, nterms_max, ndraws, nclusters,
                  summaries_ref, clust_used_eval = perf_eval_out[["clust_used"]],
                  nprjdraws_eval = perf_eval_out[["nprjdraws"]]))
   }
+  # Some parallel backends (e.g., doFuture) send the enclosing environment of
+  # one_fold() to the workers, so keep only the objects that one_fold() uses
+  # (in particular not `list_cv`; each iteration gets its own fold):
+  one_fold <- fun_with_objs(one_fold, c(
+    "K", "method", "nclusters", "nclusters_pred", "ndraws", "ndraws_pred",
+    "nterms_max", "penalty", "refit_prj", "refmodel", "search_control",
+    "search_out_rks_was_null", "search_path_fulldata", "search_terms",
+    "validate_search", "verbose", "y_wobs_test"
+  ))
   if (!parallel) {
     # Sequential case. Actually, we could simply use ``%do_projpred%` <-
     # foreach::`%do%`` here and then proceed as in the parallel case, but that

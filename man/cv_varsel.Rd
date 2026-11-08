@@ -332,7 +332,11 @@ argument \code{parallel}; only \pkg{projpred}'s CV is affected.) The
 parallelization is powered by the \pkg{foreach} package. Thus, any parallel
 (or sequential) backend compatible with \pkg{foreach} can be used, e.g.,
 the backends from packages \pkg{doParallel}, \pkg{doMPI}, or
-\pkg{doFuture}. For GLMs, this CV parallelization should work reliably, but
+\pkg{doFuture}. With \pkg{doFuture}, we recommend the global option
+\code{doFuture.foreach.export = ".export"}: the exported fold functions carry
+all objects that the CV folds need, and the automatic search for further
+objects can take several seconds for a large reference model. For GLMs,
+this CV parallelization should work reliably, but
 for other models (such as GLMMs), it may lead to excessive memory usage
 which in turn may crash the R session (on Unix systems, setting an
 appropriate memory limit via \code{\link[unix:rlimit_as]{unix::rlimit_as()}} may avoid crashing the

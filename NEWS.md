@@ -26,6 +26,7 @@ If you read this from a place other than <https://mc-stan.org/projpred/news/inde
 ## Minor changes
 
 * Faster `cl_agg()` and conversion of arrays to augmented-rows matrices. For example, LOO CV with validated search for the latent projection with 4000 projected draws is about 3-4 times faster. (GitHub: #600)
+* The parallel `cv_varsel()` with `validate_search = TRUE` sends less data to the workers: the fold functions keep only the objects that they use. For example, with doFuture, a K-fold CV with 200 observations, 2000 draws and K = 5 sends 96 instead of 285 MiB to each worker. (GitHub: #PR)
 
 ## Bug fixes and maintenance
 
