@@ -710,8 +710,9 @@ split_plus <- function(term_strings) {
         length(expr) == 3L) {
       return(c(parts_of(expr[[2L]]), parts_of(expr[[3L]])))
     }
-    return(paste(deparse(expr, width.cutoff = 500L, backtick = TRUE),
-                 collapse = " "))
+    return(join_lines(paste(deparse(expr, width.cutoff = 500L,
+                                    backtick = TRUE),
+                            collapse = "\n")))
   }
   return(as.character(unlist(
     lapply(term_strings, function(x) parts_of(str2lang(x))),
@@ -720,10 +721,11 @@ split_plus <- function(term_strings) {
 }
 
 # Term labels with the variables of an interaction in sorted order, so that, for
-# example, "x2:x1" and "x1:x2" are equal (as for terms()).
+# example, "x2:x1" and "x1:x2" are equal (as for terms()). The lines of a long
+# label are joined (see join_lines()).
 norm_term_labels <- function(labels) {
   cached_by_strings("norm_term_labels", labels, function() {
-    vapply(strsplit(labels, ":", fixed = TRUE), function(parts) {
+    vapply(strsplit(join_lines(labels), ":", fixed = TRUE), function(parts) {
       paste(sort(trimws(parts)), collapse = ":")
     }, character(1))
   })
@@ -881,7 +883,14 @@ select_possible_terms_size_uncached <- function(chosen, terms, size,
 ## @return a character vector containing only the right hand side.
 to_character_rhs <- function(rhs) {
   chr <- as.character(rhs)
-  return(chr[length(chr)])
+  return(join_lines(chr[length(chr)]))
+}
+
+# Deparsed code (from as.character(), deparse() or terms() labels) breaks a long
+# expression into lines. Join the lines with one space, as in a short
+# expression.
+join_lines <- function(x) {
+  gsub("[[:space:]]*\n[[:space:]]*", " ", x)
 }
 
 ## Given a refmodel structure, count the number of terms included.

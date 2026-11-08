@@ -420,6 +420,20 @@ test_that(paste(
 })
 
 test_that(paste(
+  "the cross-product search works for a term above 500 characters, and the",
+  "ranking keeps its text"
+), {
+  # Deparsed code and terms() labels break this term into lines:
+  long_term <- paste0("I(x1", strrep(" + 0", 200), ")")
+  refm <- refm_search_gauss(as.formula(paste("y ~ x2 +", long_term)), n = 40)
+  res_vs <- with_gauss_search_count(suppressWarnings(varsel(
+    refm, nclusters = 3, nclusters_pred = 5, seed = 3317, verbose = FALSE
+  )))
+  expect_identical(res_vs$n, 1L)
+  expect_setequal(ranking(res_vs$value)$fulldata, c("x2", long_term))
+})
+
+test_that(paste(
   "the cross-product search and evaluation find functions from the",
   "environment of the reference model formula"
 ), {
