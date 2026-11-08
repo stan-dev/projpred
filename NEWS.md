@@ -36,7 +36,7 @@ If you read this from a place other than <https://mc-stan.org/projpred/news/inde
 * Fixed bias in `cv_varsel()` with `cv_method = "LOO"` and `validate_search = TRUE`: the projections of each fold used the left-out observation, so the submodels, mostly the larger ones, looked too good. The elpd estimates change, and `suggest_size()` can select larger submodels if many Pareto k values are high. (GitHub: #580)
 * Fixed the error `solve(): solution not found` (and possible wrong fits) when a predictor of a GLM submodel is constant over the observations with nonzero weight, e.g., a rare binary predictor in a CV fold. Such a predictor now gets the coefficient 0. (GitHub: #589)
 * Fixed inexact Gaussian submodel fits (identity link, also in the latent projection). (GitHub: #593)
-* Fixed a parse error in `varsel()` and `cv_varsel()` if two predictor terms have the same text before or after a `+` inside a call, such as `log(p + 1)` and `log(q + 1)`. (GitHub: #595)
+* Fixed a parse error in `varsel()` and `cv_varsel()` if two predictor terms have the same text before or after a `+` inside a call, such as `log(p + 1)` and `log(q + 1)`. (GitHub: #595, #606)
 * Filter the warning "non-integer response values in a poisson model" of lme4 (>= 2.1-1), which every projection onto a Poisson submodel with group-level terms would give. (GitHub: #585)
 * With `options(projpred.PQL = TRUE)`, remove the warnings that every projection gave: the "iteration" messages of `MASS::glmmPQL()`, the warnings about non-integer Poisson responses, and "Unrecognized submodel fit" in the convergence check. (GitHub: #585)
 * Tests: Add tests that run on CRAN for the submodel fitters from lme4, MASS, gamm4, ordinal and mclogit. (GitHub: #585)
