@@ -780,6 +780,6 @@ test_that("a long search term keeps its text in the ranking", {
     vs <- suppressWarnings(varsel(refm, search_terms = c("1", "z", long_term),
                                   nterms_max = 31, verbose = FALSE))
     expect_identical(ranking(vs)$fulldata, c("z", long_term),
-                     info = use_crossprod)
+                     info = as.character(use_crossprod))
   }
 })

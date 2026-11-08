@@ -342,7 +342,7 @@ test_that(paste(
       select_possible_terms_size("z", allterms, size = 202,
                                  use_term_info = use_term_info),
       long_term,
-      info = use_term_info
+      info = as.character(use_term_info)
     )
   }
   # A candidate that overlaps with the chosen terms:
