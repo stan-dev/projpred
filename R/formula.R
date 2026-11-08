@@ -849,7 +849,7 @@ select_possible_terms_size_uncached <- function(chosen, terms, size,
     if (size_crr == size) {
       if (length(dups) > 0) {
         tt <- terms(formula(paste("~", x, "-", paste(dups, collapse = "-"))))
-        x <- setdiff(attr(tt, "term.labels"), chosen)
+        x <- setdiff(join_lines(attr(tt, "term.labels")), chosen)
         if (grepl("\\|", x) && !grepl("[()]", x)) {
           x <- paste0("(", x, ")")
         }

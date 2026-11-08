@@ -430,7 +430,7 @@ test_that(paste(
     refm, nclusters = 3, nclusters_pred = 5, seed = 3317, verbose = FALSE
   )))
   expect_identical(res_vs$n, 1L)
-  expect_setequal(ranking(res_vs$value)$fulldata, c("x2", long_term))
+  expect_identical(ranking(res_vs$value)$fulldata, c(long_term, "x2"))
 })
 
 test_that(paste(
