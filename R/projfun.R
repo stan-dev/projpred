@@ -142,6 +142,10 @@ perf_eval <- function(search_path,
                       y_oscale_test = refmodel_fulldata$y_oscale[indices_test],
                       verbose = FALSE, verbose_line_length = 5,
                       verbose_txt_add = "", ...) {
+  # Whether to try perf_eval_gauss() (see below):
+  use_gauss_crossprod <- refit_prj && !is.null(reweighting_args) &&
+    !return_submodls && !return_preds &&
+    getOption("projpred.search_gauss_crossprod", TRUE)
   if (!refit_prj) {
     p_ref <- search_path$p_sel
     # In this case, simply fetch the already computed projections, so don't
@@ -162,7 +166,7 @@ perf_eval <- function(search_path,
       p_ref <- get_refdist(refmodel, ndraws = ndraws, nclusters = nclusters)
     } else {
       # Reweight the clusters (or thinned draws) according to the PSIS weights:
-      p_ref <- get_p_clust(
+      p_clust_args <- list(
         family = refmodel$family, eta = refmodel$eta, mu = refmodel$mu,
         mu_offs = refmodel$mu_offs, dis = refmodel$dis,
         wdraws = reweighting_args$wdraws_ref, cl = reweighting_args$cl_ref,
@@ -172,6 +176,16 @@ perf_eval <- function(search_path,
           S = length(refmodel$wdraws_ref)
         )[["clust_used"]]
       )
+      p_ref <- NULL
+      if (use_gauss_crossprod && !return_p_ref &&
+          !is.null(gauss_crossprod_regul(refmodel, list(...)))) {
+        # Without the observations x draws matrices, if possible (they are
+        # computed below if perf_eval_gauss() does not apply):
+        p_ref <- do.call(get_p_clust, c(p_clust_args, as_moments = TRUE))
+      }
+      if (is.null(p_ref)) {
+        p_ref <- do.call(get_p_clust, p_clust_args)
+      }
     }
     fetch_submodl <- function(size_j, ...) {
       return(proj_to_submodl(
@@ -186,8 +200,7 @@ perf_eval <- function(search_path,
            " (`refit_prj = ", refit_prj, "`) ...",
            verbose = verbose && !return_submodls)
   out_by_size <- NULL
-  if (refit_prj && !is.null(reweighting_args) && !return_submodls &&
-      !return_preds && getOption("projpred.search_gauss_crossprod", TRUE)) {
+  if (use_gauss_crossprod) {
     # In the LOO CV with validated search, compute the evaluation of Gaussian
     # submodels from cross-products (`NULL` if this case does not apply):
     out_by_size <- perf_eval_gauss(
@@ -197,6 +210,10 @@ perf_eval <- function(search_path,
       offset_test = offset_test, wobs_test = wobs_test, y_test = y_test,
       y_oscale_test = y_oscale_test, divmin_args = list(...)
     )
+    if (is.null(out_by_size) && isTRUE(p_ref$moments_only)) {
+      # The projections below need the full `p_ref`:
+      p_ref <- do.call(get_p_clust, p_clust_args)
+    }
   }
   if (is.null(out_by_size)) out_by_size <- lapply(nterms, function(size_j) {
     # Fetch the init_submodl() output (of class `submodl`) for the submodel at
