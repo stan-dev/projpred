@@ -1074,6 +1074,14 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
                    clust_used_eval = perf_eval_out[["clust_used"]],
                    nprjdraws_eval = perf_eval_out[["nprjdraws"]]))
     }
+    # Some parallel backends (e.g., doFuture) send the enclosing environment of
+    # one_obs() to the workers, so keep only the objects that one_obs() uses:
+    one_obs <- fun_with_objs(one_obs, c(
+      "cl_pred", "cl_sel", "inds", "lw", "method", "n", "nclusters",
+      "nclusters_pred", "ndraws", "ndraws_pred", "nloo", "nterms_max",
+      "penalty", "refit_prj", "refmodel", "search_control", "search_out_rks",
+      "search_out_rks_was_null", "search_terms", "verbose"
+    ))
     if (!parallel) {
       # Sequential case. Actually, we could simply use ``%do_projpred%` <-
       # foreach::`%do%`` here and then proceed as in the parallel case, but that
@@ -1108,6 +1116,14 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
       }
       dot_args <- list(...)
       `%do_projpred%` <- doRNG::`%dorng%`
+      # one_obs() holds all objects that the folds need (see fun_with_objs()),
+      # and the loop body uses only `.export` objects and base functions. So
+      # set doFuture to use only the `.export` objects (its "manual" mode).
+      # This skips its automatic search for further globals, which can take
+      # seconds for a large reference model. doFuture reads the option when
+      # the loop starts; restore it right after the loop (and on an error):
+      opts_old <- options(doFuture.foreach.export = ".export")
+      on.exit(options(opts_old), add = TRUE)
       res_cv <- foreach::foreach(
         run_index = seq_along(inds),
         .packages = c("projpred"),
@@ -1125,6 +1141,7 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
         if (!is.null(progressor_obj)) progressor_obj()
         return(out_one_obs)
       }
+      options(opts_old)
     }
     # For storing the fold-wise predictor rankings:
     predictor_ranking_mat <- matrix(nrow = n, ncol = nterms_max)
@@ -1472,6 +1489,15 @@ kfold_varsel <- function(refmodel, method, nterms_max, ndraws, nclusters,
                  summaries_ref, clust_used_eval = perf_eval_out[["clust_used"]],
                  nprjdraws_eval = perf_eval_out[["nprjdraws"]]))
   }
+  # Some parallel backends (e.g., doFuture) send the enclosing environment of
+  # one_fold() to the workers, so keep only the objects that one_fold() uses
+  # (in particular not `list_cv`; each iteration gets its own fold):
+  one_fold <- fun_with_objs(one_fold, c(
+    "K", "method", "nclusters", "nclusters_pred", "ndraws", "ndraws_pred",
+    "nterms_max", "penalty", "refit_prj", "refmodel", "search_control",
+    "search_out_rks_was_null", "search_path_fulldata", "search_terms",
+    "validate_search", "verbose", "y_wobs_test"
+  ))
   if (!parallel) {
     # Sequential case. Actually, we could simply use ``%do_projpred%` <-
     # foreach::`%do%`` here and then proceed as in the parallel case, but that
@@ -1505,6 +1531,15 @@ kfold_varsel <- function(refmodel, method, nterms_max, ndraws, nclusters,
     }
     dot_args <- list(...)
     `%do_projpred%` <- doRNG::`%dorng%`
+    # one_fold() holds all objects that the folds need (see fun_with_objs()),
+    # and the loop body uses only `.export` objects, base functions and the
+    # exported do_call(). So set doFuture to use only the `.export` objects
+    # (its "manual" mode). This skips its automatic search for further
+    # globals, which can take seconds for a large reference model. doFuture
+    # reads the option when the loop starts; restore it right after the loop
+    # (and on an error):
+    opts_old <- options(doFuture.foreach.export = ".export")
+    on.exit(options(opts_old), add = TRUE)
     res_cv <- foreach::foreach(
       list_cv_k = list_cv,
       search_out_rks_k = search_out_rks,
@@ -1524,6 +1559,7 @@ kfold_varsel <- function(refmodel, method, nterms_max, ndraws, nclusters,
       if (!is.null(progressor_obj)) progressor_obj()
       return(out_one_fold)
     }
+    options(opts_old)
   }
   verb_out("-----", verbose = verbose)
   predictor_ranking_cv <- do.call(rbind,
