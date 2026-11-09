@@ -1175,7 +1175,8 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
     one_obs <- fun_with_objs(one_obs, c(
       "cl_pred", "cl_sel", "inds", "lw", "method", "n", "nclusters",
       "nclusters_pred", "ndraws", "ndraws_pred", "nloo", "nterms_max",
-      "penalty", "refit_prj", "refmodel", "search_control", "search_out_rks",
+      "penalty", "perturb_alpha", "perturb_ll", "perturb_seed", "refit_prj",
+      "refmodel", "search_control", "search_out_rks",
       "search_out_rks_was_null", "search_terms", "verbose"
     ))
     if (!parallel) {
