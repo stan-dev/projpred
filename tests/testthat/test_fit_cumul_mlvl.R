@@ -46,6 +46,36 @@ test_that("fit_cumul_mlvl() uses nlminb() if clmm() cannot use ucminf()", {
   expect_false(is.null(fit$optRes$objective))
 })
 
+test_that("fit_cumul_mlvl() fits the requested link for cloglog and loglog", {
+  skip_if_not_installed("ordinal")
+  set.seed(4567)
+  n <- 400
+  dat <- data.frame(x = rnorm(n), g = gl(20, 20))
+  # Quantile functions of the latent variable for each link:
+  qfuns <- list(cloglog = function(p) log(-log1p(-p)),
+                loglog = function(p) -log(-log(p)))
+  for (lk in names(qfuns)) {
+    lat <- dat$x + qfuns[[lk]](runif(n))
+    dat$y <- factor(cut(lat, c(-Inf, -0.5, 0.5, 1.5, Inf), labels = FALSE),
+                    levels = 1:4, ordered = TRUE)
+    # The data have no group effects, so the fit is close to the clm() fit
+    # with the same link (with the other link, the thresholds differ by
+    # about 1):
+    fit_clm <- ordinal::clm(y ~ x, data = dat, link = lk)
+    fit <- fit_cumul_mlvl(y ~ x + (1 | g), data = dat,
+                          family = list(link = lk), weights = rep(1, n))
+    expect_equal(fit$coefficients, fit_clm$coefficients, tolerance = 0.05,
+                 info = lk)
+    expect_true(check_conv_s(fit), info = lk)
+    # Also with a `control` from the caller:
+    fit_ctrl <- fit_cumul_mlvl(y ~ x + (1 | g), data = dat,
+                               family = list(link = lk), weights = rep(1, n),
+                               control = ordinal::clmm.control())
+    expect_equal(fit_ctrl$coefficients, fit_clm$coefficients,
+                 tolerance = 0.05, info = lk)
+  }
+})
+
 test_that("fit_cumul_mlvl() refits with nlminb() if ucminf() does not converge", {
   skip_if_not_installed("ordinal")
   local_mocked_bindings(check_conv_s = function(fit_s) {

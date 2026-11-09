@@ -1861,6 +1861,15 @@ fit_cumul_mlvl <- function(formula, data, family, weights, ...) {
   if (link_nm == "probit_approx") {
     link_nm <- "probit"
   }
+  # For a single `(1 | <group>)` term, clmm() uses C code in which the links
+  # "cloglog" and "loglog" are swapped (ordinal up to version 2026.7-26 at
+  # least), so it would fit the model with the other link.  For these links,
+  # use the R code of clmm() (`useMatrix = TRUE`, which overrides `control`);
+  # clmm() then cannot use ucminf():
+  if (link_nm %in% c("cloglog", "loglog")) {
+    dot_args$useMatrix <- TRUE
+    use_ucminf <- FALSE
+  }
   # Call the submodel fitter:
   fit_clmm <- function(dot_args) {
     fitobj <- do.call(ordinal::clmm, c(
