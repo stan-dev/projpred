@@ -192,21 +192,10 @@ divmin <- function(
     } else {
       progressor_obj <- NULL
     }
-    `%do_projpred%` <- foreach::`%dopar%`
-    outdmin <- foreach::foreach(
-      formula_s = formulas,
-      projpred_var_s = iterators::iter(projpred_var, by = "column"),
-      projpred_formula_no_random_s = projpred_formulas_no_random,
-      .packages = c("projpred"),
-      .export = c("sdivmin", "projpred_random", "dot_args", "progressor_obj",
-                  "capt_fun"),
-      .noexport = c(
-        "object", "p_sel", "search_path", "p_ref", "refmodel", "formulas",
-        "projpred_var", "projpred_ws_aug", "projpred_formulas_no_random"
-      ),
-      .errorhandling = getOption("projpred.foreach_errorhandling", "stop"),
-      .verbose = getOption("projpred.foreach_verbose", FALSE)
-    ) %do_projpred% {
+    # The projection of one draw, in an environment with only the objects that
+    # it uses (see fun_with_objs()) and the projpred namespace as parent:
+    one_draw <- fun_with_objs(function(formula_s, projpred_var_s,
+                                       projpred_formula_no_random_s) {
       mssgs_warns_capt <- capt_fun(
         soutdmin <- do.call(
           sdivmin,
@@ -217,9 +206,32 @@ divmin <- function(
             dot_args)
         )
       )
-      if (!is.null(progressor_obj)) progressor_obj()
       return(nlist(soutdmin, mssgs_warns_capt))
+    }, c("sdivmin", "projpred_random", "dot_args", "capt_fun"))
+    `%do_projpred%` <- foreach::`%dopar%`
+    # The loop body uses only `.export` objects and base functions, so doFuture
+    # can skip its search for further globals (see loo_varsel()):
+    opts_old <- options(doFuture.foreach.export = ".export")
+    on.exit(options(opts_old), add = TRUE)
+    outdmin <- foreach::foreach(
+      formula_s = formulas,
+      projpred_var_s = iterators::iter(projpred_var, by = "column"),
+      projpred_formula_no_random_s = projpred_formulas_no_random,
+      .packages = c("projpred"),
+      .export = c("one_draw", "progressor_obj"),
+      .noexport = c(
+        "object", "p_sel", "search_path", "p_ref", "refmodel", "formulas",
+        "projpred_var", "projpred_ws_aug", "projpred_formulas_no_random"
+      ),
+      .errorhandling = getOption("projpred.foreach_errorhandling", "stop"),
+      .verbose = getOption("projpred.foreach_verbose", FALSE)
+    ) %do_projpred% {
+      out_one_draw <- one_draw(formula_s, projpred_var_s,
+                               projpred_formula_no_random_s)
+      if (!is.null(progressor_obj)) progressor_obj()
+      return(out_one_draw)
     }
+    options(opts_old)
   }
   mssgs_warns_capts <- lapply(outdmin, "[[", "mssgs_warns_capt")
   outdmin <- lapply(outdmin, "[[", "soutdmin")
@@ -1598,21 +1610,9 @@ divmin_augdat <- function(
       progressor_obj <- NULL
     }
     dot_args <- list(...)
-    `%do_projpred%` <- foreach::`%dopar%`
-    outdmin <- foreach::foreach(
-      projpred_w_aug_s = iterators::iter(projpred_ws_aug, by = "column"),
-      .packages = c("projpred"),
-      .export = c(
-        "sdivmin", "formula", "data", "family", "projpred_formula_no_random",
-        "projpred_random", "dot_args", "progressor_obj"
-      ),
-      .noexport = c(
-        "object", "p_sel", "search_path", "p_ref", "refmodel", "projpred_var",
-        "projpred_ws_aug", "linkobjs"
-      ),
-      .errorhandling = getOption("projpred.foreach_errorhandling", "stop"),
-      .verbose = getOption("projpred.foreach_verbose", FALSE)
-    ) %do_projpred% {
+    # The projection of one draw, in an environment with only the objects that
+    # it uses (see fun_with_objs()) and the projpred namespace as parent:
+    one_draw <- fun_with_objs(function(projpred_w_aug_s) {
       mssgs_warns_capt <- capt_mssgs_warns(
         soutdmin <- do.call(
           sdivmin,
@@ -1625,9 +1625,30 @@ divmin_augdat <- function(
             dot_args)
         )
       )
-      if (!is.null(progressor_obj)) progressor_obj()
       return(nlist(soutdmin, mssgs_warns_capt))
+    }, c("sdivmin", "formula", "data", "family", "projpred_formula_no_random",
+         "projpred_random", "dot_args"))
+    `%do_projpred%` <- foreach::`%dopar%`
+    # The loop body uses only `.export` objects and base functions, so doFuture
+    # can skip its search for further globals (see loo_varsel()):
+    opts_old <- options(doFuture.foreach.export = ".export")
+    on.exit(options(opts_old), add = TRUE)
+    outdmin <- foreach::foreach(
+      projpred_w_aug_s = iterators::iter(projpred_ws_aug, by = "column"),
+      .packages = c("projpred"),
+      .export = c("one_draw", "progressor_obj"),
+      .noexport = c(
+        "object", "p_sel", "search_path", "p_ref", "refmodel", "projpred_var",
+        "projpred_ws_aug", "linkobjs"
+      ),
+      .errorhandling = getOption("projpred.foreach_errorhandling", "stop"),
+      .verbose = getOption("projpred.foreach_verbose", FALSE)
+    ) %do_projpred% {
+      out_one_draw <- one_draw(projpred_w_aug_s)
+      if (!is.null(progressor_obj)) progressor_obj()
+      return(out_one_draw)
     }
+    options(opts_old)
   }
   mssgs_warns_capts <- lapply(outdmin, "[[", "mssgs_warns_capt")
   outdmin <- lapply(outdmin, "[[", "soutdmin")

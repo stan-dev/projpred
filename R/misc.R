@@ -945,7 +945,7 @@ element_unq <- function(list_obj, nm) {
 # parallel backend then serializes these objects together with `fun`, not the
 # whole `env`. `nms` must list every free variable of `fun` that is a local
 # of `env`; a missing name is looked up in the namespace instead (test
-# "the object lists of the fold functions ..." in test_parallel.R).
+# "the object lists of the loop functions ..." in test_parallel.R).
 fun_with_objs <- function(fun, nms, env = parent.frame()) {
   environment(fun) <- list2env(mget(nms, envir = env, inherits = FALSE),
                                parent = topenv(env))
