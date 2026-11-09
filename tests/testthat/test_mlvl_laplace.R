@@ -199,7 +199,7 @@ test_that(paste(
   "not handle"
 ), {
   d <- dat_mlvl()
-  expect_glmer <- function(fit, info) {
+  expect_glmer <- function(fit) {
     expect_s4_class(fit, "glmerMod")
   }
   quiet <- function(expr) suppressWarnings(suppressMessages(expr))
@@ -238,11 +238,31 @@ test_that(paste(
   })
   fit <- suppressWarnings(suppressMessages(fit_mlvl_tst(fml, d, binomial())))
   expect_s3_class(fit, "projpred_mlvl")
-  expect_identical(fit$optinfo$message, "lme4::glmer() fit")
+  expect_identical(fit$optinfo$message,
+                   "lme4::glmer() fit (Laplace fit: mocked)")
   fit_g <- glmer_tst(fml, d, binomial())
   expect_equal(fit$coefficients, lme4::fixef(fit_g), tolerance = 1e-8)
   expect_equal(get_subparams(fit, nm_scheme = "rstanarm"),
                get_subparams(fit_g, nm_scheme = "rstanarm"), tolerance = 1e-8)
+  # The deviance on the scale of mlvl_laplace():
+  des <- mlvl_laplace_design(fml, d, rep(1, nrow(d)), "g", 0L)
+  expect_equal(fit$deviance,
+               mlvl_laplace_dev(des, 0L, fit$sd, unname(fit$coefficients)))
+})
+
+test_that("divmin() passes global option `projpred.mlvl_laplace` on", {
+  d <- dat_mlvl()
+  d$.y.1 <- plogis(d$eta)
+  fit_divmin <- function() {
+    divmin(formula = .y.1 ~ x + (1 | g), data = d,
+           family = extend_family(binomial()), weights = rep(1, nrow(d)),
+           projpred_var = matrix(NA_real_, nrow(d), 1),
+           projpred_ws_aug = matrix(d$.y.1), verbose_divmin = FALSE,
+           throw_warn_sdivmin = FALSE, do_check_conv = FALSE)[[1]]
+  }
+  expect_s3_class(fit_divmin(), "projpred_mlvl")
+  withr::local_options(projpred.mlvl_laplace = FALSE)
+  expect_s4_class(suppressWarnings(suppressMessages(fit_divmin())), "glmerMod")
 })
 
 test_that(paste(

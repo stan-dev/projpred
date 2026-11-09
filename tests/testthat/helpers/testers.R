@@ -970,6 +970,25 @@ outdmin_tester_trad <- function(
         expect_identical(outdmin_totest[[!!j]]$convergence, 0L,
                          info = info_str)
       }
+      # The fixed effects of lme4::glmer() for the first of these draws (lme4
+      # >= 2.1-1 does not round non-integer responses):
+      j1 <- seq_extensive_tests[1]
+      if (utils::packageVersion("lme4") >= "2.1.1" && is.null(augdat_cats)) {
+        dat_j1 <- sub_data
+        dat_j1$.w_tst <- if (is.null(wobs_expected)) {
+          rep(1, nrow(sub_data))
+        } else if (is.matrix(wobs_expected)) {
+          wobs_expected[, j1]
+        } else {
+          wobs_expected
+        }
+        fit_g <- suppressWarnings(suppressMessages(lme4::glmer(
+          sub_formul[[j1]], data = dat_j1, family = get(sub_fam)(),
+          weights = .w_tst, control = lme4::glmerControl(optimizer = "bobyqa")
+        )))
+        expect_equal(outdmin_totest[[j1]]$coefficients, lme4::fixef(fit_g),
+                     tolerance = 1e-2, info = info_str)
+      }
       return(invisible(TRUE))
     }
 

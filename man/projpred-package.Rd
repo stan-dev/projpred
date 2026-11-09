@@ -76,10 +76,13 @@ the log link, if all group-level terms are random intercepts
 inherits from class \code{projpred_mlvl}). This fit minimizes the Laplace
 approximation of \code{\link[lme4:glmer]{lme4::glmer()}} (with \code{nAGQ = 1}), without rounding
 non-integer responses. \pkg{projpred} uses \code{\link[lme4:glmer]{lme4::glmer()}} instead if
-the fit does not converge, if the submodel has an offset or a
-rank-deficient model matrix, if \code{...} contains arguments of
+the fit does not converge, if the submodel has an offset, a
+rank-deficient model matrix or more than 500 group levels in total, if
+\code{...} contains arguments of
 \code{\link[lme4:glmer]{lme4::glmer()}} (for example \code{control} or \code{nAGQ}), or if global option
-\code{projpred.mlvl_laplace} is \code{FALSE}. For \code{\link[lme4:glmer]{lme4::glmer()}},
+\code{projpred.mlvl_laplace} is \code{FALSE}. After a fit that does not converge,
+the \code{\link[lme4:glmer]{lme4::glmer()}} fit is returned as class \code{projpred_mlvl}, too. For
+\code{\link[lme4:glmer]{lme4::glmer()}},
 \pkg{projpred} uses \code{control = lme4::glmerControl(optimizer = "bobyqa")},
 so both optimization stages use BOBYQA. A \code{control} argument in \code{...}
 replaces this default in the first fit. After some \pkg{lme4} errors,

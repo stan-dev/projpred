@@ -121,6 +121,11 @@ divmin <- function(
   }
 
   dot_args <- list(...)
+  # The option of the Laplace fit (see mlvl_laplace()) is read here, because the
+  # draw-wise calls may run in parallel workers:
+  if (identical(sdivmin, fit_glmer_callback)) {
+    dot_args$mlvl_laplace <- getOption("projpred.mlvl_laplace", TRUE)
+  }
   # Observations with weight 0 (in the LOO CV with validated search, the
   # left-out observation of a fold): remove them from the data for the
   # multilevel and additive submodel fitters. Some of these fitters (for example
@@ -1142,11 +1147,15 @@ fit_gamm_callback <- function(formula, projpred_formula_no_random,
 # Use package "lme4" to fit multilevel submodels:
 fit_glmer_callback <- function(formula, projpred_formula_no_random,
                                projpred_random, family,
-                               control = control_callback(family), ...) {
+                               control = control_callback(family),
+                               mlvl_laplace = getOption("projpred.mlvl_laplace",
+                                                        TRUE),
+                               ...) {
   # Binomial (logit) and Poisson (log) submodels with random intercepts only:
   # projpred's own Laplace fit, with lme4::glmer() as the fallback if it does
   # not converge (the fallback fit is converted to the same class):
-  if (missing(control) && mlvl_laplace_use(formula, family, list(...))) {
+  if (missing(control) &&
+      mlvl_laplace_use(formula, family, list(...), use = mlvl_laplace)) {
     ml_args <- list(...)
     fit <- mlvl_laplace(formula, data = ml_args$data, family = family,
                         weights = ml_args$weights)
@@ -1158,7 +1167,7 @@ fit_glmer_callback <- function(formula, projpred_formula_no_random,
         projpred_random = projpred_random, family = family, control = control,
         ...
       )
-      return(mlvl_from_merMod(fit_glmer, formula))
+      return(mlvl_from_merMod(fit_glmer, formula, failed = fit))
     }
   }
   tryCatch({
@@ -1616,6 +1625,11 @@ divmin_augdat <- function(
       progressor_obj <- NULL
     }
     dot_args <- list(...)
+    # The option of the Laplace fit (see mlvl_laplace()), read in this R
+    # process:
+    if (identical(sdivmin, fit_glmer_callback)) {
+      dot_args$mlvl_laplace <- getOption("projpred.mlvl_laplace", TRUE)
+    }
     `%do_projpred%` <- foreach::`%dopar%`
     outdmin <- foreach::foreach(
       projpred_w_aug_s = iterators::iter(projpred_ws_aug, by = "column"),

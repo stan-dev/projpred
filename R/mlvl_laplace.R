@@ -8,6 +8,10 @@
 # responses (projected means) without rounding.  The returned object has class
 # `projpred_mlvl`.  divmin() calls it through fit_glmer_callback(); other
 # multilevel submodels keep lme4::glmer().
+#
+# The stored `deviance` uses the deviance residuals.  For the Poisson family,
+# lme4 uses the log-likelihood instead, so its value differs by a constant
+# that depends only on the data.
 
 # Family code of mlvl_laplace_c(), or `NULL` if mlvl_laplace() does not handle
 # `family`:
@@ -34,12 +38,17 @@ mlvl_laplace_grps <- function(formula) {
   return(grps)
 }
 
+# Largest number of group levels (summed over the grouping variables) for the
+# dense matrices of mlvl_laplace_c():
+mlvl_laplace_max_levels <- 500L
+
 # Design of mlvl_laplace(): the fixed-effects model matrix, the response, the
 # weights and the level codes of the grouping variables, in the term order of
 # lme4 (reformulas::mkReTrms() sorts the terms by decreasing number of levels if
 # they are not in this order).  Returns `NULL` for cases that the fit does not
 # handle (missing values, offsets, a rank-deficient model matrix, a response
-# outside the range of the family).
+# outside the range of the family, more than `mlvl_laplace_max_levels` group
+# levels).
 mlvl_laplace_design <- function(formula, data, weights, grps, fam) {
   if (!is.data.frame(data) || !all(grps %in% names(data))) return(NULL)
   n <- nrow(data)
@@ -71,6 +80,7 @@ mlvl_laplace_design <- function(formula, data, weights, grps, fam) {
   })
   if (any(vapply(facs, anyNA, logical(1)))) return(NULL)
   nlev <- vapply(facs, nlevels, integer(1))
+  if (sum(nlev) > mlvl_laplace_max_levels) return(NULL)
   ord <- seq_along(nlev)
   if (any(diff(nlev) > 0)) ord <- rev(order(nlev))
   facs <- facs[ord]
@@ -81,6 +91,14 @@ mlvl_laplace_design <- function(formula, data, weights, grps, fam) {
     terms = delete.response(trms), xlevels = .getXlevels(trms, mf),
     contrasts = attr(x, "contrasts")
   ))
+}
+
+# Objective of the design `des` at (theta, beta), with the conditional modes
+# found from u = 0:
+mlvl_laplace_dev <- function(des, fam, theta, beta) {
+  return(mlvl_laplace_c(theta, beta, des$x, des$grp, des$nlev, des$y, des$w,
+                        rep(0, nrow(des$x)), rep(0, sum(des$nlev)), fam,
+                        FALSE)$D)
 }
 
 # Minimize the Laplace deviance over (theta, beta) with nlminb().  Start: theta
@@ -114,9 +132,11 @@ mlvl_laplace_optim <- function(des, fam, rel_tol = 1e-10, small_theta = 1e-3,
     ev
   }
   fn <- function(par) run(par)$D
+  # nlminb() asks for the gradient only at points with a finite objective; at
+  # other points, the gradient is `NaN`, and nlminb() stops with an error:
   gr <- function(par) {
     if (!identical(cache$par, par)) run(par)
-    cache$ev$grad %||% rep(NaN, length(par))
+    as.vector(cache$ev$grad %||% rep(NaN, length(par)))
   }
   lower <- c(rep(0, k), rep(-Inf, p))
   ctrl <- list(rel.tol = rel_tol, iter.max = 300, eval.max = 600)
@@ -158,13 +178,14 @@ new_projpred_mlvl <- function(formula, family, link, terms, xlevels,
   ))
 }
 
-# Whether fit_glmer_callback() uses mlvl_laplace(): the global option
-# `projpred.mlvl_laplace` is `TRUE`, `projpred.PQL` is not set, the family and
-# the group-level terms are supported, and `dot_args` has no lme4::glmer()
-# arguments other than `data` and `weights`.
-mlvl_laplace_use <- function(formula, family, dot_args) {
-  if (!getOption("projpred.mlvl_laplace", TRUE) ||
-      getOption("projpred.PQL", FALSE) || is.null(mlvl_laplace_fam(family)) ||
+# Whether fit_glmer_callback() uses mlvl_laplace(): `use` (global option
+# `projpred.mlvl_laplace`, read by divmin() in the main R process) is `TRUE`,
+# global option `projpred.PQL` is not set, the family and the group-level
+# terms are supported, and `dot_args` has no lme4::glmer() arguments other
+# than `data` and `weights`.
+mlvl_laplace_use <- function(formula, family, dot_args, use = TRUE) {
+  if (!isTRUE(use) || getOption("projpred.PQL", FALSE) ||
+      is.null(mlvl_laplace_fam(family)) ||
       is.null(mlvl_laplace_grps(formula))) {
     return(FALSE)
   }
@@ -173,19 +194,22 @@ mlvl_laplace_use <- function(formula, family, dot_args) {
 }
 
 # The Laplace fit.  Returns `NULL` if the design does not apply (see
-# mlvl_laplace_design()) and the fit with `convergence != 0` if nlminb() did not
-# converge or gave non-finite values.
+# mlvl_laplace_design()), and an object with `convergence != 0` if nlminb()
+# failed or did not converge (then `optinfo$message` says why).  The design is
+# in attribute "des" of an object with `convergence != 0`.
 mlvl_laplace <- function(formula, data, family, weights = NULL) {
   fam <- mlvl_laplace_fam(family)
   grps <- mlvl_laplace_grps(formula)
   if (is.null(fam) || is.null(grps)) return(NULL)
   des <- mlvl_laplace_design(formula, data, weights, grps, fam)
   if (is.null(des)) return(NULL)
-  opt <- tryCatch(mlvl_laplace_optim(des, fam), error = function(e) NULL)
-  if (is.null(opt)) {
-    return(new_projpred_mlvl(formula, family$family, family$link, des$terms,
+  opt <- tryCatch(mlvl_laplace_optim(des, fam), error = function(e) e)
+  if (inherits(opt, "error")) {
+    out <- new_projpred_mlvl(formula, family$family, family$link, des$terms,
                              des$xlevels, des$contrasts, NULL, NULL, NULL,
-                             NA_real_, convergence = -1L))
+                             NA_real_, convergence = -1L,
+                             optinfo = list(message = conditionMessage(opt)))
+    return(structure(out, des = des))
   }
   ok <- all(is.finite(c(opt$theta, opt$beta, opt$deviance, opt$u)))
   k <- length(des$nlev)
@@ -194,7 +218,7 @@ mlvl_laplace <- function(formula, data, family, weights = NULL) {
     setNames(opt$theta[j] * opt$u[offs_u[j] + seq_len(des$nlev[j])],
              des$lvls[[j]])
   })
-  return(new_projpred_mlvl(
+  out <- new_projpred_mlvl(
     formula = formula, family = family$family, link = family$link,
     terms = des$terms, xlevels = des$xlevels, contrasts = des$contrasts,
     coefficients = setNames(opt$beta, colnames(des$x)),
@@ -202,35 +226,46 @@ mlvl_laplace <- function(formula, data, family, weights = NULL) {
     ranef = setNames(ranef, names(des$lvls)), deviance = opt$deviance,
     convergence = if (ok) opt$convergence else -1L,
     optinfo = opt[c("message", "iterations", "n_restart")]
-  ))
+  )
+  if (out$convergence != 0) attr(out, "des") <- des
+  return(out)
 }
 
 # Convert an lme4::glmer() fit with random intercepts only to class
 # `projpred_mlvl` (for the fallback of fit_glmer_callback(), so that all draws
-# of a submodel have the same class).  Returns `fit` unchanged if it has other
-# group-level terms.
-mlvl_from_merMod <- function(fit, formula) {
+# of a submodel have the same class).  `failed`: the mlvl_laplace() object that
+# did not converge; its design gives the deviance of the glmer() fit on the
+# scale of mlvl_laplace().  Returns `fit` unchanged if it has other group-level
+# terms.
+mlvl_from_merMod <- function(fit, formula, failed) {
   if (!inherits(fit, "glmerMod")) return(fit)
   re <- lme4::ranef(fit, condVar = FALSE)
+  des <- attr(failed, "des")
   if (!all(vapply(re, function(r) identical(names(r), "(Intercept)"),
-                  logical(1)))) {
+                  logical(1))) ||
+      !identical(names(re), names(des$lvls))) {
     return(fit)
   }
   vc <- lme4::VarCorr(fit)
+  sd <- vapply(vc[names(re)], function(v) unname(attr(v, "stddev")),
+               numeric(1))
+  fam <- stats::family(fit)
+  dev <- tryCatch(
+    mlvl_laplace_dev(des, mlvl_laplace_fam(fam), sd,
+                     unname(lme4::fixef(fit))),
+    error = function(e) NA_real_
+  )
   trms <- delete.response(terms(fit, fixed.only = TRUE))
   attr(trms, ".Environment") <- environment(formula)
-  fam <- stats::family(fit)
   return(new_projpred_mlvl(
     formula = formula, family = fam$family, link = fam$link, terms = trms,
     xlevels = .getXlevels(terms(fit, fixed.only = TRUE), fit@frame),
     contrasts = attr(lme4::getME(fit, "X"), "contrasts"),
-    coefficients = lme4::fixef(fit),
-    sd = vapply(vc[names(re)], function(v) unname(attr(v, "stddev")),
-                numeric(1)),
+    coefficients = lme4::fixef(fit), sd = sd,
     ranef = lapply(re, function(r) setNames(r[["(Intercept)"]], rownames(r))),
-    deviance = stats::deviance(fit),
-    convergence = if (check_conv_s(fit)) 0L else 1L,
-    optinfo = list(message = "lme4::glmer() fit")
+    deviance = dev, convergence = if (check_conv_s(fit)) 0L else 1L,
+    optinfo = list(message = paste0("lme4::glmer() fit (Laplace fit: ",
+                                    failed$optinfo$message, ")"))
   ))
 }
 
@@ -238,7 +273,9 @@ mlvl_from_merMod <- function(fit, formula) {
 # `newdata`: X beta_s plus the random intercepts of the existing group levels;
 # for new group levels (and for all levels if global option
 # `projpred.mlvl_pred_new` is `TRUE`), random intercepts drawn from their
-# Gaussian distribution, as repair_re.merMod() does for lme4 fits.
+# Gaussian distribution, as repair_re.merMod() does for lme4 fits (also in the
+# same order: per draw, per grouping variable, per level in the order of the
+# factor levels).
 subprd_mlvl <- function(fits, newdata) {
   stopifnot(!is.null(newdata))
   pred_new <- getOption("projpred.mlvl_pred_new", FALSE)
@@ -250,7 +287,7 @@ subprd_mlvl <- function(fits, newdata) {
     }
   }
   lvls_new <- lapply(setNames(nm = grps), function(g) {
-    as.character(unique(newdata[[g]]))
+    levels(factor(newdata[[g]]))
   })
   lvls_chk <- if (pred_new) {
     lvls_new

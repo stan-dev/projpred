@@ -136,17 +136,21 @@ List mlvl_laplace_c(const arma::vec& theta, const arma::vec& beta,
     if (!solve(step, h, at_v(r) - u, solve_opts::likely_sympd)) {
       return List::create(Named("D") = R_PosInf, Named("u") = u);
     }
-    // Step halving:
+    // Step halving; without a step that does not increase the objective, keep
+    // u:
     double s = 1, f_new;
     vec u_new;
-    while (true) {
+    bool accepted = false;
+    while (s >= 1e-10) {
       u_new = u + s * step;
       f_new = obj(u_new);
-      if (std::isfinite(f_new) && f_new <= f + 1e-12 * std::abs(f)) break;
+      if (std::isfinite(f_new) && f_new <= f + 1e-12 * std::abs(f)) {
+        accepted = true;
+        break;
+      }
       s /= 2;
-      if (s < 1e-10) break;
     }
-    if (!std::isfinite(f_new)) break;
+    if (!accepted) break;
     bool conv = accu(abs(u_new - u)) < tol * (1 + accu(abs(u)));
     u = u_new;
     f = f_new;
