@@ -1656,6 +1656,7 @@ refdist_tester <- function(refd,
 # @param from_vsel_L1_search A single logical value indicating whether `p` uses
 #   the L1 `search_path` of an object of class `vsel` for extracting the
 #   subfit(s) (`TRUE`) or not (`FALSE`).
+# @param uses_nagq Passed to outdmin_tester().
 # @param info_str A single character string giving information to be printed in
 #   case of failure.
 #
@@ -1668,6 +1669,7 @@ projection_tester <- function(p,
                               seed_expected = seed_tst,
                               prjdraw_weights_expected = NULL,
                               from_vsel_L1_search = FALSE,
+                              uses_nagq = FALSE,
                               info_str = "") {
   expect_s3_class(p, "projection")
   expect_type(p, "list")
@@ -1792,10 +1794,7 @@ projection_tester <- function(p,
                  wobs_expected = wobs_expected_crr,
                  prd_trms_vsel_L1_search = prd_trms_vsel_L1_search_crr,
                  augdat_cats = augdat_cats_crr,
-                 # setup.R passes `nAGQ` to the Bernoulli augmented-data and
-                 # `trad_compare` projections:
-                 uses_nagq = grepl("\\.brnll\\..*\\.(augdat|trad_compare)\\.",
-                                   info_str),
+                 uses_nagq = uses_nagq,
                  info_str = info_str)
 
   # dis

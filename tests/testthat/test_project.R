@@ -13,6 +13,7 @@ test_that(paste(
                       prd_trms_expected = args_prj_i$predictor_terms,
                       nprjdraws_expected = ndr_ncl$nprjdraws,
                       with_clusters = ndr_ncl$clust_used,
+                      uses_nagq = !is.null(args_prj_i$nAGQ),
                       info_str = tstsetup)
   }
 })
