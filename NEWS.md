@@ -27,6 +27,7 @@ If you read this from a place other than <https://mc-stan.org/projpred/news/inde
 
 * Faster `cl_agg()` and conversion of arrays to augmented-rows matrices. For example, LOO CV with validated search for the latent projection with 4000 projected draws is about 3-4 times faster. (GitHub: #600)
 * The parallel `cv_varsel()` with `validate_search = TRUE` sends less data to the workers. The fold functions keep only the objects that they use, and doFuture skips its search for further globals. (GitHub: #PR)
+* Faster parallel projections (global option `projpred.parallel_proj_trigger`) with doFuture: doFuture skips its search for globals. For example, `varsel()` for a Bernoulli multilevel model with 4 to 16 workers is about 2 to 3 times faster. (GitHub: #PR)
 
 ## Bug fixes and maintenance
 
