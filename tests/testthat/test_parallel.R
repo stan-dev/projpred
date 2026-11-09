@@ -91,9 +91,10 @@ test_that("cv_varsel() in parallel gives the same results as sequentially", {
 # projection parallelization (option `projpred.parallel_proj_trigger`), it
 # records the same for each call, in `draw_env_nms` and `draw_export_opt`. Then
 # it runs the iterations sequentially. With `export_only = TRUE`, the loop body
-# sees only the `.export` objects, the iteration arguments and the search path,
-# as with doFuture and `doFuture.foreach.export = ".export"`. With
-# `fail = TRUE`, it stops in the first fold loop. When `frame` exits, the
+# sees only the `.export` objects, the iteration arguments and base R. This is
+# stricter than doFuture with `doFuture.foreach.export = ".export"`, whose
+# workers also attach the `.packages`. With `fail = TRUE`, it stops in the
+# first fold loop or projection loop. When `frame` exits, the
 # previous backend is registered again. foreach has no exported getter for the
 # registered backend, so this reads its internal store (the setup of this file
 # can have registered doParallel or doFuture).
@@ -118,10 +119,11 @@ local_record_backend <- function(fail = FALSE, export_only = FALSE,
       ))
       rec$draw_export_opt <- c(rec$draw_export_opt,
                                list(getOption("doFuture.foreach.export")))
+      if (fail) stop("Stop of the recording foreach backend.")
     }
     if (export_only) {
       envir <- list2env(mget(obj$export, envir = envir, inherits = TRUE),
-                        parent = globalenv())
+                        parent = baseenv())
     }
     it <- iterators::iter(obj)
     accumulator <- foreach::makeAccum(it)
@@ -255,36 +257,51 @@ test_that(paste(
                       "projpred_formula_no_random", "projpred_random",
                       "sdivmin")
   )
-  withr::local_options(list(
-    projpred.parallel_proj_trigger = 0L,
-    doFuture.foreach.export = ".export-and-automatic"
-  ))
+  withr::local_options(list(projpred.parallel_proj_trigger = 0L))
   rec <- local_record_backend(export_only = TRUE)
   for (fun_nm in names(tstsetups)[!is.na(tstsetups)]) {
     tstsetup <- tstsetups[[fun_nm]]
     args_prj_i <- args_prj[[tstsetup]]
-    rec$draw_env_nms <- list()
-    rec$draw_export_opt <- list()
-    p_repr <- suppressWarnings(do.call(project, c(
-      list(object = refmods[[args_prj_i$tstsetup_ref]]),
-      excl_nonargs(args_prj_i)
-    )))
-    expect_equal(p_repr, prjs[[tstsetup]], info = tstsetup)
-    expect_gt(length(rec$draw_env_nms), 0)
-    for (env_nms in rec$draw_env_nms) {
-      expect_setequal(env_nms, nms_expected[[fun_nm]])
+    prj_i <- function() {
+      suppressWarnings(do.call(project, c(
+        list(object = refmods[[args_prj_i$tstsetup_ref]]),
+        excl_nonargs(args_prj_i)
+      )))
     }
-    for (export_opt in rec$draw_export_opt) {
-      expect_identical(export_opt, ".export", info = tstsetup)
+    # A value set by the user, and the option not set (the default):
+    for (opt_user in list(".export-and-automatic", NULL)) {
+      withr::local_options(list(doFuture.foreach.export = opt_user))
+      info_i <- paste(tstsetup, if (is.null(opt_user)) "NULL" else opt_user)
+      rec$draw_env_nms <- list()
+      rec$draw_export_opt <- list()
+      expect_equal(prj_i(), prjs[[tstsetup]], info = info_i)
+      expect_gt(length(rec$draw_env_nms), 0)
+      for (env_nms in rec$draw_env_nms) {
+        expect_setequal(env_nms, nms_expected[[fun_nm]])
+      }
+      for (export_opt in rec$draw_export_opt) {
+        expect_identical(export_opt, ".export", info = info_i)
+      }
+      expect_identical(getOption("doFuture.foreach.export"), opt_user,
+                       info = info_i)
     }
-    expect_identical(getOption("doFuture.foreach.export"),
-                     ".export-and-automatic", info = tstsetup)
+    # An error in the projection loop:
+    withr::local_options(list(
+      doFuture.foreach.export = ".export-and-automatic"
+    ))
+    local({
+      local_record_backend(fail = TRUE)
+      expect_error(prj_i(), "Stop of the recording foreach backend",
+                   info = tstsetup)
+      expect_identical(getOption("doFuture.foreach.export"),
+                       ".export-and-automatic", info = tstsetup)
+    })
   }
 })
 
 test_that(paste(
-  "the object lists of the loop functions of cv_varsel() and divmin() match",
-  "their free variables"
+  "the object lists of the loop functions of cv_varsel(), divmin() and",
+  "divmin_augdat() match their free variables"
 ), {
   skip_if_not_installed("codetools")
   # The right-hand sides of all assignments `nm <- ...` in `expr`:
