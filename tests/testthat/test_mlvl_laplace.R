@@ -1,0 +1,269 @@
+# projpred's Laplace fit of binomial and Poisson multilevel submodels with
+# random intercepts (mlvl_laplace()). These tests need no reference model fits,
+# so they also run on CRAN.
+
+# Data with two grouping variables (`g` with 8 levels, `h` with 4 levels, with
+# disjoint level names), a linear predictor `eta` and integer responses.
+dat_mlvl <- function(n = 160, seed = 3) {
+  withr::local_seed(seed)
+  d <- data.frame(x = rnorm(n), z = rnorm(n),
+                  g = factor(paste0("g", sample(8, n, replace = TRUE))),
+                  h = factor(paste0("h", sample(4, n, replace = TRUE))))
+  d$eta <- -0.2 + 0.7 * d$x - 0.4 * d$z + rnorm(8, sd = 0.8)[d$g] +
+    rnorm(4, sd = 0.4)[d$h]
+  d$y_bern <- rbinom(n, 1, plogis(d$eta))
+  d$y_pois <- rpois(n, exp(d$eta))
+  d
+}
+
+fit_mlvl_tst <- function(formula, data, family, weights = rep(1, nrow(data)),
+                         ...) {
+  fit_glmer_callback(formula, projpred_formula_no_random = NA,
+                     projpred_random = NA, family = extend_family(family),
+                     data = data, weights = weights, ...)
+}
+
+glmer_tst <- function(formula, data, family, weights = rep(1, nrow(data))) {
+  data$.w_tst <- weights
+  suppressWarnings(suppressMessages(lme4::glmer(
+    formula, data = data, family = family, weights = .w_tst,
+    control = lme4::glmerControl(optimizer = "bobyqa")
+  )))
+}
+
+test_that("mlvl_laplace_c() gives the gradient of its objective", {
+  d <- dat_mlvl()
+  d$y_frac <- plogis(d$eta + 0.3)
+  d$y_mean <- exp(d$eta)
+  cases <- list(bern = list(y = d$y_bern, fam = 0L),
+                frac = list(y = d$y_frac, fam = 0L),
+                pois = list(y = d$y_pois, fam = 1L),
+                mean = list(y = d$y_mean, fam = 1L))
+  x <- cbind(1, d$x, d$z)
+  grp <- cbind(as.integer(d$g), as.integer(d$h)) - 1L
+  nlev <- c(8L, 4L)
+  w <- rep(c(1, 2), length.out = nrow(d))
+  par <- c(0.6, 0.3, -0.1, 0.5, -0.3)
+  for (nm in names(cases)) {
+    cs <- cases[[nm]]
+    obj <- function(par) {
+      mlvl_laplace_c(par[1:2], par[3:5], x, grp, nlev, cs$y, w,
+                     rep(0, nrow(d)), rep(0, 12), cs$fam, FALSE)$D
+    }
+    ev <- mlvl_laplace_c(par[1:2], par[3:5], x, grp, nlev, cs$y, w,
+                         rep(0, nrow(d)), rep(0, 12), cs$fam, TRUE)
+    grad_fd <- vapply(seq_along(par), function(j) {
+      h <- 1e-5
+      e <- replace(numeric(length(par)), j, h)
+      (obj(par + e) - obj(par - e)) / (2 * h)
+    }, numeric(1))
+    expect_equal(as.vector(ev$grad), grad_fd, tolerance = 1e-6, info = nm)
+    expect_equal(ev$D, obj(par), info = nm)
+  }
+})
+
+test_that(paste(
+  "mlvl_laplace() gives the glmer() fit for integer binomial and Poisson",
+  "responses"
+), {
+  d <- dat_mlvl()
+  cases <- list(
+    bern = list(fml = y_bern ~ x + z + (1 | g) + (1 | h), fam = binomial()),
+    pois = list(fml = y_pois ~ x + z + (1 | g) + (1 | h), fam = poisson()),
+    pois_one = list(fml = y_pois ~ x + (1 | h), fam = poisson())
+  )
+  for (nm in names(cases)) {
+    cs <- cases[[nm]]
+    fit <- fit_mlvl_tst(cs$fml, d, cs$fam)
+    expect_s3_class(fit, "projpred_mlvl")
+    expect_true(check_conv_s(fit), info = nm)
+    fit_g <- glmer_tst(cs$fml, d, cs$fam)
+    expect_equal(fit$coefficients, lme4::fixef(fit_g), tolerance = 1e-3,
+                 info = nm)
+    # The parameters and the predictions in the names of the lme4 path:
+    for (nm_scheme in c("rstanarm", "brms")) {
+      expect_equal(get_subparams(fit, nm_scheme = nm_scheme),
+                   get_subparams(fit_g, nm_scheme = nm_scheme),
+                   tolerance = 1e-3, info = paste(nm, nm_scheme))
+    }
+    expect_equal(subprd(list(fit, fit), d)[, 2], subprd(list(fit_g), d)[, 1],
+                 tolerance = 1e-3, info = nm)
+    expect_equal(predict(fit, d), predict(fit_g, d), tolerance = 1e-3,
+                 info = nm)
+  }
+})
+
+test_that(paste(
+  "mlvl_laplace() gives the glmer() fit for non-integer responses with",
+  "lme4 >= 2.1-1"
+), {
+  skip_if(utils::packageVersion("lme4") < "2.1.1",
+          "lme4 < 2.1-1 rounds non-integer binomial and Poisson data")
+  d <- dat_mlvl()
+  d$y_frac <- plogis(d$eta + 0.3 * d$z)
+  d$y_mean <- exp(d$eta + 0.3 * d$z)
+  for (cs in list(list(fml = y_frac ~ x + (1 | g) + (1 | h), fam = binomial()),
+                  list(fml = y_mean ~ x + (1 | g) + (1 | h), fam = poisson()))) {
+    fit <- fit_mlvl_tst(cs$fml, d, cs$fam)
+    fit_g <- glmer_tst(cs$fml, d, cs$fam)
+    expect_equal(fit$coefficients, lme4::fixef(fit_g), tolerance = 1e-3)
+    expect_equal(unname(fit$sd),
+                 unname(vapply(lme4::VarCorr(fit_g)[names(fit$sd)], attr,
+                               numeric(1), "stddev")),
+                 tolerance = 1e-2)
+  }
+})
+
+test_that(paste(
+  "the traditional and the augmented-data form of a binomial submodel give",
+  "the same mlvl_laplace() fit"
+), {
+  d <- dat_mlvl()
+  d$y <- plogis(d$eta + 0.3 * d$z)
+  d_aug <- rbind(d, d)
+  d_aug$y <- rep(c(1, 0), each = nrow(d))
+  fit_trad <- fit_mlvl_tst(y ~ x + (1 | g), d, binomial())
+  fit_aug <- fit_mlvl_tst(y ~ x + (1 | g), d_aug, binomial(),
+                          weights = c(d$y, 1 - d$y))
+  expect_equal(fit_aug$coefficients, fit_trad$coefficients, tolerance = 1e-5)
+  expect_equal(fit_aug$sd, fit_trad$sd, tolerance = 1e-4)
+})
+
+test_that(paste(
+  "a Poisson submodel with non-integer responses estimates the group-level",
+  "standard deviation"
+), {
+  withr::local_seed(4)
+  g <- factor(rep(seq_len(8), each = 6))
+  x <- rnorm(48)
+  b <- rnorm(8, sd = 0.8)
+  d <- data.frame(y = exp(0.5 + 0.4 * x + b[g] + rnorm(48, sd = 0.1)),
+                  x = x, g = g)
+  fit <- fit_mlvl_tst(y ~ x + (1 | g), d, poisson())
+  expect_s3_class(fit, "projpred_mlvl")
+  expect_gt(abs(fit$sd[["g"]] - 1), 1e-4)
+  expect_gt(fit$sd[["g"]], 0.2)
+  expect_true(is.finite(fit$deviance))
+})
+
+test_that(paste(
+  "integer weights in mlvl_laplace() equal duplicated observations, and",
+  "divmin() removes observations with weight 0"
+), {
+  d <- dat_mlvl()
+  d$mu_b <- plogis(d$eta)
+  d$mu_p <- exp(d$eta)
+  idxs_w2 <- 1:10
+  w <- rep(1, nrow(d))
+  w[idxs_w2] <- 2
+  d_dupl <- d[c(seq_len(nrow(d)), idxs_w2), ]
+  for (cs in list(list(y = "mu_b", fam = binomial()),
+                  list(y = "mu_p", fam = poisson()))) {
+    fml <- as.formula(paste(cs$y, "~ x + (1 | g)"))
+    fit_w <- fit_mlvl_tst(fml, d, cs$fam, weights = w)
+    fit_dupl <- fit_mlvl_tst(fml, d_dupl, cs$fam)
+    expect_equal(fit_w$coefficients, fit_dupl$coefficients, tolerance = 1e-6)
+    expect_equal(fit_w$sd, fit_dupl$sd, tolerance = 1e-5)
+  }
+  # Weight 0 (the left-out observation of a fold in LOO CV with validated
+  # search), with changed predictor values:
+  w0 <- rep(1, nrow(d))
+  w0[1:3] <- 0
+  d_chg <- d
+  d_chg$x[1:3] <- d_chg$x[1:3] + 5
+  fit_divmin <- function(data) {
+    data$.y.1 <- data$mu_b
+    divmin(formula = .y.1 ~ x + (1 | g), data = data,
+           family = extend_family(binomial()), weights = w0,
+           projpred_var = matrix(NA_real_, nrow(data), 1),
+           projpred_ws_aug = matrix(data$mu_b), verbose_divmin = FALSE,
+           throw_warn_sdivmin = FALSE, do_check_conv = FALSE)[[1]]
+  }
+  fit_w0 <- fit_divmin(d)
+  fit_chg <- fit_divmin(d_chg)
+  expect_s3_class(fit_w0, "projpred_mlvl")
+  expect_equal(fit_chg$coefficients, fit_w0$coefficients, tolerance = 1e-10)
+  fit_rm <- fit_mlvl_tst(mu_b ~ x + (1 | g), d[-(1:3), ], binomial())
+  expect_equal(fit_rm$coefficients, fit_w0$coefficients, tolerance = 1e-6)
+})
+
+test_that(paste(
+  "fit_glmer_callback() uses glmer() for the cases that mlvl_laplace() does",
+  "not handle"
+), {
+  d <- dat_mlvl()
+  expect_glmer <- function(fit, info) {
+    expect_s4_class(fit, "glmerMod")
+  }
+  quiet <- function(expr) suppressWarnings(suppressMessages(expr))
+  # Random slopes:
+  expect_glmer(quiet(fit_mlvl_tst(y_bern ~ x + (x | g), d, binomial())))
+  # Another link:
+  expect_glmer(quiet(fit_mlvl_tst(y_bern ~ x + (1 | g), d,
+                                  binomial(link = "probit"))))
+  # A `control` or an `nAGQ` from the caller:
+  expect_glmer(quiet(fit_mlvl_tst(y_bern ~ x + (1 | g), d, binomial(),
+                                  control = lme4::glmerControl())))
+  expect_glmer(quiet(fit_mlvl_tst(y_bern ~ x + (1 | g), d, binomial(),
+                                  nAGQ = 5)))
+  # An offset:
+  d$offs <- 0.1 * d$z
+  expect_glmer(quiet(fit_mlvl_tst(y_pois ~ x + offset(offs) + (1 | g), d,
+                                  poisson())))
+  # A rank-deficient model matrix:
+  d$x2 <- 2 * d$x
+  expect_glmer(quiet(fit_mlvl_tst(y_bern ~ x + x2 + (1 | g), d, binomial())))
+  # The global option:
+  withr::local_options(projpred.mlvl_laplace = FALSE)
+  expect_glmer(quiet(fit_mlvl_tst(y_bern ~ x + (1 | g), d, binomial())))
+})
+
+test_that(paste(
+  "fit_glmer_callback() refits with glmer() if mlvl_laplace() does not",
+  "converge, and returns the glmer() fit as a `projpred_mlvl` object"
+), {
+  d <- dat_mlvl()
+  fml <- y_bern ~ x + (1 | g)
+  local_mocked_bindings(mlvl_laplace_optim = function(des, fam, ...) {
+    list(theta = 1, beta = rep(0, ncol(des$x)), u = rep(0, sum(des$nlev)),
+         deviance = 1, convergence = 1L, message = "mocked",
+         iterations = 0L, n_restart = 0L)
+  })
+  fit <- suppressWarnings(suppressMessages(fit_mlvl_tst(fml, d, binomial())))
+  expect_s3_class(fit, "projpred_mlvl")
+  expect_identical(fit$optinfo$message, "lme4::glmer() fit")
+  fit_g <- glmer_tst(fml, d, binomial())
+  expect_equal(fit$coefficients, lme4::fixef(fit_g), tolerance = 1e-8)
+  expect_equal(get_subparams(fit, nm_scheme = "rstanarm"),
+               get_subparams(fit_g, nm_scheme = "rstanarm"), tolerance = 1e-8)
+})
+
+test_that(paste(
+  "subprd() draws the group-level intercepts of new group levels once per",
+  "level and keeps those of the existing levels"
+), {
+  d <- dat_mlvl()
+  fit <- fit_mlvl_tst(y_bern ~ x + (1 | g) + (1 | h), d, binomial())
+  nd <- d[1:6, ]
+  nd$g <- factor(c("g_new1", "g_new1", "g1", "g_new2", "g2", "g_new2"))
+  prd_fixed <- predict(fit, nd)
+  withr::local_seed(1)
+  prd <- subprd(list(fit, fit), nd)
+  expect_identical(dim(prd), c(6L, 2L))
+  expect_identical(rownames(prd), rownames(nd))
+  b_new <- prd[, 1] - prd_fixed
+  # Existing levels: no draw; new levels: one draw per level:
+  expect_equal(unname(b_new[c(3, 5)]), c(0, 0))
+  expect_equal(b_new[[1]], b_new[[2]])
+  expect_equal(b_new[[4]], b_new[[6]])
+  expect_false(isTRUE(all.equal(b_new[[1]], b_new[[4]])))
+  # The draws differ between the draws of the submodel:
+  expect_false(isTRUE(all.equal(prd[1, 1], prd[1, 2])))
+  # With `projpred.mlvl_pred_new`, all levels are new:
+  withr::local_options(projpred.mlvl_pred_new = TRUE)
+  prd_new <- subprd(list(fit), nd)
+  expect_false(isTRUE(all.equal(prd_new[3, 1], prd_fixed[[3]])))
+  # Overlapping level sets of the grouping variables:
+  nd$h <- factor(c("g1", "h1", "h1", "h1", "h1", "h1"))
+  expect_error(subprd(list(fit), nd), "disjoint level sets")
+})

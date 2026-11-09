@@ -156,6 +156,29 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
+// mlvl_laplace_c
+List mlvl_laplace_c(const arma::vec& theta, const arma::vec& beta, const arma::mat& x, const IntegerMatrix& grp, const IntegerVector& nlev, const arma::vec& y, const arma::vec& w, const arma::vec& offset, arma::vec u, int fam, bool want_grad, double tol, int maxit);
+RcppExport SEXP _projpred_mlvl_laplace_c(SEXP thetaSEXP, SEXP betaSEXP, SEXP xSEXP, SEXP grpSEXP, SEXP nlevSEXP, SEXP ySEXP, SEXP wSEXP, SEXP offsetSEXP, SEXP uSEXP, SEXP famSEXP, SEXP want_gradSEXP, SEXP tolSEXP, SEXP maxitSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< const arma::vec& >::type theta(thetaSEXP);
+    Rcpp::traits::input_parameter< const arma::vec& >::type beta(betaSEXP);
+    Rcpp::traits::input_parameter< const arma::mat& >::type x(xSEXP);
+    Rcpp::traits::input_parameter< const IntegerMatrix& >::type grp(grpSEXP);
+    Rcpp::traits::input_parameter< const IntegerVector& >::type nlev(nlevSEXP);
+    Rcpp::traits::input_parameter< const arma::vec& >::type y(ySEXP);
+    Rcpp::traits::input_parameter< const arma::vec& >::type w(wSEXP);
+    Rcpp::traits::input_parameter< const arma::vec& >::type offset(offsetSEXP);
+    Rcpp::traits::input_parameter< arma::vec >::type u(uSEXP);
+    Rcpp::traits::input_parameter< int >::type fam(famSEXP);
+    Rcpp::traits::input_parameter< bool >::type want_grad(want_gradSEXP);
+    Rcpp::traits::input_parameter< double >::type tol(tolSEXP);
+    Rcpp::traits::input_parameter< int >::type maxit(maxitSEXP);
+    rcpp_result_gen = Rcpp::wrap(mlvl_laplace_c(theta, beta, x, grp, nlev, y, w, offset, u, fam, want_grad, tol, maxit));
+    return rcpp_result_gen;
+END_RCPP
+}
 
 static const R_CallMethodDef CallEntries[] = {
     {"_projpred_categ_fit_multi_c", (DL_FUNC) &_projpred_categ_fit_multi_c, 6},
@@ -165,6 +188,7 @@ static const R_CallMethodDef CallEntries[] = {
     {"_projpred_glm_ridge_c", (DL_FUNC) &_projpred_glm_ridge_c, 11},
     {"_projpred_glm_ridge_native_c", (DL_FUNC) &_projpred_glm_ridge_native_c, 15},
     {"_projpred_glm_ridge_native_multi_c", (DL_FUNC) &_projpred_glm_ridge_native_multi_c, 15},
+    {"_projpred_mlvl_laplace_c", (DL_FUNC) &_projpred_mlvl_laplace_c, 13},
     {NULL, NULL, 0}
 };
 

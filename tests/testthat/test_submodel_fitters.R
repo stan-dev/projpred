@@ -168,6 +168,7 @@ test_that(paste(
   "submodel give the same fit"
 ), {
   skip_if_lme4_rounds()
+  withr::local_options(projpred.mlvl_laplace = FALSE)
   # A singular fit and a fit with theta > 0 (10 groups of 30 observations):
   withr::local_seed(11)
   g <- factor(rep(1:10, each = 30))
@@ -205,6 +206,7 @@ test_that(paste(
   "group-level standard deviation"
 ), {
   skip_if_lme4_rounds()
+  withr::local_options(projpred.mlvl_laplace = FALSE)
   withr::local_seed(4)
   g <- factor(rep(seq_len(8), each = 6))
   x <- rnorm(48)
@@ -257,6 +259,7 @@ test_that(paste(
 test_that(paste(
   "observations with weight 0 do not change a binomial glmer() submodel fit"
 ), {
+  withr::local_options(projpred.mlvl_laplace = FALSE)
   d <- dat_fitters()
   mu <- plogis(d$eta)
   w <- rep(1, nrow(d))
@@ -282,6 +285,7 @@ test_that(paste(
   "with duplicated observations"
 ), {
   skip_if_lme4_rounds()
+  withr::local_options(projpred.mlvl_laplace = FALSE)
   d <- dat_fitters()
   idxs_dupl <- c(seq_len(nrow(d)), idxs_w2)
   w <- rep(1, nrow(d))

@@ -73,7 +73,17 @@
 #'     projection in case of the [binomial()] or [brms::bernoulli()] family):
 #'     [lme4::lmer()] (the returned object inherits from class `lmerMod`) for
 #'     the [gaussian()] family, [lme4::glmer()] (the returned object inherits
-#'     from class `glmerMod`) for all other families. For [lme4::glmer()],
+#'     from class `glmerMod`) for all other families. Exception: for the
+#'     [binomial()] family with the logit link and the [poisson()] family with
+#'     the log link, if all group-level terms are random intercepts
+#'     `(1 | <group>)`, \pkg{projpred} uses its own fit (the returned object
+#'     inherits from class `projpred_mlvl`). This fit minimizes the Laplace
+#'     approximation of [lme4::glmer()] (with `nAGQ = 1`), without rounding
+#'     non-integer responses. \pkg{projpred} uses [lme4::glmer()] instead if
+#'     the fit does not converge, if the submodel has an offset or a
+#'     rank-deficient model matrix, if `...` contains arguments of
+#'     [lme4::glmer()] (for example `control` or `nAGQ`), or if global option
+#'     `projpred.mlvl_laplace` is `FALSE`. For [lme4::glmer()],
 #'     \pkg{projpred} uses `control = lme4::glmerControl(optimizer = "bobyqa")`,
 #'     so both optimization stages use BOBYQA. A `control` argument in `...`
 #'     replaces this default in the first fit. After some \pkg{lme4} errors,

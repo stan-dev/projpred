@@ -903,9 +903,19 @@ outdmin_tester_trad <- function(
       }
     }
   } else if (has_grp && !has_add) {
+    # projpred's own Laplace fit (see mlvl_laplace()) for binomial and Poisson
+    # submodels with random intercepts only and without offsets:
+    is_mlvl <- sub_fam %in% c("binomial", "poisson") && !with_offs &&
+      getOption("projpred.mlvl_laplace", TRUE) &&
+      !getOption("projpred.PQL", FALSE) &&
+      !is.null(mlvl_laplace_grps(sub_formul[[1]]))
     if (sub_fam == "gaussian") {
       for (j in seq_along(outdmin_totest)) {
         expect_s4_class(outdmin_totest[[!!j]], "lmerMod")
+      }
+    } else if (is_mlvl) {
+      for (j in seq_along(outdmin_totest)) {
+        expect_s3_class(outdmin_totest[[!!j]], "projpred_mlvl")
       }
     } else {
       for (j in seq_along(outdmin_totest)) {
@@ -935,6 +945,30 @@ outdmin_tester_trad <- function(
     ))
     mm_expected <- model.matrix(sub_formul_for_mm, data = sub_mf_expected)
     attr(mm_expected, "msgScaleX") <- character()
+
+    if (is_mlvl) {
+      grps_expected <- mlvl_laplace_grps(sub_formul[[1]])
+      for (j in seq_extensive_tests) {
+        expect_equal(formula(outdmin_totest[[!!j]]),
+                     flatten_formula(sub_formul[[j]]), info = info_str)
+        expect_identical(names(outdmin_totest[[!!j]]$coefficients),
+                         colnames(mm_expected), info = info_str)
+        expect_true(all(is.finite(outdmin_totest[[!!j]]$coefficients)),
+                    info = info_str)
+        expect_setequal(names(outdmin_totest[[!!j]]$sd), grps_expected)
+        expect_true(all(outdmin_totest[[!!j]]$sd >= 0), info = info_str)
+        for (g in grps_expected) {
+          expect_identical(
+            names(outdmin_totest[[!!j]]$ranef[[!!g]]),
+            levels(droplevels(as.factor(sub_data[[!!g]]))),
+            info = info_str
+          )
+        }
+        expect_identical(outdmin_totest[[!!j]]$convergence, 0L,
+                         info = info_str)
+      }
+      return(invisible(TRUE))
+    }
 
     for (j in seq_extensive_tests) {
       # formula

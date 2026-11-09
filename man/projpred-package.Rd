@@ -61,12 +61,7 @@ coefficients; default: vector of \code{0}s).
 \item For the augmented-data projection: \code{\link[MASS:polr]{MASS::polr()}} (the returned object
 inherits from class \code{polr}) for the \code{\link[brms:cumulative]{brms::cumulative()}} family or
 \code{\link[rstanarm:stan_polr]{rstanarm::stan_polr()}} fits, \code{\link[nnet:multinom]{nnet::multinom()}} (the returned object
-inherits from class \code{multinom}) for the \code{\link[brms:categorical]{brms::categorical()}} family. For \code{\link[ordinal:clmm]{ordinal::clmm()}} with a single
-group-level term \code{(1 | <group>)}, \pkg{projpred} uses
-\code{method = "ucminf"} and \code{grad = "forward"} (see
-\code{\link[ordinal:clmm.control]{ordinal::clmm.control()}}). If this fit fails or does not converge,
-\pkg{projpred} refits with the default settings of \code{\link[ordinal:clmm]{ordinal::clmm()}}. An
-argument \code{method} or \code{control} in \code{...} replaces this default.
+inherits from class \code{multinom}) for the \code{\link[brms:categorical]{brms::categorical()}} family.
 }
 \item Submodel with multilevel but no additive terms:
 \itemize{
@@ -74,7 +69,17 @@ argument \code{method} or \code{control} in \code{...} replaces this default.
 projection in case of the \code{\link[=binomial]{binomial()}} or \code{\link[brms:bernoulli]{brms::bernoulli()}} family):
 \code{\link[lme4:lmer]{lme4::lmer()}} (the returned object inherits from class \code{lmerMod}) for
 the \code{\link[=gaussian]{gaussian()}} family, \code{\link[lme4:glmer]{lme4::glmer()}} (the returned object inherits
-from class \code{glmerMod}) for all other families. For \code{\link[lme4:glmer]{lme4::glmer()}},
+from class \code{glmerMod}) for all other families. Exception: for the
+\code{\link[=binomial]{binomial()}} family with the logit link and the \code{\link[=poisson]{poisson()}} family with
+the log link, if all group-level terms are random intercepts
+\verb{(1 | <group>)}, \pkg{projpred} uses its own fit (the returned object
+inherits from class \code{projpred_mlvl}). This fit minimizes the Laplace
+approximation of \code{\link[lme4:glmer]{lme4::glmer()}} (with \code{nAGQ = 1}), without rounding
+non-integer responses. \pkg{projpred} uses \code{\link[lme4:glmer]{lme4::glmer()}} instead if
+the fit does not converge, if the submodel has an offset or a
+rank-deficient model matrix, if \code{...} contains arguments of
+\code{\link[lme4:glmer]{lme4::glmer()}} (for example \code{control} or \code{nAGQ}), or if global option
+\code{projpred.mlvl_laplace} is \code{FALSE}. For \code{\link[lme4:glmer]{lme4::glmer()}},
 \pkg{projpred} uses \code{control = lme4::glmerControl(optimizer = "bobyqa")},
 so both optimization stages use BOBYQA. A \code{control} argument in \code{...}
 replaces this default in the first fit. After some \pkg{lme4} errors,
@@ -82,7 +87,12 @@ replaces this default in the first fit. After some \pkg{lme4} errors,
 \item For the augmented-data projection: \code{\link[ordinal:clmm]{ordinal::clmm()}} (the returned
 object inherits from class \code{clmm}) for the \code{\link[brms:cumulative]{brms::cumulative()}} family,
 \code{\link[mclogit:mblogit]{mclogit::mblogit()}} (the returned object inherits from class \code{mmblogit})
-for the \code{\link[brms:categorical]{brms::categorical()}} family.
+for the \code{\link[brms:categorical]{brms::categorical()}} family. For \code{\link[ordinal:clmm]{ordinal::clmm()}} with a single
+group-level term \verb{(1 | <group>)}, \pkg{projpred} uses
+\code{method = "ucminf"} and \code{grad = "forward"} (see
+\code{\link[ordinal:clmm.control]{ordinal::clmm.control()}}). If this fit fails or does not converge,
+\pkg{projpred} refits with the default settings of \code{\link[ordinal:clmm]{ordinal::clmm()}}. An
+argument \code{method} or \code{control} in \code{...} replaces this default.
 }
 \item Submodel without multilevel but additive terms: \code{\link[mgcv:gam]{mgcv::gam()}} (the returned
 object inherits from class \code{gam}).
