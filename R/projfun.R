@@ -166,25 +166,28 @@ perf_eval <- function(search_path,
       p_ref <- get_refdist(refmodel, ndraws = ndraws, nclusters = nclusters)
     } else {
       # Reweight the clusters (or thinned draws) according to the PSIS weights:
-      p_clust_args <- list(
-        family = refmodel$family, eta = refmodel$eta, mu = refmodel$mu,
-        mu_offs = refmodel$mu_offs, dis = refmodel$dis,
-        wdraws = reweighting_args$wdraws_ref, cl = reweighting_args$cl_ref,
-        clust_used_forced = clust_info(
-          ndraws = ndraws,
-          nclusters = nclusters,
-          S = length(refmodel$wdraws_ref)
-        )[["clust_used"]]
-      )
+      clust_used_forced <- clust_info(
+        ndraws = ndraws,
+        nclusters = nclusters,
+        S = length(refmodel$wdraws_ref)
+      )[["clust_used"]]
+      p_clust <- function(as_moments = FALSE) {
+        get_p_clust(
+          family = refmodel$family, eta = refmodel$eta, mu = refmodel$mu,
+          mu_offs = refmodel$mu_offs, dis = refmodel$dis,
+          wdraws = reweighting_args$wdraws_ref, cl = reweighting_args$cl_ref,
+          clust_used_forced = clust_used_forced, as_moments = as_moments
+        )
+      }
       p_ref <- NULL
       if (use_gauss_crossprod && !return_p_ref &&
           !is.null(gauss_crossprod_regul(refmodel, list(...)))) {
-        # Without the observations x draws matrices, if possible (they are
-        # computed below if perf_eval_gauss() does not apply):
-        p_ref <- do.call(get_p_clust, c(p_clust_args, as_moments = TRUE))
+        # Without the observations x draws matrices, if possible (p_clust()
+        # computes them later if they are needed):
+        p_ref <- p_clust(as_moments = TRUE)
       }
       if (is.null(p_ref)) {
-        p_ref <- do.call(get_p_clust, p_clust_args)
+        p_ref <- p_clust()
       }
     }
     fetch_submodl <- function(size_j, ...) {
@@ -208,11 +211,12 @@ perf_eval <- function(search_path,
       p_ref = p_ref, refmodel_fulldata = refmodel_fulldata,
       indices_test = indices_test, newdata_test = newdata_test,
       offset_test = offset_test, wobs_test = wobs_test, y_test = y_test,
-      y_oscale_test = y_oscale_test, divmin_args = list(...)
+      y_oscale_test = y_oscale_test, divmin_args = list(...),
+      p_ref_full = p_clust
     )
     if (is.null(out_by_size) && isTRUE(p_ref$moments_only)) {
       # The projections below need the full `p_ref`:
-      p_ref <- do.call(get_p_clust, p_clust_args)
+      p_ref <- p_clust()
     }
   }
   if (is.null(out_by_size)) out_by_size <- lapply(nterms, function(size_j) {

@@ -10,7 +10,8 @@ using namespace arma;
 // draws matrices. For k = 1, ..., length(idx), the column is
 // `scale[k] * mu[, idx[k]]` (`idx` 0-based). The function returns the weighted
 // mean of each column (`mean`) and the weighted sum of squares about that mean
-// (`ss`, second pass).
+// (`ss`, second pass). A non-finite value in a column gives a non-finite `ss`
+// for it, also with a weight of 0 (perf_eval_gauss() relies on this).
 // [[Rcpp::export]]
 List wcol_moments_c(const arma::mat& mu, const IntegerVector& idx,
                     const arma::vec& scale, const arma::vec& wobs,
