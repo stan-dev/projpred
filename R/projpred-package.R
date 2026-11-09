@@ -87,9 +87,9 @@
 #'     [ordinal::clmm.control()]). If this fit fails or does not converge,
 #'     \pkg{projpred} refits with the default settings of [ordinal::clmm()]. An
 #'     argument `method` or `control` in `...` replaces this default. For the
-#'     `cloglog` and `loglog` links, \pkg{projpred} uses `useMatrix = TRUE`
-#'     (see [ordinal::clmm.control()]) and the default optimizer instead,
-#'     because the code of [ordinal::clmm()] for a single group-level term
+#'     `cloglog` and `loglog` links, \pkg{projpred} always uses
+#'     `useMatrix = TRUE` (see [ordinal::clmm.control()]) and does not use
+#'     `ucminf()`. The code of [ordinal::clmm()] for a single group-level term
 #'     uses the other of these two links.
 #' * Submodel without multilevel but additive terms: [mgcv::gam()] (the returned
 #' object inherits from class `gam`).
