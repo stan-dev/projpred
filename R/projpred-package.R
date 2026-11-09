@@ -292,6 +292,11 @@
 #' the latent projection) from cross-products of the model matrix (default
 #' `TRUE`). With `FALSE`, \pkg{projpred} projects onto each candidate submodel
 #' draw by draw. The cross-products are used only with a positive `regul`.
+#' * `projpred.categ_mlvl_mblogit`: A single logical value indicating whether to
+#' fit the multilevel submodels of the augmented-data projection for the
+#' [brms::categorical()] family with [mclogit::mblogit()] (`TRUE`) or with
+#' \pkg{projpred}'s own implementation of the PQL algorithm of
+#' [mclogit::mblogit()] (`FALSE`, the default).
 #'
 #' @name internal-global-options
 #' @keywords internal
