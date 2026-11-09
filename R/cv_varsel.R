@@ -202,7 +202,8 @@ cv_varsel.vsel <- function(
 ) {
   ## the following arguments should not change
   arg_nms_internal <- c("method", "ndraws", "nclusters", "nterms_max",
-                        "search_control", "penalty", "search_terms")
+                        "search_control", "penalty", "search_terms",
+                        "search_screen")
   dots <- list(...)
   arg_nms_internal_used <- intersect(arg_nms_internal, names(dots))
   for (arg in arg_nms_internal_used) {
@@ -256,6 +257,7 @@ cv_varsel.vsel <- function(
       search_control = object[["args_search"]][["search_control"]],
       penalty = object[["args_search"]][["penalty"]],
       search_terms = object[["args_search"]][["search_terms"]],
+      search_screen = object[["args_search"]][["search_screen"]],
       cv_method = cv_method,
       nloo = nloo,
       K = K,
@@ -291,6 +293,7 @@ cv_varsel.refmodel <- function(
     validate_search = TRUE,
     seed = NA,
     search_terms = NULL,
+    search_screen = NULL,
     search_out = NULL,
     parallel = getOption("projpred.parallel_cv", FALSE),
     ...
@@ -348,7 +351,7 @@ cv_varsel.refmodel <- function(
   args <- parse_args_varsel(
     refmodel = refmodel, method = method, refit_prj = refit_prj,
     nterms_max = nterms_max, nclusters = nclusters, search_terms = search_terms,
-    nterms_all = nterms_all, verbose = verbose
+    nterms_all = nterms_all, verbose = verbose, search_screen = search_screen
   )
   method <- args$method
   refit_prj <- args$refit_prj
@@ -356,6 +359,7 @@ cv_varsel.refmodel <- function(
   nclusters <- args$nclusters
   search_terms <- args$search_terms
   search_terms_was_null <- args$search_terms_was_null
+  search_screen <- args$search_screen
   verbose <- args$verbose
   # Parse arguments specific to cv_varsel():
   args <- parse_args_cv_varsel(
@@ -385,7 +389,8 @@ cv_varsel.refmodel <- function(
       # full-data search could be confusing:
       verbose_txt_add = if (validate_search) "using the full dataset " else "",
       search_control = search_control, search_terms = search_terms,
-      search_terms_was_null = search_terms_was_null, ...
+      search_terms_was_null = search_terms_was_null,
+      search_screen = search_screen, ...
     )
   }
 
@@ -421,7 +426,8 @@ cv_varsel.refmodel <- function(
       },
       search_terms = search_terms,
       search_terms_was_null = search_terms_was_null,
-      search_out_rks = search_out_rks, parallel = parallel, ...
+      search_out_rks = search_out_rks, parallel = parallel,
+      search_screen = search_screen, ...
     )
     if (validate_search && nloo < refmodel$nobs) {
       # Run fast LOO-CV to be used in subsampling difference estimator
@@ -437,7 +443,8 @@ cv_varsel.refmodel <- function(
         search_path_fulldata = search_path_fulldata,
         search_terms = search_terms,
         search_terms_was_null = search_terms_was_null,
-        search_out_rks = search_out_rks, parallel = parallel, ...
+        search_out_rks = search_out_rks, parallel = parallel,
+        search_screen = search_screen, ...
       )[["summaries"]]
     }
   } else if (cv_method == "kfold") {
@@ -457,7 +464,7 @@ cv_varsel.refmodel <- function(
         search_path_fulldata["predictor_ranking"]
       },
       search_terms = search_terms, search_out_rks = search_out_rks,
-      parallel = parallel, ...
+      parallel = parallel, search_screen = search_screen, ...
     )
   }
 
@@ -508,7 +515,8 @@ cv_varsel.refmodel <- function(
                   method == "forward" && is.null(search_control)
                 ) list(...) else search_control,
                 penalty,
-                search_terms = if (search_terms_was_null) NULL else search_terms
+                search_terms = if (search_terms_was_null) NULL else search_terms,
+                search_screen
               ),
               clust_used_search = refdist_info_search$clust_used,
               clust_used_eval = refdist_info_eval$clust_used,
@@ -615,7 +623,8 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
                        nclusters, ndraws_pred, nclusters_pred, refit_prj,
                        penalty, verbose, search_control, nloo, validate_search,
                        search_path_fulldata, search_terms,
-                       search_terms_was_null, search_out_rks, parallel, ...) {
+                       search_terms_was_null, search_out_rks, parallel,
+                       search_screen = NULL, ...) {
   ## Pre-processing ---------------------------------------------------------
 
   has_grp <- formula_contains_group_terms(refmodel$formula)
@@ -1054,7 +1063,7 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
           verbose_txt_add = vtxt_obs_i, search_control = search_control,
           search_terms = search_terms, est_runtime = FALSE,
           # The evaluation uses the search fits only with `refit_prj = FALSE`:
-          return_outdmins = !refit_prj, ...
+          return_outdmins = !refit_prj, search_screen = search_screen, ...
         )
       }
 
@@ -1354,7 +1363,7 @@ kfold_varsel <- function(refmodel, method, nterms_max, ndraws, nclusters,
                          ndraws_pred, nclusters_pred, refit_prj, penalty,
                          verbose, search_control, K, cvfits, validate_search,
                          search_path_fulldata, search_terms, search_out_rks,
-                         parallel, ...) {
+                         parallel, search_screen = NULL, ...) {
   # Fetch the K reference model fits (or fit them now if not already done) and
   # create objects of class `refmodel` from them (and also store the `omitted`
   # indices):
@@ -1436,7 +1445,7 @@ kfold_varsel <- function(refmodel, method, nterms_max, ndraws, nclusters,
         verbose_txt_add = vtxt_fold_k, search_control = search_control,
         search_terms = search_terms, est_runtime = FALSE,
         # The evaluation uses the search fits only with `refit_prj = FALSE`:
-        return_outdmins = !refit_prj, ...
+        return_outdmins = !refit_prj, search_screen = search_screen, ...
       )
     }
 
