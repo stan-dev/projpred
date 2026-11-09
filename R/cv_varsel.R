@@ -660,8 +660,18 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
       # computationally more efficient.
     }
   } else {
+    # The linear predictor gives the exact log-likelihood where the inverse
+    # link clamps `mu_offs` (binomial and Poisson families):
+    # (binomial and Poisson are not in fams_neg_linpred(), so the offset is
+    # added; the augmented-data projection uses its own log-likelihood):
+    eta_offs <- NULL
+    if (refmodel$family$family %in% c("binomial", "poisson") &&
+        !refmodel$family$for_augdat) {
+      eta_offs <- refmodel$eta + refmodel$offset
+    }
     loglik_forPSIS <- t(refmodel$family$ll_fun(
-      refmodel$mu_offs, refmodel$dis, refmodel$y, refmodel$wobs
+      refmodel$mu_offs, refmodel$dis, refmodel$y, refmodel$wobs,
+      eta = eta_offs
     ))
   }
   n <- ncol(loglik_forPSIS)
@@ -1231,8 +1241,11 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
     if (has_grp && getOption("projpred.mlvl_pred_new", FALSE)) {
       # Need to use `mlvl_allrandom = TRUE` (`loo_ref_oscale` is based on
       # `mlvl_allrandom = getOption("projpred.mlvl_proj_ref_new", FALSE)`):
+      # `eta` as in `loglik_forPSIS` (ignored by the augmented-data
+      # log-likelihood):
       loglik_mlvlRan <- t(refmodel$family$ll_fun(
-        mu_offs_mlvlRan, refmodel$dis, refmodel$y, refmodel$wobs
+        mu_offs_mlvlRan, refmodel$dis, refmodel$y, refmodel$wobs,
+        eta = eta_offs_mlvlRan
       ))
       lppd_ref <- apply(loglik_mlvlRan + lw, 2, log_sum_exp)
     } else {

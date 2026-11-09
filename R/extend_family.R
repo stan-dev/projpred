@@ -468,7 +468,7 @@ extend_family <- function(family,
     family$predvar <- function(mu, dis, wdraws = 1) {
       return(rep(NA, NROW(mu)))
     }
-    family$ll_fun <- function(mu, dis = NULL, y, weights = 1) {
+    family$ll_fun <- function(mu, dis = NULL, y, weights = 1, eta = NULL) {
       mu_arr <- augmat2arr(mu)
       return(ll_cats(mu_arr, y = y, wobs = weights))
     }
@@ -481,6 +481,58 @@ extend_family <- function(family,
   }
   family$is_extended <- TRUE
   return(family)
+}
+
+# The log-likelihood from the linear predictor `eta` (same dimensions as `ll`,
+# offsets included). binomial()$linkinv() gives 2.2e-16 and 1 - 2.2e-16 for
+# |eta| > 30, and log(1 - mu) loses digits for smaller positive `eta` too (1 -
+# mu has a relative rounding error of about 1.1e-16 * exp(eta)), so the
+# binomial (logit) function computes all entries from `eta`.
+# poisson()$linkinv() gives at least 2.2e-16 (eta < -36), and log(mu) is
+# accurate above that, so the Poisson (log) function computes only the clamped
+# entries of `ll` again. `y` and `weights` are recycled to the dimensions of
+# `ll`, as in dbinom() and dpois(). The product with a zero count or a zero
+# weight is 0, also for an infinite `eta`.
+ll_eta_binom_logit <- function(ll, eta, y, weights) {
+  ll_check_eta_dim(eta, ll)
+  idx <- which(!is.na(eta))
+  if (length(idx) == 0) {
+    return(ll)
+  }
+  y <- matrix(y, nrow = nrow(ll), ncol = ncol(ll))[idx]
+  w <- matrix(weights, nrow = nrow(ll), ncol = ncol(ll))[idx]
+  e <- eta[idx]
+  # dbinom(y, w, 0.5, log = TRUE) - w * log(0.5) is the log binomial
+  # coefficient, with the handling of invalid `y` of dbinom() (-Inf and a
+  # warning for a non-integer `y`; lchoose() would give a finite value):
+  ll[idx] <- dbinom(y, w, 0.5, log = TRUE) - w * log(0.5) +
+    ll_xlogp(y, plogis(e, log.p = TRUE)) +
+    ll_xlogp(w - y, plogis(-e, log.p = TRUE))
+  return(ll)
+}
+ll_clamped_poiss_log <- function(ll, eta, y, weights) {
+  ll_check_eta_dim(eta, ll)
+  idx <- which(exp(eta) < .Machine$double.eps)
+  if (length(idx) == 0) {
+    return(ll)
+  }
+  y <- matrix(y, nrow = nrow(ll), ncol = ncol(ll))[idx]
+  w <- matrix(weights, nrow = nrow(ll), ncol = ncol(ll))[idx]
+  e <- eta[idx]
+  # dpois(y, 1, log = TRUE) + 1 is -lgamma(y + 1), with the handling of invalid
+  # `y` of dpois():
+  ll[idx] <- ll_xlogp(w, dpois(y, 1, log = TRUE) + 1 + ll_xlogp(y, e) - exp(e))
+  return(ll)
+}
+ll_check_eta_dim <- function(eta, ll) {
+  if (!identical(dim(eta), dim(ll))) {
+    stop("Unexpected dimensions of `eta`. Please notify the package ",
+         "maintainer.")
+  }
+  return(invisible(TRUE))
+}
+ll_xlogp <- function(k, logp) {
+  ifelse(k == 0, 0, k * logp)
 }
 
 extend_family_binomial <- function(family) {
@@ -504,9 +556,13 @@ extend_family_binomial <- function(family) {
   predvar_na <- function(mu, dis, wdraws = 1) {
     rep(NA, NROW(mu))
   }
-  ll_binom <- function(mu, dis, y, weights = 1) {
+  ll_binom <- function(mu, dis, y, weights = 1, eta = NULL) {
     y <- as.matrix(y)
-    dbinom(y, weights, mu, log = TRUE)
+    ll <- dbinom(y, weights, mu, log = TRUE)
+    if (!is.null(eta) && family$link == "logit") {
+      ll <- ll_eta_binom_logit(ll, eta = eta, y = y, weights = weights)
+    }
+    ll
   }
   dev_binom <- function(mu, y, weights = 1, dis = NULL) {
     if (NCOL(y) < NCOL(mu)) {
@@ -591,9 +647,13 @@ extend_family_poisson <- function(family) {
   predvar_na <- function(mu, dis, wdraws = 1) {
     rep(NA, NROW(mu))
   }
-  ll_poiss <- function(mu, dis, y, weights = 1) {
+  ll_poiss <- function(mu, dis, y, weights = 1, eta = NULL) {
     y <- as.matrix(y)
-    weights * dpois(y, mu, log = TRUE)
+    ll <- weights * dpois(y, mu, log = TRUE)
+    if (!is.null(eta) && family$link == "log") {
+      ll <- ll_clamped_poiss_log(ll, eta = eta, y = y, weights = weights)
+    }
+    ll
   }
   dev_poiss <- function(mu, y, weights = 1, dis = NULL) {
     if (NCOL(y) < NCOL(mu)) {
@@ -683,7 +743,7 @@ extend_family_gaussian <- function(family) {
   predvar_mix_gauss <- function(dis2, mu_var, nobs) {
     predvar_mix_add(dis2, mu_var, nobs)
   }
-  ll_gauss <- function(mu, dis, y, weights = 1) {
+  ll_gauss <- function(mu, dis, y, weights = 1, eta = NULL) {
     y <- as.matrix(y)
     dis <- matrix(rep(dis, each = length(y)), ncol = NCOL(mu))
     weights * dnorm(y, mu, dis, log = TRUE)
@@ -738,7 +798,7 @@ extend_family_gamma <- function(family) {
   predvar_gamma <- function(mu, dis, wdraws = 1) {
     stop("Family Gamma not implemented yet.")
   }
-  ll_gamma <- function(mu, dis, y, weights = 1) {
+  ll_gamma <- function(mu, dis, y, weights = 1, eta = NULL) {
     y <- as.matrix(y)
     dis <- matrix(rep(dis, each = length(y)), ncol = NCOL(mu))
     weights * dgamma(y, dis, dis / matrix(mu), log = TRUE)
@@ -789,7 +849,7 @@ extend_family_student_t <- function(family) {
   predvar_mix_student_t <- function(dis2, mu_var, nobs) {
     predvar_mix_add(family$nu / (family$nu - 2) * dis2, mu_var, nobs)
   }
-  ll_student_t <- function(mu, dis, y, weights = 1) {
+  ll_student_t <- function(mu, dis, y, weights = 1, eta = NULL) {
     y <- as.matrix(y)
     dis <- matrix(rep(dis, each = length(y)), ncol = NCOL(mu))
     weights * (dt((y - mu) / dis, family$nu, log = TRUE) - log(dis))
