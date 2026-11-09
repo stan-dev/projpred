@@ -120,12 +120,7 @@
 #'   parallelization is powered by the \pkg{foreach} package. Thus, any parallel
 #'   (or sequential) backend compatible with \pkg{foreach} can be used, e.g.,
 #'   the backends from packages \pkg{doParallel}, \pkg{doMPI}, or
-#'   \pkg{doFuture}. With \pkg{doFuture}, we recommend the global option
-#'   `doFuture.foreach.export = ".export"`. The exported fold functions contain
-#'   all objects that the CV folds need. Without the option, \pkg{doFuture}
-#'   searches for further objects, which can take several seconds for a large
-#'   reference model. For GLMs, this CV parallelization should work reliably,
-#'   but
+#'   \pkg{doFuture}. For GLMs, this CV parallelization should work reliably, but
 #'   for other models (such as GLMMs), it may lead to excessive memory usage
 #'   which in turn may crash the R session (on Unix systems, setting an
 #'   appropriate memory limit via [unix::rlimit_as()] may avoid crashing the
@@ -1121,6 +1116,11 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
       }
       dot_args <- list(...)
       `%do_projpred%` <- doRNG::`%dorng%`
+      # one_obs() holds all objects that the folds need (see fun_with_objs()),
+      # so turn off doFuture's automatic search for further globals, which can
+      # take seconds for a large reference model:
+      opts_old <- options(doFuture.foreach.export = ".export")
+      on.exit(options(opts_old), add = TRUE)
       res_cv <- foreach::foreach(
         run_index = seq_along(inds),
         .packages = c("projpred"),
@@ -1138,6 +1138,7 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
         if (!is.null(progressor_obj)) progressor_obj()
         return(out_one_obs)
       }
+      options(opts_old)
     }
     # For storing the fold-wise predictor rankings:
     predictor_ranking_mat <- matrix(nrow = n, ncol = nterms_max)
@@ -1527,6 +1528,11 @@ kfold_varsel <- function(refmodel, method, nterms_max, ndraws, nclusters,
     }
     dot_args <- list(...)
     `%do_projpred%` <- doRNG::`%dorng%`
+    # one_fold() holds all objects that the folds need (see fun_with_objs()),
+    # so turn off doFuture's automatic search for further globals, which can
+    # take seconds for a large reference model:
+    opts_old <- options(doFuture.foreach.export = ".export")
+    on.exit(options(opts_old), add = TRUE)
     res_cv <- foreach::foreach(
       list_cv_k = list_cv,
       search_out_rks_k = search_out_rks,
@@ -1546,6 +1552,7 @@ kfold_varsel <- function(refmodel, method, nterms_max, ndraws, nclusters,
       if (!is.null(progressor_obj)) progressor_obj()
       return(out_one_fold)
     }
+    options(opts_old)
   }
   verb_out("-----", verbose = verbose)
   predictor_ranking_cv <- do.call(rbind,

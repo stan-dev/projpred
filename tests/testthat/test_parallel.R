@@ -105,12 +105,16 @@ test_that(paste(
   # environment, e.g., doFuture) and then runs the iterations sequentially.
   # It also runs the foreach loops of the projection parallelization (option
   # `projpred.parallel_proj_trigger`), which have no fold function.
+  # It also records the option `doFuture.foreach.export` during the fold
+  # loops.
   env_nms <- list()
+  export_opt <- list()
   do_record <- function(obj, expr, envir, data) {
     fun_nm <- intersect(c("one_obs", "one_fold"), obj$export)
     if (length(fun_nm) == 1L) {
       env_nms[[fun_nm]] <<- ls(environment(get(fun_nm, envir)),
                                all.names = TRUE)
+      export_opt[[fun_nm]] <<- getOption("doFuture.foreach.export")
     }
     it <- iterators::iter(obj)
     accumulator <- foreach::makeAccum(it)
@@ -136,6 +140,9 @@ test_that(paste(
     switch(item, name = "record", version = "0", workers = 1L, NULL)
   })
 
+  # cv_varsel() sets `doFuture.foreach.export = ".export"` for its fold loops
+  # only; check that it restores the user's value:
+  withr::local_options(list(doFuture.foreach.export = ".export-and-automatic"))
   refmod <- refmods[[tstsetup_ref]]
   for (cv_meth in c("LOO", "kfold")) {
     # Use suppressWarnings() because of Pareto-k warnings of the small data:
@@ -147,7 +154,11 @@ test_that(paste(
       parallel = TRUE, seed = seed_tst, verbose = FALSE
     ))
     expect_true(inherits(cvvs, "vsel"), info = cv_meth)
+    expect_identical(getOption("doFuture.foreach.export"),
+                     ".export-and-automatic", info = cv_meth)
   }
+  expect_identical(export_opt$one_obs, ".export")
+  expect_identical(export_opt$one_fold, ".export")
   expect_true("refmodel" %in% env_nms$one_obs)
   expect_false(any(c("psisloo", "loglik_forPSIS", "refdist_pred") %in%
                      env_nms$one_obs))
