@@ -48,6 +48,15 @@
   with 10 000 observations and 4 000 projected draws is about 7 times
   faster. (GitHub:
   [\#575](https://github.com/stan-dev/projpred/issues/575))
+- Faster and more accurate multilevel submodel fits for the
+  [`brms::categorical()`](https://paulbuerkner.com/brms/reference/brmsfamily.html)
+  family: projpred now uses its own implementation of the PQL algorithm
+  of
+  [`mclogit::mblogit()`](https://melff.github.io/mclogit/reference/mblogit.html),
+  with a corrected gradient. For example,
+  [`varsel()`](https://mc-stan.org/projpred/dev/reference/varsel.md) for
+  a model with 300 observations is about 26 times faster. (GitHub:
+  [\#597](https://github.com/stan-dev/projpred/issues/597))
 - Faster [`ordinal::clmm()`](https://rdrr.io/pkg/ordinal/man/clmm.html)
   submodel fits with a single group-level intercept: projpred now uses
   `ucminf()` with forward differences, and refits with

@@ -41,6 +41,11 @@ validated search for Gaussian submodels with the identity link (including
 the latent projection) from cross-products of the model matrix (default
 TRUE). With FALSE, projpred projects onto each candidate submodel
 draw by draw. The cross-products are used only with a positive regul.
+projpred.categ_mlvl_mblogit: A single logical value indicating whether to
+fit the multilevel submodels of the augmented-data projection for the
+brms::categorical() family with mclogit::mblogit() (TRUE) or with
+projpred's own implementation of the PQL algorithm of
+mclogit::mblogit() (FALSE, the default).
 
 "><meta property="og:description" content="The following global options are for internal use:
 projpred.mssg_ndraws, projpred.mssg_cut_search, projpred.mssg_time,
@@ -83,6 +88,11 @@ validated search for Gaussian submodels with the identity link (including
 the latent projection) from cross-products of the model matrix (default
 TRUE). With FALSE, projpred projects onto each candidate submodel
 draw by draw. The cross-products are used only with a positive regul.
+projpred.categ_mlvl_mblogit: A single logical value indicating whether to
+fit the multilevel submodels of the augmented-data projection for the
+brms::categorical() family with mclogit::mblogit() (TRUE) or with
+projpred's own implementation of the PQL algorithm of
+mclogit::mblogit() (FALSE, the default).
 
 "><meta property="og:image" content="https://mc-stan.org/projpred/logo.svg"><meta name="robots" content="noindex"></head><body>
     <a href="#main" class="visually-hidden-focusable">Skip to contents</a>
@@ -189,6 +199,11 @@ validated search for Gaussian submodels with the identity link (including
 the latent projection) from cross-products of the model matrix (default
 <code>TRUE</code>). With <code>FALSE</code>, <span class="pkg">projpred</span> projects onto each candidate submodel
 draw by draw. The cross-products are used only with a positive <code>regul</code>.</p></li>
+<li><p><code>projpred.categ_mlvl_mblogit</code>: A single logical value indicating whether to
+fit the multilevel submodels of the augmented-data projection for the
+<code><a href="https://paulbuerkner.com/brms/reference/brmsfamily.html" class="external-link">brms::categorical()</a></code> family with <code><a href="https://melff.github.io/mclogit/reference/mblogit.html" class="external-link">mclogit::mblogit()</a></code> (<code>TRUE</code>) or with
+<span class="pkg">projpred</span>'s own implementation of the PQL algorithm of
+<code><a href="https://melff.github.io/mclogit/reference/mblogit.html" class="external-link">mclogit::mblogit()</a></code> (<code>FALSE</code>, the default).</p></li>
 </ul></div>
 
 

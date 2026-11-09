@@ -57,3 +57,13 @@ The following global options are for internal use:
   matrix (default `TRUE`). With `FALSE`, projpred projects onto each
   candidate submodel draw by draw. The cross-products are used only with
   a positive `regul`.
+
+- `projpred.categ_mlvl_mblogit`: A single logical value indicating
+  whether to fit the multilevel submodels of the augmented-data
+  projection for the
+  [`brms::categorical()`](https://paulbuerkner.com/brms/reference/brmsfamily.html)
+  family with
+  [`mclogit::mblogit()`](https://melff.github.io/mclogit/reference/mblogit.html)
+  (`TRUE`) or with projpred's own implementation of the PQL algorithm of
+  [`mclogit::mblogit()`](https://melff.github.io/mclogit/reference/mblogit.html)
+  (`FALSE`, the default).
