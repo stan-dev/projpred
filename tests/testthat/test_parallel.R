@@ -10,7 +10,6 @@ if (run_prll) {
     withr::defer(doParallel::stopImplicitCluster())
   } else if (dopar_backend == "doFuture") {
     doFuture::registerDoFuture()
-    withr::local_options(list(doFuture.foreach.export = ".export"))
     withr::defer(future::plan(future::sequential))
     if (future_plan == "multicore") {
       future::plan(future::multicore, workers = ncores)
@@ -82,39 +81,30 @@ test_that("cv_varsel() in parallel gives the same results as sequentially", {
   }
 })
 
-# The two tests below do not need `run_prll`: the first one registers its own
-# (sequential) foreach backend, and the second one only reads code.
+# The three tests below do not need `run_prll`: the first two register their own
+# (sequential) foreach backend, and the third one only reads code.
 
-test_that(paste(
-  "the fold function of the parallel cv_varsel() holds only the objects that",
-  "it uses"
-), {
-  skip_if_not(run_cvvs)
-  skip_if_not_installed("foreach")
-  skip_if_not_installed("doRNG")
-  skip_if_not_installed("iterators")
-  # A GLM with K-fold fits (in the setup, these are the reference models
-  # without observation weights), preferably with the traditional projection:
-  tstsetups_ref <- names(cvfitss)[!sapply(cvfitss, inherits, "try-error")]
-  tstsetup_ref <- c(grep("\\.glm\\..*\\.trad", tstsetups_ref, value = TRUE),
-                    grep("\\.glm\\.", tstsetups_ref, value = TRUE))[1]
-  skip_if(is.na(tstsetup_ref))
-
-  # A foreach backend that records the objects in the environment of the fold
-  # function (these objects go to the workers with backends that keep the
-  # environment, e.g., doFuture) and then runs the iterations sequentially.
-  # It also runs the foreach loops of the projection parallelization (option
-  # `projpred.parallel_proj_trigger`), which have no fold function.
-  # It also records the option `doFuture.foreach.export` during the fold
-  # loops.
-  env_nms <- list()
-  export_opt <- list()
+# A foreach backend for the tests below. It records the objects in the
+# enclosing environment of the fold function (these objects go to the workers
+# with backends that keep the environment, e.g., doFuture) and the option
+# `doFuture.foreach.export` during the fold loops. Then it runs the iterations
+# sequentially, also those of the loops of the projection parallelization
+# (option `projpred.parallel_proj_trigger`), which have no fold function. With
+# `fail = TRUE`, it stops in the first fold loop. When `frame` exits, the
+# previous backend is registered again. foreach has no exported getter for the
+# registered backend, so this reads its internal store (the setup of this file
+# can have registered doParallel or doFuture).
+local_record_backend <- function(fail = FALSE, frame = parent.frame()) {
+  rec <- new.env()
+  rec$env_nms <- list()
+  rec$export_opt <- list()
   do_record <- function(obj, expr, envir, data) {
     fun_nm <- intersect(c("one_obs", "one_fold"), obj$export)
     if (length(fun_nm) == 1L) {
-      env_nms[[fun_nm]] <<- ls(environment(get(fun_nm, envir)),
-                               all.names = TRUE)
-      export_opt[[fun_nm]] <<- getOption("doFuture.foreach.export")
+      rec$env_nms[[fun_nm]] <- ls(environment(get(fun_nm, envir)),
+                                  all.names = TRUE)
+      rec$export_opt[fun_nm] <- list(getOption("doFuture.foreach.export"))
+      if (fail) stop("Stop of the recording foreach backend.")
     }
     it <- iterators::iter(obj)
     accumulator <- foreach::makeAccum(it)
@@ -124,9 +114,6 @@ test_that(paste(
     accumulator(results, seq_along(results))
     foreach::getResult(it)
   }
-  # Restore the registered backend at the end. foreach has no exported getter
-  # for the registered backend, so read its internal store (the setup of this
-  # file can have registered doParallel or doFuture):
   fe_globals <- foreach:::.foreachGlobals
   nms_reg <- c("fun", "data", "info")
   reg_old <- mget(nms_reg, envir = fe_globals, ifnotfound = list(NULL))
@@ -135,35 +122,90 @@ test_that(paste(
     if (!is.null(reg_old$fun)) {
       foreach::setDoPar(reg_old$fun, data = reg_old$data, info = reg_old$info)
     }
-  })
+  }, envir = frame)
   foreach::setDoPar(do_record, info = function(data, item) {
     switch(item, name = "record", version = "0", workers = 1L, NULL)
   })
+  rec
+}
 
-  # cv_varsel() sets `doFuture.foreach.export = ".export"` for its fold loops
-  # only; check that it restores the user's value:
-  withr::local_options(list(doFuture.foreach.export = ".export-and-automatic"))
-  refmod <- refmods[[tstsetup_ref]]
+# A GLM with K-fold fits (in the setup, these are the reference models without
+# observation weights), preferably with the traditional projection (`NA` if
+# there is none):
+tstsetup_ref_par <- function() {
+  tstsetups_ref <- names(cvfitss)[!sapply(cvfitss, inherits, "try-error")]
+  c(grep("\\.glm\\..*\\.trad", tstsetups_ref, value = TRUE),
+    grep("\\.glm\\.", tstsetups_ref, value = TRUE))[1]
+}
+
+cvvs_par <- function(tstsetup_ref, cv_meth) {
+  # Use suppressWarnings() because of Pareto-k warnings of the small data:
+  suppressWarnings(cv_varsel(
+    refmods[[tstsetup_ref]], cv_method = cv_meth,
+    cvfits = if (cv_meth == "kfold") cvfitss[[tstsetup_ref]],
+    validate_search = TRUE, nclusters = nclusters_tst,
+    nclusters_pred = nclusters_pred_tst, nterms_max = nterms_max_tst,
+    parallel = TRUE, seed = seed_tst, verbose = FALSE
+  ))
+}
+
+test_that(paste(
+  "the fold function of the parallel cv_varsel() holds only the objects that",
+  "it uses"
+), {
+  skip_if_not(run_cvvs)
+  skip_if_not_installed("foreach")
+  skip_if_not_installed("doRNG")
+  skip_if_not_installed("iterators")
+  tstsetup_ref <- tstsetup_ref_par()
+  skip_if(is.na(tstsetup_ref))
+  rec <- local_record_backend()
   for (cv_meth in c("LOO", "kfold")) {
-    # Use suppressWarnings() because of Pareto-k warnings of the small data:
-    cvvs <- suppressWarnings(cv_varsel(
-      refmod, cv_method = cv_meth,
-      cvfits = if (cv_meth == "kfold") cvfitss[[tstsetup_ref]],
-      validate_search = TRUE, nclusters = nclusters_tst,
-      nclusters_pred = nclusters_pred_tst, nterms_max = nterms_max_tst,
-      parallel = TRUE, seed = seed_tst, verbose = FALSE
-    ))
+    cvvs <- cvvs_par(tstsetup_ref, cv_meth)
     expect_true(inherits(cvvs, "vsel"), info = cv_meth)
-    expect_identical(getOption("doFuture.foreach.export"),
-                     ".export-and-automatic", info = cv_meth)
   }
-  expect_identical(export_opt$one_obs, ".export")
-  expect_identical(export_opt$one_fold, ".export")
-  expect_true("refmodel" %in% env_nms$one_obs)
+  expect_true("refmodel" %in% rec$env_nms$one_obs)
   expect_false(any(c("psisloo", "loglik_forPSIS", "refdist_pred") %in%
-                     env_nms$one_obs))
-  expect_true("refmodel" %in% env_nms$one_fold)
-  expect_false("list_cv" %in% env_nms$one_fold)
+                     rec$env_nms$one_obs))
+  expect_true("refmodel" %in% rec$env_nms$one_fold)
+  expect_false("list_cv" %in% rec$env_nms$one_fold)
+})
+
+test_that(paste(
+  "the parallel cv_varsel() sets `doFuture.foreach.export = \".export\"` only",
+  "for its fold loops"
+), {
+  skip_if_not(run_cvvs)
+  skip_if_not_installed("foreach")
+  skip_if_not_installed("doRNG")
+  skip_if_not_installed("iterators")
+  tstsetup_ref <- tstsetup_ref_par()
+  skip_if(is.na(tstsetup_ref))
+  rec <- local_record_backend()
+  # A value set by the user, and the option not set (the default):
+  for (opt_user in list(".export-and-automatic", NULL)) {
+    withr::local_options(list(doFuture.foreach.export = opt_user))
+    for (cv_meth in c("LOO", "kfold")) {
+      rec$export_opt <- list()
+      cvvs_par(tstsetup_ref, cv_meth)
+      fun_nm <- c(LOO = "one_obs", kfold = "one_fold")[[cv_meth]]
+      info_i <- paste(cv_meth, if (is.null(opt_user)) "NULL" else opt_user)
+      expect_identical(rec$export_opt[[fun_nm]], ".export", info = info_i)
+      expect_identical(getOption("doFuture.foreach.export"), opt_user,
+                       info = info_i)
+    }
+  }
+  # An error in the fold loop:
+  withr::local_options(list(doFuture.foreach.export = ".export-and-automatic"))
+  local({
+    local_record_backend(fail = TRUE)
+    for (cv_meth in c("LOO", "kfold")) {
+      expect_error(cvvs_par(tstsetup_ref, cv_meth),
+                   "Stop of the recording foreach backend", info = cv_meth)
+      expect_identical(getOption("doFuture.foreach.export"),
+                       ".export-and-automatic", info = cv_meth)
+    }
+  })
 })
 
 test_that(paste(
@@ -208,5 +250,17 @@ test_that(paste(
     listed <- eval(rhss[[which(is_slim)]][[3]])
     expect_setequal(intersect(globs$variables, outer_locals), listed)
     expect_length(intersect(globs$functions, outer_locals), 0)
+    # With `doFuture.foreach.export = ".export"`, the workers find all other
+    # free variables only if they are in the projpred namespace, its imports
+    # or base (not in the global environment):
+    others <- setdiff(c(globs$variables, globs$functions), outer_locals)
+    ns <- asNamespace("projpred")
+    in_ns <- vapply(others, function(nm) {
+      exists(nm, envir = ns, inherits = FALSE) ||
+        exists(nm, envir = parent.env(ns), inherits = FALSE) ||
+        exists(nm, envir = baseenv(), inherits = FALSE)
+    }, logical(1))
+    expect_true(all(in_ns), info = paste(outer_nm, ":",
+                                         paste(others[!in_ns], collapse = ", ")))
   }
 })

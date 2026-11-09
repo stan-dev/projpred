@@ -1117,8 +1117,11 @@ loo_varsel <- function(refmodel, method, nterms_max, ndraws,
       dot_args <- list(...)
       `%do_projpred%` <- doRNG::`%dorng%`
       # one_obs() holds all objects that the folds need (see fun_with_objs()),
-      # so turn off doFuture's automatic search for further globals, which can
-      # take seconds for a large reference model:
+      # and the loop body uses only `.export` objects and base functions. So
+      # doFuture can use only the `.export` objects (its "manual" mode) and
+      # skip its automatic search for further globals, which can take seconds
+      # for a large reference model. doFuture reads the option when the loop
+      # starts; restore it right after the loop (and on an error):
       opts_old <- options(doFuture.foreach.export = ".export")
       on.exit(options(opts_old), add = TRUE)
       res_cv <- foreach::foreach(
@@ -1529,8 +1532,11 @@ kfold_varsel <- function(refmodel, method, nterms_max, ndraws, nclusters,
     dot_args <- list(...)
     `%do_projpred%` <- doRNG::`%dorng%`
     # one_fold() holds all objects that the folds need (see fun_with_objs()),
-    # so turn off doFuture's automatic search for further globals, which can
-    # take seconds for a large reference model:
+    # and the loop body uses only `.export` objects, base functions and the
+    # exported do_call(). So doFuture can use only the `.export` objects (its
+    # "manual" mode) and skip its automatic search for further globals, which
+    # can take seconds for a large reference model. doFuture reads the option
+    # when the loop starts; restore it right after the loop (and on an error):
     opts_old <- options(doFuture.foreach.export = ".export")
     on.exit(options(opts_old), add = TRUE)
     res_cv <- foreach::foreach(
