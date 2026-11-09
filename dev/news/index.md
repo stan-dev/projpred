@@ -130,6 +130,13 @@
   [`varsel()`](https://mc-stan.org/projpred/dev/reference/varsel.md) for
   an additive model is about 1.5 times faster. (GitHub:
   [\#584](https://github.com/stan-dev/projpred/issues/584))
+- Faster reweighting of the clusters of the reference model draws in
+  [`cv_varsel()`](https://mc-stan.org/projpred/dev/reference/cv_varsel.md)
+  with `validate_search = TRUE`. For example,
+  [`cv_varsel()`](https://mc-stan.org/projpred/dev/reference/cv_varsel.md)
+  with `validate_search = TRUE` and 400 clusters is about 2 times faster
+  for a Gaussian model with 382 observations. (GitHub:
+  [\#601](https://github.com/stan-dev/projpred/issues/601))
 
 ### Minor changes
 
