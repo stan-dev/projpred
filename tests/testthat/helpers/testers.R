@@ -904,9 +904,13 @@ outdmin_tester_trad <- function(
     }
   } else if (has_grp && !has_add) {
     # projpred's own Laplace fit (see mlvl_laplace()) for binomial and Poisson
-    # submodels with random intercepts only and without offsets:
+    # submodels with random intercepts only and without offsets. setup.R
+    # passes `nAGQ` (an lme4::glmer() argument) to the Bernoulli
+    # augmented-data and `trad_compare` projections, which therefore use
+    # lme4::glmer():
+    uses_nagq <- grepl("\\.brnll\\..*\\.(augdat|trad_compare)\\.", info_str)
     is_mlvl <- sub_fam %in% c("binomial", "poisson") && !with_offs &&
-      getOption("projpred.mlvl_laplace", TRUE) &&
+      !uses_nagq && getOption("projpred.mlvl_laplace", TRUE) &&
       !getOption("projpred.PQL", FALSE) &&
       !is.null(mlvl_laplace_grps(sub_formul[[1]]))
     if (sub_fam == "gaussian") {
