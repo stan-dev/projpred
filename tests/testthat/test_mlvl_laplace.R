@@ -127,6 +127,13 @@ test_that(paste(
                           weights = c(d$y, 1 - d$y))
   expect_equal(fit_aug$coefficients, fit_trad$coefficients, tolerance = 1e-5)
   expect_equal(fit_aug$sd, fit_trad$sd, tolerance = 1e-4)
+  # A factor response, as in the augmented-data projection (first level:
+  # failure):
+  d_aug$y <- factor(d_aug$y, levels = c(0, 1))
+  fit_fac <- fit_mlvl_tst(y ~ x + (1 | g), d_aug, binomial(),
+                          weights = c(d$y, 1 - d$y))
+  expect_s3_class(fit_fac, "projpred_mlvl")
+  expect_equal(fit_fac$coefficients, fit_aug$coefficients, tolerance = 1e-10)
 })
 
 test_that(paste(

@@ -54,6 +54,11 @@ mlvl_laplace_design <- function(formula, data, weights, grps, fam) {
   if (attr(trms, "intercept") != 1) return(NULL)
   x <- model.matrix(trms, mf)
   y <- model.response(mf)
+  # A factor response (the augmented-data projection) as in glm(): the first
+  # level is failure, all others are success:
+  if (fam == 0L && (is.factor(y) || is.logical(y))) {
+    y <- if (is.factor(y)) as.numeric(y != levels(y)[1]) else as.numeric(y)
+  }
   if (anyNA(x) || !is.numeric(y) || !is.null(dim(y)) || anyNA(y) ||
       qr(x)$rank < ncol(x)) {
     return(NULL)

@@ -915,7 +915,8 @@ outdmin_tester_trad <- function(
       }
     } else if (is_mlvl) {
       for (j in seq_along(outdmin_totest)) {
-        expect_s3_class(outdmin_totest[[!!j]], "projpred_mlvl")
+        expect_true(inherits(outdmin_totest[[!!j]], "projpred_mlvl"),
+                    info = info_str)
       }
     } else {
       for (j in seq_along(outdmin_totest)) {
