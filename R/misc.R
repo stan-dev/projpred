@@ -550,37 +550,108 @@ get_p_clust <- function(family, eta, mu, mu_offs, dis, nclusters = 10,
   }
 
   # (Re)compute the cluster centers, because they may be different from the ones
-  # returned by kmeans() if the draws have differing weights.
+  # returned by kmeans() if the draws have differing weights. `cl` has one
+  # element per draw (column of `mu`).
   # Number of clusters (assumes labeling "1, ..., nclusters"):
   nclusters <- max(cl, na.rm = TRUE)
-  # Cluster centers:
-  centers <- matrix(0, nrow = dim(mu)[1], ncol = nclusters)
-  # The same centers, but taking offsets into account:
-  centers_offs <- matrix(0, nrow = dim(mu_offs)[1], ncol = nclusters)
-  # Cluster weights:
-  wcluster <- rep(0, nclusters)
-  # Dispersion parameter draws aggregated within each cluster:
-  dis_agg <- rep(NA_real_, nclusters)
-  # Predictive variances:
-  predvar <- matrix(nrow = dim(mu)[1], ncol = nclusters)
+  # Draw indices of each cluster (one pass over `cl`; draws with `cl` `NA` are
+  # in no cluster). match() compares numbers, as `cl == j` does:
+  cl_ind <- match(cl, seq_len(nclusters))
+  ind_by_cl <- split(seq_along(cl),
+                     factor(cl_ind, levels = seq_len(nclusters)))
   eps <- 1e-10
-  for (j in 1:nclusters) {
-    ind <- which(cl == j)
+  nobs <- dim(mu)[1]
+  # Use `family$predvar_mix` only if `family$predvar` is the function that it
+  # belongs to (a user can replace `family$predvar`):
+  use_mix <- !is.null(family$predvar_mix) &&
+    identical(family$predvar, attr(family$predvar_mix, "predvar"))
+  # The weighted mean of `dis^2` and the weighted variance of `mu_offs` within
+  # the clusters are needed only if `family$predvar_mix` uses them:
+  need_var <- use_mix && !isFALSE(attr(family$predvar_mix, "uses_moments"))
+  if (all(lengths(ind_by_cl) == 1L)) {
+    # One draw per cluster (thinned draws, or as many clusters as draws). This
+    # gives the same results as the cluster loop at the end, for all clusters
+    # at once.
+    idx <- unlist(ind_by_cl, use.names = FALSE)
+    wcluster <- unname(as.numeric(wdraws[idx]))
+    ws <- wcluster / wcluster * (1 - eps)
+    # Usually, all draws are used in their order, and `w / w` is exactly 1
+    # (for a finite nonzero weight), so that `ws` is `1 - eps`. Then one
+    # product with a scalar gives the centers, without copies of the draws:
+    all_draws <- identical(idx, seq_len(ncol(mu)))
+    ws_mult <- if (!anyNA(ws)) 1 - eps else rep(ws, each = nobs)
+    scale_draws <- function(m) {
+      if (!all_draws) {
+        m <- unclass(m)[, idx, drop = FALSE]
+      }
+      out <- m * ws_mult
+      attributes(out) <- list(dim = dim(out))
+      out
+    }
+    centers <- scale_draws(mu)
+    centers_offs <- scale_draws(mu_offs)
+    dis_agg <- unname(as.numeric(dis[idx]) * ws)
+    if (use_mix) {
+      # The variance across one draw is 0 (NaN for a non-finite `mu_offs`, as
+      # in rowvar_wdraws()):
+      mu_var <- 0
+      if (need_var) {
+        mu_offs_idx <- unclass(mu_offs)
+        if (!all_draws) {
+          mu_offs_idx <- mu_offs_idx[, idx, drop = FALSE]
+        }
+        if (length(mu_offs_idx) > 0 && !all(is.finite(range(mu_offs_idx)))) {
+          mu_var <- (mu_offs_idx - mu_offs_idx)^2
+          attributes(mu_var) <- list(dim = dim(mu_var))
+        }
+      }
+      predvar <- family$predvar_mix(as.numeric(dis[idx])^2, mu_var, nobs)
+    }
+  } else {
+    # Several draws in a cluster: weighted moments of the draws in compiled
+    # code. The results differ from the cluster loop only by rounding.
+    wcluster <- vapply(ind_by_cl, function(ind) sum(wdraws[ind]), numeric(1),
+                       USE.NAMES = FALSE)
+    wn <- as.numeric(wdraws) / wcluster[cl_ind]
+    wn[is.na(cl_ind)] <- 0
+    mom <- clust_moments_c(
+      mu, mu_offs, as.numeric(dis)[seq_along(cl)], wn,
+      ifelse(is.na(cl_ind), -1L, cl_ind - 1L), nclusters, need_var
+    )
+    centers <- mom$mu * (1 - eps)
+    centers_offs <- mom$mu_offs * (1 - eps)
+    dis_agg <- mom$dis * (1 - eps)
+    if (use_mix) {
+      predvar <- family$predvar_mix(mom$dis2, mom$var_offs, nobs)
+    }
+  }
+  # The cluster loop: for the predictive variances without
+  # `family$predvar_mix`, and for the clusters with a weight sum of 0, Inf or
+  # NaN, or without draws (so that NA and NaN propagate as in the loop):
+  ind_loop <- which(!is.finite(wcluster) | wcluster == 0)
+  if (!use_mix) {
+    predvar <- matrix(nrow = nobs, ncol = nclusters)
+    ind_loop <- seq_len(nclusters)
+  }
+  for (j in ind_loop) {
+    ind <- ind_by_cl[[j]]
     # Compute normalized weights within the j-th cluster; `1 - eps` is for
     # numerical stability:
-    ws <- wdraws[ind] / sum(wdraws[ind]) * (1 - eps)
-
-    # Center of the j-th cluster:
-    centers[, j] <- mu[, ind, drop = FALSE] %*% ws
-    # The same centers, but taking offsets into account:
-    centers_offs[, j] <- mu_offs[, ind, drop = FALSE] %*% ws
-    # Unnormalized weight for the j-th cluster:
-    wcluster[j] <- sum(wdraws[ind])
-    # Aggregated dispersion parameter for the j-th cluster:
-    dis_agg[j] <- crossprod(dis[ind], ws)
+    ws_j <- wdraws[ind] / sum(wdraws[ind]) * (1 - eps)
     # Predictive variance for the j-th cluster:
-    predvar[, j] <- family$predvar(mu_offs[, ind, drop = FALSE], dis[ind], ws)
+    predvar[, j] <- family$predvar(mu_offs[, ind, drop = FALSE], dis[ind],
+                                   ws_j)
+    if (is.finite(wcluster[j]) && wcluster[j] != 0) {
+      next
+    }
+    # Center of the j-th cluster:
+    centers[, j] <- mu[, ind, drop = FALSE] %*% ws_j
+    # The same centers, but taking offsets into account:
+    centers_offs[, j] <- mu_offs[, ind, drop = FALSE] %*% ws_j
+    # Aggregated dispersion parameter for the j-th cluster:
+    dis_agg[j] <- crossprod(dis[ind], ws_j)
   }
+  predvar <- unname(predvar)
   wcluster <- wcluster / sum(wcluster)
 
   # combine the results

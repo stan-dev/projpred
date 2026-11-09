@@ -81,7 +81,12 @@
 #'     + For the augmented-data projection: [ordinal::clmm()] (the returned
 #'     object inherits from class `clmm`) for the [brms::cumulative()] family,
 #'     [mclogit::mblogit()] (the returned object inherits from class `mmblogit`)
-#'     for the [brms::categorical()] family.
+#'     for the [brms::categorical()] family. For [ordinal::clmm()] with a single
+#'     group-level term `(1 | <group>)`, \pkg{projpred} uses
+#'     `method = "ucminf"` and `grad = "forward"` (see
+#'     [ordinal::clmm.control()]). If this fit fails or does not converge,
+#'     \pkg{projpred} refits with the default settings of [ordinal::clmm()]. An
+#'     argument `method` or `control` in `...` replaces this default.
 #' * Submodel without multilevel but additive terms: [mgcv::gam()] (the returned
 #' object inherits from class `gam`).
 #' * Submodel with multilevel and additive terms: [gamm4::gamm4()] (within
@@ -287,6 +292,11 @@
 #' the latent projection) from cross-products of the model matrix (default
 #' `TRUE`). With `FALSE`, \pkg{projpred} projects onto each candidate submodel
 #' draw by draw. The cross-products are used only with a positive `regul`.
+#' * `projpred.categ_mlvl_mblogit`: A single logical value indicating whether to
+#' fit the multilevel submodels of the augmented-data projection for the
+#' [brms::categorical()] family with [mclogit::mblogit()] (`TRUE`) or with
+#' \pkg{projpred}'s own implementation of the PQL algorithm of
+#' [mclogit::mblogit()] (`FALSE`, the default).
 #'
 #' @name internal-global-options
 #' @keywords internal

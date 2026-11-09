@@ -1,6 +1,6 @@
 test_that(paste(
   "select_possible_terms_size() gives the same candidates with and without",
-  "`term_info`"
+  "search_term_info()"
 ), {
   term_sets <- list(
     union("1", split_formula(
@@ -19,7 +19,7 @@ test_that(paste(
       for (size in 1:8) {
         cands <- select_possible_terms_size(chosen, st, size)
         cands_info <- select_possible_terms_size(chosen, st, size,
-                                                 term_info = info)
+                                                 use_term_info = TRUE)
         expect_identical(cands_info, cands)
         if (is.null(cands)) next
         chosen <- c(chosen, cands[sample.int(length(cands), 1)])
