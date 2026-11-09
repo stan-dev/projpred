@@ -16,15 +16,14 @@ using namespace arma;
 // of nnet::nnet(); this code uses Newton steps with the analytic gradient and
 // Hessian and a backtracking line search.
 
-// Objective (and optionally gradient and Hessian) at the coefficients `b`
-// (p x K, K = C - 1; stored column-wise in the parameter vector).
-static double ml_eval(const mat& x, const mat& w, const vec& nw, const mat& b,
-                      bool deriv, vec& grad, mat& hess) {
+// Objective at the coefficients `b` (p x K, K = C - 1; stored column-wise in
+// the parameter vector). Also writes the probabilities pi_ik (k >= 1) into
+// `pr` (n x K), from which ml_deriv() computes the derivatives.
+static double ml_loss(const mat& x, const mat& w, const mat& b, mat& pr) {
   const uword n = x.n_rows;
-  const uword p = x.n_cols;
   const uword K = b.n_cols;
   mat eta = x * b;  // n x K
-  mat pr(n, K);
+  pr.set_size(n, K);
   double loss = 0.0;
   for (uword i = 0; i < n; ++i) {
     double m = 0.0;
@@ -40,24 +39,30 @@ static double ml_eval(const mat& x, const mat& w, const vec& nw, const mat& b,
       if (w(i, k + 1) != 0.0) loss -= w(i, k + 1) * lp;
     }
   }
-  if (deriv) {
-    grad.set_size(p * K);
-    hess.set_size(p * K, p * K);
-    for (uword k = 0; k < K; ++k) {
-      vec r = nw % pr.col(k) - w.col(k + 1);
-      grad.subvec(k * p, (k + 1) * p - 1) = x.t() * r;
-      for (uword l = k; l < K; ++l) {
-        vec d = -nw % pr.col(k) % pr.col(l);
-        if (l == k) d += nw % pr.col(k);
-        mat h = x.t() * (x.each_col() % d);
-        hess.submat(k * p, l * p, (k + 1) * p - 1, (l + 1) * p - 1) = h;
-        if (l != k) {
-          hess.submat(l * p, k * p, (l + 1) * p - 1, (k + 1) * p - 1) = h.t();
-        }
+  return loss;
+}
+
+// Gradient and Hessian of the objective, from the probabilities `pr` of
+// ml_loss():
+static void ml_deriv(const mat& x, const mat& w, const vec& nw, const mat& pr,
+                     vec& grad, mat& hess) {
+  const uword p = x.n_cols;
+  const uword K = pr.n_cols;
+  grad.set_size(p * K);
+  hess.set_size(p * K, p * K);
+  for (uword k = 0; k < K; ++k) {
+    vec r = nw % pr.col(k) - w.col(k + 1);
+    grad.subvec(k * p, (k + 1) * p - 1) = x.t() * r;
+    for (uword l = k; l < K; ++l) {
+      vec d = -nw % pr.col(k) % pr.col(l);
+      if (l == k) d += nw % pr.col(k);
+      mat h = x.t() * (x.each_col() % d);
+      hess.submat(k * p, l * p, (k + 1) * p - 1, (l + 1) * p - 1) = h;
+      if (l != k) {
+        hess.submat(l * p, k * p, (l + 1) * p - 1, (k + 1) * p - 1) = h.t();
       }
     }
   }
-  return loss;
 }
 
 // Fits one weight matrix `w` (n x C). The model matrix `x` contains the
@@ -81,7 +86,9 @@ static double ml_fit_one(const mat& x, const mat& w, int icpt, double thresh,
   }
   vec grad;
   mat hess;
-  double loss = ml_eval(x, w, nw, b, true, grad, hess);
+  mat pr;
+  double loss = ml_loss(x, w, b, pr);
+  ml_deriv(x, w, nw, pr, grad, hess);
   conv = 1;
   niter = 0;
   // Non-finite objective at the start values: not converged.
@@ -111,16 +118,19 @@ static double ml_fit_one(const mat& x, const mat& w, int icpt, double thresh,
       break;
     }
     mat bdir = reshape(dir, p, K);
+    // Backtracking line search. The trials compute only the objective; the
+    // derivatives at the accepted point come from its stored probabilities,
+    // so that the point needs no second evaluation.
     double t = 1.0;
     bool accepted = false;
-    mat b_new;
-    vec grad_new;
-    mat hess_new;
+    double loss_accepted = 0.0;
+    mat b_new, pr_new;
     for (int ls = 0; ls < 60; ++ls) {
       b_new = b + t * bdir;
-      double loss_new = ml_eval(x, w, nw, b_new, false, grad_new, hess_new);
+      double loss_new = ml_loss(x, w, b_new, pr_new);
       if (std::isfinite(loss_new) && loss_new <= loss - 1e-4 * t * decrement) {
         accepted = true;
+        loss_accepted = loss_new;
         break;
       }
       t *= 0.5;
@@ -130,7 +140,9 @@ static double ml_fit_one(const mat& x, const mat& w, int icpt, double thresh,
       break;
     }
     b = b_new;
-    loss = ml_eval(x, w, nw, b, true, grad, hess);
+    loss = loss_accepted;
+    pr.swap(pr_new);
+    ml_deriv(x, w, nw, pr, grad, hess);
   }
   return loss;
 }
