@@ -743,6 +743,7 @@ outdmin_tester_trad <- function(
     augdat_cats = NULL,
     allow_w_zero = FALSE,
     check_y_from_resp = TRUE,
+    uses_nagq = FALSE,
     seq_extensive_tests = seq_extensive_tests,
     nobsv = nobsv,
     info_str
@@ -904,11 +905,8 @@ outdmin_tester_trad <- function(
     }
   } else if (has_grp && !has_add) {
     # projpred's own Laplace fit (see mlvl_laplace()) for binomial and Poisson
-    # submodels with random intercepts only and without offsets. setup.R
-    # passes `nAGQ` (an lme4::glmer() argument) to the Bernoulli
-    # augmented-data and `trad_compare` projections, which therefore use
-    # lme4::glmer():
-    uses_nagq <- grepl("\\.brnll\\..*\\.(augdat|trad_compare)\\.", info_str)
+    # submodels with random intercepts only and without offsets (and without
+    # lme4::glmer() arguments such as `nAGQ`):
     is_mlvl <- sub_fam %in% c("binomial", "poisson") && !with_offs &&
       !uses_nagq && getOption("projpred.mlvl_laplace", TRUE) &&
       !getOption("projpred.PQL", FALSE) &&
@@ -1447,6 +1445,9 @@ outdmin_tester_aug <- function(
 #   weights are allowed to have a value of zero (`TRUE`) or not (`FALSE`).
 # @param check_y_from_resp A single logical value indicating whether to check
 #   elements `outdmin_totest[[j]]@resp$y` for GLMMs (`TRUE`) or not (`FALSE`).
+# @param uses_nagq A single logical value indicating whether the divergence
+#   minimizer got argument `nAGQ` (then binomial and Poisson multilevel
+#   submodels are fitted by lme4::glmer(), not by mlvl_laplace()).
 # @param info_str A single character string giving information to be printed in
 #   case of failure.
 #
@@ -1465,6 +1466,7 @@ outdmin_tester <- function(
     augdat_cats = NULL,
     allow_w_zero = FALSE,
     check_y_from_resp = TRUE,
+    uses_nagq = FALSE,
     info_str
 ) {
   expect_type(outdmin_totest, "list")
@@ -1515,6 +1517,7 @@ outdmin_tester <- function(
       augdat_cats = augdat_cats,
       allow_w_zero = allow_w_zero,
       check_y_from_resp = check_y_from_resp,
+      uses_nagq = uses_nagq,
       seq_extensive_tests = seq_extensive_tests,
       nobsv = nobsv,
       info_str = info_str
@@ -1770,6 +1773,10 @@ projection_tester <- function(p,
                  wobs_expected = wobs_expected_crr,
                  prd_trms_vsel_L1_search = prd_trms_vsel_L1_search_crr,
                  augdat_cats = augdat_cats_crr,
+                 # setup.R passes `nAGQ` to the Bernoulli augmented-data and
+                 # `trad_compare` projections:
+                 uses_nagq = grepl("\\.brnll\\..*\\.(augdat|trad_compare)\\.",
+                                   info_str),
                  info_str = info_str)
 
   # dis
