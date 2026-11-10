@@ -614,10 +614,14 @@ test_that(paste(
       }
       expect_identical(step$cands, ref, info = info)
       if (is.null(ref)) {
-        expect_null(step$labels_new, info = info)
+        expect_null(step$idx, info = info)
         next
       }
-      expect_identical(step$labels_new, lapply(ref, function(cand) {
+      # The new labels of the candidates, from the index of their search term:
+      labels_new <- lapply(single$lab[step$idx], function(l) {
+        if (is.na(l)) character(0) else l
+      })
+      expect_identical(labels_new, lapply(ref, function(cand) {
         setdiff(labels_gauss(cand), labels_chosen)
       }), info = info)
     }

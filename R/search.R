@@ -190,7 +190,8 @@ single_label_info <- function(term_info) {
 
 # The candidates of one search step for the output `single` of
 # single_label_info(): the result `cands` of select_possible_terms_size() and
-# the new term labels `labels_new` of each candidate, without formula code.
+# the index `idx` of the search term of each candidate, without formula code.
+# The new term label of a candidate is `single$lab[idx]` (`NA`: no new label).
 # With one label per term, the size of a candidate is the number of chosen
 # labels, plus one for a new label, plus one for the intercept. `cands` is
 # `NULL` if no candidate has the size. Returns `NULL` if a candidate is a term
@@ -205,15 +206,12 @@ cands_single_label <- function(single, labels_chosen, size) {
     return(NULL)
   }
   if (!any(is_valid)) {
-    return(list(cands = NULL, labels_new = NULL))
+    return(list(cands = NULL, idx = NULL))
   }
-  cands <- single$out[is_valid]
-  lab <- single$lab[is_valid]
+  idx <- which(is_valid)
+  cands <- single$out[idx]
   keep <- !duplicated(cands)
-  labels_new <- lapply(lab[keep], function(l) {
-    if (is.na(l)) character(0) else l
-  })
-  return(list(cands = cands[keep], labels_new = labels_new))
+  return(list(cands = cands[keep], idx = idx[keep]))
 }
 
 # Forward search for Gaussian submodels with the identity link, from the
@@ -352,6 +350,13 @@ search_forward_gauss <- function(p_ref, refmodel, nterms_max, verbose,
   y_chosen <- NULL
   term_info <- search_term_info(search_terms)
   single <- single_label_info(term_info)
+  if (!is.null(single)) {
+    # The columns of each search term (none for "1"), looked up by name once
+    # for all steps. `NULL`: the model matrix has no columns for the label.
+    cols_term <- unname(cols_by_term[single$lab])
+    cols_term[is.na(single$lab)] <- list(integer(0))
+    term_has_cols <- !vapply(cols_term, is.null, logical(1))
+  }
   for (size in seq_len(nterms_max + 1L)) {
     step <- NULL
     if (!is.null(single)) {
@@ -359,23 +364,29 @@ search_forward_gauss <- function(p_ref, refmodel, nterms_max, verbose,
     }
     if (!is.null(step)) {
       cands <- step$cands
-      labels_new <- step$labels_new
+      if (is.null(cands)) {
+        next
+      }
+      if (!all(term_has_cols[step$idx])) {
+        return(NULL)
+      }
+      cols_cands <- cols_term[step$idx]
     } else {
       cands <- select_possible_terms_size(chosen, search_terms, size = size,
                                           use_term_info = TRUE)
+      if (is.null(cands)) {
+        next
+      }
       labels_new <- lapply(cands, function(cand) {
         setdiff(labels_of(cand), labels_chosen)
       })
+      if (!all(unlist(labels_new) %in% names(cols_by_term))) {
+        return(NULL)
+      }
+      cols_cands <- lapply(labels_new, function(lbls) {
+        unlist(cols_by_term[lbls], use.names = FALSE)
+      })
     }
-    if (is.null(cands)) {
-      next
-    }
-    if (!all(unlist(labels_new) %in% names(cols_by_term))) {
-      return(NULL)
-    }
-    cols_cands <- lapply(labels_new, function(lbls) {
-      unlist(cols_by_term[lbls], use.names = FALSE)
-    })
     crits <- rep(NA_real_, length(cands))
     is_single <- lengths(cols_cands) == 1L
     if (any(is_single)) {
@@ -411,7 +422,11 @@ search_forward_gauss <- function(p_ref, refmodel, nterms_max, verbose,
         y_chosen <- rbind(y_chosen, best$y_n)
       }
       cols_chosen <- c(cols_chosen, cols_new)
-      labels_chosen <- c(labels_chosen, labels_new[[imin]])
+      labels_chosen <- c(labels_chosen, if (!is.null(step)) {
+        single$lab[step$idx[imin]]
+      } else {
+        labels_new[[imin]]
+      })
     }
   }
 
