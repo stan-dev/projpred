@@ -122,11 +122,13 @@ labels_gauss <- function(term_string) {
 # size in `nterms`, the projected dispersion, the cross-entropy and the
 # predictions for the test data, without the draw-wise submodel fits. Returns
 # the list `out_by_size` of perf_eval() (elements `sub_summary`, `ce` and
-# `dis_sub`), or `NULL` if a condition does not hold.
+# `dis_sub`), or `NULL` if a condition does not hold. For a `p_ref` from
+# get_p_clust(as_moments = TRUE), the function `p_ref_full` (no arguments)
+# must return the get_p_clust() result with the draw matrices.
 perf_eval_gauss <- function(search_path, nterms, refmodel, p_ref,
                             refmodel_fulldata, indices_test, newdata_test,
                             offset_test, wobs_test, y_test, y_oscale_test,
-                            divmin_args) {
+                            divmin_args, p_ref_full) {
   regul <- gauss_crossprod_regul(refmodel, divmin_args)
   ranking <- search_path$predictor_ranking
   if (is.null(regul) || length(nterms) == 0 || any(nterms > length(ranking)) ||
@@ -159,16 +161,19 @@ perf_eval_gauss <- function(search_path, nterms, refmodel, p_ref,
     # `p_ref` (see get_p_clust()): the center of cluster j is
     # `ws[j] * draws_offs[, idx[j]]`, and its predictive variance is
     # `draws_predvar[j]` for all observations.
+    mom <- wcol_moments_c(p_ref$draws_offs, p_ref$idx - 1L, p_ref$ws, wobs,
+                          sum_w)
+    if (!all(is.finite(mom$ss))) {
+      # A non-finite value in a projected draw (or an overflow) gives a
+      # non-finite sum of squares. The predictive variances can then depend on
+      # the observation, so the full `p_ref` is needed:
+      p_ref <- p_ref_full()
+    }
+  }
+  if (isTRUE(p_ref$moments_only)) {
     draws <- p_ref$draws_offs
     idx <- p_ref$idx
     ws <- p_ref$ws
-    mom <- wcol_moments_c(draws, idx - 1L, ws, wobs, sum_w)
-    if (!all(is.finite(mom$ss))) {
-      # get_p_clust() returns finite draws here, so only an overflow of the
-      # sums of squares gives this case. Then perf_eval() uses the draw-wise
-      # projections.
-      return(NULL)
-    }
     sum_wvar <- p_ref$draws_predvar * sum_w
     if (identical(idx, seq_len(ncol(draws)))) {
       c_mat <- crossprod(des$x_cw, draws)

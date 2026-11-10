@@ -214,6 +214,63 @@ test_that(paste(
   }
 })
 
+test_that(paste(
+  "perf_eval() with non-finite projected draws gives the results of the full",
+  "reweighted reference distribution"
+), {
+  ns <- asNamespace("projpred")
+  refm <- refm_search_gauss(y ~ x1 + x2 + x3, n = 40, ndraws = 30)
+  S <- ncol(refm$mu)
+  set.seed(7702)
+  wdraws <- exp(rnorm(S))
+  # As in a LOO fold, the test observation has the weight 0:
+  refm_fold <- refm
+  refm_fold$wobs[3] <- 0
+  # A NaN for an observation with a weight, and an infinite value for the
+  # observation with the weight 0 (0 * Inf gives NaN in the weighted sums):
+  for (el in c("eta", "mu", "mu_offs")) {
+    refm_fold[[el]][5, 2] <- NaN
+    refm_fold[[el]][3, 4] <- Inf
+  }
+  run_eval <- function() {
+    perf_eval(
+      search_path = list(predictor_ranking = c("x2", "x1")),
+      refmodel = refm_fold, refit_prj = TRUE, ndraws = S, nclusters = NULL,
+      reweighting_args = list(cl_ref = seq_len(S), wdraws_ref = wdraws),
+      return_dis_sub = TRUE, refmodel_fulldata = refm, indices_test = 3L
+    )
+  }
+  n_light <- 0L
+  n_full <- 0L
+  trace("get_p_clust", exit = function() {
+    if (isTRUE(returnValue()$moments_only)) {
+      n_light <<- n_light + 1L
+    } else {
+      n_full <<- n_full + 1L
+    }
+  }, print = FALSE, where = ns)
+  on.exit(untrace("get_p_clust", where = ns))
+  n_gauss <- 0L
+  trace("perf_eval_gauss", exit = function() {
+    if (!is.null(returnValue())) n_gauss <<- n_gauss + 1L
+  }, print = FALSE, where = ns)
+  on.exit(untrace("perf_eval_gauss", where = ns), add = TRUE)
+  out_light <- run_eval()
+  # perf_eval_gauss() got the reference distribution without draw matrices,
+  # then the full one, and gave the results. The counts check this path; the
+  # results below do not depend on it.
+  expect_identical(c(n_light, n_full, n_gauss), c(1L, 1L, 1L))
+  for (dis_sub in out_light$dis_sub) {
+    expect_identical(which(is.na(dis_sub)), c(2L, 4L))
+  }
+  # The same computations with the full reference distribution from the start:
+  trace("get_p_clust", tracer = quote(as_moments <- FALSE), print = FALSE,
+        where = ns)
+  out_full <- run_eval()
+  expect_identical(n_gauss, 2L)
+  expect_identical(out_light, out_full)
+})
+
 test_that("search_forward_gauss() applies to Gaussian GLM-type submodels", {
   refm <- refm_search_gauss(fml_search_gauss)
   p_ref <- get_refdist(refm, nclusters = 3)
@@ -531,8 +588,8 @@ test_that(paste(
 })
 
 test_that(paste(
-  "cands_single_label() gives the candidates and new labels of",
-  "select_possible_terms_size()"
+  "cands_single_label() gives the candidates of",
+  "select_possible_terms_size() and the indices of their search terms"
 ), {
   search_terms <- c("1", "x1", "x2", "x3", "f", "poly(x3, 2)", "x2:x1")
   term_info <- search_term_info(search_terms)
@@ -557,10 +614,15 @@ test_that(paste(
       }
       expect_identical(step$cands, ref, info = info)
       if (is.null(ref)) {
-        expect_null(step$labels_new, info = info)
+        expect_null(step$idx, info = info)
         next
       }
-      expect_identical(step$labels_new, lapply(ref, function(cand) {
+      expect_identical(single$out[step$idx], step$cands, info = info)
+      # The new labels of the candidates, from the index of their search term:
+      labels_new <- lapply(single$lab[step$idx], function(l) {
+        if (is.na(l)) character(0) else l
+      })
+      expect_identical(labels_new, lapply(ref, function(cand) {
         setdiff(labels_gauss(cand), labels_chosen)
       }), info = info)
     }
@@ -621,3 +683,50 @@ test_that(paste(
   }
 })
 
+test_that(paste(
+  "search_forward_gauss() handles a step without the candidates from",
+  "cands_single_label() and a label without model-matrix columns"
+), {
+  refm <- refm_search_gauss(y ~ x1 + x2 + x3 + x4 + f + x1:x2)
+  p_ref <- get_refdist(refm, nclusters = 3)
+  search_terms <- c("1", "x1", "x2", "x3", "x4", "f", "x1:x2")
+  run_search <- function() {
+    search_forward_gauss(p_ref = p_ref, refmodel = refm, nterms_max = 4,
+                         verbose = FALSE, search_terms = search_terms)
+  }
+  out <- run_search()
+  expect_false(is.null(out))
+  # In the step of size 3, the candidates come from
+  # select_possible_terms_size(); in the other steps from
+  # cands_single_label():
+  cands_orig <- cands_single_label
+  sizes <- integer(0)
+  out_mixed <- with_mocked_bindings(
+    run_search(),
+    cands_single_label = function(single, labels_chosen, size) {
+      sizes <<- c(sizes, size)
+      if (size == 3L) {
+        return(NULL)
+      }
+      cands_orig(single, labels_chosen, size)
+    }
+  )
+  expect_identical(sizes, 1:5)
+  expect_identical(out_mixed, out)
+  # Without model-matrix columns for the label `x3`, the search gives `NULL`
+  # (then search_forward() runs its own search), with and without the
+  # candidates from cands_single_label():
+  design_orig <- gauss_crossprod_design
+  design_no_x3 <- function(...) {
+    des <- design_orig(...)
+    des$cols_by_term <- des$cols_by_term[setdiff(names(des$cols_by_term), "x3")]
+    des
+  }
+  expect_null(with_mocked_bindings(run_search(),
+                                   gauss_crossprod_design = design_no_x3))
+  expect_null(with_mocked_bindings(
+    run_search(),
+    gauss_crossprod_design = design_no_x3,
+    single_label_info = function(term_info) NULL
+  ))
+})

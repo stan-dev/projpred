@@ -43,7 +43,7 @@ test_that(paste(
 
 test_that(paste(
   "get_p_clust(as_moments = TRUE) describes the centers and predictive",
-  "variances of get_p_clust()"
+  "variances of get_p_clust(), and wcol_moments_c() shows non-finite draws"
 ), {
   set.seed(9310)
   n <- 25
@@ -82,16 +82,32 @@ test_that(paste(
   w_0[3] <- 0
   expect_null(do.call(get_p_clust,
                       modifyList(args, list(cl = seq_len(S), wdraws = w_0))))
-  # A non-finite value in a projected draw, but not in a draw that is not used:
-  args_inf <- args
-  args_inf$mu_offs[2, 2] <- Inf
-  expect_null(do.call(get_p_clust, c(args_inf, list(cl = seq_len(S)))))
-  args_inf$mu_offs[2, 2] <- NaN
-  expect_null(do.call(get_p_clust, c(args_inf, list(cl = seq_len(S)))))
-  expect_null(do.call(get_p_clust, c(args_inf, list(cl = thin))))
+  # get_p_clust() does not check the projected draws. A non-finite value in a
+  # projected draw gives a non-finite sum of squares in wcol_moments_c(), also
+  # with a weight of 0 for its observation (perf_eval_gauss() checks this), but
+  # not in a draw that is not used:
+  wobs <- rep(1, n)
+  wobs[2] <- 0
+  ss_finite <- function(mom, wobs) {
+    stopifnot(isTRUE(mom$moments_only))
+    is.finite(wcol_moments_c(mom$draws_offs, mom$idx - 1L, mom$ws, wobs,
+                             sum(wobs))$ss)
+  }
+  for (val in c(Inf, -Inf, NaN, NA)) {
+    args_inf <- args
+    args_inf$mu_offs[2, 2] <- val
+    for (cl in list(seq_len(S), thin)) {
+      mom <- do.call(get_p_clust, c(args_inf, list(cl = cl)))
+      expect_true(isTRUE(mom$moments_only))
+      for (w in list(rep(1, n), wobs)) {
+        expect_identical(which(!ss_finite(mom, w)), which(mom$idx == 2L))
+      }
+    }
+  }
   args_inf <- args
   args_inf$mu_offs[2, 3] <- Inf
-  expect_false(is.null(do.call(get_p_clust, c(args_inf, list(cl = thin)))))
+  mom <- do.call(get_p_clust, c(args_inf, list(cl = thin)))
+  expect_true(all(ss_finite(mom, wobs)))
   # A user-defined `family$predvar` (no `predvar_mix` for it):
   fam_user <- extend_family(gaussian())
   fam_user$predvar <- function(mu, dis, wdraws = 1) {

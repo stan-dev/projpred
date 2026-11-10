@@ -534,13 +534,15 @@ get_p_clust <- function(family, eta, mu, mu_offs, dis, nclusters = 10,
                         wdraws = rep(1, dim(mu)[2]), cl = NULL,
                         clust_used_forced = NULL, as_moments = FALSE) {
   # With `as_moments = TRUE`, the function returns `NULL` or, for a given `cl`
-  # with one draw per cluster, finite nonzero weights, finite projected draws
-  # and a `family$predvar_mix` (whose predictive variance does not depend on
-  # the observation), a list without the observations x clusters matrices
+  # with one draw per cluster, finite nonzero weights and a
+  # `family$predvar_mix`, a list without the observations x clusters matrices
   # `mu`, `mu_offs` and `var`. Instead, the list has `draws_offs` (the input
   # `mu_offs`), the draw `idx` and the factor `ws` of each cluster (cluster
   # center `ws[j] * mu_offs[, idx[j]]`), and `draws_predvar` (the predictive
-  # variance of cluster j for all observations). See perf_eval_gauss().
+  # variance of cluster j for all observations). The function also returns
+  # the list for non-finite projected draws, where `draws_predvar` can be
+  # wrong (see `mu_var` below). perf_eval_gauss() detects them with the
+  # weighted sums of squares and then uses the full result.
   # (The names do not start with "mu" or "var", because `$` matches partial
   # names.)
   if (as_moments && is.null(cl)) {
@@ -598,15 +600,6 @@ get_p_clust <- function(family, eta, mu, mu_offs, dis, nclusters = 10,
     all_draws <- identical(idx, seq_len(ncol(mu)))
     if (as_moments) {
       if (!use_mix || anyNA(ws)) {
-        return(NULL)
-      }
-      # A non-finite value in a projected draw gives predictive variances that
-      # depend on the observation (see below), so the full version is needed:
-      mu_offs_idx <- unclass(mu_offs)
-      if (!all_draws) {
-        mu_offs_idx <- mu_offs_idx[, idx, drop = FALSE]
-      }
-      if (length(mu_offs_idx) > 0 && !all(is.finite(range(mu_offs_idx)))) {
         return(NULL)
       }
       return(list(
