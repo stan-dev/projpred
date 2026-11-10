@@ -1850,8 +1850,8 @@ cumul_native_multi <- function(formula, data, family, ws_aug, dot_args) {
   }))
 }
 
-# Use ordinal::clmm() to fit multilevel submodels for the brms::cumulative()
-# family:
+# Fit multilevel submodels for the brms::cumulative() family: projpred's own
+# Laplace fit for a single group-level intercept term, else ordinal::clmm():
 fit_cumul_mlvl <- function(formula, data, family, weights,
                            mlvl_laplace = getOption("projpred.mlvl_laplace",
                                                     TRUE),
@@ -1886,11 +1886,20 @@ fit_cumul_mlvl <- function(formula, data, family, weights,
                               weights = weights)
     if (!is.null(fit)) {
       if (fit$convergence == 0) return(fit)
-      return(mlvl_cumul_from_clmm(
-        fit_cumul_mlvl(formula = formula, data = data, family = family,
-                       weights = weights, mlvl_laplace = FALSE, ...),
-        formula, failed = fit
+      # The default code of ordinal::clmm() for a single group-level intercept
+      # term swaps the links cloglog and loglog; `useMatrix = TRUE` selects its
+      # other code:
+      args_clmm <- if (family$link %in% c("cloglog", "loglog")) {
+        list(control = ordinal::clmm.control(useMatrix = TRUE))
+      } else {
+        list()
+      }
+      fit_clmm <- do.call(fit_cumul_mlvl, c(
+        list(formula = formula, data = data, family = family,
+             weights = weights, mlvl_laplace = FALSE),
+        args_clmm, list(...)
       ))
+      return(mlvl_cumul_from_clmm(fit_clmm, formula, failed = fit))
     }
   }
   data$projpred_internal_w_aug <- weights
@@ -2547,7 +2556,8 @@ subprd_augdat <- function(fits, newdata) {
   }
   # Fits of projpred's Laplace fitter (see mlvl_laplace_cumul()): all draws at
   # once:
-  if (all(vapply(fits, inherits, logical(1), "projpred_mlvl_cumul"))) {
+  if (length(fits) > 0 &&
+      all(vapply(fits, inherits, logical(1), "projpred_mlvl_cumul"))) {
     return(subprd_mlvl_cumul(fits, newdata))
   }
   is_clmm <- vapply(fits, inherits, logical(1), "clmm")

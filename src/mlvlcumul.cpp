@@ -64,8 +64,9 @@ static inline void mc_funs(int link, double z, double& F, double& S, double& f,
     F = std::exp(-e);
     S = -std::expm1(-e);
     f = std::exp(-z - e);
-    g = f * (e - 1);
-    k = f * ((e - 1) * (e - 1) - e);
+    // In the far tail, f is 0 and e is infinite:
+    g = (f > 0) ? f * (e - 1) : 0.0;
+    k = (f > 0) ? f * ((e - 1) * (e - 1) - e) : 0.0;
     break;
   }
   case MC_CLOGLOG: {
@@ -73,8 +74,8 @@ static inline void mc_funs(int link, double z, double& F, double& S, double& f,
     F = -std::expm1(-e);
     S = std::exp(-e);
     f = std::exp(z - e);
-    g = f * (1 - e);
-    k = f * ((1 - e) * (1 - e) - e);
+    g = (f > 0) ? f * (1 - e) : 0.0;
+    k = (f > 0) ? f * ((1 - e) * (1 - e) - e) : 0.0;
     break;
   }
   case MC_CAUCHIT: {
@@ -96,6 +97,9 @@ static inline void mc_funs(int link, double z, double& F, double& S, double& f,
 // with respect to e1, e2.
 struct McParts {
   double l, m, h, l1, l2, m1, m2, h1, h2;
+  bool finite() const {
+    return std::isfinite(l + m + h + l1 + l2 + m1 + m2 + h1 + h2);
+  }
 };
 
 // F(z1) - F(z2), from the upper tails if both arguments are positive:
@@ -127,8 +131,11 @@ static inline McParts mc_parts(int link, double z1, double z2, double w) {
 // Objective L and (for `want_grad`) its gradient with respect to (alpha, beta,
 // tau), at the conditional modes u_hat found from the start `u`. `grp` holds
 // 0-based level codes, `y` 1-based category codes. Rows with weight 0 are
-// ignored. L is `Inf` if the thresholds do not increase or if a category
-// probability with positive weight is not positive.
+// ignored. L is `Inf` if the thresholds do not increase, or if a category
+// probability with positive weight is not positive or so small that the
+// derivatives are not finite. `gmax` is the largest absolute element of the
+// gradient with respect to u at the returned `u` (0 at the conditional
+// modes).
 // [[Rcpp::export]]
 List mlvl_cumul_c(const arma::vec& alpha, const arma::vec& beta, double tau,
                   const arma::mat& x, const IntegerVector& grp, int nlev,
@@ -181,6 +188,7 @@ List mlvl_cumul_c(const arma::vec& alpha, const arma::vec& beta, double tau,
       Mg[grp[i]] += r.m;
       Hg[grp[i]] += r.h;
     }
+    if (!Mg.is_finite() || !Hg.is_finite()) return out_inf;
     vec grad_u = tau * Mg + u;
     if (max(abs(grad_u)) < tol) break;
     // Newton step per group; a gradient step where the Hessian is not
@@ -214,16 +222,19 @@ List mlvl_cumul_c(const arma::vec& alpha, const arma::vec& beta, double tau,
     if (w[i] == 0) continue;
     double s = tau * u[grp[i]];
     parts[i] = mc_parts(link, e1[i] - s, e2[i] - s, w[i]);
+    if (!parts[i].finite()) return out_inf;
     lsum += parts[i].l;
     Mg[grp[i]] += parts[i].m;
     Hg[grp[i]] += parts[i].h;
     HSg[grp[i]] -= parts[i].h1 + parts[i].h2;
   }
   vec Dg = 1 + tau * tau * Hg;
-  if (!(Dg.min() > 0)) return out_inf;
+  if (!Dg.is_finite() || !(Dg.min() > 0)) return out_inf;
   double L = lsum + 0.5 * dot(u, u) + 0.5 * accu(log(Dg));
+  double gmax = max(abs(tau * Mg + u));
   if (!want_grad) {
-    return List::create(Named("L") = L, Named("u") = u);
+    return List::create(Named("L") = L, Named("u") = u,
+                        Named("gmax") = gmax);
   }
   vec cg = 0.5 / Dg;
   vec eg = cg * std::pow(tau, 3) % HSg / Dg;
@@ -247,5 +258,7 @@ List mlvl_cumul_c(const arma::vec& alpha, const arma::vec& beta, double tau,
     grad.subvec(alpha.n_elem, alpha.n_elem + beta.n_elem - 1) = -x.t() * qsum;
   }
   grad[grad.n_elem - 1] = g_tau;
-  return List::create(Named("L") = L, Named("u") = u, Named("grad") = grad);
+  if (!std::isfinite(L) || !grad.is_finite()) return out_inf;
+  return List::create(Named("L") = L, Named("u") = u, Named("grad") = grad,
+                      Named("gmax") = gmax);
 }

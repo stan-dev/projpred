@@ -7,6 +7,9 @@
 # approximation, see `src/mlvlcumul.cpp`): with thresholds alpha, coefficients
 # beta and group-level intercepts b,
 #   P(y <= j) = F(alpha_j - x' beta - b_g).
+# For the links cloglog and loglog, they are those of the code of clmm() for
+# `useMatrix = TRUE`; its default code for a single group-level intercept term
+# swaps these two links.
 # It minimizes the objective with nlminb() and the exact gradient. The returned
 # object has class `c("projpred_mlvl_cumul", "projpred_mlvl")`.
 # fit_cumul_mlvl() calls it; other multilevel submodels of this family keep
@@ -97,9 +100,12 @@ mlvl_cumul_obj <- function(des, link_code, alpha, beta, tau) {
 # thresholds from the weighted proportions of the categories, beta 0, tau 1.
 # The objective is even in tau, so tau = 0 is a stationary point where the
 # gradient-based search can stop: if tau ends below `small_tau`, restart from
-# `restart_tau` and keep the lower objective.
+# `restart_tau` and keep the lower objective. Each evaluation starts the search
+# for the conditional modes at those of the last evaluation. The fit has not
+# converged (code 2) if the gradient with respect to the conditional modes is
+# above `tol_modes` at the optimum.
 mlvl_cumul_optim <- function(des, link, rel_tol = 1e-10, small_tau = 1e-3,
-                             restart_tau = 0.3) {
+                             restart_tau = 0.3, tol_modes = 1e-6) {
   n_thres <- length(des$lev) - 1L
   p <- ncol(des$x)
   idx_alpha <- seq_len(n_thres)
@@ -146,8 +152,14 @@ mlvl_cumul_optim <- function(des, link, rel_tol = 1e-10, small_tau = 1e-3,
   tau <- opt$par[idx_tau]
   ev <- mlvl_cumul_c(alpha, beta, tau, des$x, des$grp, des$nlev, des$y, des$w,
                      cache$u, link$code, FALSE)
+  convergence <- opt$convergence
+  message <- opt$message
+  if (convergence == 0 && !isTRUE(ev$gmax < tol_modes)) {
+    convergence <- 2L
+    message <- "the search for the conditional modes did not converge"
+  }
   return(list(alpha = alpha, beta = beta, tau = tau, u = ev$u, objective = ev$L,
-              convergence = opt$convergence, message = opt$message,
+              convergence = convergence, message = message,
               iterations = opt$iterations, n_restart = n_restart))
 }
 
@@ -228,8 +240,7 @@ mlvl_cumul_from_clmm <- function(fit, formula, failed) {
   alpha <- unname(fit$alpha)
   tau <- unname(attr(vc[[des$grp_nm]], "stddev"))
   link <- mlvl_cumul_link(fit$link)
-  obj <- tryCatch(mlvl_cumul_obj(des, link$code, alpha, beta, tau),
-                  error = function(e) NA_real_)
+  obj <- mlvl_cumul_obj(des, link$code, alpha, beta, tau)
   return(new_projpred_mlvl_cumul(
     formula, link$name, des, alpha = alpha, coefficients = beta, sd = tau,
     ranef = re[[1]][des$lvls, "(Intercept)"], deviance = 2 * obj,
@@ -280,7 +291,8 @@ subprd_mlvl_cumul <- function(fits, newdata, as_array = TRUE) {
     }
     prd <- matrix(fit$alpha, nrow = n, ncol = length(fit$alpha),
                   byrow = TRUE) - (eta + b_lv)
-    dimnames(prd) <- list(rownames(newdata), fit$lev[-length(fit$lev)])
+    # The dimnames of the ordinal::clmm() path:
+    dimnames(prd) <- list(as.character(seq_len(n)), fit$lev[-length(fit$lev)])
     prd
   })
   if (!as_array) return(prd_list)
@@ -305,6 +317,13 @@ predict.projpred_mlvl_cumul <- function(object, newdata, ...) {
                 byrow = TRUE) - (eta + b)
   dimnames(prd) <- list(rownames(newdata), names(object$alpha))
   return(prd)
+}
+
+# The thresholds and the regression coefficients:
+#' @noRd
+#' @export
+coef.projpred_mlvl_cumul <- function(object, ...) {
+  return(c(object$alpha, object$coefficients))
 }
 
 #' @noRd

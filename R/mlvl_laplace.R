@@ -279,6 +279,8 @@ mlvl_from_merMod <- function(fit, formula, failed) {
 # uses another order of the draws).
 subprd_mlvl <- function(fits, newdata) {
   stopifnot(!is.null(newdata))
+  # Cumulative fits have their own function (subprd_mlvl_cumul()):
+  stopifnot(!inherits(fits[[1]], "projpred_mlvl_cumul"))
   pred_new <- getOption("projpred.mlvl_pred_new", FALSE)
   # Group levels, as in repair_re.merMod():
   grps <- names(fits[[1]]$sd)
