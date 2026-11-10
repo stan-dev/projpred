@@ -159,12 +159,16 @@ search_forward_latent_mlvl <- function(p_ref, refmodel, nterms_max, verbose,
   wobs <- refmodel$wobs
   mu_ref <- unclass(p_ref$mu)
   if (!is.matrix(mu_ref) || nrow(mu_ref) != nrow(dat) ||
-      length(wobs) != nrow(dat) || any(wobs <= 0)) {
+      length(wobs) != nrow(dat) || any(wobs < 0)) {
     return(NULL)
   }
   wdraws <- p_ref$wdraws_prj
   dat$.projpred_eta <- drop(mu_ref %*% (wdraws / sum(wdraws)))
   dat$.projpred_w <- wobs
+  # The screen fits use the observations with a positive weight (a fold of
+  # LOO CV sets the weight of the left-out observation to zero):
+  dat <- dat[wobs > 0, , drop = FALSE]
+  wobs <- wobs[wobs > 0]
   env_fml <- environment(refmodel$formula)
 
   # The right-hand side of a submodel. A term "(x | g)" includes the
