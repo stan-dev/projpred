@@ -24,9 +24,8 @@ jobs:
           - {os: ubuntu-latest,   r: 'devel', http-user-agent: 'release'}
           - {os: ubuntu-latest,   r: 'release'}
           - {os: ubuntu-latest,   r: 'oldrel-1'}
-          # The lowest R version in DESCRIPTION. The current gamm4 needs a
-          # newer R, so this job uses an older gamm4:
-          - {os: ubuntu-latest,   r: '4.2', extra-packages: 'gamm4@0.2-6'}
+          # The lowest R version in DESCRIPTION:
+          - {os: ubuntu-latest,   r: '4.4'}
 
     env:
       GITHUB_PAT: ${{ secrets.GITHUB_TOKEN }}
@@ -53,7 +52,6 @@ jobs:
               any::RcppEigen
               any::RcppParallel
               any::StanHeaders
-              ${{ matrix.config.extra-packages }}
           needs: check
 
       - uses: r-lib/actions/check-r-package@v2

@@ -629,13 +629,6 @@ nlist <- function(...) {
   dots
 }
 
-# The `%||%` special binary (infix) operator from brms (equivalent to the
-# `%ORifNULL%` operator from rstanarm):
-`%||%` <- function(x, y) {
-  if (is.null(x)) x <- y
-  x
-}
-
 #' Execute a function call
 #'
 #' Execute a function call similar to [do.call()], but without deparsing
