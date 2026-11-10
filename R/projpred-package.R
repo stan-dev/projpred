@@ -78,6 +78,12 @@
 #'     so both optimization stages use BOBYQA. A `control` argument in `...`
 #'     replaces this default in the first fit. After some \pkg{lme4} errors,
 #'     \pkg{projpred} refits with its own settings and ignores this `control`.
+#'     For the [binomial()] family, \pkg{lme4} versions before 2.1-1 round
+#'     non-integer responses and weights in the objective of [lme4::glmer()]
+#'     with `nAGQ >= 1`. With these \pkg{lme4} versions, \pkg{projpred} uses
+#'     `nAGQ = 0` for such submodels unless `nAGQ` is set via `...`. Then the
+#'     fixed effects and the group-level effects do not depend on the rounded
+#'     objective; the group-level standard deviations still do.
 #'     + For the augmented-data projection: [ordinal::clmm()] (the returned
 #'     object inherits from class `clmm`) for the [brms::cumulative()] family,
 #'     [mclogit::mblogit()] (the returned object inherits from class `mmblogit`)
