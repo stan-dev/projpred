@@ -127,8 +127,9 @@ For <code><a href="plot.vsel.html">plot.vsel()</a></code>, <code>nterms_max</cod
 
 
 <dt id="arg-stats">stats<a class="anchor" aria-label="anchor" href="#arg-stats"></a></dt>
-<dd><p>One or more character strings determining which performance
-statistics (i.e., utilities or losses) to estimate based on the
+<dd><p>One or more character strings (or <code><a href="custom_stat.html">custom_stat()</a></code> objects, see
+below) determining which performance statistics (i.e., utilities or
+losses) to estimate based on the
 observations in the evaluation (or "test") set (in case of
 cross-validation, these are all observations because they are partitioned
 into multiple test sets; in case of <code><a href="varsel.html">varsel()</a></code> with <code>d_test = NULL</code>, these
@@ -175,7 +176,10 @@ mentioned in section "Details" below). For the corresponding standard error
 and lower and upper uncertainty interval bounds, bootstrapping is used. Not
 supported in case of subsampled LOO-CV (see argument <code>nloo</code> of
 <code><a href="cv_varsel.html">cv_varsel()</a></code>).</p></li>
-</ul></dd>
+</ul><p>For a user-defined statistic, use <code><a href="custom_stat.html">custom_stat()</a></code>. <code>stats</code> then takes one
+<code><a href="custom_stat.html">custom_stat()</a></code> object, or a <code>list</code> of single character strings (built-in
+statistics) and <code><a href="custom_stat.html">custom_stat()</a></code> objects, for example
+<code>stats = list("elpd", custom_stat(...))</code>.</p></dd>
 
 
 <dt id="arg-type">type<a class="anchor" aria-label="anchor" href="#arg-type"></a></dt>

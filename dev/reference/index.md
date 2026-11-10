@@ -25,6 +25,9 @@
 - [`cl_agg()`](https://mc-stan.org/projpred/dev/reference/cl_agg.md) :
   Weighted averaging within clusters of parameter draws
 
+- [`custom_stat()`](https://mc-stan.org/projpred/dev/reference/custom_stat.md)
+  : Custom predictive performance statistic
+
 - [`cv_folds()`](https://mc-stan.org/projpred/dev/reference/cv-indices.md)
   [`cvfolds()`](https://mc-stan.org/projpred/dev/reference/cv-indices.md)
   [`cv_ids()`](https://mc-stan.org/projpred/dev/reference/cv-indices.md)

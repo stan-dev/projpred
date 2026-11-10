@@ -359,7 +359,7 @@ In
 with `cv_method = "kfold"`, the reference model objects of the \\K\\
 folds are created by the `cvrefbuilder` function (see
 [`init_refmodel()`](https://mc-stan.org/projpred/dev/reference/refmodel-init-get.md)).
-The `cvrefbuilder` functions of
+The default `cvrefbuilder` functions of
 [`get_refmodel.stanreg()`](https://mc-stan.org/projpred/dev/reference/refmodel-init-get.md)
 and
 [`brms::get_refmodel.brmsfit()`](https://paulbuerkner.com/brms/reference/get_refmodel.brmsfit.html)
@@ -373,14 +373,15 @@ use the draws from the full-data fit. To use the draws from the
 fold-wise refits, define the functions (and compute `dis`) inside a
 function that takes the fitted model object as its argument and calls
 [`get_refmodel()`](https://mc-stan.org/projpred/dev/reference/refmodel-init-get.md).
-Then set element `cvrefbuilder` of the reference model object to a
-function that calls this outer function with the fold-wise refit.
-(Methods
-[`get_refmodel.stanreg()`](https://mc-stan.org/projpred/dev/reference/refmodel-init-get.md)
-and
+Then define a function that calls this outer function with the fold-wise
+refit. For an rstanarm reference model, pass this function as argument
+`cvrefbuilder` of
+[`get_refmodel.stanreg()`](https://mc-stan.org/projpred/dev/reference/refmodel-init-get.md).
+Method
 [`brms::get_refmodel.brmsfit()`](https://paulbuerkner.com/brms/reference/get_refmodel.brmsfit.html)
-do not accept a `cvrefbuilder` argument.) The latent-projection vignette
-shows an example.
+does not accept a `cvrefbuilder` argument; for a brms reference model,
+set element `cvrefbuilder` of the reference model object to this
+function instead. The latent-projection vignette shows an example.
 
 If `family$cats` is not `NULL` (after taking `latent_y_unqs` into
 account), then the response vector resulting from `extract_model_data`

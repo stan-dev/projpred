@@ -318,7 +318,7 @@ print(time_lat)
 ```
 
        user  system elapsed 
-      0.261   0.000   0.202 
+      0.254   0.002   0.198 
 
 The message telling that `<refmodel>$dis` consists of only `NA`s will
 not concern us here because we will only focus on response-scale
@@ -431,7 +431,7 @@ print(time_trad)
 ```
 
        user  system elapsed 
-       0.92    0.00    0.55 
+      0.849   0.000   0.519 
 
 ``` r
 
@@ -816,7 +816,7 @@ cvvs_weib <- cv_varsel(
     Warning: Some (1 / 500) Pareto k's for the reference model's PSIS-LOO weights
     are > 0.7.
 
-    Warning: In the recalculation of the latent response values, some (5 / 500) expectation-specific Pareto k-values are > 0.7.
+    Warning: In the recalculation of the latent response values, some (6 / 500) expectation-specific Pareto k-values are > 0.7.
     In general, we recommend K-fold CV in this case.
 
     Warning: Some Pareto k diagnostic values are too high. See help('pareto-k-diagnostic') for details.
@@ -824,7 +824,7 @@ cvvs_weib <- cv_varsel(
     Warning: Some (1 / 500) Pareto k's for the reference model's PSIS-LOO weights
     are > 0.7.
 
-    Warning: In the recalculation of the latent response values, some (5 / 500) expectation-specific Pareto k-values are > 0.7.
+    Warning: In the recalculation of the latent response values, some (6 / 500) expectation-specific Pareto k-values are > 0.7.
     In general, we recommend K-fold CV in this case.
 
     Using standard importance sampling (SIS) due to a small number of clusters.
@@ -1106,7 +1106,7 @@ with `cv_method = "LOO"`, because these use only the full-data fit. With
 `cv_method = "kfold"`, the reference model is refitted in each fold, and
 **projpred** creates the fold-wise reference model objects with the
 function in element `cvrefbuilder` of the reference model object. The
-`cvrefbuilder` functions of
+default `cvrefbuilder` functions of
 [`get_refmodel.stanreg()`](https://mc-stan.org/projpred/dev/reference/refmodel-init-get.md)
 and
 [`brms::get_refmodel.brmsfit()`](https://paulbuerkner.com/brms/reference/get_refmodel.brmsfit.html)
@@ -1119,23 +1119,23 @@ To use the draws from the fold-wise refits, define the custom functions
 inside a function that takes the fitted model object as its argument and
 calls
 [`get_refmodel()`](https://mc-stan.org/projpred/dev/reference/refmodel-init-get.md).
-Then set element `cvrefbuilder` of the reference model object to a
-function that calls this outer function with the fold-wise refit. In
-this call, argument `called_from_cvrefbuilder = TRUE` suppresses some
-warnings that are already shown for the full-data reference model object
-(see
+Then define a function that calls this outer function with the fold-wise
+refit. For an **rstanarm** reference model, pass this function as
+argument `cvrefbuilder` of
+[`get_refmodel()`](https://mc-stan.org/projpred/dev/reference/refmodel-init-get.md).
+In the call inside `cvrefbuilder`, argument
+`called_from_cvrefbuilder = TRUE` suppresses some warnings that are
+already shown for the full-data reference model object (see
 [`?init_refmodel`](https://mc-stan.org/projpred/dev/reference/refmodel-init-get.md)).
-This is a workaround: currently, methods
-[`get_refmodel.stanreg()`](https://mc-stan.org/projpred/dev/reference/refmodel-init-get.md)
-and
+Method
 [`brms::get_refmodel.brmsfit()`](https://paulbuerkner.com/brms/reference/get_refmodel.brmsfit.html)
-do not accept a `cvrefbuilder` argument, so we replace the element after
-we have created the reference model object. For a **brms** reference
-model, the default `cvrefbuilder` also passes arguments `resp` and
-`brms_seed` of
-[`brms::get_refmodel.brmsfit()`](https://paulbuerkner.com/brms/reference/get_refmodel.brmsfit.html).
-If you use these arguments, pass them in the custom `cvrefbuilder` too.
-For the negative binomial example, this can look as follows:
+does not accept a `cvrefbuilder` argument. For a **brms** reference
+model, create the reference model object first, then set its element
+`cvrefbuilder` to this function. The default `cvrefbuilder` of
+[`brms::get_refmodel.brmsfit()`](https://paulbuerkner.com/brms/reference/get_refmodel.brmsfit.html)
+also passes its arguments `resp` and `brms_seed`. If you use these
+arguments, pass them in the custom `cvrefbuilder` too. For the negative
+binomial example, this can look as follows:
 
 ``` r
 
@@ -1176,19 +1176,17 @@ get_refmodel_nebin <- function(fit, ...) {
                latent_ll_oscale = latent_ll_oscale_nebin,
                latent_ppd_oscale = latent_ppd_oscale_nebin, ...)
 }
-refm_nebin_kfold <- get_refmodel_nebin(refm_fit_nebin)
+refm_nebin_kfold <- get_refmodel_nebin(
+  refm_fit_nebin,
+  cvrefbuilder = function(cvfit) {
+    get_refmodel_nebin(cvfit, called_from_cvrefbuilder = TRUE)
+  }
+)
 ```
 
     Defining `latent_ilink` as a function which calls `family$linkinv`, but there is no guarantee that this will work for all families. If relying on `family$linkinv` is not appropriate or if this raises an error in downstream functions, supply a custom `latent_ilink` function (which is also allowed to return only `NA`s if response-scale post-processing is not needed).
 
     Since `<refmodel>$dis` will consist of only `NA`s, downstream analyses based on this reference model object won't be able to use log predictive density (LPD) values on latent scale. Furthermore, proj_predict() won't be able to draw from the latent Gaussian distribution.
-
-``` r
-
-refm_nebin_kfold$cvrefbuilder <- function(cvfit) {
-  get_refmodel_nebin(cvfit, called_from_cvrefbuilder = TRUE)
-}
-```
 
 As before, the messages concerning `<refmodel>$dis` and `latent_ilink`
 can be ignored here. Then

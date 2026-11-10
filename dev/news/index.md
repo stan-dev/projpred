@@ -76,14 +76,13 @@
   [\#592](https://github.com/stan-dev/projpred/issues/592))
 - Faster projections onto ordinal submodels without group-level terms
   ([`brms::cumulative()`](https://paulbuerkner.com/brms/reference/brmsfamily.html),
-  [`rstanarm::stan_polr()`](https://mc-stan.org/rstanarm/reference/stan_polr.html)):
-  one C++ call fits all projected draws, with results equal to those of
-  [`MASS::polr()`](https://rdrr.io/pkg/MASS/man/polr.html) up to its
-  convergence tolerance. For example,
+  [`rstanarm::stan_polr()`](https://mc-stan.org/rstanarm/reference/stan_polr.html)).
+  For example,
   [`cv_varsel()`](https://mc-stan.org/projpred/dev/reference/cv_varsel.md)
-  with `validate_search = TRUE` is about 23 times faster for a model
+  with `validate_search = TRUE` is about 45 times faster for a model
   with 6 categories. (GitHub:
-  [\#583](https://github.com/stan-dev/projpred/issues/583))
+  [\#583](https://github.com/stan-dev/projpred/issues/583),
+  [\#608](https://github.com/stan-dev/projpred/issues/608))
 - Faster projections onto categorical submodels without group-level
   terms
   ([`brms::categorical()`](https://paulbuerkner.com/brms/reference/brmsfamily.html)):
@@ -149,6 +148,22 @@
 
 ### Minor changes
 
+- [`get_refmodel.stanreg()`](https://mc-stan.org/projpred/dev/reference/refmodel-init-get.md)
+  has new arguments `cvfun` and `cvrefbuilder` for K-fold CV. For
+  example, a custom `cvrefbuilder` lets custom latent-projection
+  functions use the draws of the fold-wise refits. (GitHub:
+  [\#604](https://github.com/stan-dev/projpred/issues/604))
+- New function
+  [`custom_stat()`](https://mc-stan.org/projpred/dev/reference/custom_stat.md)
+  defines a user-defined performance statistic for argument `stats` of
+  [`summary.vsel()`](https://mc-stan.org/projpred/dev/reference/summary.vsel.md),
+  [`plot.vsel()`](https://mc-stan.org/projpred/dev/reference/plot.vsel.md)
+  and
+  [`performances()`](https://mc-stan.org/projpred/dev/reference/performances.md),
+  and argument `stat` of
+  [`suggest_size()`](https://mc-stan.org/projpred/dev/reference/suggest_size.md).
+  (GitHub: [\#566](https://github.com/stan-dev/projpred/issues/566),
+  [\#590](https://github.com/stan-dev/projpred/issues/590))
 - Faster
   [`cl_agg()`](https://mc-stan.org/projpred/dev/reference/cl_agg.md) and
   conversion of arrays to augmented-rows matrices. For example, LOO CV
@@ -208,7 +223,8 @@
   [`cv_varsel()`](https://mc-stan.org/projpred/dev/reference/cv_varsel.md)
   if two predictor terms have the same text before or after a `+` inside
   a call, such as `log(p + 1)` and `log(q + 1)`. (GitHub:
-  [\#595](https://github.com/stan-dev/projpred/issues/595))
+  [\#595](https://github.com/stan-dev/projpred/issues/595),
+  [\#606](https://github.com/stan-dev/projpred/issues/606))
 - Filter the warning “non-integer response values in a poisson model” of
   lme4 (\>= 2.1-1), which every projection onto a Poisson submodel with
   group-level terms would give. (GitHub:

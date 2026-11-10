@@ -47,8 +47,10 @@ suggest_size(
 
 - stat:
 
-  Performance statistic (i.e., utility or loss) used for the decision.
-  See argument `stats` of
+  Performance statistic (i.e., utility or loss) used for the decision: a
+  single character string or a single
+  [`custom_stat()`](https://mc-stan.org/projpred/dev/reference/custom_stat.md)
+  object. See argument `stats` of
   [`summary.vsel()`](https://mc-stan.org/projpred/dev/reference/summary.vsel.md)
   and
   [`plot.vsel()`](https://mc-stan.org/projpred/dev/reference/plot.vsel.md)

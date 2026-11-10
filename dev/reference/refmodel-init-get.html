@@ -130,7 +130,14 @@ see <code><a href="cv_varsel.html">cv_varsel()</a></code> for the use of \(K\)-f
 <span><span class="fu">get_refmodel</span><span class="op">(</span><span class="va">object</span>, family <span class="op">=</span> <span class="cn">NULL</span>, <span class="va">...</span><span class="op">)</span></span>
 <span></span>
 <span><span class="co"># S3 method for class 'stanreg'</span></span>
-<span><span class="fu">get_refmodel</span><span class="op">(</span><span class="va">object</span>, latent <span class="op">=</span> <span class="cn">FALSE</span>, dis <span class="op">=</span> <span class="cn">NULL</span>, <span class="va">...</span><span class="op">)</span></span>
+<span><span class="fu">get_refmodel</span><span class="op">(</span></span>
+<span>  <span class="va">object</span>,</span>
+<span>  latent <span class="op">=</span> <span class="cn">FALSE</span>,</span>
+<span>  dis <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  cvfun <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  cvrefbuilder <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  <span class="va">...</span></span>
+<span><span class="op">)</span></span>
 <span></span>
 <span><span class="fu">init_refmodel</span><span class="op">(</span></span>
 <span>  <span class="va">object</span>,</span>
@@ -204,6 +211,38 @@ Note that for the <code><a href="https://rdrr.io/r/stats/family.html" class="ext
 not the variance.</p></dd>
 
 
+<dt id="arg-cvfun">cvfun<a class="anchor" aria-label="anchor" href="#arg-cvfun"></a></dt>
+<dd><p>For \(K\)-fold CV only. A function that, given a fold indices
+vector, fits the reference model separately for each fold and returns the
+\(K\) model fits as a <code>list</code>. If <code>object</code> is <code>NULL</code>, <code>cvfun</code> may be
+<code>NULL</code> for using an internal default. Only one of <code>cvfits</code> and <code>cvfun</code>
+needs to be provided (for \(K\)-fold CV). Note that <code>cvfits</code> takes
+precedence over <code>cvfun</code>, i.e., if both are provided, <code>cvfits</code> is used.
+For <code>get_refmodel.stanreg()</code>, <code>cvfun = NULL</code> uses an internal default
+based on <code><a href="https://mc-stan.org/rstanarm/reference/kfold.stanreg.html" class="external-link">rstanarm::kfold.stanreg()</a></code>.</p></dd>
+
+
+<dt id="arg-cvrefbuilder">cvrefbuilder<a class="anchor" aria-label="anchor" href="#arg-cvrefbuilder"></a></dt>
+<dd><p>For \(K\)-fold CV only. A function that, given a
+reference model fit for fold \(k \in \{1, ..., K\}\),
+returns an object of the same type as <code>init_refmodel()</code> does. The reference
+model fit for fold \(k\) is the \(k\)-th element of the return value of
+<code>cvfun</code> or the \(k\)-th element of the <code>list</code> supplied to <code>cvfits</code>
+(either here in <code>init_refmodel()</code> or in <code><a href="cv_varsel.html">cv_varsel.refmodel()</a></code>), extended
+by elements <code>omitted</code> (containing the indices of the left-out observations
+in that fold) and <code>projpred_k</code> (containing the integer \(k\)) if that
+\(k\)-th element is a <code>list</code> itself (otherwise, <code>omitted</code> and
+<code>projpred_k</code> are appended as attributes). Argument <code>cvrefbuilder</code> may be
+<code>NULL</code> for using an internal default: <code>get_refmodel()</code> if <code>object</code> is not
+<code>NULL</code> and a function calling <code>init_refmodel()</code> appropriately (with the
+assumption <code>dis = 0</code>) if <code>object</code> is <code>NULL</code>. For <code>get_refmodel.stanreg()</code>,
+<code>cvrefbuilder = NULL</code> uses an internal default that calls <code>get_refmodel()</code>
+on the fold-wise fit with the arguments <code>latent</code>, <code>dis</code>, and <code>...</code> of the
+original call and with <code>called_from_cvrefbuilder = TRUE</code>. A custom
+<code>cvrefbuilder</code> is needed, for example, if the reference model uses custom
+functions that depend on the posterior draws (see <code><a href="extend_family.html">extend_family()</a></code>).</p></dd>
+
+
 <dt id="arg-data">data<a class="anchor" aria-label="anchor" href="#arg-data"></a></dt>
 <dd><p>A <code>data.frame</code> containing the data to use for the projection
 predictive variable selection. Any <code>contrasts</code> attributes of the dataset's
@@ -257,15 +296,6 @@ default that essentially corresponds to <code><a href="y_wobs_offs.html">y_wobs_
 "Argument <code>extract_model_data</code>" below.</p></dd>
 
 
-<dt id="arg-cvfun">cvfun<a class="anchor" aria-label="anchor" href="#arg-cvfun"></a></dt>
-<dd><p>For \(K\)-fold CV only. A function that, given a fold indices
-vector, fits the reference model separately for each fold and returns the
-\(K\) model fits as a <code>list</code>. If <code>object</code> is <code>NULL</code>, <code>cvfun</code> may be
-<code>NULL</code> for using an internal default. Only one of <code>cvfits</code> and <code>cvfun</code>
-needs to be provided (for \(K\)-fold CV). Note that <code>cvfits</code> takes
-precedence over <code>cvfun</code>, i.e., if both are provided, <code>cvfits</code> is used.</p></dd>
-
-
 <dt id="arg-cvfits">cvfits<a class="anchor" aria-label="anchor" href="#arg-cvfits"></a></dt>
 <dd><p>For \(K\)-fold CV only. A <code>list</code> containing the \(K\)
 reference model refits from which reference model objects are created. This
@@ -274,22 +304,6 @@ vector giving the fold indices (one fold index per observation). Only one
 of <code>cvfits</code> and <code>cvfun</code> needs to be provided (for \(K\)-fold CV). Note
 that <code>cvfits</code> takes precedence over <code>cvfun</code>, i.e., if both are provided,
 <code>cvfits</code> is used.</p></dd>
-
-
-<dt id="arg-cvrefbuilder">cvrefbuilder<a class="anchor" aria-label="anchor" href="#arg-cvrefbuilder"></a></dt>
-<dd><p>For \(K\)-fold CV only. A function that, given a
-reference model fit for fold \(k \in \{1, ..., K\}\),
-returns an object of the same type as <code>init_refmodel()</code> does. The reference
-model fit for fold \(k\) is the \(k\)-th element of the return value of
-<code>cvfun</code> or the \(k\)-th element of the <code>list</code> supplied to <code>cvfits</code>
-(either here in <code>init_refmodel()</code> or in <code><a href="cv_varsel.html">cv_varsel.refmodel()</a></code>), extended
-by elements <code>omitted</code> (containing the indices of the left-out observations
-in that fold) and <code>projpred_k</code> (containing the integer \(k\)) if that
-\(k\)-th element is a <code>list</code> itself (otherwise, <code>omitted</code> and
-<code>projpred_k</code> are appended as attributes). Argument <code>cvrefbuilder</code> may be
-<code>NULL</code> for using an internal default: <code>get_refmodel()</code> if <code>object</code> is not
-<code>NULL</code> and a function calling <code>init_refmodel()</code> appropriately (with the
-assumption <code>dis = 0</code>) if <code>object</code> is <code>NULL</code>.</p></dd>
 
 
 <dt id="arg-called-from-cvrefbuilder">called_from_cvrefbuilder<a class="anchor" aria-label="anchor" href="#arg-called-from-cvrefbuilder"></a></dt>

@@ -64,11 +64,13 @@ plot(
 
 - stats:
 
-  One or more character strings determining which performance statistics
-  (i.e., utilities or losses) to estimate based on the observations in
-  the evaluation (or "test") set (in case of cross-validation, these are
-  all observations because they are partitioned into multiple test sets;
-  in case of
+  One or more character strings (or
+  [`custom_stat()`](https://mc-stan.org/projpred/dev/reference/custom_stat.md)
+  objects, see below) determining which performance statistics (i.e.,
+  utilities or losses) to estimate based on the observations in the
+  evaluation (or "test") set (in case of cross-validation, these are all
+  observations because they are partitioned into multiple test sets; in
+  case of
   [`varsel()`](https://mc-stan.org/projpred/dev/reference/varsel.md)
   with `d_test = NULL`, these are again all observations because the
   test set is the same as the training set). Available statistics are:
@@ -127,6 +129,15 @@ plot(
     bootstrapping is used. Not supported in case of subsampled LOO-CV
     (see argument `nloo` of
     [`cv_varsel()`](https://mc-stan.org/projpred/dev/reference/cv_varsel.md)).
+
+  For a user-defined statistic, use
+  [`custom_stat()`](https://mc-stan.org/projpred/dev/reference/custom_stat.md).
+  `stats` then takes one
+  [`custom_stat()`](https://mc-stan.org/projpred/dev/reference/custom_stat.md)
+  object, or a `list` of single character strings (built-in statistics)
+  and
+  [`custom_stat()`](https://mc-stan.org/projpred/dev/reference/custom_stat.md)
+  objects, for example `stats = list("elpd", custom_stat(...))`.
 
 - deltas:
 

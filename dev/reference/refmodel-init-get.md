@@ -45,7 +45,14 @@ get_refmodel(object, ...)
 get_refmodel(object, family = NULL, ...)
 
 # S3 method for class 'stanreg'
-get_refmodel(object, latent = FALSE, dis = NULL, ...)
+get_refmodel(
+  object,
+  latent = FALSE,
+  dis = NULL,
+  cvfun = NULL,
+  cvrefbuilder = NULL,
+  ...
+)
 
 init_refmodel(
   object,
@@ -122,6 +129,43 @@ init_refmodel(
   [`gaussian()`](https://rdrr.io/r/stats/family.html) `family`, `dis` is
   the standard deviation, not the variance.
 
+- cvfun:
+
+  For \\K\\-fold CV only. A function that, given a fold indices vector,
+  fits the reference model separately for each fold and returns the
+  \\K\\ model fits as a `list`. If `object` is `NULL`, `cvfun` may be
+  `NULL` for using an internal default. Only one of `cvfits` and `cvfun`
+  needs to be provided (for \\K\\-fold CV). Note that `cvfits` takes
+  precedence over `cvfun`, i.e., if both are provided, `cvfits` is used.
+  For `get_refmodel.stanreg()`, `cvfun = NULL` uses an internal default
+  based on
+  [`rstanarm::kfold.stanreg()`](https://mc-stan.org/rstanarm/reference/kfold.stanreg.html).
+
+- cvrefbuilder:
+
+  For \\K\\-fold CV only. A function that, given a reference model fit
+  for fold \\k \in \\1, ..., K\\\\, returns an object of the same type
+  as `init_refmodel()` does. The reference model fit for fold \\k\\ is
+  the \\k\\-th element of the return value of `cvfun` or the \\k\\-th
+  element of the `list` supplied to `cvfits` (either here in
+  `init_refmodel()` or in
+  [`cv_varsel.refmodel()`](https://mc-stan.org/projpred/dev/reference/cv_varsel.md)),
+  extended by elements `omitted` (containing the indices of the left-out
+  observations in that fold) and `projpred_k` (containing the integer
+  \\k\\) if that \\k\\-th element is a `list` itself (otherwise,
+  `omitted` and `projpred_k` are appended as attributes). Argument
+  `cvrefbuilder` may be `NULL` for using an internal default:
+  `get_refmodel()` if `object` is not `NULL` and a function calling
+  `init_refmodel()` appropriately (with the assumption `dis = 0`) if
+  `object` is `NULL`. For `get_refmodel.stanreg()`,
+  `cvrefbuilder = NULL` uses an internal default that calls
+  `get_refmodel()` on the fold-wise fit with the arguments `latent`,
+  `dis`, and `...` of the original call and with
+  `called_from_cvrefbuilder = TRUE`. A custom `cvrefbuilder` is needed,
+  for example, if the reference model uses custom functions that depend
+  on the posterior draws (see
+  [`extend_family()`](https://mc-stan.org/projpred/dev/reference/extend_family.md)).
+
 - data:
 
   A `data.frame` containing the data to use for the projection
@@ -179,15 +223,6 @@ init_refmodel(
   [`y_wobs_offs()`](https://mc-stan.org/projpred/dev/reference/y_wobs_offs.md).
   See also section "Argument `extract_model_data`" below.
 
-- cvfun:
-
-  For \\K\\-fold CV only. A function that, given a fold indices vector,
-  fits the reference model separately for each fold and returns the
-  \\K\\ model fits as a `list`. If `object` is `NULL`, `cvfun` may be
-  `NULL` for using an internal default. Only one of `cvfits` and `cvfun`
-  needs to be provided (for \\K\\-fold CV). Note that `cvfits` takes
-  precedence over `cvfun`, i.e., if both are provided, `cvfits` is used.
-
 - cvfits:
 
   For \\K\\-fold CV only. A `list` containing the \\K\\ reference model
@@ -197,24 +232,6 @@ init_refmodel(
   one of `cvfits` and `cvfun` needs to be provided (for \\K\\-fold CV).
   Note that `cvfits` takes precedence over `cvfun`, i.e., if both are
   provided, `cvfits` is used.
-
-- cvrefbuilder:
-
-  For \\K\\-fold CV only. A function that, given a reference model fit
-  for fold \\k \in \\1, ..., K\\\\, returns an object of the same type
-  as `init_refmodel()` does. The reference model fit for fold \\k\\ is
-  the \\k\\-th element of the return value of `cvfun` or the \\k\\-th
-  element of the `list` supplied to `cvfits` (either here in
-  `init_refmodel()` or in
-  [`cv_varsel.refmodel()`](https://mc-stan.org/projpred/dev/reference/cv_varsel.md)),
-  extended by elements `omitted` (containing the indices of the left-out
-  observations in that fold) and `projpred_k` (containing the integer
-  \\k\\) if that \\k\\-th element is a `list` itself (otherwise,
-  `omitted` and `projpred_k` are appended as attributes). Argument
-  `cvrefbuilder` may be `NULL` for using an internal default:
-  `get_refmodel()` if `object` is not `NULL` and a function calling
-  `init_refmodel()` appropriately (with the assumption `dis = 0`) if
-  `object` is `NULL`.
 
 - called_from_cvrefbuilder:
 
