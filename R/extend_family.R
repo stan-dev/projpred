@@ -486,31 +486,33 @@ extend_family <- function(family,
   return(family)
 }
 
-# The log-likelihood from the linear predictor `eta` (same dimensions as `ll`,
-# offsets included). binomial()$linkinv() gives 2.2e-16 and 1 - 2.2e-16 for
-# |eta| > 30, and log(1 - mu) loses digits for smaller positive `eta` too (1 -
-# mu has a relative rounding error of about 1.1e-16 * exp(eta)), so the
-# binomial (logit) function computes all entries from `eta`.
+# The log-likelihood from the linear predictor `eta` (an N x S matrix with the
+# dimensions of `mu`, offsets included). binomial()$linkinv() gives 2.2e-16 and
+# 1 - 2.2e-16 for |eta| > 30, and log(1 - mu) loses digits for smaller positive
+# `eta` too (1 - mu has a relative rounding error of about 1.1e-16 * exp(eta)),
+# so the binomial (logit) function computes all entries from `eta`; it uses
+# `mu` only for the entries where `eta` is `NA`, and for the dimnames.
 # poisson()$linkinv() gives at least 2.2e-16 (eta < -36), and log(mu) is
 # accurate above that, so the Poisson (log) function computes only the clamped
-# entries of `ll` again. `y` and `weights` are recycled to the dimensions of
-# `ll`, as in dbinom() and dpois(). The product with a zero count or a zero
+# entries of `ll` again. `y` and `weights` are recycled along the columns of
+# `eta`, as in dbinom() and dpois(). The product with a zero count or a zero
 # weight is 0, also for an infinite `eta`.
-ll_eta_binom_logit <- function(ll, eta, y, weights) {
-  ll_check_eta_dim(eta, ll)
-  idx <- which(!is.na(eta))
-  if (length(idx) == 0) {
-    return(ll)
+ll_eta_binom_logit <- function(mu, eta, y, weights) {
+  ll_check_eta_dim(eta, mu)
+  y <- as.vector(y)
+  weights <- as.vector(weights)
+  # dbinom(y, weights, 0.5, log = TRUE) - weights * log(0.5) is the log binomial
+  # coefficient (computed once per observation if `y` and `weights` have length
+  # N), with the handling of invalid `y` of dbinom() (-Inf and a warning for a
+  # non-integer `y`; lchoose() would give a finite value):
+  ll <- (dbinom(y, weights, 0.5, log = TRUE) - weights * log(0.5)) +
+    ll_xlogp(y, plogis(eta, log.p = TRUE)) +
+    ll_xlogp(weights - y, plogis(-eta, log.p = TRUE))
+  if (anyNA(eta)) {
+    na_idx <- is.na(eta)
+    ll[na_idx] <- dbinom(y, weights, mu, log = TRUE)[na_idx]
   }
-  y <- matrix(y, nrow = nrow(ll), ncol = ncol(ll))[idx]
-  w <- matrix(weights, nrow = nrow(ll), ncol = ncol(ll))[idx]
-  e <- eta[idx]
-  # dbinom(y, w, 0.5, log = TRUE) - w * log(0.5) is the log binomial
-  # coefficient, with the handling of invalid `y` of dbinom() (-Inf and a
-  # warning for a non-integer `y`; lchoose() would give a finite value):
-  ll[idx] <- dbinom(y, w, 0.5, log = TRUE) - w * log(0.5) +
-    ll_xlogp(y, plogis(e, log.p = TRUE)) +
-    ll_xlogp(w - y, plogis(-e, log.p = TRUE))
+  dimnames(ll) <- dimnames(mu)
   return(ll)
 }
 ll_clamped_poiss_log <- function(ll, eta, y, weights) {
@@ -527,15 +529,20 @@ ll_clamped_poiss_log <- function(ll, eta, y, weights) {
   ll[idx] <- ll_xlogp(w, dpois(y, 1, log = TRUE) + 1 + ll_xlogp(y, e) - exp(e))
   return(ll)
 }
-ll_check_eta_dim <- function(eta, ll) {
-  if (!identical(dim(eta), dim(ll))) {
+# `x` is `mu` or `ll` (a vector counts as a one-column matrix):
+ll_check_eta_dim <- function(eta, x) {
+  if (!is.matrix(eta) || !identical(dim(eta), dim(as.matrix(x)))) {
     stop("Unexpected dimensions of `eta`. Please notify the package ",
          "maintainer.")
   }
   return(invisible(TRUE))
 }
+# k * logp, with 0 where `k` is 0 (`k` is recycled to the length of the
+# product):
 ll_xlogp <- function(k, logp) {
-  ifelse(k == 0, 0, k * logp)
+  out <- k * logp
+  out[rep(k == 0, length.out = length(out))] <- 0
+  out
 }
 
 extend_family_binomial <- function(family) {
@@ -561,11 +568,10 @@ extend_family_binomial <- function(family) {
   }
   ll_binom <- function(mu, dis, y, weights = 1, eta = NULL) {
     y <- as.matrix(y)
-    ll <- dbinom(y, weights, mu, log = TRUE)
     if (!is.null(eta) && family$link == "logit") {
-      ll <- ll_eta_binom_logit(ll, eta = eta, y = y, weights = weights)
+      return(ll_eta_binom_logit(mu = mu, eta = eta, y = y, weights = weights))
     }
-    ll
+    dbinom(y, weights, mu, log = TRUE)
   }
   dev_binom <- function(mu, y, weights = 1, dis = NULL) {
     if (NCOL(y) < NCOL(mu)) {
