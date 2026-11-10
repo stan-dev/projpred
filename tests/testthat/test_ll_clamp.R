@@ -51,6 +51,80 @@ test_that("binomial ll_fun() with `eta` is exact where linkinv() clamps", {
   )
 })
 
+test_that("binomial ll_fun() uses `mu` where `eta` is `NA`", {
+  fam <- extend_family(binomial())
+  eta <- cbind(c(-450, NA, -31, 2), c(NA, 40, NA, -3), c(-5, 0, 5, 20))
+  rownames(eta) <- paste0("obs", seq_len(nrow(eta)))
+  mu <- fam$linkinv(eta)
+  # `mu` is known at the entries where `eta` is not:
+  mu[is.na(eta)] <- c(0.2, 0.7, 0.4)
+  cases <- list(list(trials = 1, y = c(1, 0, 1, 0)),
+                list(trials = c(1, 4, 2, 0), y = c(0, 4, 1, 0)))
+  for (cs in cases) {
+    trials <- cs$trials
+    y <- cs$y
+    y_mat <- matrix(y, nrow(eta), ncol(eta))
+    t_mat <- matrix(trials, nrow(eta), ncol(eta))
+    info <- paste("trials:", paste(trials, collapse = ","))
+    ll <- fam$ll_fun(mu, NULL, y, trials, eta = eta)
+    ll_exp <- ll_binom_exact(eta, y_mat, t_mat)
+    ll_exp[is.na(eta)] <- dbinom(y_mat, t_mat, mu, log = TRUE)[is.na(eta)]
+    dimnames(ll_exp) <- dimnames(eta)
+    expect_false(anyNA(ll), info = info)
+    expect_equal(ll, ll_exp, tolerance = 1e-12, info = info)
+    # Only `NA`s in `eta` give the values from `mu`:
+    eta_na <- eta
+    eta_na[] <- NA_real_
+    expect_equal(fam$ll_fun(mu, NULL, y, trials, eta = eta_na),
+                 fam$ll_fun(mu, NULL, y, trials), tolerance = 1e-12,
+                 info = info)
+  }
+  # `eta` must be a matrix with the dimensions of `mu`:
+  expect_error(fam$ll_fun(mu[, 1], NULL, c(1, 0, 1, 0), 1, eta = eta[, 1]),
+               "Unexpected dimensions of `eta`")
+  expect_error(fam$ll_fun(mu, NULL, c(1, 0, 1, 0), 1, eta = eta[, 1:2]),
+               "Unexpected dimensions of `eta`")
+})
+
+test_that("binomial ll_fun() with `eta` handles the shapes of its arguments", {
+  fam <- extend_family(binomial())
+  eta <- cbind(c(-450, 40, -31, 2), c(35, -40, 0.5, -3), c(-5, 0, 5, 20))
+  mu <- fam$linkinv(eta)
+  y <- c(0, 4, 1, 0)
+  trials <- c(1, 4, 2, 0)
+  y_mat <- matrix(y, nrow(eta), ncol(eta))
+  t_mat <- matrix(trials, nrow(eta), ncol(eta))
+  ll_exp <- ll_binom_exact(eta, y_mat, t_mat)
+  # `y` and the trials as one-column matrices and as N x S matrices:
+  expect_equal(fam$ll_fun(mu, NULL, matrix(y), matrix(trials), eta = eta),
+               ll_exp, tolerance = 1e-12)
+  expect_equal(fam$ll_fun(mu, NULL, y_mat, t_mat, eta = eta),
+               ll_exp, tolerance = 1e-12)
+  # A single `y` with a vector of trials:
+  expect_equal(fam$ll_fun(mu, NULL, 0, trials, eta = eta),
+               ll_binom_exact(eta, 0 * y_mat, t_mat), tolerance = 1e-12)
+  # One draw, with `mu` as a matrix and as a vector:
+  eta1 <- eta[, 1, drop = FALSE]
+  expect_equal(fam$ll_fun(mu[, 1, drop = FALSE], NULL, y, trials, eta = eta1),
+               ll_exp[, 1, drop = FALSE], tolerance = 1e-12)
+  expect_equal(fam$ll_fun(mu[, 1], NULL, y, trials, eta = eta1),
+               ll_exp[, 1, drop = FALSE], tolerance = 1e-12)
+  # One observation and one draw:
+  expect_equal(fam$ll_fun(mu[1, 1, drop = FALSE], NULL, y[1], trials[1],
+                          eta = eta[1, 1, drop = FALSE]),
+               ll_exp[1, 1, drop = FALSE], tolerance = 1e-12)
+  # The dimnames are those of `mu`:
+  nms <- list(paste0("obs", seq_len(nrow(eta))), NULL)
+  expect_null(dimnames(fam$ll_fun(mu, NULL, y, trials,
+                                  eta = `dimnames<-`(eta, nms))))
+  expect_identical(dimnames(fam$ll_fun(`dimnames<-`(mu, nms), NULL, y, trials,
+                                       eta = eta)),
+                   nms)
+  # ll_xlogp() recycles a shorter `k`:
+  expect_identical(ll_xlogp(0, c(-1, -Inf)), c(0, 0))
+  expect_identical(ll_xlogp(c(0, 2), c(-Inf, -1)), c(0, -2))
+})
+
 test_that("Poisson ll_fun() with `eta` is exact where linkinv() clamps", {
   fam <- extend_family(poisson())
   eta <- cbind(c(-100, -40, -37, -36), c(-Inf, -Inf, 0, 2))
