@@ -2108,6 +2108,29 @@ fit_categ_mlvl <- function(formula, projpred_formula_no_random,
   random_fmls <- lapply(random_trms, function(random_trm) {
     as.formula(paste("~", random_trm))
   })
+  # Use categ_pql_fit() unless there are offsets, global option
+  # `projpred.categ_mlvl_mblogit` is `TRUE`, or `...` has mblogit() settings
+  # that categ_pql_fit() does not support.  In mclogit's PQL algorithm,
+  # `avoid.increase` and `break.on.infinite` have no effect, and `trace` and
+  # `trace.inner` only print the iterations:
+  pql_args <- c("epsilon", "maxit", "maxit.inner")
+  no_effect_args <- c("trace", "trace.inner", "avoid.increase",
+                      "break.on.infinite")
+  break_args <- c("break.on.increase", "break.on.negative")
+  if (!getOption("projpred.categ_mlvl_mblogit", FALSE) && !length(offs_attr) &&
+      all(names(dot_args) %in% c(pql_args, no_effect_args, break_args)) &&
+      !any(vapply(dot_args[intersect(names(dot_args), break_args)],
+                  isTRUE, logical(1)))) {
+    mat_resp <- categ_mat_resp(projpred_formula_no_random, data, weights)
+    if (!is.null(mat_resp)) {
+      fitobj <- do.call(categ_pql_fit, c(
+        list(formula = mat_resp$formula, random = random_fmls,
+             data = mat_resp$data),
+        dot_args[intersect(names(dot_args), pql_args)]
+      ))
+      if (!is.null(fitobj)) return(fitobj)
+    }
+  }
   if (length(random_fmls) == 1) {
     random_fmls <- random_fmls[[1]]
   }

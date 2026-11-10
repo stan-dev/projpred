@@ -705,14 +705,27 @@ cached_by_strings <- function(type, key, compute, max_n = 10000L) {
 # so their spacing is that of terms() labels (for example "poly(x3, 2)" for
 # "poly(x3,2)"), and non-syntactic names keep their backticks.
 split_plus <- function(term_strings) {
+  # A loop, not recursion: the call tree of a long `+` chain is deep. The loop
+  # goes down the left operands and puts the right operands on a stack (`top`
+  # is the index of its last element), so the parts come in their order.
   parts_of <- function(expr) {
-    if (is.call(expr) && identical(expr[[1L]], as.name("+")) &&
-        length(expr) == 3L) {
-      return(c(parts_of(expr[[2L]]), parts_of(expr[[3L]])))
+    parts <- character()
+    stack <- list(expr)
+    top <- 1L
+    while (top > 0L) {
+      e <- stack[[top]]
+      top <- top - 1L
+      while (is.call(e) && identical(e[[1L]], as.name("+")) &&
+             length(e) == 3L) {
+        top <- top + 1L
+        stack[top] <- list(e[[3L]])
+        e <- e[[2L]]
+      }
+      parts[length(parts) + 1L] <- join_lines(
+        paste(deparse(e, width.cutoff = 500L, backtick = TRUE), collapse = "\n")
+      )
     }
-    return(join_lines(paste(deparse(expr, width.cutoff = 500L,
-                                    backtick = TRUE),
-                            collapse = "\n")))
+    return(parts)
   }
   return(as.character(unlist(
     lapply(term_strings, function(x) parts_of(str2lang(x))),

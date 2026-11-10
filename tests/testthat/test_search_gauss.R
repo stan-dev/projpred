@@ -434,6 +434,45 @@ test_that(paste(
 })
 
 test_that(paste(
+  "search_forward_gauss() and varsel() work with a candidate string of more",
+  "than 10000 bytes (the limit of an environment key)"
+), {
+  set.seed(5307)
+  n <- 30
+  # The smallest `p` with more than 10000 bytes in `block` (8 bytes per term).
+  # With n < p, the search needs the default `regul`:
+  p <- 1251
+  dat <- as.data.frame(matrix(rnorm(n * p), n, p,
+                              dimnames = list(NULL, sprintf("v%04d", seq_len(p)))))
+  dat$y <- dat$v0001 + rnorm(n)
+  ndraws <- 20
+  beta <- matrix(rnorm(2 * ndraws, mean = c(0, 1), sd = 0.05), 2)
+  fit <- list(beta = beta, data = dat)
+  ref_predfun <- function(fit, newdata = NULL) {
+    nd <- if (is.null(newdata)) fit$data else newdata
+    cbind(1, nd$v0001) %*% fit$beta
+  }
+  block <- paste(sprintf("v%04d", seq_len(p)), collapse = " + ")
+  expect_gt(nchar(block, type = "bytes"), 10000)
+  refm <- suppressWarnings(init_refmodel(
+    fit, data = dat, formula = as.formula(paste("y ~", block)),
+    family = gaussian(), ref_predfun = ref_predfun, dis = rep(1, ndraws)
+  ))
+  p_ref <- get_refdist(refm, nclusters = 2)
+  out <- search_forward_gauss(p_ref = p_ref, refmodel = refm, nterms_max = p,
+                              verbose = FALSE, search_terms = c("1", block),
+                              return_outdmins = FALSE)
+  expect_false(is.null(out))
+  expect_length(out$predictor_ranking, 1)
+  expect_identical(split_plus(out$predictor_ranking), split_plus(block))
+  # The whole path, with the projections and their cache:
+  vs <- varsel(refm, search_terms = c("1", block), nterms_max = p,
+               verbose = FALSE)
+  expect_identical(split_plus(ranking(vs)$fulldata), split_plus(block))
+  expect_s3_class(summary(vs), "vselsummary")
+})
+
+test_that(paste(
   "the cross-product search and evaluation find functions from the",
   "environment of the reference model formula"
 ), {

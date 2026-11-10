@@ -100,11 +100,19 @@ weighted_summary_means <- function(y_wobs_test, data_aux_test, family, wdraws,
 # particular, `nfeat_baseline_diff = Inf` designates the reference model).
 .tabulate_stats <- function(varsel, stats, alpha = 0.05,
                             nfeat_baseline = NULL, nfeat_baseline_diff = NULL,
-                            resp_oscale = TRUE, ...) {
+                            resp_oscale = TRUE, custom_stats = list(), ...) {
   stat_tab <- data.frame()
   summaries_ref <- varsel$summaries$ref
   summaries_sub <- varsel$summaries$sub
   summaries_fast_sub <- varsel$summaries_fast$sub
+  is_agg <- vapply(custom_stats, function(cs) cs$type == "aggregate",
+                   logical(1))
+  if (!is.null(summaries_fast_sub) &&
+      any(stats %in% names(custom_stats)[is_agg])) {
+    stop("Subsampled LOO-CV with an aggregate custom statistic is not ",
+         "implemented. Use a pointwise custom statistic, full (i.e., ",
+         "non-subsampled) LOO-CV or K-fold CV.")
+  }
   if (!is.null(summaries_fast_sub) && any(stats %in% c("auc"))) {
     stop("Subsampled LOO-CV with AUC not implemented. Alternatives using ",
          "`validate_search = TRUE` are full (i.e., non-subsampled) LOO-CV and ",
@@ -260,7 +268,8 @@ weighted_summary_means <- function(y_wobs_test, data_aux_test, family, wdraws,
                     summaries_baseline = summaries_baseline,
                     summaries_fast = NULL,
                     loo_inds = NULL,
-                    varsel$y_wobs_test, stat, alpha = alpha, ...)
+                    varsel$y_wobs_test, stat, alpha = alpha,
+                    custom_stats = custom_stats, ...)
     row <- data.frame(
       data = varsel$type_test, size = Inf, delta = delta, statistic = stat,
       value = res$value, lq = res$lq, uq = res$uq, se = res$se,
@@ -274,7 +283,8 @@ weighted_summary_means <- function(y_wobs_test, data_aux_test, family, wdraws,
                       summaries_baseline = summaries_baseline,
                       summaries_fast = summaries_fast_sub[[k]],
                       loo_inds = varsel$loo_inds,
-                      varsel$y_wobs_test, stat, alpha = alpha, ...)
+                      varsel$y_wobs_test, stat, alpha = alpha,
+                      custom_stats = custom_stats, ...)
       # TODO: If `!is.null(nfeat_baseline) && nfeat_baseline == Inf` and
       # `is.null(nfeat_baseline_diff)`, we should be able to set `diff <- res`
       # and hence avoid a second call to get_stat().
@@ -282,7 +292,8 @@ weighted_summary_means <- function(y_wobs_test, data_aux_test, family, wdraws,
                        summaries_baseline = summaries_baseline_diff,
                        summaries_fast = summaries_fast_sub[[k]],
                        loo_inds = varsel$loo_inds,
-                       varsel$y_wobs_test, stat, alpha = alpha, ...)
+                       varsel$y_wobs_test, stat, alpha = alpha,
+                       custom_stats = custom_stats, ...)
       row <- data.frame(
         data = varsel$type_test, size = k - 1, delta = delta, statistic = stat,
         value = res$value, lq = res$lq, uq = res$uq, se = res$se,
@@ -319,7 +330,14 @@ check_sub_NA <- function(summaries_sub_k, el_nm) {
 ## some further adjustments are necessary below.
 get_stat <- function(summaries, summaries_baseline = NULL,
                      summaries_fast = NULL, loo_inds = NULL,
-                     y_wobs_test, stat, alpha = 0.1, ...) {
+                     y_wobs_test, stat, alpha = 0.1, custom_stats = list(),
+                     ...) {
+  if (stat %in% names(custom_stats)) {
+    return(get_stat_custom(custom_stats[[stat]], mu = summaries$mu,
+                           mu_baseline = summaries_baseline$mu,
+                           mu_fast = summaries_fast$mu, loo_inds = loo_inds,
+                           y_wobs_test = y_wobs_test, alpha = alpha, ...))
+  }
   mu <- summaries$mu
   lppd <- summaries$lppd
   n_full <- length(lppd)
@@ -627,26 +645,31 @@ get_stat <- function(summaries, summaries_baseline = NULL,
   return(list(value = value, se = value_se, lq = lq, uq = uq))
 }
 
-is_util <- function(stat) {
+is_util <- function(stat, custom_stats = list()) {
   ## a simple function to determine whether a given statistic (string) is
   ## a utility (we want to maximize) or loss (we want to minimize)
   ## by the time we get here, stat should have already been validated
+  if (stat %in% names(custom_stats)) {
+    return(custom_stats[[stat]]$higher_better)
+  }
   return(!stat %in% c("rmse", "mse"))
 }
 
-get_nfeat_baseline <- function(object, baseline, stat, ...) {
+get_nfeat_baseline <- function(object, baseline, stat, custom_stats = list(),
+                               ...) {
   ## get model size that is used as a baseline in comparisons. baseline is one
   ## of 'best' or 'ref', stat is the statistic according to which the selection
   ## is done
   if (baseline == "best") {
     ## find number of features that maximizes the utility (or minimizes the
     ## loss)
-    tab <- .tabulate_stats(object, stat, B = 2, ...)
+    tab <- .tabulate_stats(object, stat, B = 2, custom_stats = custom_stats,
+                           ...)
     stats_table <- subset(tab, tab$size != Inf)
     ## tab <- .tabulate_stats(object, B = 2, ...)
     ## stats_table <- subset(tab, tab$delta == FALSE &
     ##   tab$statistic == stat & tab$size != Inf)
-    optfun <- ifelse(is_util(stat), which.max, which.min)
+    optfun <- ifelse(is_util(stat, custom_stats), which.max, which.min)
     nfeat_baseline <- stats_table$size[optfun(stats_table$value)]
   } else {
     ## use reference model
