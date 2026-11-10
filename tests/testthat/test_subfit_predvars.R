@@ -75,8 +75,8 @@ test_that("the L1 search ranks the terms for a poly() term with 10 columns", {
   # The column "poly(x3, 10)1" is the start of the column "poly(x3, 10)10":
   fml <- y ~ x1 + x2 + poly(x3, 10)
   refm <- refm_predvars(fml)
-  vs <- suppressWarnings(varsel(refm, method = "L1", refit_prj = FALSE,
-                                seed = 3906, verbose = FALSE))
+  vs <- varsel(refm, method = "L1", refit_prj = FALSE, seed = 3906,
+               verbose = FALSE)
   rk <- ranking(vs)$fulldata
   expect_length(rk, 3L)
   expect_setequal(rk, c("x1", "x2", "poly(x3, 10)"))

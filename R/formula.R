@@ -977,9 +977,9 @@ lhs <- function(x) {
 #   derived).
 # @param data The model data (from which the ranking in `path` was derived).
 #
-# @return A character vector of collapsed predictor terms (i.e., all of these
-#   returned predictor terms occur in `formula`), in the order of their first
-#   column in `path`.
+# @return A character vector of collapsed predictor terms, in the order of their
+#   first column in `path`. These terms occur in `formula`; an element of `path`
+#   that is not a column (for example `NA`) is returned as it is.
 collapse_ranked_predictors <- function(path, formula, data) {
   # TODO: In the following model.matrix() call, allow user-specified contrasts
   # to be passed to argument `contrasts.arg`. The `contrasts.arg` default
@@ -987,13 +987,12 @@ collapse_ranked_predictors <- function(path, formula, data) {
   # convenient to let users specify contrasts directly. At that occasion,
   # contrasts should also be tested thoroughly (not done until now).
   x <- model.matrix(formula, data = data)
-  # The "assign" attribute gives the term of each column (0: the intercept).
-  # The text of a column name does not identify its term: one column name can
-  # be the start of another one.
+  # Match the columns to the terms by the "assign" attribute (0: the
+  # intercept), not by the text of the column names:
   term_idx <- attr(x, "assign")
-  term_of_col <- attr(terms(formula), "term.labels")[term_idx[term_idx > 0]]
+  term_labels <- attr(terms(formula, data = data), "term.labels")
+  term_of_col <- term_labels[term_idx[term_idx > 0]]
   path_terms <- term_of_col[match(path, colnames(x)[term_idx > 0])]
-  # An element that is not a column (for example `NA`) stays as it is:
   path_terms[is.na(path_terms)] <- path[is.na(path_terms)]
   return(unique(path_terms))
 }

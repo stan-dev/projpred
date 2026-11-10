@@ -47,7 +47,7 @@ If you read this from a place other than <https://mc-stan.org/projpred/news/inde
 * Tests: Leave the options, the random seed and the global environment of the R session unchanged after the tests, also when a test fails, and remove the manual cleanup of the test workspace. (GitHub: #586)
 * Fixed the error "'gam.fit' is not an exported object from 'namespace:mgcv'" in projections onto additive submodels with mgcv 1.9-5. (GitHub: #598, #602)
 * Fixed the log-likelihood of binomial (logit) and Poisson (log) reference model draws with a large linear predictor, where the inverse link clamped the mean. (GitHub: #614)
-* Fixed the term names of the L1 search if one model-matrix column name starts with another one, for example the levels `a` and `ab` of a factor, or a `poly()` term with 10 or more columns (which gave a parse error). (GitHub: #PR)
+* Fixed the term names of the L1 search if one model-matrix column name starts with another one. (GitHub: #PR)
 
 
 # projpred 2.11.0
