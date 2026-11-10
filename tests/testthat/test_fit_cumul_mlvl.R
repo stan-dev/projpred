@@ -13,7 +13,7 @@ clmm_test_data <- function() {
 fit_clmm_test <- function(dat, formula = y ~ x + (1 | g), ...) {
   fit_cumul_mlvl(formula = formula, data = dat,
                  family = list(link = "logit"), weights = rep(1, nrow(dat)),
-                 ...)
+                 mlvl_laplace = FALSE, ...)
 }
 
 test_that("fit_cumul_mlvl() uses ucminf() with forward differences", {

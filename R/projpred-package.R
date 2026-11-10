@@ -95,7 +95,20 @@
 #'     + For the augmented-data projection: [ordinal::clmm()] (the returned
 #'     object inherits from class `clmm`) for the [brms::cumulative()] family,
 #'     [mclogit::mblogit()] (the returned object inherits from class `mmblogit`)
-#'     for the [brms::categorical()] family. For [ordinal::clmm()] with a single
+#'     for the [brms::categorical()] family. Exception: for the
+#'     [brms::cumulative()] family, if the only group-level term is a random
+#'     intercept `(1 | <group>)`, \pkg{projpred} uses its own fit (the returned
+#'     object inherits from classes `projpred_mlvl_cumul` and `projpred_mlvl`).
+#'     This fit minimizes the Laplace approximation that [ordinal::clmm()]
+#'     uses, for the links of [brms::cumulative()] (`logit`, `probit`,
+#'     `probit_approx`, `cloglog`, `cauchit`). \pkg{projpred} uses
+#'     [ordinal::clmm()] instead if the fit does not converge, if the submodel
+#'     has an offset or a rank-deficient model matrix, if `...` contains
+#'     arguments of [ordinal::clmm()] or of its optimizers (for example
+#'     `method` or `control`), or if global option `projpred.mlvl_laplace` is
+#'     `FALSE`. After a fit that does not converge, the [ordinal::clmm()] fit
+#'     is returned as class `projpred_mlvl_cumul`, too. For [ordinal::clmm()]
+#'     with a single
 #'     group-level term `(1 | <group>)`, \pkg{projpred} uses
 #'     `method = "ucminf"` and `grad = "forward"` (see
 #'     [ordinal::clmm.control()]). If this fit fails or does not converge,

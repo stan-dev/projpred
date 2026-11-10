@@ -1,0 +1,322 @@
+# projpred's Laplace fit of cumulative-link multilevel submodels with one
+# group-level intercept term (mlvl_laplace_cumul()). These tests need no
+# reference model fits, so they also run on CRAN.
+
+links_cumul_tst <- c("logit", "probit", "loglog", "cloglog", "cauchit")
+
+cdf_cumul_tst <- function(z, link) {
+  switch(link,
+         logit = plogis(z),
+         probit = pnorm(z),
+         loglog = exp(-exp(-z)),
+         cloglog = -expm1(-exp(z)),
+         cauchit = pcauchy(z))
+}
+
+# Augmented data of a cumulative model with 4 categories: one row per
+# observation and category (`y`), and the category probabilities as the
+# weights (`w`). `d`: the data of the observations.
+dat_cumul_tst <- function(link = "logit", n = 200, n_grp = 10, sd_grp = 0.7,
+                          seed = 8) {
+  withr::local_seed(seed)
+  d <- data.frame(x = rnorm(n), z = rnorm(n),
+                  g = factor(paste0("g", sample(n_grp, n, replace = TRUE))))
+  eta <- 0.8 * d$x - 0.5 * d$z + rnorm(n_grp, sd = sd_grp)[d$g]
+  cum_probs <- cbind(vapply(c(-0.8, 0.2, 1.1), function(a) {
+    cdf_cumul_tst(a - eta, link)
+  }, numeric(n)), 1)
+  probs <- cbind(cum_probs[, 1], cum_probs[, -1] - cum_probs[, -4])
+  d_aug <- d[rep(seq_len(n), 4), ]
+  d_aug$y <- factor(rep(1:4, each = n))
+  list(d = d, d_aug = d_aug, w = as.vector(probs), probs = probs)
+}
+
+fam_cumul_tst <- function(link) {
+  structure(list(family = "cumulative", link = link, cats = as.character(1:4)),
+            class = "family")
+}
+
+fit_cumul_tst <- function(dat, link = "logit", formula = y ~ x + z + (1 | g),
+                          data = dat$d_aug, weights = dat$w, ...) {
+  fit_cumul_mlvl(formula = formula, data = data, family = fam_cumul_tst(link),
+                 weights = weights, ...)
+}
+
+# The ordinal::clmm() fit. For the links cloglog and loglog, the default code
+# of clmm() for a single group-level intercept term swaps the two links, so
+# these fits use the other code of clmm() (`useMatrix = TRUE`).
+fit_clmm_tst <- function(dat, link = "logit", ...) {
+  args <- list(dat, link = link, mlvl_laplace = FALSE, ...)
+  if (link %in% c("cloglog", "loglog")) {
+    args$control <- ordinal::clmm.control(useMatrix = TRUE)
+  }
+  suppressWarnings(suppressMessages(do.call(fit_cumul_tst, args)))
+}
+
+# The objective of mlvl_laplace_cumul() at the estimates of a clmm() fit:
+obj_clmm_tst <- function(fit_clmm, dat, link) {
+  des <- mlvl_cumul_design(y ~ x + z + (1 | g), dat$d_aug, dat$w)
+  mlvl_cumul_obj(des, mlvl_cumul_link(link)$code, unname(fit_clmm$alpha),
+                 unname(fit_clmm$beta[des$x_nms]),
+                 unname(attr(ordinal::VarCorr(fit_clmm)$g, "stddev")))
+}
+
+test_that("mlvl_cumul_c() gives the gradient of its objective for each link", {
+  dat <- dat_cumul_tst(n = 60, n_grp = 6)
+  x <- as.matrix(dat$d_aug[, c("x", "z")])
+  grp <- as.integer(dat$d_aug$g) - 1L
+  y <- as.integer(dat$d_aug$y)
+  # Other weights than those of the model, some of them 0:
+  w <- dat$w * rep(c(0.5, 1, 2), length.out = length(dat$w))
+  w[c(3, 70, 200)] <- 0
+  par <- c(-0.9, 0.1, 1.2, 0.4, -0.3, 0.7)
+  for (link in links_cumul_tst) {
+    code <- mlvl_cumul_link(link)$code
+    obj <- function(par) {
+      mlvl_cumul_c(par[1:3], par[4:5], par[6], x, grp, 6L, y, w, rep(0, 6),
+                   code, FALSE)$L
+    }
+    ev <- mlvl_cumul_c(par[1:3], par[4:5], par[6], x, grp, 6L, y, w,
+                       rep(0, 6), code, TRUE)
+    grad_fd <- vapply(seq_along(par), function(j) {
+      h <- 1e-5
+      e <- replace(numeric(length(par)), j, h)
+      (obj(par + e) - obj(par - e)) / (2 * h)
+    }, numeric(1))
+    expect_equal(as.vector(ev$grad), grad_fd, tolerance = 1e-6, info = link)
+    expect_equal(ev$L, obj(par), info = link)
+    # Rows with weight 0 do not count:
+    keep <- w > 0
+    expect_equal(
+      mlvl_cumul_c(par[1:3], par[4:5], par[6], x[keep, ], grp[keep], 6L,
+                   y[keep], w[keep], rep(0, 6), code, FALSE)$L,
+      ev$L, info = link
+    )
+  }
+  # Thresholds that do not increase:
+  expect_identical(
+    mlvl_cumul_c(c(0.5, 0.1, 1.2), par[4:5], par[6], x, grp, 6L, y, w,
+                 rep(0, 6), 1L, FALSE)$L,
+    Inf
+  )
+})
+
+test_that("mlvl_laplace_cumul() gives the clmm() fit for each link", {
+  skip_if_not_installed("ordinal")
+  for (link in links_cumul_tst) {
+    dat <- dat_cumul_tst(link)
+    fit <- fit_cumul_tst(dat, link)
+    expect_s3_class(fit, c("projpred_mlvl_cumul", "projpred_mlvl"),
+                    exact = TRUE)
+    expect_identical(fit$link, link)
+    expect_true(check_conv_s(fit), info = link)
+    fit_c <- fit_clmm_tst(dat, link)
+    expect_s3_class(fit_c, "clmm")
+    # The same objective value, or a lower one:
+    expect_lt(fit$deviance / 2, obj_clmm_tst(fit_c, dat, link) + 1e-6)
+    expect_equal(fit$deviance / 2, obj_clmm_tst(fit_c, dat, link),
+                 tolerance = 1e-6, info = link)
+    # The parameters in the names of the clmm() path:
+    for (nm_scheme in c("rstanarm", "brms")) {
+      expect_equal(get_subparams(fit, nm_scheme = nm_scheme),
+                   get_subparams(fit_c, nm_scheme = nm_scheme),
+                   tolerance = 1e-3, info = paste(link, nm_scheme))
+    }
+    expect_equal(as.vector(subprd_augdat(list(fit), dat$d)),
+                 as.vector(predict(fit, dat$d)), info = link)
+    # projpred's predictions for clmm() fits do not have the loglog link:
+    if (link == "loglog") next
+    # The predictions, with existing and new group levels. For new levels,
+    # both paths use the same random numbers:
+    nd <- dat$d[1:8, ]
+    nd$g <- factor(c("g_new1", "g1", "g_new2", "g_new1", "g2", "g3", "g_new3",
+                     "g_new2"))
+    for (pred_new in c(FALSE, TRUE)) {
+      withr::with_options(list(projpred.mlvl_pred_new = pred_new), {
+        prd <- withr::with_seed(1, subprd_augdat(list(fit, fit), nd))
+        prd_c <- withr::with_seed(1, subprd_augdat(list(fit_c, fit_c), nd))
+      })
+      expect_identical(dim(prd), c(8L, 3L, 2L))
+      expect_equal(prd, prd_c, tolerance = 1e-3,
+                   info = paste(link, pred_new))
+      # The two draws get different group-level intercepts for new levels:
+      expect_false(isTRUE(all.equal(prd[1, , 1], prd[1, , 2])))
+    }
+  }
+  # Link `probit_approx` of brms is fitted as `probit`:
+  dat <- dat_cumul_tst("probit")
+  expect_equal(fit_cumul_tst(dat, "probit_approx"),
+               fit_cumul_tst(dat, "probit"))
+})
+
+test_that(paste(
+  "an mlvl_laplace_cumul() fit without group-level variation equals the",
+  "fit without the group-level term"
+), {
+  dat <- dat_cumul_tst(sd_grp = 0)
+  fit <- fit_cumul_tst(dat)
+  fit_polr <- suppressWarnings(MASS::polr(
+    y ~ x + z, data = cbind(dat$d_aug, w = dat$w), weights = w
+  ))
+  expect_lt(fit$sd[["g"]], 1e-3)
+  expect_equal(fit$coefficients, coef(fit_polr), tolerance = 1e-4)
+  expect_equal(fit$alpha, fit_polr$zeta, tolerance = 1e-4)
+  expect_equal(fit$deviance, deviance(fit_polr), tolerance = 1e-6)
+})
+
+test_that(paste(
+  "observations with weight 0 do not change an mlvl_laplace_cumul() fit, and",
+  "integer weights equal duplicated observations"
+), {
+  dat <- dat_cumul_tst()
+  n <- nrow(dat$d)
+  pars <- function(fit) c(fit$alpha, fit$coefficients, fit$sd)
+  idxs_w0 <- 1:3
+  probs_w0 <- dat$probs
+  probs_w0[idxs_w0, ] <- 0
+  d_chg <- dat$d_aug
+  d_chg$x[d_chg$x %in% dat$d$x[idxs_w0]] <- 5
+  fit_w0 <- fit_cumul_tst(dat, weights = as.vector(probs_w0))
+  fit_chg <- fit_cumul_tst(dat, data = d_chg, weights = as.vector(probs_w0))
+  keep <- rep(!seq_len(n) %in% idxs_w0, 4)
+  fit_rm <- fit_cumul_tst(dat, data = dat$d_aug[keep, ],
+                          weights = dat$w[keep])
+  expect_equal(pars(fit_chg), pars(fit_w0), tolerance = 1e-10)
+  expect_equal(pars(fit_rm), pars(fit_w0), tolerance = 1e-10)
+
+  idxs_w2 <- 1:10
+  probs_w2 <- dat$probs
+  probs_w2[idxs_w2, ] <- 2 * probs_w2[idxs_w2, ]
+  idxs_dupl <- rep(c(seq_len(n), idxs_w2), 4) +
+    rep((0:3) * n, each = n + length(idxs_w2))
+  fit_w2 <- fit_cumul_tst(dat, weights = as.vector(probs_w2))
+  fit_dupl <- fit_cumul_tst(dat, data = dat$d_aug[idxs_dupl, ],
+                            weights = dat$w[idxs_dupl])
+  expect_equal(pars(fit_dupl), pars(fit_w2), tolerance = 1e-6)
+})
+
+test_that(paste(
+  "fit_cumul_mlvl() uses clmm() for the cases that mlvl_laplace_cumul() does",
+  "not handle"
+), {
+  skip_if_not_installed("ordinal")
+  dat <- dat_cumul_tst(n = 120, n_grp = 6)
+  expect_clmm <- function(fit) {
+    expect_s3_class(fit, "clmm")
+  }
+  quiet <- function(expr) suppressWarnings(suppressMessages(expr))
+  # A group-level slope, and two group-level terms:
+  expect_clmm(quiet(fit_cumul_tst(dat, formula = y ~ x + (x | g))))
+  d2 <- dat$d_aug
+  d2$h <- factor(paste0("h", as.integer(d2$g) %% 3))
+  expect_clmm(quiet(fit_cumul_tst(dat, formula = y ~ x + (1 | g) + (1 | h),
+                                  data = d2)))
+  # Arguments for clmm() or its optimizers:
+  expect_clmm(quiet(fit_cumul_tst(dat, method = "nlminb")))
+  expect_clmm(quiet(fit_cumul_tst(dat, control = ordinal::clmm.control())))
+  # An offset:
+  d2$offs <- 0.1 * d2$z
+  expect_clmm(quiet(fit_cumul_tst(dat, formula = y ~ x + offset(offs) + (1 | g),
+                                  data = d2)))
+  # A rank-deficient model matrix:
+  d2$x2 <- 2 * d2$x
+  expect_clmm(quiet(fit_cumul_tst(dat, formula = y ~ x + x2 + (1 | g),
+                                  data = d2)))
+  # The global option:
+  withr::local_options(projpred.mlvl_laplace = FALSE)
+  expect_clmm(quiet(fit_cumul_tst(dat)))
+})
+
+test_that("mlvl_cumul_design() returns `NULL` for the cases without a fit", {
+  dat <- dat_cumul_tst(n = 40, n_grp = 4)
+  fml <- y ~ x + (1 | g)
+  expect_type(mlvl_cumul_design(fml, dat$d_aug, dat$w), "list")
+  # A response category without weight:
+  w_cat0 <- dat$w
+  w_cat0[dat$d_aug$y == "2"] <- 0
+  expect_null(mlvl_cumul_design(fml, dat$d_aug, w_cat0))
+  # Missing values, a response that is not a factor, weights of another
+  # length:
+  d_na <- dat$d_aug
+  d_na$x[1] <- NA
+  expect_null(mlvl_cumul_design(fml, d_na, dat$w))
+  d_num <- dat$d_aug
+  d_num$y <- as.integer(d_num$y)
+  expect_null(mlvl_cumul_design(fml, d_num, dat$w))
+  expect_null(mlvl_cumul_design(fml, dat$d_aug, dat$w[-1]))
+  # A link without a fit:
+  expect_null(mlvl_laplace_cumul(fml, dat$d_aug, list(link = "softit"),
+                                 dat$w))
+})
+
+test_that(paste(
+  "fit_cumul_mlvl() refits with clmm() if mlvl_laplace_cumul() does not",
+  "converge, and returns the clmm() fit as a `projpred_mlvl_cumul` object"
+), {
+  skip_if_not_installed("ordinal")
+  dat <- dat_cumul_tst(n = 120, n_grp = 6)
+  local_mocked_bindings(mlvl_cumul_optim = function(des, link, ...) {
+    list(alpha = c(-1, 0, 1), beta = rep(0, ncol(des$x)), tau = 1,
+         u = rep(0, des$nlev), objective = 1, convergence = 1L,
+         message = "mocked", iterations = 0L, n_restart = 0L)
+  })
+  fit <- suppressWarnings(suppressMessages(fit_cumul_tst(dat)))
+  expect_s3_class(fit, c("projpred_mlvl_cumul", "projpred_mlvl"), exact = TRUE)
+  expect_identical(fit$optinfo$message,
+                   "ordinal::clmm() fit (Laplace fit: mocked)")
+  expect_true(check_conv_s(fit))
+  fit_c <- fit_clmm_tst(dat)
+  expect_equal(get_subparams(fit, nm_scheme = "brms"),
+               get_subparams(fit_c, nm_scheme = "brms"), tolerance = 1e-8)
+  expect_equal(fit$deviance / 2, obj_clmm_tst(fit_c, dat, "logit"))
+  nd <- dat$d[1:5, ]
+  expect_equal(subprd_augdat(list(fit), nd), subprd_augdat(list(fit_c), nd),
+               tolerance = 1e-8)
+})
+
+test_that(paste(
+  "divmin_augdat() gives `projpred_mlvl_cumul` fits, and subprd_augdat()",
+  "handles them together with clmm() fits"
+), {
+  skip_if_not_installed("ordinal")
+  dat <- dat_cumul_tst(n = 120, n_grp = 6)
+  fit_divmin <- function() {
+    divmin_augdat(formula = y ~ x + (1 | g), data = dat$d_aug,
+                  family = fam_cumul_tst("logit"), weights = "unused",
+                  projpred_var = matrix(NA_real_, nrow(dat$d_aug), 2),
+                  projpred_ws_aug = cbind(dat$w, rev(dat$w)),
+                  verbose_divmin = FALSE, throw_warn_sdivmin = TRUE,
+                  do_check_conv = TRUE)
+  }
+  expect_no_warning(fits <- fit_divmin())
+  expect_length(fits, 2)
+  for (fit in fits) {
+    expect_s3_class(fit, "projpred_mlvl_cumul")
+  }
+  withr::local_options(projpred.mlvl_laplace = FALSE)
+  fits_c <- suppressWarnings(suppressMessages(fit_divmin()))
+  expect_s3_class(fits_c[[1]], "clmm")
+  nd <- dat$d[1:5, ]
+  prd_mixed <- subprd_augdat(list(fits[[1]], fits_c[[2]]), nd)
+  expect_equal(prd_mixed, subprd_augdat(fits_c, nd), tolerance = 1e-3)
+  # A single row of new data:
+  expect_identical(dim(subprd_augdat(fits, nd[1, ])), c(1L, 3L, 2L))
+  expect_identical(dim(subprd_augdat(list(fits[[1]], fits_c[[2]]), nd[1, ])),
+                   c(1L, 3L, 2L))
+})
+
+test_that("the methods for `projpred_mlvl_cumul` objects work", {
+  dat <- dat_cumul_tst(n = 120, n_grp = 6)
+  fit <- fit_cumul_tst(dat)
+  expect_equal(formula(fit), y ~ x + z + (1 | g))
+  prd <- predict(fit, dat$d[1:4, ])
+  expect_identical(dimnames(prd), list(as.character(1:4), c("1|2", "2|3",
+                                                            "3|4")))
+  # The category probabilities of the fit are close to those of the data:
+  cum_probs <- cbind(plogis(predict(fit, dat$d)), 1)
+  probs <- cbind(cum_probs[, 1], cum_probs[, -1] - cum_probs[, -4])
+  expect_lt(mean(abs(probs - dat$probs)), 0.05)
+  expect_output(print(fit), "Thresholds")
+  expect_error(as_glmerMod(fit, data = dat$d_aug),
+               "does not support fits of the cumulative family")
+})

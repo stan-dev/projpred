@@ -405,6 +405,9 @@ as_glmerMod <- function(object, data, weights = NULL) {
   if (!inherits(object, "projpred_mlvl")) {
     stop("`object` must be of class `projpred_mlvl`.")
   }
+  if (inherits(object, "projpred_mlvl_cumul")) {
+    stop("as_glmerMod() does not support fits of the cumulative family.")
+  }
   if (is.null(object$coefficients) || is.null(object$sd)) {
     stop("`object` has no parameter estimates.")
   }

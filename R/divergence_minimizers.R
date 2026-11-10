@@ -1625,9 +1625,10 @@ divmin_augdat <- function(
       progressor_obj <- NULL
     }
     dot_args <- list(...)
-    # The option of the Laplace fit (see mlvl_laplace()), read in this R
-    # process:
-    if (identical(sdivmin, fit_glmer_callback)) {
+    # The option of the Laplace fit (see mlvl_laplace() and
+    # mlvl_laplace_cumul()), read in this R process:
+    if (identical(sdivmin, fit_glmer_callback) ||
+        identical(sdivmin, fit_cumul_mlvl)) {
       dot_args$mlvl_laplace <- getOption("projpred.mlvl_laplace", TRUE)
     }
     `%do_projpred%` <- foreach::`%dopar%`
@@ -1851,7 +1852,10 @@ cumul_native_multi <- function(formula, data, family, ws_aug, dot_args) {
 
 # Use ordinal::clmm() to fit multilevel submodels for the brms::cumulative()
 # family:
-fit_cumul_mlvl <- function(formula, data, family, weights, ...) {
+fit_cumul_mlvl <- function(formula, data, family, weights,
+                           mlvl_laplace = getOption("projpred.mlvl_laplace",
+                                                    TRUE),
+                           ...) {
   # Argument `weights` of ordinal::clmm() expects a column name (as a symbol):
   if ("projpred_internal_w_aug" %in% names(data)) {
     stop("Need to write to column `projpred_internal_w_aug` of `data`, but ",
@@ -1859,7 +1863,6 @@ fit_cumul_mlvl <- function(formula, data, family, weights, ...) {
          "try again.")
   }
   stopifnot(length(weights) == nrow(data))
-  data$projpred_internal_w_aug <- weights
   # Exclude arguments from `...` which cannot be passed to ordinal::clmm():
   dot_args <- list(...)
   dot_args <- dot_args[intersect(
@@ -1874,6 +1877,23 @@ fit_cumul_mlvl <- function(formula, data, family, weights, ...) {
       methods::formalArgs(stats::nlminb),
       methods::formalArgs(stats::optim))
   )]
+  # A single `(1 | <group>)` term and no arguments for ordinal::clmm() or its
+  # optimizers: projpred's own Laplace fit (see mlvl_laplace_cumul()), with
+  # ordinal::clmm() as the fallback if it does not converge (the fallback fit
+  # is converted to the same class):
+  if (isTRUE(mlvl_laplace) && !length(dot_args)) {
+    fit <- mlvl_laplace_cumul(formula, data = data, family = family,
+                              weights = weights)
+    if (!is.null(fit)) {
+      if (fit$convergence == 0) return(fit)
+      return(mlvl_cumul_from_clmm(
+        fit_cumul_mlvl(formula = formula, data = data, family = family,
+                       weights = weights, mlvl_laplace = FALSE, ...),
+        formula, failed = fit
+      ))
+    }
+  }
+  data$projpred_internal_w_aug <- weights
   # clmm() has no analytic gradient, so its default optimizer nlminb() spends
   # most objective evaluations on finite-difference gradients.  ucminf() with
   # forward differences needs fewer evaluations and gives the same fits within
@@ -2525,10 +2545,19 @@ subprd_augdat <- function(fits, newdata) {
   if (!is.null(prd_direct)) {
     return(prd_direct)
   }
-  if (inherits(fits[[1]], "clmm")) {
-    y_nm <- extract_terms_response(formula(fits[[1]]))$response
+  # Fits of projpred's Laplace fitter (see mlvl_laplace_cumul()): all draws at
+  # once:
+  if (all(vapply(fits, inherits, logical(1), "projpred_mlvl_cumul"))) {
+    return(subprd_mlvl_cumul(fits, newdata))
+  }
+  is_clmm <- vapply(fits, inherits, logical(1), "clmm")
+  if (any(is_clmm)) {
+    y_nm <- extract_terms_response(formula(fits[[which(is_clmm)[1]]]))$response
   }
   prd_list <- lapply(fits, function(fit) {
+    if (inherits(fit, "projpred_mlvl_cumul")) {
+      return(subprd_mlvl_cumul(list(fit), newdata, as_array = FALSE)[[1]])
+    }
     # Basic predictions (if possible, these should be already on link scale; if
     # this is not possible, the transformation to link scale has to follow):
     if (inherits(fit, "polr")) {
