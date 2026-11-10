@@ -248,7 +248,6 @@ test_that(paste(
   "posterior::weight_draws()"
 ), {
   skip_if_not(run_prj)
-  skip_if_not_installed("posterior")
   for (tstsetup in names(prjs)) {
     if (args_prj[[tstsetup]]$mod_nm == "gamm") {
       # Skipping GAMMs because of issue #131.
@@ -274,7 +273,6 @@ test_that(paste(
   "as.matrix.projection()"
 ), {
   skip_if_not(run_prj)
-  skip_if_not_installed("posterior")
   for (tstsetup in grep("rstanarm\\.glm\\.", names(prjs), value = TRUE)) {
     m <- as.matrix(prjs[[tstsetup]], nm_scheme = "brms",
                    allow_nonconst_wdraws_prj = ndr_ncl_dtls(
@@ -294,7 +292,6 @@ test_that(paste(
   "as_draws.projection() is a wrapper for as_draws_matrix.projection()"
 ), {
   skip_if_not(run_prj)
-  skip_if_not_installed("posterior")
   for (tstsetup in grep("rstanarm\\.glm\\.", names(prjs), value = TRUE)) {
     m_dr <- posterior::as_draws_matrix(prjs[[tstsetup]], nm_scheme = "brms")
     m_dr_unspec <- posterior::as_draws(prjs[[tstsetup]], nm_scheme = "brms")

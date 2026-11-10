@@ -123,7 +123,7 @@
 #'   \pkg{doFuture}. For GLMs, this CV parallelization should work reliably, but
 #'   for other models (such as GLMMs), it may lead to excessive memory usage
 #'   which in turn may crash the R session (on Unix systems, setting an
-#'   appropriate memory limit via [unix::rlimit_as()] may avoid crashing the
+#'   appropriate memory limit via `unix::rlimit_as()` may avoid crashing the
 #'   whole machine). However, the problem of excessive memory usage is less
 #'   pronounced for the CV parallelization than for the projection
 #'   parallelization described in [projpred-package]. In that regard, the CV

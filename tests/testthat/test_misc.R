@@ -453,3 +453,21 @@ test_that(".auc() propagates input `NA`s to its output", {
                   "`wobs` column only `NA`s")
   )
 })
+
+test_that("all_ia_perms() gives all orders of an interaction term", {
+  expect_identical(all_ia_perms("a"), "a")
+  expect_identical(all_ia_perms("b:a"), c("b:a", "a:b"))
+  expect_identical(
+    all_ia_perms("x2:x1:s(x3)"),
+    c("x2:x1:s(x3)", "x2:s(x3):x1", "x1:x2:s(x3)", "x1:s(x3):x2",
+      "s(x3):x2:x1", "s(x3):x1:x2")
+  )
+  expect_identical(all_ia_perms(c("b", "a"), is_split = TRUE),
+                   all_ia_perms("b:a"))
+  perms4 <- all_ia_perms("d:c:b:a")
+  expect_length(perms4, 24)
+  expect_identical(anyDuplicated(perms4), 0L)
+  expect_identical(unique(vapply(strsplit(perms4, ":"), function(trms) {
+    paste(sort(trms), collapse = ":")
+  }, character(1))), "a:b:c:d")
+})
