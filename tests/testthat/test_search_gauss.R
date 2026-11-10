@@ -443,7 +443,13 @@ test_that("the L1 search gives the text of a term above 500 characters", {
     vs <- suppressWarnings(varsel(
       refm, method = "L1", nclusters_pred = 5, seed = 3317, verbose = FALSE
     ))
-    expect_setequal(ranking(vs)$fulldata, c(long_term, "x2"))
+    rk <- ranking(vs)$fulldata
+    expect_length(rk, 2L)
+    expect_setequal(rk, c(long_term, "x2"))
+    # The largest submodel of the search has the columns of both terms:
+    x_all <- model.matrix(refm$formula, refm$fetch_data())
+    expect_identical(ncol(vs$search_path$outdmins[[3]][[1]]$x),
+                     ncol(x_all) - 1L)
   }
 })
 
