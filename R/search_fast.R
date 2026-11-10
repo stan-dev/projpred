@@ -2,17 +2,23 @@
 # cv_varsel(), integer m, `NULL` = off). In each step, the score statistic at
 # the current submodel ranks the candidates, and only the m best get an exact
 # projection. Returns `NULL` if `search_screen` is `NULL` or a condition does
-# not hold; then search_forward() continues with its own search.
+# not hold; then search_forward() continues with its own search (with a
+# message in verbose mode).
 search_forward_fast <- function(p_ref, refmodel, nterms_max, verbose,
                                 search_terms, search_screen = NULL, ...) {
   if (is.null(search_screen)) {
     return(NULL)
   }
-  return(search_forward_screen(
+  out <- search_forward_screen(
     p_ref = p_ref, refmodel = refmodel, nterms_max = nterms_max,
     verbose = verbose, search_terms = search_terms,
     screen_m = as.integer(search_screen), ...
-  ))
+  )
+  if (is.null(out)) {
+    verb_out("Argument `search_screen` cannot be used for this model or ",
+             "data. Running the plain forward search.", verbose = verbose)
+  }
+  return(out)
 }
 
 # Score-screened forward search for binomial (logit link) and Poisson (log
@@ -27,15 +33,16 @@ search_forward_fast <- function(p_ref, refmodel, nterms_max, verbose,
 # averaged over the draws with `wdraws_prj` and divided by sum(w) (the scale of
 # the cross-entropy `ce`; only the order of the gains matters). The ridge
 # penalty of the projection is ignored. The gains only select the candidates
-# to project; the exact projections choose the term.
+# to project; the exact projections choose the term. The submodels are fitted
+# to the reference means without the offsets, so `mu_ref` and `mu_A` are the
+# means without the offsets, too.
 search_forward_screen <- function(p_ref, refmodel, nterms_max, verbose,
                                   search_terms, screen_m, ...) {
   fam <- refmodel$family
   canon <- c(binomial = "logit", poisson = "log")
   if (!fam$family %in% names(canon) || fam$link != canon[[fam$family]] ||
       isTRUE(fam$for_augdat) || isTRUE(fam$for_latent) ||
-      !identical(refmodel$div_minimizer, divmin) ||
-      any(refmodel$offset != 0) || anyNA(p_ref$mu) ||
+      !identical(refmodel$div_minimizer, divmin) || anyNA(p_ref$mu) ||
       !isTRUE(screen_m >= 1L)) {
     return(NULL)
   }
@@ -55,7 +62,7 @@ search_forward_screen <- function(p_ref, refmodel, nterms_max, verbose,
   # The approximate gains of the candidates with the new columns `cols_cands`
   # at the submodel fit `outdmin` with the columns `cols_chosen`:
   score_gains <- function(outdmin, cols_cands, cols_chosen) {
-    mu_a <- refmodel$mu_fun(outdmin, offset = refmodel$offset)
+    mu_a <- refmodel$mu_fun(outdmin)
     if (!identical(dim(mu_a), dim(mu_ref)) || anyNA(mu_a)) {
       return(NULL)
     }
@@ -64,6 +71,7 @@ search_forward_screen <- function(p_ref, refmodel, nterms_max, verbose,
                         cols_cands = cols_cands, cols_chosen = cols_chosen))
   }
 
+  iq <- ceiling(quantile(seq_len(nterms_max + 1L), 1:10 / 10))
   chosen <- character()
   labels_chosen <- character()
   cols_chosen <- integer(0)
@@ -102,6 +110,16 @@ search_forward_screen <- function(p_ref, refmodel, nterms_max, verbose,
     labels_chosen <- c(labels_chosen, st$labels_new[[k]])
     cols_chosen <- c(cols_chosen, st$cols[[k]])
     outdmins <- c(outdmins, list(cur$outdmin))
+
+    # Verbose mode output, as in search_forward():
+    ct_chosen <- count_terms_chosen(chosen)
+    if (verbose && ct_chosen %in% iq) {
+      vtxt <- paste(names(iq)[max(which(ct_chosen == iq))], "of terms selected")
+      if (verbose >= 2L) {
+        vtxt <- paste0(vtxt, ": `~ ", paste(chosen, collapse = " + "), "`")
+      }
+      verb_out(vtxt)
+    }
   }
   return(nlist(predictor_ranking = setdiff(chosen, "1"), outdmins))
 }

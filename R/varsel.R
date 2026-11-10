@@ -96,13 +96,16 @@
 #'   step. The selected terms and their order can differ from those of the
 #'   plain forward search. The screening applies only to the traditional
 #'   projection with [binomial()] (logit link) or [poisson()] (log link)
-#'   submodels without multilevel terms, additive terms, interactions with a
-#'   factor and offsets, with the default divergence minimizer, and only if the
+#'   submodels without multilevel terms, additive terms and interactions with
+#'   a factor, with the default divergence minimizer, and only if the
 #'   model matrix of the search terms can be built (for example, no missing
 #'   values and no zero-variance columns); in the other cases, `search_screen`
 #'   is ignored and the plain forward search runs. For Gaussian submodels with
 #'   the identity link, `search_screen` is ignored if projpred uses its
 #'   cross-product forward search for them.
+#'   With offsets, the score statistic approximates the reduction of the
+#'   objective that the submodels are fitted to, which has no offsets; the
+#'   exact projections still choose the term.
 #' @param search_out Intended for internal use.
 #' @param verbose A single integer value from the set \eqn{\{0, 1, 2, 3,
 #'   4\}}{{0, 1, 2, 3, 4}} (for [varsel()], \eqn{3} and \eqn{4} have the same

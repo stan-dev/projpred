@@ -194,6 +194,36 @@ test_that(paste(
   }
 })
 
+test_that("`search_screen` applies to models with offsets", {
+  for (fam in list(binomial(), poisson())) {
+    refm <- refm_screen(fam, n = 200, offset = TRUE)
+    expect_true(any(refm$offset != 0), info = fam$family)
+    expect_screen_equal_forward(refm, 20, info = fam$family)
+    # The submodels are fitted without the offsets, but `ce` includes them,
+    # so the gains and `ce` can order the candidates differently. With 3
+    # candidates per step, the first 3 terms are the forward choices here:
+    rk_fwd <- ranking(vs_screen(refm, NULL, nterms_max = 4))$fulldata
+    rk_scr <- ranking(vs_screen(refm, 3, nterms_max = 4))$fulldata
+    expect_identical(rk_scr[1:3], rk_fwd[1:3], info = fam$family)
+  }
+})
+
+test_that("`search_screen` gives verbose output", {
+  refm <- refm_screen()
+  expect_message(
+    muffle_known(varsel(refm, search_screen = 2, nclusters = 3,
+                        ndraws_pred = 20, nterms_max = 4, seed = 5521,
+                        verbose = TRUE)),
+    "100% of terms selected"
+  )
+  expect_message(
+    muffle_known(varsel(refm_screen(binomial(link = "probit")),
+                        search_screen = 2, nclusters = 3, ndraws_pred = 20,
+                        nterms_max = 2, seed = 5521, verbose = TRUE)),
+    "`search_screen` cannot be used for this model or data"
+  )
+})
+
 test_that("`search_screen` applies to numeric interaction terms", {
   refm <- refm_screen(fml = y ~ x1 + x2 + x3 + x4 + x1:x2 + x3:x4)
   expect_screen_equal_forward(refm, 10, info = "numeric interactions",
@@ -201,14 +231,10 @@ test_that("`search_screen` applies to numeric interaction terms", {
 })
 
 test_that(paste(
-  "`search_screen` falls back to the plain forward search for an offset, a",
+  "`search_screen` falls back to the plain forward search for a",
   "non-canonical link, a factor in an interaction and a custom divergence",
   "minimizer"
 ), {
-  expect_screen_fallback(refm_screen(binomial(), offset = TRUE),
-                         info = "binomial offset")
-  expect_screen_fallback(refm_screen(poisson(), offset = TRUE),
-                         info = "poisson offset")
   expect_screen_fallback(refm_screen(binomial(link = "probit")),
                          info = "probit link")
   expect_screen_fallback(refm_screen(fml = y ~ x1 + x2 + f + x1:f),

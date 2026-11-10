@@ -213,13 +213,16 @@ reduces the number of projections from about p per step to at most m per
 step. The selected terms and their order can differ from those of the
 plain forward search. The screening applies only to the traditional
 projection with \code{\link[=binomial]{binomial()}} (logit link) or \code{\link[=poisson]{poisson()}} (log link)
-submodels without multilevel terms, additive terms, interactions with a
-factor and offsets, with the default divergence minimizer, and only if the
+submodels without multilevel terms, additive terms and interactions with
+a factor, with the default divergence minimizer, and only if the
 model matrix of the search terms can be built (for example, no missing
 values and no zero-variance columns); in the other cases, \code{search_screen}
 is ignored and the plain forward search runs. For Gaussian submodels with
 the identity link, \code{search_screen} is ignored if projpred uses its
-cross-product forward search for them.}
+cross-product forward search for them.
+With offsets, the score statistic approximates the reduction of the
+objective that the submodels are fitted to, which has no offsets; the
+exact projections still choose the term.}
 
 \item{search_out}{Intended for internal use.}
 
