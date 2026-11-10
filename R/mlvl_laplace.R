@@ -243,9 +243,10 @@ mlvl_from_merMod <- function(fit, formula, failed) {
   des <- attr(failed, "des")
   if (!all(vapply(re, function(r) identical(names(r), "(Intercept)"),
                   logical(1))) ||
-      !identical(names(re), names(des$lvls))) {
+      !setequal(names(re), names(des$lvls))) {
     return(fit)
   }
+  re <- re[names(des$lvls)]
   vc <- lme4::VarCorr(fit)
   sd <- vapply(vc[names(re)], function(v) unname(attr(v, "stddev")),
                numeric(1))
@@ -273,9 +274,9 @@ mlvl_from_merMod <- function(fit, formula, failed) {
 # `newdata`: X beta_s plus the random intercepts of the existing group levels;
 # for new group levels (and for all levels if global option
 # `projpred.mlvl_pred_new` is `TRUE`), random intercepts drawn from their
-# Gaussian distribution, as repair_re.merMod() does for lme4 fits (also in the
-# same order: per draw, per grouping variable, per level in the order of the
-# factor levels).
+# Gaussian distribution (per draw, per grouping variable, per level in the
+# order of the factor levels), as repair_re.merMod() does for lme4 fits (which
+# uses another order of the draws).
 subprd_mlvl <- function(fits, newdata) {
   stopifnot(!is.null(newdata))
   pred_new <- getOption("projpred.mlvl_pred_new", FALSE)
@@ -341,21 +342,30 @@ subprd_mlvl <- function(fits, newdata) {
 #'   element `outdmin` of an object returned by [project()].
 #' @param data A `data.frame` with the data that `object` was fitted to: the
 #'   predictors, the grouping variables and the response, with the names used
-#'   in `formula(object)`. The object does not store these data. In a
-#'   projection, the response of a submodel fit is the vector of the reference
-#'   model's predicted means (success probabilities for the binomial family)
-#'   for the projected draw or cluster.
+#'   in `formula(object)`. The object does not store these data. In the
+#'   traditional projection, the response of a submodel fit is the vector of
+#'   the reference model's predicted means (success probabilities for the
+#'   binomial family) for the projected draw or cluster. In the augmented-data
+#'   projection, the data are the augmented rows (one row per observation and
+#'   response category), and the predicted probabilities are in the weights.
 #' @param weights A numeric vector of the observation weights that `object` was
-#'   fitted with, or `NULL` for weights of 1.
+#'   fitted with, or `NULL` for weights of 1. Rows of `data` with weight 0 are
+#'   removed, as \pkg{projpred} does before it fits a multilevel submodel.
 #'
 #' @details The group-level intercepts of the returned object are computed by
-#'   \pkg{lme4} from `data` and `weights`. If they differ from those of
+#'   \pkg{lme4} from `data` and `weights`. If they or the value of the
+#'   objective function at the parameter estimates differ from those of
 #'   `object`, then `data` or `weights` are not those of the fit, and this
-#'   function throws a warning. With \pkg{lme4} versions that round non-integer
-#'   binomial responses or do not support non-integer Poisson responses in the
-#'   log-likelihood (versions up to 2.1-0), the deviance and the log-likelihood
-#'   of the returned object are not those of the fit; the parameter estimates
-#'   and the predictions are not affected.
+#'   function throws a warning.
+#'
+#'   For non-integer responses, \pkg{lme4} versions up to 2.1-0 round binomial
+#'   responses in the log-likelihood and give a log-likelihood of `-Inf` for
+#'   the Poisson family. With these versions, the log-likelihood of the
+#'   returned object (and what depends on it, for example [AIC()]) is not that
+#'   of the fit; the parameter estimates and the predictions are not affected.
+#'
+#'   The call stored in the returned object is the [lme4::glmer()] call for
+#'   `data` and `weights`, with the default settings of [lme4::glmer()].
 #'
 #' @return An object of class `glmerMod` (see [lme4::glmer()]) with the
 #'   fixed effects, the group-level standard deviations and the group-level
@@ -402,16 +412,46 @@ as_glmerMod <- function(object, data, weights = NULL) {
     stop("`data` must be a `data.frame`.")
   }
   if (is.null(weights)) weights <- rep(1, nrow(data))
-  if (!is.numeric(weights) || length(weights) != nrow(data)) {
-    stop("`weights` must be a numeric vector with one element per row of ",
-         "`data`.")
+  if (!is.numeric(weights) || length(weights) != nrow(data) ||
+      anyNA(weights) || any(weights < 0)) {
+    stop("`weights` must be a numeric vector of non-negative values with one ",
+         "element per row of `data`.")
+  }
+  if (".projpred_wobs" %in% names(data)) {
+    stop("`data` must not have a column named `.projpred_wobs`.")
   }
   fam <- switch(object$family,
                 binomial = binomial(link = object$link),
                 poisson = poisson(link = object$link),
                 stop("Unexpected family of `object`."))
+  # The call of the returned object: the lme4::glmer() call for these data.
+  mc_in <- match.call()
+  mc <- as.call(c(
+    list(quote(lme4::glmer), formula = object$formula, data = mc_in$data,
+         family = call(object$family, link = object$link)),
+    if (!is.null(mc_in$weights)) list(weights = mc_in$weights)
+  ))
+  # As divmin() does before the fit:
+  if (any(weights == 0)) {
+    data <- data[weights != 0, , drop = FALSE]
+    weights <- weights[weights != 0]
+  }
+  # The objective of mlvl_laplace() for these data, at the estimates of
+  # `object`:
+  des <- mlvl_laplace_design(object$formula, data, weights,
+                             mlvl_laplace_grps(object$formula),
+                             mlvl_laplace_fam(fam))
+  dev <- if (is.null(des)) {
+    NA_real_
+  } else {
+    tryCatch(
+      mlvl_laplace_dev(des, mlvl_laplace_fam(fam),
+                       unname(object$sd[names(des$lvls)]),
+                       unname(object$coefficients[colnames(des$x)])),
+      error = function(e) NA_real_
+    )
+  }
   data$.projpred_wobs <- weights
-  mc <- match.call()
   # The responses of a projection are not integers, so the warnings of the
   # family functions about non-integer responses are expected:
   out <- withCallingHandlers({
@@ -434,10 +474,13 @@ as_glmerMod <- function(object, data, weights = NULL) {
     lme4::mkMerMod(environment(devfun), opt, glmod$reTrms, fr = glmod$fr,
                    mc = mc)
   }, warning = function(w) {
-    if (grepl("non-integer", conditionMessage(w), fixed = TRUE)) {
+    if (grepl("^non-integer (#successes in a binomial glm|x = )",
+              conditionMessage(w))) {
       invokeRestart("muffleWarning")
     }
   })
+  # `data` and `weights` are those of the fit if they give the objective value
+  # and the group-level intercepts of `object`:
   re <- lme4::ranef(out, condVar = FALSE)
   differs <- vapply(nms_g, function(g) {
     b <- object$ranef[[g]]
@@ -445,10 +488,14 @@ as_glmerMod <- function(object, data, weights = NULL) {
     !setequal(names(b), names(b_out)) ||
       max(abs(b - b_out[names(b)])) > 1e-3 * (1 + max(abs(b)))
   }, logical(1))
-  if (any(differs)) {
-    warning("The group-level intercepts of the converted fit differ from ",
-            "those of `object`. Check that `data` (including the response) ",
-            "and `weights` are those that `object` was fitted to.")
+  dev_differs <- is.finite(object$deviance) &&
+    (!is.finite(dev) ||
+       abs(dev - object$deviance) > 1e-6 * (1 + abs(object$deviance)))
+  if (any(differs) || dev_differs) {
+    warning("The converted fit differs from `object` in the group-level ",
+            "intercepts or in the value of the objective function. Check that ",
+            "`data` (including the response) and `weights` are those that ",
+            "`object` was fitted to.")
   }
   return(out)
 }

@@ -12,13 +12,16 @@ element \code{outdmin} of an object returned by \code{\link[=project]{project()}
 
 \item{data}{A \code{data.frame} with the data that \code{object} was fitted to: the
 predictors, the grouping variables and the response, with the names used
-in \code{formula(object)}. The object does not store these data. In a
-projection, the response of a submodel fit is the vector of the reference
-model's predicted means (success probabilities for the binomial family)
-for the projected draw or cluster.}
+in \code{formula(object)}. The object does not store these data. In the
+traditional projection, the response of a submodel fit is the vector of
+the reference model's predicted means (success probabilities for the
+binomial family) for the projected draw or cluster. In the augmented-data
+projection, the data are the augmented rows (one row per observation and
+response category), and the predicted probabilities are in the weights.}
 
 \item{weights}{A numeric vector of the observation weights that \code{object} was
-fitted with, or \code{NULL} for weights of 1.}
+fitted with, or \code{NULL} for weights of 1. Rows of \code{data} with weight 0 are
+removed, as \pkg{projpred} does before it fits a multilevel submodel.}
 }
 \value{
 An object of class \code{glmerMod} (see \code{\link[lme4:glmer]{lme4::glmer()}}) with the
@@ -36,13 +39,19 @@ builds the corresponding \pkg{lme4} object, for use with the methods of
 }
 \details{
 The group-level intercepts of the returned object are computed by
-\pkg{lme4} from \code{data} and \code{weights}. If they differ from those of
+\pkg{lme4} from \code{data} and \code{weights}. If they or the value of the
+objective function at the parameter estimates differ from those of
 \code{object}, then \code{data} or \code{weights} are not those of the fit, and this
-function throws a warning. With \pkg{lme4} versions that round non-integer
-binomial responses or do not support non-integer Poisson responses in the
-log-likelihood (versions up to 2.1-0), the deviance and the log-likelihood
-of the returned object are not those of the fit; the parameter estimates
-and the predictions are not affected.
+function throws a warning.
+
+For non-integer responses, \pkg{lme4} versions up to 2.1-0 round binomial
+responses in the log-likelihood and give a log-likelihood of \code{-Inf} for
+the Poisson family. With these versions, the log-likelihood of the
+returned object (and what depends on it, for example \code{\link[=AIC]{AIC()}}) is not that
+of the fit; the parameter estimates and the predictions are not affected.
+
+The call stored in the returned object is the \code{\link[lme4:glmer]{lme4::glmer()}} call for
+\code{data} and \code{weights}, with the default settings of \code{\link[lme4:glmer]{lme4::glmer()}}.
 }
 \examples{
 \dontshow{if (requireNamespace("rstanarm", quietly = TRUE)) withAutoprint(\{ # examplesIf}

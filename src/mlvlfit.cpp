@@ -46,6 +46,7 @@ static vec ml_wvar(const vec& mu, const vec& w, int fam) {
 static double ml_dev(const vec& y, const vec& mu, const vec& w, int fam) {
   double d = 0;
   for (uword i = 0; i < y.n_elem; i++) {
+    if (w[i] == 0) continue;
     double yi = y[i], mi = mu[i];
     double a = (yi > 0) ? yi * std::log(yi / mi) : 0.0;
     double b;

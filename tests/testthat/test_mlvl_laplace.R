@@ -90,6 +90,12 @@ test_that(paste(
                  tolerance = 1e-3, info = nm)
     expect_equal(predict(fit, d), predict(fit_g, d), tolerance = 1e-3,
                  info = nm)
+    # For a 0-1 response, the objective is -2 times the log-likelihood of
+    # lme4:
+    if (nm == "bern") {
+      expect_equal(fit$deviance, -2 * as.numeric(logLik(fit_g)),
+                   tolerance = 1e-5)
+    }
   }
 })
 
@@ -299,6 +305,47 @@ test_that(paste(
   expect_equal(predict(fit_fb_g, d), predict(fit_fb, d), tolerance = 1e-6)
 })
 
+test_that(paste(
+  "as_glmerMod() stores a glmer() call, removes observations with weight 0",
+  "and handles the factor response of the augmented-data projection"
+), {
+  d <- dat_mlvl()
+  d$y_frac <- plogis(d$eta + 0.3 * d$z)
+  w <- rep(c(1, 2), length.out = nrow(d))
+  fit <- fit_mlvl_tst(y_frac ~ x + (1 | g), d, binomial(), weights = w)
+  fit_g <- as_glmerMod(fit, data = d, weights = w)
+  cl <- getCall(fit_g)
+  expect_identical(cl[[1]], quote(lme4::glmer))
+  expect_identical(cl$formula, formula(fit))
+  expect_identical(cl$data, quote(d))
+  expect_identical(cl$weights, quote(w))
+  expect_identical(cl$family, quote(binomial(link = "logit")))
+  expect_null(getCall(as_glmerMod(
+    fit_mlvl_tst(y_bern ~ x + (1 | g), d, binomial()), data = d
+  ))$weights)
+  # Weight 0: the fit of the other observations, with any values in the rows
+  # with weight 0:
+  w0 <- w
+  w0[1:3] <- 0
+  fit_rm <- fit_mlvl_tst(y_frac ~ x + (1 | g), d[-(1:3), ], binomial(),
+                         weights = w[-(1:3)])
+  d_chg <- d
+  d_chg$y_frac[1:3] <- 0.5
+  expect_no_warning(fit_rm_g <- as_glmerMod(fit_rm, data = d_chg,
+                                            weights = w0))
+  expect_identical(nrow(model.frame(fit_rm_g)), nrow(d) - 3L)
+  expect_equal(predict(fit_rm_g, d), predict(fit_rm, d), tolerance = 1e-6)
+  # The augmented-data form with a factor response (first level: failure):
+  d_aug <- rbind(d, d)
+  d_aug$y_frac <- factor(rep(c(1, 0), each = nrow(d)), levels = c(0, 1))
+  w_aug <- c(d$y_frac, 1 - d$y_frac)
+  fit_aug <- fit_mlvl_tst(y_frac ~ x + (1 | g), d_aug, binomial(),
+                          weights = w_aug)
+  expect_no_warning(fit_aug_g <- as_glmerMod(fit_aug, data = d_aug,
+                                             weights = w_aug))
+  expect_equal(predict(fit_aug_g, d), predict(fit_aug, d), tolerance = 1e-6)
+})
+
 test_that("as_glmerMod() checks its arguments and the data", {
   d <- dat_mlvl()
   d$y_frac <- plogis(d$eta + 0.3 * d$z)
@@ -307,20 +354,37 @@ test_that("as_glmerMod() checks its arguments and the data", {
   expect_error(as_glmerMod(fit, data = as.matrix(d[, c("x", "z")])),
                "`data` must be a `data.frame`")
   expect_error(as_glmerMod(fit, data = d, weights = 1), "`weights` must be")
+  expect_error(as_glmerMod(fit, data = cbind(d, .projpred_wobs = 1)),
+               "must not have a column named `.projpred_wobs`")
+  expect_error(as_glmerMod(fit, data = d[, setdiff(names(d), "z")]), NA)
+  expect_error(as_glmerMod(fit, data = d[, setdiff(names(d), "x")]))
+  msg_differs <- "converted fit differs from `object`"
   # Another response than that of the fit:
   d_other <- d
   d_other$y_frac <- rev(d$y_frac)
-  expect_warning(as_glmerMod(fit, data = d_other),
-                 "group-level intercepts of the converted fit differ")
+  expect_warning(as_glmerMod(fit, data = d_other), msg_differs)
+  # A small change of the response, which changes the group-level intercepts
+  # by less than the tolerance of their comparison:
+  d_small <- d
+  d_small$y_frac <- plogis(qlogis(d$y_frac) + 1e-3 * d$z)
+  expect_warning(as_glmerMod(fit, data = d_small), msg_differs)
   # Other weights than those of the fit:
   expect_warning(
     as_glmerMod(fit, data = d, weights = rep(c(1, 20), each = nrow(d) / 2)),
-    "group-level intercepts of the converted fit differ"
+    msg_differs
   )
   # Other group levels than those of the fit:
   d_lvls <- d[d$g != "g1", ]
-  expect_warning(as_glmerMod(fit, data = d_lvls),
-                 "group-level intercepts of the converted fit differ")
+  expect_warning(as_glmerMod(fit, data = d_lvls), msg_differs)
+  # A fit with group-level standard deviation 0 (all group-level intercepts
+  # are 0, also for another response):
+  fit0 <- fit
+  fit0$sd[] <- 0
+  fit0$ranef$g[] <- 0
+  des <- mlvl_laplace_design(formula(fit), d, rep(1, nrow(d)), "g", 0L)
+  fit0$deviance <- mlvl_laplace_dev(des, 0L, 0, unname(fit0$coefficients))
+  expect_no_warning(as_glmerMod(fit0, data = d))
+  expect_warning(as_glmerMod(fit0, data = d_other), msg_differs)
 })
 
 test_that("divmin() passes global option `projpred.mlvl_laplace` on", {
@@ -336,6 +400,18 @@ test_that("divmin() passes global option `projpred.mlvl_laplace` on", {
   expect_s3_class(fit_divmin(), "projpred_mlvl")
   withr::local_options(projpred.mlvl_laplace = FALSE)
   expect_s4_class(suppressWarnings(suppressMessages(fit_divmin())), "glmerMod")
+  # divmin() reads the option itself and passes its value to the fitter, which
+  # can run in a parallel worker without the option:
+  seen <- NULL
+  local_mocked_bindings(fit_glmer_callback = function(...) {
+    seen <<- list(...)$mlvl_laplace
+    stop("recorded")
+  })
+  try(fit_divmin(), silent = TRUE)
+  expect_identical(seen, FALSE)
+  withr::local_options(projpred.mlvl_laplace = TRUE)
+  try(fit_divmin(), silent = TRUE)
+  expect_identical(seen, TRUE)
 })
 
 test_that(paste(
