@@ -588,8 +588,8 @@ test_that(paste(
 })
 
 test_that(paste(
-  "cands_single_label() gives the candidates and new labels of",
-  "select_possible_terms_size()"
+  "cands_single_label() gives the candidates of",
+  "select_possible_terms_size() and the indices of their search terms"
 ), {
   search_terms <- c("1", "x1", "x2", "x3", "f", "poly(x3, 2)", "x2:x1")
   term_info <- search_term_info(search_terms)
@@ -617,6 +617,7 @@ test_that(paste(
         expect_null(step$idx, info = info)
         next
       }
+      expect_identical(single$out[step$idx], step$cands, info = info)
       # The new labels of the candidates, from the index of their search term:
       labels_new <- lapply(single$lab[step$idx], function(l) {
         if (is.na(l)) character(0) else l
@@ -682,3 +683,50 @@ test_that(paste(
   }
 })
 
+test_that(paste(
+  "search_forward_gauss() handles a step without the candidates from",
+  "cands_single_label() and a label without model-matrix columns"
+), {
+  refm <- refm_search_gauss(y ~ x1 + x2 + x3 + x4 + f + x1:x2)
+  p_ref <- get_refdist(refm, nclusters = 3)
+  search_terms <- c("1", "x1", "x2", "x3", "x4", "f", "x1:x2")
+  run_search <- function() {
+    search_forward_gauss(p_ref = p_ref, refmodel = refm, nterms_max = 4,
+                         verbose = FALSE, search_terms = search_terms)
+  }
+  out <- run_search()
+  expect_false(is.null(out))
+  # In the step of size 3, the candidates come from
+  # select_possible_terms_size(); in the other steps from
+  # cands_single_label():
+  cands_orig <- cands_single_label
+  sizes <- integer(0)
+  out_mixed <- with_mocked_bindings(
+    run_search(),
+    cands_single_label = function(single, labels_chosen, size) {
+      sizes <<- c(sizes, size)
+      if (size == 3L) {
+        return(NULL)
+      }
+      cands_orig(single, labels_chosen, size)
+    }
+  )
+  expect_identical(sizes, 1:5)
+  expect_identical(out_mixed, out)
+  # Without model-matrix columns for the label `x3`, the search gives `NULL`
+  # (then search_forward() runs its own search), with and without the
+  # candidates from cands_single_label():
+  design_orig <- gauss_crossprod_design
+  design_no_x3 <- function(...) {
+    des <- design_orig(...)
+    des$cols_by_term <- des$cols_by_term[setdiff(names(des$cols_by_term), "x3")]
+    des
+  }
+  expect_null(with_mocked_bindings(run_search(),
+                                   gauss_crossprod_design = design_no_x3))
+  expect_null(with_mocked_bindings(
+    run_search(),
+    gauss_crossprod_design = design_no_x3,
+    single_label_info = function(term_info) NULL
+  ))
+})

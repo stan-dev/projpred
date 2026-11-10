@@ -196,8 +196,8 @@ single_label_info <- function(term_info) {
 # labels, plus one for a new label, plus one for the intercept. `cands` is
 # `NULL` if no candidate has the size. Returns `NULL` if a candidate is a term
 # with a chosen label (select_possible_terms_size() builds a formula for it).
-# In a search, this does not occur: after the intercept step, the number of
-# chosen labels is `size - 2`.
+# In a search, this does not occur: each step adds at most one label, so
+# after the intercept step, the number of chosen labels is at most `size - 2`.
 cands_single_label <- function(single, labels_chosen, size) {
   in_chosen <- single$lab %in% labels_chosen
   n_new <- as.integer(!is.na(single$lab) & !in_chosen)
@@ -351,8 +351,9 @@ search_forward_gauss <- function(p_ref, refmodel, nterms_max, verbose,
   term_info <- search_term_info(search_terms)
   single <- single_label_info(term_info)
   if (!is.null(single)) {
-    # The columns of each search term (none for "1"), looked up by name once
-    # for all steps. `NULL`: the model matrix has no columns for the label.
+    # The columns of each search term, looked up by name once for all steps:
+    # `integer(0)` for "1" (no label), `NULL` if the model matrix has no
+    # columns for the label.
     cols_term <- unname(cols_by_term[single$lab])
     cols_term[is.na(single$lab)] <- list(integer(0))
     term_has_cols <- !vapply(cols_term, is.null, logical(1))
@@ -422,11 +423,12 @@ search_forward_gauss <- function(p_ref, refmodel, nterms_max, verbose,
         y_chosen <- rbind(y_chosen, best$y_n)
       }
       cols_chosen <- c(cols_chosen, cols_new)
-      labels_chosen <- c(labels_chosen, if (!is.null(step)) {
+      label_new <- if (!is.null(step)) {
         single$lab[step$idx[imin]]
       } else {
         labels_new[[imin]]
-      })
+      }
+      labels_chosen <- c(labels_chosen, label_new)
     }
   }
 
