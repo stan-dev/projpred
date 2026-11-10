@@ -247,6 +247,10 @@
   1.9-5. (GitHub:
   [\#598](https://github.com/stan-dev/projpred/issues/598),
   [\#602](https://github.com/stan-dev/projpred/issues/602))
+- Fixed the log-likelihood of binomial (logit) and Poisson (log)
+  reference model draws with a large linear predictor, where the inverse
+  link clamped the mean. (GitHub:
+  [\#614](https://github.com/stan-dev/projpred/issues/614))
 
 ## projpred 2.11.0
 
