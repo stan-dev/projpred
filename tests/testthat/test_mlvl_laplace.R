@@ -250,6 +250,79 @@ test_that(paste(
                mlvl_laplace_dev(des, 0L, fit$sd, unname(fit$coefficients)))
 })
 
+test_that(paste(
+  "as_glmerMod() gives a `glmerMod` object with the parameters and the",
+  "predictions of the `projpred_mlvl` fit"
+), {
+  d <- dat_mlvl()
+  d$y_frac <- plogis(d$eta + 0.3 * d$z)
+  d$y_mean <- exp(d$eta + 0.3 * d$z)
+  w <- rep(c(1, 2), length.out = nrow(d))
+  nd <- d[1:6, ]
+  nd$g <- factor(c("g_new1", "g1", "g2", "g3", "g_new2", "g4"))
+  cases <- list(
+    bern = list(fml = y_bern ~ x + z + (1 | g) + (1 | h), fam = binomial()),
+    frac = list(fml = y_frac ~ x + (1 | h) + (1 | g), fam = binomial()),
+    pois = list(fml = y_pois ~ x + (1 | g), fam = poisson()),
+    mean = list(fml = y_mean ~ x + z + (1 | g) + (1 | h), fam = poisson())
+  )
+  for (nm in names(cases)) {
+    cs <- cases[[nm]]
+    fit <- fit_mlvl_tst(cs$fml, d, cs$fam, weights = w)
+    expect_s3_class(fit, "projpred_mlvl")
+    # No warning, also not for the non-integer responses:
+    expect_no_warning(fit_g <- as_glmerMod(fit, data = d, weights = w))
+    expect_s4_class(fit_g, "glmerMod")
+    expect_equal(lme4::fixef(fit_g), fit$coefficients, tolerance = 1e-12,
+                 info = nm)
+    for (nm_scheme in c("rstanarm", "brms")) {
+      expect_equal(get_subparams(fit_g, nm_scheme = nm_scheme),
+                   get_subparams(fit, nm_scheme = nm_scheme),
+                   tolerance = 1e-6, info = paste(nm, nm_scheme))
+    }
+    expect_equal(predict(fit_g, d), predict(fit, d), tolerance = 1e-6,
+                 info = nm)
+    expect_equal(predict(fit_g, nd, allow.new.levels = TRUE),
+                 predict(fit, nd), tolerance = 1e-6, info = nm)
+  }
+  # The fit that mlvl_from_merMod() builds after the glmer() fallback:
+  local_mocked_bindings(mlvl_laplace_optim = function(des, fam, ...) {
+    list(theta = 1, beta = rep(0, ncol(des$x)), u = rep(0, sum(des$nlev)),
+         deviance = 1, convergence = 1L, message = "mocked",
+         iterations = 0L, n_restart = 0L)
+  })
+  fit_fb <- suppressWarnings(suppressMessages(
+    fit_mlvl_tst(y_bern ~ x + (1 | g), d, binomial())
+  ))
+  expect_s3_class(fit_fb, "projpred_mlvl")
+  fit_fb_g <- as_glmerMod(fit_fb, data = d)
+  expect_equal(predict(fit_fb_g, d), predict(fit_fb, d), tolerance = 1e-6)
+})
+
+test_that("as_glmerMod() checks its arguments and the data", {
+  d <- dat_mlvl()
+  d$y_frac <- plogis(d$eta + 0.3 * d$z)
+  fit <- fit_mlvl_tst(y_frac ~ x + (1 | g), d, binomial())
+  expect_error(as_glmerMod(list(), data = d), "class `projpred_mlvl`")
+  expect_error(as_glmerMod(fit, data = as.matrix(d[, c("x", "z")])),
+               "`data` must be a `data.frame`")
+  expect_error(as_glmerMod(fit, data = d, weights = 1), "`weights` must be")
+  # Another response than that of the fit:
+  d_other <- d
+  d_other$y_frac <- rev(d$y_frac)
+  expect_warning(as_glmerMod(fit, data = d_other),
+                 "group-level intercepts of the converted fit differ")
+  # Other weights than those of the fit:
+  expect_warning(
+    as_glmerMod(fit, data = d, weights = rep(c(1, 20), each = nrow(d) / 2)),
+    "group-level intercepts of the converted fit differ"
+  )
+  # Other group levels than those of the fit:
+  d_lvls <- d[d$g != "g1", ]
+  expect_warning(as_glmerMod(fit, data = d_lvls),
+                 "group-level intercepts of the converted fit differ")
+})
+
 test_that("divmin() passes global option `projpred.mlvl_laplace` on", {
   d <- dat_mlvl()
   d$.y.1 <- plogis(d$eta)

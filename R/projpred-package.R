@@ -85,8 +85,9 @@
 #'     `...` contains arguments of
 #'     [lme4::glmer()] (for example `control` or `nAGQ`), or if global option
 #'     `projpred.mlvl_laplace` is `FALSE`. After a fit that does not converge,
-#'     the [lme4::glmer()] fit is returned as class `projpred_mlvl`, too. For
-#'     [lme4::glmer()],
+#'     the [lme4::glmer()] fit is returned as class `projpred_mlvl`, too.
+#'     [as_glmerMod()] converts an object of class `projpred_mlvl` to class
+#'     `glmerMod`. For [lme4::glmer()],
 #'     \pkg{projpred} uses `control = lme4::glmerControl(optimizer = "bobyqa")`,
 #'     so both optimization stages use BOBYQA. A `control` argument in `...`
 #'     replaces this default in the first fit. After some \pkg{lme4} errors,

@@ -81,8 +81,9 @@ rank-deficient model matrix or more than 500 group levels in total, if
 \code{...} contains arguments of
 \code{\link[lme4:glmer]{lme4::glmer()}} (for example \code{control} or \code{nAGQ}), or if global option
 \code{projpred.mlvl_laplace} is \code{FALSE}. After a fit that does not converge,
-the \code{\link[lme4:glmer]{lme4::glmer()}} fit is returned as class \code{projpred_mlvl}, too. For
-\code{\link[lme4:glmer]{lme4::glmer()}},
+the \code{\link[lme4:glmer]{lme4::glmer()}} fit is returned as class \code{projpred_mlvl}, too.
+\code{\link[=as_glmerMod]{as_glmerMod()}} converts an object of class \code{projpred_mlvl} to class
+\code{glmerMod}. For \code{\link[lme4:glmer]{lme4::glmer()}},
 \pkg{projpred} uses \code{control = lme4::glmerControl(optimizer = "bobyqa")},
 so both optimization stages use BOBYQA. A \code{control} argument in \code{...}
 replaces this default in the first fit. After some \pkg{lme4} errors,

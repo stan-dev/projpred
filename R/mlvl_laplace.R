@@ -327,6 +327,132 @@ subprd_mlvl <- function(fits, newdata) {
   return(prd)
 }
 
+#' Convert a submodel fit of class `projpred_mlvl` to class `glmerMod`
+#'
+#' For binomial and Poisson multilevel submodels with random intercepts,
+#' \pkg{projpred} uses its own fit, which has class `projpred_mlvl` (see section
+#' "Draw-wise divergence minimizers" of [projpred-package]). This function
+#' builds the corresponding \pkg{lme4} object, for use with the methods of
+#' \pkg{lme4}. It does not fit the submodel again: it evaluates the objective of
+#' [lme4::glmer()] (with `nAGQ = 1`) once, at the parameter estimates of
+#' `object`.
+#'
+#' @param object An object of class `projpred_mlvl`, for example an element of
+#'   element `outdmin` of an object returned by [project()].
+#' @param data A `data.frame` with the data that `object` was fitted to: the
+#'   predictors, the grouping variables and the response, with the names used
+#'   in `formula(object)`. The object does not store these data. In a
+#'   projection, the response of a submodel fit is the vector of the reference
+#'   model's predicted means (success probabilities for the binomial family)
+#'   for the projected draw or cluster.
+#' @param weights A numeric vector of the observation weights that `object` was
+#'   fitted with, or `NULL` for weights of 1.
+#'
+#' @details The group-level intercepts of the returned object are computed by
+#'   \pkg{lme4} from `data` and `weights`. If they differ from those of
+#'   `object`, then `data` or `weights` are not those of the fit, and this
+#'   function throws a warning. With \pkg{lme4} versions that round non-integer
+#'   binomial responses or do not support non-integer Poisson responses in the
+#'   log-likelihood (versions up to 2.1-0), the deviance and the log-likelihood
+#'   of the returned object are not those of the fit; the parameter estimates
+#'   and the predictions are not affected.
+#'
+#' @return An object of class `glmerMod` (see [lme4::glmer()]) with the
+#'   fixed effects, the group-level standard deviations and the group-level
+#'   intercepts of `object`.
+#'
+#' @examplesIf requireNamespace("rstanarm", quietly = TRUE)
+#' # Data:
+#' set.seed(1)
+#' dat <- data.frame(x1 = rnorm(120), x2 = rnorm(120),
+#'                   g = factor(rep(1:8, each = 15)))
+#' dat$y <- rbinom(120, 1, plogis(0.8 * dat$x1 + rnorm(8)[dat$g]))
+#'
+#' # The `stanreg` fit which will be used as the reference model (with small
+#' # values for `chains` and `iter`, but only for technical reasons in this
+#' # example; this is not recommended in general):
+#' fit <- rstanarm::stan_glmer(
+#'   y ~ x1 + x2 + (1 | g), family = binomial(), data = dat,
+#'   chains = 2, iter = 500, refresh = 0, seed = 9876
+#' )
+#'
+#' # Projection onto a multilevel submodel, with a single cluster (so the
+#' # response of the submodel fit is the mean of the reference model's
+#' # predicted success probabilities over the posterior draws):
+#' refm <- suppressWarnings(get_refmodel(fit))
+#' prj <- project(refm, predictor_terms = c("x1", "(1 | g)"), nclusters = 1)
+#' fit_sub <- prj$outdmin[[1]]
+#'
+#' # Conversion (the name of the response is taken from the formula of the
+#' # submodel fit):
+#' dat_sub <- dat
+#' dat_sub[[all.vars(formula(fit_sub))[1]]] <- rowMeans(refm$mu)
+#' fit_lme4 <- as_glmerMod(fit_sub, data = dat_sub, weights = refm$wobs)
+#' lme4::ranef(fit_lme4)
+#'
+#' @export
+as_glmerMod <- function(object, data, weights = NULL) {
+  if (!inherits(object, "projpred_mlvl")) {
+    stop("`object` must be of class `projpred_mlvl`.")
+  }
+  if (is.null(object$coefficients) || is.null(object$sd)) {
+    stop("`object` has no parameter estimates.")
+  }
+  if (!is.data.frame(data)) {
+    stop("`data` must be a `data.frame`.")
+  }
+  if (is.null(weights)) weights <- rep(1, nrow(data))
+  if (!is.numeric(weights) || length(weights) != nrow(data)) {
+    stop("`weights` must be a numeric vector with one element per row of ",
+         "`data`.")
+  }
+  fam <- switch(object$family,
+                binomial = binomial(link = object$link),
+                poisson = poisson(link = object$link),
+                stop("Unexpected family of `object`."))
+  data$.projpred_wobs <- weights
+  mc <- match.call()
+  # The responses of a projection are not integers, so the warnings of the
+  # family functions about non-integer responses are expected:
+  out <- withCallingHandlers({
+    glmod <- do.call(lme4::glFormula, list(
+      formula = object$formula, data = data, family = fam,
+      weights = quote(.projpred_wobs)
+    ))
+    nms_x <- colnames(glmod$X)
+    nms_g <- names(glmod$reTrms$cnms)
+    if (!setequal(nms_x, names(object$coefficients)) ||
+        !setequal(nms_g, names(object$sd))) {
+      stop("The fixed effects or the grouping variables that lme4 builds ",
+           "from `data` are not those of `object`.")
+    }
+    devfun <- do.call(lme4::mkGlmerDevfun, c(glmod, list(nAGQ = 0L)))
+    devfun <- lme4::updateGlmerDevfun(devfun, glmod$reTrms, nAGQ = 1L)
+    par <- unname(c(object$sd[nms_g], object$coefficients[nms_x]))
+    opt <- list(par = par, fval = devfun(par), conv = 0L, feval = 1L,
+                message = "parameter estimates of projpred's Laplace fit")
+    lme4::mkMerMod(environment(devfun), opt, glmod$reTrms, fr = glmod$fr,
+                   mc = mc)
+  }, warning = function(w) {
+    if (grepl("non-integer", conditionMessage(w), fixed = TRUE)) {
+      invokeRestart("muffleWarning")
+    }
+  })
+  re <- lme4::ranef(out, condVar = FALSE)
+  differs <- vapply(nms_g, function(g) {
+    b <- object$ranef[[g]]
+    b_out <- setNames(re[[g]][["(Intercept)"]], rownames(re[[g]]))
+    !setequal(names(b), names(b_out)) ||
+      max(abs(b - b_out[names(b)])) > 1e-3 * (1 + max(abs(b)))
+  }, logical(1))
+  if (any(differs)) {
+    warning("The group-level intercepts of the converted fit differ from ",
+            "those of `object`. Check that `data` (including the response) ",
+            "and `weights` are those that `object` was fitted to.")
+  }
+  return(out)
+}
+
 #' @noRd
 #' @export
 formula.projpred_mlvl <- function(x, ...) {

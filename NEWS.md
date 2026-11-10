@@ -25,6 +25,7 @@ If you read this from a place other than <https://mc-stan.org/projpred/news/inde
 * Faster projections onto additive submodels without group-level terms (`mgcv::gam()`): all projected draws share one setup of `mgcv::gam()`, and one linear-predictor matrix gives the predictions of all draws. For example, `varsel()` for an additive model is about 1.5 times faster. (GitHub: #584)
 * Faster reweighting of the clusters of the reference model draws in `cv_varsel()` with `validate_search = TRUE`. For example, `cv_varsel()` with `validate_search = TRUE` and 400 clusters is about 2 times faster for a Gaussian model with 382 observations. (GitHub: #601)
 * Faster binomial (logit) and Poisson (log) multilevel submodels with group-level intercepts only: projpred's own Laplace fit (class `projpred_mlvl`) replaces `lme4::glmer()` and does not round non-integer responses. `cv_varsel()` with `validate_search = TRUE` is about 7 times faster. (GitHub: #PR)
+* The fits of these submodels (for example, in element `outdmin` of `project()` output) have class `projpred_mlvl` instead of `glmerMod`. The new function `as_glmerMod()` converts such a fit to class `glmerMod`. (GitHub: #PR)
 
 ## Minor changes
 
