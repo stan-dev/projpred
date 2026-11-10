@@ -14,6 +14,14 @@ search_forward_fast <- function(p_ref, refmodel, nterms_max, verbose,
     verbose = verbose, search_terms = search_terms,
     screen_m = as.integer(search_screen), ...
   )
+  # Experimental: latent screens (see search_forward_latent()):
+  if (is.null(out) && getOption("projpred.search_screen_latent", FALSE)) {
+    out <- search_forward_latent(
+      p_ref = p_ref, refmodel = refmodel, nterms_max = nterms_max,
+      verbose = verbose, search_terms = search_terms,
+      screen_m = as.integer(search_screen), ...
+    )
+  }
   if (is.null(out)) {
     verb_out("Argument `search_screen` cannot be used for this model or ",
              "data. Running the plain forward search.", verbose = verbose)
