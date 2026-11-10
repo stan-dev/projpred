@@ -967,38 +967,35 @@ lhs <- function(x) {
   if (length(x) == 3L) update(x, . ~ 1) else NULL
 }
 
-# Collapse "raw" predictor terms representing contrasts, dummy codings, or
-# polynomial terms into their corresponding original terms from a model formula.
+# Collapse "raw" predictor terms (the columns of the model matrix, for example
+# those of contrasts, dummy codings, or polynomial terms) into their
+# corresponding original terms from a model formula.
 #
-# @param path Vector of ranked "raw" predictor terms ("raw" means that these
-#   terms may represent contrasts, dummy codings, or polynomial terms).
+# @param path Vector of ranked "raw" predictor terms: column names of
+#   `model.matrix(formula, data = data)`.
 # @param formula The model formula (from which the ranking in `path` was
 #   derived).
 # @param data The model data (from which the ranking in `path` was derived).
 #
 # @return A character vector of collapsed predictor terms (i.e., all of these
-#   returned predictor terms occur in `formula`).
+#   returned predictor terms occur in `formula`), in the order of their first
+#   column in `path`.
 collapse_ranked_predictors <- function(path, formula, data) {
-  tt <- terms(formula)
-  terms_ <- attr(tt, "term.labels")
-  for (term in terms_) {
-    # TODO: In the following model.matrix() call, allow user-specified contrasts
-    # to be passed to argument `contrasts.arg`. The `contrasts.arg` default
-    # (`NULL`) uses `options("contrasts")` internally, but it might be more
-    # convenient to let users specify contrasts directly. At that occasion,
-    # contrasts should also be tested thoroughly (not done until now).
-    x <- model.matrix(as.formula(paste("~ 1 +", term)), data = data)
-    if (length(attr(x, "contrasts")) == 0 &&
-        !grepl("^poly[m]*\\(.+\\)$", term)) {
-      next
-    }
-    x <- x[, colnames(x) != "(Intercept)", drop = FALSE]
-    for (col_nm in colnames(x)) {
-      path <- gsub(esc_chars(col_nm), term, path)
-    }
-    path <- unique(path)
-  }
-  return(path)
+  # TODO: In the following model.matrix() call, allow user-specified contrasts
+  # to be passed to argument `contrasts.arg`. The `contrasts.arg` default
+  # (`NULL`) uses `options("contrasts")` internally, but it might be more
+  # convenient to let users specify contrasts directly. At that occasion,
+  # contrasts should also be tested thoroughly (not done until now).
+  x <- model.matrix(formula, data = data)
+  # The "assign" attribute gives the term of each column (0: the intercept).
+  # The text of a column name does not identify its term: one column name can
+  # be the start of another one.
+  term_idx <- attr(x, "assign")
+  term_of_col <- attr(terms(formula), "term.labels")[term_idx[term_idx > 0]]
+  path_terms <- term_of_col[match(path, colnames(x)[term_idx > 0])]
+  # An element that is not a column (for example `NA`) stays as it is:
+  path_terms[is.na(path_terms)] <- path[is.na(path_terms)]
+  return(unique(path_terms))
 }
 
 split_formula_random_gamm4 <- function(formula) {

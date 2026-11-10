@@ -337,3 +337,39 @@ test_that("split_plus() splits term strings only at the `+` between terms", {
   long_terms <- paste0("x", seq_len(5000))
   expect_identical(split_plus(paste(long_terms, collapse = " + ")), long_terms)
 })
+
+test_that(paste(
+  "collapse_ranked_predictors() gives the term of each model-matrix column,",
+  "also if a column name is the start of another column name"
+), {
+  withr::local_seed(7714)
+  n <- 60
+  dat <- data.frame(
+    x1 = rnorm(n), x3 = rnorm(n),
+    f = factor(sample(c("c", "a", "ab"), n, replace = TRUE),
+               levels = c("c", "a", "ab")),
+    g = factor(sample(c("u", "v", "w"), n, replace = TRUE))
+  )
+  dat$y <- rnorm(n)
+  # The column "fa" is the start of "fab", and "poly(x3, 10)1" is the start of
+  # "poly(x3, 10)10". The last three formulas have no such column names:
+  fmls <- list(y ~ x1 + f, y ~ x1 * f, y ~ g * f, y ~ x1 + poly(x3, 10),
+               y ~ poly(x3, 10) * x1,
+               y ~ x1 + g + poly(x3, 2), y ~ poly(x3, 2) * g, y ~ x1:g)
+  if (requireNamespace("splines", quietly = TRUE)) {
+    # A term with several columns, but without contrasts:
+    fmls <- c(fmls, list(y ~ x1 + splines::ns(x3, df = 3)))
+  }
+  for (fml in fmls) {
+    info <- paste(deparse(fml), collapse = "")
+    fr <- model.frame(fml, dat)
+    cols <- setdiff(colnames(model.matrix(fml, data = fr)), "(Intercept)")
+    labs <- attr(terms(fml), "term.labels")
+    # The columns of a term are next to each other, so the terms come in the
+    # order of the columns:
+    expect_identical(collapse_ranked_predictors(cols, fml, fr), labs,
+                     info = info)
+    expect_identical(collapse_ranked_predictors(rev(cols), fml, fr), rev(labs),
+                     info = info)
+  }
+})
