@@ -1882,6 +1882,13 @@ fit_cumul_mlvl <- function(formula, data, family, weights, ...) {
   if (link_nm == "probit_approx") {
     link_nm <- "probit"
   }
+  # clmm() with a single `(1 | <group>)` term uses C code that swaps the links
+  # "cloglog" and "loglog" (ordinal 2025.12.29, 2026.7-26).  Use its R code
+  # (`useMatrix = TRUE` overrides `control`); this excludes ucminf().
+  if (link_nm %in% c("cloglog", "loglog")) {
+    dot_args$useMatrix <- TRUE
+    use_ucminf <- FALSE
+  }
   # Call the submodel fitter:
   fit_clmm <- function(dot_args) {
     fitobj <- do.call(ordinal::clmm, c(
