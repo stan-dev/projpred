@@ -993,7 +993,7 @@ all_ia_perms <- function(ia, is_split = FALSE) {
 }
 
 # All permutations of `seq_len(n)` as the rows of a matrix, in lexicographic
-# order:
+# order (a matrix with one row and no columns for `n = 0`).
 perm_idxs <- function(n) {
   if (n <= 1L) {
     return(matrix(seq_len(n), nrow = 1L, ncol = n))
