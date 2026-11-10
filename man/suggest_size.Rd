@@ -27,8 +27,9 @@ See section "Details" below for some important arguments which may be
 passed here.}
 
 \item{stat}{Performance statistic (i.e., utility or loss) used for the
-decision. See argument \code{stats} of \code{\link[=summary.vsel]{summary.vsel()}} and \code{\link[=plot.vsel]{plot.vsel()}} for
-possible choices.}
+decision: a single character string or a single \code{\link[=custom_stat]{custom_stat()}} object.
+See argument \code{stats} of \code{\link[=summary.vsel]{summary.vsel()}} and \code{\link[=plot.vsel]{plot.vsel()}} for possible
+choices.}
 
 \item{pct}{A number giving the proportion (\emph{not} percents) of the \emph{relative}
 null model utility one is willing to sacrifice. See section "Details" below
