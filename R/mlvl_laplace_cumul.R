@@ -154,7 +154,10 @@ mlvl_cumul_optim <- function(des, link, rel_tol = 1e-10, small_tau = 1e-3,
                      cache$u, link$code, FALSE)
   convergence <- opt$convergence
   message <- opt$message
-  if (convergence == 0 && !isTRUE(ev$gmax < tol_modes)) {
+  if (convergence == 0 && !is.finite(ev$L)) {
+    convergence <- 2L
+    message <- "the objective is not finite at the optimum"
+  } else if (convergence == 0 && !isTRUE(ev$gmax < tol_modes)) {
     convergence <- 2L
     message <- "the search for the conditional modes did not converge"
   }

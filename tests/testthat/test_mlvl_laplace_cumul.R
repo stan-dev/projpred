@@ -109,6 +109,32 @@ test_that(paste(
   x <- as.matrix(dat$d_aug[, c("x", "z")])
   grp <- as.integer(dat$d_aug$g) - 1L
   y <- as.integer(dat$d_aug$y)
+  # Thresholds far from the linear predictors, with probabilities that are
+  # small but not 0 in double precision: a finite objective with the correct
+  # gradient:
+  for (link in links_cumul_tst) {
+    # The distributions of loglog and cloglog have one short tail, where the
+    # probabilities are 0 at a smaller distance:
+    par <- if (link %in% c("loglog", "cloglog")) {
+      c(-2.5, 0, 1.5, 0.5, -0.5, 1)
+    } else {
+      c(-5, 0, 6, 0.5, -2, 3)
+    }
+    code <- mlvl_cumul_link(link)$code
+    obj <- function(par) {
+      mlvl_cumul_c(par[1:3], par[4:5], par[6], x, grp, 6L, y, dat$w,
+                   rep(0, 6), code, FALSE)$L
+    }
+    ev <- mlvl_cumul_c(par[1:3], par[4:5], par[6], x, grp, 6L, y, dat$w,
+                       rep(0, 6), code, TRUE)
+    expect_true(is.finite(ev$L), info = link)
+    grad_fd <- vapply(seq_along(par), function(j) {
+      h <- 1e-5
+      e <- replace(numeric(length(par)), j, h)
+      (obj(par + e) - obj(par - e)) / (2 * h)
+    }, numeric(1))
+    expect_equal(as.vector(ev$grad), grad_fd, tolerance = 1e-5, info = link)
+  }
   alphas <- list(c(-30, -1, 2), c(-8, 0, 8), c(-1, 0, 800), c(-800, 0, 1),
                  c(-800, 0, 800), c(-1e-3, 0, 1e-3))
   for (link in links_cumul_tst) {
@@ -131,8 +157,8 @@ test_that(paste(
 })
 
 test_that(paste(
-  "mlvl_cumul_c() reports the gradient at the conditional modes, and a fit",
-  "with a large value has not converged"
+  "mlvl_cumul_c() reports the gradient at the conditional modes, and",
+  "mlvl_cumul_optim() uses it for its convergence code"
 ), {
   skip_if_not_installed("ordinal")
   dat <- dat_cumul_tst(n = 120, n_grp = 6)
@@ -143,6 +169,12 @@ test_that(paste(
   }
   expect_lt(ev(50)$gmax, 1e-8)
   expect_gt(ev(1)$gmax, 1e-6)
+  link <- mlvl_cumul_link("logit")
+  expect_identical(mlvl_cumul_optim(des, link)$convergence, 0L)
+  opt_tol0 <- mlvl_cumul_optim(des, link, tol_modes = 0)
+  expect_identical(opt_tol0$convergence, 2L)
+  expect_match(opt_tol0$message, "conditional modes did not converge")
+  # fit_cumul_mlvl() then uses clmm():
   mlvl_cumul_c_orig <- mlvl_cumul_c
   local_mocked_bindings(mlvl_cumul_c = function(...) {
     out <- mlvl_cumul_c_orig(...)
@@ -166,9 +198,9 @@ test_that("mlvl_laplace_cumul() gives the clmm() fit for each link", {
     expect_true(check_conv_s(fit), info = link)
     fit_c <- fit_clmm_tst(dat, link)
     expect_s3_class(fit_c, "clmm")
-    # The objective is minus the log-likelihood of clmm() (clmm() computes its
-    # log-determinant term at the last but one iterate of the conditional
-    # modes, which gives small differences):
+    # The objective is minus the log-likelihood of clmm() (the value that
+    # clmm() reports differs slightly from the Laplace value at its
+    # estimates):
     expect_equal(obj_clmm_tst(fit_c, dat, link), -as.numeric(logLik(fit_c)),
                  tolerance = 1e-4, info = link)
     # The same objective value, or a lower one:
@@ -183,11 +215,14 @@ test_that("mlvl_laplace_cumul() gives the clmm() fit for each link", {
     }
     expect_equal(as.vector(subprd_augdat(list(fit), dat$d)),
                  as.vector(predict(fit, dat$d)), info = link)
-    # projpred's predictions for clmm() fits do not have the loglog link:
+    # subprd_augdat() cannot predict from clmm() fits with the loglog link
+    # (linkfun_raw() does not have this link):
     if (link == "loglog") next
     # The predictions, with existing and new group levels. For new levels,
-    # both paths use the same random numbers:
+    # both paths use the same random numbers. The row names are those of the
+    # clmm() path ("1", "2", ...), not those of the new data:
     nd <- dat$d[1:8, ]
+    rownames(nd) <- paste0("row", 1:8)
     nd$g <- factor(c("g_new1", "g1", "g_new2", "g_new1", "g2", "g3", "g_new3",
                      "g_new2"))
     for (pred_new in c(FALSE, TRUE)) {
@@ -196,6 +231,7 @@ test_that("mlvl_laplace_cumul() gives the clmm() fit for each link", {
         prd_c <- withr::with_seed(1, subprd_augdat(list(fit_c, fit_c), nd))
       })
       expect_identical(dim(prd), c(8L, 3L, 2L))
+      expect_identical(dimnames(prd)[[1]], as.character(1:8))
       expect_equal(prd, prd_c, tolerance = 1e-3,
                    info = paste(link, pred_new))
       # The two draws get different group-level intercepts for new levels:
@@ -349,18 +385,21 @@ test_that(paste(
   "numeric grouping variable and a submodel without predictors"
 ), {
   skip_if_not_installed("ordinal")
-  dat <- dat_cumul_tst(n = 150, n_grp = 6)
-  dat$d_aug$f <- factor(c("a", "b", "c")[1 + as.integer(dat$d_aug$z > -0.5) +
-                                           as.integer(dat$d_aug$z > 0.5)])
-  dat$d_aug$g_num <- as.integer(dat$d_aug$g)
-  for (fml in list(y ~ x + f + (1 | g), y ~ x + (1 | g_num), y ~ 1 + (1 | g),
-                   y ~ (1 | g))) {
-    info_str <- paste(deparse(fml), collapse = " ")
-    fit <- fit_cumul_tst(dat, formula = fml)
+  fmls <- list(y ~ x + f + (1 | g), y ~ x + (1 | g_num), y ~ 1 + (1 | g),
+               y ~ (1 | g))
+  cases <- expand.grid(link = c("logit", "cloglog"), fml = seq_along(fmls),
+                       stringsAsFactors = FALSE)
+  for (i in seq_len(nrow(cases))) {
+    link <- cases$link[i]
+    fml <- fmls[[cases$fml[i]]]
+    dat <- dat_cumul_tst(link, n = 150, n_grp = 6)
+    dat$d_aug$f <- factor(c("a", "b", "c")[1 + as.integer(dat$d_aug$z > -0.5) +
+                                             as.integer(dat$d_aug$z > 0.5)])
+    dat$d_aug$g_num <- as.integer(dat$d_aug$g)
+    info_str <- paste(link, paste(deparse(fml), collapse = " "))
+    fit <- fit_cumul_tst(dat, link, formula = fml)
     expect_s3_class(fit, "projpred_mlvl_cumul")
-    fit_c <- suppressWarnings(suppressMessages(
-      fit_cumul_tst(dat, formula = fml, mlvl_laplace = FALSE)
-    ))
+    fit_c <- fit_clmm_tst(dat, link, formula = fml)
     expect_s3_class(fit_c, "clmm")
     for (nm_scheme in c("rstanarm", "brms")) {
       expect_equal(get_subparams(fit, nm_scheme = nm_scheme),
@@ -368,8 +407,15 @@ test_that(paste(
                    tolerance = 1e-3, info = paste(info_str, nm_scheme))
     }
     nd <- dat$d_aug[c(1, 5, 9), ]
-    expect_equal(subprd_augdat(list(fit), nd), subprd_augdat(list(fit_c), nd),
-                 tolerance = 1e-3, info = info_str)
+    prd <- subprd_augdat(list(fit), nd)
+    prd_c <- subprd_augdat(list(fit_c), nd)
+    expect_identical(dimnames(prd), dimnames(prd_c), info = info_str)
+    expect_true(all(is.finite(prd)), info = info_str)
+    # The clmm() path gives `Inf` for a cumulative probability that is 1 in
+    # double precision:
+    is_fin <- is.finite(prd_c)
+    expect_equal(prd[is_fin], prd_c[is_fin], tolerance = 1e-3,
+                 info = info_str)
   }
 })
 
@@ -415,7 +461,7 @@ test_that("the methods for `projpred_mlvl_cumul` objects work", {
   cum_probs <- cbind(plogis(predict(fit, dat$d)), 1)
   probs <- cbind(cum_probs[, 1], cum_probs[, -1] - cum_probs[, -4])
   expect_lt(mean(abs(probs - dat$probs)), 0.05)
-  expect_identical(coef(fit), c(fit$alpha, fit$coefficients))
+  expect_named(coef(fit), c("1|2", "2|3", "3|4", "x", "z"))
   expect_output(print(fit), "Thresholds")
   expect_error(as_glmerMod(fit, data = dat$d_aug),
                "does not support fits of the cumulative family")

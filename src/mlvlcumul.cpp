@@ -229,7 +229,7 @@ List mlvl_cumul_c(const arma::vec& alpha, const arma::vec& beta, double tau,
     HSg[grp[i]] -= parts[i].h1 + parts[i].h2;
   }
   vec Dg = 1 + tau * tau * Hg;
-  if (!Dg.is_finite() || !(Dg.min() > 0)) return out_inf;
+  if (!Mg.is_finite() || !Dg.is_finite() || !(Dg.min() > 0)) return out_inf;
   double L = lsum + 0.5 * dot(u, u) + 0.5 * accu(log(Dg));
   double gmax = max(abs(tau * Mg + u));
   if (!want_grad) {
