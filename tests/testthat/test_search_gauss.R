@@ -433,6 +433,20 @@ test_that(paste(
   expect_identical(ranking(res_vs$value)$fulldata, c(long_term, "x2"))
 })
 
+test_that("the L1 search gives the text of a term above 500 characters", {
+  # A term with one column, and a poly() term (the L1 search ranks its columns
+  # and then replaces them by the term):
+  long_terms <- c(paste0("I(x1", strrep(" + 0", 200), ")"),
+                  paste0("poly(x3", strrep(" + 0", 200), ", 2)"))
+  for (long_term in long_terms) {
+    refm <- refm_search_gauss(as.formula(paste("y ~ x2 +", long_term)), n = 40)
+    vs <- suppressWarnings(varsel(
+      refm, method = "L1", nclusters_pred = 5, seed = 3317, verbose = FALSE
+    ))
+    expect_setequal(ranking(vs)$fulldata, c(long_term, "x2"))
+  }
+})
+
 test_that(paste(
   "search_forward_gauss() and varsel() work with a candidate string of more",
   "than 10000 bytes (the limit of an environment key)"

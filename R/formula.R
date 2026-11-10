@@ -989,7 +989,10 @@ lhs <- function(x) {
 #   returned predictor terms occur in `formula`).
 collapse_ranked_predictors <- function(path, formula, data) {
   tt <- terms(formula)
-  terms_ <- attr(tt, "term.labels")
+  # The labels and the column names of a long term have line breaks (see
+  # join_lines()):
+  terms_ <- join_lines(attr(tt, "term.labels"))
+  path <- join_lines(path)
   for (term in terms_) {
     # TODO: In the following model.matrix() call, allow user-specified contrasts
     # to be passed to argument `contrasts.arg`. The `contrasts.arg` default
@@ -1002,7 +1005,7 @@ collapse_ranked_predictors <- function(path, formula, data) {
       next
     }
     x <- x[, colnames(x) != "(Intercept)", drop = FALSE]
-    for (col_nm in colnames(x)) {
+    for (col_nm in join_lines(colnames(x))) {
       path <- gsub(esc_chars(col_nm), term, path)
     }
     path <- unique(path)
