@@ -248,7 +248,8 @@ validate_num_folds <- function(k, n) {
   }
 }
 
-validate_vsel_object_stats <- function(object, stats, resp_oscale = TRUE) {
+validate_vsel_object_stats <- function(object, stats, resp_oscale = TRUE,
+                                       custom_stats = list()) {
   if (!inherits(object, c("vsel"))) {
     stop("The object is not a variable selection object. Run variable ",
          "selection first")
@@ -259,8 +260,7 @@ validate_vsel_object_stats <- function(object, stats, resp_oscale = TRUE) {
   }
   resp_oscale <- object$refmodel$family$for_latent && resp_oscale
 
-  trad_stats <- c("elpd", "mlpd", "gmpd", "mse", "rmse", "R2",
-                  "acc", "pctcorr", "auc")
+  trad_stats <- builtin_stats()
   trad_stats_binom_only <- c("acc", "pctcorr", "auc")
   augdat_stats <- c("elpd", "mlpd", "gmpd", "acc", "pctcorr")
   resp_oscale_stats_fac <- augdat_stats
@@ -274,7 +274,17 @@ validate_vsel_object_stats <- function(object, stats, resp_oscale = TRUE) {
     fam_ch <- object$refmodel$family$family
   }
   for (stat in stats) {
-    if (object$refmodel$family$for_augdat) {
+    if (stat %in% names(custom_stats)) {
+      if (object$refmodel$family$for_augdat) {
+        stop("Currently, the augmented-data projection may not be combined ",
+             "with a custom performance statistic.")
+      }
+      if (resp_oscale && !is.null(object$refmodel$family$cats)) {
+        stop("Currently, the latent projection with `resp_oscale = TRUE` and ",
+             "a non-`NULL` element `family$cats` may not be combined with a ",
+             "custom performance statistic.")
+      }
+    } else if (object$refmodel$family$for_augdat) {
       if (!stat %in% augdat_stats) {
         stop("Currently, the augmented-data projection may not be combined ",
              "with performance statistic `\"", stat, "\"`.")
@@ -996,8 +1006,18 @@ proj_cache_exit <- function() {
   return(invisible())
 }
 
+# Whether `key` can be the name of an entry. `[[` and assign() make a symbol
+# from the key, and a symbol has a limit of 10000 bytes, so long keys are not
+# cached:
+proj_cache_key_ok <- function(key) {
+  nchar(key, type = "bytes") < 10000L
+}
+
 # The entry `key` of store `store`, or `NULL` if there is none:
 proj_cache_get <- function(store, key) {
+  if (!proj_cache_key_ok(key)) {
+    return(NULL)
+  }
   ent <- store$cur[[key]]
   if (!is.null(ent)) {
     return(ent$value)
@@ -1013,6 +1033,9 @@ proj_cache_get <- function(store, key) {
 
 # Stores `value` as entry `key` of store `store`:
 proj_cache_put <- function(store, key, value) {
+  if (!proj_cache_key_ok(key)) {
+    return(invisible())
+  }
   proj_cache_add(store, key, list(value = value,
                                   bytes = as.numeric(utils::object.size(value))))
   return(invisible())

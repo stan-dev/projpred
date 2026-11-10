@@ -95,6 +95,8 @@
 #'   `NULL` for using an internal default. Only one of `cvfits` and `cvfun`
 #'   needs to be provided (for \eqn{K}-fold CV). Note that `cvfits` takes
 #'   precedence over `cvfun`, i.e., if both are provided, `cvfits` is used.
+#'   For [get_refmodel.stanreg()], `cvfun = NULL` uses an internal default
+#'   based on [rstanarm::kfold.stanreg()].
 #' @param cvrefbuilder For \eqn{K}-fold CV only. A function that, given a
 #'   reference model fit for fold \eqn{k \in \{1, ..., K\}}{k = 1, ..., K},
 #'   returns an object of the same type as [init_refmodel()] does. The reference
@@ -107,7 +109,12 @@
 #'   `projpred_k` are appended as attributes). Argument `cvrefbuilder` may be
 #'   `NULL` for using an internal default: [get_refmodel()] if `object` is not
 #'   `NULL` and a function calling [init_refmodel()] appropriately (with the
-#'   assumption `dis = 0`) if `object` is `NULL`.
+#'   assumption `dis = 0`) if `object` is `NULL`. For [get_refmodel.stanreg()],
+#'   `cvrefbuilder = NULL` uses an internal default that calls [get_refmodel()]
+#'   on the fold-wise fit with the arguments `latent`, `dis`, and `...` of the
+#'   original call and with `called_from_cvrefbuilder = TRUE`. A custom
+#'   `cvrefbuilder` is needed, for example, if the reference model uses custom
+#'   functions that depend on the posterior draws (see [extend_family()]).
 #' @param called_from_cvrefbuilder A single logical value indicating whether
 #'   [init_refmodel()] is called from a `cvrefbuilder` function (`TRUE`) or not
 #'   (`FALSE`). Currently, `TRUE` only causes some warnings to be suppressed
@@ -793,9 +800,16 @@ get_refmodel.default <- function(object, family = NULL, ...) {
 
 #' @rdname refmodel-init-get
 #' @export
-get_refmodel.stanreg <- function(object, latent = FALSE, dis = NULL, ...) {
+get_refmodel.stanreg <- function(object, latent = FALSE, dis = NULL,
+                                 cvfun = NULL, cvrefbuilder = NULL, ...) {
   if (!requireNamespace("rstanarm", quietly = TRUE)) {
     stop("Please install the 'rstanarm' package.")
+  }
+  if (!is.null(cvfun) && !is.function(cvfun)) {
+    stop("Argument `cvfun` must be a function or `NULL`.")
+  }
+  if (!is.null(cvrefbuilder) && !is.function(cvrefbuilder)) {
+    stop("Argument `cvrefbuilder` must be a function or `NULL`.")
   }
 
   # Family ------------------------------------------------------------------
@@ -989,24 +1003,28 @@ get_refmodel.stanreg <- function(object, latent = FALSE, dis = NULL, ...) {
     return(linpred_out)
   }
 
-  cvfun <- function(folds) {
-    # Use `cores = 1` because of rstanarm issue #551. In fact, this issue only
-    # affects Windows systems, but since `cores = 1` leads to an *inner*
-    # parallelization (i.e., across chains, not across CV folds) with
-    # `stan_cores <- getOption("mc.cores", 1)` cores, this should also be
-    # suitable for other systems:
-    kfold(
-      object, K = max(folds), save_fits = TRUE, folds = folds, cores = 1
-    )$fits[, "fit"]
+  if (is.null(cvfun)) {
+    cvfun <- function(folds) {
+      # Use `cores = 1` because of rstanarm issue #551. In fact, this issue
+      # only affects Windows systems, but since `cores = 1` leads to an *inner*
+      # parallelization (i.e., across chains, not across CV folds) with
+      # `stan_cores <- getOption("mc.cores", 1)` cores, this should also be
+      # suitable for other systems:
+      kfold(
+        object, K = max(folds), save_fits = TRUE, folds = folds, cores = 1
+      )$fits[, "fit"]
+    }
   }
 
-  # Keep the user's `dis` (possibly `NULL`) for the folds. The default set below
-  # uses the full-data `sigma`; with `NULL`, each fold takes `sigma` from its
-  # own refit.
-  dis_user <- dis
-  cvrefbuilder <- function(cvfit) {
-    get_refmodel(cvfit, latent = latent, dis = dis_user,
-                 called_from_cvrefbuilder = TRUE, ...)
+  if (is.null(cvrefbuilder)) {
+    # Keep the user's `dis` (possibly `NULL`) for the folds. The default set
+    # below uses the full-data `sigma`; with `NULL`, each fold takes `sigma`
+    # from its own refit.
+    dis_user <- dis
+    cvrefbuilder <- function(cvfit) {
+      get_refmodel(cvfit, latent = latent, dis = dis_user,
+                   called_from_cvrefbuilder = TRUE, ...)
+    }
   }
 
   # Miscellaneous -----------------------------------------------------------
