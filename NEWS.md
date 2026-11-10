@@ -48,6 +48,7 @@ If you read this from a place other than <https://mc-stan.org/projpred/news/inde
 * Tests: Leave the options, the random seed and the global environment of the R session unchanged after the tests, also when a test fails, and remove the manual cleanup of the test workspace. (GitHub: #586)
 * Fixed `ordinal::clmm()` submodel fits of cumulative models (e.g., `brms::cumulative()`) with the `cloglog` or `loglog` link and a single group-level intercept. These fits now use the slower default optimizer of `clmm()`. (GitHub: #PR)
 * Fixed the error "'gam.fit' is not an exported object from 'namespace:mgcv'" in projections onto additive submodels with mgcv 1.9-5. (GitHub: #598, #602)
+* Fixed the log-likelihood of binomial (logit) and Poisson (log) reference model draws with a large linear predictor, where the inverse link clamped the mean. (GitHub: #614)
 
 
 # projpred 2.11.0

@@ -638,7 +638,8 @@ predict.refmodel <- function(object, newdata = NULL, ynew = NULL,
         }
       }
       loglik <- refmodel$family$ll_fun(
-        refmodel$family$linkinv(eta), refmodel$dis, ynew, weightsnew
+        refmodel$family$linkinv(eta), refmodel$dis, ynew, weightsnew,
+        eta = eta
       )
       S <- ncol(loglik)
       marg_obs <- 1
