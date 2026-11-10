@@ -64,6 +64,7 @@ Suggests:
     rstanarm,
     brms,
     nlme,
+    Matrix,
     optimx,
     ucminf,
     parallel,
