@@ -27,12 +27,11 @@ search_forward <- function(p_ref, refmodel, nterms_max, verbose = TRUE,
 
   chosen <- character()
   outdmins <- c()
-  term_info <- search_term_info(search_terms)
 
   for (size in seq_len(nterms_max_with_icpt)) {
     # Determine candidate predictors for the current size:
     cands <- select_possible_terms_size(chosen, search_terms, size = size,
-                                        term_info = term_info)
+                                        use_term_info = TRUE)
     if (is.null(cands))
       next
     full_cands <- lapply(cands, function(cand) c(chosen, cand))
@@ -294,10 +293,9 @@ search_forward_gauss <- function(p_ref, refmodel, nterms_max, verbose,
   cols_chosen <- integer(0)
   r_chosen <- NULL
   y_chosen <- NULL
-  term_info <- search_term_info(search_terms)
   for (size in seq_len(nterms_max + 1L)) {
     cands <- select_possible_terms_size(chosen, search_terms, size = size,
-                                        term_info = term_info)
+                                        use_term_info = TRUE)
     if (is.null(cands)) {
       next
     }

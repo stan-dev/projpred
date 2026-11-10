@@ -565,6 +565,7 @@ extend_family_binomial <- function(family) {
   family$ce <- ce_binom
   family$dis_fun <- dis_na
   family$predvar <- predvar_na
+  family <- add_predvar_mix(family, predvar_mix_na, uses_moments = FALSE)
   family$ll_fun <- ll_binom
   family$deviance <- dev_binom
   family$ppd <- ppd_binom
@@ -611,6 +612,7 @@ extend_family_poisson <- function(family) {
   family$ce <- ce_poiss
   family$dis_fun <- dis_na
   family$predvar <- predvar_na
+  family <- add_predvar_mix(family, predvar_mix_na, uses_moments = FALSE)
   family$ll_fun <- ll_poiss
   family$deviance <- dev_poiss
   family$ppd <- ppd_poiss
@@ -625,6 +627,41 @@ extend_family_poisson <- function(family) {
 rowvar_wdraws <- function(mu, wdraws) {
   mu_mean <- drop(mu %*% wdraws) / sum(wdraws)
   return(drop(((mu - mu_mean)^2) %*% wdraws))
+}
+
+# Predictive variances of several clusters at once, from their parts.
+# `family$predvar_mix(dis2, mu_var, nobs)` gives the observations x clusters
+# matrix of `family$predvar()` of all clusters, from the weighted means `dis2`
+# of the squared dispersion parameter draws in each cluster and the weighted
+# variances `mu_var` of `mu` across the draws of each cluster (an observations
+# x clusters matrix, or `0` if each cluster has one draw and all values of `mu`
+# are finite).
+# Attribute "predvar" of `family$predvar_mix` is the `family$predvar` that it
+# belongs to (see add_predvar_mix()). Attribute "uses_moments" is `FALSE` if
+# `family$predvar_mix` uses only `length(dis2)`, not the values of `dis2` and
+# `mu_var`. Then get_p_clust() does not compute these values and can give `NA`
+# in them.
+
+# Adds `predvar_mix` to `family`, for the current `family$predvar`.
+add_predvar_mix <- function(family, predvar_mix, uses_moments = TRUE) {
+  family$predvar_mix <- structure(predvar_mix, predvar = family$predvar,
+                                  uses_moments = uses_moments)
+  return(family)
+}
+
+# `predvar_mix` of the families whose predvar() gives `NA`.
+predvar_mix_na <- function(dis2, mu_var, nobs) {
+  matrix(NA, nrow = nobs, ncol = length(dis2))
+}
+
+# The predictive variances `dis_part[j] + mu_var[, j]` (the sum in the same
+# order as in predvar_gauss() and predvar_student_t()).
+predvar_mix_add <- function(dis_part, mu_var, nobs) {
+  out <- matrix(dis_part, nrow = nobs, ncol = length(dis_part), byrow = TRUE)
+  if (!identical(mu_var, 0)) {
+    out <- out + mu_var
+  }
+  out
 }
 
 extend_family_gaussian <- function(family) {
@@ -644,6 +681,10 @@ extend_family_gaussian <- function(family) {
     wdraws <- wdraws / sum(wdraws)
     mu_var <- rowvar_wdraws(mu, wdraws)
     as.vector(sum(wdraws * dis^2) + mu_var)
+  }
+  # predvar_gauss() of several clusters at once (see add_predvar_mix()):
+  predvar_mix_gauss <- function(dis2, mu_var, nobs) {
+    predvar_mix_add(dis2, mu_var, nobs)
   }
   ll_gauss <- function(mu, dis, y, weights = 1) {
     y <- as.matrix(y)
@@ -669,6 +710,7 @@ extend_family_gaussian <- function(family) {
   family$ce <- ce_gauss
   family$dis_fun <- dis_gauss
   family$predvar <- predvar_gauss
+  family <- add_predvar_mix(family, predvar_mix_gauss)
   family$ll_fun <- ll_gauss
   family$deviance <- dev_gauss
   family$ppd <- ppd_gauss
@@ -746,6 +788,10 @@ extend_family_student_t <- function(family) {
     mu_var <- rowvar_wdraws(mu, wdraws)
     as.vector(family$nu / (family$nu - 2) * sum(wdraws * dis^2) + mu_var)
   }
+  # predvar_student_t() of several clusters at once (see add_predvar_mix()):
+  predvar_mix_student_t <- function(dis2, mu_var, nobs) {
+    predvar_mix_add(family$nu / (family$nu - 2) * dis2, mu_var, nobs)
+  }
   ll_student_t <- function(mu, dis, y, weights = 1) {
     y <- as.matrix(y)
     dis <- matrix(rep(dis, each = length(y)), ncol = NCOL(mu))
@@ -771,6 +817,7 @@ extend_family_student_t <- function(family) {
   family$ce <- ce_student_t
   family$dis_fun <- dis_student_t
   family$predvar <- predvar_student_t
+  family <- add_predvar_mix(family, predvar_mix_student_t)
   family$ll_fun <- ll_student_t
   family$deviance <- dev_student_t
   family$ppd <- ppd_student_t

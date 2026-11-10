@@ -269,10 +269,10 @@ shared_setup_callback <- function(make_shared, formulas, sdivmin_plain) {
 # setup of mgcv::gam() (model frame, smooth bases and penalties;
 # mgcv::gam(fit = FALSE)). gam_shared_callback() fits each draw with
 # mgcv::gam(G = ), the public interface for a prepared setup, with the response
-# of the draw. It sets the elements of the fit that contain the response name
-# (`formula`, `terms`, `pterms`, `model`, `pred.formula`) and `call` as in a fit
-# by fit_gam_callback(), so the fits are equal (all.equal()) to those of
-# fit_gam_callback().
+# of the draw and the estimation arguments of the call. It sets the elements of
+# the fit that contain the response name (`formula`, `terms`, `pterms`, `model`,
+# `pred.formula`) and `call` as in a fit by fit_gam_callback(), so the fits are
+# equal (all.equal()) to those of fit_gam_callback().
 
 # Draw-wise divergence minimizer for divmin() that uses one mgcv::gam() setup
 # for all draws, or `NULL` if this does not apply.
@@ -289,10 +289,8 @@ gam_shared_callback <- function(formulas, dot_args) {
     return(NULL)
   }
   # As in fit_gam_callback():
-  gam_dot_args <- dot_args[intersect(
-    names(dot_args),
-    c(methods::formalArgs(mgcv::gam), methods::formalArgs(mgcv::gam.fit))
-  )]
+  gam_dot_args <- dot_args[intersect(names(dot_args),
+                                     methods::formalArgs(mgcv::gam))]
   if (any(c("G", "fit") %in% names(gam_dot_args))) {
     return(NULL)
   }
@@ -304,6 +302,14 @@ gam_shared_callback <- function(formulas, dot_args) {
   if (is.null(g_setup) || length(g_setup$y) != nrow(data)) {
     return(NULL)
   }
+  # With `G`, mgcv::gam() takes the arguments of the estimation from its call,
+  # not from `G` (`data` only for `control$keepData`). The setup already
+  # contains `sp`; a second `sp` stops with an error.
+  est_args <- gam_dot_args[intersect(
+    names(gam_dot_args),
+    c("method", "optimizer", "control", "scale", "gamma", "in.out", "nei",
+      "data")
+  )]
   resp_old <- resp_nms[1]
   return(function(formula, ...) {
     resp_new <- as.character(formula[[2]])
@@ -311,7 +317,7 @@ gam_shared_callback <- function(formulas, dot_args) {
       g_s <- g_setup
       g_s$y <- data[[resp_new]]
       g_s$mf[[resp_old]] <- data[[resp_new]]
-      fit <- mgcv::gam(G = g_s)
+      fit <- do.call(mgcv::gam, c(list(G = g_s), est_args))
       if (resp_new != resp_old) {
         for (el in c("formula", "terms", "pterms", "model", "pred.formula")) {
           if (!is.null(fit[[el]])) {
@@ -1050,11 +1056,8 @@ fit_glm_callback <- function(formula, family, ...) {
 fit_gam_callback <- function(formula, ...) {
   # Exclude arguments from `...` which cannot be passed to mgcv::gam():
   dot_args <- list(...)
-  dot_args <- dot_args[intersect(
-    names(dot_args),
-    c(methods::formalArgs(mgcv::gam),
-      methods::formalArgs(mgcv::gam.fit))
-  )]
+  dot_args <- dot_args[intersect(names(dot_args),
+                                 methods::formalArgs(mgcv::gam))]
   # Call the submodel fitter:
   return(do.call(mgcv::gam, c(list(formula = formula), dot_args)))
 }
@@ -2105,6 +2108,29 @@ fit_categ_mlvl <- function(formula, projpred_formula_no_random,
   random_fmls <- lapply(random_trms, function(random_trm) {
     as.formula(paste("~", random_trm))
   })
+  # Use categ_pql_fit() unless there are offsets, global option
+  # `projpred.categ_mlvl_mblogit` is `TRUE`, or `...` has mblogit() settings
+  # that categ_pql_fit() does not support.  In mclogit's PQL algorithm,
+  # `avoid.increase` and `break.on.infinite` have no effect, and `trace` and
+  # `trace.inner` only print the iterations:
+  pql_args <- c("epsilon", "maxit", "maxit.inner")
+  no_effect_args <- c("trace", "trace.inner", "avoid.increase",
+                      "break.on.infinite")
+  break_args <- c("break.on.increase", "break.on.negative")
+  if (!getOption("projpred.categ_mlvl_mblogit", FALSE) && !length(offs_attr) &&
+      all(names(dot_args) %in% c(pql_args, no_effect_args, break_args)) &&
+      !any(vapply(dot_args[intersect(names(dot_args), break_args)],
+                  isTRUE, logical(1)))) {
+    mat_resp <- categ_mat_resp(projpred_formula_no_random, data, weights)
+    if (!is.null(mat_resp)) {
+      fitobj <- do.call(categ_pql_fit, c(
+        list(formula = mat_resp$formula, random = random_fmls,
+             data = mat_resp$data),
+        dot_args[intersect(names(dot_args), pql_args)]
+      ))
+      if (!is.null(fitobj)) return(fitobj)
+    }
+  }
   if (length(random_fmls) == 1) {
     random_fmls <- random_fmls[[1]]
   }
