@@ -72,6 +72,47 @@ test_that("cumul_fit_multi_c() finds the optimum of the polr() objective", {
   expect_identical(fit_both$zeta[, 2], drop(fit_2$zeta))
 })
 
+test_that("cumul_fit_multi_c() gives the polr() objective at bounds +-100", {
+  # Survival functions of the latent variables (1 - pfun, without
+  # cancellation):
+  sfun_cn <- list(logistic = function(q) plogis(q, lower.tail = FALSE),
+                  probit = function(q) pnorm(q, lower.tail = FALSE),
+                  loglog = function(q) -expm1(-exp(-q)),
+                  cloglog = function(q) exp(-exp(q)),
+                  cauchit = function(q) pcauchy(q, lower.tail = FALSE))
+  # Offsets of +-150 for some observations, so that the bounds +-100 apply.
+  # These observations have weight only in the highest or lowest category
+  # (else the objective is infinite). No random numbers: later tests use the
+  # random number state.
+  offs <- rep_len(c(0, 0, 150, -150, 0), n_cn)
+  for (method in links_cn) {
+    cp <- cbind(0, pfun_cn[[method]](outer(-eta_cn, c(-1, 0, 1), "+")), 1)
+    w <- pmax(t(apply(cp, 1, diff)), 1e-10)
+    w[offs == 150, ] <- rep(c(0, 0, 0, 1), each = sum(offs == 150))
+    w[offs == -150, ] <- rep(c(1, 0, 0, 0), each = sum(offs == -150))
+    fit_nat <- cumul_fit_multi_c(x_cn, w, ncat_cn, offs,
+                                 match(method, links_cn), 1e-12, 100L)
+    expect_identical(fit_nat$convergence, 0L, info = method)
+    eta <- offs + drop(x_cn %*% fit_nat$beta)
+    # The bounds apply to these observations:
+    expect_true(all(fit_nat$zeta[ncat_cn - 1] - eta[offs == 150] < -100),
+                info = method)
+    expect_true(all(fit_nat$zeta[1] - eta[offs == -150] > 100),
+                info = method)
+    g <- c(-Inf, fit_nat$zeta, Inf)
+    loss <- -sum(vapply(seq_len(ncat_cn), function(k) {
+      z1 <- pmin(100, g[k + 1] - eta)
+      z2 <- pmax(-100, g[k] - eta)
+      pr <- ifelse(z2 > 0, sfun_cn[[method]](z2) - sfun_cn[[method]](z1),
+                   pfun_cn[[method]](z1) - pfun_cn[[method]](z2))
+      # As in the C++ code, terms with weight 0 are left out:
+      pos <- w[, k] > 0
+      sum(w[pos, k] * log(pr[pos]))
+    }, numeric(1)))
+    expect_equal(drop(fit_nat$loss), loss, tolerance = 1e-10, info = method)
+  }
+})
+
 test_that("cumul_native_multi() returns usable `polr` objects", {
   method <- "logistic"
   ws <- cbind(as.vector(wts_cn(method)), as.vector(wts_cn(method)))

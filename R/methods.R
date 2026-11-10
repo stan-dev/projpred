@@ -809,7 +809,11 @@ plot.vsel <- function(
 ) {
   # Parse input:
   object <- x
-  validate_vsel_object_stats(object, stats, resp_oscale = resp_oscale)
+  stats_parsed <- parse_stats(stats)
+  stats <- stats_parsed$nms
+  custom_stats <- stats_parsed$custom
+  validate_vsel_object_stats(object, stats, resp_oscale = resp_oscale,
+                             custom_stats = custom_stats)
   baseline <- validate_baseline(object, baseline, deltas)
   if (!is.null(ranking_repel) && !requireNamespace("ggrepel", quietly = TRUE)) {
     warning("Package 'ggrepel' is needed for a non-`NULL` argument ",
@@ -824,6 +828,7 @@ plot.vsel <- function(
   # Define `nfeat_baseline` and a slightly modified variant that can be used for
   # .tabulate_stats()'s argument `nfeat_baseline`:
   nfeat_baseline <- get_nfeat_baseline(object, baseline, stats[1],
+                                       custom_stats = custom_stats,
                                        resp_oscale = resp_oscale)
   nfeat_baseline_mixed <- NULL
   if (isTRUE(deltas)) {
@@ -839,7 +844,8 @@ plot.vsel <- function(
   stats_table_all <- .tabulate_stats(object, stats, alpha = alpha,
                                      nfeat_baseline = nfeat_baseline_for_tab,
                                      nfeat_baseline_diff = nfeat_baseline_mixed,
-                                     resp_oscale = resp_oscale, ...)
+                                     resp_oscale = resp_oscale,
+                                     custom_stats = custom_stats, ...)
   if (identical(deltas, "mixed")) {
     stats_bs_init <- subset(stats_table_all,
                             stats_table_all$size == nfeat_baseline)
@@ -1190,14 +1196,17 @@ plot.vsel <- function(
     #                        direction = 1)
     ###
   }
-  if (all(stats %in% c("auc"))) {
+  stats_bs_ci <- c("auc", names(Filter(function(cs) {
+    cs$type == "aggregate"
+  }, custom_stats)))
+  if (all(stats %in% stats_bs_ci)) {
     ci_type <- "bootstrap "
   } else if (all(stats %in% c("gmpd"))) {
     ci_type <- "exponentiated normal-approximation "
   } else if (all(stats %in% c("mse", "rmse")) && isFALSE(deltas)) {
     ci_type <- "log-normal-approximation "
-  } else if (all(!stats %in% c("auc", "gmpd", "mse", "rmse")) ||
-             (all(!stats %in% c("auc", "gmpd")) &&
+  } else if (all(!stats %in% c(stats_bs_ci, "gmpd", "mse", "rmse")) ||
+             (all(!stats %in% c(stats_bs_ci, "gmpd")) &&
               (identical(deltas, "mixed") || isTRUE(deltas)))) {
     ci_type <- "normal-approximation "
   } else {
@@ -1228,6 +1237,14 @@ plot.vsel <- function(
   } else {
     x_axis_sec <- waiver()
   }
+  if (length(custom_stats) > 0) {
+    facet_labs <- setNames(stats, stats)
+    facet_labs[names(custom_stats)] <- vapply(custom_stats, "[[", character(1),
+                                              "label")
+    facet_labeller <- labeller(statistic = facet_labs)
+  } else {
+    facet_labeller <- "label_value"
+  }
   hjust_val <- 0.5
   vjust_val <- 0.5
   if (!is.null(text_angle)) {
@@ -1253,7 +1270,7 @@ plot.vsel <- function(
     theme(axis.text.x.bottom = element_text(angle = text_angle,
                                             hjust = hjust_val,
                                             vjust = vjust_val)) +
-    facet_grid(statistic ~ ., scales = "free_y")
+    facet_grid(statistic ~ ., scales = "free_y", labeller = facet_labeller)
   if (!is.na(ranking_nterms_max) && !is.null(ranking_repel)) {
     if (identical(ranking_repel, "text")) {
       geom_repel_fun <- ggrepel::geom_text_repel
@@ -1293,8 +1310,9 @@ plot.vsel <- function(
 #'   same as `length(ranking(object)$fulldata)`. Note that `nterms_max` does not
 #'   count the intercept, so use `nterms_max = 0` for the intercept-only model.
 #'   For [plot.vsel()], `nterms_max` must be at least `1`.
-#' @param stats One or more character strings determining which performance
-#'   statistics (i.e., utilities or losses) to estimate based on the
+#' @param stats One or more character strings (or [custom_stat()] objects, see
+#'   below) determining which performance statistics (i.e., utilities or
+#'   losses) to estimate based on the
 #'   observations in the evaluation (or "test") set (in case of
 #'   cross-validation, these are all observations because they are partitioned
 #'   into multiple test sets; in case of [varsel()] with `d_test = NULL`, these
@@ -1342,6 +1360,11 @@ plot.vsel <- function(
 #'   and lower and upper uncertainty interval bounds, bootstrapping is used. Not
 #'   supported in case of subsampled LOO-CV (see argument `nloo` of
 #'   [cv_varsel()]).
+#'
+#'   For a user-defined statistic, use [custom_stat()]. `stats` then takes one
+#'   [custom_stat()] object, or a `list` of single character strings (built-in
+#'   statistics) and [custom_stat()] objects, for example
+#'   `stats = list("elpd", custom_stat(...))`.
 #' @param type One or more items from `"mean"`, `"se"`, `"lower"`, `"upper"`,
 #'   `"diff"`, `"diff.lower"`, `"diff.upper"`, and `"diff.se"` indicating which
 #'   of these to compute for each item from `stats` (mean, standard error, lower
@@ -1447,7 +1470,11 @@ summary.vsel <- function(
     cumulate = FALSE,
     ...
 ) {
-  validate_vsel_object_stats(object, stats, resp_oscale = resp_oscale)
+  stats_parsed <- parse_stats(stats)
+  stats <- stats_parsed$nms
+  custom_stats <- stats_parsed$custom
+  validate_vsel_object_stats(object, stats, resp_oscale = resp_oscale,
+                             custom_stats = custom_stats)
   baseline <- validate_baseline(object, baseline, deltas)
 
   # Initialize output:
@@ -1477,13 +1504,15 @@ summary.vsel <- function(
   # The full table of the performance statistics from `stats`:
   if (deltas) {
     nfeat_baseline_for_tab <- get_nfeat_baseline(object, baseline, stats[1],
+                                                 custom_stats = custom_stats,
                                                  resp_oscale = resp_oscale)
   } else {
     nfeat_baseline_for_tab <- NULL
   }
   stats_table_all <- .tabulate_stats(object, stats, alpha = alpha,
                                      nfeat_baseline = nfeat_baseline_for_tab,
-                                     resp_oscale = resp_oscale, ...)
+                                     resp_oscale = resp_oscale,
+                                     custom_stats = custom_stats, ...)
 
   # Extract the reference model performance results from `stats_table_all`:
   stats_table_ref <- subset(stats_table_all, stats_table_all$size == Inf)
@@ -1709,8 +1738,9 @@ print.vsel <- function(x, digits = getOption("projpred.digits", 2), ...) {
 #' @param object An object of class `vsel` (returned by [varsel()] or
 #'   [cv_varsel()]).
 #' @param stat Performance statistic (i.e., utility or loss) used for the
-#'   decision. See argument `stats` of [summary.vsel()] and [plot.vsel()] for
-#'   possible choices.
+#'   decision: a single character string or a single [custom_stat()] object.
+#'   See argument `stats` of [summary.vsel()] and [plot.vsel()] for possible
+#'   choices.
 #' @param pct A number giving the proportion (*not* percents) of the *relative*
 #'   null model utility one is willing to sacrifice. See section "Details" below
 #'   for more information.
@@ -1843,7 +1873,8 @@ suggest_size.vsel <- function(
     warnings = TRUE,
     ...
 ) {
-  if (length(stat) > 1) {
+  stat_parsed <- parse_stats(stat)
+  if (length(stat_parsed$nms) > 1) {
     stop("Only one statistic can be specified to suggest_size")
   }
   stats <- summary.vsel(object,
@@ -1852,8 +1883,9 @@ suggest_size.vsel <- function(
                         deltas = TRUE,
                         ...)
   stats <- stats$perf_sub
+  stat <- stat_parsed$nms
 
-  if (is_util(stat)) {
+  if (is_util(stat, stat_parsed$custom)) {
     sgn <- 1
   } else {
     sgn <- -1
