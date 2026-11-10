@@ -474,8 +474,7 @@ as_glmerMod <- function(object, data, weights = NULL) {
     lme4::mkMerMod(environment(devfun), opt, glmod$reTrms, fr = glmod$fr,
                    mc = mc)
   }, warning = function(w) {
-    if (grepl("^non-integer (#successes in a binomial glm|x = )",
-              conditionMessage(w))) {
+    if (grepl("^non-integer ", conditionMessage(w))) {
       invokeRestart("muffleWarning")
     }
   })
