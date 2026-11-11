@@ -2488,13 +2488,12 @@ get_subparams.mmblogit <- function(x, ...) {
 #'   reference model fit (see section "Augmented-data projection" in
 #'   [extend_family()]'s documentation).
 #'
-#'   For a submodel with smooth terms (an additive submodel fitted with
-#'   [mgcv::gam()]), the columns of the smooth terms are the coefficients in the
-#'   basis of [mgcv::gam()]. The reference model fit can use another basis (for
-#'   example, [rstanarm::stan_gamm4()] and \pkg{brms} do for `s()` terms), so
-#'   in general, these columns cannot be compared with the reference model
-#'   parameters. For a submodel with smooth and group-level terms (GAMM), the
-#'   conversion stops with an error.
+#'   For a submodel with smooth terms (fitted with [mgcv::gam()]), the columns
+#'   of the smooth terms are the coefficients in the basis of `gam()`. The
+#'   reference model fit can use another basis ([rstanarm::stan_gamm4()] and
+#'   \pkg{brms} do so for `s()` terms). Then these columns do not match the
+#'   reference model parameters. For a submodel with smooth and group-level
+#'   terms (GAMM), the projected draws cannot be extracted yet (error).
 #'
 #' @return An \eqn{S_{\mathrm{prj}} \times Q}{S_prj x Q} matrix of projected
 #'   draws, with \eqn{S_{\mathrm{prj}}}{S_prj} denoting the number of projected
